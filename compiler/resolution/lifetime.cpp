@@ -37,6 +37,8 @@
 static const char* debugLifetimesForFn = "";
 static const int debugLifetimesForId = 0;
 static const bool debugOutputOnError = false;
+static const char* debugExpiringForFn = "";
+static const int debugExpiringForId = 0;
 
 /* This file implements lifetime checking.
 
@@ -268,6 +270,41 @@ namespace {
     CONSTRAINT_GREATER = 11,
   } constraint_t;
 
+  // It is assumed that any symbol always includes itself in its alias
+  // group.
+  typedef std::set<Symbol*> AliasesGroup;
+  typedef std::map<Symbol*, AliasesGroup*> AliasesMap;
+
+  class GatherAliasesVisitor : public AstVisitorTraverse {
+    public:
+      AliasesMap *aliases;
+      LifetimeState* lifetimes;
+      bool changed;
+      virtual bool enterDefExpr(DefExpr* def);
+      virtual bool enterCallExpr(CallExpr* call);
+  };
+
+  class MarkCapturesVisitor : public AstVisitorTraverse {
+    public:
+      AliasesMap *aliases;
+      LifetimeState* lifetimes;
+      virtual bool enterFnSym(FnSymbol* fn);
+      virtual bool enterDefExpr(DefExpr* def);
+      virtual bool enterCallExpr(CallExpr* call);
+  };
+
+  class ReportExpiringVisitor : public AstVisitorTraverse {
+    public:
+      FnSymbol* fn;
+      bool printedAny;
+      AliasesMap *aliases;
+      LifetimeState* lifetimes;
+      std::set<Symbol*> printed;
+      virtual bool enterDefExpr(DefExpr* def);
+      virtual bool enterCallExpr(CallExpr* call);
+  };
+
+
 } /* end anon namespace */
 
 static bool typeHasInfiniteBorrowLifetime(Type* type);
@@ -308,6 +345,8 @@ static void checkFunction(FnSymbol* fn);
 
 static bool isCallToFunctionReturningNotOwned(CallExpr* call);
 static bool isUser(BaseAST* ast);
+
+static void markLocalVariableExpiryInFn(FnSymbol* fn, LifetimeState* state);
 
 void checkLifetimes(void) {
   // Mark all arguments with FLAG_SCOPE or FLAG_RETURN_SCOPE.
@@ -351,6 +390,10 @@ static void checkFunction(FnSymbol* fn) {
 }
 
 void checkLifetimesInFunction(FnSymbol* fn) {
+
+  // No need to check lifetimes in string literal module.
+  if (fn->getModule() == stringLiteralModule)
+    return;
 
   bool debugging = debuggingLifetimesForFn(fn);
 
@@ -407,6 +450,11 @@ void checkLifetimesInFunction(FnSymbol* fn) {
   info.lifetimes = &state;
   for_set(FnSymbol, inFn, state.inFns) {
     checkLifetimesForForallUnorderedOps(inFn, &info);
+  }
+
+  // Mark local variables as potentially captured or not.
+  for_set(FnSymbol, inFn, state.inFns) {
+    markLocalVariableExpiryInFn(inFn, &state);
   }
 }
 
@@ -1063,7 +1111,7 @@ LifetimePair LifetimeState::inferredLifetimeForCall(CallExpr* call) {
   if (calledFn->isMethod() &&
       (calledFn->name == astrInit || calledFn->name == astrInitEquals)) {
     returnType = calledFn->getFormal(1)->getValType();
-  } else if(calledFn->hasFlag(FLAG_FN_RETARG)) {
+  } else if (calledFn->hasFlag(FLAG_FN_RETARG)) {
     ArgSymbol* retArg = toArgSymbol(toDefExpr(calledFn->formals.tail)->sym);
     INT_ASSERT(retArg && retArg->hasFlag(FLAG_RETARG));
     returnType = retArg->getValType();
@@ -1513,16 +1561,20 @@ bool IntrinsicLifetimesVisitor::enterDefExpr(DefExpr* def) {
   return false;
 }
 
-static bool isCallToFunctionReturningNotOwned(CallExpr* call) {
-
-  FnSymbol* calledFn = call->resolvedOrVirtualFunction();
-  if (calledFn &&
-      calledFn->hasEitherFlag(FLAG_RETURN_NOT_OWNED,
-                              FLAG_RETURNS_ALIASING_ARRAY))
+static bool isFunctionReturningNotOwned(FnSymbol* fn) {
+  if (fn &&
+      fn->hasEitherFlag(FLAG_RETURN_NOT_OWNED,
+                        FLAG_RETURNS_ALIASING_ARRAY))
     return true;
 
   return false;
 }
+
+static bool isCallToFunctionReturningNotOwned(CallExpr* call) {
+  FnSymbol* calledFn = call->resolvedOrVirtualFunction();
+  return isFunctionReturningNotOwned(calledFn);
+}
+
 
 
 bool IntrinsicLifetimesVisitor::enterCallExpr(CallExpr* call) {
@@ -2800,4 +2852,646 @@ static LifetimePair infiniteLifetimePair() {
   ret.referent = lt;
   ret.borrowed = lt;
   return ret;
+}
+
+/*
+
+The compiler considers the appearances of a local variable in
+the source code.
+
+If any of its uses are potentially capturing aliases according to the rule
+below, it would make the variable dead at the end of the block.  Otherwise, it
+would be dead at the end of the last statement that mentioned that variable.
+Note that for an if conditional or a loop that contained a mention of the
+variable in its body, the variable would be dead after that if or the loop.
+Globals continue to be destroyed at the end of the program's execution.
+
+A function call f(..., a, ...) is potentially capturing an alias to an argument
+a if the lifetime constraint or inferred lifetime constraint would allow:
+
+* storing something with lifetime of a into another formal argument
+* storing something with lifetime of a into an outer / global variable
+* initializing a new user variable that refers to / borrows from a
+  (e.g. ref x = a).
+
+A function call g(..., b, ...) is potentially creating an alias to an argument b
+if the lifetime constraint or inferred lifetime constraint would allow:
+
+* returning something with lifetime b
+
+To determine if a variable v is potentially capture, the analysis would develop
+a set of potential aliases. Initially, the set consists the variable v only. The
+analysis would expand this set to include the results of any calls that create
+an alias, and proceed until this set does not change. Then it would consider
+calls mentioning members of this set to determine if any of them are potentially
+capturing.
+
+*/
+
+// Joins alias groups (if necessary)
+static void ensureSameAliasesGroup(AliasesMap& aliases,
+                                   Symbol* a, Symbol* b,
+                                   bool& changed) {
+  if (a == b || a == NULL || b == NULL) return;
+
+  // Are they already in the same map?
+  AliasesGroup* aGroup = NULL;
+  AliasesGroup* bGroup = NULL;
+  if (aliases.count(a))
+    aGroup = aliases[a];
+  if (aliases.count(b))
+    bGroup = aliases[b];
+  if (aGroup != NULL && aGroup == bGroup)
+    return;
+
+  // Choose one group to extend (the other group will be removed)
+  AliasesGroup* extendGroup = NULL;
+  AliasesGroup* removeGroup = NULL;
+  if (aGroup != NULL && bGroup == NULL) {
+    extendGroup = aGroup;
+  } else if (bGroup != NULL && aGroup == NULL) {
+    extendGroup = bGroup;
+  } else if (aGroup != NULL && bGroup != NULL) {
+    if (aGroup->size() >= bGroup->size()) {
+      extendGroup = aGroup;
+      removeGroup = bGroup;
+    } else {
+      extendGroup = bGroup;
+      removeGroup = aGroup;
+    }
+  } else if (aGroup == NULL && bGroup == NULL) {
+    extendGroup = new AliasesGroup();
+    changed = true;
+  }
+
+  INT_ASSERT(extendGroup != NULL);
+
+  // OK, extend the group to contain a, b, and removeGroup.
+  // And update the map to point to extendGroup.
+  if (extendGroup->count(a) == 0) {
+    extendGroup->insert(a);
+    aliases[a] = extendGroup;
+    changed = true;
+  }
+  if (extendGroup->count(b) == 0) {
+    extendGroup->insert(b);
+    aliases[b] = extendGroup;
+    changed = true;
+  }
+  if (removeGroup != NULL) {
+    for (AliasesGroup::iterator it = removeGroup->begin();
+         it != removeGroup->end();
+         ++it) {
+      Symbol* sym = *it;
+      if (extendGroup->count(sym) == 0) {
+        extendGroup->insert(sym);
+        aliases[sym] = extendGroup;
+        changed = true;
+      }
+    }
+  }
+
+  // Now delete removeGroup. It should no longer be referred to.
+  delete removeGroup;
+}
+
+// Given a call, which of the actual arguments could the function
+// possibly return a lifetime for?
+static
+void expandAliasesForPossiblyReturned(AliasesMap& aliases,
+                                      CallExpr* call, Symbol* lhsActual,
+                                      bool& changed) {
+  FnSymbol* calledFn = call->resolvedOrVirtualFunction();
+
+  if (calledFn == NULL)
+    return; // nothing to do - no returned lifetime
+
+  if (calledFn->hasFlag(FLAG_RETURNS_INFINITE_LIFETIME))
+    return; // nothing to do -- infinite lifetime
+
+  // "_new" calls return infinite lifetime. Why?
+  //  * the result of 'new' is currently user-managed
+  //  * ref fields are not supported in classes
+  //    so they can't capture a ref argument
+  if (isClassLike(call->typeInfo()) &&
+      calledFn->hasFlag(FLAG_NEW_WRAPPER)) {
+    return; // nothing to do -- infinite lifetime
+  }
+
+  /*bool returnsRef = call->isRef() ||
+                    calledFn->retTag == RET_REF ||
+                    calledFn->retTag == RET_CONST_REF;*/
+
+  bool returnsBorrow = false;
+  Type* returnType = calledFn->retType;
+  if (calledFn->isMethod() &&
+      (calledFn->name == astrInit || calledFn->name == astrInitEquals)) {
+    returnType = calledFn->getFormal(1)->getValType();
+  } else if(calledFn->hasFlag(FLAG_FN_RETARG)) {
+    ArgSymbol* retArg = toArgSymbol(toDefExpr(calledFn->formals.tail)->sym);
+    INT_ASSERT(retArg && retArg->hasFlag(FLAG_RETARG));
+    returnType = retArg->getValType();
+  }
+
+  returnsBorrow = isSubjectToBorrowLifetimeAnalysis(returnType);
+
+  ArgSymbol* theOnlyOneThatMatters = NULL;
+  if (calledFn->lifetimeConstraints) {
+    Symbol* sym = returnLifetimeFromClause(calledFn);
+    // lifetime = outer/global variable -> infinite lifetime
+    if (sym->defPoint->getFunction() != calledFn)
+      return; // infinite lifetime
+
+    INT_ASSERT(isArgSymbol(sym));
+    theOnlyOneThatMatters = toArgSymbol(sym);
+  }
+
+  Symbol* rvvActual = NULL;
+  if (calledFn->hasFlag(FLAG_FN_RETARG)) {
+    for_formals_actuals(formal, actual, call) {
+      if (formal->hasFlag(FLAG_RETARG))
+        rvvActual = toSymExpr(actual)->symbol();
+    }
+  }
+
+  for_formals_actuals(formal, actual, call) {
+    if (formalArgumentDoesNotImpactReturnLifetime(formal) ||
+        (theOnlyOneThatMatters != NULL && theOnlyOneThatMatters != formal))
+      continue;
+
+    if (formal->hasFlag(FLAG_RETURN_SCOPE)) {
+      // Something with this lifetime could be returned, so update
+      // the aliases map.
+      SymExpr* actualSe = toSymExpr(actual);
+      INT_ASSERT(actualSe);
+      Symbol* actualSym = actualSe->symbol();
+      if (rvvActual != NULL)
+        ensureSameAliasesGroup(aliases, actualSym, rvvActual, changed);
+      if (lhsActual != NULL)
+        ensureSameAliasesGroup(aliases, actualSym, lhsActual, changed);
+    }
+  }
+}
+
+
+// This function should not strictly be necessary for the analysis
+bool GatherAliasesVisitor::enterDefExpr(DefExpr* def) {
+  if (def->id == debugExpiringForId)
+    gdbShouldBreakHere();
+
+  if (VarSymbol* var = toVarSymbol(def->sym)) {
+    // If the lifetime of se is referring to another symbol, then
+    // they are in the same aliases group. Also if the lifetime
+    // checker considers them the same symbol.
+
+    // check for canonical symbol
+    Symbol* c = lifetimes->getCanonicalSymbol(var);
+    if (c != var)
+      ensureSameAliasesGroup(*aliases, var, c, changed);
+
+    // get lifetimes for canonical symbol
+    LifetimePair intrinsic = lifetimes->intrinsicLifetimeForSymbol(c);
+    LifetimePair inferred = lifetimes->inferredLifetimeForSymbol(c);
+
+    if (!intrinsic.referent.unknown && !intrinsic.referent.infinite)
+      ensureSameAliasesGroup(*aliases, c, intrinsic.referent.fromSymbolScope, changed);
+    if (!intrinsic.borrowed.unknown && !intrinsic.borrowed.infinite)
+      ensureSameAliasesGroup(*aliases, c, intrinsic.borrowed.fromSymbolScope, changed);
+    if (!inferred.referent.unknown && !inferred.referent.infinite)
+      ensureSameAliasesGroup(*aliases, c, inferred.referent.fromSymbolScope, changed);
+    if (!inferred.borrowed.unknown && !inferred.borrowed.infinite)
+      ensureSameAliasesGroup(*aliases, c, inferred.borrowed.fromSymbolScope, changed);
+  }
+
+  return false;
+}
+
+bool GatherAliasesVisitor::enterCallExpr(CallExpr* call) {
+  if (call->id == debugExpiringForId)
+    gdbShouldBreakHere();
+
+  if (call->isPrimitive(PRIM_MOVE) ||
+      call->isPrimitive(PRIM_ASSIGN)) {
+    // check for: initializing a new user variable refering to / borrowing from
+    SymExpr* lhsSe = toSymExpr(call->get(1));
+    Symbol* lhs = lhsSe->symbol();
+
+    if (CallExpr* rhsCall = toCallExpr(call->get(2))) {
+      if (rhsCall->isPrimitive(PRIM_ADDR_OF) ||
+          rhsCall->isPrimitive(PRIM_SET_REFERENCE)) {
+        SymExpr* rhsSe = toSymExpr(rhsCall->get(1));
+        ensureSameAliasesGroup(*aliases, lhs, rhsSe->symbol(), changed);
+      } else {
+        expandAliasesForPossiblyReturned(*aliases, rhsCall, lhs, changed);
+      }
+    } else if (SymExpr* rhsSe = toSymExpr(call->get(2))) {
+      ensureSameAliasesGroup(*aliases, lhs, rhsSe->symbol(), changed);
+    }
+  } else {
+    // Check for calls initializing something through the RVV.
+    if (FnSymbol* calledFn = call->resolvedOrVirtualFunction()) {
+      if (isTaskFun(calledFn)) {
+        calledFn->body->accept(this);
+        return false;
+      }
+
+      if (calledFn->hasFlag(FLAG_FN_RETARG)) {
+        expandAliasesForPossiblyReturned(*aliases, call, NULL, changed);
+      }
+    }
+  }
+  return false;
+}
+
+static inline bool debuggingExpiringForFn(FnSymbol* fn)
+{
+  if (!fn) return false;
+  if (debugExpiringForId == 0 &&
+      (debugExpiringForFn == NULL || debugExpiringForFn[0] == '\0'))
+    return false;
+
+  if (fn->id == debugExpiringForId) return true;
+  if (0 == strcmp(debugExpiringForFn, fn->name)) return true;
+  return false;
+}
+
+
+static bool shouldSetCapture(Symbol* sym) {
+  if (sym->type->symbol->hasFlag(FLAG_POD))
+    return false; // don't worry about POD types
+
+  return sym->hasFlag(FLAG_INSERT_AUTO_DESTROY) ||
+         sym->hasFlag(FLAG_INSERT_AUTO_DESTROY_FOR_EXPLICIT_NEW);
+}
+
+static void markNotPotentiallyCaptured(Symbol* sym, Expr* ctx) {
+  if (shouldSetCapture(sym)) {
+    if (debuggingExpiringForFn(sym->defPoint->getFunction()) ||
+        debugExpiringForId == sym->id)
+      fprintf(stderr, " %s (%i) not captured at %i\n",
+              sym->name, sym->id, ctx->id);
+
+    sym->removeFlag(FLAG_DEAD_END_OF_BLOCK);
+    sym->addFlag(FLAG_DEAD_LAST_MENTION);
+  }
+}
+
+static void markPotentiallyCaptured(Symbol* sym, Expr* ctx) {
+  if (shouldSetCapture(sym)) {
+    if (debuggingExpiringForFn(sym->defPoint->getFunction()) ||
+        debugExpiringForId == sym->id)
+      fprintf(stderr, " %s (%i) potentially captured at %i\n",
+              sym->name, sym->id, ctx->id);
+
+    sym->removeFlag(FLAG_DEAD_LAST_MENTION);
+    sym->addFlag(FLAG_DEAD_END_OF_BLOCK);
+  }
+}
+
+bool MarkCapturesVisitor::enterFnSym(FnSymbol* fn) {
+
+  std::set<AliasesGroup*> visitedGroups;
+
+  for (AliasesMap::iterator mapIt = aliases->begin();
+       mapIt != aliases->end();
+       ++mapIt) {
+    AliasesGroup* group = mapIt->second;
+
+    if (visitedGroups.count(group) != 0)
+      continue;
+
+    visitedGroups.insert(group);
+
+    // Develop the single user variable in the alias group
+    // (if there are more, that means there is a potential capture).
+    // If any of the variables other than the user variable are
+    // marked for destruction, that also means there is a potential capture.
+
+    Symbol* user = NULL;
+    Symbol* destroy = NULL;
+    FnSymbol* inFn = NULL;
+    bool multipleUserVariables = false;
+    bool multipleDestroyVariables = false;
+    bool multipleFunctions = false;
+
+    for (AliasesGroup::iterator it = group->begin();
+         it != group->end();
+         ++it) {
+      Symbol* sym = *it;
+      if (!sym->hasFlag(FLAG_TEMP)) {
+        if (user == NULL)
+          user = sym;
+        else
+          multipleUserVariables = true;
+      }
+      if (shouldSetCapture(sym)) {
+        if (destroy == NULL)
+          destroy = sym;
+        else
+          multipleDestroyVariables = true;
+      }
+      if (inFn == NULL)
+        inFn = sym->defPoint->getFunction();
+      else if (sym->defPoint->getFunction() != inFn)
+        multipleFunctions = true;
+    }
+
+    bool userAndDestroyDiffer = user != NULL &&
+                                destroy != NULL &&
+                                user != destroy;
+    bool potentiallyCaptured = multipleUserVariables ||
+                               multipleDestroyVariables ||
+                               multipleFunctions ||
+                               userAndDestroyDiffer;
+
+    for (AliasesGroup::iterator it = group->begin();
+         it != group->end();
+         ++it) {
+      Symbol* sym = *it;
+      if (potentiallyCaptured) {
+        Symbol* ctxSym = sym;
+        if (user && user != sym)
+          ctxSym = user;
+        if (destroy && destroy != sym)
+          ctxSym = destroy;
+        // i.e. another user variable referring to / borrowing from a
+        markPotentiallyCaptured(sym, ctxSym->defPoint);
+      } else {
+        // variable not captured by other variable borrowing
+        markNotPotentiallyCaptured(sym, sym->defPoint);
+      }
+    }
+  }
+
+  return true;
+}
+
+bool MarkCapturesVisitor::enterDefExpr(DefExpr* def) {
+  // handle: initializing a new user variable that refers to / borrows from a
+  if (def->id == debugExpiringForId)
+    gdbShouldBreakHere();
+
+  if (VarSymbol* var = toVarSymbol(def->sym)) {
+    if (aliases->count(var) == 0) {
+      markNotPotentiallyCaptured(var, def);
+    }
+  }
+
+  return false;
+}
+
+static
+void markAliasesGroupPotentiallyCaptured(AliasesMap& aliases,
+                                         Symbol* sym, Expr* ctx) {
+  markPotentiallyCaptured(sym, ctx);
+
+  // also mark anything in the alias group
+  if (aliases.count(sym)) {
+    AliasesGroup* group = aliases[sym];
+    for (AliasesGroup::iterator it = group->begin();
+         it != group->end();
+         ++it) {
+      Symbol* otherSym = *it;
+      markPotentiallyCaptured(otherSym, ctx);
+    }
+  }
+}
+/*
+static
+bool aliasGroupContainsDestroyed(AliasesMap& aliases, Symbol* sym) {
+  if (sym->hasFlag(FLAG_INSERT_AUTO_DESTROY) ||
+      sym->hasFlag(FLAG_INSERT_AUTO_DESTROY_FOR_EXPLICIT_NEW))
+    return true;
+
+  if (aliases.count(sym)) {
+    AliasesGroup* group = aliases[sym];
+    for (AliasesGroup::iterator it = group->begin();
+         it != group->end();
+         ++it) {
+      Symbol* otherSym = *it;
+      if (otherSym->hasFlag(FLAG_INSERT_AUTO_DESTROY) ||
+          otherSym->hasFlag(FLAG_INSERT_AUTO_DESTROY_FOR_EXPLICIT_NEW))
+        return true;
+    }
+  }
+
+  return false;
+}*/
+
+
+
+bool MarkCapturesVisitor::enterCallExpr(CallExpr* call) {
+  // handle
+  // * storing something with lifetime of a into another formal argument
+  // * storing something with lifetime of a into an outer / global variable
+  // * initializing a new user variable refering to / borrowing from
+
+  if (call->id == debugExpiringForId)
+    gdbShouldBreakHere();
+
+  if (FnSymbol* calledFn = call->resolvedOrVirtualFunction()) {
+    if (isTaskFun(calledFn)) {
+      calledFn->body->accept(this);
+      return false;
+    }
+
+    // Check for calls captuing to other args / globals
+    for_formals_actuals(formal1, actual, call) {
+
+      // TODO: check for lifetime constraints enabling formal to be
+      // be stored in outer variable.
+
+      for_formals(formal2, calledFn) {
+        constraint_t c = orderConstraintFromClause(calledFn, formal2, formal1);
+        // Could the argument in formal1 be stored in formal2?
+        // i.e. formal2 = formal1
+        // i.e. formal2 lifetime is "shorter" than formal1
+        if (c == CONSTRAINT_LESS ||
+            c == CONSTRAINT_LESS_EQ ||
+            c == CONSTRAINT_EQUAL) {
+          SymExpr* actualSe = toSymExpr(actual);
+          markAliasesGroupPotentiallyCaptured(*aliases,
+                                              actualSe->symbol(), call);
+        }
+      }
+    }
+  } else if (call->isPrimitive(PRIM_MOVE) ||
+             call->isPrimitive(PRIM_ASSIGN)) {
+    SymExpr* lhsSe = toSymExpr(call->get(1));
+    Symbol* lhs = lhsSe->symbol();
+
+    if (!lhs->hasFlag(FLAG_TEMP)) {
+      if (CallExpr* rhsCall = toCallExpr(call->get(2))) {
+        if (rhsCall->isPrimitive(PRIM_ADDR_OF) ||
+            rhsCall->isPrimitive(PRIM_SET_REFERENCE)) {
+          SymExpr* rhsSe = toSymExpr(rhsCall->get(1));
+          markAliasesGroupPotentiallyCaptured(*aliases, rhsSe->symbol(), call);
+        }
+      }/* else if (SymExpr* rhsSe = toSymExpr(call->get(2))) {
+        if (aliasGroupContainsDestroyed(*aliases, rhsSe->symbol())) {
+          markAliasesGroupPotentiallyCaptured(*aliases, rhsSe->symbol(), call);
+        }
+      }*/
+    }
+  }
+
+  return true;
+}
+
+static bool shouldPrintExpiringForVar(Symbol* sym) {
+  if (VarSymbol* var = toVarSymbol(sym)) {
+    if (isRecord(var->type) &&
+        (var->hasFlag(FLAG_INSERT_AUTO_DESTROY) ||
+         var->hasFlag(FLAG_INSERT_AUTO_DESTROY_FOR_EXPLICIT_NEW))) {
+
+      if (var->hasFlag(FLAG_DEAD_END_OF_BLOCK) ||
+          var->hasFlag(FLAG_DEAD_LAST_MENTION))
+        return true;
+    }
+  }
+
+  return false;
+}
+
+static void printExpiringForVar(Symbol* sym, FnSymbol* fn, bool& printedAny,
+    std::set<Symbol*>& printed) {
+  if (shouldPrintExpiringForVar(sym)) {
+    DefExpr* def = sym->defPoint;
+    const char* name = sym->name;
+    const char* state = NULL;
+    if (!developer && sym->hasFlag(FLAG_TEMP))
+      name = "temp";
+
+    if (sym->hasFlag(FLAG_DEAD_END_OF_BLOCK))
+      state = "at end of block";
+    else if (sym->hasFlag(FLAG_DEAD_LAST_MENTION))
+      state = "after last mention";
+
+    if (state != NULL) {
+      if (printed.count(sym) == 0) {
+        printed.insert(sym);
+
+        if (!printedAny) {
+          printedAny = true;
+          fprintf(stdout, "Expiring values for function %s (%s:%i)\n",
+                  fn->name, fn->fname(), fn->linenum());
+        }
+
+        fprintf(stdout, "  %s (%s:%i) expires %s\n",
+                name, def->fname(), def->linenum(), state);
+      }
+    }
+  }
+}
+
+bool ReportExpiringVisitor::enterDefExpr(DefExpr* def) {
+  Symbol* var = def->sym;
+
+  if (shouldPrintExpiringForVar(var)
+      /*&& (developer || !var->hasFlag(FLAG_TEMP))*/) {
+    printExpiringForVar(var, fn, printedAny, printed);
+
+    if (aliases->count(var)) {
+      AliasesGroup* group = (*aliases)[var];
+      for (AliasesGroup::iterator it = group->begin();
+           it != group->end();
+           ++it) {
+        Symbol* sym = *it;
+        DefExpr* def = sym->defPoint;
+        if (shouldPrintExpiringForVar(sym) &&
+            printed.count(sym) == 0 &&
+            (developer || !sym->hasFlag(FLAG_TEMP))) {
+          fprintf(stdout, "    alias %s (%s:%i)\n",
+                  sym->name, def->fname(), def->linenum());
+          printed.insert(sym);
+        }
+      }
+    }
+  }
+
+  return false;
+}
+
+bool ReportExpiringVisitor::enterCallExpr(CallExpr* call) {
+  if (FnSymbol* calledFn = call->resolvedOrVirtualFunction()) {
+    if (isTaskFun(calledFn)) {
+      calledFn->body->accept(this);
+      return false;
+    }
+  }
+  return false;
+}
+
+
+static void markLocalVariableExpiryInFn(FnSymbol* fn, LifetimeState* state) {
+  // add FLAG_DEAD_END_OF_BLOCK and FLAG_DEAD_LAST_MENTION
+
+  if (debuggingExpiringForFn(fn))
+    nprint_view(fn);
+
+  AliasesMap aliases; // potential aliases for each symbol
+
+  {
+    // Develop the set of potential aliases
+    GatherAliasesVisitor visitor;
+    visitor.aliases = &aliases;
+    visitor.lifetimes = state;
+    visitor.changed = false;
+
+    do {
+      visitor.changed = false;
+      // expand the set of potential aliases
+      if (debuggingExpiringForFn(fn))
+        gdbShouldBreakHere();
+      fn->accept(&visitor);
+    } while (visitor.changed);
+  }
+
+  if (debuggingExpiringForFn(fn)) {
+    std::set<Symbol*> printed;
+    fprintf(stdout, "aliases for function %s\n", fn->name);
+    for (AliasesMap::iterator mapIt = aliases.begin();
+         mapIt != aliases.end();
+         ++mapIt) {
+      Symbol* mapSym = mapIt->first;
+      AliasesGroup* group = mapIt->second;
+      if (printed.count(mapSym) == 0) {
+        fprintf(stdout, " group\n");
+        for (AliasesGroup::iterator it = group->begin();
+             it != group->end();
+             ++it) {
+          Symbol* sym = *it;
+          DefExpr* def = sym->defPoint;
+          fprintf(stdout, "    alias %s (%i) (at %s:%i)\n",
+                  sym->name, sym->id, def->fname(), def->linenum());
+          printed.insert(sym);
+        }
+      }
+    }
+  }
+
+  {
+    // Mark which symbols are potentially capturing
+    // This visitor sets FLAG_DEAD_END_OF_BLOCK or FLAG_DEAD_LAST_MENTION
+    // for each local variable.
+    if (debuggingExpiringForFn(fn))
+      gdbShouldBreakHere();
+    MarkCapturesVisitor visitor;
+    visitor.aliases = &aliases;
+    visitor.lifetimes = state;
+    fn->accept(&visitor);
+  }
+
+  if (debuggingExpiringForFn(fn))
+    nprint_view(fn);
+
+  if (fReportExpiring && fn->getModule()->modTag == MOD_USER &&
+      !fn->hasFlag(FLAG_COMPILER_GENERATED)) {
+    ReportExpiringVisitor visitor;
+    visitor.fn = fn;
+    visitor.printedAny = false;
+    visitor.aliases = &aliases;
+    visitor.lifetimes = state;
+    fn->accept(&visitor);
+  }
 }

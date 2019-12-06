@@ -202,6 +202,7 @@ extern bool fWarnUnstable;
 
 extern bool fReportAliases;
 extern bool fReportBlocking;
+extern bool fReportExpiring;
 extern bool fReportOptimizedLoopIterators;
 extern bool fReportInlinedIterators;
 extern bool fReportVectorizedLoops;

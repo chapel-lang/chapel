@@ -1,0 +1,55 @@
+Expiring values for function refExample1 (ex.chpl:6)
+  rec (ex.chpl:7) expires at end of block
+Expiring values for function refExample2 (ex.chpl:12)
+  rec (ex.chpl:13) expires at end of block
+Expiring values for function borrowExample1 (ex.chpl:18)
+  c (ex.chpl:19) expires at end of block
+Expiring values for function borrowExample2 (ex.chpl:24)
+  c (ex.chpl:25) expires at end of block
+Expiring values for function borrowExample3 (ex.chpl:30)
+  c (ex.chpl:31) expires at end of block
+Expiring values for function recordExample1 (ex.chpl:39)
+  rec (ex.chpl:40) expires after last mention
+Expiring values for function recordExample2 (ex.chpl:45)
+  rec (ex.chpl:46) expires after last mention
+Expiring values for function makeR (ex.chpl:51)
+  temp (ex.chpl:52) expires at end of block
+Expiring values for function recordExample3 (ex.chpl:54)
+  rec (ex.chpl:55) expires after last mention
+Expiring values for function ioExample0 (ex.chpl:61)
+  tmp (ex.chpl:62) expires after last mention
+Expiring values for function ioExample1 (ex.chpl:66)
+  tmp (ex.chpl:67) expires at end of block
+  A (ex.chpl:69) expires at end of block
+  B (ex.chpl:70) expires after last mention
+  temp (ex.chpl:70) expires at end of block
+  temp (ex.chpl:72) expires at end of block
+  temp (ex.chpl:73) expires at end of block
+Expiring values for function ownedExample1 (ex.chpl:77)
+  temp (ex.chpl:78) expires at end of block
+Expiring values for function ownedExample2 (ex.chpl:86)
+  x (ex.chpl:87) expires after last mention
+  y (ex.chpl:88) expires after last mention
+Expiring values for function f (ex.chpl:94)
+  a (ex.chpl:95) expires at end of block
+  temp (ex.chpl:95) expires at end of block
+  temp (ex.chpl:96) expires at end of block
+  temp (ex.chpl:99) expires at end of block
+Expiring values for function arrayExample1 (ex.chpl:101)
+  x (ex.chpl:102) expires after last mention
+Expiring values for function sliceExample1 (ex.chpl:106)
+  A (ex.chpl:107) expires at end of block
+  temp (ex.chpl:107) expires at end of block
+  temp (ex.chpl:108) expires at end of block
+Expiring values for function makeArray (ex.chpl:116)
+  A (ex.chpl:117) expires at end of block
+  temp (ex.chpl:117) expires at end of block
+Expiring values for function sliceExample2 (ex.chpl:120)
+  temp (ex.chpl:121) expires at end of block
+  temp (ex.chpl:121) expires at end of block
+{x = 1}
+
+0 0 0 0 0 0 0 0 0 0
+
+0 0 0 0 0 0 0 0 0 0
+
