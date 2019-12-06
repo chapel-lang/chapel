@@ -845,7 +845,7 @@ if ($runtests == 0) {
 # analyze memory leaks tests
 #
     if (!($memleaks eq "")) {
-        mysystem("$chplhomedir/util/devel/analyzeMemLeaksLog $basetmpdir/$memleaks > $memleaksdir/$memleaks");
+        mysystem("$chplhomedir/util/devel/analyzeMemLeaksLog $basetmpdir/$memleaks > $memleaksdir/$memleaks", "analyzeMemLeaksLog", 1, 0, 0);
 
         # Update the memory leaks status for performance testing runs to
         #  generate graphs for the memory leaks data
@@ -862,7 +862,7 @@ if ($runtests == 0) {
             }
         }
 
-        mysystem("cd $testdir && cp $memleaksdir/$memleaks ./$memleaksmode.exec.out.tmp && $chplhomedir/util/test/computePerfStats $memleaksmode $memleaksdir");
+        mysystem("cd $testdir && cp $memleaksdir/$memleaks ./$memleaksmode.exec.out.tmp && $chplhomedir/util/test/computePerfStats $memleaksmode $memleaksdir", "memLeak computePerfStats", 1, 0, 0);
     }
 }
 
