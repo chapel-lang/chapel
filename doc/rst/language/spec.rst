@@ -1368,7 +1368,7 @@ available:
 
 .. code-block:: chapel
 
-   proc $enum$.size: param int
+   proc enum.size: param int
 
 The number of constants in the given enumerated type.
 
@@ -1561,11 +1561,30 @@ record. Such a type alias is called an unspecified type alias. Classes
 and records that contain type aliases, specified or unspecified, are
 generic (:ref:`Type_Aliases_in_Generic_Types`).
 
-   *Open issue*.
+   *Example (type-alias.chpl)*.
 
-   There is on going discussion on whether a type alias is a new type or
-   simply an alias. The former should enable redefinition of default
-   values, identity elements, etc.
+   The declaration
+
+   .. code-block:: chapel
+
+      type t = int;
+
+   defines a ``t`` as a synonym for the type ``int``. Functions and
+   methods available on ``int`` will apply to variables declared with
+   type ``t``. For example,
+
+   .. code-block:: chapel
+
+      var x: t = 1;
+      x += 1;
+      writeln(x);
+
+   will print out ``2``.
+
+   .. BLOCK-test-chapeloutput
+
+      2
+
 
 .. _Chapter-Variables:
 
@@ -1582,15 +1601,15 @@ to the variable can be stored in that variable as specified by its type.
 Variable Declarations
 ---------------------
 
-Variables are declared with the following syntax: 
+Variables are declared with the following syntax:
 
 .. code-block:: syntax
 
    variable-declaration-statement:
-     privacy-specifier[OPT] config-or-extern[OPT] variable-kind variable-declaration-list ;
+     privacy-specifier[OPT] config-extern-or-export[OPT] variable-kind variable-declaration-list ;
 
    config-or-extern: one of
-     `config' $ $ $ $ `extern'
+     `config' `extern' `export'
 
    variable-kind:
      `param'
@@ -1652,25 +1671,31 @@ in :ref:`Constants`. Ref variables are discussed in
 :ref:`Ref_Variables`.
 
 The ``type-part`` of a variable declaration specifies the type of the
-variable. It is optional if the ``initialization-part`` is specified. If
-the ``type-part`` is omitted, the type of the variable is inferred using
-local type inference described in :ref:`Local_Type_Inference`.
-If the ``type-part`` refers to a generic type, then an
-``initialization-part`` is required and will be used to determine the
-type of the variable. In this event, the compiler will fail with an
-error if the ``initialization-part`` is not coercible to an
-instantiation of the generic type.
+variable. It is optional.
 
 The ``initialization-part`` of a variable declaration specifies an
-initial expression to assign to the variable. If the
-``initialization-part`` is omitted, the ``type-part`` must be present,
-and the variable is initialized to the default value of its type as
-described in :ref:`Default_Values_For_Types`.
+initial expression to store into the variable. It is also optional. When
+present, it forms the initialization expression for the variable.
 
-If the ``no-initialization-part`` is present, the variable declaration
-does not initialize the variable to any value, as described
-in :ref:`Noinit_Capability`. The result of any read of an
-uninitialized variable is undefined until that variable is written.
+If the ``initialization-part`` is omitted, the compiler will consider if
+split initialization can be applied to this variable as described in
+:ref:`Split_Initialization`. If split initialization can be applied, the
+compiler will identify a later assignment statement and the
+right-hand-side of that statement will form the initialization
+expression. If the ``initialization-part`` is omitted and split
+initialization cannot be applied, then the variable will need to be
+initialized to a default value. Only `var` and `const` variable
+declarations can be initialized to a default value. Not all types have a
+default value. Default values are described in
+:ref:`Default_Values_For_Types`.
+
+If the ``type-part`` is omitted, the type of the variable is inferred
+from the initialization expression using local type inference described
+in :ref:`Local_Type_Inference`.  If the ``type-part`` refers to a generic
+type, the initialization expression is required and will be used to determine
+the type of the variable. In this event, the compiler will fail with an
+error if the initialization expression is not coercible to an
+instantiation of the generic type.
 
 Multiple variables can be defined in the same
 ``variable-declaration-list``. The semantics of declaring multiple
@@ -1679,6 +1704,105 @@ defined in :ref:`Multiple_Variable_Declarations`.
 
 Multiple variables can be grouped together using a tuple notation as
 described in :ref:`Variable_Declarations_in_a_Tuple`.
+
+.. _Split_Initialization:
+
+Split Initialization
+~~~~~~~~~~~~~~~~~~~~
+
+When the ``initialization-part`` is present, it forms the initialization
+expression. For local variables, if the ``initialization-part`` is
+omitted, the compiler will search forward in the function for the first
+assignment statement(s) setting that variable that occur before the
+variable is otherwise used. It will search only within block declarations
+``{ }`` and conditionals. These assignment statements are called
+applicable assignment statements. The variable will be initialized at the
+applicable assignment instead of being assigned to. This feature is
+called split initialization.
+
+   *Example (simple-split-init.chpl)*
+
+   The combination of statements ``const x;`` and ``x = 5;`` in the below
+   example are equivalent to the declaration ``const x = 5;``.
+
+   .. code-block:: chapel
+
+      proc main() {
+        const x;
+        x = 5;
+        writeln(x);
+      }
+
+   .. BLOCK-test-chapeloutput
+
+      5
+
+
+   *Example (no-split-init.chpl)*
+
+   In the following code, the variable ``x`` is used before it is
+   assigned to, and so split initialization cannot apply to that
+   variable.
+
+   .. code-block:: chapel
+
+      proc main() {
+        const x;
+        writeln(x);
+        x = 5;
+      }
+
+   .. BLOCK-test-chapeloutput
+
+      no-split-init.chpl:1: In function 'main':
+      no-split-init.chpl:2: error: 'x' cannot be default initialized
+      no-split-init.chpl:3: note: 'x' is before being initialized here
+
+   *Example (split-cond-blocks-init.chpl)*
+
+   Split initialization can find the applicable assignment statement
+   within a nested block or conditional. When conditionals are involved,
+   there might be multiple applicable assignment statements representing
+   different branches.
+
+   .. code-block:: chapel
+
+      config const option = false;
+      proc main() {
+        const x;
+        if option {
+          x = 6;
+        } else {
+          {
+            x = 4;
+          }
+        }
+        writeln(x);
+      }
+
+   .. BLOCK-test-chapeloutput
+
+      4
+
+Split initialization does not apply:
+
+ * to module-level variables, fields, config variables, or ``extern``
+   variables.
+ * to variables that are referred to in nested functions
+ * to variables where an applicable assignment statement setting that
+   variable could not be identified
+ * to variables where the variable is used in some way before the
+   applicable assignment statement
+ * to variables where the applicable assignment statement is in a loop,
+   ``on`` statement, or ``begin`` statement
+ * to variables where an applicable assignment statement is in one
+   branch of a conditional but not in the other, including when the
+   conditional has no ``else`` branch
+
+In the case that the variable is declared without a ``type-part`` and
+where multiple applicable assignment statements are identified, all of
+the assignment statements need to contain an initialization expression of
+the same type.
 
 .. _Default_Values_For_Types:
 
@@ -1710,24 +1834,6 @@ sync/single base default value and *empty* status
 atomic      base default value
 =========== =======================================
 
-.. _Noinit_Capability:
-
-Deferred Initialization
-~~~~~~~~~~~~~~~~~~~~~~~
-
-For performance purposes, a variable’s declaration can specify that the
-variable should not be default initialized by using the ``noinit``
-keyword in place of an initialization expression. Since this variable
-should be written at a later point in order to be read properly, it must
-be a regular variable (``var``). It is incompatible with declarations
-that require the variable to remain unchanged throughout the program’s
-lifetime, such as ``const`` or ``param``. Additionally, its type must be
-specified at declaration time.
-
-The result of any read of this variable before it is written is
-undefined; it exists and therefore can be accessed, but no guarantees
-are made as to its contents.
-
 .. _Local_Type_Inference:
 
 Local Type Inference
@@ -1742,7 +1848,7 @@ With the exception of sync and single expressions, the declaration
 
    var v = e;
 
-is equivalent to 
+is equivalent to
 
 .. code-block:: chapel
 
@@ -1762,14 +1868,14 @@ initialization expression are evaluated only once.
 
    *Example (multiple.chpl)*.
 
-   In the declaration 
+   In the declaration
 
    .. code-block:: chapel
 
       proc g() { writeln("side effect"); return "a string"; }
       var a, b = 1.0, c, d:int, e, f = g();
 
-   
+
 
    .. BLOCK-test-chapelpost
 
@@ -1781,7 +1887,7 @@ initialization expression are evaluated only once.
    ``string`` with value ``"a string"``. The string ``"side effect"``
    has been written to the display once. It is not evaluated twice.
 
-   
+
 
    .. BLOCK-test-chapeloutput
 
