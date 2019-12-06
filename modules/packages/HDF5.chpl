@@ -54,6 +54,7 @@ The native HDF5 functions can be called directly by calling into the
 :mod:`C_HDF5` submodule.
 */
 module HDF5 {
+  use SysCTypes;
 
   // This interface was generated with HDF5 1.10.1. Due to a change of the
   // `hid_t` type from 32-bit to 64-bit in this version, versions prior
@@ -73,6 +74,7 @@ module HDF5 {
      https://portal.hdfgroup.org/display/HDF5/HDF5
   */
   module C_HDF5 {
+    public use SysCTypes;
 
     // Header given to c2chapel:
     require "hdf5_hl.h";
