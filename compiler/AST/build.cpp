@@ -675,9 +675,8 @@ buildIfStmt(Expr* condExpr, Expr* thenExpr, Expr* elseExpr) {
 
 BlockStmt*
 buildExternBlockStmt(const char* c_code) {
-  CallExpr* sysCTypes = new CallExpr(PRIM_ACTUALS_LIST,
-                                     new UnresolvedSymExpr("SysCTypes"));
-  BlockStmt* useSysCTypes = buildUseStmt(sysCTypes, /* private = */ false);
+  BlockStmt* useSysCTypes = buildUseList(new UnresolvedSymExpr("SysCTypes"),
+                                         "", NULL, /* private = */ false);
   useSysCTypes->insertAtTail(new ExternBlockStmt(c_code));
   BlockStmt* ret = buildChapelStmt(useSysCTypes);
 
