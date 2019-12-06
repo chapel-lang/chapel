@@ -872,14 +872,18 @@ module ChapelIO {
 
   /* Equivalent to ``try! stdout.writef``. See
      :proc:`FormattedIO.channel.writef`. */
-  proc writef(fmt:string, const args ...?k):bool {
+  proc writef(fmt:?t, const args ...?k):bool
+      where isStringType(t) || isBytesType(t) {
+
     try! {
       return stdout.writef(fmt, (...args));
     }
   }
   // documented in string version
   pragma "no doc"
-  proc writef(fmt:string):bool {
+  proc writef(fmt:?t):bool
+      where isStringType(t) || isBytesType(t) {
+
     try! {
       return stdout.writef(fmt);
     }

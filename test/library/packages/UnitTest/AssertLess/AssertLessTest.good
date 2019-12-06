@@ -3,7 +3,7 @@ AssertionError: assert failed - First element is of type [domain(3,int(64),false
 ================================================================================
 Error Caught in Array Others Equal 1D
 AssertionError: Both Array are equal
-'[1, 2, 5]' == '[1, 2, 5]'
+'[1, 2, 5]'=='[1, 2, 5]'
 ================================================================================
 Error Caught in Array Others Equal High Dim
 AssertionError: assert failed - 
@@ -33,20 +33,20 @@ AssertionError: assert failed - First element is of type complex(128) and Second
 ================================================================================
 Error Caught in Equal Strings
 AssertionError: Both String are equal
-'equal string' == 'equal string'
+'equal string'=='equal string'
 ================================================================================
 Error Caught in Equal Ranges
-AssertionError: assert failed - '1..6' >= '1..6'
+AssertionError: assert failed - '1..6'>='1..6'
 ================================================================================
 Error Caught in Equal Integers
-AssertionError: assert failed - '1.0' >= '1'
+AssertionError: assert failed - '1.0'>='1'
 ================================================================================
 Error Caught in greater Range
 AssertionError: assert failed - Ranges are not of same length
 ================================================================================
 Error Caught in tuple other
 AssertionError: First tuple(3*int(64)) > Second tuple(3*int(64)) :
-'(1, 2, 5)' > '(1, 2, 3)'
+'(1, 2, 5)'>'(1, 2, 3)'
 First larger element in first tuple(3*int(64)) is at index 3:
 '5'
 '3'
@@ -63,7 +63,7 @@ AssertionError: assert failed - Strings are not of same length
 ================================================================================
 Error Caught in Equal Strings
 AssertionError: First String > Second String :
-'unequalstring' > 'unequalString'
+'unequalstring'>'unequalString'
 First larger element in first String is at index 8:
 's'
 'S'

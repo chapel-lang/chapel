@@ -1,3 +1,5 @@
+use SysCTypes;
+
 extern proc sizeof(e): ssize_t;
 
 writeln(sizeof(1.0i));

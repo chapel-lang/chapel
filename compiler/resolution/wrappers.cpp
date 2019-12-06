@@ -145,15 +145,15 @@ static bool isNestedNewOrDefault(FnSymbol* innerFn, CallExpr* innerCall) {
 
 /************************************* | **************************************
 *                                                                             *
-* The argument actualIdxToFormals[i] stores, for actual i (counting from 0),  *
-* the corresponding formal argument.                                          *
+* actualIdxToFormal[i] is the formal argument that corresponds to i-th actual *
+* (counting from 0). 'actualIdxToFormal' can be modified here.                *
 * (This mapping is nontrivial when named arguments are used)                  *
 *                                                                             *
 ************************************** | *************************************/
 
 FnSymbol* wrapAndCleanUpActuals(FnSymbol*                fn,
                                 CallInfo&                info,
-                                std::vector<ArgSymbol*>  actualIdxToFormal,
+                                std::vector<ArgSymbol*>& actualIdxToFormal,
                                 bool                     fastFollowerChecks) {
   int       numActuals = static_cast<int>(actualIdxToFormal.size());
   FnSymbol* retval     = fn;
@@ -1226,6 +1226,7 @@ static void errorIfValueCoercionToRef(CallExpr* call, ArgSymbol* formal) {
     // compiler is currently producing this pattern for chpl__unref.
     // This is a workaround and a better solution would be preferred.
   } else if (argumentCanModifyActual(intent)) {
+   if (! inGenerousResolutionForErrors()) {
     // Error for coerce->value passed to ref / out / etc
     USR_FATAL_CONT(call,
                    "value from coercion passed to ref formal '%s'",
@@ -1233,6 +1234,7 @@ static void errorIfValueCoercionToRef(CallExpr* call, ArgSymbol* formal) {
     USR_FATAL_CONT(formal->getFunction(),
                    "to function '%s' defined here",
                    formal->getFunction()->name);
+   }
   } else {
     // Error for coerce->value passed to 'const ref' (ref case handled above).
     // Note that coercing SubClass to ParentClass is theoretically
@@ -1244,7 +1246,7 @@ static void errorIfValueCoercionToRef(CallExpr* call, ArgSymbol* formal) {
     // visible).
     bool formalIsRef = formal->isRef() || (intent & INTENT_REF);
 
-    if (formalIsRef) {
+    if (formalIsRef && ! inGenerousResolutionForErrors()) {
       USR_FATAL_CONT(call,
                      "value from coercion passed to const ref formal '%s'",
                      formal->name);

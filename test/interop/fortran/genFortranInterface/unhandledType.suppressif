@@ -1,3 +1,0 @@
-# munging of internal symbols is currently disabled for llvm, so
-# suppress this test which is sensitive to such symbols for now
-COMPOPTS <= --llvm

@@ -31,11 +31,23 @@
 */
 module Reflection {
 
+/* Ensure that a query about fields is applied to a class/record/union type.
+   Return that type. If it is a class type, strip any decorators/mem managers.
+*/
+private proc checkQueryT(type t) type {
+  if isClassType(t) then
+    return t: borrowed class;
+  else if isRecordType(t) || isUnionType(t) then
+    return t;
+  else
+    compilerError(t:string, " is not a class, record, or union type", 2);
+}
+
 /* Return the number of fields in a class or record as a param.
    The count of fields includes types and param fields.
  */
 proc numFields(type t) param : int
-  return __primitive("num fields", t);
+  return __primitive("num fields", checkQueryT(t));
 
 /* Get the name of the ith field in a class or record.
    Causes a compilation error if `i` is not in 1..numFields(t).
@@ -45,7 +57,7 @@ proc numFields(type t) param : int
    :returns: the name of the field, as a param string
  */
 proc getFieldName(type t, param i:int) param : string
-  return __primitive("field num to name", t, i);
+  return __primitive("field num to name", checkQueryT(t), i);
 
 // Note, since this version has a where clause, it is preferred
 // over the const ref one.
@@ -132,10 +144,49 @@ proc getField(const ref x:?t, param s: string) type
    :returns: an rvalue referring to that field.
  */
 pragma "unsafe"
+inline
 proc getField(const ref x:?t, param s:string) const ref {
   param i = __primitive("field name to num", t, s);
   if i == 0 then
     compilerError("field ", s, " not found in ", t:string);
+  return __primitive("field by num", x, i);
+}
+
+/* numImplementationFields() and getImplementationField()
+   allows querying non-record types that are implemented using records.
+   Restricting their applicability with isImplementedWithRecords()
+   prevents an internal error that currently would happen
+   when they are invoked on `int`, for example. Additional
+   types can be added to isImplementedWithRecords() as needed.
+*/
+
+pragma "no doc"
+proc isImplementedWithRecords(type t) param
+  return isRangeType(t) || isStringType(t);
+
+pragma "no doc"
+proc numImplementationFields(type t) param : int
+  where isImplementedWithRecords(t)
+  return __primitive("num fields", t);
+
+pragma "no doc"
+proc getImplementationField(const ref x:?t, param i: int) type
+  where isImplementedWithRecords(t) &&
+        isType(__primitive("field by num", x, i))
+  return __primitive("field by num", x, i);
+
+pragma "no doc"
+proc getImplementationField(const ref x:?t, param i: int) param
+  where isImplementedWithRecords(t) &&
+        isParam(__primitive("field by num", x, i))
+  return __primitive("field by num", x, i);
+
+pragma "no doc"
+pragma "unsafe"
+proc getImplementationField(const ref x:?t, param i:int) const ref {
+  if !isImplementedWithRecords(t) then
+    compilerError("an argument of the type ", t:string,
+                  " is not valid for getImplementationField()");
   return __primitive("field by num", x, i);
 }
 
@@ -176,7 +227,7 @@ proc getFieldRef(ref x:?t, param s:string) ref {
    :returns: an index `i` usable in getField, or 0 if the field was not found.
  */
 proc getFieldIndex(type t, param s:string) param : int
-  return __primitive("field name to num", t, s);
+  return __primitive("field name to num", checkQueryT(t), s);
 
 /* Returns `true` if a class or record has a field named `s`,
    or `false` otherwise.
@@ -189,6 +240,18 @@ proc getFieldIndex(type t, param s:string) param : int
 proc hasField(type t, param s:string) param : bool
   return getFieldIndex(t, s) > 0;
 
+/* Returns `true` if the given class or record's ith field
+   has been instantiated.
+
+   :arg t: a class or record type
+   :arg i: which field to query
+   :returns: `true` if the field is instantiated
+*/
+proc isFieldBound(type t, param i: int) param : bool {
+  return __primitive("is bound", checkQueryT(t),
+                     getFieldName(checkQueryT(t), i));
+}
+
 /* Returns `true` if the given class or record's field named `s`
    has been instantiated.
 
@@ -197,7 +260,7 @@ proc hasField(type t, param s:string) param : bool
    :returns: `true` if the field is instantiated
 */
 proc isFieldBound(type t, param s : string) param : bool {
-  return __primitive("is bound", t, s);
+  return __primitive("is bound", checkQueryT(t), s);
 }
 
 /* Returns true if a function named `fname` taking no arguments

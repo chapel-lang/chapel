@@ -40,6 +40,9 @@ module ChapelError {
     pragma "no doc"
     var thrownFileId:int(32);
 
+    pragma "no doc"
+    var _hasThrowInfo: bool = false;
+
     /* Construct an Error */
     proc init() {
       _next = nil;
@@ -364,8 +367,16 @@ module ChapelError {
 
     const line = __primitive("_get_user_line");
     const fileId = __primitive("_get_user_file");
-    fixErr!.thrownLine = line;
-    fixErr!.thrownFileId = fileId;
+
+    //
+    // TODO: Adjust/remove calls to this routine that are present in catch
+    // blocks rather than doing extra work at runtime?
+    //
+    if !fixErr!._hasThrowInfo {
+      fixErr!._hasThrowInfo = true;
+      fixErr!.thrownLine = line;
+      fixErr!.thrownFileId = fileId;
+    }
 
     return _to_nonnil(fixErr);
   }

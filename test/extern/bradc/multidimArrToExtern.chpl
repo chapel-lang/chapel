@@ -1,3 +1,5 @@
+use SysCTypes;
+
 extern proc cprintarr(X: [] real, n: c_int);
 
 var A: [1..3] real = [i in 1..3] i:real;
