@@ -3,6 +3,7 @@
 
    contributed by Ben Harshbarger and Brad Chamberlain
    derived from the Rust #2 version by Matt Brubeck
+   updated to avoid allocating the buffer to be the right size from the start
 */
 use IO;
 
