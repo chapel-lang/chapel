@@ -498,19 +498,11 @@ module String {
 
   pragma "no doc"
   proc chpl_createStringWithLiteral(s: c_string, length:int) {
-    //NOTE: This function is heavily used by the compiler to create string
-    //literals.
-    return createStringWithBorrowedBuffer(s:c_ptr(uint(8)), length=length,
-                                                            size=length+1);
-  }
-
-  pragma "no doc"
-  proc chpl_createString(s: c_string, length=s.length) {
-    //NOTE: This function is heavily used by the compiler to create string
-    //literals. So, inlining this causes some bloat in the AST that increases
-    //the compilation time slightly. Therefore, currently we are keeping this
-    //one non-inlined.
-    return chpl_createString(s:c_ptr(uint(8)), length=length, size=length+1);
+    // NOTE: This is a "wellknown" function used by the compiler to create
+    // string literals. Inlining this creates some bloat in the AST, slowing the
+    // compilation.
+    return chpl_createStringWithNoVal(s:c_ptr(uint(8)), length=length,
+                                                        size=length+1);
   }
 
   /*
@@ -539,7 +531,12 @@ module String {
   }
 
   pragma "no doc"
-  private inline proc chpl_createString(s: bufferType, length: int, size: int) {
+  private inline proc chpl_createStringWithNoVal(s: bufferType, length: int,
+                                                                size: int) {
+    // NOTE: This is similar to chpl_createStringWithLiteral above, but only
+    // used internally by the String module. These two functions cannot have the
+    // same names, because "wellknown" implementation in the compiler does not
+    // allow overloads.
     var ret: string;
     initWithBorrowedBuffer(ret, s, length,size);
     return ret;
@@ -711,14 +708,14 @@ module String {
     proc type chpl__deserialize(data) {
       if data.locale_id != chpl_nodeID {
         if data.len <= CHPL_SHORT_STRING_SIZE {
-          return chpl_createString(chpl__getInPlaceBufferData(data.shortData),
-                                   data.len, data.size);
+          return chpl_createStringWithNoVal(chpl__getInPlaceBufferData(data.shortData),
+                                            data.len, data.size);
         } else {
           var localBuff = bufferCopyRemote(data.locale_id, data.buff, data.len);
-          return chpl_createString(localBuff, data.len, data.size);
+          return chpl_createStringWithNoVal(localBuff, data.len, data.size);
         }
       } else {
-        return chpl_createString(data.buff, data.len, data.size);
+        return chpl_createStringWithNoVal(data.buff, data.len, data.size);
       }
     }
 
