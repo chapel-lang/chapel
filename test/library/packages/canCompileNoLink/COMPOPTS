@@ -1,1 +1,1 @@
---stop-after-pass codegen
+--no-codegen
