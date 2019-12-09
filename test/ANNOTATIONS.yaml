@@ -1598,34 +1598,6 @@ time-write:
   03/05/15:
     - no strings with externs update
 
-timeVectorArray:
-  03/05/16:
-    - implemented doubling/halving for array-as-vec (#3380) (no timing from 4th)
-  03/09/16:
-    - increased array-as-vec problem size (#3422)
-  05/28/16:
-    - upgrade jemalloc to 4.2.0 (#3919)
-  01/31/17:
-    - upgrade jemalloc to 4.4.0 (#5278)
-  07/26/17:
-    - Allow domains to implement specialized assignment (#6722)
-  09/13/17:
-    - Support arrays as args to array.{push_front,push_back,insert} (#7180)
-  09/16/17:
-    - Resolve timeVectorArray regressions (#7333)
-  09/20/17:
-    - Resolve push_back / pop_front regressions w/ inline (#7397)
-  12/05/17:
-    - Enforce qualified refs after inlining (#7906)
-  06/22/18:
-    - Make 'for' loop in dsiReallocate parallel (#9895)
-  08/17/18:
-    - Add a new dsiReallocate that is aware of allocated size (#10793)
-  09/07/18:
-    - Fix performance regression in pop_front/pop_back from PR 10793 (#11017)
-  04/23/19:
-    - Denormalize the test in CondStmts (#12867)
-
 views-forall-iter:
   10/12/17:
     - Switch from these(tag) to foralls for some standalone iters (#7578)

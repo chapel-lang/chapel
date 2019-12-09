@@ -4093,30 +4093,31 @@ double chpl_comm_ofi_time_get(void) {
 //
 static
 void ofiErrReport(const char* exprStr, int retVal, const char* errStr) {
-  if (retVal == -FI_EMFILE && isInProviderName("tcp")) {
+  if (retVal == -FI_EMFILE) {
     //
-    // The tcp provider opens a lot of files but most importantly, it
-    // opens a socket file for each connected endpoint.  Because of
-    // this, one can reach a quite reasonable open-file limit in a job
-    // running on a fairly modest number of many-core locales.  For
-    // example, we've seen extremeBlock get -FI_EMFILE with an open file
-    // limit of 1024 when run on 32 overloaded locales on a 24-core
-    // node.  Here, try to inform the user about this without getting
-    // overly technical.
+    // We've run into the limit on the number of files we can have open
+    // at once.
     //
-    if (2L * chpl_numNodes * numTxCtxs > sysconf(_SC_OPEN_MAX)) {
-      INTERNAL_ERROR_V(
-        "OFI error: %s: %s:\n"
-        "The program has reached the limit on the number of files it can\n"
-        "have open at once.  This may be because the product of the number\n"
-        "of locales (%d) and the communication concurrency (roughly %d) is\n"
-        "a significant fraction of the open-file limit (%ld).  That being\n"
-        "so, either setting CHPL_RT_COMM_CONCURRENCY to decrease the former\n"
-        "or using `ulimit` to increase the latter may allow the program to\n"
-        "run successfully at this scale.",
-                       exprStr, errStr, (int) chpl_numNodes, numTxCtxs,
-                       sysconf(_SC_OPEN_MAX));
-    }
+    // Some providers open a lot of files.  The tcp provider, as one
+    // example, can open as many as roughly 9 files per node, plus 2
+    // socket files for each connected endpoint.  Because of this, one
+    // can exceed a quite reasonable open-file limit in a job running on
+    // a fairly modest number of many-core locales.  Thus for example,
+    // extremeBlock will get -FI_EMFILE with an open file limit of 1024
+    // when run on 32 24-core locales.  Here, try to inform the user
+    // about this without getting overly technical.
+    //
+    INTERNAL_ERROR_V(
+      "OFI error: %s: %s:\n"
+      "  The program has reached the limit on the number of files it can\n"
+      "  have open at once.  This may be because the product of the number\n"
+      "  of locales (%d) and the communication concurrency (roughly %d) is\n"
+      "  a significant fraction of the open-file limit (%ld).  If so,\n"
+      "  either setting CHPL_RT_COMM_CONCURRENCY to decrease communication\n"
+      "  concurrency or running on fewer locales may allow the program to\n"
+      "  execute successfully.  Or, you may be able to use `ulimit` to\n"
+      "  increase the open file limit and achieve the same result.",
+      exprStr, errStr, (int) chpl_numNodes, numTxCtxs, sysconf(_SC_OPEN_MAX));
   }
 }
 

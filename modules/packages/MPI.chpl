@@ -189,7 +189,7 @@ MPI Module Documentation
 
 */
 module MPI {
-  use SysCTypes;
+  public use SysCTypes;
   require "mpi.h";
 
   use ReplicatedVar;
