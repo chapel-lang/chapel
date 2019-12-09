@@ -491,7 +491,7 @@ module String {
 
     :returns: A new `string`
   */
-  inline proc createStringWithBorrowedBuffer(s: c_string, length=s.length) {
+  inline proc createStringWithBorrowedBuffer(s: c_string, length=s.length) throws {
     return createStringWithBorrowedBuffer(s:c_ptr(uint(8)), length=length,
                                                             size=length+1);
   }
