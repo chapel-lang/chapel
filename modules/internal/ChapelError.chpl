@@ -41,6 +41,9 @@ module ChapelError {
     var thrownFileId:int(32);
 
     pragma "no doc"
+    var _msg: string;
+    
+    pragma "no doc"
     var _hasThrowInfo: bool = false;
 
     /* Construct an Error */
@@ -48,11 +51,16 @@ module ChapelError {
       _next = nil;
     }
 
+    /* Construct an :class:`Error` with a message. */
+    proc init(msg: string) {
+      this._msg = msg; 
+    }
+
     /* Override this method to provide an error message
        in case the error is printed out or never caught.
      */
     proc message() {
-      return "";
+      return _msg;
     }
   }
 
@@ -82,26 +90,15 @@ module ChapelError {
   }
 
   class IllegalArgumentError : Error {
-    var formal: string;
-    var info: string;
-
-    proc init() {
-    }
+    proc init() {}
 
     proc init(info: string) {
-      this.info = info;
+      super.init(info);
     }
 
     proc init(formal: string, info: string) {
-      this.formal = formal;
-      this.info   = info;
-    }
-
-    override proc message() {
-      if formal.isEmpty() then
-        return info;
-      else
-        return "illegal argument '" + formal + "': " + info;
+      var msg = "illegal argument '" + formal + "': " + info;
+      super.init(msg);
     }
   }
 
