@@ -744,7 +744,7 @@ module Curl {
       // lock the channel if it's not already locked
       assert(cc!.have_channel_lock);
 
-      var amt = realsize.safeCast(int(64));
+      var amt = realsize.safeCast(ssize_t);
 
       //writeln("curl_write_received offset=", qio_channel_offset_unlocked(cc.qio_ch), " len=", amt);
 
