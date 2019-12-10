@@ -3073,13 +3073,14 @@ void GatherAliasesVisitor::expandAliasesForPossiblyReturned(
 
   ArgSymbol* theOnlyOneThatMatters = NULL;
   if (calledFn->lifetimeConstraints) {
-    Symbol* sym = returnLifetimeFromClause(calledFn);
-    // lifetime = outer/global variable -> infinite lifetime
-    if (sym->defPoint->getFunction() != calledFn)
-      return; // infinite lifetime
+    if (Symbol* sym = returnLifetimeFromClause(calledFn)) {
+      // lifetime = outer/global variable -> infinite lifetime
+      if (sym->defPoint->getFunction() != calledFn)
+        return; // infinite lifetime
 
-    INT_ASSERT(isArgSymbol(sym));
-    theOnlyOneThatMatters = toArgSymbol(sym);
+      INT_ASSERT(isArgSymbol(sym));
+      theOnlyOneThatMatters = toArgSymbol(sym);
+    }
   }
 
   Symbol* rvvActual = NULL;
