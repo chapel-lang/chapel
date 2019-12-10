@@ -22,6 +22,7 @@
 
 #include <vector>
 
+class ArgSymbol;
 class FnSymbol;
 class Type;
 
@@ -33,6 +34,7 @@ extern Type* exportTypeCharPtr;
 extern Type* exportTypeChplBytesWrapper;
 
 FnSymbol* getUnwrappedFunction(FnSymbol* wrapper);
+ArgSymbol* getUnwrappedArg(ArgSymbol* arg);
 void fixupExportedFunctions(const std::vector<FnSymbol*>& fns);
 void fixupExportedFunction(FnSymbol* fn);
 

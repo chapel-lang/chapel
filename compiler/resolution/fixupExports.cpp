@@ -36,7 +36,7 @@
 #include <vector>
 
 static std::map<FnSymbol*, FnSymbol*> wrapperMap;
-static std::map<const char*, FnSymbol*> conversionCallMap;
+static std::map<ArgSymbol*, ArgSymbol*> wrapperArgMap;
 
 Type* exportTypeCharPtr = NULL;
 Type* exportTypeChplBytesWrapper = NULL;
@@ -65,6 +65,14 @@ static void insertUnwrappedCall(FnSymbol* wrapper, FnSymbol* fn,
 FnSymbol* getUnwrappedFunction(FnSymbol* wrapper) {
   std::map<FnSymbol*, FnSymbol*>::iterator it;
   if ((it = wrapperMap.find(wrapper)) != wrapperMap.end()) {
+    return it->second;
+  }
+  return NULL;
+}
+
+ArgSymbol* getUnwrappedArg(ArgSymbol* arg) {
+  std::map<ArgSymbol*, ArgSymbol*>::iterator it;
+  if ((it = wrapperArgMap.find(arg)) != wrapperArgMap.end()) {
     return it->second;
   }
   return NULL;
@@ -180,6 +188,13 @@ static void attemptFixups(FnSymbol* fn) {
       VarSymbol* tmp = fixupFormal(wrapper, i);
       INT_ASSERT(tmp != NULL);
       tmps.push_back(tmp);
+
+      //
+      // Some types (IE, string, bytes) map to the same interop type, i.e,
+      // `chpl_bytes_wrapper`, so we need the original ArgSymbol to
+      // disambiguate them in later passes.
+      //
+      wrapperArgMap[wrapper->getFormal(i)] = as;
     } else {
       // Push back a NULL sentry value for unconverted formals.
       tmps.push_back(NULL);
