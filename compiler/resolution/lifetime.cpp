@@ -722,6 +722,54 @@ static Symbol* returnLifetimeFromClause(FnSymbol* fn) {
   return returnLifetimeFromClause(last);
 }
 
+static bool isOuterLifetimeFromClause(LifetimeState& lifetimes, ArgSymbol* arg, Expr* clausePart) {
+  if (CallExpr* call = toCallExpr(clausePart)) {
+    if (call->isNamed(",")) {
+      bool partOne = isOuterLifetimeFromClause(lifetimes, arg, call->get(1));
+      bool partTwo = isOuterLifetimeFromClause(lifetimes, arg, call->get(2));
+      if (partOne || partTwo)
+        return true;
+    } else if (call->isPrimitive(PRIM_RETURN)) {
+      return false;
+    } else {
+      Symbol* lhs = NULL;
+      Symbol* rhs = NULL;
+      bool lhsRet = false;
+      bool rhsRet = false;
+
+      lhs = getSymbolFromLifetimeClause(call->get(1), lhsRet);
+      rhs = getSymbolFromLifetimeClause(call->get(2), rhsRet);
+
+      // arg > outerVariable
+      if (lhs == arg &&
+          lifetimes.inFns.count(rhs->defPoint->getFunction()) == 0 &&
+          (call->isNamed("==") ||
+           call->isNamed(">") ||
+           call->isNamed(">=")))
+        return true;
+
+      // outerVariable > arg
+      if (rhs == arg &&
+          lifetimes.inFns.count(lhs->defPoint->getFunction()) == 0 &&
+          (call->isNamed("==") ||
+           call->isNamed("<") ||
+           call->isNamed("<=") || call->isNamed("=")))
+        return true;
+    }
+  }
+  return false;
+}
+
+static bool isOuterLifetimeFromClause(LifetimeState& lifetimes, ArgSymbol* arg)
+{
+  if (FnSymbol* fn = arg->defPoint->getFunction())
+    if (fn->lifetimeConstraints)
+      if (Expr* last = fn->lifetimeConstraints->body.last())
+        return isOuterLifetimeFromClause(lifetimes, arg, last);
+
+  return false;
+}
+
 static void printOrderConstraintFromClause(Expr* expr, Symbol* a, Symbol* b)
 {
   if (CallExpr* call = toCallExpr(expr)) {
@@ -1536,6 +1584,12 @@ bool IntrinsicLifetimesVisitor::enterDefExpr(DefExpr* def) {
         lp.referent.returnScope = true;
       if (isSubjectToBorrowLifetimeAnalysis(sym->type))
         lp.borrowed.returnScope = true;
+    }
+
+    // Arguments with e.g. lifetime arg > someGlobal
+    // will have infinite lifetime
+    if (isOuterLifetimeFromClause(*lifetimes, arg)) {
+      lp = infiniteLifetimePair();
     }
   } else if (VarSymbol* var = toVarSymbol(sym)) {
     // Don't bother getting intrinsic lifetime for RVV
