@@ -73,8 +73,59 @@ iter dynamic(c:range(?), chunkSize:int=1, numTasks:int=0) {
   for i in c do yield i;
 }
 
-// Parallel iterator
+// Parallel iterators
 pragma "no doc"
+iter dynamic(param tag:iterKind, c:range(?), chunkSize:int=1, numTasks:int=0)
+where tag == iterKind.standalone
+{
+  assert(chunkSize > 0); // caller's responsibility
+
+  // # of tasks the range can fill. (fast) ceil so all work is represented
+  const chunkTasks = divceilpos(c.length, chunkSize): int;
+
+  // Check if the number of tasks is 0, in that case it returns a default value
+  const nTasks = min(chunkTasks, defaultNumTasks(numTasks));
+
+  // If the number of tasks is insufficient, yield in serial
+  if nTasks == 1 then {
+    if debugDynamicIters then
+      writeln("Dynamic Iterator: serial execution because there is not enough work");
+    for i in c do
+      yield i;
+  } else {
+    var moreWork : atomic bool;
+    moreWork.write(true);
+    var curIndex : atomic c.low.type;
+    curIndex.write(c.low);
+
+    coforall tid in 0..#nTasks with (const in c) {
+      while moreWork.read() {
+        // There is local work in c
+        const low = curIndex.fetchAdd(chunkSize);
+        var high = low + chunkSize-1;
+
+        if low > c.high {
+          break;
+        } else if high > c.high {
+          high = c.high;
+          moreWork.write(false);
+        }
+
+        const current = c(low .. high);
+
+        if high >= low then {
+          if debugDynamicIters then
+            writeln("Standalone dynamic Iterator. Working at tid ", tid, " with range ", unDensify(current,c), " yielded as ", current);
+          for i in current do
+            yield i;
+        }
+      }
+    }
+  }
+}
+
+
+ pragma "no doc"
 iter dynamic(param tag:iterKind, c:range(?), chunkSize:int=1, numTasks:int=0)
 where tag == iterKind.leader
 {
