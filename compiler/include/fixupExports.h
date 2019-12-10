@@ -30,7 +30,6 @@ class Type;
 // These are only initialized _after_ "fixupExportedFunctions" has been called
 // during resolution.
 //
-extern Type* exportTypeCharPtr;
 extern Type* exportTypeChplBytesWrapper;
 
 FnSymbol* getUnwrappedFunction(FnSymbol* wrapper);

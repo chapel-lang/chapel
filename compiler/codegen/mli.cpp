@@ -906,7 +906,7 @@ std::string MLIContext::genServersideRPC(FnSymbol* fn) {
 std::string MLIContext::genMemCleanup(Type* t, const char* var) {
   std::string gen;
 
-  if (t == dtStringC || t == exportTypeCharPtr) {
+  if (t == dtStringC) {
     gen += "mli_free(";
     gen += "((void*) ";
     gen += var;

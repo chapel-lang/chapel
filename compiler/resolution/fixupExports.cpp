@@ -38,7 +38,6 @@
 static std::map<FnSymbol*, FnSymbol*> wrapperMap;
 static std::map<ArgSymbol*, ArgSymbol*> wrapperArgMap;
 
-Type* exportTypeCharPtr = NULL;
 Type* exportTypeChplBytesWrapper = NULL;
 
 std::set<FnSymbol*> exportedStrRets;
@@ -85,7 +84,6 @@ static void resolveExportWrapperTypeAliases(void) {
 
   const char* mod = "ExportWrappers";
 
-  exportTypeCharPtr = resolveTypeAlias(mod, "chpl__exportTypeCharPtr");
   exportTypeChplBytesWrapper =
     resolveTypeAlias(mod, "chpl__exportTypeChplBytesWrapper");
 
@@ -320,10 +318,7 @@ static FnSymbol* createWrapper(FnSymbol* fn) {
 // TODO: Do we need explicit cases for reference types here?
 //
 static Type* getTypeForFixup(Type* t, bool ret) {
-  if (t == dtString) {
-    Type* result = ret ? exportTypeCharPtr : dtStringC;
-    return result;
-  } else if (t == dtBytes) {
+  if (t == dtBytes || t == dtString) {
     return exportTypeChplBytesWrapper;
   } else {
     INT_FATAL("Type %s is unsupported in %s", t->name(), __FUNCTION__);
@@ -346,7 +341,7 @@ static VarSymbol* fixupFormal(FnSymbol* wrapper, int idx) {
   wrapper->body->insertAtTail(new DefExpr(result));
 
   // Make a call to the appropriate conversion call.
-  CallExpr* call = new CallExpr("chpl__exportConv", as, origt->symbol);
+  CallExpr* call = new CallExpr("chpl__exportArg", as, origt->symbol);
 
   // Unwrap the wrapped formal using the conversion call, store in temp.
   CallExpr* move = new CallExpr(PRIM_MOVE, result, call);
@@ -422,7 +417,7 @@ static void insertUnwrappedCall(FnSymbol* wrapper, FnSymbol* fn,
   if (needsFixup(fn->retType)) {
 
     // Make a call to the appropriate conversion routine.
-    CallExpr* call = new CallExpr("chpl__exportConv", utmp,
+    CallExpr* call = new CallExpr("chpl__exportRet", utmp,
                                   wrapper->retType->symbol);
 
     // Move the result of the conversion call into the result temp.
