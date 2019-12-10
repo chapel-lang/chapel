@@ -762,18 +762,13 @@ static bool containsOnlyModules(BlockStmt* block, const char* path) {
 
   } else if (moduleDefs >= 1 && (hasUses || hasOther)) {
     USR_WARN(firstOtherStmt,
-            "All Chapel code must be contained within a module, "
-            "so an implicit module named '%s' is being introduced "
-            "to store the contents of the file '%s' due to file-scope "
-            "code found on line %i even though the file contains "
-            "the module '%s'",
-            filenameToModulename(path),
-            path,
-            firstOtherStmt->linenum(),
-            lastModSym->name);
+             "This file-scope code is outside of any "
+             "explicit module declarations (e.g., module %s), "
+             "so an implicit module named '%s' is being "
+             "introduced to contain the file's contents.",
+             lastModSym->name,
+             filenameToModulename(path));
   }
-
-
 
   return hasUses == false &&
     hasRequires == false &&
