@@ -93,10 +93,8 @@ where tag == iterKind.standalone
     for i in c do
       yield i;
   } else {
-    var moreWork : atomic bool;
-    moreWork.write(true);
-    var curIndex : atomic c.low.type;
-    curIndex.write(c.low);
+    var moreWork : atomic bool = true;
+    var curIndex : atomic c.low.type = c.low;
 
     coforall tid in 0..#nTasks with (const in c) {
       while moreWork.read() {
@@ -149,10 +147,8 @@ where tag == iterKind.leader
       writeln("Dynamic Iterator: serial execution because there is not enough work");
     yield (remain,);
   } else {
-    var moreWork : atomic bool;
-    moreWork.write(true);
-    var curIndex : atomic remain.low.type;
-    curIndex.write(remain.low);
+    var moreWork : atomic bool = true;
+    var curIndex : atomic remain.low.type = remain.low;
 
     coforall tid in 0..#nTasks with (const in remain) {
       while moreWork.read() {
@@ -538,8 +534,7 @@ where tag == iterKind.leader
     const factor:int=2;
 
     const factorSteal:int=2;
-    var moreWork : atomic bool; // A global var to control the termination
-    moreWork.write(true);
+    var moreWork : atomic bool = true; // A global var to control the termination
 
     // Variables to put a barrier to ensure the initial range is computed on each Thread
     var barrier : atomic int;
