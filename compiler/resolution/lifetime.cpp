@@ -740,17 +740,20 @@ static bool isOuterLifetimeFromClause(LifetimeState& lifetimes, ArgSymbol* arg, 
       lhs = getSymbolFromLifetimeClause(call->get(1), lhsRet);
       rhs = getSymbolFromLifetimeClause(call->get(2), rhsRet);
 
+      bool lhsOuter = lhs->hasFlag(FLAG_OUTER_VARIABLE) ||
+                      lifetimes.inFns.count(lhs->defPoint->getFunction()) == 0;
+      bool rhsOuter = rhs->hasFlag(FLAG_OUTER_VARIABLE) ||
+                      lifetimes.inFns.count(rhs->defPoint->getFunction()) == 0;
+
       // arg > outerVariable
-      if (lhs == arg &&
-          lifetimes.inFns.count(rhs->defPoint->getFunction()) == 0 &&
+      if (lhs == arg && rhsOuter &&
           (call->isNamed("==") ||
            call->isNamed(">") ||
            call->isNamed(">=")))
         return true;
 
       // outerVariable > arg
-      if (rhs == arg &&
-          lifetimes.inFns.count(lhs->defPoint->getFunction()) == 0 &&
+      if (rhs == arg && lhsOuter &&
           (call->isNamed("==") ||
            call->isNamed("<") ||
            call->isNamed("<=") || call->isNamed("=")))
@@ -3291,20 +3294,32 @@ bool MarkCapturesVisitor::enterCallExpr(CallExpr* call) {
   // 1: check for called function allowing capture
   //    (into another argument or into an outer/global variable)
   if (FnSymbol* calledFn = call->resolvedOrVirtualFunction()) {
-    // Check for calls capturing to other args / globals
-    for_formals_actuals(formal1, actual, call) {
+    if (calledFn->lifetimeConstraints != NULL) {
+      // check for possibly capturing into outer variable
+      // check for call capturing into another argument
+      for_formals_actuals(formal1, actual, call) {
 
-      // TODO: check for lifetime constraints enabling formal to be
-      // be stored in outer variable.
+        bool potentiallyCaptured = false;
 
-      for_formals(formal2, calledFn) {
-        constraint_t c = orderConstraintFromClause(calledFn, formal2, formal1);
-        // Could the argument in formal1 be stored in formal2?
-        // i.e. formal2 = formal1
-        // i.e. formal2 lifetime is "shorter" than formal1
-        if (c == CONSTRAINT_LESS ||
-            c == CONSTRAINT_LESS_EQ ||
-            c == CONSTRAINT_EQUAL) {
+        if (isOuterLifetimeFromClause(*lifetimes, formal1)) {
+          // formal1 could be stored into an outer variable
+          potentiallyCaptured = true;
+        }
+
+        for_formals(formal2, calledFn) {
+          constraint_t c = orderConstraintFromClause(calledFn, formal2, formal1);
+          // Could the argument in formal1 be stored in formal2?
+          // i.e. formal2 = formal1
+          // i.e. formal2 lifetime is "shorter" than formal1
+          if (c == CONSTRAINT_LESS ||
+              c == CONSTRAINT_LESS_EQ ||
+              c == CONSTRAINT_EQUAL)
+          {
+            potentiallyCaptured = true;
+          }
+        }
+
+        if (potentiallyCaptured) {
           SymExpr* actualSe = toSymExpr(actual);
           Symbol* actualSym = actualSe->symbol();
           markAliasesPotentiallyCaptured(actualSym, call);

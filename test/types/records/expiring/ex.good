@@ -55,6 +55,8 @@ Expiring values for function makeArray (ex.chpl:159)
 Expiring values for function sliceExample2EOB (ex.chpl:163)
   temp (ex.chpl:164) expires at end of block
   temp (ex.chpl:164) expires at end of block
+Expiring values for function innerFnExample1 (ex.chpl:172)
+  c (ex.chpl:173) expires at end of block
 {x = 1}
 
 {x = 1}
@@ -65,3 +67,4 @@ Expiring values for function sliceExample2EOB (ex.chpl:163)
 
 0 0 0 0 0 0 0 0 0 0
 
+{x = 1}

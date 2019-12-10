@@ -168,3 +168,16 @@ proc sliceExample2EOB() {
   // point 2
 }
 sliceExample2EOB();
+
+proc innerFnExample1() {
+  var c = new C(1);
+  var b: borrowed C?;
+  proc inner(arg: borrowed C) lifetime b < arg {
+    b = arg;
+  }
+  inner(c);
+  // point 1
+  writeln(b);
+  // point 2
+}
+innerFnExample1();
