@@ -1120,12 +1120,11 @@ std::string ArgSymbol::getPythonArgTranslation() {
     res += " \'const char*\', ";
     res += "found \" + str(type(" + strname + ")))\n";
 
-    // Encode string as bytes.
-    res += "\t" + strname + " = " + strname + ".encode()\n";
+    // Encode string as bytes. We still hold a ref.
+    res += "\t" + strname + " = " + strname + ".encode(\'utf-8\')\n";
 
-    // Cython will auto convert the bytes to "const char*".
-    res += "\tcdef const char* chpl_" + strname + " = " + strname;
-    res += "\n";
+    // Cython will auto convert the bytes to "char*";
+    res += "\tcdef char* chpl_" + strname + " = " + strname + "\n";
 
     return res;
   } else if (t->getValType() == exportTypeChplBytesWrapper) {
@@ -2256,6 +2255,26 @@ GenRet FnSymbol::codegenPYXType() {
       // This will free the "chpl_bytes_wrapper" buffer if required.
       returnStmt += "\tchpl_bytes_wrapper_free(rdat)\n";
 
+    } else if (retType == dtStringC) {
+
+      //
+      // NOTE: The result of the routine call is a `c_string`, AKA const
+      // char*. We know that the only thing we could be returning here
+      // is a `c_string` (since Chapel strings are returned as char*),
+      // which means that we can't call `chpl_free` on it because we know
+      // nothing about its lifetime.
+      //
+      funcCall += "cdef const char* rdata = <char*> ";
+
+      // Get the length of the "char*" using strlen.
+      returnStmt += "\tcdef Py_ssize_t rsize = strlen(rdata)\n";
+
+      // Create a new Python bytes that is a copy of the Chapel string.
+      returnStmt += "\tret = PyBytes_FromStringAndSize(rdata, rsize)\n";
+
+      // Decode the bytes into a Python string.
+      returnStmt += "\tret = ret.decode(\'utf-8\')\n";
+
     } else if (retType == exportTypeCharPtr) {
 
       //
@@ -2273,8 +2292,8 @@ GenRet FnSymbol::codegenPYXType() {
       // Create a new Python bytes that is a copy of the Chapel string.
       returnStmt += "\tret = PyBytes_FromStringAndSize(rdata, rsize)\n";
 
-      // Cast the bytes to a Python string.
-      returnStmt += "\tret = str(ret)\n";
+      // Encode the bytes into a Python string.
+      returnStmt += "\tret = ret.decode(\'utf-8\')\n";
 
       // Free the "char*" buffer.
       returnStmt += "\tchpl_free(rdata)\n";
