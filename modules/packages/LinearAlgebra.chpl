@@ -806,7 +806,7 @@ proc inv (ref A: [?Adom] ?eltType, overwrite=false) where usingLAPACK {
 }
 
 /*
-  Return the matrix ``A`` to the ``bth`` power, where ``b`` is am integer.
+  Return the matrix ``A`` to the ``bth`` power, where ``b`` is an integer.
 
   .. note::
 
@@ -815,7 +815,7 @@ proc inv (ref A: [?Adom] ?eltType, overwrite=false) where usingLAPACK {
     :mod:`BLAS` implementation.
 
     If ``b`` is negative, ``matPow`` will depend on :mod:`LAPACK` module, and will
-    generate a compiler error if ``lapackImpl`` is ``none``.
+    result in a runtime error if ``lapackImpl`` is ``none``.
 */
 proc matPow(A: [], b) where isNumeric(b) {
   // TODO -- flatten recursion into while-loop
