@@ -1701,7 +1701,7 @@ proc openplugin(pluginFile: QioPluginFile, mode:iomode,
     var path:string = "unknown";
     if pluginFile {
       var str:c_string = nil;
-      var len:ssize_t;
+      var len:int;
       var path_err = pluginFile.getpath(str, len);
       if path_err {
         path = "unknown";
