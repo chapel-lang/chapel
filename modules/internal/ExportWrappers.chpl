@@ -23,23 +23,23 @@ module ExportWrappers {
   private use SysCTypes;
 
   // Actual definition is in "runtime/include/chpl-export-wrappers.h".
-  extern record chpl_bytes_wrapper {
+  extern record chpl_byte_buffer {
     var isOwned: int(8);
     var data: c_ptr(c_char);
     var size: uint(64);
   }
 
-  extern proc chpl_bytes_wrapper_free(cb: chpl_bytes_wrapper);
+  extern proc chpl_byte_buffer_free(cb: chpl_byte_buffer);
 
   //
   // TODO: Using type aliases to resolve a type shouldn't be necessary. The
   // compiler should be able to figure this out on its own.
   //
-  type chpl__exportTypeChplBytesWrapper = chpl_bytes_wrapper;
+  type chpl__exportTypeChplBytesWrapper = chpl_byte_buffer;
 
   // Generic, but both string and bytes have the same implementation.
-  proc chpl__exportRetStringOrBytes(val): chpl_bytes_wrappe {
-    var result: chpl_bytes_wrapper;
+  proc chpl__exportRetStringOrBytes(ref val): chpl_byte_buffer {
+    var result: chpl_byte_buffer;
     result.isOwned = val.isowned:int(8);
     result.data = val.buff:c_ptr(c_char);
     result.size = val.size:uint(64);
@@ -49,23 +49,23 @@ module ExportWrappers {
     return result;
   }
 
-  proc chpl__exportRet(ref val: string, type rt: chpl_bytes_wrapper): rt {
+  proc chpl__exportRet(ref val: string, type rt: chpl_byte_buffer): rt {
     return chpl__exportRetStringOrBytes(val); 
   }
 
-  proc chpl__exportRet(ref val: bytes, type rt: chpl_bytes_wrapper): rt {
+  proc chpl__exportRet(ref val: bytes, type rt: chpl_byte_buffer): rt {
     return chpl__exportRetStringOrBytes(val);
   }
 
   // TODO: Identify where it is appropriate to make shallow copies.
-  proc chpl__exportArg(val: chpl_bytes_wrapper, type rt: string): rt {
+  proc chpl__exportArg(val: chpl_byte_buffer, type rt: string): rt {
     var data = val.data:c_string;
     var size = val.size.safeCast(int);
     return createStringWithNewBuffer(data, size);
   }
 
   // TODO: Identify where it is appropriate to make shallow copies.
-  proc chpl__exportArg(val: chpl_bytes_wrapper, type rt: bytes): rt {
+  proc chpl__exportArg(val: chpl_byte_buffer, type rt: bytes): rt {
     var data = val.data:c_string;
     var size = val.size.safeCast(int);
     return createBytesWithNewBuffer(data, size);

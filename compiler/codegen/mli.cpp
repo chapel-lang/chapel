@@ -399,7 +399,7 @@ std::string MLIContext::genMarshalBodyChplBytesWrapper(Type* t, bool out) {
   const char* target = out ? "obj" : "result";
   std::string gen;
 
-  // Create expressions for each "chpl_bytes_wrapper" struct field.
+  // Create expressions for each "chpl_byte_buffer" struct field.
   const char* fieldIsOwned = astr(target, ".isOwned");
   const char* fieldSize = astr(target, ".size");
   const char* fieldData = astr(target, ".data");
@@ -912,7 +912,7 @@ std::string MLIContext::genMemCleanup(Type* t, const char* var) {
     gen += var;
     gen += "));\n";
   } else if (t == exportTypeChplBytesWrapper) {
-    gen += "chpl_bytes_wrapper_free(";
+    gen += "chpl_byte_buffer_free(";
     gen += var;
     gen += ");\n";
   } else {

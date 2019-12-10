@@ -37,6 +37,7 @@
 
 static std::map<FnSymbol*, FnSymbol*> wrapperMap;
 static std::map<ArgSymbol*, ArgSymbol*> wrapperArgMap;
+static std::map<FnSymbol*, Type*> wrapperRetTypeMap;
 
 Type* exportTypeChplBytesWrapper = NULL;
 
@@ -72,6 +73,14 @@ FnSymbol* getUnwrappedFunction(FnSymbol* wrapper) {
 ArgSymbol* getUnwrappedArg(ArgSymbol* arg) {
   std::map<ArgSymbol*, ArgSymbol*>::iterator it;
   if ((it = wrapperArgMap.find(arg)) != wrapperArgMap.end()) {
+    return it->second;
+  }
+  return NULL;
+}
+
+Type* getUnwrappedRetType(FnSymbol* fn) {
+  std::map<FnSymbol*, Type*>::iterator it;
+  if ((it = wrapperRetTypeMap.find(fn)) != wrapperRetTypeMap.end()) {
     return it->second;
   }
   return NULL;
@@ -189,7 +198,7 @@ static void attemptFixups(FnSymbol* fn) {
 
       //
       // Some types (IE, string, bytes) map to the same interop type, i.e,
-      // `chpl_bytes_wrapper`, so we need the original ArgSymbol to
+      // `chpl_byte_buffer`, so we need the original ArgSymbol to
       // disambiguate them in later passes.
       //
       wrapperArgMap[wrapper->getFormal(i)] = as;
@@ -205,6 +214,9 @@ static void attemptFixups(FnSymbol* fn) {
       exportedStrRets.insert(wrapper);
     }
     changeRetType(wrapper);
+
+    // Some return types can change after lowering, so map them as well.
+    wrapperRetTypeMap[wrapper] = fn->retType;
   }
 
   // If a wrapper hasn't been made yet, there's nothing to do.

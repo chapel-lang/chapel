@@ -34,6 +34,10 @@ extern Type* exportTypeChplBytesWrapper;
 
 FnSymbol* getUnwrappedFunction(FnSymbol* wrapper);
 ArgSymbol* getUnwrappedArg(ArgSymbol* arg);
+
+// Some return types can change after lowering (i.e., callDestructors).
+Type* getUnwrappedRetType(FnSymbol* wrapper);
+
 void fixupExportedFunctions(const std::vector<FnSymbol*>& fns);
 void fixupExportedFunction(FnSymbol* fn);
 

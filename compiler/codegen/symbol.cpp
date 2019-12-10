@@ -1140,10 +1140,10 @@ std::string ArgSymbol::getPythonArgTranslation() {
     //
     res += "\tif type(" + strname + ") != ";
     res += pythonType;
-    res + ":\n";
+    res += ":\n";
     res += "\t\traise TypeError(\"Expected \'";
     res += pythonType;
-    res += "\' in conversion to \'chpl_bytes_wrapper\', ";
+    res += "\' in conversion to \'chpl_byte_buffer\', ";
     res += "found \" + str(type(" + strname + ")))\n";
 
     // Python strings need to encode themselves into a bytes first.
@@ -1162,14 +1162,14 @@ std::string ArgSymbol::getPythonArgTranslation() {
     // Declare a struct by value on the stack.
     std::string wrapval = "chpl_" + strname + "_val";
 
-    // Create a chpl_bytes_wrapper struct that represents a shallow copy.
-    res += "\tcdef chpl_bytes_wrapper " + wrapval + "\n";
+    // Create a chpl_byte_buffer struct that represents a shallow copy.
+    res += "\tcdef chpl_byte_buffer " + wrapval + "\n";
     res += "\t" + wrapval + ".isOwned = 0\n";
     res += "\t" + wrapval + ".data = " + argdata + "\n";
     res += "\t" + wrapval + ".size = " + argsize + "\n";
 
     // The final result is a copy of the stack allocated struct.
-    res += "\tcdef chpl_bytes_wrapper chpl_" + strname;
+    res += "\tcdef chpl_byte_buffer chpl_" + strname;
     res += " = " + wrapval + "\n";
 
     return res;
@@ -2256,28 +2256,28 @@ GenRet FnSymbol::codegenPYXType() {
   if (retType != dtVoid) {
     if (retType == exportTypeChplBytesWrapper) {
 
-      // The raw result of the routine call, a "chpl_bytes_wrapper".
-      funcCall += "cdef chpl_bytes_wrapper rdat = ";
+      // The raw result of the routine call, a "chpl_byte_buffer".
+      funcCall += "cdef chpl_byte_buffer rv = ";
 
       // Unpack the required fields.
-      returnStmt += "\tcdef char* chpl_rdata = rdat.data\n";
-      returnStmt += "\tcdef Py_ssize_t chpl_rsize = rdat.size\n";
+      returnStmt += "\tcdef char* rdata = rv.data\n";
+      returnStmt += "\tcdef Py_ssize_t rsize = rv.size\n";
 
       // Create a new Python bytes that is a copy of the Chapel bytes.
       returnStmt += "\tret = PyBytes_FromStringAndSize(rdata, rsize)\n";
 
-      // This will free the "chpl_bytes_wrapper" buffer if required.
-      returnStmt += "\tchpl_bytes_wrapper_free(rdat)\n";
+      // This will free the "chpl_byte_buffer" buffer if required.
+      returnStmt += "\tchpl_byte_buffer_free(rv)\n";
 
-      FnSymbol* unwrapped = getUnwrappedFunction(this);
-      INT_ASSERT(unwrapped != NULL);
+      Type* origt = getUnwrappedRetType(this)->getValType();
+      INT_ASSERT(origt != NULL);
 
-      Type* origt = unwrapped->retType;
+      // The only two types that can be mapped to "chpl_byte_buffer".
       INT_ASSERT(origt == dtBytes || origt == dtString);
 
       //
-      // If the original Chapel routine's return type is a string, then decode
-      // the Python bytes into a Python UTF-8 string.
+      // If the original Chapel routine's return type is a string, then
+      // decode the Python bytes into a Python UTF-8 string.
       //
       if (origt == dtString) {
         returnStmt += "\tret = ret.decode(\'utf-8\')\n";  
