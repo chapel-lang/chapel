@@ -2886,6 +2886,9 @@ void ofi_put_ll(const void* addr, c_nodeid_t node,
                                mrDesc, rxRmaAddr(tcip, node),
                                mrRaddr, mrKey, ctx),
                       checkTxCQ(tcip));
+  if (tcip->txCntr != NULL) {
+    tcip->numTxnsBegun++;
+  }
   tciFree(tcip);
 }
 
