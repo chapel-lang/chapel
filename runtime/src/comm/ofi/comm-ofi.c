@@ -2261,12 +2261,7 @@ void amWrapExecOnLrgBody(void* p) {
   //
   // Create space for the full bundle and fill in the header part from
   // what we've already received.  Retrieve the remainder, that is, the
-  // args proper, from the initiating node.  Iff this is a nonblocking
-  // executeOn, tell the initiator we've done so, because they cannot
-  // proceed until they know we have the bundle.  This prevents them
-  // freeing it before we've retrieved it.  For blocking executeOn we
-  // don't have to say we have the bundle, because the initiator won't
-  // proceed until the entire executeOn is complete anyway.
+  // args proper, from the initiating node.
   //
   chpl_comm_on_bundle_t* reqCopy;
   CHPL_CALLOC_SZ(reqCopy, 1, xol->argSize);
@@ -2279,6 +2274,16 @@ void amWrapExecOnLrgBody(void* p) {
   CHK_TRUE(mrGetKey(NULL, NULL, node, &reqOnOrig[1], remnantSize) == 0);
   (void) ofi_get(&req[1], node, &reqOnOrig[1], remnantSize);
 
+  //
+  // Iff this is a nonblocking executeOn, tell the initiator we've got
+  // the rest of the bundle.  They have to be held until we've got it,
+  // so that it doesn't disappear before then.  We don't have to do this
+  // for blocking executeOn because the initiator won't proceed until
+  // the entire executeOn is complete anyway.  We can save a little bit
+  // of time here by not waiting for a network response.  Either we or
+  // someone else will consume that completion later.  In the meantime
+  // we can go ahead with the executeOn body.
+  //
   if (xol->pAmDone == NULL) {
     static __thread chpl_comm_amDone_t* myGotArg = NULL;
     if (myGotArg == NULL) {
@@ -2287,6 +2292,8 @@ void amWrapExecOnLrgBody(void* p) {
     }
 
     chpl_comm_amDone_t* origGotArg = &reqOnOrig->comm.xol.gotArg;
+    DBG_PRINTF(DBG_AM, "AM seqId %d:%" PRIu64 ": set gotArg (NB) %p",
+               (int) node, xol->b.seq, origGotArg);
     ofi_put_ll(myGotArg, node, origGotArg, sizeof(*origGotArg),
                txnTrkEncode(txnTrkNone, NULL));
   }
@@ -2425,7 +2432,11 @@ void amSendDone(struct chpl_comm_bundleData_base_t* b,
     *amDone = 1;
   }
 
-  DBG_PRINTF(DBG_AM, "AM seqId %d:%" PRIu64 ": set pAmDone %p",
+  //
+  // Send the 'done' indicator without waiting for a completion.
+  // Either we or someone else will consume that completion later.
+  //
+  DBG_PRINTF(DBG_AM, "AM seqId %d:%" PRIu64 ": set pAmDone (NB) %p",
              (int) b->node, b->seq, pAmDone);
   ofi_put_ll(amDone, b->node, pAmDone, sizeof(*pAmDone),
              txnTrkEncode(txnTrkNone, NULL));
@@ -2863,7 +2874,7 @@ chpl_comm_nb_handle_t ofi_put(const void* addr, c_nodeid_t node,
 
 static inline
 void ofi_put_ll(const void* addr, c_nodeid_t node,
-                 void* raddr, size_t size, void* ctx) {
+                void* raddr, size_t size, void* ctx) {
   DBG_PRINTF(DBG_RMA | DBG_RMAWRITE,
              "PUT %d:%p <= %p, size %zd",
              (int) node, raddr, addr, size);
