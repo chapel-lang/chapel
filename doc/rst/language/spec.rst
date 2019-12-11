@@ -1694,7 +1694,7 @@ generic, the type of the variable is inferred from the initialization
 expression using local type inference described
 in :ref:`Local_Type_Inference`. If the ``type-part`` is present, the
 initialization expression must be coercible to the specified type or, if
-th ``type-part`` is generic, to its instantiation.
+``type-part`` is generic, to its instantiation.
 
 Multiple variables can be defined in the same
 ``variable-declaration-list``. The semantics of declaring multiple
