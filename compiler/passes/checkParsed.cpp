@@ -81,7 +81,7 @@ checkParsed() {
         if ((def->init && def->init->isNoInitExpr()) ||
             def->sym->hasFlag(FLAG_CONFIG)) {
           USR_FATAL_CONT(def->sym,
-                         "Variable '%s' is not initialized or has no type",
+                         "Variable '%s' is not initialized and has no type",
                          def->sym->name);
         } else {
           SET_LINENO(def);

@@ -2238,22 +2238,16 @@ static void normalizeVariableDefinition(DefExpr* defExpr) {
   FnSymbol* initFn = defExpr->getModule()->initFn;
   bool global = (initFn && defExpr->parentExpr == initFn->body);
 
-  if (requestedSplitInit && global)
-    USR_FATAL(defExpr, "split initialization not supported for globals");
+  if (requestedSplitInit && global) {
+    USR_FATAL_CONT(defExpr, "Variable '%s' is not initialized and has no type",
+                   var->name);
+    USR_PRINT(defExpr, "split initialization is not supported for globals");
+  }
 
   // For now, disable automatic split init on non-user code
   if ((defExpr->getModule()->modTag == MOD_USER || requestedSplitInit) &&
       global == false)
     foundSplitInit = findInitPoints(defExpr, initAssign);
-
-  /*if (foundSplitInit) {
-    USR_WARN(defExpr, "Found split init for '%s'", defExpr->sym->name);
-    //if (developer)
-    //  USR_PRINT(defExpr, "for sym id %i", defExpr->sym->id);
-    for_vector(CallExpr, call, initAssign) {
-      USR_WARN(call, "init stmt here");
-    }
-  }*/
 
   if ((init != NULL && !requestedSplitInit) ||
       foundSplitInit == false ||
@@ -2474,7 +2468,7 @@ static found_init_t doFindInitPoints(DefExpr* def,
       }
     }
 
-    if (developer) {
+    if (fVerify) {
       // Redundantly check for uses
       if (containsSymExprFor(cur, def->sym))
         INT_FATAL("use not found above");
@@ -2540,7 +2534,7 @@ static void errorIfSplitInitializationRequired(DefExpr* def, Expr* cur) {
     const char* name = def->sym->name;
     USR_FATAL_CONT(def, "'%s' cannot be default initialized", name);
     if (cur) {
-      USR_PRINT(cur, "'%s' is before being initialized here", name);
+      USR_PRINT(cur, "'%s' is used here before being initialized", name);
     } else if (nonNilableType != NULL) {
       USR_PRINT("non-nil class types do not support default initialization");
 

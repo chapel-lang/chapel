@@ -659,6 +659,12 @@ initPrimitive() {
   // dst, type to default-init
   prim_def(PRIM_DEFAULT_INIT_VAR, "default init var", returnInfoVoid);
 
+  // fn->_this, the name of the field, value/type, optional declared type
+  prim_def(PRIM_INIT_FIELD, "init field", returnInfoVoid, false);
+
+  // dst, init-expr, optional declared type
+  prim_def(PRIM_INIT_VAR,   "init var",   returnInfoVoid);
+
   // indicates split initialization point of declaration
   // If the type is provided, apply that to the value immediately
   // The value may not be used until a later PRIM_INIT_VAR.
@@ -666,11 +672,6 @@ initPrimitive() {
   // dst, optional type to default-init
   prim_def(PRIM_INIT_VAR_SPLIT_DECL, "init var split decl", returnInfoVoid, false);
 
-  // fn->_this, the name of the field, value/type, optional declared type
-  prim_def(PRIM_INIT_FIELD, "init field", returnInfoVoid, false);
-
-  // dst, init-expr, optional declared type
-  prim_def(PRIM_INIT_VAR,   "init var",   returnInfoVoid);
   // indicates split initialization point of initialization
   // dst, init-expr
   prim_def(PRIM_INIT_VAR_SPLIT_INIT, "init var split init",   returnInfoVoid);
@@ -900,6 +901,7 @@ initPrimitive() {
   // BlockStmt::blockInfo - on block
   prim_def(PRIM_BLOCK_ON, "on block", returnInfoVoid);
   // BlockStmt::blockInfo - elided on block
+  //   (i.e. an on block that not needed for single-locale compilation)
   prim_def(PRIM_BLOCK_ELIDED_ON, "elided on block", returnInfoVoid);
   // BlockStmt::blockInfo - begin on block
   prim_def(PRIM_BLOCK_BEGIN_ON, "begin on block", returnInfoVoid);
