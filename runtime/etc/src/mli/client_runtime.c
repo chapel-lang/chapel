@@ -42,7 +42,7 @@ void chpl_library_finalize(void);
 // The `mli_free` routine should resolve to a call to `free` on the client
 // side.
 //
-void chpl_bytes_wrapper_free(chpl_bytes_wrapper cb) {
+void chpl_byte_buffer_free(chpl_byte_buffer cb) {
   if (!cb.isOwned) { return; }
 
   if (cb.data != NULL) {

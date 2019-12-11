@@ -2288,9 +2288,9 @@ GenRet FnSymbol::codegenPYXType() {
       //
       // NOTE: The result of the routine call is a `c_string`, AKA const
       // char*. We know that the only thing we could be returning here
-      // is a `c_string` (since Chapel strings are returned as char*),
-      // which means that we can't call `chpl_free` on it because we know
-      // nothing about its lifetime.
+      // is a `c_string` (since Chapel strings are returned as
+      // "chpl_byte_buffer"), which means that we can't call `chpl_free` on
+      // it because we know nothing about its lifetime.
       //
       funcCall += "cdef const char* rdata = <char*> ";
 
