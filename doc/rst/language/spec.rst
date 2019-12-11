@@ -9761,31 +9761,28 @@ Nilable Class Types
 
 Variables of a class type cannot store ``nil`` and do not have a default
 value unless the class type is nilable. To create a nilable class type,
-use the postfix ``?`` operator. For example, if ``C`` is a class type, then
-``C?`` indicates the nilable class type with generic management. The
-``?`` operator can be combined with memory management specifiers as
+use the postfix ``?`` operator. For example, if ``C`` is a class, then
+``C?`` indicates the nilable class type with generic memory management strategy.
+The ``?`` operator can be combined with memory management specifiers as
 well. For example, ``borrowed C?`` indicates a nilable class using the
 ``borrowed`` memory management strategy. Note that the ``?`` operator
 applies only to types.
 
 A nilable type can also be created with a cast to ``class?``. For example,
 if ``T`` is a class type, then ``T: class?`` indicates its nilable counterpart,
-or ``T`` itself if it is already nilable. ``T: borrowed class?`` modifies ``T``
-as needed to ensure the result is nilable and has the ``borrowed``
-memory management strategy.
+or ``T`` itself if it is already nilable. ``T: borrowed class?`` produces
+the nilable ``borrowed`` variant of ``T``.
 
-To create a non-nilalble class type, apply a cast to ``class`` or
-to a more specific type. For example, if ``T`` is a class type, then
-``T: class`` indicates its non-nilable counterpart, or ``T`` itself
-if it is already non-nilable. ``T: borrowed class`` modifies ``T``
-as needed to ensure the result is non-nilable and has the ``borrowed``
-memory management strategy.
+To create a non-nilalble class type from a nilable class type, apply a
+cast to ``class`` or to a more specific type. For example, if ``T`` is
+a class type, then ``T: class`` indicates its non-nilable counterpart,
+or ``T`` itself if it is already non-nilable. ``T: borrowed class``
+produces the non-nilable ``borrowed`` variant of ``T``.
 
 The postfix ``!`` operator converts a class value to a non-nilable type.
 If the value is not ``nil``, it returns a copy of that value if it is
 ``borrowed`` or ``unmanaged``, or a borrow from it if it is ``owned``
 or ``shared``. If the value is in fact ``nil``, it halts.
-The result of the postfix ``!`` has a non-nilable type.
 
 An alternative to ``!`` is to use a cast to a non-nilable type. Such a
 cast will throw ``NilClassError`` if the value was in fact ``nil``.
