@@ -1623,17 +1623,13 @@ Variables are declared with the following syntax:
      variable-declaration , variable-declaration-list
 
    variable-declaration:
-     identifier-list type-part[OPT] initialization-part
-     identifier-list type-part no-initialization-part[OPT]
+     identifier-list type-part[OPT] initialization-part[OPT]
 
    type-part:
      : type-expression
 
    initialization-part:
      = expression
-
-   no-initialization-part:
-     = `noinit'
 
    identifier-list:
      identifier
@@ -1674,14 +1670,15 @@ The ``type-part`` of a variable declaration specifies the type of the
 variable. It is optional.
 
 The ``initialization-part`` of a variable declaration specifies an
-initial expression to store into the variable. It is also optional. When
-present, it forms the initialization expression for the variable.
+initialization expression for the variable. It is option. When present,
+the initialization expression will be stored into the variable as its
+initial value.
 
 If the ``initialization-part`` is omitted, the compiler will consider if
 split initialization can be applied to this variable as described in
 :ref:`Split_Initialization`. If split initialization can be applied, the
-compiler will identify a later assignment statement and the
-right-hand-side of that statement will form the initialization
+compiler will identify one or more later assignment statements and the
+right-hand-side of such statements will form the initialization
 expression. If the ``initialization-part`` is omitted and split
 initialization cannot be applied, then the variable will need to be
 initialized to a default value. Only `var` and `const` variable
@@ -1689,13 +1686,15 @@ declarations can be initialized to a default value. Not all types have a
 default value. Default values are described in
 :ref:`Default_Values_For_Types`.
 
-If the ``type-part`` is omitted, the type of the variable is inferred
-from the initialization expression using local type inference described
-in :ref:`Local_Type_Inference`.  If the ``type-part`` refers to a generic
-type, the initialization expression is required and will be used to determine
-the type of the variable. In this event, the compiler will fail with an
-error if the initialization expression is not coercible to an
-instantiation of the generic type.
+If the ``type-part`` is omitted or refers to a generic type, an
+initialization expression as described above is required. Note that such
+initialization expressions can be in later statements if
+:ref:`Split_Initialization` us used. When the ``type-part`` is omitted or
+generic, the type of the variable is inferred from the initialization
+expression using local type inference described
+in :ref:`Local_Type_Inference`. If the ``type-part`` is present, the
+initialization expression must be coercible to the specified type or, if
+th ``type-part`` is generic, to its instantiation.
 
 Multiple variables can be defined in the same
 ``variable-declaration-list``. The semantics of declaring multiple
@@ -1710,15 +1709,17 @@ described in :ref:`Variable_Declarations_in_a_Tuple`.
 Split Initialization
 ~~~~~~~~~~~~~~~~~~~~
 
-When the ``initialization-part`` is present, it forms the initialization
-expression. For local variables, if the ``initialization-part`` is
-omitted, the compiler will search forward in the function for the first
-assignment statement(s) setting that variable that occur before the
-variable is otherwise used. It will search only within block declarations
-``{ }`` and conditionals. These assignment statements are called
-applicable assignment statements. The variable will be initialized at the
-applicable assignment instead of being assigned to. This feature is
-called split initialization.
+Split initialization is a feature that allows an initialization
+expression for a variable to be in a statement after the variable
+declaration statement.
+
+If the ``initialization-part`` of a local variable declaration is
+omitted, the compiler will search forward in the function for the
+earliest assignment statement(s) setting that variable that occur before
+the variable is otherwise mentioned. It will search only within block
+declarations ``{ }`` and conditionals. These assignment statements are
+called applicable assignment statements. They perform initialization, not
+assignment, of that variable.
 
    *Example (simple-split-init.chpl)*
 
@@ -1786,18 +1787,17 @@ called split initialization.
 
 Split initialization does not apply:
 
- * to module-level variables, fields, config variables, or ``extern``
-   variables.
- * to variables that are referred to in nested functions
- * to variables where an applicable assignment statement setting that
-   variable could not be identified
- * to variables where the variable is used in some way before the
-   applicable assignment statement
- * to variables where the applicable assignment statement is in a loop,
-   ``on`` statement, or ``begin`` statement
- * to variables where an applicable assignment statement is in one
-   branch of a conditional but not in the other, including when the
-   conditional has no ``else`` branch
+ * when the variable is a module-level variable, fields, config variable,
+   or ``extern`` variable.
+ * when an applicable assignment statement setting the variable could not
+   be identified
+ * when the variable is mentioned before the earliest assignment
+   statement(s)
+ * when an applicable assignment statement is in a loop, ``on``
+   statement, or ``begin`` statement
+ * when an applicable assignment statement is in one branch of a
+   conditional but not in the other, including when the conditional has
+   no ``else`` branch.
 
 In the case that the variable is declared without a ``type-part`` and
 where multiple applicable assignment statements are identified, all of
