@@ -447,7 +447,9 @@ class BadRegexpError : Error {
                    ``(?U)``.
 
  */
-proc compile(pattern: string, utf8=true, posix=false, literal=false, nocapture=false, /*i*/ ignorecase=false, /*m*/ multiline=false, /*s*/ dotnl=false, /*U*/ nongreedy=false):regexp throws {
+proc compile(pattern: ?t, posix=false, literal=false, nocapture=false,
+             /*i*/ ignorecase=false, /*m*/ multiline=false, /*s*/ dotnl=false,
+             /*U*/ nongreedy=false): regexp throws where t==string || t==bytes {
 
   if CHPL_REGEXP == "none" {
     compilerError("Cannot use Regexp with CHPL_REGEXP=none");
@@ -455,7 +457,7 @@ proc compile(pattern: string, utf8=true, posix=false, literal=false, nocapture=f
 
   var opts:qio_regexp_options_t;
   qio_regexp_init_default_options(opts);
-  opts.utf8 = utf8;
+  opts.utf8 = t==string;
   opts.posix = posix;
   opts.literal = literal;
   opts.nocapture = nocapture;
@@ -479,11 +481,14 @@ proc compile(pattern: string, utf8=true, posix=false, literal=false, nocapture=f
 }
 
 pragma "no doc"
-proc compile(pattern: string, out error:syserr, utf8, posix, literal, nocapture, /*i*/ ignorecase, /*m*/ multiline, /*s*/ dotnl, /*U*/ nongreedy):regexp {
+proc compile(pattern: ?t, out error:syserr, posix, literal, nocapture,
+             /*i*/ ignorecase, /*m*/ multiline, /*s*/ dotnl,
+             /*U*/ nongreedy): regexp where t==string || t==bytes {
+
   compilerWarning("'out error: syserr' pattern has been deprecated, use 'throws' function instead");
   var ret: regexp;
   try {
-    ret = compile(pattern, utf8, posix, literal, nocapture, ignorecase,
+    ret = compile(pattern, posix, literal, nocapture, ignorecase,
                   multiline, dotnl, nongreedy);
   } catch e: SystemError {
     error = e.err;
@@ -545,6 +550,11 @@ proc string.this(m:reMatch) {
   else return "";
 }
 
+proc bytes.this(m:reMatch) {
+  if m.matched then return this[m.offset+1..#m.length];
+  else return "";
+}
+
  private use IO;
 
 /*  This class represents a compiled regular expression. Regular expressions
@@ -595,7 +605,8 @@ record regexp {
   }
 
   pragma "no doc"
-  proc _handle_captures(text: string, matches:_ddata(qio_regexp_string_piece_t), nmatches:int, ref captures) {
+  proc _handle_captures(text: ?t, matches:_ddata(qio_regexp_string_piece_t),
+                        nmatches:int, ref captures) where t==string || t==bytes {
     assert(nmatches >= captures.size);
     for param i in 1..captures.size {
       var m = _to_reMatch(matches[i]);
@@ -603,7 +614,7 @@ record regexp {
         captures[i] = m;
       } else {
         if m.matched {
-          if captures[i].type == string {
+          if captures[i].type == t {
             captures[i] = text[m];
           } else {
             try {
@@ -641,7 +652,7 @@ record regexp {
 
     */
   proc search(text: ?t, ref captures ...?k):reMatch
-    where t == string
+    where t == string || t==bytes
   {
     var ret:reMatch;
     on this.home {
@@ -670,7 +681,7 @@ record regexp {
   // documented in the captures version
   pragma "no doc"
   proc search(text: ?t):reMatch
-    where t == string
+    where t == string || t==bytes
   {
     var ret:reMatch;
     on this.home {
@@ -715,7 +726,7 @@ record regexp {
                where a match occurred
    */
   proc match(text: ?t, ref captures ...?k):reMatch
-    where t == string
+    where t == string || t==bytes
   {
     var ret:reMatch;
     on this.home {
@@ -744,7 +755,7 @@ record regexp {
   // documented in the version taking captures.
   pragma "no doc"
   proc match(text: ?t):reMatch
-    where t == string
+    where t == string || t==bytes
   {
     var ret:reMatch;
     on this.home {
@@ -781,7 +792,7 @@ record regexp {
      :yields: each split portion, one at a time
    */
   iter split(text: ?t, maxsplit: int = 0)
-    where t == string
+    where t == string || t==bytes
   {
     var matches:_ddata(qio_regexp_string_piece_t);
     var ncaptures = qio_regexp_get_ncaptures(_regexp);
@@ -853,7 +864,7 @@ record regexp {
               the match for the whole pattern and the rest are the capture groups.
    */
   iter matches(text: ?t, param captures=0, maxmatches: int = max(int))
-    where t == string
+    where t == string || t==bytes
   {
     var matches:_ddata(qio_regexp_string_piece_t);
     var nmatches = 1 + captures;
@@ -899,8 +910,8 @@ record regexp {
      :returns: a tuple containing (new string, number of substitutions made)
    */
   // TODO -- move subn after sub for documentation clarity
-  proc subn(repl:string, text: ?t, global = true ):(string, int)
-    where t == string
+  proc subn(repl:?t, text: t, global = true ):(t, int)
+    where t == string || t == bytes
   {
     var pos:byteIndex;
     var endpos:byteIndex;
@@ -915,8 +926,14 @@ record regexp {
                                    repl.numBytes, text.localize().c_str(),
                                    text.numBytes, pos:int, endpos:int, global,
                                    replaced, replaced_len);
-    try! {
-      const ret = createStringWithOwnedBuffer(replaced);
+    if t==string {
+      try! {
+        const ret = createStringWithOwnedBuffer(replaced);
+        return (ret, nreplaced);
+      }
+    }
+    else {
+      const ret = createBytesWithOwnedBuffer(replaced);
       return (ret, nreplaced);
     }
   }
@@ -931,8 +948,8 @@ record regexp {
      :arg global: if true, replace multiple matches
      :returns: the new string
    */
-  proc sub(repl:string, text: ?t, global = true )
-    where t == string
+  proc sub(repl:?t, text: t, global = true )
+    where t == string || t == bytes
   {
     var (str, count) = subn(repl, text, global);
     return str;
