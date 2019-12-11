@@ -501,8 +501,9 @@ module String {
     // NOTE: This is a "wellknown" function used by the compiler to create
     // string literals. Inlining this creates some bloat in the AST, slowing the
     // compilation.
-    return chpl_createStringWithNoVal(s:c_ptr(uint(8)), length=length,
-                                                        size=length+1);
+    return chpl_createStringWithBorrowedBufferNV(s:c_ptr(uint(8)),
+                                                 length=length,
+                                                 size=length+1);
   }
 
   /*
@@ -531,8 +532,9 @@ module String {
   }
 
   pragma "no doc"
-  private inline proc chpl_createStringWithNoVal(s: bufferType, length: int,
-                                                                size: int) {
+  private inline proc chpl_createStringWithBorrowedBufferNV(s: bufferType,
+                                                            length: int,
+                                                            size: int) {
     // NOTE: This is similar to chpl_createStringWithLiteral above, but only
     // used internally by the String module. These two functions cannot have the
     // same names, because "wellknown" implementation in the compiler does not
@@ -590,6 +592,15 @@ module String {
     return ret;
   }
 
+  pragma "no doc"
+  private inline proc chpl_createStringWithOwnedBufferNV(s: bufferType,
+                                                         length: int,
+                                                         size: int) {
+    var ret: string;
+    initWithOwnedBuffer(ret, s, length,size);
+    return ret;
+  }
+
   /*
     Creates a new string by creating a copy of the buffer of another string.
 
@@ -642,6 +653,15 @@ module String {
     var ret: string;
     validateEncoding(s, length);
     initWithNewBuffer(ret, s, length, size);
+    return ret;
+  }
+
+  pragma "no doc"
+  private inline proc chpl_createStringWithNewBufferNV(s: bufferType,
+                                                       length: int,
+                                                       size: int) {
+    var ret: string;
+    initWithNewBuffer(ret, s, length,size);
     return ret;
   }
 
@@ -708,14 +728,20 @@ module String {
     proc type chpl__deserialize(data) {
       if data.locale_id != chpl_nodeID {
         if data.len <= CHPL_SHORT_STRING_SIZE {
-          return chpl_createStringWithNoVal(chpl__getInPlaceBufferData(data.shortData),
-                                            data.len, data.size);
+          return chpl_createStringWithNewBufferNV(
+                      chpl__getInPlaceBufferData(data.shortData),
+                      data.len,
+                      data.size);
         } else {
           var localBuff = bufferCopyRemote(data.locale_id, data.buff, data.len);
-          return chpl_createStringWithNoVal(localBuff, data.len, data.size);
+          return chpl_createStringWithOwnedBufferNV(localBuff,
+                                                    data.len,
+                                                    data.size);
         }
       } else {
-        return chpl_createStringWithNoVal(data.buff, data.len, data.size);
+        return chpl_createStringWithBorrowedBufferNV(data.buff,
+                                                     data.len,
+                                                     data.size);
       }
     }
 
