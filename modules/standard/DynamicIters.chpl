@@ -97,10 +97,11 @@ where tag == iterKind.standalone
     var curIndex : atomic c.low.type = c.low;
 
     coforall tid in 0..#nTasks with (const in c) {
+      const strChunk = chunkSize * c.stride;
       while moreWork.read() {
         // There is local work in c
-        const low = curIndex.fetchAdd(chunkSize);
-        var high = low + chunkSize-1;
+        const low = curIndex.fetchAdd(strChunk);
+        var high = low + strChunk - 1;
 
         if low > c.high {
           break;
@@ -113,7 +114,7 @@ where tag == iterKind.standalone
 
         if high >= low then {
           if debugDynamicIters then
-            writeln("Standalone dynamic Iterator. Working at tid ", tid, " with range ", unDensify(current,c), " yielded as ", current);
+            writeln("Standalone dynamic Iterator. Working at tid ", tid, " with range ", c, " yielded as ", current);
           for i in current do
             yield i;
         }
