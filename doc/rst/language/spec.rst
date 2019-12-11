@@ -5371,16 +5371,14 @@ Prototype Modules
 -----------------
 
 Modules that are declared with the ``prototype`` keyword use relaxed
-rules for error handling and ``nil`` checking. These relaxed rules are
+rules for error handling. These relaxed rules are
 appropriate for programs in the early stages of development but are not
-appropriate for libraries. In particular, within a ``prototype`` module:
+appropriate for libraries. In particular, within a ``prototype`` module
+errors that are not handled will terminate the program
+(see :ref:`Errors_Prototype_Mode`).
 
--  errors that are not handled will terminate the program
-   (see :ref:`Errors_Prototype_Mode`)
-
--  methods on nilable class instances can be called - these will
-   implicitly convert to non-nilable class instances
-   (see :ref:`Methods on Nilable in Prototype Modules <Methods_on_Nilable_in_Prototype_Modules>`)
+Implicit modules (:ref:`Implicit_Modules`) are implicitly considered
+``prototype`` modules as well.
 
 .. _Implicit_Modules:
 
@@ -5431,7 +5429,8 @@ any relation to the file in terms of their names.
 For any file that contains file-scope statements other than module
 declarations, the file itself is treated as a module declaration. In
 this case, the module is implicit. Implicit modules are always
-``prototype`` modules. An implicit module takes its name from the base
+``prototype`` modules (:ref:`Prototype_Modules`).
+An implicit module takes its name from the base
 filename. In particular, the module name is defined as the remaining
 string after removing the ``.chpl`` suffix and any path specification
 from the specified filename. If the resulting name is not a legal Chapel
@@ -9760,22 +9759,30 @@ available for this purpose
 Nilable Class Types
 ~~~~~~~~~~~~~~~~~~~
 
-Variables of class type cannot store ``nil`` unless the class type is
-nilable. To declare a nilable class type, use the ``?`` operator to
-create a nilable type. For example, if ``C`` is a class type, then
-``C?`` indicates the nilable class type with generic management. The
-``?`` operator can be combined with memory management specifiers as
+Variables of a class type cannot store ``nil`` and do not have a default
+value unless the class type is nilable. To create a nilable class type,
+use the postfix ``?`` operator. For example, if ``C`` is a class, then
+``C?`` indicates the nilable class type with generic memory management strategy.
+The ``?`` operator can be combined with memory management specifiers as
 well. For example, ``borrowed C?`` indicates a nilable class using the
 ``borrowed`` memory management strategy. Note that the ``?`` operator
 applies only to types.
 
-The postfix ``!`` operator applies to a type or a value. When applied to
-a ``borrowed`` or ``unmanaged`` type, it returns the non-nilable version
-of that type. When applied to an ``owned`` or ``shared`` type, it
-returns the non-nilable borrowed type. When applied to a value, it
-asserts that the value is not ``nil`` and returns that value as a
-non-nilable type. If the value was in fact ``nil``, it halts. It returns
-the borrowed type for ``owned`` or ``shared``.
+A nilable type can also be created with a cast to ``class?``. For example,
+if ``T`` is a class type, then ``T: class?`` indicates its nilable counterpart,
+or ``T`` itself if it is already nilable. ``T: borrowed class?`` produces
+the nilable ``borrowed`` variant of ``T``.
+
+To create a non-nilalble class type from a nilable class type, apply a
+cast to ``class`` or to a more specific type. For example, if ``T`` is
+a class type, then ``T: class`` indicates its non-nilable counterpart,
+or ``T`` itself if it is already non-nilable. ``T: borrowed class``
+produces the non-nilable ``borrowed`` variant of ``T``.
+
+The postfix ``!`` operator converts a class value to a non-nilable type.
+If the value is not ``nil``, it returns a copy of that value if it is
+``borrowed`` or ``unmanaged``, or a borrow from it if it is ``owned``
+or ``shared``. If the value is in fact ``nil``, it halts.
 
 An alternative to ``!`` is to use a cast to a non-nilable type. Such a
 cast will throw ``NilClassError`` if the value was in fact ``nil``.
@@ -9787,11 +9794,7 @@ types. See :ref:`Implicit_Class_Conversions`.
 Class methods generally expect a receiver of type ``borrowed C``
 (see :ref:`Class_Methods`). Since such a class method call might
 involve dynamic dispatch, it is a program error to call a class method
-on a class receiver storing ``nil``. The language helps to identify this
-error in two different ways, depending on whether or not the module is a
-``prototype`` module (:ref:`Prototype_Modules`).
-
-For modules that are not prototype modules, the compiler will not
+on a class receiver storing ``nil``. The compiler will not
 resolve calls to class methods if the receiver has nilable type. If the
 programmer knows that the receiver cannot store ``nil`` at that moment,
 they can use ``!`` to assert that the receiver is not ``nil`` and to
@@ -9808,11 +9811,7 @@ convert it to the non-nilable borrowed type. For example:
       }
       var c: owned C? = new C();
 
-      // The following call is allowed only in prototype modules,
-      // in which case it is equivalent to c!.method()
-      c.method();
-
-      // This pattern is appropriate in libraries
+      // Invoke c.method() only when c is non-nil.
       if c != nil {
         c!.method(); // c! converts from 'owned C?' to 'borrowed C'
       }
@@ -9821,11 +9820,6 @@ The ``borrow()`` method is an exception. Suppose it is invoked on an
 expression of a class type ``C``. It will return ``borrowed C`` for any
 non-nilable ``C`` type (e.g. ``owned C``). It will return
 ``borrowed C?`` for any nilable ``C`` type (e.g. ``C?``).
-
-.. _Methods_on_Nilable_in_Prototype_Modules:
-
-Within a ``prototype`` module, the compiler will implicitly convert a
-nilable method receiver to the non-nilable type by adding a ``!`` call.
 
 .. _Class_Values:
 
@@ -16010,7 +16004,7 @@ typically made by iterating over it in a loop.
             yield child;
           for child in postorder(tree!.right) do
             yield child;
-          yield tree.data;
+          yield tree!.data;
         }
       }
 
@@ -16919,7 +16913,7 @@ argument.
    .. BLOCK-test-chapelpost
 
       writeln(list.data);
-      writeln(list.next.data);
+      writeln(list.next!.data);
       delete list.next;
       delete list;
 
@@ -17288,8 +17282,8 @@ Example: A Generic Stack
           if isEmpty then
             halt("attempt to pop an item off an empty stack");
           var oldTop = top;
-          var oldItem = top.item;
-          top = top.next;
+          var oldItem = top!.item;
+          top = top!.next;
           delete oldTop;
           return oldItem;
         }
@@ -17541,8 +17535,8 @@ initially empty.
              return value;
 
           var x$: sync int;
-          begin x$ = left.sum();
-          var y = right.sum();
+          begin x$ = left!.sum();
+          var y = right!.sum();
           return x$ + y;
         }
       }
