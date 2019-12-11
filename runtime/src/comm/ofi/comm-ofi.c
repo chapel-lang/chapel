@@ -321,7 +321,9 @@ static chpl_bool provCtl_readAmoNeedsOpnd; // READ AMO needs operand (RxD)
 //
 static
 chpl_bool isInProviderName(const char* s) {
-  if (ofi_info->fabric_attr->prov_name == NULL) {
+  if (ofi_info == NULL
+      || ofi_info->fabric_attr == NULL
+      || ofi_info->fabric_attr->prov_name == NULL) {
     return false;
   }
 
@@ -1272,7 +1274,23 @@ static void exit_all(int status) {
 
 
 static void exit_any(int status) {
-  // TODO
+  //
+  // (Over)abundance of caution mode: if exiting unilaterally with the
+  // 'verbs' provider in use, call _exit() now instead of allowing the
+  // usual runtime control flow to call exit() and invoke the atexit(3)
+  // functions.  Otherwise we run the risk of segfaulting due to some
+  // broken destructor code in librdmacm.  That was fixed years ago by
+  //     https://github.com/linux-rdma/rdma-core/commit/9ef8ed2
+  // but the fix doesn't seem to have made it into general circulation
+  // yet.
+  //
+  // Flush all the stdio FILE streams first, in the hope of not losing
+  // any output.
+  //
+  if (isInProviderName("verbs")) {
+    fflush(NULL);
+    _exit(status);
+  }
 }
 
 
