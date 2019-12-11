@@ -28,7 +28,12 @@
 
 #include "chpltypes.h"
 
+// The type of task private data.
+#include "chpl-cache-task-decls.h"
+#define HAS_CHPL_CACHE_FNS
+
 typedef struct {
+  chpl_cache_taskPrvData_t cache_data;
   int numTxnsOut;    // number of transactions outstanding
 } chpl_comm_taskPrvData_t;
 
