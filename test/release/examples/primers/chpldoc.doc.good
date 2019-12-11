@@ -1,3 +1,4 @@
+chpldoc.doc.chpl:31: warning: This file-scope code is outside of any explicit module declarations (e.g., module Defined), so an implicit module named 'chpldoc.doc' is being introduced to contain the file's contents.
 chpldoc.doc
 
 Usage:

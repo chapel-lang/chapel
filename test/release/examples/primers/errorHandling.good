@@ -1,3 +1,4 @@
+errorHandling.chpl:22: warning: This file-scope code is outside of any explicit module declarations (e.g., module R), so an implicit module named 'errorHandling' is being introduced to contain the file's contents.
 an error occurred
 Warning: input.txt does not exist
 Warning: backup_input.txt does not exist
