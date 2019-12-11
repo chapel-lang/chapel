@@ -1368,7 +1368,7 @@ available:
 
 .. code-block:: chapel
 
-   proc $enum$.size: param int
+   proc enum.size: param int
 
 The number of constants in the given enumerated type.
 
@@ -9454,7 +9454,7 @@ Returns true if ``t`` is a homogeneous tuple; otherwise false.
 
 .. code-block:: chapel
 
-   proc isTuple(t: $Tuple$) param
+   proc isTuple(t: tuple) param
 
 Returns true if ``t`` is a tuple; otherwise false.
 
