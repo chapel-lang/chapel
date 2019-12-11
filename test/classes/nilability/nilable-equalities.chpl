@@ -2,19 +2,19 @@
 class MyClass { var x:int; }
 
 type od = owned MyClass;
-type ob = (owned MyClass)!; // aka borrowed MyClass
+type ob = ((owned MyClass) :borrowed class); // aka borrowed MyClass
 type oq = owned MyClass?;
 
 type sd = shared MyClass;
-type sb = (shared MyClass)!; // aka borrowed MyClass
+type sb = ((shared MyClass) :borrowed class); // aka borrowed MyClass
 type sq = shared MyClass?;
 
 type bd = borrowed MyClass;
-type bb = (borrowed MyClass)!;
+type bb = ((borrowed MyClass) :borrowed class);
 type bq = borrowed MyClass?;
 
 type ud = unmanaged MyClass;
-type ub = (unmanaged MyClass)!;
+type ub = ((unmanaged MyClass) :borrowed class);
 type uq = unmanaged MyClass?;
 
 // test string representation of types
