@@ -493,27 +493,6 @@ proc compile(pattern: string, out error:syserr, utf8, posix, literal, nocapture,
   return ret;
 }
 
-/***
- *** sungeun: AFAIK, there are no tests programs or examples that use
- *** this.  Depending on how it is generally used, it might be
- *** easier/cheaper to use a c_string here and provide a custom
- *** constructor.
- ***/
-/* mferguson - I agree - I think we should remove this one at some point,
-  at least it makes no sense if the string contained here will
-  copy the entire larger string, which is what I think we are building.
-  */
-/*  Regular expression search routines also can work with
-    a stringPart, which refers to a substring within another
-    string.
- */
-pragma "no doc"
-record stringPart {
-  var offset:byteIndex;
-  var numBytes:int;
-  var from:string;
-}
-
 /*  The reMatch record records a regular expression search match
     or a capture group.
 
@@ -662,26 +641,23 @@ record regexp {
 
     */
   proc search(text: ?t, ref captures ...?k):reMatch
-    where t == string || t == stringPart
+    where t == string
   {
     var ret:reMatch;
     on this.home {
       var pos:byteIndex;
       var endpos:byteIndex;
 
-      if t == stringPart then pos = text.offset;
-      else pos = 0;
+      pos = 0;
       endpos = pos + text.numBytes;
 
       var matches:_ddata(qio_regexp_string_piece_t);
       var nmatches = 1 + captures.size;
       matches = _ddata_allocate(qio_regexp_string_piece_t, nmatches);
       var got:bool;
-      if t == stringPart {
-        got = qio_regexp_match(_regexp, text.from.localize().c_str(), text.from.numBytes, pos:int, endpos:int, QIO_REGEXP_ANCHOR_UNANCHORED, matches, nmatches);
-      } else {
-        got = qio_regexp_match(_regexp, text.localize().c_str(), text.numBytes, pos:int, endpos:int, QIO_REGEXP_ANCHOR_UNANCHORED, matches, nmatches);
-      }
+      got = qio_regexp_match(_regexp, text.localize().c_str(), text.numBytes,
+                             pos:int, endpos:int, QIO_REGEXP_ANCHOR_UNANCHORED,
+                             matches, nmatches);
       // Now try to coerce the read strings into the captures.
       _handle_captures(text, matches, nmatches, captures);
       // Now return where we matched.
@@ -694,26 +670,23 @@ record regexp {
   // documented in the captures version
   pragma "no doc"
   proc search(text: ?t):reMatch
-    where t == string || t == stringPart
+    where t == string
   {
     var ret:reMatch;
     on this.home {
       var pos:byteIndex;
       var endpos:byteIndex;
 
-      if t == stringPart then pos = text.offset;
-      else pos = 0;
+      pos = 0;
       endpos = pos + text.numBytes;
 
       var matches:_ddata(qio_regexp_string_piece_t);
       var nmatches = 1;
       matches = _ddata_allocate(qio_regexp_string_piece_t, nmatches);
       var got:bool;
-      if t == stringPart {
-        got = qio_regexp_match(_regexp, text.from.localize().c_str(), text.from.numBytes, pos:int, endpos:int, QIO_REGEXP_ANCHOR_UNANCHORED, matches, nmatches);
-      } else {
-        got = qio_regexp_match(_regexp, text.localize().c_str(), text.numBytes, pos:int, endpos:int, QIO_REGEXP_ANCHOR_UNANCHORED, matches, nmatches);
-      }
+      got = qio_regexp_match(_regexp, text.localize().c_str(), text.numBytes,
+                             pos:int, endpos:int, QIO_REGEXP_ANCHOR_UNANCHORED,
+                             matches, nmatches);
       // Now return where we matched.
       ret = new reMatch(got, matches[0].offset:byteIndex, matches[0].len);
       _ddata_free(matches, nmatches);
@@ -742,26 +715,23 @@ record regexp {
                where a match occurred
    */
   proc match(text: ?t, ref captures ...?k):reMatch
-    where t == string || t == stringPart
+    where t == string
   {
     var ret:reMatch;
     on this.home {
       var pos:byteIndex;
       var endpos:byteIndex;
 
-      if t == stringPart then pos = text.offset;
-      else pos = 0;
+      pos = 0;
       endpos = pos + text.numBytes;
 
       var matches:_ddata(qio_regexp_string_piece_t);
       var nmatches = 1 + captures.size;
       matches = _ddata_allocate(qio_regexp_string_piece_t, nmatches);
       var got:bool;
-      if t == stringPart {
-        got = qio_regexp_match(_regexp, text.from.localize().c_str(), text.from.numBytes, pos:int, endpos:int, QIO_REGEXP_ANCHOR_START, matches, nmatches);
-      } else {
-        got = qio_regexp_match(_regexp, text.localize().c_str(), text.numBytes, pos:int, endpos:int, QIO_REGEXP_ANCHOR_START, matches, nmatches);
-      }
+      got = qio_regexp_match(_regexp, text.localize().c_str(), text.numBytes,
+                             pos:int, endpos:int, QIO_REGEXP_ANCHOR_START,
+                             matches, nmatches);
       // Now try to coerce the read strings into the captures.
       _handle_captures(text, matches, nmatches, captures);
       // Now return where we matched.
@@ -774,26 +744,23 @@ record regexp {
   // documented in the version taking captures.
   pragma "no doc"
   proc match(text: ?t):reMatch
-    where t == string || t == stringPart
+    where t == string
   {
     var ret:reMatch;
     on this.home {
       var pos:byteIndex;
       var endpos:byteIndex;
 
-      if t == stringPart then pos = text.offset;
-      else pos = 0;
+      pos = 0;
       endpos = pos + text.numBytes;
 
       var matches:_ddata(qio_regexp_string_piece_t);
       var nmatches = 1;
       matches = _ddata_allocate(qio_regexp_string_piece_t, nmatches);
       var got:bool;
-      if t == stringPart {
-        got = qio_regexp_match(_regexp, text.from.localize().c_str(), text.from.numBytes, pos:int, endpos:int, QIO_REGEXP_ANCHOR_START, matches, nmatches);
-      } else {
-        got = qio_regexp_match(_regexp, text.localize().c_str(), text.numBytes, pos:int, endpos:int, QIO_REGEXP_ANCHOR_START, matches, nmatches);
-      }
+      got = qio_regexp_match(_regexp, text.localize().c_str(), text.numBytes,
+                             pos:int, endpos:int, QIO_REGEXP_ANCHOR_START,
+                             matches, nmatches);
       // Now return where we matched.
       ret = new reMatch(got, matches[0].offset:byteIndex, matches[0].len);
       _ddata_free(matches, nmatches);
@@ -814,7 +781,7 @@ record regexp {
      :yields: each split portion, one at a time
    */
   iter split(text: ?t, maxsplit: int = 0)
-    where t == string || t == stringPart
+    where t == string
   {
     var matches:_ddata(qio_regexp_string_piece_t);
     var ncaptures = qio_regexp_get_ncaptures(_regexp);
@@ -826,8 +793,7 @@ record regexp {
       matches = _ddata_allocate(qio_regexp_string_piece_t, nmatches);
     }
 
-    if t == stringPart then pos = text.offset;
-    else pos = 0;
+    pos = 0;
     endpos = pos + text.numBytes;
 
     var splits = 0;
@@ -839,7 +805,6 @@ record regexp {
       var splitend:byteIndex = 0;
       var got:bool;
       on this.home {
-        // This doesn't have a case for stringPart.  Mistake?
         got = qio_regexp_match(_regexp, text.localize().c_str(), text.numBytes, pos:int, endpos:int, QIO_REGEXP_ANCHOR_UNANCHORED, matches, nmatches);
       }
 
@@ -888,7 +853,7 @@ record regexp {
               the match for the whole pattern and the rest are the capture groups.
    */
   iter matches(text: ?t, param captures=0, maxmatches: int = max(int))
-    where t == string || t == stringPart
+    where t == string
   {
     var matches:_ddata(qio_regexp_string_piece_t);
     var nmatches = 1 + captures;
@@ -899,8 +864,7 @@ record regexp {
       matches = _ddata_allocate(qio_regexp_string_piece_t, nmatches);
     }
 
-    if t == stringPart then pos = text.offset;
-    else pos = 0;
+    pos = 0;
     textLength = text.numBytes;
     endpos = pos + textLength;
 
@@ -909,7 +873,6 @@ record regexp {
     while nfound < maxmatches && cur < endpos {
       var got:bool;
       on this.home {
-        // This doesn't have a case for stringPart.  Mistake?
         got = qio_regexp_match(_regexp, text.localize().c_str(), textLength, cur:int, endpos:int, QIO_REGEXP_ANCHOR_UNANCHORED, matches, nmatches);
       }
       if !got then break;
@@ -937,28 +900,25 @@ record regexp {
    */
   // TODO -- move subn after sub for documentation clarity
   proc subn(repl:string, text: ?t, global = true ):(string, int)
-    where t == string || t == stringPart
+    where t == string
   {
     var pos:byteIndex;
     var endpos:byteIndex;
 
-    if t == stringPart then pos = text.offset;
-    else pos = 0;
+    pos = 0;
     endpos = pos + text.numBytes;
 
     var replaced:c_string;
     var nreplaced:int;
     var replaced_len:int(64);
-    if t == stringPart {
-      nreplaced = qio_regexp_replace(_regexp, repl.localize().c_str(), repl.numBytes, text.from.localize().c_str(), text.from.numBytes, pos:int, endpos:int, global, replaced, replaced_len);
-    } else {
-      nreplaced = qio_regexp_replace(_regexp, repl.localize().c_str(), repl.numBytes, text.localize().c_str(), text.numBytes, pos:int, endpos:int, global, replaced, replaced_len);
-    }
-    var ret: string;
+    nreplaced = qio_regexp_replace(_regexp, repl.localize().c_str(),
+                                   repl.numBytes, text.localize().c_str(),
+                                   text.numBytes, pos:int, endpos:int, global,
+                                   replaced, replaced_len);
     try! {
-      ret = createStringWithOwnedBuffer(replaced);
+      const ret = createStringWithOwnedBuffer(replaced);
+      return (ret, nreplaced);
     }
-    return (ret, nreplaced);
   }
 
   /*
@@ -972,7 +932,7 @@ record regexp {
      :returns: the new string
    */
   proc sub(repl:string, text: ?t, global = true )
-    where t == string || t == stringPart
+    where t == string
   {
     var (str, count) = subn(repl, text, global);
     return str;
