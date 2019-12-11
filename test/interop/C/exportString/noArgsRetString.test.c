@@ -2,9 +2,9 @@
 
 int main(int argc, char** argv) {
   chpl_library_init(argc, argv);
-  chpl_bytes_wrapper msg = noArgsRetString();
+  chpl_byte_buffer msg = noArgsRetString();
   printf("%s\n", msg.data);
-  chpl_bytes_wrapper_free(msg);
+  chpl_byte_buffer_free(msg);
   chpl_library_finalize();
   return 0;
 }
