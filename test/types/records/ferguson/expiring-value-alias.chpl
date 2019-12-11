@@ -7,7 +7,7 @@ class C {
 proc getNum(c:borrowed C?)
 {
   if c == nil then return -1;
-  else return c.x;
+  else return c!.x;
 }
 
 record R {
@@ -33,14 +33,14 @@ proc R.init(aliasing:unmanaged C?) {
 
 proc R.init=(other:R) {
   if debug then writeln("  R.init=(R) from ", getNum(other.c));
-  this.c = new unmanaged C(other.c.x);
+  this.c = new unmanaged C(other.c!.x);
   this.isowned = true;
 }
 
 proc =(ref lhs: R, rhs: R) {
   if debug then writeln("  assign lhs = rhs ", getNum(rhs.c));
 
-  lhs.c.x = rhs.c.x;
+  lhs.c!.x = rhs.c!.x;
 }
 
 proc addOne(r:R) {
@@ -63,7 +63,7 @@ proc returnsR(x:int) {
 
 proc transformR(arg:R) {
   if debug then writeln("in transformR");
-  arg.c.x += 1;
+  arg.c!.x += 1;
   return arg;
 }
 
@@ -76,19 +76,19 @@ proc test0()
   {
     // 2019-03 Neither Chapel, C++11, nor D call copy for this pattern
     var r = returnsR(100);
-    writeln("r.x is ", r.c.x);
+    writeln("r.x is ", r.c!.x);
   }
   if debug then writeln("R r = transformR(returnsR(100))");
   {
     // 2019-03 Chapel makes 1 copies, D makes 1, C++11 makes 0
     var r = transformR(returnsR(100));
-    writeln("r.x is ", r.c.x);
+    writeln("r.x is ", r.c!.x);
   }
   if debug then writeln("R r = transformR(transformR(returnsR(100)))");
   {
     // 2019-03 Chapel makes 2 copies, D makes 2, C++11 makes 0
     var r = transformR(transformR(returnsR(100)));
-    writeln("r.x is ", r.c.x);
+    writeln("r.x is ", r.c!.x);
   }
 }
 
@@ -175,18 +175,18 @@ proc getAliasGlobalR() {
 }
 
 proc test2() {
-  globalR.c.x = 100;
+  globalR.c!.x = 100;
   writeln("test2");
   var local_dom = getAliasGlobalR();
   var curr_dom = local_dom;
   var next_dom = returnsR(3);
   curr_dom = next_dom;
-  writeln(globalR.c.x);
+  writeln(globalR.c!.x);
 }
 
 
 proc test3() {
-  globalR.c.x = 100;
+  globalR.c!.x = 100;
   writeln("test3");
   var local_dom:R;
   local_dom.c = globalR.c;
@@ -194,18 +194,18 @@ proc test3() {
   var curr_dom = local_dom;
   var next_dom = returnsR(3);
   curr_dom = next_dom;
-  writeln(globalR.c.x); // Chapel, C++11, D print 100
+  writeln(globalR.c!.x); // Chapel, C++11, D print 100
 }
 proc test4() {
-  globalR.c.x = 100;
+  globalR.c!.x = 100;
   writeln("test4");
   var local_dom:R;
   local_dom.c = globalR.c;
   local_dom.isowned = false;
   var curr_dom = local_dom;
   var next_dom = returnsR(3);
-  curr_dom.c.x = next_dom.c.x;
-  writeln(globalR.c.x); // Chapel, C++11, D print 100
+  curr_dom.c!.x = next_dom.c!.x;
+  writeln(globalR.c!.x); // Chapel, C++11, D print 100
 }
 
 proc test5_part2(curr_dom: R)
@@ -213,13 +213,13 @@ proc test5_part2(curr_dom: R)
   if debug then writeln("var next_dom = make");
   var next_dom = returnsR(3);
   if debug then writeln("curr_dom = next_dom");
-  curr_dom.c.x = next_dom.c.x;
-  writeln(globalR.c.x);
+  curr_dom.c!.x = next_dom.c!.x;
+  writeln(globalR.c!.x);
 }
 
 proc test5()
 {
-  globalR.c.x = 100;
+  globalR.c!.x = 100;
   writeln("test5");
   var local_dom:R;
   local_dom.c = globalR.c;
@@ -238,13 +238,13 @@ proc test5ref_part2(ref curr_dom: R)
   if debug then writeln("var next_dom = make");
   var next_dom = returnsR(3);
   if debug then writeln("curr_dom = next_dom");
-  curr_dom.c.x = next_dom.c.x;
-  writeln(globalR.c.x);
+  curr_dom.c!.x = next_dom.c!.x;
+  writeln(globalR.c!.x);
 }
 
 proc test5ref()
 {
-  globalR.c.x = 100;
+  globalR.c!.x = 100;
   writeln("test5ref");
   var local_dom:R;
   local_dom.c = globalR.c;
@@ -261,13 +261,13 @@ proc test5in_part2(in curr_dom: R)
   if debug then writeln("var next_dom = make");
   var next_dom = returnsR(3);
   if debug then writeln("curr_dom = next_dom");
-  curr_dom.c.x = next_dom.c.x;
-  writeln(globalR.c.x);
+  curr_dom.c!.x = next_dom.c!.x;
+  writeln(globalR.c!.x);
 }
 
 proc test5in()
 {
-  globalR.c.x = 100;
+  globalR.c!.x = 100;
   writeln("test5in");
   var local_dom:R;
   local_dom.c = globalR.c;
@@ -285,13 +285,13 @@ proc test6_part2(curr_dom:R)
   if debug then writeln("var next_dom = make");
   var next_dom = returnsR(3);
   if debug then writeln("curr_dom = next_dom");
-  curr_dom.c.x = next_dom.c.x;
-  writeln(globalR.c.x);
+  curr_dom.c!.x = next_dom.c!.x;
+  writeln(globalR.c!.x);
 }
 
 proc test6()
 {
-  globalR.c.x = 100;
+  globalR.c!.x = 100;
   writeln("test6");
   var local_dom:R;
   local_dom.c = globalR.c;
@@ -309,13 +309,13 @@ proc test6ref_part2(const ref curr_dom:R)
   if debug then writeln("var next_dom = make");
   var next_dom = returnsR(3);
   if debug then writeln("curr_dom = next_dom");
-  curr_dom.c.x = next_dom.c.x;
-  writeln(globalR.c.x);
+  curr_dom.c!.x = next_dom.c!.x;
+  writeln(globalR.c!.x);
 }
 
 proc test6ref()
 {
-  globalR.c.x = 100;
+  globalR.c!.x = 100;
   writeln("test6ref");
   var local_dom:R;
   local_dom.c = globalR.c;
@@ -333,12 +333,12 @@ proc test6in_part2(in curr_dom:R)
   var next_dom = returnsR(3);
   if debug then writeln("curr_dom = next_dom");
   curr_dom = next_dom;
-  writeln(globalR.c.x);
+  writeln(globalR.c!.x);
 }
 
 proc test6in()
 {
-  globalR.c.x = 100;
+  globalR.c!.x = 100;
   writeln("test6in");
   var local_dom:R;
   local_dom.c = globalR.c;

@@ -11,7 +11,7 @@ proc bad1() {
     var own = new owned C();
     setC(b, own.borrow());
   }
-  writeln(b.x);
+  writeln(b!.x);
 }
 bad1();
 
@@ -29,7 +29,7 @@ proc bad2() {
     var bb: borrowed C? = own.borrow();
     swapC(b, bb);
   }
-  writeln(b.x);
+  writeln(b!.x);
 }
 bad2();
 

@@ -74,7 +74,6 @@ class Chameneos {
      returns the color of the chameneos who arrives 2nd,
      otherwise returns the color of the chameneos who arrives 1st */
   proc meet(place : unmanaged MeetingPlace) {
-    var partner : unmanaged Chameneos?;
     var spotsLeft = place.spotsLeft$;
 
     if (spotsLeft == 0) {
@@ -87,7 +86,7 @@ class Chameneos {
       place.spotsLeft$ = spotsLeft - 1;
       meetingCompleted$;
     } else if (spotsLeft % 2 == 1) {
-      partner = place.partner;
+      const partner = place.partner!;
       place.spotsLeft$ = spotsLeft - 1;
 
       if (id == partner.id) {

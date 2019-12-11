@@ -1,11 +1,13 @@
 // Test that forwarding cycle results in an error
 
 class A {
-  forwarding var data: unmanaged B?;
+  var data: unmanaged B?;
+  forwarding data!;
   proc fun(i:int) {}
 }
 class B {
-  forwarding var data: unmanaged A?;
+  var data: unmanaged A?;
+  forwarding data!;
 }
 
 proc main() {

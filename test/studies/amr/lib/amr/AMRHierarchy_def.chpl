@@ -816,7 +816,7 @@ proc LevelVariable.initialFill (
 
         if overlap.numIndices > 0 
         {
-          this(grid,overlap) = q_old(old_grid, overlap);
+          this(grid,overlap) = q_old!(old_grid, overlap);
           unfilled_region.subtract( overlap );
         }
         

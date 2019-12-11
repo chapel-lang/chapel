@@ -36,25 +36,25 @@ class Table {
       n = new unmanaged Node(d, 0, nil);
       size += 1;
       head = n;
-      return n.count;
+      return n!.count;
     }
 
     while n != nil {
-      if n.data == d then return n.count;
-      n = n.next;
+      if n!.data == d then return n!.count;
+      n = n!.next;
     }
     n = new unmanaged Node(d, 0, head);
     size += 1;
     head = n;
-    return n.count;
+    return n!.count;
   }
 
   iter these() {
     for t in table {
       var n = t;
       while n != nil {
-        yield (n.data, n.count);
-        n = n.next;
+        yield (n!.data, n!.count);
+        n = n!.next;
       }
     }
   }
@@ -63,7 +63,7 @@ class Table {
     for n in table do {
       var cur = n;
       while cur != nil {
-        var next = cur.next;
+        var next = cur!.next;
         delete cur;
         cur = next;
       }

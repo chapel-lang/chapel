@@ -1287,19 +1287,6 @@ bool allowImplicitNilabilityRemoval(Type* actualType,
   if (inGenerousResolutionForErrors())
     return true;
 
-  // Currently only applies to this arguments (method receivers)
-  if (formalSym && actualSym && actualSym->defPoint &&
-      formalSym->hasFlag(FLAG_ARG_THIS)) {
-
-    // Currently only applies to implicit/prototype modules
-    ModuleSymbol* mod = actualSym->defPoint->getModule();
-    if (mod->hasFlag(FLAG_IMPLICIT_MODULE) ||
-        mod->hasFlag(FLAG_PROTOTYPE_MODULE)) {
-
-      return true;
-    }
-  }
-
   return false;
 }
 

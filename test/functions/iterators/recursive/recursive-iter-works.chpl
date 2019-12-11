@@ -5,10 +5,10 @@ class Tree {
   
   iter these(): int {
     if left then
-      for e in left.these() do yield e;
+      for e in left!.these() do yield e;
     yield data;
     if right then
-      for e in right.these() do yield e;
+      for e in right!.these() do yield e;
   }
 }
 
