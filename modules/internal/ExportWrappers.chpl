@@ -45,7 +45,6 @@ module ExportWrappers {
     result.size = val.size:uint(64);
     // Assume ownership of the string/bytes record's internal buffer.
     val.isowned = false;
-    result.size = val.size:uint(64);
     return result;
   }
 
