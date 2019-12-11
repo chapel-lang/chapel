@@ -9951,7 +9951,7 @@ For example:
 
    
 
-   .. code-block:: chapel
+   ::
 
       class C {
         proc primaryMethod() {
@@ -9969,6 +9969,26 @@ For example:
       x!.primaryMethod();   // within the method, this: borrowed C
       x!.secondaryMethod(); // within the method, this: borrowed C
       x.secondaryMethodWithTypeExpression(); // within the method, this: owned C?
+
+   .. BLOCK-test-chapelpost
+
+      class C {
+        proc primaryMethod() {
+          assert(this.type == borrowed C);
+        }
+      }
+      proc C.secondaryMethod() {
+        assert(this.type == borrowed C);
+      }
+      proc (owned C?).secondaryMethodWithTypeExpression() {
+        assert(this.type == owned C?);
+      }
+
+      var x:owned C? = new owned C();
+      x!.primaryMethod();   // within the method, this: borrowed C
+      x!.secondaryMethod(); // within the method, this: borrowed C
+      x.secondaryMethodWithTypeExpression(); // within the method, this: owned C?
+
 
 For type methods on a class, ``this`` will accept any management or
 nilability variant of the class type and it will refer to that type in
@@ -17221,7 +17241,7 @@ concrete method to be selected when applicable. For example:
 
    
 
-   .. code-block:: chapel
+   ::
 
       record MyNode {
         var field;  // since no type is specified here, MyNode is a generic type
@@ -17239,7 +17259,25 @@ concrete method to be selected when applicable. For example:
       var myIntNode = new MyNode(1);
       myIntNode.foo(); // outputs "in specific MyNode(int).foo()"
 
-   
+   .. BLOCK-test-chapelnoprint
+
+      record MyNode {
+        var field;  // since no type is specified here, MyNode is a generic type
+      }
+
+      proc MyNode.foo() {
+        writeln("in generic MyNode.foo()");
+      }
+      proc (MyNode(int)).foo() {
+        writeln("in specific MyNode(int).foo()");
+      }
+
+      var myRealNode = new MyNode(1.0);
+      myRealNode.foo(); // outputs "in generic MyNode.foo()"
+      var myIntNode = new MyNode(1);
+      myIntNode.foo(); // outputs "in specific MyNode(int).foo()"
+
+
 
    .. BLOCK-test-chapeloutput
 
@@ -17680,7 +17718,7 @@ The following methods are defined for variables of sync and single type.
 
 
 
-.. code-block:: chapel
+::
 
    proc (sync t).readFE(): t
 
@@ -17691,7 +17729,7 @@ when this method completes. This method implements the normal read of a
 
 
 
-.. code-block:: chapel
+::
 
    proc (sync t).readFF(): t
    proc (single t).readFF(): t
@@ -17703,7 +17741,7 @@ implements the normal read of a ``single`` variable.
 
 
 
-.. code-block:: chapel
+::
 
    proc (sync t).readXX(): t
    proc (single t).readXX(): t
@@ -17714,7 +17752,7 @@ when this method completes.
 
 
 
-.. code-block:: chapel
+::
 
    proc (sync t).writeEF(v: t)
    proc (single t).writeEF(v: t)
@@ -17726,7 +17764,7 @@ method implements the normal write of a ``sync`` or ``single`` variable.
 
 
 
-.. code-block:: chapel
+::
 
    proc (sync t).writeFF(v: t)
 
@@ -17736,7 +17774,7 @@ full when this method completes.
 
 
 
-.. code-block:: chapel
+::
 
    proc (sync t).writeXF(v: t)
 
@@ -17746,7 +17784,7 @@ method completes.
 
 
 
-.. code-block:: chapel
+::
 
    proc (sync t).reset()
 
@@ -17756,7 +17794,7 @@ is set to empty when this method completes.
 
 
 
-.. code-block:: chapel
+::
 
    proc (sync t).isFull: bool
    proc (single t).isFull: bool
@@ -17891,7 +17929,7 @@ memoryOrder.seqCst.
 
 
 
-.. code-block:: chapel
+::
 
    proc (atomic T).read(order:memoryOrder = memoryOrder.seqCst): T
 
@@ -17899,7 +17937,7 @@ Reads and returns the stored value. Defined for all atomic types.
 
 
 
-.. code-block:: chapel
+::
 
    proc (atomic T).write(v: T, order:memoryOrder = memoryOrder.seqCst)
 
@@ -17907,7 +17945,7 @@ Stores ``v`` as the new value. Defined for all atomic types.
 
 
 
-.. code-block:: chapel
+::
 
    proc (atomic T).exchange(v: T, order:memoryOrder = memoryOrder.seqCst): T
 
@@ -17916,7 +17954,7 @@ for all atomic types.
 
 
 
-.. code-block:: chapel
+::
 
    proc (atomic T).compareAndSwap(e: t, v: T, order:memoryOrder = memoryOrder.seqCst): bool
 
@@ -17926,7 +17964,7 @@ otherwise. Defined for all atomic types.
 
 
 
-.. code-block:: chapel
+::
 
    proc (atomic T).add(v: T, order:memoryOrder = memoryOrder.seqCst)
    proc (atomic T).sub(v: T, order:memoryOrder = memoryOrder.seqCst)
@@ -17947,7 +17985,7 @@ for the ``bool`` atomic type.
 
 
 
-.. code-block:: chapel
+::
 
    proc (atomic T).fetchAdd(v: T, order:memoryOrder = memoryOrder.seqCst): T
    proc (atomic T).fetchSub(v: T, order:memoryOrder = memoryOrder.seqCst): T
@@ -17963,7 +18001,7 @@ methods are defined for the ``bool`` atomic type.
 
 
 
-.. code-block:: chapel
+::
 
    proc (atomic bool).testAndSet(order:memoryOrder = memoryOrder.seqCst): bool
 
@@ -17972,7 +18010,7 @@ to ``exchange(true)``. Only defined for the ``bool`` atomic type.
 
 
 
-.. code-block:: chapel
+::
 
    proc (atomic bool).clear(order:memoryOrder = memoryOrder.seqCst)
 
@@ -17981,7 +18019,7 @@ defined for the ``bool`` atomic type.
 
 
 
-.. code-block:: chapel
+::
 
    proc (atomic T).waitFor(v: T)
 
