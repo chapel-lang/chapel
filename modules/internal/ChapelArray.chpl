@@ -3164,12 +3164,12 @@ module ChapelArray {
         if domToRemove != nil {
           // remove that domain
           (domToFree, distToRemove) = domToRemove!.remove();
-          domIsPrivatized = domToRemove!.pid != nullPid;
+          domIsPrivatized = _privatization && (domToRemove!.pid != nullPid);
         }
         var distIsPrivatized = false;
         if distToRemove != nil {
           distToFree = distToRemove!.remove();
-          distIsPrivatized = distToRemove!.pid != nullPid;
+          distIsPrivatized = _privatization && (distToRemove!.pid != nullPid);
         }
         if arrToFree != nil then
           _delete_arr(_instance, _isPrivatized(_instance));

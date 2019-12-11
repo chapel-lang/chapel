@@ -1701,7 +1701,7 @@ proc openplugin(pluginFile: QioPluginFile, mode:iomode,
     var path:string = "unknown";
     if pluginFile {
       var str:c_string = nil;
-      var len:ssize_t;
+      var len:int;
       var path_err = pluginFile.getpath(str, len);
       if path_err {
         path = "unknown";
@@ -6105,17 +6105,20 @@ proc channel._read_complex(width:uint(32), out t:complex, i:int)
 
 /*
 
-   Write arguments according to a format string. See
+   Write arguments according to a format. See
    :ref:`about-io-formatted-io`.
 
-   :arg fmt: the format string
+   :arg fmt: the format as string or bytes
+
    :arg args: 0 or more arguments to write
    :returns: true
 
    :throws IllegalArgumentError: if an unsupported argument type is encountered.
    :throws SystemError: if the arguments could not be written.
  */
-proc channel.writef(fmtStr: string, const args ...?k): bool throws {
+proc channel.writef(fmtStr: ?t, const args ...?k): bool throws 
+    where isStringType(t) || isBytesType(t) {
+
   if !writing then compilerError("writef on read-only channel");
   const origLocale = this.getLocaleOfIoRequest();
   var err: syserr = ENOERR;
@@ -6268,7 +6271,9 @@ proc channel.writef(fmtStr: string, const args ...?k): bool throws {
 }
 
 // documented in varargs version
-proc channel.writef(fmtStr:string): bool throws {
+proc channel.writef(fmtStr:?t): bool throws 
+    where isStringType(t) || isBytesType(t) {
+
   if !writing then compilerError("writef on read-only channel");
   var err:syserr = ENOERR;
   on this.home {
@@ -6314,7 +6319,7 @@ proc channel.writef(fmtStr:string): bool throws {
 
 /*
 
-   Read arguments according to a format string. See
+   Read arguments according to a format. See
    :ref:`about-io-formatted-io`.
 
    .. note::
@@ -6324,14 +6329,16 @@ proc channel.writef(fmtStr:string): bool throws {
       `%*S`, then those arguments cannot be constants. Instead, store the value
       into a variable and pass that.
 
-   :arg fmt: the format string
+   :arg fmt: the format as string or bytes
    :arg args: the arguments to read
    :returns: true if all arguments were read according to the format string,
              false on EOF or if the format did not match the input.
 
    :throws SystemError: Thrown if the arguments could not be read.
  */
-proc channel.readf(fmtStr:string, ref args ...?k): bool throws {
+proc channel.readf(fmtStr:?t, ref args ...?k): bool throws 
+    where isStringType(t) || isBytesType(t) {
+
   if writing then compilerError("readf on write-only channel");
   const origLocale = this.getLocaleOfIoRequest();
   var err:syserr = ENOERR;
@@ -6583,7 +6590,9 @@ proc channel.readf(fmtStr:string, ref args ...?k): bool throws {
 
 // documented in varargs version
 pragma "no doc"
-proc channel.readf(fmtStr:string) throws {
+proc channel.readf(fmtStr:?t) throws 
+    where isStringType(t) || isBytesType(t) {
+
   if writing then compilerError("readf on write-only channel");
   var err:syserr = ENOERR;
   on this.home {
@@ -6702,7 +6711,31 @@ proc string.format(args ...?k): string throws {
   return "";
 }
 
-private inline proc chpl_do_format(fmt:string, args ...?k): string throws {
+/*
+
+  Return a new bytes consisting of values formatted according to a
+  format bytes.  See :ref:`about-io-formatted-io`.
+
+  :arg this: the format bytes
+  :arg args: the arguments to format
+  :returns: the resulting bytes
+
+  :throws SystemError: Thrown if the bytes could not be formatted.
+ */
+proc bytes.format(args ...?k): bytes throws {
+  try {
+    return chpl_do_format(this, (...args));
+  } catch e: SystemError {
+    try ioerror(e.err, "in bytes.format");
+  } catch {
+    try ioerror(EINVAL:syserr, "in bytes.format");
+  }
+  return b"";
+}
+
+private inline proc chpl_do_format(fmt:?t, args ...?k): t throws
+    where isStringType(t) || isBytesType(t) {
+
   // Open a memory buffer to store the result
   var f = try openmem();
   defer {
@@ -6743,7 +6776,10 @@ private inline proc chpl_do_format(fmt:string, args ...?k): string throws {
   // Add the terminating NULL byte to make C string conversion easy.
   buf[offset] = 0;
 
-  return createStringWithOwnedBuffer(buf, offset, offset+1);
+  if isStringType(t) then
+    return createStringWithOwnedBuffer(buf, offset, offset+1);
+  else
+    return createBytesWithOwnedBuffer(buf, offset, offset+1);
 }
 
 

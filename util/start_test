@@ -777,6 +777,10 @@ def set_up_general():
     logger.write("[Starting Chapel regression tests - {0}]"
             .format(time.strftime("%y%m%d.%H%M%S")))
 
+    branch = run_git_command(["rev-parse", "--abbrev-ref", "HEAD"])
+    sha = run_git_command(["rev-parse", "--short", "HEAD"])
+    logger.write("[git branch: '{0}' ({1})]".format(branch, sha))
+
     # check to see if we are in subdir of CHPL_HOME
     if args.chpl_home_warn:
         norm_cwd  = os.path.normpath(os.path.realpath(os.getcwd()))
@@ -976,7 +980,7 @@ def set_up_performance_testing_B():
         sha_out_name = os.path.join(chpl_test_tmp_dir, "sha.exec.out.tmp")
         with open(sha_out_name, "w") as sha_out:
             try:
-                output = run_command(["git", "rev-parse", "HEAD"])
+                output = run_git_command(["rev-parse", "HEAD"])
                 sha_out.write("sha " + output)
             except:
                 pass
@@ -1506,13 +1510,12 @@ class CommandError(Exception):
         self.output = output
     def __str__(self):
         return "Command '{0}' returned non-zero exit status {1}".format(self.cmd, self.retcode)
-
-def run_command(cmd):
+def run_command(cmd, stderr=None):
     """
     check_output like wrapper, but we're still committed to 2.6 so can't rely
     on check_output
     """
-    process = subprocess.Popen(cmd, stdout=subprocess.PIPE)
+    process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=stderr)
     output, _ = process.communicate()
     retcode = process.poll()
     if retcode:
@@ -1521,6 +1524,13 @@ def run_command(cmd):
     if sys.version_info[0] >= 3 and not isinstance(output, str):
         output = str(output, 'utf-8')
 
+    return output
+
+def run_git_command(command):
+    try:
+        output = run_command(["git"]+command, stderr=subprocess.STDOUT).strip()
+    except:
+        output = None
     return output
 
 def printout(so):

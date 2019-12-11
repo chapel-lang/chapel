@@ -39,5 +39,7 @@ module w {
 
   var ARR: INST.tField;
   assert(ARR.dom == Locales.dom);
+  if isUnmanagedClass(INST) then
+    delete INST;
   writeln("done");
 }

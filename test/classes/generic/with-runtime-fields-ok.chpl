@@ -24,16 +24,16 @@ module w {
     }
   }
 
-  var db = new           CC("default",    int, RT);        test(db);
-  var dq = new           CC("default?",   int, RT)?;       test(dq);
-  var ob = new owned     CC("owned",      int, RT);        test(ob);
-  var oq = new owned     CC("owned?",     int, RT)?;       test(oq);
-  var sb = new shared    CC("shared",     int, RT);        test(sb);
-  var sq = new shared    CC("shared?",    int, RT)?;       test(sq);
-  var bb = new borrowed  CC("borrowed",   int, RT);        test(bb);
-  var bq = new borrowed  CC("borrowed?",  int, RT)?;       test(bq);
-  var ub = new unmanaged CC("unmanaged",  int, RT);        test(ub);
-  var uq = new unmanaged CC("unmanaged?", int, RT)?;       test(uq);
+  var db = new           CC("default",    int, RT);   test(db);
+  var dq = new           CC("default?",   int, RT)?;  test(dq);
+  var ob = new owned     CC("owned",      int, RT);   test(ob);
+  var oq = new owned     CC("owned?",     int, RT)?;  test(oq);
+  var sb = new shared    CC("shared",     int, RT);   test(sb);
+  var sq = new shared    CC("shared?",    int, RT)?;  test(sq);
+  var bb = new borrowed  CC("borrowed",   int, RT);   test(bb);
+  var bq = new borrowed  CC("borrowed?",  int, RT)?;  test(bq);
+  var ub = new unmanaged CC("unmanaged",  int, RT);   test(ub);  delete ub;
+  var uq = new unmanaged CC("unmanaged?", int, RT)?;  test(uq);  delete uq;
 
   compilerWarning("=== done", 0);
   writeln("done");

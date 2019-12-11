@@ -165,7 +165,7 @@ module LAPACK {
                    else 'lapacke.h'
                  else lapackHeader;
 
-  use SysCTypes;
+  public use SysCTypes;
 
   /* Return `true` if type is supported by LAPACK */
   proc isLAPACKType(type t) param: bool {
