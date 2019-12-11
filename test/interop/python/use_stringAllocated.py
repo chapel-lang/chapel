@@ -8,8 +8,8 @@ if (newsize is not -1):
     x = numpy.delete(x, range(newsize, x.size))
 else:
     stringAllocated.writeStr("Buffer wasn't wide enough")
-resString = "" # note: str type, not bytes
+resString = ""
 for character in x:
     resString += str(chr(character))
-stringAllocated.writeStr(resString); # note: required to send bytes
+stringAllocated.writeStr(resString);
 stringAllocated.chpl_cleanup()
