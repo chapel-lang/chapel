@@ -5415,8 +5415,14 @@ any relation to the file in terms of their names.
 
    .. BLOCK-test-chapelpost
 
-      MX.printX();
-      MY.printY();
+      module Test {
+        proc main() {
+          use MX;
+          use MY;
+          MX.printX();
+          MY.printY();
+        }
+      }
 
    
 
@@ -5498,14 +5504,16 @@ naming the outer module in the use statement.
         }
       }
       module testmain { // used to avoid warnings
-      }
-
+        proc main() {
    
 
    .. code-block:: chapel
 
       use libsci.blas;
 
+    .. BLOCK-test-chapelpost
+
+      } }
    
 
    .. BLOCK-test-chapeloutput
@@ -5555,6 +5563,7 @@ nested modules.
 
    .. BLOCK-test-chapeloutput
 
+      nested.chpl:11: warning: This file-scope code is outside of any explicit module declarations (e.g., module MY), so an implicit module named 'nested' is being introduced to contain the file's contents.
       0
       0
 
