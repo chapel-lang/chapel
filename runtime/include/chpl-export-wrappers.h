@@ -31,4 +31,7 @@ typedef struct chpl_byte_buffer {
 
 void chpl_byte_buffer_free(chpl_byte_buffer cb);
 
+chpl_byte_buffer chpl_byte_buffer_make(const char* data);
+chpl_byte_buffer chpl_byte_buffer_make_len(const char* data, uint64_t size);
+
 #endif

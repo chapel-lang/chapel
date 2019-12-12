@@ -523,7 +523,7 @@ std::string MLIContext::genMarshalRoutine(Type* t, bool out) {
     // A different strategy will be needed if we ever intend to support
     // c_ptr(int8)s that weren't originally Chapel strings.
     gen += this->genMarshalBodyString(t, out);
-  } else if (t->getValType() == exportTypeChplBytesWrapper) {
+  } else if (t->getValType() == exportTypeChplByteBuffer) {
     gen += this->genMarshalBodyChplBytesWrapper(t, out); 
   } else {
     USR_FATAL(t, "Multi-locale libraries do not support type: %s",
@@ -724,7 +724,7 @@ bool MLIContext::isSupportedType(Type* t) {
   return (
       isPrimitiveScalar(t) ||
       t == dtStringC ||
-      t == exportTypeChplBytesWrapper
+      t == exportTypeChplByteBuffer
   );
 }
 
@@ -911,7 +911,7 @@ std::string MLIContext::genMemCleanup(Type* t, const char* var) {
     gen += "((void*) ";
     gen += var;
     gen += "));\n";
-  } else if (t == exportTypeChplBytesWrapper) {
+  } else if (t == exportTypeChplByteBuffer) {
     gen += "chpl_byte_buffer_free(";
     gen += var;
     gen += ");\n";
@@ -1049,7 +1049,7 @@ bool MLIContext::isTypeRequiringAlloc(Type* t) {
       // TODO: Do we just assume that all CPTRs require allocation?
       t->symbol->hasFlag(FLAG_C_PTR_CLASS) ||
       t == dtStringC ||
-      t->getValType() == exportTypeChplBytesWrapper;
+      t->getValType() == exportTypeChplByteBuffer;
 }
 
 std::string MLIContext::genNewDecl(const char* t, const char* v) {

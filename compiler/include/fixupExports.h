@@ -30,7 +30,7 @@ class Type;
 // These are only initialized _after_ "fixupExportedFunctions" has been called
 // during resolution.
 //
-extern Type* exportTypeChplBytesWrapper;
+extern Type* exportTypeChplByteBuffer;
 
 FnSymbol* getUnwrappedFunction(FnSymbol* wrapper);
 ArgSymbol* getUnwrappedArg(ArgSymbol* arg);

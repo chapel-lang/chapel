@@ -39,7 +39,7 @@ static std::map<FnSymbol*, FnSymbol*> wrapperMap;
 static std::map<ArgSymbol*, ArgSymbol*> wrapperArgMap;
 static std::map<FnSymbol*, Type*> wrapperRetTypeMap;
 
-Type* exportTypeChplBytesWrapper = NULL;
+Type* exportTypeChplByteBuffer = NULL;
 
 std::set<FnSymbol*> exportedStrRets;
 
@@ -52,6 +52,7 @@ static bool validateFormalIntent(FnSymbol* fn, ArgSymbol* as);
 static bool validateReturnIntent(FnSymbol* fn);
 static FnSymbol* createWrapper(FnSymbol* fn);
 static Type* getTypeForFixup(Type* t, bool ret=false);
+static bool isTypeThatMightRequireCopy(Type* t);
 static VarSymbol* fixupFormal(FnSymbol* wrapper, int idx);
 static void changeRetType(FnSymbol* wrapper);
 static void insertUnwrappedCall(FnSymbol* wrapper, FnSymbol* fn,
@@ -93,8 +94,8 @@ static void resolveExportWrapperTypeAliases(void) {
 
   const char* mod = "ExportWrappers";
 
-  exportTypeChplBytesWrapper =
-    resolveTypeAlias(mod, "chpl__exportTypeChplBytesWrapper");
+  exportTypeChplByteBuffer =
+    resolveTypeAlias(mod, "chpl__exportTypeChplByteBuffer");
 
   return;
 }
@@ -230,8 +231,7 @@ static void attemptFixups(FnSymbol* fn) {
 }
 
 static Type* maybeUnwrapRef(Type* t) {
-  if (t->isRef()) { return t->getValType(); }
-  return t;
+  return t->getValType();
 }
 
 static bool needsFixup(Type* t) {
@@ -322,6 +322,8 @@ static FnSymbol* createWrapper(FnSymbol* fn) {
   FnSymbol* result = fn->copy();
   fn->defPoint->insertAfter(new DefExpr(result));
   result->body->replace(new BlockStmt());
+  result->addFlag(FLAG_COMPILER_GENERATED);
+  result->addFlag(FLAG_EXPORT);
   fn->removeFlag(FLAG_EXPORT);
   return result;
 }
@@ -331,7 +333,7 @@ static FnSymbol* createWrapper(FnSymbol* fn) {
 //
 static Type* getTypeForFixup(Type* t, bool ret) {
   if (t == dtBytes || t == dtString) {
-    return exportTypeChplBytesWrapper;
+    return exportTypeChplByteBuffer;
   } else {
     INT_FATAL("Type %s is unsupported in %s", t->name(), __FUNCTION__);
   }
@@ -340,12 +342,43 @@ static Type* getTypeForFixup(Type* t, bool ret) {
   return NULL;
 }
 
+static bool isTypeThatMightRequireCopy(Type* t) {
+  Type* actual = t->getValType();
+  return (isRecord(actual) || actual == dtStringC);
+}
+
 static VarSymbol* fixupFormal(FnSymbol* wrapper, int idx) {
   ArgSymbol* as = wrapper->getFormal(idx);
-  Type* origt = as->type;
+  Type* origt = maybeUnwrapRef(as->type);
   Type* wrapt = getTypeForFixup(origt);
+  bool doCopyConversionCall = false;
 
-  // Adjust the formal type for the wrapper routine.
+  // Normalize intents for types that may need it.
+  if (isTypeThatMightRequireCopy(origt)) {
+    const IntentTag oldIntent = as->intent;
+    IntentTag newIntent = oldIntent;
+
+    // TODO: How would we support the INOUT or OUT intents here?
+    if (oldIntent == INTENT_IN || oldIntent == INTENT_CONST_IN) {
+      doCopyConversionCall = true;
+    }
+
+    Type* wrapt = getTypeForFixup(origt);
+
+    //
+    // Interop wrapper records need to have the IN intent to prevent them
+    // from being exposed to the end user by ref (the records may
+    // contain additional fields that will assist the end user in passing
+    // the type into Chapel "by reference".
+    //
+    if (wrapt->symbol->hasFlag(FLAG_EXPORT_WRAPPER)) {
+      newIntent = INTENT_IN;
+    }
+
+    as->intent=newIntent;
+  } 
+
+  // Adjust the wrapper type.
   as->type = wrapt;
 
   // Create a temporary to store the converted unwrapped formal.
@@ -353,7 +386,10 @@ static VarSymbol* fixupFormal(FnSymbol* wrapper, int idx) {
   wrapper->body->insertAtTail(new DefExpr(result));
 
   // Make a call to the appropriate conversion call.
-  CallExpr* call = new CallExpr("chpl__exportArg", as, origt->symbol);
+  CallExpr* call = new CallExpr("chpl__exportArg",
+                                new_BoolSymbol(doCopyConversionCall),
+                                as,
+                                origt->symbol);
 
   // Unwrap the wrapped formal using the conversion call, store in temp.
   CallExpr* move = new CallExpr(PRIM_MOVE, result, call);

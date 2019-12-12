@@ -1081,7 +1081,7 @@ std::string ArgSymbol::getPythonType(PythonFileType pxd) {
              t->getValType() == dtOpaqueArray &&
              (pxd == PYTHON_PYX || pxd == C_PYX)) {
     return "ChplOpaqueArray ";
-  } else if (pxd == C_PYX && t->getValType() == exportTypeChplBytesWrapper) {
+  } else if (pxd == C_PYX && t->getValType() == exportTypeChplByteBuffer) {
     //
     // For now, bytes uses an arg check in the body of the routine to ensure
     // that the argument is bytes.
@@ -1089,8 +1089,6 @@ std::string ArgSymbol::getPythonType(PythonFileType pxd) {
     // TODO: Better place to put this?
     //
     return "";
-  } else if (pxd == C_PYX && t == dtStringC) {
-    return ""; 
   } else {
     return getPythonTypeName(t, pxd) + " ";
   }
@@ -1112,22 +1110,10 @@ std::string ArgSymbol::getPythonArgTranslation() {
   std::string strname = cname;
 
   if (t == dtStringC) {
-    std::string res;
-
-    // First, check to see if the input type is the Python "str" type.
-    res += "\tif type(" + strname + ") != str:\n";
-    res += "\t\traise TypeError(\"Expected \'str\' in conversion to ";
-    res += " \'const char*\', ";
-    res += "found \" + str(type(" + strname + ")))\n";
-
-    // Encode string as bytes. We still hold a ref.
-    res += "\t" + strname + " = " + strname + ".encode(\'utf-8\')\n";
-
-    // Cython will auto convert the bytes to "char*";
-    res += "\tcdef char* chpl_" + strname + " = " + strname + "\n";
-
+    std::string res = "\tcdef const char* chpl_" + strname + " = " + strname;
+    res += "\n";
     return res;
-  } else if (t->getValType() == exportTypeChplBytesWrapper) {
+  } else if (t->getValType() == exportTypeChplByteBuffer) {
     Type* origt = getUnwrappedArg(this)->type->getValType();
     INT_ASSERT(origt == dtBytes || origt == dtString);
   
@@ -2254,7 +2240,7 @@ GenRet FnSymbol::codegenPYXType() {
   // Return statement, if applicable
   std::string returnStmt = "";
   if (retType != dtVoid) {
-    if (retType == exportTypeChplBytesWrapper) {
+    if (retType == exportTypeChplByteBuffer) {
 
       // The raw result of the routine call, a "chpl_byte_buffer".
       funcCall += "cdef chpl_byte_buffer rv = ";
@@ -2282,27 +2268,6 @@ GenRet FnSymbol::codegenPYXType() {
       if (origt == dtString) {
         returnStmt += "\tret = ret.decode(\'utf-8\')\n";  
       }
-
-    } else if (retType == dtStringC) {
-
-      //
-      // NOTE: The result of the routine call is a `c_string`, AKA const
-      // char*. We know that the only thing we could be returning here
-      // is a `c_string` (since Chapel strings are returned as
-      // "chpl_byte_buffer"), which means that we can't call `chpl_free` on
-      // it because we know nothing about its lifetime.
-      //
-      funcCall += "cdef const char* rdata = <char*> ";
-
-      // Get the length of the "char*" using strlen.
-      returnStmt += "\tcdef Py_ssize_t rsize = strlen(rdata)\n";
-
-      // Create a new Python bytes that is a copy of the Chapel string.
-      returnStmt += "\tret = PyBytes_FromStringAndSize(rdata, rsize)\n";
-
-      // Decode the bytes into a Python string.
-      returnStmt += "\tret = ret.decode(\'utf-8\')\n";
-
     } else if (retType == dtExternalArray &&
              exportedArrayElementType[this] != NULL) {
       funcCall += "cdef chpl_external_array ret_arr = ";

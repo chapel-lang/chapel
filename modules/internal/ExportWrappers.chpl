@@ -17,12 +17,14 @@
  * limitations under the License.
  */
 
+pragma "no doc"
 module ExportWrappers {
   use ChapelStandard;
   use CPtr;
   private use SysCTypes;
 
   // Actual definition is in "runtime/include/chpl-export-wrappers.h".
+  pragma "export wrapper"
   extern record chpl_byte_buffer {
     var isOwned: int(8);
     var data: c_ptr(c_char);
@@ -35,14 +37,15 @@ module ExportWrappers {
   // TODO: Using type aliases to resolve a type shouldn't be necessary. The
   // compiler should be able to figure this out on its own.
   //
-  type chpl__exportTypeChplBytesWrapper = chpl_byte_buffer;
+  type chpl__exportTypeChplByteBuffer = chpl_byte_buffer;
 
   // Generic, but both string and bytes have the same implementation.
   proc chpl__exportRetStringOrBytes(ref val): chpl_byte_buffer {
     var result: chpl_byte_buffer;
     result.isOwned = val.isowned:int(8);
     result.data = val.buff:c_ptr(c_char);
-    result.size = val.size:uint(64);
+    // Use the "_size" field to get the _buffer_ length in bytes!
+    result.size = val._size:uint(64);
     // Assume ownership of the string/bytes record's internal buffer.
     val.isowned = false;
     return result;
@@ -56,18 +59,18 @@ module ExportWrappers {
     return chpl__exportRetStringOrBytes(val);
   }
 
-  // TODO: Identify where it is appropriate to make shallow copies.
-  proc chpl__exportArg(val: chpl_byte_buffer, type rt: string): rt {
+  proc chpl__exportArg(cp: bool, val: chpl_byte_buffer, type rt: string): rt {
     var data = val.data:c_string;
     var size = val.size.safeCast(int);
-    return createStringWithNewBuffer(data, size);
+    if cp then return createStringWithNewBuffer(data, size);
+    return createStringWithBorrowedBuffer(data, size);
   }
 
-  // TODO: Identify where it is appropriate to make shallow copies.
-  proc chpl__exportArg(val: chpl_byte_buffer, type rt: bytes): rt {
+  proc chpl__exportArg(cp: bool, val: chpl_byte_buffer, type rt: bytes): rt {
     var data = val.data:c_string;
     var size = val.size.safeCast(int);
-    return createBytesWithNewBuffer(data, size);
+    if cp then return createBytesWithNewBuffer(data, size);
+    return createBytesWithBorrowedBuffer(data, size);
   }
 
 } // End module "ExportWrappers".
