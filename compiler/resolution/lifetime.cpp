@@ -282,7 +282,6 @@ namespace {
       bool changed;
       void ensureSameAliasesGroup(Symbol* a, Symbol* b);
       void expandAliasesForPossiblyReturned(CallExpr* call, Symbol* lhsActual);
-      virtual bool enterDefExpr(DefExpr* def);
       virtual bool enterCallExpr(CallExpr* call);
   };
 
@@ -299,7 +298,6 @@ namespace {
       void markPotentiallyCaptured(Symbol* sym, Expr* ctx);
       void markAliasesPotentiallyCaptured(Symbol* sym, Expr* ctx);
 
-      virtual bool enterFnSym(FnSymbol* fn);
       virtual bool enterDefExpr(DefExpr* def);
       virtual bool enterCallExpr(CallExpr* call);
   };
@@ -3053,24 +3051,6 @@ void GatherAliasesVisitor::expandAliasesForPossiblyReturned(
     return; // nothing to do -- infinite lifetime
   }
 
-  /*bool returnsRef = call->isRef() ||
-                    calledFn->retTag == RET_REF ||
-                    calledFn->retTag == RET_CONST_REF;
-  bool returnsBorrow = false;*/
-
-  /*
-  Type* returnType = calledFn->retType;
-  if (calledFn->isMethod() &&
-      (calledFn->name == astrInit || calledFn->name == astrInitEquals)) {
-    returnType = calledFn->getFormal(1)->getValType();
-  } else if(calledFn->hasFlag(FLAG_FN_RETARG)) {
-    ArgSymbol* retArg = toArgSymbol(toDefExpr(calledFn->formals.tail)->sym);
-    INT_ASSERT(retArg && retArg->hasFlag(FLAG_RETARG));
-    returnType = retArg->getValType();
-  }*/
-
-  //returnsBorrow = isSubjectToBorrowLifetimeAnalysis(returnType);
-
   ArgSymbol* theOnlyOneThatMatters = NULL;
   if (calledFn->lifetimeConstraints) {
     if (Symbol* sym = returnLifetimeFromClause(calledFn)) {
@@ -3108,40 +3088,6 @@ void GatherAliasesVisitor::expandAliasesForPossiblyReturned(
         ensureSameAliasesGroup(actualSym, lhsActual);
     }
   }
-}
-
-
-// This function should not strictly be necessary for the analysis
-bool GatherAliasesVisitor::enterDefExpr(DefExpr* def) {
-  /*if (def->id == debugExpiringForId)
-    gdbShouldBreakHere();
-
-  if (VarSymbol* var = toVarSymbol(def->sym)) {
-    // If the lifetime of se is referring to another symbol, then
-    // they are in the same aliases group. Also if the lifetime
-    // checker considers them the same symbol.
-
-    // check for canonical symbol
-    Symbol* c = lifetimes->getCanonicalSymbol(var);
-    if (c != var)
-      ensureSameAliasesGroup(*aliases, var, c, changed);
-
-    // get lifetimes for canonical symbol
-    LifetimePair intrinsic = lifetimes->intrinsicLifetimeForSymbol(c);
-    LifetimePair inferred = lifetimes->inferredLifetimeForSymbol(c);
-
-    if (!intrinsic.referent.unknown && !intrinsic.referent.infinite)
-      ensureSameAliasesGroup(*aliases, c, intrinsic.referent.fromSymbolScope, changed);
-    if (!intrinsic.borrowed.unknown && !intrinsic.borrowed.infinite)
-      ensureSameAliasesGroup(*aliases, c, intrinsic.borrowed.fromSymbolScope, changed);
-    if (!inferred.referent.unknown && !inferred.referent.infinite)
-      ensureSameAliasesGroup(*aliases, c, inferred.referent.fromSymbolScope, changed);
-    if (!inferred.borrowed.unknown && !inferred.borrowed.infinite)
-      ensureSameAliasesGroup(*aliases, c, inferred.borrowed.fromSymbolScope, changed);
-  }
-
-  */
-  return false;
 }
 
 bool GatherAliasesVisitor::enterCallExpr(CallExpr* call) {
@@ -3185,16 +3131,7 @@ bool GatherAliasesVisitor::enterCallExpr(CallExpr* call) {
   if (FnSymbol* calledFn = call->resolvedOrVirtualFunction()) {
     if (calledFn->hasFlag(FLAG_FN_RETARG)) {
       expandAliasesForPossiblyReturned(call, NULL);
-    }/* else if (calledFn->name == astrSassign) {
-      if (isClassLikeOrNil(call->get(1)->getValType()) &&
-          isClassLikeOrNil(call->get(2)->getValType()))
-        // class = other class
-        return true;
-      else if (isRecord(call->get(1)->getValType()) &&
-               calledFn->hasFlag(FLAG_COMPILER_GENERATED))
-        // compiler-generated record =
-        return true;
-    }*/
+    }
   }
   return false;
 }
@@ -3255,10 +3192,6 @@ void MarkCapturesVisitor::markAliasesPotentiallyCaptured(
         markPotentiallyCaptured(otherSym, ctx);
     }
   }
-}
-
-bool MarkCapturesVisitor::enterFnSym(FnSymbol* fn) {
-  return true;
 }
 
 bool MarkCapturesVisitor::enterDefExpr(DefExpr* def) {
@@ -3424,8 +3357,7 @@ static void printExpiringForVar(Symbol* sym, FnSymbol* fn, bool& printedAny,
 bool ReportExpiringVisitor::enterDefExpr(DefExpr* def) {
   Symbol* var = def->sym;
 
-  if (shouldPrintExpiringForVar(var)
-      /*&& (developer || !var->hasFlag(FLAG_TEMP))*/) {
+  if (shouldPrintExpiringForVar(var)) {
     printExpiringForVar(var, fn, printedAny, printed);
 
     if (aliases->count(var)) {
