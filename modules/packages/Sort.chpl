@@ -1716,7 +1716,7 @@ module ShallowCopy {
     }
 
     if A._instance.isDefaultRectangular() {
-      type st = __primitive("static field type", A, "eltType");
+      type st = __primitive("static field type", A._value, "eltType");
       var size = (nElts:size_t)*c_sizeof(st);
       c_memcpy(ptrTo(A[dst]), ptrTo(A[src]), size);
     } else {
@@ -1743,7 +1743,7 @@ module ShallowCopy {
 
     if DstA._instance.isDefaultRectangular() &&
        SrcA._instance.isDefaultRectangular() {
-      type st = __primitive("static field type", DstA, "eltType");
+      type st = __primitive("static field type", DstA._value, "eltType");
       var size = (nElts:size_t)*c_sizeof(st);
       c_memcpy(ptrTo(DstA[dst]), ptrTo(SrcA[src]), size);
     } else {
