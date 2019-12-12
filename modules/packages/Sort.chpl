@@ -1646,10 +1646,6 @@ module ShallowCopy {
 
   private use SysCTypes;
 
-  // compute size of local variable without considering runtime types
-  pragma "fn synchronization free"
-  private extern proc sizeof(x): size_t;
-
   // work around c_ptrTo on array returning pointer to 1st element
   private inline proc ptrTo(ref x) {
     return c_pointer_return(x);
@@ -1666,10 +1662,7 @@ module ShallowCopy {
     if isPODType(st) {
       dst = src;
     } else {
-      pragma "no init"
-      pragma "no auto destroy"
-      var tmp: st;
-      var size = sizeof(tmp);
+      var size = c_sizeof(st);
       c_memcpy(ptrTo(dst), ptrTo(src), size);
       // The version moved from should never be used again,
       // but we clear it out just in case.
@@ -1700,7 +1693,7 @@ module ShallowCopy {
       lhs = rhs;
       rhs = tmp;
     } else {
-      var size = sizeof(tmp);
+      var size = c_sizeof(st);
       // tmp = lhs
       c_memcpy(ptrTo(tmp), ptrTo(lhs), size);
       // lhs = rhs
