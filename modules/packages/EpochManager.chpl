@@ -809,10 +809,6 @@ module EpochManager {
     pragma "no doc"
     var locale_epoch : atomic uint;
 
-    //  Number of active (pinned) tasks on current locale
-    pragma "no doc"
-    var active_tasks : atomic uint;
-
     //  Local flag to indicate a task is trying to advance global epoch
     pragma "no doc"
     var is_setting_epoch : atomic bool;
@@ -921,7 +917,6 @@ module EpochManager {
       // An inactive task has local_epoch set to 0. A value other than 0
       // implies active task
       if (tok.local_epoch.read() == INACTIVE) {
-        active_tasks.add(1);
         tok.local_epoch.write(locale_epoch.read());
       }
     }
@@ -965,13 +960,11 @@ module EpochManager {
       var safeToReclaim = true;
       coforall loc in Locales with (&& reduce safeToReclaim) do on loc {
         var _this = getPrivatizedInstance();
-        if _this.active_tasks.read() != 0 {
-          for tok in _this.allocated_list {
-            var local_epoch = tok.local_epoch.read();
-            if (local_epoch != 0 && local_epoch != current_global_epoch) {
-              safeToReclaim = false;
-              break;
-            } 
+        for tok in _this.allocated_list {
+          var local_epoch = tok.local_epoch.read();
+          if (local_epoch != 0 && local_epoch != current_global_epoch) {
+            safeToReclaim = false;
+            break;
           }
         }
       }
@@ -1010,10 +1003,7 @@ module EpochManager {
 
     pragma "no doc"
     proc unpin(tok: unmanaged _token) {
-      if (tok.local_epoch.read() != INACTIVE) {
-        active_tasks.sub(1);
-        tok.local_epoch.write(INACTIVE);
-      }
+      tok.local_epoch.write(INACTIVE);
     }
 
     /*
