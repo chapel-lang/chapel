@@ -937,7 +937,7 @@ module MergeSort {
      * sort one level before that, while we're still even.
      *
      * "size" is a misnomer.  For 1..10, size works out to 9.  That's
-     * the value we want to base the calculation of mid on, but for
+     * the value we want to base the calculation of mid on.  But for
      * the loop control, we really need to consider the size as 10.
      */
     if ((size+1) < minlen || (((depth & 1) == 0) && (size+1) < 2 * minlen)) {
@@ -971,7 +971,7 @@ module MergeSort {
     }
   }
 
-  private proc _Merge(Data: [?Dom] ?eltType, Scratch: [], lo:int, mid:int, hi:int, comparator:?rec=defaultComparator) {
+  private proc _Merge(Dst: [?Dom] ?eltType, Src: [], lo:int, mid:int, hi:int, comparator:?rec=defaultComparator) {
     /* Data[lo..mid by stride] is much slower than Data[lo..mid] when
      * Dom is unstrided.  So specify the latter explicitly when possible. */
     const stride = if Dom.stridable then abs(Dom.stride) else 1;
@@ -981,30 +981,30 @@ module MergeSort {
     const a2range = if Dom.stridable then (mid+stride)..hi by stride else (mid+1)..hi;
     const a2max = hi;
 
-    ref A1 = Scratch[a1range];
-    ref A2 = Scratch[a2range];
+    ref A1 = Src[a1range];
+    ref A2 = Src[a2range];
 
     var a1 = a1range.first;
     var a2 = a2range.first;
     var i = lo;
     while ((a1 <= a1max) && (a2 <= a2max)) {
       if (chpl_compare(A1(a1), A2(a2), comparator) <= 0) {
-        Data[i] = A1[a1];
+        Dst[i] = A1[a1];
         a1 += stride;
         i += stride;
       } else {
-        Data[i] = A2[a2];
+        Dst[i] = A2[a2];
         a2 += stride;
         i += stride;
       }
     }
     while (a1 <= a1max) {
-      Data[i] = A1[a1];
+      Dst[i] = A1[a1];
       a1 += stride;
       i += stride;
     }
     while (a2 <= a2max) {
-      Data[i] = A2[a2];
+      Dst[i] = A2[a2];
       a2 += stride;
       i += stride;
     }
