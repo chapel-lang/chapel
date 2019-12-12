@@ -45,7 +45,7 @@
 # CHPL_ONETEST: Name of the one test in this directory to run
 # CHPL_TEST_SINGLES: If false, test the entire directory
 # CHPL_SYSTEM_PREEXEC: If set, run script on test output prior to execution
-# CHPL_SYSTEM_PREDIFF: If set, run that script on each test output
+# CHPL_SYSTEM_PREDIFF: If set, run comma-separated scripts on each test output
 # CHPL_COMM: Chapel communication layer
 # CHPL_COMPONLY: Only build the test (same as -noexec flag)
 # CHPL_TEST_NUM_LOCALES_AVAILABLE: same as CHPL_TEST_MAX_LOCALES (for backwards compatibility)
@@ -717,11 +717,12 @@ if systemPreexec is not None:
     if not os.access(systemPreexec, os.R_OK|os.X_OK):
         Fatal("Cannot execute system-wide preexec '{0}'".format(systemPreexec))
 
-# Get the system-wide prediff
-systemPrediff = os.getenv('CHPL_SYSTEM_PREDIFF')
-if systemPrediff:
-  if not os.access(systemPrediff,os.R_OK|os.X_OK):
-    Fatal('Cannot execute system-wide prediff \''+systemPrediff+'\'')
+# Get the system-wide prediff(s)
+systemPrediffs = os.getenv('CHPL_SYSTEM_PREDIFF').strip().split(',')
+if systemPrediffs:
+    for spdf in systemPrediffs:
+        if not os.access(spdf,os.R_OK|os.X_OK):
+            Fatal('Cannot execute system-wide prediff \''+spdf+'\'')
 
 # Use the launcher walltime option for timeout
 useLauncherTimeout = os.getenv('CHPL_LAUNCHER_TIMEOUT')
@@ -1071,8 +1072,8 @@ sys.stdout.write('[Starting subtest - %s]\n'%(time.strftime('%a %b %d %H:%M:%S %
 #sys.stdout.write('[compiler: \'%s\']\n'%(compiler))
 if systemPreexec:
     sys.stdout.write("[system-wide preexec: '{0}']\n".format(systemPreexec))
-if systemPrediff:
-    sys.stdout.write('[system-wide prediff: \'%s\']\n'%(systemPrediff))
+if systemPrediffs:
+    sys.stdout.write('[system-wide prediff(s): \'%s\']\n'%(', '.join(systemPrediffs)))
 
 # consistently look only at the files in the current directory
 dirlist=os.listdir(".")
@@ -1612,14 +1613,15 @@ for testname in testsrc:
             with open(complog, 'w') as complogfile:
                 complogfile.write('%s'%(output))
 
-            if systemPrediff:
-                sys.stdout.write('[Executing system-wide prediff]\n')
-                sys.stdout.flush()
-                p = py3_compat.Popen([systemPrediff, execname, complog, compiler,
-                                     ' '.join(envCompopts)+' '+compopts, ' '.join(args)],
-                                     stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-                sys.stdout.write(p.communicate()[0])
-                sys.stdout.flush()
+            if systemPrediffs:
+                for spdf in systemPrediffs:
+                    sys.stdout.write('[Executing system-wide prediff %s]\n'%(spdf))
+                    sys.stdout.flush()
+                    p = py3_compat.Popen([spdf, execname, complog, compiler,
+                                          ' '.join(envCompopts)+' '+compopts, ' '.join(args)],
+                                         stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+                    sys.stdout.write(p.communicate()[0])
+                    sys.stdout.flush()
 
             if globalPrediff:
                 sys.stdout.write('[Executing ./PREDIFF]\n')
@@ -2115,13 +2117,14 @@ for testname in testsrc:
                     execlogfile.write(output_content)
 
                 if not exectimeout and not launcher_error:
-                    if systemPrediff:
-                        sys.stdout.write('[Executing system-wide prediff]\n')
-                        sys.stdout.flush()
-                        p = py3_compat.Popen([systemPrediff, execname, execlog, compiler,
-                                             ' '.join(envCompopts)+' '+compopts, ' '.join(args)],
-                                             stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-                        sys.stdout.write(p.communicate()[0])
+                    if systemPrediffs:
+                        for spdf in systemPrediffs:
+                            sys.stdout.write('[Executing system-wide prediff %s]\n'%(spdf))
+                            sys.stdout.flush()
+                            p = py3_compat.Popen([spdf, execname, execlog, compiler,
+                                                  ' '.join(envCompopts)+' '+compopts, ' '.join(args)],
+                                                 stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+                            sys.stdout.write(p.communicate()[0])
 
                     if globalPrediff:
                         sys.stdout.write('[Executing ./PREDIFF]\n')

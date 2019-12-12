@@ -669,7 +669,7 @@ def set_up_environment():
         os.environ["CHPL_SYSTEM_PREEXEC"] = args.preexec
 
     if args.prediff:
-        os.environ["CHPL_SYSTEM_PREDIFF"] = args.prediff
+        os.environ["CHPL_SYSTEM_PREDIFF"] = ','.join(args.prediff)
 
     # compopts (note that we have to strip out our preprocessing)
     if args.compopts:
@@ -1092,14 +1092,15 @@ def set_up_executables():
 
     # pre-diff
     if args.prediff:
-        if os.path.isfile(args.prediff) and os.access(args.prediff, os.X_OK):
-            args.prediff = os.path.abspath(args.prediff)
-            logger.write("[system-wide prediff: {0}]".format(args.prediff))
-        else:
-            logger.write("[Error: Cannot find or execute system-wide prediff: "
-                    "{0}".format(args.prediff))
-            finish()
-        os.environ["CHPL_SYSTEM_PREDIFF"] = args.prediff
+        for pdf in args.prediff:
+            if os.path.isfile(pdf) and os.access(pdf, os.X_OK):
+                pdf = os.path.abspath(pdf)
+                logger.write("[system-wide prediff: {0}]".format(pdf))
+            else:
+                logger.write("[Error: Cannot find or execute system-wide prediff: "
+                        "{0}".format(pdf))
+                finish()
+            os.environ["CHPL_SYSTEM_PREDIFF"] += ','+pdf
 
 
 def auto_generate_tests():
@@ -1306,8 +1307,10 @@ def parser_setup():
     parser.add_argument("-syspreexec", "--syspreexec", action="store",
             dest="preexec", 
             help="set a PREEXEC script to run before execution")
-    parser.add_argument("-sysprediff", "--sysprediff", action="store",
-            dest="prediff", help="set a PREDIFF script to run on test output")
+    parser.add_argument("-sysprediff", "--sysprediff", action="append",
+                        dest="prediff",
+                        help="set a PREDIFF script to run on test output"
+                             ", may be given more than once")
     # future mode args
     futures_mode = 0
     parser.add_argument("-futures", "--futures", action="store_const", const=1,
