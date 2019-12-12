@@ -1,5 +1,5 @@
 # Many of these packages have newer versions that work on Python 3 only.
-Jinja2==2.10.3
+Jinja2==2.10.1
 MarkupSafe==1.1.1
 Pygments==2.4.2
 Sphinx==1.8.5
