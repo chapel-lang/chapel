@@ -1659,6 +1659,16 @@ compilerAndTestingStats: &compiler-perf-base
     - Switched test machine
   11/05/19:
     - Remove standardModuleSet and all code involving it from the compiler (#14270)
+  11/20/19:
+    - Simplify visible function determination of use visibility (#14481)
+  11/21/19:
+    - Only check visibility once per scope instead of once per private function (#14492)
+  12/04/19:
+    - pinned test machine for linux64, --fast, and --no-local
+  12/10/19:
+    - Switched test machine for --fast and --no-local
+  12/13/19:
+    - Switched test machine for --no-local
 
 allTotalTime:
   <<: *compiler-perf-base
