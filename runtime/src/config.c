@@ -39,6 +39,7 @@ typedef struct _configVarType { /* table entry */
   const char* moduleName;
   char* defaultValue;
   char* setValue;
+  int private;
 
   struct _configVarType* nextInBucket;
   struct _configVarType* nextInstalled;
@@ -211,9 +212,20 @@ void printConfigVarTable(void) {
           }
         }
         fprintf(stdout, "  %*s: ", longestName, configVar->varName);
+
         fprintf(stdout, "%s", configVar->defaultValue);
-        if (configVar->setValue) {
-          fprintf(stdout, " (configured to %s)", configVar->setValue);
+        if (configVar->setValue || configVar->private) {
+          fprintf(stdout, " (");
+          if (configVar->private) {
+            fprintf(stdout, "private");
+            if (configVar->setValue) {
+              fprintf(stdout, ", ");
+            }
+          }
+          if (configVar->setValue) {
+            fprintf(stdout, "configured to %s", configVar->setValue);
+          }
+          fprintf(stdout, ")");
         }
         fprintf(stdout, "\n");
       }
@@ -225,7 +237,8 @@ void printConfigVarTable(void) {
 static configVarType* lookupConfigVar(const char* moduleName, 
                                       const char* varName) {
   configVarType* configVar = NULL;
-  configVarType* foundConfigVar = NULL; 
+  configVarType* foundConfigVar = NULL;
+  int foundPublic = 0;
   unsigned hashValue;
   int numTimesFound = 0;
   hashValue = hash(varName);
@@ -241,8 +254,31 @@ static configVarType* lookupConfigVar(const char* moduleName,
         numTimesFound++;
         if (numTimesFound == 1) {
           foundConfigVar = configVar;
+          if (!configVar->private) {
+            foundPublic = 1;
+          }
         } else {
-          foundConfigVar = ambiguousConfigVar;
+          if (configVar->private) {
+            // this match is private...
+            if (foundPublic) {
+              // ...and we'd previously found a public one, so don't
+              // replace it
+            } else {
+              // ...as was our previous, so things are currently
+              // ambiguous
+              foundConfigVar = ambiguousConfigVar;
+            }
+          } else {
+            // this match is public...
+            if (foundPublic) {
+              // ...as was a previous one, so things are ambiguous
+              foundConfigVar = ambiguousConfigVar;
+            } else {
+              // ...and it's the first public match, so have it override
+              foundConfigVar = configVar;
+              foundPublic = 1;
+            }
+          }
         }
       } else {
         if (strcmp(configVar->moduleName, moduleName) == 0) {
@@ -308,7 +344,7 @@ const char* lookupSetValue(const char* varName, const char* moduleName) {
 
 
 void installConfigVar(const char* varName, const char* value, 
-                      const char* moduleName) {
+                      const char* moduleName, int private) {
   unsigned hashValue;
   configVarType* configVar = (configVarType*) 
     chpl_mem_allocMany(1, sizeof(configVarType), CHPL_RT_MD_CF_TABLE_DATA, 0, 0);
@@ -327,6 +363,7 @@ void installConfigVar(const char* varName, const char* value,
   configVar->moduleName = chpl_glom_strings(1, moduleName);
   configVar->defaultValue = chpl_glom_strings(1, value);
   configVar->setValue = NULL;
+  configVar->private = private;
 } 
 
 

@@ -1938,10 +1938,12 @@ codegen_config() {
           type = type->getField("addr")->type;
         fprintf(outfile, "%s", type->symbol->name);
         if (var->getModule()->modTag == MOD_INTERNAL) {
-          fprintf(outfile, "\", \"Built-in\");\n");
+          fprintf(outfile, "\", \"Built-in\"");
         } else {
-          fprintf(outfile, "\", \"%s\");\n", var->getModule()->name);
+          fprintf(outfile, "\", \"%s\"", var->getModule()->name);
         }
+        fprintf(outfile,", /* private = */ %d);\n", var->hasFlag(FLAG_PRIVATE));
+
       }
     }
 
