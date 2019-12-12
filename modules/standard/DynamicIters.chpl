@@ -82,10 +82,10 @@ where tag == iterKind.leader
   assert(chunkSize > 0); // caller's responsibility
 
   // # of tasks the range can fill. (fast) ceil so all work is represented
-  const chunkTasks = divceilpos(c.size, chunkSize): int;
+  const numChunks = divceilpos(c.size, chunkSize): int;
 
   // Check if the number of tasks is 0, in that case it returns a default value
-  const nTasks = min(chunkTasks, defaultNumTasks(numTasks));
+  const nTasks = min(numChunks, defaultNumTasks(numTasks));
 
   type rType=c.type;
 
@@ -99,31 +99,35 @@ where tag == iterKind.leader
       writeln("Dynamic Iterator: serial execution because there is not enough work");
     yield (remain,);
   } else {
-    var moreWork : atomic bool;
-    moreWork.write(true);
-    var curIndex : atomic remain.low.type;
-    curIndex.write(remain.low);
+    var moreWork : atomic bool = true;
+    var curChunkIdx : atomic int = 0;
 
     coforall tid in 0..#nTasks with (const in remain) {
       while moreWork.read() {
         // There is local work in remain
-        const low = curIndex.fetchAdd(chunkSize);
-        var high = low + chunkSize-1;
+        const chunkIdx = curChunkIdx.fetchAdd(1);
+        const low = chunkIdx * chunkSize; /* remain.low is 0, stride is 1 */
+        const high: low.type =
+          if chunkSize >= max(low.type) - low
+          then max(low.type)
+          else low + chunkSize-1;
 
-        if low > remain.high {
+        if chunkIdx >= numChunks {
+          /*
+           * Multiple threads passed moreWork.read() at once.
+           * All whose fetchAdd() was after the one
+           * that grabbed the final chunk just break.
+           */
           break;
-        } else if high > remain.high {
-          high = remain.high;
+        } else if high >= remain.high {
           moreWork.write(false);
         }
 
         const current:rType = remain(low .. high);
 
-        if high >= low then {
-          if debugDynamicIters then
-            writeln("Parallel dynamic Iterator. Working at tid ", tid, " with range ", unDensify(current,c), " yielded as ", current);
-          yield (current,);
-        }
+        if debugDynamicIters then
+          writeln("Parallel dynamic Iterator. Working at tid ", tid, " with range ", unDensify(current,c), " yielded as ", current);
+        yield (current,);
       }
     }
   }
