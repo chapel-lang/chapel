@@ -457,6 +457,9 @@ proc compile(pattern: ?t, posix=false, literal=false, nocapture=false,
 
   var opts:qio_regexp_options_t;
   qio_regexp_init_default_options(opts);
+
+  // always use UTF8 for strings.
+  // For bytes, this is set to false which means use Latin1
   opts.utf8 = t==string;
   opts.posix = posix;
   opts.literal = literal;
@@ -1070,9 +1073,33 @@ proc string.search(needle: string, ignorecase=false):reMatch
   return re.search(this);
 }
 
+/*
+
+   Compile a regular expression and search the receiving bytes for matches at
+   any offset using :proc:`regexp.search`.
+
+   :arg needle: the regular expression to search for
+   :arg ignorecase: true to ignore case in the regular expression
+   :returns: an :record:`reMatch` object representing the offset in the
+             receiving bytes where a match occurred
+ */
+proc bytes.search(needle: bytes, ignorecase=false):reMatch
+{
+  // Create a regexp matching the literal for needle
+  var re = compile(needle, literal=true, nocapture=true, ignorecase=ignorecase);
+  return re.search(this);
+}
+
 // documented in the captures version
 pragma "no doc"
 proc string.search(needle: regexp):reMatch
+{
+  return needle.search(this);
+}
+
+// documented in the captures version
+pragma "no doc"
+proc bytes.search(needle: regexp):reMatch
 {
   return needle.search(this);
 }
@@ -1091,9 +1118,30 @@ proc string.search(needle: regexp, ref captures ...?k):reMatch
   return needle.search(this, (...captures));
 }
 
+/* Search the receiving bytes for a regular expression already compiled
+   by calling :proc:`regexp.search`. Search for matches at any offset.
+
+   :arg needle: the compiled regular expression to search for
+   :arg captures: (optional) what to capture from the regular expression. These
+                  should be bytes or types that bytes can cast to.
+   :returns: an :record:`reMatch` object representing the offset in the
+             receiving string where a match occurred
+ */
+proc bytes.search(needle: regexp, ref captures ...?k):reMatch
+{
+  return needle.search(this, (...captures));
+}
+
 // documented in the captures version
 pragma "no doc"
 proc string.match(pattern: regexp):reMatch
+{
+  return pattern.match(this);
+}
+
+// documented in the captures version
+pragma "no doc"
+proc bytes.match(pattern: regexp):reMatch
 {
   return pattern.match(this);
 }
@@ -1115,6 +1163,23 @@ proc string.match(pattern: regexp, ref captures ...?k):reMatch
   return pattern.match(this, (...captures));
 }
 
+/* Match the receiving bytes to a regular expression already compiled by
+   calling :proc:`regexp.match`. Note that function only returns a match if
+   the start of the bytes matches the pattern. Use :proc:`bytes.search`
+   to search for the pattern at any offset.
+
+   :arg pattern: the compiled regular expression to match
+   :arg captures: (optional) what to capture from the regular expression. These
+                  should be bytes or types that bytes can cast to.
+   :returns: an :record:`reMatch` object representing the offset in the
+             receiving string where a match occurred
+ */
+
+proc bytes.match(pattern: regexp, ref captures ...?k):reMatch
+{
+  return pattern.match(this, (...captures));
+}
+
 /*
    Split the the receiving string by occurrences of the passed regular
    expression by calling :proc:`regexp.split`.
@@ -1124,6 +1189,21 @@ proc string.match(pattern: regexp, ref captures ...?k):reMatch
    :yields: each split portion, one at a time
  */
 iter string.split(pattern: regexp, maxsplit: int = 0)
+{
+  for v in pattern.split(this, maxsplit) {
+    yield v;
+  }
+}
+
+/*
+   Split the the receiving bytes by occurrences of the passed regular
+   expression by calling :proc:`regexp.split`.
+
+   :arg pattern: the regular expression to use to split
+   :arg maxsplit: if nonzero, the maximum number of splits to do
+   :yields: each split portion, one at a time
+ */
+iter bytes.split(pattern: regexp, maxsplit: int = 0)
 {
   for v in pattern.split(this, maxsplit) {
     yield v;
@@ -1142,6 +1222,24 @@ iter string.split(pattern: regexp, maxsplit: int = 0)
 
 */
 iter string.matches(pattern:regexp, param captures=0, maxmatches:int=max(int))
+{
+  for v in pattern.matches(this, captures, maxmatches) {
+    yield v;
+  }
+}
+
+/*
+   Enumerates matches in the receiving bytes as well as capture groups
+   by calling :proc:`regexp.matches`.
+
+   :arg pattern: the regular expression to find matches
+   :arg captures: (compile-time constant) the size of the captures to return
+   :arg maxmatches: the maximum number of matches to return
+   :yields: tuples of :record:`reMatch` objects, the 1st is always
+            the match for the whole pattern and the rest are the capture groups.
+
+*/
+iter bytes.matches(pattern:regexp, param captures=0, maxmatches:int=max(int))
 {
   for v in pattern.matches(this, captures, maxmatches) {
     yield v;
