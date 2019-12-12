@@ -617,6 +617,8 @@ create-views:
     - Govern slice expressions by slicing domain (#12931)
   11/27/19:
     - Close some multilocale distribution and privatization memleaks (#14510)
+  12/10/19:
+    - Guard privatization checks with param flag (#14604)
 
 cs-resize:
   03/05/19:
@@ -1158,6 +1160,9 @@ memleaksfull:
     - Access param, type fields without postfix-! (#14549)
   12/06/19:
     - Close user-level leaks in some new tests (#14586)
+    - Fix quicksort to work with owned array elements (#14204)
+  12/10/19:
+    - Allow messages in new Errors (#14545)
 
 meteor:
   12/18/13:
