@@ -1,2 +1,2 @@
-check_symbol_accesses2.chpl:20: In function 'bar':
-check_symbol_accesses2.chpl:21: error: 'a' undeclared (first use this function)
+check_symbol_accesses2.chpl:21: In function 'bar':
+check_symbol_accesses2.chpl:22: error: 'a' undeclared (first use this function)
