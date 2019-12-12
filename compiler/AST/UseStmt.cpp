@@ -523,7 +523,17 @@ void UseStmt::trackMethods() {
 }
 
 ModuleSymbol* UseStmt::checkIfModuleNameMatches(const char* name) {
-  if (SymExpr* se = toSymExpr(src)) {
+  if (isARename()) {
+    // Use statements that rename the module should only allow us to find the
+    // new name, not the original one.
+    if (strcmp(name, getRename()) == 0) {
+      SymExpr* actualSe = toSymExpr(src);
+      INT_ASSERT(actualSe);
+      ModuleSymbol* actualModSym = toModuleSymbol(actualSe->symbol());
+      INT_ASSERT(actualModSym);
+      return actualModSym;
+    }
+  } else if (SymExpr* se = toSymExpr(src)) {
     if (ModuleSymbol* modSym = toModuleSymbol(se->symbol())) {
       if (strcmp(name, se->symbol()->name) == 0) {
         return modSym;
