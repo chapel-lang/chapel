@@ -1664,9 +1664,11 @@ module ShallowCopy {
     } else {
       var size = c_sizeof(st);
       c_memcpy(ptrTo(dst), ptrTo(src), size);
-      // The version moved from should never be used again,
-      // but we clear it out just in case.
-      c_memset(ptrTo(src), 0, size);
+      if boundsChecking {
+        // The version moved from should never be used again,
+        // but we clear it out just in case.
+        c_memset(ptrTo(src), 0, size);
+      }
     }
   }
 
