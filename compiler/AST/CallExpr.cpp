@@ -256,11 +256,6 @@ void CallExpr::verify() {
       INT_FATAL("PRIM_BLOCK_UNLOCAL between passes");
       break;
 
-    case PRIM_TYPE_INIT:
-      // A "type init" call is always expected to have a parent.
-      INT_ASSERT(toCallExpr(this->parentExpr));
-      break;
-
     default:
       break; // do nothing
     }
@@ -641,11 +636,6 @@ void CallExpr::prettyPrint(std::ostream* o) {
       baseExpr->prettyPrint(o);
     }
 
-  } else if (primitive != NULL) {
-    if (primitive->tag == PRIM_TYPE_INIT) {
-      unusual = true;
-      argList.head->prettyPrint(o);
-    }
   }
 
   if (!array && !unusual) {
