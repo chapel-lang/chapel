@@ -632,6 +632,8 @@ void initPrimitiveTypes() {
   // This type should not be visible past normalize.
   CREATE_DEFAULT_SYMBOL (dtVoid, gNoInit, "_gnoinit");
 
+  CREATE_DEFAULT_SYMBOL (dtVoid, gSplitInit, "_gsplitinit");
+
   dtUnknown = createInternalType ("_unknown", "_unknown");
   CREATE_DEFAULT_SYMBOL (dtUnknown, gUnknown, "_gunknown");
   gUnknown->addFlag(FLAG_TYPE_VARIABLE);

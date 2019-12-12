@@ -2426,6 +2426,7 @@ void resolveCall(CallExpr* call) {
       break;
 
     case PRIM_DEFAULT_INIT_VAR:
+    case PRIM_INIT_VAR_SPLIT_DECL:
       resolveGenericActuals(call);
       resolvePrimInit(call);
       break;
@@ -2435,6 +2436,7 @@ void resolveCall(CallExpr* call) {
       break;
 
     case PRIM_INIT_VAR:
+    case PRIM_INIT_VAR_SPLIT_INIT:
       resolveInitVar(call);
       break;
 
@@ -5910,6 +5912,27 @@ static void resolveInitVar(CallExpr* call) {
     gdbShouldBreakHere();
   }
 
+  if (call->isPrimitive(PRIM_INIT_VAR_SPLIT_INIT)) {
+    // If it has runtime type, turn this back into assignment
+    if (dst->type->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE)) {
+      call->primitive = primitives[PRIM_NOOP];
+      CallExpr* assign = new CallExpr("=", dst, src);
+      call->getStmtExpr()->insertAfter(assign);
+      resolveExpr(assign);
+      return;
+    }
+    // Also, check that the types are compatible for split initialization
+    // with type inference.
+    if (call->numActuals() < 3)
+      if (dst->type != dtUnknown)
+        if (dst->type != srcType)
+          USR_FATAL_CONT(call, "Split initialization uses multiple types; "
+                               "another initialization has type %s "
+                               "but this initialization has type %s",
+                               toString(dst->type),
+                               toString(srcType));
+  }
+
   Type* targetType = NULL;
   bool addedCoerce = false;
 
@@ -9334,7 +9357,8 @@ static void replaceRuntimeTypePrims(std::vector<BaseAST*>& asts) {
         continue;
       }
 
-      if (call->isPrimitive(PRIM_DEFAULT_INIT_VAR)) {
+      if (call->isPrimitive(PRIM_DEFAULT_INIT_VAR) ||
+          call->isPrimitive(PRIM_INIT_VAR_SPLIT_DECL)) {
         replaceRuntimeTypeDefaultInit(call);
       } else if (call->isPrimitive(PRIM_GET_RUNTIME_TYPE_FIELD)) {
         replaceRuntimeTypeGetField(call);
@@ -9378,7 +9402,17 @@ void resolvePrimInit(CallExpr* call) {
   Expr* fieldNameExpr = NULL;
   Expr* typeExpr = NULL;
 
-  INT_ASSERT(call->isPrimitive(PRIM_DEFAULT_INIT_VAR));
+  INT_ASSERT(call->isPrimitive(PRIM_DEFAULT_INIT_VAR) ||
+             call->isPrimitive(PRIM_INIT_VAR_SPLIT_DECL));
+
+  if (call->isPrimitive(PRIM_INIT_VAR_SPLIT_DECL) &&
+      call->numActuals() == 1) {
+    // Without type information, PRIM_INIT_VAR_SPLIT_DECL does nothing.
+    // Except if it's an array... then we need to use default init for now
+    // and that is handled already in replaceRuntimeTypePrims
+    call->convertToNoop();
+    return;
+  }
 
   valExpr = call->get(1);
   fieldNameExpr = NULL;
@@ -9617,7 +9651,8 @@ static void resolvePrimInit(CallExpr* call, Symbol* val, Type* type) {
 
 
     errorInvalidParamInit(call, val, at);
-    if (!val->hasFlag(FLAG_NO_INIT))
+    if (!val->hasFlag(FLAG_NO_INIT) &&
+        !call->isPrimitive(PRIM_INIT_VAR_SPLIT_DECL))
       resolvePrimInitNonGenericRecordVar(call, val, at);
     else
       call->convertToNoop(); // let the memory be uninitialized
@@ -9638,7 +9673,8 @@ static void resolvePrimInit(CallExpr* call, Symbol* val, Type* type) {
     if (at->symbol->hasFlag(FLAG_MANAGED_POINTER))
       errorIfNonNilableType(call, val, getManagedPtrBorrowType(at), at);
 
-    if (!val->hasFlag(FLAG_NO_INIT))
+    if (!val->hasFlag(FLAG_NO_INIT) &&
+        !call->isPrimitive(PRIM_INIT_VAR_SPLIT_DECL))
       resolvePrimInitGenericRecordVar(call, val, at);
     else
       call->convertToNoop(); // let the memory be uninitialized

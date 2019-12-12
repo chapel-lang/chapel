@@ -407,7 +407,7 @@ proc AMRHierarchy.buildRefinedLevel ( i_refining: int )
   //---- Cluster ----
 
   var min_width: dimension*int;
-  min_width = 2;
+  min_width = min_width + 2;
   var cluster_domains = clusterFlags( buffered_flags, target_efficiency, min_width );
   
     
