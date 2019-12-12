@@ -1,2 +1,2 @@
 renameMultiple2.chpl:16: In function 'main':
-renameMultiple2.chpl:22: error: 'First' undeclared (first used this function)
+renameMultiple2.chpl:22: error: 'First' undeclared (first use this function)
