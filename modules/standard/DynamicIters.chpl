@@ -82,7 +82,12 @@ where tag == iterKind.leader
   assert(chunkSize > 0); // caller's responsibility
 
   // # of tasks the range can fill. (fast) ceil so all work is represented
-  const numChunks = divceilpos(c.size, chunkSize): int;
+  const numChunks =
+    if c.idxType != uint(64) then
+      divceilpos(c.size:int, chunkSize): int
+    else
+      // why doesn't divceilpos() accept two unsigned ints, and divceil() requires matching signedness?
+      divceil(c.size, chunkSize:uint(64)): int;
 
   // Check if the number of tasks is 0, in that case it returns a default value
   const nTasks = min(numChunks, defaultNumTasks(numTasks));
