@@ -1,2 +1,2 @@
-renameSameNameConflict.chpl:11: In function 'main':
-renameSameNameConflict.chpl:12: error: 'L' is ambiguous
+renameSameNameConflict.chpl:4: error: symbol L is multiply defined
+renameSameNameConflict.chpl:9: note: also defined here
