@@ -174,6 +174,8 @@ if [ -z "$BUILD_CONFIGS_CALLBACK" ]; then
 
         log_info "Start build_configs $dry_run $verbose -- mason"
 
+        # build mason but don't build chpldoc since it
+        # doesn't build on XE due to Python version dependencies
         $cwd/../build_configs.py $dry_run $verbose -s $cwd/$setenv -l "$project.mason.log" \
             --target-compiler=gnu -- mason-no-chpldoc
         ;;
