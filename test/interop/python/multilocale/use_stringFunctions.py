@@ -3,7 +3,7 @@ import stringFunctions
 stringFunctions.chpl_setup(1)
 x = stringFunctions.getString()
 stringFunctions.takesString(x)
-y = "blah blah blah"
+y = b"blah blah blah"
 stringFunctions.takesString(y)
 z = stringFunctions.takeAndReturn(x)
 stringFunctions.takesString(z)

@@ -44,8 +44,8 @@ module ExportWrappers {
     var result: chpl_byte_buffer;
     result.isOwned = val.isowned:int(8);
     result.data = val.buff:c_ptr(c_char);
-    // Use the "_size" field to get the _buffer_ length in bytes!
-    result.size = val._size:uint(64);
+    // Get the length of the string/bytes record in bytes!
+    result.size = val.numBytes:uint(64);
     // Assume ownership of the string/bytes record's internal buffer.
     val.isowned = false;
     return result;

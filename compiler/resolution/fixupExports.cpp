@@ -359,17 +359,17 @@ static VarSymbol* fixupFormal(FnSymbol* wrapper, int idx) {
     IntentTag newIntent = oldIntent;
 
     // TODO: How would we support the INOUT or OUT intents here?
+    // TODO: Can we eliminate copies for multilocale libraries?
     if (oldIntent == INTENT_IN || oldIntent == INTENT_CONST_IN) {
       doCopyConversionCall = true;
     }
-
-    Type* wrapt = getTypeForFixup(origt);
 
     //
     // Interop wrapper records need to have the IN intent to prevent them
     // from being exposed to the end user by ref (the records may
     // contain additional fields that will assist the end user in passing
-    // the type into Chapel "by reference".
+    // the type into Chapel "by reference". We attach the "export wrapper"
+    // pragma to their symbols (in module code) to communicate this.
     //
     if (wrapt->symbol->hasFlag(FLAG_EXPORT_WRAPPER)) {
       newIntent = INTENT_IN;
@@ -385,7 +385,7 @@ static VarSymbol* fixupFormal(FnSymbol* wrapper, int idx) {
   VarSymbol* result = newTemp(origt);
   wrapper->body->insertAtTail(new DefExpr(result));
 
-  // Make a call to the appropriate conversion call.
+  // Make a call to the appropriate conversion routine.
   CallExpr* call = new CallExpr("chpl__exportArg",
                                 new_BoolSymbol(doCopyConversionCall),
                                 as,

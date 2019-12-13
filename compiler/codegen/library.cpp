@@ -512,7 +512,7 @@ static void makePYXFile(std::vector<FnSymbol*> functions) {
     fprintf(pyx.fptr, ", chpl_free_external_array, chpl_opaque_array, ");
     fprintf(pyx.fptr, "cleanupOpaqueArray, chpl_free, ");
     fprintf(pyx.fptr, "chpl_byte_buffer, chpl_byte_buffer_free, ");
-    fprintf(pyx.fptr, "PyBytes_FromStringAndSize, strlen\n");
+    fprintf(pyx.fptr, "PyBytes_FromStringAndSize\n");
 
     std::vector<FnSymbol*> moduleInits;
     std::vector<FnSymbol*> exported;

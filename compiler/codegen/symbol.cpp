@@ -1116,21 +1116,25 @@ std::string ArgSymbol::getPythonArgTranslation() {
   } else if (t->getValType() == exportTypeChplByteBuffer) {
     Type* origt = getUnwrappedArg(this)->type->getValType();
     INT_ASSERT(origt == dtBytes || origt == dtString);
-  
-    const char* pythonType = (origt == dtBytes) ? "bytes" : "str";
+
+    std::string chapelType = "Chapel bytes";
+    std::string pythonType = "bytes";
+
+    if (origt == dtString) {
+      chapelType = "Chapel string";
+      pythonType = "str";
+    }
+ 
     std::string res;
 
     //
     // Generate a Python TypeError if the Python type does not match the
     // Chapel type (string or bytes).
     //
-    res += "\tif type(" + strname + ") != ";
-    res += pythonType;
-    res += ":\n";
-    res += "\t\traise TypeError(\"Expected \'";
-    res += pythonType;
-    res += "\' in conversion to \'chpl_byte_buffer\', ";
-    res += "found \" + str(type(" + strname + ")))\n";
+    res += "\tif type(" + strname + ") != " + pythonType + ":\n";
+    res += "\t\traise TypeError(\"Expected \'" + pythonType;
+    res += "\' in conversion to \'" + chapelType;
+    res += "\', found \" + str(type(" + strname + ")))\n";
 
     // Python strings need to encode themselves into a bytes first.
     if (origt == dtString) {

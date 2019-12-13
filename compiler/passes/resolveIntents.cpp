@@ -18,7 +18,7 @@
  */
 
 #include "resolveIntents.h"
-#include "view.h"
+
 #include "passes.h"
 #include "resolution.h"
 

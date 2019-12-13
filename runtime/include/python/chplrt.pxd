@@ -37,6 +37,3 @@ cdef extern from "chpl-export-wrappers.h":
 cdef extern from "chpl-mem.h":
 	void chpl_free(void* ptr)
 
-cdef extern from "string.h":
-	size_t strlen(const char*)
-
