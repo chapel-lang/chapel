@@ -129,7 +129,7 @@ void checkPrimitives()
      case PRIM_IS_TUPLE_TYPE:
      case PRIM_IS_STAR_TUPLE_TYPE:
      case PRIM_IS_SUBTYPE:
-     case PRIM_IS_SUBTYPE_ALLOW_VALUES:
+     case PRIM_IS_INSTANTIATION_ALLOW_VALUES:
      case PRIM_IS_PROPER_SUBTYPE:
      case PRIM_NEW:                 // new keyword
      case PRIM_ERROR:
@@ -274,6 +274,7 @@ void checkPrimitives()
      case PRIM_BLOCK_COBEGIN:           // BlockStmt::blockInfo - cobegin block
      case PRIM_BLOCK_COFORALL:          // BlockStmt::blockInfo - coforall block
      case PRIM_BLOCK_ON:                // BlockStmt::blockInfo - on block
+     case PRIM_BLOCK_ELIDED_ON:
      case PRIM_BLOCK_BEGIN_ON:
      case PRIM_BLOCK_COBEGIN_ON:
      case PRIM_BLOCK_COFORALL_ON:

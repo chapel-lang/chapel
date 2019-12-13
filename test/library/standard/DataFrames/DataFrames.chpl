@@ -19,6 +19,7 @@
 
 module DataFrames {
   use Sort;
+  private use IO;
 
   class Index {
     pragma "no doc"

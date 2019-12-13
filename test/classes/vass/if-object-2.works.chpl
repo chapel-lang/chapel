@@ -8,10 +8,10 @@ proc test(type CT) {
   var obj: CT?;
 
   if obj then
-    writeln(obj.x);
+    writeln(obj!.x);
 
   if obj != nil then
-    writeln(obj.x);
+    writeln(obj!.x);
 }
 
 proc main {

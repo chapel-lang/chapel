@@ -1,3 +1,5 @@
+use IO;
+
 var myFirstInt: int = 999;
 var myFirstFloat: real = 99.9;
 var mySecondInt: int;

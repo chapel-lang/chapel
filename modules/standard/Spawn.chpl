@@ -128,6 +128,9 @@ other task is consuming it.
 
  */
 module Spawn {
+  public use IO;
+  public use SysError;
+  private use SysCTypes;
 
   private extern proc qio_openproc(argv:c_ptr(c_string),
                                    env:c_ptr(c_string),

@@ -433,6 +433,33 @@ proc BlockCyclic.idxToLocaleInd(ind: rank*idxType) where rank != 1 {
   return locInd;
 }
 
+proc BlockCyclic.init(other: BlockCyclic, privatizeData,
+                      param rank = other.rank, type idxType = other.idxType) {
+  this.rank = rank;
+  this.idxType = idxType;
+  lowIdx = privatizeData[1];
+  blocksize = privatizeData[2];
+  targetLocDom = {(...privatizeData[3])};
+  dataParTasksPerLocale = privatizeData[4];
+
+  this.complete();
+
+  for i in targetLocDom {
+    targetLocales[i] = other.targetLocales[i];
+    locDist[i] = other.locDist[i];
+  }
+}
+
+proc BlockCyclic.dsiSupportsPrivatization() param return true;
+
+proc BlockCyclic.dsiGetPrivatizeData() {
+  return (lowIdx, blocksize, targetLocDom.dims(), dataParTasksPerLocale);
+}
+
+proc BlockCyclic.dsiPrivatize(privatizeData) {
+  return new unmanaged BlockCyclic(_to_unmanaged(this), privatizeData);
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // BlockCyclic Local Distribution Class
 //
@@ -679,10 +706,10 @@ proc type BlockCyclicDom.chpl__deserialize(data) {
 
 proc BlockCyclicDom.dsiSupportsPrivatization() param return true;
 
-proc BlockCyclicDom.dsiGetPrivatizeData() return 0;
+proc BlockCyclicDom.dsiGetPrivatizeData() return dist.pid;
 
 proc BlockCyclicDom.dsiPrivatize(privatizeData) {
-  var privateDist = new unmanaged BlockCyclic(rank, idxType, dist);
+  var privateDist = chpl_getPrivatizedCopy(dist.type, privatizeData);
   var c = new unmanaged BlockCyclicDom(rank=rank, idxType=idxType, stridable=stridable, dist=privateDist);
   c.locDoms = locDoms;
   c.whole = whole;

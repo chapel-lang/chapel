@@ -1,3 +1,5 @@
+use IO;
+
 record MyRecord {
   var i: int;
 }

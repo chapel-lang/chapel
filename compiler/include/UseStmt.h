@@ -64,8 +64,6 @@ public:
 
   bool            providesNewSymbols(const UseStmt* other)               const;
 
-  bool            isVisible(BaseAST* scope)                              const;
-
   BaseAST*        getSearchScope()                                       const;
 
   ModuleSymbol*   checkIfModuleNameMatches(const char* name);

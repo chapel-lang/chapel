@@ -1,6 +1,7 @@
 //Helper functions for stencil.chpl
 
 use stencil;
+private use IO;
 
 // verboseness
 config const v1 = false, v2 = false;

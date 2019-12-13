@@ -166,7 +166,7 @@
 */
 module DistributedDeque {
 
-  use Collection;
+  public use Collection;
 
   /*
     Size of each unroll block for each local deque node.

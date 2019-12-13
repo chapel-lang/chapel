@@ -13,11 +13,7 @@ def get():
         platform_val = chpl_platform.get('target')
 
         if comm_val == 'gasnet':
-            if platform_val == 'cray-xe':
-                substrate_val = 'gemini'
-            elif platform_val == 'cray-xk':
-                substrate_val = 'gemini'
-            elif platform_val == 'cray-xc':
+            if platform_val == 'cray-xc':
                 substrate_val = 'aries'
             elif platform_val == 'cray-cs':
                 substrate_val = 'ibv'

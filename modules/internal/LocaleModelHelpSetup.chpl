@@ -34,6 +34,7 @@ module LocaleModelHelpSetup {
   use ChapelNumLocales;
   use ChapelEnv;
   use Sys;
+  private use SysCTypes;
 
   config param debugLocaleModel = false;
 
@@ -124,7 +125,7 @@ module LocaleModelHelpSetup {
     // at least this setup method) must be run on the node it is
     // intended to describe.
     extern proc chpl_nodeName(): c_string;
-    const _node_name = chpl_nodeName(): string;
+    const _node_name = createStringWithNewBuffer(chpl_nodeName());
     const _node_id = (chpl_nodeID: int): string;
 
     return if localSpawn() then _node_name + "-" + _node_id else _node_name;

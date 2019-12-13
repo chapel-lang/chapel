@@ -23,7 +23,7 @@
 // In terms of how they are used, c_strings are a "close to the metal"
 // representation, being in essence the common NUL-terminated C string.
 module CString {
-  private use ChapelStandard;
+  private use ChapelStandard, SysCTypes;
 
   //inline proc c_string.c_str() return this;
 
@@ -131,27 +131,27 @@ module CString {
   // casts from c_string to bool types
   //
   inline proc _cast(type t:chpl_anybool, x:c_string) throws
-    return try ((x:string).strip()): t;
+    return try ((createStringWithNewBuffer(x)).strip()): t;
 
   //
   // casts from c_string to integer types
   //
   inline proc _cast(type t:integral, x:c_string) throws
-    return try ((x:string).strip()): t;
+    return try ((createStringWithNewBuffer(x)).strip()): t;
 
   //
   // casts from c_string to real/imag types
   //
   inline proc _cast(type t:chpl_anyreal, x:c_string) throws
-    return try ((x:string).strip()): t;
+    return try ((createStringWithNewBuffer(x)).strip()): t;
   inline proc _cast(type t:chpl_anyimag, x:c_string) throws
-    return try ((x:string).strip()): t;
+    return try ((createStringWithNewBuffer(x)).strip()): t;
 
   //
   // casts from c_string to complex types
   //
   inline proc _cast(type t:chpl_anycomplex, x:c_string) throws
-    return try ((x:string).strip()): t;
+    return try ((createStringWithNewBuffer(x)).strip()): t;
 
   //
   // primitive c_string functions and methods

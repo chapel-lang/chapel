@@ -1227,31 +1227,19 @@ static void protectNameFromC(Symbol* sym) {
   }
 
   //
-  // For now, we only rename our user and standard symbols.  Internal
-  // modules symbols should arguably similarly be protected, to ensure
-  // that we haven't inadvertently used a name that some user library
-  // will; most file-level symbols should be protected by 'chpl_' or
-  // somesuch, but of course local symbols may not be, and can cause
-  // conflicts (at present, a local variable named 'socket' would).
-  // The challenges to handling MOD_INTERNAL symbols in the same way
-  // today is that things like chpl_string and uint64_t should not be
-  // renamed, and should arguably have FLAG_EXTERN on them; however,
-  // putting it on them causes it to bleed over onto type aliases in a
-  // way that breaks things and wasn't easy to fix.  So this remains
-  // a TODO (currently in Brad's court).
-  //
-  ModuleSymbol* symMod = sym->getModule();
-  if (symMod->modTag == MOD_INTERNAL) {
-    return;
-  }
-
-  //
-  // If this symbol is exported of an extern symbol then someone
-  // outside of Chapel is relying on it to have a certain name and we
-  // need to respect that.
+  // Don't rename the symbol if it's not able to be (typically because
+  // it's exported, extern, or has otherwise been flagged as not being
+  // renameable).
   //
   if (!sym->isRenameable()) {
     return;
+  }
+
+  // Don't rename fields
+  if (isVarSymbol(sym)) {
+    if (isAggregateType(sym->defPoint->parentSymbol->type)) {
+      return;
+    }
   }
 
   //
@@ -1259,6 +1247,7 @@ static void protectNameFromC(Symbol* sym) {
   // is declared within an extern declaration, we should preserve its
   // name for similar reasons.
   //
+  ModuleSymbol* symMod = sym->getModule();
   if (sym != symMod) {
     Symbol* parentSym = sym->defPoint->parentSymbol;
     while (parentSym != symMod) {
@@ -2088,6 +2077,8 @@ shouldChangeArgumentTypeToRef(ArgSymbol* arg) {
   return (shouldPassRef &&
           !alreadyRef &&
           !fn->hasFlag(FLAG_EXTERN) &&
+          // TODO: Consider flag for export wrappers instead of this.
+          !(fLibraryCompile && fn->hasFlag(FLAG_EXPORT)) &&
           !arg->hasFlag(FLAG_NO_CODEGEN));
 }
 

@@ -19,5 +19,5 @@ proc main() {
     swapit(copy, bb); // Does this propagate lifetime?
     b = copy; // expecting an error here
   }
-  writeln(b.x);
+  writeln(b!.x);
 }

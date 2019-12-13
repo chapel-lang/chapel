@@ -7,6 +7,8 @@
      and Preston Sahabu.
 */
 
+use IO;
+
 config const n = 1000,            // the length of the generated strings
              lineLength = 60,     // the number of columns in the output
              blockSize = 1024,    // the parallelization granularity

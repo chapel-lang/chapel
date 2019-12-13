@@ -1,8 +1,9 @@
-module M {
-  extern {
-    #define TEST_DEFINE                               0x0007
+module OuterModule {
+  module M {
+    extern {
+      #define TEST_DEFINE                               0x0007
+    }
   }
+
+  writeln(M.TEST_DEFINE);
 }
-
-writeln(M.TEST_DEFINE);
-

@@ -25,7 +25,7 @@ var Grid:     [BigD] bool, // grid of life
     NextGrid: [D]    bool; // grid for next iteration
 
 // initialize grid
-var rs = makeRandomStream(seed, eltType=real(64), algorithm=RNG.NPB);
+var rs = createRandomStream(seed, eltType=real(64), algorithm=RNG.NPB);
 
 for i in D do
   Grid(i) = if rs.getNext() <= p:real / 100 then true else false;

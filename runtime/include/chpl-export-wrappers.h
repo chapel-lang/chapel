@@ -24,9 +24,9 @@
 #include <stdint.h>
 
 typedef struct chpl_bytes_wrapper {
-  int isOwned;
+  int8_t isOwned;
   char* data;
-  size_t size;
+  uint64_t size;
 } chpl_bytes_wrapper;
 
 void chpl_bytes_wrapper_free(chpl_bytes_wrapper cb);

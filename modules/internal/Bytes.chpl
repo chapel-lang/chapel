@@ -39,7 +39,7 @@ Creating :record:`bytes`
 :record:`bytes` and :record:`~String.string`
 --------------------------------------------
 
-As :record:`bytes` can store arbitrary data, any :record:`String.string` can be
+As :record:`bytes` can store arbitrary data, any :record:`~String.string` can be
 cast to :record:`bytes`. In that event, the bytes will store UTF-8 encoded
 character data. However, a :record:`bytes` can contain non-UTF-8 bytes and needs
 to be decoded to be converted to string.
@@ -96,10 +96,11 @@ module Bytes {
   use BytesCasts;
   private use ByteBufferHelpers;
   private use BytesStringCommon;
+  private use SysCTypes;
 
   /*
      ``decodePolicy`` specifies what happens when there is malformed characters
-     when decoding a :record:`bytes` into a UTF-8 :record:`String.string`.
+     when decoding a :record:`bytes` into a UTF-8 :record:`~String.string`.
        
        - **strict**: default policy; raise error
        - **replace**: replace with UTF-8 replacement character
@@ -389,6 +390,18 @@ module Bytes {
       */
     inline proc numBytes return len;
 
+    pragma "no doc"
+    inline proc param length param
+      return __primitive("string_length_bytes", this);
+
+    pragma "no doc"
+    inline proc param size param
+      return length;
+
+    pragma "no doc"
+    inline proc param numBytes param
+      return __primitive("string_length_bytes", this);
+
     /*
        Gets a version of the :record:`bytes` that is on the currently
        executing locale.
@@ -416,6 +429,11 @@ module Bytes {
       return getCStr(this);
     }
 
+    pragma "no doc"
+    inline proc param c_str() param : c_string {
+      return this:c_string; // folded out in resolution
+    }
+
     /*
       Gets a byte from the :record:`bytes`
 
@@ -441,6 +459,14 @@ module Bytes {
       return bufferGetByte(buf=this.buff, off=0, loc=this.locale_id);
     }
 
+    pragma "no doc"
+    inline proc param toByte() param : uint(8) {
+      if this.numBytes != 1 then
+        compilerError("bytes.toByte() only accepts single-byte bytes");
+      return __primitive("ascii", this);
+    }
+
+
     /*
       Gets a byte from the :record:`bytes`
 
@@ -452,6 +478,13 @@ module Bytes {
       if boundsChecking && (i <= 0 || i > this.len)
         then halt("index out of bounds of bytes: ", i);
       return bufferGetByte(buf=this.buff, off=i-1, loc=this.locale_id);
+    }
+
+    pragma "no doc"
+    inline proc param byte(param i: int) param : uint(8) {
+      if i < 1 || i > this.numBytes then
+        compilerError("index out of bounds of bytes: " + i:string);
+      return __primitive("ascii", this, i);
     }
 
     /*
@@ -1312,6 +1345,10 @@ module Bytes {
     return doConcat(s0, s1);
   }
 
+  pragma "no doc"
+  inline proc +(param s0: bytes, param s1: bytes) param
+    return __primitive("string_concat", s0, s1);
+
   /*
      :returns: A new :record:`bytes` which is the result of repeating `s` `n`
                times.  If `n` is less than or equal to 0, an empty bytes is
@@ -1377,6 +1414,36 @@ module Bytes {
   pragma "no doc"
   inline proc >=(a: bytes, b: bytes) : bool {
     return doGreaterThanOrEq(a, b);
+  }
+
+  pragma "no doc"
+  inline proc ==(param s0: bytes, param s1: bytes) param  {
+    return __primitive("string_compare", s0, s1) == 0;
+  }
+
+  pragma "no doc"
+  inline proc !=(param s0: bytes, param s1: bytes) param {
+    return __primitive("string_compare", s0, s1) != 0;
+  }
+
+  pragma "no doc"
+  inline proc <=(param a: bytes, param b: bytes) param {
+    return (__primitive("string_compare", a, b) <= 0);
+  }
+
+  pragma "no doc"
+  inline proc >=(param a: bytes, param b: bytes) param {
+    return (__primitive("string_compare", a, b) >= 0);
+  }
+
+  pragma "no doc"
+  inline proc <(param a: bytes, param b: bytes) param {
+    return (__primitive("string_compare", a, b) < 0);
+  }
+
+  pragma "no doc"
+  inline proc >(param a: bytes, param b: bytes) param {
+    return (__primitive("string_compare", a, b) > 0);
   }
 
   // character-wise operation helpers

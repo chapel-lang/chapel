@@ -26,7 +26,7 @@
  */
 module CPtr {
   private use ChapelStandard;
-  private use SysBasic, SysError;
+  private use SysBasic, SysError, SysCTypes;
   private use HaltWrappers only;
 
   /* A Chapel version of a C NULL pointer. */
@@ -94,6 +94,8 @@ module CPtr {
       (this:c_void_ptr).writeThis(ch);
     }
   }
+
+  private use IO;
 
   /*
   This class represents a C array with fixed size.  A variable of type c_array

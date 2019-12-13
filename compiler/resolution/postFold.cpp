@@ -211,7 +211,8 @@ static Expr* postFoldNormal(CallExpr* call) {
 *                                                                             *
 ************************************** | *************************************/
 
-static void  insertValueTemp(Expr* insertPoint, Expr* actual);
+static void insertValueTemp(Expr* insertPoint, Expr* actual);
+static bool isSameTypeOrInstantiation(Type* sub, Type* super, Expr* ctx);
 
 static Expr* postFoldPrimop(CallExpr* call) {
   Expr* retval = call;
@@ -292,7 +293,7 @@ static Expr* postFoldPrimop(CallExpr* call) {
     }
 
   } else if (call->isPrimitive(PRIM_IS_SUBTYPE) ||
-             call->isPrimitive(PRIM_IS_SUBTYPE_ALLOW_VALUES) ||
+             call->isPrimitive(PRIM_IS_INSTANTIATION_ALLOW_VALUES) ||
              call->isPrimitive(PRIM_IS_PROPER_SUBTYPE) ||
              call->isPrimitive(PRIM_IS_COERCIBLE)) {
     SymExpr* parentExpr = toSymExpr(call->get(1));
@@ -302,7 +303,7 @@ static Expr* postFoldPrimop(CallExpr* call) {
     bool subIsType = isTypeExpr(subExpr);
 
 
-    if (call->isPrimitive(PRIM_IS_SUBTYPE_ALLOW_VALUES)) {
+    if (call->isPrimitive(PRIM_IS_INSTANTIATION_ALLOW_VALUES)) {
       if (parentIsType == false && subIsType == false)
         USR_FATAL_CONT(call, "Subtype query requires a type");
     } else {
@@ -338,6 +339,8 @@ static Expr* postFoldPrimop(CallExpr* call) {
       bool result = false;
       if (call->isPrimitive(PRIM_IS_COERCIBLE))
         result = isCoercibleOrInstantiation(st, pt, call);
+      else if (call->isPrimitive(PRIM_IS_INSTANTIATION_ALLOW_VALUES))
+        result = isSameTypeOrInstantiation(st, pt, call);
       else
         result = isSubtypeOrInstantiation(st, pt, call);
 
@@ -397,6 +400,8 @@ static Expr* postFoldPrimop(CallExpr* call) {
 
       if (lhs->symbol()->type == dtString) {
         retval = new SymExpr(new_StringSymbol(astr(lstr, rstr)));
+      } else if (lhs->symbol()->type == dtBytes) {
+        retval = new SymExpr(new_BytesSymbol(astr(lstr, rstr)));
       } else {
         retval = new SymExpr(new_CStringSymbol(astr(lstr, rstr)));
       }
@@ -587,6 +592,22 @@ static Expr* postFoldPrimop(CallExpr* call) {
   }
 
   return retval;
+}
+
+// This function implements PRIM_IS_INSTANTIATION_ALLOW_VALUES
+static bool isSameTypeOrInstantiation(Type* sub, Type* super, Expr* ctx) {
+
+  if (sub == super)
+    return true;
+
+  // Consider instantiation
+  if (super->symbol->hasFlag(FLAG_GENERIC)) {
+    super = getInstantiationType(sub, NULL, super, NULL, ctx);
+    if (sub == super)
+      return true;
+  }
+
+  return false;
 }
 
 // This function implements PRIM_IS_SUBTYPE

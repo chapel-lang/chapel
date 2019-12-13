@@ -1,3 +1,4 @@
+throwing.doc.chpl:1: warning: This file-scope code is outside of any explicit module declarations (e.g., module Inner), so an implicit module named 'throwing.doc' is being introduced to contain the file's contents.
 .. default-domain:: chpl
 
 .. module:: throwing.doc

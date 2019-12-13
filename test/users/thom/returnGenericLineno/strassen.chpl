@@ -4,6 +4,7 @@ module Strassen
     use Time;
     use Rosslyn;
     use Util;
+    private use IO;
 
     class StrassenFactory : BenchmarkFactory
     {

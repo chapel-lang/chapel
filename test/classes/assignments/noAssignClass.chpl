@@ -75,15 +75,15 @@ proc =(ref lhs: borrowed H, rhs: H) {
 }
 
 proc =(ref lhs: I?, rhs: I) {
-  lhs.x = rhs.x;
+  lhs!.x = rhs.x;
 }
 
 proc =(ref lhs: owned J?, rhs: J) {
-  lhs.x = rhs.x;
+  lhs!.x = rhs.x;
 }
 
 proc =(ref lhs: borrowed K?, rhs: K) {
-  lhs.x = rhs.x;
+  lhs!.x = rhs.x;
 }
 
 proc =(ref lhs: A, rhs: int) {

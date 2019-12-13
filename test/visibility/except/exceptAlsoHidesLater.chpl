@@ -1,11 +1,11 @@
 // This test verifies that if an 'except' list is specified, the symbols are
 // ignored in all modules in that use chain, instead of just the module
 // specified.  So if some module M uses a module A and excludes 'foo', if A
-// uses a module B that also defines a 'foo', that 'foo' will also not be
-// visible.
+// publicly uses a module B that also defines a 'foo', that 'foo' will also
+// not be visible.
 
 module A {
-  use B;
+  public use B;
 
   var foo = 15; // Should be hidden
 
@@ -18,7 +18,7 @@ module B {
 }
 
 module C {
-  use D;
+  public use D;
 
   var whatev: uint;
 }

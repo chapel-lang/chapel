@@ -297,6 +297,8 @@ FnSymbol* build_accessor(AggregateType* ct, Symbol* field,
                            bool setter, bool typeMethod) {
   const bool fieldIsConst = field->hasFlag(FLAG_CONST);
   const bool recordLike   = ct->isRecord() || ct->isUnion();
+  const bool chapelClass  = isClassLike(ct) && isClass(ct);
+  const bool typeOrParam  = field->hasEitherFlag(FLAG_TYPE_VARIABLE, FLAG_PARAM);
   FnSymbol*  fn           = new FnSymbol(field->name);
 
   fn->addFlag(FLAG_NO_IMPLICIT_COPY);
@@ -319,7 +321,7 @@ FnSymbol* build_accessor(AggregateType* ct, Symbol* field,
   fn->setMethod(true);
 
   Type* thisType = ct;
-  if (isClassLike(ct) && isClass(ct) && typeMethod)
+  if (chapelClass && (typeMethod || typeOrParam))
     thisType = ct->getDecoratedClass(CLASS_TYPE_GENERIC);
   ArgSymbol* _this = new ArgSymbol(INTENT_BLANK, "this", thisType);
 
@@ -355,6 +357,21 @@ FnSymbol* build_accessor(AggregateType* ct, Symbol* field,
     }
   }
 
+  Symbol* baseSym = _this;
+  if (typeOrParam && chapelClass) {
+    // Strip the _owned/_shared wrapper, if applicable.
+    VarSymbol* borrowOfThis = new VarSymbol("borrowOfThis");
+    if (typeMethod) borrowOfThis->addFlag(FLAG_TYPE_VARIABLE);
+
+    fn->insertAtTail(new DefExpr(borrowOfThis));
+    // This cast "throws" when the receiver actual is nilable. OK because:
+    // - If this field is a runtime type, we will generate an error below.
+    // - Otherwise this method will be eliminated before lowerErrorHandling.
+    fn->insertAtTail("'move'(%S,_cast(%S,%S))", borrowOfThis,
+                     dtBorrowedNonNilable->symbol, _this);
+    baseSym = borrowOfThis;
+  }
+
   if (isUnion(ct)) {
     if (setter) {
       // Set the union ID in the setter.
@@ -383,23 +400,27 @@ FnSymbol* build_accessor(AggregateType* ct, Symbol* field,
     ct->symbol->defPoint->insertBefore(field->defPoint->remove());
   } else if (field->hasFlag(FLAG_TYPE_VARIABLE) || field->hasFlag(FLAG_SUPER_CLASS)) {
     toReturn = new CallExpr(PRIM_GET_MEMBER_VALUE,
-                            new SymExpr(_this),
+                            new SymExpr(baseSym),
                             new SymExpr(new_CStringSymbol(field->name)));
+    if (chapelClass && field->hasFlag(FLAG_TYPE_VARIABLE))
+      // Issue an error when accessing a runtime-type field of a nilable class.
+      toReturn = new CallExpr("chpl_checkLegalTypeFieldAccessor", _this,
+                              toReturn, new_StringSymbol(field->name));
   } else {
     toReturn = new CallExpr(PRIM_GET_MEMBER,
-                            new SymExpr(_this),
+                            new SymExpr(baseSym),
                             new SymExpr(new_CStringSymbol(field->name)));
   }
 
   if (toReturn != NULL) {
-    if (field->hasEitherFlag(FLAG_TYPE_VARIABLE, FLAG_PARAM)) {
+    if (typeOrParam) {
       Symbol* alternate = NULL;
       if (field->hasFlag(FLAG_PARAM))
         alternate = gUninstantiated;
       else
         alternate = dtUninstantiated->symbol;
 
-      fn->insertAtTail(new CondStmt(new CallExpr(PRIM_IS_BOUND, _this, new_CStringSymbol(field->name)),
+      fn->insertAtTail(new CondStmt(new CallExpr(PRIM_IS_BOUND, baseSym, new_CStringSymbol(field->name)),
                                     new CallExpr(PRIM_RETURN, toReturn),
                                     new CallExpr(PRIM_RETURN, alternate)));
     } else {

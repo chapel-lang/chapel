@@ -33,6 +33,7 @@
 #include "resolveIntents.h"
 #include "resolution.h"
 #include "stringutil.h"
+#include "wellknown.h"
 
 #include <algorithm>
 
@@ -47,6 +48,7 @@ Symbol *gTypeDefaultToken = NULL;
 Symbol *gLeaderTag = NULL, *gFollowerTag = NULL, *gStandaloneTag = NULL;
 Symbol *gModuleToken = NULL;
 Symbol *gNoInit = NULL;
+Symbol *gSplitInit = NULL;
 Symbol *gVoid = NULL;
 Symbol *gNone = NULL;
 Symbol *gFile = NULL;
@@ -209,7 +211,15 @@ bool Symbol::isParameter() const {
 }
 
 bool Symbol::isRenameable() const {
-  return !(hasFlag(FLAG_EXPORT) || hasFlag(FLAG_EXTERN));
+  // we can't rename symbols that we're exporting or that are extern
+  // because the other language will require the name to be as specified.
+  // and we can't rename symbols that say not to.
+  if (hasFlag(FLAG_EXPORT) ||
+      hasFlag(FLAG_EXTERN) ||
+      hasFlag(FLAG_NO_RENAME)) {
+    return false;
+  }
+  return true;
 }
 
 bool Symbol::isRef() {
@@ -1003,6 +1013,9 @@ void ShadowVarSymbol::accept(AstVisitor* visitor) {
     outerVarSE->accept(visitor);
   if (specBlock)
     specBlock->accept(visitor);
+
+  svInitBlock->accept(visitor);
+  svDeinitBlock->accept(visitor);
 }
 
 ShadowVarSymbol* ShadowVarSymbol::copyInner(SymbolMap* map) {
@@ -1479,7 +1492,13 @@ VarSymbol *new_StringSymbol(const char *str) {
   // DefExpr(s) always goes into the module scope to make it a global
   stringLiteralModule->block->insertAtTail(stringLitDef);
 
-  CallExpr *initCall = new CallExpr(astr("createStringWithBorrowedBuffer"),
+  Expr* initFn = NULL;
+  if (gChplCreateStringWithLiteral != NULL)
+    initFn = new SymExpr(gChplCreateStringWithLiteral);
+  else
+    initFn = new UnresolvedSymExpr("chpl_createStringWithLiteral");
+
+  CallExpr *initCall = new CallExpr(initFn,
                                     cstrTemp,
                                     new_IntSymbol(strLength));
 

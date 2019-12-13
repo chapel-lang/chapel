@@ -30,6 +30,8 @@ module LocaleModel {
 
   use LocaleModelHelpNUMA;
 
+  private use IO, SysCTypes;
+
   require "hbwmalloc.h", "-lmemkind";
 
   extern proc hbw_check_available():c_int;

@@ -69,6 +69,14 @@
 
 ////////////////////////////////////////
 //
+// This is the libfabric API version we need.
+//
+
+#define COMM_OFI_FI_VERSION FI_VERSION(1, 8)
+
+
+////////////////////////////////////////
+//
 // Global types and data
 //
 
@@ -159,10 +167,12 @@ static inline struct perTxCtxInfo_t* tciAlloc(void);
 static inline struct perTxCtxInfo_t* tciAllocForAmHandler(void);
 static inline chpl_bool tciTryRealloc(struct perTxCtxInfo_t*);
 static inline void tciFree(struct perTxCtxInfo_t*);
-static /*inline*/ chpl_comm_nb_handle_t ofi_put(const void*, c_nodeid_t,
-                                                void*, size_t);
-static /*inline*/ chpl_comm_nb_handle_t ofi_get(void*, c_nodeid_t,
-                                                void*, size_t);
+static inline chpl_comm_nb_handle_t ofi_put(const void*, c_nodeid_t,
+                                            void*, size_t);
+static inline void ofi_put_ll(const void*, c_nodeid_t,
+                              void*, size_t, void*);
+static inline chpl_comm_nb_handle_t ofi_get(void*, c_nodeid_t,
+                                            void*, size_t);
 static inline void waitForCQThisTxn(struct perTxCtxInfo_t*, atomic_bool*);
 static inline void waitForCQAllTxns(struct perTxCtxInfo_t*,
                                     chpl_comm_taskPrvData_t*);
@@ -311,7 +321,9 @@ static chpl_bool provCtl_readAmoNeedsOpnd; // READ AMO needs operand (RxD)
 //
 static
 chpl_bool isInProviderName(const char* s) {
-  if (ofi_info->fabric_attr->prov_name == NULL) {
+  if (ofi_info == NULL
+      || ofi_info->fabric_attr == NULL
+      || ofi_info->fabric_attr->prov_name == NULL) {
     return false;
   }
 
@@ -359,8 +371,9 @@ chpl_bool isInProviderName(const char* s) {
 static __thread chpl_bool isAmHandler = false;
 
 typedef enum {
-  txnTrkDone,        // *ptr is 'txnDone' flag
-  txnTrkTskprvCntr,  // *ptr is initiator's chpl_comm_taskPrvData_t.txnCntr
+  txnTrkNone,  // no tracking, ptr is ignored
+  txnTrkDone,  // *ptr is atomic bool 'done' flag
+  txnTrkCntr,  // *ptr is plain int (caller responsible for de-conflict)
 } txnTrkType_t;
 
 typedef struct {
@@ -472,6 +485,27 @@ void init_ofi(void) {
   init_ofiForMem();
   init_ofiForRma();
   init_ofiForAms();
+
+  DBG_PRINTF(DBG_CFG,
+             "AM config: recv buf size %zd MiB, %s, responses use %s",
+             ofi_iov_reqs.iov_len / (1L << 20),
+             (ofi_amhWaitSet == NULL) ? "polling" : "wait set",
+             (tciTab[tciTabLen - 1].txCQ != NULL) ? "CQ" : "counter");
+  if (useScalableTxEp) {
+    DBG_PRINTF(DBG_CFG,
+               "per node config: 1 scalable tx ep + %d tx ctx%s (%d fixed), "
+               "%d rx ctx%s",
+               numTxCtxs, (numTxCtxs == 1) ? "" : "s",
+               tciTabFixedAssignments ? chpl_task_getFixedNumThreads() : 0,
+               numRxCtxs, (numRxCtxs == 1) ? "" : "s");
+  } else {
+    DBG_PRINTF(DBG_CFG,
+               "per node config: %d regular tx ep+ctx%s (%d fixed), "
+               "%d rx ctx%s",
+               numTxCtxs, (numTxCtxs == 1) ? "" : "s",
+               tciTabFixedAssignments ? chpl_task_getFixedNumThreads() : 0,
+               numRxCtxs, (numRxCtxs == 1) ? "" : "s");
+  }
 }
 
 
@@ -515,9 +549,27 @@ void init_ofiFabricDomain(void) {
   hints->domain_attr->data_progress = prg;
 
   hints->domain_attr->av_type = FI_AV_TABLE;
-  hints->domain_attr->mr_mode = FI_MR_LOCAL | FI_MR_VIRT_ADDR
-                                | FI_MR_ALLOCATED | FI_MR_PROV_KEY /*TODO*/
-                                | FI_MR_ENDPOINT;
+
+  //
+  // We can support all of the MR modes shown here, but we should only
+  // throw ALLOCATED if indeed the pages are known to exist, and that's
+  // only true with a fixed heap.
+  //
+  // PROV_KEY is marked TODO only because if the provider doesn't assert
+  // that mode we may be able to avoid broadcasting keys around the job.
+  //
+  int mr_mode;
+  if ((mr_mode = chpl_env_rt_get_int("COMM_MR_MODE", -1)) == -1) {
+    mr_mode = FI_MR_LOCAL
+              | FI_MR_VIRT_ADDR
+              | FI_MR_PROV_KEY /*TODO*/
+              | FI_MR_ENDPOINT;
+    if (chpl_numNodes > 1 && chpl_comm_getenvMaxHeapSize() > 0) {
+      mr_mode |= FI_MR_ALLOCATED;
+    }
+  }
+  hints->domain_attr->mr_mode = mr_mode;
+
   hints->domain_attr->resource_mgmt = FI_RM_ENABLED;
 
   //
@@ -533,8 +585,7 @@ void init_ofiFabricDomain(void) {
   }
 
   int ret;
-  OFI_CHK_2(fi_getinfo(FI_VERSION(FI_MAJOR_VERSION, FI_MINOR_VERSION),
-                       NULL, NULL, 0, hints, &ofi_info),
+  OFI_CHK_2(fi_getinfo(COMM_OFI_FI_VERSION, NULL, NULL, 0, hints, &ofi_info),
             ret, -FI_ENODATA);
 
   if (chpl_nodeID == 0) {
@@ -548,8 +599,7 @@ void init_ofiFabricDomain(void) {
                    "None matched hints; available with prov_name \"%s\" are:",
                    (provider == NULL) ? "<any>" : provider);
         struct fi_info* info = NULL;
-        OFI_CHK(fi_getinfo(FI_VERSION(FI_MAJOR_VERSION, FI_MINOR_VERSION),
-                           NULL, NULL, 0, NULL, &info));
+        OFI_CHK(fi_getinfo(COMM_OFI_FI_VERSION, NULL, NULL, 0, NULL, &info));
         for ( ; info != NULL; info = info->next) {
           const char* pn = info->fabric_attr->prov_name;
           if (provider == NULL
@@ -881,22 +931,6 @@ void init_ofiEpNumCtxs(void) {
   //
   CHK_TRUE(dom_attr->max_ep_rx_ctx >= numAmHandlers);
   numRxCtxs = numAmHandlers;
-
-  if (useScalableTxEp) {
-    DBG_PRINTF(DBG_CFG,
-               "per node: 1 scalable tx ep + %d tx ctx%s (%d fixed), "
-               "%d rx ctx%s",
-               numTxCtxs, (numTxCtxs == 1) ? "" : "s",
-               tciTabFixedAssignments ? fixedNumThreads : 0,
-               numRxCtxs, (numRxCtxs == 1) ? "" : "s");
-  } else {
-    DBG_PRINTF(DBG_CFG,
-               "per node: %d regular tx ep+ctx%s (%d fixed), "
-               "%d rx ctx%s",
-               numTxCtxs, (numTxCtxs == 1) ? "" : "s",
-               tciTabFixedAssignments ? fixedNumThreads : 0,
-               numRxCtxs, (numRxCtxs == 1) ? "" : "s");
-  }
 }
 
 
@@ -1040,15 +1074,14 @@ void init_ofiForMem(void) {
   }
 
   for (int i = 0; i < numMemRegions; i++) {
+    DBG_PRINTF(DBG_MR, "[%d] fi_mr_reg(%p, %#zx, %#" PRIx64 ")",
+               i, memTab[i].addr, memTab[i].size, bufAcc);
     OFI_CHK(fi_mr_reg(ofi_domain,
                       memTab[i].addr, memTab[i].size,
                       bufAcc, 0, 0, 0, &ofiMrTab[i], NULL));
     memTab[i].desc = fi_mr_desc(ofiMrTab[i]);
     memTab[i].key  = fi_mr_key(ofiMrTab[i]);
-    DBG_PRINTF(DBG_MR,
-               "[%d] fi_mr_reg(%p, %#zx): key %#" PRIx64,
-               i, memTab[i].addr, memTab[i].size,
-               memTab[i].key);
+    DBG_PRINTF(DBG_MR, "[%d]     key %#" PRIx64, i, memTab[i].key);
     if ((ofi_info->domain_attr->mr_mode & FI_MR_ENDPOINT) != 0) {
       OFI_CHK(fi_mr_bind(ofiMrTab[i], &ofi_rxEpRma->fid, 0));
       OFI_CHK(fi_mr_enable(ofiMrTab[i]));
@@ -1241,7 +1274,23 @@ static void exit_all(int status) {
 
 
 static void exit_any(int status) {
-  // TODO
+  //
+  // (Over)abundance of caution mode: if exiting unilaterally with the
+  // 'verbs' provider in use, call _exit() now instead of allowing the
+  // usual runtime control flow to call exit() and invoke the atexit(3)
+  // functions.  Otherwise we run the risk of segfaulting due to some
+  // broken destructor code in librdmacm.  That was fixed years ago by
+  //     https://github.com/linux-rdma/rdma-core/commit/9ef8ed2
+  // but the fix doesn't seem to have made it into general circulation
+  // yet.
+  //
+  // Flush all the stdio FILE streams first, in the hope of not losing
+  // any output.
+  //
+  if (isInProviderName("verbs")) {
+    fflush(NULL);
+    _exit(status);
+  }
 }
 
 
@@ -1867,7 +1916,7 @@ void amRequestCommon(c_nodeid_t node,
       atomic_init_bool(&txnDone, false);
       ctx = txnTrkEncode(txnTrkDone, &txnDone);
     } else {
-      ctx = txnTrkEncode(txnTrkTskprvCntr, &prvData->numTxnsOut);
+      ctx = txnTrkEncode(txnTrkCntr, &prvData->numTxnsOut);
       prvData->numTxnsOut++;  // count txn now, saving control flow later
     }
   } else {
@@ -2230,12 +2279,7 @@ void amWrapExecOnLrgBody(void* p) {
   //
   // Create space for the full bundle and fill in the header part from
   // what we've already received.  Retrieve the remainder, that is, the
-  // args proper, from the initiating node.  Iff this is a nonblocking
-  // executeOn, tell the initiator we've done so, because they cannot
-  // proceed until they know we have the bundle.  This prevents them
-  // freeing it before we've retrieved it.  For blocking executeOn we
-  // don't have to say we have the bundle, because the initiator won't
-  // proceed until the entire executeOn is complete anyway.
+  // args proper, from the initiating node.
   //
   chpl_comm_on_bundle_t* reqCopy;
   CHPL_CALLOC_SZ(reqCopy, 1, xol->argSize);
@@ -2248,17 +2292,28 @@ void amWrapExecOnLrgBody(void* p) {
   CHK_TRUE(mrGetKey(NULL, NULL, node, &reqOnOrig[1], remnantSize) == 0);
   (void) ofi_get(&req[1], node, &reqOnOrig[1], remnantSize);
 
+  //
+  // Iff this is a nonblocking executeOn, tell the initiator we've got
+  // the rest of the bundle.  They have to be held until we've got it,
+  // so that it doesn't disappear before then.  We don't have to do this
+  // for blocking executeOn because the initiator won't proceed until
+  // the entire executeOn is complete anyway.  We can save a little bit
+  // of time here by not waiting for a network response.  Either we or
+  // someone else will consume that completion later.  In the meantime
+  // we can go ahead with the executeOn body.
+  //
   if (xol->pAmDone == NULL) {
     static __thread chpl_comm_amDone_t* myGotArg = NULL;
     if (myGotArg == NULL) {
       myGotArg = allocBounceBuf(1);
-      CHK_TRUE(mrGetDesc(NULL, myGotArg, 1) == 0);
       *myGotArg = 1;
     }
 
     chpl_comm_amDone_t* origGotArg = &reqOnOrig->comm.xol.gotArg;
-    CHK_TRUE(mrGetKey(NULL, NULL, node, origGotArg, sizeof(*origGotArg)) == 0);
-    (void) ofi_put(myGotArg, node, origGotArg, sizeof(*origGotArg));
+    DBG_PRINTF(DBG_AM, "AM seqId %d:%" PRIu64 ": set gotArg (NB) %p",
+               (int) node, xol->b.seq, origGotArg);
+    ofi_put_ll(myGotArg, node, origGotArg, sizeof(*origGotArg),
+               txnTrkEncode(txnTrkNone, NULL));
   }
 
   //
@@ -2392,14 +2447,17 @@ void amSendDone(struct chpl_comm_bundleData_base_t* b,
   static __thread chpl_comm_amDone_t* amDone = NULL;
   if (amDone == NULL) {
     amDone = allocBounceBuf(1);
-    CHK_TRUE(mrGetDesc(NULL, amDone, 1) == 0);
     *amDone = 1;
   }
 
-  CHK_TRUE(mrGetKey(NULL, NULL, b->node, pAmDone, sizeof(*pAmDone)) == 0);
-  DBG_PRINTF(DBG_AM, "AM seqId %d:%" PRIu64 ": set pAmDone %p",
+  //
+  // Send the 'done' indicator without waiting for a completion.
+  // Either we or someone else will consume that completion later.
+  //
+  DBG_PRINTF(DBG_AM, "AM seqId %d:%" PRIu64 ": set pAmDone (NB) %p",
              (int) b->node, b->seq, pAmDone);
-  (void) ofi_put(amDone, b->node, pAmDone, sizeof(*pAmDone));
+  ofi_put_ll(amDone, b->node, pAmDone, sizeof(*pAmDone),
+             txnTrkEncode(txnTrkNone, NULL));
 }
 
 
@@ -2734,9 +2792,29 @@ void tciFree(struct perTxCtxInfo_t* tcip) {
 }
 
 
-static /*inline*/
+static inline
 chpl_comm_nb_handle_t ofi_put(const void* addr, c_nodeid_t node,
                               void* raddr, size_t size) {
+  //
+  // Don't ask the provider to transfer more than it wants to.
+  //
+  if (size > ofi_info->ep_attr->max_msg_size) {
+    DBG_PRINTF(DBG_RMA | DBG_RMAWRITE,
+               "splitting large PUT %d:%p <= %p, size %zd",
+               (int) node, raddr, addr, size);
+
+    size_t chunkSize = ofi_info->ep_attr->max_msg_size;
+    for (size_t i = 0; i < size; i += chunkSize) {
+      if (chunkSize > size - i) {
+        chunkSize = size - i;
+      }
+      (void) ofi_put(&((const char*) addr)[i], node, &((char*) raddr)[i],
+                     chunkSize);
+    }
+
+    return NULL;
+  }
+
   DBG_PRINTF(DBG_RMA | DBG_RMAWRITE,
              "PUT %d:%p <= %p, size %zd",
              (int) node, raddr, addr, size);
@@ -2812,9 +2890,61 @@ chpl_comm_nb_handle_t ofi_put(const void* addr, c_nodeid_t node,
 }
 
 
-static /*inline*/
+static inline
+void ofi_put_ll(const void* addr, c_nodeid_t node,
+                void* raddr, size_t size, void* ctx) {
+  DBG_PRINTF(DBG_RMA | DBG_RMAWRITE,
+             "PUT %d:%p <= %p, size %zd",
+             (int) node, raddr, addr, size);
+
+  uint64_t mrKey = 0;
+  uint64_t mrRaddr = 0;
+  CHK_TRUE(mrGetKey(&mrKey, &mrRaddr, node, raddr, size) == 0);
+
+  void* myAddr = (void*) addr;
+  void* mrDesc = NULL;
+  CHK_TRUE(mrGetDesc(&mrDesc, myAddr, size) == 0);
+
+  struct perTxCtxInfo_t* tcip;
+  CHK_TRUE((tcip = tciAlloc()) != NULL);
+
+  DBG_PRINTF(DBG_RMA | DBG_RMAWRITE,
+             "tx write ll: %d:%p <= %p, size %zd, key 0x%" PRIx64 ", ctx %p",
+             (int) node, raddr, myAddr, size, mrKey, ctx);
+  OFI_RIDE_OUT_EAGAIN(fi_write(tcip->txCtx, myAddr, size,
+                               mrDesc, rxRmaAddr(tcip, node),
+                               mrRaddr, mrKey, ctx),
+                      checkTxCQ(tcip));
+  if (tcip->txCntr != NULL) {
+    tcip->numTxnsBegun++;
+  }
+  tciFree(tcip);
+}
+
+
+static inline
 chpl_comm_nb_handle_t ofi_get(void* addr, c_nodeid_t node,
                               void* raddr, size_t size) {
+  //
+  // Don't ask the provider to transfer more than it wants to.
+  //
+  if (size > ofi_info->ep_attr->max_msg_size) {
+    DBG_PRINTF(DBG_RMA | DBG_RMAWRITE,
+               "splitting large GET %p <= %d:%p, size %zd",
+               addr, (int) node, raddr, size);
+
+    size_t chunkSize = ofi_info->ep_attr->max_msg_size;
+    for (size_t i = 0; i < size; i += chunkSize) {
+      if (chunkSize > size - i) {
+        chunkSize = size - i;
+      }
+      (void) ofi_get(&((char*) addr)[i], node, &((char*) raddr)[i],
+                     chunkSize);
+    }
+
+    return NULL;
+  }
+
   DBG_PRINTF(DBG_RMA | DBG_RMAREAD,
              "GET %p <= %d:%p, size %zd",
              addr, (int) node, raddr, size);
@@ -2937,7 +3067,7 @@ chpl_comm_nb_handle_t ofi_amo(struct perTxCtxInfo_t* tcip,
       waitForCQAllTxns(tcip, prvData);
       ctx = txnTrkEncode(txnTrkDone, &txnDone);
     } else {
-      ctx = txnTrkEncode(txnTrkTskprvCntr, &prvData->numTxnsOut);
+      ctx = txnTrkEncode(txnTrkCntr, &prvData->numTxnsOut);
       prvData->numTxnsOut++;  // counting txn now allows smaller prvData scope
     }
   } else {
@@ -3057,12 +3187,14 @@ void checkTxCQ(struct perTxCtxInfo_t* tcip) {
       DBG_PRINTF(DBG_ACK, "CQ ack tx, flags %#" PRIx64, cqe->flags);
       const txnTrkCtx_t trk = txnTrkDecode(cqe->op_context);
       switch (trk.typ) {
+      case txnTrkNone:
+        break;
       case txnTrkDone:
         atomic_store_explicit_bool((atomic_bool*) trk.ptr, true,
                                    memory_order_release);
         break;
-      case txnTrkTskprvCntr:
-        ((chpl_comm_taskPrvData_t*) trk.ptr)->numTxnsOut--;
+      case txnTrkCntr:
+        (*((int*) trk.ptr))--;
         break;
       default:
         INTERNAL_ERROR_V("unexpected trk.typ %d", trk.typ);
@@ -3993,30 +4125,31 @@ double chpl_comm_ofi_time_get(void) {
 //
 static
 void ofiErrReport(const char* exprStr, int retVal, const char* errStr) {
-  if (retVal == -FI_EMFILE && isInProviderName("tcp")) {
+  if (retVal == -FI_EMFILE) {
     //
-    // The tcp provider opens a lot of files but most importantly, it
-    // opens a socket file for each connected endpoint.  Because of
-    // this, one can reach a quite reasonable open-file limit in a job
-    // running on a fairly modest number of many-core locales.  For
-    // example, we've seen extremeBlock get -FI_EMFILE with an open file
-    // limit of 1024 when run on 32 overloaded locales on a 24-core
-    // node.  Here, try to inform the user about this without getting
-    // overly technical.
+    // We've run into the limit on the number of files we can have open
+    // at once.
     //
-    if (2L * chpl_numNodes * numTxCtxs > sysconf(_SC_OPEN_MAX)) {
-      INTERNAL_ERROR_V(
-        "OFI error: %s: %s:\n"
-        "The program has reached the limit on the number of files it can\n"
-        "have open at once.  This may be because the product of the number\n"
-        "of locales (%d) and the communication concurrency (roughly %d) is\n"
-        "a significant fraction of the open-file limit (%ld).  That being\n"
-        "so, either setting CHPL_RT_COMM_CONCURRENCY to decrease the former\n"
-        "or using `ulimit` to increase the latter may allow the program to\n"
-        "run successfully at this scale.",
-                       exprStr, errStr, (int) chpl_numNodes, numTxCtxs,
-                       sysconf(_SC_OPEN_MAX));
-    }
+    // Some providers open a lot of files.  The tcp provider, as one
+    // example, can open as many as roughly 9 files per node, plus 2
+    // socket files for each connected endpoint.  Because of this, one
+    // can exceed a quite reasonable open-file limit in a job running on
+    // a fairly modest number of many-core locales.  Thus for example,
+    // extremeBlock will get -FI_EMFILE with an open file limit of 1024
+    // when run on 32 24-core locales.  Here, try to inform the user
+    // about this without getting overly technical.
+    //
+    INTERNAL_ERROR_V(
+      "OFI error: %s: %s:\n"
+      "  The program has reached the limit on the number of files it can\n"
+      "  have open at once.  This may be because the product of the number\n"
+      "  of locales (%d) and the communication concurrency (roughly %d) is\n"
+      "  a significant fraction of the open-file limit (%ld).  If so,\n"
+      "  either setting CHPL_RT_COMM_CONCURRENCY to decrease communication\n"
+      "  concurrency or running on fewer locales may allow the program to\n"
+      "  execute successfully.  Or, you may be able to use `ulimit` to\n"
+      "  increase the open file limit and achieve the same result.",
+      exprStr, errStr, (int) chpl_numNodes, numTxCtxs, sysconf(_SC_OPEN_MAX));
   }
 }
 

@@ -210,7 +210,7 @@ module BLAS {
 
   use C_BLAS;
 
-  use SysCTypes;
+  public use SysCTypes;
 
   /* Return `true` if type is supported by BLAS */
   proc isBLASType(type t) param: bool {

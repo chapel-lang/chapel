@@ -21,7 +21,7 @@
 //
 module MemTracking
 {
-  private use ChapelStandard;
+  private use ChapelStandard, SysCTypes;
 
   config const
     memTrack: bool = false,

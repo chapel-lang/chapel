@@ -1,17 +1,17 @@
 Error Caught in Equal 1D Arrays
-AssertionError: assert failed - 
+AssertionError: assert failed -
 '1 2 5'
-== 
+==
 '1 2 5'
 ================================================================================
 Error Caught in Equal High Dim Arrays
-AssertionError: assert failed - 
+AssertionError: assert failed -
 '0.0 0.0 0.0 0.0 0.0 0.0 0.0
 0.0 0.0 0.0 0.0 0.0 0.0 0.0
 0.0 0.0 0.0 0.0 0.0 0.0 0.0
 0.0 0.0 0.0 0.0 0.0 0.0 0.0
 0.0 0.0 0.0 0.0 0.0 0.0 0.0'
-== 
+==
 '0.0 0.0 0.0 0.0 0.0 0.0 0.0
 0.0 0.0 0.0 0.0 0.0 0.0 0.0
 0.0 0.0 0.0 0.0 0.0 0.0 0.0
@@ -19,20 +19,20 @@ AssertionError: assert failed -
 0.0 0.0 0.0 0.0 0.0 0.0 0.0'
 ================================================================================
 Error Caught in Equal Integers
-AssertionError: assert failed - 
+AssertionError: assert failed -
 '1.0'
-== 
+==
 '1'
 ================================================================================
 Error Caught in Equal Ranges
-AssertionError: assert failed - 
+AssertionError: assert failed -
 '1..6'
-== 
+==
 '1..6'
 ================================================================================
 Error Caught in Equal Strings
-AssertionError: assert failed - 
+AssertionError: assert failed -
 'equal string'
-== 
+==
 'equal string'
 ================================================================================

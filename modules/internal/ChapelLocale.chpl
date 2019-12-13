@@ -68,6 +68,7 @@ module ChapelLocale {
 
   use LocaleModel;
   private use HaltWrappers only;
+  private use SysCTypes;
 
   //
   // Node and sublocale types and special sublocale values.
@@ -195,7 +196,7 @@ module ChapelLocale {
       extern proc chpl_nodeName(): c_string;
       var hname: string;
       on this {
-        hname = chpl_nodeName():string;
+        hname = createStringWithNewBuffer(chpl_nodeName());
       }
       return hname;
     }
@@ -302,12 +303,6 @@ module ChapelLocale {
     proc highBandwidthMemory() : locale {
       HaltWrappers.pureVirtualMethodHalt();
       return this;
-    }
-
-    // A useful default definition is provided (not pure virtual).
-    pragma "no doc"
-    override proc writeThis(f) throws {
-      f <~> name;
     }
 
     pragma "no doc"
@@ -475,8 +470,22 @@ module ChapelLocale {
           yield locIdx;
           b.wait(locIdx, flags);
           chpl_rootLocaleInitPrivate(locIdx);
+          warmupRuntime();
         }
       }
+    }
+  }
+
+  // Warm up runtime components. For tasking layers that have a fixed number of
+  // threads, we create a task on each thread to warm it up (e.g. grab some
+  // initial call stacks.) We also warm up the memory layer, since allocators
+  // tend to have per thread pools/arenas.
+  private proc warmupRuntime() {
+    extern proc chpl_task_getFixedNumThreads(): uint(32);
+    coforall i in 0..#chpl_task_getFixedNumThreads() {
+      var p = c_malloc(int, 1);
+      p[0] = i;
+      c_free(p);
     }
   }
 

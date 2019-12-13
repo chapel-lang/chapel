@@ -649,8 +649,11 @@ buildIfStmt(Expr* condExpr, Expr* thenExpr, Expr* elseExpr) {
 
 BlockStmt*
 buildExternBlockStmt(const char* c_code) {
-  BlockStmt* ret = NULL;
-  ret = buildChapelStmt(new ExternBlockStmt(c_code));
+  CallExpr* sysCTypes = new CallExpr(PRIM_ACTUALS_LIST,
+                                     new UnresolvedSymExpr("SysCTypes"));
+  BlockStmt* useSysCTypes = buildUseStmt(sysCTypes, /* private = */ false);
+  useSysCTypes->insertAtTail(new ExternBlockStmt(c_code));
+  BlockStmt* ret = buildChapelStmt(useSysCTypes);
 
   // Check that the compiler supports extern blocks
   // but skip these checks for chpldoc.
@@ -2012,6 +2015,7 @@ buildOnStmt(Expr* expr, Expr* stmt) {
     Symbol* tmp = newTempConst();
     block->insertAtHead(new CallExpr(PRIM_MOVE, tmp, onExpr)); // evaluate the expression for side effects
     block->insertAtHead(new DefExpr(tmp));
+    block->blockInfoSet(new CallExpr(PRIM_BLOCK_ELIDED_ON, gFalse, tmp));
     return buildChapelStmt(block);
   }
 
@@ -2312,7 +2316,9 @@ static BlockStmt* findStmtWithTag(PrimitiveTag tag, BlockStmt* blockStmt) {
       blockStmt = NULL;
 
     // Stop if the tail is not a "real" BlockStmt (e.g. a Loop etc)
-    } else if (tail == NULL || tail->isRealBlockStmt() == false) {
+    } else if (tail == NULL ||
+               (tail->isRealBlockStmt() == false &&
+                !tail->isBlockType(PRIM_BLOCK_ELIDED_ON))) {
       blockStmt = NULL;
 
     // Step in to the block and try again

@@ -1915,6 +1915,9 @@ for testname in testsrc:
             # envExecopts are meant for chpl programs, dont add them to C tests
             if not is_c_test and envExecopts != None:
                 args+=shlex.split(envExecopts)
+            # lastexecopts really must be last, so add any launcher timeout now
+            if useLauncherTimeout:
+                args += LauncherTimeoutArgs(timeout)
             if lastexecopts:
                 args += lastexecopts
             # sys.stdout.write("args=%s\n"%(args))
@@ -1970,7 +1973,7 @@ for testname in testsrc:
                             my_stdin = None
                         else:
                             my_stdin=open(redirectin, 'r')
-                        test_command = [cmd] + args + LauncherTimeoutArgs(timeout)
+                        test_command = [cmd] + args
                         p = py3_compat.Popen(test_command,
                                              env=dict(list(os.environ.items()) + list(testenv.items())),
                                              stdin=my_stdin, stdout=subprocess.PIPE, stderr=subprocess.PIPE)

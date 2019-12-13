@@ -1,3 +1,5 @@
+use IO;
+
 var b: bytes;
 readln(b);
 if b.length != 3 then

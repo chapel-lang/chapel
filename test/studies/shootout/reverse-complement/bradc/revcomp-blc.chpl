@@ -3,8 +3,8 @@
 
    contributed by Ben Harshbarger and Brad Chamberlain
    derived from the Rust #2 version by Matt Brubeck
+   updated to avoid allocating the buffer to be the right size from the start
 */
-
 use IO;
 
 param eol = "\n".toByte();    // end-of-line, as an integer
@@ -16,7 +16,8 @@ proc main(args: [] string) {
         input = stdin.reader(iokind.native, locking=false,
                              hints=QIO_HINT_PARALLEL),
         len = stdin.length();
-  var data: [0..#len] uint(8);
+  var dataSpace = {0..#16384};
+  var data: [dataSpace] uint(8);
 
   // if the file isn't empty, wait for all tasks to complete before continuing
   if len then sync {
@@ -46,6 +47,10 @@ proc main(args: [] string) {
       // Go back to the point we marked
       input.revert();
 
+      // Recursively double the data buffer as necessary
+      while nextDescOffset >= data.size do
+        dataSpace = {0..#(2*data.size)};
+
       // Read up to the nextDescOffset into the data array.
       input.read(data[descOffset..nextDescOffset]);
 
@@ -57,10 +62,10 @@ proc main(args: [] string) {
     } while !eof;
   }
 
-  // write the data out to stdout once all tasks have completed
+  // write the data that we read to stdout once all tasks have completed
   const stdoutBin = openfd(1).writer(iokind.native, locking=false,
                                      hints=QIO_CH_ALWAYS_UNBUFFERED);
-  stdoutBin.write(data);
+  stdoutBin.write(data[0..#input.offset()]);
 }
 
 // process a sequence from both ends, replacing each extreme element

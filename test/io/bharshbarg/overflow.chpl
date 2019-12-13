@@ -1,3 +1,5 @@
+use IO;
+
 config const lineLen = 100;
 
 var f = openmem();

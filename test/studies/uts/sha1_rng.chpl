@@ -1,4 +1,5 @@
 module sha1_rng {
+  use SysCTypes;
 
   //
   // This should really be something like c_int

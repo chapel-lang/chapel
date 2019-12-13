@@ -26,6 +26,7 @@
 
 use Image;    // use helper module related to writing out images
 use List;
+use IO;       // allow use of stderr, stdin, iomode
 
 //
 // =================================================
@@ -442,6 +443,8 @@ proc computeDims(sizeString) {
 // its results are portable, and it can optionally be used in parallel).
 //
 proc initRands() {
+  use SysCTypes;
+
   var rands: randNums;
   
   if useCRand {

@@ -1368,7 +1368,7 @@ available:
 
 .. code-block:: chapel
 
-   proc $enum$.size: param int
+   proc enum.size: param int
 
 The number of constants in the given enumerated type.
 
@@ -1561,11 +1561,30 @@ record. Such a type alias is called an unspecified type alias. Classes
 and records that contain type aliases, specified or unspecified, are
 generic (:ref:`Type_Aliases_in_Generic_Types`).
 
-   *Open issue*.
+   *Example (type-alias.chpl)*.
 
-   There is on going discussion on whether a type alias is a new type or
-   simply an alias. The former should enable redefinition of default
-   values, identity elements, etc.
+   The declaration
+
+   .. code-block:: chapel
+
+      type t = int;
+
+   defines a ``t`` as a synonym for the type ``int``. Functions and
+   methods available on ``int`` will apply to variables declared with
+   type ``t``. For example,
+
+   .. code-block:: chapel
+
+      var x: t = 1;
+      x += 1;
+      writeln(x);
+
+   will print out ``2``.
+
+   .. BLOCK-test-chapeloutput
+
+      2
+
 
 .. _Chapter-Variables:
 
@@ -1582,15 +1601,15 @@ to the variable can be stored in that variable as specified by its type.
 Variable Declarations
 ---------------------
 
-Variables are declared with the following syntax: 
+Variables are declared with the following syntax:
 
 .. code-block:: syntax
 
    variable-declaration-statement:
-     privacy-specifier[OPT] config-or-extern[OPT] variable-kind variable-declaration-list ;
+     privacy-specifier[OPT] config-extern-or-export[OPT] variable-kind variable-declaration-list ;
 
    config-or-extern: one of
-     `config' $ $ $ $ `extern'
+     `config' `extern' `export'
 
    variable-kind:
      `param'
@@ -1604,17 +1623,13 @@ Variables are declared with the following syntax:
      variable-declaration , variable-declaration-list
 
    variable-declaration:
-     identifier-list type-part[OPT] initialization-part
-     identifier-list type-part no-initialization-part[OPT]
+     identifier-list type-part[OPT] initialization-part[OPT]
 
    type-part:
      : type-expression
 
    initialization-part:
      = expression
-
-   no-initialization-part:
-     = `noinit'
 
    identifier-list:
      identifier
@@ -1652,25 +1667,34 @@ in :ref:`Constants`. Ref variables are discussed in
 :ref:`Ref_Variables`.
 
 The ``type-part`` of a variable declaration specifies the type of the
-variable. It is optional if the ``initialization-part`` is specified. If
-the ``type-part`` is omitted, the type of the variable is inferred using
-local type inference described in :ref:`Local_Type_Inference`.
-If the ``type-part`` refers to a generic type, then an
-``initialization-part`` is required and will be used to determine the
-type of the variable. In this event, the compiler will fail with an
-error if the ``initialization-part`` is not coercible to an
-instantiation of the generic type.
+variable. It is optional.
 
 The ``initialization-part`` of a variable declaration specifies an
-initial expression to assign to the variable. If the
-``initialization-part`` is omitted, the ``type-part`` must be present,
-and the variable is initialized to the default value of its type as
-described in :ref:`Default_Values_For_Types`.
+initialization expression for the variable. It is option. When present,
+the initialization expression will be stored into the variable as its
+initial value.
 
-If the ``no-initialization-part`` is present, the variable declaration
-does not initialize the variable to any value, as described
-in :ref:`Noinit_Capability`. The result of any read of an
-uninitialized variable is undefined until that variable is written.
+If the ``initialization-part`` is omitted, the compiler will consider if
+split initialization can be applied to this variable as described in
+:ref:`Split_Initialization`. If split initialization can be applied, the
+compiler will identify one or more later assignment statements and the
+right-hand-side of such statements will form the initialization
+expression. If the ``initialization-part`` is omitted and split
+initialization cannot be applied, then the variable will need to be
+initialized to a default value. Only `var` and `const` variable
+declarations can be initialized to a default value. Not all types have a
+default value. Default values are described in
+:ref:`Default_Values_For_Types`.
+
+If the ``type-part`` is omitted or refers to a generic type, an
+initialization expression as described above is required. Note that such
+initialization expressions can be in later statements if
+:ref:`Split_Initialization` us used. When the ``type-part`` is omitted or
+generic, the type of the variable is inferred from the initialization
+expression using local type inference described
+in :ref:`Local_Type_Inference`. If the ``type-part`` is present, the
+initialization expression must be coercible to the specified type or, if
+``type-part`` is generic, to its instantiation.
 
 Multiple variables can be defined in the same
 ``variable-declaration-list``. The semantics of declaring multiple
@@ -1679,6 +1703,107 @@ defined in :ref:`Multiple_Variable_Declarations`.
 
 Multiple variables can be grouped together using a tuple notation as
 described in :ref:`Variable_Declarations_in_a_Tuple`.
+
+.. _Split_Initialization:
+
+Split Initialization
+~~~~~~~~~~~~~~~~~~~~
+
+Split initialization is a feature that allows an initialization
+expression for a variable to be in a statement after the variable
+declaration statement.
+
+If the ``initialization-part`` of a local variable declaration is
+omitted, the compiler will search forward in the function for the
+earliest assignment statement(s) setting that variable that occur before
+the variable is otherwise mentioned. It will search only within block
+declarations ``{ }`` and conditionals. These assignment statements are
+called applicable assignment statements. They perform initialization, not
+assignment, of that variable.
+
+   *Example (simple-split-init.chpl)*
+
+   The combination of statements ``const x;`` and ``x = 5;`` in the below
+   example are equivalent to the declaration ``const x = 5;``.
+
+   .. code-block:: chapel
+
+      proc main() {
+        const x;
+        x = 5;
+        writeln(x);
+      }
+
+   .. BLOCK-test-chapeloutput
+
+      5
+
+
+   *Example (no-split-init.chpl)*
+
+   In the following code, the variable ``x`` is used before it is
+   assigned to, and so split initialization cannot apply to that
+   variable.
+
+   .. code-block:: chapel
+
+      proc main() {
+        const x;
+        writeln(x);
+        x = 5;
+      }
+
+   .. BLOCK-test-chapeloutput
+
+      no-split-init.chpl:1: In function 'main':
+      no-split-init.chpl:2: error: 'x' cannot be default initialized
+      no-split-init.chpl:3: note: 'x' is used here before being initialized
+
+
+   *Example (split-cond-blocks-init.chpl)*
+
+   Split initialization can find the applicable assignment statement
+   within a nested block or conditional. When conditionals are involved,
+   there might be multiple applicable assignment statements representing
+   different branches.
+
+   .. code-block:: chapel
+
+      config const option = false;
+      proc main() {
+        const x;
+        if option {
+          x = 6;
+        } else {
+          {
+            x = 4;
+          }
+        }
+        writeln(x);
+      }
+
+   .. BLOCK-test-chapeloutput
+
+      4
+
+Split initialization does not apply:
+
+ * when the variable is a module-level variable, fields, config variable,
+   or ``extern`` variable.
+ * when an applicable assignment statement setting the variable could not
+   be identified
+ * when the variable is mentioned before the earliest assignment
+   statement(s)
+ * when an applicable assignment statement is in a loop, ``on``
+   statement, or ``begin`` statement
+ * when an applicable assignment statement is in one branch of a
+   conditional but not in the other, including when the conditional has
+   no ``else`` branch.
+
+In the case that the variable is declared without a ``type-part`` and
+where multiple applicable assignment statements are identified, all of
+the assignment statements need to contain an initialization expression of
+the same type.
 
 .. _Default_Values_For_Types:
 
@@ -1710,24 +1835,6 @@ sync/single base default value and *empty* status
 atomic      base default value
 =========== =======================================
 
-.. _Noinit_Capability:
-
-Deferred Initialization
-~~~~~~~~~~~~~~~~~~~~~~~
-
-For performance purposes, a variable’s declaration can specify that the
-variable should not be default initialized by using the ``noinit``
-keyword in place of an initialization expression. Since this variable
-should be written at a later point in order to be read properly, it must
-be a regular variable (``var``). It is incompatible with declarations
-that require the variable to remain unchanged throughout the program’s
-lifetime, such as ``const`` or ``param``. Additionally, its type must be
-specified at declaration time.
-
-The result of any read of this variable before it is written is
-undefined; it exists and therefore can be accessed, but no guarantees
-are made as to its contents.
-
 .. _Local_Type_Inference:
 
 Local Type Inference
@@ -1742,7 +1849,7 @@ With the exception of sync and single expressions, the declaration
 
    var v = e;
 
-is equivalent to 
+is equivalent to
 
 .. code-block:: chapel
 
@@ -1762,14 +1869,14 @@ initialization expression are evaluated only once.
 
    *Example (multiple.chpl)*.
 
-   In the declaration 
+   In the declaration
 
    .. code-block:: chapel
 
       proc g() { writeln("side effect"); return "a string"; }
       var a, b = 1.0, c, d:int, e, f = g();
 
-   
+
 
    .. BLOCK-test-chapelpost
 
@@ -1781,7 +1888,7 @@ initialization expression are evaluated only once.
    ``string`` with value ``"a string"``. The string ``"side effect"``
    has been written to the display once. It is not evaluated twice.
 
-   
+
 
    .. BLOCK-test-chapeloutput
 
@@ -5371,16 +5478,14 @@ Prototype Modules
 -----------------
 
 Modules that are declared with the ``prototype`` keyword use relaxed
-rules for error handling and ``nil`` checking. These relaxed rules are
+rules for error handling. These relaxed rules are
 appropriate for programs in the early stages of development but are not
-appropriate for libraries. In particular, within a ``prototype`` module:
+appropriate for libraries. In particular, within a ``prototype`` module
+errors that are not handled will terminate the program
+(see :ref:`Errors_Prototype_Mode`).
 
--  errors that are not handled will terminate the program
-   (see :ref:`Errors_Prototype_Mode`)
-
--  methods on nilable class instances can be called - these will
-   implicitly convert to non-nilable class instances
-   (see :ref:`Methods on Nilable in Prototype Modules <Methods_on_Nilable_in_Prototype_Modules>`)
+Implicit modules (:ref:`Implicit_Modules`) are implicitly considered
+``prototype`` modules as well.
 
 .. _Implicit_Modules:
 
@@ -5415,8 +5520,14 @@ any relation to the file in terms of their names.
 
    .. BLOCK-test-chapelpost
 
-      MX.printX();
-      MY.printY();
+      module Test {
+        proc main() {
+          use MX;
+          use MY;
+          MX.printX();
+          MY.printY();
+        }
+      }
 
    
 
@@ -5431,7 +5542,8 @@ any relation to the file in terms of their names.
 For any file that contains file-scope statements other than module
 declarations, the file itself is treated as a module declaration. In
 this case, the module is implicit. Implicit modules are always
-``prototype`` modules. An implicit module takes its name from the base
+``prototype`` modules (:ref:`Prototype_Modules`).
+An implicit module takes its name from the base
 filename. In particular, the module name is defined as the remaining
 string after removing the ``.chpl`` suffix and any path specification
 from the specified filename. If the resulting name is not a legal Chapel
@@ -5498,14 +5610,16 @@ naming the outer module in the use statement.
         }
       }
       module testmain { // used to avoid warnings
-      }
-
+        proc main() {
    
 
    .. code-block:: chapel
 
       use libsci.blas;
 
+    .. BLOCK-test-chapelpost
+
+      } }
    
 
    .. BLOCK-test-chapeloutput
@@ -5555,6 +5669,7 @@ nested modules.
 
    .. BLOCK-test-chapeloutput
 
+      nested.chpl:11: warning: This file-scope code is outside of any explicit module declarations (e.g., module MY), so an implicit module named 'nested' is being introduced to contain the file's contents.
       0
       0
 
@@ -8025,6 +8140,8 @@ statement after the ``try``-``catch`` blocks.
 
    .. code-block:: chapel
 
+      use SysError;
+
       proc catchingErrors() throws {
         try {
           alwaysThrows(0);
@@ -8055,6 +8172,8 @@ clauses, if any, match that error, the program halts.
    
 
    .. code-block:: chapel
+
+      use SysError;
 
       proc catchingErrorsHalt() {
         try! {
@@ -8127,6 +8246,8 @@ error raised in a ``try`` block.
    
 
    .. code-block:: chapel
+
+      use SysError;
 
       proc catchingErrorsPropagate() throws {
         try {
@@ -9449,7 +9570,7 @@ Returns true if ``t`` is a homogeneous tuple; otherwise false.
 
 .. code-block:: chapel
 
-   proc isTuple(t: $Tuple$) param
+   proc isTuple(t: tuple) param
 
 Returns true if ``t`` is a tuple; otherwise false.
 
@@ -9754,22 +9875,30 @@ available for this purpose
 Nilable Class Types
 ~~~~~~~~~~~~~~~~~~~
 
-Variables of class type cannot store ``nil`` unless the class type is
-nilable. To declare a nilable class type, use the ``?`` operator to
-create a nilable type. For example, if ``C`` is a class type, then
-``C?`` indicates the nilable class type with generic management. The
-``?`` operator can be combined with memory management specifiers as
+Variables of a class type cannot store ``nil`` and do not have a default
+value unless the class type is nilable. To create a nilable class type,
+use the postfix ``?`` operator. For example, if ``C`` is a class, then
+``C?`` indicates the nilable class type with generic memory management strategy.
+The ``?`` operator can be combined with memory management specifiers as
 well. For example, ``borrowed C?`` indicates a nilable class using the
 ``borrowed`` memory management strategy. Note that the ``?`` operator
 applies only to types.
 
-The postfix ``!`` operator applies to a type or a value. When applied to
-a ``borrowed`` or ``unmanaged`` type, it returns the non-nilable version
-of that type. When applied to an ``owned`` or ``shared`` type, it
-returns the non-nilable borrowed type. When applied to a value, it
-asserts that the value is not ``nil`` and returns that value as a
-non-nilable type. If the value was in fact ``nil``, it halts. It returns
-the borrowed type for ``owned`` or ``shared``.
+A nilable type can also be created with a cast to ``class?``. For example,
+if ``T`` is a class type, then ``T: class?`` indicates its nilable counterpart,
+or ``T`` itself if it is already nilable. ``T: borrowed class?`` produces
+the nilable ``borrowed`` variant of ``T``.
+
+To create a non-nilalble class type from a nilable class type, apply a
+cast to ``class`` or to a more specific type. For example, if ``T`` is
+a class type, then ``T: class`` indicates its non-nilable counterpart,
+or ``T`` itself if it is already non-nilable. ``T: borrowed class``
+produces the non-nilable ``borrowed`` variant of ``T``.
+
+The postfix ``!`` operator converts a class value to a non-nilable type.
+If the value is not ``nil``, it returns a copy of that value if it is
+``borrowed`` or ``unmanaged``, or a borrow from it if it is ``owned``
+or ``shared``. If the value is in fact ``nil``, it halts.
 
 An alternative to ``!`` is to use a cast to a non-nilable type. Such a
 cast will throw ``NilClassError`` if the value was in fact ``nil``.
@@ -9781,11 +9910,7 @@ types. See :ref:`Implicit_Class_Conversions`.
 Class methods generally expect a receiver of type ``borrowed C``
 (see :ref:`Class_Methods`). Since such a class method call might
 involve dynamic dispatch, it is a program error to call a class method
-on a class receiver storing ``nil``. The language helps to identify this
-error in two different ways, depending on whether or not the module is a
-``prototype`` module (:ref:`Prototype_Modules`).
-
-For modules that are not prototype modules, the compiler will not
+on a class receiver storing ``nil``. The compiler will not
 resolve calls to class methods if the receiver has nilable type. If the
 programmer knows that the receiver cannot store ``nil`` at that moment,
 they can use ``!`` to assert that the receiver is not ``nil`` and to
@@ -9802,11 +9927,7 @@ convert it to the non-nilable borrowed type. For example:
       }
       var c: owned C? = new C();
 
-      // The following call is allowed only in prototype modules,
-      // in which case it is equivalent to c!.method()
-      c.method();
-
-      // This pattern is appropriate in libraries
+      // Invoke c.method() only when c is non-nil.
       if c != nil {
         c!.method(); // c! converts from 'owned C?' to 'borrowed C'
       }
@@ -9815,11 +9936,6 @@ The ``borrow()`` method is an exception. Suppose it is invoked on an
 expression of a class type ``C``. It will return ``borrowed C`` for any
 non-nilable ``C`` type (e.g. ``owned C``). It will return
 ``borrowed C?`` for any nilable ``C`` type (e.g. ``C?``).
-
-.. _Methods_on_Nilable_in_Prototype_Modules:
-
-Within a ``prototype`` module, the compiler will implicitly convert a
-nilable method receiver to the non-nilable type by adding a ``!`` call.
 
 .. _Class_Values:
 
@@ -9951,7 +10067,7 @@ For example:
 
    
 
-   .. code-block:: chapel
+   ::
 
       class C {
         proc primaryMethod() {
@@ -9969,6 +10085,26 @@ For example:
       x!.primaryMethod();   // within the method, this: borrowed C
       x!.secondaryMethod(); // within the method, this: borrowed C
       x.secondaryMethodWithTypeExpression(); // within the method, this: owned C?
+
+   .. BLOCK-test-chapelpost
+
+      class C {
+        proc primaryMethod() {
+          assert(this.type == borrowed C);
+        }
+      }
+      proc C.secondaryMethod() {
+        assert(this.type == borrowed C);
+      }
+      proc (owned C?).secondaryMethodWithTypeExpression() {
+        assert(this.type == owned C?);
+      }
+
+      var x:owned C? = new owned C();
+      x!.primaryMethod();   // within the method, this: borrowed C
+      x!.secondaryMethod(); // within the method, this: borrowed C
+      x.secondaryMethodWithTypeExpression(); // within the method, this: owned C?
+
 
 For type methods on a class, ``this`` will accept any management or
 nilability variant of the class type and it will refer to that type in
@@ -16004,7 +16140,7 @@ typically made by iterating over it in a loop.
             yield child;
           for child in postorder(tree!.right) do
             yield child;
-          yield tree.data;
+          yield tree!.data;
         }
       }
 
@@ -16913,7 +17049,7 @@ argument.
    .. BLOCK-test-chapelpost
 
       writeln(list.data);
-      writeln(list.next.data);
+      writeln(list.next!.data);
       delete list.next;
       delete list;
 
@@ -17221,7 +17357,7 @@ concrete method to be selected when applicable. For example:
 
    
 
-   .. code-block:: chapel
+   ::
 
       record MyNode {
         var field;  // since no type is specified here, MyNode is a generic type
@@ -17239,7 +17375,25 @@ concrete method to be selected when applicable. For example:
       var myIntNode = new MyNode(1);
       myIntNode.foo(); // outputs "in specific MyNode(int).foo()"
 
-   
+   .. BLOCK-test-chapelnoprint
+
+      record MyNode {
+        var field;  // since no type is specified here, MyNode is a generic type
+      }
+
+      proc MyNode.foo() {
+        writeln("in generic MyNode.foo()");
+      }
+      proc (MyNode(int)).foo() {
+        writeln("in specific MyNode(int).foo()");
+      }
+
+      var myRealNode = new MyNode(1.0);
+      myRealNode.foo(); // outputs "in generic MyNode.foo()"
+      var myIntNode = new MyNode(1);
+      myIntNode.foo(); // outputs "in specific MyNode(int).foo()"
+
+
 
    .. BLOCK-test-chapeloutput
 
@@ -17282,8 +17436,8 @@ Example: A Generic Stack
           if isEmpty then
             halt("attempt to pop an item off an empty stack");
           var oldTop = top;
-          var oldItem = top.item;
-          top = top.next;
+          var oldItem = top!.item;
+          top = top!.next;
           delete oldTop;
           return oldItem;
         }
@@ -17535,8 +17689,8 @@ initially empty.
              return value;
 
           var x$: sync int;
-          begin x$ = left.sum();
-          var y = right.sum();
+          begin x$ = left!.sum();
+          var y = right!.sum();
           return x$ + y;
         }
       }
@@ -17680,7 +17834,7 @@ The following methods are defined for variables of sync and single type.
 
 
 
-.. code-block:: chapel
+::
 
    proc (sync t).readFE(): t
 
@@ -17691,7 +17845,7 @@ when this method completes. This method implements the normal read of a
 
 
 
-.. code-block:: chapel
+::
 
    proc (sync t).readFF(): t
    proc (single t).readFF(): t
@@ -17703,7 +17857,7 @@ implements the normal read of a ``single`` variable.
 
 
 
-.. code-block:: chapel
+::
 
    proc (sync t).readXX(): t
    proc (single t).readXX(): t
@@ -17714,7 +17868,7 @@ when this method completes.
 
 
 
-.. code-block:: chapel
+::
 
    proc (sync t).writeEF(v: t)
    proc (single t).writeEF(v: t)
@@ -17726,7 +17880,7 @@ method implements the normal write of a ``sync`` or ``single`` variable.
 
 
 
-.. code-block:: chapel
+::
 
    proc (sync t).writeFF(v: t)
 
@@ -17736,7 +17890,7 @@ full when this method completes.
 
 
 
-.. code-block:: chapel
+::
 
    proc (sync t).writeXF(v: t)
 
@@ -17746,7 +17900,7 @@ method completes.
 
 
 
-.. code-block:: chapel
+::
 
    proc (sync t).reset()
 
@@ -17756,7 +17910,7 @@ is set to empty when this method completes.
 
 
 
-.. code-block:: chapel
+::
 
    proc (sync t).isFull: bool
    proc (single t).isFull: bool
@@ -17891,7 +18045,7 @@ memoryOrder.seqCst.
 
 
 
-.. code-block:: chapel
+::
 
    proc (atomic T).read(order:memoryOrder = memoryOrder.seqCst): T
 
@@ -17899,7 +18053,7 @@ Reads and returns the stored value. Defined for all atomic types.
 
 
 
-.. code-block:: chapel
+::
 
    proc (atomic T).write(v: T, order:memoryOrder = memoryOrder.seqCst)
 
@@ -17907,7 +18061,7 @@ Stores ``v`` as the new value. Defined for all atomic types.
 
 
 
-.. code-block:: chapel
+::
 
    proc (atomic T).exchange(v: T, order:memoryOrder = memoryOrder.seqCst): T
 
@@ -17916,7 +18070,7 @@ for all atomic types.
 
 
 
-.. code-block:: chapel
+::
 
    proc (atomic T).compareAndSwap(e: t, v: T, order:memoryOrder = memoryOrder.seqCst): bool
 
@@ -17926,7 +18080,7 @@ otherwise. Defined for all atomic types.
 
 
 
-.. code-block:: chapel
+::
 
    proc (atomic T).add(v: T, order:memoryOrder = memoryOrder.seqCst)
    proc (atomic T).sub(v: T, order:memoryOrder = memoryOrder.seqCst)
@@ -17947,7 +18101,7 @@ for the ``bool`` atomic type.
 
 
 
-.. code-block:: chapel
+::
 
    proc (atomic T).fetchAdd(v: T, order:memoryOrder = memoryOrder.seqCst): T
    proc (atomic T).fetchSub(v: T, order:memoryOrder = memoryOrder.seqCst): T
@@ -17963,7 +18117,7 @@ methods are defined for the ``bool`` atomic type.
 
 
 
-.. code-block:: chapel
+::
 
    proc (atomic bool).testAndSet(order:memoryOrder = memoryOrder.seqCst): bool
 
@@ -17972,7 +18126,7 @@ to ``exchange(true)``. Only defined for the ``bool`` atomic type.
 
 
 
-.. code-block:: chapel
+::
 
    proc (atomic bool).clear(order:memoryOrder = memoryOrder.seqCst)
 
@@ -17981,7 +18135,7 @@ defined for the ``bool`` atomic type.
 
 
 
-.. code-block:: chapel
+::
 
    proc (atomic T).waitFor(v: T)
 

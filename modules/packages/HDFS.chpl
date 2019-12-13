@@ -125,6 +125,7 @@ HDFS Support Types and Functions
 module HDFS {
 
   use IO, SysBasic, SysError;
+  public use SysCTypes;
 
   require "hdfs.h";
 
@@ -454,7 +455,7 @@ module HDFS {
       var remaining = amt;
       while remaining > 0 {
         var ptr:c_void_ptr = c_nil;
-        var len = 0;
+        var len = 0:ssize_t;
         var offset = 0;
         err = qio_channel_get_allocated_ptr_unlocked(qio_ch, amt, ptr, len, offset);
         if err then
@@ -493,7 +494,7 @@ module HDFS {
       var remaining = amt;
       while remaining > 0 {
         var ptr:c_void_ptr = c_nil;
-        var len = 0;
+        var len = 0:ssize_t;
         var offset = 0;
         err = qio_channel_get_write_behind_ptr_unlocked(qio_ch, ptr, len, offset);
         if err then
@@ -501,7 +502,7 @@ module HDFS {
         if ptr == nil || len == 0 then
           return EINVAL;
 
-        len = min(len, amt);
+        len = min(len, amt.safeCast(ssize_t));
         if len >= max(int(32)) then
           len = max(int(32));
 

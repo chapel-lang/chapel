@@ -176,6 +176,8 @@ chpl_qthread_tls_t chpl_qthread_comm_task_tls = {
 
 static aligned_t exit_ret = 0;
 
+static chpl_bool guardPagesInUse = true;
+
 void chpl_task_yield(void)
 {
     PROFILE_INCR(profile_task_yield,1);
@@ -577,9 +579,11 @@ static void setupCallStacks(void) {
     size_t qt_rtds_size;
 
     size_t maxPoolAllocSize;
+
     char newenv_alloc[QT_ENV_S];
 
-    guardPagesEnabled = (int)setupGuardPages();
+    guardPagesInUse = setupGuardPages();
+    guardPagesEnabled = (int)guardPagesInUse;
 
     // Setup the base call stack size (Precedence high-to-low):
     // 1) Chapel environment (CHPL_RT_CALL_STACK_SIZE)
@@ -1041,6 +1045,11 @@ size_t chpl_task_getCallStackSize(void)
     PROFILE_INCR(profile_task_getCallStackSize,1);
 
     return qthread_readstate(STACK_SIZE);
+}
+
+chpl_bool chpl_task_guardPagesInUse(void)
+{
+  return guardPagesInUse;
 }
 
 // XXX: Should probably reflect all shepherds

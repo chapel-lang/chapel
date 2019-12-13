@@ -1,3 +1,5 @@
+use IO;
+
 config var numIterations = 1;
 config const printTimers = 0;
 

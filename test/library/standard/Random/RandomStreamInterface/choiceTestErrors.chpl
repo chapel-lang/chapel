@@ -7,7 +7,7 @@ proc main() throws {
 
   var success = true;
 
-  var stream = makeRandomStream(real);
+  var stream = createRandomStream(real);
 
   // size=0
   try {

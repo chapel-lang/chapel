@@ -1,0 +1,4 @@
+param-errors4.chpl:6: error: unresolved call 'bar("some string")'
+param-errors4.chpl:3: note: this candidate did not match: bar(param b: bytes)
+param-errors4.chpl:6: note: because call actual argument #1 with type string
+param-errors4.chpl:3: note: is passed to formal 'param b: bytes'

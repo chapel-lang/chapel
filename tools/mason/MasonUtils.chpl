@@ -23,11 +23,11 @@
 private use List;
 private use Map;
 
-use Spawn;
-use FileSystem;
-use TOML;
-use Path;
-use MasonEnv;
+public use Spawn;
+public use FileSystem;
+public use TOML;
+public use Path;
+public use MasonEnv;
 
 
 /* Gets environment variables for spawn commands */
@@ -35,7 +35,7 @@ extern proc getenv(name : c_string) : c_string;
 proc getEnv(name: string): string {
   var cname: c_string = name.c_str();
   var value = getenv(cname);
-  return value:string;
+  return createStringWithNewBuffer(value);
 }
 
 
@@ -421,6 +421,8 @@ extern "struct timespec" record chpl_timespec {
 }
 
 proc getLastModified(filename: string) : int {
+  use SysCTypes;
+
   extern proc sys_stat(filename: c_string, ref chpl_stat): c_int;
 
   var file_buf: chpl_stat;

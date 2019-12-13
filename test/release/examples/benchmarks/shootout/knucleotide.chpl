@@ -5,7 +5,7 @@
    derived from the GNU C++ version by Branimir Maksimovic
 */
 
-use Sort, Map;
+use Sort, Map, IO;
 
 config param tableSize = 2**16,
              columns = 61;
@@ -51,6 +51,7 @@ proc main(args: [] string) {
 
 
 proc writeFreqs(data, param nclSize) {
+  use IO;
   const freqs = calculate(data, nclSize);
 
   var arr = for (s,f) in freqs.items() do (f,s);

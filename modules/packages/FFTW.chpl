@@ -122,7 +122,7 @@ module FFTW {
   */
   config param isFFTW_MKL=false;
 
-  use SysCTypes;
+  public use SysCTypes;
   require "fftw3.h"; // This is common
   if (isFFTW_MKL) {
     require "fftw3_mkl.h";

@@ -1,3 +1,5 @@
+use IO;
+
 var (x,y) = stdin.read(int, real);
 
 writeln("x is: ", x);

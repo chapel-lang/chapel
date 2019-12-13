@@ -1,6 +1,7 @@
 # suite: <empty>
 # suite: Performance Tracking
 npb/ep/mcahir/ep.ml-perf.graph
+npb/ft/npadmana/ft_transposed.ml-perf.graph
 release/examples/benchmarks/hpcc/fft.ml-perf.graph
 release/examples/benchmarks/hpcc/hpl.ml-perf.graph
 release/examples/benchmarks/hpcc/ptrans.ml-perf.graph
@@ -19,6 +20,7 @@ studies/isx/isx.ml-time.graph
 # suite: <empty>
 # suite: All (perf)
 npb/ep/mcahir/ep.ml-perf.graph
+npb/ft/npadmana/ft_transposed.ml-perf.graph
 release/examples/benchmarks/hpcc/fft.ml-perf.graph
 release/examples/benchmarks/hpcc/hpl.ml-perf.graph
 release/examples/benchmarks/hpcc/ptrans.ml-perf.graph
@@ -36,6 +38,7 @@ studies/bale/indexgather/ig-variants.ml-perf.graph
 
 # suite: - NAS Parallel Benchmarks (perf)
 npb/ep/mcahir/ep.ml-perf.graph
+npb/ft/npadmana/ft_transposed.ml-perf.graph
 # suite: - HPCC (perf)
 release/examples/benchmarks/hpcc/fft.ml-perf.graph
 release/examples/benchmarks/hpcc/hpl.ml-perf.graph

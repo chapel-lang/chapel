@@ -182,24 +182,29 @@ $ENV{'CHPL_HOME'} = "$archive_dir";
 $ENV{'CHPL_COMM'} = "none";
 print "[gen_release] CHPL_HOME is set to: $ENV{'CHPL_HOME'}\n";
 
-print "[gen_release] Building the html docs...\n";
-SystemOrDie("make -j docs");
+if (not exists($ENV{"CHPL_GEN_RELEASE_SKIP_DOCS"})) {
+  print "[gen_release] Building the html docs...\n";
+  SystemOrDie("make -j docs");
 
-# TODO - make this more elegant / maintainable
-print "[gen_release] Pruning the docs directory...\n";
-SystemOrDie("cd doc && make clean-symlinks");
-SystemOrDie("cd doc && make prunedocs");
-SystemOrDie("cd doc && rm -f Makefile*");
-SystemOrDie("cd doc && rm -rf util");
-SystemOrDie("cd doc && rm -f rst/conf.py");
-SystemOrDie("cd doc && rm -f rst/index.rst");
-SystemOrDie("cd doc && rm -f rst/*/index.rst");
-SystemOrDie("cd doc && rm -rf rst/developer"); # remove when dev-docs enabled
-SystemOrDie("cd doc && rm -rf rst/meta");
+  # TODO - make this more elegant / maintainable
+  print "[gen_release] Pruning the docs directory...\n";
+  SystemOrDie("cd doc && make clean-symlinks");
+  SystemOrDie("cd doc && make prunedocs");
+  SystemOrDie("cd doc && rm -f Makefile*");
+  SystemOrDie("cd doc && rm -rf util");
+  SystemOrDie("cd doc && rm -f rst/conf.py");
+  SystemOrDie("cd doc && rm -f rst/index.rst");
+  SystemOrDie("cd doc && rm -f rst/*/index.rst");
+  SystemOrDie("cd doc && rm -rf rst/developer"); # remove when dev-docs enabled
+  SystemOrDie("cd doc && rm -rf rst/meta");
 
-print "[gen_release] Building the man pages...\n";
-SystemOrDie("make man");
-SystemOrDie("make man-chpldoc");
+  print "[gen_release] Building the man pages...\n";
+  SystemOrDie("make man");
+  SystemOrDie("make man-chpldoc");
+} else {
+  SystemOrDie("mkdir -p man/man1");
+}
+
 SystemOrDie("make clobber");
 
 print "[gen_release] Creating the examples directory...\n";

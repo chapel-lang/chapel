@@ -40,25 +40,27 @@ module ChapelError {
     pragma "no doc"
     var thrownFileId:int(32);
 
+    pragma "no doc"
+    var _msg: string;
+    
+    pragma "no doc"
+    var _hasThrowInfo: bool = false;
+
     /* Construct an Error */
     proc init() {
       _next = nil;
+    }
+
+    /* Construct an :class:`Error` with a message. */
+    proc init(msg: string) {
+      this._msg = msg; 
     }
 
     /* Override this method to provide an error message
        in case the error is printed out or never caught.
      */
     proc message() {
-      return "";
-    }
-
-    /* Errors can be printed out. In that event, they will
-       show information about the error including the result
-       of calling :proc:`Error.message`.
-     */
-    override proc writeThis(f) throws {
-      var description = chpl_describe_error(this);
-      f <~> description;
+      return _msg;
     }
   }
 
@@ -88,26 +90,15 @@ module ChapelError {
   }
 
   class IllegalArgumentError : Error {
-    var formal: string;
-    var info: string;
-
-    proc init() {
-    }
+    proc init() {}
 
     proc init(info: string) {
-      this.info = info;
+      super.init(info);
     }
 
     proc init(formal: string, info: string) {
-      this.formal = formal;
-      this.info   = info;
-    }
-
-    override proc message() {
-      if formal.isEmpty() then
-        return info;
-      else
-        return "illegal argument '" + formal + "': " + info;
+      var msg = "illegal argument '" + formal + "': " + info;
+      super.init(msg);
     }
   }
 
@@ -350,7 +341,7 @@ module ChapelError {
   proc chpl_error_type_name(err: borrowed Error) : string {
     var cid =  __primitive("getcid", err);
     var nameC: c_string = __primitive("class name by id", cid);
-    var nameS = nameC:string;
+    var nameS = createStringWithNewBuffer(nameC);
     return nameS;
   }
   pragma "no doc"
@@ -373,8 +364,16 @@ module ChapelError {
 
     const line = __primitive("_get_user_line");
     const fileId = __primitive("_get_user_file");
-    fixErr!.thrownLine = line;
-    fixErr!.thrownFileId = fileId;
+
+    //
+    // TODO: Adjust/remove calls to this routine that are present in catch
+    // blocks rather than doing extra work at runtime?
+    //
+    if !fixErr!._hasThrowInfo {
+      fixErr!._hasThrowInfo = true;
+      fixErr!.thrownLine = line;
+      fixErr!.thrownFileId = fileId;
+    }
 
     return _to_nonnil(fixErr);
   }
@@ -436,12 +435,12 @@ module ChapelError {
 
     const myFileC:c_string = __primitive("chpl_lookupFilename",
                                          __primitive("_get_user_file"));
-    const myFileS = myFileC:string;
+    const myFileS = createStringWithNewBuffer(myFileC);
     const myLine = __primitive("_get_user_line");
 
     const thrownFileC:c_string = __primitive("chpl_lookupFilename",
                                              err.thrownFileId);
-    const thrownFileS = thrownFileC:string;
+    const thrownFileS = createStringWithNewBuffer(thrownFileC);
     const thrownLine = err.thrownLine;
 
     var s = "uncaught " + chpl_describe_error(err) +

@@ -115,6 +115,8 @@ writeln(r.vals);
 // :ref:`readThis-writeThis-readWriteThis` for more information  on the
 // ``writeThis``, ``readThis``, and ``readWriteThis`` methods.
 
+use IO; // required for file operations
+
 config const filename = "tempfile.txt";
 
 proc R.writeThis(ch: channel) {
