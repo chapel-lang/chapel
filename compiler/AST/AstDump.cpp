@@ -383,6 +383,10 @@ void AstDump::visitUseStmt(UseStmt* node) {
 
   node->src->accept(this);
 
+  if (node->isARename()) {
+    fprintf(mFP, " 'as' %s", node->getRename());
+  }
+
   if (!node->isPlainUse()) {
     node->writeListPredicate(mFP);
     bool first = outputVector(mFP, node->named);
