@@ -175,7 +175,7 @@ if [ -z "$BUILD_CONFIGS_CALLBACK" ]; then
         log_info "Start build_configs $dry_run $verbose -- mason"
 
         $cwd/../build_configs.py $dry_run $verbose -s $cwd/$setenv -l "$project.mason.log" \
-            --target-compiler=gnu -- mason
+            --target-compiler=gnu -- mason-no-chpldoc
         ;;
     ( * )
         log_info "NO building Chapel component: mason"
