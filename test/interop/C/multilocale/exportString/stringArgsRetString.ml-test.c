@@ -3,7 +3,7 @@
 int main(int argc, char** argv) {
   chpl_library_init(argc, argv);
 
-  chpl_bytes_buffer a, b;
+  chpl_byte_buffer a, b;
 
   a = chpl_byte_buffer_make("Greetings");
   b = chpl_byte_buffer_make(", computer!");
