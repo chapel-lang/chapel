@@ -149,7 +149,7 @@ if [ -z "$BUILD_CONFIGS_CALLBACK" ]; then
         ;;
     esac
 
-    venv_targets="test-venv chpldoc"
+    venv_targets="test-venv"
     case ",$components," in
     ( *,venv,* )
         log_info "Building Chapel component: venv ($venv_targets)"
