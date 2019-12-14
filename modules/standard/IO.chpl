@@ -5587,12 +5587,12 @@ proc _setIfChar(ref lhs:?t, rhs:int(32)) where !(t==string||isIntegralType(t))
 
 
 private inline
-proc _toRegexp(x:?t) where t == regexp
+proc _toRegexp(x:?t) where isSubtype(t, regexp)
 {
   return (x, true);
 }
 private inline
-proc _toRegexp(x:?t) where t != regexp
+proc _toRegexp(x:?t)
 {
   var r:regexp;
   return (r, false);
@@ -5600,14 +5600,20 @@ proc _toRegexp(x:?t) where t != regexp
 
 pragma "no doc"
 class _channel_regexp_info {
+  type exprType = string;
   var hasRegexp = false;
   var matchedRegexp = false;
   var releaseRegexp = false;
   var theRegexp = qio_regexp_null();
   var matches: _ddata(qio_regexp_string_piece_t) = nil; // size = ncaptures+1
-  var capArr: _ddata(string) = nil; // size = ncaptures
+  var capArr: _ddata(exprType) = nil; // size = ncaptures
   var capturei: int;
   var ncaptures: int;
+
+  proc init(type exprType=string) {
+    this.exprType = exprType;
+  }
+
   proc clear() {
     if releaseRegexp {
       qio_regexp_release(theRegexp);
@@ -6372,7 +6378,7 @@ proc channel.readf(fmtStr:?t, ref args ...?k): bool throws
     var end:size_t;
     var argType:(k+5)*c_int;
 
-    var r:unmanaged _channel_regexp_info?;
+    var r:unmanaged _channel_regexp_info(t)?;
     defer {
       if r then delete r;
     }
@@ -6516,23 +6522,25 @@ proc channel.readf(fmtStr:?t, ref args ...?k): bool throws
               if ! ok {
                 err = qio_format_error_arg_mismatch(i);
               }
-              // match it here.
-              if r == nil then r = new unmanaged _channel_regexp_info();
-              const rnn = r!;  // indicate that it is non-nil
-              rnn.clear();
-              rnn.theRegexp = t._regexp;
-              rnn.hasRegexp = true;
-              rnn.releaseRegexp = false;
-              _match_regexp_if_needed(cur, len, err, style, rnn);
+              else {
+                // match it here.
+                if r == nil then r = new unmanaged _channel_regexp_info(t.exprType);
+                const rnn = r!;  // indicate that it is non-nil
+                rnn.clear();
+                rnn.theRegexp = t._regexp;
+                rnn.hasRegexp = true;
+                rnn.releaseRegexp = false;
+                _match_regexp_if_needed(cur, len, err, style, rnn);
 
-              // Set the capture groups.
-              // We need to handle the next ncaptures arguments.
-              if i + rnn.ncaptures - 1 > k {
-                err = qio_format_error_too_few_args();
-              }
-              for z in 0..#rnn.ncaptures {
-                if i+z <= argType.size {
-                  argType(i+z+1) = QIO_CONV_SET_CAPTURE;
+                // Set the capture groups.
+                // We need to handle the next ncaptures arguments.
+                if i + rnn.ncaptures - 1 > k {
+                  err = qio_format_error_too_few_args();
+                }
+                for z in 0..#rnn.ncaptures {
+                  if i+z <= argType.size {
+                    argType(i+z+1) = QIO_CONV_SET_CAPTURE;
+                  }
                 }
               }
             } when QIO_CONV_ARG_TYPE_REPR {
@@ -6625,7 +6633,7 @@ proc channel.readf(fmtStr:?t) throws
     var end:size_t;
     var dummy:c_int;
 
-    var r:unmanaged _channel_regexp_info?;
+    var r:unmanaged _channel_regexp_info(t)?;
     defer {
       if r then delete r;
     }

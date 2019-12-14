@@ -449,7 +449,7 @@ class BadRegexpError : Error {
  */
 proc compile(pattern: ?t, posix=false, literal=false, nocapture=false,
              /*i*/ ignorecase=false, /*m*/ multiline=false, /*s*/ dotnl=false,
-             /*U*/ nongreedy=false): regexp throws where t==string || t==bytes {
+             /*U*/ nongreedy=false): regexp(t) throws where t==string || t==bytes {
 
   if CHPL_REGEXP == "none" {
     compilerError("Cannot use Regexp with CHPL_REGEXP=none");
@@ -488,7 +488,7 @@ proc compile(pattern: ?t, posix=false, literal=false, nocapture=false,
 pragma "no doc"
 proc compile(pattern: ?t, out error:syserr, posix, literal, nocapture,
              /*i*/ ignorecase, /*m*/ multiline, /*s*/ dotnl,
-             /*U*/ nongreedy): regexp where t==string || t==bytes {
+             /*U*/ nongreedy): regexp(t) where t==string || t==bytes {
 
   compilerWarning("'out error: syserr' pattern has been deprecated, use 'throws' function instead");
   var ret: regexp(t);
@@ -574,7 +574,7 @@ pragma "ignore noinit"
 record regexp {
 
   pragma "no doc"
-  type exprType;
+  type exprType = string;
   pragma "no doc"
   var home: locale = here;
   pragma "no doc"
@@ -1092,14 +1092,14 @@ proc bytes.search(needle: bytes, ignorecase=false):reMatch
 
 // documented in the captures version
 pragma "no doc"
-proc string.search(needle: regexp):reMatch
+proc string.search(needle: regexp(string)):reMatch
 {
   return needle.search(this);
 }
 
 // documented in the captures version
 pragma "no doc"
-proc bytes.search(needle: regexp):reMatch
+proc bytes.search(needle: regexp(bytes)):reMatch
 {
   return needle.search(this);
 }
@@ -1113,7 +1113,7 @@ proc bytes.search(needle: regexp):reMatch
    :returns: an :record:`reMatch` object representing the offset in the
              receiving string where a match occurred
  */
-proc string.search(needle: regexp, ref captures ...?k):reMatch
+proc string.search(needle: regexp(string), ref captures ...?k):reMatch
 {
   return needle.search(this, (...captures));
 }
@@ -1127,21 +1127,21 @@ proc string.search(needle: regexp, ref captures ...?k):reMatch
    :returns: an :record:`reMatch` object representing the offset in the
              receiving string where a match occurred
  */
-proc bytes.search(needle: regexp, ref captures ...?k):reMatch
+proc bytes.search(needle: regexp(bytes), ref captures ...?k):reMatch
 {
   return needle.search(this, (...captures));
 }
 
 // documented in the captures version
 pragma "no doc"
-proc string.match(pattern: regexp):reMatch
+proc string.match(pattern: regexp(string)):reMatch
 {
   return pattern.match(this);
 }
 
 // documented in the captures version
 pragma "no doc"
-proc bytes.match(pattern: regexp):reMatch
+proc bytes.match(pattern: regexp(bytes)):reMatch
 {
   return pattern.match(this);
 }
@@ -1158,7 +1158,7 @@ proc bytes.match(pattern: regexp):reMatch
              receiving string where a match occurred
  */
 
-proc string.match(pattern: regexp, ref captures ...?k):reMatch
+proc string.match(pattern: regexp(string), ref captures ...?k):reMatch
 {
   return pattern.match(this, (...captures));
 }
@@ -1175,7 +1175,7 @@ proc string.match(pattern: regexp, ref captures ...?k):reMatch
              receiving string where a match occurred
  */
 
-proc bytes.match(pattern: regexp, ref captures ...?k):reMatch
+proc bytes.match(pattern: regexp(bytes), ref captures ...?k):reMatch
 {
   return pattern.match(this, (...captures));
 }
@@ -1188,7 +1188,7 @@ proc bytes.match(pattern: regexp, ref captures ...?k):reMatch
    :arg maxsplit: if nonzero, the maximum number of splits to do
    :yields: each split portion, one at a time
  */
-iter string.split(pattern: regexp, maxsplit: int = 0)
+iter string.split(pattern: regexp(string), maxsplit: int = 0)
 {
   for v in pattern.split(this, maxsplit) {
     yield v;
@@ -1203,7 +1203,7 @@ iter string.split(pattern: regexp, maxsplit: int = 0)
    :arg maxsplit: if nonzero, the maximum number of splits to do
    :yields: each split portion, one at a time
  */
-iter bytes.split(pattern: regexp, maxsplit: int = 0)
+iter bytes.split(pattern: regexp(bytes), maxsplit: int = 0)
 {
   for v in pattern.split(this, maxsplit) {
     yield v;
@@ -1221,7 +1221,8 @@ iter bytes.split(pattern: regexp, maxsplit: int = 0)
             the match for the whole pattern and the rest are the capture groups.
 
 */
-iter string.matches(pattern:regexp, param captures=0, maxmatches:int=max(int))
+iter string.matches(pattern:regexp(string), param captures=0,
+                    maxmatches:int=max(int))
 {
   for v in pattern.matches(this, captures, maxmatches) {
     yield v;
@@ -1239,7 +1240,8 @@ iter string.matches(pattern:regexp, param captures=0, maxmatches:int=max(int))
             the match for the whole pattern and the rest are the capture groups.
 
 */
-iter bytes.matches(pattern:regexp, param captures=0, maxmatches:int=max(int))
+iter bytes.matches(pattern:regexp(bytes), param captures=0,
+                   maxmatches:int=max(int))
 {
   for v in pattern.matches(this, captures, maxmatches) {
     yield v;
