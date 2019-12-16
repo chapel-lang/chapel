@@ -2397,10 +2397,6 @@ static bool findInitPoints(DefExpr* def,
   }
 
   found_init_t found = doFindInitPoints(def, start, initAssigns);
-
-  if (found != FOUND_INIT)
-    errorIfSplitInitializationRequired(def, NULL);
-
   return (found == FOUND_INIT);
 }
 
