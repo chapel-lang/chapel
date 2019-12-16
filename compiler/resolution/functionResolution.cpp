@@ -1842,9 +1842,14 @@ static bool fits_in_twos_complement(int width, int64_t i) {
 static bool fits_in_mantissa(int width, Immediate* imm) {
   // is it between -2**width .. 2**width, inclusive?
 
-  if (imm->const_kind == NUM_KIND_INT && imm->num_index == INT_SIZE_DEFAULT) {
+  if (imm->const_kind == NUM_KIND_INT) {
     int64_t i = imm->int_value();
     return fits_in_bits_no_sign(width, i);
+  } else if (imm->const_kind == NUM_KIND_UINT) {
+    uint64_t u = imm->uint_value();
+    if (u > INT64_MAX)
+      return false;
+    return fits_in_bits_no_sign(width, (int64_t)u);
   }
 
   return false;
@@ -6039,8 +6044,12 @@ static void resolveInitVar(CallExpr* call) {
       resolveExpr(move);
 
       // Use the targetType as the srcType
-      srcExpr->setSymbol(tmp);
       srcType = targetType;
+      // Set the source expression to the result of coercion
+      if (Symbol* p = paramMap.get(tmp))
+        srcExpr->setSymbol(p); // Use the right param value if we computed one.
+      else
+        srcExpr->setSymbol(tmp);
 
       addedCoerce = true;
     }
@@ -6598,7 +6607,7 @@ static void resolveMoveForRhsCallExpr(CallExpr* call) {
 
   moveSetConstFlagsAndCheck(call, rhs);
 
-  if (rhs->resolvedFunction() == gChplHereAlloc) {
+  if (gChplHereAlloc != NULL && rhs->resolvedFunction() == gChplHereAlloc) {
     Symbol*  lhsType = call->get(1)->typeInfo()->symbol;
     Symbol*  tmp     = newTemp("cast_tmp", rhs->typeInfo());
 
@@ -6778,11 +6787,6 @@ static void moveFinalize(CallExpr* call) {
       if (isMoveFromMain(call)) {
         USR_FATAL(chplUserMain, "main() returns a non-integer (%s)",
                   rhsValType->name());
-      } else if (rhsType != dtNil) {
-        USR_FATAL(userCall(call),
-                  "type mismatch in assignment from %s to %s",
-                  toString(rhsType),
-                  toString(lhsType));
       }
     }
   }
