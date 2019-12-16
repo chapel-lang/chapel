@@ -1092,15 +1092,15 @@ def set_up_executables():
 
     # pre-diff
     if args.prediff:
-        for pdf in args.prediff:
-            if os.path.isfile(pdf) and os.access(pdf, os.X_OK):
-                pdf = os.path.abspath(pdf)
-                logger.write("[system-wide prediff: {0}]".format(pdf))
+        for prediff in args.prediff:
+            if os.path.isfile(prediff) and os.access(prediff, os.X_OK):
+                prediff = os.path.abspath(prediff)
+                logger.write("[system-wide prediff: {0}]".format(prediff))
             else:
                 logger.write("[Error: Cannot find or execute system-wide prediff: "
-                        "{0}".format(pdf))
+                        "{0}".format(prediff))
                 finish()
-            os.environ["CHPL_SYSTEM_PREDIFF"] += ','+pdf
+            os.environ["CHPL_SYSTEM_PREDIFF"] += ','+prediff
 
 
 def auto_generate_tests():
