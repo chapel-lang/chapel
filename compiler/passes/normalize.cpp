@@ -2252,7 +2252,7 @@ static void normalizeVariableDefinition(DefExpr* defExpr) {
   if ((init != NULL && !requestedSplitInit) ||
       foundSplitInit == false ||
       // Future: enable ref vars, params
-      var->hasFlag(FLAG_REF_VAR) || var->hasFlag(FLAG_PARAM)) {
+      var->hasFlag(FLAG_REF_VAR)) {
     // handle non-split initialization
 
     // handle ref variables
@@ -2293,9 +2293,6 @@ static void normalizeVariableDefinition(DefExpr* defExpr) {
       if (var->hasFlag(FLAG_REF_VAR)) {
         //       ref x = <value>;
         // const ref y : <type> = <value>;
-        INT_FATAL("not implemented yet");
-
-      } else if (var->hasFlag(FLAG_PARAM)) {
         INT_FATAL("not implemented yet");
 
       } else {

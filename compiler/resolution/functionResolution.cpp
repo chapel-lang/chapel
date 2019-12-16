@@ -5921,6 +5921,7 @@ static void resolveInitVar(CallExpr* call) {
       resolveExpr(assign);
       return;
     }
+
     // Also, check that the types are compatible for split initialization
     // with type inference.
     if (call->numActuals() < 3)
@@ -5931,6 +5932,29 @@ static void resolveInitVar(CallExpr* call) {
                                "but this initialization has type %s",
                                toString(dst->type),
                                toString(srcType));
+
+    // Also, if the dst is a param, check that the src values are
+    // an acceptable param value, and if there are many, the same param value.
+    if (dst->isParameter()) {
+      // Check that they are initialized to the same value.
+      Symbol* dstParam = dst;
+      Symbol* srcParam = src;
+      if (Symbol* s = paramMap.get(dst))
+        dstParam = s;
+      if (Symbol* s = paramMap.get(src))
+        srcParam = s;
+
+      if (Immediate* srcImm = getSymbolImmediate(srcParam)) {
+        if (Immediate* dstImm = getSymbolImmediate(dstParam)) {
+          if (dstImm != srcImm) {
+            USR_FATAL_CONT(call, "Split initialization sets parameter to "
+                                 "different values");
+            call->convertToNoop();
+            return;
+          }
+        }
+      }
+    }
   }
 
   Type* targetType = NULL;
@@ -9631,20 +9655,25 @@ static void resolvePrimInit(CallExpr* call, Symbol* val, Type* type) {
   } else if (type->defaultValue != NULL) {
     // note: error for bad param initialization checked for in resolving move
 
-    Expr* defaultExpr = NULL;
-    SymExpr* typeSe = NULL;
-    if (type->defaultValue->type == type) {
-      defaultExpr = new SymExpr(type->defaultValue);
-    } else {
-      typeSe = new SymExpr(type->symbol);
-      defaultExpr = new CallExpr(PRIM_CAST, type->symbol, type->defaultValue);
-    }
+    if (!call->isPrimitive(PRIM_INIT_VAR_SPLIT_DECL)) {
+      Expr* defaultExpr = NULL;
+      SymExpr* typeSe = NULL;
+      if (type->defaultValue->type == type) {
+        defaultExpr = new SymExpr(type->defaultValue);
+      } else {
+        typeSe = new SymExpr(type->symbol);
+        defaultExpr = new CallExpr(PRIM_CAST, type->symbol, type->defaultValue);
+      }
 
-    CallExpr* moveDefault = new CallExpr(PRIM_MOVE, val, defaultExpr);
-    call->insertBefore(moveDefault);
-    if (typeSe) resolveExprTypeConstructor(typeSe);
-    resolveExpr(moveDefault);
-    call->convertToNoop();
+      CallExpr* moveDefault = new CallExpr(PRIM_MOVE, val, defaultExpr);
+      call->insertBefore(moveDefault);
+      if (typeSe) resolveExprTypeConstructor(typeSe);
+      resolveExpr(moveDefault);
+      call->convertToNoop();
+    } else {
+      call->convertToNoop(); // initialize it PRIM_INIT_VAR_SPLIT_INIT
+                             // (important for params)
+    }
 
   // non-generic records with initializers
   } else if (at                                           != NULL &&
