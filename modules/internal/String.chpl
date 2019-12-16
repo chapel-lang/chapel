@@ -448,6 +448,14 @@ module String {
     return x != 0;
   // End index arithmetic support
 
+  private proc validateEncoding(buf, len) throws {
+    extern proc chpl_enc_validate_buf(buf, len) : c_int;
+
+    if chpl_enc_validate_buf(buf, len) != 0 {
+      throw new DecodeError();
+    }
+  }
+
   //
   // createString* functions
   //
@@ -463,6 +471,7 @@ module String {
     :returns: A new `string`
   */
   inline proc createStringWithBorrowedBuffer(s: string) {
+    // we don't validate here because `s` must have been validated already
     var ret: string;
     initWithBorrowedBuffer(ret, s);
     return ret;
@@ -482,17 +491,19 @@ module String {
 
     :returns: A new `string`
   */
-  inline proc createStringWithBorrowedBuffer(s: c_string, length=s.length) {
+  inline proc createStringWithBorrowedBuffer(s: c_string, length=s.length) throws {
     return createStringWithBorrowedBuffer(s:c_ptr(uint(8)), length=length,
                                                             size=length+1);
   }
 
   pragma "no doc"
   proc chpl_createStringWithLiteral(s: c_string, length:int) {
-    //NOTE: This function is heavily used by the compiler to create string
-    //literals.
-    return createStringWithBorrowedBuffer(s:c_ptr(uint(8)), length=length,
-                                                            size=length+1);
+    // NOTE: This is a "wellknown" function used by the compiler to create
+    // string literals. Inlining this creates some bloat in the AST, slowing the
+    // compilation.
+    return chpl_createStringWithBorrowedBufferNV(s:c_ptr(uint(8)),
+                                                 length=length,
+                                                 size=length+1);
   }
 
   /*
@@ -512,7 +523,22 @@ module String {
 
      :returns: A new `string`
   */
-  inline proc createStringWithBorrowedBuffer(s: bufferType, length: int, size: int) {
+  inline proc createStringWithBorrowedBuffer(s: bufferType,
+                                             length: int, size: int) throws {
+    var ret: string;
+    validateEncoding(s, length);
+    initWithBorrowedBuffer(ret, s, length,size);
+    return ret;
+  }
+
+  pragma "no doc"
+  private inline proc chpl_createStringWithBorrowedBufferNV(s: bufferType,
+                                                            length: int,
+                                                            size: int) {
+    // NOTE: This is similar to chpl_createStringWithLiteral above, but only
+    // used internally by the String module. These two functions cannot have the
+    // same names, because "wellknown" implementation in the compiler does not
+    // allow overloads.
     var ret: string;
     initWithBorrowedBuffer(ret, s, length,size);
     return ret;
@@ -537,7 +563,7 @@ module String {
 
     :returns: A new `string`
   */
-  inline proc createStringWithOwnedBuffer(s: c_string, length=s.length) {
+  inline proc createStringWithOwnedBuffer(s: c_string, length=s.length) throws {
     return createStringWithOwnedBuffer(s: bufferType, length=length,
                                                       size=length+1);
   }
@@ -558,9 +584,20 @@ module String {
 
      :returns: A new `string`
   */
-  inline proc createStringWithOwnedBuffer(s: bufferType, length: int, size: int) {
+  inline proc createStringWithOwnedBuffer(s: bufferType,
+                                          length: int, size: int) throws {
     var ret: string;
+    validateEncoding(s, length);
     initWithOwnedBuffer(ret, s, length, size);
+    return ret;
+  }
+
+  pragma "no doc"
+  private inline proc chpl_createStringWithOwnedBufferNV(s: bufferType,
+                                                         length: int,
+                                                         size: int) {
+    var ret: string;
+    initWithOwnedBuffer(ret, s, length,size);
     return ret;
   }
 
@@ -573,6 +610,7 @@ module String {
     :returns: A new `string`
   */
   inline proc createStringWithNewBuffer(s: string) {
+    // we don't validate here because `s` must have been validated already
     var ret: string;
     initWithNewBuffer(ret, s);
     return ret;
@@ -590,7 +628,7 @@ module String {
 
     :returns: A new `string`
   */
-  inline proc createStringWithNewBuffer(s: c_string, length=s.length) {
+  inline proc createStringWithNewBuffer(s: c_string, length=s.length) throws {
     return createStringWithNewBuffer(s: bufferType, length=length,
                                                     size=length+1);
   }
@@ -610,9 +648,20 @@ module String {
 
      :returns: A new `string`
   */
-  inline proc createStringWithNewBuffer(s: bufferType, length: int, size: int) {
+  inline proc createStringWithNewBuffer(s: bufferType,
+                                        length: int, size: int) throws {
     var ret: string;
+    validateEncoding(s, length);
     initWithNewBuffer(ret, s, length, size);
+    return ret;
+  }
+
+  pragma "no doc"
+  private inline proc chpl_createStringWithNewBufferNV(s: bufferType,
+                                                       length: int,
+                                                       size: int) {
+    var ret: string;
+    initWithNewBuffer(ret, s, length,size);
     return ret;
   }
 
@@ -679,15 +728,20 @@ module String {
     proc type chpl__deserialize(data) {
       if data.locale_id != chpl_nodeID {
         if data.len <= CHPL_SHORT_STRING_SIZE {
-          return createStringWithNewBuffer(
-                  chpl__getInPlaceBufferData(data.shortData), data.len,
-                  data.size);
+          return chpl_createStringWithNewBufferNV(
+                      chpl__getInPlaceBufferData(data.shortData),
+                      data.len,
+                      data.size);
         } else {
           var localBuff = bufferCopyRemote(data.locale_id, data.buff, data.len);
-          return createStringWithOwnedBuffer(localBuff, data.len, data.size);
+          return chpl_createStringWithOwnedBufferNV(localBuff,
+                                                    data.len,
+                                                    data.size);
         }
       } else {
-        return createStringWithBorrowedBuffer(data.buff, data.len, data.size);
+        return chpl_createStringWithBorrowedBufferNV(data.buff,
+                                                     data.len,
+                                                     data.size);
       }
     }
 
@@ -2252,8 +2306,9 @@ module String {
     var buffer = bufferAllocExact(2);
     buffer[0] = i;
     buffer[1] = 0;
-    var s = createStringWithOwnedBuffer(buffer, 1, 2);
-    return s;
+    try! {
+      return createStringWithOwnedBuffer(buffer, 1, 2);
+    }
   }
 
   /*
@@ -2265,8 +2320,9 @@ module String {
     var (buffer, mbsize) = bufferAlloc(mblength+1);
     qio_encode_char_buf(buffer, i);
     buffer[mblength] = 0;
-    var s = createStringWithOwnedBuffer(buffer, mblength, mbsize);
-    return s;
+    try! {
+      return createStringWithOwnedBuffer(buffer, mblength, mbsize);
+    }
   }
 
   //

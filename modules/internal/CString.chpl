@@ -130,28 +130,54 @@ module CString {
   //
   // casts from c_string to bool types
   //
-  inline proc _cast(type t:chpl_anybool, x:c_string) throws
-    return try ((createStringWithNewBuffer(x)).strip()): t;
+  inline proc _cast(type t:chpl_anybool, x:c_string) throws {
+    var chplString: string;
+    try! {
+      chplString = createStringWithNewBuffer(x);
+    }
+    return try (chplString.strip()): t;
+  }
 
   //
   // casts from c_string to integer types
   //
-  inline proc _cast(type t:integral, x:c_string) throws
-    return try ((createStringWithNewBuffer(x)).strip()): t;
+  inline proc _cast(type t:integral, x:c_string) throws {
+    var chplString: string;
+    try! {
+      chplString = createStringWithNewBuffer(x);
+    }
+    return try (chplString.strip()): t;
+  }
 
   //
   // casts from c_string to real/imag types
   //
-  inline proc _cast(type t:chpl_anyreal, x:c_string) throws
-    return try ((createStringWithNewBuffer(x)).strip()): t;
-  inline proc _cast(type t:chpl_anyimag, x:c_string) throws
-    return try ((createStringWithNewBuffer(x)).strip()): t;
+  inline proc _cast(type t:chpl_anyreal, x:c_string) throws {
+    var chplString: string;
+    try! {
+      chplString = createStringWithNewBuffer(x);
+    }
+    return try (chplString.strip()): t;
+  }
+
+  inline proc _cast(type t:chpl_anyimag, x:c_string) throws {
+    var chplString: string;
+    try! {
+      chplString = createStringWithNewBuffer(x);
+    }
+    return try (chplString.strip()): t;
+  }
 
   //
   // casts from c_string to complex types
   //
-  inline proc _cast(type t:chpl_anycomplex, x:c_string) throws
-    return try ((createStringWithNewBuffer(x)).strip()): t;
+  inline proc _cast(type t:chpl_anycomplex, x:c_string) throws {
+    var chplString: string;
+    try! {
+      chplString = createStringWithNewBuffer(x);
+    }
+    return try (chplString.strip()): t;
+  }
 
   //
   // primitive c_string functions and methods

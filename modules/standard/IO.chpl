@@ -1565,7 +1565,9 @@ proc file.path : string throws {
     }
     chpl_free_c_string(tmp);
     if !err {
-      ret = createStringWithOwnedBuffer(tmp2);
+      try! {
+        ret = createStringWithOwnedBuffer(tmp2);
+      }
     }
   }
   if err then try ioerror(err, "in file.path");
@@ -1706,7 +1708,7 @@ proc openplugin(pluginFile: QioPluginFile, mode:iomode,
       if path_err {
         path = "unknown";
       } else {
-        path = createStringWithOwnedBuffer(str, len);
+        path = try! createStringWithOwnedBuffer(str, len);
       }
     }
 
@@ -1778,8 +1780,11 @@ proc openfd(fd: fd_t, hints:iohints=IOHINT_NONE, style:iostyle = defaultIOStyle(
   if err {
     var path_cs:c_string;
     var path_err = qio_file_path_for_fd(fd, path_cs);
-    var path = if path_err then "unknown"
-                           else createStringWithOwnedBuffer(path_cs);
+    var path: string;
+    try! {
+      path = if path_err then "unknown"
+                         else createStringWithOwnedBuffer(path_cs);
+    }
     try ioerror(err, "in openfd", path);
   }
   return ret;
@@ -1820,8 +1825,11 @@ proc openfp(fp: _file, hints:iohints=IOHINT_NONE, style:iostyle = defaultIOStyle
   if err {
     var path_cs:c_string;
     var path_err = qio_file_path_for_fp(fp, path_cs);
-    var path = if path_err then "unknown"
-                           else createStringWithOwnedBuffer(path_cs);
+    var path: string;
+    try! {
+      path = if path_err then "unknown"
+                         else createStringWithOwnedBuffer(path_cs);
+    }
     try ioerror(err, "in openfp", path);
   }
   return ret;
@@ -2046,7 +2054,9 @@ pragma "no doc"
 inline proc _cast(type t:string, x: ioChar) {
   var csc: c_string =  qio_encode_to_string(x.ch);
   // The caller has responsibility for freeing the returned string.
-  return createStringWithOwnedBuffer(csc);
+  try! {
+    return createStringWithOwnedBuffer(csc);
+  }
 }
 
 
@@ -2146,7 +2156,9 @@ proc channel._ch_ioerror(error:syserr, msg:string) throws {
     var err:syserr = ENOERR;
     err = qio_channel_path_offset(locking, _channel_internal, tmp_path, tmp_offset);
     if !err {
-      path = createStringWithOwnedBuffer(tmp_path);
+      try! {
+        path = createStringWithOwnedBuffer(tmp_path);
+      }
       offset = tmp_offset;
     }
   }
@@ -2164,7 +2176,9 @@ proc channel._ch_ioerror(errstr:string, msg:string) throws {
     var err:syserr = ENOERR;
     err = qio_channel_path_offset(locking, _channel_internal, tmp_path, tmp_offset);
     if !err {
-      path = createStringWithOwnedBuffer(tmp_path);
+      try! {
+        path = createStringWithOwnedBuffer(tmp_path);
+      }
       offset = tmp_offset;
     }
   }
@@ -2764,7 +2778,7 @@ private proc _read_text_internal(_channel_internal:qio_channel_ptr_t,
     var len:int(64);
     var tx: c_string;
     var ret = qio_channel_scan_string(false, _channel_internal, tx, len, -1);
-    x = createStringWithOwnedBuffer(tx, length=len);
+    x = try! createStringWithOwnedBuffer(tx, length=len);
     return ret;
   } else if t == bytes {
     // handle _bytes
@@ -2907,7 +2921,7 @@ private inline proc _read_binary_internal(_channel_internal:qio_channel_ptr_t, p
     var ret = qio_channel_read_string(false, byteorder:c_int,
                                       qio_channel_str_style(_channel_internal),
                                       _channel_internal, tx, len, -1);
-    x = createStringWithOwnedBuffer(tx, length=len);
+    x = try! createStringWithOwnedBuffer(tx, length=len);
     return ret;
   } else if t == bytes {
     // handle _bytes (nothing special for bytes vs string in this case)
@@ -3430,7 +3444,9 @@ proc _stringify_tuple(tup:?t) where isTuple(t)
   for param i in 1..tup.size {
     if i != 1 then str += ", ";
     if tup[i].type == c_string {
-      str += createStringWithNewBuffer(tup[i]);
+      try! {
+        str += createStringWithNewBuffer(tup[i]);
+      }
     }
     else {
       str += tup[i]:string;
@@ -3464,7 +3480,9 @@ proc stringify(const args ...?k):string {
       if args[i].type == string {
         str += args[i];
       } else if args[i].type == c_string {
-        str += createStringWithNewBuffer(args[i]);
+        try! {
+          str += createStringWithNewBuffer(args[i]);
+        }
       } else if args[i].type == bytes {
         //decodePolicy.replace never throws
         try! {
@@ -3502,7 +3520,7 @@ proc stringify(const args ...?k):string {
       // Add the terminating NULL byte to make C string conversion easy.
       buf[offset] = 0;
 
-      return createStringWithOwnedBuffer(buf, offset, offset+1);
+      return try! createStringWithOwnedBuffer(buf, offset, offset+1);
     }
   }
 }
@@ -3776,7 +3794,7 @@ private proc readBytesOrString(ch: channel, ref out_var: ?t,  len: int(64))
     }
 
     if t == string {
-      out_var = createStringWithOwnedBuffer(tx, length=lenread);
+      out_var = try! createStringWithOwnedBuffer(tx, length=lenread);
     }
     else {
       out_var = createBytesWithOwnedBuffer(tx, length=lenread);
@@ -6705,6 +6723,8 @@ proc string.format(args ...?k): string throws {
     return chpl_do_format(this, (...args));
   } catch e: SystemError {
     try ioerror(e.err, "in string.format");
+  } catch e: DecodeError {
+    try ioerror(EILSEQ:syserr, "in string.format");
   } catch {
     try ioerror(EINVAL:syserr, "in string.format");
   }
@@ -6832,7 +6852,7 @@ proc channel._extractMatch(m:reMatch, ref arg:string, ref error:syserr) {
     error =
         qio_channel_read_string(false, iokind.native:c_int, stringStyleExactLen(len),
                                 _channel_internal, ts, gotlen, len: ssize_t);
-    s = createStringWithOwnedBuffer(ts, length=gotlen);
+    s = try! createStringWithOwnedBuffer(ts, length=gotlen);
   }
 
   if ! error {
