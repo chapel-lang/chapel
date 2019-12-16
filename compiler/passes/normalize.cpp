@@ -2266,12 +2266,7 @@ static void normalizeVariableDefinition(DefExpr* defExpr) {
       normVarTypeWoutInit(defExpr);
 
     } else if (type != NULL && init != NULL) {
-      if (var->hasFlag(FLAG_PARAM) == true) {
-        CallExpr* cast = createCast(init->remove(), type->remove());
-
-        defExpr->insertAfter(new CallExpr(PRIM_MOVE, var, cast));
-
-      } else if (init->isNoInitExpr() == true) {
+      if (init->isNoInitExpr() == true) {
         normVarNoinit(defExpr);
 
       } else {

@@ -6001,6 +6001,8 @@ static void resolveInitVar(CallExpr* call) {
 
       VarSymbol* tmp = newTemp(primCoerceTmpName, targetType);
       tmp->addFlag(FLAG_EXPR_TEMP);
+      if (dst->hasFlag(FLAG_PARAM))
+        tmp->addFlag(FLAG_PARAM);
 
       CallExpr* coerce = new CallExpr(PRIM_COERCE,
                                       srcExpr->copy(),
@@ -6010,7 +6012,7 @@ static void resolveInitVar(CallExpr* call) {
       call->insertBefore(new DefExpr(tmp));
       call->insertBefore(move);
       resolveCoerce(coerce);
-      resolveMove(move);
+      resolveExpr(move);
 
       // Use the targetType as the srcType
       srcExpr->setSymbol(tmp);
