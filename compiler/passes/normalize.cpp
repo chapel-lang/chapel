@@ -2362,6 +2362,10 @@ static bool findInitPoints(DefExpr* def,
   }
 
   found_init_t found = doFindInitPoints(def, start, initAssigns);
+
+  if (found != FOUND_INIT)
+    errorIfSplitInitializationRequired(def, NULL);
+
   return (found == FOUND_INIT);
 }
 
@@ -2446,7 +2450,12 @@ static found_init_t doFindInitPoints(DefExpr* def,
           initAssigns.push_back(call);
         }
         return FOUND_INIT;
-      } else if (foundIf != FOUND_NOTHING || foundElse != FOUND_NOTHING) {
+      } else if (foundIf == FOUND_INIT || foundElse == FOUND_INIT) {
+        // intialized on one side but not the other
+        errorIfSplitInitializationRequired(def, cur);
+        return FOUND_USE;
+      } else if (foundIf == FOUND_USE && foundElse == FOUND_USE) {
+        // at least one of them must be FOUND_USE, so return that
         errorIfSplitInitializationRequired(def, cur);
         return FOUND_USE;
       }
@@ -2466,8 +2475,6 @@ static found_init_t doFindInitPoints(DefExpr* def,
         INT_FATAL("use not found above");
     }
   }
-
-  errorIfSplitInitializationRequired(def, NULL);
 
   return FOUND_NOTHING;
 }
@@ -2504,7 +2511,7 @@ static void errorIfSplitInitializationRequired(DefExpr* def, Expr* cur) {
         // can't default init a generic type
         canDefaultInit = false;
       }
- 
+
       // can't default init a generic management/nilability
       if (isClassLikeOrManaged(ts->type)) {
         ClassTypeDecorator d = classTypeDecorator(ts->type);
