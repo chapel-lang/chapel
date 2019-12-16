@@ -1,0 +1,2 @@
+split-init-type-multiple.chpl:3: In function 'main':
+split-init-type-multiple.chpl:9: error: illegal cast from real(64) to int(64)
