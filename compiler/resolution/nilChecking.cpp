@@ -1044,10 +1044,8 @@ static bool combine(FnSymbol* fn,
 
       // combine alias locations
       if (was.type == loc.type &&
-          was.location == loc.location) {
-        // OK, do nothing
-      } else if (was.type == MUST_ALIAS_NIL &&
-                 loc.type == MUST_ALIAS_NIL ) {
+          (was.location == loc.location ||
+           was.type != MUST_ALIAS_REFVAR)) {
         // OK, do nothing
         // only difference is reason for nil
       } else if (was.type == MUST_ALIAS_IGNORED) {
