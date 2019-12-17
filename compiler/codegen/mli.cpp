@@ -514,7 +514,7 @@ std::string MLIContext::genMarshalRoutine(Type* t, bool out) {
   // Handle translation of different type classes here. Note that right now
   // what we can translate is limited.
   //
-  if (isPrimitiveScalar(t)) {
+  if (isPrimitiveScalar(t) && !is_complex_type(t)) {
     gen += this->genMarshalBodyPrimitiveScalar(t, out);
   } else if (t == dtStringC) {
     gen += this->genMarshalBodyString(t, out);
@@ -722,7 +722,7 @@ MLIContext::genServerDispatchSwitch(const std::vector<FnSymbol*>& fns) {
 //
 bool MLIContext::isSupportedType(Type* t) {
   return (
-      isPrimitiveScalar(t) ||
+      (isPrimitiveScalar(t) && !is_complex_type(t)) ||
       t == dtStringC ||
       t == exportTypeChplBytesWrapper
   );
