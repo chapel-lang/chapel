@@ -132,7 +132,7 @@ module Crypto {
       }
       this.buffDomain = {1..this._len};
       for i in this.buffDomain do {
-        this.buff[i] = s.byte(i);
+        this.buff[i] = s.byte(i-1);
       }
     }
 

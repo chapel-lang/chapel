@@ -641,8 +641,8 @@ module UnitTest {
       }
       if tmpString == "" {
         for i in 1..len1 {
-          var item1 = seq1[i],
-              item2 = seq2[i];
+          var item1 = seq1[i-isString(seq1)],
+              item2 = seq2[i-isString(seq1)];
           if item1 == item2 then checkequal = true;
           else if item1 < item2 {
             tmpString += "First "+seq_type_name+" < Second "+seq_type_name+" :\n";
@@ -845,8 +845,8 @@ module UnitTest {
       }
       if tmpString == "" {
         for i in 1..len1 {
-          var item1 = seq1[i],
-              item2 = seq2[i];
+          var item1 = seq1[i-isString(seq1)],
+              item2 = seq2[i-isString(seq2)];
           if item1 == item2 then checkequal = true;
           else if item1 > item2 {
             tmpString += "First "+seq_type_name+" > Second "+seq_type_name+" :\n";
