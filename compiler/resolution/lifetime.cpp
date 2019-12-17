@@ -2285,12 +2285,14 @@ void EmitLifetimeErrorsVisitor::emitErrors() {
     if (erroredSymbols.count(key))
       continue;
 
+    bool user = !key->hasFlag(FLAG_TEMP);
+
     if (key->isRef()) {
       if (// check if intrinsic lifetime < symbol lifetime
-          (!intrinsic.referent.unknown &&
+          (!intrinsic.referent.unknown && user &&
            isLifetimeShorter(intrinsic.referent, scope)) ||
           // check if inferred lifetime < symbol lifetime
-          (!inferred.referent.unknown &&
+          (!inferred.referent.unknown && user &&
            isLifetimeShorter(inferred.referent, scope)) ||
           // check if inferred lifetime < intrinsic lifetime
           (!inferred.referent.unknown &&
@@ -2309,10 +2311,10 @@ void EmitLifetimeErrorsVisitor::emitErrors() {
 
     if (isOrContainsBorrowedClass(key->type)) {
       if (// check if intrinsic lifetime < symbol lifetime
-          (!intrinsic.borrowed.unknown &&
+          (!intrinsic.borrowed.unknown && user &&
            isLifetimeShorter(intrinsic.borrowed, scope)) ||
           // check if inferred lifetime < symbol lifetime
-          (!inferred.borrowed.unknown &&
+          (!inferred.borrowed.unknown && user &&
            isLifetimeShorter(inferred.borrowed, scope)) ||
           // check if inferred lifetime < intrinsic lifetime
           (!inferred.borrowed.unknown &&
