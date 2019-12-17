@@ -225,6 +225,3 @@ proc testRecs() {
   }
 }
 testRecs();
-
-// TODO: param set in a conditional
-// TODO: references and types
