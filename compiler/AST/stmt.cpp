@@ -576,6 +576,13 @@ CondStmt::CondStmt(Expr* iCondExpr, BaseAST* iThenStmt, BaseAST* iElseStmt) :
   gCondStmts.add(this);
 }
 
+static void fixIfExprFoldedBlock(Expr* stmt) {
+  if (BlockStmt* block = toBlockStmt(stmt)) {
+    // This addresses lifetime issues with variables created within if-exprs.
+    block->flattenAndRemove();
+  }
+}
+
 CallExpr* CondStmt::foldConstantCondition() {
   CallExpr* result = NULL;
 
@@ -589,6 +596,7 @@ CallExpr* CondStmt::foldConstantCondition() {
 
         insertBefore(result);
 
+        bool isIfExpr = false;
         // A squashed IfExpr's result does not need FLAG_IF_EXPR_RESULT, which
         // is only used when there are multiple paths that could return a
         // different type.
@@ -597,6 +605,7 @@ CallExpr* CondStmt::foldConstantCondition() {
             Symbol* LHS = toSymExpr(call->get(1))->symbol();
             if (LHS->hasFlag(FLAG_IF_EXPR_RESULT)) {
               LHS->removeFlag(FLAG_IF_EXPR_RESULT);
+              isIfExpr = true;
             }
           }
         }
@@ -605,16 +614,16 @@ CallExpr* CondStmt::foldConstantCondition() {
           Expr* then_stmt = thenStmt;
 
           then_stmt->remove();
-
           replace(then_stmt);
+          if (isIfExpr) fixIfExprFoldedBlock(then_stmt);
 
         } else {
           Expr* else_stmt = elseStmt;
 
           if (else_stmt != NULL) {
             else_stmt->remove();
-
             replace(else_stmt);
+            if (isIfExpr) fixIfExprFoldedBlock(else_stmt);
           } else {
             remove();
           }
