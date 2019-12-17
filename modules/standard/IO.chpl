@@ -5629,7 +5629,7 @@ class _channel_regexp_info {
   proc allocate_captures() {
     ncaptures = qio_regexp_get_ncaptures(theRegexp);
     matches = _ddata_allocate(qio_regexp_string_piece_t, ncaptures+1);
-    capArr = _ddata_allocate(string, ncaptures);
+    capArr = _ddata_allocate(this.exprType, ncaptures);
     capturei = 0;
   }
   proc deinit() {
@@ -5765,7 +5765,7 @@ proc channel._format_reader(
           error = qio_format_error_write_regexp();
         } else {
           // allocate regexp info if needed
-          if r == nil then r = new unmanaged _channel_regexp_info();
+          if r == nil then r = new unmanaged _channel_regexp_info(r.exprType);
           const rnn = r!;  // indicate that it is non-nil
           // clear out old data, if there is any.
           rnn.clear();
@@ -6524,7 +6524,11 @@ proc channel.readf(fmtStr:?t, ref args ...?k): bool throws
               }
               else {
                 // match it here.
-                if r == nil then r = new unmanaged _channel_regexp_info(t.exprType);
+                /*extern proc printf(fmt, str);*/
+                /*printf("t.type: %s\n", t.type:string);*/
+                /*printf("t.exprType: %s\n", t.exprType:string);*/
+                /*printf("r.exprType: %s\n", r.exprType:string);*/
+                if r == nil then r = new unmanaged _channel_regexp_info(r.exprType);
                 const rnn = r!;  // indicate that it is non-nil
                 rnn.clear();
                 rnn.theRegexp = t._regexp;
@@ -6561,6 +6565,9 @@ proc channel.readf(fmtStr:?t, ref args ...?k): bool throws
                     // but only if it's a primitive type
                     // (so that we can avoid problems with string-to-record).
                     try {
+                      /*extern proc printf(fmt, str): void;*/
+                      /*printf("cap type %s\n", rnn.capArr[rnn.capturei].type:string);*/
+                      /*printf("arg type %s\n", args(i).type:string);*/
                       args(i) = rnn.capArr[rnn.capturei]:args(i).type;
                     } catch {
                       err = qio_format_error_bad_regexp();
