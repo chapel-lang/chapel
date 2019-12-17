@@ -2286,7 +2286,8 @@ void EmitLifetimeErrorsVisitor::emitErrors() {
     if (key->isRef() &&
         !inferred.referent.unknown &&
         !intrinsic.referent.unknown &&
-        isLifetimeShorter(inferred.referent, intrinsic.referent)) {
+        (isLifetimeShorter(inferred.referent, intrinsic.referent) ||
+         isLifetimeShorter(intrinsic.referent, scopeLifetimeForSymbol(key)))) {
       Expr* at = key->defPoint;
       if (inferred.referent.relevantExpr)
         at = inferred.referent.relevantExpr;
