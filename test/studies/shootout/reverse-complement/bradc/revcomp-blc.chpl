@@ -37,33 +37,33 @@ class Seq {
     last = cursor + readSize - 1;
     if (last >= dataLen) {
       dataLen *= 2;
-      if debug then writeln("resizing seq ", id, " to ", dataLen);
+      if debug then stderr.writeln("resizing seq ", id, " to ", dataLen);
       dom = {0..#dataLen};
     }
-    if debug then writeln("reading into ", cursor..last);
+    if debug then stderr.writeln("reading into ", cursor..last);
     return !input.read(data[cursor..last]);
   }
 
   proc processChunk() {
     for i in cursor..last {
       if data[i] == ">".toByte() {
-        if debug then writeln("Found a '>' at offset ", i);
+        if debug then stderr.writeln("Found a '>' at offset ", i);
         if start == -1 {
-          if debug then writeln("Setting start to ", i);  // TODO: we always set start to 0
+          if debug then stderr.writeln("Setting start to ", i);  // TODO: we always set start to 0
           start = i;
 	} else {
-          if debug then writeln("Setting end to ", i-1);
+          if debug then stderr.writeln("Setting end to ", i-1);
 	  end = i-1;
 	  return 1;
 	}
       } else if data[i] == 0 {
-        if debug then writeln("Found end of data at ", i);
+        if debug then stderr.writeln("Found end of data at ", i);
         end = i-1;
 	return 2;
       }
     }
 
-    if debug then writeln("Advancing cursor");
+    if debug then stderr.writeln("Advancing cursor");
     // we did not find the end of a sequence; set up for the next read
     cursor = last+1;
     return 0;
@@ -71,7 +71,7 @@ class Seq {
 
   proc copyTail() {
     const tailLen = last - end;
-    if debug then writeln("Copying tail of ", tailLen, " from ", end+1..#tailLen);
+    if debug then stderr.writeln("Copying tail of ", tailLen, " from ", end+1..#tailLen);
     var newSeq = new Seq(id = id+1,
                          cursor = 0,
                          last = tailLen-1);
@@ -81,7 +81,7 @@ class Seq {
   }
 
   proc revcomp() {
-    if debug then writeln("Processing sequence from ", start, " to ", end);
+    if debug then stderr.writeln("Processing sequence from ", start, " to ", end);
     const last = end;
     do {
       start += 1;
