@@ -45,7 +45,7 @@ module LCALSDataTypes {
     var num_suite_passes: int;
     var loop_samp_frac: real;
 
-    var ref_loop_stat: owned LoopStat?;
+    const ref_loop_stat = new owned LoopStat();
 
     var loop_weights: [weight_group_dom] real;
 

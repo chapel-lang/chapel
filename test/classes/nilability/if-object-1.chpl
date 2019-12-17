@@ -7,11 +7,11 @@ class C {
 proc main() {
   var obj: borrowed C?;
 
-  writeln(obj.x);
+  writeln(obj!.x);
 
   if obj then
-    writeln(obj.x);
+    writeln(obj!.x);
 
   if obj != nil then
-    writeln(obj.x);
+    writeln(obj!.x);
 }

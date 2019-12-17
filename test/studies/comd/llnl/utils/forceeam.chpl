@@ -121,7 +121,7 @@ if useChplVis then tagVdebug("setupEAMForce");
     this.eamPot = new unmanaged EAMPot();
     const boxSpace = {1..numBoxes(1), 1..numBoxes(2), 1..numBoxes(3)};
     const distSpace = boxSpace dmapped Block(boundingBox=boxSpace, targetLocales=locGrid);
-    ref eamDom = this.eamPot.eamDom;
+    ref eamDom = this.eamPot!.eamDom;
     coforall ijk in locDom {
       on locGrid[ijk] {
         const MyLocDom = distSpace.localSubdomain();
@@ -316,7 +316,7 @@ if useChplVis then pauseVdebug();
   proc exchangeData() {
     // halo exchange
     tArray[timerEnum.EAMHALO].start();
-    const ref eamDom = this.eamPot.eamDom;
+    const ref eamDom = this.eamPot!.eamDom;
     for i in 1..6 by 2 {
       coforall ijk in locDom {
         on locGrid[ijk] {
@@ -332,8 +332,8 @@ if useChplVis then pauseVdebug();
     var r2 = dot(dr, dr);
     if( r2 > cutoff2 || r2 <= 0.0 ) then return;
     var r = sqrt(r2);
-    var phiTmp, dPhi:real; phiIO.interpolate(r, phiTmp, dPhi);
-    var rhoTmp, dRho:real; rhoIO.interpolate(r, rhoTmp, dRho);
+    var phiTmp, dPhi:real; phiIO!.interpolate(r, phiTmp, dPhi);
+    var rhoTmp, dRho:real; rhoIO!.interpolate(r, rhoTmp, dRho);
     fij += (dPhi/r)*dr;
     pij += phiTmp/2;
     rij += rhoTmp;
@@ -344,14 +344,14 @@ if useChplVis then pauseVdebug();
     var r2 = dot(dr, dr);
     if( r2 > cutoff2 || r2 <= 0.0 ) then return;
     var r = sqrt(r2);
-    var rhoTmp, dRho:real; rhoIO.interpolate(r, rhoTmp, dRho);
+    var rhoTmp, dRho:real; rhoIO!.interpolate(r, rhoTmp, dRho);
     fij += (dfEmbed*dRho/r)*dr;
   }
 
   override proc compute() : void {
     tArray[timerEnum.FORCE1].start();
 if useChplVis then tagVdebug("computeEAMForce");
-    const ref eamDom = this.eamPot.eamDom;
+    const ref eamDom = this.eamPot!.eamDom;
     coforall ijk in locDom {
       on locGrid[ijk] {
         const MyDom = Grid[ijk];
@@ -379,7 +379,7 @@ if useChplVis then tagVdebug("computeEAMForce");
           }
 
           for i in 1..box.count {
-            var fEmbedTmp, dfEmbedTmp:real; force.fIO.interpolate(rhoBar(i), fEmbedTmp, dfEmbedTmp);
+            var fEmbedTmp, dfEmbedTmp:real; force.fIO!.interpolate(rhoBar(i), fEmbedTmp, dfEmbedTmp);
             dfEmbed(i) = dfEmbedTmp;
             pe(i) += fEmbedTmp;
           }
@@ -421,7 +421,7 @@ if useChplVis then pauseVdebug();
   override proc computeLocal() : void {
     tArray[timerEnum.FORCE1].start();
 if useChplVis then tagVdebug("computeEAMForce");
-    const ref eamDom = this.eamPot.eamDom;
+    const ref eamDom = this.eamPot!.eamDom;
     coforall ijk in locDom {
       on locGrid[ijk] {
         const MyDom = Grid[ijk];
@@ -450,7 +450,7 @@ local {
           }
 
           for i in 1..box.count {
-            var fEmbedTmp, dfEmbedTmp:real; force.fIO.interpolate(rhoBar(i), fEmbedTmp, dfEmbedTmp);
+            var fEmbedTmp, dfEmbedTmp:real; force.fIO!.interpolate(rhoBar(i), fEmbedTmp, dfEmbedTmp);
             dfEmbed(i) = dfEmbedTmp;
             pe(i) += fEmbedTmp;
           }
@@ -514,9 +514,9 @@ if useChplVis then pauseVdebug();
     temp.potName = this.potName;
     temp.cutoff2 = this.cutoff2;
     temp.eamPot = nil;
-    temp.phiIO = this.phiIO.replicate();
-    temp.rhoIO = this.rhoIO.replicate();
-    temp.fIO   = this.fIO.replicate();
+    temp.phiIO = this.phiIO!.replicate();
+    temp.rhoIO = this.rhoIO!.replicate();
+    temp.fIO   = this.fIO!.replicate();
     return temp;
   }
 

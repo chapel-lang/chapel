@@ -4310,9 +4310,9 @@ qioerr _qio_channel_read_char_slow_unlocked(qio_channel_t* restrict ch, int32_t*
     while( 1 ) {
       gotch = qio_channel_read_byte(false, ch);
       if(gotch < 0 ||
-         qio_utf8_decode(&state,
-                         &codepoint,
-                         gotch) <= 1){
+         chpl_enc_utf8_decode(&state,
+                              &codepoint,
+                              gotch) <= 1){
         break;
       }
     }

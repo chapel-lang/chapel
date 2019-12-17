@@ -694,7 +694,7 @@ private proc writeTimeStatistics(wallTime:real,
   {
     const localeTime = localeTimes[i];
     localeTotalTime += localeTime;
-    localeTimesFormatted += (i + ": " + localeTime);
+    localeTimesFormatted += (i:string + ": " + localeTime:string);
     localeTimesFormatted += if i == localeRange.high
                             then ""
                             else ", ";

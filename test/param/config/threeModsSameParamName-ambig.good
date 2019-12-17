@@ -1,6 +1,6 @@
-threeModsSameParamName.chpl:6: error: ambiguous config name (flag)
-threeModsSameParamName.chpl:2: note: also defined here
-threeModsSameParamName.chpl:2: note: (disambiguate using -s<modulename>.flag...)
-threeModsSameParamName.chpl:10: error: ambiguous config name (flag)
-threeModsSameParamName.chpl:2: note: also defined here
-threeModsSameParamName.chpl:2: note: (disambiguate using -s<modulename>.flag...)
+threeModsSameParamName.chpl:7: error: ambiguous config name (flag)
+threeModsSameParamName.chpl:3: note: also defined here
+threeModsSameParamName.chpl:3: note: (disambiguate using -s<modulename>.flag...)
+threeModsSameParamName.chpl:11: error: ambiguous config name (flag)
+threeModsSameParamName.chpl:3: note: also defined here
+threeModsSameParamName.chpl:3: note: (disambiguate using -s<modulename>.flag...)

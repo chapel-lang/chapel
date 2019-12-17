@@ -53,6 +53,7 @@ static int         err_print        =    0;
 static int         err_ignore       =    0;
 
 static FnSymbol*   err_fn           = NULL;
+static int         err_fn_id        = 0;
 static bool        err_fn_header_printed = false;
 
 static bool forceWidePtrs();
@@ -335,6 +336,9 @@ static void printInstantiationNoteForLastError() {
       }
     }
   }
+
+  // Clear this variable in case e.g. err_fn is deleted in a future pass
+  err_fn = NULL;
 }
 
 static bool printErrorHeader(BaseAST* ast) {
@@ -356,7 +360,7 @@ static bool printErrorHeader(BaseAST* ast) {
         if (fn->defPoint == NULL || !fn->inTree())
           fn = NULL;
 
-      if (fn && fn != err_fn) {
+      if (fn && fn->id != err_fn_id) {
         printInstantiationNoteForLastError();
         err_fn_header_printed = false;
         err_fn = fn;
@@ -368,6 +372,7 @@ static bool printErrorHeader(BaseAST* ast) {
 
           err_fn = fn;
         }
+        err_fn_id = err_fn->id;
 
         // If the function is compiler-generated, or inlined, or doesn't match
         // the error function and line number, nothing is printed.

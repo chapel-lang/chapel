@@ -125,7 +125,10 @@ module LocaleModelHelpSetup {
     // at least this setup method) must be run on the node it is
     // intended to describe.
     extern proc chpl_nodeName(): c_string;
-    const _node_name = createStringWithNewBuffer(chpl_nodeName());
+    var _node_name: string;
+    try! {
+      _node_name = createStringWithNewBuffer(chpl_nodeName());
+    }
     const _node_id = (chpl_nodeID: int): string;
 
     return if localSpawn() then _node_name + "-" + _node_id else _node_name;

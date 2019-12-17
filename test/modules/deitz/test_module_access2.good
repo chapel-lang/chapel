@@ -1,1 +1,1 @@
-test_module_access2.chpl:12: error: Symbol 'x' undeclared in module 'M'
+test_module_access2.chpl:13: error: Symbol 'x' undeclared in module 'M'

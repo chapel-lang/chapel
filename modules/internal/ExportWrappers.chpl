@@ -62,15 +62,19 @@ module ExportWrappers {
   proc chpl__exportArg(cp: bool, val: chpl_byte_buffer, type rt: string): rt {
     var data = val.data:c_string;
     var size = val.size.safeCast(int);
-    if cp then return createStringWithNewBuffer(data, size);
-    return createStringWithBorrowedBuffer(data, size);
+    try! {
+      if cp then return createStringWithNewBuffer(data, size);
+      return createStringWithBorrowedBuffer(data, size);
+    }
   }
 
   proc chpl__exportArg(cp: bool, val: chpl_byte_buffer, type rt: bytes): rt {
     var data = val.data:c_string;
     var size = val.size.safeCast(int);
-    if cp then return createBytesWithNewBuffer(data, size);
-    return createBytesWithBorrowedBuffer(data, size);
+    try! {
+      if cp then return createBytesWithNewBuffer(data, size);
+      return createBytesWithBorrowedBuffer(data, size);
+    }
   }
 
 } // End module "ExportWrappers".

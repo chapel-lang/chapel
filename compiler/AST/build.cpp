@@ -2015,6 +2015,7 @@ buildOnStmt(Expr* expr, Expr* stmt) {
     Symbol* tmp = newTempConst();
     block->insertAtHead(new CallExpr(PRIM_MOVE, tmp, onExpr)); // evaluate the expression for side effects
     block->insertAtHead(new DefExpr(tmp));
+    block->blockInfoSet(new CallExpr(PRIM_BLOCK_ELIDED_ON, gFalse, tmp));
     return buildChapelStmt(block);
   }
 
@@ -2315,7 +2316,9 @@ static BlockStmt* findStmtWithTag(PrimitiveTag tag, BlockStmt* blockStmt) {
       blockStmt = NULL;
 
     // Stop if the tail is not a "real" BlockStmt (e.g. a Loop etc)
-    } else if (tail == NULL || tail->isRealBlockStmt() == false) {
+    } else if (tail == NULL ||
+               (tail->isRealBlockStmt() == false &&
+                !tail->isBlockType(PRIM_BLOCK_ELIDED_ON))) {
       blockStmt = NULL;
 
     // Step in to the block and try again

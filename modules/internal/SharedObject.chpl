@@ -317,6 +317,7 @@ module SharedObject {
       this.chpl_t = int; //dummy
     }
 
+    pragma "leaves this nil"
     proc init=(src : _nilType) {
       this.init(this.type.chpl_t);
 

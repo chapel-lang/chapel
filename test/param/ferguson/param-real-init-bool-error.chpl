@@ -1,0 +1,1 @@
+param x:real = true;

@@ -5972,7 +5972,7 @@ void do_remote_get(void* tgt_addr, c_nodeid_t locale, void* src_addr,
     while (xmit_size > gbp_max_size) {
       do_nic_get(tgt_addr_xmit, locale, remote_mr,
                  src_addr_xmit, gbp_max_size, gnr_mreg);
-      memcpy(tgt_addr, tgt_addr_xmit, xmit_size);
+      memcpy(tgt_addr, tgt_addr_xmit, gbp_max_size);
       tgt_addr = (char*) tgt_addr + gbp_max_size;
       src_addr_xmit = (char*) src_addr_xmit + gbp_max_size;
       xmit_size -= gbp_max_size;

@@ -15,8 +15,8 @@ class UpdateManager {
     if updateList == nil {
       return new unmanaged Update();
     } else {
-      var update = updateList;
-      updateList = updateList.forward;
+      var update = updateList!;
+      updateList = update.forward;
       return update;
     }
   }
@@ -86,9 +86,9 @@ class Buckets {
       var i = 0;
 
       while update != nil {
-        var tmp = update.forward;
-        buf(i) = update.value;
-        updateManager.returnUpdate(update);
+        var tmp = update!.forward;
+        buf(i) = update!.value;
+        updateManager.returnUpdate(update!);
         update = tmp;
         i += 1;
       }

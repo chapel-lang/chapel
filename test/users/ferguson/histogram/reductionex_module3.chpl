@@ -1,4 +1,4 @@
-
+module OuterModule {
   module Test {
     /* these should already be defined:
     param NBUCKETS;
@@ -60,4 +60,4 @@
   var counts = myhisto reduce array;
 
   writeln(counts);
-
+}

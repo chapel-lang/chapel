@@ -695,6 +695,7 @@ static bool containsOnlyModules(BlockStmt* block, const char* path) {
   bool          hasOther       = false;
   ModuleSymbol* lastModSym     =  NULL;
   BaseAST*      lastModSymStmt =  NULL;
+  BaseAST*      firstOtherStmt =  NULL;
 
   for_alist(stmt, block->body) {
     if (BlockStmt* block = toBlockStmt(stmt))
@@ -710,6 +711,8 @@ static bool containsOnlyModules(BlockStmt* block, const char* path) {
         moduleDefs++;
       } else {
         hasOther = true;
+        if (firstOtherStmt == NULL)
+          firstOtherStmt = stmt;
       }
 
     } else if (CallExpr* callexpr = toCallExpr(stmt)) {
@@ -717,6 +720,8 @@ static bool containsOnlyModules(BlockStmt* block, const char* path) {
         hasRequires = true;
       } else {
         hasOther = true;
+        if (firstOtherStmt == NULL)
+          firstOtherStmt = stmt;
       }
 
     } else if (isUseStmt(stmt)  == true) {
@@ -724,6 +729,8 @@ static bool containsOnlyModules(BlockStmt* block, const char* path) {
 
     } else {
       hasOther = true;
+      if (firstOtherStmt == NULL)
+        firstOtherStmt = stmt;
     }
   }
 
@@ -753,6 +760,14 @@ static bool containsOnlyModules(BlockStmt* block, const char* path) {
              lastModSym->name,
              stmtKind);
 
+  } else if (moduleDefs >= 1 && (hasUses || hasOther)) {
+    USR_WARN(firstOtherStmt,
+             "This file-scope code is outside of any "
+             "explicit module declarations (e.g., module %s), "
+             "so an implicit module named '%s' is being "
+             "introduced to contain the file's contents.",
+             lastModSym->name,
+             filenameToModulename(path));
   }
 
   return hasUses == false &&

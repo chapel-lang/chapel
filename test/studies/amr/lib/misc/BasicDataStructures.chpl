@@ -63,7 +63,7 @@ class List
   iter these ()
   {
     var node = head;
-    while node { yield node.data; node = node.next; }
+    while node { yield node!.data; node = node!.next; }
   }
   
   
@@ -80,7 +80,7 @@ class List
     var next_node: unmanaged Node(data_type)?;
     
     while head {
-      next_node = head.next;
+      next_node = head!.next;
       delete head;
       head = next_node;
     }
@@ -188,10 +188,10 @@ class Queue
   proc enqueue (data: data_type)
   {
     if tail {
-      var old_tail = tail;
+      var old_tail = tail!;
       tail = new unmanaged Node(data_type, data);
       old_tail.next = tail;
-      tail.prev     = old_tail;
+      tail!.prev    = old_tail;
     }
     else {
       head = new unmanaged Node(data_type, data);
@@ -207,7 +207,7 @@ class Queue
       halt("Error: Attempted to dequeue from empty Queue.");
     else
     {
-      var output_data = head.data;
+      var output_data = head!.data;
     
       if head == tail {
         delete head;
@@ -216,7 +216,7 @@ class Queue
       }
       else {
         var old_head = head;
-        head = head.next;
+        head = head!.next;
         delete old_head;
       }
     

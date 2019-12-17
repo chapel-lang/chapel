@@ -27,7 +27,7 @@ class myseq {
   }
 
   proc print() {
-    writeln("sequence contains ", first.element);
+    writeln("sequence contains ", first!.element);
   }
 }
 

@@ -2,13 +2,12 @@ proc paramprint(param arg) {
   writeln(arg.type:string, " ", arg:string);
 }
 
-// First, check complex(64) initialized by real
 proc check(type t, param ini) {
   writeln(t:string, " initialized by ", ini.type:string, " ", ini);
   param x:t = ini:t;
   write("x=", x, " ");
   paramprint(x);
-  param y:t = ini;
+  param y:t = ini; // relies on conversion
   write("y=", y, " ");
   paramprint(y);
   param z = ini:t;
@@ -24,6 +23,28 @@ proc check(type t, param ini) {
   paramprint(a);
   writeln();
 }
+proc checkNoCoerce(type t, param ini) {
+  writeln(t:string, " initialized by ", ini.type:string, " ", ini);
+  param x:t = ini:t;
+  write("x=", x, " ");
+  paramprint(x);
+  param y:t = ini:t; // does not rely on coercion
+  write("y=", y, " ");
+  paramprint(y);
+  param z = ini:t;
+  write("z=", z, " ");
+  paramprint(z);
+  // Check that the types match
+  assert(x.type == y.type && y.type == z.type);
+  // Check that the values match
+  assert(x == y && y == z);
+  // Now try casting one of them back to ini.type
+  param a = z:ini.type;
+  write("a=", a, " ");
+  paramprint(a);
+  writeln();
+}
+
 
 // initializing from real of different sizes
 check(complex(128), 1.0);
@@ -89,16 +110,16 @@ check(complex(64), 1:uint(8));
 writeln();
 
 // initializing from bool of different sizes
-check(complex(128), true);
-check(complex(128), true:bool(64));
-check(complex(128), true:bool(32));
-check(complex(128), true:bool(16));
-check(complex(128), true:bool(8));
-check(complex(64), true);
-check(complex(64), true:bool(64));
-check(complex(64), true:bool(32));
-check(complex(64), true:bool(16));
-check(complex(64), true:bool(8));
+checkNoCoerce(complex(128), true);
+checkNoCoerce(complex(128), true:bool(64));
+checkNoCoerce(complex(128), true:bool(32));
+checkNoCoerce(complex(128), true:bool(16));
+checkNoCoerce(complex(128), true:bool(8));
+checkNoCoerce(complex(64), true);
+checkNoCoerce(complex(64), true:bool(64));
+checkNoCoerce(complex(64), true:bool(32));
+checkNoCoerce(complex(64), true:bool(16));
+checkNoCoerce(complex(64), true:bool(8));
 writeln();
 
 // Note, initializing a numeric param from a string param
