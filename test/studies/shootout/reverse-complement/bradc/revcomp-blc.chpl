@@ -1,9 +1,10 @@
 /* The Computer Language Benchmarks Game
    https://salsa.debian.org/benchmarksgame-team/benchmarksgame/
 
-   contributed by Ben Harshbarger and Brad Chamberlain
-   informed by the C gcc #6 version by Jeremy Zerfas, particularly in
-   terms of recursively doubling the buffer size and the read chunk size
+   contributed by Brad Chamberlain
+   based on the Chapel #1-#3 versions by Ben Harshbarger and myself,
+   and informed by the C gcc #6 version by Jeremy Zerfas, particularly in
+   terms of the read chunk size and the recursive doubling of the buffer
 */
 
 // TODO: if I add a flush and remove the unbuffered, does perf improve?
