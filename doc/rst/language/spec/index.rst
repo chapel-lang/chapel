@@ -40,4 +40,4 @@ Chapel Language Specification
    domain-maps
    user-defined-reductions-and-scans
    memory-consistency-model
-   interoperability.rst
+   interoperability
