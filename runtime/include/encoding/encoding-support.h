@@ -22,6 +22,7 @@
 
 // Note: This header is used by both the compiler and the runtime.
 
+#include <sys/types.h>
 #include <stdlib.h>
 #include <inttypes.h>
 #include <wchar.h>
