@@ -9654,24 +9654,27 @@ static void resolvePrimInit(CallExpr* call, Symbol* val, Type* type) {
 
   // These types default to nil
   } else if (isClassLikeOrPtr(type) || type == dtNil) {
-    // note: error for bad param initialization checked for in resolving move
 
-    Expr* nilExpr = NULL;
-    SymExpr* typeSe = NULL;
-    if (gNil->type == type) {
-      nilExpr = new SymExpr(gNil);
+    if (!call->isPrimitive(PRIM_INIT_VAR_SPLIT_DECL)) {
+      Expr* nilExpr = NULL;
+      SymExpr* typeSe = NULL;
+      if (gNil->type == type) {
+        nilExpr = new SymExpr(gNil);
+      } else {
+        typeSe = new SymExpr(type->symbol);
+        nilExpr = new CallExpr(PRIM_CAST, typeSe, gNil);
+      }
+
+      CallExpr* moveDefault = new CallExpr(PRIM_MOVE, val, nilExpr);
+      call->insertBefore(moveDefault);
+      if (typeSe) resolveExprTypeConstructor(typeSe);
+      resolveExpr(moveDefault);
+      call->convertToNoop();
+
+      errorIfNonNilableType(call, val, type, type);
     } else {
-      typeSe = new SymExpr(type->symbol);
-      nilExpr = new CallExpr(PRIM_CAST, typeSe, gNil);
+      call->convertToNoop(); // initialize it PRIM_INIT_VAR_SPLIT_INIT
     }
-
-    CallExpr* moveDefault = new CallExpr(PRIM_MOVE, val, nilExpr);
-    call->insertBefore(moveDefault);
-    if (typeSe) resolveExprTypeConstructor(typeSe);
-    resolveExpr(moveDefault);
-    call->convertToNoop();
-
-    errorIfNonNilableType(call, val, type, type);
 
   // any type with a defaultValue is easy enough
   // (expect this to handle numeric types and classes)
