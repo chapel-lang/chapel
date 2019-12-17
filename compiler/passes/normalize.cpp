@@ -2268,6 +2268,7 @@ static void normalizeVariableDefinition(DefExpr* defExpr) {
   // points written using '='
   bool foundSplitInit = false;
   bool requestedSplitInit = isSplitInitExpr(init);
+  bool refVar = var->hasFlag(FLAG_REF_VAR);
 
   // Error for global variables using split init
   FnSymbol* initFn = defExpr->getModule()->initFn;
@@ -2285,13 +2286,12 @@ static void normalizeVariableDefinition(DefExpr* defExpr) {
     foundSplitInit = findInitPoints(defExpr, initAssign);
 
   if ((init != NULL && !requestedSplitInit) ||
-      foundSplitInit == false ||
-      // Future: enable ref vars, params
-      var->hasFlag(FLAG_REF_VAR)) {
+      var->hasFlag(FLAG_REF_VAR) || // TODO REMOVE
+      foundSplitInit == false) {
     // handle non-split initialization
 
     // handle ref variables
-    if (var->hasFlag(FLAG_REF_VAR)) {
+    if (refVar) {
       normRefVar(defExpr);
 
     } else if (type == NULL && init != NULL) {
@@ -2585,9 +2585,8 @@ static void normRefVar(DefExpr* defExpr) {
   Expr*      init        = defExpr->init;
   Expr*      varLocation = NULL;
 
-  if (init == NULL) {
-    USR_FATAL_CONT(var,
-                   "References must be initialized when they are defined.");
+  if (init == NULL || isSplitInitExpr(init)) {
+    USR_FATAL_CONT(var, "References must be initialized");
   }
 
   // If this is a const reference to an immediate, we need to insert a temp
