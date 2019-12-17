@@ -8,6 +8,46 @@ record RQ {
   var classField: borrowed C?;
 }
 
+proc testCborrowedCQassign() {
+  var c:borrowed C? = nil;
+  {
+    var inner = new owned C(1);
+    c = inner.borrow();
+  }
+  writeln(c);
+}
+testCborrowedCQassign();
+
+proc testCborrowedC() {
+  var c:borrowed C;
+  {
+    var inner = new owned C(1);
+    c = inner.borrow();
+  }
+  writeln(c);
+}
+testCborrowedC();
+
+proc testCborrowedCQ() {
+  var c:borrowed C?;
+  {
+    var inner = new owned C(1);
+    c = inner.borrow();
+  }
+  writeln(c);
+}
+testCborrowedCQ();
+
+proc testCNoType() {
+  var c;
+  {
+    var inner = new owned C(1);
+    c = inner.borrow();
+  }
+  writeln(c);
+}
+testCNoType();
+
 proc testRassign() {
   var outer = new owned C(0);
   var x: R = new R(outer.borrow());
