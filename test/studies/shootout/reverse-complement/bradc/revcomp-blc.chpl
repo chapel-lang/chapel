@@ -5,89 +5,133 @@
    derived from the Rust #2 version by Matt Brubeck
    updated to avoid allocating the buffer to be the right size from the start
 */
+
+// TODO: All variables read?
+
 use IO;
+
+config const debug = false;
+
+config const readSize = 16384;
 
 param eol = "\n".toByte();    // end-of-line, as an integer
 
 const table = createTable();  // create the table of code complements
 
+// write the data that we read to stdout once all tasks have completed	
+const stdoutBin = openfd(1).writer(iokind.native, locking=false,
+                                   hints=QIO_CH_ALWAYS_UNBUFFERED);
+var seqToWrite: atomic int = 1;
+
+class Seq {
+  const id = 0;
+  var cursor = 0,
+      last = 0,
+      start = -1,
+      end = -1;
+  var dataLen = readSize;
+  var dom = {0..#dataLen};
+  var data: [dom] uint(8);
+
+  proc readChunk(input) {
+    last = cursor + readSize - 1;
+    if (last >= dataLen) {
+      dataLen *= 2;
+      if debug then writeln("resizing seq ", id, " to ", dataLen);
+      dom = {0..#dataLen};
+    }
+    if debug then writeln("reading into ", cursor..last);
+    return !input.read(data[cursor..last]);
+  }
+
+  proc processChunk() {
+    for i in cursor..last {
+      if data[i] == ">".toByte() {
+        if debug then writeln("Found a '>' at offset ", i);
+        if start == -1 {
+          if debug then writeln("Setting start to ", i);  // TODO: we always set start to 0
+          start = i;
+	} else {
+          if debug then writeln("Setting end to ", i-1);
+	  end = i-1;
+	  return 1;
+	}
+      } else if data[i] == 0 {
+        if debug then writeln("Found end of data at ", i);
+        end = i-1;
+	return 2;
+      }
+    }
+
+    if debug then writeln("Advancing cursor");
+    // we did not find the end of a sequence; set up for the next read
+    cursor = last+1;
+    return 0;
+  }
+
+  proc copyTail() {
+    const tailLen = last - end;
+    if debug then writeln("Copying tail of ", tailLen, " from ", end+1..#tailLen);
+    var newSeq = new Seq(id = id+1,
+                         cursor = 0,
+                         last = tailLen-1);
+    newSeq.data[0..#tailLen] = data[end+1..#tailLen];
+
+    return newSeq;
+  }
+
+  proc revcomp() {
+    if debug then writeln("Processing sequence from ", start, " to ", end);
+    const last = end;
+    do {
+      start += 1;
+    } while data[start] != eol;
+
+    while start <= end {
+      ref d1 = data[start],
+          d2 = data[end];
+
+      (d1, d2) = (table[d2], table[d1]);
+
+      advance(start, 1);
+      advance(end, -1);
+
+      proc advance(ref ind, dir) {
+        do {
+          ind += dir;
+        } while data[ind] == eol;
+      }
+    }
+
+    seqToWrite.waitFor(id);
+    stdoutBin.write(data[..last]);
+    stdoutBin.flush();
+    seqToWrite.write(id+1);
+  }
+}
+
+
 proc main(args: [] string) {
   const stdin = openfd(0),
         input = stdin.reader(iokind.native, locking=false,
-                             hints=QIO_HINT_PARALLEL),
-        len = stdin.length();
-  var dataSpace = {0..#16384};
-  var data: [dataSpace] uint(8);
+                             hints=QIO_HINT_PARALLEL);
 
   // if the file isn't empty, wait for all tasks to complete before continuing
-  if len then sync {
+  if stdin.length() != 0 then sync {
+    var curSeq = new Seq(id=1);
+
     do {
-      // Mark where we start scanning and capture the starting offset
-      const descOffset = input.mark();
-
-      // Scan forward until we get to '\n' (end of description)
-      input.advancePastByte(eol);
-      const seqOffset = input.offset();
-
-      // Scan forward until we get to '>' (end of sequence) or EOF
-      const (eof, nextDescOffset) = findNextDesc();
-
-      // look for the next description, returning '(eof, its offset)'
-      proc findNextDesc() {
-        param gt  = ">".toByte();
-
-        try {
-          input.advancePastByte(gt);
-        } catch {
-          return (true, len-1);
+      const eof = curSeq.readChunk(input);
+      // TODO: Can we use a while...do here or is that a problem w.r.t. curSeq?
+      do {
+        const foundSeq = curSeq.processChunk();
+        if (foundSeq) {
+	  var lastSeq = curSeq;
+          curSeq = lastSeq.copyTail();
+          begin with (in lastSeq) { lastSeq.revcomp(); }
         }
-        return (false, input.offset()-1);
-      }
-
-      // Go back to the point we marked
-      input.revert();
-
-      // Recursively double the data buffer as necessary
-      while nextDescOffset >= data.size do
-        dataSpace = {0..#(2*data.size)};
-
-      // Read up to the nextDescOffset into the data array.
-      input.read(data[descOffset..nextDescOffset]);
-
-      // chars to rewind past: 1 for '\n' and 1 for '>' if we're not yet at eof
-      const rewind = if eof then 1 else 2;
-
-      // fire off a task to process the data for this sequence
-      begin process(data[seqOffset..nextDescOffset-rewind]);
+      } while foundSeq == 1;
     } while !eof;
-  }
-
-  // write the data that we read to stdout once all tasks have completed
-  const stdoutBin = openfd(1).writer(iokind.native, locking=false,
-                                     hints=QIO_CH_ALWAYS_UNBUFFERED);
-  stdoutBin.write(data[0..#input.offset()]);
-}
-
-// process a sequence from both ends, replacing each extreme element
-// with the table lookup of the opposite one
-proc process(seq: [?inds]) {
-  var start = inds.low,
-      end = inds.high;
-
-  while start <= end {
-    ref d1 = seq[start],
-        d2 = seq[end];
-
-    (d1, d2) = (table[d2], table[d1]);
-
-    advance(start, 1);
-    advance(end, -1);
-  }
-
-  proc advance(ref cursor, dir) {
-    do {
-      cursor += dir;
-    } while seq[cursor] == eol;
   }
 }
 
@@ -98,7 +142,7 @@ proc createTable() {
   param pairs = b"ATCGGCTAUAMKRYWWSSYRKMVBHDDHBVNN",
         upperToLower = "a".toByte() - "A".toByte();
 
-  var table: [1..128] uint(8);
+  var table: [0..127] uint(8);
 
   table[eol] = eol;
   for i in 1..pairs.size by 2 {
