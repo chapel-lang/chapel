@@ -24,8 +24,7 @@ UTIL_SRCS = \
 	timer.cpp \
 	tmpdirname.cpp
 
-SVN_SRCS = $(UTIL_SRCS)
-SRCS = $(SVN_SRCS)
+SRCS = $(UTIL_SRCS)
 
 UTIL_OBJS = \
 	$(UTIL_SRCS:%.cpp=$(UTIL_OBJDIR)/%.$(OBJ_SUFFIX))

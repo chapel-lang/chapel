@@ -18,8 +18,7 @@
 TOPO_SRCS = \
         topo-none.c \
 
-SVN_SRCS = $(TOPO_SRCS)
-SRCS = $(SVN_SRCS)
+SRCS = $(TOPO_SRCS)
 
 TOPO_OBJS = \
 	$(TOPO_SRCS:%.c=$(TOPO_OBJDIR)/%.o)

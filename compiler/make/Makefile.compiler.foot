@@ -44,7 +44,7 @@ echocompilerdir:
 # dependences and misc. stuff
 #
 
--include $(SVN_DEPENDS)
+-include $(DEPENDS)
 
 #
 # pattern-based rules

@@ -21,7 +21,6 @@ PARSER_SRCS =                                                      \
               countTokens.cpp                                      \
               parser.cpp
 
-SVN_SRCS    = $(PARSER_SRCS)
-SRCS        = $(SVN_SRCS)
+SRCS        = $(PARSER_SRCS)
 
 PARSER_OBJS = $(PARSER_SRCS:%.cpp=$(PARSER_OBJDIR)/%.$(OBJ_SUFFIX))

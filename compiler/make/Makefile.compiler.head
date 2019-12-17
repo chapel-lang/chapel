@@ -95,7 +95,7 @@ CLOBBER_TARGS = \
 # platform-specific subdirectory targets
 #
 
-SVN_DEPENDS = ./$(OBJ_SUBDIR)/*.d
+DEPENDS = ./$(OBJ_SUBDIR)/*.d
 
 
 

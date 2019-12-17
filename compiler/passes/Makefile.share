@@ -45,8 +45,7 @@ PASSES_SRCS =                                              \
         returnStarTuplesByRefArgs.cpp                      \
         scopeResolve.cpp
 
-SVN_SRCS    = $(PASSES_SRCS)
-SRCS        = $(SVN_SRCS)
+SRCS        = $(PASSES_SRCS)
 
 PASSES_OBJS = \
         $(PASSES_SRCS:%.cpp=$(PASSES_OBJDIR)/%.$(OBJ_SUFFIX))
