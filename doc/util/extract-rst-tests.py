@@ -66,7 +66,7 @@ def read_block(lines, start):
     indend_text = ""
     first_nonempty = -1
     j = start
-    end = -1
+    end = len(lines)
 
     # compute where to stop reading
     while j < len(lines):
