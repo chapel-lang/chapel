@@ -1,0 +1,3 @@
+split-init-borrow-lifetime-error.chpl:5: In function 'test':
+split-init-borrow-lifetime-error.chpl:9: error: Scoped variable b would outlive the value it is set to
+split-init-borrow-lifetime-error.chpl:8: note: consider scope of inner
