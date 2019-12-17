@@ -1,13 +1,5 @@
-spaceInQuery.chpl:49: warning: support for space between the question mark and queried type is deprecated
-spaceInQuery.chpl:50: warning: support for space between the question mark and queried type is deprecated
-spaceInQuery.chpl:52: warning: support for space between the question mark and queried type is deprecated
-spaceInQuery.chpl:52: warning: support for space between the question mark and queried type is deprecated
-spaceInQuery.chpl:53: warning: support for space between the question mark and queried type is deprecated
 spaceInQuery.chpl:53: warning: support for space between the question mark and queried type is deprecated
 spaceInQuery.chpl:54: warning: support for space between the question mark and queried type is deprecated
-spaceInQuery.chpl:54: warning: support for space between the question mark and queried type is deprecated
-spaceInQuery.chpl:55: warning: support for space between the question mark and queried type is deprecated
-spaceInQuery.chpl:55: warning: support for space between the question mark and queried type is deprecated
 spaceInQuery.chpl:56: warning: support for space between the question mark and queried type is deprecated
 spaceInQuery.chpl:56: warning: support for space between the question mark and queried type is deprecated
 spaceInQuery.chpl:57: warning: support for space between the question mark and queried type is deprecated
@@ -16,11 +8,21 @@ spaceInQuery.chpl:58: warning: support for space between the question mark and q
 spaceInQuery.chpl:58: warning: support for space between the question mark and queried type is deprecated
 spaceInQuery.chpl:59: warning: support for space between the question mark and queried type is deprecated
 spaceInQuery.chpl:59: warning: support for space between the question mark and queried type is deprecated
+spaceInQuery.chpl:60: warning: support for space between the question mark and queried type is deprecated
+spaceInQuery.chpl:60: warning: support for space between the question mark and queried type is deprecated
+spaceInQuery.chpl:61: warning: support for space between the question mark and queried type is deprecated
 spaceInQuery.chpl:61: warning: support for space between the question mark and queried type is deprecated
 spaceInQuery.chpl:62: warning: support for space between the question mark and queried type is deprecated
+spaceInQuery.chpl:62: warning: support for space between the question mark and queried type is deprecated
+spaceInQuery.chpl:63: warning: support for space between the question mark and queried type is deprecated
 spaceInQuery.chpl:63: warning: support for space between the question mark and queried type is deprecated
 spaceInQuery.chpl:64: warning: support for space between the question mark and queried type is deprecated
-spaceInQuery.chpl:66: warning: support for space between the question mark and queried type is deprecated
+spaceInQuery.chpl:65: warning: support for space between the question mark and queried type is deprecated
+spaceInQuery.chpl:67: warning: support for space between the question mark and queried type is deprecated
+spaceInQuery.chpl:68: warning: support for space between the question mark and queried type is deprecated
+spaceInQuery.chpl:69: warning: support for space between the question mark and queried type is deprecated
+spaceInQuery.chpl:70: warning: support for space between the question mark and queried type is deprecated
+spaceInQuery.chpl:72: warning: support for space between the question mark and queried type is deprecated
 int(64)
 real(64)
 int(64)
@@ -33,6 +35,8 @@ real(64)
 2 real(64)
 2 int(64)
 2 real(64)
+2
+2
 int(64)
 real(64)
 int(64)
@@ -51,6 +55,8 @@ real(64)
 2 real(64)
 2 int(64)
 2 real(64)
+2
+2
 int(64)
 real(64)
 int(64)

@@ -14,6 +14,8 @@ record GenericType {
   proc vararg6(a: ?t... ?n) { writeln(n, " ", t:string); }
   proc vararg7(a: ?t ...?n) { writeln(n, " ", t:string); }
   proc vararg8(a: ?t ... ?n) { writeln(n, " ", t:string); }
+  proc vararg9(a...?n) { writeln(n); }
+  proc vararg10(a... ?n) { writeln(n); }
 
   proc arrElem1(a: [] ?t) { writeln(t:string); }
   proc arrElem2(a: []?t) { writeln(t:string); }
@@ -35,6 +37,8 @@ record GenericType {
   vararg6(1.1, 1.1);
   vararg7(1, 1);
   vararg8(1.1, 1.1);
+  vararg9(1.1, 1.1);
+  vararg10(1.1, 1.1);
 
   arrElem1([1, 1]);
   arrElem2([1.1, 1.1]);
@@ -57,6 +61,8 @@ record GenericType {
   proc vararg6(a: ? t... ? n) { writeln(n, " ", t:string); }
   proc vararg7(a: ? t ...? n) { writeln(n, " ", t:string); }
   proc vararg8(a: ? t ... ? n) { writeln(n, " ", t:string); }
+  proc vararg9(a...? n) { writeln(n); }
+  proc vararg10(a... ? n) { writeln(n); }
 
   proc arrElem1(a: [] ? t) { writeln(t:string); }
   proc arrElem2(a: []? t) { writeln(t:string); }
@@ -78,6 +84,8 @@ record GenericType {
   vararg6(1.1, 1.1);
   vararg7(1, 1);
   vararg8(1.1, 1.1);
+  vararg9(1.1, 1.1);
+  vararg10(1.1, 1.1);
 
   arrElem1([1, 1]);
   arrElem2([1.1, 1.1]);
