@@ -2649,11 +2649,14 @@ static void emitRefVarInit(Expr* after, Symbol* var, Expr* init) {
 
 static void normRefVar(DefExpr* defExpr) {
   VarSymbol* var         = toVarSymbol(defExpr->sym);
-  Expr*      init        = defExpr->init->remove();
+  Expr*      init        = defExpr->init;
 
   if (init == NULL || isSplitInitExpr(init)) {
     USR_FATAL_CONT(var, "References must be initialized");
   }
+
+  if (init != NULL)
+    init->remove();
 
   emitRefVarInit(defExpr, var, init);
 }

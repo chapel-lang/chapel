@@ -1,1 +1,1 @@
-refvar-no-init-with-use.chpl:1: error: References must be initialized when they are defined.
+refvar-no-init-with-use.chpl:1: error: References must be initialized
