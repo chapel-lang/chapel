@@ -77,7 +77,6 @@ tags
 
 # Runtime ignores.
 /runtime/include/chpl_rt_utils.h
-/runtime/src/timers/
 
 # Spec ignores.
 /spec/*.aux
