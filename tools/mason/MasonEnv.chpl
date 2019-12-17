@@ -169,7 +169,7 @@ proc masonEnv(args) {
 private proc getRegNameFromLoc(location: string): string {
   var strippedLoc  = location.strip("/", leading=false);
   var lastSlashPos = strippedLoc.rfind("/");
-  if lastSlashPos == 0 {
+  if lastSlashPos == -1 {
     stderr.writeln("location should be an absolute path or URL");
     exit(1);
   }

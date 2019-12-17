@@ -461,9 +461,9 @@ proc isIdentifier(name:string) {
     return false;
 
   // Identifiers can't start with a digit or a $
-  if name[1].isDigit() then
+  if name[0].isDigit() then
     return false;
-  if name[1] == "$" then
+  if name[0] == "$" then
     return false;
 
   // Check all characters are legal identifier characters

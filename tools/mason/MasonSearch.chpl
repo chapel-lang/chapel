@@ -153,7 +153,7 @@ proc findLatest(packageDir: string): VersionInfo {
 
     // Check that Chapel version is supported
     const end = manifest.length - suffix.length;
-    const ver = new VersionInfo(manifest[1..end]);
+    const ver = new VersionInfo(manifest[0..end-1]);
     if ver > ret then ret = ver;
   }
   return ret;

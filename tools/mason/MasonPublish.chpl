@@ -117,7 +117,7 @@ proc masonPublish(ref args: list(string)) throws {
 /* Uses the existence of a colon to see if a passed registryPath is a local or remote registryPath
  */
 proc isRegistryPathLocal(registryPath : string) throws {
-  return registryPath.find(":") == 0;
+  return registryPath.find(":") == -1;
 }
 
 /* When passed a registryPath and whether or not that registryPath is a local or remote registryPath,
@@ -381,7 +381,7 @@ private proc addPackageToBricks(projectLocal: string, safeDir: string, name : st
         var newToml = open(safeDir + "/mason-registry/Bricks/" + name + "/" + versionNum + ".toml", iomode.cw);
         var tomlWriter = newToml.writer();
         const url = gitUrl();
-        baseToml["brick"].set("source", url[1..url.length-1]);
+        baseToml["brick"].set("source", url[0..url.length-2]);
         tomlWriter.write(baseToml);
         tomlWriter.close();
         return name + '@' + versionNum;
@@ -623,7 +623,7 @@ private proc returnMasonEnv() {
 private proc falseIfRemotePath() {
   var registryInEnv = MASON_REGISTRY;
   for (name, registry) in registryInEnv {
-    if registry.find(':') != 0 {
+    if registry.find(':') != -1 {
       return false;
     }
   }
