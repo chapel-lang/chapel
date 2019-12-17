@@ -1408,7 +1408,7 @@ query_expr:
       USR_WARN(de, "support for space between the question mark and queried type is deprecated");
       $$ = de;
   }
-| TQUERIEDIDENT       { $$ = new DefExpr(new VarSymbol(&($1[1]))); }
+| TQUERIEDIDENT       { $$ = buildQueriedExpr($1); }
 ;
 
 var_arg_expr:
