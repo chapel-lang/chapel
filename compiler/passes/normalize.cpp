@@ -2252,7 +2252,7 @@ static void normalizeVariableDefinition(DefExpr* defExpr) {
   if ((init != NULL && !requestedSplitInit) ||
       foundSplitInit == false ||
       // Future: enable ref vars, params
-      var->hasFlag(FLAG_REF_VAR) || var->hasFlag(FLAG_PARAM)) {
+      var->hasFlag(FLAG_REF_VAR)) {
     // handle non-split initialization
 
     // handle ref variables
@@ -2266,12 +2266,7 @@ static void normalizeVariableDefinition(DefExpr* defExpr) {
       normVarTypeWoutInit(defExpr);
 
     } else if (type != NULL && init != NULL) {
-      if (var->hasFlag(FLAG_PARAM) == true) {
-        CallExpr* cast = createCast(init->remove(), type->remove());
-
-        defExpr->insertAfter(new CallExpr(PRIM_MOVE, var, cast));
-
-      } else if (init->isNoInitExpr() == true) {
+      if (init->isNoInitExpr() == true) {
         normVarNoinit(defExpr);
 
       } else {
@@ -2298,9 +2293,6 @@ static void normalizeVariableDefinition(DefExpr* defExpr) {
       if (var->hasFlag(FLAG_REF_VAR)) {
         //       ref x = <value>;
         // const ref y : <type> = <value>;
-        INT_FATAL("not implemented yet");
-
-      } else if (var->hasFlag(FLAG_PARAM)) {
         INT_FATAL("not implemented yet");
 
       } else {

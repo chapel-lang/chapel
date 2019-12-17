@@ -1533,7 +1533,10 @@ bool isPrimitiveScalar(Type* type) {
       type == dtReal[FLOAT_SIZE_64]        ||
 
       type == dtImag[FLOAT_SIZE_32]        ||
-      type == dtImag[FLOAT_SIZE_64]) {
+      type == dtImag[FLOAT_SIZE_64]        ||
+
+      type == dtComplex[COMPLEX_SIZE_64]   ||
+      type == dtComplex[COMPLEX_SIZE_128]) {
 
     retval = true;
 
