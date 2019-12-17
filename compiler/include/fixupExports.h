@@ -22,6 +22,7 @@
 
 #include <vector>
 
+class ArgSymbol;
 class FnSymbol;
 class Type;
 
@@ -29,10 +30,14 @@ class Type;
 // These are only initialized _after_ "fixupExportedFunctions" has been called
 // during resolution.
 //
-extern Type* exportTypeCharPtr;
-extern Type* exportTypeChplBytesWrapper;
+extern Type* exportTypeChplByteBuffer;
 
 FnSymbol* getUnwrappedFunction(FnSymbol* wrapper);
+ArgSymbol* getUnwrappedArg(ArgSymbol* arg);
+
+// Some return types can change after lowering (i.e., callDestructors).
+Type* getUnwrappedRetType(FnSymbol* wrapper);
+
 void fixupExportedFunctions(const std::vector<FnSymbol*>& fns);
 void fixupExportedFunction(FnSymbol* fn);
 

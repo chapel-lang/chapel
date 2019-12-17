@@ -42,7 +42,7 @@ void chpl_library_finalize(void);
 // The `mli_free` routine should resolve to a call to `free` on the client
 // side.
 //
-void chpl_bytes_wrapper_free(chpl_bytes_wrapper cb) {
+void chpl_byte_buffer_free(chpl_byte_buffer cb) {
   if (!cb.isOwned) { return; }
 
   if (cb.data != NULL) {
@@ -50,6 +50,18 @@ void chpl_bytes_wrapper_free(chpl_bytes_wrapper cb) {
   }
 
   return;
+}
+
+chpl_byte_buffer chpl_byte_buffer_make(const char* data) {
+  // We can get away with this cast because we mark "isOwned" as false.
+  chpl_byte_buffer result = { 0, (char*) data, strlen(data) };
+  return result;
+}
+
+chpl_byte_buffer chpl_byte_buffer_make_len(const char* data, uint64_t size) {
+  // We can get away with this cast because we mark "isOwned" as false.
+  chpl_byte_buffer result = { 0, (char*) data, size };
+  return result;
 }
 
 void chpl_mli_client_init(struct chpl_mli_context* client) {
