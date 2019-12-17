@@ -32,7 +32,15 @@ module OuterModule {
   //NOTE: either C.my_struct or my_struct will work with the use C; statement.
   var strct: C.my_struct = new my_struct(42, "bar".c_str());
   writeln(strct.foo);
-  writeln(createStringWithNewBuffer(strct.bar));
+  try {
+    writeln(createStringWithNewBuffer(strct.bar));
+  }
+  catch e: DecodeError {
+    writeln("Decode error creating string");
+  }
+  catch {
+    writeln("Unknown error creating string");
+  }
 
   //NOTE: due to an issue with the way Chapel implements type aliases,
   //

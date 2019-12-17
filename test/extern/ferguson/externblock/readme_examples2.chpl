@@ -49,7 +49,15 @@ module OuterModule {
 
   var str:c_string;
   setString(c_ptrTo(str));
-  writeln(createStringWithNewBuffer(str));
+  try {
+    writeln(createStringWithNewBuffer(str));
+  }
+  catch e:DecodeError {
+    writeln("Decode error creating string");
+  }
+  catch {
+    writeln("Unknown error creating string");
+  }
 
   module MyCModule {
     extern {
