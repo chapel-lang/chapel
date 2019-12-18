@@ -1,0 +1,2 @@
+# Segfault instead of nil dereference error on gasnet.
+CHPL_COMM = gasnet && CHPL_TEST_VGRND_EXE != on
