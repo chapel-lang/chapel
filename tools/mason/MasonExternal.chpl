@@ -116,7 +116,7 @@ private proc searchSpkgs(args: [?d] string) {
     var pkgName: string;
     if args[3].find('-') != -1 {
       for arg in args[3..] {
-        if arg.find('h') {
+        if arg.find('h') != -1 {
           masonExternalSearchHelp();
           exit(0);
         }
