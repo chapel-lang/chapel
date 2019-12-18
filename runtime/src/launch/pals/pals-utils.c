@@ -112,5 +112,8 @@ char** chpl_create_pals_cmd(int argc, char* argv[], int32_t numLocales,
     APPEND_LARGV(nodeList);
   }
 
+  // craycli arg parser needs a marker at end of system launcher opts
+  APPEND_LARGV("--");
+
   return chpl_bundle_exec_args(argc, argv, largc, (char* const *) largv);
 }
