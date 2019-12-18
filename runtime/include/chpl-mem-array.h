@@ -123,7 +123,7 @@ void* chpl_mem_array_realloc(void* ptr, size_t nmemb, size_t eltSize,
   }
   */
 
-  printf("Requesting a realloc of %ld\n", size);
+  //  printf("Requesting a realloc of %ld\n", size);
   ptr = chpl_realloc(ptr, size);
 
   /*

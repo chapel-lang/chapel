@@ -690,8 +690,7 @@ module DefaultRectangular {
                                        idxType=idxType,
                                        stridable=stridable,
                                        dom=_to_unmanaged(this),
-                                       data=data,
-                                       dataAllocRange=allocRange);
+                                       data=data);
     }
 
 
@@ -1021,12 +1020,6 @@ module DefaultRectangular {
     var _borrowed: bool = true;
     var externFreeFunc: c_void_ptr;
 
-    // 'dataAllocRange' is used by the array-vector operations (e.g. push_back,
-    // pop_back, insert, remove) to allow growing or shrinking the data
-    // buffer in a doubling/halving style.  If it is used, it will be the
-    // actual size of the 'data' buffer, while 'dom' represents the size of
-    // the user-level array.
-    var dataAllocRange: range(idxType);
     //var numelm: int = -1; // for correctness checking
 
     // end class definition here, then defined secondary methods below
@@ -1060,14 +1053,10 @@ module DefaultRectangular {
         }
       } else {
         var numElts:intIdxType = 0;
-        if dom.dsiNumIndices > 0 || dataAllocRange.length > 0 {
+        if dom.dsiNumIndices > 0 {
           param needsDestroy = __primitive("needs auto destroy",
                                            __primitive("deref", data[0]));
-          // dataAllocRange may be empty or contain a meaningful value
-          if rank == 1 && !stridable then
-            numElts = dataAllocRange.length;
-          if numElts == 0 then
-            numElts = dom.dsiNumIndices;
+          numElts = dom.dsiNumIndices;
 
           if needsDestroy {
             dsiDestroyDataHelper(data, numElts);
@@ -1209,8 +1198,6 @@ module DefaultRectangular {
       }
 
       initShiftedData();
-      if rank == 1 && !stridable then
-        dataAllocRange = dom.dsiDim(1);
     }
 
     inline proc getDataIndex(ind: idxType ...1,
@@ -1346,50 +1333,6 @@ module DefaultRectangular {
       }
     }
 
-    override proc dsiReallocate(allocBound: range(idxType,
-                                                  BoundedRangeType.bounded,
-                                                  stridable),
-                                arrayBound: range(idxType,
-                                                  BoundedRangeType.bounded,
-                                                  stridable)) where rank == 1 {
-      on this {
-        use IO;
-        const allocD = {allocBound};
-        var copy = new unmanaged DefaultRectangularArr(eltType=eltType,
-                                                       rank=rank,
-                                                       idxType=idxType,
-                                                       stridable=allocD._value.stridable,
-                                                       dom=allocD._value);
-
-        forall i in arrayBound(dom.ranges(1)) do
-          copy.dsiAccess(i) = dsiAccess(i);
-
-        off = copy.off;
-        blk = copy.blk;
-        str = copy.str;
-        factoredOffs = copy.factoredOffs;
-
-        dsiDestroyArr();
-        data = copy.data;
-        // We can't call initShiftedData here because the new domain
-        // has not yet been updated (this is called from within the
-        // = function for domains.
-        if earlyShiftData && !allocD._value.stridable {
-          // Lydia note 11/04/15: a question was raised as to whether this
-          // check on numIndices added any value.  Performance results
-          // from removing this line seemed inconclusive, which may indicate
-          // that the check is not necessary, but it seemed like unnecessary
-          // work for something with no immediate reward.
-          if allocD.numIndices > 0 {
-            shiftedData = copy.shiftedData;
-          }
-        }
-        dataAllocRange = copy.dataAllocRange;
-        delete copy;
-      }
-    }
-
-
     // Reallocate the array to have space for elements specified by `bounds`
     override proc dsiReallocate(bounds: rank*range(idxType,
                                                    BoundedRangeType.bounded,
@@ -1400,13 +1343,13 @@ module DefaultRectangular {
         const allocD = {(...bounds)};
 
         if (rank == 1 && allocD.low == dom.dsiLow && allocD.stride == dom.dsiStride) {
+          // REALLOCATE IN PLACE
           //          try! stderr.writeln("candidate for reallocating in-place");
           //          writeln("reallocating to ", allocD.dsiDim(1));
-          dom = allocD._value;
+          //          dom = allocD._value;
           sizesPerDim(1) = allocD.dsiDim(1).size;
           data.reallocate(eltType, allocD.size);
-          shiftedData = data;
-          dataAllocRange = allocD.dsiDim(1);
+          initShiftedData();
         } else {
 
         var copy = new unmanaged DefaultRectangularArr(eltType=eltType,
@@ -1438,7 +1381,6 @@ module DefaultRectangular {
             shiftedData = copy.shiftedData;
           }
         }
-        dataAllocRange = copy.dataAllocRange;
         delete copy;
         }
       }
