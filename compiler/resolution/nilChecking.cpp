@@ -724,12 +724,16 @@ static Expr* getSingleDefExpr(Expr* expr) {
   return NULL;
 }
 
+//
 // SE->symbol() is known to be nil/non-nil. If it comes from a MOVE or CAST,
 // propagate to their arguments.
 // For efficiency, the caller should assure isSymbolAnalyzed(SE).
+//
 // Returns true and skips updating 'OUT' if the branch in question is unreachable.
+//
 static bool adjustTestArgChain(SymExpr* SE, bool isAllocated, AliasMap& OUT) {
   SymExpr* curr = SE;
+  // Loop over the definitions for the temps.
   while (true) {
     AliasMap::const_iterator it = OUT.find(curr->symbol());
     if (it != OUT.end()) {
@@ -741,8 +745,8 @@ static bool adjustTestArgChain(SymExpr* SE, bool isAllocated, AliasMap& OUT) {
     }
 
     // Not worth updating OUT if 'curr' is the only use (a common case?).
-    if (curr->symbol()->getSingleUse() == curr) ;
-    else updateForConditional(curr->symbol(), isAllocated, curr, OUT);
+    if (curr->symbol()->getSingleUse() != curr)
+      updateForConditional(curr->symbol(), isAllocated, curr, OUT);
 
     if (! curr->symbol()->hasFlag(FLAG_TEMP))
       // Stop following the use->def chain to safeguard against corner cases
@@ -750,7 +754,9 @@ static bool adjustTestArgChain(SymExpr* SE, bool isAllocated, AliasMap& OUT) {
       break;
 
     if (CallExpr* CE = toCallExpr(getSingleDefExpr(curr)))
-      if (CE->isPrimitive(PRIM_MOVE) || CE->isPrimitive(PRIM_CAST))
+      if (CE->isPrimitive(PRIM_MOVE)   ||
+          CE->isPrimitive(PRIM_ASSIGN) ||
+          CE->isPrimitive(PRIM_CAST)   )
         if ((curr = toSymExpr(CE->get(2))))
           continue;
 
@@ -760,10 +766,20 @@ static bool adjustTestArgChain(SymExpr* SE, bool isAllocated, AliasMap& OUT) {
   return false;
 }
 
+//
 // Is 'expr' a SymExpr for 'nil' ?
-// I consider it insufficient to test "expr->getValType() == dtNil"
-// because "expr" could be a calltemp where the invoked function
-// side-effects the variable involved in the comparison, as a corner case.
+//
+// We are not testing simply "expr->getValType() == dtNil"
+// to guard against assuming v==nil inside BLOCK in this corner case:
+//   proc f(ref arg) { arg = new MyClass(); return nil; }
+//   var v = nil;
+//   if v == f(v) then BLOCK;
+// AST:
+//   tmp1 = cast v: object  // tmp1=nil
+//   tmp2 = f(v)            // tmp2=nil, v=new MyClass
+//   tmp3 = tmp1 == tmp2    // true
+//   if tmp3 then ...       // 'v' is not nil here
+//
 static bool isNilSymExpr(Expr* expr) {
   if (SymExpr* se = toSymExpr(expr))
     if (se->symbol() == gNil)
@@ -856,6 +872,7 @@ static void adjustMapForCatchBlock(CondStmt* cond, bool inThenBranch,
 
 // Update 'OUT' based on being inside a conditional,
 // if 'bb' is the starting BasicBlock of the then- or else- branch.
+// Returns true if 'bb' is unreachable.
 static bool adjustMapForConditional(BasicBlock* bb, AliasMap& OUT,
                                     bool trace) {
   if (bb->ins.size() != 1 || bb->exprs.size() == 0)
@@ -985,17 +1002,19 @@ static void gatherVariablesToCheck(FnSymbol* fn,
           idxToSym.push_back(sym);
           INT_ASSERT((int)(idxToSym.size()-1) == index);
           index++;
-          if (debugging) {
-            printf("Tracking symbol %i %s\n", sym->id, sym->name);
-          }
+          if (debugging) printf("tracking %i %s\n", sym->id, sym->name);
         }
       }
   }
 }
 
-// The formals are initially unknown.
-// When we are confindent in our nilable type-checking, set the formals
-// whose types are non-nilable to MUST_ALIAS_ALLOCATED.
+//
+// Sets the formals initially to "unknown".
+//
+// When we are confindent in our nilable type-checking
+// or we switch to less-agressive handling of unreachable branches,
+// we can set the formals whose types are non-nilable to MUST_ALIAS_ALLOCATED.
+//
 static void setupInitialMap(FnSymbol* fn, std::vector<AliasMap>& INs,
                             std::vector<int> forwardOrder, bool debugging) {
   AliasMap& INini = INs[forwardOrder[0]];
@@ -1006,7 +1025,7 @@ static void setupInitialMap(FnSymbol* fn, std::vector<AliasMap>& INs,
         loc.type = MUST_ALIAS_UNKNOWN;
         loc.location = formal->defPoint;
         INini[formal] = loc;
-        if (debugging) printAliasEntry("  formal", formal, loc);
+        if (debugging) printAliasEntry("formal", formal, loc);
       }
 }
 
