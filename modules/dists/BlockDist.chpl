@@ -44,8 +44,8 @@ private use CommDiagnostics;
 private use ChapelLocks;
 private use ChapelDebugPrint;
 
-use SparseBlockDist;
-use LayoutCS;
+public use SparseBlockDist;
+public use LayoutCS;
 //
 // These flags are used to output debug information and run extra
 // checks when using Block.  Should these be promoted so that they can

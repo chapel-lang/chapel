@@ -27,9 +27,9 @@ record Stack {
       return "";
     } else {
       var h = head;
-      var e = head.element;
+      var e = head!.element;
 
-      head = head.next;
+      head = head!.next;
 
       delete h;
 
@@ -40,7 +40,7 @@ record Stack {
     if head == nil then
       return "";
     else
-      return head.element;
+      return head!.element;
   }
 }
 

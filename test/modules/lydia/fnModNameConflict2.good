@@ -1,2 +1,2 @@
-fnModNameConflict2.chpl:2: error: 'M1' has multiple definitions, redefined at:
-  fnModNameConflict2.chpl:6
+fnModNameConflict2.chpl:3: error: 'M1' has multiple definitions, redefined at:
+  fnModNameConflict2.chpl:7

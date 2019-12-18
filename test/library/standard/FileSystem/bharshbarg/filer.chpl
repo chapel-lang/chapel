@@ -30,6 +30,8 @@ use Sort;
 
 iter listdir(path: string, hidden=false, dirs=true, files=true, 
     listlinks=true): string {
+  use SysCTypes;
+
   extern type DIRptr;
   extern type direntptr;
   extern proc opendir(name: c_string): DIRptr;

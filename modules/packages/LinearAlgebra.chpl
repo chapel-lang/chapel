@@ -783,6 +783,7 @@ proc _matmatMult(A: [?Adom] ?eltType, B: [?Bdom] eltType)
       compiler error if ``lapackImpl`` is ``none``.
 */
 proc inv (ref A: [?Adom] ?eltType, overwrite=false) where usingLAPACK {
+  use SysCTypes;
   if Adom.rank != 2 then
     halt("Wrong rank for matrix inverse");
 
@@ -1769,7 +1770,7 @@ A common usage of this interface might look like this:
 */
 module Sparse {
 
-  use LayoutCS;
+  public use LayoutCS;
 
   /* Return an empty CSR domain over parent domain:
      ``{1..rows, 1..rows}``

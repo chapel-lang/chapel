@@ -1,8 +1,10 @@
-module M {
-  proc uhoh() {
-    module realBad {
+module OuterModule {
+  module M {
+    proc uhoh() {
+      module realBad {
+      }
     }
   }
-}
 
-uhoh();
+  uhoh();
+}

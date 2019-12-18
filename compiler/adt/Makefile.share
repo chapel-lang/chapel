@@ -20,8 +20,7 @@ ADT_SRCS = \
 	map.cpp \
 	vec.cpp
 
-SVN_SRCS = $(ADT_SRCS)
-SRCS = $(SVN_SRCS)
+SRCS = $(ADT_SRCS)
 
 ADT_OBJS = \
 	$(ADT_SRCS:%.cpp=$(ADT_OBJDIR)/%.$(OBJ_SUFFIX))

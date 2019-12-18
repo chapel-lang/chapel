@@ -406,6 +406,9 @@ all:
   10/10/19:
     - text: Optimize unorderedCopy for types larger than 8 bytes (#14255)
       config: 16 node XC
+  12/04/19:
+    - text: Warm up the runtime before entering user code (#14567)
+      config: 16 node XC, 16-node-cs
 
 
 AllCompTime:
@@ -444,6 +447,10 @@ arrayPerformance-1d:
 arrayPerformance-2d:
   10/21/16:
     - Improvements to scalarReplace, refPropagation and copyPropagation (#4761)
+
+array-assign-get:
+  11/13/19:
+    - Improve performance for large transfers under --cache-remote (#14352)
 
 array-of-strings-read:
   04/14/16:
@@ -569,6 +576,8 @@ compSampler-timecomp: &timecomp-base
     - Add factory functions for string and bytes (#13914)
   11/05/19:
     - Remove standardModuleSet and all code involving it from the compiler (#14270)
+  11/20/19:
+    - Simplify visible function determination of use visibility (#14481)
 
 
 cg:
@@ -606,6 +615,10 @@ create-views:
     - Improve timing and stability of the create-views performance test (#11609)
   05/03/19:
     - Govern slice expressions by slicing domain (#12931)
+  11/27/19:
+    - Close some multilocale distribution and privatization memleaks (#14510)
+  12/10/19:
+    - Guard privatization checks with param flag (#14604)
 
 cs-resize:
   03/05/19:
@@ -1141,6 +1154,15 @@ memleaksfull:
     - Starting running mason as part of memleak testing
   11/01/19:
     - Fix a leak in masonModify (#14375)
+  11/12/19:
+    - Move the essentials of IO.chpl into ChapelIO (#14145)
+  12/04/19:
+    - Access param, type fields without postfix-! (#14549)
+  12/06/19:
+    - Close user-level leaks in some new tests (#14586)
+    - Fix quicksort to work with owned array elements (#14204)
+  12/10/19:
+    - Allow messages in new Errors (#14545)
 
 meteor:
   12/18/13:
@@ -1581,34 +1603,6 @@ time-write:
   03/05/15:
     - no strings with externs update
 
-timeVectorArray:
-  03/05/16:
-    - implemented doubling/halving for array-as-vec (#3380) (no timing from 4th)
-  03/09/16:
-    - increased array-as-vec problem size (#3422)
-  05/28/16:
-    - upgrade jemalloc to 4.2.0 (#3919)
-  01/31/17:
-    - upgrade jemalloc to 4.4.0 (#5278)
-  07/26/17:
-    - Allow domains to implement specialized assignment (#6722)
-  09/13/17:
-    - Support arrays as args to array.{push_front,push_back,insert} (#7180)
-  09/16/17:
-    - Resolve timeVectorArray regressions (#7333)
-  09/20/17:
-    - Resolve push_back / pop_front regressions w/ inline (#7397)
-  12/05/17:
-    - Enforce qualified refs after inlining (#7906)
-  06/22/18:
-    - Make 'for' loop in dsiReallocate parallel (#9895)
-  08/17/18:
-    - Add a new dsiReallocate that is aware of allocated size (#10793)
-  09/07/18:
-    - Fix performance regression in pop_front/pop_back from PR 10793 (#11017)
-  04/23/19:
-    - Denormalize the test in CondStmts (#12867)
-
 views-forall-iter:
   10/12/17:
     - Switch from these(tag) to foralls for some standalone iters (#7578)
@@ -1670,6 +1664,16 @@ compilerAndTestingStats: &compiler-perf-base
     - Switched test machine
   11/05/19:
     - Remove standardModuleSet and all code involving it from the compiler (#14270)
+  11/20/19:
+    - Simplify visible function determination of use visibility (#14481)
+  11/21/19:
+    - Only check visibility once per scope instead of once per private function (#14492)
+  12/04/19:
+    - pinned test machine for linux64, --fast, and --no-local
+  12/10/19:
+    - Switched test machine for --fast and --no-local
+  12/13/19:
+    - Switched test machine for --no-local
 
 allTotalTime:
   <<: *compiler-perf-base

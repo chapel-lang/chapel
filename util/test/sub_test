@@ -44,8 +44,8 @@
 # CHPL_TEST_PERF_TRIALS: Default number of trials for perf tests
 # CHPL_ONETEST: Name of the one test in this directory to run
 # CHPL_TEST_SINGLES: If false, test the entire directory
-# CHPL_SYSTEM_PREEXEC: If set, run script on test output prior to execution
-# CHPL_SYSTEM_PREDIFF: If set, run that script on each test output
+# CHPL_SYSTEM_PREEXEC: If set, run comma-separated scripts on test output prior to execution
+# CHPL_SYSTEM_PREDIFF: If set, run comma-separated scripts on each test output
 # CHPL_COMM: Chapel communication layer
 # CHPL_COMPONLY: Only build the test (same as -noexec flag)
 # CHPL_TEST_NUM_LOCALES_AVAILABLE: same as CHPL_TEST_MAX_LOCALES (for backwards compatibility)
@@ -711,17 +711,21 @@ platform = platform.strip()
 machine=os.uname()[1].split('.', 1)[0]
 # sys.stdout.write('machine='+machine+'\n')
 
-# Get the system-wide preexec
-systemPreexec = os.getenv('CHPL_SYSTEM_PREEXEC')
-if systemPreexec is not None:
-    if not os.access(systemPreexec, os.R_OK|os.X_OK):
-        Fatal("Cannot execute system-wide preexec '{0}'".format(systemPreexec))
+# Get the system-wide preexec(s)
+systemPreexecs = os.getenv('CHPL_SYSTEM_PREEXEC')
+if systemPreexecs:
+    systemPreexecs = systemPreexecs.strip().split(',')
+    for spreexec in systemPreexecs:
+        if not os.access(spreexec, os.R_OK|os.X_OK):
+            Fatal('Cannot execute system-wide preexec \''+spreexec+'\'')
 
-# Get the system-wide prediff
-systemPrediff = os.getenv('CHPL_SYSTEM_PREDIFF')
-if systemPrediff:
-  if not os.access(systemPrediff,os.R_OK|os.X_OK):
-    Fatal('Cannot execute system-wide prediff \''+systemPrediff+'\'')
+# Get the system-wide prediff(s)
+systemPrediffs = os.getenv('CHPL_SYSTEM_PREDIFF')
+if systemPrediffs:
+    systemPrediffs = systemPrediffs.strip().split(',')
+    for sprediff in systemPrediffs:
+        if not os.access(sprediff,os.R_OK|os.X_OK):
+            Fatal('Cannot execute system-wide prediff \''+sprediff+'\'')
 
 # Use the launcher walltime option for timeout
 useLauncherTimeout = os.getenv('CHPL_LAUNCHER_TIMEOUT')
@@ -1069,10 +1073,10 @@ else:
 #
 sys.stdout.write('[Starting subtest - %s]\n'%(time.strftime('%a %b %d %H:%M:%S %Z %Y', time.localtime())))
 #sys.stdout.write('[compiler: \'%s\']\n'%(compiler))
-if systemPreexec:
-    sys.stdout.write("[system-wide preexec: '{0}']\n".format(systemPreexec))
-if systemPrediff:
-    sys.stdout.write('[system-wide prediff: \'%s\']\n'%(systemPrediff))
+if systemPreexecs:
+    sys.stdout.write('[system-wide preexec(s): \'%s\']\n'%(', '.join(systemPreexecs)))
+if systemPrediffs:
+    sys.stdout.write('[system-wide prediff(s): \'%s\']\n'%(', '.join(systemPrediffs)))
 
 # consistently look only at the files in the current directory
 dirlist=os.listdir(".")
@@ -1612,14 +1616,15 @@ for testname in testsrc:
             with open(complog, 'w') as complogfile:
                 complogfile.write('%s'%(output))
 
-            if systemPrediff:
-                sys.stdout.write('[Executing system-wide prediff]\n')
-                sys.stdout.flush()
-                p = py3_compat.Popen([systemPrediff, execname, complog, compiler,
-                                     ' '.join(envCompopts)+' '+compopts, ' '.join(args)],
-                                     stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-                sys.stdout.write(p.communicate()[0])
-                sys.stdout.flush()
+            if systemPrediffs:
+                for sprediff in systemPrediffs:
+                    sys.stdout.write('[Executing system-wide prediff %s]\n'%(sprediff))
+                    sys.stdout.flush()
+                    p = py3_compat.Popen([sprediff, execname, complog, compiler,
+                                          ' '.join(envCompopts)+' '+compopts, ' '.join(args)],
+                                         stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+                    sys.stdout.write(p.communicate()[0])
+                    sys.stdout.flush()
 
             if globalPrediff:
                 sys.stdout.write('[Executing ./PREDIFF]\n')
@@ -1729,7 +1734,7 @@ for testname in testsrc:
                 for i in range(1, len(execoptslist) + 1):
                     exec_log_names.append(get_exec_log_name(execname, compoptsnum, i))
 
-            # Write the log(s), so it/they can be modified by preexec.
+            # Write the log(s), so it/they can be modified by preexec(s).
             for exec_log_name in exec_log_names:
                 with open(exec_log_name, 'w') as execlogfile:
                     execlogfile.write(compoutput)
@@ -1836,13 +1841,14 @@ for testname in testsrc:
                 explicitexecgoodfile = explicitcompgoodfile
             del tlist
 
-            if systemPreexec:
-                sys.stdout.write('[Executing system-wide preexec]\n')
-                sys.stdout.flush()
-                p = py3_compat.Popen([systemPreexec, execname, execlog, compiler],
-                                     stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-                sys.stdout.write(p.communicate()[0])
-                sys.stdout.flush()
+            if systemPreexecs:
+                for spreexec in systemPreexecs:
+                    sys.stdout.write('[Executing system-wide preexec %s]\n'%(spreexec))
+                    sys.stdout.flush()
+                    p = py3_compat.Popen([spreexec, execname, execlog, compiler],
+                                         stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+                    sys.stdout.write(p.communicate()[0])
+                    sys.stdout.flush()
 
             if globalPreexec:
                 sys.stdout.write('[Executing ./PREEXEC]\n')
@@ -1915,6 +1921,9 @@ for testname in testsrc:
             # envExecopts are meant for chpl programs, dont add them to C tests
             if not is_c_test and envExecopts != None:
                 args+=shlex.split(envExecopts)
+            # lastexecopts really must be last, so add any launcher timeout now
+            if useLauncherTimeout:
+                args += LauncherTimeoutArgs(timeout)
             if lastexecopts:
                 args += lastexecopts
             # sys.stdout.write("args=%s\n"%(args))
@@ -1970,7 +1979,7 @@ for testname in testsrc:
                             my_stdin = None
                         else:
                             my_stdin=open(redirectin, 'r')
-                        test_command = [cmd] + args + LauncherTimeoutArgs(timeout)
+                        test_command = [cmd] + args
                         p = py3_compat.Popen(test_command,
                                              env=dict(list(os.environ.items()) + list(testenv.items())),
                                              stdin=my_stdin, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -2112,13 +2121,14 @@ for testname in testsrc:
                     execlogfile.write(output_content)
 
                 if not exectimeout and not launcher_error:
-                    if systemPrediff:
-                        sys.stdout.write('[Executing system-wide prediff]\n')
-                        sys.stdout.flush()
-                        p = py3_compat.Popen([systemPrediff, execname, execlog, compiler,
-                                             ' '.join(envCompopts)+' '+compopts, ' '.join(args)],
-                                             stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-                        sys.stdout.write(p.communicate()[0])
+                    if systemPrediffs:
+                        for sprediff in systemPrediffs:
+                            sys.stdout.write('[Executing system-wide prediff %s]\n'%(sprediff))
+                            sys.stdout.flush()
+                            p = py3_compat.Popen([sprediff, execname, execlog, compiler,
+                                                  ' '.join(envCompopts)+' '+compopts, ' '.join(args)],
+                                                 stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+                            sys.stdout.write(p.communicate()[0])
 
                     if globalPrediff:
                         sys.stdout.write('[Executing ./PREDIFF]\n')

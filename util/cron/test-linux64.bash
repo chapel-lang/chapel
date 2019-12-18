@@ -12,4 +12,4 @@ source $CWD/common.bash
 export CHPL_NIGHTLY_TEST_CONFIG_NAME="linux64"
 
 nightly_args="${nightly_args} -compperformance (default)"
-$CWD/nightly -cron -futures ${nightly_args}
+$CWD/nightly -cron -mason -futures ${nightly_args}

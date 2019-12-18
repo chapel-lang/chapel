@@ -546,125 +546,6 @@ iter sorted(x, comparator:?rec=defaultComparator) {
     yield i;
 }
 
-/*
-   Sort the 1D array `Data` in-place using a sequential bubble sort algorithm.
-
-   .. note:: This function is deprecated - please use :proc:`sort`.
-
-   :arg Data: The array to be sorted
-   :type Data: [] `eltType`
-   :arg comparator: :ref:`Comparator <comparators>` record that defines how the
-      data is sorted.
-
- */
-proc bubbleSort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator) {
-  compilerWarning("bubbleSort is deprecated - please use sort");
-  BubbleSort.bubbleSort(Data, comparator);
-}
-
-/*
-   Sort the 1D array `Data` in-place using a sequential heap sort algorithm.
-
-   .. note:: This function is deprecated - please use :proc:`sort`.
-
-   :arg Data: The array to be sorted
-   :type Data: [] `eltType`
-   :arg comparator: :ref:`Comparator <comparators>` record that defines how the
-      data is sorted.
-
- */
-proc heapSort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator) {
-  compilerWarning("heapSort is deprecated - please use sort");
-  HeapSort.heapSort(Data, comparator);
-}
-
-/*
-   Sort the 1D array `Data` in-place using a sequential insertion sort
-   algorithm.
-
-   .. note:: This function is deprecated - please use :proc:`sort`.
-
-   :arg Data: The array to be sorted
-   :type Data: [] `eltType`
-   :arg comparator: :ref:`Comparator <comparators>` record that defines how the
-      data is sorted.
-
- */
-proc insertionSort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator, lo:int=Dom.alignedLow, hi:int=Dom.alignedHigh) {
-  compilerWarning("insertionSort is deprecated - please use sort");
-  InsertionSort.insertionSort(Data, comparator, lo, hi);
-}
-
-/*
-  Sort the 1D array `Data` in-place using a sequential, stable binary
-  insertion sort algorithm.
-  Should be used when there is a high cost of comparison.
-
-  .. note:: This function is deprecated - please use :proc:`sort`.
-
-  :arg Data: The array to be sorted
-  :type Data: [] `eltType`
-  :arg comparator: :ref:`Comparator <comparators>` record that defines how the
-     data is sorted.
-
- */
-proc binaryInsertionSort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator) {
-  compilerWarning("binaryInsertionSort is deprecated - please use sort");
-  BinaryInsertionSort.binaryInsertionSort(Data, comparator);
-}
-
-/*
-  Sort the 1D array `Data` using a parallel merge sort algorithm.
-
-  .. note:: This function is deprecated - please use :proc:`sort`.
-
-  :arg Data: The array to be sorted
-  :type Data: [] `eltType`
-  :arg minlen: When the array size is less than `minlen` use :proc:`insertionSort` algorithm
-  :type minlen: `integral`
-  :arg comparator: :ref:`Comparator <comparators>` record that defines how the
-    data is sorted.
- */
-proc mergeSort(Data: [?Dom] ?eltType, minlen=16, comparator:?rec=defaultComparator) {
-  compilerWarning("mergeSort is deprecated - please use sort");
-  MergeSort.mergeSort(Data, minlen, comparator);
-}
-
-/*
-  Sort the 1D array `Data` in-place using a sequential quick sort algorithm.
-
-  .. note:: This function is deprecated - please use :proc:`sort`.
-
-  :arg Data: The array to be sorted
-  :type Data: [] `eltType`
-  :arg minlen: When the array size is less than `minlen` use :proc:`insertionSort` algorithm
-  :type minlen: `integral`
-  :arg comparator: :ref:`Comparator <comparators>` record that defines how the
-    data is sorted.
-
- */
-proc quickSort(Data: [?Dom] ?eltType, minlen=16, comparator:?rec=defaultComparator) {
-  compilerWarning("quickSort is deprecated - please use sort");
-  QuickSort.quickSort(Data, minlen, comparator);
-}
-
-/*
-  Sort the 1D array `Data` in-place using a sequential selection sort
-  algorithm.
-
-  .. note:: This function is deprecated - please use :proc:`sort`.
-
-  :arg Data: The array to be sorted
-  :type Data: [] `eltType`
-  :arg comparator: :ref:`Comparator <comparators>` record that defines how the
-     data is sorted.
-
- */
-proc selectionSort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator) {
-  compilerWarning("selectionSort is deprecated - please use sort");
-  SelectionSort.selectionSort(Data, comparator);
-}
-
 pragma "no doc"
 module BubbleSort {
 
@@ -899,68 +780,110 @@ module MergeSort {
       compilerError("mergeSort() requires 1-D array");
     }
 
-    _MergeSort(Data, Dom.alignedLow, Dom.alignedHigh, minlen, comparator);
+    var Scratch: Data.type;
+
+    _MergeSort(Data, Scratch, Dom.alignedLow, Dom.alignedHigh, minlen, comparator, 0);
   }
 
-  private proc _MergeSort(Data: [?Dom], lo:int, hi:int, minlen=16, comparator:?rec=defaultComparator)
+  /*
+   * Use Scratch[lo..hi] as scratch space to sort the Data[lo..hi].
+   *
+   * Rather than copy our portion of Data into Scratch to start off
+   * each _Merge(), the recursive levels will alternate merging from
+   * Data into Scratch, and merging from Scratch into Data.
+   *
+   * At even depths -- including the initial one -- we leave the
+   * sorted data in Data.  At odd depths, we leave the sorted data in
+   * Scratch.
+   *
+   * The data stays in Data "all they way down" until the first
+   * _Merge(), then is moved back and forth as we return up the chain.
+   */
+  private proc _MergeSort(Data: [?Dom], Scratch: [], lo:int, hi:int, minlen=16, comparator:?rec=defaultComparator, depth: int)
     where Dom.rank == 1 {
-    if (hi-lo < minlen) {
-      InsertionSort.insertionSort(Data, comparator=comparator, lo, hi);
-      return;
-    }
 
     const stride = if Dom.stridable then abs(Dom.stride) else 1,
           size = (hi - lo) / stride,
           mid = lo + (size/2) * stride;
 
+    /*
+     * When we return from an even depth, the data must be in Data.
+     * When we return from an odd depth, the data must be in Scratch.
+     * At the point we dispatch to insertionSort, the data is still in
+     * Data.  So, if we get here at an odd depth, we'd have to sort
+     * Data and then copy to Scratch.  Avoid the copy by doing the
+     * sort one level before that, while we're still even.
+     *
+     * "size" is a misnomer.  For 1..10, size works out to 9.  That's
+     * the value we want to base the calculation of mid on.  But for
+     * the loop control, we really need to consider the size as 10.
+     */
+    if ((size+1) < minlen || (((depth & 1) == 0) && (size+1) < 2 * minlen)) {
+      InsertionSort.insertionSort(Data, comparator=comparator, lo, hi);
+
+      if depth & 1 {
+        // At odd depths, we need to return the results in Scratch.
+        // But if the test above is correct, we'll never reach this point.
+        if Dom.stridable then
+          Scratch[lo..hi by Dom.stride] = Data[lo..hi by Dom.stride];
+        else
+          Scratch[lo..hi] = Data[lo..hi];
+      }
+      return;
+    }
+
     if(here.runningTasks() < here.numPUs(logical=true)) {
       cobegin {
-        { _MergeSort(Data, lo, mid, minlen, comparator); }
-        { _MergeSort(Data, mid+stride, hi, minlen, comparator); }
+        { _MergeSort(Data, Scratch, lo, mid, minlen, comparator, depth+1); }
+        { _MergeSort(Data, Scratch, mid+stride, hi, minlen, comparator, depth+1); }
       }
     } else {
-      _MergeSort(Data, lo, mid, minlen, comparator);
-      _MergeSort(Data, mid+stride, hi, minlen, comparator);
+      _MergeSort(Data, Scratch, lo, mid, minlen, comparator, depth+1);
+      _MergeSort(Data, Scratch, mid+stride, hi, minlen, comparator, depth+1);
     }
-    _Merge(Data, lo, mid, hi, comparator);
+
+    if depth & 1 == 0 {
+      _Merge(Data, Scratch, lo, mid, hi, comparator);
+    } else {
+      _Merge(Scratch, Data, lo, mid, hi, comparator);
+    }
   }
 
-  private proc _Merge(Data: [?Dom] ?eltType, lo:int, mid:int, hi:int, comparator:?rec=defaultComparator) {
+  private proc _Merge(Dst: [?Dom] ?eltType, Src: [], lo:int, mid:int, hi:int, comparator:?rec=defaultComparator) {
     /* Data[lo..mid by stride] is much slower than Data[lo..mid] when
      * Dom is unstrided.  So specify the latter explicitly when possible. */
     const stride = if Dom.stridable then abs(Dom.stride) else 1;
-    const a1size = (lo..mid by stride).size;
-    var A1: [1..a1size] Data.eltType =
-      if Dom.stridable
-      then Data[lo..mid by stride]
-      else Data[lo..mid];
-    const a2size = ((mid+stride)..hi by stride).size;
-    var A2: [1..a2size] Data.eltType =
-      if Dom.stridable
-      then Data[(mid+stride)..hi by stride]
-      else Data[(mid+1)..hi];
-    var a1 = 1;
-    var a2 = 1;
+    const a1range = if Dom.stridable then lo..mid by stride else lo..mid;
+    const a1max = mid;
+
+    const a2range = if Dom.stridable then (mid+stride)..hi by stride else (mid+1)..hi;
+    const a2max = hi;
+
+    ref A1 = Src[a1range];
+    ref A2 = Src[a2range];
+
+    var a1 = a1range.first;
+    var a2 = a2range.first;
     var i = lo;
-    while ((a1 <= a1size) && (a2 <= a2size)) {
+    while ((a1 <= a1max) && (a2 <= a2max)) {
       if (chpl_compare(A1(a1), A2(a2), comparator) <= 0) {
-        Data[i] = A1[a1];
-        a1 += 1;
+        Dst[i] = A1[a1];
+        a1 += stride;
         i += stride;
       } else {
-        Data[i] = A2[a2];
-        a2 += 1;
+        Dst[i] = A2[a2];
+        a2 += stride;
         i += stride;
       }
     }
-    while (a1 <= a1size) {
-      Data[i] = A1[a1];
-      a1 += 1;
+    while (a1 <= a1max) {
+      Dst[i] = A1[a1];
+      a1 += stride;
       i += stride;
     }
-    while (a2 <= a2size) {
-      Data[i] = A2[a2];
-      a2 += 1;
+    while (a2 <= a2max) {
+      Dst[i] = A2[a2];
+      a2 += stride;
       i += stride;
     }
   }
@@ -968,74 +891,161 @@ module MergeSort {
 
 pragma "no doc"
 module QuickSort {
+
   /*
-    Sort the 1D array `Data` in-place using a sequential quick sort algorithm.
+   Partition the array Data[lo..hi] using the pivot at Data[pivIdx].
 
-    :arg Data: The array to be sorted
-    :type Data: [] `eltType`
-    :arg minlen: When the array size is less than `minlen` use :proc:`insertionSort` algorithm
-    :type minlen: `integral`
-    :arg comparator: :ref:`Comparator <comparators>` record that defines how the
-      data is sorted.
+   This is the 3-way symmetric partition described
+   in Engineering a Sort Function (1993) by Jon L. Bentley , M. Douglas McIlroy
 
+   Returns the (eqStart,eqEnd) where eqStart..eqEnd elements are
+   equal to the pivot (and elements less are before eqStart and elements
+   greater are after eqEnd).
    */
-  proc quickSort(Data: [?Dom] ?eltType, minlen=16, comparator:?rec=defaultComparator) {
-    chpl_check_comparator(comparator, eltType);
-    if Dom.rank != 1 {
-      compilerError("quickSort() requires 1-D array");
-    }
+  proc partition(Data: [?Dom] ?eltType,
+                 lo: int, pivIdx: int, hi: int,
+                 comparator)
+  {
+    // The following section categorizes array elements as follows:
+    //
+    //   |  =  |  <  |  ?  |  >  |  =   |
+    //    lo    a     b   c     d     hi
+    //
+    //  lo..a-1 stores equal elements
+    //   a..b-1 stores elements < pivot
+    //   b..c   store uncategorized elements
+    // c+1..d-1 store elements > pivot
+    // d+1..hi  stores equal elements
 
-    // grab obvious indices
-    const stride = abs(Dom.stride),
-          lo = Dom.alignedLow,
-          hi = Dom.alignedHigh,
-          size = Dom.size,
-          mid = if hi == lo then hi
-                else if size % 2 then lo + ((size - 1)/2) * stride
-                else lo + (size/2 - 1) * stride;
+    // initally, entire array is in b..c
+    var a = lo;
+    var b = lo;
+    var c = hi;
+    var d = hi;
 
-    // base case -- use insertion sort
-    if (hi - lo < minlen) {
-      InsertionSort.insertionSort(Data, comparator=comparator);
-      return;
-    }
+    // Now put the pivot in Data[lo] so we can
+    // avoid keeping track of its position.
+    if lo != pivIdx then
+      ShallowCopy.shallowSwap(Data[lo], Data[pivIdx]);
 
-    // find pivot using median-of-3 method
-    if (chpl_compare(Data(mid), Data(lo), comparator) < 0) then
-      Data(mid) <=> Data(lo);
-    if (chpl_compare(Data(hi), Data(lo), comparator) < 0) then
-      Data(hi) <=> Data(lo);
-    if (chpl_compare(Data(hi), Data(mid), comparator) < 0) then
-      Data(hi) <=> Data(mid);
+    a += 1;
+    b += 1;
 
-    const pivotVal = Data(mid);
-    Data(mid) = Data(hi-stride);
-    Data(hi-stride) = pivotVal;
-    // end median-of-3 partitioning
+    // Now swap the pivot to a local variable
+    pragma "no auto destroy"
+    var piv: eltType = ShallowCopy.shallowCopyInit(Data[lo]); // leaves Data[lo] empty
 
-    var loptr = lo,
-        hiptr = hi-stride;
-    while (loptr < hiptr) {
-      do { loptr += stride; } while (chpl_compare(Data(loptr), pivotVal, comparator) < 0);
-      do { hiptr -= stride; } while (chpl_compare(pivotVal, Data(hiptr), comparator) < 0);
-      if (loptr < hiptr) {
-        Data(loptr) <=> Data(hiptr);
+    while true {
+      while b <= c {
+        // continue while Data[b] <= piv
+        var cmp = chpl_compare(Data[b], piv, comparator);
+        if cmp > 0 then
+          break;
+        if cmp == 0 {
+          ShallowCopy.shallowSwap(Data[a], Data[b]);
+          a += 1; // one more equal element (on left)
+        }
+        b += 1; // one more categorized element
       }
+      while c >= b {
+        // continue while Data[c] >= piv
+        var cmp = chpl_compare(Data[c], piv, comparator);
+        if cmp < 0 then
+          break;
+        if cmp == 0 {
+          ShallowCopy.shallowSwap(Data[d], Data[c]);
+          d -= 1; // one more equal element (on right)
+        }
+        c -= 1; // one more categorized element
+      }
+      if b > c then
+        break; // stop here
+
+      // then Data[b] > piv and Data[c] < piv,
+      // so Data[c] < Data[b] and they are an inversion
+      ShallowCopy.shallowSwap(Data[b], Data[c]);
+      b += 1;
+      c -= 1;
     }
 
-    Data(hi-stride) = Data(loptr);
-    Data(loptr) = pivotVal;
+    // Now put piv back in Data[lo]
+    ShallowCopy.shallowCopy(Data[lo], piv); // leaves piv empty
 
-    // TODO -- Get this cobegin working and tested
-    //  cobegin {
-      quickSort(Data[..loptr-stride by stride align lo], minlen, comparator);  // could use unbounded ranges here
-      quickSort(Data[loptr+stride.. by stride align lo], minlen, comparator);
-    //  }
+    // now we are in the state:
+    //   |  =  |  <  |  > |  =   |
+    //    lo    a   c b  d     hi
+
+    // now place the equal regions in the right places
+    var s, l, h: int;
+
+    // Fix the first = region
+    s = min(a-lo, b-a); // the number of of elements to swap
+    l = lo;
+    h = b-s;
+    while s > 0 {
+      ShallowCopy.shallowSwap(Data[l], Data[h]);
+      l += 1;
+      h += 1;
+      s -= 1;
+    }
+
+    // Fix the second = region
+    var n = hi+1;
+    s = min(d-c, hi-d);
+    l = b;
+    h = n-s;
+    while s > 0 {
+      ShallowCopy.shallowSwap(Data[l], Data[h]);
+      l += 1;
+      h += 1;
+      s -= 1;
+    }
+
+    var eqStart = b-a+lo;
+    var eqEnd = hi-(d-c);
+
+    return (eqStart, eqEnd);
   }
 
-  /* Non-stridable quickSort */
-  proc quickSort(Data: [?Dom] ?eltType, minlen=16, comparator:?rec=defaultComparator)
-    where !Dom.stridable {
+
+  // Returns the index of the median element
+  // of Data[lo], Data[mid], Data[hi]
+  // (in other words it returns lo, mid, or hi).
+  proc order3(Data: [?Dom] ?eltType,
+              lo: int, mid: int, hi: int,
+              comparator): int {
+
+    if chpl_compare(Data[lo], Data[mid], comparator) < 0 {
+      // lo < mid
+      if chpl_compare(Data[hi], Data[lo], comparator) < 0 {
+        // lo < mid, hi < lo -> hi < lo < mid
+        return lo;
+      } else if chpl_compare(Data[mid], Data[hi], comparator) < 0 {
+        // lo < mid, lo <= hi, mid < hi -> lo < mid < hi
+        return mid;
+      } else {
+        // lo < mid, lo <= hi, hi <= mid -> lo <= hi <= mid
+        return hi;
+      }
+    } else {
+      // mid <= lo
+      if chpl_compare(Data[lo], Data[hi], comparator) < 0 {
+        // mid <= lo, lo < hi -> mid <= lo < hi
+        return lo;
+      } else if chpl_compare(Data[hi], Data[mid], comparator) < 0 {
+        // mid <= lo, hi <= lo, hi < mid -> hi < mid <= lo
+        return mid;
+      } else {
+        // mid <= lo, hi <= lo, mid <= hi -> mid <= hi <= lo
+        return hi;
+      }
+    }
+  }
+
+ /* Use quickSort to sort Data */
+ proc quickSort(Data: [?Dom] ?eltType,
+                minlen=16,
+                comparator:?rec=defaultComparator) {
 
     chpl_check_comparator(comparator, eltType);
 
@@ -1043,48 +1053,70 @@ module QuickSort {
       compilerError("quickSort() requires 1-D array");
     }
 
-    // grab obvious indices
-    const lo = Dom.low,
-          hi = Dom.high,
-          mid = lo + (hi-lo+1)/2;
-
-    // base case -- use insertion sort
-    if (hi - lo < minlen) {
-      InsertionSort.insertionSort(Data, comparator=comparator);
+    if Dom.stridable && Dom.stride != 1 {
+      ref reindexed = Data.reindex(Dom.alignedLow..#Dom.size);
+      assert(reindexed.domain.stride == 1);
+      quickSortImpl(reindexed, minlen, comparator);
       return;
     }
 
-    // find pivot using median-of-3 method
-    if (chpl_compare(Data(mid), Data(lo), comparator) < 0) then
-      Data(mid) <=> Data(lo);
-    if (chpl_compare(Data(hi), Data(lo), comparator) < 0) then
-      Data(hi) <=> Data(lo);
-    if (chpl_compare(Data(hi), Data(mid), comparator) < 0) then
-      Data(hi) <=> Data(mid);
+    assert(Dom.stride == 1);
+    quickSortImpl(Data, minlen, comparator);
+  }
 
-    const pivotVal = Data(mid);
-    Data(mid) = Data(hi-1);
-    Data(hi-1) = pivotVal;
-    // end median-of-3 partitioning
 
-    var loptr = lo,
-        hiptr = hi-1;
-    while (loptr < hiptr) {
-      do { loptr += 1; } while (chpl_compare(Data(loptr), pivotVal, comparator) < 0);
-      do { hiptr -= 1; } while (chpl_compare(pivotVal, Data(hiptr), comparator) < 0);
-      if (loptr < hiptr) {
-        Data(loptr) <=> Data(hiptr);
-      }
+  /* Non-stridable quickSort to sort Data[start..end] */
+  proc quickSortImpl(Data: [?Dom] ?eltType,
+                     minlen=16,
+                     comparator:?rec=defaultComparator,
+                     start:int = Dom.low, end:int = Dom.high) {
+
+    // grab obvious indices
+    const lo = start,
+          hi = end,
+          mid = lo + (hi-lo+1)/2;
+    var piv = mid;
+
+    if hi - lo < minlen {
+      // base case -- use insertion sort
+      InsertionSort.insertionSort(Data, comparator=comparator, lo, hi);
+      return;
+    } else if hi <= lo {
+      // nothing to sort
+      return;
     }
 
-    Data(hi-1) = Data(loptr);
-    Data(loptr) = pivotVal;
+    // find pivot using median-of-3 method for small arrays
+    // and a "ninther" for bigger arrays. Places the pivot in
+    // Data[lo].
+    if hi - lo < 100 {
+      piv = order3(Data, lo, mid, hi, comparator);
+    } else {
+      // assumes array size > 9 at the very least
 
-    // TODO -- Get this cobegin working and tested
-    //  cobegin {
-      quickSort(Data[..loptr-1], minlen, comparator);  // could use unbounded ranges here
-      quickSort(Data[loptr+1..], minlen, comparator);
-    //  }
+      // median of each group of 3
+      const medLo  = order3(Data, lo,    lo+1, lo+2,  comparator);
+      const medMid = order3(Data, mid-1, mid,  mid+1, comparator);
+      const medHi  = order3(Data, hi-2,  hi-1, hi,    comparator);
+      // median of the medians
+      piv = order3(Data, medLo, medMid, medHi, comparator);
+    }
+
+    var (eqStart, eqEnd) = partition(Data, lo, piv, hi, comparator);
+
+    if hi-lo < 300 {
+      // stay sequential
+      quickSortImpl(Data, minlen, comparator, lo, eqStart-1);
+      quickSortImpl(Data, minlen, comparator, eqEnd+1, hi);
+    } else {
+      // do the subproblems in parallel
+      forall i in 1..2 {
+        if i == 1 then
+          quickSortImpl(Data, minlen, comparator, lo, eqStart-1);
+        else
+          quickSortImpl(Data, minlen, comparator, eqEnd+1, hi);
+      }
+    }
   }
 }
 
@@ -1614,12 +1646,52 @@ module ShallowCopy {
 
   // These shallow copy functions "move" a record around
   // (i.e. they neither swap nor call a copy initializer).
-
+  //
   // TODO: move these out of the Sort module and/or consider
-  // language support for it.
+  // language support for it. See issue #14576.
+
+  inline proc shallowCopy(ref dst:?t, ref src:t) {
+    if isPODType(t) {
+      dst = src;
+    } else {
+      var size = c_sizeof(t);
+      c_memcpy(c_ptrTo(dst), c_ptrTo(src), size);
+      // The version moved from should never be used again,
+      // but we clear it out just in case.
+      c_memset(c_ptrTo(src), 0, size);
+    }
+  }
+
+  // returns the result of shallow copying src
+  pragma "unsafe"
+  inline proc shallowCopyInit(ref src:?t) {
+    var dst: t;
+    shallowCopy(dst, src);
+    return dst;
+  }
+
+  pragma "unsafe"
+  inline proc shallowSwap(ref lhs:?t, ref rhs:t) {
+    pragma "no auto destroy"
+    var tmp: t;
+    if isPODType(t) {
+      tmp = lhs;
+      lhs = rhs;
+      rhs = tmp;
+    } else {
+      var size = c_sizeof(t);
+      // tmp = lhs
+      c_memcpy(c_ptrTo(tmp), c_ptrTo(lhs), size);
+      // lhs = rhs
+      c_memcpy(c_ptrTo(lhs), c_ptrTo(rhs), size);
+      // rhs = tmp
+      c_memcpy(c_ptrTo(rhs), c_ptrTo(tmp), size);
+    }
+  }
 
   // TODO: These shallowCopy functions should handle Block,Cyclic arrays
   inline proc shallowCopy(ref A, dst, src, nElts) {
+    use SysCTypes;
     // Ideally this would just be
     //A[dst..#nElts] = A[src..#nElts];
 
@@ -1644,6 +1716,7 @@ module ShallowCopy {
     }
   }
   inline proc shallowCopy(ref DstA, dst, ref SrcA, src, nElts) {
+    use SysCTypes;
     // Ideally this would just be
     //DstA[dst..#nElts] = SrcA[src..#nElts];
 

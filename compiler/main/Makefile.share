@@ -27,8 +27,7 @@ MAIN_SRCS =                  \
             version.cpp      \
             PhaseTracker.cpp
 
-SVN_SRCS = $(MAIN_SRCS)
-SRCS = $(SVN_SRCS)
+SRCS = $(MAIN_SRCS)
 
 MAIN_OBJS = \
 	$(MAIN_SRCS:%.cpp=$(MAIN_OBJDIR)/%.$(OBJ_SUFFIX))

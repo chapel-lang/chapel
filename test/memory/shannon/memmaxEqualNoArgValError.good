@@ -1,1 +1,1 @@
-<command-line arg>:1: error: Configuration variable 'memMax' is missing its initialization value
+<command-line arg>:N: error: Configuration variable 'memMax' is missing its initialization value

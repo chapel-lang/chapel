@@ -951,21 +951,21 @@ module ChapelDistribution {
   // param privatized here is a workaround for the fact that
   // we can't include the privatized freeing for DefaultRectangular
   // because of resolution order issues
-  proc _delete_dist(dist:unmanaged BaseDist, param privatized:bool) {
+  proc _delete_dist(dist:unmanaged BaseDist, privatized:bool) {
     dist.dsiDestroyDist();
 
-    if privatized {
+    if _privatization && privatized {
       _freePrivatizedClass(dist.pid, dist);
     }
 
     delete dist;
   }
 
-  proc _delete_dom(dom, param privatized:bool) {
+  proc _delete_dom(dom, privatized:bool) {
 
     dom.dsiDestroyDom();
 
-    if privatized {
+    if _privatization && privatized {
       _freePrivatizedClass(dom.pid, dom);
     }
 
@@ -983,7 +983,7 @@ module ChapelDistribution {
     // refer to this inner domain.
     arr.decEltCountsIfNeeded();
 
-    if privatized {
+    if _privatization && privatized {
       _freePrivatizedClass(arr.pid, arr);
     }
 

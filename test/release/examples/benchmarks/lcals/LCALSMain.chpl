@@ -19,34 +19,34 @@ use IO;
 proc allocateLoopData() {
 /*  Currently unused:
   const num_aligned_segments =
-    (s_loop_data.max_loop_length + 20)/LCALS_DATA_ALIGN + 1;
+    (s_loop_data!.max_loop_length + 20)/LCALS_DATA_ALIGN + 1;
   const aligned_chunksize = num_aligned_segments*LCALS_DATA_ALIGN;
 */
   writeln("\n allocateLoopData...");
 
-  for i in 0..#s_loop_data.s_num_1D_Real_arrays {
-    initData(s_loop_data.RealArray_1D[i], i+1);
+  for i in 0..#s_loop_data!.s_num_1D_Real_arrays {
+    initData(s_loop_data!.RealArray_1D[i], i+1);
   }
-  for i in 0..#s_loop_data.s_num_1D_Nx4_Real_arrays {
-    initData(s_loop_data.RealArray_1D_Nx4[i], i+1);
+  for i in 0..#s_loop_data!.s_num_1D_Nx4_Real_arrays {
+    initData(s_loop_data!.RealArray_1D_Nx4[i], i+1);
   }
-  for i in 0..#s_loop_data.s_num_1D_Indx_arrays {
-    initData(s_loop_data.IndxArray_1D[i], i+1);
+  for i in 0..#s_loop_data!.s_num_1D_Indx_arrays {
+    initData(s_loop_data!.IndxArray_1D[i], i+1);
   }
-  for i in 0..#s_loop_data.s_num_1D_Complex_arrays {
-    initData(s_loop_data.ComplexArray_1D[i], i+1);
+  for i in 0..#s_loop_data!.s_num_1D_Complex_arrays {
+    initData(s_loop_data!.ComplexArray_1D[i], i+1);
   }
-  for i in 0..#s_loop_data.s_num_2D_Nx25_Real_arrays {
-    initData(s_loop_data.RealArray_2D_Nx25[i], i+1);
+  for i in 0..#s_loop_data!.s_num_2D_Nx25_Real_arrays {
+    initData(s_loop_data!.RealArray_2D_Nx25[i], i+1);
   }
-  for i in 0..#s_loop_data.s_num_2D_7xN_Real_arrays {
-    initData(s_loop_data.RealArray_2D_7xN[i], i+1);
+  for i in 0..#s_loop_data!.s_num_2D_7xN_Real_arrays {
+    initData(s_loop_data!.RealArray_2D_7xN[i], i+1);
   }
-  for i in 0..#s_loop_data.s_num_2D_64x64_Real_arrays {
-    initData(s_loop_data.RealArray_2D_64x64[i], i+1);
+  for i in 0..#s_loop_data!.s_num_2D_64x64_Real_arrays {
+    initData(s_loop_data!.RealArray_2D_64x64[i], i+1);
   }
-  for i in 0..#s_loop_data.s_num_3D_2xNx4_Real_arrays {
-    initData(s_loop_data.RealArray_3D_2xNx4[i], i+1);
+  for i in 0..#s_loop_data!.s_num_3D_2xNx4_Real_arrays {
+    initData(s_loop_data!.RealArray_3D_2xNx4[i], i+1);
   }
 }
 
@@ -725,8 +725,7 @@ proc computeReferenceLoopTimes() {
 
 proc defineReferenceLoopRunInfo() {
   var suite_info = getLoopSuiteRunInfo();
-  suite_info.ref_loop_stat = new owned LoopStat();
-  var ref_loop_stat = suite_info.ref_loop_stat.borrow();
+  const ref_loop_stat = suite_info.ref_loop_stat.borrow();
 
   ref_loop_stat.loop_length[LoopLength.LONG]        = 24336;
   ref_loop_stat.loop_length[LoopLength.MEDIUM]      = 3844;
@@ -1146,6 +1145,6 @@ proc defineLoopSuiteRunInfo(run_variants, run_loop,
     }
   }
   defineReferenceLoopRunInfo();
-  s_loop_data = new owned LoopData(max(max_loop_length, suite_info.ref_loop_stat.loop_length[LoopLength.LONG]));
+  s_loop_data = new owned LoopData(max(max_loop_length, suite_info.ref_loop_stat!.loop_length[LoopLength.LONG]));
 
 }

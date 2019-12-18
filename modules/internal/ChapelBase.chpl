@@ -22,7 +22,7 @@
 
 module ChapelBase {
   use ChapelStandard;
-  private use ChapelEnv;
+  private use ChapelEnv, SysCTypes;
 
   // These two are called by compiler-generated code.
   extern proc chpl_config_has_value(name:c_string, module_name:c_string): bool;
@@ -727,9 +727,11 @@ module ChapelBase {
   }
 
   inline proc postfix!(type t: class) type {
+    compilerWarning("applying the postfix-! operator to a type is deprecated; instead use a cast to 'class' or 'borrowed class', e.g. 'MyType :borrowed class'");
     return _to_borrowed(_to_nonnil(t));
   }
   inline proc postfix!(type t: class?) type {
+    compilerWarning("applying the postfix-! operator to a type is deprecated; instead use a cast to 'class' or 'borrowed class', e.g. 'MyType :borrowed class'");
     return _to_borrowed(_to_nonnil(t));
   }
 
@@ -1350,7 +1352,10 @@ module ChapelBase {
     if isAtomicType(t) then
       compilerError("config variables of atomic type are not supported");
 
-    var str = createStringWithNewBuffer(x);
+    var str: string;
+    try! {
+      str = createStringWithNewBuffer(x);
+    }
     if t == string {
       return str;
     } else {
@@ -2325,10 +2330,41 @@ module ChapelBase {
     const deinitFun:  c_fn_ptr;          // module deinit function
     const prevModule: unmanaged chpl_ModuleDeinit?; // singly-linked list / LIFO queue
     proc writeThis(ch) throws { 
+      try {
       ch.writef("chpl_ModuleDeinit(%s)",createStringWithNewBuffer(moduleName));
+      }
+      catch e: DecodeError { // let IOError propagate
+        halt("Module name is not valid string!");
+      }
     }
   }
   var chpl_moduleDeinitFuns = nil: unmanaged chpl_ModuleDeinit?;
+
+  // Supports type field accessors on nilable classes - on an instance...
+  inline proc chpl_checkLegalTypeFieldAccessor(thisArg, type fieldType,
+                                              param fieldName) type {
+    if isNilableClassType(thisArg.type) &&
+       // it is a runtime type
+       (isDomainType(fieldType) || isArrayType(fieldType))
+    then
+       compilerError("accessing the runtime-type field ", fieldName,
+         " of a nilable class. Consider applying postfix-! operator",
+         " to the class before accessing this field.");
+
+    return fieldType;
+  }
+
+  // ... and on a type.
+  inline proc chpl_checkLegalTypeFieldAccessor(type thisArg, type fieldType,
+                                              param fieldName) type {
+    if // it is a runtime type
+      (isDomainType(fieldType) || isArrayType(fieldType))
+    then
+       compilerError("accessing the runtime-type field ", fieldName,
+         " of a class type is currently unsupported"); // see #11549
+
+    return fieldType;
+  }
 
   // The compiler does not emit _defaultOf for numeric and class types
   // directly. If _defaultOf is required, use variable initialization

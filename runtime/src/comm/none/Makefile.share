@@ -22,8 +22,7 @@ COMM_SRCS = \
 	$(COMM_LAUNCHER_SRCS) \
 	comm-none.c \
 
-SVN_SRCS = $(COMM_SRCS)
-SRCS = $(SVN_SRCS)
+SRCS = $(COMM_SRCS)
 
 COMM_OBJS = \
 	$(COMM_SRCS:%.c=$(COMM_OBJDIR)/%.o)

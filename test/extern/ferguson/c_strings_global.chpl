@@ -1,3 +1,5 @@
+use SysCTypes;
+
 extern proc returns_c_string():c_string;
 extern proc returns_c_string_in_argument(ref ret:c_string);
 extern proc print_c_string(arg:c_string);

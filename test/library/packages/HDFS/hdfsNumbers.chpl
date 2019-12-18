@@ -5,6 +5,7 @@
 */
 use HDFS only;
 use IO;
+use SysCTypes;
 
 config const path = "/tmp/lots-of-numbers.txt";
 

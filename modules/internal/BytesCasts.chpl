@@ -19,6 +19,7 @@
 
 module BytesCasts {
   use ChapelStandard;
+  private use SysCTypes;
 
 
   //

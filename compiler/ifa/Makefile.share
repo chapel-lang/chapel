@@ -20,8 +20,7 @@ IFA_SRCS = \
 	num.cpp \
 
 
-SVN_SRCS = $(IFA_SRCS)
-SRCS = $(SVN_SRCS) 
+SRCS = $(IFA_SRCS)
 
 IFA_OBJS = \
 	$(IFA_SRCS:%.cpp=$(IFA_OBJDIR)/%.$(OBJ_SUFFIX))

@@ -1,0 +1,5 @@
+init()
+(field = 0)
+init(1)
+(field = 0) = (field = 1)
+(field = 1)

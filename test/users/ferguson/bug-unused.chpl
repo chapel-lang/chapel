@@ -1,10 +1,12 @@
-module TwoArrayPartitioning {
-  param maxBuckets = 512;
+module OuterModule {
+  module TwoArrayPartitioning {
+    param maxBuckets = 512;
 
-  record TwoArrayBucketizerPerTaskState {
-    var localCounts: [0..#maxBuckets] int;
+    record TwoArrayBucketizerPerTaskState {
+      var localCounts: [0..#maxBuckets] int;
+    }
+
   }
 
+  writeln("Hello");
 }
-
-writeln("Hello");

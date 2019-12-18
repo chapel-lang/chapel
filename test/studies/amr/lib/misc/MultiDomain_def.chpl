@@ -237,8 +237,8 @@ class MDNode
 
   proc clearChildren ()
   {
-    if left  then { left.clearChildren();   delete left;  left = nil; }
-    if right then { right.clearChildren();  delete right;  right = nil; }
+    if left  then { left!.clearChildren();   delete left;  left = nil; }
+    if right then { right!.clearChildren();  delete right;  right = nil; }
   }
 
 
@@ -251,8 +251,8 @@ class MDNode
     new_node.bisect_dim = bisect_dim;
     new_node.right_low  = right_low;
     
-    if left  then new_node.left  = left.copy();
-    if right then new_node.right = right.copy();
+    if left  then new_node.left  = left!.copy();
+    if right then new_node.right = right!.copy();
     
     return new_node;
   }
@@ -367,7 +367,7 @@ class MDNode
       if D.low(bisect_dim) <= right_low - Domain.stride(bisect_dim)
       {
         if left==nil then createLeft( filled=false );
-        left.add( D );
+        left!.add( D );
       }
       
       
@@ -376,14 +376,14 @@ class MDNode
       if D.high(bisect_dim) >= right_low
       {
         if right==nil then createRight( filled=false );
-        right.add( D );
+        right!.add( D );
       }
       
       
       //---- Check whether children can be merged ----
       
       if left!=nil && right!=nil then
-        if left.bisect_dim==0 && right.bisect_dim==0
+        if left!.bisect_dim==0 && right!.bisect_dim==0
         {
           delete left;
           left = nil;
@@ -441,8 +441,8 @@ class MDNode
       
       if D.low(bisect_dim) <= right_low - Domain.stride(bisect_dim)  &&  left!=nil
       {
-        left.subtract( D );
-        if left.bisect_dim == -1 then { delete left;  left=nil; }
+        left!.subtract( D );
+        if left!.bisect_dim == -1 then { delete left;  left=nil; }
       }
 
 
@@ -450,8 +450,8 @@ class MDNode
 
       if D.high(bisect_dim) >= right_low  &&  right!=nil
       {
-        right.subtract( D );
-        if right.bisect_dim == -1 then { delete right;  right=nil; }
+        right!.subtract( D );
+        if right!.bisect_dim == -1 then { delete right;  right=nil; }
       }
     }
     
@@ -502,14 +502,14 @@ class MDNode
         
         if left
         {
-          left.intersect(D);
-          if left.bisect_dim==-1  then { delete left;   left = nil; }
+          left!.intersect(D);
+          if left!.bisect_dim==-1  then { delete left;   left = nil; }
         } 
 
         if right
         {
-          right.intersect(D);
-          if right.bisect_dim==-1 then { delete right;  right = nil; }
+          right!.intersect(D);
+          if right!.bisect_dim==-1 then { delete right;  right = nil; }
         }
         
         if left==nil && right==nil then bisect_dim = -1;
@@ -527,9 +527,9 @@ class MDNode
       
       else if intersects_left
       {
-        if right { right.clearChildren();  delete right;  right = nil; }
+        if right { right!.clearChildren();  delete right;  right = nil; }
         
-        if left { left.intersect(D);  merge(left!); }
+        if left { left!.intersect(D);  merge(left!); }
         else bisect_dim = -1;
       }
       
@@ -539,9 +539,9 @@ class MDNode
       
       else
       {
-        if left { left.clearChildren();  delete left; left = nil; }
+        if left { left!.clearChildren();  delete left; left = nil; }
         
-        if right { right.intersect(D);  merge(right!); }
+        if right { right!.intersect(D);  merge(right!); }
         else bisect_dim = -1;
       }
 

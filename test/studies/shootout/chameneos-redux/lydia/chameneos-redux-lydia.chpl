@@ -120,13 +120,12 @@ class Chameneos {
   /* Given the id of its peer, finds and updates the data of its peer and
      itself */
   proc runMeeting (population : [] owned Chameneos, peer_idx) {
-    var peer : borrowed Chameneos?;
     var newColor : Color;
     var is_same : int;
     if (id == peer_idx) {
       is_same = 1;
     }
-    peer = population[peer_idx:int(32)];
+    const peer = population[peer_idx:int(32)].borrow();
     newColor = getComplement(color, peer.color);
     peer.color = newColor;
     peer.meetings += 1;

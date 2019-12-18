@@ -3,6 +3,7 @@ config const verbose=false;
 
 proc doit(a:locale, b:locale)
 {
+  use SysCTypes;
   extern proc printf(fmt: c_string, vals...?numvals): int;
  
   on a {

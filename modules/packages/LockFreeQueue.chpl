@@ -90,7 +90,7 @@
       Simple, Fast, and Practical Non-Blocking and Blocking Concurrent Queue Algorithms. 
       No. TR-600. ROCHESTER UNIV NY DEPT OF COMPUTER SCIENCE, 1995.
 */
-prototype module LockFreeQueue {
+module LockFreeQueue {
   use EpochManager;
   use AtomicObjects;
 
@@ -111,14 +111,14 @@ prototype module LockFreeQueue {
 
   class LockFreeQueue {
     type objType;
-    var _head : AtomicObject(unmanaged Node(objType?), hasGlobalSupport=true, hasABASupport=false);
-    var _tail : AtomicObject(unmanaged Node(objType?), hasGlobalSupport=true, hasABASupport=false);
+    var _head : AtomicObject(unmanaged Node(objType), hasGlobalSupport=true, hasABASupport=false);
+    var _tail : AtomicObject(unmanaged Node(objType), hasGlobalSupport=true, hasABASupport=false);
     var _manager = new owned LocalEpochManager();
 
     proc init(type objType) {
       this.objType = objType;
       this.complete();
-      var _node = new unmanaged Node(objType?);
+      var _node = new unmanaged Node(objType);
       _head.write(_node);
       _tail.write(_node);
     }
@@ -127,11 +127,11 @@ prototype module LockFreeQueue {
       return _manager.register();
     }
 
-    proc enqueue(newObj : objType?, tok : owned TokenWrapper = getToken()) {
+    proc enqueue(newObj : objType, tok : owned TokenWrapper = getToken()) {
       var n = new unmanaged Node(newObj);
       tok.pin();
       while (true) {
-        var curr_tail = _tail.read();
+        var curr_tail = _tail.read()!;
         var next = curr_tail.next.read();
         if (next == nil) {
           if (curr_tail.next.compareAndSwap(next, n)) {
@@ -150,7 +150,7 @@ prototype module LockFreeQueue {
     proc dequeue(tok : owned TokenWrapper = getToken()) : (bool, objType?) {
       tok.pin();
       while (true) {
-        var curr_head = _head.read();
+        var curr_head = _head.read()!;
         var curr_tail = _tail.read();
         var next_node = curr_head.next.read();
 
@@ -163,7 +163,7 @@ prototype module LockFreeQueue {
           _tail.compareAndSwap(curr_tail, next_node);
         }
         else {
-          var ret_val = next_node.val;
+          var ret_val = next_node!.val;
           if (_head.compareAndSwap(curr_head, next_node)) {
             tok.deferDelete(curr_head);
             tok.unpin();

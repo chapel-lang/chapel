@@ -18,7 +18,7 @@
  */
 
 module ByteBufferHelpers {
-  private use ChapelStandard;
+  private use ChapelStandard, SysCTypes;
 
   pragma "no doc"
   type byteType = uint(8);

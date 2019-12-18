@@ -23,12 +23,11 @@ COMM_SRCS = \
 	comm-gasnet.c \
 	comm-gasnet-locales.c \
 
-SVN_SRCS = \
+SRCS = \
   comm-gasnet.c \
   comm-gasnet-launch.c \
   comm-gasnet-locales.c \
 
-SRCS = $(SVN_SRCS)
 
 COMM_OBJS = \
 	$(COMM_SRCS:%.c=$(COMM_OBJDIR)/%.o)

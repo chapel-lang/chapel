@@ -1,12 +1,12 @@
-
-
-module d2 {
-  proc rund() {
-    writeln("in rund() from module d2");
+module ModD {
+  module d2 {
+    proc rund() {
+      writeln("in rund() from module d2");
+    }
   }
-}
 
 
-proc rund() {
-  writeln("in rund() from module d");
+  proc rund() {
+    writeln("in rund() from module d");
+  }
 }

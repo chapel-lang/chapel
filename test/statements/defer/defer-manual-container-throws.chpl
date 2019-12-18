@@ -58,7 +58,7 @@ proc create_thing() {
 var thing = create_thing();
 if thing {
   writeln(thing);
-  delete thing.a;
-  delete thing.b;
+  delete thing!.a;
+  delete thing!.b;
   delete thing;
 }

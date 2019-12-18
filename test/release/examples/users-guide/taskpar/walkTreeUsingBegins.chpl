@@ -25,7 +25,7 @@ sync begin walkTree(tree);
 proc walkTree(node) {
   node.processNode();
   if node.left != nil then
-    begin walkTree(node.left);
+    begin walkTree(node.left!);
   if node.right != nil then
-    begin walkTree(node.right);
+    begin walkTree(node.right!);
 }

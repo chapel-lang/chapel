@@ -73,8 +73,7 @@ AST_SRCS =                                          \
            TransformLogicalShortCircuit.cpp
 
 
-SVN_SRCS = $(AST_SRCS)
-SRCS = $(SVN_SRCS)
+SRCS = $(AST_SRCS)
 
 AST_OBJS = \
 	$(AST_SRCS:%.cpp=$(AST_OBJDIR)/%.$(OBJ_SUFFIX))

@@ -9,7 +9,7 @@ proc okSetByRef() {
   var x: owned MyClass?;
   ref r = x;
   r = new owned MyClass(1);
-  x.method();
+  x!.method();
 }
 okSetByRef();
 
@@ -21,7 +21,7 @@ proc okSetByObscuredRef() {
   var x: owned MyClass?;
   ref r = returnRefArg(x);
   r = new owned MyClass(1);
-  x.method();
+  x!.method();
 }
 okSetByObscuredRef();
 
@@ -32,6 +32,6 @@ proc okSetByUncertainRef() {
   var y: owned MyClass? = new owned MyClass(1);
   ref r = if option then x else y;
   r = new owned MyClass(1);
-  x.method();
+  x!.method();
 }
 okSetByUncertainRef();

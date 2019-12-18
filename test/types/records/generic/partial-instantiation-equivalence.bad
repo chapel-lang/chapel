@@ -1,0 +1,4 @@
+partial-instantiation-equivalence.chpl:32: error: unresolved call 'oof(R(1,1))'
+partial-instantiation-equivalence.chpl:27: note: this candidate did not match: oof(rr: Ryx)
+partial-instantiation-equivalence.chpl:32: note: because call actual argument #1 with type R(1,1)
+partial-instantiation-equivalence.chpl:27: note: is passed to formal 'rr: R(1,1)'

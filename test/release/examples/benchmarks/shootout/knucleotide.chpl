@@ -51,6 +51,7 @@ proc main(args: [] string) {
 
 
 proc writeFreqs(data, param nclSize) {
+  use IO;
   const freqs = calculate(data, nclSize);
 
   var arr = for (s,f) in freqs.items() do (f,s);

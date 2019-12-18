@@ -35,8 +35,8 @@ record ListStack {
     if isEmpty then
       halt("attempt to pop an item off an empty stack");
     var oldTop = top;
-    var oldItem = top.item;
-    top = top.next;
+    var oldItem = top!.item;
+    top = top!.next;
     delete oldTop;
     return oldItem;
   }

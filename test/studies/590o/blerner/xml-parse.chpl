@@ -163,7 +163,7 @@ proc processTag(i,j) {
         elt.childrenValueSpace = {1..curSize*2};
       elt.numChildren += 1;
       elt.childrenValues(elt.numChildren) = item!;
-      start += item.length;
+      start += item!.length;
     }     
   }
   parsedElements(i,j) = elt;

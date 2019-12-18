@@ -1,2 +1,0 @@
-inCobeginOn.chpl:4: In initializer:
-inCobeginOn.chpl:8: error: use of this.complete() call in an on block

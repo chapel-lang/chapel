@@ -1,6 +1,4 @@
 addEnumUint8.chpl:5: warning: uint(8)
 addEnumUint8.chpl:6: warning: uint(8)
-Note: This source location is a guess.
-addEnumUint8.chpl:6: warning: uint(8)
 addEnumUint8.chpl:7: error: unresolved call '+(E, 1)'
 (prediff deleted module lines)

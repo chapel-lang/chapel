@@ -59,7 +59,6 @@ Data Parallelism
    Domains <domains>
    Arrays <arrays>
    Slices <slices>
-   Array Vector Operations <arrayVectorOps>
    Sparse Domains and Arrays <sparse>
    Associative Domains and Arrays <associative>
    Reductions <reductions>

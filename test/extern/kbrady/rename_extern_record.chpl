@@ -1,3 +1,5 @@
+use SysCTypes;
+
 extern "struct stat" record chpl_stat {
   var st_size: off_t;
 }

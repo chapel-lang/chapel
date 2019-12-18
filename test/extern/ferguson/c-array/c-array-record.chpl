@@ -68,6 +68,7 @@ proc test4() {
 
   // test assign
   var y: c_array(R, 2);
+  y; // avoid copy-init
   y = x;
   writeln(y);
 }

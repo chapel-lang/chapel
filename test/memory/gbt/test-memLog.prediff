@@ -3,8 +3,9 @@
 for loc in 0 1 ; do
   echo "========== Locale $loc memLog ==========" >> $2
   if [ -f $1.memLog.$loc ] ; then
-    sed -e 's/ allocate [0-9]*B / allocate <BYTES> /' \
-	-e 's/ at 0x[0-9a-f]*$/ at <ADDR>/' \
+    sed -e 's/ allocate [0-9]*B of C at 0x[0-9a-f]*$/ allocate <BYTES> of C at <ADDR>/' \
+        -e 's/ free \([0-9]*B of C \)\{0,1\}at 0x[0-9a-f]*$/ free at <ADDR>/' \
+        -e '/.*<internal>.*/d' \
 	< $1.memLog.$loc \
 	>> $2
   fi

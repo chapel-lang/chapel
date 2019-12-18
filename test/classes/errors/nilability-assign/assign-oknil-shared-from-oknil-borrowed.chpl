@@ -2,7 +2,7 @@
 
 class MyClass {  var x: int;  }
 
-var lhs: shared MyClass?;
+var lhs: shared MyClass? = nil;
 var rhs: borrowed MyClass?;
 
 lhs = rhs;

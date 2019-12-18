@@ -77,7 +77,6 @@ tags
 
 # Runtime ignores.
 /runtime/include/chpl_rt_utils.h
-/runtime/src/timers/
 
 # Spec ignores.
 /spec/*.aux
@@ -194,6 +193,7 @@ tags
 /test/io/bradc/fileIO.out.txt
 /test/io/bradc/subdir/out.dat
 
+/test/library/packages/HDF5/mydata.h5
 /test/localeModels/gbt/maxTaskPar.good
 
 /test/memory/gbt/test-memLog.memLog.*

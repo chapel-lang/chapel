@@ -34,6 +34,7 @@
 
 module DateTime {
   private use HaltWrappers only ;
+  private use SysCTypes;
 
   /* The minimum year allowed in `date` objects */
   param MINYEAR = 1;
@@ -433,9 +434,10 @@ module DateTime {
     timeStruct.tm_yday = (this - new date(year, 1, 1)).days: int(32);
 
     strftime(c_ptrTo(buf), bufLen, fmt.c_str(), timeStruct);
-    var str = createStringWithNewBuffer( __primitive("cast",
-                                                     c_string, c_ptrTo(buf)));
-
+    var str: string;
+    try! {
+      str = createStringWithNewBuffer(c_ptrTo(buf):c_string);
+    }
     return str;
   }
 
@@ -682,8 +684,10 @@ module DateTime {
     }
 
     strftime(c_ptrTo(buf), bufLen, fmt.c_str(), timeStruct);
-    var str = createStringWithNewBuffer(__primitive("cast",
-                                                    c_string, c_ptrTo(buf)));
+    var str: string;
+    try! {
+      str = createStringWithNewBuffer(c_ptrTo(buf):c_string);
+    }
 
     return str;
   }
@@ -1192,8 +1196,10 @@ module DateTime {
     timeStruct.tm_yday = (this.replace(tzinfo=nil) - new datetime(year, 1, 1)).days: int(32);
 
     strftime(c_ptrTo(buf), bufLen, fmt.c_str(), timeStruct);
-    var str = createStringWithNewBuffer(__primitive("cast",
-                                                    c_string, c_ptrTo(buf)));
+    var str: string;
+    try! {
+      str = createStringWithNewBuffer(c_ptrTo(buf):c_string);
+    }
 
     return str;
   }

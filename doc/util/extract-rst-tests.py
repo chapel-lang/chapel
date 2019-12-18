@@ -66,7 +66,7 @@ def read_block(lines, start):
     indend_text = ""
     first_nonempty = -1
     j = start
-    end = -1
+    end = len(lines)
 
     # compute where to stop reading
     while j < len(lines):
@@ -256,7 +256,15 @@ def main(**kwargs):
     verbose = kwargs['verbose']
 
     for rstfile in rstfiles:
-        extract_tests(rstfile, output)
+        if os.path.isfile(rstfile):
+            extract_tests(rstfile, output)
+        elif os.path.isdir(rstfile):
+          for dirpath, dirnames, filenames in os.walk(rstfile):
+              for f in filenames:
+                  if f.endswith('.rst'):
+                      extract_tests(os.path.join(dirpath, f), output)
+        else:
+            print("File not found ", rstfile)
 
     global total_tests
     print("DONE - created", total_tests, "tests")
