@@ -20,6 +20,7 @@
 #ifndef _APRUN_UTILS_H_
 #define _APRUN_UTILS_H_
 
-char** chpl_create_pals_cmd(int argc, char* argv[], int32_t numLocalesa);
+char** chpl_create_pals_cmd(int argc, char* argv[], int32_t numLocales,
+                            const char* ccArg);
 
 #endif

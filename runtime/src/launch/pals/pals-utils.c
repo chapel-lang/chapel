@@ -36,6 +36,22 @@
 
 
 static
+int getCoresPerLocale(void) {
+  int numCores = -1;
+  char* numCoresString = getenv("CHPL_LAUNCHER_CORES_PER_LOCALE");
+
+  if (numCoresString != NULL) {
+    numCores = atoi(numCoresString);
+    if (numCores <= 0)
+      chpl_warning("CHPL_LAUNCHER_CORES_PER_LOCALE set to invalid value.",
+                   0, 0);
+  }
+
+  return (numCores > 0) ? numCores : 0;
+}
+
+
+static
 char *getNodeList(void) {
   const char *nodeList = getenv("CHPL_LAUNCHER_NODELIST");
   char *buf = NULL;
@@ -59,7 +75,8 @@ char* int_str(int val) {
 }
 
 
-char** chpl_create_pals_cmd(int argc, char* argv[], int32_t numLocales) {
+char** chpl_create_pals_cmd(int argc, char* argv[], int32_t numLocales,
+                            const char* ccArg) {
   int largc = 0;
   const char **largv = NULL;
   int largv_len = 0;
@@ -68,11 +85,26 @@ char** chpl_create_pals_cmd(int argc, char* argv[], int32_t numLocales) {
   APPEND_LARGV("cray");
   APPEND_LARGV("mpiexec");
 
+  if (verbosity < 2) {
+    APPEND_LARGV("--quiet");            // quiet
+  }
+
   APPEND_LARGV("-n");                   // num processes
   APPEND_LARGV(int_str(numLocales));
 
   APPEND_LARGV("--ppn");                // num processes per node
   APPEND_LARGV(int_str(1));
+
+  int numCoresPerLocale;
+  if ((numCoresPerLocale = getCoresPerLocale()) > 0) {
+    APPEND_LARGV("--depth");            // num CPUs per process
+    APPEND_LARGV(int_str(numCoresPerLocale));
+  }
+
+  if (ccArg != NULL) {
+    APPEND_LARGV("--cpu-bind");         // CPU binding
+    APPEND_LARGV(ccArg);
+  }
 
   char *nodeList;
   if ((nodeList = getNodeList()) != NULL) {
