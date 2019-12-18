@@ -7,7 +7,7 @@ proc main {
   var b: int;
   writeln(c);
   on Locales(1) {
-    b = c.s.byte(1);
+    b = c.s.byte(0);
     c.s = "another string";
   }
   writeln(b);
