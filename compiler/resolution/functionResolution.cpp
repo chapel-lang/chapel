@@ -6599,6 +6599,12 @@ static void resolveMoveForRhsSymExpr(CallExpr* call, SymExpr* rhs) {
 
   }
 
+  if (lhsSym->hasFlag(FLAG_TYPE_VARIABLE) &&
+      lhsSym->type != dtUnknown &&
+      lhsSym->type != rhsSym->type) {
+    USR_FATAL(call, "type alias split initialization uses different types");
+  }
+
   moveFinalize(call);
 }
 

@@ -96,6 +96,11 @@ static void        applyGetterTransform(CallExpr* call);
 static void        insertCallTemps(CallExpr* call);
 static void        insertCallTempsWithStmt(CallExpr* call, Expr* stmt);
 
+static bool isSplitInitExpr(Expr* e);
+static bool findInitPoints(DefExpr* def,
+                           std::vector<CallExpr*>& initAssigns);
+
+
 static void        normalizeTypeAlias(DefExpr* defExpr);
 static void        normalizeConfigVariableDefinition(DefExpr* defExpr);
 static void        normalizeVariableDefinition(DefExpr* defExpr);
@@ -2022,23 +2027,7 @@ static bool moveMakesTypeAlias(CallExpr* call) {
 *                                                                             *
 ************************************** | *************************************/
 
-static void normalizeTypeAlias(DefExpr* defExpr) {
-  SET_LINENO(defExpr);
-
-  Symbol* var  = defExpr->sym;
-  Expr*   type = defExpr->exprType;
-  Expr*   init = defExpr->init;
-
-  if (type == NULL && init == NULL) {
-    // Don't worry about compiler temporaries
-    INT_ASSERT(var->hasFlag(FLAG_TEMP));
-    return;
-  }
-
-  // TODO: call findInitPoints
-
-  INT_ASSERT(type == NULL);
-  INT_ASSERT(init != NULL);
+static void emitTypeAliasInit(Expr* after, Symbol* var, Expr* init) {
 
   // Generate a type constructor call
   if (SymExpr* se = toSymExpr(init)) {
@@ -2055,11 +2044,61 @@ static void normalizeTypeAlias(DefExpr* defExpr) {
     // to enable early resolution of these types.
     BlockStmt* block = new BlockStmt(BLOCK_EXTERN_TYPE);
     block->insertAtTail(move);
-    defExpr->insertAfter(block);
+    after->insertAfter(block);
   } else {
-    defExpr->insertAfter(move);
+    after->insertAfter(move);
+  }
+}
+
+static void normalizeTypeAlias(DefExpr* defExpr) {
+  SET_LINENO(defExpr);
+
+  Symbol* var  = defExpr->sym;
+  Expr*   type = defExpr->exprType;
+  Expr*   init = defExpr->init;
+
+  if (type == NULL && init == NULL) {
+    // Don't worry about compiler temporaries
+    INT_ASSERT(var->hasFlag(FLAG_TEMP));
+    return;
   }
 
+  std::vector<CallExpr*> initAssign;
+  // if there is no init expression, search for initialization
+  // points written using '='
+  bool foundSplitInit = false;
+  bool requestedSplitInit = isSplitInitExpr(init);
+  // Error for global variables using split init
+  FnSymbol* initFn = defExpr->getModule()->initFn;
+  bool global = (initFn && defExpr->parentExpr == initFn->body);
+
+  if (requestedSplitInit && global) {
+    USR_FATAL_CONT(defExpr, "type alias '%s' is not initialized",
+                   var->name);
+    USR_PRINT(defExpr, "split initialization is not supported for globals");
+  }
+
+  // For now, disable automatic split init on non-user code
+  if ((defExpr->getModule()->modTag == MOD_USER || requestedSplitInit) &&
+      global == false)
+    foundSplitInit = findInitPoints(defExpr, initAssign);
+
+  INT_ASSERT(type == NULL);
+  INT_ASSERT(init != NULL);
+
+  if ((init != NULL && !requestedSplitInit) || foundSplitInit == false) {
+    // handle non-split initialization
+    emitTypeAliasInit(defExpr, var, init);
+  } else {
+    // handle split initialization for type aliases
+    for_vector(CallExpr, call, initAssign) {
+      SET_LINENO(call);
+      // Consider the RHS of the '=' call to be the init expr.
+      Expr* rhs = call->get(2)->remove();
+      emitTypeAliasInit(call, var, rhs);
+      call->remove();
+    }
+  }
 }
 
 /************************************* | **************************************
@@ -2207,10 +2246,6 @@ static Symbol* varModuleName(VarSymbol* var) {
 * moves, calls to chpl__initCopy, _init, and _cast, and assignments.          *
 *                                                                             *
 ************************************** | *************************************/
-
-static bool isSplitInitExpr(Expr* e);
-static bool findInitPoints(DefExpr* def,
-                           std::vector<CallExpr*>& initAssigns);
 
 static void           normVarTypeInference(DefExpr* expr);
 static void           normVarTypeWoutInit(DefExpr* expr);
@@ -2446,7 +2481,12 @@ static found_init_t doFindInitPoints(DefExpr* def,
           initAssigns.push_back(call);
         }
         return FOUND_INIT;
-      } else if (foundIf != FOUND_NOTHING || foundElse != FOUND_NOTHING) {
+      } else if (foundIf == FOUND_INIT || foundElse == FOUND_INIT) {
+        // intialized on one side but not the other
+        errorIfSplitInitializationRequired(def, cur);
+        return FOUND_USE;
+      } else if (foundIf == FOUND_USE && foundElse == FOUND_USE) {
+        // at least one of them must be FOUND_USE, so return that
         errorIfSplitInitializationRequired(def, cur);
         return FOUND_USE;
       }
@@ -2466,8 +2506,6 @@ static found_init_t doFindInitPoints(DefExpr* def,
         INT_FATAL("use not found above");
     }
   }
-
-  errorIfSplitInitializationRequired(def, NULL);
 
   return FOUND_NOTHING;
 }
@@ -2504,7 +2542,7 @@ static void errorIfSplitInitializationRequired(DefExpr* def, Expr* cur) {
         // can't default init a generic type
         canDefaultInit = false;
       }
- 
+
       // can't default init a generic management/nilability
       if (isClassLikeOrManaged(ts->type)) {
         ClassTypeDecorator d = classTypeDecorator(ts->type);
