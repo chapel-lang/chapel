@@ -1037,6 +1037,21 @@ module ChapelBase {
     inline proc this(i: integral) ref {
       return __primitive("array_get", this, i);
     }
+
+    inline proc ref reallocate(type t, size: integral, subloc = c_sublocid_none) {
+      pragma "fn synchronization free"
+      pragma "insert line file info"
+      extern proc chpl_mem_array_realloc(ptr: c_void_ptr, nmemb: size_t,
+                                         eltSize: size_t,
+                                         subloc: chpl_sublocID_t,
+                                         ref callPostAlloc: bool): c_void_ptr;
+      var callPostAlloc: bool;
+      this = chpl_mem_array_realloc(this: c_void_ptr, size.safeCast(size_t),
+                                    _ddata_sizeof_element(this),
+                                    subloc, callPostAlloc): this.type;
+      if (callPostAlloc) then
+        halt("realloc doesn't support post-alloc hooks yet");
+    }
   }
 
   proc chpl_isDdata(type t:_ddata) param return true;

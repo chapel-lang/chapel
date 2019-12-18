@@ -1353,6 +1353,7 @@ module DefaultRectangular {
                                                   BoundedRangeType.bounded,
                                                   stridable)) where rank == 1 {
       on this {
+        use IO;
         const allocD = {allocBound};
         var copy = new unmanaged DefaultRectangularArr(eltType=eltType,
                                                        rank=rank,
@@ -1394,7 +1395,19 @@ module DefaultRectangular {
                                                    BoundedRangeType.bounded,
                                                    stridable)) {
       on this {
+        use IO;
+        //        try! stderr.writeln("reallocating from ", dom.ranges, " to ", bounds);
         const allocD = {(...bounds)};
+
+        if (rank == 1 && allocD.low == dom.dsiLow && allocD.stride == dom.dsiStride) {
+          //          try! stderr.writeln("candidate for reallocating in-place");
+          //          writeln("reallocating to ", allocD.dsiDim(1));
+          dom = allocD._value;
+          sizesPerDim(1) = allocD.dsiDim(1).size;
+          data.reallocate(eltType, allocD.size);
+          shiftedData = data;
+          dataAllocRange = allocD.dsiDim(1);
+        } else {
 
         var copy = new unmanaged DefaultRectangularArr(eltType=eltType,
                                             rank=rank,
@@ -1427,6 +1440,7 @@ module DefaultRectangular {
         }
         dataAllocRange = copy.dataAllocRange;
         delete copy;
+        }
       }
     }
 

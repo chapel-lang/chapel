@@ -88,6 +88,55 @@ void* chpl_mem_array_alloc(size_t nmemb, size_t eltSize,
 
 
 static inline
+void* chpl_mem_array_realloc(void* ptr, size_t nmemb, size_t eltSize,
+                             c_sublocid_t subloc, chpl_bool* callPostAlloc,
+                             int32_t lineno, int32_t filename) {
+  
+  //
+  // To support dynamic array registration by comm layers, in addition
+  // to the address to the allocated memory this returns either true or
+  // false in *callPostAlloc.  If we set *callPostAlloc==false then
+  // allocation is complete when we return.  But if *callPostAlloc==true
+  // then after initializing (first-touching) the memory, our caller
+  // needs to call chpl_mem_array_postAlloc() with the allocated address
+  // and the original nmemb and eltSize arguments.  At that point we will
+  // call the comm layer post-alloc function, which typically does the
+  // actual registration.  This is how we get NUMA locality correct on
+  // registered memory, when that is possible.
+  //
+  /*
+    TODO:
+  chpl_memhook_malloc_pre(nmemb, eltSize, CHPL_RT_MD_ARRAY_ELEMENTS,
+                          lineno, filename);
+  */
+
+  const size_t size = nmemb * eltSize;
+  /*
+  void* p = NULL;
+  *callPostAlloc = false;
+  if (chpl_mem_size_justifies_comm_alloc(size)) {
+    p = chpl_comm_regMemAlloc(size, CHPL_RT_MD_ARRAY_ELEMENTS,
+                              lineno, filename);
+    if (p != NULL) {
+      *callPostAlloc = true;
+    }
+  }
+  */
+
+  printf("Requesting a realloc of %ld\n", size);
+  ptr = chpl_realloc(ptr, size);
+
+  /*
+  TODO:
+  chpl_memhook_malloc_post(p, nmemb, eltSize, CHPL_RT_MD_ARRAY_ELEMENTS,
+                           lineno, filename);
+  */
+
+  return ptr;
+}
+
+
+static inline
 void chpl_mem_array_postAlloc(void* p, size_t nmemb, size_t eltSize,
                               int32_t lineno, int32_t filename) {
   //
