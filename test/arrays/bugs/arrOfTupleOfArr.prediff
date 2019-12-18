@@ -1,4 +1,3 @@
-
 #!/bin/bash
 
 outfile=$2
@@ -12,4 +11,3 @@ if grep -q '^==[0-9]*== ' $outfile; then
   grep 'Conditional jump or move' $temp | sed 's@^=[^ ]*= @@' | head -1 > $outfile
 
 fi
-
