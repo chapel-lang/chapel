@@ -295,6 +295,7 @@
 // identifiers and literals
 //
 %token <pch> TIDENT
+%token <pch> TQUERIEDIDENT
 %token <pch> INTLITERAL
 %token <pch> REALLITERAL
 %token <pch> IMAGLITERAL
@@ -1402,8 +1403,12 @@ function_body_stmt:
 ;
 
 query_expr:
-  TQUESTION ident_def
-    { $$ = new DefExpr(new VarSymbol($2)); }
+  TQUESTION ident_def { 
+      DefExpr * de = new DefExpr(new VarSymbol($2));
+      USR_WARN(de, "support for space in query expressions is deprecated");
+      $$ = de;
+  }
+| TQUERIEDIDENT       { $$ = buildQueriedExpr($1); }
 ;
 
 var_arg_expr:

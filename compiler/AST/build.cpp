@@ -561,6 +561,12 @@ BlockStmt* buildRequireStmt(CallExpr* args) {
   return list;
 }
 
+//
+// Build a queried expression like `?t`
+//
+DefExpr* buildQueriedExpr(const char *expr) {
+  return new DefExpr(new VarSymbol(&(expr[1])));
+}
 
 static void
 buildTupleVarDeclHelp(Expr* base, BlockStmt* decls, Expr* insertPoint) {
