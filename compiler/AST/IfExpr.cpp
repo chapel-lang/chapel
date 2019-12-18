@@ -124,3 +124,13 @@ GenRet IfExpr::codegen() {
   return ret;
 }
 
+bool isLoweredIfExprBlock(BlockStmt* block) {
+  if (CallExpr* call = toCallExpr(block->body.last()))
+    if (call->isPrimitive(PRIM_MOVE) || call->isPrimitive(PRIM_ASSIGN))
+      if (SymExpr* lhs = toSymExpr(call->get(1)))
+        if (lhs->symbol()->hasFlag(FLAG_IF_EXPR_RESULT))
+          return true;
+
+  return false;
+}
+
