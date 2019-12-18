@@ -180,7 +180,7 @@ module Itertools {
 
     if isString(arg) || isArray(arg) || isTuple(arg) then
       for idx in workingIters do
-        yield arg[(idx % arg.size) + 1];
+        yield arg[(idx % arg.size) + (isArray(arg) || isTuple(arg)):int];
     else {
       var tempObject: [1..#arg.size] arg.low.type;
 

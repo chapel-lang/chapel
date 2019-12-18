@@ -126,7 +126,7 @@ inline proc hash(str, beg, param size) {
 
 proc string.toBytes() {
   var byteArr: [1..this.numBytes] uint(8);
-  for (b, i) in zip(byteArr, 1..) do
+  for (b, i) in zip(byteArr, 0..) do
     b = this.byte(i);
   return byteArr;
 }

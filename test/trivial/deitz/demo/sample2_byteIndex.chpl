@@ -3,11 +3,11 @@ use LinkedLists;
 config var phrase : string = "shuffle me please";
 const n = (phrase.numBytes);
 
-var encoded = phrase[1:byteIndex..n:byteIndex by 2] + phrase[2:byteIndex..n:byteIndex by 2];
+var encoded = phrase[0:byteIndex..(n-1):byteIndex by 2] + phrase[1:byteIndex..(n-1):byteIndex by 2];
 
 var decoder : LinkedList(int);
 
-for i in 1..n/2 {
+for i in 0..#(n/2) {
   var l = makeList(i, n/2 + n % 2 + i);
 
   decoder.concat(l);
@@ -16,7 +16,7 @@ for i in 1..n/2 {
 }
 
 if n % 2 == 1 {
-  var tmp : int = n / 2 + 1;
+  var tmp : int = n / 2;
   var l         = makeList(tmp);
 
   decoder.concat(l);

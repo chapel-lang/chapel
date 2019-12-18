@@ -20,12 +20,12 @@ proc main() {
   len1 = (s1.length);
   len2 = (s2.length);
 
-  var b: [0..len1, 0..len2] (int, int);
-  var c: [0..len1, 0..len2] int;
+  var b: [-1..len1-1, -1..len2-1] (int, int);
+  var c: [-1..len1-1, -1..len2-1] int;
 
   lcs_length(s1, s2, b, c);
-  writeln("LCS length: ", c(len1, len2));
-  print_lcs(b, s1, (len1, len2));
+  writeln("LCS length: ", c(len1-1, len2-1));
+  print_lcs(b, s1, (len1-1, len2-1));
   writeln();
 }
 
@@ -47,8 +47,8 @@ proc lcs_length(s1: string, s2: string, b, c) {
   */
   var m = (s1.length);
   var n = (s2.length);
-  for i in 1..m {
-    for j in 1..n {
+  for i in 0..#m {
+    for j in 0..#n {
       if s1[i] == s2[j] {
         c(i,j) = c((i,j) + northwest) + 1;
         b(i,j) = northwest;
@@ -69,7 +69,7 @@ proc print_lcs(b, X, field: (int, int)) {
   */
   var (i, j) = field;
 
-  if (i == 0 || j == 0) then
+  if (i == -1 || j == -1) then
     return;
 
   if (b(field) == northwest) {

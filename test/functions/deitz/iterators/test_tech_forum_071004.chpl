@@ -1,6 +1,6 @@
 iter iter_string_chars(s: string) {
-  var i = 1, limit = s.length;
-  while i <= limit {
+  var i = 0, limit = s.length;
+  while i < limit {
     yield s[i];
     i += 1;
   }

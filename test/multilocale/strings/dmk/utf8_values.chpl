@@ -1,7 +1,7 @@
 var mystring1 = "hello";
 
 on Locales[numLocales-1] {
-  for (i, c) in zip(1.., mystring1.bytes()) {
+  for (i, c) in zip(0.., mystring1.bytes()) {
     const str = codepointToString(c);
     write(c);
     var c2 = mystring1.byte(i);
@@ -9,7 +9,7 @@ on Locales[numLocales-1] {
       write("#", c2);
     on Locales[0] {
       write("\t", str);
-      for (j, bval) in zip(1.., str.bytes()) {
+      for (j, bval) in zip(0.., str.bytes()) {
         write(" ", bval);
         var bval2 = str.byte(j);
         if bval2 != bval then
@@ -23,7 +23,7 @@ on Locales[numLocales-1] {
 var mystring2 = "événement";
 
 on Locales[numLocales-1] {
-  for (i, c) in zip(1.., mystring2.codepoints()) {
+  for (i, c) in zip(0.., mystring2.codepoints()) {
     const str = codepointToString(c);
     write(c);
     var c2 = mystring2.codepoint(i);
@@ -31,7 +31,7 @@ on Locales[numLocales-1] {
       write("#", c2);
     on Locales[0] {
       write("\t", str);
-      for (j, bval) in zip(1.., str.bytes()) {
+      for (j, bval) in zip(0.., str.bytes()) {
         write(" ", bval);
         var bval2 = str.byte(j);
         if bval2 != bval then

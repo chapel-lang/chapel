@@ -224,7 +224,7 @@ proc printInfo(population : [] owned Chameneos) {
 /* spellInt takes an integer, and spells each of its digits out in English */
 proc spellInt(n : int) {
   var s : string = n:string;
-  for i in 1..s.length {
+  for i in 0..#s.length {
     write(" ", (s[i]:int):Digit);
   }
   writeln();

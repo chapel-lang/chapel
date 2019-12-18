@@ -249,7 +249,7 @@ proc process_json(logfile:channel, fname:string, ref Pairs) {
 proc process_json(fname: string, ref Pairs)
 {
 
-  var last3chars = fname[fname.length-2..fname.length];
+  var last3chars = fname[fname.length-3..];
   if last3chars == ".gz" {
     var sub = spawn(["gunzip", "-c", fname], stdout=PIPE);
     process_json(sub.stdout, fname, Pairs);
