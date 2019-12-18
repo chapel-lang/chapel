@@ -58,7 +58,7 @@ COMMON_NOGEN_SRCS = \
 MAIN_SRCS = \
 	main.c
 
-SVN_SRCS = \
+SRCS = \
 	$(COMMON_NOGEN_SRCS) \
 	$(MAIN_SRCS) \
 	$(RUNTIME_MALLOC_SRCS)
@@ -72,7 +72,6 @@ MAIN_LAUNCHER_SRCS = \
 RUNTIME_MALLOC_SRCS = \
 	chpl-mem-replace-malloc.c
 
-SRCS = $(SVN_SRCS)
 
 COMMON_OBJS = \
 	$(COMMON_SRCS:%.c=$(COMMON_OBJDIR)/%.o)

@@ -70,7 +70,7 @@ include src/qio/Makefile.include
 SUBDIRS = \
 	src \
 
-SVN_SRCS = 
+SRCS =
 
 RUNTIME_OBJS = \
 	$(COMMON_OBJS) \

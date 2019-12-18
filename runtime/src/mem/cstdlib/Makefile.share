@@ -17,7 +17,6 @@
 
 MEM_SRCS = mem-cstdlib.c
 
-SVN_SRCS = $(MEM_SRCS)
-SRCS = $(SVN_SRCS)
+SRCS = $(MEM_SRCS)
 
 MEM_COMMON_OBJS = $(MEM_SRCS:%.c=$(MEM_OBJDIR)/%.o)
