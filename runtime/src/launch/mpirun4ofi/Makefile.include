@@ -15,7 +15,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-LAUNCH_SUBDIR = src/launch/mpirun4ofi
+LAUNCH_SUBDIR = src/launch/$(CHPL_MAKE_LAUNCHER)
 
 LAUNCH_OBJDIR = $(LAUNCHER_BUILD)/$(LAUNCH_SUBDIR)
 
