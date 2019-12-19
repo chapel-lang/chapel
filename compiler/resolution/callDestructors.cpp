@@ -1227,6 +1227,21 @@ static void destroyFormalInTaskFn(ArgSymbol* formal, FnSymbol* taskFn) {
 
 /************************************* | **************************************
 *                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
+
+
+static void removeEndOfStatementMarkers() {
+  for_alive_in_Vec(CallExpr, call, gCallExprs) {
+    if (call->isPrimitive(PRIM_END_OF_STATEMENT))
+      call->remove();
+  }
+}
+
+
+/************************************* | **************************************
+*                                                                             *
 * Entry point                                                                 *
 *                                                                             *
 ************************************** | *************************************/
@@ -1261,4 +1276,6 @@ void callDestructors() {
   checkForErroneousInitCopies();
 
   convertClassTypesToCanonical();
+
+  removeEndOfStatementMarkers();
 }

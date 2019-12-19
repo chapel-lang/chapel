@@ -110,6 +110,13 @@ static void gatherIgnoredVariablesForYield(
     Expr* stmt,
     std::set<VarSymbol*>& ignoredVariables);
 
+// last mention:
+// the last mention is stored in the AST. Variables whos last mention
+// has already passed should not be destroyed on a break/return.
+// So, when they are destroyed, they are added to the ignores set.
+// Note that if we extend the last-mention to go within conditional statements,
+// relying on the traversal order will not be sufficient.
+
 //
 // A ForallStmt index variable does not have a DefExprs in the loop body.
 // Yet, it needs to be autoDestroyed at the end of the block.

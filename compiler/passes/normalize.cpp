@@ -80,6 +80,7 @@ static void        find_printModuleInit_stuff();
 static void        normalizeBase(BaseAST* base);
 static void        processSyntacticDistributions(CallExpr* call);
 static void        processManagedNew(CallExpr* call);
+static void        addEndOfStatementMarkers(BaseAST* base);
 static Expr*       getCallTempInsertPoint(Expr* expr);
 static void        addTypeBlocksForParentTypeOf(CallExpr* call);
 static void        normalizeReturns(FnSymbol* fn);
@@ -493,19 +494,22 @@ static void normalizeBase(BaseAST* base) {
   // Phase 0
   //
   normalizeErrorHandling(base);
+  addEndOfStatementMarkers(base);
 
   //
   // Phase 1
   //
-  std::vector<CallExpr*> calls1;
+  {
+    std::vector<CallExpr*> calls1;
 
-  collectCallExprs(base, calls1);
+    collectCallExprs(base, calls1);
 
-  for_vector(CallExpr, call, calls1) {
-    processSyntacticDistributions(call);
-    processManagedNew(call);
-    if (call->isPrimitive(PRIM_TYPEOF))
-      addTypeBlocksForParentTypeOf(call);
+    for_vector(CallExpr, call, calls1) {
+      processSyntacticDistributions(call);
+      processManagedNew(call);
+      if (call->isPrimitive(PRIM_TYPEOF))
+        addTypeBlocksForParentTypeOf(call);
+    }
   }
 
 
@@ -1127,6 +1131,118 @@ static void processManagedNew(CallExpr* newCall) {
     }
   }
 }
+
+class AddEndOfStatementMarkers : public AstVisitorTraverse
+{
+  private:
+    void addMarker(Expr* node);
+  public:
+    virtual bool enterCallExpr(CallExpr* node);
+    virtual bool enterDefExpr(DefExpr* node);
+    virtual bool enterIfExpr(IfExpr* node);
+    virtual bool enterLoopExpr(LoopExpr* node);
+};
+
+void AddEndOfStatementMarkers::addMarker(Expr* node) {
+  // Rule out several cases that shouldn't get end-of-statement markers
+  if (node->list == NULL)
+    return;
+
+  FnSymbol* fn = toFnSymbol(node->parentSymbol);
+  if (fn == NULL)
+    return;
+
+  BlockStmt* firstBlock = NULL;
+  BlockStmt* fnBlock = fn->body;
+  bool foundInBody = false;
+
+  // Check that the call is contained a FnSymbol's Block
+  // While traversing, also compute the first parent Block.
+  for (Expr* cur = node->parentExpr;
+       cur != NULL;
+       cur = cur->parentExpr) {
+
+    if (firstBlock == NULL)
+      if (BlockStmt* block = toBlockStmt(cur))
+        firstBlock = block;
+
+    if (cur == fnBlock) {
+      foundInBody = true;
+      break;
+    }
+  }
+
+  // not in a FnSymbol's body
+  //  e.g. in where clause, lifetime clause, return type expression, arg, etc
+  if (foundInBody == false)
+    return;
+
+  // Otherwise, check that the call is a statement-level call, and
+  // in that event, add the end-of-statement marker.
+  if (firstBlock != node->parentExpr)
+    return;
+
+  // Don't add if already at the end of the block
+  if (node->next == NULL)
+    return;
+
+  // Don't add duplicates
+  if (CallExpr* next = toCallExpr(node->next))
+    if (next->isPrimitive(PRIM_END_OF_STATEMENT))
+      return;
+
+  SET_LINENO(node);
+  node->insertAfter(new CallExpr(PRIM_END_OF_STATEMENT));
+}
+
+bool AddEndOfStatementMarkers::enterIfExpr(IfExpr* node) {
+  addMarker(node);
+  return false;
+}
+
+bool AddEndOfStatementMarkers::enterLoopExpr(LoopExpr* node) {
+  addMarker(node);
+  return false;
+}
+
+bool AddEndOfStatementMarkers::enterCallExpr(CallExpr* node) {
+  // Don't add more markers after an end of statement marker.
+  if (node->isPrimitive(PRIM_END_OF_STATEMENT))
+    return false;
+
+  // Don't add markers after a move setting a temp
+  if (node->isPrimitive(PRIM_MOVE) || node->isPrimitive(PRIM_ASSIGN))
+    if (SymExpr* lhs = toSymExpr(node->get(1)))
+      if (lhs->symbol()->hasFlag(FLAG_TEMP))
+        return false;
+
+  addMarker(node);
+  return false;
+}
+
+bool AddEndOfStatementMarkers::enterDefExpr(DefExpr* node) {
+  VarSymbol* var = toVarSymbol(node->sym);
+  if (var != NULL && !var->hasFlag(FLAG_TEMP)) {
+    addMarker(node);
+    return false;
+  }
+
+  if (isModuleSymbol(node->sym))
+    return true; // look for functions in modules
+
+  if (isFnSymbol(node->sym))
+    if (!node->sym->hasFlag(FLAG_COMPILER_GENERATED))
+      return true;  // visit non-compiler-generated functions
+
+  return false; // other symbols, e.g. ArgSymbols
+}
+
+
+static void addEndOfStatementMarkers(BaseAST* base) {
+  AddEndOfStatementMarkers visitor;
+  base->accept(&visitor);
+}
+
 
 static void addTypeBlocksForParentTypeOf(CallExpr* call) {
   Expr* stmt = getCallTempInsertPoint(call);

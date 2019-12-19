@@ -119,8 +119,6 @@ void AutoDestroyScope::insertAutoDestroys(FnSymbol* fn, Expr* refStmt,
   // variables in the parent block are assumed to be destroyed by the
   // parent block.
 
-  // Problem: this loop terminates because
-  // scope->mBlock == forTarget by the time we should be running it.
   while (scope != NULL) {
     // stop when block == forTarget for non-error-handling gotos
     if (scope->mBlock == forTarget && includeParent == false)
