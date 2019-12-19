@@ -79,7 +79,7 @@ endif
 #
 # platform-specific subdirectory targets
 #
-SVN_DEPENDS = ./$(DEPEND_DIR)/*.d
+DEPENDS = ./$(DEPEND_DIR)/*.d
 
 
 #

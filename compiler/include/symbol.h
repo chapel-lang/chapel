@@ -603,6 +603,9 @@ public:
 *                                                                             *
 ************************************** | *************************************/
 
+// Checks whether a string is valid in UTF8 encoding
+bool isValidString(std::string str);
+
 // Processes a char* to replace any escape sequences with the actual bytes
 std::string unescapeString(const char* const str, BaseAST* astForError);
 

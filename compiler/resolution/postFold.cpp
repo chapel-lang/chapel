@@ -751,10 +751,23 @@ static bool postFoldMoveUpdateForParam(CallExpr* call, Symbol* lhsSym) {
                            lhsSym->name);
 
           } else {
-            USR_FATAL_CONT(call,
-                           "Initializing parameter '%s' to value "
-                           "not known at compile time",
-                           lhsSym->name);
+            bool failedCoercion = false;
+            if (SymExpr* rhsSe = toSymExpr(call->get(2)))
+              if (SymExpr* se = rhsSe->symbol()->getSingleDef())
+                if (CallExpr* p = toCallExpr(se->parentExpr))
+                  if (p->isPrimitive(PRIM_MOVE))
+                    if (CallExpr* rhsCall = toCallExpr(p->get(2)))
+                      if (rhsCall->isPrimitive(PRIM_COERCE))
+                        failedCoercion = true;
+
+            if (failedCoercion)
+              USR_FATAL_CONT(call,
+                             "Could not coerce param into requested type");
+            else
+              USR_FATAL_CONT(call,
+                             "Initializing parameter '%s' to value "
+                             "not known at compile time",
+                             lhsSym->name);
 
             lhsSym->removeFlag(FLAG_PARAM);
           }

@@ -31,6 +31,7 @@ module ExternalArray {
     var _unowned: bool;
   }
 
+  pragma "export wrapper"
   extern record chpl_external_array {
     var elts: c_void_ptr;
     var num_elts: uint;

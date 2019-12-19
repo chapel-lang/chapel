@@ -15,7 +15,15 @@ module OuterModule {
     const char* greet_str = "Hello";
   } }
 
-  writeln(createStringWithNewBuffer(C.greeting()));
+  try {
+    writeln(createStringWithNewBuffer(C.greeting()));
+  }
+  catch e: DecodeError {
+    writeln("Decode error creating string");
+  }
+  catch {
+    writeln("Unknown error creating string");
+  }
   writeln(C.my_doub);
   writeln(C.my_int);
   writeln(C.add_one(1000));

@@ -399,7 +399,7 @@ std::string MLIContext::genMarshalBodyChplBytesWrapper(Type* t, bool out) {
   const char* target = out ? "obj" : "result";
   std::string gen;
 
-  // Create expressions for each "chpl_bytes_wrapper" struct field.
+  // Create expressions for each "chpl_byte_buffer" struct field.
   const char* fieldIsOwned = astr(target, ".isOwned");
   const char* fieldSize = astr(target, ".size");
   const char* fieldData = astr(target, ".data");
@@ -514,7 +514,7 @@ std::string MLIContext::genMarshalRoutine(Type* t, bool out) {
   // Handle translation of different type classes here. Note that right now
   // what we can translate is limited.
   //
-  if (isPrimitiveScalar(t)) {
+  if (isPrimitiveScalar(t) && !is_complex_type(t)) {
     gen += this->genMarshalBodyPrimitiveScalar(t, out);
   } else if (t == dtStringC) {
     gen += this->genMarshalBodyString(t, out);
@@ -523,7 +523,7 @@ std::string MLIContext::genMarshalRoutine(Type* t, bool out) {
     // A different strategy will be needed if we ever intend to support
     // c_ptr(int8)s that weren't originally Chapel strings.
     gen += this->genMarshalBodyString(t, out);
-  } else if (t->getValType() == exportTypeChplBytesWrapper) {
+  } else if (t->getValType() == exportTypeChplByteBuffer) {
     gen += this->genMarshalBodyChplBytesWrapper(t, out); 
   } else {
     USR_FATAL(t, "Multi-locale libraries do not support type: %s",
@@ -722,9 +722,9 @@ MLIContext::genServerDispatchSwitch(const std::vector<FnSymbol*>& fns) {
 //
 bool MLIContext::isSupportedType(Type* t) {
   return (
-      isPrimitiveScalar(t) ||
+      (isPrimitiveScalar(t) && !is_complex_type(t)) ||
       t == dtStringC ||
-      t == exportTypeChplBytesWrapper
+      t == exportTypeChplByteBuffer
   );
 }
 
@@ -906,13 +906,13 @@ std::string MLIContext::genServersideRPC(FnSymbol* fn) {
 std::string MLIContext::genMemCleanup(Type* t, const char* var) {
   std::string gen;
 
-  if (t == dtStringC || t == exportTypeCharPtr) {
+  if (t == dtStringC) {
     gen += "mli_free(";
     gen += "((void*) ";
     gen += var;
     gen += "));\n";
-  } else if (t == exportTypeChplBytesWrapper) {
-    gen += "chpl_bytes_wrapper_free(";
+  } else if (t == exportTypeChplByteBuffer) {
+    gen += "chpl_byte_buffer_free(";
     gen += var;
     gen += ");\n";
   } else {
@@ -1049,7 +1049,7 @@ bool MLIContext::isTypeRequiringAlloc(Type* t) {
       // TODO: Do we just assume that all CPTRs require allocation?
       t->symbol->hasFlag(FLAG_C_PTR_CLASS) ||
       t == dtStringC ||
-      t->getValType() == exportTypeChplBytesWrapper;
+      t->getValType() == exportTypeChplByteBuffer;
 }
 
 std::string MLIContext::genNewDecl(const char* t, const char* v) {

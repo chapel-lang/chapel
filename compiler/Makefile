@@ -81,7 +81,7 @@ include passes/Makefile.include
 include resolution/Makefile.include
 include util/Makefile.include
 
-SVN_SRCS =
+SRCS =
 
 CHPL_OBJS = \
 	$(ADT_OBJS) \

@@ -129,6 +129,30 @@ proc testRecs() {
   yes6 = x;
   writeln(yes6);
 
+  writeln("yes7");
+  var yes7:R;
+  var UnrelatedArray = forall i in 1..100 do i;
+  yes7 = x;
+  writeln(yes7);
+
+  writeln("yes8");
+  var yes8:R;
+  if cond then
+    f(1);
+  else
+    f(2);
+  var sum = 0;
+  for i in 1..100 {
+    sum += i;
+  }
+  forall i in 1..10 with (+ reduce sum) {
+    sum += i;
+  }
+  yes8 = x;
+  writeln(yes8);
+
+
+
 
   writeln("no1");
   var no1 = new R(1000);

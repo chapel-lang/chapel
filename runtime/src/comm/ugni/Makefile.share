@@ -26,13 +26,12 @@ COMM_SRCS = \
         comm-ugni-locales.c \
         comm-ugni-heap-pages.c \
 
-SVN_SRCS = \
+SRCS = \
         comm-ugni.c \
         comm-ugni-launch.c \
         comm-ugni-locales.c \
         comm-ugni-heap-pages.c \
 
-SRCS = $(SVN_SRCS)
 
 COMM_OBJS = \
 	$(COMM_SRCS:%.c=$(COMM_OBJDIR)/%.o)

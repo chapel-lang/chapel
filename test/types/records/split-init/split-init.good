@@ -25,6 +25,12 @@ init= 5
 yes6
 init= 0
 (x = 0, ptr = {})
+yes7
+init= 0
+(x = 0, ptr = {})
+yes8
+init= 0
+(x = 0, ptr = {})
 no1
 init 1000
 init 1001

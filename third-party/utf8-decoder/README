@@ -14,6 +14,8 @@ UTF-8 decoder code itself.
 Changes from the version on the website:
  - the symbols are prefixed with 'qio' to avoid collisions
  - the decode routine is static
+ - a custom `CHPL_ENC_RESTRICT` preprocessor constant is used instead of
+   `restrict`
 
 License from the website:
 

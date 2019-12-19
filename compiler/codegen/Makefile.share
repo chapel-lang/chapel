@@ -33,8 +33,7 @@ CODEGEN_SRCS =                                          \
                type.cpp
 
 
-SVN_SRCS = $(CODEGEN_SRCS)
-SRCS = $(SVN_SRCS)
+SRCS = $(CODEGEN_SRCS)
 
 CODEGEN_OBJS = \
 	$(CODEGEN_SRCS:%.cpp=$(CODEGEN_OBJDIR)/%.$(OBJ_SUFFIX))

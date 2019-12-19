@@ -17,8 +17,7 @@
 
 REGEXP_SRCS = fail-regexp.c
 
-SVN_SRCS = $(REGEXP_SRCS)
-SRCS = $(SVN_SRCS)
+SRCS = $(REGEXP_SRCS)
 
 REGEXP_OBJS = \
       $(addprefix $(REGEXP_OBJDIR)/,$(addsuffix .o,$(basename $(REGEXP_SRCS))))
