@@ -718,8 +718,6 @@ static CallExpr* buildLoopExprFunctions(LoopExpr* loopExpr) {
   if (insideArgSymbol) {
     loopExpr->getModule()->block->insertAtHead(new DefExpr(fn));
   } else {
-    if (loopExpr->id == 197967 || fn->id == 533949)
-      gdbShouldBreakHere();
     BlockStmt* block = NULL;
     CondStmt* ifExprCond = NULL;
     for (Expr* cur = loopExpr->getStmtExpr();
