@@ -13,7 +13,7 @@ proc main() {
     // Repeated push/pop of the same index should not leak.
     for i in 1..testIters {
       lines.append(s);
-      lines.pop(1);
+      lines.pop(0);
     }
   }
 }

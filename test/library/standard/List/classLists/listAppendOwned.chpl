@@ -7,4 +7,4 @@ var L: list(owned C);
 var c = new owned C(1);
 L.append(c);
 
-writeln(L[1].x);
+writeln(L[0].x);

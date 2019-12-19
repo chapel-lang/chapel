@@ -14,7 +14,7 @@ lst2.extend(lst1);
 
 assert(lst2.size > lst1.size);
 
-for i in 1..testIters do
+for i in 0..#testIters do
   assert(lst1[i] == lst2[testIters + i]);
 
 
