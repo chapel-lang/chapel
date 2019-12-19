@@ -583,7 +583,7 @@ record regexp {
   /*proc init() {*/
   /*}*/
 
-  proc init=(x: regexp) {
+  proc init=(x: regexp(?)) {
     this.exprType = x.exprType;
     this.home = x.home;
     this._regexp = x._regexp;
@@ -1006,7 +1006,7 @@ record regexp {
 }
 
 pragma "no doc"
-proc =(ref ret:regexp, x:regexp)
+proc =(ref ret:regexp(?t), x:regexp(t))
 {
   // retain -- release
   if x.home == ret.home {
@@ -1050,7 +1050,7 @@ inline proc _cast(type t, x: regexp(?exprType)) where t == exprType  {
 // Cast string to regexp
 pragma "no doc"
 inline proc _cast(type t, x: ?valType) throws
-  where t == regexp  && (valType == string || valType == bytes) {
+  where t == regexp(valType)  && (valType == string || valType == bytes) {
   return compile(x);
 }
 

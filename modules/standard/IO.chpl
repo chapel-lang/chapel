@@ -5587,14 +5587,14 @@ proc _setIfChar(ref lhs:?t, rhs:int(32)) where !(t==string||isIntegralType(t))
 
 
 private inline
-proc _toRegexp(x:?t) where isSubtype(t, regexp)
+proc _toRegexp(x:?t) where isSubtype(t, regexp(?))
 {
   return (x, true);
 }
 private inline
 proc _toRegexp(x:?t)
 {
-  var r:regexp;
+  var r:regexp(string);
   return (r, false);
 }
 
