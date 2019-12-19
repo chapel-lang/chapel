@@ -320,6 +320,9 @@ static void checkForNilDereferencesInCall(
     AliasMap::const_iterator it = aliasMap.find(argSym);
     if (it != aliasMap.end()) {
       AliasLocation loc = it->second;
+      if (loc.type == MUST_ALIAS_REFVAR)
+        if (Symbol* referent = getReferent(argSym, aliasMap))
+          loc = aliasLocationFromValue(referent, aliasMap, call);
       if (loc.type == MUST_ALIAS_NIL) {
         issueNilError("applying postfix-! to nil", call, argSym, loc);
       } else if (loc.type == MUST_ALIAS_ALLOCATED) {
