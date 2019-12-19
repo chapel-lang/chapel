@@ -1,0 +1,5 @@
+yes1: int(64) = 1
+yes2: int(64) = 2
+yes3: int(64) = 3
+yes4: int(64) = 4
+yes5: int(64) = 5

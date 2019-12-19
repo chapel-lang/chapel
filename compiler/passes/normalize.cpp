@@ -105,6 +105,7 @@ static void        normalizeTypeAlias(DefExpr* defExpr);
 static void        normalizeConfigVariableDefinition(DefExpr* defExpr);
 static void        normalizeVariableDefinition(DefExpr* defExpr);
 
+static void        emitRefVarInit(Expr* after, Symbol* var, Expr* init);
 static void        normRefVar(DefExpr* defExpr);
 
 static void        updateVariableAutoDestroy(DefExpr* defExpr);
@@ -2268,6 +2269,7 @@ static void normalizeVariableDefinition(DefExpr* defExpr) {
   // points written using '='
   bool foundSplitInit = false;
   bool requestedSplitInit = isSplitInitExpr(init);
+  bool refVar = var->hasFlag(FLAG_REF_VAR);
 
   // Error for global variables using split init
   FnSymbol* initFn = defExpr->getModule()->initFn;
@@ -2285,13 +2287,11 @@ static void normalizeVariableDefinition(DefExpr* defExpr) {
     foundSplitInit = findInitPoints(defExpr, initAssign);
 
   if ((init != NULL && !requestedSplitInit) ||
-      foundSplitInit == false ||
-      // Future: enable ref vars, params
-      var->hasFlag(FLAG_REF_VAR)) {
+      foundSplitInit == false) {
     // handle non-split initialization
 
     // handle ref variables
-    if (var->hasFlag(FLAG_REF_VAR)) {
+    if (refVar) {
       normRefVar(defExpr);
 
     } else if (type == NULL && init != NULL) {
@@ -2311,13 +2311,19 @@ static void normalizeVariableDefinition(DefExpr* defExpr) {
   } else {
     // handle split initialization
 
-    // Emit PRIM_INIT_VAR_SPLIT.
-    // It sets the type, if we have a type expression.
-    if (type == NULL)
-      defExpr->insertAfter( new CallExpr(PRIM_INIT_VAR_SPLIT_DECL, var));
-    else
-      defExpr->insertAfter(
-          new CallExpr(PRIM_INIT_VAR_SPLIT_DECL, var, defExpr->exprType->remove()));
+    // remove the init expression if present
+    if (init != NULL)
+      init->remove();
+
+    if (refVar == false) {
+      // Emit PRIM_INIT_VAR_SPLIT for non-ref variables
+      // It sets the type, if we have a type expression.
+      if (type == NULL)
+        defExpr->insertAfter( new CallExpr(PRIM_INIT_VAR_SPLIT_DECL, var));
+      else
+        defExpr->insertAfter(
+            new CallExpr(PRIM_INIT_VAR_SPLIT_DECL, var, defExpr->exprType->remove()));
+    }
 
     for_vector(CallExpr, call, initAssign) {
       SET_LINENO(call);
@@ -2325,10 +2331,11 @@ static void normalizeVariableDefinition(DefExpr* defExpr) {
       // Consider the RHS of the '=' call to be the init expr.
       Expr* rhs = call->get(2)->remove();
 
-      if (var->hasFlag(FLAG_REF_VAR)) {
+      if (refVar) {
         //       ref x = <value>;
         // const ref y : <type> = <value>;
-        INT_FATAL("not implemented yet");
+        emitRefVarInit(call, var, rhs);
+        call->remove();
 
       } else {
         // var x;
@@ -2579,16 +2586,8 @@ static void errorIfSplitInitializationRequired(DefExpr* def, Expr* cur) {
 
 
 
-
-static void normRefVar(DefExpr* defExpr) {
-  VarSymbol* var         = toVarSymbol(defExpr->sym);
-  Expr*      init        = defExpr->init;
-  Expr*      varLocation = NULL;
-
-  if (init == NULL) {
-    USR_FATAL_CONT(var,
-                   "References must be initialized when they are defined.");
-  }
+static void emitRefVarInit(Expr* after, Symbol* var, Expr* init) {
+  Expr* varLocation = NULL;
 
   // If this is a const reference to an immediate, we need to insert a temp
   // variable so we can take the address of it, non-const references to an
@@ -2598,10 +2597,11 @@ static void normRefVar(DefExpr* defExpr) {
       if (initSym->symbol()->isImmediate()) {
         VarSymbol* constRefTemp  = newTemp("const_ref_immediate_tmp");
 
-        defExpr->insertBefore(new DefExpr(constRefTemp));
-        defExpr->insertBefore(new CallExpr(PRIM_MOVE,
-                                           constRefTemp,
-                                           init->remove()));
+        // Store the temp variable to the immediate next to the
+        // variable definition because `after` might be at an inner scope
+        Expr* before = var->defPoint;
+        before->insertBefore(new DefExpr(constRefTemp));
+        before->insertBefore(new CallExpr(PRIM_MOVE, constRefTemp, init));
 
         varLocation = new SymExpr(constRefTemp);
       }
@@ -2609,7 +2609,7 @@ static void normRefVar(DefExpr* defExpr) {
   }
 
   if (varLocation == NULL && init != NULL) {
-    varLocation = init->remove();
+    varLocation = init;
   }
 
   if (SymExpr* sym = toSymExpr(varLocation)) {
@@ -2642,10 +2642,25 @@ static void normRefVar(DefExpr* defExpr) {
     }
   }
 
-  defExpr->insertAfter(new CallExpr(PRIM_MOVE,
-                                    var,
-                                    new CallExpr(PRIM_ADDR_OF, varLocation)));
+  after->insertAfter(new CallExpr(PRIM_MOVE,
+                                  var,
+                                  new CallExpr(PRIM_ADDR_OF, varLocation)));
 }
+
+static void normRefVar(DefExpr* defExpr) {
+  VarSymbol* var         = toVarSymbol(defExpr->sym);
+  Expr*      init        = defExpr->init;
+
+  if (init == NULL || isSplitInitExpr(init)) {
+    USR_FATAL_CONT(var, "References must be initialized");
+  }
+
+  if (init != NULL)
+    init->remove();
+
+  emitRefVarInit(defExpr, var, init);
+}
+
 
 //
 // const <name> = <value>;
