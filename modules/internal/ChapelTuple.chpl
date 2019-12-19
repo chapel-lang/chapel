@@ -663,20 +663,24 @@ module ChapelTuple {
   }
 
   inline proc ==(a: _tuple, b: _tuple) {
-    if a.size != b.size then
+    if a.size != b.size {
       return false;
-    for param i in 1..a.size do
-      if a(i) != b(i) then
-        return false;
+    } else {
+      for param i in 1..a.size do
+        if a(i) != b(i) then
+          return false;
+    }
     return true;
   }
 
   inline proc !=(a: _tuple, b: _tuple) {
-    if a.size != b.size then
+    if a.size != b.size {
       return true;
-    for param i in 1..a.size do
-      if a(i) != b(i) then
-        return true;
+    } else {
+      for param i in 1..a.size do
+        if a(i) != b(i) then
+          return true;
+    }
     return false;
   }
 
