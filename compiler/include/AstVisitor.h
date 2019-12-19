@@ -64,6 +64,17 @@ public:
                  AstVisitor();
   virtual       ~AstVisitor();
 
+  // Generally an AST visitor has one or two routine per type of AST node.
+  // For nodes that can contain other nodes, it has 2 routines:
+  //   bool enterSomething(Something* node)
+  //   void exitSomething(Something* node)
+  // And for nodes that do not contain other nodes, it has
+  //   void visitSomething(Something* node)
+  //
+  // If enterSomething returns `true`, it indicates that:
+  //   * nested nodes should be visited
+  //   * exitSomething should be called for that node
+
   //
   // The first implementation of this pattern used a traditional naming
   // convention that relied on overloading of virtual functions.  Although
