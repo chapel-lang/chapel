@@ -8,14 +8,16 @@ class C {
 proc test(type CT) {
   var obj: CT?;
 
-  if obj then
-    writeln(obj!.x); // never executed
-
-  if obj != nil then
-    writeln(obj!.x); // never executed
-
   if obj == nil then
     writeln(obj.type:string);
+
+//writeln(obj!.x);    // error
+
+  if obj then
+    writeln(obj!.x);  // never executed
+
+  if obj != nil then
+    writeln(obj!.x);  // never executed
 }
 
 proc main {
