@@ -5600,7 +5600,7 @@ proc _toRegexp(x:?t)
 
 pragma "no doc"
 class _channel_regexp_info {
-  type exprType = string;
+  type exprType;
   var hasRegexp = false;
   var matchedRegexp = false;
   var releaseRegexp = false;
@@ -5609,10 +5609,6 @@ class _channel_regexp_info {
   var capArr: _ddata(exprType) = nil; // size = ncaptures
   var capturei: int;
   var ncaptures: int;
-
-  proc init(type exprType=string) {
-    this.exprType = exprType;
-  }
 
   proc clear() {
     if releaseRegexp {
@@ -5691,7 +5687,7 @@ proc channel._match_regexp_if_needed(cur:size_t, len:size_t, ref error:syserr,
     } else {
       // otherwise, clear out caps...
       for j in 0..#ncaps {
-        r.capArr[j] = "";
+        r.capArr[j] = "":r.exprType;
       }
       // ... and put the channel before the match.
       var cur = qio_channel_offset_unlocked(_channel_internal);
@@ -6158,7 +6154,7 @@ proc channel.writef(fmtStr: ?t, const args ...?k): bool throws
     var end:size_t;
     var argType:(k+5)*c_int;
 
-    var r:unmanaged _channel_regexp_info?;
+    var r:unmanaged _channel_regexp_info(t)?;
     defer {
       if r then delete r;
     }
@@ -6312,7 +6308,7 @@ proc channel.writef(fmtStr:?t): bool throws
     var end:size_t;
     var dummy:c_int;
 
-    var r:unmanaged _channel_regexp_info?;
+    var r:unmanaged _channel_regexp_info(t)?;
     defer {
       if r then delete r;
     }
@@ -6524,10 +6520,6 @@ proc channel.readf(fmtStr:?t, ref args ...?k): bool throws
               }
               else {
                 // match it here.
-                /*extern proc printf(fmt, str);*/
-                /*printf("t.type: %s\n", t.type:string);*/
-                /*printf("t.exprType: %s\n", t.exprType:string);*/
-                /*printf("r.exprType: %s\n", r.exprType:string);*/
                 if r == nil then r = new unmanaged _channel_regexp_info(r.exprType);
                 const rnn = r!;  // indicate that it is non-nil
                 rnn.clear();
@@ -6565,9 +6557,6 @@ proc channel.readf(fmtStr:?t, ref args ...?k): bool throws
                     // but only if it's a primitive type
                     // (so that we can avoid problems with string-to-record).
                     try {
-                      /*extern proc printf(fmt, str): void;*/
-                      /*printf("cap type %s\n", rnn.capArr[rnn.capturei].type:string);*/
-                      /*printf("arg type %s\n", args(i).type:string);*/
                       args(i) = rnn.capArr[rnn.capturei]:args(i).type;
                     } catch {
                       err = qio_format_error_bad_regexp();

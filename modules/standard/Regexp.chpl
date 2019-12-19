@@ -574,7 +574,7 @@ pragma "ignore noinit"
 record regexp {
 
   pragma "no doc"
-  type exprType = string;
+  type exprType;
   pragma "no doc"
   var home: locale = here;
   pragma "no doc"
