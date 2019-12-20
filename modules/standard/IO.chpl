@@ -5600,13 +5600,12 @@ proc _toRegexp(x:?t)
 
 pragma "no doc"
 class _channel_regexp_info {
-  type exprType;
   var hasRegexp = false;
   var matchedRegexp = false;
   var releaseRegexp = false;
   var theRegexp = qio_regexp_null();
   var matches: _ddata(qio_regexp_string_piece_t) = nil; // size = ncaptures+1
-  var capArr: _ddata(exprType) = nil; // size = ncaptures
+  var capArr: _ddata(bytes) = nil; // size = ncaptures
   var capturei: int;
   var ncaptures: int;
 
@@ -5619,13 +5618,13 @@ class _channel_regexp_info {
     matchedRegexp = false;
     releaseRegexp = false;
     if matches then _ddata_free(matches, ncaptures+1);
-    for i in 0..#ncaptures do capArr[i] = "";
+    for i in 0..#ncaptures do capArr[i] = b"";
     if capArr then _ddata_free(capArr, ncaptures);
   }
   proc allocate_captures() {
     ncaptures = qio_regexp_get_ncaptures(theRegexp);
     matches = _ddata_allocate(qio_regexp_string_piece_t, ncaptures+1);
-    capArr = _ddata_allocate(this.exprType, ncaptures);
+    capArr = _ddata_allocate(bytes, ncaptures);
     capturei = 0;
   }
   proc deinit() {
@@ -5687,7 +5686,7 @@ proc channel._match_regexp_if_needed(cur:size_t, len:size_t, ref error:syserr,
     } else {
       // otherwise, clear out caps...
       for j in 0..#ncaps {
-        r.capArr[j] = "":r.exprType;
+        r.capArr[j] = b"";
       }
       // ... and put the channel before the match.
       var cur = qio_channel_offset_unlocked(_channel_internal);
@@ -5761,7 +5760,7 @@ proc channel._format_reader(
           error = qio_format_error_write_regexp();
         } else {
           // allocate regexp info if needed
-          if r == nil then r = new unmanaged _channel_regexp_info(r.exprType);
+          if r == nil then r = new unmanaged _channel_regexp_info();
           const rnn = r!;  // indicate that it is non-nil
           // clear out old data, if there is any.
           rnn.clear();
@@ -6154,7 +6153,7 @@ proc channel.writef(fmtStr: ?t, const args ...?k): bool throws
     var end:size_t;
     var argType:(k+5)*c_int;
 
-    var r:unmanaged _channel_regexp_info(t)?;
+    var r:unmanaged _channel_regexp_info?;
     defer {
       if r then delete r;
     }
@@ -6308,7 +6307,7 @@ proc channel.writef(fmtStr:?t): bool throws
     var end:size_t;
     var dummy:c_int;
 
-    var r:unmanaged _channel_regexp_info(t)?;
+    var r:unmanaged _channel_regexp_info?;
     defer {
       if r then delete r;
     }
@@ -6374,7 +6373,7 @@ proc channel.readf(fmtStr:?t, ref args ...?k): bool throws
     var end:size_t;
     var argType:(k+5)*c_int;
 
-    var r:unmanaged _channel_regexp_info(t)?;
+    var r:unmanaged _channel_regexp_info?;
     defer {
       if r then delete r;
     }
@@ -6520,7 +6519,7 @@ proc channel.readf(fmtStr:?t, ref args ...?k): bool throws
               }
               else {
                 // match it here.
-                if r == nil then r = new unmanaged _channel_regexp_info(r.exprType);
+                if r == nil then r = new unmanaged _channel_regexp_info();
                 const rnn = r!;  // indicate that it is non-nil
                 rnn.clear();
                 rnn.theRegexp = t._regexp;
@@ -6557,7 +6556,10 @@ proc channel.readf(fmtStr:?t, ref args ...?k): bool throws
                     // but only if it's a primitive type
                     // (so that we can avoid problems with string-to-record).
                     try {
-                      args(i) = rnn.capArr[rnn.capturei]:args(i).type;
+                      if args(i).type == string then
+                        args(i) = rnn.capArr[rnn.capturei].decode();
+                      else
+                        args(i) = rnn.capArr[rnn.capturei]:args(i).type;
                     } catch {
                       err = qio_format_error_bad_regexp();
                     }
@@ -6629,7 +6631,7 @@ proc channel.readf(fmtStr:?t) throws
     var end:size_t;
     var dummy:c_int;
 
-    var r:unmanaged _channel_regexp_info(t)?;
+    var r:unmanaged _channel_regexp_info?;
     defer {
       if r then delete r;
     }
@@ -6826,14 +6828,14 @@ proc channel._extractMatch(m:reMatch, ref arg:reMatch, ref error:syserr) {
 }
 
 pragma "no doc"
-proc channel._extractMatch(m:reMatch, ref arg:string, ref error:syserr) {
+proc channel._extractMatch(m:reMatch, ref arg:bytes, ref error:syserr) {
   var cur:int(64);
   var target = m.offset:int;
   var len = m.length;
 
   // If there was no match, return the default value of the type
   if !m.matched {
-    arg = "";
+    arg = b"";
   }
 
   // Read into a string the appropriate region of the file.
@@ -6849,37 +6851,52 @@ proc channel._extractMatch(m:reMatch, ref arg:string, ref error:syserr) {
     error = qio_channel_advance(false, _channel_internal, target - cur);
   }
 
-  var s:string;
+  var s:bytes;
   if ! error {
     var gotlen:int(64);
     var ts: c_string;
     error =
         qio_channel_read_string(false, iokind.native:c_int, stringStyleExactLen(len),
                                 _channel_internal, ts, gotlen, len: ssize_t);
-    s = try! createStringWithOwnedBuffer(ts, length=gotlen);
+    s = createBytesWithOwnedBuffer(ts, length=gotlen);
   }
 
   if ! error {
     arg = s;
   } else {
-    arg = "";
+    arg = b"";
   }
 }
 
 pragma "no doc"
-proc channel._extractMatch(m:reMatch, ref arg:?t, ref error:syserr) where t != reMatch && t != string {
+proc channel._extractMatch(m:reMatch, ref arg:?t, ref error:syserr)
+      where t != reMatch && t != bytes {
   // If there was no match, return the default value of the type
   if !m.matched {
     var empty:arg.type;
     arg = empty;
   }
 
-  // Read into a string the appropriate region of the file.
-  var s:string;
+  // Read into a bytes the appropriate region of the file.
+  var s:bytes;
   _extractMatch(m, s, error);
 
+
   if ! error {
-    arg = s:arg.type;
+    if arg.type == string {
+      try {
+        // throws if trying to extract a non UTF8 match into a string
+        // at this point this is unlikely to happen. So, just catch the error
+        // and set error to EFORMAT
+        arg = s.decode();
+      }
+      catch {
+        error = EFORMAT;
+      }
+    }
+    else {
+      arg = s:arg.type;
+    }
   } else {
     var empty:arg.type;
     arg = empty;

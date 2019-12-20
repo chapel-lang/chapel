@@ -34,15 +34,20 @@ writeln(r.offset(), " ", ok);
 writeln("#5 captures 9, should match");
 ok = r.readf("%/([0-9])/":t, str);
 writeln(r.offset(), " ", ok, ":", str);
+
+
+// in the following two, the format strings to readf are hardcoded and string
+// and bytes, respectively. One can match a bytes regex using a string format
+// and vice versa
 writeln("#6 passes x, should match");
 {
   var re = compile("x":t);
-  ok = r.readf("%/*/":t, re);
+  ok = r.readf("%/*/", re);
   writeln(r.offset(), " ", ok);
 }
 writeln("#7 captures zz, should match");
 {
   var re = compile("(z+)":t);
-  ok = r.readf("%/*/":t, re, str);
+  ok = r.readf(b"%/*/", re, str);
   writeln(r.offset(), " ", ok, ":", str);
 }
