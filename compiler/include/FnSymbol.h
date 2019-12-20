@@ -137,6 +137,8 @@ public:
   LabelSymbol*               getEpilogueLabel();
   LabelSymbol*               getOrCreateEpilogueLabel();
 
+  // getReturnSymbol returns the variable marked RVV, but if
+  // the return-by-ref transformation has been applied, it returns gVoid.
   Symbol*                    getReturnSymbol();
 
   // Removes all statements from body and adds all statements from block.

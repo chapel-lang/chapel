@@ -251,8 +251,34 @@ void AutoDestroyScope::variablesDestroy(Expr*      refStmt,
 // Note that the value we are concerned about may be copied in to one or
 // more temporary variables between being copied to the return temp.
 static VarSymbol* variableToExclude(FnSymbol* fn, Expr* refStmt) {
-  VarSymbol* retVar = toVarSymbol(fn->getReturnSymbol());
-  VarSymbol* retval = NULL;
+  Symbol* retVar = NULL;
+  VarSymbol* exclude = NULL;
+
+  if (fn->hasFlag(FLAG_FN_RETARG)) {
+    // FnSymbol::getReturnSymbol does not work on functions
+    // transformed in this way, so work around that issue.
+
+    // Starting from the end of the function, find a PRIM_ASSIGN to the RETARG
+    for (Expr* cur = fn->body->body.last(); cur != NULL; cur = cur->prev) {
+      if (CallExpr* call = toCallExpr(cur)) {
+        if (call->isPrimitive(PRIM_ASSIGN)) {
+          if (SymExpr* lhsSe = toSymExpr(call->get(1))) {
+            if (ArgSymbol* lhs = toArgSymbol(lhsSe->symbol())) {
+              if (lhs->hasFlag(FLAG_RETARG)) {
+                SymExpr* rhsSe = toSymExpr(call->get(2));
+                VarSymbol* rhs = toVarSymbol(rhsSe->symbol());
+                // rhs commonly has FLAG_RVV but not necessarily
+                retVar = rhs;
+                break;
+              }
+            }
+          }
+        }
+      }
+    }
+  } else {
+    retVar = toVarSymbol(fn->getReturnSymbol());
+  }
 
   // TODO: migrate variableToExclude to addAutoDestroys
   // and the excluded set.
@@ -260,22 +286,21 @@ static VarSymbol* variableToExclude(FnSymbol* fn, Expr* refStmt) {
   if (retVar != NULL) {
     if (typeNeedsCopyInitDeinit(retVar->type) ||
         fn->hasFlag(FLAG_INIT_COPY_FN)) {
-      VarSymbol* needle = retVar;
-      Expr*      expr   = refStmt;
+      Symbol* needle = retVar;
+      Expr*   expr   = refStmt;
 
       // Walk backwards looking for the variable that is being returned
-      while (retval == NULL && expr != NULL && needle != NULL) {
+      while (exclude == NULL && expr != NULL && needle != NULL) {
         if (CallExpr* move = toCallExpr(expr)) {
-          if (move->isPrimitive(PRIM_MOVE) == true) {
+          if (move->isPrimitive(PRIM_MOVE) || move->isPrimitive(PRIM_ASSIGN)) {
             SymExpr*   lhs    = toSymExpr(move->get(1));
-            VarSymbol* lhsVar = toVarSymbol(lhs->symbol());
 
-            if (needle == lhsVar) {
+            if (needle == lhs->symbol()) {
               if (SymExpr* rhs = toSymExpr(move->get(2))) {
                 VarSymbol* rhsVar = toVarSymbol(rhs->symbol());
 
                 if (isAutoDestroyedVariable(rhsVar) == true) {
-                  retval = rhsVar;
+                  exclude = rhsVar;
                 } else {
                   needle = rhsVar;
                 }
@@ -291,14 +316,20 @@ static VarSymbol* variableToExclude(FnSymbol* fn, Expr* refStmt) {
     }
   }
 
-  return retval;
+  return exclude;
 }
 
+// A PRIM_RETURN or a PRIM_ASSIGN to the RETARG counts as a return statement
 static bool isReturnStmt(const Expr* stmt) {
   bool retval = false;
 
-  if (const CallExpr* expr = toConstCallExpr(stmt)) {
-    retval = expr->isPrimitive(PRIM_RETURN);
+  if (const CallExpr* call = toConstCallExpr(stmt)) {
+    if (call->isPrimitive(PRIM_ASSIGN))
+      if (SymExpr* lhsSe = toSymExpr(call->get(1)))
+        if (lhsSe->symbol()->hasFlag(FLAG_RETARG))
+          return true;
+    if (call->isPrimitive(PRIM_RETURN))
+      return true;
   }
 
   return retval;

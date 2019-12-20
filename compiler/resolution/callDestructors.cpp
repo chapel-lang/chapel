@@ -1256,8 +1256,6 @@ void callDestructors() {
 
   insertDestructorCalls();
 
-  addAutoDestroyCalls();
-
   ReturnByRef::apply();
 
   insertCopiesForYields();
@@ -1269,7 +1267,7 @@ void callDestructors() {
 
   lateConstCheck(NULL);
 
-  //addAutoDestroyCalls(); // can we move it here?
+  addAutoDestroyCalls();
 
   insertGlobalAutoDestroyCalls();
 
