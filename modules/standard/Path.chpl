@@ -199,8 +199,8 @@ proc commonPath(paths: string ...?n): string {
       minPathLength = minimum;
     }
 
-    for itr in 1..minimum do {
-      if (tempList[itr]!=prefixList[itr] && itr<=pos) {
+    for itr in 0..#minimum do {
+      if (tempList[itr]!=prefixList[itr] && itr<pos) {
         pos = itr;
         flag=1;   // indicating that pos was changed
         break;
@@ -209,10 +209,10 @@ proc commonPath(paths: string ...?n): string {
   }
 
   if (flag == 1) {
-    for i in pos..prefixList.size by -1 do
+    for i in pos..prefixList.size-1 by -1 do
       try! prefixList.pop(i);
   } else {
-    for i in (minPathLength + 1)..prefixList.size by -1 do
+    for i in minPathLength..prefixList.size-1 by -1 do
       try! prefixList.pop(i);
     // in case all paths are subsets of the longest path thus pos was never
     // updated
@@ -281,7 +281,7 @@ proc commonPath(paths: []): string {
       minPathLength = minimum;
     }
 
-    for itr in 1..minimum do {
+    for itr in 0..#minimum do {
       if (tempList[itr]!=prefixList[itr] && itr<=pos) {
         pos = itr;
         flag = 1;   // indicating that pos was changed
@@ -291,10 +291,10 @@ proc commonPath(paths: []): string {
   }
 
   if (flag == 1) {
-    for i in pos..prefixList.size by -1 do
+    for i in pos..prefixList.size-1 by -1 do
       try! prefixList.pop(i);
   } else {
-    for i in (minPathLength + 1)..prefixList.size by -1 do
+    for i in minPathLength..prefixList.size-1 by -1 do
       try! prefixList.pop(i);
     // in case all paths are subsets of the longest path thus pos was never
     // updated
@@ -546,7 +546,7 @@ proc normPath(name: string): string {
     // Second case exists because we cannot go up past the top level.
     // Third case continues a chain of leading up-levels.
     if comp != parentDir || (leadingSlashes == 0 && outComps.isEmpty()) ||
-        (!outComps.isEmpty() && outComps[outComps.size] == parentDir) then
+        (!outComps.isEmpty() && outComps[outComps.size-1] == parentDir) then
       outComps.append(comp);
     else if !outComps.isEmpty() then
       try! outComps.pop();
