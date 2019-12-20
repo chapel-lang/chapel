@@ -23,6 +23,7 @@
 
 #include "astutil.h"
 #include "AutoDestroyScope.h"
+#include "AstVisitorTraverse.h"
 #include "DeferStmt.h"
 #include "errorHandling.h"
 #include "expr.h"
@@ -34,16 +35,28 @@
 
 #include <vector>
 
+// last mention map:
+// Stores a map from a symbol to the expression after which it should
+// be destroyed.
+// (If we extend last-mention to go within conditional statements,
+//  this map will need to map to multiple expressions).
+typedef std::map<VarSymbol*, Expr*> LastMentionMap;
+
+static void computeLastMentionPoints(LastMentionMap& lmm, FnSymbol* fn);
+
 static void walkBlock(FnSymbol*         fn,
                       AutoDestroyScope* parent,
                       BlockStmt*        block,
                       std::set<VarSymbol*>& ignoredVariables,
+                      LastMentionMap&   lmm,
                       ForallStmt*       pfs = NULL);
 
 void addAutoDestroyCalls() {
   forv_Vec(FnSymbol, fn, gFnSymbols) {
-    std::set<VarSymbol*> empty;
-    walkBlock(fn, NULL, fn->body, empty);
+    std::set<VarSymbol*> ignoredVariables;
+    LastMentionMap lmm;
+    computeLastMentionPoints(lmm, fn);
+    walkBlock(fn, NULL, fn->body, ignoredVariables, lmm);
   }
 
   // Finally, remove all defer statements, since they have been lowered.
@@ -101,7 +114,8 @@ static bool         isYieldStmt(const Expr* stmt);
 static void         walkForallBlocks(FnSymbol* fn,
                                      AutoDestroyScope* parentScope,
                                      ForallStmt* forall,
-                                     std::set<VarSymbol*>& parentIgnored);
+                                     std::set<VarSymbol*>& parentIgnored,
+                                     LastMentionMap& lmm);
 
 static void gatherIgnoredVariablesForErrorHandling(
     CondStmt* cond,
@@ -109,13 +123,6 @@ static void gatherIgnoredVariablesForErrorHandling(
 static void gatherIgnoredVariablesForYield(
     Expr* stmt,
     std::set<VarSymbol*>& ignoredVariables);
-
-// last mention:
-// the last mention is stored in the AST. Variables whos last mention
-// has already passed should not be destroyed on a break/return.
-// So, when they are destroyed, they are added to the ignores set.
-// Note that if we extend the last-mention to go within conditional statements,
-// relying on the traversal order will not be sufficient.
 
 //
 // A ForallStmt index variable does not have a DefExprs in the loop body.
@@ -137,7 +144,8 @@ static void walkBlockScopelessBlock(FnSymbol*         fn,
                                     LabelSymbol*      retLabel,
                                     bool              isDeadCode,
                                     BlockStmt*        block,
-                                    std::set<VarSymbol*>& ignoredVariables);
+                                    std::set<VarSymbol*>& ignoredVariables,
+                                    LastMentionMap&   lmm);
 
 static void walkBlockStmt(FnSymbol*         fn,
                           AutoDestroyScope& scope,
@@ -145,7 +153,8 @@ static void walkBlockStmt(FnSymbol*         fn,
                           bool              isDeadCode,
                           bool              inScopelessBlock,
                           Expr*             stmt,
-                          std::set<VarSymbol*>& ignoredVariables) {
+                          std::set<VarSymbol*>& ignoredVariables,
+                          LastMentionMap&   lmm) {
 
   //
   // Handle the current statement
@@ -189,13 +198,13 @@ static void walkBlockStmt(FnSymbol*         fn,
       // ignore scopeless blocks for deciding where to destroy
       if ((subBlock->blockTag & BLOCK_SCOPELESS))
         walkBlockScopelessBlock(fn, scope, retLabel, isDeadCode,
-                                subBlock, ignoredVariables);
+                                subBlock, ignoredVariables, lmm);
       else
-        walkBlock(fn, &scope, subBlock, ignoredVariables);
+        walkBlock(fn, &scope, subBlock, ignoredVariables, lmm);
 
     // Recurse in to a ForallStmt
     } else if (ForallStmt* forall = toForallStmt(stmt)) {
-      walkForallBlocks(fn, &scope, forall, ignoredVariables);
+      walkForallBlocks(fn, &scope, forall, ignoredVariables, lmm);
 
     // Recurse in to the BlockStmt(s) of a CondStmt
     } else if (CondStmt*  cond     = toCondStmt(stmt))  {
@@ -205,10 +214,10 @@ static void walkBlockStmt(FnSymbol*         fn,
       if (isCheckErrorStmt(cond))
         gatherIgnoredVariablesForErrorHandling(cond, toIgnore);
 
-      walkBlock(fn, &scope, cond->thenStmt, toIgnore);
+      walkBlock(fn, &scope, cond->thenStmt, toIgnore, lmm);
 
       if (cond->elseStmt != NULL)
-        walkBlock(fn, &scope, cond->elseStmt, toIgnore);
+        walkBlock(fn, &scope, cond->elseStmt, toIgnore, lmm);
 
     }
   }
@@ -219,9 +228,11 @@ static void walkBlockScopelessBlock(FnSymbol*         fn,
                                     LabelSymbol*      retLabel,
                                     bool              isDeadCode,
                                     BlockStmt*        block,
-                                    std::set<VarSymbol*>& ignoredVariables) {
+                                    std::set<VarSymbol*>& ignoredVariables,
+                                    LastMentionMap&   lmm) {
   for_alist(stmt, block->body) {
-    walkBlockStmt(fn, scope, retLabel, isDeadCode, true, stmt, ignoredVariables);
+    walkBlockStmt(fn, scope, retLabel, isDeadCode, true, stmt,
+                  ignoredVariables, lmm);
   }
 }
 
@@ -229,6 +240,7 @@ static void walkBlock(FnSymbol*         fn,
                       AutoDestroyScope* parent,
                       BlockStmt*        block,
                       std::set<VarSymbol*>& ignoredVariables,
+                      LastMentionMap&   lmm,
                       ForallStmt*       pfs) {
   AutoDestroyScope scope(parent, block);
 
@@ -242,7 +254,8 @@ static void walkBlock(FnSymbol*         fn,
     //
     // Handle the current statement
     //
-    walkBlockStmt(fn, scope, retLabel, isDeadCode, false, stmt, ignoredVariables);
+    walkBlockStmt(fn, scope, retLabel, isDeadCode, false, stmt,
+                  ignoredVariables, lmm);
 
     //
     // Handle the end of a block
@@ -364,10 +377,11 @@ static bool isYieldStmt(const Expr* stmt) {
 static void walkForallBlocks(FnSymbol* fn,
                              AutoDestroyScope* parentScope,
                              ForallStmt* forall,
-                             std::set<VarSymbol*>& parentIgnored)
+                             std::set<VarSymbol*>& parentIgnored,
+                             LastMentionMap& lmm)
 {
   std::set<VarSymbol*> toIgnoreLB(parentIgnored);
-  walkBlock(fn, parentScope, forall->loopBody(), toIgnoreLB, forall);
+  walkBlock(fn, parentScope, forall->loopBody(), toIgnoreLB, lmm, forall);
 
   for_shadow_vars(svar, temp, forall)
     if (!svar->initBlock()->body.empty() || !svar->deinitBlock()->body.empty())
@@ -376,8 +390,8 @@ static void walkForallBlocks(FnSymbol* fn,
         //  * should 'toIgnoreSV' start out with 'parentIgnored'?
         //  * is it appropriate to reference 'fn' ?  -vass 1/2018
         std::set<VarSymbol*> toIgnoreSV(parentIgnored);
-        walkBlock(fn, parentScope, svar->initBlock(), toIgnoreSV);
-        walkBlock(fn, parentScope, svar->deinitBlock(), toIgnoreSV);
+        walkBlock(fn, parentScope, svar->initBlock(), toIgnoreSV, lmm);
+        walkBlock(fn, parentScope, svar->deinitBlock(), toIgnoreSV, lmm);
       }
 }
 
@@ -509,6 +523,59 @@ static void gatherIgnoredVariablesForYield(
                            FLAG_EXPR_TEMP))
       ignoredVariables.insert(var);
   }
+}
+
+class ComputeLastSymExpr : public AstVisitorTraverse
+{
+  public:
+    LastMentionMap& lmm;
+    ComputeLastSymExpr(LastMentionMap& lmm) : lmm(lmm) { }
+    virtual void visitSymExpr(SymExpr* node);
+};
+
+static Expr* findLastExprInStatement(Expr* e);
+
+static void computeLastMentionPoints(LastMentionMap& lmm, FnSymbol* fn) {
+  // Use a traversal to compute the last SymExpr mentioning each
+  ComputeLastSymExpr visitor(lmm);
+  fn->body->accept(&visitor);
+
+  // Now go from each SymExpr to the end of the statement.
+  for (LastMentionMap::iterator it = lmm.begin(); it != lmm.end(); ++it) {
+    it->second = findLastExprInStatement(it->second);
+  }
+}
+
+void ComputeLastSymExpr::visitSymExpr(SymExpr* node) {
+  if (VarSymbol* var = toVarSymbol(node->symbol())) {
+    if (var->hasFlag(FLAG_DEAD_LAST_MENTION)) {
+      // put it in the map
+      lmm[var] = node;
+    }
+  }
+}
+
+static Expr* findLastExprInStatement(Expr* e) {
+
+  Expr* stmt = e->getStmtExpr();
+  Expr* last = stmt;
+
+  // Now look forward for:
+  //  * next PRIM_END_OF_STATEMENT
+  //  * last stmt expr before label or end of block
+  for (Expr* cur = stmt; cur != NULL; cur = cur->next) {
+    if (CallExpr* call = toCallExpr(cur))
+      if (call->isPrimitive(PRIM_END_OF_STATEMENT))
+        return call; // PRIM_END_OF_STATEMENT reached
+
+    if (DefExpr* def = toDefExpr(cur))
+      if (isLabelSymbol(def->sym))
+        return last; // label statement reached
+
+    last = cur;
+  }
+
+  return last; // end of block reached
 }
 
 /************************************* | **************************************
