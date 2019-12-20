@@ -107,8 +107,8 @@ proc test(param rank : int, Dom) {
   B = 3;
 
   var count = 0;
-  for i in 1..slices.size {
-    for j in i..slices.size {
+  for i in 0..slices.size-1 {
+    for j in i..slices.size-1 {
       var sa = slices[i];
       var sb = slices[j];
 
@@ -136,8 +136,8 @@ proc testReindex(param rank : int, Dom) {
   ref refB = B.reindex(Dom);
 
   var count = 0;
-  for i in 1..slices.size {
-    for j in i..slices.size {
+  for i in 0..slices.size-1 {
+    for j in i..slices.size-1 {
       var sa = slices[i];
       var sb = slices[j];
 
