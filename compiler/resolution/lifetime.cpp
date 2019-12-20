@@ -297,6 +297,7 @@ namespace {
 
       void markPotentiallyCaptured(Symbol* sym, Expr* ctx);
       void markAliasesPotentiallyCaptured(Symbol* sym, Expr* ctx);
+      void markAliasesAndSymPotentiallyCaptured(Symbol* sym, Expr* ctx);
 
       virtual bool enterDefExpr(DefExpr* def);
       virtual bool enterCallExpr(CallExpr* call);
@@ -329,6 +330,7 @@ static bool isOrRefersBorrowedClass(Type* type);
 static bool isAnalyzedMoveOrAssignment(CallExpr* call);
 static bool symbolHasInfiniteLifetime(Symbol* sym);
 static BlockStmt* getDefBlock(Symbol* sym);
+static Expr* getParentExprIncludingTaskFnCalls(Expr* cur);
 static bool isBlockWithinBlock(BlockStmt* a, BlockStmt* b);
 static bool isLifetimeUnspecifiedFormalOrdering(Lifetime a, Lifetime b);
 static constraint_t orderConstraintFromClause(Expr* expr, Symbol* a, Symbol* b);
@@ -720,6 +722,18 @@ static Symbol* returnLifetimeFromClause(FnSymbol* fn) {
   return returnLifetimeFromClause(last);
 }
 
+static bool isOuterVariable(FnSymbol* fn, Symbol* var) {
+  for (Expr* cur = var->defPoint;
+      cur != NULL;
+      cur = getParentExprIncludingTaskFnCalls(cur)) {
+    if (cur->parentSymbol == fn)
+      return false;
+  }
+
+  return true;
+}
+
+
 static bool isOuterLifetimeFromClause(LifetimeState& lifetimes, ArgSymbol* arg, Expr* clausePart) {
   if (CallExpr* call = toCallExpr(clausePart)) {
     if (call->isNamed(",")) {
@@ -738,10 +752,13 @@ static bool isOuterLifetimeFromClause(LifetimeState& lifetimes, ArgSymbol* arg, 
       lhs = getSymbolFromLifetimeClause(call->get(1), lhsRet);
       rhs = getSymbolFromLifetimeClause(call->get(2), rhsRet);
 
+      // X checking lifetimes.inFns.count is wrong because
+      // inFns is e.g. borrowExample5EOB but lhs is in e.g. setit
+
       bool lhsOuter = lhs->hasFlag(FLAG_OUTER_VARIABLE) ||
-                      lifetimes.inFns.count(lhs->defPoint->getFunction()) == 0;
+                      isOuterVariable(arg->defPoint->getFunction(), lhs);
       bool rhsOuter = rhs->hasFlag(FLAG_OUTER_VARIABLE) ||
-                      lifetimes.inFns.count(rhs->defPoint->getFunction()) == 0;
+                      isOuterVariable(arg->defPoint->getFunction(), rhs);
 
       // arg > outerVariable
       if (lhs == arg && rhsOuter &&
@@ -3194,6 +3211,13 @@ void MarkCapturesVisitor::markAliasesPotentiallyCaptured(
   }
 }
 
+void MarkCapturesVisitor::markAliasesAndSymPotentiallyCaptured(Symbol* sym,
+                                                               Expr* ctx) {
+  markAliasesPotentiallyCaptured(sym, ctx);
+  sym = lifetimes->getCanonicalSymbol(sym);
+  markPotentiallyCaptured(sym, ctx);
+}
+
 bool MarkCapturesVisitor::enterDefExpr(DefExpr* def) {
 
   Symbol* sym = def->sym;
@@ -3241,6 +3265,8 @@ bool MarkCapturesVisitor::enterCallExpr(CallExpr* call) {
         }
 
         for_formals(formal2, calledFn) {
+          if (formal1 == formal2) continue;
+
           constraint_t c = orderConstraintFromClause(calledFn, formal2, formal1);
           // Could the argument in formal1 be stored in formal2?
           // i.e. formal2 = formal1
@@ -3256,7 +3282,7 @@ bool MarkCapturesVisitor::enterCallExpr(CallExpr* call) {
         if (potentiallyCaptured) {
           SymExpr* actualSe = toSymExpr(actual);
           Symbol* actualSym = actualSe->symbol();
-          markAliasesPotentiallyCaptured(actualSym, call);
+          markAliasesAndSymPotentiallyCaptured(actualSym, call);
         }
       }
     }
@@ -3266,12 +3292,12 @@ bool MarkCapturesVisitor::enterCallExpr(CallExpr* call) {
           isClassLikeOrNil(call->get(2)->getValType())) {
         // class = other class
         SymExpr* rhsSe = toSymExpr(call->get(2));
-        markAliasesPotentiallyCaptured(rhsSe->symbol(), call);
+        markAliasesAndSymPotentiallyCaptured(rhsSe->symbol(), call);
       } else if (isRecord(call->get(1)->getValType()) &&
                  calledFn->hasFlag(FLAG_COMPILER_GENERATED)) {
         // compiler-generated record =
         SymExpr* rhsSe = toSymExpr(call->get(2));
-        markAliasesPotentiallyCaptured(rhsSe->symbol(), call);
+        markAliasesAndSymPotentiallyCaptured(rhsSe->symbol(), call);
       }
     }
   }

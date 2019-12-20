@@ -55,6 +55,12 @@ proc borrowExample5EOB() {
 }
 borrowExample5EOB();
 
+proc borrowExample6EOB() {
+  var c = new owned C();
+  var b:borrowed C?;
+  setit(b, c.borrow());
+}
+borrowExample6EOB();
 
 proc acceptRecord(a) {
 }
@@ -181,3 +187,23 @@ proc innerFnExample1() {
   // point 2
 }
 innerFnExample1();
+
+proc sharedExample1LMEOB() {
+  var c = new shared C();
+  var d = new shared C();
+  setit(c, d);
+}
+sharedExample1LMEOB();
+
+proc sharedExample2LM() {
+  var c = new shared C();
+  var d = new shared C();
+  c = d;
+}
+sharedExample2LM();
+
+proc sharedExample3LM() {
+  var c = new shared C();
+  var d = c;
+}
+sharedExample3LM();
