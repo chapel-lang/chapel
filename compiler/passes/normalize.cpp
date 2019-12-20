@@ -2492,7 +2492,7 @@ static found_init_t doFindInitPoints(DefExpr* def,
         // intialized on one side but not the other
         errorIfSplitInitializationRequired(def, cur);
         return FOUND_USE;
-      } else if (foundIf == FOUND_USE && foundElse == FOUND_USE) {
+      } else if (foundIf == FOUND_USE || foundElse == FOUND_USE) {
         // at least one of them must be FOUND_USE, so return that
         errorIfSplitInitializationRequired(def, cur);
         return FOUND_USE;
