@@ -5705,13 +5705,14 @@ proc channel._match_regexp_if_needed(cur:size_t, len:size_t, ref error:syserr,
 //  in readf. (used in the regexp handling here).
 pragma "no doc"
 proc channel._format_reader(
-    fmt:c_string, ref cur:size_t, len:size_t, ref error:syserr,
+    fmtStr:?fmtType, ref cur:size_t, len:size_t, ref error:syserr,
     ref conv:qio_conv_t, ref gotConv:bool, ref style:iostyle,
     ref r:unmanaged _channel_regexp_info?,
     isReadf:bool)
 {
   if r != nil then r!.hasRegexp = false;
   if !error {
+    var fmt = fmtStr.localize().c_str();
     while cur < len {
       gotConv = false;
       if error then break;
@@ -5767,7 +5768,11 @@ proc channel._format_reader(
           // Compile a regexp from the format string
           var errstr:string;
           // build a regexp out of regexp and regexp_flags
-          qio_regexp_create_compile_flags_2(conv.regexp, conv.regexp_length, conv.regexp_flags, conv.regexp_flags_length, /* utf8? */ true, rnn.theRegexp);
+          qio_regexp_create_compile_flags_2(conv.regexp, conv.regexp_length,
+                                            conv.regexp_flags,
+                                            conv.regexp_flags_length,
+                                            /* utf8? */ fmtType==string,
+                                            rnn.theRegexp);
           rnn.releaseRegexp = true;
           if qio_regexp_ok(rnn.theRegexp) {
             rnn.hasRegexp = true;
@@ -6143,10 +6148,9 @@ proc channel.writef(fmtStr: ?t, const args ...?k): bool throws
   var err: syserr = ENOERR;
   on this.home {
     try this.lock(); defer { this.unlock(); }
-    var fmt = fmtStr.localize().c_str();
     var save_style = this._style();
     var cur:size_t = 0;
-    var len:size_t = fmt.length:size_t;
+    var len:size_t = fmtStr.length:size_t;
     var conv:qio_conv_t;
     var gotConv:bool;
     var style:iostyle;
@@ -6172,7 +6176,7 @@ proc channel.writef(fmtStr: ?t, const args ...?k): bool throws
       gotConv = false;
 
       if j <= i {
-        _format_reader(fmt, cur, len, err,
+        _format_reader(fmtStr, cur, len, err,
                        conv, gotConv, style, r,
                        false);
       }
@@ -6271,7 +6275,7 @@ proc channel.writef(fmtStr: ?t, const args ...?k): bool throws
     if ! err {
       if cur < len {
         var dummy:c_int;
-        _format_reader(fmt, cur, len, err,
+        _format_reader(fmtStr, cur, len, err,
                        conv, gotConv, style, r,
                        false);
       }
@@ -6297,10 +6301,9 @@ proc channel.writef(fmtStr:?t): bool throws
   var err:syserr = ENOERR;
   on this.home {
     try this.lock(); defer { this.unlock(); }
-    var fmt = fmtStr.localize().c_str();
     var save_style = this._style();
     var cur:size_t = 0;
-    var len:size_t = fmt.length:size_t;
+    var len:size_t = fmtStr.length:size_t;
     var conv:qio_conv_t;
     var gotConv:bool;
     var style:iostyle;
@@ -6312,7 +6315,7 @@ proc channel.writef(fmtStr:?t): bool throws
       if r then delete r;
     }
 
-    _format_reader(fmt, cur, len, err,
+    _format_reader(fmtStr, cur, len, err,
                    conv, gotConv, style, r,
                    false);
 
@@ -6363,10 +6366,9 @@ proc channel.readf(fmtStr:?t, ref args ...?k): bool throws
   var err:syserr = ENOERR;
   on this.home {
     try this.lock(); defer { this.unlock(); }
-    var fmt = fmtStr.localize().c_str();
     var save_style = this._style();
     var cur:size_t = 0;
-    var len:size_t = fmt.length:size_t;
+    var len:size_t = fmtStr.length:size_t;
     var conv:qio_conv_t;
     var gotConv:bool;
     var style:iostyle;
@@ -6391,7 +6393,7 @@ proc channel.readf(fmtStr:?t, ref args ...?k): bool throws
         // we're writing it all in a param for in order to
         // get generic argument handling.
         if j <= i {
-          _format_reader(fmt, cur, len, err,
+          _format_reader(fmtStr, cur, len, err,
                          conv, gotConv, style, r,
                          true);
 
@@ -6582,7 +6584,7 @@ proc channel.readf(fmtStr:?t, ref args ...?k): bool throws
       if ! err {
         if cur < len {
           var dummy:c_int;
-          _format_reader(fmt, cur, len, err,
+          _format_reader(fmtStr, cur, len, err,
                          conv, gotConv, style, r,
                          true);
         }
@@ -6625,10 +6627,9 @@ proc channel.readf(fmtStr:?t) throws
   var err:syserr = ENOERR;
   on this.home {
     try this.lock(); defer { this.unlock(); }
-    var fmt = fmtStr.localize().c_str();
     var save_style = this._style();
     var cur:size_t = 0;
-    var len:size_t = fmt.length:size_t;
+    var len:size_t = fmtStr.length:size_t;
     var conv:qio_conv_t;
     var gotConv:bool;
     var style:iostyle;
@@ -6642,7 +6643,7 @@ proc channel.readf(fmtStr:?t) throws
 
     err = qio_channel_mark(false, _channel_internal);
     if !err {
-      _format_reader(fmt, cur, len, err,
+      _format_reader(fmtStr, cur, len, err,
                      conv, gotConv, style, r,
                      true);
       if gotConv {
