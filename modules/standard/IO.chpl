@@ -6566,7 +6566,15 @@ proc channel.readf(fmtStr:?t, ref args ...?k): bool throws
                         args(i) = rnn.capArr[rnn.capturei].decode():args(i).type;
                       else
                         args(i) = rnn.capArr[rnn.capturei]:args(i).type;
+                    } catch e: DecodeError {
+                      // someone's trying to capture a non UTF8 sequence in a
+                      // string -- argument type mismatch
+                      err = qio_format_error_arg_mismatch(i);
+                      
+                      // Engin: maybe in the future we can just propagate
+                      // DecodeError here?
                     } catch {
+                      // maybe a cast error for the enum cast
                       err = qio_format_error_bad_regexp();
                     }
                   }
