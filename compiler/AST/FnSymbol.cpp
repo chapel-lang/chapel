@@ -507,36 +507,6 @@ Symbol* FnSymbol::getReturnSymbol() {
   return retval;
 }
 
-
-// Replace the return symbol with 'newRetSymbol',
-// return the previous return symbol.
-// If newRetType != NULL, also update fn->retType.
-Symbol* FnSymbol::replaceReturnSymbol(Symbol* newRetSymbol, Type* newRetType) {
-  CallExpr* ret    = toCallExpr(this->body->body.last());
-  Symbol*   retval = NULL;
-
-  if (ret != NULL && ret->isPrimitive(PRIM_RETURN) == true) {
-    if (SymExpr* sym = toSymExpr(ret->get(1))) {
-      Symbol* prevRetSymbol = sym->symbol();
-
-      sym->setSymbol(newRetSymbol);
-
-      this->retSymbol = newRetSymbol;
-
-      if (newRetType != NULL) {
-        this->retType = newRetType;
-      }
-
-      retval = prevRetSymbol;
-    }
-
-  } else {
-    INT_FATAL(this, "function is not normal");
-  }
-
-  return retval;
-}
-
 // Removes all statements from body and adds all statements from block.
 void FnSymbol::replaceBodyStmtsWithStmts(BlockStmt* block) {
   for_alist(stmt, this->body->body) {

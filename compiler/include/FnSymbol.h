@@ -138,8 +138,6 @@ public:
   LabelSymbol*               getOrCreateEpilogueLabel();
 
   Symbol*                    getReturnSymbol();
-  Symbol*                    replaceReturnSymbol(Symbol* newRetSymbol,
-                                                 Type*   newRetType);
 
   // Removes all statements from body and adds all statements from block.
   void                       replaceBodyStmtsWithStmts(BlockStmt* block);
