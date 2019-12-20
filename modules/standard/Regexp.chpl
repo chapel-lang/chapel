@@ -425,12 +425,12 @@ class BadRegexpError : Error {
    :arg literal: (optional) set to true to treat the regular expression as a
                  literal (ie, create a regexp matching ``pattern`` as a string
                  rather than as a regular expression).
-   :arg nocapture: (optional) set to true in order to disable all capture groups
+   :arg noCapture: (optional) set to true in order to disable all capture groups
                    in the regular expression
-   :arg ignorecase: (optional) set to true in order to ignore case when
+   :arg ignoreCase: (optional) set to true in order to ignore case when
                     matching. Note that this can be set inside the regular
                     expression with ``(?i)``.
-   :arg multiline: (optional) set to true in order to activate multiline mode
+   :arg multiLine: (optional) set to true in order to activate multiline mode
                    (meaning that ``^`` and ``$`` match the beginning and end
                    of a line instead of just the beginning and end of the text.
                    Note that this can be set inside a regular expression
@@ -438,7 +438,7 @@ class BadRegexpError : Error {
    :arg dotnl: (optional, default false) set to true in order to allow ``.``
                to match a newline. Note that this can be set inside the
                regular expression with ``(?s)``.
-   :arg nongreedy: (optional) set to true in order to prefer shorter matches for
+   :arg nonGreedy: (optional) set to true in order to prefer shorter matches for
                    repetitions; for example, normally x* will match as many x
                    characters as possible and x*? will match as few as possible.
                    This flag swaps the two, so that x* will match as few as
@@ -447,9 +447,9 @@ class BadRegexpError : Error {
                    ``(?U)``.
 
  */
-proc compile(pattern: ?t, posix=false, literal=false, nocapture=false,
-             /*i*/ ignorecase=false, /*m*/ multiline=false, /*s*/ dotnl=false,
-             /*U*/ nongreedy=false): regexp(t) throws where t==string || t==bytes {
+proc compile(pattern: ?t, posix=false, literal=false, noCapture=false,
+             /*i*/ ignoreCase=false, /*m*/ multiLine=false, /*s*/ dotnl=false,
+             /*U*/ nonGreedy=false): regexp(t) throws where t==string || t==bytes {
 
   if CHPL_REGEXP == "none" {
     compilerError("Cannot use Regexp with CHPL_REGEXP=none");
@@ -463,11 +463,11 @@ proc compile(pattern: ?t, posix=false, literal=false, nocapture=false,
   opts.utf8 = t==string;
   opts.posix = posix;
   opts.literal = literal;
-  opts.nocapture = nocapture;
-  opts.ignorecase = ignorecase;
-  opts.multiline = multiline;
+  opts.nocapture = noCapture;
+  opts.ignorecase = ignoreCase;
+  opts.multiline = multiLine;
   opts.dotnl = dotnl;
-  opts.nongreedy = nongreedy;
+  opts.nongreedy = nonGreedy;
 
   var ret: regexp(t);
   qio_regexp_create_compile(pattern.localize().c_str(), pattern.numBytes, opts, ret._regexp);
@@ -486,22 +486,19 @@ proc compile(pattern: ?t, posix=false, literal=false, nocapture=false,
 }
 
 pragma "no doc"
-proc compile(pattern: ?t, out error:syserr, posix, literal, nocapture,
-             /*i*/ ignorecase, /*m*/ multiline, /*s*/ dotnl,
-             /*U*/ nongreedy): regexp(t) where t==string || t==bytes {
+proc compile(pattern: string, utf8=true, posix=false, literal=false,
+             nocapture=false, /*i*/ ignorecase=false, /*m*/ multiline=false,
+             /*s*/ dotnl=false, /*U*/ nongreedy=false): regexp(string) throws {
+  compilerWarning("Regexp.compile with 'utf8' argument is deprecated. Use generic Regexp.compile, instead");
 
-  compilerWarning("'out error: syserr' pattern has been deprecated, use 'throws' function instead");
-  var ret: regexp(t);
-  try {
-    ret = compile(pattern, posix, literal, nocapture, ignorecase,
-                  multiline, dotnl, nongreedy);
-  } catch e: SystemError {
-    error = e.err;
-  } catch {
-    error = EINVAL;
-  }
-  return ret;
+  if utf8 == false then
+    throw new owned IllegalArgumentError("utf8 argument cannot be false");
+  else
+    return compile(pattern, posix, literal, noCapture=nocapture,
+                   ignoreCase=ignorecase, multiLine=multiline, dotnl,
+                   nonGreedy=nongreedy);
 }
+
 
 /*  The reMatch record records a regular expression search match
     or a capture group.
