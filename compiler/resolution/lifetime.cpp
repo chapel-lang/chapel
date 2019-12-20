@@ -2274,6 +2274,8 @@ void EmitLifetimeErrorsVisitor::emitErrors() {
 
     LifetimePair intrinsic = lifetimes->intrinsicLifetimeForSymbol(key);
 
+    Lifetime scope = scopeLifetimeForSymbol(key);
+
     // Ignore the RVV for this check since that's tested in acceptCall
     // (see test lifetimes/bug-like-timezones.chpl)
     if (key->hasEitherFlag(FLAG_RVV,FLAG_RETARG))
@@ -2283,32 +2285,50 @@ void EmitLifetimeErrorsVisitor::emitErrors() {
     if (erroredSymbols.count(key))
       continue;
 
-    if (key->isRef() &&
-        !inferred.referent.unknown &&
-        !intrinsic.referent.unknown &&
-        isLifetimeShorter(inferred.referent, intrinsic.referent)) {
-      Expr* at = key->defPoint;
-      if (inferred.referent.relevantExpr)
-        at = inferred.referent.relevantExpr;
+    bool user = !key->hasFlag(FLAG_TEMP);
 
-      emitError(at,
-                "Reference to scoped variable",
-                "reachable after lifetime ends",
-                key, inferred.referent, lifetimes);
+    if (key->isRef()) {
+      if (// check if intrinsic lifetime < symbol lifetime
+          (!intrinsic.referent.unknown && user &&
+           isLifetimeShorter(intrinsic.referent, scope)) ||
+          // check if inferred lifetime < symbol lifetime
+          (!inferred.referent.unknown && user &&
+           isLifetimeShorter(inferred.referent, scope)) ||
+          // check if inferred lifetime < intrinsic lifetime
+          (!inferred.referent.unknown &&
+           !intrinsic.referent.unknown &&
+           isLifetimeShorter(inferred.referent, intrinsic.referent))) {
+        Expr* at = key->defPoint;
+        if (inferred.referent.relevantExpr)
+          at = inferred.referent.relevantExpr;
+
+        emitError(at,
+                  "Reference to scoped variable",
+                  "reachable after lifetime ends",
+                  key, inferred.referent, lifetimes);
+      }
     }
 
-    if (isOrContainsBorrowedClass(key->type) &&
-        !inferred.borrowed.unknown &&
-        !intrinsic.borrowed.unknown &&
-        isLifetimeShorter(inferred.borrowed, intrinsic.borrowed)) {
-      Expr* at = key->defPoint;
-      if (inferred.borrowed.relevantExpr)
-        at = inferred.borrowed.relevantExpr;
+    if (isOrContainsBorrowedClass(key->type)) {
+      if (// check if intrinsic lifetime < symbol lifetime
+          (!intrinsic.borrowed.unknown && user &&
+           isLifetimeShorter(intrinsic.borrowed, scope)) ||
+          // check if inferred lifetime < symbol lifetime
+          (!inferred.borrowed.unknown && user &&
+           isLifetimeShorter(inferred.borrowed, scope)) ||
+          // check if inferred lifetime < intrinsic lifetime
+          (!inferred.borrowed.unknown &&
+           !intrinsic.borrowed.unknown &&
+           isLifetimeShorter(inferred.borrowed, intrinsic.borrowed))) {
+        Expr* at = key->defPoint;
+        if (inferred.borrowed.relevantExpr)
+          at = inferred.borrowed.relevantExpr;
 
-      emitError(at,
-                "Scoped variable",
-                "reachable after lifetime ends",
-                key, inferred.borrowed, lifetimes);
+        emitError(at,
+                  "Scoped variable",
+                  "reachable after lifetime ends",
+                  key, inferred.borrowed, lifetimes);
+      }
     }
 
     // check refs of borrows

@@ -28,6 +28,7 @@
 #include "build.h"
 #include "expr.h"
 #include "ForLoop.h"
+#include "IfExpr.h"
 #include "LoopExpr.h"
 #include "passes.h"
 #include "scopeResolve.h"
@@ -717,7 +718,26 @@ static CallExpr* buildLoopExprFunctions(LoopExpr* loopExpr) {
   if (insideArgSymbol) {
     loopExpr->getModule()->block->insertAtHead(new DefExpr(fn));
   } else {
-    loopExpr->getStmtExpr()->insertBefore(new DefExpr(fn));
+    BlockStmt* block = NULL;
+    CondStmt* ifExprCond = NULL;
+    for (Expr* cur = loopExpr->getStmtExpr();
+         cur != NULL;
+         cur = cur->parentExpr) {
+      if (BlockStmt* b = toBlockStmt(cur)) {
+        block = b;
+        break;
+      }
+    }
+
+    if (block != NULL && isLoweredIfExprBlock(block)) {
+      ifExprCond = toCondStmt(block->parentExpr);
+    }
+
+    if (ifExprCond != NULL)
+      // for if-exprs, insert just before the CondStmt
+      ifExprCond->insertBefore(new DefExpr(fn));
+    else
+      loopExpr->getStmtExpr()->insertBefore(new DefExpr(fn));
   }
 
   SymbolMap outerMap;

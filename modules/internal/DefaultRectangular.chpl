@@ -690,8 +690,7 @@ module DefaultRectangular {
                                        idxType=idxType,
                                        stridable=stridable,
                                        dom=_to_unmanaged(this),
-                                       data=data,
-                                       dataAllocRange=allocRange);
+                                       data=data);
     }
 
 
@@ -1021,12 +1020,6 @@ module DefaultRectangular {
     var _borrowed: bool = true;
     var externFreeFunc: c_void_ptr;
 
-    // 'dataAllocRange' is used by the array-vector operations (e.g. push_back,
-    // pop_back, insert, remove) to allow growing or shrinking the data
-    // buffer in a doubling/halving style.  If it is used, it will be the
-    // actual size of the 'data' buffer, while 'dom' represents the size of
-    // the user-level array.
-    var dataAllocRange: range(idxType);
     //var numelm: int = -1; // for correctness checking
 
     // end class definition here, then defined secondary methods below
@@ -1060,14 +1053,10 @@ module DefaultRectangular {
         }
       } else {
         var numElts:intIdxType = 0;
-        if dom.dsiNumIndices > 0 || dataAllocRange.length > 0 {
+        if dom.dsiNumIndices > 0 {
           param needsDestroy = __primitive("needs auto destroy",
                                            __primitive("deref", data[0]));
-          // dataAllocRange may be empty or contain a meaningful value
-          if rank == 1 && !stridable then
-            numElts = dataAllocRange.length;
-          if numElts == 0 then
-            numElts = dom.dsiNumIndices;
+          numElts = dom.dsiNumIndices;
 
           if needsDestroy {
             dsiDestroyDataHelper(data, numElts);
@@ -1209,8 +1198,6 @@ module DefaultRectangular {
       }
 
       initShiftedData();
-      if rank == 1 && !stridable then
-        dataAllocRange = dom.dsiDim(1);
     }
 
     inline proc getDataIndex(ind: idxType ...1,
@@ -1383,7 +1370,6 @@ module DefaultRectangular {
             shiftedData = copy.shiftedData;
           }
         }
-        dataAllocRange = copy.dataAllocRange;
         delete copy;
       }
     }
@@ -1425,7 +1411,6 @@ module DefaultRectangular {
             shiftedData = copy.shiftedData;
           }
         }
-        dataAllocRange = copy.dataAllocRange;
         delete copy;
       }
     }

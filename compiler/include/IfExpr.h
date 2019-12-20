@@ -53,4 +53,7 @@ private:
   BlockStmt* elseStmt;
 };
 
+// This function works only before conditional statement folding
+bool isLoweredIfExprBlock(BlockStmt* block);
+
 #endif
