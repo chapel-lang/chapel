@@ -1031,28 +1031,43 @@ proc =(ref ret:regexp(?t), x:regexp(t))
 
 // Cast regexp to string.
 pragma "no doc"
-inline proc _cast(type t, x: regexp(?exprType)) where t == exprType  {
+inline proc _cast(type t: string, x: regexp(string)) {
   var pattern: t;
   on x.home {
     var cs: c_string;
     qio_regexp_get_pattern(x._regexp, cs);
-    if t == string then
+    if t == string {
       try! {
         pattern = createStringWithOwnedBuffer(cs);
       }
-    else
-      pattern = createBytesWithOwnedBuffer(cs);
+    }
   }
   return pattern;
 }
-// Cast string to regexp
+
 pragma "no doc"
-inline proc _cast(type t, x: ?valType) throws
-  where t == regexp(valType)  && (valType == string || valType == bytes) {
-  return compile(x);
+inline proc _cast(type t:bytes, x: regexp(bytes)) {
+  var pattern: t;
+  on x.home {
+    var cs: c_string;
+    qio_regexp_get_pattern(x._regexp, cs);
+    pattern = createBytesWithOwnedBuffer(cs);
+  }
+  return pattern;
 }
 
 
+// Cast string to regexp
+pragma "no doc"
+inline proc _cast(type t: regexp(string), x: string) throws {
+  return compile(x);
+}
+
+// Cast bytes to regexp
+pragma "no doc"
+inline proc _cast(type t: regexp(bytes), x: bytes) throws {
+  return compile(x);
+}
 
 /*
 
