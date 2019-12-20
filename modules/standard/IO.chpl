@@ -6558,6 +6558,10 @@ proc channel.readf(fmtStr:?t, ref args ...?k): bool throws
                     try {
                       if args(i).type == string then
                         args(i) = rnn.capArr[rnn.capturei].decode();
+                      // the following is a workaround for bytes->enum casts
+                      // being unimplemented See #14553
+                      else if isEnumType(args(i).type) then
+                        args(i) = rnn.capArr[rnn.capturei].decode():args(i).type;
                       else
                         args(i) = rnn.capArr[rnn.capturei]:args(i).type;
                     } catch {
