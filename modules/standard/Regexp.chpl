@@ -486,7 +486,7 @@ proc compile(pattern: ?t, posix=false, literal=false, noCapture=false,
 }
 
 pragma "no doc"
-proc compile(pattern: string, utf8=true, posix=false, literal=false,
+proc compile(pattern: string, utf8, posix=false, literal=false,
              nocapture=false, /*i*/ ignorecase=false, /*m*/ multiline=false,
              /*s*/ dotnl=false, /*U*/ nongreedy=false): regexp(string) throws {
   compilerWarning("Regexp.compile with 'utf8' argument is deprecated. Use generic Regexp.compile, instead");
@@ -577,8 +577,9 @@ record regexp {
   pragma "no doc"
   var _regexp:qio_regexp_t = qio_regexp_null();
 
-  /*proc init() {*/
-  /*}*/
+  proc init(type exprType) {
+    this.exprType = exprType;
+  }
 
   proc init=(x: regexp(?)) {
     this.exprType = x.exprType;
