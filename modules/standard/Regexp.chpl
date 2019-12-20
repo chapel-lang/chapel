@@ -50,16 +50,19 @@ in the Chapel distribution.
 Using Regular Expression Support
 --------------------------------
 
+Chapel supports both string and bytes regular expressions.
+
 .. code-block:: chapel
 
    use Regexp;
-   var myRegexp = compile("a+");
+   var myRegexp = compile("a+");   // b"a+" for matching arbitrary bytes values
 
 Now you can use these methods on regular expressions: :proc:`regexp.search`,
 :proc:`regexp.match`, :proc:`regexp.split`, :proc:`regexp.matches`.
 
 You can also use the string versions of these methods: :proc:`string.search`,
-:proc:`string.match`, :proc:`string.split`, or :proc:`string.matches`.
+:proc:`string.match`, :proc:`string.split`, or :proc:`string.matches`. Methods
+with same prototypes exist for :record:`~Bytes.bytes` type, as well.
 
 Lastly, you can include regular expressions in the format string for
 :proc:`~FormattedIO.readf` for searching on QIO channels using the ``%/<regexp>/``
@@ -408,18 +411,15 @@ class BadRegexpError : Error {
 }
 
 /*
-   Compile a regular expression. If the optional error argument is provided,
-   this routine will return an error code if compilation failed. Otherwise, it
-   will halt with an error message.
+   Compile a regular expression. This routine will throw a
+   class:`BadRegexpError` if compilation failed.
 
-   :arg pattern: the string regular expression to compile.
-                 See :ref:`regular-expression-syntax` for details. Note that
-                 you may have to escape backslashes. For example, to
+   :arg pattern: the regular expression to compile. This argument can be string
+                 or bytes. See :ref:`regular-expression-syntax` for details.
+                 Note that you may have to escape backslashes. For example, to
                  get the regular expression ``\s``, you'd have to write
                  ``"\\s"`` because the ``\`` is the escape character within
-                 Chapel string literals
-   :arg utf8: (optional, default true) set to `true` to create a regular
-               expression matching UTF-8; `false` for binary or ASCII only.
+                 Chapel string/bytes literals
    :arg posix: (optional) set to true to disable non-POSIX regular expression
                syntax
    :arg literal: (optional) set to true to treat the regular expression as a
@@ -552,6 +552,14 @@ proc string.this(m:reMatch) {
   else return "";
 }
 
+/*  This function extracts the part of a bytes matching a regular
+    expression or capture group. This method is intended to be
+    called on the same bytes used as the `text` in a regular
+    expression search.
+
+    :arg m: a match (e.g. returned by :proc:`regexp.search`)
+    :returns: the portion of ``this`` referred to by the match
+ */
 proc bytes.this(m:reMatch) {
   if m.matched then return this[(m.offset+1):int..#m.length];
   else return b"";
@@ -561,11 +569,11 @@ proc bytes.this(m:reMatch) {
 
 /*  This class represents a compiled regular expression. Regular expressions
     are currently cached on a per-thread basis and are reference counted.
-    To create a compiled regular expression, use the compile function.
+    To create a compiled regular expression, use the proc:`compile` function.
 
-    A regexp can be cast to a string (resulting in the pattern that
-    was compiled). A string can be cast to a regexp (resulting in a compiled
-    regexp).
+    A string-based regexp can be cast to a string (resulting in the pattern that
+    was compiled). A string can be cast to a string-based regexp (resulting in a
+    compiled regexp). Same applies for bytes.
   */
 pragma "ignore noinit"
 record regexp {
@@ -651,9 +659,11 @@ record regexp {
      matched, the corresponding argument will get the default value for its
      type.
 
-     :arg text: a string to search
-     :arg captures: (optional) what to capture from the regular expression. These
-                    should be strings or types that strings can cast to.
+     :arg text: a string or bytes to search
+     :arg captures: (optional) what to capture from the regular expression.
+                    If the class:`regexp` was based on string, then, these
+                    should be strings or types that strings can cast to. Same
+                    applies for bytes.
      :returns: an :record:`reMatch` object representing the offset in text
                where a match occurred
 
@@ -720,13 +730,15 @@ record regexp {
 
      .. code-block:: chapel
 
-       if myregexp.match("some string") {
-         do_something_if_matched();
+       if myRegExp.match("some string") {
+         doSomethingIfMatched();
        }
 
-     :arg text: a string to search
-     :arg captures: what to capture from the regular expression. These should
-                    be strings or types that strings can cast to.
+     :arg text: a string or bytes to search
+     :arg captures: what to capture from the regular expression.
+                    If the class:`regexp` was based on string, then, these
+                    should be strings or types that strings can cast to. Same
+                    applies for bytes.
      :returns: an :record:`reMatch` object representing the offset in text
                where a match occurred
    */
@@ -790,7 +802,7 @@ record regexp {
      If *maxsplit* is nonzero, at most maxsplit splits occur, and the
      remaining text is returned as the last element.
 
-     :arg text: a string to split
+     :arg text: a string or bytes to split
      :arg maxsplit: if nonzero, the maximum number of splits to do
      :yields: each split portion, one at a time
    */
@@ -860,9 +872,9 @@ record regexp {
     }
   }
 
-  /* Enumerates matches in the string as well as capture groups.
+  /* Enumerates matches in the text as well as capture groups.
 
-     :arg text: the string to search
+     :arg text: the string or bytes to search
      :arg captures: (compile-time constant) the size of the captures to return
      :arg maxmatches: the maximum number of matches to return
      :yields: tuples of :record:`reMatch` objects, the 1st is always
@@ -905,13 +917,13 @@ record regexp {
   }
 
   /* Perform the same operation as :proc:`regexp.sub` but return a tuple
-     containing the new string and the number of substitutions made.
+     containing the new text and the number of substitutions made.
 
-     :arg repl: replace matches with this string
+     :arg repl: replace matches with this string or bytes
      :arg text: the text to search and replace within
-     :type text: `string`
+     :type text: `string` or `bytes`
      :arg global: if true, replace multiple matches
-     :returns: a tuple containing (new string, number of substitutions made)
+     :returns: a tuple containing (new text, number of substitutions made)
    */
   // TODO -- move subn after sub for documentation clarity
   proc subn(repl: exprType, text: exprType, global = true ):(exprType, int)
@@ -943,14 +955,14 @@ record regexp {
   }
 
   /*
-     Find matches to this regular expression and create a new string in which
-     those matches are replaced by repl.
+     Find matches to this regular expression and create a new string or bytes in
+     which those matches are replaced by repl.
 
-     :arg repl: replace matches with this string
+     :arg repl: replace matches with this string or bytes
      :arg text: the text to search and replace within
-     :type text: `string`
+     :type text: `string` or `bytes`
      :arg global: if true, replace multiple matches
-     :returns: the new string
+     :returns: the new string or bytes
    */
   proc sub(repl: exprType, text: exprType, global = true )
   {
@@ -1045,6 +1057,7 @@ inline proc _cast(type t: string, x: regexp(string)) {
   return pattern;
 }
 
+// Cast regexp to bytes.
 pragma "no doc"
 inline proc _cast(type t:bytes, x: regexp(bytes)) {
   var pattern: t;
@@ -1138,7 +1151,7 @@ proc string.search(needle: regexp(string), ref captures ...?k):reMatch
    :arg captures: (optional) what to capture from the regular expression. These
                   should be bytes or types that bytes can cast to.
    :returns: an :record:`reMatch` object representing the offset in the
-             receiving string where a match occurred
+             receiving bytes where a match occurred
  */
 proc bytes.search(needle: regexp(bytes), ref captures ...?k):reMatch
 {
@@ -1185,7 +1198,7 @@ proc string.match(pattern: regexp(string), ref captures ...?k):reMatch
    :arg captures: (optional) what to capture from the regular expression. These
                   should be bytes or types that bytes can cast to.
    :returns: an :record:`reMatch` object representing the offset in the
-             receiving string where a match occurred
+             receiving bytes where a match occurred
  */
 
 proc bytes.match(pattern: regexp(bytes), ref captures ...?k):reMatch
