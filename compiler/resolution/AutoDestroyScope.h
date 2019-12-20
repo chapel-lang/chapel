@@ -46,6 +46,9 @@ public:
                                               Expr*     refStmt,
                                               const std::set<VarSymbol*>& ignored);
 
+  void                     destroyVariable(Expr* after, VarSymbol* var,
+                                           const std::set<VarSymbol*>& ignored);
+
 private:
   void                     variablesDestroy(Expr*      refStmt,
                                             VarSymbol* excludeVar,

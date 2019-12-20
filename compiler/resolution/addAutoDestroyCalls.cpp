@@ -36,11 +36,9 @@
 #include <vector>
 
 // last mention map:
-// Stores a map from a symbol to the expression after which it should
-// be destroyed.
-// (If we extend last-mention to go within conditional statements,
-//  this map will need to map to multiple expressions).
-typedef std::map<VarSymbol*, Expr*> LastMentionMap;
+// Maps from expressions to the list of variables to be destroy after
+// that expression.
+typedef std::map<Expr*, std::vector<VarSymbol*> > LastMentionMap;
 
 static void computeLastMentionPoints(LastMentionMap& lmm, FnSymbol* fn);
 
@@ -161,6 +159,25 @@ static void walkBlockStmt(FnSymbol*         fn,
   //
 
   // TODO -- maybe we need to handle breakLabel and continueLabel here?
+
+  // Destroy the variable after this statement if it's the last mention
+  /*
+   Re-enable after lifetime checking runs before addAutoDestroyCalls
+
+  if (CallExpr* call = toCallExpr(stmt)) {
+    if (!(call->isPrimitive(PRIM_YIELD) || call->isPrimitive(PRIM_RETURN))) {
+      LastMentionMap::const_iterator lmmIt = lmm.find(stmt);
+      if (lmmIt != lmm.end()) {
+        const std::vector<VarSymbol*>& vars = lmmIt->second;
+        for_vector(VarSymbol, var, vars) {
+          scope.destroyVariable(call, var, ignoredVariables);
+          // Needs a better strategy if we move last mention points within
+          // conditionals
+          ignoredVariables.insert(var);
+        }
+      }
+    }
+  }*/
 
   // Once a variable is yielded, it should no longer be auto-destroyed,
   // since such destruction is the responsibility of
@@ -528,21 +545,31 @@ static void gatherIgnoredVariablesForYield(
 class ComputeLastSymExpr : public AstVisitorTraverse
 {
   public:
-    LastMentionMap& lmm;
-    ComputeLastSymExpr(LastMentionMap& lmm) : lmm(lmm) { }
+    std::map<VarSymbol*, Expr*>& last;
+    ComputeLastSymExpr(std::map<VarSymbol*, Expr*>& last) : last(last) { }
     virtual void visitSymExpr(SymExpr* node);
 };
 
 static Expr* findLastExprInStatement(Expr* e);
 
 static void computeLastMentionPoints(LastMentionMap& lmm, FnSymbol* fn) {
+  std::map<VarSymbol*, Expr*> last;
+
   // Use a traversal to compute the last SymExpr mentioning each
-  ComputeLastSymExpr visitor(lmm);
+  ComputeLastSymExpr visitor(last);
   fn->body->accept(&visitor);
 
-  // Now go from each SymExpr to the end of the statement.
-  for (LastMentionMap::iterator it = lmm.begin(); it != lmm.end(); ++it) {
-    it->second = findLastExprInStatement(it->second);
+  // Now go from each SymExpr to the end of the statement
+  // and invert the map.
+  for (std::map<VarSymbol*, Expr*>::iterator it = last.begin();
+       it != last.end();
+       ++it) {
+    VarSymbol* v = it->first;
+    Expr* point = it->second;
+    // find the end of statement
+    point = findLastExprInStatement(point);
+    // store in the inverse map
+    lmm[point].push_back(v);
   }
 }
 
@@ -550,7 +577,7 @@ void ComputeLastSymExpr::visitSymExpr(SymExpr* node) {
   if (VarSymbol* var = toVarSymbol(node->symbol())) {
     if (var->hasFlag(FLAG_DEAD_LAST_MENTION)) {
       // put it in the map
-      lmm[var] = node;
+      last[var] = node;
     }
   }
 }

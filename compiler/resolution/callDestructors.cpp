@@ -1256,8 +1256,6 @@ void callDestructors() {
 
   insertDestructorCalls();
 
-  // Execute this before conversion to return by ref
-  // May fail to handle reference variables as desired
   addAutoDestroyCalls();
 
   ReturnByRef::apply();
@@ -1270,6 +1268,8 @@ void callDestructors() {
   // to local variables. Other parts of this pass use this.
 
   lateConstCheck(NULL);
+
+  //addAutoDestroyCalls(); // can we move it here?
 
   insertGlobalAutoDestroyCalls();
 

@@ -138,6 +138,22 @@ void AutoDestroyScope::insertAutoDestroys(FnSymbol* fn, Expr* refStmt,
   mLocalsHandled = true;
 }
 
+void AutoDestroyScope::destroyVariable(Expr* after, VarSymbol* var,
+                                       const std::set<VarSymbol*>& ignored) {
+  if (ignored.count(var) == 0) {
+    if (FnSymbol* autoDestroyFn = autoDestroyMap.get(var->type)) {
+      SET_LINENO(var);
+
+      INT_ASSERT(autoDestroyFn->hasFlag(FLAG_AUTO_DESTROY_FN));
+
+      CallExpr* autoDestroy = new CallExpr(autoDestroyFn, var);
+
+      after->insertAfter(autoDestroy);
+    }
+  }
+}
+
+
 // If 'refStmt' is in a shadow variable's initBlock(),
 // return that svar's deinitBlock(). Otherwise return NULL.
 static BlockStmt* shadowVarsDeinitBlock(Expr* refStmt) {
