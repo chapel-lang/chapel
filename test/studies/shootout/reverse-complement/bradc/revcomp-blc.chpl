@@ -18,15 +18,13 @@ param eol = "\n".toByte();      // end-of-line, as an integer
 const table = createTable();    // create the table of code complements
 
 // a channel and coordination variable for writing data to stdout
-var stdoutBin = openfd(1).writer(iokind.native, locking=false,
-                                 hints=QIO_CH_ALWAYS_UNBUFFERED),
+var stdoutBin = openfd(1).writer(iokind.native, locking=false),
     seqToWrite: atomic int = 1;
 
 
 proc main(args: [] string) {
   const stdin = openfd(0),
-        input = stdin.reader(iokind.native, locking=false,
-                             hints=QIO_HINT_PARALLEL);
+        input = stdin.reader(iokind.native, locking=false);
 
   var curSeq = new Seq(id=1);
 
