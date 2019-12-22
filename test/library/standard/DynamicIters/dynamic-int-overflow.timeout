@@ -1,0 +1,15 @@
+# This test can't produce any output in the loop body, because the
+# loop body is executed 2**63 times.  With an empty loop body and
+# --fast, the test completes in a second.  But when the test fails,
+# there may be some large constant factor of extra loop iterations.
+# Given enough time, this may complete, and still produce no output,
+# and so still match the .good file.
+#
+# If this test fails due to execution timeout, try running with
+# -sdebugDynamicIters=true
+#
+# Set a 7 second timeout so that if the overflow problem recurs, this
+# test will fail.  I'd make it 2 seconds, but it takes over 25 seconds to
+# compile on my machine, and compilation is limited to 4*timeout 
+
+7
