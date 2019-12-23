@@ -260,33 +260,6 @@ static void replaceBangWithCast(CallExpr* call, Type* type, Symbol* arg) {
   call->replace(cast);
 }
 
-//
-// The analysis shows that 'bb' is unreachable, ex. var x=nil; if x!=nil ...
-// We can remove 'bb' altogether. However, since this is a corner case, it is
-// hard to test it thoroughly. So we limit the changes to suppressing
-// nil-dereference errors and removing postfix-! calls, as otherwise
-// they may disable some optimiations.
-// Note: to be invoked only when fixed point is reached i.e. raiseErrors==true.
-// Note: does not update bb->exprs - nobody is expected to look there any more.
-//
-static void processUnreachableBasicBlock(BasicBlock* bb) {
-  for_vector(Expr, expr, bb->exprs) {
-    if (CallExpr* call = toCallExpr(expr)) {
-      if (call->numActuals() == 1) {
-        // a naked postfix-! call
-        if (isPostfixBangCall(call))
-          expr->remove();
-      } else if (call->numActuals() == 2) {
-        // move, assign, etc. from a postfix-!
-        if (CallExpr* rhs = toCallExpr(call->get(2)))
-          if (Type* resultType = isPostfixBangCall(rhs))
-            replaceBangWithCast(rhs, resultType,
-                                toSymExpr(rhs->get(1))->symbol());
-      }
-    }
-  }
-}
-
 static void checkForNilDereferencesInCall(
     CallExpr* call,
     const AliasMap& aliasMap) {
@@ -457,6 +430,17 @@ static bool isOuterVar(Symbol* sym, FnSymbol* fn) {
   return true;
 }
 
+// This is a version of isNonNilableClassType() for post-resolution,
+// when we can't invoke classTypeDecorator() / getManagedPtrBorrowType()
+// because the field 'chpl_t' is no more. So instead we rely on a flag.
+static bool isNonNilableType(Type* t) {
+  Symbol* ts = t->symbol;
+  if (ts->hasFlag(FLAG_MANAGED_POINTER))
+    return ts->hasFlag(FLAG_MANAGED_POINTER_NONNILABLE);
+  else
+    return isNonNilableClassType(t);
+}
+
 static void update(AliasMap& OUT, Symbol* lhs, AliasLocation loc) {
   if (isSymbolAnalyzed(lhs))
     OUT[lhs] = loc;
@@ -606,18 +590,40 @@ static void checkCall(
             Symbol* rhsSym = toSymExpr(userCall->get(1))->symbol();
             update(OUT, lhsSym, aliasLocationFromValue(rhsSym, OUT, call));
             ignoreGlobalUpdates = true;
+          } else if (userCalledFn->name == astrPostfixBang) {
+            // the outcome of postfix-! is always non-nilable
+            update(OUT, lhsSym, allocatedAliasLocation(call));
           } else {
             Expr* nilFromActual = NULL;
+            Expr* retActual = NULL;
             for_formals_actuals(formal, actual, userCall) {
               if (formal->hasFlag(FLAG_NIL_FROM_ARG)) {
                 nilFromActual = actual;
+              } else if (formal->hasFlag(FLAG_RETARG)) {
+                retActual = actual;
               }
             }
+
             if (nilFromActual != NULL) {
               SymExpr* actualSe = toSymExpr(nilFromActual);
               Symbol* actualSym = actualSe->symbol();
               update(OUT, lhsSym, aliasLocationFromValue(actualSym, OUT, call));
               ignoreGlobalUpdates = true;
+
+            } else if (retActual != NULL) {
+              // Analogously to the "non-nilable return type" case below.
+              Symbol* retSymbol = toSymExpr(retActual)->symbol();
+              if (isNonNilableType(retActual->getValType()))
+                update(OUT, retSymbol, allocatedAliasLocation(call));
+
+            } else if (isNonNilableType(userCalledFn->retType->getValType())) {
+              // Non-nilable return type - assume we get a non-nil.
+              // We check this as the last resort due to holes in typechecking.
+              // For example, this allows us to know that x.borrow() returns nil
+              // when x is nil even when it is of a non-nilable type - because
+              // that check comes earlier. When the holes are fixed, this check
+              // can go all the way to the top of the "if (moveLike)" case.
+              update(OUT, lhsSym, allocatedAliasLocation(call));
             }
           }
 
@@ -921,11 +927,7 @@ static void checkBasicBlock(
 
   bool unreachable = adjustMapForConditional(bb, OUT, trace);
   if (unreachable) {
-    if (trace) printf("\nskipping an unreachable block\n");
-
-    if (raiseErrors)
-      processUnreachableBasicBlock(bb);
-
+    if (trace) printf("skipping unreachable block\n");
     OUT.clear(); // combine() will use the other AliasMap unchanged
     return;
   }
@@ -1012,11 +1014,8 @@ static void gatherVariablesToCheck(FnSymbol* fn,
 }
 
 //
-// Sets the formals initially to "unknown".
-//
-// When we are confindent in our nilable type-checking
-// or we switch to less-agressive handling of unreachable branches,
-// we can set the formals whose types are non-nilable to MUST_ALIAS_ALLOCATED.
+// Sets the formals, including ref intents, initially to "unknown".
+// For formals of non-nilable types, set them to "allocated".
 //
 static void setupInitialMap(FnSymbol* fn, std::vector<AliasMap>& INs,
                             std::vector<int> forwardOrder, bool debugging) {
@@ -1025,7 +1024,8 @@ static void setupInitialMap(FnSymbol* fn, std::vector<AliasMap>& INs,
     if (isSymbolAnalyzed(formal))
       {
         AliasLocation loc;
-        loc.type = MUST_ALIAS_UNKNOWN;
+        loc.type = isNonNilableType(formal->getValType())
+                   ? MUST_ALIAS_ALLOCATED : MUST_ALIAS_UNKNOWN;
         loc.location = formal->defPoint;
         INini[formal] = loc;
         if (debugging) printAliasEntry("formal", formal, loc);
