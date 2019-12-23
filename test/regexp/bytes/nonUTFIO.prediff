@@ -1,0 +1,4 @@
+#!/bin/sh
+
+sed "s/Argument type mismatch in argument [1|2]/Argument type mismatch in argument x/" $2 >$2.tmp
+mv $2.tmp $2

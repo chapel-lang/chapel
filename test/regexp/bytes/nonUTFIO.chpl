@@ -9,6 +9,19 @@
 */
 
 use IO;
+use Regexp;;
+
+config const preCompiled = false;
+
+proc testRead(channel, pattern: ?t, ref capture, preCompiled:bool) throws {
+  if preCompiled {
+    var re = compile(pattern);
+    channel.readf("%/*/", re, capture);
+  }
+  else {
+    channel.readf(("%/":t)+pattern+"/":t, capture);
+  }
+}
 
 {
   var f = openmem();
@@ -26,19 +39,19 @@ use IO;
   var captureBytes: bytes;
 
   writeln("Case 1");
-  r.readf("%/Pattern:(.*)\n/", captureString);
+  testRead(r, "Pattern:(.*)\n", captureString, preCompiled=preCompiled);
   writeln("Captured string length should be 7 : ", captureString.length);
 
   writeln("Case 2");
-  r.readf(b"%/Patt\xffern:(.*)\n/", captureString);
+  testRead(r, b"Patt\xffern:(.*)\n", captureString, preCompiled=preCompiled);
   writeln("Captured string length should be 7 : ", captureString.length);
 
   writeln("Case 3");
-  r.readf(b"%/Patt\xffern:(.*)\n/", captureBytes);
+  testRead(r, b"Patt\xffern:(.*)\n", captureBytes, preCompiled=preCompiled);
   writeln("Captured bytes length should be 8 : ", captureBytes.length);
 
   writeln("Case 4");
-  r.readf(b"%/Pattern:(.*)\n/", captureBytes);
+  testRead(r, b"Pattern:(.*)\n", captureBytes, preCompiled=preCompiled);
   writeln("Captured bytes length should be 8 : ", captureBytes.length);
 
   r.close();
@@ -65,19 +78,19 @@ use IO;
   writeln("Case 5");
   // you can read the first line however you want, here test reading it with a
   // bytes pattern and storing it in a string  -- should work fine
-  r.readf(b"%/Pattern:(.*)\n/", captureString);
+  testRead(r, b"Pattern:(.*)\n", captureString, preCompiled=preCompiled);
   writeln("Captured string length should be 7 : ", captureString.length);
 
   writeln("Case 6");
   // you cannot create a string literal for this pattern anyway, so here try to
   // capture the match in a bytes -- should work fine
-  r.readf(b"%/Patt\xffern:(.*)\n/", captureBytes);
+  testRead(r, b"Patt\xffern:(.*)\n", captureBytes, preCompiled=preCompiled);
   writeln("Captured string length should be 7 : ", captureBytes.length);
 
   writeln("Case 7 -- Take 1");
   // here the capture is non UTF8 -- so cannot be captured in a string
   try! {  // halt if we get a different error
-    r.readf(b"%/Patt\xffern:(.*)\n/", captureString);
+    testRead(r, b"Patt\xffern:(.*)\n", captureString, preCompiled=preCompiled);
     writeln("(FAILURE) Captured string length : ", captureString.length);
   }
   catch e: SystemError {
@@ -88,7 +101,7 @@ use IO;
   writeln("Case 7 -- Take 2");
   // here the channel must have been rewound back. Read it the right way to move
   // it forward
-  r.readf(b"%/Patt\xffern:(.*)\n/", captureBytes);
+  testRead(r, b"Patt\xffern:(.*)\n", captureBytes, preCompiled=preCompiled);
   writeln("Captured bytes length should be 8 : ", captureBytes.length);
 
   writeln("Case 8 -- Take 1");
@@ -96,7 +109,7 @@ use IO;
   // (1) use a string regular expression to capture non UTF8 data -- should be
   // BadFormatError
   try! {
-    r.readf("%/Pattern:(.*)\n/", captureBytes);
+    testRead(r, "Pattern:(.*)\n", captureBytes, preCompiled=preCompiled);
     writeln("(FAILURE) Captured bytes length : ", captureBytes.length);
   }
   catch e: BadFormatError {
@@ -108,7 +121,7 @@ use IO;
   // (2) correctly use a bytes regular expression but try to capture the match
   // into a string -- should be argument mismatch
   try! {
-    r.readf(b"%/Pattern:(.*)\n/", captureString);
+    testRead(r, b"Pattern:(.*)\n", captureString, preCompiled=preCompiled);
     writeln("(FAILURE) Captured string length : ", captureString.length);
   }
   catch e: SystemError {
@@ -118,7 +131,7 @@ use IO;
 
   writeln("Case 8 -- Take 3");
   // read it correctly just for the sake of it
-  r.readf(b"%/Pattern:(.*)\n/", captureBytes);
+  testRead(r, b"Pattern:(.*)\n", captureBytes, preCompiled=preCompiled);
   writeln("Captured bytes length should be 8 : ", captureBytes.length);
 
   r.close();
