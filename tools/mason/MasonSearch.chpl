@@ -60,7 +60,7 @@ proc masonSearch(ref args: list(string)) {
   // If no query is provided, list all packages in registry
   const query = if args.size > 0 then args[args.size].toLower()
                 else ".*";
-  const pattern = compile(query, ignorecase=true);
+  const pattern = compile(query, ignoreCase=true);
 
   var results: list(string);
   var packages: list(string);

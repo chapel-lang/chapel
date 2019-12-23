@@ -489,7 +489,8 @@ proc compile(pattern: ?t, posix=false, literal=false, noCapture=false,
 }
 
 pragma "no doc"
-proc compile(pattern: string, utf8, posix=false, literal=false,
+pragma "last resort"  // otherwise compile("some regex") resolves calling this
+proc compile(pattern: string, utf8=true, posix=false, literal=false,
              nocapture=false, /*i*/ ignorecase=false, /*m*/ multiline=false,
              /*s*/ dotnl=false, /*U*/ nongreedy=false): regexp(string) throws {
   compilerWarning("Regexp.compile with 'utf8' argument is deprecated. Use generic Regexp.compile, instead");
