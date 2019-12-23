@@ -230,6 +230,7 @@ symbolFlag( FLAG_LOCAL_FN , npr, "local fn" , "function is completely local (no 
 symbolFlag( FLAG_LOCAL_ON, npr, "local on", ncm)
 symbolFlag( FLAG_LOOP_BODY_ARGUMENT_CLASS , npr, "loop body argument class" , ncm )
 symbolFlag( FLAG_MANAGED_POINTER , ypr, "managed pointer" , "e.g. Owned and Shared" )
+symbolFlag( FLAG_MANAGED_POINTER_NONNILABLE , npr, "managed pointer nonnilable" , "e.g. non-nilable Owned and Shared" )
 symbolFlag( FLAG_MARKED_GENERIC , npr, "marked generic" , "formal is marked generic using the type query syntax" )
 symbolFlag( FLAG_MAYBE_ARRAY_TYPE , npr, "maybe array type" , "function may be computing array type")
 symbolFlag( FLAG_MAYBE_PARAM , npr, "maybe param" , "symbol can resolve to a param" )
