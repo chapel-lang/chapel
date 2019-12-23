@@ -419,7 +419,10 @@ class BadRegexpError : Error {
                  Note that you may have to escape backslashes. For example, to
                  get the regular expression ``\s``, you'd have to write
                  ``"\\s"`` because the ``\`` is the escape character within
-                 Chapel string/bytes literals
+                 Chapel string/bytes literals. Note that, Chapel supports
+                 triple-quoted raw string/bytes literals, which do not require
+                 escaping backslashes. For example ``"""\s"""`` or ``b"""\s"""``
+                 can be used.
    :arg posix: (optional) set to true to disable non-POSIX regular expression
                syntax
    :arg literal: (optional) set to true to treat the regular expression as a
