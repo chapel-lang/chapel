@@ -65,6 +65,9 @@
     "compiler/AST/symbol.cpp",
     "compiler/codegen/symbol.cpp"
   ],
+  "b4bc8e62-253c-11ea-948f-10ddb1d4c3d5": [
+    "compiler/AST/type.cpp"
+  ],
   "c0913c10-9315-11e9-a422-10ddb1d4c3d5": [
     "compiler/AST/view.cpp"
   ],
@@ -357,6 +360,33 @@
   "d667ed16-fd34-11e9-98b5-10ddb1d4c3d5": [
     "doc/rst/language/spec.rst"
   ],
+  "7c62caa8-253d-11ea-948f-10ddb1d4c3d5": [
+    "doc/rst/language/spec/arrays.rst"
+  ],
+  "4d4f76a8-253d-11ea-948f-10ddb1d4c3d5": [
+    "doc/rst/language/spec/domains.rst"
+  ],
+  "836b6940-253d-11ea-948f-10ddb1d4c3d5": [
+    "doc/rst/language/spec/expressions.rst"
+  ],
+  "7717bf22-253d-11ea-948f-10ddb1d4c3d5": [
+    "doc/rst/language/spec/interoperability.rst"
+  ],
+  "117a9e8c-253d-11ea-948f-10ddb1d4c3d5": [
+    "doc/rst/language/spec/modules.rst"
+  ],
+  "61e57b76-253d-11ea-948f-10ddb1d4c3d5": [
+    "doc/rst/language/spec/procedures.rst"
+  ],
+  "1c00d998-253d-11ea-948f-10ddb1d4c3d5": [
+    "doc/rst/language/spec/ranges.rst"
+  ],
+  "1381859c-253d-11ea-948f-10ddb1d4c3d5": [
+    "doc/rst/language/spec/statements.rst"
+  ],
+  "466a4d0e-253d-11ea-948f-10ddb1d4c3d5": [
+    "doc/rst/language/spec/tuples.rst"
+  ],
   "3916e364-dfc3-11e6-93be-10ddb1d4c3d5": [
     "doc/rst/platforms/aws.rst"
   ],
@@ -471,6 +501,9 @@
   ],
   "dc718a6c-ab57-11e8-b963-10ddb1d4c3d5": [
     "modules/internal/ChapelIteratorSupport.chpl"
+  ],
+  "be179ce4-253d-11ea-948f-10ddb1d4c3d5": [
+    "modules/internal/ChapelLocale.chpl"
   ],
   "47cb0e3c-1f14-11e6-a3a6-10ddb1d4c3d5": [
     "modules/internal/ChapelRange.chpl"

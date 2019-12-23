@@ -2280,6 +2280,7 @@ rdonly
 rdwr
 readahead
 readbits
+readbytes
 readdata
 readded
 readdir
@@ -2713,6 +2714,7 @@ elen
 
 FILEID: 732b6fa0-1d83-11e6-a3a6-10ddb1d4c3d5
 rtmp
+urse
 
 FILEID: 75f1ecaa-1d83-11e6-a3a6-10ddb1d4c3d5
 cint
@@ -3050,6 +3052,7 @@ mcode
 ntlm
 objectpoint
 prequote
+readbytes
 referer
 rtmp
 rtsp
@@ -3858,6 +3861,7 @@ isinstance
 ndarray
 nfor
 optos
+origt
 rdat
 simport
 sswap
@@ -4679,6 +4683,7 @@ fabsall
 freeinfo
 lcpus
 libiberty
+librdmacm
 mrdesc
 mrkey
 ofichkerr
@@ -4793,6 +4798,8 @@ FILEID: c3e70026-8645-11e8-ad82-10ddb1d4c3d5
 prolly
 
 FILEID: ce35097e-8645-11e8-ad82-10ddb1d4c3d5
+bitshift
+bitwidth
 casttmp
 
 FILEID: e22d9978-8645-11e8-ad82-10ddb1d4c3d5
@@ -4881,11 +4888,13 @@ itype
 slayout
 
 FILEID: 3bdbc4ea-d1aa-11e8-954d-10ddb1d4c3d5
+altype
 anychanged
 bbin
 bbout
 inbb
 nbbs
+nini
 
 FILEID: d5351900-d1c0-11e8-954d-10ddb1d4c3d5
 compflags
@@ -4988,6 +4997,8 @@ FILEID: 9410539a-9317-11e9-a422-10ddb1d4c3d5
 tilda
 
 FILEID: c0ac0568-bd81-11e9-8464-10ddb1d4c3d5
+ilroy
+ninther
 sortit
 
 FILEID: 4d6baa58-bd82-11e9-8464-10ddb1d4c3d5
@@ -5106,6 +5117,44 @@ vallen
 
 FILEID: 5b81c0c6-fd35-11e9-98b5-10ddb1d4c3d5
 uniqued
+
+FILEID: b4bc8e62-253c-11ea-948f-10ddb1d4c3d5
+gsplitinit
+
+FILEID: 117a9e8c-253d-11ea-948f-10ddb1d4c3d5
+testmain
+
+FILEID: 1381859c-253d-11ea-948f-10ddb1d4c3d5
+condtest
+
+FILEID: 1c00d998-253d-11ea-948f-10ddb1d4c3d5
+alignmt
+nfty
+
+FILEID: 466a4d0e-253d-11ea-948f-10ddb1d4c3d5
+onetuple
+protohead
+
+FILEID: 4d4f76a8-253d-11ea-948f-10ddb1d4c3d5
+imes
+
+FILEID: 61e57b76-253d-11ea-948f-10ddb1d4c3d5
+mywriteln
+
+FILEID: 7717bf22-253d-11ea-948f-10ddb1d4c3d5
+addone
+fltdbl
+
+FILEID: 7c62caa8-253d-11ea-948f-10ddb1d4c3d5
+adecl
+imes
+
+FILEID: 836b6940-253d-11ea-948f-10ddb1d4c3d5
+condexp
+writehalf
+
+FILEID: be179ce4-253d-11ea-948f-10ddb1d4c3d5
+hname
 
 NATURAL:
 aarch
@@ -5246,6 +5295,7 @@ bendre
 bengali
 benharsh
 benhavns
+bentley
 berkeley
 bernstein
 bertolacci
@@ -6909,6 +6959,7 @@ paramness
 paratest
 parekh
 parens
+parenthesesless
 parenthesization
 parentvar
 parsable
@@ -7672,7 +7723,9 @@ unalias
 unanchored
 unary
 unbundles
+uncategorized
 uncommented
+uncommenting
 undefines
 underrun
 unencoded
