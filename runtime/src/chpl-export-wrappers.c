@@ -34,7 +34,7 @@ void chpl_byte_buffer_free(chpl_byte_buffer cb) {
 }
 
 chpl_byte_buffer chpl_byte_buffer_make(const char* data) {
-  // We can get away with this cast because we mark "isOWned" as false.
+  // We can get away with this cast because we mark "isOwned" as false.
   chpl_byte_buffer result = { 0, (char*) data, strlen(data) };
   return result;
 }
