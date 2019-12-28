@@ -18,7 +18,8 @@ param eol = "\n".toByte();      // end-of-line, as an integer
 const table = createTable();    // create the table of code complements
 
 // a channel and coordination variable for writing data to stdout
-var stdoutBin = openfd(1).writer(iokind.native, locking=false),
+var stdoutBin = openfd(1).writer(iokind.native, locking=false,
+                                 hints=QIO_CH_ALWAYS_UNBUFFERED),
     seqToWrite: atomic int = 1;
 
 
