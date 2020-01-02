@@ -161,9 +161,6 @@ static void walkBlockStmt(FnSymbol*         fn,
   // TODO -- maybe we need to handle breakLabel and continueLabel here?
 
   // Destroy the variable after this statement if it's the last mention
-  /*
-   Re-enable after lifetime checking runs before addAutoDestroyCalls
-
   if (CallExpr* call = toCallExpr(stmt)) {
     if (!(call->isPrimitive(PRIM_YIELD) || call->isPrimitive(PRIM_RETURN))) {
       LastMentionMap::const_iterator lmmIt = lmm.find(stmt);
@@ -177,7 +174,7 @@ static void walkBlockStmt(FnSymbol*         fn,
         }
       }
     }
-  }*/
+  }
 
   // Once a variable is yielded, it should no longer be auto-destroyed,
   // since such destruction is the responsibility of
@@ -593,7 +590,7 @@ class ComputeLastSymExpr : public AstVisitorTraverse
     virtual void visitSymExpr(SymExpr* node);
 };
 
-static Expr* findLastExprInStatement(Expr* e);
+static Expr* findLastExprInStatement(Expr* e, VarSymbol* v);
 
 static void computeLastMentionPoints(LastMentionMap& lmm, FnSymbol* fn) {
   std::map<VarSymbol*, Expr*> last;
@@ -610,7 +607,7 @@ static void computeLastMentionPoints(LastMentionMap& lmm, FnSymbol* fn) {
     VarSymbol* v = it->first;
     Expr* point = it->second;
     // find the end of statement
-    point = findLastExprInStatement(point);
+    point = findLastExprInStatement(point, v);
     // store in the inverse map
     lmm[point].push_back(v);
   }
@@ -618,17 +615,36 @@ static void computeLastMentionPoints(LastMentionMap& lmm, FnSymbol* fn) {
 
 void ComputeLastSymExpr::visitSymExpr(SymExpr* node) {
   if (VarSymbol* var = toVarSymbol(node->symbol())) {
-    if (var->hasFlag(FLAG_DEAD_LAST_MENTION)) {
+    if (var->hasFlag(FLAG_DEAD_LAST_MENTION) &&
+        var->hasFlag(FLAG_INSERT_AUTO_DESTROY) &&
+        !var->hasFlag(FLAG_NO_AUTO_DESTROY)) {
       // put it in the map
       last[var] = node;
     }
   }
 }
 
-static Expr* findLastExprInStatement(Expr* e) {
+static Expr* findLastExprInStatement(Expr* e, VarSymbol* v) {
 
   Expr* stmt = e->getStmtExpr();
   Expr* last = stmt;
+
+  // Go up in any complex nested statements until we reach the same level
+  // as the DefExpr.
+  // Note, forall index vars are just in a ForallStmt (not a block)
+  Expr* defParent = v->defPoint->parentExpr;
+  INT_ASSERT(defParent);
+  for (Expr* cur = stmt;
+       cur != NULL && cur != defParent;
+       cur = cur->parentExpr) {
+    // If we encounter any non-trivial block statements, make the
+    // statement be the entire block.
+    if (isCondStmt(cur) || isLoopStmt(cur) || isForallStmt(cur))
+      stmt = cur;
+    if (BlockStmt* block = toBlockStmt(cur))
+      if (block->isLoopStmt() || block->isRealBlockStmt() == false)
+        stmt = block;
+  }
 
   // Now look forward for:
   //  * next PRIM_END_OF_STATEMENT
