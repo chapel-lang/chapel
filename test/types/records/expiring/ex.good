@@ -1,0 +1,81 @@
+Expiring values for function refExample1EOB (ex.chpl:14)
+  rec (ex.chpl:15) expires at end of block
+Expiring values for function refExample2EOB (ex.chpl:20)
+  rec (ex.chpl:21) expires at end of block
+Expiring values for function borrowExample1EOB (ex.chpl:26)
+  c (ex.chpl:27) expires at end of block
+Expiring values for function borrowExample2EOB (ex.chpl:32)
+  c (ex.chpl:33) expires at end of block
+Expiring values for function borrowExample3EOB (ex.chpl:38)
+  c (ex.chpl:39) expires at end of block
+Expiring values for function borrowExample4EOB (ex.chpl:44)
+  c (ex.chpl:45) expires at end of block
+Expiring values for function borrowExample5EOB (ex.chpl:51)
+  c (ex.chpl:52) expires at end of block
+Expiring values for function borrowExample6EOB (ex.chpl:58)
+  c (ex.chpl:59) expires at end of block
+Expiring values for function recordExample1LM (ex.chpl:68)
+  rec (ex.chpl:69) expires after last mention
+Expiring values for function recordExample2LM (ex.chpl:74)
+  rec (ex.chpl:75) expires after last mention
+Expiring values for function makeR (ex.chpl:80)
+  temp (ex.chpl:81) expires at end of block
+Expiring values for function recordExample3LM (ex.chpl:83)
+  rec (ex.chpl:84) expires after last mention
+Expiring values for function ioExample0LM (ex.chpl:90)
+  tmp (ex.chpl:91) expires after last mention
+Expiring values for function ioExample1LM (ex.chpl:95)
+  tmp (ex.chpl:96) expires after last mention
+  A (ex.chpl:98) expires after last mention
+  B (ex.chpl:99) expires after last mention
+  temp (ex.chpl:99) expires at end of block
+  temp (ex.chpl:101) expires at end of block
+  temp (ex.chpl:102) expires at end of block
+Expiring values for function ownedExample1EOB (ex.chpl:106)
+  temp (ex.chpl:107) expires at end of block
+Expiring values for function ownedExample2EOB (ex.chpl:115)
+  temp (ex.chpl:117) expires at end of block
+Expiring values for function ownedExample3EOB (ex.chpl:125)
+  temp (ex.chpl:127) expires at end of block
+Expiring values for function ownedExample4LM (ex.chpl:135)
+  x (ex.chpl:136) expires after last mention
+  y (ex.chpl:137) expires after last mention
+Expiring values for function f (ex.chpl:143)
+  a (ex.chpl:144) expires at end of block
+  temp (ex.chpl:144) expires after last mention
+  temp (ex.chpl:145) expires at end of block
+  temp (ex.chpl:148) expires at end of block
+Expiring values for function arrayExample1LM (ex.chpl:150)
+  x (ex.chpl:151) expires after last mention
+Expiring values for function sliceExample1EOB (ex.chpl:155)
+  A (ex.chpl:156) expires at end of block
+  temp (ex.chpl:156) expires after last mention
+  temp (ex.chpl:157) expires at end of block
+Expiring values for function makeArray (ex.chpl:165)
+  A (ex.chpl:166) expires at end of block
+  temp (ex.chpl:166) expires after last mention
+Expiring values for function sliceExample2EOB (ex.chpl:169)
+  temp (ex.chpl:170) expires at end of block
+  temp (ex.chpl:170) expires at end of block
+Expiring values for function innerFnExample1 (ex.chpl:178)
+  c (ex.chpl:179) expires at end of block
+Expiring values for function sharedExample1LMEOB (ex.chpl:191)
+  c (ex.chpl:192) expires after last mention
+  d (ex.chpl:193) expires at end of block
+Expiring values for function sharedExample2LM (ex.chpl:198)
+  c (ex.chpl:199) expires after last mention
+  d (ex.chpl:200) expires after last mention
+Expiring values for function sharedExample3LM (ex.chpl:205)
+  c (ex.chpl:206) expires after last mention
+  d (ex.chpl:207) expires after last mention
+{x = 1}
+
+{x = 1}
+
+{x = 1}
+
+0 0 0 0 0 0 0 0 0 0
+
+0 0 0 0 0 0 0 0 0 0
+
+{x = 1}
