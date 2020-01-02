@@ -1,21 +1,19 @@
 /* The Computer Language Benchmarks Game
    https://salsa.debian.org/benchmarksgame-team/benchmarksgame/
 
-   contributed by Brad Chamberlain
-   based on the Chapel #1-#3 versions by Ben Harshbarger and myself,
-   and informed by the C gcc #6 version by Jeremy Zerfas, particularly in
-   terms of the read chunk size and the recursive doubling of the buffer
+   contributed by Brad Chamberlain and Ben Harshbarger
+   based on the Chapel #1-#3 versions that we previously submitted, but
+   informed by the C gcc #6 version by Jeremy Zerfas in terms of the read
+   chunk size and the recursive doubling of the input data buffer
 */
 
-// TODO: if I add a flush and remove the unbuffered, does perf improve?
-
 use IO;
-
-config const readSize = 16384;  // the chunk size to read at a time
 
 param eol = "\n".toByte();      // end-of-line, as an integer
 
 const table = createTable();    // create the table of code complements
+
+config const readSize = 16384;  // the chunk size to read at a time
 
 // a channel and coordination variable for writing data to stdout
 var stdoutBin = openfd(1).writer(iokind.native, locking=false,
@@ -25,7 +23,8 @@ var stdoutBin = openfd(1).writer(iokind.native, locking=false,
 
 proc main(args: [] string) {
   const stdin = openfd(0),
-        input = stdin.reader(iokind.native, locking=false);
+        input = stdin.reader(iokind.native, locking=false,
+                             hints = QIO_CH_ALWAYS_UNBUFFERED);
 
   var curSeq = new Seq(id=1);
 
@@ -34,9 +33,9 @@ proc main(args: [] string) {
 
     // look for one or more sequences in the chunk we just read
     do {
-      const foundSeq = curSeq.processChunk();
+      const (foundSeq, moreSeqs) = curSeq.processChunk();
 
-      if (foundSeq) {
+      if foundSeq {
         // if the chunk completed a sequence, save it away and copy the
         // remainder into the next one
         var lastSeq = curSeq;
@@ -47,7 +46,7 @@ proc main(args: [] string) {
           lastSeq.revcomp();
         }
       }
-    } while foundSeq == 1;
+    } while moreSeqs;
   } while !eof;
 }
 
@@ -66,16 +65,17 @@ class Seq {
   // returns whether we've seen EOF (true) or not (false)
   proc readChunk(input) {
     last = cursor + readSize - 1;
-    if (last >= dataLen) {
+    // if we don't have enough space for the last byte, double the data buffer
+    if last >= dataLen {
       dataLen *= 2;
       inds = {0..#dataLen};
     }
     return !input.read(data[cursor..last]);
   }
 
-  // process the chunk from cursor through last looking for '>'s or '\0's;
-  // returns 0 if we did not find the end of the sequence, 1 if we did and
-  // another sequence follows, 2 if we did and it's the end of the file (EOF)
+  // process the chunk from 'cursor' through 'last' looking for '>'s or '\0's;
+  // returns a pair of bools where the first indicates whether or not we found
+  // a sequence and the second indicates whether there may yet be more.
   proc processChunk() {
     for i in cursor..last {
       if data[i] == ">".toByte() {  // if we find '>'
@@ -83,19 +83,19 @@ class Seq {
           start = i;                // this is the start
         } else {
           end = i-1;                // otherwise, it starts the next one
-          return 1;
+          return (true, true);      // we found a sequence and there's more
         }
-      } else if data[i] == 0 {      // if we find '\0', this is the file's end;
+      } else if data[i] == 0 {      // if we find '\0', the file has ended
         end = i-1;
         if start != -1 then
-          return 2;                 // indicate that we found a sequence
+          return (true, false);     // we found a sequence and there's no more
       }
     }
 
     // we did not find the end of a sequence, so advance the cursor to
     // prepare for the next read
     cursor = last+1;
-    return 0;
+    return (false, false);          // we didn't find a sequence
   }
 
   // copy the unused tail of our data buffer into a new sequence
@@ -127,10 +127,10 @@ class Seq {
       advance(start, 1);
       advance(end, -1);
 
-      proc advance(ref ind, dir) {
+      proc advance(ref idx, dir) {
         do {
-          ind += dir;
-        } while data[ind] == eol;
+          idx += dir;
+        } while data[idx] == eol;
       }
     }
 
