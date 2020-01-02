@@ -431,6 +431,7 @@ static void walkForallBlocks(FnSymbol* fn,
   'def' x;
   'def' call_tmp;
   'move' call_tmp 'call' returnOrThrow(1, error)
+    (or call using ret-arg and a ret_tmp)
   if('check error' error)
   {
     gotoErrorHandling handler;
@@ -453,50 +454,92 @@ static void gatherIgnoredVariablesForErrorHandling(
   // that throws. Is it returning a variable that we will
   // want to auto-destroy?
 
-  VarSymbol* ignore = NULL;
-  if (CallExpr* move = toCallExpr(cond->prev)) {
-    if (move->isPrimitive(PRIM_MOVE)) {
-      if (CallExpr* call = toCallExpr(move->get(2))) {
-        if (FnSymbol* fn = call->resolvedFunction()) {
-          if (fn->throwsError()) {
-            // The following block is a workaround to close a memory leak in
-            // code similar to:
-            //
-            //   try {
-            //     var a = for i in 0..3 throwingFunc(i)
-            //   }
-            //   catch { ... }
-            //
-            // Do not ignore if the call is chpl__initCopy(ir) because not
-            // cleaning after it causes memory leaks. See the test:
-            // test/errhandling/ferguson/loopexprs-caught.chpl and PR #14192
-            bool isInitCopyWithIR = false;
-            if (fn->hasFlag(FLAG_INIT_COPY_FN)) {
-              if (call->numActuals() >= 1) {
-                if (SymExpr *argSE = toSymExpr(call->get(1))) {
-                  if (argSE->symbol()->type->symbol->hasFlag(FLAG_ITERATOR_RECORD)) {
-                    isInitCopyWithIR = true;
-                  }
-                }
-              }
-            }
+  VarSymbol* callResult = NULL;
+  VarSymbol* moveResult = NULL;
+  CallExpr* returningAndThrowingCall = NULL;
 
-            if (!isInitCopyWithIR) {
-              SymExpr *se = toSymExpr(move->get(1));
-              ignore = toVarSymbol(se->symbol());
-              ignoredVariables.insert(ignore);
+  // Look for previous call and track whatever variable was move'd into
+  for (Expr* cur = cond->prev; cur != NULL; cur = cur->prev) {
+    if (CallExpr* call = toCallExpr(cur)) {
+      FnSymbol* calledFn = call->resolvedFunction();
+
+      // Check for a pattern like
+      //   move tmp (call someFunction())
+      //   if error
+      if (call->isPrimitive(PRIM_MOVE) || call->isPrimitive(PRIM_ASSIGN)) {
+        SymExpr* lhsSe = toSymExpr(call->get(1));
+        moveResult = toVarSymbol(lhsSe->symbol());
+        if (CallExpr* subCall = toCallExpr(call->get(2))) {
+          if (FnSymbol* subFn = subCall->resolvedFunction()) {
+            if (subFn->throwsError()) {
+              // Found the non-ret-arg pattern
+              callResult = NULL;
+              returningAndThrowingCall = subCall;
+              break;
             }
           }
         }
+
+      // Check for a ret-arg pattern like
+      //   call someFunction(ret_tmp)
+      //   move tmp ret_tmp
+      //   if error
+      } else if (calledFn != NULL &&
+                 calledFn->throwsError() &&
+                 calledFn->hasFlag(FLAG_FN_RETARG)) {
+        ArgSymbol* retArg = toArgSymbol(toDefExpr(calledFn->formals.tail)->sym);
+        INT_ASSERT(retArg && retArg->hasFlag(FLAG_RETARG));
+        // Find the corresponding actual, which is the last actual
+        SymExpr* lastActual = toSymExpr(call->argList.tail);
+        INT_ASSERT(lastActual && isVarSymbol(lastActual->symbol()));
+        INT_ASSERT(moveResult);
+        callResult = toVarSymbol(lastActual->symbol());
+        returningAndThrowingCall = call;
+        break;
       }
     }
+  }
+
+  FnSymbol* fn = NULL;
+  if (returningAndThrowingCall != NULL) {
+    fn = returningAndThrowingCall->resolvedFunction();
+    INT_ASSERT(fn && fn->throwsError());
+  }
+
+  // The following block is a workaround to close a memory leak in
+  // code similar to:
+  //
+  //   try {
+  //     var a = for i in 0..3 throwingFunc(i)
+  //   }
+  //   catch { ... }
+  //
+  // Do not ignore if the call is chpl__initCopy(ir) because not
+  // cleaning after it causes memory leaks. See the test:
+  // test/errhandling/ferguson/loopexprs-caught.chpl and PR #14192
+  bool isInitCopyWithIR = false;
+  if (fn && fn->hasFlag(FLAG_INIT_COPY_FN)) {
+    if (returningAndThrowingCall->numActuals() >= 1) {
+      if (SymExpr *argSE = toSymExpr(returningAndThrowingCall->get(1))) {
+        if (argSE->symbol()->type->symbol->hasFlag(FLAG_ITERATOR_RECORD)) {
+          isInitCopyWithIR = true;
+        }
+      }
+    }
+  }
+
+  if (!isInitCopyWithIR) {
+    if (callResult)
+      ignoredVariables.insert(callResult);
+    if (moveResult)
+      ignoredVariables.insert(moveResult);
   }
 
   // If ignore is set, it might be a callTmp,
   // track a subsequent PRIM_MOVE to expand the
   // set of ignored variables to include the
   // relevant user variable.
-  if (ignore != NULL) {
+/*  if (ignore != NULL) {
     if (CallExpr* move = toCallExpr(cond->next)) {
       if (move->isPrimitive(PRIM_MOVE)) {
         SymExpr *dstSe = toSymExpr(move->get(1));
@@ -516,7 +559,7 @@ static void gatherIgnoredVariablesForErrorHandling(
           ignoredVariables.insert(toVarSymbol(dstSe->symbol()));
       }
     }
-  }
+  }*/
 }
 
 static void gatherIgnoredVariablesForYield(
