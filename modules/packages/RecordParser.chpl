@@ -115,7 +115,7 @@ class RecordReader {
   /* The channel to read from */
   var myReader;
   /* The regular expression to read (using match on the channel) */
-  var matchRegexp: regexp;
+  var matchRegexp: regexp(string);
   pragma "no doc"
   param num_fields = numFields(t); // Number of fields in record
 
