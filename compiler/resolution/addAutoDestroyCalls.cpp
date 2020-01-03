@@ -617,7 +617,8 @@ void ComputeLastSymExpr::visitSymExpr(SymExpr* node) {
   if (VarSymbol* var = toVarSymbol(node->symbol())) {
     if (var->hasFlag(FLAG_DEAD_LAST_MENTION) &&
         var->hasFlag(FLAG_INSERT_AUTO_DESTROY) &&
-        !var->hasFlag(FLAG_NO_AUTO_DESTROY)) {
+        !var->hasFlag(FLAG_NO_AUTO_DESTROY) &&
+        !isForallStmt(var->defPoint->parentExpr)) {
       // put it in the map
       last[var] = node;
     }
