@@ -13,6 +13,10 @@ record ComplexR {
     this.owns = true;
     this.c = new unmanaged C(x);
   }
+  proc init(other: ComplexR) {
+    this.owns = false;
+    this.c = other.c;
+  }
   proc init=(other: ComplexR) {
     this.owns = false;
     this.c = other.c;
@@ -37,6 +41,17 @@ proc rCopyInitEOB() {
   // point 2
 }
 rCopyInitEOB();
+
+proc rCopyInitIshEOB() {
+  var a = new ComplexR(1);
+  var b = new ComplexR(a);
+  writeln(a);
+  // point 1
+  writeln(b);
+  // point 2
+}
+rCopyInitIshEOB();
+
 
 proc rAssignEOB() {
   var a = new ComplexR(1);
