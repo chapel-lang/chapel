@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2019 Cray Inc.
+ * Copyright 2004-2020 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -1231,7 +1231,7 @@ static void errorIfValueCoercionToRef(CallExpr* call, ArgSymbol* formal) {
     USR_FATAL_CONT(call,
                    "value from coercion passed to ref formal '%s'",
                    formal->name);
-    USR_FATAL_CONT(formal->getFunction(),
+    USR_PRINT(formal->getFunction(),
                    "to function '%s' defined here",
                    formal->getFunction()->name);
    }
@@ -1250,7 +1250,7 @@ static void errorIfValueCoercionToRef(CallExpr* call, ArgSymbol* formal) {
       USR_FATAL_CONT(call,
                      "value from coercion passed to const ref formal '%s'",
                      formal->name);
-      USR_FATAL_CONT(formal->getFunction(),
+      USR_PRINT(formal->getFunction(),
                      "to function '%s' defined here",
                      formal->getFunction()->name);
 
@@ -2600,6 +2600,8 @@ static void buildFastFollowerCheck(bool                  isStatic,
     checkFn         = new FnSymbol(fnName);
     checkFn->retTag = RET_VALUE;
   }
+
+  checkFn->addFlag(FLAG_COMPILER_GENERATED);
 
   checkFn->insertFormalAtTail(x);
 

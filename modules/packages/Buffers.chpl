@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2019 Cray Inc.
+ * Copyright 2004-2020 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -155,7 +155,7 @@ module Buffers {
 
 
   pragma "no doc"
-  proc byteBuffer.init=(x: bytes) {
+  proc byteBuffer.init=(x: byteBuffer) {
     this.home = here;
     if x.home == here {
       qbytes_retain(x._bytes_internal);
@@ -698,7 +698,7 @@ module Buffers {
         err = qbuffer_copyout(this._buf_internal,
                               start._bufit_internal, end._bufit_internal,
                               buf, len);
-        value = createStringWithOwnedBuffer(buf, length=len, size=len+1);
+        value = try! createStringWithOwnedBuffer(buf, length=len, size=len+1);
         ret = end;
       }
     }

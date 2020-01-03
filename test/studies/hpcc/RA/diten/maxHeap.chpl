@@ -53,9 +53,8 @@ class MaxHeap {
   }
 
   proc extractMax() {
-    var node: unmanaged HeapNode?;
+    var node = heap(0);
     var parent, child, ind, key: int;
-    node = heap(0);
     ind = node.ind;
     key = node.key;
     size -= 1;

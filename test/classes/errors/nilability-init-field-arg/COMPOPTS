@@ -1,1 +1,3 @@
---no-codegen
+--no-codegen --no-lifetime-checking
+# lifetime checking is disabled for these tests because they
+# are checking specifically nilability errors

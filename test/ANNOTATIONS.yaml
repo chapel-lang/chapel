@@ -617,6 +617,8 @@ create-views:
     - Govern slice expressions by slicing domain (#12931)
   11/27/19:
     - Close some multilocale distribution and privatization memleaks (#14510)
+  12/10/19:
+    - Guard privatization checks with param flag (#14604)
 
 cs-resize:
   03/05/19:
@@ -1158,6 +1160,9 @@ memleaksfull:
     - Access param, type fields without postfix-! (#14549)
   12/06/19:
     - Close user-level leaks in some new tests (#14586)
+    - Fix quicksort to work with owned array elements (#14204)
+  12/10/19:
+    - Allow messages in new Errors (#14545)
 
 meteor:
   12/18/13:
@@ -1659,6 +1664,16 @@ compilerAndTestingStats: &compiler-perf-base
     - Switched test machine
   11/05/19:
     - Remove standardModuleSet and all code involving it from the compiler (#14270)
+  11/20/19:
+    - Simplify visible function determination of use visibility (#14481)
+  11/21/19:
+    - Only check visibility once per scope instead of once per private function (#14492)
+  12/04/19:
+    - pinned test machine for linux64, --fast, and --no-local
+  12/10/19:
+    - Switched test machine for --fast and --no-local
+  12/13/19:
+    - Switched test machine for --no-local
 
 allTotalTime:
   <<: *compiler-perf-base

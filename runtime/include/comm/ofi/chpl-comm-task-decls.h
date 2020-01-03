@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2019 Cray Inc.
+ * Copyright 2004-2020 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -28,7 +28,12 @@
 
 #include "chpltypes.h"
 
+// The type of task private data.
+#include "chpl-cache-task-decls.h"
+#define HAS_CHPL_CACHE_FNS
+
 typedef struct {
+  chpl_cache_taskPrvData_t cache_data;
   int numTxnsOut;    // number of transactions outstanding
 } chpl_comm_taskPrvData_t;
 

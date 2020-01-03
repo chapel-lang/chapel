@@ -76,7 +76,7 @@ class PotentialEAM : BasePotential {
     this.rhoIO = r!;
     this.fIO   = f!;
 
-    const boxInfo  = computeBoxInfo(info.lat, info.cutoff);
+    const boxInfo  = computeBoxInfo(info!.lat, info!.cutoff);
     const numBoxes = boxInfo(2);
     rhoDom         = {1..numBoxes(1), 1..numBoxes(2), 1..numBoxes(3)};
 

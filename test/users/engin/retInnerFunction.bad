@@ -1,4 +1,4 @@
-internal error: PAS-DEN-IZE-0304 chpl version 1.19.0 pre-release (cfeb6592b3)
+retInnerFunction.chpl:5: internal error: RES-LIF-IME-3074 chpl version 1.21.0 pre-release (f6474ce083)
 
 Internal errors indicate a bug in the Chapel compiler ("It's us, not you"),
 and we're sorry for the hassle.  We would appreciate your reporting this bug -- 

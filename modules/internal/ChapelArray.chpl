@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2019 Cray Inc.
+ * Copyright 2004-2020 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -3001,81 +3001,6 @@ module ChapelArray {
       return this[this.domain.alignedHigh];
     }
 
-    /* Return a range that is grown shrunk from
-       this._value.dataAllocRange to accommodate 'r2'
-     */
-    pragma "no doc"
-    inline proc resizeAllocRange(r2: range, factor=arrayAsVecGrowthFactor,
-                                 param direction=1, param grow=1) {
-      // This should only be called for 1-dimensional arrays
-      const ref r = this._value.dataAllocRange;
-      const lo = r.low,
-            hi = r.high,
-            size = r.size;
-
-      if grow > 0 {
-        const newSize = max(size+1, (size*factor):int, r2.size); // Always grow by at least 1.
-        if direction > 0 {
-          return lo..#newSize;
-        } else {
-          return ..hi#-newSize;
-        }
-      } else {
-        // TODO: grow <= 0 is not tested for |r2.size - r1.size| > 1
-        const newSize = min(size-1, (size/factor):int);
-        if direction > 0 {
-          var newRange = lo..#newSize;
-          if newRange.high < r2.high {
-            // not able to take enough spaces off the high end.  Take them
-            // off the low end instead.
-            const spaceNeeded = r2.high - newRange.high;
-            newRange = (newRange.low+spaceNeeded)..r2.high;
-          }
-          return newRange;
-        } else {
-          var newRange = ..hi # -newSize;
-          if newRange.low > r2.low {
-            // not able to take enough spaces off the low end.  Take them
-            // off the high end instead.
-            const spaceNeeded = newRange.low - r2.low;
-            newRange = r2.low..(newRange.high-spaceNeeded);
-          }
-          return newRange;
-        }
-      }
-    }
-
-    pragma "no doc"
-    /* Internal helper method to reallocate an array */
-    inline proc reallocateArray(newRange: range, param direction=1,
-                                debugMsg="reallocateArray")
-    {
-      on this._value {
-        const check = if direction > 0 then newRange.high else newRange.low;
-        if !this._value.dataAllocRange.contains(check) {
-          /* The new index is not in the allocated space.  We'll need to
-             realloc it. */
-          if this._value.dataAllocRange.length < this.domain.numIndices {
-            /* If dataAllocRange has fewer indices than this.domain it must not
-               be set correctly.  Set it to match this.domain to start.
-             */
-            this._value.dataAllocRange = this.domain.low..this.domain.high;
-          }
-          const oldRange = this._value.dataAllocRange;
-          const nextAllocRange = resizeAllocRange(newRange, direction=direction);
-
-          if debugArrayAsVec then
-            writeln(debugMsg, ": ",
-                    oldRange, " => ", nextAllocRange, " (", newRange, ")");
-
-          // note: dsiReallocate sets _value.dataAllocRange = nextAllocRange
-          this._value.dsiReallocate((nextAllocRange,));
-        }
-        this.domain.setIndices((newRange,));
-        this._value.dsiPostReallocate();
-      }
-    }
-
     /* Return the last element in the array. The array must be a
        rectangular 1-D array.
      */
@@ -3164,12 +3089,12 @@ module ChapelArray {
         if domToRemove != nil {
           // remove that domain
           (domToFree, distToRemove) = domToRemove!.remove();
-          domIsPrivatized = domToRemove!.pid != nullPid;
+          domIsPrivatized = _privatization && (domToRemove!.pid != nullPid);
         }
         var distIsPrivatized = false;
         if distToRemove != nil {
           distToFree = distToRemove!.remove();
-          distIsPrivatized = distToRemove!.pid != nullPid;
+          distIsPrivatized = _privatization && (distToRemove!.pid != nullPid);
         }
         if arrToFree != nil then
           _delete_arr(_instance, _isPrivatized(_instance));

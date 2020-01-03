@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2019 Cray Inc.
+ * Copyright 2004-2020 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -663,20 +663,24 @@ module ChapelTuple {
   }
 
   inline proc ==(a: _tuple, b: _tuple) {
-    if a.size != b.size then
+    if a.size != b.size {
       return false;
-    for param i in 1..a.size do
-      if a(i) != b(i) then
-        return false;
+    } else {
+      for param i in 1..a.size do
+        if a(i) != b(i) then
+          return false;
+    }
     return true;
   }
 
   inline proc !=(a: _tuple, b: _tuple) {
-    if a.size != b.size then
+    if a.size != b.size {
       return true;
-    for param i in 1..a.size do
-      if a(i) != b(i) then
-        return true;
+    } else {
+      for param i in 1..a.size do
+        if a(i) != b(i) then
+          return true;
+    }
     return false;
   }
 

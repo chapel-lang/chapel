@@ -470,7 +470,7 @@ tArray[timerEnum.REDIST].stop();
 
 proc computeForce() {
 tArray[timerEnum.FORCE].start();
-  if(replicateForce) then f.computeLocal(); else f.compute();
+  if(replicateForce) then f!.computeLocal(); else f!.compute();
 tArray[timerEnum.FORCE].stop();
 }
 
@@ -489,7 +489,7 @@ tArray[timerEnum.FCREATE].stop();
   writeln(); 
 
   var latticeConstant : real = lat;
-  if(lat < 0.0) then latticeConstant = f.lat;
+  if(lat < 0.0) then latticeConstant = f!.lat;
 
 tArray[timerEnum.INITGRID].start();
 if useChplVis then tagVdebug("initGrid");
@@ -498,7 +498,7 @@ if useChplVis then pauseVdebug();
 tArray[timerEnum.INITGRID].stop();
 
 tArray[timerEnum.EPILOGUE].start();
-  f.epilogue();
+  f!.epilogue();
 tArray[timerEnum.EPILOGUE].stop();
 
 if useChplVis then tagVdebug("createLattice");

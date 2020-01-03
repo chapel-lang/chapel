@@ -15,7 +15,7 @@ record foo {
    var anew : unmanaged node(t) = new unmanaged node(t);
     anew.element = e;
     if length > 0 {
-      last.next = anew;
+      last!.next = anew;
       last = anew;
     } else {
       first = anew;
@@ -41,8 +41,8 @@ proc foo.writeThis(fp) {
   fp.write("(/");
   var tmp = first;
   while tmp != nil {
-    fp.write(tmp.element);
-    tmp = tmp.next;
+    fp.write(tmp!.element);
+    tmp = tmp!.next;
     if (tmp != nil) {
       fp.write(", ");
     }

@@ -1,0 +1,1 @@
+../../../release/examples/primers/LAPACKlib.chpl

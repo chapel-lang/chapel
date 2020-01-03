@@ -177,13 +177,14 @@ $(LLVM_CLANG_FILE):
 # This file is necessary on darwin where important headers are
 # not in /usr/include. This causes a problem when building another clang
 # because the new clang can't find the appropriate headers.
-$(LLVM_CLANG_CONFIG_FILE):
-	mkdir -p $(LLVM_INSTALL_DIR)
-	if [ "clang" = "$(CHPL_MAKE_HOST_COMPILER)" ]; then \
-	  ../../util/config/gather-clang-sysroot-arguments clang > $(LLVM_CLANG_CONFIG_FILE) ; \
+$(LLVM_CLANG_CONFIG_FILE): FORCE
+	@mkdir -p $(LLVM_INSTALL_DIR)
+	@if [ "clang" = "$(CHPL_MAKE_HOST_COMPILER)" ]; then \
+	  $(CHPL_MAKE_HOME)/util/config/gather-clang-sysroot-arguments clang > $(LLVM_CLANG_CONFIG_FILE).incoming ; \
         else \
-          touch $(LLVM_CLANG_CONFIG_FILE) ; \
+          touch $(LLVM_CLANG_CONFIG_FILE).incoming ; \
         fi
+	@$(CHPL_MAKE_HOME)/util/config/update-if-different $(LLVM_CLANG_CONFIG_FILE) $(LLVM_CLANG_CONFIG_FILE).incoming
 
 configure-llvm: $(LLVM_CONFIGURED_HEADER_FILE)
 
