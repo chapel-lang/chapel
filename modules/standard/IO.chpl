@@ -2191,7 +2191,7 @@ proc channel._ch_ioerror(errstr:string, msg:string) throws {
 
    :throws SystemError: Thrown if the lock could not be acquired.
  */
-inline proc channel.lock() throws {
+proc channel.lock() throws {
   var err:syserr = ENOERR;
 
   if is_c_nil(_channel_internal) then
@@ -2208,7 +2208,7 @@ inline proc channel.lock() throws {
 /*
    Release a channel's lock.
  */
-inline proc channel.unlock() {
+proc channel.unlock() {
   if locking {
     on this.home {
       qio_channel_unlock(_channel_internal);
@@ -2308,7 +2308,7 @@ proc channel.advancePastByte(byte:uint(8)) throws {
   :returns: The offset that was marked
   :throws: SystemError: if marking the channel failed
  */
-inline proc channel.mark() throws where this.locking == false {
+proc channel.mark() throws where this.locking == false {
   const offset = this.offset();
   const err = qio_channel_mark(false, _channel_internal);
 
@@ -2324,7 +2324,7 @@ inline proc channel.mark() throws where this.locking == false {
    previous channel offset unchanged.  This function can only be
    called on a channel with ``locking==false``.
 */
-inline proc channel.revert() where this.locking == false {
+proc channel.revert() where this.locking == false {
   qio_channel_revert_unlocked(_channel_internal);
 }
 
@@ -2335,7 +2335,7 @@ inline proc channel.revert() where this.locking == false {
    only be called on a channel with ``locking==false``.
 
 */
-inline proc channel.commit() where this.locking == false {
+proc channel.commit() where this.locking == false {
   qio_channel_commit_unlocked(_channel_internal);
 }
 
@@ -2380,7 +2380,7 @@ proc channel.seek(start:int, end:int = max(int)) throws {
    For a channel locked with :proc:`channel.lock`, return the offset
    of that channel.
  */
-inline proc channel._offset():int(64) {
+proc channel._offset():int(64) {
   var ret:int(64);
   on this.home {
     ret = qio_channel_offset_unlocked(_channel_internal);
@@ -2402,7 +2402,7 @@ inline proc channel._offset():int(64) {
   :returns: The offset that was marked
   :throws: SystemError: if marking the channel failed
  */
-inline proc channel._mark() throws {
+proc channel._mark() throws {
   const offset = this.offset();
   const err = qio_channel_mark(false, _channel_internal);
 
@@ -2419,7 +2419,7 @@ inline proc channel._mark() throws {
    only be called on a channel that has already been locked and
    marked.
 */
-inline proc channel._revert() {
+proc channel._revert() {
   qio_channel_revert_unlocked(_channel_internal);
 }
 
@@ -2430,7 +2430,7 @@ inline proc channel._revert() {
    only be called on a channel that has already been locked and
    marked.
 */
-inline proc channel._commit() {
+proc channel._commit() {
   qio_channel_commit_unlocked(_channel_internal);
 }
 
@@ -2471,7 +2471,6 @@ proc channel._set_style(style:iostyle) {
    the formal argument to a `readThis`, `writeThis`, or `readWriteThis` method.
 
  */
-inline
 proc channel.readWriteThisFromLocale() {
   return _readWriteThisFromLocale;
 }
@@ -2483,7 +2482,6 @@ proc channel.readWriteThisFromLocale() {
 // was not created to call readThis/writeThis/readWriteThis and
 // so the original locale of the I/O is `here`.
 pragma "no doc"
-inline
 proc channel.getLocaleOfIoRequest() {
   var ret = this.readWriteThisFromLocale();
   if ret == nil then
@@ -3099,21 +3097,16 @@ private inline proc _read_one_internal(_channel_internal:qio_channel_ptr_t,
 
   try {
     x.readThis(reader);
+  //
+  // TODO: What to do with the caught error besides just stuff a code in the
+  // channel? Do we want to propagate it back up?
+  // TODO: Should we store Error objects in the channel instead of just error
+  // codes? This might be a more elegant design.
+  //
   } catch err: SystemError {
-    //
-    // For now, if the error is a system error, stuff its code in the
-    // channel.
-    // 
-    // TODO: This does not solve the problem of what to do when a user throws
-    // a SystemError (ideally, we only want to stuff the error in the channel
-    // if it originated from within IO code).
-    //
     const code = err.err;
     _qio_channel_set_error_unlocked(_channel_internal, code);
   } catch err {
-    //
-    // TODO: What to do with the caught error? Propagate back up?
-    //
     const code: syserr = EIO;
     _qio_channel_set_error_unlocked(_channel_internal, code);
   }
@@ -3168,13 +3161,16 @@ private inline proc _write_one_internal(_channel_internal:qio_channel_ptr_t,
     } else {
       x.writeThis(writer);
     }
+  //
+  // TODO: What to do with the caught error besides just stuff a code in the
+  // channel? Do we want to propagate it back up?
+  // TODO: Should we store Error objects in the channel instead of just error
+  // codes? This might be a more elegant design.
+  //
   } catch err: SystemError {
     const code = err.err;
     _qio_channel_set_error_unlocked(_channel_internal, code);
   } catch err {
-    //
-    // TODO: What to do with the caught error? Propagate back up?
-    //
     const code: syserr = EIO;
     _qio_channel_set_error_unlocked(_channel_internal, code);
   }
@@ -3240,7 +3236,7 @@ proc channel.writeIt(const x) throws {
    For a reading channel, reads as with :proc:`channel.read`.
    Stores any error encountered in the channel. Does not return anything.
  */
-inline proc channel.readwrite(const x) where this.writing {
+proc channel.readwrite(const x) where this.writing {
   try {
     this.writeIt(x);
   } catch err {
@@ -3253,7 +3249,7 @@ inline proc channel.readwrite(const x) where this.writing {
 }
 // documented in the writing version.
 pragma "no doc"
-inline proc channel.readwrite(ref x) where !this.writing {
+proc channel.readwrite(ref x) where !this.writing {
   try {
     this.readIt(x);
   } catch err {
@@ -3277,7 +3273,7 @@ inline proc channel.readwrite(ref x) where !this.writing {
      :returns: ch
      :throws SystemError: When an IO error has occurred.
    */
-  inline proc <~>(const ref ch: channel, x) const ref throws
+  proc <~>(const ref ch: channel, x) const ref throws
   where ch.writing {
     try ch.writeIt(x);
     return ch;
