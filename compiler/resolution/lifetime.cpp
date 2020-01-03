@@ -2979,6 +2979,31 @@ capturing.
 
 */
 
+static bool typeCanAlias(Type* t) {
+  if (isClassLikeOrPtr(t) || isManagedPtrType(t))
+    return true; // classes, ptrs of any flavor can alias other things
+
+  else if (AggregateType* at = toAggregateType(t)) {
+    // Does it contain any pointer fields, recursively?
+    if (isRecord(at)) {
+      bool canAlias = false;
+      for_fields(field, at) {
+        if (field->isRef())
+          canAlias = true;
+        else
+          canAlias = canAlias || typeCanAlias(field->type);
+      }
+      return canAlias;
+    }
+  }
+
+  // No references or pointers, so can't alias.
+  return false;
+}
+static bool typeCannotAlias(Type* t) {
+  return !typeCanAlias(t);
+}
+
 // Joins alias groups (if necessary)
 void GatherAliasesVisitor::ensureSameAliasesGroup(Symbol* a, Symbol* b) {
 
@@ -2986,6 +3011,11 @@ void GatherAliasesVisitor::ensureSameAliasesGroup(Symbol* a, Symbol* b) {
   b = lifetimes->getCanonicalSymbol(b);
 
   if (a == b || a == NULL || b == NULL) return;
+
+  // Do nothing if one of the types is e.g. int and neither is a ref
+  if (a->isRef() == false && b->isRef() == false)
+    if (typeCannotAlias(a->type) || typeCannotAlias(b->type))
+      return;
 
   // Are they already in the same map?
   AliasesGroup* aGroup = NULL;
@@ -3022,11 +3052,15 @@ void GatherAliasesVisitor::ensureSameAliasesGroup(Symbol* a, Symbol* b) {
   // OK, extend the group to contain a, b, and removeGroup.
   // And update the map to point to extendGroup.
   if (extendGroup->count(a) == 0) {
+    if (a->id == debugExpiringForId)
+      gdbShouldBreakHere();
     extendGroup->insert(a);
     (*aliases)[a] = extendGroup;
     changed = true;
   }
   if (extendGroup->count(b) == 0) {
+    if (b->id == debugExpiringForId)
+      gdbShouldBreakHere();
     extendGroup->insert(b);
     (*aliases)[b] = extendGroup;
     changed = true;
@@ -3037,6 +3071,8 @@ void GatherAliasesVisitor::ensureSameAliasesGroup(Symbol* a, Symbol* b) {
          ++it) {
       Symbol* sym = *it;
       if (extendGroup->count(sym) == 0) {
+        if (sym->id == debugExpiringForId)
+          gdbShouldBreakHere();
         extendGroup->insert(sym);
         (*aliases)[sym] = extendGroup;
         changed = true;
@@ -3062,6 +3098,14 @@ void GatherAliasesVisitor::expandAliasesForPossiblyReturned(
 
   if (calledFn->hasFlag(FLAG_RETURNS_INFINITE_LIFETIME))
     return; // nothing to do -- infinite lifetime
+
+  // For copy-initialization of a managed pointer
+  // from a managed pointer, don't consider it aliasing.
+  // The managed pointer will handle it.
+  if (calledFn->name == astrInitEquals)
+    if (isManagedPtrType(call->get(1)->getValType()))
+      if (isManagedPtrType(lhsActual->getValType()))
+        return; // handled by e.g. owned init=
 
   ArgSymbol* theOnlyOneThatMatters = NULL;
   if (calledFn->lifetimeConstraints) {
@@ -3295,16 +3339,22 @@ bool MarkCapturesVisitor::enterCallExpr(CallExpr* call) {
     }
 
     if (calledFn->name == astrSassign) {
-      if (isClassLikeOrNil(call->get(1)->getValType()) &&
-          isClassLikeOrNil(call->get(2)->getValType())) {
+      Type* lhsT = call->get(1)->getValType();
+      Type* rhsT = call->get(2)->getValType();
+      if (isClassLikeOrPtr(lhsT) && isClassLikeOrPtr(rhsT)) {
         // class = other class
         SymExpr* rhsSe = toSymExpr(call->get(2));
         markAliasesAndSymPotentiallyCaptured(rhsSe->symbol(), call);
-      } else if (isRecord(call->get(1)->getValType()) &&
+      } else if (isManagedPtrType(lhsT) && isManagedPtrType(rhsT)) {
+        // managed pointer = do not capture an alias
+        // (rather they transfer / share ownership)
+      } else if (isRecord(lhsT) &&
+                 typeCanAlias(lhsT) &&
                  calledFn->hasFlag(FLAG_COMPILER_GENERATED)) {
         // compiler-generated record =
         SymExpr* rhsSe = toSymExpr(call->get(2));
         markAliasesAndSymPotentiallyCaptured(rhsSe->symbol(), call);
+        // note: user-defined record = should have lifetime clause
       }
     }
   }

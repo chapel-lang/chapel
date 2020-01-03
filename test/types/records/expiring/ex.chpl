@@ -160,6 +160,26 @@ proc ownedExample6LM() {
 }
 ownedExample6LM();
 
+proc ownedExample7LM() {
+  var x = new owned C(1);
+  var y: owned C? = nil;
+  y = x; // ownership transfer to y
+  // end of statement mentioning x
+}
+ownedExample7LM();
+
+proc ownedExample8EOB() {
+  var x = new owned C(1);
+  var y: borrowed C = x;
+}
+ownedExample8EOB();
+
+proc ownedExample9EOB() {
+  var x = new owned C(1);
+  var y: borrowed C? = nil;
+  y = x;
+}
+ownedExample9EOB();
 
 class Wrapper { var x; }
 proc f() {
@@ -215,29 +235,49 @@ proc sharedExample0LM() {
 }
 sharedExample0LM();
 
-proc sharedExample1EOB() {
+proc sharedExample1LM() {
   var c = new shared C();
   var d = c;
 }
-sharedExample1EOB();
+sharedExample1LM();
 
-proc sharedExample2EOB() {
+proc sharedExample2LM() {
   var c = new shared C();
   var d = new shared C();
   c = d;
 }
-sharedExample2EOB();
+sharedExample2LM();
 
-proc sharedExample3EOB() {
+proc sharedExample3LM() {
   var c = new shared C();
   var d: shared C?;
   d = c;
 }
-sharedExample3EOB();
+sharedExample3LM();
 
-proc sharedExample4EOB() {
+proc sharedExample4LM() {
+  var c = new shared C();
+  var d: shared C? = nil;
+  d = c;
+}
+sharedExample4LM();
+
+proc sharedExample5LMEOB() {
   var c = new shared C();
   var d = new shared C();
   setit(c, d);
 }
-sharedExample4EOB();
+sharedExample5LMEOB();
+
+proc sharedExample6EOB() {
+  var c = new shared C();
+  var d: borrowed C = c;
+}
+sharedExample6EOB();
+
+proc sharedExample7EOB() {
+  var c = new shared C();
+  var d: borrowed C? = nil;
+  d = c;
+}
+sharedExample7EOB();
