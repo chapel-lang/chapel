@@ -143,6 +143,8 @@ class SymRename {
 
   SymRename(const char* new_name, const char* file_name, int line_no);
 
+  SymRename* copy();
+
 };
 
 class SymExpr : public Expr {

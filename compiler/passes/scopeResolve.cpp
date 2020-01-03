@@ -1656,7 +1656,9 @@ Symbol* lookupAndCount(const char*           name,
 
   } else if (symbols.size() == 1) {
     retval = symbols[0];
-    *rename = renames[retval];
+    if (SymRename* retvalRename = renames[retval]) {
+      *rename = retvalRename->copy();
+    }
 
   } else {
     // Multiple symbols found for this name.
@@ -1679,6 +1681,12 @@ Symbol* lookupAndCount(const char*           name,
     }
 
     retval = NULL;
+  }
+
+  for_vector(Symbol, sym, symbols) {
+    if (SymRename* rename = renames[sym]) {
+      delete rename;
+    }
   }
 
   return retval;

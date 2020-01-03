@@ -678,6 +678,11 @@ SymRename::SymRename(const char* new_name, const char* file_name, int line_no) {
   lineno = line_no;
 }
 
+SymRename* SymRename::copy() {
+  SymRename* cpy = new SymRename(newName, filename, lineno);
+  return cpy;
+}
+
 /************************************ | *************************************
 *                                                                           *
 *                                                                           *
