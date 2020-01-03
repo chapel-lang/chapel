@@ -163,6 +163,7 @@ class SymExpr : public Expr {
 
   SymExpr(Symbol* init_var);
   SymExpr(Symbol* init_var, SymRename* rename);
+  virtual ~SymExpr();
 
   DECLARE_COPY(SymExpr);
 

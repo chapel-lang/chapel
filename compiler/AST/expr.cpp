@@ -563,6 +563,11 @@ SymExpr::SymExpr(Symbol* init_var, SymRename* rename):
   // when the SymExpr is added to the tree.
 }
 
+SymExpr::~SymExpr() {
+  if (rename)
+    delete rename;
+}
+
 bool SymExpr::isNoInitExpr() const {
   return var == gNoInit;
 }
