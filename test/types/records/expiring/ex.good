@@ -31,43 +31,56 @@ Expiring values for function ioExample1LM (ex.chpl:95)
   temp (ex.chpl:99) expires at end of block
   temp (ex.chpl:101) expires at end of block
   temp (ex.chpl:102) expires at end of block
-Expiring values for function ownedExample1EOB (ex.chpl:106)
-  temp (ex.chpl:107) expires at end of block
-Expiring values for function ownedExample2EOB (ex.chpl:115)
-  temp (ex.chpl:117) expires at end of block
-Expiring values for function ownedExample3EOB (ex.chpl:125)
-  temp (ex.chpl:127) expires at end of block
-Expiring values for function ownedExample4LM (ex.chpl:135)
-  x (ex.chpl:136) expires after last mention
-  y (ex.chpl:137) expires after last mention
-Expiring values for function f (ex.chpl:143)
-  a (ex.chpl:144) expires at end of block
-  temp (ex.chpl:144) expires after last mention
-  temp (ex.chpl:145) expires at end of block
-  temp (ex.chpl:148) expires at end of block
-Expiring values for function arrayExample1LM (ex.chpl:150)
-  x (ex.chpl:151) expires after last mention
-Expiring values for function sliceExample1EOB (ex.chpl:155)
-  A (ex.chpl:156) expires at end of block
-  temp (ex.chpl:156) expires after last mention
-  temp (ex.chpl:157) expires at end of block
-Expiring values for function makeArray (ex.chpl:165)
-  A (ex.chpl:166) expires at end of block
+Expiring values for function ownedExample0LM (ex.chpl:106)
+  x (ex.chpl:107) expires after last mention
+Expiring values for function ownedExample1EOB (ex.chpl:111)
+  temp (ex.chpl:112) expires at end of block
+Expiring values for function ownedExample2EOB (ex.chpl:120)
+  temp (ex.chpl:122) expires at end of block
+Expiring values for function ownedExample3EOB (ex.chpl:130)
+  temp (ex.chpl:132) expires at end of block
+Expiring values for function ownedExample4LM (ex.chpl:140)
+  x (ex.chpl:141) expires after last mention
+  y (ex.chpl:142) expires after last mention
+Expiring values for function ownedExample5LM (ex.chpl:147)
+  x (ex.chpl:148) expires after last mention
+  y (ex.chpl:149) expires after last mention
+Expiring values for function ownedExample6LM (ex.chpl:155)
+  x (ex.chpl:156) expires after last mention
+  y (ex.chpl:157) expires after last mention
+Expiring values for function f (ex.chpl:165)
+  a (ex.chpl:166) expires at end of block
   temp (ex.chpl:166) expires after last mention
-Expiring values for function sliceExample2EOB (ex.chpl:169)
+  temp (ex.chpl:167) expires at end of block
   temp (ex.chpl:170) expires at end of block
-  temp (ex.chpl:170) expires at end of block
-Expiring values for function innerFnExample1 (ex.chpl:178)
-  c (ex.chpl:179) expires at end of block
-Expiring values for function sharedExample1LMEOB (ex.chpl:191)
-  c (ex.chpl:192) expires after last mention
-  d (ex.chpl:193) expires at end of block
-Expiring values for function sharedExample2LM (ex.chpl:198)
-  c (ex.chpl:199) expires after last mention
-  d (ex.chpl:200) expires after last mention
-Expiring values for function sharedExample3LM (ex.chpl:205)
-  c (ex.chpl:206) expires after last mention
-  d (ex.chpl:207) expires after last mention
+Expiring values for function arrayExample1LM (ex.chpl:172)
+  x (ex.chpl:173) expires after last mention
+Expiring values for function sliceExample1EOB (ex.chpl:177)
+  A (ex.chpl:178) expires at end of block
+  temp (ex.chpl:178) expires after last mention
+  temp (ex.chpl:179) expires at end of block
+Expiring values for function makeArray (ex.chpl:187)
+  A (ex.chpl:188) expires at end of block
+  temp (ex.chpl:188) expires after last mention
+Expiring values for function sliceExample2EOB (ex.chpl:191)
+  temp (ex.chpl:192) expires at end of block
+  temp (ex.chpl:192) expires at end of block
+Expiring values for function innerFnExample1 (ex.chpl:200)
+  c (ex.chpl:201) expires at end of block
+Expiring values for function sharedExample0LM (ex.chpl:213)
+  x (ex.chpl:214) expires after last mention
+Expiring values for function sharedExample1EOB (ex.chpl:218)
+  c (ex.chpl:219) expires at end of block
+    alias d (ex.chpl:220)
+Expiring values for function sharedExample2EOB (ex.chpl:224)
+  c (ex.chpl:225) expires at end of block
+    alias d (ex.chpl:226)
+Expiring values for function sharedExample3EOB (ex.chpl:231)
+  c (ex.chpl:232) expires at end of block
+    alias d (ex.chpl:233)
+Expiring values for function sharedExample4EOB (ex.chpl:238)
+  c (ex.chpl:239) expires at end of block
+    alias d (ex.chpl:240)
 {x = 1}
 
 {x = 1}

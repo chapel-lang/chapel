@@ -103,6 +103,11 @@ proc ioExample1LM() {
 }
 ioExample1LM();
 
+proc ownedExample0LM() {
+  var x = new owned C(1);
+}
+ownedExample0LM();
+
 proc ownedExample1EOB() {
   var b: borrowed C = (new owned C(1)).borrow();
   // point 1
@@ -138,6 +143,23 @@ proc ownedExample4LM() {
   // end of statement mentioning x
 }
 ownedExample4LM();
+
+proc ownedExample5LM() {
+  var x = new owned C(1);
+  var y = new owned C(2);
+  y = x; // ownership transfer to y
+  // end of statement mentioning x
+}
+ownedExample5LM();
+
+proc ownedExample6LM() {
+  var x = new owned C(1);
+  var y: owned C?;
+  y = x; // ownership transfer to y
+  // end of statement mentioning x
+}
+ownedExample6LM();
+
 
 class Wrapper { var x; }
 proc f() {
@@ -188,22 +210,34 @@ proc innerFnExample1() {
 }
 innerFnExample1();
 
-proc sharedExample1LMEOB() {
-  var c = new shared C();
-  var d = new shared C();
-  setit(c, d);
+proc sharedExample0LM() {
+  var x = new shared C(1);
 }
-sharedExample1LMEOB();
+sharedExample0LM();
 
-proc sharedExample2LM() {
+proc sharedExample1EOB() {
+  var c = new shared C();
+  var d = c;
+}
+sharedExample1EOB();
+
+proc sharedExample2EOB() {
   var c = new shared C();
   var d = new shared C();
   c = d;
 }
-sharedExample2LM();
+sharedExample2EOB();
 
-proc sharedExample3LM() {
+proc sharedExample3EOB() {
   var c = new shared C();
-  var d = c;
+  var d: shared C?;
+  d = c;
 }
-sharedExample3LM();
+sharedExample3EOB();
+
+proc sharedExample4EOB() {
+  var c = new shared C();
+  var d = new shared C();
+  setit(c, d);
+}
+sharedExample4EOB();
