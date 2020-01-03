@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2019 Cray Inc.
+ * Copyright 2004-2020 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -96,10 +96,16 @@ static void        applyGetterTransform(CallExpr* call);
 static void        insertCallTemps(CallExpr* call);
 static void        insertCallTempsWithStmt(CallExpr* call, Expr* stmt);
 
+static bool isSplitInitExpr(Expr* e);
+static bool findInitPoints(DefExpr* def,
+                           std::vector<CallExpr*>& initAssigns);
+
+
 static void        normalizeTypeAlias(DefExpr* defExpr);
 static void        normalizeConfigVariableDefinition(DefExpr* defExpr);
 static void        normalizeVariableDefinition(DefExpr* defExpr);
 
+static void        emitRefVarInit(Expr* after, Symbol* var, Expr* init);
 static void        normRefVar(DefExpr* defExpr);
 
 static void        updateVariableAutoDestroy(DefExpr* defExpr);
@@ -534,10 +540,10 @@ static void normalizeBase(BaseAST* base) {
         if (fn == stringLiteralModule->initFn) {
           fixStringLiteralInit(fn);
         } else if (fn->isNormalized() == false) {
-          Expr* type = defExpr->exprType;
-          Expr* init = defExpr->init;
+          if (defExpr->exprType != NULL || defExpr->init != NULL) {
+            // MPF 2019-11 - the above condition allows code generated
+            // by the compiler to rely on type inference upon a PRIM_MOVE.
 
-          if (type != NULL || init != NULL) {
             if (var->isType() == true) {
               normalizeTypeAlias(defExpr);
 
@@ -630,7 +636,7 @@ void checkUseBeforeDefs(FnSymbol* fn) {
           }
 
         } else if (isLcnSymbol(sym) == true) {
-          if (sym->defPoint->parentExpr != rootModule->block) {
+          if (sym->defPoint && sym->defPoint->parentExpr != rootModule->block) {
             Symbol* parent = sym->defPoint->parentSymbol;
 
             if (parent == fn || (parent == mod && mod->initFn == fn)) {
@@ -685,9 +691,10 @@ static void checkUseBeforeDefs() {
 
 // guard against "var a:int = a;"
 static void checkSelfDef(CallExpr* call, Symbol* sym) {
-  if (SymExpr* se2 = toSymExpr(call->get(2)))
-    if (se2->symbol() == sym)
-      USR_FATAL_CONT(se2, "'%s' is used to define itself", sym->name);
+  if (call->numActuals() >= 2)
+    if (SymExpr* se2 = toSymExpr(call->get(2)))
+      if (se2->symbol() == sym)
+        USR_FATAL_CONT(se2, "'%s' is used to define itself", sym->name);
 }
 
 // If the AST node defines a symbol, then return that symbol.
@@ -709,7 +716,9 @@ static Symbol* theDefinedSymbol(BaseAST* ast) {
       if (call->isPrimitive(PRIM_MOVE)      ||
           call->isPrimitive(PRIM_ASSIGN)    ||
           call->isPrimitive(PRIM_INIT_VAR)  ||
-          call->isPrimitive(PRIM_DEFAULT_INIT_VAR)) {
+          call->isPrimitive(PRIM_INIT_VAR_SPLIT_INIT)  ||
+          call->isPrimitive(PRIM_DEFAULT_INIT_VAR) ||
+          call->isPrimitive(PRIM_INIT_VAR_SPLIT_DECL)) {
         if (call->get(1) == se) {
           retval = se->symbol();
           checkSelfDef(call, se->symbol());
@@ -2019,15 +2028,7 @@ static bool moveMakesTypeAlias(CallExpr* call) {
 *                                                                             *
 ************************************** | *************************************/
 
-static void normalizeTypeAlias(DefExpr* defExpr) {
-  SET_LINENO(defExpr);
-
-  Symbol* var  = defExpr->sym;
-  Expr*   type = defExpr->exprType;
-  Expr*   init = defExpr->init;
-
-  INT_ASSERT(type == NULL);
-  INT_ASSERT(init != NULL);
+static void emitTypeAliasInit(Expr* after, Symbol* var, Expr* init) {
 
   // Generate a type constructor call
   if (SymExpr* se = toSymExpr(init)) {
@@ -2044,11 +2045,61 @@ static void normalizeTypeAlias(DefExpr* defExpr) {
     // to enable early resolution of these types.
     BlockStmt* block = new BlockStmt(BLOCK_EXTERN_TYPE);
     block->insertAtTail(move);
-    defExpr->insertAfter(block);
+    after->insertAfter(block);
   } else {
-    defExpr->insertAfter(move);
+    after->insertAfter(move);
+  }
+}
+
+static void normalizeTypeAlias(DefExpr* defExpr) {
+  SET_LINENO(defExpr);
+
+  Symbol* var  = defExpr->sym;
+  Expr*   type = defExpr->exprType;
+  Expr*   init = defExpr->init;
+
+  if (type == NULL && init == NULL) {
+    // Don't worry about compiler temporaries
+    INT_ASSERT(var->hasFlag(FLAG_TEMP));
+    return;
   }
 
+  std::vector<CallExpr*> initAssign;
+  // if there is no init expression, search for initialization
+  // points written using '='
+  bool foundSplitInit = false;
+  bool requestedSplitInit = isSplitInitExpr(init);
+  // Error for global variables using split init
+  FnSymbol* initFn = defExpr->getModule()->initFn;
+  bool global = (initFn && defExpr->parentExpr == initFn->body);
+
+  if (requestedSplitInit && global) {
+    USR_FATAL_CONT(defExpr, "type alias '%s' is not initialized",
+                   var->name);
+    USR_PRINT(defExpr, "split initialization is not supported for globals");
+  }
+
+  // For now, disable automatic split init on non-user code
+  if ((defExpr->getModule()->modTag == MOD_USER || requestedSplitInit) &&
+      global == false)
+    foundSplitInit = findInitPoints(defExpr, initAssign);
+
+  INT_ASSERT(type == NULL);
+  INT_ASSERT(init != NULL);
+
+  if ((init != NULL && !requestedSplitInit) || foundSplitInit == false) {
+    // handle non-split initialization
+    emitTypeAliasInit(defExpr, var, init);
+  } else {
+    // handle split initialization for type aliases
+    for_vector(CallExpr, call, initAssign) {
+      SET_LINENO(call);
+      // Consider the RHS of the '=' call to be the init expr.
+      Expr* rhs = call->get(2)->remove();
+      emitTypeAliasInit(call, var, rhs);
+      call->remove();
+    }
+  }
 }
 
 /************************************* | **************************************
@@ -2095,6 +2146,8 @@ static void normalizeConfigVariableDefinition(DefExpr* defExpr) {
   VarSymbol* var  = toVarSymbol(defExpr->sym);
   Expr*      type = defExpr->exprType;
   Expr*      init = defExpr->init;
+
+  INT_ASSERT(type != NULL || init != NULL);
 
   // Noakes: Feb 17, 2017
   //   config ref / const ref can be overridden at compile time.
@@ -2210,45 +2263,331 @@ static void normalizeVariableDefinition(DefExpr* defExpr) {
   Expr*      type = defExpr->exprType;
   Expr*      init = defExpr->init;
   Expr*  svarMark = prepareShadowVarForNormalize(defExpr, var);
+  std::vector<CallExpr*> initAssign;
 
-  // handle ref variables
-  if (var->hasFlag(FLAG_REF_VAR)) {
-    normRefVar(defExpr);
+  // if there is no init expression, search for initialization
+  // points written using '='
+  bool foundSplitInit = false;
+  bool requestedSplitInit = isSplitInitExpr(init);
+  bool refVar = var->hasFlag(FLAG_REF_VAR);
 
-  } else if (type == NULL && init != NULL) {
-    normVarTypeInference(defExpr);
+  // Error for global variables using split init
+  FnSymbol* initFn = defExpr->getModule()->initFn;
+  bool global = (initFn && defExpr->parentExpr == initFn->body);
 
-  } else if (type != NULL && init == NULL) {
-    normVarTypeWoutInit(defExpr);
+  if (requestedSplitInit && global) {
+    USR_FATAL_CONT(defExpr, "Variable '%s' is not initialized and has no type",
+                   var->name);
+    USR_PRINT(defExpr, "split initialization is not supported for globals");
+  }
 
-  } else if (type != NULL && init != NULL) {
-    if (var->hasFlag(FLAG_PARAM) == true) {
-      CallExpr* cast = createCast(init->remove(), type->remove());
+  // For now, disable automatic split init on non-user code
+  if ((defExpr->getModule()->modTag == MOD_USER || requestedSplitInit) &&
+      global == false)
+    foundSplitInit = findInitPoints(defExpr, initAssign);
 
-      defExpr->insertAfter(new CallExpr(PRIM_MOVE, var, cast));
+  if ((init != NULL && !requestedSplitInit) ||
+      foundSplitInit == false) {
+    // handle non-split initialization
 
-    } else if (init->isNoInitExpr() == true) {
-      normVarNoinit(defExpr);
+    // handle ref variables
+    if (refVar) {
+      normRefVar(defExpr);
 
-    } else {
-      normVarTypeWithInit(defExpr);
+    } else if (type == NULL && init != NULL) {
+      normVarTypeInference(defExpr);
+
+    } else if (type != NULL && init == NULL) {
+      normVarTypeWoutInit(defExpr);
+
+    } else if (type != NULL && init != NULL) {
+      if (init->isNoInitExpr() == true) {
+        normVarNoinit(defExpr);
+
+      } else {
+        normVarTypeWithInit(defExpr);
+      }
+    }
+  } else {
+    // handle split initialization
+
+    // remove the init expression if present
+    if (init != NULL)
+      init->remove();
+
+    if (refVar == false) {
+      // Emit PRIM_INIT_VAR_SPLIT for non-ref variables
+      // It sets the type, if we have a type expression.
+      if (type == NULL)
+        defExpr->insertAfter( new CallExpr(PRIM_INIT_VAR_SPLIT_DECL, var));
+      else
+        defExpr->insertAfter(
+            new CallExpr(PRIM_INIT_VAR_SPLIT_DECL, var, defExpr->exprType->remove()));
     }
 
-  } else {
-    INT_ASSERT(false);
+    for_vector(CallExpr, call, initAssign) {
+      SET_LINENO(call);
+
+      // Consider the RHS of the '=' call to be the init expr.
+      Expr* rhs = call->get(2)->remove();
+
+      if (refVar) {
+        //       ref x = <value>;
+        // const ref y : <type> = <value>;
+        emitRefVarInit(call, var, rhs);
+        call->remove();
+
+      } else {
+        // var x;
+        // x = <value>;
+        // const y: int;
+        // y = <value>
+
+        CallExpr* init2 = NULL;
+        if (type == NULL)
+          init2 = new CallExpr(PRIM_INIT_VAR_SPLIT_INIT, var, rhs);
+        else
+          init2 = new CallExpr(PRIM_INIT_VAR_SPLIT_INIT, var, rhs,
+                               new CallExpr(PRIM_TYPEOF, var));
+
+        call->replace(init2);
+      }
+    }
   }
+
   restoreShadowVarForNormalize(defExpr, svarMark);
 }
 
-static void normRefVar(DefExpr* defExpr) {
-  VarSymbol* var         = toVarSymbol(defExpr->sym);
-  Expr*      init        = defExpr->init;
-  Expr*      varLocation = NULL;
+static bool isSplitInitExpr(Expr* e) {
+  if (SymExpr* se = toSymExpr(e))
+    if (se->symbol() == gSplitInit)
+      return true;
 
-  if (init == NULL) {
-    USR_FATAL_CONT(var,
-                   "References must be initialized when they are defined.");
+  return false;
+}
+
+static void errorIfSplitInitializationRequired(DefExpr* def, Expr* cur);
+
+typedef enum {
+  FOUND_NOTHING = 0,
+  FOUND_USE,
+  FOUND_INIT
+} found_init_t;
+
+static found_init_t doFindInitPoints(DefExpr* def,
+                                     Expr* start,
+                                     std::vector<CallExpr*>& initAssigns);
+
+static bool findInitPoints(DefExpr* def,
+                           std::vector<CallExpr*>& initAssigns) {
+  // split initialization doesn't make sense to try for e.g.
+  //  var x = 25;
+  if (def->init != NULL && !isSplitInitExpr(def->init))
+    return false;
+
+  // and it doesn't make sense for extern variables
+  if (def->sym->hasFlag(FLAG_EXTERN))
+    return false;
+
+  Expr* start = NULL;
+  if (def && def->getStmtExpr())
+    start = def->getStmtExpr()->next;
+
+  // Check for mentions of this variable in other functions (inner functions)
+  {
+    Symbol* sym = def->sym;
+    FnSymbol* fn = def->getFunction();
+    for_SymbolSymExprs(se, sym) {
+      if (se->getFunction() != fn)
+        return false; // use in inner function detected; disable split init
+    }
   }
+
+  found_init_t found = doFindInitPoints(def, start, initAssigns);
+  return (found == FOUND_INIT);
+}
+
+static found_init_t doFindInitPoints(DefExpr* def,
+                                     Expr* start,
+                                     std::vector<CallExpr*>& initAssigns) {
+  // Regular initialization is not split initialization
+  if (def->init != NULL && !isSplitInitExpr(def->init))
+    return FOUND_NOTHING;
+
+  if (start == NULL)
+    return FOUND_NOTHING;
+
+  // Scroll forward in the block containing DefExpr for x.
+  // Find 'x = ' before any use of 'x'.
+  // Consider also { x = ... } and
+  //               if _ { x = ... } else { x = ... }
+
+  for (Expr* cur = start->getStmtExpr(); cur != NULL; cur = cur->next) {
+    // x = ...
+    if (CallExpr* call = toCallExpr(cur)) {
+      if (call->isNamedAstr(astrSassign)) {
+        if (SymExpr* se = toSymExpr(call->get(1))) {
+          if (se->symbol() == def->sym) {
+            if (containsSymExprFor(call->get(2), def->sym) == false) {
+              // careful with e.g.
+              //  x = x + 1;  or y = 1:y.type;
+              initAssigns.push_back(call);
+              return FOUND_INIT;
+            }
+          }
+        }
+      }
+
+      if (containsSymExprFor(cur, def->sym)) {
+        // Emit an error if split initialization is required
+        errorIfSplitInitializationRequired(def, cur);
+        return FOUND_USE;
+      }
+
+    // { x = ... }
+    } else if (BlockStmt* block = toBlockStmt(cur)) {
+      if (block->isLoopStmt() || block->isRealBlockStmt() == false) {
+        // Loop / on / begin / etc - just check for uses
+        if (containsSymExprFor(cur, def->sym)) {
+          errorIfSplitInitializationRequired(def, cur);
+          return FOUND_USE;
+        }
+      } else {
+        // non-loop block
+        Expr* start = block->body.first();
+        found_init_t found = doFindInitPoints(def, start, initAssigns);
+        if (found == FOUND_INIT) {
+          return FOUND_INIT;
+        } else if (found == FOUND_USE) {
+          errorIfSplitInitializationRequired(def, cur);
+          return FOUND_USE;
+        }
+      }
+
+    // if _ { x = ... } else { x = ... }
+    } else if (CondStmt* cond = toCondStmt(cur)) {
+      if (containsSymExprFor(cond->condExpr, def->sym)) {
+        errorIfSplitInitializationRequired(def, cur);
+        return FOUND_USE;
+      }
+
+      Expr* ifStart = cond->thenStmt->body.first();
+      Expr* elseStart = cond->elseStmt ? cond->elseStmt->body.first() : NULL;
+      std::vector<CallExpr*> ifAssigns;
+      std::vector<CallExpr*> elseAssigns;
+      found_init_t foundIf = doFindInitPoints(def, ifStart, ifAssigns);
+      found_init_t foundElse = FOUND_NOTHING;
+      if (elseStart != NULL)
+        foundElse = doFindInitPoints(def, elseStart, elseAssigns);
+
+      if (foundIf == FOUND_INIT && foundElse == FOUND_INIT) {
+        for_vector(CallExpr, call, ifAssigns) {
+          initAssigns.push_back(call);
+        }
+        for_vector(CallExpr, call, elseAssigns) {
+          initAssigns.push_back(call);
+        }
+        return FOUND_INIT;
+      } else if (foundIf == FOUND_INIT || foundElse == FOUND_INIT) {
+        // intialized on one side but not the other
+        errorIfSplitInitializationRequired(def, cur);
+        return FOUND_USE;
+      } else if (foundIf == FOUND_USE || foundElse == FOUND_USE) {
+        // at least one of them must be FOUND_USE, so return that
+        errorIfSplitInitializationRequired(def, cur);
+        return FOUND_USE;
+      }
+
+    } else {
+      // Look for uses of 'x' before the first assignment
+      if (containsSymExprFor(cur, def->sym)) {
+        // In that case, can't convert '=' to initialization
+        errorIfSplitInitializationRequired(def, cur);
+        return FOUND_USE;
+      }
+    }
+
+    if (fVerify) {
+      // Redundantly check for uses
+      if (containsSymExprFor(cur, def->sym))
+        INT_FATAL("use not found above");
+    }
+  }
+
+  return FOUND_NOTHING;
+}
+
+static void errorIfSplitInitializationRequired(DefExpr* def, Expr* cur) {
+  // Don't worry about compiler temporaries or index variables
+  // or reduction variables
+  if (def->sym->hasFlag(FLAG_TEMP) ||
+      def->sym->hasFlag(FLAG_INDEX_VAR) ||
+      isShadowVarSymbol(def->sym))
+    return;
+
+  bool canDefaultInit = true;
+  Type* nonNilableType = NULL;
+  // No type or init expr, so can't default init
+  if (def->exprType == NULL &&
+      (def->init == NULL || isSplitInitExpr(def->init)))
+    canDefaultInit = false;
+  // Can't default init a ref ever
+  if (def->sym->hasFlag(FLAG_REF_VAR))
+    canDefaultInit = false;
+  // Check for a few other cases to give better errors now
+  // (this will not catch all patterns)
+  if (SymExpr* typeSe = toSymExpr(def->exprType)) {
+    if (TypeSymbol* ts = toTypeSymbol(typeSe->symbol())) {
+
+      AggregateType* at = toAggregateType(canonicalClassType(ts->type));
+      if (at && at->hasUserDefinedInit) {
+        // OK, in the event user supplied an init() function
+        // (if not, expect an error later)
+      } else if (at && at->isGenericWithDefaults()) {
+        // OK, this can still be default-inited
+      } else if (ts->hasFlag(FLAG_GENERIC) || (at && at->isGeneric())) {
+        // can't default init a generic type
+        canDefaultInit = false;
+      }
+
+      // can't default init a generic management/nilability
+      if (isClassLikeOrManaged(ts->type)) {
+        ClassTypeDecorator d = classTypeDecorator(ts->type);
+        if (isDecoratorUnknownManagement(d) ||
+            isDecoratorUnknownNilability(d))
+          canDefaultInit = false;
+      }
+
+      // can't default init a non-nilable class type
+      // unless --legacy-classes is on
+      if (isNonNilableClassType(ts->type) && !fLegacyClasses) {
+        canDefaultInit = false;
+        nonNilableType = ts->type;
+      }
+    }
+  }
+
+  if (canDefaultInit == false) {
+    const char* name = def->sym->name;
+    USR_FATAL_CONT(def, "'%s' cannot be default initialized", name);
+    if (cur) {
+      USR_PRINT(cur, "'%s' is used here before being initialized", name);
+    } else if (nonNilableType != NULL) {
+      USR_PRINT("non-nil class types do not support default initialization");
+
+      Type* type = nonNilableType;
+      AggregateType* at = toAggregateType(canonicalDecoratedClassType(type));
+      ClassTypeDecorator d = classTypeDecorator(type);
+      Type* suggestedType = at->getDecoratedClass(addNilableToDecorator(d));
+      USR_PRINT("Consider using the type %s instead", toString(suggestedType));
+    }
+  }
+}
+
+
+
+static void emitRefVarInit(Expr* after, Symbol* var, Expr* init) {
+  Expr* varLocation = NULL;
 
   // If this is a const reference to an immediate, we need to insert a temp
   // variable so we can take the address of it, non-const references to an
@@ -2258,10 +2597,11 @@ static void normRefVar(DefExpr* defExpr) {
       if (initSym->symbol()->isImmediate()) {
         VarSymbol* constRefTemp  = newTemp("const_ref_immediate_tmp");
 
-        defExpr->insertBefore(new DefExpr(constRefTemp));
-        defExpr->insertBefore(new CallExpr(PRIM_MOVE,
-                                           constRefTemp,
-                                           init->remove()));
+        // Store the temp variable to the immediate next to the
+        // variable definition because `after` might be at an inner scope
+        Expr* before = var->defPoint;
+        before->insertBefore(new DefExpr(constRefTemp));
+        before->insertBefore(new CallExpr(PRIM_MOVE, constRefTemp, init));
 
         varLocation = new SymExpr(constRefTemp);
       }
@@ -2269,7 +2609,7 @@ static void normRefVar(DefExpr* defExpr) {
   }
 
   if (varLocation == NULL && init != NULL) {
-    varLocation = init->remove();
+    varLocation = init;
   }
 
   if (SymExpr* sym = toSymExpr(varLocation)) {
@@ -2302,10 +2642,25 @@ static void normRefVar(DefExpr* defExpr) {
     }
   }
 
-  defExpr->insertAfter(new CallExpr(PRIM_MOVE,
-                                    var,
-                                    new CallExpr(PRIM_ADDR_OF, varLocation)));
+  after->insertAfter(new CallExpr(PRIM_MOVE,
+                                  var,
+                                  new CallExpr(PRIM_ADDR_OF, varLocation)));
 }
+
+static void normRefVar(DefExpr* defExpr) {
+  VarSymbol* var         = toVarSymbol(defExpr->sym);
+  Expr*      init        = defExpr->init;
+
+  if (init == NULL || isSplitInitExpr(init)) {
+    USR_FATAL_CONT(var, "References must be initialized");
+  }
+
+  if (init != NULL)
+    init->remove();
+
+  emitRefVarInit(defExpr, var, init);
+}
+
 
 //
 // const <name> = <value>;

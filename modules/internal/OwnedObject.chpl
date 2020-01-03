@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2019 Cray Inc.
+ * Copyright 2004-2020 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -275,6 +275,7 @@ module OwnedObject {
     }
 
     pragma "no doc"
+    pragma "leaves this nil"
     proc init=(src : _nilType) {
       this.init(this.type.chpl_t);
 

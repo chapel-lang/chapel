@@ -1,0 +1,32 @@
+split-init-borrow-lifetime-error.chpl:11: In function 'testCborrowedCQassign':
+split-init-borrow-lifetime-error.chpl:15: error: Scoped variable c would outlive the value it is set to
+split-init-borrow-lifetime-error.chpl:14: note: consider scope of inner
+split-init-borrow-lifetime-error.chpl:21: In function 'testCborrowedC':
+split-init-borrow-lifetime-error.chpl:25: error: Scoped variable c would outlive the value it is set to
+split-init-borrow-lifetime-error.chpl:24: note: consider scope of inner
+split-init-borrow-lifetime-error.chpl:31: In function 'testCborrowedCQ':
+split-init-borrow-lifetime-error.chpl:35: error: Scoped variable would outlive the value it is set to
+split-init-borrow-lifetime-error.chpl:34: note: consider scope of inner
+split-init-borrow-lifetime-error.chpl:35: error: Scoped variable c reachable after lifetime ends
+split-init-borrow-lifetime-error.chpl:34: note: consider scope of inner
+split-init-borrow-lifetime-error.chpl:41: In function 'testCNoType':
+split-init-borrow-lifetime-error.chpl:45: error: Scoped variable c would outlive the value it is set to
+split-init-borrow-lifetime-error.chpl:44: note: consider scope of inner
+split-init-borrow-lifetime-error.chpl:51: In function 'testRassign':
+split-init-borrow-lifetime-error.chpl:56: error: Scoped variable x reachable after lifetime ends
+split-init-borrow-lifetime-error.chpl:55: note: consider scope of myC
+split-init-borrow-lifetime-error.chpl:62: In function 'testRQassign':
+split-init-borrow-lifetime-error.chpl:66: error: Scoped variable x reachable after lifetime ends
+split-init-borrow-lifetime-error.chpl:65: note: consider scope of myC
+split-init-borrow-lifetime-error.chpl:72: In function 'testRsplitType':
+split-init-borrow-lifetime-error.chpl:76: error: Scoped variable x reachable after lifetime ends
+split-init-borrow-lifetime-error.chpl:75: note: consider scope of myC
+split-init-borrow-lifetime-error.chpl:82: In function 'testRQsplitType':
+split-init-borrow-lifetime-error.chpl:86: error: Scoped variable x reachable after lifetime ends
+split-init-borrow-lifetime-error.chpl:85: note: consider scope of myC
+split-init-borrow-lifetime-error.chpl:92: In function 'testRsplitNoType':
+split-init-borrow-lifetime-error.chpl:96: error: Scoped variable x reachable after lifetime ends
+split-init-borrow-lifetime-error.chpl:95: note: consider scope of myC
+split-init-borrow-lifetime-error.chpl:102: In function 'testRQsplitNoType':
+split-init-borrow-lifetime-error.chpl:106: error: Scoped variable x reachable after lifetime ends
+split-init-borrow-lifetime-error.chpl:105: note: consider scope of myC

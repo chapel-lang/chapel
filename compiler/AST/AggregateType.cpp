@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2019 Cray Inc.
+ * Copyright 2004-2020 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -1187,6 +1187,13 @@ static void checkTypesForInstantiation(AggregateType* at, CallExpr* call, const 
   }
 }
 
+static void markManagedPointerIfNonNilable(AggregateType* mp, Symbol* mps) {
+  if (! mps->hasFlag(FLAG_GENERIC))
+    if (Symbol* chpl_t = mp->getField("chpl_t", false))
+      if (isNonNilableClassType(chpl_t->type))
+        mps->addFlag(FLAG_MANAGED_POINTER_NONNILABLE);
+}
+
 AggregateType* AggregateType::generateType(SymbolMap& subs, CallExpr* call, const char* callString, bool evalDefaults, Expr* insnPoint) {
   AggregateType* retval = this;
 
@@ -1246,6 +1253,9 @@ AggregateType* AggregateType::generateType(SymbolMap& subs, CallExpr* call, cons
       }
     }
   }
+
+  if (retval->symbol->hasFlag(FLAG_MANAGED_POINTER))
+    markManagedPointerIfNonNilable(retval, retval->symbol);
 
   return retval;
 }

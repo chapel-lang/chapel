@@ -1,1 +1,2 @@
+use_module_in_same_file.chpl:7: warning: This file-scope code is outside of any explicit module declarations (e.g., module foo), so an implicit module named 'use_module_in_same_file' is being introduced to contain the file's contents.
 5

@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2019 Cray Inc.
+ * Copyright 2004-2020 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -107,18 +107,6 @@ module Bytes {
        - **ignore**: silently drop data
   */
   enum decodePolicy { strict, replace, ignore }
-
-  /*
-   A `DecodeError` is thrown if the `decode` method is called on a non-UTF-8
-   string.
-   */
-  class DecodeError: Error {
-    
-    pragma "no doc"
-    override proc message() {
-      return "Invalid UTF-8 character encountered.";
-    }
-  }
 
   pragma "no doc"
   type idxType = int; 

@@ -1,4 +1,4 @@
 unstable-owned-shared-intent2.chpl:7: In function 'test1':
 unstable-owned-shared-intent2.chpl:11: error: value from coercion passed to const ref formal 'arg'
-unstable-owned-shared-intent2.chpl:5: error: to function 'foo' defined here
+unstable-owned-shared-intent2.chpl:5: note: to function 'foo' defined here
 unstable-owned-shared-intent2.chpl:5: note: default intent for owned Parent has changed from `in` to `const ref`

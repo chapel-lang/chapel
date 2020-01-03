@@ -1,29 +1,36 @@
 nilcheck.chpl:8: In function 'bad1':
-nilcheck.chpl:10: error: attempt to dereference nil
+nilcheck.chpl:10: error: applying postfix-! to nil
 nilcheck.chpl:10: note: variable x is nil at this point
 nilcheck.chpl:9: note: this statement may be relevant
 nilcheck.chpl:14: In function 'bad2':
-nilcheck.chpl:17: error: attempt to dereference nil
+nilcheck.chpl:17: error: applying postfix-! to nil
 nilcheck.chpl:17: note: variable x is nil at this point
 nilcheck.chpl:16: note: this statement may be relevant
 nilcheck.chpl:21: In function 'bad3':
-nilcheck.chpl:23: error: attempt to dereference nil
+nilcheck.chpl:23: error: applying postfix-! to nil
+nilcheck.chpl:23: note: variable x is nil at this point
 nilcheck.chpl:22: note: this statement may be relevant
 nilcheck.chpl:27: In function 'bad4':
-nilcheck.chpl:30: error: attempt to dereference nil
+nilcheck.chpl:30: error: applying postfix-! to nil
+nilcheck.chpl:30: note: variable x is nil at this point
 nilcheck.chpl:29: note: this statement may be relevant
 nilcheck.chpl:34: In function 'bad5':
-nilcheck.chpl:36: error: attempt to dereference nil
+nilcheck.chpl:36: error: applying postfix-! to nil
+nilcheck.chpl:36: note: variable x is nil at this point
 nilcheck.chpl:35: note: this statement may be relevant
 nilcheck.chpl:40: In function 'bad6':
-nilcheck.chpl:43: error: attempt to dereference nil
+nilcheck.chpl:43: error: applying postfix-! to nil
+nilcheck.chpl:43: note: variable x is nil at this point
 nilcheck.chpl:42: note: this statement may be relevant
 nilcheck.chpl:47: In function 'bad7':
-nilcheck.chpl:49: error: attempt to dereference nil
+nilcheck.chpl:49: error: applying postfix-! to nil
+nilcheck.chpl:49: note: variable x is nil at this point
 nilcheck.chpl:48: note: this statement may be relevant
 nilcheck.chpl:53: In function 'bad8':
-nilcheck.chpl:56: error: attempt to dereference nil
+nilcheck.chpl:56: error: applying postfix-! to nil
+nilcheck.chpl:56: note: variable x is nil at this point
 nilcheck.chpl:55: note: this statement may be relevant
 nilcheck.chpl:62: In function 'bad9':
-nilcheck.chpl:66: error: attempt to dereference nil
+nilcheck.chpl:66: error: applying postfix-! to nil
+nilcheck.chpl:66: note: variable x is nil at this point
 nilcheck.chpl:63: note: this statement may be relevant

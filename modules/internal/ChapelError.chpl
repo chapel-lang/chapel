@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2019 Cray Inc.
+ * Copyright 2004-2020 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -86,6 +86,20 @@ module ChapelError {
     pragma "no doc"
     override proc message() {
       return "cannot cast class to type - runtime types not compatible";
+    }
+  }
+
+  /*
+   A `DecodeError` is thrown if an attempt to create a string with non-UTF8 byte
+   sequences are made at runtime. This includes calling the
+   `bytes.decode(decodePolicy.strict)` method on a bytes with non-UTF8 byte
+   sequences.
+   */
+  class DecodeError: Error {
+    
+    pragma "no doc"
+    override proc message() {
+      return "Invalid UTF-8 character encountered.";
     }
   }
 
@@ -341,7 +355,10 @@ module ChapelError {
   proc chpl_error_type_name(err: borrowed Error) : string {
     var cid =  __primitive("getcid", err);
     var nameC: c_string = __primitive("class name by id", cid);
-    var nameS = createStringWithNewBuffer(nameC);
+    var nameS: string;
+    try! {
+      nameS = createStringWithNewBuffer(nameC);
+    }
     return nameS;
   }
   pragma "no doc"
@@ -435,12 +452,18 @@ module ChapelError {
 
     const myFileC:c_string = __primitive("chpl_lookupFilename",
                                          __primitive("_get_user_file"));
-    const myFileS = createStringWithNewBuffer(myFileC);
+    var myFileS: string;
+    try! {
+      myFileS = createStringWithNewBuffer(myFileC);
+    }
     const myLine = __primitive("_get_user_line");
 
     const thrownFileC:c_string = __primitive("chpl_lookupFilename",
                                              err.thrownFileId);
-    const thrownFileS = createStringWithNewBuffer(thrownFileC);
+    var thrownFileS: string;
+    try! {
+      thrownFileS = createStringWithNewBuffer(thrownFileC);
+    }
     const thrownLine = err.thrownLine;
 
     var s = "uncaught " + chpl_describe_error(err) +

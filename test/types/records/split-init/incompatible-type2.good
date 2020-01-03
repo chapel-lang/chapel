@@ -1,0 +1,2 @@
+incompatible-type2.chpl:3: In function 'test':
+incompatible-type2.chpl:6: error: Cannot assign to int(64) from string

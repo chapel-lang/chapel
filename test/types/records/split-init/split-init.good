@@ -1,0 +1,79 @@
+testInts
+1
+2
+3
+4
+testRecs
+x
+init 0
+yes1
+init 1
+(x = 1, ptr = {})
+yes2
+init 2
+(x = 2, ptr = {})
+yes3
+init 3
+(x = 3, ptr = {})
+yes4
+init 4
+(x = 4, ptr = {})
+yes5
+init 5
+init= 5
+(x = 5, ptr = {})
+yes6
+init= 0
+(x = 0, ptr = {})
+yes7
+init= 0
+(x = 0, ptr = {})
+yes8
+init= 0
+(x = 0, ptr = {})
+no1
+init 1000
+init 1001
+= 1000 1001
+no2
+init
+init= 0
+init 2000
+= 0 2000
+no3
+init
+init
+init 3000
+= 0 3000
+no4
+init
+init 4000
+= 0 4000
+no5
+init
+init 5000
+= 0 5000
+no6
+init
+init 6000
+= 0 6000
+init 6000
+= 0 6000
+init 6000
+= 0 6000
+no7
+init
+init 7000
+= 0 7000
+init 7000
+= 0 7000
+no8
+init
+init 8000
+= 0 8000
+init 8000
+= 0 8000
+no9
+init
+init 9000
+= 0 9000
