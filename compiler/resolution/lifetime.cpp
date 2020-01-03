@@ -2830,10 +2830,12 @@ static bool isLifetimeUnspecifiedFormalOrdering(Lifetime a, Lifetime b) {
   if (c != CONSTRAINT_UNKNOWN)
     return false;
   // TODO - make this exception more reasonable
-  if (fn->name == astrSassign)
-    return false;
-  if (fn->name == astrSswap)
-    return false;
+  if (fn->getModule()->modTag != MOD_USER) {
+    if (fn->name == astrSassign)
+      return false;
+    if (fn->name == astrSswap)
+      return false;
+  }
 
   return true;
 }
