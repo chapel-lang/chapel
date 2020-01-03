@@ -786,7 +786,8 @@ class_level_stmt:
   TSEMI                 { $$ = buildChapelStmt(new BlockStmt()); }
 | private_decl
 | TPUBLIC private_decl  { $$ = $2; }
-| TPRIVATE {parsingPrivate=true;} private_decl { parsingPrivate=false; applyPrivateToBlock($3); $$ = $3; }
+| TPRIVATE <b>{ $$ = parsingPrivate; parsingPrivate=true;}
+    private_decl { parsingPrivate=$2; applyPrivateToBlock($3); $$ = $3; }
 ;
 
 private_decl:
