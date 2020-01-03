@@ -161,18 +161,21 @@ static void walkBlockStmt(FnSymbol*         fn,
   // TODO -- maybe we need to handle breakLabel and continueLabel here?
 
   // Destroy the variable after this statement if it's the last mention
-  if (CallExpr* call = toCallExpr(stmt)) {
-    LastMentionMap::const_iterator lmmIt = lmm.find(stmt);
-    if (lmmIt != lmm.end()) {
-      const std::vector<VarSymbol*>& vars = lmmIt->second;
-      for_vector(VarSymbol, var, vars) {
-        scope.destroyVariable(call, var, ignoredVariables);
 
-        // Needs a better strategy if we move last mention points within
-        // conditionals
-        ignoredVariables.insert(var);
-      }
+  if (isCallExpr(stmt)) { // TODO -- remove this -- but
+                          // removing it is causing valgrind errors
+
+  LastMentionMap::const_iterator lmmIt = lmm.find(stmt);
+  if (lmmIt != lmm.end()) {
+    const std::vector<VarSymbol*>& vars = lmmIt->second;
+    for_vector(VarSymbol, var, vars) {
+      scope.destroyVariable(stmt, var, ignoredVariables);
+
+      // Needs a better strategy if we move last mention points within
+      // conditionals
+      ignoredVariables.insert(var);
     }
+  }
   }
 
   // Once a variable is yielded, it should no longer be auto-destroyed,
@@ -640,31 +643,49 @@ static Expr* findLastExprInStatement(Expr* e, VarSymbol* v) {
   // Note, forall index vars are just in a ForallStmt (not a block)
   Expr* defParent = v->defPoint->parentExpr;
   INT_ASSERT(defParent);
+  bool isFullStatement = false;
+
   for (Expr* cur = stmt;
        cur != NULL && cur != defParent;
        cur = cur->parentExpr) {
     // If we encounter any non-trivial block statements, make the
     // statement be the entire block.
-    if (isCondStmt(cur) || isLoopStmt(cur) || isForallStmt(cur))
+
+    // TODO - fix if-exprs with isLoweredIfExprBlock
+
+    if (isCondStmt(cur) || isLoopStmt(cur) || isForallStmt(cur)) {
       stmt = cur;
-    if (BlockStmt* block = toBlockStmt(cur))
-      if (block->isLoopStmt() || block->isRealBlockStmt() == false)
+      isFullStatement = true;
+    }
+
+    if (BlockStmt* block = toBlockStmt(cur)) {
+      if (block->isLoopStmt() || block->isRealBlockStmt() == false) {
         stmt = block;
+        isFullStatement = true;
+      }
+    }
   }
 
-  // Now look forward for:
+  last = stmt;
+
+  // Now if it wasn't inhenently a statement, look forward for:
   //  * next PRIM_END_OF_STATEMENT
   //  * last stmt expr before label or end of block
-  for (Expr* cur = stmt; cur != NULL; cur = cur->next) {
-    if (CallExpr* call = toCallExpr(cur))
-      if (call->isPrimitive(PRIM_END_OF_STATEMENT))
-        return call; // PRIM_END_OF_STATEMENT reached
+  if (isFullStatement == false) {
+    for (Expr* cur = stmt; cur != NULL; cur = cur->next) {
+      if (CallExpr* call = toCallExpr(cur)) {
+        if (call->isPrimitive(PRIM_END_OF_STATEMENT))
+          return call; // PRIM_END_OF_STATEMENT reached
+        if (call->isNamed("_statementLevelSymbol")) // TODO chpl, astr
+          return call;
+      }
 
-    if (DefExpr* def = toDefExpr(cur))
-      if (isLabelSymbol(def->sym))
-        break; // label statement reached
+      if (DefExpr* def = toDefExpr(cur))
+        if (isLabelSymbol(def->sym))
+          break; // label statement reached
 
-    last = cur;
+      last = cur;
+    }
   }
 
   // Check if the early deinit point is the same as the the

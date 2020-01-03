@@ -1,0 +1,71 @@
+t1
+deinit
+t2
+middle
+deinit
+t3
+deinit
+middle
+t4
+begin inner
+deinit
+end inner
+end outer
+t5
+end if
+deinit
+end outer
+t6
+end if
+deinit
+end outer
+t7
+end loop iter
+end loop iter
+deinit
+end outer
+t8
+end loop iter
+deinit
+end outer
+t9
+end loop iter
+deinit
+end outer
+t10
+end loop iter
+end loop iter
+deinit
+end outer
+t11
+end loop iter
+end loop iter
+deinit
+end outer
+t12
+end inner
+deinit
+end outer
+t12
+end inner
+deinit
+end outer
+t14
+begin inner
+begin inner inner
+deinit
+end inner
+end outer
+t15
+begin inner
+begin inner inner
+deinit
+end inner
+end outer
+t16
+begin inner
+begin inner inner
+deinit
+end inner inner
+end inner
+end outer
