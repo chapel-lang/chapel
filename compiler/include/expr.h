@@ -134,6 +134,17 @@ public:
 };
 
 
+class SymRename {
+ public:
+  // Name used to make this SymExpr (different than name stored on symbol)
+  const char* newName;
+  const char* filename; // file where rename occurred
+  int         lineno; // line where rename occurred
+
+  SymRename(const char* new_name, const char* file_name, int line_no);
+
+};
+
 class SymExpr : public Expr {
  private:
   Symbol* var;
@@ -146,7 +157,10 @@ class SymExpr : public Expr {
   SymExpr* symbolSymExprsPrev;
   SymExpr* symbolSymExprsNext;
 
+  SymRename* rename;
+
   SymExpr(Symbol* init_var);
+  SymExpr(Symbol* init_var, SymRename* rename);
 
   DECLARE_COPY(SymExpr);
 
@@ -167,7 +181,6 @@ class SymExpr : public Expr {
 
   void setSymbol(Symbol* s);
 };
-
 
 class UnresolvedSymExpr : public Expr {
  public:

@@ -78,12 +78,13 @@ static Expr*         handleUnstableClassType(SymExpr* se);
 static void          resolveUnresolvedSymExpr(UnresolvedSymExpr* usymExpr);
 
 static void          resolveUnresolvedSymExpr(UnresolvedSymExpr* usymExpr,
-                                              Symbol* toSymbol);
+                                              Symbol* sym, SymRename* rename);
 
-static bool          lookupThisScopeAndUses(const char*           name,
-                                            BaseAST*              context,
-                                            BaseAST*              scope,
-                                            std::vector<Symbol*>& symbols);
+static bool lookupThisScopeAndUses(const char*           name,
+                                   BaseAST*              context,
+                                   BaseAST*              scope,
+                                   std::vector<Symbol*>& symbols,
+                                   std::map<Symbol*, SymRename*>& renames);
 
 static ModuleSymbol* definesModuleSymbol(Expr* expr);
 
@@ -924,9 +925,10 @@ static void resolveUnresolvedSymExpr(UnresolvedSymExpr* usymExpr) {
   if (name == astrSdot || !usymExpr->inTree())
     return;
 
-  Symbol* sym = lookupAndCount(name, usymExpr, nSymbols);
+  SymRename* rename = NULL;
+  Symbol* sym = lookupAndCount(name, usymExpr, nSymbols, &rename);
   if (sym != NULL) {
-    resolveUnresolvedSymExpr(usymExpr, sym);
+    resolveUnresolvedSymExpr(usymExpr, sym, rename);
   } else {
     updateMethod(usymExpr);
 
@@ -943,7 +945,7 @@ static void resolveUnresolvedSymExpr(UnresolvedSymExpr* usymExpr) {
 // usymExpr is the UnresolveSymExpr and sym is what we
 // have resolved it to with scope resolution.
 static void resolveUnresolvedSymExpr(UnresolvedSymExpr* usymExpr,
-                                     Symbol* sym) {
+                                     Symbol* sym, SymRename* rename) {
   FnSymbol* fn = toFnSymbol(sym);
 
   if (fn == NULL) {
@@ -974,7 +976,7 @@ static void resolveUnresolvedSymExpr(UnresolvedSymExpr* usymExpr,
       }
     }
 
-    symExpr = new SymExpr(sym);
+    symExpr = new SymExpr(sym, rename);
     usymExpr->replace(symExpr);
 
     if (fWarnUnstable)
@@ -1430,18 +1432,46 @@ static void resolveModuleCall(CallExpr* call) {
             }
 
           } else {
-            USR_FATAL(call,
-                      "Cannot access '%s', '%s' is private to '%s'",
-                      mbrName,
-                      mbrName,
-                      mod->name);
+            if (se->rename) {
+              USR_FATAL_CONT(call,
+                             "Cannot access '%s', '%s' is private to '%s'",
+                             mbrName,
+                             mbrName,
+                             se->rename->newName);
+              USR_PRINT("module '%s' was renamed from '%s' at %s:%d",
+                        se->rename->newName,
+                        mod->name,
+                        se->rename->filename,
+                        se->rename->lineno);
+              USR_STOP();
+
+            } else {
+              USR_FATAL(call,
+                        "Cannot access '%s', '%s' is private to '%s'",
+                        mbrName,
+                        mbrName,
+                        mod->name);
+            }
           }
 
         } else {
-          USR_FATAL_CONT(call,
-                         "Symbol '%s' undeclared in module '%s'",
-                         mbrName,
-                         mod->name);
+          if (se->rename) {
+            USR_FATAL_CONT(call,
+                           "Symbol '%s' undeclared in module '%s'",
+                           mbrName,
+                           se->rename->newName);
+            USR_PRINT("module '%s' was renamed from '%s' at %s:%d",
+                      se->rename->newName,
+                      mod->name,
+                      se->rename->filename,
+                      se->rename->lineno);
+
+          } else {
+            USR_FATAL_CONT(call,
+                           "Symbol '%s' undeclared in module '%s'",
+                           mbrName,
+                           mod->name);
+          }
         }
       }
     }
@@ -1577,7 +1607,8 @@ static void lookup(const char*           name,
                    BaseAST*              scope,
                    Vec<BaseAST*>&        visited,
 
-                   std::vector<Symbol*>& symbols);
+                   std::vector<Symbol*>& symbols,
+                   std::map<Symbol*, SymRename*>& renames);
 
 // Show what symbols from 'symbols' conflict with the given 'sym'.
 static void printConflictingSymbols(std::vector<Symbol*>& symbols, Symbol* sym)
@@ -1600,12 +1631,14 @@ static void printConflictingSymbols(std::vector<Symbol*>& symbols, Symbol* sym)
 // by that name in the context of that call
 Symbol* lookupAndCount(const char*           name,
                        BaseAST*              context,
-                       int&                  nSymbolsFound) {
+                       int&                  nSymbolsFound,
+                       SymRename**           rename) {
 
   std::vector<Symbol*> symbols;
+  std::map<Symbol*, SymRename*> renames;
   Symbol*              retval = NULL;
 
-  lookup(name, context, symbols);
+  lookup(name, context, symbols, renames);
 
   nSymbolsFound = symbols.size();
 
@@ -1614,6 +1647,7 @@ Symbol* lookupAndCount(const char*           name,
 
   } else if (symbols.size() == 1) {
     retval = symbols[0];
+    *rename = renames[retval];
 
   } else {
     // Multiple symbols found for this name.
@@ -1637,15 +1671,17 @@ Symbol* lookupAndCount(const char*           name,
 
 Symbol* lookup(const char* name, BaseAST* context) {
   int nSymbolsFound = 0;
-  return lookupAndCount(name, context, nSymbolsFound);
+  SymRename* rename = NULL;
+  return lookupAndCount(name, context, nSymbolsFound, &rename);
 }
 
 void lookup(const char*           name,
             BaseAST*              context,
-            std::vector<Symbol*>& symbols) {
+            std::vector<Symbol*>& symbols,
+            std::map<Symbol*, SymRename*>& renames) {
   Vec<BaseAST*> visited;
 
-  lookup(name, context, context, visited, symbols);
+  lookup(name, context, context, visited, symbols, renames);
 }
 
 static void lookup(const char*           name,
@@ -1654,12 +1690,14 @@ static void lookup(const char*           name,
                    BaseAST*              scope,
                    Vec<BaseAST*>&        visited,
 
-                   std::vector<Symbol*>& symbols) {
+                   std::vector<Symbol*>& symbols,
+                   std::map<Symbol*, SymRename*>& renames) {
 
   if (!visited.set_in(scope)) {
     visited.set_add(scope);
 
-    if (lookupThisScopeAndUses(name, context, scope, symbols) == true) {
+    if (lookupThisScopeAndUses(name, context, scope, symbols,
+                               renames) == true) {
       // We've found an instance here.
       // Lydia note: in the access call case, we'd want to look in our
       // surrounding scopes for the symbols on the left and right part
@@ -1676,7 +1714,7 @@ static void lookup(const char*           name,
     if (scope->getModule()->block == scope) {
       BaseAST* outerScope = getScope(scope);
       if (outerScope != NULL) {
-        lookup(name, context, outerScope, visited, symbols);
+        lookup(name, context, outerScope, visited, symbols, renames);
         // As a last ditch effort, see if this module's name happens to match.
         // This handles the case when we refer to the name of the module in
         // which we are declared (e.g., `module M { ...M.xyz... }`
@@ -1697,7 +1735,7 @@ static void lookup(const char*           name,
         // within the aggregate type
         if (AggregateType* ct =
             toAggregateType(canonicalClassType(fn->_this->type))) {
-          lookup(name, context, ct->symbol, visited, symbols);
+          lookup(name, context, ct->symbol, visited, symbols, renames);
         }
       }
 
@@ -1705,7 +1743,7 @@ static void lookup(const char*           name,
       if (symbols.size() == 0) {
         // If we didn't find something in the aggregate type that matched,
         // or we weren't in an aggregate type method, so look at next scope up.
-        lookup(name, context, getScope(scope), visited, symbols);
+        lookup(name, context, getScope(scope), visited, symbols, renames);
       }
     }
   }
@@ -1740,7 +1778,8 @@ static bool      skipUse(std::map<Symbol*, std::vector<UseStmt*> >* seen,
 static bool lookupThisScopeAndUses(const char*           name,
                                    BaseAST*              context,
                                    BaseAST*              scope,
-                                   std::vector<Symbol*>& symbols) {
+                                   std::vector<Symbol*>& symbols,
+                                   std::map<Symbol*, SymRename*>& renames) {
   if (Symbol* sym = inSymbolTable(name, scope)) {
     if (sym->hasFlag(FLAG_PRIVATE) == true) {
       if (sym->isVisible(context) == true) {
@@ -1801,10 +1840,18 @@ static bool lookupThisScopeAndUses(const char*           name,
                   if (sym->isVisible(context) == true &&
                       isRepeat(sym, symbols)  == false) {
                     symbols.push_back(sym);
+                    if (use->isARename(name)) {
+                      renames[sym] = new SymRename(name, use->astloc.filename,
+                                                   use->astloc.lineno);
+                    }
                   }
 
                 } else if (isRepeat(sym, symbols) == false) {
                   symbols.push_back(sym);
+                  if (use->isARename(name)) {
+                    renames[sym] = new SymRename(name, use->astloc.filename,
+                                                 use->astloc.lineno);
+                  }
                 }
               }
             }
@@ -1846,6 +1893,10 @@ static bool lookupThisScopeAndUses(const char*           name,
               if (Symbol* modSym = use->checkIfModuleNameMatches(name)) {
                 if (isRepeat(modSym, symbols) == false) {
                   symbols.push_back(modSym);
+                  if (use->isARename()) {
+                    renames[modSym] = new SymRename(name, use->astloc.filename,
+                                                    use->astloc.lineno);
+                  }
                 }
               }
             }

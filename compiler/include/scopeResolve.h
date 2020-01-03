@@ -25,8 +25,10 @@ class CallExpr;
 class DefExpr;
 class FnSymbol;
 class Symbol;
+class SymRename;
 
 #include <vector>
+#include <map>
 
 void     addToSymbolTable(FnSymbol* fn);
 void     addToSymbolTable(DefExpr* def);
@@ -36,11 +38,13 @@ Symbol*  lookup(const char*           name,
 
 void     lookup(const char*           name,
                 BaseAST*              context,
-                std::vector<Symbol*>& symbols);
+                std::vector<Symbol*>& symbols,
+                std::map<Symbol*, SymRename*>& renames);
 
 Symbol*  lookupAndCount(const char*           name,
                         BaseAST*              context,
-                        int&                  nSymbolsFound);
+                        int&                  nSymbolsFound,
+                        SymRename**           rename);
 
 
 BaseAST* getScope(BaseAST* ast);
