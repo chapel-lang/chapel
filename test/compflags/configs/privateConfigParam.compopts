@@ -1,0 +1,4 @@
+-sfoo=true               # privateConfigParam-ft.good
+-sM.foo=true             # privateConfigParam-tf.good
+-sM2.foo=true            # privateConfigParam-ft.good
+-sfoo=true -sM.foo=true  # privateConfigParam-tt.good
