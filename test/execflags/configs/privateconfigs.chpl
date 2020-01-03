@@ -17,7 +17,7 @@ module M2 {
   private config const ddd = 2;
   private config const eee = 2;
   private config const fff = 2;
-          config const ggg = 1;
+          config const ggg = 2;
 
   writeln("M2: ", (aaa, bbb, ccc, ddd, eee, fff, ggg));
 }
@@ -29,7 +29,7 @@ module M3 {
   private config const ddd = 3;
   private config const eee = 3;
           config const fff = 3;
-  private config const ggg = 1;
+  private config const ggg = 3;
 
   writeln("M3: ", (aaa, bbb, ccc, ddd, eee, fff, ggg));
 }
@@ -41,7 +41,7 @@ module M4 {
           config const ddd = 4;
   private config const eee = 4;
   private config const fff = 4;
-          config const ggg = 1;
+          config const ggg = 4;
 
   writeln("M4: ", (aaa, bbb, ccc, ddd, eee, fff, ggg));
 

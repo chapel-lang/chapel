@@ -1,1 +1,5 @@
 --aaa=0 --bbb=0 --ccc=0 --ddd=0
+--eee=0  # privateconfigs-eee.good
+--fff=0  # privateconfigs-fff.good
+--ggg=0  # privateconfigs-ggg.good
+--help   # privateconfigs-help.good
