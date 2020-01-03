@@ -162,16 +162,15 @@ static void walkBlockStmt(FnSymbol*         fn,
 
   // Destroy the variable after this statement if it's the last mention
   if (CallExpr* call = toCallExpr(stmt)) {
-    if (!(call->isPrimitive(PRIM_YIELD) || call->isPrimitive(PRIM_RETURN))) {
-      LastMentionMap::const_iterator lmmIt = lmm.find(stmt);
-      if (lmmIt != lmm.end()) {
-        const std::vector<VarSymbol*>& vars = lmmIt->second;
-        for_vector(VarSymbol, var, vars) {
-          scope.destroyVariable(call, var, ignoredVariables);
-          // Needs a better strategy if we move last mention points within
-          // conditionals
-          ignoredVariables.insert(var);
-        }
+    LastMentionMap::const_iterator lmmIt = lmm.find(stmt);
+    if (lmmIt != lmm.end()) {
+      const std::vector<VarSymbol*>& vars = lmmIt->second;
+      for_vector(VarSymbol, var, vars) {
+        scope.destroyVariable(call, var, ignoredVariables);
+
+        // Needs a better strategy if we move last mention points within
+        // conditionals
+        ignoredVariables.insert(var);
       }
     }
   }
@@ -265,6 +264,8 @@ static void walkBlock(FnSymbol*         fn,
     addForallIndexVarToScope(&scope, pfs);
 
   for_alist(stmt, block->body) {
+    Expr* next = stmt->next;
+
     //
     // Handle the current statement
     //
@@ -277,7 +278,7 @@ static void walkBlock(FnSymbol*         fn,
     // with a GotoStmt or when we run out of next statements.
     //
     GotoStmt* gotoStmt = toGotoStmt(stmt);
-    if (gotoStmt != NULL || stmt->next == NULL) {
+    if (gotoStmt != NULL || next == NULL) {
 
       // Don't visit any later code in this block
       // (don't add variable definitions, etc, above).
@@ -608,8 +609,10 @@ static void computeLastMentionPoints(LastMentionMap& lmm, FnSymbol* fn) {
     Expr* point = it->second;
     // find the end of statement
     point = findLastExprInStatement(point, v);
-    // store in the inverse map
-    lmm[point].push_back(v);
+    if (point != NULL) {
+      // store in the inverse map
+      lmm[point].push_back(v);
+    }
   }
 }
 
@@ -619,8 +622,10 @@ void ComputeLastSymExpr::visitSymExpr(SymExpr* node) {
         var->hasFlag(FLAG_INSERT_AUTO_DESTROY) &&
         !var->hasFlag(FLAG_NO_AUTO_DESTROY) &&
         !isForallStmt(var->defPoint->parentExpr)) {
-      // put it in the map
-      last[var] = node;
+      if (isFnSymbol(node->parentSymbol)) {
+        // put it in the map
+        last[var] = node;
+      }
     }
   }
 }
@@ -657,12 +662,26 @@ static Expr* findLastExprInStatement(Expr* e, VarSymbol* v) {
 
     if (DefExpr* def = toDefExpr(cur))
       if (isLabelSymbol(def->sym))
-        return last; // label statement reached
+        break; // label statement reached
 
     last = cur;
   }
 
-  return last; // end of block reached
+  // Check if the early deinit point is the same as the the
+  // usual (end of block) deinit point.
+  GotoStmt* gotoStmt = toGotoStmt(last);
+  if (gotoStmt != NULL || last->next == NULL) {
+    // it's the end of something... is the end of of the block for the DefExpr?
+    if (defParent == last->parentExpr)
+      return NULL;
+  }
+
+  // Check if the call is a yield or return
+  if (CallExpr* call = toCallExpr(last))
+    if (call->isPrimitive(PRIM_YIELD) || call->isPrimitive(PRIM_RETURN))
+      return NULL;
+
+  return last; // last statement in the end of *some* block
 }
 
 /************************************* | **************************************
