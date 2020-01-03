@@ -1611,15 +1611,24 @@ static void lookup(const char*           name,
                    std::map<Symbol*, SymRename*>& renames);
 
 // Show what symbols from 'symbols' conflict with the given 'sym'.
-static void printConflictingSymbols(std::vector<Symbol*>& symbols, Symbol* sym)
+static void printConflictingSymbols(std::vector<Symbol*>& symbols, Symbol* sym,
+                                    std::map<Symbol*, SymRename*> renames)
 {
   Symbol* sampleFunction = NULL;
   for_vector(Symbol, another, symbols) if (another != sym)
   {
     if (isFnSymbol(another))
       sampleFunction = another;
-    else
-      USR_PRINT(another, "also defined here", another->name);
+    else {
+      if (SymRename* rename = renames[another]) {
+        USR_PRINT(another,
+                  "symbol '%s', defined here, was renamed to '%s' at %s:%d",
+                  another->name, rename->newName, rename->filename,
+                  rename->lineno);
+      } else {
+        USR_PRINT(another, "also defined here", another->name);
+      }
+    }
   }
 
   if (sampleFunction)
@@ -1657,8 +1666,14 @@ Symbol* lookupAndCount(const char*           name,
 
     for_vector(Symbol, sym, symbols) {
       if (! isFnSymbol(sym)) {
-        USR_FATAL_CONT(sym, "symbol %s is multiply defined", name);
-        printConflictingSymbols(symbols, sym);
+        if (SymRename* rename = renames[sym]) {
+          USR_FATAL_CONT(sym, "symbol %s is multiply defined", name);
+          USR_PRINT("'%s' was renamed to '%s' at %s:%d", sym->name,
+                    rename->newName, rename->filename, rename->lineno);
+        } else {
+          USR_FATAL_CONT(sym, "symbol %s is multiply defined", name);
+        }
+        printConflictingSymbols(symbols, sym, renames);
         break;
       }
     }
