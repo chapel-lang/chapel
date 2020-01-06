@@ -142,5 +142,5 @@ See $CHPL\_HOME/CONTRIBUTORS.md for a list of contributors to Chapel.
 COPYRIGHT
 ---------
 
-Copyright (c) 2004-2020 Cray Inc. (See $CHPL\_HOME/LICENSE for more
+Copyright (c) 2004-2020 Hewlett Packard Enterprise Development LP (See $CHPL\_HOME/LICENSE for more
 details.)
