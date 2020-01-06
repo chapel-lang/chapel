@@ -3,8 +3,6 @@
 Chapel Language Specification
 |||||||||||||||||||||||||||||
 
-©2020 Cray Inc.
-
 .. toctree::
    :caption: Chapters
    :maxdepth: 1
