@@ -2147,7 +2147,7 @@ inline proc _cast(type t:string, x: ioBits) {
 
 
 pragma "no doc"
-inline proc channel._ch_ioerror(error:syserr, msg:string) throws {
+proc channel._ch_ioerror(error:syserr, msg:string) throws {
   var path:string = "unknown";
   var offset:int(64) = -1;
   on this.home {
@@ -2191,7 +2191,7 @@ proc channel._ch_ioerror(errstr:string, msg:string) throws {
 
    :throws SystemError: Thrown if the lock could not be acquired.
  */
-proc channel.lock() throws {
+inline proc channel.lock() throws {
   var err:syserr = ENOERR;
 
   if is_c_nil(_channel_internal) then
@@ -2208,7 +2208,7 @@ proc channel.lock() throws {
 /*
    Release a channel's lock.
  */
-proc channel.unlock() {
+inline proc channel.unlock() {
   if locking {
     on this.home {
       qio_channel_unlock(_channel_internal);
@@ -2308,7 +2308,7 @@ proc channel.advancePastByte(byte:uint(8)) throws {
   :returns: The offset that was marked
   :throws: SystemError: if marking the channel failed
  */
-proc channel.mark() throws where this.locking == false {
+inline proc channel.mark() throws where this.locking == false {
   const offset = this.offset();
   const err = qio_channel_mark(false, _channel_internal);
 
@@ -2324,7 +2324,7 @@ proc channel.mark() throws where this.locking == false {
    previous channel offset unchanged.  This function can only be
    called on a channel with ``locking==false``.
 */
-proc channel.revert() where this.locking == false {
+inline proc channel.revert() where this.locking == false {
   qio_channel_revert_unlocked(_channel_internal);
 }
 
@@ -2335,7 +2335,7 @@ proc channel.revert() where this.locking == false {
    only be called on a channel with ``locking==false``.
 
 */
-proc channel.commit() where this.locking == false {
+inline proc channel.commit() where this.locking == false {
   qio_channel_commit_unlocked(_channel_internal);
 }
 
@@ -2380,7 +2380,7 @@ proc channel.seek(start:int, end:int = max(int)) throws {
    For a channel locked with :proc:`channel.lock`, return the offset
    of that channel.
  */
-proc channel._offset():int(64) {
+inline proc channel._offset():int(64) {
   var ret:int(64);
   on this.home {
     ret = qio_channel_offset_unlocked(_channel_internal);
@@ -2402,7 +2402,7 @@ proc channel._offset():int(64) {
   :returns: The offset that was marked
   :throws: SystemError: if marking the channel failed
  */
-proc channel._mark() throws {
+inline proc channel._mark() throws {
   const offset = this.offset();
   const err = qio_channel_mark(false, _channel_internal);
 
@@ -2419,7 +2419,7 @@ proc channel._mark() throws {
    only be called on a channel that has already been locked and
    marked.
 */
-proc channel._revert() {
+inline proc channel._revert() {
   qio_channel_revert_unlocked(_channel_internal);
 }
 
@@ -2430,7 +2430,7 @@ proc channel._revert() {
    only be called on a channel that has already been locked and
    marked.
 */
-proc channel._commit() {
+inline proc channel._commit() {
   qio_channel_commit_unlocked(_channel_internal);
 }
 
@@ -2471,7 +2471,7 @@ proc channel._set_style(style:iostyle) {
    the formal argument to a `readThis`, `writeThis`, or `readWriteThis` method.
 
  */
-proc channel.readWriteThisFromLocale() {
+inline proc channel.readWriteThisFromLocale() {
   return _readWriteThisFromLocale;
 }
 
@@ -2482,6 +2482,7 @@ proc channel.readWriteThisFromLocale() {
 // was not created to call readThis/writeThis/readWriteThis and
 // so the original locale of the I/O is `here`.
 pragma "no doc"
+inline
 proc channel.getLocaleOfIoRequest() {
   var ret = this.readWriteThisFromLocale();
   if ret == nil then
@@ -3236,7 +3237,7 @@ proc channel.writeIt(const x) throws {
    For a reading channel, reads as with :proc:`channel.read`.
    Stores any error encountered in the channel. Does not return anything.
  */
-proc channel.readwrite(const x) where this.writing {
+inline proc channel.readwrite(const x) where this.writing {
   try {
     this.writeIt(x);
   } catch err {
@@ -3249,13 +3250,13 @@ proc channel.readwrite(const x) where this.writing {
 }
 // documented in the writing version.
 pragma "no doc"
-proc channel.readwrite(ref x) where !this.writing {
+inline proc channel.readwrite(ref x) where !this.writing {
   try {
     this.readIt(x);
   } catch err {
     //
     // Do nothing with caught errors, for now, since this routine doesn't
-    // throw yet (and writeIt stuffs errors in the channel in addition to
+    // throw yet (and readIt stuffs errors in the channel in addition to
     // throwing).
     //
   }
@@ -3265,15 +3266,14 @@ proc channel.readwrite(ref x) where !this.writing {
 
      The _`<~> operator`
 
-     This `<~>` operator is the same as calling :proc:`channel.read` or
-     :proc:`channel.write` (depending on channel direction) except that it
-     returns the channel so that multiple operator calls can be chained
-     together.
+     This `<~>` operator is the same as calling :proc:`channel.readwrite`,
+     except that it returns the channel so that multiple operator
+     calls can be chained together.
 
      :returns: ch
      :throws SystemError: When an IO error has occurred.
    */
-  proc <~>(const ref ch: channel, x) const ref throws
+  inline proc <~>(const ref ch: channel, x) const ref throws
   where ch.writing {
     try ch.writeIt(x);
     return ch;
@@ -3339,7 +3339,7 @@ proc channel.readwrite(ref x) where !this.writing {
   /* Explicit call for reading or writing a literal as an
      alternative to using :type:`IO.ioLiteral`.
    */
-  inline proc channel.readWriteLiteral(lit:string, ignoreWhiteSpace=true)
+  proc channel.readWriteLiteral(lit:string, ignoreWhiteSpace=true)
   {
     var iolit = new ioLiteral(lit:string, ignoreWhiteSpace);
     this.readwrite(iolit);
@@ -3348,7 +3348,7 @@ proc channel.readwrite(ref x) where !this.writing {
   /* Explicit call for reading or writing a newline as an
      alternative to using :type:`IO.ioNewline`.
    */
-  inline proc channel.readWriteNewline()
+  proc channel.readWriteNewline()
   {
     var ionl = new ioNewline();
     this.readwrite(ionl);
@@ -3596,7 +3596,7 @@ private proc _args_to_proto(const args ...?k, preArg:string) {
 
 /* returns true if read successfully, false if we encountered EOF */
 // better documented in the style= version
-proc channel.read(ref args ...?k):bool throws {
+inline proc channel.read(ref args ...?k):bool throws {
   if writing then compilerError("read on write-only channel");
   const origLocale = this.getLocaleOfIoRequest();
   var err:syserr = ENOERR;
