@@ -3237,30 +3237,16 @@ proc channel.writeIt(const x) throws {
    For a writing channel, writes as with :proc:`channel.write`.
    For a reading channel, reads as with :proc:`channel.read`.
    Stores any error encountered in the channel. Does not return anything.
+
+   :throws SystemError: When an IO error has occurred.
  */
-inline proc channel.readwrite(const x) where this.writing {
-  try {
-    this.writeIt(x);
-  } catch err {
-    //
-    // Do nothing with caught errors, for now, since this routine doesn't
-    // throw yet (and writeIt stuffs errors in the channel in addition to
-    // throwing).
-    //
-  }
+inline proc channel.readwrite(const x) throws where this.writing {
+  try this.writeIt(x);
 }
 // documented in the writing version.
 pragma "no doc"
-inline proc channel.readwrite(ref x) where !this.writing {
-  try {
-    this.readIt(x);
-  } catch err {
-    //
-    // Do nothing with caught errors, for now, since this routine doesn't
-    // throw yet (and readIt stuffs errors in the channel in addition to
-    // throwing).
-    //
-  }
+inline proc channel.readwrite(ref x) throws where !this.writing {
+  try this.readIt(x);
 }
 
   /*
