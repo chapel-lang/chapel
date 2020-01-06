@@ -1,0 +1,3 @@
+uncaught IllegalArgumentError: User error thrown from writeThis!
+  Test.chpl:12: thrown here
+  Test.chpl:20: uncaught here

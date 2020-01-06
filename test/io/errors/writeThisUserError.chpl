@@ -10,7 +10,7 @@ record foo {
 
   proc writeThis(ch: channel) throws {
     throw new
-      IllegalArgumentError('This is an example user error!');
+      IllegalArgumentError('User error thrown from writeThis!');
     ch <~> x;
   }
 }
