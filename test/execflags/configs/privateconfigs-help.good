@@ -33,7 +33,7 @@ Built-in config vars:
                      memLog: string
                 memLeaksLog: string
              memLeaksByDesc: string
-                 numLocales: int(64)
+                 numLocales: int(64) (configured to 1)
 
 M1 config vars:
                         aaa: int(64)
