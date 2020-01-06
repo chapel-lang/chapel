@@ -1,2 +1,2 @@
  # ensureStillVisible.good
--sfoo=12 # ensureStillVisible.set.good
+-sdefinesPrivate.foo=12 # ensureStillVisible.set.good

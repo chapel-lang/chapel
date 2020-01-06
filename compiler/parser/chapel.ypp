@@ -39,6 +39,7 @@
   #include <string>
   int         captureTokens;
   std::string captureString;
+  bool        parsingPrivate=false;
 }
 
 // It would be better if Flex could generate these for itself
@@ -785,7 +786,17 @@ class_level_stmt:
   TSEMI                 { $$ = buildChapelStmt(new BlockStmt()); }
 | private_decl
 | TPUBLIC private_decl  { $$ = $2; }
-| TPRIVATE private_decl { applyPrivateToBlock($2); $$ = $2; }
+/* the following rule saves the current state of `parsingPrivate`,
+   then sets it to true when parsing the `private_decl` rule; it then
+   restores the original value before completing.  Note that this is
+   not sufficient to reason about nestings of public and private
+   declarations, but that the current use of `parsingPrivate` (to
+   distinguish private configs) does not require that.  For such
+   cases, we'd need to do similar save/set-to-false/restore actions in
+   the public rules above, but doing this in the most straightforward
+   way results in conflicts. */
+| TPRIVATE { $<b>$ = parsingPrivate; parsingPrivate=true;}
+    private_decl { parsingPrivate=$<b>2; applyPrivateToBlock($3); $$ = $3; }
 ;
 
 private_decl:
