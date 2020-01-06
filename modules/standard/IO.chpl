@@ -2471,7 +2471,8 @@ proc channel._set_style(style:iostyle) {
    the formal argument to a `readThis`, `writeThis`, or `readWriteThis` method.
 
  */
-inline proc channel.readWriteThisFromLocale() {
+inline
+proc channel.readWriteThisFromLocale() {
   return _readWriteThisFromLocale;
 }
 
@@ -3339,7 +3340,7 @@ inline proc channel.readwrite(ref x) where !this.writing {
   /* Explicit call for reading or writing a literal as an
      alternative to using :type:`IO.ioLiteral`.
    */
-  proc channel.readWriteLiteral(lit:string, ignoreWhiteSpace=true)
+  inline proc channel.readWriteLiteral(lit:string, ignoreWhiteSpace=true)
   {
     var iolit = new ioLiteral(lit:string, ignoreWhiteSpace);
     this.readwrite(iolit);
@@ -3348,7 +3349,7 @@ inline proc channel.readwrite(ref x) where !this.writing {
   /* Explicit call for reading or writing a newline as an
      alternative to using :type:`IO.ioNewline`.
    */
-  proc channel.readWriteNewline()
+  inline proc channel.readWriteNewline()
   {
     var ionl = new ioNewline();
     this.readwrite(ionl);
