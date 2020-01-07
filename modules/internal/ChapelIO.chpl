@@ -356,7 +356,7 @@ module ChapelIO {
     }
 
     private
-    proc skipFieldsAtEnd(reader, inout needsComma:bool) {
+    proc skipFieldsAtEnd(reader, inout needsComma:bool) throws {
 
       var st = reader.styleElement(QIO_STYLE_ELEMENT_AGGREGATE);
       var skip_unk = reader.styleElement(QIO_STYLE_ELEMENT_SKIP_UNKNOWN_FIELDS);
