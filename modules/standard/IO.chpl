@@ -3326,7 +3326,8 @@ inline proc channel.readwrite(ref x) throws where !this.writing {
   /* Explicit call for reading or writing a literal as an
      alternative to using :type:`IO.ioLiteral`.
    */
-  inline proc channel.readWriteLiteral(lit:string, ignoreWhiteSpace=true)
+  inline
+  proc channel.readWriteLiteral(lit:string, ignoreWhiteSpace=true) throws
   {
     var iolit = new ioLiteral(lit:string, ignoreWhiteSpace);
     this.readwrite(iolit);
@@ -3335,7 +3336,7 @@ inline proc channel.readwrite(ref x) throws where !this.writing {
   /* Explicit call for reading or writing a newline as an
      alternative to using :type:`IO.ioNewline`.
    */
-  inline proc channel.readWriteNewline()
+  inline proc channel.readWriteNewline() throws
   {
     var ionl = new ioNewline();
     this.readwrite(ionl);
