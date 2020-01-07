@@ -1343,13 +1343,23 @@ module DefaultRectangular {
         const allocD = {(...bounds)};
 
         if (rank == 1 && allocD.low == dom.dsiLow && allocD.stride == dom.dsiStride) {
+          const newLow = dom.dsiAlignedHigh + dom.dsiStride;
           // REALLOCATE IN PLACE
           //          try! stderr.writeln("candidate for reallocating in-place");
           //          writeln("reallocating to ", allocD.dsiDim(1));
           //          dom = allocD._value;
           sizesPerDim(1) = allocD.dsiDim(1).size;
-          data.reallocate(eltType, allocD.size);
+          data.reallocate(eltType, newSize=allocD.size,
+                          oldSize=dom.dsiNumIndices);
           initShiftedData();
+          /*
+          forall i in newLow..allocD.high by allocD.stride {
+            pragma "no auto destroy"
+            var y: eltType;
+            __primitive("array_set_first", data, i, y);
+          }
+          */
+            
         } else {
 
         var copy = new unmanaged DefaultRectangularArr(eltType=eltType,
