@@ -398,7 +398,7 @@ module ChapelIO {
 
     pragma "no doc"
     proc readThisFieldsDefaultImpl(reader, type t, ref x,
-                                   inout needsComma:bool) {
+                                   inout needsComma:bool) throws {
       param num_fields = __primitive("num fields", t);
       var isBinary = reader.binary();
       var superclass_error : syserr = ENOERR;
