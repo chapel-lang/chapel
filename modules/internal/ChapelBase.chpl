@@ -1037,24 +1037,6 @@ module ChapelBase {
     inline proc this(i: integral) ref {
       return __primitive("array_get", this, i);
     }
-
-    inline proc ref reallocate(type eltType, newSize: integral,
-                               oldSize: integral,
-                               subloc = c_sublocid_none) {
-      pragma "fn synchronization free"
-      pragma "insert line file info"
-      extern proc chpl_mem_array_realloc(ptr: c_void_ptr, nmemb: size_t,
-                                         eltSize: size_t,
-                                         subloc: chpl_sublocID_t,
-                                         ref callPostAlloc: bool): c_void_ptr;
-      var callPostAlloc: bool;
-      this = chpl_mem_array_realloc(this: c_void_ptr, newSize.safeCast(size_t),
-                                    _ddata_sizeof_element(this),
-                                    subloc, callPostAlloc): this.type;
-      init_elts(this, newSize, eltType, lo=oldSize);
-      if (callPostAlloc) then
-        halt("realloc doesn't support post-alloc hooks yet");
-    }
   }
 
   proc chpl_isDdata(type t:_ddata) param return true;
@@ -1103,6 +1085,28 @@ module ChapelBase {
     }
     return ret;
   }
+
+
+  inline proc _ddata_reallocate(ref ddata,
+                                type eltType,
+                                oldSize: integral,
+                                newSize: integral,
+                                subloc = c_sublocid_none) {
+    pragma "fn synchronization free"
+    pragma "insert line file info"
+    extern proc chpl_mem_array_realloc(ptr: c_void_ptr, nmemb: size_t,
+                                       eltSize: size_t,
+                                       subloc: chpl_sublocID_t,
+                                       ref callPostAlloc: bool): c_void_ptr;
+    var callPostAlloc: bool;
+    ddata = chpl_mem_array_realloc(ddata: c_void_ptr, newSize.safeCast(size_t),
+                                   _ddata_sizeof_element(ddata),
+                                   subloc, callPostAlloc): ddata.type;
+    init_elts(ddata, newSize, eltType, lo=oldSize);
+    if (callPostAlloc) then
+      halt("realloc doesn't support post-alloc hooks yet");
+  }
+
 
   inline proc _ddata_free(data: _ddata, size: integral) {
     pragma "fn synchronization free"
