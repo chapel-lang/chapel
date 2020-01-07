@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2019 Cray Inc.
+ * Copyright 2004-2020 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -60,7 +60,7 @@ proc masonSearch(ref args: list(string)) {
   // If no query is provided, list all packages in registry
   const query = if args.size > 0 then args[args.size].toLower()
                 else ".*";
-  const pattern = compile(query, ignorecase=true);
+  const pattern = compile(query, ignoreCase=true);
 
   var results: list(string);
   var packages: list(string);
