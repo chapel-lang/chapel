@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2019 Cray Inc.
+ * Copyright 2004-2020 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -2344,9 +2344,7 @@ module ChapelArray {
       if isRectangularArr(this) {
         var ok = true;
         for param i in 1..rank {
-//          writeln("Checking ", ranges(i), " against ", value.dom.dsiDim(i));
           ok &&= value.dom.dsiDim(i).boundsCheck(ranges(i));
-//          writeln("ok = ", ok);
         }
         if ok == false {
           if rank == 1 {
@@ -2561,7 +2559,6 @@ module ChapelArray {
     pragma "reference to const when const this"
     pragma "fn returns aliasing array"
     proc this(ranges...rank) where chpl__isTupleOfRanges(ranges) {
-//      writeln("In this: ", _value.dom.dsiDim(1));
       if boundsChecking then
         checkSlice((... ranges), value=_value);
 
