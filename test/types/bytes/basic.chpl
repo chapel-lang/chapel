@@ -41,6 +41,8 @@ writeln("Accessor tests");
 for i in 1..b_from_c_ptr.length do
   writeln(b_from_c_ptr[i], " as ", b_from_c_ptr[i].type:string);
 for i in 1..b_from_c_ptr.length do
+  writeln(b_from_c_ptr[i:byteIndex], " as ", b_from_c_ptr[i].type:string);
+for i in 1..b_from_c_ptr.length do
   writeln(b_from_c_ptr.byte(i), " as ", b_from_c_ptr[i].type:string);
 
 var singleByteBytes = b"A";
@@ -99,10 +101,21 @@ writeln();
 
 // TEST SLICE
 writeln("Slice tests");
-writeln(b[..4], " -- the type is ", b[1..4].type:string); // "this"
+writeln(b[1..4], " -- the type is ", b[1..4].type:string); // "this"
+writeln(b[..4], " -- the type is ", b[..4].type:string); // "this"
 writeln(b[6..], " -- the type is ", b[6..].type:string); // "is a bytes"
 writeln(b[..], " -- the type is ", b[..].type:string); // "this is a bytes"
 writeln(b[11..b.length], " -- the type is ", b[..].type:string); // "bytes"
+writeln();
+writeln(b[1:byteIndex..4:byteIndex],
+        " -- the type is ", b[1..4].type:string); // "this"
+writeln(b[..4:byteIndex],
+        " -- the type is ", b[1..4].type:string); // "this"
+writeln(b[6:byteIndex..],
+        " -- the type is ", b[6..].type:string); // "is a bytes"
+writeln(b[..], " -- the type is ", b[..].type:string); // "this is a bytes"
+writeln(b[11:byteIndex..b.length:byteIndex],
+        " -- the type is ", b[..].type:string); // "bytes"
 writeln();
 
 // TEST SEARCH ETC. -- this is getting too much without coercion
