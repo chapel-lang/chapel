@@ -3270,16 +3270,6 @@ inline proc channel.readwrite(ref x) throws where !this.writing {
   pragma "no doc"
   inline proc <~>(const ref ch: channel, ref x) const ref throws
   where !ch.writing {
-
-    //
-    // TODO: Ideally, we would like to replace calls to `channel.readIt`
-    // entirely with calls to `channel.read`, however ioLiterals seem to
-    // expect the channel error state to be set _immediately_ after a call
-    // to `_read_one_internal`, and `channel.read` was throwing a EFORMAT
-    // error when called instead.
-    // So for now, I've adjusted `channel.readIt` (and `channel.writeIt`)
-    // to be throwing.
-    //
     try ch.readIt(x);
     return ch;
   }

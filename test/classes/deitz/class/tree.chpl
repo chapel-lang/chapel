@@ -11,9 +11,8 @@ class BinaryTree {
 }
 
 //
-// Old code uses a recursive iterator, which has trouble compiling when
-// called by writeln now that the <~> operator throws. See private issue
-// #644.
+// Old code uses a recursive iterator, which has trouble compiling currently,
+// see issue #7134.
 //
 /*
   if left then
