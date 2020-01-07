@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2019 Cray Inc.
+ * Copyright 2004-2020 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -23,12 +23,15 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-typedef struct chpl_bytes_wrapper {
+typedef struct chpl_byte_buffer {
   int8_t isOwned;
   char* data;
   uint64_t size;
-} chpl_bytes_wrapper;
+} chpl_byte_buffer;
 
-void chpl_bytes_wrapper_free(chpl_bytes_wrapper cb);
+void chpl_byte_buffer_free(chpl_byte_buffer cb);
+
+chpl_byte_buffer chpl_byte_buffer_make(const char* data);
+chpl_byte_buffer chpl_byte_buffer_make_len(const char* data, uint64_t size);
 
 #endif

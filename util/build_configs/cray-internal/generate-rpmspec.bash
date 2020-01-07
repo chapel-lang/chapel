@@ -62,7 +62,7 @@ Name:    %{name}
 Version: %{version}
 Release: %{pkg_release}
 Prefix:  %{platform_prefix}
-License: Copyright 2019, Cray Inc. All Rights Reserved.
+License: Copyright 2020, Cray Inc. All Rights Reserved.
 Packager: Cray, Inc
 Group:   Development/Languages/Other
 Source:  %{chpl_home_basename}.tar.gz

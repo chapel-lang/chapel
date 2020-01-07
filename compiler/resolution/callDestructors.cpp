@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2019 Cray Inc.
+ * Copyright 2004-2020 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -1250,6 +1250,9 @@ void callDestructors() {
   insertCopiesForYields();
 
   checkLifetimes();
+  // Note - checkLifetimes adds flags to mark when a variable is dead:
+  //  FLAG_DEAD_END_OF_BLOCK and FLAG_DEAD_LAST_MENTION
+  // to local variables. Other parts of this pass use this.
 
   lateConstCheck(NULL);
 

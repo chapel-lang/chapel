@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2019 Cray Inc.
+ * Copyright 2004-2020 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -6255,7 +6255,7 @@ static void  moveHaltForUnacceptableTypes(CallExpr* call);
 
 static void  resolveMoveForRhsSymExpr(CallExpr* call, SymExpr* rhs);
 
-static void  resolveMoveForRhsCallExpr(CallExpr* call);
+static void  resolveMoveForRhsCallExpr(CallExpr* call, Type* rhsType);
 
 static void  moveSetConstFlagsAndCheck(CallExpr* call, CallExpr* rhs);
 
@@ -6314,7 +6314,7 @@ static void resolveMove(CallExpr* call) {
       resolveMoveForRhsSymExpr(call, rhsSymExpr);
 
     } else if (isCallExpr(rhs) == true) {
-      resolveMoveForRhsCallExpr(call);
+      resolveMoveForRhsCallExpr(call, rhsType);
 
     } else {
       INT_ASSERT(false);
@@ -6599,10 +6599,16 @@ static void resolveMoveForRhsSymExpr(CallExpr* call, SymExpr* rhs) {
 
   }
 
+  if (lhsSym->hasFlag(FLAG_TYPE_VARIABLE) &&
+      lhsSym->type != dtUnknown &&
+      lhsSym->type != rhsSym->type) {
+    USR_FATAL(call, "type alias split initialization uses different types");
+  }
+
   moveFinalize(call);
 }
 
-static void resolveMoveForRhsCallExpr(CallExpr* call) {
+static void resolveMoveForRhsCallExpr(CallExpr* call, Type* rhsType) {
   CallExpr* rhs = toCallExpr(call->get(2));
 
   moveSetConstFlagsAndCheck(call, rhs);
@@ -6676,6 +6682,19 @@ static void resolveMoveForRhsCallExpr(CallExpr* call) {
         if (SymExpr* se = toSymExpr(call->get(1))) {
           se->symbol()->addFlag(FLAG_DELAY_GENERIC_EXPANSION);
         }
+      }
+    } else if (rhs->isPrimitive(PRIM_ADDR_OF)) {
+      // Check that the types match
+      SymExpr* lhsSe = toSymExpr(call->get(1));
+      Symbol* lhs = lhsSe->symbol();
+      INT_ASSERT(lhs->isRef());
+
+      if (lhs->getValType() != rhsType->getValType()) {
+        USR_FATAL_CONT(call, "Initializing a reference with another type");
+        USR_PRINT(lhs, "Reference has type %s", toString(lhs->getValType()));
+        USR_PRINT(call, "Initializing with type %s",
+                        toString(rhsType->getValType()));
+        USR_STOP();
       }
     }
 
@@ -9635,24 +9654,27 @@ static void resolvePrimInit(CallExpr* call, Symbol* val, Type* type) {
 
   // These types default to nil
   } else if (isClassLikeOrPtr(type) || type == dtNil) {
-    // note: error for bad param initialization checked for in resolving move
 
-    Expr* nilExpr = NULL;
-    SymExpr* typeSe = NULL;
-    if (gNil->type == type) {
-      nilExpr = new SymExpr(gNil);
+    if (!call->isPrimitive(PRIM_INIT_VAR_SPLIT_DECL)) {
+      Expr* nilExpr = NULL;
+      SymExpr* typeSe = NULL;
+      if (gNil->type == type) {
+        nilExpr = new SymExpr(gNil);
+      } else {
+        typeSe = new SymExpr(type->symbol);
+        nilExpr = new CallExpr(PRIM_CAST, typeSe, gNil);
+      }
+
+      CallExpr* moveDefault = new CallExpr(PRIM_MOVE, val, nilExpr);
+      call->insertBefore(moveDefault);
+      if (typeSe) resolveExprTypeConstructor(typeSe);
+      resolveExpr(moveDefault);
+      call->convertToNoop();
+
+      errorIfNonNilableType(call, val, type, type);
     } else {
-      typeSe = new SymExpr(type->symbol);
-      nilExpr = new CallExpr(PRIM_CAST, typeSe, gNil);
+      call->convertToNoop(); // initialize it PRIM_INIT_VAR_SPLIT_INIT
     }
-
-    CallExpr* moveDefault = new CallExpr(PRIM_MOVE, val, nilExpr);
-    call->insertBefore(moveDefault);
-    if (typeSe) resolveExprTypeConstructor(typeSe);
-    resolveExpr(moveDefault);
-    call->convertToNoop();
-
-    errorIfNonNilableType(call, val, type, type);
 
   // any type with a defaultValue is easy enough
   // (expect this to handle numeric types and classes)

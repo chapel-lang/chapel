@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2019 Cray Inc.
+ * Copyright 2004-2020 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -39,6 +39,7 @@
   #include <string>
   int         captureTokens;
   std::string captureString;
+  bool        parsingPrivate=false;
 }
 
 // It would be better if Flex could generate these for itself
@@ -295,6 +296,7 @@
 // identifiers and literals
 //
 %token <pch> TIDENT
+%token <pch> TQUERIEDIDENT
 %token <pch> INTLITERAL
 %token <pch> REALLITERAL
 %token <pch> IMAGLITERAL
@@ -784,7 +786,17 @@ class_level_stmt:
   TSEMI                 { $$ = buildChapelStmt(new BlockStmt()); }
 | private_decl
 | TPUBLIC private_decl  { $$ = $2; }
-| TPRIVATE private_decl { applyPrivateToBlock($2); $$ = $2; }
+/* the following rule saves the current state of `parsingPrivate`,
+   then sets it to true when parsing the `private_decl` rule; it then
+   restores the original value before completing.  Note that this is
+   not sufficient to reason about nestings of public and private
+   declarations, but that the current use of `parsingPrivate` (to
+   distinguish private configs) does not require that.  For such
+   cases, we'd need to do similar save/set-to-false/restore actions in
+   the public rules above, but doing this in the most straightforward
+   way results in conflicts. */
+| TPRIVATE { $<b>$ = parsingPrivate; parsingPrivate=true;}
+    private_decl { parsingPrivate=$<b>2; applyPrivateToBlock($3); $$ = $3; }
 ;
 
 private_decl:
@@ -1402,8 +1414,12 @@ function_body_stmt:
 ;
 
 query_expr:
-  TQUESTION ident_def
-    { $$ = new DefExpr(new VarSymbol($2)); }
+  TQUESTION ident_def { 
+      DefExpr * de = new DefExpr(new VarSymbol($2));
+      USR_WARN(de, "support for space in query expressions is deprecated");
+      $$ = de;
+  }
+| TQUERIEDIDENT       { $$ = buildQueriedExpr($1); }
 ;
 
 var_arg_expr:

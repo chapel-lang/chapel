@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2019 Cray Inc.
+ * Copyright 2004-2020 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -561,6 +561,12 @@ BlockStmt* buildRequireStmt(CallExpr* args) {
   return list;
 }
 
+//
+// Build a queried expression like `?t`
+//
+DefExpr* buildQueriedExpr(const char *expr) {
+  return new DefExpr(new VarSymbol(&(expr[1])));
+}
 
 static void
 buildTupleVarDeclHelp(Expr* base, BlockStmt* decls, Expr* insertPoint) {
@@ -1339,11 +1345,23 @@ static Expr* lookupConfigValHelp(const char* cfgname, VarSymbol* var) {
 // first try looking up cfgname;
 // if it fails, try looking up currentModuleName.cfgname
 static Expr* lookupConfigVal(VarSymbol* var) {
+  extern bool parsingPrivate;
   const char* cfgname = var->name;
-  Expr* configInit = NULL;
-  configInit = lookupConfigValHelp(astr(cfgname), var);
-  if (configInit == NULL) {
-    configInit = lookupConfigValHelp(astr(currentModuleName, ".", cfgname), var);
+  Expr* configInit = lookupConfigValHelp(astr(currentModuleName, ".", cfgname), var);
+  // only public configs can be matched in an unqualified manner
+  if (!parsingPrivate) {
+    if (Expr* unqualConfigInit = lookupConfigValHelp(astr(cfgname), var)) {
+      if (configInit == NULL) {
+        configInit = unqualConfigInit;
+      } else {
+        // we may want to have the latter flag "win", but that would require
+        // storing ordering information about the order in which the flags
+        // were passed, which we don't currently maintain.  A job for a rainy
+        // day?
+        USR_FATAL_CONT(var, "config set ambiguously via '-s%s' and '-s%s.%s'",
+                       cfgname, currentModuleName, cfgname);
+      }
+    }
   }
   return configInit;
 }

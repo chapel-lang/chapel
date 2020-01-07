@@ -27,10 +27,13 @@ cdef extern from "chpl-external-array.h":
 	void cleanupOpaqueArray(chpl_opaque_array* arr)
 
 cdef extern from "chpl-export-wrappers.h":
-	ctypedef struct chpl_bytes_wrapper:
+	ctypedef struct chpl_byte_buffer:
 		int isOwned
 		char* data
 		size_t size
 
-	void chpl_bytes_wrapper_free(chpl_bytes_wrapper cb)
+	void chpl_byte_buffer_free(chpl_byte_buffer cb)
+
+cdef extern from "chpl-mem.h":
+	void chpl_free(void* ptr)
 
