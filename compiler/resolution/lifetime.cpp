@@ -3295,6 +3295,16 @@ bool MarkCapturesVisitor::enterCallExpr(CallExpr* call) {
   // 0: Handle task functions
   if (FnSymbol* calledFn = call->resolvedOrVirtualFunction()) {
     if (isTaskFun(calledFn)) {
+      // Consider a 'begin' to be a capture
+      // TODO?: unless it is in a sync block?
+      if (calledFn->hasFlag(FLAG_BEGIN)) {
+        for_formals_actuals(formal, actual, call) {
+          SymExpr* actualSe = toSymExpr(actual);
+          Symbol* actualSym = actualSe->symbol();
+          markAliasesAndSymPotentiallyCaptured(actualSym, call);
+        }
+      }
+      // Descend into task functions
       calledFn->body->accept(this);
       return false;
     }
