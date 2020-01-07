@@ -255,7 +255,7 @@ module ChapelIO {
 
 
     pragma "no doc"
-    proc writeThisFieldsDefaultImpl(writer, x:?t, inout first:bool) {
+    proc writeThisFieldsDefaultImpl(writer, x:?t, inout first:bool) throws {
       param num_fields = __primitive("num fields", t);
       var isBinary = writer.binary();
 
