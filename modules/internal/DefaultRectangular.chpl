@@ -1339,8 +1339,6 @@ module DefaultRectangular {
                                                    BoundedRangeType.bounded,
                                                    stridable)) {
       on this {
-        use IO;
-        //        try! stderr.writeln("reallocating from ", dom.ranges, " to ", bounds);
         const allocD = {(...bounds)};
 
         if (rank == 1 && allocD.low == dom.dsiLow && allocD.stride == dom.dsiStride) {
