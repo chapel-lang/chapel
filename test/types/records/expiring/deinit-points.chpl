@@ -1,5 +1,8 @@
 record R {
+  var x:int = 0;
   proc deinit() {
+    assert(x == 0);
+    x = 99;
     writeln("deinit");
   }
 }
@@ -25,6 +28,7 @@ proc t3() {
   writeln("t3");
   var r: R;
   var i: int;
+  r;
   writeln("middle");
 }
 t3();
@@ -35,7 +39,6 @@ proc t4() {
   {
     writeln("begin inner");
     r;
-    // TODO: destroy it here 
     writeln("end inner");
   }
   writeln("end outer");
@@ -52,7 +55,6 @@ proc t5() {
     r;
     writeln("end else");
   }
-  // TODO: destroy it here
   writeln("end outer");
 }
 t5();
@@ -64,7 +66,6 @@ proc t6() {
     r;
     writeln("end if");
   }
-  // TODO: destroy it here
   writeln("end outer");
 }
 t6();
@@ -76,7 +77,6 @@ proc t7() {
     r;
     writeln("end loop iter");
   }
-  // TODO: destroy it here
   writeln("end outer");
 }
 t7();
@@ -90,7 +90,6 @@ proc t8() {
     i += 1;
     writeln("end loop iter");
   }
-  // TODO: destroy it here
   writeln("end outer");
 }
 t8();
@@ -104,7 +103,6 @@ proc t9() {
     i += 1;
     writeln("end loop iter");
   } while i < 2;
-  // TODO: destroy it here
   writeln("end outer");
 }
 t9();
@@ -133,6 +131,20 @@ proc t11() {
 }
 t11();
 
+proc t11o() {
+  writeln("t11o");
+  var r: R;
+  coforall i in 1..2 {
+    on Locales[numLocales-1] {
+      r;
+      writeln("end loop iter");
+    }
+  }
+  // TODO: destroy it here
+  writeln("end outer");
+}
+t11o();
+
 proc t12() {
   writeln("t12");
   var r: R;
@@ -150,6 +162,24 @@ proc t12() {
   writeln("end outer");
 }
 t12();
+
+proc t12o() {
+  writeln("t12o");
+  var r: R;
+  var i = 1;
+  cobegin with (ref i) {
+    on Locales[numLocales-1] {
+      r;
+      writeln("end inner");
+    }
+    {
+      i = 2;
+    }
+  }
+  // TODO: destroy it here
+  writeln("end outer");
+}
+t12o();
 
 proc t13() {
   writeln("t13");
@@ -207,3 +237,72 @@ proc t16() {
   writeln("end outer");
 }
 t16();
+
+proc t17() {
+  writeln("t17");
+  var r: R;
+  var i = 1;
+  sync {
+    begin {
+      r;
+      writeln("end inner");
+    }
+  }
+  writeln("end outer");
+}
+t17();
+
+proc t18() {
+  writeln("t18");
+  var r: R;
+  var done:sync int;
+
+  begin {
+    writeln("task one ", r);
+    done = 1;
+  }
+
+  done;
+
+  writeln("end outer");
+}
+t18();
+
+proc t18o() {
+  writeln("t18o");
+  var r: R;
+  var done:sync int;
+
+  begin on Locales[numLocales-1] {
+    writeln("task one ", r);
+    done = 1;
+  }
+
+  done;
+
+  writeln("end outer");
+}
+t18o();
+
+proc t20() {
+  writeln("t20");
+  var r: R;
+  var step1:sync int;
+  var step2:sync int;
+
+  begin {
+    step1; // wait for 1st task
+    writeln("task one ", r);
+    step2 = 1;
+  }
+
+  begin {
+    writeln("task two ", r);
+    step1 = 1;
+  }
+
+  step2;
+
+  writeln("end outer");
+}
+t20();

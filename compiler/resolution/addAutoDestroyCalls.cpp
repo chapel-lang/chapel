@@ -161,10 +161,6 @@ static void walkBlockStmt(FnSymbol*         fn,
   // TODO -- maybe we need to handle breakLabel and continueLabel here?
 
   // Destroy the variable after this statement if it's the last mention
-
-  if (isCallExpr(stmt)) { // TODO -- remove this -- but
-                          // removing it is causing valgrind errors
-
   LastMentionMap::const_iterator lmmIt = lmm.find(stmt);
   if (lmmIt != lmm.end()) {
     const std::vector<VarSymbol*>& vars = lmmIt->second;
@@ -175,7 +171,6 @@ static void walkBlockStmt(FnSymbol*         fn,
       // conditionals
       ignoredVariables.insert(var);
     }
-  }
   }
 
   // Once a variable is yielded, it should no longer be auto-destroyed,
@@ -592,11 +587,13 @@ class ComputeLastSymExpr : public AstVisitorTraverse
     std::map<VarSymbol*, Expr*>& last;
     ComputeLastSymExpr(std::map<VarSymbol*, Expr*>& last) : last(last) { }
     virtual void visitSymExpr(SymExpr* node);
+    virtual void exitForallStmt(ForallStmt* node);
 };
 
 static Expr* findLastExprInStatement(Expr* e, VarSymbol* v);
 
 static void computeLastMentionPoints(LastMentionMap& lmm, FnSymbol* fn) {
+
   std::map<VarSymbol*, Expr*> last;
 
   // Use a traversal to compute the last SymExpr mentioning each
@@ -633,6 +630,20 @@ void ComputeLastSymExpr::visitSymExpr(SymExpr* node) {
   }
 }
 
+void ComputeLastSymExpr::exitForallStmt(ForallStmt* node) {
+  // visit the shadow variables and record them as uses at the forall
+  for_alist(elt, node->shadowVariables()) {
+    if (DefExpr* def = toDefExpr(elt)) {
+      if (ShadowVarSymbol* svar = toShadowVarSymbol(def->sym)) {
+        if (VarSymbol* var = toVarSymbol(svar->outerVarSym())) {
+          // outer variable's use is at the forall itself
+          last[var] = node;
+        }
+      }
+    }
+  }
+}
+
 static Expr* findLastExprInStatement(Expr* e, VarSymbol* v) {
 
   Expr* stmt = e->getStmtExpr();
@@ -653,22 +664,27 @@ static Expr* findLastExprInStatement(Expr* e, VarSymbol* v) {
 
     // TODO - fix if-exprs with isLoweredIfExprBlock
 
-    if (isCondStmt(cur) || isLoopStmt(cur) || isForallStmt(cur)) {
+    if (isBlockStmt(cur) ||
+        isCondStmt(cur) || isLoopStmt(cur) || isForallStmt(cur)) {
       stmt = cur;
       isFullStatement = true;
-    }
-
-    if (BlockStmt* block = toBlockStmt(cur)) {
-      if (block->isLoopStmt() || block->isRealBlockStmt() == false) {
-        stmt = block;
-        isFullStatement = true;
+      // if it's a forall statement, also include any number of calls to
+      // chpl_after_forall_fence in the variable lifetime.
+      if (isForallStmt(cur)) {
+        for (Expr* e = cur->next; e != NULL; e = e->next) {
+          CallExpr* call = toCallExpr(e);
+          if (call && call->isNamed("chpl_after_forall_fence")) // TODO
+            stmt = call;
+          else
+            break;
+        }
       }
     }
   }
 
   last = stmt;
 
-  // Now if it wasn't inhenently a statement, look forward for:
+  // Now if it wasn't inherently a statement, look forward for:
   //  * next PRIM_END_OF_STATEMENT
   //  * last stmt expr before label or end of block
   if (isFullStatement == false) {
