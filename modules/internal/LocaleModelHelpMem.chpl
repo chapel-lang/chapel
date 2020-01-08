@@ -71,10 +71,10 @@ module LocaleModelHelpMem {
                                md:chpl_mem_descInt_t): c_void_ptr {
     pragma "fn synchronization free"
     pragma "insert line file info"
-    extern proc chpl_mem_aligned_alloc(alignment:size_t, size:size_t, md:chpl_mem_descInt_t) : c_void_ptr;
-    return chpl_mem_aligned_alloc(alignment.safeCast(size_t),
-                                  size.safeCast(size_t),
-                                  md + chpl_memhook_md_num());
+    extern proc chpl_mem_memalign(alignment:size_t, size:size_t, md:chpl_mem_descInt_t) : c_void_ptr;
+    return chpl_mem_memalign(alignment.safeCast(size_t),
+                             size.safeCast(size_t),
+                             md + chpl_memhook_md_num());
   }
 
   pragma "allocator"

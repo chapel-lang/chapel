@@ -609,7 +609,7 @@ module LocaleModel {
   proc chpl_here_aligned_alloc(alignment:integral, size:integral, md:chpl_mem_descInt_t): c_void_ptr {
     pragma "fn synchronization free"
     pragma "insert line file info"
-    extern proc chpl_mem_aligned_alloc(alignment:size_t, size:size_t, md:chpl_mem_descInt_t) : c_void_ptr;
+    extern proc chpl_mem_memalign(alignment:size_t, size:size_t, md:chpl_mem_descInt_t) : c_void_ptr;
 
     if allocatingInHbmSublocale() {
       var ptr:c_void_ptr = nil;
@@ -620,9 +620,9 @@ module LocaleModel {
         halt("hbw_posix_memalign allocation call failed");
       return ptr;
     } else {
-      return chpl_mem_aligned_alloc(alignment.safeCast(size_t),
-                                    size.safeCast(size_t),
-                                    md + chpl_memhook_md_num());
+      return chpl_mem_memalign(alignment.safeCast(size_t),
+                               size.safeCast(size_t),
+                               md + chpl_memhook_md_num());
     }
   }
 

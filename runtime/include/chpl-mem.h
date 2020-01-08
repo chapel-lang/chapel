@@ -81,21 +81,6 @@ void* chpl_mem_alloc(size_t size, chpl_mem_descInt_t description,
   return chpl_mem_allocMany(1, size, description, lineno, filename);
 }
 
-// assumes alignment is a power of 2
-// assumes that size is a multiple of alignment
-static inline
-void* chpl_mem_aligned_alloc(size_t alignment, size_t size,
-                             chpl_mem_descInt_t description,
-                             int32_t lineno, int32_t filename) {
-  size_t number = 1;
-  void* memAlloc;
-  chpl_memhook_malloc_pre(number, size, description, lineno, filename);
-  memAlloc = chpl_memalign(alignment, number*size);
-  chpl_memhook_malloc_post(memAlloc, number, size, description,
-                           lineno, filename);
-  return memAlloc;
-}
-
 static inline
 void* chpl_mem_allocManyZero(size_t number, size_t size,
                              chpl_mem_descInt_t description,
@@ -134,6 +119,8 @@ void* chpl_mem_realloc(void* memAlloc, size_t size,
   return moreMemAlloc;
 }
 
+// assumes that alignment/boundary is a power of 2
+// size is not necessarily a multiple of alignment
 static inline
 void* chpl_mem_memalign(size_t boundary, size_t size,
                         chpl_mem_descInt_t description,
