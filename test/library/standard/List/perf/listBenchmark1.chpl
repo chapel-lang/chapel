@@ -1,6 +1,5 @@
 //
-// A performance test benchmarking the following common operations, comparing
-// between List, LinkedList, and the Chapel array (when applicable):
+// A performance test benchmarking the following common list operations:
 //
 //    - Insertions of various sizes
 //    - Removal of various sizes
@@ -9,123 +8,134 @@
 //    - Random-access indexing
 //
 
-private use LinkedLists;
 private use List;
 private use Random;
 private use Search;
 private use Sort;
 private use Time;
 
-config const trials: int = 128;
-config const n: int = 1024 * 1024 * 32;
-config const linearN: int = (n / 2);
-config const seed: int = 13;
+config const trials = 6;
+config const n: int = 1024 * 1024 * 16;
 
 type byte = int(8);
+type testList = list(byte, false);
 
 proc createList(size: int) {
-  var result: list(byte);
+  var result: testList;
   for i in 1..size do result.append(i);
-  return result;
-}
-
-proc createLinkedList(size: int) {
-  var result: LinkedList(byte);
-  for i in 1..size do result.append(i);
-  return result;
-}
-
-proc createArray(size: int) {
-  var result: [1..size] byte;
-  for i in 1..size do result[i] = i;
   return result;
 }
 
 proc generateNoise() {
-  for i in 1..trials {
-    var size: int = i * 128;
+  var lst1 = createList(n);
+  var lst2 = createList(n);
 
-    var a = createList(size);
-    var b = createLinkedList(size);
-    var c = createArray(size);
+  for (a, b) in zip(lst1, lst2) do a += b % 128;
 
-    for (a, b, c) in zip(a, b, c) {
-      var rd: int = (a + b + c) % 128;
-      a = rd;
-      b = rd;
-      c = rd;
-    }
-  }
-
-  return;
-}
-
-iter trace(lo: int, hi: int, size: int=(hi-lo)) {
-  extern proc srand(seed: int);
-  extern proc rand(): int;
-
-  srand(seed);
-
-  var words: int = size / 64 + 1;
-  var bmp: [1..words] int(64);
-  var touched = 0;
-
-  while touched != size {   
-    const val = rand();
-    const (int, int) ofs = (val / 64, val % 64);
-    const flag = bmp[ofs
-     
-  }
-
+  lst1.clear();
+  lst2.clear();  
 }
 
 //
 // Generate some noise to warm up before the test.
 //
-generateNoise(16);
+generateNoise();
 
-//
-//
-//
-var t: timer;
-var a = createList(n);
-var b = createLinkedList(n);
-var c = createArray(n);
+proc output(name: string, time: real) {
+  writeln(name, " ", time);
+}
 
-//
-// Time creating list/linked list/arrays of various sizes.
-//
+var tmr: timer;
+const lstForIter = createList(n);
+var avg = 0.0;
 
-//
-// Generate a random trace of indices and then use the trace to test inserts.
-//
+proc testCreate(size: int): real {
 
-//
-// Reset the testing arrays.
-//
+}
 
-//
-// Generate a random trace of indices and then use the trace to test removes.
-//
+avg = 0.0;
+for i in 1..trials do avg += testCreate(n);
+avg /= trials;
+output("Create", avg);
 
-//
-// Reset the testing arrays.
-//
+proc testAppendFromEmpty(size: int): real {
 
-//
-// Serial iteration.
-//
+}
 
-//
-// Parallel iteration.
-//
+avg = 0.0;
+for i in 1..trials do avg += testAppendFromEmpty(n);
+avg /= trials;
+output("AppendFromEmpty", avg);
 
-//
-// Generate a random trace of indices for random access.
-//
+proc testInsertFront(size: int): real {
 
-//
-// Random access indexing.
-//
+}
 
+avg = 0.0;
+for i in trials do avg += testInsertFront(n, trace);
+avg /= trials;
+output("InsertFront", avg);
+
+proc testPopFromBack(size: int): real {
+
+}
+
+avg = 0.0;
+for i in trials do avg += testPopFromBack(n, trace);
+avg /= trials;
+output("PopFromBack", avg);
+
+proc testPopFromFront(size: int): real {
+
+}
+
+avg = 0.0;
+for i in trials do avg += testPopFromFront(n, trace);
+avg /= trials;
+output("PopFromFront", avg);
+
+proc testIterSerial(size: int): real {
+
+}
+
+avg = 0.0;
+for i in trials do avg += testPopFromFront(n, trace);
+avg /= trials;
+output("IterSerial", avg);
+
+proc testIterParallel(size: int): real {
+
+}
+
+avg = 0.0;
+for i in trials do avg += testPopFromFront(n, trace);
+avg /= trials;
+output("IterParallel", avg);
+
+proc testRandomAccess1(size: int): real {
+
+}
+
+avg = 0.0;
+for i in trials do avg += testPopFromFront(n, trace);
+avg /= trials;
+output("RandomAccess1", avg);
+
+proc testClear(size: int): real {
+
+}
+
+avg = 0.0;
+for i in trials do avg += testPopFromFront(n, trace);
+avg /= trials;
+output("Clear", avg);
+
+proc testDeinit(size: int): real {
+
+}
+
+avg = 0.0;
+for i in trials do avg += testPopFromFront(n, trace);
+avg /= trials;
+output("Deinit", avg);
 
