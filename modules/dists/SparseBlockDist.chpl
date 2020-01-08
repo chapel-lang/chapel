@@ -36,6 +36,7 @@ private use ChapelUtil;
 private use BlockDist;
 private use RangeChunk;
 private use HaltWrappers;
+private use LayoutCS;
 
 //
 // These flags are used to output debug information and run extra
