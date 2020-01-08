@@ -895,10 +895,23 @@ module String {
         d
      */
     iter these() : string {
-      for cp in this.codepoints() do
-        // This is pretty painful from a performance perspective right now,
-        // allocates w/ every yield
-        yield codepointToString(cp);
+      var localThis: string = this.localize();
+
+      var i = 0;
+      while i < localThis.len {
+        const curPos = localThis.buff+i;
+        var cp: int(32);
+        var nBytes: c_int;
+        var maxBytes = (localThis.len - i): ssize_t;
+        qio_decode_char_buf(cp, nBytes, curPos:c_string, maxBytes);
+
+        var (newBuf, newSize) = bufferCopyLocal(curPos, nBytes);
+        newBuf[nBytes] = 0;
+
+        yield chpl_createStringWithOwnedBufferNV(newBuf, nBytes, newSize);
+
+        i += nBytes;
+      }
     }
 
     /*
