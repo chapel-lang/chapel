@@ -559,11 +559,13 @@ module CPtr {
     Allocate aligned memory that is not initialized. This memory
     should be eventually freed with :proc:`c_free`.
 
+    This function is intended to behave similarly to the C17
+    function aligned_alloc.
+
     :arg eltType: the type of the elements to allocate
     :arg alignment: the memory alignment of the allocation
                     which must be a power of two
     :arg size: the number of elements to allocate space for
-               which must be a multiple of alignment
     :returns: a c_ptr(eltType) to allocated memory
     */
   inline proc c_aligned_alloc(type eltType,
@@ -584,10 +586,6 @@ module CPtr {
         // TODO: or just round it up?
       if aln == 0 then
         halt("c_aligned_alloc called with alignment of 0");
-
-      var sz = size.safeCast(size_t);
-      if (sz % aln) != 0 then
-        halt("c_aligned_alloc called with size not a multiple of alignment");
     }
 
     const alloc_size = size.safeCast(size_t) * c_sizeof(eltType);
