@@ -1646,7 +1646,12 @@ module ShallowCopy {
 
   private use SysCTypes;
 
-  // work around c_ptrTo on array returning pointer to 1st element
+  // The shallowCopy / shallowSwap code needs to be able to copy/swap
+  // _array records. But c_ptrTo on an _array will return a pointer to
+  // the first element, which messes up the shallowCopy/shallowSwap code
+  //
+  // As a workaround, this function just returns a pointer to the argument,
+  // whether or not it is an array.
   private inline proc ptrTo(ref x) {
     return c_pointer_return(x);
   }
