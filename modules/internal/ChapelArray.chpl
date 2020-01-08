@@ -2041,7 +2041,7 @@ module ChapelArray {
     }
   }
 
-  proc _cast(type t:string, x: _domain) where t == string {
+  proc _cast(type t:string, x: _domain) {
     use IO;
     return stringify(x);
   }
