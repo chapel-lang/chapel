@@ -41,17 +41,6 @@ record ValueComparator {
     if A[i] == nil then halt("nil was introduced");
   }
   assert(isSorted(A, comparator));
-
-  /*
-  for i in 1..n {
-    A[i] = new owned Value(n-i);
-  }
-  QuickSort.quickSort(A, comparator=comparator);
-  if n <= 20 then writeln(A);
-  for i in 1..n {
-    if A[i] == nil then halt("nil was introduced");
-  }
-  assert(isSorted(A, comparator));*/
 }
 
 // TEST 2: SORTING RECORD CONTAINING OWNED ELEMENTS
@@ -95,17 +84,6 @@ record WrapperComparator {
     if A[i].elt == nil then halt("nil was introduced");
   }
   assert(isSorted(A, comparator));
-
-  /*
-  for i in 1..n {
-    A[i] = new Wrapper(new owned Value(n-i));
-  }
-  QuickSort.quickSort(A, comparator=comparator);
-  if n <= 20 then writeln(A);
-  for i in 1..n {
-    if A[i].elt == nil then halt("nil was introduced");
-  }
-  assert(isSorted(A, comparator));*/
 }
 
 // TEST 3: SORTING RECORD CONTAINING ARRAY OF OWNED ELEMENTS
@@ -151,15 +129,39 @@ record ArrayWrapperComparator {
     if A[i].elts[1] == nil then halt("nil was introduced");
   }
   assert(isSorted(A, comparator));
+}
 
-  /*
-  for i in 1..n {
-    A[i] = new ArrayWrapper(new owned Value(n-i));
+// TEST 4: SORTING ARRAY CONTAINING ARRAY OF OWNED ELEMENTS
+
+record ArrayComparator {
+  proc key(v: [] owned Value?) where useKeyComparator {
+    if v[1] == nil then
+      return 0;
+    else
+      return v[1]!.x;
   }
-  QuickSort.quickSort(A, comparator=comparator);
+  proc compare(a: [] owned Value?, b: [] owned Value?) where !useKeyComparator {
+    var aNum = 0;
+    if a[1] != nil then
+      aNum = a[1]!.x;
+    var bNum = 0;
+    if b[1] != nil then
+      bNum = b[1]!.x;
+    return aNum - bNum;
+  }
+}
+
+{
+  writeln("Testing sorting array containing array of owned");
+  var A: [1..n] [1..1] owned Value?;
+  var comparator = new ArrayComparator();
+  for i in 1..n {
+    A[i][1] = new owned Value(n-i);
+  }
+  sort(A, comparator=comparator);
   if n <= 20 then writeln(A);
   for i in 1..n {
-    if A[i].elts[1] == nil then halt("nil was introduced");
+    if A[i][1] == nil then halt("nil was introduced");
   }
-  assert(isSorted(A, comparator));*/
+  assert(isSorted(A, comparator));
 }
