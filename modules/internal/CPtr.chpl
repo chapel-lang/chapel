@@ -564,9 +564,10 @@ module CPtr {
 
     :arg eltType: the type of the elements to allocate
     :arg alignment: the memory alignment of the allocation
-                    which must be a power of two
+                    which must be a power of two and a multiple
+                    of ``c_sizeof(c_void_ptr)``.
     :arg size: the number of elements to allocate space for
-    :returns: a c_ptr(eltType) to allocated memory
+    :returns: a ``c_ptr(eltType)`` to allocated memory
     */
   inline proc c_aligned_alloc(type eltType,
                               alignment : integral,
@@ -576,6 +577,8 @@ module CPtr {
       var one:size_t = 1;
       // Round the alignment up to the nearest power of 2
       var aln = alignment.safeCast(size_t);
+      if aln == 0 then
+        halt("c_aligned_alloc called with alignment of 0");
       var p = log2(aln); // power of 2 rounded down
       // compute alignment rounded up
       if (one << p) < aln then
@@ -583,9 +586,8 @@ module CPtr {
       assert(aln <= (one << p));
       if aln != (one << p) then
         halt("c_aligned_alloc called with non-power-of-2 alignment ", aln);
-        // TODO: or just round it up?
-      if aln == 0 then
-        halt("c_aligned_alloc called with alignment of 0");
+      if alignment < c_sizeof(c_void_ptr) then
+        halt("c_aligned_alloc called with alignment smaller than pointer size");
     }
 
     const alloc_size = size.safeCast(size_t) * c_sizeof(eltType);
