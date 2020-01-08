@@ -176,20 +176,20 @@ void normalize() {
   moveGlobalDeclarationsToModuleScope();
 
   if (!fMinimalModules) {
-    // Calls to _statementLevelSymbol() are inserted here and in
+    // Calls to chpl_statementLevelSymbol() are inserted here and in
     // function resolution to ensure that sync vars are in the correct
     // state (empty) if they are used but not assigned to anything.
     forv_Vec(SymExpr, se, gSymExprs) {
       if (FnSymbol* parentFn = toFnSymbol(se->parentSymbol)) {
         if (se == se->getStmtExpr()) {
           // Don't add these calls for the return type, since
-          // _statementLevelSymbol would do nothing in that case
+          // chpl_statementLevelSymbol would do nothing in that case
           // anyway, and it contributes to order-of-resolution issues for
           // extern functions with declared return type.
           if (parentFn->retExprType != se->parentExpr) {
             SET_LINENO(se);
 
-            CallExpr* call = new CallExpr("_statementLevelSymbol");
+            CallExpr* call = new CallExpr(astr_chpl_statementLevelSymbol);
 
             se->insertBefore(call);
 

@@ -8850,7 +8850,7 @@ static void insertReturnTemps() {
   //
   // Insert return temps for functions that return values if no
   // variable captures the result. If the value is a sync/single var or a
-  // reference to a sync/single var, pass it through the _statementLevelSymbol
+  // reference to a sync/single var, pass it through a chpl_statementLevelSymbol
   // function to get the semantics of reading a sync/single var. If the value
   // is an iterator, iterate over it in a ForallStmt for side effects.
   // Note that we do not do this for --minimal-modules compilation
@@ -8904,7 +8904,8 @@ static void insertReturnTemps() {
                   isSyncType(fn->retType)                             ||
                   isSingleType(fn->retType)                           )
               {
-                CallExpr* sls = new CallExpr("_statementLevelSymbol", tmp);
+                CallExpr* sls = new CallExpr(
+                    astr_chpl_statementLevelSymbol, tmp);
 
                 def->next->insertAfter(sls);
                 resolveCallAndCallee(sls);

@@ -32,6 +32,7 @@
 #include "stlUtil.h"
 #include "stmt.h"
 #include "symbol.h"
+#include "wellknown.h"
 
 #include <vector>
 
@@ -672,7 +673,11 @@ static Expr* findLastExprInStatement(Expr* e, VarSymbol* v) {
       if (isForallStmt(cur)) {
         for (Expr* e = cur->next; e != NULL; e = e->next) {
           CallExpr* call = toCallExpr(e);
-          if (call && call->isNamed("chpl_after_forall_fence")) // TODO
+          FnSymbol* calledFn = NULL;
+          if (call != NULL) {
+            calledFn = call->resolvedFunction();
+          }
+          if (calledFn == gChplAfterForallFence)
             stmt = call;
           else
             break;
@@ -691,7 +696,7 @@ static Expr* findLastExprInStatement(Expr* e, VarSymbol* v) {
       if (CallExpr* call = toCallExpr(cur)) {
         if (call->isPrimitive(PRIM_END_OF_STATEMENT))
           return call; // PRIM_END_OF_STATEMENT reached
-        if (call->isNamed("_statementLevelSymbol")) // TODO chpl, astr
+        if (call->isNamedAstr(astr_chpl_statementLevelSymbol))
           return call;
       }
 
