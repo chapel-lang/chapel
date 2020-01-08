@@ -616,31 +616,30 @@ static void computeLastMentionPoints(LastMentionMap& lmm, FnSymbol* fn) {
   }
 }
 
+static bool shouldDestroyOnLastMention(VarSymbol* var) {
+  return var->hasFlag(FLAG_DEAD_LAST_MENTION) && // dead at last mention
+         var->hasFlag(FLAG_INSERT_AUTO_DESTROY) && // needs auto destroy
+         !var->hasFlag(FLAG_NO_AUTO_DESTROY) &&
+         // forall statement exception avoids certain variables
+         // within forall statements such as fRecIterIRdef.
+         !isForallStmt(var->defPoint->parentExpr);
+}
+
 void ComputeLastSymExpr::visitSymExpr(SymExpr* node) {
-  if (VarSymbol* var = toVarSymbol(node->symbol())) {
-    if (var->hasFlag(FLAG_DEAD_LAST_MENTION) &&
-        var->hasFlag(FLAG_INSERT_AUTO_DESTROY) &&
-        !var->hasFlag(FLAG_NO_AUTO_DESTROY) &&
-        !isForallStmt(var->defPoint->parentExpr)) {
-      if (isFnSymbol(node->parentSymbol)) {
-        // put it in the map
+  if (VarSymbol* var = toVarSymbol(node->symbol()))
+    if (isFnSymbol(node->parentSymbol))
+      if (shouldDestroyOnLastMention(var))
         last[var] = node;
-      }
-    }
-  }
 }
 
 void ComputeLastSymExpr::exitForallStmt(ForallStmt* node) {
   // visit the shadow variables and record them as uses at the forall
   for_alist(elt, node->shadowVariables()) {
-    if (DefExpr* def = toDefExpr(elt)) {
-      if (ShadowVarSymbol* svar = toShadowVarSymbol(def->sym)) {
-        if (VarSymbol* var = toVarSymbol(svar->outerVarSym())) {
-          // outer variable's use is at the forall itself
-          last[var] = node;
-        }
-      }
-    }
+    if (DefExpr* def = toDefExpr(elt))
+      if (ShadowVarSymbol* svar = toShadowVarSymbol(def->sym))
+        if (VarSymbol* var = toVarSymbol(svar->outerVarSym()))
+          if (shouldDestroyOnLastMention(var))
+            last[var] = node; // make outer variable's last the forall itself
   }
 }
 
