@@ -1,4 +1,4 @@
-# Copyright 2004-2020 Cray Inc.
+# Copyright 2004-2019 Cray Inc.
 # Other additional copyright holders may be indicated within.
 # 
 # The entirety of this work is licensed under the Apache License,
@@ -15,10 +15,27 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-LAUNCH_SUBDIR = src/launch/$(CHPL_MAKE_LAUNCHER)
+RUNTIME_ROOT = ../../..
+RUNTIME_SUBDIR = src/launch/$(CHPL_MAKE_LAUNCHER)
 
-LAUNCH_OBJDIR = $(LAUNCHER_BUILD)/$(LAUNCH_SUBDIR)
+ifndef CHPL_MAKE_HOME
+export CHPL_MAKE_HOME=$(shell pwd)/$(RUNTIME_ROOT)/..
+endif
 
-ALL_SRCS += $(CURDIR)/$(LAUNCH_SUBDIR)/*.c
+#
+# standard header
+#
+include $(RUNTIME_ROOT)/make/Makefile.runtime.head
 
-include $(RUNTIME_ROOT)/$(LAUNCH_SUBDIR)/Makefile.share
+LAUNCH_OBJDIR = $(LAUNCHER_OBJDIR)
+include Makefile.share
+
+TARGETS = \
+	$(LAUNCHER_OBJS) \
+
+include $(RUNTIME_ROOT)/make/Makefile.runtime.subdirrules
+
+#
+# standard footer
+#
+include $(RUNTIME_ROOT)/make/Makefile.runtime.foot
