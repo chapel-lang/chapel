@@ -3099,12 +3099,18 @@ private inline proc _read_one_internal(_channel_internal:qio_channel_ptr_t,
 
   try {
     x.readThis(reader);
+  //
+  // TODO: What to do with the caught error besides just stuff a code in the
+  // channel? Do we want to propagate it back up?
+  // TODO: Should we store Error objects in the channel instead of just error
+  // codes? This might be a more elegant design.
+  //
+  } catch err: SystemError {
+    const code = err.err;
+    _qio_channel_set_error_unlocked(_channel_internal, code);
   } catch err {
-    //
-    // TODO: What to do with the caught error? Propagate back up?
-    //
-    const chError: syserr = EIO;
-    _qio_channel_set_error_unlocked(_channel_internal, chError);
+    const code: syserr = EIO;
+    _qio_channel_set_error_unlocked(_channel_internal, code);
   }
 
   // Set the channel pointer to NULL to make the
@@ -3157,12 +3163,18 @@ private inline proc _write_one_internal(_channel_internal:qio_channel_ptr_t,
     } else {
       x.writeThis(writer);
     }
+  //
+  // TODO: What to do with the caught error besides just stuff a code in the
+  // channel? Do we want to propagate it back up?
+  // TODO: Should we store Error objects in the channel instead of just error
+  // codes? This might be a more elegant design.
+  //
+  } catch err: SystemError {
+    const code = err.err;
+    _qio_channel_set_error_unlocked(_channel_internal, code);
   } catch err {
-    //
-    // TODO: What to do with the caught error? Propagate back up?
-    //
-    const chError: syserr = EIO;
-    _qio_channel_set_error_unlocked(_channel_internal, chError);
+    const code: syserr = EIO;
+    _qio_channel_set_error_unlocked(_channel_internal, code);
   }
 
   // Set the channel pointer to NULL to make the
@@ -3175,35 +3187,49 @@ private inline proc _write_one_internal(_channel_internal:qio_channel_ptr_t,
 }
 
 pragma "no doc"
-proc channel.readIt(ref x) {
+proc channel.readIt(ref x) throws {
   if writing then compilerError("read on write-only channel");
   const origLocale = this.getLocaleOfIoRequest();
+  var error:syserr = ENOERR;
+
   on this.home {
     try! this.lock();
-    var error:syserr;
-    error = qio_channel_error(_channel_internal);
-    if ! error {
-      error = _read_one_internal(_channel_internal, kind, x, origLocale);
-      _qio_channel_set_error_unlocked(_channel_internal, error);
+    var etmp:syserr;
+    etmp = qio_channel_error(_channel_internal);
+    if !etmp {
+      etmp = _read_one_internal(_channel_internal, kind, x, origLocale);
+      _qio_channel_set_error_unlocked(_channel_internal, etmp);
     }
+    error = etmp;
     this.unlock();
   }
+
+  if !error then
+    try this._ch_ioerror(error, "in channel.readIt(" +
+                                _args_to_proto(x, preArg="ref ") + ")");
 }
 
 pragma "no doc"
-proc channel.writeIt(const x) {
+proc channel.writeIt(const x) throws {
   if !writing then compilerError("write on read-only channel");
   const origLocale = this.getLocaleOfIoRequest();
+  var error:syserr = ENOERR;
+
   on this.home {
     try! this.lock();
-    var error:syserr;
-    error = qio_channel_error(_channel_internal);
-    if ! error {
-      error = _write_one_internal(_channel_internal, kind, x, origLocale);
-      _qio_channel_set_error_unlocked(_channel_internal, error);
+    var etmp:syserr;
+    etmp = qio_channel_error(_channel_internal);
+    if !etmp {
+      etmp = _write_one_internal(_channel_internal, kind, x, origLocale);
+      _qio_channel_set_error_unlocked(_channel_internal, etmp);
     }
+    error = etmp;
     this.unlock();
   }
+
+  if !error then
+    try this._ch_ioerror(error, "in channel.writeIt(" +
+                                _args_to_proto(x, preArg="ref ") + ")");
 }
 
 
@@ -3211,14 +3237,16 @@ proc channel.writeIt(const x) {
    For a writing channel, writes as with :proc:`channel.write`.
    For a reading channel, reads as with :proc:`channel.read`.
    Stores any error encountered in the channel. Does not return anything.
+
+   :throws SystemError: When an IO error has occurred.
  */
-inline proc channel.readwrite(const x) where this.writing {
-  this.writeIt(x);
+inline proc channel.readwrite(const x) throws where this.writing {
+  try this.writeIt(x);
 }
 // documented in the writing version.
 pragma "no doc"
-inline proc channel.readwrite(ref x) where !this.writing {
-  this.readIt(x);
+inline proc channel.readwrite(ref x) throws where !this.writing {
+  try this.readIt(x);
 }
 
   /*
@@ -3230,17 +3258,19 @@ inline proc channel.readwrite(ref x) where !this.writing {
      calls can be chained together.
 
      :returns: ch
+     :throws SystemError: When an IO error has occurred.
    */
-  inline proc <~>(const ref ch: channel, x) const ref
+  inline proc <~>(const ref ch: channel, x) const ref throws
   where ch.writing {
-    ch.writeIt(x);
+    try ch.writeIt(x);
     return ch;
   }
+
   // documented in the writing version.
   pragma "no doc"
-  inline proc <~>(const ref ch: channel, ref x) const ref
+  inline proc <~>(const ref ch: channel, ref x) const ref throws
   where !ch.writing {
-    ch.readIt(x);
+    try ch.readIt(x);
     return ch;
   }
 
@@ -3259,10 +3289,10 @@ inline proc channel.readwrite(ref x) where !this.writing {
      works without requiring an explicit temporary value to store
      the ioLiteral.
    */
-  inline proc <~>(const ref r: channel, lit:ioLiteral) const ref
+  inline proc <~>(const ref r: channel, lit:ioLiteral) const ref throws
   where !r.writing {
     var litCopy = lit;
-    r.readwrite(litCopy);
+    try r.readIt(litCopy);
     return r;
   }
 
@@ -3276,17 +3306,18 @@ inline proc channel.readwrite(ref x) where !this.writing {
      works without requiring an explicit temporary value to store
      the ioNewline.
    */
-  inline proc <~>(const ref r: channel, nl:ioNewline) const ref
+  inline proc <~>(const ref r: channel, nl:ioNewline) const ref throws
   where !r.writing {
     var nlCopy = nl;
-    r.readwrite(nlCopy);
+    try r.readIt(nlCopy);
     return r;
   }
 
   /* Explicit call for reading or writing a literal as an
      alternative to using :type:`IO.ioLiteral`.
    */
-  inline proc channel.readWriteLiteral(lit:string, ignoreWhiteSpace=true)
+  inline
+  proc channel.readWriteLiteral(lit:string, ignoreWhiteSpace=true) throws
   {
     var iolit = new ioLiteral(lit:string, ignoreWhiteSpace);
     this.readwrite(iolit);
@@ -3295,7 +3326,7 @@ inline proc channel.readwrite(ref x) where !this.writing {
   /* Explicit call for reading or writing a newline as an
      alternative to using :type:`IO.ioNewline`.
    */
-  inline proc channel.readWriteNewline()
+  inline proc channel.readWriteNewline() throws
   {
     var ionl = new ioNewline();
     this.readwrite(ionl);

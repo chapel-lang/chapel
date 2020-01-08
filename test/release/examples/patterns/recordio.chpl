@@ -90,7 +90,7 @@ var B: [1..3] MyRecord;
    - the I/O operator <~> is available to read or write (depending
      on which situation we are being called in)
  */
-proc MyRecord.readWriteThis(f) {
+proc MyRecord.readWriteThis(f) throws {
   f <~> i;
   f <~> new ioLiteral("\t");
   f <~> r;

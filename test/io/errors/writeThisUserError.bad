@@ -1,0 +1,3 @@
+uncaught IOError: Input/output error (in channel.write(a:foo, b:ioNewline) with path "unknown" offset -1)
+  writeThisUserError.chpl:20: thrown here
+  writeThisUserError.chpl:20: uncaught here
