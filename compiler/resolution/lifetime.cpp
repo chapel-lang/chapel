@@ -383,7 +383,7 @@ void checkLifetimes(void) {
 }
 
 static void checkFunction(FnSymbol* fn) {
-  if (shouldCheckLifetimesInFn(fn)) {
+  if (fNoLifetimeChecking == false || fNoEarlyDeinit == false) {
     // check lifetimes
     // e.g. borrow can't outlive borrowed-from
     checkLifetimesInFunction(fn);
@@ -449,23 +449,28 @@ void checkLifetimesInFunction(FnSymbol* fn) {
     printLifetimeState(&state);
   }
 
-  // Emit errors
-  EmitLifetimeErrorsVisitor emit;
-  emit.lifetimes = &state;
-  fn->accept(&emit);
-  emit.emitErrors();
+  if (shouldCheckLifetimesInFn(fn)) {
+    // Emit errors
+    EmitLifetimeErrorsVisitor emit;
+    emit.lifetimes = &state;
+    fn->accept(&emit);
+    emit.emitErrors();
+  }
 
   // Give forall unordered ops optimization a chance to check
   // lifetimes of certain variables.
+  // Runs no matter flag setting to mark ends of foralls.
   LifetimeInformation info;
   info.lifetimes = &state;
   for_set(FnSymbol, inFn, state.inFns) {
     checkLifetimesForForallUnorderedOps(inFn, &info);
   }
 
-  // Mark local variables as potentially captured or not.
-  for_set(FnSymbol, inFn, state.inFns) {
-    markLocalVariableExpiryInFn(inFn, &state);
+  if (fNoEarlyDeinit == false) {
+    // Mark local variables as potentially captured or not.
+    for_set(FnSymbol, inFn, state.inFns) {
+      markLocalVariableExpiryInFn(inFn, &state);
+    }
   }
 }
 
@@ -872,7 +877,7 @@ static bool shouldCheckLifetimesInFn(FnSymbol* fn) {
   if (inMod->hasFlag(FLAG_SAFE))
     return true;
 
-  return fLifetimeChecking;
+  return !fNoLifetimeChecking;
 }
 
 static bool debuggingLifetimesForFn(FnSymbol* fn)

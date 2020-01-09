@@ -190,7 +190,9 @@ int fLinkStyle = LS_DEFAULT; // use backend compiler's default
 bool fUserSetLocal = false;
 bool fLocal;   // initialized in postLocal()
 bool fIgnoreLocalClasses = false;
-bool fLifetimeChecking = true;
+bool fNoLifetimeChecking = false;
+bool fNoSplitInit = false;
+bool fNoEarlyDeinit = false;
 bool fCompileTimeNilChecking = true;
 bool fOverrideChecking = true;
 bool fieeefloat = false;
@@ -1069,7 +1071,9 @@ static ArgumentDescription arg_desc[] = {
  {"denormalize", ' ', NULL, "Enable [disable] denormalization", "N", &fDenormalize, "CHPL_DENORMALIZE", NULL},
  DRIVER_ARG_DEBUGGERS,
  {"interprocedural-alias-analysis", ' ', NULL, "Enable [disable] interprocedural alias analysis", "n", &fNoInterproceduralAliasAnalysis, NULL, NULL},
- {"lifetime-checking", ' ', NULL, "Enable [disable] lifetime checking pass", "N", &fLifetimeChecking, NULL, NULL},
+ {"lifetime-checking", ' ', NULL, "Enable [disable] lifetime checking pass", "n", &fNoLifetimeChecking, NULL, NULL},
+ {"disable-split-initialization", ' ', NULL, "Disable support for split initialization", "F", &fNoSplitInit, NULL, NULL},
+ {"disable-early-deinit", ' ', NULL, "Disable support for early deinit based upon expiring value analysis", "F", &fNoEarlyDeinit, NULL, NULL},
  {"legacy-classes", ' ', NULL, "Deprecated flag - does not affect compilation", "N", &fLegacyClasses, NULL, &warnUponLegacyClasses},
  {"ignore-nilability-errors", ' ', NULL, "Allow compilation to continue by coercing away nilability", "N", &fIgnoreNilabilityErrors, NULL, NULL},
  {"overload-sets-checks", ' ', NULL, "Report potentially hijacked calls", "N", &fOverloadSetsChecks, NULL, NULL},

@@ -2197,7 +2197,8 @@ static void normalizeTypeAlias(DefExpr* defExpr) {
 
   // For now, disable automatic split init on non-user code
   if ((defExpr->getModule()->modTag == MOD_USER || requestedSplitInit) &&
-      global == false)
+      global == false &&
+      fNoSplitInit == false)
     foundSplitInit = findInitPoints(defExpr, initAssign);
 
   INT_ASSERT(type == NULL);
@@ -2399,7 +2400,8 @@ static void normalizeVariableDefinition(DefExpr* defExpr) {
 
   // For now, disable automatic split init on non-user code
   if ((defExpr->getModule()->modTag == MOD_USER || requestedSplitInit) &&
-      global == false)
+      global == false &&
+      fNoSplitInit == false)
     foundSplitInit = findInitPoints(defExpr, initAssign);
 
   if ((init != NULL && !requestedSplitInit) ||
