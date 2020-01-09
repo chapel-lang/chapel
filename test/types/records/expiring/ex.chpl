@@ -281,3 +281,54 @@ proc sharedExample7EOB() {
   d = c;
 }
 sharedExample7EOB();
+
+
+proc forall1EOB() {
+  var o = new owned C();
+  var b: borrowed C?;
+  forall i in 1..10 with (ref o, ref b) {
+    if i == 1 then
+      b = o.borrow();
+  }
+}
+forall1EOB();
+
+proc forall2EOB() {
+  var o = new owned C();
+  var b: borrowed C?;
+  forall i in 1..10 with (ref b) {
+    if i == 1 then
+      b = o.borrow();
+  }
+}
+forall2EOB();
+
+proc coforall1EOB() {
+  var o = new owned C();
+  var b: borrowed C?;
+  coforall i in 1..10 with (ref o, ref b) {
+    if i == 1 then
+      b = o.borrow();
+  }
+}
+coforall1EOB();
+
+proc coforall2EOB() {
+  var o = new owned C();
+  var b: borrowed C?;
+  coforall i in 1..10 with (ref b) {
+    if i == 1 then
+      b = o.borrow();
+  }
+}
+coforall2EOB();
+
+proc forEOB() {
+  var o = new owned C();
+  var b: borrowed C?;
+  for i in 1..10 {
+    if i == 1 then
+      b = o.borrow();
+  }
+}
+forEOB();

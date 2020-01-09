@@ -18,36 +18,40 @@ Expiring values for function t9 (deinit-points.chpl:97)
   r (deinit-points.chpl:99) expires after last mention
 Expiring values for function t10 (deinit-points.chpl:110)
   r (deinit-points.chpl:112) expires after last mention
-Expiring values for function t11 (deinit-points.chpl:122)
-  r (deinit-points.chpl:124) expires after last mention
-Expiring values for function t11o (deinit-points.chpl:134)
-  r (deinit-points.chpl:136) expires after last mention
-Expiring values for function t12 (deinit-points.chpl:148)
-  r (deinit-points.chpl:150) expires after last mention
-Expiring values for function t12o (deinit-points.chpl:166)
-  r (deinit-points.chpl:168) expires after last mention
-Expiring values for function t13 (deinit-points.chpl:184)
-  r (deinit-points.chpl:186) expires after last mention
-Expiring values for function t14 (deinit-points.chpl:195)
-  r (deinit-points.chpl:197) expires after last mention
-Expiring values for function t15 (deinit-points.chpl:210)
-  r (deinit-points.chpl:213) expires after last mention
-Expiring values for function t16 (deinit-points.chpl:225)
-  r (deinit-points.chpl:228) expires after last mention
-Expiring values for function t17 (deinit-points.chpl:241)
-  r (deinit-points.chpl:243) expires at end of block
-  chpl_sync_error (deinit-points.chpl:245) expires after last mention
-  temp (deinit-points.chpl:245) expires after last mention
-Expiring values for function t18 (deinit-points.chpl:255)
-  r (deinit-points.chpl:257) expires at end of block
-  done (deinit-points.chpl:258) expires at end of block
-Expiring values for function t18o (deinit-points.chpl:271)
-  r (deinit-points.chpl:273) expires at end of block
-  done (deinit-points.chpl:274) expires at end of block
-Expiring values for function t20 (deinit-points.chpl:287)
-  r (deinit-points.chpl:289) expires at end of block
-  step1 (deinit-points.chpl:290) expires at end of block
-  step2 (deinit-points.chpl:291) expires at end of block
+Expiring values for function t10a (deinit-points.chpl:121)
+  r (deinit-points.chpl:123) expires after last mention
+Expiring values for function t10b (deinit-points.chpl:133)
+  r (deinit-points.chpl:135) expires at end of block
+Expiring values for function t11 (deinit-points.chpl:146)
+  r (deinit-points.chpl:148) expires after last mention
+Expiring values for function t11o (deinit-points.chpl:157)
+  r (deinit-points.chpl:159) expires after last mention
+Expiring values for function t12 (deinit-points.chpl:170)
+  r (deinit-points.chpl:172) expires after last mention
+Expiring values for function t12o (deinit-points.chpl:187)
+  r (deinit-points.chpl:189) expires after last mention
+Expiring values for function t13 (deinit-points.chpl:204)
+  r (deinit-points.chpl:206) expires after last mention
+Expiring values for function t14 (deinit-points.chpl:215)
+  r (deinit-points.chpl:217) expires after last mention
+Expiring values for function t15 (deinit-points.chpl:230)
+  r (deinit-points.chpl:233) expires after last mention
+Expiring values for function t16 (deinit-points.chpl:245)
+  r (deinit-points.chpl:248) expires after last mention
+Expiring values for function t17 (deinit-points.chpl:261)
+  r (deinit-points.chpl:263) expires at end of block
+  chpl_sync_error (deinit-points.chpl:265) expires after last mention
+  temp (deinit-points.chpl:265) expires after last mention
+Expiring values for function t18 (deinit-points.chpl:275)
+  r (deinit-points.chpl:277) expires at end of block
+  done (deinit-points.chpl:278) expires at end of block
+Expiring values for function t18o (deinit-points.chpl:291)
+  r (deinit-points.chpl:293) expires at end of block
+  done (deinit-points.chpl:294) expires at end of block
+Expiring values for function t20 (deinit-points.chpl:307)
+  r (deinit-points.chpl:309) expires at end of block
+  step1 (deinit-points.chpl:310) expires at end of block
+  step2 (deinit-points.chpl:311) expires at end of block
 t1
 deinit
 t2
@@ -87,6 +91,18 @@ end loop iter
 end loop iter
 deinit
 end outer
+t10a
+end loop iter
+end loop iter
+(x = 0)
+deinit
+end outer
+t10b
+end loop iter
+end loop iter
+(x = 0)
+end outer
+deinit
 t11
 end loop iter
 end loop iter

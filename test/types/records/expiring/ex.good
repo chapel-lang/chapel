@@ -95,6 +95,16 @@ Expiring values for function sharedExample6EOB (ex.chpl:272)
   c (ex.chpl:273) expires at end of block
 Expiring values for function sharedExample7EOB (ex.chpl:278)
   c (ex.chpl:279) expires at end of block
+Expiring values for function forall1EOB (ex.chpl:286)
+  o (ex.chpl:287) expires at end of block
+Expiring values for function forall2EOB (ex.chpl:296)
+  o (ex.chpl:297) expires at end of block
+Expiring values for function coforall1EOB (ex.chpl:306)
+  o (ex.chpl:307) expires at end of block
+Expiring values for function coforall2EOB (ex.chpl:316)
+  o (ex.chpl:317) expires at end of block
+Expiring values for function forEOB (ex.chpl:326)
+  o (ex.chpl:327) expires at end of block
 {x = 1}
 
 {x = 1}

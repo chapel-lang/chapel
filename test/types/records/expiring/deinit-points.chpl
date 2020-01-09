@@ -110,7 +110,6 @@ t9();
 proc t10() {
   writeln("t10");
   var r: R;
-  // TODO: bug - it is destroyed here
   forall i in 1..2 {
     r;
     writeln("end loop iter");
@@ -119,6 +118,31 @@ proc t10() {
 }
 t10();
 
+proc t10a() {
+  writeln("t10a");
+  var r: R;
+  forall i in 1..2 {
+    r;
+    writeln("end loop iter");
+  }
+  writeln(r);
+  writeln("end outer");
+}
+t10a();
+
+proc t10b() {
+  writeln("t10b");
+  var r: R;
+  ref rr = r;
+  forall i in 1..2 {
+    r;
+    writeln("end loop iter");
+  }
+  writeln(r);
+  writeln("end outer");
+}
+t10b();
+
 proc t11() {
   writeln("t11");
   var r: R;
@@ -126,7 +150,6 @@ proc t11() {
     r;
     writeln("end loop iter");
   }
-  // TODO: destroy it here
   writeln("end outer");
 }
 t11();
@@ -140,7 +163,6 @@ proc t11o() {
       writeln("end loop iter");
     }
   }
-  // TODO: destroy it here
   writeln("end outer");
 }
 t11o();
@@ -158,7 +180,6 @@ proc t12() {
       i = 2;
     }
   }
-  // TODO: destroy it here
   writeln("end outer");
 }
 t12();
@@ -176,7 +197,6 @@ proc t12o() {
       i = 2;
     }
   }
-  // TODO: destroy it here
   writeln("end outer");
 }
 t12o();
