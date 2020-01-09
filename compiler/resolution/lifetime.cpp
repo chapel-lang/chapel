@@ -1647,7 +1647,7 @@ bool IntrinsicLifetimesVisitor::enterDefExpr(DefExpr* def) {
     lifetimes->intrinsicLifetime[sym] = lp;
   }
 
-  return false;
+  return true;
 }
 
 static bool isFunctionReturningNotOwned(FnSymbol* fn) {
