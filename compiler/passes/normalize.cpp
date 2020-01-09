@@ -26,6 +26,7 @@
 
 #include "astutil.h"
 #include "build.h"
+#include "CatchStmt.h"
 #include "DecoratedClassType.h"
 #include "driver.h"
 #include "errorHandling.h"
@@ -38,6 +39,7 @@
 #include "stlUtil.h"
 #include "stringutil.h"
 #include "TransformLogicalShortCircuit.h"
+#include "TryStmt.h"
 #include "typeSpecifier.h"
 #include "wellknown.h"
 
@@ -1991,7 +1993,8 @@ static void insertCallTempsWithStmt(CallExpr* call, Expr* stmt) {
     // This flag triggers autoCopy/autoDestroy behavior.
     if (parentCall == NULL ||
         (parentCall->isNamed("chpl__initCopy")  == false &&
-         parentCall->isPrimitive(PRIM_INIT_VAR) == false)) {
+         parentCall->isPrimitive(PRIM_INIT_VAR) == false &&
+         parentCall->isPrimitive(PRIM_INIT_VAR_SPLIT_INIT) == false)) {
       tmp->addFlag(FLAG_EXPR_TEMP);
     }
   }
@@ -2579,6 +2582,29 @@ static found_init_t doFindInitPoints(DefExpr* def,
         } else if (found == FOUND_USE) {
           errorIfSplitInitializationRequired(def, cur);
           return FOUND_USE;
+        }
+      }
+
+    } else if (TryStmt* tr = toTryStmt(cur)) {
+      Expr* start = tr->body()->body.first();
+      found_init_t found = doFindInitPoints(def, start, initAssigns);
+      if (found == FOUND_INIT) {
+        return FOUND_INIT;
+      } else if (found == FOUND_USE) {
+        errorIfSplitInitializationRequired(def, cur);
+        return FOUND_USE;
+      }
+
+      // then check catches
+      for_alist(elt, tr->_catches) {
+        if (CatchStmt* ctch = toCatchStmt(elt)) {
+          Expr* start = ctch->body()->body.first();
+          found_init_t found = doFindInitPoints(def, start, initAssigns);
+          if (found != FOUND_NOTHING) {
+            // Consider even an assignment in a catch block as a use
+            errorIfSplitInitializationRequired(def, cur);
+            return FOUND_USE;
+          }
         }
       }
 

@@ -151,6 +151,28 @@ proc testRecs() {
   yes8 = x;
   writeln(yes8);
 
+  writeln("yes9");
+  var yes9;
+  {
+    f(x);
+    yes9 = makeR(9);
+  }
+  writeln(yes9);
+
+  writeln("yes10");
+  var yes10;
+  {
+    if cond {
+      yes10 = makeR(10);
+    } else {
+      f(x);
+      f(x);
+      {
+        yes10 = makeR(10);
+      }
+    }
+  }
+  writeln(yes10);
 
 
 

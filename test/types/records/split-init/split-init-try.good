@@ -1,0 +1,18 @@
+test
+x
+init 0
+yes1
+init 1
+(x = 1, ptr = {})
+yes2
+init 2
+(x = 2, ptr = {})
+yes3
+init 1
+(x = 1, ptr = {})
+yes4
+init 1
+(x = 1, ptr = {})
+no1
+init
+(x = 0, ptr = {})
