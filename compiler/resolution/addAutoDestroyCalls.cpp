@@ -683,6 +683,15 @@ static Expr* findLastExprInStatement(Expr* e, VarSymbol* v) {
             break;
         }
       }
+      // Check for a block that unconditionally returns
+      if (BlockStmt* block = toBlockStmt(stmt)) {
+        Expr* end = block->body.last();
+        if (isGotoStmt(end))
+          return NULL;
+        if (CallExpr* call = toCallExpr(end))
+          if (call->isPrimitive(PRIM_YIELD) || call->isPrimitive(PRIM_RETURN))
+            return NULL;
+      }
     }
   }
 
