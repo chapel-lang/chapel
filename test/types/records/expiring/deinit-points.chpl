@@ -326,3 +326,25 @@ proc t20() {
   writeln("end outer");
 }
 t20();
+
+proc t21() {
+  writeln("t21");
+  var r;
+  if option then
+    return;
+  r = new R();
+  writeln("end outer");
+}
+t21();
+
+proc makeR() {
+  writeln("in makeR");
+  return new R();
+}
+
+proc t22() {
+  writeln("t22");
+  var r = if option then makeR() else makeR();
+  writeln("end outer");
+}
+t22();

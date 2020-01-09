@@ -162,6 +162,9 @@ static void walkBlockStmt(FnSymbol*         fn,
   // TODO -- maybe we need to handle breakLabel and continueLabel here?
 
   // Destroy the variable after this statement if it's the last mention
+  // Since this adds the destroy immediately after this statement,
+  // it ends up destroying multiple variables to be destroyed here
+  // in the reverse order of the vector - i.e. reverse initialization order.
   LastMentionMap::const_iterator lmmIt = lmm.find(stmt);
   if (lmmIt != lmm.end()) {
     const std::vector<VarSymbol*>& vars = lmmIt->second;
@@ -585,8 +588,12 @@ static void gatherIgnoredVariablesForYield(
 class ComputeLastSymExpr : public AstVisitorTraverse
 {
   public:
+    std::vector<VarSymbol*>& declared;
     std::map<VarSymbol*, Expr*>& last;
-    ComputeLastSymExpr(std::map<VarSymbol*, Expr*>& last) : last(last) { }
+    ComputeLastSymExpr(std::vector<VarSymbol*>& declared,
+                       std::map<VarSymbol*, Expr*>& last)
+      : declared(declared), last(last) { }
+    virtual bool enterDefExpr(DefExpr* node);
     virtual void visitSymExpr(SymExpr* node);
     virtual void exitForallStmt(ForallStmt* node);
 };
@@ -595,35 +602,45 @@ static Expr* findLastExprInStatement(Expr* e, VarSymbol* v);
 
 static void computeLastMentionPoints(LastMentionMap& lmm, FnSymbol* fn) {
 
+  std::vector<VarSymbol*> declared;
   std::map<VarSymbol*, Expr*> last;
 
   // Use a traversal to compute the last SymExpr mentioning each
-  ComputeLastSymExpr visitor(last);
+  ComputeLastSymExpr visitor(declared, last);
   fn->body->accept(&visitor);
 
-  // Now go from each SymExpr to the end of the statement
-  // and invert the map.
-  for (std::map<VarSymbol*, Expr*>::iterator it = last.begin();
-       it != last.end();
-       ++it) {
-    VarSymbol* v = it->first;
-    Expr* point = it->second;
-    // find the end of statement
-    point = findLastExprInStatement(point, v);
-    if (point != NULL) {
-      // store in the inverse map
-      lmm[point].push_back(v);
+  // Store the gathered DefExprs in the appropriate place in the inverse
+  // map. The map creates vectors in order of declaration.
+  for_vector(VarSymbol, var, declared) {
+    std::map<VarSymbol*, Expr*>::iterator it = last.find(var);
+    if (it != last.end()) {
+      Expr* point = it->second;
+      // find the end of statement
+      point = findLastExprInStatement(point, var);
+      if (point != NULL) {
+        // store in the inverse map
+        lmm[point].push_back(var);
+      }
     }
   }
 }
 
 static bool shouldDestroyOnLastMention(VarSymbol* var) {
   return var->hasFlag(FLAG_DEAD_LAST_MENTION) && // dead at last mention
-         var->hasFlag(FLAG_INSERT_AUTO_DESTROY) && // needs auto destroy
+         (var->hasFlag(FLAG_INSERT_AUTO_DESTROY) || // needs auto destroy
+          var->hasFlag(FLAG_INSERT_AUTO_DESTROY_FOR_EXPLICIT_NEW)) &&
          !var->hasFlag(FLAG_NO_AUTO_DESTROY) &&
          // forall statement exception avoids certain variables
          // within forall statements such as fRecIterIRdef.
          !isForallStmt(var->defPoint->parentExpr);
+}
+
+bool ComputeLastSymExpr::enterDefExpr(DefExpr* node) {
+  if (VarSymbol* var = toVarSymbol(node->sym))
+    if (shouldDestroyOnLastMention(var))
+      declared.push_back(var);
+
+  return true;
 }
 
 void ComputeLastSymExpr::visitSymExpr(SymExpr* node) {
