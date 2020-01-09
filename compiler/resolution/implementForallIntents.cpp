@@ -602,6 +602,12 @@ static ShadowVarSymbol* create_IN_Parentvar(ForallStmt* fs,
     INPovar = inptemp;
   }
 
+  // Insert a move in the init block for this shadow variable
+  // to enable other passes to understand the data flow. This
+  // move is not needed in forall lowering.
+  CallExpr* move = new CallExpr(PRIM_MOVE, INP, INPovar);
+  INP->initBlock()->insertAtTail(move);
+
   INP->outerVarSE = new SymExpr(INPovar);
   insert_help(INP->outerVarSE, NULL, INP);
 
