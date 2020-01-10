@@ -157,7 +157,7 @@ bool UseStmt::isARename(const char* name) const {
 
 // Specifically for when the module being used is renamed
 bool UseStmt::isARename() const {
-  return strcmp(modRename, "") != 0;
+  return modRename[0] != '\0';
 }
 
 const char* UseStmt::getRename(const char* name) const {
