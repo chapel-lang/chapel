@@ -818,7 +818,7 @@ module ChapelIO {
       f <~> new ioLiteral(" align ");
     } catch err: BadFormatError {
       // TODO: We may not need this at all anymore?
-      f.setError(EFORMAT:syserr);
+      f.clearError();
       // Range is naturally aligned.
     }
 
