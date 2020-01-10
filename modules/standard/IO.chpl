@@ -2147,7 +2147,7 @@ inline proc _cast(type t:string, x: ioBits) {
 
 
 pragma "no doc"
-proc channel._ch_ioerror(error:syserr, msg:string) throws {
+inline proc channel._ch_ioerror(error:syserr, msg:string) throws {
   var path:string = "unknown";
   var offset:int(64) = -1;
   on this.home {
@@ -3015,9 +3015,10 @@ private inline proc _write_binary_internal(_channel_internal:qio_channel_ptr_t, 
 pragma "no doc"
 inline proc channel._readOne(param kind: iokind, ref x:?t,
                              loc:locale?) throws {
-  var err = try _read_one_internal(_channel_internal, kind, x, loc);
+  var err = try _write_one_internal(_channel_internal, kind, x, loc); 
 
-  // Store errors thrown from QIO operations in the channel.
+  // Store errors from QIO operations in the channel.
+  // TODO: Do we want this at all?
   if err != ENOERR {
     _qio_channel_set_error_unlocked(err);
     const msg = "while reading " + x.type:string;
@@ -3030,7 +3031,8 @@ pragma "no doc"
 inline proc channel._writeOne(param kind: iokind, x:?t, loc:locale?) throws {
   var err = try _write_one_internal(_channel_internal, kind, x, loc);
 
-  // Store errors thrown from QIO operations in the channel.
+  // Store errors from QIO operations in the channel.
+  // TODO: Do we want this at all?
   if err != ENOERR {
     _qio_channel_set_error_unlocked(err);
     const msg = "while writing " + x.type:string;
