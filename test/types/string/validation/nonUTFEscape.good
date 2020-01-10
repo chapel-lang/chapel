@@ -1,0 +1,24 @@
+Escaped string numBytes: 6
+Escaped string bytes: 
+97
+98
+99
+220
+255
+97
+
+Unescaped string bytes: 
+97
+98
+99
+255
+97
+
+Base bytes: 
+97
+98
+99
+255
+97
+
+true

@@ -31,10 +31,13 @@ module BytesStringCommon {
        - **replace**: replace with UTF-8 replacement character
        - **ignore**: silently drop data
   */
-  enum decodePolicy { strict, replace, ignore }
+  enum decodePolicy { strict, replace, ignore, escape }
 
   pragma "no doc"
   config param showStringBytesInitDeprWarnings = true;
+
+  pragma "no doc"
+  param surrogateEscape = 0xdc:byteType;
 
   private proc isBytesOrStringType(type t) param: bool {
     return t==bytes || t==string;
@@ -94,9 +97,7 @@ module BytesStringCommon {
         if errors == decodePolicy.strict {
           throw new owned DecodeError();
         }
-        else if errors == decodePolicy.ignore || 
-                errors == decodePolicy.replace {
-
+        else {
           // if nbytes is 1, then we must have read a single byte and found
           // that it was invalid, if nbytes is >1 then we must have read
           // multible bytes where the last one broke the sequence. But it can
@@ -122,6 +123,20 @@ module BytesStringCommon {
 
             decodedIdx += 3;  // replacement character is 3 bytes in UTF8
           }
+          else if errors == decodePolicy.escape {
+
+            // we add one more byte per invalid byte in the sequence
+            const sizeChange = nInvalidBytes;
+            (ret.buff, ret._size) = bufferEnsureSize(ret.buff, ret._size,
+                                                     ret._size+sizeChange);
+            for i in 0..#nInvalidBytes {
+              ret.buff[decodedIdx] = surrogateEscape;
+              ret.buff[decodedIdx+1] = buf[thisIdx-nInvalidBytes+i];
+              decodedIdx += 2;
+            }
+          }
+          // if errors == decodePolicy.ignore, we don't do anything and skip over
+          // the invalid sequence
         }
       }
       else {  // we got valid characters

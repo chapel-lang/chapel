@@ -876,6 +876,34 @@ module String {
       return this:c_string; // folded out in resolution
     }
 
+    proc encode(): bytes {
+      var (buf, size) = bufferAlloc(this.len+1);
+      var localThis: string = this.localize();
+
+      var readIdx = 0;
+      var writeIdx = 0;
+      while readIdx < localThis.len {
+        if readIdx < localThis.len-1 &&
+           localThis.buff[readIdx] == surrogateEscape {
+          buf[writeIdx] = localThis.buff[readIdx+1];
+          writeIdx += 1;
+          readIdx += 2;
+        }
+        else {
+          var cp: int(32);
+          var nbytes: c_int;
+          var multibytes = (localThis.buff + readIdx): c_string;
+          var maxbytes = (localThis.len - readIdx): ssize_t;
+          qio_decode_char_buf(cp, nbytes, multibytes, maxbytes);
+          bufferMemcpyLocal(dst=(buf+writeIdx), src=multibytes, len=nbytes);
+          readIdx += nbytes;
+          writeIdx += nbytes;
+        }
+      }
+      buf[writeIdx] = 0;
+      return createBytesWithOwnedBuffer(buf, length=writeIdx, size=size);
+    }
+
     /*
       Iterates over the string character by character.
 
