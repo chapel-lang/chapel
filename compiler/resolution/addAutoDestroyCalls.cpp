@@ -48,6 +48,7 @@ static void walkBlock(FnSymbol*         fn,
                       BlockStmt*        block,
                       std::set<VarSymbol*>& ignoredVariables,
                       LastMentionMap&   lmm,
+                      bool              addInitedToParent = true,
                       ForallStmt*       pfs = NULL);
 
 void addAutoDestroyCalls() {
@@ -105,6 +106,7 @@ void addAutoDestroyCalls() {
 ************************************** | *************************************/
 
 static VarSymbol*   definesAnAutoDestroyedVariable(const Expr* stmt);
+static VarSymbol* possiblyInitializesDestroyedVariable(Expr* stmt);
 static LabelSymbol* findReturnLabel(FnSymbol* fn);
 static bool         isReturnLabel(const Expr*        stmt,
                                   const LabelSymbol* returnLabel);
@@ -135,6 +137,7 @@ static void addForallIndexVarToScope(AutoDestroyScope* scope,
   if (isAutoDestroyedVariable(idx)) {
     INT_ASSERT(!idx->isRef()); // no destruction for ref iterators
     scope->variableAdd(idx);
+    scope->addInitialization(idx);
   }
 }
 
@@ -160,22 +163,6 @@ static void walkBlockStmt(FnSymbol*         fn,
   //
 
   // TODO -- maybe we need to handle breakLabel and continueLabel here?
-
-  // Destroy the variable after this statement if it's the last mention
-  // Since this adds the destroy immediately after this statement,
-  // it ends up destroying multiple variables to be destroyed here
-  // in the reverse order of the vector - i.e. reverse initialization order.
-  LastMentionMap::const_iterator lmmIt = lmm.find(stmt);
-  if (lmmIt != lmm.end()) {
-    const std::vector<VarSymbol*>& vars = lmmIt->second;
-    for_vector(VarSymbol, var, vars) {
-      scope.destroyVariable(stmt, var, ignoredVariables);
-
-      // Needs a better strategy if we move last mention points within
-      // conditionals
-      ignoredVariables.insert(var);
-    }
-  }
 
   // Once a variable is yielded, it should no longer be auto-destroyed,
   // since such destruction is the responsibility of
@@ -208,6 +195,13 @@ static void walkBlockStmt(FnSymbol*         fn,
     } else if (scope.handlingFormalTemps(stmt) == true) {
       scope.insertAutoDestroys(fn, stmt, ignoredVariables);
 
+    } else if (VarSymbol* var = possiblyInitializesDestroyedVariable(stmt)) {
+      // note that this case will run also when setting the variable
+      // after the 1st initialization. That should be OK though because
+      // once a variable is initialized, it stays initialized, until
+      // it is destroyed.
+      scope.addInitialization(var);
+
     // Recurse in to a BlockStmt (or sub-classes of BlockStmt e.g. a loop)
     } else if (BlockStmt* subBlock = toBlockStmt(stmt)) {
       // ignore scopeless blocks for deciding where to destroy
@@ -229,13 +223,36 @@ static void walkBlockStmt(FnSymbol*         fn,
       if (isCheckErrorStmt(cond))
         gatherIgnoredVariablesForErrorHandling(cond, toIgnore);
 
-      walkBlock(fn, &scope, cond->thenStmt, toIgnore, lmm);
+      walkBlock(fn, &scope, cond->thenStmt, toIgnore, lmm, false, NULL);
+      // false above avoids adding initializations in cond statement
+      // to parent - so that the else clause does not consider
+      // split init variables already initialized. The else clause
+      // must initialize the same variables and will add to parent.
 
       if (cond->elseStmt != NULL)
         walkBlock(fn, &scope, cond->elseStmt, toIgnore, lmm);
 
+      scope.addInitializationsToParent();
     }
   }
+
+  // Destroy the variable after this statement if it's the last mention
+  // Since this adds the destroy immediately after this statement,
+  // it ends up destroying multiple variables to be destroyed here
+  // in the reverse order of the vector - i.e. reverse initialization order.
+  LastMentionMap::const_iterator lmmIt = lmm.find(stmt);
+  if (lmmIt != lmm.end()) {
+    const std::vector<VarSymbol*>& vars = lmmIt->second;
+    for_vector(VarSymbol, var, vars) {
+      scope.destroyVariable(stmt, var, ignoredVariables);
+
+      // Needs a better strategy if we move last mention points within
+      // conditionals
+      ignoredVariables.insert(var);
+    }
+  }
+
+
 }
 
 static void walkBlockScopelessBlock(FnSymbol*         fn,
@@ -256,6 +273,7 @@ static void walkBlock(FnSymbol*         fn,
                       BlockStmt*        block,
                       std::set<VarSymbol*>& ignoredVariables,
                       LastMentionMap&   lmm,
+                      bool              addInitedToParent,
                       ForallStmt*       pfs) {
   AutoDestroyScope scope(parent, block);
 
@@ -311,6 +329,9 @@ static void walkBlock(FnSymbol*         fn,
       }
     }
   }
+
+  if (addInitedToParent)
+    scope.addInitializationsToParent();
 }
 
 // Is this a DefExpr that defines a variable that might be autoDestroyed?
@@ -323,6 +344,47 @@ static VarSymbol* definesAnAutoDestroyedVariable(const Expr* stmt) {
   }
 
   return retval;
+}
+
+// Is this a CallExpr that initializes a variable that might be destroyed?
+// If so, return the VarSymbol initialized. Otherwise, return NULL.
+//
+// Note, this must identify the first initialization, but it can also
+// return a variable for other calls setting the variable (since the
+// variable remains initialized).
+static VarSymbol* possiblyInitializesDestroyedVariable(Expr* stmt) {
+
+  if (CallExpr* call = toCallExpr(stmt)) {
+    // case 1: PRIM_MOVE/PRIM_ASSIGN into a variable
+    if (call->isPrimitive(PRIM_MOVE) || call->isPrimitive(PRIM_ASSIGN))
+      if (SymExpr* se = toSymExpr(call->get(1)))
+        if (VarSymbol* var = toVarSymbol(se->symbol()))
+          if (isAutoDestroyedVariable(var))
+            return var;
+
+    if (FnSymbol* calledFn = call->resolvedOrVirtualFunction()) {
+      // case 2: init or init=
+      if (calledFn->isMethod() &&
+          (calledFn->name == astrInit || calledFn->name == astrInitEquals)) {
+        SymExpr* se = toSymExpr(call->get(1));
+        if (VarSymbol* var = toVarSymbol(se->symbol()))
+          if (isAutoDestroyedVariable(var))
+            return var;
+
+      // case 3: return through ret-arg
+      } else if (calledFn->hasFlag(FLAG_FN_RETARG)) {
+        ArgSymbol* retArg = toArgSymbol(toDefExpr(calledFn->formals.tail)->sym);
+        INT_ASSERT(retArg && retArg->hasFlag(FLAG_RETARG));
+        // Find the corresponding actual, which is the last actual
+        if (SymExpr* lastActual = toSymExpr(call->argList.tail))
+          if (VarSymbol* var = toVarSymbol(lastActual->symbol()))
+            if (isAutoDestroyedVariable(var))
+              return var;
+      }
+    }
+  }
+
+  return NULL;
 }
 
 //
@@ -398,7 +460,7 @@ static void walkForallBlocks(FnSymbol* fn,
                              LastMentionMap& lmm)
 {
   std::set<VarSymbol*> toIgnoreLB(parentIgnored);
-  walkBlock(fn, parentScope, forall->loopBody(), toIgnoreLB, lmm, forall);
+  walkBlock(fn, parentScope, forall->loopBody(), toIgnoreLB, lmm, false, forall);
 
   for_shadow_vars(svar, temp, forall)
     if (!svar->initBlock()->body.empty() || !svar->deinitBlock()->body.empty())

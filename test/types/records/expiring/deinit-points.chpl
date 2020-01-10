@@ -327,24 +327,64 @@ proc t20() {
 }
 t20();
 
-proc t21() {
-  writeln("t21");
-  var r;
-  if option then
-    return;
-  r = new R();
-  writeln("end outer");
-}
-t21();
-
 proc makeR() {
   writeln("in makeR");
   return new R();
 }
 
-proc t22() {
-  writeln("t22");
+proc t21() {
+  writeln("t21");
   var r = if option then makeR() else makeR();
   writeln("end outer");
 }
+t21();
+
+proc t22() {
+  writeln("t22");
+  {
+    writeln("begin inner");
+    var r: R;
+    writeln("end inner");
+  }
+  writeln("end outer");
+}
 t22();
+
+proc t23() {
+  writeln("t23");
+  {
+    writeln("begin inner");
+    var r: R;
+    ref rr = r;
+    writeln("end inner");
+  }
+  writeln("end outer");
+}
+t23();
+
+proc t24() {
+  writeln("t24");
+  {
+    {
+      writeln("begin inner");
+      var r: R;
+      ref rr = r;
+      writeln("end inner");
+    }
+  }
+  writeln("end outer");
+}
+t24();
+
+proc t25() {
+  writeln("t25");
+  {
+    {
+      writeln("begin inner");
+      var r: R;
+      writeln("end inner");
+    }
+  }
+  writeln("end outer");
+}
+t25();

@@ -43,8 +43,8 @@ static bool       isReturnStmt(const Expr* stmt);
 
 static BlockStmt* findBlockForTarget(GotoStmt* stmt);
 
-AutoDestroyScope::AutoDestroyScope(const AutoDestroyScope* parent,
-                                   const BlockStmt*        block) {
+AutoDestroyScope::AutoDestroyScope(AutoDestroyScope* parent,
+                                   const BlockStmt* block) {
   mParent        = parent;
   mBlock         = block;
 
@@ -61,6 +61,26 @@ void AutoDestroyScope::variableAdd(VarSymbol* var) {
 
 void AutoDestroyScope::deferAdd(DeferStmt* defer) {
   mLocalsAndDefers.push_back(defer);
+}
+
+void AutoDestroyScope::addInitialization(VarSymbol* var) {
+  // inserting redundantly is expected.
+  mInitedVars.insert(var);
+}
+
+void AutoDestroyScope::addInitializationsToParent() const {
+  if (mParent != NULL) {
+    // Pass up to the parent block any variables
+    // (particularly those declared outside of this block).
+    for_set(VarSymbol, var, mInitedVars) {
+      mParent->mInitedVars.insert(var);
+    }
+    // Subtract out variables local to this block
+    for_vector(BaseAST, elt, mLocalsAndDefers) {
+      if (VarSymbol* var = toVarSymbol(elt))
+        mParent->mInitedVars.erase(var);
+    }
+  }
 }
 
 //
@@ -124,7 +144,7 @@ void AutoDestroyScope::insertAutoDestroys(FnSymbol* fn, Expr* refStmt,
     if (scope->mBlock == forTarget && includeParent == false)
       break;
 
-    scope->variablesDestroy(refStmt, excludeVar, ignored);
+    scope->variablesDestroy(refStmt, excludeVar, ignored, this);
 
     // stop if recurse == false or if block == forTarget
     if (recurse == false)
@@ -166,7 +186,8 @@ static BlockStmt* shadowVarsDeinitBlock(Expr* refStmt) {
 
 void AutoDestroyScope::variablesDestroy(Expr*      refStmt,
                                         VarSymbol* excludeVar,
-                                        const std::set<VarSymbol*>& ignored) const {
+                                        const std::set<VarSymbol*>& ignored,
+                                        AutoDestroyScope* startingScope) const {
   // Handle the primary locals
   if (mLocalsHandled == false) {
     Expr*  insertBeforeStmt = refStmt;
@@ -176,7 +197,10 @@ void AutoDestroyScope::variablesDestroy(Expr*      refStmt,
     // If this is a simple nested block, insert after the final stmt
     // But always insert the destruction calls in reverse declaration order.
     // Do not get tricked by sequences of unreachable code
-    if (refStmt->next == NULL) {
+    if (count == 0) {
+      // Don't bother adding a noop if there is nothing to insert
+      insertBeforeStmt = NULL;
+    } else if (refStmt->next == NULL) {
       if (mParent != NULL && !isGotoStmt(refStmt)) {
         SET_LINENO(refStmt);
         // Add a PRIM_NOOP to insert before
@@ -205,13 +229,12 @@ void AutoDestroyScope::variablesDestroy(Expr*      refStmt,
 
       if (var != NULL && var != excludeVar && ignored.count(var) == 0) {
         if (FnSymbol* autoDestroyFn = autoDestroyMap.get(var->type)) {
-          SET_LINENO(var);
-
-          INT_ASSERT(autoDestroyFn->hasFlag(FLAG_AUTO_DESTROY_FN));
-
-          CallExpr* autoDestroy = new CallExpr(autoDestroyFn, var);
-
-          insertBeforeStmt->insertBefore(autoDestroy);
+          if (startingScope->isVariableInitialized(var)) {
+            SET_LINENO(var);
+            INT_ASSERT(autoDestroyFn->hasFlag(FLAG_AUTO_DESTROY_FN));
+            CallExpr* autoDestroy = new CallExpr(autoDestroyFn, var);
+            insertBeforeStmt->insertBefore(autoDestroy);
+          }
         }
       }
 
@@ -242,6 +265,17 @@ void AutoDestroyScope::variablesDestroy(Expr*      refStmt,
       }
     }
   }
+}
+
+bool AutoDestroyScope::isVariableInitialized(VarSymbol* var) const {
+  for (const AutoDestroyScope* scope = this;
+       scope != NULL;
+       scope = scope->mParent) {
+    if (scope->mInitedVars.count(var) > 0)
+      return true;
+  }
+
+  return false;
 }
 
 // Walk backwards from the current statement to determine if a sequence of
