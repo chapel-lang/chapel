@@ -48,31 +48,31 @@ proc test() throws {
   }
   writeln(yes2);
 
-  writeln("yes3");
-  var yes3:R;
-  try {
-    yes3 = makeR(1);
-  } catch e {
-    writeln(e);
-  }
-  writeln(yes3);
-
-  writeln("yes4");
-  var yes4;
-  try {
-    yes4 = makeR(1);
-  } catch e {
-    writeln(e);
-  }
-  writeln(yes4);
-  
   writeln("no1");
   var no1:R;
   try {
-  } catch e {
     no1 = makeR(1);
+  } catch e {
     writeln(e);
   }
   writeln(no1);
+
+  writeln("no2");
+  var no2:R;
+  try {
+    no2 = makeR(1);
+  } catch e {
+    writeln(e);
+  }
+  writeln(no2);
+  
+  writeln("no3");
+  var no3:R;
+  try {
+  } catch e {
+    no3 = makeR(1);
+    writeln(e);
+  }
+  writeln(no3);
 }
 try! test();

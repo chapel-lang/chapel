@@ -7,12 +7,16 @@ init 1
 yes2
 init 2
 (x = 2, ptr = {})
-yes3
-init 1
-(x = 1, ptr = {})
-yes4
-init 1
-(x = 1, ptr = {})
 no1
+init
+init 1
+= 0 1
+(x = 0, ptr = {})
+no2
+init
+init 1
+= 0 1
+(x = 0, ptr = {})
+no3
 init
 (x = 0, ptr = {})

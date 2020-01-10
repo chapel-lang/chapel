@@ -2587,25 +2587,27 @@ static found_init_t doFindInitPoints(DefExpr* def,
 
     } else if (TryStmt* tr = toTryStmt(cur)) {
       Expr* start = tr->body()->body.first();
-      found_init_t found = doFindInitPoints(def, start, initAssigns);
-      if (found == FOUND_INIT) {
-        return FOUND_INIT;
-      } else if (found == FOUND_USE) {
-        errorIfSplitInitializationRequired(def, cur);
-        return FOUND_USE;
-      }
+      found_init_t foundBody = doFindInitPoints(def, start, initAssigns);
 
-      // then check catches
+      // if there are any catches, check them for uses;
+      // also a catch block prevents initialization in the try body
       for_alist(elt, tr->_catches) {
         if (CatchStmt* ctch = toCatchStmt(elt)) {
           Expr* start = ctch->body()->body.first();
-          found_init_t found = doFindInitPoints(def, start, initAssigns);
-          if (found != FOUND_NOTHING) {
+          found_init_t foundCatch = doFindInitPoints(def, start, initAssigns);
+          if (foundCatch != FOUND_NOTHING || foundBody != FOUND_NOTHING) {
             // Consider even an assignment in a catch block as a use
             errorIfSplitInitializationRequired(def, cur);
             return FOUND_USE;
           }
         }
+      }
+
+      if (foundBody == FOUND_INIT) {
+        return FOUND_INIT;
+      } else if (foundBody == FOUND_USE) {
+        errorIfSplitInitializationRequired(def, cur);
+        return FOUND_USE;
       }
 
     // if _ { x = ... } else { x = ... }
