@@ -3105,12 +3105,12 @@ private inline proc _read_one_internal(_channel_internal:qio_channel_ptr_t,
                            _channel_internal=_channel_internal,
                            _readWriteThisFromLocale=loc);
 
-  try x.readThis(reader);
-
   // Set the channel pointer to NULL to make the
   // destruction of the local reader record safe
   // (it shouldn't release anything since it's a local copy).
-  reader._channel_internal = QIO_CHANNEL_PTR_NULL;
+  defer { reader._channel_internal = QIO_CHANNEL_PTR_NULL; }
+
+  try x.readThis(reader);
 
   return ENOERR;
 }
@@ -3127,6 +3127,11 @@ private inline proc _write_one_internal(_channel_internal:qio_channel_ptr_t,
                            home=here,
                            _channel_internal=_channel_internal,
                            _readWriteThisFromLocale=loc);
+
+  // Set the channel pointer to NULL to make the
+  // destruction of the local writer record safe
+  // (it shouldn't release anything since it's a local copy).
+  defer { writer._channel_internal = QIO_CHANNEL_PTR_NULL; }
 
   var err: syserr = ENOERR;
 
@@ -3154,11 +3159,6 @@ private inline proc _write_one_internal(_channel_internal:qio_channel_ptr_t,
     try x.writeThis(writer);
   }
 
-  // Set the channel pointer to NULL to make the
-  // destruction of the local writer record safe
-  // (it shouldn't release anything since it's a local copy).
-  writer._channel_internal = QIO_CHANNEL_PTR_NULL;
-
   return err;
 }
 
@@ -3167,10 +3167,6 @@ proc channel.readIt(ref x) throws {
   if writing then compilerError("read on write-only channel");
   const origLocale = this.getLocaleOfIoRequest();
 
-  //
-  // NOTE: This block used to only be executed if the channel is/was not in
-  // an error state.
-  //
   on this.home {
     try! this.lock(); defer { this.unlock(); }
     try _readOne(kind, x, origLocale);
@@ -3182,10 +3178,6 @@ proc channel.writeIt(const x) throws {
   if !writing then compilerError("write on read-only channel");
   const origLocale = this.getLocaleOfIoRequest();
 
-  //
-  // NOTE: This block used to only be executed if the channel is/was not in
-  // an error state.
-  //
   on this.home {
     try! this.lock(); defer { this.unlock(); }
     try _writeOne(kind, x, origLocale);
@@ -4007,7 +3999,7 @@ proc channel.write(const args ...?k, style:iostyle):bool throws {
     this._set_style(style); defer { this._set_style(saveStyle); }
 
     for param i in 1..k {
-      _writeOne(iokind.dynamic, args(i), origLocale);
+      try _writeOne(iokind.dynamic, args(i), origLocale);
     }
   }
 
