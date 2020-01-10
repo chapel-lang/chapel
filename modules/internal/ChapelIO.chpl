@@ -816,19 +816,17 @@ module ChapelIO {
 
     try {
       f <~> new ioLiteral(" align ");
-    } catch err: BadFormatError {
-      // TODO: We may not need this at all anymore?
-      f.clearError();
-      // Range is naturally aligned.
-    }
 
-    if stridable {
-      var a: intIdxType;
-      f <~> a;
-      _alignment = a;
-    } else {
-      throw new owned
-        BadFormatError("Range is not stridable, cannot store alignment");
+      if stridable {
+        var a: intIdxType;
+        f <~> a;
+        _alignment = a;
+      } else {
+        throw new owned
+          BadFormatError("Range is not stridable, cannot store alignment");
+      }
+    } catch err: BadFormatError {
+      // Range is naturally aligned.
     }
   }
 
