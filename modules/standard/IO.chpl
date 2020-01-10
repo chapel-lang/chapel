@@ -3015,7 +3015,7 @@ private inline proc _write_binary_internal(_channel_internal:qio_channel_ptr_t, 
 pragma "no doc"
 inline proc channel._readOne(param kind: iokind, ref x:?t,
                              loc:locale?) throws {
-  var err = try _write_one_internal(_channel_internal, kind, x, loc); 
+  var err = try _read_one_internal(_channel_internal, kind, x, loc); 
 
   // Store errors from QIO operations in the channel.
   // TODO: Do we want this at all?
