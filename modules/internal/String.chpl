@@ -628,9 +628,10 @@ module String {
 
     :returns: A new `string`
   */
-  inline proc createStringWithNewBuffer(s: c_string, length=s.length) throws {
+  inline proc createStringWithNewBuffer(s: c_string, length=s.length,
+                                        errors=decodePolicy.strict) throws {
     return createStringWithNewBuffer(s: bufferType, length=length,
-                                                    size=length+1);
+                                     size=length+1, errors);
   }
 
   /*
@@ -648,12 +649,12 @@ module String {
 
      :returns: A new `string`
   */
+  // TODO: size is probably unnecessary here, but maybe we keep it for
+  // consistence? Then, we can at least give it a default like length+1
   inline proc createStringWithNewBuffer(s: bufferType,
-                                        length: int, size: int) throws {
-    var ret: string;
-    validateEncoding(s, length);
-    initWithNewBuffer(ret, s, length, size);
-    return ret;
+                                        length: int, size: int,
+                                        errors=decodePolicy.strict) throws {
+    return decodeByteBuffer(s, length, errors);
   }
 
   pragma "no doc"
