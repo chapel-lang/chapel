@@ -805,35 +805,30 @@ module ChapelIO {
   }
 
   pragma "no doc"
-  proc ref range.readThis(f) throws
-  {
-    if hasLowBound() then
-      f <~> _low;
-    f <~> new ioLiteral("..");
-    if hasHighBound() then
-      f <~> _high;
-    if stride != 1 then
-      f <~> new ioLiteral(" by ") <~> stride;
+  proc ref range.readThis(f) throws {
+    if hasLowBound() then f <~> _low;
 
-    // try reading an 'align'
-    if !f.error() {
+    f <~> new ioLiteral("..");
+
+    if hasHighBound() then f <~> _high;
+
+    if stride != 1 then f <~> new ioLiteral(" by ") <~> stride;
+
+    try {
       f <~> new ioLiteral(" align ");
-      if f.error() == EFORMAT then {
-        // naturally aligned.
-        f.clearError();
-      } else {
-        if stridable {
-          // un-naturally aligned - read the un-natural alignment
-          var a: intIdxType;
-          f <~> a;
-          _alignment = a;
-        } else {
-          // If the range is not stridable, it can't store an alignment.
-          // TODO: once Channels can store Chapel errors,
-          // create a more descriptive error for this case
-          f.setError(EFORMAT:syserr);
-        }
-      }
+    } catch err: BadFormatError {
+      // TODO: We may not need this at all anymore?
+      f.setError(EFORMAT:syserr);
+      // Range is naturally aligned.
+    }
+
+    if stridable {
+      var a: intIdxType;
+      f <~> a;
+      _alignment = a;
+    } else {
+      throw new owned
+        BadFormatError("Range is not stridable, cannot store alignment");
     }
   }
 
