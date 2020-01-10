@@ -3012,21 +3012,36 @@ private inline proc _write_binary_internal(_channel_internal:qio_channel_ptr_t, 
 
 // Channel must be locked, must be running on this.home
 // x is ref (vs out) because it might contain a literal string.
+inline
+proc channel._readOne(param kind: iokind, ref x:?t, loc:locale?) throws {
+  // TODO: Assert that the channel is locked?
+  var err = try _read_one_internal(_channel_internal, kind, x, loc);
+  if err != ENOERR then try _ch_ioerror(err, "while reading IO primitive");
+}
+
+// Channel must be locked, must be running on this.home
+inline
+proc channel._writeOne(param kind: iokind, x:?t, loc:locale?) throws {
+  // TODO: Assert that the channel is locked?
+  var err = try _write_one_internal(_channel_internal, kind, x, loc);
+  if err != ENOERR then try _ch_ioerror(err, "while writing IO primitive");
+}
+
 private inline proc _read_one_internal(_channel_internal:qio_channel_ptr_t,
                                        param kind:iokind,
                                        ref x:?t,
-                                       loc:locale?) throws where _isIoPrimitiveTypeOrNewline(t) {
+                                       loc:locale?): syserr throws where _isIoPrimitiveTypeOrNewline(t) {
   var e:syserr = ENOERR;
   if t == ioNewline {
-    e = qio_channel_skip_past_newline(false, _channel_internal, x.skipWhitespaceOnly);
+    return qio_channel_skip_past_newline(false, _channel_internal, x.skipWhitespaceOnly);
   } else if t == ioChar {
-    e = qio_channel_read_char(false, _channel_internal, x.ch);
+    return qio_channel_read_char(false, _channel_internal, x.ch);
   } else if t == ioLiteral {
-    e = qio_channel_scan_literal(false, _channel_internal,
+    return qio_channel_scan_literal(false, _channel_internal,
                                     x.val.localize().c_str(),
                                     x.val.numBytes: ssize_t, x.ignoreWhiteSpace);
   } else if t == ioBits {
-    e = qio_channel_read_bits(false, _channel_internal, x.v, x.nbits);
+    return qio_channel_read_bits(false, _channel_internal, x.v, x.nbits);
   } else if kind == iokind.dynamic {
     var binary:uint(8) = qio_channel_binary(_channel_internal);
     var byteorder:uint(8) = qio_channel_byteorder(_channel_internal);
@@ -3043,31 +3058,30 @@ private inline proc _read_one_internal(_channel_internal:qio_channel_ptr_t,
     e = _read_binary_internal(_channel_internal, kind, x);
   }
 
-  // TODO: Transform 'e' into an error here and throw it if appropriate.    
+  return e;
 }
 
-// Channel must be locked, must be running on this.home
 private inline proc _write_one_internal(_channel_internal:qio_channel_ptr_t,
                                         param kind:iokind,
                                         x:?t,
-                                        loc:locale?) throws where _isIoPrimitiveTypeOrNewline(t) {
+                                        loc:locale?): syserr throws where _isIoPrimitiveTypeOrNewline(t) {
   var e:syserr = ENOERR;
   if t == ioNewline {
-    e = qio_channel_write_newline(false, _channel_internal);
+    return qio_channel_write_newline(false, _channel_internal);
   } else if t == ioChar {
-    e = qio_channel_write_char(false, _channel_internal, x.ch);
+    return qio_channel_write_char(false, _channel_internal, x.ch);
   } else if t == ioLiteral {
-    e = qio_channel_print_literal(false, _channel_internal, x.val.localize().c_str(), x.val.numBytes:ssize_t);
+    return qio_channel_print_literal(false, _channel_internal, x.val.localize().c_str(), x.val.numBytes:ssize_t);
   } else if t == ioBits {
-    e = qio_channel_write_bits(false, _channel_internal, x.v, x.nbits);
+    return qio_channel_write_bits(false, _channel_internal, x.v, x.nbits);
   } else if kind == iokind.dynamic {
     var binary:uint(8) = qio_channel_binary(_channel_internal);
     var byteorder:uint(8) = qio_channel_byteorder(_channel_internal);
     if binary {
       select byteorder:iokind {
-        when iokind.big    do e = _write_binary_internal(_channel_internal, iokind.big, x);
-        when iokind.little do e = _write_binary_internal(_channel_internal, iokind.little, x);
-        otherwise             e = _write_binary_internal(_channel_internal, iokind.native, x);
+        when iokind.big    do e = try _write_binary_internal(_channel_internal, iokind.big, x);
+        when iokind.little do e = try _write_binary_internal(_channel_internal, iokind.little, x);
+        otherwise             e = try _write_binary_internal(_channel_internal, iokind.native, x);
       }
     } else {
       e = _write_text_internal(_channel_internal, x);
@@ -3076,14 +3090,13 @@ private inline proc _write_one_internal(_channel_internal:qio_channel_ptr_t,
     e = _write_binary_internal(_channel_internal, kind, x);
   }
 
-  // TODO: Transform 'e' into an error here and throw if appropriate.
+  return e;
 }
 
 private inline proc _read_one_internal(_channel_internal:qio_channel_ptr_t,
                                        param kind:iokind,
                                        ref x:?t,
-                                       loc:locale?) throws {
-
+                                       loc:locale?): syserr throws {
   // Create a new channel that borrows the pointer in the
   // existing channel so we can avoid locking (because we
   // already have the lock)
@@ -3092,22 +3105,21 @@ private inline proc _read_one_internal(_channel_internal:qio_channel_ptr_t,
                            _channel_internal=_channel_internal,
                            _readWriteThisFromLocale=loc);
 
-  // TODO: Do we need this now?
-  qio_channel_clear_error(_channel_internal);
-
   try x.readThis(reader);
 
   // Set the channel pointer to NULL to make the
   // destruction of the local reader record safe
   // (it shouldn't release anything since it's a local copy).
   reader._channel_internal = QIO_CHANNEL_PTR_NULL;
+
+  return ENOERR;
 }
 
 pragma "suppress lvalue error"
 private inline proc _write_one_internal(_channel_internal:qio_channel_ptr_t,
                                         param kind:iokind,
                                         const x:?t,
-                                        loc:locale?) throws {
+                                        loc:locale?): syserr throws {
   // Create a new channel that borrows the pointer in the
   // existing channel so we can avoid locking (because we
   // already have the lock)
@@ -3116,8 +3128,7 @@ private inline proc _write_one_internal(_channel_internal:qio_channel_ptr_t,
                            _channel_internal=_channel_internal,
                            _readWriteThisFromLocale=loc);
 
-  // TODO: Do we need this now?
-  qio_channel_clear_error(_channel_internal);
+  var err: syserr = ENOERR;
 
   // NOTE: Error was stuffed in the channel at this point on failure.
   if isClassType(t) || chpl_isDdata(t) || isAnyCPtr(t) {
@@ -3130,7 +3141,8 @@ private inline proc _write_one_internal(_channel_internal:qio_channel_ptr_t,
       } else {
         iolit = new ioLiteral("nil");
       }
-      try _write_one_internal(_channel_internal, iokind.dynamic, iolit, loc);
+      err = try _write_one_internal(_channel_internal, iokind.dynamic,
+                                    iolit, loc);
     } else if isClassType(t) {
       var notNilX = x!;
       try notNilX.writeThis(writer);
@@ -3146,6 +3158,8 @@ private inline proc _write_one_internal(_channel_internal:qio_channel_ptr_t,
   // destruction of the local writer record safe
   // (it shouldn't release anything since it's a local copy).
   writer._channel_internal = QIO_CHANNEL_PTR_NULL;
+
+  return err;
 }
 
 pragma "no doc"
@@ -3159,7 +3173,7 @@ proc channel.readIt(ref x) throws {
   //
   on this.home {
     try! this.lock(); defer { this.unlock(); }
-    try _read_one_internal(_channel_internal, kind, x, origLocale);
+    try _readOne(kind, x, origLocale);
   }
 }
 
@@ -3174,7 +3188,7 @@ proc channel.writeIt(const x) throws {
   //
   on this.home {
     try! this.lock(); defer { this.unlock(); }
-    try _write_one_internal(_channel_internal, kind, x, origLocale);
+    try _writeOne(kind, x, origLocale);
   }
 }
 
@@ -3529,10 +3543,10 @@ inline proc channel.read(ref args ...?k):bool throws {
       for param i in 1..k {
         // TODO: Used to only be executed if not in error state. 
         if args[i].locale == here {
-          try _read_one_internal(_channel_internal, kind, args[i], origLocale);
+          try _readOne(kind, args[i], origLocale);
         } else {
           var tmp = args[i];
-          try _read_one_internal(_channel_internal, kind, tmp, origLocale);
+          try _readOne(kind, tmp, origLocale);
           // TODO: Do we need to make sure this write always happens?
           args[i] = tmp;
         }
@@ -3576,7 +3590,7 @@ proc channel.read(ref args ...?k, style:iostyle):bool throws {
 
       for param i in 1..k {
         // TODO: Used to only be executed if not in error state.
-        try _read_one_internal(_channel_internal, kind, args[i], origLocale);
+        try _readOne(kind, args[i], origLocale);
       }
     }
   } catch err: SystemError {
@@ -3658,23 +3672,17 @@ proc channel.readline(ref arg: ?t): bool throws where t==string || t==bytes {
     on this.home {
       try this.lock(); defer { this.unlock(); }
       var saveStyle = this._style(); defer { this._set_style(saveStyle); }
-      var myStyle = save_style.text();
+      var myStyle = saveStyle.text();
       myStyle.string_format = QIO_STRING_FORMAT_TOEND;
       myStyle.string_end = 0x0a; // ascii newline.
       this._set_style(myStyle);
-      try _read_one_internal(_channel_internal, iokind.dynamic, arg,
-                             origLocale);
+      try _readOne(iokind.dynamic, arg, origLocale);
     }
   } catch err: SystemError {
     if err.err != EEOF then throw err;
     return false;
   }
 
-  // TODO: Was used to fix the error here.
-  /*
-  try this._ch_ioerror(err, "in channel.readline(ref arg)");
-  */
-  
   return true;
 }
 
@@ -3966,16 +3974,9 @@ inline proc channel.write(const args ...?k):bool throws {
   on this.home {
     try this.lock(); defer { this.unlock(); }
     for param i in 1..k {
-      try _write_one_internal(_channel_internal, kind, args(i), origLocale);
+      try _writeOne(kind, args(i), origLocale);
     }
   }
-
-  // TODO: Used to fix the thrown error here!
-  /*
-  if err then try this._ch_ioerror(err, "in channel.write(" +
-                                        _args_to_proto((...args), preArg="") +
-                                        ")");
-  */
 
   return true;
 }
@@ -4006,18 +4007,9 @@ proc channel.write(const args ...?k, style:iostyle):bool throws {
     this._set_style(style); defer { this._set_style(saveStyle); }
 
     for param i in 1..k {
-      // TODO: Used to break on failure.
-      try _write_one_internal(_channel_internal, iokind.dynamic, args(i),
-                              origLocale);
+      _writeOne(iokind.dynamic, args(i), origLocale);
     }
   }
-
-  // TODO: Used to fix the thrown error here!
-  /*
-  if err then try this._ch_ioerror(err, "in channel.write(" +
-                                        _args_to_proto((...args), preArg="") +
-                                        "style:iostyle)");
-  */
 
   return true;
 }
@@ -6186,7 +6178,7 @@ proc channel.writef(fmtStr: ?t, const args ...?k): bool throws
               if argType(i) == QIO_CONV_ARG_TYPE_BINARY_SIGNED then
                 err = _write_signed(style.max_width_bytes, t, i);
               else
-                try _write_one_internal(_channel_internal, iokind.dynamic, t, origLocale);
+                try _writeOne(iokind.dynamic, t, origLocale);
             }
           } when QIO_CONV_ARG_TYPE_UNSIGNED, QIO_CONV_ARG_TYPE_BINARY_UNSIGNED {
             var (t,ok) = _toUnsigned(args(i));
@@ -6196,7 +6188,7 @@ proc channel.writef(fmtStr: ?t, const args ...?k): bool throws
               if argType(i) == QIO_CONV_ARG_TYPE_BINARY_UNSIGNED then
                 err = _write_unsigned(style.max_width_bytes, t, i);
               else
-                try _write_one_internal(_channel_internal, iokind.dynamic, t, origLocale);
+                try _writeOne(iokind.dynamic, t, origLocale);
             }
           } when QIO_CONV_ARG_TYPE_REAL, QIO_CONV_ARG_TYPE_BINARY_REAL {
             var (t,ok) = _toReal(args(i));
@@ -6206,7 +6198,7 @@ proc channel.writef(fmtStr: ?t, const args ...?k): bool throws
               if argType(i) == QIO_CONV_ARG_TYPE_BINARY_REAL then
                 err = _write_real(style.max_width_bytes, t, i);
               else
-                try _write_one_internal(_channel_internal, iokind.dynamic, t, origLocale);
+                try _writeOne(iokind.dynamic, t, origLocale);
             }
           } when QIO_CONV_ARG_TYPE_IMAG, QIO_CONV_ARG_TYPE_BINARY_IMAG {
             var (t,ok) = _toImag(args(i));
@@ -6216,7 +6208,7 @@ proc channel.writef(fmtStr: ?t, const args ...?k): bool throws
               if argType(i) == QIO_CONV_ARG_TYPE_BINARY_IMAG then
                 err = _write_real(style.max_width_bytes, t:real, i);
               else
-                try _write_one_internal(_channel_internal, iokind.dynamic, t, origLocale);
+                try _writeOne(iokind.dynamic, t, origLocale);
             }
           } when QIO_CONV_ARG_TYPE_COMPLEX, QIO_CONV_ARG_TYPE_BINARY_COMPLEX {
             var (t,ok) = _toComplex(args(i));
@@ -6225,33 +6217,33 @@ proc channel.writef(fmtStr: ?t, const args ...?k): bool throws
             } else {
               if argType(i) == QIO_CONV_ARG_TYPE_BINARY_COMPLEX then
                 err = _write_complex(style.max_width_bytes, t, i);
-              else try _write_one_internal(_channel_internal, iokind.dynamic, t, origLocale);
+              else try _writeOne(iokind.dynamic, t, origLocale);
             }
           } when QIO_CONV_ARG_TYPE_NUMERIC {
             var (t,ok) = _toNumeric(args(i));
             if ! ok {
               err = qio_format_error_arg_mismatch(i);
-            } else try _write_one_internal(_channel_internal, iokind.dynamic, t, origLocale);
+            } else try _writeOne(iokind.dynamic, t, origLocale);
           } when QIO_CONV_ARG_TYPE_CHAR {
             var (t,ok) = _toChar(args(i));
             if ! ok {
               err = qio_format_error_arg_mismatch(i);
-            } else try _write_one_internal(_channel_internal, iokind.dynamic, new ioChar(t), origLocale);
+            } else try _writeOne(iokind.dynamic, new ioChar(t), origLocale);
           } when QIO_CONV_ARG_TYPE_BINARY_STRING {
             var (t,ok) = _toBytes(args(i));
             if ! ok {
               err = qio_format_error_arg_mismatch(i);
-            } else try _write_one_internal(_channel_internal, iokind.dynamic, t, origLocale);
+            } else try _writeOne(iokind.dynamic, t, origLocale);
           } when QIO_CONV_ARG_TYPE_STRING { // can only happen with string
             var (t,ok) = _toString(args(i));
             if ! ok {
               err = qio_format_error_arg_mismatch(i);
-            } else try _write_one_internal(_channel_internal, iokind.dynamic, t, origLocale);
+            } else try _writeOne(iokind.dynamic, t, origLocale);
           } when QIO_CONV_ARG_TYPE_REGEXP { // It's not so clear what to do when printing
             // a regexp. So we just don't handle it.
             err = qio_format_error_write_regexp();
           } when QIO_CONV_ARG_TYPE_REPR {
-            try _write_one_internal(_channel_internal, iokind.dynamic, args(i), origLocale);
+            try _writeOne(iokind.dynamic, args(i), origLocale);
           } otherwise {
             // Unhandled argument type!
             throw new owned IllegalArgumentError("args(" + i:string + ")",
@@ -6421,7 +6413,7 @@ proc channel.readf(fmtStr:?t, ref args ...?k): bool throws
                 if argType(i) == QIO_CONV_ARG_TYPE_BINARY_SIGNED {
                   err = _read_signed(style.max_width_bytes, ti, i);
                 } else {
-                  try _read_one_internal(_channel_internal, iokind.dynamic, ti, origLocale);
+                  try _readOne(iokind.dynamic, ti, origLocale);
                 }
                 if !err then err = _setIfPrimitive(args(i),ti,i);
               }
@@ -6435,7 +6427,7 @@ proc channel.readf(fmtStr:?t, ref args ...?k): bool throws
                 if argType(i) == QIO_CONV_ARG_TYPE_BINARY_UNSIGNED {
                   err = _read_unsigned(style.max_width_bytes, ti, i);
                 } else {  
-                  try _read_one_internal(_channel_internal, iokind.dynamic, ti, origLocale);
+                  try _readOne(iokind.dynamic, ti, origLocale);
                 }
                 if !err then err = _setIfPrimitive(args(i),ti,i);
               }
@@ -6448,7 +6440,7 @@ proc channel.readf(fmtStr:?t, ref args ...?k): bool throws
                 if argType(i) == QIO_CONV_ARG_TYPE_BINARY_REAL {
                   err = _read_real(style.max_width_bytes, ti, i);
                 } else {
-                  try _read_one_internal(_channel_internal, iokind.dynamic, ti, origLocale);
+                  try _readOne(iokind.dynamic, ti, origLocale);
                 }
                 if !err then err = _setIfPrimitive(args(i),ti,i);
               }
@@ -6463,7 +6455,7 @@ proc channel.readf(fmtStr:?t, ref args ...?k): bool throws
                   err = _read_real(style.max_width_bytes, tr, i);
                   ti = tr:imag;
                 } else {
-                  try _read_one_internal(_channel_internal, iokind.dynamic, ti, origLocale);
+                  try _readOne(iokind.dynamic, ti, origLocale);
                 }
                 if !err then err = _setIfPrimitive(args(i),ti,i);
               }
@@ -6476,7 +6468,7 @@ proc channel.readf(fmtStr:?t, ref args ...?k): bool throws
                 if argType(i) == QIO_CONV_ARG_TYPE_BINARY_COMPLEX {
                  err = _read_complex(style.max_width_bytes, ti, i);
                 } else {
-                  try _read_one_internal(_channel_internal, iokind.dynamic, ti, origLocale);
+                  try _readOne(iokind.dynamic, ti, origLocale);
                 }
                 if !err then err = _setIfPrimitive(args(i),ti,i);
               }
@@ -6486,7 +6478,7 @@ proc channel.readf(fmtStr:?t, ref args ...?k): bool throws
                 err = qio_format_error_arg_mismatch(i);
               } else {
                 var ti = t;
-                try _read_one_internal(_channel_internal, iokind.dynamic, ti, origLocale);
+                try _readOne(iokind.dynamic, ti, origLocale);
                 if !err then err = _setIfPrimitive(args(i),ti,i);
               }
             } when QIO_CONV_ARG_TYPE_CHAR {
@@ -6495,7 +6487,7 @@ proc channel.readf(fmtStr:?t, ref args ...?k): bool throws
               if !ok {
                 err = qio_format_error_arg_mismatch(i);
               } else {
-                try _read_one_internal(_channel_internal, iokind.dynamic, chr, origLocale);
+                try _readOne(iokind.dynamic, chr, origLocale);
               }
               if !err then _setIfChar(args(i),chr.ch);
             } when QIO_CONV_ARG_TYPE_BINARY_STRING {
@@ -6503,7 +6495,7 @@ proc channel.readf(fmtStr:?t, ref args ...?k): bool throws
               if !ok {
                 err = qio_format_error_arg_mismatch(i);
               } else {
-                try _read_one_internal(_channel_internal, iokind.dynamic, t, origLocale);
+                try _readOne(iokind.dynamic, t, origLocale);
               }
               if !err then err = _setIfPrimitive(args(i),t,i);
             } when QIO_CONV_ARG_TYPE_STRING {
@@ -6511,7 +6503,7 @@ proc channel.readf(fmtStr:?t, ref args ...?k): bool throws
               if !ok {
                 err = qio_format_error_arg_mismatch(i);
               } else {
-                try _read_one_internal(_channel_internal, iokind.dynamic, t, origLocale);
+                try _readOne(iokind.dynamic, t, origLocale);
               }
               if !err then err = _setIfPrimitive(args(i),t,i);
             } when QIO_CONV_ARG_TYPE_REGEXP {
@@ -6540,7 +6532,7 @@ proc channel.readf(fmtStr:?t, ref args ...?k): bool throws
                 }
               }
             } when QIO_CONV_ARG_TYPE_REPR {
-              try _read_one_internal(_channel_internal, iokind.dynamic, args(i), origLocale);
+              try _readOne(iokind.dynamic, args(i), origLocale);
             } when QIO_CONV_SET_CAPTURE {
               if r == nil {
                 err = qio_format_error_bad_regexp();
