@@ -52,8 +52,9 @@
   into a list is O(1).
 */
 module List {
+  private use ChapelLocks only;
+  private use HaltWrappers;
   private use Sort;
-  private use ChapelLocks only ;
 
   pragma "no doc"
   private const _initialCapacity = 8;
@@ -636,7 +637,7 @@ module List {
 
         if boundsChecking && _size == 0 {
           _leave();
-          halt("Called \"list.first\" on an empty list.");
+          boundsCheckHalt("Called \"list.first\" on an empty list.");
         }
 
         result = _getRef(1);
@@ -667,7 +668,7 @@ module List {
 
         if boundsChecking && _size == 0 {
           _leave();
-          halt("Called \"list.last\" on an empty list.");
+          boundsCheckHalt("Called \"list.last\" on an empty list.");
         }
 
         result = _getRef(_size);
@@ -985,13 +986,14 @@ module List {
       if boundsChecking && _size <= 0 {
         if unlockBeforeHalt then
           _leave();
-        halt("Called \"list.pop\" on an empty list.");
+        boundsCheckHalt("Called \"list.pop\" on an empty list.");
       }
 
       if boundsChecking && !_withinBounds(idx) {
         if unlockBeforeHalt then
           _leave();
-        halt("Index for \"list.pop\" out of bounds: " + idx:string);
+        const msg = "Index for \"list.pop\" out of bounds: " + idx:string;
+        boundsCheckHalt(msg);
       }
 
       ref item = _getRef(idx);
@@ -1161,10 +1163,10 @@ module List {
         const msg = " index for \"list.indexOf\" out of bounds: ";
 
         if end > 0 && !_withinBounds(end) then
-          halt("End" + msg + end:string);
+          boundsCheckHalt("End" + msg + end:string);
 
         if !_withinBounds(start) then
-          halt("Start" + msg + start:string);
+          boundsCheckHalt("Start" + msg + start:string);
       }
 
       param error = -1;
@@ -1276,7 +1278,7 @@ module List {
     proc this(i: int) ref {
       if boundsChecking && !_withinBounds(i) {
         const msg = "Invalid list index: " + i:string;
-        halt(msg);
+        boundsCheckHalt(msg);
       }
 
       ref result = _getRef(i);
