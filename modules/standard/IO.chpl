@@ -3020,7 +3020,7 @@ inline proc channel._readOne(param kind: iokind, ref x:?t,
   // Store errors from QIO operations in the channel.
   // TODO: Do we want this at all?
   if err != ENOERR {
-    _qio_channel_set_error_unlocked(err);
+    _qio_channel_set_error_unlocked(_channel_internal, err);
     const msg = "while reading " + x.type:string;
     try _ch_ioerror(err, msg);
   }
@@ -3034,7 +3034,7 @@ inline proc channel._writeOne(param kind: iokind, x:?t, loc:locale?) throws {
   // Store errors from QIO operations in the channel.
   // TODO: Do we want this at all?
   if err != ENOERR {
-    _qio_channel_set_error_unlocked(err);
+    _qio_channel_set_error_unlocked(_channel_internal, err);
     const msg = "while writing " + x.type:string;
     try _ch_ioerror(err, msg);
   }
@@ -6477,25 +6477,21 @@ proc channel.readf(fmtStr:?t, ref args ...?k): bool throws
             } when QIO_CONV_ARG_TYPE_CHAR {
               var (t,ok) = _toChar(args(i));
               var chr = new ioChar(t);
-              if !ok {
+              if ! ok {
                 err = qio_format_error_arg_mismatch(i);
-              } else {
-                try _readOne(iokind.dynamic, chr, origLocale);
-              }
-              if !err then _setIfChar(args(i),chr.ch);
+              } else try _readOne(iokind.dynamic, chr, origLocale);
+              if ! err then _setIfChar(args(i),chr.ch);
             } when QIO_CONV_ARG_TYPE_BINARY_STRING {
               var (t,ok) = _toBytes(args(i));
               if ! ok {
                 err = qio_format_error_arg_mismatch(i);
-              else
-                try _readOne(iokind.dynamic, t, origLocale);
+              } else try _readOne(iokind.dynamic, t, origLocale);
               if ! err then err = _setIfPrimitive(args(i),t,i);
             } when QIO_CONV_ARG_TYPE_STRING {
               var (t,ok) = _toString(args(i));
               if ! ok {
                 err = qio_format_error_arg_mismatch(i);
-              else
-                try _readOne(iokind.dynamic, t, origLocale);
+              } else try _readOne(iokind.dynamic, t, origLocale);
               if ! err then err = _setIfPrimitive(args(i),t,i);
             } when QIO_CONV_ARG_TYPE_REGEXP {
               var (t,ok) = _toRegexp(args(i));
