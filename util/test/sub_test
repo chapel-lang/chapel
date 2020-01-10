@@ -1668,7 +1668,7 @@ for testname in testsrc:
                 continue
 
             if not os.path.isfile(goodfile) or not os.access(goodfile, os.R_OK):
-                if perftest:
+                if perftest or executebin:
                     sys.stdout.write('[Error compilation failed for %s]\n'%(test_name))
                 else:
                     sys.stdout.write('[Error cannot locate compiler output comparison file %s/%s]\n'%(localdir, goodfile))

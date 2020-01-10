@@ -70,6 +70,21 @@ static void chpl_launch_sanity_checks(const char* argv0) {
 }
 
 //
+// Use this utility routine to build up an argv[] list.  Start with
+// *largc==0, *largv==NULL, *largv_len==0, and it will keep those
+// updated as you append args one after another.
+//
+void chpl_append_to_largv(int* largc, const char*** largv, int* largv_len,
+                          const char* arg) {
+  if (*largc >= *largv_len) {
+    *largv_len += 10;
+    *largv = chpl_mem_realloc(*largv, *largv_len * sizeof(**largv),
+                              CHPL_RT_MD_COMMAND_BUFFER, -1, 0);
+  }
+  (*largv)[(*largc)++] = (arg);
+}
+
+//
 // Use this function to run short utility programs that will return less
 //  than 1024 characters of output.  The program must not expect any input.
 //  On success, returns the number of bytes read and the output of the

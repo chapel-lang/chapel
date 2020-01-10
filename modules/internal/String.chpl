@@ -906,6 +906,8 @@ module String {
         qio_decode_char_buf(cp, nBytes, curPos:c_string, maxBytes);
 
         var (newBuf, newSize) = bufferCopyLocal(curPos, nBytes);
+        newBuf[nBytes] = 0;
+
         yield chpl_createStringWithOwnedBufferNV(newBuf, nBytes, newSize);
 
         i += nBytes;
