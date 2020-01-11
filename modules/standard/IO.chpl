@@ -3010,32 +3010,45 @@ private inline proc _write_binary_internal(_channel_internal:qio_channel_ptr_t, 
   return EINVAL;
 }
 
-// Channel must be locked, must be running on this.home
-// x is ref (vs out) because it might contain a literal string.
+pragma "no doc"
+proc channel._constructIoErrorMsg(param kind: iokind, x:?t): string {
+  var result: string = "while ";
+
+  result += if this.writing then "writing " else "reading ";
+  result += t:string + " ";
+
+  select t {
+    when ioNewline do result += "newline";
+    when ioLiteral do result += "\"" + x:string + "\""; 
+  }
+
+  return result;
+}
+
+//
+// The channel must be locked and running on this.home.
+// The intent of x is ref (vs out) because it might contain a string literal.
+//
 pragma "no doc"
 inline proc channel._readOne(param kind: iokind, ref x:?t,
                              loc:locale?) throws {
   var err = try _read_one_internal(_channel_internal, kind, x, loc); 
 
-  // Store errors from QIO operations in the channel.
-  // TODO: Do we want this at all?
   if err != ENOERR {
-    _qio_channel_set_error_unlocked(_channel_internal, err);
-    const msg = "while reading " + x.type:string;
+    const msg = _constructIoErrorMsg(kind, x);
     try _ch_ioerror(err, msg);
   }
 }
 
-// Channel must be locked, must be running on this.home
+//
+// The channel must be locked and running on this.home.
+//
 pragma "no doc"
 inline proc channel._writeOne(param kind: iokind, x:?t, loc:locale?) throws {
-  var err = try _write_one_internal(_channel_internal, kind, x, loc);
+  var err = _write_one_internal(_channel_internal, kind, x, loc);
 
-  // Store errors from QIO operations in the channel.
-  // TODO: Do we want this at all?
   if err != ENOERR {
-    _qio_channel_set_error_unlocked(_channel_internal, err);
-    const msg = "while writing " + x.type:string;
+    const msg = _constructIoErrorMsg(kind, x);
     try _ch_ioerror(err, msg);
   }
 }
