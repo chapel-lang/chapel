@@ -10,7 +10,7 @@ define([cv_prefix],[gasnet_cv_])
 
 dnl Public release version packaging identifier:
 define([GASNET_RELEASE_VERSION_MAJOR_D],[2019])
-define([GASNET_RELEASE_VERSION_MINOR_D],[6])
+define([GASNET_RELEASE_VERSION_MINOR_D],[9])
 define([GASNET_RELEASE_VERSION_PATCH_D],[0])
 dnl GASNet-EX spec version:
 define([GASNETEX_SPEC_VERSION_MAJOR_D],[0])
@@ -20,7 +20,7 @@ define([GASNET_SPEC_VERSION_MAJOR_D],[1])
 define([GASNET_SPEC_VERSION_MINOR_D],[8])
 dnl GASNet tools spec version:
 define([GASNETT_SPEC_VERSION_MAJOR_D],[1])
-define([GASNETT_SPEC_VERSION_MINOR_D],[13])
+define([GASNETT_SPEC_VERSION_MINOR_D],[14])
 
 define([GASNET_RELEASE_VERSION_D],
          [GASNET_RELEASE_VERSION_MAJOR_D.GASNET_RELEASE_VERSION_MINOR_D.GASNET_RELEASE_VERSION_PATCH_D])
@@ -2432,6 +2432,35 @@ else
   atomics_config="$GASNETI_ATOMIC_IMPL_STR,${GASNETI_ATOMIC32_IMPL_STR}32,${GASNETI_ATOMIC64_IMPL_STR}64"
 fi
 
+dnl Logic to check for certain atomics implementation(s)
+dnl
+dnl CHECK_ATOMICS(match-list, action-on-match, action-on-no-match)
+dnl Note: action-on-no-match runs with $check_atomics_msg set
+AC_DEFUN([CHECK_ATOMICS],[
+  check_atomics_match=''
+  for check_atomics_val in [$1]; do
+    if test $GASNETI_ATOMIC_IMPL_STR = $check_atomics_val; then
+      check_atomics_match=1
+      break
+    fi
+  done
+  if test -n "$check_atomics_match"; then
+    :
+    $2
+  else
+    if test -n "$enabled_generic_atomicops" ; then
+      check_atomics_msg='user passed --enable-force-generic-atomicops'
+    elif test -n "$enabled_os_atomicops"; then
+      check_atomics_msg='user passed --enable-force-os-atomicops'
+    else
+      check_atomics_msg="this platform has defaulted to '$GASNETI_ATOMIC_IMPL_STR' atomicops"
+    fi
+    $3
+    unset check_atomics_msg
+  fi
+  unset check_atomics_match
+])
+
 #---------------------------------------------------------------------------------------------------------------
 # PSHM uses atomics in shared memory for IPC.
 # So we assume that Generic and O/S atomics are insufficient.
@@ -2442,11 +2471,10 @@ if test "$with_pshm" != no; then
     yes) pshm_how='enabled explicitly by --enable-pshm';;
       *) pshm_how='auto-enabled';;
   esac
-  if test -n "$enabled_generic_atomicops" ; then
-    GASNET_MSG_ERROR([User passed --enable-force-generic-atomicops and PSHM was $pshm_how, but PSHM support requires native atomics])
-  elif test -n "$enabled_os_atomicops"; then
-    GASNET_MSG_ERROR([User passed --enable-force-os-atomicops and PSHM was $pshm_how, but PSHM support requires native atomics])
-  fi
+  # For all platforms of interest, compiler is equivalent to native
+  CHECK_ATOMICS([native compiler],[],[
+      GASNET_MSG_ERROR([PSHM support ($pshm_how) requires native atomicops, but $check_atomics_msg])
+    ])
 fi
 dnl GASNET_TOOLSONLY_FALSE_END
 
@@ -3416,6 +3444,52 @@ CONDUIT_END([test "$enabled_smp" = yes])
 AM_CONDITIONAL(USE_SMP_CONDUIT, test "$enabled_smp" = yes)
 
 #--------------------------------------------------------------------------------------------------------
+# UCX configuration
+#
+
+CONDUIT_BEGIN(ucx,no,[Unified Communication X conduit (ucx)])
+if test "$enabled_ucx" = no; then
+    :
+elif test "$have_fork" = no; then
+    GASNET_MSG_WARN([ucx-conduit requires fork() ($fork_reason) for startup - disabling ucx])
+elif test "$have_pthread" = no; then
+    GASNET_MSG_WARN([ucx-conduit requires libpthread ($pthread_reason) - disabling ucx])
+else
+    #
+    # Either UCX was required explicitly, or we just need to probe for its existence
+    #
+
+    have_ucx=yes  # assume success
+
+    CONDUIT_HOME([UCX library], [ucx_info], [/opt/mellanox/ucx], [include/ucp/api/ucp.h])
+    CONDUIT_CFLAGS
+    GASNET_ENV_DEFAULT(UCX_LIBS, -lucp -lucs -luct -lucm)
+    CONDUIT_LDFLAGS(ucx)
+    GASNET_SPLIT_LINKER_OPTS(UCX_LDFLAGS,UCX_LIBS)
+
+    # Try to compile and link a basic UCX program
+    GASNET_PUSHVAR(CFLAGS,"$CFLAGS $UCX_CFLAGS")
+    GASNET_PUSHVAR(LDFLAGS,"$LDFLAGS $UCX_LDFLAGS")
+    GASNET_PUSHVAR(LIBS,"$LIBS $UCX_LIBS")
+      GASNET_TRY_CACHE_LINK(for working UCX configuration, ucx_works, [
+            #include <ucp/api/ucp.h>
+        ], [{
+               unsigned major_version, minor_version, release_number;
+               ucp_get_version(&major_version, &minor_version, &release_number);
+            }], [ : ], [ have_ucx=no; GASNET_ERR_SAVE() ] )
+    GASNET_POPVAR(CFLAGS)
+    GASNET_POPVAR(LDFLAGS)
+    GASNET_POPVAR(LIBS)
+
+    CONDUIT_SPAWNER
+fi
+AC_SUBST(UCX_CFLAGS)
+AC_SUBST(UCX_LDFLAGS)
+AC_SUBST(UCX_LIBS)
+CONDUIT_END([test "$enabled_ucx$have_ucx" = yesyes])
+AM_CONDITIONAL(USE_UCX_CONDUIT, test "$enabled_ucx$have_ucx" = yesyes)
+
+#--------------------------------------------------------------------------------------------------------
 # IBV configuration
 
 CONDUIT_BEGIN(ibv,yes,[InfiniBand IB Verbs conduit (ibv)])
@@ -3451,6 +3525,16 @@ if test "$enabled_ibv" = yes; then
     struct ibv_device device;
     const char *s = ibv_get_device_name(&device);
   }], [ : ], [ have_ibv=no; GASNET_ERR_SAVE() ] )
+
+  # For all platforms of interest, compiler is equivalent to native
+  AC_MSG_CHECKING(for appropriate atomics support required by ibv-conduit)
+  CHECK_ATOMICS([native compiler],[
+      AC_MSG_RESULT(yes)
+    ],[
+      AC_MSG_RESULT(no)
+      GASNET_MSG_WARN([ibv-conduit requires native atomicops, but $check_atomics_msg])
+      have_ibv=no
+    ])
 
   if test "$have_ibv" = yes; then
     GASNET_TRY_CACHE_LINK(for ibv_device.transport_type, ibv_transport_type, [
@@ -3603,22 +3687,20 @@ CONDUIT_END([test "$enabled_ibv$have_ibv" = yesyes])
 AM_CONDITIONAL(USE_IBV_CONDUIT, test "$enabled_ibv$have_ibv" = yesyes)
 
 #--------------------------------------------------------------------------------------------------------
-# Gemini and Aries Conduits
+# Aries Conduit
 
-gni_network=""
-AC_DEFUN([GASNET_CHECK_GNI],[
-pushdef([lowername],translit($1,'A-Z','a-z'))
-
+CONDUIT_BEGIN(aries,yes,[Cray XC Aries conduit (aries)])
+CONDUIT_DISALLOW_SEGMENT(everything)
 # gni only supported on compute node linux for now (cnl)
 case "$target" in
   *-cnl-*) ;;
-  *) if test "$force_[]lowername" != "yes"; then
-       enabled_[]lowername=no 
+  *) if test "$force_aries" != "yes"; then
+       enabled_aries=no
      fi
   ;;
 esac
-
-if test "$gni_network$enabled_[]lowername" = "yes" ; then
+# Now only on Aries (not Gemini)
+if test "$enabled_aries" = yes; then
   AC_MSG_CHECKING(for GNI network type)
   if test "${CRAYPE_NETWORK_TARGET+set}" = set ; then
     gni_network=${CRAYPE_NETWORK_TARGET}
@@ -3628,10 +3710,13 @@ if test "$gni_network$enabled_[]lowername" = "yes" ; then
     gni_network="unknown"
   fi
   AC_MSG_RESULT($gni_network)
+  if test $gni_network = gemini; then
+    GASNET_MSG_WARN([Cray gemini network software detected, but gemini-conduit has been removed.])
+    enabled_aries=no
+  fi
 fi
-
-if test ${gni_network}:${enabled_[]lowername} = lowername[]:yes; then
-  have_[]lowername=yes # start by assuming we have it
+if test "$enabled_aries" = yes; then
+  have_aries=yes # start by assuming we have it
 
   GNI_CFLAGS=
   GNI_LDFLAGS=
@@ -3655,9 +3740,9 @@ if test ${gni_network}:${enabled_[]lowername} = lowername[]:yes; then
   GNI_LDFLAGS="$GNI_LDFLAGS $CRAY_UGNI_POST_LINK_OPTS"
   GNI_LIBS="$GNI_LIBS -lugni"
 
-  if test $have_[]lowername = yes; then
+  if test $have_aries = yes; then
     # PSHM must be XPMEM, HUGETLBFS or none.
-    AC_MSG_CHECKING(for appropriate pshm support required by $1)
+    AC_MSG_CHECKING(for appropriate pshm support required by Aries)
     case "$with_pshm" in
       no) # If none, then we still want hugetlbfs if available.
         if test $have_hugetlbfs = yes; then
@@ -3670,18 +3755,18 @@ if test ${gni_network}:${enabled_[]lowername} = lowername[]:yes; then
         AC_MSG_RESULT(yes - $with_pshm)
         ;;
       *)
-        have_[]lowername=no
+        have_aries=no
         AC_MSG_RESULT(no - have '$with_pshm' but require xpmem or hugetlbfs)
         ;;
     esac
   fi
 
-  if test $have_[]lowername = yes; then
+  if test $have_aries = yes; then
     GASNET_SPLIT_LINKER_OPTS(GNI_LDFLAGS,GNI_LIBS)
     GASNET_PUSHVAR(LDFLAGS,"$LDFLAGS ${GNI_LDFLAGS}")
     GASNET_PUSHVAR(LIBS,"$LIBS ${GNI_LIBS}")
     GASNET_PUSHVAR(CPPFLAGS,"$CPPFLAGS $GNI_CFLAGS")
-    GASNET_TRY_CACHE_LINK(for working $1 configuration, lowername[]_works, [
+    GASNET_TRY_CACHE_LINK(for working Aries configuration, aries_works, [
       #include <stddef.h>
       #include <stdint.h>
       #include <gni_pub.h>
@@ -3692,13 +3777,13 @@ if test ${gni_network}:${enabled_[]lowername} = lowername[]:yes; then
 
       int localranks;
       int ret = PMI_Get_numpes_on_smp(&localranks); /* Cray extension */
-    ], [ : ], [ have_[]lowername=no; GASNET_ERR_SAVE() ] )
+    ], [ : ], [ have_aries=no; GASNET_ERR_SAVE() ] )
     GASNET_POPVAR(LDFLAGS)
     GASNET_POPVAR(LIBS)
     GASNET_POPVAR(CPPFLAGS)
   fi
 
-  GASNET_IF_ENABLED_WITH_AUTO(lowername-udreg,
+  GASNET_IF_ENABLED_WITH_AUTO(aries-udreg,
      [Use Cray's UDREG to cache memory registration (enabled by default if available)],
      [gni_udreg=yes], [gni_udreg=no], [gni_udreg=probe])
   if test $gni_udreg != no; then
@@ -3711,13 +3796,13 @@ if test ${gni_network}:${enabled_[]lowername} = lowername[]:yes; then
       ],[
         if test "$gni_udreg" = yes; then
           GASNET_ERR_SAVE()
-          AC_MSG_ERROR([--enable-lowername-udreg was passed but udreg_pub.h header was not found])
+          AC_MSG_ERROR([--enable-aries-udreg was passed but udreg_pub.h header was not found])
         fi
       ])
     GNI_LIBS="$GNI_LIBS $CRAY_UDREG_POST_LINK_OPTS -ludreg"
   fi
 
-  GASNET_WITH(lowername-max-medium,
+  GASNET_WITH(aries-max-medium,
      [specify gasnet_AMMaxMedium() (default 4032)],
      [if expr "$withval" : '[[0-9]]*$' >/dev/null 2>&1 && \
          expr \( "$withval" / 64 \) \* 64 = "$withval" >/dev/null 2>&1 &&
@@ -3726,38 +3811,19 @@ if test ${gni_network}:${enabled_[]lowername} = lowername[]:yes; then
         gni_max_medium="$withval"
       else
         GASNET_ERR_SAVE()
-        AC_MSG_ERROR([--with-lowername-max-medium="$withval" is not legal.  Value must be a multiple of 64, between 512 and 65472, inclusive.])
+        AC_MSG_ERROR([--with-aries-max-medium="$withval" is not legal.  Value must be a multiple of 64, between 512 and 65472, inclusive.])
       fi
      ],
      [GASNET_ERR_SAVE()
-      AC_MSG_ERROR([--with-lowername-max-medium must be a multiple of 64 and no smaller than 512])],
+      AC_MSG_ERROR([--with-aries-max-medium must be a multiple of 64 and no smaller than 512])],
      [gni_max_medium=4032])
   AC_DEFINE_UNQUOTED(GASNETC_GNI_MAX_MEDIUM, [$gni_max_medium])
 
-  GASNET_IF_ENABLED(lowername-multi-domain, [Use experimental multi-domain support in PAR builds], [AC_DEFINE(GASNETC_GNI_MULTI_DOMAIN)])
+  GASNET_IF_ENABLED(aries-multi-domain, [Use experimental multi-domain support in PAR builds], [AC_DEFINE(GASNETC_GNI_MULTI_DOMAIN)])
 
   AC_SUBST(GNI_LDFLAGS)
   AC_SUBST(GNI_LIBS)
   AC_SUBST(GNI_CFLAGS)
-fi
-popdef([lowername])
-])
-
-CONDUIT_BEGIN(gemini,yes,[Cray XE/XK Gemini conduit (gemini)])
-CONDUIT_DISALLOW_SEGMENT(everything)
-if test "$enabled_gemini" = yes; then
-  GASNET_CHECK_GNI(Gemini)
-  if test "$have_gemini" = yes; then
-    GASNET_MSG_WARN([gemini-conduit has been deprecated.  Please see the gemini-conduit README for more information.])
-  fi
-fi
-CONDUIT_END([test "$enabled_gemini$have_gemini" = yesyes])
-AM_CONDITIONAL(USE_GEMINI_CONDUIT, test "$enabled_gemini$have_gemini" = yesyes)
-
-CONDUIT_BEGIN(aries,yes,[Cray XC Aries conduit (aries)])
-CONDUIT_DISALLOW_SEGMENT(everything)
-if test "$enabled_aries" = yes; then
-  GASNET_CHECK_GNI(Aries)
 fi
 CONDUIT_END([test "$enabled_aries$have_aries" = yesyes])
 AM_CONDITIONAL(USE_ARIES_CONDUIT, test "$enabled_aries$have_aries" = yesyes)
@@ -3863,6 +3929,9 @@ AC_SUBST(PAMI_LDFLAGS)
 AC_SUBST(PAMI_LIBS)
 CONDUIT_END([test "$enabled_pami$have_pami" = yesyes])
 AM_CONDITIONAL(USE_PAMI_CONDUIT, test "$enabled_pami$have_pami" = yesyes)
+if test "$enabled_pami$have_pami" = yesyes; then
+  GASNET_MSG_WARN([pami-conduit has been deprecated.  Please see the pami-conduit README for more information.])
+fi
 
 #--------------------------------------------------------------------------------------------------------
 # Libfabric Conduit
@@ -4036,8 +4105,8 @@ EOF
 # Order native conduits from LOW to HIGH precedence, clients use order to select defaults
 
 CONDUIT_OUTPUT(pami)    dnl Ensure pami-over-ib is lower than ibv
+CONDUIT_OUTPUT(ucx)
 CONDUIT_OUTPUT(ibv)
-CONDUIT_OUTPUT(gemini)
 CONDUIT_OUTPUT(aries)
 
 #--------------------------------------------------------------------------------------------------------
@@ -4725,7 +4794,7 @@ if test "$HAVE_MMAP" != "0" ; then
      [ #include <sys/mman.h> ],[ void *junk = mmap(0, 0, 0, MAP_ANON, 0, 0); ],
      [ AC_DEFINE(HAVE_MAP_ANON) ] )
 dnl GASNET_TOOLSONLY_FALSE_BEGIN
-  GASNET_IF_ENABLED(bug3480-workaround,[See Aries or Gemini conduit's README],[
+  GASNET_IF_ENABLED(bug3480-workaround,[See Aries conduit README],[
       AC_DEFINE(GASNETI_BUG3480_WORKAROUND)
       if test "$GASNETI_DISABLE_ALIGNED_SEGMENTS" != 1 && \
          test "$segconfig" != everything; then
@@ -5039,7 +5108,6 @@ dnl GASNET_TOOLSONLY_FALSE_END
 GASNET_FIX_EXEC(mpi-conduit/contrib/gasnetrun_mpi)
 GASNET_FIX_EXEC(ibv-conduit/contrib/gasnetrun_ibv)
 GASNET_FIX_EXEC(pami-conduit/contrib/gasnetrun_pami)
-GASNET_FIX_EXEC(gemini-conduit/contrib/gasnetrun_gemini)
 GASNET_FIX_EXEC(aries-conduit/contrib/gasnetrun_aries)
 GASNET_FIX_EXEC(ofi-conduit/contrib/gasnetrun_ofi)
 GASNET_FIX_EXEC(other/contrib/gasnet_trace)
@@ -5141,10 +5209,8 @@ ibv-conduit/conduit.mak
 ibv-conduit/contrib/Makefile
 ibv-conduit/contrib/gasnetrun_ibv
 
-gemini-conduit/Makefile
-gemini-conduit/conduit.mak
-gemini-conduit/contrib/Makefile
-gemini-conduit/contrib/gasnetrun_gemini
+ucx-conduit/Makefile
+ucx-conduit/conduit.mak
 
 aries-conduit/Makefile
 aries-conduit/conduit.mak

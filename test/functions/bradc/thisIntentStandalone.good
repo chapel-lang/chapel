@@ -1,2 +1,2 @@
 thisIntentStandalone.chpl:7: error: 'this' intents can only be applied to methods
-thisIntentStandalone.chpl:11: error: 'this' intents can only be applied to methods
+thisIntentStandalone.chpl:11: error: Missing type for secondary type method

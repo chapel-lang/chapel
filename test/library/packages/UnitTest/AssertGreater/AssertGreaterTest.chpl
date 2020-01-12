@@ -25,23 +25,23 @@ proc main() {
 }
 
 proc ArrayOthers() {
-  
+
   var x1 : [1..5,1..7,1..6] real;
   var y1 : [{1..5,1..7}] real;
   testAssert(x1,y1,"Array Others Diff Dim");
-  
+
   var x2 = [1,2,5];
   var y2 = [1,2,5];
   testAssert(x2,y2,"Array Others Equal 1D");
-  
+
   var x3 : [1..5,1..7] real;
   var y3 : [{1..5,1..7}] real;
   testAssert(x3,y3,"Array Others Equal High Dim");
-  
+
   var x4 : [1..5,1..7] real;
   var y4 : [{1..7,1..5}] int;
   testAssert(x4,y4,"Array Others Diff Shape High Dim");
-  
+
   var x5 = [1,7,6,5,8];
   var y5 = [1,7,6];
   testAssert(x5,y5,"Array Others Diff Shape 1D");
@@ -113,7 +113,7 @@ proc NotGreaterString() {
   var x = "Just a string";
   var y = "Just a string with space";
   testAssert(x,y,"Unequal length String");
-  
+
   x = "unequalString";
   y = "unequalstring";
   testAssert(x,y,"Equal Strings");

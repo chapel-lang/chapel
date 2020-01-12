@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2019 Cray Inc.
+ * Copyright 2004-2020 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -39,6 +39,7 @@
   #include <string>
   int         captureTokens;
   std::string captureString;
+  bool        parsingPrivate=false;
 }
 
 // It would be better if Flex could generate these for itself
@@ -79,6 +80,7 @@
   class EnumType;
   class Expr;
   class FnSymbol;
+  class NamedExpr;
   class Type;
 
   enum   ProcIter {
@@ -294,6 +296,7 @@
 // identifiers and literals
 //
 %token <pch> TIDENT
+%token <pch> TQUERIEDIDENT
 %token <pch> INTLITERAL
 %token <pch> REALLITERAL
 %token <pch> IMAGLITERAL
@@ -475,6 +478,7 @@
 %type <pdefexpr> formal enum_item
 %type <pexpr> query_expr
 
+%type <pcallexpr> new_maybe_decorated
 %type <pcallexpr> opt_inherit simple_expr_ls expr_ls assoc_expr_ls tuple_expr_ls
 %type <pcallexpr> opt_actual_ls actual_ls
 %type <pcallexpr> opt_task_intent_ls task_intent_ls task_intent_clause
@@ -650,8 +654,8 @@ except_ls:
 ;
 
 use_access_control:
-        { $$ = false; } // public
-| TPUBLIC { $$ = false; } // public
+           { $$ = (currentModuleType != MOD_INTERNAL ? true : false); } // private | public
+| TPUBLIC  { $$ = false; } // public
 | TPRIVATE { $$ = true; } // private
 ;
 
@@ -782,7 +786,17 @@ class_level_stmt:
   TSEMI                 { $$ = buildChapelStmt(new BlockStmt()); }
 | private_decl
 | TPUBLIC private_decl  { $$ = $2; }
-| TPRIVATE private_decl { applyPrivateToBlock($2); $$ = $2; }
+/* the following rule saves the current state of `parsingPrivate`,
+   then sets it to true when parsing the `private_decl` rule; it then
+   restores the original value before completing.  Note that this is
+   not sufficient to reason about nestings of public and private
+   declarations, but that the current use of `parsingPrivate` (to
+   distinguish private configs) does not require that.  For such
+   cases, we'd need to do similar save/set-to-false/restore actions in
+   the public rules above, but doing this in the most straightforward
+   way results in conflicts. */
+| TPRIVATE { $<b>$ = parsingPrivate; parsingPrivate=true;}
+    private_decl { parsingPrivate=$<b>2; applyPrivateToBlock($3); $$ = $3; }
 ;
 
 private_decl:
@@ -1400,8 +1414,12 @@ function_body_stmt:
 ;
 
 query_expr:
-  TQUESTION ident_def
-    { $$ = new DefExpr(new VarSymbol($2)); }
+  TQUESTION ident_def { 
+      DefExpr * de = new DefExpr(new VarSymbol($2));
+      USR_WARN(de, "support for space in query expressions is deprecated");
+      $$ = de;
+  }
+| TQUERIEDIDENT       { $$ = buildQueriedExpr($1); }
 ;
 
 var_arg_expr:
@@ -1926,9 +1944,66 @@ io_expr:
     { $$ = new CallExpr("<~>", $1, $3); }
 ;
 
+new_maybe_decorated:
+  TNEW         %prec TNOELSE
+    { $$ = new CallExpr(PRIM_NEW); }
+| TNEW TOWNED
+    { $$ = new CallExpr(PRIM_NEW,
+                        new NamedExpr(astr_chpl_manager,
+                                      new SymExpr(dtOwned->symbol))); }
+| TNEW TSHARED
+    { $$ = new CallExpr(PRIM_NEW,
+                        new NamedExpr(astr_chpl_manager,
+                                      new SymExpr(dtShared->symbol))); }
+| TNEW TUNMANAGED
+    { $$ = new CallExpr(PRIM_NEW,
+                        new NamedExpr(astr_chpl_manager,
+                                      new SymExpr(dtUnmanaged->symbol))); }
+| TNEW TBORROWED
+    { $$ = new CallExpr(PRIM_NEW,
+                        new NamedExpr(astr_chpl_manager,
+                                      new SymExpr(dtBorrowed->symbol))); }
+;
+
 new_expr:
-  TNEW expr
-    { $$ = new CallExpr(PRIM_NEW, $2); }
+  /* handles the typical new cases, e.g. new C(); new owned C() */
+  new_maybe_decorated expr %prec TNEW
+    { $1->insertAtTail($2);
+      $$ = $1; }
+
+  /* handles e.g. new (typefn())(initargs) */
+| TNEW TOWNED TLP expr TRP TLP opt_actual_ls TRP %prec TNOELSE
+    { $$ = new CallExpr(PRIM_NEW,
+                        new NamedExpr(astr_chpl_manager,
+                                      new SymExpr(dtOwned->symbol)),
+                        new CallExpr($4, $7));
+    }
+| TNEW TSHARED TLP expr TRP TLP opt_actual_ls TRP %prec TNOELSE
+    { $$ = new CallExpr(PRIM_NEW,
+                        new NamedExpr(astr_chpl_manager,
+                                      new SymExpr(dtShared->symbol)),
+                        new CallExpr($4, $7));
+    }
+| TNEW TOWNED TLP expr TRP TLP opt_actual_ls TRP TQUESTION
+    { $$ = new CallExpr(PRIM_NEW,
+                        new NamedExpr(astr_chpl_manager,
+                                      new SymExpr(dtOwned->symbol)),
+                        new CallExpr(PRIM_TO_NILABLE_CLASS_CHECKED,
+                                     new CallExpr($4, $7)));
+    }
+| TNEW TSHARED TLP expr TRP TLP opt_actual_ls TRP TQUESTION
+    { $$ = new CallExpr(PRIM_NEW,
+                        new NamedExpr(astr_chpl_manager,
+                                      new SymExpr(dtShared->symbol)),
+                        new CallExpr(PRIM_TO_NILABLE_CLASS_CHECKED,
+                                     new CallExpr($4, $7)));
+    }
+
+  /* handles e.g. new owned(myUnmanaged) */
+| TNEW TOWNED TLP expr TRP
+    { $$ = new CallExpr(PRIM_NEW, new CallExpr(dtOwned->symbol, $4)); }
+| TNEW TSHARED TLP expr TRP
+    { $$ = new CallExpr(PRIM_NEW, new CallExpr(dtShared->symbol, $4)); }
 ;
 
 let_expr:

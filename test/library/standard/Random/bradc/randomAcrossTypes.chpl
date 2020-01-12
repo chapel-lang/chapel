@@ -17,9 +17,9 @@ writeln(A);
 writeln(B);
 writeln(C);
 
-var rs1 = makeRandomStream(seed=314159265, eltType=real, algorithm=rtype);
-var rs2 = makeRandomStream(seed=314159265, eltType=imag, algorithm=rtype);
-var rs3 = makeRandomStream(seed=314159265, eltType=complex, algorithm=rtype);
+var rs1 = createRandomStream(seed=314159265, eltType=real, algorithm=rtype);
+var rs2 = createRandomStream(seed=314159265, eltType=imag, algorithm=rtype);
+var rs3 = createRandomStream(seed=314159265, eltType=complex, algorithm=rtype);
 
 //
 // Check fillRandom method
@@ -31,9 +31,9 @@ writeln(A);
 writeln(B);
 writeln(C);
 
-var rs4 = makeRandomStream(seed=314159265, eltType=real, algorithm=rtype);
-var rs5 = makeRandomStream(seed=314159265, eltType=imag, algorithm=rtype);
-var rs6 = makeRandomStream(seed=314159265, eltType=complex, algorithm=rtype);
+var rs4 = createRandomStream(seed=314159265, eltType=real, algorithm=rtype);
+var rs5 = createRandomStream(seed=314159265, eltType=imag, algorithm=rtype);
+var rs6 = createRandomStream(seed=314159265, eltType=complex, algorithm=rtype);
 
 //
 // Check consecutive implementations of fillRandom method()
@@ -79,9 +79,9 @@ writeln(A);
 writeln(B);
 writeln(C);
 
-var rs7 = makeRandomStream(seed=314159265, eltType=real, algorithm=rtype);
-var rs8 = makeRandomStream(seed=314159265, eltType=imag, algorithm=rtype);
-var rs9 = makeRandomStream(seed=314159265, eltType=complex, algorithm=rtype);
+var rs7 = createRandomStream(seed=314159265, eltType=real, algorithm=rtype);
+var rs8 = createRandomStream(seed=314159265, eltType=imag, algorithm=rtype);
+var rs9 = createRandomStream(seed=314159265, eltType=complex, algorithm=rtype);
 //
 // Check getNext() method
 //

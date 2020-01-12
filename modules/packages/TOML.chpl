@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2019 Cray Inc.
+ * Copyright 2004-2020 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -36,8 +36,9 @@ module TOML {
 
 private use List;
 private use Map;
-use TomlParser;
+public use TomlParser;
 private use TomlReader;
+use IO;
 
 
 /* Receives a TOML file as a parameter and outputs a Toml object.
@@ -804,7 +805,7 @@ used to recursively hold tables and respective values
 
 
     /* Write a Table to channel f in TOML format */
-    override proc writeThis(f) {
+    override proc writeThis(f) throws {
       writeTOML(f);
     }
 
@@ -1293,7 +1294,7 @@ module TomlReader {
       }
     }
 
-    proc readWriteThis(f) {
+    proc readWriteThis(f) throws {
       // TODO: The `list` type currently doesn't support readWriteThis!
       f <~> this.A.toArray();
     }

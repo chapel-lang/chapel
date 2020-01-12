@@ -95,6 +95,8 @@ module analyze_RMAT_graph_associative_array {
       // there is another edge v1->v2, possibly with a different weight.
       //
       proc RemoveDuplicates(lo, inout hi) {
+        use IO;
+
         param showArrays = false;  // beware of 'local' in the caller
         const style = new iostyle(min_width_columns = 3);
         if showArrays {

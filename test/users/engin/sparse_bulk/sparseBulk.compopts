@@ -1,2 +1,3 @@
--slayoutType=CS
--slayoutType=DefaultDist
+-slayoutType=layoutTypes.coo
+-slayoutType=layoutTypes.csr
+-slayoutType=layoutTypes.csc

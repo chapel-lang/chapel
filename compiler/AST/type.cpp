@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2019 Cray Inc.
+ * Copyright 2004-2020 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -569,6 +569,7 @@ static VarSymbol*     createSymbol(PrimitiveType* primType, const char* name);
 //  well as internal types and other types used in the generated code
 void initPrimitiveTypes() {
   dtVoid                               = createInternalType("void", "void");
+  dtVoid->symbol->addFlag(FLAG_NO_RENAME);
   dtNothing                            = createInternalType ("nothing",  "nothing");
 
   dtBools[BOOL_SIZE_SYS]               = createPrimitiveType("bool",     "chpl_bool");
@@ -576,16 +577,25 @@ void initPrimitiveTypes() {
   dtReal[FLOAT_SIZE_64]                = createPrimitiveType("real",     "_real64");
 
   dtStringC                            = createPrimitiveType("c_string", "c_string" );
+  dtStringC->symbol->addFlag(FLAG_NO_CODEGEN);
+
+  dtObject                             = new AggregateType(AGGREGATE_CLASS);
+  dtObject->symbol                     = new TypeSymbol("object", dtObject);
 
   dtBytes                              = new AggregateType(AGGREGATE_RECORD);
   dtBytes->symbol                      = new TypeSymbol("bytes", dtBytes);
 
   dtString                             = new AggregateType(AGGREGATE_RECORD);
   dtString->symbol                     = new TypeSymbol("string", dtString);
-  dtStringC->symbol->addFlag(FLAG_NO_CODEGEN);
 
   dtLocale                             = new AggregateType(AGGREGATE_RECORD);
   dtLocale->symbol                     = new TypeSymbol("locale", dtLocale);
+
+  dtOwned                              = new AggregateType(AGGREGATE_RECORD);
+  dtOwned->symbol                      = new TypeSymbol("_owned", dtOwned);
+
+  dtShared                             = new AggregateType(AGGREGATE_RECORD);
+  dtShared->symbol                     = new TypeSymbol("_shared", dtShared);
 
   gFalse                               = createSymbol(dtBools[BOOL_SIZE_SYS], "false");
   gTrue                                = createSymbol(dtBools[BOOL_SIZE_SYS], "true");
@@ -612,13 +622,17 @@ void initPrimitiveTypes() {
   uniqueConstantsHash.put(gTrue->immediate,  gTrue);
 
   dtNil = createInternalType ("_nilType", "_nilType");
+  dtNil->symbol->addFlag(FLAG_NO_RENAME);
   CREATE_DEFAULT_SYMBOL (dtNil, gNil, "nil");
+  gNil->addFlag(FLAG_NO_RENAME);
 
   // dtStringC defaults to nil
   dtStringC->defaultValue = gNil;
 
   // This type should not be visible past normalize.
   CREATE_DEFAULT_SYMBOL (dtVoid, gNoInit, "_gnoinit");
+
+  CREATE_DEFAULT_SYMBOL (dtVoid, gSplitInit, "_gsplitinit");
 
   dtUnknown = createInternalType ("_unknown", "_unknown");
   CREATE_DEFAULT_SYMBOL (dtUnknown, gUnknown, "_gunknown");
@@ -795,7 +809,9 @@ void initPrimitiveTypes() {
 }
 
 static PrimitiveType* createPrimitiveType(const char* name, const char* cname) {
-  return createType(name, cname, false);
+  PrimitiveType* newType = createType(name, cname, false);
+  newType->symbol->addFlag(FLAG_NO_RENAME);
+  return newType;
 }
 
 static PrimitiveType* createInternalType(const char* name, const char* cname) {
@@ -833,7 +849,7 @@ static VarSymbol* createSymbol(PrimitiveType* primType, const char* name) {
 *                                                                             *
 ************************************** | *************************************/
 
-void initChplProgram(DefExpr* objectDef) {
+void initChplProgram() {
   theProgram           = new ModuleSymbol("chpl__Program",
                                           MOD_INTERNAL,
                                           new BlockStmt());
@@ -841,8 +857,6 @@ void initChplProgram(DefExpr* objectDef) {
   theProgram->filename = astr("<internal>");
 
   theProgram->addFlag(FLAG_NO_CODEGEN);
-
-  theProgram->block->insertAtHead(objectDef);
 
   rootModule->block->insertAtTail(new DefExpr(theProgram));
 }
@@ -1519,7 +1533,10 @@ bool isPrimitiveScalar(Type* type) {
       type == dtReal[FLOAT_SIZE_64]        ||
 
       type == dtImag[FLOAT_SIZE_32]        ||
-      type == dtImag[FLOAT_SIZE_64]) {
+      type == dtImag[FLOAT_SIZE_64]        ||
+
+      type == dtComplex[COMPLEX_SIZE_64]   ||
+      type == dtComplex[COMPLEX_SIZE_128]) {
 
     retval = true;
 

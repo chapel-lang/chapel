@@ -7,7 +7,7 @@ class Helper {
 }
 
 record Foo {
-  var h : unmanaged Helper?;
+  var h : unmanaged Helper;
   inline proc ranges {
     return h.x;
   }
@@ -17,9 +17,7 @@ record Foo {
   }
 
   proc type chpl__deserialize(data) {
-    var f : Foo;
-    f.h = new unmanaged Helper(data);
-    return f;
+    return new Foo(new unmanaged Helper(data));
   }
 
   proc deinit() {

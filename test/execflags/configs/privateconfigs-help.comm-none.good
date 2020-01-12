@@ -1,0 +1,72 @@
+
+FLAGS:
+======
+  -h, --help            : print this message
+  -a, --about           : print compilation information
+  -nl <n>               : run program using n locales
+                          (equivalent to setting the numLocales config const)
+  -q, --quiet           : run program in quiet mode
+  -v, --verbose         : run program in verbose mode
+  -b, --blockreport     : report location of blocked threads on SIGINT
+  -t, --taskreport      : report list of pending and executing tasks on SIGINT
+  --gdb                 : run program in gdb
+  -E<envVar>=<val>      : set the value of an environment variable
+
+CONFIG VAR FLAGS:
+=================
+  -s, --<cfgVar>=<val>  : set the value of a config var
+  -f<filename>          : read in a file of config var assignments
+
+CONFIG VARS:
+============
+Built-in config vars:
+       printModuleInitOrder: bool
+      dataParTasksPerLocale: int(64)
+  dataParIgnoreRunningTasks: bool
+      dataParMinGranularity: int(64)
+                   memTrack: bool
+                   memStats: bool
+             memLeaksByType: bool
+                   memLeaks: bool
+                     memMax: uint(64)
+               memThreshold: uint(64)
+                     memLog: string
+                memLeaksLog: string
+             memLeaksByDesc: string
+                 numLocales: int(64)
+
+M1 config vars:
+                        aaa: int(64)
+                        bbb: int(64) (private)
+                        ccc: int(64) (private)
+                        ddd: int(64) (private)
+                        eee: int(64) (private)
+                        fff: int(64)
+                        ggg: int(64) (private)
+
+M2 config vars:
+                        aaa: int(64) (private)
+                        bbb: int(64)
+                        ccc: int(64) (private)
+                        ddd: int(64) (private)
+                        eee: int(64) (private)
+                        fff: int(64) (private)
+                        ggg: int(64)
+
+M3 config vars:
+                        aaa: int(64) (private)
+                        bbb: int(64) (private)
+                        ccc: int(64)
+                        ddd: int(64) (private)
+                        eee: int(64) (private)
+                        fff: int(64)
+                        ggg: int(64) (private)
+
+M4 config vars:
+                        aaa: int(64) (private)
+                        bbb: int(64) (private)
+                        ccc: int(64) (private)
+                        ddd: int(64)
+                        eee: int(64) (private)
+                        fff: int(64) (private)
+                        ggg: int(64)

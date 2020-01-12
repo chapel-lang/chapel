@@ -1121,9 +1121,9 @@ static void test_yield_if_polite(void) {
   if (_test_in_polite_mode) gasnett_sched_yield();
 }
 
-static void _test_set_waitmode(int threads) {
+static void _test_set_waitmode(int threads, int reserve_cores) {
   const int local_procs = TEST_LOCALPROCS();
-  if (gasnett_getenv_yesno_withdefault("GASNET_TEST_POLITE_SYNC",0)) return;
+  if (gasnett_getenv_yesno_withdefault("GASNET_TEST_POLITE_SYNC",0)) return; // already set
 #if TEST_PAR
   if (threads > 1) {
     int threads_serialized = 0;
@@ -1148,17 +1148,25 @@ static void _test_set_waitmode(int threads) {
   /* assume no overcommit, since gasnett_cpu_count() reports cores per proc, NOT per node */
 #else
   threads *= local_procs;
-  if (threads > gasnett_cpu_count()) {
-    if (_test_firstnode == TEST_MYPROC)
-      MSG("WARNING: per-node thread count (%i) exceeds actual cpu count (%i) "
+  if (threads + reserve_cores > gasnett_cpu_count()) {
+    if (_test_firstnode == TEST_MYPROC) {
+      char reserve[80];
+      if (reserve_cores) sprintf(reserve, " + %i reserved cores", reserve_cores);
+      else reserve[0] = 0;
+      MSG("WARNING: per-node thread count (%i%s) exceeds actual cpu count (%i) "
           "- enabling  \"polite\", low-performance synchronization algorithms",
-          threads, gasnett_cpu_count());
+          threads, reserve, gasnett_cpu_count());
+    }
     gasnet_set_waitmode(GASNET_WAIT_BLOCK);
     _test_in_polite_mode = 1;
   }
 #endif
 }
-#define TEST_SET_WAITMODE _test_set_waitmode
+// Compute whether `th` (single-valued) threads per process for the current host
+// would lead to overcommit, and set waitmode appropriately.
+// The second variant reserves additional cores to leave idle, eg for system daemons
+#define TEST_SET_WAITMODE(th) _test_set_waitmode(th,0)
+#define TEST_SET_WAITMODE_RESERVE(th,reserve) _test_set_waitmode(th,reserve)
 
 #endif /* TEST_GASNETEX_H */
 /* ------------------------------------------------------------------------------------ */

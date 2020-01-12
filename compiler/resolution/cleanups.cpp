@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2019 Cray Inc.
+ * Copyright 2004-2020 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -59,7 +59,7 @@ static void removeUnusedFunctions() {
   std::vector<FnSymbol*> fns = getWellKnownFunctions();
 
   for_vector(FnSymbol, fn, fns) {
-    INT_ASSERT(fn->hasFlag(FLAG_GENERIC) == false);
+    INT_ASSERT(! fn->isGeneric());
 
     concreteWellKnownFunctionsSet.insert(fn);
   }
@@ -172,23 +172,6 @@ static void removeRandomPrimitive(CallExpr* call) {
       if (sym->hasFlag(FLAG_TYPE_VARIABLE) ||
           sym->isParameter())
         call->getStmtExpr()->remove();
-    }
-    break;
-
-    // Maybe this can be pushed into the following case, where a PRIM_MOVE gets
-    // removed if its rhs is a type symbol.  That is, resolution of a
-    // PRIM_TYPE_INIT replaces the primitive with symexpr that contains a type symbol.
-    case PRIM_TYPE_INIT:
-    {
-      // A "type init" call that is in the tree should always have a callExpr
-      // parent, as guaranteed by CallExpr::verify().
-      CallExpr* parent = toCallExpr(call->parentExpr);
-      // We expect all PRIM_TYPE_INIT primitives to have a PRIM_MOVE
-      // parent, following the insertion of call temps.
-      if (parent->isPrimitive(PRIM_MOVE))
-        parent->remove();
-      else
-        INT_FATAL(parent, "expected parent of PRIM_TYPE_EXPR to be a PRIM_MOVE");
     }
     break;
 

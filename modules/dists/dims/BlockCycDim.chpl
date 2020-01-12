@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2019 Cray Inc.
+ * Copyright 2004-2020 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -714,7 +714,7 @@ proc BlockCyclic1locdom.dsiMyDensifiedRangeForTaskID1d(globDD, taskid:int, numTa
   const hereDenseInds = 0:resultIdxType..#wholeR.length by nLocs align AL;
 
   // This is our chunk of hereDenseInds
-  return chunk(hereDenseInds, numTasks, taskid);
+  return RangeChunk.chunk(hereDenseInds, numTasks, taskid);
 }
 
 proc BlockCyclic1locdom.dsiMyDensifiedRangeType1d(globDD) type

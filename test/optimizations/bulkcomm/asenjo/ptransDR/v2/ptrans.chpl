@@ -5,7 +5,7 @@ Rows to columns communications are implemented a la MPI:
 explicit Data[localeA].DR[slicedest]=Data[localeB].DR[sliceSource]
 */
 
-use BlockDist;
+public use BlockDist;
 use util;
 
 config const n=2, m=4: int;

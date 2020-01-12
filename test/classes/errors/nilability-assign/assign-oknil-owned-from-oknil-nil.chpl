@@ -2,7 +2,7 @@
 
 class MyClass {  var x: int;  }
 
-var lhs: owned MyClass?;
+var lhs: owned MyClass? = nil;
 
 
 lhs = nil;

@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2019 Cray Inc.
+ * Copyright 2004-2020 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -101,7 +101,7 @@ static void codegenCall(const char* fnName, GenRet a1, GenRet a2, GenRet a3);
 //static void codegenCallNotValues(const char* fnName, GenRet a1, GenRet a2, GenRet a3);
 static void codegenCall(const char* fnName, GenRet a1, GenRet a2, GenRet a3, GenRet a4);
 static void codegenCall(const char* fnName, GenRet a1, GenRet a2, GenRet a3, GenRet a4, GenRet a5);
-//static void codegenCall(const char* fnName, GenRet a1, GenRet a2, GenRet a3, GenRet a4, GenRet a5, GenRet a6);
+static void codegenCall(const char* fnName, GenRet a1, GenRet a2, GenRet a3, GenRet a4, GenRet a5, GenRet a6);
 
 static GenRet codegenZero();
 static GenRet codegenZero32();
@@ -2802,7 +2802,7 @@ void codegenCall(const char* fnName, GenRet a1, GenRet a2, GenRet a3,
   args.push_back(a5);
   codegenCall(fnName, args);
 }
-/*
+
 static
 void codegenCall(const char* fnName, GenRet a1, GenRet a2, GenRet a3,
                  GenRet a4, GenRet a5, GenRet a6)
@@ -2816,7 +2816,7 @@ void codegenCall(const char* fnName, GenRet a1, GenRet a2, GenRet a3,
   args.push_back(a6);
   codegenCall(fnName, args);
 }
-*/
+
 static
 void codegenCall(const char* fnName, GenRet a1, GenRet a2, GenRet a3,
                  GenRet a4, GenRet a5, GenRet a6, GenRet a7)
@@ -4248,13 +4248,6 @@ DEFINE_PRIM(PRIM_ASSIGN) {
   codegenAssign(lg, rg);
 }
 
-static bool commUnorderedOpsAvailable(Type* elementType) {
-  if (0 == strcmp(CHPL_COMM, "ugni")) {
-    return true;
-  }
-  return false;
-}
-
 DEFINE_PRIM(PRIM_UNORDERED_ASSIGN) {
 
   Expr* lhsExpr = call->get(1);
@@ -4262,9 +4255,8 @@ DEFINE_PRIM(PRIM_UNORDERED_ASSIGN) {
   bool lhsWide = lhsExpr->isWideRef();
   bool rhsWide = rhsExpr->isWideRef();
 
-  // Unordered ops not supported or both sides are narrow, do a normal assign
-  Type* elementType = lhsExpr->getValType();
-  if (!commUnorderedOpsAvailable(elementType) || (!lhsWide && !rhsWide)) {
+  // Both sides are narrow, do a normal assign
+  if (!lhsWide && !rhsWide) {
     FORWARD_PRIM(PRIM_ASSIGN);
     return;
   }
@@ -4280,7 +4272,7 @@ DEFINE_PRIM(PRIM_UNORDERED_ASSIGN) {
 
   if (!lhsWide && rhsWide) {
     // do an unordered GET
-    // chpl_comm_get_unordered(void *dst,
+    // chpl_gen_comm_get_unordered(void *dst,
     //   c_nodeid_t src_locale, void* src_raddr,
     //   size_t size, int32_t commID,
     //   int ln, int32_t fn);
@@ -4289,7 +4281,7 @@ DEFINE_PRIM(PRIM_UNORDERED_ASSIGN) {
     if (dstRef)
       dst = codegenDeref(dst);
 
-    codegenCall("chpl_comm_get_unordered",
+    codegenCall("chpl_gen_comm_get_unordered",
                 codegenCastToVoidStar(codegenAddrOf(dst)),
                 codegenRnode(src),
                 codegenRaddr(src),
@@ -4298,7 +4290,7 @@ DEFINE_PRIM(PRIM_UNORDERED_ASSIGN) {
                 ln, fn);
   } else if (lhsWide && !rhsWide) {
     // do an unordered PUT
-    // chpl_comm_put_unordered(void *src,
+    // chpl_gen_comm_put_unordered(void *src,
     //   c_nodeid_t dst_locale, void* dst_raddr,
     //   size_t size, int32_t commID,
     //   int ln, int32_t fn);
@@ -4307,7 +4299,7 @@ DEFINE_PRIM(PRIM_UNORDERED_ASSIGN) {
     if (srcRef)
       src = codegenDeref(src);
 
-    codegenCall("chpl_comm_put_unordered",
+    codegenCall("chpl_gen_comm_put_unordered",
                 codegenCastToVoidStar(codegenAddrOf(src)),
                 codegenRnode(dst),
                 codegenRaddr(dst),
@@ -4321,7 +4313,7 @@ DEFINE_PRIM(PRIM_UNORDERED_ASSIGN) {
     //   c_nodeid_t src_locale, void* src_raddr,
     //   size_t size, int32_t commID,
     //   int ln, int32_t fn);
-    codegenCall("chpl_comm_getput_unordered",
+    codegenCall("chpl_gen_comm_getput_unordered",
                 codegenRnode(dst),
                 codegenRaddr(dst),
                 codegenRnode(src),
@@ -4774,6 +4766,7 @@ DEFINE_PRIM(PRIM_CHPL_COMM_REMOTE_PREFETCH) {
                 locale,
                 remoteAddr,
                 len,
+                genCommID(gGenInfo),
                 call->get(4),
                 call->get(5));
 }

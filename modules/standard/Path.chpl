@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2019 Cray Inc.
+ * Copyright 2004-2020 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -65,7 +65,7 @@
 module Path {
 
 private use List;
-use SysError;
+use SysError, IO;
 private use Sys;
 
 /* Represents generally the current directory. This starts as the directory
@@ -358,7 +358,9 @@ proc dirname(name: string): string {
            if (h != 1) {
              value = "${" + env_var + "}";
            } else {
-             value = value_c: string;
+             try! {
+               value = createStringWithNewBuffer(value_c);
+             }
            }
            res += value;
          }
@@ -375,7 +377,9 @@ proc dirname(name: string): string {
          if (h != 1) {
            value = "$" + env_var;
          } else {
-           value = value_c: string;
+           try! {
+             value = createStringWithNewBuffer(value_c);
+           }
          }
          res += value;
          if (ind <= path_p.numBytes) {

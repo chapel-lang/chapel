@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2019 Cray Inc.
+ * Copyright 2004-2020 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -24,6 +24,7 @@
 #include "callInfo.h"
 #include "expr.h"
 #include "PartialCopyData.h"
+#include "passes.h"
 #include "resolution.h"
 #include "stlUtil.h"
 #include "stmt.h"
@@ -200,7 +201,7 @@ static void expandVarArgsFixed(FnSymbol* fn, CallInfo& info) {
           expandVarArgsFormal(fn, formal, varArgsCount(formal, nVar));
         }
 
-      } else if (fn->hasFlag(FLAG_GENERIC) == false) {
+      } else if (! fn->isGeneric()) {
         INT_FATAL("bad variableExpr");
       }
 

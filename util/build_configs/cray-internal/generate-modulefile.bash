@@ -153,9 +153,6 @@ if { [string match cray-shasta $CHPL_HOST_PLATFORM] } {
         module swap PrgEnv-pgi PrgEnv-gnu
     }
 
-    # The cray-libsci module is loading hugepages, which we don't want (yet).
-    module unload cray-libsci
-
     # Some libraries are not yet available in static form.
     setenv CRAYPE_LINK_TYPE dynamic
 

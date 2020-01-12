@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2019 Cray Inc.
+ * Copyright 2004-2020 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -98,6 +98,8 @@ module List {
       lock$.unlock();
     }
   }
+
+  private use IO;
 
   /*
     A list is a lightweight container suitable for building up and iterating
@@ -1357,7 +1359,7 @@ module List {
 
       :arg ch: A channel to write to.
     */
-    proc readWriteThis(ch: channel) {
+    proc readWriteThis(ch: channel) throws {
       _enter();
       
       ch <~> "[";

@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2019 Cray Inc.
+ * Copyright 2004-2020 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -153,6 +153,7 @@ class CSDom: BaseSparseDomImpl {
 
   proc dsiAssignDomain(rhs: domain, lhsPrivate:bool) {
     if _to_borrowed(rhs._instance.type) == this.type && this.dsiNumIndices == 0 {
+      // Optimized CSC->CSC / CSR->CSR
 
       // ENGIN: We cannot use bulkGrow here, because rhs might be grown using
       // grow, which has a different heuristic to grow the internal arrays.
@@ -163,8 +164,14 @@ class CSDom: BaseSparseDomImpl {
 
       this.startIdx = rhs.startIdx;
       this.idx = rhs.idx;
-    }
-    else {
+    } else if _to_borrowed(rhs._instance.type) < DefaultSparseDom {
+      // Optimized COO -> CSR/CSC
+
+      // Note: only COO->CSR can take advantage of COO having sorted indices
+      this.dsiBulkAdd(rhs._instance.indices[rhs.nnzDom.low..#rhs._nnz],
+                      dataSorted=this.compressRows, isUnique=true);
+    } else {
+      // Unoptimized generic case
       chpl_assignDomainWithIndsIterSafeForRemoving(this, rhs);
     }
   }
@@ -211,7 +218,7 @@ class CSDom: BaseSparseDomImpl {
     if numChunks == 1 then
       yield (this, 1, numElems);
     else
-      coforall chunk in chunks(1..numElems, numChunks) do
+      coforall chunk in RangeChunk.chunks(1..numElems, numChunks) do
         yield (this, chunk.first, chunk.last);
     // TODO: to handle large numElems and numChunks faster, it would be great
     // to run the binary search in _private_findStart smarter, e.g.

@@ -10,8 +10,8 @@ module FileHashing {
     /* Help `writeln` and other calls output SHA256Hash value
        in a good format.
        */
-    // Note, this ought to be throws, see issue #7261
-    proc writeThis(f) {
+
+    proc writeThis(f) throws {
       for component in hash {
         var s = try! "%08xu".format(component);
         f <~> s;
@@ -80,6 +80,7 @@ module FileHashing {
      May throw an error if the file could not be openned, for example.
    */
   proc computeFileHash(path: string): SHA256Hash throws {
+    use IO;
     use SHA256Implementation;
 
     var f = open(path, iomode.r);

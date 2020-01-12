@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2019 Cray Inc.
+ * Copyright 2004-2020 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -21,6 +21,7 @@
 #define __STDC_FORMAT_MACROS
 #endif
 
+#include "encoding-support.h"
 #include "symbol.h"
 
 #include "AstToText.h"
@@ -33,6 +34,7 @@
 #include "resolveIntents.h"
 #include "resolution.h"
 #include "stringutil.h"
+#include "wellknown.h"
 
 #include <algorithm>
 
@@ -47,6 +49,7 @@ Symbol *gTypeDefaultToken = NULL;
 Symbol *gLeaderTag = NULL, *gFollowerTag = NULL, *gStandaloneTag = NULL;
 Symbol *gModuleToken = NULL;
 Symbol *gNoInit = NULL;
+Symbol *gSplitInit = NULL;
 Symbol *gVoid = NULL;
 Symbol *gNone = NULL;
 Symbol *gFile = NULL;
@@ -209,7 +212,15 @@ bool Symbol::isParameter() const {
 }
 
 bool Symbol::isRenameable() const {
-  return !(hasFlag(FLAG_EXPORT) || hasFlag(FLAG_EXTERN));
+  // we can't rename symbols that we're exporting or that are extern
+  // because the other language will require the name to be as specified.
+  // and we can't rename symbols that say not to.
+  if (hasFlag(FLAG_EXPORT) ||
+      hasFlag(FLAG_EXTERN) ||
+      hasFlag(FLAG_NO_RENAME)) {
+    return false;
+  }
+  return true;
 }
 
 bool Symbol::isRef() {
@@ -258,6 +269,13 @@ void Symbol::removeFlag(Flag flag) {
 
 bool Symbol::hasEitherFlag(Flag aflag, Flag bflag) const {
   return hasFlag(aflag) || hasFlag(bflag);
+}
+
+bool Symbol::isKnownToBeGeneric() {
+  if (FnSymbol* fn = toFnSymbol(this))
+    return fn->isGenericIsValid() && fn->isGeneric();
+  else
+    return hasFlag(FLAG_GENERIC);
 }
 
 // Don't generate documentation for this symbol, either because it is private,
@@ -996,6 +1014,9 @@ void ShadowVarSymbol::accept(AstVisitor* visitor) {
     outerVarSE->accept(visitor);
   if (specBlock)
     specBlock->accept(visitor);
+
+  svInitBlock->accept(visitor);
+  svDeinitBlock->accept(visitor);
 }
 
 ShadowVarSymbol* ShadowVarSymbol::copyInner(SymbolMap* map) {
@@ -1415,7 +1436,10 @@ std::string unescapeString(const char* const str, BaseAST *astForError) {
 
 static int literal_id = 1;
 HashMap<Immediate *, ImmHashFns, VarSymbol *> uniqueConstantsHash;
+
+// stringLiteralsHash should never contain any invalid string
 HashMap<Immediate *, ImmHashFns, VarSymbol *> stringLiteralsHash;
+HashMap<Immediate *, ImmHashFns, VarSymbol *> bytesLiteralsHash;
 
 LabelSymbol* initStringLiteralsEpilogue = NULL;
 
@@ -1429,6 +1453,10 @@ void createInitStringLiterals() {
   initStringLiterals->retType = dtVoid;
   initStringLiterals->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
   stringLiteralModule->block->insertAtTail(new DefExpr(initStringLiterals));
+}
+
+bool isValidString(std::string str) {
+  return chpl_enc_validate_buf(str.c_str(), str.length()) == 0;
 }
 
 // Note that string immediate values are stored
@@ -1451,6 +1479,8 @@ VarSymbol *new_StringSymbol(const char *str) {
     INT_FATAL("new_StringSymbol called after function resolution.");
   }
 
+  bool invalid = false;
+
   // String (as record) literals are inserted from the very beginning on the
   // parser all the way through resolution (postFold). Since resolution happens
   // after normalization we need to insert everything in normalized form. We
@@ -1460,7 +1490,21 @@ VarSymbol *new_StringSymbol(const char *str) {
   VarSymbol* cstrTemp = newTemp("call_tmp");
   CallExpr *cstrMove = new CallExpr(PRIM_MOVE, cstrTemp, new_CStringSymbol(str));
 
-  int strLength = unescapeString(str, cstrMove).length();
+  std::string unescapedString = unescapeString(str, cstrMove);
+
+  if (!isValidString(unescapedString)) {
+    USR_FATAL_CONT(cstrMove, "Invalid string literal");
+
+    // We want to keep the compilation going here so that we can catch other
+    // invalid string literals without having to compile again. However,
+    // returning `s` (i.e. NULL at this point) does not work well with the rest
+    // of the compilation. At the same time we should avoid adding invalid
+    // sequences to stringLiteralsHash. Therefore, set a flag to note that this
+    // string is invalid and should not be added to stringLiteralsHash.
+    invalid = true;
+  }
+
+  int strLength = unescapedString.length();
 
   s = new VarSymbol(astr("_str_literal_", istr(literal_id++)), dtString);
   s->addFlag(FLAG_NO_AUTO_DESTROY);
@@ -1472,7 +1516,13 @@ VarSymbol *new_StringSymbol(const char *str) {
   // DefExpr(s) always goes into the module scope to make it a global
   stringLiteralModule->block->insertAtTail(stringLitDef);
 
-  CallExpr *initCall = new CallExpr(astr("createStringWithBorrowedBuffer"),
+  Expr* initFn = NULL;
+  if (gChplCreateStringWithLiteral != NULL)
+    initFn = new SymExpr(gChplCreateStringWithLiteral);
+  else
+    initFn = new UnresolvedSymExpr("chpl_createStringWithLiteral");
+
+  CallExpr *initCall = new CallExpr(initFn,
                                     cstrTemp,
                                     new_IntSymbol(strLength));
 
@@ -1491,7 +1541,9 @@ VarSymbol *new_StringSymbol(const char *str) {
 
   s->immediate = new Immediate;
   *s->immediate = imm;
-  stringLiteralsHash.put(s->immediate, s);
+  if (!invalid) {
+    stringLiteralsHash.put(s->immediate, s);
+  }
   return s;
 }
 
@@ -1500,7 +1552,7 @@ VarSymbol *new_BytesSymbol(const char *str) {
   imm.const_kind = CONST_KIND_STRING;
   imm.string_kind = STRING_KIND_BYTES;
   imm.v_string = astr(str);
-  VarSymbol *s = stringLiteralsHash.get(&imm);
+  VarSymbol *s = bytesLiteralsHash.get(&imm);
   if (s) {
     return s;
   }
@@ -1548,7 +1600,7 @@ VarSymbol *new_BytesSymbol(const char *str) {
 
   s->immediate = new Immediate;
   *s->immediate = imm;
-  stringLiteralsHash.put(s->immediate, s);
+  bytesLiteralsHash.put(s->immediate, s);
   return s;
 }
 

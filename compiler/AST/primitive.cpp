@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2019 Cray Inc.
+ * Copyright 2004-2020 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -665,10 +665,16 @@ initPrimitive() {
   // dst, init-expr, optional declared type
   prim_def(PRIM_INIT_VAR,   "init var",   returnInfoVoid);
 
-  // Used in a context where only a type is needed.
-  // Establishes the type of the result without
-  // generating code.
-  prim_def(PRIM_TYPE_INIT,  "type init",  returnInfoFirstDeref);
+  // indicates split initialization point of declaration
+  // If the type is provided, apply that to the value immediately
+  // The value may not be used until a later PRIM_INIT_VAR.
+  //
+  // dst, optional type to default-init
+  prim_def(PRIM_INIT_VAR_SPLIT_DECL, "init var split decl", returnInfoVoid, false);
+
+  // indicates split initialization point of initialization
+  // dst, init-expr
+  prim_def(PRIM_INIT_VAR_SPLIT_INIT, "init var split init",   returnInfoVoid);
 
   prim_def(PRIM_REF_TO_STRING, "ref to string", returnInfoStringC);
   prim_def(PRIM_RETURN, "return", returnInfoFirst, true);
@@ -800,9 +806,9 @@ initPrimitive() {
   // PRIM_IS_SUBTYPE arguments are (parent, sub) and it checks
   // if sub is a sub-type of parent.
   prim_def(PRIM_IS_SUBTYPE, "is_subtype", returnInfoBool);
-  // same as above but can apply to non-type
-  // this variant can be removed if normalization of type queries is updated
-  prim_def(PRIM_IS_SUBTYPE_ALLOW_VALUES, "is_subtype_allow_values", returnInfoBool);
+  // for arguments (generic, sub), checks if sub is an instantiation of generic
+  // sub can be a value as a convenience for normalization of type queries
+  prim_def(PRIM_IS_INSTANTIATION_ALLOW_VALUES, "is_instantiation_allow_values", returnInfoBool);
   // same as above but excludes same type
   prim_def(PRIM_IS_PROPER_SUBTYPE, "is_proper_subtype", returnInfoBool);
   // accepts two arguments: A class/record type expression and a param string for the field name
@@ -894,6 +900,9 @@ initPrimitive() {
   prim_def(PRIM_BLOCK_COFORALL, "coforall loop", returnInfoVoid);
   // BlockStmt::blockInfo - on block
   prim_def(PRIM_BLOCK_ON, "on block", returnInfoVoid);
+  // BlockStmt::blockInfo - elided on block
+  //   (i.e. an on block that not needed for single-locale compilation)
+  prim_def(PRIM_BLOCK_ELIDED_ON, "elided on block", returnInfoVoid);
   // BlockStmt::blockInfo - begin on block
   prim_def(PRIM_BLOCK_BEGIN_ON, "begin on block", returnInfoVoid);
   // BlockStmt::blockInfo - cobegin on block

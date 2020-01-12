@@ -1,5 +1,6 @@
 use Spawn;
 use Time;
+use IO;
 
 config const showtime = false;
 

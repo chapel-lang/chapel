@@ -1,0 +1,1 @@
+-I$FFTW_INC -L$FFTW_DIR -lfftw3 -schpl_serializeSlices

@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2019 Cray Inc.
+ * Copyright 2004-2020 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -67,7 +67,8 @@ InitNormalize::InitNormalize(BlockStmt* block, const InitNormalize& curr) {
                blockInfo->isPrimitive(PRIM_BLOCK_COFORALL_ON) == true) {
       mBlockType = cBlockCoforall;
 
-    } else if (blockInfo->isPrimitive(PRIM_BLOCK_ON) == true) {
+    } else if (blockInfo->isPrimitive(PRIM_BLOCK_ON) == true ||
+               blockInfo->isPrimitive(PRIM_BLOCK_ELIDED_ON)) {
       mBlockType = cBlockOn;
 
     } else {

@@ -1,6 +1,7 @@
 use IO;
 
 config const noisy = false;
+config type t = string;
 
 proc testio(fmts: [] string, values: [])
 {
@@ -26,7 +27,7 @@ proc testio(fmts: [] string, values: [])
         {
           var ch = f.writer();
           if noisy then writeln("Writing ", x:string);
-          ch.writef(usefmt, x);
+          ch.writef(usefmt:t, x);
           if writextra then ch.write("  \t\n");
           ch.close();
         }
@@ -36,7 +37,7 @@ proc testio(fmts: [] string, values: [])
           var y:x.type;
           var z:x.type;
           if noisy then writeln("Reading element");
-          var got = ch.readf(usefmt, y);
+          var got = ch.readf(usefmt:t, y);
           if noisy then writeln("Read ", y:string);
           assert( got );
           assert( y == x );
@@ -44,7 +45,7 @@ proc testio(fmts: [] string, values: [])
           if tryN == 1 {
             // Try reading another item -- should get EOF
             if noisy then writeln("Reading another - should get EOF");
-            got = ch.readf(usefmt, z);
+            got = ch.readf(usefmt:t, z);
             if noisy then writeln("Read ", z:string);
             assert( !got );
           }

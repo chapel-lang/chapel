@@ -10,6 +10,7 @@ done
 
 use FileHashing;
 use FileSystem;
+use IO;
 
 config const path = "many-a.tmp";
 

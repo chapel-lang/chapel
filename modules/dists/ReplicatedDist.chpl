@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2019 Cray Inc.
+ * Copyright 2004-2020 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -536,6 +536,10 @@ proc ReplicatedArr.dsiAccess(indexx) ref {
   return chpl_myLocArr().arrLocalRep[indexx];
 }
 
+proc ReplicatedArr.dsiBoundsCheck(indexx) {
+  return dom.dist.targetLocDom.contains(here.id);
+}
+
 // Write the array out to the given Writer serially.
 proc ReplicatedArr.dsiSerialWrite(f): void {
   localArrs[f.readWriteThisFromLocale()!.id].arrLocalRep._value.dsiSerialWrite(f);
@@ -630,4 +634,8 @@ proc ReplicatedArr.dsiLocalSubdomain(loc: locale) {
     var d: domain(rank, idxType, stridable);
     return d;
   }
+}
+
+proc ReplicatedArr.dsiLocalSlice(ranges) {
+  return chpl_myLocArr().arrLocalRep((...ranges));
 }

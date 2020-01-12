@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2019 Cray Inc.
+ * Copyright 2004-2020 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -142,6 +142,19 @@ module ChapelSyncvar {
       this.isOwned = false;
     }
 
+    proc init=(const other : _syncvar) {
+      // Allow initialization from compatible sync variables, e.g.:
+      //   var x : sync int = 5;
+      //   var y : sync real = x;
+      if isCoercible(other.valType, this.type.valType) == false {
+        param theseTypes = "'" + this.type:string + "' from '" + other.type:string + "'";
+        param because = "because '" + other.valType:string + "' is not coercible to '" + this.type.valType:string + "'";
+        compilerError("cannot initialize ", theseTypes, " ",  because);
+      }
+      this.init(this.type.valType);
+      this.writeEF(other.readFE());
+    }
+
     pragma "dont disable remote value forwarding"
     proc init=(const other : this.valType) {
       this.init(other.type);
@@ -156,12 +169,12 @@ module ChapelSyncvar {
     }
 
     // Do not allow implicit reads of sync vars.
-    proc readThis(x) {
+    proc readThis(x) throws {
       compilerError("sync variables cannot currently be read - use writeEF/writeFF instead");
     }
 
     // Do not allow implicit writes of sync vars.
-    proc writeThis(x) {
+    proc writeThis(x) throws {
       compilerError("sync variables cannot currently be written - apply readFE/readFF() to those variables first");
      }
   }
@@ -668,6 +681,19 @@ module ChapelSyncvar {
       isOwned = false;
     }
 
+    proc init=(const other : _singlevar) {
+      // Allow initialization from compatible single variables, e.g.:
+      //   var x : single int = 5;
+      //   var y : single real = x;
+      if isCoercible(other.valType, this.type.valType) == false {
+        param theseTypes = "'" + this.type:string + "' from '" + other.type:string + "'";
+        param because = "because '" + other.valType:string + "' is not coercible to '" + this.type.valType:string + "'";
+        compilerError("cannot initialize ", theseTypes, " ",  because);
+      }
+      this.init(this.type.valType);
+      this.writeEF(other.readFF());
+    }
+
     pragma "dont disable remote value forwarding"
     proc init=(const other : this.type.valType) {
       this.init(other.type);
@@ -681,12 +707,12 @@ module ChapelSyncvar {
     }
 
     // Do not allow implicit reads of single vars.
-    proc readThis(x) {
+    proc readThis(x) throws {
       compilerError("single variables cannot currently be read - use writeEF instead");
     }
 
     // Do not allow implicit writes of single vars.
-    proc writeThis(x) {
+    proc writeThis(x) throws {
       compilerError("single variables cannot currently be written - apply readFF() to those variables first");
      }
   }
@@ -889,7 +915,7 @@ module ChapelSyncvar {
 
 
 private module SyncVarRuntimeSupport {
-  private use ChapelStandard;
+  private use ChapelStandard, SysCTypes;
   use AlignedTSupport;
 
   //
@@ -1003,11 +1029,11 @@ private module AlignedTSupport {
   }
 
   // read/write support
-  proc aligned_t.writeThis(f) {
+  proc aligned_t.writeThis(f) throws {
     var tmp : uint(64) = this : uint(64);
     f <~> tmp;
   }
-  proc aligned_t.readThis(f) {
+  proc aligned_t.readThis(f) throws {
     var tmp : uint(64);
     f <~> tmp;
     this = tmp : aligned_t;

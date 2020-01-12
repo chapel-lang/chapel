@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2019 Cray Inc.
+ * Copyright 2004-2020 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -21,7 +21,8 @@
  * Collection of mutexes/locks.
  */
 module ChapelLocks {
-  use MemConsistency;
+  private use Atomics, ChapelBase;
+  private use MemConsistency;
   /*
    * Local processor atomic spinlock. Intended for situations with minimal
    * contention or very short critical sections.

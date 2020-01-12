@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2019 Cray Inc.
+ * Copyright 2004-2020 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -23,12 +23,16 @@
 #include "baseAST.h"
 #include "vec.h"
 
+#include <map>
 #include <vector>
 
 class ArgSymbol;
 class CallInfo;
 class FnSymbol;
 class Symbol;
+
+extern std::map<Type*,std::map<Type*,bool>*> actualFormalCoercible;
+void clearCoercibleCache(void);
 
 typedef enum {
   // These are in order of severity, for failedCandidateIsBetterMatch.

@@ -1,3 +1,4 @@
+use IO;
 
 enum MyEnum { Type1, Type2, Type3 };
 

@@ -1,3 +1,5 @@
+use IO;
+
 config const m = 9;
 config const n = 7;
 config const o = 5;

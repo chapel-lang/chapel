@@ -1,0 +1,4 @@
+param-errors3.chpl:6: error: unresolved call 'foo("some bytes")'
+param-errors3.chpl:3: note: this candidate did not match: foo(param s: string)
+param-errors3.chpl:6: note: because call actual argument #1 with type bytes
+param-errors3.chpl:3: note: is passed to formal 'param s: string'

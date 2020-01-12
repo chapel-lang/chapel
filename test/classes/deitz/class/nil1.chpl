@@ -5,6 +5,6 @@ class C {
 var c : borrowed C?;
 
 if c != nil then
-  writeln(c.x);
+  writeln(c!.x);
 else
   writeln("c is nil");

@@ -413,7 +413,7 @@ class Graph {
 
 	writeln("In Loop: delta = ",delta," edge to add = ",minEdge);
 	/* if the head is the incident node, then reverse the slack */
-	if (treeNodes(minEdge.src.id)) then delta = -delta;
+	if (treeNodes(minEdge!.src.id)) then delta = -delta;
 
 
 	/* Try to promote across treeNodes */
@@ -425,7 +425,7 @@ class Graph {
 	    writeln(e.src," @R[[",curRank(e.src.id),"]] --> ",e.dst,"@R[[",curRank(e.dst.id),"]] == ",slack(e.id));
 	  }
 	/* Try and tighten from the incident edge */
-	treeSize = tight_tree(minEdge.src.id);
+	treeSize = tight_tree(minEdge!.src.id);
       }
     writeln("Feasible tree computed!");
     //    init_cutvalues();
@@ -507,6 +507,8 @@ proc DFS(G){
 // This function reads a new graph returns
 //
 proc readGraph(filename) {
+  use IO;
+
   // Create and open  an input file with the specified filename in read (iomode.r) mode
   var infile = open(filename, iomode.r);
   var reader = infile.reader();

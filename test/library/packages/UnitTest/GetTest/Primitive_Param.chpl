@@ -23,7 +23,7 @@ var test: owned Test = new owned Test();
 param a = __primitive("gather tests", test.borrow());
 writeln(a);
 var c = __primitive("get test by name","test_square");
-param idx = 2; 
+param idx = 2;
 var d = __primitive("get test by index", idx);
 c(test);
 d(test);

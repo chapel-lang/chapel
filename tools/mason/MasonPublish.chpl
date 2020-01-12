@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2019 Cray Inc.
+ * Copyright 2004-2020 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -162,7 +162,7 @@ proc checkRegistryPath(registryPath : string, trueIfLocal : bool) throws {
 proc publishPackage(username: string, registryPath : string, isLocal : bool) throws {
   try! {
     const packageLocation = absPath(here.cwd());
-    var stream = makeRandomStream(int);
+    var stream = createRandomStream(int);
     var uniqueDir = stream.getNext(): string;
     const name = getPackageName();
     var safeDir = '';

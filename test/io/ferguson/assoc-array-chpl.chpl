@@ -1,3 +1,4 @@
+use IO;
 
 proc main() {
   var tmp = opentmp();

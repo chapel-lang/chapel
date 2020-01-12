@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2019 Cray Inc.
+ * Copyright 2004-2020 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -121,6 +121,13 @@ static void helpGetLastStmts(Expr* last, std::vector<Expr*>& stmts) {
     }
   }
 
+  // Ignore calls to chpl_rmem_consist_maybe_acquire that were added
+  // by the compiler. We will remove these if we optimize an atomic op.
+  if (CallExpr* call = toCallExpr(last))
+    if (FnSymbol* fn = call->resolvedFunction())
+      if (fn->hasFlag(FLAG_COMPILER_ADDED_REMOTE_FENCE))
+        last = last->prev;
+
   // Otherwise, add what we got.
   stmts.push_back(last);
 }
@@ -207,35 +214,13 @@ class MarkOptimizableForallLastStmts : public AstVisitorTraverse {
     LifetimeInformation* lifetimeInfo;
 
     virtual bool enterForallStmt(ForallStmt* forall);
+    void markLoopsInForall(ForallStmt* forall);
 };
 
 bool MarkOptimizableForallLastStmts::enterForallStmt(ForallStmt* forall) {
-
   if (fNoOptimizeForallUnordered == false) {
     // If the optimization is enabled, do this
-    std::vector<BlockStmt*> bodies = forall->loopBodies();
-    for_vector(BlockStmt, block, bodies) {
-      std::vector<Expr*> lastStmts;
-      getLastStmts(block, lastStmts);
-      for_vector(Expr, stmt, lastStmts) {
-        if (exprIsOptimizable(block, stmt, lifetimeInfo)) {
-          SymExpr* lhs = NULL;
-          SymExpr* rhs = NULL;
-          if (CallExpr* call = toCallExpr(stmt)) {
-            if (call->numActuals() >= 1)
-              lhs = toSymExpr(call->get(1));
-            if (call->numActuals() >= 2)
-              rhs = toSymExpr(call->get(2));
-          }
-          if (lhs && symbolOutlivesLoop(block, lhs->symbol(), lifetimeInfo))
-            addOptimizationFlag(stmt, OPT_INFO_LHS_OUTLIVES_FORALL);
-          if (rhs && symbolOutlivesLoop(block, rhs->symbol(), lifetimeInfo))
-            addOptimizationFlag(stmt, OPT_INFO_RHS_OUTLIVES_FORALL);
-          if (forallNoTaskPrivate(forall))
-            addOptimizationFlag(stmt, OPT_INFO_FLAG_NO_TASK_PRIVATE);
-        }
-      }
-    }
+    markLoopsInForall(forall);
   }
 
   // Either way, add chpl_comm_unordered_task_fence at the end of
@@ -245,6 +230,91 @@ bool MarkOptimizableForallLastStmts::enterForallStmt(ForallStmt* forall) {
   forall->insertAfter(new CallExpr(gChplAfterForallFence));
 
   return true;
+}
+
+void MarkOptimizableForallLastStmts::markLoopsInForall(ForallStmt* forall) {
+
+  bool addNoTaskPrivate = forallNoTaskPrivate(forall);
+  std::vector< std::vector<Expr*> > lastStatementsPerBody;
+
+  // Gather the last statements in each loop body
+  std::vector<BlockStmt*> bodies = forall->loopBodies();
+  for_vector(BlockStmt, block, bodies) {
+    std::vector<Expr*> lastStmts;
+    getLastStmts(block, lastStmts);
+    lastStatementsPerBody.push_back(lastStmts);
+  }
+
+  // Compute the number of last statements
+  // (expecting it matches across fast-follower/follower bodies)
+  int numLastStmts = -1;
+  for (size_t loopNum = 0;
+       loopNum < lastStatementsPerBody.size();
+       loopNum++) {
+    int numThisLoop = (int) lastStatementsPerBody[loopNum].size();
+    if (numLastStmts == -1)
+      numLastStmts = numThisLoop;
+    else if (numLastStmts != numThisLoop)
+      return; // Give up on optimizing it
+  }
+
+  // Consider the last statements
+  for (int stmtNum = 0; stmtNum < numLastStmts; stmtNum++) {
+
+    int loopNum;
+
+    // For this last statement, compute the lifetime
+    // properties, but do so ignoring the difference between
+    // fast-follower/follower loops.
+    bool addLhsOutlivesForall = false;
+    bool addRhsOutlivesForall = false;
+
+    loopNum = 0;
+    for_vector(BlockStmt, block, bodies) {
+      Expr* stmt = lastStatementsPerBody[loopNum][stmtNum];
+      if (exprIsOptimizable(block, stmt, lifetimeInfo)) {
+        SymExpr* lhs = NULL;
+        SymExpr* rhs = NULL;
+        if (CallExpr* call = toCallExpr(stmt)) {
+          if (call->numActuals() >= 1)
+            lhs = toSymExpr(call->get(1));
+          if (call->numActuals() >= 2)
+            rhs = toSymExpr(call->get(2));
+        }
+        if (lhs && symbolOutlivesLoop(block, lhs->symbol(), lifetimeInfo))
+          addLhsOutlivesForall = true;
+        if (rhs && symbolOutlivesLoop(block, rhs->symbol(), lifetimeInfo))
+          addRhsOutlivesForall = true;
+      }
+
+      loopNum++;
+    }
+
+    // Now that we have the lifetime properties, mark all follower
+    // loop bodies with the appropriate optimization info.
+    loopNum = 0;
+    for_vector(BlockStmt, block, bodies) {
+      Expr* stmt = lastStatementsPerBody[loopNum][stmtNum];
+      if (exprIsOptimizable(block, stmt, lifetimeInfo)) {
+        SymExpr* lhs = NULL;
+        SymExpr* rhs = NULL;
+        if (CallExpr* call = toCallExpr(stmt)) {
+          if (call->numActuals() >= 1)
+            lhs = toSymExpr(call->get(1));
+          if (call->numActuals() >= 2)
+            rhs = toSymExpr(call->get(2));
+        }
+        if (lhs && addLhsOutlivesForall)
+          addOptimizationFlag(stmt, OPT_INFO_LHS_OUTLIVES_FORALL);
+        if (rhs && addRhsOutlivesForall)
+          addOptimizationFlag(stmt, OPT_INFO_RHS_OUTLIVES_FORALL);
+        if (addNoTaskPrivate)
+          addOptimizationFlag(stmt, OPT_INFO_FLAG_NO_TASK_PRIVATE);
+      }
+
+      loopNum++;
+    }
+  }
 }
 
 void checkLifetimesForForallUnorderedOps(FnSymbol* fn,
@@ -370,7 +440,8 @@ static MayBlockState mayBlock(FnSymbol* fn) {
   MayBlockState& state = fnMayBlock[fn];
   if (state == STATE_UNKNOWN) {
     if (fn->hasFlag(FLAG_FN_SYNCHRONIZATION_FREE) ||
-        fn->hasFlag(FLAG_FN_UNORDERED_SAFE)) {
+        fn->hasFlag(FLAG_FN_UNORDERED_SAFE) ||
+        fn->hasFlag(FLAG_COMPILER_ADDED_REMOTE_FENCE)) {
       state = STATE_COMPUTED;
     } else if (fn->hasFlag(FLAG_FUNCTION_TERMINATES_PROGRAM)) {
       // No need for such a function to impede optimization
@@ -690,6 +761,46 @@ static void transformAtomicStmt(Expr* stmt) {
   }
 
   SET_LINENO(call);
+
+  // Remove redundant remote-memory fences from --cache-remote.
+  if (fCacheRemote) {
+    // remove the chpl_rmem_consist_maybe_release added before the atomic
+    // This fence is redundant because we add a full fence immediately below.
+    for (Expr* cur = call->getStmtExpr()->prev; cur != NULL; cur = cur->prev) {
+      if (CallExpr* call = toCallExpr(cur)) {
+        if (FnSymbol* fn = call->resolvedFunction()) {
+          if (fn->hasFlag(FLAG_COMPILER_ADDED_REMOTE_FENCE))
+            cur->remove();
+          // if we encountered a function call, including the added fence, stop
+          break;
+        }
+      }
+    }
+    // remove the chpl_rmem_consist_maybe_acquire added after the atomic
+    // This fence is redundant because we add a full fence immediately below
+    // *and* because the optimization fired, we know that the atomic op
+    // we are making unordered is not being used to communicate to the current
+    // task.
+    for (Expr* cur = call->getStmtExpr()->next; cur != NULL; cur = cur->next) {
+      if (CallExpr* call = toCallExpr(cur)) {
+        if (FnSymbol* fn = call->resolvedFunction()) {
+          if (fn->hasFlag(FLAG_COMPILER_ADDED_REMOTE_FENCE))
+            cur->remove();
+          // if we encountered a function call, including the added fence, stop
+          break;
+        }
+      }
+    }
+  }
+
+  // TODO: This could just be a release fence (and then we could do an
+  // aquire fence at the end of the forall loop in addition to just
+  // completing the unordered ops). That could help in 2 cases:
+  //  1. If --cache-remote is used, we can still use cached GETs
+  //     during the unordered loop
+  //  2. If we improve the unordered ops the compiler is targeting to use
+  //     other methods that aggregate, within-thread performance might
+  //     matter & optimizing the fences could allow better compiler opt.
 
   // Add a fence call before the call.
   // First, gather the memory order argument from the call.

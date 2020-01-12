@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2019 Cray Inc.
+ * Copyright 2004-2020 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -77,7 +77,6 @@ void resolveSignatureAndFunction(FnSymbol* fn) {
 ************************************** | *************************************/
 
 void resolveSignature(FnSymbol* fn) {
-  if (fn->hasFlag(FLAG_GENERIC) == false) {
     // Don't resolve formals for concrete functions
     // more often than necessary.
     static std::set<FnSymbol*> done;
@@ -87,7 +86,6 @@ void resolveSignature(FnSymbol* fn) {
 
       resolveFormals(fn);
     }
-  }
 }
 
 /************************************* | **************************************
@@ -478,6 +476,8 @@ void resolveFunction(FnSymbol* fn, CallExpr* forCall) {
     }
 
     fn->addFlag(FLAG_RESOLVED);
+
+    fn->tagIfGeneric();
 
     if (strcmp(fn->name, "init") == 0 && fn->isMethod()) {
       AggregateType* at = toAggregateType(fn->_this->getValType());

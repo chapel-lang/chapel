@@ -10,7 +10,7 @@ use Random;
 // This primer shows two ways to generate a sequence of random numbers:
 // The first is by creating an array of random numbers using the
 // :proc:`Random.fillRandom` function. The second way is to use
-// a :class:`~PCGRandom.RandomStream` instance.
+// a :class:`~PCGRandom.PCGRandomStream` instance.
 //
 
 // Using fillRandom
@@ -45,7 +45,7 @@ writeln();
 
 //
 // The second way to generate a sequence of random numbers is by creating a
-// :class:`~PCGRandom.RandomStream` class instance.  The first argument is the
+// :class:`~PCGRandom.PCGRandomStream` class instance.  The first argument is the
 // type of the elements that the instance should generate. If a particular seed
 // is desired, it should be specified upon creation of this instance.
 //
@@ -54,7 +54,7 @@ var randStreamSeeded = new owned RandomStream(real, seed);
 
 //
 // Then the instance can be used to obtain the numbers.  This can be done in a
-// large chunk by calling :proc:`~PCGRandom.RandomStream.fillRandom`:
+// large chunk by calling :proc:`~PCGRandom.PCGRandomStream.fillRandom`:
 //
 var randsFromStream: [1..10] real;
 randStream.fillRandom(randsFromStream);
@@ -104,7 +104,7 @@ for i in randStreamSeeded.iterate({5..10}, real) {
 
 
 //
-// By default, access using the :class:`~PCGRandom.RandomStream` instance will
+// By default, access using the :class:`~PCGRandom.PCGRandomStream` instance will
 // be safe in the presence of parallelism. This can be changed for the entire
 // stream during class creation.  As a result, two parallel accesses or updates
 // to the position from which reading is intended may conflict.
@@ -112,7 +112,7 @@ for i in randStreamSeeded.iterate({5..10}, real) {
 var parallelUnsafe       = new owned RandomStream(real, parSafe=false);
 var parallelSeededUnsafe = new owned RandomStream(real, seed, false);
 
-// Now :class:`~PCGRandom.RandomStream` functions, such as
+// Now :class:`~PCGRandom.PCGRandomStream` functions, such as
 // ``parallelUnsafe.getNext()`` and ``parallelSeededUnsafe.getNext()`` can be
 // called.
 

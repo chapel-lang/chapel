@@ -4,7 +4,7 @@
    contributed by Ben Harshbarger
    derived from the GNU C++ version by Branimir Maksimovic
 */
-use Map, Sort;
+use Map, Sort, IO;
 
 // Used to encode a string into a uint
 var tonum : [0..127] int;

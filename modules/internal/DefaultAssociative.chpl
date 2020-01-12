@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2019 Cray Inc.
+ * Copyright 2004-2020 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -107,7 +107,7 @@ module DefaultAssociative {
                                        parSafeDom=parSafe, dom=_to_unmanaged(this));
     }
   
-    proc dsiSerialReadWrite(f /*: Reader or Writer*/) {
+    proc dsiSerialReadWrite(f /*: Reader or Writer*/) throws {
 
       var binary = f.binary();
 
@@ -184,8 +184,8 @@ module DefaultAssociative {
         }
       }
     }
-    proc dsiSerialWrite(f) { this.dsiSerialReadWrite(f); }
-    proc dsiSerialRead(f) { this.dsiSerialReadWrite(f); }
+    proc dsiSerialWrite(f) throws { this.dsiSerialReadWrite(f); }
+    proc dsiSerialRead(f) throws { this.dsiSerialReadWrite(f); }
   
     //
     // Standard user domain interface
@@ -661,31 +661,9 @@ module DefaultAssociative {
       if found {
         return data[slotNum];
 
-      // if the element didn't exist, then this is either:
-      //
-      // - an error if the array does not own the domain (it's
-      //   trying to get a reference to an element that doesn't exist)
-      //
-      // - an indication that we should grow the domain + array to
-      //   include the element
-      } else if slotNum != -1 {
-
-        const arrOwnsDom = dom._arrs.length == 1;
-        if !arrOwnsDom {
-          // here's the error case
-          halt("cannot implicitly add to an array's domain when the domain is used by more than one array: ", dom._arrs.length);
-          return data(0);
-        } else {
-          // grow the table
-          warning("growing associative domains by assigning to an array is deprecated");
-          const (newSlot, _) = dom._addWrapper(idx, slotNum, needLock=false);
-
-          // and return the element
-          return data[newSlot];
-        }
+      // if the element didn't exist, then it is an error
       } else {
         halt("array index out of bounds: ", idx);
-        return data(0);
       }
     }
 
@@ -791,7 +769,7 @@ module DefaultAssociative {
       }
     }
 
-    proc dsiSerialReadWrite(f /*: channel*/) {
+    proc dsiSerialReadWrite(f /*: channel*/) throws {
       var binary = f.binary();
       var arrayStyle = f.styleElement(QIO_STYLE_ELEMENT_ARRAY);
       var isspace = arrayStyle == QIO_ARRAY_FORMAT_SPACE && !binary;
@@ -825,7 +803,7 @@ module DefaultAssociative {
       }
     }
 
-    proc readChapelStyleAssocArray(f) {
+    proc readChapelStyleAssocArray(f) throws {
       var first = true;
       var read_end = false;
 
@@ -867,8 +845,8 @@ module DefaultAssociative {
       }
     }
 
-    proc dsiSerialWrite(f) { this.dsiSerialReadWrite(f); }
-    proc dsiSerialRead(f) { this.dsiSerialReadWrite(f); }
+    proc dsiSerialWrite(f) throws { this.dsiSerialReadWrite(f); }
+    proc dsiSerialRead(f) throws { this.dsiSerialReadWrite(f); }
 
     //
     // Associative array interface
@@ -1026,11 +1004,11 @@ module DefaultAssociative {
   inline proc chpl__defaultHash(r : range): uint {
     use Reflection;
     var ret : uint;
-    for param i in 1..numFields(r.type) {
-      if isParam(getField(r, i)) == false &&
-         isType(getField(r, i)) == false &&
-         isNothingType(getField(r, i).type) == false {
-        const ref field = getField(r, i);
+    for param i in 1..numImplementationFields(r.type) {
+      if isParam(getImplementationField(r, i)) == false &&
+         isType(getImplementationField(r, i)) == false &&
+         isNothingType(getImplementationField(r, i).type) == false {
+        const ref field = getImplementationField(r, i);
         const fieldHash = chpl__defaultHash(field);
         if i == 1 then
           ret = fieldHash;
@@ -1043,7 +1021,7 @@ module DefaultAssociative {
   
   // Is 'idxType' legal to create a default associative domain with?
   // Currently based on the availability of chpl__defaultHash().
-  // Enumerated, opaque, and sparse domains are handled separately.
+  // Enumerated and sparse domains are handled separately.
   // Tuples and records also work, somehow.
   proc chpl__validDefaultAssocDomIdxType(type idxType) param return false;
   

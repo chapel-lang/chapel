@@ -1,4 +1,5 @@
 {
+  use SysCTypes;
 
   extern proc sizeof(type t): size_t;
 

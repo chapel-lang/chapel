@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2019 Cray Inc.
+ * Copyright 2004-2020 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -34,6 +34,7 @@
 module SysError {
 
 use SysBasic;
+private use SysCTypes;
 
 /*
 
@@ -58,7 +59,10 @@ class SystemError : Error {
   override proc message() {
     var strerror_err: err_t = ENOERR;
     var errstr              = sys_strerror_syserr_str(err, strerror_err);
-    var err_msg             = createStringWithOwnedBuffer(errstr);
+    var err_msg: string;
+    try! {
+      err_msg = createStringWithOwnedBuffer(errstr);
+    }
 
     if !details.isEmpty() then
       err_msg += " (" + details + ")";
@@ -384,9 +388,10 @@ private proc quote_string(s:string, len:ssize_t) {
   // This doesn't handle the case where ret==NULL as did the previous
   // version in QIO, but I'm not sure how that was used.
 
-  if err then return createStringWithOwnedBuffer(qio_strdup("<error>"));
-
-  return createStringWithOwnedBuffer(ret);
+  try! {
+    if err then return createStringWithOwnedBuffer(qio_strdup("<error>"));
+    return createStringWithOwnedBuffer(ret);
+  }
 }
 
 /* Create and throw a :class:`SystemError` if an error occurred, formatting a
@@ -462,7 +467,9 @@ proc errorToString(error:syserr):string
 {
   var strerror_err:err_t = ENOERR;
   const errstr = sys_strerror_syserr_str(error, strerror_err);
-  return createStringWithOwnedBuffer(errstr);
+  try! {
+    return createStringWithOwnedBuffer(errstr);
+  }
 }
 
 }

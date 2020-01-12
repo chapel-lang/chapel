@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2019 Cray Inc.
+ * Copyright 2004-2020 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -21,9 +21,12 @@ private use List;
 use MasonHelp;
 use MasonEnv;
 use MasonUpdate;
+use MasonUtils;
+use TOML;
 
 use FileSystem;
 use Regexp;
+use IO;
 
 //
 // TODO:
@@ -57,7 +60,7 @@ proc masonSearch(ref args: list(string)) {
   // If no query is provided, list all packages in registry
   const query = if args.size > 0 then args[args.size].toLower()
                 else ".*";
-  const pattern = compile(query, ignorecase=true);
+  const pattern = compile(query, ignoreCase=true);
 
   var results: list(string);
   var packages: list(string);
@@ -125,6 +128,8 @@ proc isHidden(name : string) : bool {
 /* Search TOML files within a package directory to find the latest package
    version number that is supported with current Chapel version */
 proc findLatest(packageDir: string): VersionInfo {
+  use Path;
+
   var ret = new VersionInfo(0, 0, 0);
   const suffix = ".toml";
   const packageName = basename(packageDir);
@@ -171,7 +176,7 @@ proc consumeArgs(ref args : list(string)) {
 /* Print a TOML file. Expects full path. */
 proc showToml(tomlFile : string) {
   const openFile = openreader(tomlFile);
-  const toml = new owned parseToml(openFile);
+  const toml = new owned(parseToml(openFile));
   writeln(toml);
   openFile.close();
 }

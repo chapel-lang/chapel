@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2019 Cray Inc.
+ * Copyright 2004-2020 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -43,6 +43,7 @@ module Set {
   //
   private use Reflection;
   private use ChapelLocks only ;
+  private use IO;
 
   pragma "no doc"
   private param _sanityChecks = true;
@@ -355,7 +356,7 @@ module Set {
 
       :arg ch: A channel to write to.
     */
-    proc const writeThis(ch: channel) {
+    proc const writeThis(ch: channel) throws {
       on this {
         _enter();
         var count = 1;

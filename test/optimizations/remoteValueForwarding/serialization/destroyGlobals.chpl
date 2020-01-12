@@ -6,7 +6,7 @@ class Helper {
 }
 
 record Foo {
-  var h : unmanaged Helper?;
+  var h : unmanaged Helper;
   var serialized = false;
 
   proc chpl__serialize() {
@@ -14,10 +14,7 @@ record Foo {
   }
 
   proc type chpl__deserialize(data) {
-    var f : Foo;
-    f.h = new unmanaged Helper(data);
-    f.serialized = true;
-    return f;
+    return new Foo(new unmanaged Helper(data), true);
   }
 
   proc deinit() {

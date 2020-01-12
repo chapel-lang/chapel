@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2019 Cray Inc.
+ * Copyright 2004-2020 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -215,6 +215,7 @@ bool fPrintUnusedFns = false;
 bool fPrintUnusedInternalFns = false;
 bool fReportAliases = false;
 bool fReportBlocking = false;
+bool fReportExpiring = false;
 bool fReportOptimizedLoopIterators = false;
 bool fReportInlinedIterators = false;
 bool fReportVectorizedLoops = false;
@@ -1038,6 +1039,7 @@ static ArgumentDescription arg_desc[] = {
  {"print-statistics", ' ', "[n|k|t]", "Print AST statistics", "S256", fPrintStatistics, NULL, NULL},
  {"report-aliases", ' ', NULL, "Report aliases in user code", "N", &fReportAliases, NULL, NULL},
  {"report-blocking", ' ', NULL, "Report blocking functions in user code", "N", &fReportBlocking, NULL, NULL},
+ {"report-expiring", ' ', NULL, "Report expiring values in user code", "N", &fReportExpiring, NULL, NULL},
  {"report-inlining", ' ', NULL, "Print inlined functions", "F", &report_inlining, NULL, NULL},
  {"report-dead-blocks", ' ', NULL, "Print dead block removal stats", "F", &fReportDeadBlocks, NULL, NULL},
  {"report-dead-modules", ' ', NULL, "Print dead module removal stats", "F", &fReportDeadModules, NULL, NULL},
@@ -1448,6 +1450,15 @@ static void checkMLDebugAndLibmode(void) {
   return;
 }
 
+static void checkNotLibraryAndMinimalModules(void) {
+  const bool isLibraryCompile = fLibraryCompile || fMultiLocaleInterop;
+  if (isLibraryCompile && fMinimalModules) {
+    USR_FATAL("Libraries do not currently support \'--minimal-modules\'");
+  }
+
+  return;
+}
+
 static void postprocess_args() {
   // Processes that depend on results of passed arguments or values of CHPL_vars
 
@@ -1464,6 +1475,8 @@ static void postprocess_args() {
   postStaticLink();
 
   checkMLDebugAndLibmode();
+
+  checkNotLibraryAndMinimalModules();
 
   setPrintCppLineno();
 
@@ -1503,9 +1516,7 @@ int main(int argc, char* argv[]) {
     initPrimitive();
     initPrimitiveTypes();
 
-    DefExpr* objectClass = defineObjectClass();
-
-    initChplProgram(objectClass);
+    initChplProgram();
 
     initStringLiteralModule();
 

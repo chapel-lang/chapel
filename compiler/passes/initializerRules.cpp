@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2019 Cray Inc.
+ * Copyright 2004-2020 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -686,6 +686,7 @@ static InitNormalize preNormalize(AggregateType* at,
       stmt = stmt->next;
 
     } else if (ForallStmt* forall = toForallStmt(stmt)) {
+      preNormalize(at, block, state, forall->iteratedExpressions().head);
       preNormalize(at,
                    forall->loopBody(),
                    InitNormalize(forall, state));

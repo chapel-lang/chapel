@@ -1,4 +1,4 @@
-use Random;
+use Random, IO;
 
 config const inputfile = "easy.dat";
 config const ANNEAL    = 200;

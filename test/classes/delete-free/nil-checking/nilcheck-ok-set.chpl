@@ -11,7 +11,7 @@ proc okSetInInner() {
     x = new owned MyClass(1);
   }
   inner();
-  x.method();
+  x!.method();
 }
 okSetInInner();
 
@@ -26,7 +26,7 @@ proc okSetInTask() {
 
   s$; // wait for task to complete
 
-  x.method();
+  x!.method();
 }
 okSetInTask();
 
@@ -37,7 +37,7 @@ proc setGlobal() {
 proc okSetGlobalInFn() {
   global = nil;
   setGlobal();
-  global.method();
+  global!.method();
   delete global;
 }
 okSetGlobalInFn();

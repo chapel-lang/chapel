@@ -1074,13 +1074,18 @@ class SlurmJob(AbstractJob):
             logging.error(msg)
             raise ValueError(msg)
 
-        # Output is: Submitted batch job 106001
-        id_parts = stdout.split(' ')
-        if len(id_parts) < 4:
-            raise ValueError('Could not parse output from sbatch submission: {0}'.format(stdout))
-        else:
-            job_id = id_parts[3].strip()
-            return job_id
+        # The output line we want is: Submitted batch job 106001
+        lines = stdout.split('\n')
+        for line in lines:
+            if line.startswith('Submitted batch job'):
+                id_parts = line.split(' ')
+                if len(id_parts) < 4:
+                    raise ValueError('Could not parse output from sbatch submission: {0}'.format(stdout))
+                else:
+                    job_id = id_parts[3].strip()
+                    return job_id
+
+        raise ValueError('Did not see expected output from sbatch submission: {0}'.format(stdout))
 
 
 @contextlib.contextmanager

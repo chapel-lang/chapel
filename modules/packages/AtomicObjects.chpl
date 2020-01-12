@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2019 Cray Inc.
+ * Copyright 2004-2020 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -375,7 +375,7 @@ prototype module AtomicObjects {
       return __ABA_cnt;
     }
 
-    proc readWriteThis(f) {
+    proc readWriteThis(f) throws {
       f <~> "(ABA){cnt=" <~> this.__ABA_cnt <~> ", obj=" <~> this.getObject() <~> "}";
     }
 
@@ -603,7 +603,7 @@ prototype module AtomicObjects {
       return ret;
     }
 
-    proc readWriteThis(f) {
+    proc readWriteThis(f) throws {
       f <~> atomicVariable.read();
     }
   }

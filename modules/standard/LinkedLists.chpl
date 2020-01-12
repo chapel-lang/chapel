@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2019 Cray Inc.
+ * Copyright 2004-2020 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -42,6 +42,7 @@ class listNode {
       l1.append(i);
   }
 
+  private use IO;
 
 /*
   A singly linked list.
@@ -224,7 +225,7 @@ record LinkedList {
   }
 
   pragma "no doc"
-  proc writeThis(f) {
+  proc writeThis(f) throws {
     var binary = f.binary();
     var arrayStyle = f.styleElement(QIO_STYLE_ELEMENT_ARRAY);
     var isspace = arrayStyle == QIO_ARRAY_FORMAT_SPACE && !binary;
@@ -257,7 +258,7 @@ record LinkedList {
   }
 
   pragma "no doc"
-  proc readThis(f) {
+  proc readThis(f) throws {
     // Special handling for reading in order to handle
     // reading an arbitrary length.
     var binary = f.binary();

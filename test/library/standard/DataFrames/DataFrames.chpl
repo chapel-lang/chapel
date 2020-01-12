@@ -19,6 +19,7 @@
 
 module DataFrames {
   use Sort;
+  private use IO;
 
   class Index {
     pragma "no doc"
@@ -53,17 +54,17 @@ module DataFrames {
     }
 
     pragma "no doc"
-    proc writeThis(f, s: borrowed TypedSeries(?)) {
+    proc writeThis(f, s: borrowed TypedSeries(?)) throws {
       halt("cannot writeThis on generic Index");
     }
 
     pragma "no doc"
-    proc writeThis(f, d: borrowed DataFrame) {
+    proc writeThis(f, d: borrowed DataFrame) throws {
       halt("cannot writeThis on generic Index");
     }
 
     pragma "no doc"
-    proc writeThis(f) {
+    proc writeThis(f) throws {
       halt("cannot writeThis on generic Index");
     }
 
@@ -229,7 +230,7 @@ module DataFrames {
     }
 
     override
-    proc writeThis(f, s: borrowed TypedSeries) {
+    proc writeThis(f, s: borrowed TypedSeries) throws {
       var idxWidth = writeIdxWidth() + 4;
       for (idx, (v, d)) in zip(this, s!._these()) {
         // TODO: clean up to simple cast after bugfix
@@ -247,7 +248,7 @@ module DataFrames {
     }
 
     override
-    proc writeThis(f, d: borrowed DataFrame) {
+    proc writeThis(f, d: borrowed DataFrame) throws {
       var idxWidth = writeIdxWidth() + 1;
       for space in 1..idxWidth do
         f <~> " ";
@@ -271,7 +272,7 @@ module DataFrames {
     }
 
     override
-    proc writeThis(f) {
+    proc writeThis(f) throws {
       var idxWidth = writeIdxWidth() + 1;
       for space in 1..idxWidth do
         f <~> " ";
@@ -397,12 +398,12 @@ module DataFrames {
     }
 
     pragma "no doc"
-    proc writeElem(f, i, len: int) {
+    proc writeElem(f, i, len: int) throws {
       halt("generic Series cannot be indexed");
     }
 
     pragma "no doc"
-    proc writeElemNoIndex(f, i: int, len: int) {
+    proc writeElemNoIndex(f, i: int, len: int) throws {
       halt("generic Series cannot be accessed");
     }
   }
@@ -712,7 +713,7 @@ module DataFrames {
     }
 
     override
-    proc writeThis(f) {
+    proc writeThis(f) throws {
       if idx {
         idx!.writeThis(f, _to_unmanaged(this));
       } else {
@@ -730,7 +731,7 @@ module DataFrames {
 
     pragma "no doc"
     override
-    proc writeElem(f, i, len: int) {
+    proc writeElem(f, i, len: int) throws {
       // TODO: clean up to simple cast after bugfix
       var output = if this.valid(i)
                    then createStringWithNewBuffer(this[i]: string)
@@ -743,7 +744,7 @@ module DataFrames {
 
     pragma "no doc"
     override
-    proc writeElemNoIndex(f, i: int, len: int) {
+    proc writeElemNoIndex(f, i: int, len: int) throws {
       // TODO: clean up to simple cast after bugfix
       var output = if this.valid_at(i)
                    then createStringWithNewBuffer(this.at(i): string)
@@ -824,7 +825,7 @@ module DataFrames {
     }
 
     override
-    proc writeThis(f) {
+    proc writeThis(f) throws {
       if idx {
         idx!.writeThis(f, _to_unmanaged(this));
       } else {

@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2019 Cray Inc.
+ * Copyright 2004-2020 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -21,7 +21,7 @@
 //
 module DefaultSparse {
   private use ChapelStandard;
-  use RangeChunk only ;
+  private use RangeChunk only ;
 
   config param debugDefaultSparse = false;
 
@@ -77,7 +77,7 @@ module DefaultSparse {
           yield indices(i);
         }
       } else {
-        coforall chunk in chunks(1..numElems, numChunks) {
+        coforall chunk in RangeChunk.chunks(1..numElems, numChunks) {
           for i in chunk do
             yield indices(i);
         }
@@ -96,7 +96,7 @@ module DefaultSparse {
         // ... except if 1, just use the current thread
         yield (this, 1, numElems);
       else
-        coforall chunk in chunks(1..numElems, numChunks) do
+        coforall chunk in RangeChunk.chunks(1..numElems, numChunks) do
           yield (this, chunk.first, chunk.last);
     }
 
@@ -489,7 +489,7 @@ module DefaultSparse {
           yield data[i];
         }
       } else {
-        coforall chunk in chunks(1..numElems, numChunks) {
+        coforall chunk in RangeChunk.chunks(1..numElems, numChunks) {
           for i in chunk do
             yield data[i];
         }
@@ -536,7 +536,7 @@ module DefaultSparse {
   }
 
 
-  proc DefaultSparseDom.dsiSerialWrite(f, printBrackets=true) {
+  proc DefaultSparseDom.dsiSerialWrite(f, printBrackets=true) throws {
     if (rank == 1) {
       if printBrackets then f <~> "{";
       if (_nnz >= 1) {
@@ -565,7 +565,7 @@ module DefaultSparse {
   }
 
 
-  proc DefaultSparseArr.dsiSerialWrite(f) {
+  proc DefaultSparseArr.dsiSerialWrite(f) throws {
     if (rank == 1) {
       if (dom._nnz >= 1) {
         f <~> data(1);

@@ -151,7 +151,7 @@ int main(int argc, char **argv) {
     #endif
     GASNET_Safe(gex_Segment_Attach(&mysegment, myteam, TEST_SEGSZ_REQUEST));
     GASNET_Safe(gex_EP_RegisterHandlers(myep, htable, sizeof(htable)/sizeof(gex_AM_Entry_t)));
-    test_init("testqueue",1,"[-in|-out|-a|-f] (iters) (maxdepth) (maxsz)\n"
+    test_init("testqueue",1,"[-in|-out|-a|-f] [type options] (iters) (maxdepth) (maxsz)\n"
                "  The '-in' or '-out' option selects whether the initiator-side\n"
                "    memory is in the GASNet segment or not (default is 'in').\n"
                "  The -a option enables full-duplex mode, where all nodes send.\n"
@@ -166,9 +166,9 @@ int main(int argc, char **argv) {
                "   -n : Test non-bulk put/gets\n"
                "   -b : Test bulk put/gets\n"
                "   -v : Test value-based put/gets\n"
-               "   -i : Test implicit-handle put/gets\n"
-               "   -e : Test explicit-handle put/gets\n"
-               "   -k : Test blocking put/gets\n");
+               "   -i : Test implicit-handle put/gets/medium/long\n"
+               "   -e : Test explicit-handle put/gets/medium/long\n"
+               "   -k : Test blocking put/gets/medium/long\n");
     if (help) test_usage();
 
     min_payload = 1;
@@ -456,9 +456,9 @@ void do_amtests(void) {
                  min_payload);
     }
 
-    if (do_ammedium) {
+    if (do_ammedium && do_blocking) {
       gasnett_atomic_set(&amcount, 0, 0);
-      QUEUE_TEST("gex_AM_RequestMedium0", 
+      QUEUE_TEST("gex_AM_RequestMedium0 (blocking for LC)",
                  gex_AM_RequestMedium0(myteam, peerproc, hidx_ping_medhandler,
                                            msgbuf, payload, GEX_EVENT_NOW, 0), (void)0,
                 { assert(iamrecver);
@@ -466,16 +466,56 @@ void do_amtests(void) {
                   gasnett_atomic_set(&amcount, 0, 0); }, 
                  gex_AM_MaxRequestMedium(myteam,GEX_RANK_INVALID,GEX_EVENT_NOW,0,0));
     }
+    if (do_ammedium && do_explicit) {
+      QUEUE_TEST("gex_AM_RequestMedium0 (explicit handle for LC)",
+                 gex_AM_RequestMedium0(myteam, peerproc, hidx_ping_medhandler,
+                                         msgbuf, payload, &events[i], 0),
+                 gex_Event_WaitAll(events, depth, 0),
+                { assert(iamrecver);
+                  GASNET_BLOCKUNTIL(gasnett_atomic_read(&amcount,0) == depth);
+                  gasnett_atomic_set(&amcount, 0, 0); },
+                 gex_AM_MaxRequestMedium(myteam,GEX_RANK_INVALID,NULL,0,0));
+    }
+    if (do_ammedium && do_implicit) {
+      QUEUE_TEST("gex_AM_RequestMedium0 (implicit handle for LC)",
+                 gex_AM_RequestMedium0(myteam, peerproc, hidx_ping_medhandler,
+                                         msgbuf, payload, GEX_EVENT_GROUP, 0),
+                 gex_NBI_Wait(GEX_EC_ALL,0),
+                { assert(iamrecver);
+                  GASNET_BLOCKUNTIL(gasnett_atomic_read(&amcount,0) == depth);
+                  gasnett_atomic_set(&amcount, 0, 0); },
+                 gex_AM_MaxRequestMedium(myteam,GEX_RANK_INVALID,GEX_EVENT_GROUP,0,0));
+    }
 
-    if (do_amlong) {
+    if (do_amlong && do_blocking) {
       gasnett_atomic_set(&amcount, 0, 0);
-      QUEUE_TEST("gex_AM_RequestLong0", 
+      QUEUE_TEST("gex_AM_RequestLong0 (blocking for LC)",
                  gex_AM_RequestLong0(myteam, peerproc, hidx_ping_longhandler,
                                          msgbuf, payload, tgtmem, GEX_EVENT_NOW, 0), (void)0,
                 { assert(iamrecver);
                   GASNET_BLOCKUNTIL(gasnett_atomic_read(&amcount,0) == depth); 
                   gasnett_atomic_set(&amcount, 0, 0); }, 
                  gex_AM_MaxRequestLong(myteam,GEX_RANK_INVALID,GEX_EVENT_NOW,0,0));
+    }
+    if (do_amlong && do_explicit) {
+      QUEUE_TEST("gex_AM_RequestLong0 (explicit handle for LC)",
+                 gex_AM_RequestLong0(myteam, peerproc, hidx_ping_longhandler,
+                                         msgbuf, payload, tgtmem, &events[i], 0),
+                 gex_Event_WaitAll(events, depth, 0),
+                { assert(iamrecver);
+                  GASNET_BLOCKUNTIL(gasnett_atomic_read(&amcount,0) == depth);
+                  gasnett_atomic_set(&amcount, 0, 0); },
+                 gex_AM_MaxRequestLong(myteam,GEX_RANK_INVALID,NULL,0,0));
+    }
+    if (do_amlong && do_implicit) {
+      QUEUE_TEST("gex_AM_RequestLong0 (implicit handle for LC)",
+                 gex_AM_RequestLong0(myteam, peerproc, hidx_ping_longhandler,
+                                         msgbuf, payload, tgtmem, GEX_EVENT_GROUP, 0),
+                 gex_NBI_Wait(GEX_EC_ALL,0),
+                { assert(iamrecver);
+                  GASNET_BLOCKUNTIL(gasnett_atomic_read(&amcount,0) == depth);
+                  gasnett_atomic_set(&amcount, 0, 0); },
+                 gex_AM_MaxRequestLong(myteam,GEX_RANK_INVALID,GEX_EVENT_GROUP,0,0));
     }
 }
 

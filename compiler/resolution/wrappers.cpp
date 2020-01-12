@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2019 Cray Inc.
+ * Copyright 2004-2020 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -145,15 +145,15 @@ static bool isNestedNewOrDefault(FnSymbol* innerFn, CallExpr* innerCall) {
 
 /************************************* | **************************************
 *                                                                             *
-* The argument actualIdxToFormals[i] stores, for actual i (counting from 0),  *
-* the corresponding formal argument.                                          *
+* actualIdxToFormal[i] is the formal argument that corresponds to i-th actual *
+* (counting from 0). 'actualIdxToFormal' can be modified here.                *
 * (This mapping is nontrivial when named arguments are used)                  *
 *                                                                             *
 ************************************** | *************************************/
 
 FnSymbol* wrapAndCleanUpActuals(FnSymbol*                fn,
                                 CallInfo&                info,
-                                std::vector<ArgSymbol*>  actualIdxToFormal,
+                                std::vector<ArgSymbol*>& actualIdxToFormal,
                                 bool                     fastFollowerChecks) {
   int       numActuals = static_cast<int>(actualIdxToFormal.size());
   FnSymbol* retval     = fn;
@@ -497,13 +497,9 @@ static DefaultExprFnEntry buildDefaultedActualFn(FnSymbol*  fn,
   ret.defaultExprFn = wrapper;
 
   //wrapper->addFlag(FLAG_WRAPPER);
-
   wrapper->addFlag(FLAG_INVISIBLE_FN);
-
   wrapper->addFlag(FLAG_INLINE);
-
   wrapper->addFlag(FLAG_LINE_NUMBER_OK);
-
   wrapper->retTag = RET_VALUE;
 
   if (fn->hasFlag(FLAG_METHOD)) {
@@ -528,6 +524,7 @@ static DefaultExprFnEntry buildDefaultedActualFn(FnSymbol*  fn,
   wrapper->addFlag(FLAG_COMPILER_GENERATED);
   wrapper->addFlag(FLAG_MAYBE_PARAM);
   wrapper->addFlag(FLAG_MAYBE_TYPE);
+  wrapper->setGeneric(false); // We are here only when resolving a call.
 
   if (fn->throwsError())
     wrapper->throwsErrorInit();
@@ -1229,13 +1226,15 @@ static void errorIfValueCoercionToRef(CallExpr* call, ArgSymbol* formal) {
     // compiler is currently producing this pattern for chpl__unref.
     // This is a workaround and a better solution would be preferred.
   } else if (argumentCanModifyActual(intent)) {
+   if (! inGenerousResolutionForErrors()) {
     // Error for coerce->value passed to ref / out / etc
     USR_FATAL_CONT(call,
                    "value from coercion passed to ref formal '%s'",
                    formal->name);
-    USR_FATAL_CONT(formal->getFunction(),
+    USR_PRINT(formal->getFunction(),
                    "to function '%s' defined here",
                    formal->getFunction()->name);
+   }
   } else {
     // Error for coerce->value passed to 'const ref' (ref case handled above).
     // Note that coercing SubClass to ParentClass is theoretically
@@ -1247,11 +1246,11 @@ static void errorIfValueCoercionToRef(CallExpr* call, ArgSymbol* formal) {
     // visible).
     bool formalIsRef = formal->isRef() || (intent & INTENT_REF);
 
-    if (formalIsRef) {
+    if (formalIsRef && ! inGenerousResolutionForErrors()) {
       USR_FATAL_CONT(call,
                      "value from coercion passed to const ref formal '%s'",
                      formal->name);
-      USR_FATAL_CONT(formal->getFunction(),
+      USR_PRINT(formal->getFunction(),
                      "to function '%s' defined here",
                      formal->getFunction()->name);
 
@@ -1724,7 +1723,7 @@ static BlockStmt* buildPromotionLoop(PromotionInfo& promotion,
                                      CallInfo&  info,
                                      bool       fastFollowerChecks);
 
-static void       buildLeaderIterator(FnSymbol* wrapFn,
+static void       buildLeaderIterator(PromotionInfo& promotion,
                                       BlockStmt* instantiationPt,
                                       Expr*     iterator,
                                       bool      zippered);
@@ -2000,7 +1999,7 @@ static BlockStmt* buildPromotionLoop(PromotionInfo& promotion,
  {
   promotion.hasLeaderFollowers = true;
 
-  buildLeaderIterator(wrapFn, instantiationPt, iterator, zippered);
+  buildLeaderIterator(promotion, instantiationPt, iterator, zippered);
 
   buildFollowerIterator(promotion, instantiationPt, indices, iterator, wrapCall);
 
@@ -2023,12 +2022,12 @@ static BlockStmt* buildPromotionLoop(PromotionInfo& promotion,
   return ForLoop::buildForLoop(indices, iterator, yieldBlock, false, zippered);
 }
 
-static void buildLeaderIterator(FnSymbol* wrapFn,
+static void buildLeaderIterator(PromotionInfo& promotion,
                                 BlockStmt* instantiationPt,
                                 Expr*     iterator,
                                 bool      zippered) {
   SymbolMap   leaderMap;
-  FnSymbol*   liFn       = wrapFn->copy(&leaderMap);
+  FnSymbol*   liFn       = promotion.wrapperFn->copy(&leaderMap);
 
   Type*       tagType    = gLeaderTag->type;
   ArgSymbol*  liFnTag    = new ArgSymbol(INTENT_PARAM, "tag", tagType);
@@ -2064,7 +2063,7 @@ static void buildLeaderIterator(FnSymbol* wrapFn,
   BlockStmt* loop = buildChapelStmt(fs);
 
   liFn->addFlag(FLAG_INLINE_ITERATOR);
-  liFn->addFlag(FLAG_GENERIC);
+  liFn->setGeneric(true);
   liFn->removeFlag(FLAG_INVISIBLE_FN);
 
   liFn->insertFormalAtTail(liFnTag);
@@ -2079,7 +2078,7 @@ static void buildLeaderIterator(FnSymbol* wrapFn,
 
   liFn->insertAtTail(loop);
 
-  theProgram->block->insertAtTail(new DefExpr(liFn));
+  promotion.fn->defPoint->getModule()->block->insertAtHead(new DefExpr(liFn));
 
   normalize(liFn);
 
@@ -2119,7 +2118,7 @@ static void buildFollowerIterator(PromotionInfo& promotion,
   fiFnFollower = new ArgSymbol(INTENT_BLANK, iterFollowthisArgname, dtAny);
   fastFollower = new ArgSymbol(INTENT_PARAM, "fast", dtBool, NULL, symFalse);
 
-  fiFn->addFlag(FLAG_GENERIC);
+  fiFn->setGeneric(true);
   fiFn->removeFlag(FLAG_INVISIBLE_FN);
 
   fiFn->insertFormalAtTail(fiFnTag);
@@ -2143,7 +2142,7 @@ static void buildFollowerIterator(PromotionInfo& promotion,
                                      followerMap,
                                      wrapCall));
 
-  theProgram->block->insertAtTail(new DefExpr(fiFn));
+  fn->defPoint->getModule()->block->insertAtHead(new DefExpr(fiFn));
 
   normalize(fiFn);
 
@@ -2602,6 +2601,8 @@ static void buildFastFollowerCheck(bool                  isStatic,
     checkFn->retTag = RET_VALUE;
   }
 
+  checkFn->addFlag(FLAG_COMPILER_GENERATED);
+
   checkFn->insertFormalAtTail(x);
 
   if (addLead == true) {
@@ -2610,8 +2611,6 @@ static void buildFastFollowerCheck(bool                  isStatic,
     checkFn->insertFormalAtTail(lead);
 
     forward = new CallExpr(astr(fnName, "Zip"), pTup, lead);
-
-    checkFn->addFlag(FLAG_GENERIC);
 
   } else {
     forward = new CallExpr(astr(fnName, "Zip"), pTup);
@@ -2642,9 +2641,11 @@ static void buildFastFollowerCheck(bool                  isStatic,
   checkFn->insertAtTail(new CallExpr(PRIM_MOVE,   returnTmp, forward));
   checkFn->insertAtTail(new CallExpr(PRIM_RETURN, returnTmp));
 
-  theProgram->block->insertAtTail(new DefExpr(checkFn));
+  wrapper->defPoint->getModule()->block->insertAtHead(new DefExpr(checkFn));
 
   normalize(checkFn);
+  checkFn->setGeneric(addLead);
+  INT_ASSERT(! wrapper->isGeneric()); //fyi
 }
 
 void buildFastFollowerChecksIfNeeded(CallExpr* checkCall) {

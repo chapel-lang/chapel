@@ -1,2 +1,0 @@
-{x = 42}
-newValueNotType.chpl:10: error: halt reached - argument to ! is nil

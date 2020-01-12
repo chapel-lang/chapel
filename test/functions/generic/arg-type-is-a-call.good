@@ -1,0 +1,4 @@
+arg-type-is-a-call.chpl:16: warning: ra: owned OAR(bool)
+arg-type-is-a-call.chpl:35: warning: formal1: GRec(5)
+arg-type-is-a-call.chpl:36: warning: formal2: GRec(5)
+arg-type-is-a-call.chpl:38: error: done

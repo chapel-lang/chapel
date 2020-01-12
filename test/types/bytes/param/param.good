@@ -1,0 +1,27 @@
+bytes1 as bytes
+bytes1 as c_string
+6
+6
+6
+bytes1bytes1bytes2 as bytes
+65
+116
+false
+true
+false
+true
+false
+true
+false
+true
+false
+true
+false
+true
+10 as bytes
+10.0 as bytes
+true as bytes
+10.0i as bytes
+10.0 + 10.0i as bytes
+some string as bytes
+some C string as bytes

@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2019 Cray Inc.
+ * Copyright 2004-2020 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -21,6 +21,7 @@ private use List;
 use MasonBuild;
 use MasonHelp;
 use MasonUtils;
+use MasonExample;
 use FileSystem;
 use TOML;
 

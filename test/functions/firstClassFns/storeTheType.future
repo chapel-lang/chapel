@@ -1,2 +1,0 @@
-bug: compiler segfault with storing type of fcf directly into type variable
-#13209

@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2019 Cray Inc.
+ * Copyright 2004-2020 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -138,17 +138,19 @@ void chpl_comm_diags_verbose_printf(chpl_bool is_unstable,
   }
 }
 
-#define chpl_comm_diags_verbose_rdma(op, node, size, ln, fn)            \
-  chpl_comm_diags_verbose_printf(false,                                 \
-                                 "%s:%d: remote %s, node %d, %zu bytes",\
-                                 chpl_lookupFilename(fn), ln, op,       \
-                                 (int) node, size)
+#define chpl_comm_diags_verbose_rdma(op, node, size, ln, fn, commid)     \
+  chpl_comm_diags_verbose_printf(false,                                  \
+                                 "%s:%d: remote %s, node %d, %zu bytes, " \
+                                 "commid %d",                            \
+                                 chpl_lookupFilename(fn), ln, op,        \
+                                 (int) node, size, (int) commid)
 
-#define chpl_comm_diags_verbose_rdmaStrd(op, node, ln, fn)              \
+#define chpl_comm_diags_verbose_rdmaStrd(op, node, ln, fn, commid)      \
   chpl_comm_diags_verbose_printf(false,                                 \
-                                 "%s:%d: remote strided %s, node %d",   \
+                                 "%s:%d: remote strided %s, node %d, "  \
+                                 "commid %d",                           \
                                  chpl_lookupFilename(fn), ln, op,       \
-                                 (int) node)
+                                 (int) node, (int) commid)
 
 #define chpl_comm_diags_verbose_amo(op, node, ln, fn)                   \
   chpl_comm_diags_verbose_printf(true,                                  \

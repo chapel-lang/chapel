@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2019 Cray Inc.
+ * Copyright 2004-2020 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -803,7 +803,7 @@ unlock:
   return err;
 }
 
-// allocates and returns a string.
+// allocates and returns a string without checking for valid encoding
 qioerr qio_channel_scan_bytes(const int threadsafe, qio_channel_t* restrict ch, const char* restrict * restrict out, int64_t* restrict len_out, ssize_t maxlen_bytes)
 {
   qioerr err;
@@ -4310,9 +4310,9 @@ qioerr _qio_channel_read_char_slow_unlocked(qio_channel_t* restrict ch, int32_t*
     while( 1 ) {
       gotch = qio_channel_read_byte(false, ch);
       if(gotch < 0 ||
-         qio_utf8_decode(&state,
-                         &codepoint,
-                         gotch) <= 1){
+         chpl_enc_utf8_decode(&state,
+                              &codepoint,
+                              gotch) <= 1){
         break;
       }
     }

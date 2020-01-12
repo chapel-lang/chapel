@@ -1,0 +1,6 @@
+#!/bin/bash
+
+# Make the comparison against .bad insensitive to the number of candidates
+
+sed 's/\(and \)[1-9][0-9]*\( other candidates,\)/\1N\2/' < $2 > $2.tmp && \
+  mv $2.tmp $2

@@ -1,5 +1,7 @@
 // This should generate a warning about not returning a value.
 
+use IO;
+
 proc foo(): int {
   var ret = 5;
   var externTyped: qio_file_ptr_t;

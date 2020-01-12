@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2019 Cray Inc.
+ * Copyright 2004-2020 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -34,6 +34,7 @@
 #include "stmt.h"
 #include "stringutil.h"
 #include "symbol.h"
+#include "wellknown.h"
 
 static void cleanup(ModuleSymbol* module);
 
@@ -114,6 +115,27 @@ static void cleanup(ModuleSymbol* module) {
       }
     } else if (CatchStmt* catchStmt = toCatchStmt(ast)) {
       catchStmt->cleanup();
+    }
+  }
+
+  if (module == stringLiteralModule && !fMinimalModules) {
+    // Fix calls to chpl_createStringWithLiteral to use resolved expression.
+    // For compiler performance reasons, we'd like to have new_StringSymbol
+    // emit calls to a resolved function; however new_StringSymbol might
+    // run before that function is parsed. So fix up any literals created
+    // during parsing here.
+    INT_ASSERT(gChplCreateStringWithLiteral != NULL);
+    const char* name = gChplCreateStringWithLiteral->name;
+
+    for_vector(BaseAST, ast, asts) {
+      if (CallExpr* call = toCallExpr(ast)) {
+        if (UnresolvedSymExpr* urse = toUnresolvedSymExpr(call->baseExpr)) {
+          if (urse->unresolved == name) {
+            SET_LINENO(urse);
+            urse->replace(new SymExpr(gChplCreateStringWithLiteral));
+          }
+        }
+      }
     }
   }
 }

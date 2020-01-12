@@ -1,3 +1,5 @@
+use IO;
+
 var isTrue: bool;
 var isFalse:   bool;
 var notABool: bool;

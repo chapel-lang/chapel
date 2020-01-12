@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2019 Cray Inc.
+ * Copyright 2004-2020 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -275,10 +275,12 @@ void resolveArgIntent(ArgSymbol* arg) {
       // records/unions.
       bool addedTmp = (isRecord(arg->type) || isUnion(arg->type));
       FnSymbol* fn = toFnSymbol(arg->defPoint->parentSymbol);
-      if (fn->hasFlag(FLAG_EXTERN))
+      if (fn->hasFlag(FLAG_EXTERN)) 
         // Q - should this check arg->type->symbol->hasFlag(FLAG_EXTERN)?
         addedTmp = false;
-
+      // Pass wrappers used in libraries/interop by value.
+      if (arg->type->symbol->hasFlag(FLAG_EXPORT_WRAPPER))
+        addedTmp = false;
       if (addedTmp) {
         if (arg->type->symbol->hasFlag(FLAG_COPY_MUTATES) ||
             (formalRequiresTemp(arg, fn) &&

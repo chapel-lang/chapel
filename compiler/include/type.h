@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2019 Cray Inc.
+ * Copyright 2004-2020 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -432,7 +432,7 @@ TYPE_EXTERN Map<Type*, Type*> wideClassMap; // class -> wide class
 TYPE_EXTERN Map<Type*, Type*> wideRefMap;   // reference -> wide reference
 
 void     initPrimitiveTypes();
-void     initChplProgram(DefExpr* objectDef);
+void     initChplProgram();
 void     initCompilerGlobals();
 
 bool is_nothing_type(Type*);

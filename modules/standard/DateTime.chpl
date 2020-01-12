@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2019 Cray Inc.
+ * Copyright 2004-2020 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -34,6 +34,7 @@
 
 module DateTime {
   private use HaltWrappers only ;
+  private use SysCTypes;
 
   /* The minimum year allowed in `date` objects */
   param MINYEAR = 1;
@@ -433,13 +434,17 @@ module DateTime {
     timeStruct.tm_yday = (this - new date(year, 1, 1)).days: int(32);
 
     strftime(c_ptrTo(buf), bufLen, fmt.c_str(), timeStruct);
-    var str = __primitive("cast", c_string, c_ptrTo(buf)): string;
-
+    var str: string;
+    try! {
+      str = createStringWithNewBuffer(c_ptrTo(buf):c_string);
+    }
     return str;
   }
 
+  private use IO;
+
   /* Read or write a date value from channel `f` */
-  proc date.readWriteThis(f) {
+  proc date.readWriteThis(f) throws {
     const dash = new ioLiteral("-");
 
     if f.writing {
@@ -679,13 +684,16 @@ module DateTime {
     }
 
     strftime(c_ptrTo(buf), bufLen, fmt.c_str(), timeStruct);
-    var str = __primitive("cast", c_string, c_ptrTo(buf)): string;
+    var str: string;
+    try! {
+      str = createStringWithNewBuffer(c_ptrTo(buf):c_string);
+    }
 
     return str;
   }
 
   /* Read or write a time value from channel `f` */
-  proc time.readWriteThis(f) {
+  proc time.readWriteThis(f) throws {
     const colon = new ioLiteral(":");
     if f.writing {
       try! {
@@ -1188,7 +1196,10 @@ module DateTime {
     timeStruct.tm_yday = (this.replace(tzinfo=nil) - new datetime(year, 1, 1)).days: int(32);
 
     strftime(c_ptrTo(buf), bufLen, fmt.c_str(), timeStruct);
-    var str = __primitive("cast", c_string, c_ptrTo(buf)): string;
+    var str: string;
+    try! {
+      str = createStringWithNewBuffer(c_ptrTo(buf):c_string);
+    }
 
     return str;
   }
@@ -1201,7 +1212,7 @@ module DateTime {
   }
 
   /* Read or write a datetime value from channel `f` */
-  proc datetime.readWriteThis(f) {
+  proc datetime.readWriteThis(f) throws {
     const dash  = new ioLiteral("-"),
           colon = new ioLiteral(":");
 

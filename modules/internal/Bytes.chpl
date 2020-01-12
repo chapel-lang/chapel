@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2019 Cray Inc.
+ * Copyright 2004-2020 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -39,7 +39,7 @@ Creating :record:`bytes`
 :record:`bytes` and :record:`~String.string`
 --------------------------------------------
 
-As :record:`bytes` can store arbitrary data, any :record:`String.string` can be
+As :record:`bytes` can store arbitrary data, any :record:`~String.string` can be
 cast to :record:`bytes`. In that event, the bytes will store UTF-8 encoded
 character data. However, a :record:`bytes` can contain non-UTF-8 bytes and needs
 to be decoded to be converted to string.
@@ -96,28 +96,17 @@ module Bytes {
   use BytesCasts;
   private use ByteBufferHelpers;
   private use BytesStringCommon;
+  private use SysCTypes;
 
   /*
      ``decodePolicy`` specifies what happens when there is malformed characters
-     when decoding a :record:`bytes` into a UTF-8 :record:`String.string`.
+     when decoding a :record:`bytes` into a UTF-8 :record:`~String.string`.
        
        - **strict**: default policy; raise error
        - **replace**: replace with UTF-8 replacement character
        - **ignore**: silently drop data
   */
   enum decodePolicy { strict, replace, ignore }
-
-  /*
-   A `DecodeError` is thrown if the `decode` method is called on a non-UTF-8
-   string.
-   */
-  class DecodeError: Error {
-    
-    pragma "no doc"
-    override proc message() {
-      return "Invalid UTF-8 character encountered.";
-    }
-  }
 
   pragma "no doc"
   type idxType = int; 
@@ -303,11 +292,11 @@ module Bytes {
     }
 
     pragma "no doc"
-    proc writeThis(f) {
+    proc writeThis(f) throws {
       compilerError("not implemented: writeThis");
     }
     pragma "no doc"
-    proc readThis(f) {
+    proc readThis(f) throws {
       compilerError("not implemented: readThis");
     }
 
@@ -389,6 +378,18 @@ module Bytes {
       */
     inline proc numBytes return len;
 
+    pragma "no doc"
+    inline proc param length param
+      return __primitive("string_length_bytes", this);
+
+    pragma "no doc"
+    inline proc param size param
+      return length;
+
+    pragma "no doc"
+    inline proc param numBytes param
+      return __primitive("string_length_bytes", this);
+
     /*
        Gets a version of the :record:`bytes` that is on the currently
        executing locale.
@@ -416,6 +417,11 @@ module Bytes {
       return getCStr(this);
     }
 
+    pragma "no doc"
+    inline proc param c_str() param : c_string {
+      return this:c_string; // folded out in resolution
+    }
+
     /*
       Gets a byte from the :record:`bytes`
 
@@ -431,6 +437,13 @@ module Bytes {
       return createBytesWithOwnedBuffer(buf, length=1, size=size);
     }
 
+    // byteIndex overload provides a nicer interface for string/bytes
+    // generic programming
+    pragma "no doc"
+    proc this(i: byteIndex): bytes {
+      return this[i:int];
+    }
+
     /*
       :returns: The value of a single-byte :record:`bytes` as an integer.
     */
@@ -440,6 +453,14 @@ module Bytes {
       }
       return bufferGetByte(buf=this.buff, off=0, loc=this.locale_id);
     }
+
+    pragma "no doc"
+    inline proc param toByte() param : uint(8) {
+      if this.numBytes != 1 then
+        compilerError("bytes.toByte() only accepts single-byte bytes");
+      return __primitive("ascii", this);
+    }
+
 
     /*
       Gets a byte from the :record:`bytes`
@@ -452,6 +473,13 @@ module Bytes {
       if boundsChecking && (i <= 0 || i > this.len)
         then halt("index out of bounds of bytes: ", i);
       return bufferGetByte(buf=this.buff, off=i-1, loc=this.locale_id);
+    }
+
+    pragma "no doc"
+    inline proc param byte(param i: int) param : uint(8) {
+      if i < 1 || i > this.numBytes then
+        compilerError("index out of bounds of bytes: " + i:string);
+      return __primitive("ascii", this, i);
     }
 
     /*
@@ -494,7 +522,7 @@ module Bytes {
     // range that can be used to iterate over a section of the string
     // TODO: move into the public interface in some form? better name if so?
     pragma "no doc"
-    proc _getView(r:range(?)) where r.idxType == int {
+    proc _getView(r:range(?)) where r.idxType == int || r.idxType == byteIndex {
       if boundsChecking {
         if r.hasLowBound() && (!r.hasHighBound() || r.size > 0) {
           if r.low:int <= 0 then
@@ -928,6 +956,8 @@ module Bytes {
       pragma "fn synchronization free"
       extern proc qio_decode_char_buf(ref chr:int(32), ref nbytes:c_int,
                                       buf:c_string, buflen:ssize_t):syserr;
+      extern proc qio_encode_char_buf(dst: c_void_ptr, chr: int(32)): syserr;
+      extern proc qio_nbytes_char(chr: int(32)): c_int;
 
       var localThis: bytes = this.localize();
 
@@ -948,23 +978,50 @@ module Bytes {
         var nbytes: c_int;
         var bufToDecode = (localThis.buff + thisIdx): c_string;
         var maxbytes = (localThis.len - thisIdx): ssize_t;
-        qio_decode_char_buf(cp, nbytes, bufToDecode, maxbytes);
+        const decodeRet = qio_decode_char_buf(cp, nbytes,
+                                              bufToDecode, maxbytes);
 
-        if cp == 0xfffd {  //decoder returns the replacement character
+        if decodeRet != 0 {  //decoder returns error
           if errors == decodePolicy.strict {
             throw new owned DecodeError();
           }
-          else if errors == decodePolicy.ignore {
-            thisIdx += nbytes; //skip over the malformed bytes
-            continue;
+          else if errors == decodePolicy.ignore || 
+                  errors == decodePolicy.replace {
+
+            // if nbytes is 1, then we must have read a single byte and found
+            // that it was invalid, if nbytes is >1 then we must have read
+            // multible bytes where the last one broke the sequence. But it can
+            // be a valid byte itself. So we rewind by 1 in that case
+            // we use nInvalidBytes to store how many bytes we are ignoring or
+            // replacing
+            const nInvalidBytes = if nbytes==1 then nbytes else nbytes-1;
+            thisIdx += nInvalidBytes;
+
+            if errors == decodePolicy.replace {
+              param replChar: int(32) = 0xfffd;
+
+              // Replacement can cause the string to be larger than initially
+              // expected. The Unicode replacement character has codepoint
+              // 0xfffd. It is encoded in `encodedReplChar` and its encoded
+              // length is `nbytesRepl`, which is 3 bytes in UTF8. If it is used
+              // in place of a single byte, we may overflow
+              const sizeChange = 3-nInvalidBytes;
+              (ret.buff, ret._size) = bufferEnsureSize(ret.buff, ret._size,
+                                                       ret._size+sizeChange);
+
+              qio_encode_char_buf(ret.buff+decodedIdx, replChar);
+
+              decodedIdx += 3;  // replacement character is 3 bytes in UTF8
+            }
           }
         }
-
-        // do a naive copy
-        bufferMemcpyLocal(dst=ret.buff, src=bufToDecode, len=nbytes,
-                          dst_off=decodedIdx);
-        thisIdx += nbytes;
-        decodedIdx += nbytes;
+        else {  // we got valid characters
+          // do a naive copy
+          bufferMemcpyLocal(dst=ret.buff, src=bufToDecode, len=nbytes,
+                            dst_off=decodedIdx);
+          thisIdx += nbytes;
+          decodedIdx += nbytes;
+        }
       }
 
       ret.len = decodedIdx;
@@ -1283,6 +1340,10 @@ module Bytes {
     return doConcat(s0, s1);
   }
 
+  pragma "no doc"
+  inline proc +(param s0: bytes, param s1: bytes) param
+    return __primitive("string_concat", s0, s1);
+
   /*
      :returns: A new :record:`bytes` which is the result of repeating `s` `n`
                times.  If `n` is less than or equal to 0, an empty bytes is
@@ -1348,6 +1409,36 @@ module Bytes {
   pragma "no doc"
   inline proc >=(a: bytes, b: bytes) : bool {
     return doGreaterThanOrEq(a, b);
+  }
+
+  pragma "no doc"
+  inline proc ==(param s0: bytes, param s1: bytes) param  {
+    return __primitive("string_compare", s0, s1) == 0;
+  }
+
+  pragma "no doc"
+  inline proc !=(param s0: bytes, param s1: bytes) param {
+    return __primitive("string_compare", s0, s1) != 0;
+  }
+
+  pragma "no doc"
+  inline proc <=(param a: bytes, param b: bytes) param {
+    return (__primitive("string_compare", a, b) <= 0);
+  }
+
+  pragma "no doc"
+  inline proc >=(param a: bytes, param b: bytes) param {
+    return (__primitive("string_compare", a, b) >= 0);
+  }
+
+  pragma "no doc"
+  inline proc <(param a: bytes, param b: bytes) param {
+    return (__primitive("string_compare", a, b) < 0);
+  }
+
+  pragma "no doc"
+  inline proc >(param a: bytes, param b: bytes) param {
+    return (__primitive("string_compare", a, b) > 0);
   }
 
   // character-wise operation helpers

@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2019 Cray Inc.
+ * Copyright 2004-2020 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -25,6 +25,7 @@
 #include "driver.h"
 #include "expr.h"
 #include "PartialCopyData.h"
+#include "passes.h"
 #include "resolveFunction.h"
 #include "resolveIntents.h"
 #include "stmt.h"
@@ -590,7 +591,7 @@ FnSymbol* instantiateFunction(FnSymbol*  fn,
                               SymbolMap& allSubsBeforeDefaultExprs) {
   FnSymbol* newFn = fn->partialCopy(&map);
 
-  newFn->removeFlag(FLAG_GENERIC);
+  newFn->clearGeneric();
   newFn->addFlag(FLAG_INVISIBLE_FN);
   newFn->instantiatedFrom = fn;
   newFn->substitutions.map_union(allSubs);
@@ -758,7 +759,7 @@ void explainAndCheckInstantiation(FnSymbol* newFn, FnSymbol* fn) {
                      &explainInstantiationModule);
   }
 
-  if (!newFn->hasFlag(FLAG_GENERIC) && explainInstantiationLine) {
+  if (!newFn->isGeneric() && explainInstantiationLine) {
     explainInstantiation(newFn);
   }
 

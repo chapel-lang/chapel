@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2019 Cray Inc.
+ * Copyright 2004-2020 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -26,7 +26,7 @@
  */
 module CPtr {
   private use ChapelStandard;
-  private use SysBasic, SysError;
+  private use SysBasic, SysError, SysCTypes;
   private use HaltWrappers only;
 
   /* A Chapel version of a C NULL pointer. */
@@ -90,10 +90,12 @@ module CPtr {
       return __primitive("array_get", this, 0);
     }
     /* Print this pointer */
-    inline proc writeThis(ch) {
+    inline proc writeThis(ch) throws {
       (this:c_void_ptr).writeThis(ch);
     }
   }
+
+  private use IO;
 
   /*
   This class represents a C array with fixed size.  A variable of type c_array
@@ -183,7 +185,7 @@ module CPtr {
 
 
     /* Print the elements */
-    proc writeThis(ch) {
+    proc writeThis(ch) throws {
       ch <~> new ioLiteral("[");
       var first = true;
       for i in 0..#size {
@@ -276,11 +278,15 @@ module CPtr {
   }
   pragma "no doc"
   inline proc _cast(type t:string, x:c_void_ptr) {
-    return createStringWithOwnedBuffer(__primitive("ref to string", x));
+    try! {
+      return createStringWithOwnedBuffer(__primitive("ref to string", x));
+    }
   }
   pragma "no doc"
   inline proc _cast(type t:string, x:c_ptr) {
-    return createStringWithOwnedBuffer(__primitive("ref to string", x));
+    try! {
+      return createStringWithOwnedBuffer(__primitive("ref to string", x));
+    }
   }
   pragma "last resort"
   pragma "no doc"

@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2019 Cray Inc.
+ * Copyright 2004-2020 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -275,6 +275,7 @@ module OwnedObject {
     }
 
     pragma "no doc"
+    pragma "leaves this nil"
     proc init=(src : _nilType) {
       this.init(this.type.chpl_t);
 
@@ -421,7 +422,7 @@ module OwnedObject {
   /*
     Swap two :record:`owned` objects.
   */
-  proc <=>(ref lhs:_owned(?t), ref rhs:_owned(t)) {
+  proc <=>(ref lhs:_owned, ref rhs:lhs.type) {
     lhs.chpl_p <=> rhs.chpl_p;
   }
 
@@ -455,7 +456,7 @@ module OwnedObject {
 
   // Don't print out 'chpl_p' when printing an _owned, just print class pointer
   pragma "no doc"
-  proc _owned.readWriteThis(f) {
+  proc _owned.readWriteThis(f) throws {
     f <~> this.chpl_p;
   }
 

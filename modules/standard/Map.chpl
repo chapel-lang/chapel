@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2019 Cray Inc.
+ * Copyright 2004-2020 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -47,12 +47,14 @@ module Map {
     }
   }
 
+  private use IO;
+
   record map {
     type keyType, valType;
     param parSafe = false;
 
-    var keys: domain(keyType, parSafe=parSafe);
-    var vals: [keys] valType;
+    var myKeys: domain(keyType, parSafe=parSafe);
+    var vals: [myKeys] valType;
 
 
     pragma "no doc"
@@ -93,15 +95,15 @@ module Map {
       :arg parSafe: If `true`, this map will use parallel safe operations.
       :type parSafe: bool
     */
-    proc init=(const ref other: map(?kt, ?vt, ?ps), param parSafe=ps) {
+    proc init=(const ref other: map(?kt, ?vt, ?ps)) {
       this.keyType = kt;
       this.valType = vt;
-      this.parSafe = parSafe;
+      this.parSafe = ps;
 
       this.complete();
 
       for key in other {
-        keys += key;
+        myKeys += key;
         vals[key] = other.vals[key];
       }
     }
@@ -116,7 +118,7 @@ module Map {
     */
     proc clear() {
       _enter();
-      keys.clear();
+      myKeys.clear();
       _leave();
     }
 
@@ -125,7 +127,7 @@ module Map {
     */
     inline proc const size {
       _enter();
-      var result = keys.size;
+      var result = myKeys.size;
       _leave();
       return result;
     }
@@ -152,7 +154,7 @@ module Map {
     */
     proc const contains(const k: keyType): bool {
       _enter();
-      var result = keys.contains(k);
+      var result = myKeys.contains(k);
       _leave();
       return result;
     }
@@ -167,8 +169,8 @@ module Map {
     proc update(const ref m: map(keyType, valType, parSafe)) {
       _enter();
       for key in m {
-        if !keys.contains(key) then
-          keys += key;
+        if !myKeys.contains(key) then
+          myKeys += key;
         vals[key] = m.vals[key];
       }
       _leave();
@@ -185,14 +187,14 @@ module Map {
     */
     proc this(k: keyType) ref {
       _enter();
-      var (found, slotNum) = keys._value._findFilledSlot(k, needLock=false);
+      var (found, slotNum) = myKeys._value._findFilledSlot(k, needLock=false);
 
       if found {
         ref result = vals._value.data[slotNum];
         _leave();
         return result;
       } else if slotNum != -1 {
-        const (newSlot, _) = keys._value._addWrapper(k, slotNum, needLock=false);
+        const (newSlot, _) = myKeys._value._addWrapper(k, slotNum, needLock=false);
         ref result = vals._value.data[newSlot];
         _leave();
         return result;
@@ -207,7 +209,7 @@ module Map {
     pragma "no doc"
     proc const this(k: keyType) const {
       _enter();
-      if !keys.contains(k) then
+      if !myKeys.contains(k) then
         halt("map index ", k, " out of bounds");
       const result = vals[k];
       _leave();
@@ -215,12 +217,23 @@ module Map {
     }
 
     /*
-      Iterates over the keys of this map.
+      Iterates over the keys of this map. This is a shortcut for :iter:`keys`.
 
       :yields: A reference to one of the keys contained in this map.
     */
     iter these() const ref {
-      for key in keys {
+      for key in this.keys() {
+        yield key;
+      }
+    }
+
+    /*
+      Iterates over the keys of this map.
+
+      :yields: A reference to one of the keys contained in this map.
+    */
+    iter keys() const ref {
+      for key in myKeys {
         yield key;
       }
     }
@@ -232,7 +245,7 @@ module Map {
                this map.
     */
     iter items() const ref {
-      for key in keys {
+      for key in myKeys {
         yield (key, vals[key]);
       }
     }
@@ -257,12 +270,12 @@ module Map {
 
       :arg ch: A channel to write to.
     */
-    proc readWriteThis(ch: channel) {
+    proc readWriteThis(ch: channel) throws {
       _enter();
       var first = true;
       //try! {
         ch <~> "{";
-        for key in keys {
+        for key in myKeys {
           if first {
             first = false;
           } else {
@@ -291,12 +304,12 @@ module Map {
     */
     proc add(k: keyType, v: valType): bool {
       _enter();
-      if keys.contains(k) {
+      if myKeys.contains(k) {
         _leave();
         return false;
       }
 
-      keys += k;
+      myKeys += k;
       vals[k] = v;
 
       _leave();
@@ -319,7 +332,7 @@ module Map {
     */
     proc set(k: keyType, v: valType): bool {
       _enter();
-      if !keys.contains(k) {
+      if !myKeys.contains(k) {
         _leave();
         return false;
       }
@@ -341,11 +354,11 @@ module Map {
     */
     proc remove(k: keyType): bool {
       _enter();
-      if !keys.contains(k) {
+      if !myKeys.contains(k) {
         _leave();
         return false;
       }
-      keys -= k;
+      myKeys -= k;
       _leave();
       return true;
     }
@@ -359,8 +372,8 @@ module Map {
     */
     proc toArray(): [] (keyType, valType) {
       _enter();
-      var A: [1..keys.size] (keyType, valType);
-      for (a, key) in zip(A, keys) {
+      var A: [1..myKeys.size] (keyType, valType);
+      for (a, key) in zip(A, myKeys) {
         a = (key, vals[key]);
       }
       _leave();
@@ -376,8 +389,8 @@ module Map {
     */
     proc keysToArray(): [] keyType {
       _enter();
-      var A: [1..keys.size] keyType;
-      for (a, k) in zip(A, keys) {
+      var A: [1..myKeys.size] keyType;
+      for (a, k) in zip(A, myKeys) {
         a = k;
       }
       _leave();
@@ -416,7 +429,7 @@ module Map {
   proc =(ref lhs: map(?kt, ?vt, ?ps), const ref rhs: map(kt, vt, ps)){
     lhs.clear();
 
-    for key in rhs.keys {
+    for key in rhs.myKeys {
       lhs.add(key, rhs.vals[key]);
     }
   }
@@ -481,7 +494,7 @@ module Map {
   proc |(a: map(?keyType, ?valueType, ?parSafe),
          b: map(keyType, valueType, parSafe)) {
     var newMap = new map(keyType, valueType, parSafe);
-    newMap.keys = a.keys | b.keys;
+    newMap.myKeys = a.myKeys | b.myKeys;
 
     for k in b do newMap[k] = b.vals[k];
     for k in a do newMap[k] = a.vals[k];
@@ -501,7 +514,7 @@ module Map {
   proc &(a: map(?keyType, ?valueType, ?parSafe),
          b: map(keyType, valueType, parSafe)) {
     var newMap = new map(keyType, valueType, parSafe);
-    newMap.keys = a.keys & b.keys;
+    newMap.myKeys = a.myKeys & b.myKeys;
 
     for k in newMap do newMap[k] = a.vals[k];
     return newMap;
@@ -520,7 +533,7 @@ module Map {
   proc -(a: map(?keyType, ?valueType, ?parSafe),
          b: map(keyType, valueType, parSafe)) {
     var newMap = new map(keyType, valueType, parSafe);
-    newMap.keys = a.keys - b.keys;
+    newMap.myKeys = a.myKeys - b.myKeys;
 
     for k in newMap do newMap[k] = a.vals[k];
 
@@ -540,7 +553,7 @@ module Map {
   proc ^(a: map(?keyType, ?valueType, ?parSafe),
          b: map(keyType, valueType, parSafe)) {
     var newMap = new map(keyType, valueType, parSafe);
-    newMap.keys = a.keys ^ b.keys;
+    newMap.myKeys = a.myKeys ^ b.myKeys;
 
     for k in a do
       if !b.contains(k) then newMap[k] = a.vals[k];

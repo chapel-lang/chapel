@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2019 Cray Inc.
+ * Copyright 2004-2020 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -325,15 +325,35 @@ override proc Cyclic.dsiDisplayRepresentation() {
     writeln("locDist[", tli, "].myChunk = ", locDist[tli].myChunk);
 }
 
+proc Cyclic.init(other: Cyclic, privateData,
+                 param rank = other.rank,
+                 type idxType = other.idxType) {
+  this.rank = rank;
+  this.idxType = idxType;
+  startIdx = privateData[1];
+  targetLocDom = {(...privateData[2])};
+  dataParTasksPerLocale = privateData[3];
+  dataParIgnoreRunningTasks = privateData[4];
+  dataParMinGranularity = privateData[5];
+
+  this.complete();
+
+  for i in targetLocDom {
+    targetLocs[i] = other.targetLocs[i];
+    locDist[i] = other.locDist[i];
+  }
+}
+                 
 proc Cyclic.dsiSupportsPrivatization() param return true;
 
-proc Cyclic.dsiGetPrivatizeData() return 0;
+proc Cyclic.dsiGetPrivatizeData() return (startIdx,
+                                          targetLocDom.dims(),
+                                          dataParTasksPerLocale,
+                                          dataParIgnoreRunningTasks,
+                                          dataParMinGranularity);
 
 proc Cyclic.dsiPrivatize(privatizeData) {
-  return new unmanaged Cyclic(startIdx, targetLocs,
-                    dataParTasksPerLocale,
-                    dataParIgnoreRunningTasks,
-                    dataParMinGranularity);
+  return new unmanaged Cyclic(_to_unmanaged(this), privatizeData);
 }
 
 proc Cyclic.dsiGetReprivatizeData() return 0;
@@ -381,7 +401,7 @@ proc _cyclic_matchArgsShape(type rangeType, type scalarType, args) type {
   return helper(1);
 }
 
-proc Cyclic.writeThis(x) {
+proc Cyclic.writeThis(x) throws {
   x <~> this.type:string <~> "\n";
   x <~> "------\n";
   for locid in targetLocDom do
@@ -719,7 +739,7 @@ pragma "no copy return"
 proc CyclicArr.dsiLocalSlice(ranges) {
   var low: rank*idxType;
   for param i in 1..rank {
-    low(i) = ranges(i).low;
+    low(i) = ranges(i).alignedLow;
   }
 
   return locArr(dom.dist.targetLocsIdx(low)).myElems((...ranges));
@@ -835,9 +855,6 @@ proc CyclicArr.dsiAccess(i:rank*idxType) ref {
   }
   if doRADOpt && !stridable {
     if myLocArr {
-      if boundsChecking then
-        if !dom.dsiMember(i) then
-          halt("array index out of bounds: ", i);
       var rlocIdx = dom.dist.targetLocsIdx(i);
       if !disableCyclicLazyRAD {
         if myLocArr!.locRAD == nil {
@@ -845,6 +862,10 @@ proc CyclicArr.dsiAccess(i:rank*idxType) ref {
           if myLocArr!.locRAD == nil {
             var tempLocRAD = new unmanaged LocRADCache(eltType, rank, idxType,
                 stridable=true, dom.dist.targetLocDom);
+            if myLocArr!.locCyclicRAD != nil {
+              delete myLocArr!.locCyclicRAD;
+              myLocArr!.locCyclicRAD = nil;
+            }
             myLocArr!.locCyclicRAD = new unmanaged LocCyclicRADCache(rank, idxType, dom.dist.startIdx, dom.dist.targetLocDom);
             tempLocRAD.RAD.blk = SENTINEL;
             myLocArr!.locRAD = tempLocRAD;
@@ -881,6 +902,11 @@ proc CyclicArr.dsiAccess(i:rank*idxType) ref {
 
 proc CyclicArr.dsiAccess(i: idxType...rank) ref
   return dsiAccess(i);
+
+proc CyclicArr.dsiBoundsCheck(i: rank*idxType) {
+  return dom.dsiMember(i);
+}
+
 
 iter CyclicArr.these() ref {
   for i in dom do
@@ -989,6 +1015,8 @@ class LocCyclicArr {
   proc deinit() {
     if locRAD != nil then
       delete locRAD;
+    if locCyclicRAD != nil then
+      delete locCyclicRAD;
   }
 }
 

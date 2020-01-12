@@ -1,3 +1,5 @@
+use IO;
+
 enum precipitation {mist, sprinkle, drizzle, rain, shower};
 var todaysWeather: precipitation = precipitation.sprinkle;
 

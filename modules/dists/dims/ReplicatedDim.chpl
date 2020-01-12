@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2019 Cray Inc.
+ * Copyright 2004-2020 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -292,7 +292,7 @@ proc Replicated1locdom.dsiMyDensifiedRangeForTaskID1d(globDD, taskid:int, numTas
   : dsiMyDensifiedRangeType1d(globDD)
 {
   type IT = globDD.idxType;
-  const (start, end) = chunkOrder(locWholeR, numTasks:IT, taskid:IT);
+  const (start, end) = RangeChunk.chunkOrder(locWholeR, numTasks:IT, taskid:IT);
   return (start:IT)..(end:IT);
 }
 

@@ -519,7 +519,7 @@ extern int yylex \
 #undef yyTABLES_NAME
 #endif
 
-#line 317 "chapel.lex"
+#line 320 "chapel.lex"
 
 
 #line 525 "../include/flex-chapel.h"

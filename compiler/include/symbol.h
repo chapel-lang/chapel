@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2019 Cray Inc.
+ * Copyright 2004-2020 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -177,6 +177,7 @@ public:
   void               removeFlag(Flag flag);
   void               copyFlags(const Symbol* other);
 
+  bool               isKnownToBeGeneric();
   virtual bool       isVisible(BaseAST* scope)                 const;
   bool               noDocGen()                                const;
 
@@ -602,6 +603,9 @@ public:
 *                                                                             *
 ************************************** | *************************************/
 
+// Checks whether a string is valid in UTF8 encoding
+bool isValidString(std::string str);
+
 // Processes a char* to replace any escape sequences with the actual bytes
 std::string unescapeString(const char* const str, BaseAST* astForError);
 
@@ -730,6 +734,7 @@ extern Symbol *gTypeDefaultToken;
 extern Symbol *gLeaderTag, *gFollowerTag, *gStandaloneTag;
 extern Symbol *gModuleToken;
 extern Symbol *gNoInit;
+extern Symbol *gSplitInit;
 extern Symbol *gVoid;
 extern Symbol *gNone;
 extern Symbol *gStringC;

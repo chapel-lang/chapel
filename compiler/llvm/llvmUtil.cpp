@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2019 Cray Inc.
+ * Copyright 2004-2020 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -23,6 +23,8 @@
 #include <cassert>
 
 #ifdef HAVE_LLVM
+
+#include "llvm/Support/Debug.h"
 
 bool isArrayVecOrStruct(llvm::Type* t)
 {
@@ -397,6 +399,27 @@ uint64_t getTypeFieldNext(const llvm::DataLayout& layout, llvm::Type* ty, uint64
 
   return doGetTypeFieldNext(layout, ty, offset, 0, sz);
 }
+
+void print_llvm(llvm::Type* t)
+{
+  if (t == NULL)
+    fprintf(stderr, "NULL");
+  else
+    t->print(llvm::dbgs(), true);
+
+  fprintf(stderr, "\n");
+}
+
+void print_llvm(llvm::Value* v)
+{
+  if (v == NULL)
+    fprintf(stderr, "NULL");
+  else
+    v->print(llvm::dbgs(), true);
+
+  fprintf(stderr, "\n");
+}
+
 
 #endif
 

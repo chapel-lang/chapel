@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2019 Cray Inc.
+ * Copyright 2004-2020 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -561,6 +561,12 @@ BlockStmt* buildRequireStmt(CallExpr* args) {
   return list;
 }
 
+//
+// Build a queried expression like `?t`
+//
+DefExpr* buildQueriedExpr(const char *expr) {
+  return new DefExpr(new VarSymbol(&(expr[1])));
+}
 
 static void
 buildTupleVarDeclHelp(Expr* base, BlockStmt* decls, Expr* insertPoint) {
@@ -649,8 +655,11 @@ buildIfStmt(Expr* condExpr, Expr* thenExpr, Expr* elseExpr) {
 
 BlockStmt*
 buildExternBlockStmt(const char* c_code) {
-  BlockStmt* ret = NULL;
-  ret = buildChapelStmt(new ExternBlockStmt(c_code));
+  CallExpr* sysCTypes = new CallExpr(PRIM_ACTUALS_LIST,
+                                     new UnresolvedSymExpr("SysCTypes"));
+  BlockStmt* useSysCTypes = buildUseStmt(sysCTypes, /* private = */ false);
+  useSysCTypes->insertAtTail(new ExternBlockStmt(c_code));
+  BlockStmt* ret = buildChapelStmt(useSysCTypes);
 
   // Check that the compiler supports extern blocks
   // but skip these checks for chpldoc.
@@ -1336,11 +1345,23 @@ static Expr* lookupConfigValHelp(const char* cfgname, VarSymbol* var) {
 // first try looking up cfgname;
 // if it fails, try looking up currentModuleName.cfgname
 static Expr* lookupConfigVal(VarSymbol* var) {
+  extern bool parsingPrivate;
   const char* cfgname = var->name;
-  Expr* configInit = NULL;
-  configInit = lookupConfigValHelp(astr(cfgname), var);
-  if (configInit == NULL) {
-    configInit = lookupConfigValHelp(astr(currentModuleName, ".", cfgname), var);
+  Expr* configInit = lookupConfigValHelp(astr(currentModuleName, ".", cfgname), var);
+  // only public configs can be matched in an unqualified manner
+  if (!parsingPrivate) {
+    if (Expr* unqualConfigInit = lookupConfigValHelp(astr(cfgname), var)) {
+      if (configInit == NULL) {
+        configInit = unqualConfigInit;
+      } else {
+        // we may want to have the latter flag "win", but that would require
+        // storing ordering information about the order in which the flags
+        // were passed, which we don't currently maintain.  A job for a rainy
+        // day?
+        USR_FATAL_CONT(var, "config set ambiguously via '-s%s' and '-s%s.%s'",
+                       cfgname, currentModuleName, cfgname);
+      }
+    }
   }
   return configInit;
 }
@@ -1488,6 +1509,15 @@ DefExpr* buildClassDefExpr(const char*  name,
     ts = ct->symbol;
   } else if (strcmp("_locale", name) == 0) {
     ct = installInternalType(ct, dtLocale);
+    ts = ct->symbol;
+  } else if (strcmp("_object", name) == 0) {
+    ct = installInternalType(ct, dtObject);
+    ts = ct->symbol;
+  } else if (strcmp("_owned", name) == 0) {
+    ct = installInternalType(ct, dtOwned);
+    ts = ct->symbol;
+  } else if (strcmp("_shared", name) == 0) {
+    ct = installInternalType(ct, dtShared);
     ts = ct->symbol;
   } else {
     ts = new TypeSymbol(name, ct);
@@ -2003,6 +2033,7 @@ buildOnStmt(Expr* expr, Expr* stmt) {
     Symbol* tmp = newTempConst();
     block->insertAtHead(new CallExpr(PRIM_MOVE, tmp, onExpr)); // evaluate the expression for side effects
     block->insertAtHead(new DefExpr(tmp));
+    block->blockInfoSet(new CallExpr(PRIM_BLOCK_ELIDED_ON, gFalse, tmp));
     return buildChapelStmt(block);
   }
 
@@ -2303,7 +2334,9 @@ static BlockStmt* findStmtWithTag(PrimitiveTag tag, BlockStmt* blockStmt) {
       blockStmt = NULL;
 
     // Stop if the tail is not a "real" BlockStmt (e.g. a Loop etc)
-    } else if (tail == NULL || tail->isRealBlockStmt() == false) {
+    } else if (tail == NULL ||
+               (tail->isRealBlockStmt() == false &&
+                !tail->isBlockType(PRIM_BLOCK_ELIDED_ON))) {
       blockStmt = NULL;
 
     // Step in to the block and try again

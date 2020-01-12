@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2019 Cray Inc.
+ * Copyright 2004-2020 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -30,6 +30,8 @@ module LocaleModel {
 
   use LocaleModelHelpNUMA;
   use LocaleModelHelpMem;
+
+  private use IO;
 
   //
   // The task layer calls these to convert between full sublocales and
@@ -72,7 +74,7 @@ module LocaleModel {
       ndName = "ND"+sid:string;
     }
 
-    override proc writeThis(f) {
+    override proc writeThis(f) throws {
       if parent then
         parent!.writeThis(f);
       f <~> '.'+ndName;
@@ -197,7 +199,7 @@ module LocaleModel {
     //- Implementation (private)
     //-
     proc setup() {
-      helpSetupLocaleNUMA(this, local_name, numSublocales);
+      helpSetupLocaleNUMA(this, local_name, numSublocales, NumaDomain);
     }
     //------------------------------------------------------------------------}
 
@@ -246,7 +248,7 @@ module LocaleModel {
     override proc chpl_name() return local_name();
     proc local_name() return "rootLocale";
 
-    override proc writeThis(f) {
+    override proc writeThis(f) throws {
       f <~> name;
     }
 
