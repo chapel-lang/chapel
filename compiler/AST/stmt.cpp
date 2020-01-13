@@ -452,7 +452,7 @@ BlockStmt::length() const {
 
 void
 BlockStmt::useListAdd(ModuleSymbol* mod, bool privateUse) {
-  useListAdd(new UseStmt(mod, privateUse));
+  useListAdd(new UseStmt(mod, "", privateUse));
 }
 
 void

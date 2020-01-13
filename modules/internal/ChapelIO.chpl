@@ -255,7 +255,7 @@ module ChapelIO {
 
 
     pragma "no doc"
-    proc writeThisFieldsDefaultImpl(writer, x:?t, inout first:bool) {
+    proc writeThisFieldsDefaultImpl(writer, x:?t, inout first:bool) throws {
       param num_fields = __primitive("num fields", t);
       var isBinary = writer.binary();
 
@@ -356,7 +356,7 @@ module ChapelIO {
     }
 
     private
-    proc skipFieldsAtEnd(reader, inout needsComma:bool) {
+    proc skipFieldsAtEnd(reader, inout needsComma:bool) throws {
 
       var st = reader.styleElement(QIO_STYLE_ELEMENT_AGGREGATE);
       var skip_unk = reader.styleElement(QIO_STYLE_ELEMENT_SKIP_UNKNOWN_FIELDS);
@@ -398,7 +398,7 @@ module ChapelIO {
 
     pragma "no doc"
     proc readThisFieldsDefaultImpl(reader, type t, ref x,
-                                   inout needsComma:bool) {
+                                   inout needsComma:bool) throws {
       param num_fields = __primitive("num fields", t);
       var isBinary = reader.binary();
       var superclass_error : syserr = ENOERR;

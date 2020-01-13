@@ -1,0 +1,2 @@
+renamePrivateUse2.chpl:12: In function 'main':
+renamePrivateUse2.chpl:16: error: 'F' undeclared (first use this function)

@@ -168,7 +168,6 @@ class SymExpr : public Expr {
   void setSymbol(Symbol* s);
 };
 
-
 class UnresolvedSymExpr : public Expr {
  public:
   const char* unresolved;

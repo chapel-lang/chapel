@@ -37,17 +37,10 @@ static char** chpl_launch_create_argv(const char *launch_cmd,
   snprintf(_nlbuf, sizeof(_nlbuf), "%d", getArgNumLocales());
 
   char** largv = NULL;
-  int largv_size = 0;
+  int largv_len = 0;
   int largc = 0;
-#define ADD_LARGV(s)                                                    \
-  do {                                                                  \
-    if (largc >= largv_size) {                                          \
-      largv_size += 10;                                                 \
-      largv = chpl_mem_realloc(largv, largv_size * sizeof(*largv),      \
-                               CHPL_RT_MD_COMMAND_BUFFER, -1, 0);       \
-    }                                                                   \
-    largv[largc++] = (char*) (s);                                       \
-  } while (0)
+#define ADD_LARGV(arg) chpl_append_to_largv(&largc, (const char***) &largv, \
+                                            &largv_len, arg)
 
   ADD_LARGV(launch_cmd);
   ADD_LARGV("-np");

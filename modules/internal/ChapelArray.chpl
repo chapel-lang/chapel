@@ -2041,6 +2041,11 @@ module ChapelArray {
     }
   }
 
+  proc _cast(type t:string, x: _domain) {
+    use IO;
+    return stringify(x);
+  }
+
   proc chpl_countDomHelp(dom, counts) {
     var ranges = dom.dims();
     for param i in 1..dom.rank do

@@ -634,7 +634,7 @@ void ModuleSymbol::addDefaultUses() {
       SET_LINENO(this);
 
       UnresolvedSymExpr* modRef = new UnresolvedSymExpr("ChapelStandard");
-      block->insertAtHead(new UseStmt(modRef, /* isPrivate */ true));
+      block->insertAtHead(new UseStmt(modRef, "", /* isPrivate */ true));
     }
 
   // We don't currently have a good way to fetch the root module by name.
@@ -650,7 +650,7 @@ void ModuleSymbol::addDefaultUses() {
       SET_LINENO(this);
 
       UnresolvedSymExpr* modRef = new UnresolvedSymExpr("ISO_Fortran_binding");
-      block->insertAtTail(new UseStmt(modRef, /* isPrivate */ false));
+      block->insertAtTail(new UseStmt(modRef, "", /* isPrivate */ false));
     }
   }
 }
@@ -741,7 +741,7 @@ void initStringLiteralModule() {
                                                    MOD_INTERNAL,
                                                    new BlockStmt());
 
-  stringLiteralModule->block->useListAdd(new UseStmt(new UnresolvedSymExpr("ChapelStandard"), false));
+  stringLiteralModule->block->useListAdd(new UseStmt(new UnresolvedSymExpr("ChapelStandard"), "", false));
 
   stringLiteralModule->filename = astr("<internal>");
 

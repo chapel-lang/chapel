@@ -1644,48 +1644,69 @@ module RadixSortHelp {
 pragma "no doc"
 module ShallowCopy {
 
+  private use SysCTypes;
+
+  // The shallowCopy / shallowSwap code needs to be able to copy/swap
+  // _array records. But c_ptrTo on an _array will return a pointer to
+  // the first element, which messes up the shallowCopy/shallowSwap code
+  //
+  // As a workaround, this function just returns a pointer to the argument,
+  // whether or not it is an array.
+  private inline proc ptrTo(ref x) {
+    return c_pointer_return(x);
+  }
+
   // These shallow copy functions "move" a record around
   // (i.e. they neither swap nor call a copy initializer).
   //
   // TODO: move these out of the Sort module and/or consider
   // language support for it. See issue #14576.
 
-  inline proc shallowCopy(ref dst:?t, ref src:t) {
-    if isPODType(t) {
+  inline proc shallowCopy(ref dst, ref src) {
+    type st = __primitive("static typeof", dst);
+    if isPODType(st) {
       dst = src;
     } else {
-      var size = c_sizeof(t);
-      c_memcpy(c_ptrTo(dst), c_ptrTo(src), size);
-      // The version moved from should never be used again,
-      // but we clear it out just in case.
-      c_memset(c_ptrTo(src), 0, size);
+      var size = c_sizeof(st);
+      c_memcpy(ptrTo(dst), ptrTo(src), size);
+      if boundsChecking {
+        // The version moved from should never be used again,
+        // but we clear it out just in case.
+        c_memset(ptrTo(src), 0, size);
+      }
     }
   }
 
   // returns the result of shallow copying src
   pragma "unsafe"
-  inline proc shallowCopyInit(ref src:?t) {
-    var dst: t;
+  pragma "no copy return"
+  inline proc shallowCopyInit(ref src) {
+    type st = __primitive("static typeof", src);
+    pragma "no init"
+    pragma "no auto destroy"
+    var dst: st;
     shallowCopy(dst, src);
     return dst;
   }
 
   pragma "unsafe"
   inline proc shallowSwap(ref lhs:?t, ref rhs:t) {
+    type st = __primitive("static typeof", lhs);
+    pragma "no init"
     pragma "no auto destroy"
-    var tmp: t;
-    if isPODType(t) {
+    var tmp: st;
+    if isPODType(st) {
       tmp = lhs;
       lhs = rhs;
       rhs = tmp;
     } else {
-      var size = c_sizeof(t);
+      var size = c_sizeof(st);
       // tmp = lhs
-      c_memcpy(c_ptrTo(tmp), c_ptrTo(lhs), size);
+      c_memcpy(ptrTo(tmp), ptrTo(lhs), size);
       // lhs = rhs
-      c_memcpy(c_ptrTo(lhs), c_ptrTo(rhs), size);
+      c_memcpy(ptrTo(lhs), ptrTo(rhs), size);
       // rhs = tmp
-      c_memcpy(c_ptrTo(rhs), c_ptrTo(tmp), size);
+      c_memcpy(ptrTo(rhs), ptrTo(tmp), size);
     }
   }
 
@@ -1702,8 +1723,9 @@ module ShallowCopy {
     }
 
     if A._instance.isDefaultRectangular() {
-      var size = (nElts:size_t)*c_sizeof(A.eltType);
-      c_memcpy(c_ptrTo(A[dst]), c_ptrTo(A[src]), size);
+      type st = __primitive("static field type", A._value, "eltType");
+      var size = (nElts:size_t)*c_sizeof(st);
+      c_memcpy(ptrTo(A[dst]), ptrTo(A[src]), size);
     } else {
       var ok = chpl__bulkTransferArray(/*dst*/ A, {dst..#nElts},
                                        /*src*/ A, {src..#nElts});
@@ -1728,8 +1750,9 @@ module ShallowCopy {
 
     if DstA._instance.isDefaultRectangular() &&
        SrcA._instance.isDefaultRectangular() {
-      var size = (nElts:size_t)*c_sizeof(DstA.eltType);
-      c_memcpy(c_ptrTo(DstA[dst]), c_ptrTo(SrcA[src]), size);
+      type st = __primitive("static field type", DstA._value, "eltType");
+      var size = (nElts:size_t)*c_sizeof(st);
+      c_memcpy(ptrTo(DstA[dst]), ptrTo(SrcA[src]), size);
     } else {
       var ok = chpl__bulkTransferArray(/*dst*/ DstA, {dst..#nElts},
                                        /*src*/ SrcA, {src..#nElts});
@@ -1739,23 +1762,6 @@ module ShallowCopy {
           __primitive("=", DstA[dst+i], SrcA[src+i]);
         }
       }
-    }
-  }
-  inline proc parallelShallowCopy(ref DstA, dst, ref SrcA, src, nElts) {
-    const nTasks = if dataParTasksPerLocale > 0
-                   then dataParTasksPerLocale
-                   else here.maxTaskPar;
-
-    halt("buggy");
-    // TODO: something about this code is wrong right now.
-    const blockSize = divceil(nElts, nTasks);
-    const nBlocks = divceil(nElts, blockSize);
-    coforall tid in 0..#nTasks {
-      var start = tid * blockSize;
-      var n = blockSize;
-      if start + n > nElts then
-        n = nElts - start;
-      shallowCopy(DstA, dst+start, SrcA, src+start, n);
     }
   }
 }

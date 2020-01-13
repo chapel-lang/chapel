@@ -437,6 +437,13 @@ module Bytes {
       return createBytesWithOwnedBuffer(buf, length=1, size=size);
     }
 
+    // byteIndex overload provides a nicer interface for string/bytes
+    // generic programming
+    pragma "no doc"
+    proc this(i: byteIndex): bytes {
+      return this[i:int];
+    }
+
     /*
       :returns: The value of a single-byte :record:`bytes` as an integer.
     */
@@ -515,7 +522,7 @@ module Bytes {
     // range that can be used to iterate over a section of the string
     // TODO: move into the public interface in some form? better name if so?
     pragma "no doc"
-    proc _getView(r:range(?)) where r.idxType == int {
+    proc _getView(r:range(?)) where r.idxType == int || r.idxType == byteIndex {
       if boundsChecking {
         if r.hasLowBound() && (!r.hasHighBound() || r.size > 0) {
           if r.low:int <= 0 then

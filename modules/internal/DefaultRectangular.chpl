@@ -1523,17 +1523,17 @@ module DefaultRectangular {
     }
   }
 
-  proc DefaultRectangularDom.dsiSerialReadWrite(f /*: Reader or Writer*/) {
+  proc DefaultRectangularDom.dsiSerialReadWrite(f /*: Reader or Writer*/) throws {
     f <~> new ioLiteral("{") <~> ranges(1);
     for i in 2..rank do
       f <~> new ioLiteral(", ") <~> ranges(i);
     f <~> new ioLiteral("}");
   }
 
-  proc DefaultRectangularDom.dsiSerialWrite(f) { this.dsiSerialReadWrite(f); }
-  proc DefaultRectangularDom.dsiSerialRead(f) { this.dsiSerialReadWrite(f); }
+  proc DefaultRectangularDom.dsiSerialWrite(f) throws { this.dsiSerialReadWrite(f); }
+  proc DefaultRectangularDom.dsiSerialRead(f) throws { this.dsiSerialReadWrite(f); }
 
-  proc DefaultRectangularArr.dsiSerialReadWrite(f /*: Reader or Writer*/) {
+  proc DefaultRectangularArr.dsiSerialReadWrite(f /*: Reader or Writer*/) throws {
     chpl_serialReadWriteRectangular(f, this);
   }
 
@@ -1543,7 +1543,7 @@ module DefaultRectangular {
   // (e.g., if arr.dom is non-stridable but the 'dom' passed in is
   // stridable).
   //
-  proc chpl_serialReadWriteRectangular(f, arr) {
+  proc chpl_serialReadWriteRectangular(f, arr) throws {
     chpl_serialReadWriteRectangular(f, arr, arr.dom);
   }
 
@@ -1556,24 +1556,24 @@ module DefaultRectangular {
   // Overload sets (or a similar idea) would be a better user-facing
   // way to solve this problem (see CHIP 20).
   pragma "last resort"
-  proc chpl_serialReadWriteRectangular(f, arr, dom) {
+  proc chpl_serialReadWriteRectangular(f, arr, dom) throws {
     chpl_serialReadWriteRectangularHelper(f, arr, dom);
   }
 
-  proc chpl_serialReadWriteRectangularHelper(f, arr, dom) {
+  proc chpl_serialReadWriteRectangularHelper(f, arr, dom) throws {
     param rank = arr.rank;
     type idxType = arr.idxType;
     type idxSignedType = chpl__signedType(chpl__idxTypeToIntIdxType(idxType));
 
     const isNative = f.styleElement(QIO_STYLE_ELEMENT_IS_NATIVE_BYTE_ORDER): bool;
 
-    proc writeSpaces(dim:int) {
+    proc writeSpaces(dim:int) throws {
       for i in 1..dim {
         f <~> new ioLiteral(" ");
       }
     }
 
-    proc recursiveArrayWriter(in idx: rank*idxType, dim=1, in last=false) {
+    proc recursiveArrayWriter(in idx: rank*idxType, dim=1, in last=false) throws {
       var binary = f.binary();
       var arrayStyle = f.styleElement(QIO_STYLE_ELEMENT_ARRAY);
       var isspace = arrayStyle == QIO_ARRAY_FORMAT_SPACE && !binary;
@@ -1760,11 +1760,11 @@ module DefaultRectangular {
     }
   }
 
-  proc DefaultRectangularArr.dsiSerialWrite(f) {
+  proc DefaultRectangularArr.dsiSerialWrite(f) throws {
     dsiSerialReadWrite(f);
   }
 
-  proc DefaultRectangularArr.dsiSerialRead(f) {
+  proc DefaultRectangularArr.dsiSerialRead(f) throws {
     dsiSerialReadWrite(f);
   }
 

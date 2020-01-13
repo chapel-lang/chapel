@@ -16,7 +16,7 @@
 # limitations under the License.
 
 RUNTIME_ROOT = ../../..
-RUNTIME_SUBDIR = src/launch/mpirun4ofi
+RUNTIME_SUBDIR = src/launch/$(CHPL_MAKE_LAUNCHER)
 
 ifndef CHPL_MAKE_HOME
 export CHPL_MAKE_HOME=$(shell pwd)/$(RUNTIME_ROOT)/..

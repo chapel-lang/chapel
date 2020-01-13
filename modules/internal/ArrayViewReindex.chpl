@@ -481,11 +481,11 @@ module ArrayViewReindex {
     // I/O
     //
 
-    proc dsiSerialWrite(f) {
+    proc dsiSerialWrite(f) throws {
       chpl_serialReadWriteRectangular(f, this, privDom.updom);
     }
 
-    proc dsiSerialRead(f) {
+    proc dsiSerialRead(f) throws {
       chpl_serialReadWriteRectangular(f, this, privDom.updom);
     }
 

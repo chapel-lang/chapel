@@ -16,7 +16,7 @@
 # limitations under the License.
 
 LAUNCHER_SRCS = \
-        launch-mpirun4ofi.c \
+        launch-$(CHPL_MAKE_LAUNCHER).c \
 
 SRCS = $(LAUNCHER_SRCS)
 

@@ -1938,10 +1938,12 @@ codegen_config() {
           type = type->getField("addr")->type;
         fprintf(outfile, "%s", type->symbol->name);
         if (var->getModule()->modTag == MOD_INTERNAL) {
-          fprintf(outfile, "\", \"Built-in\");\n");
+          fprintf(outfile, "\", \"Built-in\"");
         } else {
-          fprintf(outfile, "\", \"%s\");\n", var->getModule()->name);
+          fprintf(outfile, "\", \"%s\"", var->getModule()->name);
         }
+        fprintf(outfile,", /* private = */ %d);\n", var->hasFlag(FLAG_PRIVATE));
+
       }
     }
 
@@ -1981,7 +1983,7 @@ codegen_config() {
 
     forv_Vec(VarSymbol, var, gVarSymbols) {
       if (var->hasFlag(FLAG_CONFIG) && !var->isType()) {
-        std::vector<llvm::Value *> args (3);
+        std::vector<llvm::Value *> args (4);
         args[0] = info->irBuilder->CreateLoad(
             new_CStringSymbol(var->name)->codegen().val);
 
@@ -2006,6 +2008,8 @@ codegen_config() {
           args[2] =info->irBuilder->CreateLoad(
               new_CStringSymbol(var->getModule()->name)->codegen().val);
         }
+
+        args[3] = info->irBuilder->getInt32(var->hasFlag(FLAG_PRIVATE));
 
         info->irBuilder->CreateCall(installConfigFunc, args);
       }

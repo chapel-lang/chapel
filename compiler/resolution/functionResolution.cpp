@@ -9337,6 +9337,11 @@ static void replaceRuntimeTypeDefaultInit(CallExpr* call) {
   Type*    rt = typeSe->symbol()->type;
 
   if (rt->symbol->hasFlag(FLAG_RUNTIME_TYPE_VALUE)) {
+    if (var->hasFlag(FLAG_NO_INIT)) {
+      call->convertToNoop();
+      return;
+    }
+
     // ('init' x foo), where typeof(foo) has flag "runtime type value"
     //
     // ==>
