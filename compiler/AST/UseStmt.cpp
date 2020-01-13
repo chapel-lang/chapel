@@ -23,6 +23,7 @@
 #include "ResolveScope.h"
 #include "scopeResolve.h"
 #include "stlUtil.h"
+#include "stringutil.h"
 #include "visibleFunctions.h"
 
 #include <algorithm>
@@ -31,7 +32,7 @@ UseStmt::UseStmt(BaseAST* source, const char* modRename,
                  bool isPrivate) : Stmt(E_UseStmt) {
   this->isPrivate = isPrivate;
   src    = NULL;
-  this->modRename = modRename;
+  this->modRename = astr(modRename);
   except = false;
 
   if (Symbol* b = toSymbol(source)) {
@@ -57,7 +58,7 @@ UseStmt::UseStmt(BaseAST*                            source,
 
   this->isPrivate = isPrivate;
   src    = NULL;
-  this->modRename = modRename;
+  this->modRename = astr(modRename);
   except = exclude;
 
   if (Symbol* b = toSymbol(source)) {
@@ -526,7 +527,7 @@ Symbol* UseStmt::checkIfModuleNameMatches(const char* name) {
   if (isARename()) {
     // Use statements that rename the module should only allow us to find the
     // new name, not the original one.
-    if (strcmp(name, getRename()) == 0) {
+    if (name == getRename()) {
       SymExpr* actualSe = toSymExpr(src);
       INT_ASSERT(actualSe);
       // Could be either an enum or a module, but either way we should be able
