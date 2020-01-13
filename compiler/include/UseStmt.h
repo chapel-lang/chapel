@@ -26,13 +26,14 @@ class ResolveScope;
 
 class UseStmt : public Stmt {
 public:
-  UseStmt(BaseAST* source, bool isPrivate);
+  UseStmt(BaseAST* source, const char* modRename, bool isPrivate);
 
-                  UseStmt(BaseAST*                            source,
-                          std::vector<const char*>*           args,
-                          bool                                exclude,
-                          std::map<const char*, const char*>* renames,
-                          bool isPrivate);
+  UseStmt(BaseAST*                            source,
+          const char*                         modRename,
+          std::vector<const char*>*           args,
+          bool                                exclude,
+          std::map<const char*, const char*>* renames,
+          bool isPrivate);
 
   DECLARE_COPY(UseStmt);
 
@@ -53,8 +54,10 @@ public:
   bool            hasExceptList()                                        const;
 
   bool            isARename(const char* name)                            const;
+  bool            isARename()                                            const;
 
   const char*     getRename(const char* name)                            const;
+  const char*     getRename()                                            const;
 
   void            scopeResolve(ResolveScope* scope);
 
@@ -66,7 +69,7 @@ public:
 
   BaseAST*        getSearchScope()                                       const;
 
-  ModuleSymbol*   checkIfModuleNameMatches(const char* name);
+  Symbol*         checkIfModuleNameMatches(const char* name);
 
   void            writeListPredicate(FILE* mFP)                          const;
 
@@ -98,6 +101,7 @@ public:
   bool isPrivate;
 
 private:
+  const char*                        modRename;
   bool                               except;
   std::vector<const char*>           methodsAndFields;
   std::vector<const char*>           functionsToAlwaysCheck;

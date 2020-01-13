@@ -62,8 +62,12 @@ Expr* buildDotExpr(const char* base, const char* member);
 BlockStmt* buildChapelStmt(Expr* expr = NULL);
 BlockStmt* buildErrorStandin();
 
-BlockStmt* buildUseStmt(CallExpr* modules, bool privateUse);
-BlockStmt* buildUseStmt(Expr* mod, std::vector<OnlyRename*>* names, bool except,
+BlockStmt* buildUseStmt(std::vector<PotentialRename*>* args, bool privateUse);
+BlockStmt* buildUseStmt(Expr* mod, const char* rename,
+                        std::vector<PotentialRename*>* names, bool except,
+                        bool privateUse);
+BlockStmt* buildUseStmt(Expr* mod, Expr* rename,
+                        std::vector<PotentialRename*>* names, bool except,
                         bool privateUse);
 bool processStringInRequireStmt(const char* str, bool parseTime,
                                 const char* modFilename);
@@ -161,7 +165,7 @@ BlockStmt* buildFunctionDecl(FnSymbol*   fn,
                              const char* docs);
 void applyPrivateToBlock(BlockStmt* block);
 BlockStmt* buildForwardingStmt(Expr* expr);
-BlockStmt* buildForwardingStmt(Expr* expr, std::vector<OnlyRename*>* names, bool except);
+BlockStmt* buildForwardingStmt(Expr* expr, std::vector<PotentialRename*>* names, bool except);
 BlockStmt* buildForwardingDeclStmt(BlockStmt*);
 BlockStmt* buildLocalStmt(Expr* condExpr, Expr* stmt);
 BlockStmt* buildLocalStmt(Expr* stmt);

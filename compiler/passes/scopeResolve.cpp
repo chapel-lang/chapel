@@ -78,12 +78,12 @@ static Expr*         handleUnstableClassType(SymExpr* se);
 static void          resolveUnresolvedSymExpr(UnresolvedSymExpr* usymExpr);
 
 static void          resolveUnresolvedSymExpr(UnresolvedSymExpr* usymExpr,
-                                              Symbol* toSymbol);
+                                              Symbol* sym);
 
-static bool          lookupThisScopeAndUses(const char*           name,
-                                            BaseAST*              context,
-                                            BaseAST*              scope,
-                                            std::vector<Symbol*>& symbols);
+static bool lookupThisScopeAndUses(const char*           name,
+                                   BaseAST*              context,
+                                   BaseAST*              scope,
+                                   std::vector<Symbol*>& symbols);
 
 static ModuleSymbol* definesModuleSymbol(Expr* expr);
 
@@ -1843,7 +1843,7 @@ static bool lookupThisScopeAndUses(const char*           name,
           // symbols that they define.
           forv_Vec(UseStmt, use, *moduleUses) {
             if (use != NULL) {
-              if (ModuleSymbol* modSym = use->checkIfModuleNameMatches(name)) {
+              if (Symbol* modSym = use->checkIfModuleNameMatches(name)) {
                 if (isRepeat(modSym, symbols) == false) {
                   symbols.push_back(modSym);
                 }
