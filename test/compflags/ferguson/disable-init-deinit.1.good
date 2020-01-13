@@ -3,5 +3,5 @@ init
 after declaration, before assignment
 init
 deinit
-after assignment
 deinit
+after assignment
