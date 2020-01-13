@@ -537,8 +537,7 @@ SymExpr::SymExpr(Symbol* init_var) :
   Expr(E_SymExpr),
   var(init_var),
   symbolSymExprsPrev(NULL),
-  symbolSymExprsNext(NULL),
-  rename(NULL)
+  symbolSymExprsNext(NULL)
 {
   if (!init_var)
     INT_FATAL(this, "Bad call to SymExpr");
@@ -546,26 +545,6 @@ SymExpr::SymExpr(Symbol* init_var) :
 
   // No need to call var->addSymExpr here since it will be called
   // when the SymExpr is added to the tree.
-}
-
-SymExpr::SymExpr(Symbol* init_var, SymRename* rename):
-  Expr(E_SymExpr),
-  var(init_var),
-  symbolSymExprsPrev(NULL),
-  symbolSymExprsNext(NULL),
-  rename(rename)
-{
-  if (!init_var)
-    INT_FATAL(this, "Bad call to SymExpr");
-  gSymExprs.add(this);
-
-  // No need to call var->addSymExpr here since it will be called
-  // when the SymExpr is added to the tree.
-}
-
-SymExpr::~SymExpr() {
-  if (rename)
-    delete rename;
 }
 
 bool SymExpr::isNoInitExpr() const {
@@ -671,21 +650,6 @@ void SymExpr::setSymbol(Symbol* s)
   if (s != NULL && parentSymbol != NULL) {
     s->addSymExpr(this);
   }
-}
-
-/************************************ | *************************************
-*                                                                           *
-*                                                                           *
-************************************* | ************************************/
-SymRename::SymRename(const char* new_name, const char* file_name, int line_no) {
-  newName = new_name;
-  filename = file_name;
-  lineno = line_no;
-}
-
-SymRename* SymRename::copy() {
-  SymRename* cpy = new SymRename(newName, filename, lineno);
-  return cpy;
 }
 
 /************************************ | *************************************
