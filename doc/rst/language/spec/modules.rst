@@ -473,9 +473,9 @@ If a program defines multiple potential entry points, the implementation
 may provide a compiler flag that disambiguates between main functions in
 multiple modules.
 
-   *Cray’s Chapel Implementation*.
+   *Implementation Notes*.
 
-   In the Cray Chapel compiler implementation, the *– –main-module* flag
+   In the current Chapel compiler implementation, the *– –main-module* flag
    can be used to specify the module from which the main function
    definition will be used.
 

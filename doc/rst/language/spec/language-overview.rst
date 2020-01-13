@@ -7,7 +7,8 @@ Chapel is an emerging parallel programming language designed for
 productive scalable computing. Chapel’s primary goal is to make parallel
 programming far more productive, from multicore desktops and laptops to
 commodity clusters and the cloud to high-end supercomputers. Chapel’s
-design and development are being led by Cray Inc. in collaboration with
+design and development are being led by Hewlett Packard Enterprise (formerly
+by Cray Inc.) in collaboration with
 academia, computing centers, and industry.
 
 Chapel is being developed in an open-source manner at GitHub under the
