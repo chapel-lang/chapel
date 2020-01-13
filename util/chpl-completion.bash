@@ -49,6 +49,8 @@ _chpl ()
 --default-dist \
 --denormalize \
 --devel \
+--disable-early-deinit \
+--disable-split-initialization \
 --div-by-zero-checks \
 --dynamic \
 --explain-call \
