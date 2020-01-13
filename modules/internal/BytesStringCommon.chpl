@@ -18,10 +18,10 @@
  */
 
 module BytesStringCommon {
+  private use ChapelStandard;
   private use SysCTypes;
-  use Bytes;
+  private use Bytes;
   private use ByteBufferHelpers;
-
 
   /*
      ``decodePolicy`` specifies what happens when there is malformed characters

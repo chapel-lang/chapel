@@ -133,12 +133,13 @@ and :proc:`~string.rfind()` return a :record:`byteIndex`.
  */
 module String {
   private use ChapelStandard;
-  use CString;
   private use SysCTypes;
-  use StringCasts;
   private use ByteBufferHelpers;
   private use BytesStringCommon;
   private use SysBasic;
+
+  public use CString;
+  public use StringCasts;
 
   pragma "fn synchronization free"
   private extern proc qio_decode_char_buf(ref chr:int(32), ref nbytes:c_int, buf:c_string, buflen:ssize_t):syserr;

@@ -93,11 +93,11 @@ To learn more about handling these errors, see the
  */
 module Bytes {
   private use ChapelStandard;
-  use BytesCasts;
   private use ByteBufferHelpers;
   private use BytesStringCommon;
   private use SysCTypes;
 
+  public use BytesCasts;
   public use BytesStringCommon only decodePolicy;  // expose decodePolicy
 
   pragma "no doc"
