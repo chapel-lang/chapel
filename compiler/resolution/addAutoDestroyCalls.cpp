@@ -728,6 +728,15 @@ static Expr* findLastExprInStatement(Expr* e, VarSymbol* v) {
   Expr* stmt = e->getStmtExpr();
   Expr* last = stmt;
 
+  // make it "end of block" if it's returned
+  if (CallExpr* call = toCallExpr(stmt))
+    if (call->isPrimitive(PRIM_MOVE) || call->isPrimitive(PRIM_ASSIGN))
+      if (SymExpr* lhsSe = toSymExpr(call->get(1)))
+        if (SymExpr* rhsSe = toSymExpr(call->get(2)))
+          if (lhsSe->symbol()->hasFlag(FLAG_RVV))
+            if (rhsSe->symbol() == v)
+              return NULL;
+
   // Go up in any complex nested statements until we reach the same level
   // as the DefExpr.
   // Note, forall index vars are just in a ForallStmt (not a block)
