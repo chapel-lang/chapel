@@ -2436,14 +2436,31 @@ static void normalizeVariableDefinition(DefExpr* defExpr) {
     if (init != NULL)
       init->remove();
 
+    VarSymbol* typeTemp = NULL;
+
     if (refVar == false) {
       // Emit PRIM_INIT_VAR_SPLIT for non-ref variables
       // It sets the type, if we have a type expression.
-      if (type == NULL)
+      if (type == NULL) {
         defExpr->insertAfter( new CallExpr(PRIM_INIT_VAR_SPLIT_DECL, var));
-      else
-        defExpr->insertAfter(
-            new CallExpr(PRIM_INIT_VAR_SPLIT_DECL, var, defExpr->exprType->remove()));
+      } else {
+        VarSymbol* tt = newTemp("type_tmp");
+        tt->addFlag(FLAG_MAYBE_PARAM);
+        tt->addFlag(FLAG_MAYBE_TYPE);
+
+        DefExpr* def = new DefExpr(tt);
+        CallExpr* mv = new CallExpr(PRIM_MOVE, tt, defExpr->exprType->remove());
+
+        // after the def, put
+        //   declare type_tmp
+        //   move type_tmp, type-expr
+        //   PRIM_INIT_VAR_SPLIT_DECL var type_tmp
+        defExpr->insertAfter(new CallExpr(PRIM_INIT_VAR_SPLIT_DECL, var, tt));
+        defExpr->insertAfter(mv);
+        defExpr->insertAfter(def);
+
+        typeTemp = tt;
+      }
     }
 
     for_vector(CallExpr, call, initAssign) {
@@ -2468,8 +2485,7 @@ static void normalizeVariableDefinition(DefExpr* defExpr) {
         if (type == NULL)
           init2 = new CallExpr(PRIM_INIT_VAR_SPLIT_INIT, var, rhs);
         else
-          init2 = new CallExpr(PRIM_INIT_VAR_SPLIT_INIT, var, rhs,
-                               new CallExpr(PRIM_TYPEOF, var));
+          init2 = new CallExpr(PRIM_INIT_VAR_SPLIT_INIT, var, rhs, typeTemp);
 
         call->replace(init2);
       }

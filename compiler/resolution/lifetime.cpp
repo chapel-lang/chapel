@@ -3287,6 +3287,11 @@ bool MarkCapturesVisitor::enterDefExpr(DefExpr* def) {
   return false;
 }
 
+// user variables "capture" aliases, so do runtime type variables
+static bool isCapturingVariable(Symbol* var) {
+  return !var->hasFlag(FLAG_TEMP) ||
+         var->type->symbol->hasFlag(FLAG_RUNTIME_TYPE_VALUE);
+}
 
 bool MarkCapturesVisitor::enterCallExpr(CallExpr* call) {
   // handle
@@ -3381,7 +3386,7 @@ bool MarkCapturesVisitor::enterCallExpr(CallExpr* call) {
     SymExpr* lhsSe = toSymExpr(call->get(1));
     Symbol* lhs = lhsSe->symbol();
 
-    if (!lhs->hasFlag(FLAG_TEMP)) {
+    if (isCapturingVariable(lhs)) {
       // Check for storing an alias into a user variable
       // Alias set should already include lhs, so mark captured other aliases
       markAliasesPotentiallyCaptured(lhs, call);
@@ -3394,7 +3399,7 @@ bool MarkCapturesVisitor::enterCallExpr(CallExpr* call) {
     Symbol* lhs = NULL;
     CallExpr* initOrCtor = NULL;
     if (isRecordInitOrReturn(call, lhs, initOrCtor, lifetimes)) {
-      if (!lhs->hasFlag(FLAG_TEMP)) {
+      if (isCapturingVariable(lhs)) {
         // Check for storing an alias into a user variable
         // Alias set should already include lhs, so mark captured other aliases
         markAliasesPotentiallyCaptured(lhs, call);

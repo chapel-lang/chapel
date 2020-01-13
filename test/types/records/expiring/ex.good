@@ -26,7 +26,7 @@ Expiring values for function ioExample0LM (ex.chpl:90)
   tmp (ex.chpl:91) expires after last mention
 Expiring values for function ioExample1LM (ex.chpl:95)
   tmp (ex.chpl:96) expires after last mention
-  A (ex.chpl:98) expires after last mention
+  A (ex.chpl:98) expires at end of block
   B (ex.chpl:99) expires after last mention
   temp (ex.chpl:99) expires at end of block
   temp (ex.chpl:101) expires at end of block
@@ -57,18 +57,18 @@ Expiring values for function ownedExample9EOB (ex.chpl:177)
   x (ex.chpl:178) expires at end of block
 Expiring values for function f (ex.chpl:185)
   a (ex.chpl:186) expires at end of block
-  temp (ex.chpl:186) expires after last mention
+  temp (ex.chpl:186) expires at end of block
   temp (ex.chpl:187) expires at end of block
   temp (ex.chpl:190) expires at end of block
 Expiring values for function arrayExample1LM (ex.chpl:192)
   x (ex.chpl:193) expires after last mention
 Expiring values for function sliceExample1EOB (ex.chpl:197)
   A (ex.chpl:198) expires at end of block
-  temp (ex.chpl:198) expires after last mention
+  temp (ex.chpl:198) expires at end of block
   temp (ex.chpl:199) expires at end of block
 Expiring values for function makeArray (ex.chpl:207)
   A (ex.chpl:208) expires at end of block
-  temp (ex.chpl:208) expires after last mention
+  temp (ex.chpl:208) expires at end of block
 Expiring values for function sliceExample2EOB (ex.chpl:211)
   temp (ex.chpl:212) expires at end of block
   temp (ex.chpl:212) expires at end of block

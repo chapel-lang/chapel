@@ -5915,15 +5915,6 @@ static void resolveInitVar(CallExpr* call) {
   }
 
   if (call->isPrimitive(PRIM_INIT_VAR_SPLIT_INIT)) {
-    // If it has runtime type, turn this back into assignment
-    if (dst->type->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE)) {
-      call->primitive = primitives[PRIM_NOOP];
-      CallExpr* assign = new CallExpr("=", dst, src);
-      call->getStmtExpr()->insertAfter(assign);
-      resolveExpr(assign);
-      return;
-    }
-
     // Also, check that the types are compatible for split initialization
     // with type inference.
     if (call->numActuals() < 3)
@@ -9409,8 +9400,7 @@ static void replaceRuntimeTypePrims(std::vector<BaseAST*>& asts) {
         continue;
       }
 
-      if (call->isPrimitive(PRIM_DEFAULT_INIT_VAR) ||
-          call->isPrimitive(PRIM_INIT_VAR_SPLIT_DECL)) {
+      if (call->isPrimitive(PRIM_DEFAULT_INIT_VAR)) {
         replaceRuntimeTypeDefaultInit(call);
       } else if (call->isPrimitive(PRIM_GET_RUNTIME_TYPE_FIELD)) {
         replaceRuntimeTypeGetField(call);
@@ -9457,11 +9447,8 @@ void resolvePrimInit(CallExpr* call) {
   INT_ASSERT(call->isPrimitive(PRIM_DEFAULT_INIT_VAR) ||
              call->isPrimitive(PRIM_INIT_VAR_SPLIT_DECL));
 
-  if (call->isPrimitive(PRIM_INIT_VAR_SPLIT_DECL) &&
-      call->numActuals() == 1) {
-    // Without type information, PRIM_INIT_VAR_SPLIT_DECL does nothing.
-    // Except if it's an array... then we need to use default init for now
-    // and that is handled already in replaceRuntimeTypePrims
+  if (call->isPrimitive(PRIM_INIT_VAR_SPLIT_DECL)) {
+    // PRIM_INIT_SPLIT_DECL does nothing at this point
     call->convertToNoop();
     return;
   }
@@ -9644,7 +9631,8 @@ static void resolvePrimInit(CallExpr* call, Symbol* val, Type* type) {
 
   // These are handled in replaceRuntimeTypePrims().
   if (type->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE) == true) {
-    errorInvalidParamInit(call, val, at);
+    if (call->isPrimitive(PRIM_DEFAULT_INIT_VAR))
+      errorInvalidParamInit(call, val, at);
 
   // Shouldn't be default-initializing iterator records here
   } else if (type->symbol->hasFlag(FLAG_ITERATOR_RECORD)  == true) {
