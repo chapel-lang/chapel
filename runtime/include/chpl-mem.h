@@ -119,6 +119,10 @@ void* chpl_mem_realloc(void* memAlloc, size_t size,
   return moreMemAlloc;
 }
 
+// assumes that alignment/boundary is:
+//   * a power of 2
+//   * a multiple of sizeof(void*)
+// size is not necessarily a multiple of alignment
 static inline
 void* chpl_mem_memalign(size_t boundary, size_t size,
                         chpl_mem_descInt_t description,

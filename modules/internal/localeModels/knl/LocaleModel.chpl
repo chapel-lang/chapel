@@ -36,6 +36,8 @@ module LocaleModel {
 
   extern proc hbw_check_available():c_int;
   extern proc hbw_malloc(size:size_t):c_void_ptr;
+  extern proc hbw_posix_memalign(out memptr:c_void_ptr,
+                                 alignment:size_t, size:size_t):c_int;
   extern proc hbw_calloc(nmemb:size_t, size:size_t):c_void_ptr;
   extern proc hbw_realloc(ptr:c_void_ptr, size:size_t):c_void_ptr;
   extern proc hbw_free(ptr:c_void_ptr);
@@ -576,9 +578,12 @@ module LocaleModel {
   // The allocator pragma is used by scalar replacement.
   pragma "allocator"
   pragma "locale model alloc"
+  pragma "always propagate line file info"
   proc chpl_here_alloc(size:int(64), md:chpl_mem_descInt_t): c_void_ptr {
+    pragma "fn synchronization free"
     pragma "insert line file info"
-      extern proc chpl_mem_alloc(size:size_t, md:chpl_mem_descInt_t) : c_void_ptr;
+    extern proc chpl_mem_alloc(size:size_t, md:chpl_mem_descInt_t) : c_void_ptr;
+
     if allocatingInHbmSublocale() then
       return hbw_malloc(size.safeCast(size_t));
     else
@@ -586,9 +591,11 @@ module LocaleModel {
   }
 
   pragma "allocator"
+  pragma "always propagate line file info"
   proc chpl_here_alloc(size:integral, md:chpl_mem_descInt_t): c_void_ptr {
+    pragma "fn synchronization free"
     pragma "insert line file info"
-      extern proc chpl_mem_alloc(size:size_t, md:chpl_mem_descInt_t) : c_void_ptr;
+    extern proc chpl_mem_alloc(size:size_t, md:chpl_mem_descInt_t) : c_void_ptr;
     if allocatingInHbmSublocale() then
       return hbw_malloc(size.safeCast(size_t));
     else
@@ -596,9 +603,35 @@ module LocaleModel {
   }
 
   pragma "allocator"
-  proc chpl_here_calloc(size:integral, number:int, md:chpl_mem_descInt_t): c_void_ptr {
+  pragma "always propagate line file info"
+  proc chpl_here_aligned_alloc(alignment:integral, size:integral, md:chpl_mem_descInt_t): c_void_ptr {
+    pragma "fn synchronization free"
     pragma "insert line file info"
-      extern proc chpl_mem_calloc(number:size_t, size:size_t, md:chpl_mem_descInt_t) : c_void_ptr;
+    extern proc chpl_mem_memalign(alignment:size_t, size:size_t, md:chpl_mem_descInt_t) : c_void_ptr;
+
+    if allocatingInHbmSublocale() {
+      var ptr:c_void_ptr = nil;
+      var rc = hbw_posix_memalign(ptr,
+                                  alignment.safeCast(size_t),
+                                  size.safeCast(size_t));
+      if rc != 0 then
+        halt("hbw_posix_memalign allocation call failed");
+      return ptr;
+    } else {
+      return chpl_mem_memalign(alignment.safeCast(size_t),
+                               size.safeCast(size_t),
+                               md + chpl_memhook_md_num());
+    }
+  }
+
+
+  pragma "allocator"
+  pragma "always propagate line file info"
+  proc chpl_here_calloc(size:integral, number:int, md:chpl_mem_descInt_t): c_void_ptr {
+    pragma "fn synchronization free"
+    pragma "insert line file info"
+    extern proc chpl_mem_calloc(number:size_t, size:size_t, md:chpl_mem_descInt_t) : c_void_ptr;
+
     if allocatingInHbmSublocale() then
       return hbw_calloc(number.safeCast(size_t), size.safeCast(size_t));
     else
@@ -606,9 +639,12 @@ module LocaleModel {
   }
 
   pragma "allocator"
+  pragma "always propagate line file info"
   proc chpl_here_realloc(ptr:c_void_ptr, size:integral, md:chpl_mem_descInt_t): c_void_ptr {
+    pragma "fn synchronization free"
     pragma "insert line file info"
-      extern proc chpl_mem_realloc(ptr:c_void_ptr, size:size_t, md:chpl_mem_descInt_t) : c_void_ptr;
+    extern proc chpl_mem_realloc(ptr:c_void_ptr, size:size_t, md:chpl_mem_descInt_t) : c_void_ptr;
+
     const useHbm = if ptr == nil
                    then allocatingInHbmSublocale()
                    else addrIsInHbm(ptr);
@@ -618,9 +654,12 @@ module LocaleModel {
       return chpl_mem_realloc(ptr, size.safeCast(size_t), md + chpl_memhook_md_num());
   }
 
+  pragma "always propagate line file info"
   proc chpl_here_good_alloc_size(min_size:integral): int {
+    pragma "fn synchronization free"
     pragma "insert line file info"
-      extern proc chpl_mem_good_alloc_size(min_size:size_t) : size_t;
+    extern proc chpl_mem_good_alloc_size(min_size:size_t) : size_t;
+
     // memkind doesn't seem to provide one of these, so we'll
     // just get the # from the default allocator and hope for the best.
     // That's not totally crazy since they both might use jemalloc.
@@ -628,11 +667,15 @@ module LocaleModel {
   }
 
   pragma "locale model free"
+  pragma "always propagate line file info"
   proc chpl_here_free(ptr:c_void_ptr): void {
     if ptr == nil then
       return;
+
+    pragma "fn synchronization free"
     pragma "insert line file info"
-      extern proc chpl_mem_free(ptr:c_void_ptr) : void;
+    extern proc chpl_mem_free(ptr:c_void_ptr) : void;
+
     if addrIsInHbm(ptr) then
       hbw_free(ptr);
     else
