@@ -166,6 +166,10 @@ static void forallPostamble(Expr* expr, ForallStmt* pfs, int indent) {
 }
 
 static void usePostamble(UseStmt* use, int indent) {
+  if (use->isARename()) {
+    printf("as %s ", use->getRename());
+  }
+
   if (use->isPlainUse())
     return;
 

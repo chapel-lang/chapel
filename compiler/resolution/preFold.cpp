@@ -2198,7 +2198,7 @@ static Expr* createFunctionAsValue(CallExpr *call) {
     if (ioModule == NULL) {
       INT_FATAL("never parsed IO module, this shouldn't be possible");
     }
-    fn->body->useListAdd(new UseStmt(ioModule, false));
+    fn->body->useListAdd(new UseStmt(ioModule, "", false));
     fn->getModule()->moduleUseAdd(ioModule);
     fn->insertAtTail(new CallExpr(new CallExpr(".", fileArg,
                                                new_StringSymbol("writeIt")),

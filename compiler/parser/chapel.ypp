@@ -88,7 +88,7 @@
     ProcIter_ITER
   };
 
-  struct OnlyRename {
+  struct PotentialRename {
     enum{SINGLE, DOUBLE} tag;
 
     union {
@@ -132,7 +132,7 @@
     FlagSet*                  flagSet;
     ShadowVarSymbol*          pShadowVar;
     ShadowVarPrefix           pShadowVarPref;
-    std::vector<OnlyRename*>* ponlylist;
+    std::vector<PotentialRename*>* ponlylist;
     std::set<Flag>*           pflagset;
     WhereAndLifetime          lifetimeAndWhere;
   };
@@ -417,7 +417,7 @@
 %type <pblockstmt> stmt_ls
 
 %type <pblockstmt> use_stmt require_stmt
-%type <ponlylist>  only_ls opt_only_ls except_ls
+%type <ponlylist>  renames_ls opt_only_ls except_ls
 
 %type <pblockstmt> class_level_stmt_ls
 
@@ -614,43 +614,43 @@ stmt_ls:
 ;
 
 
-only_ls:
-  expr                                 { $$ = new std::vector<OnlyRename*>();
-                                         OnlyRename* cur = new OnlyRename();
-                                         cur->tag = OnlyRename::SINGLE;
+renames_ls:
+  expr                                 { $$ = new std::vector<PotentialRename*>();
+                                         PotentialRename* cur = new PotentialRename();
+                                         cur->tag = PotentialRename::SINGLE;
                                          cur->elem = $1;
                                          $$->push_back(cur); }
-| expr TAS expr                        { $$ = new std::vector<OnlyRename*>();
-                                         OnlyRename* cur = new OnlyRename();
-                                         cur->tag = OnlyRename::DOUBLE;
+| expr TAS expr                        { $$ = new std::vector<PotentialRename*>();
+                                         PotentialRename* cur = new PotentialRename();
+                                         cur->tag = PotentialRename::DOUBLE;
                                          cur->renamed = new std::pair<Expr*, Expr*>($1, $3);
                                          $$->push_back(cur); }
-| only_ls TCOMMA expr                  { OnlyRename* cur = new OnlyRename();
-                                         cur->tag = OnlyRename::SINGLE;
+| renames_ls TCOMMA expr                  { PotentialRename* cur = new PotentialRename();
+                                         cur->tag = PotentialRename::SINGLE;
                                          cur->elem = $3;
                                          $1->push_back(cur); }
-| only_ls TCOMMA expr TAS expr         { OnlyRename* cur = new OnlyRename();
-                                         cur->tag = OnlyRename::DOUBLE;
+| renames_ls TCOMMA expr TAS expr         { PotentialRename* cur = new PotentialRename();
+                                         cur->tag = PotentialRename::DOUBLE;
                                          cur->renamed = new std::pair<Expr*, Expr*>($3, $5);
                                          $1->push_back(cur); }
 ;
 
 opt_only_ls:
-  /* nothing */                        { $$ = new std::vector<OnlyRename*>();
-                                         OnlyRename* cur = new OnlyRename();
-                                         cur->tag = OnlyRename::SINGLE;
+  /* nothing */                        { $$ = new std::vector<PotentialRename*>();
+                                         PotentialRename* cur = new PotentialRename();
+                                         cur->tag = PotentialRename::SINGLE;
                                          cur->elem = new UnresolvedSymExpr("");
                                          $$->push_back(cur); }
-| only_ls
+| renames_ls
 ;
 
 except_ls:
-  TSTAR                                { $$ = new std::vector<OnlyRename*>();
-                                         OnlyRename* cur = new OnlyRename();
-                                         cur->tag = OnlyRename::SINGLE;
+  TSTAR                                { $$ = new std::vector<PotentialRename*>();
+                                         PotentialRename* cur = new PotentialRename();
+                                         cur->tag = PotentialRename::SINGLE;
                                          cur->elem = new UnresolvedSymExpr("");
                                          $$->push_back(cur); }
-| only_ls
+| renames_ls
 ;
 
 use_access_control:
@@ -660,9 +660,11 @@ use_access_control:
 ;
 
 use_stmt:
-  use_access_control TUSE expr_ls TSEMI                   { $$ = buildUseStmt($3, $1); }
-| use_access_control TUSE expr TEXCEPT except_ls TSEMI    { $$ = buildUseStmt($3, $5, true, $1); }
-| use_access_control TUSE expr TONLY opt_only_ls TSEMI    { $$ = buildUseStmt($3, $5, false, $1); }
+  use_access_control TUSE renames_ls TSEMI                { $$ = buildUseStmt($3, $1); }
+| use_access_control TUSE expr TEXCEPT except_ls TSEMI    { $$ = buildUseStmt($3, "", $5, true, $1); }
+|use_access_control TUSE expr TAS expr TEXCEPT except_ls TSEMI    { $$ = buildUseStmt($3, $5, $7, true, $1); }
+| use_access_control TUSE expr TONLY opt_only_ls TSEMI    { $$ = buildUseStmt($3, "", $5, false, $1); }
+| use_access_control TUSE expr TAS expr TONLY opt_only_ls TSEMI    { $$ = buildUseStmt($3, $5, $7, false, $1); }
 ;
 
 require_stmt:
