@@ -917,7 +917,7 @@ module QuickSort {
     // c+1..d-1 store elements > pivot
     // d+1..hi  stores equal elements
 
-    // initally, entire array is in b..c
+    // initially, entire array is in b..c
     var a = lo;
     var b = lo;
     var c = hi;

@@ -2489,7 +2489,7 @@ static found_init_t doFindInitPoints(DefExpr* def,
         }
         return FOUND_INIT;
       } else if (foundIf == FOUND_INIT || foundElse == FOUND_INIT) {
-        // intialized on one side but not the other
+        // initialized on one side but not the other
         errorIfSplitInitializationRequired(def, cur);
         return FOUND_USE;
       } else if (foundIf == FOUND_USE || foundElse == FOUND_USE) {
@@ -3848,7 +3848,7 @@ static void expandQueryForGenericTypeSpecifier(FnSymbol*  fn,
 
   // Fix type constructor calls to owned e.g.
   // (call dtOwned SomeGenericClass( arg ))
-  // This is relant to test/functions/ferguson/query/owned-generic
+  // This is relevant to test/functions/ferguson/query/owned-generic
   if (call->baseExpr != NULL) {
     if (SymExpr* se = toSymExpr(call->baseExpr)) {
       if (TypeSymbol* ts = toTypeSymbol(se->symbol())) {

@@ -552,7 +552,7 @@ module String {
 
   /*
     Creates a new string which takes ownership of the internal buffer of a
-    `c_string`. The buffer will be freed when the bytes is deinitialized.
+    `c_string`. The buffer will be freed when the string is deinitialized.
 
     :arg s: Object to take ownership of the buffer from
     :type s: `c_string`
@@ -570,7 +570,7 @@ module String {
 
   /*
      Creates a new string which takes ownership of the memory allocated for a
-     `c_ptr(uint(8))`. The buffer will be freed when the bytes is deinitialized.
+     `c_ptr(uint(8))`. The buffer will be freed when the string is deinitialized.
 
      :arg s: Object to take ownership of the buffer from
      :type s: `bufferType` (i.e. `c_ptr(uint(8))`)

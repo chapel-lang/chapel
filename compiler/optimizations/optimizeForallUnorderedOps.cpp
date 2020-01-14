@@ -794,7 +794,7 @@ static void transformAtomicStmt(Expr* stmt) {
   }
 
   // TODO: This could just be a release fence (and then we could do an
-  // aquire fence at the end of the forall loop in addition to just
+  // acquire fence at the end of the forall loop in addition to just
   // completing the unordered ops). That could help in 2 cases:
   //  1. If --cache-remote is used, we can still use cached GETs
   //     during the unordered loop
