@@ -2638,9 +2638,7 @@ static found_init_t doFindInitPoints(DefExpr* def,
         }
       }
 
-      if (foundBody == FOUND_INIT) {
-        return FOUND_INIT;
-      } else if (foundBody == FOUND_USE) {
+      if (foundBody != FOUND_NOTHING) {
         errorIfSplitInitializationRequired(def, cur);
         return FOUND_USE;
       }

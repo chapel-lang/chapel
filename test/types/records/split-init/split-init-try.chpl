@@ -34,19 +34,19 @@ proc test() throws {
   writeln("x");
   var x:R = makeR(0);
 
-  writeln("yes1");
-  var yes1;
+  writeln("no00");
+  var no00:R;
   try {
-    yes1 = makeR(1);
+    no00 = makeR(1);
   }
-  writeln(yes1);
+  writeln(no00);
 
-  writeln("yes2");
-  var yes2:R;
+  writeln("no01");
+  var no01:R;
   try! {
-    yes2 = makeR(2);
+    no01 = makeR(2);
   }
-  writeln(yes2);
+  writeln(no01);
 
   writeln("no1");
   var no1:R;
