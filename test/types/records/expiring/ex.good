@@ -105,6 +105,12 @@ Expiring values for function coforall2EOB (ex.chpl:316)
   o (ex.chpl:317) expires at end of block
 Expiring values for function forEOB (ex.chpl:326)
   o (ex.chpl:327) expires at end of block
+Expiring values for function refIfExpr1EOB (ex.chpl:336)
+  temp (ex.chpl:337) expires at end of block
+Expiring values for function refIfExpr2EOB (ex.chpl:342)
+  temp (ex.chpl:343) expires at end of block
+Expiring values for function refIfExpr3EOB (ex.chpl:347)
+  temp (ex.chpl:348) expires at end of block
 {x = 1}
 
 {x = 1}

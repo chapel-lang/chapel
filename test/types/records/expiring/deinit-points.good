@@ -41,7 +41,6 @@ Expiring values for function t16 (deinit-points.chpl:245)
 Expiring values for function t17 (deinit-points.chpl:261)
   r (deinit-points.chpl:263) expires at end of block
   chpl_sync_error (deinit-points.chpl:265) expires after last mention
-  temp (deinit-points.chpl:265) expires after last mention
 Expiring values for function t18 (deinit-points.chpl:275)
   r (deinit-points.chpl:277) expires at end of block
   done (deinit-points.chpl:278) expires at end of block
@@ -57,16 +56,28 @@ Expiring values for function makeR (deinit-points.chpl:330)
 Expiring values for function t21 (deinit-points.chpl:335)
   r (deinit-points.chpl:337) expires after last mention
   temp (deinit-points.chpl:337) expires after last mention
-  temp (deinit-points.chpl:337) expires after last mention
-  temp (deinit-points.chpl:337) expires after last mention
-Expiring values for function t22 (deinit-points.chpl:342)
-  r (deinit-points.chpl:346) expires after last mention
-Expiring values for function t23 (deinit-points.chpl:353)
-  r (deinit-points.chpl:357) expires at end of block
-Expiring values for function t24 (deinit-points.chpl:365)
-  r (deinit-points.chpl:370) expires at end of block
-Expiring values for function t25 (deinit-points.chpl:379)
-  r (deinit-points.chpl:384) expires after last mention
+Expiring values for function t21a (deinit-points.chpl:342)
+  temp (deinit-points.chpl:344) expires at end of block
+Expiring values for function t21b (deinit-points.chpl:349)
+  temp (deinit-points.chpl:351) expires at end of block
+Expiring values for function t21c (deinit-points.chpl:356)
+  temp (deinit-points.chpl:358) expires at end of block
+Expiring values for function t21d (deinit-points.chpl:363)
+  temp (deinit-points.chpl:365) expires at end of block
+Expiring values for function t21e (deinit-points.chpl:370)
+  r (deinit-points.chpl:372) expires after last mention
+  temp (deinit-points.chpl:372) expires after last mention
+Expiring values for function t21f (deinit-points.chpl:377)
+  r (deinit-points.chpl:379) expires after last mention
+  temp (deinit-points.chpl:379) expires after last mention
+Expiring values for function t22 (deinit-points.chpl:384)
+  r (deinit-points.chpl:388) expires after last mention
+Expiring values for function t23 (deinit-points.chpl:395)
+  r (deinit-points.chpl:399) expires at end of block
+Expiring values for function t24 (deinit-points.chpl:407)
+  r (deinit-points.chpl:412) expires at end of block
+Expiring values for function t25 (deinit-points.chpl:421)
+  r (deinit-points.chpl:426) expires after last mention
 t1
 deinit
 t2
@@ -177,6 +188,32 @@ task one (x = 0)
 end outer
 deinit
 t21
+in makeR
+deinit
+deinit
+end outer
+t21a
+in makeR
+end outer
+deinit
+t21b
+in makeR
+end outer
+deinit
+t21c
+in makeR
+end outer
+deinit
+t21d
+in makeR
+end outer
+deinit
+t21e
+in makeR
+deinit
+deinit
+end outer
+t21f
 in makeR
 deinit
 deinit

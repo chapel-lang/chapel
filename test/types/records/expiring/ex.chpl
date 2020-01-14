@@ -332,3 +332,19 @@ proc forEOB() {
   }
 }
 forEOB();
+
+proc refIfExpr1EOB() {
+  const ref left = if true then makeR() else makeR();
+}
+refIfExpr1EOB();
+
+config const option = true;
+proc refIfExpr2EOB() {
+  const ref left = if option then makeR() else makeR();
+}
+refIfExpr2EOB();
+
+proc refIfExpr3EOB() {
+  const ref left = if option then makeR() else makeR();
+}
+refIfExpr3EOB();

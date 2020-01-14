@@ -1398,27 +1398,38 @@ static void addSymbolToDetempGroup(Symbol* sym, DetempGroup* group) {
     bool symTemp = sym->hasFlag(FLAG_TEMP);
     bool oldRef = old->isRef();
     bool symRef = sym->isRef();
-    bool oldDestroyed = old->hasFlag(FLAG_INSERT_AUTO_DESTROY) ||
-                        old->hasFlag(FLAG_INSERT_AUTO_DESTROY_FOR_EXPLICIT_NEW);
-    bool symDestroyed = sym->hasFlag(FLAG_INSERT_AUTO_DESTROY) ||
-                        sym->hasFlag(FLAG_INSERT_AUTO_DESTROY_FOR_EXPLICIT_NEW);
+    bool oldDestroyed =
+      (old->hasFlag(FLAG_INSERT_AUTO_DESTROY) ||
+       old->hasFlag(FLAG_INSERT_AUTO_DESTROY_FOR_EXPLICIT_NEW)) &&
+      !old->hasFlag(FLAG_NO_AUTO_DESTROY);
+    bool symDestroyed =
+      (sym->hasFlag(FLAG_INSERT_AUTO_DESTROY) ||
+       sym->hasFlag(FLAG_INSERT_AUTO_DESTROY_FOR_EXPLICIT_NEW)) &&
+      !sym->hasFlag(FLAG_NO_AUTO_DESTROY);
 
     // Prefer sym if it's in an outer block
     // (e.g. actual variable passed to task function formal,
     //  task function formal vs inner task function formal)
     if ((isTaskFunctionFormal(old) || isTaskFunctionFormal(sym)) &&
-        (oldInSym || symInOld))
+        (oldInSym || symInOld)) {
       preferSym = oldInSym;
-    else if (oldGlobal != symGlobal)
+    } else if (oldGlobal != symGlobal) {
       preferSym = symGlobal;
-    else if (oldTemp != symTemp)
+    } else if (oldTemp != symTemp) {
       preferSym = !symTemp;
-    else if (oldRef != symRef)
+    } else if (oldRef != symRef) {
       preferSym = !symRef;
-    else if (oldDestroyed != symDestroyed)
+    } else if (oldDestroyed != symDestroyed) {
       preferSym = symDestroyed;
-    else
-      preferSym = (strlen(sym->name) < strlen(old->name));
+    } else {
+      // break ties based on shorter name and then lower id
+      int symlen = strlen(sym->name);
+      int oldlen = strlen(old->name);
+      if (symlen != oldlen)
+        preferSym = symlen < oldlen;
+      else
+        preferSym = sym->id < old->id;
+    }
   }
 
   if (preferSym)
@@ -3415,7 +3426,8 @@ static bool shouldPrintExpiringForVar(Symbol* sym) {
   if (VarSymbol* var = toVarSymbol(sym)) {
     if (isRecord(var->type) &&
         (var->hasFlag(FLAG_INSERT_AUTO_DESTROY) ||
-         var->hasFlag(FLAG_INSERT_AUTO_DESTROY_FOR_EXPLICIT_NEW))) {
+         var->hasFlag(FLAG_INSERT_AUTO_DESTROY_FOR_EXPLICIT_NEW)) &&
+        !var->hasFlag(FLAG_NO_AUTO_DESTROY)) {
 
       if (var->hasFlag(FLAG_DEAD_END_OF_BLOCK) ||
           var->hasFlag(FLAG_DEAD_LAST_MENTION))

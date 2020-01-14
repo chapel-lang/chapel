@@ -339,6 +339,48 @@ proc t21() {
 }
 t21();
 
+proc t21a() {
+  writeln("t21a");
+  const ref r = if option then makeR() else makeR();
+  writeln("end outer");
+}
+t21a();
+
+proc t21b() {
+  writeln("t21b");
+  const ref r = if !option then makeR() else makeR();
+  writeln("end outer");
+}
+t21b();
+
+proc t21c() {
+  writeln("t21c");
+  const ref r = if true then makeR() else makeR();
+  writeln("end outer");
+}
+t21c();
+
+proc t21d() {
+  writeln("t21d");
+  const ref r = if false then makeR() else makeR();
+  writeln("end outer");
+}
+t21d();
+
+proc t21e() {
+  writeln("t21e");
+  var r = if true then makeR() else makeR();
+  writeln("end outer");
+}
+t21e();
+
+proc t21f() {
+  writeln("t21f");
+  var r = if false then makeR() else makeR();
+  writeln("end outer");
+}
+t21f();
+
 proc t22() {
   writeln("t22");
   {
