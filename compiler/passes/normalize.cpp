@@ -1184,17 +1184,33 @@ void AddEndOfStatementMarkers::addMarker(Expr* node) {
   if (firstBlock != node->parentExpr)
     return;
 
-  // Don't add if already at the end of the block
-  if (node->next == NULL)
-    return;
-
   // Don't add duplicates
   if (CallExpr* next = toCallExpr(node->next))
     if (next->isPrimitive(PRIM_END_OF_STATEMENT))
       return;
 
+  // Gather symexprs used in the statement
+  // This could be folded into the AstVisitor (but make it more complex)
+  std::vector<SymExpr*> mentions;
+  collectSymExprs(node, mentions);
+
   SET_LINENO(node);
-  node->insertAfter(new CallExpr(PRIM_END_OF_STATEMENT));
+  CallExpr* call = new CallExpr(PRIM_END_OF_STATEMENT);
+
+  // Add SymExprs for any user variables mentioned in the statement
+  // That way, if later passes remove them, e.g. for .type,
+  // the variable lifetime still matches the user's view of the code.
+  // A reasonable alternative would be for transformations such as
+  // the removal of .type blocks to add such SymExprs.
+  for_vector(SymExpr, se, mentions) {
+    if (VarSymbol* var = toVarSymbol(se->symbol()))
+      if (!var->hasFlag(FLAG_TEMP) && !var->isParameter())
+        call->insertAtTail(new SymExpr(se->symbol()));
+  }
+
+  // Don't add if already at the end of the block and no mentions are stored
+  if (call->numActuals() > 0 || node->next != NULL)
+    node->insertAfter(call);
 }
 
 bool AddEndOfStatementMarkers::enterIfExpr(IfExpr* node) {

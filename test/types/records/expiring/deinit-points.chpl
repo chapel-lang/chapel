@@ -430,3 +430,18 @@ proc t25() {
   writeln("end outer");
 }
 t25();
+
+proc t26() {
+  writeln("t26");
+  var r: R;
+  writeln(r.type:string);
+}
+t26();
+
+proc t27() {
+  writeln("t27");
+  var r: R;
+  writeln(r.type:string);
+  writeln("end");
+}
+t27();

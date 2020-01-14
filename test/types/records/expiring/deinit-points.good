@@ -78,6 +78,10 @@ Expiring values for function t24 (deinit-points.chpl:407)
   r (deinit-points.chpl:412) expires at end of block
 Expiring values for function t25 (deinit-points.chpl:421)
   r (deinit-points.chpl:426) expires after last mention
+Expiring values for function t26 (deinit-points.chpl:434)
+  r (deinit-points.chpl:436) expires after last mention
+Expiring values for function t27 (deinit-points.chpl:441)
+  r (deinit-points.chpl:443) expires after last mention
 t1
 deinit
 t2
@@ -238,3 +242,10 @@ begin inner
 deinit
 end inner
 end outer
+t26
+R
+deinit
+t27
+R
+deinit
+end
