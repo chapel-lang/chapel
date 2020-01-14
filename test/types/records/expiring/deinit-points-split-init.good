@@ -18,8 +18,6 @@ Expiring values for function t28 (deinit-points-split-init.chpl:125)
   r (deinit-points-split-init.chpl:127) expires after last mention
 Expiring values for function t29 (deinit-points-split-init.chpl:140)
   r (deinit-points-split-init.chpl:142) expires after last mention
-Expiring values for function maybeThrow (deinit-points-split-init.chpl:155)
-  temp (deinit-points-split-init.chpl:156) expires at end of block
 Expiring values for function t30 (deinit-points-split-init.chpl:158)
   r (deinit-points-split-init.chpl:160) expires after last mention
 Expiring values for function t31 (deinit-points-split-init.chpl:171)
