@@ -248,7 +248,8 @@ module Bytes {
 
      :returns: A new :record:`bytes`
   */
-  inline proc createBytesWithNewBuffer(s: bufferType, length: int, size: int) {
+  inline proc createBytesWithNewBuffer(s: bufferType, length: int,
+                                       size=length+1) {
     var ret: bytes;
     initWithNewBuffer(ret, s, length, size);
     return ret;

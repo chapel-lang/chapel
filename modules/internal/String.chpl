@@ -653,7 +653,7 @@ module String {
   // TODO: size is probably unnecessary here, but maybe we keep it for
   // consistence? Then, we can at least give it a default like length+1
   inline proc createStringWithNewBuffer(s: bufferType,
-                                        length: int, size: int,
+                                        length: int, size=length+1,
                                         errors=decodePolicy.strict) throws {
     return decodeByteBuffer(s, length, errors);
   }
