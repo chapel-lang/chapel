@@ -586,7 +586,6 @@ module LocaleModel {
 
     if allocatingInHbmSublocale() then
       return hbw_malloc(size.safeCast(size_t));
-      // TODO: should this halt instead on returning NULL for size > 0?
     else
       return chpl_mem_alloc(size.safeCast(size_t), md + chpl_memhook_md_num());
   }
@@ -599,7 +598,6 @@ module LocaleModel {
     extern proc chpl_mem_alloc(size:size_t, md:chpl_mem_descInt_t) : c_void_ptr;
     if allocatingInHbmSublocale() then
       return hbw_malloc(size.safeCast(size_t));
-      // TODO: should this halt instead on returning NULL for size > 0?
     else
       return chpl_mem_alloc(size.safeCast(size_t), md + chpl_memhook_md_num());
   }
@@ -636,7 +634,6 @@ module LocaleModel {
 
     if allocatingInHbmSublocale() then
       return hbw_calloc(number.safeCast(size_t), size.safeCast(size_t));
-      // TODO: should this halt instead on returning NULL for size > 0?
     else
       return chpl_mem_calloc(number.safeCast(size_t), size.safeCast(size_t), md + chpl_memhook_md_num());
   }
@@ -653,7 +650,6 @@ module LocaleModel {
                    else addrIsInHbm(ptr);
     if useHbm then
       return hbw_realloc(ptr, size.safeCast(size_t));
-      // TODO: should this halt instead on returning NULL for size > 0?
     else
       return chpl_mem_realloc(ptr, size.safeCast(size_t), md + chpl_memhook_md_num());
   }
