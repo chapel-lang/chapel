@@ -5,6 +5,7 @@ import chpl_bin_subdir
 import chpl_make
 import chpl_platform
 import chpl_comm
+import chpl_comm_debug
 import chpl_comm_segment
 import chpl_comm_substrate
 import chpl_compiler
