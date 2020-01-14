@@ -6360,7 +6360,7 @@ proc channel.readf(fmtStr:?t, ref args ...?k): bool throws
 
   on this.home {
     try this.lock(); defer { this.unlock(); }
-    var save_style = this._style();
+    var save_style = this._style(); defer { this._set_style(save_style); }
     var cur:size_t = 0;
     var len:size_t = fmtStr.length:size_t;
     var conv:qio_conv_t;
@@ -6379,7 +6379,8 @@ proc channel.readf(fmtStr:?t, ref args ...?k): bool throws
     }
 
     err = qio_channel_mark(false, _channel_internal);
-    if !err {
+
+    if !err then try {
       var j = 1;
 
       for param i in 1..k {
@@ -6603,8 +6604,9 @@ proc channel.readf(fmtStr:?t, ref args ...?k): bool throws
         // revert
         qio_channel_revert_unlocked(_channel_internal);
       }
+    } catch EndOfFileError {
+      err = EEOF;
     }
-    this._set_style(save_style);
   }
 
   if !err {
@@ -6614,6 +6616,7 @@ proc channel.readf(fmtStr:?t, ref args ...?k): bool throws
   } else {
     try this._ch_ioerror(err, "in channel.readf(fmt:string, ...)");
   }
+
   return false;
 }
 
