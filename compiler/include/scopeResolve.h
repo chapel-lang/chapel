@@ -20,12 +20,14 @@
 #ifndef _SCOPE_RESOLVE_H_
 #define _SCOPE_RESOLVE_H_
 
+class astlocT;
 class BaseAST;
 class CallExpr;
 class DefExpr;
 class FnSymbol;
 class Symbol;
 
+#include <map>
 #include <vector>
 
 void     addToSymbolTable(FnSymbol* fn);
@@ -36,11 +38,15 @@ Symbol*  lookup(const char*           name,
 
 void     lookup(const char*           name,
                 BaseAST*              context,
-                std::vector<Symbol*>& symbols);
+                std::vector<Symbol*>& symbols,
+                std::map<Symbol*, astlocT*>& renameLocs,
+                bool storeRenames = false);
 
 Symbol*  lookupAndCount(const char*           name,
                         BaseAST*              context,
-                        int&                  nSymbolsFound);
+                        int&                  nSymbolsFound,
+                        bool storeRenames = false,
+                        astlocT** renameLoc = NULL);
 
 
 BaseAST* getScope(BaseAST* ast);
