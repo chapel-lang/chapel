@@ -689,9 +689,7 @@ static void computeLastMentionPoints(LastMentionMap& lmm, FnSymbol* fn) {
 
 static bool shouldDestroyOnLastMention(VarSymbol* var) {
   return var->hasFlag(FLAG_DEAD_LAST_MENTION) && // dead at last mention
-         (var->hasFlag(FLAG_INSERT_AUTO_DESTROY) || // needs auto destroy
-          var->hasFlag(FLAG_INSERT_AUTO_DESTROY_FOR_EXPLICIT_NEW)) &&
-         !var->hasFlag(FLAG_NO_AUTO_DESTROY) &&
+         isAutoDestroyedVariable(var) &&
          // forall statement exception avoids certain variables
          // within forall statements such as fRecIterIRdef.
          !isForallStmt(var->defPoint->parentExpr);
