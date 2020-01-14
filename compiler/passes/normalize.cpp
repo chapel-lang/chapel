@@ -1204,7 +1204,10 @@ void AddEndOfStatementMarkers::addMarker(Expr* node) {
   // the removal of .type blocks to add such SymExprs.
   for_vector(SymExpr, se, mentions) {
     if (VarSymbol* var = toVarSymbol(se->symbol()))
-      if (!var->hasFlag(FLAG_TEMP) && !var->isParameter())
+      if (!var->hasFlag(FLAG_TEMP) &&
+          !var->isParameter() &&
+          // exclude global variables, e.g. gMethodToken
+          var->defPoint->getFunction() == node->getFunction())
         call->insertAtTail(new SymExpr(se->symbol()));
   }
 
