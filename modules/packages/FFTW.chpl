@@ -122,7 +122,7 @@ module FFTW {
   */
   config param isFFTW_MKL=false;
 
-  public use SysCTypes;
+  use SysCTypes;
   require "fftw3.h"; // This is common
   if (isFFTW_MKL) {
     require "fftw3_mkl.h";
@@ -162,6 +162,21 @@ module FFTW {
   */
   extern type fftw_plan; // opaque type
 
+  /*
+    Type alias for FFTW flags
+  */
+  type FFTW_Flag = c_uint;
+
+  /*
+    Type alias for FFT directions
+  */
+  type FFTW_Direction = c_int;
+
+  /*
+    Type alias for FFTW R2R type
+  */
+  type FFTW_R2R = c_int;
+
 
   // Planner functions
   // Complex : 4.3.1
@@ -184,15 +199,15 @@ module FFTW {
     :type output: [] `complex(128)`
 
     :arg sign: :const:`FFTW_FORWARD` or :const:`FFTW_BACKWARD`
-    :type sign: `c_int`
+    :type sign: `FFTW_Direction`
 
     :arg flags: the bitwise-or of any planning-rigor or algorithm-restriction flags that should be used in creating the plan (e.g., :const:`FFTW_MEASURE` ``|`` :const:`FFTW_PRESERVE_INPUT`)
-    :type flags: `c_int`
+    :type flags: `FFTW_Flag`
 
     :returns: The :type:`fftw_plan` representing the resulting plan
   */
   proc plan_dft(input: [?Din] complex(128), output: [?Dout] complex(128), 
-                 sign: c_int, flags: c_uint) : fftw_plan
+                 sign: FFTW_Direction, flags: FFTW_Flag) : fftw_plan
   {
     if !noFFTWsizeChecks {
       var error = false;
@@ -215,14 +230,14 @@ module FFTW {
     :type arr: [] `complex(128)`
 
     :arg sign: :const:`FFTW_FORWARD` or :const:`FFTW_BACKWARD`
-    :type sign: `c_int`
+    :type sign: `FFTW_Direction`
 
     :arg flags: the bitwise-or of any planning-rigor or algorithm-restriction flags that should be used in creating the plan (e.g., :const:`FFTW_MEASURE` ``|`` :const:`FFTW_PRESERVE_INPUT`)
-    :type flags: `c_int`
+    :type flags: `FFTW_Flag`
 
     :returns: The :type:`fftw_plan` representing the resulting plan
   */
-  proc plan_dft(arr: [] complex(128), sign: c_int, flags: c_uint): fftw_plan {
+  proc plan_dft(arr: [] complex(128), sign: FFTW_Direction, flags: FFTW_Flag): fftw_plan {
     return plan_dft_help(arr, arr, sign, flags);
   }
 
@@ -231,7 +246,7 @@ module FFTW {
   // doing the size check for the in-place case.
   //
   private proc plan_dft_help(input: [] complex(128), output: [] complex(128),
-                             sign: c_int, flags: c_uint) : fftw_plan
+                             sign: FFTW_Direction, flags: FFTW_Flag) : fftw_plan
   {
     param rank = input.rank;
 
@@ -258,12 +273,12 @@ module FFTW {
     :type output: [] `complex(128)`
 
     :arg flags: the bitwise-or of any planning-rigor or algorithm-restriction flags that should be used in creating the plan (e.g., :const:`FFTW_MEASURE` ``|`` :const:`FFTW_PRESERVE_INPUT`)
-    :type flags: `c_int`
+    :type flags: `FFTW_Flag`
 
     :returns: The :type:`fftw_plan` representing the resulting plan
   */
   proc plan_dft_r2c(input : [?Din] real(64), output : [?Dout] complex(128), 
-                    flags :c_uint) : fftw_plan
+                    flags : FFTW_Flag) : fftw_plan
   {
     param rank = input.rank: c_int;
 
@@ -299,11 +314,11 @@ module FFTW {
     :type arr: [] `T` where `T` is of type `real(64)` or `complex(128)`
 
     :arg flags: the bitwise-or of any planning-rigor or algorithm-restriction flags that should be used in creating the plan (e.g., :const:`FFTW_MEASURE` ``|`` :const:`FFTW_PRESERVE_INPUT`)
-    :type flags: `c_int`
+    :type flags: `FFTW_Flag`
 
     :returns: The :type:`fftw_plan` representing the resulting plan
    */
-  proc plan_dft_r2c(realDom : domain, arr : [?D] ?t, flags : c_uint) : fftw_plan
+  proc plan_dft_r2c(realDom : domain, arr : [?D] ?t, flags : FFTW_Flag) : fftw_plan
     where t == real || t == complex
   {
     if !noFFTWsizeChecks then
@@ -324,7 +339,7 @@ module FFTW {
   // Error overload
   //
   pragma "no doc"
-  proc plan_dft_r2c(realDom : domain, arr: [] ?t, flags : c_uint) : fftw_plan {
+  proc plan_dft_r2c(realDom : domain, arr: [] ?t, flags : FFTW_Flag) : fftw_plan {
     compilerError("plan_dft_r2c() is only supported for arrays of type real(64) and complex(128)");
   }
 
@@ -338,12 +353,12 @@ module FFTW {
     :type output: [] `real(64)`
     
     :arg flags: the bitwise-or of any planning-rigor or algorithm-restriction flags that should be used in creating the plan (e.g., :const:`FFTW_MEASURE` ``|`` :const:`FFTW_PRESERVE_INPUT`)
-    :type flags: `c_int`
+    :type flags: `FFTW_Flag`
 
     :returns: The :type:`fftw_plan` representing the resulting plan
   */
   proc plan_dft_c2r(input : [?Din] complex(128), output : [?Dout] real(64), 
-                    flags :c_uint) : fftw_plan
+                    flags : FFTW_Flag) : fftw_plan
   {
     param rank = output.rank: c_int; // The dimensions are that of the real array
 
@@ -376,11 +391,11 @@ module FFTW {
     :type arr: [] `T` where `T` is of type `real(64)` or `complex(128)`
 
     :arg flags: the bitwise-or of any planning-rigor or algorithm-restriction flags that should be used in creating the plan (e.g., :const:`FFTW_MEASURE` ``|`` :const:`FFTW_PRESERVE_INPUT`)
-    :type flags: `c_int`
+    :type flags: `FFTW_Flag`
 
     :returns: The :type:`fftw_plan` representing the resulting plan
    */
-  proc plan_dft_c2r(realDom : domain, arr: [?D] ?t, flags : c_uint) : fftw_plan 
+  proc plan_dft_c2r(realDom : domain, arr: [?D] ?t, flags : FFTW_Flag) : fftw_plan 
     where t == real || t == complex
   {
     if !noFFTWsizeChecks then
@@ -398,7 +413,7 @@ module FFTW {
   }
 
   pragma "no doc"
-  proc plan_dft_c2r(realDom : domain, arr: [] ?t, flags : c_uint) : fftw_plan {
+  proc plan_dft_c2r(realDom : domain, arr: [] ?t, flags : FFTW_Flag) : fftw_plan {
     compilerError("plan_dft_c2r() is only supported for arrays of type real(64) and complex(128)");
   }
 
@@ -447,9 +462,9 @@ module FFTW {
   // Direction flags
 
   /* Request a forward transform (i.e., use a negative exponent in the transform). */
-  extern const FFTW_FORWARD : c_int;
+  extern const FFTW_FORWARD : FFTW_Direction;
   /* Request a backward transform (i.e., use a positive exponent in the transform). */
-  extern const FFTW_BACKWARD : c_int;
+  extern const FFTW_BACKWARD : FFTW_Direction;
 
 
   // Planning-rigor flags
@@ -457,7 +472,7 @@ module FFTW {
   /* Specify that a simple heuristic should be used to pick a plan
      quickly.  This will prevent the input/output arrays from being
      overwritten during planning. */
-  extern const FFTW_ESTIMATE : c_uint;
+  extern const FFTW_ESTIMATE : FFTW_Flag;
 
   /* Specify that FFTW should try and find an optimized plan by
      computing several FFTs and measuring their execution time.
@@ -465,15 +480,15 @@ module FFTW {
   */
   // TODO: If/when we support defaults, might say something like: This
   // is the default planning option.
-  extern const FFTW_MEASURE : c_uint;
+  extern const FFTW_MEASURE : FFTW_Flag;
 
   /* Specify that FFTW should expend a greater effort finding an
      optimized plan. */
-  extern const FFTW_PATIENT : c_uint;
+  extern const FFTW_PATIENT : FFTW_Flag;
 
   /* Specify that FFTW should expend an even greater effort finding an
      optimized plan. */
-  extern const FFTW_EXHAUSTIVE : c_uint;
+  extern const FFTW_EXHAUSTIVE : FFTW_Flag;
 
   /* This is a special planning mode that is useful for querying
      whether wisdom is available.  When using it, the plan is only
@@ -484,7 +499,7 @@ module FFTW {
      this flag and the previous four, refer to `Section 4.3.2
      <http://www.fftw.org/doc/Planner-Flags.html>`_ of the FFTW manual
   */
-  extern const FFTW_WISDOM_ONLY : c_uint;
+  extern const FFTW_WISDOM_ONLY : FFTW_Flag;
 
 
   // Algorithm-restriction flags
@@ -494,13 +509,13 @@ module FFTW {
      algorithms to be used in some cases. */
   // TODO: When we're ready to mention defaults, add: "This is the default for
   // :proc:`plan_dft_c2r`. // NOTE: ...and hc2r once supported...
-  extern const FFTW_DESTROY_INPUT : c_uint;
+  extern const FFTW_DESTROY_INPUT : FFTW_Flag;
 
   /* Specify that an out-of-place transform cannot change its input
      array. */
   // TODO: When we're ready to mention defaults, add: This is the
   // default for :proc:`plan_dft` and :proc:`plan_dft_r2c`. */
-  extern const FFTW_PRESERVE_INPUT : c_uint;
+  extern const FFTW_PRESERVE_INPUT : FFTW_Flag;
 
   /* Specify that the algorithm may not impose any unusual alignment
      requirements on the input/output arrays.  This flag should not be
@@ -509,27 +524,27 @@ module FFTW {
      and the previous two, refer to `Section 4.3.2
      <http://www.fftw.org/doc/Planner-Flags.html>`_ of the FFTW manual.
   */  // NOTE: But it will be if/when the new-array execute interface is supported
-  extern const FFTW_UNALIGNED : c_uint;
+  extern const FFTW_UNALIGNED : FFTW_Flag;
 
   // More FFTW type flags.
   
   /* Use the halfcomplex form of array storage */
-  extern const FFTW_R2HC :c_int;
-  extern const FFTW_HC2R :c_int;
+  extern const FFTW_R2HC :FFTW_R2R;
+  extern const FFTW_HC2R :FFTW_R2R;
 
   /* Discrete Hartley Transforms. */
-  extern const FFTW_DHT :c_int;
+  extern const FFTW_DHT :FFTW_R2R;
 
   /* Specify the type of discrete cosine and
      discrete sine transforms to use. */
-  extern const FFTW_REDFT00 :c_int;
-  extern const FFTW_REDFT01 :c_int;
-  extern const FFTW_REDFT10 :c_int;
-  extern const FFTW_REDFT11 :c_int;
-  extern const FFTW_RODFT00 :c_int;
-  extern const FFTW_RODFT01 :c_int;
-  extern const FFTW_RODFT10 :c_int;
-  extern const FFTW_RODFT11 :c_int;
+  extern const FFTW_REDFT00 :FFTW_R2R;
+  extern const FFTW_REDFT01 :FFTW_R2R;
+  extern const FFTW_REDFT10 :FFTW_R2R;
+  extern const FFTW_REDFT11 :FFTW_R2R;
+  extern const FFTW_RODFT00 :FFTW_R2R;
+  extern const FFTW_RODFT01 :FFTW_R2R;
+  extern const FFTW_RODFT10 :FFTW_R2R;
+  extern const FFTW_RODFT11 :FFTW_R2R;
 
 
   //
