@@ -68,6 +68,10 @@ static bool                                   enableModuleUsesCache = false;
 typedef std::pair< std::pair<const char*,int>, const char* >  WFDIWmark;
 static std::set< std::pair< std::pair<const char*,int>, const char* > > warnedForDotInsideWith;
 
+// To avoid duplicate user warnings between resolveUnresolvedSymExpr and
+// resolveModuleCall
+static std::vector<BaseAST*> failedUSymExprs;
+
 static void          scopeResolve(ModuleSymbol*       module,
                                   const ResolveScope* root);
 
@@ -906,6 +910,13 @@ static astlocT* resolveUnresolvedSymExpr(UnresolvedSymExpr* usymExpr,
   if (usymExpr->parentExpr == NULL)
     return NULL;
 
+  for_vector(BaseAST, node, failedUSymExprs) {
+    // Should only be expensive in case where we are already erroring out,
+    // and we're already exiting compilation early in that case.
+    if (node == usymExpr)
+      return NULL;
+  }
+
   SET_LINENO(usymExpr);
 
   const char* name = usymExpr->unresolved;
@@ -1668,6 +1679,7 @@ Symbol* lookupAndCount(const char*           name,
 
     for_vector(Symbol, sym, symbols) {
       if (! isFnSymbol(sym)) {
+        failedUSymExprs.push_back(context);
         astlocT* symRenameLoc = renameLocs[sym];
         USR_FATAL_CONT(sym, "symbol %s is multiply defined", name);
         if (storeRenames && symRenameLoc != NULL) {
