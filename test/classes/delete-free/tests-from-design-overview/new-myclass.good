@@ -5,6 +5,7 @@ in MyClass.init 4
 in MyClass.init 5
 in MyClass.init 6
 owned MyClass
+in MyClass.deinit 1
 borrowed MyClass
 borrowed MyClass
 borrowed MyClass
@@ -15,4 +16,3 @@ in MyClass.deinit 5
 in MyClass.deinit 4
 in MyClass.deinit 3
 in MyClass.deinit 2
-in MyClass.deinit 1
