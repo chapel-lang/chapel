@@ -9918,13 +9918,13 @@ void printUndecoratedClassTypeNote(Expr* ctx, Type* type) {
 }
 
 void checkDuplicateDecorators(Type* decorator, Type* decorated, Expr* ctx) {
-    if (isClassLikeOrManaged(decorator) && isClassLikeOrManaged(decorated)) {
-      ClassTypeDecorator d = classTypeDecorator(decorated);
+  if (isClassLikeOrManaged(decorator) && isClassLikeOrManaged(decorated)) {
+    ClassTypeDecorator d = classTypeDecorator(decorated);
 
-      if (!isDecoratorUnknownManagement(d))
-        USR_FATAL_CONT(ctx, "duplicate decorators - %s %s",
-                             toString(decorator), toString(decorated));
-    }
+    if (!isDecoratorUnknownManagement(d))
+      USR_FATAL_CONT(ctx, "duplicate decorators - %s %s",
+                           toString(decorator), toString(decorated));
+  }
 }
 
 void startGenerousResolutionForErrors() {

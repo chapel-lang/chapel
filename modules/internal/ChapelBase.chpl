@@ -1382,7 +1382,7 @@ module ChapelBase {
   }
   inline proc _cast(type t:borrowed class, x:_nilType)
   {
-      compilerError("cannot cast nil to " + t:string);
+    compilerError("cannot cast nil to " + t:string);
   }
 
   // casting to unmanaged?, no class downcast

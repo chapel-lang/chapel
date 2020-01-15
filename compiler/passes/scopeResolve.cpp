@@ -961,11 +961,11 @@ static void resolveUnresolvedSymExpr(UnresolvedSymExpr* usymExpr,
         INT_ASSERT(t);
         sym = t->symbol;
       } else if (isClass(sym->type)) {
-            // Make 'MyClass' mean generic-management.
-            // Switch to the CLASS_TYPE_GENERIC_NONNIL decorated class type.
-            ClassTypeDecorator d = CLASS_TYPE_GENERIC_NONNIL;
-            Type* t = getDecoratedClass(sym->type, d);
-            sym = t->symbol;
+        // Make 'MyClass' mean generic-management.
+        // Switch to the CLASS_TYPE_GENERIC_NONNIL decorated class type.
+        ClassTypeDecorator d = CLASS_TYPE_GENERIC_NONNIL;
+        Type* t = getDecoratedClass(sym->type, d);
+        sym = t->symbol;
       }
     }
 
