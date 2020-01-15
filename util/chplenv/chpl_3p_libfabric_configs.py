@@ -10,13 +10,13 @@ def get_uniq_cfg_path():
 def get_compile_args(libfabric):
     flags = []
     if libfabric == 'system':
-      # Try using pkg-config to get the compile-time flags.
-      pcflags = third_party_utils.pkgconfig_get_compile_args(
-                       'libfabric', system=True)
-      for pcl in pcflags:
-        flags.append(pcl)
+        # Try using pkg-config to get the compile-time flags.
+        pcflags = third_party_utils.pkgconfig_get_compile_args('libfabric',
+                                                               system=True)
+        for pcl in pcflags:
+            flags.append(pcl)
     elif libfabric == 'libfabric':
-      error("CHPL_LIBFABRIC=libfabric is not yet supported", ValueError)
+        error("CHPL_LIBFABRIC=libfabric is not yet supported", ValueError)
 
     launcher_val = chpl_launcher.get()
     ofi_oob_val = overrides.get_environ('CHPL_RT_COMM_OFI_OOB')
@@ -31,15 +31,15 @@ def get_compile_args(libfabric):
 def get_link_args(libfabric):
     libs = []
     if libfabric == 'system':
-      # Try using pkg-config to get the libraries to link
-      # libfabric with.
-      pclibs = third_party_utils.pkgconfig_get_link_args(
-                       'libfabric', system=True)
-      for pcl in pclibs:
-        libs.append(pcl)
-        if pcl.startswith('-L'):
-          libs.append(pcl.replace('-L', '-Wl,-rpath,', 1))
+        # Try using pkg-config to get the libraries to link
+        # libfabric with.
+        pclibs = third_party_utils.pkgconfig_get_link_args('libfabric',
+                                                           system=True)
+        for pcl in pclibs:
+            libs.append(pcl)
+            if pcl.startswith('-L'):
+                libs.append(pcl.replace('-L', '-Wl,-rpath,', 1))
     elif libfabric == 'libfabric':
-      error("CHPL_LIBFABRIC=libfabric is not yet supported", ValueError)
+        error("CHPL_LIBFABRIC=libfabric is not yet supported", ValueError)
 
     return libs
