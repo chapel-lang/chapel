@@ -245,9 +245,7 @@ module OwnedObject {
        refer to `nil` after this call.
      */
     proc init=(pragma "leaves arg nil" pragma "nil from arg" ref src:_owned) {
-      if isNonNilableClass(this.type) && isNilableClass(src) &&
-         !chpl_legacyClasses
-      then
+      if isNonNilableClass(this.type) && isNilableClass(src) then
         compilerError("cannot create a non-nilable owned variable from a nilable class instance");
 
       if isCoercible(src.chpl_t, this.type.chpl_t) == false then
@@ -279,9 +277,8 @@ module OwnedObject {
     proc init=(src : _nilType) {
       this.init(this.type.chpl_t);
 
-      if isNonNilableClass(chpl_t) && !chpl_legacyClasses {
+      if isNonNilableClass(chpl_t) then
         compilerError("Assigning non-nilable owned to nil");
-      }
     }
 
     // Copy-init implementation to allow for 'new _owned(foo)' in module code
@@ -347,8 +344,6 @@ module OwnedObject {
 
       if _to_nilable(chpl_t) == chpl_t {
         return _to_unmanaged(oldPtr);
-      } else if chpl_legacyClasses {
-        return _to_unmanaged(_to_nonnil(oldPtr));
       } else {
         return _to_unmanaged(oldPtr!);
       }
@@ -366,8 +361,6 @@ module OwnedObject {
     proc /*const*/ borrow() {
       if _to_nilable(chpl_t) == chpl_t {
         return chpl_p;
-      } else if chpl_legacyClasses {
-        return _to_nonnil(chpl_p);
       } else {
         return chpl_p!;
       }
@@ -390,8 +383,7 @@ module OwnedObject {
   proc =(ref lhs:_owned,
          pragma "leaves arg nil"
          ref rhs: _owned)
-    where chpl_legacyClasses ||
-          ! (isNonNilableClass(lhs) && isNilableClass(rhs))
+    where ! (isNonNilableClass(lhs) && isNilableClass(rhs))
   {
     use HaltWrappers only;
     // Work around issues in associative arrays of owned
@@ -415,7 +407,7 @@ module OwnedObject {
 
   pragma "no doc"
   proc =(ref lhs:_owned, rhs:_nilType)
-    where chpl_legacyClasses || ! isNonNilableClass(lhs)
+    where ! isNonNilableClass(lhs)
   {
     lhs.clear();
   }
@@ -558,7 +550,7 @@ module OwnedObject {
   // cast from nil to owned
   pragma "no doc"
   inline proc _cast(type t:_owned, pragma "nil from arg" x:_nilType) {
-    if _to_nilable(t.chpl_t) != t.chpl_t && !chpl_legacyClasses then
+    if isNonNilableClass(t.chpl_t) then
       compilerError("Illegal cast from nil to non-nilable owned type");
 
     var tmp:t;

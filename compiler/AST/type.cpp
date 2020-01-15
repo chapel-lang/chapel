@@ -890,10 +890,6 @@ void initCompilerGlobals() {
   gNilChecking->addFlag(FLAG_PARAM);
   setupBoolGlobal(gNilChecking, !fNoNilChecks);
 
-  gLegacyClasses = new VarSymbol("chpl_legacyClasses", dtBool);
-  gLegacyClasses->addFlag(FLAG_PARAM);
-  setupBoolGlobal(gLegacyClasses, fLegacyClasses);
-
   gOverloadSetsChecks = new VarSymbol("chpl_overloadSetsChecks", dtBool);
   gOverloadSetsChecks->addFlag(FLAG_PARAM);
   setupBoolGlobal(gOverloadSetsChecks, fOverloadSetsChecks);

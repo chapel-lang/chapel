@@ -550,14 +550,22 @@ static void setPrintIr(const ArgumentDescription* desc, const char* arg) {
   }
 }
 
-static void verifyStageAndSetStageNum(const ArgumentDescription* desc, const
-    char* arg)
+static void verifyStageAndSetStageNum(const ArgumentDescription* desc,
+                                      const char* arg)
 {
   llvmStageNum_t stageNum = llvmStageNumFromLlvmStageName(arg);
   if(stageNum == llvmStageNum::NOPRINT)
     USR_FATAL("Unknown llvm-print-ir-stage argument");
 
   llvmPrintIrStageNum = stageNum;
+}
+
+static void warnUponLegacyClasses(const ArgumentDescription* desc,
+                                  const char* arg)
+{
+  USR_WARN("'--legacy-classes' option has been deprecated"
+           " and will be removed in the next Chapel release;"
+           " it no longer affects compilation");
 }
 
 // In order to handle accumulating ccflags arguments, the argument
@@ -1062,7 +1070,7 @@ static ArgumentDescription arg_desc[] = {
  DRIVER_ARG_DEBUGGERS,
  {"interprocedural-alias-analysis", ' ', NULL, "Enable [disable] interprocedural alias analysis", "n", &fNoInterproceduralAliasAnalysis, NULL, NULL},
  {"lifetime-checking", ' ', NULL, "Enable [disable] lifetime checking pass", "N", &fLifetimeChecking, NULL, NULL},
- {"legacy-classes", ' ', NULL, "Class variables match 1.19 - borrowed by default, can store nil", "N", &fLegacyClasses, NULL, NULL},
+ {"legacy-classes", ' ', NULL, "Deprecated flag - does not affect compilation", "N", &fLegacyClasses, NULL, &warnUponLegacyClasses},
  {"ignore-nilability-errors", ' ', NULL, "Allow compilation to continue by coercing away nilability", "N", &fIgnoreNilabilityErrors, NULL, NULL},
  {"overload-sets-checks", ' ', NULL, "Report potentially hijacked calls", "N", &fOverloadSetsChecks, NULL, NULL},
  {"compile-time-nil-checking", ' ', NULL, "Enable [disable] compile-time nil checking", "N", &fCompileTimeNilChecking, "CHPL_NO_COMPILE_TIME_NIL_CHECKS", NULL},

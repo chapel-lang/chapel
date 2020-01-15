@@ -2559,8 +2559,7 @@ static void errorIfSplitInitializationRequired(DefExpr* def, Expr* cur) {
       }
 
       // can't default init a non-nilable class type
-      // unless --legacy-classes is on
-      if (isNonNilableClassType(ts->type) && !fLegacyClasses) {
+      if (isNonNilableClassType(ts->type)) {
         canDefaultInit = false;
         nonNilableType = ts->type;
       }

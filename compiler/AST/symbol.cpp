@@ -66,7 +66,6 @@ VarSymbol *gFalse = NULL;
 VarSymbol *gBoundsChecking = NULL;
 VarSymbol *gCastChecking = NULL;
 VarSymbol *gNilChecking = NULL;
-VarSymbol *gLegacyClasses = NULL;
 VarSymbol *gOverloadSetsChecks = NULL;
 VarSymbol *gDivZeroChecking = NULL;
 VarSymbol* gPrivatization = NULL;
