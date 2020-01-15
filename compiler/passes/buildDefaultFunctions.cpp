@@ -55,8 +55,7 @@ static void build_extern_assignment_function(Type* type);
 static void build_record_assignment_function(AggregateType* ct);
 static void check_not_pod(AggregateType* ct);
 static void build_record_hash_function(AggregateType* ct);
-static void build_record_equality_function(AggregateType* ct);
-static void build_record_inequality_function(AggregateType* ct);
+static void buildRecordComparisonFunc(AggregateType* ct, const char* op);
 
 static void buildDefaultReadWriteFunctions(AggregateType* type);
 
@@ -109,8 +108,12 @@ void buildDefaultFunctions() {
 
         if (isRecord(ct)) {
           if (!isRecordWrappedType(ct)) {
-            build_record_equality_function(ct);
-            build_record_inequality_function(ct);
+            buildRecordComparisonFunc(ct, "==");
+            buildRecordComparisonFunc(ct, "!=");
+            buildRecordComparisonFunc(ct, "<");
+            buildRecordComparisonFunc(ct, "<=");
+            buildRecordComparisonFunc(ct, ">");
+            buildRecordComparisonFunc(ct, ">=");
           }
 
           build_record_assignment_function(ct);
@@ -725,11 +728,13 @@ static void build_chpl_entry_points() {
   normalize(chpl_gen_main);
 }
 
-static void build_record_equality_function(AggregateType* ct) {
-  if (function_exists("==", ct, ct))
+static void buildRecordComparisonFunc(AggregateType* ct, const char* op) {
+  if (function_exists(op, ct, ct))
     return;
 
-  FnSymbol* fn = new FnSymbol("==");
+  bool isNotEqual = strncmp(op, "!=", 2) == 0;
+
+  FnSymbol* fn = new FnSymbol(op);
   fn->addFlag(FLAG_COMPILER_GENERATED);
   fn->addFlag(FLAG_LAST_RESORT);
   ArgSymbol* arg1 = new ArgSymbol(INTENT_BLANK, "_arg1", ct);
@@ -744,47 +749,27 @@ static void build_record_equality_function(AggregateType* ct) {
                                          new CallExpr(PRIM_TYPEOF, arg2)));
 
   for_fields(tmp, ct) {
-    if (!tmp->hasFlag(FLAG_IMPLICIT_ALIAS_FIELD)) {
+    if (!tmp->hasFlag(FLAG_IMPLICIT_ALIAS_FIELD) &&
+        !tmp->hasFlag(FLAG_TYPE_VARIABLE)) {  // types fields must be equal
       Expr* left = new CallExpr(tmp->name, gMethodToken, arg1);
       Expr* right = new CallExpr(tmp->name, gMethodToken, arg2);
-      fn->insertAtTail(new CondStmt(new CallExpr("!=", left, right), new CallExpr(PRIM_RETURN, gFalse)));
+      CallExpr *elemComp = new CallExpr(op, left, right);
+      if (isNotEqual) {
+        fn->insertAtTail(new CondStmt(elemComp,
+                                      new CallExpr(PRIM_RETURN, gTrue)));
+      }
+      else {
+        fn->insertAtTail(new CondStmt(new CallExpr("!", elemComp), 
+                                      new CallExpr(PRIM_RETURN, gFalse)));
+      }
     }
   }
-  fn->insertAtTail(new CallExpr(PRIM_RETURN, gTrue));
-  DefExpr* def = new DefExpr(fn);
-  ct->symbol->defPoint->insertBefore(def);
-  reset_ast_loc(def, ct->symbol);
-  normalize(fn);
-}
-
-
-static void build_record_inequality_function(AggregateType* ct) {
-  if (function_exists("!=", ct, ct))
-    return;
-
-  FnSymbol* fn = new FnSymbol("!=");
-  fn->addFlag(FLAG_COMPILER_GENERATED);
-  fn->addFlag(FLAG_LAST_RESORT);
-  ArgSymbol* arg1 = new ArgSymbol(INTENT_BLANK, "_arg1", ct);
-  arg1->addFlag(FLAG_MARKED_GENERIC);
-  ArgSymbol* arg2 = new ArgSymbol(INTENT_BLANK, "_arg2", ct);
-  arg2->addFlag(FLAG_MARKED_GENERIC);
-  fn->insertFormalAtTail(arg1);
-  fn->insertFormalAtTail(arg2);
-  fn->retType = dtBool;
-  fn->where = new BlockStmt(new CallExpr("==",
-                                         new CallExpr(PRIM_TYPEOF, arg1),
-                                         new CallExpr(PRIM_TYPEOF, arg2)));
-
-  for_fields(tmp, ct) {
-    if (!tmp->hasFlag(FLAG_IMPLICIT_ALIAS_FIELD)) {
-      Expr* left = new CallExpr(tmp->name, gMethodToken, arg1);
-      Expr* right = new CallExpr(tmp->name, gMethodToken, arg2);
-      fn->insertAtTail(new CondStmt(new CallExpr("!=", left, right),
-                                    new CallExpr(PRIM_RETURN, gTrue)));
-    }
+  if (isNotEqual) {
+    fn->insertAtTail(new CallExpr(PRIM_RETURN, gFalse));
   }
-  fn->insertAtTail(new CallExpr(PRIM_RETURN, gFalse));
+  else {
+    fn->insertAtTail(new CallExpr(PRIM_RETURN, gTrue));
+  }
   DefExpr* def = new DefExpr(fn);
   ct->symbol->defPoint->insertBefore(def);
   reset_ast_loc(def, ct->symbol);
