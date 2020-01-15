@@ -1004,6 +1004,11 @@ static void resolveUnresolvedSymExpr(UnresolvedSymExpr* usymExpr,
     if (call == NULL || call->baseExpr != usymExpr) {
       CallExpr* primFn = NULL;
 
+      // Avoid duplicate wrapping with PRIM_CAPTURE_FN_*
+      if (call != NULL && (call->isPrimitive(PRIM_CAPTURE_FN_FOR_C) ||
+                           call->isPrimitive(PRIM_CAPTURE_FN_FOR_CHPL)))
+        return;
+
       // Wrap the FN in the appropriate way
       if (call != NULL && call->isNamed("c_ptrTo") == true) {
         primFn = new CallExpr(PRIM_CAPTURE_FN_FOR_C);
