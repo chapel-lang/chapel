@@ -1388,101 +1388,104 @@ static CallExpr* resolveModuleGetNewExpr(CallExpr* call, Symbol* sym);
 
 static void resolveModuleCall(CallExpr* call) {
   if (call->isNamedAstr(astrSdot) == true) {
-    if (UnresolvedSymExpr* uSE = toUnresolvedSymExpr(call->get(1))) {
-      astlocT* renameLoc = resolveUnresolvedSymExpr(uSE, true);
+    astlocT* renameLoc = NULL;
+    UnresolvedSymExpr* uSE = toUnresolvedSymExpr(call->get(1));
+    if (uSE != NULL) {
+      renameLoc = resolveUnresolvedSymExpr(uSE, true);
+    }
 
-      // Now that we've resolved the unresolved sym expr, check if it's been
-      // replaced with a sym expr, and operate within it if so.
-      if (SymExpr* se = toSymExpr(call->get(1))) {
-        if (ModuleSymbol* mod = toModuleSymbol(se->symbol())) {
-          SET_LINENO(call);
+    // Now that we've potentially resolved the unresolved sym expr, check if
+    // it's been replaced with a sym expr (or if it was one to start), and
+    // operate within it if so.
+    if (SymExpr* se = toSymExpr(call->get(1))) {
+      if (ModuleSymbol* mod = toModuleSymbol(se->symbol())) {
+        SET_LINENO(call);
 
-          ModuleSymbol* currModule = call->getModule();
-          ResolveScope* scope      = ResolveScope::getScopeFor(mod->block);
-          const char*   mbrName    = get_string(call->get(2));
+        ModuleSymbol* currModule = call->getModule();
+        ResolveScope* scope      = ResolveScope::getScopeFor(mod->block);
+        const char*   mbrName    = get_string(call->get(2));
 
-          currModule->moduleUseAdd(mod);
+        currModule->moduleUseAdd(mod);
 
-          // First, try regular scope resolution
-          Symbol* sym = scope->lookupNameLocally(mbrName);
+        // First, try regular scope resolution
+        Symbol* sym = scope->lookupNameLocally(mbrName);
 
-          // Adjust class types to undecorated
-          if (sym && isClass(sym->type) && !fLegacyClasses) {
-            // Switch to the CLASS_TYPE_GENERIC_NONNIL decorated class type.
-            ClassTypeDecorator d = CLASS_TYPE_GENERIC_NONNIL;
-            Type* t = getDecoratedClass(sym->type, d);
-            sym = t->symbol;
-          }
+        // Adjust class types to undecorated
+        if (sym && isClass(sym->type) && !fLegacyClasses) {
+          // Switch to the CLASS_TYPE_GENERIC_NONNIL decorated class type.
+          ClassTypeDecorator d = CLASS_TYPE_GENERIC_NONNIL;
+          Type* t = getDecoratedClass(sym->type, d);
+          sym = t->symbol;
+        }
 
-          // Failing that, try looking in an extern block.
+        // Failing that, try looking in an extern block.
 #ifdef HAVE_LLVM
-          if (sym == NULL && gExternBlockStmts.size() > 0) {
-            sym = tryCResolveLocally(mod, mbrName);
-          }
+        if (sym == NULL && gExternBlockStmts.size() > 0) {
+          sym = tryCResolveLocally(mod, mbrName);
+        }
 #endif
 
-          if (sym != NULL) {
-            if (sym->isVisible(call) == true) {
-              if (FnSymbol* fn = toFnSymbol(sym)) {
-                if (fn->_this == NULL && fn->hasFlag(FLAG_NO_PARENS) == true) {
-                  call->replace(new CallExpr(fn));
-
-                } else {
-                  CallExpr* parent = toCallExpr(call->parentExpr);
-
-                  call->replace(new UnresolvedSymExpr(mbrName));
-
-                  parent->insertAtHead(mod);
-                  parent->insertAtHead(gModuleToken);
-                }
-
-              } else if (CallExpr* c = resolveModuleGetNewExpr(call, sym)) {
-                call->replace(new SymExpr(sym));
-
-                c->insertAtHead(mod);
-                c->insertAtHead(gModuleToken);
+        if (sym != NULL) {
+          if (sym->isVisible(call) == true) {
+            if (FnSymbol* fn = toFnSymbol(sym)) {
+              if (fn->_this == NULL && fn->hasFlag(FLAG_NO_PARENS) == true) {
+                call->replace(new CallExpr(fn));
 
               } else {
-                call->replace(new SymExpr(sym));
+                CallExpr* parent = toCallExpr(call->parentExpr);
+
+                call->replace(new UnresolvedSymExpr(mbrName));
+
+                parent->insertAtHead(mod);
+                parent->insertAtHead(gModuleToken);
               }
+
+            } else if (CallExpr* c = resolveModuleGetNewExpr(call, sym)) {
+              call->replace(new SymExpr(sym));
+
+              c->insertAtHead(mod);
+              c->insertAtHead(gModuleToken);
 
             } else {
-              if (uSE->unresolved == mod->name) {
-                USR_FATAL(call,
-                          "Cannot access '%s', '%s' is private to '%s'",
-                          mbrName,
-                          mbrName,
-                          mod->name);
-
-              } else {
-                USR_FATAL_CONT(call,
-                               "Cannot access '%s', '%s' is private to '%s'",
-                               mbrName,
-                               mbrName,
-                               uSE->unresolved);
-                USR_PRINT("module '%s' was renamed from '%s' at %s:%d",
-                          uSE->unresolved, mod->name, renameLoc->filename,
-                          renameLoc->lineno);
-
-              }
+              call->replace(new SymExpr(sym));
             }
 
           } else {
-            if (uSE->unresolved == mod->name) {
-              USR_FATAL_CONT(call,
-                             "Symbol '%s' undeclared in module '%s'",
-                             mbrName,
-                             mod->name);
+            if (!uSE || uSE->unresolved == mod->name) {
+              USR_FATAL(call,
+                        "Cannot access '%s', '%s' is private to '%s'",
+                        mbrName,
+                        mbrName,
+                        mod->name);
 
             } else {
               USR_FATAL_CONT(call,
-                             "Symbol '%s' undeclared in module '%s'",
+                             "Cannot access '%s', '%s' is private to '%s'",
+                             mbrName,
                              mbrName,
                              uSE->unresolved);
               USR_PRINT("module '%s' was renamed from '%s' at %s:%d",
                         uSE->unresolved, mod->name, renameLoc->filename,
                         renameLoc->lineno);
+
             }
+          }
+
+        } else {
+          if (!uSE || uSE->unresolved == mod->name) {
+            USR_FATAL_CONT(call,
+                           "Symbol '%s' undeclared in module '%s'",
+                           mbrName,
+                           mod->name);
+
+          } else {
+            USR_FATAL_CONT(call,
+                           "Symbol '%s' undeclared in module '%s'",
+                           mbrName,
+                           uSE->unresolved);
+            USR_PRINT("module '%s' was renamed from '%s' at %s:%d",
+                      uSE->unresolved, mod->name, renameLoc->filename,
+                      renameLoc->lineno);
           }
         }
       }
