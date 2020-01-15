@@ -22,7 +22,7 @@ proc main() {
 
 // Return record 'foobar'
 record rec { }
-record foobar { };
+class foobar { };
 
 proc rec.key(a) {
   return new foobar();

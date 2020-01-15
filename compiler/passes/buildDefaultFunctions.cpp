@@ -733,6 +733,7 @@ static void buildRecordComparisonFunc(AggregateType* ct, const char* op) {
     return;
 
   const char* astrOp = astr(op);
+  Symbol* opSym = new_StringSymbol(op);
 
   // we need to special case `!=`:
   // it can return true early, and returns false after checking all fields
@@ -749,9 +750,29 @@ static void buildRecordComparisonFunc(AggregateType* ct, const char* op) {
   fn->insertFormalAtTail(arg1);
   fn->insertFormalAtTail(arg2);
   fn->retType = dtBool;
-  fn->where = new BlockStmt(new CallExpr("==",
+
+  //build the where clause
+  Expr* typeComp = new CallExpr("==", new CallExpr(PRIM_TYPEOF, arg1),
+                                      new CallExpr(PRIM_TYPEOF, arg2));
+  if (ct->numFields() == 0) {  // no fields, no need for &&
+    fn->where = new BlockStmt(typeComp);
+  }
+  else {  // we have some fields, so && them
+    CallExpr *whereExpr = new CallExpr(PRIM_AND);
+    whereExpr->insertAtTail(new CallExpr("==",
                                          new CallExpr(PRIM_TYPEOF, arg1),
                                          new CallExpr(PRIM_TYPEOF, arg2)));
+    for_fields(tmp, ct) {
+      if (!tmp->hasFlag(FLAG_IMPLICIT_ALIAS_FIELD) &&
+          !tmp->hasFlag(FLAG_TYPE_VARIABLE)) {  // types fields must be equal
+        Expr* left = new CallExpr(tmp->name, gMethodToken, arg1);
+        Expr* right = new CallExpr(tmp->name, gMethodToken, arg2);
+        whereExpr->insertAtTail(new CallExpr(PRIM_CALL_RESOLVES,
+                                             opSym, left, right));
+      }
+    }
+    fn->where = new BlockStmt(whereExpr);
+  }
 
   // keep track of whether we have any fields to compare
   bool hasComparableFields = false;
