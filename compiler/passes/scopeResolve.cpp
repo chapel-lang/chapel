@@ -907,19 +907,6 @@ static Expr* handleUnstableClassType(SymExpr* se) {
 
 static astlocT* resolveUnresolvedSymExpr(UnresolvedSymExpr* usymExpr,
                                          bool returnRename) {
-  // Avoid duplicate work by not trying to resolve UnresolvedSymExprs that
-  // we've already either removed from the tree or encountered an error when
-  // trying to resolve.
-  if (usymExpr->parentExpr == NULL)
-    return NULL;
-
-  for_vector(BaseAST, node, failedUSymExprs) {
-    // Should only be expensive in case where we are already erroring out,
-    // and we're already exiting compilation early in that case.
-    if (node == usymExpr)
-      return NULL;
-  }
-
   SET_LINENO(usymExpr);
 
   const char* name = usymExpr->unresolved;
@@ -927,6 +914,15 @@ static astlocT* resolveUnresolvedSymExpr(UnresolvedSymExpr* usymExpr,
 
   if (name == astrSdot || !usymExpr->inTree())
     return NULL;
+
+  // Avoid duplicate work by not trying to resolve UnresolvedSymExprs that we've
+  // already encountered an error when trying to resolve.
+  for_vector(BaseAST, node, failedUSymExprs) {
+    // Should only be expensive in case where we are already erroring out,
+    // and we're already exiting compilation early in that case.
+    if (node == usymExpr)
+      return NULL;
+  }
 
   astlocT* renameLoc = NULL;
   Symbol* sym = lookupAndCount(name, usymExpr, nSymbols, returnRename,
