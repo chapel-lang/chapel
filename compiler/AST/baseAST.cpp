@@ -173,7 +173,7 @@ static void remove_weak_links(BaseAST* ast) {
       if (isAlive(se))
         if (CallExpr* call = toCallExpr(se->parentExpr))
           if (call->isPrimitive(PRIM_END_OF_STATEMENT))
-            call->remove();
+            se->remove();
     }
   }
 }
