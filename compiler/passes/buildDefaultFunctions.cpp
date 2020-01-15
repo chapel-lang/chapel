@@ -734,6 +734,9 @@ static void buildRecordComparisonFunc(AggregateType* ct, const char* op) {
 
   const char* astrOp = astr(op);
 
+  // we need to special case `!=`:
+  // it can return true early, and returns false after checking all fields
+  // all other operators does the exact opposite
   bool isNotEqual = (astrOp == astrSne);
 
   FnSymbol* fn = new FnSymbol(op);
@@ -750,6 +753,7 @@ static void buildRecordComparisonFunc(AggregateType* ct, const char* op) {
                                          new CallExpr(PRIM_TYPEOF, arg1),
                                          new CallExpr(PRIM_TYPEOF, arg2)));
 
+  // keep track of whether we have any fields to compare
   bool hasComparableFields = false;
   for_fields(tmp, ct) {
     if (!tmp->hasFlag(FLAG_IMPLICIT_ALIAS_FIELD) &&
@@ -777,7 +781,7 @@ static void buildRecordComparisonFunc(AggregateType* ct, const char* op) {
     }
   }
   else {
-    // this is an empty record, so instances are equal to each other
+    // this is an empty record, so instances are always equal to each other
     if (astrOp == astrSeq || astrOp == astrSlte || astrOp == astrSgte) {
       fn->insertAtTail(new CallExpr(PRIM_RETURN, gTrue));
     }
