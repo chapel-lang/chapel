@@ -596,32 +596,6 @@ static void gatherIgnoredVariablesForErrorHandling(
     if (moveResult)
       ignoredVariables.insert(moveResult);
   }
-
-  // If ignore is set, it might be a callTmp,
-  // track a subsequent PRIM_MOVE to expand the
-  // set of ignored variables to include the
-  // relevant user variable.
-/*  if (ignore != NULL) {
-    if (CallExpr* move = toCallExpr(cond->next)) {
-      if (move->isPrimitive(PRIM_MOVE)) {
-        SymExpr *dstSe = toSymExpr(move->get(1));
-        SymExpr *srcSe = NULL;
-
-        if (CallExpr* subCall = toCallExpr(move->get(2))) {
-          if (FnSymbol* calledFn = subCall->resolvedFunction())
-            if (calledFn->hasFlag(FLAG_INIT_COPY_FN) ||
-                calledFn->hasFlag(FLAG_AUTO_COPY_FN))
-              srcSe = toSymExpr(subCall->get(1));
-        } else {
-          srcSe = toSymExpr(move->get(2));
-        }
-
-        if (dstSe != NULL && srcSe != NULL &&
-            srcSe->symbol() == ignore)
-          ignoredVariables.insert(toVarSymbol(dstSe->symbol()));
-      }
-    }
-  }*/
 }
 
 static void gatherIgnoredVariablesForYield(
@@ -747,8 +721,6 @@ static Expr* findLastExprInStatement(Expr* e, VarSymbol* v) {
        cur = cur->parentExpr) {
     // If we encounter any non-trivial block statements, make the
     // statement be the entire block.
-
-    // TODO - fix if-exprs with isLoweredIfExprBlock
 
     if (isBlockStmt(cur) ||
         isCondStmt(cur) || isLoopStmt(cur) || isForallStmt(cur)) {
