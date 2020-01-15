@@ -907,6 +907,9 @@ static Expr* handleUnstableClassType(SymExpr* se) {
 
 static astlocT* resolveUnresolvedSymExpr(UnresolvedSymExpr* usymExpr,
                                          bool returnRename) {
+  // Avoid duplicate work by not trying to resolve UnresolvedSymExprs that
+  // we've already either removed from the tree or encountered an error when
+  // trying to resolve.
   if (usymExpr->parentExpr == NULL)
     return NULL;
 
