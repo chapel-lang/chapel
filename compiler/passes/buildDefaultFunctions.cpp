@@ -732,7 +732,7 @@ static void buildRecordComparisonFunc(AggregateType* ct, const char* op) {
   if (functionExists(op, ct, ct))
     return;
 
-  bool isNotEqual = strncmp(op, "!=", 2) == 0;
+  bool isNotEqual = (astr(op) == astrSne);
 
   FnSymbol* fn = new FnSymbol(op);
   fn->addFlag(FLAG_COMPILER_GENERATED);
