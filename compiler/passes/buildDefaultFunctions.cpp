@@ -732,7 +732,9 @@ static void buildRecordComparisonFunc(AggregateType* ct, const char* op) {
   if (functionExists(op, ct, ct))
     return;
 
-  bool isNotEqual = (astr(op) == astrSne);
+  const char* astrOp = astr(op);
+
+  bool isNotEqual = (astrOp == astrSne);
 
   FnSymbol* fn = new FnSymbol(op);
   fn->addFlag(FLAG_COMPILER_GENERATED);
@@ -748,6 +750,7 @@ static void buildRecordComparisonFunc(AggregateType* ct, const char* op) {
                                          new CallExpr(PRIM_TYPEOF, arg1),
                                          new CallExpr(PRIM_TYPEOF, arg2)));
 
+  bool hasComparableFields = false;
   for_fields(tmp, ct) {
     if (!tmp->hasFlag(FLAG_IMPLICIT_ALIAS_FIELD) &&
         !tmp->hasFlag(FLAG_TYPE_VARIABLE)) {  // types fields must be equal
@@ -762,14 +765,27 @@ static void buildRecordComparisonFunc(AggregateType* ct, const char* op) {
         fn->insertAtTail(new CondStmt(new CallExpr("!", elemComp), 
                                       new CallExpr(PRIM_RETURN, gFalse)));
       }
+      hasComparableFields = true;
     }
   }
-  if (isNotEqual) {
-    fn->insertAtTail(new CallExpr(PRIM_RETURN, gFalse));
+  if (hasComparableFields) {
+    if (isNotEqual) {
+      fn->insertAtTail(new CallExpr(PRIM_RETURN, gFalse));
+    }
+    else {
+      fn->insertAtTail(new CallExpr(PRIM_RETURN, gTrue));
+    }
   }
   else {
-    fn->insertAtTail(new CallExpr(PRIM_RETURN, gTrue));
+    // this is an empty record, so instances are equal to each other
+    if (astrOp == astrSeq || astrOp == astrSlte || astrOp == astrSgte) {
+      fn->insertAtTail(new CallExpr(PRIM_RETURN, gTrue));
+    }
+    else {
+      fn->insertAtTail(new CallExpr(PRIM_RETURN, gFalse));
+    }
   }
+
   DefExpr* def = new DefExpr(fn);
   ct->symbol->defPoint->insertBefore(def);
   reset_ast_loc(def, ct->symbol);
