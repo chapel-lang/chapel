@@ -134,7 +134,7 @@ The default intent for :record:`owned` currently depends on whether
 or not the formal argument was declared with a type.
 
 If the formal argument has a declared type, the default intent is `in`, meaning
-that ownership will occur.
+that ownership transfer will occur.
 
 .. code-block:: chapel
 
@@ -319,8 +319,6 @@ module OwnedObject {
        Change the instance managed by this class to `newPtr`.
        If this record was already managing a non-nil instance,
        that instance will be deleted.
-
-       Here `t` refers to the object type managed by this :record:`owned`.
      */
     proc ref retain(pragma "nil from arg" newPtr:unmanaged) {
       if !isCoercible(newPtr.type, chpl_t) then
@@ -336,8 +334,6 @@ module OwnedObject {
     /*
        Empty this :record:`owned` so that it manages `nil`.
        Returns the instance previously managed by this :record:`owned`.
-
-       Here `t` refers to the object type managed by this :record:`owned`.
      */
     pragma "leaves this nil"
     pragma "nil from this"
@@ -359,7 +355,7 @@ module OwnedObject {
        impacting its lifetime at all. It is an error to use the
        value returned by this function after the :record:`owned`
        goes out of scope or deletes the contained class instance
-       for another reason, such as with `=` or :proc`retain`.
+       for another reason, such as with `=` or `retain`.
        In some cases such errors are caught at compile-time.
      */
     pragma "nil from this"
@@ -385,7 +381,7 @@ module OwnedObject {
   /*
     Assign one :record:`owned` to another. Deletes the object managed by
     ``lhs``, if any. Transfers ownership of the object managed by ``rhs``
-    to ``lhs``, leaving ``lhs`` storing `nil`.
+    to ``lhs``, leaving ``rhs`` storing `nil`.
   */
   proc =(ref lhs:_owned,
          pragma "leaves arg nil"
