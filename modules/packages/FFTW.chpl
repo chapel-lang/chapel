@@ -693,6 +693,7 @@ module FFTW {
 
      Please refer to the FFTW documentation for more details. */
   module C_FFTW {
+    public use SysCTypes;
     extern proc fftw_execute(p : fftw_plan) : void;
 
     extern proc fftw_plan_dft(rank : c_int, n : c_ptr(c_int), in_arg : c_ptr(fftw_complex), out_arg : c_ptr(fftw_complex), sign : c_int, flags : c_uint) : fftw_plan;
