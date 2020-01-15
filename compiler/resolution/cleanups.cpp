@@ -653,15 +653,6 @@ static void cleanupAfterRemoves() {
   }
 }
 
-static void removeDefAndStatementMentions(DefExpr* def) {
-  for_SymbolSymExprs(se, def->sym) {
-    if (CallExpr* call = toCallExpr(se->parentExpr))
-      if (call->isPrimitive(PRIM_END_OF_STATEMENT))
-        call->remove();
-  }
-  def->remove();
-}
-
 static bool isVoidOrVoidTupleType(Type* type) {
   if (type == NULL) {
     return false;
@@ -828,14 +819,14 @@ static void cleanupVoidVarsAndFields() {
               ! isForallIterVarDef(def)              &&
               ! preserveShadowVar(var)               ) {
             if (var != gNone) {
-              removeDefAndStatementMentions(def);
+              def->remove();
             }
           }
         }
       } else if (def->sym->type == dtUninstantiated &&
                  isVarSymbol(def->sym) &&
                  !def->parentSymbol->hasFlag(FLAG_REF)) {
-        removeDefAndStatementMentions(def);
+        def->remove();
       }
   }
 

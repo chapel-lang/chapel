@@ -566,7 +566,12 @@ void SymExpr::verify() {
     INT_FATAL(this, "SymExpr::verify %12d: var is NULL", id);
 
   if (var->defPoint) {
-    if (!var->defPoint->inTree())
+    bool isEndOfStatement = false;
+    if (CallExpr* call = toCallExpr(parentExpr))
+      if (call->isPrimitive(PRIM_END_OF_STATEMENT))
+        isEndOfStatement = true;
+
+    if (!var->defPoint->inTree() && !isEndOfStatement)
       INT_FATAL(this, "SymExpr::verify %12d:  var->defPoint is not in AST", id);
   } else {
     if (var != rootModule)

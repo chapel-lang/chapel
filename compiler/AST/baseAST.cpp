@@ -163,6 +163,21 @@ void printStatistics(const char* pass) {
   last_nasts = nasts;
 }
 
+/* Certain AST elements, such as PRIM_END_OF_STATEMENT, should just
+   be adjusted when variables are removed. */
+static void remove_weak_links(BaseAST* ast) {
+  VarSymbol* var = toVarSymbol(ast);
+
+  if (var != NULL) {
+    for_SymbolSymExprs(se, var) {
+      if (isAlive(se))
+        if (CallExpr* call = toCallExpr(se->parentExpr))
+          if (call->isPrimitive(PRIM_END_OF_STATEMENT))
+            call->remove();
+    }
+  }
+}
+
 // for debugging purposes only
 void trace_remove(BaseAST* ast, char flag) {
   // crash if deletedIdHandle is not initialized but deletedIdFilename is
@@ -187,6 +202,7 @@ void trace_remove(BaseAST* ast, char flag) {
     if (isAlive(ast) || isRootModuleWithType(ast, type)) { \
       g##type##s.v[i##type++] = ast;            \
     } else {                                    \
+      remove_weak_links(ast);                   \
       trace_remove(ast, 'x');                   \
       delete ast; ast = 0;                      \
     }                                           \
