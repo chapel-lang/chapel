@@ -5,22 +5,22 @@ no00
 init
 init 1
 = 0 1
-(x = 0, ptr = {})
+(x = 1, ptr = {})
 no01
 init
 init 2
 = 0 2
-(x = 0, ptr = {})
+(x = 2, ptr = {})
 no1
 init
 init 1
 = 0 1
-(x = 0, ptr = {})
+(x = 1, ptr = {})
 no2
 init
 init 1
 = 0 1
-(x = 0, ptr = {})
+(x = 1, ptr = {})
 no3
 init
 (x = 0, ptr = {})

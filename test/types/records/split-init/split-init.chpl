@@ -20,6 +20,7 @@ record R {
 }
 proc =(ref lhs:R, rhs:R) {
   writeln("= ", lhs.x, " ", rhs.x);
+  lhs.x = rhs.x;
 }
 
 proc testInts() {
