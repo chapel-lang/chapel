@@ -55,6 +55,7 @@ static void buildExternAssignmentFunction(Type* type);
 static void buildRecordAssignmentFunction(AggregateType* ct);
 static void checkNotPod(AggregateType* ct);
 static void buildRecordHashFunction(AggregateType* ct);
+static FnSymbol* buildRecordIsComparableFunc(AggregateType* ct, const char* op);
 static void buildRecordComparisonFunc(AggregateType* ct, const char* op);
 
 static void buildDefaultReadWriteFunctions(AggregateType* type);
@@ -728,12 +729,65 @@ static void buildChplEntryPoints() {
   normalize(chpl_gen_main);
 }
 
+static FnSymbol* buildRecordIsComparableFunc(AggregateType* ct,
+                                             const char* op) {
+  Symbol* opSym = new_CStringSymbol(op);
+
+  FnSymbol* fn = new FnSymbol("chpl_fields_are_comparable");
+  fn->addFlag(FLAG_COMPILER_GENERATED);
+  fn->addFlag(FLAG_LAST_RESORT);
+  fn->addFlag(FLAG_PARAM);
+  ArgSymbol* arg1 = new ArgSymbol(INTENT_BLANK, "_arg1", ct);
+  arg1->addFlag(FLAG_MARKED_GENERIC);
+  ArgSymbol* arg2 = new ArgSymbol(INTENT_BLANK, "_arg2", ct);
+  arg2->addFlag(FLAG_MARKED_GENERIC);
+  fn->insertFormalAtTail(arg1);
+  fn->insertFormalAtTail(arg2);
+  fn->retType = dtBool;
+  fn->retTag = RET_PARAM;
+
+  if (ct->numFields() == 0) {  // no fields, no need for &&
+    fn->insertAtTail(new CallExpr(PRIM_RETURN, gTrue));
+  }
+  else {  // we have some fields, so possibly && them
+    std::vector<CallExpr *> fieldChecks;
+    for_fields(tmp, ct) {
+      if (!tmp->hasFlag(FLAG_IMPLICIT_ALIAS_FIELD) &&
+          !tmp->hasFlag(FLAG_TYPE_VARIABLE)) {  // types fields must be equal
+        Expr* left = new CallExpr(tmp->name, gMethodToken, arg1);
+        Expr* right = new CallExpr(tmp->name, gMethodToken, arg2);
+        fieldChecks.push_back(new CallExpr(PRIM_CALL_RESOLVES,
+                                           opSym, left, right));
+      }
+    }
+    if (fieldChecks.size() == 0) {
+      fn->insertAtTail(new CallExpr(PRIM_RETURN, gTrue));
+    }
+    else if (fieldChecks.size() == 1) {
+      fn->insertAtTail(new CallExpr(PRIM_RETURN, fieldChecks[0]));
+    }
+    else {
+      CallExpr* boolExpr = new CallExpr(PRIM_AND);
+      for_vector(CallExpr, ce, fieldChecks) {
+        boolExpr->insertAtTail(ce);
+      }
+      fn->insertAtTail(new CallExpr(PRIM_RETURN, boolExpr));
+    }
+  }
+
+  DefExpr* def = new DefExpr(fn);
+  ct->symbol->defPoint->insertBefore(def);
+  reset_ast_loc(def, ct->symbol);
+  normalize(fn);
+
+  return fn;
+}
+
 static void buildRecordComparisonFunc(AggregateType* ct, const char* op) {
   if (functionExists(op, ct, ct))
     return;
 
   const char* astrOp = astr(op);
-  Symbol* opSym = new_CStringSymbol(op);
 
   // we need to special case `!=`:
   // it can return true early, and returns false after checking all fields
@@ -754,28 +808,9 @@ static void buildRecordComparisonFunc(AggregateType* ct, const char* op) {
   //build the where clause
   Expr* typeComp = new CallExpr("==", new CallExpr(PRIM_TYPEOF, arg1),
                                       new CallExpr(PRIM_TYPEOF, arg2));
-  if (ct->numFields() == 0) {  // no fields, no need for &&
-    fn->where = new BlockStmt(typeComp);
-  }
-  else {  // we have some fields, so && them
-    CallExpr *whereExpr = new CallExpr(PRIM_AND);
-    whereExpr->insertAtTail(new CallExpr("==",
-                                         new CallExpr(PRIM_TYPEOF, arg1),
-                                         new CallExpr(PRIM_TYPEOF, arg2)));
-    for_fields(tmp, ct) {
-      if (!tmp->hasFlag(FLAG_IMPLICIT_ALIAS_FIELD) &&
-          !tmp->hasFlag(FLAG_TYPE_VARIABLE)) {  // types fields must be equal
-        Expr* left = new CallExpr(tmp->name, gMethodToken, arg1);
-        Expr* right = new CallExpr(tmp->name, gMethodToken, arg2);
-        whereExpr->insertAtTail(new CallExpr(PRIM_CALL_RESOLVES,
-                                             opSym, left, right));
-      }
-    }
-    fn->where = new BlockStmt(whereExpr);
-  }
-
-  // keep track of whether we have any fields to compare
-  bool hasComparableFields = false;
+  Expr* fieldsCheckExpr = new CallExpr(buildRecordIsComparableFunc(ct, op),
+                                       arg1, arg2);
+  fn->where = new BlockStmt(new CallExpr(PRIM_AND, typeComp, fieldsCheckExpr));
 
   // add comparisons for fields
   for_fields(tmp, ct) {
@@ -792,20 +827,18 @@ static void buildRecordComparisonFunc(AggregateType* ct, const char* op) {
         fn->insertAtTail(new CondStmt(new CallExpr("!", elemComp), 
                                       new CallExpr(PRIM_RETURN, gFalse)));
       }
-      hasComparableFields = true;
     }
   }
 
   // find the return value and add the return statement
   VarSymbol* ret;
-  if (hasComparableFields) {
+  if (fn->body->length() > 0) { // we added comparison statements: not empty
     if (isNotEqual)
       ret = gFalse;
     else
       ret = gTrue;
   }
-  else {
-    // this is an empty record, so instances are always equal to each other
+  else { // this is an empty record, so instances are always equal to each other
     if (astrOp == astrSeq || astrOp == astrSlte || astrOp == astrSgte)
       ret = gTrue;
     else
