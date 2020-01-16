@@ -765,6 +765,9 @@ static Expr* findLastExprInStatement(Expr* e, VarSymbol* v) {
           return call; // PRIM_END_OF_STATEMENT reached
         if (call->isNamedAstr(astr_chpl_statementLevelSymbol))
           return call;
+        if (FnSymbol* fn = call->resolvedFunction())
+          if (isTaskFun(fn))
+            return call;
       }
 
       if (DefExpr* def = toDefExpr(cur))
