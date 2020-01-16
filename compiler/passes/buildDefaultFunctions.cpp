@@ -159,14 +159,6 @@ static void buildFieldAccessorFunctions(AggregateType* at) {
   }
 }
 
-
-// functionExists returns true iff
-//  function's name matches name
-//  function's number of formals matches numFormals
-//  function's first formal's type matches formalType1 if not NULL
-//  function's second formal's type matches formalType2 if not NULL
-//  function's third formal's type matches formalType3 if not NULL
-
 static bool typeMatch(Type* type, Symbol* sym) {
   if (type == dtAny)
     return true;
@@ -182,15 +174,22 @@ typedef enum {
   FIND_EITHER = 0,
   FIND_REF,
   FIND_NOT_REF
-} functionExists_kind_t;
+} functionExistsKind;
 
+
+// functionExists returns true iff
+//  function's name matches name
+//  function's number of formals matches numFormals
+//  function's first formal's type matches formalType1 if not NULL
+//  function's second formal's type matches formalType2 if not NULL
+//  function's third formal's type matches formalType3 if not NULL
 static FnSymbol* functionExists(const char* name,
                                  int numFormals,
                                  Type* formalType1,
                                  Type* formalType2,
                                  Type* formalType3,
                                  Type* formalType4,
-                                 functionExists_kind_t kind)
+                                 functionExistsKind kind)
 {
   switch(numFormals)
   {
@@ -244,7 +243,7 @@ static FnSymbol* functionExists(const char* name,
 
 static FnSymbol* functionExists(const char* name,
                                  Type* formalType1,
-                                 functionExists_kind_t kind=FIND_EITHER)
+                                 functionExistsKind kind=FIND_EITHER)
 {
   return functionExists(name, 1, formalType1, NULL, NULL, NULL, kind);
 }
@@ -254,7 +253,7 @@ static FnSymbol* functionExists(const char* name,
 static FnSymbol* functionExists(const char* name,
                                  Type* formalType1,
                                  Type* formalType2,
-                                 functionExists_kind_t kind=FIND_EITHER)
+                                 functionExistsKind kind=FIND_EITHER)
 {
   return functionExists(name, 2, formalType1, formalType2, NULL, NULL, kind);
 }
@@ -263,7 +262,7 @@ static FnSymbol* functionExists(const char* name,
                                  Type* formalType1,
                                  Type* formalType2,
                                  Type* formalType3,
-                                 functionExists_kind_t kind=FIND_EITHER)
+                                 functionExistsKind kind=FIND_EITHER)
 {
   return functionExists(name, 3,
                          formalType1, formalType2, formalType3, NULL, kind);
@@ -791,7 +790,7 @@ static void buildRecordComparisonFunc(AggregateType* ct, const char* op) {
 
   // we need to special case `!=`:
   // it can return true early, and returns false after checking all fields
-  // all other operators does the exact opposite
+  // all other operators do the exact opposite
   bool isNotEqual = (astrOp == astrSne);
 
   FnSymbol* fn = new FnSymbol(op);

@@ -20,7 +20,7 @@ proc main() {
 
 /* Broken keys */
 
-// Return record 'foobar'
+// Return class 'foobar'
 record rec { }
 class foobar { };
 
