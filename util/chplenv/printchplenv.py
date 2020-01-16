@@ -335,11 +335,12 @@ def printchplenv(contents, print_filters=None, print_format='pretty'):
     # Print environment variables and their values
     for env in envs:
         value = ENV_VALS[env.name]
-        if env.name == 'CHPL_TARGET_CPU' and print_format == 'path':
-            value = ENV_VALS['CHPL_RUNTIME_CPU']
+        if print_format == 'path':
+            if env.name == 'CHPL_TARGET_CPU':
+                value = ENV_VALS['CHPL_RUNTIME_CPU']
+            elif env.name == 'CHPL_COMM' and chpl_comm_debug.get() == 'debug':
+                value += '-debug'
         ret.append(print_var(env.name, value, shortname=env.shortname))
-        if env.name == 'CHPL_COMM' and print_format == 'path':
-            ret.append(print_var(env.name, chpl_comm_debug.get()))
 
     # Handle special formatting case for --path
     if print_format == 'path':
