@@ -2350,7 +2350,7 @@ void resolveUnmanagedBorrows(CallExpr* call) {
     }
   }
 
-  // Fix e.g. call _owned class?
+  // Fix e.g. call _owned class? or call _owned anymanaged Error
   if (call->numActuals() == 1) {
     SymExpr* se1 = toSymExpr(call->baseExpr);
     SymExpr* se2 = toSymExpr(call->get(1));
@@ -2371,6 +2371,14 @@ void resolveUnmanagedBorrows(CallExpr* call) {
         if (useType != NULL) {
           SET_LINENO(call);
           call->replace(new SymExpr(useType->symbol));
+        } else if (isClassLike(t2)) {
+          Type* canonical = canonicalClassType(t2);
+          if (isNilableClassType(t2))
+            useType = getDecoratedClass(canonical, CLASS_TYPE_BORROWED_NILABLE);
+          else
+            useType = canonical;
+
+          se2->setSymbol(useType->symbol);
         }
       }
     }
