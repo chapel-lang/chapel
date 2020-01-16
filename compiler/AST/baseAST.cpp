@@ -165,9 +165,7 @@ void printStatistics(const char* pass) {
 
 /* Certain AST elements, such as PRIM_END_OF_STATEMENT, should just
    be adjusted when variables are removed. */
-static void remove_weak_links(BaseAST* ast) {
-  VarSymbol* var = toVarSymbol(ast);
-
+static void remove_weak_links(VarSymbol* var) {
   if (var != NULL) {
     for_SymbolSymExprs(se, var) {
       if (isAlive(se))
@@ -202,7 +200,8 @@ void trace_remove(BaseAST* ast, char flag) {
     if (isAlive(ast) || isRootModuleWithType(ast, type)) { \
       g##type##s.v[i##type++] = ast;            \
     } else {                                    \
-      remove_weak_links(ast);                   \
+      if (E_##type == E_VarSymbol)              \
+        remove_weak_links(toVarSymbol(ast));    \
       trace_remove(ast, 'x');                   \
       delete ast; ast = 0;                      \
     }                                           \
