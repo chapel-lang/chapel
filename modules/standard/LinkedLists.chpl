@@ -324,6 +324,7 @@ record LinkedList {
     if !hasReadEnd then
       if isJson || isChpl then f <~> new ioLiteral("]");
   }
+}
 
 /*
   Initialize a new :record:`LinkedList` containing all of the supplied arguments.

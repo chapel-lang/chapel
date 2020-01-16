@@ -3030,7 +3030,7 @@ proc channel._constructIoErrorMsg(param kind: iokind, x:?t): string {
 // The intent of x is ref (vs out) because it might contain a string literal.
 //
 pragma "no doc"
-inline proc channel._readOne(param kind: iokind, ref x:?t,
+proc channel._readOne(param kind: iokind, ref x:?t,
                              loc:locale?) throws {
   var err = try _read_one_internal(_channel_internal, kind, x, loc); 
 
@@ -3044,7 +3044,7 @@ inline proc channel._readOne(param kind: iokind, ref x:?t,
 // The channel must be locked and running on this.home.
 //
 pragma "no doc"
-inline proc channel._writeOne(param kind: iokind, x:?t, loc:locale?) throws {
+proc channel._writeOne(param kind: iokind, x:?t, loc:locale?) throws {
   var err = _write_one_internal(_channel_internal, kind, x, loc);
 
   if err != ENOERR {
@@ -6604,14 +6604,16 @@ proc channel.readf(fmtStr:?t, ref args ...?k): bool throws
         // revert
         qio_channel_revert_unlocked(_channel_internal);
       }
-    } catch EndOfFileError {
-      err = EEOF;
+    } catch thrownError: SystemError {
+      if thrownError.err != EEOF then throw thrownError;
+      err = EEOF; 
     }
   }
 
   if !err {
     return true;
   } else if err == EEOF {
+    // TODO: Shouldn't we also be checking for EFORMAT here?
     return false;
   } else {
     try this._ch_ioerror(err, "in channel.readf(fmt:string, ...)");
@@ -6629,7 +6631,7 @@ proc channel.readf(fmtStr:?t) throws
   var err:syserr = ENOERR;
   on this.home {
     try this.lock(); defer { this.unlock(); }
-    var save_style = this._style();
+    var save_style = this._style(); defer { this._set_style(save_style); }
     var cur:size_t = 0;
     var len:size_t = fmtStr.length:size_t;
     var conv:qio_conv_t;
@@ -6664,13 +6666,11 @@ proc channel.readf(fmtStr:?t) throws
       // revert
       qio_channel_revert_unlocked(_channel_internal);
     }
-
-    this._set_style(save_style);
   }
 
   if !err {
     return true;
-  } else if err == EEOF || err == EFORMAT {
+  } else if err == EEOF {
     return false;
   } else {
     try this._ch_ioerror(err, "in channel.readf(fmt:string)");
