@@ -1,4 +1,4 @@
-FROM debian:9.5
+FROM debian:10
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     wget \
