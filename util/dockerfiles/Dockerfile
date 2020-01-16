@@ -1,4 +1,4 @@
-FROM debian:9.5
+FROM debian:10
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     wget \
@@ -41,4 +41,4 @@ RUN sed -i -e 's/# en_US.UTF-8 UTF-8/en_US.UTF-8 UTF-8/' /etc/locale.gen && \
 RUN git config --global user.email "noreply@example.com" && \
     git config --global user.name  "Chapel user"
 
-ENV PATH $PATH:$CHPL_HOME/bin/linux64:$CHPL_HOME/util
+ENV PATH $PATH:$CHPL_HOME/bin/linux64-x86_64:$CHPL_HOME/util
