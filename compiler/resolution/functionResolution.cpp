@@ -204,8 +204,6 @@ static void  moveHaltMoveIsUnacceptable(CallExpr* call);
 
 
 static bool useLegacyNilability(Expr* at) {
-  if (fLegacyClasses) return true;
-
   if (at != NULL) {
     FnSymbol* fn = at->getFunction();
     ModuleSymbol* mod = at->getModule();
@@ -5877,8 +5875,7 @@ static const char* describeLHS(CallExpr* call, const char* nonnilable) {
 }
 
 void checkMoveIntoClass(CallExpr* call, Type* lhs, Type* rhs) {
-  if (! fLegacyClasses &&
-      isNonNilableClassType(lhs) && isNilableClassType(rhs))
+  if (isNonNilableClassType(lhs) && isNilableClassType(rhs))
     USR_FATAL(userCall(call), "cannot %s '%s' from a nilable '%s'",
               describeLHS(call, " non-nilable"), toString(lhs), toString(rhs));
 
@@ -6978,7 +6975,7 @@ static void resolveNewSetupManaged(CallExpr* newExpr, Type*& manager) {
           } else {
             manager = dtOwned;
           }
-        } else if (isClass(type) && !fLegacyClasses) {
+        } else if (isClass(type)) {
           manager = dtBorrowed;
         } else if (isClass(type) && isUndecoratedClassNew(newExpr, type)) {
           manager = dtOwned;
@@ -9921,14 +9918,12 @@ void printUndecoratedClassTypeNote(Expr* ctx, Type* type) {
 }
 
 void checkDuplicateDecorators(Type* decorator, Type* decorated, Expr* ctx) {
-  if (fLegacyClasses == false) {
-    if (isClassLikeOrManaged(decorator) && isClassLikeOrManaged(decorated)) {
-      ClassTypeDecorator d = classTypeDecorator(decorated);
+  if (isClassLikeOrManaged(decorator) && isClassLikeOrManaged(decorated)) {
+    ClassTypeDecorator d = classTypeDecorator(decorated);
 
-      if (!isDecoratorUnknownManagement(d))
-        USR_FATAL_CONT(ctx, "duplicate decorators - %s %s",
-                             toString(decorator), toString(decorated));
-    }
+    if (!isDecoratorUnknownManagement(d))
+      USR_FATAL_CONT(ctx, "duplicate decorators - %s %s",
+                           toString(decorator), toString(decorated));
   }
 }
 

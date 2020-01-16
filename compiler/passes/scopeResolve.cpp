@@ -961,16 +961,11 @@ static void resolveUnresolvedSymExpr(UnresolvedSymExpr* usymExpr,
         INT_ASSERT(t);
         sym = t->symbol;
       } else if (isClass(sym->type)) {
-        // e.g. 'MyClass' becomes 'MyClass with any management'
-          // make MyClass mean generic-management unless
-          // --legacy-classes is passed.
-          bool defaultIsGenericHere = !fLegacyClasses;
-          if (defaultIsGenericHere) {
-            // Switch to the CLASS_TYPE_GENERIC_NONNIL decorated class type.
-            ClassTypeDecorator d = CLASS_TYPE_GENERIC_NONNIL;
-            Type* t = getDecoratedClass(sym->type, d);
-            sym = t->symbol;
-          }
+        // Make 'MyClass' mean generic-management.
+        // Switch to the CLASS_TYPE_GENERIC_NONNIL decorated class type.
+        ClassTypeDecorator d = CLASS_TYPE_GENERIC_NONNIL;
+        Type* t = getDecoratedClass(sym->type, d);
+        sym = t->symbol;
       }
     }
 
@@ -1390,7 +1385,7 @@ static void resolveModuleCall(CallExpr* call) {
         Symbol* sym = scope->lookupNameLocally(mbrName);
 
         // Adjust class types to undecorated
-        if (sym && isClass(sym->type) && !fLegacyClasses) {
+        if (sym && isClass(sym->type)) {
           // Switch to the CLASS_TYPE_GENERIC_NONNIL decorated class type.
           ClassTypeDecorator d = CLASS_TYPE_GENERIC_NONNIL;
           Type* t = getDecoratedClass(sym->type, d);
