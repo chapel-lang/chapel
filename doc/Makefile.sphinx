@@ -9,7 +9,7 @@ BUILDDIR      = ../build/doc
 BUILDPATH     = $$CHPL_HOME/doc/$(BUILDDIR)
 
 # Explicitly set author
-export CHPLDOC_AUTHOR=Cray Inc
+export CHPLDOC_AUTHOR=Hewlett Packard Enterprise Development LP
 
 # User-friendly check for sphinx-build
 SPHINXTEST=$(shell which $(SPHINXBUILD) >/dev/null 2>&1; echo $$?)
