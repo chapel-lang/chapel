@@ -481,6 +481,14 @@ bool AstDump::enterForallStmt(ForallStmt* node) {
   }
   --mIndent;
   newline();
+  write("other variables");
+  ++mIndent;
+  if (node->fRecIterIRdef) node->fRecIterIRdef->accept(this);
+  if (node->fRecIterICdef) node->fRecIterICdef->accept(this);
+  if (node->fRecIterGetIterator) node->fRecIterGetIterator->accept(this);
+  if (node->fRecIterFreeIterator) node->fRecIterFreeIterator->accept(this);
+  newline();
+  --mIndent;
   write("forall body");
   node->loopBody()->accept(this);
   --mIndent;

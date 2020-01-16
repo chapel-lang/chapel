@@ -1227,6 +1227,21 @@ static void destroyFormalInTaskFn(ArgSymbol* formal, FnSymbol* taskFn) {
 
 /************************************* | **************************************
 *                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
+
+
+static void removeEndOfStatementMarkers() {
+  for_alive_in_Vec(CallExpr, call, gCallExprs) {
+    if (call->isPrimitive(PRIM_END_OF_STATEMENT))
+      call->remove();
+  }
+}
+
+
+/************************************* | **************************************
+*                                                                             *
 * Entry point                                                                 *
 *                                                                             *
 ************************************** | *************************************/
@@ -1241,10 +1256,6 @@ void callDestructors() {
 
   insertDestructorCalls();
 
-  // Execute this before conversion to return by ref
-  // May fail to handle reference variables as desired
-  addAutoDestroyCalls();
-
   ReturnByRef::apply();
 
   insertCopiesForYields();
@@ -1256,9 +1267,13 @@ void callDestructors() {
 
   lateConstCheck(NULL);
 
+  addAutoDestroyCalls();
+
   insertGlobalAutoDestroyCalls();
 
   checkForErroneousInitCopies();
 
   convertClassTypesToCanonical();
+
+  removeEndOfStatementMarkers();
 }

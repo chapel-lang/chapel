@@ -653,7 +653,6 @@ static void cleanupAfterRemoves() {
   }
 }
 
-
 static bool isVoidOrVoidTupleType(Type* type) {
   if (type == NULL) {
     return false;

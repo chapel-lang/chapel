@@ -733,17 +733,17 @@ module ChapelBase {
   // a sync to read it or a sync returned from a function but not
   // explicitly captured.
   //
-  inline proc _statementLevelSymbol(a) { }
-  inline proc _statementLevelSymbol(a: sync)  { a.readFE(); }
-  inline proc _statementLevelSymbol(a: single) { a.readFF(); }
-  inline proc _statementLevelSymbol(param a) param { return a; }
-  inline proc _statementLevelSymbol(type a) type { return a; }
+  inline proc chpl_statementLevelSymbol(a) { }
+  inline proc chpl_statementLevelSymbol(a: sync)  { a.readFE(); }
+  inline proc chpl_statementLevelSymbol(a: single) { a.readFF(); }
+  inline proc chpl_statementLevelSymbol(param a) param { return a; }
+  inline proc chpl_statementLevelSymbol(type a) type { return a; }
 
   //
   // If an iterator is called without capturing the result, iterate over it
   // to ensure any side effects it has will happen.
   //
-  inline proc _statementLevelSymbol(ir: _iteratorRecord) {
+  inline proc chpl_statementLevelSymbol(ir: _iteratorRecord) {
     iter _ir_copy_recursive(ir) {
       for e in ir do
         yield chpl__initCopy(e);

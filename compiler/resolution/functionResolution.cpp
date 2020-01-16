@@ -5915,15 +5915,6 @@ static void resolveInitVar(CallExpr* call) {
   }
 
   if (call->isPrimitive(PRIM_INIT_VAR_SPLIT_INIT)) {
-    // If it has runtime type, turn this back into assignment
-    if (dst->type->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE)) {
-      call->primitive = primitives[PRIM_NOOP];
-      CallExpr* assign = new CallExpr("=", dst, src);
-      call->getStmtExpr()->insertAfter(assign);
-      resolveExpr(assign);
-      return;
-    }
-
     // Also, check that the types are compatible for split initialization
     // with type inference.
     if (call->numActuals() < 3)
@@ -8850,7 +8841,7 @@ static void insertReturnTemps() {
   //
   // Insert return temps for functions that return values if no
   // variable captures the result. If the value is a sync/single var or a
-  // reference to a sync/single var, pass it through the _statementLevelSymbol
+  // reference to a sync/single var, pass it through a chpl_statementLevelSymbol
   // function to get the semantics of reading a sync/single var. If the value
   // is an iterator, iterate over it in a ForallStmt for side effects.
   // Note that we do not do this for --minimal-modules compilation
@@ -8904,7 +8895,8 @@ static void insertReturnTemps() {
                   isSyncType(fn->retType)                             ||
                   isSingleType(fn->retType)                           )
               {
-                CallExpr* sls = new CallExpr("_statementLevelSymbol", tmp);
+                CallExpr* sls = new CallExpr(
+                    astr_chpl_statementLevelSymbol, tmp);
 
                 def->next->insertAfter(sls);
                 resolveCallAndCallee(sls);
@@ -9408,8 +9400,7 @@ static void replaceRuntimeTypePrims(std::vector<BaseAST*>& asts) {
         continue;
       }
 
-      if (call->isPrimitive(PRIM_DEFAULT_INIT_VAR) ||
-          call->isPrimitive(PRIM_INIT_VAR_SPLIT_DECL)) {
+      if (call->isPrimitive(PRIM_DEFAULT_INIT_VAR)) {
         replaceRuntimeTypeDefaultInit(call);
       } else if (call->isPrimitive(PRIM_GET_RUNTIME_TYPE_FIELD)) {
         replaceRuntimeTypeGetField(call);
@@ -9456,11 +9447,8 @@ void resolvePrimInit(CallExpr* call) {
   INT_ASSERT(call->isPrimitive(PRIM_DEFAULT_INIT_VAR) ||
              call->isPrimitive(PRIM_INIT_VAR_SPLIT_DECL));
 
-  if (call->isPrimitive(PRIM_INIT_VAR_SPLIT_DECL) &&
-      call->numActuals() == 1) {
-    // Without type information, PRIM_INIT_VAR_SPLIT_DECL does nothing.
-    // Except if it's an array... then we need to use default init for now
-    // and that is handled already in replaceRuntimeTypePrims
+  if (call->isPrimitive(PRIM_INIT_VAR_SPLIT_DECL)) {
+    // PRIM_INIT_SPLIT_DECL does nothing at this point
     call->convertToNoop();
     return;
   }
@@ -9643,7 +9631,8 @@ static void resolvePrimInit(CallExpr* call, Symbol* val, Type* type) {
 
   // These are handled in replaceRuntimeTypePrims().
   if (type->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE) == true) {
-    errorInvalidParamInit(call, val, at);
+    if (call->isPrimitive(PRIM_DEFAULT_INIT_VAR))
+      errorInvalidParamInit(call, val, at);
 
   // Shouldn't be default-initializing iterator records here
   } else if (type->symbol->hasFlag(FLAG_ITERATOR_RECORD)  == true) {

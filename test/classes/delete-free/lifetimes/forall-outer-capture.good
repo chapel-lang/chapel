@@ -1,0 +1,6 @@
+forall-outer-capture.chpl:3: In function 'error1':
+forall-outer-capture.chpl:9: error: Scoped variable b would outlive the value it is set to
+forall-outer-capture.chpl:6: note: consider scope of o
+forall-outer-capture.chpl:15: In function 'error2':
+forall-outer-capture.chpl:22: error: Scoped variable b would outlive the value it is set to
+forall-outer-capture.chpl:18: note: consider scope of o

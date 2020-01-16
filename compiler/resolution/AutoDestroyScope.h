@@ -20,12 +20,7 @@
 #ifndef _AUTO_DESTROY_SCOPE_H_
 #define _AUTO_DESTROY_SCOPE_H_
 
-class BaseAST;
-class BlockStmt;
-class DeferStmt;
-class Expr;
-class FnSymbol;
-class VarSymbol;
+#include "baseAST.h"
 
 #include <set>
 #include <vector>
@@ -33,12 +28,19 @@ class VarSymbol;
 // Track status of auto destroy variables within lexical scopes
 class AutoDestroyScope {
 public:
-                           AutoDestroyScope(const AutoDestroyScope* parent,
+                           AutoDestroyScope(AutoDestroyScope* parent,
                                             const BlockStmt*        block);
 
+  // adds a declaration
   void                     variableAdd(VarSymbol* var);
 
   void                     deferAdd(DeferStmt* var);
+
+  // adds an initialization
+  void                     addInitialization(VarSymbol* var);
+
+  // Report initialization for outer variables to parent scope
+  void                     addInitializationsToParent() const;
 
   bool                     handlingFormalTemps(const Expr* stmt) const;
 
@@ -46,12 +48,20 @@ public:
                                               Expr*     refStmt,
                                               const std::set<VarSymbol*>& ignored);
 
+  void                     destroyVariable(Expr* after, VarSymbol* var,
+                                           const std::set<VarSymbol*>& ignored);
+
 private:
   void                     variablesDestroy(Expr*      refStmt,
                                             VarSymbol* excludeVar,
-                                            const std::set<VarSymbol*>& ignored) const;
+                                            const std::set<VarSymbol*>& ignored,
+                                            AutoDestroyScope* startingScope) const;
 
-  const AutoDestroyScope*  mParent;
+  // Returns true if the variable has already been initialized in
+  // this or a parent scope.
+  bool                     isVariableInitialized(VarSymbol* var) const;
+
+  AutoDestroyScope*  mParent;
   const BlockStmt*         mBlock;
 
   bool                     mLocalsHandled;     // Manage function epilogue
@@ -61,6 +71,12 @@ private:
   // order to create a single stack for cleanup operations to be executed.
   // In particular, the ordering between defer blocks and locals matters,
   // in addition to the ordering within each group.
+
+  // To support split-init, which can have two init points within a
+  // conditional, store the set of variables that have been initialized.
+  // This set might include variables declared (and in mLocalsAndDefers)
+  // for a parent scope.
+  std::set<VarSymbol*>     mInitedVars;
 };
 
 #endif

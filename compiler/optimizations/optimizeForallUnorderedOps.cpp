@@ -128,6 +128,11 @@ static void helpGetLastStmts(Expr* last, std::vector<Expr*>& stmts) {
       if (fn->hasFlag(FLAG_COMPILER_ADDED_REMOTE_FENCE))
         last = last->prev;
 
+  // Ignore calls to PRIM_END_OF_STATEMENT
+  if (CallExpr* call = toCallExpr(last))
+    if (call->isPrimitive(PRIM_END_OF_STATEMENT))
+      last = last->prev;
+
   // Otherwise, add what we got.
   stmts.push_back(last);
 }
