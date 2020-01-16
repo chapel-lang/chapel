@@ -3598,10 +3598,14 @@ static bool isGenericActual(Expr* expr) {
   if (SymExpr* se = toSymExpr(expr)) {
     if (se->symbol() == gUninstantiated) {
       return true;
-    } else if (TypeSymbol* ts = toTypeSymbol(se->symbol()))
-      if (AggregateType* at = toAggregateType(canonicalDecoratedClassType(ts->type)))
+    } else if (TypeSymbol* ts = toTypeSymbol(se->symbol())) {
+      Type* canonicalType = canonicalDecoratedClassType(ts->type);
+      if (AggregateType* at = toAggregateType(canonicalType))
         if (at->isGeneric() && !at->isGenericWithDefaults())
           return true;
+      if (ts->hasFlag(FLAG_GENERIC))
+        return true;
+    }
   }
 
   return false;
