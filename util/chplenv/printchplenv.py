@@ -101,6 +101,7 @@ CHPL_ENVS = [
     ChapelEnv('CHPL_HOST_BIN_SUBDIR', INTERNAL),
     ChapelEnv('CHPL_TARGET_BIN_SUBDIR', INTERNAL),
     ChapelEnv('  CHPL_LLVM_UNIQ_CFG_PATH', INTERNAL),
+    ChapelEnv('  CHPL_GASNET_UNIQ_CFG_PATH', INTERNAL),
     ChapelEnv('  CHPL_GMP_UNIQ_CFG_PATH', INTERNAL),
     ChapelEnv('  CHPL_HWLOC_UNIQ_CFG_PATH', INTERNAL),
     ChapelEnv('  CHPL_JEMALLOC_UNIQ_CFG_PATH',INTERNAL),
@@ -193,6 +194,8 @@ def compute_internal_values():
 
     compile_args_3p = []
     link_args_3p = []
+
+    ENV_VALS['  CHPL_GASNET_UNIQ_CFG_PATH'] = chpl_3p_gasnet_configs.get_uniq_cfg_path()
 
     ENV_VALS['  CHPL_GMP_UNIQ_CFG_PATH'] = chpl_3p_gmp_configs.get_uniq_cfg_path()
     link_args_3p.extend(chpl_3p_gmp_configs.get_link_args(chpl_gmp.get()))
