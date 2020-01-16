@@ -3011,7 +3011,7 @@ private inline proc _write_binary_internal(_channel_internal:qio_channel_ptr_t, 
 }
 
 pragma "no doc"
-proc channel._constructIoErrorMsg(param kind: iokind, x:?t): string {
+proc channel._constructIoErrorMsg(param kind: iokind, const x:?t): string {
   var result: string = "while ";
 
   result += if this.writing then "writing " else "reading ";
@@ -3044,7 +3044,7 @@ proc channel._readOne(param kind: iokind, ref x:?t,
 // The channel must be locked and running on this.home.
 //
 pragma "no doc"
-proc channel._writeOne(param kind: iokind, x:?t, loc:locale?) throws {
+proc channel._writeOne(param kind: iokind, const x:?t, loc:locale?) throws {
   var err = _write_one_internal(_channel_internal, kind, x, loc);
 
   if err != ENOERR {
@@ -3089,7 +3089,7 @@ private inline proc _read_one_internal(_channel_internal:qio_channel_ptr_t,
 
 private inline proc _write_one_internal(_channel_internal:qio_channel_ptr_t,
                                         param kind:iokind,
-                                        x:?t,
+                                        const x:?t,
                                         loc:locale?): syserr throws where _isIoPrimitiveTypeOrNewline(t) {
   var e:syserr = ENOERR;
   if t == ioNewline {
@@ -3240,7 +3240,7 @@ inline proc channel.readwrite(ref x) throws where !this.writing {
    */
   inline proc <~>(const ref ch: channel, x) const ref throws
   where ch.writing {
-    try ch.writeIt(x);
+    try ch.readwrite(x);
     return ch;
   }
 
@@ -3248,7 +3248,7 @@ inline proc channel.readwrite(ref x) throws where !this.writing {
   pragma "no doc"
   inline proc <~>(const ref ch: channel, ref x) const ref throws
   where !ch.writing {
-    try ch.readIt(x);
+    try ch.readwrite(x);
     return ch;
   }
 
@@ -3562,11 +3562,10 @@ inline proc channel.read(ref args ...?k):bool throws {
       for param i in 1..k {
         // NOTE: Used to only be executed if not in error state. 
         if args[i].locale == here {
-          try _readOne(kind, args[i], origLocale);
+          _readOne(kind, args[i], origLocale);
         } else {
           var tmp = args[i];
-          try _readOne(kind, tmp, origLocale);
-          // TODO: Do we need to make sure this write always happens?
+          _readOne(kind, tmp, origLocale);
           args[i] = tmp;
         }
       }
@@ -3603,12 +3602,11 @@ proc channel.read(ref args ...?k, style:iostyle):bool throws {
     on this.home {
       try this.lock(); defer { this.unlock(); }
 
-      var saveStyle = this._style();
-      this._set_style(style); defer { this._set_style(saveStyle); }
+      var saveStyle = this._style(); defer { this._set_style(saveStyle); }
+      this._set_style(style);
 
       for param i in 1..k {
-        // NOTE: Used to only be executed if not in error state.
-        try _readOne(kind, args[i], origLocale);
+        _readOne(kind, args[i], origLocale);
       }
     }
   } catch err: SystemError {
