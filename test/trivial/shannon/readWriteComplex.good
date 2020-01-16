@@ -3,6 +3,6 @@
 1.2 + 2.3i
 1.2 + 2.3i
 1.2 + 2.3i
-uncaught BadFormatError: bad format: missing i when reading #.# + #.#i complex (in channel.read(ref a:complex(128)) with path "readWriteComplex.stdin" offset 50)
+uncaught BadFormatError: bad format: missing i when reading #.# + #.#i complex (while reading complex(128) with path "readWriteComplex.stdin" offset 50)
   readWriteComplex.chpl:8: thrown here
   readWriteComplex.chpl:8: uncaught here

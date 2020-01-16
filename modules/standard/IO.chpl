@@ -3015,11 +3015,11 @@ proc channel._constructIoErrorMsg(param kind: iokind, const x:?t): string {
   var result: string = "while ";
 
   result += if this.writing then "writing " else "reading ";
-  result += t:string + " ";
+  result += t:string;
 
   select t {
-    when ioNewline do result += "newline";
-    when ioLiteral do result += "\"" + x:string + "\""; 
+    when ioNewline do result += " " + "newline";
+    when ioLiteral do result += " " + "\"" + x:string + "\""; 
   }
 
   return result;
@@ -6611,7 +6611,7 @@ proc channel.readf(fmtStr:?t, ref args ...?k): bool throws
   if !err {
     return true;
   } else if err == EEOF {
-    // TODO: Shouldn't we also be checking for EFORMAT here?
+    // TODO: Shouldn't we be returning false for EFORMAT as well?
     return false;
   } else {
     try this._ch_ioerror(err, "in channel.readf(fmt:string, ...)");
@@ -6668,7 +6668,7 @@ proc channel.readf(fmtStr:?t) throws
 
   if !err {
     return true;
-  } else if err == EEOF {
+  } else if err == EEOF || err == EFORMAT {
     return false;
   } else {
     try this._ch_ioerror(err, "in channel.readf(fmt:string)");
