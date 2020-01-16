@@ -3,7 +3,7 @@
 //
 //    - Insertions of various sizes
 //    - Removal of various sizes
-//    - Iterations of various sizes
+//    - 
 //    - Sequential-access indexing
 //    - Random-access indexing
 //
@@ -14,16 +14,26 @@ private use Search;
 private use Sort;
 private use Time;
 
-config const trials = 6;
-config const n: int = 1024 * 1024 * 16;
-
 type byte = int(8);
 type testList = list(byte, false);
+
+config const trials = 6;
+config const n: int = 1024 * 1024 * 16;
+const seed = 314159;
 
 proc createList(size: int) {
   var result: testList;
   for i in 1..size do result.append(i);
   return result;
+}
+
+proc randSetup() {
+  // TODO: Give the random number generator our seed.  
+
+}
+
+proc randInt(): int {
+
 }
 
 proc generateNoise() {
@@ -46,7 +56,7 @@ proc output(name: string, time: real) {
 }
 
 var tmr: timer;
-const lstForIter = createList(n);
+const stableList = createList(n);
 var avg = 0.0;
 
 proc testCreate(size: int): real {
@@ -99,7 +109,7 @@ proc testIterSerial(size: int): real {
 }
 
 avg = 0.0;
-for i in trials do avg += testPopFromFront(n, trace);
+for i in trials do avg += testIterSerial(n, trace);
 avg /= trials;
 output("IterSerial", avg);
 
@@ -108,7 +118,7 @@ proc testIterParallel(size: int): real {
 }
 
 avg = 0.0;
-for i in trials do avg += testPopFromFront(n, trace);
+for i in trials do avg += testIterParallel(n, trace);
 avg /= trials;
 output("IterParallel", avg);
 
@@ -117,7 +127,7 @@ proc testRandomAccess1(size: int): real {
 }
 
 avg = 0.0;
-for i in trials do avg += testPopFromFront(n, trace);
+for i in trials do avg += testRandomAccess1(n, trace);
 avg /= trials;
 output("RandomAccess1", avg);
 
@@ -126,7 +136,7 @@ proc testClear(size: int): real {
 }
 
 avg = 0.0;
-for i in trials do avg += testPopFromFront(n, trace);
+for i in trials do avg += testClear(n, trace);
 avg /= trials;
 output("Clear", avg);
 
@@ -135,7 +145,7 @@ proc testDeinit(size: int): real {
 }
 
 avg = 0.0;
-for i in trials do avg += testPopFromFront(n, trace);
+for i in trials do avg += testDeinit(n, trace);
 avg /= trials;
 output("Deinit", avg);
 
