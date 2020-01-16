@@ -101,6 +101,7 @@ CHPL_ENVS = [
     ChapelEnv('CHPL_HOST_BIN_SUBDIR', INTERNAL),
     ChapelEnv('CHPL_TARGET_BIN_SUBDIR', INTERNAL),
     ChapelEnv('  CHPL_LLVM_UNIQ_CFG_PATH', INTERNAL),
+    ChapelEnv('  CHPL_GASNET_UNIQ_CFG_PATH', INTERNAL),
     ChapelEnv('  CHPL_GMP_UNIQ_CFG_PATH', INTERNAL),
     ChapelEnv('  CHPL_HWLOC_UNIQ_CFG_PATH', INTERNAL),
     ChapelEnv('  CHPL_JEMALLOC_UNIQ_CFG_PATH',INTERNAL),
@@ -193,6 +194,8 @@ def compute_internal_values():
 
     compile_args_3p = []
     link_args_3p = []
+
+    ENV_VALS['  CHPL_GASNET_UNIQ_CFG_PATH'] = chpl_3p_gasnet_configs.get_uniq_cfg_path()
 
     ENV_VALS['  CHPL_GMP_UNIQ_CFG_PATH'] = chpl_3p_gmp_configs.get_uniq_cfg_path()
     link_args_3p.extend(chpl_3p_gmp_configs.get_link_args(chpl_gmp.get()))
@@ -335,8 +338,11 @@ def printchplenv(contents, print_filters=None, print_format='pretty'):
     # Print environment variables and their values
     for env in envs:
         value = ENV_VALS[env.name]
-        if env.name == 'CHPL_TARGET_CPU' and print_format == 'path':
-            value = ENV_VALS['CHPL_RUNTIME_CPU']
+        if print_format == 'path':
+            if env.name == 'CHPL_TARGET_CPU':
+                value = ENV_VALS['CHPL_RUNTIME_CPU']
+            elif env.name == 'CHPL_COMM' and chpl_comm_debug.get() == 'debug':
+                value += '-debug'
         ret.append(print_var(env.name, value, shortname=env.shortname))
 
     # Handle special formatting case for --path

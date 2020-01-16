@@ -5,6 +5,7 @@ import chpl_bin_subdir
 import chpl_make
 import chpl_platform
 import chpl_comm
+import chpl_comm_debug
 import chpl_comm_segment
 import chpl_comm_substrate
 import chpl_compiler
@@ -23,6 +24,7 @@ import chpl_timers
 import chpl_unwind
 import chpl_lib_pic
 # third-party package configuration helpers
+import chpl_3p_gasnet_configs
 import chpl_3p_gmp_configs
 import chpl_3p_hwloc_configs
 import chpl_3p_jemalloc_configs
