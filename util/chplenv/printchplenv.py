@@ -339,8 +339,7 @@ def printchplenv(contents, print_filters=None, print_format='pretty'):
             value = ENV_VALS['CHPL_RUNTIME_CPU']
         ret.append(print_var(env.name, value, shortname=env.shortname))
         if env.name == 'CHPL_COMM' and print_format == 'path':
-            if value != 'none':
-                ret.append(print_var(env.name, chpl_comm_debug.get()))
+            ret.append(print_var(env.name, chpl_comm_debug.get()))
 
     # Handle special formatting case for --path
     if print_format == 'path':
