@@ -733,7 +733,7 @@ static void buildRecordComparisonFunc(AggregateType* ct, const char* op) {
     return;
 
   const char* astrOp = astr(op);
-  Symbol* opSym = new_StringSymbol(op);
+  Symbol* opSym = new_CStringSymbol(op);
 
   // we need to special case `!=`:
   // it can return true early, and returns false after checking all fields
@@ -776,6 +776,8 @@ static void buildRecordComparisonFunc(AggregateType* ct, const char* op) {
 
   // keep track of whether we have any fields to compare
   bool hasComparableFields = false;
+
+  // add comparisons for fields
   for_fields(tmp, ct) {
     if (!tmp->hasFlag(FLAG_IMPLICIT_ALIAS_FIELD) &&
         !tmp->hasFlag(FLAG_TYPE_VARIABLE)) {  // types fields must be equal
@@ -793,23 +795,23 @@ static void buildRecordComparisonFunc(AggregateType* ct, const char* op) {
       hasComparableFields = true;
     }
   }
+
+  // find the return value and add the return statement
+  VarSymbol* ret;
   if (hasComparableFields) {
-    if (isNotEqual) {
-      fn->insertAtTail(new CallExpr(PRIM_RETURN, gFalse));
-    }
-    else {
-      fn->insertAtTail(new CallExpr(PRIM_RETURN, gTrue));
-    }
+    if (isNotEqual)
+      ret = gFalse;
+    else
+      ret = gTrue;
   }
   else {
     // this is an empty record, so instances are always equal to each other
-    if (astrOp == astrSeq || astrOp == astrSlte || astrOp == astrSgte) {
-      fn->insertAtTail(new CallExpr(PRIM_RETURN, gTrue));
-    }
-    else {
-      fn->insertAtTail(new CallExpr(PRIM_RETURN, gFalse));
-    }
+    if (astrOp == astrSeq || astrOp == astrSlte || astrOp == astrSgte)
+      ret = gTrue;
+    else
+      ret = gFalse;
   }
+  fn->insertAtTail(new CallExpr(PRIM_RETURN, ret));
 
   DefExpr* def = new DefExpr(fn);
   ct->symbol->defPoint->insertBefore(def);
