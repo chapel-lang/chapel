@@ -412,18 +412,23 @@ bool BaseAST::isRefOrWideRef() {
 }
 
 FnSymbol* BaseAST::getFunction() {
-  if (ModuleSymbol* x = toModuleSymbol(this))
-    return x->initFn;
-  else if (FnSymbol* x = toFnSymbol(this))
-    return x;
-  else if (Type* x = toType(this))
-    return x->symbol->getFunction();
-  else if (Symbol* x = toSymbol(this))
-    return x->defPoint->getFunction();
-  else if (Expr* x = toExpr(this))
-    return x->parentSymbol->getFunction();
-  else
-    INT_FATAL(this, "Unexpected case in BaseAST::getFunction()");
+  BaseAST* cur = this;
+  while (cur != NULL) {
+    // base cases
+    if (ModuleSymbol* x = toModuleSymbol(cur))
+      return x->initFn;
+    else if (FnSymbol* x = toFnSymbol(cur))
+      return x;
+    // inductive cases
+    else if (Type* x = toType(cur))
+      cur = x->symbol;
+    else if (Symbol* x = toSymbol(cur))
+      cur = x->defPoint;
+    else if (Expr* x = toExpr(cur))
+      cur = x->parentSymbol;
+    else
+      INT_FATAL(this, "Unexpected case in BaseAST::getFunction()");
+  }
   return NULL;
 }
 
