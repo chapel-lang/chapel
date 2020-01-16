@@ -99,7 +99,7 @@ proc pkgSearch(args) throws {
   if pkgName == "" {
     throw new owned MasonError("Must include a package name");
   }
-  const pattern = compile(pkgName, ignorecase=true);
+  const pattern = compile(pkgName, ignoreCase=true);
   const command = "pkg-config --list-all";
   const cmd = command.split();
   var sub = spawn(cmd, stdout=PIPE);
