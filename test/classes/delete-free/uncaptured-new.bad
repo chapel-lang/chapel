@@ -5,8 +5,8 @@ returned from foo()
 
 entering bar
 init(2)
-exiting bar
 deinit(2)
+exiting bar
 returned from bar()
 
 entering baz
