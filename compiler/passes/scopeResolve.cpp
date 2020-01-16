@@ -78,12 +78,12 @@ static Expr*         handleUnstableClassType(SymExpr* se);
 static void          resolveUnresolvedSymExpr(UnresolvedSymExpr* usymExpr);
 
 static void          resolveUnresolvedSymExpr(UnresolvedSymExpr* usymExpr,
-                                              Symbol* toSymbol);
+                                              Symbol* sym);
 
-static bool          lookupThisScopeAndUses(const char*           name,
-                                            BaseAST*              context,
-                                            BaseAST*              scope,
-                                            std::vector<Symbol*>& symbols);
+static bool lookupThisScopeAndUses(const char*           name,
+                                   BaseAST*              context,
+                                   BaseAST*              scope,
+                                   std::vector<Symbol*>& symbols);
 
 static ModuleSymbol* definesModuleSymbol(Expr* expr);
 
@@ -961,16 +961,11 @@ static void resolveUnresolvedSymExpr(UnresolvedSymExpr* usymExpr,
         INT_ASSERT(t);
         sym = t->symbol;
       } else if (isClass(sym->type)) {
-        // e.g. 'MyClass' becomes 'MyClass with any management'
-          // make MyClass mean generic-management unless
-          // --legacy-classes is passed.
-          bool defaultIsGenericHere = !fLegacyClasses;
-          if (defaultIsGenericHere) {
-            // Switch to the CLASS_TYPE_GENERIC_NONNIL decorated class type.
-            ClassTypeDecorator d = CLASS_TYPE_GENERIC_NONNIL;
-            Type* t = getDecoratedClass(sym->type, d);
-            sym = t->symbol;
-          }
+        // Make 'MyClass' mean generic-management.
+        // Switch to the CLASS_TYPE_GENERIC_NONNIL decorated class type.
+        ClassTypeDecorator d = CLASS_TYPE_GENERIC_NONNIL;
+        Type* t = getDecoratedClass(sym->type, d);
+        sym = t->symbol;
       }
     }
 
@@ -1390,7 +1385,7 @@ static void resolveModuleCall(CallExpr* call) {
         Symbol* sym = scope->lookupNameLocally(mbrName);
 
         // Adjust class types to undecorated
-        if (sym && isClass(sym->type) && !fLegacyClasses) {
+        if (sym && isClass(sym->type)) {
           // Switch to the CLASS_TYPE_GENERIC_NONNIL decorated class type.
           ClassTypeDecorator d = CLASS_TYPE_GENERIC_NONNIL;
           Type* t = getDecoratedClass(sym->type, d);
@@ -1843,7 +1838,7 @@ static bool lookupThisScopeAndUses(const char*           name,
           // symbols that they define.
           forv_Vec(UseStmt, use, *moduleUses) {
             if (use != NULL) {
-              if (ModuleSymbol* modSym = use->checkIfModuleNameMatches(name)) {
+              if (Symbol* modSym = use->checkIfModuleNameMatches(name)) {
                 if (isRepeat(modSym, symbols) == false) {
                   symbols.push_back(modSym);
                 }
@@ -2355,7 +2350,7 @@ void resolveUnmanagedBorrows(CallExpr* call) {
     }
   }
 
-  // Fix e.g. call _owned class?
+  // Fix e.g. call _owned class? or call _owned anymanaged Error
   if (call->numActuals() == 1) {
     SymExpr* se1 = toSymExpr(call->baseExpr);
     SymExpr* se2 = toSymExpr(call->get(1));
@@ -2376,6 +2371,14 @@ void resolveUnmanagedBorrows(CallExpr* call) {
         if (useType != NULL) {
           SET_LINENO(call);
           call->replace(new SymExpr(useType->symbol));
+        } else if (isClassLike(t2)) {
+          Type* canonical = canonicalClassType(t2);
+          if (isNilableClassType(t2))
+            useType = getDecoratedClass(canonical, CLASS_TYPE_BORROWED_NILABLE);
+          else
+            useType = canonical;
+
+          se2->setSymbol(useType->symbol);
         }
       }
     }

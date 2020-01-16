@@ -113,7 +113,7 @@ int chpl_enc_decode_char_buf_ascii(int32_t* CHPL_ENC_RESTRICT chr,
  * :arg buflen: Upper limit for number of bytes to read
  *
  * :returns: 0 if successful, -1 if illegal byte sequence, -2 if the
- * sytem does not have wctype.h
+ * system does not have wctype.h
  */
 static inline
 int chpl_enc_decode_char_buf_wctype(int32_t* CHPL_ENC_RESTRICT chr,

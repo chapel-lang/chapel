@@ -2489,7 +2489,7 @@ static found_init_t doFindInitPoints(DefExpr* def,
         }
         return FOUND_INIT;
       } else if (foundIf == FOUND_INIT || foundElse == FOUND_INIT) {
-        // intialized on one side but not the other
+        // initialized on one side but not the other
         errorIfSplitInitializationRequired(def, cur);
         return FOUND_USE;
       } else if (foundIf == FOUND_USE || foundElse == FOUND_USE) {
@@ -2559,8 +2559,7 @@ static void errorIfSplitInitializationRequired(DefExpr* def, Expr* cur) {
       }
 
       // can't default init a non-nilable class type
-      // unless --legacy-classes is on
-      if (isNonNilableClassType(ts->type) && !fLegacyClasses) {
+      if (isNonNilableClassType(ts->type)) {
         canDefaultInit = false;
         nonNilableType = ts->type;
       }
@@ -3599,10 +3598,14 @@ static bool isGenericActual(Expr* expr) {
   if (SymExpr* se = toSymExpr(expr)) {
     if (se->symbol() == gUninstantiated) {
       return true;
-    } else if (TypeSymbol* ts = toTypeSymbol(se->symbol()))
-      if (AggregateType* at = toAggregateType(canonicalDecoratedClassType(ts->type)))
+    } else if (TypeSymbol* ts = toTypeSymbol(se->symbol())) {
+      Type* canonicalType = canonicalDecoratedClassType(ts->type);
+      if (AggregateType* at = toAggregateType(canonicalType))
         if (at->isGeneric() && !at->isGenericWithDefaults())
           return true;
+      if (ts->hasFlag(FLAG_GENERIC))
+        return true;
+    }
   }
 
   return false;
@@ -3848,7 +3851,7 @@ static void expandQueryForGenericTypeSpecifier(FnSymbol*  fn,
 
   // Fix type constructor calls to owned e.g.
   // (call dtOwned SomeGenericClass( arg ))
-  // This is relant to test/functions/ferguson/query/owned-generic
+  // This is relevant to test/functions/ferguson/query/owned-generic
   if (call->baseExpr != NULL) {
     if (SymExpr* se = toSymExpr(call->baseExpr)) {
       if (TypeSymbol* ts = toTypeSymbol(se->symbol())) {

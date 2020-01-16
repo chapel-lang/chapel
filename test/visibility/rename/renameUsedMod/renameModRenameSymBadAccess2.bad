@@ -1,0 +1,2 @@
+renameModRenameSymBadAccess2.chpl:8: In function 'main':
+renameModRenameSymBadAccess2.chpl:12: error: Symbol 'y' undeclared in module 'Foo'

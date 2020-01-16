@@ -1368,6 +1368,8 @@ regexdna: &regexdna-base
     - Free strings leaked by Regex.subn() / qio_regexp_replace() (#6509)
   08/09/19:
     - Change string.length to measure in codepoints (#13675)
+  12/17/19:
+    - Add UTF8 validation for strings (#14384)
 regexdna-redux:
   <<: *regexdna-base
 regexdna-submitted:
@@ -1452,6 +1454,8 @@ search:
     - Avoid 'use'ing ByteBufferHelpers ExportWrappers (#14377)
   11/05/19:
     - Remove standardModuleSet and all code involving it from the compiler (#14270)
+  12/10/19:
+    - Allow messages in new Errors (#14545)
 
 spectralnorm:
   01/21/15:

@@ -10,7 +10,11 @@ class BinaryTree {
   }
 }
 
-iter BinaryTree.postOrder(): eltType {
+//
+// Old code uses a recursive iterator, which has trouble compiling currently,
+// see issue #7134.
+//
+/*
   if left then
     for e in left!.postOrder() do
       yield e;
@@ -18,6 +22,39 @@ iter BinaryTree.postOrder(): eltType {
     for e in right!.postOrder() do
       yield e;
   yield data;
+*/
+iter BinaryTree.postOrder(): eltType {
+  use List;
+
+  type Tree = unmanaged BinaryTree(eltType);
+
+  var isDescending = true;
+  var last: Tree? = nil;
+  var nodes: list(Tree);
+
+  nodes.append(this:unmanaged);
+
+  while !nodes.isEmpty() {
+    var node = nodes.pop();
+    var next: Tree? = nil;
+
+    if node.left != nil && isDescending {
+      next = node.left;
+    } else if node.right != nil && !isDescending && last != node.right {
+      isDescending = true;
+      next = node.right;
+    }
+
+    if next {
+      nodes.append(node);
+      nodes.append(next!);
+      continue;
+    }
+
+    isDescending = false;
+    last = node;
+    yield node.data;
+  }
 }
 
 var bt =
