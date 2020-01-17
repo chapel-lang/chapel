@@ -95,7 +95,7 @@ module Map {
       :arg parSafe: If `true`, this map will use parallel safe operations.
       :type parSafe: bool
     */
-    proc init=(const ref other: map(?kt, ?vt, ?ps)) {
+    proc init=(ref other: map(?kt, ?vt, ?ps)) {
       this.keyType = kt;
       this.valType = vt;
       this.parSafe = ps;
@@ -207,7 +207,8 @@ module Map {
     }
 
     pragma "no doc"
-    proc const this(k: keyType) const {
+    proc const this(k: keyType) const
+    where shouldReturnRvalueByValue(valType) {
       _enter();
       if !myKeys.contains(k) then
         halt("map index ", k, " out of bounds");
@@ -215,6 +216,19 @@ module Map {
       _leave();
       return result;
     }
+
+
+    pragma "no doc"
+    proc const this(k: keyType) const ref
+    where shouldReturnRvalueByConstRef(valType) {
+      _enter();
+      if !myKeys.contains(k) then
+        halt("map index ", k, " out of bounds");
+      const ref result = vals[k];
+      _leave();
+      return result;
+    }
+
 
     /*
       Iterates over the keys of this map. This is a shortcut for :iter:`keys`.
