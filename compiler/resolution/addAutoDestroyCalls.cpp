@@ -624,12 +624,13 @@ static void gatherIgnoredVariablesForYield(
 class ComputeLastSymExpr : public AstVisitorTraverse
 {
   public:
-    std::vector<VarSymbol*>& declared;
+    std::vector<VarSymbol*>& inited;
+    std::set<VarSymbol*> initedSet;
     std::map<VarSymbol*, Expr*>& last;
-    ComputeLastSymExpr(std::vector<VarSymbol*>& declared,
+    ComputeLastSymExpr(std::vector<VarSymbol*>& inited,
                        std::map<VarSymbol*, Expr*>& last)
-      : declared(declared), last(last) { }
-    virtual bool enterDefExpr(DefExpr* node);
+      : inited(inited), last(last) { }
+    virtual bool enterCallExpr(CallExpr* node);
     virtual void visitSymExpr(SymExpr* node);
     virtual void exitForallStmt(ForallStmt* node);
 };
@@ -638,16 +639,16 @@ static Expr* findLastExprInStatement(Expr* e, VarSymbol* v);
 
 static void computeLastMentionPoints(LastMentionMap& lmm, FnSymbol* fn) {
 
-  std::vector<VarSymbol*> declared;
+  std::vector<VarSymbol*> inited;
   std::map<VarSymbol*, Expr*> last;
 
   // Use a traversal to compute the last SymExpr mentioning each
-  ComputeLastSymExpr visitor(declared, last);
+  ComputeLastSymExpr visitor(inited, last);
   fn->body->accept(&visitor);
 
   // Store the gathered DefExprs in the appropriate place in the inverse
-  // map. The map creates vectors in order of declaration.
-  for_vector(VarSymbol, var, declared) {
+  // map. The map creates vectors in order of initialization.
+  for_vector(VarSymbol, var, inited) {
     std::map<VarSymbol*, Expr*>::iterator it = last.find(var);
     if (it != last.end()) {
       Expr* point = it->second;
@@ -669,10 +670,15 @@ static bool shouldDestroyOnLastMention(VarSymbol* var) {
          !isForallStmt(var->defPoint->parentExpr);
 }
 
-bool ComputeLastSymExpr::enterDefExpr(DefExpr* node) {
-  if (VarSymbol* var = toVarSymbol(node->sym))
-    if (shouldDestroyOnLastMention(var))
-      declared.push_back(var);
+bool ComputeLastSymExpr::enterCallExpr(CallExpr* node) {
+  if (VarSymbol* var = possiblyInitializesDestroyedVariable(node)) {
+    if (shouldDestroyOnLastMention(var)) {
+      if (initedSet.insert(var).second) {
+        // the first potential initialization
+        inited.push_back(var);
+      }
+    }
+  }
 
   return true;
 }
