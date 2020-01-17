@@ -1,0 +1,140 @@
+testArrays
+x (regular init example)
+makeArr initing -1 -1
+(x = -1, ptr = {}) (x = -1, ptr = {})
+y (assignment example)
+init (default)
+init (default)
+makeArr initing -2 -2
+= 0 -2
+= 0 -2
+deinit -2
+deinit -2
+(x = -2, ptr = {}) (x = -2, ptr = {})
+deinit -2
+deinit -2
+yes1
+makeArr initing 1 1
+(x = 1, ptr = {}) (x = 1, ptr = {})
+deinit 1
+deinit 1
+yes2a
+init (default)
+init (default)
+init 20
+= 0 20
+deinit 20
+init 20
+= 0 20
+deinit 20
+(x = 20, ptr = {}) (x = 20, ptr = {})
+deinit 20
+deinit 20
+yes2b
+init 200
+init 200
+init (default)
+init (default)
+= 0 200
+= 0 200
+deinit 200
+deinit 200
+(x = 200, ptr = {}) (x = 200, ptr = {})
+deinit 200
+deinit 200
+yes2c
+makeArr initing 2000 2000
+init (default)
+init (default)
+= 0 2000
+= 0 2000
+deinit 2000
+deinit 2000
+{0..1}
+(x = 2000, ptr = {}) (x = 2000, ptr = {})
+deinit 2000
+deinit 2000
+yes3
+makeArr initing 3 3
+(x = 3, ptr = {}) (x = 3, ptr = {})
+deinit 3
+deinit 3
+yes4
+makeArr initing 4 4
+init (default)
+init (default)
+= 0 4
+= 0 4
+deinit 4
+deinit 4
+(x = 4, ptr = {}) (x = 4, ptr = {})
+deinit 4
+deinit 4
+yes5
+makeArr initing 5 5
+init (default)
+init (default)
+= 0 5
+= 0 5
+deinit 5
+deinit 5
+(x = 5, ptr = {}) (x = 5, ptr = {})
+deinit 5
+deinit 5
+yes6
+init (default)
+init (default)
+= 0 -1
+= 0 -1
+(x = -1, ptr = {}) (x = -1, ptr = {})
+deinit -1
+deinit -1
+yes7
+init (default)
+init (default)
+= 0 -1
+= 0 -1
+(x = -1, ptr = {}) (x = -1, ptr = {})
+deinit -1
+deinit -1
+yes8
+init (default)
+init (default)
+= 0 -1
+= 0 -1
+(x = -1, ptr = {}) (x = -1, ptr = {})
+deinit -1
+deinit -1
+yes9
+makeArr initing 9 9
+(x = 9, ptr = {}) (x = 9, ptr = {})
+deinit 9
+deinit 9
+yes10
+makeArr initing 10 10
+(x = 10, ptr = {}) (x = 10, ptr = {})
+deinit 10
+deinit 10
+yes11
+makeArr initing 110 110
+(x = 110, ptr = {}) (x = 110, ptr = {})
+deinit 110
+deinit 110
+yes12
+makeArr initing 12 12
+(x = 12, ptr = {}) (x = 12, ptr = {})
+deinit 12
+deinit 12
+yes13
+makeArr initing 1300 1300
+(x = 1300, ptr = {}) (x = 1300, ptr = {})
+deinit 1300
+deinit 1300
+yes14
+makeArr initing 14 14
+(x = 14, ptr = {}) (x = 14, ptr = {})
+deinit 14
+deinit 14
+ending
+deinit -1
+deinit -1

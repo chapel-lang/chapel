@@ -404,7 +404,7 @@ B. Follower Yield Order
 
   ``dsiSerialWrite()`` will always be invoked on ``Locales(0)``.
 
-  .. [TODO: will this remain this way? This is specific to Cray Chapel.]
+  .. [TODO: will this remain this way or is it specific to our implementation?]
 
 .. method:: proc GlobalDomain.dsiDisplayRepresentation(): void
 

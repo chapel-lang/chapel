@@ -19,7 +19,7 @@ UnexpectedLocales: Max Locales is less than 1
 SKIPPED test_locales.chpl: s1()
 ----------------------------------------------------------------------
 Not a MultiLocale Environment. $CHPL_COMM = none
-TestIncorrectNumLocales: Required Locales = 16
+TestIncorrectNumLocales: Required Locales = {16}
 
 ======================================================================
 SKIPPED test_locales.chpl: s2()
@@ -31,7 +31,7 @@ TestIncorrectNumLocales: Required Locales = 2
 SKIPPED test_locales.chpl: s3()
 ----------------------------------------------------------------------
 Not a MultiLocale Environment. $CHPL_COMM = none
-TestIncorrectNumLocales: Required Locales = 16,8
+TestIncorrectNumLocales: Required Locales = {16, 8}
 
 ======================================================================
 SKIPPED test_locales.chpl: s6()
@@ -43,13 +43,13 @@ TestIncorrectNumLocales: Required Locales = 6
 SKIPPED test_locales.chpl: s7()
 ----------------------------------------------------------------------
 Not a MultiLocale Environment. $CHPL_COMM = none
-TestIncorrectNumLocales: Required Locales = 16,8
+TestIncorrectNumLocales: Required Locales = {16, 8}
 
 ======================================================================
 SKIPPED test_locales.chpl: s9()
 ----------------------------------------------------------------------
 Not a MultiLocale Environment. $CHPL_COMM = none
-TestIncorrectNumLocales: Required Locales = 16,8
+TestIncorrectNumLocales: Required Locales = {16, 8}
 
 ======================================================================
 SKIPPED test_locales.chpl: s14()

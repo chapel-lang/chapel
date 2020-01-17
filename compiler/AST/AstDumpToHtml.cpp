@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2019 Cray Inc.
+ * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -63,7 +63,7 @@ void AstDumpToHtml::init() {
   fprintf(sIndexFP, "<HEAD>\n");
   fprintf(sIndexFP, "<TITLE> Compilation Dump </TITLE>\n");
   fprintf(sIndexFP, "<SCRIPT SRC=\"https://chapel-lang.org/developer/mktree.js\" LANGUAGE=\"JavaScript\"></SCRIPT>");
-  fprintf(sIndexFP, "<LINK REL=\"stylesheet\" HREF=\"http://chapel.cray.com/developer/mktree.css\">\n");
+  fprintf(sIndexFP, "<LINK REL=\"stylesheet\" HREF=\"https://chapel-lang.org/developer/mktree.css\">\n");
   fprintf(sIndexFP, "<STYLE>\n");
   fprintf(sIndexFP, "a.userMod:link {color:#00A0FF;}\n");
   fprintf(sIndexFP, "a.userMod:visited {color:#A000F0;}\n");
@@ -463,6 +463,10 @@ void AstDumpToHtml::visitUseStmt(UseStmt* node) {
   fprintf(mFP, " (%d 'use' ", node->id);
 
   node->src->accept(this);
+
+  if (node->isARename()) {
+    fprintf(mFP, " 'as' %s", node->getRename());
+  }
 
   if (!node->isPlainUse()) {
     node->writeListPredicate(mFP);

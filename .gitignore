@@ -192,6 +192,7 @@ tags
 
 /test/io/bradc/fileIO.out.txt
 /test/io/bradc/subdir/out.dat
+/test/io/diten/myBlockArr.bin
 
 /test/library/packages/HDF5/mydata.h5
 /test/localeModels/gbt/maxTaskPar.good
@@ -296,6 +297,10 @@ tags
 /test/release/examples/primers/FFTWlib
 /test/release/examples/primers/genericClasses
 /test/release/examples/primers/iterators
+/test/release/examples/primers/learnChapelInYMinutes
+/test/release/examples/primers/learnChapelInYMinutes.comp.out.tmp.preserved
+/test/release/examples/primers/learnChapelInYMinutes.exec.out.tmp.preserved
+/test/release/examples/primers/listOps
 /test/release/examples/primers/locales
 /test/release/examples/primers/parIters
 /test/release/examples/primers/procedures

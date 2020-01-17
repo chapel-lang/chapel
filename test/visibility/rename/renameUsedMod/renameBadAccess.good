@@ -1,0 +1,2 @@
+renameBadAccess.chpl:7: In function 'main':
+renameBadAccess.chpl:8: error: 'LongName' undeclared (first use this function)

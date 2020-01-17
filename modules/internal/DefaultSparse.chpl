@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2019 Cray Inc.
+ * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -536,7 +536,7 @@ module DefaultSparse {
   }
 
 
-  proc DefaultSparseDom.dsiSerialWrite(f, printBrackets=true) {
+  proc DefaultSparseDom.dsiSerialWrite(f, printBrackets=true) throws {
     if (rank == 1) {
       if printBrackets then f <~> "{";
       if (_nnz >= 1) {
@@ -565,7 +565,7 @@ module DefaultSparse {
   }
 
 
-  proc DefaultSparseArr.dsiSerialWrite(f) {
+  proc DefaultSparseArr.dsiSerialWrite(f) throws {
     if (rank == 1) {
       if (dom._nnz >= 1) {
         f <~> data(1);

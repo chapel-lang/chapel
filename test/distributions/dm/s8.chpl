@@ -58,7 +58,7 @@ proc test(A, ix1, ix2) {
   tl();
 
   var D: domain(A.rank, A.domain.idxType, A.domain.stridable);
-  D = A.domain;
+  D; D = A.domain; // see issue #14746
 
   hd("zippered iterator (A,D)");
   forall (a,i) in zip(A,D) do msg(i, "  ", a);

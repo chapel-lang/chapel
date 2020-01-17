@@ -1,0 +1,1 @@
+$CHPL_HOME/modules/internal/ChapelArray.chpl:4193: error: non-lvalue actual is passed to a 'ref' formal of chpl__initCopy()

@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2019 Cray Inc.
+ * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -889,10 +889,6 @@ void initCompilerGlobals() {
   gNilChecking = new VarSymbol("chpl_checkNilDereferences", dtBool);
   gNilChecking->addFlag(FLAG_PARAM);
   setupBoolGlobal(gNilChecking, !fNoNilChecks);
-
-  gLegacyClasses = new VarSymbol("chpl_legacyClasses", dtBool);
-  gLegacyClasses->addFlag(FLAG_PARAM);
-  setupBoolGlobal(gLegacyClasses, fLegacyClasses);
 
   gOverloadSetsChecks = new VarSymbol("chpl_overloadSetsChecks", dtBool);
   gOverloadSetsChecks->addFlag(FLAG_PARAM);

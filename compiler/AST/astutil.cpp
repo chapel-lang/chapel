@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2019 Cray Inc.
+ * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -505,6 +505,8 @@ int isDefAndOrUse(SymExpr* se) {
       } else {
         return USE; // ? = se;
       }
+    } else if (call->isPrimitive(PRIM_END_OF_STATEMENT)) {
+      return 0; // neither def nor use
     } else if (isOpEqualPrim(call) && isFirstActual) {
       // Both a def and a use:
       // se   =   se <op> ?

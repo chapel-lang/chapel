@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2019 Cray Inc.
+ * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -29,7 +29,7 @@ void initSetValue(const char* varName, const char* value,
                   const char* moduleName, int32_t lineno, int32_t filename);
 const char* lookupSetValue(const char* varName, const char* moduleName);
 void installConfigVar(const char* varName, const char* value, 
-                      const char* moduleName);
+                      const char* moduleName, int private);
 
 int handlePossibleConfigVar(int* argc, char* argv[], int argnum, 
                             int32_t lineno, int32_t filename);

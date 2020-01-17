@@ -1,0 +1,3 @@
+split-init-ref-lifetime-error.chpl:1: In function 'test':
+split-init-ref-lifetime-error.chpl:6: error: Reference to scoped variable x reachable after lifetime ends
+split-init-ref-lifetime-error.chpl:5: note: consider scope of innerInt

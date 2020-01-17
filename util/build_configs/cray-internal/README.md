@@ -8,7 +8,7 @@ or a new setenv script derived from one of those. See `chapel_build.bash` for il
 The Chapel RPM file produced by these scripts is intended to be fully compatible
 with current generation Cray-XC/XE supercomputers and system-management tools.
 As far as the packaging is concerned, these RPMs should be interchangeable with the
-Chapel Cray modules released through Cray, Inc.
+officially released Chapel modules for Cray systems.
 
 These scripts are designed to work with some more-generic Chapel package support scripts
 located in the parent directory. The idea is to implement package-specific details in
@@ -64,8 +64,7 @@ new subdir.
 For convenience, users may keep their own Chapel workspaces and project files in
 this subdirectory, without adding them to Git. A hypothetical user story follows.
 
-Let's say you have a Cray-XC supercomputer that Cray no longer provides Chapel releases
-for. You want to build Chapel from source (a Chapel release tarball like [chapel-1.17.1.tar.gz](https://github.com/chapel-lang/chapel/releases/download/1.17.1/chapel-1.17.1.tar.gz) from GitHub);
+Let's say you have a Cray-XC supercomputer on which Chapel is no longer officially supported. You want to build Chapel from source (a Chapel release tarball like [chapel-1.17.1.tar.gz](https://github.com/chapel-lang/chapel/releases/download/1.17.1/chapel-1.17.1.tar.gz) from GitHub);
 create a Chapel RPM from those binaries; and install that RPM on your Cray-XC system.
 Users on your Cray-XC system should only need to `module load chapel` to access your
 locally-built Chapel version, same as other supported computing languages.

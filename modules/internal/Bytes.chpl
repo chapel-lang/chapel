@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2019 Cray Inc.
+ * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -437,6 +437,13 @@ module Bytes {
       return createBytesWithOwnedBuffer(buf, length=1, size=size);
     }
 
+    // byteIndex overload provides a nicer interface for string/bytes
+    // generic programming
+    pragma "no doc"
+    proc this(i: byteIndex): bytes {
+      return this[i:int];
+    }
+
     /*
       :returns: The value of a single-byte :record:`bytes` as an integer.
     */
@@ -515,7 +522,7 @@ module Bytes {
     // range that can be used to iterate over a section of the string
     // TODO: move into the public interface in some form? better name if so?
     pragma "no doc"
-    proc _getView(r:range(?)) where r.idxType == int {
+    proc _getView(r:range(?)) where r.idxType == int || r.idxType == byteIndex {
       if boundsChecking {
         if r.hasLowBound() && (!r.hasHighBound() || r.size > 0) {
           if r.low:int < 0 then
@@ -984,7 +991,7 @@ module Bytes {
 
             // if nbytes is 1, then we must have read a single byte and found
             // that it was invalid, if nbytes is >1 then we must have read
-            // multible bytes where the last one broke the sequence. But it can
+            // multiple bytes where the last one broke the sequence. But it can
             // be a valid byte itself. So we rewind by 1 in that case
             // we use nInvalidBytes to store how many bytes we are ignoring or
             // replacing
