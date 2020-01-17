@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2019 Cray Inc.
+ * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -1235,16 +1235,6 @@ static void protectNameFromC(Symbol* sym) {
     return;
   }
 
-  //
-  // For reasons not clear to me, renaming internal module symbols
-  // when LLVM is being used causes problems, so let's not do it for
-  // now.
-  //
-  ModuleSymbol* symMod = sym->getModule();
-  if (llvmCodegen && symMod->modTag == MOD_INTERNAL) {
-    return;
-  }
-
   // Don't rename fields
   if (isVarSymbol(sym)) {
     if (isAggregateType(sym->defPoint->parentSymbol->type)) {
@@ -1257,6 +1247,7 @@ static void protectNameFromC(Symbol* sym) {
   // is declared within an extern declaration, we should preserve its
   // name for similar reasons.
   //
+  ModuleSymbol* symMod = sym->getModule();
   if (sym != symMod) {
     Symbol* parentSym = sym->defPoint->parentSymbol;
     while (parentSym != symMod) {
@@ -1947,10 +1938,12 @@ codegen_config() {
           type = type->getField("addr")->type;
         fprintf(outfile, "%s", type->symbol->name);
         if (var->getModule()->modTag == MOD_INTERNAL) {
-          fprintf(outfile, "\", \"Built-in\");\n");
+          fprintf(outfile, "\", \"Built-in\"");
         } else {
-          fprintf(outfile, "\", \"%s\");\n", var->getModule()->name);
+          fprintf(outfile, "\", \"%s\"", var->getModule()->name);
         }
+        fprintf(outfile,", /* private = */ %d);\n", var->hasFlag(FLAG_PRIVATE));
+
       }
     }
 
@@ -1990,7 +1983,7 @@ codegen_config() {
 
     forv_Vec(VarSymbol, var, gVarSymbols) {
       if (var->hasFlag(FLAG_CONFIG) && !var->isType()) {
-        std::vector<llvm::Value *> args (3);
+        std::vector<llvm::Value *> args (4);
         args[0] = info->irBuilder->CreateLoad(
             new_CStringSymbol(var->name)->codegen().val);
 
@@ -2015,6 +2008,8 @@ codegen_config() {
           args[2] =info->irBuilder->CreateLoad(
               new_CStringSymbol(var->getModule()->name)->codegen().val);
         }
+
+        args[3] = info->irBuilder->getInt32(var->hasFlag(FLAG_PRIVATE));
 
         info->irBuilder->CreateCall(installConfigFunc, args);
       }

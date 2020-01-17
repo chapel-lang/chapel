@@ -1,0 +1,55 @@
+Expiring values for function t22 (deinit-points-split-init.chpl:15)
+  r (deinit-points-split-init.chpl:17) expires after last mention
+Expiring values for function t23 (deinit-points-split-init.chpl:25)
+  r (deinit-points-split-init.chpl:27) expires after last mention
+Expiring values for function t24 (deinit-points-split-init.chpl:35)
+  r (deinit-points-split-init.chpl:37) expires after last mention
+Expiring values for function t25 (deinit-points-split-init.chpl:49)
+  r (deinit-points-split-init.chpl:51) expires after last mention
+Expiring values for function t26 (deinit-points-split-init.chpl:63)
+  r (deinit-points-split-init.chpl:65) expires after last mention
+Expiring values for function t26a (deinit-points-split-init.chpl:78)
+  r (deinit-points-split-init.chpl:80) expires after last mention
+Expiring values for function t27 (deinit-points-split-init.chpl:94)
+  r (deinit-points-split-init.chpl:96) expires after last mention
+Expiring values for function t27a (deinit-points-split-init.chpl:109)
+  r (deinit-points-split-init.chpl:111) expires after last mention
+Expiring values for function t28 (deinit-points-split-init.chpl:125)
+  r (deinit-points-split-init.chpl:127) expires after last mention
+Expiring values for function t29 (deinit-points-split-init.chpl:140)
+  r (deinit-points-split-init.chpl:142) expires after last mention
+Expiring values for function t30 (deinit-points-split-init.chpl:158)
+  r (deinit-points-split-init.chpl:160) expires after last mention
+Expiring values for function t31 (deinit-points-split-init.chpl:171)
+  r (deinit-points-split-init.chpl:173) expires after last mention
+Expiring values for function chpl__init_deinit-points-split-init (deinit-points-split-init.chpl:1)
+  e (deinit-points-split-init.chpl:167) expires after last mention
+  e (deinit-points-split-init.chpl:182) expires after last mention
+t22
+t23
+init
+deinit
+end outer
+t24
+t25
+init
+deinit
+end outer
+t26
+t26a
+t27
+init
+deinit
+t27a
+init
+deinit
+t28
+init
+deinit
+t29
+init
+deinit
+t30
+Error: 
+t31
+Error: 

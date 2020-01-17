@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2019 Cray Inc.
+ * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -278,20 +278,22 @@ module CPtr {
   }
   pragma "no doc"
   inline proc _cast(type t:string, x:c_void_ptr) {
-    return createStringWithOwnedBuffer(__primitive("ref to string", x));
+    try! {
+      return createStringWithOwnedBuffer(__primitive("ref to string", x));
+    }
   }
   pragma "no doc"
   inline proc _cast(type t:string, x:c_ptr) {
-    return createStringWithOwnedBuffer(__primitive("ref to string", x));
+    try! {
+      return createStringWithOwnedBuffer(__primitive("ref to string", x));
+    }
   }
   pragma "last resort"
   pragma "no doc"
   inline proc _cast(type t:_anyManagementAnyNilable, x:c_void_ptr) {
     if isUnmanagedClass(t) || isBorrowedClass(t) {
-      if !chpl_legacyClasses {
-        compilerWarning("cast from c_void_ptr to "+ t:string +" is deprecated");
-        compilerWarning("cast to "+ _to_nilable(t):string +" instead");
-      }
+      compilerWarning("cast from c_void_ptr to "+ t:string +" is deprecated");
+      compilerWarning("cast to "+ _to_nilable(t):string +" instead");
       return __primitive("cast", t, x);
     } else {
       compilerWarning("invalid cast from c_void_ptr to managed type " +
@@ -551,6 +553,47 @@ module CPtr {
     return chpl_here_alloc(alloc_size, offset_ARRAY_ELEMENTS):c_ptr(eltType);
   }
 
+  /*
+    Allocate aligned memory that is not initialized. This memory
+    should be eventually freed with :proc:`c_free`.
+
+    This function is intended to behave similarly to the C17
+    function aligned_alloc.
+
+    :arg eltType: the type of the elements to allocate
+    :arg alignment: the memory alignment of the allocation
+                    which must be a power of two and a multiple
+                    of ``c_sizeof(c_void_ptr)``.
+    :arg size: the number of elements to allocate space for
+    :returns: a ``c_ptr(eltType)`` to allocated memory
+    */
+  inline proc c_aligned_alloc(type eltType,
+                              alignment : integral,
+                              size: integral) : c_ptr(eltType) {
+    // check alignment, size restriction
+    if boundsChecking {
+      var one:size_t = 1;
+      // Round the alignment up to the nearest power of 2
+      var aln = alignment.safeCast(size_t);
+      if aln == 0 then
+        halt("c_aligned_alloc called with alignment of 0");
+      var p = log2(aln); // power of 2 rounded down
+      // compute alignment rounded up
+      if (one << p) < aln then
+        p += 1;
+      assert(aln <= (one << p));
+      if aln != (one << p) then
+        halt("c_aligned_alloc called with non-power-of-2 alignment ", aln);
+      if alignment < c_sizeof(c_void_ptr) then
+        halt("c_aligned_alloc called with alignment smaller than pointer size");
+    }
+
+    const alloc_size = size.safeCast(size_t) * c_sizeof(eltType);
+    return chpl_here_aligned_alloc(alignment.safeCast(size_t),
+                                   alloc_size,
+                                   offset_ARRAY_ELEMENTS):c_ptr(eltType);
+  }
+
   /* Free memory that was allocated with :proc:`c_calloc` or :proc:`c_malloc`.
 
     :arg data: the c_ptr to memory that was allocated. Note that both
@@ -636,5 +679,4 @@ module CPtr {
     memset(s, c.safeCast(c_int), n.safeCast(size_t));
     return s;
   }
-
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2019 Cray Inc.
+ * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -255,7 +255,7 @@ module ChapelIO {
 
 
     pragma "no doc"
-    proc writeThisFieldsDefaultImpl(writer, x:?t, inout first:bool) {
+    proc writeThisFieldsDefaultImpl(writer, x:?t, inout first:bool) throws {
       param num_fields = __primitive("num fields", t);
       var isBinary = writer.binary();
 
@@ -356,7 +356,7 @@ module ChapelIO {
     }
 
     private
-    proc skipFieldsAtEnd(reader, inout needsComma:bool) {
+    proc skipFieldsAtEnd(reader, inout needsComma:bool) throws {
 
       var st = reader.styleElement(QIO_STYLE_ELEMENT_AGGREGATE);
       var skip_unk = reader.styleElement(QIO_STYLE_ELEMENT_SKIP_UNKNOWN_FIELDS);
@@ -398,7 +398,7 @@ module ChapelIO {
 
     pragma "no doc"
     proc readThisFieldsDefaultImpl(reader, type t, ref x,
-                                   inout needsComma:bool) {
+                                   inout needsComma:bool) throws {
       param num_fields = __primitive("num fields", t);
       var isBinary = reader.binary();
       var superclass_error : syserr = ENOERR;
@@ -872,14 +872,18 @@ module ChapelIO {
 
   /* Equivalent to ``try! stdout.writef``. See
      :proc:`FormattedIO.channel.writef`. */
-  proc writef(fmt:string, const args ...?k):bool {
+  proc writef(fmt:?t, const args ...?k):bool
+      where isStringType(t) || isBytesType(t) {
+
     try! {
       return stdout.writef(fmt, (...args));
     }
   }
   // documented in string version
   pragma "no doc"
-  proc writef(fmt:string):bool {
+  proc writef(fmt:?t):bool
+      where isStringType(t) || isBytesType(t) {
+
     try! {
       return stdout.writef(fmt);
     }

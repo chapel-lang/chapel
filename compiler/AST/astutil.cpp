@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2019 Cray Inc.
+ * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -201,6 +201,20 @@ static void collect_top_asts_internal(BaseAST*               ast,
 void collect_top_asts(BaseAST* ast, std::vector<BaseAST*>& asts) {
   AST_CHILDREN_CALL(ast, collect_top_asts_internal, asts);
   asts.push_back(ast);
+}
+
+static void do_containsSymExprFor(BaseAST* ast, Symbol* sym, bool* found) {
+  AST_CHILDREN_CALL(ast, do_containsSymExprFor, sym, found);
+  if (SymExpr* symExpr = toSymExpr(ast))
+    if (symExpr->symbol() == sym)
+      *found = true;
+}
+
+// returns true if the AST contains a SymExpr pointing to sym
+bool containsSymExprFor(BaseAST* ast, Symbol* sym) {
+  bool found = false;
+  do_containsSymExprFor(ast, sym, &found);
+  return found;
 }
 
 void reset_ast_loc(BaseAST* destNode, BaseAST* sourceNode) {
@@ -491,6 +505,8 @@ int isDefAndOrUse(SymExpr* se) {
       } else {
         return USE; // ? = se;
       }
+    } else if (call->isPrimitive(PRIM_END_OF_STATEMENT)) {
+      return 0; // neither def nor use
     } else if (isOpEqualPrim(call) && isFirstActual) {
       // Both a def and a use:
       // se   =   se <op> ?

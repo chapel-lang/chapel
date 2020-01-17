@@ -6,34 +6,33 @@ Chapel release:
 
 Contributors to the current release
 -----------------------------------
-* Ben Albrecht, [Cray Inc.]
+* Ben Albrecht, [HPE]
 * Himanshu Bhadani, individual contributor
 * Akshansh Bhanjana, individual contributor
-* Paul Cassella, [Cray Inc.]
-* [Brad Chamberlain], [Cray Inc.]
+* Paul Cassella, [HPE]
+* [Brad Chamberlain], [HPE]
 * Sanket Chaudhari, individual contributor
 * Anway De, individual contributor
 * Garvit Dewan, [GSoC 2019] student from [Indian Institute of Technology Roorkee]
 * Krishna Kumar Dey, [GSoC 2019] student from [Indian Institute of Information Technology, Sri City] (former individual contributor)
-* Lydia Duncan, [Cray Inc.]
-* Michael Ferguson, [Cray Inc.]
-* Ben Harshbarger, [Cray Inc.]
-* Jenna Hoole Starkey, [Cray Inc.]
-* David Iten, [Cray Inc.]
+* Lydia Duncan, [HPE]
+* Michael Ferguson, [HPE]
+* Ben Harshbarger, [HPE]
+* Jenna Hoole Starkey, [HPE]
+* David Iten, [HPE]
 * Louis Jenkins, [Pacific Northwest National Laboratory], [GSoC 2019] mentor (former individual contributor, [GSoC 2017] student from [Bloomsburg University])
-* Engin Kayraklioglu, [Cray Inc.] (former [GSoC 2017] mentor, [Cray Inc.] intern from [George Washington University])
-* David Keaton, [Cray Inc.]
-* Vassily Litvinov, [Cray Inc.]
-* David Longnecker, [Cray Inc.]
+* Engin Kayraklioglu, [HPE] (former [GSoC 2017] mentor, [Cray Inc.] intern from [George Washington University])
+* Vassily Litvinov, [HPE]
+* David Longnecker, [HPE]
 * Mohammed Nafees, [GSoC 2019] student from [University of Waterloo]
 * Nikhil Padmanabhan, [Yale University]
 * Owen Plambeck, [Cray Inc.] intern from [Haverford College]
-* Audrey Pratt, [Cray Inc.]
-* Elliot Ronaghan, [Cray Inc.]
-* Greg Titus, [Cray Inc.]
+* Audrey Pratt, [HPE]
+* Elliot Ronaghan, [HPE]
+* Greg Titus, [HPE]
 * David Tjong, individual contributor
 * Anubhav Ujjawal, individual contributor
-* Karlon West, [Cray Inc.]
+* Karlon West, [HPE]
 * Alvis Wong, [GSoC 2019] student from [University of Waterloo]
 
 
@@ -79,6 +78,7 @@ Contributors to previous releases
 * Mackale Joyner, [Cray Inc.] intern from [Rice University]
 * Jessica Jueckstock, [MITRE]
 * Avneet Kaur, [RGSoC 2018] student from [Indraprastha Institute of Information Technology, Delhi]
+* David Keaton, [Cray Inc.]
 * Krishna Keshav, individual contributor
 * Sagar Khatri, individual contributor
 * John Koenig, [Cray Inc.]
@@ -196,6 +196,7 @@ implementation.
 [GSoC 2018]: https://summerofcode.withgoogle.com/organizations/4743716460298240/
 [GSoC 2019]: https://summerofcode.withgoogle.com/organizations/4892546359099392/
 [Haverford College]: https://www.haverford.edu/
+[HPE]: https://www.hpe.com/
 [Indian Institute of Information Technology, Sri City]: http://www.iiits.ac.in/
 [Indian Institute of Technology, Hyderabad]: https://www.iith.ac.in/
 [Indian Institute of Technology Roorkee]: https://www.iitr.ac.in/

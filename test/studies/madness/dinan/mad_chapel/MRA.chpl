@@ -148,7 +148,7 @@ class Function {
 
         for mu in quad_phiDom.dim(1) {
             var x  = (l + quad_x[mu]) * h;
-            var fx = f(x);
+            var fx = f!(x);
             for i in quad_phiDom.dim(2) do
                 s[i] += scale * fx * quad_phiw[mu, i];
         }
@@ -572,7 +572,7 @@ class Function {
         for i in 0..npt {
 	    // This truncation may lead to a loss of precision in the error calculation.
             // var (fval, Fval) = (truncate(f(i/npt:real)), truncate(this(i/npt:real)));
-            var (fval, Fval) = (f(i/npt:real), this(i/npt:real));
+            var (fval, Fval) = (f!(i/npt:real), this(i/npt:real));
             writef(" -- %.2dr:  F_numeric()=% .8dr  f_analytic()=% .8dr err=% .8dr%s\n",
 		   i/npt:real, truncate(Fval), truncate(fval), truncate(Fval-fval), 
 		   if abs(Fval-fval) > thresh then "  > thresh" else "");

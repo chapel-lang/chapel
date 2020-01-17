@@ -1,1 +1,1 @@
-new-c-q-q.chpl:3: error: owned object?
+new-c-q-q.chpl:2: syntax error: near '?'

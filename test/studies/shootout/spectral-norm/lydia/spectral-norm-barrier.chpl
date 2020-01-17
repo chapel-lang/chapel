@@ -53,9 +53,9 @@ proc eval_At_times_u(u : [] real, inRange : int, Au : [] real, outRange1, outRan
 proc eval_AtA_times_u(u, AtAu, v : [] real, inRange, range1, range2 : int)
 {
            eval_A_times_u(u, inRange, v, range1, range2);
-           b.barrier();
+           b!.barrier();
            eval_At_times_u(v, inRange, AtAu, range1, range2);
-           b.barrier();
+           b!.barrier();
 }
 
 proc main() {

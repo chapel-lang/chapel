@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2019 Cray Inc.
+ * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -954,7 +954,7 @@ module ChapelDistribution {
   proc _delete_dist(dist:unmanaged BaseDist, privatized:bool) {
     dist.dsiDestroyDist();
 
-    if privatized {
+    if _privatization && privatized {
       _freePrivatizedClass(dist.pid, dist);
     }
 
@@ -965,7 +965,7 @@ module ChapelDistribution {
 
     dom.dsiDestroyDom();
 
-    if privatized {
+    if _privatization && privatized {
       _freePrivatizedClass(dom.pid, dom);
     }
 
@@ -983,7 +983,7 @@ module ChapelDistribution {
     // refer to this inner domain.
     arr.decEltCountsIfNeeded();
 
-    if privatized {
+    if _privatization && privatized {
       _freePrivatizedClass(arr.pid, arr);
     }
 

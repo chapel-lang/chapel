@@ -1,6 +1,5 @@
 chpldoc src/Pkg.chpl -o doc/ --process-used-modules
-Running Sphinx v1.3.3
-loading pickled environment... not yet created
+Running Sphinx v1.8.5
 building [mo]: targets for 0 po files that are out of date
 building [html]: targets for 3 source files that are out of date
 updating environment: 3 added, 0 changed, 0 removed
@@ -23,4 +22,6 @@ copying extra files... done
 dumping search index in English (code: en) ... done
 dumping object inventory... done
 build succeeded.
+
+The HTML pages are in doc.
 HTML files are at: doc/

@@ -1,6 +1,6 @@
 /*
  * Copyright 2017 Advanced Micro Devices, Inc.
- * Copyright 2004-2019 Cray Inc.
+ * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -125,7 +125,10 @@ module LocaleModelHelpSetup {
     // at least this setup method) must be run on the node it is
     // intended to describe.
     extern proc chpl_nodeName(): c_string;
-    const _node_name = createStringWithNewBuffer(chpl_nodeName());
+    var _node_name: string;
+    try! {
+      _node_name = createStringWithNewBuffer(chpl_nodeName());
+    }
     const _node_id = (chpl_nodeID: int): string;
 
     return if localSpawn() then _node_name + "-" + _node_id else _node_name;

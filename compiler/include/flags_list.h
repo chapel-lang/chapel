@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2019 Cray Inc.
+ * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -47,6 +47,8 @@ symbolFlag( FLAG_ALLOCATOR , ypr, "allocator" , "allocates heap storage" )
 symbolFlag( FLAG_ALLOW_REF , ypr, "allow ref" , ncm )
 symbolFlag( FLAG_ALWAYS_PROPAGATE_LINE_FILE_INFO , ypr, "always propagate line file info" , "counterpart to INSERT_LINE_FILE_INFO" )
 symbolFlag( FLAG_ALWAYS_RVF, ypr, "always RVF", "attach to a type to force RVF for objects of that type" )
+symbolFlag( FLAG_DEAD_END_OF_BLOCK , ypr, "dead at end of block" , ncm )
+symbolFlag( FLAG_DEAD_LAST_MENTION , ypr, "dead after last mention" , ncm )
 symbolFlag( FLAG_DONT_ALLOW_REF , ypr, "do not allow ref" , ncm )
 symbolFlag( FLAG_ARG_THIS, npr, "arg this", "the hidden object argument")
 symbolFlag( FLAG_ARRAY , ypr, "array" , ncm )
@@ -131,6 +133,7 @@ symbolFlag( FLAG_EXPANDED_VARARGS, npr, "expanded varargs", ncm)
 symbolFlag( FLAG_EXPAND_TUPLES_WITH_VALUES , ypr, "expand tuples with values" , ncm )
 symbolFlag( FLAG_EXPORT , npr, "export" , ncm )
 symbolFlag( FLAG_EXPORT_INIT, ypr, "export init", "indicate that the module's initialization function should be exported" )
+symbolFlag( FLAG_EXPORT_WRAPPER, ypr, "export wrapper", ncm )
 symbolFlag( FLAG_EXPR_TEMP , npr, "expr temp" , "temporary that stores the result of an expression" )
 symbolFlag( FLAG_EXTERN , npr, "extern" , "extern variables, types, and functions" )
 symbolFlag( FLAG_EXTERN_FN_WITH_ARRAY_ARG, "npr", "extern fn with array arg", "extern functions with array arguments" )
@@ -229,6 +232,7 @@ symbolFlag( FLAG_LOCAL_FN , npr, "local fn" , "function is completely local (no 
 symbolFlag( FLAG_LOCAL_ON, npr, "local on", ncm)
 symbolFlag( FLAG_LOOP_BODY_ARGUMENT_CLASS , npr, "loop body argument class" , ncm )
 symbolFlag( FLAG_MANAGED_POINTER , ypr, "managed pointer" , "e.g. Owned and Shared" )
+symbolFlag( FLAG_MANAGED_POINTER_NONNILABLE , npr, "managed pointer nonnilable" , "e.g. non-nilable Owned and Shared" )
 symbolFlag( FLAG_MARKED_GENERIC , npr, "marked generic" , "formal is marked generic using the type query syntax" )
 symbolFlag( FLAG_MAYBE_ARRAY_TYPE , npr, "maybe array type" , "function may be computing array type")
 symbolFlag( FLAG_MAYBE_PARAM , npr, "maybe param" , "symbol can resolve to a param" )
@@ -294,6 +298,9 @@ symbolFlag( FLAG_ON , npr, "on" , ncm )
 symbolFlag( FLAG_ON_BLOCK , npr, "on block" , ncm )
 
 symbolFlag( FLAG_OVERRIDE , npr, "method overrides" , ncm )
+
+// variables added by flatten functions
+symbolFlag( FLAG_OUTER_VARIABLE , npr, "outer variable" , ncm )
 
 symbolFlag( FLAG_OWNED , ypr, "owned", "owned class instance for lifetime checking" )
 

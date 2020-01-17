@@ -1196,14 +1196,14 @@ proc main(){
     }
   }
 
-  var solvedMap = topoResult.permutationMap;
+  var solvedMap = topoResult!.permutationMap!;
 
   if printPerfStats {
     writeln( "Benchmark timers:");
-    for timerName in topoResult.timerDom {
-      writeln(timerName, ": ", topoResult.timers[timerName].elapsed() );
+    for timerName in topoResult!.timerDom {
+      writeln(timerName, ": ", topoResult!.timers[timerName].elapsed() );
     }
-    writeln( "Rows/second: ", (N/topoResult.timers["whole"].elapsed()) );
+    writeln( "Rows/second: ", (N/topoResult!.timers["whole"].elapsed()) );
   }
 
   if printPermutations then writeln( "Solved permutation map:\n", solvedMap );

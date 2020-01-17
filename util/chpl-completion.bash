@@ -51,6 +51,7 @@ _chpl ()
 --devel \
 --div-by-zero-checks \
 --dynamic \
+--early-deinit \
 --explain-call \
 --explain-call-id \
 --explain-instantiation \
@@ -150,6 +151,7 @@ _chpl ()
 --no-denormalize \
 --no-devel \
 --no-div-by-zero-checks \
+--no-early-deinit \
 --no-explain-verbose \
 --no-fast-followers \
 --no-force-vectorize \
@@ -215,8 +217,10 @@ _chpl ()
 --no-replace-array-accesses-with-ref-temps \
 --no-report-aliases \
 --no-report-blocking \
+--no-report-expiring \
 --no-scalar-replacement \
 --no-specialize \
+--no-split-initialization \
 --no-stack-checks \
 --no-task-tracking \
 --no-tuple-copy-opt \
@@ -275,6 +279,7 @@ _chpl ()
 --report-blocking \
 --report-dead-blocks \
 --report-dead-modules \
+--report-expiring \
 --report-inlined-iterators \
 --report-inlining \
 --report-optimized-forall-unordered-ops \
@@ -288,6 +293,7 @@ _chpl ()
 --scalar-replacement \
 --set \
 --specialize \
+--split-initialization \
 --stack-checks \
 --static \
 --stop-after-pass \

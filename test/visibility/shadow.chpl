@@ -1,30 +1,32 @@
-/* Test to ensure that functions shadowed by methods can be called with
-   module-access-expression */
-module A {
+module OuterModule {
+  /* Test to ensure that functions shadowed by methods can be called with
+     module-access-expression */
+  module A {
 
-  proc shadow() {
-    writeln('A scope');
-  }
-
-  proc newline() { writeln(); }
-
-  record R {
     proc shadow() {
+      writeln('A scope');
+    }
 
-      writeln('R scope');
+    proc newline() { writeln(); }
 
-      A.newline();
-      newline();
+    record R {
+      proc shadow() {
 
-      A.shadow();
+        writeln('R scope');
+
+        A.newline();
+        newline();
+
+        A.shadow();
+      }
     }
   }
-}
 
 
-proc main() {
-  use A;
-  var r = new R();
+  proc main() {
+    use A;
+    var r = new R();
 
-  r.shadow();
+    r.shadow();
+  }
 }

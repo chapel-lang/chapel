@@ -1,5 +1,0 @@
-array-as-vec-remove-elts.chpl:7: warning: remove is deprecated - please use list.pop
-array-as-vec-remove-elts.chpl:11: warning: remove is deprecated - please use list.pop
-1 2 3 4 5 6 7 8 9 10
-1 2 3 4 5 6 7 8
-3 4 5 6 7 8

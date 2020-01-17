@@ -1,1 +1,1 @@
-refvar-compare-nil.chpl:1: error: References must be initialized when they are defined.
+refvar-compare-nil.chpl:1: error: References must be initialized

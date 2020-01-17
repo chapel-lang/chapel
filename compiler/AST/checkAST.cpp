@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2019 Cray Inc.
+ * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -274,6 +274,7 @@ void checkPrimitives()
      case PRIM_BLOCK_COBEGIN:           // BlockStmt::blockInfo - cobegin block
      case PRIM_BLOCK_COFORALL:          // BlockStmt::blockInfo - coforall block
      case PRIM_BLOCK_ON:                // BlockStmt::blockInfo - on block
+     case PRIM_BLOCK_ELIDED_ON:
      case PRIM_BLOCK_BEGIN_ON:
      case PRIM_BLOCK_COBEGIN_ON:
      case PRIM_BLOCK_COFORALL_ON:

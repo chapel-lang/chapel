@@ -13,7 +13,9 @@ iter myIter() {
   var r = new R(0);
 
   for i in 1..10 {
-    var r2 = new R(i);
+    var r1 = new R(i);
+    var r2 = new R(10*i);
+    ref refr = r2;
     yield i;
   }
 }

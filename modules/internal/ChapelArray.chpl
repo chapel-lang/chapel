@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2019 Cray Inc.
+ * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -169,9 +169,6 @@ module ChapelArray {
   private use Reflection only;
   private use ChapelDebugPrint;
   private use SysCTypes;
-
-  pragma "no doc"
-  config param showArrayAsVecWarnings = true;
 
   // Explicitly use a processor atomic, as most calls to this function are
   // likely be on locale 0
@@ -2048,6 +2045,11 @@ module ChapelArray {
     }
   }
 
+  proc _cast(type t:string, x: _domain) {
+    use IO;
+    return stringify(x);
+  }
+
   proc chpl_countDomHelp(dom, counts) {
     var ranges = dom.dims();
     for param i in 1..dom.rank do
@@ -3008,81 +3010,6 @@ module ChapelArray {
       return this[this.domain.alignedHigh];
     }
 
-    /* Return a range that is grown shrunk from
-       this._value.dataAllocRange to accommodate 'r2'
-     */
-    pragma "no doc"
-    inline proc resizeAllocRange(r2: range, factor=arrayAsVecGrowthFactor,
-                                 param direction=1, param grow=1) {
-      // This should only be called for 1-dimensional arrays
-      const ref r = this._value.dataAllocRange;
-      const lo = r.low,
-            hi = r.high,
-            size = r.size;
-
-      if grow > 0 {
-        const newSize = max(size+1, (size*factor):int, r2.size); // Always grow by at least 1.
-        if direction > 0 {
-          return lo..#newSize;
-        } else {
-          return ..hi#-newSize;
-        }
-      } else {
-        // TODO: grow <= 0 is not tested for |r2.size - r1.size| > 1
-        const newSize = min(size-1, (size/factor):int);
-        if direction > 0 {
-          var newRange = lo..#newSize;
-          if newRange.high < r2.high {
-            // not able to take enough spaces off the high end.  Take them
-            // off the low end instead.
-            const spaceNeeded = r2.high - newRange.high;
-            newRange = (newRange.low+spaceNeeded)..r2.high;
-          }
-          return newRange;
-        } else {
-          var newRange = ..hi # -newSize;
-          if newRange.low > r2.low {
-            // not able to take enough spaces off the low end.  Take them
-            // off the high end instead.
-            const spaceNeeded = newRange.low - r2.low;
-            newRange = r2.low..(newRange.high-spaceNeeded);
-          }
-          return newRange;
-        }
-      }
-    }
-
-    pragma "no doc"
-    /* Internal helper method to reallocate an array */
-    inline proc reallocateArray(newRange: range, param direction=1,
-                                debugMsg="reallocateArray")
-    {
-      on this._value {
-        const check = if direction > 0 then newRange.high else newRange.low;
-        if !this._value.dataAllocRange.contains(check) {
-          /* The new index is not in the allocated space.  We'll need to
-             realloc it. */
-          if this._value.dataAllocRange.length < this.domain.numIndices {
-            /* If dataAllocRange has fewer indices than this.domain it must not
-               be set correctly.  Set it to match this.domain to start.
-             */
-            this._value.dataAllocRange = this.domain.low..this.domain.high;
-          }
-          const oldRange = this._value.dataAllocRange;
-          const nextAllocRange = resizeAllocRange(newRange, direction=direction);
-
-          if debugArrayAsVec then
-            writeln(debugMsg, ": ",
-                    oldRange, " => ", nextAllocRange, " (", newRange, ")");
-
-          // note: dsiReallocate sets _value.dataAllocRange = nextAllocRange
-          this._value.dsiReallocate((nextAllocRange,));
-        }
-        this.domain.setIndices((newRange,));
-        this._value.dsiPostReallocate();
-      }
-    }
-
     /* Return the last element in the array. The array must be a
        rectangular 1-D array.
      */
@@ -3094,97 +3021,6 @@ module ChapelArray {
         halt("back called on an empty array");
 
       return this(this.domain.high);
-    }
-
-    /* Add element ``val`` to the back of the array, extending the array's
-       domain by one. If the domain was ``{1..5}`` it will become ``{1..6}``.
-
-       The array must be a rectangular 1-D array; its domain must be
-       non-stridable and not shared with other arrays.
-     */
-    proc push_back(in val: this.eltType) lifetime this < val {
-      if showArrayAsVecWarnings then
-        compilerWarning("push_back is deprecated - please use list.append");
-      if (!chpl__isDense1DArray()) then
-        compilerError("push_back() is only supported on dense 1D arrays");
-
-      chpl__assertSingleArrayDomain("push_back");
-
-      const newRange = this.domain.low..(this.domain.high+1);
-
-      reallocateArray(newRange, debugMsg="push_back reallocate");
-
-      // This could "move" from val to the array element, but
-      // we'd have to either destroy what was there already or
-      // use uninitialized memory for the extra space.
-      this[this.domain.high] = val;
-    }
-
-    /* Extend array with elements of array ``vals``, extending the
-       array's domain by ``vals.size`` in the ascending direction.
-
-       The array must be a rectangular 1-D array; its domain must be
-       non-stridable and not shared with other arrays.
-     */
-    proc push_back(vals:_array) lifetime this < vals {
-      if showArrayAsVecWarnings then
-        compilerWarning("push_back is deprecated - please use list.extend");
-      if (!chpl__isDense1DArray()) then
-        compilerError("push_back() is only supported on dense 1D arrays");
-
-      chpl__assertSingleArrayDomain("push_back");
-
-      const thisRange = this.domain.high+1..#vals.size,
-            valsRange = vals.domain.dim(1),
-            newRange = this.domain.low..(this.domain.high + vals.size);
-
-      reallocateArray(newRange, debugMsg="push_back reallocate");
-
-      this[thisRange] = vals[valsRange];
-    }
-
-    /* Remove the last element from the array, reducing the size of the
-       domain by one. If the domain was ``{1..5}`` it will become ``{1..4}``
-
-       Returns the removed element.
-
-       The array must be a rectangular 1-D array; its domain must be
-       non-stridable and not shared with other arrays.
-     */
-    proc pop_back() {
-      if showArrayAsVecWarnings then
-        compilerWarning("pop_back is deprecated - please use list.pop");
-      if (!chpl__isDense1DArray()) then
-        compilerError("pop_back() is only supported on dense 1D arrays");
-
-      chpl__assertSingleArrayDomain("pop_back");
-
-      if boundsChecking && isEmpty() then
-        halt("pop_back called on empty array");
-
-      const lo = this.domain.low,
-            hi = this.domain.high-1;
-      const newRange = lo..hi;
-      const ret = this(this.domain.high);
-
-      on this._value {
-        if this._value.dataAllocRange.length < this.domain.numIndices {
-          this._value.dataAllocRange = this.domain.low..this.domain.high;
-        }
-        if newRange.length < (this._value.dataAllocRange.length / (arrayAsVecGrowthFactor*arrayAsVecGrowthFactor)):int {
-          const oldRng = this._value.dataAllocRange;
-          const nextAllocRange = resizeAllocRange(newRange, grow=-1);
-          if debugArrayAsVec then
-            writeln("pop_back reallocate: ",
-                    oldRng, " => ", nextAllocRange,
-                    " (", newRange, ")");
-          this._value.dsiReallocate(nextAllocRange, newRange);
-          // note: dsiReallocate sets _value.dataAllocRange = nextAllocRange
-        }
-        this.domain.setIndices((newRange,));
-        this._value.dsiPostReallocate();
-      }
-      return ret;
     }
 
     /* Return the first element in the array. The array must be a
@@ -3200,253 +3036,6 @@ module ChapelArray {
       return this(this.domain.low);
     }
 
-    /* Add element ``val`` to the front of the array, extending the array's
-       domain by one. If the domain was ``{1..5}`` it will become ``{0..5}``.
-
-       The array must be a rectangular 1-D array; its domain must be
-       non-stridable and not shared with other arrays.
-     */
-    proc push_front(in val: this.eltType) lifetime this < val {
-      if showArrayAsVecWarnings then
-        compilerWarning("push_front is deprecated - please use list.insert");
-      if (!chpl__isDense1DArray()) then
-        compilerError("push_front() is only supported on dense 1D arrays");
-      chpl__assertSingleArrayDomain("push_front");
-      const lo = this.domain.low-1,
-            hi = this.domain.high;
-      const newRange = lo..hi;
-      reallocateArray(newRange, direction=-1, debugMsg="push_front reallocate");
-      this[lo] = val;
-    }
-
-    /* Prepend array with elements of array ``vals``, extending the
-       array's domain by ``vals.size`` in the descending direction.
-
-       The array must be a rectangular 1-D array; its domain must be
-       non-stridable and not shared with other arrays.
-     */
-    proc push_front(vals:_array) lifetime this < vals {
-      if showArrayAsVecWarnings then
-        compilerWarning("push_front is deprecated - please use list.insert");
-      if (!chpl__isDense1DArray()) then
-        compilerError("push_front() is only supported on dense 1D arrays");
-
-      chpl__assertSingleArrayDomain("push_front");
-
-      const thisRange = (this.domain.low-vals.size)..#vals.size,
-            valsRange = vals.domain.dim(1),
-            newRange = (this.domain.low - vals.size)..this.domain.high;
-
-      reallocateArray(newRange, direction=-1, debugMsg="push_front reallocate");
-
-      this[thisRange] = vals[valsRange];
-    }
-
-
-    /* Remove the first element of the array reducing the size of the
-       domain by one.  If the domain was ``{1..5}`` it will become ``{2..5}``.
-
-       Returns the removed element.
-
-       The array must be a rectangular 1-D array; its domain must be
-       non-stridable and not shared with other arrays.
-     */
-    proc pop_front() {
-      if showArrayAsVecWarnings then
-        compilerWarning("pop_front is deprecated - please use list.pop");
-      if (!chpl__isDense1DArray()) then
-        compilerError("pop_front() is only supported on dense 1D arrays");
-      chpl__assertSingleArrayDomain("pop_front");
-
-      if boundsChecking && isEmpty() then
-        halt("pop_front called on empty array");
-
-      const lo = this.domain.low+1,
-            hi = this.domain.high;
-      const newRange = lo..hi;
-      const ret = this(this.domain.low);
-
-      on this._value {
-        if this._value.dataAllocRange.length < this.domain.numIndices {
-          this._value.dataAllocRange = this.domain.low..this.domain.high;
-        }
-        if newRange.length < (this._value.dataAllocRange.length / (arrayAsVecGrowthFactor*arrayAsVecGrowthFactor)):int {
-          const oldRng = this._value.dataAllocRange;
-          const nextAllocRange = resizeAllocRange(newRange, direction=-1, grow=-1);
-          if debugArrayAsVec then
-            writeln("pop_front reallocate: ",
-                    oldRng, " => ", nextAllocRange,
-                    " (", newRange, ")");
-          this._value.dsiReallocate(nextAllocRange, newRange);
-          // note: dsiReallocate sets _value.dataAllocRange = nextAllocRange
-        }
-        this.domain.setIndices((newRange,));
-        this._value.dsiPostReallocate();
-      }
-      return ret;
-    }
-
-    /* Insert element ``val`` into the array at index ``pos``. Shift the array
-       elements above ``pos`` up one index. If the domain was ``{1..5}`` it will
-       become ``{1..6}``.
-
-       The array must be a rectangular 1-D array; its domain must be
-       non-stridable and not shared with other arrays.
-     */
-    proc insert(pos: this.idxType, in val: this.eltType) {
-      if showArrayAsVecWarnings then
-        compilerWarning("insert is deprecated - please use list.insert");
-      if (!chpl__isDense1DArray()) then
-        compilerError("insert() is only supported on dense 1D arrays");
-
-      chpl__assertSingleArrayDomain("insert");
-
-      const prevHigh = this.domain.high;
-      const newRange = this.domain.low..(this.domain.high + 1);
-
-      if boundsChecking && !newRange.contains(pos) then
-        halt("insert at position ", pos, " out of bounds");
-
-      reallocateArray(newRange, debugMsg="insert reallocate");
-
-      for i in pos..prevHigh by -1 do
-        this[i+1] = this[i];
-      this[pos] = val;
-    }
-
-    /* Insert elements of ``vals`` into the array at index ``pos``.
-       Shift the array elements above ``pos`` up ``vals.size`` indices.
-       If the domain was ``{1..5}`` and ``vals.size`` is ``3``,it will become
-       ``{1..8}``.
-
-       The array must be a rectangular 1-D array; its domain must be
-       non-stridable and not shared with other arrays.
-
-       Aliasing arguments are not supported for this method. For example, the
-       following call would not work as intended:
-
-       .. code-block:: chapel
-
-          var A = [1, 2, 3, 4];
-          A.insert(3, A); // Will result in runtime error
-
-    */
-    proc insert(pos: this.idxType, vals: []) {
-      if showArrayAsVecWarnings then
-        compilerWarning("insert is deprecated - please use list.insert");
-      if (!chpl__isDense1DArray()) then
-        compilerError("insert() is only supported on dense 1D arrays");
-
-      chpl__assertSingleArrayDomain("insert");
-
-      const shift = vals.size,
-            shiftRange = pos..this.domain.high,
-            newRange = this.domain.low..(this.domain.high + vals.size),
-            validInsertRange = this.domain.low..(this.domain.high + 1);
-
-      if boundsChecking && !validInsertRange.contains(pos) then
-        halt("insert at position ", pos, " out of bounds");
-
-      reallocateArray(newRange, debugMsg="insert reallocate");
-
-      for i in shiftRange by -1 do
-        this[i + shift] = this[i];
-
-      this[pos..#shift] = vals;
-    }
-
-    /* Remove the element at index ``pos`` from the array and shift the array
-       elements above ``pos`` down one index. If the domain was ``{1..5}``
-       it will become ``{1..4}``.
-
-       The array must be a rectangular 1-D array; its domain must be
-       non-stridable and not shared with other arrays.
-     */
-    proc remove(pos: this.idxType) {
-      if showArrayAsVecWarnings then
-        compilerWarning("remove is deprecated - please use list.pop");
-      if (!chpl__isDense1DArray()) then
-        compilerError("remove() is only supported on dense 1D arrays");
-      chpl__assertSingleArrayDomain("remove");
-
-      if boundsChecking && !this.domain.contains(pos) then
-        halt("remove at position ", pos, " out of bounds");
-
-      const lo = this.domain.low,
-            hi = this.domain.high-1;
-      const newRange = lo..hi;
-      for i in pos..hi {
-        this[i] = this[i+1];
-      }
-      on this._value {
-        if this._value.dataAllocRange.length < this.domain.numIndices {
-          this._value.dataAllocRange = this.domain.low..this.domain.high;
-        }
-        if newRange.length < (this._value.dataAllocRange.length / (arrayAsVecGrowthFactor*arrayAsVecGrowthFactor)):int {
-          const nextAllocRange = resizeAllocRange(newRange, grow=-1);
-          this._value.dsiReallocate(nextAllocRange, newRange);
-          // note: dsiReallocate sets _value.dataAllocRange = nextAllocRange
-        }
-        this.domain.setIndices((newRange,));
-        this._value.dsiPostReallocate();
-      }
-    }
-
-    /* Remove ``count`` elements from the array starting at index ``pos`` and
-       shift elements above ``pos+count`` down by ``count`` indices.
-
-       The array must be a rectangular 1-D array; its domain must be
-       non-stridable and not shared with other arrays.
-     */
-    proc remove(pos: this.idxType, count: this.idxType) {
-      if showArrayAsVecWarnings then
-        compilerWarning("remove is deprecated - please use list.pop");
-      if (!chpl__isDense1DArray()) then
-        compilerError("remove() is only supported on dense 1D arrays");
-      chpl__assertSingleArrayDomain("remove count");
-      const lo = this.domain.low,
-            hi = this.domain.high-count;
-      if boundsChecking && pos+count-1 > this.domain.high then
-        halt("remove at position ", pos+count-1, " out of bounds");
-      if boundsChecking && pos < lo then
-        halt("remove at position ", pos, " out of bounds");
-
-      const newRange = lo..hi;
-      for i in pos..hi {
-        this[i] = this[i+count];
-      }
-      on this._value {
-        if this._value.dataAllocRange.length < this.domain.numIndices {
-          this._value.dataAllocRange = this.domain.low..this.domain.high;
-        }
-        if newRange.length < (this._value.dataAllocRange.length / (arrayAsVecGrowthFactor*arrayAsVecGrowthFactor)):int {
-          const nextAllocRange = resizeAllocRange(newRange, grow=-1);
-          this._value.dsiReallocate(nextAllocRange, newRange);
-          // note: dsiReallocate sets _value.dataAllocRange = nextAllocRange
-        }
-        this.domain.setIndices((newRange,));
-        this._value.dsiPostReallocate();
-      }
-    }
-
-    /* Remove the elements at the indices in the ``pos`` range and shift the
-       array elements down by ``pos.size`` elements. If the domain was
-       ``{1..5}`` and this is called with ``2..3`` as an argument, the new
-       domain would be ``{1..3}`` and the array would contain the elements
-       formerly at positions 1, 4, and 5.
-
-       The array must be a rectangular 1-D array; its domain must be
-       non-stridable and not shared with other arrays.
-     */
-    proc remove(pos: range(this.idxType, stridable=false)) {
-      if showArrayAsVecWarnings then
-        compilerWarning("remove has been deprecated - please use list.pop");
-      if (!chpl__isDense1DArray()) then
-        compilerError("remove() is only supported on dense 1D arrays");
-      chpl__assertSingleArrayDomain("remove range");
-      remove(pos.low, pos.size);
-    }
-
     /* Reverse the order of the values in the array. */
     proc reverse() {
       if (!chpl__isDense1DArray()) then
@@ -3456,29 +3045,6 @@ module ChapelArray {
             hi = this.domain.high;
       for i in 0..#mid {
         this[lo + i] <=> this[hi - i];
-      }
-    }
-
-    /* Remove all elements from the array leaving the domain empty. If the
-       domain was ``{5..10}`` it will become ``{5..4}``.
-
-       The array must be a rectangular 1-D array; its domain must be
-       non-stridable and not shared with other arrays.
-     */
-    proc clear() {
-      if showArrayAsVecWarnings then
-        compilerWarning("clear is deprecated - please use list.clear");
-      if (!chpl__isDense1DArray()) then
-        compilerError("clear() is only supported on dense 1D arrays");
-      chpl__assertSingleArrayDomain("clear");
-      const lo = this.domain.low,
-            hi = this.domain.low-1;
-      assert(hi < lo, "overflow occurred subtracting 1 from low bound in clear");
-      const newRange = lo..hi;
-      on this._value {
-        this._value.dsiReallocate((newRange,));
-        this.domain.setIndices((newRange,));
-        this._value.dsiPostReallocate();
       }
     }
 
@@ -3532,12 +3098,12 @@ module ChapelArray {
         if domToRemove != nil {
           // remove that domain
           (domToFree, distToRemove) = domToRemove!.remove();
-          domIsPrivatized = domToRemove!.pid != nullPid;
+          domIsPrivatized = _privatization && (domToRemove!.pid != nullPid);
         }
         var distIsPrivatized = false;
         if distToRemove != nil {
           distToFree = distToRemove!.remove();
-          distIsPrivatized = distToRemove!.pid != nullPid;
+          distIsPrivatized = _privatization && (distToRemove!.pid != nullPid);
         }
         if arrToFree != nil then
           _delete_arr(_instance, _isPrivatized(_instance));

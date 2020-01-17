@@ -1,0 +1,9 @@
+motivated-by-expiring-values.chpl:26: In function '=':
+motivated-by-expiring-values.chpl:28: error: Setting borrowed formal illegal without specifying formal lifetime constraint
+motivated-by-expiring-values.chpl:26: note: consider scope of rhs
+motivated-by-expiring-values.chpl:50: In function 'captureA':
+motivated-by-expiring-values.chpl:51: error: Scoped variable global would outlive the value it is set to
+motivated-by-expiring-values.chpl:50: note: consider scope of arg
+motivated-by-expiring-values.chpl:55: In function 'captureB':
+motivated-by-expiring-values.chpl:56: error: Setting borrowed formal lhs illegal without specifying formal lifetime constraint
+motivated-by-expiring-values.chpl:55: note: consider scope of rhs

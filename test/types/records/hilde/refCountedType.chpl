@@ -45,15 +45,15 @@ record Handle
   {
     if _impl != nil && _impl!.release() == 0
     {
-      _impl.freed = true;
+      _impl!.freed = true;
       delete _impl;
       _impl = nil;
     }
   }
 
 // Accessors
-  proc value return _impl.value;
-  proc freed return _impl.freed;
+  proc value return _impl!.value;
+  proc freed return _impl!.freed;
 }
 
 // Assignment

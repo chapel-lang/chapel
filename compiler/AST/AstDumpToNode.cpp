@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2019 Cray Inc.
+ * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -1104,6 +1104,10 @@ void AstDumpToNode::visitUseStmt(UseStmt* node)
   newline();
   node->src->accept(this);
 
+  if (node->isARename()) {
+    fprintf(mFP, " 'as' %s", node->getRename());
+  }
+
 
   if (!node->isPlainUse()) {
     node->writeListPredicate(mFP);
@@ -1116,7 +1120,7 @@ void AstDumpToNode::visitUseStmt(UseStmt* node)
     for (std::map<const char*, const char*>::iterator it = node->renamed.begin();
          it != node->renamed.end(); ++it) {
       newline();
-      fprintf(mFP, "%s as %s", it->second, it->first);
+      fprintf(mFP, "%s 'as' %s", it->second, it->first);
     }
   }
 

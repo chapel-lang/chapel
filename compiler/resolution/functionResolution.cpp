@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2019 Cray Inc.
+ * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -204,8 +204,6 @@ static void  moveHaltMoveIsUnacceptable(CallExpr* call);
 
 
 static bool useLegacyNilability(Expr* at) {
-  if (fLegacyClasses) return true;
-
   if (at != NULL) {
     FnSymbol* fn = at->getFunction();
     ModuleSymbol* mod = at->getModule();
@@ -1287,19 +1285,6 @@ bool allowImplicitNilabilityRemoval(Type* actualType,
   if (inGenerousResolutionForErrors())
     return true;
 
-  // Currently only applies to this arguments (method receivers)
-  if (formalSym && actualSym && actualSym->defPoint &&
-      formalSym->hasFlag(FLAG_ARG_THIS)) {
-
-    // Currently only applies to implicit/prototype modules
-    ModuleSymbol* mod = actualSym->defPoint->getModule();
-    if (mod->hasFlag(FLAG_IMPLICIT_MODULE) ||
-        mod->hasFlag(FLAG_PROTOTYPE_MODULE)) {
-
-      return true;
-    }
-  }
-
   return false;
 }
 
@@ -1855,9 +1840,14 @@ static bool fits_in_twos_complement(int width, int64_t i) {
 static bool fits_in_mantissa(int width, Immediate* imm) {
   // is it between -2**width .. 2**width, inclusive?
 
-  if (imm->const_kind == NUM_KIND_INT && imm->num_index == INT_SIZE_DEFAULT) {
+  if (imm->const_kind == NUM_KIND_INT) {
     int64_t i = imm->int_value();
     return fits_in_bits_no_sign(width, i);
+  } else if (imm->const_kind == NUM_KIND_UINT) {
+    uint64_t u = imm->uint_value();
+    if (u > INT64_MAX)
+      return false;
+    return fits_in_bits_no_sign(width, (int64_t)u);
   }
 
   return false;
@@ -2439,12 +2429,9 @@ void resolveCall(CallExpr* call) {
       break;
 
     case PRIM_DEFAULT_INIT_VAR:
+    case PRIM_INIT_VAR_SPLIT_DECL:
       resolveGenericActuals(call);
       resolvePrimInit(call);
-      break;
-
-    case PRIM_TYPE_INIT:
-      resolveGenericActuals(call);
       break;
 
     case PRIM_INIT_FIELD:
@@ -2452,6 +2439,7 @@ void resolveCall(CallExpr* call) {
       break;
 
     case PRIM_INIT_VAR:
+    case PRIM_INIT_VAR_SPLIT_INIT:
       resolveInitVar(call);
       break;
 
@@ -5887,8 +5875,7 @@ static const char* describeLHS(CallExpr* call, const char* nonnilable) {
 }
 
 void checkMoveIntoClass(CallExpr* call, Type* lhs, Type* rhs) {
-  if (! fLegacyClasses &&
-      isNonNilableClassType(lhs) && isNilableClassType(rhs))
+  if (isNonNilableClassType(lhs) && isNilableClassType(rhs))
     USR_FATAL(userCall(call), "cannot %s '%s' from a nilable '%s'",
               describeLHS(call, " non-nilable"), toString(lhs), toString(rhs));
 
@@ -5925,6 +5912,42 @@ static void resolveInitVar(CallExpr* call) {
 
   if (call->id == breakOnResolveID) {
     gdbShouldBreakHere();
+  }
+
+  if (call->isPrimitive(PRIM_INIT_VAR_SPLIT_INIT)) {
+    // Also, check that the types are compatible for split initialization
+    // with type inference.
+    if (call->numActuals() < 3)
+      if (dst->type != dtUnknown)
+        if (dst->type != srcType)
+          USR_FATAL_CONT(call, "Split initialization uses multiple types; "
+                               "another initialization has type %s "
+                               "but this initialization has type %s",
+                               toString(dst->type),
+                               toString(srcType));
+
+    // Also, if the dst is a param, check that the src values are
+    // an acceptable param value, and if there are many, the same param value.
+    if (dst->isParameter()) {
+      // Check that they are initialized to the same value.
+      Symbol* dstParam = dst;
+      Symbol* srcParam = src;
+      if (Symbol* s = paramMap.get(dst))
+        dstParam = s;
+      if (Symbol* s = paramMap.get(src))
+        srcParam = s;
+
+      if (Immediate* srcImm = getSymbolImmediate(srcParam)) {
+        if (Immediate* dstImm = getSymbolImmediate(dstParam)) {
+          if (dstImm != srcImm) {
+            USR_FATAL_CONT(call, "Split initialization sets parameter to "
+                                 "different values");
+            call->convertToNoop();
+            return;
+          }
+        }
+      }
+    }
   }
 
   Type* targetType = NULL;
@@ -5995,6 +6018,8 @@ static void resolveInitVar(CallExpr* call) {
 
       VarSymbol* tmp = newTemp(primCoerceTmpName, targetType);
       tmp->addFlag(FLAG_EXPR_TEMP);
+      if (dst->hasFlag(FLAG_PARAM))
+        tmp->addFlag(FLAG_PARAM);
 
       CallExpr* coerce = new CallExpr(PRIM_COERCE,
                                       srcExpr->copy(),
@@ -6004,11 +6029,15 @@ static void resolveInitVar(CallExpr* call) {
       call->insertBefore(new DefExpr(tmp));
       call->insertBefore(move);
       resolveCoerce(coerce);
-      resolveMove(move);
+      resolveExpr(move);
 
       // Use the targetType as the srcType
-      srcExpr->setSymbol(tmp);
       srcType = targetType;
+      // Set the source expression to the result of coercion
+      if (Symbol* p = paramMap.get(tmp))
+        srcExpr->setSymbol(p); // Use the right param value if we computed one.
+      else
+        srcExpr->setSymbol(tmp);
 
       addedCoerce = true;
     }
@@ -6214,7 +6243,7 @@ static void  moveHaltForUnacceptableTypes(CallExpr* call);
 
 static void  resolveMoveForRhsSymExpr(CallExpr* call, SymExpr* rhs);
 
-static void  resolveMoveForRhsCallExpr(CallExpr* call);
+static void  resolveMoveForRhsCallExpr(CallExpr* call, Type* rhsType);
 
 static void  moveSetConstFlagsAndCheck(CallExpr* call, CallExpr* rhs);
 
@@ -6273,7 +6302,7 @@ static void resolveMove(CallExpr* call) {
       resolveMoveForRhsSymExpr(call, rhsSymExpr);
 
     } else if (isCallExpr(rhs) == true) {
-      resolveMoveForRhsCallExpr(call);
+      resolveMoveForRhsCallExpr(call, rhsType);
 
     } else {
       INT_ASSERT(false);
@@ -6558,15 +6587,21 @@ static void resolveMoveForRhsSymExpr(CallExpr* call, SymExpr* rhs) {
 
   }
 
+  if (lhsSym->hasFlag(FLAG_TYPE_VARIABLE) &&
+      lhsSym->type != dtUnknown &&
+      lhsSym->type != rhsSym->type) {
+    USR_FATAL(call, "type alias split initialization uses different types");
+  }
+
   moveFinalize(call);
 }
 
-static void resolveMoveForRhsCallExpr(CallExpr* call) {
+static void resolveMoveForRhsCallExpr(CallExpr* call, Type* rhsType) {
   CallExpr* rhs = toCallExpr(call->get(2));
 
   moveSetConstFlagsAndCheck(call, rhs);
 
-  if (rhs->resolvedFunction() == gChplHereAlloc) {
+  if (gChplHereAlloc != NULL && rhs->resolvedFunction() == gChplHereAlloc) {
     Symbol*  lhsType = call->get(1)->typeInfo()->symbol;
     Symbol*  tmp     = newTemp("cast_tmp", rhs->typeInfo());
 
@@ -6635,6 +6670,19 @@ static void resolveMoveForRhsCallExpr(CallExpr* call) {
         if (SymExpr* se = toSymExpr(call->get(1))) {
           se->symbol()->addFlag(FLAG_DELAY_GENERIC_EXPANSION);
         }
+      }
+    } else if (rhs->isPrimitive(PRIM_ADDR_OF)) {
+      // Check that the types match
+      SymExpr* lhsSe = toSymExpr(call->get(1));
+      Symbol* lhs = lhsSe->symbol();
+      INT_ASSERT(lhs->isRef());
+
+      if (lhs->getValType() != rhsType->getValType()) {
+        USR_FATAL_CONT(call, "Initializing a reference with another type");
+        USR_PRINT(lhs, "Reference has type %s", toString(lhs->getValType()));
+        USR_PRINT(call, "Initializing with type %s",
+                        toString(rhsType->getValType()));
+        USR_STOP();
       }
     }
 
@@ -6746,11 +6794,6 @@ static void moveFinalize(CallExpr* call) {
       if (isMoveFromMain(call)) {
         USR_FATAL(chplUserMain, "main() returns a non-integer (%s)",
                   rhsValType->name());
-      } else if (rhsType != dtNil) {
-        USR_FATAL(userCall(call),
-                  "type mismatch in assignment from %s to %s",
-                  toString(rhsType),
-                  toString(lhsType));
       }
     }
   }
@@ -6923,7 +6966,7 @@ static void resolveNewSetupManaged(CallExpr* newExpr, Type*& manager) {
           } else {
             manager = dtOwned;
           }
-        } else if (isClass(type) && !fLegacyClasses) {
+        } else if (isClass(type)) {
           manager = dtBorrowed;
         } else if (isClass(type) && isUndecoratedClassNew(newExpr, type)) {
           manager = dtOwned;
@@ -8798,7 +8841,7 @@ static void insertReturnTemps() {
   //
   // Insert return temps for functions that return values if no
   // variable captures the result. If the value is a sync/single var or a
-  // reference to a sync/single var, pass it through the _statementLevelSymbol
+  // reference to a sync/single var, pass it through a chpl_statementLevelSymbol
   // function to get the semantics of reading a sync/single var. If the value
   // is an iterator, iterate over it in a ForallStmt for side effects.
   // Note that we do not do this for --minimal-modules compilation
@@ -8852,7 +8895,8 @@ static void insertReturnTemps() {
                   isSyncType(fn->retType)                             ||
                   isSingleType(fn->retType)                           )
               {
-                CallExpr* sls = new CallExpr("_statementLevelSymbol", tmp);
+                CallExpr* sls = new CallExpr(
+                    astr_chpl_statementLevelSymbol, tmp);
 
                 def->next->insertAfter(sls);
                 resolveCallAndCallee(sls);
@@ -9282,6 +9326,11 @@ static void replaceRuntimeTypeDefaultInit(CallExpr* call) {
   Type*    rt = typeSe->symbol()->type;
 
   if (rt->symbol->hasFlag(FLAG_RUNTIME_TYPE_VALUE)) {
+    if (var->hasFlag(FLAG_NO_INIT)) {
+      call->convertToNoop();
+      return;
+    }
+
     // ('init' x foo), where typeof(foo) has flag "runtime type value"
     //
     // ==>
@@ -9395,7 +9444,14 @@ void resolvePrimInit(CallExpr* call) {
   Expr* fieldNameExpr = NULL;
   Expr* typeExpr = NULL;
 
-  INT_ASSERT(call->isPrimitive(PRIM_DEFAULT_INIT_VAR));
+  INT_ASSERT(call->isPrimitive(PRIM_DEFAULT_INIT_VAR) ||
+             call->isPrimitive(PRIM_INIT_VAR_SPLIT_DECL));
+
+  if (call->isPrimitive(PRIM_INIT_VAR_SPLIT_DECL)) {
+    // PRIM_INIT_SPLIT_DECL does nothing at this point
+    call->convertToNoop();
+    return;
+  }
 
   valExpr = call->get(1);
   fieldNameExpr = NULL;
@@ -9575,7 +9631,8 @@ static void resolvePrimInit(CallExpr* call, Symbol* val, Type* type) {
 
   // These are handled in replaceRuntimeTypePrims().
   if (type->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE) == true) {
-    errorInvalidParamInit(call, val, at);
+    if (call->isPrimitive(PRIM_DEFAULT_INIT_VAR))
+      errorInvalidParamInit(call, val, at);
 
   // Shouldn't be default-initializing iterator records here
   } else if (type->symbol->hasFlag(FLAG_ITERATOR_RECORD)  == true) {
@@ -9588,44 +9645,52 @@ static void resolvePrimInit(CallExpr* call, Symbol* val, Type* type) {
 
   // These types default to nil
   } else if (isClassLikeOrPtr(type) || type == dtNil) {
-    // note: error for bad param initialization checked for in resolving move
 
-    Expr* nilExpr = NULL;
-    SymExpr* typeSe = NULL;
-    if (gNil->type == type) {
-      nilExpr = new SymExpr(gNil);
+    if (!call->isPrimitive(PRIM_INIT_VAR_SPLIT_DECL)) {
+      Expr* nilExpr = NULL;
+      SymExpr* typeSe = NULL;
+      if (gNil->type == type) {
+        nilExpr = new SymExpr(gNil);
+      } else {
+        typeSe = new SymExpr(type->symbol);
+        nilExpr = new CallExpr(PRIM_CAST, typeSe, gNil);
+      }
+
+      CallExpr* moveDefault = new CallExpr(PRIM_MOVE, val, nilExpr);
+      call->insertBefore(moveDefault);
+      if (typeSe) resolveExprTypeConstructor(typeSe);
+      resolveExpr(moveDefault);
+      call->convertToNoop();
+
+      errorIfNonNilableType(call, val, type, type);
     } else {
-      typeSe = new SymExpr(type->symbol);
-      nilExpr = new CallExpr(PRIM_CAST, typeSe, gNil);
+      call->convertToNoop(); // initialize it PRIM_INIT_VAR_SPLIT_INIT
     }
-
-    CallExpr* moveDefault = new CallExpr(PRIM_MOVE, val, nilExpr);
-    call->insertBefore(moveDefault);
-    if (typeSe) resolveExprTypeConstructor(typeSe);
-    resolveExpr(moveDefault);
-    call->convertToNoop();
-
-    errorIfNonNilableType(call, val, type, type);
 
   // any type with a defaultValue is easy enough
   // (expect this to handle numeric types and classes)
   } else if (type->defaultValue != NULL) {
     // note: error for bad param initialization checked for in resolving move
 
-    Expr* defaultExpr = NULL;
-    SymExpr* typeSe = NULL;
-    if (type->defaultValue->type == type) {
-      defaultExpr = new SymExpr(type->defaultValue);
-    } else {
-      typeSe = new SymExpr(type->symbol);
-      defaultExpr = new CallExpr(PRIM_CAST, type->symbol, type->defaultValue);
-    }
+    if (!call->isPrimitive(PRIM_INIT_VAR_SPLIT_DECL)) {
+      Expr* defaultExpr = NULL;
+      SymExpr* typeSe = NULL;
+      if (type->defaultValue->type == type) {
+        defaultExpr = new SymExpr(type->defaultValue);
+      } else {
+        typeSe = new SymExpr(type->symbol);
+        defaultExpr = new CallExpr(PRIM_CAST, type->symbol, type->defaultValue);
+      }
 
-    CallExpr* moveDefault = new CallExpr(PRIM_MOVE, val, defaultExpr);
-    call->insertBefore(moveDefault);
-    if (typeSe) resolveExprTypeConstructor(typeSe);
-    resolveExpr(moveDefault);
-    call->convertToNoop();
+      CallExpr* moveDefault = new CallExpr(PRIM_MOVE, val, defaultExpr);
+      call->insertBefore(moveDefault);
+      if (typeSe) resolveExprTypeConstructor(typeSe);
+      resolveExpr(moveDefault);
+      call->convertToNoop();
+    } else {
+      call->convertToNoop(); // initialize it PRIM_INIT_VAR_SPLIT_INIT
+                             // (important for params)
+    }
 
   // non-generic records with initializers
   } else if (at                                           != NULL &&
@@ -9634,7 +9699,8 @@ static void resolvePrimInit(CallExpr* call, Symbol* val, Type* type) {
 
 
     errorInvalidParamInit(call, val, at);
-    if (!val->hasFlag(FLAG_NO_INIT))
+    if (!val->hasFlag(FLAG_NO_INIT) &&
+        !call->isPrimitive(PRIM_INIT_VAR_SPLIT_DECL))
       resolvePrimInitNonGenericRecordVar(call, val, at);
     else
       call->convertToNoop(); // let the memory be uninitialized
@@ -9655,7 +9721,8 @@ static void resolvePrimInit(CallExpr* call, Symbol* val, Type* type) {
     if (at->symbol->hasFlag(FLAG_MANAGED_POINTER))
       errorIfNonNilableType(call, val, getManagedPtrBorrowType(at), at);
 
-    if (!val->hasFlag(FLAG_NO_INIT))
+    if (!val->hasFlag(FLAG_NO_INIT) &&
+        !call->isPrimitive(PRIM_INIT_VAR_SPLIT_DECL))
       resolvePrimInitGenericRecordVar(call, val, at);
     else
       call->convertToNoop(); // let the memory be uninitialized
@@ -9840,14 +9907,12 @@ void printUndecoratedClassTypeNote(Expr* ctx, Type* type) {
 }
 
 void checkDuplicateDecorators(Type* decorator, Type* decorated, Expr* ctx) {
-  if (fLegacyClasses == false) {
-    if (isClassLikeOrManaged(decorator) && isClassLikeOrManaged(decorated)) {
-      ClassTypeDecorator d = classTypeDecorator(decorated);
+  if (isClassLikeOrManaged(decorator) && isClassLikeOrManaged(decorated)) {
+    ClassTypeDecorator d = classTypeDecorator(decorated);
 
-      if (!isDecoratorUnknownManagement(d))
-        USR_FATAL_CONT(ctx, "duplicate decorators - %s %s",
-                             toString(decorator), toString(decorated));
-    }
+    if (!isDecoratorUnknownManagement(d))
+      USR_FATAL_CONT(ctx, "duplicate decorators - %s %s",
+                           toString(decorator), toString(decorated));
   }
 }
 

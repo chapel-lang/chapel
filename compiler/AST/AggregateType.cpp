@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2019 Cray Inc.
+ * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -825,6 +825,55 @@ static void checkNumArgsErrors(AggregateType* at, CallExpr* call, const char* ca
   }
 }
 
+static void resolveConcreteFields(AggregateType* ret, CallExpr* call, const char* callString) {
+  if (ret->resolveStatus != RESOLVED) {
+    ret->resolveStatus = RESOLVED;
+    // TODO: How to handle cases where generic fields lean on non-generic
+    // fields for type/init-expressions:
+    //   class C {
+    //     type T;
+    //     param x : int;
+    //
+    //     var next : C(T, x);
+    //
+    //     param flag : bool = if next.type.T == int then true else false;
+    //   }
+    //
+    // In this example, the current implementation fails to resolve the type
+    // of field 'flag' because 'next' is not yet resolved. This particular
+    // example is difficult to resolve because the field 'next' requires
+    // recursive resolution of the type we're already trying to resolve. This
+    // difficulty has lead to the current implementation which resolves
+    // concrete fields after generic fields are resolved.
+    //
+
+    // TODO: Unfortunate workaround for the existing infrastructure. We need
+    // to keep types marked as generic if their type fields are generic.
+    for_fields(field, ret) {
+      if (field->hasFlag(FLAG_TYPE_VARIABLE) && field->type->symbol->hasFlag(FLAG_GENERIC)) {
+        ret->symbol->addFlag(FLAG_GENERIC);
+        break;
+      }
+    }
+
+    // Resolve the remaining non-generic fields
+    if (ret->symbol->hasFlag(FLAG_GENERIC) == false) {
+
+      makeRefType(ret);
+
+      for_fields(field, ret) {
+        if (field->hasFlag(FLAG_PARAM) == false &&
+            field->hasFlag(FLAG_TYPE_VARIABLE) == false &&
+            field->type == dtUnknown) {
+          if (Type* type = resolveFieldTypeForInstantiation(field, call, callString)) {
+            field->type = type;
+          }
+        }
+      }
+    }
+  }
+}
+
 AggregateType* AggregateType::generateType(CallExpr* call, const char* callString) {
 
   checkNumArgsErrors(this, call, callString);
@@ -878,53 +927,7 @@ AggregateType* AggregateType::generateType(CallExpr* call, const char* callStrin
   if (ret != this) {
     ret->instantiatedFrom = this;
 
-    if (ret->resolveStatus != RESOLVED) {
-      ret->resolveStatus = RESOLVED;
-      // TODO: How to handle cases where generic fields lean on non-generic
-      // fields for type/init-expressions:
-      //   class C {
-      //     type T;
-      //     param x : int;
-      //
-      //     var next : C(T, x);
-      //
-      //     param flag : bool = if next.type.T == int then true else false;
-      //   }
-      //
-      // In this example, the current implementation fails to resolve the type
-      // of field 'flag' because 'next' is not yet resolved. This particular
-      // example is difficult to resolve because the field 'next' requires
-      // recursive resolution of the type we're already trying to resolve. This
-      // difficulty has lead to the current implementation which resolves
-      // concrete fields after generic fields are resolved.
-      //
-
-      // TODO: Unfortunate workaround for the existing infrastructure. We need
-      // to keep types marked as generic if their type fields are generic.
-      for_fields(field, ret) {
-        if (field->hasFlag(FLAG_TYPE_VARIABLE) && field->type->symbol->hasFlag(FLAG_GENERIC)) {
-          ret->symbol->addFlag(FLAG_GENERIC);
-          break;
-        }
-      }
-
-      // Resolve the remaining non-generic fields
-      if (ret->symbol->hasFlag(FLAG_GENERIC) == false) {
-
-        makeRefType(ret);
-
-        for (int index = 1; index <= numFields(); index = index + 1) {
-          Symbol* field = ret->getField(index);
-          if (field->hasFlag(FLAG_PARAM) == false &&
-              field->hasFlag(FLAG_TYPE_VARIABLE) == false &&
-              field->type == dtUnknown) {
-            if (Type* type = resolveFieldTypeForInstantiation(field, call, callString)) {
-              field->type = type;
-            }
-          }
-        }
-      }
-    }
+    resolveConcreteFields(ret, call, callString);
   }
 
   return ret;
@@ -1187,6 +1190,13 @@ static void checkTypesForInstantiation(AggregateType* at, CallExpr* call, const 
   }
 }
 
+static void markManagedPointerIfNonNilable(AggregateType* mp, Symbol* mps) {
+  if (! mps->hasFlag(FLAG_GENERIC))
+    if (Symbol* chpl_t = mp->getField("chpl_t", false))
+      if (isNonNilableClassType(chpl_t->type))
+        mps->addFlag(FLAG_MANAGED_POINTER_NONNILABLE);
+}
+
 AggregateType* AggregateType::generateType(SymbolMap& subs, CallExpr* call, const char* callString, bool evalDefaults, Expr* insnPoint) {
   AggregateType* retval = this;
 
@@ -1197,6 +1207,8 @@ AggregateType* AggregateType::generateType(SymbolMap& subs, CallExpr* call, cons
     // Is the parent generic?
     if (parent->genericFields.size() > 0) {
       AggregateType* instantiatedParent = parent->generateType(subs, call, callString, evalDefaults, insnPoint);
+
+      resolveConcreteFields(instantiatedParent, call, callString);
 
       retval = instantiationWithParent(instantiatedParent, insnPoint);
     }
@@ -1247,6 +1259,9 @@ AggregateType* AggregateType::generateType(SymbolMap& subs, CallExpr* call, cons
     }
   }
 
+  if (retval->symbol->hasFlag(FLAG_MANAGED_POINTER))
+    markManagedPointerIfNonNilable(retval, retval->symbol);
+
   return retval;
 }
 
@@ -1282,9 +1297,8 @@ static void buildParentSubMap(AggregateType* at, SymbolMap& map) {
   if (root->dispatchParents.n > 0) {
     buildParentSubMap(at->dispatchParents.v[0], map);
   }
-  form_Map(SymbolMapElem, e, at->substitutions) {
-    Symbol* instantiated = e->key;
-    map.put(root->getField(instantiated->name), instantiated);
+  for_fields(field, at) {
+    map.put(root->getField(field->name), field);
   }
 }
 

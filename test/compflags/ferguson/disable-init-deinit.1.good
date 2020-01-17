@@ -1,0 +1,7 @@
+before declaration
+init
+after declaration, before assignment
+init
+deinit
+deinit
+after assignment

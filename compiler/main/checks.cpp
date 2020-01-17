@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2019 Cray Inc.
+ * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -590,7 +590,6 @@ checkResolveRemovedPrims(void) {
         case PRIM_DEFAULT_INIT_VAR:
         case PRIM_INIT_FIELD:
         case PRIM_INIT_VAR:
-        case PRIM_TYPE_INIT:
 
         case PRIM_LOGICAL_FOLDER:
         case PRIM_TYPEOF:

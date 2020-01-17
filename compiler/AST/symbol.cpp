@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2019 Cray Inc.
+ * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -21,6 +21,7 @@
 #define __STDC_FORMAT_MACROS
 #endif
 
+#include "encoding-support.h"
 #include "symbol.h"
 
 #include "AstToText.h"
@@ -48,6 +49,7 @@ Symbol *gTypeDefaultToken = NULL;
 Symbol *gLeaderTag = NULL, *gFollowerTag = NULL, *gStandaloneTag = NULL;
 Symbol *gModuleToken = NULL;
 Symbol *gNoInit = NULL;
+Symbol *gSplitInit = NULL;
 Symbol *gVoid = NULL;
 Symbol *gNone = NULL;
 Symbol *gFile = NULL;
@@ -64,7 +66,6 @@ VarSymbol *gFalse = NULL;
 VarSymbol *gBoundsChecking = NULL;
 VarSymbol *gCastChecking = NULL;
 VarSymbol *gNilChecking = NULL;
-VarSymbol *gLegacyClasses = NULL;
 VarSymbol *gOverloadSetsChecks = NULL;
 VarSymbol *gDivZeroChecking = NULL;
 VarSymbol* gPrivatization = NULL;
@@ -1434,7 +1435,10 @@ std::string unescapeString(const char* const str, BaseAST *astForError) {
 
 static int literal_id = 1;
 HashMap<Immediate *, ImmHashFns, VarSymbol *> uniqueConstantsHash;
+
+// stringLiteralsHash should never contain any invalid string
 HashMap<Immediate *, ImmHashFns, VarSymbol *> stringLiteralsHash;
+HashMap<Immediate *, ImmHashFns, VarSymbol *> bytesLiteralsHash;
 
 LabelSymbol* initStringLiteralsEpilogue = NULL;
 
@@ -1448,6 +1452,10 @@ void createInitStringLiterals() {
   initStringLiterals->retType = dtVoid;
   initStringLiterals->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
   stringLiteralModule->block->insertAtTail(new DefExpr(initStringLiterals));
+}
+
+bool isValidString(std::string str) {
+  return chpl_enc_validate_buf(str.c_str(), str.length()) == 0;
 }
 
 // Note that string immediate values are stored
@@ -1470,6 +1478,8 @@ VarSymbol *new_StringSymbol(const char *str) {
     INT_FATAL("new_StringSymbol called after function resolution.");
   }
 
+  bool invalid = false;
+
   // String (as record) literals are inserted from the very beginning on the
   // parser all the way through resolution (postFold). Since resolution happens
   // after normalization we need to insert everything in normalized form. We
@@ -1479,7 +1489,21 @@ VarSymbol *new_StringSymbol(const char *str) {
   VarSymbol* cstrTemp = newTemp("call_tmp");
   CallExpr *cstrMove = new CallExpr(PRIM_MOVE, cstrTemp, new_CStringSymbol(str));
 
-  int strLength = unescapeString(str, cstrMove).length();
+  std::string unescapedString = unescapeString(str, cstrMove);
+
+  if (!isValidString(unescapedString)) {
+    USR_FATAL_CONT(cstrMove, "Invalid string literal");
+
+    // We want to keep the compilation going here so that we can catch other
+    // invalid string literals without having to compile again. However,
+    // returning `s` (i.e. NULL at this point) does not work well with the rest
+    // of the compilation. At the same time we should avoid adding invalid
+    // sequences to stringLiteralsHash. Therefore, set a flag to note that this
+    // string is invalid and should not be added to stringLiteralsHash.
+    invalid = true;
+  }
+
+  int strLength = unescapedString.length();
 
   s = new VarSymbol(astr("_str_literal_", istr(literal_id++)), dtString);
   s->addFlag(FLAG_NO_AUTO_DESTROY);
@@ -1516,7 +1540,9 @@ VarSymbol *new_StringSymbol(const char *str) {
 
   s->immediate = new Immediate;
   *s->immediate = imm;
-  stringLiteralsHash.put(s->immediate, s);
+  if (!invalid) {
+    stringLiteralsHash.put(s->immediate, s);
+  }
   return s;
 }
 
@@ -1525,7 +1551,7 @@ VarSymbol *new_BytesSymbol(const char *str) {
   imm.const_kind = CONST_KIND_STRING;
   imm.string_kind = STRING_KIND_BYTES;
   imm.v_string = astr(str);
-  VarSymbol *s = stringLiteralsHash.get(&imm);
+  VarSymbol *s = bytesLiteralsHash.get(&imm);
   if (s) {
     return s;
   }
@@ -1573,7 +1599,7 @@ VarSymbol *new_BytesSymbol(const char *str) {
 
   s->immediate = new Immediate;
   *s->immediate = imm;
-  stringLiteralsHash.put(s->immediate, s);
+  bytesLiteralsHash.put(s->immediate, s);
   return s;
 }
 
@@ -1948,6 +1974,7 @@ const char* astrThis = NULL;
 const char* astr_chpl_cname = NULL;
 const char* astr_chpl_forward_tgt = NULL;
 const char* astr_chpl_manager = NULL;
+const char* astr_chpl_statementLevelSymbol = NULL;
 const char* astr_forallexpr = NULL;
 const char* astr_forexpr = NULL;
 const char* astr_loopexpr_iter = NULL;
@@ -1975,6 +2002,7 @@ void initAstrConsts() {
   astr_chpl_cname = astr("_chpl_cname");
   astr_chpl_forward_tgt = astr("_chpl_forward_tgt");
   astr_chpl_manager = astr("_chpl_manager");
+  astr_chpl_statementLevelSymbol = astr("chpl_statementLevelSymbol");
 
   astr_forallexpr    = astr("chpl__forallexpr");
   astr_forexpr       = astr("chpl__forexpr");
