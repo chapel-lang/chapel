@@ -505,6 +505,8 @@ int isDefAndOrUse(SymExpr* se) {
       } else {
         return USE; // ? = se;
       }
+    } else if (call->isPrimitive(PRIM_END_OF_STATEMENT)) {
+      return 0; // neither def nor use
     } else if (isOpEqualPrim(call) && isFirstActual) {
       // Both a def and a use:
       // se   =   se <op> ?
