@@ -8,6 +8,7 @@
 //    - Random-access indexing
 //
 
+private use HaltWrappers;
 private use List;
 private use Random;
 private use Search;
@@ -17,135 +18,159 @@ private use Time;
 type byte = int(8);
 type testList = list(byte, false);
 
-config const trials = 6;
-config const n: int = 1024 * 1024 * 16;
+config const trials = 5;
+config const n: int = 1024 * 32;
 const seed = 314159;
+const stableList = createList(n);
 
 proc createList(size: int) {
   var result: testList;
-  for i in 1..size do result.append(i);
+  for i in 1..size do result.append((i % 127):int(8));
   return result;
 }
 
-proc randSetup() {
-  // TODO: Give the random number generator our seed.  
-
+proc setup() {
+  extern proc srand(seed: int);
+  srand(seed);
 }
 
 proc randInt(): int {
-
+  extern proc rand(): int;
+  return rand();
 }
 
 proc generateNoise() {
   var lst1 = createList(n);
   var lst2 = createList(n);
 
-  for (a, b) in zip(lst1, lst2) do a += b % 128;
+  for (a, b) in zip(lst1, lst2) do a += b % 127;
 
   lst1.clear();
   lst2.clear();  
 }
 
-//
-// Generate some noise to warm up before the test.
-//
-generateNoise();
+class Test {
+  proc name(): string { pureVirtualMethodHalt(); }
+  proc setup() {}
+  proc test() { pureVirtualMethodHalt(); }
 
-proc output(name: string, time: real) {
-  writeln(name, " ", time);
+  proc run(): real {
+    var tmr = new Timer();
+    var avg = 0.0;
+
+    for i in 1..trials {
+      setup();
+      tmr.start();
+      test();
+      tmr.stop();
+      avg += tmr.elapsed();
+    }
+
+    avg /= trials;
+
+    return avg;
+  }
+
+  proc output() {
+    writeln(this.name(), " ", this.run());
+  }
+}
+  
+class AppendFromEmpty: Test {
+  var _lst: list(byte);
+
+  override proc name() return "AppendFromEmpty";
+  override proc setup() { _lst.clear(); }
+
+  override proc test() {
+    assert(_lst.isEmpty());
+    for i in 1..n do _lst.append((i % 127):byte);
+  }
 }
 
-var tmr: timer;
-const stableList = createList(n);
-var avg = 0.0;
+class InsertFront: Test {
+  const _limit = (n / 16);
+  var _lst: list(byte);
+  
+  override proc name() return "InsertFront";
+  override proc setup() {
+    _lst.clear();
+    for i in 1.._limit do _lst.append((i % 127):byte);
+  }
 
-proc testCreate(size: int): real {
-
+  override proc test() {
+    assert(_lst.size == _limit);
+    for i in 1.._limit do _lst.insert(1, (i & 127):byte); 
+  }
 }
 
-avg = 0.0;
-for i in 1..trials do avg += testCreate(n);
-avg /= trials;
-output("Create", avg);
+class PopFromBack: Test {
+  override proc name() return "PopFromBack";
+  override proc test() {
 
-proc testAppendFromEmpty(size: int): real {
-
+  }
 }
 
-avg = 0.0;
-for i in 1..trials do avg += testAppendFromEmpty(n);
-avg /= trials;
-output("AppendFromEmpty", avg);
+class PopFromFront: Test {
+  override proc name() return "PopFromFront";
+  override proc test() {
 
-proc testInsertFront(size: int): real {
-
+  }
 }
 
-avg = 0.0;
-for i in trials do avg += testInsertFront(n, trace);
-avg /= trials;
-output("InsertFront", avg);
+class IterSerial: Test {
+  override proc name() return "IterSerial";
+  override proc test() {
 
-proc testPopFromBack(size: int): real {
-
+  }
 }
 
-avg = 0.0;
-for i in trials do avg += testPopFromBack(n, trace);
-avg /= trials;
-output("PopFromBack", avg);
+class IterParallel: Test {
+  override proc name() return "IterParallel";
+  override proc test() {
 
-proc testPopFromFront(size: int): real {
+  }
+}
+  
+class RandomAccess1: Test {
+  override proc name() return "RandomAccess1";
+  override proc test() {
 
+  }
 }
 
-avg = 0.0;
-for i in trials do avg += testPopFromFront(n, trace);
-avg /= trials;
-output("PopFromFront", avg);
+class Clear: Test {
+  override proc name() return "Clear";
+  override proc test() {
 
-proc testIterSerial(size: int): real {
-
+  }
 }
 
-avg = 0.0;
-for i in trials do avg += testIterSerial(n, trace);
-avg /= trials;
-output("IterSerial", avg);
+class Deinit: Test {
+  override proc name() return "Deinit"; 
+  override proc test() {
 
-proc testIterParallel(size: int): real {
-
+  }
 }
 
-avg = 0.0;
-for i in trials do avg += testIterParallel(n, trace);
-avg /= trials;
-output("IterParallel", avg);
+proc main() {
+  setup();
 
-proc testRandomAccess1(size: int): real {
+  var tests: list(owned Test);
 
+  tests.append(new AppendFromEmpty());
+  tests.append(new InsertFront());
+  tests.append(new PopFromBack());
+  tests.append(new PopFromFront());
+  tests.append(new IterSerial());
+  tests.append(new IterParallel());
+  tests.append(new RandomAccess1());
+  tests.append(new Clear());
+  tests.append(new Deinit());
+
+  generateNoise();
+
+  for tst in tests do
+    tst.output();
 }
-
-avg = 0.0;
-for i in trials do avg += testRandomAccess1(n, trace);
-avg /= trials;
-output("RandomAccess1", avg);
-
-proc testClear(size: int): real {
-
-}
-
-avg = 0.0;
-for i in trials do avg += testClear(n, trace);
-avg /= trials;
-output("Clear", avg);
-
-proc testDeinit(size: int): real {
-
-}
-
-avg = 0.0;
-for i in trials do avg += testDeinit(n, trace);
-avg /= trials;
-output("Deinit", avg);
 
