@@ -1,0 +1,2 @@
+warning: '--legacy-classes' option has been deprecated and will be removed in the next Chapel release; it no longer affects compilation
+legacy-classes-opt.chpl:2: error: done

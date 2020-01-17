@@ -243,6 +243,7 @@ performance/compiler/bradc/AllCompTime.graph
 # suite: Memory tracking
 memleaks.graph
 memleaksfull.graph
+ml-memleaksfull.graph
 # suite: Memory allocation
 memory/lifetime/allocation.graph
 # suite: Code size tracking

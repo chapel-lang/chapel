@@ -1,0 +1,19 @@
+Expiring values for function ttTest (example-from-learnxiny.chpl:61)
+  myObject (example-from-learnxiny.chpl:62) expires at end of block
+    alias myDiffObject (example-from-learnxiny.chpl:67)
+    alias plusObject (example-from-learnxiny.chpl:86)
+  temp (example-from-learnxiny.chpl:63) expires after last mention
+  temp (example-from-learnxiny.chpl:68) expires after last mention
+  myThirdObject (example-from-learnxiny.chpl:73) expires after last mention
+Expiring values for function + (example-from-learnxiny.chpl:54)
+  temp (example-from-learnxiny.chpl:56) expires at end of block
+MyClass deinitializer called (10, true)
+10
+MyClass deinitializer called (-1, true)
+{memberInt = -1, memberBool = true}
+{memberInt = 0, memberBool = true}
+MyClass deinitializer called (0, true)
+{memberInt = 9, memberBool = true}
+MyClass deinitializer called (9, true)
+MyClass deinitializer called (-1, true)
+MyClass deinitializer called (10, true)

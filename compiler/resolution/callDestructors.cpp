@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2019 Cray Inc.
+ * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -1227,6 +1227,21 @@ static void destroyFormalInTaskFn(ArgSymbol* formal, FnSymbol* taskFn) {
 
 /************************************* | **************************************
 *                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
+
+
+static void removeEndOfStatementMarkers() {
+  for_alive_in_Vec(CallExpr, call, gCallExprs) {
+    if (call->isPrimitive(PRIM_END_OF_STATEMENT))
+      call->remove();
+  }
+}
+
+
+/************************************* | **************************************
+*                                                                             *
 * Entry point                                                                 *
 *                                                                             *
 ************************************** | *************************************/
@@ -1241,21 +1256,24 @@ void callDestructors() {
 
   insertDestructorCalls();
 
-  // Execute this before conversion to return by ref
-  // May fail to handle reference variables as desired
-  addAutoDestroyCalls();
-
   ReturnByRef::apply();
 
   insertCopiesForYields();
 
   checkLifetimes();
+  // Note - checkLifetimes adds flags to mark when a variable is dead:
+  //  FLAG_DEAD_END_OF_BLOCK and FLAG_DEAD_LAST_MENTION
+  // to local variables. Other parts of this pass use this.
 
   lateConstCheck(NULL);
+
+  addAutoDestroyCalls();
 
   insertGlobalAutoDestroyCalls();
 
   checkForErroneousInitCopies();
 
   convertClassTypesToCanonical();
+
+  removeEndOfStatementMarkers();
 }

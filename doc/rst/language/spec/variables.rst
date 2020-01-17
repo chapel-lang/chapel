@@ -488,12 +488,12 @@ If the keyword ``config`` precedes the keyword ``var``, ``const``, or
 ``param``, the variable, constant, or parameter is called a
 configuration variable, configuration constant, or configuration
 parameter respectively. Such variables, constants, and parameters must
-be at the module level.
+be declared at the module level.
 
-The initialization of these variables can be set via implementation
-dependent means, such as command-line switches or environment variables.
-The initialization expression in the program is ignored if the
-initialization is alternatively set.
+The default initialization of such variables can be overridden via
+implementation-dependent means, such as command-line switches or
+configuration files.  When overridden in this manner, the initialization
+expression in the program is ignored.
 
 Configuration parameters are set at compilation time via compilation
 flags or other implementation-defined means. The value passed via these

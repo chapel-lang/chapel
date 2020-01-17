@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2019 Cray Inc.
+ * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -3099,12 +3099,18 @@ private inline proc _read_one_internal(_channel_internal:qio_channel_ptr_t,
 
   try {
     x.readThis(reader);
+  //
+  // TODO: What to do with the caught error besides just stuff a code in the
+  // channel? Do we want to propagate it back up?
+  // TODO: Should we store Error objects in the channel instead of just error
+  // codes? This might be a more elegant design.
+  //
+  } catch err: SystemError {
+    const code = err.err;
+    _qio_channel_set_error_unlocked(_channel_internal, code);
   } catch err {
-    //
-    // TODO: What to do with the caught error? Propagate back up?
-    //
-    const chError: syserr = EIO;
-    _qio_channel_set_error_unlocked(_channel_internal, chError);
+    const code: syserr = EIO;
+    _qio_channel_set_error_unlocked(_channel_internal, code);
   }
 
   // Set the channel pointer to NULL to make the
@@ -3157,12 +3163,18 @@ private inline proc _write_one_internal(_channel_internal:qio_channel_ptr_t,
     } else {
       x.writeThis(writer);
     }
+  //
+  // TODO: What to do with the caught error besides just stuff a code in the
+  // channel? Do we want to propagate it back up?
+  // TODO: Should we store Error objects in the channel instead of just error
+  // codes? This might be a more elegant design.
+  //
+  } catch err: SystemError {
+    const code = err.err;
+    _qio_channel_set_error_unlocked(_channel_internal, code);
   } catch err {
-    //
-    // TODO: What to do with the caught error? Propagate back up?
-    //
-    const chError: syserr = EIO;
-    _qio_channel_set_error_unlocked(_channel_internal, chError);
+    const code: syserr = EIO;
+    _qio_channel_set_error_unlocked(_channel_internal, code);
   }
 
   // Set the channel pointer to NULL to make the
@@ -3175,35 +3187,49 @@ private inline proc _write_one_internal(_channel_internal:qio_channel_ptr_t,
 }
 
 pragma "no doc"
-proc channel.readIt(ref x) {
+proc channel.readIt(ref x) throws {
   if writing then compilerError("read on write-only channel");
   const origLocale = this.getLocaleOfIoRequest();
+  var error:syserr = ENOERR;
+
   on this.home {
     try! this.lock();
-    var error:syserr;
-    error = qio_channel_error(_channel_internal);
-    if ! error {
-      error = _read_one_internal(_channel_internal, kind, x, origLocale);
-      _qio_channel_set_error_unlocked(_channel_internal, error);
+    var etmp:syserr;
+    etmp = qio_channel_error(_channel_internal);
+    if !etmp {
+      etmp = _read_one_internal(_channel_internal, kind, x, origLocale);
+      _qio_channel_set_error_unlocked(_channel_internal, etmp);
     }
+    error = etmp;
     this.unlock();
   }
+
+  if !error then
+    try this._ch_ioerror(error, "in channel.readIt(" +
+                                _args_to_proto(x, preArg="ref ") + ")");
 }
 
 pragma "no doc"
-proc channel.writeIt(const x) {
+proc channel.writeIt(const x) throws {
   if !writing then compilerError("write on read-only channel");
   const origLocale = this.getLocaleOfIoRequest();
+  var error:syserr = ENOERR;
+
   on this.home {
     try! this.lock();
-    var error:syserr;
-    error = qio_channel_error(_channel_internal);
-    if ! error {
-      error = _write_one_internal(_channel_internal, kind, x, origLocale);
-      _qio_channel_set_error_unlocked(_channel_internal, error);
+    var etmp:syserr;
+    etmp = qio_channel_error(_channel_internal);
+    if !etmp {
+      etmp = _write_one_internal(_channel_internal, kind, x, origLocale);
+      _qio_channel_set_error_unlocked(_channel_internal, etmp);
     }
+    error = etmp;
     this.unlock();
   }
+
+  if !error then
+    try this._ch_ioerror(error, "in channel.writeIt(" +
+                                _args_to_proto(x, preArg="ref ") + ")");
 }
 
 
@@ -3211,14 +3237,16 @@ proc channel.writeIt(const x) {
    For a writing channel, writes as with :proc:`channel.write`.
    For a reading channel, reads as with :proc:`channel.read`.
    Stores any error encountered in the channel. Does not return anything.
+
+   :throws SystemError: When an IO error has occurred.
  */
-inline proc channel.readwrite(const x) where this.writing {
-  this.writeIt(x);
+inline proc channel.readwrite(const x) throws where this.writing {
+  try this.writeIt(x);
 }
 // documented in the writing version.
 pragma "no doc"
-inline proc channel.readwrite(ref x) where !this.writing {
-  this.readIt(x);
+inline proc channel.readwrite(ref x) throws where !this.writing {
+  try this.readIt(x);
 }
 
   /*
@@ -3230,17 +3258,19 @@ inline proc channel.readwrite(ref x) where !this.writing {
      calls can be chained together.
 
      :returns: ch
+     :throws SystemError: When an IO error has occurred.
    */
-  inline proc <~>(const ref ch: channel, x) const ref
+  inline proc <~>(const ref ch: channel, x) const ref throws
   where ch.writing {
-    ch.writeIt(x);
+    try ch.writeIt(x);
     return ch;
   }
+
   // documented in the writing version.
   pragma "no doc"
-  inline proc <~>(const ref ch: channel, ref x) const ref
+  inline proc <~>(const ref ch: channel, ref x) const ref throws
   where !ch.writing {
-    ch.readIt(x);
+    try ch.readIt(x);
     return ch;
   }
 
@@ -3259,10 +3289,10 @@ inline proc channel.readwrite(ref x) where !this.writing {
      works without requiring an explicit temporary value to store
      the ioLiteral.
    */
-  inline proc <~>(const ref r: channel, lit:ioLiteral) const ref
+  inline proc <~>(const ref r: channel, lit:ioLiteral) const ref throws
   where !r.writing {
     var litCopy = lit;
-    r.readwrite(litCopy);
+    try r.readIt(litCopy);
     return r;
   }
 
@@ -3276,17 +3306,18 @@ inline proc channel.readwrite(ref x) where !this.writing {
      works without requiring an explicit temporary value to store
      the ioNewline.
    */
-  inline proc <~>(const ref r: channel, nl:ioNewline) const ref
+  inline proc <~>(const ref r: channel, nl:ioNewline) const ref throws
   where !r.writing {
     var nlCopy = nl;
-    r.readwrite(nlCopy);
+    try r.readIt(nlCopy);
     return r;
   }
 
   /* Explicit call for reading or writing a literal as an
      alternative to using :type:`IO.ioLiteral`.
    */
-  inline proc channel.readWriteLiteral(lit:string, ignoreWhiteSpace=true)
+  inline
+  proc channel.readWriteLiteral(lit:string, ignoreWhiteSpace=true) throws
   {
     var iolit = new ioLiteral(lit:string, ignoreWhiteSpace);
     this.readwrite(iolit);
@@ -3295,7 +3326,7 @@ inline proc channel.readwrite(ref x) where !this.writing {
   /* Explicit call for reading or writing a newline as an
      alternative to using :type:`IO.ioNewline`.
    */
-  inline proc channel.readWriteNewline()
+  inline proc channel.readWriteNewline() throws
   {
     var ionl = new ioNewline();
     this.readwrite(ionl);
@@ -5587,14 +5618,14 @@ proc _setIfChar(ref lhs:?t, rhs:int(32)) where !(t==string||isIntegralType(t))
 
 
 private inline
-proc _toRegexp(x:?t) where t == regexp
+proc _toRegexp(x:?t) where isSubtype(t, regexp(?))
 {
   return (x, true);
 }
 private inline
-proc _toRegexp(x:?t) where t != regexp
+proc _toRegexp(x:?t)
 {
-  var r:regexp;
+  var r:regexp(string);
   return (r, false);
 }
 
@@ -5605,9 +5636,10 @@ class _channel_regexp_info {
   var releaseRegexp = false;
   var theRegexp = qio_regexp_null();
   var matches: _ddata(qio_regexp_string_piece_t) = nil; // size = ncaptures+1
-  var capArr: _ddata(string) = nil; // size = ncaptures
+  var capArr: _ddata(bytes) = nil; // size = ncaptures
   var capturei: int;
   var ncaptures: int;
+
   proc clear() {
     if releaseRegexp {
       qio_regexp_release(theRegexp);
@@ -5617,13 +5649,13 @@ class _channel_regexp_info {
     matchedRegexp = false;
     releaseRegexp = false;
     if matches then _ddata_free(matches, ncaptures+1);
-    for i in 0..#ncaptures do capArr[i] = "";
+    for i in 0..#ncaptures do capArr[i] = b"";
     if capArr then _ddata_free(capArr, ncaptures);
   }
   proc allocate_captures() {
     ncaptures = qio_regexp_get_ncaptures(theRegexp);
     matches = _ddata_allocate(qio_regexp_string_piece_t, ncaptures+1);
-    capArr = _ddata_allocate(string, ncaptures);
+    capArr = _ddata_allocate(bytes, ncaptures);
     capturei = 0;
   }
   proc deinit() {
@@ -5685,7 +5717,7 @@ proc channel._match_regexp_if_needed(cur:size_t, len:size_t, ref error:syserr,
     } else {
       // otherwise, clear out caps...
       for j in 0..#ncaps {
-        r.capArr[j] = "";
+        r.capArr[j] = b"";
       }
       // ... and put the channel before the match.
       var cur = qio_channel_offset_unlocked(_channel_internal);
@@ -5704,13 +5736,14 @@ proc channel._match_regexp_if_needed(cur:size_t, len:size_t, ref error:syserr,
 //  in readf. (used in the regexp handling here).
 pragma "no doc"
 proc channel._format_reader(
-    fmt:c_string, ref cur:size_t, len:size_t, ref error:syserr,
+    fmtStr:?fmtType, ref cur:size_t, len:size_t, ref error:syserr,
     ref conv:qio_conv_t, ref gotConv:bool, ref style:iostyle,
     ref r:unmanaged _channel_regexp_info?,
     isReadf:bool)
 {
   if r != nil then r!.hasRegexp = false;
   if !error {
+    var fmt = fmtStr.localize().c_str();
     while cur < len {
       gotConv = false;
       if error then break;
@@ -5766,7 +5799,11 @@ proc channel._format_reader(
           // Compile a regexp from the format string
           var errstr:string;
           // build a regexp out of regexp and regexp_flags
-          qio_regexp_create_compile_flags_2(conv.regexp, conv.regexp_length, conv.regexp_flags, conv.regexp_flags_length, /* utf8? */ true, rnn.theRegexp);
+          qio_regexp_create_compile_flags_2(conv.regexp, conv.regexp_length,
+                                            conv.regexp_flags,
+                                            conv.regexp_flags_length,
+                                            /* utf8? */ fmtType==string,
+                                            rnn.theRegexp);
           rnn.releaseRegexp = true;
           if qio_regexp_ok(rnn.theRegexp) {
             rnn.hasRegexp = true;
@@ -6142,10 +6179,9 @@ proc channel.writef(fmtStr: ?t, const args ...?k): bool throws
   var err: syserr = ENOERR;
   on this.home {
     try this.lock(); defer { this.unlock(); }
-    var fmt = fmtStr.localize().c_str();
     var save_style = this._style();
     var cur:size_t = 0;
-    var len:size_t = fmt.length:size_t;
+    var len:size_t = fmtStr.length:size_t;
     var conv:qio_conv_t;
     var gotConv:bool;
     var style:iostyle;
@@ -6171,7 +6207,7 @@ proc channel.writef(fmtStr: ?t, const args ...?k): bool throws
       gotConv = false;
 
       if j <= i {
-        _format_reader(fmt, cur, len, err,
+        _format_reader(fmtStr, cur, len, err,
                        conv, gotConv, style, r,
                        false);
       }
@@ -6270,7 +6306,7 @@ proc channel.writef(fmtStr: ?t, const args ...?k): bool throws
     if ! err {
       if cur < len {
         var dummy:c_int;
-        _format_reader(fmt, cur, len, err,
+        _format_reader(fmtStr, cur, len, err,
                        conv, gotConv, style, r,
                        false);
       }
@@ -6296,10 +6332,9 @@ proc channel.writef(fmtStr:?t): bool throws
   var err:syserr = ENOERR;
   on this.home {
     try this.lock(); defer { this.unlock(); }
-    var fmt = fmtStr.localize().c_str();
     var save_style = this._style();
     var cur:size_t = 0;
-    var len:size_t = fmt.length:size_t;
+    var len:size_t = fmtStr.length:size_t;
     var conv:qio_conv_t;
     var gotConv:bool;
     var style:iostyle;
@@ -6311,7 +6346,7 @@ proc channel.writef(fmtStr:?t): bool throws
       if r then delete r;
     }
 
-    _format_reader(fmt, cur, len, err,
+    _format_reader(fmtStr, cur, len, err,
                    conv, gotConv, style, r,
                    false);
 
@@ -6362,10 +6397,9 @@ proc channel.readf(fmtStr:?t, ref args ...?k): bool throws
   var err:syserr = ENOERR;
   on this.home {
     try this.lock(); defer { this.unlock(); }
-    var fmt = fmtStr.localize().c_str();
     var save_style = this._style();
     var cur:size_t = 0;
-    var len:size_t = fmt.length:size_t;
+    var len:size_t = fmtStr.length:size_t;
     var conv:qio_conv_t;
     var gotConv:bool;
     var style:iostyle;
@@ -6390,7 +6424,7 @@ proc channel.readf(fmtStr:?t, ref args ...?k): bool throws
         // we're writing it all in a param for in order to
         // get generic argument handling.
         if j <= i {
-          _format_reader(fmt, cur, len, err,
+          _format_reader(fmtStr, cur, len, err,
                          conv, gotConv, style, r,
                          true);
 
@@ -6516,23 +6550,25 @@ proc channel.readf(fmtStr:?t, ref args ...?k): bool throws
               if ! ok {
                 err = qio_format_error_arg_mismatch(i);
               }
-              // match it here.
-              if r == nil then r = new unmanaged _channel_regexp_info();
-              const rnn = r!;  // indicate that it is non-nil
-              rnn.clear();
-              rnn.theRegexp = t._regexp;
-              rnn.hasRegexp = true;
-              rnn.releaseRegexp = false;
-              _match_regexp_if_needed(cur, len, err, style, rnn);
+              else {
+                // match it here.
+                if r == nil then r = new unmanaged _channel_regexp_info();
+                const rnn = r!;  // indicate that it is non-nil
+                rnn.clear();
+                rnn.theRegexp = t._regexp;
+                rnn.hasRegexp = true;
+                rnn.releaseRegexp = false;
+                _match_regexp_if_needed(cur, len, err, style, rnn);
 
-              // Set the capture groups.
-              // We need to handle the next ncaptures arguments.
-              if i + rnn.ncaptures - 1 > k {
-                err = qio_format_error_too_few_args();
-              }
-              for z in 0..#rnn.ncaptures {
-                if i+z <= argType.size {
-                  argType(i+z+1) = QIO_CONV_SET_CAPTURE;
+                // Set the capture groups.
+                // We need to handle the next ncaptures arguments.
+                if i + rnn.ncaptures - 1 > k {
+                  err = qio_format_error_too_few_args();
+                }
+                for z in 0..#rnn.ncaptures {
+                  if i+z <= argType.size {
+                    argType(i+z+1) = QIO_CONV_SET_CAPTURE;
+                  }
                 }
               }
             } when QIO_CONV_ARG_TYPE_REPR {
@@ -6553,8 +6589,23 @@ proc channel.readf(fmtStr:?t, ref args ...?k): bool throws
                     // but only if it's a primitive type
                     // (so that we can avoid problems with string-to-record).
                     try {
-                      args(i) = rnn.capArr[rnn.capturei]:args(i).type;
+                      if args(i).type == string then
+                        args(i) = rnn.capArr[rnn.capturei].decode();
+                      // the following is a workaround for bytes->enum casts
+                      // being unimplemented See #14553
+                      else if isEnumType(args(i).type) then
+                        args(i) = rnn.capArr[rnn.capturei].decode():args(i).type;
+                      else
+                        args(i) = rnn.capArr[rnn.capturei]:args(i).type;
+                    } catch e: DecodeError {
+                      // someone's trying to capture a non UTF8 sequence in a
+                      // string -- argument type mismatch
+                      err = qio_format_error_arg_mismatch(i);
+                      
+                      // Engin: maybe in the future we can just propagate
+                      // DecodeError here?
                     } catch {
+                      // maybe a cast error for the enum cast
                       err = qio_format_error_bad_regexp();
                     }
                   }
@@ -6572,7 +6623,7 @@ proc channel.readf(fmtStr:?t, ref args ...?k): bool throws
       if ! err {
         if cur < len {
           var dummy:c_int;
-          _format_reader(fmt, cur, len, err,
+          _format_reader(fmtStr, cur, len, err,
                          conv, gotConv, style, r,
                          true);
         }
@@ -6615,10 +6666,9 @@ proc channel.readf(fmtStr:?t) throws
   var err:syserr = ENOERR;
   on this.home {
     try this.lock(); defer { this.unlock(); }
-    var fmt = fmtStr.localize().c_str();
     var save_style = this._style();
     var cur:size_t = 0;
-    var len:size_t = fmt.length:size_t;
+    var len:size_t = fmtStr.length:size_t;
     var conv:qio_conv_t;
     var gotConv:bool;
     var style:iostyle;
@@ -6632,7 +6682,7 @@ proc channel.readf(fmtStr:?t) throws
 
     err = qio_channel_mark(false, _channel_internal);
     if !err {
-      _format_reader(fmt, cur, len, err,
+      _format_reader(fmtStr, cur, len, err,
                      conv, gotConv, style, r,
                      true);
       if gotConv {
@@ -6822,14 +6872,14 @@ proc channel._extractMatch(m:reMatch, ref arg:reMatch, ref error:syserr) {
 }
 
 pragma "no doc"
-proc channel._extractMatch(m:reMatch, ref arg:string, ref error:syserr) {
+proc channel._extractMatch(m:reMatch, ref arg:bytes, ref error:syserr) {
   var cur:int(64);
   var target = m.offset:int;
   var len = m.length;
 
   // If there was no match, return the default value of the type
   if !m.matched {
-    arg = "";
+    arg = b"";
   }
 
   // Read into a string the appropriate region of the file.
@@ -6845,37 +6895,52 @@ proc channel._extractMatch(m:reMatch, ref arg:string, ref error:syserr) {
     error = qio_channel_advance(false, _channel_internal, target - cur);
   }
 
-  var s:string;
+  var s:bytes;
   if ! error {
     var gotlen:int(64);
     var ts: c_string;
     error =
         qio_channel_read_string(false, iokind.native:c_int, stringStyleExactLen(len),
                                 _channel_internal, ts, gotlen, len: ssize_t);
-    s = try! createStringWithOwnedBuffer(ts, length=gotlen);
+    s = createBytesWithOwnedBuffer(ts, length=gotlen);
   }
 
   if ! error {
     arg = s;
   } else {
-    arg = "";
+    arg = b"";
   }
 }
 
 pragma "no doc"
-proc channel._extractMatch(m:reMatch, ref arg:?t, ref error:syserr) where t != reMatch && t != string {
+proc channel._extractMatch(m:reMatch, ref arg:?t, ref error:syserr)
+      where t != reMatch && t != bytes {
   // If there was no match, return the default value of the type
   if !m.matched {
     var empty:arg.type;
     arg = empty;
   }
 
-  // Read into a string the appropriate region of the file.
-  var s:string;
+  // Read into a bytes the appropriate region of the file.
+  var s:bytes;
   _extractMatch(m, s, error);
 
+
   if ! error {
-    arg = s:arg.type;
+    if arg.type == string {
+      try {
+        // throws if trying to extract a non UTF8 match into a string
+        // at this point this is unlikely to happen. So, just catch the error
+        // and set error to EFORMAT
+        arg = s.decode();
+      }
+      catch {
+        error = EFORMAT;
+      }
+    }
+    else {
+      arg = s:arg.type;
+    }
   } else {
     var empty:arg.type;
     arg = empty;

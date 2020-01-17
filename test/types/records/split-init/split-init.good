@@ -3,6 +3,7 @@ testInts
 2
 3
 4
+55
 testRecs
 x
 init 0
@@ -20,7 +21,6 @@ init 4
 (x = 4, ptr = {})
 yes5
 init 5
-init= 5
 (x = 5, ptr = {})
 yes6
 init= 0
@@ -31,6 +31,24 @@ init= 0
 yes8
 init= 0
 (x = 0, ptr = {})
+yes9
+init 9
+(x = 9, ptr = {})
+yes10
+init 10
+(x = 10, ptr = {})
+yes11
+init 110
+(x = 110, ptr = {})
+yes12
+init 12
+(x = 12, ptr = {})
+yes13
+init 1300
+(x = 1300, ptr = {})
+yes14
+init 14
+(x = 14, ptr = {})
 no1
 init 1000
 init 1001
@@ -58,21 +76,21 @@ init
 init 6000
 = 0 6000
 init 6000
-= 0 6000
+= 6000 6000
 init 6000
-= 0 6000
+= 6000 6000
 no7
 init
 init 7000
 = 0 7000
 init 7000
-= 0 7000
+= 7000 7000
 no8
 init
 init 8000
 = 0 8000
 init 8000
-= 0 8000
+= 8000 8000
 no9
 init
 init 9000

@@ -15,6 +15,7 @@ proc main() {
     var A : [changingDom] int;
     assert(A.size == 10);
     stopCommDiagnostics();
+    A; // keep A alive until here to not count deinit in counts
   }
   writeln(changingDom);
   for (loc, dat) in zip(Locales, getCommDiagnostics()) {
@@ -29,6 +30,7 @@ proc main() {
     if dims(1).high > 1000 then halt("foo");
     var A : [Offsets] int;
     stopCommDiagnostics();
+    A; // keep A alive until here to not count deinit in counts
   }
 
   for (loc, dat) in zip(Locales, getCommDiagnostics()) {
