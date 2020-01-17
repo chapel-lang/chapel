@@ -2999,6 +2999,9 @@ static bool typeCanAlias(Type* t) {
   if (isClassLikeOrPtr(t) || isManagedPtrType(t))
     return true; // classes, ptrs of any flavor can alias other things
 
+  else if (t->symbol->hasFlag(FLAG_ITERATOR_RECORD))
+    return true; // iterator records generally contain aliases of arguments
+
   else if (AggregateType* at = toAggregateType(t)) {
     // Does it contain any pointer fields, recursively?
     if (isRecord(at)) {
@@ -3299,6 +3302,7 @@ bool MarkCapturesVisitor::enterDefExpr(DefExpr* def) {
 }
 
 // user variables "capture" aliases, so do runtime type variables
+// (TODO: Should this include iterator records as well?)
 static bool isCapturingVariable(Symbol* var) {
   return !var->hasFlag(FLAG_TEMP) ||
          var->type->symbol->hasFlag(FLAG_RUNTIME_TYPE_VALUE);
@@ -3462,8 +3466,12 @@ static void printExpiringForVar(Symbol* sym, FnSymbol* fn, bool& printedAny,
                   fn->name, fn->fname(), fn->linenum());
         }
 
-        fprintf(stdout, "  %s (%s:%i) expires %s\n",
-                name, def->fname(), def->linenum(), state);
+        if (developer)
+          fprintf(stdout, "  %s (%s:%i) [%i] expires %s\n",
+                  name, def->fname(), def->linenum(), sym->id, state);
+        else
+          fprintf(stdout, "  %s (%s:%i) expires %s\n",
+                  name, def->fname(), def->linenum(), state);
       }
     }
   }
@@ -3485,8 +3493,12 @@ bool ReportExpiringVisitor::enterDefExpr(DefExpr* def) {
         if (shouldPrintExpiringForVar(sym) &&
             printed.count(sym) == 0 &&
             (developer || !sym->hasFlag(FLAG_TEMP))) {
-          fprintf(stdout, "    alias %s (%s:%i)\n",
-                  sym->name, def->fname(), def->linenum());
+          if (developer)
+            fprintf(stdout, "    alias %s (%s:%i) [%i]\n",
+                    sym->name, def->fname(), def->linenum(), sym->id);
+          else
+            fprintf(stdout, "    alias %s (%s:%i)\n",
+                    sym->name, def->fname(), def->linenum());
           printed.insert(sym);
         }
       }

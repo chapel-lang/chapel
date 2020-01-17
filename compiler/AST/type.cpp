@@ -1135,6 +1135,7 @@ bool isClassLikeOrPtr(Type* t) {
   return isClassLike(t) || (t->symbol->hasFlag(FLAG_C_PTR_CLASS) ||
                             t->symbol->hasFlag(FLAG_DATA_CLASS) ||
                             t == dtCVoidPtr ||
+                            t == dtStringC ||
                             t == dtCFnPtr);
 }
 
