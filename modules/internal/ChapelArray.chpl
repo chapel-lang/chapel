@@ -4236,7 +4236,7 @@ module ChapelArray {
       r = r #i;
 
     if !shapeful then
-      r = 1 .. #i;
+      r = 0 .. #i;
 
     pragma "insert auto destroy"
     var D = { r };
