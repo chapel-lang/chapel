@@ -1304,6 +1304,7 @@ bool canCoerceAsSubtype(Type*     actualType,
                         bool*     paramNarrows) {
 
   if (actualType == dtNil && isClassLikeOrPtr(formalType) &&
+      formalType != dtStringC &&
       (!isNonNilableClassType(formalType) || useLegacyNilability(actualSym)))
     return true;
 
