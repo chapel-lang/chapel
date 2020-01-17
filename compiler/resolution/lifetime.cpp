@@ -3462,8 +3462,12 @@ static void printExpiringForVar(Symbol* sym, FnSymbol* fn, bool& printedAny,
                   fn->name, fn->fname(), fn->linenum());
         }
 
-        fprintf(stdout, "  %s (%s:%i) expires %s\n",
-                name, def->fname(), def->linenum(), state);
+        if (developer)
+          fprintf(stdout, "  %s (%s:%i) [%i] expires %s\n",
+                  name, def->fname(), def->linenum(), sym->id, state);
+        else
+          fprintf(stdout, "  %s (%s:%i) expires %s\n",
+                  name, def->fname(), def->linenum(), state);
       }
     }
   }
@@ -3485,8 +3489,12 @@ bool ReportExpiringVisitor::enterDefExpr(DefExpr* def) {
         if (shouldPrintExpiringForVar(sym) &&
             printed.count(sym) == 0 &&
             (developer || !sym->hasFlag(FLAG_TEMP))) {
-          fprintf(stdout, "    alias %s (%s:%i)\n",
-                  sym->name, def->fname(), def->linenum());
+          if (developer)
+            fprintf(stdout, "    alias %s (%s:%i) [%i]\n",
+                    sym->name, def->fname(), def->linenum(), sym->id);
+          else
+            fprintf(stdout, "    alias %s (%s:%i)\n",
+                    sym->name, def->fname(), def->linenum());
           printed.insert(sym);
         }
       }
