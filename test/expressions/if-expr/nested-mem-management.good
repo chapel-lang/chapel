@@ -1,4 +1,4 @@
 R.init(int): 100
 R.init=(R): 101
-R.deinit: 100
 R.deinit: 101
+R.deinit: 100
