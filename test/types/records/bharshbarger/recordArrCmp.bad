@@ -1,7 +1,6 @@
-recordArrCmp.chpl:2: internal error: AST-EXP-0538 chpl version 1.19.0 pre-release (ddd8270625)
-
-Internal errors indicate a bug in the Chapel compiler ("It's us, not you"),
-and we're sorry for the hassle.  We would appreciate your reporting this bug -- 
-please see https://chapel-lang.org/bugs.html for instructions.  In the meantime,
-the filename + line number above may be useful in working around the issue.
-
+recordArrCmp.chpl:9: error: unresolved call '!(promoted expression)'
+$CHPL_HOME/modules/internal/String.chpl:438: note: this candidate did not match: !(x: ?t)
+$CHPL_HOME/modules/internal/String.chpl:438: note: because where clause evaluated to false
+$CHPL_HOME/modules/internal/ChapelBase.chpl:551: note: candidates are: !(a: bool)
+$CHPL_HOME/modules/internal/ChapelBase.chpl:552: note:                 !(a: int(8))
+note: and 19 other candidates, use --print-all-candidates to see them
