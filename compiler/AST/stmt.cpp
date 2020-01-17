@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2020 Cray Inc.
+ * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -452,7 +452,7 @@ BlockStmt::length() const {
 
 void
 BlockStmt::useListAdd(ModuleSymbol* mod, bool privateUse) {
-  useListAdd(new UseStmt(mod, privateUse));
+  useListAdd(new UseStmt(mod, "", privateUse));
 }
 
 void

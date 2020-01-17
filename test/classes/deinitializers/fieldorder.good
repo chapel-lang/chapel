@@ -1,8 +1,8 @@
 checking helpers F1-F4
-F4.deinit()
-F3.deinit()
-F2.deinit()
 F1.deinit()
+F2.deinit()
+F3.deinit()
+F4.deinit()
 checking field order in RR
 F2.deinit()
 F1.deinit()

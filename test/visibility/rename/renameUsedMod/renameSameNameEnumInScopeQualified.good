@@ -1,0 +1,3 @@
+renameSameNameEnumInScopeQualified.chpl:9: In function 'main':
+renameSameNameEnumInScopeQualified.chpl:10: error: unresolved enumerated type symbol or call 'type L.x'
+renameSameNameEnumInScopeQualified.chpl:10: note: because no functions named x found in scope

@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2020 Cray Inc.
+ * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -990,7 +990,7 @@ module Bytes {
 
             // if nbytes is 1, then we must have read a single byte and found
             // that it was invalid, if nbytes is >1 then we must have read
-            // multible bytes where the last one broke the sequence. But it can
+            // multiple bytes where the last one broke the sequence. But it can
             // be a valid byte itself. So we rewind by 1 in that case
             // we use nInvalidBytes to store how many bytes we are ignoring or
             // replacing

@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2020 Cray Inc.
+ * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -43,9 +43,9 @@ private use ChapelUtil;
 private use CommDiagnostics;
 private use ChapelLocks;
 private use ChapelDebugPrint;
+private use LayoutCS;
 
 public use SparseBlockDist;
-public use LayoutCS;
 //
 // These flags are used to output debug information and run extra
 // checks when using Block.  Should these be promoted so that they can

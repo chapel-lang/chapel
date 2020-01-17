@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2020 Cray Inc.
+ * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -43,8 +43,8 @@ static bool       isReturnStmt(const Expr* stmt);
 
 static BlockStmt* findBlockForTarget(GotoStmt* stmt);
 
-AutoDestroyScope::AutoDestroyScope(const AutoDestroyScope* parent,
-                                   const BlockStmt*        block) {
+AutoDestroyScope::AutoDestroyScope(AutoDestroyScope* parent,
+                                   const BlockStmt* block) {
   mParent        = parent;
   mBlock         = block;
 
@@ -61,6 +61,26 @@ void AutoDestroyScope::variableAdd(VarSymbol* var) {
 
 void AutoDestroyScope::deferAdd(DeferStmt* defer) {
   mLocalsAndDefers.push_back(defer);
+}
+
+void AutoDestroyScope::addInitialization(VarSymbol* var) {
+  // inserting redundantly is expected.
+  mInitedVars.insert(var);
+}
+
+void AutoDestroyScope::addInitializationsToParent() const {
+  if (mParent != NULL) {
+    // Pass up to the parent block any variables
+    // (particularly those declared outside of this block).
+    for_set(VarSymbol, var, mInitedVars) {
+      mParent->mInitedVars.insert(var);
+    }
+    // Subtract out variables local to this block
+    for_vector(BaseAST, elt, mLocalsAndDefers) {
+      if (VarSymbol* var = toVarSymbol(elt))
+        mParent->mInitedVars.erase(var);
+    }
+  }
 }
 
 //
@@ -119,14 +139,12 @@ void AutoDestroyScope::insertAutoDestroys(FnSymbol* fn, Expr* refStmt,
   // variables in the parent block are assumed to be destroyed by the
   // parent block.
 
-  // Problem: this loop terminates because
-  // scope->mBlock == forTarget by the time we should be running it.
   while (scope != NULL) {
     // stop when block == forTarget for non-error-handling gotos
     if (scope->mBlock == forTarget && includeParent == false)
       break;
 
-    scope->variablesDestroy(refStmt, excludeVar, ignored);
+    scope->variablesDestroy(refStmt, excludeVar, ignored, this);
 
     // stop if recurse == false or if block == forTarget
     if (recurse == false)
@@ -140,6 +158,22 @@ void AutoDestroyScope::insertAutoDestroys(FnSymbol* fn, Expr* refStmt,
   mLocalsHandled = true;
 }
 
+void AutoDestroyScope::destroyVariable(Expr* after, VarSymbol* var,
+                                       const std::set<VarSymbol*>& ignored) {
+  if (ignored.count(var) == 0) {
+    if (FnSymbol* autoDestroyFn = autoDestroyMap.get(var->type)) {
+      SET_LINENO(var);
+
+      INT_ASSERT(autoDestroyFn->hasFlag(FLAG_AUTO_DESTROY_FN));
+
+      CallExpr* autoDestroy = new CallExpr(autoDestroyFn, var);
+
+      after->insertAfter(autoDestroy);
+    }
+  }
+}
+
+
 // If 'refStmt' is in a shadow variable's initBlock(),
 // return that svar's deinitBlock(). Otherwise return NULL.
 static BlockStmt* shadowVarsDeinitBlock(Expr* refStmt) {
@@ -152,7 +186,8 @@ static BlockStmt* shadowVarsDeinitBlock(Expr* refStmt) {
 
 void AutoDestroyScope::variablesDestroy(Expr*      refStmt,
                                         VarSymbol* excludeVar,
-                                        const std::set<VarSymbol*>& ignored) const {
+                                        const std::set<VarSymbol*>& ignored,
+                                        AutoDestroyScope* startingScope) const {
   // Handle the primary locals
   if (mLocalsHandled == false) {
     Expr*  insertBeforeStmt = refStmt;
@@ -162,7 +197,10 @@ void AutoDestroyScope::variablesDestroy(Expr*      refStmt,
     // If this is a simple nested block, insert after the final stmt
     // But always insert the destruction calls in reverse declaration order.
     // Do not get tricked by sequences of unreachable code
-    if (refStmt->next == NULL) {
+    if (count == 0) {
+      // Don't bother adding a noop if there is nothing to insert
+      insertBeforeStmt = NULL;
+    } else if (refStmt->next == NULL) {
       if (mParent != NULL && !isGotoStmt(refStmt)) {
         SET_LINENO(refStmt);
         // Add a PRIM_NOOP to insert before
@@ -191,13 +229,12 @@ void AutoDestroyScope::variablesDestroy(Expr*      refStmt,
 
       if (var != NULL && var != excludeVar && ignored.count(var) == 0) {
         if (FnSymbol* autoDestroyFn = autoDestroyMap.get(var->type)) {
-          SET_LINENO(var);
-
-          INT_ASSERT(autoDestroyFn->hasFlag(FLAG_AUTO_DESTROY_FN));
-
-          CallExpr* autoDestroy = new CallExpr(autoDestroyFn, var);
-
-          insertBeforeStmt->insertBefore(autoDestroy);
+          if (startingScope->isVariableInitialized(var)) {
+            SET_LINENO(var);
+            INT_ASSERT(autoDestroyFn->hasFlag(FLAG_AUTO_DESTROY_FN));
+            CallExpr* autoDestroy = new CallExpr(autoDestroyFn, var);
+            insertBeforeStmt->insertBefore(autoDestroy);
+          }
         }
       }
 
@@ -230,6 +267,17 @@ void AutoDestroyScope::variablesDestroy(Expr*      refStmt,
   }
 }
 
+bool AutoDestroyScope::isVariableInitialized(VarSymbol* var) const {
+  for (const AutoDestroyScope* scope = this;
+       scope != NULL;
+       scope = scope->mParent) {
+    if (scope->mInitedVars.count(var) > 0)
+      return true;
+  }
+
+  return false;
+}
+
 // Walk backwards from the current statement to determine if a sequence of
 // moves have copied a variable that is marked for auto destruction in to
 // the dedicated return-temp within the current scope.
@@ -237,8 +285,34 @@ void AutoDestroyScope::variablesDestroy(Expr*      refStmt,
 // Note that the value we are concerned about may be copied in to one or
 // more temporary variables between being copied to the return temp.
 static VarSymbol* variableToExclude(FnSymbol* fn, Expr* refStmt) {
-  VarSymbol* retVar = toVarSymbol(fn->getReturnSymbol());
-  VarSymbol* retval = NULL;
+  Symbol* retVar = NULL;
+  VarSymbol* exclude = NULL;
+
+  if (fn->hasFlag(FLAG_FN_RETARG)) {
+    // FnSymbol::getReturnSymbol does not work on functions
+    // transformed in this way, so work around that issue.
+
+    // Starting from the end of the function, find a PRIM_ASSIGN to the RETARG
+    for (Expr* cur = fn->body->body.last(); cur != NULL; cur = cur->prev) {
+      if (CallExpr* call = toCallExpr(cur)) {
+        if (call->isPrimitive(PRIM_ASSIGN)) {
+          if (SymExpr* lhsSe = toSymExpr(call->get(1))) {
+            if (ArgSymbol* lhs = toArgSymbol(lhsSe->symbol())) {
+              if (lhs->hasFlag(FLAG_RETARG)) {
+                SymExpr* rhsSe = toSymExpr(call->get(2));
+                VarSymbol* rhs = toVarSymbol(rhsSe->symbol());
+                // rhs commonly has FLAG_RVV but not necessarily
+                retVar = rhs;
+                break;
+              }
+            }
+          }
+        }
+      }
+    }
+  } else {
+    retVar = toVarSymbol(fn->getReturnSymbol());
+  }
 
   // TODO: migrate variableToExclude to addAutoDestroys
   // and the excluded set.
@@ -246,22 +320,21 @@ static VarSymbol* variableToExclude(FnSymbol* fn, Expr* refStmt) {
   if (retVar != NULL) {
     if (typeNeedsCopyInitDeinit(retVar->type) ||
         fn->hasFlag(FLAG_INIT_COPY_FN)) {
-      VarSymbol* needle = retVar;
-      Expr*      expr   = refStmt;
+      Symbol* needle = retVar;
+      Expr*   expr   = refStmt;
 
       // Walk backwards looking for the variable that is being returned
-      while (retval == NULL && expr != NULL && needle != NULL) {
+      while (exclude == NULL && expr != NULL && needle != NULL) {
         if (CallExpr* move = toCallExpr(expr)) {
-          if (move->isPrimitive(PRIM_MOVE) == true) {
+          if (move->isPrimitive(PRIM_MOVE) || move->isPrimitive(PRIM_ASSIGN)) {
             SymExpr*   lhs    = toSymExpr(move->get(1));
-            VarSymbol* lhsVar = toVarSymbol(lhs->symbol());
 
-            if (needle == lhsVar) {
+            if (needle == lhs->symbol()) {
               if (SymExpr* rhs = toSymExpr(move->get(2))) {
                 VarSymbol* rhsVar = toVarSymbol(rhs->symbol());
 
                 if (isAutoDestroyedVariable(rhsVar) == true) {
-                  retval = rhsVar;
+                  exclude = rhsVar;
                 } else {
                   needle = rhsVar;
                 }
@@ -277,14 +350,20 @@ static VarSymbol* variableToExclude(FnSymbol* fn, Expr* refStmt) {
     }
   }
 
-  return retval;
+  return exclude;
 }
 
+// A PRIM_RETURN or a PRIM_ASSIGN to the RETARG counts as a return statement
 static bool isReturnStmt(const Expr* stmt) {
   bool retval = false;
 
-  if (const CallExpr* expr = toConstCallExpr(stmt)) {
-    retval = expr->isPrimitive(PRIM_RETURN);
+  if (const CallExpr* call = toConstCallExpr(stmt)) {
+    if (call->isPrimitive(PRIM_ASSIGN))
+      if (SymExpr* lhsSe = toSymExpr(call->get(1)))
+        if (lhsSe->symbol()->hasFlag(FLAG_RETARG))
+          return true;
+    if (call->isPrimitive(PRIM_RETURN))
+      return true;
   }
 
   return retval;

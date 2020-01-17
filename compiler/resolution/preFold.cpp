@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2020 Cray Inc.
+ * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -2198,7 +2198,7 @@ static Expr* createFunctionAsValue(CallExpr *call) {
     if (ioModule == NULL) {
       INT_FATAL("never parsed IO module, this shouldn't be possible");
     }
-    fn->body->useListAdd(new UseStmt(ioModule, false));
+    fn->body->useListAdd(new UseStmt(ioModule, "", false));
     fn->getModule()->moduleUseAdd(ioModule);
     fn->insertAtTail(new CallExpr(new CallExpr(".", fileArg,
                                                new_StringSymbol("writeIt")),

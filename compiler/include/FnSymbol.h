@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2020 Cray Inc.
+ * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -137,9 +137,9 @@ public:
   LabelSymbol*               getEpilogueLabel();
   LabelSymbol*               getOrCreateEpilogueLabel();
 
+  // getReturnSymbol returns the variable marked RVV, but if
+  // the return-by-ref transformation has been applied, it returns gVoid.
   Symbol*                    getReturnSymbol();
-  Symbol*                    replaceReturnSymbol(Symbol* newRetSymbol,
-                                                 Type*   newRetType);
 
   // Removes all statements from body and adds all statements from block.
   void                       replaceBodyStmtsWithStmts(BlockStmt* block);

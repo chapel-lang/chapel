@@ -21,6 +21,7 @@ proc warning2() {
 proc ok1() {
 
   var myDomain: domain(2);
+  myDomain; // see issue #14746
   myDomain = {1..n, 1..n} dmapped Block({1..n, 1..n});
   writeln(myDomain);
 

@@ -19,10 +19,12 @@ record RRR {
 iter myIter1() {
   defer { writeln("myIter1 defer 300"); }
   var loc1a = new RRR(300);
+  ref r1a = loc1a;
   yield new RRR(33);
 
   defer { writeln("myIter1 defer 400"); }
   var loc1b = new RRR(400);
+  ref r1b = loc1b;
   yield new RRR(44);
 
   writeln("myIter1 exit");
@@ -31,6 +33,7 @@ iter myIter1() {
 iter myIter2() {
   defer { writeln("myIter2 defer 500"); }
   var loc2a = new RRR(500);
+  ref r2a = loc2a;
   yield new RRR(55);
 
   for r2nz in myIter1() {
@@ -41,6 +44,7 @@ iter myIter2() {
     }
     defer { writeln("myIter2 defer 600"); }
     var loc2b = new RRR(600);
+    ref r2b = loc2b;
     yield new RRR(1000 + r2nz.jj);
   }
 
@@ -52,6 +56,7 @@ iter myIter2() {
     }
     defer { writeln("myIter2 defer 700"); }
     var loc2c = new RRR(700);
+    ref r2c = loc2c;
     yield new RRR(2000 + k2.jj);
   }
 

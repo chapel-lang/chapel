@@ -185,8 +185,8 @@ proc schurComplement(Ab: [?AbD] elemType, AD: domain, BD: domain, Rest: domain) 
   //
   var replAD: domain(2, indexType),
       replBD: domain(2, indexType);
-  replAD = AD;
-  replBD = BD;
+  replAD; replAD = AD; // see issue #14746
+  replBD; replBD = BD; // see issue #14746
     
   const replA : [replAD] elemType = Ab[replAD],
         replB : [replBD] elemType = Ab[replBD];

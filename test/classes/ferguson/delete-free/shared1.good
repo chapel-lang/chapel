@@ -1,4 +1,4 @@
 in Impl.init
 {field = 1}
-nil
 in Impl.~Impl
+nil

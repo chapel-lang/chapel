@@ -1,0 +1,13 @@
+Expiring values for function rAssign (challenges.chpl:29)
+  a (challenges.chpl:30) expires after last mention
+  b (challenges.chpl:31) expires after last mention
+Expiring values for function rAssignFields (challenges.chpl:40)
+  a (challenges.chpl:41) expires after last mention
+  b (challenges.chpl:42) expires after last mention
+Expiring values for function makeR (challenges.chpl:53)
+  temp (challenges.chpl:54) expires at end of block
+Expiring values for function testRCaptures (challenges.chpl:68)
+  tmp (challenges.chpl:71) expires after last mention
+Expiring values for function cAssignFieldEOB (challenges.chpl:101)
+  a (challenges.chpl:102) expires after last mention
+  b (challenges.chpl:103) expires after last mention

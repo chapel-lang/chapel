@@ -58,6 +58,7 @@ module OuterModule {
     {
       var mu: [LocaleSpace] uint(64);
       const m1 = memoryUsed();
+      mu; // keep it alive
       return m1-m0;
     }
   }

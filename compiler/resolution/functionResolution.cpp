@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2020 Cray Inc.
+ * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -204,8 +204,6 @@ static void  moveHaltMoveIsUnacceptable(CallExpr* call);
 
 
 static bool useLegacyNilability(Expr* at) {
-  if (fLegacyClasses) return true;
-
   if (at != NULL) {
     FnSymbol* fn = at->getFunction();
     ModuleSymbol* mod = at->getModule();
@@ -5877,8 +5875,7 @@ static const char* describeLHS(CallExpr* call, const char* nonnilable) {
 }
 
 void checkMoveIntoClass(CallExpr* call, Type* lhs, Type* rhs) {
-  if (! fLegacyClasses &&
-      isNonNilableClassType(lhs) && isNilableClassType(rhs))
+  if (isNonNilableClassType(lhs) && isNilableClassType(rhs))
     USR_FATAL(userCall(call), "cannot %s '%s' from a nilable '%s'",
               describeLHS(call, " non-nilable"), toString(lhs), toString(rhs));
 
@@ -5918,15 +5915,6 @@ static void resolveInitVar(CallExpr* call) {
   }
 
   if (call->isPrimitive(PRIM_INIT_VAR_SPLIT_INIT)) {
-    // If it has runtime type, turn this back into assignment
-    if (dst->type->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE)) {
-      call->primitive = primitives[PRIM_NOOP];
-      CallExpr* assign = new CallExpr("=", dst, src);
-      call->getStmtExpr()->insertAfter(assign);
-      resolveExpr(assign);
-      return;
-    }
-
     // Also, check that the types are compatible for split initialization
     // with type inference.
     if (call->numActuals() < 3)
@@ -6978,7 +6966,7 @@ static void resolveNewSetupManaged(CallExpr* newExpr, Type*& manager) {
           } else {
             manager = dtOwned;
           }
-        } else if (isClass(type) && !fLegacyClasses) {
+        } else if (isClass(type)) {
           manager = dtBorrowed;
         } else if (isClass(type) && isUndecoratedClassNew(newExpr, type)) {
           manager = dtOwned;
@@ -8853,7 +8841,7 @@ static void insertReturnTemps() {
   //
   // Insert return temps for functions that return values if no
   // variable captures the result. If the value is a sync/single var or a
-  // reference to a sync/single var, pass it through the _statementLevelSymbol
+  // reference to a sync/single var, pass it through a chpl_statementLevelSymbol
   // function to get the semantics of reading a sync/single var. If the value
   // is an iterator, iterate over it in a ForallStmt for side effects.
   // Note that we do not do this for --minimal-modules compilation
@@ -8907,7 +8895,8 @@ static void insertReturnTemps() {
                   isSyncType(fn->retType)                             ||
                   isSingleType(fn->retType)                           )
               {
-                CallExpr* sls = new CallExpr("_statementLevelSymbol", tmp);
+                CallExpr* sls = new CallExpr(
+                    astr_chpl_statementLevelSymbol, tmp);
 
                 def->next->insertAfter(sls);
                 resolveCallAndCallee(sls);
@@ -9337,6 +9326,11 @@ static void replaceRuntimeTypeDefaultInit(CallExpr* call) {
   Type*    rt = typeSe->symbol()->type;
 
   if (rt->symbol->hasFlag(FLAG_RUNTIME_TYPE_VALUE)) {
+    if (var->hasFlag(FLAG_NO_INIT)) {
+      call->convertToNoop();
+      return;
+    }
+
     // ('init' x foo), where typeof(foo) has flag "runtime type value"
     //
     // ==>
@@ -9406,8 +9400,7 @@ static void replaceRuntimeTypePrims(std::vector<BaseAST*>& asts) {
         continue;
       }
 
-      if (call->isPrimitive(PRIM_DEFAULT_INIT_VAR) ||
-          call->isPrimitive(PRIM_INIT_VAR_SPLIT_DECL)) {
+      if (call->isPrimitive(PRIM_DEFAULT_INIT_VAR)) {
         replaceRuntimeTypeDefaultInit(call);
       } else if (call->isPrimitive(PRIM_GET_RUNTIME_TYPE_FIELD)) {
         replaceRuntimeTypeGetField(call);
@@ -9454,11 +9447,8 @@ void resolvePrimInit(CallExpr* call) {
   INT_ASSERT(call->isPrimitive(PRIM_DEFAULT_INIT_VAR) ||
              call->isPrimitive(PRIM_INIT_VAR_SPLIT_DECL));
 
-  if (call->isPrimitive(PRIM_INIT_VAR_SPLIT_DECL) &&
-      call->numActuals() == 1) {
-    // Without type information, PRIM_INIT_VAR_SPLIT_DECL does nothing.
-    // Except if it's an array... then we need to use default init for now
-    // and that is handled already in replaceRuntimeTypePrims
+  if (call->isPrimitive(PRIM_INIT_VAR_SPLIT_DECL)) {
+    // PRIM_INIT_SPLIT_DECL does nothing at this point
     call->convertToNoop();
     return;
   }
@@ -9641,7 +9631,8 @@ static void resolvePrimInit(CallExpr* call, Symbol* val, Type* type) {
 
   // These are handled in replaceRuntimeTypePrims().
   if (type->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE) == true) {
-    errorInvalidParamInit(call, val, at);
+    if (call->isPrimitive(PRIM_DEFAULT_INIT_VAR))
+      errorInvalidParamInit(call, val, at);
 
   // Shouldn't be default-initializing iterator records here
   } else if (type->symbol->hasFlag(FLAG_ITERATOR_RECORD)  == true) {
@@ -9916,14 +9907,12 @@ void printUndecoratedClassTypeNote(Expr* ctx, Type* type) {
 }
 
 void checkDuplicateDecorators(Type* decorator, Type* decorated, Expr* ctx) {
-  if (fLegacyClasses == false) {
-    if (isClassLikeOrManaged(decorator) && isClassLikeOrManaged(decorated)) {
-      ClassTypeDecorator d = classTypeDecorator(decorated);
+  if (isClassLikeOrManaged(decorator) && isClassLikeOrManaged(decorated)) {
+    ClassTypeDecorator d = classTypeDecorator(decorated);
 
-      if (!isDecoratorUnknownManagement(d))
-        USR_FATAL_CONT(ctx, "duplicate decorators - %s %s",
-                             toString(decorator), toString(decorated));
-    }
+    if (!isDecoratorUnknownManagement(d))
+      USR_FATAL_CONT(ctx, "duplicate decorators - %s %s",
+                           toString(decorator), toString(decorated));
   }
 }
 

@@ -186,6 +186,7 @@ The following identifiers are reserved as keywords:
    owned
    param
    private
+   prototype
    proc
    public
    real
