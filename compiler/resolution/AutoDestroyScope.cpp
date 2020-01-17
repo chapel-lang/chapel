@@ -53,7 +53,7 @@ AutoDestroyScope::AutoDestroyScope(AutoDestroyScope* parent,
 
 void AutoDestroyScope::variableAdd(VarSymbol* var) {
   if (var->hasFlag(FLAG_FORMAL_TEMP) == false) {
-    mLocalsAndDefers.push_back(var);
+    mDeclaredVars.insert(var);
   } else {
     mFormalTemps.push_back(var);
   }
@@ -64,24 +64,58 @@ void AutoDestroyScope::deferAdd(DeferStmt* defer) {
 }
 
 void AutoDestroyScope::addInitialization(VarSymbol* var) {
-  // inserting redundantly is expected.
-  mInitedVars.insert(var);
-}
+  // Note: this will be called redundantly.
+  for (AutoDestroyScope* cur = this; cur != NULL; cur = cur->mParent) {
+    if (cur->mInitedVars.insert(var).second) {
+      // An insertion occured, meaning this was the first
+      // thing that looked like initialization for this variable.
 
-void AutoDestroyScope::addInitializationsToParent() const {
-  if (mParent != NULL) {
-    // Pass up to the parent block any variables
-    // (particularly those declared outside of this block).
-    for_set(VarSymbol, var, mInitedVars) {
-      mParent->mInitedVars.insert(var);
-    }
-    // Subtract out variables local to this block
-    for_vector(BaseAST, elt, mLocalsAndDefers) {
-      if (VarSymbol* var = toVarSymbol(elt))
-        mParent->mInitedVars.erase(var);
+      if (cur->mDeclaredVars.count(var) > 0) {
+        // Add it to mDeclaredVars at the declaration scope.
+        cur->mLocalsAndDefers.push_back(var);
+        break;
+      } else {
+        // Or add it to mInitedOuterVars at inner scopes.
+        cur->mInitedOuterVars.push_back(var);
+      }
     }
   }
 }
+
+void AutoDestroyScope::forgetOuterVariableInitializations() {
+
+  // iterate through mInitedOuterVars in reverse
+  size_t count = mInitedOuterVars.size();
+  for (size_t i = 1; i <= count; i++) {
+    VarSymbol* var = mInitedOuterVars[count - i];
+
+    // Each outer variable should be stored in some parent scope's
+    // mLocalsAndDefers.
+    for (AutoDestroyScope* cur = this; cur != NULL; cur = cur->mParent) {
+      if (cur->mInitedVars.erase(var) > 0 ) {
+        if (cur->mDeclaredVars.count(var) > 0) {
+          // expecting to find it at the last position in mLocalsAndDefers
+          INT_ASSERT(cur->mLocalsAndDefers.back() == var);
+          cur->mLocalsAndDefers.pop_back();
+          break;
+        } else {
+          // expecting to find it at the last position in mInitedOuterVars
+          INT_ASSERT(cur->mInitedOuterVars.back() == var);
+          cur->mInitedOuterVars.pop_back();
+        }
+      }
+    }
+  }
+}
+
+std::vector<VarSymbol*> AutoDestroyScope::getInitedOuterVars() const {
+  return mInitedOuterVars;
+}
+
+AutoDestroyScope* AutoDestroyScope::getParentScope() const {
+  return mParent;
+}
+
 
 //
 // Functions have an informal epilogue defined by code that

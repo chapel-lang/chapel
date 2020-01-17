@@ -31,6 +31,7 @@
 #include "resolution.h"
 #include "stlUtil.h"
 #include "stmt.h"
+#include "stringutil.h"
 #include "symbol.h"
 #include "wellknown.h"
 
@@ -48,8 +49,13 @@ static void walkBlock(FnSymbol*         fn,
                       BlockStmt*        block,
                       std::set<VarSymbol*>& ignoredVariables,
                       LastMentionMap&   lmm,
-                      bool              addInitedToParent = true,
                       ForallStmt*       pfs = NULL);
+
+static void walkBlockWithScope(AutoDestroyScope& scope,
+                               FnSymbol*         fn,
+                               BlockStmt*        block,
+                               std::set<VarSymbol*>& ignoredVariables,
+                               LastMentionMap&   lmm);
 
 void addAutoDestroyCalls() {
   forv_Vec(FnSymbol, fn, gFnSymbols) {
@@ -141,13 +147,17 @@ static void addForallIndexVarToScope(AutoDestroyScope* scope,
   }
 }
 
-static void walkBlockScopelessBlock(FnSymbol*         fn,
-                                    AutoDestroyScope& scope,
+static void walkBlockScopelessBlock(AutoDestroyScope& scope,
+                                    FnSymbol*         fn,
                                     LabelSymbol*      retLabel,
                                     bool              isDeadCode,
                                     BlockStmt*        block,
                                     std::set<VarSymbol*>& ignoredVariables,
                                     LastMentionMap&   lmm);
+
+static void checkSplitInitOrder(CondStmt* cond,
+                                std::vector<VarSymbol*>& thenOrder,
+                                std::vector<VarSymbol*>& elseOrder);
 
 static void walkBlockStmt(FnSymbol*         fn,
                           AutoDestroyScope& scope,
@@ -206,7 +216,7 @@ static void walkBlockStmt(FnSymbol*         fn,
     } else if (BlockStmt* subBlock = toBlockStmt(stmt)) {
       // ignore scopeless blocks for deciding where to destroy
       if ((subBlock->blockTag & BLOCK_SCOPELESS))
-        walkBlockScopelessBlock(fn, scope, retLabel, isDeadCode,
+        walkBlockScopelessBlock(scope, fn, retLabel, isDeadCode,
                                 subBlock, ignoredVariables, lmm);
       else
         walkBlock(fn, &scope, subBlock, ignoredVariables, lmm);
@@ -223,16 +233,30 @@ static void walkBlockStmt(FnSymbol*         fn,
       if (isCheckErrorStmt(cond))
         gatherIgnoredVariablesForErrorHandling(cond, toIgnore);
 
-      walkBlock(fn, &scope, cond->thenStmt, toIgnore, lmm, false, NULL);
-      // false above avoids adding initializations in cond statement
-      // to parent - so that the else clause does not consider
-      // split init variables already initialized. The else clause
-      // must initialize the same variables and will add to parent.
+      if (cond->elseStmt == NULL) {
+        // Traverse into the if branch only
+        walkBlock(fn, &scope, cond->thenStmt, toIgnore, lmm);
+      } else {
+        // includes an if and an else. Split init is possible within these,
+        // and we need to ensure that the order of initializations matches.
 
-      if (cond->elseStmt != NULL)
-        walkBlock(fn, &scope, cond->elseStmt, toIgnore, lmm);
+        // visit the then block
+        AutoDestroyScope thenScope(&scope, cond->thenStmt);
+        walkBlockWithScope(thenScope, fn, cond->thenStmt, toIgnore, lmm);
+        // Gather the inited outer vars from the then block
+        std::vector<VarSymbol*> thenOrder = thenScope.getInitedOuterVars();
+        // When we visit the else block, outer variables that were initialized
+        // in the then block shouldn't be considered initialized.
+        thenScope.forgetOuterVariableInitializations();
 
-      scope.addInitializationsToParent();
+        // visit the else block
+        AutoDestroyScope elseScope(&scope, cond->elseStmt);
+        walkBlockWithScope(elseScope, fn, cond->elseStmt, toIgnore, lmm);
+        std::vector<VarSymbol*> elseOrder = elseScope.getInitedOuterVars();
+
+        // check that the outer variables are initialized in the same order.
+        checkSplitInitOrder(cond, thenOrder, elseOrder);
+      }
     }
   }
 
@@ -255,8 +279,8 @@ static void walkBlockStmt(FnSymbol*         fn,
 
 }
 
-static void walkBlockScopelessBlock(FnSymbol*         fn,
-                                    AutoDestroyScope& scope,
+static void walkBlockScopelessBlock(AutoDestroyScope& scope,
+                                    FnSymbol*         fn,
                                     LabelSymbol*      retLabel,
                                     bool              isDeadCode,
                                     BlockStmt*        block,
@@ -268,20 +292,74 @@ static void walkBlockScopelessBlock(FnSymbol*         fn,
   }
 }
 
+static void checkSplitInitOrder(CondStmt* cond,
+                                std::vector<VarSymbol*>& thenOrder,
+                                std::vector<VarSymbol*>& elseOrder) {
+  // normalizer should prevent these two from initializing different
+  // variables.
+  bool ok = true;
+  if (thenOrder.size() != elseOrder.size())
+    ok = false;
+
+  if (ok) {
+    size_t size = thenOrder.size();
+    for (size_t i = 0; i < size; i++) {
+      if (thenOrder[i] != elseOrder[i]) {
+        ok = false;
+        break;
+      }
+    }
+  }
+
+  if (!ok) {
+    USR_FATAL_CONT(cond, "Initialization order in conditional does not match");
+    std::string thenMsg = "then initializes:";
+    for_vector(VarSymbol, var, thenOrder) {
+      thenMsg += " ";
+      thenMsg += var->name;
+      if (developer) {
+        thenMsg += "[";
+        thenMsg += istr(var->id);
+        thenMsg += "]";
+      }
+    }
+    std::string elseMsg = "else initializes:";
+    for_vector(VarSymbol, var, elseOrder) {
+      elseMsg += " ";
+      elseMsg += var->name;
+      if (developer) {
+        elseMsg += "[";
+        elseMsg += istr(var->id);
+        elseMsg += "]";
+      }
+    }
+    USR_PRINT(cond->thenStmt, thenMsg.c_str());
+    USR_PRINT(cond->elseStmt, elseMsg.c_str());
+  }
+}
+
 static void walkBlock(FnSymbol*         fn,
                       AutoDestroyScope* parent,
                       BlockStmt*        block,
                       std::set<VarSymbol*>& ignoredVariables,
                       LastMentionMap&   lmm,
-                      bool              addInitedToParent,
                       ForallStmt*       pfs) {
   AutoDestroyScope scope(parent, block);
 
-  LabelSymbol*     retLabel   = (parent == NULL) ? findReturnLabel(fn) : NULL;
-  bool             isDeadCode = false;
-
   if (pfs != NULL)
     addForallIndexVarToScope(&scope, pfs);
+
+  walkBlockWithScope(scope, fn, block, ignoredVariables, lmm);
+}
+
+static void walkBlockWithScope(AutoDestroyScope& scope,
+                               FnSymbol*         fn,
+                               BlockStmt*        block,
+                               std::set<VarSymbol*>& ignoredVariables,
+                               LastMentionMap&   lmm) {
+  AutoDestroyScope* parent    = scope.getParentScope();
+  LabelSymbol*     retLabel   = (parent == NULL) ? findReturnLabel(fn) : NULL;
+  bool             isDeadCode = false;
 
   for_alist(stmt, block->body) {
     Expr* next = stmt->next;
@@ -329,9 +407,6 @@ static void walkBlock(FnSymbol*         fn,
       }
     }
   }
-
-  if (addInitedToParent)
-    scope.addInitializationsToParent();
 }
 
 // Is this a DefExpr that defines a variable that might be autoDestroyed?
@@ -460,7 +535,7 @@ static void walkForallBlocks(FnSymbol* fn,
                              LastMentionMap& lmm)
 {
   std::set<VarSymbol*> toIgnoreLB(parentIgnored);
-  walkBlock(fn, parentScope, forall->loopBody(), toIgnoreLB, lmm, false, forall);
+  walkBlock(fn, parentScope, forall->loopBody(), toIgnoreLB, lmm, forall);
 
   for_shadow_vars(svar, temp, forall)
     if (!svar->initBlock()->body.empty() || !svar->deinitBlock()->body.empty())
