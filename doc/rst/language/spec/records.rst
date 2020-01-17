@@ -519,13 +519,14 @@ following signatures for a record ``R``:
    proc ==(lhs:R, rhs:R) : bool where lhs.type == rhs.type;
    proc !=(lhs:R, rhs:R) : bool where lhs.type == rhs.type;
 
-Other comparison operator overloads, namely ``<``, ``<=``, ``>``, and ``>=`` have
-similar signatures but their where clauses also check whether the relevant
+Other comparison operator overloads (namely ``<``, ``<=``, ``>``, and ``>=``)
+have similar signatures but their where clauses also check whether the relevant
 operator is supported by each field.
 
-All except ``!=`` compare the fields, one at a time, returning ``false`` if
-the property is not satisfied by the given pair of fields. Whereas ``!=`` returns
-``true`` if the property is satisfied by any field.
+All of these comparison operators except ``!=`` compare the fields, one at a
+time, returning ``false`` if the property is not satisfied by the given pair of
+fields. Whereas ``!=`` returns ``true`` if the property is satisfied by any
+field.
 
 .. _Class_and_Record_Differences:
 
