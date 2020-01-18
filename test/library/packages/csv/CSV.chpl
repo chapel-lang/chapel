@@ -56,8 +56,8 @@ module CSV {
         if line.length == 0 then
           continue;
         const vals = line.split(sep);
-        for param i in 1..numFields(t) {
-          getFieldRef(r, i) = vals[i]: getField(r, i).type;
+        for param i in 0..#numFields(t) {
+          getFieldRef(r, i+1) = vals[i]: getField(r, i+1).type;
         }
         if skipHeader {
           skipHeader = false;
@@ -85,8 +85,8 @@ module CSV {
         if line.length == 0 then
           continue;
         const vals = line.split(sep);
-        for param i in 1..t.size {
-          r(i) = vals[i]: t(i);
+        for param i in 0..#t.size {
+          r(i+1) = vals[i]: t(i+1);
         }
         if skipHeader {
           skipHeader = false;
@@ -113,7 +113,7 @@ module CSV {
       var skipHeader = hasHeader;
 
       var lines = ch.lines();
-      var firstLine = lines[1];
+      var firstLine = lines[0];
       var vals = firstLine.strip().split(sep);
       const numRows = if skipHeader then lines.numElements - 1
                                     else lines.numElements;
@@ -123,7 +123,7 @@ module CSV {
         A[1, ..] = vals;
       }
 
-      for i in 2..lines.numElements {
+      for i in 1..lines.numElements-1 {
         const line = lines[i].strip(leading=false);
         if line.length == 0 then
           continue;
