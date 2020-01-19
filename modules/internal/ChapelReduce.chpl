@@ -213,6 +213,27 @@ module ChapelReduce {
     proc clone() return new unmanaged MinReduceScanOp(eltType=eltType);
   }
 
+  class minmax: ReduceScanOp {
+    type eltType;
+    var value = (max(eltType), min(eltType));
+
+    proc identity return (max(eltType), min(eltType));
+    proc accumulate(x){
+      value[1] = min(x[1], value[1]);
+      value[2] = max(x[2], value[2]);
+    }
+    proc accumulateOntoState(ref state, x) {
+      state[1] = min(state[1], x);
+      state[2] = max(state[2], x);
+    }
+    proc combine(x){
+      value[1] = min(value[1], x.value[1]);
+      value[2] = max(value[2], x.value[2]);
+    }
+    proc generate() return value;
+    proc clone() return new unmanaged minmax(eltType=eltType);
+  }
+
   class LogicalAndReduceScanOp: ReduceScanOp {
     type eltType;
     var value = _land_id(eltType);
