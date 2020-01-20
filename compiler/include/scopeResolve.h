@@ -27,6 +27,7 @@ class DefExpr;
 class FnSymbol;
 class Symbol;
 
+#include <cstddef>
 #include <map>
 #include <vector>
 
