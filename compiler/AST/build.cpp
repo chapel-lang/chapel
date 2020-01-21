@@ -1485,15 +1485,8 @@ BlockStmt* buildVarDecls(BlockStmt* stmts, const char* docs,
     stmts->blockInfoSet(NULL);
   }
 
-  // Add a PRIM_END_OF_STATEMENT mentioning the declared variables
+  // Add a PRIM_END_OF_STATEMENT.
   CallExpr* end = new CallExpr(PRIM_END_OF_STATEMENT);
-  for_alist(stmt, stmts->body) {
-    if (DefExpr* defExpr = toDefExpr(stmt)) {
-      if (VarSymbol* var = toVarSymbol(defExpr->sym)) {
-        end->insertAtTail(new SymExpr(var));
-      }
-    }
-  }
   stmts->insertAtTail(end);
 
   // this was allocated in buildVarDeclFlags()

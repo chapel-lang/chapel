@@ -2604,7 +2604,9 @@ static found_init_t doFindInitPoints(DefExpr* def,
   for (Expr* cur = start->getStmtExpr(); cur != NULL; cur = cur->next) {
     // x = ...
     if (CallExpr* call = toCallExpr(cur)) {
-      if (call->isNamedAstr(astrSassign)) {
+      if (call->isPrimitive(PRIM_END_OF_STATEMENT)) {
+        // do nothing
+      } else if (call->isNamedAstr(astrSassign)) {
         if (SymExpr* se = toSymExpr(call->get(1))) {
           if (se->symbol() == def->sym) {
             if (containsSymExprFor(call->get(2), def->sym) == false) {
@@ -2615,9 +2617,7 @@ static found_init_t doFindInitPoints(DefExpr* def,
             }
           }
         }
-      }
-
-      if (containsSymExprFor(cur, def->sym)) {
+      } else if (containsSymExprFor(cur, def->sym)) {
         // Emit an error if split initialization is required
         errorIfSplitInitializationRequired(def, cur);
         return FOUND_USE;
@@ -2711,8 +2711,9 @@ static found_init_t doFindInitPoints(DefExpr* def,
 
     if (fVerify) {
       // Redundantly check for uses
-      if (containsSymExprFor(cur, def->sym))
-        INT_FATAL("use not found above");
+      if (!isEndOfStatementMarker(cur))
+        if (containsSymExprFor(cur, def->sym))
+          INT_FATAL("use not found above");
     }
   }
 
