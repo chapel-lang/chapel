@@ -84,6 +84,29 @@ module RangeChunk {
       else start..end;
   }
 
+  iter blockCyclicChunks(r: range(?), blockSize: integral, blockSize: integral, idx: integral, numInds: integral){
+  
+    var range_stride = r.stride;
+    var block_stride = blockSize * range_stride;
+    var low = r.low;
+    var high = r.high;
+    var first_block_start = (if range_stride > 0 then r.low  else r.high) + block_stride * idx;
+    if first_block_start > r.high || first_block_start < r.low then return;
+
+    var stride_to_next_block = block_stride * numInds;
+  
+    if range_stride > 0 {
+      for block_start in first_block_start..high by stride_to_next_block {
+        var block_end = min(high, block_start + block_stride - 1);
+        yield block_start..block_end by range_stride;
+      }
+    }else{
+      for block_end in low..first_block_start by stride_to_next_block {
+        var block_start = max(low, block_end + block_stride + 1);
+        yield block_start..block_end by abs(range_stride);
+      }
+    }
+  }
   /*
      Iterates through chunks ``0`` to ``numChunks - 1`` of range ``r``, emitting each
      as a 0-based order tuple. The remainders will be distributed according to ``remPol``.
