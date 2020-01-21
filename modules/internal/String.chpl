@@ -140,9 +140,14 @@ module String {
 
   public use CString;
   public use StringCasts;
+  public use BytesStringCommon only encodePolicy;  // expose encodePolicy
 
   pragma "fn synchronization free"
-  private extern proc qio_decode_char_buf(ref chr:int(32), ref nbytes:c_int, buf:c_string, buflen:ssize_t):syserr;
+  private extern proc qio_decode_char_buf(ref chr:int(32),
+                                          ref nbytes:c_int,
+                                          buf:c_string,
+                                          buflen:ssize_t,
+                                          allowEscape=false):syserr;
   pragma "fn synchronization free"
   private extern proc qio_encode_char_buf(dst:c_void_ptr, chr:int(32)):syserr;
   pragma "fn synchronization free"
@@ -877,32 +882,42 @@ module String {
       return this:c_string; // folded out in resolution
     }
 
-    proc encode(): bytes {
-      var (buf, size) = bufferAlloc(this.len+1);
+    proc encode(errors=encodePolicy.pass): bytes {
       var localThis: string = this.localize();
 
-      var readIdx = 0;
-      var writeIdx = 0;
-      while readIdx < localThis.len {
-        if readIdx < localThis.len-1 &&
-           localThis.buff[readIdx] == surrogateEscape {
-          buf[writeIdx] = localThis.buff[readIdx+1];
-          writeIdx += 1;
-          readIdx += 2;
-        }
-        else {
+      if errors == encodePolicy.pass {  // just copy
+        return createBytesWithNewBuffer(localThis.buff, localThis.numBytes);
+      }
+      else {  // see if there is escaped data in the string
+        var (buf, size) = bufferAlloc(this.len+1);
+
+        var readIdx = 0;
+        var writeIdx = 0;
+        while readIdx < localThis.len {
           var cp: int(32);
           var nbytes: c_int;
           var multibytes = (localThis.buff + readIdx): c_string;
           var maxbytes = (localThis.len - readIdx): ssize_t;
-          qio_decode_char_buf(cp, nbytes, multibytes, maxbytes);
-          bufferMemcpyLocal(dst=(buf+writeIdx), src=multibytes, len=nbytes);
+          qio_decode_char_buf(cp, nbytes, multibytes, maxbytes, allowEscape=true);
+          if (cp>=0xdc80 && cp<=0xdcff) {
+            buf[writeIdx] = (cp-0xdc00):byteType;
+            writeIdx += 1;
+          }
+          else if (cp==0xfffd) {
+            // the string contains invalid data
+            // at this point this can only happen due to a failure in our
+            // implementation of string encoding/decoding
+            halt("Unexpected data encountered while encoding string");
+          }
+          else {
+            bufferMemcpyLocal(dst=(buf+writeIdx), src=multibytes, len=nbytes);
+            writeIdx += nbytes;
+          }
           readIdx += nbytes;
-          writeIdx += nbytes;
         }
+        buf[writeIdx] = 0;
+        return createBytesWithOwnedBuffer(buf, length=writeIdx, size=size);
       }
-      buf[writeIdx] = 0;
-      return createBytesWithOwnedBuffer(buf, length=writeIdx, size=size);
     }
 
     /*

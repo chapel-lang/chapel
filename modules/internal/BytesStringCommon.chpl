@@ -33,6 +33,9 @@ module BytesStringCommon {
   */
   enum decodePolicy { strict, replace, ignore, escape }
 
+  enum encodePolicy { unescape, pass };
+
+
   pragma "no doc"
   config param showStringBytesInitDeprWarnings = true;
 
@@ -69,7 +72,8 @@ module BytesStringCommon {
 
     pragma "fn synchronization free"
     extern proc qio_decode_char_buf(ref chr:int(32), ref nbytes:c_int,
-                                    buf:c_string, buflen:ssize_t):syserr;
+                                    buf:c_string, buflen:ssize_t,
+                                    allowEscape=false):syserr;
     extern proc qio_encode_char_buf(dst: c_void_ptr, chr: int(32)): syserr;
     extern proc qio_nbytes_char(chr: int(32)): c_int;
 
@@ -125,14 +129,14 @@ module BytesStringCommon {
           }
           else if errors == decodePolicy.escape {
 
-            // we add one more byte per invalid byte in the sequence
-            const sizeChange = nInvalidBytes;
+            // encoded escape sequence is 3 bytes. And this is per invalid byte
+            const sizeChange = 3*nInvalidBytes;
             (ret.buff, ret._size) = bufferEnsureSize(ret.buff, ret._size,
                                                      ret._size+sizeChange);
             for i in 0..#nInvalidBytes {
-              ret.buff[decodedIdx] = surrogateEscape;
-              ret.buff[decodedIdx+1] = buf[thisIdx-nInvalidBytes+i];
-              decodedIdx += 2;
+              qio_encode_char_buf(ret.buff+decodedIdx,
+                                  0xdc00+buf[thisIdx-nInvalidBytes+i]);
+              decodedIdx += 3;
             }
           }
           // if errors == decodePolicy.ignore, we don't do anything and skip over

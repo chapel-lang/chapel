@@ -1074,7 +1074,8 @@ qioerr qio_channel_scan_literal(const int threadsafe, qio_channel_t* restrict ch
     // ignore leading or trailing whitespace
     // in the pattern.
     for( ; nread < len; nread += nbytes ) {
-      err = qio_decode_char_buf(&wchr, &nbytes, &match[nread], len - nread);
+      err = qio_decode_char_buf(&wchr, &nbytes, &match[nread], len - nread,
+                                false);
       if( err ) return err;
       if( ! iswspace(wchr) ) {
         if( nread < min_nonspace ) min_nonspace = nread;
@@ -1589,7 +1590,7 @@ qioerr qio_channel_print_string(const int threadsafe, qio_channel_t* restrict ch
 
     // Write the string while translating it.
     for( i = 0; i < len; i+=clen ) {
-      err = qio_decode_char_buf(&chr, &clen, ptr + i, len - i);
+      err = qio_decode_char_buf(&chr, &clen, ptr + i, len - i, false);
       if( err ) goto rewind;
 
       tmplen = _qio_chr_escape(chr, style->string_end, style->string_format, tmp, NULL, NULL);
@@ -1921,7 +1922,7 @@ qioerr qio_quote_string_length(uint8_t string_start, uint8_t string_end, uint8_t
   // we need to compute the number of characters
   // and the total number of columns.
   for( i = 0; i < len; i+=clen ) {
-    err = qio_decode_char_buf(&chr, &clen, ptr + i, len - i);
+    err = qio_decode_char_buf(&chr, &clen, ptr + i, len - i, false);
     if( err ) {
       err = 0;
     }
@@ -2047,7 +2048,7 @@ qioerr qio_quote_string(uint8_t string_start, uint8_t string_end, uint8_t string
 
   for( i = 0; i < ilen; i+=clen ) {
     // Write the string while translating it.
-    err = qio_decode_char_buf(&chr, &clen, ptr + i, len - i);
+    err = qio_decode_char_buf(&chr, &clen, ptr + i, len - i, false);
     if( err ) goto error;
 
     // handle escaping for the different formats.

@@ -584,13 +584,15 @@ qioerr qio_encode_char_buf(char* dst, int32_t chr)
 c_string qio_encode_to_string(int32_t chr);
 
 static inline
-qioerr qio_decode_char_buf(int32_t* restrict chr, int* restrict nbytes, const char* buf, ssize_t buflen)
+qioerr qio_decode_char_buf(int32_t* restrict chr, int* restrict nbytes,
+                           const char* buf, ssize_t buflen, bool allow_escape)
 {
   // Fast path: an entire multi-byte sequence
   // is stored in the buffers.
   if( qio_glocale_utf8 > 0 ) {
     if( qio_glocale_utf8 == QIO_GLOCALE_UTF8 ) {
-      const int ret = chpl_enc_decode_char_buf_utf8(chr, nbytes, buf, buflen);
+      const int ret = chpl_enc_decode_char_buf_utf8(chr, nbytes, buf, buflen,
+                                                    allow_escape);
       if (ret == 0) {
         return 0;
       }

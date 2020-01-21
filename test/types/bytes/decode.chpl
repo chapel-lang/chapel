@@ -67,7 +67,8 @@ writeln(createHelp(almostHwairToStringRepl:bytes));
 
 var almostHwairToStringEscp = createHelp(almostHwairFlippedBit,
                                          decodePolicy.escape);
-writeln("Should be 11: ", almostHwairToStringEscp.numBytes);
+// we replace each of the 4 invalid bytes with 3-byte sequence
+writeln("Should be 15: ", almostHwairToStringEscp.numBytes);
 
 
 //now create another almost equal one where the fourth byte is replaced with a
@@ -87,7 +88,7 @@ writeln("Should be 7: ", almostHwairToStringRepl.numBytes);
 writeln(createHelp(almostHwairToStringRepl:bytes));
 
 almostHwairToStringEscp = createHelp(almostHwairValidAscii, decodePolicy.escape);
-writeln("Should be 10: ", almostHwairToStringEscp.numBytes);
+writeln("Should be 13: ", almostHwairToStringEscp.numBytes);
 
 var almostHwairToStringIgnr = createHelp(almostHwairValidAscii, decodePolicy.ignore);
 // number of bytes should be 4 -- only the last four must be in the string
