@@ -1142,7 +1142,7 @@ static void processManagedNew(CallExpr* newCall) {
 class AddEndOfStatementMarkers : public AstVisitorTraverse
 {
   private:
-    void addMarker(Expr* node);
+    void addMarker(Expr* node, CallExpr* existingEndOfStatement);
   public:
     virtual bool enterCallExpr(CallExpr* node);
     virtual bool enterDefExpr(DefExpr* node);
@@ -1150,7 +1150,8 @@ class AddEndOfStatementMarkers : public AstVisitorTraverse
     virtual bool enterLoopExpr(LoopExpr* node);
 };
 
-void AddEndOfStatementMarkers::addMarker(Expr* node) {
+void AddEndOfStatementMarkers::addMarker(Expr* node,
+                                         CallExpr* existingEndOfStatement) {
   // Rule out several cases that shouldn't get end-of-statement markers
   if (node->list == NULL)
     return;
@@ -1195,14 +1196,16 @@ void AddEndOfStatementMarkers::addMarker(Expr* node) {
   collectSymExprs(node, mentions);
 
   SET_LINENO(node);
-  CallExpr* call = NULL;
+  CallExpr* call = existingEndOfStatement;
   bool insertCall = false;
 
-  // Don't add duplicate PRIM_END_OF_STATEMENT calls, but do
-  // add mentions to an existing one.
-  if (CallExpr* next = toCallExpr(node->next))
-    if (next->isPrimitive(PRIM_END_OF_STATEMENT))
-      call = next;
+  if (call == NULL) {
+    // Don't add duplicate PRIM_END_OF_STATEMENT calls, but do
+    // add mentions to an existing one.
+    if (CallExpr* next = toCallExpr(node->next))
+      if (next->isPrimitive(PRIM_END_OF_STATEMENT))
+        call = next;
+  }
 
   if (call == NULL) {
     call = new CallExpr(PRIM_END_OF_STATEMENT);
@@ -1229,12 +1232,12 @@ void AddEndOfStatementMarkers::addMarker(Expr* node) {
 }
 
 bool AddEndOfStatementMarkers::enterIfExpr(IfExpr* node) {
-  addMarker(node);
+  addMarker(node, NULL);
   return false;
 }
 
 bool AddEndOfStatementMarkers::enterLoopExpr(LoopExpr* node) {
-  addMarker(node);
+  addMarker(node, NULL);
   return false;
 }
 
@@ -1249,14 +1252,22 @@ bool AddEndOfStatementMarkers::enterCallExpr(CallExpr* node) {
       if (lhs->symbol()->hasFlag(FLAG_TEMP))
         return false;
 
-  addMarker(node);
+  addMarker(node, NULL);
   return false;
 }
 
 bool AddEndOfStatementMarkers::enterDefExpr(DefExpr* node) {
   VarSymbol* var = toVarSymbol(node->sym);
+
   if (var != NULL && !var->hasFlag(FLAG_TEMP)) {
-    addMarker(node);
+    // Scroll forward to find a PRIM_END_OF_STATEMENT
+    // (these are added in the parser along with DefExprs)
+    CallExpr* endOfStatement = NULL;
+    for (Expr* cur = node->next; cur != NULL; cur = cur->next)
+      if (CallExpr* call = toCallExpr(cur))
+        if (call->isPrimitive(PRIM_END_OF_STATEMENT))
+          endOfStatement = call;
+    addMarker(node, endOfStatement);
     return false;
   }
 

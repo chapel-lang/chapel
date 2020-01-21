@@ -162,6 +162,8 @@ BlockStmt* buildPragmaStmt(Vec<const char*>* pragmas,
   for_alist(expr, stmt->body) {
     if (DefExpr* def = toDefExpr(expr)) {
       addPragmaFlags(def->sym, pragmas);
+    } else if (isEndOfStatementMarker(expr)) {
+      // ignore it
     } else {
       error = true;
       break;
@@ -1436,13 +1438,9 @@ BlockStmt* buildVarDecls(BlockStmt* stmts, const char* docs,
     }
   }
 
-  int nVars = 0;
-
   for_alist(stmt, stmts->body) {
     if (DefExpr* defExpr = toDefExpr(stmt)) {
       if (VarSymbol* var = toVarSymbol(defExpr->sym)) {
-        nVars++;
-
         // Store the user-provided cname, if there was one
         if (cname)
           var->cname = cname;
@@ -1488,18 +1486,15 @@ BlockStmt* buildVarDecls(BlockStmt* stmts, const char* docs,
   }
 
   // Add a PRIM_END_OF_STATEMENT mentioning the declared variables
-  // if there are multiple variables.
-  if (nVars > 1) {
-    CallExpr* end = new CallExpr(PRIM_END_OF_STATEMENT);
-    for_alist(stmt, stmts->body) {
-      if (DefExpr* defExpr = toDefExpr(stmt)) {
-        if (VarSymbol* var = toVarSymbol(defExpr->sym)) {
-          end->insertAtTail(new SymExpr(var));
-        }
+  CallExpr* end = new CallExpr(PRIM_END_OF_STATEMENT);
+  for_alist(stmt, stmts->body) {
+    if (DefExpr* defExpr = toDefExpr(stmt)) {
+      if (VarSymbol* var = toVarSymbol(defExpr->sym)) {
+        end->insertAtTail(new SymExpr(var));
       }
     }
-    stmts->insertAtTail(end);
   }
+  stmts->insertAtTail(end);
 
   // this was allocated in buildVarDeclFlags()
   if (flags)
