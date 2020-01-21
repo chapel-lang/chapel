@@ -79,7 +79,7 @@ static void        hack_resolve_types(ArgSymbol* arg);
 
 static void        find_printModuleInit_stuff();
 
-static void        normalizeBase(BaseAST* base);
+static void        normalizeBase(BaseAST* base, bool addEndOfStatements);
 static void        processSyntacticDistributions(CallExpr* call);
 static void        processManagedNew(CallExpr* call);
 static void        addEndOfStatementMarkers(BaseAST* base);
@@ -169,7 +169,7 @@ void normalize() {
     }
   }
 
-  normalizeBase(theProgram);
+  normalizeBase(theProgram, true);
 
   normalized = true;
 
@@ -263,13 +263,13 @@ void normalize() {
 
 void normalize(FnSymbol* fn) {
   if (fn->isNormalized() == false) {
-    normalizeBase(fn);
+    normalizeBase(fn, true);
     fn->setNormalized(true);
   }
 }
 
 void normalize(Expr* expr) {
-  normalizeBase(expr);
+  normalizeBase(expr, false);
 }
 
 /************************************* | **************************************
@@ -491,12 +491,13 @@ static void insertCallTempsForRiSpecs(BaseAST* base) {
 *                                                                             *
 ************************************** | *************************************/
 
-static void normalizeBase(BaseAST* base) {
+static void normalizeBase(BaseAST* base, bool addEndOfStatements) {
   //
   // Phase 0
   //
   normalizeErrorHandling(base);
-  addEndOfStatementMarkers(base);
+  if (addEndOfStatements)
+    addEndOfStatementMarkers(base);
 
   //
   // Phase 1
@@ -1188,18 +1189,25 @@ void AddEndOfStatementMarkers::addMarker(Expr* node) {
   if (firstBlock != node->parentExpr)
     return;
 
-  // Don't add duplicates
-  if (CallExpr* next = toCallExpr(node->next))
-    if (next->isPrimitive(PRIM_END_OF_STATEMENT))
-      return;
-
   // Gather symexprs used in the statement
   // This could be folded into the AstVisitor (but make it more complex)
   std::vector<SymExpr*> mentions;
   collectSymExprs(node, mentions);
 
   SET_LINENO(node);
-  CallExpr* call = new CallExpr(PRIM_END_OF_STATEMENT);
+  CallExpr* call = NULL;
+  bool insertCall = false;
+
+  // Don't add duplicate PRIM_END_OF_STATEMENT calls, but do
+  // add mentions to an existing one.
+  if (CallExpr* next = toCallExpr(node->next))
+    if (next->isPrimitive(PRIM_END_OF_STATEMENT))
+      call = next;
+
+  if (call == NULL) {
+    call = new CallExpr(PRIM_END_OF_STATEMENT);
+    insertCall = true;
+  }
 
   // Add SymExprs for any user variables mentioned in the statement
   // That way, if later passes remove them, e.g. for .type,
@@ -1216,7 +1224,7 @@ void AddEndOfStatementMarkers::addMarker(Expr* node) {
   }
 
   // Don't add if already at the end of the block and no mentions are stored
-  if (call->numActuals() > 0 || node->next != NULL)
+  if (insertCall && (call->numActuals() > 0 || node->next != NULL))
     node->insertAfter(call);
 }
 

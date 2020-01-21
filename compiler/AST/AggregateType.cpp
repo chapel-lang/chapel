@@ -511,6 +511,8 @@ void AggregateType::addDeclarations(Expr* expr) {
 
     this->forwardingTo.insertAtTail(forwarding);
 
+  } else if (isEndOfStatementMarker(expr)) {
+    // drop it
   } else {
     INT_FATAL(expr, "unexpected case");
   }
