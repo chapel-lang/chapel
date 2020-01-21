@@ -2999,12 +2999,6 @@ static bool typeCanAlias(Type* t) {
   if (isClassLikeOrPtr(t) || isManagedPtrType(t))
     return true; // classes, ptrs of any flavor can alias other things
 
-  // TODO - replace FLAG_ITERATOR_RECORD check with making sure 
-  // compiler adds nested blocks... see PR #14779 
-  // see test/types/records/expiring/bug-based-on-sudoku2.chpl 
-//  else if (t->symbol->hasFlag(FLAG_ITERATOR_RECORD))
-//    return true; // iterator records generally contain aliases of arguments
-
   else if (AggregateType* at = toAggregateType(t)) {
     // Does it contain any pointer fields, recursively?
     if (isRecord(at)) {

@@ -838,13 +838,8 @@ static Expr* findLastExprInStatement(Expr* e, VarSymbol* v) {
         if (isTaskFun(fn))
           break;
     }
-    // TODO: rule out
-    //   reduce expressions
-    //   forall exprsessions
-    ///  for expressions
-    //   if exprsessions
     if (isExprStmt(cur)) {
-      // keep going
+      // e.g. an if-expr; keep going
     } else if (isBlockStmt(cur) || isCondStmt(cur) ||
                isLoopStmt(cur) || isForallStmt(cur)) {
       break; // full statement reached (but see fixups below)
