@@ -1486,8 +1486,10 @@ BlockStmt* buildVarDecls(BlockStmt* stmts, const char* docs,
   }
 
   // Add a PRIM_END_OF_STATEMENT.
-  CallExpr* end = new CallExpr(PRIM_END_OF_STATEMENT);
-  stmts->insertAtTail(end);
+  if (fDocs == false) {
+    CallExpr* end = new CallExpr(PRIM_END_OF_STATEMENT);
+    stmts->insertAtTail(end);
+  }
 
   // this was allocated in buildVarDeclFlags()
   if (flags)
