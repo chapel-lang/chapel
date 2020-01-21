@@ -28,6 +28,8 @@
 #include "errorHandling.h"
 #include "expr.h"
 #include "ForallStmt.h"
+#include "ForLoop.h"
+#include "LoopStmt.h"
 #include "resolution.h"
 #include "stlUtil.h"
 #include "stmt.h"
@@ -776,10 +778,23 @@ void ComputeLastSymExpr::exitForallStmt(ForallStmt* node) {
   }
 }
 
+// Returns true for statements that are expressions when
+// their type would normally be a statement,
+// e.g. if-expr, for-expr, forall-expr
+static bool isExprStmt(Expr* e) {
+  if (CondStmt* cond = toCondStmt(e))
+    return cond->isIfExpr();
+  if (ForLoop* forLoop = toForLoop(e))
+    return forLoop->isForExpr();
+  if (ForallStmt* forall = toForallStmt(e))
+    return forall->isForallExpr();
+
+  return false;
+}
+
 static Expr* findLastExprInStatement(Expr* e, VarSymbol* v) {
 
   Expr* stmt = e->getStmtExpr();
-  Expr* last = stmt;
 
   // make it "end of block" if it's returned
   if (CallExpr* call = toCallExpr(stmt))
@@ -795,85 +810,89 @@ static Expr* findLastExprInStatement(Expr* e, VarSymbol* v) {
   // Note, forall index vars are just in a ForallStmt (not a block)
   Expr* defParent = v->defPoint->parentExpr;
   INT_ASSERT(defParent);
-  bool isFullStatement = false;
 
   for (Expr* cur = stmt;
        cur != NULL && cur != defParent;
        cur = cur->parentExpr) {
-    // If we encounter any non-trivial block statements, make the
-    // statement be the entire block.
+    stmt = cur;
+  }
 
-    if (isBlockStmt(cur) ||
-        isCondStmt(cur) || isLoopStmt(cur) || isForallStmt(cur)) {
-      stmt = cur;
-      isFullStatement = true;
-      // if it's a forall statement, also include any number of calls to
-      // chpl_after_forall_fence in the variable lifetime.
-      if (isForallStmt(cur)) {
-        for (Expr* e = cur->next; e != NULL; e = e->next) {
-          CallExpr* call = toCallExpr(e);
-          FnSymbol* calledFn = NULL;
-          if (call != NULL) {
-            calledFn = call->resolvedFunction();
-          }
-          if (calledFn == gChplAfterForallFence)
-            stmt = call;
-          else
-            break;
-        }
-      }
-      // Check for a block that unconditionally returns
-      if (BlockStmt* block = toBlockStmt(stmt)) {
-        Expr* end = block->body.last();
-        if (isGotoStmt(end))
-          return NULL;
-        if (CallExpr* call = toCallExpr(end))
-          if (call->isPrimitive(PRIM_YIELD) || call->isPrimitive(PRIM_RETURN))
-            return NULL;
-      }
+  // Scroll forward (starting at stmt) until we reach:
+  //  * the last stmt expr before label or end of block
+  //  * a PRIM_END_OF_STATEMENT or chpl_statementLevelSymbol
+  //  * a task function call (these are already statements)
+  //  * a block, conditional, or loop (these are already statements)
+  for (Expr* cur = stmt; cur != NULL; cur = cur->next) {
+    if (DefExpr* def = toDefExpr(cur))
+      if (isLabelSymbol(def->sym))
+        break; // label statement reached - use last stmt
+
+    stmt = cur;
+
+    if (CallExpr* call = toCallExpr(cur)) {
+      if (call->isPrimitive(PRIM_END_OF_STATEMENT))
+        break;
+      if (call->isNamedAstr(astr_chpl_statementLevelSymbol))
+        break;
+      if (FnSymbol* fn = call->resolvedFunction())
+        if (isTaskFun(fn))
+          break;
+    }
+    // TODO: rule out
+    //   reduce expressions
+    //   forall exprsessions
+    ///  for expressions
+    //   if exprsessions
+    if (isExprStmt(cur)) {
+      // keep going
+    } else if (isBlockStmt(cur) || isCondStmt(cur) ||
+               isLoopStmt(cur) || isForallStmt(cur)) {
+      break; // full statement reached (but see fixups below)
     }
   }
 
-  last = stmt;
-
-  // Now if it wasn't inherently a statement, look forward for:
-  //  * next PRIM_END_OF_STATEMENT
-  //  * last stmt expr before label or end of block
-  if (isFullStatement == false) {
-    for (Expr* cur = stmt; cur != NULL; cur = cur->next) {
-      if (CallExpr* call = toCallExpr(cur)) {
-        if (call->isPrimitive(PRIM_END_OF_STATEMENT))
-          return call; // PRIM_END_OF_STATEMENT reached
-        if (call->isNamedAstr(astr_chpl_statementLevelSymbol))
-          return call;
-        if (FnSymbol* fn = call->resolvedFunction())
-          if (isTaskFun(fn))
-            return call;
+  // Fix up for extra AST outside of loop statements
+  if (isForallStmt(stmt)) {
+    // if it's a forall statement, the end of the variable lifetime
+    // is after any number of chpl_after_forall_fence calls.
+    for (Expr* e = stmt->next; e != NULL; e = e->next) {
+      CallExpr* call = toCallExpr(e);
+      FnSymbol* calledFn = NULL;
+      if (call != NULL) {
+        calledFn = call->resolvedFunction();
       }
-
-      if (DefExpr* def = toDefExpr(cur))
-        if (isLabelSymbol(def->sym))
-          break; // label statement reached
-
-      last = cur;
+      if (calledFn == gChplAfterForallFence)
+        stmt = call;
+      else
+        break;
+    }
+  } else if (LoopStmt* loop = toLoopStmt(stmt)) {
+    // If it's a LoopStmt with a break label, the end of the variable
+    // lifetime is after the break label DefExpr.
+    if (LabelSymbol* breakLabel = loop->breakLabelGet()) {
+      if (DefExpr* breakDef = breakLabel->defPoint) {
+        stmt = breakDef;
+      }
     }
   }
 
   // Check if the early deinit point is the same as the the
-  // usual (end of block) deinit point.
-  GotoStmt* gotoStmt = toGotoStmt(last);
-  if (gotoStmt != NULL || last->next == NULL) {
+  // usual (end of block) deinit point. If it is, treat the variable
+  // as end-of-block to simplify matters.
+  GotoStmt* gotoStmt = toGotoStmt(stmt);
+  if (gotoStmt != NULL || stmt->next == NULL) {
     // it's the end of something... is the end of of the block for the DefExpr?
-    if (defParent == last->parentExpr)
+    if (defParent == stmt->parentExpr)
       return NULL;
   }
 
-  // Check if the call is a yield or return
-  if (CallExpr* call = toCallExpr(last))
+  // Check if the call is a yield or return. In that event, treat the
+  // variable as end-of-block to simplify matters.
+  if (CallExpr* call = toCallExpr(stmt))
     if (call->isPrimitive(PRIM_YIELD) || call->isPrimitive(PRIM_RETURN))
       return NULL;
 
-  return last; // last statement in the end of *some* block
+  return stmt; // last statement in the end of *some* block
 }
 
 /************************************* | **************************************
