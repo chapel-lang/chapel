@@ -1943,6 +1943,12 @@ BlockStmt* buildForwardingDeclStmt(BlockStmt* stmts) {
       if (VarSymbol* var = toVarSymbol(defExpr->sym)) {
         // Append a ForwardingStmt
         BlockStmt* toAppend = buildForwardingStmt(new UnresolvedSymExpr(var->name));
+
+        // Remove the END_OF_STATEMENT marker, not used for fields
+        Expr* last = stmts->body.last();
+        if (last && isEndOfStatementMarker(stmts->body.last()))
+          last->remove();
+
         for_alist(tmp, toAppend->body) {
           stmts->insertAtTail(tmp->remove());
         }
