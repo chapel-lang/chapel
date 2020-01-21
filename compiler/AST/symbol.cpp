@@ -1603,6 +1603,20 @@ VarSymbol *new_BytesSymbol(const char *str) {
   return s;
 }
 
+// Just a convenience function
+VarSymbol *new_StringOrBytesSymbol(const char *str, AggregateType *t) {
+  if (t == dtString) {
+    return new_StringSymbol(str);
+  }
+  else if (t == dtBytes) {
+    return new_BytesSymbol(str);
+  }
+  else {
+    INT_FATAL("new_StringOrBytesSymbol accepts dtString and dtBytes only");
+    return NULL;
+  }
+}
+
 VarSymbol *new_CStringSymbol(const char *str) {
   Immediate imm;
   imm.const_kind = CONST_KIND_STRING;

@@ -329,14 +329,4 @@ module BytesCasts {
 
     return retVal;
   }
-
-
-  //
-  // enum 
-  // not sure if this is quite necessary, but adding it just to make bytes as
-  // similar to string as possible
-  proc _cast(type t:bytes, x: enumerated) {
-    return x:string:bytes;
-  }
-
 } // end of module BytesCasts

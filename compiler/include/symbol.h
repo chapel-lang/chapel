@@ -614,6 +614,9 @@ VarSymbol *new_StringSymbol(const char *s);
 //
 // Creates a new bytes literal with the given value.
 VarSymbol *new_BytesSymbol(const char *s);
+//
+// Creates a new string or bytes literal with the given value.
+VarSymbol *new_StringOrBytesSymbol(const char *s, AggregateType *at);
 
 // Creates a new C string literal with the given value.
 VarSymbol *new_CStringSymbol(const char *s);

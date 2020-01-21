@@ -44,11 +44,13 @@ static void buildDefaultOfFunction(AggregateType* ct);
 
 static void buildUnionAssignmentFunction(AggregateType* ct);
 
-static void buildEnumCastFunction(EnumType* et);
+static void buildEnumIntegerCastFunctions(EnumType* et);
 static void buildEnumFirstFunction(EnumType* et);
 static void buildEnumEnumerateFunction(EnumType* et);
 static void buildEnumSizeFunction(EnumType* et);
 static void buildEnumOrderFunctions(EnumType* et);
+static void buildEnumStringOrBytesCastFunctions(EnumType* type,
+                                                AggregateType* otherType);
 
 static void buildExternAssignmentFunction(Type* type);
 
@@ -59,8 +61,6 @@ static FnSymbol* buildRecordIsComparableFunc(AggregateType* ct, const char* op);
 static void buildRecordComparisonFunc(AggregateType* ct, const char* op);
 
 static void buildDefaultReadWriteFunctions(AggregateType* type);
-
-static void buildStringCastFunction(EnumType* type);
 
 static void buildFieldAccessorFunctions(AggregateType* at);
 
@@ -856,9 +856,10 @@ static void buildRecordComparisonFunc(AggregateType* ct, const char* op) {
 // It is necessary to have this separated out, because such functions are not
 // automatically created when the EnumType is copied.
 void buildEnumFunctions(EnumType* et) {
-  buildStringCastFunction(et);
+  buildEnumStringOrBytesCastFunctions(et, dtBytes);
+  buildEnumStringOrBytesCastFunctions(et, dtString);
 
-  buildEnumCastFunction(et);
+  buildEnumIntegerCastFunctions(et);
   buildEnumEnumerateFunction(et);
   buildEnumFirstFunction(et);
   buildEnumSizeFunction(et);
@@ -963,7 +964,7 @@ static void buildEnumEnumerateFunction(EnumType* et) {
   fn->tagIfGeneric();
 }
 
-static void buildEnumCastFunction(EnumType* et) {
+static void buildEnumIntegerCastFunctions(EnumType* et) {
   bool initsExist = !et->isAbstract();
 
   FnSymbol* fn;
@@ -1090,56 +1091,6 @@ static void buildEnumCastFunction(EnumType* et) {
     normalize(fn);
     fn->tagIfGeneric();
   }
-
-  // string to enumerated type cast function
-  fn = new FnSymbol(astr_cast);
-  fn->addFlag(FLAG_COMPILER_GENERATED);
-  fn->addFlag(FLAG_LAST_RESORT);
-  arg1 = new ArgSymbol(INTENT_BLANK, "t", et);
-  arg1->addFlag(FLAG_TYPE_VARIABLE);
-  arg2 = new ArgSymbol(INTENT_BLANK, "_arg2", dtString);
-  fn->insertFormalAtTail(arg1);
-  fn->insertFormalAtTail(arg2);
-
-  CondStmt* cond = NULL;
-  for_enums(constant, et) {
-    cond = new CondStmt(
-             new CallExpr("==", arg2, new_StringSymbol(constant->sym->name)),
-             new CallExpr(PRIM_RETURN, constant->sym),
-             cond);
-    cond = new CondStmt(
-             new CallExpr("==", arg2,
-                          new_StringSymbol(
-                            astr(et->symbol->name, ".", constant->sym->name))),
-             new CallExpr(PRIM_RETURN, constant->sym),
-             cond);
-  }
-
-  fn->insertAtTail(cond);
-
-  fn->throwsErrorInit();
-  fn->insertAtTail(new TryStmt(
-                     false,
-                     new BlockStmt(
-                       new CallExpr("chpl_enum_cast_error",
-                                    arg2,
-                                    new_StringSymbol(et->symbol->name))),
-                     NULL));
-  fn->addFlag(FLAG_INSERT_LINE_FILE_INFO);
-  fn->addFlag(FLAG_ALWAYS_PROPAGATE_LINE_FILE_INFO);
-
-  fn->insertAtTail(new CallExpr(PRIM_RETURN,
-                                toDefExpr(et->constants.first())->sym));
-
-  def = new DefExpr(fn);
-  //
-  // these cast functions need to go in the base module because they
-  // are automatically inserted to handle implicit coercions
-  //
-  baseModule->block->insertAtTail(def);
-  reset_ast_loc(def, et->symbol);
-  normalize(fn);
-  fn->tagIfGeneric();
 }
 
 
@@ -1650,14 +1601,18 @@ static void buildDefaultReadWriteFunctions(AggregateType* ct) {
 }
 
 
-static void buildStringCastFunction(EnumType* et) {
-  if (functionExists(astr_cast, dtString, et))
+static void buildEnumStringOrBytesCastFunctions(EnumType* et,
+                                                AggregateType *otherType) {
+  if (otherType != dtString && otherType != dtBytes) {
+    INT_FATAL("wrong type was passed to buildEnumStringOrBytesCastFunctions");
+  }
+  if (functionExists(astr_cast, otherType, et))
     return;
 
   FnSymbol* fn = new FnSymbol(astr_cast);
   fn->addFlag(FLAG_COMPILER_GENERATED);
   fn->addFlag(FLAG_LAST_RESORT);
-  ArgSymbol* t = new ArgSymbol(INTENT_BLANK, "t", dtString);
+  ArgSymbol* t = new ArgSymbol(INTENT_BLANK, "t", otherType);
   t->addFlag(FLAG_TYPE_VARIABLE);
   fn->insertFormalAtTail(t);
   ArgSymbol* arg = new ArgSymbol(INTENT_BLANK, "this", et);
@@ -1668,11 +1623,65 @@ static void buildStringCastFunction(EnumType* et) {
     fn->insertAtTail(
       new CondStmt(
         new CallExpr("==", arg, constant->sym),
-        new CallExpr(PRIM_RETURN, new_StringSymbol(constant->sym->name))));
+        new CallExpr(PRIM_RETURN,
+                     new_StringOrBytesSymbol(constant->sym->name, otherType))));
   }
-  fn->insertAtTail(new CallExpr(PRIM_RETURN, new_StringSymbol("")));
+  fn->insertAtTail(new CallExpr(PRIM_RETURN,
+                                new_StringOrBytesSymbol("", otherType)));
 
   DefExpr* def = new DefExpr(fn);
+  //
+  // these cast functions need to go in the base module because they
+  // are automatically inserted to handle implicit coercions
+  //
+  baseModule->block->insertAtTail(def);
+  reset_ast_loc(def, et->symbol);
+  normalize(fn);
+  fn->tagIfGeneric();
+
+  // string to enumerated type cast function
+  fn = new FnSymbol(astr_cast);
+  fn->addFlag(FLAG_COMPILER_GENERATED);
+  fn->addFlag(FLAG_LAST_RESORT);
+  ArgSymbol* arg1 = new ArgSymbol(INTENT_BLANK, "t", et);
+  arg1->addFlag(FLAG_TYPE_VARIABLE);
+  ArgSymbol* arg2 = new ArgSymbol(INTENT_BLANK, "_arg2", otherType);
+  fn->insertFormalAtTail(arg1);
+  fn->insertFormalAtTail(arg2);
+
+  CondStmt* cond = NULL;
+  for_enums(constant, et) {
+    cond = new CondStmt(
+             new CallExpr("==", arg2,
+                          new_StringOrBytesSymbol(constant->sym->name, otherType)),
+             new CallExpr(PRIM_RETURN, constant->sym),
+             cond);
+    cond = new CondStmt(
+             new CallExpr("==", arg2,
+                          new_StringOrBytesSymbol(
+                            astr(et->symbol->name, ".", constant->sym->name),
+                            otherType)),
+             new CallExpr(PRIM_RETURN, constant->sym),
+             cond);
+  }
+
+  fn->insertAtTail(cond);
+
+  fn->throwsErrorInit();
+  fn->insertAtTail(new TryStmt(
+                     false,
+                     new BlockStmt(
+                       new CallExpr("chpl_enum_cast_error",
+                                    arg2,
+                                    new_StringSymbol(et->symbol->name))),
+                     NULL));
+  fn->addFlag(FLAG_INSERT_LINE_FILE_INFO);
+  fn->addFlag(FLAG_ALWAYS_PROPAGATE_LINE_FILE_INFO);
+
+  fn->insertAtTail(new CallExpr(PRIM_RETURN,
+                                toDefExpr(et->constants.first())->sym));
+
+  def = new DefExpr(fn);
   //
   // these cast functions need to go in the base module because they
   // are automatically inserted to handle implicit coercions

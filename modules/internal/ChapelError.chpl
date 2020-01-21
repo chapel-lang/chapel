@@ -503,4 +503,18 @@ module ChapelError {
     else
       throw new owned IllegalArgumentError("bad cast from string '" + casted + "' to " + enumName);
   }
+
+  // The compiler generates functions to cast from bytes to enums. This
+  // function helps the compiler throw errors from those generated casts.
+  pragma "no doc"
+  pragma "insert line file info"
+  pragma "always propagate line file info"
+  proc chpl_enum_cast_error(casted: bytes, enumName: string) throws {
+    if casted.isEmpty() then
+      throw new owned IllegalArgumentError("bad cast from empty bytes to " + enumName);
+    else
+      throw new owned IllegalArgumentError("bad cast from bytes '" +
+                                           casted.decode(decodePolicy.replace) +
+                                           "' to " + enumName);
+  }
 }
