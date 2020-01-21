@@ -2146,7 +2146,7 @@ module DefaultRectangular {
       writeln("Whose chunks are: ", rngs);
     }
 
-    var state: [1..numTasks] resType;
+    var state: [0..#numTasks] resType;
 
     // Take first pass over data doing per-chunk scans
 
@@ -2154,7 +2154,7 @@ module DefaultRectangular {
     if numTasks == 1 {
       preScanChunk(1);
     } else {
-      coforall tid in 1..numTasks {
+      coforall tid in 0..#numTasks {
         preScanChunk(tid);
       }
     }
@@ -2178,7 +2178,7 @@ module DefaultRectangular {
     // Scan state vector itself
     const metaop = op.clone();
     var next: resType = metaop.identity;
-    for i in 1..numTasks {
+    for i in 0..#numTasks {
       state[i] <=> next;
       metaop.accumulateOntoState(next, state[i]);
     }
@@ -2198,7 +2198,7 @@ module DefaultRectangular {
     if numTasks == 1 {
       postScanChunk(1);
     } else {
-      coforall tid in 1..numTasks {
+      coforall tid in 0..#numTasks {
         postScanChunk(tid);
       }
     }
