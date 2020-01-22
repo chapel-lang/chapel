@@ -278,30 +278,37 @@ static void checkPrivateDecls(DefExpr* def) {
                          "a class or record yet");
 
         } else if (mod->block != def->parentExpr) {
-          if (BlockStmt* block = toBlockStmt(def->parentExpr)) {
-            // Scopeless blocks are used to define multiple symbols, for
-            // instance.  Those are valid "nested" blocks for private symbols.
-            if (block->blockTag != BLOCK_SCOPELESS) {
-              // The block in which we are defined is not the top level module
-              // block.  Private symbols at this scope are meaningless, so warn
-              // the user.
+          for (Expr* cur = def->parentExpr; cur; cur = cur->parentExpr) {
+            if (cur == mod->block)
+              break;
+
+            if (BlockStmt* block = toBlockStmt(cur)) {
+              // Scopeless blocks are used to define multiple symbols, for
+              // instance.  Those are valid "nested" blocks for private symbols.
+              if (block->blockTag != BLOCK_SCOPELESS) {
+                // The block in which we are defined is not the top level module
+                // block.  Private symbols at this scope are meaningless, so warn
+                // the user.
+                USR_WARN(def,
+                         "Private declarations within nested blocks "
+                         "are meaningless");
+
+                def->sym->removeFlag(FLAG_PRIVATE);
+                break;
+              }
+
+            } else {
+              // There are many situations which could lead to this else branch.
+              // Most of them will not reach here due to being banned at parse
+              // time.  However, those that aren't excluded by syntax errors will
+              // be caught here.
               USR_WARN(def,
-                       "Private declarations within nested blocks "
-                       "are meaningless");
+                       "Private declarations are meaningless outside "
+                       "of module level declarations");
 
               def->sym->removeFlag(FLAG_PRIVATE);
+              break;
             }
-
-          } else {
-            // There are many situations which could lead to this else branch.
-            // Most of them will not reach here due to being banned at parse
-            // time.  However, those that aren't excluded by syntax errors will
-            // be caught here.
-            USR_WARN(def,
-                     "Private declarations are meaningless outside "
-                     "of module level declarations");
-
-            def->sym->removeFlag(FLAG_PRIVATE);
           }
         }
 

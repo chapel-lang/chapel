@@ -162,6 +162,8 @@ BlockStmt* buildPragmaStmt(Vec<const char*>* pragmas,
   for_alist(expr, stmt->body) {
     if (DefExpr* def = toDefExpr(expr)) {
       addPragmaFlags(def->sym, pragmas);
+    } else if (isEndOfStatementMarker(expr)) {
+      // ignore it
     } else {
       error = true;
       break;
@@ -1013,7 +1015,10 @@ static BlockStmt* buildLoweredCoforall(Expr* indices,
     addByrefVars(taskBlk, byref_vars);
   }
 
-  BlockStmt* block = ForLoop::buildForLoop(indices, new SymExpr(iterator), taskBlk, true, zippered);
+  BlockStmt* block = ForLoop::buildCoforallLoop(indices,
+                                                new SymExpr(iterator),
+                                                taskBlk,
+                                                zippered);
   if (bounded) {
     if (!onBlock) { block->insertAtHead(new CallExpr("chpl_resetTaskSpawn", numTasks)); }
     block->insertAtHead(new CallExpr("_upEndCount", coforallCount, countRunningTasks, numTasks));
@@ -1480,6 +1485,12 @@ BlockStmt* buildVarDecls(BlockStmt* stmts, const char* docs,
     stmts->blockInfoSet(NULL);
   }
 
+  // Add a PRIM_END_OF_STATEMENT.
+  if (fDocs == false) {
+    CallExpr* end = new CallExpr(PRIM_END_OF_STATEMENT);
+    stmts->insertAtTail(end);
+  }
+
   // this was allocated in buildVarDeclFlags()
   if (flags)
     delete flags;
@@ -1932,6 +1943,12 @@ BlockStmt* buildForwardingDeclStmt(BlockStmt* stmts) {
       if (VarSymbol* var = toVarSymbol(defExpr->sym)) {
         // Append a ForwardingStmt
         BlockStmt* toAppend = buildForwardingStmt(new UnresolvedSymExpr(var->name));
+
+        // Remove the END_OF_STATEMENT marker, not used for fields
+        Expr* last = stmts->body.last();
+        if (last && isEndOfStatementMarker(stmts->body.last()))
+          last->remove();
+
         for_alist(tmp, toAppend->body) {
           stmts->insertAtTail(tmp->remove());
         }

@@ -79,7 +79,7 @@ static void        hack_resolve_types(ArgSymbol* arg);
 
 static void        find_printModuleInit_stuff();
 
-static void        normalizeBase(BaseAST* base);
+static void        normalizeBase(BaseAST* base, bool addEndOfStatements);
 static void        processSyntacticDistributions(CallExpr* call);
 static void        processManagedNew(CallExpr* call);
 static void        addEndOfStatementMarkers(BaseAST* base);
@@ -169,7 +169,7 @@ void normalize() {
     }
   }
 
-  normalizeBase(theProgram);
+  normalizeBase(theProgram, true);
 
   normalized = true;
 
@@ -263,13 +263,13 @@ void normalize() {
 
 void normalize(FnSymbol* fn) {
   if (fn->isNormalized() == false) {
-    normalizeBase(fn);
+    normalizeBase(fn, true);
     fn->setNormalized(true);
   }
 }
 
 void normalize(Expr* expr) {
-  normalizeBase(expr);
+  normalizeBase(expr, false);
 }
 
 /************************************* | **************************************
@@ -491,12 +491,13 @@ static void insertCallTempsForRiSpecs(BaseAST* base) {
 *                                                                             *
 ************************************** | *************************************/
 
-static void normalizeBase(BaseAST* base) {
+static void normalizeBase(BaseAST* base, bool addEndOfStatements) {
   //
   // Phase 0
   //
   normalizeErrorHandling(base);
-  addEndOfStatementMarkers(base);
+  if (addEndOfStatements)
+    addEndOfStatementMarkers(base);
 
   //
   // Phase 1
@@ -927,13 +928,17 @@ void LowerIfExprVisitor::exitIfExpr(IfExpr* ife) {
 
   CondStmt* cs = new CondStmt(new SymExpr(cond),
                               ife->getThenStmt()->remove(),
-                              ife->getElseStmt()->remove());
+                              ife->getElseStmt()->remove(),
+                              true /* isIfExpr */);
+
 
   // Remove nested BlockStmts
   toBlockStmt(cs->thenStmt->body.tail)->flattenAndRemove();
   toBlockStmt(cs->elseStmt->body.tail)->flattenAndRemove();
 
   anchor->insertBefore(cs);
+
+  INT_ASSERT(cs->isIfExpr());
 
   ife->replace(new SymExpr(result));
 }
@@ -1137,7 +1142,7 @@ static void processManagedNew(CallExpr* newCall) {
 class AddEndOfStatementMarkers : public AstVisitorTraverse
 {
   private:
-    void addMarker(Expr* node);
+    void addMarker(Expr* node, CallExpr* existingEndOfStatement);
   public:
     virtual bool enterCallExpr(CallExpr* node);
     virtual bool enterDefExpr(DefExpr* node);
@@ -1145,7 +1150,8 @@ class AddEndOfStatementMarkers : public AstVisitorTraverse
     virtual bool enterLoopExpr(LoopExpr* node);
 };
 
-void AddEndOfStatementMarkers::addMarker(Expr* node) {
+void AddEndOfStatementMarkers::addMarker(Expr* node,
+                                         CallExpr* existingEndOfStatement) {
   // Rule out several cases that shouldn't get end-of-statement markers
   if (node->list == NULL)
     return;
@@ -1184,18 +1190,27 @@ void AddEndOfStatementMarkers::addMarker(Expr* node) {
   if (firstBlock != node->parentExpr)
     return;
 
-  // Don't add duplicates
-  if (CallExpr* next = toCallExpr(node->next))
-    if (next->isPrimitive(PRIM_END_OF_STATEMENT))
-      return;
-
   // Gather symexprs used in the statement
   // This could be folded into the AstVisitor (but make it more complex)
   std::vector<SymExpr*> mentions;
   collectSymExprs(node, mentions);
 
   SET_LINENO(node);
-  CallExpr* call = new CallExpr(PRIM_END_OF_STATEMENT);
+  CallExpr* call = existingEndOfStatement;
+  bool insertCall = false;
+
+  if (call == NULL) {
+    // Don't add duplicate PRIM_END_OF_STATEMENT calls, but do
+    // add mentions to an existing one.
+    if (CallExpr* next = toCallExpr(node->next))
+      if (next->isPrimitive(PRIM_END_OF_STATEMENT))
+        call = next;
+  }
+
+  if (call == NULL) {
+    call = new CallExpr(PRIM_END_OF_STATEMENT);
+    insertCall = true;
+  }
 
   // Add SymExprs for any user variables mentioned in the statement
   // That way, if later passes remove them, e.g. for .type,
@@ -1212,17 +1227,17 @@ void AddEndOfStatementMarkers::addMarker(Expr* node) {
   }
 
   // Don't add if already at the end of the block and no mentions are stored
-  if (call->numActuals() > 0 || node->next != NULL)
+  if (insertCall && (call->numActuals() > 0 || node->next != NULL))
     node->insertAfter(call);
 }
 
 bool AddEndOfStatementMarkers::enterIfExpr(IfExpr* node) {
-  addMarker(node);
+  addMarker(node, NULL);
   return false;
 }
 
 bool AddEndOfStatementMarkers::enterLoopExpr(LoopExpr* node) {
-  addMarker(node);
+  addMarker(node, NULL);
   return false;
 }
 
@@ -1237,14 +1252,22 @@ bool AddEndOfStatementMarkers::enterCallExpr(CallExpr* node) {
       if (lhs->symbol()->hasFlag(FLAG_TEMP))
         return false;
 
-  addMarker(node);
+  addMarker(node, NULL);
   return false;
 }
 
 bool AddEndOfStatementMarkers::enterDefExpr(DefExpr* node) {
   VarSymbol* var = toVarSymbol(node->sym);
+
   if (var != NULL && !var->hasFlag(FLAG_TEMP)) {
-    addMarker(node);
+    // Scroll forward to find a PRIM_END_OF_STATEMENT
+    // (these are added in the parser along with DefExprs)
+    CallExpr* endOfStatement = NULL;
+    for (Expr* cur = node->next; cur != NULL; cur = cur->next)
+      if (CallExpr* call = toCallExpr(cur))
+        if (call->isPrimitive(PRIM_END_OF_STATEMENT))
+          endOfStatement = call;
+    addMarker(node, endOfStatement);
     return false;
   }
 
@@ -2581,23 +2604,26 @@ static found_init_t doFindInitPoints(DefExpr* def,
   for (Expr* cur = start->getStmtExpr(); cur != NULL; cur = cur->next) {
     // x = ...
     if (CallExpr* call = toCallExpr(cur)) {
-      if (call->isNamedAstr(astrSassign)) {
-        if (SymExpr* se = toSymExpr(call->get(1))) {
-          if (se->symbol() == def->sym) {
-            if (containsSymExprFor(call->get(2), def->sym) == false) {
-              // careful with e.g.
-              //  x = x + 1;  or y = 1:y.type;
-              initAssigns.push_back(call);
-              return FOUND_INIT;
+      // ignore PRIM_END_OF_STATEMENT
+      if (!call->isPrimitive(PRIM_END_OF_STATEMENT)) {
+        if (call->isNamedAstr(astrSassign)) {
+          if (SymExpr* se = toSymExpr(call->get(1))) {
+            if (se->symbol() == def->sym) {
+              if (containsSymExprFor(call->get(2), def->sym) == false) {
+                // careful with e.g.
+                //  x = x + 1;  or y = 1:y.type;
+                initAssigns.push_back(call);
+                return FOUND_INIT;
+              }
             }
           }
         }
-      }
 
-      if (containsSymExprFor(cur, def->sym)) {
-        // Emit an error if split initialization is required
-        errorIfSplitInitializationRequired(def, cur);
-        return FOUND_USE;
+        if (containsSymExprFor(cur, def->sym)) {
+          // Emit an error if split initialization is required
+          errorIfSplitInitializationRequired(def, cur);
+          return FOUND_USE;
+        }
       }
 
     // { x = ... }
@@ -2688,8 +2714,9 @@ static found_init_t doFindInitPoints(DefExpr* def,
 
     if (fVerify) {
       // Redundantly check for uses
-      if (containsSymExprFor(cur, def->sym))
-        INT_FATAL("use not found above");
+      if (!isEndOfStatementMarker(cur))
+        if (containsSymExprFor(cur, def->sym))
+          INT_FATAL("use not found above");
     }
   }
 

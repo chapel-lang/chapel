@@ -158,7 +158,8 @@ class CondStmt : public Stmt {
 public:
                       CondStmt(Expr*    iCondExpr,
                                BaseAST* iThenStmt,
-                               BaseAST* iElseStmt = NULL);
+                               BaseAST* iElseStmt = NULL,
+                               bool     isIfExpr = false);
 
                       DECLARE_COPY(CondStmt);
 
@@ -175,6 +176,11 @@ public:
   Expr*               condExpr;
   BlockStmt*          thenStmt;
   BlockStmt*          elseStmt;
+
+  bool                isIfExpr() const;
+
+private:
+  bool                fIsIfExpr;
 };
 
 /************************************* | **************************************

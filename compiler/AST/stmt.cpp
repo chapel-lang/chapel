@@ -538,12 +538,14 @@ BlockStmt::accept(AstVisitor* visitor) {
 *                                                                             *
 ************************************** | *************************************/
 
-CondStmt::CondStmt(Expr* iCondExpr, BaseAST* iThenStmt, BaseAST* iElseStmt) :
-  Stmt(E_CondStmt) {
+CondStmt::CondStmt(Expr* iCondExpr,
+                   BaseAST* iThenStmt, BaseAST* iElseStmt,
+                   bool isIfExpr) : Stmt(E_CondStmt) {
 
   condExpr = iCondExpr;
   thenStmt = NULL;
   elseStmt = NULL;
+  fIsIfExpr = isIfExpr;
 
   if (Expr* s = toExpr(iThenStmt)) {
     BlockStmt* bs = toBlockStmt(s);
@@ -635,6 +637,10 @@ CallExpr* CondStmt::foldConstantCondition() {
   return result;
 }
 
+bool CondStmt::isIfExpr() const {
+  return fIsIfExpr;
+}
+
 void CondStmt::verify() {
   Expr::verify();
 
@@ -684,7 +690,8 @@ void CondStmt::verify() {
 CondStmt* CondStmt::copyInner(SymbolMap* map) {
   return new CondStmt(COPY_INT(condExpr),
                       COPY_INT(thenStmt),
-                      COPY_INT(elseStmt));
+                      COPY_INT(elseStmt),
+                      fIsIfExpr);
 }
 
 
