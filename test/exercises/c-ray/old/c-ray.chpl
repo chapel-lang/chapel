@@ -447,7 +447,7 @@ proc loadScene() {
     if columns.size == 0 then continue;
 
     // grab the input type
-    const inType = columns[1];
+    const inType = columns[0];
 
     // handle error conditions
     if !expectedArgs.domain.contains(inType) then
@@ -458,7 +458,7 @@ proc loadScene() {
       inputError("too many arguments for input of type '" + inType + "'");
 
     // grab the position columns
-    const pos = (columns[2]:real, columns[3]:real, columns[4]:real);
+    const pos = (columns[1]:real, columns[2]:real, columns[3]:real);
 
     // if this is a light, store it as such
     if inType == 'l' {
@@ -467,8 +467,8 @@ proc loadScene() {
     }
 
     // grab the radius/field-of-view and color/target columns
-    const rad = columns[5]:real,
-          col = (columns[6]:real, columns[7]:real, columns[8]:real);
+    const rad = columns[4]:real,
+          col = (columns[5]:real, columns[6]:real, columns[7]:real);
 
     // if this is the camera, store it
     if inType == 'c' {
@@ -479,8 +479,8 @@ proc loadScene() {
     }
 
     // grab the shininess and reflectivity columns
-    const spow = columns[9]: real,
-          refl = columns[10]: real;
+    const spow = columns[8]: real,
+          refl = columns[9]: real;
 
     // this must be a sphere, so store it
     objects.append(new owned sphere(pos, rad, new material(col, spow, refl)));
