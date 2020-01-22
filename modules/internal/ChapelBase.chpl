@@ -1300,7 +1300,7 @@ module ChapelBase {
   // This version is called for normal sync blocks.
   pragma "task join impl fn"
   pragma "unchecked throws"
-  proc _waitDynamicEndCount(param countRunningTasks=true) throws {
+  proc chpl_waitDynamicEndCount(param countRunningTasks=true) throws {
     var e = __primitive("get dynamic end count");
     _waitEndCount(e, countRunningTasks);
 

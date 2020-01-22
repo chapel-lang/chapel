@@ -2160,7 +2160,7 @@ buildSyncStmt(Expr* stmt) {
 
   // Note that a sync statement can contain arbitrary code,
   // including code that throws. As a result, we need to take
-  // care call _waitDynamicEndCount even if such errors are thrown.
+  // care call chpl_waitDynamicEndCount even if such errors are thrown.
 
   // This code takes the approach of wrapping the sync body with
   //
@@ -2194,7 +2194,7 @@ buildSyncStmt(Expr* stmt) {
 
   block->insertAtTail(t);
 
-  // waitDynamicEndCount might throw, but we need to clean up the
+  // chpl_waitDynamicEndCount might throw, but we need to clean up the
   // end counts either way.
 
   BlockStmt* cleanup = new BlockStmt();
@@ -2203,7 +2203,7 @@ buildSyncStmt(Expr* stmt) {
   cleanup->insertAtTail(new CallExpr(PRIM_SET_DYNAMIC_END_COUNT, endCountSave));
 
   block->insertAtTail(new DeferStmt(cleanup));
-  block->insertAtTail(new CallExpr("_waitDynamicEndCount"));
+  block->insertAtTail(new CallExpr(astr_chpl_waitDynamicEndCount));
   return block;
 }
 
