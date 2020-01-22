@@ -113,6 +113,7 @@ iter fannkuch(inds) {
 
 iter computeFact(n) {
   var f = 1;
+  yield f;
   for i in 1..n {
     f *= i;
     yield f;
