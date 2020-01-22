@@ -886,6 +886,16 @@ module String {
       return this:c_string; // folded out in resolution
     }
 
+    /*
+      Returns a :record:`~Bytes.bytes` from the given :record:`string`. If the
+      string contains some escaped non-UTF8 bytes, `errors` argument determines
+      the action.
+        
+      :arg errors: `encodePolicy.pass` directly copies the data,
+                   `encodePolicy.unescape` recovers the escaped bytes back.
+
+      :returns: :record:`~Bytes.bytes`
+    */
     proc encode(errors=encodePolicy.pass): bytes {
       var localThis: string = this.localize();
 

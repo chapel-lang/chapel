@@ -33,6 +33,14 @@ module BytesStringCommon {
   */
   enum decodePolicy { strict, replace, ignore, escape }
 
+  /*
+     ``encodePolicy`` specifies what happens when there is escaped non-UTF8
+     bytes when encoding a :record:`~String.string` into a
+     :record:`~Bytes.bytes`.
+       
+       - **pass**: default policy; copy directly
+       - **unescape**: recover the original data from the escaped data
+  */
   enum encodePolicy { unescape, pass };
 
 
