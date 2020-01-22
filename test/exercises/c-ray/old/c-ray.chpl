@@ -440,7 +440,7 @@ proc loadScene() {
   for (rawLine, lineno) in zip(infile.lines(), 1..) {
     // drop any comments (text following '#')
     const linePlusComment = rawLine.split('#', maxsplit=1, ignoreEmpty=false),
-          line = linePlusComment[1];
+          line = linePlusComment[0];
 
     // split the line into its whitespace-separated strings
     const columns = line.split();
