@@ -368,7 +368,8 @@ ForLoop* ForLoop::copy(SymbolMap* mapRef, bool internal)
   retval->mIterator         = mIterator->copy(map, true);
   retval->mZippered         = mZippered;
 
-  retval->mLoweredForall    = mLoweredForall;
+  // MPF 2020-01-21: It seems it should also copy mLoweredForall,
+  // but doing so causes problems in lowerIterators.
   retval->mIsForExpr        = mIsForExpr;
 
   for_alist(expr, body)
