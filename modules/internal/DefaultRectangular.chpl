@@ -2152,7 +2152,7 @@ module DefaultRectangular {
 
     // optimize for the single-task case
     if numTasks == 1 {
-      preScanChunk(1);
+      preScanChunk(0);
     } else {
       coforall tid in 0..#numTasks {
         preScanChunk(tid);
@@ -2196,7 +2196,7 @@ module DefaultRectangular {
   proc DefaultRectangularArr.chpl__postScan(op, res, numTasks, rngs, state) {
     // optimize for the single-task case
     if numTasks == 1 {
-      postScanChunk(1);
+      postScanChunk(0);
     } else {
       coforall tid in 0..#numTasks {
         postScanChunk(tid);
