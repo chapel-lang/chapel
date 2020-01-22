@@ -1,5 +1,0 @@
-#!/bin/sh
-
-out=$2
-cut -d"-" -f1 $2  > $out.tmp
-mv $out.tmp $out
