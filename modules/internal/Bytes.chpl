@@ -937,7 +937,9 @@ module Bytes {
       
       :arg errors: `decodePolicy.strict` raises an error, `decodePolicy.replace`
                    replaces the malformed character with UTF-8 replacement
-                   character, `decodePolicy.ignore` drops the data silently.
+                   character, `decodePolicy.ignore` drops the data silently,
+                   `decodePolicy.escape` escapes each illegal byte with private
+                   use codepoints
       
       :throws: `DecodeError` if `decodePolicy.strict` is passed to the `errors`
                argument and the :record:`bytes` contains non-UTF-8 characters.

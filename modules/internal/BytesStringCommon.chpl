@@ -30,6 +30,7 @@ module BytesStringCommon {
        - **strict**: default policy; raise error
        - **replace**: replace with UTF-8 replacement character
        - **ignore**: silently drop data
+       - **escape**: escape data with private use codepoints
   */
   enum decodePolicy { strict, replace, ignore, escape }
 
