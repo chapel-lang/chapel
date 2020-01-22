@@ -72,8 +72,8 @@ module BytesStringCommon {
 
     pragma "fn synchronization free"
     extern proc qio_decode_char_buf(ref chr:int(32), ref nbytes:c_int,
-                                    buf:c_string, buflen:ssize_t,
-                                    allowEscape=false):syserr;
+                                    buf:c_string, buflen:ssize_t): syserr;
+                                    
     extern proc qio_encode_char_buf(dst: c_void_ptr, chr: int(32)): syserr;
     extern proc qio_nbytes_char(chr: int(32)): c_int;
 

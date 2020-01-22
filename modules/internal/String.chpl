@@ -146,8 +146,12 @@ module String {
   private extern proc qio_decode_char_buf(ref chr:int(32),
                                           ref nbytes:c_int,
                                           buf:c_string,
-                                          buflen:ssize_t,
-                                          allowEscape=false):syserr;
+                                          buflen:ssize_t): syserr;
+  pragma "fn synchronization free"
+  private extern proc qio_decode_char_buf_esc(ref chr:int(32),
+                                              ref nbytes:c_int,
+                                              buf:c_string,
+                                              buflen:ssize_t): syserr;
   pragma "fn synchronization free"
   private extern proc qio_encode_char_buf(dst:c_void_ptr, chr:int(32)):syserr;
   pragma "fn synchronization free"
@@ -899,8 +903,8 @@ module String {
           var multibytes = (localThis.buff + readIdx): c_string;
           var maxbytes = (localThis.len - readIdx): ssize_t;
           // TODO make the following a separate function
-          const decodeRet = qio_decode_char_buf(cp, nbytes, multibytes,
-                                                maxbytes, allowEscape=true);
+          const decodeRet = qio_decode_char_buf_esc(cp, nbytes, multibytes,
+                                                    maxbytes);
           if (cp>=0xdc80 && cp<=0xdcff) {
             buf[writeIdx] = (cp-0xdc00):byteType;
             writeIdx += 1;

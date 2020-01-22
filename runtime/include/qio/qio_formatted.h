@@ -584,8 +584,8 @@ qioerr qio_encode_char_buf(char* dst, int32_t chr)
 c_string qio_encode_to_string(int32_t chr);
 
 static inline
-qioerr qio_decode_char_buf(int32_t* restrict chr, int* restrict nbytes,
-                           const char* buf, ssize_t buflen, bool allow_escape)
+qioerr do_qio_decode_char_buf(int32_t* restrict chr, int* restrict nbytes,
+                              const char* buf, ssize_t buflen, bool allow_escape)
 {
   // Fast path: an entire multi-byte sequence
   // is stored in the buffers.
@@ -625,6 +625,21 @@ qioerr qio_decode_char_buf(int32_t* restrict chr, int* restrict nbytes,
   QIO_RETURN_CONSTANT_ERROR(EILSEQ, ""); // this should never be reached.
 }
 
+static inline
+qioerr qio_decode_char_buf(int32_t* restrict chr, int* restrict nbytes,
+                           const char* buf, ssize_t buflen)
+{
+  return do_qio_decode_char_buf(chr, nbytes, buf, buflen, false);
+}
+
+// this version allows escaped nonUTF8 data
+static inline
+qioerr qio_decode_char_buf_esc(int32_t* restrict chr, int* restrict nbytes,
+                               const char* buf, ssize_t buflen)
+{
+  return do_qio_decode_char_buf(chr, nbytes, buf, buflen, true);
+
+}
 
 qioerr _qio_channel_write_char_slow_unlocked(qio_channel_t* restrict ch, int32_t chr);
 
