@@ -128,7 +128,7 @@ module CSV {
         if line.length == 0 then
           continue;
         const vals = line.split(sep);
-        const row = if skipHeader then i-1 else i;
+        const row = if skipHeader then i else i+1;
         A[row, ..] = vals;
       }
       return A;
