@@ -898,16 +898,19 @@ module String {
           var nbytes: c_int;
           var multibytes = (localThis.buff + readIdx): c_string;
           var maxbytes = (localThis.len - readIdx): ssize_t;
-          qio_decode_char_buf(cp, nbytes, multibytes, maxbytes, allowEscape=true);
+          // TODO make the following a separate function
+          const decodeRet = qio_decode_char_buf(cp, nbytes, multibytes,
+                                                maxbytes, allowEscape=true);
           if (cp>=0xdc80 && cp<=0xdcff) {
             buf[writeIdx] = (cp-0xdc00):byteType;
             writeIdx += 1;
           }
-          else if (cp==0xfffd) {
+          else if (decodeRet != 0) {
             // the string contains invalid data
             // at this point this can only happen due to a failure in our
             // implementation of string encoding/decoding
-            halt("Unexpected data encountered while encoding string");
+            // simply copy the data out
+            return createBytesWithNewBuffer(localThis.buff, localThis.numBytes);
           }
           else {
             bufferMemcpyLocal(dst=(buf+writeIdx), src=multibytes, len=nbytes);
