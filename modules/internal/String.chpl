@@ -891,8 +891,9 @@ module String {
       string contains some escaped non-UTF8 bytes, `errors` argument determines
       the action.
         
-      :arg errors: `encodePolicy.pass` directly copies the data,
-                   `encodePolicy.unescape` recovers the escaped bytes back.
+      :arg errors: `encodePolicy.pass` directly copies the (potentially escaped)
+                    data, `encodePolicy.unescape` recovers the escaped bytes
+                    back.
 
       :returns: :record:`~Bytes.bytes`
     */
@@ -912,10 +913,9 @@ module String {
           var nbytes: c_int;
           var multibytes = (localThis.buff + readIdx): c_string;
           var maxbytes = (localThis.len - readIdx): ssize_t;
-          // TODO make the following a separate function
           const decodeRet = qio_decode_char_buf_esc(cp, nbytes, multibytes,
                                                     maxbytes);
-          if (cp>=0xdc80 && cp<=0xdcff) {
+          if (0xdc80<=cp && cp<=0xdcff) {
             buf[writeIdx] = (cp-0xdc00):byteType;
             writeIdx += 1;
           }
@@ -924,7 +924,8 @@ module String {
             // at this point this can only happen due to a failure in our
             // implementation of string encoding/decoding
             // simply copy the data out
-            return createBytesWithNewBuffer(localThis.buff, localThis.numBytes);
+            bufferMemcpyLocal(dst=(buf+writeIdx), src=multibytes, len=nbytes);
+            writeIdx += nbytes;
           }
           else {
             bufferMemcpyLocal(dst=(buf+writeIdx), src=multibytes, len=nbytes);

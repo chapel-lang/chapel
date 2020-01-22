@@ -30,7 +30,8 @@ module BytesStringCommon {
        - **strict**: default policy; raise error
        - **replace**: replace with UTF-8 replacement character
        - **ignore**: silently drop data
-       - **escape**: escape data with private use codepoints
+       - **escape**: escape invalid data by replacing each byte 0xXX with
+                     codepoint 0xDCXX
   */
   enum decodePolicy { strict, replace, ignore, escape }
 
@@ -76,14 +77,24 @@ module BytesStringCommon {
     return x.buff:c_string;
   }
 
+  /*
+   This function is called by `bytes.decode` and string factory functions that
+   take a C array as the buffer.
+
+   It iterates over the buffer, trying to decode codepoints out of it. If there
+   is an illegal sequence that doesn't correspond to any valid codepoint, the
+   behavior is determined by the `errors` argument. See the `decodePolicy`
+   documentation above for the meaning of different policies.
+  */
   proc decodeByteBuffer(buf: bufferType, length: int, errors: decodePolicy)
       throws {
 
     pragma "fn synchronization free"
     extern proc qio_decode_char_buf(ref chr:int(32), ref nbytes:c_int,
                                     buf:c_string, buflen:ssize_t): syserr;
-                                    
+    pragma "fn synchronization free"
     extern proc qio_encode_char_buf(dst: c_void_ptr, chr: int(32)): syserr;
+    pragma "fn synchronization free"
     extern proc qio_nbytes_char(chr: int(32)): c_int;
 
     // allocate buffer the same size as this buffer assuming that the string
