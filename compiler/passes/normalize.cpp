@@ -2604,23 +2604,26 @@ static found_init_t doFindInitPoints(DefExpr* def,
   for (Expr* cur = start->getStmtExpr(); cur != NULL; cur = cur->next) {
     // x = ...
     if (CallExpr* call = toCallExpr(cur)) {
-      if (call->isPrimitive(PRIM_END_OF_STATEMENT)) {
-        // do nothing
-      } else if (call->isNamedAstr(astrSassign)) {
-        if (SymExpr* se = toSymExpr(call->get(1))) {
-          if (se->symbol() == def->sym) {
-            if (containsSymExprFor(call->get(2), def->sym) == false) {
-              // careful with e.g.
-              //  x = x + 1;  or y = 1:y.type;
-              initAssigns.push_back(call);
-              return FOUND_INIT;
+      // ignore PRIM_END_OF_STATEMENT
+      if (!call->isPrimitive(PRIM_END_OF_STATEMENT)) {
+        if (call->isNamedAstr(astrSassign)) {
+          if (SymExpr* se = toSymExpr(call->get(1))) {
+            if (se->symbol() == def->sym) {
+              if (containsSymExprFor(call->get(2), def->sym) == false) {
+                // careful with e.g.
+                //  x = x + 1;  or y = 1:y.type;
+                initAssigns.push_back(call);
+                return FOUND_INIT;
+              }
             }
           }
         }
-      } else if (containsSymExprFor(cur, def->sym)) {
-        // Emit an error if split initialization is required
-        errorIfSplitInitializationRequired(def, cur);
-        return FOUND_USE;
+
+        if (containsSymExprFor(cur, def->sym)) {
+          // Emit an error if split initialization is required
+          errorIfSplitInitializationRequired(def, cur);
+          return FOUND_USE;
+        }
       }
 
     // { x = ... }
