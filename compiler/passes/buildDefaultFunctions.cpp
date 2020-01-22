@@ -57,8 +57,19 @@ static void buildExternAssignmentFunction(Type* type);
 static void buildRecordAssignmentFunction(AggregateType* ct);
 static void checkNotPod(AggregateType* ct);
 static void buildRecordHashFunction(AggregateType* ct);
+
 static FnSymbol* buildRecordIsComparableFunc(AggregateType* ct, const char* op);
 static void buildRecordComparisonFunc(AggregateType* ct, const char* op);
+static void buildRecordEqualsBody(AggregateType* ct, FnSymbol *fn,
+                                  ArgSymbol *arg1, ArgSymbol *arg2);
+static void buildRecordNotEqualsBody(AggregateType* ct, FnSymbol *fn,
+                                     ArgSymbol *arg1, ArgSymbol *arg2);
+static void buildRecordLessThanBody(AggregateType* ct, FnSymbol *fn,
+                                    ArgSymbol *arg1, ArgSymbol *arg2,
+                                    bool allowEquals);
+static void buildRecordGreaterThanBody(AggregateType* ct, FnSymbol *fn,
+                                       ArgSymbol *arg1, ArgSymbol *arg2,
+                                       bool allowEquals);
 
 static void buildDefaultReadWriteFunctions(AggregateType* type);
 
@@ -791,8 +802,6 @@ static void buildRecordComparisonFunc(AggregateType* ct, const char* op) {
   // we need to special case `!=`:
   // it can return true early, and returns false after checking all fields
   // all other operators do the exact opposite
-  bool isNotEqual = (astrOp == astrSne);
-
   FnSymbol* fn = new FnSymbol(op);
   fn->addFlag(FLAG_COMPILER_GENERATED);
   fn->addFlag(FLAG_LAST_RESORT);
@@ -811,44 +820,138 @@ static void buildRecordComparisonFunc(AggregateType* ct, const char* op) {
                                        arg1, arg2);
   fn->where = new BlockStmt(new CallExpr(PRIM_AND, typeComp, fieldsCheckExpr));
 
+  if (astrOp == astrSeq) {
+    buildRecordEqualsBody(ct, fn, arg1, arg2);
+  }
+  else if (astrOp == astrSne) {
+    buildRecordNotEqualsBody(ct, fn, arg1, arg2);
+  }
+  else if (astrOp == astrSgt) {
+    buildRecordGreaterThanBody(ct, fn, arg1, arg2, false);
+  }
+  else if (astrOp == astrSgte) {
+    buildRecordGreaterThanBody(ct, fn, arg1, arg2, true);
+  }
+  else if (astrOp == astrSlt) {
+    buildRecordLessThanBody(ct, fn, arg1, arg2, false);
+  }
+  else if (astrOp == astrSlte) {
+    buildRecordLessThanBody(ct, fn, arg1, arg2, true);
+  }
+  else {
+    INT_FATAL("Unrecognized operator was passed to buildRecordComparisonFunc");
+  }
+
+  DefExpr* def = new DefExpr(fn);
+  ct->symbol->defPoint->insertBefore(def);
+  reset_ast_loc(def, ct->symbol);
+  normalize(fn);
+}
+
+static void buildRecordEqualsBody(AggregateType *ct, FnSymbol *fn,
+                                  ArgSymbol *arg1, ArgSymbol *arg2) {
   // add comparisons for fields
   for_fields(tmp, ct) {
     if (!tmp->hasFlag(FLAG_IMPLICIT_ALIAS_FIELD) &&
         !tmp->hasFlag(FLAG_TYPE_VARIABLE)) {  // types fields must be equal
       Expr* left = new CallExpr(tmp->name, gMethodToken, arg1);
       Expr* right = new CallExpr(tmp->name, gMethodToken, arg2);
-      CallExpr *elemComp = new CallExpr(op, left, right);
-      if (isNotEqual) {
-        fn->insertAtTail(new CondStmt(elemComp,
+      CallExpr *elemComp = new CallExpr("!=", left, right);
+      fn->insertAtTail(new CondStmt(elemComp,
+                                    new CallExpr(PRIM_RETURN, gFalse)));
+    }
+  }
+  // either it is an empty record, and we didn't add any meaningful comparisons,
+  // or we added those comparisons but they never returned
+
+  // for ==, in either case we return true
+  fn->insertAtTail(new CallExpr(PRIM_RETURN, gTrue));
+}
+
+static void buildRecordNotEqualsBody(AggregateType *ct, FnSymbol *fn,
+                                  ArgSymbol *arg1, ArgSymbol *arg2) {
+  // add comparisons for fields
+  for_fields(tmp, ct) {
+    if (!tmp->hasFlag(FLAG_IMPLICIT_ALIAS_FIELD) &&
+        !tmp->hasFlag(FLAG_TYPE_VARIABLE)) {  // types fields must be equal
+      Expr* left = new CallExpr(tmp->name, gMethodToken, arg1);
+      Expr* right = new CallExpr(tmp->name, gMethodToken, arg2);
+      CallExpr *elemComp = new CallExpr("!=", left, right);
+      fn->insertAtTail(new CondStmt(elemComp,
+                                    new CallExpr(PRIM_RETURN, gTrue)));
+    }
+  }
+  // either it is an empty record, and we didn't add any meaningful comparisons,
+  // or we added those comparisons but they never returned
+
+  // for !=, in either case we return false
+  fn->insertAtTail(new CallExpr(PRIM_RETURN, gFalse));
+}
+
+static void buildRecordLessThanBody(AggregateType *ct, FnSymbol *fn,
+                                    ArgSymbol *arg1, ArgSymbol *arg2,
+                                    bool allowEquals) {
+  // add comparisons for fields
+  for_fields(tmp, ct) {
+    if (!tmp->hasFlag(FLAG_IMPLICIT_ALIAS_FIELD) &&
+        !tmp->hasFlag(FLAG_TYPE_VARIABLE)) {  // types fields must be equal
+
+        CallExpr *elemCompTrue = new CallExpr("<",
+                                   new CallExpr(tmp->name, gMethodToken, arg1),
+                                   new CallExpr(tmp->name, gMethodToken, arg2));
+        fn->insertAtTail(new CondStmt(elemCompTrue,
                                       new CallExpr(PRIM_RETURN, gTrue)));
-      }
-      else {
-        fn->insertAtTail(new CondStmt(new CallExpr("!", elemComp), 
+
+        CallExpr *elemCompFalse = new CallExpr(">",
+                                   new CallExpr(tmp->name, gMethodToken, arg1),
+                                   new CallExpr(tmp->name, gMethodToken, arg2));
+
+        fn->insertAtTail(new CondStmt(elemCompFalse,
                                       new CallExpr(PRIM_RETURN, gFalse)));
-      }
     }
   }
 
-  // find the return value and add the return statement
-  VarSymbol* ret;
-  if (fn->body->length() > 0) { // we added comparison statements: not empty
-    if (isNotEqual)
-      ret = gFalse;
-    else
-      ret = gTrue;
+  // either it is an empty record, and we didn't add any meaningful comparisons,
+  // or we added those comparisons but they never returned
+  if (allowEquals) {
+    fn->insertAtTail(new CallExpr(PRIM_RETURN, gTrue));
   }
-  else { // this is an empty record, so instances are always equal to each other
-    if (astrOp == astrSeq || astrOp == astrSlte || astrOp == astrSgte)
-      ret = gTrue;
-    else
-      ret = gFalse;
+  else {
+    fn->insertAtTail(new CallExpr(PRIM_RETURN, gFalse));
   }
-  fn->insertAtTail(new CallExpr(PRIM_RETURN, ret));
+}
 
-  DefExpr* def = new DefExpr(fn);
-  ct->symbol->defPoint->insertBefore(def);
-  reset_ast_loc(def, ct->symbol);
-  normalize(fn);
+static void buildRecordGreaterThanBody(AggregateType *ct, FnSymbol *fn,
+                                       ArgSymbol *arg1, ArgSymbol *arg2,
+                                       bool allowEquals) {
+  // add comparisons for fields
+  for_fields(tmp, ct) {
+    if (!tmp->hasFlag(FLAG_IMPLICIT_ALIAS_FIELD) &&
+        !tmp->hasFlag(FLAG_TYPE_VARIABLE)) {  // types fields must be equal
+
+        CallExpr *elemCompTrue = new CallExpr(">",
+                                   new CallExpr(tmp->name, gMethodToken, arg1),
+                                   new CallExpr(tmp->name, gMethodToken, arg2));
+        fn->insertAtTail(new CondStmt(elemCompTrue,
+                                      new CallExpr(PRIM_RETURN, gTrue)));
+
+        CallExpr *elemCompFalse = new CallExpr("<",
+                                   new CallExpr(tmp->name, gMethodToken, arg1),
+                                   new CallExpr(tmp->name, gMethodToken, arg2));
+
+        fn->insertAtTail(new CondStmt(elemCompFalse,
+                                      new CallExpr(PRIM_RETURN, gFalse)));
+    }
+  }
+
+  // either it is an empty record, and we didn't add any meaningful comparisons,
+  // or we added those comparisons but they never returned
+  if (allowEquals) {
+    fn->insertAtTail(new CallExpr(PRIM_RETURN, gTrue));
+  }
+  else {
+    fn->insertAtTail(new CallExpr(PRIM_RETURN, gFalse));
+  }
 }
 
 // Builds default enum functions that are defined outside of the scope in which
