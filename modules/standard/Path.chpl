@@ -648,7 +648,7 @@ proc commonPrefixLength(const a1: [] string, const a2: [] string): int {
   }
   var result = 0;
 
-  for i in 1..a.size do
+  for i in 0..#a.size do
     if a[i] != b[i] then
       return result;
     else
@@ -696,7 +696,7 @@ proc relPath(name: string, start:string=curDir): string throws {
 
   // Append the portion of name following the common prefix.
   if !nameComps.isEmpty() then
-    for x in nameComps[(prefixLen + 1)..nameComps.size] do
+    for x in nameComps[prefixLen..nameComps.size-1] do
       outComps.append(x);
 
   if outComps.isEmpty() then
