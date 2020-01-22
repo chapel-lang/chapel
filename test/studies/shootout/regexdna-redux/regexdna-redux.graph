@@ -1,6 +1,5 @@
-perfkeys: real
-files: regexdnaredux-release.dat
-graphkeys: regexdnaredux-release
+perfkeys: real real
+files: regexdnaredux-release.dat regexdnaredux-bytes.dat
+graphkeys: regexdnaredux-release regexdnaredux-bytes
 graphtitle: Regex-dna redux Shootout Benchmark
 ylabel: Time (seconds)
-graphname: regexdnaredux
