@@ -884,7 +884,7 @@ static void buildRecordNotEqualsBody(AggregateType *ct, FnSymbol *fn,
   // either it is an empty record, and we didn't add any meaningful comparisons,
   // or we added those comparisons but they never returned
 
-  // for !=, in either case we return fales
+  // for !=, in either case we return false
   fn->insertAtTail(new CallExpr(PRIM_RETURN, gFalse));
 }
 
@@ -895,26 +895,24 @@ static void buildRecordLessThanBody(AggregateType *ct, FnSymbol *fn,
   for_fields(tmp, ct) {
     if (!tmp->hasFlag(FLAG_IMPLICIT_ALIAS_FIELD) &&
         !tmp->hasFlag(FLAG_TYPE_VARIABLE)) {  // types fields must be equal
-      {
-        Expr* left = new CallExpr(tmp->name, gMethodToken, arg1);
-        Expr* right = new CallExpr(tmp->name, gMethodToken, arg2);
-        CallExpr *elemCompTrue = new CallExpr("<", left, right);
+
+        CallExpr *elemCompTrue = new CallExpr("<",
+                                   new CallExpr(tmp->name, gMethodToken, arg1),
+                                   new CallExpr(tmp->name, gMethodToken, arg2));
         fn->insertAtTail(new CondStmt(elemCompTrue,
                                       new CallExpr(PRIM_RETURN, gTrue)));
-      }
-      {
-        Expr* left = new CallExpr(tmp->name, gMethodToken, arg1);
-        Expr* right = new CallExpr(tmp->name, gMethodToken, arg2);
-        CallExpr *elemCompFalse = new CallExpr(">", left, right);
+
+        CallExpr *elemCompFalse = new CallExpr(">",
+                                   new CallExpr(tmp->name, gMethodToken, arg1),
+                                   new CallExpr(tmp->name, gMethodToken, arg2));
+
         fn->insertAtTail(new CondStmt(elemCompFalse,
                                       new CallExpr(PRIM_RETURN, gFalse)));
-      }
     }
   }
+
   // either it is an empty record, and we didn't add any meaningful comparisons,
   // or we added those comparisons but they never returned
-
-  // for <, in either case we return false
   if (allowEquals) {
     fn->insertAtTail(new CallExpr(PRIM_RETURN, gTrue));
   }
@@ -930,26 +928,24 @@ static void buildRecordGreaterThanBody(AggregateType *ct, FnSymbol *fn,
   for_fields(tmp, ct) {
     if (!tmp->hasFlag(FLAG_IMPLICIT_ALIAS_FIELD) &&
         !tmp->hasFlag(FLAG_TYPE_VARIABLE)) {  // types fields must be equal
-      {
-        Expr* left = new CallExpr(tmp->name, gMethodToken, arg1);
-        Expr* right = new CallExpr(tmp->name, gMethodToken, arg2);
-        CallExpr *elemCompTrue = new CallExpr(">", left, right);
+
+        CallExpr *elemCompTrue = new CallExpr(">",
+                                   new CallExpr(tmp->name, gMethodToken, arg1),
+                                   new CallExpr(tmp->name, gMethodToken, arg2));
         fn->insertAtTail(new CondStmt(elemCompTrue,
                                       new CallExpr(PRIM_RETURN, gTrue)));
-      }
-      {
-        Expr* left = new CallExpr(tmp->name, gMethodToken, arg1);
-        Expr* right = new CallExpr(tmp->name, gMethodToken, arg2);
-        CallExpr *elemCompFalse = new CallExpr("<", left, right);
+
+        CallExpr *elemCompFalse = new CallExpr("<",
+                                   new CallExpr(tmp->name, gMethodToken, arg1),
+                                   new CallExpr(tmp->name, gMethodToken, arg2));
+
         fn->insertAtTail(new CondStmt(elemCompFalse,
                                       new CallExpr(PRIM_RETURN, gFalse)));
-      }
     }
   }
+
   // either it is an empty record, and we didn't add any meaningful comparisons,
   // or we added those comparisons but they never returned
-
-  // for <, in either case we return false
   if (allowEquals) {
     fn->insertAtTail(new CallExpr(PRIM_RETURN, gTrue));
   }
