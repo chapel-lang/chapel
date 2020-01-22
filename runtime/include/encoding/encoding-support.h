@@ -39,6 +39,29 @@ static inline intptr_t chpl_enc_ptr_diff(void* a, void* b)
   return ((intptr_t)a) - ((intptr_t)b);
 }
 
+static inline
+bool chpl_enc_is_escape_codepoint(uint32_t cp) {
+  return cp>=0xdc80 && cp<=0xdcff;
+}
+
+static inline
+uint32_t chpl_enc_check_escape(const char* start, const char* end) {
+  uint32_t cp;
+  if (start+3 <= end) {
+    if ((start[0] & 0xf0) == 0xe0 &&
+        (start[1] & 0xc0) == 0x80 &&
+        (start[2] & 0xc0) == 0x80) {
+      cp = ((start[0] & 0x0f) << 12) +
+           ((start[1] & 0x3f) << 6) +
+           (start[2] & 0x3f);
+      if (cp>=0xdc80 && cp<=0xdcff) {
+        return cp;
+      }
+    }
+  }
+  return 0;
+}
+
 /*
  * Decodes the char buffer `buf` using UTF8 encoding and writes the codepoint in
  * `chr`
@@ -52,28 +75,47 @@ static inline intptr_t chpl_enc_ptr_diff(void* a, void* b)
 static inline
 int chpl_enc_decode_char_buf_utf8(int32_t* CHPL_ENC_RESTRICT chr,
                                   int* CHPL_ENC_RESTRICT nbytes,
-                                  const char* buf, ssize_t buflen)
+                                  const char* buf, ssize_t buflen,
+                                  bool allow_escape)
 {
   const char* start = buf;
   const char* end = start + buflen;
   uint32_t codepoint=0, state;
+  int bytes_read = 0;
   state = 0;
   while( buf != end ) {
-    chpl_enc_utf8_decode(&state, &codepoint, *(const unsigned char*)buf);
-    buf++;
+    chpl_enc_utf8_decode(&state, &codepoint,
+                         *((const unsigned char*)buf+bytes_read));
+    bytes_read++;
     if (state <= 1) {
       break;
     }
   }
   if( state == UTF8_ACCEPT ) {
     *chr = codepoint;
-    *nbytes = chpl_enc_ptr_diff((void*) buf, (void*) start);
+    *nbytes = bytes_read;
     return 0;
   } else {
-    *chr = 0xfffd; // replacement character
-    *nbytes = chpl_enc_ptr_diff((void*) buf, (void*) start);
-    return -1; // -1: EILSEQ
+    if (allow_escape) {
+      codepoint = chpl_enc_check_escape(buf, end);
+      if (codepoint > 0) {
+        *chr = codepoint;  // it was an escape sequence
+        *nbytes = 3;
+        return 0;
+      }
+      else {  // escapes are allowed but this is not a legal one
+        *chr = 0xfffd; // replacement character
+        *nbytes = bytes_read;
+        return -1; // -1: EILSEQ
+      }
+    }
+    else {
+      *chr = 0xfffd; // replacement character
+      *nbytes = bytes_read;
+      return -1; // -1: EILSEQ
+    }
   }
+  return -1;
 }
 
 /*
@@ -169,7 +211,8 @@ int chpl_enc_validate_buf(const char *buf, ssize_t buflen) {
   int offset = 0;
 
   while (offset<buflen) {
-    if (chpl_enc_decode_char_buf_utf8(&cp, &nbytes, buf+offset, buflen-offset) != 0) {
+    if (chpl_enc_decode_char_buf_utf8(&cp, &nbytes, buf+offset,
+                                      buflen-offset, false) != 0) {
       return -1;  // invalid : return EILSEQ
     }
     offset += nbytes;
