@@ -56,7 +56,7 @@ module CSV {
         if line.length == 0 then
           continue;
         const vals = line.split(sep);
-        for param i in 0..#numFields(t) {
+        for param i in 0..numFields(t)-1 {
           getFieldRef(r, i+1) = vals[i]: getField(r, i+1).type;
         }
         if skipHeader {
@@ -85,7 +85,7 @@ module CSV {
         if line.length == 0 then
           continue;
         const vals = line.split(sep);
-        for param i in 0..#t.size {
+        for param i in 0..t.size-1 {
           r(i+1) = vals[i]: t(i+1);
         }
         if skipHeader {
