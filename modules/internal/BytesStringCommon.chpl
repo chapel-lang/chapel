@@ -130,7 +130,7 @@ module BytesStringCommon {
             // in place of a single byte, we may overflow
             const sizeChange = 3-nInvalidBytes;
             (ret.buff, ret._size) = bufferEnsureSize(ret.buff, ret._size,
-                                                     ret._size+sizeChange);
+                                                     ret.len+sizeChange+1);
 
             qio_encode_char_buf(ret.buff+decodedIdx, replChar);
 
@@ -139,9 +139,9 @@ module BytesStringCommon {
           else if errors == decodePolicy.escape {
 
             // encoded escape sequence is 3 bytes. And this is per invalid byte
-            const sizeChange = 3*nInvalidBytes;
+            const sizeChange = 2*nInvalidBytes;
             (ret.buff, ret._size) = bufferEnsureSize(ret.buff, ret._size,
-                                                     ret._size+sizeChange);
+                                                     ret.len+sizeChange+1);
             for i in 0..#nInvalidBytes {
               qio_encode_char_buf(ret.buff+decodedIdx,
                                   0xdc00+buf[thisIdx-nInvalidBytes+i]);
