@@ -82,6 +82,12 @@ Expiring values for function t26 (deinit-points.chpl:434)
   r (deinit-points.chpl:436) expires after last mention
 Expiring values for function t27 (deinit-points.chpl:441)
   r (deinit-points.chpl:443) expires after last mention
+Expiring values for function t28 (deinit-points.chpl:449)
+  r (deinit-points.chpl:451) expires after last mention
+  chpl_sync_error (deinit-points.chpl:452) expires after last mention
+Expiring values for function t29 (deinit-points.chpl:465)
+  r (deinit-points.chpl:467) expires after last mention
+  chpl_sync_error (deinit-points.chpl:468) expires after last mention
 t1
 deinit
 t2
@@ -249,3 +255,13 @@ t27
 R
 deinit
 end
+t28
+begin inner
+end inner
+deinit
+end outer
+t29
+begin inner
+end inner
+deinit
+end outer

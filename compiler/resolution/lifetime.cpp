@@ -3305,9 +3305,11 @@ static bool isCapturingVariable(Symbol* var) {
          var->type->symbol->hasFlag(FLAG_RUNTIME_TYPE_VALUE);
 }
 
-static bool inSyncBlock(Expr* e) {
+static bool inSyncBlock(Expr* e, DefExpr* def) {
 
-  for (Expr* cur = e; cur != NULL; cur = cur->parentExpr) {
+  Expr* defBlock = def->parentExpr;
+
+  for (Expr* cur = e; cur != NULL && cur != defBlock; cur = cur->parentExpr) {
     if (BlockStmt* block = toBlockStmt(cur)) {
       // Recognize sync blocks by the call to chpl_waitDynamicEndCount
       // (and then a if-check-error CondStmt) at the end of them.
@@ -3336,12 +3338,13 @@ bool MarkCapturesVisitor::enterCallExpr(CallExpr* call) {
   if (FnSymbol* calledFn = call->resolvedOrVirtualFunction()) {
     if (isTaskFun(calledFn)) {
       // Consider a 'begin' to be a capture unless it is
-      // lexically enclosed in a sync block.
+      // lexically enclosed in a sync block (considering only
+      // blocks nested inside the declaration block).
       if (calledFn->hasFlag(FLAG_BEGIN)) {
-        if (!inSyncBlock(call)) {
-          for_formals_actuals(formal, actual, call) {
-            SymExpr* actualSe = toSymExpr(actual);
-            Symbol* actualSym = actualSe->symbol();
+        for_formals_actuals(formal, actual, call) {
+          SymExpr* actualSe = toSymExpr(actual);
+          Symbol* actualSym = actualSe->symbol();
+          if (!inSyncBlock(call, actualSym->defPoint)) {
             markAliasesAndSymPotentiallyCaptured(actualSym, call);
           }
         }
