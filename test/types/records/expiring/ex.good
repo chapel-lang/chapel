@@ -111,6 +111,8 @@ Expiring values for function refIfExpr2EOB (ex.chpl:344)
   temp (ex.chpl:345) expires at end of block
 Expiring values for function refIfExpr3EOB (ex.chpl:349)
   temp (ex.chpl:350) expires at end of block
+Expiring values for function splitInitLM (ex.chpl:354)
+  o (ex.chpl:355) expires after last mention
 A: 1 2 3 4
 B: 1 2 3 4
 {x = 1}
@@ -124,3 +126,4 @@ B: 1 2 3 4
 0 0 0 0 0 0 0 0 0 0
 
 {x = 1}
+{x = 0}

@@ -350,3 +350,10 @@ proc refIfExpr3EOB() {
   const ref left = if option then makeR() else makeR();
 }
 refIfExpr3EOB();
+
+proc splitInitLM() {
+  var o;
+  o = new owned C();
+  writeln(o.borrow());
+}
+splitInitLM();
