@@ -2234,17 +2234,17 @@ static void normalizeTypeAlias(DefExpr* defExpr) {
   FnSymbol* initFn = defExpr->getModule()->initFn;
   bool global = (initFn && defExpr->parentExpr == initFn->body);
 
-  if (requestedSplitInit && global) {
-    USR_FATAL_CONT(defExpr, "type alias '%s' is not initialized",
-                   var->name);
-    USR_PRINT(defExpr, "split initialization is not supported for globals");
-  }
-
   // For now, disable automatic split init on non-user code
   if ((defExpr->getModule()->modTag == MOD_USER || requestedSplitInit) &&
-      global == false &&
+      (global == false || requestedSplitInit) &&
       fNoSplitInit == false)
     foundSplitInit = findInitPoints(defExpr, initAssign);
+
+  if (requestedSplitInit && foundSplitInit == false) {
+    USR_FATAL_CONT(defExpr, "type alias '%s' is not initialized", var->name);
+  } else if (foundSplitInit && global) {
+    USR_FATAL_CONT(defExpr, "split initialization is not supported for globals");
+  }
 
   INT_ASSERT(type == NULL);
   INT_ASSERT(init != NULL);
@@ -2437,17 +2437,18 @@ static void normalizeVariableDefinition(DefExpr* defExpr) {
   FnSymbol* initFn = defExpr->getModule()->initFn;
   bool global = (initFn && defExpr->parentExpr == initFn->body);
 
-  if (requestedSplitInit && global) {
-    USR_FATAL_CONT(defExpr, "Variable '%s' is not initialized and has no type",
-                   var->name);
-    USR_PRINT(defExpr, "split initialization is not supported for globals");
-  }
-
   // For now, disable automatic split init on non-user code
   if ((defExpr->getModule()->modTag == MOD_USER || requestedSplitInit) &&
-      global == false &&
+      (global == false || requestedSplitInit) &&
       fNoSplitInit == false)
     foundSplitInit = findInitPoints(defExpr, initAssign);
+
+  if (requestedSplitInit && foundSplitInit == false) {
+    USR_FATAL_CONT(defExpr, "Variable '%s' is not initialized and has no type",
+                   var->name);
+  } else if (requestedSplitInit && global) {
+    USR_FATAL_CONT(defExpr, "split initialization is not supported for globals");
+  }
 
   if ((init != NULL && !requestedSplitInit) ||
       foundSplitInit == false) {
