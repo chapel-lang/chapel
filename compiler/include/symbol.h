@@ -699,6 +699,7 @@ extern const char* astr_chpl_cname;
 extern const char* astr_chpl_forward_tgt;
 extern const char* astr_chpl_manager;
 extern const char* astr_chpl_statementLevelSymbol;
+extern const char* astr_chpl_waitDynamicEndCount;
 extern const char* astr_forallexpr;
 extern const char* astr_forexpr;
 extern const char* astr_loopexpr_iter;

@@ -3305,6 +3305,26 @@ static bool isCapturingVariable(Symbol* var) {
          var->type->symbol->hasFlag(FLAG_RUNTIME_TYPE_VALUE);
 }
 
+static bool inSyncBlock(Expr* e, DefExpr* def) {
+
+  Expr* defBlock = def->parentExpr;
+
+  for (Expr* cur = e; cur != NULL && cur != defBlock; cur = cur->parentExpr) {
+    if (BlockStmt* block = toBlockStmt(cur)) {
+      // Recognize sync blocks by the call to chpl_waitDynamicEndCount
+      // (and then a if-check-error CondStmt) at the end of them.
+      if (CondStmt* cond = toCondStmt(block->body.last()))
+        if (CallExpr* condCall = toCallExpr(cond->condExpr))
+          if (condCall->isPrimitive(PRIM_CHECK_ERROR))
+            if (CallExpr* prevCall = toCallExpr(cond->prev))
+              if (prevCall->isNamedAstr(astr_chpl_waitDynamicEndCount))
+                return true;
+    }
+  }
+
+  return false;
+}
+
 bool MarkCapturesVisitor::enterCallExpr(CallExpr* call) {
   // handle
   // * storing something with lifetime of a into another formal argument
@@ -3317,13 +3337,16 @@ bool MarkCapturesVisitor::enterCallExpr(CallExpr* call) {
   // 0: Handle task functions
   if (FnSymbol* calledFn = call->resolvedOrVirtualFunction()) {
     if (isTaskFun(calledFn)) {
-      // Consider a 'begin' to be a capture
-      // TODO?: unless it is in a sync block?
+      // Consider a 'begin' to be a capture unless it is
+      // lexically enclosed in a sync block (considering only
+      // blocks nested inside the declaration block).
       if (calledFn->hasFlag(FLAG_BEGIN)) {
         for_formals_actuals(formal, actual, call) {
           SymExpr* actualSe = toSymExpr(actual);
           Symbol* actualSym = actualSe->symbol();
-          markAliasesAndSymPotentiallyCaptured(actualSym, call);
+          if (!inSyncBlock(call, actualSym->defPoint)) {
+            markAliasesAndSymPotentiallyCaptured(actualSym, call);
+          }
         }
       }
       // Descend into task functions

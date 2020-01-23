@@ -1989,6 +1989,7 @@ const char* astr_chpl_cname = NULL;
 const char* astr_chpl_forward_tgt = NULL;
 const char* astr_chpl_manager = NULL;
 const char* astr_chpl_statementLevelSymbol = NULL;
+const char* astr_chpl_waitDynamicEndCount = NULL;
 const char* astr_forallexpr = NULL;
 const char* astr_forexpr = NULL;
 const char* astr_loopexpr_iter = NULL;
@@ -2017,6 +2018,7 @@ void initAstrConsts() {
   astr_chpl_forward_tgt = astr("_chpl_forward_tgt");
   astr_chpl_manager = astr("_chpl_manager");
   astr_chpl_statementLevelSymbol = astr("chpl_statementLevelSymbol");
+  astr_chpl_waitDynamicEndCount = astr("chpl_waitDynamicEndCount");
 
   astr_forallexpr    = astr("chpl__forallexpr");
   astr_forexpr       = astr("chpl__forexpr");
