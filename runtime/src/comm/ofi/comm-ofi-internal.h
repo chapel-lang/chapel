@@ -61,6 +61,7 @@ FILE* chpl_comm_ofi_dbg_file;
 #define DBG_RMA                0x100000UL
 #define DBG_RMAWRITE           0x200000UL
 #define DBG_RMAREAD            0x400000UL
+#define DBG_RMAUNORD           0x800000UL
 #define DBG_AMO               0x1000000UL
 #define DBG_ACK               0x2000000UL
 #define DBG_MR               0x10000000UL
