@@ -1,5 +1,5 @@
 Expiring values for function main (no-leak-for-domain.chpl:1)
-  temp (no-leak-for-domain.chpl:4) expires after last mention
+  temp (no-leak-for-domain.chpl:4) expires at end of block
 1851
 
 =================================================================================================================

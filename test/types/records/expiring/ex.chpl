@@ -100,6 +100,8 @@ proc ioExample1LM() {
 
   tmp.writer().write(A);
   tmp.reader().read(B);
+  writeln("A: ", A);
+  writeln("B: ", B);
 }
 ioExample1LM();
 
