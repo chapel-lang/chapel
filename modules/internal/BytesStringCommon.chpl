@@ -107,6 +107,8 @@ module BytesStringCommon {
     ret._size = allocSize;
     ret.isowned = true;
 
+    var expectedSize = ret._size;
+
     var thisIdx = 0;
     var decodedIdx = 0;
     while thisIdx < length {
@@ -139,9 +141,9 @@ module BytesStringCommon {
             // 0xfffd. It is encoded in `encodedReplChar` and its encoded
             // length is `nbytesRepl`, which is 3 bytes in UTF8. If it is used
             // in place of a single byte, we may overflow
-            const sizeChange = 3-nInvalidBytes;
+            expectedSize += 3-nInvalidBytes;
             (ret.buff, ret._size) = bufferEnsureSize(ret.buff, ret._size,
-                                                     ret.len+sizeChange+1);
+                                                     expectedSize);
 
             qio_encode_char_buf(ret.buff+decodedIdx, replChar);
 
@@ -150,9 +152,9 @@ module BytesStringCommon {
           else if errors == decodePolicy.escape {
 
             // encoded escape sequence is 3 bytes. And this is per invalid byte
-            const sizeChange = 2*nInvalidBytes;
+            expectedSize += 2*nInvalidBytes;
             (ret.buff, ret._size) = bufferEnsureSize(ret.buff, ret._size,
-                                                     ret.len+sizeChange+1);
+                                                     expectedSize);
             for i in 0..#nInvalidBytes {
               qio_encode_char_buf(ret.buff+decodedIdx,
                                   0xdc00+buf[thisIdx-nInvalidBytes+i]);
