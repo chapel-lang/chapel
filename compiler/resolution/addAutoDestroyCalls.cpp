@@ -781,7 +781,7 @@ void ComputeLastSymExpr::exitForallStmt(ForallStmt* node) {
 // Returns true for statements that are expressions when
 // their type would normally be a statement,
 // e.g. if-expr, for-expr, forall-expr
-static bool isExprStmt(Expr* e) {
+static bool stmtIsExpr(Expr* e) {
   if (CondStmt* cond = toCondStmt(e))
     return cond->isIfExpr();
   if (ForLoop* forLoop = toForLoop(e))
@@ -838,7 +838,7 @@ static Expr* findLastExprInStatement(Expr* e, VarSymbol* v) {
         if (isTaskFun(fn))
           break;
     }
-    if (isExprStmt(cur)) {
+    if (stmtIsExpr(cur)) {
       // e.g. an if-expr; keep going
     } else if (isBlockStmt(cur) || isCondStmt(cur) ||
                isLoopStmt(cur) || isForallStmt(cur)) {

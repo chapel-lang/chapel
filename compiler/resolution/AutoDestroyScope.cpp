@@ -82,6 +82,9 @@ void AutoDestroyScope::addInitialization(VarSymbol* var) {
   }
 }
 
+// Forget about initializations for outer variables initialized
+// in this scope. The variables will no longer be considered initialized.
+// This matters for split-init and conditionals.
 void AutoDestroyScope::forgetOuterVariableInitializations() {
 
   // iterate through mInitedOuterVars in reverse
