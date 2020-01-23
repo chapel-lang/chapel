@@ -21,6 +21,7 @@
 
 #include "AstVisitorTraverse.h"
 #include "DecoratedClassType.h"
+#include "DeferStmt.h"
 #include "driver.h"
 #include "expr.h"
 #include "ForallStmt.h"
@@ -292,6 +293,9 @@ namespace {
       AliasesMap *aliases;
       LifetimeState* lifetimes;
 
+      MarkCapturesVisitor() : aliases(NULL), lifetimes(NULL) { }
+
+      // only local variables being considered are added to this map
       // symbol -> 1 if potentially captured, 0 if not captured
       SymbolToCapturedMap varToPotentiallyCaptured;
 
@@ -300,6 +304,7 @@ namespace {
       void markAliasesAndSymPotentiallyCaptured(Symbol* sym, Expr* ctx);
 
       virtual bool enterDefExpr(DefExpr* def);
+      virtual bool enterDeferStmt(DeferStmt* defer);
       virtual bool enterCallExpr(CallExpr* call);
   };
 
@@ -3246,12 +3251,15 @@ static bool shouldSetCapture(Symbol* sym) {
 
 void MarkCapturesVisitor::markPotentiallyCaptured(Symbol* sym, Expr* ctx) {
   if (shouldSetCapture(sym)) {
-    if (debuggingExpiringForFn(sym->defPoint->getFunction()) ||
-        debugExpiringForId == sym->id)
-      fprintf(stderr, " %s (%i) potentially captured at %i\n",
-              sym->name, sym->id, ctx->id);
+    SymbolToCapturedMap::iterator it = varToPotentiallyCaptured.find(sym);
+    if (it != varToPotentiallyCaptured.end()) {
+      if (debuggingExpiringForFn(sym->defPoint->getFunction()) ||
+          debugExpiringForId == sym->id)
+        fprintf(stderr, " %s (%i) potentially captured at %i\n",
+                sym->name, sym->id, ctx->id);
 
-    varToPotentiallyCaptured[sym] = 1;
+      it->second = 1;
+    }
   }
 }
 
@@ -3289,12 +3297,23 @@ bool MarkCapturesVisitor::enterDefExpr(DefExpr* def) {
 
   Symbol* sym = def->sym;
   if (shouldSetCapture(sym)) {
-    if (varToPotentiallyCaptured.count(sym) == 0) {
-      // Mark not captured
-      varToPotentiallyCaptured[def->sym] = 0;
-    }
+    // Add to map which indicates that analysis is considering
+    // this variable. Set value in map to 0 to mean not captured
+    // unless something causes it to be.
+    varToPotentiallyCaptured.insert(std::make_pair(sym, 0));
+    // Note, insert call above does nothing if element already in map.
   }
 
+  return false;
+}
+
+bool MarkCapturesVisitor::enterDeferStmt(DeferStmt* defer) {
+  // Mark anything mentioned in a defer as end-of-block
+  std::vector<SymExpr*> symExprs;
+  collectSymExprs(defer, symExprs);
+  for_vector(SymExpr, se, symExprs) {
+    markAliasesAndSymPotentiallyCaptured(se->symbol(), se);
+  }
   return false;
 }
 
