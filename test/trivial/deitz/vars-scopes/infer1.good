@@ -1,3 +1,4 @@
 infer1.chpl:1: In function 'main':
 infer1.chpl:2: error: 'x' cannot be default initialized
 infer1.chpl:3: note: 'x' is used here before being initialized
+infer1.chpl:2: error: Variable 'x' is not initialized and has no type

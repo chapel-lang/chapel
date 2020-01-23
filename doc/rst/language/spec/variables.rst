@@ -170,6 +170,7 @@ assignment, of that variable.
       no-split-init.chpl:1: In function 'main':
       no-split-init.chpl:2: error: 'x' cannot be default initialized
       no-split-init.chpl:3: note: 'x' is used here before being initialized
+      no-split-init.chpl:2: error: Variable 'x' is not initialized and has no type
 
 
    *Example (split-cond-blocks-init.chpl)*

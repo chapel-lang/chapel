@@ -1,0 +1,7 @@
+error-never-initialized.chpl:1: In function 'error':
+error-never-initialized.chpl:2: error: Variable 'a' is not initialized and has no type
+error-never-initialized.chpl:3: error: type alias 't' is not initialized
+error-never-initialized.chpl:7: error: Variable 'b' is not initialized and has no type
+error-never-initialized.chpl:8: error: type alias 'tt' is not initialized
+error-never-initialized.chpl:10: error: split initialization is not supported for globals
+error-never-initialized.chpl:12: error: split initialization is not supported for globals
