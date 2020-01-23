@@ -127,3 +127,9 @@
 51 52 53 54 55 56 57 58
 61 62 63 64 65 66 67 68
 71 72 73 74 75 76 77 78
+s8.chpl:38: In function 'test':
+s8.chpl:38: In function 'test':
+s8.chpl:61: warning: initializing a non-distributed domain from a distributed domain. If you didn't mean to do that, add a dmapped clause to the type expression or remove the type expression altogether
+s8.chpl:61: warning: initializing a non-distributed domain from a distributed domain. If you didn't mean to do that, add a dmapped clause to the type expression or remove the type expression altogether
+s8.chpl:72: Function 'test' instantiated as: test(A: [DimensionalDom(2,int(64),false,unmanaged DimensionalDist2D([domain(2,int(64),false)] borrowed locale,BlockCyclicDim,BlockCyclicDim,int(64),2),BlockCyclic1dom(int(64),int(64),false),BlockCyclic1dom(int(64),int(64),false))] int(64), ix1: 2*int(64), ix2: 2*int(64))
+s8.chpl:73: Function 'test' instantiated as: test(A: [DimensionalDom(2,int(64),true,unmanaged DimensionalDist2D([domain(2,int(64),false)] borrowed locale,BlockCyclicDim,BlockCyclicDim,int(64),2),BlockCyclic1dom(int(64),int(64),true),BlockCyclic1dom(int(64),int(64),true))] int(64), ix1: 2*int(64), ix2: 2*int(64))
