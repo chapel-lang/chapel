@@ -133,15 +133,25 @@ and :proc:`~string.rfind()` return a :record:`byteIndex`.
  */
 module String {
   private use ChapelStandard;
-  use CString;
   private use SysCTypes;
-  use StringCasts;
   private use ByteBufferHelpers;
   private use BytesStringCommon;
   private use SysBasic;
 
+  public use CString;
+  public use StringCasts;
+  public use BytesStringCommon only encodePolicy;  // expose encodePolicy
+
   pragma "fn synchronization free"
-  private extern proc qio_decode_char_buf(ref chr:int(32), ref nbytes:c_int, buf:c_string, buflen:ssize_t):syserr;
+  private extern proc qio_decode_char_buf(ref chr:int(32),
+                                          ref nbytes:c_int,
+                                          buf:c_string,
+                                          buflen:ssize_t): syserr;
+  pragma "fn synchronization free"
+  private extern proc qio_decode_char_buf_esc(ref chr:int(32),
+                                              ref nbytes:c_int,
+                                              buf:c_string,
+                                              buflen:ssize_t): syserr;
   pragma "fn synchronization free"
   private extern proc qio_encode_char_buf(dst:c_void_ptr, chr:int(32)):syserr;
   pragma "fn synchronization free"
@@ -628,9 +638,10 @@ module String {
 
     :returns: A new `string`
   */
-  inline proc createStringWithNewBuffer(s: c_string, length=s.length) throws {
+  inline proc createStringWithNewBuffer(s: c_string, length=s.length,
+                                        errors=decodePolicy.strict) throws {
     return createStringWithNewBuffer(s: bufferType, length=length,
-                                                    size=length+1);
+                                     size=length+1, errors);
   }
 
   /*
@@ -648,12 +659,12 @@ module String {
 
      :returns: A new `string`
   */
+  // TODO: size is probably unnecessary here, but maybe we keep it for
+  // consistence? Then, we can at least give it a default like length+1
   inline proc createStringWithNewBuffer(s: bufferType,
-                                        length: int, size: int) throws {
-    var ret: string;
-    validateEncoding(s, length);
-    initWithNewBuffer(ret, s, length, size);
-    return ret;
+                                        length: int, size=length+1,
+                                        errors=decodePolicy.strict) throws {
+    return decodeByteBuffer(s, length, errors);
   }
 
   pragma "no doc"
@@ -873,6 +884,58 @@ module String {
     pragma "no doc"
     inline proc param c_str() param : c_string {
       return this:c_string; // folded out in resolution
+    }
+
+    /*
+      Returns a :record:`~Bytes.bytes` from the given :record:`string`. If the
+      string contains some escaped non-UTF8 bytes, `errors` argument determines
+      the action.
+        
+      :arg errors: `encodePolicy.pass` directly copies the (potentially escaped)
+                    data, `encodePolicy.unescape` recovers the escaped bytes
+                    back.
+
+      :returns: :record:`~Bytes.bytes`
+    */
+    proc encode(errors=encodePolicy.pass): bytes {
+      var localThis: string = this.localize();
+
+      if errors == encodePolicy.pass {  // just copy
+        return createBytesWithNewBuffer(localThis.buff, localThis.numBytes);
+      }
+      else {  // see if there is escaped data in the string
+        var (buf, size) = bufferAlloc(this.len+1);
+
+        var readIdx = 0;
+        var writeIdx = 0;
+        while readIdx < localThis.len {
+          var cp: int(32);
+          var nbytes: c_int;
+          var multibytes = (localThis.buff + readIdx): c_string;
+          var maxbytes = (localThis.len - readIdx): ssize_t;
+          const decodeRet = qio_decode_char_buf_esc(cp, nbytes, multibytes,
+                                                    maxbytes);
+          if (0xdc80<=cp && cp<=0xdcff) {
+            buf[writeIdx] = (cp-0xdc00):byteType;
+            writeIdx += 1;
+          }
+          else if (decodeRet != 0) {
+            // the string contains invalid data
+            // at this point this can only happen due to a failure in our
+            // implementation of string encoding/decoding
+            // simply copy the data out
+            bufferMemcpyLocal(dst=(buf+writeIdx), src=multibytes, len=nbytes);
+            writeIdx += nbytes;
+          }
+          else {
+            bufferMemcpyLocal(dst=(buf+writeIdx), src=multibytes, len=nbytes);
+            writeIdx += nbytes;
+          }
+          readIdx += nbytes;
+        }
+        buf[writeIdx] = 0;
+        return createBytesWithOwnedBuffer(buf, length=writeIdx, size=size);
+      }
     }
 
     /*

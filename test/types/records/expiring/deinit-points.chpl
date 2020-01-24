@@ -445,3 +445,35 @@ proc t27() {
   writeln("end");
 }
 t27();
+
+proc t28() {
+  writeln("t28");
+  var r: R;
+  sync {
+    {
+      begin {
+        writeln("begin inner");
+        r;
+        writeln("end inner");
+      }
+    }
+  }
+  writeln("end outer");
+}
+t28();
+
+proc t29() {
+  writeln("t29");
+  var r: R;
+  sync {
+    if option {
+      begin {
+        writeln("begin inner");
+        r;
+        writeln("end inner");
+      }
+    }
+  }
+  writeln("end outer");
+}
+t29();

@@ -29,7 +29,7 @@
 class AutoDestroyScope {
 public:
                            AutoDestroyScope(AutoDestroyScope* parent,
-                                            const BlockStmt*        block);
+                                            const BlockStmt*  block);
 
   // adds a declaration
   void                     variableAdd(VarSymbol* var);
@@ -38,6 +38,16 @@ public:
 
   // adds an initialization
   void                     addInitialization(VarSymbol* var);
+
+  // Forget about initializations for outer variables initialized
+  // in this scope. The variables will no longer be considered initialized.
+  // This matters for split-init and conditionals.
+  void                     forgetOuterVariableInitializations();
+
+  // Returns outer variables initialized in this scope
+  std::vector<VarSymbol*>  getInitedOuterVars() const;
+
+  AutoDestroyScope*        getParentScope() const;
 
   // Report initialization for outer variables to parent scope
   void                     addInitializationsToParent() const;
@@ -61,7 +71,7 @@ private:
   // this or a parent scope.
   bool                     isVariableInitialized(VarSymbol* var) const;
 
-  AutoDestroyScope*  mParent;
+  AutoDestroyScope*        mParent;
   const BlockStmt*         mBlock;
 
   bool                     mLocalsHandled;     // Manage function epilogue
@@ -71,12 +81,20 @@ private:
   // order to create a single stack for cleanup operations to be executed.
   // In particular, the ordering between defer blocks and locals matters,
   // in addition to the ordering within each group.
+  // This vector stores variables declared in this block that have
+  // been initialized by this point in the traversal. It stores variables
+  // in initialization order.
 
-  // To support split-init, which can have two init points within a
-  // conditional, store the set of variables that have been initialized.
-  // This set might include variables declared (and in mLocalsAndDefers)
-  // for a parent scope.
+  // Which variables are declared in this scope?
+  std::set<VarSymbol*>     mDeclaredVars;
+
+  // Which variables have been initialized in this scope
+  // (possibly including outer variables)?
   std::set<VarSymbol*>     mInitedVars;
+
+  // Which outer variables have been initialized in this scope?
+  // This vector lists them in initialization order.
+  std::vector<VarSymbol*>  mInitedOuterVars;
 };
 
 #endif

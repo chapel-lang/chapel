@@ -614,6 +614,9 @@ VarSymbol *new_StringSymbol(const char *s);
 //
 // Creates a new bytes literal with the given value.
 VarSymbol *new_BytesSymbol(const char *s);
+//
+// Creates a new string or bytes literal with the given value.
+VarSymbol *new_StringOrBytesSymbol(const char *s, AggregateType *at);
 
 // Creates a new C string literal with the given value.
 VarSymbol *new_CStringSymbol(const char *s);
@@ -696,6 +699,7 @@ extern const char* astr_chpl_cname;
 extern const char* astr_chpl_forward_tgt;
 extern const char* astr_chpl_manager;
 extern const char* astr_chpl_statementLevelSymbol;
+extern const char* astr_chpl_waitDynamicEndCount;
 extern const char* astr_forallexpr;
 extern const char* astr_forexpr;
 extern const char* astr_loopexpr_iter;

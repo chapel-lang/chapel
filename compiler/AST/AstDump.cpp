@@ -567,6 +567,10 @@ bool AstDump::enterForLoop(ForLoop* node) {
 
   write("ForLoop");
   printLoopStmtDetails(node);
+  if (node->isLoweredForallLoop())
+    write("lowered-forall");
+  if (node->isForExpr())
+    write("for-expr");
   newline();
   write("{");
   printBlockID(node);

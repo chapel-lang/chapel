@@ -637,7 +637,15 @@ proc file.realPath(out error: syserr): string {
 /* Compute the common prefix length between two lists of path components. */
 private
 proc commonPrefixLength(const a1: [] string, const a2: [] string): int {
-  const ref (a, b) = if a1.size < a2.size then (a1, a2) else (a2, a1);
+  const ref a;
+  const ref b;
+  if a1.size < a2.size {
+    a = a1;
+    b = a2;
+  } else {
+    a = a2;
+    b = a1;
+  }
   var result = 0;
 
   for i in 1..a.size do

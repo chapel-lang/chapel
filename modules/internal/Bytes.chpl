@@ -93,20 +93,12 @@ To learn more about handling these errors, see the
  */
 module Bytes {
   private use ChapelStandard;
-  use BytesCasts;
   private use ByteBufferHelpers;
   private use BytesStringCommon;
   private use SysCTypes;
 
-  /*
-     ``decodePolicy`` specifies what happens when there is malformed characters
-     when decoding a :record:`bytes` into a UTF-8 :record:`~String.string`.
-       
-       - **strict**: default policy; raise error
-       - **replace**: replace with UTF-8 replacement character
-       - **ignore**: silently drop data
-  */
-  enum decodePolicy { strict, replace, ignore }
+  public use BytesCasts;
+  public use BytesStringCommon only decodePolicy;  // expose decodePolicy
 
   pragma "no doc"
   type idxType = int; 
@@ -256,7 +248,8 @@ module Bytes {
 
      :returns: A new :record:`bytes`
   */
-  inline proc createBytesWithNewBuffer(s: bufferType, length: int, size: int) {
+  inline proc createBytesWithNewBuffer(s: bufferType, length: int,
+                                       size=length+1) {
     var ret: bytes;
     initWithNewBuffer(ret, s, length, size);
     return ret;
@@ -944,7 +937,9 @@ module Bytes {
       
       :arg errors: `decodePolicy.strict` raises an error, `decodePolicy.replace`
                    replaces the malformed character with UTF-8 replacement
-                   character, `decodePolicy.ignore` drops the data silently.
+                   character, `decodePolicy.ignore` drops the data silently,
+                   `decodePolicy.escape` escapes each illegal byte with private
+                   use codepoints
       
       :throws: `DecodeError` if `decodePolicy.strict` is passed to the `errors`
                argument and the :record:`bytes` contains non-UTF-8 characters.
@@ -953,80 +948,8 @@ module Bytes {
     */
     // NOTE: In the future this could support more encodings.
     proc decode(errors=decodePolicy.strict): string throws {
-      pragma "fn synchronization free"
-      extern proc qio_decode_char_buf(ref chr:int(32), ref nbytes:c_int,
-                                      buf:c_string, buflen:ssize_t):syserr;
-      extern proc qio_encode_char_buf(dst: c_void_ptr, chr: int(32)): syserr;
-      extern proc qio_nbytes_char(chr: int(32)): c_int;
-
       var localThis: bytes = this.localize();
-
-      // allocate buffer the same size as this buffer assuming that the string
-      // is in fact perfectly decodable. In the worst case, the user wants the
-      // replacement policy and we grow the buffer couple of times.
-      // The alternative is to allocate more space from the beginning.
-      var ret: string;
-      var (newBuff, allocSize) = bufferAlloc(this.len+1);
-      ret.buff = newBuff;
-      ret._size = allocSize;
-      ret.isowned = true;
-
-      var thisIdx = 0;
-      var decodedIdx = 0;
-      while thisIdx < localThis.len {
-        var cp: int(32);
-        var nbytes: c_int;
-        var bufToDecode = (localThis.buff + thisIdx): c_string;
-        var maxbytes = (localThis.len - thisIdx): ssize_t;
-        const decodeRet = qio_decode_char_buf(cp, nbytes,
-                                              bufToDecode, maxbytes);
-
-        if decodeRet != 0 {  //decoder returns error
-          if errors == decodePolicy.strict {
-            throw new owned DecodeError();
-          }
-          else if errors == decodePolicy.ignore || 
-                  errors == decodePolicy.replace {
-
-            // if nbytes is 1, then we must have read a single byte and found
-            // that it was invalid, if nbytes is >1 then we must have read
-            // multiple bytes where the last one broke the sequence. But it can
-            // be a valid byte itself. So we rewind by 1 in that case
-            // we use nInvalidBytes to store how many bytes we are ignoring or
-            // replacing
-            const nInvalidBytes = if nbytes==1 then nbytes else nbytes-1;
-            thisIdx += nInvalidBytes;
-
-            if errors == decodePolicy.replace {
-              param replChar: int(32) = 0xfffd;
-
-              // Replacement can cause the string to be larger than initially
-              // expected. The Unicode replacement character has codepoint
-              // 0xfffd. It is encoded in `encodedReplChar` and its encoded
-              // length is `nbytesRepl`, which is 3 bytes in UTF8. If it is used
-              // in place of a single byte, we may overflow
-              const sizeChange = 3-nInvalidBytes;
-              (ret.buff, ret._size) = bufferEnsureSize(ret.buff, ret._size,
-                                                       ret._size+sizeChange);
-
-              qio_encode_char_buf(ret.buff+decodedIdx, replChar);
-
-              decodedIdx += 3;  // replacement character is 3 bytes in UTF8
-            }
-          }
-        }
-        else {  // we got valid characters
-          // do a naive copy
-          bufferMemcpyLocal(dst=ret.buff, src=bufToDecode, len=nbytes,
-                            dst_off=decodedIdx);
-          thisIdx += nbytes;
-          decodedIdx += nbytes;
-        }
-      }
-
-      ret.len = decodedIdx;
-      ret.buff[ret.len] = 0;
-      return ret;
+      return decodeByteBuffer(localThis.buff, localThis.len, errors);
     }
 
     /*

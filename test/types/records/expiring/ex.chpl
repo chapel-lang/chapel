@@ -100,6 +100,8 @@ proc ioExample1LM() {
 
   tmp.writer().write(A);
   tmp.reader().read(B);
+  writeln("A: ", A);
+  writeln("B: ", B);
 }
 ioExample1LM();
 
@@ -348,3 +350,10 @@ proc refIfExpr3EOB() {
   const ref left = if option then makeR() else makeR();
 }
 refIfExpr3EOB();
+
+proc splitInitLM() {
+  var o;
+  o = new owned C();
+  writeln(o.borrow());
+}
+splitInitLM();

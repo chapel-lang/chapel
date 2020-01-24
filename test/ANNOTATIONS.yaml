@@ -1163,6 +1163,8 @@ memleaksfull:
     - Fix quicksort to work with owned array elements (#14204)
   12/10/19:
     - Allow messages in new Errors (#14545)
+  01/09/20:
+    - Resolve memory leaks with quicksort with array-of-arrays (#14635)
 
 meteor:
   12/18/13:

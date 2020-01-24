@@ -1,2 +1,0 @@
-renameSameNameConflict2.chpl:1: error: symbol L is multiply defined
-renameSameNameConflict2.chpl:4: note: also defined here

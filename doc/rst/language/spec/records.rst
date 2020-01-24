@@ -508,8 +508,8 @@ The following example demonstrates record assignment.
 Default Comparison Operators
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Default functions to overload ``==`` and ``!=`` are defined for
-records if none are explicitly defined. These functions have the
+Default functions to overload comparison operators are defined for
+records if none are explicitly defined. ``==`` and ``!=`` functions have the
 following signatures for a record ``R``:
 
 
@@ -519,8 +519,14 @@ following signatures for a record ``R``:
    proc ==(lhs:R, rhs:R) : bool where lhs.type == rhs.type;
    proc !=(lhs:R, rhs:R) : bool where lhs.type == rhs.type;
 
-Each of these compare the fields, one at a time, returning ``false`` if
-the property is not satisfied by the given pair of fields.
+Other comparison operator overloads (namely ``<``, ``<=``, ``>``, and ``>=``)
+have similar signatures but their where clauses also check whether the relevant
+operator is supported by each field.
+
+All of these comparison operators except ``!=`` compare the fields, one at a
+time, returning ``false`` if the property is not satisfied by the given pair of
+fields. Whereas ``!=`` returns ``true`` if the property is satisfied by any
+field.
 
 .. _Class_and_Record_Differences:
 

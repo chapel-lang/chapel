@@ -1,0 +1,84 @@
+test1
+init b
+init a
+deinit a
+deinit b
+end
+test1eob
+init b
+init a
+deinit a
+deinit b
+test2
+init b
+init a
+deinit a
+deinit b
+end
+test2eob
+init b
+init a
+deinit a
+deinit b
+test3
+init b
+init a
+deinit a
+deinit b
+end
+test3eob
+init b
+init a
+deinit a
+deinit b
+test4
+init b
+init a
+deinit a
+deinit b
+end
+test4eob
+init b
+init a
+deinit a
+deinit b
+test5
+init b
+init a
+deinit a
+deinit b
+end
+test5eob
+init b
+init a
+deinit a
+deinit b
+test6
+init b
+init a
+deinit a
+deinit b
+end
+test6eob
+init b
+init a
+deinit a
+deinit b
+test7
+test7eob
+test8
+init b
+deinit b
+test8eob
+init b
+deinit b
+test9
+init b
+init a
+deinit a
+deinit b
+test9eob
+init b
+init a
+deinit a
+deinit b
