@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2020 Cray Inc.
+ * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -34,7 +34,7 @@ void chpl_byte_buffer_free(chpl_byte_buffer cb) {
 }
 
 chpl_byte_buffer chpl_byte_buffer_make(const char* data) {
-  // We can get away with this cast because we mark "isOWned" as false.
+  // We can get away with this cast because we mark "isOwned" as false.
   chpl_byte_buffer result = { 0, (char*) data, strlen(data) };
   return result;
 }

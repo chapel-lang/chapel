@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2020 Cray Inc.
+ * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -262,7 +262,9 @@
 
   PRIMITIVE_R(PRIM_IS_POD)
   PRIMITIVE_R(PRIM_NEEDS_AUTO_DESTROY)
+  PRIMITIVE_R(PRIM_END_OF_STATEMENT)
   PRIMITIVE_R(PRIM_AUTO_DESTROY_RUNTIME_TYPE)
+
   PRIMITIVE_R(PRIM_GET_RUNTIME_TYPE_FIELD)
 
   PRIMITIVE_R(PRIM_COERCE)

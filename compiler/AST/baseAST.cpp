@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2020 Cray Inc.
+ * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -163,6 +163,19 @@ void printStatistics(const char* pass) {
   last_nasts = nasts;
 }
 
+/* Certain AST elements, such as PRIM_END_OF_STATEMENT, should just
+   be adjusted when variables are removed. */
+static void remove_weak_links(VarSymbol* var) {
+  if (var != NULL) {
+    for_SymbolSymExprs(se, var) {
+      if (isAlive(se))
+        if (CallExpr* call = toCallExpr(se->parentExpr))
+          if (call->isPrimitive(PRIM_END_OF_STATEMENT))
+            se->remove();
+    }
+  }
+}
+
 // for debugging purposes only
 void trace_remove(BaseAST* ast, char flag) {
   // crash if deletedIdHandle is not initialized but deletedIdFilename is
@@ -187,6 +200,8 @@ void trace_remove(BaseAST* ast, char flag) {
     if (isAlive(ast) || isRootModuleWithType(ast, type)) { \
       g##type##s.v[i##type++] = ast;            \
     } else {                                    \
+      if (E_##type == E_VarSymbol)              \
+        remove_weak_links(toVarSymbol(ast));    \
       trace_remove(ast, 'x');                   \
       delete ast; ast = 0;                      \
     }                                           \
@@ -396,18 +411,23 @@ bool BaseAST::isRefOrWideRef() {
 }
 
 FnSymbol* BaseAST::getFunction() {
-  if (ModuleSymbol* x = toModuleSymbol(this))
-    return x->initFn;
-  else if (FnSymbol* x = toFnSymbol(this))
-    return x;
-  else if (Type* x = toType(this))
-    return x->symbol->getFunction();
-  else if (Symbol* x = toSymbol(this))
-    return x->defPoint->getFunction();
-  else if (Expr* x = toExpr(this))
-    return x->parentSymbol->getFunction();
-  else
-    INT_FATAL(this, "Unexpected case in BaseAST::getFunction()");
+  BaseAST* cur = this;
+  while (cur != NULL) {
+    // base cases
+    if (ModuleSymbol* x = toModuleSymbol(cur))
+      return x->initFn;
+    else if (FnSymbol* x = toFnSymbol(cur))
+      return x;
+    // inductive cases
+    else if (Type* x = toType(cur))
+      cur = x->symbol;
+    else if (Symbol* x = toSymbol(cur))
+      cur = x->defPoint;
+    else if (Expr* x = toExpr(cur))
+      cur = x->parentSymbol;
+    else
+      INT_FATAL(this, "Unexpected case in BaseAST::getFunction()");
+  }
   return NULL;
 }
 

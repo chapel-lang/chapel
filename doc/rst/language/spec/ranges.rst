@@ -426,7 +426,7 @@ only if the range is iterable. In this case the loop iterates over the
 members of the range’s represented sequence, in the order defined by the
 sequence. If the range is empty, no iterations are executed.
 
-   *Cray’s Chapel Implementation*.
+   *Implementation Notes*.
 
    An attempt to iterate over a range causes an error if adding stride
    to the range’s last index overflows its index type, i.e. if the sum

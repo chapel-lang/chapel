@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2020 Cray Inc.
+ * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -108,7 +108,7 @@ module ChapelBase {
     // assignments defined for sync and single class types.
   inline proc =(ref a, b:_nilType) where isBorrowedOrUnmanagedClassType(a.type)
   {
-    if isNonNilableClassType(a.type) && !chpl_legacyClasses {
+    if isNonNilableClassType(a.type) {
       compilerError("cannot assign to " + a.type:string + " from nil");
     }
     __primitive("=", a, nil);
@@ -733,17 +733,17 @@ module ChapelBase {
   // a sync to read it or a sync returned from a function but not
   // explicitly captured.
   //
-  inline proc _statementLevelSymbol(a) { }
-  inline proc _statementLevelSymbol(a: sync)  { a.readFE(); }
-  inline proc _statementLevelSymbol(a: single) { a.readFF(); }
-  inline proc _statementLevelSymbol(param a) param { return a; }
-  inline proc _statementLevelSymbol(type a) type { return a; }
+  inline proc chpl_statementLevelSymbol(a) { }
+  inline proc chpl_statementLevelSymbol(a: sync)  { a.readFE(); }
+  inline proc chpl_statementLevelSymbol(a: single) { a.readFF(); }
+  inline proc chpl_statementLevelSymbol(param a) param { return a; }
+  inline proc chpl_statementLevelSymbol(type a) type { return a; }
 
   //
   // If an iterator is called without capturing the result, iterate over it
   // to ensure any side effects it has will happen.
   //
-  inline proc _statementLevelSymbol(ir: _iteratorRecord) {
+  inline proc chpl_statementLevelSymbol(ir: _iteratorRecord) {
     iter _ir_copy_recursive(ir) {
       for e in ir do
         yield chpl__initCopy(e);
@@ -1300,7 +1300,7 @@ module ChapelBase {
   // This version is called for normal sync blocks.
   pragma "task join impl fn"
   pragma "unchecked throws"
-  proc _waitDynamicEndCount(param countRunningTasks=true) throws {
+  proc chpl_waitDynamicEndCount(param countRunningTasks=true) throws {
     var e = __primitive("get dynamic end count");
     _waitEndCount(e, countRunningTasks);
 
@@ -1378,17 +1378,12 @@ module ChapelBase {
 
   inline proc _cast(type t:unmanaged class, x:_nilType)
   {
-    if !chpl_legacyClasses {
       compilerError("cannot cast nil to " + t:string);
-    }
   }
   inline proc _cast(type t:borrowed class, x:_nilType)
   {
-    if !chpl_legacyClasses {
-      compilerError("cannot cast nil to " + t:string);
-    }
+    compilerError("cannot cast nil to " + t:string);
   }
-
 
   // casting to unmanaged?, no class downcast
   inline proc _cast(type t:unmanaged class?, x:borrowed class?)
@@ -1579,8 +1574,7 @@ module ChapelBase {
   pragma "suppress lvalue error"
   pragma "unsafe"
   inline proc _createFieldDefault(type t, init) {
-    if !chpl_legacyClasses && isNonNilableClassType(t)
-                           && isNilableClassType(init.type) then
+    if isNonNilableClassType(t) && isNilableClassType(init.type) then
       compilerError("default-initializing a field with a non-nilable type ",
           t:string, " from an instance of nilable ", init.type:string);
 
@@ -1602,7 +1596,7 @@ module ChapelBase {
   pragma "no copy return"
   pragma "unsafe"
   inline proc _createFieldDefault(type t, init: _nilType) {
-    if !chpl_legacyClasses && isNonNilableClassType(t) then
+    if isNonNilableClassType(t) then
       compilerError("default-initializing a field with a non-nilable type ",
                     t:string, " from nil");
 
@@ -2239,6 +2233,12 @@ module ChapelBase {
   proc isBorrowedOrUnmanagedClassType(type t:unmanaged) param return true;
   proc isBorrowedOrUnmanagedClassType(type t:borrowed) param return true;
   proc isBorrowedOrUnmanagedClassType(type t) param return false;
+
+  // Former support for --legacy-classes, to be removed after 1.21.
+  proc chpl_legacyClasses param {
+    compilerWarning("'chpl_legacyClasses' is deprecated and will be removed in the next release; it is now always false");
+    return false;
+  }
 
   proc isRecordType(type t) param {
     if __primitive("is record type", t) == false then

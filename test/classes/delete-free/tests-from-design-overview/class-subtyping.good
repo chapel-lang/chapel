@@ -4,10 +4,10 @@ in ParentClass.deinit
 back in test1
 in test2
 in borrowParent
-back in test2
+back in test2 {x = 0}
 in ParentClass.deinit
 in test3
 in method, this.type is borrowed ChildClass
 in parentMethod, this.type is borrowed ParentClass
-back in test3
 in ParentClass.deinit
+back in test3

@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2020 Cray Inc.
+ * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -166,6 +166,10 @@ static void forallPostamble(Expr* expr, ForallStmt* pfs, int indent) {
 }
 
 static void usePostamble(UseStmt* use, int indent) {
+  if (use->isARename()) {
+    printf("as %s ", use->getRename());
+  }
+
   if (use->isPlainUse())
     return;
 

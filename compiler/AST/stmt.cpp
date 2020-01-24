@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2020 Cray Inc.
+ * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -452,7 +452,7 @@ BlockStmt::length() const {
 
 void
 BlockStmt::useListAdd(ModuleSymbol* mod, bool privateUse) {
-  useListAdd(new UseStmt(mod, privateUse));
+  useListAdd(new UseStmt(mod, "", privateUse));
 }
 
 void
@@ -538,12 +538,14 @@ BlockStmt::accept(AstVisitor* visitor) {
 *                                                                             *
 ************************************** | *************************************/
 
-CondStmt::CondStmt(Expr* iCondExpr, BaseAST* iThenStmt, BaseAST* iElseStmt) :
-  Stmt(E_CondStmt) {
+CondStmt::CondStmt(Expr* iCondExpr,
+                   BaseAST* iThenStmt, BaseAST* iElseStmt,
+                   bool isIfExpr) : Stmt(E_CondStmt) {
 
   condExpr = iCondExpr;
   thenStmt = NULL;
   elseStmt = NULL;
+  fIsIfExpr = isIfExpr;
 
   if (Expr* s = toExpr(iThenStmt)) {
     BlockStmt* bs = toBlockStmt(s);
@@ -635,6 +637,10 @@ CallExpr* CondStmt::foldConstantCondition() {
   return result;
 }
 
+bool CondStmt::isIfExpr() const {
+  return fIsIfExpr;
+}
+
 void CondStmt::verify() {
   Expr::verify();
 
@@ -684,7 +690,8 @@ void CondStmt::verify() {
 CondStmt* CondStmt::copyInner(SymbolMap* map) {
   return new CondStmt(COPY_INT(condExpr),
                       COPY_INT(thenStmt),
-                      COPY_INT(elseStmt));
+                      COPY_INT(elseStmt),
+                      fIsIfExpr);
 }
 
 

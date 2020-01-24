@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2020 Cray Inc.
+ * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -890,10 +890,6 @@ void initCompilerGlobals() {
   gNilChecking->addFlag(FLAG_PARAM);
   setupBoolGlobal(gNilChecking, !fNoNilChecks);
 
-  gLegacyClasses = new VarSymbol("chpl_legacyClasses", dtBool);
-  gLegacyClasses->addFlag(FLAG_PARAM);
-  setupBoolGlobal(gLegacyClasses, fLegacyClasses);
-
   gOverloadSetsChecks = new VarSymbol("chpl_overloadSetsChecks", dtBool);
   gOverloadSetsChecks->addFlag(FLAG_PARAM);
   setupBoolGlobal(gOverloadSetsChecks, fOverloadSetsChecks);
@@ -1139,6 +1135,7 @@ bool isClassLikeOrPtr(Type* t) {
   return isClassLike(t) || (t->symbol->hasFlag(FLAG_C_PTR_CLASS) ||
                             t->symbol->hasFlag(FLAG_DATA_CLASS) ||
                             t == dtCVoidPtr ||
+                            t == dtStringC ||
                             t == dtCFnPtr);
 }
 

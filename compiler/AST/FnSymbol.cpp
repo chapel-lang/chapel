@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2020 Cray Inc.
+ * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -501,36 +501,6 @@ Symbol* FnSymbol::getReturnSymbol() {
   }
 
   if (retval == NULL) {
-    INT_FATAL(this, "function is not normal");
-  }
-
-  return retval;
-}
-
-
-// Replace the return symbol with 'newRetSymbol',
-// return the previous return symbol.
-// If newRetType != NULL, also update fn->retType.
-Symbol* FnSymbol::replaceReturnSymbol(Symbol* newRetSymbol, Type* newRetType) {
-  CallExpr* ret    = toCallExpr(this->body->body.last());
-  Symbol*   retval = NULL;
-
-  if (ret != NULL && ret->isPrimitive(PRIM_RETURN) == true) {
-    if (SymExpr* sym = toSymExpr(ret->get(1))) {
-      Symbol* prevRetSymbol = sym->symbol();
-
-      sym->setSymbol(newRetSymbol);
-
-      this->retSymbol = newRetSymbol;
-
-      if (newRetType != NULL) {
-        this->retType = newRetType;
-      }
-
-      retval = prevRetSymbol;
-    }
-
-  } else {
     INT_FATAL(this, "function is not normal");
   }
 

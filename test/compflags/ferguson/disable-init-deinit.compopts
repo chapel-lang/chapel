@@ -1,0 +1,2 @@
+--no-split-initialization  # disable-init-deinit.1.good
+--no-early-deinit          # disable-init-deinit.2.good

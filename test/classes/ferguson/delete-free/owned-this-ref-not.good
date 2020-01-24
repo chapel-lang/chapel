@@ -1,12 +1,12 @@
 calling test1
 in test1, calling x.foo()
 in foo
-back in test1
+back in test1 {x = 1}
 deinit
 back in main
 calling test2
 in test2, calling x.bar()
 in bar
-back in test2
+back in test2 {x = 1}
 deinit
 back in main

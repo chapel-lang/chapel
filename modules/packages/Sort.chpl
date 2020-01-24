@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2020 Cray Inc.
+ * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -917,7 +917,7 @@ module QuickSort {
     // c+1..d-1 store elements > pivot
     // d+1..hi  stores equal elements
 
-    // initally, entire array is in b..c
+    // initially, entire array is in b..c
     var a = lo;
     var b = lo;
     var c = hi;

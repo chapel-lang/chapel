@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2020 Cray Inc.
+ * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -1063,6 +1063,13 @@ initPrimitive() {
   prim_def(PRIM_TO_NON_NILABLE_CLASS, "to non nilable class", returnInfoToNonNilable, false, false);
 
   prim_def(PRIM_NEEDS_AUTO_DESTROY, "needs auto destroy", returnInfoBool, false, false);
+
+  // Indicates the end of a statement. This is important for the
+  // deinitialization location for some variables.
+  // Any arguments are SymExprs to user variables that should be alive until
+  // after this primitive.
+  prim_def(PRIM_END_OF_STATEMENT, "end of statement", returnInfoVoid, false, false);
+
   prim_def(PRIM_AUTO_DESTROY_RUNTIME_TYPE, "auto destroy runtime type", returnInfoVoid, false, false);
 
   // Accepts 3 arguments:

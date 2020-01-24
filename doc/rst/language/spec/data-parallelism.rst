@@ -379,12 +379,6 @@ the ``initialization-part`` as calculated at the start of the
 corresponding task or the iterator. ``ref`` shadow variables are never
 destroyed.
 
-   *Cray’s Chapel Implementation*.
-
-   Currently task-private variables are not available for task
-   constructs. A regular variable declared at the start of the
-   begin/cobegin/coforall block can be used instead.
-
 ..
 
    *Example (task-private-variable.chpl)*.

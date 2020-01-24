@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2020 Cray Inc.
+ * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -66,7 +66,6 @@ VarSymbol *gFalse = NULL;
 VarSymbol *gBoundsChecking = NULL;
 VarSymbol *gCastChecking = NULL;
 VarSymbol *gNilChecking = NULL;
-VarSymbol *gLegacyClasses = NULL;
 VarSymbol *gOverloadSetsChecks = NULL;
 VarSymbol *gDivZeroChecking = NULL;
 VarSymbol* gPrivatization = NULL;
@@ -1604,6 +1603,20 @@ VarSymbol *new_BytesSymbol(const char *str) {
   return s;
 }
 
+// Just a convenience function
+VarSymbol *new_StringOrBytesSymbol(const char *str, AggregateType *t) {
+  if (t == dtString) {
+    return new_StringSymbol(str);
+  }
+  else if (t == dtBytes) {
+    return new_BytesSymbol(str);
+  }
+  else {
+    INT_FATAL("new_StringOrBytesSymbol accepts dtString and dtBytes only");
+    return NULL;
+  }
+}
+
 VarSymbol *new_CStringSymbol(const char *str) {
   Immediate imm;
   imm.const_kind = CONST_KIND_STRING;
@@ -1975,6 +1988,8 @@ const char* astrThis = NULL;
 const char* astr_chpl_cname = NULL;
 const char* astr_chpl_forward_tgt = NULL;
 const char* astr_chpl_manager = NULL;
+const char* astr_chpl_statementLevelSymbol = NULL;
+const char* astr_chpl_waitDynamicEndCount = NULL;
 const char* astr_forallexpr = NULL;
 const char* astr_forexpr = NULL;
 const char* astr_loopexpr_iter = NULL;
@@ -2002,6 +2017,8 @@ void initAstrConsts() {
   astr_chpl_cname = astr("_chpl_cname");
   astr_chpl_forward_tgt = astr("_chpl_forward_tgt");
   astr_chpl_manager = astr("_chpl_manager");
+  astr_chpl_statementLevelSymbol = astr("chpl_statementLevelSymbol");
+  astr_chpl_waitDynamicEndCount = astr("chpl_waitDynamicEndCount");
 
   astr_forallexpr    = astr("chpl__forallexpr");
   astr_forexpr       = astr("chpl__forexpr");

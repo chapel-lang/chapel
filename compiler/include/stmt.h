@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2020 Cray Inc.
+ * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -158,7 +158,8 @@ class CondStmt : public Stmt {
 public:
                       CondStmt(Expr*    iCondExpr,
                                BaseAST* iThenStmt,
-                               BaseAST* iElseStmt = NULL);
+                               BaseAST* iElseStmt = NULL,
+                               bool     isIfExpr = false);
 
                       DECLARE_COPY(CondStmt);
 
@@ -175,6 +176,11 @@ public:
   Expr*               condExpr;
   BlockStmt*          thenStmt;
   BlockStmt*          elseStmt;
+
+  bool                isIfExpr() const;
+
+private:
+  bool                fIsIfExpr;
 };
 
 /************************************* | **************************************

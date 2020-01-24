@@ -30,11 +30,13 @@ proc returnOrThrow(i:int, j = 4):MyRecord throws {
 proc test() {
   try {
     var x = returnOrThrow(1);
+    ref rx = x;
     writeln(x);
     var y = returnOrThrow(2);
     writeln(y);
     var z = returnOrThrow(3);
     writeln(z);
+    y;
   } catch e {
     writeln(e);
   }
