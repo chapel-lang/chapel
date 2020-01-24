@@ -300,13 +300,42 @@ static void checkSplitInitOrder(CondStmt* cond,
   // normalizer should prevent these two from initializing different
   // variables.
   bool ok = true;
-  if (thenOrder.size() != elseOrder.size())
-    ok = false;
 
-  if (ok) {
+  if (thenOrder.size() == elseOrder.size()) {
+    // common case
     size_t size = thenOrder.size();
     for (size_t i = 0; i < size; i++) {
       if (thenOrder[i] != elseOrder[i]) {
+        ok = false;
+        break;
+      }
+    }
+  } else {
+    // one of the branches might have returned early,
+    // so only consider variables that are initialized in both.
+    std::vector<VarSymbol*> thenOrder2;
+    std::vector<VarSymbol*> elseOrder2;
+    std::set<VarSymbol*> thenSet;
+    std::set<VarSymbol*> elseSet;
+
+    for_vector(VarSymbol, var, thenOrder) {
+      thenSet.insert(var);
+    }
+    for_vector(VarSymbol, var, elseOrder) {
+      elseSet.insert(var);
+    }
+    for_vector(VarSymbol, var, thenOrder) {
+      if (elseSet.count(var) != 0)
+        thenOrder2.push_back(var);
+    }
+    for_vector(VarSymbol, var, elseOrder) {
+      if (thenSet.count(var) != 0)
+        elseOrder2.push_back(var);
+    }
+    INT_ASSERT(thenOrder2.size() == elseOrder2.size());
+    size_t size = thenOrder2.size();
+    for (size_t i = 0; i < size; i++) {
+      if (thenOrder2[i] != elseOrder2[i]) {
         ok = false;
         break;
       }
