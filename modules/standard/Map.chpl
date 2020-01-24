@@ -200,7 +200,7 @@ module Map {
         _leave();
         return result;
       } else {
-        boundsCheckHalt("map index out of bounds: ", k);
+        boundsCheckHalt("map index out of bounds: " + k:string);
         ref result = vals._value.data[0];
         _leave();
         return result;
@@ -211,7 +211,7 @@ module Map {
     proc const this(k: keyType) const {
       _enter();
       if !myKeys.contains(k) then
-        boundsCheckHalt("map index ", k, " out of bounds");
+        boundsCheckHalt("map index " + k:string + " out of bounds");
       const result = vals[k];
       _leave();
       return result;
