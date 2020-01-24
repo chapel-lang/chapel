@@ -3032,6 +3032,7 @@ proc channel._constructIoErrorMsg(param kind: iokind, const x:?t): string {
 pragma "no doc"
 proc channel._readOne(param kind: iokind, ref x:?t,
                              loc:locale?) throws {
+  // TODO: Make _read_one_internal(s) a method instead.
   var err = try _read_one_internal(_channel_internal, kind, x, loc); 
 
   if err != ENOERR {
@@ -3045,6 +3046,7 @@ proc channel._readOne(param kind: iokind, ref x:?t,
 //
 pragma "no doc"
 proc channel._writeOne(param kind: iokind, const x:?t, loc:locale?) throws {
+  // TODO: Make _write_one_internal(s) a method instead.
   var err = _write_one_internal(_channel_internal, kind, x, loc);
 
   if err != ENOERR {
@@ -6612,10 +6614,10 @@ proc channel.readf(fmtStr:?t, ref args ...?k): bool throws
   if !err {
     return true;
   } else if err == EEOF {
+
     //
-    // TODO: Shouldn't we also return false for EFORMAT? Yet some tests
-    // (io/ferguson/json.chpl off the top of my head) expect EFORMAT errors
-    // to be thrown. Is the documentation off?
+    // TODO: Since we don't return false for EFORMAT, should the docstring be
+    // updated to reflect that?
     //
     return false;
   } else {
