@@ -307,6 +307,8 @@ record LinkedList {
           // Continue on if we didn't read an end bracket.
         }
       } else {
+
+        // Try to read a space or a comma. Break if we don't.
         try {
           if isSpace {
             f <~> new ioLiteral(" ");

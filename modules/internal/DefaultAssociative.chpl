@@ -814,6 +814,7 @@ module DefaultAssociative {
           try {
             f <~> new ioLiteral(",");
           } catch err: BadFormatError {
+            // Break out of the loop if we didn't read a comma.
             break;
           }
         }

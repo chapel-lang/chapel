@@ -436,14 +436,15 @@ module ChapelIO {
 
         // The order should not matter.
         while numRead < numToRead {
+
+          // Try reading a comma. If we don't, then break.
           if needsComma then 
             try {
               var comma = new ioLiteral(",", true);
-
-              // Try reading a comma. If we don't, then break.
               reader.readwrite(comma);
               needsComma = false;
             } catch err: BadFormatError {
+              // Break out of the loop if we didn't read a comma.
               break;
             }
 
