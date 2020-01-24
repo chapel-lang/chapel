@@ -378,7 +378,6 @@ module ChapelIO {
         // Skip an unknown JSON field.
         var err:syserr = ENOERR;
 
-        // TODO: Should we be catching all errors and continuing, here?
         try reader.skipField();
         needsComma = true;
       }
@@ -403,8 +402,8 @@ module ChapelIO {
         // Copy the pointer to pass it by ref.
         var castTmp: superType = x;
 
-        // Preserve errors when reading superclass (?).
-        try { 
+        try {
+          // Read superclass fields.
           readThisFieldsDefaultImpl(reader, superType, castTmp,
                                     needsComma);
         } catch err {
@@ -505,11 +504,10 @@ module ChapelIO {
         // Check that we've read all fields, return error if not.
         if numRead == numToRead {
           // TODO: Do we throw superclass error here?
-          // if superclassError != nil then throw superclassError;
         } else {
           param tag = if isClassType(t) then "class" else "record";
           const msg = "Read only " + numRead:string + " out of "
-              + numToRead:string + " " + tag + " fields";
+              + numToRead:string + " fields of " + tag + " " + t:string;
           throw new owned
             BadFormatError(msg);
         }
@@ -550,6 +548,7 @@ module ChapelIO {
 
             // Try reading again with a different union element.
             if err.err == EFORMAT || err.err == EEOF then continue;
+            throw err;
           }
 
           hasFoundAtLeastOneField = true;

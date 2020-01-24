@@ -320,7 +320,6 @@ record LinkedList {
       i += 1;
     }
 
-    // TODO: This is probably unnecessary now.
     if !hasReadEnd then
       if isJson || isChpl then f <~> new ioLiteral("]");
   }

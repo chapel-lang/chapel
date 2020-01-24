@@ -2147,7 +2147,7 @@ inline proc _cast(type t:string, x: ioBits) {
 
 
 pragma "no doc"
-inline proc channel._ch_ioerror(error:syserr, msg:string) throws {
+proc channel._ch_ioerror(error:syserr, msg:string) throws {
   var path:string = "unknown";
   var offset:int(64) = -1;
   on this.home {
@@ -3167,7 +3167,6 @@ private inline proc _write_one_internal(_channel_internal:qio_channel_ptr_t,
 
   var err: syserr = ENOERR;
 
-  // NOTE: Error was stuffed in the channel at this point on failure.
   if isClassType(t) || chpl_isDdata(t) || isAnyCPtr(t) {
     if x == nil {
       // future - write class IDs, have serialization format
@@ -3201,7 +3200,6 @@ proc channel.readIt(ref x) throws {
 
   on this.home {
     try! this.lock(); defer { this.unlock(); }
-    // TODO: Try stuffing the error into the channel at this point.
     try _readOne(kind, x, origLocale);
   }
 }
@@ -3566,7 +3564,6 @@ inline proc channel.read(ref args ...?k):bool throws {
     on this.home {
       try this.lock(); defer { this.unlock(); }
       for param i in 1..k {
-        // NOTE: Used to only be executed if not in error state. 
         if args[i].locale == here {
           _readOne(kind, args[i], origLocale);
         } else {
@@ -3713,7 +3710,6 @@ proc channel.readline(ref arg: ?t): bool throws where t==string || t==bytes {
    :throws SystemError: Thrown if the bytes could not be read from the channel.
  */
 proc channel.readstring(ref str_out:string, len:int(64) = -1):bool throws {
-  // TODO: Don't touch this helper for now.
   var err = readBytesOrString(this, str_out, len);
 
   if !err {
@@ -3738,7 +3734,6 @@ proc channel.readstring(ref str_out:string, len:int(64) = -1):bool throws {
    :throws SystemError: Thrown if the bytes could not be read from the channel.
  */
 proc channel.readbytes(ref bytes_out:bytes, len:int(64) = -1):bool throws {
-  // TODO: Don't touch this helper for now.
   var err = readBytesOrString(this, bytes_out, len);
 
   if !err {
@@ -6610,14 +6605,18 @@ proc channel.readf(fmtStr:?t, ref args ...?k): bool throws
       }
     } catch thrownError: SystemError {
       if thrownError.err != EEOF then throw thrownError;
-      err = EEOF; 
+      err = EEOF;
     }
   }
 
   if !err {
     return true;
   } else if err == EEOF {
-    // TODO: Shouldn't we be returning false for EFORMAT as well?
+    //
+    // TODO: Shouldn't we also return false for EFORMAT? Yet some tests
+    // (io/ferguson/json.chpl off the top of my head) expect EFORMAT errors
+    // to be thrown. Is the documentation off?
+    //
     return false;
   } else {
     try this._ch_ioerror(err, "in channel.readf(fmt:string, ...)");
