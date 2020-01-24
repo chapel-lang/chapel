@@ -1674,9 +1674,12 @@ module DefaultRectangular {
             }
             read_end = true;
             break;
-          } catch err: BadFormatError {}
+          } catch err: BadFormatError {
+            // Continue on if we didn't read a closing bracket.
+          }
         } else {
-          // read a comma or a space.
+
+          // Try reading a comma/space. Break if we don't read one.
           try {
             if isspace then f <~> new ioLiteral(" ");
             else if isjson || ischpl then f <~> new ioLiteral(",");

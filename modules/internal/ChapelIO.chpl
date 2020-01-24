@@ -367,6 +367,8 @@ module ChapelIO {
       while true {
         if needsComma {
           var comma = new ioLiteral(",", true);
+
+          // Try reading a comma. If we don't, break out of the loop.
           try {
             reader.readwrite(comma);
             needsComma = false; 
@@ -437,6 +439,8 @@ module ChapelIO {
           if needsComma then 
             try {
               var comma = new ioLiteral(",", true);
+
+              // Try reading a comma. If we don't, then break.
               reader.readwrite(comma);
               needsComma = false;
             } catch err: BadFormatError {

@@ -3133,9 +3133,6 @@ private inline proc _read_one_internal(_channel_internal:qio_channel_ptr_t,
                            _channel_internal=_channel_internal,
                            _readWriteThisFromLocale=loc);
 
-  // Code in defer blocks fires after deinitializer, see #14797.
-  ref r = reader;
-
   // Set the channel pointer to NULL to make the
   // destruction of the local reader record safe
   // (it shouldn't release anything since it's a local copy).
@@ -3158,9 +3155,6 @@ private inline proc _write_one_internal(_channel_internal:qio_channel_ptr_t,
                            home=here,
                            _channel_internal=_channel_internal,
                            _readWriteThisFromLocale=loc);
-
-  // Code in defer blocks fires after deinitializer, see #14797.
-  ref w = writer;
 
   // Set the channel pointer to NULL to make the
   // destruction of the local writer record safe

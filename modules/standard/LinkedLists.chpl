@@ -292,6 +292,8 @@ record LinkedList {
 
       if isFirst {
         isFirst = false;
+
+        // Try reading an end bracket. If we don't, then continue on.
         try {
           if isJson || isChpl {
             f <~> new ioLiteral("]");
@@ -301,7 +303,9 @@ record LinkedList {
 
           hasReadEnd = true;
           break;
-        } catch err: BadFormatError {}
+        } catch err: BadFormatError {
+          // Continue on if we didn't read an end bracket.
+        }
       } else {
         try {
           if isSpace {

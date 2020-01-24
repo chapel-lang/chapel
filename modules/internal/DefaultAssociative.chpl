@@ -150,11 +150,14 @@ module DefaultAssociative {
           var end = new ioLiteral("}");
 
           while true {
-            // Try reading an end curly. If we get it, break.
+
+            // Try reading an end curly. If we get it, then break.
             try {
               f <~> end;
               break;
-            } catch err: BadFormatError {}
+            } catch err: BadFormatError {
+              // We didn't read an end brace, so continue on.
+            }
 
             // Try reading a comma.
             if !first then f <~> comma;
@@ -796,17 +799,23 @@ module DefaultAssociative {
       while true {
         if first {
           first = false;
-          // Check for immediate closed bracket.
+
+          // Break if we read an immediate closed bracket.
           try {
             f <~> closedBracket;
             readEnd = true;
             break;
-          } catch err: BadFormatError {}
+          } catch err: BadFormatError {
+            // We didn't read a closed bracket, so continue on.
+          }
         } else {
+
+          // Try reading a comma. If we don't, then break.
           try {
-            // Try reading a comma. If we don't, then break.
             f <~> new ioLiteral(",");
-          } catch err: BadFormatError { break; }
+          } catch err: BadFormatError {
+            break;
+          }
         }
 
         // Read a key.
