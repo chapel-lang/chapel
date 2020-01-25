@@ -6,3 +6,4 @@ IterSerial
 IterParallel
 RandomAccess1
 Clear
+Deinit
