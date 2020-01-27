@@ -1,11 +1,6 @@
 //
-// A performance test benchmarking the following common list operations:
-//
-//    - Insertions of various sizes
-//    - Removal of various sizes
-//    - 
-//    - Sequential-access indexing
-//    - Random-access indexing
+// A performance test benchmarking common list operations. Modelled after a
+// similar test for array-as-vector routines.
 //
 
 private use HaltWrappers;
@@ -18,12 +13,11 @@ private use Time;
 type byte = int(8);
 type testList = list(byte, false);
 
-param const isPrintTimes = false;
-config const n0: int = 32 * 1024;
+config param isPerformanceTest: bool = false;
+config const n0: int = 50000;
 
-const n1: int = n0 / 16;
+const n1: int = n0 / 1000;
 const seed = 314159;
-const stableList = createList(n);
 
 proc createList(size: int) {
   var result: testList;
@@ -36,14 +30,9 @@ proc setup() {
   srand(seed);
 }
 
-proc randInt(): int {
-  extern proc rand(): int;
-  return rand();
-}
-
 proc generateNoise() {
-  var lst1 = createList(n);
-  var lst2 = createList(n);
+  var lst1 = createList(n1);
+  var lst2 = createList(n1);
 
   for (a, b) in zip(lst1, lst2) do a += b % 127;
 
@@ -60,20 +49,19 @@ class Test {
     var tmr = new Timer();
 
     setup();
+
     tmr.start();
     test();
     tmr.stop();
-    result = tmr.elapsed();
-    tmr.clear();
 
-    return result;
+    return tmr.elapsed();
   }
 
   proc output() {
-    const msg = if isPrintTimes
+    const msg = if isPerformanceTest
       then this.name() + " " + this.run()
       else this.name();
-    writeln(msg)
+    writeln(msg);
   }
 }
   
@@ -90,7 +78,7 @@ class AppendFromEmpty: Test {
 }
 
 class InsertFront: Test {
-  // Use a smaller value of N because InsertFront is a O(n**2) operation.
+  // Use a smaller value for N because InsertFront is a O(n**2) operation.
   const _hi = n1 / 2;
   var _lst: testList;
  
@@ -116,8 +104,9 @@ class PopFromBack: Test {
 }
 
 class PopFromFront: Test {
+  var _lst: testList;
   override proc name() return "PopFromFront";
-  // Use a smaller value of N because PopFromFront is O(n**2).
+  // Use a smaller value for N because PopFromFront is O(n**2).
   override proc setup() { _lst = createList(n1); }
   override proc test() {
     assert(_lst.size == n1);
@@ -148,11 +137,11 @@ class IterParallel: Test {
 class RandomAccess1: Test {
   var _lst: testList;
   override proc name() return "RandomAccess1";
-  override setup() { _lst = createList(n0); } 
+  override proc setup() { _lst = createList(n0); } 
   override proc test() {
     for x in _lst {
       const idx = abs(rand()) % _lst.size + 1;
-      const val = _lst[idx];
+      _lst[idx] &= 0xFF;
     }
   }
 }
