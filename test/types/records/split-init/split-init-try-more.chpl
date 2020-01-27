@@ -408,5 +408,281 @@ proc test17() {
 }
 test17();
 
-// TODO: try/catch combined with if statement and split init
-// TODO: check initialization order for multiple outer variables
+proc test2000() {
+  writeln("test2000");
+
+  var outer = makeR(0, false);
+  var r;
+
+  try {
+    writeln("begin try");
+    if option {
+      r = makeR(1, false);
+    } else {
+      r = makeR(2, false);
+    }
+    writeln("end try");
+  } catch e {
+    writeln("error encountered");
+    return;
+  }
+}
+proc test2001() {
+  writeln("test2010");
+
+  var outer = makeR(0, false);
+  var r;
+
+  try {
+    writeln("begin try");
+    if option {
+      r = makeR(1, true);
+    } else {
+      r = makeR(2, false);
+    }
+    writeln("end try");
+  } catch e {
+    writeln("error encountered");
+    return;
+  }
+
+  outer;
+}
+test2001();
+
+proc test2100() {
+  writeln("test2100");
+
+  var outer = makeR(0, false);
+  var r;
+
+  try {
+    writeln("begin try");
+    if !option {
+      r = makeR(1, false);
+    } else {
+      r = makeR(2, false);
+    }
+    writeln("end try");
+  } catch e {
+    writeln("error encountered");
+    return;
+  }
+
+  outer;
+}
+test2100();
+
+proc test2101() {
+  writeln("test2101");
+
+  var outer = makeR(0, false);
+  var r;
+
+  try {
+    writeln("begin try");
+    if !option {
+      r = makeR(1, false);
+    } else {
+      r = makeR(2, true);
+    }
+    writeln("end try");
+  } catch e {
+    writeln("error encountered");
+    return;
+  }
+
+  outer;
+}
+test2101();
+
+proc test3000() {
+  writeln("test3000");
+
+  var outer = makeR(0, false);
+  var r;
+
+  if option {
+    try {
+      writeln("begin try1");
+      r = makeR(1, false);
+      writeln("end try1");
+    } catch e {
+      writeln("error encountered1");
+      return;
+    }
+  } else {
+    try {
+      writeln("begin try2");
+      r = makeR(2, false);
+      writeln("end try2");
+    } catch e {
+      writeln("error encountered2");
+      return;
+    }
+  }
+
+  outer;
+}
+test3000();
+
+proc test3010() {
+  writeln("test3010");
+
+  var outer = makeR(0, false);
+  var r;
+
+  if option {
+    try {
+      writeln("begin try1");
+      r = makeR(1, true);
+      writeln("end try1");
+    } catch e {
+      writeln("error encountered1");
+      return;
+    }
+  } else {
+    try {
+      writeln("begin try2");
+      r = makeR(2, false);
+      writeln("end try2");
+    } catch e {
+      writeln("error encountered2");
+      return;
+    }
+  }
+
+  outer;
+}
+test3010();
+
+proc test3111() {
+  writeln("test3111");
+
+  var outer = makeR(0, false);
+  var r;
+
+  if !option {
+    try {
+      writeln("begin try1");
+      r = makeR(1, true);
+      writeln("end try1");
+    } catch e {
+      writeln("error encountered1");
+      return;
+    }
+  } else {
+    try {
+      writeln("begin try2");
+      r = makeR(2, true);
+      writeln("end try2");
+    } catch e {
+      writeln("error encountered2");
+      return;
+    }
+  }
+
+  outer;
+}
+test3111();
+
+proc test19() throws {
+  writeln("test19");
+
+  var r: R;
+
+  {
+    writeln("begin inner");
+    try {
+
+      {
+        r = makeR(1, false);
+        doThrow();
+      }
+    } catch e {
+      writeln("error encountered");
+      throw e;
+    }
+    writeln("end inner");
+  }
+}
+try { test19(); } catch e { writeln(e); }
+
+
+proc test20() throws {
+  writeln("test20");
+
+  var a: R;
+  var b: R;
+  var c: R;
+
+  {
+    writeln("begin inner");
+    try {
+
+      {
+        a = makeR(1, false);
+        b = makeR(2, false);
+        c = makeR(3, false);
+      }
+    } catch e {
+      writeln("error encountered");
+      throw e;
+    }
+    writeln("end inner");
+  }
+}
+try { test20(); } catch e { writeln(e); }
+
+proc test21() throws {
+  writeln("test21");
+
+  var a: R;
+  var b: R;
+  var c: R;
+
+  {
+    writeln("begin inner");
+    try {
+
+      {
+        a = makeR(1, false);
+        b = makeR(2, false);
+        c = makeR(3, false);
+        doThrow();
+      }
+    } catch e {
+      writeln("error encountered");
+      throw e;
+    }
+    writeln("end inner");
+  }
+}
+try { test21(); } catch e { writeln(e); }
+
+proc test22() throws {
+  writeln("test22");
+
+  var a: R;
+  var b: R;
+  var c: R;
+
+  {
+    writeln("begin inner");
+    try {
+
+      {
+        a = makeR(1, false);
+        b = makeR(2, false);
+        c = makeR(3, false);
+        doThrow();
+      }
+    } catch e {
+      writeln("error encountered");
+    }
+    writeln("end inner");
+  }
+
+  writeln(a, " ", b, " ", c);
+}
+try { test22(); } catch e { writeln(e); }
