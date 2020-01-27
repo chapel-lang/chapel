@@ -30,6 +30,11 @@ proc setup() {
   srand(seed);
 }
 
+proc randInt() {
+  extern proc rand(): int;
+  return rand();
+}
+
 proc generateNoise() {
   var lst1 = createList(n1);
   var lst2 = createList(n1);
@@ -58,8 +63,11 @@ class Test {
   }
 
   proc output() {
+    // Run tests even if we aren't `-performance`.
+    const time = this.run();
+
     const msg = if isPerformanceTest
-      then this.name() + " " + this.run()
+      then this.name() + " " + time:string
       else this.name();
     writeln(msg);
   }
@@ -140,8 +148,8 @@ class RandomAccess1: Test {
   override proc setup() { _lst = createList(n0); } 
   override proc test() {
     for x in _lst {
-      const idx = abs(rand()) % _lst.size + 1;
-      _lst[idx] &= 0xFF;
+      const idx = abs(randInt()) % _lst.size + 1;
+      _lst[idx] &= 0xFF:byte;
     }
   }
 }
