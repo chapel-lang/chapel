@@ -3179,7 +3179,7 @@ void ofi_put_V(int v_len, void** addr_v, void** local_mr_v,
  *** START OF BUFFERED PUT OPERATIONS ***
  *
  * Support for buffered PUT operations. We internally buffer PUT operations and
- * then initiate them with chained transactions for increased transaction rate.
+ * then initiate them all at once for increased transaction rate.
  */
 
 // Flush buffered PUTs for the specified task info and reset the counter.
@@ -3382,7 +3382,7 @@ void ofi_get_V(int v_len, void** addr_v, void** local_mr_v,
  *** START OF BUFFERED GET OPERATIONS ***
  *
  * Support for buffered GET operations. We internally buffer GET operations and
- * then initiate them with chained transactions for increased transaction rate.
+ * then initiate them all at once for increased transaction rate.
  */
 
 // Flush buffered GETs for the specified task info and reset the counter.
