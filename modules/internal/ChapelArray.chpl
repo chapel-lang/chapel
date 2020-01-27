@@ -4138,6 +4138,11 @@ module ChapelArray {
     return result;
   }
 
+  pragma "unchecked throws"
+  proc chpl__throwErrorUnchecked(in e: owned Error) throws {
+    throw e;
+  }
+
   pragma "init copy fn"
   proc chpl__initCopy(ir: _iteratorRecord) {
 
@@ -4233,8 +4238,9 @@ module ChapelArray {
       }
       // Free the allocated memory.
       _ddata_free(data, size);
-      // Propagate the thrown error.
-      throw e;
+      // Propagate the thrown error, but don't consider this
+      // function throwing just because of this call.
+      chpl__throwErrorUnchecked(e);
     }
 
     // Create the domain of the array that we will return.
