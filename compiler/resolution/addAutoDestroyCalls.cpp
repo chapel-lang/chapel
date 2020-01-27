@@ -126,9 +126,9 @@ static void         walkForallBlocks(FnSymbol* fn,
                                      std::set<VarSymbol*>& parentIgnored,
                                      LastMentionMap& lmm);
 
-static void gatherIgnoredVariablesForErrorHandling(
+/*static void gatherIgnoredVariablesForErrorHandling(
     CondStmt* cond,
-    std::set<VarSymbol*>& ignoredVariables);
+    std::set<VarSymbol*>& ignoredVariables);*/
 static void gatherIgnoredVariablesForYield(
     Expr* stmt,
     std::set<VarSymbol*>& ignoredVariables);
@@ -161,14 +161,17 @@ static void checkSplitInitOrder(CondStmt* cond,
                                 std::vector<VarSymbol*>& thenOrder,
                                 std::vector<VarSymbol*>& elseOrder);
 
-static void walkBlockStmt(FnSymbol*         fn,
-                          AutoDestroyScope& scope,
-                          LabelSymbol*      retLabel,
-                          bool              isDeadCode,
-                          bool              inScopelessBlock,
-                          Expr*             stmt,
-                          std::set<VarSymbol*>& ignoredVariables,
-                          LastMentionMap&   lmm) {
+// Returns the next statement to traverse
+static Expr* walkBlockStmt(FnSymbol*         fn,
+                           AutoDestroyScope& scope,
+                           LabelSymbol*      retLabel,
+                           bool              isDeadCode,
+                           bool              inScopelessBlock,
+                           Expr*             stmt,
+                           std::set<VarSymbol*>& ignoredVariables,
+                           LastMentionMap&   lmm) {
+
+  Expr* next = stmt->next;
 
   //
   // Handle the current statement
@@ -188,6 +191,20 @@ static void walkBlockStmt(FnSymbol*         fn,
     INT_ASSERT(!inScopelessBlock); // situation leads to miscompiles/leaks
 
     scope.insertAutoDestroys(fn, stmt, ignoredVariables);
+
+    std::vector<VarSymbol*> outerInits = scope.getInitedOuterVars();
+    scope.forgetOuterVariableInitializations();
+
+    // Consider the catch blocks now
+    for (Expr* cur = stmt->next; cur != NULL; cur = next) {
+      next = walkBlockStmt(fn, scope, retLabel, false, false, cur,
+                           ignoredVariables, lmm);
+    }
+
+    // Now once again consider the outer variables initialized
+    for_vector(VarSymbol, var, outerInits) {
+      scope.addInitialization(var);
+    }
 
   // AutoDestroy primary locals at start of function epilogue (1)
   } else if (isReturnLabel(stmt, retLabel) == true) {
@@ -212,6 +229,15 @@ static void walkBlockStmt(FnSymbol*         fn,
       // after the 1st initialization. That should be OK though because
       // once a variable is initialized, it stays initialized, until
       // it is destroyed.
+
+      // TODO: fix test/errhandling/ferguson/loopexprs-caught.chpl
+      if (isCheckErrorStmt(stmt->next)) {
+        // Visit the check-error block now - do not consider
+        // the variable initialized when running that check-error block.
+        next = walkBlockStmt(fn, scope, retLabel, false, false, stmt->next,
+                             ignoredVariables, lmm);
+      }
+
       scope.addInitialization(var);
 
     // Recurse in to a BlockStmt (or sub-classes of BlockStmt e.g. a loop)
@@ -230,21 +256,25 @@ static void walkBlockStmt(FnSymbol*         fn,
     // Recurse in to the BlockStmt(s) of a CondStmt
     } else if (CondStmt*  cond     = toCondStmt(stmt))  {
 
-      std::set<VarSymbol*> toIgnore(ignoredVariables);
+      //std::set<VarSymbol*> toIgnore(ignoredVariables);
 
-      if (isCheckErrorStmt(cond))
-        gatherIgnoredVariablesForErrorHandling(cond, toIgnore);
+      if (isCheckErrorStmt(cond)) {
+        //gatherIgnoredVariablesForErrorHandling(cond, toIgnore);
 
-      if (cond->elseStmt == NULL) {
+        INT_ASSERT(!cond->elseStmt);
+        //walkBlockWithScope(scope, fn, cond->thenStmt, ignoredVariables, lmm);
+        walkBlock(fn, &scope, cond->thenStmt, ignoredVariables, lmm);
+
+      } else if (cond->elseStmt == NULL) {
         // Traverse into the if branch only
-        walkBlock(fn, &scope, cond->thenStmt, toIgnore, lmm);
+        walkBlock(fn, &scope, cond->thenStmt, ignoredVariables, lmm);
       } else {
         // includes an if and an else. Split init is possible within these,
         // and we need to ensure that the order of initializations matches.
 
         // visit the then block
         AutoDestroyScope thenScope(&scope, cond->thenStmt);
-        walkBlockWithScope(thenScope, fn, cond->thenStmt, toIgnore, lmm);
+        walkBlockWithScope(thenScope, fn, cond->thenStmt, ignoredVariables, lmm);
         // Gather the inited outer vars from the then block
         std::vector<VarSymbol*> thenOrder = thenScope.getInitedOuterVars();
         // When we visit the else block, outer variables that were initialized
@@ -253,7 +283,7 @@ static void walkBlockStmt(FnSymbol*         fn,
 
         // visit the else block
         AutoDestroyScope elseScope(&scope, cond->elseStmt);
-        walkBlockWithScope(elseScope, fn, cond->elseStmt, toIgnore, lmm);
+        walkBlockWithScope(elseScope, fn, cond->elseStmt, ignoredVariables, lmm);
         std::vector<VarSymbol*> elseOrder = elseScope.getInitedOuterVars();
 
         // check that the outer variables are initialized in the same order.
@@ -278,7 +308,7 @@ static void walkBlockStmt(FnSymbol*         fn,
     }
   }
 
-
+  return next;
 }
 
 static void walkBlockScopelessBlock(AutoDestroyScope& scope,
@@ -288,9 +318,10 @@ static void walkBlockScopelessBlock(AutoDestroyScope& scope,
                                     BlockStmt*        block,
                                     std::set<VarSymbol*>& ignoredVariables,
                                     LastMentionMap&   lmm) {
-  for_alist(stmt, block->body) {
-    walkBlockStmt(fn, scope, retLabel, isDeadCode, true, stmt,
-                  ignoredVariables, lmm);
+  Expr* next = NULL;
+  for (Expr* stmt = block->body.first(); stmt != NULL; stmt = next) {
+    next = walkBlockStmt(fn, scope, retLabel, isDeadCode, true, stmt,
+                         ignoredVariables, lmm);
   }
 }
 
@@ -392,14 +423,14 @@ static void walkBlockWithScope(AutoDestroyScope& scope,
   LabelSymbol*     retLabel   = (parent == NULL) ? findReturnLabel(fn) : NULL;
   bool             isDeadCode = false;
 
-  for_alist(stmt, block->body) {
-    Expr* next = stmt->next;
+  Expr* next = NULL;
+  for (Expr* stmt = block->body.first(); stmt != NULL; stmt = next) {
 
     //
     // Handle the current statement
     //
-    walkBlockStmt(fn, scope, retLabel, isDeadCode, false, stmt,
-                  ignoredVariables, lmm);
+    next = walkBlockStmt(fn, scope, retLabel, isDeadCode, false, stmt,
+                         ignoredVariables, lmm);
 
     //
     // Handle the end of a block
@@ -613,7 +644,7 @@ static void walkForallBlocks(FnSymbol* fn,
   (since these variables really are the same and the existence of both
    is an artifact of the current implementation)
 */
-static void gatherIgnoredVariablesForErrorHandling(
+/*static void gatherIgnoredVariablesForErrorHandling(
     CondStmt* cond,
     std::set<VarSymbol*>& ignoredVariables)
 {
@@ -702,7 +733,7 @@ static void gatherIgnoredVariablesForErrorHandling(
     if (moveResult)
       ignoredVariables.insert(moveResult);
   }
-}
+}*/
 
 static void gatherIgnoredVariablesForYield(
     Expr* yieldStmt,
@@ -810,9 +841,11 @@ void ComputeLastSymExpr::exitForallStmt(ForallStmt* node) {
 // Returns true for statements that are expressions when
 // their type would normally be a statement,
 // e.g. if-expr, for-expr, forall-expr
+// Also returns 'true' for IfExprs implementing error handling
+//  (handling control flow after an error is thrown by a call)
 static bool stmtIsExpr(Expr* e) {
   if (CondStmt* cond = toCondStmt(e))
-    return cond->isIfExpr();
+    return cond->isIfExpr() || isCheckErrorStmt(e);
   if (ForLoop* forLoop = toForLoop(e))
     return forLoop->isForExpr();
   if (ForallStmt* forall = toForallStmt(e))
