@@ -16,21 +16,29 @@ proc masonInit(args) throws {
                     name = arg;
                 }
             }
-
+            //checks if path is given as parameter or not
             if name == '' {
+                //If Mason.toml is already present, we get an error
                 if isFile("Mason.toml"){
                     throw new owned MasonError("Mason.toml already exists.");
                 }else{
+                    //If Mason.toml not present, proceed with init
                     var name = getCurrDir();
                     makeTomlFileFromName(name);            
                 }
             }else{
+                /*if a path is given as a parameter
+                  check if the path is already present 
+                  or if TOML file is already present 
+                  in the given path
+                */
                 var path = name;
                 if(isDir(path)){
                     throw new owned MasonError("Path already exists.");
                 }else if(isFile(path + "/Mason.toml")){
                     throw new owned MasonError("Mason.toml file already exists in path");
                 }else{
+                    //creates a directory and makes a TOML file.
                     mkdir(path);
                     makeTomlFileFromPath(path); 
                 }
