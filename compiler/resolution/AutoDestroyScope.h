@@ -68,7 +68,7 @@ private:
                                             AutoDestroyScope* startingScope) const;
 
   void                     destroyOuterVariables(Expr* before,
-                                                 const std::set<VarSymbol*>& ignored) const;
+                                                 std::set<VarSymbol*>& ignored) const;
 
 
   // Returns true if the variable has already been initialized in
