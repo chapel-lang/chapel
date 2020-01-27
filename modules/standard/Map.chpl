@@ -27,7 +27,8 @@
   mode of its originating map.
 */
 module Map {
-  private use ChapelLocks only ;
+  private use ChapelLocks only;
+  private use HaltWrappers;
 
   // Lock code lifted from modules/standard/Lists.chpl.
   // Maybe they should be combined into a Locks module.
@@ -199,7 +200,7 @@ module Map {
         _leave();
         return result;
       } else {
-        halt("map index out of bounds: ", k);
+        boundsCheckHalt("map index out of bounds: " + k:string);
         ref result = vals._value.data[0];
         _leave();
         return result;
@@ -210,7 +211,7 @@ module Map {
     proc const this(k: keyType) const {
       _enter();
       if !myKeys.contains(k) then
-        halt("map index ", k, " out of bounds");
+        boundsCheckHalt("map index " + k:string + " out of bounds");
       const result = vals[k];
       _leave();
       return result;
