@@ -127,6 +127,7 @@ bool isVirtualIterator(FnSymbol* iterFn);
 void normalize(FnSymbol* fn);
 void normalize(Expr* expr);
 void checkUseBeforeDefs(FnSymbol* fn);
+void addMentionToEndOfStatement(Expr* node, CallExpr* existingEndOfStatement);
 
 // parallel.cpp
 Type* getOrMakeRefTypeDuringCodegen(Type* type);
