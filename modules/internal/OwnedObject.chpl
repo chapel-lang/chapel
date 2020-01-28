@@ -22,22 +22,28 @@
 
 `owned` (along with :record:`~SharedObject.shared`) manage the
 deallocation of a class instance. :record:`owned` is meant to be used when
-only one reference to an object needs to manage that object's storage.
+only one reference to an object needs to manage that object's storage
+at a time.
+
+Please see also the language spec section :ref:`Class_Lifetime_and_Borrows`.
 
 Using `owned`
 -------------
 
-To use :record:`owned`, use the `owned` keyword when allocating a class
-instance, as shown in this example:
+The ``new`` keyword allocates :record:`owned` classes by default.
+Additionally, it is possible to explicitly request an ``owned`` class instance
 
 .. code-block:: chapel
 
  class MyClass { }
 
+ var myOwnedObject = new MyClass();
+ // or, equivalently
  var myOwnedObject = new owned MyClass();
 
-When ``myOwnedObject`` goes out of scope, the class instance
-it refers to will be deleted.
+When ``myOwnedObject`` goes out of scope, the class instance it refers to will
+be deleted.  It is possible to transfer the ownership to another `owned`
+variable before that happens.
 
 Copy initializing from ``myOwnedObject`` or assigning it to another
 :record:`owned` will leave ``myOwnedObject`` storing a nil value
@@ -56,8 +62,6 @@ and transfer the owned class instance to the other value.
  // and myOwnedObject stores a value that will be deleted
  // when myOwnedObject goes out of scope.
 
-It is possible to transfer the ownership to another `owned`
-variable before that happens.
 
 `owned` forms part of a type and can be used in type expressions:
 
@@ -96,17 +100,17 @@ Coercions for `owned`
 ---------------------
 
 The compiler includes support for introducing automatic coercions
-from :record:`owned` to the contained class type. This is equivalent
+from :record:`owned` to the borrow type. This is equivalent
 to calling the :proc:`owned.borrow` method. For example:
 
 .. code-block:: chapel
 
- proc f(arg:MyClass) {
+ proc f(arg: borrowed MyClass) {
    writeln(arg);
  }
 
  var myOwned = new owned MyClass();
- f(myOwned); // compiler coerces to MyClass via borrow()
+ f(myOwned); // compiler coerces to borrowed MyClass via borrow()
 
 
 Additionally, the compiler includes support for coercing a value
@@ -125,52 +129,10 @@ For example:
  // myStudent containing nil.
 
 
-.. _about-owned-intents-and-instantiation:
+`owned` Default Intent
+----------------------
 
-`owned` Intents and Instantiation
----------------------------------
-
-The default intent for :record:`owned` currently depends on whether
-or not the formal argument was declared with a type.
-
-If the formal argument has a declared type, the default intent is `in`, meaning
-that ownership will occur.
-
-.. code-block:: chapel
-
-  var global: owned MyClass;
-  proc saveit(arg: owned MyClass) {
-    global = arg; // OK! Transfers ownership from 'arg' to 'global'
-    // now that instance will be deleted at end of program
-  }
-  proc test0() {
-    var x = new owned MyClass();
-    saveit(x);
-    // now x stores `nil` since ownership was transfer to the argument
-  }
-
-If the formal argument had no type (i.e. it is generic) and used `const` or
-default intent, the argument will not cause ownership transfer and the
-function will be instantiated with the borrow type if an owned actual is
-supplied. For example:
-
-.. code-block:: chapel
-
-  proc f(x) {
-    writeln("in f, x.type is ", x.type:string);
-  }
-  proc test1() {
-    writeln("in test1");
-    var x = new owned MyClass();
-    f(x); // f gets a borrow
-    writeln("back in test1");
-    writeln(x); // so x is not 'nil' at this point
-  }
-
-.. note::
-
-  It is expected that this rule will change in the future with
-  more experience with this language design.
+The default intent for :record:`owned` is ``const ref``.
 
  */
 module OwnedObject {
@@ -231,6 +193,7 @@ module OwnedObject {
       this.chpl_p = _to_borrowed(p);
     }
 
+    pragma "no doc"
     proc init(p:?T) where isClass(T) == false &&
                           isSubtype(T, _owned) == false  &&
                           isIterator(p) == false {
@@ -257,16 +220,19 @@ module OwnedObject {
       this.complete();
     }
 
+    pragma "no doc"
     proc init=(src: shared) {
       compilerError("cannot create an owned variable from a shared class instance");
       this.chpl_t = int; //dummy
     }
 
+    pragma "no doc"
     proc init=(src: borrowed) {
       compilerError("cannot create an owned variable from a borrowed class instance");
       this.chpl_t = int; //dummy
     }
 
+    pragma "no doc"
     proc init=(src: unmanaged) {
       compilerError("cannot create an owned variable from an unmanaged class instance");
       this.chpl_t = int; //dummy
@@ -354,7 +320,7 @@ module OwnedObject {
        impacting its lifetime at all. It is an error to use the
        value returned by this function after the :record:`owned`
        goes out of scope or deletes the contained class instance
-       for another reason, such as with `=` or :proc`retain`.
+       for another reason, such as with `=` or ``owned.retain``.
        In some cases such errors are caught at compile-time.
      */
     pragma "nil from this"
@@ -500,6 +466,7 @@ module OwnedObject {
   }
 
   // this version handles downcast to non-nil owned
+  pragma "no doc"
   inline proc _cast(type t:owned class, ref x:owned class?) throws
     where isProperSubtype(t.chpl_t,_to_nonnil(x.chpl_t))
   {
@@ -511,6 +478,7 @@ module OwnedObject {
     x.chpl_p = nil;
     return new _owned(castPtr);
   }
+  pragma "no doc"
   inline proc _cast(type t:owned class, ref x:owned class) throws
     where isProperSubtype(t.chpl_t,x.chpl_t)
   {
@@ -522,6 +490,7 @@ module OwnedObject {
 
 
   // this version handles downcast to nilable owned
+  pragma "no doc"
   inline proc _cast(type t:owned class?, ref x:owned class?)
     where isProperSubtype(t.chpl_t,x.chpl_t)
   {
@@ -533,6 +502,7 @@ module OwnedObject {
     return new _owned(castPtr);
   }
   // this version handles downcast to nilable owned
+  pragma "no doc"
   inline proc _cast(type t:owned class?, ref x:owned class)
     where isProperSubtype(_to_nonnil(t.chpl_t),x.chpl_t)
   {
