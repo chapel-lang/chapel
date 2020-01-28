@@ -88,7 +88,7 @@ proc InitProject(name, vcs, show) throws {
   }
   // Confirm git init before creating files
   if isDir(name) {
-    makeBasicToml(name);
+    makeBasicToml(name, path=name);
     makeProjectFiles(name);
     writeln("Created new library project: " + name);
   }
@@ -113,7 +113,7 @@ private proc addGitIgnore(name: string) {
 }
 
 
-proc makeBasicToml(name: string) {
+proc makeBasicToml(name: string, path: string) {
   const baseToml = '[brick]\n' +
                      'name = "' + name + '"\n' +
                      'version = "0.1.0"\n' +
@@ -121,7 +121,7 @@ proc makeBasicToml(name: string) {
                      '\n' +
                      '[dependencies]' +
                      '\n';
-  var tomlFile = open(name+"/Mason.toml", iomode.cw);
+  var tomlFile = open(path+"/Mason.toml", iomode.cw);
   var tomlWriter = tomlFile.writer();
   tomlWriter.write(baseToml);
   tomlWriter.close();

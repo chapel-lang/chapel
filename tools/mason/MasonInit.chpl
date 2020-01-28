@@ -18,7 +18,9 @@
  */
 
 use Path; 
+use Spawn;
 use MasonEnv;
+use MasonNew;
 use MasonBuild;
 use MasonHelp;
 use MasonUtils;
@@ -45,7 +47,8 @@ proc masonInit(args) throws {
 				const cwd  = getEnv("PWD");
 				const currDir = basename(cwd);
 				var name = currDir;
-				makeTomlFileFromName(name);            
+				var path = '.';
+				makeBasicToml(name,path);            
 			}
 		} else {
 			/*if a path is given as a parameter
@@ -61,7 +64,8 @@ proc masonInit(args) throws {
 			} else {
 					//creates a directory and makes a TOML file.
 					mkdir(path);
-					makeTomlFileFromPath(path); 
+					var name = basename(path);
+					makeBasicToml(name,path); 
 			}
 		}
 	}
@@ -69,34 +73,4 @@ proc masonInit(args) throws {
 		writeln(e.message());
 		exit(1);
 	}
-}
-
-proc makeTomlFileFromPath(path: string){
-	var currDir = basename(path);
-	const baseToml = '[brick]\n' +
-										'name = "' + currDir + '"\n' +
-										'version = "0.1.0"\n' +
-										'chplVersion = "' + getChapelVersionStr() + '"\n' +
-										'\n' +
-										'[dependencies]' +
-										'\n';
-	var tomlFile = open(path+"/Mason.toml",iomode.cw);
-	var tomlWriter = tomlFile.writer();
-	tomlWriter.write(baseToml);
-	tomlWriter.close();
-}
-
-proc makeTomlFileFromName(name: string){
-	const baseToml = '[brick]\n' +
-										'name = "' + name + '"\n' +
-										'version = "0.1.0"\n' +
-										'chplVersion = "' + getChapelVersionStr() + '"\n' +
-										'\n' +
-										'[dependencies]' +
-										'\n';
-	
-	var tomlFile = open("Mason.toml",iomode.cw);
-	var tomlWriter = tomlFile.writer();
-	tomlWriter.write(baseToml);
-	tomlWriter.close();
 }
