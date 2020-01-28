@@ -1217,12 +1217,28 @@ void addMentionToEndOfStatement(Expr* node, CallExpr* existingEndOfStatement) {
   // A reasonable alternative would be for transformations such as
   // the removal of .type blocks to add such SymExprs.
   for_vector(SymExpr, se, mentions) {
-    if (VarSymbol* var = toVarSymbol(se->symbol()))
+    if (VarSymbol* var = toVarSymbol(se->symbol())) {
       if (!var->hasFlag(FLAG_TEMP) &&
           !var->isParameter() &&
           // exclude global variables, e.g. gMethodToken
-          var->defPoint->getFunction() == node->getFunction())
-        call->insertAtTail(new SymExpr(se->symbol()));
+          var->defPoint->getFunction() == node->getFunction()) {
+
+        // check that the variable is defined outside of the
+        // node (to avoid adding mentions of removed variables
+        // in param-if folding)
+        bool definedOutsideOfNode = true;
+        if (DefExpr* def = var->defPoint) {
+          for (Expr* cur = def; cur != NULL; cur = cur->parentExpr) {
+            if (cur == node) {
+              definedOutsideOfNode = false;
+              break;
+            }
+          }
+        }
+        if (definedOutsideOfNode)
+          call->insertAtTail(new SymExpr(se->symbol()));
+      }
+    }
   }
 
   // Don't add if already at the end of the block and no mentions are stored
