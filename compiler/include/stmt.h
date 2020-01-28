@@ -171,7 +171,7 @@ public:
   virtual Expr*       getFirstExpr();
   virtual Expr*       getNextExpr(Expr* expr);
 
-  CallExpr*           foldConstantCondition();
+  CallExpr*           foldConstantCondition(bool addEndOfStatement);
 
   Expr*               condExpr;
   BlockStmt*          thenStmt;
