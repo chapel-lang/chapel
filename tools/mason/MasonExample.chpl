@@ -199,7 +199,7 @@ private proc runExamples(show: bool, run: bool, build: bool, release: bool,
 
     // Get buildInfo: dependencies, path to src code, compopts,
     // names of examples, example compopts
-    const buildInfo = getBuildInfo(projectHome);
+    var buildInfo = getBuildInfo(projectHome);
     const sourceList = buildInfo[1];
     const projectPath = buildInfo[2];
     const compopts = buildInfo[3];
