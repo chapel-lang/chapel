@@ -1,0 +1,62 @@
+#!/usr/bin/env bash
+
+# Custom sub_test to run Arkouda testing. Clones, installs dependencies, builds
+# Arkouda and runs testing.
+
+ARKOUDA_URL=git@github.com:mhmerrill/arkouda.git
+ARKOUDA_BRANCH=master
+
+CWD=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
+source $CWD/functions.bash
+
+subtest_start
+
+# Arkouda needs chpl in PATH
+bin_subdir=$($CHPL_HOME/util/chplenv/chpl_bin_subdir.py)
+export "PATH=$CHPL_HOME/bin/$bin_subdir:$PATH"
+chpl --version
+
+export ARKOUDA_HOME=$CWD/arkouda
+rm -rf ${ARKOUDA_HOME}
+
+# Clone Arkouda 
+if ! git clone --depth=1 ${ARKOUDA_URL} --branch=${ARKOUDA_BRANCH} ; then
+  log_error "cloning Arkouda"
+fi
+cd ${ARKOUDA_HOME}
+
+# Install dependencies
+if ! nice make -j $($CHPL_HOME/util/buildRelease/chpl-make-cpu_count) install-deps ; then
+  log_error "installing dependencies"
+fi
+
+# Compile Arkouda
+if ! make ; then
+  log_error "compiling arkouda"
+fi
+
+# Install Arkouda and python dependencies
+if ! pip3 install -e .[test] --user ; then
+  log_error "installing arkouda"
+fi
+
+# Check installation
+test_start "make check"
+if make check ; then
+  log_success "make check output"
+else
+  log_error "running make check"
+fi
+test_end "make check"
+
+# Run benchmarks
+test_start "benchmarks"
+benchmark_opts="--gen-graphs --dat-dir $CHPL_TEST_PERF_DIR --graph-dir $CHPL_TEST_PERF_DIR/html"
+if ./benchmarks/run_benchmarks.py ${benchmark_opts} ; then
+  log_success "benchmark output"
+else
+  log_error "running benchmarks"
+fi
+test_end "benchmarks"
+
+subtest_end
