@@ -5,8 +5,6 @@
 private use HaltWrappers;
 private use List;
 private use Random;
-private use Search;
-private use Sort;
 private use Time;
 
 type byte = int(8);
