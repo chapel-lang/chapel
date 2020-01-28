@@ -1,6 +1,5 @@
 //
-// A performance test benchmarking common list operations. Modelled after a
-// similar test for array-as-vector routines.
+// A performance test benchmarking common list operations.
 //
 
 private use HaltWrappers;
@@ -87,15 +86,14 @@ class AppendFromEmpty: Test {
 
 class InsertFront: Test {
   // Use a smaller value for N because InsertFront is a O(n**2) operation.
-  const _hi = n1 / 2;
   var _lst: testList;
  
   override proc name() return "InsertFront";
-  override proc setup() { _lst = createList(_hi); }
+  override proc setup() { _lst = createList(1); }
 
   override proc test() {
-    assert(_lst.size == _hi);
-    for i in 1.._hi do _lst.insert(1, (i & 127):byte); 
+    assert(_lst.size == 1);
+    while _lst.size < n1 do _lst.insert(1, (_lst.size & 127):byte);
   }
 }
 
