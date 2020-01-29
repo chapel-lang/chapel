@@ -647,12 +647,19 @@ module Random {
       to lock this object to ensure two tasks do not both pull the same
       bit of entropy.
       */
-      proc type udevRandomSeed: int(64) {
+      proc type devURandomSeed: int(64) {
         use IO;
-        var entropy = open('/dev/urandom', iomode.r);
-        var entropyStream = entropy.reader();
-        const seed: int(64);
-        entropyStream.readbits(seed, 64);
+        var seed: int(64);
+        try {
+          var entropy = open('/dev/urandom', iomode.r);
+          var entropyStream = entropy.reader();
+          entropyStream.readbits(seed, 64);
+        } catch {
+          // it would be nice to default to the timer, except
+          // we shouldn't invisibly use the timer when /dev/urandom isn't
+          // available.  So for now, this is 0.
+          // seed = oddCurrentTime;
+        }
         return seed;
       }
     }
