@@ -3,4 +3,4 @@ Called visitLocales().
 Called visitLocales().
 Called visitLocales().
 Called visitLocales().
-(get = 36, put = 8, execute_on = 4, execute_on_nb = 4) (get = 3, put = 2, execute_on = 1, execute_on_fast = 1) (get = 3, put = 2, execute_on = 1, execute_on_fast = 1) (get = 3, put = 2, execute_on = 1, execute_on_fast = 1) (get = 3, put = 2, execute_on = 1, execute_on_fast = 1)
+(get = 32, execute_on = 4, execute_on_nb = 4) (get = 3, put = 2, execute_on = 1, execute_on_fast = 1) (get = 3, put = 2, execute_on = 1, execute_on_fast = 1) (get = 3, put = 2, execute_on = 1, execute_on_fast = 1) (get = 3, put = 2, execute_on = 1, execute_on_fast = 1)

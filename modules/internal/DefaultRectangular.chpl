@@ -1662,31 +1662,30 @@ module DefaultRectangular {
 
       var read_end = false;
 
-      while ! f.error() {
+      while true {
         if first {
           first = false;
           // but check for a ]
-          if isjson || ischpl {
-            f <~> new ioLiteral("]");
-          } else if isspace {
-            f <~> new ioNewline(skipWhitespaceOnly=true);
-          }
-          if f.error() == EFORMAT {
-            f.clearError();
-          } else {
+          try {
+            if isjson || ischpl {
+              f <~> new ioLiteral("]");
+            } else if isspace {
+              f <~> new ioNewline(skipWhitespaceOnly=true);
+            }
             read_end = true;
             break;
+          } catch err: BadFormatError {
+            // Continue on if we didn't read a closing bracket.
           }
         } else {
-          // read a comma or a space.
-          if isspace then f <~> new ioLiteral(" ");
-          else if isjson || ischpl then f <~> new ioLiteral(",");
 
-          if f.error() == EFORMAT {
-            f.clearError();
-            // No comma.
+          // Try reading a comma/space. Break if we don't read one.
+          try {
+            if isspace then f <~> new ioLiteral(" ");
+            else if isjson || ischpl then f <~> new ioLiteral(",");
+          } catch err: BadFormatError {
             break;
-          }
+          } 
         }
 
         if i >= dom.dsiDim(1).size {
@@ -1749,10 +1748,9 @@ module DefaultRectangular {
         } else {
           f.readBytes(_ddata_shift(arr.eltType, src, idx), size);
         }
-      } catch e: SystemError {
-        f.setError(e.err);
-      } catch {
-        f.setError(EINVAL:syserr);
+      } catch err {
+        // Setting errors in channels has no effect, so just rethrow.
+        throw err;
       }
     } else {
       const zeroTup: rank*idxType;
