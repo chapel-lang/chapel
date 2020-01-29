@@ -11,11 +11,11 @@ on Locales(1) {
 }
 
 coforall i in 1..n {
-  c.A(i) += 1;
+  c!.A(i) += 1;
 }
 
 for i in 1..n do
-  if c.A(i) != 1 then
+  if c!.A(i) != 1 then
     halt("error detected");
 
 writeln("success");

@@ -80,7 +80,7 @@ class Tree {
   proc sum(): int {
     var sum = 1;
     if left {
-      sum += left.sum() + right.sum();
+      sum += left!.sum() + right!.sum();
       delete left;
       delete right;
     }

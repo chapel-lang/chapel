@@ -2,6 +2,6 @@
 
 # Find calls to gcd function (not definition) and then simplify to see
 # number of arguments
-grep gcd genCode/no-extra-lineno.c | grep -v static | sed 's/[a-zA-Z_][0-9a-zA-Z_]*/x/g' | sed 's/ //g' >> $2
+grep gcd genCode/no-extra-lineno.c | grep -v static | grep '(' | sed 's/[a-zA-Z_][0-9a-zA-Z_]*/x/g' | sed 's/ //g' >> $2
 
 rm -rf genCode

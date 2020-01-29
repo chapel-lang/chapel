@@ -664,13 +664,6 @@ def set_up_tmpdir():
 
 
 def set_up_environment():
-    # pre-
-    if args.preexec:
-        os.environ["CHPL_SYSTEM_PREEXEC"] = args.preexec
-
-    if args.prediff:
-        os.environ["CHPL_SYSTEM_PREDIFF"] = args.prediff
-
     # compopts (note that we have to strip out our preprocessing)
     if args.compopts:
         args.compopts = [strip_preprocessing(x) for x in args.compopts]
@@ -776,6 +769,10 @@ def set_up_general():
 
     logger.write("[Starting Chapel regression tests - {0}]"
             .format(time.strftime("%y%m%d.%H%M%S")))
+
+    branch = run_git_command(["rev-parse", "--abbrev-ref", "HEAD"])
+    sha = run_git_command(["rev-parse", "--short", "HEAD"])
+    logger.write("[git branch: '{0}' ({1})]".format(branch, sha))
 
     # check to see if we are in subdir of CHPL_HOME
     if args.chpl_home_warn:
@@ -976,7 +973,7 @@ def set_up_performance_testing_B():
         sha_out_name = os.path.join(chpl_test_tmp_dir, "sha.exec.out.tmp")
         with open(sha_out_name, "w") as sha_out:
             try:
-                output = run_command(["git", "rev-parse", "HEAD"])
+                output = run_git_command(["rev-parse", "HEAD"])
                 sha_out.write("sha " + output)
             except:
                 pass
@@ -1077,25 +1074,32 @@ def set_up_executables():
 
     # pre-exec
     if args.preexec:
-        if os.path.isfile(args.preexec) and os.access(args.preexec, os.X_OK):
-            args.preexec = os.path.abspath(args.preexec)
-            logger.write("[system-wide preexec: {0}]".format(args.preexec))
-        else:
-            logger.write("[Error: Cannot find or execute system-wide preexec:"
-                    "{0}".format(args.preexec))
-            finish()
-        os.environ["CHPL_SYSTEM_PREEXEC"] = args.preexec
+        chpl_system_preexec = []
+        for preexec in args.preexec:
+            if os.path.isfile(preexec) and os.access(preexec, os.X_OK):
+                preexec = os.path.abspath(preexec)
+                logger.write("[system-wide preexec: {0}]".format(preexec))
+            else:
+                logger.write("[Error: Cannot find or execute system-wide preexec: "
+                        "{0}".format(preexec))
+                finish()
+            chpl_system_preexec.append(preexec)
+        os.environ["CHPL_SYSTEM_PREEXEC"] = ','.join(chpl_system_preexec)
+
 
     # pre-diff
     if args.prediff:
-        if os.path.isfile(args.prediff) and os.access(args.prediff, os.X_OK):
-            args.prediff = os.path.abspath(args.prediff)
-            logger.write("[system-wide prediff: {0}]".format(args.prediff))
-        else:
-            logger.write("[Error: Cannot find or execute system-wide prediff: "
-                    "{0}".format(args.prediff))
-            finish()
-        os.environ["CHPL_SYSTEM_PREDIFF"] = args.prediff
+        chpl_system_prediff = []
+        for prediff in args.prediff:
+            if os.path.isfile(prediff) and os.access(prediff, os.X_OK):
+                prediff = os.path.abspath(prediff)
+                logger.write("[system-wide prediff: {0}]".format(prediff))
+            else:
+                logger.write("[Error: Cannot find or execute system-wide prediff: "
+                        "{0}".format(prediff))
+                finish()
+            chpl_system_prediff.append(prediff)
+        os.environ["CHPL_SYSTEM_PREDIFF"] = ','.join(chpl_system_prediff)
 
 
 def auto_generate_tests():
@@ -1299,11 +1303,14 @@ def parser_setup():
     parser.add_argument("-valgrindexe", "--valgrindexe", action="store_true",
             dest="valgrind_exe", help="execute tests using valgrind")
     # pre exec, pre- etc....
-    parser.add_argument("-syspreexec", "--syspreexec", action="store",
-            dest="preexec", 
-            help="set a PREEXEC script to run before execution")
-    parser.add_argument("-sysprediff", "--sysprediff", action="store",
-            dest="prediff", help="set a PREDIFF script to run on test output")
+    parser.add_argument("-syspreexec", "--syspreexec", action="append",
+                        dest="preexec",
+                        help="set a PREEXEC script to run before execution"
+                             ", may be given more than once")
+    parser.add_argument("-sysprediff", "--sysprediff", action="append",
+                        dest="prediff",
+                        help="set a PREDIFF script to run on test output"
+                             ", may be given more than once")
     # future mode args
     futures_mode = 0
     parser.add_argument("-futures", "--futures", action="store_const", const=1,
@@ -1506,13 +1513,12 @@ class CommandError(Exception):
         self.output = output
     def __str__(self):
         return "Command '{0}' returned non-zero exit status {1}".format(self.cmd, self.retcode)
-
-def run_command(cmd):
+def run_command(cmd, stderr=None):
     """
     check_output like wrapper, but we're still committed to 2.6 so can't rely
     on check_output
     """
-    process = subprocess.Popen(cmd, stdout=subprocess.PIPE)
+    process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=stderr)
     output, _ = process.communicate()
     retcode = process.poll()
     if retcode:
@@ -1521,6 +1527,13 @@ def run_command(cmd):
     if sys.version_info[0] >= 3 and not isinstance(output, str):
         output = str(output, 'utf-8')
 
+    return output
+
+def run_git_command(command):
+    try:
+        output = run_command(["git"]+command, stderr=subprocess.STDOUT).strip()
+    except:
+        output = None
     return output
 
 def printout(so):

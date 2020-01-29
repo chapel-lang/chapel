@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2019 Cray Inc.
+ * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -28,7 +28,7 @@ module DefaultRectangular {
   if dataParMinGranularity<=0 then halt("dataParMinGranularity must be > 0");
 
   use DSIUtil, ChapelArray;
-  private use ChapelDistribution, ChapelRange, SysBasic, SysError;
+  private use ChapelDistribution, ChapelRange, SysBasic, SysError, SysCTypes;
   private use ChapelDebugPrint, ChapelLocks, OwnedObject, IO;
   private use DefaultSparse, DefaultAssociative;
   use ExternalArray;
@@ -690,8 +690,7 @@ module DefaultRectangular {
                                        idxType=idxType,
                                        stridable=stridable,
                                        dom=_to_unmanaged(this),
-                                       data=data,
-                                       dataAllocRange=allocRange);
+                                       data=data);
     }
 
 
@@ -1021,12 +1020,6 @@ module DefaultRectangular {
     var _borrowed: bool = true;
     var externFreeFunc: c_void_ptr;
 
-    // 'dataAllocRange' is used by the array-vector operations (e.g. push_back,
-    // pop_back, insert, remove) to allow growing or shrinking the data
-    // buffer in a doubling/halving style.  If it is used, it will be the
-    // actual size of the 'data' buffer, while 'dom' represents the size of
-    // the user-level array.
-    var dataAllocRange: range(idxType);
     //var numelm: int = -1; // for correctness checking
 
     // end class definition here, then defined secondary methods below
@@ -1060,14 +1053,10 @@ module DefaultRectangular {
         }
       } else {
         var numElts:intIdxType = 0;
-        if dom.dsiNumIndices > 0 || dataAllocRange.length > 0 {
+        if dom.dsiNumIndices > 0 {
           param needsDestroy = __primitive("needs auto destroy",
                                            __primitive("deref", data[0]));
-          // dataAllocRange may be empty or contain a meaningful value
-          if rank == 1 && !stridable then
-            numElts = dataAllocRange.length;
-          if numElts == 0 then
-            numElts = dom.dsiNumIndices;
+          numElts = dom.dsiNumIndices;
 
           if needsDestroy {
             dsiDestroyDataHelper(data, numElts);
@@ -1209,8 +1198,6 @@ module DefaultRectangular {
       }
 
       initShiftedData();
-      if rank == 1 && !stridable then
-        dataAllocRange = dom.dsiDim(0);
     }
 
     inline proc getDataIndex(ind: idxType ...1,
@@ -1383,7 +1370,6 @@ module DefaultRectangular {
             shiftedData = copy.shiftedData;
           }
         }
-        dataAllocRange = copy.dataAllocRange;
         delete copy;
       }
     }
@@ -1425,7 +1411,6 @@ module DefaultRectangular {
             shiftedData = copy.shiftedData;
           }
         }
-        dataAllocRange = copy.dataAllocRange;
         delete copy;
       }
     }
@@ -1538,17 +1523,17 @@ module DefaultRectangular {
     }
   }
 
-  proc DefaultRectangularDom.dsiSerialReadWrite(f /*: Reader or Writer*/) {
+  proc DefaultRectangularDom.dsiSerialReadWrite(f /*: Reader or Writer*/) throws {
     f <~> new ioLiteral("{") <~> ranges(0);
     for i in 1..rank-1 do
       f <~> new ioLiteral(", ") <~> ranges(i);
     f <~> new ioLiteral("}");
   }
 
-  proc DefaultRectangularDom.dsiSerialWrite(f) { this.dsiSerialReadWrite(f); }
-  proc DefaultRectangularDom.dsiSerialRead(f) { this.dsiSerialReadWrite(f); }
+  proc DefaultRectangularDom.dsiSerialWrite(f) throws { this.dsiSerialReadWrite(f); }
+  proc DefaultRectangularDom.dsiSerialRead(f) throws { this.dsiSerialReadWrite(f); }
 
-  proc DefaultRectangularArr.dsiSerialReadWrite(f /*: Reader or Writer*/) {
+  proc DefaultRectangularArr.dsiSerialReadWrite(f /*: Reader or Writer*/) throws {
     chpl_serialReadWriteRectangular(f, this);
   }
 
@@ -1558,7 +1543,7 @@ module DefaultRectangular {
   // (e.g., if arr.dom is non-stridable but the 'dom' passed in is
   // stridable).
   //
-  proc chpl_serialReadWriteRectangular(f, arr) {
+  proc chpl_serialReadWriteRectangular(f, arr) throws {
     chpl_serialReadWriteRectangular(f, arr, arr.dom);
   }
 
@@ -1571,24 +1556,24 @@ module DefaultRectangular {
   // Overload sets (or a similar idea) would be a better user-facing
   // way to solve this problem (see CHIP 20).
   pragma "last resort"
-  proc chpl_serialReadWriteRectangular(f, arr, dom) {
+  proc chpl_serialReadWriteRectangular(f, arr, dom) throws {
     chpl_serialReadWriteRectangularHelper(f, arr, dom);
   }
 
-  proc chpl_serialReadWriteRectangularHelper(f, arr, dom) {
+  proc chpl_serialReadWriteRectangularHelper(f, arr, dom) throws {
     param rank = arr.rank;
     type idxType = arr.idxType;
     type idxSignedType = chpl__signedType(chpl__idxTypeToIntIdxType(idxType));
 
     const isNative = f.styleElement(QIO_STYLE_ELEMENT_IS_NATIVE_BYTE_ORDER): bool;
 
-    proc writeSpaces(dim:int) {
+    proc writeSpaces(dim:int) throws {
       for i in 1..dim {
         f <~> new ioLiteral(" ");
       }
     }
 
-    proc recursiveArrayWriter(in idx: rank*idxType, dim=0, in last=false) {
+    proc recursiveArrayWriter(in idx: rank*idxType, dim=0, in last=false) throws {
       var binary = f.binary();
       var arrayStyle = f.styleElement(QIO_STYLE_ELEMENT_ARRAY);
       var isspace = arrayStyle == QIO_ARRAY_FORMAT_SPACE && !binary;
@@ -1775,11 +1760,11 @@ module DefaultRectangular {
     }
   }
 
-  proc DefaultRectangularArr.dsiSerialWrite(f) {
+  proc DefaultRectangularArr.dsiSerialWrite(f) throws {
     dsiSerialReadWrite(f);
   }
 
-  proc DefaultRectangularArr.dsiSerialRead(f) {
+  proc DefaultRectangularArr.dsiSerialRead(f) throws {
     dsiSerialReadWrite(f);
   }
 

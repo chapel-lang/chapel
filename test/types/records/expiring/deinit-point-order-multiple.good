@@ -1,0 +1,68 @@
+Expiring values for function t1 (deinit-point-order-multiple.chpl:18)
+  temp (deinit-point-order-multiple.chpl:20) expires after last mention
+  temp (deinit-point-order-multiple.chpl:20) expires after last mention
+  temp (deinit-point-order-multiple.chpl:20) expires after last mention
+  temp (deinit-point-order-multiple.chpl:20) expires after last mention
+  temp (deinit-point-order-multiple.chpl:20) expires after last mention
+  temp (deinit-point-order-multiple.chpl:21) expires after last mention
+  temp (deinit-point-order-multiple.chpl:21) expires after last mention
+  temp (deinit-point-order-multiple.chpl:21) expires after last mention
+  temp (deinit-point-order-multiple.chpl:21) expires after last mention
+  temp (deinit-point-order-multiple.chpl:21) expires after last mention
+Expiring values for function t2 (deinit-point-order-multiple.chpl:34)
+  temp (deinit-point-order-multiple.chpl:36) expires at end of block
+  temp (deinit-point-order-multiple.chpl:36) expires at end of block
+  temp (deinit-point-order-multiple.chpl:36) expires at end of block
+  temp (deinit-point-order-multiple.chpl:36) expires at end of block
+  temp (deinit-point-order-multiple.chpl:36) expires at end of block
+  temp (deinit-point-order-multiple.chpl:37) expires at end of block
+  temp (deinit-point-order-multiple.chpl:37) expires at end of block
+  temp (deinit-point-order-multiple.chpl:37) expires at end of block
+  temp (deinit-point-order-multiple.chpl:37) expires at end of block
+  temp (deinit-point-order-multiple.chpl:37) expires at end of block
+t1
+init 1
+init 2
+init 3
+init 4
+init 5
+init 6
+init 7
+init 8
+init 9
+init 10
+deinit 10
+deinit 9
+deinit 8
+deinit 7
+deinit 6
+deinit 5
+deinit 4
+deinit 3
+deinit 2
+deinit 1
+after last use of temporaries
+sum1: 55
+t2
+init 1
+init 2
+init 3
+init 4
+init 5
+init 6
+init 7
+init 8
+init 9
+init 10
+choose: (x = 10)
+at end of function
+deinit 10
+deinit 9
+deinit 8
+deinit 7
+deinit 6
+deinit 5
+deinit 4
+deinit 3
+deinit 2
+deinit 1

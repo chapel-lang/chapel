@@ -1,3 +1,5 @@
+use SysCTypes;
+
 proc copyBtoC(A:[], B:[])
 {
   A._value.copyBtoC(B);

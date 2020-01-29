@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2019 Cray Inc.
+ * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -694,7 +694,7 @@ private proc writeTimeStatistics(wallTime:real,
   {
     const localeTime = localeTimes[i];
     localeTotalTime += localeTime;
-    localeTimesFormatted += (i + ": " + localeTime);
+    localeTimesFormatted += (i:string + ": " + localeTime:string);
     localeTimesFormatted += if i == localeRange.high
                             then ""
                             else ", ";

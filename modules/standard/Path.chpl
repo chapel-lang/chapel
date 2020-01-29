@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2019 Cray Inc.
+ * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -358,7 +358,9 @@ proc dirname(name: string): string {
            if (h != 1) {
              value = "${" + env_var + "}";
            } else {
-             value = createStringWithNewBuffer(value_c);
+             try! {
+               value = createStringWithNewBuffer(value_c);
+             }
            }
            res += value;
          }
@@ -375,7 +377,9 @@ proc dirname(name: string): string {
          if (h != 1) {
            value = "$" + env_var;
          } else {
-           value = createStringWithNewBuffer(value_c);
+           try! {
+             value = createStringWithNewBuffer(value_c);
+           }
          }
          res += value;
          if (ind <= path_p.numBytes) {
@@ -633,7 +637,15 @@ proc file.realPath(out error: syserr): string {
 /* Compute the common prefix length between two lists of path components. */
 private
 proc commonPrefixLength(const a1: [] string, const a2: [] string): int {
-  const ref (a, b) = if a1.size < a2.size then (a1, a2) else (a2, a1);
+  const ref a;
+  const ref b;
+  if a1.size < a2.size {
+    a = a1;
+    b = a2;
+  } else {
+    a = a2;
+    b = a1;
+  }
   var result = 0;
 
   for i in 1..a.size do

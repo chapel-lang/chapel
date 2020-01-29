@@ -14,7 +14,7 @@ module Strassen
         {
             return new unmanaged Strassen("name", false, n);
         }
-        override proc writeThis(w)
+        override proc writeThis(w) throws
         {
           w <~> "StrassenFactory " <~> n;
         }
@@ -24,7 +24,7 @@ module Strassen
     class Strassen : Benchmark
     {
         var n;
-        proc writeThis(w)
+        proc writeThis(w) throws
         {
           w <~> "Strassen " <~> n;
         }

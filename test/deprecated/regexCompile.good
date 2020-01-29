@@ -1,0 +1,4 @@
+regexCompile.chpl:3: warning: Regexp.compile with 'utf8' argument is deprecated. Use generic Regexp.compile, instead
+regexCompile.chpl:7: warning: Regexp.compile with 'utf8' argument is deprecated. Use generic Regexp.compile, instead
+(matched = true, offset = 0, length = 6)
+Caught expected error

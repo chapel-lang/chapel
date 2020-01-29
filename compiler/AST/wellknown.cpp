@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2019 Cray Inc.
+ * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -60,6 +60,7 @@ FnSymbol *gChplSaveTaskError;
 FnSymbol *gChplForallError;
 FnSymbol *gAtomicFenceFn;
 FnSymbol *gChplAfterForallFence;
+FnSymbol *gChplCreateStringWithLiteral;
 
 /************************************* | **************************************
 *                                                                             *
@@ -318,6 +319,13 @@ static WellKnownFn sWellKnownFns[] = {
     &gChplAfterForallFence,
     FLAG_UNKNOWN
   },
+
+  {
+    "chpl_createStringWithLiteral",
+    &gChplCreateStringWithLiteral,
+    FLAG_UNKNOWN
+  },
+
 };
 
 void gatherWellKnownFns() {

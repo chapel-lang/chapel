@@ -88,7 +88,6 @@ class Chameneos {
      meeting has ended, setting both of their colors to this value. */
   proc start(population : [] owned Chameneos, meetingPlace: MeetingPlace) {
     var stateTemp : uint(32);
-    var peer : borrowed Chameneos?;
     var peer_idx : uint(32);
     var xchg : uint(32);
     var is_same : int;
@@ -112,7 +111,7 @@ class Chameneos {
             is_same = 1;
             halt("halt: chameneos met with self");
           }
-          peer = population[peer_idx:int(32)];
+          const peer = population[peer_idx:int(32)].borrow();
           newColor = getComplement(color, peer.color);
           peer.color = newColor;
           peer.meetings += 1;

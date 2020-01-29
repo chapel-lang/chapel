@@ -1,0 +1,56 @@
+testMultiInit
+init 1
+in secondDeclaration
+deinit 1
+testReduceExpr1
+init 1 (setupArr)
+in conditional
+deinit 1
+testReduceExpr2
+init 1 (setupArr)
+in conditional
+deinit 1
+testReduceExpr3
+init 1 (setupArr)
+in conditional
+deinit 1
+testReduceExpr4
+init 1 (setupArr)
+in secondDeclaration
+deinit 1
+testIfExpr1
+init 1 (setupArr)
+in conditional
+deinit 1
+testIfExpr2
+init 1 (setupArr)
+in secondDeclaration
+deinit 1
+testForExpr1
+init 1 (setupArr)
+in conditional
+deinit 1
+testForExpr2
+init 1 (setupArr)
+in secondDeclaration
+deinit 1
+testScanExpr1
+init 1 (setupArr)
+in conditional
+deinit 1
+testScanExpr2
+init 1 (setupArr)
+in secondDeclaration
+deinit 1
+testForallExpr1
+init 1 (setupArr)
+in secondDeclaration
+deinit 1
+testForallExpr2
+init 1 (setupArr)
+in secondDeclaration
+deinit 1
+testForallExpr3
+init 1 (setupArr)
+in conditional
+deinit 1

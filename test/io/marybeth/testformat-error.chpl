@@ -1,3 +1,4 @@
 use IO;
 
-writeln("##.##".format(1.0));
+config type t = string;
+writeln(("##.##":t).format(1.0));

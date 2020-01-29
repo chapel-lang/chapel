@@ -1,6 +1,6 @@
 /*
  * Copyright 2017 Advanced Micro Devices, Inc.
- * Copyright 2004-2019 Cray Inc.
+ * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -22,6 +22,7 @@ module LocaleModelHelpAPU {
 
   use LocaleModelHelpSetup;
   use LocaleModelHelpRuntime;
+  private use SysCTypes;
 
   pragma "no doc"
   config param debugAPULocale = false;

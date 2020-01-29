@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2019 Cray Inc.
+ * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -108,7 +108,7 @@ module DefaultAssociative {
                                        parSafeDom=parSafe, dom=_to_unmanaged(this));
     }
   
-    proc dsiSerialReadWrite(f /*: Reader or Writer*/) {
+    proc dsiSerialReadWrite(f /*: Reader or Writer*/) throws {
 
       var binary = f.binary();
 
@@ -185,8 +185,8 @@ module DefaultAssociative {
         }
       }
     }
-    proc dsiSerialWrite(f) { this.dsiSerialReadWrite(f); }
-    proc dsiSerialRead(f) { this.dsiSerialReadWrite(f); }
+    proc dsiSerialWrite(f) throws { this.dsiSerialReadWrite(f); }
+    proc dsiSerialRead(f) throws { this.dsiSerialReadWrite(f); }
   
     //
     // Standard user domain interface
@@ -770,7 +770,7 @@ module DefaultAssociative {
       }
     }
 
-    proc dsiSerialReadWrite(f /*: channel*/) {
+    proc dsiSerialReadWrite(f /*: channel*/) throws {
       var binary = f.binary();
       var arrayStyle = f.styleElement(QIO_STYLE_ELEMENT_ARRAY);
       var isspace = arrayStyle == QIO_ARRAY_FORMAT_SPACE && !binary;
@@ -804,7 +804,7 @@ module DefaultAssociative {
       }
     }
 
-    proc readChapelStyleAssocArray(f) {
+    proc readChapelStyleAssocArray(f) throws {
       var first = true;
       var read_end = false;
 
@@ -846,8 +846,8 @@ module DefaultAssociative {
       }
     }
 
-    proc dsiSerialWrite(f) { this.dsiSerialReadWrite(f); }
-    proc dsiSerialRead(f) { this.dsiSerialReadWrite(f); }
+    proc dsiSerialWrite(f) throws { this.dsiSerialReadWrite(f); }
+    proc dsiSerialRead(f) throws { this.dsiSerialReadWrite(f); }
 
     //
     // Associative array interface
@@ -1005,11 +1005,11 @@ module DefaultAssociative {
   inline proc chpl__defaultHash(r : range): uint {
     use Reflection;
     var ret : uint;
-    for param i in 1..numFields(r.type) {
-      if isParam(getField(r, i)) == false &&
-         isType(getField(r, i)) == false &&
-         isNothingType(getField(r, i).type) == false {
-        const ref field = getField(r, i);
+    for param i in 1..numImplementationFields(r.type) {
+      if isParam(getImplementationField(r, i)) == false &&
+         isType(getImplementationField(r, i)) == false &&
+         isNothingType(getImplementationField(r, i).type) == false {
+        const ref field = getImplementationField(r, i);
         const fieldHash = chpl__defaultHash(field);
         if i == 1 then
           ret = fieldHash;

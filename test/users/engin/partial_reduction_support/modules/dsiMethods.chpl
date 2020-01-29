@@ -3,6 +3,7 @@ use BlockDist;
 use CyclicDist;
 use BlockCycDist;
 use Search;
+use LayoutCS;
 
 //
 // DefaultRectangular support

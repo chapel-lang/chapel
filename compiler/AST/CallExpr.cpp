@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2019 Cray Inc.
+ * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -243,6 +243,7 @@ void CallExpr::verify() {
     case PRIM_BLOCK_COBEGIN:
     case PRIM_BLOCK_COFORALL:
     case PRIM_BLOCK_ON:
+    case PRIM_BLOCK_ELIDED_ON:
     case PRIM_BLOCK_BEGIN_ON:
     case PRIM_BLOCK_COBEGIN_ON:
     case PRIM_BLOCK_COFORALL_ON:
@@ -254,11 +255,6 @@ void CallExpr::verify() {
 
     case PRIM_BLOCK_UNLOCAL:
       INT_FATAL("PRIM_BLOCK_UNLOCAL between passes");
-      break;
-
-    case PRIM_TYPE_INIT:
-      // A "type init" call is always expected to have a parent.
-      INT_ASSERT(toCallExpr(this->parentExpr));
       break;
 
     default:
@@ -641,11 +637,6 @@ void CallExpr::prettyPrint(std::ostream* o) {
       baseExpr->prettyPrint(o);
     }
 
-  } else if (primitive != NULL) {
-    if (primitive->tag == PRIM_TYPE_INIT) {
-      unusual = true;
-      argList.head->prettyPrint(o);
-    }
   }
 
   if (!array && !unusual) {

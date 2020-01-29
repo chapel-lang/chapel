@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2019 Cray Inc.
+ * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -421,6 +421,8 @@ extern "struct timespec" record chpl_timespec {
 }
 
 proc getLastModified(filename: string) : int {
+  use SysCTypes;
+
   extern proc sys_stat(filename: c_string, ref chpl_stat): c_int;
 
   var file_buf: chpl_stat;

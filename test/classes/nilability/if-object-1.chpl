@@ -1,17 +1,30 @@
-// see also test/classes/vass/if-object-2.chpl
+// if-object-1.chpl generates errors "applying postfix-! to nil"
+// if-object-2.chpl compiles successfully
 
 class C {
   var x: int;
 }
 
-proc main() {
-  var obj: borrowed C?;
+proc test(type CT) {
+  var obj: CT?;
 
-  writeln(obj.x);
+  if obj == nil then
+    writeln(obj.type:string);
+
+  writeln(obj!.x);    // error
 
   if obj then
-    writeln(obj.x);
+    writeln(obj!.x);  // never executed
 
   if obj != nil then
-    writeln(obj.x);
+    writeln(obj!.x);  // never executed
+}
+
+proc main {
+  test(owned C);
+  test(shared C);
+  test(borrowed C);
+  test(unmanaged C);
+
+  writeln("done");
 }

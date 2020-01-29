@@ -19,12 +19,10 @@ class Planet {
   var mass : real;
 }
 
-proc advance(nbodies:int, B: [] borrowed Planet?, dt: real) {
-  var b2 : borrowed Planet?;
-  
+proc advance(nbodies:int, B: [] borrowed Planet, dt: real) {
   for (b1, i) in zip(B, 0..) {
     for j in i+1..nbodies-1 {
-      b2 = B(j);
+      const b2 = B(j);
       var dx = b1.x - b2.x;
       var dy = b1.y - b2.y;
       var dz = b1.z - b2.z;
@@ -46,15 +44,14 @@ proc advance(nbodies:int, B: [] borrowed Planet?, dt: real) {
   }
 }
 
-proc energy(nbodies:int, B : [] borrowed Planet?) : real {
-  var b2 : borrowed Planet?;
+proc energy(nbodies:int, B : [] borrowed Planet) : real {
   var e : real;
   
   for (b1, i) in zip(B, 0..) {
     e += 0.5 * b1.mass * (b1.vx * b1.vx + b1.vy * b1.vy + b1.vz * b1.vz);
     
     for j in i+1..nbodies-1 {
-      b2 = B(j);
+      const b2 = B(j);
       var dx = b1.x - b2.x;
       var dy = b1.y - b2.y;
       var dz = b1.z - b2.z;
@@ -65,7 +62,7 @@ proc energy(nbodies:int, B : [] borrowed Planet?) : real {
   return e;
 }
 
-proc offset_momentum(nbodies:int, B : [] borrowed Planet?) {
+proc offset_momentum(nbodies:int, B : [] borrowed Planet) {
   var px,py,pz : real;
   for b in B {
     px += b.vx * b.mass;
@@ -79,7 +76,7 @@ proc offset_momentum(nbodies:int, B : [] borrowed Planet?) {
 
 proc main() {
   param NBODIES = 5;
-  var bodies : [0..#NBODIES] borrowed Planet?;
+  var bodies : [0..#NBODIES] borrowed Planet;
   
   bodies(0) = new Planet(0, 0, 0, 0, 0, 0, solar_mass);
   bodies(1) = new Planet(4.84143144246472090e+00,

@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2019 Cray Inc.
+ * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -60,9 +60,9 @@
 */
 module Random {
 
-  use RandomSupport;
-  use NPBRandom;
-  use PCGRandom;
+  public use RandomSupport;
+  public use NPBRandom;
+  public use PCGRandom;
   private use HaltWrappers only;
 
 
@@ -669,7 +669,7 @@ module Random {
   module PCGRandom {
 
     use RandomSupport;
-    use PCGRandomLib;
+    public use PCGRandomLib;
     private use ChapelLocks;
 
     // How many generators do we need for this type?

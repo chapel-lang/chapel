@@ -43,7 +43,7 @@ proc test_begin() {
     var a = new owned C(1);
     setit_begin(bb, a.borrow());
   }
-  writeln(bb.x);
+  writeln(bb!.x);
 }
 test_begin();
 
@@ -53,7 +53,7 @@ proc test_cobegin() {
     var a = new owned C(1);
     setit_cobegin(bb, a.borrow());
   }
-  writeln(bb.x);
+  writeln(bb!.x);
 }
 test_cobegin();
 
@@ -63,7 +63,7 @@ proc test_coforall() {
     var a = new owned C(1);
     setit_coforall(bb, a.borrow());
   }
-  writeln(bb.x);
+  writeln(bb!.x);
 }
 test_coforall();
 
@@ -73,7 +73,7 @@ proc test_forall() {
     var a = new owned C(1);
     setit_forall(bb, a.borrow());
   }
-  writeln(bb.x);
+  writeln(bb!.x);
 }
 test_forall();
 
@@ -83,6 +83,6 @@ proc test_on() {
     var a = new owned C(1);
     setit_on(bb, a.borrow());
   }
-  writeln(bb.x);
+  writeln(bb!.x);
 }
 test_on();

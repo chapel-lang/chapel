@@ -3,7 +3,7 @@
 Module Search Paths
 ===================
 
-This document describes how modules are located by the current Cray
+This document describes how modules are located by the current
 implementation of Chapel.
 
 Internal modules are always loaded by a chapel program *as if* the

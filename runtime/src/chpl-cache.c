@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2019 Cray Inc.
+ * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -2777,7 +2777,7 @@ void chpl_cache_fence(int acquire, int release, int ln, int32_t fn)
 static inline
 int size_merits_direct_comm(struct rdcache_s* cache, size_t size)
 {
-  return size > (cache->max_pages* CACHEPAGE_SIZE / 4);
+  return size >= CACHEPAGE_SIZE;
 }
 
 void chpl_cache_comm_put(void* addr, c_nodeid_t node, void* raddr,

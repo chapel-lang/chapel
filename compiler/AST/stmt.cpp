@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2019 Cray Inc.
+ * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -452,7 +452,7 @@ BlockStmt::length() const {
 
 void
 BlockStmt::useListAdd(ModuleSymbol* mod, bool privateUse) {
-  useListAdd(new UseStmt(mod, privateUse));
+  useListAdd(new UseStmt(mod, "", privateUse));
 }
 
 void
@@ -538,12 +538,14 @@ BlockStmt::accept(AstVisitor* visitor) {
 *                                                                             *
 ************************************** | *************************************/
 
-CondStmt::CondStmt(Expr* iCondExpr, BaseAST* iThenStmt, BaseAST* iElseStmt) :
-  Stmt(E_CondStmt) {
+CondStmt::CondStmt(Expr* iCondExpr,
+                   BaseAST* iThenStmt, BaseAST* iElseStmt,
+                   bool isIfExpr) : Stmt(E_CondStmt) {
 
   condExpr = iCondExpr;
   thenStmt = NULL;
   elseStmt = NULL;
+  fIsIfExpr = isIfExpr;
 
   if (Expr* s = toExpr(iThenStmt)) {
     BlockStmt* bs = toBlockStmt(s);
@@ -576,6 +578,13 @@ CondStmt::CondStmt(Expr* iCondExpr, BaseAST* iThenStmt, BaseAST* iElseStmt) :
   gCondStmts.add(this);
 }
 
+static void fixIfExprFoldedBlock(Expr* stmt) {
+  if (BlockStmt* block = toBlockStmt(stmt)) {
+    // This addresses lifetime issues with variables created within if-exprs.
+    block->flattenAndRemove();
+  }
+}
+
 CallExpr* CondStmt::foldConstantCondition() {
   CallExpr* result = NULL;
 
@@ -589,6 +598,7 @@ CallExpr* CondStmt::foldConstantCondition() {
 
         insertBefore(result);
 
+        bool isIfExpr = false;
         // A squashed IfExpr's result does not need FLAG_IF_EXPR_RESULT, which
         // is only used when there are multiple paths that could return a
         // different type.
@@ -597,6 +607,7 @@ CallExpr* CondStmt::foldConstantCondition() {
             Symbol* LHS = toSymExpr(call->get(1))->symbol();
             if (LHS->hasFlag(FLAG_IF_EXPR_RESULT)) {
               LHS->removeFlag(FLAG_IF_EXPR_RESULT);
+              isIfExpr = true;
             }
           }
         }
@@ -605,16 +616,16 @@ CallExpr* CondStmt::foldConstantCondition() {
           Expr* then_stmt = thenStmt;
 
           then_stmt->remove();
-
           replace(then_stmt);
+          if (isIfExpr) fixIfExprFoldedBlock(then_stmt);
 
         } else {
           Expr* else_stmt = elseStmt;
 
           if (else_stmt != NULL) {
             else_stmt->remove();
-
             replace(else_stmt);
+            if (isIfExpr) fixIfExprFoldedBlock(else_stmt);
           } else {
             remove();
           }
@@ -624,6 +635,10 @@ CallExpr* CondStmt::foldConstantCondition() {
   }
 
   return result;
+}
+
+bool CondStmt::isIfExpr() const {
+  return fIsIfExpr;
 }
 
 void CondStmt::verify() {
@@ -675,7 +690,8 @@ void CondStmt::verify() {
 CondStmt* CondStmt::copyInner(SymbolMap* map) {
   return new CondStmt(COPY_INT(condExpr),
                       COPY_INT(thenStmt),
-                      COPY_INT(elseStmt));
+                      COPY_INT(elseStmt),
+                      fIsIfExpr);
 }
 
 

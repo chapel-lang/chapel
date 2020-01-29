@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2019 Cray Inc.
+ * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -122,8 +122,9 @@
 
 module DistributedBag {
 
-  use Collection;
+  public use Collection;
   use BlockDist;
+  private use SysCTypes;
 
   /*
     Below are segment statuses, which is a way to make visible to outsiders the

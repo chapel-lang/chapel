@@ -5,7 +5,6 @@ CHPL = chpl
 
 TARGETS = \
 	arrays \
-	arrayVectorOps \
 	associative \
 	atomics \
 	chpldoc.doc \

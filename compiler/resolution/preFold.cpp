@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2019 Cray Inc.
+ * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -1188,8 +1188,9 @@ static Expr* preFoldPrimOp(CallExpr* call) {
     } else {
       // Check whether the type's def is within the .type block itself.
       if (BlockStmt* blk = toBlockStmt(call->getStmtExpr()->parentExpr))
-        if (type->symbol->defPoint->parentExpr == blk)
-          USR_FATAL_CONT(call, ".type is not supported for this kind of expression");
+        if (blk->blockTag & BLOCK_TYPE_ONLY)
+          if (type->symbol->defPoint->parentExpr == blk)
+            USR_FATAL_CONT(call, ".type is not supported for this kind of expression");
     }
 
     break;
@@ -2196,7 +2197,7 @@ static Expr* createFunctionAsValue(CallExpr *call) {
     if (ioModule == NULL) {
       INT_FATAL("never parsed IO module, this shouldn't be possible");
     }
-    fn->body->useListAdd(new UseStmt(ioModule, false));
+    fn->body->useListAdd(new UseStmt(ioModule, "", false));
     fn->getModule()->moduleUseAdd(ioModule);
     fn->insertAtTail(new CallExpr(new CallExpr(".", fileArg,
                                                new_StringSymbol("writeIt")),

@@ -30,9 +30,9 @@ R.deinit 100
 [(x = 0), (x = 100)]
 R.init= (x = 0)
 R.init= (x = 100)
-[(x = 0), (x = 100)]
 R.deinit 0
 R.deinit 100
+[(x = 0), (x = 100)]
 R.deinit 0
 R.deinit 100
 
@@ -50,8 +50,8 @@ R.init
 R.init
 1 = 0
 1 = 100
-[(x = 0), (x = 100)]
 R.deinit 0
 R.deinit 100
+[(x = 0), (x = 100)]
 R.deinit 0
 R.deinit 100

@@ -653,7 +653,10 @@ the enclosing Chapel module.  This is similar to what one might do
 manually using the extern declarations (as described above), but can
 save a lot of labor for a large API.  Moreover, using an inline extern
 block permits you to write C declarations directly within Chapel
-without having to create distinct C files.
+without having to create distinct C files.  Using an extern block in
+this way also injects an implicit ``public use SysCTypes;`` statement
+into the scope of the extern block to make standard C types that the
+extern block is likely to require available.
 
 If you don't want to have a lot of C symbols cluttering up a module's
 namespace, it's easy to put the C code into its own Chapel module:

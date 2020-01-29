@@ -1,4 +1,4 @@
-use TOML;
+use IO, TOML;
 
 config const f: string;
 

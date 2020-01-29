@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2019 Cray Inc.
+ * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -22,7 +22,7 @@ Module UnitTest provides support for automated testing in Chapel.
 Any function of the form
 
 .. code-block:: chapel
-  
+
   proc funcName(test: borrowed Test) throws {}
 
 is treated as a test function. These functions must accept an object of Test
@@ -68,7 +68,7 @@ Here is a minimal example demonstrating how to use the UnitTest module:
 .. code-block:: chapel
 
    use UnitTest;
-    
+
    proc celsius2fahrenheit(x) {
      // we should be returning "(x: real * 9/5)+32"
      return (x * 9/5)+32;
@@ -82,10 +82,10 @@ Here is a minimal example demonstrating how to use the UnitTest module:
 
    UnitTest.main();
 
-Output: 
+Output:
 
 .. code-block:: bash
-  
+
   ======================================================================
   FAIL xyz.chpl: test_temperature()
   ----------------------------------------------------------------------
@@ -94,22 +94,22 @@ Output:
   ----------------------------------------------------------------------
   Run 1 test
 
-  FAILED failures = 1 
+  FAILED failures = 1
 
 
 Skipping Tests
 ^^^^^^^^^^^^^^^
 
-You can skip tests unconditionally with :proc:`~Test.skip` and 
+You can skip tests unconditionally with :proc:`~Test.skip` and
 conditionally with :proc:`~Test.skipIf`:
 
 .. code-block:: chapel
 
    use UnitTest;
-    
+
    /* calculates factorial */
    proc factorial(x: int): int {
-     return if x == 0 then 1 else x * factorial(x-1); 
+     return if x == 0 then 1 else x * factorial(x-1);
    }
 
    /*Conditional skip*/
@@ -126,7 +126,7 @@ conditionally with :proc:`~Test.skipIf`:
    UnitTest.main();
 
 
-Output: 
+Output:
 
 .. code-block:: bash
 
@@ -138,7 +138,7 @@ Output:
   ----------------------------------------------------------------------
   Run 1 test
 
-  OK skipped = 1 
+  OK skipped = 1
 
 
 Specifying locales
@@ -181,8 +181,8 @@ You can also specify multiple locales on which your code can run.
   proc test3(test: borrowed Test) throws {
     test.addNumLocales(16,8);
   }
-  
-You can mention the range of locales using :proc:`~Test.maxLocales` and 
+
+You can mention the range of locales using :proc:`~Test.maxLocales` and
 :proc:`~Test.minLocales`
 
 .. code-block:: chapel
@@ -202,12 +202,12 @@ Here is an example demonstrating how to use the :proc:`~Test.dependsOn`
 .. code-block:: chapel
 
    use UnitTest;
-    
+
    var factArray: [1..0] int;
 
    // calculates factorial
    proc factorial(x: int): int {
-     return if x == 0 then 1 else x * factorial(x-1); 
+     return if x == 0 then 1 else x * factorial(x-1);
    }
 
    proc testFillFact(test: borrowed Test) throws {
@@ -221,7 +221,7 @@ Here is an example demonstrating how to use the :proc:`~Test.dependsOn`
      var s = 0;
      for i in 1..10 do
        s += factArray[i];
-     test.assertGreaterThan(s,0); 
+     test.assertGreaterThan(s,0);
    }
 
    UnitTest.main();
@@ -297,7 +297,7 @@ module UnitTest {
 
     /*
       Assert that a boolean condition is true.  If it is false, prints
-      ``assert failed``. 
+      ``assert failed``.
 
       :arg test: the boolean condition
       :type test: `bool`
@@ -324,11 +324,11 @@ module UnitTest {
       if test then
         throw new owned AssertionError("assertFalse failed. Given expression is True");
     }
-    
+
     pragma "no doc"
     /*Function to call the respective method for equality checking based on the type of argument*/
     proc checkAssertEquality(first, second) throws {
-      type firstType = first.type, 
+      type firstType = first.type,
           secondType = second.type;
 
       if isTupleType(firstType) && isTupleType(secondType) {
@@ -353,7 +353,7 @@ module UnitTest {
         __baseAssertEqual(first, second);
       }
     }
-    
+
     pragma "no doc"
     /*
       Check that a boolean array is true.  If any element is false, returns 'false'
@@ -373,7 +373,7 @@ module UnitTest {
     proc all(check: bool) {
       return check;
     }
-    
+
     pragma "no doc"
     /*An equality assertion for sequences (like arrays, tuples, strings, range).
       Args:
@@ -442,23 +442,28 @@ module UnitTest {
       array1: The first array to compare.
       array2: The second array to compare.
     */
-    proc assertArrayEqual(array1, array2) throws {
-      type firstType = array1.type,
-          secondType = array2.type;
-      if firstType == secondType {
-        if array1.rank == 1 {
-          assertSequenceEqual(array1, array2, "Array");
-        }
-        else {
-          if !array1.equals(array2) {
-            var tmpString = "assert failed - \n'" + stringify(array1) +"'\n!=\n'"+stringify(array2)+"'";
-            throw new owned AssertionError(tmpString);
-          }
-        }
+    proc assertArrayEqual(array1: [], array2: []) throws {
+      const genericErrorMsg = "assert failed -\n'" + stringify(array1) +
+                              "'\nand\n'"+stringify(array2) + "'\n";
+
+      // Compare array types, size, and shape
+      if array1.type != array2.type {
+        const errorMsg = genericErrorMsg + "are not of same type";
+        throw new owned AssertionError(errorMsg);
+      } else if array1.size != array2.size {
+        const errorMsg = genericErrorMsg + "are not of same size";
+        throw new owned AssertionError(errorMsg);
+      } else if array1.shape != array2.shape {
+        const errorMsg = genericErrorMsg + "are not of same shape";
+        throw new owned AssertionError(errorMsg);
       }
-      else {
-        var tmpString = "assert failed - \n'" + stringify(array1) +"'\nand\n'"+stringify(array2) + "'\nare not of same type";
-        throw new owned AssertionError(tmpString);
+
+      // Compare array values
+      const arraysEqual = && reduce (array1 == array2);
+      if !arraysEqual {
+        const errorMsg = "assert failed -\n'" + stringify(array1) +
+                         "'\n!=\n'"+stringify(array2)+"'";
+        throw new owned AssertionError(errorMsg);
       }
     }
 
@@ -502,7 +507,7 @@ module UnitTest {
     proc assertStringEqual(string1, string2) throws {
       assertSequenceEqual(string1,string2,"String");
     }
-    
+
     pragma "no doc"
     /*The default assertEqual implementation, not type specific.*/
     proc __baseAssertEqual(first, second) throws {
@@ -517,13 +522,13 @@ module UnitTest {
         throw new owned AssertionError(tmpString);
       }
     }
-    
+
     /*
       Fail if the two objects are unequal as determined by the ``==`` operator.
-      
+
       :arg first: The first object to compare.
       :arg second: The second object to compare.
-      :throws AssertionError: If both the arguments are not equal. 
+      :throws AssertionError: If both the arguments are not equal.
     */
     proc assertEqual(first, second) throws {
       checkAssertEquality(first, second);
@@ -550,7 +555,7 @@ module UnitTest {
       return true;
     }
 
-    
+
     /*
       Assert that a first argument is not equal to second argument.
       Uses ``==`` operator and type to determine if both are equal
@@ -563,7 +568,7 @@ module UnitTest {
     proc assertNotEqual(first, second) throws {
       if canResolve("!=",first, second) {
         if !checkAssertInequality(first,second) {
-          var tmpString = "assert failed - \n'" + stringify(first) +"'\n== \n'"+stringify(second)+"'";
+          var tmpString = "assert failed -\n'" + stringify(first) +"'\n==\n'"+stringify(second)+"'";
           throw new owned AssertionError(tmpString);
         }
       }
@@ -571,11 +576,11 @@ module UnitTest {
 
     /*
       Assert that a first argument is greater than second argument.  If it is false, prints
-      ``assert failed`` and raises AssertionError. 
+      ``assert failed`` and raises AssertionError.
 
       :arg first: The first object to compare.
-      :arg second: The second object to compare. 
-      :throws AssertionError: If the first argument is not greater than second argument. 
+      :arg second: The second object to compare.
+      :throws AssertionError: If the first argument is not greater than second argument.
     */
     proc assertGreaterThan(first, second) throws {
       if canResolve(">=",first, second) {
@@ -615,7 +620,7 @@ module UnitTest {
         __baseAssertGreater(first, second);
       }
     }
-    
+
     pragma "no doc"
     /*An greater assertion for sequences (like arrays, tuples, strings).
       Args:
@@ -667,7 +672,7 @@ module UnitTest {
           tmpString += "'[";
           for i in 1..seq1.size {
             if i != seq1.size then tmpString+= seq1[i]:string+", ";
-            else tmpString += seq1[i]:string+"]' "+symbol+ " '[";
+            else tmpString += seq1[i]:string+"]'"+symbol+ "'[";
           }
           for i in 1..seq2.size {
             if i != seq2.size then tmpString+= seq2[i]:string+", ";
@@ -675,7 +680,7 @@ module UnitTest {
           }
         }
         else {
-          tmpString += "'"+stringify(seq1)+"' "+symbol+" '"+stringify(seq2)+"'" ;
+          tmpString += "'"+stringify(seq1)+"'"+symbol+"'"+stringify(seq2)+"'" ;
         }
         tmpString+=tmplarge;
       }
@@ -695,8 +700,8 @@ module UnitTest {
             assertSequenceGreater(array1, array2, "Array");
           }
           else { // can be reimplemented using `reduce`
-            if all(array1 <= array2) { 
-              var tmpString = "assert failed - \n'" + stringify(array1) +"'\n<=\n'"+stringify(array2)+"'";
+            if all(array1 <= array2) {
+              var tmpString = "assert failed -\n'" + stringify(array1) +"'\n<=\n'"+stringify(array2)+"'";
               throw new owned AssertionError(tmpString);
             }
         }
@@ -747,7 +752,7 @@ module UnitTest {
         throw new owned AssertionError(tmpString);
       }
     }
-    
+
     pragma "no doc"
     /*
       A string-specific Greater assertion.
@@ -775,10 +780,10 @@ module UnitTest {
     }
 
     /*
-      Assert that a first argument is less than second argument.  If it is false, raises AssertionError. 
+      Assert that a first argument is less than second argument.  If it is false, raises AssertionError.
 
       :arg first: The first object to compare.
-      :arg second: The second object to compare. 
+      :arg second: The second object to compare.
       :throws AssertionError: If the first argument is not less than the second argument.
     */
     proc assertLessThan(first, second) throws {
@@ -790,7 +795,7 @@ module UnitTest {
         throw new owned AssertionError(tmpString);
       }
     }
-    
+
     pragma "no doc"
     /*checks the type of the arguments and then do less than comparison */
     proc checkLessThan(first, second) throws {
@@ -871,7 +876,7 @@ module UnitTest {
           tmpString += "'[";
           for i in 1..seq1.size {
             if i != seq1.size then tmpString+= seq1[i]:string+", ";
-            else tmpString += seq1[i]:string+"]' "+symbol+ " '[";
+            else tmpString += seq1[i]:string+"]'"+symbol+ "'[";
           }
           for i in 1..seq2.size {
             if i != seq2.size then tmpString+= seq2[i]:string+", ";
@@ -879,7 +884,7 @@ module UnitTest {
           }
         }
         else {
-          tmpString += "'"+stringify(seq1)+"' "+symbol+" '"+stringify(seq2)+"'" ;
+          tmpString += "'"+stringify(seq1)+"'"+symbol+"'"+stringify(seq2)+"'" ;
         }
         tmpString+=tmplarge;
       }
@@ -915,7 +920,7 @@ module UnitTest {
         throw new owned AssertionError(tmpString);
       }
     }
-    
+
     pragma "no doc"
     /*
       A tuple-specific less than assertion.
@@ -952,7 +957,7 @@ module UnitTest {
       }
     }
 
-    pragma "no doc"    
+    pragma "no doc"
     /*
       A string-specific Less than assertion.
       Args:
@@ -973,18 +978,18 @@ module UnitTest {
     /*The default assertGreater implementation, not type specific.*/
     proc __baseAssertLess(first, second) throws {
       if all(first >= second) {
-        var tmpString = "assert failed - '" + stringify(first) +"' >= '"+stringify(second)+"'";
+        var tmpString = "assert failed - '" + stringify(first) +"'>='"+stringify(second)+"'";
         throw new owned AssertionError(tmpString);
       }
     }
 
     /*
       Specify Max Number of Locales required to run the test
-    
+
       :arg value: Maximum number of locales with which the test can be ran.
       :type value: `int`.
 
-      :throws UnexpectedLocalesError: If `value` is less than 1 or `minNumLocales` 
+      :throws UnexpectedLocalesError: If `value` is less than 1 or `minNumLocales`
     */
     proc maxLocales(value: int) throws {
       this.numMaxLocales = value;
@@ -995,13 +1000,13 @@ module UnitTest {
         throw new owned UnexpectedLocales("Max Locales is less than Min Locales");
       }
       if value < numLocales {
-        throw new owned TestIncorrectNumLocales("Required Locales ="+value:string);
+        throw new owned TestIncorrectNumLocales("Required Locales = "+value:string);
       }
     }
 
     /*
       Specify Min Number of Locales required to run the test
-    
+
       :arg value: Minimum number of locales with which the test can be ran.
       :type value: `int`.
 
@@ -1023,7 +1028,7 @@ module UnitTest {
       :arg locales: Multiple ``,`` separated locale values
 
       :throws UnexpectedLocalesError: If `locales` are already added.
-    
+
     */
     proc addNumLocales(locales: int ...?n) throws {
       var canRun =  false;
@@ -1037,14 +1042,8 @@ module UnitTest {
         }
       }
       if !canRun {
-        var localesStr: string = this.dictDomain: string;
-        var tempLocales: list(string);
-        for loc in localesStr.split(" ") {
-          tempLocales.append(loc: string);
-        }
         var localesErrorStr= "Required Locales = ";
-        if tempLocales.size > 1 then localesErrorStr += ",".join(tempLocales.toArray()); 
-        else localesErrorStr += localesStr:string;
+        localesErrorStr += ",".join(this.dictDomain:string);
         throw new owned TestIncorrectNumLocales(localesErrorStr);
       }
     }
@@ -1053,7 +1052,7 @@ module UnitTest {
 
       :arg tests: Multiple ``,`` separated First Class Test Functions.
       :throws DependencyFound: If Called for the first time in a function.
-      
+
     */
     proc dependsOn(tests: argType ...?n) throws {
       if testDependsOn.size == 0 {
@@ -1070,7 +1069,7 @@ module UnitTest {
   class TextTestResult {
     var separator1 = "="* 70,
         separator2 = "-"* 70;
-    
+
     proc startTest(test) throws {
       stdout.writeln(test: string);
     }
@@ -1114,12 +1113,12 @@ module UnitTest {
     }
 
   }
-  
+
   pragma "no doc"
   class TestSuite {
     var testCount = 0;
     var _tests: list(argType);
-    
+
     // TODO: Get lifetime checking working in this case and remove pragma unsafe.
     // Pragma "unsafe" disables the lifetime checker here.
     pragma "unsafe"
@@ -1148,8 +1147,8 @@ module UnitTest {
 
   /*Runs the tests
 
-    Call this as 
-    
+    Call this as
+
     .. code-block:: chapel
 
       UnitTest.main();
@@ -1176,7 +1175,7 @@ module UnitTest {
         testSuite.addTest(test_FCF);
       }
     }
-    
+
     for test in testSuite {
       const testName = test: string;
       testStatus[testName] = false;
@@ -1229,8 +1228,8 @@ module UnitTest {
   }
 
   private
-  proc runTestMethod(ref testStatus, ref testObject, ref testsFailed, ref testsErrored, 
-                      ref testsSkipped, ref testsLocalFails, test, ref checkCircle, 
+  proc runTestMethod(ref testStatus, ref testObject, ref testsFailed, ref testsErrored,
+                      ref testsSkipped, ref testsLocalFails, test, ref checkCircle,
                       ref circleFound) throws {
     var testResult = new TextTestResult();
     var testName = test: string; //test is a FCF:
@@ -1268,8 +1267,8 @@ module UnitTest {
             // Create a test object per test
             var superTestObject = new Test();
             // running the super test
-            runTestMethod(testStatus, superTestObject, testsFailed, testsErrored, 
-                          testsSkipped, testsLocalFails, superTest, checkCircle, 
+            runTestMethod(testStatus, superTestObject, testsFailed, testsErrored,
+                          testsSkipped, testsLocalFails, superTest, checkCircle,
                           circleFound);
             var removeSuperTestCount = checkCircle.count(superTest: string);
             if removeSuperTestCount > 0 {
@@ -1313,7 +1312,7 @@ module UnitTest {
           testResult.addSkip(testName, skipReason);
           break;
         }
-        // super test Skipped 
+        // super test Skipped
         else if testsSkipped[superTest: string] {
           testsSkipped[testName] = true;
           var skipReason = testName + " skipped because " + superTest: string +" Skipped";
@@ -1357,7 +1356,7 @@ module UnitTest {
       testResult.addFailure(testName, e: string);
       testsFailed[testName] = true ;
     }
-    catch e { 
+    catch e {
       testResult.addError(testName, e:string);
       testsErrored[testName] = true ;
     }
@@ -1372,9 +1371,9 @@ module UnitTest {
       var details: string;
 
       proc init(details: string = "") {
-        this.details = details;  
+        this.details = details;
       }
-      
+
       // Message function overridden here
       override proc message() {
         return this.details;

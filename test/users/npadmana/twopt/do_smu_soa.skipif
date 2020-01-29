@@ -1,0 +1,2 @@
+# This test runs too long under valgrind.
+CHPL_TEST_VGRND_EXE == on

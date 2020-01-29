@@ -2,10 +2,9 @@
 #
 # Configure environment for CHPL_COMM=ofi testing.
 
-CWD=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
-
-source $CWD/common.bash
-source $CWD/common-oversubscribed.bash
+if [[ $($CHPL_HOME/util/chplenv/chpl_platform.py --target) != cray-* ]] ; then
+  source $CWD/common-oversubscribed.bash
+fi
 
 export CHPL_COMM=ofi
 
@@ -17,21 +16,20 @@ export CHPL_COMM=ofi
 # on Cray CS systems, for example.  Otherwise, our only option is the
 # stopgap mpirun4ofi launcher, in which case we also need MPI and the
 # MPI-based out-of-band support.
-lch=$($CHPL_HOME/util/chplenv/chpl_launcher.py)
 lchOK=
-
-if [ $($CHPL_HOME/util/chplenv/chpl_platform.py --target) == cray-x* ] ; then
+if [[ $($CHPL_HOME/util/chplenv/chpl_platform.py --target) == cray-x* ]] ; then
   lchOK=y
-else if [ "$lch" == slurm-srun ] && \
-        srun --mpi=list 2>&1 | grep -q pmix && \
-        module avail pmix 2>&1 | grep -q pmix ; then
+elif [[ "$($CHPL_HOME/util/chplenv/chpl_launcher.py)" == slurm-srun ]] && \
+     srun --mpi=list 2>&1 | grep -q pmix && \
+     module avail pmix 2>&1 | grep -q pmix ; then
   module load pmix
+  export CHPL_LAUNCHER=slurm-srun
   export CHPL_COMM_OFI_OOB=slurm-pmi2
   export SLURM_MPI_TYPE=pmix
   lchOK=y
 fi
 
-if [ -z "$lch" ] ; then
+if [ -z "$lchOK" ] ; then
   export CHPL_LAUNCHER=mpirun4ofi
 
   # Load OpenMPI environment module and confirm it has loaded
@@ -47,7 +45,7 @@ fi
 # Make sure we have a libfabric to use, with the required API version.
 source /cray/css/users/chapelu/setup_libfabric.bash || return 1
 
-if [ $($CHPL_HOME/util/chplenv/chpl_platform.py --target) != cray-* ] ; then
+if [[ $($CHPL_HOME/util/chplenv/chpl_platform.py --target) != cray-* ]] ; then
   # Bump the timeout slightly if we might be oversubscribed.
   export CHPL_TEST_TIMEOUT=500
 fi

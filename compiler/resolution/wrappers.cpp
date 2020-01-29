@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2019 Cray Inc.
+ * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -145,15 +145,15 @@ static bool isNestedNewOrDefault(FnSymbol* innerFn, CallExpr* innerCall) {
 
 /************************************* | **************************************
 *                                                                             *
-* The argument actualIdxToFormals[i] stores, for actual i (counting from 0),  *
-* the corresponding formal argument.                                          *
+* actualIdxToFormal[i] is the formal argument that corresponds to i-th actual *
+* (counting from 0). 'actualIdxToFormal' can be modified here.                *
 * (This mapping is nontrivial when named arguments are used)                  *
 *                                                                             *
 ************************************** | *************************************/
 
 FnSymbol* wrapAndCleanUpActuals(FnSymbol*                fn,
                                 CallInfo&                info,
-                                std::vector<ArgSymbol*>  actualIdxToFormal,
+                                std::vector<ArgSymbol*>& actualIdxToFormal,
                                 bool                     fastFollowerChecks) {
   int       numActuals = static_cast<int>(actualIdxToFormal.size());
   FnSymbol* retval     = fn;
@@ -1226,13 +1226,15 @@ static void errorIfValueCoercionToRef(CallExpr* call, ArgSymbol* formal) {
     // compiler is currently producing this pattern for chpl__unref.
     // This is a workaround and a better solution would be preferred.
   } else if (argumentCanModifyActual(intent)) {
+   if (! inGenerousResolutionForErrors()) {
     // Error for coerce->value passed to ref / out / etc
     USR_FATAL_CONT(call,
                    "value from coercion passed to ref formal '%s'",
                    formal->name);
-    USR_FATAL_CONT(formal->getFunction(),
+    USR_PRINT(formal->getFunction(),
                    "to function '%s' defined here",
                    formal->getFunction()->name);
+   }
   } else {
     // Error for coerce->value passed to 'const ref' (ref case handled above).
     // Note that coercing SubClass to ParentClass is theoretically
@@ -1244,11 +1246,11 @@ static void errorIfValueCoercionToRef(CallExpr* call, ArgSymbol* formal) {
     // visible).
     bool formalIsRef = formal->isRef() || (intent & INTENT_REF);
 
-    if (formalIsRef) {
+    if (formalIsRef && ! inGenerousResolutionForErrors()) {
       USR_FATAL_CONT(call,
                      "value from coercion passed to const ref formal '%s'",
                      formal->name);
-      USR_FATAL_CONT(formal->getFunction(),
+      USR_PRINT(formal->getFunction(),
                      "to function '%s' defined here",
                      formal->getFunction()->name);
 
@@ -2017,7 +2019,9 @@ static BlockStmt* buildPromotionLoop(PromotionInfo& promotion,
 
   insertAndSaveWrapCall(promotion, yieldBlock, yieldTmp, wrapCall);
 
-  return ForLoop::buildForLoop(indices, iterator, yieldBlock, false, zippered);
+  return ForLoop::buildForLoop(indices, iterator, yieldBlock,
+                               zippered,
+                               /* isForExpr */ true);
 }
 
 static void buildLeaderIterator(PromotionInfo& promotion,
@@ -2197,7 +2201,9 @@ static BlockStmt* followerForLoop(PromotionInfo& promotion,
 
   return ForLoop::buildForLoop(indices->copy(&followerMap),
                                new SymExpr(followerIterator),
-                               block, false, promotion.zippered);
+                               block,
+                               promotion.zippered,
+                               /* isForExpr */ true);
 }
 
 // The returned string is canonical ie from astr().
@@ -2598,6 +2604,8 @@ static void buildFastFollowerCheck(bool                  isStatic,
     checkFn         = new FnSymbol(fnName);
     checkFn->retTag = RET_VALUE;
   }
+
+  checkFn->addFlag(FLAG_COMPILER_GENERATED);
 
   checkFn->insertFormalAtTail(x);
 

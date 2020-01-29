@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2019 Cray Inc.
+ * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -22,7 +22,7 @@
 
 module ChapelBase {
   use ChapelStandard;
-  private use ChapelEnv;
+  private use ChapelEnv, SysCTypes;
 
   // These two are called by compiler-generated code.
   extern proc chpl_config_has_value(name:c_string, module_name:c_string): bool;
@@ -108,7 +108,7 @@ module ChapelBase {
     // assignments defined for sync and single class types.
   inline proc =(ref a, b:_nilType) where isBorrowedOrUnmanagedClassType(a.type)
   {
-    if isNonNilableClassType(a.type) && !chpl_legacyClasses {
+    if isNonNilableClassType(a.type) {
       compilerError("cannot assign to " + a.type:string + " from nil");
     }
     __primitive("=", a, nil);
@@ -196,10 +196,6 @@ module ChapelBase {
   inline proc <=(a: int(?w), b: int(w)) return __primitive("<=", a, b);
   inline proc <=(a: uint(?w), b: uint(w)) return __primitive("<=", a, b);
   inline proc <=(a: real(?w), b: real(w)) return __primitive("<=", a, b);
-  inline proc <=(a: imag(?w), b: imag(w)) {
-    compilerWarning("inequality comparisons on 'imag' are deprecated");
-    return __primitive("<=", a, b);
-  }
   proc <=(a: enumerated, b: enumerated) where (a.type == b.type) {
     return __primitive("<=", chpl__enumToOrder(a), chpl__enumToOrder(b));
   }
@@ -212,10 +208,6 @@ module ChapelBase {
   inline proc >=(a: int(?w), b: int(w)) return __primitive(">=", a, b);
   inline proc >=(a: uint(?w), b: uint(w)) return __primitive(">=", a, b);
   inline proc >=(a: real(?w), b: real(w)) return __primitive(">=", a, b);
-  inline proc >=(a: imag(?w), b: imag(w)) {
-    compilerWarning("inequality comparisons on 'imag' are deprecated");
-    return __primitive(">=", a, b);
-  }
   proc >=(a: enumerated, b: enumerated) where (a.type == b.type) {
     return __primitive(">=", chpl__enumToOrder(a), chpl__enumToOrder(b));
   }
@@ -228,10 +220,6 @@ module ChapelBase {
   inline proc <(a: int(?w), b: int(w)) return __primitive("<", a, b);
   inline proc <(a: uint(?w), b: uint(w)) return __primitive("<", a, b);
   inline proc <(a: real(?w), b: real(w)) return __primitive("<", a, b);
-  inline proc <(a: imag(?w), b: imag(w)) {
-    compilerWarning("inequality comparisons on 'imag' are deprecated");
-    return __primitive("<", a, b);
-  }
   proc <(a: enumerated, b: enumerated) where (a.type == b.type) {
     return __primitive("<", chpl__enumToOrder(a), chpl__enumToOrder(b));
   }
@@ -244,10 +232,6 @@ module ChapelBase {
   inline proc >(a: int(?w), b: int(w)) return __primitive(">", a, b);
   inline proc >(a: uint(?w), b: uint(w)) return __primitive(">", a, b);
   inline proc >(a: real(?w), b: real(w)) return __primitive(">", a, b);
-  inline proc >(a: imag(?w), b: imag(w)) {
-    compilerWarning("inequality comparisons on 'imag' are deprecated");
-    return __primitive(">", a, b);
-  }
   proc >(a: enumerated, b: enumerated) where (a.type == b.type) {
     return __primitive(">", chpl__enumToOrder(a), chpl__enumToOrder(b));
   }
@@ -261,37 +245,21 @@ module ChapelBase {
   inline proc <=(param a: uint(?w), param b: uint(w)) param return __primitive("<=", a, b);
   inline proc <=(param a: enumerated, param b: enumerated) param where (a.type == b.type) return __primitive("<=", chpl__enumToOrder(a), chpl__enumToOrder(b));
   inline proc <=(param a: real(?w), param b: real(w)) param return __primitive("<=", a, b);
-  inline proc <=(param a: imag(?w), param b: imag(w)) param {
-    compilerWarning("inequality comparisons on 'imag' are deprecated");
-    return __primitive("<=", a, b);
-  }
 
   inline proc >=(param a: int(?w), param b: int(w)) param return __primitive(">=", a, b);
   inline proc >=(param a: uint(?w), param b: uint(w)) param return __primitive(">=", a, b);
   inline proc >=(param a: enumerated, param b: enumerated) param where (a.type == b.type) return __primitive(">=", chpl__enumToOrder(a), chpl__enumToOrder(b));
   inline proc >=(param a: real(?w), param b: real(w)) param return __primitive(">=", a, b);
-  inline proc >=(param a: imag(?w), param b: imag(w)) param {
-    compilerWarning("inequality comparisons on 'imag' are deprecated");
-    return __primitive(">=", a, b);
-  }
 
   inline proc <(param a: int(?w), param b: int(w)) param return __primitive("<", a, b);
   inline proc <(param a: uint(?w), param b: uint(w)) param return __primitive("<", a, b);
   inline proc <(param a: enumerated, param b: enumerated) param where (a.type == b.type) return __primitive("<", chpl__enumToOrder(a), chpl__enumToOrder(b));
   inline proc <(param a: real(?w), param b: real(w)) param return __primitive("<", a, b);
-  inline proc <(param a: imag(?w), param b: imag(w)) param {
-    compilerWarning("inequality comparisons on 'imag' are deprecated");
-    return __primitive("<", a, b);
-  }
 
   inline proc >(param a: int(?w), param b: int(w)) param return __primitive(">", a, b);
   inline proc >(param a: uint(?w), param b: uint(w)) param return __primitive(">", a, b);
   inline proc >(param a: enumerated, param b: enumerated) param where (a.type == b.type) return __primitive(">", chpl__enumToOrder(a), chpl__enumToOrder(b));
   inline proc >(param a: real(?w), param b: real(w)) param return __primitive(">", a, b);
-  inline proc >(param a: imag(?w), param b: imag(w)) param {
-    compilerWarning("inequality comparisons on 'imag' are deprecated");
-    return __primitive(">", a, b);
-  }
 
   //
   // unary + and - on primitive types
@@ -727,9 +695,11 @@ module ChapelBase {
   }
 
   inline proc postfix!(type t: class) type {
+    compilerWarning("applying the postfix-! operator to a type is deprecated; instead use a cast to 'class' or 'borrowed class', e.g. 'MyType :borrowed class'");
     return _to_borrowed(_to_nonnil(t));
   }
   inline proc postfix!(type t: class?) type {
+    compilerWarning("applying the postfix-! operator to a type is deprecated; instead use a cast to 'class' or 'borrowed class', e.g. 'MyType :borrowed class'");
     return _to_borrowed(_to_nonnil(t));
   }
 
@@ -763,17 +733,17 @@ module ChapelBase {
   // a sync to read it or a sync returned from a function but not
   // explicitly captured.
   //
-  inline proc _statementLevelSymbol(a) { }
-  inline proc _statementLevelSymbol(a: sync)  { a.readFE(); }
-  inline proc _statementLevelSymbol(a: single) { a.readFF(); }
-  inline proc _statementLevelSymbol(param a) param { return a; }
-  inline proc _statementLevelSymbol(type a) type { return a; }
+  inline proc chpl_statementLevelSymbol(a) { }
+  inline proc chpl_statementLevelSymbol(a: sync)  { a.readFE(); }
+  inline proc chpl_statementLevelSymbol(a: single) { a.readFF(); }
+  inline proc chpl_statementLevelSymbol(param a) param { return a; }
+  inline proc chpl_statementLevelSymbol(type a) type { return a; }
 
   //
   // If an iterator is called without capturing the result, iterate over it
   // to ensure any side effects it has will happen.
   //
-  inline proc _statementLevelSymbol(ir: _iteratorRecord) {
+  inline proc chpl_statementLevelSymbol(ir: _iteratorRecord) {
     iter _ir_copy_recursive(ir) {
       for e in ir do
         yield chpl__initCopy(e);
@@ -868,9 +838,6 @@ module ChapelBase {
 
   inline proc min(x: real(?w), y: real(w)) return if (x < y) | isnan(x) then x else y;
   inline proc max(x: real(?w), y: real(w)) return if (x > y) | isnan(x) then x else y;
-
-  inline proc min(x: imag(?w), y: imag(w)) return if x < y then x else y;
-  inline proc max(x: imag(?w), y: imag(w)) return if x > y then x else y;
 
   inline proc min(x, y) return if x < y then x else y;
   inline proc max(x, y) return if x > y then x else y;
@@ -1333,7 +1300,7 @@ module ChapelBase {
   // This version is called for normal sync blocks.
   pragma "task join impl fn"
   pragma "unchecked throws"
-  proc _waitDynamicEndCount(param countRunningTasks=true) throws {
+  proc chpl_waitDynamicEndCount(param countRunningTasks=true) throws {
     var e = __primitive("get dynamic end count");
     _waitEndCount(e, countRunningTasks);
 
@@ -1350,7 +1317,10 @@ module ChapelBase {
     if isAtomicType(t) then
       compilerError("config variables of atomic type are not supported");
 
-    var str = createStringWithNewBuffer(x);
+    var str: string;
+    try! {
+      str = createStringWithNewBuffer(x);
+    }
     if t == string {
       return str;
     } else {
@@ -1408,17 +1378,12 @@ module ChapelBase {
 
   inline proc _cast(type t:unmanaged class, x:_nilType)
   {
-    if !chpl_legacyClasses {
       compilerError("cannot cast nil to " + t:string);
-    }
   }
   inline proc _cast(type t:borrowed class, x:_nilType)
   {
-    if !chpl_legacyClasses {
-      compilerError("cannot cast nil to " + t:string);
-    }
+    compilerError("cannot cast nil to " + t:string);
   }
-
 
   // casting to unmanaged?, no class downcast
   inline proc _cast(type t:unmanaged class?, x:borrowed class?)
@@ -1609,8 +1574,7 @@ module ChapelBase {
   pragma "suppress lvalue error"
   pragma "unsafe"
   inline proc _createFieldDefault(type t, init) {
-    if !chpl_legacyClasses && isNonNilableClassType(t)
-                           && isNilableClassType(init.type) then
+    if isNonNilableClassType(t) && isNilableClassType(init.type) then
       compilerError("default-initializing a field with a non-nilable type ",
           t:string, " from an instance of nilable ", init.type:string);
 
@@ -1632,7 +1596,7 @@ module ChapelBase {
   pragma "no copy return"
   pragma "unsafe"
   inline proc _createFieldDefault(type t, init: _nilType) {
-    if !chpl_legacyClasses && isNonNilableClassType(t) then
+    if isNonNilableClassType(t) then
       compilerError("default-initializing a field with a non-nilable type ",
                     t:string, " from nil");
 
@@ -2270,6 +2234,12 @@ module ChapelBase {
   proc isBorrowedOrUnmanagedClassType(type t:borrowed) param return true;
   proc isBorrowedOrUnmanagedClassType(type t) param return false;
 
+  // Former support for --legacy-classes, to be removed after 1.21.
+  proc chpl_legacyClasses param {
+    compilerWarning("'chpl_legacyClasses' is deprecated and will be removed in the next release; it is now always false");
+    return false;
+  }
+
   proc isRecordType(type t) param {
     if __primitive("is record type", t) == false then
       return false;
@@ -2325,10 +2295,41 @@ module ChapelBase {
     const deinitFun:  c_fn_ptr;          // module deinit function
     const prevModule: unmanaged chpl_ModuleDeinit?; // singly-linked list / LIFO queue
     proc writeThis(ch) throws { 
+      try {
       ch.writef("chpl_ModuleDeinit(%s)",createStringWithNewBuffer(moduleName));
+      }
+      catch e: DecodeError { // let IOError propagate
+        halt("Module name is not valid string!");
+      }
     }
   }
   var chpl_moduleDeinitFuns = nil: unmanaged chpl_ModuleDeinit?;
+
+  // Supports type field accessors on nilable classes - on an instance...
+  inline proc chpl_checkLegalTypeFieldAccessor(thisArg, type fieldType,
+                                              param fieldName) type {
+    if isNilableClassType(thisArg.type) &&
+       // it is a runtime type
+       (isDomainType(fieldType) || isArrayType(fieldType))
+    then
+       compilerError("accessing the runtime-type field ", fieldName,
+         " of a nilable class. Consider applying postfix-! operator",
+         " to the class before accessing this field.");
+
+    return fieldType;
+  }
+
+  // ... and on a type.
+  inline proc chpl_checkLegalTypeFieldAccessor(type thisArg, type fieldType,
+                                              param fieldName) type {
+    if // it is a runtime type
+      (isDomainType(fieldType) || isArrayType(fieldType))
+    then
+       compilerError("accessing the runtime-type field ", fieldName,
+         " of a class type is currently unsupported"); // see #11549
+
+    return fieldType;
+  }
 
   // The compiler does not emit _defaultOf for numeric and class types
   // directly. If _defaultOf is required, use variable initialization

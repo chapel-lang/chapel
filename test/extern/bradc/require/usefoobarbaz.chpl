@@ -1,5 +1,7 @@
 require "foo.h", "bar.h", "bar.c", "baz.h", "baz.o";
 
+use SysCTypes;
+
 extern proc foo(x: c_int);
 extern proc bar(x: c_int);
 extern proc baz(x: c_int);

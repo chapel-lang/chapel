@@ -1,3 +1,7 @@
+hpl-blc-noreindex.chpl:176: In function 'schurComplement':
+hpl-blc-noreindex.chpl:188: warning: initializing a non-distributed domain from a distributed domain. If you didn't mean to do that, add a dmapped clause to the type expression or remove the type expression altogether
+hpl-blc-noreindex.chpl:189: warning: initializing a non-distributed domain from a distributed domain. If you didn't mean to do that, add a dmapped clause to the type expression or remove the type expression altogether
+hpl-blc-noreindex.chpl:143: Function 'schurComplement' instantiated as: schurComplement(Ab: [BlockCyclicDom(2,int(64),false)] real(64), AD: BlockCyclicDom(2,int(64),false), BD: BlockCyclicDom(2,int(64),false), Rest: BlockCyclicDom(2,int(64),false))
 Problem size = 30 x 30
 Bytes per array = 7200
 Total memory required (GB) = 6.70552e-06

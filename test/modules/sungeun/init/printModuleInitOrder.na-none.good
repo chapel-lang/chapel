@@ -26,12 +26,8 @@ Initializing Modules:
            RadixSortHelp
            ShellSort
           QuickSort
+           ShallowCopy
            InsertionSort
-          BubbleSort
-          HeapSort
-          BinaryInsertionSort
-          MergeSort
-          SelectionSort
         ChapelDistribution
          LinkedLists
         DefaultAssociative

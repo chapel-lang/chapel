@@ -2,6 +2,7 @@ use FileSystem;
 
 use MasonUtils;
 use MasonDoc only;
+use SysCTypes;
 
 extern proc setenv(name : c_string, envval : c_string, overwrite : c_int) : c_int;
 
@@ -16,9 +17,9 @@ setenv("PWD", newPWD.c_str(), 1);
 MasonDoc.masonDoc(['mason', 'doc']);
 
 const sourcesDir = 'doc/_sources/modules/src/',
-      Pkg = sourcesDir + 'Pkg.txt',
-      SubPkg = sourcesDir + 'SubPkg.txt',
-      FS = sourcesDir + 'FileSystem.txt';
+      Pkg = sourcesDir + 'Pkg.rst.txt',
+      SubPkg = sourcesDir + 'SubPkg.rst.txt',
+      FS = sourcesDir + 'FileSystem.rst.txt';
 
 // Confirm Pkg was documented
 if !exists(Pkg) then

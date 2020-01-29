@@ -56,3 +56,9 @@ for (val, i) in zip(fac.values(), 1..) {
   C[i] = val;
 }
 writeln(C.sorted());
+
+var D: [1..fac.size] (int, FacInt);
+for key in fac.keys() {
+  D[key] = (key, fac[key]);
+}
+writeln(D.sorted());

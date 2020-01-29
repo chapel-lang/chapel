@@ -8,7 +8,7 @@ areal.and(1);
 
 var astring: atomic string;
 
-var aint: atomic int;
+var aint: atomic int = 0;
 
 aint = 1;
 aint = aint + 1;

@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2019 Cray Inc.
+ * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -67,6 +67,7 @@ checkParsed() {
 
   forv_Vec(DefExpr, def, gDefExprs) {
     if (toVarSymbol(def->sym)) {
+      bool needsInit = false;
       // The test for FLAG_TEMP allows compiler-generated (temporary) variables
       // to be declared without an explicit type or initializer expression.
       if ((!def->init || def->init->isNoInitExpr())
@@ -74,9 +75,20 @@ checkParsed() {
         if (isBlockStmt(def->parentExpr) && !isArgSymbol(def->parentSymbol))
           if (def->parentExpr != rootModule->block && def->parentExpr != stringLiteralModule->block)
             if (!def->sym->hasFlag(FLAG_INDEX_VAR))
-              USR_FATAL_CONT(def->sym,
-                             "Variable '%s' is not initialized or has no type",
-                             def->sym->name);
+              needsInit = true;
+
+      if (needsInit) {
+        if ((def->init && def->init->isNoInitExpr()) ||
+            def->sym->hasFlag(FLAG_CONFIG)) {
+          USR_FATAL_CONT(def->sym,
+                         "Variable '%s' is not initialized and has no type",
+                         def->sym->name);
+        } else {
+          SET_LINENO(def);
+          def->init = new SymExpr(gSplitInit);
+          parent_insert_help(def, def->init);
+        }
+      }
     }
 
     //
@@ -266,30 +278,37 @@ static void checkPrivateDecls(DefExpr* def) {
                          "a class or record yet");
 
         } else if (mod->block != def->parentExpr) {
-          if (BlockStmt* block = toBlockStmt(def->parentExpr)) {
-            // Scopeless blocks are used to define multiple symbols, for
-            // instance.  Those are valid "nested" blocks for private symbols.
-            if (block->blockTag != BLOCK_SCOPELESS) {
-              // The block in which we are defined is not the top level module
-              // block.  Private symbols at this scope are meaningless, so warn
-              // the user.
+          for (Expr* cur = def->parentExpr; cur; cur = cur->parentExpr) {
+            if (cur == mod->block)
+              break;
+
+            if (BlockStmt* block = toBlockStmt(cur)) {
+              // Scopeless blocks are used to define multiple symbols, for
+              // instance.  Those are valid "nested" blocks for private symbols.
+              if (block->blockTag != BLOCK_SCOPELESS) {
+                // The block in which we are defined is not the top level module
+                // block.  Private symbols at this scope are meaningless, so warn
+                // the user.
+                USR_WARN(def,
+                         "Private declarations within nested blocks "
+                         "are meaningless");
+
+                def->sym->removeFlag(FLAG_PRIVATE);
+                break;
+              }
+
+            } else {
+              // There are many situations which could lead to this else branch.
+              // Most of them will not reach here due to being banned at parse
+              // time.  However, those that aren't excluded by syntax errors will
+              // be caught here.
               USR_WARN(def,
-                       "Private declarations within nested blocks "
-                       "are meaningless");
+                       "Private declarations are meaningless outside "
+                       "of module level declarations");
 
               def->sym->removeFlag(FLAG_PRIVATE);
+              break;
             }
-
-          } else {
-            // There are many situations which could lead to this else branch.
-            // Most of them will not reach here due to being banned at parse
-            // time.  However, those that aren't excluded by syntax errors will
-            // be caught here.
-            USR_WARN(def,
-                     "Private declarations are meaningless outside "
-                     "of module level declarations");
-
-            def->sym->removeFlag(FLAG_PRIVATE);
           }
         }
 

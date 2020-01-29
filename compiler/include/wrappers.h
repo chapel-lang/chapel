@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2019 Cray Inc.
+ * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -26,10 +26,10 @@ class ArgSymbol;
 class CallInfo;
 class FnSymbol;
 
-FnSymbol* wrapAndCleanUpActuals(FnSymbol*               fn,
-                                CallInfo&               info,
-                                std::vector<ArgSymbol*> actualIdxToFormal,
-                                bool                    fastFollowerChecks);
+FnSymbol* wrapAndCleanUpActuals(FnSymbol*                fn,
+                                CallInfo&                info,
+                                std::vector<ArgSymbol*>& actualIdxToFormal,
+                                bool                     fastFollowerChecks);
 
 const char* unwrapFnName(FnSymbol* fn);
 

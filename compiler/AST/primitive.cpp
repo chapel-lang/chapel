@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2019 Cray Inc.
+ * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -665,10 +665,16 @@ initPrimitive() {
   // dst, init-expr, optional declared type
   prim_def(PRIM_INIT_VAR,   "init var",   returnInfoVoid);
 
-  // Used in a context where only a type is needed.
-  // Establishes the type of the result without
-  // generating code.
-  prim_def(PRIM_TYPE_INIT,  "type init",  returnInfoFirstDeref);
+  // indicates split initialization point of declaration
+  // If the type is provided, apply that to the value immediately
+  // The value may not be used until a later PRIM_INIT_VAR.
+  //
+  // dst, optional type to default-init
+  prim_def(PRIM_INIT_VAR_SPLIT_DECL, "init var split decl", returnInfoVoid, false);
+
+  // indicates split initialization point of initialization
+  // dst, init-expr
+  prim_def(PRIM_INIT_VAR_SPLIT_INIT, "init var split init",   returnInfoVoid);
 
   prim_def(PRIM_REF_TO_STRING, "ref to string", returnInfoStringC);
   prim_def(PRIM_RETURN, "return", returnInfoFirst, true);
@@ -894,6 +900,9 @@ initPrimitive() {
   prim_def(PRIM_BLOCK_COFORALL, "coforall loop", returnInfoVoid);
   // BlockStmt::blockInfo - on block
   prim_def(PRIM_BLOCK_ON, "on block", returnInfoVoid);
+  // BlockStmt::blockInfo - elided on block
+  //   (i.e. an on block that not needed for single-locale compilation)
+  prim_def(PRIM_BLOCK_ELIDED_ON, "elided on block", returnInfoVoid);
   // BlockStmt::blockInfo - begin on block
   prim_def(PRIM_BLOCK_BEGIN_ON, "begin on block", returnInfoVoid);
   // BlockStmt::blockInfo - cobegin on block
@@ -1054,6 +1063,13 @@ initPrimitive() {
   prim_def(PRIM_TO_NON_NILABLE_CLASS, "to non nilable class", returnInfoToNonNilable, false, false);
 
   prim_def(PRIM_NEEDS_AUTO_DESTROY, "needs auto destroy", returnInfoBool, false, false);
+
+  // Indicates the end of a statement. This is important for the
+  // deinitialization location for some variables.
+  // Any arguments are SymExprs to user variables that should be alive until
+  // after this primitive.
+  prim_def(PRIM_END_OF_STATEMENT, "end of statement", returnInfoVoid, false, false);
+
   prim_def(PRIM_AUTO_DESTROY_RUNTIME_TYPE, "auto destroy runtime type", returnInfoVoid, false, false);
 
   // Accepts 3 arguments:

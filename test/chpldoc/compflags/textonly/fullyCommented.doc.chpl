@@ -37,4 +37,3 @@ proc hasArg(val: int) {
 proc argAndBody(val: int) {
   writeln(val);
 }
-

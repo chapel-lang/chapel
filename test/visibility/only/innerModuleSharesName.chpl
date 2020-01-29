@@ -1,12 +1,14 @@
-module EvenMoreOuter {
-  module M {
+module OuterModule {
+  module EvenMoreOuter {
     module M {
-      proc whatev() {
-        writeln("whee");
+      module M {
+        proc whatev() {
+          writeln("whee");
+        }
       }
     }
   }
-}
 
-use EvenMoreOuter.M only M;
-M.whatev();
+  use EvenMoreOuter.M only M;
+  M.whatev();
+}

@@ -1,3 +1,2 @@
---legacy-classes --warn-unstable  # unstable-owned-shared-intent2.1.good
---legacy-classes                  # unstable-owned-shared-intent2.2.good
---no-legacy-classes               # unstable-owned-shared-intent2.2.good
+--warn-unstable  # unstable-owned-shared-intent2.1.good
+                 # unstable-owned-shared-intent2.2.good

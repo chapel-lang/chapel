@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2019 Cray Inc.
+ * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -569,6 +569,7 @@ static VarSymbol*     createSymbol(PrimitiveType* primType, const char* name);
 //  well as internal types and other types used in the generated code
 void initPrimitiveTypes() {
   dtVoid                               = createInternalType("void", "void");
+  dtVoid->symbol->addFlag(FLAG_NO_RENAME);
   dtNothing                            = createInternalType ("nothing",  "nothing");
 
   dtBools[BOOL_SIZE_SYS]               = createPrimitiveType("bool",     "chpl_bool");
@@ -621,13 +622,17 @@ void initPrimitiveTypes() {
   uniqueConstantsHash.put(gTrue->immediate,  gTrue);
 
   dtNil = createInternalType ("_nilType", "_nilType");
+  dtNil->symbol->addFlag(FLAG_NO_RENAME);
   CREATE_DEFAULT_SYMBOL (dtNil, gNil, "nil");
+  gNil->addFlag(FLAG_NO_RENAME);
 
   // dtStringC defaults to nil
   dtStringC->defaultValue = gNil;
 
   // This type should not be visible past normalize.
   CREATE_DEFAULT_SYMBOL (dtVoid, gNoInit, "_gnoinit");
+
+  CREATE_DEFAULT_SYMBOL (dtVoid, gSplitInit, "_gsplitinit");
 
   dtUnknown = createInternalType ("_unknown", "_unknown");
   CREATE_DEFAULT_SYMBOL (dtUnknown, gUnknown, "_gunknown");
@@ -804,7 +809,9 @@ void initPrimitiveTypes() {
 }
 
 static PrimitiveType* createPrimitiveType(const char* name, const char* cname) {
-  return createType(name, cname, false);
+  PrimitiveType* newType = createType(name, cname, false);
+  newType->symbol->addFlag(FLAG_NO_RENAME);
+  return newType;
 }
 
 static PrimitiveType* createInternalType(const char* name, const char* cname) {
@@ -882,10 +889,6 @@ void initCompilerGlobals() {
   gNilChecking = new VarSymbol("chpl_checkNilDereferences", dtBool);
   gNilChecking->addFlag(FLAG_PARAM);
   setupBoolGlobal(gNilChecking, !fNoNilChecks);
-
-  gLegacyClasses = new VarSymbol("chpl_legacyClasses", dtBool);
-  gLegacyClasses->addFlag(FLAG_PARAM);
-  setupBoolGlobal(gLegacyClasses, fLegacyClasses);
 
   gOverloadSetsChecks = new VarSymbol("chpl_overloadSetsChecks", dtBool);
   gOverloadSetsChecks->addFlag(FLAG_PARAM);
@@ -1132,6 +1135,7 @@ bool isClassLikeOrPtr(Type* t) {
   return isClassLike(t) || (t->symbol->hasFlag(FLAG_C_PTR_CLASS) ||
                             t->symbol->hasFlag(FLAG_DATA_CLASS) ||
                             t == dtCVoidPtr ||
+                            t == dtStringC ||
                             t == dtCFnPtr);
 }
 
@@ -1526,7 +1530,10 @@ bool isPrimitiveScalar(Type* type) {
       type == dtReal[FLOAT_SIZE_64]        ||
 
       type == dtImag[FLOAT_SIZE_32]        ||
-      type == dtImag[FLOAT_SIZE_64]) {
+      type == dtImag[FLOAT_SIZE_64]        ||
+
+      type == dtComplex[COMPLEX_SIZE_64]   ||
+      type == dtComplex[COMPLEX_SIZE_128]) {
 
     retval = true;
 

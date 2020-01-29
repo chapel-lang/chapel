@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2019 Cray Inc.
+ * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -28,6 +28,7 @@
 #include "build.h"
 #include "expr.h"
 #include "ForLoop.h"
+#include "IfExpr.h"
 #include "LoopExpr.h"
 #include "passes.h"
 #include "scopeResolve.h"
@@ -407,8 +408,8 @@ static FnSymbol* buildSerialIteratorFn(const char* iteratorName,
   sifn->insertAtTail(ForLoop::buildForLoop(indices,
                                            new SymExpr(sifnIterator),
                                            new BlockStmt(stmt),
-                                           false, // is it a coforall?
-                                           zippered));
+                                           zippered,
+                                           /*isForExpr*/ true));
 
   return sifn;
 }
@@ -717,7 +718,26 @@ static CallExpr* buildLoopExprFunctions(LoopExpr* loopExpr) {
   if (insideArgSymbol) {
     loopExpr->getModule()->block->insertAtHead(new DefExpr(fn));
   } else {
-    loopExpr->getStmtExpr()->insertBefore(new DefExpr(fn));
+    BlockStmt* block = NULL;
+    CondStmt* ifExprCond = NULL;
+    for (Expr* cur = loopExpr->getStmtExpr();
+         cur != NULL;
+         cur = cur->parentExpr) {
+      if (BlockStmt* b = toBlockStmt(cur)) {
+        block = b;
+        break;
+      }
+    }
+
+    if (block != NULL && isLoweredIfExprBlock(block)) {
+      ifExprCond = toCondStmt(block->parentExpr);
+    }
+
+    if (ifExprCond != NULL)
+      // for if-exprs, insert just before the CondStmt
+      ifExprCond->insertBefore(new DefExpr(fn));
+    else
+      loopExpr->getStmtExpr()->insertBefore(new DefExpr(fn));
   }
 
   SymbolMap outerMap;
@@ -770,7 +790,11 @@ static CallExpr* buildLoopExprFunctions(LoopExpr* loopExpr) {
       indDefCopies.insertAtTail(defI->copy(&map));
     Expr* indicesCopy = (indices) ? indices->copy(&map) : NULL;
     Expr* bodyCopy = stmt->copy(&map);
-    fifn->insertAtTail(ForLoop::buildLoweredForallLoop(indicesCopy, new SymExpr(followerIterator), new BlockStmt(bodyCopy), false, zippered));
+    fifn->insertAtTail(
+        ForLoop::buildLoweredForallLoop(
+          indicesCopy, new SymExpr(followerIterator), new BlockStmt(bodyCopy),
+          zippered,
+          /* isForExpr */ true));
     addOuterVariableFormals(fifn, outerVars);
     adjustIndexDefPoints(fifn, &indDefCopies);
   }

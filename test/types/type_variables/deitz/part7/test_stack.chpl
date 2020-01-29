@@ -41,8 +41,8 @@ proc stack.pop() : eltType {
 proc stack.writeThis(f) {
   var tmp = top;
   while tmp != nil {
-    f.write(tmp.value, " ");
-    tmp = tmp.next;
+    f.write(tmp!.value, " ");
+    tmp = tmp!.next;
   }
 }
 

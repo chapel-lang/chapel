@@ -1,0 +1,2 @@
+bug: lvalue error when initializing array of record containing owned
+#14759 

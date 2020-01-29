@@ -7,8 +7,8 @@ in MyClass.deinit
 in test2
 in MyClass.init
 in f, x.type is owned MyClass
-back in test2
 in MyClass.deinit
+back in test2
 in MyClass.init
 in g, x.type is owned MyClass
 in MyClass.deinit
