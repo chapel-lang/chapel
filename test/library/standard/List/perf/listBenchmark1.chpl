@@ -15,6 +15,7 @@ config const n0: int = 50000;
 
 const n1: int = n0 / 1000;
 const seed = 314159;
+const rand = createRandomStream(eltType=int(64), seed=seed);
 
 proc createList(size: int) {
   var result: testList;
@@ -22,19 +23,10 @@ proc createList(size: int) {
   return result;
 }
 
-proc setup() {
-  extern proc srand(seed: int);
-  srand(seed);
-}
-
-proc randInt() {
-  extern proc rand(): int;
-  return rand();
-}
-
 proc generateNoise() {
-  var lst1 = createList(n1);
-  var lst2 = createList(n1);
+  const size = if isPerformanceTest then n1 else n0;
+  var lst1 = createList(size);
+  var lst2 = createList(size);
 
   for (a, b) in zip(lst1, lst2) do a += b % 127;
 
@@ -144,7 +136,7 @@ class RandomAccess1: Test {
   override proc setup() { _lst = createList(n0); } 
   override proc test() {
     for x in _lst {
-      const idx = abs(randInt()) % _lst.size + 1;
+      const idx = abs(rand.getNext()) % _lst.size + 1;
       _lst[idx] &= 0xFF:byte;
     }
   }
@@ -161,8 +153,6 @@ class Clear: Test {
 }
 
 proc main() {
-  setup();
-
   var tests: list(owned Test);
 
   tests.append(new AppendFromEmpty());
