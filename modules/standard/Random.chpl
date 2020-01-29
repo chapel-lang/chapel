@@ -638,6 +638,23 @@ module Random {
         const oddseed = if seed % 2 == 0 then seed + 1 else seed;
         return oddseed;
       }
+      /*
+      Generate a seed based on the entropy pool in the OS; this requires
+      the presence of /dev/urandom.  This should be standard on both macOS
+      and Linux systems.
+
+      For highly parallel applications on one locale, it may be necessary
+      to lock this object to ensure two tasks do not both pull the same
+      bit of entropy.
+      */
+      proc type udevRandomSeed: int(64) {
+        use IO;
+        var entropy = open('/dev/urandom', iomode.r);
+        var entropyStream = entropy.reader();
+        const seed: int(64);
+        entropyStream.readbits(seed, 64);
+        return seed;
+      }
     }
 
 
