@@ -67,6 +67,10 @@ private:
                                             const std::set<VarSymbol*>& ignored,
                                             AutoDestroyScope* startingScope) const;
 
+  void                     destroyOuterVariables(Expr* before,
+                                                 std::set<VarSymbol*>& ignored) const;
+
+
   // Returns true if the variable has already been initialized in
   // this or a parent scope.
   bool                     isVariableInitialized(VarSymbol* var) const;

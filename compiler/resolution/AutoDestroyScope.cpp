@@ -164,10 +164,11 @@ void AutoDestroyScope::insertAutoDestroys(FnSymbol* fn, Expr* refStmt,
   BlockStmt*              forTarget  = findBlockForTarget(gotoStmt);
   VarSymbol*              excludeVar = variableToExclude(fn, refStmt);
   const AutoDestroyScope* scope      = this;
-  bool                    includeParent    = false;
+  bool                    gotoError  = false;
+  std::set<VarSymbol*>    ignoredSet(ignored);
 
   if (gotoStmt != NULL && gotoStmt->gotoTag == GOTO_ERROR_HANDLING)
-    includeParent = true;
+    gotoError = true;
 
   // Error handling gotos need to include auto-destroys
   // for any in-scope variables for the block containing
@@ -175,13 +176,20 @@ void AutoDestroyScope::insertAutoDestroys(FnSymbol* fn, Expr* refStmt,
   // Compare with while/break, say, in which the
   // variables in the parent block are assumed to be destroyed by the
   // parent block.
+  // Error handling gotos also need to include auto-destroys
+  // for outer variables initialized in the scope (in the try block).
 
   while (scope != NULL) {
     // stop when block == forTarget for non-error-handling gotos
-    if (scope->mBlock == forTarget && includeParent == false)
+    if (scope->mBlock == forTarget && gotoError == false)
       break;
 
-    scope->variablesDestroy(refStmt, excludeVar, ignored, this);
+    // destroy outer variables initialized in the scope too
+    if (gotoError) {
+      scope->destroyOuterVariables(refStmt, ignoredSet);
+    }
+
+    scope->variablesDestroy(refStmt, excludeVar, ignoredSet, this);
 
     // stop if recurse == false or if block == forTarget
     if (recurse == false)
@@ -210,6 +218,25 @@ void AutoDestroyScope::destroyVariable(Expr* after, VarSymbol* var,
   }
 }
 
+// Destroy outer variabls and add them to the ignored set
+void AutoDestroyScope::destroyOuterVariables(Expr* before,
+                                             std::set<VarSymbol*>& ignored) const
+{
+  size_t count = mInitedOuterVars.size();
+  for (size_t i = 1; i <= count; i++) {
+    VarSymbol* var = mInitedOuterVars[count - i];
+    if (ignored.count(var) == 0) {
+      if (FnSymbol* autoDestroyFn = autoDestroyMap.get(var->type)) {
+        SET_LINENO(var);
+
+        INT_ASSERT(autoDestroyFn->hasFlag(FLAG_AUTO_DESTROY_FN));
+        CallExpr* autoDestroy = new CallExpr(autoDestroyFn, var);
+        before->insertBefore(autoDestroy);
+        ignored.insert(var);
+      }
+    }
+  }
+}
 
 // If 'refStmt' is in a shadow variable's initBlock(),
 // return that svar's deinitBlock(). Otherwise return NULL.

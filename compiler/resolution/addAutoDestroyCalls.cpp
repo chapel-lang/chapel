@@ -126,9 +126,6 @@ static void         walkForallBlocks(FnSymbol* fn,
                                      std::set<VarSymbol*>& parentIgnored,
                                      LastMentionMap& lmm);
 
-static void gatherIgnoredVariablesForErrorHandling(
-    CondStmt* cond,
-    std::set<VarSymbol*>& ignoredVariables);
 static void gatherIgnoredVariablesForYield(
     Expr* stmt,
     std::set<VarSymbol*>& ignoredVariables);
@@ -161,14 +158,17 @@ static void checkSplitInitOrder(CondStmt* cond,
                                 std::vector<VarSymbol*>& thenOrder,
                                 std::vector<VarSymbol*>& elseOrder);
 
-static void walkBlockStmt(FnSymbol*         fn,
-                          AutoDestroyScope& scope,
-                          LabelSymbol*      retLabel,
-                          bool              isDeadCode,
-                          bool              inScopelessBlock,
-                          Expr*             stmt,
-                          std::set<VarSymbol*>& ignoredVariables,
-                          LastMentionMap&   lmm) {
+// Returns the next statement to traverse
+static Expr* walkBlockStmt(FnSymbol*         fn,
+                           AutoDestroyScope& scope,
+                           LabelSymbol*      retLabel,
+                           bool              isDeadCode,
+                           bool              inScopelessBlock,
+                           Expr*             stmt,
+                           std::set<VarSymbol*>& ignoredVariables,
+                           LastMentionMap&   lmm) {
+
+  Expr* next = stmt->next;
 
   //
   // Handle the current statement
@@ -188,6 +188,20 @@ static void walkBlockStmt(FnSymbol*         fn,
     INT_ASSERT(!inScopelessBlock); // situation leads to miscompiles/leaks
 
     scope.insertAutoDestroys(fn, stmt, ignoredVariables);
+
+    std::vector<VarSymbol*> outerInits = scope.getInitedOuterVars();
+    scope.forgetOuterVariableInitializations();
+
+    // Consider the catch blocks now
+    for (Expr* cur = stmt->next; cur != NULL; cur = next) {
+      next = walkBlockStmt(fn, scope, retLabel, false, false, cur,
+                           ignoredVariables, lmm);
+    }
+
+    // Now once again consider the outer variables initialized
+    for_vector(VarSymbol, var, outerInits) {
+      scope.addInitialization(var);
+    }
 
   // AutoDestroy primary locals at start of function epilogue (1)
   } else if (isReturnLabel(stmt, retLabel) == true) {
@@ -212,6 +226,15 @@ static void walkBlockStmt(FnSymbol*         fn,
       // after the 1st initialization. That should be OK though because
       // once a variable is initialized, it stays initialized, until
       // it is destroyed.
+
+      // TODO: fix test/errhandling/ferguson/loopexprs-caught.chpl
+      if (isCheckErrorStmt(stmt->next)) {
+        // Visit the check-error block now - do not consider
+        // the variable initialized when running that check-error block.
+        next = walkBlockStmt(fn, scope, retLabel, false, false, stmt->next,
+                             ignoredVariables, lmm);
+      }
+
       scope.addInitialization(var);
 
     // Recurse in to a BlockStmt (or sub-classes of BlockStmt e.g. a loop)
@@ -230,21 +253,22 @@ static void walkBlockStmt(FnSymbol*         fn,
     // Recurse in to the BlockStmt(s) of a CondStmt
     } else if (CondStmt*  cond     = toCondStmt(stmt))  {
 
-      std::set<VarSymbol*> toIgnore(ignoredVariables);
+      //std::set<VarSymbol*> toIgnore(ignoredVariables);
 
-      if (isCheckErrorStmt(cond))
-        gatherIgnoredVariablesForErrorHandling(cond, toIgnore);
+      if (isCheckErrorStmt(cond)) {
+        INT_ASSERT(!cond->elseStmt);
+        walkBlock(fn, &scope, cond->thenStmt, ignoredVariables, lmm);
 
-      if (cond->elseStmt == NULL) {
+      } else if (cond->elseStmt == NULL) {
         // Traverse into the if branch only
-        walkBlock(fn, &scope, cond->thenStmt, toIgnore, lmm);
+        walkBlock(fn, &scope, cond->thenStmt, ignoredVariables, lmm);
       } else {
         // includes an if and an else. Split init is possible within these,
         // and we need to ensure that the order of initializations matches.
 
         // visit the then block
         AutoDestroyScope thenScope(&scope, cond->thenStmt);
-        walkBlockWithScope(thenScope, fn, cond->thenStmt, toIgnore, lmm);
+        walkBlockWithScope(thenScope, fn, cond->thenStmt, ignoredVariables, lmm);
         // Gather the inited outer vars from the then block
         std::vector<VarSymbol*> thenOrder = thenScope.getInitedOuterVars();
         // When we visit the else block, outer variables that were initialized
@@ -253,7 +277,7 @@ static void walkBlockStmt(FnSymbol*         fn,
 
         // visit the else block
         AutoDestroyScope elseScope(&scope, cond->elseStmt);
-        walkBlockWithScope(elseScope, fn, cond->elseStmt, toIgnore, lmm);
+        walkBlockWithScope(elseScope, fn, cond->elseStmt, ignoredVariables, lmm);
         std::vector<VarSymbol*> elseOrder = elseScope.getInitedOuterVars();
 
         // check that the outer variables are initialized in the same order.
@@ -278,7 +302,7 @@ static void walkBlockStmt(FnSymbol*         fn,
     }
   }
 
-
+  return next;
 }
 
 static void walkBlockScopelessBlock(AutoDestroyScope& scope,
@@ -288,9 +312,10 @@ static void walkBlockScopelessBlock(AutoDestroyScope& scope,
                                     BlockStmt*        block,
                                     std::set<VarSymbol*>& ignoredVariables,
                                     LastMentionMap&   lmm) {
-  for_alist(stmt, block->body) {
-    walkBlockStmt(fn, scope, retLabel, isDeadCode, true, stmt,
-                  ignoredVariables, lmm);
+  Expr* next = NULL;
+  for (Expr* stmt = block->body.first(); stmt != NULL; stmt = next) {
+    next = walkBlockStmt(fn, scope, retLabel, isDeadCode, true, stmt,
+                         ignoredVariables, lmm);
   }
 }
 
@@ -300,13 +325,42 @@ static void checkSplitInitOrder(CondStmt* cond,
   // normalizer should prevent these two from initializing different
   // variables.
   bool ok = true;
-  if (thenOrder.size() != elseOrder.size())
-    ok = false;
 
-  if (ok) {
+  if (thenOrder.size() == elseOrder.size()) {
+    // common case
     size_t size = thenOrder.size();
     for (size_t i = 0; i < size; i++) {
       if (thenOrder[i] != elseOrder[i]) {
+        ok = false;
+        break;
+      }
+    }
+  } else {
+    // one of the branches might have returned early,
+    // so only consider variables that are initialized in both.
+    std::vector<VarSymbol*> thenOrder2;
+    std::vector<VarSymbol*> elseOrder2;
+    std::set<VarSymbol*> thenSet;
+    std::set<VarSymbol*> elseSet;
+
+    for_vector(VarSymbol, var, thenOrder) {
+      thenSet.insert(var);
+    }
+    for_vector(VarSymbol, var, elseOrder) {
+      elseSet.insert(var);
+    }
+    for_vector(VarSymbol, var, thenOrder) {
+      if (elseSet.count(var) != 0)
+        thenOrder2.push_back(var);
+    }
+    for_vector(VarSymbol, var, elseOrder) {
+      if (thenSet.count(var) != 0)
+        elseOrder2.push_back(var);
+    }
+    INT_ASSERT(thenOrder2.size() == elseOrder2.size());
+    size_t size = thenOrder2.size();
+    for (size_t i = 0; i < size; i++) {
+      if (thenOrder2[i] != elseOrder2[i]) {
         ok = false;
         break;
       }
@@ -363,14 +417,14 @@ static void walkBlockWithScope(AutoDestroyScope& scope,
   LabelSymbol*     retLabel   = (parent == NULL) ? findReturnLabel(fn) : NULL;
   bool             isDeadCode = false;
 
-  for_alist(stmt, block->body) {
-    Expr* next = stmt->next;
+  Expr* next = NULL;
+  for (Expr* stmt = block->body.first(); stmt != NULL; stmt = next) {
 
     //
     // Handle the current statement
     //
-    walkBlockStmt(fn, scope, retLabel, isDeadCode, false, stmt,
-                  ignoredVariables, lmm);
+    next = walkBlockStmt(fn, scope, retLabel, isDeadCode, false, stmt,
+                         ignoredVariables, lmm);
 
     //
     // Handle the end of a block
@@ -551,130 +605,6 @@ static void walkForallBlocks(FnSymbol* fn,
       }
 }
 
-/*
- This function identifies variables that have not yet been initialized
- because the function that would initialize them has thrown an error.
- The error handling can add 'gotos' to handle such errors in-between
- a DefExpr and the AST nodes that cause that variable to be initialized.
- This wouldn't have been possible before error handling.
-
-  For example, consider the following Chapel code and AST:
-
-  try {
-    var x = returnOrThrow(1);
-    writeln(x);
-  }
-
-
-  'def' error:Error;
-  'def' x;
-  'def' call_tmp;
-  'move' call_tmp 'call' returnOrThrow(1, error)
-    (or call using ret-arg and a ret_tmp)
-  if('check error' error)
-  {
-    gotoErrorHandling handler;
-  }
-  'move' x 'call' chpl__initCopy(call_tmp)
-  'call' writeln(x)
-
-  In that event, 'call_tmp' might be stack trash (or at least
-  a value that was not a result of initialization) if returnOrThrow
-  threw an error. So 'deinit' shouldn't be called on 'call_tmp' or 'x'
-  (since these variables really are the same and the existence of both
-   is an artifact of the current implementation)
-*/
-static void gatherIgnoredVariablesForErrorHandling(
-    CondStmt* cond,
-    std::set<VarSymbol*>& ignoredVariables)
-{
-
-  // Look for the function call immediately preceding
-  // that throws. Is it returning a variable that we will
-  // want to auto-destroy?
-
-  VarSymbol* callResult = NULL;
-  VarSymbol* moveResult = NULL;
-  CallExpr* returningAndThrowingCall = NULL;
-
-  // Look for previous call and track whatever variable was move'd into
-  for (Expr* cur = cond->prev; cur != NULL; cur = cur->prev) {
-    if (CallExpr* call = toCallExpr(cur)) {
-      FnSymbol* calledFn = call->resolvedFunction();
-
-      // Check for a pattern like
-      //   move tmp (call someFunction())
-      //   if error
-      if (call->isPrimitive(PRIM_MOVE) || call->isPrimitive(PRIM_ASSIGN)) {
-        SymExpr* lhsSe = toSymExpr(call->get(1));
-        moveResult = toVarSymbol(lhsSe->symbol());
-        if (CallExpr* subCall = toCallExpr(call->get(2))) {
-          if (FnSymbol* subFn = subCall->resolvedFunction()) {
-            if (subFn->throwsError()) {
-              // Found the non-ret-arg pattern
-              callResult = NULL;
-              returningAndThrowingCall = subCall;
-              break;
-            }
-          }
-        }
-
-      // Check for a ret-arg pattern like
-      //   call someFunction(ret_tmp)
-      //   move tmp ret_tmp
-      //   if error
-      } else if (calledFn != NULL &&
-                 calledFn->throwsError() &&
-                 calledFn->hasFlag(FLAG_FN_RETARG)) {
-        ArgSymbol* retArg = toArgSymbol(toDefExpr(calledFn->formals.tail)->sym);
-        INT_ASSERT(retArg && retArg->hasFlag(FLAG_RETARG));
-        // Find the corresponding actual, which is the last actual
-        SymExpr* lastActual = toSymExpr(call->argList.tail);
-        INT_ASSERT(lastActual && isVarSymbol(lastActual->symbol()));
-        INT_ASSERT(moveResult);
-        callResult = toVarSymbol(lastActual->symbol());
-        returningAndThrowingCall = call;
-        break;
-      }
-    }
-  }
-
-  FnSymbol* fn = NULL;
-  if (returningAndThrowingCall != NULL) {
-    fn = returningAndThrowingCall->resolvedFunction();
-    INT_ASSERT(fn && fn->throwsError());
-  }
-
-  // The following block is a workaround to close a memory leak in
-  // code similar to:
-  //
-  //   try {
-  //     var a = for i in 0..3 throwingFunc(i)
-  //   }
-  //   catch { ... }
-  //
-  // Do not ignore if the call is chpl__initCopy(ir) because not
-  // cleaning after it causes memory leaks. See the test:
-  // test/errhandling/ferguson/loopexprs-caught.chpl and PR #14192
-  bool isInitCopyWithIR = false;
-  if (fn && fn->hasFlag(FLAG_INIT_COPY_FN)) {
-    if (returningAndThrowingCall->numActuals() >= 1) {
-      if (SymExpr *argSE = toSymExpr(returningAndThrowingCall->get(1))) {
-        if (argSE->symbol()->type->symbol->hasFlag(FLAG_ITERATOR_RECORD)) {
-          isInitCopyWithIR = true;
-        }
-      }
-    }
-  }
-
-  if (!isInitCopyWithIR) {
-    if (callResult)
-      ignoredVariables.insert(callResult);
-    if (moveResult)
-      ignoredVariables.insert(moveResult);
-  }
-}
-
 static void gatherIgnoredVariablesForYield(
     Expr* yieldStmt,
     std::set<VarSymbol*>& ignoredVariables)
@@ -781,9 +711,11 @@ void ComputeLastSymExpr::exitForallStmt(ForallStmt* node) {
 // Returns true for statements that are expressions when
 // their type would normally be a statement,
 // e.g. if-expr, for-expr, forall-expr
+// Also returns 'true' for IfExprs implementing error handling
+//  (handling control flow after an error is thrown by a call)
 static bool stmtIsExpr(Expr* e) {
   if (CondStmt* cond = toCondStmt(e))
-    return cond->isIfExpr();
+    return cond->isIfExpr() || isCheckErrorStmt(e);
   if (ForLoop* forLoop = toForLoop(e))
     return forLoop->isForExpr();
   if (ForallStmt* forall = toForallStmt(e))

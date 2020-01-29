@@ -4138,6 +4138,11 @@ module ChapelArray {
     return result;
   }
 
+  pragma "unchecked throws"
+  proc chpl__throwErrorUnchecked(in e: owned Error) throws {
+    throw e;
+  }
+
   pragma "init copy fn"
   proc chpl__initCopy(ir: _iteratorRecord) {
 
@@ -4188,42 +4193,54 @@ module ChapelArray {
 
     if size > 0 then allocateData(true, size);
 
-    for elt in ir {
+    try {
+      for elt in ir {
 
-      // Future: we should generally remove this copy.
-      // Note though that in some cases it invokes this function
-      // recursively - in that case it shouldn't be removed!
-      pragma "no auto destroy"
-      pragma "no copy"
-      var eltCopy = chpl__initCopy(elt);
+        // Future: we should generally remove this copy.
+        // Note though that in some cases it invokes this function
+        // recursively - in that case it shouldn't be removed!
+        pragma "no auto destroy"
+        pragma "no copy"
+        var eltCopy = try chpl__initCopy(elt);
 
-      if i >= size {
-        // Allocate a new buffer and then copy.
-        var oldSize = size;
-        var oldData = data;
+        if i >= size {
+          // Allocate a new buffer and then copy.
+          var oldSize = size;
+          var oldData = data;
 
-        if size == 0 then
-          size = 4;
-        else
-          size = 2 * size;
+          if size == 0 then
+            size = 4;
+          else
+            size = 2 * size;
 
-        allocateData(true, size);
+          allocateData(true, size);
 
-        // Now copy the data over
-        for i in 0..#oldSize {
-          // this is a move, transferring ownership
-          __primitive("=", data[i], oldData[i]);
+          // Now copy the data over
+          for i in 0..#oldSize {
+            // this is a move, transferring ownership
+            __primitive("=", data[i], oldData[i]);
+          }
+
+          // Then, free the old data
+          _ddata_free(oldData, oldSize);
         }
 
-        // Then, free the old data
-        _ddata_free(oldData, oldSize);
+        // Now move the element to the array
+        // The intent here is to transfer ownership to the array.
+        __primitive("=", data[i], eltCopy);
+
+        i += 1;
       }
-
-      // Now move the element to the array
-      // The intent here is to transfer ownership to the array.
-      __primitive("=", data[i], eltCopy);
-
-      i += 1;
+    } catch e {
+      // Deinitialize any elements that have been iniitalized.
+      for j in 0..i-1 {
+        chpl__autoDestroy(data[j]);
+      }
+      // Free the allocated memory.
+      _ddata_free(data, size);
+      // Propagate the thrown error, but don't consider this
+      // function throwing just because of this call.
+      chpl__throwErrorUnchecked(e);
     }
 
     // Create the domain of the array that we will return.
