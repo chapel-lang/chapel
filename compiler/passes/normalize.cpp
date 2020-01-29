@@ -1141,8 +1141,6 @@ static void processManagedNew(CallExpr* newCall) {
 
 class AddEndOfStatementMarkers : public AstVisitorTraverse
 {
-  private:
-    void addMarker(Expr* node, CallExpr* existingEndOfStatement);
   public:
     virtual bool enterCallExpr(CallExpr* node);
     virtual bool enterDefExpr(DefExpr* node);
@@ -1150,8 +1148,10 @@ class AddEndOfStatementMarkers : public AstVisitorTraverse
     virtual bool enterLoopExpr(LoopExpr* node);
 };
 
-void AddEndOfStatementMarkers::addMarker(Expr* node,
-                                         CallExpr* existingEndOfStatement) {
+// Note, this might be called also during resolution
+// Adds a PRIM_END_OF_STATEMENT if the second argument is NULL
+void addMentionToEndOfStatement(Expr* node, CallExpr* existingEndOfStatement) {
+
   // Rule out several cases that shouldn't get end-of-statement markers
   if (node->list == NULL)
     return;
@@ -1191,7 +1191,6 @@ void AddEndOfStatementMarkers::addMarker(Expr* node,
     return;
 
   // Gather symexprs used in the statement
-  // This could be folded into the AstVisitor (but make it more complex)
   std::vector<SymExpr*> mentions;
   collectSymExprs(node, mentions);
 
@@ -1218,12 +1217,28 @@ void AddEndOfStatementMarkers::addMarker(Expr* node,
   // A reasonable alternative would be for transformations such as
   // the removal of .type blocks to add such SymExprs.
   for_vector(SymExpr, se, mentions) {
-    if (VarSymbol* var = toVarSymbol(se->symbol()))
+    if (VarSymbol* var = toVarSymbol(se->symbol())) {
       if (!var->hasFlag(FLAG_TEMP) &&
           !var->isParameter() &&
           // exclude global variables, e.g. gMethodToken
-          var->defPoint->getFunction() == node->getFunction())
-        call->insertAtTail(new SymExpr(se->symbol()));
+          var->defPoint->getFunction() == node->getFunction()) {
+
+        // check that the variable is defined outside of the
+        // node (to avoid adding mentions of removed variables
+        // in param-if folding)
+        bool definedOutsideOfNode = true;
+        if (DefExpr* def = var->defPoint) {
+          for (Expr* cur = def; cur != NULL; cur = cur->parentExpr) {
+            if (cur == node) {
+              definedOutsideOfNode = false;
+              break;
+            }
+          }
+        }
+        if (definedOutsideOfNode)
+          call->insertAtTail(new SymExpr(se->symbol()));
+      }
+    }
   }
 
   // Don't add if already at the end of the block and no mentions are stored
@@ -1232,12 +1247,12 @@ void AddEndOfStatementMarkers::addMarker(Expr* node,
 }
 
 bool AddEndOfStatementMarkers::enterIfExpr(IfExpr* node) {
-  addMarker(node, NULL);
+  addMentionToEndOfStatement(node, NULL);
   return false;
 }
 
 bool AddEndOfStatementMarkers::enterLoopExpr(LoopExpr* node) {
-  addMarker(node, NULL);
+  addMentionToEndOfStatement(node, NULL);
   return false;
 }
 
@@ -1252,7 +1267,7 @@ bool AddEndOfStatementMarkers::enterCallExpr(CallExpr* node) {
       if (lhs->symbol()->hasFlag(FLAG_TEMP))
         return false;
 
-  addMarker(node, NULL);
+  addMentionToEndOfStatement(node, NULL);
   return false;
 }
 
@@ -1267,7 +1282,7 @@ bool AddEndOfStatementMarkers::enterDefExpr(DefExpr* node) {
       if (CallExpr* call = toCallExpr(cur))
         if (call->isPrimitive(PRIM_END_OF_STATEMENT))
           endOfStatement = call;
-    addMarker(node, endOfStatement);
+    addMentionToEndOfStatement(node, endOfStatement);
     return false;
   }
 

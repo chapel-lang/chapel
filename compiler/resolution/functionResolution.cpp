@@ -7977,7 +7977,7 @@ static Expr* foldTryCond(Expr* expr) {
 
   if (CondStmt* cond = toCondStmt(expr->parentExpr))
     if (cond->condExpr == expr)
-      if (CallExpr* noop = cond->foldConstantCondition())
+      if (CallExpr* noop = cond->foldConstantCondition(true))
         retval = noop;
 
   return retval;
