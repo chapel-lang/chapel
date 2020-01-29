@@ -15,7 +15,7 @@ config const n0: int = 50000;
 
 const n1: int = n0 / 1000;
 const seed = 314159;
-const rand = createRandomStream(eltType=int(64), seed=seed);
+const rand = createRandomStream(eltType=int, seed=seed, parSafe=false);
 
 proc createList(size: int) {
   var result: testList;
