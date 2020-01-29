@@ -126,9 +126,6 @@ static void         walkForallBlocks(FnSymbol* fn,
                                      std::set<VarSymbol*>& parentIgnored,
                                      LastMentionMap& lmm);
 
-/*static void gatherIgnoredVariablesForErrorHandling(
-    CondStmt* cond,
-    std::set<VarSymbol*>& ignoredVariables);*/
 static void gatherIgnoredVariablesForYield(
     Expr* stmt,
     std::set<VarSymbol*>& ignoredVariables);
@@ -259,10 +256,7 @@ static Expr* walkBlockStmt(FnSymbol*         fn,
       //std::set<VarSymbol*> toIgnore(ignoredVariables);
 
       if (isCheckErrorStmt(cond)) {
-        //gatherIgnoredVariablesForErrorHandling(cond, toIgnore);
-
         INT_ASSERT(!cond->elseStmt);
-        //walkBlockWithScope(scope, fn, cond->thenStmt, ignoredVariables, lmm);
         walkBlock(fn, &scope, cond->thenStmt, ignoredVariables, lmm);
 
       } else if (cond->elseStmt == NULL) {
@@ -610,130 +604,6 @@ static void walkForallBlocks(FnSymbol* fn,
         walkBlock(fn, parentScope, svar->deinitBlock(), toIgnoreSV, lmm);
       }
 }
-
-/*
- This function identifies variables that have not yet been initialized
- because the function that would initialize them has thrown an error.
- The error handling can add 'gotos' to handle such errors in-between
- a DefExpr and the AST nodes that cause that variable to be initialized.
- This wouldn't have been possible before error handling.
-
-  For example, consider the following Chapel code and AST:
-
-  try {
-    var x = returnOrThrow(1);
-    writeln(x);
-  }
-
-
-  'def' error:Error;
-  'def' x;
-  'def' call_tmp;
-  'move' call_tmp 'call' returnOrThrow(1, error)
-    (or call using ret-arg and a ret_tmp)
-  if('check error' error)
-  {
-    gotoErrorHandling handler;
-  }
-  'move' x 'call' chpl__initCopy(call_tmp)
-  'call' writeln(x)
-
-  In that event, 'call_tmp' might be stack trash (or at least
-  a value that was not a result of initialization) if returnOrThrow
-  threw an error. So 'deinit' shouldn't be called on 'call_tmp' or 'x'
-  (since these variables really are the same and the existence of both
-   is an artifact of the current implementation)
-*/
-/*static void gatherIgnoredVariablesForErrorHandling(
-    CondStmt* cond,
-    std::set<VarSymbol*>& ignoredVariables)
-{
-
-  // Look for the function call immediately preceding
-  // that throws. Is it returning a variable that we will
-  // want to auto-destroy?
-
-  VarSymbol* callResult = NULL;
-  VarSymbol* moveResult = NULL;
-  CallExpr* returningAndThrowingCall = NULL;
-
-  // Look for previous call and track whatever variable was move'd into
-  for (Expr* cur = cond->prev; cur != NULL; cur = cur->prev) {
-    if (CallExpr* call = toCallExpr(cur)) {
-      FnSymbol* calledFn = call->resolvedFunction();
-
-      // Check for a pattern like
-      //   move tmp (call someFunction())
-      //   if error
-      if (call->isPrimitive(PRIM_MOVE) || call->isPrimitive(PRIM_ASSIGN)) {
-        SymExpr* lhsSe = toSymExpr(call->get(1));
-        moveResult = toVarSymbol(lhsSe->symbol());
-        if (CallExpr* subCall = toCallExpr(call->get(2))) {
-          if (FnSymbol* subFn = subCall->resolvedFunction()) {
-            if (subFn->throwsError()) {
-              // Found the non-ret-arg pattern
-              callResult = NULL;
-              returningAndThrowingCall = subCall;
-              break;
-            }
-          }
-        }
-
-      // Check for a ret-arg pattern like
-      //   call someFunction(ret_tmp)
-      //   move tmp ret_tmp
-      //   if error
-      } else if (calledFn != NULL &&
-                 calledFn->throwsError() &&
-                 calledFn->hasFlag(FLAG_FN_RETARG)) {
-        ArgSymbol* retArg = toArgSymbol(toDefExpr(calledFn->formals.tail)->sym);
-        INT_ASSERT(retArg && retArg->hasFlag(FLAG_RETARG));
-        // Find the corresponding actual, which is the last actual
-        SymExpr* lastActual = toSymExpr(call->argList.tail);
-        INT_ASSERT(lastActual && isVarSymbol(lastActual->symbol()));
-        INT_ASSERT(moveResult);
-        callResult = toVarSymbol(lastActual->symbol());
-        returningAndThrowingCall = call;
-        break;
-      }
-    }
-  }
-
-  FnSymbol* fn = NULL;
-  if (returningAndThrowingCall != NULL) {
-    fn = returningAndThrowingCall->resolvedFunction();
-    INT_ASSERT(fn && fn->throwsError());
-  }
-
-  // The following block is a workaround to close a memory leak in
-  // code similar to:
-  //
-  //   try {
-  //     var a = for i in 0..3 throwingFunc(i)
-  //   }
-  //   catch { ... }
-  //
-  // Do not ignore if the call is chpl__initCopy(ir) because not
-  // cleaning after it causes memory leaks. See the test:
-  // test/errhandling/ferguson/loopexprs-caught.chpl and PR #14192
-  bool isInitCopyWithIR = false;
-  if (fn && fn->hasFlag(FLAG_INIT_COPY_FN)) {
-    if (returningAndThrowingCall->numActuals() >= 1) {
-      if (SymExpr *argSE = toSymExpr(returningAndThrowingCall->get(1))) {
-        if (argSE->symbol()->type->symbol->hasFlag(FLAG_ITERATOR_RECORD)) {
-          isInitCopyWithIR = true;
-        }
-      }
-    }
-  }
-
-  if (!isInitCopyWithIR) {
-    if (callResult)
-      ignoredVariables.insert(callResult);
-    if (moveResult)
-      ignoredVariables.insert(moveResult);
-  }
-}*/
 
 static void gatherIgnoredVariablesForYield(
     Expr* yieldStmt,
