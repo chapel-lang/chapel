@@ -639,7 +639,7 @@ argument expression is a tuple of the actual arguments.
    .. code-block:: chapel
 
       proc mywriteln(x ...?k) {
-        for param i in 1..k do
+        for param i in 0..k-1 do
           writeln(x(i));
       }
 
