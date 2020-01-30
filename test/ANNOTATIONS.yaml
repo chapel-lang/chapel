@@ -409,6 +409,8 @@ all:
   12/04/19:
     - text: Warm up the runtime before entering user code (#14567)
       config: 16 node XC, 16-node-cs
+  01/17/20:
+    - Adjust point of deinitialization based on expiring value analysis (#14691)
 
 
 AllCompTime:
@@ -1165,6 +1167,10 @@ memleaksfull:
     - Allow messages in new Errors (#14545)
   01/09/20:
     - Resolve memory leaks with quicksort with array-of-arrays (#14635)
+  01/29/20:
+    - Propagate user thrown errors out of IO routines (#14739)
+  01/30/20:
+    - Adjust split init to allow some try, if with returns (#14814)
 
 meteor:
   12/18/13:
@@ -1372,6 +1378,8 @@ regexdna: &regexdna-base
     - Change string.length to measure in codepoints (#13675)
   12/17/19:
     - Add UTF8 validation for strings (#14384)
+  01/23/20:
+    - Add support for escaping non-UTF8 sequences in strings (#14743)
 regexdna-redux:
   <<: *regexdna-base
 regexdna-submitted:
