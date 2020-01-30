@@ -17,6 +17,7 @@ function loadCSModule()
 
 if module avail craype- 2>&1 | grep -q craype- ; then
   export CHPL_HOST_PLATFORM=cray-cs
+  export CHPL_TEST_LAUNCHCMD=$CHPL_HOME/util/test/chpl_launchcmd.py
   loadCSModule gcc
   loadCSModule python/2.7.6
   loadCSModule cray-fftw
