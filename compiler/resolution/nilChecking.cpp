@@ -1093,6 +1093,8 @@ static bool combine(FnSymbol* fn,
   return changed;
 }
 
+static void findNonNilableStoringNil(FnSymbol* fn);
+
 void findNilDereferences(FnSymbol* fn) {
 
   bool debugging = 0 == strcmp(fn->name, debugNilsForFn) ||
@@ -1178,6 +1180,8 @@ void findNilDereferences(FnSymbol* fn) {
     checkBasicBlock(fn, (*fn->basicBlocks)[i], idxToSym, IN[i], OUT[i],
                     debugging, /*raise errors?*/ true);
   }
+
+  findNonNilableStoringNil(fn);
 }
 
 void adjustSignatureForNilChecking(FnSymbol* fn) {
@@ -1187,4 +1191,127 @@ void adjustSignatureForNilChecking(FnSymbol* fn) {
     if (fn->hasFlag(FLAG_LEAVES_THIS_NIL))
       fn->_this->addFlag(FLAG_LEAVES_ARG_NIL);
   }
+}
+
+typedef std::map<Symbol*,Expr*> SymbolToNilMap;
+
+class FindInvalidNonNilables : public AstVisitorTraverse {
+  public:
+    // key - a variable of interest
+    // value - NULL if that variable isn't possibly nil now
+    //         an Expr* setting it to nil if it is possibly nil now
+    SymbolToNilMap varsToNil;
+    virtual bool enterDefExpr(DefExpr* def);
+    //virtual bool enterCallExpr(CallExpr* call);
+    virtual void exitCallExpr(CallExpr* call);
+    virtual void visitSymExpr(SymExpr* se);
+};
+
+static bool isNonNilableVariable(Symbol* sym) {
+  return (isVarSymbol(sym) || isArgSymbol(sym)) &&
+         isNonNilableType(sym->getValType());
+}
+
+static bool isTrackedNonNilableVariable(Symbol* sym) {
+  if (isNonNilableVariable(sym)) {
+    if (sym->hasFlag(FLAG_DEAD_LAST_MENTION))
+      return true;
+    if (ArgSymbol* arg = toArgSymbol(sym))
+      if (arg->intent == INTENT_IN || arg->intent == INTENT_CONST_IN)
+        return true;
+  }
+
+  return false;
+}
+
+bool FindInvalidNonNilables::enterDefExpr(DefExpr* def) {
+
+  Symbol* sym = def->sym;
+
+  if (isTrackedNonNilableVariable(sym)) {
+    if (varsToNil.count(sym) == 0) {
+      // Assume that the variable is not nil at initialization-time.
+      varsToNil[sym] = NULL;
+    }
+  }
+
+  return true;
+}
+/*
+void FindInvalidNonNilables::enterCallExpr(CallExpr* call) {
+
+  return true;
+}
+*/
+
+void FindInvalidNonNilables::exitCallExpr(CallExpr* call) {
+  if (call->isPrimitive(PRIM_MOVE) || call->isPrimitive(PRIM_ASSIGN)) {
+    // handle some compiler-added temps
+    SymExpr* lhsSe = toSymExpr(call->get(1));
+    Symbol* lhs = lhsSe->symbol();
+    if (SymExpr* rhsSe = toSymExpr(call->get(2))) {
+      Symbol* rhs = rhsSe->symbol();
+      if (isTrackedNonNilableVariable(lhs) && isTrackedNonNilableVariable(rhs))
+        if (varsToNil[rhs] != NULL)
+          varsToNil[lhs] = call;
+    }
+  } else if (call->resolvedOrVirtualFunction() != NULL) {
+    for_formals_actuals(formal, actual, call) {
+      SymExpr* actualSe = toSymExpr(actual);
+      Symbol* actualSym = actualSe->symbol();
+      if (isNonNilableVariable(actualSym)) {
+        if (formal->hasFlag(FLAG_LEAVES_ARG_NIL)) {
+          if (isTrackedNonNilableVariable(actualSym) &&
+              varsToNil.count(actualSym) != 0) {
+            varsToNil[actualSym] = call;
+          } else if (isArgSymbol(actualSym)) {
+            // leaves-arg-nil OK for e.g. owned initCopy/init= etc.
+            if (actualSym->hasFlag(FLAG_LEAVES_ARG_NIL) == false)
+              USR_FATAL_CONT(call, "Cannot transfer ownership from non-nilable reference argument");
+          } else if (isOuterVar(actualSym, call->getFunction())) {
+            USR_FATAL_CONT(call, "Cannot transfer ownership from a non-nilable outer variable");
+          } else if (!actualSym->hasFlag(FLAG_DEAD_LAST_MENTION)) {
+            USR_FATAL_CONT(call, "Cannot transfer ownership from a non-nilable variable with a potentially captured alias");
+          } else {
+            USR_FATAL_CONT(call, "Cannot transfer ownership from this non-nilable variable");
+          }
+        }
+      }
+    }
+  }
+}
+
+void FindInvalidNonNilables::visitSymExpr(SymExpr* se) {
+  Symbol* sym = se->symbol();
+  if (isNonNilableVariable(sym)) {
+    if (Expr* e = varsToNil[sym]) {
+      bool error = true;
+      // Don't worry about a PRIM_END_OF_STATEMENT if it follows the
+      // expression
+      if (CallExpr* parentCall = toCallExpr(se->parentExpr)) {
+        if (parentCall->isPrimitive(PRIM_END_OF_STATEMENT)) {
+          error = false;
+          for (Expr* cur = e; cur != NULL; cur = cur->next) {
+            if (CallExpr* curCall = toCallExpr(cur)) {
+              if (curCall->isPrimitive(PRIM_END_OF_STATEMENT)) {
+                if (curCall != parentCall)
+                  error = true;
+                break;
+              }
+            }
+          }
+        }
+      }
+
+      if (error) {
+        USR_FATAL_CONT(se, "mention of non-nilable variable after ownership is transferred out of it");
+        USR_PRINT(e, "ownership transfer occurred here");
+      }
+    }
+  }
+}
+
+static void findNonNilableStoringNil(FnSymbol* fn) {
+  FindInvalidNonNilables visitor;
+  fn->body->accept(&visitor);
 }
