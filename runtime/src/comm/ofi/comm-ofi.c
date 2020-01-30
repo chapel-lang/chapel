@@ -172,7 +172,7 @@ static inline void tciFree(struct perTxCtxInfo_t*);
 static inline chpl_comm_nb_handle_t ofi_put(const void*, c_nodeid_t,
                                             void*, size_t);
 static inline void ofi_put_ll(const void*, c_nodeid_t,
-                              void*, size_t, void*);
+                              void*, size_t, void*, struct perTxCtxInfo_t*);
 static inline void do_remote_put_buff(void*, c_nodeid_t, void*, size_t);
 static inline chpl_comm_nb_handle_t ofi_get(void*, c_nodeid_t,
                                             void*, size_t);
@@ -2257,7 +2257,7 @@ static void amHandleExecOnLrg(chpl_comm_on_bundle_t*);
 static void amWrapExecOnLrgBody(void*);
 static void amWrapGet(void*);
 static void amWrapPut(void*);
-static void amHandleAMO(struct perTxCtxInfo_t*, chpl_comm_on_bundle_t*);
+static void amHandleAMO(chpl_comm_on_bundle_t*);
 static inline void amSendDone(struct chpl_comm_bundleData_base_t*,
                               chpl_comm_amDone_t*);
 
@@ -2303,10 +2303,13 @@ void fini_amHandling(void) {
 //
 // The AM handler runs this.
 //
+static __thread struct perTxCtxInfo_t* amTcip;
+
 static
 void amHandler(void* argNil) {
   struct perTxCtxInfo_t* tcip;
   CHK_TRUE((tcip = tciAllocForAmHandler()) != NULL);
+  amTcip = tcip;
 
   isAmHandler = true;
 
@@ -2439,7 +2442,7 @@ void processRxAmReq(struct perTxCtxInfo_t* tcip) {
         break;
 
       case am_opAMO:
-        amHandleAMO(tcip, req);
+        amHandleAMO(req);
         break;
 
       case am_opShutdown:
@@ -2569,7 +2572,7 @@ void amWrapExecOnLrgBody(void* p) {
     DBG_PRINTF(DBG_AM, "AM seqId %d:%" PRIu64 ": set gotArg (NB) %p",
                (int) node, xol->b.seq, origGotArg);
     ofi_put_ll(myGotArg, node, origGotArg, sizeof(*origGotArg),
-               txnTrkEncode(txnTrkNone, NULL));
+               txnTrkEncode(txnTrkNone, NULL), amTcip);
   }
 
   //
@@ -2621,7 +2624,7 @@ void amWrapPut(void* p) {
 
 
 static
-void amHandleAMO(struct perTxCtxInfo_t* tcip, chpl_comm_on_bundle_t* req) {
+void amHandleAMO(chpl_comm_on_bundle_t* req) {
   struct chpl_comm_bundleData_AMO_t* amo = &req->comm.amo;
   if (amo->ofiOp == FI_CSWAP) {
     DBG_PRINTF(DBG_AM | DBG_AMRECV | DBG_AMO,
@@ -2713,7 +2716,7 @@ void amSendDone(struct chpl_comm_bundleData_base_t* b,
   DBG_PRINTF(DBG_AM, "AM seqId %d:%" PRIu64 ": set pAmDone (NB) %p",
              (int) b->node, b->seq, pAmDone);
   ofi_put_ll(amDone, b->node, pAmDone, sizeof(*pAmDone),
-             txnTrkEncode(txnTrkNone, NULL));
+             txnTrkEncode(txnTrkNone, NULL), amTcip);
 }
 
 
@@ -3219,7 +3222,8 @@ chpl_comm_nb_handle_t ofi_put(const void* addr, c_nodeid_t node,
 
 static inline
 void ofi_put_ll(const void* addr, c_nodeid_t node,
-                void* raddr, size_t size, void* ctx) {
+                void* raddr, size_t size, void* ctx,
+                struct perTxCtxInfo_t* tcip) {
   DBG_PRINTF(DBG_RMA | DBG_RMAWRITE,
              "PUT LL %d:%p <= %p, size %zd",
              (int) node, raddr, addr, size);
@@ -3232,18 +3236,23 @@ void ofi_put_ll(const void* addr, c_nodeid_t node,
   void* mrDesc = NULL;
   CHK_TRUE(mrGetDesc(&mrDesc, myAddr, size) == 0);
 
-  struct perTxCtxInfo_t* tcip;
-  CHK_TRUE((tcip = tciAlloc()) != NULL);
+  struct perTxCtxInfo_t* myTcip = tcip;
+  if (myTcip == NULL) {
+    CHK_TRUE((myTcip = tciAlloc()) != NULL);
+  }
 
   DBG_PRINTF(DBG_RMA | DBG_RMAWRITE,
              "tx write ll: %d:%p <= %p, size %zd, key 0x%" PRIx64 ", ctx %p",
              (int) node, raddr, myAddr, size, mrKey, ctx);
-  OFI_RIDE_OUT_EAGAIN(fi_write(tcip->txCtx, myAddr, size,
-                               mrDesc, rxRmaAddr(tcip, node),
+  OFI_RIDE_OUT_EAGAIN(fi_write(myTcip->txCtx, myAddr, size,
+                               mrDesc, rxRmaAddr(myTcip, node),
                                mrRaddr, mrKey, ctx),
-                      checkTxCQ(tcip));
-  tcip->numTxns++;
-  tciFree(tcip);
+                      checkTxCQ(myTcip));
+  myTcip->numTxns++;
+
+  if (myTcip != tcip) {
+    tciFree(myTcip);
+  }
 }
 
 
