@@ -173,13 +173,11 @@ static inline chpl_comm_nb_handle_t ofi_put(const void*, c_nodeid_t,
                                             void*, size_t);
 static inline void ofi_put_ll(const void*, c_nodeid_t,
                               void*, size_t, void*);
-static void ofi_put_V(int, void**, void**, c_nodeid_t*, void**, uint64_t*,
-                      size_t*);
 static inline void do_remote_put_buff(void*, c_nodeid_t, void*, size_t);
 static inline chpl_comm_nb_handle_t ofi_get(void*, c_nodeid_t,
                                             void*, size_t);
-static void ofi_get_V(int, void**, void**, c_nodeid_t*, void**, uint64_t*,
-                      size_t*);
+static inline void ofi_get_ll(void*, c_nodeid_t,
+                              void*, size_t, void*, struct perTxCtxInfo_t*);
 static inline void do_remote_get_buff(void*, c_nodeid_t, void*, size_t);
 static inline void waitForCQThisTxn(struct perTxCtxInfo_t*, atomic_bool*);
 static inline void waitForCQAllTxns(struct perTxCtxInfo_t*,
@@ -271,7 +269,7 @@ static pthread_once_t networkOnce = PTHREAD_ONCE_INIT;
 typedef enum {
   networkUnknown,
   networkAries,
-  networkVerbs,
+  networkInfiniBand,
 } network_t;
 
 static network_t network = networkUnknown;
@@ -300,6 +298,9 @@ static const char* ofi_provNameEnv = "FI_PROVIDER";
 
 static pthread_once_t provNameOnce = PTHREAD_ONCE_INIT;
 static const char* provName;
+
+static chpl_bool providerHasRxm = false;
+static chpl_bool providerHasVerbs = false;
 
 static void setProvName(void);
 static const char* getProviderName(void);
@@ -416,6 +417,97 @@ chpl_comm_taskPrvData_t* get_comm_taskPrvdata(void) {
 
 ////////////////////////////////////////
 //
+// transaction ordering
+//
+
+//
+// This is a little dummy memory buffer used when we need to do a
+// remote GET or PUT to enforce ordering.  Its contents must _not_
+// by considered meaningful, because it can be written to at any
+// time by any remote node.
+//
+static uint32_t* orderDummy;
+static uint32_t** orderDummyMap;
+
+
+////////////////////////////////////////
+//
+// bitmaps
+//
+
+#define bitmapElemWidth 64
+#define __bitmapBaseType_t(w) uint##w##_t
+#define _bitmapBaseType_t(w) __bitmapBaseType_t(w)
+#define bitmapBaseType_t _bitmapBaseType_t(bitmapElemWidth)
+
+struct bitmap_t {
+  size_t len;
+  bitmapBaseType_t map[0];
+};
+
+static inline
+size_t bitmapIdx(size_t i) {
+  return i / bitmapElemWidth;
+}
+
+static inline
+size_t bitmapOff(size_t i) {
+  return i % bitmapElemWidth;
+}
+
+static inline
+size_t bitmapNumElems(size_t len) {
+  return (len - 1) / bitmapElemWidth + 1;
+}
+
+static inline
+size_t bitmapSizeofMap(size_t len) {
+  return bitmapNumElems(len) * sizeof(bitmapBaseType_t);
+}
+
+static inline
+size_t bitmapSizeof(size_t len) {
+  return offsetof(struct bitmap_t, map) + bitmapSizeofMap(len);
+}
+
+static inline
+void bitmapZero(struct bitmap_t* b) {
+  memset(&b->map, 0, bitmapSizeofMap(b->len));
+}
+
+static inline
+bitmapBaseType_t bitmapElemBit(size_t i) {
+  return ((bitmapBaseType_t) 1) << bitmapOff(i);
+}
+
+static inline
+void bitmapSetBit(struct bitmap_t* b, size_t i) {
+  b->map[bitmapIdx(i)] |= bitmapElemBit(i);
+}
+
+static inline
+int bitmapIsSet(struct bitmap_t* b, size_t i) {
+  return (b->map[bitmapIdx(i)] & bitmapElemBit(i)) != 0;
+}
+
+#define BITMAP_FOREACH_SET(b, i)                                        \
+  for (size_t _ei = 0; _ei < bitmapNumElems((b)->len); _ei++) {         \
+    if ((b)->map[_ei] != 0) {                                           \
+      for (size_t _bi = 0; _bi < bitmapElemWidth; _bi++) {              \
+        if (((b)->map[_ei] & bitmapElemBit(_bi)) != 0) {                \
+          size_t i = _ei * bitmapElemWidth + _bi;
+
+#define BITMAP_FOREACH_SET_END  } } } }
+
+//
+// bitmapAlloc() and bitmapFree() aren't yet needed and may never be,
+// because so far these bitmaps are only used as appendages to the
+// {amo,get,put}_buff_task_info_t types.
+//
+
+
+////////////////////////////////////////
+//
 // task local buffering
 //
 
@@ -445,6 +537,7 @@ typedef struct {
   void*         src_addr_v[MAX_CHAINED_GET_LEN];
   size_t        size_v[MAX_CHAINED_GET_LEN];
   void*         local_mr_v[MAX_CHAINED_GET_LEN];
+  struct bitmap_t nodeBitmap;
 } get_buff_task_info_t;
 
 // Per task information about PUT buffers
@@ -457,6 +550,7 @@ typedef struct {
   size_t        size_v[MAX_CHAINED_PUT_LEN];
   uint64_t      remote_mr_v[MAX_CHAINED_PUT_LEN];
   void*         local_mr_v[MAX_CHAINED_PUT_LEN];
+  struct bitmap_t nodeBitmap;
 } put_buff_task_info_t;
 
 // Acquire a task local buffer, initializing if needed
@@ -469,10 +563,19 @@ void* task_local_buff_acquire(enum BuffType t) {
   if (t == TLS_NAME) {                                                        \
     TYPE* info = prvData->TLS_NAME;                                           \
     if (info == NULL) {                                                       \
-      prvData->TLS_NAME = chpl_mem_alloc(sizeof(TYPE),                        \
+      size_t _size = sizeof(TYPE);                                            \
+      if (t == put_buff && providerHasRxm) {                                  \
+        _size += bitmapSizeofMap(chpl_numNodes);                              \
+      }                                                                       \
+      prvData->TLS_NAME = chpl_mem_alloc(_size,                               \
                                          CHPL_RT_MD_COMM_PER_LOC_INFO, 0, 0); \
       info = prvData->TLS_NAME;                                               \
       info->vi = 0;                                                           \
+      if (t == put_buff && providerHasRxm) {                                  \
+        info->nodeBitmap.len = chpl_numNodes;                                 \
+      } else {                                                                \
+        info->nodeBitmap.len = 0;                                             \
+      }                                                                       \
     }                                                                         \
     return info;                                                              \
   }
@@ -554,6 +657,13 @@ static void init_bar(void);
 static void init_broadcast_private(void);
 
 
+//
+// forward decls
+//
+static inline int mrGetLocalKey(void*, size_t);
+static inline int mrGetDesc(void**, void*, size_t);
+
+
 void chpl_comm_init(int *argc_p, char ***argv_p) {
   chpl_comm_ofi_abort_on_error =
     (chpl_env_rt_get("COMM_OFI_ABORT_ON_ERROR", NULL) != NULL);
@@ -609,6 +719,13 @@ void init_ofi(void) {
   init_ofiForMem();
   init_ofiForRma();
   init_ofiForAms();
+
+  CHPL_CALLOC(orderDummy, 1);
+  CHK_TRUE(mrGetLocalKey(orderDummy, sizeof(*orderDummy)) == 0);
+  CHK_TRUE(mrGetDesc(NULL, orderDummy, sizeof(*orderDummy)) == 0);
+  CHPL_CALLOC(orderDummyMap, chpl_numNodes);
+  chpl_comm_ofi_oob_allgather(&orderDummy, orderDummyMap,
+                              sizeof(orderDummyMap[0]));
 
   DBG_PRINTF(DBG_CFG,
              "AM config: recv buf size %zd MiB, %s, responses use %s",
@@ -799,7 +916,9 @@ void init_ofiDoProviderChecks(void) {
     // try to close it.
     //
     useWaitset = false;
-  } else if (isInProviderName("ofi_rxd")) {
+  }
+
+  if (isInProviderName("ofi_rxd")) {
     //
     // ofi_rxd (utility provider with tcp, verbs, possibly others)
     //
@@ -817,6 +936,15 @@ void init_ofiDoProviderChecks(void) {
     provCtl_sizeAvsByNumEps = true;
     provCtl_readAmoNeedsOpnd = true;
   }
+
+  if (isInProviderName("ofi_rxm")) {
+    providerHasRxm = true;
+
+    // See ofi_put_V().
+    CHK_TRUE((ofi_info->tx_attr->msg_order & FI_ORDER_RMA_RAW) != 0);
+  }
+
+  providerHasVerbs = isInProviderName("verbs");
 }
 
 
@@ -1412,7 +1540,7 @@ static void exit_any(int status) {
   // Flush all the stdio FILE streams first, in the hope of not losing
   // any output.
   //
-  if (isInProviderName("verbs")) {
+  if (providerHasVerbs) {
     fflush(NULL);
     _exit(status);
   }
@@ -3093,7 +3221,7 @@ static inline
 void ofi_put_ll(const void* addr, c_nodeid_t node,
                 void* raddr, size_t size, void* ctx) {
   DBG_PRINTF(DBG_RMA | DBG_RMAWRITE,
-             "PUT %d:%p <= %p, size %zd",
+             "PUT LL %d:%p <= %p, size %zd",
              (int) node, raddr, addr, size);
 
   uint64_t mrKey = 0;
@@ -3122,20 +3250,29 @@ void ofi_put_ll(const void* addr, c_nodeid_t node,
 static
 void ofi_put_V(int v_len, void** addr_v, void** local_mr_v,
                c_nodeid_t* locale_v, void** raddr_v, uint64_t* remote_mr_v,
-               size_t* size_v) {
-  DBG_PRINTF(DBG_RMA | DBG_RMAWRITE,
+               size_t* size_v, struct bitmap_t* b) {
+  DBG_PRINTF(DBG_RMA | DBG_RMAWRITE | DBG_RMAUNORD,
              "PUT_V(%d) %d:%p <= %p, size %zd",
              v_len, (int) locale_v[0], raddr_v[0], addr_v[0], size_v[0]);
 
   struct perTxCtxInfo_t* tcip;
   CHK_TRUE((tcip = tciAlloc()) != NULL);
 
-  if (tcip->numTxns >= txCQLen) {
-    while (tcip->numTxns > 0) {
-      checkTxCQ(tcip);
-    }
-  }
+  //
+  // Make sure we have enough free CQ entries to initiate the entire
+  // batch of transactions.
+  //
+  do {
+    checkTxCQ(tcip);
+  } while (v_len > txCQLen - tcip->numTxns);
 
+  //
+  // Initiate the batch.  If we're using the RxM provider, record
+  // which nodes we PUT to; see below for why this is needed.
+  //
+  if (providerHasRxm) {
+    bitmapZero(b);
+  }
   for (int vi = 0; vi < v_len; vi++) {
     struct iovec iov = (struct iovec)
                        { .iov_base = addr_v[vi],
@@ -3157,18 +3294,39 @@ void ofi_put_V(int v_len, void** addr_v, void** local_mr_v,
                "tx writemsg: %d:%p <= %p, size %zd, key 0x%" PRIx64,
                (int) locale_v[vi], (void*) riov.addr, iov.iov_base,
                iov.iov_len, riov.key);
-    if (++(tcip->numTxns) >= txCQLen || vi == v_len - 1) {
-      // Initiate last transaction in group and wait for whole group.
-      OFI_RIDE_OUT_EAGAIN(fi_writemsg(tcip->txCtx, &msg, 0),
-                          checkTxCQ(tcip));
-      while (tcip->numTxns > 0) {
+    //
+    // Add another transaction to the group and go on without waiting.
+    // Throw FI_MORE except for the last one in the batch.
+    //
+    OFI_RIDE_OUT_EAGAIN(fi_writemsg(tcip->txCtx, &msg,
+                                    (vi < v_len - 1) ? FI_MORE : 0),
+                        checkTxCQ(tcip));
+    tcip->numTxns++;
+    if (providerHasRxm) {
+      bitmapSetBit(b, locale_v[vi]);
+    }
+  }
+
+  if (providerHasRxm) {
+    //
+    // The verbs;ofi_rxm provider has a peculiarity: it advertises that
+    // it supports FI_DELIVERY_COMPLETE but it doesn't actually do so.
+    // It silently provides FI_TRANSMIT_COMPLETE instead.  We deal with
+    // this by asserting read-after-write ordering and then here, we
+    // do a GET from every node we did at least one PUT to.  The PUTS
+    // are thus forced to completion.  We don't care about the values
+    // we GET, just their completion, so we use the orderDummy buffers.
+    //
+    BITMAP_FOREACH_SET(b, node) {
+      while (tcip->numTxns >= txCQLen) { // need CQ room for at least 1 txn
         checkTxCQ(tcip);
       }
-    } else {
-      // Add another transaction to the group and go on without waiting.
-      OFI_RIDE_OUT_EAGAIN(fi_writemsg(tcip->txCtx, &msg, FI_MORE),
-                          checkTxCQ(tcip));
-    }
+      DBG_PRINTF(DBG_RMAUNORD,
+                 "PUT_V ordering: %p <= %d:%p",
+                 orderDummy, (int) node, orderDummyMap[node]);
+      (void) ofi_get_ll(orderDummy, node, orderDummyMap[node], 1,
+                        txnTrkEncode(txnTrkNone, NULL), tcip);
+    } BITMAP_FOREACH_SET_END
   }
 
   tciFree(tcip);
@@ -3191,7 +3349,7 @@ void put_buff_task_info_flush(put_buff_task_info_t* info) {
                info->vi);
     ofi_put_V(info->vi, info->src_addr_v, info->local_mr_v,
               info->locale_v, info->tgt_addr_v, info->remote_mr_v,
-              info->size_v);
+              info->size_v, &info->nodeBitmap);
     info->vi = 0;
   }
 }
@@ -3322,11 +3480,48 @@ chpl_comm_nb_handle_t ofi_get(void* addr, c_nodeid_t node,
 }
 
 
+static inline
+void ofi_get_ll(void* addr, c_nodeid_t node,
+                void* raddr, size_t size, void* ctx,
+                struct perTxCtxInfo_t* tcip) {
+  DBG_PRINTF(DBG_RMA | DBG_RMAREAD,
+             "GET LL %p <= %d:%p, size %zd",
+             addr, (int) node, raddr, size);
+
+  uint64_t mrKey = 0;
+  uint64_t mrRaddr = 0;
+  CHK_TRUE(mrGetKey(&mrKey, &mrRaddr, node, raddr, size) == 0);
+
+  void* myAddr = (void*) addr;
+  void* mrDesc = NULL;
+  CHK_TRUE(mrGetDesc(&mrDesc, myAddr, size) == 0);
+
+  struct perTxCtxInfo_t* myTcip = tcip;
+  if (myTcip == NULL) {
+    CHK_TRUE((myTcip = tciAlloc()) != NULL);
+  }
+
+  DBG_PRINTF(DBG_RMA | DBG_RMAREAD,
+             "tx read: %p <= %d:%p(0x%" PRIx64 "), size %zd, key 0x%" PRIx64
+             ", ctx %p",
+             myAddr, (int) node, raddr, mrRaddr, size, mrKey, ctx);
+  OFI_RIDE_OUT_EAGAIN(fi_read(myTcip->txCtx, myAddr, size,
+                              mrDesc, rxRmaAddr(myTcip, node),
+                              mrRaddr, mrKey, ctx),
+                      checkTxCQ(myTcip));
+  myTcip->numTxns++;
+
+  if (myTcip != tcip) {
+    tciFree(myTcip);
+  }
+}
+
+
 static
 void ofi_get_V(int v_len, void** addr_v, void** local_mr_v,
                c_nodeid_t* locale_v, void** raddr_v, uint64_t* remote_mr_v,
                size_t* size_v) {
-  DBG_PRINTF(DBG_RMA | DBG_RMAREAD,
+  DBG_PRINTF(DBG_RMA | DBG_RMAREAD | DBG_RMAUNORD,
              "GET_V(%d) %p <= %d:%p, size %zd",
              v_len, addr_v[0], (int) locale_v[0], raddr_v[0], size_v[0]);
 
@@ -3605,7 +3800,7 @@ void waitForCQAllTxns(struct perTxCtxInfo_t* tcip,
 
 static inline
 void checkTxCQ(struct perTxCtxInfo_t* tcip) {
-  struct fi_cq_msg_entry cqes[5];
+  struct fi_cq_msg_entry cqes[txCQLen];
   const int cqesSize = sizeof(cqes) / sizeof(cqes[0]);
   const ssize_t numEvents = readCQ(tcip->txCQ, cqes, cqesSize);
 
