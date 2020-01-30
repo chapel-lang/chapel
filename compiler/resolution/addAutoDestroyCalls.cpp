@@ -158,7 +158,7 @@ static void checkSplitInitOrder(CondStmt* cond,
                                 std::vector<VarSymbol*>& thenOrder,
                                 std::vector<VarSymbol*>& elseOrder);
 
-// Returns the next statement to traverse
+// Returns the statement before the next statement to traverse
 static Expr* walkBlockStmt(FnSymbol*         fn,
                            AutoDestroyScope& scope,
                            LabelSymbol*      retLabel,
@@ -168,7 +168,7 @@ static Expr* walkBlockStmt(FnSymbol*         fn,
                            std::set<VarSymbol*>& ignoredVariables,
                            LastMentionMap&   lmm) {
 
-  Expr* next = stmt->next;
+  Expr* ret = stmt;
 
   //
   // Handle the current statement
@@ -193,9 +193,10 @@ static Expr* walkBlockStmt(FnSymbol*         fn,
     scope.forgetOuterVariableInitializations();
 
     // Consider the catch blocks now
-    for (Expr* cur = stmt->next; cur != NULL; cur = next) {
-      next = walkBlockStmt(fn, scope, retLabel, false, false, cur,
-                           ignoredVariables, lmm);
+    for (Expr* cur = stmt->next; cur != NULL; cur = cur->next) {
+      cur = walkBlockStmt(fn, scope, retLabel, false, false, cur,
+                          ignoredVariables, lmm);
+      ret = cur;
     }
 
     // Now once again consider the outer variables initialized
@@ -231,8 +232,8 @@ static Expr* walkBlockStmt(FnSymbol*         fn,
       if (isCheckErrorStmt(stmt->next)) {
         // Visit the check-error block now - do not consider
         // the variable initialized when running that check-error block.
-        next = walkBlockStmt(fn, scope, retLabel, false, false, stmt->next,
-                             ignoredVariables, lmm);
+        ret = walkBlockStmt(fn, scope, retLabel, false, false, stmt->next,
+                            ignoredVariables, lmm);
       }
 
       scope.addInitialization(var);
@@ -252,8 +253,6 @@ static Expr* walkBlockStmt(FnSymbol*         fn,
 
     // Recurse in to the BlockStmt(s) of a CondStmt
     } else if (CondStmt*  cond     = toCondStmt(stmt))  {
-
-      //std::set<VarSymbol*> toIgnore(ignoredVariables);
 
       if (isCheckErrorStmt(cond)) {
         INT_ASSERT(!cond->elseStmt);
@@ -302,7 +301,8 @@ static Expr* walkBlockStmt(FnSymbol*         fn,
     }
   }
 
-  return next;
+  INT_ASSERT(ret != NULL);
+  return ret;
 }
 
 static void walkBlockScopelessBlock(AutoDestroyScope& scope,
@@ -312,9 +312,8 @@ static void walkBlockScopelessBlock(AutoDestroyScope& scope,
                                     BlockStmt*        block,
                                     std::set<VarSymbol*>& ignoredVariables,
                                     LastMentionMap&   lmm) {
-  Expr* next = NULL;
-  for (Expr* stmt = block->body.first(); stmt != NULL; stmt = next) {
-    next = walkBlockStmt(fn, scope, retLabel, isDeadCode, true, stmt,
+  for (Expr* stmt = block->body.first(); stmt != NULL; stmt = stmt->next) {
+    stmt = walkBlockStmt(fn, scope, retLabel, isDeadCode, true, stmt,
                          ignoredVariables, lmm);
   }
 }
@@ -417,13 +416,11 @@ static void walkBlockWithScope(AutoDestroyScope& scope,
   LabelSymbol*     retLabel   = (parent == NULL) ? findReturnLabel(fn) : NULL;
   bool             isDeadCode = false;
 
-  Expr* next = NULL;
-  for (Expr* stmt = block->body.first(); stmt != NULL; stmt = next) {
-
+  for (Expr* stmt = block->body.first(); stmt != NULL; stmt = stmt->next) {
     //
     // Handle the current statement
     //
-    next = walkBlockStmt(fn, scope, retLabel, isDeadCode, false, stmt,
+    stmt = walkBlockStmt(fn, scope, retLabel, isDeadCode, false, stmt,
                          ignoredVariables, lmm);
 
     //
@@ -432,7 +429,7 @@ static void walkBlockWithScope(AutoDestroyScope& scope,
     // with a GotoStmt or when we run out of next statements.
     //
     GotoStmt* gotoStmt = toGotoStmt(stmt);
-    if (gotoStmt != NULL || next == NULL) {
+    if (gotoStmt != NULL || stmt->next == NULL) {
 
       // Don't visit any later code in this block
       // (don't add variable definitions, etc, above).
