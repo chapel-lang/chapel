@@ -315,6 +315,7 @@ module SharedObject {
        instance once there are no longer any copies of this
        :record:`shared` that refer to it.
      */
+    pragma "leaves this nil"
     proc deinit() {
       clear();
     }
@@ -431,7 +432,7 @@ module SharedObject {
   // This is a workaround
   pragma "no doc"
   pragma "auto destroy fn"
-  proc chpl__autoDestroy(ref x: _shared) {
+  proc chpl__autoDestroy(pragma "leaves arg nil" ref x: _shared) {
     __primitive("call destructor", __primitive("deref", x));
   }
 

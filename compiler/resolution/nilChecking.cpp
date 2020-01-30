@@ -1312,6 +1312,12 @@ void FindInvalidNonNilables::visitSymExpr(SymExpr* se) {
 }
 
 static void findNonNilableStoringNil(FnSymbol* fn) {
+  // don't check special functions (owned/shared etc need to write these)
+  if (fn->hasFlag(FLAG_INIT_COPY_FN) ||
+      fn->hasFlag(FLAG_AUTO_COPY_FN) ||
+      fn->hasFlag(FLAG_AUTO_DESTROY_FN))
+    return;
+
   FindInvalidNonNilables visitor;
   fn->body->accept(&visitor);
 }

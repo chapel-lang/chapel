@@ -258,6 +258,7 @@ module OwnedObject {
        The deinitializer for :record:`owned` will destroy the class
        instance it manages when the :record:`owned` goes out of scope.
      */
+    pragma "leaves this nil"
     proc deinit() {
       if isClass(chpl_p) { // otherwise, let error happen on init call
         if chpl_p != nil then
@@ -404,7 +405,7 @@ module OwnedObject {
   // chpl__autoDestroy(x:object) from internal coercions.
   pragma "no doc"
   pragma "auto destroy fn"
-  proc chpl__autoDestroy(ref x: _owned) {
+  proc chpl__autoDestroy(pragma "leaves arg nil" ref x: _owned) {
     __primitive("call destructor", __primitive("deref", x));
   }
 
