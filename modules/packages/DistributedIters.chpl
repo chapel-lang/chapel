@@ -63,8 +63,8 @@ config const infoDistributedIters:bool = false;
   :type numTasks: int
 
   :arg parDim: If ``c`` is a domain, then this specifies the dimension index
-    to parallelize across. Must be positive, and must be at most the rank of
-    the domain ``c``. Defaults to 1.
+    to parallelize across. Must be non-negative and less than the rank of
+    the domain ``c``. Defaults to 0.
   :type parDim: int
 
   :arg localeChunkSize: Chunk size to yield to each locale. Must be
@@ -100,7 +100,7 @@ config const infoDistributedIters:bool = false;
 iter distributedDynamic(c,
                         chunkSize:int=1,
                         numTasks:int=0,
-                        parDim:int=1,
+                        parDim:int=0,
                         localeChunkSize:int=0,
                         coordinated:bool=false,
                         workerLocales=Locales)
@@ -153,13 +153,13 @@ where tag == iterKind.leader
                                 c=parDimDim,
                                 chunkSize=chunkSize,
                                 numTasks=numTasks,
-                                parDim=1,
+                                parDim=0,
                                 localeChunkSize=localeChunkSize,
                                 coordinated=coordinated,
                                 workerLocales=workerLocales)
     {
       // Set the new range based on the tuple the dynamic 1-D iterator yields.
-      var newRange = t(1);
+      var newRange = t(0);
 
       // Does the same thing as densify, but densify makes a stridable domain,
       // which mismatches here if c (and thus cType) is non-stridable.
@@ -309,7 +309,7 @@ where tag == iterKind.follower
                  1);
   const current = if isDomain(c)
                   then c.these(tag=iterKind.follower, followThis=followThis)
-                  else unDensify(followThis(1), c);
+                  else unDensify(followThis(0), c);
 
   if debugDistributedIters
   then writeln("DistributedIters: Dynamic iterator (follower): ", here.locale,
@@ -333,8 +333,8 @@ where tag == iterKind.follower
   :type numTasks: int
 
   :arg parDim: If ``c`` is a domain, then this specifies the dimension index
-    to parallelize across. Must be positive, and must be at most the rank of
-    the domain ``c``. Defaults to 1.
+    to parallelize across. Must be non-negative and less than the rank of
+    the domain ``c``. Defaults to 0.
   :type parDim: int
 
   :arg minChunkSize: The smallest allowable chunk size. Must be positive.
@@ -370,7 +370,7 @@ where tag == iterKind.follower
 // Serial version.
 iter distributedGuided(c,
                        numTasks:int=0,
-                       parDim:int=1,
+                       parDim:int=0,
                        minChunkSize:int=1,
                        coordinated:bool=false,
                        workerLocales=Locales)
@@ -390,7 +390,7 @@ pragma "no doc"
 iter distributedGuided(param tag:iterKind,
                        c,
                        numTasks:int=0,
-                       parDim:int=1,
+                       parDim:int=0,
                        minChunkSize:int=1,
                        coordinated:bool=false,
                        workerLocales=Locales)
@@ -414,13 +414,13 @@ where tag == iterKind.leader
     for t in distributedGuided(tag=iterKind.leader,
                                c=parDimDim,
                                numTasks=numTasks,
-                               parDim=1,
+                               parDim=0,
                                minChunkSize=minChunkSize,
                                coordinated=coordinated,
                                workerLocales=workerLocales)
     {
       // Set the new range based on the tuple the guided 1-D iterator yields.
-      var newRange = t(1);
+      var newRange = t(0);
 
       type cType = c.type;
       // Does the same thing as densify, but densify makes a stridable domain,
@@ -553,7 +553,7 @@ pragma "no doc"
 iter distributedGuided(param tag:iterKind,
                        c,
                        numTasks:int,
-                       parDim:int=1,
+                       parDim:int=0,
                        minChunkSize:int,
                        coordinated:bool,
                        workerLocales=Locales,
@@ -566,7 +566,7 @@ where tag == iterKind.follower
                  1);
   const current = if isDomain(c)
                   then c.these(tag=iterKind.follower, followThis=followThis)
-                  else unDensify(followThis(1), c);
+                  else unDensify(followThis(0), c);
 
   if debugDistributedIters
   then writeln("DistributedIters: Guided iterator (follower): ", here.locale,

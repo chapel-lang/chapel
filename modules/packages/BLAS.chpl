@@ -2460,9 +2460,9 @@ module BLAS {
   { require header;
     const dims = chpl__getActualArray(Arr).dom.dsiDims();
     if order==Order.Row then
-      return dims(2).size : c_int;
-    else
       return dims(1).size : c_int;
+    else
+      return dims(0).size : c_int;
   }
 
 
