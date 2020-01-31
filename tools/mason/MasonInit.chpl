@@ -26,6 +26,7 @@ use MasonHelp;
 use MasonUtils;
 use MasonExample;
 use FileSystem;
+private use List;
 
 proc masonInit(args) throws {
 	try! {
@@ -42,35 +43,72 @@ proc masonInit(args) throws {
 			//If Mason.toml is already present, we get an error
 			if isFile("Mason.toml") {
 				throw new owned MasonError("Mason.toml already exists.");
+				//[WIP] scan Mason.toml for project name,
+				//validate project name checks from Mason new 55-65
 			} else {
 				//If Mason.toml not present, proceed with init
 				const cwd  = getEnv("PWD");
 				const currDir = basename(cwd);
 				var name = currDir;
 				var path = '.';
-				makeBasicToml(name,path);            
+				makeBasicToml(name,path);
+				ValidateInit(path);
 			}
 		} else {
-			/*if a path is given as a parameter
-				check if the path is already present 
-				or if TOML file is already present 
-				in the given path
+			/*
+			if the target directory in path doesnt exist, throw error
+			if target directory exists, check for files && validate
+			create folders and toml file without overwriting anything 
+			if TOML file exists, check for values in it and validate
 			*/
 			var path = name;
 			if(isDir(path)) {
-					throw new owned MasonError("Path already exists.");
-			} else if (isFile(path + "/Mason.toml")) {
-					throw new owned MasonError("Mason.toml file already exists in path");
+				ValidateInit(path);
 			} else {
-					//creates a directory and makes a TOML file.
-					mkdir(path);
-					var name = basename(path);
-					makeBasicToml(name,path); 
+					throw new owned MasonError("Directory does not exist:" + path +
+															"Did you mean 'mason new' to create a new project from scratch?"); 
 			}
 		}
 	}
 	catch e: MasonError {
 		writeln(e.message());
 		exit(1);
+	}
+}
+
+proc ValidateInit(path: string){
+	var files = [ "/Mason.toml" , "/src" , "/test" , "/example", "/.git", ".gitignore" ];
+	var ToBeCreated : list(string);				
+	for idx in 1..files.size do {
+		var file = files(idx);
+		if(file == "/Mason.toml"){
+			if(isFile(path + file)){
+				//scan using TOML reader and validate
+			}else{
+				ToBeCreated.append(file);
+			}
+		} else {
+			var dir = file;
+			if(isDir(path + dir) == false){
+				ToBeCreated.append(dir);
+			}
+		}
+	}
+	for file in ToBeCreated{
+		//if Mason.toml is found -- create Mason.toml
+		//if normal directories are found create them individually
+		if(file == "/Mason.toml"){
+			var name = basename(path);
+			makeBasicToml(name,path);
+		}else{
+			var name = basename(path);
+			if(file == "/.git"){
+				gitInit(name, show=false);	
+			}else if(file == ".gitignore"){
+				addGitIgnore(name);
+			}else{
+				makeProjectFiles(path,file);
+			}
+		}
 	}
 }

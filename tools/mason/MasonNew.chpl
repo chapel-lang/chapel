@@ -51,24 +51,8 @@ proc masonNew(args) throws {
           name = arg;
         }
       }
+      validateAndInit(name,vcs,show);
       
-      if name == '' {
-        throw new owned MasonError("No package name specified");
-      }
-      else if !isIdentifier(name) {
-        throw new owned MasonError("Bad package name '" + name +
-                             "' - only Chapel identifiers are legal package names");
-      }
-      else if name.count("$") > 0 {
-        throw new owned MasonError("Bad package name '" + name +
-                             "' - $ is not allowed in package names");
-      }
-      else if isDir(name) {
-          throw new owned MasonError("A directory named '" + name + "' already exists");
-      }
-      else {
-        InitProject(name, vcs, show);
-      }
     }
   }
   catch e: MasonError {
@@ -77,6 +61,25 @@ proc masonNew(args) throws {
   }
 }
 
+proc validateAndInit(name,vcs,show) throws {
+  if name == '' {
+          throw new owned MasonError("No package name specified");
+        }
+        else if !isIdentifier(name) {
+          throw new owned MasonError("Bad package name '" + name +
+                              "' - only Chapel identifiers are legal package names");
+        }
+        else if name.count("$") > 0 {
+          throw new owned MasonError("Bad package name '" + name +
+                              "' - $ is not allowed in package names");
+        }
+        else if isDir(name) {
+            throw new owned MasonError("A directory named '" + name + "' already exists");
+        }
+        else {
+          InitProject(name, vcs, show);
+        }
+}
 
 proc InitProject(name, vcs, show) throws {
   if vcs {
@@ -88,8 +91,9 @@ proc InitProject(name, vcs, show) throws {
   }
   // Confirm git init before creating files
   if isDir(name) {
+    var allFiles = "all";
     makeBasicToml(name, path=name);
-    makeProjectFiles(name);
+    makeProjectFiles(name, allFiles);
     writeln("Created new library project: " + name);
   }
   else {
@@ -98,13 +102,13 @@ proc InitProject(name, vcs, show) throws {
 }
 
 
-private proc gitInit(name: string, show: bool) {
+proc gitInit(name: string, show: bool) {
   var initialize = "git init -q " + name;
   if show then initialize = "git init " + name;
   runCommand(initialize);
 }
 
-private proc addGitIgnore(name: string) {
+proc addGitIgnore(name: string) {
   var toIgnore = "target/\nMason.lock\n";
   var gitIgnore = open(name+"/.gitignore", iomode.cw);
   var GIwriter = gitIgnore.writer();
@@ -128,14 +132,29 @@ proc makeBasicToml(name: string, path: string) {
 }
 
 
-private proc makeProjectFiles(name: string) {
-  mkdir(name + "/src");
-  mkdir(name + "/test");
-  mkdir(name + "/example");
-  const libTemplate = '/* Documentation for ' + name +
-    ' */\nmodule '+ name + ' {\n  writeln("New library: '+ name +'");\n}';
-  var lib = open(name+'/src/'+name+'.chpl', iomode.cw);
-  var libWriter = lib.writer();
-  libWriter.write(libTemplate + '\n');
-  libWriter.close();
+proc makeProjectFiles(path:string,name: string) {
+  if(name=="all"){
+    mkdir(path + "/src");
+    mkdir(path + "/test");
+    mkdir(path + "/example");
+    const libTemplate = '/* Documentation for ' + path +
+      ' */\nmodule '+ path + ' {\n  writeln("New library: '+ path +'");\n}';
+    var lib = open(path+'/src/'+path+'.chpl', iomode.cw);
+    var libWriter = lib.writer();
+    libWriter.write(libTemplate + '\n');
+    libWriter.close();
+  }else if(name == "/src"){
+    mkdir(path + "/src");
+    const libTemplate = '/* Documentation for ' + path +
+      ' */\nmodule '+ path + ' {\n  writeln("New library: '+ path +'");\n}';
+    var lib = open(path+'/src/'+path+'.chpl', iomode.cw);
+    var libWriter = lib.writer();
+    libWriter.write(libTemplate + '\n');
+    libWriter.close();
+  }else if(name == "/test"){
+    mkdir(path + "/test");
+  }else if(name == "/example"){
+    mkdir(path + "/example");
+  }
+  
 }
