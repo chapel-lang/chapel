@@ -546,6 +546,25 @@ BlockStmt* buildUseStmt(std::vector<PotentialRename*>* args, bool privateUse) {
   return list;
 }
 
+//
+// Build an 'import' statement
+//
+BlockStmt* buildImportStmt(Expr* mod) {
+  // Stub out arguments for unsupported extensions to import
+  // We're still discussing what will be supported and what won't be (and how)
+  const char* rename = "";
+  std::vector<PotentialRename*>* names = new std::vector<PotentialRename*>();
+  bool except = false;
+  bool privateUse = false;
+
+  PotentialRename* onlyNothing = new PotentialRename();
+  onlyNothing->tag = PotentialRename::SINGLE;
+  onlyNothing->elem = new UnresolvedSymExpr("");
+  names->push_back(onlyNothing);
+
+  return buildUseStmt(mod, rename, names, except, privateUse);
+}
+
 
 //
 // Build a 'require' statement

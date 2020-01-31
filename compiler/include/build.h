@@ -69,6 +69,7 @@ BlockStmt* buildUseStmt(Expr* mod, const char* rename,
 BlockStmt* buildUseStmt(Expr* mod, Expr* rename,
                         std::vector<PotentialRename*>* names, bool except,
                         bool privateUse);
+BlockStmt* buildImportStmt(Expr* mod);
 bool processStringInRequireStmt(const char* str, bool parseTime,
                                 const char* modFilename);
 BlockStmt* buildRequireStmt(CallExpr* args);

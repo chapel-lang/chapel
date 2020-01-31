@@ -152,6 +152,7 @@ forall           return processToken(yyscanner, TFORALL);
 forwarding       return processToken(yyscanner, TFORWARDING);
 if               return processToken(yyscanner, TIF);
 imag             return processToken(yyscanner, TIMAG);
+import           return processToken(yyscanner, TIMPORT);
 in               return processToken(yyscanner, TIN);
 index            return processToken(yyscanner, TINDEX);
 inline           return processToken(yyscanner, TINLINE);
