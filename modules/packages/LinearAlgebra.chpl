@@ -1446,50 +1446,52 @@ proc eig(A: [] ?t, param left = false, param right = false)
   if !isSquare(A) then
     halt("Matrix passed to eigvals must be square");
   var copy = A;
-  var wr, wi: [1..n] t;
+  var wr: [1..n] t;
+  var wi: if t == complex then nothing else [1..n] t;
 
   if !left && !right {
     var vl, vr: [1..1, 1..n] t;
-    if t == complex{
-    LAPACK.geev(lapack_memory_order.row_major, 'N', 'N', copy, w, vl, vr);
+    var eigVals;
+    if t == complex {
+    LAPACK.geev(lapack_memory_order.row_major, 'N', 'N', copy, wr, vl, vr);
     var eigVals = w;
     }else{
     LAPACK.geev(lapack_memory_order.row_major, 'N', 'N', copy, wr, wi, vl, vr);
     var eigVals = convertToCplx(wr, wi);
-         }
+      }
     return eigVals;
   } else if left && !right {
     var vl: [1..n, 1..n] t;
     var vr: [1..1, 1..n] t;
-    if t == complex{
-    LAPACK.geev(lapack_memory_order.row_major, 'V', 'N', copy, w, vl, vr);
+    if t == complex {
+    LAPACK.geev(lapack_memory_order.row_major, 'V', 'N', copy, wr, vl, vr);
     var eigVals = w;
     var vlcplx = vl;
     }else{
     LAPACK.geev(lapack_memory_order.row_major, 'V', 'N', copy, wr, wi, vl, vr);
     var eigVals = convertToCplx(wr, wi);
     var vlcplx = flattenCplxEigenVecs(wi, vl);
-         }
+      }
     return (eigVals, vlcplx);
   } else if right && !left {
     var vl: [1..1, 1..n] t;
     var vr: [1..n, 1..n] t;
-    if t == complex{
-    LAPACK.geev(lapack_memory_order.row_major, 'N', 'V', copy, w, vl, vr);
+    if t == complex {
+    LAPACK.geev(lapack_memory_order.row_major, 'N', 'V', copy, wr, vl, vr);
     var eigVals = w;
     var vrcplx = vr;
     }else{
     LAPACK.geev(lapack_memory_order.row_major, 'N', 'V', copy, wr, wi, vl, vr);
     var eigVals = convertToCplx(wr, wi);
     var vrcplx = flattenCplxEigenVecs(wi, vr);
-        }
+      }
     return (eigVals, vrcplx);
   } else {
     // left && right
     var vl: [1..n, 1..n] t;
     var vr: [1..n, 1..n] t;
-    if t == complex{
-    LAPACK.geev(lapack_memory_order.row_major, 'V', 'V', copy, w, vl, vr);
+    if t == complex {
+    LAPACK.geev(lapack_memory_order.row_major, 'V', 'V', copy, wr, vl, vr);
     var eigVals = w;
     var vlcplx = vl;
     var vrcplx = vr;
@@ -1498,7 +1500,7 @@ proc eig(A: [] ?t, param left = false, param right = false)
     var eigVals = convertToCplx(wr, wi);
     var vlcplx = flattenCplxEigenVecs(wi, vl);
     var vrcplx = flattenCplxEigenVecs(wi, vr);
-        }
+      }
     return (eigVals, vlcplx, vrcplx);
   }
 }
