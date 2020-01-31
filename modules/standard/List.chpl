@@ -352,7 +352,7 @@ module List {
     // accesses of list elements should go through this function.
     //
     pragma "no doc"
-    inline proc const ref _doGetRef(idx: int) ref {
+    inline proc const ref _getRef(idx: int) ref {
       _sanity(idx >= 1 && idx <= _totalCapacity);
       const zpos = idx - 1;
       const arrayIdx = _getArrayIdx(zpos);
@@ -361,12 +361,6 @@ module List {
       _sanity(array != nil);
       ref result = array[itemIdx];
       return result;
-    }
-    inline proc ref _getRef(idx: int) ref {
-      return _doGetRef(idx);
-    }
-    inline proc const ref _getRef(idx: int) const ref {
-      return _doGetRef(idx);
     }
 
     pragma "no doc"
@@ -1301,13 +1295,15 @@ module List {
     }
 
     // TODO - make const ref return intent overloads for `these`
+    // and make the ref-return overload accept this by `ref`
+    // once #12944 is fixed.
 
     /*
       Iterate over the elements of this list.
 
       :yields: A reference to one of the elements contained in this list.
     */
-    iter ref these() ref {
+    iter these() ref {
       // TODO: We can just iterate through the _ddata directly here.
       for i in 1.._size {
         ref result = _getRef(i);
@@ -1316,7 +1312,7 @@ module List {
     }
 
     pragma "no doc"
-    iter ref these(param tag: iterKind) ref where tag == iterKind.standalone {
+    iter these(param tag: iterKind) ref where tag == iterKind.standalone {
       const osz = _size;
       const minChunkSize = 64;
       const hasOneChunk = osz <= minChunkSize;
@@ -1347,7 +1343,7 @@ module List {
     }
 
     pragma "no doc"
-    iter ref these(param tag) ref where tag == iterKind.leader {
+    iter these(param tag) ref where tag == iterKind.leader {
       const osz = _size;
       const minChunkSize = 32;
       const hasOneChunk = osz <= minChunkSize;
@@ -1363,7 +1359,7 @@ module List {
     }
 
     pragma "no doc"
-    iter ref these(param tag, followThis) ref where tag == iterKind.follower {
+    iter these(param tag, followThis) ref where tag == iterKind.follower {
 
       //
       // TODO: A faster scheme would access the _ddata directly to avoid
