@@ -1,0 +1,1 @@
+nilStorageNonNilAssocArr.chpl:23: error: halt reached - argument to ! is nil
