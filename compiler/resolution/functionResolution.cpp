@@ -2993,7 +2993,7 @@ static bool isGenericRecordInit(CallExpr* call) {
   bool retval = false;
 
   if (UnresolvedSymExpr* ures = toUnresolvedSymExpr(call->baseExpr)) {
-    if ((strcmp(ures->unresolved, "init") == 0 || strcmp(ures->unresolved, astrInitEquals) == 0) &&
+    if ((ures->unresolved == astrInit || ures->unresolved == astrInitEquals) &&
         call->numActuals()               >= 2) {
       Type* t1 = call->get(1)->typeInfo();
       Type* t2 = call->get(2)->typeInfo();

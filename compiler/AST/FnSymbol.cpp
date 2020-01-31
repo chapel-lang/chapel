@@ -909,7 +909,7 @@ bool FnSymbol::isDefaultInit() const {
 }
 
 bool FnSymbol::isCopyInit() const {
-  return isMethod() && strcmp(name, astrInitEquals) == 0;
+  return isMethod() && name == astrInitEquals;
 }
 
 // This function or method is an iterator (as opposed to a procedure).
