@@ -43,9 +43,6 @@ extern SymbolMap                        paramMap;
 
 extern Vec<CallExpr*>                   callStack;
 
-extern char                             arrayUnrefName[];
-extern char                             primCoerceTmpName[];
-
 extern Map<Type*,     FnSymbol*>        autoDestroyMap;
 
 extern Map<Type*,     FnSymbol*>        valueToRuntimeTypeMap;

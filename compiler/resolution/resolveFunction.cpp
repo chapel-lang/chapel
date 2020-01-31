@@ -672,7 +672,7 @@ static void insertUnrefForArrayOrTupleReturn(FnSymbol* fn) {
 
           SET_LINENO(call);
           Expr*      rhs       = call->get(2)->remove();
-          VarSymbol* tmp       = newTemp(arrayUnrefName, rhsType);
+          VarSymbol* tmp       = newTemp("array_unref_ret_tmp", rhsType);
           CallExpr*  initTmp   = new CallExpr(PRIM_MOVE,     tmp, rhs);
           CallExpr*  unrefCall = new CallExpr("chpl__unref", tmp);
           CallExpr*  shapeSet  = findSetShape(call, ret);
