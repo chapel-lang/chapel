@@ -226,6 +226,7 @@ FnSymbol* getUnalias(Type* t);
 
 
 bool isPOD(Type* t);
+bool recordContainingCopyMutatesField(Type* at);
 
 // resolution errors and warnings
 

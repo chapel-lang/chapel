@@ -100,8 +100,6 @@ static bool needRefFormal(FnSymbol* fn, ArgSymbol* formal, bool* needRefIntent);
 
 static bool shouldUpdateAtomicFormalToRef(FnSymbol* fn, ArgSymbol* formal);
 
-static bool recordContainingCopyMutatesField(Type* at);
-
 static void handleParamCNameFormal(FnSymbol* fn, ArgSymbol* formal);
 
 static void storeDefaultValuesForPython(FnSymbol* fn, ArgSymbol* formal);
@@ -357,7 +355,7 @@ static bool shouldUpdateAtomicFormalToRef(FnSymbol* fn, ArgSymbol* formal) {
          fn->hasFlag(FLAG_BUILD_TUPLE)         == false;
 }
 
-static bool recordContainingCopyMutatesField(Type* t) {
+bool recordContainingCopyMutatesField(Type* t) {
   AggregateType* at = toAggregateType(t);
   if (at == NULL) return false;
   if (!isRecord(at)) return false;
