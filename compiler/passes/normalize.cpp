@@ -2603,6 +2603,17 @@ static bool findInitPoints(DefExpr* def,
   return (found == FOUND_INIT);
 }
 
+// Returns true if there is an init or use at or after cur
+static bool checkForUseAfterReturn(DefExpr* def, Expr* start) {
+  for (Expr* cur = start; cur != NULL; cur = cur->next) {
+    if (containsSymExprFor(cur, def->sym)) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
 static found_init_t doFindInitPoints(DefExpr* def,
                                      Expr* start,
                                      std::vector<CallExpr*>& initAssigns) {
@@ -2643,14 +2654,21 @@ static found_init_t doFindInitPoints(DefExpr* def,
         }
 
         if (call->isPrimitive(PRIM_RETURN) || call->isPrimitive(PRIM_THROW)) {
-          return FOUND_RET;
+          if (checkForUseAfterReturn(def, call->next))
+            return FOUND_USE;
+          else
+            return FOUND_RET;
         }
       }
 
     // return
     } else if (GotoStmt* gt = toGotoStmt(cur)) {
-      if (gt->gotoTag == GOTO_RETURN)
-        return FOUND_RET;
+      if (gt->gotoTag == GOTO_RETURN) {
+        if (checkForUseAfterReturn(def, gt->next))
+          return FOUND_USE;
+        else
+          return FOUND_RET;
+      }
 
     // { x = ... }
     } else if (BlockStmt* block = toBlockStmt(cur)) {
@@ -2686,7 +2704,7 @@ static found_init_t doFindInitPoints(DefExpr* def,
         if (CatchStmt* ctch = toCatchStmt(elt)) {
           Expr* start = ctch->body()->body.first();
           found_init_t foundCatch = doFindInitPoints(def, start, initAssigns);
-          if (foundCatch == FOUND_USE) {
+          if (foundCatch == FOUND_USE || foundCatch == FOUND_INIT) {
             // Consider even an assignment in a catch block as a use
             errorIfSplitInitializationRequired(def, cur);
             return FOUND_USE;
