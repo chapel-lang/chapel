@@ -155,6 +155,22 @@ pragma "no doc" // I don't think we want to make this public yet
 proc isPODType(type t) param {
   return __primitive("is pod type", t);
 }
+pragma "no doc"
+proc isCopyableType(type t) param {
+  return __primitive("is copyable type", t);
+}
+pragma "no doc"
+proc isRefCopyableType(type t) param {
+  return __primitive("is ref copyable type", t);
+}
+pragma "no doc"
+proc isAssignableType(type t) param {
+  return __primitive("is assignable type", t);
+}
+pragma "no doc"
+proc isRefAssignableType(type t) param {
+  return __primitive("is ref assignable type", t);
+}
 
 // Returns the unsigned equivalent of the input type.
 pragma "no doc"
@@ -275,6 +291,14 @@ pragma "no doc"
 proc isRefIterValue(e)   param  return isRefIterType(e.type);
 pragma "no doc"
 proc isPODValue(e)       param  return isPODType(e.type);
+pragma "no doc"
+proc isCopyableValue(e)     param  return isCopyableType(e.type);
+pragma "no doc"
+proc isRefCopyableValue(e)  param  return isRefCopyableType(e.type);
+pragma "no doc"
+proc isAssignableValue(e)   param  return isAssignableType(e.type);
+pragma "no doc"
+proc isRefAssignableValue(e)  param  return isRefAssignableType(e.type);
 
 
 //
@@ -351,6 +375,14 @@ pragma "no doc"
 proc isRefIter(type t)   param  return isRefIterType(t);
 pragma "no doc"
 proc isPOD(type t)       param  return isPODType(t);
+pragma "no doc"
+proc isCopyable(type t)      param  return isCopyableType(t);
+pragma "no doc"
+proc isRefCopyable(type t)   param  return isRefCopyableType(t);
+pragma "no doc"
+proc isAssignable(type t)    param  return isAssignableType(t);
+pragma "no doc"
+proc isRefAssignable(type t) param  return isRefAssignableType(t);
 
 // Set 2 - values.
 /*
@@ -449,6 +481,11 @@ proc isRefIter(e)   param  return isRefIterValue(e);
 
 pragma "no doc" // Not sure how we want to document isPOD* right now
 proc isPOD(e)       param  return isPODValue(e);
+
+proc isCopyable(e) param return isCopyableValue(e);
+proc isRefCopyable(e) param return isRefCopyableValue(e);
+proc isAssignable(e) param return isCopyableValue(e);
+proc isRefAssignable(e) param return isRefAssignableValue(e);
 
 // for internal use until we have a better name
 pragma "no doc"

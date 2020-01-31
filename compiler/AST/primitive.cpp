@@ -1015,6 +1015,10 @@ initPrimitive() {
   prim_def(PRIM_IS_ABS_ENUM_TYPE, "is abstract enum type", returnInfoBool);
 
   prim_def(PRIM_IS_POD, "is pod type", returnInfoBool);
+  prim_def(PRIM_IS_COPYABLE, "is copyable type", returnInfoBool);
+  prim_def(PRIM_IS_REF_COPYABLE, "is ref copyable type", returnInfoBool);
+  prim_def(PRIM_IS_ASSIGNABLE, "is assignable type", returnInfoBool);
+  prim_def(PRIM_IS_REF_ASSIGNABLE, "is ref assignable type", returnInfoBool);
 
   // This primitive allows normalize to request function resolution
   // coerce a return value to the declared return type, even though

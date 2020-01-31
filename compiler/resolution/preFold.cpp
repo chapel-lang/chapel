@@ -805,6 +805,54 @@ static Expr* preFoldPrimOp(CallExpr* call) {
 
     break;
   }
+  case PRIM_IS_COPYABLE:
+  case PRIM_IS_REF_COPYABLE:
+  case PRIM_IS_ASSIGNABLE:
+  case PRIM_IS_REF_ASSIGNABLE: {
+    Type* t = call->get(1)->typeInfo();
+
+    bool mutates = false;
+    bool copyable = true;
+    bool assignable = true;
+    bool val = true;
+    if (isRecord(t)) {
+      mutates = recordContainingCopyMutatesField(t);
+      copyable = !t->symbol->hasFlag(FLAG_NO_INIT_EQUAL);
+      assignable = !t->symbol->hasFlag(FLAG_NO_ASSIGN);
+
+      if (isManagedPtrType(t)) {
+        AggregateType* at = getManagedPtrManagerType(t);
+        if (at == dtOwned) {
+          if (isNonNilableClassType(t)) {
+            // non-nilable owned has special rules
+            // assignment and copy-init are not always available
+            copyable = false;
+            assignable = false;
+          }
+        }
+      }
+    }
+
+    if (call->isPrimitive(PRIM_IS_COPYABLE))
+      val = copyable && !mutates;
+    else if (call->isPrimitive(PRIM_IS_REF_COPYABLE))
+      val = copyable && mutates;
+    else if (call->isPrimitive(PRIM_IS_ASSIGNABLE))
+      val = assignable && !mutates;
+    else if (call->isPrimitive(PRIM_IS_REF_ASSIGNABLE))
+      val = assignable && mutates;
+    else
+      INT_FATAL("not handled");
+
+    if (val)
+      retval = new SymExpr(gTrue);
+    else
+      retval = new SymExpr(gFalse);
+
+    call->replace(retval);
+
+    break;
+  }
 
   case PRIM_NEEDS_AUTO_DESTROY: {
     Type* t = call->get(1)->typeInfo();

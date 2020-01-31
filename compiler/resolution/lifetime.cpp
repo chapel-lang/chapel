@@ -3561,6 +3561,10 @@ bool ReportExpiringVisitor::enterCallExpr(CallExpr* call) {
 static void markLocalVariableExpiryInFn(FnSymbol* fn, LifetimeState* state) {
   // add FLAG_DEAD_END_OF_BLOCK and FLAG_DEAD_LAST_MENTION
 
+  // Skip task functions because they will be traversed at their call site.
+  if (isTaskFun(fn))
+    return;
+
   if (debuggingExpiringForFn(fn))
     nprint_view(fn);
 
