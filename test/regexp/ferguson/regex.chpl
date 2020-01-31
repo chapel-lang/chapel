@@ -273,7 +273,7 @@ writeln("Matches 1");
     writeln(str[s[0]]);
   }
   for s in str.matches(re, 0) {
-    writeln(str[s[1]]);
+    writeln(str[s[0]]);
   }
 }
 writeln("Matches 2");
@@ -286,9 +286,9 @@ writeln("Matches 2");
     writeln(str[s[2]]);
   }
   for s in str.matches(re, 2) {
+    writeln(str[s[0]]);
     writeln(str[s[1]]);
     writeln(str[s[2]]);
-    writeln(str[s[3]]);
   }
 }
 

@@ -62,8 +62,8 @@ class CombiningReduceOp: ReduceScanOp {
     }
   }
   proc accumulateOntoState(ref state, elm:_tuple) {
-    var hash = elm(1);
-    var path = elm(2);
+    var hash = elm(0);
+    var path = elm(1);
     state.keys += hash;
     state.values[hash].keys += path;
   }
