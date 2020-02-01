@@ -286,7 +286,7 @@ static Expr* preFoldPrimOp(CallExpr* call) {
     if (call->numActuals() > 1) {
       USR_FATAL(call, "too many arguments to 'gather tests'");
     }
-    
+
     Type* testType = call->get(1)->getValType();
     forv_Vec(FnSymbol, fn, gFnSymbols) {
       if (fn->throwsError()) {
@@ -320,7 +320,7 @@ static Expr* preFoldPrimOp(CallExpr* call) {
 
   case PRIM_GET_TEST_BY_INDEX: {
     int64_t index    =        0;
-    
+
     if (call->numActuals() == 0) {
       USR_FATAL(call, "illegal call of 'get test by index'. Expected an argument of type 'int'");
     }
@@ -364,7 +364,7 @@ static Expr* preFoldPrimOp(CallExpr* call) {
       int index = testNameIndex[name];
       retval = testCaptureVector[index-1]->copy();
       call->replace(retval);
-      break; 
+      break;
     }
     else {
       USR_FATAL(call, "No test function with name '%s'",name);
@@ -1723,7 +1723,7 @@ static Expr* preFoldNamed(CallExpr* call) {
           Type* newType = toSE->symbol()->type;
 
           bool fromEnum = is_enum_type(oldType);
-          bool fromString = (oldType == dtString || 
+          bool fromString = (oldType == dtString ||
                              oldType == dtStringC);
           bool fromBytes = oldType == dtBytes;
           bool fromIntUint = is_int_type(oldType) ||
@@ -2297,10 +2297,10 @@ static Expr* createFunctionAsValue(CallExpr *call) {
   FnSymbol* wrapper = new FnSymbol("wrapper");
 
   wrapper->addFlag(FLAG_INLINE);
-  
+
   // Insert the wrapper into the AST now so we can resolve some things.
   call->getStmtExpr()->insertBefore(new DefExpr(wrapper));
-  
+
   BlockStmt* block = new BlockStmt();
   wrapper->insertAtTail(block);
 
@@ -2308,7 +2308,7 @@ static Expr* createFunctionAsValue(CallExpr *call) {
 
   NamedExpr* usym = new NamedExpr(astr_chpl_manager,
                                   new SymExpr(dtUnmanaged->symbol));
-  
+
   // Create a new "unmanaged child".
   CallExpr* init = new CallExpr(PRIM_NEW, usym,
                                 new CallExpr(new SymExpr(undecorated->symbol)));
