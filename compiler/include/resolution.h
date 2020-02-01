@@ -142,6 +142,7 @@ bool canDispatch(Type*     actualType,
 void parseExplainFlag(char* flag, int* line, ModuleSymbol** module);
 
 FnSymbol* findCopyInit(AggregateType* ct);
+FnSymbol* findAssign(AggregateType* at);
 
 FnSymbol* getTheIteratorFn(Symbol* ic);
 FnSymbol* getTheIteratorFn(Type* icType);

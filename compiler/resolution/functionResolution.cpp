@@ -6282,6 +6282,16 @@ FnSymbol* findCopyInit(AggregateType* at) {
   return ret;
 }
 
+FnSymbol* findAssign(AggregateType* at) {
+  VarSymbol* tmpAt = newTemp(at);
+  FnSymbol* ret = NULL;
+
+  CallExpr* call = new CallExpr("=", tmpAt, tmpAt);
+  ret = resolveUninsertedCall(at, call, false);
+
+  return ret;
+}
+
 /************************************* | **************************************
 *                                                                             *
 *                                                                             *
