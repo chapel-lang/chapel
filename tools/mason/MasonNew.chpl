@@ -51,7 +51,10 @@ proc masonNew(args) throws {
           name = arg;
         }
       }
-      validateAndInit(name,vcs,show);
+      
+      if(validateAndInit(name,vcs,show)){
+          InitProject(name, vcs, show);
+      }
       
     }
   }
@@ -77,7 +80,7 @@ proc validateAndInit(name,vcs,show) throws {
             throw new owned MasonError("A directory named '" + name + "' already exists");
         }
         else {
-          InitProject(name, vcs, show);
+          return true;
         }
 }
 

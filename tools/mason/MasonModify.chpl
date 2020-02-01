@@ -289,7 +289,7 @@ private proc generateToml(toml: borrowed Toml, tomlPath: string) {
   tomlFile.close();
 }
 
-private proc checkVersion(version: string) throws {
+proc checkVersion(version: string) throws {
 
   const pattern = compile("([0-9].[0-9].[0-9][a-zA-Z]?)");
   if !pattern.match(version) {

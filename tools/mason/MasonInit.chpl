@@ -17,6 +17,7 @@
  * limitations under the License.
  */
 
+use TOML;
 use Path; 
 use Spawn;
 use MasonEnv;
@@ -25,6 +26,7 @@ use MasonBuild;
 use MasonHelp;
 use MasonUtils;
 use MasonExample;
+use MasonModify;
 use FileSystem;
 private use List;
 
@@ -40,11 +42,13 @@ proc masonInit(args) throws {
 		}
 		//checks if path is given as parameter or not
 		if name == '' {
-			//If Mason.toml is already present, we get an error
 			if isFile("Mason.toml") {
-				throw new owned MasonError("Mason.toml already exists.");
-				//[WIP] scan Mason.toml for project name,
-				//validate project name checks from Mason new 55-65
+				const toParse = open("Mason.toml", iomode.r);
+				const tomlFile = new owned(parseToml(toParse));
+				var projectName = tomlFile["brick"]["name"].s;
+				var version = tomlFile["brick"]["version"].s;
+				validateAndInit(projectName, vcs=true, show=false);
+				checkVersion(version);
 			} else {
 				//If Mason.toml not present, proceed with init
 				const cwd  = getEnv("PWD");
@@ -55,12 +59,10 @@ proc masonInit(args) throws {
 				ValidateInit(path);
 			}
 		} else {
-			/*
-			if the target directory in path doesnt exist, throw error
-			if target directory exists, check for files && validate
-			create folders and toml file without overwriting anything 
-			if TOML file exists, check for values in it and validate
-			*/
+			// if the target directory in path doesnt exist, throw error
+			// if target directory exists, check for files && validate
+			// create folders and toml file without overwriting anything 
+			// if TOML file exists, check for values in it and validate
 			var path = name;
 			if(isDir(path)) {
 				ValidateInit(path);
@@ -84,6 +86,13 @@ proc ValidateInit(path: string){
 		if(file == "/Mason.toml"){
 			if(isFile(path + file)){
 				//scan using TOML reader and validate
+				const toParse = open(path + file, iomode.r);
+				const tomlFile = new owned(parseToml(toParse));
+				var projectName = tomlFile["brick"]["name"].s;
+				var version = tomlFile["brick"]["version"].s;
+				validateAndInit(projectName, vcs=true, show=false);
+				checkVersion(version);
+				writeln(projectName,version);
 			}else{
 				ToBeCreated.append(file);
 			}
@@ -95,7 +104,7 @@ proc ValidateInit(path: string){
 		}
 	}
 	for file in ToBeCreated{
-		//if Mason.toml is found -- create Mason.toml
+		//if Mason.toml is not found -- create Mason.toml
 		//if normal directories are found create them individually
 		if(file == "/Mason.toml"){
 			var name = basename(path);
