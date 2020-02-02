@@ -615,6 +615,6 @@ Default Comparison Operators
 For records, the compiler will supply default comparison operators if
 they are not supplied by the user. In contrast, the user cannot redefine
 ``==`` and ``!=`` for classes. The default comparison operators for a
-record examine the arguments’ fields, while the comparison operators for
+record examine the arguments’ fields in a lexicographical order, while the comparison operators for
 classes check whether the l.h.s. and r.h.s. refer to the same class
 instance or are both ``nil``.
