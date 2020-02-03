@@ -627,7 +627,19 @@ module DefaultAssociative {
   
     var tmpDom = {0..(-1:chpl_table_index_type)};
     var tmpTable: [tmpDom] eltType;
-  
+
+    //
+    // #14367 - Use this as a workaround in order to detect whether or not
+    // the element type of an associative array is a non-nilable class.
+    // 
+    proc postinit() {
+      if isNonNilableClass(this.eltType) {
+        param msg = "Cannot initialize associative array with element type "
+                  + eltType:string + " because it is a non-nilable class";
+        compilerError(msg);
+      }
+    }
+
     //
     // Standard internal array interface
     // 

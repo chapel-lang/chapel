@@ -1,1 +1,2 @@
-No idea what this will look like yet!
+nilStorageNonNilAssocArr.chpl:11: In function 'main':
+nilStorageNonNilAssocArr.chpl:13: error: Cannot initialize associative array with element type shared C because it is a non-nilable class
