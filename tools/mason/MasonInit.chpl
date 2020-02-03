@@ -78,13 +78,13 @@ proc masonInit(args) throws {
 	}
 }
 
-proc ValidateInit(path: string){
+proc ValidateInit(path: string) {
 	var files = [ "/Mason.toml" , "/src" , "/test" , "/example", "/.git", ".gitignore" ];
 	var ToBeCreated : list(string);				
 	for idx in 1..files.size do {
 		var file = files(idx);
-		if(file == "/Mason.toml"){
-			if(isFile(path + file)){
+		if file == "/Mason.toml" {
+			if isFile(path + file) {
 				//scan using TOML reader and validate
 				const toParse = open(path + file, iomode.r);
 				const tomlFile = new owned(parseToml(toParse));
@@ -93,29 +93,28 @@ proc ValidateInit(path: string){
 				validateAndInit(projectName, vcs=true, show=false);
 				checkVersion(version);
 				writeln(projectName,version);
-			}else{
-				ToBeCreated.append(file);
+			} else {
+					ToBeCreated.append(file);
 			}
 		} else {
 			var dir = file;
-			if(isDir(path + dir) == false){
+			if isDir(path + dir) == false {
 				ToBeCreated.append(dir);
 			}
 		}
 	}
 	for file in ToBeCreated{
-		//if Mason.toml is not found -- create Mason.toml
-		//if normal directories are found create them individually
-		if(file == "/Mason.toml"){
+		if file == "/Mason.toml" {
 			var name = basename(path);
 			makeBasicToml(name,path);
-		}else{
+		} else {
 			var name = basename(path);
-			if(file == "/.git"){
-				gitInit(name, show=false);	
-			}else if(file == ".gitignore"){
-				addGitIgnore(name);
-			}else{
+			if file == "/.git" {
+				gitInit(path, show=false);
+
+			} else if file == ".gitignore" {
+				addGitIgnore(path);
+			} else {
 				makeProjectFiles(path,file);
 			}
 		}

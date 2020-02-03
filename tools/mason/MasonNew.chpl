@@ -136,7 +136,7 @@ proc makeBasicToml(name: string, path: string) {
 
 
 proc makeProjectFiles(path:string,name: string) {
-  if(name=="all"){
+  if(name=="all") {
     mkdir(path + "/src");
     mkdir(path + "/test");
     mkdir(path + "/example");
@@ -146,17 +146,17 @@ proc makeProjectFiles(path:string,name: string) {
     var libWriter = lib.writer();
     libWriter.write(libTemplate + '\n');
     libWriter.close();
-  }else if(name == "/src"){
+  } else if(name == "/src") {
     mkdir(path + "/src");
-    const libTemplate = '/* Documentation for ' + path +
-      ' */\nmodule '+ path + ' {\n  writeln("New library: '+ path +'");\n}';
-    var lib = open(path+'/src/'+path+'.chpl', iomode.cw);
+    const libTemplate = '/* Documentation for ' + basename(path) +
+      ' */\nmodule '+ basename(path) + ' {\n  writeln("New library: '+ basename(path) +'");\n}';
+    var lib = open(path+'/src/'+basename(path)+'.chpl', iomode.cw);
     var libWriter = lib.writer();
     libWriter.write(libTemplate + '\n');
     libWriter.close();
-  }else if(name == "/test"){
+  } else if(name == "/test") {
     mkdir(path + "/test");
-  }else if(name == "/example"){
+  } else if(name == "/example") {
     mkdir(path + "/example");
   }
   
