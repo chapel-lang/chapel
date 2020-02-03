@@ -767,8 +767,8 @@ void init_ofiFabricDomain(void) {
 
   hints->addr_format = FI_FORMAT_UNSPEC;
 
-  hints->tx_attr->op_flags = FI_DELIVERY_COMPLETE | FI_COMPLETION;
-  hints->rx_attr->op_flags = FI_MULTI_RECV        | FI_COMPLETION;
+  hints->tx_attr->op_flags = FI_COMPLETION | FI_DELIVERY_COMPLETE;
+  hints->rx_attr->op_flags = FI_COMPLETION;
 
   hints->ep_attr->type = FI_EP_RDM;
 
