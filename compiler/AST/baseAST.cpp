@@ -29,6 +29,7 @@
 #include "ForallStmt.h"
 #include "ForLoop.h"
 #include "IfExpr.h"
+#include "ImportStmt.h"
 #include "log.h"
 #include "LoopExpr.h"
 #include "ModuleSymbol.h"
@@ -102,8 +103,12 @@ void printStatistics(const char* pass) {
 
   foreach_ast(decl_counters);
 
-  int nStmt = nBlockStmt + nCondStmt + nDeferStmt + nGotoStmt + nUseStmt + nExternBlockStmt + nForallStmt + nTryStmt + nForwardingStmt + nCatchStmt;
-  int kStmt = kBlockStmt + kCondStmt + kDeferStmt + kGotoStmt + kUseStmt + kExternBlockStmt + kForallStmt + kTryStmt + kForwardingStmt + kCatchStmt;
+  int nStmt = nBlockStmt + nCondStmt + nDeferStmt + nGotoStmt + nUseStmt +
+    nImportStmt + nExternBlockStmt + nForallStmt + nTryStmt + nForwardingStmt +
+    nCatchStmt;
+  int kStmt = kBlockStmt + kCondStmt + kDeferStmt + kGotoStmt + kUseStmt +
+    kImportStmt + kExternBlockStmt + kForallStmt + kTryStmt + kForwardingStmt +
+    kCatchStmt;
   int nExpr = nUnresolvedSymExpr + nSymExpr + nDefExpr + nCallExpr +
     nContextCallExpr + nLoopExpr + nNamedExpr + nIfExpr;
   int kExpr = kUnresolvedSymExpr + kSymExpr + kDefExpr + kCallExpr +
@@ -503,6 +508,10 @@ const char* BaseAST::astTagAsString() const {
 
     case E_UseStmt:
       retval = "UseStmt";
+      break;
+
+    case E_ImportStmt:
+      retval = "ImportStmt";
       break;
 
     case E_BlockStmt:

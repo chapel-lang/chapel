@@ -30,6 +30,7 @@
 #include "files.h"
 #include "ForallStmt.h"
 #include "ForLoop.h"
+#include "ImportStmt.h"
 #include "LoopExpr.h"
 #include "ParamForLoop.h"
 #include "parser.h"
@@ -376,6 +377,15 @@ static void addModuleToSearchList(UseStmt* newUse, BaseAST* module) {
   }
 }
 
+static void addModuleToSearchList(ImportStmt* newImport, BaseAST* module) {
+  UnresolvedSymExpr* modNameExpr = toUnresolvedSymExpr(module);
+  if (modNameExpr) {
+    addModuleToParseList(modNameExpr->unresolved, newImport);
+  } /* else if (CallExpr* callExpr = toCallExpr(module)) {
+    addModuleToSearchList(newUse, callExpr->argList.first());
+    }*/ // Expected to be useful when import statements can list multiple mods
+}
+
 
 static BlockStmt* buildUseList(BaseAST* module, const char* newName,
                                BlockStmt* list, bool privateUse) {
@@ -550,6 +560,10 @@ BlockStmt* buildUseStmt(std::vector<PotentialRename*>* args, bool privateUse) {
 // Build an 'import' statement
 //
 BlockStmt* buildImportStmt(Expr* mod) {
+  ImportStmt* newImport = new ImportStmt(mod);
+  addModuleToSearchList(newImport, mod);
+
+  /*
   // Stub out arguments for unsupported extensions to import
   // We're still discussing what will be supported and what won't be (and how)
   const char* rename = "";
@@ -562,7 +576,9 @@ BlockStmt* buildImportStmt(Expr* mod) {
   onlyNothing->elem = new UnresolvedSymExpr("");
   names->push_back(onlyNothing);
 
-  return buildUseStmt(mod, rename, names, except, privateUse);
+  return buildUseStmt(mod, rename, names, except, privateUse); */
+
+  return buildChapelStmt(newImport);
 }
 
 

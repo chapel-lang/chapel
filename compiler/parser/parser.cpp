@@ -28,6 +28,7 @@
 #include "expr.h"
 #include "files.h"
 #include "flex-chapel.h"
+#include "ImportStmt.h"
 #include "insertLineNumbers.h"
 #include "stringutil.h"
 #include "symbol.h"
@@ -133,7 +134,7 @@ static Vec<const char*> sFlagModPath;
 static Vec<const char*> sModNameSet;
 static Vec<const char*> sModNameList;
 static Vec<const char*> sModDoneSet;
-static Vec<UseStmt*>    sModReqdByInt;
+static Vec<Stmt*>    sModReqdByInt;
 
 void addInternalModulePath(const ArgumentDescription* desc, const char* newpath) {
   sIntModPath.add(astr(newpath));
@@ -239,6 +240,21 @@ void addModuleToParseList(const char* name, UseStmt* useExpr) {
     if (currentModuleType           == MOD_INTERNAL ||
         sHandlingInternalModulesNow == true) {
       sModReqdByInt.add(useExpr);
+    }
+
+    sModNameSet.set_add(modName);
+    sModNameList.add(modName);
+  }
+}
+
+void addModuleToParseList(const char* name, ImportStmt* newImport) {
+  const char* modName = astr(name);
+
+  if (sModDoneSet.set_in(modName) == NULL &&
+      sModNameSet.set_in(modName) == NULL) {
+    if (currentModuleType           == MOD_INTERNAL ||
+        sHandlingInternalModulesNow == true) {
+      sModReqdByInt.add(newImport);
     }
 
     sModNameSet.set_add(modName);
@@ -391,14 +407,23 @@ static void helpPrintPath(Vec<const char*> path) {
 
 static void ensureRequiredStandardModulesAreParsed() {
   do {
-    Vec<UseStmt*> modReqdByIntCopy = sModReqdByInt;
+    Vec<Stmt*> modReqdByIntCopy = sModReqdByInt;
 
     sModReqdByInt.clear();
 
     sHandlingInternalModulesNow = true;
 
-    forv_Vec(UseStmt*, moduse, modReqdByIntCopy) {
-      BaseAST*           moduleExpr     = moduse->src;
+    forv_Vec(Stmt*, moduse, modReqdByIntCopy) {
+      BaseAST* moduleExpr = NULL;
+      if (UseStmt* use = toUseStmt(moduse)) {
+        moduleExpr = use->src;
+      } else if (ImportStmt* import = toImportStmt(moduse)) {
+        moduleExpr = import->src;
+      } else {
+        INT_FATAL("Incorrect Stmt subclass, expected either UseStmt or "
+                  "ImportStmt");
+      }
+
       UnresolvedSymExpr* oldModNameExpr = toUnresolvedSymExpr(moduleExpr);
 
       if (oldModNameExpr == NULL) {
@@ -691,6 +716,7 @@ static ModuleSymbol* parseFile(const char* path,
 static bool containsOnlyModules(BlockStmt* block, const char* path) {
   int           moduleDefs     =     0;
   bool          hasUses        = false;
+  bool          hasImports     = false;
   bool          hasRequires    = false;
   bool          hasOther       = false;
   ModuleSymbol* lastModSym     =  NULL;
@@ -727,6 +753,9 @@ static bool containsOnlyModules(BlockStmt* block, const char* path) {
     } else if (isUseStmt(stmt)  == true) {
       hasUses = true;
 
+    } else if (isImportStmt(stmt) == true) {
+      hasImports = true;
+
     } else {
       hasOther = true;
       if (firstOtherStmt == NULL)
@@ -734,20 +763,10 @@ static bool containsOnlyModules(BlockStmt* block, const char* path) {
     }
   }
 
-  if ((hasUses == true || hasRequires == true) &&
+  if ((hasUses == true || hasImports == true || hasRequires == true) &&
       hasOther == false &&
       moduleDefs == 1) {
-    const char* stmtKind;
-
-    if (hasUses == true && hasRequires == true) {
-      stmtKind = "require' and 'use";
-
-    } else if (hasUses == true) {
-      stmtKind = "use";
-
-    } else {
-      stmtKind = "require";
-    }
+    const char* stmtKind = "require', 'use', and/or 'import";
 
     USR_WARN(lastModSymStmt,
              "as written, '%s' is a sub-module of the module created for "
@@ -771,6 +790,7 @@ static bool containsOnlyModules(BlockStmt* block, const char* path) {
   }
 
   return hasUses == false &&
+    hasImports == false &&
     hasRequires == false &&
     hasOther == false &&
     moduleDefs > 0;

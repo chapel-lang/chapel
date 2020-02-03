@@ -111,6 +111,8 @@ foreach_ast(decl_members);
   //
   virtual void   visitUseStmt        (UseStmt*           node);
 
+  virtual void   visitImportStmt     (ImportStmt*        node);
+
   virtual bool   enterBlockStmt      (BlockStmt*         node);
   virtual void   exitBlockStmt       (BlockStmt*         node);
 

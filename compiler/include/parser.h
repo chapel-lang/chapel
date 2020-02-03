@@ -21,6 +21,7 @@
 #define _PARSER_H_
 
 class BlockStmt;
+class ImportStmt;
 class UseStmt;
 
 #include "symbol.h"
@@ -50,6 +51,8 @@ void               addFlagModulePath(const char* newpath);
 
 void               addModuleToParseList(const char* name,
                                         UseStmt*    newUse);
+void               addModuleToParseList(const char* name,
+                                        ImportStmt* newImport);
 
 BlockStmt*         parseString(const char* string,
                                const char* filename,
