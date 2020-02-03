@@ -132,6 +132,8 @@ static std::map<FnSymbol*, const char*> outerCompilerWarningMap;
 static std::map<FnSymbol*, const char*> innerCompilerErrorMap;
 static std::map<FnSymbol*, const char*> outerCompilerErrorMap;
 
+static std::vector<FnSymbol*> tryResolveStack;
+
 static CapturedValueMap            capturedValues;
 
 // Used to ensure we only issue the warning once per instantiation
@@ -139,6 +141,9 @@ static std::set<FnSymbol*> oldStyleInitCopyFns;
 
 // Enable coercions from nilable -> non-nilable to have easier errors
 static int generousResolutionForErrors;
+
+// Hide errors when trying to resolve something.
+static int hidingResolutionErrors;
 
 //#
 //# Static Function Declarations
@@ -2471,9 +2476,25 @@ void resolveCall(CallExpr* call) {
   }
 }
 
+// aka error strategy?
+typedef enum {
+  CHECK_NORMAL_CALL,
+  CHECK_CALLABLE_ONLY,
+  CHECK_BODY_RESOLVES
+} check_state_t;
 
-FnSymbol* tryResolveCall(CallExpr* call) {
-  return resolveNormalCall(call, true);
+static FnSymbol* resolveNormalCall(CallExpr* call, check_state_t checkState);
+
+FnSymbol* resolveNormalCall(CallExpr* call) {
+  return resolveNormalCall(call, CHECK_NORMAL_CALL);
+}
+
+FnSymbol* tryResolveCall(CallExpr* call, bool checkWithin) {
+  check_state_t checkState = CHECK_CALLABLE_ONLY;
+  if (checkWithin)
+      checkState = CHECK_BODY_RESOLVES;
+
+  return resolveNormalCall(call, checkState);
 }
 
 static bool resolveTypeComparisonCall(CallExpr* call) {
@@ -2826,7 +2847,8 @@ static bool resolveClassBorrowMethod(CallExpr* call) {
 
 static bool      isGenericRecordInit(CallExpr* call);
 
-static FnSymbol* resolveNormalCall(CallInfo& info, bool checkOnly);
+static FnSymbol* resolveNormalCall(CallInfo& info, check_state_t checkState);
+static FnSymbol* resolveNormalCall(CallExpr* call, check_state_t checkState);
 
 static void      findVisibleFunctionsAndCandidates(
                                      CallInfo&                  info,
@@ -2840,11 +2862,11 @@ static int       disambiguateByMatch(CallInfo&                  info,
                                      ResolutionCandidate*&      bestValue);
 
 static FnSymbol* resolveNormalCall(CallInfo&            info,
-                                   bool                 checkOnly,
+                                   check_state_t        checkState,
                                    ResolutionCandidate* best);
 
 static FnSymbol* resolveNormalCall(CallInfo&            info,
-                                   bool                 checkOnly,
+                                   check_state_t        checkState,
                                    ResolutionCandidate* bestRef,
                                    ResolutionCandidate* bestConstRef,
                                    ResolutionCandidate* bestValue);
@@ -2953,9 +2975,13 @@ static Type* resolveTypeSpecifier(CallInfo& info) {
   return ret;
 }
 
-FnSymbol* resolveNormalCall(CallExpr* call, bool checkOnly) {
+static
+FnSymbol* resolveNormalCall(CallExpr* call, check_state_t checkState) {
   CallInfo  info;
   FnSymbol* retval = NULL;
+
+  if (checkState != CHECK_NORMAL_CALL)
+    hidingResolutionErrors++;
 
   if (call->id == breakOnResolveID) {
     printf("breaking on resolve call %d:\n", call->id);
@@ -2971,14 +2997,26 @@ FnSymbol* resolveNormalCall(CallExpr* call, bool checkOnly) {
     if (isTypeConstructionCall(call)) {
       resolveTypeSpecifier(info);
     } else {
-      retval = resolveNormalCall(info, checkOnly);
+      retval = resolveNormalCall(info, checkState);
     }
 
-  } else if (checkOnly == true) {
+  } else if (checkState != CHECK_NORMAL_CALL) {
     retval = NULL;
 
   } else {
     info.haltNotWellFormed();
+  }
+
+  if (checkState != CHECK_NORMAL_CALL) {
+    if (checkState == CHECK_BODY_RESOLVES) {
+      if (FnSymbol* fn = call->resolvedFunction()) {
+        tryResolveStack.push_back(fn);
+        // resolve that function as well
+        resolveFunction(fn);
+        tryResolveStack.pop_back();
+      }
+    }
+    hidingResolutionErrors--;
   }
 
   return retval;
@@ -3014,12 +3052,12 @@ static inline ModuleSymbol* overloadSetModule(ResolutionCandidate* RC) {
 }
 
 // As of this writing, this always succeeds on our test suite.
-static bool bestModulesAreConsistent(CallExpr* call, bool checkOnly,
+static bool bestModulesAreConsistent(CallExpr* call, check_state_t checkState,
    ModuleSymbol* mod1, ResolutionCandidate* rc1, const char* descr1,
    ModuleSymbol* mod2, ResolutionCandidate* rc2, const char* descr2)
 {
   if (mod1 != NULL && mod2 != NULL && mod1 != mod2) {
-    if (! checkOnly) {
+    if (checkState == CHECK_NORMAL_CALL) {
       USR_FATAL_CONT(call,
                      "the best %s and %s overloads are in different modules",
                      descr1, descr2);
@@ -3082,7 +3120,7 @@ static void reportHijackingError(CallExpr* call,
   USR_STOP();
 }
 
-static bool overloadSetsOK(CallExpr* call, bool checkOnly,
+static bool overloadSetsOK(CallExpr* call, check_state_t checkState,
                            Vec<ResolutionCandidate*>& candidates,
                            ResolutionCandidate* bestRef,
                            ResolutionCandidate* bestCref,
@@ -3095,13 +3133,13 @@ static bool overloadSetsOK(CallExpr* call, bool checkOnly,
   ModuleSymbol* bestValMod  = overloadSetModule(bestVal);
 
   // Ensure these "best" modules, if any, are consistent.
-  if (! bestModulesAreConsistent(call, checkOnly,
+  if (! bestModulesAreConsistent(call, checkState,
                                  bestRefMod,  bestRef,  "ref",
                                  bestCrefMod, bestCref, "const ref") ||
-      ! bestModulesAreConsistent(call, checkOnly,
+      ! bestModulesAreConsistent(call, checkState,
                                  bestRefMod,  bestRef,  "ref",
                                  bestValMod,  bestVal,  "value")     ||
-      ! bestModulesAreConsistent(call, checkOnly,
+      ! bestModulesAreConsistent(call, checkState,
                                  bestCrefMod, bestCref, "const ref",
                                  bestValMod,  bestVal,  "value")     )
     return false;
@@ -3126,7 +3164,7 @@ static bool overloadSetsOK(CallExpr* call, bool checkOnly,
         ! isMoreVisible(call, bestFn, candidate->fn)                        &&
         ! isAcceptableMethodChoice(call, bestFn, candidate->fn, candidates) )
     {
-      if (! checkOnly)
+      if (checkState == CHECK_NORMAL_CALL)
         reportHijackingError(call, bestFn, bestMod, candidate->fn, candMod);
       return false;
     }
@@ -3137,10 +3175,10 @@ static bool overloadSetsOK(CallExpr* call, bool checkOnly,
 }
 
 
-static FnSymbol* resolveForwardedCall(CallInfo& info, bool checkOnly);
+static FnSymbol* resolveForwardedCall(CallInfo& info, check_state_t checkState);
 static bool typeUsesForwarding(Type* t);
 
-static FnSymbol* resolveNormalCall(CallInfo& info, bool checkOnly) {
+static FnSymbol* resolveNormalCall(CallInfo& info, check_state_t checkState) {
   Vec<FnSymbol*>            mostApplicable;
   Vec<ResolutionCandidate*> candidates;
 
@@ -3167,7 +3205,7 @@ static FnSymbol* resolveNormalCall(CallInfo& info, bool checkOnly) {
       info.call->get(1)->typeInfo() == dtMethodToken) {
     Type* receiverType = canonicalDecoratedClassType(info.call->get(2)->getValType());
     if (typeUsesForwarding(receiverType)) {
-      FnSymbol* fn = resolveForwardedCall(info, checkOnly);
+      FnSymbol* fn = resolveForwardedCall(info, checkState);
       if (fn) {
         return fn;
       }
@@ -3175,21 +3213,21 @@ static FnSymbol* resolveNormalCall(CallInfo& info, bool checkOnly) {
     }
   }
 
-  if (! overloadSetsOK(info.call, checkOnly, candidates,
+  if (! overloadSetsOK(info.call, checkState, candidates,
                        bestRef, bestCref, bestVal)) {
     return NULL; // overloadSetsOK() found an error
   }
 
   if (numMatches == 0) {
     if (info.call->partialTag == false) {
-      if (checkOnly == false) {
+      if (checkState == CHECK_NORMAL_CALL) {
         if (candidates.n == 0) {
           bool existingErrors = fatalErrorsEncountered();
           printResolutionErrorUnresolved(info, mostApplicable);
 
           if (!inGenerousResolutionForErrors()) {
             startGenerousResolutionForErrors();
-            FnSymbol* retry = resolveNormalCall(info, /*checkOnly*/ true);
+            FnSymbol* retry = resolveNormalCall(info, CHECK_CALLABLE_ONLY);
             stopGenerousResolutionForErrors();
 
             if (fIgnoreNilabilityErrors && existingErrors == false && retry)
@@ -3222,10 +3260,10 @@ static FnSymbol* resolveNormalCall(CallInfo& info, bool checkOnly) {
       best = bestCref;
     }
 
-    retval = resolveNormalCall(info, checkOnly, best);
+    retval = resolveNormalCall(info, checkState, best);
 
   } else {
-    retval = resolveNormalCall(info, checkOnly, bestRef, bestCref, bestVal);
+    retval = resolveNormalCall(info, checkState, bestRef, bestCref, bestVal);
   }
 
   forv_Vec(ResolutionCandidate*, candidate, candidates) {
@@ -3236,7 +3274,7 @@ static FnSymbol* resolveNormalCall(CallInfo& info, bool checkOnly) {
 }
 
 static FnSymbol* resolveNormalCall(CallInfo&            info,
-                                   bool                 checkOnly,
+                                   check_state_t        checkState,
                                    ResolutionCandidate* best) {
   CallExpr* call   = info.call;
   FnSymbol* retval = NULL;
@@ -3251,7 +3289,7 @@ static FnSymbol* resolveNormalCall(CallInfo&            info,
       best->fn->hasFlag(FLAG_NO_PARENS) == true) {
     retval = wrapAndCleanUpActuals(best, info, true);
 
-    if (checkOnly == false &&
+    if (checkState == CHECK_NORMAL_CALL &&
         retval->name                         == astrSassign &&
         isRecord(retval->getFormal(1)->type) == true        &&
         retval->getFormal(2)->type           == dtNil) {
@@ -3269,7 +3307,7 @@ static FnSymbol* resolveNormalCall(CallInfo&            info,
 
       resolveNormalCallConstRef(call);
 
-      if (checkOnly == false) {
+      if (checkState == CHECK_NORMAL_CALL) {
         resolveNormalCallFinalChecks(call);
       }
     }
@@ -3279,7 +3317,7 @@ static FnSymbol* resolveNormalCall(CallInfo&            info,
 }
 
 static FnSymbol* resolveNormalCall(CallInfo&            info,
-                                   bool                 checkOnly,
+                                   check_state_t        checkState,
                                    ResolutionCandidate* bestRef,
                                    ResolutionCandidate* bestConstRef,
                                    ResolutionCandidate* bestValue) {
@@ -3346,7 +3384,7 @@ static FnSymbol* resolveNormalCall(CallInfo&            info,
         wrapAndCleanUpActuals(bestValue, tmpInfo, false);
 
       } else {
-        if (checkOnly == false) {
+        if (checkState == CHECK_NORMAL_CALL) {
           tmpInfo.haltNotWellFormed();
         }
       }
@@ -3359,7 +3397,7 @@ static FnSymbol* resolveNormalCall(CallInfo&            info,
         wrapAndCleanUpActuals(bestConstRef, tmpInfo, false);
 
       } else {
-        if (checkOnly == false) {
+        if (checkState == CHECK_NORMAL_CALL) {
           tmpInfo.haltNotWellFormed();
         }
       }
@@ -3369,7 +3407,7 @@ static FnSymbol* resolveNormalCall(CallInfo&            info,
       call->partialTag = false;
     }
 
-    if (checkOnly == false) {
+    if (checkState == CHECK_NORMAL_CALL) {
       if (best->fn->name                         == astrSassign &&
           isRecord(best->fn->getFormal(1)->type) == true        &&
           best->fn->getFormal(2)->type           == dtNil) {
@@ -3406,7 +3444,7 @@ static FnSymbol* resolveNormalCall(CallInfo&            info,
                                             valueCall,
                                             constRefCall);
 
-    if (checkOnly == false) {
+    if (checkState == CHECK_NORMAL_CALL) {
       resolveNormalCallFinalChecks(call);
     }
 
@@ -4169,7 +4207,7 @@ static void detectForwardingCycle(CallExpr* call) {
 
 
 // Returns a relevant FnSymbol if it worked
-static FnSymbol* resolveForwardedCall(CallInfo& info, bool checkOnly) {
+static FnSymbol* resolveForwardedCall(CallInfo& info, check_state_t checkState) {
   CallExpr* call = info.call;
   const char* calledName = info.name;
   const char* inFnName = call->getFunction()->name;

@@ -396,7 +396,7 @@ static Expr* preFoldPrimOp(CallExpr* call) {
     }
 
     // Try to resolve it.
-    if (tryResolveCall(tryCall)) {
+    if (tryResolveCall(tryCall, true)) {
       retval = new SymExpr(gTrue);
 
     } else {
