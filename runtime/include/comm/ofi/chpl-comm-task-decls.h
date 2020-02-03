@@ -35,6 +35,8 @@
 typedef struct {
   chpl_cache_taskPrvData_t cache_data;
   int numTxnsOut;    // number of transactions outstanding
+  void* get_buff;
+  void* put_buff;
 } chpl_comm_taskPrvData_t;
 
 //
