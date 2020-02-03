@@ -227,6 +227,9 @@ module List {
       :arg other: The list to initialize from.
     */
     proc init=(other: list(this.type.eltType, ?p)) {
+
+      //errorIfCopyingFromNonNilable(other.eltType);
+
       this.eltType = this.type.eltType;
       this.parSafe = this.type.parSafe;
       this.complete();

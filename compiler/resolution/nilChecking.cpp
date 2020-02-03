@@ -1288,7 +1288,7 @@ void FindInvalidNonNilables::visitSymExpr(SymExpr* se) {
       bool error = true;
       // Don't worry about a PRIM_END_OF_STATEMENT if it follows the
       // expression
-      if (CallExpr* parentCall = toCallExpr(se->parentExpr)) {
+      if (CallExpr* parentCall = toCallExpr(se->getStmtExpr())) {
         if (parentCall->isPrimitive(PRIM_END_OF_STATEMENT)) {
           error = false;
           for (Expr* cur = e; cur != NULL; cur = cur->next) {
@@ -1315,7 +1315,8 @@ static void findNonNilableStoringNil(FnSymbol* fn) {
   // don't check special functions (owned/shared etc need to write these)
   if (fn->hasFlag(FLAG_INIT_COPY_FN) ||
       fn->hasFlag(FLAG_AUTO_COPY_FN) ||
-      fn->hasFlag(FLAG_AUTO_DESTROY_FN))
+      fn->hasFlag(FLAG_AUTO_DESTROY_FN) ||
+      fn->hasFlag(FLAG_UNSAFE))
     return;
 
   FindInvalidNonNilables visitor;
