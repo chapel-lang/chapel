@@ -842,9 +842,9 @@ static Expr* preFoldPrimOp(CallExpr* call) {
     break;
   }
   case PRIM_IS_COPYABLE:
-  case PRIM_IS_REF_COPYABLE:
+  case PRIM_IS_CONST_COPYABLE:
   case PRIM_IS_ASSIGNABLE:
-  case PRIM_IS_REF_ASSIGNABLE: {
+  case PRIM_IS_CONST_ASSIGNABLE: {
     Type* t = call->get(1)->typeInfo();
 
     bool val = true;
@@ -924,23 +924,21 @@ static Expr* preFoldPrimOp(CallExpr* call) {
       }
 
       if (call->isPrimitive(PRIM_IS_COPYABLE))
+        val = ts->hasFlag(FLAG_INIT_EQUAL_FROM_CONST) ||
+              ts->hasFlag(FLAG_INIT_EQUAL_FROM_REF);
+      else if (call->isPrimitive(PRIM_IS_CONST_COPYABLE))
         val = ts->hasFlag(FLAG_INIT_EQUAL_FROM_CONST);
-      else if (call->isPrimitive(PRIM_IS_REF_COPYABLE))
-        val = ts->hasFlag(FLAG_INIT_EQUAL_FROM_REF);
       else if (call->isPrimitive(PRIM_IS_ASSIGNABLE))
+        val = ts->hasFlag(FLAG_ASSIGN_FROM_CONST) ||
+              ts->hasFlag(FLAG_ASSIGN_FROM_REF);
+      else if (call->isPrimitive(PRIM_IS_CONST_ASSIGNABLE))
         val = ts->hasFlag(FLAG_ASSIGN_FROM_CONST);
-      else if (call->isPrimitive(PRIM_IS_REF_ASSIGNABLE))
-        val = ts->hasFlag(FLAG_ASSIGN_FROM_REF);
       else
         INT_FATAL("not handled");
 
     } else {
       // Non-record types are always copyable/assignable from const
-      if (call->isPrimitive(PRIM_IS_REF_COPYABLE) ||
-          call->isPrimitive(PRIM_IS_REF_ASSIGNABLE))
-        val = false;
-      else
-        val = true;
+      val = true;
     }
 
 

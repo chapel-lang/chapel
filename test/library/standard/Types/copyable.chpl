@@ -2,56 +2,56 @@ use Types;
 
 proc checkit(type t,
              param expectCopyable,
-             param expectRefCopyable,
+             param expectConstCopyable,
              param expectAssignable,
-             param expectRefAssignable) {
+             param expectConstAssignable) {
 
   if isCopyable(t) != expectCopyable then
     compilerError("isCopyable " + t:string + " did not match");
 
-  if isRefCopyable(t) != expectRefCopyable then
-    compilerError("isRefCopyable " + t:string + " did not match");
+  if isConstCopyable(t) != expectConstCopyable then
+    compilerError("isConstCopyable " + t:string + " did not match");
   
   if isAssignable(t) != expectAssignable then
     compilerError("isAssignable " + t:string + " did not match");
 
-  if isRefAssignable(t) != expectRefAssignable then
-    compilerError("isRefAssignable " + t:string + " did not match");
+  if isConstAssignable(t) != expectConstAssignable then
+    compilerError("isConstAssignable " + t:string + " did not match");
 
 }
 
 proc checkit(e,
              param expectCopyable,
-             param expectRefCopyable,
+             param expectConstCopyable,
              param expectAssignable,
-             param expectRefAssignable) {
+             param expectConstAssignable) {
 
   if isCopyable(e) != expectCopyable then
     compilerError("isCopyable " + e.type:string + " did not match");
 
-  if isRefCopyable(e) != expectRefCopyable then
-    compilerError("isRefCopyable " + e.type:string + " did not match");
+  if isConstCopyable(e) != expectConstCopyable then
+    compilerError("isConstCopyable " + e.type:string + " did not match");
   
   if isAssignable(e) != expectAssignable then
     compilerError("isAssignable " + e.type:string + " did not match");
 
-  if isRefAssignable(e) != expectRefAssignable then
-    compilerError("isRefAssignable " + e.type:string + " did not match");
+  if isConstAssignable(e) != expectConstAssignable then
+    compilerError("isConstAssignable " + e.type:string + " did not match");
 
 }
 
 
 proc checkNormal(type t, e) {
+  checkit(t, true, true, true, true);
+  if t != e.type then
+    compilerError("types do not match");
+  checkit(e, true, true, true, true);
+}
+proc checkMutable(type t, e) {
   checkit(t, true, false, true, false);
   if t != e.type then
     compilerError("types do not match");
   checkit(e, true, false, true, false);
-}
-proc checkMutable(type t, e) {
-  checkit(t, false, true, false, true);
-  if t != e.type then
-    compilerError("types do not match");
-  checkit(e, false, true, false, true);
 }
 proc checkNo(type t, e) {
   checkit(t, false, false, false, false);

@@ -160,16 +160,16 @@ proc isCopyableType(type t) param {
   return __primitive("is copyable type", t);
 }
 pragma "no doc"
-proc isRefCopyableType(type t) param {
-  return __primitive("is ref copyable type", t);
+proc isConstCopyableType(type t) param {
+  return __primitive("is const copyable type", t);
 }
 pragma "no doc"
 proc isAssignableType(type t) param {
   return __primitive("is assignable type", t);
 }
 pragma "no doc"
-proc isRefAssignableType(type t) param {
-  return __primitive("is ref assignable type", t);
+proc isConstAssignableType(type t) param {
+  return __primitive("is const assignable type", t);
 }
 
 // Returns the unsigned equivalent of the input type.
@@ -294,11 +294,11 @@ proc isPODValue(e)       param  return isPODType(e.type);
 pragma "no doc"
 proc isCopyableValue(e)     param  return isCopyableType(e.type);
 pragma "no doc"
-proc isRefCopyableValue(e)  param  return isRefCopyableType(e.type);
+proc isConstCopyableValue(e)  param  return isConstCopyableType(e.type);
 pragma "no doc"
 proc isAssignableValue(e)   param  return isAssignableType(e.type);
 pragma "no doc"
-proc isRefAssignableValue(e)  param  return isRefAssignableType(e.type);
+proc isConstAssignableValue(e)  param  return isConstAssignableType(e.type);
 
 
 //
@@ -378,11 +378,11 @@ proc isPOD(type t)       param  return isPODType(t);
 pragma "no doc"
 proc isCopyable(type t)      param  return isCopyableType(t);
 pragma "no doc"
-proc isRefCopyable(type t)   param  return isRefCopyableType(t);
+proc isConstCopyable(type t)   param  return isConstCopyableType(t);
 pragma "no doc"
 proc isAssignable(type t)    param  return isAssignableType(t);
 pragma "no doc"
-proc isRefAssignable(type t) param  return isRefAssignableType(t);
+proc isConstAssignable(type t) param  return isConstAssignableType(t);
 
 // Set 2 - values.
 /*
@@ -483,9 +483,9 @@ pragma "no doc" // Not sure how we want to document isPOD* right now
 proc isPOD(e)       param  return isPODValue(e);
 
 proc isCopyable(e) param return isCopyableValue(e);
-proc isRefCopyable(e) param return isRefCopyableValue(e);
+proc isConstCopyable(e) param return isConstCopyableValue(e);
 proc isAssignable(e) param return isCopyableValue(e);
-proc isRefAssignable(e) param return isRefAssignableValue(e);
+proc isConstAssignable(e) param return isConstAssignableValue(e);
 
 // for internal use until we have a better name
 pragma "no doc"
