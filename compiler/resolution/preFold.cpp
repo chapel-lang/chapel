@@ -250,6 +250,21 @@ static bool recordContainsOwned(Type* t) {
 
   return false;
 }
+static bool recordContainsNonNilable(Type* t) {
+  if (isNonNilableClassType(t))
+    return true;
+
+  if (isRecord(t)) {
+    AggregateType* at = toAggregateType(t);
+
+    for_fields(field, at) {
+      if (recordContainsNonNilable(field->getValType()))
+        return true;
+    }
+  }
+
+  return false;
+}
 
 
 
@@ -844,7 +859,8 @@ static Expr* preFoldPrimOp(CallExpr* call) {
   case PRIM_IS_COPYABLE:
   case PRIM_IS_CONST_COPYABLE:
   case PRIM_IS_ASSIGNABLE:
-  case PRIM_IS_CONST_ASSIGNABLE: {
+  case PRIM_IS_CONST_ASSIGNABLE:
+  case PRIM_HAS_DEFAULT_VALUE: {
     Type* t = call->get(1)->typeInfo();
 
     bool val = true;
@@ -856,24 +872,24 @@ static Expr* preFoldPrimOp(CallExpr* call) {
                                isNonNilableClassType(t);
 
       TypeSymbol* ts = t->symbol;
-      if (!ts->hasFlag(FLAG_ASSIGN_FROM_CONST) &&
-          !ts->hasFlag(FLAG_ASSIGN_FROM_REF) &&
-          !ts->hasFlag(FLAG_NO_ASSIGN)) {
+      if (!ts->hasFlag(FLAG_TYPE_ASSIGN_FROM_CONST) &&
+          !ts->hasFlag(FLAG_TYPE_ASSIGN_FROM_REF) &&
+          !ts->hasFlag(FLAG_TYPE_ASSIGN_MISSING)) {
 
         if (isNonNilableOwned) {
-          ts->addFlag(FLAG_NO_ASSIGN);
+          ts->addFlag(FLAG_TYPE_ASSIGN_MISSING);
         } else {
           // Try resolving a test = to set the flags
           FnSymbol* assign = findAssign(at);
           if (assign == NULL) {
-            ts->addFlag(FLAG_NO_ASSIGN);
+            ts->addFlag(FLAG_TYPE_ASSIGN_MISSING);
           } else if (assign->hasFlag(FLAG_COMPILER_GENERATED)) {
             if (recordContainsNonNilableOwned(t))
-              ts->addFlag(FLAG_NO_ASSIGN);
+              ts->addFlag(FLAG_TYPE_ASSIGN_MISSING);
             else if (recordContainsOwned(t))
-              ts->addFlag(FLAG_ASSIGN_FROM_REF);
+              ts->addFlag(FLAG_TYPE_ASSIGN_FROM_REF);
             else
-              ts->addFlag(FLAG_ASSIGN_FROM_CONST);
+              ts->addFlag(FLAG_TYPE_ASSIGN_FROM_CONST);
           } else {
             // formals are lhs, rhs
             ArgSymbol* rhs = assign->getFormal(2);
@@ -881,32 +897,32 @@ static Expr* preFoldPrimOp(CallExpr* call) {
             if (intent == INTENT_IN ||
                 intent == INTENT_CONST_IN ||
                 intent == INTENT_CONST_REF) {
-              ts->addFlag(FLAG_ASSIGN_FROM_CONST);
+              ts->addFlag(FLAG_TYPE_ASSIGN_FROM_CONST);
             } else {
               // this case includes INTENT_REF_MAYBE_CONST
-              ts->addFlag(FLAG_ASSIGN_FROM_REF);
+              ts->addFlag(FLAG_TYPE_ASSIGN_FROM_REF);
             }
           }
         }
       }
-      if (!ts->hasFlag(FLAG_INIT_EQUAL_FROM_CONST) &&
-          !ts->hasFlag(FLAG_INIT_EQUAL_FROM_REF) &&
-          !ts->hasFlag(FLAG_NO_INIT_EQUAL)) {
+      if (!ts->hasFlag(FLAG_TYPE_INIT_EQUAL_FROM_CONST) &&
+          !ts->hasFlag(FLAG_TYPE_INIT_EQUAL_FROM_REF) &&
+          !ts->hasFlag(FLAG_TYPE_INIT_EQUAL_MISSING)) {
 
         if (isNonNilableOwned) {
-          ts->addFlag(FLAG_NO_INIT_EQUAL);
+          ts->addFlag(FLAG_TYPE_INIT_EQUAL_MISSING);
         } else {
           // Try resolving a test init= to set the flags
           FnSymbol* initEq = findCopyInit(at);
           if (initEq == NULL) {
-            ts->addFlag(FLAG_NO_INIT_EQUAL);
+            ts->addFlag(FLAG_TYPE_INIT_EQUAL_MISSING);
           } else if (initEq->hasFlag(FLAG_COMPILER_GENERATED)) {
             if (recordContainsNonNilableOwned(t))
-              ts->addFlag(FLAG_NO_INIT_EQUAL);
+              ts->addFlag(FLAG_TYPE_INIT_EQUAL_MISSING);
             else if (recordContainsOwned(t))
-              ts->addFlag(FLAG_INIT_EQUAL_FROM_REF);
+              ts->addFlag(FLAG_TYPE_INIT_EQUAL_FROM_REF);
             else
-              ts->addFlag(FLAG_INIT_EQUAL_FROM_CONST);
+              ts->addFlag(FLAG_TYPE_INIT_EQUAL_FROM_CONST);
           } else {
             // formals are mt, this, other
             ArgSymbol* other = initEq->getFormal(3);
@@ -914,31 +930,61 @@ static Expr* preFoldPrimOp(CallExpr* call) {
             if (intent == INTENT_IN ||
                 intent == INTENT_CONST_IN ||
                 intent == INTENT_CONST_REF) {
-              ts->addFlag(FLAG_INIT_EQUAL_FROM_CONST);
+              ts->addFlag(FLAG_TYPE_INIT_EQUAL_FROM_CONST);
             } else {
               // this case includes INTENT_REF_MAYBE_CONST
-              ts->addFlag(FLAG_INIT_EQUAL_FROM_REF);
+              ts->addFlag(FLAG_TYPE_INIT_EQUAL_FROM_REF);
             }
           }
         }
       }
 
+      if (!ts->hasFlag(FLAG_TYPE_DEFAULT_VALUE) &&
+          !ts->hasFlag(FLAG_TYPE_NO_DEFAULT_VALUE)) {
+
+        if (isNonNilableClassType(t)) {
+          ts->addFlag(FLAG_TYPE_NO_DEFAULT_VALUE);
+        } else if (isNilableClassType(t)) {
+          ts->addFlag(FLAG_TYPE_DEFAULT_VALUE);
+        } else {
+          // Try resolving a test init() to set the flags
+          FnSymbol* initZero = findZeroArgInit(at);
+          if (initZero == NULL) {
+            ts->addFlag(FLAG_TYPE_NO_DEFAULT_VALUE);
+          } else if (initZero->hasFlag(FLAG_COMPILER_GENERATED)) {
+            if (recordContainsNonNilable(t))
+              ts->addFlag(FLAG_TYPE_NO_DEFAULT_VALUE);
+            else
+              ts->addFlag(FLAG_TYPE_DEFAULT_VALUE);
+          } else {
+            ts->addFlag(FLAG_TYPE_DEFAULT_VALUE);
+          }
+        }
+      }
+
+
       if (call->isPrimitive(PRIM_IS_COPYABLE))
-        val = ts->hasFlag(FLAG_INIT_EQUAL_FROM_CONST) ||
-              ts->hasFlag(FLAG_INIT_EQUAL_FROM_REF);
+        val = ts->hasFlag(FLAG_TYPE_INIT_EQUAL_FROM_CONST) ||
+              ts->hasFlag(FLAG_TYPE_INIT_EQUAL_FROM_REF);
       else if (call->isPrimitive(PRIM_IS_CONST_COPYABLE))
-        val = ts->hasFlag(FLAG_INIT_EQUAL_FROM_CONST);
+        val = ts->hasFlag(FLAG_TYPE_INIT_EQUAL_FROM_CONST);
       else if (call->isPrimitive(PRIM_IS_ASSIGNABLE))
-        val = ts->hasFlag(FLAG_ASSIGN_FROM_CONST) ||
-              ts->hasFlag(FLAG_ASSIGN_FROM_REF);
+        val = ts->hasFlag(FLAG_TYPE_ASSIGN_FROM_CONST) ||
+              ts->hasFlag(FLAG_TYPE_ASSIGN_FROM_REF);
       else if (call->isPrimitive(PRIM_IS_CONST_ASSIGNABLE))
-        val = ts->hasFlag(FLAG_ASSIGN_FROM_CONST);
+        val = ts->hasFlag(FLAG_TYPE_ASSIGN_FROM_CONST);
+      else if (call->isPrimitive(PRIM_HAS_DEFAULT_VALUE))
+        val = ts->hasFlag(FLAG_TYPE_DEFAULT_VALUE);
       else
         INT_FATAL("not handled");
 
     } else {
       // Non-record types are always copyable/assignable from const
-      val = true;
+      // and almost always default initializeable
+      if (call->isPrimitive(PRIM_HAS_DEFAULT_VALUE))
+        val = !isNonNilableClassType(t);
+      else
+        val = true;
     }
 
 

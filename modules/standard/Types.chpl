@@ -171,6 +171,10 @@ pragma "no doc"
 proc isConstAssignableType(type t) param {
   return __primitive("is const assignable type", t);
 }
+pragma "no doc"
+proc hasDefaultValueType(type t) param {
+  return __primitive("type has default value", t);
+}
 
 // Returns the unsigned equivalent of the input type.
 pragma "no doc"
@@ -299,6 +303,8 @@ pragma "no doc"
 proc isAssignableValue(e)   param  return isAssignableType(e.type);
 pragma "no doc"
 proc isConstAssignableValue(e)  param  return isConstAssignableType(e.type);
+pragma "no doc"
+proc hasDefaultValue(e)  param  return hasDefaultValueType(e.type);
 
 
 //
@@ -383,6 +389,8 @@ pragma "no doc"
 proc isAssignable(type t)    param  return isAssignableType(t);
 pragma "no doc"
 proc isConstAssignable(type t) param  return isConstAssignableType(t);
+pragma "no doc"
+proc hasDefaultValue(type t) param  return hasDefaultValueType(t);
 
 // Set 2 - values.
 /*

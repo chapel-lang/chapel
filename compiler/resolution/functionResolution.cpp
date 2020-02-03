@@ -6292,6 +6292,16 @@ FnSymbol* findAssign(AggregateType* at) {
   return ret;
 }
 
+FnSymbol* findZeroArgInit(AggregateType* at) {
+  VarSymbol* tmpAt = newTemp(at);
+  FnSymbol* ret = NULL;
+
+  CallExpr* call = new CallExpr(astrInit, gMethodToken, tmpAt);
+  ret = resolveUninsertedCall(at, call, false);
+
+  return ret;
+}
+
 /************************************* | **************************************
 *                                                                             *
 *                                                                             *

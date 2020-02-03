@@ -143,6 +143,7 @@ void parseExplainFlag(char* flag, int* line, ModuleSymbol** module);
 
 FnSymbol* findCopyInit(AggregateType* ct);
 FnSymbol* findAssign(AggregateType* at);
+FnSymbol* findZeroArgInit(AggregateType* at);
 
 FnSymbol* getTheIteratorFn(Symbol* ic);
 FnSymbol* getTheIteratorFn(Type* icType);
