@@ -101,11 +101,6 @@ typedef std::map<int, SymbolMap*> CapturedValueMap;
 //# Global Variables
 //#
 
-// TODO -- can we remove this global now? at least it shouldn't be array.
-char                               arrayUnrefName[] = "array_unref_ret_tmp";
-
-char                               primCoerceTmpName[] = "init_coerce_tmp";
-
 bool                               resolved                  = false;
 int                                explainCallLine           = 0;
 
@@ -520,7 +515,7 @@ isLegalLvalueActualArg(ArgSymbol* formal, Expr* actual) {
       formalTS = formal->getValType()->symbol;
       formalCopyMutates = formalTS->hasFlag(FLAG_COPY_MUTATES);
     }
-    bool isInitCoerceTmp = (0 == strcmp(sym->name, primCoerceTmpName));
+    bool isInitCoerceTmp = sym->name == astr_init_coerce_tmp;
 
     if ((actualExprTmp && !formalCopyMutates && !isInitCoerceTmp) ||
         (actualConst && !(formal && formal->hasFlag(FLAG_ARG_THIS))) ||
@@ -2993,7 +2988,7 @@ static bool isGenericRecordInit(CallExpr* call) {
   bool retval = false;
 
   if (UnresolvedSymExpr* ures = toUnresolvedSymExpr(call->baseExpr)) {
-    if ((strcmp(ures->unresolved, "init") == 0 || strcmp(ures->unresolved, astrInitEquals) == 0) &&
+    if ((ures->unresolved == astrInit || ures->unresolved == astrInitEquals) &&
         call->numActuals()               >= 2) {
       Type* t1 = call->get(1)->typeInfo();
       Type* t2 = call->get(2)->typeInfo();
@@ -6017,7 +6012,7 @@ static void resolveInitVar(CallExpr* call) {
       if (mismatch)
         checkMoveIntoClass(call, targetType->getValType(), src->getValType());
 
-      VarSymbol* tmp = newTemp(primCoerceTmpName, targetType);
+      VarSymbol* tmp = newTemp(astr_init_coerce_tmp, targetType);
       tmp->addFlag(FLAG_EXPR_TEMP);
       if (dst->hasFlag(FLAG_PARAM))
         tmp->addFlag(FLAG_PARAM);

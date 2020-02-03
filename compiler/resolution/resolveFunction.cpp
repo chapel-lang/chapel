@@ -100,8 +100,6 @@ static bool needRefFormal(FnSymbol* fn, ArgSymbol* formal, bool* needRefIntent);
 
 static bool shouldUpdateAtomicFormalToRef(FnSymbol* fn, ArgSymbol* formal);
 
-static bool recordContainingCopyMutatesField(Type* at);
-
 static void handleParamCNameFormal(FnSymbol* fn, ArgSymbol* formal);
 
 static void storeDefaultValuesForPython(FnSymbol* fn, ArgSymbol* formal);
@@ -357,7 +355,7 @@ static bool shouldUpdateAtomicFormalToRef(FnSymbol* fn, ArgSymbol* formal) {
          fn->hasFlag(FLAG_BUILD_TUPLE)         == false;
 }
 
-static bool recordContainingCopyMutatesField(Type* t) {
+bool recordContainingCopyMutatesField(Type* t) {
   AggregateType* at = toAggregateType(t);
   if (at == NULL) return false;
   if (!isRecord(at)) return false;
@@ -672,7 +670,7 @@ static void insertUnrefForArrayOrTupleReturn(FnSymbol* fn) {
 
           SET_LINENO(call);
           Expr*      rhs       = call->get(2)->remove();
-          VarSymbol* tmp       = newTemp(arrayUnrefName, rhsType);
+          VarSymbol* tmp       = newTemp("array_unref_ret_tmp", rhsType);
           CallExpr*  initTmp   = new CallExpr(PRIM_MOVE,     tmp, rhs);
           CallExpr*  unrefCall = new CallExpr("chpl__unref", tmp);
           CallExpr*  shapeSet  = findSetShape(call, ret);
