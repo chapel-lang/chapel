@@ -8,14 +8,20 @@ class C {
   var x: int;
 }
 
+type OwnedC = owned C;
+type SharedC = shared C;
+type UnmanagedC = unmanaged C;
+
+config type TestClass = OwnedC;
+
 proc main() {
   var d: domain(string);
-  var a: [d] shared C;
+  var a: [d] TestClass;
 
   // Some sort of error should have been emitted by this point.
-  d += "key";
+  a += "key";
 
-  // Will emit a nil error (which shouldn't be possible).
+  // This call will emit a nil error (which shouldn't be possible).
   writeln(a);
 }
 

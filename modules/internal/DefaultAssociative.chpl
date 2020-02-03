@@ -634,8 +634,9 @@ module DefaultAssociative {
     // 
     proc postinit() {
       if isNonNilableClass(this.eltType) {
-        param msg = "Cannot initialize associative array with element type "
-                  + eltType:string + " because it is a non-nilable class";
+        param msg = "Cannot initialize associative array because"
+                  + " element type " + eltType:string
+                  + " is a non-nilable class";
         compilerError(msg);
       }
     }
