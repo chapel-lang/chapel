@@ -330,11 +330,11 @@ proc Cyclic.init(other: Cyclic, privateData,
                  type idxType = other.idxType) {
   this.rank = rank;
   this.idxType = idxType;
-  startIdx = privateData[1];
-  targetLocDom = {(...privateData[2])};
-  dataParTasksPerLocale = privateData[3];
-  dataParIgnoreRunningTasks = privateData[4];
-  dataParMinGranularity = privateData[5];
+  startIdx = privateData[0];
+  targetLocDom = {(...privateData[1])};
+  dataParTasksPerLocale = privateData[2];
+  dataParIgnoreRunningTasks = privateData[3];
+  dataParMinGranularity = privateData[4];
 
   this.complete();
 

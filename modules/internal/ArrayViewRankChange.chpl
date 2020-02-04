@@ -101,9 +101,9 @@ module ArrayViewRankChange {
 
     proc dsiPrivatize(privatizeData) {
       return new unmanaged ArrayViewRankChangeDist(downDistPid = privatizeData(0),
-                                         downDistInst = privatizeData(0),
-                                         collapsedDim = privatizeData(1),
-                                         idx = privatizeData(2));
+                                         downDistInst = privatizeData(1),
+                                         collapsedDim = privatizeData(2),
+                                         idx = privatizeData(3));
     }
 
     override proc dsiDestroyDist() {

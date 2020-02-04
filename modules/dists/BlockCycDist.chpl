@@ -437,10 +437,10 @@ proc BlockCyclic.init(other: BlockCyclic, privatizeData,
                       param rank = other.rank, type idxType = other.idxType) {
   this.rank = rank;
   this.idxType = idxType;
-  lowIdx = privatizeData[1];
-  blocksize = privatizeData[2];
-  targetLocDom = {(...privatizeData[3])};
-  dataParTasksPerLocale = privatizeData[4];
+  lowIdx = privatizeData[0];
+  blocksize = privatizeData[1];
+  targetLocDom = {(...privatizeData[2])};
+  dataParTasksPerLocale = privatizeData[3];
 
   this.complete();
 
