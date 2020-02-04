@@ -56,9 +56,6 @@ static FnSymbol*   err_fn           = NULL;
 static int         err_fn_id        = 0;
 static bool        err_fn_header_printed = false;
 
-static bool savingErrors;
-static std::vector<std::string> savedErrors;
-
 static bool forceWidePtrs();
 
 // must be non-static to avoid dead-code elim. when compiling -O3
@@ -146,59 +143,16 @@ static bool forceWidePtrs() {
 }
 
 static void vprint_error(const char* format, va_list vl) {
-  //if (savingErrors) {
-    std::string s;
-    char buf[40]; // for numeric conversions
+  vfprintf(stderr, format, vl);
 
-    for (int i = 0; format[i] != '\0'; i++) {
-      if (format[i] == '%') {
-        i++;
-        if (format[i] == 's') {
-          const char* arg = va_arg(vl, const char*);
-          s += arg;
-        } else if (format[i] == 'd' || format[i] == 'i') {
-          int arg = va_arg(vl, int);
-          snprintf(buf, sizeof(buf), "%d", arg);
-          s += buf;
-        } else if (format[i] == 'u') {
-          unsigned int arg = va_arg(vl, unsigned int);
-          snprintf(buf, sizeof(buf), "%u", arg);
-          s += buf;
-        } else if (format[i] == 'l' &&
-                   (format[i+1] == 'i' || format[i+1] == 'd')) {
-          i++;
-          long int arg = va_arg(vl, long int);
-          snprintf(buf, sizeof(buf), "%ld", arg);
-          s += buf;
-        } else if (format[i] == 'l' &&
-                   (format[i+1] == 'u')) {
-          i++;
-          long unsigned int arg = va_arg(vl, long unsigned int);
-          snprintf(buf, sizeof(buf), "%lu", arg);
-          s += buf;
-        } else {
-          fprintf(stderr, "internal error: unknown error conversion character");
-          clean_exit(1);
-        }
-      } else {
-        s += format[i];
-      }
-    }
-
-  if (savingErrors) {
-    // ... print to a local buffer
-    savedErrors.push_back(s);
-  } else {
-    //vfprintf(stderr, format, vl);
-    fprintf(stderr, "%s", s.c_str());
-  }
+  // This function could hide errors & save them for later re-issue.
+  // See the commit history for this comment for a start in that direction.
 }
 
 static void print_error(const char* format, ...) {
   va_list vl;
   va_start(vl, format);
   vprint_error(format, vl);
-  //vfprintf(stderr, format, vl);
   va_end(vl);
 }
 
@@ -642,12 +596,8 @@ void handleError(const char* fmt, ...) {
   //
   if (err_user || developer) {
     va_list args;
-
     va_start(args, fmt);
-
     vprint_error(fmt, args);
-    //vfprintf(stderr, fmt, args);
-
     va_end(args);
   }
 
@@ -704,7 +654,6 @@ static void vhandleError(const BaseAST* ast,
 
   if (err_user || developer) {
     vprint_error(fmt, args);
-    //vfprintf(stderr, fmt, args);
   }
 
   if (fPrintIDonError && ast) {
