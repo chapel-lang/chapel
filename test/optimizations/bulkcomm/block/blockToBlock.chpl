@@ -40,7 +40,7 @@ proc buildRankChange(Dom : domain, param first : bool) {
 
 proc makeFluff(param rank : int, val : int) {
   var ret : rank*int;
-  for i in 1..rank do ret(i) = val;
+  for i in 0..rank-1 do ret(i) = val;
   return ret;
 }
 
@@ -102,10 +102,10 @@ proc testDim(param rank : int, DestLocales : [], SrcLocales : []) {
   printDebug("  ----- rank=", rank:string, " -----");
   var denseRanges : rank*range;
   const len = if rank <= 2 then n else n/3;
-  for i in 1..rank do denseRanges(i) = 1..len;
+  for i in 0..#rank do denseRanges(i) = 1..len;
 
   var stridedRanges : rank*range(stridable=true);
-  for i in 1..rank do stridedRanges(i) = 1.. by (i + 1) # len;
+  for i in 0..#rank do stridedRanges(i) = 1.. by (i + 2) # len;
 
   const Dense = {(...denseRanges)};
   const Strided = {(...stridedRanges)};

@@ -30,7 +30,7 @@ proc buildDenseStride(MakeDense : domain, MakeStride : domain, stride : int) {
 proc buildRankChange(Dom : domain, param first : bool) {
   var r : (Dom.rank-1) * Dom.dim(0).type;
   if first {
-    for param i in 1..Dom.rank-1 do r(i) = Dom.dim(i);
+    for param i in 1..Dom.rank-1 do r(i-1) = Dom.dim(i);
     return (Dom.dim(0), (...r));
   } else {
     for param i in 0..Dom.rank-2 do r(i) = Dom.dim(i);
@@ -40,7 +40,7 @@ proc buildRankChange(Dom : domain, param first : bool) {
 
 proc makeFluff(param rank : int, val : int) {
   var ret : rank*int;
-  for i in 1..rank do ret(i) = val;
+  for i in 0..#rank do ret(i) = val;
   return ret;
 }
 
@@ -109,10 +109,10 @@ proc testCore(DestDom : domain, SrcDom  : domain, param useDist : bool) {
 proc testDim(param rank : int, param useDist : bool) {
   printDebug("  ----- rank=", rank:string, " -----");
   var denseRanges : rank*range;
-  for i in 1..rank do denseRanges(i) = 1..n;
+  for i in 0..#rank do denseRanges(i) = 1..n;
 
   var stridedRanges : rank*range(stridable=true);
-  for i in 1..rank do stridedRanges(i) = 1.. by (i + 1) # n;
+  for i in 0..#rank do stridedRanges(i) = 1.. by (i + 2) # n;
 
   const Dense = {(...denseRanges)};
   const Strided = {(...stridedRanges)};

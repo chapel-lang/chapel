@@ -6,8 +6,8 @@ config param tupleLen = 3;
 
 var A:[1..n] tupleLen*int;
 for i in 1..n {
-  for j in 1..tupleLen {
-    A[i][j] = i+j;
+  for j in 0..#tupleLen {
+    A[i][j] = i+j+1;
   }
 }
 
@@ -18,7 +18,7 @@ on Locales[1] {
   var sum = 0;
   for tup in A {
     var copy = tup;
-    for j in 1..tupleLen {
+    for j in 0..#tupleLen {
       sum += copy[j];
     }
   }
