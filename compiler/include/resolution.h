@@ -240,7 +240,7 @@ void printUndecoratedClassTypeNote(Expr* ctx, Type* type);
 
 FnSymbol* resolveNormalCall(CallExpr* call);
 
-void      resolveNormalCallCompilerWarningStuff(FnSymbol* resolvedFn);
+void resolveNormalCallCompilerWarningStuff(CallExpr* call, FnSymbol* resolvedFn);
 
 void checkMoveIntoClass(CallExpr* call, Type* lhs, Type* rhs);
 

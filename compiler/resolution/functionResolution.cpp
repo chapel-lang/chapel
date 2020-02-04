@@ -132,8 +132,6 @@ static std::map<FnSymbol*, const char*> outerCompilerWarningMap;
 static std::map<FnSymbol*, const char*> innerCompilerErrorMap;
 static std::map<FnSymbol*, const char*> outerCompilerErrorMap;
 
-static std::vector<FnSymbol*> tryResolveStack;
-
 static CapturedValueMap            capturedValues;
 
 // Used to ensure we only issue the warning once per instantiation
@@ -143,7 +141,20 @@ static std::set<FnSymbol*> oldStyleInitCopyFns;
 static int generousResolutionForErrors;
 
 // Hide errors when trying to resolve something.
+
+// aka error strategy?
+typedef enum {
+  CHECK_NORMAL_CALL,
+  CHECK_CALLABLE_ONLY,
+  CHECK_BODY_RESOLVES,
+  CHECK_FAILED
+} check_state_t;
+
 static int hidingResolutionErrors;
+static std::vector<check_state_t> tryResolveStates;
+static std::vector<FnSymbol*> tryResolveFunctions;
+typedef std::map<FnSymbol*,std::pair<BaseAST*,std::string> > try_resolve_map_t;
+try_resolve_map_t tryResolveErrors;
 
 //#
 //# Static Function Declarations
@@ -2476,13 +2487,6 @@ void resolveCall(CallExpr* call) {
   }
 }
 
-// aka error strategy?
-typedef enum {
-  CHECK_NORMAL_CALL,
-  CHECK_CALLABLE_ONLY,
-  CHECK_BODY_RESOLVES
-} check_state_t;
-
 static FnSymbol* resolveNormalCall(CallExpr* call, check_state_t checkState);
 
 FnSymbol* resolveNormalCall(CallExpr* call) {
@@ -2980,8 +2984,10 @@ FnSymbol* resolveNormalCall(CallExpr* call, check_state_t checkState) {
   CallInfo  info;
   FnSymbol* retval = NULL;
 
-  if (checkState != CHECK_NORMAL_CALL)
+  if (checkState != CHECK_NORMAL_CALL) {
     hidingResolutionErrors++;
+    tryResolveStates.push_back(checkState);
+  }
 
   if (call->id == breakOnResolveID) {
     printf("breaking on resolve call %d:\n", call->id);
@@ -3010,13 +3016,18 @@ FnSymbol* resolveNormalCall(CallExpr* call, check_state_t checkState) {
   if (checkState != CHECK_NORMAL_CALL) {
     if (checkState == CHECK_BODY_RESOLVES) {
       if (FnSymbol* fn = call->resolvedFunction()) {
-        tryResolveStack.push_back(fn);
+        tryResolveFunctions.push_back(fn);
         // resolve that function as well
         resolveFunction(fn);
-        tryResolveStack.pop_back();
+        tryResolveFunctions.pop_back();
       }
     }
+    check_state_t state = tryResolveStates.back();
+    tryResolveStates.pop_back();
     hidingResolutionErrors--;
+
+    if (state == CHECK_FAILED)
+      retval = NULL;
   }
 
   return retval;
@@ -3497,7 +3508,7 @@ static void resolveNormalCallFinalChecks(CallExpr* call) {
 
   checkForStoringIntoTuple(call, fn);
 
-  resolveNormalCallCompilerWarningStuff(fn);
+  resolveNormalCallCompilerWarningStuff(call, fn);
 }
 
 static FnSymbol* wrapAndCleanUpActuals(ResolutionCandidate* best,
@@ -3560,9 +3571,23 @@ static void reissueMsgs(FnSymbol* resolvedFn,
   }
 }
 
-void resolveNormalCallCompilerWarningStuff(FnSymbol* resolvedFn) {
+void resolveNormalCallCompilerWarningStuff(CallExpr* call, FnSymbol* resolvedFn) {
   reissueMsgs(resolvedFn, innerCompilerErrorMap, outerCompilerErrorMap, true);
   reissueMsgs(resolvedFn, innerCompilerWarningMap, outerCompilerWarningMap, false);
+
+  try_resolve_map_t::iterator it;
+  it = tryResolveErrors.find(resolvedFn);
+  if (it != tryResolveErrors.end()) {
+    if (hidingResolutionErrors > 0 && tryResolveFunctions.size() > 0) {
+      FnSymbol* fn = tryResolveFunctions.back();
+      tryResolveErrors[fn] = it->second;
+    } else {
+      BaseAST* from = it->second.first;
+      std::string& err = it->second.second;
+      USR_FATAL_CONT(from, "%s", err.c_str());
+      USR_PRINT(call, "in function called here");
+    }
+  }
 }
 
 /************************************* | **************************************
@@ -7958,14 +7983,25 @@ static void resolveExprMaybeIssueError(CallExpr* call) {
 
     head = callStack.n - 1 - depth;
 
-    for (int i = head; i >= 0; i--) {
+    FnSymbol* tryResolveFunction = NULL;
+    if (tryResolveFunctions.size() > 0)
+      tryResolveFunction = tryResolveFunctions.back();
+
+    for (int i = callStack.n-1; i >= 0; i--) {
       CallExpr*     frame  = callStack.v[i];
       ModuleSymbol* module = frame->getModule();
       FnSymbol*     fn     = frame->getFunction();
 
       from = frame;
 
-      if (frame->linenum()                     >  0             &&
+      // If we are in a tryResolve call, record the error at the
+      // function being attempted, instead of at a further up call site,
+      // so that the message makes sense when reissued.
+      if (tryResolveFunction != NULL && fn == tryResolveFunction)
+        break;
+
+      if (i <= head &&
+          frame->linenum()                     >  0             &&
           fn->hasFlag(FLAG_COMPILER_GENERATED) == false         &&
           module->modTag                       != MOD_INTERNAL) {
         break;
@@ -7990,11 +8026,22 @@ static void resolveExprMaybeIssueError(CallExpr* call) {
     str = astr(unescapeString(str, var).c_str());
 
     if (call->isPrimitive(PRIM_ERROR) == true) {
-      USR_FATAL(from, "%s", str);
-      if (FnSymbol* fn = callStack.tail()->resolvedFunction())
-        innerCompilerErrorMap[fn] = str;
-      if (FnSymbol* fn = callStack.v[head]->resolvedFunction())
-        outerCompilerErrorMap[fn] = str;
+      if (hidingResolutionErrors == 0) {
+        USR_FATAL(from, "%s", str);
+        if (FnSymbol* fn = callStack.tail()->resolvedFunction())
+          innerCompilerErrorMap[fn] = str;
+        if (FnSymbol* fn = callStack.v[head]->resolvedFunction())
+          outerCompilerErrorMap[fn] = str;
+      } else {
+        tryResolveStates.back() = CHECK_FAILED;
+
+        if (tryResolveFunctions.size() > 0) {
+          FnSymbol* fn = tryResolveFunctions.back();
+
+          tryResolveErrors[fn] = std::make_pair(from,str);
+        }
+      }
+
     } else {
       USR_WARN (from, "%s", str);
       if (FnSymbol* fn = callStack.tail()->resolvedFunction())
