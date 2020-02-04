@@ -190,7 +190,7 @@ proc _factor(param rank: int, value) {
     while iv > 1 {
       for i in 2..iv {
         if iv % i == 0 {
-          var j = 1;
+          var j = 0;
           for i in 1..rank-1 {
             if factors(i) < factors(j) then
               j = i;
