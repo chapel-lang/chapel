@@ -175,14 +175,6 @@ To specify a 1-tuple, use the form with the trailing comma ``(1,)``.
 
       (7)
 
-Tuple expressions are evaluated similarly to function calls where the
-arguments are all generic with no explicit intent. So a tuple expression
-containing an array does not copy the array.
-
-When a tuple is passed as an argument to a function, it is passed as if
-it is a record type containing fields of the same type and in the same
-order as in the tuple.
-
 .. _Tuple_Indexing:
 
 Tuple Indexing
@@ -281,6 +273,37 @@ In tuple assignment, the components of the tuple on the left-hand side
 of the assignment operator are each assigned the components of the tuple
 on the right-hand side of the assignment. These assignments occur in
 component order (component one followed by component two, etc.).
+
+.. _Tuple_Variables:
+
+Tuple Variables
+---------------
+
+When a tuple variable is created, the variable will not refer to any
+elements by reference. Instead, the tuple variable will contain a
+copy of each element, as though assignment had been performed.
+
+For example, in this code:
+
+.. code-block:: chapel
+
+  record R { var x: int; }
+  var A: [1..1] int;
+  var i: int;
+  var r = new R(0);
+
+  var tup = (A, i, r); // A, i, and r are copied into tup.
+
+  A[1] = 1;
+  i = 2;
+  r.x = 3;
+
+  writeln(tup); // Will output (0, 0, (x = 0)).
+
+The variable tup will contain a copy of the array `A` and the record
+`r`. This is in contrast to tuple argument behavior, where both `A`
+and `r` would be passed by reference when captured as elements of a
+tuple passed to a routine.
 
 .. _Tuple_Destructuring:
 
