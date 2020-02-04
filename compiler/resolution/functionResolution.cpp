@@ -142,15 +142,15 @@ static int generousResolutionForErrors;
 
 // Hide errors when trying to resolve something.
 
-// aka error strategy?
+// aka error strategy if function not found or contained a compilerError
 typedef enum {
   CHECK_NORMAL_CALL,
-  CHECK_CALLABLE_ONLY,
-  CHECK_BODY_RESOLVES,
-  CHECK_FAILED
+  CHECK_CALLABLE_ONLY, // check that the function is callable (but not body)
+  CHECK_BODY_RESOLVES, // check that the body resolves (but not called fns)
+  CHECK_FAILED         // indicates error encountered here
 } check_state_t;
 
-static int hidingResolutionErrors;
+static int inTryResolve;
 static std::vector<check_state_t> tryResolveStates;
 static std::vector<FnSymbol*> tryResolveFunctions;
 typedef std::map<FnSymbol*,std::pair<BaseAST*,std::string> > try_resolve_map_t;
@@ -2985,7 +2985,7 @@ FnSymbol* resolveNormalCall(CallExpr* call, check_state_t checkState) {
   FnSymbol* retval = NULL;
 
   if (checkState != CHECK_NORMAL_CALL) {
-    hidingResolutionErrors++;
+    inTryResolve++;
     tryResolveStates.push_back(checkState);
   }
 
@@ -3024,7 +3024,7 @@ FnSymbol* resolveNormalCall(CallExpr* call, check_state_t checkState) {
     }
     check_state_t state = tryResolveStates.back();
     tryResolveStates.pop_back();
-    hidingResolutionErrors--;
+    inTryResolve--;
 
     if (state == CHECK_FAILED)
       retval = NULL;
@@ -3578,7 +3578,7 @@ void resolveNormalCallCompilerWarningStuff(CallExpr* call, FnSymbol* resolvedFn)
   try_resolve_map_t::iterator it;
   it = tryResolveErrors.find(resolvedFn);
   if (it != tryResolveErrors.end()) {
-    if (hidingResolutionErrors > 0 && tryResolveFunctions.size() > 0) {
+    if (inTryResolve > 0 && tryResolveFunctions.size() > 0) {
       FnSymbol* fn = tryResolveFunctions.back();
       tryResolveErrors[fn] = it->second;
     } else {
@@ -8026,7 +8026,7 @@ static void resolveExprMaybeIssueError(CallExpr* call) {
     str = astr(unescapeString(str, var).c_str());
 
     if (call->isPrimitive(PRIM_ERROR) == true) {
-      if (hidingResolutionErrors == 0) {
+      if (inTryResolve == 0) {
         USR_FATAL(from, "%s", str);
         if (FnSymbol* fn = callStack.tail()->resolvedFunction())
           innerCompilerErrorMap[fn] = str;
