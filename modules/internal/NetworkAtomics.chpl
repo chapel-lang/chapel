@@ -124,17 +124,6 @@ module NetworkAtomics {
       return this.compareAndSwap(expected, desired, order);
     }
 
-    pragma "last resort"
-    inline proc const peek(): bool {
-      compilerWarning("Default usage of peek() is deprecated, use PeekPoke");
-      return _v:bool;
-    }
-
-    pragma "last resort"
-    inline proc poke(value:bool): void {
-      compilerWarning("Default usage of poke() is deprecated, use PeekPoke");
-      _v = value:int(64);
-    }
   }
 
   pragma "atomic type"
@@ -325,17 +314,6 @@ module NetworkAtomics {
       return this.compareAndSwap(expected, desired, order);
     }
 
-    pragma "last resort"
-    inline proc const peek(): T {
-      compilerWarning("Default usage of peek() is deprecated, use PeekPoke");
-      return _v;
-    }
-
-    pragma "last resort"
-    inline proc poke(value:T): void {
-      compilerWarning("Default usage of poke() is deprecated, use PeekPoke");
-      _v = value;
-    }
   }
 
 

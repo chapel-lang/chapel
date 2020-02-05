@@ -56,7 +56,7 @@
    in order for record assignment to work, the read() functions
    need to be able to work with a const RHS.
 
-   To enable that, the read/peek/waitFor/writeThis functions take in `this`
+   To enable that, the read/waitFor/writeThis functions take in `this`
    with const intent. That is reasonable even if the atomic is
    implemented with a lock because the programmer can view it
    as constant, and on good hardware it really will be. If we change
@@ -334,29 +334,6 @@ module Atomics {
       return this.compareAndSwap(expected, desired, order);
     }
 
-    /*
-       Non-atomically reads the stored value.
-
-       .. note:: Default usage of `peek()` is deprecated, use :mod:`PeekPoke`.
-
-    */
-    pragma "last resort"
-    inline proc const peek(): bool {
-      compilerWarning("Default usage of peek() is deprecated, use PeekPoke");
-      return this.read(order=memoryOrder.relaxed);
-    }
-
-    /*
-       Non-atomically writes `value`.
-
-       .. note:: Default usage of `poke()` is deprecated, use :mod:`PeekPoke`.
-
-    */
-    pragma "last resort"
-    inline proc poke(value:bool): void {
-      compilerWarning("Default usage of poke() is deprecated, use PeekPoke");
-      this.write(value, order=memoryOrder.relaxed);
-    }
   }
 
   pragma "atomic type"
@@ -659,29 +636,6 @@ module Atomics {
       return this.compareAndSwap(expected, desired, order);
     }
 
-    /*
-       Non-atomically reads the stored value.
-
-       .. note:: Default usage of `peek()` is deprecated, use :mod:`PeekPoke`.
-
-    */
-    pragma "last resort"
-    inline proc const peek(): T {
-      compilerWarning("Default usage of peek() is deprecated, use PeekPoke");
-      return this.read(order=memoryOrder.relaxed);
-    }
-
-    /*
-       Non-atomically writes `value`.
-
-       .. note:: Default usage of `poke()` is deprecated, use :mod:`PeekPoke`.
-
-    */
-    pragma "last resort"
-    inline proc poke(value:T): void {
-      compilerWarning("Default usage of poke() is deprecated, use PeekPoke");
-      this.write(value, order=memoryOrder.relaxed);
-    }
   }
 
   //
