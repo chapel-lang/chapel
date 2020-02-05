@@ -19,7 +19,7 @@ const rand = createRandomStream(eltType=int, seed=seed, parSafe=false);
 
 proc createList(size: int) {
   var result: testList;
-  for i in 1..size do result.append(0:int(8));
+  for i in 1..size do result.append(0:byte);
   return result;
 }
 
@@ -69,7 +69,6 @@ class AppendFromEmpty: Test {
   override proc setup() { _lst.clear(); }
 
   override proc test() {
-    assert(_lst.isEmpty());
     for i in 1..n0 do _lst.append((i % 127):byte);
   }
 }
@@ -80,9 +79,7 @@ class InsertFront: Test {
  
   override proc name() return "InsertFront";
   override proc setup() { _lst = createList(1); }
-
   override proc test() {
-    assert(_lst.size == 1);
     while _lst.size < n1 do _lst.insert(1, (_lst.size & 127):byte);
   }
 }
@@ -92,62 +89,65 @@ class PopFromBack: Test {
 
   override proc name() return "PopFromBack";
   override proc setup() { _lst = createList(n0); }
-
   override proc test() {
-    assert(_lst.size == n0);
     while !_lst.isEmpty() do _lst.pop();
   }
 }
 
 class PopFromFront: Test {
   var _lst: testList;
+
   override proc name() return "PopFromFront";
   // Use a smaller value for N because PopFromFront is O(n**2).
   override proc setup() { _lst = createList(n1); }
   override proc test() {
-    assert(_lst.size == n1);
     while !_lst.isEmpty() do _lst.pop(1);
   }
 }
 
 class IterSerial: Test {
   var _lst: testList;
+
   override proc name() return "IterSerial";
   override proc setup() { _lst = createList(n0); }
   override proc test() {
-    assert(_lst.size == n0);
     for x in _lst do x += 1;
   }
 }
 
 class IterParallel: Test {
   var _lst: testList;
+
   override proc name() return "IterParallel";
   override proc setup() { _lst = createList(n0); }
   override proc test() {
-    assert(_lst.size == n0);
     forall x in _lst do x += 1;
   }
 }
   
 class RandomAccess1: Test {
   var _lst: testList;
+  var _rnd: [0..#n0] int;
+
   override proc name() return "RandomAccess1";
-  override proc setup() { _lst = createList(n0); } 
+  override proc setup() {
+    _lst = createList(n0);
+    // Set up a trace of random indices.
+    fillRandom(_rnd, seed);
+    _rnd = mod(_rnd, n0);
+    _rnd += 1;
+  }
   override proc test() {
-    for x in _lst {
-      const idx = abs(rand.getNext()) % _lst.size + 1;
-      _lst[idx] &= 0xFF:byte;
-    }
+    for r in _rnd do _lst[r] &= 0xFF:byte;
   }
 }
 
 class Clear: Test {
   var _lst: testList;
+
   override proc name() return "Clear";
   override proc setup() { _lst = createList(n0); }
   override proc test() {
-    assert(_lst.size == n0);
     _lst.clear();
   }
 }
