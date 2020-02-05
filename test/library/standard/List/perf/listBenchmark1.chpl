@@ -10,12 +10,11 @@ private use Time;
 type byte = int(8);
 type testList = list(byte, false);
 
-config param isPerformanceTest: bool = false;
+config const isPerformanceTest: bool = false;
 config const n0: int = 50000;
 
 const n1: int = n0 / 1000;
 const seed = 314159;
-const rand = createRandomStream(eltType=int, seed=seed, parSafe=false);
 
 proc createList(size: int) {
   var result: testList;
@@ -23,7 +22,7 @@ proc createList(size: int) {
   return result;
 }
 
-proc generateNoise() {
+proc warmup() {
   const size = if isPerformanceTest then n1 else n0;
   var lst1 = createList(size);
   var lst2 = createList(size);
@@ -65,7 +64,7 @@ class Test {
 class AppendFromEmpty: Test {
   var _lst: testList;
 
-  override proc name() return "AppendFromEmpty";
+  override proc name() return "Append";
   override proc setup() { _lst.clear(); }
 
   override proc test() {
@@ -87,7 +86,7 @@ class InsertFront: Test {
 class PopFromBack: Test {
   var _lst: testList;
 
-  override proc name() return "PopFromBack";
+  override proc name() return "PopBack";
   override proc setup() { _lst = createList(n0); }
   override proc test() {
     while !_lst.isEmpty() do _lst.pop();
@@ -97,8 +96,8 @@ class PopFromBack: Test {
 class PopFromFront: Test {
   var _lst: testList;
 
-  override proc name() return "PopFromFront";
-  // Use a smaller value for N because PopFromFront is O(n**2).
+  override proc name() return "PopFront";
+  // Use a smaller value for N because PopFront is O(n**2).
   override proc setup() { _lst = createList(n1); }
   override proc test() {
     while !_lst.isEmpty() do _lst.pop(1);
@@ -164,7 +163,7 @@ proc main() {
   tests.append(new RandomAccess1());
   tests.append(new Clear());
 
-  generateNoise();
+  warmup();
 
   for tst in tests do
     tst.output();

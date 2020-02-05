@@ -1,7 +1,7 @@
-AppendFromEmpty
+Append
 InsertFront
-PopFromBack
-PopFromFront
+PopBack
+PopFront
 IterSerial
 IterParallel
 RandomAccess1
