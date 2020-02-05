@@ -3456,6 +3456,17 @@ size_t chpl_comm_impl_regMemAllocThreshold(void)
 static __thread uint64_t defaultInit_ts;
 #endif
 
+static pthread_once_t warned_out_of_mem_regions = PTHREAD_ONCE_INIT;
+static void issue_out_of_mem_regions_warning(void)
+{
+  char buf[200];
+  snprintf(buf, sizeof(buf),
+           "no more registered memory region table entries (max is %d).\n"
+           "         Change using CHPL_RT_COMM_UGNI_MAX_MEM_REGIONS.",
+           max_mem_regions);
+  chpl_warning(buf, 0, 0);
+}
+
 void* chpl_comm_impl_regMemAlloc(size_t size,
                                  chpl_mem_descInt_t desc, int ln, int32_t fn)
 {
@@ -3474,15 +3485,7 @@ void* chpl_comm_impl_regMemAlloc(size_t size,
   if (atomic_fetch_sub_int_least32_t(&mreg_free_cnt, 1) < 1) {
     atomic_fetch_add_int_least32_t(&mreg_free_cnt, 1);
 
-    static atomic_int_least8_t spoke;
-    if (atomic_compare_exchange_strong_int_least8_t(&spoke, 0, 1)) {
-      char buf[200];
-      snprintf(buf, sizeof(buf),
-               "no more registered memory region table entries (max is %d).\n"
-               "         Change using CHPL_RT_COMM_UGNI_MAX_MEM_REGIONS.",
-               max_mem_regions);
-      chpl_warning(buf, 0, 0);
-    }
+    (void)pthread_once(&warned_out_of_mem_regions, issue_out_of_mem_regions_warning);
 
     DBG_P_LP(DBGF_MEMREG, "chpl_regMemAlloc(%#zx): out of table entries", size);
     return NULL;
