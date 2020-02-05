@@ -172,7 +172,7 @@ proc isConstAssignableType(type t) param {
   return __primitive("is const assignable type", t);
 }
 pragma "no doc"
-proc hasDefaultValueType(type t) param {
+proc isDefaultInitializableType(type t) param {
   return __primitive("type has default value", t);
 }
 
@@ -304,7 +304,7 @@ proc isAssignableValue(e)   param  return isAssignableType(e.type);
 pragma "no doc"
 proc isConstAssignableValue(e)  param  return isConstAssignableType(e.type);
 pragma "no doc"
-proc hasDefaultValue(e)  param  return hasDefaultValueType(e.type);
+proc isDefaultInitializableValue(e) param return isDefaultInitializableType(e.type);
 
 
 //
@@ -390,7 +390,7 @@ proc isAssignable(type t)    param  return isAssignableType(t);
 pragma "no doc"
 proc isConstAssignable(type t) param  return isConstAssignableType(t);
 pragma "no doc"
-proc hasDefaultValue(type t) param  return hasDefaultValueType(t);
+proc isDefaultInitializable(type t) param return isDefaultInitializableType(t);
 
 // Set 2 - values.
 /*
@@ -494,6 +494,20 @@ proc isCopyable(e) param return isCopyableValue(e);
 proc isConstCopyable(e) param return isConstCopyableValue(e);
 proc isAssignable(e) param return isCopyableValue(e);
 proc isConstAssignable(e) param return isConstAssignableValue(e);
+
+/*
+
+Returns ``true`` if the argument is a type or expression of a type that
+can be default initialized and ``false`` otherwise.
+
+Returns ``false`` for non-nilable class types because these types do not
+have a default value.
+
+See also the specification section :ref:`Default_Values_For_Types`.
+
+*/
+proc isDefaultInitializable(e) param return isDefaultInitializableValue(e);
+
 
 // for internal use until we have a better name
 pragma "no doc"

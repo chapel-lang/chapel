@@ -19,8 +19,8 @@ proc checkit(type t,
   if isConstAssignable(t) != expectConstAssignable then
     compilerError("isConstAssignable " + t:string + " did not match");
 
-  if hasDefaultValue(t) != expectDefaultInitable then
-    compilerError("hasDefaultValue " + t:string + " did not match");
+  if isDefaultInitializable(t) != expectDefaultInitable then
+    compilerError("isDefaultInitializable " + t:string + " did not match");
 }
 
 proc checkit(e,
@@ -42,8 +42,8 @@ proc checkit(e,
   if isConstAssignable(e) != expectConstAssignable then
     compilerError("isConstAssignable " + e.type:string + " did not match");
 
-  if hasDefaultValue(e) != expectDefaultInitable then
-    compilerError("hasDefaultValue " + e.type:string + " did not match");
+  if isDefaultInitializable(e) != expectDefaultInitable then
+    compilerError("isDefaultInitializable " + e.type:string + " did not match");
 }
 
 
