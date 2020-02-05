@@ -142,6 +142,20 @@ static bool forceWidePtrs() {
   return (strcmp(CHPL_LOCALE_MODEL, "flat") != 0);
 }
 
+static void vprint_error(const char* format, va_list vl) {
+  vfprintf(stderr, format, vl);
+
+  // This function could hide errors & save them for later re-issue.
+  // See the commit history for this comment for a start in that direction.
+}
+
+static void print_error(const char* format, ...) {
+  va_list vl;
+  va_start(vl, format);
+  vprint_error(format, vl);
+  va_end(vl);
+}
+
 static void print_user_internal_error() {
   char error[20];
 
@@ -198,11 +212,11 @@ static void print_user_internal_error() {
     }
   }
 
-  fprintf(stderr, "%s ", error);
+  print_error("%s ", error);
 
   get_version(version);
 
-  fprintf(stderr, "chpl version %s", version);
+  print_error("chpl version %s", version);
 }
 
 
@@ -320,19 +334,17 @@ static void printInstantiationNoteForLastError() {
         intro = astr("Function ", "'", err_fn->name, "'");
 
       if (subsDesc == NULL || subsDesc[0] == '\0') {
-        fprintf(stderr,
-                "%s:%d: %s instantiated here\n",
-                cleanFilename(bestPoint),
-                bestPoint->linenum(),
-                intro);
+        print_error("%s:%d: %s instantiated here\n",
+                    cleanFilename(bestPoint),
+                    bestPoint->linenum(),
+                    intro);
       } else {
-        fprintf(stderr,
-                "%s:%d: %s instantiated as: %s(%s)\n",
-                cleanFilename(bestPoint),
-                bestPoint->linenum(),
-                intro,
-                err_fn->name,
-                subsDesc);
+        print_error("%s:%d: %s instantiated as: %s(%s)\n",
+                    cleanFilename(bestPoint),
+                    bestPoint->linenum(),
+                    intro,
+                    err_fn->name,
+                    subsDesc);
       }
     }
   }
@@ -392,19 +404,15 @@ static bool printErrorHeader(BaseAST* ast) {
           }
 
           if (suppress == false) {
-            fprintf(stderr,
-                    "%s:%d: In ",
-                    cleanFilename(err_fn),
-                    err_fn->linenum());
+            print_error("%s:%d: In ", cleanFilename(err_fn), err_fn->linenum());
 
             if (strcmp(err_fn->name, "init") == 0) {
-              fprintf(stderr, "initializer:\n");
+              print_error("initializer:\n");
 
             } else {
-              fprintf(stderr,
-                      "%s '%s':\n",
-                      (err_fn->isIterator() ? "iterator" : "function"),
-                      err_fn->name);
+              print_error("%s '%s':\n",
+                          (err_fn->isIterator() ? "iterator" : "function"),
+                          err_fn->name);
             }
             // We printed the header, so can print instantiation notes.
             err_fn_header_printed = true;
@@ -439,19 +447,19 @@ static bool printErrorHeader(BaseAST* ast) {
   bool guess = filename && !have_ast_line;
 
   if (filename) {
-    fprintf(stderr, "%s:%d: ", filename, linenum);
+    print_error("%s:%d: ", filename, linenum);
   }
 
   if (err_print) {
-    fprintf(stderr, "note: ");
+    print_error("note: ");
   } else if (err_fatal) {
     if (err_user) {
-      fprintf(stderr, "error: ");
+      print_error("error: ");
     } else {
-      fprintf(stderr, "internal error: ");
+      print_error("internal error: ");
     }
   } else {
-    fprintf(stderr, "warning: ");
+    print_error("warning: ");
   }
 
   if (!err_user) {
@@ -469,7 +477,7 @@ static void printErrorFooter(bool guess) {
   // internal error was generated.
   //
   if (developer && !err_user)
-    fprintf(stderr, " [%s/%s:%d]", err_subdir, err_filename, err_lineno);
+    print_error(" [%s/%s:%d]", err_subdir, err_filename, err_lineno);
 
   //
   // For users and developers, if the source line was a guess (i.e., an
@@ -477,19 +485,19 @@ static void printErrorFooter(bool guess) {
   // global SET_LINENO() information instead), indicate that.
   //
   if (guess) {
-    fprintf(stderr, "\nNote: This source location is a guess.");
+    print_error("\nNote: This source location is a guess.");
   }
 
   //
   // Apologize for our internal errors to the end-user
   //
   if (!developer && !err_user) {
-    fprintf(stderr, "\n\n"
-            "Internal errors indicate a bug in the Chapel compiler (\"It's us, not you\"),\n"
-            "and we're sorry for the hassle.  We would appreciate your reporting this bug -- \n"
-            "please see %s for instructions.  In the meantime,\n"
-            "the filename + line number above may be useful in working around the issue.\n\n",
-            help_url);
+    print_error("\n\n"
+      "Internal errors indicate a bug in the Chapel compiler (\"It's us, not you\"),\n"
+      "and we're sorry for the hassle.  We would appreciate your reporting this bug -- \n"
+      "please see %s for instructions.  In the meantime,\n"
+      "the filename + line number above may be useful in working around the issue.\n\n",
+      help_url);
 
     //
     // and exit if it's fatal (isn't it always?)
@@ -507,14 +515,17 @@ static void printErrorFooter(bool guess) {
 // on the call stack. This can be called from a debugger to to see what the
 // call chain looks like e.g. after a resolution error.
 //
-void printCallStack(bool force, bool shortModule, FILE* out) {
+static void printCallStack(bool force, bool shortModule, FILE* out) {
   if (!force) {
     if (!fPrintCallStackOnError || err_print || callStack.n <= 1)
       return;
   }
 
   if (!developer) {
-    fprintf(out, "while processing the following Chapel call chain:\n");
+    if (out == NULL)
+      print_error("while processing the following Chapel call chain:\n");
+    else
+      fprintf(out, "while processing the following Chapel call chain:\n");
   }
 
   for (int i = callStack.n-1; i >= 0; i--) {
@@ -522,12 +533,21 @@ void printCallStack(bool force, bool shortModule, FILE* out) {
     FnSymbol*     fn     = call->getFunction();
     ModuleSymbol* module = call->getModule();
 
-    fprintf(out,
-            "  %s:%d: %s%s%s\n",
-            (shortModule ? module->name : cleanFilename(fn->fname())),
-            call->linenum(), toString(fn),
-            (module->modTag == MOD_INTERNAL ? " [internal module]" : ""),
-            (fn->hasFlag(FLAG_COMPILER_GENERATED) ? " [compiler-generated]" : ""));
+    if (out == NULL)
+      print_error(
+              "  %s:%d: %s%s%s\n",
+              (shortModule ? module->name : cleanFilename(fn->fname())),
+              call->linenum(), toString(fn),
+              (module->modTag == MOD_INTERNAL ? " [internal module]" : ""),
+              (fn->hasFlag(FLAG_COMPILER_GENERATED) ? " [compiler-generated]" : ""));
+    else
+      fprintf(out,
+              "  %s:%d: %s%s%s\n",
+              (shortModule ? module->name : cleanFilename(fn->fname())),
+              call->linenum(), toString(fn),
+              (module->modTag == MOD_INTERNAL ? " [internal module]" : ""),
+              (fn->hasFlag(FLAG_COMPILER_GENERATED) ? " [compiler-generated]" : ""));
+
   }
 }
 
@@ -576,16 +596,13 @@ void handleError(const char* fmt, ...) {
   //
   if (err_user || developer) {
     va_list args;
-
     va_start(args, fmt);
-
-    vfprintf(stderr, fmt, args);
-
+    vprint_error(fmt, args);
     va_end(args);
   }
 
   printErrorFooter(guess);
-  fprintf(stderr, "\n");
+  print_error("\n");
 
   printCallStackOnError();
 
@@ -610,8 +627,7 @@ void handleError(const char* fmt, ...) {
 *                                                                             *
 ************************************** | *************************************/
 
-static void vhandleError(FILE*          file,
-                         const BaseAST* ast,
+static void vhandleError(const BaseAST* ast,
                          const char*    fmt,
                          va_list        args);
 
@@ -620,22 +636,12 @@ void handleError(const BaseAST* ast, const char *fmt, ...) {
 
   va_start(args, fmt);
 
-  vhandleError(stderr, ast, fmt, args);
+  vhandleError(ast, fmt, args);
 
   va_end(args);
 }
 
-void handleError(FILE* file, const BaseAST* ast, const char* fmt, ...) {
-  va_list args;
-  va_start(args, fmt);
-
-  vhandleError(file, ast, fmt, args);
-
-  va_end(args);
-}
-
-static void vhandleError(FILE*          file,
-                         const BaseAST* ast,
+static void vhandleError(const BaseAST* ast,
                          const char*    fmt,
                          va_list        args) {
   if (err_ignore) {
@@ -644,27 +650,21 @@ static void vhandleError(FILE*          file,
 
   bool guess = false;
 
-  if (file == stderr) {
-    guess = printErrorHeader(const_cast<BaseAST*>(ast));
-  }
+  guess = printErrorHeader(const_cast<BaseAST*>(ast));
 
   if (err_user || developer) {
-    vfprintf(file, fmt, args);
+    vprint_error(fmt, args);
   }
 
   if (fPrintIDonError && ast) {
-    fprintf(file, " [%d]", ast->id);
+    print_error(" [%d]", ast->id);
   }
 
-  if (file == stderr) {
-    printErrorFooter(guess);
-  }
+  printErrorFooter(guess);
 
-  fprintf(file, "\n");
+  print_error("\n");
 
-  if (file == stderr) {
-    printCallStackOnError();
-  }
+  printCallStackOnError();
 
   if (!err_user && !developer) {
     return;

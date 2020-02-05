@@ -336,14 +336,21 @@ static Expr* preFoldPrimOp(CallExpr* call) {
   }
 
   case PRIM_CALL_RESOLVES:
-  case PRIM_METHOD_CALL_RESOLVES: {
+  case PRIM_CALL_AND_FN_RESOLVES:
+  case PRIM_METHOD_CALL_RESOLVES:
+  case PRIM_METHOD_CALL_AND_FN_RESOLVES: {
     Expr* fnName   = NULL;
     Expr* callThis = NULL;
     int   firstArg = 0;
 
+    bool method = call->isPrimitive(PRIM_METHOD_CALL_RESOLVES) ||
+                  call->isPrimitive(PRIM_METHOD_CALL_AND_FN_RESOLVES);
+    bool andFn = call->isPrimitive(PRIM_CALL_AND_FN_RESOLVES) ||
+                 call->isPrimitive(PRIM_METHOD_CALL_AND_FN_RESOLVES);
+
     // this would be easier if we had a non-normalized AST!
     // That is, if this call could contain a whole expression subtree.
-    if (call->isPrimitive(PRIM_METHOD_CALL_RESOLVES) ) {
+    if (method) {
       // get(1) should be a receiver
       // get(2) should be a string function name.
       callThis = call->get(1);
@@ -372,7 +379,7 @@ static Expr* preFoldPrimOp(CallExpr* call) {
     // temporarily add a call to try resolving.
     CallExpr* tryCall = NULL;
 
-    if (call->isPrimitive(PRIM_METHOD_CALL_RESOLVES)) {
+    if (method) {
       tryCall = new CallExpr(new UnresolvedSymExpr(name),
                              gMethodToken,
                              callThis->copy());
@@ -396,7 +403,7 @@ static Expr* preFoldPrimOp(CallExpr* call) {
     }
 
     // Try to resolve it.
-    if (tryResolveCall(tryCall)) {
+    if (tryResolveCall(tryCall, andFn)) {
       retval = new SymExpr(gTrue);
 
     } else {

@@ -207,7 +207,7 @@ void      resolveCallAndCallee(CallExpr* call, bool allowUnresolved = false);
 Type*     resolveDefaultGenericTypeSymExpr(SymExpr* se);
 Type*     resolveTypeAlias(SymExpr* se);
 
-FnSymbol* tryResolveCall(CallExpr* call);
+FnSymbol* tryResolveCall(CallExpr* call, bool checkWithin=false);
 void      makeRefType(Type* type);
 
 // FnSymbol changes
@@ -238,9 +238,9 @@ void printResolutionErrorAmbiguous (CallInfo&                  info,
                                     Vec<ResolutionCandidate*>& candidates);
 void printUndecoratedClassTypeNote(Expr* ctx, Type* type);
 
-FnSymbol* resolveNormalCall(CallExpr* call, bool checkonly=false);
+FnSymbol* resolveNormalCall(CallExpr* call);
 
-void      resolveNormalCallCompilerWarningStuff(FnSymbol* resolvedFn);
+void resolveNormalCallCompilerWarningStuff(CallExpr* call, FnSymbol* resolvedFn);
 
 void checkMoveIntoClass(CallExpr* call, Type* lhs, Type* rhs);
 
