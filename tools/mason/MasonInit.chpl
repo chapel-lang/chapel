@@ -57,6 +57,7 @@ proc masonInit(args) throws {
 				var path = '.';
 				makeBasicToml(name,path);
 				ValidateInit(path);
+				writeln("Initialized new library project: " + name);
 			}
 		} else {
 			// if the target directory in path doesnt exist, throw error
@@ -66,6 +67,7 @@ proc masonInit(args) throws {
 			var path = name;
 			if(isDir(path)) {
 				ValidateInit(path);
+				writeln("Initialized new library project in " + path + ": " + basename(path));
 			} else {
 					throw new owned MasonError("Directory does not exist:" + path +
 															"Did you mean 'mason new' to create a new project from scratch?"); 
@@ -92,7 +94,6 @@ proc ValidateInit(path: string) {
 				var version = tomlFile["brick"]["version"].s;
 				validateAndInit(projectName, vcs=true, show=false);
 				checkVersion(version);
-				writeln(projectName,version);
 			} else {
 					ToBeCreated.append(file);
 			}
