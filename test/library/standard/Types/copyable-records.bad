@@ -1,8 +1,0 @@
-copyable-records.chpl:78: error: Cannot default-initialize z: owned C
-note: non-nil class types do not support default initialization
-note: Consider using the type owned C? instead
-copyable-records.chpl:107: In function 'main':
-copyable-records.chpl:115: error: unresolved call 'CustomContainingNonNilableOwned.init(owned C)'
-copyable-records.chpl:95: note: this candidate did not match: CustomContainingNonNilableOwned.init()
-copyable-records.chpl:115: note: because call includes 1 arguments
-copyable-records.chpl:95: note: but function can only accept 0 arguments

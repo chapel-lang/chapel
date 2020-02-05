@@ -73,44 +73,10 @@ proc checkNo(type t, e) {
 }
 
 class C { var x: int; }
-record R { var y: int; }
-record ContainingNilableOwned { var zq: owned C?; }
 record ContainingNonNilableOwned { var z: owned C; }
-record CustomContainingNilableOwned {
-  var zq: owned C?;
-  proc init() {
-    this.zq = nil;
-  }
-  proc init=(other) {
-    this.zq = new owned C();
-  }
-}
-proc =(ref lhs: CustomContainingNilableOwned,
-       const ref rhs: CustomContainingNilableOwned) {
-  lhs.zq = new owned C();
-}
-
-record CustomContainingNonNilableOwned {
-  var z: owned C;
-  proc init() {
-    this.z = new owned C();
-  }
-  proc init=(other) {
-    this.z = new owned C();
-  }
-}
-proc =(ref lhs: CustomContainingNonNilableOwned,
-       const ref rhs: CustomContainingNonNilableOwned) {
-  lhs.z = new owned C();
-}
 
 proc main() {
 
-  checkMutable(ContainingNilableOwned, new ContainingNilableOwned());
   checkNo(ContainingNonNilableOwned,
           new ContainingNonNilableOwned(new owned C()));
-
-  checkNormal(CustomContainingNilableOwned, new CustomContainingNilableOwned());
-  checkNormal(CustomContainingNonNilableOwned,
-              new CustomContainingNonNilableOwned(new owned C()));
 }
