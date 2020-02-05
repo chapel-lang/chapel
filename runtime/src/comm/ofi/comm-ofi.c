@@ -261,56 +261,21 @@ static void ofiErrReport(const char*, int, const char*);
 
 ////////////////////////////////////////
 //
-// Network type
+// Providers
 //
 
-static pthread_once_t networkOnce = PTHREAD_ONCE_INIT;
-
-typedef enum {
-  networkUnknown,
-  networkAries,
-  networkInfiniBand,
-} network_t;
-
-static network_t network = networkUnknown;
-
-
-static
-void init_network(void) {
-  if (strcmp(CHPL_TARGET_PLATFORM, "cray-xc") == 0) {
-    network = networkAries;
-  }
-}
-
-
-static
-network_t getNetworkType(void) {
-  PTHREAD_CHK(pthread_once(&networkOnce, init_network));
-  return network;
-}
-
-
-////////////////////////////////////////
 //
-// Provider name
+// provider name in environment
 //
+
 static const char* ofi_provNameEnv = "FI_PROVIDER";
-
 static pthread_once_t provNameOnce = PTHREAD_ONCE_INIT;
 static const char* provName;
-
-static chpl_bool providerHasRxm = false;
-static chpl_bool providerHasVerbs = false;
-
-static void setProvName(void);
-static const char* getProviderName(void);
-
 
 static
 void setProvName(void) {
   provName = getenv(ofi_provNameEnv);
 }
-
 
 static
 const char* getProviderName(void) {
@@ -318,26 +283,15 @@ const char* getProviderName(void) {
   return provName;
 }
 
-//
-// Provider-specific behavior control.
-//
-static chpl_bool provCtl_sizeAvsByNumEps;  // size AVs by numEPs (RxD)
-static chpl_bool provCtl_readAmoNeedsOpnd; // READ AMO needs operand (RxD)
-
 
 //
-// Is this name in the provider string?
+// provider name parsing
 //
-static
-chpl_bool isInProviderName(const char* s) {
-  if (ofi_info == NULL
-      || ofi_info->fabric_attr == NULL
-      || ofi_info->fabric_attr->prov_name == NULL) {
-    return false;
-  }
 
-  char pn[strlen(ofi_info->fabric_attr->prov_name) + 1];
-  strcpy(pn, ofi_info->fabric_attr->prov_name);
+static inline
+chpl_bool isInThisProviderName(const char* s, const char* prov_name) {
+  char pn[strlen(prov_name) + 1];
+  strcpy(pn, prov_name);
 
   char* tok;
   char* strSave;
@@ -350,6 +304,135 @@ chpl_bool isInProviderName(const char* s) {
   }
   return false;
 }
+
+
+//
+// provider type
+//
+typedef enum {
+  provType_gni,
+  provType_verbs,
+  provType_rxd,
+  provType_rxm,
+  provTypeCount
+} provider_t;
+
+
+//
+// provider sets
+//
+
+typedef chpl_bool providerSet_t[provTypeCount];
+
+static inline
+void providerSetZero(providerSet_t* s) {
+  memset(s, 0, sizeof(*s));
+}
+
+static inline
+void providerSetClear(providerSet_t* s, provider_t p) {
+  CHK_TRUE(p >= 0 && p < provTypeCount);
+  (*s)[p] = 0;
+}
+
+static inline
+void providerSetSet(providerSet_t* s, provider_t p) {
+  CHK_TRUE(p >= 0 && p < provTypeCount);
+  (*s)[p] = 1;
+}
+
+static inline
+int providerSetTest(providerSet_t* s, provider_t p) {
+  CHK_TRUE(p >= 0 && p < provTypeCount);
+  return (*s)[p] != 0;
+}
+
+
+//
+// providers available
+//
+
+static pthread_once_t providerAvailOnce = PTHREAD_ONCE_INIT;
+static providerSet_t providerAvailSet;
+
+static
+void init_providerAvail(void) {
+  struct fi_info* hints;
+  CHK_TRUE((hints = fi_allocinfo()) != NULL);
+  hints->ep_attr->type = FI_EP_RDM;
+  struct fi_info* info = NULL;
+  OFI_CHK(fi_getinfo(COMM_OFI_FI_VERSION, NULL, NULL, 0, hints, &info));
+  if (chpl_nodeID == 0) {
+    DBG_PRINTF(DBG_CFGFABSALL,
+               "==================== fabrics available with %s %s:",
+               ofi_provNameEnv,
+               (getProviderName() == NULL) ? "<unset>" : getProviderName());
+  }
+  for ( ; info != NULL; info = info->next) {
+    if (chpl_nodeID == 0) {
+      DBG_PRINTF(DBG_CFGFABSALL, "%s", fi_tostr(info, FI_TYPE_INFO));
+      DBG_PRINTF(DBG_CFGFABSALL, "----------");
+    }
+    const char* pn = info->fabric_attr->prov_name;
+    if (isInThisProviderName("gni", pn)) {
+      providerSetSet(&providerAvailSet, provType_gni);
+    } else if (isInThisProviderName("verbs", pn)) {
+      providerSetSet(&providerAvailSet, provType_verbs);
+    }
+  }
+  fi_freeinfo(info);
+  fi_freeinfo(hints);
+}
+
+static
+chpl_bool providerAvail(provider_t p) {
+  PTHREAD_CHK(pthread_once(&providerAvailOnce, init_providerAvail));
+  return providerSetTest(&providerAvailSet, p);
+}
+
+
+//
+// providers in use
+//
+
+static pthread_once_t providerInUseOnce = PTHREAD_ONCE_INIT;
+static providerSet_t providerInUseSet;
+
+static
+void init_providerInUse(void) {
+  //
+  // We can be using only one primary provider.
+  //
+  const char* pn = ofi_info->fabric_attr->prov_name;
+  if (isInThisProviderName("gni", pn)) {
+    providerSetSet(&providerInUseSet, provType_gni);
+  } else if (isInThisProviderName("verbs", pn)) {
+    providerSetSet(&providerInUseSet, provType_verbs);
+  }
+  //
+  // We can be using any number of utility providers.
+  //
+  if (isInThisProviderName("ofi_rxd", pn)) {
+    providerSetSet(&providerInUseSet, provType_rxd);
+  }
+  if (isInThisProviderName("ofi_rxm", pn)) {
+    providerSetSet(&providerInUseSet, provType_rxm);
+  }
+}
+
+static
+chpl_bool providerInUse(provider_t p) {
+  PTHREAD_CHK(pthread_once(&providerInUseOnce, init_providerInUse));
+  return providerSetTest(&providerInUseSet, p);
+}
+
+
+//
+// provider-specific behavior control
+//
+
+static chpl_bool provCtl_sizeAvsByNumEps;  // size AVs by numEPs (RxD)
+static chpl_bool provCtl_readAmoNeedsOpnd; // READ AMO needs operand (RxD)
 
 
 ////////////////////////////////////////
@@ -564,14 +647,14 @@ void* task_local_buff_acquire(enum BuffType t) {
     TYPE* info = prvData->TLS_NAME;                                           \
     if (info == NULL) {                                                       \
       size_t _size = sizeof(TYPE);                                            \
-      if (t == put_buff && providerHasRxm) {                                  \
+      if (t == put_buff && providerInUse(provType_rxm)) {                     \
         _size += bitmapSizeofMap(chpl_numNodes);                              \
       }                                                                       \
       prvData->TLS_NAME = chpl_mem_alloc(_size,                               \
                                          CHPL_RT_MD_COMM_PER_LOC_INFO, 0, 0); \
       info = prvData->TLS_NAME;                                               \
       info->vi = 0;                                                           \
-      if (t == put_buff && providerHasRxm) {                                  \
+      if (t == put_buff && providerInUse(provType_rxm)) {                     \
         info->nodeBitmap.len = chpl_numNodes;                                 \
       } else {                                                                \
         info->nodeBitmap.len = 0;                                             \
@@ -761,7 +844,7 @@ void init_ofiFabricDomain(void) {
   hints->caps = FI_MSG | FI_SEND | FI_RECV | FI_MULTI_RECV
                 | FI_RMA | FI_READ | FI_WRITE
                 | FI_REMOTE_READ | FI_REMOTE_WRITE;
-  if (getNetworkType() == networkAries) {
+  if (providerAvail(provType_gni)) {
       hints->caps |= FI_ATOMICS; // oddly, we don't get this without asking
   }
 
@@ -832,25 +915,6 @@ void init_ofiFabricDomain(void) {
   if (chpl_nodeID == 0) {
     if (ret == -FI_ENODATA) {
       const char* provider = getProviderName();
-
-      if (DBG_TEST_MASK(DBG_CFGFABSALL)) {
-        DBG_PRINTF(DBG_CFGFABSALL,
-                   "==================== fi_getinfo() fabrics:");
-        DBG_PRINTF(DBG_CFGFABSALL,
-                   "None matched hints; available with prov_name \"%s\" are:",
-                   (provider == NULL) ? "<any>" : provider);
-        struct fi_info* info = NULL;
-        OFI_CHK(fi_getinfo(COMM_OFI_FI_VERSION, NULL, NULL, 0, NULL, &info));
-        for ( ; info != NULL; info = info->next) {
-          const char* pn = info->fabric_attr->prov_name;
-          if (provider == NULL
-              || strncmp(pn, provider, strlen(provider)) == 0) {
-            DBG_PRINTF(DBG_CFGFABSALL, "%s", fi_tostr(info, FI_TYPE_INFO));
-            DBG_PRINTF(DBG_CFGFABSALL, "----------");
-          }
-        }
-      }
-
       INTERNAL_ERROR_V("No provider matched for prov_name \"%s\"",
                        (provider == NULL) ? "<any>" : provider);
     }
@@ -901,7 +965,7 @@ void init_ofiDoProviderChecks(void) {
   //
   // Set/compute various provider-specific things.
   //
-  if (isInProviderName("gni")) {
+  if (providerInUse(provType_gni)) {
     //
     // gni
     //
@@ -918,7 +982,7 @@ void init_ofiDoProviderChecks(void) {
     useWaitset = false;
   }
 
-  if (isInProviderName("ofi_rxd")) {
+  if (providerInUse(provType_rxd)) {
     //
     // ofi_rxd (utility provider with tcp, verbs, possibly others)
     //
@@ -937,14 +1001,10 @@ void init_ofiDoProviderChecks(void) {
     provCtl_readAmoNeedsOpnd = true;
   }
 
-  if (isInProviderName("ofi_rxm")) {
-    providerHasRxm = true;
-
+  if (providerInUse(provType_rxm)) {
     // See ofi_put_V().
     CHK_TRUE((ofi_info->tx_attr->msg_order & FI_ORDER_RMA_RAW) != 0);
   }
-
-  providerHasVerbs = isInProviderName("verbs");
 }
 
 
@@ -1540,7 +1600,7 @@ static void exit_any(int status) {
   // Flush all the stdio FILE streams first, in the hope of not losing
   // any output.
   //
-  if (providerHasVerbs) {
+  if (providerInUse(provType_verbs)) {
     fflush(NULL);
     _exit(status);
   }
@@ -1635,7 +1695,7 @@ void init_fixedHeap(void) {
   //
   size_t size = chpl_comm_getenvMaxHeapSize();
   if ( ! (chpl_numNodes > 1
-          && (getNetworkType() == networkAries || size != 0))) {
+          && (providerAvail(provType_gni) || size != 0))) {
     return;
   }
 
@@ -1722,8 +1782,7 @@ void emit_delayedFixedHeapMsgs(void) {
   // We only need a fixed heap if we're multinode on a Cray XC system
   // and using the gni provider.
   //
-  if (chpl_numNodes <= 1
-      || getNetworkType() != networkAries) {
+  if (chpl_numNodes <= 1 || !providerInUse(provType_gni)) {
     return;
   }
 
@@ -3279,7 +3338,7 @@ void ofi_put_V(int v_len, void** addr_v, void** local_mr_v,
   // Initiate the batch.  If we're using the RxM provider, record
   // which nodes we PUT to; see below for why this is needed.
   //
-  if (providerHasRxm) {
+  if (providerInUse(provType_rxm)) {
     bitmapZero(b);
   }
   for (int vi = 0; vi < v_len; vi++) {
@@ -3311,12 +3370,12 @@ void ofi_put_V(int v_len, void** addr_v, void** local_mr_v,
                                     (vi < v_len - 1) ? FI_MORE : 0),
                         checkTxCQ(tcip));
     tcip->numTxns++;
-    if (providerHasRxm) {
+    if (providerInUse(provType_rxm)) {
       bitmapSetBit(b, locale_v[vi]);
     }
   }
 
-  if (providerHasRxm) {
+  if (providerInUse(provType_rxm)) {
     //
     // The verbs;ofi_rxm provider has a peculiarity: it advertises that
     // it supports FI_DELIVERY_COMPLETE but it doesn't actually do so.
