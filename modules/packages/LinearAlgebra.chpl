@@ -1452,7 +1452,6 @@ proc eig(A: [] ?t, param left = false, param right = false)
 
   if !left && !right {
     var vl, vr: [1..1, 1..n] t;
-    var eigVals;
     if t == complex {
     LAPACK.geev(lapack_memory_order.row_major, 'N', 'N', copy, wr, vl, vr);
     eigVals = w;
