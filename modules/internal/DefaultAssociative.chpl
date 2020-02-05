@@ -628,10 +628,18 @@ module DefaultAssociative {
     var tmpDom = {0..(-1:chpl_table_index_type)};
     var tmpTable: [tmpDom] eltType;
 
+    // Don't use this for now, I don't think it's the correct answer.
+    pragma "no doc"
+    proc _isIgnoredNonNilableClass(type t) param where isNonNilableClass(t) {
+      // Make an exception for the locale type since it "lives" forever.
+      if t:unmanaged == unmanaged locale then return false;
+    }
+
     //
     // #14367 - Use this as a workaround in order to detect whether or not
     // the element type of an associative array is a non-nilable class.
-    // 
+    //
+    pragma "no doc"
     proc postinit() {
       if isNonNilableClass(this.eltType) {
         param msg = "Cannot initialize associative array because"

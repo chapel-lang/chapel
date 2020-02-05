@@ -111,7 +111,7 @@ class Replicated : BaseDist {
   var targetLocDom : domain(here.id.type);
 
   // the desired locales (an array of locales)
-  const targetLocales : [targetLocDom] locale;
+  const targetLocales : [targetLocDom] locale?;
 }
 
 
@@ -186,7 +186,7 @@ class ReplicatedDom : BaseRectangularDom {
 
   // local domain objects
   // NOTE: if they ever change after the initializer - Reprivatize them
-  var localDoms: [dist.targetLocDom] unmanaged LocReplicatedDom(rank, idxType, stridable);
+  var localDoms: [dist.targetLocDom] unmanaged LocReplicatedDom(rank, idxType, stridable)?;
 
   proc numReplicands return localDoms.numElements;
 
@@ -198,7 +198,8 @@ class ReplicatedDom : BaseRectangularDom {
     if boundsChecking then
       if (!dist.targetLocDom.contains(here.id)) then
         halt("locale ", here.id, " has no local replicand");
-    return localDoms[here.id];
+    // Force unwrap this reference for ease of use.
+    return localDoms[here.id]!;
   }
 
 }
@@ -275,7 +276,13 @@ proc ReplicatedDom.dsiReprivatize(other, reprivatizeData): void {
 
 proc Replicated.dsiClone(): _to_unmanaged(this.type) {
   if traceReplicatedDist then writeln("Replicated.dsiClone");
-  return new unmanaged Replicated(targetLocales);
+  var nonNilWrapper: [0..#targetLocales.size] locale;
+  var idx = 0;
+  for loc in targetLocales {
+    nonNilWrapper[idx] = loc!;
+    idx += 1;
+  }
+  return new unmanaged Replicated(nonNilWrapper);
 }
 
 // create a new domain mapped with this distribution
@@ -322,7 +329,7 @@ proc ReplicatedDom.dsiSetIndices(domArg: domain): void {
   domRep = domArg;
   coforall locDom in localDoms do
     on locDom do
-      locDom.domLocalRep = domArg;
+      locDom!.domLocalRep = domArg;
 }
 
 proc ReplicatedDom.dsiGetIndices(): rank * range(idxType,
@@ -424,7 +431,7 @@ class ReplicatedArr : AbsBaseArr {
   // the replicated arrays
   // NOTE: 'dom' must be initialized prior to initializing 'localArrs'
   var localArrs: [dom.dist.targetLocDom]
-              unmanaged LocReplicatedArr(eltType, dom.rank, dom.idxType, dom.stridable);
+              unmanaged LocReplicatedArr(eltType, dom.rank, dom.idxType, dom.stridable)?;
 
   //
   // helper function to get the local array safely
@@ -434,7 +441,8 @@ class ReplicatedArr : AbsBaseArr {
     if boundsChecking then
       if (!dom.dist.targetLocDom.contains(here.id)) then
         halt("locale ", here.id, " has no local replicand");
-    return localArrs[here.id];
+    // Force unwrap this reference for ease of use.
+    return localArrs[here.id]!;
   }
 
   //
@@ -527,7 +535,7 @@ proc ReplicatedDom.dsiBuildArray(type eltType)
    in zip(dist.targetLocales, localDoms, result.localArrs) do
     on loc do
       locArr = new unmanaged LocReplicatedArr(eltType, rank, idxType, stridable,
-                                    locDom);
+                                    locDom!);
   return result;
 }
 
@@ -542,11 +550,11 @@ proc ReplicatedArr.dsiBoundsCheck(indexx) {
 
 // Write the array out to the given Writer serially.
 proc ReplicatedArr.dsiSerialWrite(f): void {
-  localArrs[f.readWriteThisFromLocale()!.id].arrLocalRep._value.dsiSerialWrite(f);
+  localArrs[f.readWriteThisFromLocale()!.id]!.arrLocalRep._value.dsiSerialWrite(f);
 }
 
 proc ReplicatedArr.dsiSerialRead(f, loc): void {
-  localArrs[f.readWriteThisFromLocale()!.id].arrLocalRep._value.dsiSerialRead(f);
+  localArrs[f.readWriteThisFromLocale()!.id]!.arrLocalRep._value.dsiSerialRead(f);
 }
 
 proc isReplicatedArr(arr) param {
