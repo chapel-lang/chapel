@@ -449,7 +449,7 @@ class ReplicatedArr : AbsBaseArr {
   // Access another locale's local array representation
   //
   proc replicand(loc: locale) ref {
-    return localArrs[loc.id].arrLocalRep;
+    return localArrs[loc.id]!.arrLocalRep;
   }
 }
 
