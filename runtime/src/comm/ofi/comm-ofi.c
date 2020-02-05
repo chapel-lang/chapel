@@ -4398,140 +4398,15 @@ void doCpuAMO(void* obj,
     } else if (ofiType == FI_UINT64) {
       CPU_INT_ARITH_AMO(add, uint_least64_t, u64);
     } else if (ofiType == FI_FLOAT) {
-      chpl_amo_datum_t xpctd;
-      chpl_amo_datum_t dsrd;
-      chpl_bool32 done;
-
-      do {
-        xpctd.u32 = atomic_load_int_least32_t(obj);
-        dsrd.r32 = xpctd.r32 + myOpnd1->r32;
-        done = atomic_compare_exchange_strong_uint_least32_t(obj,
-                                                             xpctd.u32,
-                                                             dsrd.u32);
-      } while (!done);
-
-      if (result != NULL) {
-        *(float*) result = xpctd.r32;
-      }
+      CPU_INT_ARITH_AMO(add, _real32, r32);
     } else if (ofiType == FI_DOUBLE) {
-      chpl_amo_datum_t xpctd;
-      chpl_amo_datum_t dsrd;
-      chpl_bool32 done;
-
-      do {
-        xpctd.u64 = atomic_load_int_least64_t(obj);
-        dsrd.r64 = xpctd.r64 + myOpnd1->r64;
-        done = atomic_compare_exchange_strong_uint_least64_t(obj,
-                                                             xpctd.u64,
-                                                             dsrd.u64);
-      } while (!done);
-
-      if (result != NULL) {
-        *(double*) result = xpctd.r64;
-      }
+      CPU_INT_ARITH_AMO(add, _real64, r64);
     } else {
       INTERNAL_ERROR_V("doCpuAMO(): unsupported ofiOp %d, ofiType %d",
                        ofiOp, ofiType);
     }
     break;
 
-#if 0
-    //
-    // This was lifted from comm=ugni.  I'm not going to ever use it
-    // directly.  But I'm leaving it here to remind myself to cover the
-    // case where the object is in registered memory, when I add support
-    // for AMOs done directly in the fabric.
-    //
-
-  case cmpxchg_64:
-    //
-    // If the object is not in memory registered with the NIC, use the
-    // processor.  Otherwise, since the other 64-bit AMOs are done on
-    // the NIC, for coherence do this one on the NIC as well.
-    //
-    {
-      chpl_bool32 my_res;
-      mem_region_t* mr;
-      if ((mr = mreg_for_local_addr(obj)) == NULL) {
-        my_res = atomic_compare_exchange_strong_int_least64_t
-                   ((atomic_int_least64_t*) obj,
-                    *(int_least64_t*) operand1,
-                    *(int_least64_t*) operand2);
-      }
-      else {
-        int_least64_t nic_res;
-        do_nic_amo(operand1, operand2, chpl_nodeID, obj, sizeof(nic_res),
-                   amo_cmd_2_nic_op(cmpxchg_64, 1), &nic_res, mr);
-        my_res = (nic_res == *(int_least64_t*) operand1) ? true : false;
-      }
-      memcpy(result, &my_res, sizeof(my_res));
-    }
-    break;
-
-  case add_r32:
-    //
-    // Emulate 32-bit real add using compare-exchange.
-    //
-    {
-      int_least32_t expected;
-      int_least32_t desired;
-      chpl_bool32 done;
-
-      do {
-        expected = atomic_load_int_least32_t((atomic_int_least32_t*) obj);
-        *(float*) &desired  = *(float*) &expected + *(float*) operand1;
-        done = atomic_compare_exchange_strong_int_least32_t
-                 ((atomic_int_least32_t*) obj, expected, desired);
-      } while (!done);
-
-      if (result != NULL) {
-        memcpy(result, &expected, sizeof(expected));
-      }
-    }
-    break;
-
-  case add_r64:
-    //
-    // Emulate 64-bit real add using compare-exchange.  If the object
-    // is not in memory registered with the NIC, use the processor.
-    // Otherwise, since the other 64-bit AMOs are done on the NIC, for
-    // coherence do this one on the NIC as well.
-    //
-    {
-      int_least64_t expected;
-      int_least64_t desired;
-      mem_region_t* mr;
-
-      if ((mr = mreg_for_local_addr(obj)) == NULL) {
-        chpl_bool32 done;
-
-        do {
-          expected =
-            atomic_load_int_least64_t((atomic_int_least64_t*) obj);
-          *(double*) &desired = *(double*) &expected + *(double*) operand1;
-          done = atomic_compare_exchange_strong_int_least64_t
-                   ((atomic_int_least64_t*) obj, expected, desired);
-        } while (!done);
-      }
-      else {
-        int_least64_t nic_res;
-
-        do {
-          do_remote_get(&expected, chpl_nodeID, obj, sizeof(expected),
-                        may_proxy_false);
-          *(double*) &desired = *(double*) &expected + *(double*) operand1;
-          do_nic_amo(&expected, &desired, chpl_nodeID, obj,
-                     sizeof(nic_res), amo_cmd_2_nic_op(cmpxchg_64, 1),
-                     &nic_res, mr);
-        } while (nic_res != expected);
-      }
-
-      if (result != NULL) {
-        memcpy(result, &expected, sizeof(expected));
-      }
-    }
-    break;
-#endif
 
   default:
     INTERNAL_ERROR_V("doCpuAMO(): unsupported ofiOp %d, ofiType %d",
