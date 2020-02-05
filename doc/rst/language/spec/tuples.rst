@@ -845,7 +845,11 @@ Returns true if ``t`` is a homogeneous tuple; otherwise false.
 
 Returns true if ``t`` is a tuple; otherwise false.
 
-BLOCK-protohead proc isTupleType(type t) param
+
+
+.. code-block:: chapel
+
+  proc isTupleType(type t) param
 
 Returns true if ``t`` is a tuple of types; otherwise false.
 

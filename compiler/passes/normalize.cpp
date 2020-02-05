@@ -1141,8 +1141,6 @@ static void processManagedNew(CallExpr* newCall) {
 
 class AddEndOfStatementMarkers : public AstVisitorTraverse
 {
-  private:
-    void addMarker(Expr* node, CallExpr* existingEndOfStatement);
   public:
     virtual bool enterCallExpr(CallExpr* node);
     virtual bool enterDefExpr(DefExpr* node);
@@ -1150,8 +1148,10 @@ class AddEndOfStatementMarkers : public AstVisitorTraverse
     virtual bool enterLoopExpr(LoopExpr* node);
 };
 
-void AddEndOfStatementMarkers::addMarker(Expr* node,
-                                         CallExpr* existingEndOfStatement) {
+// Note, this might be called also during resolution
+// Adds a PRIM_END_OF_STATEMENT if the second argument is NULL
+void addMentionToEndOfStatement(Expr* node, CallExpr* existingEndOfStatement) {
+
   // Rule out several cases that shouldn't get end-of-statement markers
   if (node->list == NULL)
     return;
@@ -1191,7 +1191,6 @@ void AddEndOfStatementMarkers::addMarker(Expr* node,
     return;
 
   // Gather symexprs used in the statement
-  // This could be folded into the AstVisitor (but make it more complex)
   std::vector<SymExpr*> mentions;
   collectSymExprs(node, mentions);
 
@@ -1218,12 +1217,28 @@ void AddEndOfStatementMarkers::addMarker(Expr* node,
   // A reasonable alternative would be for transformations such as
   // the removal of .type blocks to add such SymExprs.
   for_vector(SymExpr, se, mentions) {
-    if (VarSymbol* var = toVarSymbol(se->symbol()))
+    if (VarSymbol* var = toVarSymbol(se->symbol())) {
       if (!var->hasFlag(FLAG_TEMP) &&
           !var->isParameter() &&
           // exclude global variables, e.g. gMethodToken
-          var->defPoint->getFunction() == node->getFunction())
-        call->insertAtTail(new SymExpr(se->symbol()));
+          var->defPoint->getFunction() == node->getFunction()) {
+
+        // check that the variable is defined outside of the
+        // node (to avoid adding mentions of removed variables
+        // in param-if folding)
+        bool definedOutsideOfNode = true;
+        if (DefExpr* def = var->defPoint) {
+          for (Expr* cur = def; cur != NULL; cur = cur->parentExpr) {
+            if (cur == node) {
+              definedOutsideOfNode = false;
+              break;
+            }
+          }
+        }
+        if (definedOutsideOfNode)
+          call->insertAtTail(new SymExpr(se->symbol()));
+      }
+    }
   }
 
   // Don't add if already at the end of the block and no mentions are stored
@@ -1232,12 +1247,12 @@ void AddEndOfStatementMarkers::addMarker(Expr* node,
 }
 
 bool AddEndOfStatementMarkers::enterIfExpr(IfExpr* node) {
-  addMarker(node, NULL);
+  addMentionToEndOfStatement(node, NULL);
   return false;
 }
 
 bool AddEndOfStatementMarkers::enterLoopExpr(LoopExpr* node) {
-  addMarker(node, NULL);
+  addMentionToEndOfStatement(node, NULL);
   return false;
 }
 
@@ -1252,7 +1267,7 @@ bool AddEndOfStatementMarkers::enterCallExpr(CallExpr* node) {
       if (lhs->symbol()->hasFlag(FLAG_TEMP))
         return false;
 
-  addMarker(node, NULL);
+  addMentionToEndOfStatement(node, NULL);
   return false;
 }
 
@@ -1267,7 +1282,7 @@ bool AddEndOfStatementMarkers::enterDefExpr(DefExpr* node) {
       if (CallExpr* call = toCallExpr(cur))
         if (call->isPrimitive(PRIM_END_OF_STATEMENT))
           endOfStatement = call;
-    addMarker(node, endOfStatement);
+    addMentionToEndOfStatement(node, endOfStatement);
     return false;
   }
 
@@ -2550,6 +2565,7 @@ static void errorIfSplitInitializationRequired(DefExpr* def, Expr* cur);
 
 typedef enum {
   FOUND_NOTHING = 0,
+  FOUND_RET, // throw or return
   FOUND_USE,
   FOUND_INIT
 } found_init_t;
@@ -2585,6 +2601,17 @@ static bool findInitPoints(DefExpr* def,
 
   found_init_t found = doFindInitPoints(def, start, initAssigns);
   return (found == FOUND_INIT);
+}
+
+// Returns true if there is an init or use at or after cur
+static bool checkForUseAfterReturn(DefExpr* def, Expr* start) {
+  for (Expr* cur = start; cur != NULL; cur = cur->next) {
+    if (containsSymExprFor(cur, def->sym)) {
+      return true;
+    }
+  }
+
+  return false;
 }
 
 static found_init_t doFindInitPoints(DefExpr* def,
@@ -2625,6 +2652,22 @@ static found_init_t doFindInitPoints(DefExpr* def,
           errorIfSplitInitializationRequired(def, cur);
           return FOUND_USE;
         }
+
+        if (call->isPrimitive(PRIM_RETURN) || call->isPrimitive(PRIM_THROW)) {
+          if (checkForUseAfterReturn(def, call->next))
+            return FOUND_USE;
+          else
+            return FOUND_RET;
+        }
+      }
+
+    // return
+    } else if (GotoStmt* gt = toGotoStmt(cur)) {
+      if (gt->gotoTag == GOTO_RETURN) {
+        if (checkForUseAfterReturn(def, gt->next))
+          return FOUND_USE;
+        else
+          return FOUND_RET;
       }
 
     // { x = ... }
@@ -2644,6 +2687,8 @@ static found_init_t doFindInitPoints(DefExpr* def,
         } else if (found == FOUND_USE) {
           errorIfSplitInitializationRequired(def, cur);
           return FOUND_USE;
+        } else if (found == FOUND_RET) {
+          return FOUND_RET;
         }
       }
 
@@ -2651,23 +2696,37 @@ static found_init_t doFindInitPoints(DefExpr* def,
       Expr* start = tr->body()->body.first();
       found_init_t foundBody = doFindInitPoints(def, start, initAssigns);
 
+      bool allCatchesRet = true;
+
       // if there are any catches, check them for uses;
       // also a catch block prevents initialization in the try body
       for_alist(elt, tr->_catches) {
         if (CatchStmt* ctch = toCatchStmt(elt)) {
           Expr* start = ctch->body()->body.first();
           found_init_t foundCatch = doFindInitPoints(def, start, initAssigns);
-          if (foundCatch != FOUND_NOTHING || foundBody != FOUND_NOTHING) {
+          if (foundCatch == FOUND_USE || foundCatch == FOUND_INIT) {
             // Consider even an assignment in a catch block as a use
             errorIfSplitInitializationRequired(def, cur);
             return FOUND_USE;
+          } else if (foundCatch != FOUND_RET) {
+            allCatchesRet = false;
           }
         }
       }
 
-      if (foundBody != FOUND_NOTHING) {
+      // if we got here, no catch returned FOUND_USE.
+
+      if (foundBody == FOUND_USE) {
         errorIfSplitInitializationRequired(def, cur);
         return FOUND_USE;
+      } else if (foundBody == FOUND_INIT) {
+        if (allCatchesRet) {
+          // all catches are either FOUND_RET or FOUND_INIT
+          return FOUND_INIT;
+        } else {
+          errorIfSplitInitializationRequired(def, cur);
+          return FOUND_USE;
+        }
       }
 
     // if _ { x = ... } else { x = ... }
@@ -2686,7 +2745,9 @@ static found_init_t doFindInitPoints(DefExpr* def,
       if (elseStart != NULL)
         foundElse = doFindInitPoints(def, elseStart, elseAssigns);
 
-      if (foundIf == FOUND_INIT && foundElse == FOUND_INIT) {
+      if ((foundIf == FOUND_INIT && foundElse == FOUND_INIT) ||
+          (foundIf == FOUND_INIT && foundElse == FOUND_RET) ||
+          (foundIf == FOUND_RET && foundElse == FOUND_INIT)) {
         for_vector(CallExpr, call, ifAssigns) {
           initAssigns.push_back(call);
         }
@@ -2702,6 +2763,8 @@ static found_init_t doFindInitPoints(DefExpr* def,
         // at least one of them must be FOUND_USE, so return that
         errorIfSplitInitializationRequired(def, cur);
         return FOUND_USE;
+      } else if (foundIf == FOUND_RET && foundElse == FOUND_RET) {
+        return FOUND_RET;
       }
 
     } else {

@@ -705,6 +705,7 @@ extern const char* astr_forexpr;
 extern const char* astr_loopexpr_iter;
 extern const char* astrPostfixBang;
 extern const char* astrBorrow;
+extern const char* astr_init_coerce_tmp;
 
 void initAstrConsts();
 
