@@ -6245,7 +6245,7 @@ static void resolveInitVar(CallExpr* call) {
 *                                                                             *
 ************************************** | *************************************/
 
-FnSymbol* findCopyInit(AggregateType* at) {
+FnSymbol* findCopyInitFn(AggregateType* at) {
   VarSymbol* tmpAt = newTemp(at);
 
   FnSymbol* ret = NULL;
@@ -6282,7 +6282,7 @@ FnSymbol* findCopyInit(AggregateType* at) {
   return ret;
 }
 
-FnSymbol* findAssign(AggregateType* at) {
+FnSymbol* findAssignFn(AggregateType* at) {
   VarSymbol* tmpAt = newTemp(at);
   FnSymbol* ret = NULL;
 
@@ -6292,7 +6292,7 @@ FnSymbol* findAssign(AggregateType* at) {
   return ret;
 }
 
-FnSymbol* findZeroArgInit(AggregateType* at) {
+FnSymbol* findZeroArgInitFn(AggregateType* at) {
   VarSymbol* tmpAt = newTemp(at);
   FnSymbol* ret = NULL;
 

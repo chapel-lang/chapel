@@ -880,7 +880,7 @@ static Expr* preFoldPrimOp(CallExpr* call) {
           ts->addFlag(FLAG_TYPE_ASSIGN_MISSING);
         } else {
           // Try resolving a test = to set the flags
-          FnSymbol* assign = findAssign(at);
+          FnSymbol* assign = findAssignFn(at);
           if (assign == NULL) {
             ts->addFlag(FLAG_TYPE_ASSIGN_MISSING);
           } else if (assign->hasFlag(FLAG_COMPILER_GENERATED)) {
@@ -913,7 +913,7 @@ static Expr* preFoldPrimOp(CallExpr* call) {
           ts->addFlag(FLAG_TYPE_INIT_EQUAL_MISSING);
         } else {
           // Try resolving a test init= to set the flags
-          FnSymbol* initEq = findCopyInit(at);
+          FnSymbol* initEq = findCopyInitFn(at);
           if (initEq == NULL) {
             ts->addFlag(FLAG_TYPE_INIT_EQUAL_MISSING);
           } else if (initEq->hasFlag(FLAG_COMPILER_GENERATED)) {
@@ -948,7 +948,7 @@ static Expr* preFoldPrimOp(CallExpr* call) {
           ts->addFlag(FLAG_TYPE_DEFAULT_VALUE);
         } else {
           // Try resolving a test init() to set the flags
-          FnSymbol* initZero = findZeroArgInit(at);
+          FnSymbol* initZero = findZeroArgInitFn(at);
           if (initZero == NULL) {
             ts->addFlag(FLAG_TYPE_NO_DEFAULT_VALUE);
           } else if (initZero->hasFlag(FLAG_COMPILER_GENERATED)) {

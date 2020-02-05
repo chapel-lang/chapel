@@ -482,7 +482,7 @@ static bool fixupDefaultInitCopy(FnSymbol* fn,
       // it up completely...
       instantiateBody(newFn);
 
-      if (FnSymbol* initFn = findCopyInit(ct)) {
+      if (FnSymbol* initFn = findCopyInitFn(ct)) {
         Symbol*   thisTmp  = newTemp(ct);
         DefExpr*  def      = new DefExpr(thisTmp);
         CallExpr* initCall = NULL;
