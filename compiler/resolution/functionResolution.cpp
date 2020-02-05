@@ -6245,7 +6245,7 @@ static void resolveInitVar(CallExpr* call) {
 *                                                                             *
 ************************************** | *************************************/
 
-FnSymbol* findCopyInit(AggregateType* at) {
+FnSymbol* findCopyInitFn(AggregateType* at) {
   VarSymbol* tmpAt = newTemp(at);
 
   FnSymbol* ret = NULL;
@@ -6278,6 +6278,26 @@ FnSymbol* findCopyInit(AggregateType* at) {
     }
     ret->setInstantiationPoint(point);
   }
+
+  return ret;
+}
+
+FnSymbol* findAssignFn(AggregateType* at) {
+  VarSymbol* tmpAt = newTemp(at);
+  FnSymbol* ret = NULL;
+
+  CallExpr* call = new CallExpr("=", tmpAt, tmpAt);
+  ret = resolveUninsertedCall(at, call, false);
+
+  return ret;
+}
+
+FnSymbol* findZeroArgInitFn(AggregateType* at) {
+  VarSymbol* tmpAt = newTemp(at);
+  FnSymbol* ret = NULL;
+
+  CallExpr* call = new CallExpr(astrInit, gMethodToken, tmpAt);
+  ret = resolveUninsertedCall(at, call, false);
 
   return ret;
 }
