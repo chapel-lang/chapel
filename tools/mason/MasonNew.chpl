@@ -52,8 +52,11 @@ proc masonNew(args) throws {
         }
       }
       
-      if(validateAndInit(name,vcs,show)){
-          InitProject(name, vcs, show);
+      if validateAndInit(name,vcs,show) {
+        if isDir(name) {
+          throw new owned MasonError("A directory named '" + name + "' already exists");
+        }
+        InitProject(name, vcs, show);
       }
       
     }
@@ -66,22 +69,19 @@ proc masonNew(args) throws {
 
 proc validateAndInit(name,vcs,show) throws {
   if name == '' {
-          throw new owned MasonError("No package name specified");
-        }
-        else if !isIdentifier(name) {
-          throw new owned MasonError("Bad package name '" + name +
-                              "' - only Chapel identifiers are legal package names");
-        }
-        else if name.count("$") > 0 {
-          throw new owned MasonError("Bad package name '" + name +
-                              "' - $ is not allowed in package names");
-        }
-        else if isDir(name) {
-            throw new owned MasonError("A directory named '" + name + "' already exists");
-        }
-        else {
-          return true;
-        }
+    throw new owned MasonError("No package name specified");
+  }
+  else if !isIdentifier(name) {
+    throw new owned MasonError("Bad package name '" + name +
+                        "' - only Chapel identifiers are legal package names");
+  }
+  else if name.count("$") > 0 {
+    throw new owned MasonError("Bad package name '" + name +
+                        "' - $ is not allowed in package names");
+  }
+  else {
+    return true;
+  }
 }
 
 proc InitProject(name, vcs, show) throws {
