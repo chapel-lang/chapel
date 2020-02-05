@@ -490,9 +490,58 @@ proc isRefIter(e)   param  return isRefIterValue(e);
 pragma "no doc" // Not sure how we want to document isPOD* right now
 proc isPOD(e)       param  return isPODValue(e);
 
+/*
+
+Returns ``true`` if the argument is a type or an expression of a type
+that can be copy-initialized and ``false`` otherwise.
+
+Note that even if this function returns ``true``, it might be the case that the
+type only supports copy-initialization from mutable values.
+:record:`~OwnedObject.owned` is an example of a type with that behavior.
+
+See also the specification section :ref:`Copy_Initialization_of_Records`.
+
+*/
 proc isCopyable(e) param return isCopyableValue(e);
+
+/*
+
+Returns ``true`` if the argument is a type or an expression of a type
+that can be copy-initialized from a ``const`` value and ``false`` otherwise.
+
+Returns ``false`` for :record:`~OwnedObject.owned` because copy-initialization
+for that type leaves the source argument storing ``nil``.
+
+See also the specification section :ref:`Copy_Initialization_of_Records`.
+
+*/
 proc isConstCopyable(e) param return isConstCopyableValue(e);
+
+/*
+
+Returns ``true`` if the argument is a type or expression of a type that
+can be assigned from another value and ``false`` otherwise.
+
+Note that even if this function returns ``true``, it might be the case that the
+type only supports assignment from mutable values.
+:record:`~OwnedObject.owned` is an example of a type with that behavior.
+
+See also the specification section :ref:`Record_Assignment`.
+
+*/
 proc isAssignable(e) param return isCopyableValue(e);
+
+/*
+
+Returns ``true`` if the argument is a type or expression of a type that
+can be assigned from a ``const`` value and ``false`` otherwise.
+
+Returns ``false`` for  :record:`~OwnedObject.owned` because assignment
+for that type leaves the source argument storing ``nil``.
+
+See also the specification section :ref:`Record_Assignment`.
+
+*/
 proc isConstAssignable(e) param return isConstAssignableValue(e);
 
 /*
