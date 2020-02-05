@@ -511,6 +511,7 @@ static void scopeResolve(const AList& alist, ResolveScope* scope) {
       scopeResolve(deferStmt->body(), scope);
 
     } else if (isUseStmt(stmt)           == true ||
+               isImportStmt(stmt)        == true ||
                isUnresolvedSymExpr(stmt) == true ||
                isSymExpr(stmt)           == true ||
                isGotoStmt(stmt)          == true) {

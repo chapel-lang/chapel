@@ -45,6 +45,7 @@
 
 #include "DecoratedClassType.h"
 #include "ForallStmt.h"
+#include "ImportStmt.h"
 #include "LoopExpr.h"
 #include "scopeResolve.h"
 
@@ -417,8 +418,14 @@ bool ResolveScope::extend(Symbol* newSym, bool isTopLevel) {
   return retval;
 }
 
-bool ResolveScope::extend(const UseStmt* stmt) {
-  mUseList.push_back(stmt);
+bool ResolveScope::extend(UseStmt* stmt) {
+  mUseImportList.push_back(stmt);
+
+  return true;
+}
+
+bool ResolveScope::extend(ImportStmt* stmt) {
+  mUseImportList.push_back(stmt);
 
   return true;
 }
@@ -502,15 +509,15 @@ Symbol* ResolveScope::lookupWithUses(UnresolvedSymExpr* usymExpr, bool isUse) co
   const char* name   = usymExpr->unresolved;
   Symbol*     retval = lookupNameLocally(name, isUse);
 
-  if (retval == NULL && mUseList.size() > 0) {
-    UseList useList = mUseList;
+  if (retval == NULL && mUseImportList.size() > 0) {
+    UseImportList useImportList = mUseImportList;
     SymList symbols;
 
-    buildBreadthFirstUseList(useList);
+    buildBreadthFirstUseImportList(useImportList);
 
     // Do not use for_vector(); it terminates on a NULL
-    for (size_t i = 0; i < useList.size(); i++) {
-      if (const UseStmt* use = useList[i]) {
+    for (size_t i = 0; i < useImportList.size(); i++) {
+      if (UseStmt* use = toUseStmt(useImportList[i])) {
         if (use->skipSymbolSearch(name, true) == false) {
           BaseAST*    scopeToUse = use->getSearchScope();
           const char* nameToUse  = name;
@@ -713,14 +720,14 @@ bool ResolveScope::getFieldsWithUses(const char* fieldName,
     symbols.push_back(sym);
 
   } else {
-    if (mUseList.size() > 0) {
-      std::vector<const UseStmt*> useList = mUseList;
+    if (mUseImportList.size() > 0) {
+      std::vector<Stmt*> useImportList = mUseImportList;
 
-      buildBreadthFirstUseList(useList);
+      buildBreadthFirstUseImportList(useImportList);
 
       // Do not use for_vector(); it terminates on a NULL
-      for (size_t i = 0; i < useList.size(); i++) {
-        const UseStmt* use = useList[i];
+      for (size_t i = 0; i < useImportList.size(); i++) {
+        UseStmt* use = toUseStmt(useImportList[i]);
 
         if (use != NULL) {
           if (use->skipSymbolSearch(fieldName, true) == false) {
@@ -756,22 +763,22 @@ bool ResolveScope::getFieldsWithUses(const char* fieldName,
 *                                                                             *
 ************************************** | *************************************/
 
-void ResolveScope::buildBreadthFirstUseList(UseList& useList) const {
-  UseMap visited;
+void ResolveScope::buildBreadthFirstUseImportList(UseImportList& useImportList) const {
+  UseImportMap visited;
 
-  buildBreadthFirstUseList(useList, useList, visited);
+  buildBreadthFirstUseImportList(useImportList, useImportList, visited);
 }
 
-void ResolveScope::buildBreadthFirstUseList(UseList& useList,
-                                            UseList& current,
-                                            UseMap&  visited) const {
-  UseList next;
+void ResolveScope::buildBreadthFirstUseImportList(UseImportList& useImportList,
+                                            UseImportList& current,
+                                            UseImportMap&  visited) const {
+  UseImportList next;
 
   // use NULL as a sentinel to identify modules of equal depth
-  useList.push_back(NULL);
+  useImportList.push_back(NULL);
 
   for (size_t i = 0; i < current.size(); i++) {
-    const UseStmt* source = current[i];
+    UseStmt* source = toUseStmt(current[i]);
 
     if (source == NULL) {
       break;
@@ -799,7 +806,7 @@ void ResolveScope::buildBreadthFirstUseList(UseList& useList,
               if (useToAdd                   != NULL &&
                   skipUse(visited, useToAdd) == false) {
                 next.push_back(useToAdd);
-                useList.push_back(useToAdd);
+                useImportList.push_back(useToAdd);
               }
 
               // If applyOuterUse returned NULL, the number of symbols
@@ -819,22 +826,24 @@ void ResolveScope::buildBreadthFirstUseList(UseList& useList,
   }
 
   if (next.size() > 0) {
-    buildBreadthFirstUseList(useList, next, visited);
+    buildBreadthFirstUseImportList(useImportList, next, visited);
   }
 }
 
 // Returns true if we should skip looking at this use, because the symbols it
 // provides have already been covered by a previous use.
-bool ResolveScope::skipUse(UseMap& visited, const UseStmt* current) const {
+bool ResolveScope::skipUse(UseImportMap& visited, const UseStmt* current) const {
   SymExpr* useSE  = toSymExpr(current->src);
-  UseList  vec    = visited[useSE->symbol()];
+  UseImportList  vec    = visited[useSE->symbol()];
   bool     retval = false;
 
   for (size_t i = 0; i < vec.size() && retval == false; i++) {
-    const UseStmt* use = vec[i];
+    UseStmt* use = toUseStmt(vec[i]);
 
-    if (current->providesNewSymbols(use) == false) {
-      retval = true;
+    if (use != NULL) {
+      if (current->providesNewSymbols(use) == false) {
+        retval = true;
+      }
     }
   }
 
