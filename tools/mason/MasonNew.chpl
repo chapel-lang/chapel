@@ -159,5 +159,4 @@ proc makeProjectFiles(path:string,name: string) {
   } else if(name == "/example") {
     mkdir(path + "/example");
   }
-  
 }
