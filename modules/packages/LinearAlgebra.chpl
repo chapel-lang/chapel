@@ -1454,7 +1454,7 @@ proc eig(A: [] ?t, param left = false, param right = false)
     var vl, vr: [1..1, 1..n] t;
     if t == complex {
     LAPACK.geev(lapack_memory_order.row_major, 'N', 'N', copy, wr, vl, vr);
-    eigVals = w;
+    eigVals = wr;
     }else{
     LAPACK.geev(lapack_memory_order.row_major, 'N', 'N', copy, wr, wi, vl, vr);
     eigVals = convertToCplx(wr, wi);
@@ -1466,7 +1466,7 @@ proc eig(A: [] ?t, param left = false, param right = false)
     var vlcplx: if t == complex then vl else [1..n, 1..n] complex(numBits(t)*2);
     if t == complex {
     LAPACK.geev(lapack_memory_order.row_major, 'V', 'N', copy, wr, vl, vr);
-    eigVals = w;
+    eigVals = wr;
     vlcplx = vl;
     }else{
     LAPACK.geev(lapack_memory_order.row_major, 'V', 'N', copy, wr, wi, vl, vr);
@@ -1480,7 +1480,7 @@ proc eig(A: [] ?t, param left = false, param right = false)
     var vrcplx: if t == complex then vr else [1..n, 1..n] complex(numBits(t)*2);
     if t == complex {
     LAPACK.geev(lapack_memory_order.row_major, 'N', 'V', copy, wr, vl, vr);
-    eigVals = w;
+    eigVals = wr;
     vrcplx = vr;
     }else{
     LAPACK.geev(lapack_memory_order.row_major, 'N', 'V', copy, wr, wi, vl, vr);
@@ -1496,7 +1496,7 @@ proc eig(A: [] ?t, param left = false, param right = false)
     var vrcplx: if t == complex then vr else [1..n, 1..n] complex(numBits(t)*2);
     if t == complex {
     LAPACK.geev(lapack_memory_order.row_major, 'V', 'V', copy, wr, vl, vr);
-    eigVals = w;
+    eigVals = wr;
     vlcplx = vl;
     vrcplx = vr;
     }else{
