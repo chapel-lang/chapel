@@ -1453,40 +1453,40 @@ proc eig(A: [] ?t, param left = false, param right = false)
   if !left && !right {
     var vl, vr: [1..1, 1..n] t;
     if t == complex {
-    LAPACK.geev(lapack_memory_order.row_major, 'N', 'N', copy, wr, vl, vr);
-    eigVals = wr;
-    }else{
-    LAPACK.geev(lapack_memory_order.row_major, 'N', 'N', copy, wr, wi, vl, vr);
-    eigVals = convertToCplx(wr, wi);
-      }
+      LAPACK.geev(lapack_memory_order.row_major, 'N', 'N', copy, wr, vl, vr);
+      eigVals = wr;
+    } else {
+      LAPACK.geev(lapack_memory_order.row_major, 'N', 'N', copy, wr, wi, vl, vr);
+      eigVals = convertToCplx(wr, wi);
+    }
     return eigVals;
   } else if left && !right {
     var vl: [1..n, 1..n] t;
     var vr: [1..1, 1..n] t;
     var vlcplx: if t == complex then vl else [1..n, 1..n] complex(numBits(t)*2);
     if t == complex {
-    LAPACK.geev(lapack_memory_order.row_major, 'V', 'N', copy, wr, vl, vr);
-    eigVals = wr;
-    vlcplx = vl;
-    }else{
-    LAPACK.geev(lapack_memory_order.row_major, 'V', 'N', copy, wr, wi, vl, vr);
-    eigVals = convertToCplx(wr, wi);
-    vlcplx = flattenCplxEigenVecs(wi, vl);
-      }
+      LAPACK.geev(lapack_memory_order.row_major, 'V', 'N', copy, wr, vl, vr);
+      eigVals = wr;
+      vlcplx = vl;
+    } else {
+      LAPACK.geev(lapack_memory_order.row_major, 'V', 'N', copy, wr, wi, vl, vr);
+      eigVals = convertToCplx(wr, wi);
+      vlcplx = flattenCplxEigenVecs(wi, vl);
+    }
     return (eigVals, vlcplx);
   } else if right && !left {
     var vl: [1..1, 1..n] t;
     var vr: [1..n, 1..n] t;
     var vrcplx: if t == complex then vr else [1..n, 1..n] complex(numBits(t)*2);
     if t == complex {
-    LAPACK.geev(lapack_memory_order.row_major, 'N', 'V', copy, wr, vl, vr);
-    eigVals = wr;
-    vrcplx = vr;
-    }else{
-    LAPACK.geev(lapack_memory_order.row_major, 'N', 'V', copy, wr, wi, vl, vr);
-    eigVals = convertToCplx(wr, wi);
-    vrcplx = flattenCplxEigenVecs(wi, vr);
-      }
+      LAPACK.geev(lapack_memory_order.row_major, 'N', 'V', copy, wr, vl, vr);
+      eigVals = wr;
+      vrcplx = vr;
+    } else {
+      LAPACK.geev(lapack_memory_order.row_major, 'N', 'V', copy, wr, wi, vl, vr);
+      eigVals = convertToCplx(wr, wi);
+      vrcplx = flattenCplxEigenVecs(wi, vr);
+    }
     return (eigVals, vrcplx);
   } else {
     // left && right
@@ -1495,16 +1495,16 @@ proc eig(A: [] ?t, param left = false, param right = false)
     var vlcplx: if t == complex then vl else [1..n, 1..n] complex(numBits(t)*2);
     var vrcplx: if t == complex then vr else [1..n, 1..n] complex(numBits(t)*2);
     if t == complex {
-    LAPACK.geev(lapack_memory_order.row_major, 'V', 'V', copy, wr, vl, vr);
-    eigVals = wr;
-    vlcplx = vl;
-    vrcplx = vr;
-    }else{
-    LAPACK.geev(lapack_memory_order.row_major, 'V', 'V', copy, wr, wi, vl, vr);
-    eigVals = convertToCplx(wr, wi);
-    vlcplx = flattenCplxEigenVecs(wi, vl);
-    vrcplx = flattenCplxEigenVecs(wi, vr);
-      }
+      LAPACK.geev(lapack_memory_order.row_major, 'V', 'V', copy, wr, vl, vr);
+      eigVals = wr;
+      vlcplx = vl;
+      vrcplx = vr;
+    } else {
+      LAPACK.geev(lapack_memory_order.row_major, 'V', 'V', copy, wr, wi, vl, vr);
+      eigVals = convertToCplx(wr, wi);
+      vlcplx = flattenCplxEigenVecs(wi, vl);
+      vrcplx = flattenCplxEigenVecs(wi, vr);
+    }
     return (eigVals, vlcplx, vrcplx);
   }
 }
