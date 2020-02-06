@@ -121,8 +121,8 @@ proc ValidateInit(path: string) throws {
     }
   }
   if ToBeCreated.size == 1 {
-		throw new owned MasonError("Library project has already been initialised.");
-		exit(1);
+    throw new owned MasonError("Library project has already been initialised.");
+    exit(1);
   }
 
   for file in ToBeCreated{
@@ -139,10 +139,10 @@ proc ValidateInit(path: string) throws {
         addGitIgnore(path);
       } 
       else {
-				if(file == '/src' && path == '.'){
-					var pwd = getEnv("PWD");
-					var currDir = basename(pwd);
-					var newPath = currDir;
+        if(file == '/src' && path == '.'){
+          var pwd = getEnv("PWD");
+          var currDir = basename(pwd);
+          var newPath = currDir;
           mkdir(path + "/src");
           const libTemplate = '/* Documentation for ' + basename(path) +
           ' */\nmodule '+ basename(newPath) + ' {\n  writeln("New library: '+ basename(newPath) +'");\n}';
@@ -150,10 +150,10 @@ proc ValidateInit(path: string) throws {
           var libWriter = lib.writer();
           libWriter.write(libTemplate + '\n');
           libWriter.close();
-				}
+        }
 				else {
 	        makeProjectFiles(path,file);
-				}
+        }
       }
     }
   }
