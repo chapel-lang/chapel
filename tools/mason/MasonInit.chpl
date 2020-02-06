@@ -96,7 +96,7 @@ proc masonInit(args) throws {
 
 proc ValidateInit(path: string) throws {
   var files = [ "/Mason.toml" , "/src" , "/test" , "/example", "/.git", ".gitignore" ];
-  var ToBeCreated : list(string);				
+  var ToBeCreated : list(string);
   for idx in 1..files.size do {
     var file = files(idx);
 	  if file == "/Mason.toml" {
@@ -134,8 +134,8 @@ proc ValidateInit(path: string) throws {
       var name = basename(path);
       if file == "/.git" {
         gitInit(path, show=false);
-      } 
-			else if file == ".gitignore" {
+      }
+      else if file == ".gitignore" {
         addGitIgnore(path);
       } 
       else {
@@ -151,7 +151,7 @@ proc ValidateInit(path: string) throws {
           libWriter.write(libTemplate + '\n');
           libWriter.close();
         }
-				else {
+        else {
 	        makeProjectFiles(path,file);
         }
       }
