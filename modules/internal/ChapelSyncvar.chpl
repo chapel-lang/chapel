@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2020 Cray Inc.
+ * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -80,7 +80,7 @@ module ChapelSyncvar {
     if isSupported(t) == false then
       compilerError("sync/single types cannot contain type '", t : string, "'");
 
-    if !chpl_legacyClasses && isNonNilableClass(t) then
+    if isNonNilableClass(t) then
       compilerError("sync/single types cannot contain non-nilable classes");
 
     if isGenericType(t) then

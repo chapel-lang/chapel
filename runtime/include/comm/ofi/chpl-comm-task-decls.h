@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2020 Cray Inc.
+ * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -35,6 +35,8 @@
 typedef struct {
   chpl_cache_taskPrvData_t cache_data;
   int numTxnsOut;    // number of transactions outstanding
+  void* get_buff;
+  void* put_buff;
 } chpl_comm_taskPrvData_t;
 
 //

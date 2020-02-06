@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2020 Cray Inc.
+ * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -537,7 +537,7 @@ static void resolveInitCall(CallExpr* call, AggregateType* newExprAlias, bool fo
 
         checkForStoringIntoTuple(call, best->fn);
 
-        resolveNormalCallCompilerWarningStuff(best->fn);
+        resolveNormalCallCompilerWarningStuff(call, best->fn);
       }
     }
 

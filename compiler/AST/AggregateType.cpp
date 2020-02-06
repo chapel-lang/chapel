@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2020 Cray Inc.
+ * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -511,6 +511,8 @@ void AggregateType::addDeclarations(Expr* expr) {
 
     this->forwardingTo.insertAtTail(forwarding);
 
+  } else if (isEndOfStatementMarker(expr)) {
+    // drop it
   } else {
     INT_FATAL(expr, "unexpected case");
   }
@@ -2502,6 +2504,7 @@ void AggregateType::buildCopyInitializer() {
     fn->addFlag(FLAG_COMPILER_GENERATED);
     fn->addFlag(FLAG_LAST_RESORT);
     fn->addFlag(FLAG_COPY_INIT);
+    fn->addFlag(FLAG_SUPPRESS_LVALUE_ERRORS);
 
     _this->addFlag(FLAG_ARG_THIS);
 

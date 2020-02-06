@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2020 Cray Inc.
+ * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -42,9 +42,6 @@ extern int                              explainCallLine;
 extern SymbolMap                        paramMap;
 
 extern Vec<CallExpr*>                   callStack;
-
-extern char                             arrayUnrefName[];
-extern char                             primCoerceTmpName[];
 
 extern Map<Type*,     FnSymbol*>        autoDestroyMap;
 
@@ -144,7 +141,9 @@ bool canDispatch(Type*     actualType,
 
 void parseExplainFlag(char* flag, int* line, ModuleSymbol** module);
 
-FnSymbol* findCopyInit(AggregateType* ct);
+FnSymbol* findCopyInitFn(AggregateType* ct);
+FnSymbol* findAssignFn(AggregateType* at);
+FnSymbol* findZeroArgInitFn(AggregateType* at);
 
 FnSymbol* getTheIteratorFn(Symbol* ic);
 FnSymbol* getTheIteratorFn(Type* icType);
@@ -210,7 +209,7 @@ void      resolveCallAndCallee(CallExpr* call, bool allowUnresolved = false);
 Type*     resolveDefaultGenericTypeSymExpr(SymExpr* se);
 Type*     resolveTypeAlias(SymExpr* se);
 
-FnSymbol* tryResolveCall(CallExpr* call);
+FnSymbol* tryResolveCall(CallExpr* call, bool checkWithin=false);
 void      makeRefType(Type* type);
 
 // FnSymbol changes
@@ -229,6 +228,7 @@ FnSymbol* getUnalias(Type* t);
 
 
 bool isPOD(Type* t);
+bool recordContainingCopyMutatesField(Type* at);
 
 // resolution errors and warnings
 
@@ -240,9 +240,9 @@ void printResolutionErrorAmbiguous (CallInfo&                  info,
                                     Vec<ResolutionCandidate*>& candidates);
 void printUndecoratedClassTypeNote(Expr* ctx, Type* type);
 
-FnSymbol* resolveNormalCall(CallExpr* call, bool checkonly=false);
+FnSymbol* resolveNormalCall(CallExpr* call);
 
-void      resolveNormalCallCompilerWarningStuff(FnSymbol* resolvedFn);
+void resolveNormalCallCompilerWarningStuff(CallExpr* call, FnSymbol* resolvedFn);
 
 void checkMoveIntoClass(CallExpr* call, Type* lhs, Type* rhs);
 

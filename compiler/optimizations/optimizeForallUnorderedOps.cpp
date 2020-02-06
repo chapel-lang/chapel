@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2020 Cray Inc.
+ * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -127,6 +127,11 @@ static void helpGetLastStmts(Expr* last, std::vector<Expr*>& stmts) {
     if (FnSymbol* fn = call->resolvedFunction())
       if (fn->hasFlag(FLAG_COMPILER_ADDED_REMOTE_FENCE))
         last = last->prev;
+
+  // Ignore calls to PRIM_END_OF_STATEMENT
+  if (CallExpr* call = toCallExpr(last))
+    if (call->isPrimitive(PRIM_END_OF_STATEMENT))
+      last = last->prev;
 
   // Otherwise, add what we got.
   stmts.push_back(last);

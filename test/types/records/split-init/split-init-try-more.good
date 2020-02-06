@@ -1,0 +1,161 @@
+test1
+init 1
+deinit 1
+test2
+error encountered
+testAB00
+init 0
+init 1
+init 2
+(x = 0, ptr = {}) (x = 1, ptr = {}) (x = 2, ptr = {})
+deinit 2
+deinit 1
+deinit 0
+end
+testAB01
+init 0
+init 1
+deinit 1
+error encountered
+deinit 0
+testAB10
+init 0
+error encountered
+deinit 0
+testAB11
+init 0
+error encountered
+deinit 0
+test1eob
+init 1
+deinit 1
+test2eob
+error encountered
+testAB00eob
+init 1
+init 2
+deinit 2
+deinit 1
+testAB01
+init 1
+deinit 1
+error encountered
+testAB10eob
+error encountered
+testAB11eob
+error encountered
+test11
+init 1
+deinit 1
+error encountered
+test12
+init 1
+deinit 1
+error encountered
+test13
+init 1
+deinit 1
+error encountered
+test14
+error encountered
+test15
+error encountered
+test16
+error encountered
+test611
+error encountered
+test610
+error encountered
+test601
+init 1
+deinit 1
+error encountered
+test600
+init 1
+init 2
+deinit 2
+deinit 1
+after f
+test17
+init 1
+deinit 1
+error encountered
+test2010
+init 0
+begin try
+error encountered
+deinit 0
+test2100
+init 0
+begin try
+init 2
+end try
+deinit 2
+deinit 0
+test2101
+init 0
+begin try
+error encountered
+deinit 0
+test3000
+init 0
+begin try1
+init 1
+end try1
+deinit 1
+deinit 0
+test3010
+init 0
+begin try1
+error encountered1
+deinit 0
+test3111
+init 0
+begin try2
+error encountered2
+deinit 0
+test19
+begin inner
+init 1
+deinit 1
+error encountered
+Error: 
+test20
+begin inner
+init 1
+init 2
+init 3
+end inner
+deinit 3
+deinit 2
+deinit 1
+test21
+begin inner
+init 1
+init 2
+init 3
+deinit 3
+deinit 2
+deinit 1
+error encountered
+Error: 
+test22
+init
+init
+init
+begin inner
+init 1
+= 0 1
+deinit 1
+init 2
+= 0 2
+deinit 2
+init 3
+= 0 3
+deinit 3
+error encountered
+end inner
+(x = 1, ptr = {}) (x = 2, ptr = {}) (x = 3, ptr = {})
+deinit 3
+deinit 2
+deinit 1

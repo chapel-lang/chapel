@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2020 Cray Inc.
+ * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -162,6 +162,8 @@ BlockStmt* buildPragmaStmt(Vec<const char*>* pragmas,
   for_alist(expr, stmt->body) {
     if (DefExpr* def = toDefExpr(expr)) {
       addPragmaFlags(def->sym, pragmas);
+    } else if (isEndOfStatementMarker(expr)) {
+      // ignore it
     } else {
       error = true;
       break;
@@ -1013,7 +1015,10 @@ static BlockStmt* buildLoweredCoforall(Expr* indices,
     addByrefVars(taskBlk, byref_vars);
   }
 
-  BlockStmt* block = ForLoop::buildForLoop(indices, new SymExpr(iterator), taskBlk, true, zippered);
+  BlockStmt* block = ForLoop::buildCoforallLoop(indices,
+                                                new SymExpr(iterator),
+                                                taskBlk,
+                                                zippered);
   if (bounded) {
     if (!onBlock) { block->insertAtHead(new CallExpr("chpl_resetTaskSpawn", numTasks)); }
     block->insertAtHead(new CallExpr("_upEndCount", coforallCount, countRunningTasks, numTasks));
@@ -1480,6 +1485,12 @@ BlockStmt* buildVarDecls(BlockStmt* stmts, const char* docs,
     stmts->blockInfoSet(NULL);
   }
 
+  // Add a PRIM_END_OF_STATEMENT.
+  if (fDocs == false) {
+    CallExpr* end = new CallExpr(PRIM_END_OF_STATEMENT);
+    stmts->insertAtTail(end);
+  }
+
   // this was allocated in buildVarDeclFlags()
   if (flags)
     delete flags;
@@ -1932,6 +1943,12 @@ BlockStmt* buildForwardingDeclStmt(BlockStmt* stmts) {
       if (VarSymbol* var = toVarSymbol(defExpr->sym)) {
         // Append a ForwardingStmt
         BlockStmt* toAppend = buildForwardingStmt(new UnresolvedSymExpr(var->name));
+
+        // Remove the END_OF_STATEMENT marker, not used for fields
+        Expr* last = stmts->body.last();
+        if (last && isEndOfStatementMarker(stmts->body.last()))
+          last->remove();
+
         for_alist(tmp, toAppend->body) {
           stmts->insertAtTail(tmp->remove());
         }
@@ -2143,7 +2160,7 @@ buildSyncStmt(Expr* stmt) {
 
   // Note that a sync statement can contain arbitrary code,
   // including code that throws. As a result, we need to take
-  // care call _waitDynamicEndCount even if such errors are thrown.
+  // care call chpl_waitDynamicEndCount even if such errors are thrown.
 
   // This code takes the approach of wrapping the sync body with
   //
@@ -2177,7 +2194,7 @@ buildSyncStmt(Expr* stmt) {
 
   block->insertAtTail(t);
 
-  // waitDynamicEndCount might throw, but we need to clean up the
+  // chpl_waitDynamicEndCount might throw, but we need to clean up the
   // end counts either way.
 
   BlockStmt* cleanup = new BlockStmt();
@@ -2186,7 +2203,7 @@ buildSyncStmt(Expr* stmt) {
   cleanup->insertAtTail(new CallExpr(PRIM_SET_DYNAMIC_END_COUNT, endCountSave));
 
   block->insertAtTail(new DeferStmt(cleanup));
-  block->insertAtTail(new CallExpr("_waitDynamicEndCount"));
+  block->insertAtTail(new CallExpr(astr_chpl_waitDynamicEndCount));
   return block;
 }
 

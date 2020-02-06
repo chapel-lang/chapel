@@ -795,7 +795,7 @@ static const flex_int16_t yy_chk[808] =
 #define YY_RESTORE_YY_MORE_OFFSET
 #line 1 "chapel.lex"
 /*
- * Copyright 2004-2020 Cray Inc.
+ * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,

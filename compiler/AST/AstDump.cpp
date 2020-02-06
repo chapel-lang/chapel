@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2020 Cray Inc.
+ * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -481,6 +481,14 @@ bool AstDump::enterForallStmt(ForallStmt* node) {
   }
   --mIndent;
   newline();
+  write("other variables");
+  ++mIndent;
+  if (node->fRecIterIRdef) node->fRecIterIRdef->accept(this);
+  if (node->fRecIterICdef) node->fRecIterICdef->accept(this);
+  if (node->fRecIterGetIterator) node->fRecIterGetIterator->accept(this);
+  if (node->fRecIterFreeIterator) node->fRecIterFreeIterator->accept(this);
+  newline();
+  --mIndent;
   write("forall body");
   node->loopBody()->accept(this);
   --mIndent;
@@ -559,6 +567,10 @@ bool AstDump::enterForLoop(ForLoop* node) {
 
   write("ForLoop");
   printLoopStmtDetails(node);
+  if (node->isLoweredForallLoop())
+    write("lowered-forall");
+  if (node->isForExpr())
+    write("for-expr");
   newline();
   write("{");
   printBlockID(node);

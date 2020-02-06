@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2020 Cray Inc.
+ * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -44,6 +44,7 @@ static void destructureTupleAssignment(CallExpr* call);
 
 static void replaceIsSubtypeWithPrimitive(CallExpr* call,
                                           bool proper, bool coerce);
+static void addIntentRefMaybeConst(ArgSymbol* arg);
 
 static void flattenPrimaryMethod(TypeSymbol* ts, FnSymbol* fn);
 
@@ -115,6 +116,8 @@ static void cleanup(ModuleSymbol* module) {
       }
     } else if (CatchStmt* catchStmt = toCatchStmt(ast)) {
       catchStmt->cleanup();
+    } else if (ArgSymbol* arg = toArgSymbol(ast)) {
+      addIntentRefMaybeConst(arg);
     }
   }
 
@@ -234,6 +237,13 @@ static void replaceIsSubtypeWithPrimitive(CallExpr* call,
     prim = PRIM_IS_COERCIBLE;
 
   call->replace(new CallExpr(prim, sup, sub));
+}
+
+
+static void addIntentRefMaybeConst(ArgSymbol* arg) {
+  if (arg->hasFlag(FLAG_INTENT_REF_MAYBE_CONST_FORMAL)) {
+    arg->intent = INTENT_REF_MAYBE_CONST;
+  }
 }
 
 //

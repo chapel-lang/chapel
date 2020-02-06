@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2020 Cray Inc.
+ * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -601,6 +601,12 @@ static ShadowVarSymbol* create_IN_Parentvar(ForallStmt* fs,
 
     INPovar = inptemp;
   }
+
+  // Insert a move in the init block for this shadow variable
+  // to enable other passes to understand the data flow. This
+  // move is not needed in forall lowering.
+  CallExpr* move = new CallExpr(PRIM_MOVE, INP, INPovar);
+  INP->initBlock()->insertAtTail(move);
 
   INP->outerVarSE = new SymExpr(INPovar);
   insert_help(INP->outerVarSE, NULL, INP);

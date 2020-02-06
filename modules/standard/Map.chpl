@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2020 Cray Inc.
+ * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -27,7 +27,8 @@
   mode of its originating map.
 */
 module Map {
-  private use ChapelLocks only ;
+  private use ChapelLocks only;
+  private use HaltWrappers;
 
   // Lock code lifted from modules/standard/Lists.chpl.
   // Maybe they should be combined into a Locks module.
@@ -95,7 +96,8 @@ module Map {
       :arg parSafe: If `true`, this map will use parallel safe operations.
       :type parSafe: bool
     */
-    proc init=(const ref other: map(?kt, ?vt, ?ps)) {
+    proc init=(pragma "intent ref maybe const formal"
+               other: map(?kt, ?vt, ?ps)) {
       this.keyType = kt;
       this.valType = vt;
       this.parSafe = ps;
@@ -199,7 +201,7 @@ module Map {
         _leave();
         return result;
       } else {
-        halt("map index out of bounds: ", k);
+        boundsCheckHalt("map index out of bounds: " + k:string);
         ref result = vals._value.data[0];
         _leave();
         return result;
@@ -207,14 +209,28 @@ module Map {
     }
 
     pragma "no doc"
-    proc const this(k: keyType) const {
+    proc const this(k: keyType) const
+    where shouldReturnRvalueByValue(valType) {
       _enter();
       if !myKeys.contains(k) then
-        halt("map index ", k, " out of bounds");
+        boundsCheckHalt("map index " + k:string + " out of bounds");
       const result = vals[k];
       _leave();
       return result;
     }
+
+
+    pragma "no doc"
+    proc const this(k: keyType) const ref
+    where shouldReturnRvalueByConstRef(valType) {
+      _enter();
+      if !myKeys.contains(k) then
+        halt("map index ", k, " out of bounds");
+      const ref result = vals[k];
+      _leave();
+      return result;
+    }
+
 
     /*
       Iterates over the keys of this map. This is a shortcut for :iter:`keys`.

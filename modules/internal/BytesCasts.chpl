@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2020 Cray Inc.
+ * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -18,7 +18,8 @@
  */
 
 module BytesCasts {
-  use ChapelStandard;
+  private use ChapelStandard;
+  private use BytesStringCommon;
   private use SysCTypes;
 
 
@@ -329,14 +330,4 @@ module BytesCasts {
 
     return retVal;
   }
-
-
-  //
-  // enum 
-  // not sure if this is quite necessary, but adding it just to make bytes as
-  // similar to string as possible
-  proc _cast(type t:bytes, x: enumerated) {
-    return x:string:bytes;
-  }
-
 } // end of module BytesCasts

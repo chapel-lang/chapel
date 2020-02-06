@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2020 Cray Inc.
+ * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -46,7 +46,6 @@ extern bool fNoLiveAnalysis;
 extern bool fNoFormalDomainChecks;
 extern bool fNoLocalChecks;
 extern bool fNoNilChecks;
-extern bool fLegacyClasses;
 extern bool fIgnoreNilabilityErrors;
 extern bool fOverloadSetsChecks;
 extern bool fNoStackChecks;
@@ -151,7 +150,9 @@ extern bool fRegionVectorizer;
 extern bool fGenIDS;
 extern bool fLocal;
 extern bool fIgnoreLocalClasses;
-extern bool fLifetimeChecking;
+extern bool fNoLifetimeChecking;
+extern bool fNoSplitInit;
+extern bool fNoEarlyDeinit;
 extern bool fCompileTimeNilChecking;
 extern bool fOverrideChecking;
 extern int  ffloatOpt;

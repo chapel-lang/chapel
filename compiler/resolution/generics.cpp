@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2020 Cray Inc.
+ * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -482,7 +482,7 @@ static bool fixupDefaultInitCopy(FnSymbol* fn,
       // it up completely...
       instantiateBody(newFn);
 
-      if (FnSymbol* initFn = findCopyInit(ct)) {
+      if (FnSymbol* initFn = findCopyInitFn(ct)) {
         Symbol*   thisTmp  = newTemp(ct);
         DefExpr*  def      = new DefExpr(thisTmp);
         CallExpr* initCall = NULL;
@@ -500,6 +500,15 @@ static bool fixupDefaultInitCopy(FnSymbol* fn,
         // above code adds a call that would be considered already resolved.
         resolveCallAndCallee(initCall);
 
+        // Workaround: setting init= argument to ref in case
+        // the fields were not resolved yet
+        if (recordContainingCopyMutatesField(ct)) {
+          FnSymbol* fn = initCall->resolvedFunction();
+          INT_ASSERT(fn->numFormals() == 3);
+          ArgSymbol* arg = fn->getFormal(3);
+          arg->intent = INTENT_REF;
+          arg->originalIntent = INTENT_REF;
+        }
         if (ct->hasPostInitializer() == true) {
           CallExpr* post = new CallExpr("postinit", gMethodToken, thisTmp);
 

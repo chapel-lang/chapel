@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2020 Cray Inc.
+ * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -20,9 +20,11 @@
 /*
 
 :record:`shared` (along with :record:`~OwnedObject.owned`) manage the
-deallocation of a class instance. :record:`shared` is meant to be used when
-many different references will exist to the object and these references need
-to keep the object alive.
+deallocation of a class instance. :record:`shared` is meant to be used when many
+different references will exist to the object at the same time and these
+references need to keep the object alive.
+
+Please see also the language spec section :ref:`Class_Lifetime_and_Borrows`.
 
 Using `shared`
 --------------
@@ -75,27 +77,10 @@ subclass of ``U``.
 
 See :ref:`about-owned-coercions` for more details and examples.
 
-`shared` Intents and Instantiation
-----------------------------------
+`shared` Default Intent
+-----------------------
 
-Intents and instantiation for :record:`shared` are similar
-to :record:`~OwnedObject.owned`. Namely:
-
- * for formal arguments declared with a type, the
-   default intent is `const in`, which updates the
-   reference count and shares the instance.
- * for generic formal arguments with no type component that are
-   passed actuals of :record:`shared` type,
-   the formal argument will be instantiated with the borrow type,
-   and no reference count changes will occur.
-
-   .. note::
-
-      It is expected that this rule will change in the future with
-      more experience with this language design.
-
-
-See also :ref:`about-owned-intents-and-instantiation` which includes examples.
+The default intent for :record:`shared` types is ``const ref``.
 
  */
 module SharedObject {
@@ -202,6 +187,7 @@ module SharedObject {
       // since it would refer to `this` as a whole here.
     }
 
+    pragma "no doc"
     proc init(p: ?T)
     where isClass(T) == false &&
           isSubtype(T, _shared) == false &&
@@ -275,9 +261,7 @@ module SharedObject {
     //   var s : shared = ownedThing;
     pragma "no doc"
     proc init=(pragma "nil from arg" in take: owned) {
-      if isNonNilableClass(this.type) && isNilableClass(take) &&
-         !chpl_legacyClasses
-      then
+      if isNonNilableClass(this.type) && isNilableClass(take) then
         compilerError("cannot create a non-nilable shared variable from a nilable class instance");
 
       this.init(take);
@@ -289,9 +273,7 @@ module SharedObject {
        These will share responsibility for managing the instance.
      */
     proc init=(pragma "nil from arg" const ref src:_shared) {
-      if isNonNilableClass(this.type) && isNilableClass(src) &&
-         !chpl_legacyClasses
-      then
+      if isNonNilableClass(this.type) && isNilableClass(src) then
         compilerError("cannot create a non-nilable shared variable from a nilable class instance");
 
       if isCoercible(src.chpl_t, this.type.chpl_t) == false then
@@ -307,24 +289,25 @@ module SharedObject {
         this.chpl_pn!.retain();
     }
 
+    pragma "no doc"
     proc init=(src: borrowed) {
       compilerError("cannot create a shared variable from a borrowed class instance");
       this.chpl_t = int; //dummy
     }
 
+    pragma "no doc"
     proc init=(src: unmanaged) {
       compilerError("cannot create a shared variable from an unmanaged class instance");
       this.chpl_t = int; //dummy
     }
 
+    pragma "no doc"
     pragma "leaves this nil"
     proc init=(src : _nilType) {
       this.init(this.type.chpl_t);
 
-      if _to_nilable(chpl_t) != chpl_t && !chpl_legacyClasses {
+      if isNonNilableClass(chpl_t) then
         compilerError("Assigning non-nilable shared to nil");
-      }
-
     }
 
     /*
@@ -390,8 +373,6 @@ module SharedObject {
     proc /*const*/ borrow() {
       if _to_nilable(chpl_t) == chpl_t {
         return chpl_p;
-      } else if chpl_legacyClasses {
-        return _to_nonnil(chpl_p);
       } else {
         return chpl_p!;
       }
@@ -409,8 +390,7 @@ module SharedObject {
      ``lhs`` will refer to the same object as ``rhs``.
    */
   proc =(ref lhs:_shared, rhs: _shared)
-    where chpl_legacyClasses ||
-          ! (isNonNilableClass(lhs) && isNilableClass(rhs))
+    where ! (isNonNilableClass(lhs) && isNilableClass(rhs))
   {
     // retain-release
     if rhs.chpl_pn != nil then
@@ -435,7 +415,7 @@ module SharedObject {
 
   pragma "no doc"
   proc =(ref lhs:shared, rhs:_nilType)
-    where chpl_legacyClasses || ! isNonNilableClass(lhs)
+    where ! isNonNilableClass(lhs)
   {
     lhs.clear();
   }
@@ -506,6 +486,7 @@ module SharedObject {
   }
 
   // this version handles downcast to non-nil shared
+  pragma "no doc"
   inline proc _cast(type t:shared class, const ref x:shared class?) throws
     where isProperSubtype(t.chpl_t,_to_nonnil(x.chpl_t))
   {
@@ -517,6 +498,7 @@ module SharedObject {
 
     return new _shared(true, _to_borrowed(p.type), p, x.chpl_pn);
   }
+  pragma "no doc"
   inline proc _cast(type t:shared class, const ref x:shared class) throws
     where isProperSubtype(t.chpl_t,x.chpl_t)
   {
@@ -528,6 +510,7 @@ module SharedObject {
 
 
   // this version handles downcast to nilable shared
+  pragma "no doc"
   inline proc _cast(type t:shared class?, const ref x:shared class?)
     where isProperSubtype(t.chpl_t,x.chpl_t)
   {
@@ -535,6 +518,7 @@ module SharedObject {
     var p = x.chpl_p:_to_nilable(_to_unmanaged(t.chpl_t));
     return new _shared(true, _to_borrowed(p.type), p, x.chpl_pn);
   }
+  pragma "no doc"
   inline proc _cast(type t:shared class?, const ref x:shared class)
     where isProperSubtype(t.chpl_t,_to_nilable(x.chpl_t))
   {
@@ -546,7 +530,7 @@ module SharedObject {
   // cast from nil to shared
   pragma "no doc"
   inline proc _cast(type t:_shared, pragma "nil from arg" x:_nilType) {
-    if _to_nilable(t.chpl_t) != t.chpl_t && !chpl_legacyClasses then
+    if isNonNilableClass(t.chpl_t) then
       compilerError("Illegal cast from nil to non-nilable shared type");
 
     var tmp:t;

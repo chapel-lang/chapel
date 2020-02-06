@@ -1,4 +1,5 @@
 config const cond = false;
+config const otherCond = true;
 
 class C { }
 record R {
@@ -19,6 +20,7 @@ record R {
 }
 proc =(ref lhs:R, rhs:R) {
   writeln("= ", lhs.x, " ", rhs.x);
+  lhs.x = rhs.x;
 }
 
 proc testInts() {
@@ -54,6 +56,16 @@ proc testInts() {
   var yes4:int;
   yes4 = 4;
   writeln(yes4);
+
+  var yes5;
+  if cond {
+    yes5 = 5;
+  } else if otherCond {
+    yes5 = 55;
+  } else {
+    yes5 = 555;
+  }
+  writeln(yes5);
 
   var no1 = 4;
   no1 = 5;
@@ -151,7 +163,80 @@ proc testRecs() {
   yes8 = x;
   writeln(yes8);
 
+  writeln("yes9");
+  var yes9;
+  {
+    f(x);
+    yes9 = makeR(9);
+  }
+  writeln(yes9);
 
+  writeln("yes10");
+  var yes10;
+  {
+    if cond {
+      yes10 = makeR(10);
+    } else {
+      f(x);
+      f(x);
+      {
+        yes10 = makeR(10);
+      }
+    }
+  }
+  writeln(yes10);
+
+  writeln("yes11");
+  var yes11;
+  {
+    if cond {
+      yes11 = makeR(11);
+    } else if otherCond {
+      yes11 = makeR(110);
+    } else {
+      yes11 = makeR(1100);
+    }
+  }
+  writeln(yes11);
+
+  writeln("yes12");
+  var yes12;
+  {
+    if !cond {
+      yes12 = makeR(12);
+    } else if otherCond {
+      yes12 = makeR(120);
+    } else {
+      yes12 = makeR(1200);
+    }
+  }
+  writeln(yes12);
+
+  writeln("yes13");
+  var yes13;
+  {
+    if cond {
+      yes13 = makeR(13);
+    } else if !otherCond {
+      yes13 = makeR(130);
+    } else {
+      yes13 = makeR(1300);
+    }
+  }
+  writeln(yes13);
+
+  writeln("yes14");
+  var yes14;
+  {
+    if !cond {
+      yes14 = makeR(14);
+    } else if !otherCond {
+      yes14 = makeR(140);
+    } else {
+      yes14 = makeR(1400);
+    }
+  }
+  writeln(yes14);
 
 
   writeln("no1");

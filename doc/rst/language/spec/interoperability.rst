@@ -389,7 +389,7 @@ C code. In practice, external consts can be used to provide Chapel
 definitions for #defines and enum symbols in addition to traditional C
 constants.
 
-   *Cray’s Chapel Implementation*.
+   *Implementation Notes*.
 
    Note that since params must be known to Chapel at compile-time and
    the Chapel compiler does not necessarily parse C code, external

@@ -28,13 +28,13 @@ Domain maps are presented as follows:
    :ref:`Domain_Maps_Not_Assigned`
 
 -  | standard layouts and distributions, such as Block and Cyclic, are
-     documented under *Standard Library* in Cray Chapel online
+     documented under *Standard Layouts and Distributions* in Chapel's online
      documentation here:
    | https://chapel-lang.org/docs/modules/layoutdist.html
 
 -  | specification of user-defined domain maps is forthcoming; please
      refer to the *Domain Map Standard Interface* page under *Technical
-     Notes* in Cray Chapel online documentation here:
+     Notes* in Chapel's online documentation here:
    | https://chapel-lang.org/docs/technotes/dsi.html
 
 .. _Domain_Maps_For_Types:
@@ -51,16 +51,6 @@ as described below, a default domain map is provided by the Chapel
 implementation. Such a domain map will typically be a layout that maps
 the entire domain to the locale on which the domain value is created or
 the domain or array variable is declared.
-
-   *Cray’s Chapel Implementation*.
-
-   The default domain map provided by the Cray Chapel compiler is such a
-   layout. The storage for the representation of a domain’s index set is
-   placed on the locale where the domain variable is declared. The
-   storage for the elements of arrays declared over domains with the
-   default map is placed on the locale where the array variable is
-   declared. Arrays declared over rectangular domains with this default
-   map are laid out in memory in row-major order.
 
 A domain map can be specified explicitly by providing a *dmap value* in
 a ``dmapped`` clause:

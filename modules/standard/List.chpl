@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2020 Cray Inc.
+ * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -52,8 +52,9 @@
   into a list is O(1).
 */
 module List {
+  private use ChapelLocks only;
+  private use HaltWrappers;
   private use Sort;
-  private use ChapelLocks only ;
 
   pragma "no doc"
   private const _initialCapacity = 8;
@@ -351,7 +352,7 @@ module List {
     // accesses of list elements should go through this function.
     //
     pragma "no doc"
-    inline proc _getRef(idx: int) ref {
+    inline proc const ref _getRef(idx: int) ref {
       _sanity(idx >= 1 && idx <= _totalCapacity);
       const zpos = idx - 1;
       const arrayIdx = _getArrayIdx(zpos);
@@ -375,7 +376,7 @@ module List {
     }
 
     pragma "no doc"
-    inline proc _withinBounds(idx: int): bool {
+    inline proc const _withinBounds(idx: int): bool {
       return (idx >= 1 && idx <= _size);
     }
 
@@ -385,7 +386,7 @@ module List {
     // a bounds check fails.
     //
     pragma "no doc"
-    inline proc _boundsCheckLeaveOnThrow(i: int, umsg: string="") throws {
+    inline proc const _boundsCheckLeaveOnThrow(i: int, umsg: string="") throws {
       if !_withinBounds(i) {
         _leave();
         const msg = if umsg != "" then umsg else
@@ -510,7 +511,7 @@ module List {
     // expand memory if necessary.
     //
     pragma "no doc"
-    proc _expand(idx: int, shift: int=1) {
+    proc ref _expand(idx: int, shift: int=1) {
       _sanity(_withinBounds(idx));
 
       if shift <= 0 then
@@ -536,7 +537,7 @@ module List {
     // This method does not fire destructors, so do so before calling it.
     //
     pragma "no doc"
-    proc _collapse(idx: int, shift: int=1) {
+    proc ref _collapse(idx: int, shift: int=1) {
       _sanity(_withinBounds(idx));
 
       if idx == _size then
@@ -562,7 +563,7 @@ module List {
     // case, fire it twice).
     //
     pragma "no doc"
-    proc _appendByRef(ref x: eltType) {
+    proc ref _appendByRef(ref x: eltType) {
       _maybeAcquireMem(1);
       ref src = x;
       ref dst = _getRef(_size + 1);
@@ -576,7 +577,7 @@ module List {
       :arg x: An element to append.
       :type x: `eltType`
     */
-    proc append(pragma "no auto destroy" in x: eltType) lifetime this < x {
+    proc ref append(pragma "no auto destroy" in x: eltType) lifetime this < x {
       _enter();
 
       //
@@ -597,7 +598,7 @@ module List {
       :return: `true` if this list contains `x`.
       :rtype: `bool`
     */
-    proc contains(x: eltType): bool {
+    proc const contains(x: eltType): bool {
       var result = false;
 
       on this {
@@ -627,7 +628,7 @@ module List {
       :return: A reference to the first item in this list.
       :rtype: `ref eltType`
     */
-    proc first() ref throws {
+    proc ref first() ref throws {
       // Hack to initialize a reference (may be invalid memory).
       ref result = _getRef(1);
 
@@ -636,7 +637,7 @@ module List {
 
         if boundsChecking && _size == 0 {
           _leave();
-          halt("Called \"list.first\" on an empty list.");
+          boundsCheckHalt("Called \"list.first\" on an empty list.");
         }
 
         result = _getRef(1);
@@ -658,7 +659,7 @@ module List {
       :return: A reference to the last item in this list.
       :rtype: `ref eltType`
     */
-    proc last() ref {
+    proc ref last() ref {
       // Hack to initialize a reference (may be invalid memory).
       ref result = _getRef(1);
 
@@ -667,7 +668,7 @@ module List {
 
         if boundsChecking && _size == 0 {
           _leave();
-          halt("Called \"list.last\" on an empty list.");
+          boundsCheckHalt("Called \"list.last\" on an empty list.");
         }
 
         result = _getRef(_size);
@@ -678,7 +679,7 @@ module List {
     }
 
     pragma "no doc"
-    inline proc _extendGeneric(collection) {
+    inline proc ref _extendGeneric(collection) {
 
       //
       // TODO: This could avoid repeated resizes at smaller total capacities
@@ -702,7 +703,7 @@ module List {
         contained in this list.
       :type other: `list(eltType)`
     */
-    proc extend(other: list(eltType, ?p)) lifetime this < other {
+    proc ref extend(other: list(eltType, ?p)) lifetime this < other {
       on this {
         _enter();
         _extendGeneric(other);
@@ -718,7 +719,7 @@ module List {
         contained in this list.
       :type other: `[?d] eltType`
     */
-    proc extend(other: [?d] eltType) lifetime this < other {
+    proc ref extend(other: [?d] eltType) lifetime this < other {
       on this {
         _enter();
         _extendGeneric(other);
@@ -738,7 +739,7 @@ module List {
       :arg other: The range to initialize from.
       :type other: `range(eltType)`
     */
-    proc extend(other: range(eltType, ?b, ?d)) lifetime this < other {
+    proc ref extend(other: range(eltType, ?b, ?d)) lifetime this < other {
       if !isBoundedRange(other) {
         param e = this.type:string;
         param f = other.type:string;
@@ -776,7 +777,7 @@ module List {
       :return: `true` if `x` was inserted, `false` otherwise.
       :rtype: `bool`
     */
-    proc insert(idx: int, pragma "no auto destroy" in x: eltType): bool
+    proc ref insert(idx: int, pragma "no auto destroy" in x: eltType): bool
          lifetime this < x {
       var result = false;
 
@@ -807,7 +808,7 @@ module List {
     }
 
     pragma "no doc"
-    proc _insertGenericKnownSize(idx: int, items, size: int): bool {
+    proc ref _insertGenericKnownSize(idx: int, items, size: int): bool {
       var result = false;
 
       _sanity(size >= 0);
@@ -863,7 +864,7 @@ module List {
       :return: `true` if `arr` was inserted, `false` otherwise.
       :rtype: `bool`
     */
-    proc insert(idx: int, arr: [?d] eltType): bool lifetime this < arr {
+    proc ref insert(idx: int, arr: [?d] eltType): bool lifetime this < arr {
 
       var result = false;
 
@@ -898,7 +899,7 @@ module List {
       :return: `true` if `lst` was inserted, `false` otherwise.
       :rtype: `bool`
     */
-    proc insert(idx: int, lst: list(eltType)): bool lifetime this < lst {
+    proc ref insert(idx: int, lst: list(eltType)): bool lifetime this < lst {
       
       var result = false;
       
@@ -935,7 +936,7 @@ module List {
       :return: The number of elements removed.
       :rtype: `int`
     */
-    proc remove(x: eltType, count:int=1): int {
+    proc ref remove(x: eltType, count:int=1): int {
       var result = 0;
 
       on this {
@@ -972,7 +973,7 @@ module List {
     // call this from `pop`, but I added `unlockBeforeHalt` all the same.
     //
     pragma "no doc"
-    proc _popAtIndex(idx: int, unlockBeforeHalt=true): eltType {
+    proc ref _popAtIndex(idx: int, unlockBeforeHalt=true): eltType {
 
       //
       // TODO: We would like to put this in an on statement, but we can't yet
@@ -985,13 +986,14 @@ module List {
       if boundsChecking && _size <= 0 {
         if unlockBeforeHalt then
           _leave();
-        halt("Called \"list.pop\" on an empty list.");
+        boundsCheckHalt("Called \"list.pop\" on an empty list.");
       }
 
       if boundsChecking && !_withinBounds(idx) {
         if unlockBeforeHalt then
           _leave();
-        halt("Index for \"list.pop\" out of bounds: " + idx:string);
+        const msg = "Index for \"list.pop\" out of bounds: " + idx:string;
+        boundsCheckHalt(msg);
       }
 
       ref item = _getRef(idx);
@@ -1022,7 +1024,7 @@ module List {
       :return: The element popped.
       :rtype: `eltType`
     */
-    proc pop(): eltType {
+    proc ref pop(): eltType {
       _enter();
       var result = _popAtIndex(_size);
       _leave();
@@ -1051,7 +1053,7 @@ module List {
       :return: The element popped.
       :rtype: `eltType`
     */
-    proc pop(idx: int): eltType {
+    proc ref pop(idx: int): eltType {
       _enter();
       var result = _popAtIndex(idx);
       _leave();
@@ -1114,7 +1116,7 @@ module List {
         Clearing the contents of this list will invalidate all existing
         references to the elements contained in this list.
     */
-    proc clear() {
+    proc ref clear() {
       on this {
         _enter();
 
@@ -1156,15 +1158,15 @@ module List {
       :return: The index of the element to search for, or `-1` on error.
       :rtype: `int`
     */
-    proc indexOf(x: eltType, start: int=1, end: int=0): int {
+    proc const indexOf(x: eltType, start: int=1, end: int=0): int {
       if boundsChecking {
         const msg = " index for \"list.indexOf\" out of bounds: ";
 
         if end > 0 && !_withinBounds(end) then
-          halt("End" + msg + end:string);
+          boundsCheckHalt("End" + msg + end:string);
 
         if !_withinBounds(start) then
-          halt("Start" + msg + start:string);
+          boundsCheckHalt("Start" + msg + start:string);
       }
 
       param error = -1;
@@ -1200,7 +1202,7 @@ module List {
       :return: The number of times a given element is found in this list.
       :rtype: `int`
     */
-    proc count(x: eltType): int {
+    proc const count(x: eltType): int {
       var result = 0;
 
       on this {
@@ -1231,7 +1233,7 @@ module List {
 
       :arg comparator: A comparator used to sort this list.
     */
-    proc sort(comparator=Sort.defaultComparator) {
+    proc ref sort(comparator=Sort.defaultComparator) {
       on this {
         _enter();
 
@@ -1273,15 +1275,28 @@ module List {
 
       :return: An element from this list.
     */
-    proc this(i: int) ref {
+    proc ref this(i: int) ref {
       if boundsChecking && !_withinBounds(i) {
         const msg = "Invalid list index: " + i:string;
-        halt(msg);
+        boundsCheckHalt(msg);
       }
 
       ref result = _getRef(i);
       return result;
     }
+    proc const ref this(i: int) const ref {
+      if boundsChecking && !_withinBounds(i) {
+        const msg = "Invalid list index: " + i:string;
+        halt(msg);
+      }
+
+      const ref result = _getRef(i);
+      return result;
+    }
+
+    // TODO - make const ref return intent overloads for `these`
+    // and make the ref-return overload accept this by `ref`
+    // once #12944 is fixed.
 
     /*
       Iterate over the elements of this list.

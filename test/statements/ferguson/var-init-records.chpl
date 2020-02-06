@@ -62,11 +62,19 @@ proc testg() {
   var b:[1..2] R = makeR();
 }
 
-proc testh() {
-  writeln("h");
+proc testh1() {
+  writeln("h1");
   var b:[1..1] R;
   b = makeR();
 }
+
+proc testh2() {
+  writeln("h2");
+  var b:[1..1] R;
+  b; // disabling split init
+  b = makeR();
+}
+
 
 proc testi() {
   writeln("i");
@@ -85,5 +93,6 @@ testd(R);
 teste();
 testf();
 testg();
-testh();
+testh1();
+testh2();
 testi();

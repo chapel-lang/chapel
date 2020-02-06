@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2020 Cray Inc.
+ * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -292,10 +292,8 @@ module CPtr {
   pragma "no doc"
   inline proc _cast(type t:_anyManagementAnyNilable, x:c_void_ptr) {
     if isUnmanagedClass(t) || isBorrowedClass(t) {
-      if !chpl_legacyClasses {
-        compilerWarning("cast from c_void_ptr to "+ t:string +" is deprecated");
-        compilerWarning("cast to "+ _to_nilable(t):string +" instead");
-      }
+      compilerWarning("cast from c_void_ptr to "+ t:string +" is deprecated");
+      compilerWarning("cast to "+ _to_nilable(t):string +" instead");
       return __primitive("cast", t, x);
     } else {
       compilerWarning("invalid cast from c_void_ptr to managed type " +
