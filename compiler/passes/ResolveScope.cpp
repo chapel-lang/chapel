@@ -542,6 +542,24 @@ Symbol* ResolveScope::lookupWithUses(UnresolvedSymExpr* usymExpr, bool isUse) co
           }
         }
 
+      } else if (ImportStmt* import = toImportStmt(useImportList[i])) {
+        BaseAST* scopeToUse = import->getSearchScope();
+
+        if (ResolveScope* next = getScopeFor(scopeToUse)) {
+          if (Symbol* sym = next->lookupNameLocally(name, isUse)) {
+            if (isRepeat(sym, symbols) == false) {
+              if (FnSymbol* fn = toFnSymbol(sym)) {
+                if (fn->isMethod() == false) {
+                  symbols.push_back(fn);
+                }
+
+              } else {
+                symbols.push_back(sym);
+              }
+            }
+          }
+        }
+
       // Found a NULL sentinel.  Break if there are results.
       } else {
         if (symbols.size() > 0) {

@@ -37,6 +37,8 @@
 
 #endif
 
+class ImportStmt;
+
 /************************************* | **************************************
 *                                                                             *
 *                                                                             *
@@ -131,6 +133,7 @@ public:
 
   void                useListAdd(ModuleSymbol* mod, bool isPrivate);
   void                useListAdd(UseStmt*      use);
+  void                useListAdd(ImportStmt*   use);
   bool                useListRemove(ModuleSymbol* mod);
   void                useListClear();
 

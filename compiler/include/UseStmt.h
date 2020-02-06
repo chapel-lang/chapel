@@ -22,6 +22,7 @@
 
 #include "stmt.h"
 
+class ImportStmt;
 class ResolveScope;
 
 class UseStmt : public Stmt {
@@ -66,6 +67,7 @@ public:
   bool            skipSymbolSearch(const char* name, bool methodCall)    const;
 
   bool            providesNewSymbols(const UseStmt* other)               const;
+  bool            providesNewSymbols(const ImportStmt* other)            const;
 
   BaseAST*        getSearchScope()                                       const;
 

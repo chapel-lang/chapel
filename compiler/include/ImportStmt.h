@@ -22,6 +22,8 @@
 
 #include "stmt.h"
 
+class ResolveScope;
+
 class ImportStmt: public Stmt {
  public:
   ImportStmt(BaseAST* source);
@@ -37,6 +39,17 @@ class ImportStmt: public Stmt {
   virtual void verify();
 
   virtual GenRet codegen();
+
+  void scopeResolve(ResolveScope* scope);
+
+  BaseAST* getSearchScope() const;
+
+  Symbol* checkIfModuleNameMatches(const char* name);
+
+ private:
+  void updateEnclosingBlock(ResolveScope* scope,
+                            Symbol* sym);
+
 
  public:
   Expr* src;

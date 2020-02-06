@@ -22,6 +22,7 @@
 #include "astutil.h"
 #include "expr.h"
 #include "files.h"
+#include "ImportStmt.h"
 #include "misc.h"
 #include "passes.h"
 #include "stlUtil.h"
@@ -465,6 +466,18 @@ BlockStmt::useListAdd(UseStmt* use) {
   }
 
   useList->insertAtTail(use);
+}
+
+void
+BlockStmt::useListAdd(ImportStmt* import) {
+  if (useList == NULL) {
+    useList = new CallExpr(PRIM_USED_MODULES_LIST);
+
+    if (parentSymbol)
+      insert_help(useList, this, parentSymbol);
+  }
+
+  useList->insertAtTail(import);
 }
 
 

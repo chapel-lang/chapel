@@ -20,6 +20,7 @@
 #include "ImportStmt.h"
 
 #include "AstVisitor.h"
+#include "ResolveScope.h"
 
 ImportStmt::ImportStmt(BaseAST* source) : Stmt(E_ImportStmt) {
   if (Symbol* b = toSymbol(source)) {
@@ -70,4 +71,96 @@ void ImportStmt::verify() {
   }
 
   verifyNotOnList(src);
+}
+
+void ImportStmt::scopeResolve(ResolveScope* scope) {
+  /*
+  // 2017-05-28: isValid() does not currently return on failure
+  if (isValid(src) == true) { */
+  // isValid should be re-enabled when we support general exprs in imports
+  // As it is today, we won't encounter the situations it is preventing.
+  // There is an else branch to turn on as well
+    // 2017/05/28 The parser inserts a normalized UseStmt in to ChapelBase
+    if (SymExpr* se = toSymExpr(src)) {
+      INT_FATAL("This should only happen for a UseStmt");
+
+    } else if (Symbol* sym = scope->lookup(src, /*isUse=*/ true)) {
+      SET_LINENO(this);
+
+      if (ModuleSymbol* modSym = toModuleSymbol(sym)) {
+        scope->enclosingModule()->moduleUseAdd(modSym);
+
+        updateEnclosingBlock(scope, sym);
+
+      } else {
+        if (sym->isImmediate() == true) {
+          USR_FATAL(this,
+                    "'import' statements must refer to module symbols "
+                    "(e.g., 'import <module>;')");
+
+        } else if (sym->name != NULL) {
+          USR_FATAL_CONT(this,
+                         "'import' of non-module symbol %s",
+                         sym->name);
+          USR_FATAL_CONT(sym,  "Definition of symbol %s", sym->name);
+          USR_STOP();
+
+        } else {
+          USR_FATAL(this, "'import' of non-module symbol");
+        }
+      }
+    } else {
+      if (UnresolvedSymExpr* import = toUnresolvedSymExpr(src)) {
+        USR_FATAL(this, "Cannot find module '%s'", import->unresolved);
+      } else {
+        USR_FATAL(this, "Cannot find module");
+      }
+    }
+    /*
+  } else {
+    INT_ASSERT(false);
+    }*/
+}
+
+BaseAST* ImportStmt::getSearchScope() const {
+  BaseAST* retval = NULL;
+
+  if (SymExpr* se = toSymExpr(src)) {
+    if (ModuleSymbol* module = toModuleSymbol(se->symbol())) {
+      retval = module->block;
+
+    } else {
+      INT_FATAL(this, "Import invalid, not applied to module");
+    }
+
+  } else {
+    INT_FATAL(this, "getSearchScope called before this import was processed");
+  }
+
+  return retval;
+}
+
+Symbol* ImportStmt::checkIfModuleNameMatches(const char* name) {
+  if (SymExpr* se = toSymExpr(src)) {
+    if (ModuleSymbol* modSym = toModuleSymbol(se->symbol())) {
+      if (strcmp(name, se->symbol()->name) == 0) {
+        return modSym;
+      }
+    }
+  } else {
+    // It seems as though we'd need to handle matches against more general
+    // expressions here (e.g., 'use M.N.O'), yet I can't seem to construct
+    // an example that requires this.  I suppose it could be because we
+    // resolve such cases element-by-element rather than wholesale...
+  }
+  return NULL;
+}
+
+void ImportStmt::updateEnclosingBlock(ResolveScope* scope, Symbol* sym) {
+  src->replace(new SymExpr(sym));
+
+  remove();
+  scope->asBlockStmt()->useListAdd(this);
+
+  scope->extend(this);
 }
