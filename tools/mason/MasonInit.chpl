@@ -99,7 +99,7 @@ proc ValidateInit(path: string) throws {
   var ToBeCreated : list(string);
   for idx in 1..files.size do {
     var file = files(idx);
-	  if file == "/Mason.toml" {
+    if file == "/Mason.toml" {
       if isFile(path + file) {
         //scan using TOML reader and validate
         const toParse = open(path + file, iomode.r);
@@ -152,7 +152,7 @@ proc ValidateInit(path: string) throws {
           libWriter.close();
         }
         else {
-	        makeProjectFiles(path,file);
+          makeProjectFiles(path,file);
         }
       }
     }
