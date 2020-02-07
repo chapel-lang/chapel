@@ -40,6 +40,8 @@ public use TomlParser;
 private use TomlReader;
 use IO;
 
+pragma "no doc"
+type TomlType = unmanaged Toml?;
 
 /* Receives a TOML file as a parameter and outputs a Toml object.
 
@@ -93,7 +95,7 @@ proc parseToml(input: channel) : unmanaged Toml {
  /* Receives a string of TOML format as a parameter and outputs a Toml object */
 proc parseToml(input: string) : unmanaged Toml {
   var D: domain(string);
-  var table: [D] unmanaged Toml;
+  var table: [D] unmanaged Toml?;
   var rootTable = new unmanaged Toml(table);
   const source = new unmanaged Source(input);
   const parser = new unmanaged Parser(source, rootTable);
@@ -575,8 +577,8 @@ used to recursively hold tables and respective values
       ti: time,
       dt: datetime,
       dom: domain(1),
-      arr: [dom] unmanaged Toml,
-      A: map(string, unmanaged Toml, false),
+      arr: [dom] unmanaged Toml?,
+      A: map(string, unmanaged Toml?, false),
       tag: fieldtag;
 
     // Empty
