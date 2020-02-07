@@ -50,12 +50,21 @@ module Map {
 
   private use IO;
 
+  pragma "no doc"
+  inline proc checkValTypeForNonNilableClass(type valType) {
+    if isNonNilableClass(valType) {
+      param msg = "Cannot initialize map because element type "
+                + valType:string + " is a non-nilable class";
+      compilerError(msg, 2);
+    }
+  }
+
   record map {
     type keyType, valType;
     param parSafe = false;
 
     var myKeys: domain(keyType, parSafe=parSafe);
-    var vals: [myKeys] valType;
+    var vals: [myKeys] checkValTypeForNonNilableClass(valType);
 
 
     pragma "no doc"
@@ -81,9 +90,14 @@ module Map {
       :arg parSafe: If `true`, this map will use parallel safe operations.
     */
     proc init(type keyType, type valType, param parSafe=false) {
+
+
+
       this.keyType = keyType;
       this.valType = valType;
       this.parSafe = parSafe;
+
+      this.vals = [myKeys] valType;
     }
 
     /*
@@ -98,6 +112,12 @@ module Map {
     */
     proc init=(pragma "intent ref maybe const formal"
                other: map(?kt, ?vt, ?ps)) {
+      if isNonNilableClass(vt) {
+        param msg = "Cannot initialize map because element type "
+                  + vt:string + " is a non-nilable class";
+        compilerError(msg);
+      }
+
       this.keyType = kt;
       this.valType = vt;
       this.parSafe = ps;
@@ -110,19 +130,6 @@ module Map {
       }
     }
 
-    //
-    // #14861 - Blanket ban on non-nilable classes while we make API changes
-    // to map that allow it to handle !isDefaultInitializable elements
-    // comfortably.
-    //
-    pragma "no doc"
-    proc postinit() {
-      if isNonNilableClass(valType) {
-        param msg = "Cannot initialize map because element type "
-                  + valType:string + " is a non-nilable class";
-        compilerError(msg);
-      }
-    }
     /*
       Clears the contents of this map.
 
