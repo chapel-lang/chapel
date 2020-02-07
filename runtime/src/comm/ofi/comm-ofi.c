@@ -3702,8 +3702,7 @@ void do_remote_get_buff(void* addr, c_nodeid_t node, void* raddr,
 
 
 static
-chpl_comm_nb_handle_t ofi_amo(struct perTxCtxInfo_t* tcip,
-                              c_nodeid_t node, uint64_t object, uint64_t mrKey,
+chpl_comm_nb_handle_t ofi_amo(c_nodeid_t node, uint64_t object, uint64_t mrKey,
                               const void* operand1, const void* operand2,
                               void* result,
                               enum fi_op ofiOp, enum fi_datatype ofiType,
@@ -3755,6 +3754,8 @@ chpl_comm_nb_handle_t ofi_amo(struct perTxCtxInfo_t* tcip,
 
   void* ctx;
 
+  struct perTxCtxInfo_t* tcip;
+  CHK_TRUE((tcip = tciAlloc()) != NULL);
   if (tcip->txCQ != NULL) {
     chpl_comm_taskPrvData_t* prvData = get_comm_taskPrvdata();
     if (ordered) {
@@ -3817,6 +3818,8 @@ chpl_comm_nb_handle_t ofi_amo(struct perTxCtxInfo_t* tcip,
       waitForCntrAllTxns(tcip);
     }
   }
+
+  tciFree(tcip);
 
   if (ofiOp == FI_CSWAP) {
     *(chpl_bool32*) result = (memcmp(myRes, operand1, size) == 0);
@@ -4312,11 +4315,8 @@ void doAMO(c_nodeid_t node, void* object,
     // The type is supported for network atomics and the object address
     // is remotely accessible.  Do the AMO natively.
     //
-    struct perTxCtxInfo_t* tcip;
-    CHK_TRUE((tcip = tciAlloc()) != NULL);
-    ofi_amo(tcip, node, mrRaddr, mrKey, operand1, operand2, result,
+    ofi_amo(node, mrRaddr, mrKey, operand1, operand2, result,
             ofiOp, ofiType, size);
-    tciFree(tcip);
   } else {
     //
     // We can't do the AMO on the network, so do it on the CPU.  If the
