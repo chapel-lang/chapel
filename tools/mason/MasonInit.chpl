@@ -84,7 +84,7 @@ proc masonInit(args) throws {
       } 
       else {
         throw new owned MasonError("Directory does not exist:" + path +
-                              "Did you mean 'mason new' to create a new project from scratch?"); 
+                              ". Did you mean 'mason new' to create a new project from scratch?"); 
       }
     }
   }
