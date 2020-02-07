@@ -310,7 +310,7 @@ TupleInfo getTupleInfo(std::vector<TypeSymbol*>& args,
     typeCtorArgs.push_back(sizeArg);
 
     for(size_t i = 0; i < args.size(); i++) {
-      const char* name = astr("x", istr(i+1));
+      const char* name = astr("x", istr(i));
       ArgSymbol* typeArg = new ArgSymbol(INTENT_TYPE, name, args[i]->type);
       typeArg->addFlag(FLAG_TYPE_VARIABLE);
       typeCtorArgs.push_back(typeArg);

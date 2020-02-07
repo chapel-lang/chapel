@@ -5526,7 +5526,7 @@ static void resolveTupleExpand(CallExpr* call) {
     } else {
       e = new CallExpr(PRIM_GET_MEMBER_VALUE,
                        sym->copy(),
-                       new_CStringSymbol(astr("x", istr(i+1))));
+                       new_CStringSymbol(astr("x", istr(i))));
     }
 
     stmt->insertBefore(new DefExpr(tmp));
@@ -9546,7 +9546,7 @@ static void resolvePrimInit(CallExpr* call,
 
 // Does 'val' feed into a tuple? Ex.:
 //   default init var( elt_x1 type owned Foo )
-//   .=( tup "x1" elt_x1 )
+//   .=( tup "x0" elt_x1 )
 static bool isTupleComponent(Symbol* val, CallExpr* call) {
   CallExpr* otherUse = NULL;
   for_SymbolSymExprs(se, val)

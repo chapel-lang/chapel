@@ -1417,7 +1417,7 @@ GenRet codegenElementPtr(GenRet base, GenRet index, bool ddataPtr=false) {
   if( fLLVMWideOpt && isWide(base) ) ret.isLVPtr = GEN_WIDE_PTR;
 
   if( baseType->symbol->hasFlag(FLAG_STAR_TUPLE) ) {
-    eltType = baseType->getField("x1")->typeInfo();
+    eltType = baseType->getField("x0")->typeInfo();
     isStarTuple = true;
     // Star tuples should only be passed by reference here...
     INT_ASSERT(base.isLVPtr != GEN_VAL);
@@ -4513,7 +4513,7 @@ DEFINE_PRIM(PRIM_GET_SVEC_MEMBER) {
 
     ret = codegenElementPtr(call->get(1), call->get(2));
 
-    if (tupleType->getField("x1")->type->symbol->hasFlag(FLAG_REF) == false)
+    if (tupleType->getField("x0")->type->symbol->hasFlag(FLAG_REF) == false)
       ret = codegenAddrOf(ret);
 }
 DEFINE_PRIM(PRIM_SET_MEMBER) {
