@@ -636,8 +636,8 @@ module DefaultAssociative {
     }
 
     //
-    // #14367 - Use this as a workaround in order to detect whether or not
-    // the element type of an associative array is a non-nilable class.
+    // #14367 - Blanket ban on non-nilable classes while we think of a more
+    // long term solution.
     //
     pragma "no doc"
     proc postinit() {

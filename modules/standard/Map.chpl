@@ -110,6 +110,19 @@ module Map {
       }
     }
 
+    //
+    // #14861 - Blanket ban on non-nilable classes while we make API changes
+    // to map that allow it to handle !isDefaultInitializable elements
+    // comfortably.
+    //
+    pragma "no doc"
+    proc postinit() {
+      if isNonNilableClass(valType) {
+        param msg = "Cannot initialize map because element type "
+                  + valType:string + " is a non-nilable class";
+        compilerError(msg);
+      }
+    }
     /*
       Clears the contents of this map.
 
