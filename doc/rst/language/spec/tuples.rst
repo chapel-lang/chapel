@@ -274,37 +274,6 @@ of the assignment operator are each assigned the components of the tuple
 on the right-hand side of the assignment. These assignments occur in
 component order (component one followed by component two, etc.).
 
-.. _Tuple_Variables:
-
-Tuple Variables
----------------
-
-When a tuple variable is created, the variable will not refer to any
-elements by reference. Instead, the tuple variable will contain a
-copy of each element, as though assignment had been performed.
-
-For example, in this code:
-
-.. code-block:: chapel
-
-  record R { var x: int; }
-  var A: [1..1] int;
-  var i: int;
-  var r = new R(0);
-
-  var tup = (A, i, r); // A, i, and r are copied into tup.
-
-  A[1] = 1;
-  i = 2;
-  r.x = 3;
-
-  writeln(tup); // Will output (0, 0, (x = 0)).
-
-The variable tup will contain a copy of the array `A` and the record
-`r`. This is in contrast to tuple argument behavior, where both `A`
-and `r` would be passed by reference when captured as elements of a
-tuple passed to a routine.
-
 .. _Tuple_Destructuring:
 
 Tuple Destructuring
@@ -736,6 +705,84 @@ where a comma-separated list of components is valid.
 
       1
       (2, 3)
+
+.. _Tuple_Expression_Behavior:
+
+Tuple Expression Behavior
+-------------------------
+
+When a tuple is constructed with the tuple expression but is not assigned
+to a variable, that tuple will refer to any elements for which the blank
+argument intent is `ref` or `const ref`. In particular, in the following
+example:
+
+.. code-block:: chapel
+
+  record R { var x: int = 0; }
+
+  var a: [0..0] int;
+  var i: int;
+  var r: R;
+
+  test((A, i, r)); // A and r are not copied here, but i is.
+
+  proc test(tup) {
+    A[0] = 1;
+    i = 2;
+    r.x = 3;
+  }
+
+  writeln(a); // Outputs 1.
+  writeln(i); // Outputs 0.
+  writeln(r); // Outputs (x = 3).
+
+The tuple literal `(A, i, r)` will refer to the array `A` and the record
+`r` by `ref`, but creates a copy of the integer `i`.
+
+.. _Tuple_Argument_Behavior:
+
+Tuple Argument Behavior
+-----------------------
+
+
+
+.. _Tuple_Variable_Behavior:
+
+Tuple Variable Behavior
+-----------------------
+
+When a tuple variable is created, the variable will not refer to any
+elements by reference. Instead, the tuple variable will contain a
+copy of each element, as though assignment had been performed.
+
+For example, in this code:
+
+.. code-block:: chapel
+
+  record R { var x: int; }
+  var A: [1..1] int;
+  var i: int;
+  var r = new R(0);
+
+  var tup = (A, i, r); // A, i, and r are copied into tup.
+
+  A[1] = 1;
+  i = 2;
+  r.x = 3;
+
+  writeln(tup); // Will output (0, 0, (x = 0)).
+
+The variable tup will contain a copy of the array `A` and the record
+`r`. This is in contrast to tuple argument behavior, where both `A`
+and `r` would be captured by reference as elements of a tuple passed
+to a routine.
+
+.. _Tuple_Return_Behavior:
+
+Tuple Return Behavior
+---------------------
+
+
 
 .. _Tuple_Operators:
 
