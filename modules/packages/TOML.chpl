@@ -204,7 +204,7 @@ module TomlParser {
       var toke = getToken(source);
       var tablename = brackets.sub('', toke);
       var tblD: domain(string);
-      var tbl: [tblD] unmanaged Toml;
+      var tbl: [tblD] unmanaged Toml?;
       if !rootTable.pathExists(tablename) {
         rootTable.set(tablename, tbl);
       }
@@ -216,10 +216,10 @@ module TomlParser {
       var tblname = getToken(source);
       skipNext(source);
       var tblD: domain(string);
-      var tbl: [tblD] unmanaged Toml;
+      var tbl: [tblD] unmanaged Toml?;
       var (tblPath, tblLeaf) = splitTblPath(tblname);
       if !rootTable.pathExists(tblPath) then makePath(tblPath);
-      rootTable[tblPath].set(tblLeaf, tbl);
+      rootTable[tblPath]!.set(tblLeaf, tbl);
       curTable = tblname;
     }
 
@@ -232,15 +232,15 @@ module TomlParser {
       for parent in path {
         if first {
           var tblD: domain(string);
-          var tbl: [tblD] unmanaged Toml;
+          var tbl: [tblD] unmanaged Toml?;
           rootTable.set(parent, tbl);
           first = false;
         }
         else {
           var tblD: domain(string);
-          var tbl: [tblD] unmanaged Toml;
+          var tbl: [tblD] unmanaged Toml?;
           var grandParent = '.'.join(path[..firstIn+i]);
-          rootTable[grandParent].set(parent, tbl);
+          rootTable[grandParent]!.set(parent, tbl);
           i+=1;
         }
       }
@@ -249,7 +249,7 @@ module TomlParser {
     proc parseInlineTbl(key: string) {
       var tblname: string;
       var tblD: domain(string);
-      var tbl: [tblD] unmanaged Toml;
+      var tbl: [tblD] unmanaged Toml?;
       if curTable.isEmpty() {
         tblname = key;
         rootTable.set(key, tbl);
@@ -257,7 +257,7 @@ module TomlParser {
       else {
         tblname = '.'.join(curTable, key);
         var (tblPath, tblLeaf) = splitTblPath(tblname);
-        rootTable[tblPath].set(tblLeaf, tbl);
+        rootTable[tblPath]!.set(tblLeaf, tbl);
       }
       var temp = curTable;
       curTable = tblname;
@@ -282,7 +282,7 @@ module TomlParser {
         else {
           var value = parseValue();
           if curTable.isEmpty() then rootTable[key] = value;
-          else rootTable[curTable][key] = value;
+          else rootTable[curTable]![key] = value;
         }
       }
       catch e: TomlError {
@@ -595,6 +595,13 @@ used to recursively hold tables and respective values
     // Toml
     proc init(A: [?D] unmanaged Toml) where isAssociativeDom(D) {
       this.complete();
+      for i in D do this.A[i] = A[i]?;
+      this.tag = fieldToml;
+    }
+
+    pragma "no doc"
+    proc init(A: [?D] unmanaged Toml?) where isAssociativeDom(D) {
+      this.complete();
       for i in D do this.A[i] = A[i];
       this.tag = fieldToml;
     }
@@ -657,20 +664,23 @@ used to recursively hold tables and respective values
       this.i = root.i;
       this.re = root.re;
       this.dom = root.dom;
-      for idx in root.dom do this.arr[idx] = new unmanaged Toml(root.arr[idx]);
+      for idx in root.dom do this.arr[idx] = new unmanaged Toml(root.arr[idx]!)?;
       this.ld = root.ld;
       this.ti = root.ti;
       this.dt = root.dt;
       this.s = root.s;
-      for idx in root.A do this.A[idx] = new unmanaged Toml(root.A[idx]);
+      for idx in root.A do this.A[idx] = new unmanaged Toml(root.A[idx]!)?;
       this.tag = root.tag;
     }
 
 
     /* Returns the index of the table path given as a parameter */
-    proc this(tbl: string) ref : unmanaged Toml throws {
+    proc this(tbl: string) ref : unmanaged Toml? throws {
       const indx = tbl.split('.');
       var top = indx.domain.first;
+      //
+      // TODO: This is a bug, see #14861.
+      //
       if indx.size < 2 {
         return this.A[tbl];
       }
@@ -679,7 +689,7 @@ used to recursively hold tables and respective values
         if !this.A.contains(indx[top]) {
           throw new owned TomlError("No index found for " + tbl);
         }
-        return this.A[indx[top]][next];
+        return this.A[indx[top]]![next];
       }
     }
 
@@ -700,7 +710,7 @@ used to recursively hold tables and respective values
         else {
           var next = '.'.join(path[top+1..]);
           if this.A.contains(path[top]) {
-            return this.A[path[top]].pathExists(next);
+            return this.A[path[top]]!.pathExists(next);
           }
           else {
             return false;
@@ -785,23 +795,23 @@ used to recursively hold tables and respective values
         t.dt = dt;
       }
     }
-    proc set(tbl: string, A: [?D] unmanaged Toml) where isAssociativeDom(D) {
+    proc set(tbl: string, A: [?D] unmanaged Toml?) where isAssociativeDom(D) {
       ref t = this(tbl);
       if t == nil {
         t = new unmanaged Toml(A);
       } else {
-        t.tag = fieldToml;
-        for i in D do t.A[i] = A[i];
+        t!.tag = fieldToml;
+        for i in D do t!.A[i] = A[i];
       }
     }
-    proc set(tbl: string, arr: [?dom] unmanaged Toml) where !isAssociativeDom(dom) {
+    proc set(tbl: string, arr: [?dom] unmanaged Toml?) where !isAssociativeDom(dom) {
       ref t = this(tbl);
       if t == nil {
         t = new unmanaged Toml(arr);
       } else {
-        t.tag = fieldArr;
-        t.dom = dom;
-        t.arr = arr;
+        t!.tag = fieldArr;
+        t!.dom = dom;
+        t!.arr = arr;
       }
     }
 
@@ -814,7 +824,7 @@ used to recursively hold tables and respective values
     /* Write a Table to channel f in TOML format */
     proc writeTOML(f) {
       try! {
-        var flat = new map(string, unmanaged Toml);
+        var flat = new map(string, unmanaged Toml?);
         this.flatten(flat);       // Flattens containing Toml
         printValues(f, this);     // Prints key values in containing Toml
         printTables(flat, f);       // Prints tables in containing Toml
@@ -827,7 +837,7 @@ used to recursively hold tables and respective values
     /* Write a Table to channel f in JSON format */
     proc writeJSON(f) {
       try! {
-        var flat = new map(string, unmanaged Toml);
+        var flat = new map(string, unmanaged Toml?);
         this.flatten(flat);           // Flattens containing Toml
 
         var indent=0;
@@ -839,13 +849,13 @@ used to recursively hold tables and respective values
         printValuesJSON(f, this, indent=indent);
 
         if flat.contains('root') {
-          printValuesJSON(f, flat['root'], indent=indent);
+          printValuesJSON(f, flat['root']!, indent=indent);
           flat.remove('root');
         }
         for k in flat.keysToArray().sorted() {
           f.writef('%s"%s": {\n', ' '*indent, k);
           indent += tabSpace;
-          printValuesJSON(f, flat[k], indent=indent);
+          printValuesJSON(f, flat[k]!, indent=indent);
           indent -= tabSpace;
           f.writef('%s}\n', ' '*indent);
         }
@@ -861,35 +871,36 @@ used to recursively hold tables and respective values
 
     pragma "no doc"
     /* Flatten tables into flat associative array for writing */
-    proc flatten(ref flat: map(string, unmanaged Toml, false), rootKey = '') : flat.type {
+    proc flatten(ref flat: map(string, unmanaged Toml?, false), rootKey = '') : flat.type {
       for (k, v) in this.A.items() {
-        if v.tag == fieldToml {
+        if v!.tag == fieldToml {
           var fullKey = k;
           if rootKey != '' then fullKey = '.'.join(rootKey, k);
           flat[fullKey] = v;
-          v.flatten(flat, fullKey);
+          v!.flatten(flat, fullKey);
         }
       }
       return flat;
     }
 
     pragma "no doc"
-    proc printTables(ref flat: map(string, unmanaged Toml, false), f:channel) {
+    proc printTables(ref flat: map(string, unmanaged Toml?, false), f:channel) {
       if flat.contains('root') {
         f.writeln('[root]');
-        printValues(f, flat['root']);
+        printValues(f, flat['root']!);
         flat.remove('root');
       }
       for k in flat.keysToArray().sorted() {
         f.writeln('[', k, ']');
-        printValues(f, flat[k]);
+        printValues(f, flat[k]!);
       }
     }
 
     pragma "no doc"
     /* Send values from table to toString for writing  */
     proc printValues(f: channel, v: borrowed Toml) throws {
-      for (key, value) in v.A.items() {
+      for (key, val) in v.A.items() {
+        var value = val!;
         select value.tag {
           when fieldToml do continue; // Table
           when fieldBool {
@@ -904,10 +915,10 @@ used to recursively hold tables and respective values
             final += '[';
             for k in value.arr {
               if value.arr.domain.size == 1 || k == value.arr[value.arr.domain.last] {
-                final += toString(k);
+                final += toString(k!);
               }
               else {
-                final += toString(k) + ', ';
+                final += toString(k!) + ', ';
               }
             }
             final += ']';
@@ -943,7 +954,8 @@ used to recursively hold tables and respective values
     pragma "no doc"
     /* Send values from table to toString for writing  */
     proc printValuesJSON(f: channel, v: borrowed Toml, in indent=0) throws {
-      for ((key, value), i) in zip(v.A.items(), 1..v.A.size) {
+      for ((key, val), i) in zip(v.A.items(), 1..v.A.size) {
+        var value = val!;
         select value.tag {
           when fieldToml do continue; // Table
           when fieldBool {
@@ -961,7 +973,7 @@ used to recursively hold tables and respective values
             var arrayElements: string;
             for i in value.arr.domain {
               ref k = value.arr[i];
-              f.writef('%s{"type": "%s", "value": "%s"}', ' '*indent, k.tomlType, toString(k));
+              f.writef('%s{"type": "%s", "value": "%s"}', ' '*indent, k!.tomlType, toString(k!));
               if i != value.arr.domain.last {
                 f.writef(',');
               }
@@ -1013,10 +1025,10 @@ used to recursively hold tables and respective values
           final += '[';
           for k in val.arr {
             if val.arr.domain.size == 1 || k == val.arr[val.arr.domain.last] {
-              final += toString(k);
+              final += toString(k!);
             }
             else {
-              final += toString(k) + ', ';
+              final += toString(k!) + ', ';
             }
           }
           final += ']';
