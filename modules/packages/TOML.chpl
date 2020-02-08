@@ -737,8 +737,8 @@ used to recursively hold tables and respective values
       if t == nil {
         t = new unmanaged Toml(s);
       } else {
-        t.tag = fieldString;
-        t.s = s;
+        t!.tag = fieldString;
+        t!.s = s;
       }
     }
     proc set(tbl: string, i: int) {
@@ -746,8 +746,8 @@ used to recursively hold tables and respective values
       if t == nil {
         t = new unmanaged Toml(i);
       } else {
-        t.tag = fieldInt;
-        t.i = i;
+        t!.tag = fieldInt;
+        t!.i = i;
       }
     }
     proc set(tbl: string, b: bool) {
@@ -755,8 +755,8 @@ used to recursively hold tables and respective values
       if t == nil {
         t = new unmanaged Toml(b);
       } else {
-        t.tag = fieldBool;
-        t.boo = b;
+        t!.tag = fieldBool;
+        t!.boo = b;
       }
     }
     proc set(tbl: string, r: real) {
@@ -764,8 +764,8 @@ used to recursively hold tables and respective values
       if t == nil {
         t = new unmanaged Toml(r);
       } else {
-        t.tag = fieldReal;
-        t.re = r;
+        t!.tag = fieldReal;
+        t!.re = r;
       }
     }
     proc set(tbl: string, ld: date) {
@@ -773,8 +773,8 @@ used to recursively hold tables and respective values
       if t == nil {
         t = new unmanaged Toml(ld);
       } else {
-        t.tag = fieldDate;
-        t.ld = ld;
+        t!.tag = fieldDate;
+        t!.ld = ld;
       }
     }
     proc set(tbl: string, ti: time) {
@@ -782,8 +782,8 @@ used to recursively hold tables and respective values
       if t == nil {
         t = new unmanaged Toml(ti);
       } else {
-        t.tag = fieldTime;
-        t.ti = ti;
+        t!.tag = fieldTime;
+        t!.ti = ti;
       }
     }
     proc set(tbl: string, dt: datetime) {
@@ -791,8 +791,8 @@ used to recursively hold tables and respective values
       if t == nil {
         t = new unmanaged Toml(dt);
       } else {
-        t.tag = fieldDateTime;
-        t.dt = dt;
+        t!.tag = fieldDateTime;
+        t!.dt = dt;
       }
     }
     proc set(tbl: string, A: [?D] unmanaged Toml?) where isAssociativeDom(D) {
