@@ -1374,7 +1374,7 @@ proc cholesky(A: [] ?t, lower = true)
       compiler error if ``lapackImpl`` is ``none``.
 
 */
-proc eigvals(A: [] ?t) where isRealType(t) && A.domain.rank == 2 && usingLAPACK {
+proc eigvals(A: [] ?t) where A.domain.rank == 2 && usingLAPACK {
   return eig(A, left=false, right=false);
 }
 
@@ -1403,7 +1403,7 @@ proc eigvals(A: [] ?t) where isRealType(t) && A.domain.rank == 2 && usingLAPACK 
 
  */
 proc eig(A: [] ?t, param left = false, param right = false)
-  where isRealType(t) && A.domain.rank == 2 && usingLAPACK {
+  where A.domain.rank == 2 && usingLAPACK {
 
   proc convertToCplx(wr: [] t, wi: [] t) {
     const n = wi.numElements;
@@ -1641,7 +1641,7 @@ proc jacobi(A: [?Adom] ?eltType, ref X: [?Xdom] eltType,
 
 pragma "no doc"
 proc eig(A: [] ?t, param left = false, param right = false)
-  where isRealType(t) && A.domain.rank == 2 && !usingLAPACK {
+  where A.domain.rank == 2 && !usingLAPACK {
   compilerError("eigvals() requires LAPACK");
 }
 
