@@ -30,6 +30,7 @@ use MasonModify;
 use FileSystem;
 private use List;
 
+
 proc masonInit(args) throws {
   try! {
     var name = '';
@@ -48,13 +49,13 @@ proc masonInit(args) throws {
         var version = "";
         const toParse = open("Mason.toml", iomode.r);
         const tomlFile = new owned(parseToml(toParse));
-        if (tomlFile["brick"]["name"]) {
+        if tomlFile["brick"]["name"] {
           projectName = tomlFile["brick"]["name"].s;
         }
         else {
           throw new owned MasonError("Project Name doesn't exist in Mason.toml");
         }
-        if (tomlFile["brick"]["version"]){
+        if tomlFile["brick"]["version"] {
           version = tomlFile["brick"]["version"].s;
         } 
         else {
@@ -66,9 +67,9 @@ proc masonInit(args) throws {
       //If Mason.toml not present, proceed with init
       const cwd  = getEnv("PWD");
       const currDir = basename(cwd);
-      var name = currDir;
-      var path = '.';
-      makeBasicToml(name,path);
+      const name = currDir;
+      const path = '.';
+      makeBasicToml(name, path);
       ValidateInit(path);
       writeln("Initialized new library project: " + name);
     } 
@@ -77,8 +78,8 @@ proc masonInit(args) throws {
       // if target directory exists, check for files && validate
       // create folders and toml file without overwriting anything 
       // if TOML file exists, check for values in it and validate
-      var path = name;
-      if(isDir(path)) {
+      const path = name;
+      if isDir(path) {
         ValidateInit(path);
         writeln("Initialized new library project in " + path + ": " + basename(path));
       } 
@@ -96,9 +97,9 @@ proc masonInit(args) throws {
 
 proc ValidateInit(path: string) throws {
   var files = [ "/Mason.toml" , "/src" , "/test" , "/example", "/.git", ".gitignore" ];
-  var ToBeCreated : list(string);
+  var toBeCreated : list(string);
   for idx in 1..files.size do {
-    var file = files(idx);
+    const file = files(idx);
     if file == "/Mason.toml" {
       if isFile(path + file) {
         //scan using TOML reader and validate
@@ -110,50 +111,63 @@ proc ValidateInit(path: string) throws {
         checkVersion(version);
       } 
       else {
-        ToBeCreated.append(file);
+        toBeCreated.append(file);
       }
     } 
     else {
-      var dir = file;
+      const dir = file;
       if isDir(path + dir) == false {
-        ToBeCreated.append(dir);
+        toBeCreated.append(dir);
       }
     }
   }
-  if ToBeCreated.size == 1 {
-    throw new owned MasonError("Library project has already been initialised.");
-    exit(1);
-  }
-
-  for file in ToBeCreated{
-    if file == "/Mason.toml" {
-      var name = basename(path);
-      makeBasicToml(name,path);
+  
+  if toBeCreated.size == 1 {
+    var fileName = "";
+    if path != '.' {
+      fileName = basename(path); 
+    } else {
+      const pwd = getEnv("PWD");
+      fileName = basename(pwd);
+    }
+    if isFile(path + '/src/' + fileName + '.chpl') == false {
+      makeModule(path,fileName);
     } 
     else {
-      var name = basename(path);
+      throw new owned MasonError("Library project has already been initialised.");
+    } 
+  }
+
+  for file in toBeCreated{
+    if file == "/Mason.toml" {
+      const name = basename(path);
+      makeBasicToml(name, path);
+    } 
+    else {
+      const name = basename(path);
       if file == "/.git" {
         gitInit(path, show=false);
       }
       else if file == ".gitignore" {
         addGitIgnore(path);
       } 
-      else {
-        if(file == '/src' && path == '.'){
-          var pwd = getEnv("PWD");
-          var currDir = basename(pwd);
-          var newPath = currDir;
-          mkdir(path + "/src");
-          const libTemplate = '/* Documentation for ' + basename(path) +
-          ' */\nmodule '+ basename(newPath) + ' {\n  writeln("New library: '+ basename(newPath) +'");\n}';
-          var lib = open(path+'/src/'+basename(newPath)+'.chpl', iomode.cw);
-          var libWriter = lib.writer();
-          libWriter.write(libTemplate + '\n');
-          libWriter.close();
-        }
-        else {
-          makeProjectFiles(path,file);
-        }
+      else if file == '/src' && path == '.' {
+        const pwd = getEnv("PWD");
+        const newPath = basename(pwd);
+        const fileName = basename(newPath); 
+        makeSrcDir(path);
+        makeModule(path, fileName);
+      }
+      else if file == '/src' {
+        makeSrcDir(path);
+        const currDir = basename(path);
+        makeModule(path, currDir);
+      } 
+      else if file == '/test' {
+        makeTestDir(path);
+      } 
+      else if file == '/example' {
+        makeExampleDir(path);
       }
     }
   }

@@ -96,7 +96,12 @@ proc InitProject(name, vcs, show) throws {
   if isDir(name) {
     var allFiles = "all";
     makeBasicToml(name, path=name);
-    makeProjectFiles(name, allFiles);
+    //new work here
+    //makeProjectFiles(name, allFiles);
+    makeSrcDir(name);
+    makeModule(name, fileName=name);
+    makeTestDir(name);
+    makeExampleDir(name);  
     writeln("Created new library project: " + name);
   }
   else {
@@ -134,29 +139,23 @@ proc makeBasicToml(name: string, path: string) {
   tomlWriter.close();
 }
 
+proc makeSrcDir(path:string) {
+  mkdir(path + "/src");
+}
 
-proc makeProjectFiles(path:string,name: string) {
-  if(name=="all") {
-    mkdir(path + "/src");
-    mkdir(path + "/test");
-    mkdir(path + "/example");
-    const libTemplate = '/* Documentation for ' + path +
-      ' */\nmodule '+ path + ' {\n  writeln("New library: '+ path +'");\n}';
-    var lib = open(path+'/src/'+path+'.chpl', iomode.cw);
+proc makeModule(path:string, fileName:string) {
+   const libTemplate = '/* Documentation for ' + fileName +
+      ' */\nmodule '+ fileName + ' {\n  writeln("New library: '+ fileName +'");\n}';
+    var lib = open(path+'/src/'+fileName+'.chpl', iomode.cw);
     var libWriter = lib.writer();
     libWriter.write(libTemplate + '\n');
     libWriter.close();
-  } else if(name == "/src") {
-    mkdir(path + "/src");
-    const libTemplate = '/* Documentation for ' + basename(path) +
-      ' */\nmodule '+ basename(path) + ' {\n  writeln("New library: '+ basename(path) +'");\n}';
-    var lib = open(path+'/src/'+basename(path)+'.chpl', iomode.cw);
-    var libWriter = lib.writer();
-    libWriter.write(libTemplate + '\n');
-    libWriter.close();
-  } else if(name == "/test") {
-    mkdir(path + "/test");
-  } else if(name == "/example") {
-    mkdir(path + "/example");
-  }
+}
+
+proc makeTestDir(path:string) {
+  mkdir(path + "/test");
+}
+
+proc makeExampleDir(path:string) {
+  mkdir(path + "/example");
 }
