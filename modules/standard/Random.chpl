@@ -405,6 +405,184 @@ module Random {
     }
   }
 
+  pragma "no doc"
+  /* Actual implementation of choiceIndex() */
+  proc _choiceIndex(stream, arr: [], size:?sizeType, replace, prob:?probType)
+    throws
+  {
+
+    if arr.rank != 1 {
+      compilerError('choiceIndex() array must be 1 dimensional');
+    }
+    if arr.size < 1 {
+      throw new owned IllegalArgumentError('choiceIndex() array.size must be greater than 0');
+    }
+
+    // Check types of optional void args
+    if !isNothingType(probType) {
+      if !isArrayType(probType) then
+        compilerError('choiceIndex() prob must be an array');
+      if !(isIntegralType(prob.eltType) || isRealType(prob.eltType)) then
+        compilerError('choiceIndex() prob.eltType must be real or integral');
+      if prob.rank != 1 {
+        compilerError('choiceIndex() prob array must be 1 dimensional');
+      }
+
+      if prob.domain != arr.domain {
+        throw new owned IllegalArgumentError('choiceIndex() array arguments must have same domain');
+      }
+    }
+    if !isNothingType(sizeType) {
+      if isIntegralType(sizeType) {
+        if size <= 0 then
+        throw new owned IllegalArgumentError('choiceIndex() size must be greater than 0');
+      } else if !isDomainType(sizeType) {
+        compilerError('choiceIndex() size must be integral or domain');
+      }
+    }
+
+    if isNothingType(probType) {
+      return _choiceIndexUniform(stream, arr, size, replace);
+    } else {
+      return _choiceIndexProbabilities(stream, arr, size, replace, prob);
+    }
+  }
+
+  pragma "no doc"
+  /* _choiceIndex branch for uniform distribution */
+  proc _choiceIndexUniform(stream, arr:[], size:?sizeType, replace) throws
+  {
+    ref A = arr.reindex(1..arr.size);
+
+    if isNothingType(sizeType) {
+      // Return 1 sample
+      var randIdx = stream.getNext(resultType=int, 1, A.size);
+      return randIdx;
+    } else {
+      // Return numElements samples
+
+      // Compute numElements for tuple case
+      var m = 1;
+      if isDomainType(sizeType) then m = size.size;
+
+      var numElements = if isDomainType(sizeType) then m
+                        else if isIntegralType(sizeType) then size:int
+                        else compilerError('choiceIndex() size type must be integral or tuple of ranges');
+
+      // Return N samples
+      var samples: [1..numElements] int;
+
+      if replace {
+        for sample in samples {
+          var randIdx = stream.getNext(resultType=int, 1, A.size);
+          sample = randIdx;
+        }
+      } else {
+        var indices: [A.domain] int = A.domain;
+        shuffle(indices);
+        for i in samples.domain {
+          samples[i] = indices[i];
+        }
+      }
+      if isIntegralType(sizeType) {
+        return samples;
+      } else if isDomainType(sizeType) {
+        return reshape(samples, size);
+      }
+    }
+  }
+
+  pragma "no doc"
+  /* _choiceIndex branch for distribution defined by probabilities array */
+  proc _choiceIndexProbabilities(stream, arr:[], size:?sizeType, replace, prob:?probType) throws
+  {
+    use Search only;
+    use Sort only;
+
+    // If stride, offset, or size don't match, we're in trouble
+    if arr.domain != prob.domain then
+      throw new owned IllegalArgumentError('choiceIndex() arrays must have equal domains');
+
+    if prob.size == 0 then
+      throw new owned IllegalArgumentError('choiceIndex() arrays cannot be empty');
+
+    ref A = arr.reindex(1..arr.size);
+    ref P = prob.reindex(1..arr.size);
+
+    // Construct cumulative sum array
+    var cumulativeArr = (+ scan P): real;
+
+    if !Sort.isSorted(cumulativeArr) then
+      throw new owned IllegalArgumentError("choiceIndex() prob array cannot contain negative values");
+
+    // Confirm the array has at least one value > 0
+    if cumulativeArr[P.domain.last] <= 0 then
+      throw new owned IllegalArgumentError('choiceIndex() prob array requires a value greater than 0');
+
+    // Normalize cumulative sum array
+    var total = cumulativeArr[P.domain.last];
+    cumulativeArr /= total;
+
+    // Begin sampling
+    if isNothingType(sizeType) {
+      // Return 1 sample
+      var randNum = stream.getNext(resultType=real);
+      var (found, idx) = Search.binarySearch(cumulativeArr, randNum);
+      return idx;
+    } else {
+      // Return numElements samples
+
+      // Compute numElements for tuple case
+      var m = 1;
+      if isDomainType(sizeType) then m = size.size;
+
+      var numElements = if isDomainType(sizeType) then m
+                        else if isIntegralType(sizeType) then size:int
+                        else compilerError('choiceIndex() size type must be integral or tuple of ranges');
+
+      // Return N samples
+      var samples: [1..numElements] int;
+
+      if replace {
+        for sample in samples {
+          var randNum = stream.getNext(resultType=real);
+          var (found, idx) = Search.binarySearch(cumulativeArr, randNum);
+          sample = idx;
+        }
+      } else {
+        var indicesChosen: domain(int);
+        var i = 1;
+        while indicesChosen.size < samples.size {
+
+          // Recalculate normalized cumulativeArr
+          if indicesChosen.size > 0 {
+            cumulativeArr = (+ scan P): real;
+            total = cumulativeArr[P.domain.last];
+            cumulativeArr /= total;
+          }
+
+          var remainingSamples = samples.size - indicesChosen.size;
+          for randNum in stream.iterate({1..(samples.size - indicesChosen.size)}, resultType=real) {
+            // A potential optimization: Generate rand nums ahead of time
+            // and do a multi-target binary search to find all of their positions
+            var (found, indexChosen) = Search.binarySearch(cumulativeArr, randNum);
+            if !indicesChosen.contains(indexChosen) {
+              indicesChosen += indexChosen;
+              samples[i] += indexChosen;
+              i += 1;
+            }
+            P[indexChosen] = 0;
+          }
+        }
+      }
+      if isIntegralType(sizeType) {
+        return samples;
+      } else if isDomainType(sizeType) {
+        return reshape(samples, size);
+      }
+    }
+  }
+
   /*
 
     Models a stream of pseudorandom numbers.  This class is defined for
@@ -555,6 +733,11 @@ module Random {
     proc choice(arr: [], size:?sizeType=none, replace=true, prob:?probType=none) throws
     {
       compilerError("RandomStreamInterface.choice called");
+    }
+
+    proc choiceIndex(arr: [], size:?sizeType=none, replace=true, prob:?probType=none) throws
+    {
+      compilerError("RandomStreamInterface.choiceIndex called");
     }
 
     /*
@@ -973,6 +1156,12 @@ module Random {
         throws
       {
         return _choice(this, arr, size=size, replace=replace, prob=prob);
+      }
+
+      proc choiceIndex(arr: [], size:?sizeType=none, replace=true, prob:?probType=none)
+        throws
+      {
+        return _choiceIndex(this, arr, size=size, replace=replace, prob=prob);
       }
 
       /* Randomly shuffle a 1-D array. */
@@ -2450,6 +2639,13 @@ module Random {
         throws
       {
         compilerError("NPBRandomStream.choice() is not supported.");
+      }
+
+      pragma "no doc"
+      proc choiceIndex(arr: [], size:?sizeType=none, replace=true, prob:?probType=none)
+        throws
+      {
+        compilerError("NPBRandomStream.choiceIndex() is not supported.");
       }
 
       /*
