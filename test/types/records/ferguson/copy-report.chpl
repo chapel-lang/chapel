@@ -95,17 +95,48 @@ proc callToInArg()
   callToInArg_inner(returnR());
 }
 
-
-proc varInitLocal()
+proc varInitLocalUntypedLast()
 {
-  writeln(" variable initialization / local var");
   var loc = new R(1);
   writeln("   untyped variable");
   var v1 = loc;
   check(v1);
+}
+
+proc varInitLocalTypedLast()
+{
+  var loc = new R(1);
   writeln("   typed variable");
   var v2:R = loc;
   check(v2);
+}
+
+proc varInitLocalUntypedNotLast()
+{
+  var loc = new R(1);
+  writeln("   untyped variable");
+  var v1 = loc;
+  check(v1);
+  check(loc);
+}
+
+proc varInitLocalTypedNotLast()
+{
+  var loc = new R(1);
+  writeln("   typed variable");
+  var v2:R = loc;
+  check(v2);
+  check(loc);
+}
+
+proc varInitLocal()
+{
+  writeln(" variable initialization / local var last mention");
+  varInitLocalUntypedLast();
+  varInitLocalTypedLast();
+  writeln(" variable initialization / local var not last mention");
+  varInitLocalUntypedNotLast();
+  varInitLocalTypedNotLast();
 }
 
 proc varInitGlobal()
@@ -191,21 +222,21 @@ proc varInitArgRef(ref arg)
   check(v2);
 }
 
-proc varInitArgInNotExpiring(in arg)
+proc varInitArgInNotLast(in arg)
 {
-  writeln(" variable initialization / in-intent arg not expiring");
+  writeln(" variable initialization / in-intent arg not last mention");
   writeln("   untyped variable");
   var v1 = arg;
   check(v1);
   writeln("   typed variable");
   var v2:R = arg;
   check(v2);
-  arg; // arg not expiring
+  check(arg);
 }
 
 proc varInitArgInUntyped(in arg)
 {
-  writeln(" variable initialization / in-intent arg expiring");
+  writeln(" variable initialization / in-intent arg last mention");
   writeln("   untyped variable");
   var v1 = arg;
   check(v1);
@@ -213,27 +244,27 @@ proc varInitArgInUntyped(in arg)
 
 proc varInitArgInTyped(in arg)
 {
-  writeln(" variable initialization / in-intent arg expiring");
+  writeln(" variable initialization / in-intent arg last mention");
   writeln("   typed variable");
   var v2:R = arg;
   check(v2);
 }
 
-proc varInitArgConstInNotExpiring(const in arg)
+proc varInitArgConstInNotLast(const in arg)
 {
-  writeln(" variable initialization / const-in-intent arg not expiring");
+  writeln(" variable initialization / const-in-intent arg not last mention");
   writeln("   untyped variable");
   var v1 = arg;
   check(v1);
   writeln("   typed variable");
   var v2:R = arg;
   check(v2);
-  arg; // arg not expiring
+  check(arg);
 }
 
 proc varInitArgConstInUntyped(const in arg)
 {
-  writeln(" variable initialization / const-in-intent arg expiring");
+  writeln(" variable initialization / const-in-intent arg last mention");
   writeln("   untyped variable");
   var v1 = arg;
   check(v1);
@@ -241,7 +272,7 @@ proc varInitArgConstInUntyped(const in arg)
 
 proc varInitArgConstInTyped(const in arg)
 {
-  writeln(" variable initialization / const-in-intent arg expiring");
+  writeln(" variable initialization / const-in-intent arg last mention");
   writeln("   typed variable");
   var v1:R = arg;
   check(v1);
@@ -289,13 +320,23 @@ proc fieldInitCall()
   check(cont.field);
 }
 
-proc fieldInitLocal()
+proc fieldInitLocalLast()
 {
-  writeln(" field initialization / local var");
+  writeln(" field initialization / local var last mention");
   var loc = new R(1);
   writeln("   default constructor");
   var cont = new Container(loc);
   check(cont.field);
+}
+
+proc fieldInitLocalNotLast()
+{
+  writeln(" field initialization / local var not last mention");
+  var loc = new R(1);
+  writeln("   default constructor");
+  var cont = new Container(loc);
+  check(cont.field);
+  check(loc);
 }
 
 proc fieldInitGlobal()
@@ -448,26 +489,6 @@ proc returnRefArgRef(ref arg:R) ref {
   return arg;
 }
 
-
-proc initFromExpiringValue()
-{
-  writeln(" init / expiring value");
-  var a = new R(1);
-  var b = a;
-  check(b);
-}
-
-proc assignFromExpiringValue()
-{
-  writeln(" assign / expiring value");
-  var a = new R(1);
-  var b:R;
-  b = a;
-  check(b);
-}
-
-
-
 proc main() {
 
   {
@@ -482,19 +503,20 @@ proc main() {
     writeln();
     writeln("VARIABLE INITIALIZATION -- LOCAL VAR");
     varInitLocal();
-    fieldInitLocal();
+    fieldInitLocalLast();
+    fieldInitLocalNotLast();
   }
 
   {
     writeln();
     writeln("VARIABLE INITIALIZATION -- IN ARG (GLOBAL)");
-    varInitArgInNotExpiring(global);
+    varInitArgInNotLast(global);
     writeln();
     varInitArgInUntyped(global);
     writeln();
     varInitArgInTyped(global);
     writeln();
-    varInitArgConstInNotExpiring(global);
+    varInitArgConstInNotLast(global);
     writeln();
     varInitArgConstInUntyped(global);
     writeln();

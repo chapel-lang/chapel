@@ -26,8 +26,8 @@ proc R.init=(other : this.type) {
 
 {
   var A = new R(10);
-  var B = A;
-  var C : R(int) = B;
+  var B = A; A; // don't copy-elide
+  var C : R(int) = B; B; // don't copy elide
   // var D : R(real) = C; // Compiler error!
 }
 writeln("\n\n");

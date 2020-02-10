@@ -10,52 +10,57 @@ VARIABLE INITIALIZATION -- VALUE CALL
    default constructor
 
 VARIABLE INITIALIZATION -- LOCAL VAR
- variable initialization / local var
+ variable initialization / local var last mention
+   untyped variable
+   typed variable
+ variable initialization / local var not last mention
    untyped variable
     R.init=(R)
    typed variable
     R.init=(R)
- field initialization / local var
+ field initialization / local var last mention
+   default constructor
+ field initialization / local var not last mention
    default constructor
     R.init=(R)
 
 VARIABLE INITIALIZATION -- IN ARG (GLOBAL)
     R.init=(R)
- variable initialization / in-intent arg not expiring
+ variable initialization / in-intent arg not last mention
    untyped variable
     R.init=(R)
    typed variable
     R.init=(R)
 
     R.init=(R)
- variable initialization / in-intent arg expiring
+ variable initialization / in-intent arg last mention
    untyped variable
 
     R.init=(R)
- variable initialization / in-intent arg expiring
+ variable initialization / in-intent arg last mention
    typed variable
 
     R.init=(R)
- variable initialization / const-in-intent arg not expiring
+ variable initialization / const-in-intent arg not last mention
    untyped variable
     R.init=(R)
    typed variable
     R.init=(R)
 
     R.init=(R)
- variable initialization / const-in-intent arg expiring
+ variable initialization / const-in-intent arg last mention
    untyped variable
 
     R.init=(R)
- variable initialization / const-in-intent arg expiring
+ variable initialization / const-in-intent arg last mention
    typed variable
 
 VARIABLE INITIALIZATION -- IN ARG (IN ARG (CALL-EXPR)))
  passing in intent arg to in intent arg
- variable initialization / in-intent arg expiring
+ variable initialization / in-intent arg last mention
    untyped variable
  passing const in intent arg to const in intent arg
- variable initialization / const-in-intent arg expiring
+ variable initialization / const-in-intent arg last mention
    untyped variable
 
 VARIABLE INITIALIZATION -- OUTER VAR
