@@ -58,7 +58,7 @@ module SSCA2_driver
         largest_edges ( G, Heavy_Edge_List );
 
         if RUN_KERNEL3 {
-          var Heavy_Edge_Subgraphs : [Heavy_Edge_List] unmanaged Generated_Subgraph (vertex);
+          var Heavy_Edge_Subgraphs : [Heavy_Edge_List] unmanaged Generated_Subgraph (vertex)?;
 
           for (x,y) in Heavy_Edge_List do
             Heavy_Edge_Subgraphs ( (x, y) ) = new unmanaged Generated_Subgraph (vertex);

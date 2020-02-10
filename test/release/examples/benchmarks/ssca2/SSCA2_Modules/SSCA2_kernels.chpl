@@ -122,13 +122,13 @@ module SSCA2_kernels
 	  writeln ( " Building heavy edge subgraph from pair:", (x,y) );
 	Active_Level.add ( y );
 	Next_Level.clear ();
-	Heavy_Edge_Subgraph ( (x, y) ).nodes.clear ();
-	Heavy_Edge_Subgraph ( (x, y) ).edges.clear ();
+	Heavy_Edge_Subgraph ( (x, y) )!.nodes.clear ();
+	Heavy_Edge_Subgraph ( (x, y) )!.edges.clear ();
 	min_distance ( y ).write(0);
 
-	Heavy_Edge_Subgraph ( (x, y) ).edges.add ( (x, y) );
-	Heavy_Edge_Subgraph ( (x, y) ).nodes.add ( x );
-	Heavy_Edge_Subgraph ( (x, y) ).nodes.add ( y );
+	Heavy_Edge_Subgraph ( (x, y) )!.edges.add ( (x, y) );
+	Heavy_Edge_Subgraph ( (x, y) )!.nodes.add ( x );
+	Heavy_Edge_Subgraph ( (x, y) )!.nodes.add ( y );
   
 	for path_length in 1 .. max_path_length do {
 	    
@@ -139,11 +139,11 @@ module SSCA2_kernels
 
               if min_distance(w).compareAndSwap(-1, path_length) then {
                 Next_Level.add (w);
-                Heavy_Edge_Subgraph ( (x, y) ).nodes.add (w);
+                Heavy_Edge_Subgraph ( (x, y) )!.nodes.add (w);
 	      }
 
 	      if min_distance(w).read() == path_length then {
-		Heavy_Edge_Subgraph ( (x, y) ).edges.add ( (v, w) );
+		Heavy_Edge_Subgraph ( (x, y) )!.edges.add ( (v, w) );
 	      }
 	    }
 	  }

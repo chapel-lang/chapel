@@ -71,10 +71,10 @@ proc initVectors(B, C) {
     on loc {
       var randlist = new owned NPBRandomStream(eltType=real, seed=seed);
       // TODO: Need to clean this up to use more normal method names
-      randlist.skipToNth(B.locArr(loc).locDom.low);
-      randlist.fillRandom(B.locArr(loc).myElems);
-      randlist.skipToNth(B.numElements + C.locArr(loc).locDom.low);
-      randlist.fillRandom(C.locArr(loc).myElems);
+      randlist.skipToNth(B.locArr(loc)!.locDom.low);
+      randlist.fillRandom(B.locArr(loc)!.myElems);
+      randlist.skipToNth(B.numElements + C.locArr(loc)!.locDom.low);
+      randlist.fillRandom(C.locArr(loc)!.myElems);
     }
   }
 
