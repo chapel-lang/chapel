@@ -1264,6 +1264,8 @@ void FindInvalidNonNilables::exitCallExpr(CallExpr* call) {
           if (isTrackedNonNilableVariable(actualSym) &&
               varsToNil.count(actualSym) != 0) {
             varsToNil[actualSym] = call;
+          } else if (actualSym->hasFlag(FLAG_TEMP)) {
+            // No error for now for temps.
           } else if (isArgSymbol(actualSym)) {
             // leaves-arg-nil OK for e.g. owned initCopy/init= etc.
             if (actualSym->hasFlag(FLAG_LEAVES_ARG_NIL) == false)
