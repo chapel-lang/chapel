@@ -3320,8 +3320,9 @@ void ofi_put_V(int v_len, void** addr_v, void** local_mr_v,
                c_nodeid_t* locale_v, void** raddr_v, uint64_t* remote_mr_v,
                size_t* size_v, struct bitmap_t* b) {
   DBG_PRINTF(DBG_RMA | DBG_RMAWRITE | DBG_RMAUNORD,
-             "PUT_V(%d) %d:%p <= %p, size %zd",
-             v_len, (int) locale_v[0], raddr_v[0], addr_v[0], size_v[0]);
+             "put_V(%d): %d:%p <= %p, size %zd, key 0x%" PRIx64,
+             v_len, (int) locale_v[0], raddr_v[0], addr_v[0], size_v[0],
+             remote_mr_v[0]);
 
   struct perTxCtxInfo_t* tcip;
   CHK_TRUE((tcip = tciAlloc()) != NULL);
@@ -3342,26 +3343,26 @@ void ofi_put_V(int v_len, void** addr_v, void** local_mr_v,
     bitmapZero(b);
   }
   for (int vi = 0; vi < v_len; vi++) {
-    struct iovec iov = (struct iovec)
-                       { .iov_base = addr_v[vi],
-                         .iov_len = size_v[vi] };
-    struct fi_rma_iov riov = (struct fi_rma_iov)
-                             { .addr = (uint64_t) raddr_v[vi],
-                               .len = size_v[vi],
-                               .key = remote_mr_v[vi] };
+    struct iovec msg_iov = (struct iovec)
+                           { .iov_base = addr_v[vi],
+                             .iov_len = size_v[vi] };
+    struct fi_rma_iov rma_iov = (struct fi_rma_iov)
+                                { .addr = (uint64_t) raddr_v[vi],
+                                  .len = size_v[vi],
+                                  .key = remote_mr_v[vi] };
     struct fi_msg_rma msg = (struct fi_msg_rma)
-                            { .msg_iov = &iov,
+                            { .msg_iov = &msg_iov,
                               .desc = &local_mr_v[vi],
                               .iov_count = 1,
                               .addr = rxRmaAddr(tcip, locale_v[vi]),
-                              .rma_iov = &riov,
+                              .rma_iov = &rma_iov,
                               .rma_iov_count = 1,
                               .context = NULL,
                               .data = 0 };
     DBG_PRINTF(DBG_RMA | DBG_RMAWRITE,
                "tx writemsg: %d:%p <= %p, size %zd, key 0x%" PRIx64,
-               (int) locale_v[vi], (void*) riov.addr, iov.iov_base,
-               iov.iov_len, riov.key);
+               (int) locale_v[vi], (void*) msg.rma_iov->addr,
+               msg.msg_iov->iov_base, msg.msg_iov->iov_len, msg.rma_iov->key);
     //
     // Add another transaction to the group and go on without waiting.
     // Throw FI_MORE except for the last one in the batch.
@@ -3390,7 +3391,7 @@ void ofi_put_V(int v_len, void** addr_v, void** local_mr_v,
         checkTxCQ(tcip);
       }
       DBG_PRINTF(DBG_RMAUNORD,
-                 "PUT_V ordering: %p <= %d:%p",
+                 "put_V ordering: %p <= %d:%p",
                  orderDummy, (int) node, orderDummyMap[node]);
       (void) ofi_get_ll(orderDummy, node, orderDummyMap[node], 1,
                         txnTrkEncode(txnTrkNone, NULL), tcip);
@@ -3590,8 +3591,9 @@ void ofi_get_V(int v_len, void** addr_v, void** local_mr_v,
                c_nodeid_t* locale_v, void** raddr_v, uint64_t* remote_mr_v,
                size_t* size_v) {
   DBG_PRINTF(DBG_RMA | DBG_RMAREAD | DBG_RMAUNORD,
-             "GET_V(%d) %p <= %d:%p, size %zd",
-             v_len, addr_v[0], (int) locale_v[0], raddr_v[0], size_v[0]);
+             "get_V(%d): %p <= %d:%p, size %zd, key 0x%" PRIx64,
+             v_len, addr_v[0], (int) locale_v[0], raddr_v[0], size_v[0],
+             remote_mr_v[0]);
 
   struct perTxCtxInfo_t* tcip;
   CHK_TRUE((tcip = tciAlloc()) != NULL);
@@ -3603,26 +3605,27 @@ void ofi_get_V(int v_len, void** addr_v, void** local_mr_v,
   }
 
   for (int vi = 0; vi < v_len; vi++) {
-    struct iovec iov = (struct iovec)
-                       { .iov_base = addr_v[vi],
-                         .iov_len = size_v[vi] };
-    struct fi_rma_iov riov = (struct fi_rma_iov)
-                             { .addr = (uint64_t) raddr_v[vi],
-                               .len = size_v[vi],
-                               .key = remote_mr_v[vi] };
+    struct iovec msg_iov = (struct iovec)
+                           { .iov_base = addr_v[vi],
+                             .iov_len = size_v[vi] };
+    struct fi_rma_iov rma_iov = (struct fi_rma_iov)
+                                { .addr = (uint64_t) raddr_v[vi],
+                                  .len = size_v[vi],
+                                  .key = remote_mr_v[vi] };
     struct fi_msg_rma msg = (struct fi_msg_rma)
-                            { .msg_iov = &iov,
+                            { .msg_iov = &msg_iov,
                               .desc = &local_mr_v[vi],
                               .iov_count = 1,
                               .addr = rxRmaAddr(tcip, locale_v[vi]),
-                              .rma_iov = &riov,
+                              .rma_iov = &rma_iov,
                               .rma_iov_count = 1,
                               .context = NULL,
                               .data = 0 };
     DBG_PRINTF(DBG_RMA | DBG_RMAREAD,
                "tx readmsg: %p <= %d:%p, size %zd, key 0x%" PRIx64,
-               iov.iov_base, (int) locale_v[vi], (void*) riov.addr,
-               iov.iov_len, riov.key);
+               msg.msg_iov->iov_base, (int) locale_v[vi],
+               (void*) msg.rma_iov->addr, msg.msg_iov->iov_len,
+               msg.rma_iov->key);
     if (++(tcip->numTxns) >= txCQLen || vi == v_len - 1) {
       // Initiate last transaction in group and wait for whole group.
       OFI_RIDE_OUT_EAGAIN(fi_readmsg(tcip->txCtx, &msg, 0),
