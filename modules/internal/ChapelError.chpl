@@ -342,7 +342,7 @@ module ChapelError {
        or a subclass of that type.
 
        Note that this iterator yields values of type ``owned Error?``
-       but only those that have dynamic type ``t``.
+       but only those that are non-nil and have dynamic type ``t``.
      */
     iter filter(type t) ref : owned Error?
       where isSubtype(t:borrowed class, borrowed Error) {
