@@ -21,34 +21,42 @@ VARIABLE INITIALIZATION -- LOCAL VAR
 
 VARIABLE INITIALIZATION -- IN ARG (GLOBAL)
     R.init=(R)
- variable initialization / in-intent arg
+ variable initialization / in-intent arg not expiring
    untyped variable
     R.init=(R)
    typed variable
     R.init=(R)
 
     R.init=(R)
- variable initialization / const-in-intent arg
+ variable initialization / in-intent arg expiring
+   untyped variable
+
+    R.init=(R)
+ variable initialization / in-intent arg expiring
+   typed variable
+
+    R.init=(R)
+ variable initialization / const-in-intent arg not expiring
    untyped variable
     R.init=(R)
    typed variable
     R.init=(R)
+
+    R.init=(R)
+ variable initialization / const-in-intent arg expiring
+   untyped variable
+
+    R.init=(R)
+ variable initialization / const-in-intent arg expiring
+   typed variable
 
 VARIABLE INITIALIZATION -- IN ARG (IN ARG (CALL-EXPR)))
  passing in intent arg to in intent arg
-    R.init=(R)
- variable initialization / in-intent arg
+ variable initialization / in-intent arg expiring
    untyped variable
-    R.init=(R)
-   typed variable
-    R.init=(R)
  passing const in intent arg to const in intent arg
-    R.init=(R)
- variable initialization / const-in-intent arg
+ variable initialization / const-in-intent arg expiring
    untyped variable
-    R.init=(R)
-   typed variable
-    R.init=(R)
 
 VARIABLE INITIALIZATION -- OUTER VAR
  variable initialization / outer var
@@ -96,6 +104,8 @@ VARIABLE INITIALIZATION -- GLOBAL / REF
     R.init=(R)
    function epilogue
     assign
+
+FIELD INITIALIZATION
  field initialization / global var
    default constructor
     R.init=(R)
@@ -117,7 +127,6 @@ VARIABLE INITIALIZATION -- GLOBAL / REF
     R.init=(R)
  field initialization / in arg
    default constructor
-    R.init=(R)
     R.init=(R)
  field initialization / inout arg
    default constructor

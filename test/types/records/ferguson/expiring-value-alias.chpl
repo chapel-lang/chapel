@@ -275,8 +275,9 @@ proc test5in()
   if debug then writeln("R curr_dom = local_dom");
   // now local_dom "aliases" globalR
   test5in_part2(local_dom); // does argument passing create a copy?
-  // The answer for Chapel is yes with in intent (prints 100).
+  // The answer for Chapel depends on copy elision
   // It is also yes for D and C++11 with the default of pass-by-value.
+  local_dom; // prevent copy elision for this test
 }
 
 
