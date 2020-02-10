@@ -8,3 +8,4 @@ bad-array-set.chpl:26: error: Scoped variable would outlive the value it is set 
 bad-array-set.chpl:22: note: consider scope of Ab
 bad-array-set.chpl:27: error: Scoped variable would outlive the value it is set to
 bad-array-set.chpl:22: note: consider scope of Ab
+$CHPL_HOME/modules/internal/ChapelArray.chpl:3777: error: Cannot transfer ownership from a non-nilable variable with a potentially captured alias

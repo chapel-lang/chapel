@@ -1,3 +1,5 @@
 use-after-free.chpl:5: In function 'main':
 use-after-free.chpl:14: error: attempt to dereference nil
 use-after-free.chpl:9: note: this statement may be relevant
+use-after-free.chpl:14: error: mention of non-nilable variable after ownership is transferred out of it
+use-after-free.chpl:9: note: ownership transfer occurred here
