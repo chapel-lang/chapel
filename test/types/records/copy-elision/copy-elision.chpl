@@ -65,6 +65,10 @@ proc copy(in arg) {
   return arg;
 }
 
+proc acceptTwoIn(in a, in b) {
+  return concatenate(a, b);
+}
+
 proc test1a() {
   writeln("test1a");
   var x = new R(1);
@@ -251,5 +255,57 @@ proc test5c() {
 test5c();
 
 writeln("end");
+
+proc test6() {
+  writeln("test6");
+  var x = new R(1);
+  writeln("test6.a");
+  writeln(acceptTwoIn(x, x));
+}
+test6();
+
+proc test7a() {
+  writeln("test7a");
+  var x = new R(0);
+  writeln("test7a.a");
+  var y = x;
+  writeln("test7a.b");
+  writeln(concatenate(x.set1(), y));
+}
+test7a();
+
+proc test7b() {
+  writeln("test7b");
+  var x = new R(0);
+  writeln("test7b.a");
+  var y = x;
+  writeln("test7b.b");
+  return concatenate(x.set1(), y);
+}
+{ writeln(test7b()); }
+
+proc test7c() {
+  writeln("test7c");
+  var x = new R(0);
+  writeln("test7c.a");
+  var y = x;
+  writeln("test7c.b");
+  writeln(concatenate(set1f(x), y));
+}
+test7c();
+
+proc test7d() {
+  writeln("test7d");
+  var x = new R(0);
+  writeln("test7d.a");
+  var y = x;
+  writeln("test7d.b");
+  return concatenate(set1f(x), y);
+}
+{ writeln(test7d()); }
+
+
+writeln("end");
+
 
 // TODO: array tests
