@@ -202,6 +202,7 @@ module DistributedDeque {
     insertion and removal from either end of the queue. Can be used as a Queue,
     Stack, or even a List.
   */
+  pragma "always RVF"
   record DistDeque {
     type eltType;
     /*
