@@ -88,6 +88,9 @@ void ImportStmt::scopeResolve(ResolveScope* scope) {
       SET_LINENO(this);
 
       if (ModuleSymbol* modSym = toModuleSymbol(sym)) {
+        if (modSym->defPoint->parentSymbol != theProgram) {
+          USR_FATAL_CONT(this, "unable to import nested modules");
+        }
         scope->enclosingModule()->moduleUseAdd(modSym);
 
         updateEnclosingBlock(scope, sym);
