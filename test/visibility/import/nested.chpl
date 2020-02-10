@@ -3,7 +3,7 @@ module A {
     var x = 13;
 
     proc foo() {
-      writeln("In A.foo()");
+      writeln("In A.B.foo()");
     }
   }
 }
