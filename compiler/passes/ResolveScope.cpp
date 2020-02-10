@@ -787,9 +787,10 @@ void ResolveScope::buildBreadthFirstUseImportList(UseImportList& useImportList) 
   buildBreadthFirstUseImportList(useImportList, useImportList, visited);
 }
 
-void ResolveScope::buildBreadthFirstUseImportList(UseImportList& useImportList,
-                                            UseImportList& current,
-                                            UseImportMap&  visited) const {
+void
+ResolveScope::buildBreadthFirstUseImportList(UseImportList& useImportList,
+                                             UseImportList& current,
+                                             UseImportMap&  visited) const {
   UseImportList next;
 
   // use NULL as a sentinel to identify modules of equal depth
@@ -809,33 +810,38 @@ void ResolveScope::buildBreadthFirstUseImportList(UseImportList& useImportList,
       if (ModuleSymbol* mod = toModuleSymbol(se->symbol())) {
         if (mod->block->useList != NULL) {
           for_actuals(expr, mod->block->useList) {
-            UseStmt* use      = toUseStmt(expr);
-            SymExpr* useSE    = toSymExpr(use->src);
-            UseStmt* useToAdd = NULL;
+            if (UseStmt* use = toUseStmt(expr)) {
+              SymExpr* useSE    = toSymExpr(use->src);
+              UseStmt* useToAdd = NULL;
 
-            if (useSE->symbol()->hasFlag(FLAG_PRIVATE) == false) {
-              // Uses of private modules are not transitive -
-              // the symbols in the private modules are only visible to
-              // itself and its immediate parent.  Therefore, if the symbol
-              // is private, we will not traverse it further and will merely
-              // add it to the alreadySeen map.
-              useToAdd = use->applyOuterUse(source);
+              if (useSE->symbol()->hasFlag(FLAG_PRIVATE) == false) {
+                // Uses of private modules are not transitive -
+                // the symbols in the private modules are only visible to
+                // itself and its immediate parent.  Therefore, if the symbol
+                // is private, we will not traverse it further and will merely
+                // add it to the alreadySeen map.
+                useToAdd = use->applyOuterUse(source);
 
-              if (useToAdd                   != NULL &&
-                  skipUse(visited, useToAdd) == false) {
-                next.push_back(useToAdd);
-                useImportList.push_back(useToAdd);
+                if (useToAdd                   != NULL &&
+                    skipUse(visited, useToAdd) == false) {
+                  next.push_back(useToAdd);
+                  useImportList.push_back(useToAdd);
+                }
+
+                // If applyOuterUse returned NULL, the number of symbols
+                // that could be provided from this use was 0,
+                // so it didn't need to be added to the alreadySeen map.
+                if (useToAdd != NULL) {
+                  visited[useSE->symbol()].push_back(useToAdd);
+                }
+
+              } else {
+                visited[useSE->symbol()].push_back(use);
               }
-
-              // If applyOuterUse returned NULL, the number of symbols
-              // that could be provided from this use was 0,
-              // so it didn't need to be added to the alreadySeen map.
-              if (useToAdd != NULL) {
-                visited[useSE->symbol()].push_back(useToAdd);
-              }
-
+            } else if (ImportStmt* import = toImportStmt(expr)) {
+              // Don't do anything, imports only apply to qualified access
             } else {
-              visited[useSE->symbol()].push_back(use);
+              INT_ASSERT("Unexpected expr, expected ImportStmt or UseStmt");
             }
           }
         }
