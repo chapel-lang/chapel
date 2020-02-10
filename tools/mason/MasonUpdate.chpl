@@ -171,13 +171,15 @@ proc updateRegistry(tf: string, args: list(string)) {
   }
 }
 
-proc parseChplVersion(brick:borrowed Toml): (VersionInfo, VersionInfo) {
+proc parseChplVersion(maybeBrick: borrowed Toml?): (VersionInfo, VersionInfo) {
   use Regexp;
 
-  if brick == nil {
+  if maybeBrick == nil {
     stderr.writeln("Error: Unable to parse manifest file");
     exit(1);
   }
+
+  var brick = maybeBrick!;
 
   // Assert some expected fields are not nil
   if brick['name'] == nil || brick['version'] == nil{

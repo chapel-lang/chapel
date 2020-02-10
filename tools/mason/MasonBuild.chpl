@@ -114,7 +114,7 @@ proc masonBuild(args) throws {
 }
 
 private proc checkChplVersion(lockFile : borrowed Toml) throws {
-  const root = lockFile["root"];
+  const root = lockFile["root"]!;
   const (success, low, hi) = verifyChapelVersion(root);
 
   if success == false {
@@ -133,7 +133,7 @@ proc buildProgram(release: bool, show: bool, force: bool, ref cmdLineCompopts: l
     const projectHome = getProjectHome(cwd, tomlName);
     const toParse = open(projectHome + "/" + lockName, iomode.r);
     var lockFile = new owned(parseToml(toParse));
-    const projectName = lockFile["root"]["name"].s;
+    const projectName = lockFile["root"]!["name"]!.s;
     
     // --fast
     var binLoc = 'debug';
@@ -200,7 +200,7 @@ proc compileSrc(lockFile: borrowed Toml, binLoc: string, show: bool,
 
   const sourceList = genSourceList(lockFile);
   const depPath = MASON_HOME + '/src/';
-  const project = lockFile["root"]["name"].s;
+  const project = lockFile["root"]!["name"]!.s;
   const pathToProj = projectHome + '/src/'+ project + '.chpl';
   const moveTo = ' -o ' + projectHome + '/target/'+ binLoc +'/'+ project;
 
