@@ -563,8 +563,9 @@ An implicit ``where`` clause is created when arguments are grouped using
 tuple notation, to ensure that the function is called with an actual
 tuple of the correct size. Arguments grouped in tuples may be nested
 arbitrarily. Functions with arguments grouped into tuples may not be
-called using named-argument passing on the tuple-grouped arguments. In
-addition, tuple-grouped arguments may not be specified individually with
+called using named-argument passing on the tuple-grouped arguments. 
+
+In addition, tuple-grouped arguments may not be specified individually with
 types or default values (only in aggregate). They may not be specified
 with any qualifier appearing before the group of arguments (or
 individual arguments) such as ``inout`` or ``type``. They may not be
