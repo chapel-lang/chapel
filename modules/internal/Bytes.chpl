@@ -496,7 +496,7 @@ module Bytes {
     }
 
     /*
-      Iterates over the :record:`bytes, yielding ASCII characters.
+      Iterates over the :record:`bytes`, yielding ASCII characters.
 
       :yields: 1-length :record:`bytes`
      */
