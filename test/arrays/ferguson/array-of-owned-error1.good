@@ -1,0 +1,2 @@
+array-of-owned-error1.chpl:3: In function 'id':
+array-of-owned-error1.chpl:4: error: implicit copy-initialization invoked for a type that does not allow it

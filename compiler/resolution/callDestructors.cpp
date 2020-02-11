@@ -1126,9 +1126,9 @@ static void checkForErroneousInitCopies() {
       for_SymbolSymExprs(se, fn) {
         if (FnSymbol* callInFn = se->getFunction()) {
           if (!callInFn->hasFlag(FLAG_INIT_COPY_FN)) {
-            USR_FATAL_CONT(se,
-                           "copy-initialization invoked for a type "
-                           "that does not have a copy initializer");
+            USR_FATAL_CONT(se, "invalid copy-initialization");
+            Type* t = fn->getFormal(1)->getValType();
+            USR_PRINT(t, "type %s does not have a valid init=", toString(t));
           } else {
             // Should have been propagated above
             INT_ASSERT(callInFn->hasFlag(FLAG_ERRONEOUS_INITCOPY));

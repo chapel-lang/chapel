@@ -1,0 +1,2 @@
+array-of-owned-error2.chpl:3: In function 'main':
+array-of-owned-error2.chpl:6: error: Cannot copy array with element type that cannot be assigned
