@@ -282,8 +282,6 @@ module OwnedObject {
        Change the instance managed by this class to `newPtr`.
        If this record was already managing a non-nil instance,
        that instance will be deleted.
-
-       Here `t` refers to the object type managed by this :record:`owned`.
      */
     proc ref retain(pragma "nil from arg" newPtr:unmanaged) {
       if !isCoercible(newPtr.type, chpl_t) then
@@ -299,8 +297,6 @@ module OwnedObject {
     /*
        Empty this :record:`owned` so that it manages `nil`.
        Returns the instance previously managed by this :record:`owned`.
-
-       Here `t` refers to the object type managed by this :record:`owned`.
      */
     pragma "leaves this nil"
     pragma "nil from this"
@@ -344,7 +340,7 @@ module OwnedObject {
   /*
     Assign one :record:`owned` to another. Deletes the object managed by
     ``lhs``, if any. Transfers ownership of the object managed by ``rhs``
-    to ``lhs``, leaving ``lhs`` storing `nil`.
+    to ``lhs``, leaving ``rhs`` storing `nil`.
   */
   proc =(ref lhs:_owned,
          pragma "leaves arg nil"

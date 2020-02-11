@@ -88,13 +88,10 @@ void        setupError(const char* subdir, const char* filename, int lineno, int
 
 void        handleError(const char* fmt, ...);
 void        handleError(const BaseAST* ast, const char* fmt, ...);
-void        handleError(FILE* file, const BaseAST* ast, const char* fmt, ...);
 
 void        exitIfFatalErrorsEncountered();
 
 void        considerExitingEndOfPass();
-
-void        printCallStack(bool force, bool shortModule, FILE* out);
 
 void        startCatchingSignals();
 void        stopCatchingSignals();
