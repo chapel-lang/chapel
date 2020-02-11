@@ -744,14 +744,15 @@ The tuple literal `(A, i, r)` will refer to the array `A` and the record
 Tuple Expression Behavior
 -------------------------
 
-TODO - Clarify this section of the CHIP with some tests.
+When a tuple expression (a tuple literal) is created, elements are
+captured based on their default argument intent. For each element,
+if the default argument intent for the type of that element is any
+variation of `ref`, then the element is captured by `ref`. Else, the
+element is copied into the tuple as though the assignment operation
+had been performed.
 
-.. _Tuple_Argument_Behavior:
-
-Tuple Argument Behavior
------------------------
-
-TODO - Clarify this section of the CHIP with some tests.
+-- TODO: Code sample illustrating expected behavior.
+-- TODO: Provide rationale block.
 
 .. _Tuple_Variable_Behavior:
 
@@ -760,7 +761,8 @@ Tuple Variable Behavior
 
 When a tuple variable is created, the variable will not refer to any
 elements by reference. Instead, the tuple variable will contain a
-copy of each element, as though assignment had been performed.
+copy of each element, as though assignment had been performed on each
+element of the tuple in component order.
 
 For example, in this code:
 
@@ -771,25 +773,34 @@ For example, in this code:
   var i: int;
   var r = new R(0);
 
-  var tup = (A, i, r); // A, i, and r are copied into tup.
+  var tup = (A, i, r); // The variables A, i, and r are copied into tup.
 
   A[1] = 1;
   i = 2;
   r.x = 3;
 
-  writeln(tup); // Will output (0, 0, (x = 0)).
+  writeln(tup); // This will output (0, 0, (x = 0)).
 
 The variable tup will contain a copy of the array `A` and the record
 `r`. This is in contrast to tuple argument behavior, where both `A`
 and `r` would be captured by reference as elements of a tuple passed
 to a routine.
 
+-- TODO: Provide rationale block.
+
+.. _Tuple_Argument_Behavior:
+
+Tuple Argument Behavior
+-----------------------
+
+-- TODO: Clarify this section of the CHIP with some tests.
+
 .. _Tuple_Return_Behavior:
 
 Tuple Return Behavior
 ---------------------
 
-TODO - Clarify this section of the CHIP with tests.
+-- TODO: Clarify this section of the CHIP with tests.
 
 .. _Tuple_Operators:
 
