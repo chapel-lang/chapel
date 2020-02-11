@@ -179,6 +179,8 @@ static inline chpl_comm_nb_handle_t ofi_get(void*, c_nodeid_t,
 static inline void ofi_get_ll(void*, c_nodeid_t,
                               void*, size_t, void*, struct perTxCtxInfo_t*);
 static inline void do_remote_get_buff(void*, c_nodeid_t, void*, size_t);
+static inline void do_remote_amo_nf_buff(void*, c_nodeid_t, void*, size_t,
+                                         enum fi_op, enum fi_datatype);
 static inline void waitForCQThisTxn(struct perTxCtxInfo_t*, atomic_bool*);
 static inline void waitForCQAllTxns(struct perTxCtxInfo_t*,
                                     chpl_comm_taskPrvData_t*);
@@ -603,16 +605,33 @@ int bitmapIsSet(struct bitmap_t* b, size_t i) {
 //
 #define MAX_TXNS_IN_FLIGHT 64
 
+#define MAX_CHAINED_AMO_NF_LEN MAX_TXNS_IN_FLIGHT
 #define MAX_CHAINED_PUT_LEN MAX_TXNS_IN_FLIGHT
 #define MAX_CHAINED_GET_LEN MAX_TXNS_IN_FLIGHT
 
 enum BuffType {
+  amo_nf_buff = 1 << 0,
   get_buff    = 1 << 1,
   put_buff    = 1 << 2
 };
 
+// Per task information about non-fetching AMO buffers
+typedef struct {
+  chpl_bool          new;
+  int                vi;
+  uint64_t           opnd1_v[MAX_CHAINED_AMO_NF_LEN];
+  c_nodeid_t         locale_v[MAX_CHAINED_AMO_NF_LEN];
+  void*              object_v[MAX_CHAINED_AMO_NF_LEN];
+  size_t             size_v[MAX_CHAINED_AMO_NF_LEN];
+  enum fi_op         cmd_v[MAX_CHAINED_AMO_NF_LEN];
+  enum fi_datatype   type_v[MAX_CHAINED_AMO_NF_LEN];
+  uint64_t           remote_mr_v[MAX_CHAINED_AMO_NF_LEN];
+  void*              local_mr;
+} amo_nf_buff_task_info_t;
+
 // Per task information about GET buffers
 typedef struct {
+  chpl_bool     new;
   int           vi;
   void*         tgt_addr_v[MAX_CHAINED_GET_LEN];
   c_nodeid_t    locale_v[MAX_CHAINED_GET_LEN];
@@ -620,11 +639,11 @@ typedef struct {
   void*         src_addr_v[MAX_CHAINED_GET_LEN];
   size_t        size_v[MAX_CHAINED_GET_LEN];
   void*         local_mr_v[MAX_CHAINED_GET_LEN];
-  struct bitmap_t nodeBitmap;
 } get_buff_task_info_t;
 
 // Per task information about PUT buffers
 typedef struct {
+  chpl_bool     new;
   int           vi;
   void*         tgt_addr_v[MAX_CHAINED_PUT_LEN];
   c_nodeid_t    locale_v[MAX_CHAINED_PUT_LEN];
@@ -638,7 +657,7 @@ typedef struct {
 
 // Acquire a task local buffer, initializing if needed
 static inline
-void* task_local_buff_acquire(enum BuffType t) {
+void* task_local_buff_acquire(enum BuffType t, size_t extra_size) {
   chpl_comm_taskPrvData_t* prvData = get_comm_taskPrvdata();
   if (prvData == NULL) return NULL;
 
@@ -646,23 +665,16 @@ void* task_local_buff_acquire(enum BuffType t) {
   if (t == TLS_NAME) {                                                        \
     TYPE* info = prvData->TLS_NAME;                                           \
     if (info == NULL) {                                                       \
-      size_t _size = sizeof(TYPE);                                            \
-      if (t == put_buff && providerInUse(provType_rxm)) {                     \
-        _size += bitmapSizeofMap(chpl_numNodes);                              \
-      }                                                                       \
-      prvData->TLS_NAME = chpl_mem_alloc(_size,                               \
+      prvData->TLS_NAME = chpl_mem_alloc(sizeof(TYPE) + extra_size,           \
                                          CHPL_RT_MD_COMM_PER_LOC_INFO, 0, 0); \
       info = prvData->TLS_NAME;                                               \
+      info->new = true;                                                       \
       info->vi = 0;                                                           \
-      if (t == put_buff && providerInUse(provType_rxm)) {                     \
-        info->nodeBitmap.len = chpl_numNodes;                                 \
-      } else {                                                                \
-        info->nodeBitmap.len = 0;                                             \
-      }                                                                       \
     }                                                                         \
     return info;                                                              \
   }
 
+  DEFINE_INIT(amo_nf_buff_task_info_t, amo_nf_buff);
   DEFINE_INIT(get_buff_task_info_t, get_buff);
   DEFINE_INIT(put_buff_task_info_t, put_buff);
 
@@ -670,6 +682,7 @@ void* task_local_buff_acquire(enum BuffType t) {
   return NULL;
 }
 
+static void amo_nf_buff_task_info_flush(amo_nf_buff_task_info_t* info);
 static void get_buff_task_info_flush(get_buff_task_info_t* info);
 static void put_buff_task_info_flush(put_buff_task_info_t* info);
 
@@ -687,6 +700,8 @@ void task_local_buff_flush(enum BuffType t) {
     }                                                                         \
   }
 
+  DEFINE_FLUSH(amo_nf_buff_task_info_t, amo_nf_buff,
+               amo_nf_buff_task_info_flush);
   DEFINE_FLUSH(get_buff_task_info_t, get_buff, get_buff_task_info_flush);
   DEFINE_FLUSH(put_buff_task_info_t, put_buff, put_buff_task_info_flush);
 
@@ -709,6 +724,8 @@ void task_local_buff_end(enum BuffType t) {
     }                                                                         \
   }
 
+  DEFINE_END(amo_nf_buff_task_info_t, amo_nf_buff,
+             amo_nf_buff_task_info_flush);
   DEFINE_END(get_buff_task_info_t, get_buff, get_buff_task_info_flush);
   DEFINE_END(put_buff_task_info_t, put_buff, put_buff_task_info_flush);
 
@@ -845,13 +862,20 @@ void init_ofiFabricDomain(void) {
                 | FI_RMA | FI_READ | FI_WRITE
                 | FI_REMOTE_READ | FI_REMOTE_WRITE;
   if (providerAvail(provType_gni)) {
-      hints->caps |= FI_ATOMICS; // oddly, we don't get this without asking
+    hints->caps |= FI_ATOMICS; // we don't get this without asking
   }
 
   hints->addr_format = FI_FORMAT_UNSPEC;
 
   hints->tx_attr->op_flags = FI_COMPLETION | FI_DELIVERY_COMPLETE;
+  if (providerAvail(provType_rxm)) {
+    hints->tx_attr->msg_order = FI_ORDER_RMA_RAW;
+  }
+
   hints->rx_attr->op_flags = FI_COMPLETION;
+  if (providerAvail(provType_rxm)) {
+    hints->rx_attr->msg_order = FI_ORDER_RMA_RAW;
+  }
 
   hints->ep_attr->type = FI_EP_RDM;
 
@@ -1952,7 +1976,7 @@ void ensure_progress(void) {
 
 
 void chpl_comm_task_end(void) {
-  task_local_buff_end(get_buff | put_buff);
+  task_local_buff_end(get_buff | put_buff | amo_nf_buff);
 }
 
 
@@ -3430,11 +3454,19 @@ void do_remote_put_buff(void* addr, c_nodeid_t node, void* raddr,
   uint64_t mrKey;
   uint64_t mrRaddr;
   put_buff_task_info_t* info;
+  size_t extra_size = providerInUse(provType_rxm)
+                      ? bitmapSizeofMap(chpl_numNodes)
+                      : 0;
   if (size > MAX_UNORDERED_TRANS_SZ
       || mrGetKey(&mrKey, &mrRaddr, node, raddr, size) != 0
-      || (info = task_local_buff_acquire(put_buff)) == NULL) {
+      || (info = task_local_buff_acquire(put_buff, extra_size)) == NULL) {
     (void) ofi_put(addr, node, raddr, size);
     return;
+  }
+
+  if (info->new) {
+    info->nodeBitmap.len = chpl_numNodes;
+    info->new = false;
   }
 
   void* mrDesc = NULL;
@@ -3674,7 +3706,7 @@ void do_remote_get_buff(void* addr, c_nodeid_t node, void* raddr,
   get_buff_task_info_t* info;
   if (size > MAX_UNORDERED_TRANS_SZ
       || mrGetKey(&mrKey, &mrRaddr, node, raddr, size) != 0
-      || (info = task_local_buff_acquire(get_buff)) == NULL) {
+      || (info = task_local_buff_acquire(get_buff, 0)) == NULL) {
     (void) ofi_get(addr, node, raddr, size);
     return;
   }
@@ -3852,6 +3884,72 @@ chpl_comm_nb_handle_t ofi_amo(c_nodeid_t node, uint64_t object, uint64_t mrKey,
   }
 
   return NULL;
+}
+
+
+static
+void ofi_amo_nf_V(int v_len, uint64_t* opnd1_v, void* local_mr,
+                  c_nodeid_t* locale_v, void** object_v, uint64_t* remote_mr_v,
+                  size_t* size_v, enum fi_op* cmd_v,
+                  enum fi_datatype* type_v) {
+  DBG_PRINTF(DBG_AMO | DBG_RMAUNORD,
+             "amo_nf_V(%d): obj %d:%p, opnd1 <%s>, op %s, typ %s, sz %zd, "
+             "key 0x%" PRIx64,
+             v_len, (int) locale_v[0], object_v[0],
+             DBG_VAL(&opnd1_v[0], type_v[0]),
+             amo_opName(cmd_v[0]), amo_typeName(type_v[0]), size_v[0],
+             remote_mr_v[0]);
+
+  struct perTxCtxInfo_t* tcip;
+  CHK_TRUE((tcip = tciAlloc()) != NULL);
+
+  //
+  // Make sure we have enough free CQ entries to initiate the entire
+  // batch of transactions.
+  //
+  do {
+    checkTxCQ(tcip);
+  } while (v_len > txCQLen - tcip->numTxns);
+
+  //
+  // Initiate the batch.
+  //
+  for (int vi = 0; vi < v_len; vi++) {
+    struct fi_ioc msg_iov = (struct fi_ioc)
+                            { .addr = &opnd1_v[vi],
+                              .count = 1 };
+    struct fi_rma_ioc rma_iov = (struct fi_rma_ioc)
+                                { .addr = (uint64_t) object_v[vi],
+                                  .count = 1,
+                                  .key = remote_mr_v[vi] };
+    struct fi_msg_atomic msg = (struct fi_msg_atomic)
+                               { .msg_iov = &msg_iov,
+                                 .desc = &local_mr,
+                                 .iov_count = 1,
+                                 .addr = rxRmaAddr(tcip, locale_v[vi]),
+                                 .rma_iov = &rma_iov,
+                                 .rma_iov_count = 1,
+                                 .datatype = type_v[vi],
+                                 .op = cmd_v[vi],
+                                 .context = NULL,
+                                 .data = 0 };
+    DBG_PRINTF(DBG_RMA | DBG_RMAWRITE,
+               "tx atomicmsg: obj %d:%p, opnd1 <%s>, op %s, typ %s, sz %zd, "
+               "key 0x%" PRIx64,
+               (int) locale_v[vi], (void*) msg.rma_iov->addr,
+               DBG_VAL(msg.msg_iov->addr, msg.datatype), amo_opName(msg.op),
+               amo_typeName(msg.datatype), size_v[vi], msg.rma_iov->key);
+    //
+    // Add another transaction to the group and go on without waiting.
+    // Throw FI_MORE except for the last one in the batch.
+    //
+    OFI_RIDE_OUT_EAGAIN(fi_atomicmsg(tcip->txCtx, &msg,
+                                     (vi < v_len - 1) ? FI_MORE : 0),
+                        checkTxCQ(tcip));
+    tcip->numTxns++;
+  }
+
+  tciFree(tcip);
 }
 
 
@@ -4123,8 +4221,10 @@ DEFN_CHPL_COMM_ATOMIC_CMPXCHG(real64, FI_DOUBLE, double)
                "chpl_comm_atomic_%s_unordered_%s(<%s>, %d, %p, %d, %s)",\
                #fnOp, #fnType, DBG_VAL(operand, ofiType), (int) node,   \
                object, ln, chpl_lookupFilename(fn));                    \
-    chpl_comm_atomic_##fnOp##_##fnType(operand, node, object,           \
-                                       memory_order_seq_cst, ln, fn);   \
+    chpl_comm_diags_verbose_amo("amo unord_" #fnOp, node, ln, fn);      \
+    chpl_comm_diags_incr(amo);                                          \
+    do_remote_amo_nf_buff(operand, node, object, sizeof(Type),          \
+                          ofiOp, ofiType);                              \
   }                                                                     \
                                                                         \
   void chpl_comm_atomic_fetch_##fnOp##_##fnType                         \
@@ -4187,8 +4287,11 @@ DEFN_IFACE_AMO_SIMPLE_OP(add, FI_SUM, real64, FI_DOUBLE, double)
                "%d, %s)",                                               \
                #fnType, DBG_VAL(operand, ofiType), (int) node, object,  \
                ln, chpl_lookupFilename(fn));                            \
-    chpl_comm_atomic_sub_##fnType(operand, node, object,                \
-                                  memory_order_seq_cst, ln, fn);        \
+    Type myOpnd = negate(*(Type*) operand);                             \
+    chpl_comm_diags_verbose_amo("amo unord_sub", node, ln, fn);         \
+    chpl_comm_diags_incr(amo);                                          \
+    do_remote_amo_nf_buff(&myOpnd, node, object, sizeof(Type),          \
+                          FI_SUM, ofiType);                             \
   }                                                                     \
                                                                         \
   void chpl_comm_atomic_fetch_sub_##fnType                              \
@@ -4218,7 +4321,7 @@ DEFN_IFACE_AMO_SUB(real32, FI_FLOAT, float, NEGATE_U_OR_R)
 DEFN_IFACE_AMO_SUB(real64, FI_DOUBLE, double, NEGATE_U_OR_R)
 
 void chpl_comm_atomic_unordered_task_fence(void) {
-  return;
+  task_local_buff_flush(amo_nf_buff);
 }
 
 
@@ -4500,6 +4603,89 @@ void doCpuAMO(void* obj,
 
 #undef CPU_INT_ARITH_AMO
 }
+
+
+/*
+ *** START OF NON-FETCHING BUFFERED ATOMIC OPERATIONS ***
+ *
+ * Support for non-fetching buffered atomic operations. We internally buffer
+ * atomic operations and then initiate them all at once for increased
+ * transaction rate.
+ */
+
+// Flush buffered AMOs for the specified task info and reset the counter.
+static inline
+void amo_nf_buff_task_info_flush(amo_nf_buff_task_info_t* info) {
+  if (info->vi > 0) {
+    DBG_PRINTF(DBG_RMAUNORD,
+               "amo_nf_buff_task_info_flush(): info has %d entries",
+               info->vi);
+    ofi_amo_nf_V(info->vi, info->opnd1_v, info->local_mr,
+                 info->locale_v, info->object_v, info->remote_mr_v,
+                 info->size_v, info->cmd_v, info->type_v);
+    info->vi = 0;
+  }
+}
+
+
+static inline
+void do_remote_amo_nf_buff(void* opnd1, c_nodeid_t node,
+                           void* object, size_t size,
+                           enum fi_op ofiOp, enum fi_datatype ofiType) {
+  //
+  // "Unordered" is possible only for actual network atomic ops.
+  //
+  uint64_t mrKey;
+  uint64_t mrRaddr;
+  if (chpl_numNodes <= 1
+      || !isAtomicValid(ofiType)
+      || mrGetKey(&mrKey, &mrRaddr, node, object, size) != 0) {
+    if (node == chpl_nodeID) {
+      doCpuAMO(object, opnd1, NULL, NULL, ofiOp, ofiType, size);
+    } else {
+      amRequestAMO(node, object, opnd1, NULL, NULL, ofiOp, ofiType, size);
+    }
+    return;
+  }
+
+  amo_nf_buff_task_info_t* info = task_local_buff_acquire(amo_nf_buff, 0);
+  if (info == NULL) {
+    ofi_amo(node, mrRaddr, mrKey, opnd1, NULL, NULL, ofiOp, ofiType, size);
+    return;
+  }
+
+  if (info->new) {
+    //
+    // The AMO operands themselves are stored in a vector in the info,
+    // so we only need one local memory descriptor for that vector.
+    //
+    CHK_TRUE(mrGetDesc(&info->local_mr, info->opnd1_v, size) == 0);
+    info->new = false;
+  }
+
+  int vi = info->vi;
+  info->opnd1_v[vi]     = size == 4 ? *(uint32_t*) opnd1:
+                                      *(uint64_t*) opnd1;
+  info->locale_v[vi]    = node;
+  info->object_v[vi]    = object;
+  info->size_v[vi]      = size;
+  info->cmd_v[vi]       = ofiOp;
+  info->type_v[vi]      = ofiType;
+  info->remote_mr_v[vi] = mrKey;
+  info->vi++;
+
+  DBG_PRINTF(DBG_RMAUNORD,
+             "do_remote_amo_nf_buff(): info[%d] = "
+             "{%p, %d, %p, %zd, %d, %d, %" PRIx64 ", %p}",
+             vi, &info->opnd1_v[vi], (int) node, object, size,
+             (int) ofiOp, (int) ofiType, mrKey, info->local_mr);
+
+  // flush if buffers are full
+  if (info->vi == MAX_CHAINED_AMO_NF_LEN) {
+    amo_nf_buff_task_info_flush(info);
+  }
+}
+/*** END OF NON-FETCHING BUFFERED ATOMIC OPERATIONS ***/
 
 
 ////////////////////////////////////////
