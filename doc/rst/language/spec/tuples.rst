@@ -714,8 +714,9 @@ Tuple Expression Behavior
 
 When a tuple is constructed with the tuple expression but is not assigned
 to a variable, that tuple will refer to any elements for which the blank
-argument intent is `ref` or `const ref`. In particular, in the following
-example:
+argument intent is `ref` or `const ref`.
+
+Consider the following example:
 
 .. code-block:: chapel
 
@@ -748,9 +749,9 @@ Tuple Expression Behavior
 When a tuple expression (a tuple literal) is created, elements are
 captured based on their default argument intent. For each element,
 if the default argument intent for the type of that element is any
-variation of `ref`, then the element is captured by `ref`. Else, the
-element is copied into the tuple as though the assignment operation
-had been performed.
+variation of `ref`, then the element is captured into the tuple
+literal by `ref`. Else, the element is copied into the tuple literal
+as though the assignment operation had been performed.
 
 -- TODO: Code sample illustrating expected behavior.
 -- TODO: Provide rationale block.
