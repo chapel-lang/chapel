@@ -134,9 +134,6 @@ static std::map<FnSymbol*, const char*> outerCompilerErrorMap;
 
 static CapturedValueMap            capturedValues;
 
-// Used to ensure we only issue the warning once per instantiation
-static std::set<FnSymbol*> oldStyleInitCopyFns;
-
 // Enable coercions from nilable -> non-nilable to have easier errors
 static int generousResolutionForErrors;
 
@@ -3599,7 +3596,6 @@ void resolveNormalCallCompilerWarningStuff(CallExpr* call, FnSymbol* resolvedFn)
 static void generateUnresolvedMsg(CallInfo& info, Vec<FnSymbol*>& visibleFns);
 static void sortExampleCandidates(CallInfo& info,
                                   Vec<FnSymbol*>& visibleFns);
-static void generateCopyInitErrorMsg();
 
 void printResolutionErrorUnresolved(CallInfo&       info,
                                     Vec<FnSymbol*>& visibleFns) {
@@ -3711,8 +3707,6 @@ void printResolutionErrorUnresolved(CallInfo&       info,
       generateUnresolvedMsg(info, visibleFns);
     }
 
-    generateCopyInitErrorMsg();
-
     if (developer == true) {
       USR_PRINT(call, "unresolved call had id %i", call->id);
     }
@@ -3748,29 +3742,6 @@ static void sortExampleCandidates(CallInfo& info,
   ExampleCandidateComparator cmp(info);
   // Try to sort them so that the more relevant candidates are first.
   std::stable_sort(&visibleFns.v[0], &visibleFns.v[visibleFns.n], cmp);
-}
-
-static void generateCopyInitErrorMsg() {
-  for (int i = callStack.n-1; i >= 0; i--) {
-    FnSymbol* currFn = callStack.v[i]->getFunction();
-    if (currFn->hasFlag(FLAG_AUTO_COPY_FN) ||
-        currFn->hasFlag(FLAG_INIT_COPY_FN)) {
-      Type* copied = currFn->getFormal(1)->type;
-      if (isNonGenericRecordWithInitializers(copied)) {
-        USR_PRINT(copied,
-                  "Function 'init' is being treated as a copy initializer for "
-                  "type '%s', was that intended?",
-                  copied->symbol->name);
-        USR_PRINT(copied,
-                  "If not, try explicitly declaring the type of the generic "
-                  "argument,");
-        USR_PRINT(copied,
-                  "or excluding '%s' as its type via a where clause",
-                  copied->symbol->name);
-        return;
-      }
-    }
-  }
 }
 
 void printResolutionErrorAmbiguous(CallInfo&                  info,
@@ -6197,32 +6168,11 @@ static void resolveInitVar(CallExpr* call) {
 
       call->insertAtHead(gMethodToken);
 
-      bool foundOldStyleInit = false;
-      // Try resolving the old-style copy initializer first
-      if (at->hasUserDefinedInitEquals() == false &&
-          srcType->getValType() == targetType->getValType()) {
-        call->setUnresolvedFunction("init");
+      call->setUnresolvedFunction(astrInitEquals);
 
-        foundOldStyleInit = tryResolveCall(call) != NULL;
+      resolveExpr(call);
 
-        if (foundOldStyleInit) {
-          resolveNormalCallFinalChecks(call);
-        }
-      }
-
-      if (foundOldStyleInit == false) {
-        call->setUnresolvedFunction(astrInitEquals);
-
-        resolveExpr(call);
-
-        dst->type = call->resolvedFunction()->_this->getValType();
-      } else {
-        FnSymbol* fn = call->resolvedFunction();
-        if (oldStyleInitCopyFns.find(fn) == oldStyleInitCopyFns.end()) {
-          oldStyleInitCopyFns.insert(fn);
-          USR_WARN(fn, "'init' has been deprecated as the copy-initializer, use 'init=' instead.");
-        }
-      }
+      dst->type = call->resolvedFunction()->_this->getValType();
 
       if (at->hasPostInitializer() == true) {
         call->insertAfter(new CallExpr("postinit", gMethodToken, dst));
@@ -6250,24 +6200,11 @@ FnSymbol* findCopyInitFn(AggregateType* at) {
 
   FnSymbol* ret = NULL;
 
-  if (at->hasUserDefinedInitEquals() == false) {
-    CallExpr* call = new CallExpr("init", gMethodToken, tmpAt, tmpAt);
-    ret = resolveUninsertedCall(at, call, false);
-  }
+  CallExpr* call = NULL;
 
-  if (ret == NULL) {
-    CallExpr* call = NULL;
+  call = new CallExpr(astrInitEquals, gMethodToken, tmpAt, tmpAt);
 
-    call = new CallExpr(astrInitEquals, gMethodToken, tmpAt, tmpAt);
-
-    ret = resolveUninsertedCall(at, call, false);
-  } else {
-    FnSymbol* fn = ret;
-    if (oldStyleInitCopyFns.find(fn) == oldStyleInitCopyFns.end()) {
-      oldStyleInitCopyFns.insert(fn);
-      USR_WARN(fn, "'init' has been deprecated as the copy-initializer, use 'init=' instead.");
-    }
-  }
+  ret = resolveUninsertedCall(at, call, false);
 
   // ret's instantiationPoint points to the dummy BlockStmt created by
   // resolveUninsertedCall, so it needs to be updated.
