@@ -80,7 +80,7 @@ void ImportStmt::scopeResolve(ResolveScope* scope) {
   // isValid should be re-enabled when we support general exprs in imports
   // As it is today, we won't encounter the situations it is preventing.
   // There is an else branch to turn on as well
-    // 2017/05/28 The parser inserts a normalized UseStmt in to ChapelBase
+    // 2017/05/28 The parser inserts a normalized UseStmt of ChapelBase
     if (SymExpr* se = toSymExpr(src)) {
       INT_FATAL("This should only happen for a UseStmt");
 
