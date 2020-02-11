@@ -739,12 +739,19 @@ example:
 The tuple literal `(A, i, r)` will refer to the array `A` and the record
 `r` by `ref`, but creates a copy of the integer `i`.
 
+.. _Tuple_Expression_Behavior:
+
+Tuple Expression Behavior
+-------------------------
+
+TODO - Clarify this section of the CHIP with some tests.
+
 .. _Tuple_Argument_Behavior:
 
 Tuple Argument Behavior
 -----------------------
 
-
+TODO - Clarify this section of the CHIP with some tests.
 
 .. _Tuple_Variable_Behavior:
 
@@ -782,7 +789,7 @@ to a routine.
 Tuple Return Behavior
 ---------------------
 
-
+TODO - Clarify this section of the CHIP with tests.
 
 .. _Tuple_Operators:
 
