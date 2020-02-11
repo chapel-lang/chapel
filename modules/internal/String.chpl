@@ -1535,7 +1535,7 @@ module String {
     /*
       Same as the varargs version, but with all the strings in a list.
 
-      :arg listToJoin: list contaning elements whose string values will be concatenated
+      :arg listToJoin: list containing elements whose string values will be concatenated
 
       :returns: A new string, which is the concatenation of all of the strings
       passed in with the receiving string inserted between them.
@@ -1551,22 +1551,9 @@ module String {
     
     */
 
-    proc join(listToJoin: list(string)) : string {
-      return _join(listToJoin);
-    }
-
     pragma "no doc"
-    proc _join(listToJoin: list(string)) : string where isList(listToJoin) {
-      var s: string;
-      var fistFlag: bool = true;
-      for el in listToJoin{
-        if fistFlag then 
-          fistFlag = false;
-        else
-          s += this;
-        s += el;
-      }
-      return s;
+    proc join(listToJoin: list(string)) : string {
+      return doJoinIterator(this, listToJoin);
     }
 
     pragma "no doc"
