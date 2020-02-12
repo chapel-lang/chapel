@@ -34,7 +34,6 @@ class FnSymbol;
 class LoopExpr;
 class ForallStmt;
 class ModuleSymbol;
-class Stmt;
 class Symbol;
 class TypeSymbol;
 class UnresolvedSymExpr;
