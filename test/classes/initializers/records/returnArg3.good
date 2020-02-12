@@ -1,7 +1,2 @@
-returnArg3.chpl:4: warning: 'init' has been deprecated as the copy-initializer, use 'init=' instead.
-returnArg3.chpl:4: In initializer:
-returnArg3.chpl:5: error: Cannot assign to int(64) from Foo
-returnArg3.chpl:1: note: Function 'init' is being treated as a copy initializer for type 'Foo', was that intended?
-returnArg3.chpl:1: note: If not, try explicitly declaring the type of the generic argument,
-returnArg3.chpl:1: note: or excluding 'Foo' as its type via a where clause
-returnArg3.chpl:1: Initializer instantiated as: init(xVal: Foo)
+(x = 13)
+(x = 13)
