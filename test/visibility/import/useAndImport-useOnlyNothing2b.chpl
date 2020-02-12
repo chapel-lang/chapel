@@ -1,6 +1,6 @@
 // Tests behavior when a module is both imported and used from different paths
-// when the use has an except list, ensuring that we can't still access the
-// specified symbol.
+// when the use has an empty only list, ensuring that we can't still access the
+// unspecified symbol.
 module A {
   var x: int = 4;
   proc foo() {
