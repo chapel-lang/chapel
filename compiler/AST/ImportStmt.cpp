@@ -90,7 +90,7 @@ void ImportStmt::scopeResolve(ResolveScope* scope) {
   // As it is today, we won't encounter the situations it is preventing.
   // There is an else branch to turn on as well
     // 2017/05/28 The parser inserts a normalized UseStmt of ChapelBase
-    if (SymExpr* se = toSymExpr(src)) {
+    if (isSymExpr(src)) {
       INT_FATAL("This should only happen for a UseStmt");
 
     } else if (Symbol* sym = scope->lookup(src, /*isUse=*/ true)) {
