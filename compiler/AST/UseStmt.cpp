@@ -30,7 +30,7 @@
 #include <algorithm>
 
 UseStmt::UseStmt(BaseAST* source, const char* modRename,
-                 bool isPrivate) : Stmt(E_UseStmt) {
+                 bool isPrivate) : VisibilityStmt(E_UseStmt) {
   this->isPrivate = isPrivate;
   src    = NULL;
   this->modRename = astr(modRename);
@@ -55,7 +55,7 @@ UseStmt::UseStmt(BaseAST*                            source,
                  bool                                exclude,
                  std::map<const char*, const char*>* renames,
                  bool isPrivate) :
-  Stmt(E_UseStmt) {
+  VisibilityStmt(E_UseStmt) {
 
   this->isPrivate = isPrivate;
   src    = NULL;
@@ -246,15 +246,6 @@ bool UseStmt::isEnum(const Symbol* sym) const {
   }
 
   return retval;
-}
-
-void UseStmt::updateEnclosingBlock(ResolveScope* scope, Symbol* sym) {
-  src->replace(new SymExpr(sym));
-
-  remove();
-  scope->asBlockStmt()->useListAdd(this);
-
-  scope->extend(this);
 }
 
 /************************************* | **************************************

@@ -57,6 +57,24 @@ public:
 *                                                                             *
 *                                                                             *
 ************************************** | *************************************/
+class ResolveScope;
+
+class VisibilityStmt: public Stmt {
+ public:
+  VisibilityStmt(AstTag astTag);
+
+  virtual ~VisibilityStmt();
+
+  virtual bool isVisibilityStmt() const;
+
+ protected:
+  void updateEnclosingBlock(ResolveScope* scope,
+                            Symbol* sym);
+
+public:
+  Expr*                              src;
+
+};
 
 #include "UseStmt.h"
 
@@ -132,8 +150,7 @@ public:
   int                 length()                                     const;
 
   void                useListAdd(ModuleSymbol* mod, bool isPrivate);
-  void                useListAdd(UseStmt*      use);
-  void                useListAdd(ImportStmt*   use);
+  void                useListAdd(VisibilityStmt* stmt);
   bool                useListRemove(ModuleSymbol* mod);
   void                useListClear();
 

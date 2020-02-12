@@ -33,13 +33,13 @@ class Expr;
 class FnSymbol;
 class LoopExpr;
 class ForallStmt;
-class ImportStmt;
 class ModuleSymbol;
 class Stmt;
 class Symbol;
 class TypeSymbol;
 class UnresolvedSymExpr;
 class UseStmt;
+class VisibilityStmt;
 
 // A preliminary version of a class to support the scope resolve pass
 // This is currently a thin wrapping over a previous typedef + functions
@@ -72,8 +72,7 @@ public:
 
   bool                  extend(Symbol*        sym, bool isTopLevel=false);
 
-  bool                  extend(UseStmt* stmt);
-  bool                  extend(ImportStmt* stmt);
+  bool                  extend(VisibilityStmt* stmt);
 
   Symbol*               lookup(Expr*       expr, bool isUse=false)       const;
 
@@ -89,7 +88,7 @@ public:
   void                  describe()                                       const;
 
 private:
-  typedef std::vector<Stmt*>       UseImportList;
+  typedef std::vector<VisibilityStmt*>   UseImportList;
   typedef std::vector<Symbol*>           SymList;
 
   typedef std::set<const ResolveScope*>  ScopeSet;

@@ -22,7 +22,13 @@
 #include "AstVisitor.h"
 #include "ResolveScope.h"
 
-ImportStmt::ImportStmt(BaseAST* source) : Stmt(E_ImportStmt) {
+
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
+
+ImportStmt::ImportStmt(BaseAST* source) : VisibilityStmt(E_ImportStmt) {
   if (Symbol* b = toSymbol(source)) {
     src = new SymExpr(b);
 
@@ -165,17 +171,4 @@ Symbol* ImportStmt::checkIfModuleNameMatches(const char* name) {
     // rather than wholesale.  Nothing else should fall under this category
   }
   return NULL;
-}
-
-//
-// Extends the scope's block statement to store this import, after replacing the
-// UnresolvedSymExpr we store with the found symbol
-//
-void ImportStmt::updateEnclosingBlock(ResolveScope* scope, Symbol* sym) {
-  src->replace(new SymExpr(sym));
-
-  remove();
-  scope->asBlockStmt()->useListAdd(this);
-
-  scope->extend(this);
 }

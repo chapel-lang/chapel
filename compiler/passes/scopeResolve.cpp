@@ -61,8 +61,8 @@
 // Note that this caching is not enabled until after use expression
 // have been resolved.
 //
-static std::map<BlockStmt*, Vec<Stmt*>*>   moduleUsesCache;
-static bool                                enableModuleUsesCache = false;
+static std::map<BlockStmt*, Vec<VisibilityStmt*>*> moduleUsesCache;
+static bool enableModuleUsesCache = false;
 
 // To avoid duplicate user warnings in checkIdInsideWithClause().
 // Using pair<> instead of astlocT to avoid defining operator<.
@@ -1579,7 +1579,7 @@ static void adjustTypeMethodsOnClasses() {
 
 
 void destroyModuleUsesCaches() {
-  std::map<BlockStmt*, Vec<Stmt*>*>::iterator use;
+  std::map<BlockStmt*, Vec<VisibilityStmt*>*>::iterator use;
 
   for (use = moduleUsesCache.begin(); use != moduleUsesCache.end(); use++) {
     delete use->second;
@@ -1806,17 +1806,17 @@ static bool      methodMatched(BaseAST* scope, FnSymbol* method);
 
 static FnSymbol* getMethod(const char* name, Type* type);
 
-static void      buildBreadthFirstModuleList(Vec<Stmt*>* modules);
+static void      buildBreadthFirstModuleList(Vec<VisibilityStmt*>* modules);
 
 static void      buildBreadthFirstModuleList(
-                      Vec<Stmt*>*                             modules,
-                      Vec<Stmt*>*                             current,
-                      std::map<Symbol*, std::vector<Stmt*> >* alreadySeen);
+            Vec<VisibilityStmt*>*                             modules,
+            Vec<VisibilityStmt*>*                             current,
+            std::map<Symbol*, std::vector<VisibilityStmt*> >* alreadySeen);
 
-static bool      skipUse(std::map<Symbol*, std::vector<Stmt*> >* seen,
-                         UseStmt*                                current);
-static bool      skipUse(std::map<Symbol*, std::vector<Stmt*> >* seen,
-                         ImportStmt*                             current);
+static bool      skipUse(std::map<Symbol*, std::vector<VisibilityStmt*> >* seen,
+                         UseStmt* current);
+static bool      skipUse(std::map<Symbol*, std::vector<VisibilityStmt*> >* seen,
+                         ImportStmt* current);
 
 static bool lookupThisScopeAndUses(const char*           name,
                                    BaseAST*              context,
@@ -1851,10 +1851,10 @@ static bool lookupThisScopeAndUses(const char*           name,
     // Nothing found so far, look into the uses.
     if (BlockStmt* block = toBlockStmt(scope)) {
       if (block->useList != NULL) {
-        Vec<Stmt*>* moduleUses = NULL;
+        Vec<VisibilityStmt*>* moduleUses = NULL;
 
         if (moduleUsesCache.count(block) == 0) {
-          moduleUses = new Vec<Stmt*>();
+          moduleUses = new Vec<VisibilityStmt*>();
 
           for_actuals(expr, block->useList) {
             // Ensure we only have use or import statements in this list
@@ -2103,8 +2103,8 @@ static FnSymbol* getMethod(const char* name, Type* type) {
   return retval;
 }
 
-static void buildBreadthFirstModuleList(Vec<Stmt*>* modules) {
-  std::map<Symbol*, std::vector<Stmt* > > seen;
+static void buildBreadthFirstModuleList(Vec<VisibilityStmt*>* modules) {
+  std::map<Symbol*, std::vector<VisibilityStmt* > > seen;
 
   return buildBreadthFirstModuleList(modules, modules, &seen);
 }
@@ -2113,15 +2113,15 @@ static void buildBreadthFirstModuleList(Vec<Stmt*>* modules) {
 // this function will only add level 2 and lower uses to the modules vector
 // argument.
 static void buildBreadthFirstModuleList(
-                 Vec<Stmt*>*                             modules,
-                 Vec<Stmt*>*                             current,
-                 std::map<Symbol*, std::vector<Stmt*> >* alreadySeen) {
+               Vec<VisibilityStmt*>*                             modules,
+               Vec<VisibilityStmt*>*                             current,
+               std::map<Symbol*, std::vector<VisibilityStmt*> >* alreadySeen) {
  // use NULL as a sentinel to identify modules of equal depth
   modules->add(NULL);
 
-  Vec<Stmt*> next;
+  Vec<VisibilityStmt*> next;
 
-  forv_Vec(Stmt, source, *current) {
+  forv_Vec(VisibilityStmt, source, *current) {
     if (!source) {
       break;
     } else {
@@ -2205,18 +2205,18 @@ static void buildBreadthFirstModuleList(
 
 // Returns true if we should skip looking at this use, because the symbols it
 // provides have already been covered by a previous use.
-static bool skipUse(std::map<Symbol*, std::vector<Stmt*> >* seen,
-                    UseStmt*                                current) {
+static bool skipUse(std::map<Symbol*, std::vector<VisibilityStmt*> >* seen,
+                    UseStmt* current) {
   SymExpr* useSE = toSymExpr(current->src);
 
   INT_ASSERT(useSE);
 
-  std::vector<Stmt*> vec = (*seen)[useSE->symbol()];
+  std::vector<VisibilityStmt*> vec = (*seen)[useSE->symbol()];
 
   if (vec.size() > 0) {
     // We've already seen at least one use of this module, but it might
     // not be thorough enough to justify skipping the newest 'use'.
-    for_vector(Stmt, stmt, vec) {
+    for_vector(VisibilityStmt, stmt, vec) {
       if (UseStmt* use = toUseStmt(stmt)) {
         if (current->providesNewSymbols(use) == false) {
           // We found a prior use that covered all the symbols available
@@ -2240,13 +2240,13 @@ static bool skipUse(std::map<Symbol*, std::vector<Stmt*> >* seen,
 
 // Returns true if we should skip looking at this import, because the symbols it
 // provides have already been covered by a previous use.
-static bool skipUse(std::map<Symbol*, std::vector<Stmt*> >* seen,
-                    ImportStmt*                             current) {
+static bool skipUse(std::map<Symbol*, std::vector<VisibilityStmt*> >* seen,
+                    ImportStmt* current) {
   SymExpr* useSE = toSymExpr(current->src);
 
   INT_ASSERT(useSE);
 
-  std::vector<Stmt*> vec = (*seen)[useSE->symbol()];
+  std::vector<VisibilityStmt*> vec = (*seen)[useSE->symbol()];
 
   if (vec.size() > 0) {
     // We've already seen at least one use or import of this module.  Since

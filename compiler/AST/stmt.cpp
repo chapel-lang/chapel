@@ -29,6 +29,7 @@
 #include "stringutil.h"
 
 #include "AstVisitor.h"
+#include "ResolveScope.h"
 
 #include <cstring>
 #include <algorithm>
@@ -55,6 +56,35 @@ Stmt::~Stmt() {
 
 bool Stmt::isStmt() const {
   return true;
+}
+
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
+
+VisibilityStmt::VisibilityStmt(AstTag astTag): Stmt(astTag) {
+}
+
+VisibilityStmt::~VisibilityStmt() {
+}
+
+bool VisibilityStmt::isVisibilityStmt() const {
+  return true;
+}
+
+//
+// Extends the scope's block statement to store this node, after replacing the
+// UnresolvedSymExpr we store with the found symbol
+//
+void VisibilityStmt::updateEnclosingBlock(ResolveScope* scope, Symbol* sym) {
+  src->replace(new SymExpr(sym));
+
+  remove();
+  scope->asBlockStmt()->useListAdd(this);
+
+  scope->extend(this);
 }
 
 /************************************* | **************************************
@@ -457,7 +487,7 @@ BlockStmt::useListAdd(ModuleSymbol* mod, bool privateUse) {
 }
 
 void
-BlockStmt::useListAdd(UseStmt* use) {
+BlockStmt::useListAdd(VisibilityStmt* stmt) {
   if (useList == NULL) {
     useList = new CallExpr(PRIM_USED_MODULES_LIST);
 
@@ -465,19 +495,7 @@ BlockStmt::useListAdd(UseStmt* use) {
       insert_help(useList, this, parentSymbol);
   }
 
-  useList->insertAtTail(use);
-}
-
-void
-BlockStmt::useListAdd(ImportStmt* import) {
-  if (useList == NULL) {
-    useList = new CallExpr(PRIM_USED_MODULES_LIST);
-
-    if (parentSymbol)
-      insert_help(useList, this, parentSymbol);
-  }
-
-  useList->insertAtTail(import);
+  useList->insertAtTail(stmt);
 }
 
 

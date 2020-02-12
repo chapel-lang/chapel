@@ -22,10 +22,9 @@
 
 #include "stmt.h"
 
-class ImportStmt;
 class ResolveScope;
 
-class UseStmt : public Stmt {
+class UseStmt : public VisibilityStmt {
 public:
   UseStmt(BaseAST* source, const char* modRename, bool isPrivate);
 
@@ -78,9 +77,6 @@ public:
 private:
   bool            isEnum(const Symbol* sym)                              const;
 
-  void            updateEnclosingBlock(ResolveScope* scope,
-                                       Symbol*       sym);
-
   bool            isValid(Expr* expr)                                    const;
 
   void            validateList();
@@ -97,7 +93,6 @@ private:
   void            noRepeats()                                            const;
 
 public:
-  Expr*                              src;
   std::vector<const char*>           named;
   std::map<const char*, const char*> renamed;
   bool isPrivate;

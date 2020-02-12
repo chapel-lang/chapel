@@ -134,7 +134,7 @@ static Vec<const char*> sFlagModPath;
 static Vec<const char*> sModNameSet;
 static Vec<const char*> sModNameList;
 static Vec<const char*> sModDoneSet;
-static Vec<Stmt*>    sModReqdByInt;
+static Vec<VisibilityStmt*> sModReqdByInt;
 
 void addInternalModulePath(const ArgumentDescription* desc, const char* newpath) {
   sIntModPath.add(astr(newpath));
@@ -232,29 +232,14 @@ void addFlagModulePath(const char* newPath) {
   sFlagModPath.add(astr(newPath));
 }
 
-void addModuleToParseList(const char* name, UseStmt* useExpr) {
+void addModuleToParseList(const char* name, VisibilityStmt* expr) {
   const char* modName = astr(name);
 
   if (sModDoneSet.set_in(modName) == NULL &&
       sModNameSet.set_in(modName) == NULL) {
     if (currentModuleType           == MOD_INTERNAL ||
         sHandlingInternalModulesNow == true) {
-      sModReqdByInt.add(useExpr);
-    }
-
-    sModNameSet.set_add(modName);
-    sModNameList.add(modName);
-  }
-}
-
-void addModuleToParseList(const char* name, ImportStmt* newImport) {
-  const char* modName = astr(name);
-
-  if (sModDoneSet.set_in(modName) == NULL &&
-      sModNameSet.set_in(modName) == NULL) {
-    if (currentModuleType           == MOD_INTERNAL ||
-        sHandlingInternalModulesNow == true) {
-      sModReqdByInt.add(newImport);
+      sModReqdByInt.add(expr);
     }
 
     sModNameSet.set_add(modName);
@@ -407,21 +392,21 @@ static void helpPrintPath(Vec<const char*> path) {
 
 static void ensureRequiredStandardModulesAreParsed() {
   do {
-    Vec<Stmt*> modReqdByIntCopy = sModReqdByInt;
+    Vec<VisibilityStmt*> modReqdByIntCopy = sModReqdByInt;
 
     sModReqdByInt.clear();
 
     sHandlingInternalModulesNow = true;
 
-    forv_Vec(Stmt*, moduse, modReqdByIntCopy) {
+    forv_Vec(VisibilityStmt*, moduse, modReqdByIntCopy) {
       BaseAST* moduleExpr = NULL;
       if (UseStmt* use = toUseStmt(moduse)) {
         moduleExpr = use->src;
       } else if (ImportStmt* import = toImportStmt(moduse)) {
         moduleExpr = import->src;
       } else {
-        INT_FATAL("Incorrect Stmt subclass, expected either UseStmt or "
-                  "ImportStmt");
+        INT_FATAL("Incorrect VisibilityStmt subclass, expected either UseStmt "
+                  "or ImportStmt");
       }
 
       UnresolvedSymExpr* oldModNameExpr = toUnresolvedSymExpr(moduleExpr);

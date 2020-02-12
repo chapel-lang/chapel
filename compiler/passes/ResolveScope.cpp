@@ -418,13 +418,7 @@ bool ResolveScope::extend(Symbol* newSym, bool isTopLevel) {
   return retval;
 }
 
-bool ResolveScope::extend(UseStmt* stmt) {
-  mUseImportList.push_back(stmt);
-
-  return true;
-}
-
-bool ResolveScope::extend(ImportStmt* stmt) {
+bool ResolveScope::extend(VisibilityStmt* stmt) {
   mUseImportList.push_back(stmt);
 
   return true;
@@ -739,7 +733,7 @@ bool ResolveScope::getFieldsWithUses(const char* fieldName,
 
   } else {
     if (mUseImportList.size() > 0) {
-      std::vector<Stmt*> useImportList = mUseImportList;
+      std::vector<VisibilityStmt*> useImportList = mUseImportList;
 
       buildBreadthFirstUseImportList(useImportList);
 

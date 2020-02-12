@@ -24,7 +24,7 @@
 
 class ResolveScope;
 
-class ImportStmt: public Stmt {
+class ImportStmt: public VisibilityStmt {
  public:
   ImportStmt(BaseAST* source);
 
@@ -45,14 +45,6 @@ class ImportStmt: public Stmt {
   BaseAST* getSearchScope() const;
 
   Symbol* checkIfModuleNameMatches(const char* name);
-
- private:
-  void updateEnclosingBlock(ResolveScope* scope,
-                            Symbol* sym);
-
-
- public:
-  Expr* src;
 
 };
 
