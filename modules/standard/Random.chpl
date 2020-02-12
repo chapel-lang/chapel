@@ -485,7 +485,7 @@ module Random {
       :arg n: The position in the stream to skip to.  Must be > 0.
       :type n: `integral`
 
-      throws CompileError: When RandomStreamInterface.skipToNth is called.
+      :throws IllegalArgumentError: When called with non-positive `n` value.
      */
     proc skipToNth(n: integral) throws {
       compilerError("RandomStreamInterface.skipToNth called");
@@ -501,7 +501,7 @@ module Random {
       :type n: `integral`
 
       :returns: The `n`-th value in the random stream as type :type:`eltType`.
-      :throws CompileError: When RandomStreamInterface.getNth is called.
+      :throws IllegalArgumentError: When called with non-positive `n` value.
      */
     proc getNth(n: integral): eltType throws {
       compilerError("RandomStreamInterface.getNth called");
@@ -900,7 +900,7 @@ module Random {
         :arg n: The position in the stream to skip to.  Must be > 0.
         :type n: `integral`
 
-        :throws IllegalArgumentError: When called with non-positive 'n' value.
+        :throws IllegalArgumentError: When called with non-positive `n` value.
        */
       proc skipToNth(n: integral) throws {
         if n <= 0 then
@@ -920,7 +920,7 @@ module Random {
         :type n: `integral`
 
         :returns: The `n`-th value in the random stream as type :type:`eltType`.
-        :throws IllegalArgumentError: When called with non-positive 'n' value.
+        :throws IllegalArgumentError: When called with non-positive `n` value.
        */
       proc getNth(n: integral): eltType throws {
         if (n <= 0) then
@@ -2401,7 +2401,7 @@ module Random {
         :arg n: The position in the stream to skip to.  Must be > 0.
         :type n: `integral`
 
-        :throws IllegalArgumentError: When called with non-positive 'n' value.
+        :throws IllegalArgumentError: When called with non-positive `n` value.
        */
       proc skipToNth(n: integral) throws {
         if n <= 0 then
@@ -2421,7 +2421,7 @@ module Random {
         :type n: `integral`
 
         :returns: The `n`-th value in the random stream as type :type:`eltType`.
-        :throws IllegalArgumentError: When called with non-positive 'n' value.
+        :throws IllegalArgumentError: When called with non-positive `n` value.
        */
       proc getNth(n: integral): eltType throws {
         if (n <= 0) then
