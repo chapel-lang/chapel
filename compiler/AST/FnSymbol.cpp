@@ -43,7 +43,8 @@ FnSymbol*                 gGenericTupleDestroy  = NULL;
 std::map<FnSymbol*, int>  ftableMap;
 std::vector<FnSymbol*>    ftableVec;
 
-FnSymbol::FnSymbol(const char* initName) : Symbol(E_FnSymbol, initName) {
+FnSymbol::FnSymbol(const char* initName)
+  : Symbol(E_FnSymbol, initName), userInstantiationPointLoc(0, NULL) {
   retType            = dtUnknown;
   where              = NULL;
   lifetimeConstraints= NULL;
@@ -536,6 +537,8 @@ void FnSymbol::setInstantiationPoint(Expr* expr) {
     this->_instantiationPoint = block;
     this->_backupInstantiationPoint = block->getFunction();
   }
+
+  userInstantiationPointLoc = getUserInstantiationPoint(this);
 }
 
 BlockStmt* FnSymbol::instantiationPoint() const {

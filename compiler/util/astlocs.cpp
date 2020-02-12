@@ -110,7 +110,11 @@ bool printsUserLocation(const BaseAST* astIn) {
       ast = foundExpr;
   }
 
-  return (ast && ast->getModule()->modTag == MOD_USER);
+  ModuleSymbol* mod = NULL;
+  if (ast)
+    mod = ast->getModule();
+
+  return (ast && mod && mod->modTag == MOD_USER);
 }
 
 astlocT getUserInstantiationPoint(const BaseAST* ast) {
