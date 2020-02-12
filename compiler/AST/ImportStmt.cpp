@@ -73,6 +73,9 @@ void ImportStmt::verify() {
   verifyNotOnList(src);
 }
 
+//
+// Resolve the module symbol referred to by the ImportStmt
+//
 void ImportStmt::scopeResolve(ResolveScope* scope) {
   /*
   // 2017-05-28: isValid() does not currently return on failure
@@ -125,6 +128,9 @@ void ImportStmt::scopeResolve(ResolveScope* scope) {
     }*/
 }
 
+//
+// Go into the module referred to by the import statement
+//
 BaseAST* ImportStmt::getSearchScope() const {
   BaseAST* retval = NULL;
 
@@ -143,6 +149,9 @@ BaseAST* ImportStmt::getSearchScope() const {
   return retval;
 }
 
+//
+// Returns the module symbol if the name provided matches the module imported
+//
 Symbol* ImportStmt::checkIfModuleNameMatches(const char* name) {
   if (SymExpr* se = toSymExpr(src)) {
     if (ModuleSymbol* modSym = toModuleSymbol(se->symbol())) {
@@ -151,14 +160,17 @@ Symbol* ImportStmt::checkIfModuleNameMatches(const char* name) {
       }
     }
   } else {
-    // It seems as though we'd need to handle matches against more general
-    // expressions here (e.g., 'use M.N.O'), yet I can't seem to construct
-    // an example that requires this.  I suppose it could be because we
-    // resolve such cases element-by-element rather than wholesale...
+    // Though we don't support it yet, things like `import M.N.O` probably
+    // wouldn't reach here because we resolve such cases element-by-element
+    // rather than wholesale.  Nothing else should fall under this category
   }
   return NULL;
 }
 
+//
+// Extends the scope's block statement to store this import, after replacing the
+// UnresolvedSymExpr we store with the found symbol
+//
 void ImportStmt::updateEnclosingBlock(ResolveScope* scope, Symbol* sym) {
   src->replace(new SymExpr(sym));
 
