@@ -1126,32 +1126,10 @@ static void checkForErroneousInitCopies() {
             }
 
             Type* t = fn->getFormal(1)->getValType();
-            Expr* typePoint = t->symbol->defPoint;
+            astlocT typePoint = t->astloc;
+            if (t->symbol->userInstantiationPointLoc.filename != NULL)
+              typePoint = t->symbol->userInstantiationPointLoc;
 
-            // TODO: find user location for instantiating a type
-            // Find the non-user instantiation point for the type
-            while (true) {
-              if (printsUserLocation(typePoint)) break;
-
-              // check instantiation point for a type or function
-              if (DefExpr* d = toDefExpr(typePoint)) {
-                BlockStmt* insnPt = NULL;
-                if (TypeSymbol* ts = toTypeSymbol(d->sym))
-                  insnPt = ts->instantiationPoint;
-                else if (FnSymbol* fn = toFnSymbol(d->sym))
-                  insnPt = fn->instantiationPoint();
-
-                if (insnPt &&
-                    insnPt->parentSymbol &&
-                    insnPt->parentSymbol->defPoint) {
-                  typePoint = insnPt->parentSymbol->defPoint;
-                  continue;
-                }
-              }
-
-              // stop if no better instantiation point found
-              break;
-            }
             USR_PRINT(typePoint,
                       "type %s does not have a valid init=", toString(t));
           } else {

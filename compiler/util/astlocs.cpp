@@ -134,6 +134,11 @@ astlocT getUserInstantiationPoint(const BaseAST* ast) {
       // Continue with the defined symbol
       if (d->sym != NULL)
         cur = d->sym;
+    } else if (Expr* e = toExpr(cur)) {
+      // Continue with the expression's parent function
+      FnSymbol* parentFn = e->getFunction();
+      if (parentFn != NULL)
+        cur = parentFn;
     } else if (FnSymbol* fn = toFnSymbol(cur)) {
       // Find the first call to the function within the instantiation point,
       // so that we can have a better error message line number.
