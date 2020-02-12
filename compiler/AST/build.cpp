@@ -563,21 +563,6 @@ BlockStmt* buildImportStmt(Expr* mod) {
   ImportStmt* newImport = new ImportStmt(mod);
   addModuleToSearchList(newImport, mod);
 
-  /*
-  // Stub out arguments for unsupported extensions to import
-  // We're still discussing what will be supported and what won't be (and how)
-  const char* rename = "";
-  std::vector<PotentialRename*>* names = new std::vector<PotentialRename*>();
-  bool except = false;
-  bool privateUse = false;
-
-  PotentialRename* onlyNothing = new PotentialRename();
-  onlyNothing->tag = PotentialRename::SINGLE;
-  onlyNothing->elem = new UnresolvedSymExpr("");
-  names->push_back(onlyNothing);
-
-  return buildUseStmt(mod, rename, names, except, privateUse); */
-
   return buildChapelStmt(newImport);
 }
 
