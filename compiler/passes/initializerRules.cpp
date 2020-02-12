@@ -201,17 +201,15 @@ void errorOnFieldsInArgList(FnSymbol* fn) {
 
     for_vector(SymExpr, se, symExprs) {
         bool error = true;
-        if (fn->isCopyInit()) {
-          if (CallExpr* call = toCallExpr(se->parentExpr)) {
-            AggregateType* at = toAggregateType(fn->_this->getValType());
-            if (call->isPrimitive(PRIM_TYPEOF)) {
+        if (CallExpr* call = toCallExpr(se->parentExpr)) {
+          AggregateType* at = toAggregateType(fn->_this->getValType());
+          if (call->isPrimitive(PRIM_TYPEOF)) {
+            error = false;
+          } else if (DefExpr* def = toLocalField(at, call)) {
+            Symbol* sym = def->sym;
+            if (sym->hasFlag(FLAG_TYPE_VARIABLE) ||
+                sym->hasFlag(FLAG_PARAM)) {
               error = false;
-            } else if (DefExpr* def = toLocalField(at, call)) {
-              Symbol* sym = def->sym;
-              if (sym->hasFlag(FLAG_TYPE_VARIABLE) ||
-                  sym->hasFlag(FLAG_PARAM)) {
-                error = false;
-              }
             }
           }
         }

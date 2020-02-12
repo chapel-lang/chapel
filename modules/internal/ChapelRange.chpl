@@ -238,9 +238,18 @@ module ChapelRange {
   // range (for example) without being warned.
   //
   pragma "no doc"
-  proc range.init(type idxType = int,
-                  param boundedType : BoundedRangeType = BoundedRangeType.bounded,
-                  param stridable : bool = false,
+  proc range.init(type idxType =
+                    if this.type.idxType == ?
+                    then int
+                    else this.type.idxType,
+                  param boundedType : BoundedRangeType =
+                    if this.type.boundedType == ?
+                    then BoundedRangeType.bounded
+                    else this.type.boundedType,
+                  param stridable : bool =
+                    if this.type.stridable == ?
+                    then false
+                    else this.type.stridable,
                   _low : idxType = chpl__intToIdx(idxType, 1),
                   _high : idxType = chpl__intToIdx(idxType, 0),
                   _stride : chpl__rangeStrideType(idxType) = 1,
