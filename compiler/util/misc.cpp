@@ -219,59 +219,6 @@ static void print_user_internal_error() {
   print_error("chpl version %s", version);
 }
 
-
-// find an AST location that is:
-//   not in an inlined function or a task function in an inlined function
-//     in non-user modules
-//     (assuming preserveInlinedLineNumbers==false)
-// to use for line number reporting.
-static Expr* findLocationIgnoringInternalInlining(Expr* cur) {
-
-  while (true) {
-    if (cur == NULL || cur->parentSymbol == NULL)
-      return cur;
-
-    FnSymbol* curFn = cur->getFunction();
-    // If we didn't find a function, or it's not in tree, give up
-    if (curFn == NULL || curFn->inTree() == false)
-      return cur;
-
-    // If it's already in user code, use that, because
-    // the line number is probably better
-    if (curFn->getModule()->modTag == MOD_USER)
-      return cur;
-
-    bool inlined = curFn->hasFlag(FLAG_INLINED_FN);
-
-    if (inlined == false || preserveInlinedLineNumbers)
-      return cur;
-
-    // Look for a call to that function
-    for_SymbolSymExprs(se, curFn) {
-      CallExpr* call = toCallExpr(se->parentExpr);
-      if (se == call->baseExpr) {
-        // Switch to considering that call point
-        cur = call;
-        break;
-      }
-    }
-  }
-
-  return cur; // never reached
-}
-
-bool printsUserLocation(const BaseAST* astIn) {
-  BaseAST* ast = const_cast<BaseAST*>(astIn);
-
-  if (Expr* expr = toExpr(ast)) {
-    Expr* foundExpr = findLocationIgnoringInternalInlining(expr);
-    if (foundExpr != NULL)
-      ast = foundExpr;
-  }
-
-  return (ast && ast->getModule()->modTag == MOD_USER);
-}
-
 // find a caller (direct or not) that is not in a task function,
 // for line number reporting
 static FnSymbol* findNonTaskCaller(FnSymbol* fn) {
@@ -353,7 +300,7 @@ static void printInstantiationNoteForLastError() {
   err_fn = NULL;
 }
 
-static bool printErrorHeader(BaseAST* ast) {
+static bool printErrorHeader(BaseAST* ast, astlocT astloc) {
 
   if (Expr* expr = toExpr(ast)) {
     Expr* use = findLocationIgnoringInternalInlining(expr);
@@ -430,6 +377,10 @@ static bool printErrorHeader(BaseAST* ast) {
     have_ast_line = true;
     filename = cleanFilename(ast);
     linenum = ast->linenum();
+  } else if ( astloc.filename != NULL) {
+    have_ast_line = true;
+    filename = cleanFilename(astloc.filename);
+    linenum = astloc.lineno;
   } else {
     have_ast_line = false;
     if ( !err_print && currentAstLoc.filename && currentAstLoc.lineno > 0 ) {
@@ -579,48 +530,6 @@ void printCallStackCalls() {
   printf("\n");
 }
 
-
-void handleError(const char* fmt, ...) {
-  fflush(stdout);
-  fflush(stderr);
-
-  if (err_ignore) {
-    return;
-  }
-
-  bool guess = printErrorHeader(NULL);
-
-  //
-  // Only print out the arguments if this is a user error or we're
-  // in developer mode.
-  //
-  if (err_user || developer) {
-    va_list args;
-    va_start(args, fmt);
-    vprint_error(fmt, args);
-    va_end(args);
-  }
-
-  printErrorFooter(guess);
-  print_error("\n");
-
-  printCallStackOnError();
-
-  if (!err_user && !developer) {
-    return;
-  }
-
-  if (exit_immediately) {
-    if (ignore_errors_for_pass) {
-      exit_end_of_pass = true;
-    } else if (!ignore_errors && !(ignore_user_errors && err_user)) {
-      printInstantiationNoteForLastError();
-      clean_exit(1);
-    }
-  }
-}
-
-
 /************************************* | **************************************
 *                                                                             *
 *                                                                             *
@@ -628,20 +537,47 @@ void handleError(const char* fmt, ...) {
 ************************************** | *************************************/
 
 static void vhandleError(const BaseAST* ast,
+                         astlocT        astloc,
                          const char*    fmt,
                          va_list        args);
 
-void handleError(const BaseAST* ast, const char *fmt, ...) {
+void handleError(const char *fmt, ...) {
+  astlocT astloc(0, NULL);
+
   va_list args;
 
   va_start(args, fmt);
 
-  vhandleError(ast, fmt, args);
+  vhandleError(NULL, astloc, fmt, args);
 
   va_end(args);
 }
 
+void handleError(const BaseAST* ast, const char *fmt, ...) {
+  astlocT astloc(0, NULL);
+
+  va_list args;
+
+  va_start(args, fmt);
+
+  vhandleError(ast, astloc, fmt, args);
+
+  va_end(args);
+}
+
+void handleError(astlocT astloc, const char *fmt, ...) {
+  va_list args;
+
+  va_start(args, fmt);
+
+  vhandleError(NULL, astloc, fmt, args);
+
+  va_end(args);
+}
+
+
 static void vhandleError(const BaseAST* ast,
+                         astlocT        astloc,
                          const char*    fmt,
                          va_list        args) {
   if (err_ignore) {
@@ -650,8 +586,12 @@ static void vhandleError(const BaseAST* ast,
 
   bool guess = false;
 
-  guess = printErrorHeader(const_cast<BaseAST*>(ast));
+  guess = printErrorHeader(const_cast<BaseAST*>(ast), astloc);
 
+  //
+  // Only print out the arguments if this is a user error or we're
+  // in developer mode.
+  //
   if (err_user || developer) {
     vprint_error(fmt, args);
   }
