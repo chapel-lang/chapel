@@ -1,0 +1,3 @@
+array-of-owned-return.chpl:9: In function 'main':
+array-of-owned-return.chpl:10: error: invalid implicit copy-initialization
+array-of-owned-return.chpl:5: note: type [domain(1,int(64),false)] owned C does not have a valid init=
