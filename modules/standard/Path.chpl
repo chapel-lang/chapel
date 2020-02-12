@@ -78,6 +78,15 @@ const parentDir = "..";
 const pathSep = "/";
 
 /*
+   Returns the c_string of the localized, unescaped string. This helper should
+   be used to convert Chapel strings into C strings before passing them to
+   extern file system procs
+*/
+private inline proc unescape(str: string) {
+  return str.encode(errors=encodePolicy.unescape);
+}
+
+/*
   Creates a normalized absolutized version of a path. On most platforms, when
   given a non-absolute path this function is equivalent to the following code:
 
@@ -354,12 +363,13 @@ proc dirname(name: string): string {
            var env_var: string = path_p(..(ind-1));
            var value: string;
            var value_c: c_string;
-           var h: int = sys_getenv(env_var.c_str(), value_c);
+           var h: int = sys_getenv(unescape(env_var).c_str(), value_c);
            if (h != 1) {
              value = "${" + env_var + "}";
            } else {
              try! {
-               value = createStringWithNewBuffer(value_c);
+               value = createStringWithNewBuffer(value_c,
+                                                 errors=decodePolicy.escape);
              }
            }
            res += value;
@@ -373,12 +383,13 @@ proc dirname(name: string): string {
          }
          var value: string;
          var value_c: c_string;
-         var h: int = sys_getenv(env_var.c_str(), value_c);
+         var h: int = sys_getenv(unescape(env_var).c_str(), value_c);
          if (h != 1) {
            value = "$" + env_var;
          } else {
            try! {
-             value = createStringWithNewBuffer(value_c);
+             value = createStringWithNewBuffer(value_c,
+                                               errors=decodePolicy.escape);
            }
          }
          res += value;
@@ -411,6 +422,7 @@ proc file.getParentName(): string throws {
   try check();
 
   try {
+    // realPath returns a string, nothing to worry about encoding-wise here
     return dirname(createStringWithNewBuffer(this.realPath()));
   } catch {
     return "unknown";
@@ -577,7 +589,7 @@ proc realPath(name: string): string throws {
   extern proc chpl_fs_realpath(path: c_string, ref shortened: c_string): syserr;
 
   var res: c_string;
-  var err = chpl_fs_realpath(name.localize().c_str(), res);
+  var err = chpl_fs_realpath(unescape(name).c_str(), res);
   if err then try ioerror(err, "realPath", name);
   return createStringWithOwnedBuffer(res);
 }
