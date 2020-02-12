@@ -380,14 +380,16 @@ module ChapelBase {
 
   inline proc /(a: real(?w), b: imag(w)) return _r2i(-a/_i2r(b));
   inline proc /(a: imag(?w), b: real(w)) return _r2i(_i2r(a)/b);
-  inline proc /(a: real(?w), b: complex(w*2))
-    return let d = abs(b) in
-    ((a/d)*(b.re/d), (-a/d)*(b.im/d)):complex(w*2);
+  inline proc /(a: real(?w), b: complex(w*2)) {
+    const d = abs(b);
+    return ((a/d)*(b.re/d), (-a/d)*(b.im/d)):complex(w*2);
+  }
   inline proc /(a: complex(?w), b: real(w/2))
     return (a.re/b, a.im/b):complex(w);
-  inline proc /(a: imag(?w), b: complex(w*2))
-    return let d = abs(b) in
-    ((_i2r(a)/d)*(b.im/d), (_i2r(a)/d)*(b.re/d)):complex(w*2);
+  inline proc /(a: imag(?w), b: complex(w*2)) {
+    const d = abs(b);
+    return ((_i2r(a)/d)*(b.im/d), (_i2r(a)/d)*(b.re/d)):complex(w*2);
+  }
   inline proc /(a: complex(?w), b: imag(w/2))
     return (a.im/_i2r(b), -a.re/_i2r(b)):complex(w);
 
@@ -496,22 +498,27 @@ module ChapelBase {
   proc **(param a: uint(?w), param b: uint(w)) param return __primitive("**", a, b);
 
   inline proc _expHelp(a, param b: integral) {
-    if b == 0 then
+    if b == 0 {
       return 1:a.type;
-    else if b == 1 then
+    } else if b == 1 {
       return a;
-    else if b == 2 then
+    } else if b == 2 {
       return a*a;
-    else if b == 3 then
+    } else if b == 3 {
       return a*a*a;
-    else if b == 4 then
-      return let t=a*a in t*t;
-    else if b == 5 then
-      return let t=a*a in t*t*a;
-    else if b == 6 then
-      return let t=a*a in t*t*t;
-    else if b == 8 then
-      return let t=a*a, u=t*t in u*u;
+    } else if b == 4 {
+      const t = a*a;
+      return t*t;
+    } else if b == 5 {
+      const t = a*a;
+      return t*t*a;
+    } else if b == 6 {
+      const t = a*a;
+      return t*t*t;
+    } else if b == 8 {
+      const t = a*a, u = t*t;
+      return u*u;
+    }
     else
       compilerError("unexpected case in exponentiation optimization");
   }
@@ -1538,7 +1545,7 @@ module ChapelBase {
     return __primitive("cast", t, x);
 
   inline proc _cast(type t:chpl_anyimag, x: chpl_anycomplex)
-    return let xim = x.im in __primitive("cast", t, xim);
+    return __primitive("cast", t, x.im);
 
   inline proc _cast(type t:chpl_anyimag, x: enumerated)
     return x:real:imag;

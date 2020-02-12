@@ -762,6 +762,9 @@ CallExpr* buildLetExpr(BlockStmt* decls, Expr* expr) {
   fn->addFlag(FLAG_INLINE);
   fn->insertAtTail(decls);
   fn->insertAtTail(new CallExpr(PRIM_RETURN, expr));
+  if (fWarnUnstable) {
+    USR_WARN(decls, "Let expressions are currently unstable and are expected to change in ways that will break their current uses.");
+  }
   return new CallExpr(new DefExpr(fn));
 }
 
