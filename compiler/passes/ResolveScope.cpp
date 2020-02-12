@@ -832,7 +832,7 @@ ResolveScope::buildBreadthFirstUseImportList(UseImportList& useImportList,
               } else {
                 visited[useSE->symbol()].push_back(use);
               }
-            } else if (ImportStmt* import = toImportStmt(expr)) {
+            } else if (isImportStmt(expr)) {
               // Don't do anything, imports only apply to qualified access
             } else {
               INT_ASSERT("Unexpected expr, expected ImportStmt or UseStmt");
