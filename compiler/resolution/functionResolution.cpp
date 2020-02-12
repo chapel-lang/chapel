@@ -3233,7 +3233,8 @@ static FnSymbol* resolveNormalCall(CallInfo& info, check_state_t checkState) {
   // If no candidates were found and it's a method, try forwarding
   if (candidates.n                  == 0 &&
       info.call->numActuals()       >= 1 &&
-      info.call->get(1)->typeInfo() == dtMethodToken) {
+      info.call->get(1)->typeInfo() == dtMethodToken &&
+      isUnresolvedSymExpr(info.call->baseExpr)) {
     Type* receiverType = canonicalDecoratedClassType(info.call->get(2)->getValType());
     if (typeUsesForwarding(receiverType)) {
       FnSymbol* fn = resolveForwardedCall(info, checkState);

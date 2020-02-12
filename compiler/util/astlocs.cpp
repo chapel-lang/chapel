@@ -117,6 +117,17 @@ bool printsUserLocation(const BaseAST* astIn) {
   return (ast && mod && mod->modTag == MOD_USER);
 }
 
+static SymExpr* findMentionOfSymbol(BlockStmt* block, Symbol* sym) {
+  std::vector<SymExpr*> symExprs;
+  collectSymExprsFor(block, sym, symExprs);
+  for_vector(SymExpr, se, symExprs) {
+    if (se->symbol() == sym) {
+      return se;
+    }
+  }
+  return NULL;
+}
+
 astlocT getUserInstantiationPoint(const BaseAST* ast) {
 
   // TODO - call this function for instantiating AggregateType and FnSymbol
@@ -145,17 +156,11 @@ astlocT getUserInstantiationPoint(const BaseAST* ast) {
       BlockStmt* instantiationPoint = fn->instantiationPoint();
 
       if (instantiationPoint != NULL) {
-        cur = instantiationPoint;
-        std::vector<CallExpr*> calls;
-        collectFnCalls(instantiationPoint, calls);
-        for_vector(CallExpr, call, calls) {
-          if (FnSymbol* calledFn = call->resolvedOrVirtualFunction()) {
-            if (calledFn == fn) {
-              cur = call;
-              break;
-            }
-          }
-        }
+        SymExpr* mention = findMentionOfSymbol(instantiationPoint, fn);
+        if (mention != NULL)
+          cur = mention;
+        else
+          cur = instantiationPoint;
       }
     } else if (TypeSymbol* ts = toTypeSymbol(cur)) {
       // Find the first use of the TypeSymbol at the type's instantation point
@@ -163,15 +168,11 @@ astlocT getUserInstantiationPoint(const BaseAST* ast) {
       BlockStmt* instantiationPoint = ts->instantiationPoint;
 
       if (instantiationPoint != NULL) {
-        cur = instantiationPoint;
-        std::vector<SymExpr*> symExprs;
-        collectSymExprsFor(instantiationPoint, ts, symExprs);
-        for_vector(SymExpr, se, symExprs) {
-          if (se->symbol() == ts) {
-            cur = se;
-            break;
-          }
-        }
+        SymExpr* mention = findMentionOfSymbol(instantiationPoint, ts);
+        if (mention != NULL)
+          cur = mention;
+        else
+          cur = instantiationPoint;
       }
     }
 
