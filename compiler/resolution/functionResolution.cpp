@@ -6140,8 +6140,17 @@ static void resolveInitVar(CallExpr* call) {
     call->insertAtTail(initCopy);
     call->primitive = primitives[PRIM_MOVE];
 
+    // If there is an error in that initCopy call,
+    // just mark it for later (rather than raising the error now)
+    // since the initCopy might be removed later in compilation.
+    inTryResolve++;
+    tryResolveStates.push_back(CHECK_CALLABLE_ONLY);
+
     resolveExpr(initCopy);
     resolveMove(call);
+
+    tryResolveStates.pop_back();
+    inTryResolve--;
 
   } else if (isRecord(targetType->getValType())) {
     AggregateType* at = toAggregateType(targetType->getValType());
@@ -8021,6 +8030,18 @@ static void resolveExprMaybeIssueError(CallExpr* call) {
 
           tryResolveErrors[fn] = std::make_pair(from,str);
         }
+
+        // Make any errors in initCopy / autoCopy mark the function
+        // with the flag for later errors (during callDestructors)
+        for (int i = callStack.n-1; i >= 0; i--) {
+          CallExpr*     frame  = callStack.v[i];
+          FnSymbol*     fn     = frame->getFunction();
+          bool inCopyIsh = fn->hasFlag(FLAG_INIT_COPY_FN) ||
+                           fn->hasFlag(FLAG_AUTO_COPY_FN) ||
+                           fn->hasFlag(FLAG_UNALIAS_FN);
+          if (inCopyIsh)
+            fn->addFlag(FLAG_ERRONEOUS_COPY);
+        }
       }
 
     } else {
@@ -8727,12 +8748,10 @@ static FnSymbol* autoMemoryFunction(AggregateType* at, const char* fnName) {
   if (retval == NULL) {
     // mark it as erroneous
     if (FnSymbol* fn = call->resolvedFunction()) {
-      if (fn->hasFlag(FLAG_INIT_COPY_FN))
-        fn->addFlag(FLAG_ERRONEOUS_INITCOPY);
-      else if (fn->hasFlag(FLAG_AUTO_COPY_FN))
-        fn->addFlag(FLAG_ERRONEOUS_AUTOCOPY);
-      else
-        INT_FATAL("unexpected case");
+      if (fn->hasFlag(FLAG_INIT_COPY_FN) ||
+          fn->hasFlag(FLAG_AUTO_COPY_FN) ||
+          fn->hasFlag(FLAG_UNALIAS_FN))
+        INT_ASSERT(fn->hasFlag(FLAG_ERRONEOUS_COPY));
 
       // Return the resolved function, for storing in the map
       retval = fn;

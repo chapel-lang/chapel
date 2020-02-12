@@ -541,7 +541,7 @@ static bool fixupDefaultInitCopy(FnSymbol* fn,
 
       } else {
         // No copy-initializer could be found
-        newFn->addFlag(FLAG_ERRONEOUS_INITCOPY);
+        newFn->addFlag(FLAG_ERRONEOUS_COPY);
       }
 
       retval = true;
