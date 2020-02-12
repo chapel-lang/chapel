@@ -2188,7 +2188,7 @@ static void buildBreadthFirstModuleList(
             }
           }
         }
-      } else if (ImportStmt* importSrc = toImportStmt(source)) {
+      } else if (isImportStmt(source)) {
         // Don't traverse the use statements of a module we imported, their
         // contents aren't brought into scope.
 

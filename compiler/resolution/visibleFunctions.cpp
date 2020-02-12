@@ -315,7 +315,7 @@ static void getVisibleFunctions(const char*           name,
               }
             }
           }
-        } else if (ImportStmt* import = toImportStmt(expr)) {
+        } else if (isImportStmt(expr)) {
           // Don't go into import statements to look for symbols, they only
           // provide qualified access.
         } else {
