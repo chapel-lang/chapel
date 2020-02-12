@@ -31,6 +31,7 @@ char fDocsFolder[256] = "";
 bool fDocsTextOnly = false;
 char fDocsSphinxDir[256] = "";
 bool fDocsHTML = true;
+char fDocsProjectVersion[256] = "0.0.1";
 
 // TODO: Whether or not to support this flag is an open discussion. Currently,
 //       it is not supported, so the flag is always true.
@@ -88,6 +89,7 @@ ArgumentDescription docs_arg_desc[] = {
  {"save-sphinx",  ' ', "<directory>", "Save generated Sphinx project in directory", "S256", fDocsSphinxDir, NULL, NULL},
  {"text-only", ' ', NULL, "Generate text documentation only", "F", &fDocsTextOnly, NULL, NULL},
  {"html", ' ', NULL, "[Don't] generate html documentation (on by default)", "N", &fDocsHTML, NULL, NULL},
+ {"project-version", ' ', "<projectversion>", "Sets the documentation version to <projectversion>", "S256", fDocsProjectVersion, "CHPLDOC_PROJECT_VERSION", NULL},
 
 
  // TODO: Whether or not to support this flag is an open discussion. Currently,
