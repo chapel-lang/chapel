@@ -83,55 +83,45 @@ void ImportStmt::verify() {
 // Resolve the module symbol referred to by the ImportStmt
 //
 void ImportStmt::scopeResolve(ResolveScope* scope) {
-  /*
-  // 2017-05-28: isValid() does not currently return on failure
-  if (isValid(src) == true) { */
-  // isValid should be re-enabled when we support general exprs in imports
-  // As it is today, we won't encounter the situations it is preventing.
-  // There is an else branch to turn on as well
-    // 2017/05/28 The parser inserts a normalized UseStmt of ChapelBase
-    if (isSymExpr(src)) {
-      INT_FATAL("This should only happen for a UseStmt");
+  // 2017/05/28 The parser inserts a normalized UseStmt of ChapelBase
+  if (isSymExpr(src)) {
+    INT_FATAL("This should only happen for a UseStmt");
 
-    } else if (Symbol* sym = scope->lookup(src, /*isUse=*/ true)) {
-      SET_LINENO(this);
+  } else if (Symbol* sym = scope->lookup(src, /*isUse=*/ true)) {
+    SET_LINENO(this);
 
-      if (ModuleSymbol* modSym = toModuleSymbol(sym)) {
-        if (modSym->defPoint->parentSymbol != theProgram) {
-          USR_FATAL_CONT(this, "unable to import nested modules");
-        }
-        scope->enclosingModule()->moduleUseAdd(modSym);
-
-        updateEnclosingBlock(scope, sym);
-
-      } else {
-        if (sym->isImmediate() == true) {
-          USR_FATAL(this,
-                    "'import' statements must refer to module symbols "
-                    "(e.g., 'import <module>;')");
-
-        } else if (sym->name != NULL) {
-          USR_FATAL_CONT(this,
-                         "'import' of non-module symbol %s",
-                         sym->name);
-          USR_FATAL_CONT(sym,  "Definition of symbol %s", sym->name);
-          USR_STOP();
-
-        } else {
-          USR_FATAL(this, "'import' of non-module symbol");
-        }
+    if (ModuleSymbol* modSym = toModuleSymbol(sym)) {
+      if (modSym->defPoint->parentSymbol != theProgram) {
+        USR_FATAL_CONT(this, "unable to import nested modules");
       }
+      scope->enclosingModule()->moduleUseAdd(modSym);
+
+      updateEnclosingBlock(scope, sym);
+
     } else {
-      if (UnresolvedSymExpr* import = toUnresolvedSymExpr(src)) {
-        USR_FATAL(this, "Cannot find module '%s'", import->unresolved);
+      if (sym->isImmediate() == true) {
+        USR_FATAL(this,
+                  "'import' statements must refer to module symbols "
+                  "(e.g., 'import <module>;')");
+
+      } else if (sym->name != NULL) {
+        USR_FATAL_CONT(this,
+                       "'import' of non-module symbol %s",
+                       sym->name);
+        USR_FATAL_CONT(sym,  "Definition of symbol %s", sym->name);
+        USR_STOP();
+
       } else {
-        USR_FATAL(this, "Cannot find module");
+        USR_FATAL(this, "'import' of non-module symbol");
       }
     }
-    /*
   } else {
-    INT_ASSERT(false);
-    }*/
+    if (UnresolvedSymExpr* import = toUnresolvedSymExpr(src)) {
+      USR_FATAL(this, "Cannot find module '%s'", import->unresolved);
+    } else {
+      USR_FATAL(this, "Cannot find module");
+    }
+  }
 }
 
 //
