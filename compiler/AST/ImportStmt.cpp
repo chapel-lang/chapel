@@ -112,14 +112,14 @@ void ImportStmt::scopeResolve(ResolveScope* scope) {
         USR_STOP();
 
       } else {
-        USR_FATAL(this, "'import' of non-module symbol");
+        INT_FATAL(this, "'import' of non-module symbol");
       }
     }
   } else {
     if (UnresolvedSymExpr* import = toUnresolvedSymExpr(src)) {
       USR_FATAL(this, "Cannot find module '%s'", import->unresolved);
     } else {
-      USR_FATAL(this, "Cannot find module");
+      INT_FATAL(this, "Cannot find module");
     }
   }
 }
@@ -159,6 +159,7 @@ Symbol* ImportStmt::checkIfModuleNameMatches(const char* name) {
     // Though we don't support it yet, things like `import M.N.O` probably
     // wouldn't reach here because we resolve such cases element-by-element
     // rather than wholesale.  Nothing else should fall under this category
+    INT_FATAL("Malformed src in ImportStmt");
   }
   return NULL;
 }
