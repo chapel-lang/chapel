@@ -92,7 +92,7 @@ void ImportStmt::scopeResolve(ResolveScope* scope) {
 
     if (ModuleSymbol* modSym = toModuleSymbol(sym)) {
       if (modSym->defPoint->parentSymbol != theProgram) {
-        USR_FATAL_CONT(this, "unable to import nested modules");
+        USR_FATAL_CONT(this, "currently unable to import nested modules");
       }
       scope->enclosingModule()->moduleUseAdd(modSym);
 

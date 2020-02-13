@@ -6,7 +6,7 @@ module A {
       writeln("In B.foo()");
     }
   }
-  import B; // Not supported yet
+  import B; // How to write this so that the below will work?
 
   proc main() {
     writeln(B.x);
