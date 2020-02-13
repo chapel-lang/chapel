@@ -8783,8 +8783,8 @@ static FnSymbol* autoMemoryFunction(AggregateType* at, const char* fnName) {
     retval = resolvedFn;
 
   if (retval == NULL) {
-    // mark it as erroneous
     if (FnSymbol* fn = call->resolvedFunction()) {
+      // if it's an initCopy e.g. we should have already marked it as erroneous
       if (fn->hasFlag(FLAG_INIT_COPY_FN) ||
           fn->hasFlag(FLAG_AUTO_COPY_FN) ||
           fn->hasFlag(FLAG_UNALIAS_FN))
