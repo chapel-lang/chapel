@@ -151,7 +151,7 @@ BaseAST* ImportStmt::getSearchScope() const {
 Symbol* ImportStmt::checkIfModuleNameMatches(const char* name) {
   if (SymExpr* se = toSymExpr(src)) {
     if (ModuleSymbol* modSym = toModuleSymbol(se->symbol())) {
-      if (strcmp(name, se->symbol()->name) == 0) {
+      if (name == se->symbol()->name) {
         return modSym;
       }
     }
