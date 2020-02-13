@@ -407,13 +407,9 @@ void AstDump::visitImportStmt(ImportStmt* node) {
 
   if (fLogIds) {
     fprintf(mFP, "(%d ", node->id);
-    mNeedSpace = false;
   } else {
     write(true, "(", false);
   }
-
-  if (mNeedSpace)
-    fputc(' ', mFP);
 
   fprintf(mFP, "'import'");
 
