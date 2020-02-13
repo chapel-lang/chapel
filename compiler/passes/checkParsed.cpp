@@ -42,6 +42,7 @@ static void checkModule(ModuleSymbol* mod);
 static void checkRecordInheritance(AggregateType* at);
 static void setupForCheckExplicitDeinitCalls();
 static void warnUnstableUnions(AggregateType* at);
+static void warnUnstableLeadingUnderscores();
 
 void
 checkParsed() {
@@ -132,6 +133,8 @@ checkParsed() {
 
     warnUnstableUnions(at);
   }
+
+  warnUnstableLeadingUnderscores();
 
   checkExportedNames();
 
@@ -521,5 +524,30 @@ checkExportedNames()
 static void warnUnstableUnions(AggregateType* at) {
   if (fWarnUnstable && at->isUnion()) {
     USR_WARN(at, "Unions are currently unstable and are expected to change in ways that will break their current uses.");
+  }
+}
+
+static void warnUnstableLeadingUnderscores() {
+  if (fWarnUnstable) {
+    forv_Vec(VarSymbol, var, gVarSymbols) {
+      if (var->name[0] == '_' &&
+          var->defPoint->getModule()->modTag == MOD_USER) {
+        USR_WARN(var->defPoint,
+                 "Symbol names with leading underscores (%s) are unstable.", var->name);
+      }
+    }
+    forv_Vec(FnSymbol, fn, gFnSymbols) {
+      if (fn->name[0] == '_' &&
+          fn->defPoint->getModule()->modTag == MOD_USER) {
+        USR_WARN(fn->defPoint,
+                 "Symbol names with leading underscores (%s) are unstable.", fn->name);
+      }
+    }
+    forv_Vec(ModuleSymbol, mod, gModuleSymbols) {
+      if (mod->name[0] == '_' && mod->modTag == MOD_USER) {
+        USR_WARN(mod->defPoint,
+                 "Symbol names with leading underscores (%s) are unstable.", mod->name);
+      }
+    }
   }
 }
