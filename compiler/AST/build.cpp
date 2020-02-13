@@ -368,22 +368,13 @@ BlockStmt* buildErrorStandin() {
   return new BlockStmt(new CallExpr(PRIM_ERROR), BLOCK_SCOPELESS);
 }
 
-static void addModuleToSearchList(UseStmt* newUse, BaseAST* module) {
+static void addModuleToSearchList(VisibilityStmt* newStmt, BaseAST* module) {
   UnresolvedSymExpr* modNameExpr = toUnresolvedSymExpr(module);
   if (modNameExpr) {
-    addModuleToParseList(modNameExpr->unresolved, newUse);
+    addModuleToParseList(modNameExpr->unresolved, newStmt);
   } else if (CallExpr* callExpr = toCallExpr(module)) {
-    addModuleToSearchList(newUse, callExpr->argList.first());
+    addModuleToSearchList(newStmt, callExpr->argList.first());
   }
-}
-
-static void addModuleToSearchList(ImportStmt* newImport, BaseAST* module) {
-  UnresolvedSymExpr* modNameExpr = toUnresolvedSymExpr(module);
-  if (modNameExpr) {
-    addModuleToParseList(modNameExpr->unresolved, newImport);
-  } /* else if (CallExpr* callExpr = toCallExpr(module)) {
-    addModuleToSearchList(newUse, callExpr->argList.first());
-    }*/ // Expected to be useful when import statements can list multiple mods
 }
 
 
