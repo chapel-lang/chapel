@@ -157,8 +157,7 @@ try_resolve_map_t tryResolveErrors;
 //# Static Function Declarations
 //#
 static FnSymbol* resolveUninsertedCall(Type* type, CallExpr* call,
-                                       bool errorOnFailure,
-                                       bool checkWithin);
+                                       bool errorOnFailure);
 static bool hasUserAssign(Type* type);
 static void resolveOther();
 static bool fits_in_int(int width, Immediate* imm);
@@ -300,7 +299,7 @@ void makeRefType(Type* type) {
   }
 
   CallExpr* call = new CallExpr(dtRef->symbol, type->symbol);
-  resolveUninsertedCall(type, call, false, false);
+  resolveUninsertedCall(type, call, false);
   type->refType  = toAggregateType(call->typeInfo());
 
   type->refType->getField(1)->type = type;
@@ -332,7 +331,7 @@ hasUserAssign(Type* type) {
   // the type was instantiated in a scope where its module wasn't used. E.g.:
   //   var x = new A.R(int);
   //
-  FnSymbol* fn = resolveUninsertedCall(type, call, false, false);
+  FnSymbol* fn = resolveUninsertedCall(type, call, false);
   // Don't think we need to resolve the whole function
   // since we're just looking for a flag.
   //resolveFunction(fn);
@@ -2194,9 +2193,9 @@ bool signatureMatch(FnSymbol* fn, FnSymbol* gn) {
 ************************************** | *************************************/
 
 static FnSymbol* resolveUninsertedCall(BlockStmt* insert, CallExpr* call,
-                                       bool errorOnFailure, bool checkWithin);
+                                       bool errorOnFailure);
 static FnSymbol* resolveUninsertedCall(Expr*      insert, CallExpr* call,
-                                       bool errorOnFailure, bool checkWithin);
+                                       bool errorOnFailure);
 
 static Expr*     getInsertPointForTypeFunction(Type* type) {
   AggregateType* at     = toAggregateType(type);
@@ -2223,20 +2222,20 @@ static Expr*     getInsertPointForTypeFunction(Type* type) {
 }
 
 static FnSymbol* resolveUninsertedCall(Type* type, CallExpr* call,
-                                       bool errorOnFailure, bool checkWithin) {
+                                       bool errorOnFailure) {
   FnSymbol*      retval = NULL;
 
   Expr* where = getInsertPointForTypeFunction(type);
   if (BlockStmt* stmt = toBlockStmt(where))
-    retval = resolveUninsertedCall(stmt, call, errorOnFailure, checkWithin);
+    retval = resolveUninsertedCall(stmt, call, errorOnFailure);
   else
-    retval = resolveUninsertedCall(where, call, errorOnFailure, checkWithin);
+    retval = resolveUninsertedCall(where, call, errorOnFailure);
 
   return retval;
 }
 
 static FnSymbol* resolveUninsertedCall(BlockStmt* insert, CallExpr* call,
-                                       bool errorOnFailure, bool checkWithin) {
+                                       bool errorOnFailure) {
   FnSymbol* ret = NULL;
   BlockStmt* block = new BlockStmt(call, BLOCK_SCOPELESS);
 
@@ -2246,7 +2245,7 @@ static FnSymbol* resolveUninsertedCall(BlockStmt* insert, CallExpr* call,
     resolveCall(call);
     ret = call->resolvedFunction();
   } else {
-    ret = tryResolveCall(call, checkWithin);
+    ret = tryResolveCall(call, false);
   }
 
   call->remove();
@@ -2256,7 +2255,7 @@ static FnSymbol* resolveUninsertedCall(BlockStmt* insert, CallExpr* call,
 }
 
 static FnSymbol* resolveUninsertedCall(Expr* insert, CallExpr* call,
-                                       bool errorOnFailure, bool checkWithin) {
+                                       bool errorOnFailure) {
   FnSymbol* ret = NULL;
   BlockStmt* block = new BlockStmt(call, BLOCK_SCOPELESS);
 
@@ -2266,7 +2265,7 @@ static FnSymbol* resolveUninsertedCall(Expr* insert, CallExpr* call,
     resolveCall(call);
     ret = call->resolvedFunction();
   } else {
-    ret = tryResolveCall(call, checkWithin);
+    ret = tryResolveCall(call, false);
   }
 
   call->remove();
@@ -2399,7 +2398,7 @@ void resolvePromotionType(AggregateType* at) {
   VarSymbol* temp     = newTemp(at);
   CallExpr* promoCall = new CallExpr("chpl__promotionType", gMethodToken, temp);
 
-  FnSymbol* promoFn = resolveUninsertedCall(at, promoCall, false, true);
+  FnSymbol* promoFn = resolveUninsertedCall(at, promoCall, false);
 
   if (promoFn != NULL) {
     promoFn->setInstantiationPoint(at->symbol->instantiationPoint);
@@ -2418,7 +2417,7 @@ void resolveDestructor(AggregateType* at) {
   VarSymbol* tmp   = newTemp(at);
   CallExpr*  call  = new CallExpr("deinit", gMethodToken, tmp);
 
-  FnSymbol* deinitFn = resolveUninsertedCall(at, call, false, false);
+  FnSymbol* deinitFn = resolveUninsertedCall(at, call, false);
 
   if (deinitFn != NULL) {
     deinitFn->setInstantiationPoint(at->symbol->instantiationPoint);
@@ -6230,48 +6229,81 @@ static void resolveInitVar(CallExpr* call) {
 *                                                                             *
 ************************************** | *************************************/
 
+static FnSymbol* fixInstantiationPointAndTryResolveBody(AggregateType* at,
+                                                        CallExpr* call);
+
 FnSymbol* findCopyInitFn(AggregateType* at) {
   VarSymbol* tmpAt = newTemp(at);
-
-  FnSymbol* ret = NULL;
 
   CallExpr* call = NULL;
 
   call = new CallExpr(astrInitEquals, gMethodToken, tmpAt, tmpAt);
 
-  ret = resolveUninsertedCall(at, call, false, true);
-
-  // ret's instantiationPoint points to the dummy BlockStmt created by
+  FnSymbol* foundFn = resolveUninsertedCall(at, call, false);
+  // foundFn's instantiationPoint points to the dummy BlockStmt created by
   // resolveUninsertedCall, so it needs to be updated.
-  if (ret != NULL) {
-    Expr* point = NULL;
-    if (BlockStmt* stmt = at->symbol->instantiationPoint) {
-      point = stmt;
-    }
-    ret->setInstantiationPoint(point);
-  }
+  FnSymbol* resolvedFn = fixInstantiationPointAndTryResolveBody(at, call);
+  FnSymbol* ret = NULL;
+
+  if (foundFn != NULL)
+    ret = resolvedFn;
 
   return ret;
 }
 
 FnSymbol* findAssignFn(AggregateType* at) {
   VarSymbol* tmpAt = newTemp(at);
-  FnSymbol* ret = NULL;
 
   CallExpr* call = new CallExpr("=", tmpAt, tmpAt);
-  ret = resolveUninsertedCall(at, call, false, true);
+
+  FnSymbol* foundFn = resolveUninsertedCall(at, call, false);
+  FnSymbol* resolvedFn = fixInstantiationPointAndTryResolveBody(at, call);
+  FnSymbol* ret = NULL;
+
+  if (foundFn != NULL)
+    ret = resolvedFn;
 
   return ret;
 }
 
 FnSymbol* findZeroArgInitFn(AggregateType* at) {
   VarSymbol* tmpAt = newTemp(at);
-  FnSymbol* ret = NULL;
 
   CallExpr* call = new CallExpr(astrInit, gMethodToken, tmpAt);
-  ret = resolveUninsertedCall(at, call, false, true);
+  FnSymbol* foundFn = resolveUninsertedCall(at, call, false);
+  FnSymbol* resolvedFn = fixInstantiationPointAndTryResolveBody(at, call);
+  FnSymbol* ret = NULL;
+
+  if (foundFn != NULL)
+    ret = resolvedFn;
 
   return ret;
+}
+
+static FnSymbol* fixInstantiationPointAndTryResolveBody(AggregateType* at,
+                                                        CallExpr* call) {
+
+  if (FnSymbol* fn = call->resolvedFunction()) {
+    fn->setInstantiationPoint(at->symbol->instantiationPoint);
+
+    inTryResolve++;
+    tryResolveStates.push_back(CHECK_BODY_RESOLVES);
+    tryResolveFunctions.push_back(fn);
+
+    resolveFunction(fn);
+
+    check_state_t state = tryResolveStates.back();
+
+    tryResolveFunctions.pop_back();
+    tryResolveStates.pop_back();
+    inTryResolve--;
+
+    // return the function if no compilerError was encountered
+    if (state != CHECK_FAILED)
+      return fn;
+  }
+
+  return NULL;
 }
 
 /************************************* | **************************************
@@ -8383,7 +8415,7 @@ static void resolveSupportForModuleDeinits() {
   VarSymbol* fnPtrDum   = newTemp("fnPtr", dtCFnPtr);
   CallExpr*  addModule  = new CallExpr("chpl_addModule", modNameDum, fnPtrDum);
 
-  resolveUninsertedCall(chpl_gen_main->body, addModule, true, false);
+  resolveUninsertedCall(chpl_gen_main->body, addModule, true);
 
   gAddModuleFn = addModule->resolvedFunction();
 
@@ -8454,7 +8486,7 @@ static void insertRuntimeTypeTemps() {
       VarSymbol* tmp = newTemp("_runtime_type_tmp_", at);
       at->symbol->defPoint->insertBefore(new DefExpr(tmp));
       CallExpr* call = new CallExpr("chpl__convertValueToRuntimeType", tmp);
-      FnSymbol* fn = resolveUninsertedCall(at, call, true, false);
+      FnSymbol* fn = resolveUninsertedCall(at, call, true);
       resolveFunction(fn);
       valueToRuntimeTypeMap.put(at, fn);
       tmp->defPoint->remove();
@@ -8681,8 +8713,7 @@ static void resolveAutoCopyEtc(AggregateType* at) {
       VarSymbol* tmp   = newTemp(at);
       CallExpr*  call  = new CallExpr("deinit", gMethodToken, tmp);
 
-      FnSymbol* fn = resolveUninsertedCall(at->symbol->defPoint, call,
-                                           true, false);
+      FnSymbol* fn = resolveUninsertedCall(at->symbol->defPoint, call, true);
       INT_ASSERT(fn);
 
       if (at->hasInitializers()) {
@@ -8741,11 +8772,15 @@ static const char* autoCopyFnForType(AggregateType* at) {
 static FnSymbol* autoMemoryFunction(AggregateType* at, const char* fnName) {
   VarSymbol* tmp    = newTemp(at);
   CallExpr*  call   = new CallExpr(fnName, tmp);
-  FnSymbol*  retval = NULL;
 
   chpl_gen_main->insertAtHead(new DefExpr(tmp));
 
-  retval = resolveUninsertedCall(at, call, false, true);
+  FnSymbol* foundFn = resolveUninsertedCall(at, call, false);
+  FnSymbol* resolvedFn = fixInstantiationPointAndTryResolveBody(at, call);
+  FnSymbol* retval = NULL;
+
+  if (foundFn != NULL)
+    retval = resolvedFn;
 
   if (retval == NULL) {
     // mark it as erroneous
