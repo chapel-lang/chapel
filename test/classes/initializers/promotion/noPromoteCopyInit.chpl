@@ -32,6 +32,6 @@ proc main() {
   var o = new R(r);
   writeln("2 * o = ", 2 * o);
 
-  var b = r;
+  var b = r; r; // avoid copy elision to test copy-init
   writeln("3 * b = ", 3 * b);
 }
