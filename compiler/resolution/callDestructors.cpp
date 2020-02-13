@@ -321,7 +321,7 @@ void ReturnByRef::updateAssignmentsFromRefArgToValue(FnSymbol* fn)
 
           if (symLhs != NULL && symRhs != NULL)
           {
-            // check if rhs is actually a formal 
+            // check if rhs is actually a formal
             bool rhsIsFormal = false;
             for_formals(formal, fn) {
               if(formal == symRhs) {
@@ -1086,6 +1086,17 @@ static void insertCopiesForYields()
 // flag is ever called and raises an error if so.
 static void checkForErroneousInitCopies() {
 
+  std::map<FnSymbol*, const char*> errors;
+
+  // Store errors in local map
+  forv_Vec(FnSymbol, fn, gFnSymbols) {
+    if (fn->hasFlag(FLAG_ERRONEOUS_COPY)) {
+      // Store the error in the local map
+      if (const char* err = getErroneousCopyError(fn))
+        errors[fn] = err;
+    }
+  }
+
   // Mark initCopy/autoCopy functions calling functions marked with
   // FLAG_ERRONEOUS_COPY with the same
   // flag. This situation can come up with the compiler-generated
@@ -1103,6 +1114,10 @@ static void checkForErroneousInitCopies() {
             if (inCopyIsh && !callInFn->hasFlag(FLAG_ERRONEOUS_COPY)) {
               callInFn->addFlag(FLAG_ERRONEOUS_COPY);
               changed = true;
+
+              // propagate error if present
+              if (errors.count(fn) != 0)
+                errors[callInFn] = errors[fn];
             }
           }
         }
@@ -1119,11 +1134,15 @@ static void checkForErroneousInitCopies() {
                            callInFn->hasFlag(FLAG_AUTO_COPY_FN) ||
                            callInFn->hasFlag(FLAG_UNALIAS_FN);
           if (inCopyIsh == false) {
+
             if (callInFn->hasFlag(FLAG_INIT_COPY_FN)) {
               USR_FATAL_CONT(se, "invalid copy-initialization");
             } else {
               USR_FATAL_CONT(se, "invalid implicit copy-initialization");
             }
+
+            if (errors.count(fn) != 0)
+              USR_FATAL_CONT(se, "%s", errors[fn]);
 
             Type* t = fn->getFormal(1)->getValType();
             astlocT typePoint = t->astloc;
@@ -1131,7 +1150,7 @@ static void checkForErroneousInitCopies() {
               typePoint = t->symbol->userInstantiationPointLoc;
 
             USR_PRINT(typePoint,
-                      "type %s does not have a valid init=", toString(t));
+                      "%s does not have a valid init=", toString(t));
           } else {
             // Should have been propagated above
             INT_ASSERT(callInFn->hasFlag(FLAG_ERRONEOUS_COPY));

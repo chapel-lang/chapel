@@ -282,7 +282,8 @@ static void setRecordCopyableFlags(AggregateType* at) {
       ts->addFlag(FLAG_TYPE_INIT_EQUAL_MISSING);
     } else {
       // Try resolving a test init= to set the flags
-      FnSymbol* initEq = findCopyInitFn(at);
+      const char* err = NULL;
+      FnSymbol* initEq = findCopyInitFn(at, err);
       if (initEq == NULL) {
         ts->addFlag(FLAG_TYPE_INIT_EQUAL_MISSING);
       } else if (initEq->hasFlag(FLAG_COMPILER_GENERATED)) {

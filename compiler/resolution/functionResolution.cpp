@@ -150,7 +150,7 @@ typedef enum {
 static int inTryResolve;
 static std::vector<check_state_t> tryResolveStates;
 static std::vector<FnSymbol*> tryResolveFunctions;
-typedef std::map<FnSymbol*,std::pair<BaseAST*,std::string> > try_resolve_map_t;
+typedef std::map<FnSymbol*,std::pair<BaseAST*,const char*> > try_resolve_map_t;
 try_resolve_map_t tryResolveErrors;
 
 //#
@@ -394,6 +394,24 @@ FnSymbol* getAutoDestroy(Type* t) {
 FnSymbol* getUnalias(Type* t) {
   return unaliasMap.get(t);
 }
+
+const char* getErroneousCopyError(FnSymbol* fn) {
+  try_resolve_map_t::iterator it;
+  it = tryResolveErrors.find(fn);
+  if (it != tryResolveErrors.end()) {
+    const char* err = it->second.second;
+    return err;
+  }
+
+  return NULL;
+}
+
+void markCopyErroneous(FnSymbol* fn, const char* err) {
+  fn->addFlag(FLAG_ERRONEOUS_COPY);
+  if (err != NULL)
+    tryResolveErrors[fn] = std::make_pair(fn,err);
+}
+
 
 /************************************* | **************************************
 *                                                                             *
@@ -3604,8 +3622,8 @@ void resolveNormalCallCompilerWarningStuff(CallExpr* call,
       tryResolveErrors[fn] = it->second;
     } else {
       BaseAST* from = it->second.first;
-      std::string& err = it->second.second;
-      USR_FATAL_CONT(from, "%s", err.c_str());
+      const char* err = it->second.second;
+      USR_FATAL_CONT(from, "%s", err);
       USR_PRINT(call, "in function called here");
     }
   }
@@ -6141,17 +6159,23 @@ static void resolveInitVar(CallExpr* call) {
     call->insertAtTail(initCopy);
     call->primitive = primitives[PRIM_MOVE];
 
-    // If there is an error in that initCopy call,
-    // just mark it for later (rather than raising the error now)
-    // since the initCopy might be removed later in compilation.
-    inTryResolve++;
-    tryResolveStates.push_back(CHECK_CALLABLE_ONLY);
+    if (initCopyIter == false) {
+      // If there is an error in that initCopy call,
+      // just mark it for later (rather than raising the error now)
+      // since the initCopy might be removed later in compilation.
+      inTryResolve++;
+      tryResolveStates.push_back(CHECK_CALLABLE_ONLY);
 
-    resolveExpr(initCopy);
-    resolveMove(call);
+      resolveExpr(initCopy);
+      resolveMove(call);
 
-    tryResolveStates.pop_back();
-    inTryResolve--;
+      tryResolveStates.pop_back();
+      inTryResolve--;
+    } else {
+      // give errors for init-copy on iterators now
+      resolveExpr(initCopy);
+      resolveMove(call);
+    }
 
   } else if (isRecord(targetType->getValType())) {
     AggregateType* at = toAggregateType(targetType->getValType());
@@ -6232,7 +6256,7 @@ static void resolveInitVar(CallExpr* call) {
 static FnSymbol* fixInstantiationPointAndTryResolveBody(AggregateType* at,
                                                         CallExpr* call);
 
-FnSymbol* findCopyInitFn(AggregateType* at) {
+FnSymbol* findCopyInitFn(AggregateType* at, const char*& err) {
   VarSymbol* tmpAt = newTemp(at);
 
   CallExpr* call = NULL;
@@ -6244,6 +6268,10 @@ FnSymbol* findCopyInitFn(AggregateType* at) {
   // resolveUninsertedCall, so it needs to be updated.
   FnSymbol* resolvedFn = fixInstantiationPointAndTryResolveBody(at, call);
   FnSymbol* ret = NULL;
+
+  if (foundFn != NULL && resolvedFn == NULL)
+    if (tryResolveErrors.count(foundFn) != 0)
+      err = tryResolveErrors[foundFn].second;
 
   if (foundFn != NULL)
     ret = resolvedFn;
@@ -8073,8 +8101,10 @@ static void resolveExprMaybeIssueError(CallExpr* call) {
           bool inCopyIsh = fn->hasFlag(FLAG_INIT_COPY_FN) ||
                            fn->hasFlag(FLAG_AUTO_COPY_FN) ||
                            fn->hasFlag(FLAG_UNALIAS_FN);
-          if (inCopyIsh)
+          if (inCopyIsh) {
             fn->addFlag(FLAG_ERRONEOUS_COPY);
+            tryResolveErrors[fn] = std::make_pair(from,str);
+          }
         }
       }
 
