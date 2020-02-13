@@ -1,0 +1,71 @@
+Char: b
+codepoint: 62
+repr: b"b"
+Char: A
+codepoint: 41
+repr: b"A"
+Char: b
+codepoint: 62
+repr: b"b"
+Char: í³¿
+codepoint: dcff
+repr: b"\xFF"
+Char: b
+codepoint: 62
+repr: b"b"
+Char: A
+codepoint: 41
+repr: b"A"
+Char: b
+codepoint: 62
+repr: b"b"
+default iterations
+codepoint: 62
+repr: b"b"
+codepoint: 41
+repr: b"A"
+codepoint: 62
+repr: b"b"
+codepoint: dcff
+repr: b"\xFF"
+codepoint: 62
+repr: b"b"
+codepoint: 41
+repr: b"A"
+codepoint: 62
+repr: b"b"
+
+codepoint iterations
+codepoint: 62
+codepoint: 41
+codepoint: 62
+codepoint: dcff
+codepoint: 62
+codepoint: 41
+codepoint: 62
+
+codepoint iterations for lower
+codepoint: 62
+codepoint: 61
+codepoint: 62
+codepoint: dcff
+codepoint: 62
+codepoint: 61
+codepoint: 62
+
+find/count
+Should be 2: 2
+Should be 1: 1
+Should be 2: 2
+Should be 4: 4
+Should be 8: 8
+Should be 4: 4
+
+split
+repr: b"bAb"
+repr: b"bAb"
+
+repr: b"b"
+repr: b"b\xFFb"
+repr: b"b"
+
