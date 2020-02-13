@@ -70,10 +70,6 @@ VisibilityStmt::VisibilityStmt(AstTag astTag): Stmt(astTag) {
 VisibilityStmt::~VisibilityStmt() {
 }
 
-bool VisibilityStmt::isVisibilityStmt() const {
-  return true;
-}
-
 //
 // Extends the scope's block statement to store this node, after replacing the
 // UnresolvedSymExpr we store with the found symbol

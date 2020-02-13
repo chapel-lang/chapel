@@ -63,8 +63,6 @@ class VisibilityStmt: public Stmt {
 
   virtual ~VisibilityStmt();
 
-  virtual bool isVisibilityStmt() const;
-
  protected:
   void updateEnclosingBlock(ResolveScope* scope,
                             Symbol* sym);
