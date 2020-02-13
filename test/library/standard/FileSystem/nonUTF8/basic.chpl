@@ -1,7 +1,9 @@
 use FileSystem;
 use IO;
+use Sort;
+use List;
 
-config param useNonUTF8 = false;
+config param useNonUTF8 = true;
 
 //helper to create \xffstr\xffstr\xff
 proc s(str) {
@@ -101,8 +103,13 @@ writeln();
 
 
 writeln("listing the dir contents");
+// the order seems to change from system to system
+var l: list(string);
 for f in listdir(dirname1) {
-  writeln(f);
+  l.append(f);
+}
+for f in sorted(l.toArray()) {
+  writef("%ht\n", f.encode(errors=encodePolicy.unescape));
 }
 writeln();
 

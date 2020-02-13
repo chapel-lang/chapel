@@ -39,8 +39,8 @@ exists works: true
 Going back to the initial dir
 
 listing the dir contents
-junkfile1
-junkfile2
+b"\xFFjunkfile1\xFFjunkfile1\xFF"
+b"\xFFjunkfile2\xFFjunkfile2\xFF"
 
 Removing the remaining junk
 exists works: true
