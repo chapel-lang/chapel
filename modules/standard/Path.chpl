@@ -344,8 +344,8 @@ proc dirname(name: string): string {
    var path_p: string = path;
    var varChars: string = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890_";
    var res: string = "";
-   var ind: byteIndex = 1;
-   var pathlen: int = path_p.numBytes;
+   var ind: int = 1;
+   var pathlen: int = path_p.length;
    while (ind <= pathlen) {
      var c: string = path_p(ind);
      if (c == "$" && ind + 1 <= pathlen) {
@@ -355,7 +355,7 @@ proc dirname(name: string): string {
        } else if (path_p(ind+1) == "{") {
          path_p = path_p((ind+2)..);
          pathlen = path_p.numBytes;
-         ind = path_p.find("}");
+         ind = path_p.find("}"):int;
          if (ind == 0) {
            res += "${" +path_p;
            ind = pathlen;
@@ -377,7 +377,7 @@ proc dirname(name: string): string {
        } else {
          var env_var: string = "";
          ind += 1;
-         while (ind <= path_p.numBytes && varChars.find(path_p(ind)) != 0) {
+         while (ind <= path_p.length && varChars.find(path_p(ind)) != 0) {
            env_var += path_p(ind);
            ind += 1;
          }
@@ -591,7 +591,7 @@ proc realPath(name: string): string throws {
   var res: c_string;
   var err = chpl_fs_realpath(unescape(name).c_str(), res);
   if err then try ioerror(err, "realPath", name);
-  return createStringWithOwnedBuffer(res);
+  return createStringWithNewBuffer(res, errors=decodePolicy.escape);
 }
 
 pragma "no doc"
