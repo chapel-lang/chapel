@@ -111,7 +111,7 @@ UseStmt* UseStmt::copyInner(SymbolMap* map) {
 }
 
 Expr* UseStmt::getFirstExpr() {
-  return this;
+  return src;
 }
 
 void UseStmt::replaceChild(Expr* oldAst, Expr* newAst) {

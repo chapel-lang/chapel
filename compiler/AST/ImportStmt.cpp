@@ -49,7 +49,7 @@ ImportStmt* ImportStmt::copyInner(SymbolMap* map) {
 }
 
 Expr* ImportStmt::getFirstExpr() {
-  return this;
+  return src;
 }
 
 void ImportStmt::replaceChild(Expr* oldAst, Expr* newAst) {
