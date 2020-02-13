@@ -1,0 +1,2 @@
+paramInHeader1.chpl:4: In initializer:
+paramInHeader1.chpl:4: error: the param value 'SOME_CONST' is not yet instantiated

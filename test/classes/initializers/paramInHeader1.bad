@@ -1,0 +1,3 @@
+paramInHeader1.chpl:4: In initializer:
+paramInHeader1.chpl:4: error: the type of the actual argument 'this' is generic
+note: generic actual arguments are not currently supported

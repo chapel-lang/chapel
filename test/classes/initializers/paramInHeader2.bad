@@ -1,0 +1,2 @@
+paramInHeader2.chpl:4: In initializer:
+paramInHeader2.chpl:5: error: Cannot assign to int(64) from _uninstantiated
