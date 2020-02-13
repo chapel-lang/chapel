@@ -1,7 +1,7 @@
 //
-// When a tuple is constructed with the tuple expression, that tuple
-// will refer to any elements (read, capture them by `ref`) for which the
-// blank argument intent is `ref` or `const ref`.
+// When a tuple is constructed with the tuple expression, the tuple will
+// capture each element based on the default argument intent for its
+// type. 
 //
 
 private use Types;
