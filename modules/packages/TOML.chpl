@@ -689,13 +689,16 @@ used to recursively hold tables and respective values
     proc this(tbl: string) ref : unmanaged Toml? throws {
       const indx = tbl.split('.');
       var top = indx.domain.first;
+
       //
-      // TODO: This is a bug, see #14861.
+      // TODO: This is a bug when the return type of this routine is a
+      // non-nilable class, see #14367/#14861. So for now, we have to make
+      // `Toml.this` return `Toml?`, which makes it a lot less pleasant
+      // to use.
       //
       if indx.size < 2 {
         return this.A[tbl];
-      }
-      else {
+      } else {
         var next = '.'.join(indx[top+1..]);
         if !this.A.contains(indx[top]) {
           throw new owned TomlError("No index found for " + tbl);
