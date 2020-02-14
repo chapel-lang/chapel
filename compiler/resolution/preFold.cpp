@@ -2205,7 +2205,9 @@ static Expr* createFunctionAsValue(CallExpr *call) {
   //
   // Otherwise, we need to create a Chapel first-class function (fcf)...
   //
-
+  if (fWarnUnstable) {
+    USR_WARN(call, "First class functions are unstable.");
+  }
   AggregateType* parent;
   FnSymbol*      thisParentMethod;
 
