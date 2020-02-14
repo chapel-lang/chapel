@@ -3639,6 +3639,7 @@ module ChapelArray {
     }
   }
   proc chpl__supportedDataTypeForBulkTransfer(x: string) param return false;
+  proc chpl__supportedDataTypeForBulkTransfer(x: bytes) param return false;
   proc chpl__supportedDataTypeForBulkTransfer(x: sync) param return false;
   proc chpl__supportedDataTypeForBulkTransfer(x: single) param return false;
   proc chpl__supportedDataTypeForBulkTransfer(x: domain) param return false;
