@@ -1163,7 +1163,7 @@ static bool needToAddCoercion(Type*      actualType,
   // New in-intents don't require coercion from ref to value
   // since it'll be handled by the initCopy call.
   if (actualType == formalType->getRefType() &&
-      shouldAddFormalTempAtCallSite(formal, fn))
+      shouldAddInFormalTempAtCallSite(formal, fn))
     return false;
 
   // If actual and formal are type symbols, no coercion is necessary
@@ -1619,7 +1619,7 @@ static void handleInIntents(FnSymbol* fn,
     // The result of a default argument for 'in' intent is already owned and
     // does not need to be copied.
     if (formalRequiresTemp(formal, fn) &&
-        shouldAddFormalTempAtCallSite(formal, fn) &&
+        shouldAddInFormalTempAtCallSite(formal, fn) &&
         ! checkAnotherFunctionsFormal(fn, info.call, actualSym) &&
         actualSym->hasFlag(FLAG_DEFAULT_ACTUAL) == false) {
 

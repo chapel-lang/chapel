@@ -77,7 +77,7 @@ bool       formalRequiresTemp(ArgSymbol* formal, FnSymbol* fn);
 // If formalRequiresTemp(formal,fn), when this function returns true,
 // the new strategy of making the temporary at the call site will be used.
 // (if it returns false, the temporary will be inside fn)
-bool       shouldAddFormalTempAtCallSite(ArgSymbol* formal, FnSymbol* fn);
+bool       shouldAddInFormalTempAtCallSite(ArgSymbol* formal, FnSymbol* fn);
 
 // This function concerns an initialization expression such as:
 //   var x = <expr>;

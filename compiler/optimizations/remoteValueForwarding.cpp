@@ -557,7 +557,7 @@ static void destroyArgAndDeserialized(FnSymbol* fn, ArgSymbol* arg,
 static void insertSerialization(FnSymbol*  fn,
                                 ArgSymbol* arg) {
   Type* oldArgType    = arg->type;
-  bool newStyleInIntent = shouldAddFormalTempAtCallSite(arg, fn);
+  bool newStyleInIntent = shouldAddInFormalTempAtCallSite(arg, fn);
 
   Serializers ser = serializeMap[oldArgType->getValType()];
 

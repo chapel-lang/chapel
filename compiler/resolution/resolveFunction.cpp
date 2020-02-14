@@ -259,12 +259,12 @@ static void updateIfRefFormal(FnSymbol* fn, ArgSymbol* formal) {
 
     INT_ASSERT(tupleType);
 
-    if (shouldAddFormalTempAtCallSite(formal, fn)) {
+    if (shouldAddInFormalTempAtCallSite(formal, fn)) {
       // In, const in, intents treat tuple as an value variable
       // so it should not contain any refs.
       formal->type = computeNonRefTuple(tupleType);
     } else {
-      // (for !shouldAddFormalTempAtCallSite),
+      // (for !shouldAddInFormalTempAtCallSite),
       // let 'in' intent work similarly to the blank intent.
       if (intent == INTENT_IN) {
         intent = INTENT_BLANK;
@@ -1513,13 +1513,14 @@ bool formalRequiresTemp(ArgSymbol* formal, FnSymbol* fn) {
     );
 }
 
-bool shouldAddFormalTempAtCallSite(ArgSymbol* formal, FnSymbol* fn) {
+bool shouldAddInFormalTempAtCallSite(ArgSymbol* formal, FnSymbol* fn) {
 
   // Don't add copies at call site if function body will be removed anyway.
   // TODO: handle RET_TYPE but not for runtime types
   if (fn && fn->retTag == RET_PARAM)
     return false;
 
+  // TODO: remove this filtering on records/unions
   if (isRecord(formal->getValType()) || isUnion(formal->getValType())) {
     if (formal->intent == INTENT_IN ||
         formal->intent == INTENT_CONST_IN ||
@@ -1646,7 +1647,7 @@ static void addLocalCopiesAndWritebacks(FnSymbol*  fn,
 
      case INTENT_IN:
      case INTENT_CONST_IN:
-      if (!shouldAddFormalTempAtCallSite(formal, fn)) {
+      if (!shouldAddInFormalTempAtCallSite(formal, fn)) {
         fn->insertAtHead(new CallExpr(PRIM_MOVE,
                                       tmp,
                                       new CallExpr("chpl__initCopy", formal)));
