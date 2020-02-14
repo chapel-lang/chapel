@@ -411,6 +411,9 @@ all:
       config: 16 node XC, 16-node-cs
   01/17/20:
     - Adjust point of deinitialization based on expiring value analysis (#14691)
+  02/07/20:
+    - text: machine update
+      config: chapcs
 
 
 AllCompTime:
@@ -1434,6 +1437,8 @@ revcomp: &revcomp-base
     - Turn "array-as-vec" deprecation warnings on (#13999)
   09/10/19:
     - Restore reverse-complement performance with qio hint (#14045)
+  02/04/20:
+    - Improve const/ref this decorators for list methods (#14809)
 revcomp-submitted:
   <<: *revcomp-base
 
