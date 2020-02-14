@@ -172,7 +172,6 @@ static BlockStmt* getParentBlock(Expr* expr);
 static void resolveTupleExpand(CallExpr* call);
 static void resolveSetMember(CallExpr* call);
 static void resolveInitField(CallExpr* call);
-static void resolveInitVar(CallExpr* call);
 static void resolveMove(CallExpr* call);
 static void resolveNew(CallExpr* call);
 static void resolveCoerce(CallExpr* call);
@@ -5975,7 +5974,7 @@ void checkMoveIntoClass(CallExpr* call, Type* lhs, Type* rhs) {
 *                                                                             *
 ************************************** | *************************************/
 
-static void resolveInitVar(CallExpr* call) {
+void resolveInitVar(CallExpr* call) {
   Symbol*  dst     = toSymExpr(call->get(1))->symbol();
 
   SymExpr* srcExpr = toSymExpr(call->get(2));
@@ -9730,7 +9729,7 @@ static void resolvePrimInit(CallExpr* call, Symbol* val, Type* type) {
       resolveExpr(moveDefault);
       call->convertToNoop();
     } else {
-      call->convertToNoop(); // initialize it PRIM_INIT_VAR_SPLIT_INIT
+      call->convertToNoop(); // initialize it in PRIM_INIT_VAR_SPLIT_INIT
                              // (important for params)
     }
 
@@ -9938,7 +9937,7 @@ static void lowerPrimInit(CallExpr* call, Symbol* val, Type* type) {
 
       errorIfNonNilableType(call, val, type, type);
     } else {
-      call->convertToNoop(); // initialize it PRIM_INIT_VAR_SPLIT_INIT
+      call->convertToNoop(); // initialize it in PRIM_INIT_VAR_SPLIT_INIT
     }
 
   // any type with a defaultValue is easy enough
@@ -9962,7 +9961,7 @@ static void lowerPrimInit(CallExpr* call, Symbol* val, Type* type) {
       resolveExpr(moveDefault);
       call->convertToNoop();
     } else {
-      call->convertToNoop(); // initialize it PRIM_INIT_VAR_SPLIT_INIT
+      call->convertToNoop(); // initialize it in PRIM_INIT_VAR_SPLIT_INIT
                              // (important for params)
     }
 

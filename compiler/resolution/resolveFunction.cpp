@@ -39,6 +39,7 @@
 #include "postFold.h"
 #include "resolution.h"
 #include "resolveIntents.h"
+#include "splitInit.h"
 #include "stmt.h"
 #include "stringutil.h"
 #include "symbol.h"
@@ -799,6 +800,78 @@ static CallExpr* findSetShape(CallExpr* setRet, Symbol* ret) {
   return NULL;
 }
 
+class SplitInitVisitor : public AstVisitorTraverse {
+ public:
+  bool inFunction;
+  bool changed;
+  SplitInitVisitor() : inFunction(false), changed(false) { }
+  virtual bool enterFnSym(FnSymbol* node);
+  virtual bool enterDefExpr(DefExpr* def);
+  virtual bool enterCallExpr(CallExpr* call);
+};
+
+bool SplitInitVisitor::enterFnSym(FnSymbol* node) {
+  // Only visit the top level function requested
+  if (inFunction) return false;
+  inFunction = true;
+  return true;
+}
+
+bool SplitInitVisitor::enterDefExpr(DefExpr* def) {
+  return true;
+}
+
+bool SplitInitVisitor::enterCallExpr(CallExpr* call) {
+  if (call->isPrimitive(PRIM_DEFAULT_INIT_VAR)) {
+    // Can this be replaced by a split init?
+    std::vector<CallExpr*> initAssigns;
+    Expr* prevent = NULL;
+    bool foundSplitInit = false;
+
+    foundSplitInit = findInitPoints(call, initAssigns, prevent);
+    SymExpr* se = toSymExpr(call->get(1));
+    Symbol* sym = se->symbol();
+    if (foundSplitInit) {
+      // Check that all of the assignments have a same-type RHS
+      for_vector(CallExpr, call, initAssigns) {
+        Type* rhsType = call->get(2)->getValType();
+        if (rhsType != sym->type) {
+          prevent = call;
+          foundSplitInit = false;
+        }
+      }
+    }
+
+    if (foundSplitInit) {
+      // Change the PRIM_DEFAULT_INIT_VAR to PRIM_INIT_VAR_SPLIT_DECL
+      call->primitive = primitives[PRIM_INIT_VAR_SPLIT_DECL];
+      // Change the '=' calls found into PRIM_INIT_VAR_SPLIT_INIT
+      for_vector(CallExpr, call, initAssigns) {
+        printf("replacing assign %i\n", call->id);
+        SET_LINENO(call);
+        Expr* rhs = call->get(2)->remove();
+        CallExpr* init = new CallExpr(PRIM_INIT_VAR_SPLIT_INIT, sym, rhs);
+        call->replace(init);
+        resolveInitVar(init);
+      }
+    } else {
+      FnSymbol* inFn = call->getFunction();
+      if (!inFn->hasFlag(FLAG_UNSAFE)) {
+        // TODO: check if the type is default-initializable
+        if (isNonNilableClassType(sym->type)) {
+          USR_FATAL_CONT(sym->defPoint, "'%s' cannot be default initialized",
+                         sym->name);
+          if (prevent)
+            USR_FATAL_CONT(prevent, "split-init prevented by this line");
+          USR_PRINT("non-nil class types do not support default initialization");
+        }
+      }
+    }
+  }
+  return true;
+}
+
+
 class FixPrimInitsVisitor : public AstVisitorTraverse {
  public:
   bool inFunction;
@@ -843,6 +916,14 @@ void fixPrimInits(FnSymbol* fn) {
   // PRIM_DEFAULT_INIT_VAR in the tree and just use it to establish types.
   // This function needs to lower these.
 
+
+  // Convert PRIM_DEFAULT_INIT_VAR to split init where possible
+  if (fNoSplitInit == false) {
+    SplitInitVisitor visitor;
+    fn->accept(&visitor);
+  }
+
+  // Lower any remaining PRIM_DEFAULT_INIT_VAR
   // Looping because the default init for a record might use
   // default arguments which in turn are set with default init.
   // This could be handled by adjusting the added AST instead of
