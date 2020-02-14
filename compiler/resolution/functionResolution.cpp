@@ -6198,12 +6198,21 @@ void resolveInitVar(CallExpr* call) {
                         srcType->getValType() == targetType->getValType() &&
                         src->isRef() == false;
 
-    if (moveStringLiteral || moveBytesLiteral || canStealTemp) {
+    bool canStealCallTemp = src->hasFlag(FLAG_EXPR_TEMP) &&
+                            srcType->getValType() == targetType->getValType() &&
+                            src->isRef() == false;
+
+    if (moveStringLiteral || moveBytesLiteral ||
+        canStealTemp || canStealCallTemp) {
       dst->type = src->type;
 
       call->primitive = primitives[PRIM_MOVE];
 
       resolveMove(call);
+
+      if (canStealCallTemp)
+        src->addFlag(FLAG_NO_AUTO_DESTROY);
+
     } else if (isRecordOrUnionWithInitializers(at) == false) {
       INT_FATAL("Unable to initialize record/union variable with type '%s'", at->symbol->name);
     } else if (targetType->getValType() == srcType->getValType() &&

@@ -1532,7 +1532,6 @@ bool shouldAddInFormalTempAtCallSite(ArgSymbol* formal, FnSymbol* fn) {
   return false;
 }
 
-
 //
 // Can Chapel rely on the compiler's back end (e.g.,
 // C) to provide the copy for us for 'in' or 'const in' intents when
@@ -1594,47 +1593,55 @@ static void addLocalCopiesAndWritebacks(FnSymbol*  fn,
       INT_FATAL("Unexpected INTENT case.");
       break;
 
-     case INTENT_OUT:
+     case INTENT_OUT: {
+      BlockStmt* defaultExpr = NULL;
+
       if (formal->defaultExpr &&
           formal->defaultExpr->body.tail->typeInfo() != dtTypeDefaultToken) {
-        BlockStmt* defaultExpr = formal->defaultExpr->copy();
+        defaultExpr = formal->defaultExpr->copy();
+      }
+
+      if (formalType->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE)) {
+        VarSymbol* typeTmp = newTemp("_formal_type_tmp_");
+
+        typeTmp->addFlag(FLAG_MAYBE_TYPE);
+
+        if (defaultExpr != NULL) {
+          CallExpr* init = new CallExpr(PRIM_INIT_VAR, tmp,
+                                        defaultExpr->body.tail->remove(),
+                                        typeTmp);
+          fn->insertAtHead(init);
+          fn->insertAtHead(defaultExpr);
+        } else {
+          CallExpr* init = new CallExpr(PRIM_DEFAULT_INIT_VAR, tmp,
+                                        typeTmp);
+          fn->insertAtHead(init);
+        }
 
         fn->insertAtHead(new CallExpr(PRIM_MOVE,
-                                      tmp,
-                                      defaultExpr->body.tail->remove()));
-        fn->insertAtHead(defaultExpr);
+                                      typeTmp,
+                                      new CallExpr(PRIM_TYPEOF, formal)));
 
+        fn->insertAtHead(new DefExpr(typeTmp));
       } else {
-        AggregateType* formalAt = toAggregateType(formal->getValType());
 
-        // BHARSH TODO: This pattern (is it concrete, otherwise use PRIM_INIT)
-        // is all over the place. Can we unify this stuff somewhere?
-        if (isNonGenericRecordWithInitializers(formalAt) &&
-            needsGenericRecordInitializer(formalAt) == false) {
-          fn->insertAtHead(new CallExpr("init",
-                                        gMethodToken,
-                                        tmp));
-          tmp->type = formalAt;
-
+        if (defaultExpr != NULL) {
+          CallExpr* init = new CallExpr(PRIM_INIT_VAR, tmp,
+                                        defaultExpr->body.tail->remove(),
+                                        formalType->symbol);
+          fn->insertAtHead(init);
+          fn->insertAtHead(defaultExpr);
         } else {
-          VarSymbol* typeTmp = newTemp("_formal_type_tmp_");
-
-          typeTmp->addFlag(FLAG_MAYBE_TYPE);
-
-          fn->insertAtHead(new CallExpr(PRIM_DEFAULT_INIT_VAR, tmp, typeTmp));
-
-          fn->insertAtHead(new CallExpr(PRIM_MOVE,
-                                        typeTmp,
-                                        new CallExpr(PRIM_TYPEOF, formal)));
-
-          fn->insertAtHead(new DefExpr(typeTmp));
+          CallExpr * init = new CallExpr(PRIM_DEFAULT_INIT_VAR, tmp,
+                                         formalType->symbol);
+          fn->insertAtHead(init);
         }
       }
 
-      tmp->addFlag(FLAG_INSERT_AUTO_DESTROY);
+      tmp->addFlag(FLAG_NO_AUTO_DESTROY);
       tmp->addFlag(FLAG_FORMAL_TEMP);
       break;
-
+     }
      case INTENT_INOUT:
       fn->insertAtHead(new CallExpr(PRIM_MOVE,
                                     tmp,
@@ -1747,8 +1754,10 @@ static void addLocalCopiesAndWritebacks(FnSymbol*  fn,
 
     // For inout or out intent, this assigns the modified value back to the
     // formal at the end of the function body.
-    if (formal->intent == INTENT_INOUT || formal->intent == INTENT_OUT) {
+    if (formal->intent == INTENT_INOUT) {
       fn->insertIntoEpilogue(new CallExpr("=", formal, tmp));
+    } else if (formal->intent == INTENT_OUT) {
+      fn->insertIntoEpilogue(new CallExpr(PRIM_ASSIGN, formal, tmp));
     }
   }
 }

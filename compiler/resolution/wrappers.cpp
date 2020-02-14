@@ -86,8 +86,9 @@ static void       reorderActuals(FnSymbol*                fn,
 static void       coerceActuals(FnSymbol* fn,
                                 CallInfo& info);
 
-static void       handleInIntents(FnSymbol* fn,
-                                  CallInfo& info);
+static void       handleInIntents(FnSymbol* fn, CallInfo& info);
+
+static void       handleOutIntents(FnSymbol* fn, CallInfo& info);
 
 bool       isPromotionRequired(FnSymbol* fn, CallInfo& info,
                                std::vector<ArgSymbol*>& actualIdxToFormal);
@@ -196,6 +197,8 @@ FnSymbol* wrapAndCleanUpActuals(FnSymbol*                fn,
 
   // handle 'in' intent
   handleInIntents(retval, info);
+  // handle 'out' intent
+  handleOutIntents(retval, info);
 
   return retval;
 }
@@ -1590,8 +1593,7 @@ static bool checkAnotherFunctionsFormal(FnSymbol* calleeFn, CallExpr* call,
   return result;
 }
 
-static void handleInIntents(FnSymbol* fn,
-                            CallInfo& info) {
+static void handleInIntents(FnSymbol* fn, CallInfo& info) {
 
   int j = 0;
 
@@ -1667,6 +1669,61 @@ static void handleInIntents(FnSymbol* fn,
         // (don't destroy it here, it will be destroyed there).
         actualSym->addFlag(FLAG_NO_AUTO_DESTROY);
       }
+    }
+
+    currActual = nextActual;
+    j++;
+  }
+}
+
+static void handleOutIntents(FnSymbol* fn, CallInfo& info) {
+  int j = 0;
+
+  // Function with no actuals can't use out intent
+  // Returning early in that event simplifies the following code.
+  if (info.call->numActuals() == 0)
+    return;
+
+  Expr* anchor = info.call->getStmtExpr();
+
+  Expr* currActual = info.call->get(1);
+  Expr* nextActual = NULL;
+
+  for_formals(formal, fn) {
+    SET_LINENO(currActual);
+    nextActual = currActual->next;
+
+    Symbol* actualSym  = info.actuals.v[j];
+
+    // The result of a default argument for 'in' intent is already owned and
+    // does not need to be copied.
+    if (formal->intent == INTENT_OUT || formal->originalIntent == INTENT_OUT) {
+      // TODO: check ?  actualSym->hasFlag(FLAG_DEFAULT_ACTUAL) ?
+
+      Expr* useExpr = currActual;
+      if (NamedExpr* named = toNamedExpr(currActual))
+        useExpr = named->actual;
+
+      SymExpr* se = toSymExpr(useExpr);
+      INT_ASSERT(actualSym == se->symbol());
+
+      VarSymbol* tmp = newTemp(astr("_formal_tmp_", formal->name),
+                               formal->getValType());
+      //tmp->addFlag(FLAG_INSERT_AUTO_DESTROY);
+      //tmp->addFlag(FLAG_EXPR_TEMP); // ? keep this? -> errors with lvalues
+
+      // Transform  f(x) where x is passed with out intent into
+      //   DefExpr tmp
+      //   f(tmp)
+      //   x = tmp     -> this might turn into split-init of x
+      anchor->insertBefore(new DefExpr(tmp));
+
+      CallExpr* assign = new CallExpr("=", actualSym, tmp);
+      anchor->insertAfter(assign);
+
+      resolveCallAndCallee(assign, false); // false - allow unresolved
+
+      currActual->replace(new SymExpr(tmp));
     }
 
     currActual = nextActual;
