@@ -78,9 +78,8 @@ const parentDir = "..";
 const pathSep = "/";
 
 /*
-   Returns the c_string of the localized, unescaped string. This helper should
-   be used to convert Chapel strings into C strings before passing them to
-   extern file system procs
+   Localizes and unescapes string to create a bytes to be used for obtaining a
+   c_string to pass to extern file system operations.
 */
 private inline proc unescape(str: string) {
   return str.encode(errors=encodePolicy.unescape);
