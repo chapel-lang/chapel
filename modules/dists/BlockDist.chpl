@@ -1052,10 +1052,12 @@ proc BlockArr.dsiStaticFastFollowCheck(type leadType) param
          _to_borrowed(leadType) == _to_borrowed(this.dom.type);
 
 proc BlockArr.dsiDynamicFastFollowCheck(lead: [])
-  return _to_borrowed(lead.domain._value) == _to_borrowed(this.dom);
+  return this.dsiDynamicFastFollowCheck(lead.domain);
 
-proc BlockArr.dsiDynamicFastFollowCheck(lead: domain)
-  return _to_borrowed(lead._value) == _to_borrowed(this.dom);
+proc BlockArr.dsiDynamicFastFollowCheck(lead: domain) {
+  // TODO: Should this return true for domains with the same shape?
+  return lead.dist.dsiEqualDMaps(this.dom.dist) && lead._value.whole == this.dom.whole;
+}
 
 iter BlockArr.these(param tag: iterKind, followThis, param fast: bool = false) ref where tag == iterKind.follower {
   proc anyStridable(rangeTuple, param i: int = 1) param
