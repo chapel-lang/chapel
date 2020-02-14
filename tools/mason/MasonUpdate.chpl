@@ -153,10 +153,17 @@ proc updateRegistry(tf: string, args: list(string)) {
   checkRegistryChanged();
   for ((name, registry), registryHome) in zip(MASON_REGISTRY, MASON_CACHED_REGISTRY) {
 
+    const env = getEnv("MASON_REGISTRY");
+    const regPath = env.split(',');
+    const masonUrl = regPath[1].split('|');
+    const localUrl = regPath[2].split('|');
+    const mRegistry = masonUrl[1];
+    const lRegistry = localUrl[1];
+
     if isDir(registryHome) {
       var pullRegistry = 'git pull -q origin master';
       if tf == "Mason.toml" then
-        writeln("Updating mason-registry");
+        writeln("Updating ", mRegistry);
       gitC(registryHome, pullRegistry);
     }
     // Registry has moved or does not exist
@@ -165,7 +172,7 @@ proc updateRegistry(tf: string, args: list(string)) {
       const localRegistry = registryHome;
       mkdir(localRegistry, parents=true);
       const cloneRegistry = 'git clone -q ' + registry + ' .';
-      writeln("Updating ", registry);
+      writeln("Updating ", lRegistry);
       gitC(localRegistry, cloneRegistry);
     }
   }
