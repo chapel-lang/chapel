@@ -487,7 +487,7 @@ proc isIdentifier(name:string) {
    TODO custom fields returned */
 iter allFields(tomlTbl: unmanaged Toml) {
   for (k,v) in tomlTbl.A.items() {
-    if v.tag == fieldtag.fieldToml then
+    if v!.tag == fieldtag.fieldToml then
       continue;
     else yield(k,v);
   }

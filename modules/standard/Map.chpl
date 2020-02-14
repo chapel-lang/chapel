@@ -50,12 +50,28 @@ module Map {
 
   private use IO;
 
+  //
+  // #14861 - For now, maps of non-nilable classes are banned. Once we
+  // resolve #13602 and #14861, we can remvoe this check. The check is on
+  // a type method instead of `map.init` because init for associative
+  // arrays (and thus their compiler error) resolves before `map.init`.
+  //
+  pragma "no doc"
+  inline proc checkForNonNilableClass(type t) type {
+    if isNonNilableClass(t) {
+      param msg = "Cannot initialize map because element type "
+                + t:string + " is a non-nilable class";
+      compilerError(msg, 2);
+    }
+    return t;
+  }
+
   record map {
     type keyType, valType;
     param parSafe = false;
 
     var myKeys: domain(keyType, parSafe=parSafe);
-    var vals: [myKeys] valType;
+    var vals: [myKeys] checkForNonNilableClass(valType);
 
 
     pragma "no doc"

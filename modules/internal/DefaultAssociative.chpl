@@ -627,7 +627,20 @@ module DefaultAssociative {
   
     var tmpDom = {0..(-1:chpl_table_index_type)};
     var tmpTable: [tmpDom] eltType;
-  
+
+    //
+    // #14367 - Blanket ban on non-nilable classes for the time being.
+    //
+    pragma "no doc"
+    proc postinit() {
+      if isNonNilableClass(this.eltType) {
+        param msg = "Cannot initialize associative array because"
+                  + " element type " + eltType:string
+                  + " is a non-nilable class";
+        compilerError(msg);
+      }
+    }
+
     //
     // Standard internal array interface
     // 

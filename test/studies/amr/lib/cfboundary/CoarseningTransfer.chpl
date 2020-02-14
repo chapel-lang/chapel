@@ -107,7 +107,7 @@ class LevelInvalidRegion {
   const level:      unmanaged Level;
   const fine_level: unmanaged Level;
   
-  var grid_invalid_regions: [level.grids] unmanaged GridInvalidRegion;
+  var grid_invalid_regions: [level.grids] unmanaged GridInvalidRegion?;
 
   // /|'''''''''''''''/|
   //< |    fields    < |
@@ -227,8 +227,8 @@ proc LevelVariable.fillInvalidRegion (
 
   //---- Each grid obtains coarsened values from fine neighbors ----
   for grid in this.level.grids {
-    for (f_neighbor,Domain) in level_invalid_region(grid) do
-      this(grid,Domain) = fine_level_variable(f_neighbor).coarsenValues(Domain,ref_ratio);
+    for (f_neighbor,Domain) in level_invalid_region(grid)! do
+      this(grid,Domain) = fine_level_variable(f_neighbor)!.coarsenValues(Domain,ref_ratio);
   }
 }
 // /|""""""""""""""""""""""""""""""""""""""""""""""""""""""/|
