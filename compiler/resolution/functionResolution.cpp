@@ -9597,7 +9597,6 @@ static void replaceRuntimeTypePrims(std::vector<BaseAST*>& asts) {
 
 static Symbol* resolvePrimInitGetField(CallExpr* call);
 
-static void    resolvePrimInit(CallExpr* call, Symbol* val, Expr* fieldNameExpr, Type* type);
 static void    resolvePrimInit(CallExpr* call, Symbol* val, Type* type);
 
 static void resolvePrimInitNonGenericRecordVar(CallExpr* call,
@@ -9615,7 +9614,6 @@ static void    primInitHaltForUnacceptableGeneric(CallExpr* call, Type* type, Sy
 
 void resolvePrimInit(CallExpr* call) {
   Expr* valExpr = NULL;
-  Expr* fieldNameExpr = NULL;
   Expr* typeExpr = NULL;
 
   INT_ASSERT(call->isPrimitive(PRIM_DEFAULT_INIT_VAR) ||
@@ -9628,7 +9626,6 @@ void resolvePrimInit(CallExpr* call) {
   }
 
   valExpr = call->get(1);
-  fieldNameExpr = NULL;
   typeExpr = call->get(2);
   INT_ASSERT(valExpr && typeExpr);
 
@@ -9638,7 +9635,7 @@ void resolvePrimInit(CallExpr* call) {
 
   if (SymExpr* se = toSymExpr(typeExpr)) {
     if (se->symbol()->hasFlag(FLAG_TYPE_VARIABLE) == true) {
-      resolvePrimInit(call, val, fieldNameExpr, resolveTypeAlias(se));
+      resolvePrimInit(call, val, resolveTypeAlias(se));
 
     } else {
       USR_FATAL(call, "invalid type specification");
@@ -9647,7 +9644,7 @@ void resolvePrimInit(CallExpr* call) {
   } else if (CallExpr* ce = toCallExpr(typeExpr)) {
     if (Symbol* field = resolvePrimInitGetField(ce)) {
       if (field->hasFlag(FLAG_TYPE_VARIABLE) == true) {
-        resolvePrimInit(call, val, fieldNameExpr, field->typeInfo());
+        resolvePrimInit(call, val, field->typeInfo());
 
       } else {
         USR_FATAL(call, "invalid type specification");
@@ -9693,34 +9690,6 @@ static Symbol* resolvePrimInitGetField(CallExpr* call) {
   return retval;
 }
 
-
-static void resolvePrimInit(CallExpr* call,
-                            Symbol* val,
-                            Expr* fieldNameExpr,
-                            Type* type) {
-
-  if (fieldNameExpr == NULL) {
-    resolvePrimInit(call, val, type);
-  } else {
-    // TODO: this is dead code
-    INT_FATAL("dead code");
-
-    // Reduce it to variable initialization
-    //   - create temporary variable
-    //   - default-initialize it
-    //   - move it to the field
-    VarSymbol* temp = newTemp("default_tmp", type);
-    Expr* stmt = call->getStmtExpr();
-    stmt->insertBefore(new DefExpr(temp));
-    resolvePrimInit(call, temp, type);
-
-    CallExpr* setit = new CallExpr(PRIM_SET_MEMBER, val,
-                                   fieldNameExpr->copy(), temp);
-
-    stmt->insertBefore(setit);
-    resolveExpr(setit);
-  }
-}
 
 // Does 'val' feed into a tuple? Ex.:
 //   default init var( elt_x1 type owned Foo )
