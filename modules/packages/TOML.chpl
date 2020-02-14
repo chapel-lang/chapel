@@ -649,8 +649,21 @@ used to recursively hold tables and respective values
       this.tag = fieldArr;
     }
 
+    pragma "no doc"
+    proc init(arr: [?dom] unmanaged Toml?) where isAssociativeDom(dom) == false  {
+      this.dom = dom;
+      this.arr = arr;
+      this.tag = fieldArr;
+    }
+
     // List
     proc init(lst: list(unmanaged Toml)) {
+      // Cheat by translating directly into an array for now.
+      this.init(lst.toArray());
+    }
+
+    pragma "no doc"
+    proc init(lst: list(unmanaged Toml?)) {
       // Cheat by translating directly into an array for now.
       this.init(lst.toArray());
     }

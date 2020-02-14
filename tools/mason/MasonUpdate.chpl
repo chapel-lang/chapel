@@ -171,29 +171,27 @@ proc updateRegistry(tf: string, args: list(string)) {
   }
 }
 
-proc parseChplVersion(maybeBrick: borrowed Toml?): (VersionInfo, VersionInfo) {
+proc parseChplVersion(brick: borrowed Toml?): (VersionInfo, VersionInfo) {
   use Regexp;
 
-  if maybeBrick == nil {
+  if brick == nil {
     stderr.writeln("Error: Unable to parse manifest file");
     exit(1);
   }
-
-  var brick = maybeBrick!;
 
   // Assert some expected fields are not nil
-  if brick['name'] == nil || brick['version'] == nil{
+  if brick!['name'] == nil || brick!['version'] == nil{
     stderr.writeln("Error: Unable to parse manifest file");
     exit(1);
   }
 
-  if brick['chplVersion'] == nil {
-    const name = brick["name"]!.s + "-" + brick["version"]!.s;
+  if brick!['chplVersion'] == nil {
+    const name = brick!["name"]!.s + "-" + brick!["version"]!.s;
     stderr.writeln("Brick '", name, "' missing required 'chplVersion' field");
     exit(1);
   }
 
-  const chplVersion = brick["chplVersion"]!.s;
+  const chplVersion = brick!["chplVersion"]!.s;
   var low, hi : VersionInfo;
 
   try {
@@ -242,7 +240,7 @@ proc parseChplVersion(maybeBrick: borrowed Toml?): (VersionInfo, VersionInfo) {
     if (low <= hi) == false then
       throw new owned MasonError("Lower bound of chplVersion must be <= upper bound: " + low.str() + " > " + hi.str());
   } catch e : Error {
-    const name = brick["name"]!.s + "-" + brick["version"]!.s;
+    const name = brick!["name"]!.s + "-" + brick!["version"]!.s;
     stderr.writeln("Invalid chplVersion in package '", name, "': ", chplVersion);
     stderr.writeln("Details: ", e.message());
     exit(1);
@@ -346,7 +344,7 @@ private proc createDepTree(root: unmanaged Toml) {
 }
 
 private proc createDepTrees(depTree: unmanaged Toml, ref deps: list(unmanaged Toml), name: string) : unmanaged Toml {
-  var depList: list(unmanaged Toml);
+  var depList: list(unmanaged Toml?);
   while deps.size > 0 {
     var dep = deps[1];
 
