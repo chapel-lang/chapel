@@ -9709,6 +9709,9 @@ static void resolvePrimInit(CallExpr* call, Symbol* val, Type* type) {
   // any type with a defaultValue is easy enough
   // (expect this to handle numeric types and classes)
   } else if (type->defaultValue != NULL) {
+    // note: it is important that param cases are handled here rather
+    // than in lowerPrimInit.
+
     // note: error for bad param initialization checked for in resolving move
 
     if (!call->isPrimitive(PRIM_INIT_VAR_SPLIT_DECL)) {
