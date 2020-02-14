@@ -54,10 +54,10 @@ public:
   bool            hasExceptList()                                        const;
 
   bool            isARename(const char* name)                            const;
-  bool            isARename()                                            const;
+  virtual bool isARename() const;
 
   const char*     getRename(const char* name)                            const;
-  const char*     getRename()                                            const;
+  virtual const char* getRename() const;
 
   void            scopeResolve(ResolveScope* scope);
 
@@ -98,7 +98,6 @@ public:
   bool isPrivate;
 
 private:
-  const char*                        modRename;
   bool                               except;
   std::vector<const char*>           methodsAndFields;
   std::vector<const char*>           functionsToAlwaysCheck;

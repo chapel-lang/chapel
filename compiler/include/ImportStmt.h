@@ -27,6 +27,7 @@ class ResolveScope;
 class ImportStmt: public VisibilityStmt {
  public:
   ImportStmt(BaseAST* source);
+  ImportStmt(BaseAST* source, const char* rename);
 
   DECLARE_COPY(ImportStmt);
 
@@ -39,6 +40,9 @@ class ImportStmt: public VisibilityStmt {
   virtual void verify();
 
   virtual GenRet codegen();
+
+  virtual bool isARename() const;
+  virtual const char* getRename() const;
 
   void scopeResolve(ResolveScope* scope);
 

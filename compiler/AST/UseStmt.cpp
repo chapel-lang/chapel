@@ -157,9 +157,8 @@ bool UseStmt::isARename(const char* name) const {
   return renamed.count(name) == 1;
 }
 
-// Specifically for when the module being used is renamed
 bool UseStmt::isARename() const {
-  return modRename[0] != '\0';
+  return VisibilityStmt::isARename();
 }
 
 const char* UseStmt::getRename(const char* name) const {
@@ -176,7 +175,7 @@ const char* UseStmt::getRename(const char* name) const {
 }
 
 const char* UseStmt::getRename() const {
-  return modRename;
+  return VisibilityStmt::getRename();
 }
 
 /************************************* | **************************************

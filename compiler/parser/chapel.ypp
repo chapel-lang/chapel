@@ -670,6 +670,8 @@ use_stmt:
 
 import_stmt:
   TIMPORT ident_use TSEMI { $$ = buildImportStmt(new UnresolvedSymExpr($2)); }
+| TIMPORT ident_use TAS ident_use TSEMI
+  { $$ = buildImportStmt(new UnresolvedSymExpr($2), $4); }
 ;
 
 require_stmt:

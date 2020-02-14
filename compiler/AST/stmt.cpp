@@ -70,6 +70,15 @@ VisibilityStmt::VisibilityStmt(AstTag astTag): Stmt(astTag) {
 VisibilityStmt::~VisibilityStmt() {
 }
 
+// Specifically for when the module being used or imported is renamed
+bool VisibilityStmt::isARename() const {
+  return modRename[0] != '\0';
+}
+
+const char* VisibilityStmt::getRename() const {
+  return modRename;
+}
+
 //
 // Extends the scope's block statement to store this node, after replacing the
 // UnresolvedSymExpr we store with the found symbol

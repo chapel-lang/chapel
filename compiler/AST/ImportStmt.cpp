@@ -21,6 +21,7 @@
 
 #include "AstVisitor.h"
 #include "ResolveScope.h"
+#include "stringutil.h"
 
 
 /************************************* | **************************************
@@ -42,8 +43,26 @@ ImportStmt::ImportStmt(BaseAST* source) : VisibilityStmt(E_ImportStmt) {
   gImportStmts.add(this);
 }
 
+ImportStmt::ImportStmt(BaseAST* source,
+                       const char* rename) : VisibilityStmt(E_ImportStmt) {
+
+  this->modRename = astr(rename);
+
+  if (Symbol* b = toSymbol(source)) {
+    src = new SymExpr(b);
+
+  } else if (Expr* b = toExpr(source)) {
+    src = b;
+
+  } else {
+    INT_FATAL(this, "Bad mod in ImportStmt constructor");
+  }
+
+  gImportStmts.add(this);
+}
+
 ImportStmt* ImportStmt::copyInner(SymbolMap* map) {
-  ImportStmt* _this = new ImportStmt(COPY_INT(src));
+  ImportStmt* _this = new ImportStmt(COPY_INT(src), modRename);
 
   return _this;
 }
@@ -77,6 +96,14 @@ void ImportStmt::verify() {
   }
 
   verifyNotOnList(src);
+}
+
+bool ImportStmt::isARename() const {
+  return VisibilityStmt::isARename();
+}
+
+const char* ImportStmt::getRename() const {
+  return VisibilityStmt::getRename();
 }
 
 //
