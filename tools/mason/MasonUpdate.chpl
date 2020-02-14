@@ -165,7 +165,7 @@ proc updateRegistry(tf: string, args: list(string)) {
       const localRegistry = registryHome;
       mkdir(localRegistry, parents=true);
       const cloneRegistry = 'git clone -q ' + registry + ' .';
-      writeln("Updating ", registry, "-registry");
+      writeln("Updating ", registry);
       gitC(localRegistry, cloneRegistry);
     }
   }
