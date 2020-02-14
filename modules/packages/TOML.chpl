@@ -593,7 +593,7 @@ used to recursively hold tables and respective values
     // Toml
     proc init(A: [?D] unmanaged Toml) where isAssociativeDom(D) {
       this.complete();
-      for i in D do this.A[i] = A[i]?;
+      for i in D do this.A[i] = A[i];
       this.tag = fieldToml;
     }
 
