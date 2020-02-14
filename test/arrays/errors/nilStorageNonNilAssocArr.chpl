@@ -19,7 +19,7 @@ proc main() {
   var a: [d] TestClass;
 
   // Some sort of error should have been emitted by this point.
-  a += "key";
+  d += "key";
 
   // This call will emit a nil error (which shouldn't be possible).
   writeln(a);
