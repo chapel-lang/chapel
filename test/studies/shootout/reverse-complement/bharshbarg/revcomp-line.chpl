@@ -120,7 +120,7 @@ proc main(args: [] string) {
     var sectionStart = lineStart;
     while input.readUntil("\n".toByte(), data) > 0 {
       if data[lineStart] == ">".toByte() {
-        begin process(data, sectionStart, lineStart-2);
+        begin with (ref data) process(data, sectionStart, lineStart-2);
         sectionStart = data.size+1;
       }
       lineStart = data.size + 1;
@@ -137,7 +137,7 @@ proc main(args: [] string) {
   stdoutBin.write(data.toArray());
 }
 
-proc process(data, in start, in end) {
+proc process(ref data, in start, in end) {
   proc advance(ref cursor, dir) {
     do { cursor += dir; } while data[cursor] == "\n".toByte();
   }

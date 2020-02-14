@@ -217,6 +217,57 @@ static FnSymbol* findForallexprFollower(FnSymbol* serialIter) {
   return NULL;
 }
 
+static bool recordContainsNonNilableOwned(Type* t) {
+  if (isManagedPtrType(t) &&
+      getManagedPtrManagerType(t) == dtOwned &&
+      isNonNilableClassType(t))
+    return true;
+
+  if (isRecord(t)) {
+    AggregateType* at = toAggregateType(t);
+
+    for_fields(field, at) {
+      if (recordContainsNonNilableOwned(field->getValType()))
+        return true;
+    }
+  }
+
+  return false;
+}
+static bool recordContainsOwned(Type* t) {
+  if (isManagedPtrType(t) &&
+      getManagedPtrManagerType(t) == dtOwned)
+    return true;
+
+  if (isRecord(t)) {
+    AggregateType* at = toAggregateType(t);
+
+    for_fields(field, at) {
+      if (recordContainsOwned(field->getValType()))
+        return true;
+    }
+  }
+
+  return false;
+}
+static bool recordContainsNonNilable(Type* t) {
+  if (isNonNilableClassType(t))
+    return true;
+
+  if (isRecord(t)) {
+    AggregateType* at = toAggregateType(t);
+
+    for_fields(field, at) {
+      if (recordContainsNonNilable(field->getValType()))
+        return true;
+    }
+  }
+
+  return false;
+}
+
+
+
 static Expr* preFoldPrimOp(CallExpr* call) {
   Expr* retval = NULL;
 
@@ -250,7 +301,7 @@ static Expr* preFoldPrimOp(CallExpr* call) {
     if (call->numActuals() > 1) {
       USR_FATAL(call, "too many arguments to 'gather tests'");
     }
-    
+
     Type* testType = call->get(1)->getValType();
     forv_Vec(FnSymbol, fn, gFnSymbols) {
       if (fn->throwsError()) {
@@ -284,7 +335,7 @@ static Expr* preFoldPrimOp(CallExpr* call) {
 
   case PRIM_GET_TEST_BY_INDEX: {
     int64_t index    =        0;
-    
+
     if (call->numActuals() == 0) {
       USR_FATAL(call, "illegal call of 'get test by index'. Expected an argument of type 'int'");
     }
@@ -328,7 +379,7 @@ static Expr* preFoldPrimOp(CallExpr* call) {
       int index = testNameIndex[name];
       retval = testCaptureVector[index-1]->copy();
       call->replace(retval);
-      break; 
+      break;
     }
     else {
       USR_FATAL(call, "No test function with name '%s'",name);
@@ -336,14 +387,21 @@ static Expr* preFoldPrimOp(CallExpr* call) {
   }
 
   case PRIM_CALL_RESOLVES:
-  case PRIM_METHOD_CALL_RESOLVES: {
+  case PRIM_CALL_AND_FN_RESOLVES:
+  case PRIM_METHOD_CALL_RESOLVES:
+  case PRIM_METHOD_CALL_AND_FN_RESOLVES: {
     Expr* fnName   = NULL;
     Expr* callThis = NULL;
     int   firstArg = 0;
 
+    bool method = call->isPrimitive(PRIM_METHOD_CALL_RESOLVES) ||
+                  call->isPrimitive(PRIM_METHOD_CALL_AND_FN_RESOLVES);
+    bool andFn = call->isPrimitive(PRIM_CALL_AND_FN_RESOLVES) ||
+                 call->isPrimitive(PRIM_METHOD_CALL_AND_FN_RESOLVES);
+
     // this would be easier if we had a non-normalized AST!
     // That is, if this call could contain a whole expression subtree.
-    if (call->isPrimitive(PRIM_METHOD_CALL_RESOLVES) ) {
+    if (method) {
       // get(1) should be a receiver
       // get(2) should be a string function name.
       callThis = call->get(1);
@@ -372,7 +430,7 @@ static Expr* preFoldPrimOp(CallExpr* call) {
     // temporarily add a call to try resolving.
     CallExpr* tryCall = NULL;
 
-    if (call->isPrimitive(PRIM_METHOD_CALL_RESOLVES)) {
+    if (method) {
       tryCall = new CallExpr(new UnresolvedSymExpr(name),
                              gMethodToken,
                              callThis->copy());
@@ -396,7 +454,7 @@ static Expr* preFoldPrimOp(CallExpr* call) {
     }
 
     // Try to resolve it.
-    if (tryResolveCall(tryCall)) {
+    if (tryResolveCall(tryCall, andFn)) {
       retval = new SymExpr(gTrue);
 
     } else {
@@ -793,6 +851,147 @@ static Expr* preFoldPrimOp(CallExpr* call) {
     } else {
       retval = new SymExpr(gFalse);
     }
+
+    call->replace(retval);
+
+    break;
+  }
+  case PRIM_IS_COPYABLE:
+  case PRIM_IS_CONST_COPYABLE:
+  case PRIM_IS_ASSIGNABLE:
+  case PRIM_IS_CONST_ASSIGNABLE:
+  case PRIM_HAS_DEFAULT_VALUE: {
+    Type* t = call->get(1)->typeInfo();
+
+    bool val = true;
+    if (isRecord(t)) {
+      AggregateType* at = toAggregateType(t);
+
+      bool isNonNilableOwned = isManagedPtrType(t) &&
+                               getManagedPtrManagerType(t) == dtOwned &&
+                               isNonNilableClassType(t);
+
+      TypeSymbol* ts = t->symbol;
+      if (!ts->hasFlag(FLAG_TYPE_ASSIGN_FROM_CONST) &&
+          !ts->hasFlag(FLAG_TYPE_ASSIGN_FROM_REF) &&
+          !ts->hasFlag(FLAG_TYPE_ASSIGN_MISSING)) {
+
+        if (isNonNilableOwned) {
+          ts->addFlag(FLAG_TYPE_ASSIGN_MISSING);
+        } else {
+          // Try resolving a test = to set the flags
+          FnSymbol* assign = findAssignFn(at);
+          if (assign == NULL) {
+            ts->addFlag(FLAG_TYPE_ASSIGN_MISSING);
+          } else if (assign->hasFlag(FLAG_COMPILER_GENERATED)) {
+            if (recordContainsNonNilableOwned(t))
+              ts->addFlag(FLAG_TYPE_ASSIGN_MISSING);
+            else if (recordContainsOwned(t))
+              ts->addFlag(FLAG_TYPE_ASSIGN_FROM_REF);
+            else
+              ts->addFlag(FLAG_TYPE_ASSIGN_FROM_CONST);
+          } else {
+            // formals are lhs, rhs
+            ArgSymbol* rhs = assign->getFormal(2);
+            IntentTag intent = concreteIntentForArg(rhs);
+            if (intent == INTENT_IN ||
+                intent == INTENT_CONST_IN ||
+                intent == INTENT_CONST_REF) {
+              ts->addFlag(FLAG_TYPE_ASSIGN_FROM_CONST);
+            } else {
+              // this case includes INTENT_REF_MAYBE_CONST
+              ts->addFlag(FLAG_TYPE_ASSIGN_FROM_REF);
+            }
+          }
+        }
+      }
+      if (!ts->hasFlag(FLAG_TYPE_INIT_EQUAL_FROM_CONST) &&
+          !ts->hasFlag(FLAG_TYPE_INIT_EQUAL_FROM_REF) &&
+          !ts->hasFlag(FLAG_TYPE_INIT_EQUAL_MISSING)) {
+
+        if (isNonNilableOwned) {
+          ts->addFlag(FLAG_TYPE_INIT_EQUAL_MISSING);
+        } else {
+          // Try resolving a test init= to set the flags
+          FnSymbol* initEq = findCopyInitFn(at);
+          if (initEq == NULL) {
+            ts->addFlag(FLAG_TYPE_INIT_EQUAL_MISSING);
+          } else if (initEq->hasFlag(FLAG_COMPILER_GENERATED)) {
+            if (recordContainsNonNilableOwned(t))
+              ts->addFlag(FLAG_TYPE_INIT_EQUAL_MISSING);
+            else if (recordContainsOwned(t))
+              ts->addFlag(FLAG_TYPE_INIT_EQUAL_FROM_REF);
+            else
+              ts->addFlag(FLAG_TYPE_INIT_EQUAL_FROM_CONST);
+          } else {
+            // formals are mt, this, other
+            ArgSymbol* other = initEq->getFormal(3);
+            IntentTag intent = concreteIntentForArg(other);
+            if (intent == INTENT_IN ||
+                intent == INTENT_CONST_IN ||
+                intent == INTENT_CONST_REF) {
+              ts->addFlag(FLAG_TYPE_INIT_EQUAL_FROM_CONST);
+            } else {
+              // this case includes INTENT_REF_MAYBE_CONST
+              ts->addFlag(FLAG_TYPE_INIT_EQUAL_FROM_REF);
+            }
+          }
+        }
+      }
+
+      if (!ts->hasFlag(FLAG_TYPE_DEFAULT_VALUE) &&
+          !ts->hasFlag(FLAG_TYPE_NO_DEFAULT_VALUE)) {
+
+        if (isNonNilableClassType(t)) {
+          ts->addFlag(FLAG_TYPE_NO_DEFAULT_VALUE);
+        } else if (isNilableClassType(t)) {
+          ts->addFlag(FLAG_TYPE_DEFAULT_VALUE);
+        } else {
+          // Try resolving a test init() to set the flags
+          FnSymbol* initZero = findZeroArgInitFn(at);
+          if (initZero == NULL) {
+            ts->addFlag(FLAG_TYPE_NO_DEFAULT_VALUE);
+          } else if (initZero->hasFlag(FLAG_COMPILER_GENERATED)) {
+            if (recordContainsNonNilable(t))
+              ts->addFlag(FLAG_TYPE_NO_DEFAULT_VALUE);
+            else
+              ts->addFlag(FLAG_TYPE_DEFAULT_VALUE);
+          } else {
+            ts->addFlag(FLAG_TYPE_DEFAULT_VALUE);
+          }
+        }
+      }
+
+
+      if (call->isPrimitive(PRIM_IS_COPYABLE))
+        val = ts->hasFlag(FLAG_TYPE_INIT_EQUAL_FROM_CONST) ||
+              ts->hasFlag(FLAG_TYPE_INIT_EQUAL_FROM_REF);
+      else if (call->isPrimitive(PRIM_IS_CONST_COPYABLE))
+        val = ts->hasFlag(FLAG_TYPE_INIT_EQUAL_FROM_CONST);
+      else if (call->isPrimitive(PRIM_IS_ASSIGNABLE))
+        val = ts->hasFlag(FLAG_TYPE_ASSIGN_FROM_CONST) ||
+              ts->hasFlag(FLAG_TYPE_ASSIGN_FROM_REF);
+      else if (call->isPrimitive(PRIM_IS_CONST_ASSIGNABLE))
+        val = ts->hasFlag(FLAG_TYPE_ASSIGN_FROM_CONST);
+      else if (call->isPrimitive(PRIM_HAS_DEFAULT_VALUE))
+        val = ts->hasFlag(FLAG_TYPE_DEFAULT_VALUE);
+      else
+        INT_FATAL("not handled");
+
+    } else {
+      // Non-record types are always copyable/assignable from const
+      // and almost always default initializeable
+      if (call->isPrimitive(PRIM_HAS_DEFAULT_VALUE))
+        val = !isNonNilableClassType(t);
+      else
+        val = true;
+    }
+
+
+    if (val)
+      retval = new SymExpr(gTrue);
+    else
+      retval = new SymExpr(gFalse);
 
     call->replace(retval);
 
@@ -1568,7 +1767,7 @@ static Expr* preFoldNamed(CallExpr* call) {
           Type* newType = toSE->symbol()->type;
 
           bool fromEnum = is_enum_type(oldType);
-          bool fromString = (oldType == dtString || 
+          bool fromString = (oldType == dtString ||
                              oldType == dtStringC);
           bool fromBytes = oldType == dtBytes;
           bool fromIntUint = is_int_type(oldType) ||
@@ -2142,10 +2341,10 @@ static Expr* createFunctionAsValue(CallExpr *call) {
   FnSymbol* wrapper = new FnSymbol("wrapper");
 
   wrapper->addFlag(FLAG_INLINE);
-  
+
   // Insert the wrapper into the AST now so we can resolve some things.
   call->getStmtExpr()->insertBefore(new DefExpr(wrapper));
-  
+
   BlockStmt* block = new BlockStmt();
   wrapper->insertAtTail(block);
 
@@ -2153,7 +2352,7 @@ static Expr* createFunctionAsValue(CallExpr *call) {
 
   NamedExpr* usym = new NamedExpr(astr_chpl_manager,
                                   new SymExpr(dtUnmanaged->symbol));
-  
+
   // Create a new "unmanaged child".
   CallExpr* init = new CallExpr(PRIM_NEW, usym,
                                 new CallExpr(new SymExpr(undecorated->symbol)));

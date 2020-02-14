@@ -1,0 +1,4 @@
+perfkeys: Append, InsertFront, PopBack, PopFront, IterSerial, IterParallel, RandomAccess1, Clear
+files: listBenchmark1.dat
+ylabel: Time (seconds)
+graphtitle: List Operations

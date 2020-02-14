@@ -1995,6 +1995,7 @@ const char* astr_forexpr = NULL;
 const char* astr_loopexpr_iter = NULL;
 const char* astrPostfixBang = NULL;
 const char* astrBorrow = NULL;
+const char* astr_init_coerce_tmp = NULL;
 
 void initAstrConsts() {
   astrSassign = astr("=");
@@ -2027,6 +2028,7 @@ void initAstrConsts() {
   astrPostfixBang = astr("postfix!");
 
   astrBorrow = astr("borrow");
+  astr_init_coerce_tmp = astr("init_coerce_tmp");
 }
 
 /************************************* | **************************************

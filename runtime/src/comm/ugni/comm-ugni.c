@@ -1497,8 +1497,6 @@ static void      do_nic_amo_nf_buff(void*, c_nodeid_t, void*, size_t,
                                     gni_fma_cmd_type_t, mem_region_t*);
 static void      do_nic_amo_nf_V(int, uint64_t*, c_nodeid_t*, void**, size_t*,
                                  gni_fma_cmd_type_t*, mem_region_t**);
-static void      amo_add_real32_cpu_cmpxchg(void*, void*, void*);
-static void      amo_add_real64_cpu_cmpxchg(void*, void*, void*);
 static void      fork_call_common(int, c_sublocid_t,
                                   chpl_fn_int_t,
                                   chpl_comm_on_bundle_t*, size_t,
@@ -3456,6 +3454,17 @@ size_t chpl_comm_impl_regMemAllocThreshold(void)
 static __thread uint64_t defaultInit_ts;
 #endif
 
+static pthread_once_t warned_out_of_mem_regions = PTHREAD_ONCE_INIT;
+static void issue_out_of_mem_regions_warning(void)
+{
+  char buf[200];
+  snprintf(buf, sizeof(buf),
+           "no more registered memory region table entries (max is %d).\n"
+           "         Change using CHPL_RT_COMM_UGNI_MAX_MEM_REGIONS.",
+           max_mem_regions);
+  chpl_warning(buf, 0, 0);
+}
+
 void* chpl_comm_impl_regMemAlloc(size_t size,
                                  chpl_mem_descInt_t desc, int ln, int32_t fn)
 {
@@ -3474,15 +3483,7 @@ void* chpl_comm_impl_regMemAlloc(size_t size,
   if (atomic_fetch_sub_int_least32_t(&mreg_free_cnt, 1) < 1) {
     atomic_fetch_add_int_least32_t(&mreg_free_cnt, 1);
 
-    static atomic_int_least8_t spoke;
-    if (atomic_compare_exchange_strong_int_least8_t(&spoke, 0, 1)) {
-      char buf[200];
-      snprintf(buf, sizeof(buf),
-               "no more registered memory region table entries (max is %d).\n"
-               "         Change using CHPL_RT_COMM_UGNI_MAX_MEM_REGIONS.",
-               max_mem_regions);
-      chpl_warning(buf, 0, 0);
-    }
+    (void)pthread_once(&warned_out_of_mem_regions, issue_out_of_mem_regions_warning);
 
     DBG_P_LP(DBGF_MEMREG, "chpl_regMemAlloc(%#zx): out of table entries", size);
     return NULL;
@@ -4461,26 +4462,7 @@ size_t do_amo_on_cpu(fork_amo_cmd_t cmd,
     break;
 
   case add_r32:
-    //
-    // Emulate 32-bit real add using compare-exchange.
-    //
-    {
-      int_least32_t expected;
-      int_least32_t desired;
-      chpl_bool32 done;
-
-      do {
-        expected = atomic_load_int_least32_t((atomic_int_least32_t*) obj);
-        *(float*) &desired  = *(float*) &expected + *(float*) opnd1;
-        done = atomic_compare_exchange_strong_int_least32_t
-                 ((atomic_int_least32_t*) obj, expected, desired);
-      } while (!done);
-
-      if (res != NULL) {
-        memcpy(res, &expected, sizeof(expected));
-        res_size = sizeof(expected);
-      }
-    }
+    CPU_INT_ARITH_AMO(add, _real32);
     break;
 
   case add_r64:
@@ -4491,22 +4473,13 @@ size_t do_amo_on_cpu(fork_amo_cmd_t cmd,
     // coherence do this one on the NIC as well.
     //
     {
-      int_least64_t expected;
-      int_least64_t desired;
       mem_region_t* mr;
 
       if ((mr = mreg_for_local_addr(obj)) == NULL) {
-        chpl_bool32 done;
-
-        do {
-          expected =
-            atomic_load_int_least64_t((atomic_int_least64_t*) obj);
-          *(double*) &desired = *(double*) &expected + *(double*) opnd1;
-          done = atomic_compare_exchange_strong_int_least64_t
-                   ((atomic_int_least64_t*) obj, expected, desired);
-        } while (!done);
-      }
-      else {
+        CPU_INT_ARITH_AMO(add, _real64);
+      } else {
+        int_least64_t expected;
+        int_least64_t desired;
         int_least64_t nic_res;
 
         do {
@@ -4517,12 +4490,13 @@ size_t do_amo_on_cpu(fork_amo_cmd_t cmd,
                      sizeof(nic_res), amo_cmd_2_nic_op(cmpxchg_64, 1),
                      &nic_res, mr);
         } while (nic_res != expected);
+
+        if (res != NULL) {
+          memcpy(res, &expected, sizeof(expected));
+          res_size = sizeof(expected);
+        }
       }
 
-      if (res != NULL) {
-        memcpy(res, &expected, sizeof(expected));
-        res_size = sizeof(expected);
-      }
     }
     break;
 
@@ -6678,7 +6652,8 @@ DEFINE_CHPL_COMM_ATOMIC_INT_OP(uint64, add, add_i64, uint_least64_t)
                    opnd, (int) loc, obj);                               \
                                                                         \
           if (chpl_numNodes == 1) {                                     \
-            amo_add_##_f##_cpu_cmpxchg(NULL, obj, opnd);                \
+            (void) atomic_fetch_add_##_t((atomic_##_t*) obj,            \
+                                         *(_t*) opnd);                  \
             return;                                                     \
           }                                                             \
                                                                         \
@@ -6711,7 +6686,8 @@ DEFINE_CHPL_COMM_ATOMIC_INT_OP(uint64, add, add_i64, uint_least64_t)
                    opnd, (int) loc, obj);                               \
                                                                         \
           if (chpl_numNodes == 1) {                                     \
-            amo_add_##_f##_cpu_cmpxchg(NULL, obj, opnd);                \
+            (void) atomic_fetch_add_##_t((atomic_##_t*) obj,            \
+                                         *(_t*) opnd);                  \
             return;                                                     \
           }                                                             \
                                                                         \
@@ -6746,7 +6722,9 @@ DEFINE_CHPL_COMM_ATOMIC_INT_OP(uint64, add, add_i64, uint_least64_t)
                    opnd, (int) loc, obj, res);                          \
                                                                         \
           if (chpl_numNodes == 1) {                                     \
-            amo_add_##_f##_cpu_cmpxchg(res, obj, opnd);                 \
+            *(_t*) res =                                                \
+                atomic_fetch_add_##_t((atomic_##_t*) obj,               \
+                                         *(_t*) opnd);                  \
             return;                                                     \
           }                                                             \
                                                                         \
@@ -6766,8 +6744,8 @@ DEFINE_CHPL_COMM_ATOMIC_INT_OP(uint64, add, add_i64, uint_least64_t)
           }                                                             \
         }
 
-DEFINE_CHPL_COMM_ATOMIC_REAL_OP(real32, add_r32, float)
-DEFINE_CHPL_COMM_ATOMIC_REAL_OP(real64, add_r64, double)
+DEFINE_CHPL_COMM_ATOMIC_REAL_OP(real32, add_r32, _real32)
+DEFINE_CHPL_COMM_ATOMIC_REAL_OP(real64, add_r64, _real64)
 
 #undef DEFINE_CHPL_COMM_ATOMIC_REAL_OP
 
@@ -6839,8 +6817,8 @@ DEFINE_CHPL_COMM_ATOMIC_SUB(int32, int_least32_t, NEGATE_I32)
 DEFINE_CHPL_COMM_ATOMIC_SUB(int64, int_least64_t, NEGATE_I64)
 DEFINE_CHPL_COMM_ATOMIC_SUB(uint32, int_least32_t, NEGATE_U_OR_R)
 DEFINE_CHPL_COMM_ATOMIC_SUB(uint64, int_least64_t, NEGATE_U_OR_R)
-DEFINE_CHPL_COMM_ATOMIC_SUB(real32, float, NEGATE_U_OR_R)
-DEFINE_CHPL_COMM_ATOMIC_SUB(real64, double, NEGATE_U_OR_R)
+DEFINE_CHPL_COMM_ATOMIC_SUB(real32, _real32, NEGATE_U_OR_R)
+DEFINE_CHPL_COMM_ATOMIC_SUB(real64, _real64, NEGATE_U_OR_R)
 
 #undef DEFINE_CHPL_COMM_ATOMIC_SUB
 
@@ -7044,56 +7022,6 @@ void do_nic_amo(void* opnd1, void* opnd2, c_nodeid_t locale,
     if (reg_result != &stack_result)
       amo_res_free(reg_result);
   }
-}
-
-
-static
-inline
-void amo_add_real32_cpu_cmpxchg(void* result, void* object, void* operand)
-{
-  float val;
-  int_least32_t expected;
-  int_least32_t desired;
-  chpl_bool cxr;
-
-  assert(sizeof(val) == sizeof(expected));
-
-  do {
-    val = *(volatile float*) object;
-    memcpy(&expected, &val, sizeof(val));
-    val += *(float*) operand;
-    memcpy(&desired, &val, sizeof(val));
-    cxr = atomic_compare_exchange_strong_int_least32_t
-            ((atomic_int_least32_t*) object, expected, desired);
-  } while (!cxr);
-
-  if (result != NULL)
-    memcpy(result, &expected, sizeof(val));
-}
-
-
-static
-inline
-void amo_add_real64_cpu_cmpxchg(void* result, void* object, void* operand)
-{
-  double val;
-  int_least64_t expected;
-  int_least64_t desired;
-  chpl_bool cxr;
-
-  assert(sizeof(val) == sizeof(expected));
-
-  do {
-    val = *(volatile double*) object;
-    memcpy(&expected, &val, sizeof(val));
-    val += *(double*) operand;
-    memcpy(&desired, &val, sizeof(val));
-    cxr = atomic_compare_exchange_strong_int_least64_t
-            ((atomic_int_least64_t*) object, expected, desired);
-  } while (!cxr);
-
-  if (result != NULL)
-    memcpy(result, &expected, sizeof(val));
 }
 
 

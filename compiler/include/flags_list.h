@@ -379,6 +379,17 @@ symbolFlag( FLAG_TEMP , npr, "temp" , "compiler-inserted temporary" )
 symbolFlag( FLAG_TUPLE , ypr, "tuple" , ncm )
 symbolFlag( FLAG_TUPLE_CAST_FN , ypr, "tuple cast fn" , ncm )
 symbolFlag( FLAG_TUPLE_WITH_REF , npr, "tuple contains ref" , ncm )
+
+symbolFlag( FLAG_TYPE_ASSIGN_FROM_CONST, npr, "type has = from const", "type supports assignment from a const rhs" )
+symbolFlag( FLAG_TYPE_ASSIGN_FROM_REF, npr, "type has = from ref", "type supports assignment from a potentially non-const rhs" )
+symbolFlag( FLAG_TYPE_ASSIGN_MISSING , npr, "type has no =", "type has no assign overload")
+symbolFlag( FLAG_TYPE_INIT_EQUAL_FROM_CONST,  npr, "type has init= from const" , "type supports init= with const other" )
+symbolFlag( FLAG_TYPE_INIT_EQUAL_FROM_REF,  npr, "type has init= from ref" , "type supports init= from a potentially non-const other argument" )
+symbolFlag( FLAG_TYPE_INIT_EQUAL_MISSING , npr, "type has no init=", "type has no init=" )
+symbolFlag( FLAG_TYPE_DEFAULT_VALUE , npr, "type has default value" , "type has a default value" )
+symbolFlag( FLAG_TYPE_NO_DEFAULT_VALUE , npr, "type has no default value" , "type has no default value" )
+
+
 symbolFlag( FLAG_TYPE_VARIABLE , npr, "type variable" , "contains a type instead of a value" )
 symbolFlag( FLAG_UNALIAS_FN,  ypr, "unalias fn" , "function to copy array slices when assigning to a user variable")
 symbolFlag( FLAG_UNCHECKED_THROWS,  ypr, "unchecked throws" , "function throws but handling the errors is not required even in strict mode")

@@ -116,12 +116,14 @@ struct perTxCtxInfo_t {
   struct fid_ep* txCtx;
   struct fid_cq* txCQ;
   struct fid_cntr* txCntr;
-  uint64_t numTxnsBegun;    // number of transactions ever initiated
+  uint64_t numTxns;  // CQ: num txns in flight now; Cntr: num ever initiated
 };
 
 static int tciTabLen;
 static struct perTxCtxInfo_t* tciTab;
 static chpl_bool tciTabFixedAssignments;
+
+static int txCQLen;
 
 //
 // Memory registration support.
@@ -170,9 +172,13 @@ static inline void tciFree(struct perTxCtxInfo_t*);
 static inline chpl_comm_nb_handle_t ofi_put(const void*, c_nodeid_t,
                                             void*, size_t);
 static inline void ofi_put_ll(const void*, c_nodeid_t,
-                              void*, size_t, void*);
+                              void*, size_t, void*, struct perTxCtxInfo_t*);
+static inline void do_remote_put_buff(void*, c_nodeid_t, void*, size_t);
 static inline chpl_comm_nb_handle_t ofi_get(void*, c_nodeid_t,
                                             void*, size_t);
+static inline void ofi_get_ll(void*, c_nodeid_t,
+                              void*, size_t, void*, struct perTxCtxInfo_t*);
+static inline void do_remote_get_buff(void*, c_nodeid_t, void*, size_t);
 static inline void waitForCQThisTxn(struct perTxCtxInfo_t*, atomic_bool*);
 static inline void waitForCQAllTxns(struct perTxCtxInfo_t*,
                                     chpl_comm_taskPrvData_t*);
@@ -255,53 +261,21 @@ static void ofiErrReport(const char*, int, const char*);
 
 ////////////////////////////////////////
 //
-// Network type
+// Providers
 //
 
-static pthread_once_t networkOnce = PTHREAD_ONCE_INIT;
-
-typedef enum {
-  networkUnknown,
-  networkAries,
-  networkVerbs,
-} network_t;
-
-static network_t network = networkUnknown;
-
-
-static
-void init_network(void) {
-  if (strcmp(CHPL_TARGET_PLATFORM, "cray-xc") == 0) {
-    network = networkAries;
-  }
-}
-
-
-static
-network_t getNetworkType(void) {
-  PTHREAD_CHK(pthread_once(&networkOnce, init_network));
-  return network;
-}
-
-
-////////////////////////////////////////
 //
-// Provider name
+// provider name in environment
 //
+
 static const char* ofi_provNameEnv = "FI_PROVIDER";
-
 static pthread_once_t provNameOnce = PTHREAD_ONCE_INIT;
 static const char* provName;
-
-static void setProvName(void);
-static const char* getProviderName(void);
-
 
 static
 void setProvName(void) {
   provName = getenv(ofi_provNameEnv);
 }
-
 
 static
 const char* getProviderName(void) {
@@ -309,26 +283,15 @@ const char* getProviderName(void) {
   return provName;
 }
 
-//
-// Provider-specific behavior control.
-//
-static chpl_bool provCtl_sizeAvsByNumEps;  // size AVs by numEPs (RxD)
-static chpl_bool provCtl_readAmoNeedsOpnd; // READ AMO needs operand (RxD)
-
 
 //
-// Is this name in the provider string?
+// provider name parsing
 //
-static
-chpl_bool isInProviderName(const char* s) {
-  if (ofi_info == NULL
-      || ofi_info->fabric_attr == NULL
-      || ofi_info->fabric_attr->prov_name == NULL) {
-    return false;
-  }
 
-  char pn[strlen(ofi_info->fabric_attr->prov_name) + 1];
-  strcpy(pn, ofi_info->fabric_attr->prov_name);
+static inline
+chpl_bool isInThisProviderName(const char* s, const char* prov_name) {
+  char pn[strlen(prov_name) + 1];
+  strcpy(pn, prov_name);
 
   char* tok;
   char* strSave;
@@ -341,6 +304,135 @@ chpl_bool isInProviderName(const char* s) {
   }
   return false;
 }
+
+
+//
+// provider type
+//
+typedef enum {
+  provType_gni,
+  provType_verbs,
+  provType_rxd,
+  provType_rxm,
+  provTypeCount
+} provider_t;
+
+
+//
+// provider sets
+//
+
+typedef chpl_bool providerSet_t[provTypeCount];
+
+static inline
+void providerSetZero(providerSet_t* s) {
+  memset(s, 0, sizeof(*s));
+}
+
+static inline
+void providerSetClear(providerSet_t* s, provider_t p) {
+  CHK_TRUE(p >= 0 && p < provTypeCount);
+  (*s)[p] = 0;
+}
+
+static inline
+void providerSetSet(providerSet_t* s, provider_t p) {
+  CHK_TRUE(p >= 0 && p < provTypeCount);
+  (*s)[p] = 1;
+}
+
+static inline
+int providerSetTest(providerSet_t* s, provider_t p) {
+  CHK_TRUE(p >= 0 && p < provTypeCount);
+  return (*s)[p] != 0;
+}
+
+
+//
+// providers available
+//
+
+static pthread_once_t providerAvailOnce = PTHREAD_ONCE_INIT;
+static providerSet_t providerAvailSet;
+
+static
+void init_providerAvail(void) {
+  struct fi_info* hints;
+  CHK_TRUE((hints = fi_allocinfo()) != NULL);
+  hints->ep_attr->type = FI_EP_RDM;
+  struct fi_info* info = NULL;
+  OFI_CHK(fi_getinfo(COMM_OFI_FI_VERSION, NULL, NULL, 0, hints, &info));
+  if (chpl_nodeID == 0) {
+    DBG_PRINTF(DBG_CFGFABSALL,
+               "==================== fabrics available with %s %s:",
+               ofi_provNameEnv,
+               (getProviderName() == NULL) ? "<unset>" : getProviderName());
+  }
+  for ( ; info != NULL; info = info->next) {
+    if (chpl_nodeID == 0) {
+      DBG_PRINTF(DBG_CFGFABSALL, "%s", fi_tostr(info, FI_TYPE_INFO));
+      DBG_PRINTF(DBG_CFGFABSALL, "----------");
+    }
+    const char* pn = info->fabric_attr->prov_name;
+    if (isInThisProviderName("gni", pn)) {
+      providerSetSet(&providerAvailSet, provType_gni);
+    } else if (isInThisProviderName("verbs", pn)) {
+      providerSetSet(&providerAvailSet, provType_verbs);
+    }
+  }
+  fi_freeinfo(info);
+  fi_freeinfo(hints);
+}
+
+static
+chpl_bool providerAvail(provider_t p) {
+  PTHREAD_CHK(pthread_once(&providerAvailOnce, init_providerAvail));
+  return providerSetTest(&providerAvailSet, p);
+}
+
+
+//
+// providers in use
+//
+
+static pthread_once_t providerInUseOnce = PTHREAD_ONCE_INIT;
+static providerSet_t providerInUseSet;
+
+static
+void init_providerInUse(void) {
+  //
+  // We can be using only one primary provider.
+  //
+  const char* pn = ofi_info->fabric_attr->prov_name;
+  if (isInThisProviderName("gni", pn)) {
+    providerSetSet(&providerInUseSet, provType_gni);
+  } else if (isInThisProviderName("verbs", pn)) {
+    providerSetSet(&providerInUseSet, provType_verbs);
+  }
+  //
+  // We can be using any number of utility providers.
+  //
+  if (isInThisProviderName("ofi_rxd", pn)) {
+    providerSetSet(&providerInUseSet, provType_rxd);
+  }
+  if (isInThisProviderName("ofi_rxm", pn)) {
+    providerSetSet(&providerInUseSet, provType_rxm);
+  }
+}
+
+static
+chpl_bool providerInUse(provider_t p) {
+  PTHREAD_CHK(pthread_once(&providerInUseOnce, init_providerInUse));
+  return providerSetTest(&providerInUseSet, p);
+}
+
+
+//
+// provider-specific behavior control
+//
+
+static chpl_bool provCtl_sizeAvsByNumEps;  // size AVs by numEPs (RxD)
+static chpl_bool provCtl_readAmoNeedsOpnd; // READ AMO needs operand (RxD)
 
 
 ////////////////////////////////////////
@@ -408,6 +500,224 @@ chpl_comm_taskPrvData_t* get_comm_taskPrvdata(void) {
 
 ////////////////////////////////////////
 //
+// transaction ordering
+//
+
+//
+// This is a little dummy memory buffer used when we need to do a
+// remote GET or PUT to enforce ordering.  Its contents must _not_
+// by considered meaningful, because it can be written to at any
+// time by any remote node.
+//
+static uint32_t* orderDummy;
+static uint32_t** orderDummyMap;
+
+
+////////////////////////////////////////
+//
+// bitmaps
+//
+
+#define bitmapElemWidth 64
+#define __bitmapBaseType_t(w) uint##w##_t
+#define _bitmapBaseType_t(w) __bitmapBaseType_t(w)
+#define bitmapBaseType_t _bitmapBaseType_t(bitmapElemWidth)
+
+struct bitmap_t {
+  size_t len;
+  bitmapBaseType_t map[0];
+};
+
+static inline
+size_t bitmapIdx(size_t i) {
+  return i / bitmapElemWidth;
+}
+
+static inline
+size_t bitmapOff(size_t i) {
+  return i % bitmapElemWidth;
+}
+
+static inline
+size_t bitmapNumElems(size_t len) {
+  return (len - 1) / bitmapElemWidth + 1;
+}
+
+static inline
+size_t bitmapSizeofMap(size_t len) {
+  return bitmapNumElems(len) * sizeof(bitmapBaseType_t);
+}
+
+static inline
+size_t bitmapSizeof(size_t len) {
+  return offsetof(struct bitmap_t, map) + bitmapSizeofMap(len);
+}
+
+static inline
+void bitmapZero(struct bitmap_t* b) {
+  memset(&b->map, 0, bitmapSizeofMap(b->len));
+}
+
+static inline
+bitmapBaseType_t bitmapElemBit(size_t i) {
+  return ((bitmapBaseType_t) 1) << bitmapOff(i);
+}
+
+static inline
+void bitmapSetBit(struct bitmap_t* b, size_t i) {
+  b->map[bitmapIdx(i)] |= bitmapElemBit(i);
+}
+
+static inline
+int bitmapIsSet(struct bitmap_t* b, size_t i) {
+  return (b->map[bitmapIdx(i)] & bitmapElemBit(i)) != 0;
+}
+
+#define BITMAP_FOREACH_SET(b, i)                                        \
+  for (size_t _ei = 0; _ei < bitmapNumElems((b)->len); _ei++) {         \
+    if ((b)->map[_ei] != 0) {                                           \
+      for (size_t _bi = 0; _bi < bitmapElemWidth; _bi++) {              \
+        if (((b)->map[_ei] & bitmapElemBit(_bi)) != 0) {                \
+          size_t i = _ei * bitmapElemWidth + _bi;
+
+#define BITMAP_FOREACH_SET_END  } } } }
+
+//
+// bitmapAlloc() and bitmapFree() aren't yet needed and may never be,
+// because so far these bitmaps are only used as appendages to the
+// {amo,get,put}_buff_task_info_t types.
+//
+
+
+////////////////////////////////////////
+//
+// task local buffering
+//
+
+// Largest size to use unordered transactions for
+#define MAX_UNORDERED_TRANS_SZ 1024
+
+//
+// Maximum number of PUTs/AMOs in a chained transaction list.  This
+// is a provisional value, not yet tuned.
+//
+#define MAX_TXNS_IN_FLIGHT 64
+
+#define MAX_CHAINED_PUT_LEN MAX_TXNS_IN_FLIGHT
+#define MAX_CHAINED_GET_LEN MAX_TXNS_IN_FLIGHT
+
+enum BuffType {
+  get_buff    = 1 << 1,
+  put_buff    = 1 << 2
+};
+
+// Per task information about GET buffers
+typedef struct {
+  int           vi;
+  void*         tgt_addr_v[MAX_CHAINED_GET_LEN];
+  c_nodeid_t    locale_v[MAX_CHAINED_GET_LEN];
+  uint64_t      remote_mr_v[MAX_CHAINED_GET_LEN];
+  void*         src_addr_v[MAX_CHAINED_GET_LEN];
+  size_t        size_v[MAX_CHAINED_GET_LEN];
+  void*         local_mr_v[MAX_CHAINED_GET_LEN];
+  struct bitmap_t nodeBitmap;
+} get_buff_task_info_t;
+
+// Per task information about PUT buffers
+typedef struct {
+  int           vi;
+  void*         tgt_addr_v[MAX_CHAINED_PUT_LEN];
+  c_nodeid_t    locale_v[MAX_CHAINED_PUT_LEN];
+  void*         src_addr_v[MAX_CHAINED_PUT_LEN];
+  char          src_v[MAX_CHAINED_PUT_LEN][MAX_UNORDERED_TRANS_SZ];
+  size_t        size_v[MAX_CHAINED_PUT_LEN];
+  uint64_t      remote_mr_v[MAX_CHAINED_PUT_LEN];
+  void*         local_mr_v[MAX_CHAINED_PUT_LEN];
+  struct bitmap_t nodeBitmap;
+} put_buff_task_info_t;
+
+// Acquire a task local buffer, initializing if needed
+static inline
+void* task_local_buff_acquire(enum BuffType t) {
+  chpl_comm_taskPrvData_t* prvData = get_comm_taskPrvdata();
+  if (prvData == NULL) return NULL;
+
+#define DEFINE_INIT(TYPE, TLS_NAME)                                           \
+  if (t == TLS_NAME) {                                                        \
+    TYPE* info = prvData->TLS_NAME;                                           \
+    if (info == NULL) {                                                       \
+      size_t _size = sizeof(TYPE);                                            \
+      if (t == put_buff && providerInUse(provType_rxm)) {                     \
+        _size += bitmapSizeofMap(chpl_numNodes);                              \
+      }                                                                       \
+      prvData->TLS_NAME = chpl_mem_alloc(_size,                               \
+                                         CHPL_RT_MD_COMM_PER_LOC_INFO, 0, 0); \
+      info = prvData->TLS_NAME;                                               \
+      info->vi = 0;                                                           \
+      if (t == put_buff && providerInUse(provType_rxm)) {                     \
+        info->nodeBitmap.len = chpl_numNodes;                                 \
+      } else {                                                                \
+        info->nodeBitmap.len = 0;                                             \
+      }                                                                       \
+    }                                                                         \
+    return info;                                                              \
+  }
+
+  DEFINE_INIT(get_buff_task_info_t, get_buff);
+  DEFINE_INIT(put_buff_task_info_t, put_buff);
+
+#undef DEFINE_INIT
+  return NULL;
+}
+
+static void get_buff_task_info_flush(get_buff_task_info_t* info);
+static void put_buff_task_info_flush(put_buff_task_info_t* info);
+
+// Flush one or more task local buffers
+static inline
+void task_local_buff_flush(enum BuffType t) {
+  chpl_comm_taskPrvData_t* prvData = get_comm_taskPrvdata();
+  if (prvData == NULL) return;
+
+#define DEFINE_FLUSH(TYPE, TLS_NAME, FLUSH_NAME)                              \
+  if (t & TLS_NAME) {                                                         \
+    TYPE* info = prvData->TLS_NAME;                                           \
+    if (info != NULL && info->vi > 0) {                                       \
+      FLUSH_NAME(info);                                                       \
+    }                                                                         \
+  }
+
+  DEFINE_FLUSH(get_buff_task_info_t, get_buff, get_buff_task_info_flush);
+  DEFINE_FLUSH(put_buff_task_info_t, put_buff, put_buff_task_info_flush);
+
+#undef DEFINE_FLUSH
+}
+
+// Flush and destroy one or more task local buffers
+static inline
+void task_local_buff_end(enum BuffType t) {
+  chpl_comm_taskPrvData_t* prvData = get_comm_taskPrvdata();
+  if (prvData == NULL) return;
+
+#define DEFINE_END(TYPE, TLS_NAME, FLUSH_NAME)                                \
+  if (t & TLS_NAME) {                                                         \
+    TYPE* info = prvData->TLS_NAME;                                           \
+    if (info != NULL && info->vi > 0) {                                       \
+      FLUSH_NAME(info);                                                       \
+      chpl_mem_free(info, 0, 0);                                              \
+      prvData->TLS_NAME = NULL;                                               \
+    }                                                                         \
+  }
+
+  DEFINE_END(get_buff_task_info_t, get_buff, get_buff_task_info_flush);
+  DEFINE_END(put_buff_task_info_t, put_buff, put_buff_task_info_flush);
+
+#undef END
+}
+
+
+////////////////////////////////////////
+//
 // Interface: initialization
 //
 
@@ -428,6 +738,13 @@ static void init_ofiForAms(void);
 static void init_bar(void);
 
 static void init_broadcast_private(void);
+
+
+//
+// forward decls
+//
+static inline int mrGetLocalKey(void*, size_t);
+static inline int mrGetDesc(void**, void*, size_t);
 
 
 void chpl_comm_init(int *argc_p, char ***argv_p) {
@@ -486,6 +803,13 @@ void init_ofi(void) {
   init_ofiForRma();
   init_ofiForAms();
 
+  CHPL_CALLOC(orderDummy, 1);
+  CHK_TRUE(mrGetLocalKey(orderDummy, sizeof(*orderDummy)) == 0);
+  CHK_TRUE(mrGetDesc(NULL, orderDummy, sizeof(*orderDummy)) == 0);
+  CHPL_CALLOC(orderDummyMap, chpl_numNodes);
+  chpl_comm_ofi_oob_allgather(&orderDummy, orderDummyMap,
+                              sizeof(orderDummyMap[0]));
+
   DBG_PRINTF(DBG_CFG,
              "AM config: recv buf size %zd MiB, %s, responses use %s",
              ofi_iov_reqs.iov_len / (1L << 20),
@@ -520,14 +844,14 @@ void init_ofiFabricDomain(void) {
   hints->caps = FI_MSG | FI_SEND | FI_RECV | FI_MULTI_RECV
                 | FI_RMA | FI_READ | FI_WRITE
                 | FI_REMOTE_READ | FI_REMOTE_WRITE;
-  if (getNetworkType() == networkAries) {
+  if (providerAvail(provType_gni)) {
       hints->caps |= FI_ATOMICS; // oddly, we don't get this without asking
   }
 
   hints->addr_format = FI_FORMAT_UNSPEC;
 
-  hints->tx_attr->op_flags = FI_DELIVERY_COMPLETE | FI_COMPLETION;
-  hints->rx_attr->op_flags = FI_MULTI_RECV        | FI_COMPLETION;
+  hints->tx_attr->op_flags = FI_COMPLETION | FI_DELIVERY_COMPLETE;
+  hints->rx_attr->op_flags = FI_COMPLETION;
 
   hints->ep_attr->type = FI_EP_RDM;
 
@@ -591,25 +915,6 @@ void init_ofiFabricDomain(void) {
   if (chpl_nodeID == 0) {
     if (ret == -FI_ENODATA) {
       const char* provider = getProviderName();
-
-      if (DBG_TEST_MASK(DBG_CFGFABSALL)) {
-        DBG_PRINTF(DBG_CFGFABSALL,
-                   "==================== fi_getinfo() fabrics:");
-        DBG_PRINTF(DBG_CFGFABSALL,
-                   "None matched hints; available with prov_name \"%s\" are:",
-                   (provider == NULL) ? "<any>" : provider);
-        struct fi_info* info = NULL;
-        OFI_CHK(fi_getinfo(COMM_OFI_FI_VERSION, NULL, NULL, 0, NULL, &info));
-        for ( ; info != NULL; info = info->next) {
-          const char* pn = info->fabric_attr->prov_name;
-          if (provider == NULL
-              || strncmp(pn, provider, strlen(provider)) == 0) {
-            DBG_PRINTF(DBG_CFGFABSALL, "%s", fi_tostr(info, FI_TYPE_INFO));
-            DBG_PRINTF(DBG_CFGFABSALL, "----------");
-          }
-        }
-      }
-
       INTERNAL_ERROR_V("No provider matched for prov_name \"%s\"",
                        (provider == NULL) ? "<any>" : provider);
     }
@@ -660,7 +965,7 @@ void init_ofiDoProviderChecks(void) {
   //
   // Set/compute various provider-specific things.
   //
-  if (isInProviderName("gni")) {
+  if (providerInUse(provType_gni)) {
     //
     // gni
     //
@@ -675,7 +980,9 @@ void init_ofiDoProviderChecks(void) {
     // try to close it.
     //
     useWaitset = false;
-  } else if (isInProviderName("ofi_rxd")) {
+  }
+
+  if (providerInUse(provType_rxd)) {
     //
     // ofi_rxd (utility provider with tcp, verbs, possibly others)
     //
@@ -692,6 +999,11 @@ void init_ofiDoProviderChecks(void) {
     //
     provCtl_sizeAvsByNumEps = true;
     provCtl_readAmoNeedsOpnd = true;
+  }
+
+  if (providerInUse(provType_rxm)) {
+    // See ofi_put_V().
+    CHK_TRUE((ofi_info->tx_attr->msg_order & FI_ORDER_RMA_RAW) != 0);
   }
 }
 
@@ -778,8 +1090,9 @@ void init_ofiEp(void) {
   {
     cqAttr = (struct fi_cq_attr)
              { .format = FI_CQ_FORMAT_MSG,
-               .size = 100, // TODO
+               .size = 100 + MAX_TXNS_IN_FLIGHT,
                .wait_obj = FI_WAIT_NONE, };
+    txCQLen = cqAttr.size;
     for (int i = 0; i < numWorkerTxCtxs; i++) {
       init_ofiEpTxCtx(i, false /*isAMHandler*/, &cqAttr, NULL);
     }
@@ -803,7 +1116,7 @@ void init_ofiEp(void) {
   } else {
     cqAttr = (struct fi_cq_attr)
              { .format = FI_CQ_FORMAT_MSG,
-               .size = 100, // TODO
+               .size = 100,
                .wait_obj = waitObj,
                .wait_cond = FI_CQ_COND_NONE,
                .wait_set = ofi_amhWaitSet, };
@@ -1287,7 +1600,7 @@ static void exit_any(int status) {
   // Flush all the stdio FILE streams first, in the hope of not losing
   // any output.
   //
-  if (isInProviderName("verbs")) {
+  if (providerInUse(provType_verbs)) {
     fflush(NULL);
     _exit(status);
   }
@@ -1382,7 +1695,7 @@ void init_fixedHeap(void) {
   //
   size_t size = chpl_comm_getenvMaxHeapSize();
   if ( ! (chpl_numNodes > 1
-          && (getNetworkType() == networkAries || size != 0))) {
+          && (providerAvail(provType_gni) || size != 0))) {
     return;
   }
 
@@ -1469,8 +1782,7 @@ void emit_delayedFixedHeapMsgs(void) {
   // We only need a fixed heap if we're multinode on a Cray XC system
   // and using the gni provider.
   //
-  if (chpl_numNodes <= 1
-      || getNetworkType() != networkAries) {
+  if (chpl_numNodes <= 1 || !providerInUse(provType_gni)) {
     return;
   }
 
@@ -1639,7 +1951,9 @@ void ensure_progress(void) {
 }
 
 
-void chpl_comm_task_end(void) { }
+void chpl_comm_task_end(void) {
+  task_local_buff_end(get_buff | put_buff);
+}
 
 
 void chpl_comm_execute_on(c_nodeid_t node, c_sublocid_t subloc,
@@ -1937,6 +2251,7 @@ void amRequestCommon(c_nodeid_t node,
   OFI_RIDE_OUT_EAGAIN(fi_send(tcip->txCtx, myArg, argSize,
                               mrDesc, rxMsgAddr(tcip, node), ctx),
                       checkTxCQ(tcip));
+  tcip->numTxns++;
 
   //
   // If this is a non-AMO or ordered AMO then wait for the network
@@ -2001,7 +2316,7 @@ static void amHandleExecOnLrg(chpl_comm_on_bundle_t*);
 static void amWrapExecOnLrgBody(void*);
 static void amWrapGet(void*);
 static void amWrapPut(void*);
-static void amHandleAMO(struct perTxCtxInfo_t*, chpl_comm_on_bundle_t*);
+static void amHandleAMO(chpl_comm_on_bundle_t*);
 static inline void amSendDone(struct chpl_comm_bundleData_base_t*,
                               chpl_comm_amDone_t*);
 
@@ -2047,10 +2362,13 @@ void fini_amHandling(void) {
 //
 // The AM handler runs this.
 //
+static __thread struct perTxCtxInfo_t* amTcip;
+
 static
 void amHandler(void* argNil) {
   struct perTxCtxInfo_t* tcip;
   CHK_TRUE((tcip = tciAllocForAmHandler()) != NULL);
+  amTcip = tcip;
 
   isAmHandler = true;
 
@@ -2183,7 +2501,7 @@ void processRxAmReq(struct perTxCtxInfo_t* tcip) {
         break;
 
       case am_opAMO:
-        amHandleAMO(tcip, req);
+        amHandleAMO(req);
         break;
 
       case am_opShutdown:
@@ -2313,7 +2631,7 @@ void amWrapExecOnLrgBody(void* p) {
     DBG_PRINTF(DBG_AM, "AM seqId %d:%" PRIu64 ": set gotArg (NB) %p",
                (int) node, xol->b.seq, origGotArg);
     ofi_put_ll(myGotArg, node, origGotArg, sizeof(*origGotArg),
-               txnTrkEncode(txnTrkNone, NULL));
+               txnTrkEncode(txnTrkNone, NULL), amTcip);
   }
 
   //
@@ -2365,7 +2683,7 @@ void amWrapPut(void* p) {
 
 
 static
-void amHandleAMO(struct perTxCtxInfo_t* tcip, chpl_comm_on_bundle_t* req) {
+void amHandleAMO(chpl_comm_on_bundle_t* req) {
   struct chpl_comm_bundleData_AMO_t* amo = &req->comm.amo;
   if (amo->ofiOp == FI_CSWAP) {
     DBG_PRINTF(DBG_AM | DBG_AMRECV | DBG_AMO,
@@ -2457,7 +2775,7 @@ void amSendDone(struct chpl_comm_bundleData_base_t* b,
   DBG_PRINTF(DBG_AM, "AM seqId %d:%" PRIu64 ": set pAmDone (NB) %p",
              (int) b->node, b->seq, pAmDone);
   ofi_put_ll(amDone, b->node, pAmDone, sizeof(*pAmDone),
-             txnTrkEncode(txnTrkNone, NULL));
+             txnTrkEncode(txnTrkNone, NULL), amTcip);
 }
 
 
@@ -2604,11 +2922,16 @@ void chpl_comm_get_strd(void* dstaddr_arg, size_t* dststrides,
                   commID, ln, fn);
 }
 
-#define MAX_UNORDERED_TRANS_SZ 1024
+
 void chpl_comm_getput_unordered(c_nodeid_t dstnode, void* dstaddr,
                                 c_nodeid_t srcnode, void* srcaddr,
                                 size_t size, int32_t commID,
                                 int ln, int32_t fn) {
+  DBG_PRINTF(DBG_INTERFACE,
+             "chpl_comm_getput_unordered(%d, %p, %d, %p, %zd, %d)",
+             (int) dstnode, dstaddr, (int) srcnode, srcaddr, size,
+             (int) commID);
+
   assert(dstaddr != NULL);
   assert(srcaddr != NULL);
 
@@ -2621,9 +2944,9 @@ void chpl_comm_getput_unordered(c_nodeid_t dstnode, void* dstaddr,
   }
 
   if (dstnode == chpl_nodeID) {
-    chpl_comm_get(dstaddr, srcnode, srcaddr, size, commID, ln, fn);
+    chpl_comm_get_unordered(dstaddr, srcnode, srcaddr, size, commID, ln, fn);
   } else if (srcnode == chpl_nodeID) {
-    chpl_comm_put(srcaddr, dstnode, dstaddr, size, commID, ln, fn);
+    chpl_comm_put_unordered(srcaddr, dstnode, dstaddr, size, commID, ln, fn);
   } else {
     if (size <= MAX_UNORDERED_TRANS_SZ) {
       char buf[MAX_UNORDERED_TRANS_SZ];
@@ -2640,17 +2963,83 @@ void chpl_comm_getput_unordered(c_nodeid_t dstnode, void* dstaddr,
   }
 }
 
+
 void chpl_comm_get_unordered(void* addr, c_nodeid_t node, void* raddr,
                              size_t size, int32_t commID, int ln, int32_t fn) {
-  chpl_comm_get(addr, node, raddr, size, commID, ln, fn);
+  DBG_PRINTF(DBG_INTERFACE,
+             "chpl_comm_get_unordered(%p, %d, %p, %zd, %d)",
+             addr, (int) node, raddr, size, (int) commID);
+
+  //
+  // Sanity checks, self-communication.
+  //
+  CHK_TRUE(addr != NULL);
+  CHK_TRUE(raddr != NULL);
+
+  if (size == 0) {
+    return;
+  }
+
+  if (node == chpl_nodeID) {
+    memmove(addr, raddr, size);
+    return;
+  }
+
+  // Communications callback support
+  if (chpl_comm_have_callbacks(chpl_comm_cb_event_kind_get)) {
+      chpl_comm_cb_info_t cb_data =
+        {chpl_comm_cb_event_kind_get, chpl_nodeID, node,
+         .iu.comm={addr, raddr, size, commID, ln, fn}};
+      chpl_comm_do_callbacks (&cb_data);
+  }
+
+  chpl_comm_diags_verbose_rdma("unordered get", node, size, ln, fn, commID);
+  chpl_comm_diags_incr(get);
+
+  do_remote_get_buff(addr, node, raddr, size);
 }
+
 
 void chpl_comm_put_unordered(void* addr, c_nodeid_t node, void* raddr,
                              size_t size, int32_t commID, int ln, int32_t fn) {
-  chpl_comm_put(addr, node, raddr, size, commID, ln, fn);
+  DBG_PRINTF(DBG_INTERFACE,
+             "chpl_comm_put_unordered(%p, %d, %p, %zd, %d)",
+             addr, (int) node, raddr, size, (int) commID);
+
+  //
+  // Sanity checks, self-communication.
+  //
+  CHK_TRUE(addr != NULL);
+  CHK_TRUE(raddr != NULL);
+
+  if (size == 0) {
+    return;
+  }
+
+  if (node == chpl_nodeID) {
+    memmove(raddr, addr, size);
+    return;
+  }
+
+  // Communications callback support
+  if (chpl_comm_have_callbacks(chpl_comm_cb_event_kind_put)) {
+      chpl_comm_cb_info_t cb_data =
+        {chpl_comm_cb_event_kind_put, chpl_nodeID, node,
+         .iu.comm={addr, raddr, size, commID, ln, fn}};
+      chpl_comm_do_callbacks (&cb_data);
+  }
+
+  chpl_comm_diags_verbose_rdma("unordered put", node, size, ln, fn, commID);
+  chpl_comm_diags_incr(put);
+
+  do_remote_put_buff(addr, node, raddr, size);
 }
 
-void chpl_comm_getput_unordered_task_fence(void) { }
+
+void chpl_comm_getput_unordered_task_fence(void) {
+  DBG_PRINTF(DBG_INTERFACE, "chpl_comm_getput_unordered_task_fence()");
+  task_local_buff_flush(get_buff | put_buff);
+}
 
 
 ////////////////////////////////////////
@@ -2850,6 +3239,7 @@ chpl_comm_nb_handle_t ofi_put(const void* addr, c_nodeid_t node,
                                  mrDesc, rxRmaAddr(tcip, node),
                                  mrRaddr, mrKey, ctx),
                         checkTxCQ(tcip));
+    tcip->numTxns++;
 
     if (tcip->txCQ != NULL) {
       waitForCQThisTxn(tcip, &txnDone);
@@ -2859,7 +3249,6 @@ chpl_comm_nb_handle_t ofi_put(const void* addr, c_nodeid_t node,
       //       let us return more quickly and handle the completion
       //       later.  But for now just wait for it.
       //
-      tcip->numTxnsBegun++;
       waitForCntrAllTxns(tcip);
     }
 
@@ -2892,9 +3281,10 @@ chpl_comm_nb_handle_t ofi_put(const void* addr, c_nodeid_t node,
 
 static inline
 void ofi_put_ll(const void* addr, c_nodeid_t node,
-                void* raddr, size_t size, void* ctx) {
+                void* raddr, size_t size, void* ctx,
+                struct perTxCtxInfo_t* tcip) {
   DBG_PRINTF(DBG_RMA | DBG_RMAWRITE,
-             "PUT %d:%p <= %p, size %zd",
+             "PUT LL %d:%p <= %p, size %zd",
              (int) node, raddr, addr, size);
 
   uint64_t mrKey = 0;
@@ -2905,21 +3295,171 @@ void ofi_put_ll(const void* addr, c_nodeid_t node,
   void* mrDesc = NULL;
   CHK_TRUE(mrGetDesc(&mrDesc, myAddr, size) == 0);
 
-  struct perTxCtxInfo_t* tcip;
-  CHK_TRUE((tcip = tciAlloc()) != NULL);
+  struct perTxCtxInfo_t* myTcip = tcip;
+  if (myTcip == NULL) {
+    CHK_TRUE((myTcip = tciAlloc()) != NULL);
+  }
 
   DBG_PRINTF(DBG_RMA | DBG_RMAWRITE,
              "tx write ll: %d:%p <= %p, size %zd, key 0x%" PRIx64 ", ctx %p",
              (int) node, raddr, myAddr, size, mrKey, ctx);
-  OFI_RIDE_OUT_EAGAIN(fi_write(tcip->txCtx, myAddr, size,
-                               mrDesc, rxRmaAddr(tcip, node),
+  OFI_RIDE_OUT_EAGAIN(fi_write(myTcip->txCtx, myAddr, size,
+                               mrDesc, rxRmaAddr(myTcip, node),
                                mrRaddr, mrKey, ctx),
-                      checkTxCQ(tcip));
-  if (tcip->txCntr != NULL) {
-    tcip->numTxnsBegun++;
+                      checkTxCQ(myTcip));
+  myTcip->numTxns++;
+
+  if (myTcip != tcip) {
+    tciFree(myTcip);
   }
+}
+
+
+static
+void ofi_put_V(int v_len, void** addr_v, void** local_mr_v,
+               c_nodeid_t* locale_v, void** raddr_v, uint64_t* remote_mr_v,
+               size_t* size_v, struct bitmap_t* b) {
+  DBG_PRINTF(DBG_RMA | DBG_RMAWRITE | DBG_RMAUNORD,
+             "PUT_V(%d) %d:%p <= %p, size %zd",
+             v_len, (int) locale_v[0], raddr_v[0], addr_v[0], size_v[0]);
+
+  struct perTxCtxInfo_t* tcip;
+  CHK_TRUE((tcip = tciAlloc()) != NULL);
+
+  //
+  // Make sure we have enough free CQ entries to initiate the entire
+  // batch of transactions.
+  //
+  do {
+    checkTxCQ(tcip);
+  } while (v_len > txCQLen - tcip->numTxns);
+
+  //
+  // Initiate the batch.  If we're using the RxM provider, record
+  // which nodes we PUT to; see below for why this is needed.
+  //
+  if (providerInUse(provType_rxm)) {
+    bitmapZero(b);
+  }
+  for (int vi = 0; vi < v_len; vi++) {
+    struct iovec iov = (struct iovec)
+                       { .iov_base = addr_v[vi],
+                         .iov_len = size_v[vi] };
+    struct fi_rma_iov riov = (struct fi_rma_iov)
+                             { .addr = (uint64_t) raddr_v[vi],
+                               .len = size_v[vi],
+                               .key = remote_mr_v[vi] };
+    struct fi_msg_rma msg = (struct fi_msg_rma)
+                            { .msg_iov = &iov,
+                              .desc = &local_mr_v[vi],
+                              .iov_count = 1,
+                              .addr = rxRmaAddr(tcip, locale_v[vi]),
+                              .rma_iov = &riov,
+                              .rma_iov_count = 1,
+                              .context = NULL,
+                              .data = 0 };
+    DBG_PRINTF(DBG_RMA | DBG_RMAWRITE,
+               "tx writemsg: %d:%p <= %p, size %zd, key 0x%" PRIx64,
+               (int) locale_v[vi], (void*) riov.addr, iov.iov_base,
+               iov.iov_len, riov.key);
+    //
+    // Add another transaction to the group and go on without waiting.
+    // Throw FI_MORE except for the last one in the batch.
+    //
+    OFI_RIDE_OUT_EAGAIN(fi_writemsg(tcip->txCtx, &msg,
+                                    (vi < v_len - 1) ? FI_MORE : 0),
+                        checkTxCQ(tcip));
+    tcip->numTxns++;
+    if (providerInUse(provType_rxm)) {
+      bitmapSetBit(b, locale_v[vi]);
+    }
+  }
+
+  if (providerInUse(provType_rxm)) {
+    //
+    // The verbs;ofi_rxm provider has a peculiarity: it advertises that
+    // it supports FI_DELIVERY_COMPLETE but it doesn't actually do so.
+    // It silently provides FI_TRANSMIT_COMPLETE instead.  We deal with
+    // this by asserting read-after-write ordering and then here, we
+    // do a GET from every node we did at least one PUT to.  The PUTS
+    // are thus forced to completion.  We don't care about the values
+    // we GET, just their completion, so we use the orderDummy buffers.
+    //
+    BITMAP_FOREACH_SET(b, node) {
+      while (tcip->numTxns >= txCQLen) { // need CQ room for at least 1 txn
+        checkTxCQ(tcip);
+      }
+      DBG_PRINTF(DBG_RMAUNORD,
+                 "PUT_V ordering: %p <= %d:%p",
+                 orderDummy, (int) node, orderDummyMap[node]);
+      (void) ofi_get_ll(orderDummy, node, orderDummyMap[node], 1,
+                        txnTrkEncode(txnTrkNone, NULL), tcip);
+    } BITMAP_FOREACH_SET_END
+  }
+
   tciFree(tcip);
 }
+
+
+/*
+ *** START OF BUFFERED PUT OPERATIONS ***
+ *
+ * Support for buffered PUT operations. We internally buffer PUT operations and
+ * then initiate them all at once for increased transaction rate.
+ */
+
+// Flush buffered PUTs for the specified task info and reset the counter.
+static inline
+void put_buff_task_info_flush(put_buff_task_info_t* info) {
+  if (info->vi > 0) {
+    DBG_PRINTF(DBG_RMAUNORD,
+               "put_buff_task_info_flush(): info has %d entries",
+               info->vi);
+    ofi_put_V(info->vi, info->src_addr_v, info->local_mr_v,
+              info->locale_v, info->tgt_addr_v, info->remote_mr_v,
+              info->size_v, &info->nodeBitmap);
+    info->vi = 0;
+  }
+}
+
+
+static inline
+void do_remote_put_buff(void* addr, c_nodeid_t node, void* raddr,
+                        size_t size) {
+  uint64_t mrKey;
+  uint64_t mrRaddr;
+  put_buff_task_info_t* info;
+  if (size > MAX_UNORDERED_TRANS_SZ
+      || mrGetKey(&mrKey, &mrRaddr, node, raddr, size) != 0
+      || (info = task_local_buff_acquire(put_buff)) == NULL) {
+    (void) ofi_put(addr, node, raddr, size);
+    return;
+  }
+
+  void* mrDesc = NULL;
+  CHK_TRUE(mrGetDesc(&mrDesc, info->src_v, size) == 0);
+
+  int vi = info->vi;
+  memcpy(&info->src_v[vi], addr, size);
+  info->src_addr_v[vi] = &info->src_v[vi];
+  info->locale_v[vi] = node;
+  info->tgt_addr_v[vi] = raddr;
+  info->size_v[vi] = size;
+  info->remote_mr_v[vi] = mrKey;
+  info->local_mr_v[vi] = mrDesc;
+  info->vi++;
+
+  DBG_PRINTF(DBG_RMAUNORD,
+             "do_remote_put_buff(): info[%d] = "
+             "{%p, %d, %p, %zd, %" PRIx64 ", %p}",
+             vi, info->src_addr_v[vi], (int) node, raddr, size, mrKey, mrDesc);
+
+  // flush if buffers are full
+  if (info->vi == MAX_CHAINED_PUT_LEN) {
+    put_buff_task_info_flush(info);
+  }
+}
+/*** END OF BUFFERED PUT OPERATIONS ***/
 
 
 static inline
@@ -2929,7 +3469,7 @@ chpl_comm_nb_handle_t ofi_get(void* addr, c_nodeid_t node,
   // Don't ask the provider to transfer more than it wants to.
   //
   if (size > ofi_info->ep_attr->max_msg_size) {
-    DBG_PRINTF(DBG_RMA | DBG_RMAWRITE,
+    DBG_PRINTF(DBG_RMA | DBG_RMAREAD,
                "splitting large GET %p <= %d:%p, size %zd",
                addr, (int) node, raddr, size);
 
@@ -2979,6 +3519,7 @@ chpl_comm_nb_handle_t ofi_get(void* addr, c_nodeid_t node,
                                 mrDesc, rxRmaAddr(tcip, node),
                                 mrRaddr, mrKey, ctx),
                         checkTxCQ(tcip));
+    tcip->numTxns++;
     waitForCQThisTxn(tcip, &txnDone);
     tciFree(tcip);
   } else {
@@ -2988,7 +3529,7 @@ chpl_comm_nb_handle_t ofi_get(void* addr, c_nodeid_t node,
     //
     if (mrGetLocalKey(myAddr, size) != 0) {
       myAddr = allocBounceBuf(size);
-      DBG_PRINTF(DBG_RMA | DBG_RMAWRITE, "GET via AM PUT src BB: %p", myAddr);
+      DBG_PRINTF(DBG_RMA | DBG_RMAREAD, "GET via AM PUT src BB: %p", myAddr);
       CHK_TRUE(mrGetLocalKey(myAddr, size) == 0);
     }
 
@@ -3005,6 +3546,159 @@ chpl_comm_nb_handle_t ofi_get(void* addr, c_nodeid_t node,
 
   return NULL;
 }
+
+
+static inline
+void ofi_get_ll(void* addr, c_nodeid_t node,
+                void* raddr, size_t size, void* ctx,
+                struct perTxCtxInfo_t* tcip) {
+  DBG_PRINTF(DBG_RMA | DBG_RMAREAD,
+             "GET LL %p <= %d:%p, size %zd",
+             addr, (int) node, raddr, size);
+
+  uint64_t mrKey = 0;
+  uint64_t mrRaddr = 0;
+  CHK_TRUE(mrGetKey(&mrKey, &mrRaddr, node, raddr, size) == 0);
+
+  void* myAddr = (void*) addr;
+  void* mrDesc = NULL;
+  CHK_TRUE(mrGetDesc(&mrDesc, myAddr, size) == 0);
+
+  struct perTxCtxInfo_t* myTcip = tcip;
+  if (myTcip == NULL) {
+    CHK_TRUE((myTcip = tciAlloc()) != NULL);
+  }
+
+  DBG_PRINTF(DBG_RMA | DBG_RMAREAD,
+             "tx read: %p <= %d:%p(0x%" PRIx64 "), size %zd, key 0x%" PRIx64
+             ", ctx %p",
+             myAddr, (int) node, raddr, mrRaddr, size, mrKey, ctx);
+  OFI_RIDE_OUT_EAGAIN(fi_read(myTcip->txCtx, myAddr, size,
+                              mrDesc, rxRmaAddr(myTcip, node),
+                              mrRaddr, mrKey, ctx),
+                      checkTxCQ(myTcip));
+  myTcip->numTxns++;
+
+  if (myTcip != tcip) {
+    tciFree(myTcip);
+  }
+}
+
+
+static
+void ofi_get_V(int v_len, void** addr_v, void** local_mr_v,
+               c_nodeid_t* locale_v, void** raddr_v, uint64_t* remote_mr_v,
+               size_t* size_v) {
+  DBG_PRINTF(DBG_RMA | DBG_RMAREAD | DBG_RMAUNORD,
+             "GET_V(%d) %p <= %d:%p, size %zd",
+             v_len, addr_v[0], (int) locale_v[0], raddr_v[0], size_v[0]);
+
+  struct perTxCtxInfo_t* tcip;
+  CHK_TRUE((tcip = tciAlloc()) != NULL);
+
+  if (tcip->numTxns >= txCQLen) {
+    while (tcip->numTxns > 0) {
+      checkTxCQ(tcip);
+    }
+  }
+
+  for (int vi = 0; vi < v_len; vi++) {
+    struct iovec iov = (struct iovec)
+                       { .iov_base = addr_v[vi],
+                         .iov_len = size_v[vi] };
+    struct fi_rma_iov riov = (struct fi_rma_iov)
+                             { .addr = (uint64_t) raddr_v[vi],
+                               .len = size_v[vi],
+                               .key = remote_mr_v[vi] };
+    struct fi_msg_rma msg = (struct fi_msg_rma)
+                            { .msg_iov = &iov,
+                              .desc = &local_mr_v[vi],
+                              .iov_count = 1,
+                              .addr = rxRmaAddr(tcip, locale_v[vi]),
+                              .rma_iov = &riov,
+                              .rma_iov_count = 1,
+                              .context = NULL,
+                              .data = 0 };
+    DBG_PRINTF(DBG_RMA | DBG_RMAREAD,
+               "tx readmsg: %p <= %d:%p, size %zd, key 0x%" PRIx64,
+               iov.iov_base, (int) locale_v[vi], (void*) riov.addr,
+               iov.iov_len, riov.key);
+    if (++(tcip->numTxns) >= txCQLen || vi == v_len - 1) {
+      // Initiate last transaction in group and wait for whole group.
+      OFI_RIDE_OUT_EAGAIN(fi_readmsg(tcip->txCtx, &msg, 0),
+                          checkTxCQ(tcip));
+      while (tcip->numTxns > 0) {
+        checkTxCQ(tcip);
+      }
+    } else {
+      // Add another transaction to the group and go on without waiting.
+      OFI_RIDE_OUT_EAGAIN(fi_readmsg(tcip->txCtx, &msg, FI_MORE),
+                          checkTxCQ(tcip));
+    }
+  }
+
+  tciFree(tcip);
+}
+
+
+/*
+ *** START OF BUFFERED GET OPERATIONS ***
+ *
+ * Support for buffered GET operations. We internally buffer GET operations and
+ * then initiate them all at once for increased transaction rate.
+ */
+
+// Flush buffered GETs for the specified task info and reset the counter.
+static inline
+void get_buff_task_info_flush(get_buff_task_info_t* info) {
+  if (info->vi > 0) {
+    DBG_PRINTF(DBG_RMAUNORD,
+               "get_buff_task_info_flush(): info has %d entries",
+               info->vi);
+    ofi_get_V(info->vi, info->tgt_addr_v, info->local_mr_v,
+              info->locale_v, info->src_addr_v, info->remote_mr_v,
+              info->size_v);
+    info->vi = 0;
+  }
+}
+
+
+static inline
+void do_remote_get_buff(void* addr, c_nodeid_t node, void* raddr,
+                        size_t size) {
+  uint64_t mrKey;
+  uint64_t mrRaddr;
+  get_buff_task_info_t* info;
+  if (size > MAX_UNORDERED_TRANS_SZ
+      || mrGetKey(&mrKey, &mrRaddr, node, raddr, size) != 0
+      || (info = task_local_buff_acquire(get_buff)) == NULL) {
+    (void) ofi_get(addr, node, raddr, size);
+    return;
+  }
+
+  void* mrDesc = NULL;
+  CHK_TRUE(mrGetDesc(&mrDesc, addr, size) == 0);
+
+  int vi = info->vi;
+  info->tgt_addr_v[vi] = addr;
+  info->locale_v[vi] = node;
+  info->remote_mr_v[vi] = mrKey;
+  info->src_addr_v[vi] = raddr;
+  info->size_v[vi] = size;
+  info->local_mr_v[vi] = mrDesc;
+  info->vi++;
+
+  DBG_PRINTF(DBG_RMAUNORD,
+             "do_remote_get_buff(): info[%d] = "
+             "{%p, %d, %" PRIx64 ", %p, %zd, %p}",
+             vi, addr, (int) node, mrKey, raddr, size, mrDesc);
+
+  // flush if buffers are full
+  if (info->vi == MAX_CHAINED_GET_LEN) {
+    get_buff_task_info_flush(info);
+  }
+}
+/*** END OF BUFFERED GET OPERATIONS ***/
 
 
 static
@@ -3109,6 +3803,7 @@ chpl_comm_nb_handle_t ofi_amo(struct perTxCtxInfo_t* tcip,
                       rxRmaAddr(tcip, node), object, mrKey,
                       ofiType, ofiOp, ctx));
   }
+  tcip->numTxns++;
 
   //
   // Wait for network completion.
@@ -3118,7 +3813,6 @@ chpl_comm_nb_handle_t ofi_amo(struct perTxCtxInfo_t* tcip,
       waitForCQThisTxn(tcip, &txnDone);
     }
   } else {
-    tcip->numTxnsBegun++;
     if (ordered) {
       waitForCntrAllTxns(tcip);
     }
@@ -3174,7 +3868,7 @@ void waitForCQAllTxns(struct perTxCtxInfo_t* tcip,
 
 static inline
 void checkTxCQ(struct perTxCtxInfo_t* tcip) {
-  struct fi_cq_msg_entry cqes[5];
+  struct fi_cq_msg_entry cqes[txCQLen];
   const int cqesSize = sizeof(cqes) / sizeof(cqes[0]);
   const ssize_t numEvents = readCQ(tcip->txCQ, cqes, cqesSize);
 
@@ -3182,6 +3876,7 @@ void checkTxCQ(struct perTxCtxInfo_t* tcip) {
     sched_yield();
     ensure_progress();
   } else {
+    tcip->numTxns -= numEvents;
     for (int i = 0; i < numEvents; i++) {
       struct fi_cq_msg_entry* cqe = &cqes[i];
       DBG_PRINTF(DBG_ACK, "CQ ack tx, flags %#" PRIx64, cqe->flags);
@@ -3248,7 +3943,7 @@ void reportCQError(struct fid_cq* cq) {
 
 static
 void waitForCntrAllTxns(struct perTxCtxInfo_t* tcip) {
-  while (getTxCntr(tcip) < tcip->numTxnsBegun) {
+  while (getTxCntr(tcip) < tcip->numTxns) {
     sched_yield();
     ensure_progress();
   }
@@ -3258,9 +3953,9 @@ void waitForCntrAllTxns(struct perTxCtxInfo_t* tcip) {
 static inline
 uint64_t getTxCntr(struct perTxCtxInfo_t* tcip) {
   const uint64_t count = fi_cntr_read(tcip->txCntr);
-  if (count > tcip->numTxnsBegun) {
-    INTERNAL_ERROR_V("fi_cntr_read() %" PRIu64 ", but numTxnsBegun %" PRIu64,
-                     count, tcip->numTxnsBegun);
+  if (count > tcip->numTxns) {
+    INTERNAL_ERROR_V("fi_cntr_read() %" PRIu64 ", but numTxns %" PRIu64,
+                     count, tcip->numTxns);
   }
   return count;
 }
@@ -3762,140 +4457,15 @@ void doCpuAMO(void* obj,
     } else if (ofiType == FI_UINT64) {
       CPU_INT_ARITH_AMO(add, uint_least64_t, u64);
     } else if (ofiType == FI_FLOAT) {
-      chpl_amo_datum_t xpctd;
-      chpl_amo_datum_t dsrd;
-      chpl_bool32 done;
-
-      do {
-        xpctd.u32 = atomic_load_int_least32_t(obj);
-        dsrd.r32 = xpctd.r32 + myOpnd1->r32;
-        done = atomic_compare_exchange_strong_uint_least32_t(obj,
-                                                             xpctd.u32,
-                                                             dsrd.u32);
-      } while (!done);
-
-      if (result != NULL) {
-        *(float*) result = xpctd.r32;
-      }
+      CPU_INT_ARITH_AMO(add, _real32, r32);
     } else if (ofiType == FI_DOUBLE) {
-      chpl_amo_datum_t xpctd;
-      chpl_amo_datum_t dsrd;
-      chpl_bool32 done;
-
-      do {
-        xpctd.u64 = atomic_load_int_least64_t(obj);
-        dsrd.r64 = xpctd.r64 + myOpnd1->r64;
-        done = atomic_compare_exchange_strong_uint_least64_t(obj,
-                                                             xpctd.u64,
-                                                             dsrd.u64);
-      } while (!done);
-
-      if (result != NULL) {
-        *(double*) result = xpctd.r64;
-      }
+      CPU_INT_ARITH_AMO(add, _real64, r64);
     } else {
       INTERNAL_ERROR_V("doCpuAMO(): unsupported ofiOp %d, ofiType %d",
                        ofiOp, ofiType);
     }
     break;
 
-#if 0
-    //
-    // This was lifted from comm=ugni.  I'm not going to ever use it
-    // directly.  But I'm leaving it here to remind myself to cover the
-    // case where the object is in registered memory, when I add support
-    // for AMOs done directly in the fabric.
-    //
-
-  case cmpxchg_64:
-    //
-    // If the object is not in memory registered with the NIC, use the
-    // processor.  Otherwise, since the other 64-bit AMOs are done on
-    // the NIC, for coherence do this one on the NIC as well.
-    //
-    {
-      chpl_bool32 my_res;
-      mem_region_t* mr;
-      if ((mr = mreg_for_local_addr(obj)) == NULL) {
-        my_res = atomic_compare_exchange_strong_int_least64_t
-                   ((atomic_int_least64_t*) obj,
-                    *(int_least64_t*) operand1,
-                    *(int_least64_t*) operand2);
-      }
-      else {
-        int_least64_t nic_res;
-        do_nic_amo(operand1, operand2, chpl_nodeID, obj, sizeof(nic_res),
-                   amo_cmd_2_nic_op(cmpxchg_64, 1), &nic_res, mr);
-        my_res = (nic_res == *(int_least64_t*) operand1) ? true : false;
-      }
-      memcpy(result, &my_res, sizeof(my_res));
-    }
-    break;
-
-  case add_r32:
-    //
-    // Emulate 32-bit real add using compare-exchange.
-    //
-    {
-      int_least32_t expected;
-      int_least32_t desired;
-      chpl_bool32 done;
-
-      do {
-        expected = atomic_load_int_least32_t((atomic_int_least32_t*) obj);
-        *(float*) &desired  = *(float*) &expected + *(float*) operand1;
-        done = atomic_compare_exchange_strong_int_least32_t
-                 ((atomic_int_least32_t*) obj, expected, desired);
-      } while (!done);
-
-      if (result != NULL) {
-        memcpy(result, &expected, sizeof(expected));
-      }
-    }
-    break;
-
-  case add_r64:
-    //
-    // Emulate 64-bit real add using compare-exchange.  If the object
-    // is not in memory registered with the NIC, use the processor.
-    // Otherwise, since the other 64-bit AMOs are done on the NIC, for
-    // coherence do this one on the NIC as well.
-    //
-    {
-      int_least64_t expected;
-      int_least64_t desired;
-      mem_region_t* mr;
-
-      if ((mr = mreg_for_local_addr(obj)) == NULL) {
-        chpl_bool32 done;
-
-        do {
-          expected =
-            atomic_load_int_least64_t((atomic_int_least64_t*) obj);
-          *(double*) &desired = *(double*) &expected + *(double*) operand1;
-          done = atomic_compare_exchange_strong_int_least64_t
-                   ((atomic_int_least64_t*) obj, expected, desired);
-        } while (!done);
-      }
-      else {
-        int_least64_t nic_res;
-
-        do {
-          do_remote_get(&expected, chpl_nodeID, obj, sizeof(expected),
-                        may_proxy_false);
-          *(double*) &desired = *(double*) &expected + *(double*) operand1;
-          do_nic_amo(&expected, &desired, chpl_nodeID, obj,
-                     sizeof(nic_res), amo_cmd_2_nic_op(cmpxchg_64, 1),
-                     &nic_res, mr);
-        } while (nic_res != expected);
-      }
-
-      if (result != NULL) {
-        memcpy(result, &expected, sizeof(expected));
-      }
-    }
-    break;
-#endif
 
   default:
     INTERNAL_ERROR_V("doCpuAMO(): unsupported ofiOp %d, ofiType %d",

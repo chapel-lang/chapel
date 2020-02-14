@@ -6341,7 +6341,7 @@ proc channel.writef(fmtStr:?t): bool throws
    :arg fmt: the format as string or bytes
    :arg args: the arguments to read
    :returns: true if all arguments were read according to the format string,
-             false on EOF or if the format did not match the input.
+             false on EOF.
 
    :throws SystemError: Thrown if the arguments could not be read.
  */
@@ -6608,11 +6608,6 @@ proc channel.readf(fmtStr:?t, ref args ...?k): bool throws
   if !err {
     return true;
   } else if err == EEOF {
-
-    //
-    // TODO: Since we don't return false for EFORMAT, should the docstring be
-    // updated to reflect that?
-    //
     return false;
   } else {
     try this._ch_ioerror(err, "in channel.readf(fmt:string, ...)");
@@ -6669,7 +6664,7 @@ proc channel.readf(fmtStr:?t) throws
 
   if !err {
     return true;
-  } else if err == EEOF || err == EFORMAT {
+  } else if err == EEOF {
     return false;
   } else {
     try this._ch_ioerror(err, "in channel.readf(fmt:string)");
