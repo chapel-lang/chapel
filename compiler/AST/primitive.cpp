@@ -667,7 +667,7 @@ initPrimitive() {
 
   // indicates split initialization point of declaration
   // If the type is provided, apply that to the value immediately
-  // The value may not be used until a later PRIM_INIT_VAR.
+  // The value may not be used until a later PRIM_INIT_VAR_SPLIT_INIT.
   //
   // dst, optional type to default-init
   prim_def(PRIM_INIT_VAR_SPLIT_DECL, "init var split decl", returnInfoVoid, false);
