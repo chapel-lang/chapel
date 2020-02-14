@@ -99,6 +99,11 @@ bool findInitPoints(CallExpr* defaultInit,
 }
 
 static bool allowSplitInit(Symbol* sym) {
+
+  // don't split init if the flag disabled it
+  if (fNoSplitInit)
+    return false;
+
   // split-init doesn't make sense for extern variables
   if (sym->hasFlag(FLAG_EXTERN))
     return false;
@@ -109,6 +114,14 @@ static bool allowSplitInit(Symbol* sym) {
     if (se->getFunction() != fn)
       return false; // use in inner function detected; disable split init
   }
+
+  // Don't allow split-init of global variables
+  if (fn->hasFlag(FLAG_MODULE_INIT))
+    return false;
+
+  // For now, disable split init on non-user code
+  if (sym->defPoint->getModule()->modTag != MOD_USER)
+    return false;
 
   return true;
 }

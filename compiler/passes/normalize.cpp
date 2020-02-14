@@ -2236,7 +2236,7 @@ static void normalizeTypeAlias(DefExpr* defExpr) {
     return;
   }
 
-  std::vector<CallExpr*> initAssign;
+  std::vector<CallExpr*> initAssigns;
   // if there is no init expression, search for initialization
   // points written using '='
   bool foundSplitInit = false;
@@ -2246,14 +2246,10 @@ static void normalizeTypeAlias(DefExpr* defExpr) {
   bool global = (initFn && defExpr->parentExpr == initFn->body);
 
   // For now, disable automatic split init on non-user code
-  if ((defExpr->getModule()->modTag == MOD_USER || requestedSplitInit) &&
-      (global == false || requestedSplitInit) &&
-      fNoSplitInit == false) {
-    Expr* prevent = NULL;
-    foundSplitInit = findInitPoints(defExpr, initAssign, prevent);
-    if (foundSplitInit == false)
-      errorIfSplitInitializationRequired(defExpr, prevent);
-  }
+  Expr* prevent = NULL;
+  foundSplitInit = findInitPoints(defExpr, initAssigns, prevent);
+  if (foundSplitInit == false)
+    errorIfSplitInitializationRequired(defExpr, prevent);
 
   if (requestedSplitInit && foundSplitInit == false) {
     USR_FATAL_CONT(defExpr, "type alias '%s' is not initialized", var->name);
@@ -2270,7 +2266,7 @@ static void normalizeTypeAlias(DefExpr* defExpr) {
     emitTypeAliasInit(defExpr, var, init);
   } else {
     // handle split initialization for type aliases
-    for_vector(CallExpr, call, initAssign) {
+    for_vector(CallExpr, call, initAssigns) {
       SET_LINENO(call);
       // Consider the RHS of the '=' call to be the init expr.
       Expr* rhs = call->get(2)->remove();
@@ -2441,7 +2437,7 @@ static void normalizeVariableDefinition(DefExpr* defExpr) {
   Expr*      type = defExpr->exprType;
   Expr*      init = defExpr->init;
   Expr*  svarMark = prepareShadowVarForNormalize(defExpr, var);
-  std::vector<CallExpr*> initAssign;
+  std::vector<CallExpr*> initAssigns;
 
   // if there is no init expression, search for initialization
   // points written using '='
@@ -2454,14 +2450,10 @@ static void normalizeVariableDefinition(DefExpr* defExpr) {
   bool global = (initFn && defExpr->parentExpr == initFn->body);
 
   // For now, disable automatic split init on non-user code
-  if ((defExpr->getModule()->modTag == MOD_USER || requestedSplitInit) &&
-      (global == false || requestedSplitInit) &&
-      fNoSplitInit == false) {
-    Expr* prevent = NULL;
-    foundSplitInit = findInitPoints(defExpr, initAssign, prevent);
-    if (foundSplitInit == false)
-      errorIfSplitInitializationRequired(defExpr, prevent);
-  }
+  Expr* prevent = NULL;
+  foundSplitInit = findInitPoints(defExpr, initAssigns, prevent);
+  if (foundSplitInit == false)
+    errorIfSplitInitializationRequired(defExpr, prevent);
 
   if (requestedSplitInit && foundSplitInit == false) {
     USR_FATAL_CONT(defExpr, "Variable '%s' is not initialized and has no type",
@@ -2526,7 +2518,7 @@ static void normalizeVariableDefinition(DefExpr* defExpr) {
       }
     }
 
-    for_vector(CallExpr, call, initAssign) {
+    for_vector(CallExpr, call, initAssigns) {
       SET_LINENO(call);
 
       // Consider the RHS of the '=' call to be the init expr.
@@ -2564,6 +2556,14 @@ static void errorIfSplitInitializationRequired(DefExpr* def, Expr* cur) {
   if (def->sym->hasFlag(FLAG_TEMP) ||
       def->sym->hasFlag(FLAG_INDEX_VAR) ||
       isShadowVarSymbol(def->sym))
+    return;
+
+  // Don't worry about declarations in unsafe functions
+  if (def->getFunction()->hasFlag(FLAG_UNSAFE))
+    return;
+
+  // Don't worry about non-split init
+  if (def->init != NULL && !isSplitInitExpr(def->init))
     return;
 
   bool canDefaultInit = true;
