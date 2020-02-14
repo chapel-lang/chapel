@@ -79,6 +79,35 @@ const char* VisibilityStmt::getRename() const {
   return modRename;
 }
 
+Symbol* VisibilityStmt::checkIfModuleNameMatches(const char* name) {
+  if (isARename()) {
+    // Use statements that rename the module should only allow us to find the
+    // new name, not the original one.
+    if (name == getRename()) {
+      SymExpr* actualSe = toSymExpr(src);
+      INT_ASSERT(actualSe);
+      // Could be either an enum or a module, but either way we should be able
+      // to find the new name
+      Symbol* actualSym = toSymbol(actualSe->symbol());
+      INT_ASSERT(actualSym);
+      return actualSym;
+    }
+  } else if (SymExpr* se = toSymExpr(src)) {
+    if (ModuleSymbol* modSym = toModuleSymbol(se->symbol())) {
+      if (name == se->symbol()->name) {
+        return modSym;
+      }
+    }
+  } else {
+    // Though we don't support it yet, things like `import M.N.O` probably
+    // wouldn't reach here because we resolve such cases element-by-element
+    // rather than wholesale.  Nothing else should fall under this category
+    INT_FATAL("Malformed src");
+  }
+  return NULL;
+}
+
+
 //
 // Extends the scope's block statement to store this node, after replacing the
 // UnresolvedSymExpr we store with the found symbol

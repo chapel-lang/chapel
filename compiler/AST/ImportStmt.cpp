@@ -30,6 +30,7 @@
 ************************************** | *************************************/
 
 ImportStmt::ImportStmt(BaseAST* source) : VisibilityStmt(E_ImportStmt) {
+  this->modRename = "";
   if (Symbol* b = toSymbol(source)) {
     src = new SymExpr(b);
 
@@ -176,17 +177,5 @@ BaseAST* ImportStmt::getSearchScope() const {
 // Returns the module symbol if the name provided matches the module imported
 //
 Symbol* ImportStmt::checkIfModuleNameMatches(const char* name) {
-  if (SymExpr* se = toSymExpr(src)) {
-    if (ModuleSymbol* modSym = toModuleSymbol(se->symbol())) {
-      if (name == se->symbol()->name) {
-        return modSym;
-      }
-    }
-  } else {
-    // Though we don't support it yet, things like `import M.N.O` probably
-    // wouldn't reach here because we resolve such cases element-by-element
-    // rather than wholesale.  Nothing else should fall under this category
-    INT_FATAL("Malformed src in ImportStmt");
-  }
-  return NULL;
+  return VisibilityStmt::checkIfModuleNameMatches(name);
 }

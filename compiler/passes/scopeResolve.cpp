@@ -1932,24 +1932,18 @@ static bool lookupThisScopeAndUses(const char*           name,
           }
         } else {
           // we haven't found a match yet, so as a last resort, let's
-          // check the names of the modules in the 'use' statements
+          // check the names of the modules in the 'use'/'import' statements
           // themselves...  This effectively places the module names at
           // a scope just a bit further out than the one holding the
           // symbols that they define.
-          forv_Vec(Stmt, stmt, *moduleUses) {
-            if (UseStmt* use = toUseStmt(stmt)) {
-              if (Symbol* modSym = use->checkIfModuleNameMatches(name)) {
+          forv_Vec(VisibilityStmt, stmt, *moduleUses) {
+            if (stmt != NULL) {
+              if (Symbol* modSym = stmt->checkIfModuleNameMatches(name)) {
                 if (isRepeat(modSym, symbols) == false) {
                   symbols.push_back(modSym);
-                  if (storeRenames && use->isARename()) {
-                    renameLocs[modSym] = &use->astloc;
+                  if (storeRenames && stmt->isARename()) {
+                    renameLocs[modSym] = &stmt->astloc;
                   }
-                }
-              }
-            } else if (ImportStmt* import = toImportStmt(stmt)) {
-              if (Symbol* modSym = import->checkIfModuleNameMatches(name)) {
-                if (isRepeat(modSym, symbols) == false) {
-                  symbols.push_back(modSym);
                 }
               }
             }
