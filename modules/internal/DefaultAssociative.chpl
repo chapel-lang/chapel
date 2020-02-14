@@ -628,16 +628,8 @@ module DefaultAssociative {
     var tmpDom = {0..(-1:chpl_table_index_type)};
     var tmpTable: [tmpDom] eltType;
 
-    // Don't use this for now, I don't think it's the correct answer.
-    pragma "no doc"
-    proc _isIgnoredNonNilableClass(type t) param where isNonNilableClass(t) {
-      // Make an exception for the locale type since it "lives" forever.
-      if t:unmanaged == unmanaged locale then return false;
-    }
-
     //
-    // #14367 - Blanket ban on non-nilable classes while we think of a more
-    // long term solution.
+    // #14367 - Blanket ban on non-nilable classes for the time being.
     //
     pragma "no doc"
     proc postinit() {

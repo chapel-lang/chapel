@@ -40,8 +40,6 @@ public use TomlParser;
 private use TomlReader;
 use IO;
 
-pragma "no doc"
-type TomlType = unmanaged Toml?;
 
 /* Receives a TOML file as a parameter and outputs a Toml object.
 

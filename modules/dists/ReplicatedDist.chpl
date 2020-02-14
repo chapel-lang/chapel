@@ -278,11 +278,6 @@ proc Replicated.dsiClone(): _to_unmanaged(this.type) {
   if traceReplicatedDist then writeln("Replicated.dsiClone");
   var nonNilWrapper: [0..#targetLocales.size] locale =
     for loc in targetLocales do loc!;
-  var idx = 0;
-  for loc in targetLocales {
-    nonNilWrapper[idx] = loc!;
-    idx += 1;
-  }
   return new unmanaged Replicated(nonNilWrapper);
 }
 
