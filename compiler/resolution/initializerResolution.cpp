@@ -677,6 +677,8 @@ static void resolveInitializerBody(FnSymbol* fn) {
 
   insertAndResolveCasts(fn);
 
+  fixPrimInits(fn);
+
   ensureInMethodList(fn);
 }
 

@@ -2471,7 +2471,6 @@ void resolveCall(CallExpr* call) {
     case PRIM_INIT_VAR_SPLIT_DECL:
       resolveGenericActuals(call);
       resolvePrimInit(call);
-      lowerPrimInit(call);
       break;
 
     case PRIM_INIT_FIELD:
@@ -9622,6 +9621,9 @@ static void errorInvalidParamInit(CallExpr* call, Symbol* val, Type* type);
 // establish the type of the initialized variable so that resolution
 // can continue.
 //
+// Additionally lower PRIM_DEFAULT_INIT for params since these
+// need to be established for further resolution.
+//
 // lowerPrimInit will be called later to generate the code to properly
 // initialize this variable.
 static void resolvePrimInit(CallExpr* call) {
@@ -9680,6 +9682,8 @@ static void resolvePrimInit(CallExpr* call, Symbol* val, Type* type) {
   // Shouldn't be called with ref types
   INT_ASSERT(at == NULL || at->getValType() == at);
 
+  SET_LINENO(call);
+
   // These are handled in replaceRuntimeTypePrims().
   if (type->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE) == true) {
     if (call->isPrimitive(PRIM_DEFAULT_INIT_VAR))
@@ -9694,18 +9698,58 @@ static void resolvePrimInit(CallExpr* call, Symbol* val, Type* type) {
   } else if (primInitIsUnacceptableGeneric(call, type)    == true) {
     primInitHaltForUnacceptableGeneric(call, type, val);
 
+  // These types default to nil
+  } else if (isClassLikeOrPtr(type) || type == dtNil) {
+    // Nothing to do here besides set the type
+
+    // These will be handled in lowerPrimInit.
+    if (call->numActuals() >= 2)
+      call->get(2)->replace(new SymExpr(type->symbol));
+
+  // any type with a defaultValue is easy enough
+  // (expect this to handle numeric types and classes)
+  } else if (type->defaultValue != NULL) {
+    // note: error for bad param initialization checked for in resolving move
+
+    if (!call->isPrimitive(PRIM_INIT_VAR_SPLIT_DECL)) {
+      Expr* defaultExpr = NULL;
+      SymExpr* typeSe = NULL;
+      if (type->defaultValue->type == type) {
+        defaultExpr = new SymExpr(type->defaultValue);
+      } else {
+        typeSe = new SymExpr(type->symbol);
+        defaultExpr = new CallExpr(PRIM_CAST, type->symbol, type->defaultValue);
+      }
+
+      CallExpr* moveDefault = new CallExpr(PRIM_MOVE, val, defaultExpr);
+      call->insertBefore(moveDefault);
+      if (typeSe) resolveExprTypeConstructor(typeSe);
+      resolveExpr(moveDefault);
+      call->convertToNoop();
+    } else {
+      call->convertToNoop(); // initialize it PRIM_INIT_VAR_SPLIT_INIT
+                             // (important for params)
+    }
+
+  // non-generic records with initializers
+  // extern types
+  // generic records with initializers
+  // other types (sync, single, ..)
+  } else {
+    // These will be handled in lowerPrimInit.
+    errorInvalidParamInit(call, val, at);
+
+    if (call->numActuals() >= 2)
+      call->get(2)->replace(new SymExpr(type->symbol));
   }
-
-  errorInvalidParamInit(call, val, at);
 }
-
 
 void lowerPrimInit(CallExpr* call) {
   Expr* valExpr = NULL;
   Expr* typeExpr = NULL;
 
-  INT_ASSERT(call->isPrimitive(PRIM_DEFAULT_INIT_VAR) ||
-             call->isPrimitive(PRIM_INIT_VAR_SPLIT_DECL));
+  // Establish types in case that is not already done.
+  //resolvePrimInit(call);
 
   if (call->isPrimitive(PRIM_INIT_VAR_SPLIT_DECL)) {
     // PRIM_INIT_SPLIT_DECL does nothing at this point
@@ -9854,6 +9898,8 @@ static void lowerPrimInit(CallExpr* call, Symbol* val, Type* type) {
   // Shouldn't be called with ref types
   INT_ASSERT(at == NULL || at->getValType() == at);
 
+  SET_LINENO(call);
+
   // These are handled in replaceRuntimeTypePrims().
   if (type->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE) == true) {
     if (call->isPrimitive(PRIM_DEFAULT_INIT_VAR))
@@ -9956,7 +10002,6 @@ static void lowerPrimInit(CallExpr* call, Symbol* val, Type* type) {
   } else {
     errorInvalidParamInit(call, val, at);
 
-    SET_LINENO(call);
 
     // enum types should have a defaultValue
     INT_ASSERT(!isEnumType(type));

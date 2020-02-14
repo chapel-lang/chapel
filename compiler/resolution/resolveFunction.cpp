@@ -20,6 +20,7 @@
 #include "resolveFunction.h"
 
 #include "astutil.h"
+#include "AstVisitorTraverse.h"
 #include "CatchStmt.h"
 #include "CForLoop.h"
 #include "DecoratedClassType.h"
@@ -511,6 +512,8 @@ void resolveFunction(FnSymbol* fn, CallExpr* forCall) {
 
       insertAndResolveCasts(fn);
 
+      fixPrimInits(fn);
+
       if (fn->isIterator() == true && fn->iteratorInfo == NULL) {
         protoIteratorClass(fn, yieldedType);
       }
@@ -794,6 +797,62 @@ static CallExpr* findSetShape(CallExpr* setRet, Symbol* ret) {
       }
   // not found
   return NULL;
+}
+
+class FixPrimInitsVisitor : public AstVisitorTraverse {
+ public:
+  bool inFunction;
+  bool changed;
+  FixPrimInitsVisitor() : inFunction(false), changed(false) { }
+  virtual bool enterFnSym(FnSymbol* node);
+  virtual bool enterDefExpr(DefExpr* def);
+  virtual bool enterCallExpr(CallExpr* call);
+};
+
+bool FixPrimInitsVisitor::enterFnSym(FnSymbol* node) {
+  // Only visit the top level function requested
+  if (inFunction) return false;
+  inFunction = true;
+  return true;
+}
+
+bool FixPrimInitsVisitor::enterDefExpr(DefExpr* def) {
+  return true;
+}
+
+bool FixPrimInitsVisitor::enterCallExpr(CallExpr* call) {
+  if (call->isPrimitive(PRIM_DEFAULT_INIT_VAR) ||
+      call->isPrimitive(PRIM_INIT_VAR_SPLIT_DECL)) {
+    lowerPrimInit(call);
+    // It was lowered if the call has been removed and replaced.
+    if (call->isPrimitive(PRIM_NOOP))
+      changed = true;
+  }
+  return true;
+}
+
+void fixPrimInits(FnSymbol* fn) {
+  // The function may contain default-init of a variable
+  // followed by assignment or passing to out intent.
+  //
+  // In that event, use split init.
+  //
+  // To enable split-init decisions for out intent,
+  // which needs to happen after types are established
+  // and functions are called, earlier resolution steps leave
+  // PRIM_DEFAULT_INIT_VAR in the tree and just use it to establish types.
+  // This function needs to lower these.
+
+  // Looping because the default init for a record might use
+  // default arguments which in turn are set with default init.
+  // This could be handled by adjusting the added AST instead of
+  // revisiting the entire function.
+  bool changed = true;
+  while (changed) {
+    FixPrimInitsVisitor visitor;
+    fn->accept(&visitor);
+    changed = visitor.changed;
+  }
 }
 
 /************************************* | **************************************

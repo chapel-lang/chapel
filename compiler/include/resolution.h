@@ -54,6 +54,7 @@ extern std::map<Type*,     Serializers> serializeMap;
 bool       propagateNotPOD(Type* t);
 
 void       lowerPrimInit(CallExpr* call);
+void       fixPrimInits(FnSymbol* fn);
 
 bool       isTupleContainingOnlyReferences(Type* t);
 
