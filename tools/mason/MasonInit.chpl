@@ -164,7 +164,7 @@ proc validateMasonFile(path:string, name:string) throws {
   }
   else {
     makeBasicToml(name, path);
-    writeln("Created Mason.toml file.\n");
+    writeln("Created Mason.toml file.");
   }
 }
 

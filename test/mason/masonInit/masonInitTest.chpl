@@ -10,11 +10,9 @@ proc main(){
   const pwd = getEnv('PWD');
   if isDir(pwd + '/src'){
       writeln("Init is correctly done");
-      runCommand('rm -rf src example test Mason.toml');
+      runCommand('rm -rf src example test Mason.toml .git');
   }
   else {
     writeln("Init is incorrect");
   }
-
-
 }

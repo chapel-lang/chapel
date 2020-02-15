@@ -1,0 +1,5 @@
+Created Mason.toml file.
+Initialized new library project in testDir: testDir
+Added [brick] section to Mason.toml
+Added [dependencies] section to Mason.toml
+Mason could not find valid version in Mason.toml file
