@@ -35,42 +35,16 @@ proc masonInit(args) throws {
   try! {
     var name = '';
     for arg in args[2..]{
-      if arg == '' {
-        name = arg;
-      } 
-      else {
-        name = arg;
-      }
+      name = arg;
     }
     //checks if path is given as parameter or not
     if name == '' {
-      if isFile("Mason.toml") {
-        var projectName = ""; 
-        var version = "";
-        const toParse = open("Mason.toml", iomode.r);
-        const tomlFile = new owned(parseToml(toParse));
-        if tomlFile["brick"]["name"] {
-          projectName = tomlFile["brick"]["name"].s;
-        }
-        else {
-          throw new owned MasonError("Project Name doesn't exist in Mason.toml");
-        }
-        if tomlFile["brick"]["version"] {
-          version = tomlFile["brick"]["version"].s;
-        } 
-        else {
-          throw new owned MasonError("Version doesn't exist in Mason.toml");
-        }
-        validateAndInit(projectName, vcs=true, show=false);
-        checkVersion(version);
-      } 
-      //If Mason.toml not present, proceed with init
-      const cwd  = getEnv("PWD");
-      const currDir = basename(cwd);
-      const name = currDir;
+      const cwd = getEnv("PWD");
+      const name = basename(cwd);
       const path = '.';
-      makeBasicToml(name, path);
-      ValidateInit(path);
+      //If Mason.toml not present, proceed with init
+      validateMasonFile(path, name);
+      validateInit(path);
       writeln("Initialized new library project: " + name);
     } 
     else {
@@ -80,7 +54,9 @@ proc masonInit(args) throws {
       // if TOML file exists, check for values in it and validate
       const path = name;
       if isDir(path) {
-        ValidateInit(path);
+        //make a condition to handle Mason.toml & get rid from below
+        validateMasonFile(path, basename(path));
+        validateInit(path);
         writeln("Initialized new library project in " + path + ": " + basename(path));
       } 
       else {
@@ -95,30 +71,14 @@ proc masonInit(args) throws {
   }
 }
 
-proc ValidateInit(path: string) throws {
-  var files = [ "/Mason.toml" , "/src" , "/test" , "/example", "/.git", ".gitignore" ];
+proc validateInit(path: string) throws {
+  var files = [ "/src" , "/test" , "/example", "/.git", ".gitignore" ];
   var toBeCreated : list(string);
   for idx in 1..files.size do {
-    const file = files(idx);
-    if file == "/Mason.toml" {
-      if isFile(path + file) {
-        //scan using TOML reader and validate
-        const toParse = open(path + file, iomode.r);
-        const tomlFile = new owned(parseToml(toParse));
-        var projectName = tomlFile["brick"]["name"].s;
-        var version = tomlFile["brick"]["version"].s;
-        validateAndInit(projectName, vcs=true, show=false);
-        checkVersion(version);
-      } 
-      else {
-        toBeCreated.append(file);
-      }
-    } 
-    else {
-      const dir = file;
-      if isDir(path + dir) == false {
-        toBeCreated.append(dir);
-      }
+    const metafile = files(idx);  
+    const dir = metafile;
+    if isDir(path + dir) == false {
+      toBeCreated.append(dir);
     }
   }
   
@@ -138,37 +98,81 @@ proc ValidateInit(path: string) throws {
     } 
   }
 
-  for file in toBeCreated{
-    if file == "/Mason.toml" {
-      const name = basename(path);
-      makeBasicToml(name, path);
+  for metafile in toBeCreated {
+    const name = basename(path);
+    if metafile == "/.git" {
+      gitInit(path, show=false);
+    }
+    else if metafile == ".gitignore" {
+      addGitIgnore(path);
     } 
-    else {
-      const name = basename(path);
-      if file == "/.git" {
-        gitInit(path, show=false);
-      }
-      else if file == ".gitignore" {
-        addGitIgnore(path);
-      } 
-      else if file == '/src' && path == '.' {
-        const pwd = getEnv("PWD");
-        const newPath = basename(pwd);
-        const fileName = basename(newPath); 
-        makeSrcDir(path);
-        makeModule(path, fileName);
-      }
-      else if file == '/src' {
-        makeSrcDir(path);
-        const currDir = basename(path);
-        makeModule(path, currDir);
-      } 
-      else if file == '/test' {
-        makeTestDir(path);
-      } 
-      else if file == '/example' {
-        makeExampleDir(path);
-      }
+    else if metafile == '/src' && path == '.' {
+      const pwd = getEnv("PWD");
+      const newPath = basename(pwd);
+      const fileName = basename(newPath); 
+      makeSrcDir(path);
+      makeModule(path, fileName);
+    }
+    else if metafile == '/src' {
+      makeSrcDir(path);
+      const currDir = basename(path);
+      makeModule(path, currDir);
+    } 
+    else if metafile == '/test' {
+      makeTestDir(path);
+    } 
+    else if metafile == '/example' {
+      makeExampleDir(path);
     }
   }
+}
+
+proc validateMasonFile(path:string, name:string) throws {
+   if isFile(path + "/Mason.toml") {
+    var projectName = ""; 
+    var version = "";
+    var chplVersion = "";
+    const toParse = open(path + "/Mason.toml", iomode.r);
+    const tomlFile = parseToml(toParse);
+    if tomlFile["brick"] == nil {
+      addSection("brick", path, tomlFile);
+    }
+    if tomlFile.pathExists("dependencies") == false {
+      addSection("dependencies", path, tomlFile);      
+    }
+    if tomlFile["brick"]["version"] == nil {
+      throw new owned MasonError("Mason could not find valid version in Mason.toml file");
+    }
+    else {
+      version = tomlFile["brick"]["version"].s;
+    }
+    if tomlFile["brick"]["name"] {
+      projectName = tomlFile["brick"]["name"].s;
+    }
+    else {
+      throw new owned MasonError("Project Name doesn't exist in Mason.toml");
+    }
+    if tomlFile["brick"]["chplVersion"] == nil {
+      const version = getChapelVersionStr();
+      tomlFile["brick"].set("chplVersion", version);
+      var tomlPath = path + "/Mason.toml";
+      generateToml(tomlFile, tomlPath);
+      writeln("Added chplVersion to Mason.toml.");
+    }
+    validateAndInit(projectName, vcs=true, show=false);
+    checkVersion(version);
+  }
+  else {
+    makeBasicToml(name, path);
+    writeln("Created Mason.toml file.\n");
+  }
+}
+
+proc addSection(sectionName: string, path: string, tomlFile: unmanaged Toml) {
+  var tdom: domain(string);
+  var tomlPath = path + "/Mason.toml";
+  var deps: [tdom] unmanaged Toml;
+  tomlFile.set(sectionName, deps);
+  generateToml(tomlFile, tomlPath);
+  writeln("Added [" + sectionName + "] section to Mason.toml");
 }

@@ -94,10 +94,7 @@ proc InitProject(name, vcs, show) throws {
   }
   // Confirm git init before creating files
   if isDir(name) {
-    var allFiles = "all";
     makeBasicToml(name, path=name);
-    //new work here
-    //makeProjectFiles(name, allFiles);
     makeSrcDir(name);
     makeModule(name, fileName=name);
     makeTestDir(name);
