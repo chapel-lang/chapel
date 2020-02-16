@@ -30,7 +30,11 @@ use MasonModify;
 use FileSystem;
 private use List;
 
-
+/* 
+Initialises a library project in a project directory
+  mason init <dirName/path>
+  or mason init (inside project directory)
+*/
 proc masonInit(args) throws {
   try! {
     var name = '';
@@ -71,6 +75,9 @@ proc masonInit(args) throws {
   }
 }
 
+/* 
+Validates directories and files in project directory to avoid overwriting
+*/
 proc validateInit(path: string) throws {
   var files = [ "/src" , "/test" , "/example", "/.git", ".gitignore" ];
   var toBeCreated : list(string);
@@ -127,6 +134,9 @@ proc validateInit(path: string) throws {
   }
 }
 
+/* 
+validates Mason.toml file in directory and ensures all fields are present
+*/
 proc validateMasonFile(path:string, name:string) throws {
    if isFile(path + "/Mason.toml") {
     var projectName = ""; 
@@ -176,6 +186,9 @@ proc validateMasonFile(path:string, name:string) throws {
   }
 }
 
+/*
+adds a section that is absent in the Mason.toml file
+*/
 proc addSection(sectionName: string, path: string, tomlFile: unmanaged Toml) {
   var tdom: domain(string);
   var tomlPath = path + "/Mason.toml";
