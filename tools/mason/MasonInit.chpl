@@ -135,7 +135,15 @@ proc validateMasonFile(path:string, name:string) throws {
     const toParse = open(path + "/Mason.toml", iomode.r);
     const tomlFile = parseToml(toParse);
     if tomlFile["brick"] == nil {
-      addSection("brick", path, tomlFile);
+      //if subtables of brick exist then show error
+      if tomlFile.pathExists("name") || 
+      tomlFile.pathExists("version") ||
+      tomlFile.pathExists("chplVersion") {
+        throw new owned MasonError("The [brick] header is missing in Mason.toml");
+      } 
+      else {
+        addSection("brick", path, tomlFile);
+      } 
     }
     if tomlFile.pathExists("dependencies") == false {
       addSection("dependencies", path, tomlFile);      
