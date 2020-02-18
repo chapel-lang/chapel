@@ -4024,6 +4024,8 @@ module ChapelArray {
         compilerError("Cannot copy array with element type that cannot be assigned");
       } else {
         // Make sure this function uses ref argument intent for a
+        // TODO: use a where clause instead to make this less strange
+        // provided that does not significantly slow compiles
         ref r = a;
       }
     }
