@@ -482,7 +482,9 @@ static bool fixupDefaultInitCopy(FnSymbol* fn,
       // it up completely...
       instantiateBody(newFn);
 
-      if (FnSymbol* initFn = findCopyInitFn(ct)) {
+      const char* err = NULL;
+
+      if (FnSymbol* initFn = findCopyInitFn(ct, err)) {
         Symbol*   thisTmp  = newTemp(ct);
         DefExpr*  def      = new DefExpr(thisTmp);
         CallExpr* initCall = NULL;
@@ -541,7 +543,7 @@ static bool fixupDefaultInitCopy(FnSymbol* fn,
 
       } else {
         // No copy-initializer could be found
-        newFn->addFlag(FLAG_ERRONEOUS_INITCOPY);
+        markCopyErroneous(newFn, err);
       }
 
       retval = true;

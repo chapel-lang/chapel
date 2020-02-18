@@ -141,7 +141,7 @@ bool canDispatch(Type*     actualType,
 
 void parseExplainFlag(char* flag, int* line, ModuleSymbol** module);
 
-FnSymbol* findCopyInitFn(AggregateType* ct);
+FnSymbol* findCopyInitFn(AggregateType* ct, const char*& err);
 FnSymbol* findAssignFn(AggregateType* at);
 FnSymbol* findZeroArgInitFn(AggregateType* at);
 
@@ -224,7 +224,8 @@ void      getAutoCopyTypeKeys(Vec<Type*>& keys);
 FnSymbol* getAutoCopy(Type* t);             // returns NULL if there are none
 FnSymbol* getAutoDestroy(Type* t);          //  "
 FnSymbol* getUnalias(Type* t);
-
+const char* getErroneousCopyError(FnSymbol* fn);
+void markCopyErroneous(FnSymbol* fn, const char* err);
 
 
 bool isPOD(Type* t);

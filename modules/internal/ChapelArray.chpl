@@ -4016,14 +4016,25 @@ module ChapelArray {
   }
 
   pragma "init copy fn"
-  proc chpl__initCopy(const ref a: []) {
+  proc chpl__initCopy(a: []) {
     var b : [a._dom] a.eltType;
+
+    if !isConstAssignableType(a.eltType) {
+      if !isAssignableType(a.eltType) {
+        compilerError("Cannot copy array with element type that cannot be assigned");
+      } else {
+        // Make sure this function uses ref argument intent for a
+        // TODO: use a where clause instead to make this less strange
+        // provided that does not significantly slow compiles
+        ref r = a;
+      }
+    }
 
     chpl__uncheckedArrayTransfer(b, a);
     return b;
   }
 
-  pragma "auto copy fn" proc chpl__autoCopy(const ref x: []) {
+  pragma "auto copy fn" proc chpl__autoCopy(x: []) {
     pragma "no copy" var b = chpl__initCopy(x);
     return b;
   }

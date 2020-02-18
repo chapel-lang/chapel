@@ -321,7 +321,7 @@ void ReturnByRef::updateAssignmentsFromRefArgToValue(FnSymbol* fn)
 
           if (symLhs != NULL && symRhs != NULL)
           {
-            // check if rhs is actually a formal 
+            // check if rhs is actually a formal
             bool rhsIsFormal = false;
             for_formals(formal, fn) {
               if(formal == symRhs) {
@@ -1077,7 +1077,7 @@ static void insertCopiesForYields()
 
 // Function resolution adds "dummy" initCopy functions for types
 // that cannot be copied. These "dummy" initCopy functions are marked
-// with the flag FLAG_ERRONEOUS_INITCOPY. This pattern enables
+// with the flag FLAG_ERRONEOUS_COPY. This pattern enables
 // the compiler to continue to operate with its current structure
 // even for types that cannot be copied. In particular, this pass
 // has the ability to remove initCopy calls in some cases.
@@ -1086,33 +1086,38 @@ static void insertCopiesForYields()
 // flag is ever called and raises an error if so.
 static void checkForErroneousInitCopies() {
 
+  std::map<FnSymbol*, const char*> errors;
+
+  // Store errors in local map
+  forv_Vec(FnSymbol, fn, gFnSymbols) {
+    if (fn->hasFlag(FLAG_ERRONEOUS_COPY)) {
+      // Store the error in the local map
+      if (const char* err = getErroneousCopyError(fn))
+        errors[fn] = err;
+    }
+  }
+
   // Mark initCopy/autoCopy functions calling functions marked with
-  // FLAG_ERRONEOUS_INITCOPY/FLAG_ERRONEOUS_AUTOCOPY with the same
+  // FLAG_ERRONEOUS_COPY with the same
   // flag. This situation can come up with the compiler-generated
   // tuple copy functions.
   bool changed;
   do {
     changed = false;
     forv_Vec(FnSymbol, fn, gFnSymbols) {
-      if (fn->hasFlag(FLAG_ERRONEOUS_INITCOPY)) {
+      if (fn->hasFlag(FLAG_ERRONEOUS_COPY)) {
         for_SymbolSymExprs(se, fn) {
           if (FnSymbol* callInFn = se->getFunction()) {
-            if (callInFn->hasFlag(FLAG_INIT_COPY_FN) &&
-                !callInFn->hasFlag(FLAG_ERRONEOUS_INITCOPY)) {
-              callInFn->addFlag(FLAG_ERRONEOUS_INITCOPY);
+            bool inCopyIsh = callInFn->hasFlag(FLAG_INIT_COPY_FN) ||
+                             callInFn->hasFlag(FLAG_AUTO_COPY_FN) ||
+                             callInFn->hasFlag(FLAG_UNALIAS_FN);
+            if (inCopyIsh && !callInFn->hasFlag(FLAG_ERRONEOUS_COPY)) {
+              callInFn->addFlag(FLAG_ERRONEOUS_COPY);
               changed = true;
-            }
-          }
-        }
-      }
 
-      if (fn->hasFlag(FLAG_ERRONEOUS_AUTOCOPY)) {
-        for_SymbolSymExprs(se, fn) {
-          if (FnSymbol* callInFn = se->getFunction()) {
-            if (callInFn->hasFlag(FLAG_AUTO_COPY_FN) &&
-                !callInFn->hasFlag(FLAG_ERRONEOUS_AUTOCOPY)) {
-              callInFn->addFlag(FLAG_ERRONEOUS_AUTOCOPY);
-              changed = true;
+              // propagate error if present
+              if (errors.count(fn) != 0)
+                errors[callInFn] = errors[fn];
             }
           }
         }
@@ -1121,33 +1126,34 @@ static void checkForErroneousInitCopies() {
   } while(changed);
 
   forv_Vec(FnSymbol, fn, gFnSymbols) {
-    if (fn->hasFlag(FLAG_ERRONEOUS_INITCOPY)) {
+    if (fn->hasFlag(FLAG_ERRONEOUS_COPY)) {
       // Error on each call site
       for_SymbolSymExprs(se, fn) {
         if (FnSymbol* callInFn = se->getFunction()) {
-          if (!callInFn->hasFlag(FLAG_INIT_COPY_FN)) {
-            USR_FATAL_CONT(se,
-                           "copy-initialization invoked for a type "
-                           "that does not have a copy initializer");
-          } else {
-            // Should have been propagated above
-            INT_ASSERT(callInFn->hasFlag(FLAG_ERRONEOUS_INITCOPY));
-          }
-        }
-      }
-    }
+          bool inCopyIsh = callInFn->hasFlag(FLAG_INIT_COPY_FN) ||
+                           callInFn->hasFlag(FLAG_AUTO_COPY_FN) ||
+                           callInFn->hasFlag(FLAG_UNALIAS_FN);
+          if (inCopyIsh == false) {
 
-    if (fn->hasFlag(FLAG_ERRONEOUS_AUTOCOPY)) {
-      // Error on each call site
-      for_SymbolSymExprs(se, fn) {
-        if (FnSymbol* callInFn = se->getFunction()) {
-          if (!callInFn->hasFlag(FLAG_AUTO_COPY_FN)) {
-            USR_FATAL_CONT(se,
-                           "implicit copy-initialization invoked for a type "
-                           "that does not allow it");
+            if (callInFn->hasFlag(FLAG_INIT_COPY_FN)) {
+              USR_FATAL_CONT(se, "invalid copy-initialization");
+            } else {
+              USR_FATAL_CONT(se, "invalid implicit copy-initialization");
+            }
+
+            if (errors.count(fn) != 0)
+              USR_FATAL_CONT(se, "%s", errors[fn]);
+
+            Type* t = fn->getFormal(1)->getValType();
+            astlocT typePoint = t->astloc;
+            if (t->symbol->userInstantiationPointLoc.filename != NULL)
+              typePoint = t->symbol->userInstantiationPointLoc;
+
+            USR_PRINT(typePoint,
+                      "%s does not have a valid init=", toString(t));
           } else {
             // Should have been propagated above
-            INT_ASSERT(callInFn->hasFlag(FLAG_ERRONEOUS_AUTOCOPY));
+            INT_ASSERT(callInFn->hasFlag(FLAG_ERRONEOUS_COPY));
           }
         }
       }

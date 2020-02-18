@@ -631,9 +631,6 @@ void BaseAST::printDocsDescription(const char *doc, std::ostream *file, unsigned
   }
 }
 
-
-astlocT currentAstLoc(0,NULL);
-
 void registerModule(ModuleSymbol* mod) {
   switch (mod->modTag) {
   case MOD_USER:
@@ -813,41 +810,4 @@ bool isCForLoop(const BaseAST* a)
   const BlockStmt* stmt = toConstBlockStmt(a);
 
   return (stmt != 0 && stmt->isCForLoop()) ? true : false;
-}
-
-/* Create a throw-away ast with a given filename and line number.
-   This can be used e.g. to pass a line and filename to USR_FATAL
-   since it only takes those from an AST, not directly. */
-VarSymbol* createASTforLineNumber(const char* filename, int line) {
-  astlocT astloc(line, filename);
-  astlocMarker markAstLoc(astloc);
-  VarSymbol* lineTemp = newTemp();
-  return lineTemp;
-}
-
-/************************************* | **************************************
-*                                                                             *
-* Definitions for astlocMarker                                                *
-*                                                                             *
-************************************** | *************************************/
-
-// constructor, invoked upon SET_LINENO
-astlocMarker::astlocMarker(astlocT newAstLoc)
-  : previousAstLoc(currentAstLoc)
-{
-  //previousAstLoc = currentAstLoc;
-  currentAstLoc = newAstLoc;
-}
-
-// constructor, for special occasions
-astlocMarker::astlocMarker(int lineno, const char* filename)
-  : previousAstLoc(currentAstLoc)
-{
-  currentAstLoc.lineno   = lineno;
-  currentAstLoc.filename = astr(filename);
-}
-
-// destructor, invoked upon leaving SET_LINENO's scope
-astlocMarker::~astlocMarker() {
-  currentAstLoc = previousAstLoc;
 }

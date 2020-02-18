@@ -23,6 +23,10 @@
 #include <cstdio>
 #include <cstdlib>
 
+#include "baseAST.h"
+
+#include "astlocs.h"
+
 #ifdef HAVE_LLVM
 #define exit(x) clean_exit(x)
 #else
@@ -88,6 +92,7 @@ void        setupError(const char* subdir, const char* filename, int lineno, int
 
 void        handleError(const char* fmt, ...);
 void        handleError(const BaseAST* ast, const char* fmt, ...);
+void        handleError(astlocT astloc, const char* fmt, ...);
 
 void        exitIfFatalErrorsEncountered();
 
@@ -103,6 +108,8 @@ void        printCallStackCalls();
 
 bool        fatalErrorsEncountered();
 void        clearFatalErrors();
+
+astlocT getUserInstantiationLocation(const BaseAST* ast);
 
 // Returns true if an error/warning at this location
 // (e.g. with USR_FATAL(ast, ...)) would print out
