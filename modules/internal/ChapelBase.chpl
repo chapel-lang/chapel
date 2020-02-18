@@ -726,6 +726,10 @@ module ChapelBase {
     compilerError("postfix ! can only apply to classes");
   }
 
+  inline proc chpl_type_id(type arg) type {
+    return arg;
+  }
+
   //
   // These functions are used to implement the semantics of
   // reading a sync/single var when the variable is not actually

@@ -816,7 +816,17 @@ static Expr* preFoldPrimOp(CallExpr* call) {
     }
 
     if (isTypeExpr(e)) {
-      retval = new SymExpr(totype->symbol);
+      if (totype->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE)) {
+        // The type is expected to remain unchanged.
+        INT_ASSERT(e->typeInfo() == totype);
+        // Preserve runtime data.
+        // 'e' may get replaced with a ref. In which case the parent 'move'
+        // would break without a fn call, see
+        //   test/classes/nilability/question-mark-on-array.chpl
+        retval = new CallExpr("chpl_type_id", e->remove());
+      } else {
+        retval = new SymExpr(totype->symbol);
+      }
       call->replace(retval);
     } else {
       if (isManagedPtrType(e->typeInfo())) {
