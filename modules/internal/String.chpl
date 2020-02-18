@@ -966,7 +966,7 @@ module String {
         var cp: int(32);
         var nBytes: c_int;
         var maxBytes = (localThis.len - i): ssize_t;
-        qio_decode_char_buf(cp, nBytes, curPos:c_string, maxBytes);
+        qio_decode_char_buf_esc(cp, nBytes, curPos:c_string, maxBytes);
 
         var (newBuf, newSize) = bufferCopyLocal(curPos, nBytes);
         newBuf[nBytes] = 0;
@@ -1000,7 +1000,7 @@ module String {
         var nbytes: c_int;
         var multibytes = (localThis.buff + i): c_string;
         var maxbytes = (localThis.len - i): ssize_t;
-        qio_decode_char_buf(cp, nbytes, multibytes, maxbytes);
+        qio_decode_char_buf_esc(cp, nbytes, multibytes, maxbytes);
         yield cp;
         i += nbytes;
       }
@@ -1026,7 +1026,7 @@ module String {
         var nbytes: c_int;
         var multibytes = (localThis.buff + i): c_string;
         var maxbytes = (localThis.len - i): ssize_t;
-        qio_decode_char_buf(cp, nbytes, multibytes, maxbytes);
+        qio_decode_char_buf_esc(cp, nbytes, multibytes, maxbytes);
         yield (cp:int(32), (i + 1):byteIndex, nbytes:int);
         i += nbytes;
       }
@@ -1089,7 +1089,7 @@ module String {
       var nbytes: c_int;
       var multibytes = localThis.buff: c_string;
       var maxbytes = localThis.len: ssize_t;
-      qio_decode_char_buf(cp, nbytes, multibytes, maxbytes);
+      qio_decode_char_buf_esc(cp, nbytes, multibytes, maxbytes);
 
       if localThis.len != nbytes:int then
         halt("string.toCodepoint() only accepts single-codepoint strings");
@@ -1142,7 +1142,7 @@ module String {
       var multibytes = ret.buff;
       var cp: int(32);
       var nbytes: c_int;
-      qio_decode_char_buf(cp, nbytes, multibytes:c_string, maxbytes);
+      qio_decode_char_buf_esc(cp, nbytes, multibytes:c_string, maxbytes);
       ret.buff[nbytes] = 0;
       ret.len = nbytes;
 
@@ -1352,7 +1352,7 @@ module String {
                   var nbytes: c_int;
                   var multibytes = (this.buff + i-1): c_string;
                   var maxbytes = (this.len - (i-1)): ssize_t;
-                  qio_decode_char_buf(cp, nbytes, multibytes, maxbytes);
+                  qio_decode_char_buf_esc(cp, nbytes, multibytes, maxbytes);
                   nextIdx = i-1 + nbytes;
                 }
               }
