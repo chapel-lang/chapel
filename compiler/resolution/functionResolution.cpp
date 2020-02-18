@@ -209,7 +209,7 @@ static void lvalueCheckActual(CallExpr* call, Expr* actual, IntentTag intent, Ar
 
 static bool  moveIsAcceptable(CallExpr* call);
 static void  moveHaltMoveIsUnacceptable(CallExpr* call);
-
+static CallExpr* createGenericRecordVarDefaultInitCall(Symbol* val, AggregateType* at, Expr* call);
 
 static bool useLegacyNilability(Expr* at) {
   if (at != NULL) {
@@ -6308,14 +6308,50 @@ FnSymbol* findAssignFn(AggregateType* at) {
 }
 
 FnSymbol* findZeroArgInitFn(AggregateType* at) {
+  SET_LINENO(at->symbol->defPoint);
+
   VarSymbol* tmpAt = newTemp(at);
 
   CallExpr* call = NULL;
-  if (at->symbol->hasFlag(FLAG_TUPLE)) {
-    call = new CallExpr(astr_defaultOf, at->symbol);
-  } else {
+
+  // non-generic records with initializers
+  if (at                                           != NULL &&
+      at->instantiatedFrom                         == NULL &&
+      isNonGenericRecordWithInitializers(at)       == true) {
+
     call = new CallExpr(astrInit, gMethodToken, tmpAt);
+
+  // extern types (but not memory_order)
+  } else if (at->symbol->hasFlag(FLAG_EXTERN) &&
+             !at->symbol->hasFlag(FLAG_C_MEMORY_ORDER_TYPE)) {
+
+    call = NULL; // not handled
+
+  // generic records with initializers
+  } else if (at != NULL && at->symbol->hasFlag(FLAG_TUPLE) == false &&
+            (at->isRecord() || at->isUnion())) {
+
+    BlockStmt* tmpBlock = new BlockStmt(BLOCK_SCOPELESS);
+    Expr* where = getInsertPointForTypeFunction(at);
+    if (BlockStmt* stmt = toBlockStmt(where))
+      stmt->insertAtHead(tmpBlock);
+    else
+      where->insertBefore(tmpBlock);
+
+    DefExpr* def = new DefExpr(tmpAt);
+    tmpBlock->insertAtTail(def);
+
+    call = createGenericRecordVarDefaultInitCall(tmpAt, at, def);
+
+    tmpBlock->remove();
+
+  // other types (sync, single, ..)
+  } else {
+    call = new CallExpr("_defaultOf", at->symbol);
   }
+
+  if (call == NULL)
+    return NULL;
 
   FnSymbol* foundFn = resolveUninsertedCall(at, call, false);
   FnSymbol* resolvedFn = fixInstantiationPointAndTryResolveBody(at, call);
@@ -10052,9 +10088,12 @@ static void lowerPrimInitNonGenericRecordVar(CallExpr* call,
   }
 }
 
-static void lowerPrimInitGenericRecordVar(CallExpr* call,
-                                            Symbol* val,
-                                            AggregateType* at) {
+// call is the context or PRIM_DEFAULT_INIT_VAR - in some cases
+// code will be added before this.
+static CallExpr* createGenericRecordVarDefaultInitCall(Symbol* val,
+                                                       AggregateType* at,
+                                                       Expr* call) {
+
   AggregateType* root = at->getRootInstantiation();
 
   val->type = root;
@@ -10111,6 +10150,20 @@ static void lowerPrimInitGenericRecordVar(CallExpr* call,
 
     initCall->insertAtTail(appendExpr);
   }
+
+  return initCall;
+}
+
+static void lowerPrimInitGenericRecordVar(CallExpr* call,
+                                          Symbol* val,
+                                          AggregateType* at) {
+  AggregateType* root = at->getRootInstantiation();
+
+  val->type = root;
+
+  INT_ASSERT(!at->symbol->hasFlag(FLAG_GENERIC));
+
+  CallExpr* initCall = createGenericRecordVarDefaultInitCall(val, at, call);
 
   call->insertBefore(initCall);
   resolveCallAndCallee(initCall);
