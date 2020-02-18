@@ -78,6 +78,14 @@ const parentDir = "..";
 const pathSep = "/";
 
 /*
+   Localizes and unescapes string to create a bytes to be used for obtaining a
+   c_string to pass to extern file system operations.
+*/
+private inline proc unescape(str: string) {
+  return str.encode(errors=encodePolicy.unescape);
+}
+
+/*
   Creates a normalized absolutized version of a path. On most platforms, when
   given a non-absolute path this function is equivalent to the following code:
 
@@ -335,8 +343,8 @@ proc dirname(name: string): string {
    var path_p: string = path;
    var varChars: string = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890_";
    var res: string = "";
-   var ind: byteIndex = 1;
-   var pathlen: int = path_p.numBytes;
+   var ind: int = 1;
+   var pathlen: int = path_p.length;
    while (ind <= pathlen) {
      var c: string = path_p(ind);
      if (c == "$" && ind + 1 <= pathlen) {
@@ -346,7 +354,7 @@ proc dirname(name: string): string {
        } else if (path_p(ind+1) == "{") {
          path_p = path_p((ind+2)..);
          pathlen = path_p.numBytes;
-         ind = path_p.find("}");
+         ind = path_p.find("}"):int;
          if (ind == 0) {
            res += "${" +path_p;
            ind = pathlen;
@@ -354,12 +362,13 @@ proc dirname(name: string): string {
            var env_var: string = path_p(..(ind-1));
            var value: string;
            var value_c: c_string;
-           var h: int = sys_getenv(env_var.c_str(), value_c);
+           var h: int = sys_getenv(unescape(env_var).c_str(), value_c);
            if (h != 1) {
              value = "${" + env_var + "}";
            } else {
              try! {
-               value = createStringWithNewBuffer(value_c);
+               value = createStringWithNewBuffer(value_c,
+                                                 errors=decodePolicy.escape);
              }
            }
            res += value;
@@ -367,18 +376,19 @@ proc dirname(name: string): string {
        } else {
          var env_var: string = "";
          ind += 1;
-         while (ind <= path_p.numBytes && varChars.find(path_p(ind)) != 0) {
+         while (ind <= path_p.length && varChars.find(path_p(ind)) != 0) {
            env_var += path_p(ind);
            ind += 1;
          }
          var value: string;
          var value_c: c_string;
-         var h: int = sys_getenv(env_var.c_str(), value_c);
+         var h: int = sys_getenv(unescape(env_var).c_str(), value_c);
          if (h != 1) {
            value = "$" + env_var;
          } else {
            try! {
-             value = createStringWithNewBuffer(value_c);
+             value = createStringWithNewBuffer(value_c,
+                                               errors=decodePolicy.escape);
            }
          }
          res += value;
@@ -411,6 +421,7 @@ proc file.getParentName(): string throws {
   try check();
 
   try {
+    // realPath returns a string, nothing to worry about encoding-wise here
     return dirname(createStringWithNewBuffer(this.realPath()));
   } catch {
     return "unknown";
@@ -577,9 +588,9 @@ proc realPath(name: string): string throws {
   extern proc chpl_fs_realpath(path: c_string, ref shortened: c_string): syserr;
 
   var res: c_string;
-  var err = chpl_fs_realpath(name.localize().c_str(), res);
+  var err = chpl_fs_realpath(unescape(name).c_str(), res);
   if err then try ioerror(err, "realPath", name);
-  return createStringWithOwnedBuffer(res);
+  return createStringWithNewBuffer(res, errors=decodePolicy.escape);
 }
 
 pragma "no doc"
