@@ -843,6 +843,11 @@ bool SplitInitVisitor::enterCallExpr(CallExpr* call) {
           foundSplitInit = false;
         }
       }
+      // Check that it's not an array init we converted int =
+      // (This is a workaround - the actual solution is to have something
+      //  like init= for arrays)
+      if (sym->hasFlag(FLAG_INITIALIZED_LATER))
+        foundSplitInit = false;
     }
 
     if (foundSplitInit) {
