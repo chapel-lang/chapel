@@ -2241,22 +2241,12 @@ static void normalizeTypeAlias(DefExpr* defExpr) {
   // points written using '='
   bool foundSplitInit = false;
   bool requestedSplitInit = isSplitInitExpr(init);
-  // Error for global variables using split init
-  FnSymbol* initFn = defExpr->getModule()->initFn;
-  bool global = (initFn && defExpr->parentExpr == initFn->body);
 
   // For now, disable automatic split init on non-user code
   Expr* prevent = NULL;
   foundSplitInit = findInitPoints(defExpr, initAssigns, prevent);
   if (foundSplitInit == false)
     errorIfSplitInitializationRequired(defExpr, prevent);
-
-  if (requestedSplitInit && foundSplitInit == false) {
-    USR_FATAL_CONT(defExpr, "type alias '%s' is not initialized", var->name);
-
-  } else if (foundSplitInit && global) {
-    USR_FATAL_CONT(defExpr, "split initialization is not supported for globals");
-  }
 
   INT_ASSERT(type == NULL);
   INT_ASSERT(init != NULL);
@@ -2445,22 +2435,11 @@ static void normalizeVariableDefinition(DefExpr* defExpr) {
   bool requestedSplitInit = isSplitInitExpr(init);
   bool refVar = var->hasFlag(FLAG_REF_VAR);
 
-  // Error for global variables using split init
-  FnSymbol* initFn = defExpr->getModule()->initFn;
-  bool global = (initFn && defExpr->parentExpr == initFn->body);
-
   // For now, disable automatic split init on non-user code
   Expr* prevent = NULL;
   foundSplitInit = findInitPoints(defExpr, initAssigns, prevent);
   if (foundSplitInit == false)
     errorIfSplitInitializationRequired(defExpr, prevent);
-
-  if (requestedSplitInit && foundSplitInit == false) {
-    USR_FATAL_CONT(defExpr, "Variable '%s' is not initialized and has no type",
-                   var->name);
-  } else if (requestedSplitInit && global) {
-    USR_FATAL_CONT(defExpr, "split initialization is not supported for globals");
-  }
 
   if ((init != NULL && !requestedSplitInit) ||
       foundSplitInit == false) {
@@ -2562,18 +2541,24 @@ static void errorIfSplitInitializationRequired(DefExpr* def, Expr* cur) {
   if (def->getFunction()->hasFlag(FLAG_UNSAFE))
     return;
 
+  bool requestedSplitInit = isSplitInitExpr(def->init);
   // Don't worry about non-split init
-  if (def->init != NULL && !isSplitInitExpr(def->init))
+  if (def->init != NULL && !requestedSplitInit)
     return;
+
+  bool refVar = def->sym->hasFlag(FLAG_REF_VAR);
 
   bool canDefaultInit = true;
   Type* nonNilableType = NULL;
+  Type* genericDecoratorClass = NULL;
+  Type* genericType = NULL;
+
   // No type or init expr, so can't default init
   if (def->exprType == NULL &&
       (def->init == NULL || isSplitInitExpr(def->init)))
     canDefaultInit = false;
   // Can't default init a ref ever
-  if (def->sym->hasFlag(FLAG_REF_VAR))
+  if (refVar)
     canDefaultInit = false;
   // Check for a few other cases to give better errors now
   // (this will not catch all patterns)
@@ -2589,14 +2574,18 @@ static void errorIfSplitInitializationRequired(DefExpr* def, Expr* cur) {
       } else if (ts->hasFlag(FLAG_GENERIC) || (at && at->isGeneric())) {
         // can't default init a generic type
         canDefaultInit = false;
+        genericType = ts->type;
       }
 
       // can't default init a generic management/nilability
       if (isClassLikeOrManaged(ts->type)) {
         ClassTypeDecorator d = classTypeDecorator(ts->type);
         if (isDecoratorUnknownManagement(d) ||
-            isDecoratorUnknownNilability(d))
+            isDecoratorUnknownNilability(d)) {
           canDefaultInit = false;
+          genericDecoratorClass = ts->type;
+          genericType = ts->type;
+        }
       }
 
       // can't default init a non-nilable class type
@@ -2609,17 +2598,46 @@ static void errorIfSplitInitializationRequired(DefExpr* def, Expr* cur) {
 
   if (canDefaultInit == false) {
     const char* name = def->sym->name;
-    USR_FATAL_CONT(def, "'%s' cannot be default initialized", name);
-    if (cur) {
-      USR_PRINT(cur, "'%s' is used here before being initialized", name);
-    } else if (nonNilableType != NULL) {
-      USR_PRINT("non-nil class types do not support default initialization");
+    FnSymbol* initFn = def->getModule()->initFn;
+    bool global = (initFn && def->parentExpr == initFn->body);
 
-      Type* type = nonNilableType;
-      AggregateType* at = toAggregateType(canonicalDecoratedClassType(type));
-      ClassTypeDecorator d = classTypeDecorator(type);
-      Type* suggestedType = at->getDecoratedClass(addNilableToDecorator(d));
-      USR_PRINT("Consider using the type %s instead", toString(suggestedType));
+    if (def->sym->hasFlag(FLAG_TYPE_VARIABLE)) {
+      USR_FATAL_CONT(def, "type alias '%s' is not initialized", name);
+    } else if (refVar) {
+      USR_FATAL_CONT(def, "reference '%s' is not initialized", name);
+    } else {
+      if (def->exprType == NULL)
+        USR_FATAL_CONT(def, "variable '%s' is not initialized and has no type",
+                       name);
+      else
+        USR_FATAL_CONT(def, "variable '%s' is not initialized", name);
+
+      if (genericDecoratorClass != NULL) {
+        USR_PRINT("undecorated class type %s does not "
+                  "support default initialization",
+                  toString(genericDecoratorClass));
+        USR_PRINT("consider adding a management decorator "
+                  "such as 'owned', 'shared', 'borrowed', or 'unmanaged'");
+      } else if (nonNilableType != NULL) {
+        USR_PRINT("non-nilable class type %s does not "
+                  "support default initialization",
+                  toString(nonNilableType));
+
+        Type* type = nonNilableType;
+        AggregateType* at = toAggregateType(canonicalDecoratedClassType(type));
+        ClassTypeDecorator d = classTypeDecorator(type);
+        Type* suggestedType = at->getDecoratedClass(addNilableToDecorator(d));
+        USR_PRINT("Consider using the type %s instead", toString(suggestedType));
+      } else if (genericType) {
+        USR_PRINT("generic type %s does not support default initialization",
+                  toString(genericType));
+      }
+    }
+
+    if (global) {
+      USR_FATAL_CONT(def, "split initialization is not supported for globals");
+    } else if (cur) {
+      USR_PRINT(cur, "'%s' use here is preventing split-init", name);
     }
   }
 }
@@ -2676,7 +2694,7 @@ static void emitRefVarInit(Expr* after, Symbol* var, Expr* init) {
       SymExpr* initSym = toSymExpr(init);
       if (initSym && initSym->symbol() == gNil)
         USR_FATAL_CONT(sym, "Cannot create a non-const reference to nil");
-      else
+      else if (!isSplitInitExpr(init))
         USR_FATAL_CONT(sym,
                        "Cannot set a non-const reference to a const variable.");
     }
@@ -2690,10 +2708,6 @@ static void emitRefVarInit(Expr* after, Symbol* var, Expr* init) {
 static void normRefVar(DefExpr* defExpr) {
   VarSymbol* var         = toVarSymbol(defExpr->sym);
   Expr*      init        = defExpr->init;
-
-  if (init == NULL || isSplitInitExpr(init)) {
-    USR_FATAL_CONT(var, "References must be initialized");
-  }
 
   if (init != NULL)
     init->remove();
