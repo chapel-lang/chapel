@@ -5992,12 +5992,12 @@ void resolveInitVar(CallExpr* call) {
     // with type inference.
     if (call->numActuals() < 3)
       if (dst->type != dtUnknown)
-        if (dst->type != srcType)
+        if (dst->type->getValType() != srcType->getValType())
           USR_FATAL_CONT(call, "Split initialization uses multiple types; "
                                "another initialization has type %s "
                                "but this initialization has type %s",
-                               toString(dst->type),
-                               toString(srcType));
+                               toString(dst->type->getValType()),
+                               toString(srcType->getValType()));
 
     // Also, if the dst is a param, check that the src values are
     // an acceptable param value, and if there are many, the same param value.
