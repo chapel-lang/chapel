@@ -290,7 +290,7 @@ void get_debugger_wrapper(int* argc, char*** argv) {
   *argv = NULL;
 
   const int use_gdb = (getenv("CHPL_COMM_USE_GDB") != NULL);
-  const int use_lldb = (getenv("CHPL_COMM_USE_LLDB2") != NULL);
+  const int use_lldb = (getenv("CHPL_COMM_USE_LLDB") != NULL);
   if (!use_gdb && !use_lldb) {
     return;
   }
