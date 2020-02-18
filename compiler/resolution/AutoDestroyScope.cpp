@@ -276,20 +276,11 @@ static void deinitializeOrCopyElide(Expr* before, Expr* after, VarSymbol* var) {
       if (after != NULL) cur = after;
       if (before != NULL) cur = before->prev;
 
-      // Back up past an end-of-statement if starting on one
-      //if (cur != NULL)
-      //  if (CallExpr* call = toCallExpr(cur))
-      //    if (call->isPrimitive(PRIM_END_OF_STATEMENT))
-      //      cur = cur->prev;
-
       bool foundEndOfStatementMentioning = false;
 
       while (cur != NULL) {
         if (isCallExpr(cur) || isDefExpr(cur)) {
           CallExpr* call = toCallExpr(cur);
-
-          //if (call && call->isPrimitive(PRIM_END_OF_STATEMENT))
-          //  break; // stop if we found the previous statement
 
           symExprs.clear();
           collectSymExprsFor(cur, var, symExprs);
