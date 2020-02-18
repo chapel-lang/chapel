@@ -478,6 +478,7 @@ int chpl_launch_using_system(char* command, char* argv0) {
       printf("%s ", evList);
     }
     printf("%s\n", command);
+    fflush(stdout);
   }
   chpl_launch_sanity_checks(argv0);
   return system(command);
