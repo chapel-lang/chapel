@@ -79,9 +79,13 @@ const char* VisibilityStmt::getRename() const {
   return modRename;
 }
 
+//
+// Returns the module symbol if the name provided matches the module imported or
+// used
+//
 Symbol* VisibilityStmt::checkIfModuleNameMatches(const char* name) {
   if (isARename()) {
-    // Use statements that rename the module should only allow us to find the
+    // Statements that rename the module should only allow us to find the
     // new name, not the original one.
     if (name == getRename()) {
       SymExpr* actualSe = toSymExpr(src);
@@ -99,9 +103,10 @@ Symbol* VisibilityStmt::checkIfModuleNameMatches(const char* name) {
       }
     }
   } else {
-    // Though we don't support it yet, things like `import M.N.O` probably
-    // wouldn't reach here because we resolve such cases element-by-element
-    // rather than wholesale.  Nothing else should fall under this category
+    // Things like `use M.N.O` (and though we don't support it yet, things like
+    // `import M.N.O`) probably wouldn't reach here because we resolve such
+    // cases element-by-element rather than wholesale.  Nothing else should fall
+    // under this category
     INT_FATAL("Malformed src");
   }
   return NULL;
