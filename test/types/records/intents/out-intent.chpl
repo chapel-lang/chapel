@@ -41,6 +41,9 @@ proc =(ref lhs:R, rhs:R) {
 proc makeR() {
   return new R(1);
 }
+proc makeR(arg: int) {
+  return new R(arg);
+}
 
 proc out1(out arg: R) {
   arg = makeR();
@@ -53,3 +56,28 @@ proc test1() {
   writeln(x);
 }
 test1();
+
+proc out2(out arg: R) {
+}
+
+proc test2() {
+  writeln("test2");
+  var x: R;
+  out2(x);
+  writeln(x);
+}
+test2();
+
+proc out3(out a: R, out b: R) {
+  a = makeR(1);
+  b = makeR(2);
+  b = makeR(3);
+}
+
+proc test3() {
+  writeln("test3");
+  var x: R;
+  out3(x, x);
+  writeln(x);
+}
+test3();

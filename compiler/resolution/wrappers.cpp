@@ -1685,6 +1685,7 @@ static void handleOutIntents(FnSymbol* fn, CallInfo& info) {
     return;
 
   Expr* anchor = info.call->getStmtExpr();
+  Expr* anchorAfter = info.call->getStmtExpr();
 
   Expr* currActual = info.call->get(1);
   Expr* nextActual = NULL;
@@ -1709,8 +1710,9 @@ static void handleOutIntents(FnSymbol* fn, CallInfo& info) {
 
       VarSymbol* tmp = newTemp(astr("_formal_tmp_", formal->name),
                                formal->getValType());
-      //tmp->addFlag(FLAG_INSERT_AUTO_DESTROY);
-      //tmp->addFlag(FLAG_EXPR_TEMP); // ? keep this? -> errors with lvalues
+      tmp->addFlag(FLAG_SUPPRESS_LVALUE_ERRORS);
+      tmp->addFlag(FLAG_INSERT_AUTO_DESTROY);
+      tmp->addFlag(FLAG_EXPR_TEMP);
 
       // Transform  f(x) where x is passed with out intent into
       //   DefExpr tmp
@@ -1719,7 +1721,8 @@ static void handleOutIntents(FnSymbol* fn, CallInfo& info) {
       anchor->insertBefore(new DefExpr(tmp));
 
       CallExpr* assign = new CallExpr("=", actualSym, tmp);
-      anchor->insertAfter(assign);
+      anchorAfter->insertAfter(assign);
+      anchorAfter = assign;
 
       resolveCallAndCallee(assign, false); // false - allow unresolved
 

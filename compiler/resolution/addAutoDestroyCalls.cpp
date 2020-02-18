@@ -498,16 +498,25 @@ static VarSymbol* possiblyInitializesDestroyedVariable(Expr* stmt) {
         if (VarSymbol* var = toVarSymbol(se->symbol()))
           if (isAutoDestroyedVariable(var))
             return var;
+      }
 
-      // case 3: return through ret-arg
-      } else if (calledFn->hasFlag(FLAG_FN_RETARG)) {
-        ArgSymbol* retArg = toArgSymbol(toDefExpr(calledFn->formals.tail)->sym);
-        INT_ASSERT(retArg && retArg->hasFlag(FLAG_RETARG));
-        // Find the corresponding actual, which is the last actual
-        if (SymExpr* lastActual = toSymExpr(call->argList.tail))
-          if (VarSymbol* var = toVarSymbol(lastActual->symbol()))
-            if (isAutoDestroyedVariable(var))
-              return var;
+      for_formals_actuals(formal, actual, call) {
+        // case 3: return through ret-arg
+        if (formal->hasFlag(FLAG_RETARG)) {
+          if (SymExpr* actualSe = toSymExpr(actual))
+            if (VarSymbol* var = toVarSymbol(actualSe->symbol()))
+              if (isAutoDestroyedVariable(var))
+                return var;
+        }
+
+        // case 4: return through out argument
+        if (formal->intent == INTENT_OUT ||
+            formal->originalIntent == INTENT_OUT) {
+          if (SymExpr* actualSe = toSymExpr(actual))
+            if (VarSymbol* var = toVarSymbol(actualSe->symbol()))
+              if (isAutoDestroyedVariable(var))
+                return var;
+        }
       }
     }
   }
