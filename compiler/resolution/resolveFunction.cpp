@@ -804,7 +804,10 @@ class SplitInitVisitor : public AstVisitorTraverse {
  public:
   bool inFunction;
   bool changed;
-  SplitInitVisitor() : inFunction(false), changed(false) { }
+  std::map<Symbol*, Expr*>& preventMap;
+  SplitInitVisitor(std::map<Symbol*, Expr*>& preventMap)
+    : inFunction(false), changed(false), preventMap(preventMap)
+  { }
   virtual bool enterFnSym(FnSymbol* node);
   virtual bool enterDefExpr(DefExpr* def);
   virtual bool enterCallExpr(CallExpr* call);
@@ -847,25 +850,14 @@ bool SplitInitVisitor::enterCallExpr(CallExpr* call) {
       call->primitive = primitives[PRIM_INIT_VAR_SPLIT_DECL];
       // Change the '=' calls found into PRIM_INIT_VAR_SPLIT_INIT
       for_vector(CallExpr, call, initAssigns) {
-        printf("replacing assign %i\n", call->id);
         SET_LINENO(call);
         Expr* rhs = call->get(2)->remove();
         CallExpr* init = new CallExpr(PRIM_INIT_VAR_SPLIT_INIT, sym, rhs);
         call->replace(init);
         resolveInitVar(init);
       }
-    } else {
-      FnSymbol* inFn = call->getFunction();
-      if (!inFn->hasFlag(FLAG_UNSAFE)) {
-        // TODO: check if the type is default-initializable
-        if (isNonNilableClassType(sym->type)) {
-          USR_FATAL_CONT(sym->defPoint, "'%s' cannot be default initialized",
-                         sym->name);
-          if (prevent)
-            USR_FATAL_CONT(prevent, "split-init prevented by this line");
-          USR_PRINT("non-nil class types do not support default initialization");
-        }
-      }
+    } else if (prevent != NULL) {
+      preventMap[sym] = prevent;
     }
   }
   return true;
@@ -876,7 +868,10 @@ class FixPrimInitsVisitor : public AstVisitorTraverse {
  public:
   bool inFunction;
   bool changed;
-  FixPrimInitsVisitor() : inFunction(false), changed(false) { }
+  std::map<Symbol*, Expr*>& preventMap;
+  FixPrimInitsVisitor(std::map<Symbol*, Expr*>& preventMap)
+    : inFunction(false), changed(false), preventMap(preventMap)
+  { }
   virtual bool enterFnSym(FnSymbol* node);
   virtual bool enterDefExpr(DefExpr* def);
   virtual bool enterCallExpr(CallExpr* call);
@@ -896,7 +891,13 @@ bool FixPrimInitsVisitor::enterDefExpr(DefExpr* def) {
 bool FixPrimInitsVisitor::enterCallExpr(CallExpr* call) {
   if (call->isPrimitive(PRIM_DEFAULT_INIT_VAR) ||
       call->isPrimitive(PRIM_INIT_VAR_SPLIT_DECL)) {
-    lowerPrimInit(call);
+    Expr* prevent = NULL;
+    SymExpr* se = toSymExpr(call->get(1));
+    Symbol* sym = se->symbol();
+    if (preventMap.count(sym))
+      prevent = preventMap[sym];
+
+    lowerPrimInit(call, prevent);
     // It was lowered if the call has been removed and replaced.
     if (call->isPrimitive(PRIM_NOOP))
       changed = true;
@@ -916,10 +917,11 @@ void fixPrimInits(FnSymbol* fn) {
   // PRIM_DEFAULT_INIT_VAR in the tree and just use it to establish types.
   // This function needs to lower these.
 
+  std::map<Symbol*, Expr*> splitInitPreventers;
 
   // Convert PRIM_DEFAULT_INIT_VAR to split init where possible
   if (fNoSplitInit == false) {
-    SplitInitVisitor visitor;
+    SplitInitVisitor visitor(splitInitPreventers);
     fn->accept(&visitor);
   }
 
@@ -930,7 +932,7 @@ void fixPrimInits(FnSymbol* fn) {
   // revisiting the entire function.
   bool changed = true;
   while (changed) {
-    FixPrimInitsVisitor visitor;
+    FixPrimInitsVisitor visitor(splitInitPreventers);
     fn->accept(&visitor);
     changed = visitor.changed;
   }

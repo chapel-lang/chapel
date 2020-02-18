@@ -9644,7 +9644,8 @@ static Symbol* resolvePrimInitGetField(CallExpr* call);
 
 static void resolvePrimInit(CallExpr* call, Symbol* val, Type* type);
 
-static void lowerPrimInit(CallExpr* call, Symbol* val, Type* type);
+static void lowerPrimInit(CallExpr* call, Symbol* val, Type* type,
+                          Expr* preventingSplitInit);
 
 static void lowerPrimInitNonGenericRecordVar(CallExpr* call,
                                                Symbol* val,
@@ -9791,7 +9792,7 @@ static void resolvePrimInit(CallExpr* call, Symbol* val, Type* type) {
   }
 }
 
-void lowerPrimInit(CallExpr* call) {
+void lowerPrimInit(CallExpr* call, Expr* preventingSplitInit) {
   Expr* valExpr = NULL;
   Expr* typeExpr = NULL;
 
@@ -9814,7 +9815,7 @@ void lowerPrimInit(CallExpr* call) {
 
   if (SymExpr* se = toSymExpr(typeExpr)) {
     if (se->symbol()->hasFlag(FLAG_TYPE_VARIABLE) == true) {
-      lowerPrimInit(call, val, resolveTypeAlias(se));
+      lowerPrimInit(call, val, resolveTypeAlias(se), preventingSplitInit);
 
     } else {
       USR_FATAL(call, "invalid type specification");
@@ -9885,7 +9886,8 @@ static bool isTupleComponent(Symbol* val, CallExpr* call) {
 
 // Create an error when default initializing a non-nilable class type.
 static void errorIfNonNilableType(CallExpr* call, Symbol* val,
-                                  Type* typeToCheck, Type* type)
+                                  Type* typeToCheck, Type* type,
+                                  Expr* preventingSplitInit)
 {
   if (!isNonNilableClassType(typeToCheck) || useLegacyNilability(call))
     return;
@@ -9918,6 +9920,8 @@ static void errorIfNonNilableType(CallExpr* call, Symbol* val,
   }
 
   USR_FATAL_CONT(uCall, "Cannot default-initialize %s", descr);
+  if (preventingSplitInit != NULL)
+    USR_FATAL_CONT(preventingSplitInit, "split-init prevented by this line");
   USR_PRINT("non-nil class types do not support default initialization");
 
   AggregateType* at = toAggregateType(canonicalDecoratedClassType(type));
@@ -9934,7 +9938,8 @@ static void errorInvalidParamInit(CallExpr* call, Symbol* val, Type* type) {
   }
 }
 
-static void lowerPrimInit(CallExpr* call, Symbol* val, Type* type) {
+static void lowerPrimInit(CallExpr* call, Symbol* val, Type* type,
+                          Expr* preventingSplitInit) {
 
   if (call->id == breakOnResolveID) gdbShouldBreakHere();
 
@@ -9980,7 +9985,7 @@ static void lowerPrimInit(CallExpr* call, Symbol* val, Type* type) {
       resolveExpr(moveDefault);
       call->convertToNoop();
 
-      errorIfNonNilableType(call, val, type, type);
+      errorIfNonNilableType(call, val, type, type, preventingSplitInit);
     } else {
       call->convertToNoop(); // initialize it in PRIM_INIT_VAR_SPLIT_INIT
     }
@@ -10037,7 +10042,8 @@ static void lowerPrimInit(CallExpr* call, Symbol* val, Type* type) {
 
     errorInvalidParamInit(call, val, at);
     if (at->symbol->hasFlag(FLAG_MANAGED_POINTER))
-      errorIfNonNilableType(call, val, getManagedPtrBorrowType(at), at);
+      errorIfNonNilableType(call, val, getManagedPtrBorrowType(at), at,
+                            preventingSplitInit);
 
     if (!val->hasFlag(FLAG_NO_INIT) &&
         !call->isPrimitive(PRIM_INIT_VAR_SPLIT_DECL))
