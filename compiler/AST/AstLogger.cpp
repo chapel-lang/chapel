@@ -135,6 +135,9 @@ void AstLogger::visitUsymExpr(UnresolvedSymExpr* node) {
 void AstLogger::visitUseStmt(UseStmt* node) {
 }
 
+void AstLogger::visitImportStmt(ImportStmt* node) {
+}
+
 bool AstLogger::enterBlockStmt(BlockStmt* node) {
   return true;
 }

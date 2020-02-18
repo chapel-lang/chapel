@@ -20,6 +20,7 @@
 #include "UseStmt.h"
 
 #include "AstVisitor.h"
+#include "ImportStmt.h"
 #include "ResolveScope.h"
 #include "scopeResolve.h"
 #include "stlUtil.h"
@@ -29,7 +30,7 @@
 #include <algorithm>
 
 UseStmt::UseStmt(BaseAST* source, const char* modRename,
-                 bool isPrivate) : Stmt(E_UseStmt) {
+                 bool isPrivate) : VisibilityStmt(E_UseStmt) {
   this->isPrivate = isPrivate;
   src    = NULL;
   this->modRename = astr(modRename);
@@ -54,7 +55,7 @@ UseStmt::UseStmt(BaseAST*                            source,
                  bool                                exclude,
                  std::map<const char*, const char*>* renames,
                  bool isPrivate) :
-  Stmt(E_UseStmt) {
+  VisibilityStmt(E_UseStmt) {
 
   this->isPrivate = isPrivate;
   src    = NULL;
@@ -110,7 +111,7 @@ UseStmt* UseStmt::copyInner(SymbolMap* map) {
 }
 
 Expr* UseStmt::getFirstExpr() {
-  return this;
+  return src;
 }
 
 void UseStmt::replaceChild(Expr* oldAst, Expr* newAst) {
@@ -245,15 +246,6 @@ bool UseStmt::isEnum(const Symbol* sym) const {
   }
 
   return retval;
-}
-
-void UseStmt::updateEnclosingBlock(ResolveScope* scope, Symbol* sym) {
-  src->replace(new SymExpr(sym));
-
-  remove();
-  scope->asBlockStmt()->useListAdd(this);
-
-  scope->extend(this);
 }
 
 /************************************* | **************************************
@@ -968,6 +960,49 @@ bool UseStmt::providesNewSymbols(const UseStmt* other) const {
       // If all of our 'only' list was in the 'only' list of other, we don't
       // provide anything new.
       return numSame != named.size() + renamed.size();
+    }
+  }
+}
+
+/************************************* | **************************************
+*                                                                             *
+* Returns true if the current use statement has the possibility of allowing   *
+* symbols that weren't already covered by 'other'                             *
+*                                                                             *
+* Assumes that other->mod == this->mod.  Will not verify that fact.           *
+*                                                                             *
+************************************** | *************************************/
+
+bool UseStmt::providesNewSymbols(const ImportStmt* other) const {
+  if (isPlainUse()) {
+    // We're a general use.  We know the other is an import statement, so we
+    // provide symbols it doesn't.
+    return true;
+  }
+
+  if (except) {
+    // We have an 'except' list.  `except *` have been transformed into `only;`
+    // at this point, so unless the user explicitly listed everything, this is
+    // probably fine. (and if they did, there's no harm in including it again)
+    return true;
+  } else {
+    if (renamed.size() > 0) {
+      // Anything being renamed means at least one symbols is included by this
+      // use, so that's more than the import statement provided
+      return true;
+    }
+    if (named.size() > 1) {
+      // `only;` lists (and transformed `except *;` lists) only contain a single
+      // element, so any size more than 1 means we definitely provide more
+      // symbols
+      return true;
+    } else if (named[0][0] == '\0') {
+      // If the element is "", then it is an `only;` or `except *;` list, so
+      // the import has already handled it.
+      return false;
+    } else {
+      // Otherwise, it's a new symbol
+      return true;
     }
   }
 }

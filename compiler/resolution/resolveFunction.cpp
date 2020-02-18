@@ -29,6 +29,7 @@
 #include "ForLoop.h"
 #include "ForallStmt.h"
 #include "IfExpr.h"
+#include "ImportStmt.h"
 #include "iterator.h"
 #include "LoopExpr.h"
 #include "LoopStmt.h"

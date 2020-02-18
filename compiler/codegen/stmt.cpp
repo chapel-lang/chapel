@@ -25,6 +25,7 @@
 #include "driver.h"
 #include "expr.h"
 #include "files.h"
+#include "ImportStmt.h"
 #include "LayeredValueTable.h"
 #include "llvmDebug.h"
 #include "misc.h"
@@ -87,6 +88,17 @@ void codegenStmt(Expr* stmt) {
 GenRet UseStmt::codegen() {
   GenRet ret;
   INT_FATAL(this, "UseStmt::codegen not implemented");
+  return ret;
+}
+
+/******************************** | *********************************
+*                                                                   *
+*                                                                   *
+********************************* | ********************************/
+
+GenRet ImportStmt::codegen() {
+  GenRet ret;
+  INT_FATAL(this, "ImportStmt::codegen not implemented");
   return ret;
 }
 

@@ -34,6 +34,7 @@ AST_SRCS =                                          \
            FnSymbol.cpp                             \
            ForallStmt.cpp                           \
            IfExpr.cpp                               \
+           ImportStmt.cpp                           \
            iterator.cpp                             \
            LoopExpr.cpp                             \
            ModuleSymbol.cpp                         \

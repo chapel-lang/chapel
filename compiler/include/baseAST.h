@@ -71,6 +71,7 @@
   macro(IfExpr) sep                                \
                                                    \
   macro(UseStmt) sep                               \
+  macro(ImportStmt) sep                            \
   macro(BlockStmt) sep                             \
   macro(CondStmt) sep                              \
   macro(GotoStmt) sep                              \
@@ -154,6 +155,7 @@ enum AstTag {
   E_IfExpr,
 
   E_UseStmt,
+  E_ImportStmt,
   E_DeferStmt,
   E_TryStmt,
   E_CatchStmt,
@@ -324,6 +326,7 @@ def_is_ast(LoopExpr)
 def_is_ast(NamedExpr)
 def_is_ast(IfExpr)
 def_is_ast(UseStmt)
+def_is_ast(ImportStmt)
 def_is_ast(BlockStmt)
 def_is_ast(CondStmt)
 def_is_ast(GotoStmt)
@@ -372,6 +375,7 @@ def_to_ast(LoopExpr)
 def_to_ast(NamedExpr)
 def_to_ast(IfExpr)
 def_to_ast(UseStmt)
+def_to_ast(ImportStmt)
 def_to_ast(BlockStmt)
 def_to_ast(CondStmt)
 def_to_ast(GotoStmt)
@@ -427,6 +431,7 @@ def_less_ast(LoopExpr)
 def_less_ast(NamedExpr)
 def_less_ast(IfExpr)
 def_less_ast(UseStmt)
+def_less_ast(ImportStmt)
 def_less_ast(BlockStmt)
 def_less_ast(CondStmt)
 def_less_ast(GotoStmt)
@@ -546,6 +551,9 @@ static inline const CallExpr* toConstCallExpr(const BaseAST* a)
     break;                                                              \
   case E_UseStmt:                                                       \
     AST_CALL_CHILD(_a, UseStmt, src, call, __VA_ARGS__);                \
+    break;                                                              \
+  case E_ImportStmt:                                                    \
+    AST_CALL_CHILD(_a, ImportStmt, src, call, __VA_ARGS__);             \
     break;                                                              \
                                                                                \
   case E_BlockStmt: {                                                          \

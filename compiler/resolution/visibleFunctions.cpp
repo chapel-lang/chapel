@@ -22,6 +22,7 @@
 #include "callInfo.h"
 #include "driver.h"
 #include "expr.h"
+#include "ImportStmt.h"
 #include "map.h"
 #include "resolution.h"
 #include "resolveIntents.h"
@@ -273,49 +274,52 @@ static void getVisibleFunctions(const char*           name,
     if (block->useList != NULL) {
       // the block uses other modules
       for_actuals(expr, block->useList) {
-        UseStmt* use = toUseStmt(expr);
+        if (UseStmt* use = toUseStmt(expr)) {
+          // Only traverse private use statements if we are in the scope that
+          // defines them
+          // If we're not already in a use chain, by definition we can see
+          // private uses.  If we're in a use chain, assume that private uses
+          // are not available to us
+          if (!inUseChain || !use->isPrivate) {
 
-        INT_ASSERT(use);
+            bool isMethodCall = false;
+            if (call->numActuals() >= 2 &&
+                call->get(1)->typeInfo() == dtMethodToken)
+              isMethodCall = true;
 
-        // Only traverse private use statements if we are in the scope that
-        // defines them
-        // If we're not already in a use chain, by definition we can see private
-        // uses.  If we're in a use chain, assume that private uses are not
-        // available to us
-        if (!inUseChain || !use->isPrivate) {
+            if (use->skipSymbolSearch(name, isMethodCall) == false) {
+              SymExpr* se = toSymExpr(use->src);
 
-          bool isMethodCall = false;
-          if (call->numActuals() >= 2 &&
-              call->get(1)->typeInfo() == dtMethodToken)
-            isMethodCall = true;
+              INT_ASSERT(se);
 
-          if (use->skipSymbolSearch(name, isMethodCall) == false) {
-            SymExpr* se = toSymExpr(use->src);
+              if (ModuleSymbol* mod = toModuleSymbol(se->symbol())) {
+                // The use statement could be of an enum instead of a module,
+                // but only modules can define functions.
 
-            INT_ASSERT(se);
-
-            if (ModuleSymbol* mod = toModuleSymbol(se->symbol())) {
-              // The use statement could be of an enum instead of a module,
-              // but only modules can define functions.
-
-              if (mod->isVisible(call) == true) {
-                if (use->isARename(name) == true) {
-                  getVisibleFunctions(use->getRename(name),
-                                      call,
-                                      mod->block,
-                                      visited,
-                                      visibleFns,
-                                      true);
-                } else {
-                  getVisibleFunctions(name,
-                                      call,
-                                      mod->block,
-                                      visited,
-                                      visibleFns, true);
+                if (mod->isVisible(call) == true) {
+                  if (use->isARename(name) == true) {
+                    getVisibleFunctions(use->getRename(name),
+                                        call,
+                                        mod->block,
+                                        visited,
+                                        visibleFns,
+                                        true);
+                  } else {
+                    getVisibleFunctions(name,
+                                        call,
+                                        mod->block,
+                                        visited,
+                                        visibleFns, true);
+                  }
                 }
               }
             }
           }
+        } else if (isImportStmt(expr)) {
+          // Don't go into import statements to look for symbols, they only
+          // provide qualified access.
+        } else {
+          INT_FATAL("Expected ImportStmt or UseStmt");
         }
       }
     }

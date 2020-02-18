@@ -1,0 +1,3 @@
+methodAccess.chpl:18: In function 'main':
+methodAccess.chpl:20: error: unresolved call 'owned Foo.bar()'
+methodAccess.chpl:20: note: because no functions named bar found in scope
