@@ -617,6 +617,8 @@ static ModuleSymbol* parseFile(const char* path,
 
       } else if (lexerStatus == YYLEX_BLOCK_COMMENT) {
         context.latestComment = yylval.pch;
+      } else if (lexerStatus == YYLEX_SINGLE_LINE_COMMENT) {
+        context.latestComment = NULL;
       }
     }
 
@@ -836,6 +838,8 @@ BlockStmt* parseString(const char* string,
 
     } else if (lexerStatus == YYLEX_BLOCK_COMMENT) {
       context.latestComment = yylval.pch;
+    } else if (lexerStatus == YYLEX_SINGLE_LINE_COMMENT) {
+      context.latestComment = NULL;
     }
   }
 
