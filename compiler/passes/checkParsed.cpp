@@ -531,7 +531,8 @@ static void warnUnstableLeadingUnderscores() {
   if (fWarnUnstable) {
     forv_Vec(VarSymbol, var, gVarSymbols) {
       if (var->name[0] == '_' &&
-          var->defPoint->getModule()->modTag == MOD_USER) {
+          var->defPoint->getModule()->modTag == MOD_USER &&
+          !var->hasFlag(FLAG_TEMP)) {
         USR_WARN(var->defPoint,
                  "Symbol names with leading underscores (%s) are unstable.", var->name);
       }
