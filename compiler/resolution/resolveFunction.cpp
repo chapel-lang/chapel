@@ -1602,6 +1602,7 @@ static void addLocalCopiesAndWritebacks(FnSymbol*  fn,
 
      case INTENT_OUT: {
       BlockStmt* defaultExpr = NULL;
+      BlockStmt* typeExpr = NULL;
 
       if (formal->defaultExpr &&
           formal->defaultExpr->body.tail->typeInfo() != dtTypeDefaultToken) {
@@ -1609,27 +1610,39 @@ static void addLocalCopiesAndWritebacks(FnSymbol*  fn,
       }
 
       if (formalType->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE)) {
-        VarSymbol* typeTmp = newTemp("_formal_type_tmp_");
+        VarSymbol* typeTmp = NULL;
 
-        typeTmp->addFlag(FLAG_MAYBE_TYPE);
+        if (formal->typeExpr != NULL) {
+          typeTmp = newTemp("_formal_type_tmp_");
+          typeTmp->addFlag(FLAG_MAYBE_TYPE);
+          typeExpr = formal->typeExpr->copy();
+        }
 
         if (defaultExpr != NULL) {
           CallExpr* init = new CallExpr(PRIM_INIT_VAR, tmp,
-                                        defaultExpr->body.tail->remove(),
-                                        typeTmp);
+                                        defaultExpr->body.tail->remove());
+          if (typeTmp != NULL)
+            init->insertAtTail(new SymExpr(typeTmp));
           fn->insertAtHead(init);
           fn->insertAtHead(defaultExpr);
         } else {
-          CallExpr* init = new CallExpr(PRIM_DEFAULT_INIT_VAR, tmp,
-                                        typeTmp);
+          CallExpr* init = new CallExpr(PRIM_DEFAULT_INIT_VAR, tmp);
+          if (typeTmp != NULL)
+            init->insertAtTail(new SymExpr(typeTmp));
           fn->insertAtHead(init);
         }
 
-        fn->insertAtHead(new CallExpr(PRIM_MOVE,
-                                      typeTmp,
-                                      new CallExpr(PRIM_TYPEOF, formal)));
+        // Copy the type expr if present
+        if (typeExpr != NULL) {
+          CallExpr* setType = new CallExpr(PRIM_MOVE,
+                                           typeTmp,
+                                           typeExpr->body.tail->remove());
+          fn->insertAtHead(setType);
+          fn->insertAtHead(typeExpr);
+          typeExpr->flattenAndRemove();
+          fn->insertAtHead(new DefExpr(typeTmp));
+        }
 
-        fn->insertAtHead(new DefExpr(typeTmp));
       } else {
 
         if (defaultExpr != NULL) {

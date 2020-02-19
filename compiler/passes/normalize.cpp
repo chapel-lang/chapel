@@ -3069,6 +3069,9 @@ static bool skipFixup(ArgSymbol* formal, Expr* domExpr, Expr* eltExpr) {
       return true;
     }
   }
+  if (formal->intent == INTENT_OUT) {
+    return true;
+  }
 
   return false;
 }
