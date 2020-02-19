@@ -468,7 +468,13 @@ typedef enum {
   txnTrkNone,  // no tracking, ptr is ignored
   txnTrkDone,  // *ptr is atomic bool 'done' flag
   txnTrkCntr,  // *ptr is plain int (caller responsible for de-conflict)
+  txnTrkTypeCount
 } txnTrkType_t;
+
+#define TXNTRK_TYPE_BITS 2
+#define TXNTRK_ADDR_BITS (64 - TXNTRK_TYPE_BITS)
+#define TXNTRK_TYPE_MASK ((1UL << TXNTRK_TYPE_BITS) - 1UL)
+#define TXNTRK_ADDR_MASK (~(TXNTRK_TYPE_MASK << TXNTRK_ADDR_BITS))
 
 typedef struct {
   txnTrkType_t typ;
@@ -477,15 +483,17 @@ typedef struct {
 
 static inline
 void* txnTrkEncode(txnTrkType_t typ, void* p) {
-  return (void*) (  ((uint64_t) typ << 63)
-                  | ((uint64_t) p & 0x7fffffffffffffffUL));
+  assert((((uint64_t) txnTrkTypeCount - 1UL) & ~TXNTRK_TYPE_MASK) == 0UL);
+  assert((((uint64_t) p) & ~TXNTRK_ADDR_MASK) == 0UL);
+  return (void*) (  ((uint64_t) typ << TXNTRK_ADDR_BITS)
+                  | ((uint64_t) p & TXNTRK_ADDR_MASK));
 }
 
 static inline
 txnTrkCtx_t txnTrkDecode(void* ctx) {
   const uint64_t u = (uint64_t) ctx;
-  return (txnTrkCtx_t) { .typ = (u >> 63) & 1,
-                         .ptr = (void*) (u & 0x7fffffffffffffffUL) };
+  return (txnTrkCtx_t) { .typ = (u >> TXNTRK_ADDR_BITS) & TXNTRK_TYPE_MASK,
+                         .ptr = (void*) (u & TXNTRK_ADDR_MASK) };
 }
 
 
@@ -2004,13 +2012,6 @@ void chpl_comm_execute_on(c_nodeid_t node, c_sublocid_t subloc,
 }
 
 
-#ifdef BLAH
-static void fork_nb_wrapper(chpl_comm_on_bundle_t *f) {
-  chpl_ftable_call(f->task_bundle.requested_fid, f);
-}
-#endif
-
-
 void chpl_comm_execute_on_nb(c_nodeid_t node, c_sublocid_t subloc,
                              chpl_fn_int_t fid,
                              chpl_comm_on_bundle_t *arg, size_t argSize,
@@ -2170,6 +2171,7 @@ void amRequestAMO(c_nodeid_t node, void* object,
     freeBounceBuf(myResult);
   }
 }
+
 
 static inline
 void amRequestShutdown(c_nodeid_t node) {
@@ -3555,6 +3557,7 @@ chpl_comm_nb_handle_t ofi_get(void* addr, c_nodeid_t node,
     tcip->numTxns++;
     waitForCQThisTxn(tcip, &txnDone);
     tciFree(tcip);
+    atomic_destroy_bool(&txnDone);
   } else {
     //
     // The remote address is not RMA-accessible.  Make sure that the
