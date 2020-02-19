@@ -1627,8 +1627,17 @@ static void addLocalCopiesAndWritebacks(FnSymbol*  fn,
           fn->insertAtHead(defaultExpr);
         } else {
           CallExpr* init = new CallExpr(PRIM_DEFAULT_INIT_VAR, tmp);
-          if (typeTmp != NULL)
+          if (typeTmp != NULL) {
             init->insertAtTail(new SymExpr(typeTmp));
+          } else {
+            // find the FLAG_TYPE_FORMAL_FOR_OUT formal just before this one
+            // and set typeTmp to that.
+            DefExpr* beforeDef = toDefExpr(formal->defPoint->prev);
+            INT_ASSERT(beforeDef != NULL);
+            ArgSymbol* typeFormal = toArgSymbol(beforeDef->sym);
+            INT_ASSERT(typeFormal != NULL);
+            init->insertAtTail(new SymExpr(typeFormal));
+          }
           fn->insertAtHead(init);
         }
 

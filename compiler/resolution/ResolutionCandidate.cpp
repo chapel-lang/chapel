@@ -198,7 +198,8 @@ bool ResolutionCandidate::computeAlignment(CallInfo& info) {
           return fn->isGeneric();
         }
 
-        if (formalIdxToActual[j] == NULL) {
+        if (formalIdxToActual[j] == NULL &&
+            !formal->hasFlag(FLAG_TYPE_FORMAL_FOR_OUT)) {
           match                = true;
           actualIdxToFormal[i] = formal;
           formalIdxToActual[j] = info.actuals.v[i];

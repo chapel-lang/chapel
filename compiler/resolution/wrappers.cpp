@@ -384,7 +384,10 @@ void doReplaceDefaultTokensWithDefaults(FnSymbol *fn,
   // Fill in the NULLs in newActuals with the appropriate default argument.
   i = 0;
   for_formals(formal, fn) {
-    if (newActuals[i] == NULL) {
+    if (formal->hasFlag(FLAG_TYPE_FORMAL_FOR_OUT)) {
+      // leave it for out intent processing
+      newActuals[i] = gTypeDefaultToken;
+    } else if (newActuals[i] == NULL) {
       // Fill it in with a default argument.
       newActuals[i] = createDefaultedActual(fn, formal, call, body, copyMap);
     } else if (formal->intent & INTENT_FLAG_IN &&
@@ -425,7 +428,8 @@ void doReplaceDefaultTokensWithDefaults(FnSymbol *fn,
     // Check that newActuals are coercible to the formals
     i = 0;
     for_formals(formal, fn) {
-      if (newActualDefaulted[i]) {
+      if (newActualDefaulted[i] &&
+          !formal->hasFlag(FLAG_TYPE_FORMAL_FOR_OUT)) {
         Symbol* actual = newActuals[i];
         bool actualIsTypeAlias = actual->hasFlag(FLAG_TYPE_VARIABLE);
         bool formalIsTypeAlias = formal->hasFlag(FLAG_TYPE_VARIABLE);
@@ -1707,6 +1711,30 @@ static void handleOutIntents(FnSymbol* fn, CallInfo& info) {
 
       SymExpr* se = toSymExpr(useExpr);
       INT_ASSERT(actualSym == se->symbol());
+
+
+      // For untyped formals with runtime types, pass the type
+      // as the previous argument.
+      Type* formalType = formal->type->getValType();
+      if (formal->typeExpr == NULL &&
+          formalType->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE)) {
+        VarSymbol* typeTmp = newTemp(astr("_formal_type_tmp_", formal->name),
+                                    formal->getValType());
+        typeTmp->addFlag(FLAG_MAYBE_TYPE);
+
+        anchor->insertBefore(new DefExpr(typeTmp));
+        BlockStmt* block = new BlockStmt(BLOCK_TYPE);
+        CallExpr* m = new CallExpr(PRIM_MOVE, typeTmp,
+                                   new CallExpr(PRIM_TYPEOF, actualSym));
+        block->insertAtTail(m);
+        anchor->insertBefore(block);
+        resolveBlockStmt(block);
+        block->flattenAndRemove();
+        SymExpr* prevActual = toSymExpr(currActual->prev);
+        INT_ASSERT(prevActual != NULL && j > 0);
+        prevActual->setSymbol(typeTmp);
+        info.actuals.v[j-1] = typeTmp;
+      }
 
       VarSymbol* tmp = newTemp(astr("_formal_tmp_", formal->name),
                                formal->getValType());
