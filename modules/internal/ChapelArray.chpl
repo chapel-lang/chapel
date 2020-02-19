@@ -1448,7 +1448,7 @@ module ChapelArray {
     }
 
     /*
-     Creates an index buffer which can be used for faster index addition. 
+     Creates an index buffer which can be used for faster index addition.
 
      For example, instead of:
 
@@ -4016,19 +4016,12 @@ module ChapelArray {
   }
 
   pragma "init copy fn"
-  proc chpl__initCopy(a: []) {
+  proc chpl__initCopy(const ref a: []) {
     var b : [a._dom] a.eltType;
 
-    if !isConstAssignableType(a.eltType) {
-      if !isAssignableType(a.eltType) {
-        compilerError("Cannot copy array with element type that cannot be assigned");
-      } else {
-        // Make sure this function uses ref argument intent for a
-        // TODO: use a where clause instead to make this less strange
-        // provided that does not significantly slow compiles
-        ref r = a;
-      }
-    }
+    // TODO: handle !isConstAssignableType(a.eltType)
+    if !isAssignableType(a.eltType) then
+      compilerError("Cannot copy array with element type that cannot be assigned");
 
     chpl__uncheckedArrayTransfer(b, a);
     return b;
