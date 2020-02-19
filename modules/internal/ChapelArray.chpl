@@ -3787,6 +3787,8 @@ module ChapelArray {
   inline proc =(ref a: [], b:domain) {
     if a.rank != b.rank then
       compilerError("rank mismatch in array assignment");
+    if isAssociativeDom(b) && isRectangularArr(a) then
+      compilerError("cannot assign to rectangular arrays from associative domains");
     chpl__transferArray(a, b);
   }
 
