@@ -447,7 +447,7 @@ module ChapelArray {
       type currType = _getLiteralType(elems(i).type);
 
       if currType != elemType {
-        compilerError( "Array literal element " + i:string +
+        compilerError( "Array literal element " + (i+1):string +
                        " expected to be of type " + elemType:string +
                        " but is of type " + currType:string );
       }
@@ -478,13 +478,13 @@ module ChapelArray {
       type elemValType = _getLiteralType(elemVal.type);
 
       if elemKeyType != keyType {
-        compilerError("Associative array key element " + ((i+2)/2):string +
+        compilerError("Associative array key element " + ((i+3)/2):string +
                        " expected to be of type " + keyType:string +
                        " but is of type " + elemKeyType:string);
       }
 
       if elemValType != valType {
-        compilerError("Associative array value element " + ((i+1)/2):string
+        compilerError("Associative array value element " + ((i+2)/2):string
                       + " expected to be of type " + valType:string
                       + " but is of type " + elemValType:string);
       }
@@ -582,7 +582,7 @@ module ChapelArray {
     type keyType = _getLiteralType(keys(0).type);
     for param i in 1..count-1 do
       if keyType != _getLiteralType(keys(i).type) {
-        compilerError("Associative domain element " + i:string +
+        compilerError("Associative domain element " + (i+1):string +
                       " expected to be of type " + keyType:string +
                       " but is of type " +
                       _getLiteralType(keys(i).type):string);
