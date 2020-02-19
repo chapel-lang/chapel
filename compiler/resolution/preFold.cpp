@@ -897,7 +897,7 @@ static Expr* preFoldPrimOp(CallExpr* call) {
 
     if (call->isPrimitive(PRIM_TO_NILABLE_CLASS_CHECKED) &&
         ! isClassLikeOrManaged(totype))
-      USR_FATAL_CONT(call, "postfix-? is not allowed on a non-class type (%s)",
+      USR_FATAL_CONT(call, "postfix-? is not allowed on a non-class type '%s'",
                      toString(totype));
     else
       totype = call->typeInfo();
