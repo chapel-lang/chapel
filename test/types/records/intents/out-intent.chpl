@@ -81,3 +81,24 @@ proc test3() {
   writeln(x);
 }
 test3();
+
+proc inThenOut(in a: R, out b: R) {
+  b = a;
+}
+
+proc test4() {
+  writeln("test4");
+  var x: R;
+  inThenOut(x, x);
+  writeln(x);
+}
+test4();
+
+proc test5() {
+  writeln("test5");
+  var x: R;
+  var y: R;
+  inThenOut(x, y);
+  writeln(y);
+}
+test5();

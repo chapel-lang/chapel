@@ -16,6 +16,17 @@ lhs(1 1) = rhs(3 3)
 deinit 3 3
 (x = 3, ptr = {xx = 3})
 deinit 3 3
+test4
+init (default)
+init= 0 0
+lhs(0 0) = rhs(0 0)
+deinit 0 0
+(x = 0, ptr = {xx = 0})
+deinit 0 0
+test5
+init (default)
+(x = 0, ptr = {xx = 0})
+deinit 0 0
 
 =================================================================================================================
 Allocated Memory (Bytes)         Number   Size     Total    Description                      Address             
