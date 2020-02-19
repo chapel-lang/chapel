@@ -53,11 +53,9 @@ public:
 
   bool            hasExceptList()                                        const;
 
-  bool            isARename(const char* name)                            const;
-  bool            isARename()                                            const;
+  bool            isARenamedSym(const char* name)                        const;
 
-  const char*     getRename(const char* name)                            const;
-  const char*     getRename()                                            const;
+  const char*     getRenamedSym(const char* name)                        const;
 
   void            scopeResolve(ResolveScope* scope);
 
@@ -69,8 +67,6 @@ public:
   bool            providesNewSymbols(const ImportStmt* other)            const;
 
   BaseAST*        getSearchScope()                                       const;
-
-  Symbol*         checkIfModuleNameMatches(const char* name);
 
   void            writeListPredicate(FILE* mFP)                          const;
 
@@ -98,7 +94,6 @@ public:
   bool isPrivate;
 
 private:
-  const char*                        modRename;
   bool                               except;
   std::vector<const char*>           methodsAndFields;
   std::vector<const char*>           functionsToAlwaysCheck;

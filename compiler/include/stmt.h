@@ -63,12 +63,20 @@ class VisibilityStmt: public Stmt {
 
   virtual ~VisibilityStmt();
 
+  bool isARename() const;
+  const char* getRename() const;
+
+  Symbol* checkIfModuleNameMatches(const char* name);
+
  protected:
   void updateEnclosingBlock(ResolveScope* scope,
                             Symbol* sym);
 
 public:
   Expr*                              src;
+
+protected:
+  const char*                        modRename;
 
 };
 

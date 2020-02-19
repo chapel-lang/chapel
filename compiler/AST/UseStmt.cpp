@@ -153,16 +153,11 @@ bool UseStmt::hasExceptList() const {
   return isPlainUse() == false && except == true;
 }
 
-bool UseStmt::isARename(const char* name) const {
+bool UseStmt::isARenamedSym(const char* name) const {
   return renamed.count(name) == 1;
 }
 
-// Specifically for when the module being used is renamed
-bool UseStmt::isARename() const {
-  return modRename[0] != '\0';
-}
-
-const char* UseStmt::getRename(const char* name) const {
+const char* UseStmt::getRenamedSym(const char* name) const {
   std::map<const char*, const char*>::const_iterator it;
   const char*                                        retval = NULL;
 
@@ -173,10 +168,6 @@ const char* UseStmt::getRename(const char* name) const {
   }
 
   return retval;
-}
-
-const char* UseStmt::getRename() const {
-  return modRename;
 }
 
 /************************************* | **************************************
@@ -513,34 +504,6 @@ void UseStmt::trackMethods() {
       }
     }
   }
-}
-
-Symbol* UseStmt::checkIfModuleNameMatches(const char* name) {
-  if (isARename()) {
-    // Use statements that rename the module should only allow us to find the
-    // new name, not the original one.
-    if (name == getRename()) {
-      SymExpr* actualSe = toSymExpr(src);
-      INT_ASSERT(actualSe);
-      // Could be either an enum or a module, but either way we should be able
-      // to find the new name
-      Symbol* actualSym = toSymbol(actualSe->symbol());
-      INT_ASSERT(actualSym);
-      return actualSym;
-    }
-  } else if (SymExpr* se = toSymExpr(src)) {
-    if (ModuleSymbol* modSym = toModuleSymbol(se->symbol())) {
-      if (strcmp(name, se->symbol()->name) == 0) {
-        return modSym;
-      }
-    }
-  } else {
-    // It seems as though we'd need to handle matches against more general
-    // expressions here (e.g., 'use M.N.O'), yet I can't seem to construct
-    // an example that requires this.  I suppose it could be because we
-    // resolve such cases element-by-element rather than wholesale...
-  }
-  return NULL;
 }
 
 /************************************* | **************************************

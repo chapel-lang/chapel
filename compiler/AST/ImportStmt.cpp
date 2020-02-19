@@ -21,6 +21,7 @@
 
 #include "AstVisitor.h"
 #include "ResolveScope.h"
+#include "stringutil.h"
 
 
 /************************************* | **************************************
@@ -29,6 +30,25 @@
 ************************************** | *************************************/
 
 ImportStmt::ImportStmt(BaseAST* source) : VisibilityStmt(E_ImportStmt) {
+  this->modRename = astr("");
+  if (Symbol* b = toSymbol(source)) {
+    src = new SymExpr(b);
+
+  } else if (Expr* b = toExpr(source)) {
+    src = b;
+
+  } else {
+    INT_FATAL(this, "Bad mod in ImportStmt constructor");
+  }
+
+  gImportStmts.add(this);
+}
+
+ImportStmt::ImportStmt(BaseAST* source,
+                       const char* rename) : VisibilityStmt(E_ImportStmt) {
+
+  this->modRename = astr(rename);
+
   if (Symbol* b = toSymbol(source)) {
     src = new SymExpr(b);
 
@@ -43,7 +63,7 @@ ImportStmt::ImportStmt(BaseAST* source) : VisibilityStmt(E_ImportStmt) {
 }
 
 ImportStmt* ImportStmt::copyInner(SymbolMap* map) {
-  ImportStmt* _this = new ImportStmt(COPY_INT(src));
+  ImportStmt* _this = new ImportStmt(COPY_INT(src), modRename);
 
   return _this;
 }
@@ -143,23 +163,4 @@ BaseAST* ImportStmt::getSearchScope() const {
   }
 
   return retval;
-}
-
-//
-// Returns the module symbol if the name provided matches the module imported
-//
-Symbol* ImportStmt::checkIfModuleNameMatches(const char* name) {
-  if (SymExpr* se = toSymExpr(src)) {
-    if (ModuleSymbol* modSym = toModuleSymbol(se->symbol())) {
-      if (name == se->symbol()->name) {
-        return modSym;
-      }
-    }
-  } else {
-    // Though we don't support it yet, things like `import M.N.O` probably
-    // wouldn't reach here because we resolve such cases element-by-element
-    // rather than wholesale.  Nothing else should fall under this category
-    INT_FATAL("Malformed src in ImportStmt");
-  }
-  return NULL;
 }

@@ -1880,7 +1880,8 @@ static bool lookupThisScopeAndUses(const char*           name,
         forv_Vec(Stmt, stmt, *moduleUses) {
           if (UseStmt* use = toUseStmt(stmt)) {
             if (use->skipSymbolSearch(name, false) == false) {
-              const char* nameToUse = use->isARename(name) ? use->getRename(name) : name;
+              const char* nameToUse = use->isARenamedSym(name) ?
+                use->getRenamedSym(name) : name;
               BaseAST* scopeToUse = use->getSearchScope();
 
               if (Symbol* sym = inSymbolTable(nameToUse, scopeToUse)) {
@@ -1888,14 +1889,14 @@ static bool lookupThisScopeAndUses(const char*           name,
                   if (sym->isVisible(context) == true &&
                       isRepeat(sym, symbols)  == false) {
                     symbols.push_back(sym);
-                    if (storeRenames && use->isARename(name)) {
+                    if (storeRenames && use->isARenamedSym(name)) {
                       renameLocs[sym] = &use->astloc;
                     }
                   }
 
                 } else if (isRepeat(sym, symbols) == false) {
                   symbols.push_back(sym);
-                  if (storeRenames && use->isARename(name)) {
+                  if (storeRenames && use->isARenamedSym(name)) {
                     renameLocs[sym] = &use->astloc;
                   }
                 }
@@ -1932,24 +1933,18 @@ static bool lookupThisScopeAndUses(const char*           name,
           }
         } else {
           // we haven't found a match yet, so as a last resort, let's
-          // check the names of the modules in the 'use' statements
+          // check the names of the modules in the 'use'/'import' statements
           // themselves...  This effectively places the module names at
           // a scope just a bit further out than the one holding the
           // symbols that they define.
-          forv_Vec(Stmt, stmt, *moduleUses) {
-            if (UseStmt* use = toUseStmt(stmt)) {
-              if (Symbol* modSym = use->checkIfModuleNameMatches(name)) {
+          forv_Vec(VisibilityStmt, stmt, *moduleUses) {
+            if (stmt != NULL) {
+              if (Symbol* modSym = stmt->checkIfModuleNameMatches(name)) {
                 if (isRepeat(modSym, symbols) == false) {
                   symbols.push_back(modSym);
-                  if (storeRenames && use->isARename()) {
-                    renameLocs[modSym] = &use->astloc;
+                  if (storeRenames && stmt->isARename()) {
+                    renameLocs[modSym] = &stmt->astloc;
                   }
-                }
-              }
-            } else if (ImportStmt* import = toImportStmt(stmt)) {
-              if (Symbol* modSym = import->checkIfModuleNameMatches(name)) {
-                if (isRepeat(modSym, symbols) == false) {
-                  symbols.push_back(modSym);
                 }
               }
             }

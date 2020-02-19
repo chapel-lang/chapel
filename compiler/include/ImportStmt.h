@@ -27,6 +27,7 @@ class ResolveScope;
 class ImportStmt: public VisibilityStmt {
  public:
   ImportStmt(BaseAST* source);
+  ImportStmt(BaseAST* source, const char* rename);
 
   DECLARE_COPY(ImportStmt);
 
@@ -43,9 +44,6 @@ class ImportStmt: public VisibilityStmt {
   void scopeResolve(ResolveScope* scope);
 
   BaseAST* getSearchScope() const;
-
-  Symbol* checkIfModuleNameMatches(const char* name);
-
 };
 
 #endif

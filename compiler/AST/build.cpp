@@ -557,6 +557,15 @@ BlockStmt* buildImportStmt(Expr* mod) {
   return buildChapelStmt(newImport);
 }
 
+//
+// Build an 'import' statement
+//
+BlockStmt* buildImportStmt(Expr* mod, const char* rename) {
+  ImportStmt* newImport = new ImportStmt(mod, rename);
+  addModuleToSearchList(newImport, mod);
+
+  return buildChapelStmt(newImport);
+}
 
 //
 // Build a 'require' statement

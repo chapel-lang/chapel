@@ -297,8 +297,8 @@ static void getVisibleFunctions(const char*           name,
                 // but only modules can define functions.
 
                 if (mod->isVisible(call) == true) {
-                  if (use->isARename(name) == true) {
-                    getVisibleFunctions(use->getRename(name),
+                  if (use->isARenamedSym(name) == true) {
+                    getVisibleFunctions(use->getRenamedSym(name),
                                         call,
                                         mod->block,
                                         visited,
@@ -388,8 +388,8 @@ static void getVisibleFunctions(const char*           name,
               // but only modules can define functions.
 
               if (mod->isVisible(call) == true) {
-                if (use->isARename(name) == true) {
-                  getVisibleFunctions(use->getRename(name),
+                if (use->isARenamedSym(name) == true) {
+                  getVisibleFunctions(use->getRenamedSym(name),
                                       call,
                                       mod->block,
                                       visited,
