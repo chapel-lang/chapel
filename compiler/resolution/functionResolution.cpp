@@ -9921,7 +9921,7 @@ static void errorIfNonNilableType(CallExpr* call, Symbol* val,
 
   USR_FATAL_CONT(uCall, "Cannot default-initialize %s", descr);
   if (preventingSplitInit != NULL)
-    USR_FATAL_CONT(preventingSplitInit, "split-init prevented by this line");
+    USR_FATAL_CONT(preventingSplitInit, "use here prevents split-init");
   USR_PRINT("non-nil class types do not support default initialization");
 
   AggregateType* at = toAggregateType(canonicalDecoratedClassType(type));

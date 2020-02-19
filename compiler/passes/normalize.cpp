@@ -2628,7 +2628,7 @@ static void errorIfSplitInitializationRequired(DefExpr* def, Expr* cur) {
         ClassTypeDecorator d = classTypeDecorator(type);
         Type* suggestedType = at->getDecoratedClass(addNilableToDecorator(d));
         USR_PRINT("Consider using the type %s instead", toString(suggestedType));
-      } else if (genericType) {
+      } else if (genericType != NULL) {
         USR_PRINT("generic type %s does not support default initialization",
                   toString(genericType));
       }
@@ -2637,7 +2637,15 @@ static void errorIfSplitInitializationRequired(DefExpr* def, Expr* cur) {
     if (global) {
       USR_FATAL_CONT(def, "split initialization is not supported for globals");
     } else if (cur) {
-      USR_PRINT(cur, "'%s' use here is preventing split-init", name);
+      if (def->exprType == NULL || genericType != NULL) {
+        USR_PRINT(cur,
+                  "'%s' use here prevents split-init from establishing the type",
+                  name);
+      } else {
+        USR_PRINT(cur,
+                  "'%s' use here prevents split-init",
+                  name);
+      }
     }
   }
 }

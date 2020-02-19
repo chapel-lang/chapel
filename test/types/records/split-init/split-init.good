@@ -49,6 +49,12 @@ init 1300
 yes14
 init 14
 (x = 14, ptr = {})
+yes15
+{}
+yes16
+{}
+yes17
+{}
 no1
 init 1000
 init 1001

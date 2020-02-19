@@ -91,6 +91,10 @@ proc makeR(arg:int) {
   return new R(arg);
 }
 
+proc makeC(out arg: owned C) {
+  arg = new owned C();
+}
+
 proc testRecs() {
   writeln("testRecs");
 
@@ -237,6 +241,34 @@ proc testRecs() {
     }
   }
   writeln(yes14);
+
+
+  writeln("yes15");
+  {
+    var yes15: owned C;
+    makeC(yes15);
+    writeln(yes15);
+  }
+
+  writeln("yes16");
+  {
+    var yes16: owned C;
+    {
+      makeC(yes16);
+      writeln(yes16);
+    }
+  }
+
+  writeln("yes17");
+  {
+    var yes17: owned C;
+    if cond {
+      makeC(yes17);
+    } else {
+      makeC(yes17);
+    }
+    writeln(yes17);
+  }
 
 
   writeln("no1");
