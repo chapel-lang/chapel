@@ -1,4 +1,4 @@
-internal error: UTI-MIS-0726 chpl version 1.21.0 pre-release (bbdc16d057)
+$CHPL_HOME/modules/internal/ChapelTuple.chpl:nnnn: internal error: AST-FNS-BOL-nnnn chpl version mmmm
 
 Internal errors indicate a bug in the Chapel compiler ("It's us, not you"),
 and we're sorry for the hassle.  We would appreciate your reporting this bug -- 
