@@ -3713,8 +3713,70 @@ module ChapelArray {
       if chpl__bulkTransferArray(a, b) == false {
         chpl__transferArray(a, b);
       }
-    } else {
+    } else if chpl__attemptWidePtrArrayBulkTransfer(a, b) == false {
       chpl__transferArray(a, b);
+    }
+  }
+
+  inline proc chpl__attemptWidePtrArrayBulkTransfer(ref a: [], b: []) {
+    /*return false;*/
+    if !useBulkTransfer then return false;
+    if a.eltType != b.eltType then return false;
+
+    // stopgap to prevent recursion
+    type serialType = (chpl_nodeID_t, chpl_sublocID_t, c_void_ptr);
+    if a.eltType == serialType then return false;
+
+    // for now assume they are both local arrays, that have the same bounds
+    if a.domain != b.domain then return false;
+
+    /*writeln("Bulk transferring array type: ", a.eltType:string);*/
+
+    if __primitive("is wide pointer", a[a.domain.low]) &&
+       __primitive("is wide pointer", b[b.domain.low]) {
+
+
+      on a {
+        var receiverData: [a.domain] serialType;
+        on b {
+          var senderData: [b.domain] serialType;
+          for (s,l) in zip(senderData, b) {
+            const locID = __primitive("_wide_get_locale", l);
+            const nodeID = chpl_nodeFromLocaleID(locID);
+            const sublocID = chpl_sublocFromLocaleID(locID);
+            const addr = __primitive("_wide_get_addr", l);
+            s = (nodeID, sublocID, addr);
+            /*s = l.chpl__serialize();*/
+            /*s = (__primitive("cast", int, __primitive("_wide_get_locale", l)),*/
+                 /*__primitive("cast", int, __primitive("_wide_get_addr", l)));*/
+
+            /*writeln(here, "senderData :", senderData);*/
+          }
+
+          /*for (r,s) in zip(receiverData, senderData) do*/
+            /*r = s;*/
+          receiverData = senderData;
+          /*writeln(here, "receiverData :", receiverData);*/
+        }
+        for (r,l) in zip(receiverData, a) {
+          /*l = a.eltType.chpl__deserialize(r);*/
+          l = __primitive("_wide_make", a.eltType, 
+                                        chpl_buildLocaleID(r[1], r[2]),
+                                        __primitive("deref", r[3]));
+          /*l = tmpWide;*/
+            /*const locID = __primitive("_wide_get_locale", l);*/
+            /*const nodeID = chpl_nodeFromLocaleID(locID);*/
+            /*const sublocID = chpl_sublocFromLocaleID(locID);*/
+            /*const addr = __primitive("_wide_get_addr", l);*/
+            /*writeln("in transfer addr: ", r[3]);*/
+            /*writeln("in transfer nodeID: ", nodeID, " sublocID ", sublocID, " addr ", addr);*/
+        }
+      }
+      /*writeln("Successfully finished the bulk transfer");*/
+      return true;
+    }
+    else {
+      return false;
     }
   }
 
