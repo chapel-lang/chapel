@@ -1,0 +1,148 @@
+test1a
+init 1 1
+test1a.a
+test1a.b
+(1 1)
+deinit 1 1
+test1b
+init 1 1
+test1b.a
+test1b.b
+(1 1)
+deinit 1 1
+test1c
+init 1 1
+test1c.a
+test1c.b
+(1 1)
+deinit 1 1
+test1d
+init 1 1
+test1d.a
+(1 1)
+deinit 1 1
+test1d.b
+test1e
+init 1 1
+test1e.a
+(1 1)
+deinit 1 1
+test2a
+init 0 0
+test2a.a
+test2a.b
+(1 1) (0 1)
+deinit 0 1
+test2b
+init 0 0
+test2b.a
+test2b.b
+deinit 0 1
+(1 1) (0 1)
+test2c
+init 0 0
+test2c.a
+test2c.b
+(1 1) (0 1)
+deinit 0 1
+test2d
+init 0 0
+test2d.a
+test2d.b
+deinit 0 1
+(1 1) (0 1)
+test3a
+init 1 1
+test3a.a
+test3a.b
+init= 1 1
+(1 1)
+deinit 1 1
+test3a.c
+deinit 1 1
+test3b
+init 1 1
+test3b.a
+test3b.b
+init= 1 1
+(1 1)
+deinit 1 1
+test3b.c
+deinit 1 1
+test3c
+init 1 1
+test3c.a
+test3c.b
+init= 1 1
+(1 1)
+deinit 1 1
+deinit 1 1
+test4a
+init 1 1
+test4a.a
+test4a.b
+init= 1 1
+(1 1)
+deinit 1 1
+test4a.c
+deinit 1 1
+test5a
+init 1 1
+init 0 0
+test5a.a
+lhs(0 0) = rhs(1 1)
+deinit 1 1
+test5a.b
+(1 1)
+deinit 1 1
+test5b
+init 1 1
+test5b.a
+(1 1) 1
+deinit 1 1
+test5c
+init 1 1
+test5c.a
+(1 1) 1
+deinit 1 1
+end
+test6
+init 1 1
+test6.a
+init= 1 1
+deinit 1 1
+deinit 1 1
+(1 1) (1 1)
+test7a
+init 0 0
+test7a.a
+init= 0 0
+test7a.b
+(1 1) (0 0)
+deinit 0 0
+deinit 1 1
+test7b
+init 0 0
+test7b.a
+init= 0 0
+test7b.b
+deinit 0 0
+deinit 1 1
+(1 1) (0 0)
+test7c
+init 0 0
+test7c.a
+init= 0 0
+test7c.b
+(1 1) (0 0)
+deinit 0 0
+deinit 1 1
+test7d
+init 0 0
+test7d.a
+init= 0 0
+test7d.b
+deinit 0 0
+deinit 1 1
+(1 1) (0 0)
+end

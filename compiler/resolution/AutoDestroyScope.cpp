@@ -19,6 +19,7 @@
 
 #include "AutoDestroyScope.h"
 
+#include "driver.h"
 #include "expr.h"
 #include "DeferStmt.h"
 #include "resolution.h"
@@ -157,6 +158,8 @@ bool AutoDestroyScope::handlingFormalTemps(const Expr* stmt) const {
 
 // If the refStmt is a goto then we need to recurse
 // to the block that contains the target of the goto
+//
+// adds autodestroys after refStmt
 void AutoDestroyScope::insertAutoDestroys(FnSymbol* fn, Expr* refStmt,
                                           const std::set<VarSymbol*>& ignored) {
   GotoStmt*               gotoStmt   = toGotoStmt(refStmt);
@@ -203,22 +206,139 @@ void AutoDestroyScope::insertAutoDestroys(FnSymbol* fn, Expr* refStmt,
   mLocalsHandled = true;
 }
 
-void AutoDestroyScope::destroyVariable(Expr* after, VarSymbol* var,
-                                       const std::set<VarSymbol*>& ignored) {
-  if (ignored.count(var) == 0) {
-    if (FnSymbol* autoDestroyFn = autoDestroyMap.get(var->type)) {
-      SET_LINENO(var);
-
-      INT_ASSERT(autoDestroyFn->hasFlag(FLAG_AUTO_DESTROY_FN));
-
-      CallExpr* autoDestroy = new CallExpr(autoDestroyFn, var);
-
-      after->insertAfter(autoDestroy);
+static void findCopy(CallExpr* call, VarSymbol* var,
+                     CallExpr** copyToElide, Symbol** copyToLhs)
+{
+  if (call->isNamedAstr(astrInitEquals)) {
+    if (call->numActuals() >= 2) {
+      if (SymExpr* lhsSe = toSymExpr(call->get(1))) {
+        if (SymExpr* rhsSe = toSymExpr(call->get(2))) {
+          if (lhsSe->getValType() == rhsSe->getValType()) {
+            if (rhsSe->symbol() == var) {
+              *copyToElide = call;
+              *copyToLhs = lhsSe->symbol();
+            }
+          }
+        }
+      }
+    }
+  } else if (call->isPrimitive(PRIM_MOVE) || call->isPrimitive(PRIM_ASSIGN)) {
+    if (SymExpr* lhsSe = toSymExpr(call->get(1))) {
+      if (CallExpr* rhsCall = toCallExpr(call->get(2))) {
+        if (rhsCall->isNamed("chpl__initCopy") ||
+            rhsCall->isNamed("chpl__autoCopy")) {
+          if (rhsCall->numActuals() >= 1) {
+            if (SymExpr* rhsSe = toSymExpr(rhsCall->get(1))) {
+              if (lhsSe->getValType() == rhsSe->getValType()) {
+                if (rhsSe->symbol() == var) {
+                  *copyToElide = call;
+                  *copyToLhs = lhsSe->symbol();
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  } else if (call->isNamed("chpl__initCopy")||call->isNamed("chpl__autoCopy")) {
+    if (call->numActuals() >= 2) {
+      if (SymExpr* rhsSe = toSymExpr(call->get(1))) {
+        if (SymExpr* lhsSe = toSymExpr(call->get(2))) {
+          if (lhsSe->getValType() == rhsSe->getValType()) {
+            if (rhsSe->symbol() == var) {
+              *copyToElide = call;
+              *copyToLhs = lhsSe->symbol();
+            }
+          }
+        }
+      }
     }
   }
 }
 
-// Destroy outer variabls and add them to the ignored set
+static void deinitializeOrCopyElide(Expr* before, Expr* after, VarSymbol* var) {
+  if (FnSymbol* autoDestroyFn = autoDestroyMap.get(var->type)) {
+    INT_ASSERT(autoDestroyFn->hasFlag(FLAG_AUTO_DESTROY_FN));
+
+    CallExpr* copyToElide = NULL;
+    Symbol* copyToLhs = NULL;
+
+    // Check to see if copy-elision is possible.
+    if (fNoCopyElision == false) {
+      // variable is dead at last mention.
+      // is copy-initialization the last mention of this variable?
+      // (Don't consider the end-of-statement marker for the copy-init itself)
+
+      std::vector<SymExpr*> symExprs;
+
+      // Scroll backwards finding uses of the variable.
+      Expr* cur = NULL;
+      if (after != NULL) cur = after;
+      if (before != NULL) cur = before->prev;
+
+      bool foundEndOfStatementMentioning = false;
+
+      while (cur != NULL) {
+        if (isCallExpr(cur) || isDefExpr(cur)) {
+          CallExpr* call = toCallExpr(cur);
+
+          symExprs.clear();
+          collectSymExprsFor(cur, var, symExprs);
+          if (symExprs.size() > 0) {
+            // Found a mention
+            if (call == NULL) {
+              break; // found a mention not in a call
+            } else {
+              // in a call
+              if (call->isPrimitive(PRIM_END_OF_STATEMENT)) {
+                // in an end of statement marker
+                if (foundEndOfStatementMentioning) {
+                  break; // stop if already encountered a statement mentioning
+                } else {
+                  foundEndOfStatementMentioning = true;
+                  // keep looking; ignore this end-of-statement
+                }
+              } else {
+                // in another call - check if it is a copy
+                findCopy(call, var, &copyToElide, &copyToLhs);
+
+                // stop the search if we found a mention.
+                break;
+              }
+            }
+          }
+
+        } else {
+          // stop the search if it was a nested block
+          break;
+        }
+        cur = cur->prev;
+      }
+    }
+
+    if (copyToElide == NULL) {
+      SET_LINENO(var);
+      CallExpr* autoDestroy = new CallExpr(autoDestroyFn, var);
+      if (before)
+        before->insertBefore(autoDestroy);
+      else
+        after->insertAfter(autoDestroy);
+    } else {
+      SET_LINENO(copyToElide);
+      // Change the copy into a move and don't destroy the variable.
+      copyToElide->replace(new CallExpr(PRIM_ASSIGN, copyToLhs, var));
+    }
+  }
+}
+
+void AutoDestroyScope::destroyVariable(Expr* after, VarSymbol* var,
+                                       const std::set<VarSymbol*>& ignored) {
+  if (ignored.count(var) == 0) {
+    deinitializeOrCopyElide(NULL, after, var);
+  }
+}
+
+// Destroy outer variables and add them to the ignored set
 void AutoDestroyScope::destroyOuterVariables(Expr* before,
                                              std::set<VarSymbol*>& ignored) const
 {
@@ -226,14 +346,8 @@ void AutoDestroyScope::destroyOuterVariables(Expr* before,
   for (size_t i = 1; i <= count; i++) {
     VarSymbol* var = mInitedOuterVars[count - i];
     if (ignored.count(var) == 0) {
-      if (FnSymbol* autoDestroyFn = autoDestroyMap.get(var->type)) {
-        SET_LINENO(var);
-
-        INT_ASSERT(autoDestroyFn->hasFlag(FLAG_AUTO_DESTROY_FN));
-        CallExpr* autoDestroy = new CallExpr(autoDestroyFn, var);
-        before->insertBefore(autoDestroy);
-        ignored.insert(var);
-      }
+      deinitializeOrCopyElide(before, NULL, var);
+      ignored.insert(var);
     }
   }
 }
@@ -248,6 +362,7 @@ static BlockStmt* shadowVarsDeinitBlock(Expr* refStmt) {
   return NULL;
 }
 
+// add autoDestorys after refStmt
 void AutoDestroyScope::variablesDestroy(Expr*      refStmt,
                                         VarSymbol* excludeVar,
                                         const std::set<VarSymbol*>& ignored,
@@ -292,13 +407,8 @@ void AutoDestroyScope::variablesDestroy(Expr*      refStmt,
       INT_ASSERT(var || defer);
 
       if (var != NULL && var != excludeVar && ignored.count(var) == 0) {
-        if (FnSymbol* autoDestroyFn = autoDestroyMap.get(var->type)) {
-          if (startingScope->isVariableInitialized(var)) {
-            SET_LINENO(var);
-            INT_ASSERT(autoDestroyFn->hasFlag(FLAG_AUTO_DESTROY_FN));
-            CallExpr* autoDestroy = new CallExpr(autoDestroyFn, var);
-            insertBeforeStmt->insertBefore(autoDestroy);
-          }
+        if (startingScope->isVariableInitialized(var)) {
+          deinitializeOrCopyElide(insertBeforeStmt, NULL, var);
         }
       }
 
@@ -322,6 +432,7 @@ void AutoDestroyScope::variablesDestroy(Expr*      refStmt,
     for (size_t i = 1; i <= count; i++) {
       VarSymbol* var = mFormalTemps[count - i];
 
+      // TODO: copy elide?
       if (FnSymbol* autoDestroyFn = autoDestroyMap.get(var->type)) {
         SET_LINENO(var);
 

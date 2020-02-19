@@ -153,6 +153,7 @@ extern bool fIgnoreLocalClasses;
 extern bool fNoLifetimeChecking;
 extern bool fNoSplitInit;
 extern bool fNoEarlyDeinit;
+extern bool fNoCopyElision;
 extern bool fCompileTimeNilChecking;
 extern bool fOverrideChecking;
 extern int  ffloatOpt;

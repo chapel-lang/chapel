@@ -1,8 +1,11 @@
 
 config const cond : bool = true;
 
+class C { }
+
 record R {
   var x : int;
+  var potentialAlias: unmanaged C?;
   proc init() {
     this.x = 0;
     writeln("R.init: ", x);
