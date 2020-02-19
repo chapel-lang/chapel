@@ -892,8 +892,15 @@ static Expr* preFoldPrimOp(CallExpr* call) {
   case PRIM_TO_NILABLE_CLASS:
   case PRIM_TO_NILABLE_CLASS_CHECKED:
   case PRIM_TO_NON_NILABLE_CLASS: {
-    Type* totype = call->typeInfo();
     Expr* e = call->get(1);
+    Type* totype = e->getValType(); // if error; otherwise changed below
+
+    if (call->isPrimitive(PRIM_TO_NILABLE_CLASS_CHECKED) &&
+        ! isClassLikeOrManaged(totype))
+      USR_FATAL_CONT(call, "postfix-? is not allowed on a non-class type '%s'",
+                     toString(totype));
+    else
+      totype = call->typeInfo();
 
     if (call->isPrimitive(PRIM_TO_UNMANAGED_CLASS_CHECKED) ||
         call->isPrimitive(PRIM_TO_BORROWED_CLASS_CHECKED)) {
