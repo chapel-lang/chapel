@@ -971,6 +971,7 @@ static void defaultedFormalApplyDefaultValue(FnSymbol*  fn,
       formal->intent & INTENT_FLAG_IN &&
       typeExprReturnsType(formal)) {
     VarSymbol* nt = newTemp(temp->type);
+    nt->addFlag(FLAG_INITIALIZED_LATER);
     body->insertAtTail(new DefExpr(nt));
     defaultedFormalApplyDefaultForType(formal, body, nt);
     body->insertAtTail(new CallExpr("=", nt, fromExpr));
