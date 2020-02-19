@@ -30,7 +30,7 @@
 ************************************** | *************************************/
 
 ImportStmt::ImportStmt(BaseAST* source) : VisibilityStmt(E_ImportStmt) {
-  this->modRename = "";
+  this->modRename = astr("");
   if (Symbol* b = toSymbol(source)) {
     src = new SymExpr(b);
 
