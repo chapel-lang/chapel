@@ -3416,11 +3416,15 @@ void ofi_put_V(int v_len, void** addr_v, void** local_mr_v,
       while (tcip->numTxns >= txCQLen) { // need CQ room for at least 1 txn
         checkTxCQ(tcip);
       }
+      atomic_bool txnDone;
+      atomic_init_bool(&txnDone, false);
+      void* ctx = txnTrkEncode(txnTrkDone, &txnDone);
       DBG_PRINTF(DBG_RMAUNORD,
                  "put_V ordering: %p <= %d:%p",
                  orderDummy, (int) node, orderDummyMap[node]);
-      (void) ofi_get_ll(orderDummy, node, orderDummyMap[node], 1,
-                        txnTrkEncode(txnTrkNone, NULL), tcip);
+      (void) ofi_get_ll(orderDummy, node, orderDummyMap[node], 1, ctx, tcip);
+      waitForCQThisTxn(tcip, &txnDone);
+      atomic_destroy_bool(&txnDone);
     } BITMAP_FOREACH_SET_END
   }
 
