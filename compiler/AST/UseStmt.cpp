@@ -153,15 +153,11 @@ bool UseStmt::hasExceptList() const {
   return isPlainUse() == false && except == true;
 }
 
-bool UseStmt::isARename(const char* name) const {
+bool UseStmt::isARenamedSym(const char* name) const {
   return renamed.count(name) == 1;
 }
 
-bool UseStmt::isARename() const {
-  return VisibilityStmt::isARename();
-}
-
-const char* UseStmt::getRename(const char* name) const {
+const char* UseStmt::getRenamedSym(const char* name) const {
   std::map<const char*, const char*>::const_iterator it;
   const char*                                        retval = NULL;
 
@@ -172,10 +168,6 @@ const char* UseStmt::getRename(const char* name) const {
   }
 
   return retval;
-}
-
-const char* UseStmt::getRename() const {
-  return VisibilityStmt::getRename();
 }
 
 /************************************* | **************************************

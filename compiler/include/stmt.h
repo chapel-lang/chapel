@@ -63,8 +63,8 @@ class VisibilityStmt: public Stmt {
 
   virtual ~VisibilityStmt();
 
-  virtual bool isARename() const;
-  virtual const char* getRename() const;
+  bool isARename() const;
+  const char* getRename() const;
 
   Symbol* checkIfModuleNameMatches(const char* name);
 

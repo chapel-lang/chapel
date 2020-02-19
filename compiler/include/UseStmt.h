@@ -53,11 +53,9 @@ public:
 
   bool            hasExceptList()                                        const;
 
-  bool            isARename(const char* name)                            const;
-  virtual bool isARename() const;
+  bool            isARenamedSym(const char* name)                        const;
 
-  const char*     getRename(const char* name)                            const;
-  virtual const char* getRename() const;
+  const char*     getRenamedSym(const char* name)                        const;
 
   void            scopeResolve(ResolveScope* scope);
 

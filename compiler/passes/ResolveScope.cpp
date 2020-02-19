@@ -516,8 +516,8 @@ Symbol* ResolveScope::lookupWithUses(UnresolvedSymExpr* usymExpr, bool isUse) co
           BaseAST*    scopeToUse = use->getSearchScope();
           const char* nameToUse  = name;
 
-          if (use->isARename(name) == true) {
-            nameToUse = use->getRename(name);
+          if (use->isARenamedSym(name) == true) {
+            nameToUse = use->getRenamedSym(name);
           }
 
           if (ResolveScope* next = getScopeFor(scopeToUse)) {
@@ -746,8 +746,8 @@ bool ResolveScope::getFieldsWithUses(const char* fieldName,
             BaseAST*    scopeToUse = use->getSearchScope();
             const char* nameToUse  = NULL;
 
-            if (use->isARename(fieldName) == true) {
-              nameToUse = use->getRename(fieldName);
+            if (use->isARenamedSym(fieldName) == true) {
+              nameToUse = use->getRenamedSym(fieldName);
             } else {
               nameToUse = fieldName;
             }

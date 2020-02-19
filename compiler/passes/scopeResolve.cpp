@@ -1880,7 +1880,8 @@ static bool lookupThisScopeAndUses(const char*           name,
         forv_Vec(Stmt, stmt, *moduleUses) {
           if (UseStmt* use = toUseStmt(stmt)) {
             if (use->skipSymbolSearch(name, false) == false) {
-              const char* nameToUse = use->isARename(name) ? use->getRename(name) : name;
+              const char* nameToUse = use->isARenamedSym(name) ?
+                use->getRenamedSym(name) : name;
               BaseAST* scopeToUse = use->getSearchScope();
 
               if (Symbol* sym = inSymbolTable(nameToUse, scopeToUse)) {
@@ -1888,14 +1889,14 @@ static bool lookupThisScopeAndUses(const char*           name,
                   if (sym->isVisible(context) == true &&
                       isRepeat(sym, symbols)  == false) {
                     symbols.push_back(sym);
-                    if (storeRenames && use->isARename(name)) {
+                    if (storeRenames && use->isARenamedSym(name)) {
                       renameLocs[sym] = &use->astloc;
                     }
                   }
 
                 } else if (isRepeat(sym, symbols) == false) {
                   symbols.push_back(sym);
-                  if (storeRenames && use->isARename(name)) {
+                  if (storeRenames && use->isARenamedSym(name)) {
                     renameLocs[sym] = &use->astloc;
                   }
                 }
