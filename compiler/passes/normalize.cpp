@@ -3063,7 +3063,8 @@ static void fixupArrayFormals(FnSymbol* fn) {
 }
 
 static bool skipFixup(ArgSymbol* formal, Expr* domExpr, Expr* eltExpr) {
-  if (formal->intent & INTENT_FLAG_IN) {
+  if ((formal->intent & INTENT_FLAG_IN) ||
+      formal->intent == INTENT_OUT) {
     if (isDefExpr(domExpr) || isDefExpr(eltExpr)) {
       return false;
     } else if (SymExpr* se = toSymExpr(domExpr)) {
@@ -3073,9 +3074,6 @@ static bool skipFixup(ArgSymbol* formal, Expr* domExpr, Expr* eltExpr) {
     } else {
       return true;
     }
-  }
-  if (formal->intent == INTENT_OUT) {
-    return true;
   }
 
   return false;

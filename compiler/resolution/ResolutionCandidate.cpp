@@ -231,7 +231,8 @@ bool ResolutionCandidate::computeAlignment(CallInfo& info) {
   // Make sure that any remaining formals are matched by name
   // or have a default value.
   while (formal) {
-    if (formalIdxToActual[j] == NULL && formal->defaultExpr == NULL) {
+    if (formalIdxToActual[j] == NULL && formal->defaultExpr == NULL &&
+        !formal->hasFlag(FLAG_TYPE_FORMAL_FOR_OUT)) {
       failingArgument = formal;
       reason = RESOLUTION_CANDIDATE_TOO_FEW_ARGUMENTS;
       return false;
