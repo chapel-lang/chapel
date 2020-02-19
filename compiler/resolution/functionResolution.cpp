@@ -9920,7 +9920,7 @@ static void errorIfNonNilableType(CallExpr* call, Symbol* val,
   }
 
   USR_FATAL_CONT(uCall, "Cannot default-initialize %s", descr);
-  if (preventingSplitInit != NULL)
+  if (preventingSplitInit != NULL && !val->hasFlag(FLAG_TEMP))
     USR_FATAL_CONT(preventingSplitInit, "use here prevents split-init");
   USR_PRINT("non-nil class types do not support default initialization");
 

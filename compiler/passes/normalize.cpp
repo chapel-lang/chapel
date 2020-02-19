@@ -2601,6 +2601,11 @@ static void errorIfSplitInitializationRequired(DefExpr* def, Expr* cur) {
     FnSymbol* initFn = def->getModule()->initFn;
     bool global = (initFn && def->parentExpr == initFn->body);
 
+    // Don't give errors for compiler generated functions at this time.
+    FnSymbol* inFn = def->getFunction();
+    if (inFn->hasFlag(FLAG_COMPILER_GENERATED))
+      return;
+
     if (def->sym->hasFlag(FLAG_TYPE_VARIABLE)) {
       USR_FATAL_CONT(def, "type alias '%s' is not initialized", name);
     } else if (refVar) {
