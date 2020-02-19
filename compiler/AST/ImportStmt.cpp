@@ -99,14 +99,6 @@ void ImportStmt::verify() {
   verifyNotOnList(src);
 }
 
-bool ImportStmt::isARename() const {
-  return VisibilityStmt::isARename();
-}
-
-const char* ImportStmt::getRename() const {
-  return VisibilityStmt::getRename();
-}
-
 //
 // Resolve the module symbol referred to by the ImportStmt
 //
@@ -171,11 +163,4 @@ BaseAST* ImportStmt::getSearchScope() const {
   }
 
   return retval;
-}
-
-//
-// Returns the module symbol if the name provided matches the module imported
-//
-Symbol* ImportStmt::checkIfModuleNameMatches(const char* name) {
-  return VisibilityStmt::checkIfModuleNameMatches(name);
 }

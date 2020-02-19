@@ -514,10 +514,6 @@ void UseStmt::trackMethods() {
   }
 }
 
-Symbol* UseStmt::checkIfModuleNameMatches(const char* name) {
-  return VisibilityStmt::checkIfModuleNameMatches(name);
-}
-
 /************************************* | **************************************
 *                                                                             *
 *                                                                             *

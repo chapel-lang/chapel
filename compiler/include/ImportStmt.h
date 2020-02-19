@@ -41,15 +41,9 @@ class ImportStmt: public VisibilityStmt {
 
   virtual GenRet codegen();
 
-  virtual bool isARename() const;
-  virtual const char* getRename() const;
-
   void scopeResolve(ResolveScope* scope);
 
   BaseAST* getSearchScope() const;
-
-  virtual Symbol* checkIfModuleNameMatches(const char* name);
-
 };
 
 #endif

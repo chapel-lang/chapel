@@ -70,8 +70,6 @@ public:
 
   BaseAST*        getSearchScope()                                       const;
 
-  virtual Symbol* checkIfModuleNameMatches(const char* name);
-
   void            writeListPredicate(FILE* mFP)                          const;
 
 private:
