@@ -4404,26 +4404,12 @@ size_t do_amo_on_cpu(fork_amo_cmd_t cmd,
     break;
 
   case cmpxchg_64:
-    //
-    // If the object is not in memory registered with the NIC, use the
-    // processor.  Otherwise, since the other 64-bit AMOs are done on
-    // the NIC, for coherence do this one on the NIC as well.
-    //
     {
       chpl_bool32 my_res;
-      mem_region_t* mr;
-      if ((mr = mreg_for_local_addr(obj)) == NULL) {
-        my_res = atomic_compare_exchange_strong_int_least64_t
-                   ((atomic_int_least64_t*) obj,
-                    *(int_least64_t*) opnd1,
-                    *(int_least64_t*) opnd2);
-      }
-      else {
-        int_least64_t nic_res;
-        do_nic_amo(opnd1, opnd2, chpl_nodeID, obj, sizeof(nic_res),
-                   amo_cmd_2_nic_op(cmpxchg_64, 1), &nic_res, mr);
-        my_res = (nic_res == *(int_least64_t*) opnd1) ? true : false;
-      }
+      my_res = atomic_compare_exchange_strong_int_least64_t
+                 ((atomic_int_least64_t*) obj,
+                  *(int_least64_t*) opnd1,
+                  *(int_least64_t*) opnd2);
       memcpy(res, &my_res, sizeof(my_res));
       res_size = sizeof(my_res);
     }
