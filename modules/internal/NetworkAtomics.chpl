@@ -107,23 +107,6 @@ module NetworkAtomics {
       x <~> read();
     }
 
-    // Deprecated //
-
-    inline proc compareExchange(expected:bool, desired:bool, param order: memoryOrder = memoryOrder.seqCst): bool {
-      compilerWarning("compareExchange is deprecated (and will be repurposed in a future release), use compareAndSwap");
-      return this.compareAndSwap(expected, desired, order);
-    }
-
-    inline proc compareExchangeWeak(expected:bool, desired:bool, param order: memoryOrder = memoryOrder.seqCst): bool {
-      compilerWarning("compareExchangeWeak is deprecated (and will be repurposed in a future release), use compareAndSwap");
-      return this.compareAndSwap(expected, desired, order);
-    }
-
-    inline proc compareExchangeStrong(expected:bool, desired:bool, param order: memoryOrder = memoryOrder.seqCst): bool {
-      compilerWarning("compareExchangeStrong is deprecated (and will be repurposed in a future release), use compareAndSwap");
-      return this.compareAndSwap(expected, desired, order);
-    }
-
   }
 
   pragma "atomic type"
@@ -295,23 +278,6 @@ module NetworkAtomics {
 
     proc const writeThis(x) throws {
       x <~> read();
-    }
-
-    // Deprecated //
-
-    inline proc compareExchange(expected:T, desired:T, param order: memoryOrder = memoryOrder.seqCst): bool {
-      compilerWarning("compareExchange is deprecated (and will be repurposed in a future release), use compareAndSwap");
-      return this.compareAndSwap(expected, desired, order);
-    }
-
-    inline proc compareExchangeWeak(expected:T, desired:T, param order: memoryOrder = memoryOrder.seqCst): bool {
-      compilerWarning("compareExchangeWeak is deprecated (and will be repurposed in a future release), use compareAndSwap");
-      return this.compareAndSwap(expected, desired, order);
-    }
-
-    inline proc compareExchangeStrong(expected:T, desired:T, param order: memoryOrder = memoryOrder.seqCst): bool {
-      compilerWarning("compareExchangeStrong is deprecated (and will be repurposed in a future release), use compareAndSwap");
-      return this.compareAndSwap(expected, desired, order);
     }
 
   }
