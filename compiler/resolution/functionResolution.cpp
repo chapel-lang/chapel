@@ -2399,6 +2399,10 @@ static void markArraysOfBorrows(AggregateType* at) {
       Type* eltType    = eltTypeField->type;
 
       if (eltType != dtUnknown) {
+        // check for infinite records here to avoid compiler crash
+        if (isRecord(eltType))
+          checkForInfiniteRecord(toAggregateType(eltType));
+
         if (isOrContainsBorrowedClass(eltType)) {
           at->symbol->addFlag(FLAG_ARRAY_OF_BORROWS);
           nextAt->symbol->addFlag(FLAG_ARRAY_OF_BORROWS);
