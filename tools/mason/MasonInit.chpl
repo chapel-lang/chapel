@@ -41,12 +41,10 @@ proc masonInit(args) throws {
     for arg in args[2..] {
       name = arg;
     }
-    //checks if path is given as parameter or not
     if name == '' {
       const cwd = getEnv("PWD");
       const name = basename(cwd);
       const path = '.';
-      //If Mason.toml not present, proceed with init
       validateMasonFile(path, name);
       validateInit(path);
       writeln("Initialized new library project: " + name);
@@ -58,7 +56,6 @@ proc masonInit(args) throws {
       // if TOML file exists, check for values in it and validate
       const path = name;
       if isDir(path) {
-        //make a condition to handle Mason.toml & get rid from below
         validateMasonFile(path, basename(path));
         validateInit(path);
         writeln("Initialized new library project in " + path + ": " + basename(path));
@@ -145,7 +142,6 @@ proc validateMasonFile(path:string, name:string) throws {
     const toParse = open(path + "/Mason.toml", iomode.r);
     const tomlFile = parseToml(toParse);
     if tomlFile["brick"] == nil {
-      //if subtables of brick exist then show error
       if tomlFile.pathExists("name") || 
       tomlFile.pathExists("version") ||
       tomlFile.pathExists("chplVersion") {
