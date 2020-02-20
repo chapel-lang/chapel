@@ -414,6 +414,9 @@ all:
   02/07/20:
     - text: machine update
       config: chapcs
+  02/19/20:
+    - text:  Serialize calls to gasnet_AMPoll for IBV/Aries (#14912)
+      config: 16 node XC, 16-node-cs
 
 
 AllCompTime:
@@ -583,6 +586,8 @@ compSampler-timecomp: &timecomp-base
     - Remove standardModuleSet and all code involving it from the compiler (#14270)
   11/20/19:
     - Simplify visible function determination of use visibility (#14481)
+  02/19/20:
+    - Improve handling for tryResolve and errors to handle a bad init= (#14887)
 
 
 cg:
@@ -1174,6 +1179,8 @@ memleaksfull:
     - Propagate user thrown errors out of IO routines (#14739)
   01/30/20:
     - Adjust split init to allow some try, if with returns (#14814)
+  02/19/20:
+    -  Use escaped strings in paths (#14907)
 
 meteor:
   12/18/13:
@@ -1400,6 +1407,10 @@ remote-record-read-copy:
   03/07/19:
     - Avoid init= for POD types (#12439)
 
+remote-unordered-gets.ml-perf:
+  02/04/20:
+    - Add unordered GET/PUT support in comm=ofi. (#14810)
+
 return-array-8: &return-array-base
   03/04/17:
     - remove unnecessary return from array-return tests (#5486)
@@ -1564,6 +1575,8 @@ temporary-copies:
     - Add the byteIndex type and its support, make string.find() return it, and make codepoint indexing/iteration the default (#12899)
   08/01/19:
     - Take advantage of known UTF-8 encoding to speed up strings (#13580)
+  02/20/20:
+    - Add 1st draft of copy elision (#14903)
 
 twopt-paircount:
   06/22/17:
