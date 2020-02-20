@@ -166,7 +166,7 @@ module List {
     */
     proc init(other: list(?t), param parSafe=false) {
       if !isCopyableType(this.type.eltType) then
-        compilerError("Cannot copy list with element type that cannot copied");
+        compilerError("Cannot copy list with element type that cannot be copied");
 
       this.eltType = t;
       this.parSafe = parSafe;
@@ -187,7 +187,7 @@ module List {
     */
     proc init(other: [?d] ?t, param parSafe=false) {
       if !isCopyableType(t) then
-        compilerError("Cannot construct list from array with element type that cannot copied");
+        compilerError("Cannot construct list from array with element type that cannot be copied");
 
       this.eltType = t;
       this.parSafe = parSafe;
@@ -234,7 +234,7 @@ module List {
     */
     proc init=(other: list(this.type.eltType, ?p)) {
       if !isCopyableType(this.type.eltType) then
-        compilerError("Cannot copy list with element type that cannot copied");
+        compilerError("Cannot copy list with element type that cannot be copied");
 
       this.eltType = this.type.eltType;
       this.parSafe = this.type.parSafe;
@@ -250,7 +250,7 @@ module List {
     */
     proc init=(other: [?d] this.type.eltType) {
       if !isCopyableType(this.type.eltType) then
-        compilerError("Cannot copy list from array with element type that cannot copied");
+        compilerError("Cannot copy list from array with element type that cannot be copied");
 
       this.eltType = this.type.eltType;
       this.parSafe = this.type.parSafe;
