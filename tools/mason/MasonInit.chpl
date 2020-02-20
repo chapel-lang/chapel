@@ -38,7 +38,7 @@ Initialises a library project in a project directory
 proc masonInit(args) throws {
   try! {
     var name = '';
-    for arg in args[2..]{
+    for arg in args[2..] {
       name = arg;
     }
     //checks if path is given as parameter or not
@@ -64,8 +64,8 @@ proc masonInit(args) throws {
         writeln("Initialized new library project in " + path + ": " + basename(path));
       } 
       else {
-        throw new owned MasonError("Directory does not exist:" + path +
-                              ". Did you mean 'mason new' to create a new project from scratch?"); 
+        throw new owned MasonError("Directory does not exist: " + path +
+                              " \nDid you mean 'mason new' to create a new project from scratch?"); 
       }
     }
   }

@@ -141,12 +141,12 @@ proc makeSrcDir(path:string) {
 }
 
 proc makeModule(path:string, fileName:string) {
-   const libTemplate = '/* Documentation for ' + fileName +
-      ' */\nmodule '+ fileName + ' {\n  writeln("New library: '+ fileName +'");\n}';
-    var lib = open(path+'/src/'+fileName+'.chpl', iomode.cw);
-    var libWriter = lib.writer();
-    libWriter.write(libTemplate + '\n');
-    libWriter.close();
+  const libTemplate = '/* Documentation for ' + fileName +
+  ' */\nmodule '+ fileName + ' {\n  writeln("New library: '+ fileName +'");\n}';
+  var lib = open(path+'/src/'+fileName+'.chpl', iomode.cw);
+  var libWriter = lib.writer();
+  libWriter.write(libTemplate + '\n');
+  libWriter.close();
 }
 
 proc makeTestDir(path:string) {
