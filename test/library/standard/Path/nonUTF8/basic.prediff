@@ -1,33 +1,4 @@
-#!/usr/bin/env python3
+#!/bin/bash
 
-import os, os.path, sys
-
-
-cur = os.path.realpath(os.getcwd()) + "/\\xFFNOT\\xFFUTF8\\xFF"
-exec_out = open(sys.argv[2], "r")
-prediff_out = open(sys.argv[2]+".tmp", "w")
-
-def wrap(s):
-    return "b\"{}\"".format(s)
-
-line = exec_out.readline().strip()
-if line != wrap(cur):
-    prediff_out.write("Expected: "+wrap(cur)+"\n")
-    prediff_out.write("Found:    "+line+"\n")
-else:
-    prediff_out.write("OK\n")
-
-line = exec_out.readline().strip()
-if line != wrap(cur+"/$THERES_NO_SPOON"):
-    prediff_out.write("Expected: "+wrap(cur+"/$THERES_NO_SPOON")+"\n")
-    prediff_out.write("Found:    "+line+"\n")
-else:
-    prediff_out.write("OK\n")
-
-for l in exec_out:
-    prediff_out.write(l)
-
-exec_out.close()
-prediff_out.close()
-
-os.rename(sys.argv[2]+".tmp", sys.argv[2])
+rev $2 | cut -d"/" -f1,2 | rev > $2.tmp
+mv $2.tmp $2

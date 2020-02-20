@@ -20,7 +20,7 @@ getMode works: true
 getFileSize works: true
 
 Attempting to chown
-Correct error was caught
+chown works
 
 chmod'ing the file
 chmod works: true
