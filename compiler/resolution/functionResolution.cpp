@@ -9800,6 +9800,7 @@ static void resolvePrimInit(CallExpr* call, Symbol* val, Type* type) {
   // These types default to nil
   } else if (isClassLikeOrPtr(type) || type == dtNil) {
     // Nothing to do here besides set the type
+    errorInvalidParamInit(call, val, at);
 
     // These will be handled in lowerPrimInit.
     if (call->numActuals() >= 2)
