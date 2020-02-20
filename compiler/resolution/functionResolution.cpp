@@ -5386,13 +5386,15 @@ static CallExpr* findOutIntentCallFromAssign(CallExpr* call,
       if (SymExpr* rhs = toSymExpr(call->get(2))) {
         if (SymExpr* defSe = rhs->symbol()->getSingleDef()) {
           CallExpr* parentCall = toCallExpr(defSe->parentExpr);
-          for_formals_actuals(formal, actual, parentCall) {
-            if (actual == defSe) {
-              if (formal->intent == INTENT_OUT ||
-                  formal->originalIntent == INTENT_OUT) {
-                *outActual = lhs;
-                *outFormal = formal;
-                return parentCall;
+          if (parentCall->resolvedFunction() != NULL) {
+            for_formals_actuals(formal, actual, parentCall) {
+              if (actual == defSe) {
+                if (formal->intent == INTENT_OUT ||
+                    formal->originalIntent == INTENT_OUT) {
+                  *outActual = lhs;
+                  *outFormal = formal;
+                  return parentCall;
+                }
               }
             }
           }
