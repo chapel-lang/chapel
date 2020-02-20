@@ -681,7 +681,7 @@ argument expression is a tuple of the actual arguments.
 
    .. code-block:: chapel
 
-      proc sum(x: int...3) return x(0) + x(1) + x(2); 
+      proc sum(x: int...3) return x(0) + x(1) + x(2);
 
    
 
