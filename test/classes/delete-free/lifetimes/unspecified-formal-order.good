@@ -11,4 +11,3 @@ unspecified-formal-order.chpl:38: error: Setting borrowed formal illegal without
 unspecified-formal-order.chpl:37: note: consider scope of rhs
 unspecified-formal-order.chpl:39: error: Setting borrowed formal illegal without specifying formal lifetime constraint
 unspecified-formal-order.chpl:37: note: consider scope of rhs
-$CHPL_HOME/modules/internal/ChapelArray.chpl:3777: error: Cannot transfer ownership from a non-nilable variable with a potentially captured alias
