@@ -1753,7 +1753,7 @@ static void handleOutIntents(FnSymbol* fn, CallInfo& info) {
       anchorAfter->insertAfter(assign);
       anchorAfter = assign;
 
-      resolveCallAndCallee(assign, false); // false - allow unresolved
+      //resolveCallAndCallee(assign, false); // false - allow unresolved
 
       currActual->replace(new SymExpr(tmp));
     }

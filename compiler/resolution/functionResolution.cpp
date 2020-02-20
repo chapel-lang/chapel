@@ -5370,6 +5370,34 @@ void lvalueCheck(CallExpr* call) {
   }
 }
 
+static CallExpr* findOutIntentCallFromAssign(CallExpr* call,
+                                             Expr** outActual,
+                                             ArgSymbol** outFormal) {
+  // Call is an assign from a temp
+  // Find an out argument call setting the temp
+  if (call->isNamed("=")) {
+    if (SymExpr* lhs = toSymExpr(call->get(1))) {
+      if (SymExpr* rhs = toSymExpr(call->get(2))) {
+        if (SymExpr* defSe = rhs->symbol()->getSingleDef()) {
+          CallExpr* parentCall = toCallExpr(defSe->parentExpr);
+          for_formals_actuals(formal, actual, parentCall) {
+            if (actual == defSe) {
+              if (formal->intent == INTENT_OUT ||
+                  formal->originalIntent == INTENT_OUT) {
+                *outActual = lhs;
+                *outFormal = formal;
+                return parentCall;
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
+  return NULL;
+}
+
 static void lvalueCheckActual(CallExpr* call, Expr* actual, IntentTag intent, ArgSymbol* formal) {
   bool errorMsg = false;
   switch (intent) {
@@ -5452,6 +5480,20 @@ static void lvalueCheckActual(CallExpr* call, Expr* actual, IntentTag intent, Ar
         isAssign = true;
 
     if (isAssign) {
+      // If the RHS is a temp, it might be for the out intent
+
+      {
+        Expr* outActual = NULL;
+        ArgSymbol* outFormal = NULL;
+        CallExpr* outCall =
+          findOutIntentCallFromAssign(call, &outActual, &outFormal);
+
+        if (outCall != NULL) {
+          lvalueCheckActual(outCall, outActual, INTENT_OUT, outFormal);
+          return;
+        }
+      }
+
       // This assert is FYI. Perhaps can remove it if it fails.
       INT_ASSERT(callStack.n > 0 && callStack.v[callStack.n - 1] == call);
 
