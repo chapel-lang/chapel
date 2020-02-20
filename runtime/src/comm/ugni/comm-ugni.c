@@ -4392,25 +4392,25 @@ size_t do_amo_on_cpu(fork_amo_cmd_t cmd,
 
   case cmpxchg_32:
     {
-      chpl_bool32 my_res;
-      my_res = atomic_compare_exchange_strong_int_least32_t
-                 ((atomic_int_least32_t*) obj,
-                  *(int_least32_t*) opnd1,
-                  *(int_least32_t*) opnd2);
-      memcpy(res, &my_res, sizeof(my_res));
-      res_size = sizeof(my_res);
+      int_least32_t opnd1Val = *(int_least32_t*) opnd1;
+      (void) atomic_compare_exchange_strong_int_least32_t
+               ((atomic_int_least32_t*) obj,
+                &opnd1Val,
+                *(int_least32_t*) opnd2);
+      memcpy(res, &opnd1Val, sizeof(opnd1Val));
+      res_size = sizeof(opnd1Val);
     }
     break;
 
   case cmpxchg_64:
     {
-      chpl_bool32 my_res;
-      my_res = atomic_compare_exchange_strong_int_least64_t
-                 ((atomic_int_least64_t*) obj,
-                  *(int_least64_t*) opnd1,
-                  *(int_least64_t*) opnd2);
-      memcpy(res, &my_res, sizeof(my_res));
-      res_size = sizeof(my_res);
+      int_least64_t opnd1Val = *(int_least64_t*) opnd1;
+      (void) atomic_compare_exchange_strong_int_least64_t
+               ((atomic_int_least64_t*) obj,
+                &opnd1Val,
+                *(int_least64_t*) opnd2);
+      memcpy(res, &opnd1Val, sizeof(opnd1Val));
+      res_size = sizeof(opnd1Val);
     }
     break;
 
@@ -6408,7 +6408,8 @@ DEFINE_CHPL_COMM_ATOMIC_XCHG(real64, xchg_64, int_least64_t)
                                            int32_t loc,                 \
                                            void* obj,                   \
                                            chpl_bool32* res,            \
-                                           memory_order order,          \
+                                           memory_order succ,           \
+                                           memory_order fail,           \
                                            int ln, int32_t fn)          \
         {                                                               \
           mem_region_t* remote_mr;                                      \
@@ -6419,16 +6420,20 @@ DEFINE_CHPL_COMM_ATOMIC_XCHG(real64, xchg_64, int_least64_t)
                                                                         \
           chpl_comm_diags_verbose_amo("amo cmpxchg", loc, ln, fn);      \
           chpl_comm_diags_incr(amo);                                    \
+          _t old_value;                                                 \
+          _t old_expected;                                              \
+          memcpy(&old_expected, cmpval, sizeof(_t));                    \
           if (chpl_numNodes == 1 || IS_32_BIT_AMO_ON_GEMINI(_t)         \
               || (remote_mr = mreg_for_remote_addr(obj, loc)) == NULL) {\
-            do_non_nic_amo_##_c##_##_f(obj, res, cmpval, xchgval, loc); \
+            do_non_nic_amo_##_c##_##_f(obj, &old_value, &old_expected,  \
+                                       xchgval, loc);                   \
           }                                                             \
           else {                                                        \
-            _t my_res = 0;                                              \
-            do_nic_amo(cmpval, xchgval, loc, obj, sizeof(_t),           \
-                       amo_cmd_2_nic_op(_c, 1), &my_res, remote_mr);    \
-            *res = (my_res == *(_t*) cmpval) ? true : false;            \
+            do_nic_amo(&old_expected, xchgval, loc, obj, sizeof(_t),    \
+                       amo_cmd_2_nic_op(_c, 1), &old_value, remote_mr); \
           }                                                             \
+          *res = (chpl_bool32)(old_value == old_expected);              \
+          memcpy(cmpval, &old_value, sizeof(_t));                       \
         }
 
 DEFINE_CHPL_COMM_ATOMIC_CMPXCHG(int32, cmpxchg_32, int_least32_t)
