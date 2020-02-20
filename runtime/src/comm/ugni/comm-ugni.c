@@ -4339,8 +4339,7 @@ size_t do_amo_on_cpu(fork_amo_cmd_t cmd,
   //
   // Here we implement AMOs which the NIC cannot do, either because
   // the target object is not in registered memory or because the NIC
-  // lacks native support.  For more information, see the comment
-  // before chpl_comm_atomic_store_int32().
+  // lacks native support.
   //
   switch (cmd) {
   case put_32:
@@ -4404,26 +4403,12 @@ size_t do_amo_on_cpu(fork_amo_cmd_t cmd,
     break;
 
   case cmpxchg_64:
-    //
-    // If the object is not in memory registered with the NIC, use the
-    // processor.  Otherwise, since the other 64-bit AMOs are done on
-    // the NIC, for coherence do this one on the NIC as well.
-    //
     {
       chpl_bool32 my_res;
-      mem_region_t* mr;
-      if ((mr = mreg_for_local_addr(obj)) == NULL) {
-        my_res = atomic_compare_exchange_strong_int_least64_t
-                   ((atomic_int_least64_t*) obj,
-                    *(int_least64_t*) opnd1,
-                    *(int_least64_t*) opnd2);
-      }
-      else {
-        int_least64_t nic_res;
-        do_nic_amo(opnd1, opnd2, chpl_nodeID, obj, sizeof(nic_res),
-                   amo_cmd_2_nic_op(cmpxchg_64, 1), &nic_res, mr);
-        my_res = (nic_res == *(int_least64_t*) opnd1) ? true : false;
-      }
+      my_res = atomic_compare_exchange_strong_int_least64_t
+                 ((atomic_int_least64_t*) obj,
+                  *(int_least64_t*) opnd1,
+                  *(int_least64_t*) opnd2);
       memcpy(res, &my_res, sizeof(my_res));
       res_size = sizeof(my_res);
     }
@@ -6219,31 +6204,35 @@ int chpl_comm_addr_gettable(c_nodeid_t node, void* start, size_t len)
         (sizeof(_t) == sizeof(int32_t) && nic_type == GNI_DEVICE_GEMINI)
 
 //
-// Do an AMO by means of an AM to a remote locale.
+// Do an AMO on the CPU (locally or by means of an AM to a remote locale.)
 //   _f: interface function name suffix (type)
 //   _c: network AMO command
 //   _t: AMO type
 //
-#define DEFINE_DO_FORK_AMO(_f, _c, _t)                                  \
-  static inline void do_fork_amo_##_c##_##_f(void* obj,                 \
+#define DEFINE_DO_NON_NIC_AMO(_f, _c, _t)                               \
+  static inline void do_non_nic_amo_##_c##_##_f(void* obj,              \
                                              void* res,                 \
                                              void* opnd1,               \
                                              void* opnd2,               \
                                              int32_t loc) {             \
-    fork_t rf_req = { .a={.cmd=_c, .obj=obj} };                         \
-    if (opnd1 != NULL)                                                  \
-      memcpy(&rf_req.a.opnd1, opnd1, sizeof(_t));                       \
-    if (opnd2 != NULL)                                                  \
-      memcpy(&rf_req.a.opnd2, opnd2, sizeof(_t));                       \
-    if (res != NULL && mreg_for_local_addr(res) == NULL) {              \
-      rf_req.a.res = amo_res_alloc();                                   \
-      fork_amo(&rf_req, loc);                                           \
-      memcpy(res, rf_req.a.res, sizeof(_t));                            \
-      amo_res_free(rf_req.a.res);                                       \
-    }                                                                   \
-    else {                                                              \
-      rf_req.a.res = res;                                               \
-      fork_amo(&rf_req, loc);                                           \
+    if (loc == chpl_nodeID) {                                           \
+      (void) do_amo_on_cpu(_c, res, obj, opnd1, opnd2);                 \
+    } else {                                                            \
+      fork_t rf_req = { .a={.cmd=_c, .obj=obj} };                       \
+      if (opnd1 != NULL)                                                \
+        memcpy(&rf_req.a.opnd1, opnd1, sizeof(_t));                     \
+      if (opnd2 != NULL)                                                \
+        memcpy(&rf_req.a.opnd2, opnd2, sizeof(_t));                     \
+      if (res != NULL && mreg_for_local_addr(res) == NULL) {            \
+        rf_req.a.res = amo_res_alloc();                                 \
+        fork_amo(&rf_req, loc);                                         \
+        memcpy(res, rf_req.a.res, sizeof(_t));                          \
+        amo_res_free(rf_req.a.res);                                     \
+      }                                                                 \
+      else {                                                            \
+        rf_req.a.res = res;                                             \
+        fork_amo(&rf_req, loc);                                         \
+      }                                                                 \
     }                                                                   \
   }
 
@@ -6254,7 +6243,7 @@ int chpl_comm_addr_gettable(c_nodeid_t node, void* start, size_t len)
 //   _t: AMO type
 //
 #define DEFINE_CHPL_COMM_ATOMIC_WRITE(_f, _c, _t)                       \
-        DEFINE_DO_FORK_AMO(_f, _c, _t)                                  \
+        DEFINE_DO_NON_NIC_AMO(_f, _c, _t)                               \
                                                                         \
         /*==============================*/                              \
         void chpl_comm_atomic_write_##_f(void* val,                     \
@@ -6268,19 +6257,11 @@ int chpl_comm_addr_gettable(c_nodeid_t node, void* start, size_t len)
                    "IFACE chpl_comm_atomic_write_"#_f"(%p, %d, %p)",    \
                    val, (int) loc, obj);                                \
                                                                         \
-          if (chpl_numNodes == 1) {                                     \
-            atomic_store_##_t((atomic_##_t*) obj, *(_t*) val);          \
-            return;                                                     \
-          }                                                             \
-                                                                        \
           chpl_comm_diags_verbose_amo("amo write", loc, ln, fn);        \
           chpl_comm_diags_incr(amo);                                    \
-          if (IS_32_BIT_AMO_ON_GEMINI(_t)                               \
+          if (chpl_numNodes == 1 || IS_32_BIT_AMO_ON_GEMINI(_t)         \
               || (remote_mr = mreg_for_remote_addr(obj, loc)) == NULL) {\
-            if (loc == chpl_nodeID)                                     \
-              (void) do_amo_on_cpu(_c, NULL, obj, val, NULL);           \
-            else                                                        \
-              do_fork_amo_##_c##_##_f(obj, NULL, val, NULL, loc);       \
+            do_non_nic_amo_##_c##_##_f(obj, NULL, val, NULL, loc);      \
           }                                                             \
           else if (nic_type == GNI_DEVICE_GEMINI) {                     \
             /*                                                          \
@@ -6319,7 +6300,7 @@ DEFINE_CHPL_COMM_ATOMIC_WRITE(real64, put_64, int_least64_t)
 //   _t: AMO type
 //
 #define DEFINE_CHPL_COMM_ATOMIC_READ(_f, _c, _t)                        \
-        DEFINE_DO_FORK_AMO(_f, _c, _t)                                  \
+        DEFINE_DO_NON_NIC_AMO(_f, _c, _t)                               \
                                                                         \
         /*==============================*/                              \
         void chpl_comm_atomic_read_##_f(void* res,                      \
@@ -6334,19 +6315,11 @@ DEFINE_CHPL_COMM_ATOMIC_WRITE(real64, put_64, int_least64_t)
                    "IFACE chpl_comm_atomic_read_"#_f"(%p, %d, %p)",     \
                    res, (int) loc, obj);                                \
                                                                         \
-          if (chpl_numNodes == 1) {                                     \
-            *(_t*) res = atomic_load_##_t((atomic_##_t*) obj);          \
-            return;                                                     \
-          }                                                             \
-                                                                        \
           chpl_comm_diags_verbose_amo("amo read", loc, ln, fn);         \
           chpl_comm_diags_incr(amo);                                    \
-          if (IS_32_BIT_AMO_ON_GEMINI(_t)                               \
+          if (chpl_numNodes == 1 || IS_32_BIT_AMO_ON_GEMINI(_t)         \
               || (remote_mr = mreg_for_remote_addr(obj, loc)) == NULL) {\
-            if (loc == chpl_nodeID)                                     \
-              (void) do_amo_on_cpu(_c, res, obj, NULL, NULL);           \
-            else                                                        \
-              do_fork_amo_##_c##_##_f(obj, res, NULL, NULL, loc);       \
+            do_non_nic_amo_##_c##_##_f(obj, res, NULL, NULL, loc);      \
           }                                                             \
           else {                                                        \
             size_t sz = sizeof(_t);                                     \
@@ -6374,7 +6347,7 @@ DEFINE_CHPL_COMM_ATOMIC_READ(real64, get_64, int_least64_t)
 //   _t: AMO type
 //
 #define DEFINE_CHPL_COMM_ATOMIC_XCHG(_f, _c, _t)                        \
-        DEFINE_DO_FORK_AMO(_f, _c, _t)                                  \
+        DEFINE_DO_NON_NIC_AMO(_f, _c, _t)                               \
                                                                         \
         /*==============================*/                              \
         void chpl_comm_atomic_xchg_##_f(void* xchgval,                  \
@@ -6389,20 +6362,11 @@ DEFINE_CHPL_COMM_ATOMIC_READ(real64, get_64, int_least64_t)
                    "IFACE chpl_comm_atomic_xchg_"#_f"(%p, %d, %p, %p)", \
                    xchgval, (int) loc, obj, res);                       \
                                                                         \
-          if (chpl_numNodes == 1) {                                     \
-            *(_t*) res =                                                \
-              atomic_exchange_##_t((atomic_##_t*) obj, *(_t*) xchgval); \
-            return;                                                     \
-          }                                                             \
-                                                                        \
           chpl_comm_diags_verbose_amo("amo xchg", loc, ln, fn);         \
           chpl_comm_diags_incr(amo);                                    \
-          if (IS_32_BIT_AMO_ON_GEMINI(_t)                               \
+          if (chpl_numNodes == 1 || IS_32_BIT_AMO_ON_GEMINI(_t)         \
               || (remote_mr = mreg_for_remote_addr(obj, loc)) == NULL) {\
-            if (loc == chpl_nodeID)                                     \
-              (void) do_amo_on_cpu(_c, res, obj, xchgval, NULL);        \
-            else                                                        \
-              do_fork_amo_##_c##_##_f(obj, res, xchgval, NULL, loc);    \
+            do_non_nic_amo_##_c##_##_f(obj, res, xchgval, NULL, loc);   \
           }                                                             \
           else if (nic_type == GNI_DEVICE_GEMINI) {                     \
             /*                                                          \
@@ -6436,7 +6400,7 @@ DEFINE_CHPL_COMM_ATOMIC_XCHG(real64, xchg_64, int_least64_t)
 //   _t: AMO type
 //
 #define DEFINE_CHPL_COMM_ATOMIC_CMPXCHG(_f, _c, _t)                     \
-        DEFINE_DO_FORK_AMO(_f, _c, _t)                                  \
+        DEFINE_DO_NON_NIC_AMO(_f, _c, _t)                               \
                                                                         \
         /*==============================*/                              \
         void chpl_comm_atomic_cmpxchg_##_f(void* cmpval,                \
@@ -6453,22 +6417,11 @@ DEFINE_CHPL_COMM_ATOMIC_XCHG(real64, xchg_64, int_least64_t)
                    "(%p, %p, %d, %p, %p)",                              \
                    cmpval, xchgval, (int) loc, obj, res);               \
                                                                         \
-          if (chpl_numNodes == 1) {                                     \
-            *res =                                                      \
-              atomic_compare_exchange_strong_##_t((atomic_##_t*) obj,   \
-                                                  *(_t*) cmpval,        \
-                                                  *(_t*) xchgval);      \
-            return;                                                     \
-          }                                                             \
-                                                                        \
           chpl_comm_diags_verbose_amo("amo cmpxchg", loc, ln, fn);      \
           chpl_comm_diags_incr(amo);                                    \
-          if (IS_32_BIT_AMO_ON_GEMINI(_t)                               \
+          if (chpl_numNodes == 1 || IS_32_BIT_AMO_ON_GEMINI(_t)         \
               || (remote_mr = mreg_for_remote_addr(obj, loc)) == NULL) {\
-            if (loc == chpl_nodeID)                                     \
-              (void) do_amo_on_cpu(_c, res, obj, cmpval, xchgval);      \
-            else                                                        \
-              do_fork_amo_##_c##_##_f(obj, res, cmpval, xchgval, loc);  \
+            do_non_nic_amo_##_c##_##_f(obj, res, cmpval, xchgval, loc); \
           }                                                             \
           else {                                                        \
             _t my_res = 0;                                              \
@@ -6496,7 +6449,7 @@ DEFINE_CHPL_COMM_ATOMIC_CMPXCHG(real64, cmpxchg_64, int_least64_t)
 //   _t: AMO type
 //
 #define DEFINE_CHPL_COMM_ATOMIC_INT_OP(_f, _o, _c, _t)                  \
-        DEFINE_DO_FORK_AMO(_f, _c, _t)                                  \
+        DEFINE_DO_NON_NIC_AMO(_f, _c, _t)                               \
                                                                         \
         /*==============================*/                              \
         void chpl_comm_atomic_##_o##_##_f(void* opnd,                   \
@@ -6511,20 +6464,11 @@ DEFINE_CHPL_COMM_ATOMIC_CMPXCHG(real64, cmpxchg_64, int_least64_t)
                    "(%p, %d, %p)",                                      \
                    opnd, (int) loc, obj);                               \
                                                                         \
-          if (chpl_numNodes == 1) {                                     \
-            (void) atomic_fetch_##_o##_##_t((atomic_##_t*) obj,         \
-                                            *(_t*) opnd);               \
-            return;                                                     \
-          }                                                             \
-                                                                        \
           chpl_comm_diags_verbose_amo("amo " #_o, loc, ln, fn);         \
           chpl_comm_diags_incr(amo);                                    \
-          if (IS_32_BIT_AMO_ON_GEMINI(_t)                               \
+          if (chpl_numNodes == 1 || IS_32_BIT_AMO_ON_GEMINI(_t)         \
               || (remote_mr = mreg_for_remote_addr(obj, loc)) == NULL) {\
-            if (loc == chpl_nodeID)                                     \
-              (void) do_amo_on_cpu(_c, NULL, obj, opnd, NULL);          \
-            else                                                        \
-              do_fork_amo_##_c##_##_f(obj, NULL, opnd, NULL, loc);      \
+            do_non_nic_amo_##_c##_##_f(obj, NULL, opnd, NULL, loc);     \
           }                                                             \
           else {                                                        \
             do_nic_amo_nf(opnd, loc, obj, sizeof(_t),                   \
@@ -6544,20 +6488,11 @@ DEFINE_CHPL_COMM_ATOMIC_CMPXCHG(real64, cmpxchg_64, int_least64_t)
                    "(%p, %d, %p)",                                      \
                    opnd, (int) loc, obj);                               \
                                                                         \
-          if (chpl_numNodes == 1) {                                     \
-            (void) atomic_fetch_##_o##_##_t((atomic_##_t*) obj,         \
-                                            *(_t*) opnd);               \
-            return;                                                     \
-          }                                                             \
-                                                                        \
           chpl_comm_diags_verbose_amo("amo unord_" #_o, loc, ln, fn);   \
           chpl_comm_diags_incr(amo);                                    \
-          if (IS_32_BIT_AMO_ON_GEMINI(_t)                               \
+          if (chpl_numNodes == 1 || IS_32_BIT_AMO_ON_GEMINI(_t)         \
               || (remote_mr = mreg_for_remote_addr(obj, loc)) == NULL) {\
-            if (loc == chpl_nodeID)                                     \
-              (void) do_amo_on_cpu(_c, NULL, obj, opnd, NULL);          \
-            else                                                        \
-              do_fork_amo_##_c##_##_f(obj, NULL, opnd, NULL, loc);      \
+            do_non_nic_amo_##_c##_##_f(obj, NULL, opnd, NULL, loc);     \
           }                                                             \
           else {                                                        \
             do_nic_amo_nf_buff(opnd, loc, obj, sizeof(_t),              \
@@ -6579,21 +6514,11 @@ DEFINE_CHPL_COMM_ATOMIC_CMPXCHG(real64, cmpxchg_64, int_least64_t)
                    "(%p, %d, %p, %p)",                                  \
                    opnd, (int) loc, obj, res);                          \
                                                                         \
-          if (chpl_numNodes == 1) {                                     \
-            *(_t*) res =                                                \
-              atomic_fetch_##_o##_##_t((atomic_##_t*) obj,              \
-                                       *(_t*) opnd);                    \
-            return;                                                     \
-          }                                                             \
-                                                                        \
           chpl_comm_diags_verbose_amo("amo fetch_" #_o, loc, ln, fn);   \
           chpl_comm_diags_incr(amo);                                    \
-          if (IS_32_BIT_AMO_ON_GEMINI(_t)                               \
+          if (chpl_numNodes == 1 || IS_32_BIT_AMO_ON_GEMINI(_t)         \
               || (remote_mr = mreg_for_remote_addr(obj, loc)) == NULL) {\
-            if (loc == chpl_nodeID)                                     \
-              (void) do_amo_on_cpu(_c, res, obj, opnd, NULL);           \
-            else                                                        \
-              do_fork_amo_##_c##_##_f(obj, res, opnd, NULL, loc);       \
+            do_non_nic_amo_##_c##_##_f(obj, res, opnd, NULL, loc);      \
           }                                                             \
           else {                                                        \
             do_nic_amo(opnd, NULL, loc, obj, sizeof(_t),                \
@@ -6636,7 +6561,7 @@ DEFINE_CHPL_COMM_ATOMIC_INT_OP(uint64, add, add_i64, uint_least64_t)
 //       Aries.
 //
 #define DEFINE_CHPL_COMM_ATOMIC_REAL_OP(_f, _c, _t)                     \
-        DEFINE_DO_FORK_AMO(_f, _c, _t)                                  \
+        DEFINE_DO_NON_NIC_AMO(_f, _c, _t)                               \
                                                                         \
         /*==============================*/                              \
         void chpl_comm_atomic_add_##_f(void* opnd,                      \
@@ -6651,25 +6576,16 @@ DEFINE_CHPL_COMM_ATOMIC_INT_OP(uint64, add, add_i64, uint_least64_t)
                    "(%p, %d, %p)",                                      \
                    opnd, (int) loc, obj);                               \
                                                                         \
-          if (chpl_numNodes == 1) {                                     \
-            (void) atomic_fetch_add_##_t((atomic_##_t*) obj,            \
-                                         *(_t*) opnd);                  \
-            return;                                                     \
-          }                                                             \
-                                                                        \
           chpl_comm_diags_verbose_amo("amo add", loc, ln, fn);          \
           chpl_comm_diags_incr(amo);                                    \
-          if (sizeof(_t) == sizeof(int_least32_t)                       \
+          if (chpl_numNodes > 1 && sizeof(_t) == sizeof(int_least32_t)  \
               && nic_type == GNI_DEVICE_ARIES                           \
               && (remote_mr = mreg_for_remote_addr(obj, loc)) != NULL) {\
             do_nic_amo_nf(opnd, loc, obj, sizeof(_t),                   \
                           amo_cmd_2_nic_op(_c, 0), remote_mr);          \
           }                                                             \
           else {                                                        \
-            if (loc == chpl_nodeID)                                     \
-              (void) do_amo_on_cpu(_c, NULL, obj, opnd, NULL);          \
-            else                                                        \
-              do_fork_amo_##_c##_##_f(obj, NULL, opnd, NULL, loc);      \
+            do_non_nic_amo_##_c##_##_f(obj, NULL, opnd, NULL, loc);     \
           }                                                             \
         }                                                               \
                                                                         \
@@ -6685,25 +6601,16 @@ DEFINE_CHPL_COMM_ATOMIC_INT_OP(uint64, add, add_i64, uint_least64_t)
                    "(%p, %d, %p)",                                      \
                    opnd, (int) loc, obj);                               \
                                                                         \
-          if (chpl_numNodes == 1) {                                     \
-            (void) atomic_fetch_add_##_t((atomic_##_t*) obj,            \
-                                         *(_t*) opnd);                  \
-            return;                                                     \
-          }                                                             \
-                                                                        \
           chpl_comm_diags_verbose_amo("amo unord_add", loc, ln, fn);    \
           chpl_comm_diags_incr(amo);                                    \
-          if (sizeof(_t) == sizeof(int_least32_t)                       \
+          if (chpl_numNodes > 1 && sizeof(_t) == sizeof(int_least32_t)  \
               && nic_type == GNI_DEVICE_ARIES                           \
               && (remote_mr = mreg_for_remote_addr(obj, loc)) != NULL) {\
             do_nic_amo_nf_buff(opnd, loc, obj, sizeof(_t),              \
                                amo_cmd_2_nic_op(_c, 0), remote_mr);     \
           }                                                             \
           else {                                                        \
-            if (loc == chpl_nodeID)                                     \
-              (void) do_amo_on_cpu(_c, NULL, obj, opnd, NULL);          \
-            else                                                        \
-              do_fork_amo_##_c##_##_f(obj, NULL, opnd, NULL, loc);      \
+            do_non_nic_amo_##_c##_##_f(obj, NULL, opnd, NULL, loc);     \
           }                                                             \
         }                                                               \
                                                                         \
@@ -6721,26 +6628,16 @@ DEFINE_CHPL_COMM_ATOMIC_INT_OP(uint64, add, add_i64, uint_least64_t)
                    "(%p, %d, %p, %p)",                                  \
                    opnd, (int) loc, obj, res);                          \
                                                                         \
-          if (chpl_numNodes == 1) {                                     \
-            *(_t*) res =                                                \
-                atomic_fetch_add_##_t((atomic_##_t*) obj,               \
-                                         *(_t*) opnd);                  \
-            return;                                                     \
-          }                                                             \
-                                                                        \
           chpl_comm_diags_verbose_amo("amo fetch_add", loc, ln, fn);    \
           chpl_comm_diags_incr(amo);                                    \
-          if (sizeof(_t) == sizeof(int_least32_t)                       \
+          if (chpl_numNodes > 1 && sizeof(_t) == sizeof(int_least32_t)  \
               && nic_type == GNI_DEVICE_ARIES                           \
               && (remote_mr = mreg_for_remote_addr(obj, loc)) != NULL) {\
             do_nic_amo(opnd, NULL, loc, obj, sizeof(_t),                \
                        amo_cmd_2_nic_op(_c, 1), res, remote_mr);        \
           }                                                             \
           else {                                                        \
-            if (loc == chpl_nodeID)                                     \
-              (void) do_amo_on_cpu(_c, res, obj, opnd, NULL);           \
-            else                                                        \
-              do_fork_amo_##_c##_##_f(obj, res, opnd, NULL, loc);       \
+            do_non_nic_amo_##_c##_##_f(obj, res, opnd, NULL, loc);      \
           }                                                             \
         }
 
