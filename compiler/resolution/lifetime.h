@@ -23,7 +23,7 @@
 class FnSymbol;
 class Type;
 
-void checkLifetimes(void);
+void checkLifetimes();
 
 void checkLifetimesInFunction(FnSymbol* fn);
 

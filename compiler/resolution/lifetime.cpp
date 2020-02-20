@@ -364,7 +364,7 @@ static bool isUser(BaseAST* ast);
 
 static void markLocalVariableExpiryInFn(FnSymbol* fn, LifetimeState* state);
 
-void checkLifetimes(void) {
+void checkLifetimes() {
   // Mark all arguments with FLAG_SCOPE or FLAG_RETURN_SCOPE.
   // This needs to be done for all functions before the next
   // loop since it affects how calls are handled.
