@@ -3765,6 +3765,7 @@ module ChapelArray {
     return success;
   }
 
+  pragma "ignore transfer errors"
   inline proc chpl__transferArray(ref a: [], const ref b) lifetime a <= b {
     if (a.eltType == b.type ||
         _isPrimitiveType(a.eltType) && _isPrimitiveType(b.type)) {
