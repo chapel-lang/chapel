@@ -113,10 +113,7 @@ module List {
     such protections are desirable, parallel safety can be enabled by setting
     `parSafe = true` in any list constructor.
 
-    .. note::
-
-      Unlike arrays, the domain of the list type is fixed from `1..size`, and
-      cannot be changed.
+    Unlike an array, the set of indices of a list is always `1..size`.
   */
   record list {
 
@@ -142,7 +139,7 @@ module List {
     var _totalCapacity = 0;
 
     /*
-      Initializes an empty list containing elements of the given type.
+      Initializes an empty list.
 
       :arg eltType: The type of the elements of this list.
 
@@ -163,7 +160,6 @@ module List {
       Used in new expressions.
 
       :arg other: The list to initialize from.
-      :type other: `list(?t)`
 
       :arg parSafe: If `true`, this list will use parallel safe operations.
       :type parSafe: `param bool`
@@ -182,7 +178,6 @@ module List {
       Used in new expressions.
 
       :arg other: The array to initialize from.
-      :type other: `[?d] ?t`
 
       :arg parSafe: If `true`, this list will use parallel safe operations.
       :type parSafe: `param bool`
@@ -206,7 +201,6 @@ module List {
         a compiler error.
 
       :arg other: The range to initialize from.
-      :type other: `range(?t)`
 
       :arg parSafe: If `true`, this list will use parallel safe operations.
       :type parSafe: `param bool`
@@ -231,7 +225,6 @@ module List {
       the elements contained in another list.
 
       :arg other: The list to initialize from.
-      :type other: `list(this.type.eltType)`
     */
     proc init=(other: list(this.type.eltType, ?p)) {
       this.eltType = this.type.eltType;
@@ -245,7 +238,6 @@ module List {
       the elements contained in an array.
 
       :arg other: The array to initialize from.
-      :type other: `[?d] this.type.eltType`
     */
     proc init=(other: [?d] this.type.eltType) {
       this.eltType = this.type.eltType;
