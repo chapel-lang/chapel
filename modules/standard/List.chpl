@@ -165,6 +165,9 @@ module List {
       :type parSafe: `param bool`
     */
     proc init(other: list(?t), param parSafe=false) {
+      if !isCopyableType(this.type.eltType) then
+        compilerError("Cannot copy list with element type that cannot copied");
+
       this.eltType = t;
       this.parSafe = parSafe;
       this.complete();
@@ -183,6 +186,9 @@ module List {
       :type parSafe: `param bool`
     */
     proc init(other: [?d] ?t, param parSafe=false) {
+      if !isCopyableType(t) then
+        compilerError("Cannot construct list from array with element type that cannot copied");
+
       this.eltType = t;
       this.parSafe = parSafe;
       this.complete();
@@ -227,8 +233,8 @@ module List {
       :arg other: The list to initialize from.
     */
     proc init=(other: list(this.type.eltType, ?p)) {
-
-      //errorIfCopyingFromNonNilable(other.eltType);
+      if !isCopyableType(this.type.eltType) then
+        compilerError("Cannot copy list with element type that cannot copied");
 
       this.eltType = this.type.eltType;
       this.parSafe = this.type.parSafe;
@@ -243,6 +249,9 @@ module List {
       :arg other: The array to initialize from.
     */
     proc init=(other: [?d] this.type.eltType) {
+      if !isCopyableType(this.type.eltType) then
+        compilerError("Cannot copy list from array with element type that cannot copied");
+
       this.eltType = this.type.eltType;
       this.parSafe = this.type.parSafe;
       this.complete();
@@ -276,6 +285,7 @@ module List {
       _commonInitFromIterable(other);
     }
 
+    //pragma "ignore transfer errors" // TODO better solution?
     pragma "no doc"
     proc _commonInitFromIterable(iterable) {
       this._firstTimeInitializeArrays();
