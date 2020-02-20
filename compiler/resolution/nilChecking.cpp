@@ -1262,16 +1262,24 @@ void FindInvalidNonNilables::exitCallExpr(CallExpr* call) {
             varsToNil[actualSym] = call;
           } else if (actualSym->hasFlag(FLAG_TEMP)) {
             // No error for now for temps.
-          } else if (isArgSymbol(actualSym)) {
-            // leaves-arg-nil OK for e.g. owned initCopy/init= etc.
-            if (actualSym->hasFlag(FLAG_LEAVES_ARG_NIL) == false)
-              USR_FATAL_CONT(call, "Cannot transfer ownership from non-nilable reference argument");
-          } else if (isOuterVar(actualSym, call->getFunction())) {
-            USR_FATAL_CONT(call, "Cannot transfer ownership from a non-nilable outer variable");
-          } else if (!actualSym->hasFlag(FLAG_DEAD_LAST_MENTION)) {
-            USR_FATAL_CONT(call, "Cannot transfer ownership from a non-nilable variable with a potentially captured alias");
           } else {
-            USR_FATAL_CONT(call, "Cannot transfer ownership from this non-nilable variable");
+            Expr* astPoint = findLocationIgnoringInternalInlining(call);
+            FnSymbol* inFn = astPoint->getFunction();
+            astlocT point = astPoint->astloc;
+            if (inFn->userInstantiationPointLoc.filename != NULL)
+              point = inFn->userInstantiationPointLoc;
+
+            if (isArgSymbol(actualSym)) {
+              // leaves-arg-nil OK for e.g. owned initCopy/init= etc.
+              if (actualSym->hasFlag(FLAG_LEAVES_ARG_NIL) == false)
+                USR_FATAL_CONT(point, "Cannot transfer ownership from non-nilable reference argument");
+            } else if (isOuterVar(actualSym, call->getFunction())) {
+              USR_FATAL_CONT(point, "Cannot transfer ownership from a non-nilable outer variable");
+            } else if (!actualSym->hasFlag(FLAG_DEAD_LAST_MENTION)) {
+              USR_FATAL_CONT(point, "Cannot transfer ownership from a non-nilable variable with a potentially captured alias");
+            } else {
+              USR_FATAL_CONT(point, "Cannot transfer ownership from this non-nilable variable");
+            }
           }
         }
       }
