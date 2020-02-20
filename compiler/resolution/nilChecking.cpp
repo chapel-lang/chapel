@@ -1328,7 +1328,9 @@ void findNonNilableStoringNil(FnSymbol* fn) {
       fn->hasFlag(FLAG_AUTO_DESTROY_FN) ||
       fn->hasFlag(FLAG_UNSAFE) ||
       fn->hasFlag(FLAG_IGNORE_TRANSFER_ERRORS) ||
-      fn->hasFlag(FLAG_ERRONEOUS_COPY))
+      fn->hasFlag(FLAG_ERRONEOUS_COPY) ||
+      fn->hasFlag(FLAG_BUILD_TUPLE) ||
+      fn->hasFlag(FLAG_INIT_TUPLE))
     return;
 
   FindInvalidNonNilables visitor;
