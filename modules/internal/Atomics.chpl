@@ -296,44 +296,6 @@ module Atomics {
       x <~> read();
     }
 
-    // Deprecated //
-
-    /*
-       Equivalent to :proc:`compareExchangeStrong`
-
-       .. note:: `compareExchange()` is deprecated (and will be repurposed in a
-          future release), use `compareAndSwap()`.
-     */
-    inline proc compareExchange(expected:bool, desired:bool, param order: memoryOrder = memoryOrder.seqCst): bool {
-      compilerWarning("compareExchange is deprecated (and will be repurposed in a future release), use compareAndSwap");
-      return this.compareAndSwap(expected, desired, order);
-    }
-
-    /*
-       Similar to :proc:`compareExchangeStrong`, except that this function may
-       return `false` even if the original value was equal to `expected`. This
-       may happen if the value could not be updated atomically.
-
-       .. note:: `compareExchangeWeak()` is deprecated (and will be repurposed in a
-          future release), use `compareAndSwap()`.
-    */
-    inline proc compareExchangeWeak(expected:bool, desired:bool, param order: memoryOrder = memoryOrder.seqCst): bool {
-      compilerWarning("compareExchangeWeak is deprecated (and will be repurposed in a future release), use compareAndSwap");
-      return this.compareAndSwap(expected, desired, order);
-    }
-
-    /*
-       Stores `desired` as the new value, if and only if the original value is
-       equal to `expected`. Returns `true` if `desired` was stored.
-
-       .. note:: `compareExchangeStrong()` is deprecated (and will be repurposed in a
-          future release), use `compareAndSwap()`.
-    */
-    inline proc compareExchangeStrong(expected:bool, desired:bool, param order: memoryOrder = memoryOrder.seqCst): bool {
-      compilerWarning("compareExchangeStrong is deprecated (and will be repurposed in a future release), use compareAndSwap");
-      return this.compareAndSwap(expected, desired, order);
-    }
-
   }
 
   pragma "atomic type"
@@ -596,44 +558,6 @@ module Atomics {
     pragma "no doc"
     proc const writeThis(x) throws {
       x <~> read();
-    }
-
-    // Deprecated //
-
-    /*
-       Equivalent to :proc:`compareExchangeStrong`
-
-       .. note:: `compareExchange()` is deprecated (and will be repurposed in a
-          future release), use `compareAndSwap()`.
-     */
-    inline proc compareExchange(expected:T, desired:T, param order: memoryOrder = memoryOrder.seqCst): bool {
-      compilerWarning("compareExchange is deprecated (and will be repurposed in a future release), use compareAndSwap");
-      return this.compareAndSwap(expected, desired, order);
-    }
-
-    /*
-       Similar to :proc:`compareExchangeStrong`, except that this function may
-       return `false` even if the original value was equal to `expected`. This
-       may happen if the value could not be updated atomically.
-
-       .. note:: `compareExchangeWeak()` is deprecated (and will be repurposed in a
-          future release), use `compareAndSwap()`.
-    */
-    inline proc compareExchangeWeak(expected:T, desired:T, param order: memoryOrder = memoryOrder.seqCst): bool {
-      compilerWarning("compareExchangeWeak is deprecated (and will be repurposed in a future release), use compareAndSwap");
-      return this.compareAndSwap(expected, desired, order);
-    }
-
-    /*
-       Stores `desired` as the new value, if and only if the original value is
-       equal to `expected`. Returns `true` if `desired` was stored.
-
-       .. note:: `compareExchangeStrong()` is deprecated (and will be repurposed in a
-          future release), use `compareAndSwap()`.
-    */
-    inline proc compareExchangeStrong(expected:T, desired:T, param order: memoryOrder = memoryOrder.seqCst): bool {
-      compilerWarning("compareExchangeStrong is deprecated (and will be repurposed in a future release), use compareAndSwap");
-      return this.compareAndSwap(expected, desired, order);
     }
 
   }
