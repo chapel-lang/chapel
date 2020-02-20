@@ -2412,6 +2412,12 @@ void resolvePromotionType(AggregateType* at) {
   INT_ASSERT(at->scalarPromotionType == NULL);
   INT_ASSERT(at->symbol->hasFlag(FLAG_GENERIC) == false);
 
+  // don't try to resolve promotion types for sync
+  // (for erroneous sync of array it leads to coercion which leads
+  //  to confusing error messages)
+  if (at->symbol->hasFlag(FLAG_SINGLE) || at->symbol->hasFlag(FLAG_SYNC))
+    return;
+
   VarSymbol* temp     = newTemp(at);
   CallExpr* promoCall = new CallExpr("chpl__promotionType", gMethodToken, temp);
 
@@ -10146,8 +10152,6 @@ static CallExpr* createGenericRecordVarDefaultInitCall(Symbol* val,
 
   val->type = root;
 
-  INT_ASSERT(!at->symbol->hasFlag(FLAG_GENERIC));
-
   CallExpr* initCall = new CallExpr("init", gMethodToken, new NamedExpr("this", new SymExpr(val)));
   form_Map(SymbolMapElem, e, at->substitutions) {
     Symbol* field = root->getField(e->key->name);
@@ -10208,8 +10212,6 @@ static void lowerPrimInitGenericRecordVar(CallExpr* call,
   AggregateType* root = at->getRootInstantiation();
 
   val->type = root;
-
-  INT_ASSERT(!at->symbol->hasFlag(FLAG_GENERIC));
 
   CallExpr* initCall = createGenericRecordVarDefaultInitCall(val, at, call);
 
