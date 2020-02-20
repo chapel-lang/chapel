@@ -3,7 +3,7 @@ use IO;
 config const inputfile = "blockLU-Mat.dat";
 config const filterfile = "aafilter3x3.dat";
 
-proc AA(Img:[?D], Filter:[?FD], fx: int, fy: int, out outImg:[D]){
+proc AA(Img:[?D], Filter:[?FD], fx: int, fy: int, out outImg:[D] real){
   for (NeighborDom,i,j) in aawindow(D.dim(1),D.dim(2),fx,fy){ 
     
     var newPixel : real = 0;
