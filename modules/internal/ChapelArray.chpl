@@ -3734,8 +3734,8 @@ module ChapelArray {
 
     if a.domain._value.isDefaultRectangular() &&
        b.domain._value.isDefaultRectangular() {
-        if __primitive("is wide pointer", a[a.domain.low]) &&
-           __primitive("is wide pointer", b[b.domain.low]) {
+        if __primitive("is wide pointer", a[a.domain.low]) {
+           /*__primitive("is wide pointer", b[b.domain.low]) {*/
 
             /*writeln("Bulk transferring array type: ", a.eltType:string);*/
 
