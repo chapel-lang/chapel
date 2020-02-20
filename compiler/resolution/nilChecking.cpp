@@ -1269,16 +1269,24 @@ void FindInvalidNonNilables::exitCallExpr(CallExpr* call) {
             if (inFn->userInstantiationPointLoc.filename != NULL)
               point = inFn->userInstantiationPointLoc;
 
+            const char* error = NULL;
             if (isArgSymbol(actualSym)) {
               // leaves-arg-nil OK for e.g. owned initCopy/init= etc.
               if (actualSym->hasFlag(FLAG_LEAVES_ARG_NIL) == false)
-                USR_FATAL_CONT(point, "Cannot transfer ownership from non-nilable reference argument");
+                error = "Cannot transfer ownership from non-nilable reference argument";
             } else if (isOuterVar(actualSym, call->getFunction())) {
-              USR_FATAL_CONT(point, "Cannot transfer ownership from a non-nilable outer variable");
+              error = "Cannot transfer ownership from a non-nilable outer variable";
             } else if (!actualSym->hasFlag(FLAG_DEAD_LAST_MENTION)) {
-              USR_FATAL_CONT(point, "Cannot transfer ownership from a non-nilable variable with a potentially captured alias");
+              error = "Cannot transfer ownership from a non-nilable variable with a potentially captured alias";
             } else {
-              USR_FATAL_CONT(point, "Cannot transfer ownership from this non-nilable variable");
+              error = "Cannot transfer ownership from this non-nilable variable";
+            }
+
+            if (error != NULL) {
+              if (printsUserLocation(astPoint))
+                USR_FATAL_CONT(astPoint, "%s", error);
+              else
+                USR_FATAL_CONT(point, "%s", error);
             }
           }
         }
