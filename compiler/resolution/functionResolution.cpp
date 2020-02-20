@@ -6261,7 +6261,11 @@ FnSymbol* findCopyInitFn(AggregateType* at, const char*& err) {
 
   CallExpr* call = NULL;
 
-  call = new CallExpr(astrInitEquals, gMethodToken, tmpAt, tmpAt);
+  if (at->symbol->hasFlag(FLAG_TUPLE)) {
+    call = new CallExpr("chpl__initCopy", tmpAt);
+  } else {
+    call = new CallExpr(astrInitEquals, gMethodToken, tmpAt, tmpAt);
+  }
 
   FnSymbol* foundFn = resolveUninsertedCall(at, call, false);
   // foundFn's instantiationPoint points to the dummy BlockStmt created by
@@ -6297,7 +6301,13 @@ FnSymbol* findAssignFn(AggregateType* at) {
 FnSymbol* findZeroArgInitFn(AggregateType* at) {
   VarSymbol* tmpAt = newTemp(at);
 
-  CallExpr* call = new CallExpr(astrInit, gMethodToken, tmpAt);
+  CallExpr* call = NULL;
+  if (at->symbol->hasFlag(FLAG_TUPLE)) {
+    call = new CallExpr(astr_defaultOf, at->symbol);
+  } else {
+    call = new CallExpr(astrInit, gMethodToken, tmpAt);
+  }
+
   FnSymbol* foundFn = resolveUninsertedCall(at, call, false);
   FnSymbol* resolvedFn = fixInstantiationPointAndTryResolveBody(at, call);
   FnSymbol* ret = NULL;
