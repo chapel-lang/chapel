@@ -1,0 +1,1 @@
+EVARS=vals srun --job-name=CHPL-testVFlag --quiet --nodes=1 --ntasks=1 --ntasks-per-node=1 --cpus-per-task=N --exclusive --mem=0 --kill-on-bad-exit --partition=P  ./testVFlag_real -v -nl 1 EXECOPTS
