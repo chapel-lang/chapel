@@ -84,8 +84,16 @@ Expr* findLocationIgnoringInternalInlining(Expr* cur) {
 
     bool inlined = curFn->hasFlag(FLAG_INLINED_FN);
 
+    // If not in developer mode, also consider functions beginning with
+    // chpl_ in the same manner (errors within these probably mean an error
+    // in user code).
+    if (developer == false && strncmp(curFn->name, "chpl_", 5) == 0)
+      inlined = true;
+
     if (inlined == false || preserveInlinedLineNumbers)
       return cur;
+
+    Expr* last = cur;
 
     // Look for a call to that function
     for_SymbolSymExprs(se, curFn) {
@@ -96,6 +104,10 @@ Expr* findLocationIgnoringInternalInlining(Expr* cur) {
         break;
       }
     }
+
+    // Stop if we didn't find any calls.
+    if (cur == last)
+      return cur;
   }
 
   return cur; // never reached
