@@ -3739,44 +3739,12 @@ module ChapelArray {
 
             /*writeln("Bulk transferring array type: ", a.eltType:string);*/
 
-          on a {
-            var receiverData: [a.domain] serialType;
-            on b {
-              var senderData: [b.domain] serialType;
-              for (s,l) in zip(senderData, b) {
-                const locID = __primitive("_wide_get_locale", l);
-                const nodeID = chpl_nodeFromLocaleID(locID);
-                const sublocID = chpl_sublocFromLocaleID(locID);
-                const addr = __primitive("_wide_get_addr", l);
-                s = (nodeID, sublocID, addr);
-                /*s = l.chpl__serialize();*/
-                /*s = (__primitive("cast", int, __primitive("_wide_get_locale", l)),*/
-                /*__primitive("cast", int, __primitive("_wide_get_addr", l)));*/
+          var ret = chpl__bulkTransferArray(a, b);
 
-                /*writeln(here, "senderData :", senderData);*/
-              }
+          /*if ret then writeln("Bulk transfer of wide was successful");*/
+          /*else writeln("Bulk transfer of wide failed");*/
+          return ret;
 
-              /*for (r,s) in zip(receiverData, senderData) do*/
-              /*r = s;*/
-              receiverData = senderData;
-              /*writeln(here, "receiverData :", receiverData);*/
-            }
-            for (r,l) in zip(receiverData, a) {
-              /*l = a.eltType.chpl__deserialize(r);*/
-              l = __primitive("_wide_make", a.eltType, 
-                  chpl_buildLocaleID(r[1], r[2]),
-                  __primitive("deref", r[3]));
-              /*l = tmpWide;*/
-              /*const locID = __primitive("_wide_get_locale", l);*/
-              /*const nodeID = chpl_nodeFromLocaleID(locID);*/
-              /*const sublocID = chpl_sublocFromLocaleID(locID);*/
-              /*const addr = __primitive("_wide_get_addr", l);*/
-              /*writeln("in transfer addr: ", r[3]);*/
-              /*writeln("in transfer nodeID: ", nodeID, " sublocID ", sublocID, " addr ", addr);*/
-            }
-          }
-          /*writeln("Successfully finished the bulk transfer");*/
-          return true;
         }
       }
     return false;
