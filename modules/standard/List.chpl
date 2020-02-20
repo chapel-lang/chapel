@@ -1002,9 +1002,11 @@ module List {
       }
 
       ref item = _getRef(idx);
-      var result = item;
 
-      _destroy(item);
+      pragma "no init"
+      var result:eltType;
+      _move(item, result);
+
       // May release memory based on size before pop.
       _collapse(idx);
       _size -= 1;

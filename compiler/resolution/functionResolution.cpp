@@ -9758,6 +9758,10 @@ static void errorIfNonNilableType(CallExpr* call, Symbol* val,
   if (unsafe)
     return;
 
+  // If the variable is explicitly not initialized, don't worry
+  if (val->hasFlag(FLAG_NO_INIT))
+    return;
+
   // Allow default-init assign to work around current compiler oddities.
   // In a future where init= is always used, we can remove this case.
   // Skip this error for a param - it will get "not of a supported param type"
