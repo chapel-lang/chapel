@@ -538,7 +538,8 @@ void FnSymbol::setInstantiationPoint(Expr* expr) {
     this->_backupInstantiationPoint = block->getFunction();
   }
 
-  userInstantiationPointLoc = getUserInstantiationPoint(this);
+  if (expr != NULL)
+    userInstantiationPointLoc = getUserInstantiationPoint(this);
 }
 
 BlockStmt* FnSymbol::instantiationPoint() const {
