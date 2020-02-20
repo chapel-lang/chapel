@@ -3072,6 +3072,12 @@ static bool skipFixup(ArgSymbol* formal, Expr* domExpr, Expr* eltExpr) {
         return false;
       }
     } else {
+      INT_ASSERT(domExpr);
+      if (eltExpr == NULL)
+        USR_FATAL_CONT(formal->defPoint,
+                       "%s array formals specifying a domain currently "
+                       "require an array element type",
+                       formal->intentDescrString());
       return true;
     }
   }
