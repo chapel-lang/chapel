@@ -3723,26 +3723,13 @@ module ChapelArray {
     if !useBulkTransfer then return false;
     if a.eltType != b.eltType then return false;
 
-    // stopgap to prevent recursion
-    type serialType = (chpl_nodeID_t, chpl_sublocID_t, c_void_ptr);
-    if a.eltType == serialType then return false;
-
     // for now assume they are both local arrays, that have the same bounds
     if a.domain != b.domain then return false;
     
-
-
     if a.domain._value.isDefaultRectangular() &&
        b.domain._value.isDefaultRectangular() {
         if __primitive("is wide pointer", a[a.domain.low]) {
-           /*__primitive("is wide pointer", b[b.domain.low]) {*/
-
-            /*writeln("Bulk transferring array type: ", a.eltType:string);*/
-
           var ret = chpl__bulkTransferArray(a, b);
-
-          /*if ret then writeln("Bulk transfer of wide was successful");*/
-          /*else writeln("Bulk transfer of wide failed");*/
           return ret;
 
         }
