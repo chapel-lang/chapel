@@ -86,7 +86,7 @@ static struct fid_domain* ofi_domain;   // fabric access domain
 static int useScalableTxEp;             // use a scalable tx endpoint?
 static struct fid_ep* ofi_txEpScal;     // scalable transmit endpoint
 static struct fid_wait* ofi_amhWaitSet; // wait set for AM handler
-static bool useWaitset = true;          // should we use the waitset?
+static chpl_bool useWaitset = true;     // should we use the waitset?
 //
 // We direct RMA traffic and AM traffic to different endpoints so we can
 // spread the progress load across all the threads when we're doing
@@ -179,6 +179,8 @@ static inline chpl_comm_nb_handle_t ofi_get(void*, c_nodeid_t,
 static inline void ofi_get_ll(void*, c_nodeid_t,
                               void*, size_t, void*, struct perTxCtxInfo_t*);
 static inline void do_remote_get_buff(void*, c_nodeid_t, void*, size_t);
+static inline void do_remote_amo_nf_buff(void*, c_nodeid_t, void*, size_t,
+                                         enum fi_op, enum fi_datatype);
 static inline void waitForCQThisTxn(struct perTxCtxInfo_t*, atomic_bool*);
 static inline void waitForCQAllTxns(struct perTxCtxInfo_t*,
                                     chpl_comm_taskPrvData_t*);
@@ -261,56 +263,21 @@ static void ofiErrReport(const char*, int, const char*);
 
 ////////////////////////////////////////
 //
-// Network type
+// Providers
 //
 
-static pthread_once_t networkOnce = PTHREAD_ONCE_INIT;
-
-typedef enum {
-  networkUnknown,
-  networkAries,
-  networkInfiniBand,
-} network_t;
-
-static network_t network = networkUnknown;
-
-
-static
-void init_network(void) {
-  if (strcmp(CHPL_TARGET_PLATFORM, "cray-xc") == 0) {
-    network = networkAries;
-  }
-}
-
-
-static
-network_t getNetworkType(void) {
-  PTHREAD_CHK(pthread_once(&networkOnce, init_network));
-  return network;
-}
-
-
-////////////////////////////////////////
 //
-// Provider name
+// provider name in environment
 //
+
 static const char* ofi_provNameEnv = "FI_PROVIDER";
-
 static pthread_once_t provNameOnce = PTHREAD_ONCE_INIT;
 static const char* provName;
-
-static chpl_bool providerHasRxm = false;
-static chpl_bool providerHasVerbs = false;
-
-static void setProvName(void);
-static const char* getProviderName(void);
-
 
 static
 void setProvName(void) {
   provName = getenv(ofi_provNameEnv);
 }
-
 
 static
 const char* getProviderName(void) {
@@ -318,26 +285,15 @@ const char* getProviderName(void) {
   return provName;
 }
 
-//
-// Provider-specific behavior control.
-//
-static chpl_bool provCtl_sizeAvsByNumEps;  // size AVs by numEPs (RxD)
-static chpl_bool provCtl_readAmoNeedsOpnd; // READ AMO needs operand (RxD)
-
 
 //
-// Is this name in the provider string?
+// provider name parsing
 //
-static
-chpl_bool isInProviderName(const char* s) {
-  if (ofi_info == NULL
-      || ofi_info->fabric_attr == NULL
-      || ofi_info->fabric_attr->prov_name == NULL) {
-    return false;
-  }
 
-  char pn[strlen(ofi_info->fabric_attr->prov_name) + 1];
-  strcpy(pn, ofi_info->fabric_attr->prov_name);
+static inline
+chpl_bool isInThisProviderName(const char* s, const char* prov_name) {
+  char pn[strlen(prov_name) + 1];
+  strcpy(pn, prov_name);
 
   char* tok;
   char* strSave;
@@ -350,6 +306,135 @@ chpl_bool isInProviderName(const char* s) {
   }
   return false;
 }
+
+
+//
+// provider type
+//
+typedef enum {
+  provType_gni,
+  provType_verbs,
+  provType_rxd,
+  provType_rxm,
+  provTypeCount
+} provider_t;
+
+
+//
+// provider sets
+//
+
+typedef chpl_bool providerSet_t[provTypeCount];
+
+static inline
+void providerSetZero(providerSet_t* s) {
+  memset(s, 0, sizeof(*s));
+}
+
+static inline
+void providerSetClear(providerSet_t* s, provider_t p) {
+  CHK_TRUE(p >= 0 && p < provTypeCount);
+  (*s)[p] = 0;
+}
+
+static inline
+void providerSetSet(providerSet_t* s, provider_t p) {
+  CHK_TRUE(p >= 0 && p < provTypeCount);
+  (*s)[p] = 1;
+}
+
+static inline
+int providerSetTest(providerSet_t* s, provider_t p) {
+  CHK_TRUE(p >= 0 && p < provTypeCount);
+  return (*s)[p] != 0;
+}
+
+
+//
+// providers available
+//
+
+static pthread_once_t providerAvailOnce = PTHREAD_ONCE_INIT;
+static providerSet_t providerAvailSet;
+
+static
+void init_providerAvail(void) {
+  struct fi_info* hints;
+  CHK_TRUE((hints = fi_allocinfo()) != NULL);
+  hints->ep_attr->type = FI_EP_RDM;
+  struct fi_info* info = NULL;
+  OFI_CHK(fi_getinfo(COMM_OFI_FI_VERSION, NULL, NULL, 0, hints, &info));
+  if (chpl_nodeID == 0) {
+    DBG_PRINTF(DBG_CFGFABSALL,
+               "==================== fabrics available with %s %s:",
+               ofi_provNameEnv,
+               (getProviderName() == NULL) ? "<unset>" : getProviderName());
+  }
+  for ( ; info != NULL; info = info->next) {
+    if (chpl_nodeID == 0) {
+      DBG_PRINTF(DBG_CFGFABSALL, "%s", fi_tostr(info, FI_TYPE_INFO));
+      DBG_PRINTF(DBG_CFGFABSALL, "----------");
+    }
+    const char* pn = info->fabric_attr->prov_name;
+    if (isInThisProviderName("gni", pn)) {
+      providerSetSet(&providerAvailSet, provType_gni);
+    } else if (isInThisProviderName("verbs", pn)) {
+      providerSetSet(&providerAvailSet, provType_verbs);
+    }
+  }
+  fi_freeinfo(info);
+  fi_freeinfo(hints);
+}
+
+static
+chpl_bool providerAvail(provider_t p) {
+  PTHREAD_CHK(pthread_once(&providerAvailOnce, init_providerAvail));
+  return providerSetTest(&providerAvailSet, p);
+}
+
+
+//
+// providers in use
+//
+
+static pthread_once_t providerInUseOnce = PTHREAD_ONCE_INIT;
+static providerSet_t providerInUseSet;
+
+static
+void init_providerInUse(void) {
+  //
+  // We can be using only one primary provider.
+  //
+  const char* pn = ofi_info->fabric_attr->prov_name;
+  if (isInThisProviderName("gni", pn)) {
+    providerSetSet(&providerInUseSet, provType_gni);
+  } else if (isInThisProviderName("verbs", pn)) {
+    providerSetSet(&providerInUseSet, provType_verbs);
+  }
+  //
+  // We can be using any number of utility providers.
+  //
+  if (isInThisProviderName("ofi_rxd", pn)) {
+    providerSetSet(&providerInUseSet, provType_rxd);
+  }
+  if (isInThisProviderName("ofi_rxm", pn)) {
+    providerSetSet(&providerInUseSet, provType_rxm);
+  }
+}
+
+static
+chpl_bool providerInUse(provider_t p) {
+  PTHREAD_CHK(pthread_once(&providerInUseOnce, init_providerInUse));
+  return providerSetTest(&providerInUseSet, p);
+}
+
+
+//
+// provider-specific behavior control
+//
+
+static chpl_bool provCtl_sizeAvsByNumEps;  // size AVs by numEPs (RxD)
+static chpl_bool provCtl_readAmoNeedsOpnd; // READ AMO needs operand (RxD)
 
 
 ////////////////////////////////////////
@@ -520,16 +605,33 @@ int bitmapIsSet(struct bitmap_t* b, size_t i) {
 //
 #define MAX_TXNS_IN_FLIGHT 64
 
+#define MAX_CHAINED_AMO_NF_LEN MAX_TXNS_IN_FLIGHT
 #define MAX_CHAINED_PUT_LEN MAX_TXNS_IN_FLIGHT
 #define MAX_CHAINED_GET_LEN MAX_TXNS_IN_FLIGHT
 
 enum BuffType {
+  amo_nf_buff = 1 << 0,
   get_buff    = 1 << 1,
   put_buff    = 1 << 2
 };
 
+// Per task information about non-fetching AMO buffers
+typedef struct {
+  chpl_bool          new;
+  int                vi;
+  uint64_t           opnd1_v[MAX_CHAINED_AMO_NF_LEN];
+  c_nodeid_t         locale_v[MAX_CHAINED_AMO_NF_LEN];
+  void*              object_v[MAX_CHAINED_AMO_NF_LEN];
+  size_t             size_v[MAX_CHAINED_AMO_NF_LEN];
+  enum fi_op         cmd_v[MAX_CHAINED_AMO_NF_LEN];
+  enum fi_datatype   type_v[MAX_CHAINED_AMO_NF_LEN];
+  uint64_t           remote_mr_v[MAX_CHAINED_AMO_NF_LEN];
+  void*              local_mr;
+} amo_nf_buff_task_info_t;
+
 // Per task information about GET buffers
 typedef struct {
+  chpl_bool     new;
   int           vi;
   void*         tgt_addr_v[MAX_CHAINED_GET_LEN];
   c_nodeid_t    locale_v[MAX_CHAINED_GET_LEN];
@@ -537,11 +639,11 @@ typedef struct {
   void*         src_addr_v[MAX_CHAINED_GET_LEN];
   size_t        size_v[MAX_CHAINED_GET_LEN];
   void*         local_mr_v[MAX_CHAINED_GET_LEN];
-  struct bitmap_t nodeBitmap;
 } get_buff_task_info_t;
 
 // Per task information about PUT buffers
 typedef struct {
+  chpl_bool     new;
   int           vi;
   void*         tgt_addr_v[MAX_CHAINED_PUT_LEN];
   c_nodeid_t    locale_v[MAX_CHAINED_PUT_LEN];
@@ -555,7 +657,7 @@ typedef struct {
 
 // Acquire a task local buffer, initializing if needed
 static inline
-void* task_local_buff_acquire(enum BuffType t) {
+void* task_local_buff_acquire(enum BuffType t, size_t extra_size) {
   chpl_comm_taskPrvData_t* prvData = get_comm_taskPrvdata();
   if (prvData == NULL) return NULL;
 
@@ -563,23 +665,16 @@ void* task_local_buff_acquire(enum BuffType t) {
   if (t == TLS_NAME) {                                                        \
     TYPE* info = prvData->TLS_NAME;                                           \
     if (info == NULL) {                                                       \
-      size_t _size = sizeof(TYPE);                                            \
-      if (t == put_buff && providerHasRxm) {                                  \
-        _size += bitmapSizeofMap(chpl_numNodes);                              \
-      }                                                                       \
-      prvData->TLS_NAME = chpl_mem_alloc(_size,                               \
+      prvData->TLS_NAME = chpl_mem_alloc(sizeof(TYPE) + extra_size,           \
                                          CHPL_RT_MD_COMM_PER_LOC_INFO, 0, 0); \
       info = prvData->TLS_NAME;                                               \
+      info->new = true;                                                       \
       info->vi = 0;                                                           \
-      if (t == put_buff && providerHasRxm) {                                  \
-        info->nodeBitmap.len = chpl_numNodes;                                 \
-      } else {                                                                \
-        info->nodeBitmap.len = 0;                                             \
-      }                                                                       \
     }                                                                         \
     return info;                                                              \
   }
 
+  DEFINE_INIT(amo_nf_buff_task_info_t, amo_nf_buff);
   DEFINE_INIT(get_buff_task_info_t, get_buff);
   DEFINE_INIT(put_buff_task_info_t, put_buff);
 
@@ -587,6 +682,7 @@ void* task_local_buff_acquire(enum BuffType t) {
   return NULL;
 }
 
+static void amo_nf_buff_task_info_flush(amo_nf_buff_task_info_t* info);
 static void get_buff_task_info_flush(get_buff_task_info_t* info);
 static void put_buff_task_info_flush(put_buff_task_info_t* info);
 
@@ -604,6 +700,8 @@ void task_local_buff_flush(enum BuffType t) {
     }                                                                         \
   }
 
+  DEFINE_FLUSH(amo_nf_buff_task_info_t, amo_nf_buff,
+               amo_nf_buff_task_info_flush);
   DEFINE_FLUSH(get_buff_task_info_t, get_buff, get_buff_task_info_flush);
   DEFINE_FLUSH(put_buff_task_info_t, put_buff, put_buff_task_info_flush);
 
@@ -626,6 +724,8 @@ void task_local_buff_end(enum BuffType t) {
     }                                                                         \
   }
 
+  DEFINE_END(amo_nf_buff_task_info_t, amo_nf_buff,
+             amo_nf_buff_task_info_flush);
   DEFINE_END(get_buff_task_info_t, get_buff, get_buff_task_info_flush);
   DEFINE_END(put_buff_task_info_t, put_buff, put_buff_task_info_flush);
 
@@ -761,14 +861,21 @@ void init_ofiFabricDomain(void) {
   hints->caps = FI_MSG | FI_SEND | FI_RECV | FI_MULTI_RECV
                 | FI_RMA | FI_READ | FI_WRITE
                 | FI_REMOTE_READ | FI_REMOTE_WRITE;
-  if (getNetworkType() == networkAries) {
-      hints->caps |= FI_ATOMICS; // oddly, we don't get this without asking
+  if (providerAvail(provType_gni)) {
+    hints->caps |= FI_ATOMICS; // we don't get this without asking
   }
 
   hints->addr_format = FI_FORMAT_UNSPEC;
 
   hints->tx_attr->op_flags = FI_COMPLETION | FI_DELIVERY_COMPLETE;
+  if (providerAvail(provType_rxm)) {
+    hints->tx_attr->msg_order = FI_ORDER_RMA_RAW;
+  }
+
   hints->rx_attr->op_flags = FI_COMPLETION;
+  if (providerAvail(provType_rxm)) {
+    hints->rx_attr->msg_order = FI_ORDER_RMA_RAW;
+  }
 
   hints->ep_attr->type = FI_EP_RDM;
 
@@ -832,25 +939,6 @@ void init_ofiFabricDomain(void) {
   if (chpl_nodeID == 0) {
     if (ret == -FI_ENODATA) {
       const char* provider = getProviderName();
-
-      if (DBG_TEST_MASK(DBG_CFGFABSALL)) {
-        DBG_PRINTF(DBG_CFGFABSALL,
-                   "==================== fi_getinfo() fabrics:");
-        DBG_PRINTF(DBG_CFGFABSALL,
-                   "None matched hints; available with prov_name \"%s\" are:",
-                   (provider == NULL) ? "<any>" : provider);
-        struct fi_info* info = NULL;
-        OFI_CHK(fi_getinfo(COMM_OFI_FI_VERSION, NULL, NULL, 0, NULL, &info));
-        for ( ; info != NULL; info = info->next) {
-          const char* pn = info->fabric_attr->prov_name;
-          if (provider == NULL
-              || strncmp(pn, provider, strlen(provider)) == 0) {
-            DBG_PRINTF(DBG_CFGFABSALL, "%s", fi_tostr(info, FI_TYPE_INFO));
-            DBG_PRINTF(DBG_CFGFABSALL, "----------");
-          }
-        }
-      }
-
       INTERNAL_ERROR_V("No provider matched for prov_name \"%s\"",
                        (provider == NULL) ? "<any>" : provider);
     }
@@ -901,7 +989,7 @@ void init_ofiDoProviderChecks(void) {
   //
   // Set/compute various provider-specific things.
   //
-  if (isInProviderName("gni")) {
+  if (providerInUse(provType_gni)) {
     //
     // gni
     //
@@ -918,7 +1006,7 @@ void init_ofiDoProviderChecks(void) {
     useWaitset = false;
   }
 
-  if (isInProviderName("ofi_rxd")) {
+  if (providerInUse(provType_rxd)) {
     //
     // ofi_rxd (utility provider with tcp, verbs, possibly others)
     //
@@ -937,14 +1025,10 @@ void init_ofiDoProviderChecks(void) {
     provCtl_readAmoNeedsOpnd = true;
   }
 
-  if (isInProviderName("ofi_rxm")) {
-    providerHasRxm = true;
-
+  if (providerInUse(provType_rxm)) {
     // See ofi_put_V().
     CHK_TRUE((ofi_info->tx_attr->msg_order & FI_ORDER_RMA_RAW) != 0);
   }
-
-  providerHasVerbs = isInProviderName("verbs");
 }
 
 
@@ -1540,7 +1624,7 @@ static void exit_any(int status) {
   // Flush all the stdio FILE streams first, in the hope of not losing
   // any output.
   //
-  if (providerHasVerbs) {
+  if (providerInUse(provType_verbs)) {
     fflush(NULL);
     _exit(status);
   }
@@ -1635,7 +1719,7 @@ void init_fixedHeap(void) {
   //
   size_t size = chpl_comm_getenvMaxHeapSize();
   if ( ! (chpl_numNodes > 1
-          && (getNetworkType() == networkAries || size != 0))) {
+          && (providerAvail(provType_gni) || size != 0))) {
     return;
   }
 
@@ -1722,8 +1806,7 @@ void emit_delayedFixedHeapMsgs(void) {
   // We only need a fixed heap if we're multinode on a Cray XC system
   // and using the gni provider.
   //
-  if (chpl_numNodes <= 1
-      || getNetworkType() != networkAries) {
+  if (chpl_numNodes <= 1 || !providerInUse(provType_gni)) {
     return;
   }
 
@@ -1893,7 +1976,7 @@ void ensure_progress(void) {
 
 
 void chpl_comm_task_end(void) {
-  task_local_buff_end(get_buff | put_buff);
+  task_local_buff_end(get_buff | put_buff | amo_nf_buff);
 }
 
 
@@ -3261,8 +3344,9 @@ void ofi_put_V(int v_len, void** addr_v, void** local_mr_v,
                c_nodeid_t* locale_v, void** raddr_v, uint64_t* remote_mr_v,
                size_t* size_v, struct bitmap_t* b) {
   DBG_PRINTF(DBG_RMA | DBG_RMAWRITE | DBG_RMAUNORD,
-             "PUT_V(%d) %d:%p <= %p, size %zd",
-             v_len, (int) locale_v[0], raddr_v[0], addr_v[0], size_v[0]);
+             "put_V(%d): %d:%p <= %p, size %zd, key 0x%" PRIx64,
+             v_len, (int) locale_v[0], raddr_v[0], addr_v[0], size_v[0],
+             remote_mr_v[0]);
 
   struct perTxCtxInfo_t* tcip;
   CHK_TRUE((tcip = tciAlloc()) != NULL);
@@ -3279,30 +3363,30 @@ void ofi_put_V(int v_len, void** addr_v, void** local_mr_v,
   // Initiate the batch.  If we're using the RxM provider, record
   // which nodes we PUT to; see below for why this is needed.
   //
-  if (providerHasRxm) {
+  if (providerInUse(provType_rxm)) {
     bitmapZero(b);
   }
   for (int vi = 0; vi < v_len; vi++) {
-    struct iovec iov = (struct iovec)
-                       { .iov_base = addr_v[vi],
-                         .iov_len = size_v[vi] };
-    struct fi_rma_iov riov = (struct fi_rma_iov)
-                             { .addr = (uint64_t) raddr_v[vi],
-                               .len = size_v[vi],
-                               .key = remote_mr_v[vi] };
+    struct iovec msg_iov = (struct iovec)
+                           { .iov_base = addr_v[vi],
+                             .iov_len = size_v[vi] };
+    struct fi_rma_iov rma_iov = (struct fi_rma_iov)
+                                { .addr = (uint64_t) raddr_v[vi],
+                                  .len = size_v[vi],
+                                  .key = remote_mr_v[vi] };
     struct fi_msg_rma msg = (struct fi_msg_rma)
-                            { .msg_iov = &iov,
+                            { .msg_iov = &msg_iov,
                               .desc = &local_mr_v[vi],
                               .iov_count = 1,
                               .addr = rxRmaAddr(tcip, locale_v[vi]),
-                              .rma_iov = &riov,
+                              .rma_iov = &rma_iov,
                               .rma_iov_count = 1,
                               .context = NULL,
                               .data = 0 };
     DBG_PRINTF(DBG_RMA | DBG_RMAWRITE,
                "tx writemsg: %d:%p <= %p, size %zd, key 0x%" PRIx64,
-               (int) locale_v[vi], (void*) riov.addr, iov.iov_base,
-               iov.iov_len, riov.key);
+               (int) locale_v[vi], (void*) msg.rma_iov->addr,
+               msg.msg_iov->iov_base, msg.msg_iov->iov_len, msg.rma_iov->key);
     //
     // Add another transaction to the group and go on without waiting.
     // Throw FI_MORE except for the last one in the batch.
@@ -3311,12 +3395,12 @@ void ofi_put_V(int v_len, void** addr_v, void** local_mr_v,
                                     (vi < v_len - 1) ? FI_MORE : 0),
                         checkTxCQ(tcip));
     tcip->numTxns++;
-    if (providerHasRxm) {
+    if (providerInUse(provType_rxm)) {
       bitmapSetBit(b, locale_v[vi]);
     }
   }
 
-  if (providerHasRxm) {
+  if (providerInUse(provType_rxm)) {
     //
     // The verbs;ofi_rxm provider has a peculiarity: it advertises that
     // it supports FI_DELIVERY_COMPLETE but it doesn't actually do so.
@@ -3331,7 +3415,7 @@ void ofi_put_V(int v_len, void** addr_v, void** local_mr_v,
         checkTxCQ(tcip);
       }
       DBG_PRINTF(DBG_RMAUNORD,
-                 "PUT_V ordering: %p <= %d:%p",
+                 "put_V ordering: %p <= %d:%p",
                  orderDummy, (int) node, orderDummyMap[node]);
       (void) ofi_get_ll(orderDummy, node, orderDummyMap[node], 1,
                         txnTrkEncode(txnTrkNone, NULL), tcip);
@@ -3370,11 +3454,19 @@ void do_remote_put_buff(void* addr, c_nodeid_t node, void* raddr,
   uint64_t mrKey;
   uint64_t mrRaddr;
   put_buff_task_info_t* info;
+  size_t extra_size = providerInUse(provType_rxm)
+                      ? bitmapSizeofMap(chpl_numNodes)
+                      : 0;
   if (size > MAX_UNORDERED_TRANS_SZ
       || mrGetKey(&mrKey, &mrRaddr, node, raddr, size) != 0
-      || (info = task_local_buff_acquire(put_buff)) == NULL) {
+      || (info = task_local_buff_acquire(put_buff, extra_size)) == NULL) {
     (void) ofi_put(addr, node, raddr, size);
     return;
+  }
+
+  if (info->new) {
+    info->nodeBitmap.len = chpl_numNodes;
+    info->new = false;
   }
 
   void* mrDesc = NULL;
@@ -3531,8 +3623,9 @@ void ofi_get_V(int v_len, void** addr_v, void** local_mr_v,
                c_nodeid_t* locale_v, void** raddr_v, uint64_t* remote_mr_v,
                size_t* size_v) {
   DBG_PRINTF(DBG_RMA | DBG_RMAREAD | DBG_RMAUNORD,
-             "GET_V(%d) %p <= %d:%p, size %zd",
-             v_len, addr_v[0], (int) locale_v[0], raddr_v[0], size_v[0]);
+             "get_V(%d): %p <= %d:%p, size %zd, key 0x%" PRIx64,
+             v_len, addr_v[0], (int) locale_v[0], raddr_v[0], size_v[0],
+             remote_mr_v[0]);
 
   struct perTxCtxInfo_t* tcip;
   CHK_TRUE((tcip = tciAlloc()) != NULL);
@@ -3544,26 +3637,27 @@ void ofi_get_V(int v_len, void** addr_v, void** local_mr_v,
   }
 
   for (int vi = 0; vi < v_len; vi++) {
-    struct iovec iov = (struct iovec)
-                       { .iov_base = addr_v[vi],
-                         .iov_len = size_v[vi] };
-    struct fi_rma_iov riov = (struct fi_rma_iov)
-                             { .addr = (uint64_t) raddr_v[vi],
-                               .len = size_v[vi],
-                               .key = remote_mr_v[vi] };
+    struct iovec msg_iov = (struct iovec)
+                           { .iov_base = addr_v[vi],
+                             .iov_len = size_v[vi] };
+    struct fi_rma_iov rma_iov = (struct fi_rma_iov)
+                                { .addr = (uint64_t) raddr_v[vi],
+                                  .len = size_v[vi],
+                                  .key = remote_mr_v[vi] };
     struct fi_msg_rma msg = (struct fi_msg_rma)
-                            { .msg_iov = &iov,
+                            { .msg_iov = &msg_iov,
                               .desc = &local_mr_v[vi],
                               .iov_count = 1,
                               .addr = rxRmaAddr(tcip, locale_v[vi]),
-                              .rma_iov = &riov,
+                              .rma_iov = &rma_iov,
                               .rma_iov_count = 1,
                               .context = NULL,
                               .data = 0 };
     DBG_PRINTF(DBG_RMA | DBG_RMAREAD,
                "tx readmsg: %p <= %d:%p, size %zd, key 0x%" PRIx64,
-               iov.iov_base, (int) locale_v[vi], (void*) riov.addr,
-               iov.iov_len, riov.key);
+               msg.msg_iov->iov_base, (int) locale_v[vi],
+               (void*) msg.rma_iov->addr, msg.msg_iov->iov_len,
+               msg.rma_iov->key);
     if (++(tcip->numTxns) >= txCQLen || vi == v_len - 1) {
       // Initiate last transaction in group and wait for whole group.
       OFI_RIDE_OUT_EAGAIN(fi_readmsg(tcip->txCtx, &msg, 0),
@@ -3612,7 +3706,7 @@ void do_remote_get_buff(void* addr, c_nodeid_t node, void* raddr,
   get_buff_task_info_t* info;
   if (size > MAX_UNORDERED_TRANS_SZ
       || mrGetKey(&mrKey, &mrRaddr, node, raddr, size) != 0
-      || (info = task_local_buff_acquire(get_buff)) == NULL) {
+      || (info = task_local_buff_acquire(get_buff, 0)) == NULL) {
     (void) ofi_get(addr, node, raddr, size);
     return;
   }
@@ -3643,8 +3737,7 @@ void do_remote_get_buff(void* addr, c_nodeid_t node, void* raddr,
 
 
 static
-chpl_comm_nb_handle_t ofi_amo(struct perTxCtxInfo_t* tcip,
-                              c_nodeid_t node, uint64_t object, uint64_t mrKey,
+chpl_comm_nb_handle_t ofi_amo(c_nodeid_t node, uint64_t object, uint64_t mrKey,
                               const void* operand1, const void* operand2,
                               void* result,
                               enum fi_op ofiOp, enum fi_datatype ofiType,
@@ -3696,6 +3789,8 @@ chpl_comm_nb_handle_t ofi_amo(struct perTxCtxInfo_t* tcip,
 
   void* ctx;
 
+  struct perTxCtxInfo_t* tcip;
+  CHK_TRUE((tcip = tciAlloc()) != NULL);
   if (tcip->txCQ != NULL) {
     chpl_comm_taskPrvData_t* prvData = get_comm_taskPrvdata();
     if (ordered) {
@@ -3759,6 +3854,8 @@ chpl_comm_nb_handle_t ofi_amo(struct perTxCtxInfo_t* tcip,
     }
   }
 
+  tciFree(tcip);
+
   if (ofiOp == FI_CSWAP) {
     *(chpl_bool32*) result = (memcmp(myRes, operand1, size) == 0);
     if (myRes != &ofiCmpRes) {
@@ -3787,6 +3884,72 @@ chpl_comm_nb_handle_t ofi_amo(struct perTxCtxInfo_t* tcip,
   }
 
   return NULL;
+}
+
+
+static
+void ofi_amo_nf_V(int v_len, uint64_t* opnd1_v, void* local_mr,
+                  c_nodeid_t* locale_v, void** object_v, uint64_t* remote_mr_v,
+                  size_t* size_v, enum fi_op* cmd_v,
+                  enum fi_datatype* type_v) {
+  DBG_PRINTF(DBG_AMO | DBG_RMAUNORD,
+             "amo_nf_V(%d): obj %d:%p, opnd1 <%s>, op %s, typ %s, sz %zd, "
+             "key 0x%" PRIx64,
+             v_len, (int) locale_v[0], object_v[0],
+             DBG_VAL(&opnd1_v[0], type_v[0]),
+             amo_opName(cmd_v[0]), amo_typeName(type_v[0]), size_v[0],
+             remote_mr_v[0]);
+
+  struct perTxCtxInfo_t* tcip;
+  CHK_TRUE((tcip = tciAlloc()) != NULL);
+
+  //
+  // Make sure we have enough free CQ entries to initiate the entire
+  // batch of transactions.
+  //
+  do {
+    checkTxCQ(tcip);
+  } while (v_len > txCQLen - tcip->numTxns);
+
+  //
+  // Initiate the batch.
+  //
+  for (int vi = 0; vi < v_len; vi++) {
+    struct fi_ioc msg_iov = (struct fi_ioc)
+                            { .addr = &opnd1_v[vi],
+                              .count = 1 };
+    struct fi_rma_ioc rma_iov = (struct fi_rma_ioc)
+                                { .addr = (uint64_t) object_v[vi],
+                                  .count = 1,
+                                  .key = remote_mr_v[vi] };
+    struct fi_msg_atomic msg = (struct fi_msg_atomic)
+                               { .msg_iov = &msg_iov,
+                                 .desc = &local_mr,
+                                 .iov_count = 1,
+                                 .addr = rxRmaAddr(tcip, locale_v[vi]),
+                                 .rma_iov = &rma_iov,
+                                 .rma_iov_count = 1,
+                                 .datatype = type_v[vi],
+                                 .op = cmd_v[vi],
+                                 .context = NULL,
+                                 .data = 0 };
+    DBG_PRINTF(DBG_RMA | DBG_RMAWRITE,
+               "tx atomicmsg: obj %d:%p, opnd1 <%s>, op %s, typ %s, sz %zd, "
+               "key 0x%" PRIx64,
+               (int) locale_v[vi], (void*) msg.rma_iov->addr,
+               DBG_VAL(msg.msg_iov->addr, msg.datatype), amo_opName(msg.op),
+               amo_typeName(msg.datatype), size_v[vi], msg.rma_iov->key);
+    //
+    // Add another transaction to the group and go on without waiting.
+    // Throw FI_MORE except for the last one in the batch.
+    //
+    OFI_RIDE_OUT_EAGAIN(fi_atomicmsg(tcip->txCtx, &msg,
+                                     (vi < v_len - 1) ? FI_MORE : 0),
+                        checkTxCQ(tcip));
+    tcip->numTxns++;
+  }
+
+  tciFree(tcip);
 }
 
 
@@ -3962,8 +4125,8 @@ DEFN_CHPL_COMM_ATOMIC_WRITE(int32, FI_INT32, int32_t)
 DEFN_CHPL_COMM_ATOMIC_WRITE(int64, FI_INT64, int64_t)
 DEFN_CHPL_COMM_ATOMIC_WRITE(uint32, FI_UINT32, uint32_t)
 DEFN_CHPL_COMM_ATOMIC_WRITE(uint64, FI_UINT64, uint64_t)
-DEFN_CHPL_COMM_ATOMIC_WRITE(real32, FI_FLOAT, float)
-DEFN_CHPL_COMM_ATOMIC_WRITE(real64, FI_DOUBLE, double)
+DEFN_CHPL_COMM_ATOMIC_WRITE(real32, FI_FLOAT, _real32)
+DEFN_CHPL_COMM_ATOMIC_WRITE(real64, FI_DOUBLE, _real64)
 
 
 //
@@ -3987,8 +4150,8 @@ DEFN_CHPL_COMM_ATOMIC_READ(int32, FI_INT32, int32_t)
 DEFN_CHPL_COMM_ATOMIC_READ(int64, FI_INT64, int64_t)
 DEFN_CHPL_COMM_ATOMIC_READ(uint32, FI_UINT32, uint32_t)
 DEFN_CHPL_COMM_ATOMIC_READ(uint64, FI_UINT64, uint64_t)
-DEFN_CHPL_COMM_ATOMIC_READ(real32, FI_FLOAT, float)
-DEFN_CHPL_COMM_ATOMIC_READ(real64, FI_DOUBLE, double)
+DEFN_CHPL_COMM_ATOMIC_READ(real32, FI_FLOAT, _real32)
+DEFN_CHPL_COMM_ATOMIC_READ(real64, FI_DOUBLE, _real64)
 
 
 #define DEFN_CHPL_COMM_ATOMIC_XCHG(fnType, ofiType, Type)               \
@@ -4009,8 +4172,8 @@ DEFN_CHPL_COMM_ATOMIC_XCHG(int32, FI_INT32, int32_t)
 DEFN_CHPL_COMM_ATOMIC_XCHG(int64, FI_INT64, int64_t)
 DEFN_CHPL_COMM_ATOMIC_XCHG(uint32, FI_UINT32, uint32_t)
 DEFN_CHPL_COMM_ATOMIC_XCHG(uint64, FI_UINT64, uint64_t)
-DEFN_CHPL_COMM_ATOMIC_XCHG(real32, FI_FLOAT, float)
-DEFN_CHPL_COMM_ATOMIC_XCHG(real64, FI_DOUBLE, double)
+DEFN_CHPL_COMM_ATOMIC_XCHG(real32, FI_FLOAT, _real32)
+DEFN_CHPL_COMM_ATOMIC_XCHG(real64, FI_DOUBLE, _real64)
 
 
 #define DEFN_CHPL_COMM_ATOMIC_CMPXCHG(fnType, ofiType, Type)            \
@@ -4033,8 +4196,8 @@ DEFN_CHPL_COMM_ATOMIC_CMPXCHG(int32, FI_INT32, int32_t)
 DEFN_CHPL_COMM_ATOMIC_CMPXCHG(int64, FI_INT64, int64_t)
 DEFN_CHPL_COMM_ATOMIC_CMPXCHG(uint32, FI_UINT32, uint32_t)
 DEFN_CHPL_COMM_ATOMIC_CMPXCHG(uint64, FI_UINT64, uint64_t)
-DEFN_CHPL_COMM_ATOMIC_CMPXCHG(real32, FI_FLOAT, float)
-DEFN_CHPL_COMM_ATOMIC_CMPXCHG(real64, FI_DOUBLE, double)
+DEFN_CHPL_COMM_ATOMIC_CMPXCHG(real32, FI_FLOAT, _real32)
+DEFN_CHPL_COMM_ATOMIC_CMPXCHG(real64, FI_DOUBLE, _real64)
 
 
 #define DEFN_IFACE_AMO_SIMPLE_OP(fnOp, ofiOp, fnType, ofiType, Type)    \
@@ -4058,8 +4221,10 @@ DEFN_CHPL_COMM_ATOMIC_CMPXCHG(real64, FI_DOUBLE, double)
                "chpl_comm_atomic_%s_unordered_%s(<%s>, %d, %p, %d, %s)",\
                #fnOp, #fnType, DBG_VAL(operand, ofiType), (int) node,   \
                object, ln, chpl_lookupFilename(fn));                    \
-    chpl_comm_atomic_##fnOp##_##fnType(operand, node, object,           \
-                                       memory_order_seq_cst, ln, fn);   \
+    chpl_comm_diags_verbose_amo("amo unord_" #fnOp, node, ln, fn);      \
+    chpl_comm_diags_incr(amo);                                          \
+    do_remote_amo_nf_buff(operand, node, object, sizeof(Type),          \
+                          ofiOp, ofiType);                              \
   }                                                                     \
                                                                         \
   void chpl_comm_atomic_fetch_##fnOp##_##fnType                         \
@@ -4095,8 +4260,8 @@ DEFN_IFACE_AMO_SIMPLE_OP(add, FI_SUM, int32, FI_INT32, int32_t)
 DEFN_IFACE_AMO_SIMPLE_OP(add, FI_SUM, int64, FI_INT64, int64_t)
 DEFN_IFACE_AMO_SIMPLE_OP(add, FI_SUM, uint32, FI_UINT32, uint32_t)
 DEFN_IFACE_AMO_SIMPLE_OP(add, FI_SUM, uint64, FI_UINT64, uint64_t)
-DEFN_IFACE_AMO_SIMPLE_OP(add, FI_SUM, real32, FI_FLOAT, float)
-DEFN_IFACE_AMO_SIMPLE_OP(add, FI_SUM, real64, FI_DOUBLE, double)
+DEFN_IFACE_AMO_SIMPLE_OP(add, FI_SUM, real32, FI_FLOAT, _real32)
+DEFN_IFACE_AMO_SIMPLE_OP(add, FI_SUM, real64, FI_DOUBLE, _real64)
 
 
 #define DEFN_IFACE_AMO_SUB(fnType, ofiType, Type, negate)               \
@@ -4122,8 +4287,11 @@ DEFN_IFACE_AMO_SIMPLE_OP(add, FI_SUM, real64, FI_DOUBLE, double)
                "%d, %s)",                                               \
                #fnType, DBG_VAL(operand, ofiType), (int) node, object,  \
                ln, chpl_lookupFilename(fn));                            \
-    chpl_comm_atomic_sub_##fnType(operand, node, object,                \
-                                  memory_order_seq_cst, ln, fn);        \
+    Type myOpnd = negate(*(Type*) operand);                             \
+    chpl_comm_diags_verbose_amo("amo unord_sub", node, ln, fn);         \
+    chpl_comm_diags_incr(amo);                                          \
+    do_remote_amo_nf_buff(&myOpnd, node, object, sizeof(Type),          \
+                          FI_SUM, ofiType);                             \
   }                                                                     \
                                                                         \
   void chpl_comm_atomic_fetch_sub_##fnType                              \
@@ -4149,11 +4317,11 @@ DEFN_IFACE_AMO_SUB(int32, FI_INT32, int32_t, NEGATE_I32)
 DEFN_IFACE_AMO_SUB(int64, FI_INT64, int64_t, NEGATE_I64)
 DEFN_IFACE_AMO_SUB(uint32, FI_UINT32, uint32_t, NEGATE_U_OR_R)
 DEFN_IFACE_AMO_SUB(uint64, FI_UINT64, uint64_t, NEGATE_U_OR_R)
-DEFN_IFACE_AMO_SUB(real32, FI_FLOAT, float, NEGATE_U_OR_R)
-DEFN_IFACE_AMO_SUB(real64, FI_DOUBLE, double, NEGATE_U_OR_R)
+DEFN_IFACE_AMO_SUB(real32, FI_FLOAT, _real32, NEGATE_U_OR_R)
+DEFN_IFACE_AMO_SUB(real64, FI_DOUBLE, _real64, NEGATE_U_OR_R)
 
 void chpl_comm_atomic_unordered_task_fence(void) {
-  return;
+  task_local_buff_flush(amo_nf_buff);
 }
 
 
@@ -4253,11 +4421,8 @@ void doAMO(c_nodeid_t node, void* object,
     // The type is supported for network atomics and the object address
     // is remotely accessible.  Do the AMO natively.
     //
-    struct perTxCtxInfo_t* tcip;
-    CHK_TRUE((tcip = tciAlloc()) != NULL);
-    ofi_amo(tcip, node, mrRaddr, mrKey, operand1, operand2, result,
+    ofi_amo(node, mrRaddr, mrKey, operand1, operand2, result,
             ofiOp, ofiType, size);
-    tciFree(tcip);
   } else {
     //
     // We can't do the AMO on the network, so do it on the CPU.  If the
@@ -4398,140 +4563,15 @@ void doCpuAMO(void* obj,
     } else if (ofiType == FI_UINT64) {
       CPU_INT_ARITH_AMO(add, uint_least64_t, u64);
     } else if (ofiType == FI_FLOAT) {
-      chpl_amo_datum_t xpctd;
-      chpl_amo_datum_t dsrd;
-      chpl_bool32 done;
-
-      do {
-        xpctd.u32 = atomic_load_int_least32_t(obj);
-        dsrd.r32 = xpctd.r32 + myOpnd1->r32;
-        done = atomic_compare_exchange_strong_uint_least32_t(obj,
-                                                             xpctd.u32,
-                                                             dsrd.u32);
-      } while (!done);
-
-      if (result != NULL) {
-        *(float*) result = xpctd.r32;
-      }
+      CPU_INT_ARITH_AMO(add, _real32, r32);
     } else if (ofiType == FI_DOUBLE) {
-      chpl_amo_datum_t xpctd;
-      chpl_amo_datum_t dsrd;
-      chpl_bool32 done;
-
-      do {
-        xpctd.u64 = atomic_load_int_least64_t(obj);
-        dsrd.r64 = xpctd.r64 + myOpnd1->r64;
-        done = atomic_compare_exchange_strong_uint_least64_t(obj,
-                                                             xpctd.u64,
-                                                             dsrd.u64);
-      } while (!done);
-
-      if (result != NULL) {
-        *(double*) result = xpctd.r64;
-      }
+      CPU_INT_ARITH_AMO(add, _real64, r64);
     } else {
       INTERNAL_ERROR_V("doCpuAMO(): unsupported ofiOp %d, ofiType %d",
                        ofiOp, ofiType);
     }
     break;
 
-#if 0
-    //
-    // This was lifted from comm=ugni.  I'm not going to ever use it
-    // directly.  But I'm leaving it here to remind myself to cover the
-    // case where the object is in registered memory, when I add support
-    // for AMOs done directly in the fabric.
-    //
-
-  case cmpxchg_64:
-    //
-    // If the object is not in memory registered with the NIC, use the
-    // processor.  Otherwise, since the other 64-bit AMOs are done on
-    // the NIC, for coherence do this one on the NIC as well.
-    //
-    {
-      chpl_bool32 my_res;
-      mem_region_t* mr;
-      if ((mr = mreg_for_local_addr(obj)) == NULL) {
-        my_res = atomic_compare_exchange_strong_int_least64_t
-                   ((atomic_int_least64_t*) obj,
-                    *(int_least64_t*) operand1,
-                    *(int_least64_t*) operand2);
-      }
-      else {
-        int_least64_t nic_res;
-        do_nic_amo(operand1, operand2, chpl_nodeID, obj, sizeof(nic_res),
-                   amo_cmd_2_nic_op(cmpxchg_64, 1), &nic_res, mr);
-        my_res = (nic_res == *(int_least64_t*) operand1) ? true : false;
-      }
-      memcpy(result, &my_res, sizeof(my_res));
-    }
-    break;
-
-  case add_r32:
-    //
-    // Emulate 32-bit real add using compare-exchange.
-    //
-    {
-      int_least32_t expected;
-      int_least32_t desired;
-      chpl_bool32 done;
-
-      do {
-        expected = atomic_load_int_least32_t((atomic_int_least32_t*) obj);
-        *(float*) &desired  = *(float*) &expected + *(float*) operand1;
-        done = atomic_compare_exchange_strong_int_least32_t
-                 ((atomic_int_least32_t*) obj, expected, desired);
-      } while (!done);
-
-      if (result != NULL) {
-        memcpy(result, &expected, sizeof(expected));
-      }
-    }
-    break;
-
-  case add_r64:
-    //
-    // Emulate 64-bit real add using compare-exchange.  If the object
-    // is not in memory registered with the NIC, use the processor.
-    // Otherwise, since the other 64-bit AMOs are done on the NIC, for
-    // coherence do this one on the NIC as well.
-    //
-    {
-      int_least64_t expected;
-      int_least64_t desired;
-      mem_region_t* mr;
-
-      if ((mr = mreg_for_local_addr(obj)) == NULL) {
-        chpl_bool32 done;
-
-        do {
-          expected =
-            atomic_load_int_least64_t((atomic_int_least64_t*) obj);
-          *(double*) &desired = *(double*) &expected + *(double*) operand1;
-          done = atomic_compare_exchange_strong_int_least64_t
-                   ((atomic_int_least64_t*) obj, expected, desired);
-        } while (!done);
-      }
-      else {
-        int_least64_t nic_res;
-
-        do {
-          do_remote_get(&expected, chpl_nodeID, obj, sizeof(expected),
-                        may_proxy_false);
-          *(double*) &desired = *(double*) &expected + *(double*) operand1;
-          do_nic_amo(&expected, &desired, chpl_nodeID, obj,
-                     sizeof(nic_res), amo_cmd_2_nic_op(cmpxchg_64, 1),
-                     &nic_res, mr);
-        } while (nic_res != expected);
-      }
-
-      if (result != NULL) {
-        memcpy(result, &expected, sizeof(expected));
-      }
-    }
-    break;
-#endif
 
   default:
     INTERNAL_ERROR_V("doCpuAMO(): unsupported ofiOp %d, ofiType %d",
@@ -4563,6 +4603,89 @@ void doCpuAMO(void* obj,
 
 #undef CPU_INT_ARITH_AMO
 }
+
+
+/*
+ *** START OF NON-FETCHING BUFFERED ATOMIC OPERATIONS ***
+ *
+ * Support for non-fetching buffered atomic operations. We internally buffer
+ * atomic operations and then initiate them all at once for increased
+ * transaction rate.
+ */
+
+// Flush buffered AMOs for the specified task info and reset the counter.
+static inline
+void amo_nf_buff_task_info_flush(amo_nf_buff_task_info_t* info) {
+  if (info->vi > 0) {
+    DBG_PRINTF(DBG_RMAUNORD,
+               "amo_nf_buff_task_info_flush(): info has %d entries",
+               info->vi);
+    ofi_amo_nf_V(info->vi, info->opnd1_v, info->local_mr,
+                 info->locale_v, info->object_v, info->remote_mr_v,
+                 info->size_v, info->cmd_v, info->type_v);
+    info->vi = 0;
+  }
+}
+
+
+static inline
+void do_remote_amo_nf_buff(void* opnd1, c_nodeid_t node,
+                           void* object, size_t size,
+                           enum fi_op ofiOp, enum fi_datatype ofiType) {
+  //
+  // "Unordered" is possible only for actual network atomic ops.
+  //
+  uint64_t mrKey;
+  uint64_t mrRaddr;
+  if (chpl_numNodes <= 1
+      || !isAtomicValid(ofiType)
+      || mrGetKey(&mrKey, &mrRaddr, node, object, size) != 0) {
+    if (node == chpl_nodeID) {
+      doCpuAMO(object, opnd1, NULL, NULL, ofiOp, ofiType, size);
+    } else {
+      amRequestAMO(node, object, opnd1, NULL, NULL, ofiOp, ofiType, size);
+    }
+    return;
+  }
+
+  amo_nf_buff_task_info_t* info = task_local_buff_acquire(amo_nf_buff, 0);
+  if (info == NULL) {
+    ofi_amo(node, mrRaddr, mrKey, opnd1, NULL, NULL, ofiOp, ofiType, size);
+    return;
+  }
+
+  if (info->new) {
+    //
+    // The AMO operands themselves are stored in a vector in the info,
+    // so we only need one local memory descriptor for that vector.
+    //
+    CHK_TRUE(mrGetDesc(&info->local_mr, info->opnd1_v, size) == 0);
+    info->new = false;
+  }
+
+  int vi = info->vi;
+  info->opnd1_v[vi]     = size == 4 ? *(uint32_t*) opnd1:
+                                      *(uint64_t*) opnd1;
+  info->locale_v[vi]    = node;
+  info->object_v[vi]    = object;
+  info->size_v[vi]      = size;
+  info->cmd_v[vi]       = ofiOp;
+  info->type_v[vi]      = ofiType;
+  info->remote_mr_v[vi] = mrKey;
+  info->vi++;
+
+  DBG_PRINTF(DBG_RMAUNORD,
+             "do_remote_amo_nf_buff(): info[%d] = "
+             "{%p, %d, %p, %zd, %d, %d, %" PRIx64 ", %p}",
+             vi, &info->opnd1_v[vi], (int) node, object, size,
+             (int) ofiOp, (int) ofiType, mrKey, info->local_mr);
+
+  // flush if buffers are full
+  if (info->vi == MAX_CHAINED_AMO_NF_LEN) {
+    amo_nf_buff_task_info_flush(info);
+  }
+}
+/*** END OF NON-FETCHING BUFFERED ATOMIC OPERATIONS ***/
 
 
 ////////////////////////////////////////
@@ -4911,8 +5034,8 @@ const char* amo_typeName(enum fi_datatype ofiType) {
   case FI_UINT32: return "uint32";
   case FI_INT64: return "int64";
   case FI_UINT64: return "uint64";
-  case FI_FLOAT: return "float";
-  case FI_DOUBLE: return "double";
+  case FI_FLOAT: return "_real32";
+  case FI_DOUBLE: return "_real64";
   default: return "amoType???";
   }
 }

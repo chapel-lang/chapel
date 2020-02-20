@@ -220,6 +220,7 @@ module DistributedBag {
     its own work-stealing algorithm, and provides a means to obtain a privatized instance of
     the data structure for maximized performance.
   */
+  pragma "always RVF"
   record DistBag {
     type eltType;
 

@@ -1015,6 +1015,11 @@ initPrimitive() {
   prim_def(PRIM_IS_ABS_ENUM_TYPE, "is abstract enum type", returnInfoBool);
 
   prim_def(PRIM_IS_POD, "is pod type", returnInfoBool);
+  prim_def(PRIM_IS_COPYABLE, "is copyable type", returnInfoBool);
+  prim_def(PRIM_IS_CONST_COPYABLE, "is const copyable type", returnInfoBool);
+  prim_def(PRIM_IS_ASSIGNABLE, "is assignable type", returnInfoBool);
+  prim_def(PRIM_IS_CONST_ASSIGNABLE, "is const assignable type", returnInfoBool);
+  prim_def(PRIM_HAS_DEFAULT_VALUE, "type has default value", returnInfoBool);
 
   // This primitive allows normalize to request function resolution
   // coerce a return value to the declared return type, even though
@@ -1023,8 +1028,13 @@ initPrimitive() {
   // It coerces its first argument to the type stored in the second argument.
   prim_def(PRIM_COERCE, "coerce", returnInfoCoerce);
 
+  // Arguments to these are the actual arguments to try resolving.
+  // May or may not end up resolving the called fn.
   prim_def(PRIM_CALL_RESOLVES, "call resolves", returnInfoBool);
   prim_def(PRIM_METHOD_CALL_RESOLVES, "method call resolves", returnInfoBool);
+  // Like the previous two but also always attempts to resolve the called fn
+  prim_def(PRIM_CALL_AND_FN_RESOLVES, "call and fn resolves", returnInfoBool);
+  prim_def(PRIM_METHOD_CALL_AND_FN_RESOLVES, "method call and fn resolves", returnInfoBool);
 
   prim_def(PRIM_START_RMEM_FENCE, "chpl_rmem_consist_acquire", returnInfoVoid, true, true);
   prim_def(PRIM_FINISH_RMEM_FENCE, "chpl_rmem_consist_release", returnInfoVoid, true, true);

@@ -537,7 +537,7 @@ static void resolveInitCall(CallExpr* call, AggregateType* newExprAlias, bool fo
 
         checkForStoringIntoTuple(call, best->fn);
 
-        resolveNormalCallCompilerWarningStuff(best->fn);
+        resolveNormalCallCompilerWarningStuff(call, best->fn);
       }
     }
 

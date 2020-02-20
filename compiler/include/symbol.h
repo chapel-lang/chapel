@@ -538,7 +538,7 @@ class TypeSymbol : public Symbol {
   const char* doc;
 
   BlockStmt* instantiationPoint;
-
+  astlocT userInstantiationPointLoc;
 };
 
 /************************************* | **************************************

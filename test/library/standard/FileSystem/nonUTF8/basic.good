@@ -1,0 +1,47 @@
+Creating a directory
+isFile works: true
+isDir works: true
+isLink works: true
+isMount works: true
+exists works: true
+
+Changing directory
+Creating file
+isFile works: true
+isDir works: true
+isLink works: true
+isMount works: true
+exists works: true
+
+Creating a copy
+getGID works: true
+getUID works: true
+getMode works: true
+getFileSize works: true
+
+Attempting to chown
+Correct error was caught
+
+chmod'ing the file
+chmod works: true
+
+Creating a symlink
+isFile works: true
+isDir works: true
+isLink works: true
+isMount works: true
+exists works: true
+
+Removing the symlink
+exists works: true
+exists works: true
+
+Going back to the initial dir
+
+listing the dir contents
+b"\xFFjunkfile1\xFFjunkfile1\xFF"
+b"\xFFjunkfile2\xFFjunkfile2\xFF"
+
+Removing the remaining junk
+exists works: true
+

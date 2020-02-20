@@ -30,6 +30,7 @@
 #include "files.h"
 #include "ForallStmt.h"
 #include "ForLoop.h"
+#include "ImportStmt.h"
 #include "LoopExpr.h"
 #include "ParamForLoop.h"
 #include "parser.h"
@@ -367,12 +368,12 @@ BlockStmt* buildErrorStandin() {
   return new BlockStmt(new CallExpr(PRIM_ERROR), BLOCK_SCOPELESS);
 }
 
-static void addModuleToSearchList(UseStmt* newUse, BaseAST* module) {
+static void addModuleToSearchList(VisibilityStmt* newStmt, BaseAST* module) {
   UnresolvedSymExpr* modNameExpr = toUnresolvedSymExpr(module);
   if (modNameExpr) {
-    addModuleToParseList(modNameExpr->unresolved, newUse);
+    addModuleToParseList(modNameExpr->unresolved, newStmt);
   } else if (CallExpr* callExpr = toCallExpr(module)) {
-    addModuleToSearchList(newUse, callExpr->argList.first());
+    addModuleToSearchList(newStmt, callExpr->argList.first());
   }
 }
 
@@ -546,6 +547,25 @@ BlockStmt* buildUseStmt(std::vector<PotentialRename*>* args, bool privateUse) {
   return list;
 }
 
+//
+// Build an 'import' statement
+//
+BlockStmt* buildImportStmt(Expr* mod) {
+  ImportStmt* newImport = new ImportStmt(mod);
+  addModuleToSearchList(newImport, mod);
+
+  return buildChapelStmt(newImport);
+}
+
+//
+// Build an 'import' statement
+//
+BlockStmt* buildImportStmt(Expr* mod, const char* rename) {
+  ImportStmt* newImport = new ImportStmt(mod, rename);
+  addModuleToSearchList(newImport, mod);
+
+  return buildChapelStmt(newImport);
+}
 
 //
 // Build a 'require' statement

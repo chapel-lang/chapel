@@ -28,6 +28,7 @@
 #include "flags.h"
 #include "ForallStmt.h"
 #include "ForLoop.h"
+#include "ImportStmt.h"
 #include "log.h"
 #include "ParamForLoop.h"
 #include "stlUtil.h"
@@ -1123,6 +1124,26 @@ void AstDumpToNode::visitUseStmt(UseStmt* node)
       fprintf(mFP, "%s 'as' %s", it->second, it->first);
     }
   }
+
+  mOffset = mOffset - 2;
+  newline();
+  exitNode(node);
+}
+
+void AstDumpToNode::visitImportStmt(ImportStmt* node)
+{
+  enterNode(node);
+
+  mOffset = mOffset + 2;
+
+  if (compact)
+  {
+    mNeedSpace = true;
+    fprintf(mFP, " 'import'");
+  }
+
+  newline();
+  node->src->accept(this);
 
   mOffset = mOffset - 2;
   newline();

@@ -22,12 +22,14 @@
 #include "astutil.h"
 #include "expr.h"
 #include "files.h"
+#include "ImportStmt.h"
 #include "misc.h"
 #include "passes.h"
 #include "stlUtil.h"
 #include "stringutil.h"
 
 #include "AstVisitor.h"
+#include "ResolveScope.h"
 
 #include <cstring>
 #include <algorithm>
@@ -54,6 +56,74 @@ Stmt::~Stmt() {
 
 bool Stmt::isStmt() const {
   return true;
+}
+
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
+
+VisibilityStmt::VisibilityStmt(AstTag astTag): Stmt(astTag) {
+}
+
+VisibilityStmt::~VisibilityStmt() {
+}
+
+// Specifically for when the module being used or imported is renamed
+bool VisibilityStmt::isARename() const {
+  return modRename[0] != '\0';
+}
+
+const char* VisibilityStmt::getRename() const {
+  return modRename;
+}
+
+//
+// Returns the module symbol if the name provided matches the module imported or
+// used
+//
+Symbol* VisibilityStmt::checkIfModuleNameMatches(const char* name) {
+  if (isARename()) {
+    // Statements that rename the module should only allow us to find the
+    // new name, not the original one.
+    if (name == getRename()) {
+      SymExpr* actualSe = toSymExpr(src);
+      INT_ASSERT(actualSe);
+      // Could be either an enum or a module, but either way we should be able
+      // to find the new name
+      Symbol* actualSym = toSymbol(actualSe->symbol());
+      INT_ASSERT(actualSym);
+      return actualSym;
+    }
+  } else if (SymExpr* se = toSymExpr(src)) {
+    if (ModuleSymbol* modSym = toModuleSymbol(se->symbol())) {
+      if (name == se->symbol()->name) {
+        return modSym;
+      }
+    }
+  } else {
+    // Things like `use M.N.O` (and though we don't support it yet, things like
+    // `import M.N.O`) probably wouldn't reach here because we resolve such
+    // cases element-by-element rather than wholesale.  Nothing else should fall
+    // under this category
+    INT_FATAL("Malformed src");
+  }
+  return NULL;
+}
+
+
+//
+// Extends the scope's block statement to store this node, after replacing the
+// UnresolvedSymExpr we store with the found symbol
+//
+void VisibilityStmt::updateEnclosingBlock(ResolveScope* scope, Symbol* sym) {
+  src->replace(new SymExpr(sym));
+
+  remove();
+  scope->asBlockStmt()->useListAdd(this);
+
+  scope->extend(this);
 }
 
 /************************************* | **************************************
@@ -456,7 +526,7 @@ BlockStmt::useListAdd(ModuleSymbol* mod, bool privateUse) {
 }
 
 void
-BlockStmt::useListAdd(UseStmt* use) {
+BlockStmt::useListAdd(VisibilityStmt* stmt) {
   if (useList == NULL) {
     useList = new CallExpr(PRIM_USED_MODULES_LIST);
 
@@ -464,7 +534,7 @@ BlockStmt::useListAdd(UseStmt* use) {
       insert_help(useList, this, parentSymbol);
   }
 
-  useList->insertAtTail(use);
+  useList->insertAtTail(stmt);
 }
 
 

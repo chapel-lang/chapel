@@ -130,7 +130,7 @@ private proc runTests(show: bool, run: bool, parallel: bool, ref cmdLineCompopts
     const sourceList = genSourceList(lockFile);
 
     getSrcCode(sourceList, show);
-    const project = lockFile["root"]["name"].s;
+    const project = lockFile["root"]!["name"]!.s;
     const projectPath = "".join(projectHome, "/src/", project, ".chpl");
 
     // Get system, and external compopts
@@ -270,7 +270,7 @@ private proc getTests(lock: borrowed Toml, projectHome: string) {
   const testPath = joinPath(projectHome, "test");
 
   if lock.pathExists("root.tests") {
-    var tests = lock["root"]["tests"].toString();
+    var tests = lock["root"]!["tests"]!.toString();
     var strippedTests = tests.split(',').strip('[]');
     for test in strippedTests {
       const t = test.strip().strip('"');

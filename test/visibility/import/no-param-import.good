@@ -1,0 +1,2 @@
+no-param-import.chpl:4: error: 'import' of non-module symbol p
+no-param-import.chpl:2: error: Definition of symbol p

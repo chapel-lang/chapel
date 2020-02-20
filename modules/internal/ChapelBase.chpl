@@ -1605,8 +1605,9 @@ module ChapelBase {
   }
 
   pragma "init copy fn"
-  inline proc chpl__initCopy(type t) {
+  inline proc chpl__initCopy(type t) type {
     compilerError("illegal assignment of type to value");
+    return t;
   }
 
   pragma "compiler generated"

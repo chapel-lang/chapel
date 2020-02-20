@@ -1,4 +1,4 @@
-./modSameNameAsFileBadRequire2.chpl:3: warning: as written, 'modSameNameAsFileBadRequire2' is a sub-module of the module created for file './modSameNameAsFileBadRequire2.chpl' due to the file-level 'require' statements.  If you meant for 'modSameNameAsFileBadRequire2' to be a top-level module, move the 'require' statements into its scope.
+./modSameNameAsFileBadRequire2.chpl:3: warning: as written, 'modSameNameAsFileBadRequire2' is a sub-module of the module created for file './modSameNameAsFileBadRequire2.chpl' due to the file-level 'require', 'use', and/or 'import' statements.  If you meant for 'modSameNameAsFileBadRequire2' to be a top-level module, move the 'require', 'use', and/or 'import' statements into its scope.
 ./modSameNameAsFileBadRequire2.chpl:3: warning: module 'modSameNameAsFileBadRequire2' has the same name as the implicit file module
 ./modSameNameAsFileBadRequire2.chpl:3: note: did you mean to include all statements in the module declaration?
 test-modSameNameBadRequire2.chpl:3: error: 'inner' undeclared (first use this function)

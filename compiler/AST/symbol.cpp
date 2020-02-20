@@ -1205,7 +1205,8 @@ TypeSymbol::TypeSymbol(const char* init_name, Type* init_type) :
     llvmTbaaStructCopyNode(NULL), llvmConstTbaaStructCopyNode(NULL),
     llvmDIType(NULL),
     doc(NULL),
-    instantiationPoint(NULL)
+    instantiationPoint(NULL),
+    userInstantiationPointLoc(0, NULL)
 {
   addFlag(FLAG_TYPE_VARIABLE);
   if (!type)
