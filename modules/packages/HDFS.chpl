@@ -38,7 +38,7 @@ connecting to an HDFS name node.
 
   use HDFS only;
 
-  fs = HDFS.connect(); // can pass a nameNode host and port here,
+  var fs = HDFS.connect(); // can pass a nameNode host and port here,
                        // otherwise uses HDFS default settings.
 
 The filesystem connection will be closed when `fs` and any files
