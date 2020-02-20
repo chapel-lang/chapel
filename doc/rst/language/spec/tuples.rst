@@ -135,7 +135,7 @@ An underscore can be used to omit components when splitting a tuple (see
 
    defines three tuple variables. Variable ``x1`` is a 2-tuple with
    component types ``string`` and ``real``. It is initialized such that
-   the first component is ``"hello"`` and the second component is
+   the initial component is ``"hello"`` and the next component is
    ``3.14``. Variables ``x2`` and ``x3`` are homogeneous 3-tuples with
    component type ``int``. Their initialization expressions specify
    3-tuples of integers. 
@@ -190,7 +190,7 @@ Tuple Indexing
 
 A tuple component may be accessed by an integral parameter (a
 compile-time constant) as if the tuple were an array. Indexing is
-0-based, so the first component in the tuple is accessed by the index
+0-based, so the initial component in the tuple is accessed by the index
 ``0``, and so forth.
 
    *Example (access.chpl)*.
@@ -280,7 +280,7 @@ Tuple Assignment
 In tuple assignment, the components of the tuple on the left-hand side
 of the assignment operator are each assigned the components of the tuple
 on the right-hand side of the assignment. These assignments occur in
-component order (component one followed by component two, etc.).
+component order (component zero followed by component one, etc.).
 
 .. _Tuple_Destructuring:
 
@@ -385,8 +385,8 @@ evaluated, but the omitted values will not be assigned to anything.
       (x,_) = f();
 
    defines a function that returns a 2-tuple, declares an integer
-   variable ``x``, calls the function, assigns the first component in
-   the returned tuple to ``x``, and ignores the second component in the
+   variable ``x``, calls the function, assigns the initial component in
+   the returned tuple to ``x``, and ignores the other component in the
    returned tuple. The value of ``x`` becomes ``1``.
    
 
@@ -477,8 +477,8 @@ defined for the omitted components.
       var (x,_) = f();
 
    defines a function that returns a 2-tuple, calls the function,
-   declares and initializes variable ``x`` to the first component in the
-   returned tuple, and ignores the second component in the returned
+   declares and initializes variable ``x`` to the initial component in the
+   returned tuple, and ignores the other component in the returned
    tuple. The value of ``x`` is initialized to ``1``.
    
 
@@ -685,9 +685,9 @@ where a comma-separated list of components is valid.
    *Example (expansion-2.chpl)*.
 
    The following code defines two functions, a function ``first`` that
-   returns the first component of a tuple and a function ``rest`` that
-   returns a tuple containing all of the components of a tuple except
-   for the first: 
+   returns the initial component of a tuple and a function ``rest`` that
+   returns a tuple containing all of the components of a tuple other
+   than the initial one:
 
    .. code-block:: chapel
 
@@ -809,8 +809,8 @@ in the two operand tuples. Otherwise, a compile-time error will result.
 
       var x = (1, 1, 0) > (1, 0, 1);
 
-   creates a variable initialized to ``true``. After comparing the first
-   components and determining they are equal, the second components are
+   creates a variable initialized to ``true``. After comparing the initial
+   components and determining they are equal, the next components are
    compared to determine that the first tuple is greater than the second
    tuple. 
 
