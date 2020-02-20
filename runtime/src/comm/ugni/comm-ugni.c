@@ -993,10 +993,10 @@ typedef enum {
   put_64,
   get_32,
   get_64,
-  xchg_32,
-  xchg_64,
-  cmpxchg_32,
-  cmpxchg_64,
+  swap_32,
+  swap_64,
+  cswap_32,
+  cswap_64,
   and_i32,
   and_i64,
   or_i32,
@@ -1159,10 +1159,10 @@ static gni_fma_cmd_type_t nic_amos_gem_fetch[]  // Gemini, fetching
                -1,                       // put_64
                -1,                       // get_32
                -1,                       // get_64
-               -1,                       // xchg_32
-               -1,                       // xchg_64 (special-cased in code)
-               -1,                       // cmpxchg_32
-               GNI_FMA_ATOMIC_CSWAP,     // cmpxchg_64
+               -1,                       // swap_32
+               -1,                       // swap_64 (special-cased in code)
+               -1,                       // cswap_32
+               GNI_FMA_ATOMIC_CSWAP,     // cswap_64
                -1,                       // and_i32
                GNI_FMA_ATOMIC_FAND,      // and_i64
                -1,                       // or_i32
@@ -1180,10 +1180,10 @@ static gni_fma_cmd_type_t nic_amos_gem[]        // Gemini, non-fetching
                -1,                       // put_64
                -1,                       // get_32
                -1,                       // get_64
-               -1,                       // xchg_32
-               -1,                       // xchg_64
-               -1,                       // cmpxchg_32
-               -1,                       // cmpxchg_64
+               -1,                       // swap_32
+               -1,                       // swap_64
+               -1,                       // cswap_32
+               -1,                       // cswap_64
                -1,                       // and_i32
                GNI_FMA_ATOMIC_AND,       // and_i64
                -1,                       // or_i32
@@ -1201,10 +1201,10 @@ static gni_fma_cmd_type_t nic_amos_ari_fetch[]  // Aries, fetching
                -1,                       // put_64
                -1,                       // get_32
                -1,                       // get_64
-               GNI_FMA_ATOMIC2_FSWAP_S,  // xchg_32
-               GNI_FMA_ATOMIC2_FSWAP,    // xchg_64
-               GNI_FMA_ATOMIC2_FCSWAP_S, // cmpxchg_32
-               GNI_FMA_ATOMIC2_FCSWAP,   // cmpxchg_64
+               GNI_FMA_ATOMIC2_FSWAP_S,  // swap_32
+               GNI_FMA_ATOMIC2_FSWAP,    // swap_64
+               GNI_FMA_ATOMIC2_FCSWAP_S, // cswap_32
+               GNI_FMA_ATOMIC2_FCSWAP,   // cswap_64
                GNI_FMA_ATOMIC2_FAND_S,   // and_i32
                GNI_FMA_ATOMIC2_FAND,     // and_i64
                GNI_FMA_ATOMIC2_FOR_S,    // or_i32
@@ -1222,10 +1222,10 @@ static gni_fma_cmd_type_t nic_amos_ari[]        // Aries, non-fetching
                -1,                       // put_64
                -1,                       // get_32
                -1,                       // get_64
-               -1,                       // xchg_32
-               -1,                       // xchg_64
-               -1,                       // cmpxchg_32
-               -1,                       // cmpxchg_64
+               -1,                       // swap_32
+               -1,                       // swap_64
+               -1,                       // cswap_32
+               -1,                       // cswap_64
                GNI_FMA_ATOMIC2_AND_S,    // and_i32
                GNI_FMA_ATOMIC2_AND,      // and_i64
                GNI_FMA_ATOMIC2_OR_S,     // or_i32
@@ -1612,10 +1612,10 @@ static const char* fork_amo_name(fork_amo_cmd_t cmd)
                                  "put_64",
                                  "get_32",
                                  "get_64",
-                                 "xchg_32",
-                                 "xchg_64",
-                                 "cmpxchg_32",
-                                 "cmpxchg_64",
+                                 "swap_32",
+                                 "swap_64",
+                                 "cswap_32",
+                                 "cswap_64",
                                  "and_i32",
                                  "and_i64",
                                  "or_i32",
@@ -4370,7 +4370,7 @@ size_t do_amo_on_cpu(fork_amo_cmd_t cmd,
     }
     break;
 
-  case xchg_32:
+  case swap_32:
     {
       int_least32_t my_res;
       my_res = atomic_exchange_int_least32_t((atomic_int_least32_t*) obj,
@@ -4380,7 +4380,7 @@ size_t do_amo_on_cpu(fork_amo_cmd_t cmd,
     }
     break;
 
-  case xchg_64:
+  case swap_64:
     {
       int_least64_t my_res;
       my_res = atomic_exchange_int_least64_t((atomic_int_least64_t*) obj,
@@ -4390,7 +4390,7 @@ size_t do_amo_on_cpu(fork_amo_cmd_t cmd,
     }
     break;
 
-  case cmpxchg_32:
+  case cswap_32:
     {
       int_least32_t opnd1Val = *(int_least32_t*) opnd1;
       (void) atomic_compare_exchange_strong_int_least32_t
@@ -4402,7 +4402,7 @@ size_t do_amo_on_cpu(fork_amo_cmd_t cmd,
     }
     break;
 
-  case cmpxchg_64:
+  case cswap_64:
     {
       int_least64_t opnd1Val = *(int_least64_t*) opnd1;
       (void) atomic_compare_exchange_strong_int_least64_t
@@ -4472,7 +4472,7 @@ size_t do_amo_on_cpu(fork_amo_cmd_t cmd,
                         may_proxy_false);
           *(double*) &desired = *(double*) &expected + *(double*) opnd1;
           do_nic_amo(&expected, &desired, chpl_nodeID, obj,
-                     sizeof(nic_res), amo_cmd_2_nic_op(cmpxchg_64, 1),
+                     sizeof(nic_res), amo_cmd_2_nic_op(cswap_64, 1),
                      &nic_res, mr);
         } while (nic_res != expected);
 
@@ -6383,12 +6383,12 @@ DEFINE_CHPL_COMM_ATOMIC_READ(real64, get_64, int_least64_t)
           }                                                             \
         }
 
-DEFINE_CHPL_COMM_ATOMIC_XCHG(int32, xchg_32, int_least32_t)
-DEFINE_CHPL_COMM_ATOMIC_XCHG(int64, xchg_64, int_least64_t)
-DEFINE_CHPL_COMM_ATOMIC_XCHG(uint32, xchg_32, uint_least32_t)
-DEFINE_CHPL_COMM_ATOMIC_XCHG(uint64, xchg_64, uint_least64_t)
-DEFINE_CHPL_COMM_ATOMIC_XCHG(real32, xchg_32, int_least32_t)
-DEFINE_CHPL_COMM_ATOMIC_XCHG(real64, xchg_64, int_least64_t)
+DEFINE_CHPL_COMM_ATOMIC_XCHG(int32, swap_32, int_least32_t)
+DEFINE_CHPL_COMM_ATOMIC_XCHG(int64, swap_64, int_least64_t)
+DEFINE_CHPL_COMM_ATOMIC_XCHG(uint32, swap_32, uint_least32_t)
+DEFINE_CHPL_COMM_ATOMIC_XCHG(uint64, swap_64, uint_least64_t)
+DEFINE_CHPL_COMM_ATOMIC_XCHG(real32, swap_32, int_least32_t)
+DEFINE_CHPL_COMM_ATOMIC_XCHG(real64, swap_64, int_least64_t)
 
 #undef DEFINE_CHPL_COMM_ATOMIC_XCHG
 
@@ -6436,12 +6436,12 @@ DEFINE_CHPL_COMM_ATOMIC_XCHG(real64, xchg_64, int_least64_t)
           memcpy(cmpval, &old_value, sizeof(_t));                       \
         }
 
-DEFINE_CHPL_COMM_ATOMIC_CMPXCHG(int32, cmpxchg_32, int_least32_t)
-DEFINE_CHPL_COMM_ATOMIC_CMPXCHG(int64, cmpxchg_64, int_least64_t)
-DEFINE_CHPL_COMM_ATOMIC_CMPXCHG(uint32, cmpxchg_32, uint_least32_t)
-DEFINE_CHPL_COMM_ATOMIC_CMPXCHG(uint64, cmpxchg_64, uint_least64_t)
-DEFINE_CHPL_COMM_ATOMIC_CMPXCHG(real32, cmpxchg_32, int_least32_t)
-DEFINE_CHPL_COMM_ATOMIC_CMPXCHG(real64, cmpxchg_64, int_least64_t)
+DEFINE_CHPL_COMM_ATOMIC_CMPXCHG(int32, cswap_32, int_least32_t)
+DEFINE_CHPL_COMM_ATOMIC_CMPXCHG(int64, cswap_64, int_least64_t)
+DEFINE_CHPL_COMM_ATOMIC_CMPXCHG(uint32, cswap_32, uint_least32_t)
+DEFINE_CHPL_COMM_ATOMIC_CMPXCHG(uint64, cswap_64, uint_least64_t)
+DEFINE_CHPL_COMM_ATOMIC_CMPXCHG(real32, cswap_32, int_least32_t)
+DEFINE_CHPL_COMM_ATOMIC_CMPXCHG(real64, cswap_64, int_least64_t)
 
 #undef DEFINE_CHPL_COMM_ATOMIC_CMPXCHG
 
