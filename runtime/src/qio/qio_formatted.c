@@ -5197,21 +5197,21 @@ qioerr qio_format_error_arg_mismatch(int64_t arg)
 {
    qioerr err;
    if( arg == 0 ) {
-     QIO_GET_CONSTANT_ERROR(err, EINVAL, "Argument type mismatch in argument 1");
+     QIO_GET_CONSTANT_ERROR(err, EINVAL, "Argument type mismatch in argument 0");
    } else if( arg == 1 ) {
-     QIO_GET_CONSTANT_ERROR(err, EINVAL, "Argument type mismatch in argument 2");
+     QIO_GET_CONSTANT_ERROR(err, EINVAL, "Argument type mismatch in argument 1");
    } else if( arg == 2 ) {
-     QIO_GET_CONSTANT_ERROR(err, EINVAL, "Argument type mismatch in argument 3");
+     QIO_GET_CONSTANT_ERROR(err, EINVAL, "Argument type mismatch in argument 2");
    } else if( arg == 3 ) {
-     QIO_GET_CONSTANT_ERROR(err, EINVAL, "Argument type mismatch in argument 4");
+     QIO_GET_CONSTANT_ERROR(err, EINVAL, "Argument type mismatch in argument 3");
    } else if( arg == 4 ) {
-     QIO_GET_CONSTANT_ERROR(err, EINVAL, "Argument type mismatch in argument 5");
+     QIO_GET_CONSTANT_ERROR(err, EINVAL, "Argument type mismatch in argument 4");
    } else if( arg == 5 ) {
-     QIO_GET_CONSTANT_ERROR(err, EINVAL, "Argument type mismatch in argument 6");
+     QIO_GET_CONSTANT_ERROR(err, EINVAL, "Argument type mismatch in argument 5");
    } else if( arg == 6 ) {
-     QIO_GET_CONSTANT_ERROR(err, EINVAL, "Argument type mismatch in argument 7");
+     QIO_GET_CONSTANT_ERROR(err, EINVAL, "Argument type mismatch in argument 6");
    } else {
-     QIO_GET_CONSTANT_ERROR(err, EINVAL, "Argument type mismatch in argument >7");
+     QIO_GET_CONSTANT_ERROR(err, EINVAL, "Argument type mismatch in argument >6");
    }
    return err;
 }
