@@ -1,0 +1,6 @@
+someRecord
+[domain(1,int(64),false)] int(64)
+int(64)
+int(64)
+shared SomeClass?
+unmanaged SomeClass?

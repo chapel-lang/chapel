@@ -712,49 +712,97 @@ where a comma-separated list of components is valid.
 Tuple Expression Behavior
 -------------------------
 
-When a tuple is constructed with the tuple expression but is not assigned
-to a variable, that tuple will refer to any elements for which the blank
-argument intent is `ref` or `const ref`.
+When a tuple expression is created, each element is captured based on its
+default argument intent.
+
+   *Example (tuple-expression-behavior.chpl)*.
+
+For each element:
+
+-  If the default argument intent of the element's type is a variation of
+   `ref`, then the element will be captured by `ref`.
+-  Otherwise, a copy is made, and the element is captured into the tuple as
+   though the assignment operation had been performed.
+ 
+Consider the following example:
+
+   .. code-block:: chapel
+
+      record R { var x: int = 0; }
+
+      var a: [0..0] int;
+      var i: int;
+      var r: R;
+
+      test((a, i, r)); // The int i is copied here, but a and r are not.
+
+      proc test(tup) {
+        tup[1] = 1;
+        tup[2] = 2;
+        tup[3].x = 3;
+      }
+
+      writeln(a); // Outputs 1.
+      writeln(i); // Outputs 0.
+      writeln(r); // Outputs (x = 3).
+
+   .. BLOCK-test-chapeloutput
+
+      1
+      0
+      (x = 3)
+
+The tuple literal `(a, i, r)` will capture the array `a` and the record `r`
+by `ref`, but will create a copy of the integer `i`.
+
+   *Rationale*.
+
+   Use of tuple expressions would be prohibitively expensive if certain types
+   (such as arrays) were copied by default. By determining whether or not to
+   capture an element by reference based on the default argument intent of
+   the element's type, the rules are made both simple to remember and follow
+   the principle of least surprise.
+
+.. _Tuple_Expressions_Preserve_Constness:
+
+Tuple Expressions Preserve Constness
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+When a tuple element is captured by `ref` (based on the default argument
+intent of its type), whether or not that reference is `const` depends on
+the constness of the value that is captured, with respect to the current
+scope.
+
+   *Example (tuple-expression-constness.chpl)*.
+
+For each tuple element to be captured by `ref`:
+
+-  If the value to be captured is `const`, then the tuple element will
+   be captured by `const ref`.
+-  Otherwise, the tuple element will be captured by `ref`. 
 
 Consider the following example:
 
-.. code-block:: chapel
+   .. code-block:: chapel
 
-  record R { var x: int = 0; }
+      record R { var x: int = 0; }
 
-  var a: [0..0] int;
-  var i: int;
-  var r: R;
+      var a: [0..0] int;
+      const r: R;
 
-  test((A, i, r)); // A and r are not copied here, but i is.
+      test((a, i, r)); 
 
-  proc test(tup) {
-    A[0] = 1;
-    i = 2;
-    r.x = 3;
-  }
+      proc test(tup) {
+        A[0] = 1;
+        i = 2;
+        r.x = 3;
+      }
 
-  writeln(a); // Outputs 1.
-  writeln(i); // Outputs 0.
-  writeln(r); // Outputs (x = 3).
+      writeln(a); // Outputs 1.
+      writeln(i); // Outputs 0.
+      writeln(r); // Outputs (x = 3).
 
-The tuple literal `(A, i, r)` will refer to the array `A` and the record
-`r` by `ref`, but creates a copy of the integer `i`.
-
-.. _Tuple_Expression_Behavior:
-
-Tuple Expression Behavior
--------------------------
-
-When a tuple expression (a tuple literal) is created, elements are
-captured based on their default argument intent. For each element,
-if the default argument intent for the type of that element is any
-variation of `ref`, then the element is captured into the tuple
-literal by `ref`. Else, the element is copied into the tuple literal
-as though the assignment operation had been performed.
-
--- TODO: Code sample illustrating expected behavior.
--- TODO: Provide rationale block.
+The tuple literal `(A, r)`...
 
 .. _Tuple_Variable_Behavior:
 
@@ -768,39 +816,73 @@ element of the tuple in component order.
 
 For example, in this code:
 
-.. code-block:: chapel
+   .. code-block:: chapel
 
-  record R { var x: int; }
-  var A: [1..1] int;
-  var i: int;
-  var r = new R(0);
+      record R { var x: int; }
+      var A: [1..1] int;
+      var i: int;
+      var r = new R(0);
 
-  var tup = (A, i, r); // The variables A, i, and r are copied into tup.
+      var tup = (A, i, r); // A, i, and r are copied into tup.
 
-  A[1] = 1;
-  i = 2;
-  r.x = 3;
+      A[1] = 1;
+      i = 2;
+      r.x = 3;
 
-  writeln(tup); // This will output (0, 0, (x = 0)).
+      writeln(tup); // This will output (0, 0, (x = 0)).
 
 The variable tup will contain a copy of the array `A` and the record
 `r`. This is in contrast to tuple argument behavior, where both `A`
 and `r` would be captured by reference as elements of a tuple passed
 to a routine.
 
--- TODO: Provide rationale block.
-
 .. _Tuple_Argument_Behavior:
 
 Tuple Argument Behavior
 -----------------------
 
--- TODO: Clarify this section of the CHIP with some tests.
+A tuple argument to a function with blank intent will not make a copy of
+the tuple elements and can accept a tuple expression.
+
+A tuple argument with `ref` intent requires an `lvalue` argument - a variable
+or returned tuple. In neither case does passing a tuple argument to a
+function create a copy of the tuple.
+
+A tuple argument declared with `const` intent will work similarly to one
+with a `blank` intent, but contain `const` elements.
 
 .. _Tuple_Return_Behavior:
 
 Tuple Return Behavior
 ---------------------
+
+When a tuple is returned from a function with `ref` or `const ref`
+return intent, that tuple must refer to a variable or other tuple
+that does not refer to elements. Otherwise there is a compilation
+error.
+
+When a tuple expression is returned from a function with blank return intent,
+the tuple elements are returned by value. For example:
+
+   .. code-block:: chapel
+
+      record R { var x:int; }
+      var A:[1..1] int;
+      var i:int;
+      var r = new R(0);
+
+      updateGlobalsAndOutput(returnTuple());
+
+      proc returnTuple() {
+        return (A, i, r); // returns a copy of A, i, and r
+      }
+      
+      proc updateGlobalsAndOutput(tup) {
+        A[1] = 1;
+        i = 2;
+        r.x = 3;
+        writeln(tup); // outputs (0, 0, (x = 0))
+      }
 
 -- TODO: Clarify this section of the CHIP with tests.
 
