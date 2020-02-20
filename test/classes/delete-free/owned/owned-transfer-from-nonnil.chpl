@@ -34,7 +34,7 @@ proc test1d() {
   var x = new owned MyClass(1);
   ref rx = x;
   var y = x; // ownership transfer to y
-  // end of statement mentioning x
+  x; // end of statement mentioning x
 }
 test1d();
 
