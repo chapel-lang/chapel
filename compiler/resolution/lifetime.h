@@ -31,4 +31,7 @@ void findNilDereferences(FnSymbol* fn);
 void adjustSignatureForNilChecking(FnSymbol* fn);
 bool isOrContainsBorrowedClass(Type* type);
 
+void findNonNilableStoringNil();
+void findNonNilableStoringNil(FnSymbol* fn);
+
 #endif

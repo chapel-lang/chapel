@@ -1311,6 +1311,8 @@ void callDestructors() {
 
   checkForErroneousInitCopies();
 
+  findNonNilableStoringNil();
+
   convertClassTypesToCanonical();
 
   removeEndOfStatementMarkers();

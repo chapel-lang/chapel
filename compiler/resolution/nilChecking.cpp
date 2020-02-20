@@ -1093,8 +1093,6 @@ static bool combine(FnSymbol* fn,
   return changed;
 }
 
-static void findNonNilableStoringNil(FnSymbol* fn);
-
 void findNilDereferences(FnSymbol* fn) {
 
   bool debugging = 0 == strcmp(fn->name, debugNilsForFn) ||
@@ -1180,8 +1178,6 @@ void findNilDereferences(FnSymbol* fn) {
     checkBasicBlock(fn, (*fn->basicBlocks)[i], idxToSym, IN[i], OUT[i],
                     debugging, /*raise errors?*/ true);
   }
-
-  findNonNilableStoringNil(fn);
 }
 
 void adjustSignatureForNilChecking(FnSymbol* fn) {
@@ -1290,6 +1286,7 @@ void FindInvalidNonNilables::visitSymExpr(SymExpr* se) {
       bool error = true;
       // Don't worry about a PRIM_END_OF_STATEMENT if it follows the
       // expression
+      // Don't worry about autoDestroy calls
       if (CallExpr* parentCall = toCallExpr(se->getStmtExpr())) {
         if (parentCall->isPrimitive(PRIM_END_OF_STATEMENT)) {
           error = false;
@@ -1302,6 +1299,9 @@ void FindInvalidNonNilables::visitSymExpr(SymExpr* se) {
               }
             }
           }
+        } else if (FnSymbol* calledFn = parentCall->resolvedFunction()) {
+          if (calledFn->hasFlag(FLAG_AUTO_DESTROY_FN))
+            error = false;
         }
       }
 
@@ -1313,14 +1313,22 @@ void FindInvalidNonNilables::visitSymExpr(SymExpr* se) {
   }
 }
 
-static void findNonNilableStoringNil(FnSymbol* fn) {
+void findNonNilableStoringNil(FnSymbol* fn) {
   // don't check special functions (owned/shared etc need to write these)
   if (fn->hasFlag(FLAG_INIT_COPY_FN) ||
       fn->hasFlag(FLAG_AUTO_COPY_FN) ||
       fn->hasFlag(FLAG_AUTO_DESTROY_FN) ||
-      fn->hasFlag(FLAG_UNSAFE))
+      fn->hasFlag(FLAG_UNSAFE) ||
+      fn->hasFlag(FLAG_IGNORE_TRANSFER_ERRORS) ||
+      fn->hasFlag(FLAG_ERRONEOUS_COPY))
     return;
 
   FindInvalidNonNilables visitor;
   fn->body->accept(&visitor);
+}
+
+void findNonNilableStoringNil() {
+  forv_Vec(FnSymbol, fn, gFnSymbols) {
+    findNonNilableStoringNil(fn);
+  }
 }
