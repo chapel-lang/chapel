@@ -1,0 +1,2 @@
+do_smu_soa-error.chpl:303: error: Cannot transfer ownership from a non-nilable variable with a potentially captured alias
+do_smu_soa-error.chpl:303: error: Cannot transfer ownership from a non-nilable variable with a potentially captured alias
