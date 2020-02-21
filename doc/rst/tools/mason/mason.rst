@@ -46,9 +46,11 @@ Mason packages can also be initialized using the ``mason init [options] [directo
 
 For example, for an existing directory named MyPackage, 
     
+  .. code-block:: sh
+    
     mason init MyPackage 
 
-    OR 
+    # OR 
 
     cd MyPackage
     mason init  
