@@ -362,6 +362,7 @@ proc dirname(name: string): string {
            var env_var: string = path_p(..(ind-1));
            var value: string;
            var value_c: c_string;
+           // buffer received from sys_getenv, shouldn't be freed
            var h: int = sys_getenv(unescape(env_var).c_str(), value_c);
            if (h != 1) {
              value = "${" + env_var + "}";
@@ -369,7 +370,6 @@ proc dirname(name: string): string {
              try! {
                value = createStringWithNewBuffer(value_c,
                                                  errors=decodePolicy.escape);
-               chpl_free_c_string(value_c);
              }
            }
            res += value;
@@ -383,6 +383,7 @@ proc dirname(name: string): string {
          }
          var value: string;
          var value_c: c_string;
+         // buffer received from sys_getenv, shouldn't be freed
          var h: int = sys_getenv(unescape(env_var).c_str(), value_c);
          if (h != 1) {
            value = "$" + env_var;
@@ -390,7 +391,6 @@ proc dirname(name: string): string {
            try! {
              value = createStringWithNewBuffer(value_c,
                                                errors=decodePolicy.escape);
-             chpl_free_c_string(value_c);
            }
          }
          res += value;
