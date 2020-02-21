@@ -369,6 +369,7 @@ proc dirname(name: string): string {
              try! {
                value = createStringWithNewBuffer(value_c,
                                                  errors=decodePolicy.escape);
+               chpl_free_c_string(value_c);
              }
            }
            res += value;
@@ -389,6 +390,7 @@ proc dirname(name: string): string {
            try! {
              value = createStringWithNewBuffer(value_c,
                                                errors=decodePolicy.escape);
+             chpl_free_c_string(value_c);
            }
          }
          res += value;
@@ -590,7 +592,10 @@ proc realPath(name: string): string throws {
   var res: c_string;
   var err = chpl_fs_realpath(unescape(name).c_str(), res);
   if err then try ioerror(err, "realPath", name);
-  return createStringWithNewBuffer(res, errors=decodePolicy.escape);
+  const ret = createStringWithNewBuffer(res, errors=decodePolicy.escape);
+  // res was qio_malloc'd by chpl_fs_realpath, so free it here
+  chpl_free_c_string(res);
+  return ret; 
 }
 
 pragma "no doc"

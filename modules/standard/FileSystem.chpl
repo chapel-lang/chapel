@@ -607,6 +607,8 @@ proc locale.cwd(): string throws {
     try! {
       ret = createStringWithNewBuffer(tmp, errors=decodePolicy.escape);
     }
+    // tmp was qio_malloc'd by chpl_fs_cwd
+    chpl_free_c_string(tmp);
   }
   if err != ENOERR then try ioerror(err, "in cwd");
   return ret;
