@@ -55,9 +55,11 @@ proc masonInit(args) throws {
       const cwd = getEnv("PWD");
       const name = basename(cwd);
       const path = '.';
-      validateMasonFile(path, name, show);
-      validateInit(path, show);
-      writeln("Initialized new library project: " + name);
+      if validateAndInit(name, vcs=true, show=false) {
+        validateMasonFile(path, name, show);
+        validateInit(path, show);
+        writeln("Initialized new library project: " + name);
+      }
     } 
     else {
       // if the target directory in path doesnt exist, throw error
@@ -66,9 +68,11 @@ proc masonInit(args) throws {
       // if TOML file exists, check for values in it and validate
       const path = name;
       if isDir(path) {
-        validateMasonFile(path, basename(path), show);
-        validateInit(path, show);
-        writeln("Initialized new library project in " + path + ": " + basename(path));
+        if validateAndInit(name, vcs=true, show=false) {
+          validateMasonFile(path, basename(path), show);
+          validateInit(path, show);
+          writeln("Initialized new library project in " + path + ": " + basename(path));
+        }
       } 
       else {
         throw new owned MasonError("Directory does not exist: " + path +
