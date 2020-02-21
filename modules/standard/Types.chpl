@@ -568,14 +568,7 @@ proc chpl_isSyncSingleAtomic(e: single) param  return true;
 pragma "no doc"
 proc chpl_isSyncSingleAtomic(e)  param where isAtomicType(e.type)  return true;
 
-
-// Is 'sub' a subtype (or equal to) 'super'?
-/* isSubtype Returns `true` if the type `sub` is a subtype of the type `super`. */
-// isSubtype is directly handled by compiler
-
-// Is 'sub' a proper subtype of 'super'?
-// isProperSubtype returns true if so
-// isProperSubtype is directly handled by compiler.
+// isSubtype(), isProperSubtype() are now directly handled by compiler
 
 // Returns true if it is legal to coerce t1 to t2, false otherwise.
 pragma "no doc"
@@ -596,7 +589,6 @@ proc chpl__legalIntCoerce(type t1, type t2) param
   }
 }
 
-
 // Returns the type with which both s and t are compatible
 // That is, both s and t can be coerced to the returned type.
 private proc chpl__commonType(type s, type t) type
@@ -615,6 +607,15 @@ private proc chpl__commonType(type s, type t) type
 
   return s;
 }
+
+/* If the argument is a class type, returns its nilable version like `arg?`.
+   Otherwise returns the argument unchanged. */
+proc toNilableIfClassType(type arg) type {
+  if isNonNilableClassType(arg)   // btw #14920
+  then return arg?;
+  else return arg;
+}
+
 
 //
 // numBits(type) -- returns the number of bits in a type
