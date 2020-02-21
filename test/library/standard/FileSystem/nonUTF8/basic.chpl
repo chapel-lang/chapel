@@ -66,11 +66,13 @@ writeln();
 
 writeln("Attempting to chown");
 try! {
+  // chown and back -- in some systems this runs successfully
   chown(filename2, uid+1, gid+1);
-  halt("chown shouldn't have succeeded");
+  chown(filename2, uid, gid);
+  writeln("chown works");
 }
 catch e: PermissionError {
-  writeln("Correct error was caught");
+  writeln("chown works");
 }
 writeln();
 
