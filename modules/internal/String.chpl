@@ -215,6 +215,7 @@ module String {
        }
 
    */
+  pragma "plain old data"
   record byteIndex {
     pragma "no doc"
     var _bindex  : int;
@@ -224,6 +225,7 @@ module String {
       // Let compiler insert defaults
     }
     proc init(i: int) { _bindex = i; }
+    proc init=(other: byteIndex) { _bindex = other._bindex; }
     proc init=(i: int) { _bindex = i; }
 
     proc writeThis(f) throws {
@@ -254,6 +256,7 @@ module String {
        }
 
    */
+  pragma "plain old data"
   record codepointIndex {
     pragma "no doc"
     var _cpindex  : int;
@@ -2020,6 +2023,10 @@ module String {
   proc =(ref lhs: byteIndex, rhs: int) {
     lhs._bindex = rhs: int;
   }
+  pragma "no doc"
+  proc =(ref lhs: byteIndex, const ref rhs: byteIndex) {
+    lhs._bindex = rhs._bindex;
+  }
 
   /*
      Copies the int `rhs` into the codepointIndex `lhs`.
@@ -2027,6 +2034,11 @@ module String {
   proc =(ref lhs: codepointIndex, rhs: int) {
     lhs._cpindex = rhs: int;
   }
+  pragma "no doc"
+  proc =(ref lhs: codepointIndex, const ref rhs: codepointIndex) {
+    lhs._cpindex = rhs._cpindex;
+  }
+
 
   /*
      Copies the string `rhs` into the string `lhs`.

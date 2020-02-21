@@ -388,6 +388,10 @@ symbolFlag( FLAG_TYPE_INIT_EQUAL_MISSING , npr, "type has no init=", "type has n
 symbolFlag( FLAG_TYPE_DEFAULT_VALUE , npr, "type has default value" , "type has a default value" )
 symbolFlag( FLAG_TYPE_NO_DEFAULT_VALUE , npr, "type has no default value" , "type has no default value" )
 
+symbolFlag( FLAG_TYPE_DEFAULT_INIT_EQUAL , npr, "type uses default init=" , "type uses compiler-generated default init=" )
+symbolFlag( FLAG_TYPE_CUSTOM_INIT_EQUAL , npr, "type uses custom init=" , "type has user-provided custom init=" )
+symbolFlag( FLAG_TYPE_DEFAULT_ASSIGN , npr, "type uses default =" , "type uses compiler-generated default =" )
+symbolFlag( FLAG_TYPE_CUSTOM_ASSIGN , npr, "type uses custom =" , "type has user-provided custom =" )
 
 symbolFlag( FLAG_TYPE_VARIABLE , npr, "type variable" , "contains a type instead of a value" )
 symbolFlag( FLAG_UNALIAS_FN,  ypr, "unalias fn" , "function to copy array slices when assigning to a user variable")
