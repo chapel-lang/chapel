@@ -170,7 +170,7 @@ record R {
   }
 }
 
-// expect error: R cannot store nil after x transferred out of
+// OK: copy is elided, x is dead
 proc test6() {
   var x = new R(1);
   var y = x; // ownership transfer to y
@@ -178,7 +178,7 @@ proc test6() {
 }
 test6();
 
-// expect error: R cannot store nil after x transferred out of
+// OK: copy is elided, x is dead
 proc test7() {
   var x = new R(1);
   passWithInIntent(x);
@@ -190,7 +190,88 @@ proc test8() {
   var x = new R(1);
   var y = new R(2);
   y = x;
+  writeln(x, y);
 }
 test8();
 
-// TODO: add some loop examples
+// expect error: R cannot store nil after x transferred out of
+proc test9() {
+  var x = new R(1);
+  var y = x; // ownership transfer to y
+  writeln(x, y); // x is now storing nil
+  // end of statement mentioning x
+}
+test9();
+
+// expect error: R.field cannot store nil after transferred out of
+proc test10() {
+  var x = new R(1);
+  var y = x.field; // ownership transfer to y
+  writeln(x, y); // x is now storing nil
+  // end of statement mentioning x
+}
+test10();
+
+record R1 {
+  var field: owned MyClass;
+  proc init(x:int) {
+    this.field = new owned MyClass(x);
+  }
+  proc init=(ref rhs: R1) {
+    this.field = rhs.field;
+  }
+}
+proc =(ref lhs: R1, ref rhs: R1) {
+  lhs.field = rhs.field;
+}
+
+// expect error: R1 cannot store nil after x transferred out of
+// error reported in = for R1
+proc test11() {
+  var x = new R1(1);
+  var y = new R1(2);
+  y = x;
+  writeln(x, y);
+}
+test11();
+
+// expect error: R1 cannot store nil after x transferred out of
+// error reported in init= for R1
+proc test12() {
+  var x = new R1(1);
+  var y = x; // ownership transfer to y
+  writeln(x, y); // x is now storing nil
+  // end of statement mentioning x
+}
+test12();
+
+record R2 {
+  var field: owned MyClass;
+  proc init(x:int) {
+    this.field = new owned MyClass(x);
+  }
+  proc init=(const ref rhs: R2) {
+    this.field = new owned MyClass(rhs.field.x);
+  }
+}
+proc =(ref lhs: R2, const ref rhs: R2) {
+  lhs.field = new owned MyClass(rhs.field.x);
+}
+
+// OK
+proc test13() {
+  var x = new R2(1);
+  var y = new R2(2);
+  y = x;
+  writeln(x, y);
+}
+test13();
+
+// OK
+proc test14() {
+  var x = new R2(1);
+  var y = x; // ownership transfer to y
+  writeln(x, y); // x is now storing nil
+  // end of statement mentioning x
+}
+test14();

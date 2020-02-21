@@ -285,7 +285,6 @@ module List {
       _commonInitFromIterable(other);
     }
 
-    //pragma "ignore transfer errors" // TODO better solution?
     pragma "no doc"
     proc _commonInitFromIterable(iterable) {
       this._firstTimeInitializeArrays();

@@ -1187,6 +1187,31 @@ void adjustSignatureForNilChecking(FnSymbol* fn) {
     if (fn->hasFlag(FLAG_LEAVES_THIS_NIL))
       fn->_this->addFlag(FLAG_LEAVES_ARG_NIL);
   }
+
+  // adjust compiler-generated = and init= for types containing owned
+  if (fn->name == astrSassign &&
+      fn->hasFlag(FLAG_COMPILER_GENERATED) &&
+      fn->numFormals() >= 1) {
+    ArgSymbol* rhs = fn->getFormal(2);
+    Type* t = rhs->getValType();
+    if (t->symbol->hasFlag(FLAG_COPY_MUTATES))
+      rhs->addFlag(FLAG_LEAVES_ARG_NIL);
+  } else if (fn->name == astrInitEquals &&
+             fn->hasFlag(FLAG_COMPILER_GENERATED) &&
+             fn->numFormals() >= 2) {
+    ArgSymbol* rhs = fn->getFormal(2);
+    Type* t = rhs->getValType();
+    if (t->symbol->hasFlag(FLAG_COPY_MUTATES))
+      rhs->addFlag(FLAG_LEAVES_ARG_NIL);
+  }
+
+  bool leavesAnyArgNil = false;
+  for_formals(formal, fn) {
+    if (formal->hasFlag(FLAG_LEAVES_ARG_NIL))
+      leavesAnyArgNil = true;
+  }
+  if (leavesAnyArgNil)
+    fn->addFlag(FLAG_LEAVES_ARG_NIL);
 }
 
 typedef std::map<Symbol*,Expr*> SymbolToNilMap;
@@ -1198,14 +1223,28 @@ class FindInvalidNonNilables : public AstVisitorTraverse {
     //         an Expr* setting it to nil if it is possibly nil now
     SymbolToNilMap varsToNil;
     virtual bool enterDefExpr(DefExpr* def);
-    //virtual bool enterCallExpr(CallExpr* call);
     virtual void exitCallExpr(CallExpr* call);
     virtual void visitSymExpr(SymExpr* se);
 };
 
+static bool isNonNilableTypeOrRecordContaining(Type* t) {
+  if (isNonNilableType(t))
+    return true;
+
+  if (isRecord(t)) {
+    AggregateType* at = toAggregateType(t);
+    for_fields(field, at) {
+      if (isNonNilableTypeOrRecordContaining(field->type))
+        return true;
+    }
+  }
+
+  return false;
+}
+
 static bool isNonNilableVariable(Symbol* sym) {
   return (isVarSymbol(sym) || isArgSymbol(sym)) &&
-         isNonNilableType(sym->getValType());
+         isNonNilableTypeOrRecordContaining(sym->getValType());
 }
 
 static bool isTrackedNonNilableVariable(Symbol* sym) {
@@ -1233,12 +1272,6 @@ bool FindInvalidNonNilables::enterDefExpr(DefExpr* def) {
 
   return true;
 }
-/*
-void FindInvalidNonNilables::enterCallExpr(CallExpr* call) {
-
-  return true;
-}
-*/
 
 void FindInvalidNonNilables::exitCallExpr(CallExpr* call) {
   if (call->isPrimitive(PRIM_MOVE) || call->isPrimitive(PRIM_ASSIGN)) {
@@ -1260,7 +1293,7 @@ void FindInvalidNonNilables::exitCallExpr(CallExpr* call) {
           if (isTrackedNonNilableVariable(actualSym) &&
               varsToNil.count(actualSym) != 0) {
             varsToNil[actualSym] = call;
-          } else if (actualSym->hasFlag(FLAG_TEMP)) {
+          } else if (actualSym->hasFlag(FLAG_EXPR_TEMP)) {
             // No error for now for temps.
           } else {
             Expr* astPoint = findLocationIgnoringInternalInlining(call);
@@ -1329,7 +1362,7 @@ void FindInvalidNonNilables::visitSymExpr(SymExpr* se) {
   }
 }
 
-void findNonNilableStoringNil(FnSymbol* fn) {
+static void findNonNilableStoringNil(FnSymbol* fn) {
   // don't check special functions (owned/shared etc need to write these)
   if (fn->hasFlag(FLAG_INIT_COPY_FN) ||
       fn->hasFlag(FLAG_AUTO_COPY_FN) ||
@@ -1341,11 +1374,20 @@ void findNonNilableStoringNil(FnSymbol* fn) {
       fn->hasFlag(FLAG_INIT_TUPLE))
     return;
 
+  // don't check inside functions already saying they leave an argument nil
+  // (we could.. but we'd have to track through references etc, and
+  //  these are by definition internal)
+  if (fn->hasFlag(FLAG_LEAVES_ARG_NIL))
+    return;
+
   FindInvalidNonNilables visitor;
   fn->body->accept(&visitor);
 }
 
 void findNonNilableStoringNil() {
+  // assumes adjustSignatureForNilChecking already was called
+  // to mark certain formals and functions with FLAG_LEAVES_ARG_NIL.
+
   forv_Vec(FnSymbol, fn, gFnSymbols) {
     findNonNilableStoringNil(fn);
   }
