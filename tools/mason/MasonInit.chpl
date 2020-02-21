@@ -55,7 +55,7 @@ proc masonInit(args) throws {
       const cwd = getEnv("PWD");
       const name = basename(cwd);
       const path = '.';
-      if validateAndInit(name, vcs=true, show=false) {
+      if validatePackageName(name) {
         validateMasonFile(path, name, show);
         validateInit(path, show);
         writeln("Initialized new library project: " + name);
@@ -68,7 +68,7 @@ proc masonInit(args) throws {
       // if TOML file exists, check for values in it and validate
       const path = name;
       if isDir(path) {
-        if validateAndInit(name, vcs=true, show=false) {
+        if validatePackageName(name) {
           validateMasonFile(path, basename(path), show);
           validateInit(path, show);
           writeln("Initialized new library project in " + path + ": " + basename(path));
@@ -119,8 +119,7 @@ proc validateInit(path: string, show: bool) throws {
   for metafile in toBeCreated {
     const name = basename(path);
     if metafile == "/.git" {
-      gitInit(path, show=false);
-      if show then writeln("Created /.git");
+      gitInit(path, show);
     }
     else if metafile == ".gitignore" {
       addGitIgnore(path);
@@ -194,7 +193,7 @@ proc validateMasonFile(path:string, name:string, show:bool) throws {
       generateToml(tomlFile, tomlPath);
       writeln("Added chplVersion to Mason.toml.");
     }
-    validateAndInit(projectName, vcs=true, show=false);
+    validatePackageName(projectName);
     checkVersion(version);
   }
   else {

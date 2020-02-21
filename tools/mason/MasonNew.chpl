@@ -52,7 +52,7 @@ proc masonNew(args) throws {
         }
       }
       
-      if validateAndInit(name,vcs,show) {
+      if validatePackageName(name) {
         if isDir(name) {
           throw new owned MasonError("A directory named '" + name + "' already exists");
         }
@@ -67,7 +67,7 @@ proc masonNew(args) throws {
   }
 }
 
-proc validateAndInit(name,vcs,show) throws {
+proc validatePackageName(name) throws {
   if name == '' {
     throw new owned MasonError("No package name specified");
   }

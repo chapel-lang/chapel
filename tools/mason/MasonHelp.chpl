@@ -135,7 +135,8 @@ proc masonNewHelp() {
 proc masonInitHelp(){
   writeln("Initializes a library project inside a given directory or path.");
   writeln('Usage:');
-  writeln('    mason init [options] <directory name> || mason init [options]');
+  writeln('    mason init [options] <directory name>');
+  writeln('    mason init [options]');
   writeln();
   writeln('Options:');
   writeln('    -h, --help                   Display this message');
