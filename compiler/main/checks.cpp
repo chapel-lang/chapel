@@ -755,6 +755,15 @@ checkDefaultInitEqAndAssign()
       if (FnSymbol* userAssign = findUserAssign(at))
         USR_PRINT(userAssign, "= for '%s' defined here", toString(ts->type));
     }
+    if (defaultInitEq && customInitEq) {
+      USR_FATAL_CONT(ts, "Type '%s' uses compiler-generated default init= "
+                         "but also has a custom init= method. "
+                         "Please add an init= method with the same RHS type",
+                         toString(ts->type));
+      if (FnSymbol* userInitEq = findUserInitEq(at))
+        USR_PRINT(userInitEq, "init= for '%s' defined here", toString(ts->type));
+    }
+
     if (customInitEq && defaultAssign) {
       USR_FATAL_CONT(ts, "Type '%s' uses compiler-generated default = "
                          "but has a custom init= method. "
@@ -762,6 +771,14 @@ checkDefaultInitEqAndAssign()
                          toString(ts->type));
       if (FnSymbol* userInitEq = findUserInitEq(at))
         USR_PRINT(userInitEq, "init= for '%s' defined here", toString(ts->type));
+    }
+    if (defaultAssign && customAssign) {
+      USR_FATAL_CONT(ts, "Type '%s' uses compiler-generated default = "
+                         "but also has a custom = function. "
+                         "Please add a = function with the same RHS type.",
+                         toString(ts->type));
+      if (FnSymbol* userAssign = findUserAssign(at))
+        USR_PRINT(userAssign, "= for '%s' defined here", toString(ts->type));
     }
   }
 }
