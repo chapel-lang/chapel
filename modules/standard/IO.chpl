@@ -3534,9 +3534,10 @@ proc stringify(const args ...?k):string {
       // Add the terminating NULL byte to make C string conversion easy.
       buf[offset] = 0;
 
-      return try! createStringWithNewBuffer(buf, offset, offset+1,
+      const ret = createStringWithNewBuffer(buf, offset, offset+1,
                                             decodePolicy.replace);
       c_free(buf);
+      return ret;
     }
   }
 }
