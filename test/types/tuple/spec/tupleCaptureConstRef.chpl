@@ -1,14 +1,16 @@
 //
-// What happens when you capture a `const ref` element in a tuple?
+// What happens when you capture a `const` element in a tuple? This is a
+// test from the tuple section of the spec that I've chosen not to embed
+// because it's a future.
+//
+// See: #14902
 //
 
-record someRecord { var x: int = 0; }
+record someRecord { var x: int; }
 
-var rec: someRecord;
+const rec = new someRecord(1);
 
-const ref foo = rec;
+// Shouldn't this be illegal, since "rec" is a `const`?
+(rec,)[1].x = 128;
 
-// Shouldn't this be illegal, since "foo" is a `const ref`?
-(foo,)[1].x = 128;
-
-writeln(foo.x:string);
+writeln(rec.x:string);

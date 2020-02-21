@@ -734,7 +734,8 @@ Consider the following example:
       var i: int;
       var r: R;
 
-      test((a, i, r)); // The int i is copied here, but a and r are not.
+      // The int `i` is copied when captured, but `a` and `r` are not.
+      test((a, i, r));
 
       proc test(tup) {
         tup[1] = 1;
@@ -790,19 +791,20 @@ Consider the following example:
       var a: [0..0] int;
       const r: R;
 
-      test((a, i, r)); 
+      // This will emit a compiler error - `r` is const!
+      (a, r)[2].x = 128;
 
-      proc test(tup) {
-        A[0] = 1;
-        i = 2;
-        r.x = 3;
-      }
+   .. BLOCK-test-chapeloutput
 
-      writeln(a); // Outputs 1.
-      writeln(i); // Outputs 0.
-      writeln(r); // Outputs (x = 3).
+      TODO: How to make this a future? See #14902.
+      TODO: Just remove this test?
 
-The tuple literal `(A, r)`...
+The tuple expression `(a, r)` will capture the array `a` by `ref`. However,
+since the record `r` is declared as `const`, it will be captured into
+the tuple expression by `const ref` instead of `ref`.
+
+Assignment to `r.x` through the tuple expression will fail with a compiler
+error.
 
 .. _Tuple_Variable_Behavior:
 
@@ -814,77 +816,99 @@ elements by reference. Instead, the tuple variable will contain a
 copy of each element, as though assignment had been performed on each
 element of the tuple in component order.
 
+   *Example (tuple-variable-behavior.chpl)*.
+
 For example, in this code:
 
    .. code-block:: chapel
 
       record R { var x: int; }
-      var A: [1..1] int;
+      var a: [0..0] int;
       var i: int;
       var r = new R(0);
 
-      var tup = (A, i, r); // A, i, and r are copied into tup.
+      // `a`, `i`, and `r` are all copied into tup.
+      var tup = (a, i, r);
 
-      A[1] = 1;
+      a[0] = 1;
       i = 2;
       r.x = 3;
 
       writeln(tup); // This will output (0, 0, (x = 0)).
 
-The variable tup will contain a copy of the array `A` and the record
-`r`. This is in contrast to tuple argument behavior, where both `A`
-and `r` would be captured by reference as elements of a tuple passed
-to a routine.
+   .. BLOCK-test-chapeloutput
+
+      (0, 0, (x = 0))
+
+The variable tup will contain a copy of the array `a`, the record `r`,
+and the integer `i`. This is in contrast to tuple expression behavior, where
+both `a` and `r` would be captured into a tuple expression by reference.
+Since `i` is a primitive scalar, it is copied regardless.
 
 .. _Tuple_Argument_Behavior:
 
 Tuple Argument Behavior
 -----------------------
 
-A tuple argument to a function with blank intent will not make a copy of
-the tuple elements and can accept a tuple expression.
+If a formal argument is a tuple and has the default argument intent, then it
+will not copy tuple elements and can accept a tuple expression as an actual
+argument. The tuple itself is considered `const` within the scope of the
+routine and cannot be modified. The individual elements that make up the
+tuple are considered to be mutable and can be modified.
 
-A tuple argument with `ref` intent requires an `lvalue` argument - a variable
-or returned tuple. In neither case does passing a tuple argument to a
-function create a copy of the tuple.
+Passing a tuple expression containing an element captured by `const ref` to
+a tuple formal argument that has the default argument intent will trigger a
+compiler error. In order to pass a tuple containing an element captured by
+`const ref`, the tuple formal must have the `const` intent.
+
+If a formal argument is a tuple and has the `ref` intent, then actual
+arguments are restricted to `lvalues` (a variable or a returned tuple).
+Tuple elements will not be copied.
+
+If a routine has a formal argument of type tuple and the argument has the
+`ref` intent, then actual arguments are restricted to `lvalues` (a variable
+or a returned tuple). Tuple elements will not be copied.
 
 A tuple argument declared with `const` intent will work similarly to one
-with a `blank` intent, but contain `const` elements.
+with a `blank` intent. The tuple itself is considerd `const` within the
+scope of the routine. The individual elements of the tuple are considered
+to be `const` and cannot be modified.
 
 .. _Tuple_Return_Behavior:
 
 Tuple Return Behavior
 ---------------------
 
-When a tuple is returned from a function with `ref` or `const ref`
-return intent, that tuple must refer to a variable or other tuple
-that does not refer to elements. Otherwise there is a compilation
-error.
+When a tuple is returned from a function with `ref` or `const ref` return
+intent, that tuple must either refer to a variable or another tuple that does
+not refer to elements. Otherwise there is a compilation error.
 
 When a tuple expression is returned from a function with blank return intent,
 the tuple elements are returned by value. For example:
 
    .. code-block:: chapel
 
-      record R { var x:int; }
-      var A:[1..1] int;
-      var i:int;
+      record R { var x: int; }
+      var a: [0..0] int;
+      var i: int;
       var r = new R(0);
 
       updateGlobalsAndOutput(returnTuple());
 
       proc returnTuple() {
-        return (A, i, r); // returns a copy of A, i, and r
+        return (a, i, r); // Returns a copy of a, i, and r.
       }
       
       proc updateGlobalsAndOutput(tup) {
-        A[1] = 1;
+        a[1] = 1;
         i = 2;
         r.x = 3;
-        writeln(tup); // outputs (0, 0, (x = 0))
+        writeln(tup); // Will output (0, 0, (x = 0)).
       }
 
--- TODO: Clarify this section of the CHIP with tests.
+   .. BLOCK-test-chapeloutput
+
+      (0, 0, (x = 0))
 
 .. _Tuple_Operators:
 
