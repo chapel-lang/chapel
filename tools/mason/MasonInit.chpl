@@ -38,15 +38,25 @@ Initialises a library project in a project directory
 proc masonInit(args) throws {
   try! {
     var name = '';
+    var show = false;
     for arg in args[2..] {
-      name = arg;
+      if arg == '-h' || arg == '--help' {
+        masonInitHelp();
+        exit();
+      }
+      else if arg == '--show' {
+        show = true;
+      }
+      else {
+        name = arg;
+      }
     }
     if name == '' {
       const cwd = getEnv("PWD");
       const name = basename(cwd);
       const path = '.';
-      validateMasonFile(path, name);
-      validateInit(path);
+      validateMasonFile(path, name, show);
+      validateInit(path, show);
       writeln("Initialized new library project: " + name);
     } 
     else {
@@ -56,8 +66,8 @@ proc masonInit(args) throws {
       // if TOML file exists, check for values in it and validate
       const path = name;
       if isDir(path) {
-        validateMasonFile(path, basename(path));
-        validateInit(path);
+        validateMasonFile(path, basename(path), show);
+        validateInit(path, show);
         writeln("Initialized new library project in " + path + ": " + basename(path));
       } 
       else {
@@ -75,7 +85,7 @@ proc masonInit(args) throws {
 /* 
 Validates directories and files in project directory to avoid overwriting
 */
-proc validateInit(path: string) throws {
+proc validateInit(path: string, show: bool) throws {
   var files = [ "/src" , "/test" , "/example", "/.git", ".gitignore" ];
   var toBeCreated : list(string);
   for idx in 1..files.size do {
@@ -106,9 +116,11 @@ proc validateInit(path: string) throws {
     const name = basename(path);
     if metafile == "/.git" {
       gitInit(path, show=false);
+      if show then writeln("Created /.git");
     }
     else if metafile == ".gitignore" {
       addGitIgnore(path);
+      if show then writeln("Created .gitignore");
     } 
     else if metafile == '/src' && path == '.' {
       const pwd = getEnv("PWD");
@@ -116,17 +128,21 @@ proc validateInit(path: string) throws {
       const fileName = basename(newPath); 
       makeSrcDir(path);
       makeModule(path, fileName);
+      if show then writeln("Created src/");
     }
     else if metafile == '/src' {
       makeSrcDir(path);
       const currDir = basename(path);
       makeModule(path, currDir);
+      if show then writeln("Created src/");
     } 
     else if metafile == '/test' {
       makeTestDir(path);
+      if show then writeln("Created test/");
     } 
     else if metafile == '/example' {
       makeExampleDir(path);
+      if show then writeln("Created example/");
     }
   }
 }
@@ -134,8 +150,9 @@ proc validateInit(path: string) throws {
 /* 
 validates Mason.toml file in directory and ensures all fields are present
 */
-proc validateMasonFile(path:string, name:string) throws {
+proc validateMasonFile(path:string, name:string, show:bool) throws {
    if isFile(path + "/Mason.toml") {
+    if show then writeln("Found Mason.toml file.");
     var projectName = ""; 
     var version = "";
     var chplVersion = "";
