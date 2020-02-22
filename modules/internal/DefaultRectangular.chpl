@@ -1333,6 +1333,7 @@ module DefaultRectangular {
       }
     }
 
+    pragma "ignore transfer errors"
     override proc dsiReallocate(allocBound: range(idxType,
                                                   BoundedRangeType.bounded,
                                                   stridable),
@@ -1376,6 +1377,7 @@ module DefaultRectangular {
 
 
     // Reallocate the array to have space for elements specified by `bounds`
+    pragma "ignore transfer errors"
     override proc dsiReallocate(bounds: rank*range(idxType,
                                                    BoundedRangeType.bounded,
                                                    stridable)) {
