@@ -1223,6 +1223,7 @@ class FindInvalidNonNilables : public AstVisitorTraverse {
     //         an Expr* setting it to nil if it is possibly nil now
     SymbolToNilMap varsToNil;
     virtual bool enterDefExpr(DefExpr* def);
+    virtual bool enterCallExpr(CallExpr* call);
     virtual void exitCallExpr(CallExpr* call);
     virtual void visitSymExpr(SymExpr* se);
 };
@@ -1273,6 +1274,16 @@ bool FindInvalidNonNilables::enterDefExpr(DefExpr* def) {
   return true;
 }
 
+bool FindInvalidNonNilables::enterCallExpr(CallExpr* call) {
+  if (FnSymbol* calledFn = call->resolvedOrVirtualFunction()) {
+    if (isTaskFun(calledFn)) {
+      calledFn->body->accept(this);
+      return false;
+    }
+  }
+  return true;
+}
+
 void FindInvalidNonNilables::exitCallExpr(CallExpr* call) {
   if (call->isPrimitive(PRIM_MOVE) || call->isPrimitive(PRIM_ASSIGN)) {
     // handle some compiler-added temps
@@ -1293,8 +1304,8 @@ void FindInvalidNonNilables::exitCallExpr(CallExpr* call) {
           if (isTrackedNonNilableVariable(actualSym) &&
               varsToNil.count(actualSym) != 0) {
             varsToNil[actualSym] = call;
-          } else if (actualSym->hasFlag(FLAG_EXPR_TEMP)) {
-            // No error for now for temps.
+          } else if (actualSym->hasFlag(FLAG_TEMP) && !actualSym->isRef()) {
+            // No error for now for value temps.
           } else {
             Expr* astPoint = findLocationIgnoringInternalInlining(call);
             FnSymbol* inFn = astPoint->getFunction();
@@ -1378,6 +1389,10 @@ static void findNonNilableStoringNil(FnSymbol* fn) {
   // (we could.. but we'd have to track through references etc, and
   //  these are by definition internal)
   if (fn->hasFlag(FLAG_LEAVES_ARG_NIL))
+    return;
+
+  // We'll check task functions while traversing the rest
+  if (isTaskFun(fn))
     return;
 
   FindInvalidNonNilables visitor;
