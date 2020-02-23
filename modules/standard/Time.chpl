@@ -73,14 +73,21 @@ enum TimeUnits { microseconds, milliseconds, seconds, minutes, hours }
 enum Day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturday }
 
 /*
-   :arg  unit: The units for the returned value
-   :type unit: :type:`TimeUnits`
+  :returns:  (hours, minutes, seconds) as a tuple of 3 ints
 
-   :returns: The elapsed time since midnight, local time, in the units specified
-   :rtype:   `real(64)`
+  The hours are in the range 0 to 24.
+  The minutes are in the range 0 to 60
+  The seconds are in the range 0 to 60
  */
-proc getCurrentTime(unit: TimeUnits = TimeUnits.seconds) : real(64)
-  return _convert_microseconds(unit, chpl_now_time());
+proc getCurrentTime() {
+  var now = chpl_now_timevalue();
+
+  var seconds, minutes, hours, mday, month, year, wday, yday, isdst:int(32);
+
+  chpl_timevalue_parts(now, seconds, minutes, hours, mday, month, year, wday, yday, isdst);
+
+  return (hours, minutes, seconds);
+}
 
 /*
    :returns:  (year, month, day) as a tuple of 3 ints
