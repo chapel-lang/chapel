@@ -30,9 +30,11 @@ class SymExpr;
 bool isSplitInitExpr(Expr* e);
 bool findInitPoints(DefExpr* def,
                     std::vector<CallExpr*>& initAssigns,
-                    Expr*& usePreventingSplitInit);
+                    Expr*& usePreventingSplitInit,
+                    bool allowReturns);
 bool findInitPoints(CallExpr* defaultInit,
                     std::vector<CallExpr*>& initAssigns,
-                    Expr*& usePreventingSplitInit);
+                    Expr*& usePreventingSplitInit,
+                    bool allowReturns);
 
 #endif

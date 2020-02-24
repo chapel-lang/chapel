@@ -2,6 +2,14 @@ test1
 init 1 1
 (x = 1, ptr = {xx = 1})
 deinit 1 1
+test1a
+init (default)
+(x = 0, ptr = {xx = 0})
+init 1 1
+lhs(0 0) = rhs(1 1)
+deinit 1 1
+(x = 1, ptr = {xx = 1})
+deinit 1 1
 test2
 init (default)
 (x = 0, ptr = {xx = 0})
@@ -95,6 +103,29 @@ lhs(0 0) = rhs(1 1)
 deinit 1 1
 lhs(0 0) = rhs(1 1)
 deinit 1 1
+(x = 1, ptr = {xx = 1})
+deinit 1 1
+test12
+init (default)
+(x = 0, ptr = {xx = 0})
+deinit 0 0
+test13
+init (default)
+(x = 0, ptr = {xx = 0})
+deinit 0 0
+test14
+init (default)
+init 1 1
+lhs(0 0) = rhs(1 1)
+deinit 1 1
+(x = 1, ptr = {xx = 1})
+deinit 1 1
+test15
+init (default)
+(x = 0, ptr = {xx = 0})
+deinit 0 0
+test16
+init 1 1
 (x = 1, ptr = {xx = 1})
 deinit 1 1
 

@@ -2244,7 +2244,7 @@ static void normalizeTypeAlias(DefExpr* defExpr) {
 
   // For now, disable automatic split init on non-user code
   Expr* prevent = NULL;
-  foundSplitInit = findInitPoints(defExpr, initAssigns, prevent);
+  foundSplitInit = findInitPoints(defExpr, initAssigns, prevent, true);
   if (foundSplitInit == false)
     errorIfSplitInitializationRequired(defExpr, prevent);
 
@@ -2437,7 +2437,7 @@ static void normalizeVariableDefinition(DefExpr* defExpr) {
 
   // For now, disable automatic split init on non-user code
   Expr* prevent = NULL;
-  foundSplitInit = findInitPoints(defExpr, initAssigns, prevent);
+  foundSplitInit = findInitPoints(defExpr, initAssigns, prevent, true);
   if (foundSplitInit == false)
     errorIfSplitInitializationRequired(defExpr, prevent);
 

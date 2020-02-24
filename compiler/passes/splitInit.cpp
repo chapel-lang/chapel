@@ -55,11 +55,13 @@ static bool allowSplitInit(Symbol* sym);
 static found_init_t doFindInitPoints(Symbol* sym,
                                      Expr* start,
                                      std::vector<CallExpr*>& initAssigns,
-                                     Expr*& usePreventingSplitInit);
+                                     Expr*& usePreventingSplitInit,
+                                     bool allowReturns);
 
 bool findInitPoints(DefExpr* def,
                     std::vector<CallExpr*>& initAssigns,
-                    Expr*& usePreventingSplitInit) {
+                    Expr*& usePreventingSplitInit,
+                    bool allowReturns) {
   // split initialization doesn't make sense to try for e.g.
   //  var x = 25;
   if (def->init != NULL && !isSplitInitExpr(def->init))
@@ -74,13 +76,15 @@ bool findInitPoints(DefExpr* def,
     start = def->getStmtExpr()->next;
 
   found_init_t found = doFindInitPoints(def->sym, start, initAssigns,
-                                        usePreventingSplitInit);
+                                        usePreventingSplitInit,
+                                        allowReturns);
   return (found == FOUND_INIT);
 }
 
 bool findInitPoints(CallExpr* defaultInit,
                     std::vector<CallExpr*>& initAssigns,
-                    Expr*& usePreventingSplitInit) {
+                    Expr*& usePreventingSplitInit,
+                    bool allowReturns) {
 
   INT_ASSERT(defaultInit->isPrimitive(PRIM_DEFAULT_INIT_VAR));
 
@@ -94,7 +98,8 @@ bool findInitPoints(CallExpr* defaultInit,
   Expr* start = defaultInit->next;
 
   found_init_t found = doFindInitPoints(sym, start, initAssigns,
-                                        usePreventingSplitInit);
+                                        usePreventingSplitInit,
+                                        allowReturns);
   return (found == FOUND_INIT);
 }
 
@@ -142,7 +147,8 @@ static SymExpr* checkForUseAfterReturn(Symbol* sym, Expr* start) {
 static found_init_t doFindInitPoints(Symbol* sym,
                                      Expr* start,
                                      std::vector<CallExpr*>& initAssigns,
-                                     Expr*& usePreventingSplitInit) {
+                                     Expr*& usePreventingSplitInit,
+                                     bool allowReturns) {
   if (start == NULL)
     return FOUND_NOTHING;
 
@@ -179,6 +185,9 @@ static found_init_t doFindInitPoints(Symbol* sym,
           if (SymExpr* se = checkForUseAfterReturn(sym, call->next)) {
             usePreventingSplitInit = se;
             return FOUND_USE;
+          } else if (allowReturns == false) {
+            usePreventingSplitInit = cur;
+            return FOUND_USE;
           } else {
             return FOUND_RET;
           }
@@ -190,6 +199,9 @@ static found_init_t doFindInitPoints(Symbol* sym,
       if (gt->gotoTag == GOTO_RETURN) {
         if (SymExpr* se = checkForUseAfterReturn(sym, gt->next)) {
           usePreventingSplitInit = se;
+          return FOUND_USE;
+        } else if (allowReturns == false) {
+          usePreventingSplitInit = cur;
           return FOUND_USE;
         } else {
           return FOUND_RET;
@@ -208,7 +220,8 @@ static found_init_t doFindInitPoints(Symbol* sym,
         // non-loop block
         Expr* start = block->body.first();
         found_init_t found = doFindInitPoints(sym, start, initAssigns,
-                                              usePreventingSplitInit);
+                                              usePreventingSplitInit,
+                                              allowReturns);
         if (found == FOUND_INIT) {
           return FOUND_INIT;
         } else if (found == FOUND_USE) {
@@ -221,7 +234,8 @@ static found_init_t doFindInitPoints(Symbol* sym,
     } else if (TryStmt* tr = toTryStmt(cur)) {
       Expr* start = tr->body()->body.first();
       found_init_t foundBody = doFindInitPoints(sym, start, initAssigns,
-                                                usePreventingSplitInit);
+                                                usePreventingSplitInit,
+                                                allowReturns);
 
       bool allCatchesRet = true;
       CatchStmt* nonReturningCatch = NULL;
@@ -236,7 +250,8 @@ static found_init_t doFindInitPoints(Symbol* sym,
           std::vector<CallExpr*> inits;
           Expr* use = NULL;
           Expr* start = ctch->body()->body.first();
-          found_init_t foundCatch = doFindInitPoints(sym, start, inits, use);
+          found_init_t foundCatch = doFindInitPoints(sym, start, inits,
+                                                     use, allowReturns);
           if (foundCatch == FOUND_USE || foundCatch == FOUND_INIT) {
             // Consider even an assignment in a catch block as a use
             usePreventingSplitInit = findSymExprFor(ctch, sym);
@@ -275,10 +290,12 @@ static found_init_t doFindInitPoints(Symbol* sym,
       std::vector<CallExpr*> elseAssigns;
       Expr* ifUse = NULL;
       Expr* elseUse = NULL;
-      found_init_t foundIf = doFindInitPoints(sym, ifStart, ifAssigns, ifUse);
+      found_init_t foundIf = doFindInitPoints(sym, ifStart, ifAssigns,
+                                              ifUse, allowReturns);
       found_init_t foundElse = FOUND_NOTHING;
       if (elseStart != NULL)
-        foundElse = doFindInitPoints(sym, elseStart, elseAssigns, elseUse);
+        foundElse = doFindInitPoints(sym, elseStart, elseAssigns,
+                                     elseUse, allowReturns);
 
       if ((foundIf == FOUND_INIT && foundElse == FOUND_INIT) ||
           (foundIf == FOUND_INIT && foundElse == FOUND_RET) ||

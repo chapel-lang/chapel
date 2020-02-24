@@ -831,9 +831,17 @@ bool SplitInitVisitor::enterCallExpr(CallExpr* call) {
     Expr* prevent = NULL;
     bool foundSplitInit = false;
 
-    foundSplitInit = findInitPoints(call, initAssigns, prevent);
     SymExpr* se = toSymExpr(call->get(1));
     Symbol* sym = se->symbol();
+
+    bool isOutFormal = sym->hasFlag(FLAG_FORMAL_TEMP) &&
+                       sym->hasFlag(FLAG_NO_AUTO_DESTROY);
+
+    // Don't allow an out-formal to be split-init after a return because
+    // that would leave the out-formal uninitialized.
+    bool allowReturns = !isOutFormal;
+    foundSplitInit = findInitPoints(call, initAssigns, prevent, allowReturns);
+
     if (foundSplitInit) {
       // Check that all of the assignments have a same-type RHS
       for_vector(CallExpr, call, initAssigns) {

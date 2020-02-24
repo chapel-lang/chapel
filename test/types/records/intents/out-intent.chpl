@@ -1,3 +1,6 @@
+config const option = true;
+config param paramOption = true;
+
 class C {
   var xx: int = 0;
 }
@@ -221,3 +224,68 @@ proc test11a() {
   writeln(AA);
 }
 test11a();
+
+proc outEarlyReturn1(out arg: R) {
+  return;
+  arg = makeR();
+}
+
+proc test12() {
+  writeln("test12");
+  var x: R;
+  outEarlyReturn1(x);
+  writeln(x);
+}
+test12();
+
+proc outEarlyReturn2(out arg: R) {
+  if option then return;
+  arg = makeR();
+}
+
+proc test13() {
+  writeln("test13");
+  var x: R;
+  outEarlyReturn2(x);
+  writeln(x);
+}
+test13();
+
+proc outEarlyReturn3(out arg: R) {
+  if !option then return;
+  arg = makeR();
+}
+
+proc test14() {
+  writeln("test14");
+  var x: R;
+  outEarlyReturn3(x);
+  writeln(x);
+}
+test14();
+
+proc outEarlyReturn4(out arg: R) {
+  if paramOption then return;
+  arg = makeR();
+}
+
+proc test15() {
+  writeln("test15");
+  var x: R;
+  outEarlyReturn4(x);
+  writeln(x);
+}
+test15();
+
+proc outEarlyReturn5(out arg: R) {
+  if !paramOption then return;
+  arg = makeR();
+}
+
+proc test16() {
+  writeln("test16");
+  var x: R;
+  outEarlyReturn5(x);
+  writeln(x);
+}
+test16();
