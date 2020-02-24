@@ -224,19 +224,33 @@ module Itertools {
             when operations.divide do
               result /= arg[idx];
 
-            when operations.logicalAnd do
+            when operations.bitwiseAnd do
               if result.type != int && result.type != bool then
                 throw new owned IllegalArgumentError(
                   "bitwise operations supported only with boolean and integer types");
               else
                 result &= arg[idx];
 
-            when operations.logicalOr do
+            when operations.bitwiseOr do
               if result.type != int && result.type != bool then
                 throw new owned IllegalArgumentError(
                   "bitwise operations supported only with boolean and integer types");
               else
                 result |= arg[idx];
+
+            when operations.bitwiseXor do
+              if result.type != int && result.type != bool then
+                throw new owned IllegalArgumentError(
+                  "bitwise operations supported only with boolean and integer types");
+              else
+                result ^= arg[idx];
+
+            when operations.bitwiseNot do
+              if result.type != int && result.type != bool then
+                throw new owned IllegalArgumentError(
+                  "bitwise operations supported only with boolean and integer types");
+              else
+                result ~= arg[idx];
 
             otherwise
               throw new owned IllegalArgumentError(
