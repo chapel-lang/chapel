@@ -255,13 +255,16 @@ module Atomics {
        updates `expected` to the original value.
      */
     inline proc compareExchange(ref expected:bool, desired:bool, param order: memoryOrder = memoryOrder.seqCst): bool {
+      return this.compareExchange(expected, desired, order, readableOrder(order));
+    }
+    inline proc compareExchange(ref expected:bool, desired:bool, param success: memoryOrder, param failure: memoryOrder): bool {
       extern externFunc("compare_exchange_strong", bool)
         proc atomic_compare_exchange_strong(ref obj:externT(bool), ref expected:bool, desired:bool, succ:memory_order, fail:memory_order): bool;
 
       var ret:bool;
       on this {
         var localizedExpected = expected;
-        ret = atomic_compare_exchange_strong(_v, localizedExpected, desired, c_memory_order(order), c_memory_order(readableOrder(order)));
+        ret = atomic_compare_exchange_strong(_v, localizedExpected, desired, c_memory_order(success), c_memory_order(failure));
         if !ret then expected = localizedExpected;
       }
       return ret;
@@ -273,13 +276,16 @@ module Atomics {
        may happen if the value could not be updated atomically.
     */
     inline proc compareExchangeWeak(ref expected:bool, desired:bool, param order: memoryOrder = memoryOrder.seqCst): bool {
+      return this.compareExchangeWeak(expected, desired, order, readableOrder(order));
+    }
+    inline proc compareExchangeWeak(ref expected:bool, desired:bool, param success: memoryOrder, param failure: memoryOrder) {
       extern externFunc("compare_exchange_weak", bool)
         proc atomic_compare_exchange_weak(ref obj:externT(bool), ref expected:bool, desired:bool, succ:memory_order, fail:memory_order): bool;
 
       var ret:bool;
       on this {
         var localizedExpected = expected;
-        ret = atomic_compare_exchange_weak(_v, localizedExpected, desired, c_memory_order(order), c_memory_order(readableOrder(order)));
+        ret = atomic_compare_exchange_weak(_v, localizedExpected, desired, c_memory_order(success), c_memory_order(failure));
         if !ret then expected = localizedExpected;
       }
       return ret;
@@ -426,13 +432,16 @@ module Atomics {
        updates `expected` to the original value.
      */
     inline proc compareExchange(ref expected:T, desired:T, param order: memoryOrder = memoryOrder.seqCst): bool {
+      return this.compareExchange(expected, desired, order, readableOrder(order));
+    }
+    inline proc compareExchange(ref expected:T, desired:T, param success: memoryOrder, param failure: memoryOrder): bool {
       extern externFunc("compare_exchange_strong", T)
         proc atomic_compare_exchange_strong(ref obj:externT(T), ref expected:T, desired:T, succ:memory_order, fail:memory_order): bool;
 
       var ret:bool;
       on this {
         var localizedExpected = expected;
-        ret = atomic_compare_exchange_strong(_v, localizedExpected, desired, c_memory_order(order), c_memory_order(readableOrder(order)));
+        ret = atomic_compare_exchange_strong(_v, localizedExpected, desired, c_memory_order(success), c_memory_order(failure));
         if !ret then expected = localizedExpected;
       }
       return ret;
@@ -444,13 +453,16 @@ module Atomics {
        may happen if the value could not be updated atomically.
     */
     inline proc compareExchangeWeak(ref expected:T, desired:T, param order: memoryOrder = memoryOrder.seqCst): bool {
+      return this.compareExchangeWeak(expected, desired, order, readableOrder(order));
+    }
+    inline proc compareExchangeWeak(ref expected:T, desired:T, param success: memoryOrder, param failure: memoryOrder): bool {
       extern externFunc("compare_exchange_weak", T)
         proc atomic_compare_exchange_weak(ref obj:externT(T), ref expected:T, desired:T, succ:memory_order, fail:memory_order): bool;
 
       var ret:bool;
       on this {
         var localizedExpected = expected;
-        ret = atomic_compare_exchange_weak(_v, localizedExpected, desired, c_memory_order(order), c_memory_order(readableOrder(order)));
+        ret = atomic_compare_exchange_weak(_v, localizedExpected, desired, c_memory_order(success), c_memory_order(failure));
         if !ret then expected = localizedExpected;
       }
       return ret;
