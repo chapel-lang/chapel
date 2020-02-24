@@ -228,9 +228,7 @@ DECLARE_ATOMICS(uint_least16_t);
 DECLARE_ATOMICS(uint_least32_t);
 DECLARE_ATOMICS(uint_least64_t);
 
-// On netbsd the DECLARE_ATOMICS macro doesn't work for uintptr_t, so we
-// call out the individual parts explicitly.  For more background, see the
-// comment in the intrinsics implementation of atomics.
+// On netbsd the DECLARE_ATOMICS macro doesn't work for uintptr_t.
 DECLARE_ATOMICS_BASE(uintptr_t, uintptr_t);
 DECLARE_ATOMICS_EXCHANGE_OPS(uintptr_t, uintptr_t);
 DECLARE_ATOMICS_FETCH_OPS(uintptr_t);
