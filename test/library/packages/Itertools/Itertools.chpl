@@ -194,9 +194,31 @@ module Itertools {
 
 
 
+  /*
+    Returns accumulated sums, differences, or results of other binary
+    operations (specified via the operation argument).
+
+
+    :arg arg: The iterable on which the accumulation is to be performed
+    :type arg: `array`
+
+    :arg operation: The operation which is to be performed for the
+    accumulation
+    :type operation: `operations (enum)`
+
+    :yields: Elements of the resultant array
+
+    :throws: ``IllegalArgumentError`` on non-array arguments
+
+
+    This iterator can be called in serial contexts.
+
+    .. note::
+      Be careful to pass ``real`` arrays if division is to be performed,
+      or the decimal part will be truncated.
+  */
+
   enum operations { add, subtract, multiply, divide, bitwiseAnd, bitwiseOr, bitwiseXor }
-
-
 
   iter accumulate(arg, operation) throws {
 
