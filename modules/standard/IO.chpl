@@ -1568,6 +1568,7 @@ proc file.path : string throws {
       ret = createStringWithNewBuffer(tmp2,
                                       errors=decodePolicy.escape);
     }
+    chpl_free_c_string(tmp2);
   }
   if err then try ioerror(err, "in file.path");
   return ret;
@@ -1829,6 +1830,7 @@ proc openfp(fp: _file, hints:iohints=IOHINT_NONE, style:iostyle = defaultIOStyle
     var path = if path_err then "unknown"
                            else createStringWithNewBuffer(path_cs,
                                                           errors=decodePolicy.replace);
+    chpl_free_c_string(path_cs);
     try ioerror(err, "in openfp", path);
   }
   return ret;
@@ -2158,6 +2160,7 @@ proc channel._ch_ioerror(error:syserr, msg:string) throws {
       // shouldn't throw
       path = createStringWithNewBuffer(tmp_path,
                                        errors=decodePolicy.replace);
+      chpl_free_c_string(tmp_path);
       offset = tmp_offset;
     }
   }
@@ -2178,6 +2181,7 @@ proc channel._ch_ioerror(errstr:string, msg:string) throws {
       // shouldn't throw
       path = createStringWithNewBuffer(tmp_path,
                                        errors=decodePolicy.replace);
+      chpl_free_c_string(tmp_path);
       offset = tmp_offset;
     }
   }
@@ -3530,8 +3534,10 @@ proc stringify(const args ...?k):string {
       // Add the terminating NULL byte to make C string conversion easy.
       buf[offset] = 0;
 
-      return try! createStringWithNewBuffer(buf, offset, offset+1,
+      const ret = createStringWithNewBuffer(buf, offset, offset+1,
                                             decodePolicy.replace);
+      c_free(buf);
+      return ret;
     }
   }
 }

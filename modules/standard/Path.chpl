@@ -362,6 +362,7 @@ proc dirname(name: string): string {
            var env_var: string = path_p(..(ind-1));
            var value: string;
            var value_c: c_string;
+           // buffer received from sys_getenv, shouldn't be freed
            var h: int = sys_getenv(unescape(env_var).c_str(), value_c);
            if (h != 1) {
              value = "${" + env_var + "}";
@@ -382,6 +383,7 @@ proc dirname(name: string): string {
          }
          var value: string;
          var value_c: c_string;
+         // buffer received from sys_getenv, shouldn't be freed
          var h: int = sys_getenv(unescape(env_var).c_str(), value_c);
          if (h != 1) {
            value = "$" + env_var;
@@ -590,7 +592,10 @@ proc realPath(name: string): string throws {
   var res: c_string;
   var err = chpl_fs_realpath(unescape(name).c_str(), res);
   if err then try ioerror(err, "realPath", name);
-  return createStringWithNewBuffer(res, errors=decodePolicy.escape);
+  const ret = createStringWithNewBuffer(res, errors=decodePolicy.escape);
+  // res was qio_malloc'd by chpl_fs_realpath, so free it here
+  chpl_free_c_string(res);
+  return ret; 
 }
 
 pragma "no doc"
