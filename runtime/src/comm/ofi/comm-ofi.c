@@ -182,8 +182,6 @@ static inline void do_remote_get_buff(void*, c_nodeid_t, void*, size_t);
 static inline void do_remote_amo_nf_buff(void*, c_nodeid_t, void*, size_t,
                                          enum fi_op, enum fi_datatype);
 static inline void waitForCQThisTxn(struct perTxCtxInfo_t*, atomic_bool*);
-static inline void waitForCQAllTxns(struct perTxCtxInfo_t*,
-                                    chpl_comm_taskPrvData_t*);
 static inline void checkTxCQ(struct perTxCtxInfo_t*);
 static inline ssize_t readCQ(struct fid_cq*, void*, size_t);
 static void reportCQError(struct fid_cq*);
@@ -446,20 +444,9 @@ static chpl_bool provCtl_readAmoNeedsOpnd; // READ AMO needs operand (RxD)
 // If we need to wait for an individual transaction's network completion
 // we give the address of a 'txnDone' flag as the context pointer when we
 // initiate the transaction, and then just wait for the flag to become
-// true.  For transactions we don't need to wait for individually, such
-// as unordered AMOs, we instead give the address of the task-private
-// outstanding transaction counter, and then we can wait for that to
-// become zero as the network responses arrive.  We encode a flag with
-// the context pointer to differentiate between these two cases, and
-// checkTxCQ() figures out what to update, and how, based on this flag.
-//
-// For AM handler transactions things are even simpler.  The transmit
-// context it uses has only a transaction counter, not a CQ.  But in
-// the AM handler we only need to wait for all outstanding transactions
-// to complete, not specific ones, so we can just maintain a matching
-// counter in the AM handler's transmit context descriptor.  That also
-// saves us having to look up the AM handler's task private data block
-// address.
+// true.  We encode this information in the context pointer we pass to
+// libfabric, and then it hands it back to us in the CQ entry, and then
+// checkTxCQ() uses that to figure out what to update.
 //
 
 static __thread chpl_bool isAmHandler = false;
@@ -467,11 +454,10 @@ static __thread chpl_bool isAmHandler = false;
 typedef enum {
   txnTrkNone,  // no tracking, ptr is ignored
   txnTrkDone,  // *ptr is atomic bool 'done' flag
-  txnTrkCntr,  // *ptr is plain int (caller responsible for de-conflict)
   txnTrkTypeCount
 } txnTrkType_t;
 
-#define TXNTRK_TYPE_BITS 2
+#define TXNTRK_TYPE_BITS 1
 #define TXNTRK_ADDR_BITS (64 - TXNTRK_TYPE_BITS)
 #define TXNTRK_TYPE_MASK ((1UL << TXNTRK_TYPE_BITS) - 1UL)
 #define TXNTRK_ADDR_MASK (~(TXNTRK_TYPE_MASK << TXNTRK_ADDR_BITS))
@@ -1966,7 +1952,7 @@ static void amRequestRMA(c_nodeid_t, amOp_t, void*, void*, size_t);
 static void amRequestAMO(c_nodeid_t, void*, const void*, const void*, void*,
                          int, enum fi_datatype, size_t);
 static void amRequestCommon(c_nodeid_t, chpl_comm_on_bundle_t*, size_t,
-                            chpl_comm_amDone_t**, chpl_bool, chpl_bool);
+                            chpl_comm_amDone_t**, chpl_bool);
 
 
 static inline
@@ -2076,8 +2062,7 @@ void amRequestExecOn(c_nodeid_t node, c_sublocid_t subloc,
                        .subloc = subloc,
                        .pAmDone = NULL };
     amRequestCommon(node, arg, argSize,
-                    blocking ? &arg->comm.xo.pAmDone : NULL,
-                    false, blocking);
+                    blocking ? &arg->comm.xo.pAmDone : NULL, blocking);
   } else {
     arg->comm.xol = (struct chpl_comm_bundleData_execOnLrg_t)
                       { .b = (struct chpl_comm_bundleData_base_t)
@@ -2090,8 +2075,7 @@ void amRequestExecOn(c_nodeid_t node, c_sublocid_t subloc,
                         .pAmDone = NULL };
     chpl_atomic_thread_fence(memory_order_release);
     amRequestCommon(node, arg, sizeof(*arg),
-                    blocking ? &arg->comm.xol.pAmDone : NULL,
-                    false, blocking);
+                    blocking ? &arg->comm.xol.pAmDone : NULL, blocking);
     if (!blocking) {
       //
       // Even if non-blocking, we cannot return until after the target
@@ -2119,7 +2103,7 @@ void amRequestRMA(c_nodeid_t node, amOp_t op,
   amRequestCommon(node, &arg,
                   (offsetof(chpl_comm_on_bundle_t, comm)
                    + sizeof(arg.comm.rma)),
-                  &arg.comm.rma.pAmDone, false, true);
+                  &arg.comm.rma.pAmDone, true);
 }
 
 
@@ -2165,7 +2149,7 @@ void amRequestAMO(c_nodeid_t node, void* object,
   amRequestCommon(node, &arg,
                   (offsetof(chpl_comm_on_bundle_t, comm)
                    + sizeof(arg.comm.amo)),
-                  &arg.comm.amo.pAmDone, true, true);
+                  &arg.comm.amo.pAmDone, true);
   if (myResult != result) {
     memcpy(result, myResult, resSize);
     freeBounceBuf(myResult);
@@ -2180,14 +2164,14 @@ void amRequestShutdown(c_nodeid_t node) {
                  { .op = am_opShutdown, .node = chpl_nodeID };
   amRequestCommon(node, &arg,
                   (offsetof(chpl_comm_on_bundle_t, comm) + sizeof(arg.comm.b)),
-                  NULL, false, true);
+                  NULL, true);
 }
 
 
 static inline
 void amRequestCommon(c_nodeid_t node,
                      chpl_comm_on_bundle_t* arg, size_t argSize,
-                     chpl_comm_amDone_t** ppAmDone, chpl_bool isOrderedAMO,
+                     chpl_comm_amDone_t** ppAmDone,
                      chpl_bool yieldDuringTxnWait) {
   //
   // If blocking, make sure target can RMA PUT the indicator to us.
@@ -2241,33 +2225,8 @@ void amRequestCommon(c_nodeid_t node,
   }
 
   atomic_bool txnDone;
-  void* ctx;
-
-  if (myArg->comm.b.op == am_opAMO) {
-    //
-    // For an ordered AMO, retire all our outstanding (unordered) ones
-    // before we initiate this one, and then wait for it specifically
-    // afterward.  For an unordered one, just initiate it straightaway
-    // and we'll wait for it later, if ever.
-    //
-    chpl_comm_taskPrvData_t* prvData = get_comm_taskPrvdata();
-    if (isOrderedAMO) {
-      waitForCQAllTxns(tcip, prvData);
-      atomic_init_bool(&txnDone, false);
-      ctx = txnTrkEncode(txnTrkDone, &txnDone);
-    } else {
-      ctx = txnTrkEncode(txnTrkCntr, &prvData->numTxnsOut);
-      prvData->numTxnsOut++;  // count txn now, saving control flow later
-    }
-  } else {
-    //
-    // Wait for non-AMOs individually after initiating them, but there's
-    // no need to synchronize beforehand with any (unordered) AMOs that
-    // might be outstanding.
-    //
-    atomic_init_bool(&txnDone, false);
-    ctx = txnTrkEncode(txnTrkDone, &txnDone);
-  }
+  atomic_init_bool(&txnDone, false);
+  void* ctx = txnTrkEncode(txnTrkDone, &txnDone);
 
   DBG_PRINTF(DBG_AM | DBG_AMSEND,
              "tx AM req to %d: seqId %d:%" PRIu64 ", %s, size %zd, "
@@ -2280,28 +2239,25 @@ void amRequestCommon(c_nodeid_t node,
   tcip->numTxns++;
 
   //
-  // If this is a non-AMO or ordered AMO then wait for the network
-  // completion.  Yield initially while doing so; the minimum round
-  // trip time on the network isn't small and maybe we can find
-  // something else to do in the meantime.  After that, only yield
-  // every 64 attempts.
+  // Wait for the network completion.  Yield initially while doing so;
+  // the minimum round trip time on the network isn't small and maybe
+  // we can find something else to do in the meantime.  After that,
+  // only yield every 64 attempts.
   //
   tciFree(tcip);
 
-  if (myArg->comm.b.op != am_opAMO || isOrderedAMO) {
-    int iters = 0;
-    do {
-      if (yieldDuringTxnWait && (iters++ & 0x3f) == 0) {
-        local_yield();
-      }
-      if (tciTryRealloc(tcip)) {
-        checkTxCQ(tcip);
-        tciFree(tcip);
-      }
-    } while (!atomic_load_explicit_bool(&txnDone, memory_order_acquire));
+  int iters = 0;
+  do {
+    if (yieldDuringTxnWait && (iters++ & 0x3f) == 0) {
+      local_yield();
+    }
+    if (tciTryRealloc(tcip)) {
+      checkTxCQ(tcip);
+      tciFree(tcip);
+    }
+  } while (!atomic_load_explicit_bool(&txnDone, memory_order_acquire));
 
-    atomic_destroy_bool(&txnDone);
-  }
+  atomic_destroy_bool(&txnDone);
 
   if (myArg != arg) {
     freeBounceBuf(myArg);
@@ -3775,35 +3731,15 @@ chpl_comm_nb_handle_t ofi_amo(c_nodeid_t node, uint64_t object, uint64_t mrKey,
     memcpy(myOpnd2, operand2, size);
   }
 
-  chpl_bool ordered = true; // always true now, but soon we'll have unordered
-
-  //
-  // For an ordered AMO, retire all our outstanding (unordered) ones
-  // before we initiate this one, and then wait for it specifically
-  // afterward.  For an unordered one, just initiate it straightaway
-  // and we'll wait for it later, if ever.
-  //
   atomic_bool txnDone;
   atomic_init_bool(&txnDone, false);
 
-  void* ctx;
+  void* ctx = NULL;
 
   struct perTxCtxInfo_t* tcip;
   CHK_TRUE((tcip = tciAlloc()) != NULL);
   if (tcip->txCQ != NULL) {
-    chpl_comm_taskPrvData_t* prvData = get_comm_taskPrvdata();
-    if (ordered) {
-      waitForCQAllTxns(tcip, prvData);
-      ctx = txnTrkEncode(txnTrkDone, &txnDone);
-    } else {
-      ctx = txnTrkEncode(txnTrkCntr, &prvData->numTxnsOut);
-      prvData->numTxnsOut++;  // counting txn now allows smaller prvData scope
-    }
-  } else {
-    if (ordered) {
-      waitForCntrAllTxns(tcip);
-    }
-    ctx = NULL;
+    ctx = txnTrkEncode(txnTrkDone, &txnDone);
   }
 
   DBG_PRINTF(DBG_AMO,
@@ -3844,13 +3780,9 @@ chpl_comm_nb_handle_t ofi_amo(c_nodeid_t node, uint64_t object, uint64_t mrKey,
   // Wait for network completion.
   //
   if (tcip->txCQ != NULL) {
-    if (ordered) {
-      waitForCQThisTxn(tcip, &txnDone);
-    }
+    waitForCQThisTxn(tcip, &txnDone);
   } else {
-    if (ordered) {
-      waitForCntrAllTxns(tcip);
-    }
+    waitForCntrAllTxns(tcip);
   }
 
   if (result != NULL) {
@@ -3954,15 +3886,6 @@ void waitForCQThisTxn(struct perTxCtxInfo_t* tcip, atomic_bool* pTxnDone) {
 
 
 static inline
-void waitForCQAllTxns(struct perTxCtxInfo_t* tcip,
-                      chpl_comm_taskPrvData_t* prvData) {
-  while (prvData->numTxnsOut > 0) {
-    checkTxCQ(tcip);
-  }
-}
-
-
-static inline
 void checkTxCQ(struct perTxCtxInfo_t* tcip) {
   struct fi_cq_msg_entry cqes[txCQLen];
   const int cqesSize = sizeof(cqes) / sizeof(cqes[0]);
@@ -3983,9 +3906,6 @@ void checkTxCQ(struct perTxCtxInfo_t* tcip) {
       case txnTrkDone:
         atomic_store_explicit_bool((atomic_bool*) trk.ptr, true,
                                    memory_order_release);
-        break;
-      case txnTrkCntr:
-        (*((int*) trk.ptr))--;
         break;
       default:
         INTERNAL_ERROR_V("unexpected trk.typ %d", trk.typ);
