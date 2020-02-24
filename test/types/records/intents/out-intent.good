@@ -128,6 +128,25 @@ test16
 init 1 1
 (x = 1, ptr = {xx = 1})
 deinit 1 1
+test17
+init 1 1
+(x = 1, ptr = {xx = 1})
+deinit 1 1
+test18
+init 2 2
+(x = 2, ptr = {xx = 2})
+deinit 2 2
+test19
+init (default)
+init 1 1
+lhs(0 0) = rhs(1 1)
+deinit 1 1
+(x = 1, ptr = {xx = 1})
+deinit 1 1
+test20
+init (default)
+(x = 0, ptr = {xx = 0})
+deinit 0 0
 
 =================================================================================================================
 Allocated Memory (Bytes)         Number   Size     Total    Description                      Address             

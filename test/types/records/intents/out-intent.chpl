@@ -289,3 +289,63 @@ proc test16() {
   writeln(x);
 }
 test16();
+
+proc outCond1(out arg: R) {
+  if option {
+    arg = makeR(1);
+  } else {
+    arg = makeR(2);
+  }
+}
+
+proc test17() {
+  writeln("test17");
+  var x: R;
+  outCond1(x);
+  writeln(x);
+}
+test17();
+
+proc outCond2(out arg: R) {
+  if !option {
+    arg = makeR(1);
+  } else {
+    arg = makeR(2);
+  }
+}
+
+proc test18() {
+  writeln("test18");
+  var x: R;
+  outCond2(x);
+  writeln(x);
+}
+test18();
+
+proc outCond3(out arg: R) {
+  if option {
+    arg = makeR(1);
+  }
+}
+
+proc test19() {
+  writeln("test19");
+  var x: R;
+  outCond3(x);
+  writeln(x);
+}
+test19();
+
+proc outCond4(out arg: R) {
+  if !option {
+    arg = makeR(1);
+  }
+}
+
+proc test20() {
+  writeln("test20");
+  var x: R;
+  outCond4(x);
+  writeln(x);
+}
+test20();
