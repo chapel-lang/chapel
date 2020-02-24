@@ -77,19 +77,25 @@ module NetworkAtomics {
     }
 
     inline proc compareExchange(ref expected:bool, desired:bool, param order: memoryOrder = memoryOrder.seqCst): bool {
+      return this.compareExchange(expected, desired, order, readableOrder(order));
+    }
+    inline proc compareExchange(ref expected:bool, desired:bool, param success: memoryOrder, param failure: memoryOrder): bool {
       pragma "insert line file info" extern externFunc("cmpxchg", int(64))
         proc atomic_cmpxchg(ref expected:int(64), ref desired:int(64), l:int(32), obj:c_void_ptr, ref result:bool(32), succ:memory_order, fail:memory_order): void;
 
       var ret:bool(32);
       var te = expected:int(64);
       var td = desired:int(64);
-      atomic_cmpxchg(te, td, _localeid(), _addr(), ret, c_memory_order(order), c_memory_order(readableOrder(order)));
+      atomic_cmpxchg(te, td, _localeid(), _addr(), ret, c_memory_order(success), c_memory_order(failure));
       if !ret then expected = te:bool;
       return ret:bool;
     }
 
     inline proc compareExchangeWeak(ref expected:bool, desired:bool, param order: memoryOrder = memoryOrder.seqCst): bool {
       return this.compareExchange(expected, desired, order);
+    }
+    inline proc compareExchangeWeak(ref expected:bool, desired:bool, param success: memoryOrder, param failure: memoryOrder): bool {
+      return this.compareExchange(expected, desired, success, failure);
     }
 
     inline proc compareAndSwap(expected:bool, desired:bool, param order: memoryOrder = memoryOrder.seqCst): bool {
@@ -178,20 +184,25 @@ module NetworkAtomics {
     }
 
     inline proc compareExchange(ref expected:T, desired:T, param order: memoryOrder = memoryOrder.seqCst): bool {
+      return this.compareExchange(expected, desired, order, readableOrder(order));
+    }
+    inline proc compareExchange(ref expected:T, desired:T, param success: memoryOrder, param failure: memoryOrder): bool {
       pragma "insert line file info" extern externFunc("cmpxchg", T)
         proc atomic_cmpxchg(ref expected:T, ref desired:T, l:int(32), obj:c_void_ptr, ref result:bool(32), succ:memory_order, fail:memory_order): void;
 
       var te = expected;
       var ret:bool(32);
       var td = desired;
-      atomic_cmpxchg(te, td, _localeid(), _addr(), ret, c_memory_order(order), c_memory_order(readableOrder(order)));
+      atomic_cmpxchg(te, td, _localeid(), _addr(), ret, c_memory_order(success), c_memory_order(failure));
       if !ret then expected = te;
       return ret:bool;
-
     }
 
     inline proc compareExchangeWeak(ref expected:T, desired:T, param order: memoryOrder = memoryOrder.seqCst): bool {
       return this.compareExchange(expected, desired, order);
+    }
+    inline proc compareExchangeWeak(ref expected:T, desired:T, param success: memoryOrder, param failure: memoryOrder): bool {
+      return this.compareExchange(expected, desired, success, failure);
     }
 
     inline proc compareAndSwap(expected:T, desired:T, param order: memoryOrder = memoryOrder.seqCst): bool {

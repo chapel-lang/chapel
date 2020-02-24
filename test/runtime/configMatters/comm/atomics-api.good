@@ -28,6 +28,10 @@ Testing 'atomic bool' with order 'seqCst':
   expected    x=true
   cmpxchg     a=false, b=false, x=false
   cmpxchg     a=true, b=true, x=false
+  cmpxchg     a=true, b=false, x=true
+  cmpxchg     a=false, b=true, x=true
+  cmpxchgW    a=false, b=false, x=false
+  cmpxchgW    a=true, b=true, x=false
   cmpxchgW    a=true, b=false, x=true
   cmpxchgW    a=false, b=true, x=true
   cas         a=false, b=false
@@ -74,6 +78,10 @@ Testing 'atomic int(8)' with order 'seqCst':
   expected    x=3
   cmpxchg     a=2, b=false, x=2
   cmpxchg     a=4, b=true, x=2
+  cmpxchg     a=4, b=false, x=4
+  cmpxchg     a=2, b=true, x=4
+  cmpxchgW    a=2, b=false, x=2
+  cmpxchgW    a=4, b=true, x=2
   cmpxchgW    a=4, b=false, x=4
   cmpxchgW    a=2, b=true, x=4
   cas         a=2, b=false
@@ -128,6 +136,10 @@ Testing 'atomic int(16)' with order 'seqCst':
   expected    x=3
   cmpxchg     a=2, b=false, x=2
   cmpxchg     a=4, b=true, x=2
+  cmpxchg     a=4, b=false, x=4
+  cmpxchg     a=2, b=true, x=4
+  cmpxchgW    a=2, b=false, x=2
+  cmpxchgW    a=4, b=true, x=2
   cmpxchgW    a=4, b=false, x=4
   cmpxchgW    a=2, b=true, x=4
   cas         a=2, b=false
@@ -182,6 +194,10 @@ Testing 'atomic int(32)' with order 'seqCst':
   expected    x=3
   cmpxchg     a=2, b=false, x=2
   cmpxchg     a=4, b=true, x=2
+  cmpxchg     a=4, b=false, x=4
+  cmpxchg     a=2, b=true, x=4
+  cmpxchgW    a=2, b=false, x=2
+  cmpxchgW    a=4, b=true, x=2
   cmpxchgW    a=4, b=false, x=4
   cmpxchgW    a=2, b=true, x=4
   cas         a=2, b=false
@@ -236,6 +252,10 @@ Testing 'atomic int(64)' with order 'seqCst':
   expected    x=3
   cmpxchg     a=2, b=false, x=2
   cmpxchg     a=4, b=true, x=2
+  cmpxchg     a=4, b=false, x=4
+  cmpxchg     a=2, b=true, x=4
+  cmpxchgW    a=2, b=false, x=2
+  cmpxchgW    a=4, b=true, x=2
   cmpxchgW    a=4, b=false, x=4
   cmpxchgW    a=2, b=true, x=4
   cas         a=2, b=false
@@ -290,6 +310,10 @@ Testing 'atomic int(64)' with order 'seqCst':
   expected    x=3
   cmpxchg     a=2, b=false, x=2
   cmpxchg     a=4, b=true, x=2
+  cmpxchg     a=4, b=false, x=4
+  cmpxchg     a=2, b=true, x=4
+  cmpxchgW    a=2, b=false, x=2
+  cmpxchgW    a=4, b=true, x=2
   cmpxchgW    a=4, b=false, x=4
   cmpxchgW    a=2, b=true, x=4
   cas         a=2, b=false
@@ -344,6 +368,10 @@ Testing 'atomic uint(8)' with order 'seqCst':
   expected    x=3
   cmpxchg     a=2, b=false, x=2
   cmpxchg     a=4, b=true, x=2
+  cmpxchg     a=4, b=false, x=4
+  cmpxchg     a=2, b=true, x=4
+  cmpxchgW    a=2, b=false, x=2
+  cmpxchgW    a=4, b=true, x=2
   cmpxchgW    a=4, b=false, x=4
   cmpxchgW    a=2, b=true, x=4
   cas         a=2, b=false
@@ -398,6 +426,10 @@ Testing 'atomic uint(16)' with order 'seqCst':
   expected    x=3
   cmpxchg     a=2, b=false, x=2
   cmpxchg     a=4, b=true, x=2
+  cmpxchg     a=4, b=false, x=4
+  cmpxchg     a=2, b=true, x=4
+  cmpxchgW    a=2, b=false, x=2
+  cmpxchgW    a=4, b=true, x=2
   cmpxchgW    a=4, b=false, x=4
   cmpxchgW    a=2, b=true, x=4
   cas         a=2, b=false
@@ -452,6 +484,10 @@ Testing 'atomic uint(32)' with order 'seqCst':
   expected    x=3
   cmpxchg     a=2, b=false, x=2
   cmpxchg     a=4, b=true, x=2
+  cmpxchg     a=4, b=false, x=4
+  cmpxchg     a=2, b=true, x=4
+  cmpxchgW    a=2, b=false, x=2
+  cmpxchgW    a=4, b=true, x=2
   cmpxchgW    a=4, b=false, x=4
   cmpxchgW    a=2, b=true, x=4
   cas         a=2, b=false
@@ -506,6 +542,10 @@ Testing 'atomic uint(64)' with order 'seqCst':
   expected    x=3
   cmpxchg     a=2, b=false, x=2
   cmpxchg     a=4, b=true, x=2
+  cmpxchg     a=4, b=false, x=4
+  cmpxchg     a=2, b=true, x=4
+  cmpxchgW    a=2, b=false, x=2
+  cmpxchgW    a=4, b=true, x=2
   cmpxchgW    a=4, b=false, x=4
   cmpxchgW    a=2, b=true, x=4
   cas         a=2, b=false
@@ -560,6 +600,10 @@ Testing 'atomic uint(64)' with order 'seqCst':
   expected    x=3
   cmpxchg     a=2, b=false, x=2
   cmpxchg     a=4, b=true, x=2
+  cmpxchg     a=4, b=false, x=4
+  cmpxchg     a=2, b=true, x=4
+  cmpxchgW    a=2, b=false, x=2
+  cmpxchgW    a=4, b=true, x=2
   cmpxchgW    a=4, b=false, x=4
   cmpxchgW    a=2, b=true, x=4
   cas         a=2, b=false
@@ -608,6 +652,10 @@ Testing 'atomic real(32)' with order 'seqCst':
   expected    x=3.0
   cmpxchg     a=2.0, b=false, x=2.0
   cmpxchg     a=4.0, b=true, x=2.0
+  cmpxchg     a=4.0, b=false, x=4.0
+  cmpxchg     a=2.0, b=true, x=4.0
+  cmpxchgW    a=2.0, b=false, x=2.0
+  cmpxchgW    a=4.0, b=true, x=2.0
   cmpxchgW    a=4.0, b=false, x=4.0
   cmpxchgW    a=2.0, b=true, x=4.0
   cas         a=2.0, b=false
@@ -650,6 +698,10 @@ Testing 'atomic real(64)' with order 'seqCst':
   expected    x=3.0
   cmpxchg     a=2.0, b=false, x=2.0
   cmpxchg     a=4.0, b=true, x=2.0
+  cmpxchg     a=4.0, b=false, x=4.0
+  cmpxchg     a=2.0, b=true, x=4.0
+  cmpxchgW    a=2.0, b=false, x=2.0
+  cmpxchgW    a=4.0, b=true, x=2.0
   cmpxchgW    a=4.0, b=false, x=4.0
   cmpxchgW    a=2.0, b=true, x=4.0
   cas         a=2.0, b=false
@@ -692,6 +744,10 @@ Testing 'atomic real(64)' with order 'seqCst':
   expected    x=3.0
   cmpxchg     a=2.0, b=false, x=2.0
   cmpxchg     a=4.0, b=true, x=2.0
+  cmpxchg     a=4.0, b=false, x=4.0
+  cmpxchg     a=2.0, b=true, x=4.0
+  cmpxchgW    a=2.0, b=false, x=2.0
+  cmpxchgW    a=4.0, b=true, x=2.0
   cmpxchgW    a=4.0, b=false, x=4.0
   cmpxchgW    a=2.0, b=true, x=4.0
   cas         a=2.0, b=false
@@ -734,6 +790,10 @@ Testing 'atomic int(64)' with order 'seqCst':
   expected    x=3 3 3
   cmpxchg     a=2 2 2, b=false false false, x=2 2 2
   cmpxchg     a=4 4 4, b=true true true, x=2 2 2
+  cmpxchg     a=4 4 4, b=false false false, x=4 4 4
+  cmpxchg     a=2 2 2, b=true true true, x=4 4 4
+  cmpxchgW    a=2 2 2, b=false false false, x=2 2 2
+  cmpxchgW    a=4 4 4, b=true true true, x=2 2 2
   cmpxchgW    a=4 4 4, b=false false false, x=4 4 4
   cmpxchgW    a=2 2 2, b=true true true, x=4 4 4
   cas         a=2 2 2, b=false false false
