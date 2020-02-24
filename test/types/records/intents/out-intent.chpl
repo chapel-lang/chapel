@@ -57,6 +57,19 @@ proc test1() {
 }
 test1();
 
+proc out1a(out arg: R) {
+  writeln(arg);
+  arg = makeR();
+}
+
+proc test1a() {
+  writeln("test1a");
+  var x: R;
+  out1a(x);
+  writeln(x);
+}
+test1a();
+
 proc out2(out arg: R) {
 }
 
@@ -102,3 +115,109 @@ proc test5() {
   writeln(y);
 }
 test5();
+
+proc outGenericArray1(out arr) {
+}
+
+proc test6() {
+  writeln("test6");
+  var AA:[1..1] R;
+  outGenericArray1(AA);
+  writeln(AA);
+}
+test6();
+
+proc outGenericArray2(out arr) {
+  var B:[1..1] R;
+  B[1] = makeR(1);
+  arr = B;
+}
+
+proc test7() {
+  writeln("test7");
+  var AA:[1..1] R;
+  outGenericArray2(AA);
+  writeln(AA);
+}
+test7();
+
+proc outGenericArray2a(out arr) {
+  writeln(arr.domain, " ", arr); // preventing split-init
+  var B:[1..1] R;
+  B[1] = makeR(1);
+  arr = B;
+}
+
+proc test7a() {
+  writeln("test7a");
+  var AA:[1..1] R;
+  outGenericArray2a(AA);
+  writeln(AA);
+}
+test7a();
+
+proc outPartialArray1(out arr:[] R) {
+}
+
+proc test8() {
+  writeln("test8");
+  var AA:[1..1] R;
+  outPartialArray1(AA);
+  writeln(AA);
+}
+test8();
+
+proc outPartialArray2(out arr:[] R) {
+  var B:[1..1] R;
+  B[1] = makeR(1);
+  arr = B;
+}
+
+proc test9() {
+  writeln("test9");
+  var AA:[1..1] R;
+  outPartialArray2(AA);
+  writeln(AA);
+}
+test9();
+
+
+proc outConcreteArray1(out arr:[1..1] R) {
+}
+
+proc test10() {
+  writeln("test10");
+  var AA:[1..1] R;
+  outConcreteArray1(AA);
+  writeln(AA);
+}
+test10();
+
+proc outConcreteArray2(out arr:[1..1] R) {
+  var B:[1..1] R;
+  B[1] = makeR(1);
+  arr = B;
+}
+
+proc test11() {
+  writeln("test11");
+  var AA:[1..1] R;
+  outConcreteArray2(AA);
+  writeln(AA);
+}
+test11();
+
+proc outConcreteArray2a(out arr:[1..1] R) {
+  writeln(arr.domain, " ", arr); // preventing split init
+  var B:[1..1] R;
+  B[1] = makeR(1);
+  arr = B;
+}
+
+proc test11a() {
+  writeln("test11a");
+  var AA:[1..1] R;
+  outConcreteArray2a(AA);
+  writeln(AA);
+}
+test11a();
