@@ -251,14 +251,53 @@ module Atomics {
 
     /*
        Stores `desired` as the new value, if and only if the original value is
+       equal to `expected`. Returns `true` if `desired` was stored, otherwise
+       updates `expected` to the original value.
+     */
+    inline proc compareExchange(ref expected:bool, desired:bool, param order: memoryOrder = memoryOrder.seqCst): bool {
+      extern externFunc("compare_exchange_strong", bool)
+        proc atomic_compare_exchange_strong(ref obj:externT(bool), ref expected:bool, desired:bool, succ:memory_order, fail:memory_order): bool;
+
+      var ret:bool;
+      on this {
+        var localizedExpected = expected;
+        ret = atomic_compare_exchange_strong(_v, localizedExpected, desired, c_memory_order(order), c_memory_order(readableOrder(order)));
+        if !ret then expected = localizedExpected;
+      }
+      return ret;
+    }
+
+    /*
+       Similar to :proc:`compareExchange`, except that this function may
+       return `false` even if the original value was equal to `expected`. This
+       may happen if the value could not be updated atomically.
+    */
+    inline proc compareExchangeWeak(ref expected:bool, desired:bool, param order: memoryOrder = memoryOrder.seqCst): bool {
+      extern externFunc("compare_exchange_weak", bool)
+        proc atomic_compare_exchange_weak(ref obj:externT(bool), ref expected:bool, desired:bool, succ:memory_order, fail:memory_order): bool;
+
+      var ret:bool;
+      on this {
+        var localizedExpected = expected;
+        ret = atomic_compare_exchange_weak(_v, localizedExpected, desired, c_memory_order(order), c_memory_order(readableOrder(order)));
+        if !ret then expected = localizedExpected;
+      }
+      return ret;
+    }
+
+    /*
+       Stores `desired` as the new value, if and only if the original value is
        equal to `expected`. Returns `true` if `desired` was stored.
     */
     inline proc compareAndSwap(expected:bool, desired:bool, param order: memoryOrder = memoryOrder.seqCst): bool {
       extern externFunc("compare_exchange_strong", bool)
-        proc atomic_compare_exchange_strong(ref obj:externT(bool), expected:bool, desired:bool, order:memory_order): bool;
+        proc atomic_compare_exchange_strong(ref obj:externT(bool), ref expected:bool, desired:bool, succ:memory_order, fail:memory_order): bool;
 
       var ret:bool;
-      on this do ret = atomic_compare_exchange_strong(_v, expected, desired, c_memory_order(order));
+      on this {
+        var mutableExpected = expected;
+        ret = atomic_compare_exchange_strong(_v, mutableExpected, desired, c_memory_order(order), c_memory_order(readableOrder(order)));
+      }
       return ret;
     }
 
@@ -383,14 +422,53 @@ module Atomics {
 
     /*
        Stores `desired` as the new value, if and only if the original value is
+       equal to `expected`. Returns `true` if `desired` was stored, otherwise
+       updates `expected` to the original value.
+     */
+    inline proc compareExchange(ref expected:T, desired:T, param order: memoryOrder = memoryOrder.seqCst): bool {
+      extern externFunc("compare_exchange_strong", T)
+        proc atomic_compare_exchange_strong(ref obj:externT(T), ref expected:T, desired:T, succ:memory_order, fail:memory_order): bool;
+
+      var ret:bool;
+      on this {
+        var localizedExpected = expected;
+        ret = atomic_compare_exchange_strong(_v, localizedExpected, desired, c_memory_order(order), c_memory_order(readableOrder(order)));
+        if !ret then expected = localizedExpected;
+      }
+      return ret;
+    }
+
+    /*
+       Similar to :proc:`compareExchange`, except that this function may
+       return `false` even if the original value was equal to `expected`. This
+       may happen if the value could not be updated atomically.
+    */
+    inline proc compareExchangeWeak(ref expected:T, desired:T, param order: memoryOrder = memoryOrder.seqCst): bool {
+      extern externFunc("compare_exchange_weak", T)
+        proc atomic_compare_exchange_weak(ref obj:externT(T), ref expected:T, desired:T, succ:memory_order, fail:memory_order): bool;
+
+      var ret:bool;
+      on this {
+        var localizedExpected = expected;
+        ret = atomic_compare_exchange_weak(_v, localizedExpected, desired, c_memory_order(order), c_memory_order(readableOrder(order)));
+        if !ret then expected = localizedExpected;
+      }
+      return ret;
+    }
+
+    /*
+       Stores `desired` as the new value, if and only if the original value is
        equal to `expected`. Returns `true` if `desired` was stored.
     */
     inline proc compareAndSwap(expected:T, desired:T, param order: memoryOrder = memoryOrder.seqCst): bool {
       extern externFunc("compare_exchange_strong", T)
-        proc atomic_compare_exchange_strong(ref obj:externT(T), expected:T, desired:T, order:memory_order): bool;
+        proc atomic_compare_exchange_strong(ref obj:externT(T), ref expected:T, desired:T, succ:memory_order, fail:memory_order): bool;
 
       var ret:bool;
-      on this do ret = atomic_compare_exchange_strong(_v, expected, desired, c_memory_order(order));
+      on this {
+        var mutableExpected = expected;
+        ret = atomic_compare_exchange_strong(_v, mutableExpected, desired, c_memory_order(order), c_memory_order(readableOrder(order)));
+      }
       return ret;
     }
 

@@ -6,6 +6,11 @@ Testing 'atomic bool':
   read        a=false, i=false
   write       a=true
   xchg        a=false, i=true
+  expected    x=true
+  cmpxchg     a=false, b=false, x=false
+  cmpxchg     a=true, b=true, x=false
+  cmpxchgW    a=true, b=false, x=true
+  cmpxchgW    a=false, b=true, x=true
   cas         a=false, b=false
   cas         a=true, b=true
   test&Set    a=true, i=true
@@ -20,6 +25,11 @@ Testing 'atomic bool' with order 'seqCst':
   read        a=false, i=false
   write       a=true
   xchg        a=false, i=true
+  expected    x=true
+  cmpxchg     a=false, b=false, x=false
+  cmpxchg     a=true, b=true, x=false
+  cmpxchgW    a=true, b=false, x=true
+  cmpxchgW    a=false, b=true, x=true
   cas         a=false, b=false
   cas         a=true, b=true
   test&Set    a=true, i=true
@@ -34,6 +44,11 @@ Testing 'atomic int(8)':
   read        a=0, i=0
   write       a=1
   xchg        a=2, i=1
+  expected    x=3
+  cmpxchg     a=2, b=false, x=2
+  cmpxchg     a=4, b=true, x=2
+  cmpxchgW    a=4, b=false, x=4
+  cmpxchgW    a=2, b=true, x=4
   cas         a=2, b=false
   cas         a=5, b=true
   fetchAdd    a=6, i=5
@@ -56,6 +71,11 @@ Testing 'atomic int(8)' with order 'seqCst':
   read        a=0, i=0
   write       a=1
   xchg        a=2, i=1
+  expected    x=3
+  cmpxchg     a=2, b=false, x=2
+  cmpxchg     a=4, b=true, x=2
+  cmpxchgW    a=4, b=false, x=4
+  cmpxchgW    a=2, b=true, x=4
   cas         a=2, b=false
   cas         a=5, b=true
   fetchAdd    a=6, i=5
@@ -78,6 +98,11 @@ Testing 'atomic int(16)':
   read        a=0, i=0
   write       a=1
   xchg        a=2, i=1
+  expected    x=3
+  cmpxchg     a=2, b=false, x=2
+  cmpxchg     a=4, b=true, x=2
+  cmpxchgW    a=4, b=false, x=4
+  cmpxchgW    a=2, b=true, x=4
   cas         a=2, b=false
   cas         a=5, b=true
   fetchAdd    a=6, i=5
@@ -100,6 +125,11 @@ Testing 'atomic int(16)' with order 'seqCst':
   read        a=0, i=0
   write       a=1
   xchg        a=2, i=1
+  expected    x=3
+  cmpxchg     a=2, b=false, x=2
+  cmpxchg     a=4, b=true, x=2
+  cmpxchgW    a=4, b=false, x=4
+  cmpxchgW    a=2, b=true, x=4
   cas         a=2, b=false
   cas         a=5, b=true
   fetchAdd    a=6, i=5
@@ -122,6 +152,11 @@ Testing 'atomic int(32)':
   read        a=0, i=0
   write       a=1
   xchg        a=2, i=1
+  expected    x=3
+  cmpxchg     a=2, b=false, x=2
+  cmpxchg     a=4, b=true, x=2
+  cmpxchgW    a=4, b=false, x=4
+  cmpxchgW    a=2, b=true, x=4
   cas         a=2, b=false
   cas         a=5, b=true
   fetchAdd    a=6, i=5
@@ -144,6 +179,11 @@ Testing 'atomic int(32)' with order 'seqCst':
   read        a=0, i=0
   write       a=1
   xchg        a=2, i=1
+  expected    x=3
+  cmpxchg     a=2, b=false, x=2
+  cmpxchg     a=4, b=true, x=2
+  cmpxchgW    a=4, b=false, x=4
+  cmpxchgW    a=2, b=true, x=4
   cas         a=2, b=false
   cas         a=5, b=true
   fetchAdd    a=6, i=5
@@ -166,6 +206,11 @@ Testing 'atomic int(64)':
   read        a=0, i=0
   write       a=1
   xchg        a=2, i=1
+  expected    x=3
+  cmpxchg     a=2, b=false, x=2
+  cmpxchg     a=4, b=true, x=2
+  cmpxchgW    a=4, b=false, x=4
+  cmpxchgW    a=2, b=true, x=4
   cas         a=2, b=false
   cas         a=5, b=true
   fetchAdd    a=6, i=5
@@ -188,6 +233,11 @@ Testing 'atomic int(64)' with order 'seqCst':
   read        a=0, i=0
   write       a=1
   xchg        a=2, i=1
+  expected    x=3
+  cmpxchg     a=2, b=false, x=2
+  cmpxchg     a=4, b=true, x=2
+  cmpxchgW    a=4, b=false, x=4
+  cmpxchgW    a=2, b=true, x=4
   cas         a=2, b=false
   cas         a=5, b=true
   fetchAdd    a=6, i=5
@@ -210,6 +260,11 @@ Testing 'atomic int(64)':
   read        a=0, i=0
   write       a=1
   xchg        a=2, i=1
+  expected    x=3
+  cmpxchg     a=2, b=false, x=2
+  cmpxchg     a=4, b=true, x=2
+  cmpxchgW    a=4, b=false, x=4
+  cmpxchgW    a=2, b=true, x=4
   cas         a=2, b=false
   cas         a=5, b=true
   fetchAdd    a=6, i=5
@@ -232,6 +287,11 @@ Testing 'atomic int(64)' with order 'seqCst':
   read        a=0, i=0
   write       a=1
   xchg        a=2, i=1
+  expected    x=3
+  cmpxchg     a=2, b=false, x=2
+  cmpxchg     a=4, b=true, x=2
+  cmpxchgW    a=4, b=false, x=4
+  cmpxchgW    a=2, b=true, x=4
   cas         a=2, b=false
   cas         a=5, b=true
   fetchAdd    a=6, i=5
@@ -254,6 +314,11 @@ Testing 'atomic uint(8)':
   read        a=0, i=0
   write       a=1
   xchg        a=2, i=1
+  expected    x=3
+  cmpxchg     a=2, b=false, x=2
+  cmpxchg     a=4, b=true, x=2
+  cmpxchgW    a=4, b=false, x=4
+  cmpxchgW    a=2, b=true, x=4
   cas         a=2, b=false
   cas         a=5, b=true
   fetchAdd    a=6, i=5
@@ -276,6 +341,11 @@ Testing 'atomic uint(8)' with order 'seqCst':
   read        a=0, i=0
   write       a=1
   xchg        a=2, i=1
+  expected    x=3
+  cmpxchg     a=2, b=false, x=2
+  cmpxchg     a=4, b=true, x=2
+  cmpxchgW    a=4, b=false, x=4
+  cmpxchgW    a=2, b=true, x=4
   cas         a=2, b=false
   cas         a=5, b=true
   fetchAdd    a=6, i=5
@@ -298,6 +368,11 @@ Testing 'atomic uint(16)':
   read        a=0, i=0
   write       a=1
   xchg        a=2, i=1
+  expected    x=3
+  cmpxchg     a=2, b=false, x=2
+  cmpxchg     a=4, b=true, x=2
+  cmpxchgW    a=4, b=false, x=4
+  cmpxchgW    a=2, b=true, x=4
   cas         a=2, b=false
   cas         a=5, b=true
   fetchAdd    a=6, i=5
@@ -320,6 +395,11 @@ Testing 'atomic uint(16)' with order 'seqCst':
   read        a=0, i=0
   write       a=1
   xchg        a=2, i=1
+  expected    x=3
+  cmpxchg     a=2, b=false, x=2
+  cmpxchg     a=4, b=true, x=2
+  cmpxchgW    a=4, b=false, x=4
+  cmpxchgW    a=2, b=true, x=4
   cas         a=2, b=false
   cas         a=5, b=true
   fetchAdd    a=6, i=5
@@ -342,6 +422,11 @@ Testing 'atomic uint(32)':
   read        a=0, i=0
   write       a=1
   xchg        a=2, i=1
+  expected    x=3
+  cmpxchg     a=2, b=false, x=2
+  cmpxchg     a=4, b=true, x=2
+  cmpxchgW    a=4, b=false, x=4
+  cmpxchgW    a=2, b=true, x=4
   cas         a=2, b=false
   cas         a=5, b=true
   fetchAdd    a=6, i=5
@@ -364,6 +449,11 @@ Testing 'atomic uint(32)' with order 'seqCst':
   read        a=0, i=0
   write       a=1
   xchg        a=2, i=1
+  expected    x=3
+  cmpxchg     a=2, b=false, x=2
+  cmpxchg     a=4, b=true, x=2
+  cmpxchgW    a=4, b=false, x=4
+  cmpxchgW    a=2, b=true, x=4
   cas         a=2, b=false
   cas         a=5, b=true
   fetchAdd    a=6, i=5
@@ -386,6 +476,11 @@ Testing 'atomic uint(64)':
   read        a=0, i=0
   write       a=1
   xchg        a=2, i=1
+  expected    x=3
+  cmpxchg     a=2, b=false, x=2
+  cmpxchg     a=4, b=true, x=2
+  cmpxchgW    a=4, b=false, x=4
+  cmpxchgW    a=2, b=true, x=4
   cas         a=2, b=false
   cas         a=5, b=true
   fetchAdd    a=6, i=5
@@ -408,6 +503,11 @@ Testing 'atomic uint(64)' with order 'seqCst':
   read        a=0, i=0
   write       a=1
   xchg        a=2, i=1
+  expected    x=3
+  cmpxchg     a=2, b=false, x=2
+  cmpxchg     a=4, b=true, x=2
+  cmpxchgW    a=4, b=false, x=4
+  cmpxchgW    a=2, b=true, x=4
   cas         a=2, b=false
   cas         a=5, b=true
   fetchAdd    a=6, i=5
@@ -430,6 +530,11 @@ Testing 'atomic uint(64)':
   read        a=0, i=0
   write       a=1
   xchg        a=2, i=1
+  expected    x=3
+  cmpxchg     a=2, b=false, x=2
+  cmpxchg     a=4, b=true, x=2
+  cmpxchgW    a=4, b=false, x=4
+  cmpxchgW    a=2, b=true, x=4
   cas         a=2, b=false
   cas         a=5, b=true
   fetchAdd    a=6, i=5
@@ -452,6 +557,11 @@ Testing 'atomic uint(64)' with order 'seqCst':
   read        a=0, i=0
   write       a=1
   xchg        a=2, i=1
+  expected    x=3
+  cmpxchg     a=2, b=false, x=2
+  cmpxchg     a=4, b=true, x=2
+  cmpxchgW    a=4, b=false, x=4
+  cmpxchgW    a=2, b=true, x=4
   cas         a=2, b=false
   cas         a=5, b=true
   fetchAdd    a=6, i=5
@@ -474,6 +584,11 @@ Testing 'atomic real(32)':
   read        a=0.0, i=0.0
   write       a=1.0
   xchg        a=2.0, i=1.0
+  expected    x=3.0
+  cmpxchg     a=2.0, b=false, x=2.0
+  cmpxchg     a=4.0, b=true, x=2.0
+  cmpxchgW    a=4.0, b=false, x=4.0
+  cmpxchgW    a=2.0, b=true, x=4.0
   cas         a=2.0, b=false
   cas         a=5.0, b=true
   fetchAdd    a=6.0, i=5.0
@@ -490,6 +605,11 @@ Testing 'atomic real(32)' with order 'seqCst':
   read        a=0.0, i=0.0
   write       a=1.0
   xchg        a=2.0, i=1.0
+  expected    x=3.0
+  cmpxchg     a=2.0, b=false, x=2.0
+  cmpxchg     a=4.0, b=true, x=2.0
+  cmpxchgW    a=4.0, b=false, x=4.0
+  cmpxchgW    a=2.0, b=true, x=4.0
   cas         a=2.0, b=false
   cas         a=5.0, b=true
   fetchAdd    a=6.0, i=5.0
@@ -506,6 +626,11 @@ Testing 'atomic real(64)':
   read        a=0.0, i=0.0
   write       a=1.0
   xchg        a=2.0, i=1.0
+  expected    x=3.0
+  cmpxchg     a=2.0, b=false, x=2.0
+  cmpxchg     a=4.0, b=true, x=2.0
+  cmpxchgW    a=4.0, b=false, x=4.0
+  cmpxchgW    a=2.0, b=true, x=4.0
   cas         a=2.0, b=false
   cas         a=5.0, b=true
   fetchAdd    a=6.0, i=5.0
@@ -522,6 +647,11 @@ Testing 'atomic real(64)' with order 'seqCst':
   read        a=0.0, i=0.0
   write       a=1.0
   xchg        a=2.0, i=1.0
+  expected    x=3.0
+  cmpxchg     a=2.0, b=false, x=2.0
+  cmpxchg     a=4.0, b=true, x=2.0
+  cmpxchgW    a=4.0, b=false, x=4.0
+  cmpxchgW    a=2.0, b=true, x=4.0
   cas         a=2.0, b=false
   cas         a=5.0, b=true
   fetchAdd    a=6.0, i=5.0
@@ -538,6 +668,11 @@ Testing 'atomic real(64)':
   read        a=0.0, i=0.0
   write       a=1.0
   xchg        a=2.0, i=1.0
+  expected    x=3.0
+  cmpxchg     a=2.0, b=false, x=2.0
+  cmpxchg     a=4.0, b=true, x=2.0
+  cmpxchgW    a=4.0, b=false, x=4.0
+  cmpxchgW    a=2.0, b=true, x=4.0
   cas         a=2.0, b=false
   cas         a=5.0, b=true
   fetchAdd    a=6.0, i=5.0
@@ -554,6 +689,11 @@ Testing 'atomic real(64)' with order 'seqCst':
   read        a=0.0, i=0.0
   write       a=1.0
   xchg        a=2.0, i=1.0
+  expected    x=3.0
+  cmpxchg     a=2.0, b=false, x=2.0
+  cmpxchg     a=4.0, b=true, x=2.0
+  cmpxchgW    a=4.0, b=false, x=4.0
+  cmpxchgW    a=2.0, b=true, x=4.0
   cas         a=2.0, b=false
   cas         a=5.0, b=true
   fetchAdd    a=6.0, i=5.0
@@ -567,6 +707,11 @@ Promotion -- Testing 'atomic int(64)':
   read        a=0 0 0, i=0 0 0
   write       a=1 1 1
   xchg        a=2 2 2, i=1 1 1
+  expected    x=3 3 3
+  cmpxchg     a=2 2 2, b=false false false, x=2 2 2
+  cmpxchg     a=4 4 4, b=true true true, x=2 2 2
+  cmpxchgW    a=4 4 4, b=false false false, x=4 4 4
+  cmpxchgW    a=2 2 2, b=true true true, x=4 4 4
   cas         a=2 2 2, b=false false false
   cas         a=5 5 5, b=true true true
   fetchAdd    a=6 6 6, i=5 5 5
@@ -586,6 +731,11 @@ Testing 'atomic int(64)' with order 'seqCst':
   read        a=0 0 0, i=0 0 0
   write       a=1 1 1
   xchg        a=2 2 2, i=1 1 1
+  expected    x=3 3 3
+  cmpxchg     a=2 2 2, b=false false false, x=2 2 2
+  cmpxchg     a=4 4 4, b=true true true, x=2 2 2
+  cmpxchgW    a=4 4 4, b=false false false, x=4 4 4
+  cmpxchgW    a=2 2 2, b=true true true, x=4 4 4
   cas         a=2 2 2, b=false false false
   cas         a=5 5 5, b=true true true
   fetchAdd    a=6 6 6, i=5 5 5

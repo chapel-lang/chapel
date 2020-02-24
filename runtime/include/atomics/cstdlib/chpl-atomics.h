@@ -77,26 +77,6 @@ static inline void chpl_atomic_signal_fence(memory_order order)
 }
 
 
-//
-// Given an input memory order, find a memory order that can be used for
-// an atomic_load or for the compare_exchange failure case.  This is an
-// issue because the Chapel API does not currently make the compare_exchange
-// "expected" parameter a pointer.  As a result, the user does not pass in a
-// memory order for the failure case, and it must be inferred from the order
-// they provided for the success case.  In the long run, we expect to migrate
-// to an API that matches the C standard API.
-//
-// The C standard requires that an atomic_load or the compare_exchange
-// failure case not have memory_order_release or memory_order_acq_rel.
-// In addition, the compare_exchange failure case cannot have a stronger
-// order than the success case.  We choose the strongest order we can
-// that satisfies those requirements.
-//
-#define GET_READABLE_ORDER(order) (order != memory_order_release && \
-                                   order != memory_order_acq_rel ? \
-                                   order : memory_order_acquire)
-
-
 ///////////////////////////////////////////////////////////////////////////////
 ////                      START OF ATOMICS BASE                           ////
 //////////////////////////////////////////////////////////////////////////////
@@ -133,19 +113,17 @@ static inline basetype atomic_exchange_explicit_ ## type(atomic_ ## type * obj, 
 static inline basetype atomic_exchange_ ## type(atomic_ ## type * obj, basetype value) { \
   return atomic_exchange(obj, value); \
 } \
-static inline chpl_bool atomic_compare_exchange_strong_explicit_ ## type(atomic_ ## type * obj, basetype expected, basetype desired, memory_order order) { \
-  memory_order exp_order = GET_READABLE_ORDER(order); \
-  return atomic_compare_exchange_strong_explicit(obj, &expected, desired, order, exp_order); \
+static inline chpl_bool atomic_compare_exchange_strong_explicit_ ## type(atomic_ ## type * obj, basetype * expected, basetype desired, memory_order succ, memory_order fail) { \
+  return atomic_compare_exchange_strong_explicit(obj, expected, desired, succ, fail); \
 } \
-static inline chpl_bool atomic_compare_exchange_strong_ ## type(atomic_ ## type * obj, basetype expected, basetype desired) { \
-  return atomic_compare_exchange_strong(obj, &expected, desired); \
+static inline chpl_bool atomic_compare_exchange_strong_ ## type(atomic_ ## type * obj, basetype * expected, basetype desired) { \
+  return atomic_compare_exchange_strong(obj, expected, desired); \
 } \
-static inline chpl_bool atomic_compare_exchange_weak_explicit_ ## type(atomic_ ## type * obj, basetype expected, basetype desired, memory_order order) { \
-  memory_order exp_order = GET_READABLE_ORDER(order); \
-  return atomic_compare_exchange_weak_explicit(obj, &expected, desired, order, exp_order); \
+static inline chpl_bool atomic_compare_exchange_weak_explicit_ ## type(atomic_ ## type * obj, basetype * expected, basetype desired, memory_order succ, memory_order fail) { \
+  return atomic_compare_exchange_weak_explicit(obj, expected, desired, succ, fail); \
 } \
-static inline chpl_bool atomic_compare_exchange_weak_ ## type(atomic_ ## type * obj, basetype expected, basetype desired) { \
-  return atomic_compare_exchange_weak(obj, &expected, desired); \
+static inline chpl_bool atomic_compare_exchange_weak_ ## type(atomic_ ## type * obj, basetype * expected, basetype desired) { \
+  return atomic_compare_exchange_weak(obj, expected, desired); \
 }
 
 
@@ -184,6 +162,22 @@ static inline type atomic_fetch_xor_ ## type(atomic_ ## type * obj, type operand
   return atomic_fetch_xor(obj, operand); \
 }
 
+
+//
+// Given an input memory order, find a memory order that can be used for
+// an atomic_load or for the compare_exchange failure case. This is used
+// for implementing floating point fetch ops, which are only passed a
+// single memory order.
+//
+// The C standard requires that an atomic_load or the compare_exchange
+// failure case not have memory_order_release or memory_order_acq_rel.
+// In addition, the compare_exchange failure case cannot have a stronger
+// order than the success case. We choose the strongest order we can
+// that satisfies those requirements.
+//
+#define GET_READABLE_ORDER(order) (order != memory_order_release && \
+                                   order != memory_order_acq_rel ? \
+                                   order : memory_order_acquire)
 
 ///////////////////////////////////////////////////////////////////////////////
 ////                   START OF REAL ATOMICS FETCH OPS                    ////
@@ -234,9 +228,7 @@ DECLARE_ATOMICS(uint_least16_t);
 DECLARE_ATOMICS(uint_least32_t);
 DECLARE_ATOMICS(uint_least64_t);
 
-// On netbsd the DECLARE_ATOMICS macro doesn't work for uintptr_t, so we
-// call out the individual parts explicitly.  For more background, see the
-// comment in the intrinsics implementation of atomics.
+// On netbsd the DECLARE_ATOMICS macro doesn't work for uintptr_t.
 DECLARE_ATOMICS_BASE(uintptr_t, uintptr_t);
 DECLARE_ATOMICS_EXCHANGE_OPS(uintptr_t, uintptr_t);
 DECLARE_ATOMICS_FETCH_OPS(uintptr_t);

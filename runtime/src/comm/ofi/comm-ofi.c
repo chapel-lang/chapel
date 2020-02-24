@@ -2134,7 +2134,7 @@ void amRequestAMO(c_nodeid_t node, void* object,
              amo_opName(ofiOp), amo_typeName(ofiType), size);
 
   void* myResult = result;
-  size_t resSize = (ofiOp == FI_CSWAP) ? sizeof(chpl_bool32) : size;
+  size_t resSize = size;
   if (myResult != NULL) {
     if (mrGetLocalKey(myResult, resSize) != 0) {
       myResult = allocBounceBuf(resSize);
@@ -2747,7 +2747,7 @@ void amHandleAMO(chpl_comm_on_bundle_t* req) {
                amo->size);
   }
   chpl_amo_datum_t result;
-  size_t resSize = (amo->ofiOp == FI_CSWAP) ? sizeof(chpl_bool32) : amo->size;
+  size_t resSize = amo->size;
   doCpuAMO(amo->obj, &amo->operand1, &amo->operand2, &result,
            amo->ofiOp, amo->ofiType, amo->size);
 
@@ -3742,15 +3742,7 @@ chpl_comm_nb_handle_t ofi_amo(c_nodeid_t node, uint64_t object, uint64_t mrKey,
                               void* result,
                               enum fi_op ofiOp, enum fi_datatype ofiType,
                               size_t size) {
-  //
-  // A wrinkle: for a cmpxchg/CSWAP our caller wants chpl_bool32 true
-  // if the compare&swap succeeded, false otherwise.  But the libfabric
-  // atomic compare returns the previous value of the operand, not T/F.
-  // We have to synthesize the result to be returned to our caller,
-  // based on comparing that previous value to the comparand.
-  //
-  chpl_amo_datum_t ofiCmpRes;
-  void* myRes = (ofiOp == FI_CSWAP) ? &ofiCmpRes : result;
+  void* myRes = result;
   void* mrDescRes = NULL;
   if (myRes != NULL && mrGetDesc(&mrDescRes, myRes, size) != 0) {
     myRes = allocBounceBuf(size);
@@ -3854,14 +3846,7 @@ chpl_comm_nb_handle_t ofi_amo(c_nodeid_t node, uint64_t object, uint64_t mrKey,
     }
   }
 
-  tciFree(tcip);
-
-  if (ofiOp == FI_CSWAP) {
-    *(chpl_bool32*) result = (memcmp(myRes, operand1, size) == 0);
-    if (myRes != &ofiCmpRes) {
-      freeBounceBuf(myRes);
-    }
-  } else if (result != NULL) {
+  if (result != NULL) {
     if (myRes != result) {
       memcpy(result, myRes, size);
       freeBounceBuf(myRes);
@@ -3872,7 +3857,7 @@ chpl_comm_nb_handle_t ofi_amo(c_nodeid_t node, uint64_t object, uint64_t mrKey,
     DBG_PRINTF(DBG_AMO,
                "  AMO result: %p is %s",
                result,
-               DBG_VAL(result, (ofiOp == FI_CSWAP) ? FI_INT32 : ofiType));
+               DBG_VAL(result,  ofiType));
   }
 
   if (myOpnd1 != operand1) {
@@ -4179,7 +4164,7 @@ DEFN_CHPL_COMM_ATOMIC_XCHG(real64, FI_DOUBLE, _real64)
 #define DEFN_CHPL_COMM_ATOMIC_CMPXCHG(fnType, ofiType, Type)            \
   void chpl_comm_atomic_cmpxchg_##fnType                                \
          (void* expected, void* desired, c_nodeid_t node, void* object, \
-          chpl_bool32* result, memory_order order,                      \
+          chpl_bool32* result, memory_order succ, memory_order fail,    \
           int ln, int32_t fn) {                                         \
     DBG_PRINTF(DBG_INTERFACE,                                           \
                "chpl_comm_atomic_cmpxchg_%s(%p, %p, %d, %p, %p, "       \
@@ -4188,8 +4173,13 @@ DEFN_CHPL_COMM_ATOMIC_XCHG(real64, FI_DOUBLE, _real64)
                ln, chpl_lookupFilename(fn));                            \
     chpl_comm_diags_verbose_amo("amo cmpxchg", node, ln, fn);           \
     chpl_comm_diags_incr(amo);                                          \
-    doAMO(node, object, expected, desired, result,                      \
+    Type old_value;                                                     \
+    Type old_expected;                                                  \
+    memcpy(&old_expected, expected, sizeof(Type));                      \
+    doAMO(node, object, &old_expected, desired, &old_value,             \
           FI_CSWAP, ofiType, sizeof(Type));                             \
+    *result = (chpl_bool32)(old_value == old_expected);                 \
+    if (!*result) memcpy(expected, &old_value, sizeof(Type));           \
   }
 
 DEFN_CHPL_COMM_ATOMIC_CMPXCHG(int32, FI_INT32, int32_t)
@@ -4496,15 +4486,17 @@ void doCpuAMO(void* obj,
 
   case FI_CSWAP:
     if (size == 4) {
-      *(chpl_bool32*) result =
-        atomic_compare_exchange_strong_uint_least32_t(obj,
-                                                      myOpnd1->u32,
-                                                      myOpnd2->u32);
+      uint32_t myOpnd1Val = myOpnd1->u32;
+      (void) atomic_compare_exchange_strong_uint_least32_t(obj,
+                                                           &myOpnd1Val,
+                                                           myOpnd2->u32);
+      *(uint32_t*) result = myOpnd1Val;
     } else {
-      *(chpl_bool32*) result =
-        atomic_compare_exchange_strong_uint_least64_t(obj,
-                                                      myOpnd1->u64,
-                                                      myOpnd2->u64);
+      uint64_t myOpnd1Val = myOpnd1->u64;
+      (void) atomic_compare_exchange_strong_uint_least64_t(obj,
+                                                           &myOpnd1Val,
+                                                           myOpnd2->u64);
+      *(uint64_t*) result = myOpnd1Val;
     }
     break;
 
