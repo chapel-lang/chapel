@@ -192,7 +192,11 @@ module Itertools {
     }
   }
 
-  enum operations { add, subtract, multiply, divide, logicalAnd, logicalOr }
+
+
+  enum operations { add, subtract, multiply, divide, bitwiseAnd, bitwiseOr, bitwiseXor, bitwiseNot }
+
+
 
   iter accumulate(arg, operation) throws {
 
@@ -221,16 +225,16 @@ module Itertools {
               result /= arg[idx];
 
             when operations.logicalAnd do
-              if result.type != int || result.type != bool then
+              if result.type != int && result.type != bool then
                 throw new owned IllegalArgumentError(
-                  "logical operations supported only with boolean and integer types");
+                  "bitwise operations supported only with boolean and integer types");
               else
                 result &= arg[idx];
 
             when operations.logicalOr do
-              if result.type != int || result.type != bool then
+              if result.type != int && result.type != bool then
                 throw new owned IllegalArgumentError(
-                  "logical operations supported only with boolean and integer types");
+                  "bitwise operations supported only with boolean and integer types");
               else
                 result |= arg[idx];
 
