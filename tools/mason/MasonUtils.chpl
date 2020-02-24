@@ -301,6 +301,12 @@ record VersionInfo {
   }
 }
 
+proc =(ref lhs:VersionInfo, const ref rhs:VersionInfo) {
+  lhs.major = rhs.major;
+  lhs.minor = rhs.minor;
+  lhs.bug   = rhs.bug;
+}
+
 proc >=(a:VersionInfo, b:VersionInfo) : bool {
   return a.cmp(b) >= 0;
 }

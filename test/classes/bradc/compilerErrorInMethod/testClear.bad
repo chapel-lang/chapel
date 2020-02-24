@@ -1,2 +1,2 @@
-testClear.chpl:22: In function 'clear':
-testClear.chpl:23: error: Can't clear a dense domain
+testClear.chpl:26: In function 'clear':
+testClear.chpl:27: error: Can't clear a dense domain

@@ -466,6 +466,8 @@ void resolveSpecifiedReturnType(FnSymbol* fn) {
 *                                                                             *
 ************************************** | *************************************/
 
+static void markTypesWithDefaultInitEqOrAssign(FnSymbol* fn);
+
 void resolveFunction(FnSymbol* fn, CallExpr* forCall) {
   if (fn->isResolved() == false) {
     if (fn->id == breakOnResolveID) {
@@ -520,8 +522,33 @@ void resolveFunction(FnSymbol* fn, CallExpr* forCall) {
       if (forCall != NULL) {
         resolveAlsoParallelIterators(fn, forCall);
       }
+
+      markTypesWithDefaultInitEqOrAssign(fn);
     }
     popInstantiationLimit(fn);
+  }
+}
+
+static void markTypesWithDefaultInitEqOrAssign(FnSymbol* fn) {
+
+  if (fn->name == astrSassign &&
+      fn->numFormals() >= 1) {
+    ArgSymbol* lhs = fn->getFormal(1);
+    Type* t = lhs->getValType();
+    if (fn->hasFlag(FLAG_COMPILER_GENERATED))
+      t->symbol->addFlag(FLAG_TYPE_DEFAULT_ASSIGN);
+    else
+      t->symbol->addFlag(FLAG_TYPE_CUSTOM_ASSIGN);
+  }
+
+  if (fn->name == astrInitEquals &&
+      fn->numFormals() >= 2) {
+    ArgSymbol* lhs = fn->getFormal(2); // 1 is mt
+    Type* t = lhs->getValType();
+    if (fn->hasFlag(FLAG_COMPILER_GENERATED))
+      t->symbol->addFlag(FLAG_TYPE_DEFAULT_INIT_EQUAL);
+    else
+      t->symbol->addFlag(FLAG_TYPE_CUSTOM_INIT_EQUAL);
   }
 }
 
