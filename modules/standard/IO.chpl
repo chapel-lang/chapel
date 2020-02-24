@@ -2165,7 +2165,6 @@ proc channel._ch_ioerror(error:syserr, msg:string) throws {
     }
   }
   try ioerror(error, msg, path, offset);
-  // c_string tmp_path leaked, but ioerror will exit
 }
 
 pragma "no doc"
@@ -2186,7 +2185,6 @@ proc channel._ch_ioerror(errstr:string, msg:string) throws {
     }
   }
   try ioerror(errstr, msg, path, offset);
-  // c_string tmp_path leaked, but ioerror will exit
 }
 
 /*
@@ -2745,7 +2743,7 @@ pragma "no doc"
 
 // Read routines for all primitive types.
 private proc _read_text_internal(_channel_internal:qio_channel_ptr_t,
-    out x:?t):syserr where _isIoPrimitiveType(t) {
+    ref x:?t):syserr where _isIoPrimitiveType(t) {
   if isBoolType(t) {
     var err:syserr = ENOERR;
     var got:bool = false;
