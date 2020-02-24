@@ -194,7 +194,7 @@ module Itertools {
 
 
 
-  enum operations { add, subtract, multiply, divide, bitwiseAnd, bitwiseOr, bitwiseXor, bitwiseNot }
+  enum operations { add, subtract, multiply, divide, bitwiseAnd, bitwiseOr, bitwiseXor }
 
 
 
@@ -244,13 +244,6 @@ module Itertools {
                   "bitwise operations supported only with boolean and integer types");
               else
                 result ^= arg[idx];
-
-            when operations.bitwiseNot do
-              if result.type != int && result.type != bool then
-                throw new owned IllegalArgumentError(
-                  "bitwise operations supported only with boolean and integer types");
-              else
-                result ~= arg[idx];
 
             otherwise
               throw new owned IllegalArgumentError(
