@@ -6433,7 +6433,7 @@ DEFINE_CHPL_COMM_ATOMIC_XCHG(real64, swap_64, int_least64_t)
                        amo_cmd_2_nic_op(_c, 1), &old_value, remote_mr); \
           }                                                             \
           *res = (chpl_bool32)(old_value == old_expected);              \
-          memcpy(cmpval, &old_value, sizeof(_t));                       \
+          if (!*res) memcpy(cmpval, &old_value, sizeof(_t));            \
         }
 
 DEFINE_CHPL_COMM_ATOMIC_CMPXCHG(int32, cswap_32, int_least32_t)

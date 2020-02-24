@@ -262,7 +262,7 @@ module Atomics {
       on this {
         var localizedExpected = expected;
         ret = atomic_compare_exchange_strong(_v, localizedExpected, desired, c_memory_order(order), c_memory_order(readableOrder(order)));
-        expected = localizedExpected;
+        if !ret then expected = localizedExpected;
       }
       return ret;
     }
@@ -280,7 +280,7 @@ module Atomics {
       on this {
         var localizedExpected = expected;
         ret = atomic_compare_exchange_weak(_v, localizedExpected, desired, c_memory_order(order), c_memory_order(readableOrder(order)));
-        expected = localizedExpected;
+        if !ret then expected = localizedExpected;
       }
       return ret;
     }
@@ -433,7 +433,7 @@ module Atomics {
       on this {
         var localizedExpected = expected;
         ret = atomic_compare_exchange_strong(_v, localizedExpected, desired, c_memory_order(order), c_memory_order(readableOrder(order)));
-        expected = localizedExpected;
+        if !ret then expected = localizedExpected;
       }
       return ret;
     }
@@ -451,7 +451,7 @@ module Atomics {
       on this {
         var localizedExpected = expected;
         ret = atomic_compare_exchange_weak(_v, localizedExpected, desired, c_memory_order(order), c_memory_order(readableOrder(order)));
-        expected = localizedExpected;
+        if !ret then expected = localizedExpected;
       }
       return ret;
     }

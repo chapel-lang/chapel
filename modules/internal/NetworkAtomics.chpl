@@ -84,7 +84,7 @@ module NetworkAtomics {
       var te = expected:int(64);
       var td = desired:int(64);
       atomic_cmpxchg(te, td, _localeid(), _addr(), ret, c_memory_order(order), c_memory_order(readableOrder(order)));
-      expected = te:bool;
+      if !ret then expected = te:bool;
       return ret:bool;
     }
 
@@ -185,7 +185,7 @@ module NetworkAtomics {
       var ret:bool(32);
       var td = desired;
       atomic_cmpxchg(te, td, _localeid(), _addr(), ret, c_memory_order(order), c_memory_order(readableOrder(order)));
-      expected = te;
+      if !ret then expected = te;
       return ret:bool;
 
     }

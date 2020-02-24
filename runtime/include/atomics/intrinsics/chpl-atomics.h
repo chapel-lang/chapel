@@ -140,7 +140,7 @@ static inline chpl_bool atomic_compare_exchange_strong_explicit_ ## type(atomic_
   chpl_bool ret; \
   old_value = __sync_val_compare_and_swap(obj, old_expected, desired); \
   ret = old_value == old_expected; \
-  *expected = old_value; \
+  if (!ret) *expected = old_value; \
   return ret; \
 } \
 static inline chpl_bool atomic_compare_exchange_strong_ ## type(atomic_ ## type * obj, basetype * expected, basetype desired) { \
@@ -260,7 +260,7 @@ static inline chpl_bool atomic_compare_exchange_strong_explicit_ ## type(atomic_
   memcpy(&desired_as_uint, &desired, sizeof(desired_as_uint)); \
   old_value_as_uint = __sync_val_compare_and_swap(obj, old_expected_as_uint, desired_as_uint); \
   ret = old_value_as_uint == old_expected_as_uint; \
-  memcpy(expected, &old_value_as_uint, sizeof(old_value_as_uint)); \
+  if (!ret) memcpy(expected, &old_value_as_uint, sizeof(old_value_as_uint)); \
   return ret; \
 } \
 static inline chpl_bool atomic_compare_exchange_strong_ ## type(atomic_ ## type * obj, type * expected, type desired) { \
