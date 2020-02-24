@@ -87,6 +87,8 @@ Expr* findLocationIgnoringInternalInlining(Expr* cur) {
     if (inlined == false || preserveInlinedLineNumbers)
       return cur;
 
+    Expr* last = cur;
+
     // Look for a call to that function
     for_SymbolSymExprs(se, curFn) {
       CallExpr* call = toCallExpr(se->parentExpr);
@@ -96,6 +98,10 @@ Expr* findLocationIgnoringInternalInlining(Expr* cur) {
         break;
       }
     }
+
+    // Stop if we didn't find any calls.
+    if (cur == last)
+      return cur;
   }
 
   return cur; // never reached

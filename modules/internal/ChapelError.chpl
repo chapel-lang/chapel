@@ -162,10 +162,12 @@ module ChapelError {
     // This could use a regular array but uses a c_ptr
     // instead to work around order-of-resolution issues
     // with the parallel array initialization code.
+    // The array stores nilable errors so that users can transfer
+    // out of them (e.g. throw one of them).
     pragma "no doc"
     var nErrors: int;
     pragma "no doc"
-    var errorsArray: c_ptr(owned Error);
+    var errorsArray: c_ptr(owned Error?);
 
     pragma "no doc"
     proc init(ref group:chpl_TaskErrors) {
@@ -196,7 +198,7 @@ module ChapelError {
       // (Note, this assumes that owned Error can be zero'd
       //  and that is valid initialization)
       nErrors = n;
-      errorsArray = c_calloc(owned Error, n);
+      errorsArray = c_calloc(owned Error?, n);
 
       // Gather the errors into errorsArray starting at index idx
       var idx = 0;
@@ -209,7 +211,7 @@ module ChapelError {
           errorsArray[idx].retain(cur!);
           idx += 1;
         } else {
-          for e in asTaskErr! {
+          for e in asTaskErr!.these() {
             // e is an owned error
             if e != nil {
               errorsArray[idx] = e;
@@ -225,7 +227,7 @@ module ChapelError {
     /* Create a :class:`TaskErrors` containing only the passed error */
     proc init(err: unmanaged Error) {
       nErrors = 1;
-      errorsArray = c_calloc(owned Error, 1);
+      errorsArray = c_calloc(owned Error?, 1);
       this.complete();
       err._next = nil;
       errorsArray[0].retain(err);
@@ -256,14 +258,20 @@ module ChapelError {
              // Do something with the contained error
            }
 
+       Yields references to ``owned Error?`` so that one of the
+       yielded errors might be re-thrown. Only yields values
+       that are not storing ``nil`` at the time of the call.
      */
-    iter these() ref : owned Error {
-      for i in 0..#nErrors do
-        yield errorsArray[i];
+    iter these() ref : owned Error? {
+      for i in 0..#nErrors {
+        if errorsArray[i] != nil {
+          yield errorsArray[i];
+        }
+      }
     }
 
     /* Returns the first non-nil error contained in this TaskErrors group */
-    proc first() ref : owned Error {
+    proc first() ref : owned Error? {
       var first = 0;
       for i in 0..#nErrors {
         if errorsArray[i] != nil {
@@ -289,7 +297,8 @@ module ChapelError {
       var first:borrowed Error?;
       var last:borrowed Error?;
 
-      for e in these() {
+      for err in these() {
+        var e = err!;
         if minMsg == "" || e.message() < minMsg then
           minMsg = e.message();
         if maxMsg == "" || e.message() > maxMsg then
@@ -300,7 +309,8 @@ module ChapelError {
 
       // Set first and last.
       {
-        for e in these() {
+        for err in these() {
+          var e = err!;
           if e.message() == minMsg {
             if first == nil then
               first = e;
@@ -308,7 +318,8 @@ module ChapelError {
           }
         }
         if minMsg != maxMsg {
-          for e in these() {
+          for err in these() {
+            var e = err!;
             if e.message() == maxMsg {
               last = e;
             }
@@ -329,12 +340,17 @@ module ChapelError {
     /*
        Iterate over those errors contained that are the passed type
        or a subclass of that type.
+
+       Note that this iterator yields values of type ``owned Error?``
+       but only those that are non-nil and have dynamic type ``t``.
      */
-    iter filter(type t) where isSubtype(_to_borrowed(t), borrowed Error) {
+    iter filter(type t) ref : owned Error?
+      where isSubtype(t:borrowed class, borrowed Error) {
+
       for e in these() {
-        var tmp = _to_unmanaged(e):_to_nilable(_to_unmanaged(t));
+        var tmp = (e.borrow():borrowed class?):(t:borrowed class?);
         if tmp then
-          yield _to_nonnil(tmp);
+          yield e;
       }
     }
     pragma "no doc"
@@ -405,6 +421,7 @@ module ChapelError {
   pragma "no doc"
   pragma "insert line file info"
   pragma "always propagate line file info"
+  pragma "ignore transfer errors"
   proc chpl_fix_thrown_error(in err: owned Error): unmanaged Error {
     return chpl_do_fix_thrown_error(err.release());
   }

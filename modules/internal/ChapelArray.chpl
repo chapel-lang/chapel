@@ -3765,6 +3765,7 @@ module ChapelArray {
     return success;
   }
 
+  pragma "ignore transfer errors"
   inline proc chpl__transferArray(ref a: [], const ref b) lifetime a <= b {
     if (a.eltType == b.type ||
         _isPrimitiveType(a.eltType) && _isPrimitiveType(b.type)) {
@@ -4121,6 +4122,7 @@ module ChapelArray {
     return chpl__initCopy_shapeHelp(shape, ir);
   }
 
+  pragma "ignore transfer errors"
   proc chpl__initCopy_shapeHelp(shape: domain, ir: _iteratorRecord)
   {
     // Right now there are two distinct events for each array element:

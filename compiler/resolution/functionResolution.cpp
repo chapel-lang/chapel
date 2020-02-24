@@ -6261,7 +6261,11 @@ FnSymbol* findCopyInitFn(AggregateType* at, const char*& err) {
 
   CallExpr* call = NULL;
 
-  call = new CallExpr(astrInitEquals, gMethodToken, tmpAt, tmpAt);
+  if (at->symbol->hasFlag(FLAG_TUPLE)) {
+    call = new CallExpr("chpl__initCopy", tmpAt);
+  } else {
+    call = new CallExpr(astrInitEquals, gMethodToken, tmpAt, tmpAt);
+  }
 
   FnSymbol* foundFn = resolveUninsertedCall(at, call, false);
   // foundFn's instantiationPoint points to the dummy BlockStmt created by
@@ -6297,7 +6301,13 @@ FnSymbol* findAssignFn(AggregateType* at) {
 FnSymbol* findZeroArgInitFn(AggregateType* at) {
   VarSymbol* tmpAt = newTemp(at);
 
-  CallExpr* call = new CallExpr(astrInit, gMethodToken, tmpAt);
+  CallExpr* call = NULL;
+  if (at->symbol->hasFlag(FLAG_TUPLE)) {
+    call = new CallExpr(astr_defaultOf, at->symbol);
+  } else {
+    call = new CallExpr(astrInit, gMethodToken, tmpAt);
+  }
+
   FnSymbol* foundFn = resolveUninsertedCall(at, call, false);
   FnSymbol* resolvedFn = fixInstantiationPointAndTryResolveBody(at, call);
   FnSymbol* ret = NULL;
@@ -8100,7 +8110,8 @@ static void resolveExprMaybeIssueError(CallExpr* call) {
           FnSymbol*     fn     = frame->getFunction();
           bool inCopyIsh = fn->hasFlag(FLAG_INIT_COPY_FN) ||
                            fn->hasFlag(FLAG_AUTO_COPY_FN) ||
-                           fn->hasFlag(FLAG_UNALIAS_FN);
+                           fn->hasFlag(FLAG_UNALIAS_FN) ||
+                           fn->name == astrInitEquals;
           if (inCopyIsh) {
             fn->addFlag(FLAG_ERRONEOUS_COPY);
             tryResolveErrors[fn] = std::make_pair(from,str);
@@ -9745,6 +9756,10 @@ static void errorIfNonNilableType(CallExpr* call, Symbol* val,
   bool unsafe = call->getFunction()->hasFlag(FLAG_UNSAFE) ||
                 call->getModule()->hasFlag(FLAG_UNSAFE);
   if (unsafe)
+    return;
+
+  // If the variable is explicitly not initialized, don't worry
+  if (val->hasFlag(FLAG_NO_INIT))
     return;
 
   // Allow default-init assign to work around current compiler oddities.

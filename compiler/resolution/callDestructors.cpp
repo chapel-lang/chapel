@@ -1159,6 +1159,38 @@ static void checkForErroneousInitCopies() {
       }
     }
   }
+
+  //
+  // Mark functions that are only called by FLAG_ERRONEOUS_COPY fns
+  // with the same flag as well (to avoid errors on these in some cases).
+  // These will generally be removed by the prune pass.
+  do {
+    changed = false;
+    forv_Vec(FnSymbol, fn, gFnSymbols) {
+      if (fn->hasFlag(FLAG_ERRONEOUS_COPY)) {
+        // do nothing
+      } else {
+        // check if all calls are inside FLAG_ERRONEOUS_COPY fns
+        bool allMentionsInErroneousFns = true;
+        bool anyMentionsInErroneousFns = false;
+        for_SymbolSymExprs(se, fn) {
+          if (FnSymbol* inFn = se->getFunction()) {
+            if (inFn->hasFlag(FLAG_ERRONEOUS_COPY)) {
+              anyMentionsInErroneousFns = true;
+              // continue to make sure they all are
+            } else {
+              allMentionsInErroneousFns = false;
+              break;
+            }
+          }
+        }
+        if (anyMentionsInErroneousFns && allMentionsInErroneousFns) {
+          fn->addFlag(FLAG_ERRONEOUS_COPY);
+          changed = true;
+        }
+      }
+    }
+  } while(changed);
 }
 
 /*
@@ -1278,6 +1310,8 @@ void callDestructors() {
   insertGlobalAutoDestroyCalls();
 
   checkForErroneousInitCopies();
+
+  findNonNilableStoringNil();
 
   convertClassTypesToCanonical();
 

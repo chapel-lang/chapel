@@ -103,6 +103,9 @@ proc main() {
   // non-nilable owned cannot generally be copied / assigned 
   checkNo(owned C, ownedC);
 
+  var tup = ("a", "b", "c");
+  checkNormal((string, string, string), tup);
+
   delete unmanagedCQ;
   delete unmanagedC;
 }

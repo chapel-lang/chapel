@@ -310,13 +310,28 @@ module SharedObject {
         compilerError("Assigning non-nilable shared to nil");
     }
 
+    pragma "no doc"
+    proc ref doClear() {
+      if chpl_p != nil && chpl_pn != nil {
+        var count = chpl_pn!.release();
+        if count == 0 {
+          delete _to_unmanaged(chpl_p);
+          delete chpl_pn;
+        }
+      }
+      chpl_p = nil;
+      chpl_pn = nil;
+    }
+
     /*
        The deinitializer for :record:`shared` will destroy the class
        instance once there are no longer any copies of this
        :record:`shared` that refer to it.
      */
     proc deinit() {
-      clear();
+      if isClass(chpl_p) { // otherwise, let error happen on init call
+        doClear();
+      }
     }
 
     /*
@@ -346,17 +361,7 @@ module SharedObject {
      */
     pragma "leaves this nil"
     proc ref clear() {
-      if isClass(chpl_p) { // otherwise, let error happen on init call
-        if chpl_p != nil && chpl_pn != nil {
-          var count = chpl_pn!.release();
-          if count == 0 {
-            delete _to_unmanaged(chpl_p);
-            delete chpl_pn;
-          }
-        }
-        chpl_p = nil;
-        chpl_pn = nil;
-      }
+      doClear();
     }
 
     /*
@@ -395,7 +400,7 @@ module SharedObject {
     // retain-release
     if rhs.chpl_pn != nil then
       rhs.chpl_pn!.retain();
-    lhs.clear();
+    lhs.doClear();
     lhs.chpl_p = rhs.chpl_p;
     lhs.chpl_pn = rhs.chpl_pn;
   }
@@ -414,7 +419,7 @@ module SharedObject {
   }
 
   pragma "no doc"
-  proc =(ref lhs:shared, rhs:_nilType)
+  proc =(pragma "leaves arg nil" ref lhs:shared, rhs:_nilType)
     where ! isNonNilableClass(lhs)
   {
     lhs.clear();

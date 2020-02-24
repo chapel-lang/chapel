@@ -165,6 +165,9 @@ module List {
       :type parSafe: `param bool`
     */
     proc init(other: list(?t), param parSafe=false) {
+      if !isCopyableType(this.type.eltType) then
+        compilerError("Cannot copy list with element type that cannot be copied");
+
       this.eltType = t;
       this.parSafe = parSafe;
       this.complete();
@@ -183,6 +186,9 @@ module List {
       :type parSafe: `param bool`
     */
     proc init(other: [?d] ?t, param parSafe=false) {
+      if !isCopyableType(t) then
+        compilerError("Cannot construct list from array with element type that cannot be copied");
+
       this.eltType = t;
       this.parSafe = parSafe;
       this.complete();
@@ -227,6 +233,9 @@ module List {
       :arg other: The list to initialize from.
     */
     proc init=(other: list(this.type.eltType, ?p)) {
+      if !isCopyableType(this.type.eltType) then
+        compilerError("Cannot copy list with element type that cannot be copied");
+
       this.eltType = this.type.eltType;
       this.parSafe = this.type.parSafe;
       this.complete();
@@ -240,6 +249,9 @@ module List {
       :arg other: The array to initialize from.
     */
     proc init=(other: [?d] this.type.eltType) {
+      if !isCopyableType(this.type.eltType) then
+        compilerError("Cannot copy list from array with element type that cannot be copied");
+
       this.eltType = this.type.eltType;
       this.parSafe = this.type.parSafe;
       this.complete();
@@ -989,9 +1001,11 @@ module List {
       }
 
       ref item = _getRef(idx);
-      var result = item;
 
-      _destroy(item);
+      pragma "no init"
+      var result:eltType;
+      _move(item, result);
+
       // May release memory based on size before pop.
       _collapse(idx);
       _size -= 1;
