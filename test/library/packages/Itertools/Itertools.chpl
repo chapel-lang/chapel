@@ -192,4 +192,56 @@ module Itertools {
     }
   }
 
+  enum operations { add, subtract, multiply, divide, logicalAnd, logicalOr }
+
+  iter accumulate(arg, operation) throws {
+
+    if !isArray(arg) then
+      throw new owned IllegalArgumentError(
+        "expected an array as argument");
+    else {
+      var result = arg[1];
+
+      for idx in arg.domain do
+        if idx == 1 then
+          yield result;
+        else {
+          select operation {
+
+            when operations.add do
+              result += arg[idx];
+
+            when operations.subtract do
+              result -= arg[idx];
+
+            when operations.multiply do
+              result *= arg[idx];
+
+            when operations.divide do
+              result /= arg[idx];
+
+            when operations.logicalAnd do
+              if result.type != int || result.type != bool then
+                throw new owned IllegalArgumentError(
+                  "logical operations supported only with boolean and integer types");
+              else
+                result &= arg[idx];
+
+            when operations.logicalOr do
+              if result.type != int || result.type != bool then
+                throw new owned IllegalArgumentError(
+                  "logical operations supported only with boolean and integer types");
+              else
+                result |= arg[idx];
+
+            otherwise
+              throw new owned IllegalArgumentError(
+                "invalid operation");
+          }
+
+          yield result;
+        }
+    }
+  }
+
 } // end module
