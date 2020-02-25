@@ -1568,7 +1568,7 @@ proc file.path : string throws {
     chpl_free_c_string(tmp);
     if !err {
       ret = createStringWithNewBuffer(tmp2,
-                                      errors=decodePolicy.escape);
+                                      policy=decodePolicy.escape);
     }
     chpl_free_c_string(tmp2);
   }
@@ -1670,7 +1670,7 @@ proc open(path:string, mode:iomode, hints:iohints=IOHINT_NONE,
     try ioerror(ENOENT:syserr, "in open: path is the empty string");
 
   error = qio_file_open_access(ret._file_internal,
-                               path.encode(errors=encodePolicy.unescape).c_str(),
+                               path.encode(policy=encodePolicy.unescape).c_str(),
                                _modestring(mode).c_str(), hints, local_style);
   if error then
     try ioerror(error, "in open", path);
@@ -1724,7 +1724,7 @@ proc openplugin(pluginFile: QioPluginFile, mode:iomode,
       } else {
         // doesn't throw with decodePolicy.replace
         path = createStringWithNewBuffer(str, len,
-                                         errors=decodePolicy.replace);
+                                         policy=decodePolicy.replace);
       }
     }
 
@@ -1779,7 +1779,7 @@ proc openfd(fd: fd_t, hints:iohints=IOHINT_NONE, style:iostyle = defaultIOStyle(
     var path_err = qio_file_path_for_fd(fd, path_cs);
     var path = if path_err then "unknown"
                            else createStringWithNewBuffer(path_cs,
-                                                          errors=decodePolicy.replace);
+                                                          policy=decodePolicy.replace);
     try ioerror(err, "in openfd", path);
   }
   return ret;
@@ -1822,7 +1822,7 @@ proc openfp(fp: _file, hints:iohints=IOHINT_NONE, style:iostyle = defaultIOStyle
     var path_err = qio_file_path_for_fp(fp, path_cs);
     var path = if path_err then "unknown"
                            else createStringWithNewBuffer(path_cs,
-                                                          errors=decodePolicy.replace);
+                                                          policy=decodePolicy.replace);
     chpl_free_c_string(path_cs);
     try ioerror(err, "in openfp", path);
   }
@@ -2152,7 +2152,7 @@ proc channel._ch_ioerror(error:syserr, msg:string) throws {
     if !err {
       // shouldn't throw
       path = createStringWithNewBuffer(tmp_path,
-                                       errors=decodePolicy.replace);
+                                       policy=decodePolicy.replace);
       chpl_free_c_string(tmp_path);
       offset = tmp_offset;
     }
@@ -2172,7 +2172,7 @@ proc channel._ch_ioerror(errstr:string, msg:string) throws {
     if !err {
       // shouldn't throw
       path = createStringWithNewBuffer(tmp_path,
-                                       errors=decodePolicy.replace);
+                                       policy=decodePolicy.replace);
       chpl_free_c_string(tmp_path);
       offset = tmp_offset;
     }
@@ -3486,7 +3486,7 @@ proc stringify(const args ...?k):string {
         //decodePolicy.replace never throws
         try! {
           str += createStringWithNewBuffer(args[i],
-                                           errors=decodePolicy.replace);
+                                           policy=decodePolicy.replace);
         }
       } else if args[i].type == bytes {
         //decodePolicy.replace never throws

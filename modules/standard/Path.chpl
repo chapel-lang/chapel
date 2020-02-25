@@ -82,7 +82,7 @@ const pathSep = "/";
    c_string to pass to extern file system operations.
 */
 private inline proc unescape(str: string) {
-  return str.encode(errors=encodePolicy.unescape);
+  return str.encode(policy=encodePolicy.unescape);
 }
 
 /*
@@ -369,7 +369,7 @@ proc dirname(name: string): string {
            } else {
              try! {
                value = createStringWithNewBuffer(value_c,
-                                                 errors=decodePolicy.escape);
+                                                 policy=decodePolicy.escape);
              }
            }
            res += value;
@@ -390,7 +390,7 @@ proc dirname(name: string): string {
          } else {
            try! {
              value = createStringWithNewBuffer(value_c,
-                                               errors=decodePolicy.escape);
+                                               policy=decodePolicy.escape);
            }
          }
          res += value;
@@ -592,7 +592,7 @@ proc realPath(name: string): string throws {
   var res: c_string;
   var err = chpl_fs_realpath(unescape(name).c_str(), res);
   if err then try ioerror(err, "realPath", name);
-  const ret = createStringWithNewBuffer(res, errors=decodePolicy.escape);
+  const ret = createStringWithNewBuffer(res, policy=decodePolicy.escape);
   // res was qio_malloc'd by chpl_fs_realpath, so free it here
   chpl_free_c_string(res);
   return ret; 
