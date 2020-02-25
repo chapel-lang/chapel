@@ -120,6 +120,7 @@ proc test5() {
 test5();
 
 proc outGenericArray1(out arr) {
+  writeln(arr.domain);
 }
 
 proc test6() {
@@ -129,6 +130,15 @@ proc test6() {
   writeln(AA);
 }
 test6();
+
+proc test6a() {
+  writeln("test6a");
+  var AA:[1..1] R;
+  writeln(AA.domain, " ", AA);
+  outGenericArray1(AA);
+  writeln(AA);
+}
+test6a();
 
 proc outGenericArray2(out arr) {
   var B:[1..1] R;

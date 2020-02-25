@@ -914,11 +914,21 @@ bool AddOutIntentTypeArgs::enterCallExpr(CallExpr* call) {
         INT_ASSERT(prevFormal->hasFlag(FLAG_TYPE_FORMAL_FOR_OUT));
 
         SymExpr* typeSe = toSymExpr(prevActual);
-        VarSymbol* dummyTypeVar = toVarSymbol(typeSe->symbol());
+        VarSymbol* typeVar = toVarSymbol(typeSe->symbol());
         SymExpr* actualSe = toSymExpr(actual);
         Symbol* actualSym = actualSe->symbol();
 
-        if (dummyTypeVar->hasFlag(FLAG_TYPE_FORMAL_FOR_OUT)) {
+        if (typeVar->hasFlag(FLAG_TYPE_FORMAL_FOR_OUT)) {
+          // Handle two different patterns that need adjustment
+          // in order to pass a runtime type for an untyped out formal.
+          //
+          // This happens here so that split-init can occur
+          // without a formalTmp.type call prohibiting it.
+          // Also, if split-init is applied to the out-intent argument,
+          // the resulting variable shouldn't be default-initialized at
+          // all, so we need to get the type for the argument another way.
+          //
+          // 1.
           // Convert this pattern of code:
           //   def dummyTypeTmp
           //   outFn(dummyTypeTmp, formalTmp)
@@ -927,23 +937,56 @@ bool AddOutIntentTypeArgs::enterCallExpr(CallExpr* call) {
           //   (def removed)
           //   outFn(coerceTypeTmp, formalTmp)
           //   move coerce_tmp, formalTmp
+          //
+          // 2.
+          // Convert this pattern of code:
+          //   def dummyTypeTmp
+          //   outFn(dummyTypeTmp, formalTmp)
+          //   call '=' otherVariable, formalTmp
+          // into this
+          //   def dummyTypeTmp
+          //   dummyTypeTemp = otherVariable.type
+          //   outFn(dummyTypeTmp, formalTmp)
+          //   call '=' otherVariable, formalTmp
+
+          SET_LINENO(call);
 
           SymExpr* singleUse = actualSym->getSingleUse();
           INT_ASSERT(singleUse);
-          CallExpr* coerceCall = toCallExpr(singleUse->parentExpr);
-          INT_ASSERT(coerceCall && coerceCall->isPrimitive(PRIM_COERCE));
-          CallExpr* moveCall = toCallExpr(coerceCall->parentExpr);
-          INT_ASSERT(moveCall && (moveCall->isPrimitive(PRIM_MOVE) ||
-                                  moveCall->isPrimitive(PRIM_ASSIGN)));
+          CallExpr* usingCall = toCallExpr(singleUse->parentExpr);
+          INT_ASSERT(usingCall);
 
-          SymExpr* coerceType = toSymExpr(coerceCall->get(2));
-          INT_ASSERT(coerceType);
-          typeSe->setSymbol(coerceType->symbol());
-          dummyTypeVar->defPoint->remove();
-          coerceCall->replace(new SymExpr(actualSym));
+          if (usingCall->isPrimitive(PRIM_COERCE)) {
+            // case 1
+            INT_ASSERT(usingCall && usingCall->isPrimitive(PRIM_COERCE));
+            CallExpr* moveCall = toCallExpr(usingCall->parentExpr);
+            INT_ASSERT(moveCall && (moveCall->isPrimitive(PRIM_MOVE) ||
+                                    moveCall->isPrimitive(PRIM_ASSIGN)));
 
-          // Don't destroy the formal temp on the way into the coerce_tmp
-          actualSym->addFlag(FLAG_NO_AUTO_DESTROY);
+            SymExpr* coerceType = toSymExpr(usingCall->get(2));
+            INT_ASSERT(coerceType);
+            typeSe->setSymbol(coerceType->symbol());
+            typeVar->defPoint->remove();
+            usingCall->replace(new SymExpr(actualSym));
+
+            // Don't destroy the formal temp on the way into the coerce_tmp
+            actualSym->addFlag(FLAG_NO_AUTO_DESTROY);
+          } else {
+            // case 2
+            FnSymbol* fn = usingCall->resolvedFunction();
+            INT_ASSERT(fn && fn->hasFlag(FLAG_ASSIGNOP));
+
+            SymExpr* lhsSe = toSymExpr(usingCall->get(1));
+            Symbol* lhs = lhsSe->symbol();
+
+            BlockStmt* block = new BlockStmt(BLOCK_TYPE);
+            CallExpr* m = new CallExpr(PRIM_MOVE, typeVar,
+                                       new CallExpr(PRIM_TYPEOF, lhs));
+            block->insertAtTail(m);
+            call->insertBefore(block);
+            resolveBlockStmt(block);
+            block->flattenAndRemove();
+          }
           changed = true;
         }
       }

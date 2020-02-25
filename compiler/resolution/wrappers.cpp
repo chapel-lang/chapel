@@ -1719,7 +1719,7 @@ static void handleOutIntents(FnSymbol* fn, CallInfo& info) {
       Type* formalType = formal->type->getValType();
       if (formal->typeExpr == NULL &&
           formalType->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE)) {
-        const char* dummyName = astr("_dummy_formal_type_tmp_", formal->name);
+        const char* dummyName = astr("_formal_type_tmp_", formal->name);
         VarSymbol* typeTmp = newTemp(dummyName, formalType);
         typeTmp->addFlag(FLAG_MAYBE_TYPE);
         typeTmp->addFlag(FLAG_TYPE_FORMAL_FOR_OUT);

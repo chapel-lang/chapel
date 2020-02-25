@@ -37,6 +37,16 @@ init (default)
 deinit 0 0
 test6
 init (default)
+{1..1}
+(x = 0, ptr = {xx = 0})
+deinit 0 0
+test6a
+init (default)
+{1..1} (x = 0, ptr = {xx = 0})
+init (default)
+{1..1}
+lhs(0 0) = rhs(0 0)
+deinit 0 0
 (x = 0, ptr = {xx = 0})
 deinit 0 0
 test7
