@@ -704,9 +704,9 @@ module String {
     :returns: A new `string`
   */
   inline proc createStringWithNewBuffer(x: c_string, length=x.size,
-                                        errors=decodePolicy.strict) throws {
+                                        policy=decodePolicy.strict) throws {
     return createStringWithNewBuffer(x: bufferType, length=length,
-                                     size=length+1, errors);
+                                     size=length+1, policy);
   }
 
   pragma "last resort"
@@ -736,7 +736,7 @@ module String {
   // consistence? Then, we can at least give it a default like length+1
   inline proc createStringWithNewBuffer(x: bufferType,
                                         length: int, size=length+1,
-                                        errors=decodePolicy.strict) throws {
+                                        policy=decodePolicy.strict) throws {
     return decodeByteBuffer(x, length, errors);
   }
 
@@ -744,7 +744,7 @@ module String {
   pragma "no doc"
   inline proc createStringWithNewBuffer(s: bufferType,
                                         length: int, size=length+1,
-                                        errors=decodePolicy.strict) throws {
+                                        policy=decodePolicy.strict) throws {
     stringFactoryArgDepr();
     return createStringWithNewBuffer(x=s, length, size, errors);
   }
@@ -978,19 +978,19 @@ module String {
 
     /*
       Returns a :record:`~Bytes.bytes` from the given :record:`string`. If the
-      string contains some escaped non-UTF8 bytes, `errors` argument determines
+      string contains some escaped non-UTF8 bytes, `policy` argument determines
       the action.
         
-      :arg errors: `encodePolicy.pass` directly copies the (potentially escaped)
+      :arg policy: `encodePolicy.pass` directly copies the (potentially escaped)
                     data, `encodePolicy.unescape` recovers the escaped bytes
                     back.
 
       :returns: :record:`~Bytes.bytes`
     */
-    proc encode(errors=encodePolicy.pass): bytes {
+    proc encode(policy=encodePolicy.pass): bytes {
       var localThis: string = this.localize();
 
-      if errors == encodePolicy.pass {  // just copy
+      if policy == encodePolicy.pass {  // just copy
         return createBytesWithNewBuffer(localThis.buff, localThis.numBytes);
       }
       else {  // see if there is escaped data in the string
