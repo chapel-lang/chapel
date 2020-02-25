@@ -10243,14 +10243,6 @@ static bool primInitIsUnacceptableGeneric(CallExpr* call, Type* type) {
   if (!type->symbol->hasFlag(FLAG_GENERIC))
     return false;
 
-  if (isRecord(type) &&
-      type->symbol->hasFlag(FLAG_SYNC) == false &&
-      type->symbol->hasFlag(FLAG_SINGLE) == false &&
-      type->symbol->hasFlag(FLAG_TUPLE) == false &&
-      type->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE) == false) {
-    return false;
-  }
-
   bool retval = true;
 
   // If it is generic then try to resolve the default type constructor

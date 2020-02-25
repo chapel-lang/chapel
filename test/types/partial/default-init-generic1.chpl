@@ -1,4 +1,3 @@
-
 record R {
   type T;
   param n : int;
@@ -20,16 +19,12 @@ record S {
 }
 
 proc main() {
-  var x : range(?);
-  writeln(x.type:string, ": ", x);
+  var D : S;
+  writeln(D.type:string, ": ", D);
 
   var A : R;
   writeln(A.type:string, ": ", A);
-  var B : R(real);
-  writeln(B.type:string, ": ", B);
-  var C : R(n=3);
-  writeln(C.type:string, ": ", C);
-
-  var D : S;
-  writeln(D.type:string, ": ", D);
+  
+  var x : range(?);
+  writeln(x.type:string, ": ", x);
 }
