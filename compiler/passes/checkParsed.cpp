@@ -41,6 +41,8 @@ static void nestedName(ModuleSymbol* mod);
 static void checkModule(ModuleSymbol* mod);
 static void checkRecordInheritance(AggregateType* at);
 static void setupForCheckExplicitDeinitCalls();
+static void warnUnstableUnions(AggregateType* at);
+static void warnUnstableLeadingUnderscores();
 
 void
 checkParsed() {
@@ -128,7 +130,11 @@ checkParsed() {
 
   forv_Vec(AggregateType, at, gAggregateTypes) {
     checkRecordInheritance(at);
+
+    warnUnstableUnions(at);
   }
+
+  warnUnstableLeadingUnderscores();
 
   checkExportedNames();
 
@@ -512,5 +518,26 @@ checkExportedNames()
     if (names.get(name))
       USR_FATAL_CONT(fn, "The name %s cannot be exported twice from the same compilation unit.", name);
     names.put(name, true);
+  }
+}
+
+static void warnUnstableUnions(AggregateType* at) {
+  if (fWarnUnstable && at->isUnion()) {
+    USR_WARN(at, "Unions are currently unstable and are expected to change in ways that will break their current uses.");
+  }
+}
+
+static void warnUnstableLeadingUnderscores() {
+  if (fWarnUnstable) {
+    forv_Vec(DefExpr, def, gDefExprs) {
+      const char* name = def->name();
+      
+      if (name && name[0] == '_' &&
+          def->getModule()->modTag == MOD_USER &&
+          !def->sym->hasFlag(FLAG_TEMP)) {
+        USR_WARN(def,
+                 "Symbol names with leading underscores (%s) are unstable.", name);
+      }
+    }
   }
 }
