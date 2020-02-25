@@ -447,6 +447,7 @@ static void walkBlockWithScope(AutoDestroyScope& scope,
           case GOTO_BREAK:
           case GOTO_ERROR_HANDLING:
           case GOTO_BREAK_ERROR_HANDLING:
+          case GOTO_ERROR_HANDLING_RETURN:
             scope.insertAutoDestroys(fn, stmt, ignoredVariables);
             break;
 

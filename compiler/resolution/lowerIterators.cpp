@@ -1653,6 +1653,7 @@ fixupErrorHandlingExits(BlockStmt* body, bool& adjustCaller) {
 
     if (g->gotoTag == GOTO_ERROR_HANDLING ||
         g->gotoTag == GOTO_BREAK_ERROR_HANDLING ||
+        g->gotoTag == GOTO_ERROR_HANDLING_RETURN ||
         g->gotoTag == GOTO_RETURN) {
       // Does the target of this Goto exist within the same function?
       LabelSymbol* target = g->gotoTarget();
