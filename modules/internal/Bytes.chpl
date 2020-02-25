@@ -1081,6 +1081,20 @@ module Bytes {
       return decodeByteBuffer(localThis.buff, localThis.len, errors);
     }
 
+    // just to capture the deprecated decodePolicy.ignore and give a compiler
+    // warning
+    pragma "no doc"
+    proc decode(param errors=decodePolicy.strict): string throws {
+      if errors == decodePolicy.ignore then
+        compilerWarning("decodePolicy.ignore is deprecated. ",
+                        "Use decodePolicy.drop instead");
+
+      // have to repeat this as above to avoid recursion. That's the cleanest
+      // way I could think of.
+      var localThis: bytes = this.localize();
+      return decodeByteBuffer(localThis.buff, localThis.len, errors);
+    }
+
     /*
      Checks if all the characters in the :record:`bytes` are uppercase (A-Z) in
      ASCII.  Ignores uncased (not a letter) and extended ASCII characters
