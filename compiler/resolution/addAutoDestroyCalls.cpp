@@ -404,6 +404,10 @@ static void walkBlock(FnSymbol*         fn,
   if (pfs != NULL)
     addForallIndexVarToScope(&scope, pfs);
 
+  if (block == fn->body) {
+    scope.addFormalTemps();
+  }
+
   walkBlockWithScope(scope, fn, block, ignoredVariables, lmm);
 }
 
@@ -681,7 +685,8 @@ static bool shouldDestroyOnLastMention(VarSymbol* var) {
          isAutoDestroyedVariable(var) &&
          // forall statement exception avoids certain variables
          // within forall statements such as fRecIterIRdef.
-         !isForallStmt(var->defPoint->parentExpr);
+         !isForallStmt(var->defPoint->parentExpr) &&
+         !var->hasFlag(FLAG_FORMAL_TEMP);
 }
 
 bool ComputeLastSymExpr::enterCallExpr(CallExpr* node) {
