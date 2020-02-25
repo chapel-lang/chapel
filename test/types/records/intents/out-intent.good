@@ -163,6 +163,36 @@ test20p
 init (default)
 (x = 0, ptr = {xx = 0})
 deinit 0 0
+test21
+init (default)
+(x = 0, ptr = {xx = 0})
+deinit 0 0
+test21a
+init (default)
+(x = 0, ptr = {xx = 0})
+deinit 0 0
+test22
+init (default)
+deinit 0 0
+Error: 
+test23
+init 1 1
+(x = 1, ptr = {xx = 1})
+deinit 1 1
+test23a
+init 1 1
+(x = 1, ptr = {xx = 1})
+deinit 1 1
+test24
+init (default)
+deinit 0 0
+Error: 
+test25
+Error: 
+test26
+init 1 1
+(x = 1, ptr = {xx = 1})
+deinit 1 1
 
 =================================================================================================================
 Allocated Memory (Bytes)         Number   Size     Total    Description                      Address             

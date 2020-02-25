@@ -409,3 +409,94 @@ proc test20p() {
   writeln(x);
 }
 test20p();
+
+proc outThrows1(out arg: R) throws {
+}
+
+proc test21() throws {
+  writeln("test21");
+  var x: R;
+  outThrows1(x);
+  writeln(x);
+}
+try { test21(); } catch e { writeln(e); }
+
+proc test21a() {
+  writeln("test21a");
+  var x: R;
+  try! outThrows1(x);
+  writeln(x);
+}
+test21a();
+
+proc outThrows2(out arg: R) throws {
+  throw new Error();
+}
+
+proc test22() throws {
+  writeln("test22");
+  var x: R;
+  outThrows2(x);
+  writeln(x);
+}
+try { test22(); } catch e { writeln(e); }
+
+proc outThrows3(out arg: R) throws {
+  arg = makeR(1);
+}
+
+proc test23() throws {
+  writeln("test23");
+  var x: R;
+  outThrows3(x);
+  writeln(x);
+}
+try { test23(); } catch e { writeln(e); }
+
+proc test23a() {
+  writeln("test23a");
+  var x: R;
+  try! outThrows3(x);
+  writeln(x);
+}
+test23a();
+
+
+proc outThrows4(out arg: R) throws {
+  throw new Error();
+  arg = makeR(1);
+}
+
+proc test24() throws {
+  writeln("test24");
+  var x: R;
+  outThrows4(x);
+  writeln(x);
+}
+try { test24(); } catch e { writeln(e); }
+
+proc outThrows5(out arg: R) throws {
+  if option then throw new Error();
+  arg = makeR(1);
+}
+
+proc test25() throws {
+  writeln("test25");
+  var x: R;
+  outThrows5(x);
+  writeln(x);
+}
+try { test25(); } catch e { writeln(e); }
+
+proc outThrows6(out arg: R) throws {
+  if !option then throw new Error();
+  arg = makeR(1);
+}
+
+proc test26() throws {
+  writeln("test26");
+  var x: R;
+  outThrows6(x);
+  writeln(x);
+}
+try { test26(); } catch e { writeln(e); }
