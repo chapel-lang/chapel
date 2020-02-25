@@ -130,7 +130,7 @@ module BytesCasts {
 
       // remove underscores everywhere but the first position
       if localX.length >= 2 then
-        localX = localX[1] + localX[2..].replace(b"_", b"");
+        localX = localX.item(1) + localX[2..].replace(b"_", b"");
     }
 
     if localX.isEmpty() then
@@ -207,8 +207,8 @@ module BytesCasts {
     if len >= 2 && s[2..].find(b"_") != 0 {
       // Don't remove a leading underscore in the string number,
       // but remove the rest.
-      if len > 2 && s[1] == b"_" {
-        s = s[1] + s[2..].replace(b"_", b"");
+      if len > 2 && s.item(1) == b"_" {
+        s = s.item(1) + s[2..].replace(b"_", b"");
       } else {
         s = s.replace(b"_", b"");
       }

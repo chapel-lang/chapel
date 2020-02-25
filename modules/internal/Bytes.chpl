@@ -416,13 +416,13 @@ module Bytes {
     }
 
     /*
-      Gets a byte from the :record:`bytes`
+      Gets an ASCII character from the :record:`bytes`
 
       :arg i: The index
 
       :returns: A 1-length :record:`bytes` 
      */
-    proc this(i: int): bytes {
+    proc item(i: int): bytes {
       if boundsChecking && (i <= 0 || i > this.len)
         then halt("index out of bounds of bytes: ", i);
       var (buf, size) = bufferCopy(buf=this.buff, off=i-1, len=1,
@@ -433,9 +433,29 @@ module Bytes {
     // byteIndex overload provides a nicer interface for string/bytes
     // generic programming
     pragma "no doc"
-    proc this(i: byteIndex): bytes {
-      return this[i:int];
+    proc item(i: byteIndex): bytes {
+      return this.item(i:int);
     }
+
+    /*
+      Gets a byte from the :record:`bytes`
+
+      :arg i: The index
+
+      :returns: uint(8)
+     */
+    proc this(i: int): byteType {
+      return this.byte(i);
+    }
+
+    // byteIndex overload provides a nicer interface for string/bytes
+    // generic programming
+    pragma "no doc"
+    proc this(i: byteIndex): byteType {
+      return this.byte(i:int);
+    }
+
+
 
     /*
       :returns: The value of a single-byte :record:`bytes` as an integer.
@@ -476,14 +496,24 @@ module Bytes {
     }
 
     /*
-      Iterates over the :record:`bytes`
+      Iterates over the :record:`bytes`, yielding ASCII characters.
 
       :yields: 1-length :record:`bytes`
      */
-    iter these(): bytes {
+    iter items(): bytes {
       if this.isEmpty() then return;
       for i in 1..this.len do
-        yield this[i];
+        yield this.item[i];
+    }
+
+    /*
+      Iterates over the :record:`bytes`
+
+      :yields: uint(8)
+     */
+    iter these(): byteType {
+      for i in this.bytes() do
+        yield i;
     }
 
     /*

@@ -960,7 +960,7 @@ module String {
         c
         d
      */
-    iter these() : string {
+    iter items() : string {
       var localThis: string = this.localize();
 
       var i = 0;
@@ -978,6 +978,32 @@ module String {
 
         i += nBytes;
       }
+    }
+
+
+    /*
+      Iterates over the string character by character, yielding 1-codepoint
+      strings. (A synonym for :iter:`items`)
+
+      For example:
+
+      .. code-block:: chapel
+
+        var str = "abcd";
+        for c in str {
+          writeln(c);
+        }
+
+      Output::
+
+        a
+        b
+        c
+        d
+     */
+    iter these() : string {
+      for c in this.items() do
+        yield c;
     }
 
     /*
@@ -1153,12 +1179,32 @@ module String {
     }
 
     /*
-      Return the `i` th codepoint in the string
+      Return the `i` th codepoint in the string. (A synonym for :proc:`item`)
 
       :returns: A string with the complete multibyte character starting at the
                 specified codepoint index from ``1..string.numCodepoints``
      */
     proc this(i: codepointIndex) : string {
+      return this.item(i);
+    }
+
+    /*
+      Return the `i` th codepoint in the string. (A synonym for :proc:`item`)
+
+      :returns: A string with the complete multibyte character starting at the
+                specified codepoint index from ``1..string.numCodepoints``
+     */
+    inline proc this(i: int) : string {
+      return this.item(i);
+    }
+
+    /*
+      Return the `i` th codepoint in the string
+
+      :returns: A string with the complete multibyte character starting at the
+                specified codepoint index from ``1..string.numCodepoints``
+     */
+    proc item(i: codepointIndex) : string {
       if this.isEmpty() then return "";
       const idx = i: int;
       return codepointToString(this.codepoint(idx));
@@ -1170,7 +1216,7 @@ module String {
       :returns: A string with the complete multibyte character starting at the
                 specified codepoint index from ``1..string.numCodepoints``
      */
-    inline proc this(i: int) : string {
+    inline proc item(i: int) : string {
       return this[i: codepointIndex];
     }
 
