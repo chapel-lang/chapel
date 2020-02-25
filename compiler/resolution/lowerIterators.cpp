@@ -1834,7 +1834,7 @@ replaceErrorFormalWithEnclosingError(SymExpr* se) {
         }
       }
       se->setSymbol(errorArg);
-      INT_ASSERT(fixGoto->gotoTag == GOTO_RETURN);
+      INT_ASSERT(fixGoto->isGotoReturn());
     } else {
       // Just call gChplUncaughtError
       VarSymbol* tmp = newTemp("error", dtError);
