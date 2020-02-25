@@ -529,25 +529,14 @@ static void warnUnstableUnions(AggregateType* at) {
 
 static void warnUnstableLeadingUnderscores() {
   if (fWarnUnstable) {
-    forv_Vec(VarSymbol, var, gVarSymbols) {
-      if (var->name[0] == '_' &&
-          var->defPoint->getModule()->modTag == MOD_USER &&
-          !var->hasFlag(FLAG_TEMP)) {
-        USR_WARN(var->defPoint,
-                 "Symbol names with leading underscores (%s) are unstable.", var->name);
-      }
-    }
-    forv_Vec(FnSymbol, fn, gFnSymbols) {
-      if (fn->name[0] == '_' &&
-          fn->defPoint->getModule()->modTag == MOD_USER) {
-        USR_WARN(fn->defPoint,
-                 "Symbol names with leading underscores (%s) are unstable.", fn->name);
-      }
-    }
-    forv_Vec(ModuleSymbol, mod, gModuleSymbols) {
-      if (mod->name[0] == '_' && mod->modTag == MOD_USER) {
-        USR_WARN(mod->defPoint,
-                 "Symbol names with leading underscores (%s) are unstable.", mod->name);
+    forv_Vec(DefExpr, def, gDefExprs) {
+      const char* name = def->name();
+      
+      if (name && name[0] == '_' &&
+          def->getModule()->modTag == MOD_USER &&
+          !def->sym->hasFlag(FLAG_TEMP)) {
+        USR_WARN(def,
+                 "Symbol names with leading underscores (%s) are unstable.", name);
       }
     }
   }

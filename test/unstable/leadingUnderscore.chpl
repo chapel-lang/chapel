@@ -7,4 +7,7 @@ module _MyHiddenModule {
     const _____a: int;
     param _____b: int;
   }
+
+  class _Underscore_ {
+  }
 }
