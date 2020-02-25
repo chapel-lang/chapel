@@ -185,7 +185,7 @@ static found_init_t doFindInitPoints(Symbol* sym,
           if (SymExpr* se = checkForUseAfterReturn(sym, call->next)) {
             usePreventingSplitInit = se;
             return FOUND_USE;
-          } else if (allowReturns == false) {
+          } else if (allowReturns == false && call->isPrimitive(PRIM_RETURN)) {
             usePreventingSplitInit = cur;
             return FOUND_USE;
           } else {
@@ -196,11 +196,13 @@ static found_init_t doFindInitPoints(Symbol* sym,
 
     // return
     } else if (GotoStmt* gt = toGotoStmt(cur)) {
-      if (gt->gotoTag == GOTO_RETURN) {
+      bool regularReturn = gt->gotoTag == GOTO_RETURN;
+      bool errorReturn = gt->gotoTag == GOTO_ERROR_HANDLING_RETURN;
+      if (regularReturn || errorReturn) {
         if (SymExpr* se = checkForUseAfterReturn(sym, gt->next)) {
           usePreventingSplitInit = se;
           return FOUND_USE;
-        } else if (allowReturns == false) {
+        } else if (allowReturns == false && regularReturn) {
           usePreventingSplitInit = cur;
           return FOUND_USE;
         } else {
