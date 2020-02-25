@@ -196,6 +196,15 @@ proc test10() {
 }
 test10();
 
+proc test10b() {
+  writeln("test10b");
+  var AA:[1..1] R;
+  writeln(AA); // preventing split init
+  outConcreteArray1(AA);
+  writeln(AA);
+}
+test10b();
+
 proc outConcreteArray2(out arr:[1..1] R) {
   var B:[1..1] R;
   B[1] = makeR(1);

@@ -55,7 +55,7 @@ bool       propagateNotPOD(Type* t);
 
 void       lowerPrimInit(CallExpr* call, Expr* preventingSplitInit);
 void       resolveInitVar(CallExpr* call); // lowers PRIM_INIT_VAR_SPLIT_INIT
-void       fixPrimInits(FnSymbol* fn);
+void       fixPrimInitsAndAddCasts(FnSymbol* fn);
 
 bool       isTupleContainingOnlyReferences(Type* t);
 
@@ -216,7 +216,6 @@ void      makeRefType(Type* type);
 
 // FnSymbol changes
 void      insertFormalTemps(FnSymbol* fn);
-void      insertAndResolveCasts(FnSymbol* fn);
 void      ensureInMethodList(FnSymbol* fn);
 
 

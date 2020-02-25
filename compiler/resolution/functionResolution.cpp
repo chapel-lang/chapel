@@ -9580,8 +9580,11 @@ static void replaceReturnedValuesWithRuntimeTypes()
         VarSymbol* ret = toVarSymbol(fn->getReturnSymbol());
         if (ret && ret->type->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE)) {
           if (FnSymbol* rtfn = valueToRuntimeTypeMap.get(ret->type)) {
-            Type* rt = (rtfn->retType->symbol->hasFlag(FLAG_RUNTIME_TYPE_VALUE)) ?
-                        rtfn->retType : runtimeTypeMap.get(rtfn->retType);
+            Type* rt = NULL;
+            if (rtfn->retType->symbol->hasFlag(FLAG_RUNTIME_TYPE_VALUE))
+              rt = rtfn->retType;
+            else
+              rt = runtimeTypeMap.get(rtfn->retType);
             INT_ASSERT(rt);
             ret->type = rt;
             fn->retType = ret->type;

@@ -1719,18 +1719,13 @@ static void handleOutIntents(FnSymbol* fn, CallInfo& info) {
       Type* formalType = formal->type->getValType();
       if (formal->typeExpr == NULL &&
           formalType->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE)) {
-        VarSymbol* typeTmp = newTemp(astr("_formal_type_tmp_", formal->name),
-                                    formal->getValType());
+        const char* dummyName = astr("_dummy_formal_type_tmp_", formal->name);
+        VarSymbol* typeTmp = newTemp(dummyName, formalType);
         typeTmp->addFlag(FLAG_MAYBE_TYPE);
+        typeTmp->addFlag(FLAG_TYPE_FORMAL_FOR_OUT);
 
         anchor->insertBefore(new DefExpr(typeTmp));
-        BlockStmt* block = new BlockStmt(BLOCK_TYPE);
-        CallExpr* m = new CallExpr(PRIM_MOVE, typeTmp,
-                                   new CallExpr(PRIM_TYPEOF, actualSym));
-        block->insertAtTail(m);
-        anchor->insertBefore(block);
-        resolveBlockStmt(block);
-        block->flattenAndRemove();
+
         SymExpr* prevActual = toSymExpr(currActual->prev);
         INT_ASSERT(prevActual != NULL && j > 0);
         prevActual->setSymbol(typeTmp);
