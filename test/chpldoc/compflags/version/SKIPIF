@@ -1,0 +1,2 @@
+# Avoids an issue where the lack of a trailing newline is not respected on darwin
+CHPL_HOST_PLATFORM != linux64
