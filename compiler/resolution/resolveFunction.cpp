@@ -834,8 +834,7 @@ bool SplitInitVisitor::enterCallExpr(CallExpr* call) {
     SymExpr* se = toSymExpr(call->get(1));
     Symbol* sym = se->symbol();
 
-    bool isOutFormal = sym->hasFlag(FLAG_FORMAL_TEMP) &&
-                       sym->hasFlag(FLAG_NO_AUTO_DESTROY);
+    bool isOutFormal = sym->hasFlag(FLAG_FORMAL_TEMP_OUT);
 
     // Don't allow an out-formal to be split-init after a return because
     // that would leave the out-formal uninitialized.
@@ -1675,8 +1674,9 @@ static void addLocalCopiesAndWritebacks(FnSymbol*  fn,
         }
       }
 
-      tmp->addFlag(FLAG_NO_AUTO_DESTROY);
       tmp->addFlag(FLAG_FORMAL_TEMP);
+      tmp->addFlag(FLAG_FORMAL_TEMP_OUT);
+      tmp->addFlag(FLAG_INSERT_AUTO_DESTROY);
       break;
      }
      case INTENT_INOUT:
@@ -1684,9 +1684,9 @@ static void addLocalCopiesAndWritebacks(FnSymbol*  fn,
                                     tmp,
                                     new CallExpr("chpl__initCopy", formal)));
 
-      tmp->addFlag(FLAG_INSERT_AUTO_DESTROY);
       tmp->addFlag(FLAG_FORMAL_TEMP);
-
+      tmp->addFlag(FLAG_FORMAL_TEMP_INOUT);
+      tmp->addFlag(FLAG_INSERT_AUTO_DESTROY);
       break;
 
      case INTENT_IN:
