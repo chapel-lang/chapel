@@ -5,9 +5,9 @@ use MasonInit;
 use MasonUtils;
 
 proc main(){
-  const args = ['init','asd'];
-  mkdir("asd");
+  const args = ['init','testSrc'];
+  mkdir("testSrc");
   masonInit(args);
-  runCommand('rm -rf asd');
+  runCommand('rm -rf testSrc');
 }
 

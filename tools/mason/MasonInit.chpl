@@ -57,8 +57,9 @@ proc masonInit(args) throws {
       const path = '.';
       if validatePackageName(name) {
         validateMasonFile(path, name, show);
-        validateInit(path, show);
-        writeln("Initialized new library project: " + name);
+        var isInitialized = validateInit(path, show);
+        if isInitialized > 0 then
+          writeln("Initialized new library project: " + name);
       }
     } 
     else {
@@ -70,8 +71,9 @@ proc masonInit(args) throws {
       if isDir(path) {
         if validatePackageName(name) {
           validateMasonFile(path, basename(path), show);
-          validateInit(path, show);
-          writeln("Initialized new library project in " + path + ": " + basename(path));
+          var isInitialized = validateInit(path, show);
+          if isInitialized > 0 then
+            writeln("Initialized new library project in " + path + ": " + basename(path));
         }
       } 
       else {
@@ -90,17 +92,24 @@ proc masonInit(args) throws {
 Validates directories and files in project directory to avoid overwriting
 */
 proc validateInit(path: string, show: bool) throws {
-  var files = [ "/src" , "/test" , "/example", "/.git", ".gitignore" ];
+  var files = [ "/Mason.toml", "/src" , "/test" , "/example", "/.git", "/.gitignore" ];
   var toBeCreated : list(string);
   for idx in 1..files.size do {
     const metafile = files(idx);  
     const dir = metafile;
-    if isDir(path + dir) == false {
-      toBeCreated.append(dir);
+    if dir == "/Mason.toml" || dir == "/.gitignore" {
+      if isFile(path + dir) == false {
+        toBeCreated.append(dir);
+      }
     }
+    else {
+        if isDir(path + dir) == false {
+        toBeCreated.append(dir);
+      }
+    }     
   }
-  
-  if toBeCreated.size == 1 {
+
+  if toBeCreated.size == 0 {
     var fileName = "";
     if path != '.' {
       fileName = basename(path); 
@@ -112,8 +121,9 @@ proc validateInit(path: string, show: bool) throws {
       makeModule(path,fileName);
     } 
     else {
-      throw new owned MasonError("Library project has already been initialised.");
-    } 
+      writeln("Library project has already been initialised.");
+      return 0;
+    }
   }
 
   for metafile in toBeCreated {
@@ -121,7 +131,7 @@ proc validateInit(path: string, show: bool) throws {
     if metafile == "/.git" {
       gitInit(path, show);
     }
-    else if metafile == ".gitignore" {
+    else if metafile == "/.gitignore" {
       addGitIgnore(path);
       if show then writeln("Created .gitignore");
     } 
@@ -148,6 +158,7 @@ proc validateInit(path: string, show: bool) throws {
       if show then writeln("Created example/");
     }
   }
+  return 1;
 }
 
 /* 
@@ -198,7 +209,7 @@ proc validateMasonFile(path:string, name:string, show:bool) throws {
   }
   else {
     makeBasicToml(name, path);
-    writeln("Created Mason.toml file.");
+    if show then writeln("Created Mason.toml file.");
   }
 }
 

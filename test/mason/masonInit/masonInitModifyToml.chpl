@@ -13,6 +13,5 @@ proc main(){
   if isFile("./testSrc/Mason.toml") {
     writeln("Mason.toml has been successfully created");
   }
-
   runCommand('rm -rf testSrc');
 }
