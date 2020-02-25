@@ -46,7 +46,8 @@ bool isSplitInitExpr(Expr* e) {
 
 typedef enum {
   FOUND_NOTHING = 0,
-  FOUND_RET, // throw or return
+  FOUND_RET,
+  FOUND_THROW,
   FOUND_USE,
   FOUND_INIT
 } found_init_t;
@@ -133,15 +134,33 @@ static bool allowSplitInit(Symbol* sym) {
   return true;
 }
 
-// Returns a SymExpr if there is an init or use at or after cur
-static SymExpr* checkForUseAfterReturn(Symbol* sym, Expr* start) {
-  for (Expr* cur = start; cur != NULL; cur = cur->next) {
-    if (SymExpr* se = findSymExprFor(cur, sym)) {
-      return se;
-    }
-  }
+// When 'start' is a return/throw (or a block containing that, e.g),
+// decide whether the variable should be considered split-initialized
+// by a later applicable assignment statement.
+static found_init_t handleReturn(found_init_t foundReturn,
+                                 Symbol* sym,
+                                 Expr* cur,
+                                 std::vector<CallExpr*>& initAssigns,
+                                 Expr*& usePreventingSplitInit,
+                                 bool allowReturns) {
+  INT_ASSERT(foundReturn == FOUND_RET || foundReturn == FOUND_THROW);
 
-  return NULL;
+  // Look for initializations after the return.
+  found_init_t afterReturn = doFindInitPoints(sym,
+                                              cur->next,
+                                              initAssigns,
+                                              usePreventingSplitInit,
+                                              allowReturns);
+  if (afterReturn == FOUND_INIT) {
+    // Initializations after a throw are still initializations, e.g.
+    return FOUND_INIT;
+  } else if (afterReturn == FOUND_USE) {
+    // use after return
+    return FOUND_USE;
+  } else {
+    // return FOUND_RET or FOUND_THROW
+    return foundReturn;
+  }
 }
 
 static found_init_t doFindInitPoints(Symbol* sym,
@@ -180,34 +199,40 @@ static found_init_t doFindInitPoints(Symbol* sym,
           usePreventingSplitInit = se;
           return FOUND_USE;
         }
+      }
+    }
 
-        if (call->isPrimitive(PRIM_RETURN) || call->isPrimitive(PRIM_THROW)) {
-          if (SymExpr* se = checkForUseAfterReturn(sym, call->next)) {
-            usePreventingSplitInit = se;
-            return FOUND_USE;
-          } else if (allowReturns == false && call->isPrimitive(PRIM_RETURN)) {
-            usePreventingSplitInit = cur;
-            return FOUND_USE;
-          } else {
-            return FOUND_RET;
-          }
-        }
+    // return - goto, PRIM_RETURN, or PRIM_THROW.
+    if (isGotoStmt(cur) || isCallExpr(cur)) {
+      GotoStmt* gt = toGotoStmt(cur);
+      CallExpr* call = toCallExpr(cur);
+
+      bool regularReturn = false;
+      bool errorReturn = false;
+      if (gt != NULL) {
+        regularReturn = gt->gotoTag == GOTO_RETURN;
+        errorReturn = gt->gotoTag == GOTO_ERROR_HANDLING_RETURN ||
+                      gt->gotoTag == GOTO_ERROR_HANDLING;
+      } else if (call != NULL) {
+        regularReturn = call->isPrimitive(PRIM_RETURN);
+        errorReturn = call->isPrimitive(PRIM_THROW);
       }
 
-    // return
-    } else if (GotoStmt* gt = toGotoStmt(cur)) {
-      bool regularReturn = gt->gotoTag == GOTO_RETURN;
-      bool errorReturn = gt->gotoTag == GOTO_ERROR_HANDLING_RETURN;
       if (regularReturn || errorReturn) {
-        if (SymExpr* se = checkForUseAfterReturn(sym, gt->next)) {
-          usePreventingSplitInit = se;
-          return FOUND_USE;
-        } else if (allowReturns == false && regularReturn) {
+
+        if (regularReturn && allowReturns == false) {
+          // For e.g. out intents, the out intent must be initialized
+          // upon return. Vs. for local variables, a variable can be
+          // uninitialized when a return occurs.
+          //
+          // Neither need to be initialized for a throw.
           usePreventingSplitInit = cur;
           return FOUND_USE;
-        } else {
-          return FOUND_RET;
         }
+
+        found_init_t foundReturn = regularReturn ? FOUND_RET : FOUND_THROW;
+        return handleReturn(foundReturn, sym, cur, initAssigns,
+                            usePreventingSplitInit, allowReturns);
       }
 
     // { x = ... }
@@ -228,8 +253,9 @@ static found_init_t doFindInitPoints(Symbol* sym,
           return FOUND_INIT;
         } else if (found == FOUND_USE) {
           return FOUND_USE;
-        } else if (found == FOUND_RET) {
-          return FOUND_RET;
+        } else if (found == FOUND_RET || found == FOUND_THROW) {
+          return handleReturn(found, sym, cur, initAssigns,
+                              usePreventingSplitInit, allowReturns);
         }
       }
 
@@ -258,15 +284,14 @@ static found_init_t doFindInitPoints(Symbol* sym,
             // Consider even an assignment in a catch block as a use
             usePreventingSplitInit = findSymExprFor(ctch, sym);
             return FOUND_USE;
-          } else if (foundCatch != FOUND_RET) {
+          } else if (foundCatch != FOUND_RET && foundCatch != FOUND_THROW) {
             allCatchesRet = false;
             nonReturningCatch = ctch;
           }
         }
       }
 
-      // if we got here, no catch returned FOUND_USE.
-
+      // if we got here, no catch used or inited the variable
       if (foundBody == FOUND_USE) {
         INT_FATAL("handled above");
       } else if (foundBody == FOUND_INIT) {
@@ -277,6 +302,9 @@ static found_init_t doFindInitPoints(Symbol* sym,
           usePreventingSplitInit = nonReturningCatch;
           return FOUND_USE;
         }
+      } else if (foundBody == FOUND_RET || foundBody == FOUND_THROW) {
+        return handleReturn(foundBody, sym, cur, initAssigns,
+                            usePreventingSplitInit, allowReturns);
       }
 
     // if _ { x = ... } else { x = ... }
@@ -299,9 +327,15 @@ static found_init_t doFindInitPoints(Symbol* sym,
         foundElse = doFindInitPoints(sym, elseStart, elseAssigns,
                                      elseUse, allowReturns);
 
-      if ((foundIf == FOUND_INIT && foundElse == FOUND_INIT) ||
-          (foundIf == FOUND_INIT && foundElse == FOUND_RET) ||
-          (foundIf == FOUND_RET && foundElse == FOUND_INIT)) {
+      bool ifInits = foundIf == FOUND_INIT;
+      bool elseInits = foundElse == FOUND_INIT;
+      bool ifReturns = foundIf == FOUND_THROW ||
+                       (foundIf == FOUND_RET && allowReturns);
+      bool elseReturns = foundElse == FOUND_THROW ||
+                         (foundElse == FOUND_RET && allowReturns);
+      if ((ifInits   && elseInits) ||
+          (ifInits   && elseReturns) ||
+          (ifReturns && elseInits)) {
         for_vector(CallExpr, call, ifAssigns) {
           initAssigns.push_back(call);
         }
@@ -309,10 +343,6 @@ static found_init_t doFindInitPoints(Symbol* sym,
           initAssigns.push_back(call);
         }
         return FOUND_INIT;
-      } else if (foundIf == FOUND_INIT || foundElse == FOUND_INIT) {
-        // initialized on one side but not the other
-        usePreventingSplitInit = cur;
-        return FOUND_USE;
       } else if (foundIf == FOUND_USE || foundElse == FOUND_USE) {
         // at least one of them must be FOUND_USE, so return that
         usePreventingSplitInit = cur;
@@ -321,8 +351,19 @@ static found_init_t doFindInitPoints(Symbol* sym,
         if (elseUse != NULL)
           usePreventingSplitInit = elseUse;
         return FOUND_USE;
-      } else if (foundIf == FOUND_RET && foundElse == FOUND_RET) {
-        return FOUND_RET;
+      } else if (foundIf == FOUND_INIT || foundElse == FOUND_INIT) {
+        // initialized on one side but not the other
+        usePreventingSplitInit = cur;
+        return FOUND_USE;
+      } else if ((foundIf == FOUND_THROW || foundIf == FOUND_RET) &&
+                 (foundElse == FOUND_THROW || foundElse == FOUND_RET)) {
+        // return is more strict than throws, so if one returns
+        // but the other throws, consider it a return.
+        found_init_t found = FOUND_RET;
+        if (foundIf == FOUND_THROW && foundElse == FOUND_THROW)
+          found = FOUND_THROW;
+        return handleReturn(found, sym, cur, initAssigns,
+                            usePreventingSplitInit, allowReturns);
       }
 
     } else {
