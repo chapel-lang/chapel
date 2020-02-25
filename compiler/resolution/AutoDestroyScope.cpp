@@ -111,7 +111,9 @@ void AutoDestroyScope::addFormalTemps() {
     LabelSymbol* epilogue = fn->getEpilogueLabel();
     INT_ASSERT(epilogue != NULL);
     // should have been created in resolution
-    for (Expr* cur = epilogue->defPoint; cur != NULL; cur = cur->next) {
+    Expr* next = NULL;
+    for (Expr* cur = epilogue->defPoint; cur != NULL; cur = next) {
+      next = cur->next;
       if (VarSymbol* var = findFormalTempAssignBack(cur)) {
         CallExpr* call = toCallExpr(cur);
         INT_ASSERT(var->hasFlag(FLAG_FORMAL_TEMP_INOUT) ||
