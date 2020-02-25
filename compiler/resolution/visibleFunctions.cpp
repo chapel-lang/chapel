@@ -33,6 +33,7 @@
 
 #include <map>
 #include <set>
+#include <utility>
 
 
 /*
@@ -63,6 +64,8 @@ static Map<BlockStmt*, VisibleFunctionBlock*> visibleFunctionMap;
 
 static int                                    nVisibleFunctions       = 0;
 
+static std::map<std::pair<BlockStmt*, BlockStmt*>, bool> scopeIsVisible;
+
 
 
 /************************************* | **************************************
@@ -70,6 +73,9 @@ static int                                    nVisibleFunctions       = 0;
 *                                                                             *
 *                                                                             *
 ************************************** | *************************************/
+
+static void getVisibleMethods(const char* name, CallExpr* call,
+                              Vec<FnSymbol*>& visibleFns);
 
 static void  buildVisibleFunctionMap();
 
@@ -92,10 +98,17 @@ void findVisibleFunctions(CallInfo&       info,
         visibleFns.append(*fns);
       }
     }
-
   } else {
-    getVisibleFunctions(info.name, call, visibleFns);
+    if (call->numActuals() >=2 && isSymExpr(call->get(1)) &&
+        toSymExpr(call->get(1))->symbol() == gMethodToken) {
+      // TODO: Need to handle the type helper function names (e.g. _new)
 
+      getVisibleMethods(info.name, call, visibleFns);
+
+    } else {
+      getVisibleFunctions(info.name, call, visibleFns);
+
+    }
   }
 
   if ((explainCallLine && explainCallMatch(call)) ||
@@ -146,6 +159,153 @@ static void buildVisibleFunctionMap() {
   }
   nVisibleFunctions = gFnSymbols.n;
 }
+
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
+
+static void getVisibleMethods(const char* name, CallExpr* call,
+                              BlockStmt* block, std::set<BlockStmt*>& visited,
+                              Vec<FnSymbol*>& visibleFns);
+
+
+static void getVisibleMethods(const char* name, CallExpr* call,
+                              Vec<FnSymbol*>& visibleFns) {
+  BlockStmt*           block    = getVisibilityScope(call);
+  std::set<BlockStmt*> visited;
+
+  getVisibleMethods(name, call, block, visited, visibleFns);
+
+}
+
+static void getVisibleMethods(const char* name, CallExpr* call,
+                              BlockStmt* block, std::set<BlockStmt*>& visited,
+                              Vec<FnSymbol*>& visibleFns) {
+  //
+  // avoid infinite recursion due to modules with mutual uses
+  //
+  if (visited.find(block) == visited.end()) {
+
+    bool moduleBlock = false;
+    bool fnBlock = false;
+    ModuleSymbol* inMod = block->getModule();
+    FnSymbol* inFn = block->getFunction();
+    BlockStmt* instantiationPt = NULL;
+    if (block->parentExpr != NULL) {
+      // not a module or function level block
+    } else if (inMod && block == inMod->block) {
+      moduleBlock = true;
+    } else if (inFn != NULL) {
+      // TODO - probably remove this assert
+      INT_ASSERT(block->parentSymbol == inFn ||
+                 isArgSymbol(block->parentSymbol) ||
+                 isShadowVarSymbol(block->parentSymbol));
+      fnBlock = true;
+      BlockStmt* inFnInstantiationPoint = inFn->instantiationPoint();
+      if (inFnInstantiationPoint && !inFnInstantiationPoint->parentSymbol) {
+        INT_FATAL(inFn, "instantiation point not in tree\n"
+                        "try --break-on-remove-id %i and consider making\n"
+                        "that block scopeless",
+                        inFnInstantiationPoint->id);
+      }
+      if (inFnInstantiationPoint && inFnInstantiationPoint->parentSymbol)
+        instantiationPt = inFnInstantiationPoint;
+    }
+
+    if (call->id == breakOnResolveID) {
+      if (moduleBlock)
+        printf("visible methods: block %i  module %s  %s\n",
+               block->id, inMod->name, debugLoc(block));
+      else if (fnBlock)
+        printf("visible methods: block %i  fn %s  %s\n",
+               block->id, inFn->name, debugLoc(block));
+      else
+        printf("visible methods: block %i  %s\n",
+               block->id, debugLoc(block));
+
+      if (instantiationPt) {
+        printf("  instantiated from block %i  %s\n",
+               instantiationPt->id, debugLoc(instantiationPt));
+      }
+    }
+
+    // Why does the following statement apply to all blocks,
+    // and not just module or function blocks?
+    //
+    // e.g. in associative.chpl primer, instantiation occurs in a
+    // block that isn't a fn or module block.
+    visited.insert(block);
+
+    if (VisibleFunctionBlock* vfb = visibleFunctionMap.get(block)) {
+      // the block defines functions
+
+      if (Vec<FnSymbol*>* fns = vfb->visibleFunctions.get(name)) {
+        forv_Vec(FnSymbol, fn, *fns) {
+          // When private methods and fields are supported, we'll need to extend
+          // this
+          visibleFns.add(fn);
+        }
+      }
+    }
+
+    if (block->useList != NULL) {
+      // the block uses other modules
+      for_actuals(expr, block->useList) {
+        SymExpr* se = NULL;
+        if (UseStmt* use = toUseStmt(expr)) {
+          se = toSymExpr(use->src);
+        } else if (ImportStmt* import = toImportStmt(expr)) {
+          se = toSymExpr(import->src);
+        } else {
+          INT_FATAL("bad expr in useList, expected ImportStmt or UseStmt");
+        }
+
+        // A use statement could be of an enum instead of a module, but only
+        // modules can define functions.
+        if (ModuleSymbol* mod = toModuleSymbol(se->symbol())) {
+          bool isVisible;
+          // Get potential scope pair.
+          std::pair<BlockStmt*, BlockStmt*> curPair =
+            std::make_pair(getVisibilityScope(call),
+                           mod->block);
+          // See if it's already in the map
+          std::map<std::pair<BlockStmt*, BlockStmt*>, bool>::iterator it =
+            scopeIsVisible.find(curPair);
+          // If not, determine and record the result, otherwise use the cached
+          // version.
+          if (it == scopeIsVisible.end()) {
+            isVisible = mod->isVisible(call);
+            scopeIsVisible[curPair] = isVisible;
+          } else {
+            isVisible = it->second;
+          }
+
+          if (isVisible) {
+            getVisibleMethods(name, call, mod->block, visited, visibleFns);
+          }
+        }
+      }
+    }
+
+    if (block != rootModule->block) {
+      BlockStmt* next  = getVisibilityScope(block);
+
+      // Recurse in the enclosing block
+      getVisibleMethods(name, call, next, visited, visibleFns);
+
+      if (instantiationPt != NULL) {
+        // Also look at the instantiation point
+        getVisibleMethods(name, call, instantiationPt, visited, visibleFns);
+      }
+    }
+
+  }
+}
+
 
 /************************************* | **************************************
 *                                                                             *
