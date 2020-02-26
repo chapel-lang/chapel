@@ -565,7 +565,7 @@ proc string.this(m:reMatch) {
     :returns: the portion of ``this`` referred to by the match
  */
 proc bytes.this(m:reMatch) {
-  if m.matched then return this[(m.offset+1):int..#m.length];
+  if m.matched then return this[m.offset:int..#m.length];
   else return b"";
 }
 

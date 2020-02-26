@@ -1,6 +1,6 @@
 var s = "my string";
 
-for i in 1..s.length {
+for i in 0..#s.length {
   write(s.item(i));
 }
 writeln();
