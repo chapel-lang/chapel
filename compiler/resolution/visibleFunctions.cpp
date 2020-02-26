@@ -64,7 +64,7 @@ static Map<BlockStmt*, VisibleFunctionBlock*> visibleFunctionMap;
 
 static int                                    nVisibleFunctions       = 0;
 
-static std::map<std::pair<BlockStmt*, BlockStmt*>, bool> scopeIsVisible;
+static std::map<std::pair<BlockStmt*, BlockStmt*>, bool> scopeIsVisForMethods;
 static std::set<const char*> typeHelperNames;
 bool builtTypeHelperNames = false;
 
@@ -293,12 +293,12 @@ static void getVisibleMethods(const char* name, CallExpr* call,
                            mod->block);
           // See if it's already in the map
           std::map<std::pair<BlockStmt*, BlockStmt*>, bool>::iterator it =
-            scopeIsVisible.find(curPair);
+            scopeIsVisForMethods.find(curPair);
           // If not, determine and record the result, otherwise use the cached
           // version.
-          if (it == scopeIsVisible.end()) {
+          if (it == scopeIsVisForMethods.end()) {
             isVisible = mod->isVisible(call);
-            scopeIsVisible[curPair] = isVisible;
+            scopeIsVisForMethods[curPair] = isVisible;
           } else {
             isVisible = it->second;
           }
