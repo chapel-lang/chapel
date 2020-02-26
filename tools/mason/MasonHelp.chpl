@@ -130,6 +130,10 @@ proc masonNewHelp() {
   writeln('    -h, --help                   Display this message');
   writeln('        --show                   Increase verbosity');
   writeln('        --no-vcs                 Do not initialize a git repository');
+  writeln(' --moduleName=<legalName>        Allow illegal package names');
+  writeln();
+  writeln("The '--moduleName' flag can be used to allow illegal package names.");
+  writeln("It sets a legal name given as argument to the flag, to the top-level module in src/.");
 }
 
 proc masonInitHelp(){
@@ -141,6 +145,10 @@ proc masonInitHelp(){
   writeln('Options:');
   writeln('    -h, --help                   Display this message');
   writeln('        --show                   Increase verbosity');
+  writeln(' --moduleName=<legalName>        Allow illegal package names');
+  writeln();
+  writeln("The '--moduleName' flag can be used to allow illegal package names.");
+  writeln("It sets a legal name given as argument to the flag, to the top-level module in src/.");
 }
 
 proc masonSearchHelp() {
