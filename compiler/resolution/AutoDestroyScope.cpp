@@ -385,11 +385,8 @@ static void deinitializeOrCopyElide(Expr* before, Expr* after, VarSymbol* var) {
     } else {
       SET_LINENO(copyToElide);
       // Change the copy into a move and don't destroy the variable.
-      //copyToElide->replace(new CallExpr(PRIM_ASSIGN, copyToLhs, var));
       copyToElide->convertToNoop();
       copyToElide->insertBefore(new CallExpr(PRIM_ASSIGN, copyToLhs, var));
-      //copyToElide->get(2)->replace(new SymExpr(var));
-      //copyToElide->get(2)->replace(new SymExpr(var));
     }
   }
 }

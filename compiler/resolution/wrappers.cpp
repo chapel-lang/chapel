@@ -1704,8 +1704,6 @@ static void handleOutIntents(FnSymbol* fn, CallInfo& info) {
     // The result of a default argument for 'in' intent is already owned and
     // does not need to be copied.
     if (formal->intent == INTENT_OUT || formal->originalIntent == INTENT_OUT) {
-      // TODO: check ?  actualSym->hasFlag(FLAG_DEFAULT_ACTUAL) ?
-
       Expr* useExpr = currActual;
       if (NamedExpr* named = toNamedExpr(currActual))
         useExpr = named->actual;
@@ -1747,8 +1745,6 @@ static void handleOutIntents(FnSymbol* fn, CallInfo& info) {
       CallExpr* assign = new CallExpr("=", actualSym, tmp);
       anchorAfter->insertAfter(assign);
       anchorAfter = assign;
-
-      //resolveCallAndCallee(assign, false); // false - allow unresolved
 
       currActual->replace(new SymExpr(tmp));
     }
