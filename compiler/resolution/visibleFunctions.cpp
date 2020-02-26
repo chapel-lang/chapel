@@ -116,6 +116,8 @@ void findVisibleFunctions(CallInfo&       info,
       }
     }
   } else {
+    // Methods, fields, and type helper functions should ignore the privacy and
+    // limitations on use statements.  All other symbols should respect them.
     if (call->numActuals() >=2 && isSymExpr(call->get(1)) &&
         toSymExpr(call->get(1))->symbol() == gMethodToken) {
 
@@ -219,7 +221,6 @@ static void getVisibleMethods(const char* name, CallExpr* call,
     } else if (inMod && block == inMod->block) {
       moduleBlock = true;
     } else if (inFn != NULL) {
-      // TODO - probably remove this assert
       INT_ASSERT(block->parentSymbol == inFn ||
                  isArgSymbol(block->parentSymbol) ||
                  isShadowVarSymbol(block->parentSymbol));
@@ -252,11 +253,11 @@ static void getVisibleMethods(const char* name, CallExpr* call,
       }
     }
 
-    // Why does the following statement apply to all blocks,
-    // and not just module or function blocks?
+    // The following statement causes this to apply to all blocks,
+    // and not just module or function blocks.
     //
-    // e.g. in associative.chpl primer, instantiation occurs in a
-    // block that isn't a fn or module block.
+    // This is because e.g. in associative.chpl primer, instantiation occurs in
+    // a block that isn't a fn or module block.
     visited.insert(block);
 
     if (VisibleFunctionBlock* vfb = visibleFunctionMap.get(block)) {
@@ -282,6 +283,9 @@ static void getVisibleMethods(const char* name, CallExpr* call,
         } else {
           INT_FATAL("bad expr in useList, expected ImportStmt or UseStmt");
         }
+        // Intentionally ignore use/import privacy and limitations
+        // Methods, fields, and special type support functions cannot be
+        // re-enabled via only lists (or doing so is not easy for the user).
 
         // A use statement could be of an enum instead of a module, but only
         // modules can define functions.
