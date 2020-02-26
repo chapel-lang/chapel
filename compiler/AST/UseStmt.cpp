@@ -20,6 +20,7 @@
 #include "UseStmt.h"
 
 #include "AstVisitor.h"
+#include "ImportStmt.h"
 #include "ResolveScope.h"
 #include "scopeResolve.h"
 #include "stlUtil.h"
@@ -29,7 +30,7 @@
 #include <algorithm>
 
 UseStmt::UseStmt(BaseAST* source, const char* modRename,
-                 bool isPrivate) : Stmt(E_UseStmt) {
+                 bool isPrivate) : VisibilityStmt(E_UseStmt) {
   this->isPrivate = isPrivate;
   src    = NULL;
   this->modRename = astr(modRename);
@@ -54,7 +55,7 @@ UseStmt::UseStmt(BaseAST*                            source,
                  bool                                exclude,
                  std::map<const char*, const char*>* renames,
                  bool isPrivate) :
-  Stmt(E_UseStmt) {
+  VisibilityStmt(E_UseStmt) {
 
   this->isPrivate = isPrivate;
   src    = NULL;
@@ -110,7 +111,7 @@ UseStmt* UseStmt::copyInner(SymbolMap* map) {
 }
 
 Expr* UseStmt::getFirstExpr() {
-  return this;
+  return src;
 }
 
 void UseStmt::replaceChild(Expr* oldAst, Expr* newAst) {
@@ -152,16 +153,11 @@ bool UseStmt::hasExceptList() const {
   return isPlainUse() == false && except == true;
 }
 
-bool UseStmt::isARename(const char* name) const {
+bool UseStmt::isARenamedSym(const char* name) const {
   return renamed.count(name) == 1;
 }
 
-// Specifically for when the module being used is renamed
-bool UseStmt::isARename() const {
-  return modRename[0] != '\0';
-}
-
-const char* UseStmt::getRename(const char* name) const {
+const char* UseStmt::getRenamedSym(const char* name) const {
   std::map<const char*, const char*>::const_iterator it;
   const char*                                        retval = NULL;
 
@@ -172,10 +168,6 @@ const char* UseStmt::getRename(const char* name) const {
   }
 
   return retval;
-}
-
-const char* UseStmt::getRename() const {
-  return modRename;
 }
 
 /************************************* | **************************************
@@ -245,15 +237,6 @@ bool UseStmt::isEnum(const Symbol* sym) const {
   }
 
   return retval;
-}
-
-void UseStmt::updateEnclosingBlock(ResolveScope* scope, Symbol* sym) {
-  src->replace(new SymExpr(sym));
-
-  remove();
-  scope->asBlockStmt()->useListAdd(this);
-
-  scope->extend(this);
 }
 
 /************************************* | **************************************
@@ -521,34 +504,6 @@ void UseStmt::trackMethods() {
       }
     }
   }
-}
-
-Symbol* UseStmt::checkIfModuleNameMatches(const char* name) {
-  if (isARename()) {
-    // Use statements that rename the module should only allow us to find the
-    // new name, not the original one.
-    if (name == getRename()) {
-      SymExpr* actualSe = toSymExpr(src);
-      INT_ASSERT(actualSe);
-      // Could be either an enum or a module, but either way we should be able
-      // to find the new name
-      Symbol* actualSym = toSymbol(actualSe->symbol());
-      INT_ASSERT(actualSym);
-      return actualSym;
-    }
-  } else if (SymExpr* se = toSymExpr(src)) {
-    if (ModuleSymbol* modSym = toModuleSymbol(se->symbol())) {
-      if (strcmp(name, se->symbol()->name) == 0) {
-        return modSym;
-      }
-    }
-  } else {
-    // It seems as though we'd need to handle matches against more general
-    // expressions here (e.g., 'use M.N.O'), yet I can't seem to construct
-    // an example that requires this.  I suppose it could be because we
-    // resolve such cases element-by-element rather than wholesale...
-  }
-  return NULL;
 }
 
 /************************************* | **************************************
@@ -968,6 +923,49 @@ bool UseStmt::providesNewSymbols(const UseStmt* other) const {
       // If all of our 'only' list was in the 'only' list of other, we don't
       // provide anything new.
       return numSame != named.size() + renamed.size();
+    }
+  }
+}
+
+/************************************* | **************************************
+*                                                                             *
+* Returns true if the current use statement has the possibility of allowing   *
+* symbols that weren't already covered by 'other'                             *
+*                                                                             *
+* Assumes that other->mod == this->mod.  Will not verify that fact.           *
+*                                                                             *
+************************************** | *************************************/
+
+bool UseStmt::providesNewSymbols(const ImportStmt* other) const {
+  if (isPlainUse()) {
+    // We're a general use.  We know the other is an import statement, so we
+    // provide symbols it doesn't.
+    return true;
+  }
+
+  if (except) {
+    // We have an 'except' list.  `except *` have been transformed into `only;`
+    // at this point, so unless the user explicitly listed everything, this is
+    // probably fine. (and if they did, there's no harm in including it again)
+    return true;
+  } else {
+    if (renamed.size() > 0) {
+      // Anything being renamed means at least one symbols is included by this
+      // use, so that's more than the import statement provided
+      return true;
+    }
+    if (named.size() > 1) {
+      // `only;` lists (and transformed `except *;` lists) only contain a single
+      // element, so any size more than 1 means we definitely provide more
+      // symbols
+      return true;
+    } else if (named[0][0] == '\0') {
+      // If the element is "", then it is an `only;` or `except *;` list, so
+      // the import has already handled it.
+      return false;
+    } else {
+      // Otherwise, it's a new symbol
+      return true;
     }
   }
 }

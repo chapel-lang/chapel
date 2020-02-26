@@ -1,0 +1,9 @@
+#!/bin/bash
+
+# Skip this directory if the system does not allow non-UTF8 filenames
+if touch `printf '\xff\xff\xff'` 2>/dev/null; then
+  rm `printf '\xff\xff\xff'`
+  echo False
+else
+  echo True
+fi

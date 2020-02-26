@@ -35,14 +35,14 @@ iter foo1() {
 
   if earlyReturn {
     writeln("early return");
-    // destroy state, r1, r2
+    // destroy state
     return;
   }
 
   yield r2;
 
   writeln("return at end");
-  // destroy state, r1, r2
+  // destroy state
 }
 
 iter foo2() {

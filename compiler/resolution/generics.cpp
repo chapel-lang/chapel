@@ -482,7 +482,9 @@ static bool fixupDefaultInitCopy(FnSymbol* fn,
       // it up completely...
       instantiateBody(newFn);
 
-      if (FnSymbol* initFn = findCopyInit(ct)) {
+      const char* err = NULL;
+
+      if (FnSymbol* initFn = findCopyInitFn(ct, err)) {
         Symbol*   thisTmp  = newTemp(ct);
         DefExpr*  def      = new DefExpr(thisTmp);
         CallExpr* initCall = NULL;
@@ -500,6 +502,15 @@ static bool fixupDefaultInitCopy(FnSymbol* fn,
         // above code adds a call that would be considered already resolved.
         resolveCallAndCallee(initCall);
 
+        // Workaround: setting init= argument to ref in case
+        // the fields were not resolved yet
+        if (recordContainingCopyMutatesField(ct)) {
+          FnSymbol* fn = initCall->resolvedFunction();
+          INT_ASSERT(fn->numFormals() == 3);
+          ArgSymbol* arg = fn->getFormal(3);
+          arg->intent = INTENT_REF;
+          arg->originalIntent = INTENT_REF;
+        }
         if (ct->hasPostInitializer() == true) {
           CallExpr* post = new CallExpr("postinit", gMethodToken, thisTmp);
 
@@ -532,7 +543,7 @@ static bool fixupDefaultInitCopy(FnSymbol* fn,
 
       } else {
         // No copy-initializer could be found
-        newFn->addFlag(FLAG_ERRONEOUS_INITCOPY);
+        markCopyErroneous(newFn, err);
       }
 
       retval = true;

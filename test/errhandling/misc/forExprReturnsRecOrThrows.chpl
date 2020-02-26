@@ -22,6 +22,9 @@ module M {
     proc deinit() { initCounter.sub(1); }
 
   }
+  proc =(ref lhs: r, const ref rhs: r) {
+    lhs.x = rhs.x;
+  }
 
   proc foo(i, shouldThrow=false) throws {
     if shouldThrow && i == 0 then throw new Error();

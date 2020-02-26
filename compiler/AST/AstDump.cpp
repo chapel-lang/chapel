@@ -25,6 +25,7 @@
 
 #include "expr.h"
 #include "IfExpr.h"
+#include "ImportStmt.h"
 #include "log.h"
 #include "LoopExpr.h"
 #include "stmt.h"
@@ -396,6 +397,29 @@ void AstDump::visitUseStmt(UseStmt* node) {
   write(false, ")", true);
 }
 
+//
+// ImportStmt
+//
+void AstDump::visitImportStmt(ImportStmt* node) {
+  if (isBlockStmt(node->parentExpr)) {
+    newline();
+  }
+
+  if (fLogIds) {
+    fprintf(mFP, "(%d ", node->id);
+  } else {
+    write(true, "(", false);
+  }
+
+  fprintf(mFP, "'import'");
+
+  mNeedSpace = true;
+
+  node->src->accept(this);
+
+  write(false, ")", true);
+}
+
 
 
 //
@@ -567,6 +591,10 @@ bool AstDump::enterForLoop(ForLoop* node) {
 
   write("ForLoop");
   printLoopStmtDetails(node);
+  if (node->isLoweredForallLoop())
+    write("lowered-forall");
+  if (node->isForExpr())
+    write("for-expr");
   newline();
   write("{");
   printBlockID(node);

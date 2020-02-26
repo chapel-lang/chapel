@@ -13,7 +13,7 @@ class C {
 
   var D: domain(locale) = targetLocs;
 
-  var A: [D] unmanaged LocC(idxType);
+  var A: [D] unmanaged LocC(idxType)?;
 
   proc postinit() {
     for (loc, locid) in zip(targetLocs, 0..) do

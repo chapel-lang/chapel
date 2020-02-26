@@ -36,6 +36,7 @@
 #include <ostream>
 #include <string>
 
+#include "astlocs.h"
 #include "map.h"
 #include "vec.h"
 
@@ -70,6 +71,7 @@
   macro(IfExpr) sep                                \
                                                    \
   macro(UseStmt) sep                               \
+  macro(ImportStmt) sep                            \
   macro(BlockStmt) sep                             \
   macro(CondStmt) sep                              \
   macro(GotoStmt) sep                              \
@@ -138,25 +140,6 @@ foreach_ast(decl_gvecs);
 typedef Map<Symbol*,Symbol*>     SymbolMap;
 typedef MapElem<Symbol*,Symbol*> SymbolMapElem;
 
-// how an AST node knows its location in the source code
-// (assumed to get copied upon assignment and parameter passing)
-class astlocT {
-public:
-  astlocT(int linenoArg, const char* filenameArg) :
-    filename(filenameArg), lineno(linenoArg)
-    {}
-
-  const char* filename;  // filename of location
-  int         lineno;    // line number of location
-
-  inline bool operator==(const astlocT other) const {
-    return this->filename == other.filename && this->lineno == other.lineno;
-  }
-  inline bool operator!=(const astlocT other) const {
-    return this->filename != other.filename || this->lineno != other.lineno;
-  }
-};
-
 //
 // enumerated type of all AST node types
 //
@@ -172,6 +155,7 @@ enum AstTag {
   E_IfExpr,
 
   E_UseStmt,
+  E_ImportStmt,
   E_DeferStmt,
   E_TryStmt,
   E_CatchStmt,
@@ -306,34 +290,6 @@ void   trace_remove(BaseAST* ast, char flag);
 
 void verifyInTree(BaseAST* ast, const char* msg);
 
-
-VarSymbol* createASTforLineNumber(const char* filename, int line);
-
-//
-// macro to update the global line number used to set the line number
-// of an AST node when it is constructed - or to print out the line
-// number of code related to a core dump.
-//
-// This should be used before constructing new nodes to make sure the
-// line number is correctly set. The global line number reverts to
-// its previous value upon leaving the scope where the macro is used.
-// The fixed variable name ensures a single macro per scope.
-// Users of the macro are to create additional scopes when needed.
-// todo - should we add it to DECLARE_COPY/DECLARE_SYMBOL_COPY ?
-//
-#define SET_LINENO(ast) astlocMarker markAstLoc(ast->astloc)
-
-extern astlocT currentAstLoc;
-
-class astlocMarker {
-public:
-  astlocMarker(astlocT newAstLoc);
-  astlocMarker(int lineno, const char* filename);
-  ~astlocMarker();
-
-  astlocT previousAstLoc;
-};
-
 //
 // class test inlines: determine the dynamic type of a BaseAST*
 //
@@ -370,6 +326,7 @@ def_is_ast(LoopExpr)
 def_is_ast(NamedExpr)
 def_is_ast(IfExpr)
 def_is_ast(UseStmt)
+def_is_ast(ImportStmt)
 def_is_ast(BlockStmt)
 def_is_ast(CondStmt)
 def_is_ast(GotoStmt)
@@ -418,6 +375,7 @@ def_to_ast(LoopExpr)
 def_to_ast(NamedExpr)
 def_to_ast(IfExpr)
 def_to_ast(UseStmt)
+def_to_ast(ImportStmt)
 def_to_ast(BlockStmt)
 def_to_ast(CondStmt)
 def_to_ast(GotoStmt)
@@ -473,6 +431,7 @@ def_less_ast(LoopExpr)
 def_less_ast(NamedExpr)
 def_less_ast(IfExpr)
 def_less_ast(UseStmt)
+def_less_ast(ImportStmt)
 def_less_ast(BlockStmt)
 def_less_ast(CondStmt)
 def_less_ast(GotoStmt)
@@ -592,6 +551,9 @@ static inline const CallExpr* toConstCallExpr(const BaseAST* a)
     break;                                                              \
   case E_UseStmt:                                                       \
     AST_CALL_CHILD(_a, UseStmt, src, call, __VA_ARGS__);                \
+    break;                                                              \
+  case E_ImportStmt:                                                    \
+    AST_CALL_CHILD(_a, ImportStmt, src, call, __VA_ARGS__);             \
     break;                                                              \
                                                                                \
   case E_BlockStmt: {                                                          \

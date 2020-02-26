@@ -1,2 +1,0 @@
-$CHPL_HOME/modules/internal/ChapelReduce.chpl:27: warning: 'enableParScan' has been deprecated (it is now always enabled)
-1 2 3

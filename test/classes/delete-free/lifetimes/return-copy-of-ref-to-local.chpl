@@ -6,7 +6,7 @@ class MyClass {
 }
 
 record MyRecord {
-  var instance: owned MyClass;
+  var instance: owned MyClass?;
 }
 
 /*proc valueIdentity(arg) {

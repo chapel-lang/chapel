@@ -2,6 +2,9 @@ init-local-from-distributed-warning.chpl:6: In function 'warning1':
 init-local-from-distributed-warning.chpl:8: warning: initializing a non-distributed domain from a distributed domain. If you didn't mean to do that, add a dmapped clause to the type expression or remove the type expression altogether
 init-local-from-distributed-warning.chpl:13: In function 'warning2':
 init-local-from-distributed-warning.chpl:15: warning: initializing a non-distributed domain from a distributed domain. If you didn't mean to do that, add a dmapped clause to the type expression or remove the type expression altogether
+init-local-from-distributed-warning.chpl:20: In function 'warning3':
+init-local-from-distributed-warning.chpl:23: warning: initializing a non-distributed domain from a distributed domain. If you didn't mean to do that, add a dmapped clause to the type expression or remove the type expression altogether
+{1..2, 1..2}
 {1..2, 1..2}
 {1..2, 1..2}
 {1..2, 1..2}

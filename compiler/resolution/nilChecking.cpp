@@ -1187,4 +1187,223 @@ void adjustSignatureForNilChecking(FnSymbol* fn) {
     if (fn->hasFlag(FLAG_LEAVES_THIS_NIL))
       fn->_this->addFlag(FLAG_LEAVES_ARG_NIL);
   }
+
+  // adjust compiler-generated = and init= for types containing owned
+  if (fn->name == astrSassign &&
+      fn->hasFlag(FLAG_COMPILER_GENERATED) &&
+      fn->numFormals() >= 1) {
+    ArgSymbol* rhs = fn->getFormal(2);
+    Type* t = rhs->getValType();
+    if (t->symbol->hasFlag(FLAG_COPY_MUTATES))
+      rhs->addFlag(FLAG_LEAVES_ARG_NIL);
+  } else if (fn->name == astrInitEquals &&
+             fn->hasFlag(FLAG_COMPILER_GENERATED) &&
+             fn->numFormals() >= 2) {
+    ArgSymbol* rhs = fn->getFormal(2);
+    Type* t = rhs->getValType();
+    if (t->symbol->hasFlag(FLAG_COPY_MUTATES))
+      rhs->addFlag(FLAG_LEAVES_ARG_NIL);
+  }
+
+  bool leavesAnyArgNil = false;
+  for_formals(formal, fn) {
+    if (formal->hasFlag(FLAG_LEAVES_ARG_NIL))
+      leavesAnyArgNil = true;
+  }
+  if (leavesAnyArgNil)
+    fn->addFlag(FLAG_LEAVES_ARG_NIL);
+}
+
+typedef std::map<Symbol*,Expr*> SymbolToNilMap;
+
+class FindInvalidNonNilables : public AstVisitorTraverse {
+  public:
+    // key - a variable of interest
+    // value - NULL if that variable isn't possibly nil now
+    //         an Expr* setting it to nil if it is possibly nil now
+    SymbolToNilMap varsToNil;
+    virtual bool enterDefExpr(DefExpr* def);
+    virtual bool enterCallExpr(CallExpr* call);
+    virtual void exitCallExpr(CallExpr* call);
+    virtual void visitSymExpr(SymExpr* se);
+};
+
+static bool isNonNilableTypeOrRecordContaining(Type* t) {
+  if (isNonNilableType(t))
+    return true;
+
+  if (isRecord(t)) {
+    AggregateType* at = toAggregateType(t);
+    for_fields(field, at) {
+      if (isNonNilableTypeOrRecordContaining(field->type))
+        return true;
+    }
+  }
+
+  return false;
+}
+
+static bool isNonNilableVariable(Symbol* sym) {
+  return (isVarSymbol(sym) || isArgSymbol(sym)) &&
+         isNonNilableTypeOrRecordContaining(sym->getValType());
+}
+
+static bool isTrackedNonNilableVariable(Symbol* sym) {
+  if (isNonNilableVariable(sym)) {
+    if (sym->hasFlag(FLAG_DEAD_LAST_MENTION))
+      return true;
+    if (ArgSymbol* arg = toArgSymbol(sym))
+      if (arg->intent == INTENT_IN || arg->intent == INTENT_CONST_IN)
+        return true;
+  }
+
+  return false;
+}
+
+bool FindInvalidNonNilables::enterDefExpr(DefExpr* def) {
+
+  Symbol* sym = def->sym;
+
+  if (isTrackedNonNilableVariable(sym)) {
+    if (varsToNil.count(sym) == 0) {
+      // Assume that the variable is not nil at initialization-time.
+      varsToNil[sym] = NULL;
+    }
+  }
+
+  return true;
+}
+
+bool FindInvalidNonNilables::enterCallExpr(CallExpr* call) {
+  if (FnSymbol* calledFn = call->resolvedOrVirtualFunction()) {
+    if (isTaskFun(calledFn)) {
+      calledFn->body->accept(this);
+      return false;
+    }
+  }
+  return true;
+}
+
+void FindInvalidNonNilables::exitCallExpr(CallExpr* call) {
+  if (call->isPrimitive(PRIM_MOVE) || call->isPrimitive(PRIM_ASSIGN)) {
+    // handle some compiler-added temps
+    SymExpr* lhsSe = toSymExpr(call->get(1));
+    Symbol* lhs = lhsSe->symbol();
+    if (SymExpr* rhsSe = toSymExpr(call->get(2))) {
+      Symbol* rhs = rhsSe->symbol();
+      if (isTrackedNonNilableVariable(lhs) && isTrackedNonNilableVariable(rhs))
+        if (varsToNil[rhs] != NULL)
+          varsToNil[lhs] = call;
+    }
+  } else if (call->resolvedOrVirtualFunction() != NULL) {
+    for_formals_actuals(formal, actual, call) {
+      SymExpr* actualSe = toSymExpr(actual);
+      Symbol* actualSym = actualSe->symbol();
+      if (isNonNilableVariable(actualSym)) {
+        if (formal->hasFlag(FLAG_LEAVES_ARG_NIL)) {
+          if (isTrackedNonNilableVariable(actualSym) &&
+              varsToNil.count(actualSym) != 0) {
+            varsToNil[actualSym] = call;
+          } else if (actualSym->hasFlag(FLAG_TEMP) && !actualSym->isRef()) {
+            // No error for now for value temps.
+          } else {
+            Expr* astPoint = findLocationIgnoringInternalInlining(call);
+            FnSymbol* inFn = astPoint->getFunction();
+            astlocT point = astPoint->astloc;
+            if (inFn->userInstantiationPointLoc.filename != NULL)
+              point = inFn->userInstantiationPointLoc;
+
+            const char* error = NULL;
+            if (isArgSymbol(actualSym)) {
+              // leaves-arg-nil OK for e.g. owned initCopy/init= etc.
+              if (actualSym->hasFlag(FLAG_LEAVES_ARG_NIL) == false)
+                error = "Cannot transfer ownership from non-nilable reference argument";
+            } else if (isOuterVar(actualSym, call->getFunction())) {
+              error = "Cannot transfer ownership from a non-nilable outer variable";
+            } else if (!actualSym->hasFlag(FLAG_DEAD_LAST_MENTION)) {
+              error = "Cannot transfer ownership from a non-nilable variable with a potentially captured alias";
+            } else {
+              error = "Cannot transfer ownership from this non-nilable variable";
+            }
+
+            if (error != NULL) {
+              if (printsUserLocation(astPoint))
+                USR_FATAL_CONT(astPoint, "%s", error);
+              else
+                USR_FATAL_CONT(point, "%s", error);
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+void FindInvalidNonNilables::visitSymExpr(SymExpr* se) {
+  Symbol* sym = se->symbol();
+  if (isNonNilableVariable(sym)) {
+    if (Expr* e = varsToNil[sym]) {
+      bool error = true;
+      // Don't worry about a PRIM_END_OF_STATEMENT if it follows the
+      // expression
+      // Don't worry about autoDestroy calls
+      if (CallExpr* parentCall = toCallExpr(se->getStmtExpr())) {
+        if (parentCall->isPrimitive(PRIM_END_OF_STATEMENT)) {
+          error = false;
+          for (Expr* cur = e; cur != NULL; cur = cur->next) {
+            if (CallExpr* curCall = toCallExpr(cur)) {
+              if (curCall->isPrimitive(PRIM_END_OF_STATEMENT)) {
+                if (curCall != parentCall)
+                  error = true;
+                break;
+              }
+            }
+          }
+        } else if (FnSymbol* calledFn = parentCall->resolvedFunction()) {
+          if (calledFn->hasFlag(FLAG_AUTO_DESTROY_FN))
+            error = false;
+        }
+      }
+
+      if (error) {
+        USR_FATAL_CONT(se, "mention of non-nilable variable after ownership is transferred out of it");
+        USR_PRINT(e, "ownership transfer occurred here");
+      }
+    }
+  }
+}
+
+static void findNonNilableStoringNil(FnSymbol* fn) {
+  // don't check special functions (owned/shared etc need to write these)
+  if (fn->hasFlag(FLAG_INIT_COPY_FN) ||
+      fn->hasFlag(FLAG_AUTO_COPY_FN) ||
+      fn->hasFlag(FLAG_AUTO_DESTROY_FN) ||
+      fn->hasFlag(FLAG_UNSAFE) ||
+      fn->hasFlag(FLAG_IGNORE_TRANSFER_ERRORS) ||
+      fn->hasFlag(FLAG_ERRONEOUS_COPY) ||
+      fn->hasFlag(FLAG_BUILD_TUPLE) ||
+      fn->hasFlag(FLAG_INIT_TUPLE))
+    return;
+
+  // don't check inside functions already saying they leave an argument nil
+  // (we could.. but we'd have to track through references etc, and
+  //  these are by definition internal)
+  if (fn->hasFlag(FLAG_LEAVES_ARG_NIL))
+    return;
+
+  // We'll check task functions while traversing the rest
+  if (isTaskFun(fn))
+    return;
+
+  FindInvalidNonNilables visitor;
+  fn->body->accept(&visitor);
+}
+
+void findNonNilableStoringNil() {
+  // assumes adjustSignatureForNilChecking already was called
+  // to mark certain formals and functions with FLAG_LEAVES_ARG_NIL.
+
+  forv_Vec(FnSymbol, fn, gFnSymbols) {
+    findNonNilableStoringNil(fn);
+  }
 }

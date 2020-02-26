@@ -11,3 +11,7 @@ Expiring values for function testRCaptures (challenges.chpl:68)
 Expiring values for function cAssignFieldEOB (challenges.chpl:101)
   a (challenges.chpl:102) expires after last mention
   b (challenges.chpl:103) expires after last mention
+Expiring values for function aliasesGlobal1 (challenges.chpl:123)
+  r (challenges.chpl:124) expires after last mention
+Expiring values for function foo (challenges.chpl:127)
+  temp (challenges.chpl:127) expires after last mention

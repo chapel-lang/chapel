@@ -1,1 +1,4 @@
-$CHPL_HOME/modules/internal/ChapelArray.chpl:4193: error: non-lvalue actual is passed to a 'ref' formal of chpl__initCopy()
+$CHPL_HOME/modules/internal/ChapelArray.chpl:4215: error: non-lvalue actual is passed to a 'ref' formal of chpl__initCopy()
+for-expr-owned-bug.chpl:6: In function 'main':
+for-expr-owned-bug.chpl:7: error: Cannot copy array with element type that cannot be assigned
+$CHPL_HOME/modules/internal/ChapelArray.chpl:4299: note: in function called here

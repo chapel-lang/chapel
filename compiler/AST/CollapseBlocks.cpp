@@ -80,6 +80,7 @@
 #include "ForallStmt.h"
 
 #include "alist.h"
+#include "ImportStmt.h"
 #include "stmt.h"
 
 CollapseBlocks::CollapseBlocks()
@@ -357,6 +358,11 @@ void CollapseBlocks::exitLoopExpr(LoopExpr* node)
 }
 
 void CollapseBlocks::visitUseStmt(UseStmt* node)
+{
+
+}
+
+void CollapseBlocks::visitImportStmt(ImportStmt* node)
 {
 
 }

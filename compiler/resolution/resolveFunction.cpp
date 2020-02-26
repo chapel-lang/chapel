@@ -29,6 +29,7 @@
 #include "ForLoop.h"
 #include "ForallStmt.h"
 #include "IfExpr.h"
+#include "ImportStmt.h"
 #include "iterator.h"
 #include "LoopExpr.h"
 #include "LoopStmt.h"
@@ -99,8 +100,6 @@ static void updateIfRefFormal(FnSymbol* fn, ArgSymbol* formal);
 static bool needRefFormal(FnSymbol* fn, ArgSymbol* formal, bool* needRefIntent);
 
 static bool shouldUpdateAtomicFormalToRef(FnSymbol* fn, ArgSymbol* formal);
-
-static bool recordContainingCopyMutatesField(Type* at);
 
 static void handleParamCNameFormal(FnSymbol* fn, ArgSymbol* formal);
 
@@ -357,7 +356,7 @@ static bool shouldUpdateAtomicFormalToRef(FnSymbol* fn, ArgSymbol* formal) {
          fn->hasFlag(FLAG_BUILD_TUPLE)         == false;
 }
 
-static bool recordContainingCopyMutatesField(Type* t) {
+bool recordContainingCopyMutatesField(Type* t) {
   AggregateType* at = toAggregateType(t);
   if (at == NULL) return false;
   if (!isRecord(at)) return false;
@@ -467,6 +466,8 @@ void resolveSpecifiedReturnType(FnSymbol* fn) {
 *                                                                             *
 ************************************** | *************************************/
 
+static void markTypesWithDefaultInitEqOrAssign(FnSymbol* fn);
+
 void resolveFunction(FnSymbol* fn, CallExpr* forCall) {
   if (fn->isResolved() == false) {
     if (fn->id == breakOnResolveID) {
@@ -521,8 +522,33 @@ void resolveFunction(FnSymbol* fn, CallExpr* forCall) {
       if (forCall != NULL) {
         resolveAlsoParallelIterators(fn, forCall);
       }
+
+      markTypesWithDefaultInitEqOrAssign(fn);
     }
     popInstantiationLimit(fn);
+  }
+}
+
+static void markTypesWithDefaultInitEqOrAssign(FnSymbol* fn) {
+
+  if (fn->name == astrSassign &&
+      fn->numFormals() >= 1) {
+    ArgSymbol* lhs = fn->getFormal(1);
+    Type* t = lhs->getValType();
+    if (fn->hasFlag(FLAG_COMPILER_GENERATED))
+      t->symbol->addFlag(FLAG_TYPE_DEFAULT_ASSIGN);
+    else
+      t->symbol->addFlag(FLAG_TYPE_CUSTOM_ASSIGN);
+  }
+
+  if (fn->name == astrInitEquals &&
+      fn->numFormals() >= 2) {
+    ArgSymbol* lhs = fn->getFormal(2); // 1 is mt
+    Type* t = lhs->getValType();
+    if (fn->hasFlag(FLAG_COMPILER_GENERATED))
+      t->symbol->addFlag(FLAG_TYPE_DEFAULT_INIT_EQUAL);
+    else
+      t->symbol->addFlag(FLAG_TYPE_CUSTOM_INIT_EQUAL);
   }
 }
 
@@ -672,7 +698,7 @@ static void insertUnrefForArrayOrTupleReturn(FnSymbol* fn) {
 
           SET_LINENO(call);
           Expr*      rhs       = call->get(2)->remove();
-          VarSymbol* tmp       = newTemp(arrayUnrefName, rhsType);
+          VarSymbol* tmp       = newTemp("array_unref_ret_tmp", rhsType);
           CallExpr*  initTmp   = new CallExpr(PRIM_MOVE,     tmp, rhs);
           CallExpr*  unrefCall = new CallExpr("chpl__unref", tmp);
           CallExpr*  shapeSet  = findSetShape(call, ret);

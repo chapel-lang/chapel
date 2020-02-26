@@ -296,20 +296,18 @@ proc doPairs() {
 
   // Read in the file
   tt.clear(); tt.start();
-  var (pp1, pp2) = initialPP12();
+  var pp1 = initialPP(fn1);
+  var pp2 = initialPP(fn2);
 
-proc initialPP12() {
+proc initialPP(fn) {
   if isPerf {
-    return (new Particle3D(nParticles, true),
-            new Particle3D(nParticles, true));
+    return new Particle3D(nParticles, true);
   } else {
-    var pp1 = readFile(fn1);
-    var pp2 = readFile(fn2);
+    var pp = readFile(fn);
     if !isTest {
-      writef("Read in %i lines from file %s \n", pp1.npart, fn1);
-      writef("Read in %i lines from file %s \n", pp2.npart, fn2);
+      writef("Read in %i lines from file %s \n", pp.npart, fn);
     }
-    return (pp1, pp2);
+    return pp;
   }
 }
 

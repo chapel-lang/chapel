@@ -23,7 +23,7 @@ class GridCFGhostRegion {
 
   const grid:             unmanaged Grid;
   var coarse_neighbors: domain(unmanaged Grid);
-  var transfer_regions:  [coarse_neighbors] unmanaged MultiDomain(dimension,stridable=true);
+  var transfer_regions:  [coarse_neighbors] unmanaged MultiDomain(dimension,stridable=true)?;
   
   // /|'''''''''''''''/|
   //< |    fields    < |
@@ -62,9 +62,9 @@ class GridCFGhostRegion {
         boundary_multidomain.subtract( grid.cells );
         
 
-        //----Remove sibling ghost regions ----
+        //---- Remove sibling ghost regions ----
         
-        for (neighbor, region) in parent_level.sibling_ghost_regions(grid) {
+        for (neighbor, region) in parent_level.sibling_ghost_regions(grid)! {
           
           if fine_intersection(region).numIndices > 0 {
             boundary_multidomain.subtract(region);     
@@ -147,7 +147,7 @@ class LevelCFGhostRegion {
   
   const level:               unmanaged Level;  
   const coarse_level:        unmanaged Level;
-  var grid_cf_ghost_regions: [level.grids] unmanaged GridCFGhostRegion;
+  var grid_cf_ghost_regions: [level.grids] unmanaged GridCFGhostRegion?;
   
   // /|'''''''''''''''/|
   //< |    fields    < |
@@ -231,10 +231,10 @@ class GridCFGhostSolution {
   
   const grid_cf_ghost_region: unmanaged GridCFGhostRegion;
   
-  var old_data: [grid_cf_ghost_region.coarse_neighbors] unmanaged MultiArray(dimension,true,real);
+  var old_data: [grid_cf_ghost_region.coarse_neighbors] unmanaged MultiArray(dimension,true,real)?;
   var old_time: real;
 
-  var current_data: [grid_cf_ghost_region.coarse_neighbors] unmanaged MultiArray(dimension,true,real);
+  var current_data: [grid_cf_ghost_region.coarse_neighbors] unmanaged MultiArray(dimension,true,real)?;
   var current_time: real;
 
 
@@ -266,10 +266,10 @@ class GridCFGhostSolution {
     for c_neighbor in grid_cf_ghost_region.coarse_neighbors {
 
       old_data(c_neighbor) = new unmanaged MultiArray(dimension,true,real);
-      old_data(c_neighbor).allocate( grid_cf_ghost_region.transfer_regions(c_neighbor) );
+      old_data(c_neighbor)!.allocate( grid_cf_ghost_region.transfer_regions(c_neighbor)! );
 
       current_data(c_neighbor) = new unmanaged MultiArray(dimension,true,real);
-      current_data(c_neighbor).allocate( grid_cf_ghost_region.transfer_regions(c_neighbor) );
+      current_data(c_neighbor)!.allocate( grid_cf_ghost_region.transfer_regions(c_neighbor)! );
     }
   }
   // /|'''''''''''''''''''''''''''''''''''/|
@@ -294,7 +294,7 @@ class GridCFGhostSolution {
       //---- This is a zipper iteration over two objects ----
 
       for ( old_array,            current_array            ) 
-      in  zip( old_data(c_neighbor), current_data(c_neighbor) )
+      in  zip( old_data(c_neighbor)!, current_data(c_neighbor)! )
       do
         yield ( old_array, current_array );
     }
@@ -351,11 +351,11 @@ class GridCFGhostSolution {
       //---- Refine data from the coarse grid solution into this structure ----
 
       for ( old_array,            current_array            )
-      in  zip( old_data(c_neighbor), current_data(c_neighbor) )
+      in  zip( old_data(c_neighbor)!, current_data(c_neighbor)! )
       {
         var boundary_domain = old_array.domain;
-        old_array     = old_coarse.refineValues( boundary_domain, ref_ratio );
-        current_array = current_coarse.refineValues( boundary_domain, ref_ratio );
+        old_array     = old_coarse!.refineValues( boundary_domain, ref_ratio );
+        current_array = current_coarse!.refineValues( boundary_domain, ref_ratio );
       }
 
     }
@@ -403,7 +403,7 @@ class LevelCFGhostSolution {
   
   const level:                 unmanaged Level;
   
-  var grid_cf_ghost_solutions: [level.grids] unmanaged GridCFGhostSolution;
+  var grid_cf_ghost_solutions: [level.grids] unmanaged GridCFGhostSolution?;
 
   var old_time:     real;    
   var current_time: real;
@@ -441,7 +441,7 @@ class LevelCFGhostSolution {
            "Error: LevelCFGhostRegion.postinit: Input level must equal level_cf_ghost_region.level");
     
     for grid in level.grids do
-      grid_cf_ghost_solutions(grid) = new unmanaged GridCFGhostSolution( level_cf_ghost_region(grid) );
+      grid_cf_ghost_solutions(grid) = new unmanaged GridCFGhostSolution( level_cf_ghost_region(grid)! );
 
   }
   // /|'''''''''''''''''''''''''''''''''''/|
@@ -512,7 +512,7 @@ class LevelCFGhostSolution {
 
     //==== Fill each GridCFGhostSolution ====
     for grid in level.grids do
-      grid_cf_ghost_solutions(grid).fill( coarse_level_solution );
+      grid_cf_ghost_solutions(grid)!.fill( coarse_level_solution );
 
 
     //==== Copy times ====
@@ -601,7 +601,7 @@ proc LevelVariable.fillCFGhostRegion (
 {
 
   for grid in level.grids do
-    this(grid).fillCFGhostRegion( level_cf_ghost_solution(grid), time );
+    this(grid)!.fillCFGhostRegion( level_cf_ghost_solution(grid)!, time );
   
 }
 // /|""""""""""""""""""""""""""""""""""""""""""""""""""""""/|

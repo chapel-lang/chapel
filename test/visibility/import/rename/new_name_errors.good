@@ -1,0 +1,2 @@
+new_name_errors.chpl:11: In function 'main':
+new_name_errors.chpl:12: error: 'Foo' undeclared (first use this function)

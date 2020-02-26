@@ -19,6 +19,8 @@
 
 #include "AstVisitorTraverse.h"
 
+#include "ImportStmt.h"
+
 AstVisitorTraverse::AstVisitorTraverse()
 {
 
@@ -179,6 +181,11 @@ void AstVisitorTraverse::visitUsymExpr(UnresolvedSymExpr* node)
 }
 
 void AstVisitorTraverse::visitUseStmt(UseStmt* node)
+{
+
+}
+
+void AstVisitorTraverse::visitImportStmt(ImportStmt* node)
 {
 
 }

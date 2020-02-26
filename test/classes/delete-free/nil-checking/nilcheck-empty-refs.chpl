@@ -29,20 +29,20 @@ proc badSetNilByRefX() {
 badSetNilByRefX();
 
 proc badSetNilByRefAssign() {
-  var x: owned MyClass = new owned MyClass(1);
+  var x: owned MyClass? = new owned MyClass(1);
   var y: owned MyClass?;
   ref r = x;
   y = r; // clears x/r
-  x.method();
+  x!.method();
 }
 badSetNilByRefAssign();
 
 proc badSetNilByRefXAssign() {
-  var x: owned MyClass = new owned MyClass(1);
+  var x: owned MyClass? = new owned MyClass(1);
   var y: owned MyClass?;
   ref r = x;
   y = x; // clears x/r
-  r.method();
+  r!.method();
 }
 badSetNilByRefXAssign();
 
@@ -75,21 +75,21 @@ proc badSetNilByRefX2() {
 badSetNilByRefX2();
 
 proc badSetNilByRefAssign2() {
-  var x: owned MyClass = new owned MyClass(1);
+  var x: owned MyClass? = new owned MyClass(1);
   var y: owned MyClass?;
   ref q = x;
   ref r = q;
   y = r; // clears x/r
-  x.method();
+  x!.method();
 }
 badSetNilByRefAssign2();
 
 proc badSetNilByRefXAssign2() {
-  var x: owned MyClass = new owned MyClass(1);
+  var x: owned MyClass? = new owned MyClass(1);
   var y: owned MyClass?;
   ref q = x;
   ref r = q;
   y = x; // clears x/r
-  r.method();
+  r!.method();
 }
 badSetNilByRefXAssign2();

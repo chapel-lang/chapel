@@ -9,6 +9,9 @@ record R {
   var x: int;
 }
 
+proc R.init=(other:R) {
+  this.x = other.x;
+}
 proc =(a:R, b:R) {
   writeln("in R's = operator");
 }
