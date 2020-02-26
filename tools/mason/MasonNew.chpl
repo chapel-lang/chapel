@@ -35,8 +35,12 @@ proc masonNew(args) throws {
     } else {
       var vcs = true;
       var show = false;
+      var isModuleName = false;
+      var moduleName = '';
       var name = '';
+      var i = 0;
       for arg in args[2..] {
+        i = i + 1;
         if arg == '-h' || arg == '--help' {
           masonNewHelp();
           exit();
@@ -47,18 +51,40 @@ proc masonNew(args) throws {
         else if arg == '--show' {
           show = true;
         }
+        else if arg.startsWith('--moduleName') {
+          isModuleName = true;
+          if arg.startsWith('--moduleName='){
+            var res = arg.split("=");
+            moduleName = res[2];
+            name = args[2];
+            break;
+          }
+          else {
+            moduleName = args[i+2];
+            name = args[2];
+            break;
+          }
+        }
         else {
           name = arg;
         }
       }
-      
-      if validatePackageName(name) {
-        if isDir(name) {
-          throw new owned MasonError("A directory named '" + name + "' already exists");
+      if isModuleName then {
+        if validatePackageName(moduleName) {
+          if isDir(name) {
+            throw new owned MasonError("A directory named '" + name + "' already exists");
+          }
+          InitProject(name, moduleName, isModuleName, vcs, show);
         }
-        InitProject(name, vcs, show);
       }
-      
+      else {
+        if validatePackageName(name) {
+          if isDir(name) {
+            throw new owned MasonError("A directory named '" + name + "' already exists");
+          }
+          InitProject(name, moduleName='', isModuleName, vcs, show);
+        }
+      }
     }
   }
   catch e: MasonError {
@@ -73,7 +99,8 @@ proc validatePackageName(name) throws {
   }
   else if !isIdentifier(name) {
     throw new owned MasonError("Bad package name '" + name +
-                        "' - only Chapel identifiers are legal package names");
+                        "' - only Chapel identifiers are legal package names.\n" +  
+                        "Please use mason new <illegal-name> --moduleName <legal-name>");
   }
   else if name.count("$") > 0 {
     throw new owned MasonError("Bad package name '" + name +
@@ -84,7 +111,7 @@ proc validatePackageName(name) throws {
   }
 }
 
-proc InitProject(name, vcs, show) throws {
+proc InitProject(name, moduleName, isModuleName, vcs, show) throws {
   if vcs {
     gitInit(name, show);
     addGitIgnore(name);
@@ -96,7 +123,8 @@ proc InitProject(name, vcs, show) throws {
   if isDir(name) {
     makeBasicToml(name, path=name);
     makeSrcDir(name);
-    makeModule(name, fileName=name);
+    if isModuleName then makeModule(name, fileName=moduleName);
+    else makeModule(name, fileName=name);
     makeTestDir(name);
     makeExampleDir(name);  
     writeln("Created new library project: " + name);
