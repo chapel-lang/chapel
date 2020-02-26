@@ -3709,35 +3709,53 @@ module ChapelArray {
   }
 
   inline proc chpl__uncheckedArrayTransfer(ref a: [], b:[]) {
-    if !chpl__serializeAssignment(a, b) && chpl__compatibleForBulkTransfer(a, b) {
-      if chpl__bulkTransferArray(a, b) == false {
-        chpl__transferArray(a, b);
+    if !chpl__serializeAssignment(a, b) {
+      if chpl__compatibleForBulkTransfer(a, b) {
+        if chpl__bulkTransferArray(a, b) == false {
+          chpl__transferArray(a, b);
+          return;
+        }
+      }
+      else if chpl__compatibleForWidePtrBulkTransfer(a, b) {
+        if chpl__attemptWidePtrArrayBulkTransfer(a, b) == false {
+          chpl__transferArray(a, b);
+          return;
+        }
       }
     }
-    else if chpl__attemptWidePtrArrayBulkTransfer(a, b) == false {
+    else {
       chpl__transferArray(a, b);
     }
   }
 
-  inline proc chpl__attemptWidePtrArrayBulkTransfer(ref a: [], b: []) {
-    /*return false;*/
-    extern proc printf(s);
+  proc chpl__compatibleForWidePtrBulkTransfer(a, b) param {
     if !useBulkTransfer then return false;
     if a.eltType != b.eltType then return false;
 
     // only classes have pointer assignment semantics
     if !isClass(a.eltType) then return false;
+    return true;
+  }
+
+  inline proc chpl__attemptWidePtrArrayBulkTransfer(ref a: [], b: []) {
+    /*return false;*/
+    /*compilerWarning("Compiler is here ", a.eltType:string, " " ,*/
+                    /*b.eltType:string);*/
 
     // for now assume they are both local arrays, that have the same bounds
     if a.domain != b.domain then return false;
     
     if a.domain._value.isDefaultRectangular() &&
        b.domain._value.isDefaultRectangular() {
+         // TODO can we omit the following check and bulk transfer narrow
+         // pointers, too
         if __primitive("is wide pointer", a[a.domain.low]) {
+          extern proc printf(s, a);
           /*printf("Doing wide transfer on " + a.eltType:string + " arrays\n");*/
           /*printf("isRecord " + isRecord(a.eltType):string + "\n");*/
           /*printf("isClass " + isClass(a.eltType):string + "\n");*/
           var ret = chpl__bulkTransferArray(a, b);
+          /*printf("%s\n", (ret:string).c_str());*/
           return ret;
 
         }
