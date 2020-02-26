@@ -1,6 +1,6 @@
-warning: Destructors have been deprecated as of Chapel 1.20. Please use deinit instead.
+warning: Destructors have been deprecated as of Chapel 1.21. Please use deinit instead.
 old-destructor-name.chpl:8: warning: to fix, rename ~C to deinit
-warning: Destructors have been deprecated as of Chapel 1.20. Please use deinit instead.
+warning: Destructors have been deprecated as of Chapel 1.21. Please use deinit instead.
 old-destructor-name.chpl:19: warning: to fix, rename ~R to deinit
 start
 C(44)

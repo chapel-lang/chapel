@@ -400,7 +400,7 @@ checkFunction(FnSymbol* fn) {
   }
 
   if (fn->hasFlag(FLAG_DESTRUCTOR) && (fn->name[0] == '~')) {
-    USR_WARN("Destructors have been deprecated as of Chapel 1.20. "
+    USR_WARN("Destructors have been deprecated as of Chapel 1.21. "
              "Please use deinit instead.");
     USR_WARN(fn, "to fix, rename %s to deinit", fn->name);
   }
