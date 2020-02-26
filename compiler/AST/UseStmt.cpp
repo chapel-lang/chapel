@@ -312,7 +312,6 @@ void UseStmt::validateList() {
 
     validateNamed();
     validateRenamed();
-    trackMethods();
   }
 }
 
@@ -467,45 +466,6 @@ BaseAST* UseStmt::getSearchScope() const {
   return retval;
 }
 
-void UseStmt::trackMethods() {
-  if (SymExpr* se = toSymExpr(src)) {
-    if (ModuleSymbol* mod = toModuleSymbol(se->symbol())) {
-      std::vector<AggregateType*> types = mod->getTopLevelClasses();
-
-      // Note: stores duplicates
-      for_vector(AggregateType, t, types) {
-        forv_Vec(FnSymbol, method, t->methods) {
-          if (method != NULL)
-            methodsAndFields.push_back(method->name);
-        }
-
-        for_fields(sym, t) {
-          methodsAndFields.push_back(sym->name);
-        }
-      }
-
-      if (types.size() != 0) {
-        // These are all compiler generated functions that might (or in some
-        // cases definitely are) not defined on the type explicitly.  Allow them
-        // as well.
-        functionsToAlwaysCheck.push_back("init");
-        functionsToAlwaysCheck.push_back("_new");
-        functionsToAlwaysCheck.push_back("deinit");
-        functionsToAlwaysCheck.push_back("_defaultOf");
-      }
-
-      std::vector<FnSymbol*> fns = mod->getTopLevelFunctions(false);
-      for_vector(FnSymbol, fn, fns) {
-        if (fn->hasFlag(FLAG_METHOD)) {
-          // Again, stores duplicates.  This is probably less costly than
-          // checking for them.
-          methodsAndFields.push_back(fn->name);
-        }
-      }
-    }
-  }
-}
-
 /************************************* | **************************************
 *                                                                             *
 *                                                                             *
@@ -545,12 +505,6 @@ bool UseStmt::skipSymbolSearch(const char* name, bool methodCall) const {
 
   } else {
     if (matchedNameOrConstructor(name) == true) {
-      retval = false;
-
-    } else if (isAllowedMethodName(name, methodCall) == true) {
-      // Only allow the symbol if the call is a method call.  Functions with
-      // the same name should not be allowed unqualified when they are omitted
-      // from the explicit only list, except for "init", "_new", etc.
       retval = false;
 
     } else {

@@ -81,7 +81,6 @@ private:
 
   void            validateRenamed();
 
-  void            trackMethods();
   bool            isAllowedMethodName(const char* name, bool methodCall) const;
 
   bool            matchedNameOrConstructor(const char* name)             const;
