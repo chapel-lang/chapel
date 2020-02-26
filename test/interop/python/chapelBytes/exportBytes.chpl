@@ -2,7 +2,7 @@ use Bytes;
 
 export proc getFirstNullBytePos(in b: bytes): int {
   for i in 1..b.length do
-    if b[i].toByte() == 0x00 then
+    if b[i] == 0x00 then
       return (i - 1);
   return -1;
 }
