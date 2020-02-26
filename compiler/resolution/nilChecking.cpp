@@ -62,6 +62,8 @@ typedef enum {
 
   MUST_ALIAS_NIL,         // it refers to nil
 
+  MUST_ALIAS_DEAD,        // it refers to dead memory
+
   MUST_ALIAS_UNKNOWN,     // might have been set, might point to nil
                           // who knows what it points to
 } AliasType;
@@ -71,8 +73,8 @@ struct AliasLocation {
   // MUST_ALIAS_ALLOCATED -> CallExpr for the allocation
   //                         or condExpr of CondStmt establishing non-nil-ness
   // MUST_ALIAS_REFVAR -> ArgSymbol or VarSymbol being referred to
-  // MUST_ALIAS_NIL -> a reason it is nil ex. assignment from nil
-  //                   or condExpr of CondStmt establishing nil-ness
+  // MUST_ALIAS_NIL, -> a reason it is nil ex. assignment from nil
+  // MUST_ALIAS_DEAD    or condExpr of CondStmt establishing nil-ness
   BaseAST* location;
   AliasLocation() : type(MUST_ALIAS_IGNORED), location(NULL) { }
 };
@@ -84,6 +86,13 @@ typedef std::map<Symbol*, AliasLocation> AliasMap;
 static inline AliasLocation nilAliasLocation(BaseAST* reason) {
   AliasLocation ret;
   ret.type = MUST_ALIAS_NIL;
+  ret.location = reason;
+  return ret;
+}
+
+static inline AliasLocation deadAliasLocation(BaseAST* reason) {
+  AliasLocation ret;
+  ret.type = MUST_ALIAS_DEAD;
   ret.location = reason;
   return ret;
 }
@@ -239,23 +248,39 @@ static bool isCheckedClassMethodCall(CallExpr* call) {
 
 static void issueNilError(const char* message, Expr* ref,
                           Symbol* var, Symbol* referent, AliasLocation loc) {
+
+  // Ignore multiple errors on the same line
+  if (printsSameLocationAsLastError(ref))
+    return;
+
   USR_FATAL_CONT(ref, message);
 
   Symbol* v  = var;
   if (referent != NULL) {
-    USR_PRINT(ref, "'%s' refers to '%s'", var->name, referent->name);
-    v = referent;
+    if (!var->hasFlag(FLAG_TEMP) && !referent->hasFlag(FLAG_TEMP))
+      USR_PRINT(ref, "'%s' refers to '%s'", var->name, referent->name);
+    if (!referent->hasFlag(FLAG_TEMP))
+      v = referent;
   }
 
   if (Expr* fromExpr = toExpr(loc.location)) {
     CallExpr* call = toCallExpr(fromExpr);
     FnSymbol* fn = call ? call->resolvedOrVirtualFunction() : NULL;
+    const char* why = NULL;
+    Type* valType = v->getValType();
     if (call && call->isPrimitive(PRIM_ASSIGN_ELIDED_COPY))
-      USR_PRINT(fromExpr, "'%s' is dead due to copy elision here", v->name);
+      why = "is dead due to copy elision here";
     else if (fn && fn->hasFlag(FLAG_AUTO_DESTROY_FN))
-      USR_PRINT(fromExpr, "'%s' is dead due to deinitialization here", v->name);
+      why = "is dead due to deinitialization here";
+    else if (isNonNilableType(valType))
+      why = "is dead due to ownership transfer here";
     else
-      USR_PRINT(fromExpr, "'%s' set to nil at this point", v->name);
+      why = "is set to nil here";
+
+    if (v->hasFlag(FLAG_TEMP))
+      USR_PRINT(fromExpr, "value %s", why);
+    else
+      USR_PRINT(fromExpr, "'%s' %s", v->name, why);
   }
 }
 
@@ -282,6 +307,8 @@ static void checkForNilDereferencesInCall(
     CallExpr* call,
     const AliasMap& aliasMap) {
 
+  Symbol* alreadyErrorSym = NULL;
+
   if (call->isPrimitive(PRIM_GET_MEMBER)       ||
       call->isPrimitive(PRIM_GET_MEMBER_VALUE) ||
       call->isPrimitive(PRIM_SET_MEMBER)       ||
@@ -303,6 +330,7 @@ static void checkForNilDereferencesInCall(
         AliasLocation loc = it->second;
         if (loc.type == MUST_ALIAS_NIL) {
           issueNilError("attempt to dereference nil", call, thisSym, NULL, loc);
+          alreadyErrorSym = thisSym;
         }
       }
     }
@@ -319,6 +347,7 @@ static void checkForNilDereferencesInCall(
       }
       if (loc.type == MUST_ALIAS_NIL) {
         issueNilError("applying postfix-! to nil", call, argSym, referent, loc);
+        alreadyErrorSym = argSym;
       } else if (loc.type == MUST_ALIAS_ALLOCATED) {
         // Postfix-! will always succeed. Replace it with a cast.
         replaceBangWithCast(call, resultType, argSym);
@@ -339,6 +368,8 @@ static void checkForNilDereferencesInCall(
         if (i == 1 &&
             (calledFn->name == astrInit || calledFn->name == astrInitEquals))
           continue; // ignore this in init functions for this check
+        if (i == 1 && calledFn->name == astrSassign)
+          continue; // ignore lhs of = for this check
         if (formal->hasFlag(FLAG_ERROR_VARIABLE) ||
             argSym->hasFlag(FLAG_ERROR_VARIABLE))
           continue; // ignore error handling implementation
@@ -355,9 +386,13 @@ static void checkForNilDereferencesInCall(
                 loc = aliasLocationFromValue(referent, aliasMap, call);
             }
 
-            if (loc.type == MUST_ALIAS_NIL) {
-              const char* error = "Illegal use of dead value";
-              issueNilError(error, call, argSym, referent, loc);
+            if (loc.type == MUST_ALIAS_DEAD ||
+                (loc.type == MUST_ALIAS_NIL && isNonNilableType(valType))) {
+              if (argSym != alreadyErrorSym) {
+                issueNilError("Illegal use of dead value",
+                              call, argSym, referent, loc);
+                alreadyErrorSym = argSym;
+              }
             }
           }
         }
@@ -375,6 +410,9 @@ static void printAliasEntry(const char* prefix, Symbol* sym, AliasLocation loc)
       break;
     case MUST_ALIAS_NIL:
       printf("%s nil: %i %s", prefix, sym->id, sym->name);
+      break;
+    case MUST_ALIAS_DEAD:
+      printf("%s ded: %i %s", prefix, sym->id, sym->name);
       break;
     case MUST_ALIAS_UNKNOWN:
       printf("%s unk: %i %s", prefix, sym->id, sym->name);
@@ -768,9 +806,9 @@ static void checkCall(
       if (actualSym->isRef()) {
         Symbol* referent = getReferent(actualSym, OUT);
         if (referent)
-          update(OUT, referent, nilAliasLocation(call));
+          update(OUT, referent, deadAliasLocation(call));
       } else {
-        update(OUT, actualSym, nilAliasLocation(call));
+        update(OUT, actualSym, deadAliasLocation(call));
       }
     }
   }
@@ -782,9 +820,9 @@ static void checkCall(
     if (sym->isRef()) {
       Symbol* referent = getReferent(sym, OUT);
       if (referent)
-        update(OUT, referent, nilAliasLocation(call));
+        update(OUT, referent, deadAliasLocation(call));
     } else {
-      update(OUT, sym, nilAliasLocation(call));
+      update(OUT, sym, deadAliasLocation(call));
     }
   }
 }
@@ -1074,8 +1112,8 @@ static void checkBasicBlock(
         if (sym->isConstValWillNotChange() == false) {
           if (storeToUnknown || isOuterVar(sym, fn)) {
             Type* t = sym->getValType();
-            bool typeIssue = isRecord(t) || isNonNilableType(t);
-            if (typeIssue && OUT[sym].type == MUST_ALIAS_NIL) {
+            if (OUT[sym].type == MUST_ALIAS_DEAD ||
+                (OUT[sym].type == MUST_ALIAS_NIL && isNonNilableType(t))) {
               // Don't reset it - using a dead variable or a non-nilable
               // class storing nil is a type system error. Setting it back
               // to a value once it was nil is still an error.
