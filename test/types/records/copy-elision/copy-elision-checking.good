@@ -1,0 +1,11 @@
+copy-elision-checking.chpl:20: In function 'test1':
+copy-elision-checking.chpl:24: error: Illegal use of dead value
+copy-elision-checking.chpl:24: note: 'r' refers to 'x'
+copy-elision-checking.chpl:23: note: 'x' is dead due to copy elision here
+copy-elision-checking.chpl:25: error: Illegal use of dead value
+copy-elision-checking.chpl:25: note: 'r' refers to 'x'
+copy-elision-checking.chpl:23: note: 'x' is dead due to copy elision here
+copy-elision-checking.chpl:30: In function 'test2':
+copy-elision-checking.chpl:34: error: Illegal use of dead value
+copy-elision-checking.chpl:34: note: 'r' refers to 'x'
+copy-elision-checking.chpl:33: note: 'x' is dead due to copy elision here

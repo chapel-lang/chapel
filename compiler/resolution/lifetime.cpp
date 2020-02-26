@@ -393,16 +393,6 @@ static void checkFunction(FnSymbol* fn) {
     // e.g. borrow can't outlive borrowed-from
     checkLifetimesInFunction(fn);
   }
-
-  if (fCompileTimeNilChecking) {
-    // Determine cases where the compiler can prove
-    // a reference-type variable is 'nil'
-    findNilDereferences(fn);
-
-    // TODO:
-    // Determine cases where the compiler can prove
-    // a class-type variable is not 'nil'
-  }
 }
 
 void checkLifetimesInFunction(FnSymbol* fn) {
