@@ -216,6 +216,11 @@ module Itertools {
     .. note::
       Be careful to pass ``real`` arrays if division is to be performed,
       or the decimal part will be truncated.
+
+    .. note::
+      This tool is similar to the already available ``scan`` functionality
+      for Chapel, however, this tool also provides ``divide`` and ``subtract``
+      functionalities which are not present in ``scan``.
   */
 
   enum operations { add, subtract, multiply, divide, bitwiseAnd, bitwiseOr, bitwiseXor }
