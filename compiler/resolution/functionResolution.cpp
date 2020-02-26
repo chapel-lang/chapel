@@ -39,6 +39,7 @@
 #include "fixupExports.h"
 #include "ForallStmt.h"
 #include "ForLoop.h"
+#include "ImportStmt.h"
 #include "initializerResolution.h"
 #include "initializerRules.h"
 #include "iterator.h"
@@ -1697,9 +1698,12 @@ isMoreVisibleInternal(BlockStmt* block, FnSymbol* fn1, FnSymbol* fn2,
   //
   if (block && block->useList) {
     for_actuals(expr, block->useList) {
-      UseStmt* use = toUseStmt(expr);
-      INT_ASSERT(use);
-      SymExpr* se = toSymExpr(use->src);
+      SymExpr* se = NULL;
+      if (UseStmt* use = toUseStmt(expr)) {
+        se = toSymExpr(use->src);
+      } else if (ImportStmt* import = toImportStmt(expr)) {
+        se = toSymExpr(import->src);
+      }
       INT_ASSERT(se);
       // We only care about uses of modules during function resolution, not
       // uses of enums.
