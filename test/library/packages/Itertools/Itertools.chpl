@@ -247,22 +247,22 @@ module Itertools {
             if result.type != int && result.type != bool then
               throw new owned IllegalArgumentError(
                 "bitwise operations supported only with boolean and integer types");
-
-            result &= arg[idx];
+            else
+              result &= arg[idx];
 
           when operations.bitwiseOr do
             if result.type != int && result.type != bool then
               throw new owned IllegalArgumentError(
                 "bitwise operations supported only with boolean and integer types");
-
-            result |= arg[idx];
+            else
+              result |= arg[idx];
 
           when operations.bitwiseXor do
             if result.type != int && result.type != bool then
               throw new owned IllegalArgumentError(
                 "bitwise operations supported only with boolean and integer types");
-
-            result ^= arg[idx];
+            else
+              result ^= arg[idx];
 
           otherwise
             throw new owned IllegalArgumentError(
