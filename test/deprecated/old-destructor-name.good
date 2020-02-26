@@ -1,0 +1,8 @@
+old-destructor-name.chpl:8: warning: "~classname" naming of deinitializers is deprecated
+old-destructor-name.chpl:19: warning: "~classname" naming of deinitializers is deprecated
+start
+C(44)
+R(55)
+~R(55)
+done
+~C(44)
