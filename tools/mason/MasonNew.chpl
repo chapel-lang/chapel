@@ -53,7 +53,7 @@ proc masonNew(args) throws {
         }
         else if arg.startsWith('--moduleName') {
           isModuleName = true;
-          if arg.startsWith('--moduleName='){
+          if arg.startsWith('--moduleName=') {
             var res = arg.split("=");
             moduleName = res[2];
             name = args[2];

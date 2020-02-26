@@ -39,7 +39,11 @@ proc masonInit(args) throws {
   try! {
     var name = '';
     var show = false;
+    var isModuleName = false;
+    var moduleName = '';
+    var i = 0;
     for arg in args[2..] {
+      i = i + 1;
       if arg == '-h' || arg == '--help' {
         masonInitHelp();
         exit();
@@ -47,19 +51,45 @@ proc masonInit(args) throws {
       else if arg == '--show' {
         show = true;
       }
+      else if arg.startsWith('--moduleName') {
+        isModuleName = true;
+        if arg.startsWith('--moduleName=') {
+          var res = arg.split("=");
+          moduleName = res[2];
+          name = args[2];
+          break;
+        }
+        else {
+          moduleName = args[i+2];
+          name = args[2];
+          break;
+        }
+      }
       else {
         name = arg;
       }
     }
+    if name.startsWith('--moduleName') then name='';
     if name == '' {
       const cwd = getEnv("PWD");
       const name = basename(cwd);
       const path = '.';
-      if validatePackageName(name) {
-        validateMasonFile(path, name, show);
-        var isInitialized = validateInit(path, show);
-        if isInitialized > 0 then
+      if isModuleName then {
+        makeLegalModule(path, moduleName);
+        if validatePackageName(moduleName) {
+          validateMasonFile(path, name, show);
+          var isInitialized = validateInit(path, show);
+          if isInitialized > 0 then
           writeln("Initialized new library project: " + name);
+        }
+      }
+      else {
+        if validatePackageName(name) {
+          validateMasonFile(path, name, show);
+          var isInitialized = validateInit(path, show);
+          if isInitialized > 0 then
+          writeln("Initialized new library project: " + name);
+        }
       }
     }
     else {
@@ -69,11 +99,22 @@ proc masonInit(args) throws {
       // if TOML file exists, check for values in it and validate
       const path = name;
       if isDir(path) {
-        if validatePackageName(name) {
-          validateMasonFile(path, basename(path), show);
-          var isInitialized = validateInit(path, show);
-          if isInitialized > 0 then
+        if isModuleName then {
+          makeLegalModule(path,moduleName);
+          if validatePackageName(moduleName) {
+            validateMasonFile(path, basename(path), show);
+            var isInitialized = validateInit(path, show);
+            if isInitialized > 0 then
             writeln("Initialized new library project in " + path + ": " + basename(path));
+          }
+        }
+        else {
+          if validatePackageName(name) {
+            validateMasonFile(path, basename(path), show);
+            var isInitialized = validateInit(path, show);
+            if isInitialized > 0 then
+            writeln("Initialized new library project in " + path + ": " + basename(path));
+          }
         }
       }
       else {
@@ -226,4 +267,21 @@ proc addSection(sectionName: string, path: string, tomlFile: unmanaged Toml, sho
   tomlFile.set(sectionName, deps);
   generateToml(tomlFile, tomlPath);
   if show then writeln("Added [" + sectionName + "] section to Mason.toml");
+}
+
+proc makeLegalModule(path: string, moduleName: string) throws {
+  if validatePackageName(moduleName) {
+    if isFile(path + "/Mason.toml") {
+      const toParse = open(path + "/Mason.toml", iomode.r);
+      const tomlFile = parseToml(toParse);
+      if tomlFile.pathExists("brick.name") {
+          throw new owned MasonError("Cannot use '--moduleName' here" +
+                                " since brick name already exists.");
+      }
+    }
+    else {
+      makeSrcDir(path);
+      makeModule(path, moduleName);
+    }
+  }
 }
