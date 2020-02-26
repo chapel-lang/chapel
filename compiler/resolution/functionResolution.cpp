@@ -10243,6 +10243,12 @@ static bool primInitIsUnacceptableGeneric(CallExpr* call, Type* type) {
   if (!type->symbol->hasFlag(FLAG_GENERIC))
     return false;
 
+  // Allow generic types in PRIM_INIT_VAR_SPLIT_DECL.
+  // The initialization at PRIM_INIT_VAR_SPLIT_INIT will establish a
+  // concrete type.
+  if (call->isPrimitive(PRIM_INIT_VAR_SPLIT_DECL))
+    return false;
+
   bool retval = true;
 
   // If it is generic then try to resolve the default type constructor
