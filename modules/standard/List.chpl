@@ -1237,9 +1237,9 @@ module List {
         Sorting the elements of this list may invalidate existing references
         to the elements contained in this list.
 
-      :arg comparator: A comparator used to sort this list.
+      :arg comparator: The type of the comparator used to sort this list.
     */
-    proc ref sort(comparator=Sort.defaultComparator) {
+    proc ref sort(comparator: ?rec=Sort.defaultComparator) {
       on this {
         _enter();
 
