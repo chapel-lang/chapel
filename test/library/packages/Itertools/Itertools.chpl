@@ -229,9 +229,9 @@ module Itertools {
   iter accumulate(arg: [?argDom], operation: operations) throws
       where argDom.rank == 1 {
 
-    if operation == operations.divide || operation == operations.subtract {
-      var result = arg[argDom.first];
+    var result = arg[argDom.first];
 
+    if operation == operations.divide || operation == operations.subtract {
       for idx in argDom do
         if idx == argDom.first then
           yield result;
