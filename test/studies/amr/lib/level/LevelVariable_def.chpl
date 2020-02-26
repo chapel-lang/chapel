@@ -16,7 +16,7 @@ private use IO;
 class LevelVariable {
   
   const level:        unmanaged Level;
-  var grid_variables: [level.grids] unmanaged GridVariable;
+  var grid_variables: [level.grids] unmanaged GridVariable?;
 
 
 
@@ -81,7 +81,7 @@ class LevelVariable {
     grid: unmanaged Grid, 
     D: domain(dimension, stridable=true)) 
   {
-    return grid_variables(grid).value(D);
+    return grid_variables(grid)!.value(D);
   }
   // /|'''''''''''''''''''''/|
   //< |    this methods    < |
@@ -111,7 +111,7 @@ proc LevelVariable.setToFunction(
 ){
 
   for grid in level.grids do
-    grid_variables(grid).setToFunction(f);
+    grid_variables(grid)!.setToFunction(f);
 
 }
 // /|""""""""""""""""""""""""""""""""""""/|
@@ -140,7 +140,7 @@ proc LevelVariable.fillOverlaps ()
 {
   
   for grid in level.grids {
-    for (neighbor, region) in level.sibling_ghost_regions(grid) do
+    for (neighbor, region) in level.sibling_ghost_regions(grid)! do
       this(grid,region) = this(neighbor,region);
   }
   
@@ -169,7 +169,7 @@ proc LevelVariable.fillOverlaps ()
 proc LevelVariable.extrapolateGhostData () {
   
   for grid_variable in grid_variables do
-    grid_variable.extrapolateGhostData();
+    grid_variable!.extrapolateGhostData();
 
 }
 
@@ -259,7 +259,7 @@ proc LevelVariable.writeData (
 
   var grid_number = base_grid_number;
   for grid in level.ordered_grids {
-    grid_variables(grid).writeData(grid_number, AMR_level, outfile);
+    grid_variables(grid)!.writeData(grid_number, AMR_level, outfile);
     outfile.writeln("  ");
     grid_number += 1;
   }

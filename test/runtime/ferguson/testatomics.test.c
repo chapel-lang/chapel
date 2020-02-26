@@ -26,8 +26,9 @@
   assert( 100 == atomic_load_ ## type (&a) ); \
   \
   atomic_store_ ## type (&a, 10); \
-  assert( ! atomic_compare_exchange_strong_ ## type (&a, 100, 11) ); \
-  assert( atomic_compare_exchange_strong_ ## type (&a, 10, 11) ); \
+  type expected = 100; \
+  assert( ! atomic_compare_exchange_strong_ ## type (&a, &expected, 11) ); \
+  assert( atomic_compare_exchange_strong_ ## type (&a, &expected, 11) ); \
   assert( 11 == atomic_load_ ## type (&a) ); \
   \
   atomic_store_ ## type (&a, 10); \

@@ -2019,7 +2019,9 @@ static BlockStmt* buildPromotionLoop(PromotionInfo& promotion,
 
   insertAndSaveWrapCall(promotion, yieldBlock, yieldTmp, wrapCall);
 
-  return ForLoop::buildForLoop(indices, iterator, yieldBlock, false, zippered);
+  return ForLoop::buildForLoop(indices, iterator, yieldBlock,
+                               zippered,
+                               /* isForExpr */ true);
 }
 
 static void buildLeaderIterator(PromotionInfo& promotion,
@@ -2199,7 +2201,9 @@ static BlockStmt* followerForLoop(PromotionInfo& promotion,
 
   return ForLoop::buildForLoop(indices->copy(&followerMap),
                                new SymExpr(followerIterator),
-                               block, false, promotion.zippered);
+                               block,
+                               promotion.zippered,
+                               /* isForExpr */ true);
 }
 
 // The returned string is canonical ie from astr().

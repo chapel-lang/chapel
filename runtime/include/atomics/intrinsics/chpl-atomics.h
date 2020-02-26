@@ -64,20 +64,12 @@ static inline memory_order _defaultOfMemoryOrder(void) {
   return memory_order_seq_cst;
 }
 
-// __sync_synchronize/__sync_bool_compare_and_swap are missing for cce < 8.4
-// and __sync_bool_compare_and_swap is broken in newer versions. Use
-// __builtin_ia32_mfence and __sync_val_compare_and_swap instead.
+// __sync_synchronize is missing for cce < 8.4
 #if RT_COMP_CC == RT_COMP_CRAY
   #include <intrinsics.h>
   #define full_memory_barrier __builtin_ia32_mfence
-  
-  # define my__sync_bool_compare_and_swap(obj, expected, desired) \
-  (__sync_val_compare_and_swap(obj, expected, desired) == expected) 
 #else
   #define full_memory_barrier __sync_synchronize
- 
-  # define my__sync_bool_compare_and_swap(obj, expected, desired) \
-  __sync_bool_compare_and_swap(obj, expected, desired) 
 #endif
 
 
@@ -142,17 +134,23 @@ static inline basetype atomic_exchange_explicit_ ## type(atomic_ ## type * obj, 
 static inline basetype atomic_exchange_ ## type(atomic_ ## type * obj, basetype value) { \
   return atomic_exchange_explicit_ ## type(obj, value, memory_order_seq_cst); \
 } \
-static inline chpl_bool atomic_compare_exchange_strong_explicit_ ## type(atomic_ ## type * obj, basetype expected, basetype desired, memory_order order) { \
-  return my__sync_bool_compare_and_swap(obj, expected, desired); \
+static inline chpl_bool atomic_compare_exchange_strong_explicit_ ## type(atomic_ ## type * obj, basetype * expected, basetype desired, memory_order succ, memory_order fail) { \
+  basetype old_value; \
+  basetype old_expected = *expected; \
+  chpl_bool ret; \
+  old_value = __sync_val_compare_and_swap(obj, old_expected, desired); \
+  ret = old_value == old_expected; \
+  if (!ret) *expected = old_value; \
+  return ret; \
 } \
-static inline chpl_bool atomic_compare_exchange_strong_ ## type(atomic_ ## type * obj, basetype expected, basetype desired) { \
-  return atomic_compare_exchange_strong_explicit_ ## type(obj, expected, desired, memory_order_seq_cst); \
+static inline chpl_bool atomic_compare_exchange_strong_ ## type(atomic_ ## type * obj, basetype * expected, basetype desired) { \
+  return atomic_compare_exchange_strong_explicit_ ## type(obj, expected, desired, memory_order_seq_cst, memory_order_seq_cst); \
 } \
-static inline chpl_bool atomic_compare_exchange_weak_explicit_ ## type(atomic_ ## type * obj, basetype expected, basetype desired, memory_order order) { \
-  return atomic_compare_exchange_strong_explicit_ ## type(obj, expected, desired, order); \
+static inline chpl_bool atomic_compare_exchange_weak_explicit_ ## type(atomic_ ## type * obj, basetype * expected, basetype desired, memory_order succ, memory_order fail) { \
+  return atomic_compare_exchange_strong_explicit_ ## type(obj, expected, desired, succ, fail); \
 } \
-static inline chpl_bool atomic_compare_exchange_weak_ ## type(atomic_ ## type * obj, basetype expected, basetype desired) { \
-  return atomic_compare_exchange_weak_explicit_ ## type(obj, expected, desired, memory_order_seq_cst); \
+static inline chpl_bool atomic_compare_exchange_weak_ ## type(atomic_ ## type * obj, basetype * expected, basetype desired) { \
+  return atomic_compare_exchange_weak_explicit_ ## type(obj, expected, desired, memory_order_seq_cst, memory_order_seq_cst); \
 }
 
 
@@ -253,21 +251,26 @@ static inline type atomic_exchange_explicit_ ## type(atomic_ ## type * obj, type
 static inline type atomic_exchange_ ## type(atomic_ ## type * obj, type value) { \
   return atomic_exchange_explicit_ ## type(obj, value, memory_order_seq_cst); \
 } \
-static inline chpl_bool atomic_compare_exchange_strong_explicit_ ## type(atomic_ ## type * obj, type expected, type desired, memory_order order) { \
-  uinttype expected_as_uint; \
+static inline chpl_bool atomic_compare_exchange_strong_explicit_ ## type(atomic_ ## type * obj, type * expected, type desired, memory_order succ, memory_order fail) { \
+  uinttype old_value_as_uint; \
+  uinttype old_expected_as_uint; \
   uinttype desired_as_uint; \
-  memcpy(&expected_as_uint, &expected, sizeof(expected_as_uint)); \
+  chpl_bool ret; \
+  memcpy(&old_expected_as_uint, expected, sizeof(old_expected_as_uint)); \
   memcpy(&desired_as_uint, &desired, sizeof(desired_as_uint)); \
-  return my__sync_bool_compare_and_swap(obj, expected_as_uint, desired_as_uint); \
+  old_value_as_uint = __sync_val_compare_and_swap(obj, old_expected_as_uint, desired_as_uint); \
+  ret = old_value_as_uint == old_expected_as_uint; \
+  if (!ret) memcpy(expected, &old_value_as_uint, sizeof(old_value_as_uint)); \
+  return ret; \
 } \
-static inline chpl_bool atomic_compare_exchange_strong_ ## type(atomic_ ## type * obj, type expected, type desired) { \
-  return atomic_compare_exchange_strong_explicit_ ## type(obj, expected, desired, memory_order_seq_cst); \
+static inline chpl_bool atomic_compare_exchange_strong_ ## type(atomic_ ## type * obj, type * expected, type desired) { \
+  return atomic_compare_exchange_strong_explicit_ ## type(obj, expected, desired, memory_order_seq_cst, memory_order_seq_cst); \
 } \
-static inline chpl_bool atomic_compare_exchange_weak_explicit_ ## type(atomic_ ## type * obj, type expected, type desired, memory_order order) { \
-  return atomic_compare_exchange_strong_explicit_ ## type(obj, expected, desired, order); \
+static inline chpl_bool atomic_compare_exchange_weak_explicit_ ## type(atomic_ ## type * obj, type * expected, type desired, memory_order succ, memory_order fail) { \
+  return atomic_compare_exchange_strong_explicit_ ## type(obj, expected, desired, succ, fail); \
 } \
-static inline chpl_bool atomic_compare_exchange_weak_ ## type(atomic_ ## type * obj, type expected, type desired) { \
-  return atomic_compare_exchange_weak_explicit_ ## type(obj, expected, desired, memory_order_seq_cst); \
+static inline chpl_bool atomic_compare_exchange_weak_ ## type(atomic_ ## type * obj, type * expected, type desired) { \
+  return atomic_compare_exchange_weak_explicit_ ## type(obj, expected, desired, memory_order_seq_cst, memory_order_seq_cst); \
 } 
 
 
@@ -336,20 +339,7 @@ DECLARE_ATOMICS(uint_least16_t);
 DECLARE_ATOMICS(uint_least32_t);
 DECLARE_ATOMICS(uint_least64_t);
 
-// On netbsd the DECLARE_ATOMICS macro doesn't work for uintptr_t. From gbt:
-// The root of the problem is the fact the on netbsd <stdint.h> (indirectly via
-// <sys.stdint.h>) #defines uintptr_t as __uintptr_t.  (__uintptr_t is in turn
-// typedef'd as unsigned long, but that doesn't matter to us.)  The C standard
-// (6.3.10.1(1) for C99) says that the actual arguments in a macro invocation
-// are themselves macro-expanded before being substituted into the replacement
-// text, unless they are preceded by a # or ## token.  In our case, the "type"
-// formal argument of DECLARE_ATOMICS_BASE has a ## before it in the
-// replacement text, so uintptr_t is not macro-expanded and the concatenation
-// produces the expected atomic_uintptr_t typedef name.  But in the case of
-// DECLARE_ATOMICS there is neither a # or ## before "type" in the replacement
-// text, so the uintptr_t actual becomes __uintptr_t via macro expansion before
-// DECLARE_ATOMICS_BASE is invoked, and we get a syntax error on the resulting
-// atomic___uintptr_t because it's not a typedef type.
+// On netbsd the DECLARE_ATOMICS macro doesn't work for uintptr_t.
 DECLARE_ATOMICS_BASE(uintptr_t, uintptr_t);
 DECLARE_ATOMICS_EXCHANGE_OPS(uintptr_t, uintptr_t);
 DECLARE_ATOMICS_FETCH_OPS(uintptr_t);
@@ -374,19 +364,3 @@ DECLARE_REAL_ATOMICS(_real64, uint64_t);
 #undef DECLARE_REAL_ATOMICS
 
 #endif // _chpl_atomics_h_
-
-/*
- * Some misc notes:
- *
- *  - According to the spec, the atomic intrinsics are technically only
- *  supported for ints, longs, long longs, and their unsigned counterparts but
- *  all the current compilers that we support have intrinsics for  1, 2, 4, and
- *  8 byte variables. 
- * 
- *  - Our interface for the atomic_compare_exchange_* functions is slightly
- *  different than the C11 interface. The C11 interface is supposed to be
- *  atomic_compare_exchange_*(volatile A* obj, C* expected, C desired), but we
- *  do not pass expected in by reference. If the compare was unsuccessful
- *  expected is supposed to be set to value of obj, but since we don't pass it
- *  by reference, we can't make that change. 
- */

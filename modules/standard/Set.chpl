@@ -41,9 +41,9 @@ module Set {
   // Use this to restrict our secondary initializer to only resolve when the
   // "iterable" argument has a method named "these".
   //
-  private use Reflection;
-  private use ChapelLocks only ;
+  private use ChapelLocks only;
   private use IO;
+  private use Reflection;
 
   pragma "no doc"
   private param _sanityChecks = true;

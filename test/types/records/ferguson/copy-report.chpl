@@ -95,17 +95,48 @@ proc callToInArg()
   callToInArg_inner(returnR());
 }
 
-
-proc varInitLocal()
+proc varInitLocalUntypedLast()
 {
-  writeln(" variable initialization / local var");
   var loc = new R(1);
   writeln("   untyped variable");
   var v1 = loc;
   check(v1);
+}
+
+proc varInitLocalTypedLast()
+{
+  var loc = new R(1);
   writeln("   typed variable");
   var v2:R = loc;
   check(v2);
+}
+
+proc varInitLocalUntypedNotLast()
+{
+  var loc = new R(1);
+  writeln("   untyped variable");
+  var v1 = loc;
+  check(v1);
+  check(loc);
+}
+
+proc varInitLocalTypedNotLast()
+{
+  var loc = new R(1);
+  writeln("   typed variable");
+  var v2:R = loc;
+  check(v2);
+  check(loc);
+}
+
+proc varInitLocal()
+{
+  writeln(" variable initialization / local var last mention");
+  varInitLocalUntypedLast();
+  varInitLocalTypedLast();
+  writeln(" variable initialization / local var not last mention");
+  varInitLocalUntypedNotLast();
+  varInitLocalTypedNotLast();
 }
 
 proc varInitGlobal()
@@ -191,38 +222,72 @@ proc varInitArgRef(ref arg)
   check(v2);
 }
 
-proc varInitArgIn(in arg)
+proc varInitArgInNotLast(in arg)
 {
-  writeln(" variable initialization / in-intent arg");
+  writeln(" variable initialization / in-intent arg not last mention");
   writeln("   untyped variable");
   var v1 = arg;
   check(v1);
+  writeln("   typed variable");
+  var v2:R = arg;
+  check(v2);
+  check(arg);
+}
+
+proc varInitArgInUntyped(in arg)
+{
+  writeln(" variable initialization / in-intent arg last mention");
+  writeln("   untyped variable");
+  var v1 = arg;
+  check(v1);
+}
+
+proc varInitArgInTyped(in arg)
+{
+  writeln(" variable initialization / in-intent arg last mention");
   writeln("   typed variable");
   var v2:R = arg;
   check(v2);
 }
 
-proc varInitArgConstIn(const in arg)
+proc varInitArgConstInNotLast(const in arg)
 {
-  writeln(" variable initialization / const-in-intent arg");
+  writeln(" variable initialization / const-in-intent arg not last mention");
   writeln("   untyped variable");
   var v1 = arg;
   check(v1);
   writeln("   typed variable");
   var v2:R = arg;
   check(v2);
+  check(arg);
+}
+
+proc varInitArgConstInUntyped(const in arg)
+{
+  writeln(" variable initialization / const-in-intent arg last mention");
+  writeln("   untyped variable");
+  var v1 = arg;
+  check(v1);
+}
+
+proc varInitArgConstInTyped(const in arg)
+{
+  writeln(" variable initialization / const-in-intent arg last mention");
+  writeln("   typed variable");
+  var v1:R = arg;
+  check(v1);
 }
 
 proc do_varInitArgIn(in arg)
 {
   writeln(" passing in intent arg to in intent arg");
-  varInitArgIn(arg);
+  varInitArgInUntyped(arg);
 }
 
 proc do_varInitArgConstIn(const in arg)
 {
   writeln(" passing const in intent arg to const in intent arg");
-  varInitArgConstIn(arg);
+  varInitArgConstInUntyped(arg);
 }
 
 proc varInitArgInout(inout arg)
@@ -255,13 +320,23 @@ proc fieldInitCall()
   check(cont.field);
 }
 
-proc fieldInitLocal()
+proc fieldInitLocalLast()
 {
-  writeln(" field initialization / local var");
+  writeln(" field initialization / local var last mention");
   var loc = new R(1);
   writeln("   default constructor");
   var cont = new Container(loc);
   check(cont.field);
+}
+
+proc fieldInitLocalNotLast()
+{
+  writeln(" field initialization / local var not last mention");
+  var loc = new R(1);
+  writeln("   default constructor");
+  var cont = new Container(loc);
+  check(cont.field);
+  check(loc);
 }
 
 proc fieldInitGlobal()
@@ -414,113 +489,129 @@ proc returnRefArgRef(ref arg:R) ref {
   return arg;
 }
 
-
-proc initFromExpiringValue()
-{
-  writeln(" init / expiring value");
-  var a = new R(1);
-  var b = a;
-  check(b);
-}
-
-proc assignFromExpiringValue()
-{
-  writeln(" assign / expiring value");
-  var a = new R(1);
-  var b:R;
-  b = a;
-  check(b);
-}
-
-
-
 proc main() {
 
-  writeln();
-  writeln("VARIABLE INITIALIZATION -- VALUE CALL");
-  varInitValueCall();
-  callToInArg();
-  fieldInitCall();
-
-  writeln();
-  writeln("VARIABLE INITIALIZATION -- LOCAL VAR");
-  varInitLocal();
-  fieldInitLocal();
-
-  writeln();
-  writeln("VARIABLE INITIALIZATION -- IN ARG (GLOBAL)");
-  varInitArgIn(global);
-  writeln();
-  varInitArgConstIn(global);
-
-  writeln();
-  writeln("VARIABLE INITIALIZATION -- IN ARG (IN ARG (CALL-EXPR)))");
-  do_varInitArgIn(returnR());
-  do_varInitArgConstIn(returnR());
-
-  writeln();
-  writeln("VARIABLE INITIALIZATION -- OUTER VAR");
-  varInitOuter();
-
-  writeln();
-  writeln("VARIABLE INITIALIZATION -- GLOBAL / REF");
-  varInitGlobal();
-  varInitRefGlobal();
-  varInitLocalRef();
-  varInitArgBlank(global);
-  varInitArgConstRef(global);
-  varInitArgRef(global);
-  varInitArgInout(global);
-
-  fieldInitGlobal();
-  fieldInitRefGlobal();
-  fieldInitLocalRef();
-  fieldInitArgBlank(global);
-  fieldInitArgConstRef(global);
-  fieldInitArgRef(global);
-  fieldInitArgIn(global);
-  fieldInitArgInout(global);
-
-  writeln();
-  writeln("VALUE RETURN -- VALUE CALL");
-  check(returnValueCall());
-  check(returnValueCall2());
-  check(returnValueCallConst());
-
-  writeln();
-  writeln("VALUE RETURN -- LOCAL VAR");
-  check(returnLocal());
-
-  writeln();
-  writeln("VALUE RETURN -- OUTER VAR");
-  returnOuter();
-
-  writeln();
-  writeln("VALUE RETURN -- IN ARG (GLOBAL)");
-  check(returnInArg(global));
-  writeln();
-  check(returnConstInArg(global));
-
-  writeln();
-  writeln("VALUE RETURN -- IN ARG (CALL-EXPR)");
-  check(returnInArg(returnR()));
-  check(returnConstInArg(returnR()));
-
-  writeln();
-  writeln("VALUE RETURN -- GLOBAL/REF");
-  check(returnGlobal());
-  check(returnRefGlobal());
-  check(returnBlankArg(global));
-  check(returnRefArg(global));
-  check(returnConstRefArg(global));
-  check(returnCallReturnsRef());
-  check(returnCallReturnsConstRef());
-
-
-  writeln();
-  writeln("REF USE -- REF VALUE");
-  // No copy expected for these ref variants
   {
+    writeln();
+    writeln("VARIABLE INITIALIZATION -- VALUE CALL");
+    varInitValueCall();
+    callToInArg();
+    fieldInitCall();
+  }
+
+  {
+    writeln();
+    writeln("VARIABLE INITIALIZATION -- LOCAL VAR");
+    varInitLocal();
+    fieldInitLocalLast();
+    fieldInitLocalNotLast();
+  }
+
+  {
+    writeln();
+    writeln("VARIABLE INITIALIZATION -- IN ARG (GLOBAL)");
+    varInitArgInNotLast(global);
+    writeln();
+    varInitArgInUntyped(global);
+    writeln();
+    varInitArgInTyped(global);
+    writeln();
+    varInitArgConstInNotLast(global);
+    writeln();
+    varInitArgConstInUntyped(global);
+    writeln();
+    varInitArgConstInTyped(global);
+  }
+
+  {
+    writeln();
+    writeln("VARIABLE INITIALIZATION -- IN ARG (IN ARG (CALL-EXPR)))");
+    do_varInitArgIn(returnR());
+    do_varInitArgConstIn(returnR());
+  }
+
+  {
+    writeln();
+    writeln("VARIABLE INITIALIZATION -- OUTER VAR");
+    varInitOuter();
+  }
+
+  {
+    writeln();
+    writeln("VARIABLE INITIALIZATION -- GLOBAL / REF");
+    varInitGlobal();
+    varInitRefGlobal();
+    varInitLocalRef();
+    varInitArgBlank(global);
+    varInitArgConstRef(global);
+    varInitArgRef(global);
+    varInitArgInout(global);
+  }
+
+  {
+    writeln();
+    writeln("FIELD INITIALIZATION");
+    fieldInitGlobal();
+    fieldInitRefGlobal();
+    fieldInitLocalRef();
+    fieldInitArgBlank(global);
+    fieldInitArgConstRef(global);
+    fieldInitArgRef(global);
+    fieldInitArgIn(global);
+    fieldInitArgInout(global);
+  }
+
+  {
+    writeln();
+    writeln("VALUE RETURN -- VALUE CALL");
+    check(returnValueCall());
+    check(returnValueCall2());
+    check(returnValueCallConst());
+  }
+
+  {
+    writeln();
+    writeln("VALUE RETURN -- LOCAL VAR");
+    check(returnLocal());
+  }
+
+  {
+    writeln();
+    writeln("VALUE RETURN -- OUTER VAR");
+    returnOuter();
+  }
+
+  {
+    writeln();
+    writeln("VALUE RETURN -- IN ARG (GLOBAL)");
+    check(returnInArg(global));
+    writeln();
+    check(returnConstInArg(global));
+  }
+
+  {
+    writeln();
+    writeln("VALUE RETURN -- IN ARG (CALL-EXPR)");
+    check(returnInArg(returnR()));
+    check(returnConstInArg(returnR()));
+  }
+
+  {
+    writeln();
+    writeln("VALUE RETURN -- GLOBAL/REF");
+    check(returnGlobal());
+    check(returnRefGlobal());
+    check(returnBlankArg(global));
+    check(returnRefArg(global));
+    check(returnConstRefArg(global));
+    check(returnCallReturnsRef());
+    check(returnCallReturnsConstRef());
+  }
+
+  {
+    writeln();
+    writeln("REF USE -- REF VALUE");
+    // No copy expected for these ref variants
     check(returnGlobalRef());
     ref v2 = returnGlobalRef();
     check(v2);

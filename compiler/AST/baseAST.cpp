@@ -29,6 +29,7 @@
 #include "ForallStmt.h"
 #include "ForLoop.h"
 #include "IfExpr.h"
+#include "ImportStmt.h"
 #include "log.h"
 #include "LoopExpr.h"
 #include "ModuleSymbol.h"
@@ -102,8 +103,12 @@ void printStatistics(const char* pass) {
 
   foreach_ast(decl_counters);
 
-  int nStmt = nBlockStmt + nCondStmt + nDeferStmt + nGotoStmt + nUseStmt + nExternBlockStmt + nForallStmt + nTryStmt + nForwardingStmt + nCatchStmt;
-  int kStmt = kBlockStmt + kCondStmt + kDeferStmt + kGotoStmt + kUseStmt + kExternBlockStmt + kForallStmt + kTryStmt + kForwardingStmt + kCatchStmt;
+  int nStmt = nBlockStmt + nCondStmt + nDeferStmt + nGotoStmt + nUseStmt +
+    nImportStmt + nExternBlockStmt + nForallStmt + nTryStmt + nForwardingStmt +
+    nCatchStmt;
+  int kStmt = kBlockStmt + kCondStmt + kDeferStmt + kGotoStmt + kUseStmt +
+    kImportStmt + kExternBlockStmt + kForallStmt + kTryStmt + kForwardingStmt +
+    kCatchStmt;
   int nExpr = nUnresolvedSymExpr + nSymExpr + nDefExpr + nCallExpr +
     nContextCallExpr + nLoopExpr + nNamedExpr + nIfExpr;
   int kExpr = kUnresolvedSymExpr + kSymExpr + kDefExpr + kCallExpr +
@@ -505,6 +510,10 @@ const char* BaseAST::astTagAsString() const {
       retval = "UseStmt";
       break;
 
+    case E_ImportStmt:
+      retval = "ImportStmt";
+      break;
+
     case E_BlockStmt:
       {
         // see AST_CHILDREN_CALL
@@ -630,9 +639,6 @@ void BaseAST::printDocsDescription(const char *doc, std::ostream *file, unsigned
     }
   }
 }
-
-
-astlocT currentAstLoc(0,NULL);
 
 void registerModule(ModuleSymbol* mod) {
   switch (mod->modTag) {
@@ -813,41 +819,4 @@ bool isCForLoop(const BaseAST* a)
   const BlockStmt* stmt = toConstBlockStmt(a);
 
   return (stmt != 0 && stmt->isCForLoop()) ? true : false;
-}
-
-/* Create a throw-away ast with a given filename and line number.
-   This can be used e.g. to pass a line and filename to USR_FATAL
-   since it only takes those from an AST, not directly. */
-VarSymbol* createASTforLineNumber(const char* filename, int line) {
-  astlocT astloc(line, filename);
-  astlocMarker markAstLoc(astloc);
-  VarSymbol* lineTemp = newTemp();
-  return lineTemp;
-}
-
-/************************************* | **************************************
-*                                                                             *
-* Definitions for astlocMarker                                                *
-*                                                                             *
-************************************** | *************************************/
-
-// constructor, invoked upon SET_LINENO
-astlocMarker::astlocMarker(astlocT newAstLoc)
-  : previousAstLoc(currentAstLoc)
-{
-  //previousAstLoc = currentAstLoc;
-  currentAstLoc = newAstLoc;
-}
-
-// constructor, for special occasions
-astlocMarker::astlocMarker(int lineno, const char* filename)
-  : previousAstLoc(currentAstLoc)
-{
-  currentAstLoc.lineno   = lineno;
-  currentAstLoc.filename = astr(filename);
-}
-
-// destructor, invoked upon leaving SET_LINENO's scope
-astlocMarker::~astlocMarker() {
-  currentAstLoc = previousAstLoc;
 }

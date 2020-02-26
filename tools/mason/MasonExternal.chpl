@@ -240,10 +240,11 @@ private proc editCompilers() {
 proc getExternalPackages(exDeps: unmanaged Toml) {
 
   var exDom: domain(string);
-  var exDepTree: [exDom] unmanaged Toml;
+  var exDepTree: [exDom] unmanaged Toml?;
 
-  for (name, spec) in exDeps.A.items() {
+  for (name, spc) in exDeps.A.items() {
     try! {
+      var spec = spc!;
       select spec.tag {
           when fieldtag.fieldToml do continue;
           otherwise {
@@ -285,7 +286,7 @@ proc getSpkgInfo(spec: string, ref dependencies: list(string)): unmanaged Toml t
   // put above try b/c compiler complains about return value
   var depList: list(unmanaged Toml);
   var spkgDom: domain(string);
-  var spkgToml: [spkgDom] unmanaged Toml;
+  var spkgToml: [spkgDom] unmanaged Toml?;
   var spkgInfo = new unmanaged Toml(spkgToml);
 
   try {

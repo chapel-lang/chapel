@@ -30,4 +30,4 @@ writeln(s[2]);
 writeln();
 
 // all together now!
-writeln(s[0..s.find(" ":bytes)], "beautifu", s[2], s[s.find(" ":bytes)..]);
+writeln(s[0..s.find(" ":bytes)], "beautifu", s.item(2), s[s.find(" ":bytes)..]);

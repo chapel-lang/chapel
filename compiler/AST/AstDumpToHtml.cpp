@@ -24,6 +24,7 @@
 #include "AstDumpToHtml.h"
 
 #include "expr.h"
+#include "ImportStmt.h"
 #include "log.h"
 #include "LoopExpr.h"
 #include "runpasses.h"
@@ -473,6 +474,25 @@ void AstDumpToHtml::visitUseStmt(UseStmt* node) {
     bool first = outputVector(mFP, node->named);
     outputRenames(mFP, node->renamed, first);
   }
+
+  fprintf(mFP, ")");
+
+  if (isBlockStmt(node->parentExpr)) {
+    fprintf(mFP, "%s\n", HTML_DL_close_tag);
+  }
+}
+
+//
+// ImportStmt
+//
+void AstDumpToHtml::visitImportStmt(ImportStmt* node) {
+  if (isBlockStmt(node->parentExpr)) {
+    fprintf(mFP, "%s\n", HTML_DL_open_tag);
+  }
+
+  fprintf(mFP, " (%d 'import' ", node->id);
+
+  node->src->accept(this);
 
   fprintf(mFP, ")");
 

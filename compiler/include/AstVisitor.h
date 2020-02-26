@@ -43,6 +43,7 @@ class UnresolvedSymExpr;
 class LoopExpr;
 
 class UseStmt;
+class ImportStmt;
 class BlockStmt;
 class ForallStmt;
 class WhileDoStmt;
@@ -148,6 +149,8 @@ public:
   // The sub-classes of Stmt
   //
   virtual void   visitUseStmt        (UseStmt*           node) = 0;
+
+  virtual void   visitImportStmt     (ImportStmt*        node) = 0;
 
   virtual bool   enterBlockStmt      (BlockStmt*         node) = 0;
   virtual void   exitBlockStmt       (BlockStmt*         node) = 0;

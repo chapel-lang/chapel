@@ -22,12 +22,14 @@
 #include "astutil.h"
 #include "expr.h"
 #include "files.h"
+#include "ImportStmt.h"
 #include "misc.h"
 #include "passes.h"
 #include "stlUtil.h"
 #include "stringutil.h"
 
 #include "AstVisitor.h"
+#include "ResolveScope.h"
 
 #include <cstring>
 #include <algorithm>
@@ -54,6 +56,74 @@ Stmt::~Stmt() {
 
 bool Stmt::isStmt() const {
   return true;
+}
+
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
+
+VisibilityStmt::VisibilityStmt(AstTag astTag): Stmt(astTag) {
+}
+
+VisibilityStmt::~VisibilityStmt() {
+}
+
+// Specifically for when the module being used or imported is renamed
+bool VisibilityStmt::isARename() const {
+  return modRename[0] != '\0';
+}
+
+const char* VisibilityStmt::getRename() const {
+  return modRename;
+}
+
+//
+// Returns the module symbol if the name provided matches the module imported or
+// used
+//
+Symbol* VisibilityStmt::checkIfModuleNameMatches(const char* name) {
+  if (isARename()) {
+    // Statements that rename the module should only allow us to find the
+    // new name, not the original one.
+    if (name == getRename()) {
+      SymExpr* actualSe = toSymExpr(src);
+      INT_ASSERT(actualSe);
+      // Could be either an enum or a module, but either way we should be able
+      // to find the new name
+      Symbol* actualSym = toSymbol(actualSe->symbol());
+      INT_ASSERT(actualSym);
+      return actualSym;
+    }
+  } else if (SymExpr* se = toSymExpr(src)) {
+    if (ModuleSymbol* modSym = toModuleSymbol(se->symbol())) {
+      if (name == se->symbol()->name) {
+        return modSym;
+      }
+    }
+  } else {
+    // Things like `use M.N.O` (and though we don't support it yet, things like
+    // `import M.N.O`) probably wouldn't reach here because we resolve such
+    // cases element-by-element rather than wholesale.  Nothing else should fall
+    // under this category
+    INT_FATAL("Malformed src");
+  }
+  return NULL;
+}
+
+
+//
+// Extends the scope's block statement to store this node, after replacing the
+// UnresolvedSymExpr we store with the found symbol
+//
+void VisibilityStmt::updateEnclosingBlock(ResolveScope* scope, Symbol* sym) {
+  src->replace(new SymExpr(sym));
+
+  remove();
+  scope->asBlockStmt()->useListAdd(this);
+
+  scope->extend(this);
 }
 
 /************************************* | **************************************
@@ -456,7 +526,7 @@ BlockStmt::useListAdd(ModuleSymbol* mod, bool privateUse) {
 }
 
 void
-BlockStmt::useListAdd(UseStmt* use) {
+BlockStmt::useListAdd(VisibilityStmt* stmt) {
   if (useList == NULL) {
     useList = new CallExpr(PRIM_USED_MODULES_LIST);
 
@@ -464,7 +534,7 @@ BlockStmt::useListAdd(UseStmt* use) {
       insert_help(useList, this, parentSymbol);
   }
 
-  useList->insertAtTail(use);
+  useList->insertAtTail(stmt);
 }
 
 
@@ -538,12 +608,14 @@ BlockStmt::accept(AstVisitor* visitor) {
 *                                                                             *
 ************************************** | *************************************/
 
-CondStmt::CondStmt(Expr* iCondExpr, BaseAST* iThenStmt, BaseAST* iElseStmt) :
-  Stmt(E_CondStmt) {
+CondStmt::CondStmt(Expr* iCondExpr,
+                   BaseAST* iThenStmt, BaseAST* iElseStmt,
+                   bool isIfExpr) : Stmt(E_CondStmt) {
 
   condExpr = iCondExpr;
   thenStmt = NULL;
   elseStmt = NULL;
+  fIsIfExpr = isIfExpr;
 
   if (Expr* s = toExpr(iThenStmt)) {
     BlockStmt* bs = toBlockStmt(s);
@@ -583,7 +655,25 @@ static void fixIfExprFoldedBlock(Expr* stmt) {
   }
 }
 
-CallExpr* CondStmt::foldConstantCondition() {
+static void addCondMentionsToEndOfStatement(CondStmt* cond, bool isIfExpr) {
+  CallExpr* end = NULL;
+
+  if (isIfExpr) {
+    // Find the next PRIM_END_OF_STATEMENT
+    for (Expr* cur = cond; cur != NULL; cur = cur->next) {
+      if (CallExpr* call = toCallExpr(cur)) {
+        if (call->isPrimitive(PRIM_END_OF_STATEMENT)) {
+          end = call;
+          break;
+        }
+      }
+    }
+  }
+
+  addMentionToEndOfStatement(cond, end);
+}
+
+CallExpr* CondStmt::foldConstantCondition(bool addEndOfStatement) {
   CallExpr* result = NULL;
 
   if (SymExpr* cond = toSymExpr(condExpr)) {
@@ -596,7 +686,7 @@ CallExpr* CondStmt::foldConstantCondition() {
 
         insertBefore(result);
 
-        bool isIfExpr = false;
+        bool ifExpr = isIfExpr();
         // A squashed IfExpr's result does not need FLAG_IF_EXPR_RESULT, which
         // is only used when there are multiple paths that could return a
         // different type.
@@ -605,17 +695,20 @@ CallExpr* CondStmt::foldConstantCondition() {
             Symbol* LHS = toSymExpr(call->get(1))->symbol();
             if (LHS->hasFlag(FLAG_IF_EXPR_RESULT)) {
               LHS->removeFlag(FLAG_IF_EXPR_RESULT);
-              isIfExpr = true;
+              ifExpr = true;
             }
           }
         }
+
+        if (addEndOfStatement)
+          addCondMentionsToEndOfStatement(this, ifExpr);
 
         if (var->immediate->bool_value() == gTrue->immediate->bool_value()) {
           Expr* then_stmt = thenStmt;
 
           then_stmt->remove();
           replace(then_stmt);
-          if (isIfExpr) fixIfExprFoldedBlock(then_stmt);
+          if (ifExpr) fixIfExprFoldedBlock(then_stmt);
 
         } else {
           Expr* else_stmt = elseStmt;
@@ -623,7 +716,7 @@ CallExpr* CondStmt::foldConstantCondition() {
           if (else_stmt != NULL) {
             else_stmt->remove();
             replace(else_stmt);
-            if (isIfExpr) fixIfExprFoldedBlock(else_stmt);
+            if (ifExpr) fixIfExprFoldedBlock(else_stmt);
           } else {
             remove();
           }
@@ -633,6 +726,10 @@ CallExpr* CondStmt::foldConstantCondition() {
   }
 
   return result;
+}
+
+bool CondStmt::isIfExpr() const {
+  return fIsIfExpr;
 }
 
 void CondStmt::verify() {
@@ -684,7 +781,8 @@ void CondStmt::verify() {
 CondStmt* CondStmt::copyInner(SymbolMap* map) {
   return new CondStmt(COPY_INT(condExpr),
                       COPY_INT(thenStmt),
-                      COPY_INT(elseStmt));
+                      COPY_INT(elseStmt),
+                      fIsIfExpr);
 }
 
 

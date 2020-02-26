@@ -6,10 +6,8 @@ R.deinit: 0
 
 Simple var actual
 R.init
-R.init(R): 1
+s = {r = (x = 0)}
 R.deinit: 0
-s = {r = (x = 1)}
-R.deinit: 1
 
 Simple new actual
 R.init

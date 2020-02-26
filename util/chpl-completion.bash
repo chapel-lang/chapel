@@ -39,6 +39,7 @@ _chpl ()
 --comm \
 --comm-substrate \
 --compile-time-nil-checking \
+--copy-elision \
 --copy-propagation \
 --copyright \
 --count-tokens \
@@ -142,6 +143,7 @@ _chpl ()
 --no-checks \
 --no-codegen \
 --no-compile-time-nil-checking \
+--no-copy-elision \
 --no-copy-propagation \
 --no-count-tokens \
 --no-cpp-lines \

@@ -65,6 +65,8 @@ public:
   FnSymbol*                  instantiatedFrom;
   SymbolMap                  substitutions;
 
+  astlocT                    userInstantiationPointLoc;
+
 private:
   BlockStmt*                 _instantiationPoint;
   FnSymbol*                  _backupInstantiationPoint;

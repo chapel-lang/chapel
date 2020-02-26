@@ -6,4 +6,4 @@
 3b {}
 3c {}
 4a {}
-assignment-to-owned-from-nil.chpl:47: error: halt reached - assigning nil to non-nilable owned
+assignment-to-owned-from-nil.chpl:49: error: halt reached - argument to ! is nil

@@ -49,7 +49,7 @@ class Block1DDist {
   // with explicit typing of locid field in LocBlock1DDist class.  Particularly
   // since I'm passing in a value from 0.. rather than an actual index value.
   //
-  var locDist: [targetLocDom] unmanaged LocBlock1DDist(glbIdxType, index(targetLocs.domain));
+  var locDist: [targetLocDom] unmanaged LocBlock1DDist(glbIdxType, index(targetLocs.domain))?;
 
   proc postinit() {
     for (loc, locid) in zip(targetLocs, 0..) do
@@ -83,7 +83,7 @@ class Block1DDist {
     // locale owns and the domain's index set
 
     // TODO: Could this be written myChunk[inds] ???
-    return locDist(here).myChunk[inds.low..inds.high];
+    return locDist(here)!.myChunk[inds.low..inds.high];
   }
   
   //
@@ -179,7 +179,7 @@ class Block1DDom {
   // TODO: would like this to be const and initialize in-place,
   // removing the initialize method
   //
-  var locDom: [dist.targetLocDom] unmanaged LocBlock1DDom(glbIdxType, lclIdxType);
+  var locDom: [dist.targetLocDom] unmanaged LocBlock1DDom(glbIdxType, lclIdxType)?;
 
   proc postinit() {
     for loc in dist.targetLocs do
@@ -203,7 +203,7 @@ class Block1DDom {
       // May want to do something like:     
       // on blk do
       // But can't currently have yields in on clauses
-        for ind in blk do
+        for ind in blk! do
           yield ind;
   }
 
@@ -320,12 +320,12 @@ class Block1DArr {
   // TODO: would like this to be const and initialize in-place,
   // removing the postinit method
   //
-  var locArr: [dom.dist.targetLocDom] unmanaged LocBlock1DArr(glbIdxType, lclIdxType, elemType);
+  var locArr: [dom.dist.targetLocDom] unmanaged LocBlock1DArr(glbIdxType, lclIdxType, elemType)?;
 
   proc postinit() {
     for loc in dom.dist.targetLocs do
       on loc do
-        locArr(loc) = new unmanaged LocBlock1DArr(glbIdxType, lclIdxType, elemType, dom.locDom(loc));
+        locArr(loc) = new unmanaged LocBlock1DArr(glbIdxType, lclIdxType, elemType, dom.locDom(loc)!);
   }
 
   proc deinit() {
@@ -338,7 +338,7 @@ class Block1DArr {
   // the global accessor for the array
   //
   proc this(i: glbIdxType) ref {
-    return locArr(dom.dist.idxToLocale(i))(i);
+    return locArr(dom.dist.idxToLocale(i))![i];
   }
 
   //
@@ -349,7 +349,7 @@ class Block1DArr {
       // May want to do something like:     
       // on this do
       // But can't currently have yields in on clauses
-      for elem in locArr(loc) {
+      for elem in locArr(loc)! {
         yield elem;
       }
     }
@@ -358,13 +358,13 @@ class Block1DArr {
   iter these(param tag: iterKind) where tag == iterKind.leader {
     coforall blk in dom.locDom do
       on blk do
-        yield blk.myBlock;
+        yield blk!.myBlock;
     //    yield 1..2;
   }
 
   iter these(param tag: iterKind, followThis) ref where tag == iterKind.follower {
     for i in followThis do
-      yield this(i);
+      yield this![i];
   }
 
   //
@@ -376,7 +376,7 @@ class Block1DArr {
       // May want to do something like the following:
       //      on loc {
       // but it causes deadlock -- see writeThisUsingOn.chpl
-        if (locArr(loc).numElements >= 1) {
+        if (locArr(loc)!.numElements >= 1) {
           if (first) {
             first = false;
           } else {

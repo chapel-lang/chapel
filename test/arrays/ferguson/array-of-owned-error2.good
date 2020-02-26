@@ -1,0 +1,4 @@
+array-of-owned-error2.chpl:3: In function 'main':
+array-of-owned-error2.chpl:6: error: invalid implicit copy-initialization
+array-of-owned-error2.chpl:6: error: Cannot copy array with element type that cannot be assigned
+array-of-owned-error2.chpl:5: note: [domain(1,int(64),false)] owned C does not have a valid init=

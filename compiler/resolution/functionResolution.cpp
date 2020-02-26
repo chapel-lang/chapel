@@ -101,11 +101,6 @@ typedef std::map<int, SymbolMap*> CapturedValueMap;
 //# Global Variables
 //#
 
-// TODO -- can we remove this global now? at least it shouldn't be array.
-char                               arrayUnrefName[] = "array_unref_ret_tmp";
-
-char                               primCoerceTmpName[] = "init_coerce_tmp";
-
 bool                               resolved                  = false;
 int                                explainCallLine           = 0;
 
@@ -139,16 +134,30 @@ static std::map<FnSymbol*, const char*> outerCompilerErrorMap;
 
 static CapturedValueMap            capturedValues;
 
-// Used to ensure we only issue the warning once per instantiation
-static std::set<FnSymbol*> oldStyleInitCopyFns;
-
 // Enable coercions from nilable -> non-nilable to have easier errors
 static int generousResolutionForErrors;
+
+// Hide errors when trying to resolve something.
+
+// aka error strategy if function not found or contained a compilerError
+typedef enum {
+  CHECK_NORMAL_CALL,
+  CHECK_CALLABLE_ONLY, // check that the function is callable (but not body)
+  CHECK_BODY_RESOLVES, // check that the body resolves (but not called fns)
+  CHECK_FAILED         // indicates error encountered here
+} check_state_t;
+
+static int inTryResolve;
+static std::vector<check_state_t> tryResolveStates;
+static std::vector<FnSymbol*> tryResolveFunctions;
+typedef std::map<FnSymbol*,std::pair<BaseAST*,const char*> > try_resolve_map_t;
+try_resolve_map_t tryResolveErrors;
 
 //#
 //# Static Function Declarations
 //#
-static FnSymbol* resolveUninsertedCall(Type* type, CallExpr* call, bool errorOnFailure=true);
+static FnSymbol* resolveUninsertedCall(Type* type, CallExpr* call,
+                                       bool errorOnFailure);
 static bool hasUserAssign(Type* type);
 static void resolveOther();
 static bool fits_in_int(int width, Immediate* imm);
@@ -290,7 +299,7 @@ void makeRefType(Type* type) {
   }
 
   CallExpr* call = new CallExpr(dtRef->symbol, type->symbol);
-  resolveUninsertedCall(type, call);
+  resolveUninsertedCall(type, call, false);
   type->refType  = toAggregateType(call->typeInfo());
 
   type->refType->getField(1)->type = type;
@@ -385,6 +394,24 @@ FnSymbol* getAutoDestroy(Type* t) {
 FnSymbol* getUnalias(Type* t) {
   return unaliasMap.get(t);
 }
+
+const char* getErroneousCopyError(FnSymbol* fn) {
+  try_resolve_map_t::iterator it;
+  it = tryResolveErrors.find(fn);
+  if (it != tryResolveErrors.end()) {
+    const char* err = it->second.second;
+    return err;
+  }
+
+  return NULL;
+}
+
+void markCopyErroneous(FnSymbol* fn, const char* err) {
+  fn->addFlag(FLAG_ERRONEOUS_COPY);
+  if (err != NULL)
+    tryResolveErrors[fn] = std::make_pair(fn,err);
+}
+
 
 /************************************* | **************************************
 *                                                                             *
@@ -520,7 +547,7 @@ isLegalLvalueActualArg(ArgSymbol* formal, Expr* actual) {
       formalTS = formal->getValType()->symbol;
       formalCopyMutates = formalTS->hasFlag(FLAG_COPY_MUTATES);
     }
-    bool isInitCoerceTmp = (0 == strcmp(sym->name, primCoerceTmpName));
+    bool isInitCoerceTmp = sym->name == astr_init_coerce_tmp;
 
     if ((actualExprTmp && !formalCopyMutates && !isInitCoerceTmp) ||
         (actualConst && !(formal && formal->hasFlag(FLAG_ARG_THIS))) ||
@@ -1304,6 +1331,7 @@ bool canCoerceAsSubtype(Type*     actualType,
                         bool*     paramNarrows) {
 
   if (actualType == dtNil && isClassLikeOrPtr(formalType) &&
+      formalType != dtStringC &&
       (!isNonNilableClassType(formalType) || useLegacyNilability(actualSym)))
     return true;
 
@@ -2182,8 +2210,10 @@ bool signatureMatch(FnSymbol* fn, FnSymbol* gn) {
 *                                                                             *
 ************************************** | *************************************/
 
-static FnSymbol* resolveUninsertedCall(BlockStmt* insert, CallExpr* call, bool errorOnFailure);
-static FnSymbol* resolveUninsertedCall(Expr*      insert, CallExpr* call, bool errorOnFailure);
+static FnSymbol* resolveUninsertedCall(BlockStmt* insert, CallExpr* call,
+                                       bool errorOnFailure);
+static FnSymbol* resolveUninsertedCall(Expr*      insert, CallExpr* call,
+                                       bool errorOnFailure);
 
 static Expr*     getInsertPointForTypeFunction(Type* type) {
   AggregateType* at     = toAggregateType(type);
@@ -2209,7 +2239,8 @@ static Expr*     getInsertPointForTypeFunction(Type* type) {
   return retval;
 }
 
-static FnSymbol* resolveUninsertedCall(Type* type, CallExpr* call, bool errorOnFailure) {
+static FnSymbol* resolveUninsertedCall(Type* type, CallExpr* call,
+                                       bool errorOnFailure) {
   FnSymbol*      retval = NULL;
 
   Expr* where = getInsertPointForTypeFunction(type);
@@ -2221,37 +2252,44 @@ static FnSymbol* resolveUninsertedCall(Type* type, CallExpr* call, bool errorOnF
   return retval;
 }
 
-static FnSymbol* resolveUninsertedCall(BlockStmt* insert, CallExpr* call, bool
-    errorOnFailure) {
+static FnSymbol* resolveUninsertedCall(BlockStmt* insert, CallExpr* call,
+                                       bool errorOnFailure) {
+  FnSymbol* ret = NULL;
   BlockStmt* block = new BlockStmt(call, BLOCK_SCOPELESS);
 
   insert->insertAtHead(block); // Tail?
 
-  if (errorOnFailure)
+  if (errorOnFailure) {
     resolveCall(call);
-  else
-    tryResolveCall(call);
+    ret = call->resolvedFunction();
+  } else {
+    ret = tryResolveCall(call, false);
+  }
 
   call->remove();
   block->remove();
 
-  return call->resolvedFunction();
+  return ret;
 }
 
-static FnSymbol* resolveUninsertedCall(Expr* insert, CallExpr* call, bool errorOnFailure) {
+static FnSymbol* resolveUninsertedCall(Expr* insert, CallExpr* call,
+                                       bool errorOnFailure) {
+  FnSymbol* ret = NULL;
   BlockStmt* block = new BlockStmt(call, BLOCK_SCOPELESS);
 
   insert->insertBefore(block);
 
-  if (errorOnFailure)
+  if (errorOnFailure) {
     resolveCall(call);
-  else
-    tryResolveCall(call);
+    ret = call->resolvedFunction();
+  } else {
+    ret = tryResolveCall(call, false);
+  }
 
   call->remove();
   block->remove();
 
-  return call->resolvedFunction();
+  return ret;
 }
 
 static void checkForInfiniteRecord(AggregateType* at, std::set<AggregateType*>& nestedRecords) {
@@ -2475,9 +2513,18 @@ void resolveCall(CallExpr* call) {
   }
 }
 
+static FnSymbol* resolveNormalCall(CallExpr* call, check_state_t checkState);
 
-FnSymbol* tryResolveCall(CallExpr* call) {
-  return resolveNormalCall(call, true);
+FnSymbol* resolveNormalCall(CallExpr* call) {
+  return resolveNormalCall(call, CHECK_NORMAL_CALL);
+}
+
+FnSymbol* tryResolveCall(CallExpr* call, bool checkWithin) {
+  check_state_t checkState = CHECK_CALLABLE_ONLY;
+  if (checkWithin)
+      checkState = CHECK_BODY_RESOLVES;
+
+  return resolveNormalCall(call, checkState);
 }
 
 static bool resolveTypeComparisonCall(CallExpr* call) {
@@ -2830,7 +2877,8 @@ static bool resolveClassBorrowMethod(CallExpr* call) {
 
 static bool      isGenericRecordInit(CallExpr* call);
 
-static FnSymbol* resolveNormalCall(CallInfo& info, bool checkOnly);
+static FnSymbol* resolveNormalCall(CallInfo& info, check_state_t checkState);
+static FnSymbol* resolveNormalCall(CallExpr* call, check_state_t checkState);
 
 static void      findVisibleFunctionsAndCandidates(
                                      CallInfo&                  info,
@@ -2844,11 +2892,11 @@ static int       disambiguateByMatch(CallInfo&                  info,
                                      ResolutionCandidate*&      bestValue);
 
 static FnSymbol* resolveNormalCall(CallInfo&            info,
-                                   bool                 checkOnly,
+                                   check_state_t        checkState,
                                    ResolutionCandidate* best);
 
 static FnSymbol* resolveNormalCall(CallInfo&            info,
-                                   bool                 checkOnly,
+                                   check_state_t        checkState,
                                    ResolutionCandidate* bestRef,
                                    ResolutionCandidate* bestConstRef,
                                    ResolutionCandidate* bestValue);
@@ -2957,9 +3005,15 @@ static Type* resolveTypeSpecifier(CallInfo& info) {
   return ret;
 }
 
-FnSymbol* resolveNormalCall(CallExpr* call, bool checkOnly) {
+static
+FnSymbol* resolveNormalCall(CallExpr* call, check_state_t checkState) {
   CallInfo  info;
   FnSymbol* retval = NULL;
+
+  if (checkState != CHECK_NORMAL_CALL) {
+    inTryResolve++;
+    tryResolveStates.push_back(checkState);
+  }
 
   if (call->id == breakOnResolveID) {
     printf("breaking on resolve call %d:\n", call->id);
@@ -2975,14 +3029,42 @@ FnSymbol* resolveNormalCall(CallExpr* call, bool checkOnly) {
     if (isTypeConstructionCall(call)) {
       resolveTypeSpecifier(info);
     } else {
-      retval = resolveNormalCall(info, checkOnly);
+      retval = resolveNormalCall(info, checkState);
     }
 
-  } else if (checkOnly == true) {
+  } else if (checkState != CHECK_NORMAL_CALL) {
     retval = NULL;
 
   } else {
     info.haltNotWellFormed();
+  }
+
+  if (checkState != CHECK_NORMAL_CALL) {
+    if (checkState == CHECK_BODY_RESOLVES) {
+      if (FnSymbol* fn = call->resolvedFunction()) {
+        tryResolveFunctions.push_back(fn);
+        // resolve that function as well
+        resolveFunction(fn);
+        tryResolveFunctions.pop_back();
+      }
+    }
+
+    check_state_t state = tryResolveStates.back();
+    tryResolveStates.pop_back();
+    inTryResolve--;
+
+    // Also check for errors in tryResolveErrors
+    // in case this is the 2nd time we attempted to resolve it.
+    if (FnSymbol* fn = call->resolvedFunction()) {
+      try_resolve_map_t::iterator it;
+      it = tryResolveErrors.find(fn);
+      if (it != tryResolveErrors.end()) {
+        state = CHECK_FAILED;
+      }
+    }
+
+    if (state == CHECK_FAILED)
+      retval = NULL;
   }
 
   return retval;
@@ -2992,7 +3074,7 @@ static bool isGenericRecordInit(CallExpr* call) {
   bool retval = false;
 
   if (UnresolvedSymExpr* ures = toUnresolvedSymExpr(call->baseExpr)) {
-    if ((strcmp(ures->unresolved, "init") == 0 || strcmp(ures->unresolved, astrInitEquals) == 0) &&
+    if ((ures->unresolved == astrInit || ures->unresolved == astrInitEquals) &&
         call->numActuals()               >= 2) {
       Type* t1 = call->get(1)->typeInfo();
       Type* t2 = call->get(2)->typeInfo();
@@ -3018,12 +3100,12 @@ static inline ModuleSymbol* overloadSetModule(ResolutionCandidate* RC) {
 }
 
 // As of this writing, this always succeeds on our test suite.
-static bool bestModulesAreConsistent(CallExpr* call, bool checkOnly,
+static bool bestModulesAreConsistent(CallExpr* call, check_state_t checkState,
    ModuleSymbol* mod1, ResolutionCandidate* rc1, const char* descr1,
    ModuleSymbol* mod2, ResolutionCandidate* rc2, const char* descr2)
 {
   if (mod1 != NULL && mod2 != NULL && mod1 != mod2) {
-    if (! checkOnly) {
+    if (checkState == CHECK_NORMAL_CALL) {
       USR_FATAL_CONT(call,
                      "the best %s and %s overloads are in different modules",
                      descr1, descr2);
@@ -3086,7 +3168,7 @@ static void reportHijackingError(CallExpr* call,
   USR_STOP();
 }
 
-static bool overloadSetsOK(CallExpr* call, bool checkOnly,
+static bool overloadSetsOK(CallExpr* call, check_state_t checkState,
                            Vec<ResolutionCandidate*>& candidates,
                            ResolutionCandidate* bestRef,
                            ResolutionCandidate* bestCref,
@@ -3099,13 +3181,13 @@ static bool overloadSetsOK(CallExpr* call, bool checkOnly,
   ModuleSymbol* bestValMod  = overloadSetModule(bestVal);
 
   // Ensure these "best" modules, if any, are consistent.
-  if (! bestModulesAreConsistent(call, checkOnly,
+  if (! bestModulesAreConsistent(call, checkState,
                                  bestRefMod,  bestRef,  "ref",
                                  bestCrefMod, bestCref, "const ref") ||
-      ! bestModulesAreConsistent(call, checkOnly,
+      ! bestModulesAreConsistent(call, checkState,
                                  bestRefMod,  bestRef,  "ref",
                                  bestValMod,  bestVal,  "value")     ||
-      ! bestModulesAreConsistent(call, checkOnly,
+      ! bestModulesAreConsistent(call, checkState,
                                  bestCrefMod, bestCref, "const ref",
                                  bestValMod,  bestVal,  "value")     )
     return false;
@@ -3130,7 +3212,7 @@ static bool overloadSetsOK(CallExpr* call, bool checkOnly,
         ! isMoreVisible(call, bestFn, candidate->fn)                        &&
         ! isAcceptableMethodChoice(call, bestFn, candidate->fn, candidates) )
     {
-      if (! checkOnly)
+      if (checkState == CHECK_NORMAL_CALL)
         reportHijackingError(call, bestFn, bestMod, candidate->fn, candMod);
       return false;
     }
@@ -3141,10 +3223,10 @@ static bool overloadSetsOK(CallExpr* call, bool checkOnly,
 }
 
 
-static FnSymbol* resolveForwardedCall(CallInfo& info, bool checkOnly);
+static FnSymbol* resolveForwardedCall(CallInfo& info, check_state_t checkState);
 static bool typeUsesForwarding(Type* t);
 
-static FnSymbol* resolveNormalCall(CallInfo& info, bool checkOnly) {
+static FnSymbol* resolveNormalCall(CallInfo& info, check_state_t checkState) {
   Vec<FnSymbol*>            mostApplicable;
   Vec<ResolutionCandidate*> candidates;
 
@@ -3168,10 +3250,11 @@ static FnSymbol* resolveNormalCall(CallInfo& info, bool checkOnly) {
   // If no candidates were found and it's a method, try forwarding
   if (candidates.n                  == 0 &&
       info.call->numActuals()       >= 1 &&
-      info.call->get(1)->typeInfo() == dtMethodToken) {
+      info.call->get(1)->typeInfo() == dtMethodToken &&
+      isUnresolvedSymExpr(info.call->baseExpr)) {
     Type* receiverType = canonicalDecoratedClassType(info.call->get(2)->getValType());
     if (typeUsesForwarding(receiverType)) {
-      FnSymbol* fn = resolveForwardedCall(info, checkOnly);
+      FnSymbol* fn = resolveForwardedCall(info, checkState);
       if (fn) {
         return fn;
       }
@@ -3179,21 +3262,21 @@ static FnSymbol* resolveNormalCall(CallInfo& info, bool checkOnly) {
     }
   }
 
-  if (! overloadSetsOK(info.call, checkOnly, candidates,
+  if (! overloadSetsOK(info.call, checkState, candidates,
                        bestRef, bestCref, bestVal)) {
     return NULL; // overloadSetsOK() found an error
   }
 
   if (numMatches == 0) {
     if (info.call->partialTag == false) {
-      if (checkOnly == false) {
+      if (checkState == CHECK_NORMAL_CALL) {
         if (candidates.n == 0) {
           bool existingErrors = fatalErrorsEncountered();
           printResolutionErrorUnresolved(info, mostApplicable);
 
           if (!inGenerousResolutionForErrors()) {
             startGenerousResolutionForErrors();
-            FnSymbol* retry = resolveNormalCall(info, /*checkOnly*/ true);
+            FnSymbol* retry = resolveNormalCall(info, CHECK_CALLABLE_ONLY);
             stopGenerousResolutionForErrors();
 
             if (fIgnoreNilabilityErrors && existingErrors == false && retry)
@@ -3226,10 +3309,10 @@ static FnSymbol* resolveNormalCall(CallInfo& info, bool checkOnly) {
       best = bestCref;
     }
 
-    retval = resolveNormalCall(info, checkOnly, best);
+    retval = resolveNormalCall(info, checkState, best);
 
   } else {
-    retval = resolveNormalCall(info, checkOnly, bestRef, bestCref, bestVal);
+    retval = resolveNormalCall(info, checkState, bestRef, bestCref, bestVal);
   }
 
   forv_Vec(ResolutionCandidate*, candidate, candidates) {
@@ -3240,7 +3323,7 @@ static FnSymbol* resolveNormalCall(CallInfo& info, bool checkOnly) {
 }
 
 static FnSymbol* resolveNormalCall(CallInfo&            info,
-                                   bool                 checkOnly,
+                                   check_state_t        checkState,
                                    ResolutionCandidate* best) {
   CallExpr* call   = info.call;
   FnSymbol* retval = NULL;
@@ -3255,7 +3338,7 @@ static FnSymbol* resolveNormalCall(CallInfo&            info,
       best->fn->hasFlag(FLAG_NO_PARENS) == true) {
     retval = wrapAndCleanUpActuals(best, info, true);
 
-    if (checkOnly == false &&
+    if (checkState == CHECK_NORMAL_CALL &&
         retval->name                         == astrSassign &&
         isRecord(retval->getFormal(1)->type) == true        &&
         retval->getFormal(2)->type           == dtNil) {
@@ -3273,7 +3356,7 @@ static FnSymbol* resolveNormalCall(CallInfo&            info,
 
       resolveNormalCallConstRef(call);
 
-      if (checkOnly == false) {
+      if (checkState == CHECK_NORMAL_CALL) {
         resolveNormalCallFinalChecks(call);
       }
     }
@@ -3283,7 +3366,7 @@ static FnSymbol* resolveNormalCall(CallInfo&            info,
 }
 
 static FnSymbol* resolveNormalCall(CallInfo&            info,
-                                   bool                 checkOnly,
+                                   check_state_t        checkState,
                                    ResolutionCandidate* bestRef,
                                    ResolutionCandidate* bestConstRef,
                                    ResolutionCandidate* bestValue) {
@@ -3350,7 +3433,7 @@ static FnSymbol* resolveNormalCall(CallInfo&            info,
         wrapAndCleanUpActuals(bestValue, tmpInfo, false);
 
       } else {
-        if (checkOnly == false) {
+        if (checkState == CHECK_NORMAL_CALL) {
           tmpInfo.haltNotWellFormed();
         }
       }
@@ -3363,7 +3446,7 @@ static FnSymbol* resolveNormalCall(CallInfo&            info,
         wrapAndCleanUpActuals(bestConstRef, tmpInfo, false);
 
       } else {
-        if (checkOnly == false) {
+        if (checkState == CHECK_NORMAL_CALL) {
           tmpInfo.haltNotWellFormed();
         }
       }
@@ -3373,7 +3456,7 @@ static FnSymbol* resolveNormalCall(CallInfo&            info,
       call->partialTag = false;
     }
 
-    if (checkOnly == false) {
+    if (checkState == CHECK_NORMAL_CALL) {
       if (best->fn->name                         == astrSassign &&
           isRecord(best->fn->getFormal(1)->type) == true        &&
           best->fn->getFormal(2)->type           == dtNil) {
@@ -3410,7 +3493,7 @@ static FnSymbol* resolveNormalCall(CallInfo&            info,
                                             valueCall,
                                             constRefCall);
 
-    if (checkOnly == false) {
+    if (checkState == CHECK_NORMAL_CALL) {
       resolveNormalCallFinalChecks(call);
     }
 
@@ -3463,7 +3546,7 @@ static void resolveNormalCallFinalChecks(CallExpr* call) {
 
   checkForStoringIntoTuple(call, fn);
 
-  resolveNormalCallCompilerWarningStuff(fn);
+  resolveNormalCallCompilerWarningStuff(call, fn);
 }
 
 static FnSymbol* wrapAndCleanUpActuals(ResolutionCandidate* best,
@@ -3526,9 +3609,24 @@ static void reissueMsgs(FnSymbol* resolvedFn,
   }
 }
 
-void resolveNormalCallCompilerWarningStuff(FnSymbol* resolvedFn) {
+void resolveNormalCallCompilerWarningStuff(CallExpr* call,
+                                           FnSymbol* resolvedFn) {
   reissueMsgs(resolvedFn, innerCompilerErrorMap, outerCompilerErrorMap, true);
   reissueMsgs(resolvedFn, innerCompilerWarningMap, outerCompilerWarningMap, false);
+
+  try_resolve_map_t::iterator it;
+  it = tryResolveErrors.find(resolvedFn);
+  if (it != tryResolveErrors.end()) {
+    if (inTryResolve > 0 && tryResolveFunctions.size() > 0) {
+      FnSymbol* fn = tryResolveFunctions.back();
+      tryResolveErrors[fn] = it->second;
+    } else {
+      BaseAST* from = it->second.first;
+      const char* err = it->second.second;
+      USR_FATAL_CONT(from, "%s", err);
+      USR_PRINT(call, "in function called here");
+    }
+  }
 }
 
 /************************************* | **************************************
@@ -3540,7 +3638,6 @@ void resolveNormalCallCompilerWarningStuff(FnSymbol* resolvedFn) {
 static void generateUnresolvedMsg(CallInfo& info, Vec<FnSymbol*>& visibleFns);
 static void sortExampleCandidates(CallInfo& info,
                                   Vec<FnSymbol*>& visibleFns);
-static void generateCopyInitErrorMsg();
 
 void printResolutionErrorUnresolved(CallInfo&       info,
                                     Vec<FnSymbol*>& visibleFns) {
@@ -3652,8 +3749,6 @@ void printResolutionErrorUnresolved(CallInfo&       info,
       generateUnresolvedMsg(info, visibleFns);
     }
 
-    generateCopyInitErrorMsg();
-
     if (developer == true) {
       USR_PRINT(call, "unresolved call had id %i", call->id);
     }
@@ -3689,29 +3784,6 @@ static void sortExampleCandidates(CallInfo& info,
   ExampleCandidateComparator cmp(info);
   // Try to sort them so that the more relevant candidates are first.
   std::stable_sort(&visibleFns.v[0], &visibleFns.v[visibleFns.n], cmp);
-}
-
-static void generateCopyInitErrorMsg() {
-  for (int i = callStack.n-1; i >= 0; i--) {
-    FnSymbol* currFn = callStack.v[i]->getFunction();
-    if (currFn->hasFlag(FLAG_AUTO_COPY_FN) ||
-        currFn->hasFlag(FLAG_INIT_COPY_FN)) {
-      Type* copied = currFn->getFormal(1)->type;
-      if (isNonGenericRecordWithInitializers(copied)) {
-        USR_PRINT(copied,
-                  "Function 'init' is being treated as a copy initializer for "
-                  "type '%s', was that intended?",
-                  copied->symbol->name);
-        USR_PRINT(copied,
-                  "If not, try explicitly declaring the type of the generic "
-                  "argument,");
-        USR_PRINT(copied,
-                  "or excluding '%s' as its type via a where clause",
-                  copied->symbol->name);
-        return;
-      }
-    }
-  }
 }
 
 void printResolutionErrorAmbiguous(CallInfo&                  info,
@@ -4173,7 +4245,7 @@ static void detectForwardingCycle(CallExpr* call) {
 
 
 // Returns a relevant FnSymbol if it worked
-static FnSymbol* resolveForwardedCall(CallInfo& info, bool checkOnly) {
+static FnSymbol* resolveForwardedCall(CallInfo& info, check_state_t checkState) {
   CallExpr* call = info.call;
   const char* calledName = info.name;
   const char* inFnName = call->getFunction()->name;
@@ -5762,7 +5834,8 @@ static void resolveInitField(CallExpr* call) {
         (fs->defPoint->exprType == NULL && fs->defPoint->init == NULL) ||
         (fs->defPoint->init == NULL && fs->defPoint->exprType != NULL &&
          ct->fieldIsGeneric(fs, ignoredHasDefault))) {
-      AggregateType* instantiate = ct->getInstantiation(srcSym, index);
+      Expr* insnPt = call->getFunction()->instantiationPoint();
+      AggregateType* instantiate = ct->getInstantiation(srcSym, index, insnPt);
       if (instantiate != ct) {
         // TODO: make this set of operations a helper function I can call
         INT_ASSERT(parentFn->_this);
@@ -6016,7 +6089,7 @@ static void resolveInitVar(CallExpr* call) {
       if (mismatch)
         checkMoveIntoClass(call, targetType->getValType(), src->getValType());
 
-      VarSymbol* tmp = newTemp(primCoerceTmpName, targetType);
+      VarSymbol* tmp = newTemp(astr_init_coerce_tmp, targetType);
       tmp->addFlag(FLAG_EXPR_TEMP);
       if (dst->hasFlag(FLAG_PARAM))
         tmp->addFlag(FLAG_PARAM);
@@ -6086,8 +6159,23 @@ static void resolveInitVar(CallExpr* call) {
     call->insertAtTail(initCopy);
     call->primitive = primitives[PRIM_MOVE];
 
-    resolveExpr(initCopy);
-    resolveMove(call);
+    if (initCopyIter == false) {
+      // If there is an error in that initCopy call,
+      // just mark it for later (rather than raising the error now)
+      // since the initCopy might be removed later in compilation.
+      inTryResolve++;
+      tryResolveStates.push_back(CHECK_CALLABLE_ONLY);
+
+      resolveExpr(initCopy);
+      resolveMove(call);
+
+      tryResolveStates.pop_back();
+      inTryResolve--;
+    } else {
+      // give errors for init-copy on iterators now
+      resolveExpr(initCopy);
+      resolveMove(call);
+    }
 
   } else if (isRecord(targetType->getValType())) {
     AggregateType* at = toAggregateType(targetType->getValType());
@@ -6138,32 +6226,11 @@ static void resolveInitVar(CallExpr* call) {
 
       call->insertAtHead(gMethodToken);
 
-      bool foundOldStyleInit = false;
-      // Try resolving the old-style copy initializer first
-      if (at->hasUserDefinedInitEquals() == false &&
-          srcType->getValType() == targetType->getValType()) {
-        call->setUnresolvedFunction("init");
+      call->setUnresolvedFunction(astrInitEquals);
 
-        foundOldStyleInit = tryResolveCall(call) != NULL;
+      resolveExpr(call);
 
-        if (foundOldStyleInit) {
-          resolveNormalCallFinalChecks(call);
-        }
-      }
-
-      if (foundOldStyleInit == false) {
-        call->setUnresolvedFunction(astrInitEquals);
-
-        resolveExpr(call);
-
-        dst->type = call->resolvedFunction()->_this->getValType();
-      } else {
-        FnSymbol* fn = call->resolvedFunction();
-        if (oldStyleInitCopyFns.find(fn) == oldStyleInitCopyFns.end()) {
-          oldStyleInitCopyFns.insert(fn);
-          USR_WARN(fn, "'init' has been deprecated as the copy-initializer, use 'init=' instead.");
-        }
-      }
+      dst->type = call->resolvedFunction()->_this->getValType();
 
       if (at->hasPostInitializer() == true) {
         call->insertAfter(new CallExpr("postinit", gMethodToken, dst));
@@ -6186,41 +6253,95 @@ static void resolveInitVar(CallExpr* call) {
 *                                                                             *
 ************************************** | *************************************/
 
-FnSymbol* findCopyInit(AggregateType* at) {
+static FnSymbol* fixInstantiationPointAndTryResolveBody(AggregateType* at,
+                                                        CallExpr* call);
+
+FnSymbol* findCopyInitFn(AggregateType* at, const char*& err) {
   VarSymbol* tmpAt = newTemp(at);
 
+  CallExpr* call = NULL;
+
+  if (at->symbol->hasFlag(FLAG_TUPLE)) {
+    call = new CallExpr("chpl__initCopy", tmpAt);
+  } else {
+    call = new CallExpr(astrInitEquals, gMethodToken, tmpAt, tmpAt);
+  }
+
+  FnSymbol* foundFn = resolveUninsertedCall(at, call, false);
+  // foundFn's instantiationPoint points to the dummy BlockStmt created by
+  // resolveUninsertedCall, so it needs to be updated.
+  FnSymbol* resolvedFn = fixInstantiationPointAndTryResolveBody(at, call);
   FnSymbol* ret = NULL;
 
-  if (at->hasUserDefinedInitEquals() == false) {
-    CallExpr* call = new CallExpr("init", gMethodToken, tmpAt, tmpAt);
-    ret = resolveUninsertedCall(at, call, false);
-  }
+  if (foundFn != NULL && resolvedFn == NULL)
+    if (tryResolveErrors.count(foundFn) != 0)
+      err = tryResolveErrors[foundFn].second;
 
-  if (ret == NULL) {
-    CallExpr* call = NULL;
-
-    call = new CallExpr(astrInitEquals, gMethodToken, tmpAt, tmpAt);
-
-    ret = resolveUninsertedCall(at, call, false);
-  } else {
-    FnSymbol* fn = ret;
-    if (oldStyleInitCopyFns.find(fn) == oldStyleInitCopyFns.end()) {
-      oldStyleInitCopyFns.insert(fn);
-      USR_WARN(fn, "'init' has been deprecated as the copy-initializer, use 'init=' instead.");
-    }
-  }
-
-  // ret's instantiationPoint points to the dummy BlockStmt created by
-  // resolveUninsertedCall, so it needs to be updated.
-  if (ret != NULL) {
-    Expr* point = NULL;
-    if (BlockStmt* stmt = at->symbol->instantiationPoint) {
-      point = stmt;
-    }
-    ret->setInstantiationPoint(point);
-  }
+  if (foundFn != NULL)
+    ret = resolvedFn;
 
   return ret;
+}
+
+FnSymbol* findAssignFn(AggregateType* at) {
+  VarSymbol* tmpAt = newTemp(at);
+
+  CallExpr* call = new CallExpr("=", tmpAt, tmpAt);
+
+  FnSymbol* foundFn = resolveUninsertedCall(at, call, false);
+  FnSymbol* resolvedFn = fixInstantiationPointAndTryResolveBody(at, call);
+  FnSymbol* ret = NULL;
+
+  if (foundFn != NULL)
+    ret = resolvedFn;
+
+  return ret;
+}
+
+FnSymbol* findZeroArgInitFn(AggregateType* at) {
+  VarSymbol* tmpAt = newTemp(at);
+
+  CallExpr* call = NULL;
+  if (at->symbol->hasFlag(FLAG_TUPLE)) {
+    call = new CallExpr(astr_defaultOf, at->symbol);
+  } else {
+    call = new CallExpr(astrInit, gMethodToken, tmpAt);
+  }
+
+  FnSymbol* foundFn = resolveUninsertedCall(at, call, false);
+  FnSymbol* resolvedFn = fixInstantiationPointAndTryResolveBody(at, call);
+  FnSymbol* ret = NULL;
+
+  if (foundFn != NULL)
+    ret = resolvedFn;
+
+  return ret;
+}
+
+static FnSymbol* fixInstantiationPointAndTryResolveBody(AggregateType* at,
+                                                        CallExpr* call) {
+
+  if (FnSymbol* fn = call->resolvedFunction()) {
+    fn->setInstantiationPoint(at->symbol->instantiationPoint);
+
+    inTryResolve++;
+    tryResolveStates.push_back(CHECK_BODY_RESOLVES);
+    tryResolveFunctions.push_back(fn);
+
+    resolveFunction(fn);
+
+    check_state_t state = tryResolveStates.back();
+
+    tryResolveFunctions.pop_back();
+    tryResolveStates.pop_back();
+    inTryResolve--;
+
+    // return the function if no compilerError was encountered
+    if (state != CHECK_FAILED)
+      return fn;
+  }
+
+  return NULL;
 }
 
 /************************************* | **************************************
@@ -7924,14 +8045,25 @@ static void resolveExprMaybeIssueError(CallExpr* call) {
 
     head = callStack.n - 1 - depth;
 
-    for (int i = head; i >= 0; i--) {
+    FnSymbol* tryResolveFunction = NULL;
+    if (tryResolveFunctions.size() > 0)
+      tryResolveFunction = tryResolveFunctions.back();
+
+    for (int i = callStack.n-1; i >= 0; i--) {
       CallExpr*     frame  = callStack.v[i];
       ModuleSymbol* module = frame->getModule();
       FnSymbol*     fn     = frame->getFunction();
 
       from = frame;
 
-      if (frame->linenum()                     >  0             &&
+      // If we are in a tryResolve call, record the error at the
+      // function being attempted, instead of at a further up call site,
+      // so that the message makes sense when reissued.
+      if (tryResolveFunction != NULL && fn == tryResolveFunction)
+        break;
+
+      if (i <= head &&
+          frame->linenum()                     >  0             &&
           fn->hasFlag(FLAG_COMPILER_GENERATED) == false         &&
           module->modTag                       != MOD_INTERNAL) {
         break;
@@ -7956,11 +8088,37 @@ static void resolveExprMaybeIssueError(CallExpr* call) {
     str = astr(unescapeString(str, var).c_str());
 
     if (call->isPrimitive(PRIM_ERROR) == true) {
-      USR_FATAL(from, "%s", str);
-      if (FnSymbol* fn = callStack.tail()->resolvedFunction())
-        innerCompilerErrorMap[fn] = str;
-      if (FnSymbol* fn = callStack.v[head]->resolvedFunction())
-        outerCompilerErrorMap[fn] = str;
+      if (inTryResolve == 0) {
+        USR_FATAL(from, "%s", str);
+        if (FnSymbol* fn = callStack.tail()->resolvedFunction())
+          innerCompilerErrorMap[fn] = str;
+        if (FnSymbol* fn = callStack.v[head]->resolvedFunction())
+          outerCompilerErrorMap[fn] = str;
+      } else {
+        tryResolveStates.back() = CHECK_FAILED;
+
+        if (tryResolveFunctions.size() > 0) {
+          FnSymbol* fn = tryResolveFunctions.back();
+
+          tryResolveErrors[fn] = std::make_pair(from,str);
+        }
+
+        // Make any errors in initCopy / autoCopy mark the function
+        // with the flag for later errors (during callDestructors)
+        for (int i = callStack.n-1; i >= 0; i--) {
+          CallExpr*     frame  = callStack.v[i];
+          FnSymbol*     fn     = frame->getFunction();
+          bool inCopyIsh = fn->hasFlag(FLAG_INIT_COPY_FN) ||
+                           fn->hasFlag(FLAG_AUTO_COPY_FN) ||
+                           fn->hasFlag(FLAG_UNALIAS_FN) ||
+                           fn->name == astrInitEquals;
+          if (inCopyIsh) {
+            fn->addFlag(FLAG_ERRONEOUS_COPY);
+            tryResolveErrors[fn] = std::make_pair(from,str);
+          }
+        }
+      }
+
     } else {
       USR_WARN (from, "%s", str);
       if (FnSymbol* fn = callStack.tail()->resolvedFunction())
@@ -7976,7 +8134,7 @@ static Expr* foldTryCond(Expr* expr) {
 
   if (CondStmt* cond = toCondStmt(expr->parentExpr))
     if (cond->condExpr == expr)
-      if (CallExpr* noop = cond->foldConstantCondition())
+      if (CallExpr* noop = cond->foldConstantCondition(true))
         retval = noop;
 
   return retval;
@@ -8298,7 +8456,7 @@ static void resolveSupportForModuleDeinits() {
   VarSymbol* fnPtrDum   = newTemp("fnPtr", dtCFnPtr);
   CallExpr*  addModule  = new CallExpr("chpl_addModule", modNameDum, fnPtrDum);
 
-  resolveUninsertedCall(chpl_gen_main->body, addModule, /*err on fail*/ true);
+  resolveUninsertedCall(chpl_gen_main->body, addModule, true);
 
   gAddModuleFn = addModule->resolvedFunction();
 
@@ -8369,7 +8527,7 @@ static void insertRuntimeTypeTemps() {
       VarSymbol* tmp = newTemp("_runtime_type_tmp_", at);
       at->symbol->defPoint->insertBefore(new DefExpr(tmp));
       CallExpr* call = new CallExpr("chpl__convertValueToRuntimeType", tmp);
-      FnSymbol* fn = resolveUninsertedCall(at, call);
+      FnSymbol* fn = resolveUninsertedCall(at, call, true);
       resolveFunction(fn);
       valueToRuntimeTypeMap.put(at, fn);
       tmp->defPoint->remove();
@@ -8655,15 +8813,31 @@ static const char* autoCopyFnForType(AggregateType* at) {
 static FnSymbol* autoMemoryFunction(AggregateType* at, const char* fnName) {
   VarSymbol* tmp    = newTemp(at);
   CallExpr*  call   = new CallExpr(fnName, tmp);
-  FnSymbol*  retval = NULL;
 
   chpl_gen_main->insertAtHead(new DefExpr(tmp));
 
-  retval = resolveUninsertedCall(at, call);
+  FnSymbol* foundFn = resolveUninsertedCall(at, call, false);
+  FnSymbol* resolvedFn = fixInstantiationPointAndTryResolveBody(at, call);
+  FnSymbol* retval = NULL;
 
-  resolveFunction(retval);
+  if (foundFn != NULL)
+    retval = resolvedFn;
 
-  INT_ASSERT(retval->hasFlag(FLAG_PROMOTION_WRAPPER) == false);
+  if (retval == NULL) {
+    if (FnSymbol* fn = call->resolvedFunction()) {
+      // if it's an initCopy e.g. we should have already marked it as erroneous
+      if (fn->hasFlag(FLAG_INIT_COPY_FN) ||
+          fn->hasFlag(FLAG_AUTO_COPY_FN) ||
+          fn->hasFlag(FLAG_UNALIAS_FN))
+        INT_ASSERT(fn->hasFlag(FLAG_ERRONEOUS_COPY));
+
+      // Return the resolved function, for storing in the map
+      retval = fn;
+    }
+  }
+
+  if (retval != NULL)
+    INT_ASSERT(retval->hasFlag(FLAG_PROMOTION_WRAPPER) == false);
 
   tmp->defPoint->remove();
 
@@ -9582,6 +9756,10 @@ static void errorIfNonNilableType(CallExpr* call, Symbol* val,
   bool unsafe = call->getFunction()->hasFlag(FLAG_UNSAFE) ||
                 call->getModule()->hasFlag(FLAG_UNSAFE);
   if (unsafe)
+    return;
+
+  // If the variable is explicitly not initialized, don't worry
+  if (val->hasFlag(FLAG_NO_INIT))
     return;
 
   // Allow default-init assign to work around current compiler oddities.

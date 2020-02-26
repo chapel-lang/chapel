@@ -1448,7 +1448,7 @@ module ChapelArray {
     }
 
     /*
-     Creates an index buffer which can be used for faster index addition. 
+     Creates an index buffer which can be used for faster index addition.
 
      For example, instead of:
 
@@ -3639,6 +3639,7 @@ module ChapelArray {
     }
   }
   proc chpl__supportedDataTypeForBulkTransfer(x: string) param return false;
+  proc chpl__supportedDataTypeForBulkTransfer(x: bytes) param return false;
   proc chpl__supportedDataTypeForBulkTransfer(x: sync) param return false;
   proc chpl__supportedDataTypeForBulkTransfer(x: single) param return false;
   proc chpl__supportedDataTypeForBulkTransfer(x: domain) param return false;
@@ -3764,6 +3765,7 @@ module ChapelArray {
     return success;
   }
 
+  pragma "ignore transfer errors"
   inline proc chpl__transferArray(ref a: [], const ref b) lifetime a <= b {
     if (a.eltType == b.type ||
         _isPrimitiveType(a.eltType) && _isPrimitiveType(b.type)) {
@@ -3787,6 +3789,8 @@ module ChapelArray {
   inline proc =(ref a: [], b:domain) {
     if a.rank != b.rank then
       compilerError("rank mismatch in array assignment");
+    if isAssociativeDom(b) && isRectangularArr(a) then
+      compilerError("cannot assign to rectangular arrays from associative domains");
     chpl__transferArray(a, b);
   }
 
@@ -4019,11 +4023,15 @@ module ChapelArray {
   proc chpl__initCopy(const ref a: []) {
     var b : [a._dom] a.eltType;
 
+    // TODO: handle !isConstAssignableType(a.eltType)
+    if !isAssignableType(a.eltType) then
+      compilerError("Cannot copy array with element type that cannot be assigned");
+
     chpl__uncheckedArrayTransfer(b, a);
     return b;
   }
 
-  pragma "auto copy fn" proc chpl__autoCopy(const ref x: []) {
+  pragma "auto copy fn" proc chpl__autoCopy(x: []) {
     pragma "no copy" var b = chpl__initCopy(x);
     return b;
   }
@@ -4116,6 +4124,7 @@ module ChapelArray {
     return chpl__initCopy_shapeHelp(shape, ir);
   }
 
+  pragma "ignore transfer errors"
   proc chpl__initCopy_shapeHelp(shape: domain, ir: _iteratorRecord)
   {
     // Right now there are two distinct events for each array element:
@@ -4136,6 +4145,11 @@ module ChapelArray {
         r = src;
     }
     return result;
+  }
+
+  pragma "unchecked throws"
+  proc chpl__throwErrorUnchecked(in e: owned Error) throws {
+    throw e;
   }
 
   pragma "init copy fn"
@@ -4188,42 +4202,54 @@ module ChapelArray {
 
     if size > 0 then allocateData(true, size);
 
-    for elt in ir {
+    try {
+      for elt in ir {
 
-      // Future: we should generally remove this copy.
-      // Note though that in some cases it invokes this function
-      // recursively - in that case it shouldn't be removed!
-      pragma "no auto destroy"
-      pragma "no copy"
-      var eltCopy = chpl__initCopy(elt);
+        // Future: we should generally remove this copy.
+        // Note though that in some cases it invokes this function
+        // recursively - in that case it shouldn't be removed!
+        pragma "no auto destroy"
+        pragma "no copy"
+        var eltCopy = try chpl__initCopy(elt);
 
-      if i >= size {
-        // Allocate a new buffer and then copy.
-        var oldSize = size;
-        var oldData = data;
+        if i >= size {
+          // Allocate a new buffer and then copy.
+          var oldSize = size;
+          var oldData = data;
 
-        if size == 0 then
-          size = 4;
-        else
-          size = 2 * size;
+          if size == 0 then
+            size = 4;
+          else
+            size = 2 * size;
 
-        allocateData(true, size);
+          allocateData(true, size);
 
-        // Now copy the data over
-        for i in 0..#oldSize {
-          // this is a move, transferring ownership
-          __primitive("=", data[i], oldData[i]);
+          // Now copy the data over
+          for i in 0..#oldSize {
+            // this is a move, transferring ownership
+            __primitive("=", data[i], oldData[i]);
+          }
+
+          // Then, free the old data
+          _ddata_free(oldData, oldSize);
         }
 
-        // Then, free the old data
-        _ddata_free(oldData, oldSize);
+        // Now move the element to the array
+        // The intent here is to transfer ownership to the array.
+        __primitive("=", data[i], eltCopy);
+
+        i += 1;
       }
-
-      // Now move the element to the array
-      // The intent here is to transfer ownership to the array.
-      __primitive("=", data[i], eltCopy);
-
-      i += 1;
+    } catch e {
+      // Deinitialize any elements that have been iniitalized.
+      for j in 0..i-1 {
+        chpl__autoDestroy(data[j]);
+      }
+      // Free the allocated memory.
+      _ddata_free(data, size);
+      // Propagate the thrown error, but don't consider this
+      // function throwing just because of this call.
+      chpl__throwErrorUnchecked(e);
     }
 
     // Create the domain of the array that we will return.

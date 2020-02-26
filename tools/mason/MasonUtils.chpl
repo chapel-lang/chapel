@@ -301,6 +301,12 @@ record VersionInfo {
   }
 }
 
+proc =(ref lhs:VersionInfo, const ref rhs:VersionInfo) {
+  lhs.major = rhs.major;
+  lhs.minor = rhs.minor;
+  lhs.bug   = rhs.bug;
+}
+
 proc >=(a:VersionInfo, b:VersionInfo) : bool {
   return a.cmp(b) >= 0;
 }
@@ -487,7 +493,7 @@ proc isIdentifier(name:string) {
    TODO custom fields returned */
 iter allFields(tomlTbl: unmanaged Toml) {
   for (k,v) in tomlTbl.A.items() {
-    if v.tag == fieldtag.fieldToml then
+    if v!.tag == fieldtag.fieldToml then
       continue;
     else yield(k,v);
   }

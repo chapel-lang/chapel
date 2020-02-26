@@ -41,6 +41,8 @@ static void nestedName(ModuleSymbol* mod);
 static void checkModule(ModuleSymbol* mod);
 static void checkRecordInheritance(AggregateType* at);
 static void setupForCheckExplicitDeinitCalls();
+static void warnUnstableUnions(AggregateType* at);
+static void warnUnstableLeadingUnderscores();
 
 void
 checkParsed() {
@@ -128,7 +130,11 @@ checkParsed() {
 
   forv_Vec(AggregateType, at, gAggregateTypes) {
     checkRecordInheritance(at);
+
+    warnUnstableUnions(at);
   }
+
+  warnUnstableLeadingUnderscores();
 
   checkExportedNames();
 
@@ -278,30 +284,37 @@ static void checkPrivateDecls(DefExpr* def) {
                          "a class or record yet");
 
         } else if (mod->block != def->parentExpr) {
-          if (BlockStmt* block = toBlockStmt(def->parentExpr)) {
-            // Scopeless blocks are used to define multiple symbols, for
-            // instance.  Those are valid "nested" blocks for private symbols.
-            if (block->blockTag != BLOCK_SCOPELESS) {
-              // The block in which we are defined is not the top level module
-              // block.  Private symbols at this scope are meaningless, so warn
-              // the user.
+          for (Expr* cur = def->parentExpr; cur; cur = cur->parentExpr) {
+            if (cur == mod->block)
+              break;
+
+            if (BlockStmt* block = toBlockStmt(cur)) {
+              // Scopeless blocks are used to define multiple symbols, for
+              // instance.  Those are valid "nested" blocks for private symbols.
+              if (block->blockTag != BLOCK_SCOPELESS) {
+                // The block in which we are defined is not the top level module
+                // block.  Private symbols at this scope are meaningless, so warn
+                // the user.
+                USR_WARN(def,
+                         "Private declarations within nested blocks "
+                         "are meaningless");
+
+                def->sym->removeFlag(FLAG_PRIVATE);
+                break;
+              }
+
+            } else {
+              // There are many situations which could lead to this else branch.
+              // Most of them will not reach here due to being banned at parse
+              // time.  However, those that aren't excluded by syntax errors will
+              // be caught here.
               USR_WARN(def,
-                       "Private declarations within nested blocks "
-                       "are meaningless");
+                       "Private declarations are meaningless outside "
+                       "of module level declarations");
 
               def->sym->removeFlag(FLAG_PRIVATE);
+              break;
             }
-
-          } else {
-            // There are many situations which could lead to this else branch.
-            // Most of them will not reach here due to being banned at parse
-            // time.  However, those that aren't excluded by syntax errors will
-            // be caught here.
-            USR_WARN(def,
-                     "Private declarations are meaningless outside "
-                     "of module level declarations");
-
-            def->sym->removeFlag(FLAG_PRIVATE);
           }
         }
 
@@ -505,5 +518,26 @@ checkExportedNames()
     if (names.get(name))
       USR_FATAL_CONT(fn, "The name %s cannot be exported twice from the same compilation unit.", name);
     names.put(name, true);
+  }
+}
+
+static void warnUnstableUnions(AggregateType* at) {
+  if (fWarnUnstable && at->isUnion()) {
+    USR_WARN(at, "Unions are currently unstable and are expected to change in ways that will break their current uses.");
+  }
+}
+
+static void warnUnstableLeadingUnderscores() {
+  if (fWarnUnstable) {
+    forv_Vec(DefExpr, def, gDefExprs) {
+      const char* name = def->name();
+      
+      if (name && name[0] == '_' &&
+          def->getModule()->modTag == MOD_USER &&
+          !def->sym->hasFlag(FLAG_TEMP)) {
+        USR_WARN(def,
+                 "Symbol names with leading underscores (%s) are unstable.", name);
+      }
+    }
   }
 }

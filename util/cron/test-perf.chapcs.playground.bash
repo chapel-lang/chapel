@@ -25,11 +25,11 @@ export CHPL_NIGHTLY_TEST_CONFIG_NAME="perf.chapcs.playground"
 # 4) Update START_DATE to be today, using the format mm/dd/yy
 #
 
-# Test performance of always-on nil-checking postfix ! operator
-GITHUB_USER=vasslitvinov
-GITHUB_BRANCH=postfix-bang-always-on
-SHORT_NAME=postfix-bang
-START_DATE=11/15/19
+# Test performance of a spinlock implemented in the atomic interface
+GITHUB_USER=ronawho
+GITHUB_BRANCH=portable-fast-spinlock
+SHORT_NAME=fast-spinlock
+START_DATE=02/23/20
 
 git branch -D $GITHUB_USER-$GITHUB_BRANCH
 git checkout -b $GITHUB_USER-$GITHUB_BRANCH

@@ -1,0 +1,2 @@
+init-eq-other-only.chpl:1: error: Type 'InitEqOtherOnly' uses compiler-generated default 'init=' but also has a custom 'init=' method. Please add an 'init=' method with the same RHS type
+init-eq-other-only.chpl:4: note: 'init=' for 'InitEqOtherOnly' defined here
