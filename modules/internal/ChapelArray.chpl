@@ -3713,15 +3713,20 @@ module ChapelArray {
       if chpl__bulkTransferArray(a, b) == false {
         chpl__transferArray(a, b);
       }
-    } else if chpl__attemptWidePtrArrayBulkTransfer(a, b) == false {
+    }
+    else if chpl__attemptWidePtrArrayBulkTransfer(a, b) == false {
       chpl__transferArray(a, b);
     }
   }
 
   inline proc chpl__attemptWidePtrArrayBulkTransfer(ref a: [], b: []) {
     /*return false;*/
+    extern proc printf(s);
     if !useBulkTransfer then return false;
     if a.eltType != b.eltType then return false;
+
+    // only classes have pointer assignment semantics
+    if !isClass(a.eltType) then return false;
 
     // for now assume they are both local arrays, that have the same bounds
     if a.domain != b.domain then return false;
@@ -3729,6 +3734,9 @@ module ChapelArray {
     if a.domain._value.isDefaultRectangular() &&
        b.domain._value.isDefaultRectangular() {
         if __primitive("is wide pointer", a[a.domain.low]) {
+          /*printf("Doing wide transfer on " + a.eltType:string + " arrays\n");*/
+          /*printf("isRecord " + isRecord(a.eltType):string + "\n");*/
+          /*printf("isClass " + isClass(a.eltType):string + "\n");*/
           var ret = chpl__bulkTransferArray(a, b);
           return ret;
 
