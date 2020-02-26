@@ -9,3 +9,35 @@ copy-elision-checking.chpl:30: In function 'test2':
 copy-elision-checking.chpl:34: error: Illegal use of dead value
 copy-elision-checking.chpl:34: note: 'r' refers to 'x'
 copy-elision-checking.chpl:33: note: 'x' is dead due to copy elision here
+copy-elision-checking.chpl:110: In function 'test2a':
+copy-elision-checking.chpl:117: error: Illegal use of dead value
+copy-elision-checking.chpl:117: note: 'rx' refers to 'x'
+copy-elision-checking.chpl:115: note: 'x' is dead due to copy elision here
+copy-elision-checking.chpl:121: In function 'test2b':
+copy-elision-checking.chpl:128: error: Illegal use of dead value
+copy-elision-checking.chpl:128: note: 'rx' refers to 'x'
+copy-elision-checking.chpl:126: note: 'x' is dead due to copy elision here
+copy-elision-checking.chpl:132: In function 'test2c':
+copy-elision-checking.chpl:139: error: Illegal use of dead value
+copy-elision-checking.chpl:139: note: 'rx' refers to 'x'
+copy-elision-checking.chpl:137: note: 'x' is dead due to copy elision here
+copy-elision-checking.chpl:143: In function 'test2d':
+copy-elision-checking.chpl:150: error: Illegal use of dead value
+copy-elision-checking.chpl:150: note: 'rx' refers to 'x'
+copy-elision-checking.chpl:148: note: 'x' is dead due to copy elision here
+copy-elision-checking.chpl:213: In function 'test2aD':
+copy-elision-checking.chpl:220: error: Illegal use of dead value
+copy-elision-checking.chpl:220: note: 'rx' refers to 'x'
+copy-elision-checking.chpl:218: note: 'x' is dead due to copy elision here
+copy-elision-checking.chpl:224: In function 'test2bD':
+copy-elision-checking.chpl:231: error: Illegal use of dead value
+copy-elision-checking.chpl:231: note: 'rx' refers to 'x'
+copy-elision-checking.chpl:229: note: 'x' is dead due to copy elision here
+copy-elision-checking.chpl:235: In function 'test2cD':
+copy-elision-checking.chpl:242: error: Illegal use of dead value
+copy-elision-checking.chpl:242: note: 'rx' refers to 'x'
+copy-elision-checking.chpl:240: note: 'x' is dead due to copy elision here
+copy-elision-checking.chpl:246: In function 'test2dD':
+copy-elision-checking.chpl:253: error: Illegal use of dead value
+copy-elision-checking.chpl:253: note: 'rx' refers to 'x'
+copy-elision-checking.chpl:251: note: 'x' is dead due to copy elision here

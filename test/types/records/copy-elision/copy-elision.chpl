@@ -116,51 +116,6 @@ proc test1e() {
 }
 { writeln(test1e().toString()); }
 
-proc test2a() {
-  writeln("test2a");
-  var x = new R(0);
-  ref rx = x;
-  writeln("test2a.a");
-  var y = x;
-  writeln("test2a.b");
-  writeln(concatenate(rx.set1(), y));
-}
-test2a();
-
-proc test2b() {
-  writeln("test2b");
-  var x = new R(0);
-  ref rx = x;
-  writeln("test2b.a");
-  var y = x;
-  writeln("test2b.b");
-  return concatenate(rx.set1(), y);
-}
-{ writeln(test2b()); }
-
-proc test2c() {
-  writeln("test2c");
-  var x = new R(0);
-  ref rx = x;
-  writeln("test2c.a");
-  var y = x;
-  writeln("test2c.b");
-  writeln(concatenate(set1f(rx), y));
-}
-test2c();
-
-proc test2d() {
-  writeln("test2d");
-  var x = new R(0);
-  ref rx = x;
-  writeln("test2d.a");
-  var y = x;
-  writeln("test2d.b");
-  return concatenate(set1f(rx), y);
-}
-{ writeln(test2d()); }
-
-
 proc test3a() {
   writeln("test3a");
   var x = new R(1);
