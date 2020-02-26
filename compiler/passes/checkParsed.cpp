@@ -401,9 +401,7 @@ checkFunction(FnSymbol* fn) {
 
   if (fn->retTag == RET_TYPE || fn->retTag == RET_PARAM) {
     for_formals(formal, fn) {
-      if (formal->intent == INTENT_IN ||
-          formal->intent == INTENT_CONST_IN ||
-          formal->intent == INTENT_OUT ||
+      if (formal->intent == INTENT_OUT ||
           formal->intent == INTENT_INOUT) {
         USR_FATAL_CONT(formal,
                        "Cannot use %s in a "
