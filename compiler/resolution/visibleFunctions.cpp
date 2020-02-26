@@ -441,13 +441,7 @@ static void getVisibleFunctions(const char*           name,
           // private uses.  If we're in a use chain, assume that private uses
           // are not available to us
           if (!inUseChain || !use->isPrivate) {
-
-            bool isMethodCall = false;
-            if (call->numActuals() >= 2 &&
-                call->get(1)->typeInfo() == dtMethodToken)
-              isMethodCall = true;
-
-            if (use->skipSymbolSearch(name, isMethodCall) == false) {
+            if (use->skipSymbolSearch(name) == false) {
               SymExpr* se = toSymExpr(use->src);
 
               INT_ASSERT(se);
@@ -532,13 +526,7 @@ static void getVisibleFunctions(const char*           name,
         // statements will have already been handled the first time this scope
         // was seen
         if (use->isPrivate) {
-
-          bool isMethodCall = false;
-          if (call->numActuals() >= 2 &&
-              call->get(1)->typeInfo() == dtMethodToken)
-            isMethodCall = true;
-
-          if (use->skipSymbolSearch(name, isMethodCall) == false) {
+          if (use->skipSymbolSearch(name) == false) {
             SymExpr* se = toSymExpr(use->src);
 
             INT_ASSERT(se);

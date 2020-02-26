@@ -103,10 +103,6 @@ UseStmt* UseStmt::copyInner(SymbolMap* map) {
     _this = new UseStmt(COPY_INT(src), modRename, isPrivate);
   }
 
-  for_vector(const char, sym, methodsAndFields) {
-    _this->methodsAndFields.push_back(sym);
-  }
-
   return _this;
 }
 
@@ -489,14 +485,14 @@ void UseStmt::writeListPredicate(FILE* mFP) const {
 *                                                                             *
 ************************************** | *************************************/
 
-bool UseStmt::skipSymbolSearch(const char* name, bool methodCall) const {
+bool UseStmt::skipSymbolSearch(const char* name) const {
   bool retval = false;
 
   if (isPlainUse() == true) {
     retval = false;
 
   } else if (except == true) {
-    if (matchedNameOrConstructor(name) == true) {
+    if (matchedNameOrRename(name) == true) {
       retval =  true;
 
     } else {
@@ -504,7 +500,7 @@ bool UseStmt::skipSymbolSearch(const char* name, bool methodCall) const {
     }
 
   } else {
-    if (matchedNameOrConstructor(name) == true) {
+    if (matchedNameOrRename(name) == true) {
       retval = false;
 
     } else {
@@ -515,7 +511,7 @@ bool UseStmt::skipSymbolSearch(const char* name, bool methodCall) const {
   return retval;
 }
 
-bool UseStmt::matchedNameOrConstructor(const char* name) const {
+bool UseStmt::matchedNameOrRename(const char* name) const {
   for_vector(const char, toCheck, named) {
     if (strcmp(name, toCheck) == 0) {
       return true;
@@ -527,25 +523,6 @@ bool UseStmt::matchedNameOrConstructor(const char* name) const {
       ++it) {
     if (strcmp(name, it->first) == 0) {
       return true;
-    }
-  }
-
-  return false;
-}
-
-// Returns true if the name was in the list of methods and fields defined in
-// this module, false otherwise.
-bool UseStmt::isAllowedMethodName(const char* name, bool methodCall) const {
-  for_vector(const char, toCheck, functionsToAlwaysCheck) {
-    if (strcmp(name, toCheck) == 0) {
-      return true;
-    }
-  }
-  if (methodCall) {
-    for_vector(const char, toCheck, methodsAndFields) {
-      if (strcmp(name, toCheck) == 0) {
-        return true;
-      }
     }
   }
 
