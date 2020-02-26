@@ -65,7 +65,8 @@ static Map<BlockStmt*, VisibleFunctionBlock*> visibleFunctionMap;
 static int                                    nVisibleFunctions       = 0;
 
 static std::map<std::pair<BlockStmt*, BlockStmt*>, bool> scopeIsVisible;
-
+static std::set<const char*> typeHelperNames;
+bool builtTypeHelperNames = false;
 
 
 /************************************* | **************************************
@@ -82,6 +83,22 @@ static void  buildVisibleFunctionMap();
 void findVisibleFunctions(CallInfo&       info,
                           Vec<FnSymbol*>& visibleFns) {
   CallExpr* call = info.call;
+
+  if (!builtTypeHelperNames) {
+    // Build the cache of names we care about even though they aren't methods
+    typeHelperNames.insert(astrSassign);
+    typeHelperNames.insert(astrSeq);
+    typeHelperNames.insert(astrSne);
+    typeHelperNames.insert(astrSgt);
+    typeHelperNames.insert(astrSgte);
+    typeHelperNames.insert(astrSlt);
+    typeHelperNames.insert(astrSlte);
+    typeHelperNames.insert(astrSswap); // ?
+    typeHelperNames.insert(astr_cast);
+    typeHelperNames.insert(astr_defaultOf);
+    typeHelperNames.insert(astrNew);
+    builtTypeHelperNames = true;
+  }
 
   //
   // update visible function map as necessary
@@ -101,8 +118,10 @@ void findVisibleFunctions(CallInfo&       info,
   } else {
     if (call->numActuals() >=2 && isSymExpr(call->get(1)) &&
         toSymExpr(call->get(1))->symbol() == gMethodToken) {
-      // TODO: Need to handle the type helper function names (e.g. _new)
 
+      getVisibleMethods(info.name, call, visibleFns);
+
+    } else if (typeHelperNames.find(info.name) != typeHelperNames.end()) {
       getVisibleMethods(info.name, call, visibleFns);
 
     } else {
