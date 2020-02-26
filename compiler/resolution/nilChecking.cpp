@@ -358,7 +358,8 @@ static void checkForNilDereferencesInCall(
   // For records and non-nilable class types, check that any argument
   // to a user function is not storing "nil"
   if (FnSymbol* calledFn = call->resolvedOrVirtualFunction()) {
-    if (!calledFn->hasFlag(FLAG_AUTO_DESTROY_FN)) {
+    if (!calledFn->hasFlag(FLAG_AUTO_DESTROY_FN) &&
+        !calledFn->hasFlag(FLAG_UNSAFE)) {
       int i = 1;
       for_formals_actuals(formal, actual, call) {
         Symbol* argSym = toSymExpr(actual)->symbol();
