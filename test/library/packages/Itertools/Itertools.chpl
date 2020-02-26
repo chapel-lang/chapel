@@ -223,59 +223,63 @@ module Itertools {
       functionalities which are not present in ``scan``.
   */
 
-  enum operations { add, subtract, multiply, divide, bitwiseAnd, bitwiseOr, bitwiseXor }
+  enum operations { add, subtract, multiply, divide,
+                    bitwiseAnd, bitwiseOr, bitwiseXor }
 
   iter accumulate(arg: [?argDom], operation: operations) throws
       where argDom.rank == 1 {
 
-    var result = arg[arg.domain.first];
+    if operation == operations.divide || operation == operations.subtract {
+      var result = arg[argDom.first];
 
-    for idx in arg.domain do
-      if idx == arg.domain.first then
-        yield result;
-      else {
-        select operation {
+      for idx in argDom do
+        if idx == argDom.first then
+          yield result;
+        else {
+          select (operation) {
+            when operations.subtract do
+              result -= arg[idx];
+            when operations.divide do
+              result /= arg[idx];
+          }
 
-          when operations.add do
-            result += arg[idx];
-
-          when operations.subtract do
-            result -= arg[idx];
-
-          when operations.multiply do
-            result *= arg[idx];
-
-          when operations.divide do
-            result /= arg[idx];
-
-          when operations.bitwiseAnd do
-            if result.type != int && result.type != bool then
-              throw new owned IllegalArgumentError(
-                "bitwise operations supported only with boolean and integer types");
-            else
-              result &= arg[idx];
-
-          when operations.bitwiseOr do
-            if result.type != int && result.type != bool then
-              throw new owned IllegalArgumentError(
-                "bitwise operations supported only with boolean and integer types");
-            else
-              result |= arg[idx];
-
-          when operations.bitwiseXor do
-            if result.type != int && result.type != bool then
-              throw new owned IllegalArgumentError(
-                "bitwise operations supported only with boolean and integer types");
-            else
-              result ^= arg[idx];
-
-          otherwise
-            throw new owned IllegalArgumentError(
-              "invalid operation");
+          yield result;
         }
+    } else {
+      select (operation) {
+        when operations.add do
+          for result in + scan arg do
+            yield result;
 
-        yield result;
+        when operations.multiply do
+          for result in * scan arg do
+            yield result;
+
+        when operations.bitwiseOr do
+          if result.type == int || result.type == bool then
+            for result in | scan arg do
+              yield result;
+          else
+            throw new owned IllegalArgumentError(
+              "bitwise operations only work with integers and booleans");
+
+        when operations.bitwiseAnd do
+          if result.type == int || result.type == bool then
+            for result in & scan arg do
+              yield result;
+          else
+            throw new owned IllegalArgumentError(
+              "bitwise operations only work with integers and booleans");
+
+        when operations.bitwiseXor do
+          if result.type == int || result.type == bool then
+            for result in ^ scan arg do
+              yield result;
+          else
+            throw new owned IllegalArgumentError(
+              "bitwise operations only work with integers and booleans");
       }
+    }
   }
 
 } // end module
