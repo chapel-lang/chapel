@@ -1,3 +1,3 @@
 #!/usr/bin/env bash
 
-sed -i -e '/^Running Sphinx v/,/^HTML files are at:/d' $2
+sed -i -e '/^Running Sphinx v/,/URL_ROOT:/d;s/^ *//;/LANGUAGE:/,$d' $2
