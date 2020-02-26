@@ -92,7 +92,6 @@ public:
 
 private:
   bool                               except;
-  std::vector<const char*>           functionsToAlwaysCheck;
 };
 
 #endif
