@@ -737,7 +737,7 @@ used to recursively hold tables and respective values
       return false;
     }
 
-    proc set(tbl: string, toml: unmanaged Toml) {
+    proc set(tbl: string, toml: unmanaged Toml?) {
       ref t = this(tbl);
       if t == nil {
         t = toml;
@@ -746,6 +746,7 @@ used to recursively hold tables and respective values
         t = toml;
       }
     }
+
     proc set(tbl: string, s: string) {
       ref t = this(tbl);
       if t == nil {
