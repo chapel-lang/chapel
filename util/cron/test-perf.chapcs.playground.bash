@@ -25,10 +25,10 @@ export CHPL_NIGHTLY_TEST_CONFIG_NAME="perf.chapcs.playground"
 # 4) Update START_DATE to be today, using the format mm/dd/yy
 #
 
-# Test performance of a spinlock implemented in the atomic interface
+# Test performance of --fast not throwing --no-checks
 GITHUB_USER=ronawho
-GITHUB_BRANCH=portable-fast-spinlock
-SHORT_NAME=fast-spinlock
+GITHUB_BRANCH=dont-disable-checks-fast
+SHORT_NAME=dont-disable-checks-fast
 START_DATE=02/23/20
 
 git branch -D $GITHUB_USER-$GITHUB_BRANCH
