@@ -1830,7 +1830,6 @@ module DefaultRectangular {
   private proc _simpleTransfer(A, aView, B, bView) {
     param rank     = A.rank;
     type idxType   = A.idxType;
-    type eltType   = A.eltType;
 
     const Adims = aView.dims();
     var Alo: rank*aView.idxType;
@@ -1856,9 +1855,9 @@ module DefaultRectangular {
     }
 
     const Aidx = A.getDataIndex(Alo);
-    const Adata = _ddata_shift(eltType, A.theData, Aidx);
+    const Adata = _ddata_shift(A.eltType, A.theData, Aidx);
     const Bidx = B.getDataIndex(Blo);
-    const Bdata = _ddata_shift(eltType, B.theData, Bidx);
+    const Bdata = _ddata_shift(B.eltType, B.theData, Bidx);
     _simpleTransferHelper(A, B, Adata, Bdata, len);
   }
 

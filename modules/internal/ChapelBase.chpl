@@ -1067,7 +1067,8 @@ module ChapelBase {
                         _ddata_sizeof_element(data));
   }
 
-  inline proc ==(a: _ddata, b: _ddata) where a.eltType == b.eltType {
+  inline proc ==(a: _ddata, b: _ddata)
+      where _to_borrowed(a.eltType) == _to_borrowed(b.eltType) {
     return __primitive("ptr_eq", a, b);
   }
   inline proc ==(a: _ddata, b: _nilType) {
