@@ -399,9 +399,10 @@ checkFunction(FnSymbol* fn) {
     }
   }
 
-  // Do not issue the warning yet.
   if (fn->hasFlag(FLAG_DESTRUCTOR) && (fn->name[0] == '~')) {
-    USR_WARN(fn, "\"~classname\" naming of deinitializers is deprecated");
+    USR_WARN("Destructors have been deprecated as of Chapel 1.20. "
+             "Please use deinit instead.");
+    USR_WARN(fn, "to fix, rename %s to deinit", fn->name);
   }
 
   std::vector<CallExpr*> calls;
