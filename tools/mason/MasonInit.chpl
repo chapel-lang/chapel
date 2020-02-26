@@ -18,7 +18,7 @@
  */
 
 use TOML;
-use Path; 
+use Path;
 use Spawn;
 use MasonEnv;
 use MasonNew;
@@ -30,7 +30,7 @@ use MasonModify;
 use FileSystem;
 private use List;
 
-/* 
+/*
 Initialises a library project in a project directory
   mason init <dirName/path>
   or mason init (inside project directory)
@@ -61,11 +61,11 @@ proc masonInit(args) throws {
         if isInitialized > 0 then
           writeln("Initialized new library project: " + name);
       }
-    } 
+    }
     else {
       // if the target directory in path doesnt exist, throw error
       // if target directory exists, check for files && validate
-      // create folders and toml file without overwriting anything 
+      // create folders and toml file without overwriting anything
       // if TOML file exists, check for values in it and validate
       const path = name;
       if isDir(path) {
@@ -75,10 +75,10 @@ proc masonInit(args) throws {
           if isInitialized > 0 then
             writeln("Initialized new library project in " + path + ": " + basename(path));
         }
-      } 
+      }
       else {
         throw new owned MasonError("Directory does not exist: " + path +
-                              " \nDid you mean 'mason new' to create a new project from scratch?"); 
+                              " \nDid you mean 'mason new' to create a new project from scratch?");
       }
     }
   }
@@ -88,14 +88,14 @@ proc masonInit(args) throws {
   }
 }
 
-/* 
+/*
 Validates directories and files in project directory to avoid overwriting
 */
 proc validateInit(path: string, show: bool) throws {
   var files = [ "/Mason.toml", "/src" , "/test" , "/example", "/.git", "/.gitignore" ];
   var toBeCreated : list(string);
   for idx in 1..files.size do {
-    const metafile = files(idx);  
+    const metafile = files(idx);
     const dir = metafile;
     if dir == "/Mason.toml" || dir == "/.gitignore" {
       if isFile(path + dir) == false {
@@ -106,20 +106,20 @@ proc validateInit(path: string, show: bool) throws {
         if isDir(path + dir) == false {
         toBeCreated.append(dir);
       }
-    }     
+    }
   }
 
   if toBeCreated.size == 0 {
     var fileName = "";
     if path != '.' {
-      fileName = basename(path); 
+      fileName = basename(path);
     } else {
       const pwd = getEnv("PWD");
       fileName = basename(pwd);
     }
     if isFile(path + '/src/' + fileName + '.chpl') == false {
       makeModule(path,fileName);
-    } 
+    }
     else {
       writeln("Library project has already been initialised.");
       return 0;
@@ -134,11 +134,11 @@ proc validateInit(path: string, show: bool) throws {
     else if metafile == "/.gitignore" {
       addGitIgnore(path);
       if show then writeln("Created .gitignore");
-    } 
+    }
     else if metafile == '/src' && path == '.' {
       const pwd = getEnv("PWD");
       const newPath = basename(pwd);
-      const fileName = basename(newPath); 
+      const fileName = basename(newPath);
       makeSrcDir(path);
       makeModule(path, fileName);
       if show then writeln("Created src/");
@@ -148,11 +148,11 @@ proc validateInit(path: string, show: bool) throws {
       const currDir = basename(path);
       makeModule(path, currDir);
       if show then writeln("Created src/");
-    } 
+    }
     else if metafile == '/test' {
       makeTestDir(path);
       if show then writeln("Created test/");
-    } 
+    }
     else if metafile == '/example' {
       makeExampleDir(path);
       if show then writeln("Created example/");
@@ -161,48 +161,51 @@ proc validateInit(path: string, show: bool) throws {
   return 1;
 }
 
-/* 
+/*
 validates Mason.toml file in directory and ensures all fields are present
 */
-proc validateMasonFile(path:string, name:string, show:bool) throws {
+proc validateMasonFile(path: string, name: string, show: bool) throws {
    if isFile(path + "/Mason.toml") {
     if show then writeln("Found Mason.toml file.");
-    var projectName = ""; 
+    var projectName = "";
     var version = "";
     var chplVersion = "";
     const toParse = open(path + "/Mason.toml", iomode.r);
     const tomlFile = parseToml(toParse);
-    if tomlFile["brick"] == nil {
-      if tomlFile.pathExists("name") || 
-      tomlFile.pathExists("version") ||
-      tomlFile.pathExists("chplVersion") {
+
+    if !tomlFile.pathExists("brick") {
+      if tomlFile.pathExists("name") ||
+         tomlFile.pathExists("version") ||
+         tomlFile.pathExists("chplVersion") {
         throw new owned MasonError("The [brick] header is missing in Mason.toml");
-      } 
+      }
       else {
-        addSection("brick", path, tomlFile);
-      } 
+        addSection("brick", path, tomlFile, show);
+      }
     }
-    if tomlFile.pathExists("dependencies") == false {
-      addSection("dependencies", path, tomlFile);      
+
+    if !tomlFile.pathExists("dependencies") {
+      addSection("dependencies", path, tomlFile, show);
     }
-    if tomlFile["brick"]["version"] == nil {
+
+    if !tomlFile.pathExists("brick.version") {
       throw new owned MasonError("Mason could not find valid version in Mason.toml file");
+    } else {
+      version = tomlFile["brick"]!["version"]!.s;
     }
-    else {
-      version = tomlFile["brick"]["version"].s;
-    }
-    if tomlFile["brick"]["name"] {
-      projectName = tomlFile["brick"]["name"].s;
-    }
-    else {
+
+    if tomlFile.pathExists("brick.name") {
+      projectName = tomlFile["brick"]!["name"]!.s;
+    } else {
       throw new owned MasonError("Project Name doesn't exist in Mason.toml");
     }
-    if tomlFile["brick"]["chplVersion"] == nil {
+
+    if !tomlFile.pathExists("brick.chplVersion") {
       const version = getChapelVersionStr();
-      tomlFile["brick"].set("chplVersion", version);
+      tomlFile["brick"]!.set("chplVersion", version);
       var tomlPath = path + "/Mason.toml";
       generateToml(tomlFile, tomlPath);
-      writeln("Added chplVersion to Mason.toml.");
+      if show then writeln("Added chplVersion to Mason.toml.");
     }
     validatePackageName(projectName);
     checkVersion(version);
@@ -216,11 +219,11 @@ proc validateMasonFile(path:string, name:string, show:bool) throws {
 /*
 adds a section that is absent in the Mason.toml file
 */
-proc addSection(sectionName: string, path: string, tomlFile: unmanaged Toml) {
+proc addSection(sectionName: string, path: string, tomlFile: unmanaged Toml, show: bool) {
   var tdom: domain(string);
   var tomlPath = path + "/Mason.toml";
-  var deps: [tdom] unmanaged Toml;
+  var deps: [tdom] unmanaged Toml?;
   tomlFile.set(sectionName, deps);
   generateToml(tomlFile, tomlPath);
-  writeln("Added [" + sectionName + "] section to Mason.toml");
+  if show then writeln("Added [" + sectionName + "] section to Mason.toml");
 }
