@@ -525,7 +525,7 @@ struct bitmap_t {
 };
 
 static inline
-size_t bitmapIdx(size_t i) {
+size_t bitmapElemIdx(size_t i) {
   return i / bitmapElemWidth;
 }
 
@@ -560,23 +560,33 @@ bitmapBaseType_t bitmapElemBit(size_t i) {
 }
 
 static inline
-void bitmapSetBit(struct bitmap_t* b, size_t i) {
-  b->map[bitmapIdx(i)] |= bitmapElemBit(i);
+void bitmapClear(struct bitmap_t* b, size_t i) {
+  b->map[bitmapElemIdx(i)] &= ~bitmapElemBit(i);
 }
 
 static inline
-int bitmapIsSet(struct bitmap_t* b, size_t i) {
-  return (b->map[bitmapIdx(i)] & bitmapElemBit(i)) != 0;
+void bitmapSet(struct bitmap_t* b, size_t i) {
+  b->map[bitmapElemIdx(i)] |= bitmapElemBit(i);
+}
+
+static inline
+int bitmapTest(struct bitmap_t* b, size_t i) {
+  return (b->map[bitmapElemIdx(i)] & bitmapElemBit(i)) != 0;
 }
 
 #define BITMAP_FOREACH_SET(b, i)                                        \
-  for (size_t _ei = 0; _ei < bitmapNumElems((b)->len); _ei++) {         \
-    if ((b)->map[_ei] != 0) {                                           \
-      for (size_t _bi = 0; _bi < bitmapElemWidth; _bi++) {              \
-        if (((b)->map[_ei] & bitmapElemBit(_bi)) != 0) {                \
-          size_t i = _ei * bitmapElemWidth + _bi;
+  do {                                                                  \
+    size_t _eWid = bitmapElemWidth;                                     \
+    size_t _eCnt = bitmapNumElems((b)->len);                            \
+    size_t _bCnt = (b)->len;                                            \
+    for (size_t _ei = 0; _ei < _eCnt; _ei++, _bCnt -= _eWid) {          \
+      if ((b)->map[_ei] != 0) {                                         \
+        size_t _bi_end = (_eWid < _bCnt) ? _eWid : _bCnt;               \
+        for (size_t _bi = 0; _bi < _bi_end; _bi++) {                    \
+          if (((b)->map[_ei] & bitmapElemBit(_bi)) != 0) {              \
+            size_t i = _ei * bitmapElemWidth + _bi;
 
-#define BITMAP_FOREACH_SET_END  } } } }
+#define BITMAP_FOREACH_SET_END  } } } } } while (0);
 
 //
 // bitmapAlloc() and bitmapFree() aren't yet needed and may never be,
@@ -3354,7 +3364,7 @@ void ofi_put_V(int v_len, void** addr_v, void** local_mr_v,
                         checkTxCQ(tcip));
     tcip->numTxns++;
     if (providerInUse(provType_rxm)) {
-      bitmapSetBit(b, locale_v[vi]);
+      bitmapSet(b, locale_v[vi]);
     }
   }
 
