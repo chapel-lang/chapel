@@ -549,45 +549,43 @@ static void getVisibleFunctions(const char*           name,
     if (block->useList != NULL) {
       // the block uses other modules
       for_actuals(expr, block->useList) {
-        VisibilityStmt* vis = NULL;
         if (UseStmt* use = toUseStmt(expr)) {
-          vis = use;
-        } else if (ImportStmt* import = toImportStmt(expr)) {
-          vis = import;
-        } else {
-          INT_FATAL("unexpected expr, expected ImportStmt or UseStmt");
-        }
+          // Only traverse private use statements at this point.  Public use
+          // statements will have already been handled the first time this scope
+          // was seen
+          if (use->isPrivate) {
+            if (use->skipSymbolSearch(name) == false) {
+              SymExpr* se = toSymExpr(use->src);
 
-        // Only traverse private use statements at this point.  Public use
-        // statements will have already been handled the first time this scope
-        // was seen
-        if (vis->isPrivate) {
-          if (use->skipSymbolSearch(name) == false) {
-            SymExpr* se = toSymExpr(use->src);
+              INT_ASSERT(se);
 
-            INT_ASSERT(se);
+              if (ModuleSymbol* mod = toModuleSymbol(se->symbol())) {
+                // The use statement could be of an enum instead of a module,
+                // but only modules can define functions.
 
-            if (ModuleSymbol* mod = toModuleSymbol(se->symbol())) {
-              // The use statement could be of an enum instead of a module,
-              // but only modules can define functions.
-
-              if (mod->isVisible(call) == true) {
-                if (use->isARenamedSym(name) == true) {
-                  getVisibleFunctions(use->getRenamedSym(name),
-                                      call,
-                                      mod->block,
-                                      visited,
-                                      visibleFns,
-                                      true);
-                } else {
-                  getVisibleFunctions(name,
-                                      call,
-                                      mod->block,
-                                      visited,
-                                      visibleFns, true);
+                if (mod->isVisible(call) == true) {
+                  if (use->isARenamedSym(name) == true) {
+                    getVisibleFunctions(use->getRenamedSym(name),
+                                        call,
+                                        mod->block,
+                                        visited,
+                                        visibleFns,
+                                        true);
+                  } else {
+                    getVisibleFunctions(name,
+                                        call,
+                                        mod->block,
+                                        visited,
+                                        visibleFns, true);
+                  }
                 }
               }
             }
+          } else if (isImportStmt(expr)) {
+            // Don't go into import statements to look for symbols, they only
+            // provide qualified access.
+          } else {
+            INT_FATAL("Expected ImportStmt or UseStmt");
           }
         }
       }
