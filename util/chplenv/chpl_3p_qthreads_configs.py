@@ -15,7 +15,9 @@ def get_uniq_cfg_path():
 def get_link_args():
     link_args = \
         third_party_utils.default_get_link_args('qthread',
-                                                ucp=get_uniq_cfg_path())
+                                                ucp=get_uniq_cfg_path(),
+                                                libs=['-lchpl',
+                                                      'libqthread.la'])
     compiler_val = chpl_compiler.get('target')
     if compiler_val == 'cray-prgenv-cray':
         link_args.append('-lrt')
