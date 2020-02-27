@@ -433,6 +433,7 @@ module ChapelArray {
   config param CHPL_WARN_DOMAIN_LITERAL = "unset";
 
   // the low bound to use for array literals
+  pragma "no doc"
   config param arrayLiteralLowBound = defaultLowBound;
 
   proc chpl__buildArrayExpr( elems ...?k ) {
