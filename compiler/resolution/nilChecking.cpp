@@ -1241,6 +1241,9 @@ static bool combine(FnSymbol* fn,
 
 static void findNilDereferencesInFn(FnSymbol* fn) {
 
+  if (fn->hasFlag(FLAG_UNSAFE))
+    return;
+
   bool debugging = 0 == strcmp(fn->name, debugNilsForFn) ||
                    fn->id == debugNilsForId;
 
