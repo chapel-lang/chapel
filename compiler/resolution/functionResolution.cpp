@@ -1397,7 +1397,7 @@ bool canCoerceAsSubtype(Type*     actualType,
 
     // Check that the decorators allow coercion
     if (canCoerceDecorators(actualDecorator, formalDecorator,
-                            /*allowNonSubtypes*/ false,
+                            /*allowNonSubtypes*/ true,
                             /*implicitBang*/false)) {
       // are the decorated class types the same?
       if (actualC == formalC)
