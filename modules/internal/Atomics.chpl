@@ -370,7 +370,7 @@ module Atomics {
     }
 
     pragma "no doc"
-    proc init=(other:this.type) {
+    proc init=(const ref other:this.type) {
       this.T = other.T;
       this.complete();
       init_helper(other.read());

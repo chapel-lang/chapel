@@ -168,9 +168,8 @@ They perform initialization, not assignment, of that variable.
    .. BLOCK-test-chapeloutput
 
       no-split-init.chpl:1: In function 'main':
-      no-split-init.chpl:2: error: 'x' cannot be default initialized
-      no-split-init.chpl:3: note: 'x' is used here before being initialized
-      no-split-init.chpl:2: error: Variable 'x' is not initialized and has no type
+      no-split-init.chpl:2: error: variable 'x' is not initialized and has no type
+      no-split-init.chpl:3: note: 'x' use here prevents split-init from establishing the type
 
 
    *Example (split-cond-blocks-init.chpl)*

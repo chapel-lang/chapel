@@ -55,7 +55,6 @@ Expiring values for function makeR (deinit-points.chpl:330)
   temp (deinit-points.chpl:332) expires after last mention
 Expiring values for function t21 (deinit-points.chpl:335)
   r (deinit-points.chpl:337) expires after last mention
-  temp (deinit-points.chpl:337) expires after last mention
 Expiring values for function t21a (deinit-points.chpl:342)
   temp (deinit-points.chpl:344) expires at end of block
 Expiring values for function t21b (deinit-points.chpl:349)
@@ -66,10 +65,8 @@ Expiring values for function t21d (deinit-points.chpl:363)
   temp (deinit-points.chpl:365) expires at end of block
 Expiring values for function t21e (deinit-points.chpl:370)
   r (deinit-points.chpl:372) expires after last mention
-  temp (deinit-points.chpl:372) expires after last mention
 Expiring values for function t21f (deinit-points.chpl:377)
   r (deinit-points.chpl:379) expires after last mention
-  temp (deinit-points.chpl:379) expires after last mention
 Expiring values for function t22 (deinit-points.chpl:384)
   r (deinit-points.chpl:388) expires after last mention
 Expiring values for function t23 (deinit-points.chpl:395)

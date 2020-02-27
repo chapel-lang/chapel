@@ -404,6 +404,10 @@ static void walkBlock(FnSymbol*         fn,
   if (pfs != NULL)
     addForallIndexVarToScope(&scope, pfs);
 
+  if (block == fn->body) {
+    scope.addFormalTemps();
+  }
+
   walkBlockWithScope(scope, fn, block, ignoredVariables, lmm);
 }
 
@@ -447,6 +451,7 @@ static void walkBlockWithScope(AutoDestroyScope& scope,
           case GOTO_BREAK:
           case GOTO_ERROR_HANDLING:
           case GOTO_BREAK_ERROR_HANDLING:
+          case GOTO_ERROR_HANDLING_RETURN:
             scope.insertAutoDestroys(fn, stmt, ignoredVariables);
             break;
 
@@ -498,16 +503,25 @@ static VarSymbol* possiblyInitializesDestroyedVariable(Expr* stmt) {
         if (VarSymbol* var = toVarSymbol(se->symbol()))
           if (isAutoDestroyedVariable(var))
             return var;
+      }
 
-      // case 3: return through ret-arg
-      } else if (calledFn->hasFlag(FLAG_FN_RETARG)) {
-        ArgSymbol* retArg = toArgSymbol(toDefExpr(calledFn->formals.tail)->sym);
-        INT_ASSERT(retArg && retArg->hasFlag(FLAG_RETARG));
-        // Find the corresponding actual, which is the last actual
-        if (SymExpr* lastActual = toSymExpr(call->argList.tail))
-          if (VarSymbol* var = toVarSymbol(lastActual->symbol()))
-            if (isAutoDestroyedVariable(var))
-              return var;
+      for_formals_actuals(formal, actual, call) {
+        // case 3: return through ret-arg
+        if (formal->hasFlag(FLAG_RETARG)) {
+          if (SymExpr* actualSe = toSymExpr(actual))
+            if (VarSymbol* var = toVarSymbol(actualSe->symbol()))
+              if (isAutoDestroyedVariable(var))
+                return var;
+        }
+
+        // case 4: return through out argument
+        if (formal->intent == INTENT_OUT ||
+            formal->originalIntent == INTENT_OUT) {
+          if (SymExpr* actualSe = toSymExpr(actual))
+            if (VarSymbol* var = toVarSymbol(actualSe->symbol()))
+              if (isAutoDestroyedVariable(var))
+                return var;
+        }
       }
     }
   }
@@ -671,7 +685,8 @@ static bool shouldDestroyOnLastMention(VarSymbol* var) {
          isAutoDestroyedVariable(var) &&
          // forall statement exception avoids certain variables
          // within forall statements such as fRecIterIRdef.
-         !isForallStmt(var->defPoint->parentExpr);
+         !isForallStmt(var->defPoint->parentExpr) &&
+         !var->hasFlag(FLAG_FORMAL_TEMP);
 }
 
 bool ComputeLastSymExpr::enterCallExpr(CallExpr* node) {

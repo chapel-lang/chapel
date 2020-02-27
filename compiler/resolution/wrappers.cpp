@@ -86,8 +86,9 @@ static void       reorderActuals(FnSymbol*                fn,
 static void       coerceActuals(FnSymbol* fn,
                                 CallInfo& info);
 
-static void       handleInIntents(FnSymbol* fn,
-                                  CallInfo& info);
+static void       handleInIntents(FnSymbol* fn, CallInfo& info);
+
+static void       handleOutIntents(FnSymbol* fn, CallInfo& info);
 
 bool       isPromotionRequired(FnSymbol* fn, CallInfo& info,
                                std::vector<ArgSymbol*>& actualIdxToFormal);
@@ -196,6 +197,8 @@ FnSymbol* wrapAndCleanUpActuals(FnSymbol*                fn,
 
   // handle 'in' intent
   handleInIntents(retval, info);
+  // handle 'out' intent
+  handleOutIntents(retval, info);
 
   return retval;
 }
@@ -381,7 +384,10 @@ void doReplaceDefaultTokensWithDefaults(FnSymbol *fn,
   // Fill in the NULLs in newActuals with the appropriate default argument.
   i = 0;
   for_formals(formal, fn) {
-    if (newActuals[i] == NULL) {
+    if (formal->hasFlag(FLAG_TYPE_FORMAL_FOR_OUT)) {
+      // leave it for out intent processing
+      newActuals[i] = gTypeDefaultToken;
+    } else if (newActuals[i] == NULL) {
       // Fill it in with a default argument.
       newActuals[i] = createDefaultedActual(fn, formal, call, body, copyMap);
     } else if (formal->intent & INTENT_FLAG_IN &&
@@ -422,7 +428,8 @@ void doReplaceDefaultTokensWithDefaults(FnSymbol *fn,
     // Check that newActuals are coercible to the formals
     i = 0;
     for_formals(formal, fn) {
-      if (newActualDefaulted[i]) {
+      if (newActualDefaulted[i] &&
+          !formal->hasFlag(FLAG_TYPE_FORMAL_FOR_OUT)) {
         Symbol* actual = newActuals[i];
         bool actualIsTypeAlias = actual->hasFlag(FLAG_TYPE_VARIABLE);
         bool formalIsTypeAlias = formal->hasFlag(FLAG_TYPE_VARIABLE);
@@ -964,6 +971,7 @@ static void defaultedFormalApplyDefaultValue(FnSymbol*  fn,
       formal->intent & INTENT_FLAG_IN &&
       typeExprReturnsType(formal)) {
     VarSymbol* nt = newTemp(temp->type);
+    nt->addFlag(FLAG_INITIALIZED_LATER);
     body->insertAtTail(new DefExpr(nt));
     defaultedFormalApplyDefaultForType(formal, body, nt);
     body->insertAtTail(new CallExpr("=", nt, fromExpr));
@@ -1163,7 +1171,7 @@ static bool needToAddCoercion(Type*      actualType,
   // New in-intents don't require coercion from ref to value
   // since it'll be handled by the initCopy call.
   if (actualType == formalType->getRefType() &&
-      shouldAddFormalTempAtCallSite(formal, fn))
+      shouldAddInFormalTempAtCallSite(formal, fn))
     return false;
 
   // If actual and formal are type symbols, no coercion is necessary
@@ -1590,8 +1598,7 @@ static bool checkAnotherFunctionsFormal(FnSymbol* calleeFn, CallExpr* call,
   return result;
 }
 
-static void handleInIntents(FnSymbol* fn,
-                            CallInfo& info) {
+static void handleInIntents(FnSymbol* fn, CallInfo& info) {
 
   int j = 0;
 
@@ -1619,7 +1626,7 @@ static void handleInIntents(FnSymbol* fn,
     // The result of a default argument for 'in' intent is already owned and
     // does not need to be copied.
     if (formalRequiresTemp(formal, fn) &&
-        shouldAddFormalTempAtCallSite(formal, fn) &&
+        shouldAddInFormalTempAtCallSite(formal, fn) &&
         ! checkAnotherFunctionsFormal(fn, info.call, actualSym) &&
         actualSym->hasFlag(FLAG_DEFAULT_ACTUAL) == false) {
 
@@ -1667,6 +1674,79 @@ static void handleInIntents(FnSymbol* fn,
         // (don't destroy it here, it will be destroyed there).
         actualSym->addFlag(FLAG_NO_AUTO_DESTROY);
       }
+    }
+
+    currActual = nextActual;
+    j++;
+  }
+}
+
+static void handleOutIntents(FnSymbol* fn, CallInfo& info) {
+  int j = 0;
+
+  // Function with no actuals can't use out intent
+  // Returning early in that event simplifies the following code.
+  if (info.call->numActuals() == 0)
+    return;
+
+  Expr* anchor = info.call->getStmtExpr();
+  Expr* anchorAfter = info.call->getStmtExpr();
+
+  Expr* currActual = info.call->get(1);
+  Expr* nextActual = NULL;
+
+  for_formals(formal, fn) {
+    SET_LINENO(currActual);
+    nextActual = currActual->next;
+
+    Symbol* actualSym  = info.actuals.v[j];
+
+    // The result of a default argument for 'in' intent is already owned and
+    // does not need to be copied.
+    if (formal->intent == INTENT_OUT || formal->originalIntent == INTENT_OUT) {
+      Expr* useExpr = currActual;
+      if (NamedExpr* named = toNamedExpr(currActual))
+        useExpr = named->actual;
+
+      SymExpr* se = toSymExpr(useExpr);
+      INT_ASSERT(actualSym == se->symbol());
+
+
+      // For untyped formals with runtime types, pass the type
+      // as the previous argument.
+      Type* formalType = formal->type->getValType();
+      if (formal->typeExpr == NULL &&
+          formalType->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE)) {
+        const char* dummyName = astr("_formal_type_tmp_", formal->name);
+        VarSymbol* typeTmp = newTemp(dummyName, formalType);
+        typeTmp->addFlag(FLAG_MAYBE_TYPE);
+        typeTmp->addFlag(FLAG_TYPE_FORMAL_FOR_OUT);
+
+        anchor->insertBefore(new DefExpr(typeTmp));
+
+        SymExpr* prevActual = toSymExpr(currActual->prev);
+        INT_ASSERT(prevActual != NULL && j > 0);
+        prevActual->setSymbol(typeTmp);
+        info.actuals.v[j-1] = typeTmp;
+      }
+
+      VarSymbol* tmp = newTemp(astr("_formal_tmp_", formal->name),
+                               formal->getValType());
+      tmp->addFlag(FLAG_SUPPRESS_LVALUE_ERRORS);
+      tmp->addFlag(FLAG_INSERT_AUTO_DESTROY);
+      tmp->addFlag(FLAG_EXPR_TEMP);
+
+      // Transform  f(x) where x is passed with out intent into
+      //   DefExpr tmp
+      //   f(tmp)
+      //   x = tmp     -> this might turn into split-init of x
+      anchor->insertBefore(new DefExpr(tmp));
+
+      CallExpr* assign = new CallExpr("=", actualSym, tmp);
+      anchorAfter->insertAfter(assign);
+      anchorAfter = assign;
+
+      currActual->replace(new SymExpr(tmp));
     }
 
     currActual = nextActual;

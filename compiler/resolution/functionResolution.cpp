@@ -173,7 +173,6 @@ static BlockStmt* getParentBlock(Expr* expr);
 static void resolveTupleExpand(CallExpr* call);
 static void resolveSetMember(CallExpr* call);
 static void resolveInitField(CallExpr* call);
-static void resolveInitVar(CallExpr* call);
 static void resolveMove(CallExpr* call);
 static void resolveNew(CallExpr* call);
 static void resolveCoerce(CallExpr* call);
@@ -211,7 +210,7 @@ static void lvalueCheckActual(CallExpr* call, Expr* actual, IntentTag intent, Ar
 
 static bool  moveIsAcceptable(CallExpr* call);
 static void  moveHaltMoveIsUnacceptable(CallExpr* call);
-
+static CallExpr* createGenericRecordVarDefaultInitCall(Symbol* val, AggregateType* at, Expr* call);
 
 static bool useLegacyNilability(Expr* at) {
   if (at != NULL) {
@@ -2404,6 +2403,10 @@ static void markArraysOfBorrows(AggregateType* at) {
       Type* eltType    = eltTypeField->type;
 
       if (eltType != dtUnknown) {
+        // check for infinite records here to avoid compiler crash
+        if (isRecord(eltType))
+          checkForInfiniteRecord(toAggregateType(eltType));
+
         if (isOrContainsBorrowedClass(eltType)) {
           at->symbol->addFlag(FLAG_ARRAY_OF_BORROWS);
           nextAt->symbol->addFlag(FLAG_ARRAY_OF_BORROWS);
@@ -2416,6 +2419,12 @@ static void markArraysOfBorrows(AggregateType* at) {
 void resolvePromotionType(AggregateType* at) {
   INT_ASSERT(at->scalarPromotionType == NULL);
   INT_ASSERT(at->symbol->hasFlag(FLAG_GENERIC) == false);
+
+  // don't try to resolve promotion types for sync
+  // (for erroneous sync of array it leads to coercion which leads
+  //  to confusing error messages)
+  if (at->symbol->hasFlag(FLAG_SINGLE) || at->symbol->hasFlag(FLAG_SYNC))
+    return;
 
   VarSymbol* temp     = newTemp(at);
   CallExpr* promoCall = new CallExpr("chpl__promotionType", gMethodToken, temp);
@@ -2457,6 +2466,7 @@ void resolveDestructor(AggregateType* at) {
 static bool resolveTypeComparisonCall(CallExpr* call);
 static bool resolveBuiltinCastCall(CallExpr* call);
 static bool resolveClassBorrowMethod(CallExpr* call);
+static void resolvePrimInit(CallExpr* call);
 
 void resolveCall(CallExpr* call) {
   if (call->primitive) {
@@ -5374,6 +5384,36 @@ void lvalueCheck(CallExpr* call) {
   }
 }
 
+static CallExpr* findOutIntentCallFromAssign(CallExpr* call,
+                                             Expr** outActual,
+                                             ArgSymbol** outFormal) {
+  // Call is an assign from a temp
+  // Find an out argument call setting the temp
+  if (call->isNamed("=")) {
+    if (SymExpr* lhs = toSymExpr(call->get(1))) {
+      if (SymExpr* rhs = toSymExpr(call->get(2))) {
+        if (SymExpr* defSe = rhs->symbol()->getSingleDef()) {
+          CallExpr* parentCall = toCallExpr(defSe->parentExpr);
+          if (parentCall->resolvedFunction() != NULL) {
+            for_formals_actuals(formal, actual, parentCall) {
+              if (actual == defSe) {
+                if (formal->intent == INTENT_OUT ||
+                    formal->originalIntent == INTENT_OUT) {
+                  *outActual = lhs;
+                  *outFormal = formal;
+                  return parentCall;
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
+  return NULL;
+}
+
 static void lvalueCheckActual(CallExpr* call, Expr* actual, IntentTag intent, ArgSymbol* formal) {
   bool errorMsg = false;
   switch (intent) {
@@ -5456,6 +5496,20 @@ static void lvalueCheckActual(CallExpr* call, Expr* actual, IntentTag intent, Ar
         isAssign = true;
 
     if (isAssign) {
+      // If the RHS is a temp, it might be for the out intent
+
+      {
+        Expr* outActual = NULL;
+        ArgSymbol* outFormal = NULL;
+        CallExpr* outCall =
+          findOutIntentCallFromAssign(call, &outActual, &outFormal);
+
+        if (outCall != NULL) {
+          lvalueCheckActual(outCall, outActual, INTENT_OUT, outFormal);
+          return;
+        }
+      }
+
       // This assert is FYI. Perhaps can remove it if it fails.
       INT_ASSERT(callStack.n > 0 && callStack.v[callStack.n - 1] == call);
 
@@ -5978,7 +6032,7 @@ void checkMoveIntoClass(CallExpr* call, Type* lhs, Type* rhs) {
 *                                                                             *
 ************************************** | *************************************/
 
-static void resolveInitVar(CallExpr* call) {
+void resolveInitVar(CallExpr* call) {
   Symbol*  dst     = toSymExpr(call->get(1))->symbol();
 
   SymExpr* srcExpr = toSymExpr(call->get(2));
@@ -5996,12 +6050,12 @@ static void resolveInitVar(CallExpr* call) {
     // with type inference.
     if (call->numActuals() < 3)
       if (dst->type != dtUnknown)
-        if (dst->type != srcType)
+        if (dst->type->getValType() != srcType->getValType())
           USR_FATAL_CONT(call, "Split initialization uses multiple types; "
                                "another initialization has type %s "
                                "but this initialization has type %s",
-                               toString(dst->type),
-                               toString(srcType));
+                               toString(dst->type->getValType()),
+                               toString(srcType->getValType()));
 
     // Also, if the dst is a param, check that the src values are
     // an acceptable param value, and if there are many, the same param value.
@@ -6202,12 +6256,21 @@ static void resolveInitVar(CallExpr* call) {
                         srcType->getValType() == targetType->getValType() &&
                         src->isRef() == false;
 
-    if (moveStringLiteral || moveBytesLiteral || canStealTemp) {
+    bool canStealCallTemp = src->hasFlag(FLAG_EXPR_TEMP) &&
+                            srcType->getValType() == targetType->getValType() &&
+                            src->isRef() == false;
+
+    if (moveStringLiteral || moveBytesLiteral ||
+        canStealTemp || canStealCallTemp) {
       dst->type = src->type;
 
       call->primitive = primitives[PRIM_MOVE];
 
       resolveMove(call);
+
+      if (canStealCallTemp)
+        src->addFlag(FLAG_NO_AUTO_DESTROY);
+
     } else if (isRecordOrUnionWithInitializers(at) == false) {
       INT_FATAL("Unable to initialize record/union variable with type '%s'", at->symbol->name);
     } else if (targetType->getValType() == srcType->getValType() &&
@@ -6303,14 +6366,50 @@ FnSymbol* findAssignFn(AggregateType* at) {
 }
 
 FnSymbol* findZeroArgInitFn(AggregateType* at) {
+  SET_LINENO(at->symbol->defPoint);
+
   VarSymbol* tmpAt = newTemp(at);
 
   CallExpr* call = NULL;
-  if (at->symbol->hasFlag(FLAG_TUPLE)) {
-    call = new CallExpr(astr_defaultOf, at->symbol);
-  } else {
+
+  // non-generic records with initializers
+  if (at                                           != NULL &&
+      at->instantiatedFrom                         == NULL &&
+      isNonGenericRecordWithInitializers(at)       == true) {
+
     call = new CallExpr(astrInit, gMethodToken, tmpAt);
+
+  // extern types (but not memory_order)
+  } else if (at->symbol->hasFlag(FLAG_EXTERN) &&
+             !at->symbol->hasFlag(FLAG_C_MEMORY_ORDER_TYPE)) {
+
+    call = NULL; // not handled
+
+  // generic records with initializers
+  } else if (at != NULL && at->symbol->hasFlag(FLAG_TUPLE) == false &&
+            (at->isRecord() || at->isUnion())) {
+
+    BlockStmt* tmpBlock = new BlockStmt(BLOCK_SCOPELESS);
+    Expr* where = getInsertPointForTypeFunction(at);
+    if (BlockStmt* stmt = toBlockStmt(where))
+      stmt->insertAtHead(tmpBlock);
+    else
+      where->insertBefore(tmpBlock);
+
+    DefExpr* def = new DefExpr(tmpAt);
+    tmpBlock->insertAtTail(def);
+
+    call = createGenericRecordVarDefaultInitCall(tmpAt, at, def);
+
+    tmpBlock->remove();
+
+  // other types (sync, single, ..)
+  } else {
+    call = new CallExpr("_defaultOf", at->symbol);
   }
+
+  if (call == NULL)
+    return NULL;
 
   FnSymbol* foundFn = resolveUninsertedCall(at, call, false);
   FnSymbol* resolvedFn = fixInstantiationPointAndTryResolveBody(at, call);
@@ -9485,8 +9584,11 @@ static void replaceReturnedValuesWithRuntimeTypes()
         VarSymbol* ret = toVarSymbol(fn->getReturnSymbol());
         if (ret && ret->type->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE)) {
           if (FnSymbol* rtfn = valueToRuntimeTypeMap.get(ret->type)) {
-            Type* rt = (rtfn->retType->symbol->hasFlag(FLAG_RUNTIME_TYPE_VALUE)) ?
-                        rtfn->retType : runtimeTypeMap.get(rtfn->retType);
+            Type* rt = NULL;
+            if (rtfn->retType->symbol->hasFlag(FLAG_RUNTIME_TYPE_VALUE))
+              rt = rtfn->retType;
+            else
+              rt = runtimeTypeMap.get(rtfn->retType);
             INT_ASSERT(rt);
             ret->type = rt;
             fn->retType = ret->type;
@@ -9601,14 +9703,16 @@ static void replaceRuntimeTypePrims(std::vector<BaseAST*>& asts) {
 
 static Symbol* resolvePrimInitGetField(CallExpr* call);
 
-static void    resolvePrimInit(CallExpr* call, Symbol* val, Expr* fieldNameExpr, Type* type);
-static void    resolvePrimInit(CallExpr* call, Symbol* val, Type* type);
+static void resolvePrimInit(CallExpr* call, Symbol* val, Type* type);
 
-static void resolvePrimInitNonGenericRecordVar(CallExpr* call,
+static void lowerPrimInit(CallExpr* call, Symbol* val, Type* type,
+                          Expr* preventingSplitInit);
+
+static void lowerPrimInitNonGenericRecordVar(CallExpr* call,
                                                Symbol* val,
                                                AggregateType* at);
 
-static void resolvePrimInitGenericRecordVar(CallExpr* call,
+static void lowerPrimInitGenericRecordVar(CallExpr* call,
                                             Symbol* val,
                                             AggregateType* at);
 
@@ -9617,13 +9721,145 @@ static bool    primInitIsUnacceptableGeneric(CallExpr* call, Type* type);
 
 static void    primInitHaltForUnacceptableGeneric(CallExpr* call, Type* type, Symbol* val);
 
-void resolvePrimInit(CallExpr* call) {
+static void errorInvalidParamInit(CallExpr* call, Symbol* val, Type* type);
+
+// For a PRIM_DEFAULT_INIT_VAR or a PRIM_INIT_VAR_SPLIT_DECL,
+// establish the type of the initialized variable so that resolution
+// can continue.
+//
+// Additionally lower PRIM_DEFAULT_INIT for params since these
+// need to be established for further resolution.
+//
+// lowerPrimInit will be called later to generate the code to properly
+// initialize this variable.
+static void resolvePrimInit(CallExpr* call) {
   Expr* valExpr = NULL;
-  Expr* fieldNameExpr = NULL;
   Expr* typeExpr = NULL;
 
   INT_ASSERT(call->isPrimitive(PRIM_DEFAULT_INIT_VAR) ||
              call->isPrimitive(PRIM_INIT_VAR_SPLIT_DECL));
+
+  valExpr = call->get(1);
+
+  if (call->numActuals() >= 2)
+    typeExpr = call->get(2);
+
+  if (call->isPrimitive(PRIM_DEFAULT_INIT_VAR))
+    INT_ASSERT(valExpr && typeExpr);
+
+  if (call->isPrimitive(PRIM_INIT_VAR_SPLIT_DECL) && typeExpr == NULL)
+    return; // do nothing because we cannot establish the type
+
+  SymExpr* valSe = toSymExpr(valExpr);
+  INT_ASSERT(valSe);
+  Symbol* val = valSe->symbol();
+
+  if (SymExpr* se = toSymExpr(typeExpr)) {
+    if (se->symbol()->hasFlag(FLAG_TYPE_VARIABLE) == true) {
+      resolvePrimInit(call, val, resolveTypeAlias(se));
+
+    } else {
+      USR_FATAL(call, "invalid type specification");
+    }
+
+  } else if (CallExpr* ce = toCallExpr(typeExpr)) {
+    if (Symbol* field = resolvePrimInitGetField(ce)) {
+      if (field->hasFlag(FLAG_TYPE_VARIABLE) == true) {
+        resolvePrimInit(call, val, field->typeInfo());
+
+      } else {
+        USR_FATAL(call, "invalid type specification");
+      }
+    }
+
+  } else {
+    INT_FATAL(call, "Unsupported primInit");
+  }
+}
+
+static void resolvePrimInit(CallExpr* call, Symbol* val, Type* type) {
+
+  if (call->id == breakOnResolveID) gdbShouldBreakHere();
+
+  AggregateType* at     = toAggregateType(type);
+
+  val->type = type;
+
+  // Shouldn't be called with ref types
+  INT_ASSERT(at == NULL || at->getValType() == at);
+
+  SET_LINENO(call);
+
+  // These are handled in replaceRuntimeTypePrims().
+  if (type->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE) == true) {
+    if (call->isPrimitive(PRIM_DEFAULT_INIT_VAR))
+      errorInvalidParamInit(call, val, at);
+
+  // Shouldn't be default-initializing iterator records here
+  } else if (type->symbol->hasFlag(FLAG_ITERATOR_RECORD)  == true) {
+
+    INT_ASSERT(false);
+
+  // Generate a more specific USR_FATAL if resolution would fail
+  } else if (primInitIsUnacceptableGeneric(call, type)    == true) {
+    primInitHaltForUnacceptableGeneric(call, type, val);
+
+  // These types default to nil
+  } else if (isClassLikeOrPtr(type) || type == dtNil) {
+    // Nothing to do here besides set the type
+    errorInvalidParamInit(call, val, at);
+
+    // These will be handled in lowerPrimInit.
+    if (call->numActuals() >= 2)
+      call->get(2)->replace(new SymExpr(type->symbol));
+
+  // any type with a defaultValue is easy enough
+  // (expect this to handle numeric types and classes)
+  } else if (type->defaultValue != NULL) {
+    // note: it is important that param cases are handled here rather
+    // than in lowerPrimInit.
+
+    // note: error for bad param initialization checked for in resolving move
+
+    if (!call->isPrimitive(PRIM_INIT_VAR_SPLIT_DECL)) {
+      Expr* defaultExpr = NULL;
+      SymExpr* typeSe = NULL;
+      if (type->defaultValue->type == type) {
+        defaultExpr = new SymExpr(type->defaultValue);
+      } else {
+        typeSe = new SymExpr(type->symbol);
+        defaultExpr = new CallExpr(PRIM_CAST, type->symbol, type->defaultValue);
+      }
+
+      CallExpr* moveDefault = new CallExpr(PRIM_MOVE, val, defaultExpr);
+      call->insertBefore(moveDefault);
+      if (typeSe) resolveExprTypeConstructor(typeSe);
+      resolveExpr(moveDefault);
+      call->convertToNoop();
+    } else {
+      call->convertToNoop(); // initialize it in PRIM_INIT_VAR_SPLIT_INIT
+                             // (important for params)
+    }
+
+  // non-generic records with initializers
+  // extern types
+  // generic records with initializers
+  // other types (sync, single, ..)
+  } else {
+    // These will be handled in lowerPrimInit.
+    errorInvalidParamInit(call, val, at);
+
+    if (call->numActuals() >= 2)
+      call->get(2)->replace(new SymExpr(type->symbol));
+  }
+}
+
+void lowerPrimInit(CallExpr* call, Expr* preventingSplitInit) {
+  Expr* valExpr = NULL;
+  Expr* typeExpr = NULL;
+
+  // Establish types in case that is not already done.
+  //resolvePrimInit(call);
 
   if (call->isPrimitive(PRIM_INIT_VAR_SPLIT_DECL)) {
     // PRIM_INIT_SPLIT_DECL does nothing at this point
@@ -9632,7 +9868,6 @@ void resolvePrimInit(CallExpr* call) {
   }
 
   valExpr = call->get(1);
-  fieldNameExpr = NULL;
   typeExpr = call->get(2);
   INT_ASSERT(valExpr && typeExpr);
 
@@ -9642,20 +9877,10 @@ void resolvePrimInit(CallExpr* call) {
 
   if (SymExpr* se = toSymExpr(typeExpr)) {
     if (se->symbol()->hasFlag(FLAG_TYPE_VARIABLE) == true) {
-      resolvePrimInit(call, val, fieldNameExpr, resolveTypeAlias(se));
+      lowerPrimInit(call, val, resolveTypeAlias(se), preventingSplitInit);
 
     } else {
       USR_FATAL(call, "invalid type specification");
-    }
-
-  } else if (CallExpr* ce = toCallExpr(typeExpr)) {
-    if (Symbol* field = resolvePrimInitGetField(ce)) {
-      if (field->hasFlag(FLAG_TYPE_VARIABLE) == true) {
-        resolvePrimInit(call, val, fieldNameExpr, field->typeInfo());
-
-      } else {
-        USR_FATAL(call, "invalid type specification");
-      }
     }
 
   } else {
@@ -9698,34 +9923,6 @@ static Symbol* resolvePrimInitGetField(CallExpr* call) {
 }
 
 
-static void resolvePrimInit(CallExpr* call,
-                            Symbol* val,
-                            Expr* fieldNameExpr,
-                            Type* type) {
-
-  if (fieldNameExpr == NULL) {
-    resolvePrimInit(call, val, type);
-  } else {
-    // TODO: this is dead code
-    INT_FATAL("dead code");
-
-    // Reduce it to variable initialization
-    //   - create temporary variable
-    //   - default-initialize it
-    //   - move it to the field
-    VarSymbol* temp = newTemp("default_tmp", type);
-    Expr* stmt = call->getStmtExpr();
-    stmt->insertBefore(new DefExpr(temp));
-    resolvePrimInit(call, temp, type);
-
-    CallExpr* setit = new CallExpr(PRIM_SET_MEMBER, val,
-                                   fieldNameExpr->copy(), temp);
-
-    stmt->insertBefore(setit);
-    resolveExpr(setit);
-  }
-}
-
 // Does 'val' feed into a tuple? Ex.:
 //   default init var( elt_x1 type owned Foo )
 //   .=( tup "x1" elt_x1 )
@@ -9751,7 +9948,8 @@ static bool isTupleComponent(Symbol* val, CallExpr* call) {
 
 // Create an error when default initializing a non-nilable class type.
 static void errorIfNonNilableType(CallExpr* call, Symbol* val,
-                                  Type* typeToCheck, Type* type)
+                                  Type* typeToCheck, Type* type,
+                                  Expr* preventingSplitInit)
 {
   if (!isNonNilableClassType(typeToCheck) || useLegacyNilability(call))
     return;
@@ -9784,6 +9982,8 @@ static void errorIfNonNilableType(CallExpr* call, Symbol* val,
   }
 
   USR_FATAL_CONT(uCall, "Cannot default-initialize %s", descr);
+  if (preventingSplitInit != NULL && !val->hasFlag(FLAG_TEMP))
+    USR_FATAL_CONT(preventingSplitInit, "use here prevents split-init");
   USR_PRINT("non-nil class types do not support default initialization");
 
   AggregateType* at = toAggregateType(canonicalDecoratedClassType(type));
@@ -9800,7 +10000,8 @@ static void errorInvalidParamInit(CallExpr* call, Symbol* val, Type* type) {
   }
 }
 
-static void resolvePrimInit(CallExpr* call, Symbol* val, Type* type) {
+static void lowerPrimInit(CallExpr* call, Symbol* val, Type* type,
+                          Expr* preventingSplitInit) {
 
   if (call->id == breakOnResolveID) gdbShouldBreakHere();
 
@@ -9810,6 +10011,8 @@ static void resolvePrimInit(CallExpr* call, Symbol* val, Type* type) {
 
   // Shouldn't be called with ref types
   INT_ASSERT(at == NULL || at->getValType() == at);
+
+  SET_LINENO(call);
 
   // These are handled in replaceRuntimeTypePrims().
   if (type->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE) == true) {
@@ -9844,9 +10047,9 @@ static void resolvePrimInit(CallExpr* call, Symbol* val, Type* type) {
       resolveExpr(moveDefault);
       call->convertToNoop();
 
-      errorIfNonNilableType(call, val, type, type);
+      errorIfNonNilableType(call, val, type, type, preventingSplitInit);
     } else {
-      call->convertToNoop(); // initialize it PRIM_INIT_VAR_SPLIT_INIT
+      call->convertToNoop(); // initialize it in PRIM_INIT_VAR_SPLIT_INIT
     }
 
   // any type with a defaultValue is easy enough
@@ -9870,7 +10073,7 @@ static void resolvePrimInit(CallExpr* call, Symbol* val, Type* type) {
       resolveExpr(moveDefault);
       call->convertToNoop();
     } else {
-      call->convertToNoop(); // initialize it PRIM_INIT_VAR_SPLIT_INIT
+      call->convertToNoop(); // initialize it in PRIM_INIT_VAR_SPLIT_INIT
                              // (important for params)
     }
 
@@ -9883,7 +10086,7 @@ static void resolvePrimInit(CallExpr* call, Symbol* val, Type* type) {
     errorInvalidParamInit(call, val, at);
     if (!val->hasFlag(FLAG_NO_INIT) &&
         !call->isPrimitive(PRIM_INIT_VAR_SPLIT_DECL))
-      resolvePrimInitNonGenericRecordVar(call, val, at);
+      lowerPrimInitNonGenericRecordVar(call, val, at);
     else
       call->convertToNoop(); // let the memory be uninitialized
 
@@ -9901,11 +10104,12 @@ static void resolvePrimInit(CallExpr* call, Symbol* val, Type* type) {
 
     errorInvalidParamInit(call, val, at);
     if (at->symbol->hasFlag(FLAG_MANAGED_POINTER))
-      errorIfNonNilableType(call, val, getManagedPtrBorrowType(at), at);
+      errorIfNonNilableType(call, val, getManagedPtrBorrowType(at), at,
+                            preventingSplitInit);
 
     if (!val->hasFlag(FLAG_NO_INIT) &&
         !call->isPrimitive(PRIM_INIT_VAR_SPLIT_DECL))
-      resolvePrimInitGenericRecordVar(call, val, at);
+      lowerPrimInitGenericRecordVar(call, val, at);
     else
       call->convertToNoop(); // let the memory be uninitialized
 
@@ -9913,7 +10117,6 @@ static void resolvePrimInit(CallExpr* call, Symbol* val, Type* type) {
   } else {
     errorInvalidParamInit(call, val, at);
 
-    SET_LINENO(call);
 
     // enum types should have a defaultValue
     INT_ASSERT(!isEnumType(type));
@@ -9929,7 +10132,7 @@ static void resolvePrimInit(CallExpr* call, Symbol* val, Type* type) {
   }
 }
 
-static void resolvePrimInitNonGenericRecordVar(CallExpr* call,
+static void lowerPrimInitNonGenericRecordVar(CallExpr* call,
                                                Symbol* val,
                                                AggregateType* at) {
   // This code not intended to handle _array etc (but these are generic, right?)
@@ -9953,9 +10156,12 @@ static void resolvePrimInitNonGenericRecordVar(CallExpr* call,
   }
 }
 
-static void resolvePrimInitGenericRecordVar(CallExpr* call,
-                                            Symbol* val,
-                                            AggregateType* at) {
+// call is the context or PRIM_DEFAULT_INIT_VAR - in some cases
+// code will be added before this.
+static CallExpr* createGenericRecordVarDefaultInitCall(Symbol* val,
+                                                       AggregateType* at,
+                                                       Expr* call) {
+
   AggregateType* root = at->getRootInstantiation();
 
   val->type = root;
@@ -10011,6 +10217,18 @@ static void resolvePrimInitGenericRecordVar(CallExpr* call,
     initCall->insertAtTail(appendExpr);
   }
 
+  return initCall;
+}
+
+static void lowerPrimInitGenericRecordVar(CallExpr* call,
+                                          Symbol* val,
+                                          AggregateType* at) {
+  AggregateType* root = at->getRootInstantiation();
+
+  val->type = root;
+
+  CallExpr* initCall = createGenericRecordVarDefaultInitCall(val, at, call);
+
   call->insertBefore(initCall);
   resolveCallAndCallee(initCall);
   call->convertToNoop();
@@ -10029,13 +10247,11 @@ static bool primInitIsUnacceptableGeneric(CallExpr* call, Type* type) {
   if (!type->symbol->hasFlag(FLAG_GENERIC))
     return false;
 
-  if (isRecord(type) &&
-      type->symbol->hasFlag(FLAG_SYNC) == false &&
-      type->symbol->hasFlag(FLAG_SINGLE) == false &&
-      type->symbol->hasFlag(FLAG_TUPLE) == false &&
-      type->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE) == false) {
+  // Allow generic types in PRIM_INIT_VAR_SPLIT_DECL.
+  // The initialization at PRIM_INIT_VAR_SPLIT_INIT will establish a
+  // concrete type.
+  if (call->isPrimitive(PRIM_INIT_VAR_SPLIT_DECL))
     return false;
-  }
 
   bool retval = true;
 
