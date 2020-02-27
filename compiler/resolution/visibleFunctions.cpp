@@ -581,12 +581,12 @@ static void getVisibleFunctions(const char*           name,
                 }
               }
             }
-          } else if (isImportStmt(expr)) {
-            // Don't go into import statements to look for symbols, they only
-            // provide qualified access.
-          } else {
-            INT_FATAL("Expected ImportStmt or UseStmt");
           }
+        } else if (isImportStmt(expr)) {
+          // Don't go into import statements to look for symbols, they only
+          // provide qualified access.
+        } else {
+          INT_FATAL("Expected ImportStmt or UseStmt");
         }
       }
     }
