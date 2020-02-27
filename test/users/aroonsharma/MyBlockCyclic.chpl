@@ -175,7 +175,7 @@ proc MyBlockCyclic.dsiNewRectangularDom(param rank: int, type idxType,
 //
 // output distribution
 //
-proc MyBlockCyclic.writeThis(x:Writer) {
+proc MyBlockCyclic.writeThis(x:Writer) throws {
   x.writeln("MyBlockCyclic");
   x.writeln("-------");
   x.writeln("distributes: ", lowIdx, "...");
@@ -314,7 +314,7 @@ class LocMyBlockCyclic {
 }
 
 
-proc LocMyBlockCyclic.writeThis(x:Writer) {
+proc LocMyBlockCyclic.writeThis(x:Writer) throws {
   var localeid: int;
   on this {
     localeid = here.id;
@@ -592,7 +592,7 @@ proc LocMyBlockCyclicDom.computeFlatInds() {
 //
 // output local domain piece
 //
-proc LocMyBlockCyclicDom.writeThis(x:Writer) {
+proc LocMyBlockCyclicDom.writeThis(x:Writer) throws {
   x.write(myStarts);
 }
 
@@ -999,7 +999,7 @@ proc LocMyBlockCyclicArr.this(i) var {
 //
 // output local array piece
 //
-proc LocMyBlockCyclicArr.writeThis(x: Writer) {
+proc LocMyBlockCyclicArr.writeThis(x: Writer) throws {
   // note on this fails; see writeThisUsingOn.chpl
   x.write(myElems);
 }

@@ -249,7 +249,7 @@ class Block1DDom {
   //
   // the print method for the domain
   //
-  proc writeThis(x) {
+  proc writeThis(x) throws {
     x.write(whole);
   }
 
@@ -330,7 +330,7 @@ class LocBlock1DDom {
   //
   // how to write out this locale's indices
   //
-  proc writeThis(x) {
+  proc writeThis(x) throws {
     x.write(myBlock);
   }
 
@@ -444,7 +444,7 @@ class Block1DArr {
   //
   // how to print out the whole array, sequentially
   //
-  proc writeThis(x) {
+  proc writeThis(x) throws {
     var first = true;
     for loc in dom.dist.targetLocs {
       // May want to do something like the following:
@@ -535,7 +535,7 @@ class LocBlock1DArr {
   //
   // prints out this locale's piece of the array
   //
-  proc writeThis(x) {
+  proc writeThis(x) throws {
     // May want to do something like the following:
     //      on loc {
     // but it causes deadlock -- see writeThisUsingOn.chpl

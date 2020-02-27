@@ -52,7 +52,7 @@ record foo {
   }
 }
 
-proc foo.writeThis(fp) {
+proc foo.writeThis(fp) throws {
   fp.write("(/");
 
   var tmp = first;
