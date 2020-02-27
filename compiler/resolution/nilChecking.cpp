@@ -471,56 +471,6 @@ static void printAliasMap(const char* prefix,
   }
 }
 
-static bool isRecordInitOrReturn(CallExpr* call, SymExpr*& lhsSe, CallExpr*& initOrCtor) {
-
-  if (call->isPrimitive(PRIM_MOVE) ||
-      call->isPrimitive(PRIM_ASSIGN)) {
-    if (CallExpr* rhsCallExpr = toCallExpr(call->get(2))) {
-      if (rhsCallExpr->resolvedOrVirtualFunction()) {
-        if (AggregateType* at = toAggregateType(rhsCallExpr->typeInfo())) {
-          if (isRecord(at)) {
-            SymExpr* se = toSymExpr(call->get(1));
-            INT_ASSERT(se);
-            lhsSe = se;
-            initOrCtor = rhsCallExpr;
-            return true;
-          }
-        }
-      }
-    }
-  }
-
-  if (FnSymbol* calledFn = call->resolvedOrVirtualFunction()) {
-    if (calledFn->isMethod() &&
-        (calledFn->name == astrInit || calledFn->name == astrInitEquals)) {
-      SymExpr* se = toSymExpr(call->get(1));
-      INT_ASSERT(se);
-      Symbol* sym = se->symbol();
-      if (isRecord(sym->type)) {
-        lhsSe = se;
-        initOrCtor = call;
-        return true;
-      }
-    } else if (calledFn->hasFlag(FLAG_FN_RETARG)) {
-      for_formals_actuals(formal, actual, call) {
-        if (formal->hasFlag(FLAG_RETARG)) {
-          if (isRecord(formal->getValType())) {
-            SymExpr* se = toSymExpr(actual);
-            INT_ASSERT(se);
-            lhsSe = se;
-            initOrCtor = call;
-            return true;
-          }
-        }
-      }
-    }
-  }
-
-  lhsSe = NULL;
-  initOrCtor = NULL;
-  return false;
-}
-
 static bool isOuterVar(Symbol* sym, FnSymbol* fn) {
 
   if (sym == gVoid)
