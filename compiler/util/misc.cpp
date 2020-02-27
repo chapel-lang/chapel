@@ -670,6 +670,11 @@ bool printsSameLocationAsLastError(const BaseAST* ast) {
   return loc == last_error_loc;
 }
 
+void clearLastErrorLocation() {
+  last_error_loc.filename = NULL;
+  last_error_loc.lineno = 0;
+}
+
 static void handleInterrupt(int sig) {
   stopCatchingSignals();
   fprintf(stderr, "error: received interrupt\n");

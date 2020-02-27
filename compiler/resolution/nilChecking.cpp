@@ -371,9 +371,6 @@ static void checkForNilDereferencesInCall(
           continue; // ignore this in init functions for this check
         if (i == 1 && calledFn->name == astrSassign)
           continue; // ignore lhs of = for this check
-        if (formal->hasFlag(FLAG_ERROR_VARIABLE) ||
-            argSym->hasFlag(FLAG_ERROR_VARIABLE))
-          continue; // ignore error handling implementation
 
         Type* valType = argSym->getValType();
         if (isRecord(valType) || isNonNilableType(valType)) {
@@ -1331,6 +1328,11 @@ static void findNilDereferencesInFn(FnSymbol* fn) {
 
 void findNilDereferences() {
   if (fCompileTimeNilChecking) {
+    // Clear last error location so we get errors from nil checking
+    // even if previous compiler code raised error on the same line.
+    // This is necessary due to the use of printsSameLocationAsLastError
+    // to hide multiple nil-checking errors from the same line.
+    clearLastErrorLocation();
     forv_Vec(FnSymbol, fn, gFnSymbols) {
       findNilDereferencesInFn(fn);
     }
