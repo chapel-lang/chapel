@@ -4305,6 +4305,4 @@ module ChapelArray {
       compilerWarning("initializing a non-distributed domain from a distributed domain. If you didn't mean to do that, add a dmapped clause to the type expression or remove the type expression altogether");
   }
 
-  //proc chpl_checkRuntimeTypes(type lhs, type rhs) {
-  //}
 }
