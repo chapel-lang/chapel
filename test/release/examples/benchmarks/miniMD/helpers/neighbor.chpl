@@ -1,6 +1,7 @@
 // contains functions to move atoms and build neighbor lists
 
 use initMD;
+use Time;
 
 // update ghost information
 proc updateFluff() {

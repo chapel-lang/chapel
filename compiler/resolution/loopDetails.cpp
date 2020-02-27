@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2019 Cray Inc.
+ * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -644,7 +644,7 @@ void gatherLoopDetails(ForallStmt* fs,
   bool zippered = false;
 
   Symbol* newIterLF = findNewIterLF(fs);
-  // copied from the other gatherLoopDetails()
+  // copied from the other gatherLoopDetails() TODO -- can we remove?
   if (newIterLF) {
     isLeader = true;
     if (SymExpr* useSE = newIterLF->getSingleUse())
@@ -652,6 +652,8 @@ void gatherLoopDetails(ForallStmt* fs,
         if (useCall->isNamed("_toFollowerZip"))
           zippered = true;
   }
+  if (fs->zippered())
+    zippered = true;
 
   INT_ASSERT(isLeader ==
              !strcmp(parIdxVar(fs)->name, "chpl_followThis"));
@@ -686,12 +688,10 @@ void gatherLoopDetails(ForallStmt* fs,
       // Leader-follower iteration
 
       // Find the iterables
-
-      SymExpr* def = newIterLF->getSingleDef();
-      CallExpr* move = toCallExpr(def->parentExpr);
-      INT_ASSERT(move && move->isPrimitive(PRIM_MOVE));
-
       if (!zippered) {
+        SymExpr* def = newIterLF->getSingleDef();
+        CallExpr* move = toCallExpr(def->parentExpr);
+        INT_ASSERT(move && move->isPrimitive(PRIM_MOVE));
         Expr* iterable = move->get(2);
         INT_ASSERT(iterable);
         // Comes up in non-zippered leader-follower iteration
@@ -700,17 +700,26 @@ void gatherLoopDetails(ForallStmt* fs,
         // Other details set below.
         detailsVector.push_back(details);
       } else {
-        CallExpr* buildTupleCall = toCallExpr(move->get(2));
-        INT_ASSERT(buildTupleCall);
-        // build up the detailsVector
-        for_actuals(actual, buildTupleCall) {
-          SymExpr* actualSe = toSymExpr(actual);
-          INT_ASSERT(actualSe); // otherwise not normalized
-          // actualSe is the iterable in this case
-          IteratorDetails details;
-          details.iterable = actualSe;
-          // Other details set below.
-          detailsVector.push_back(details);
+        FnSymbol* buildTupleFn = NULL;
+        CallExpr* buildTupleCall = toCallExpr(findExprProducing(newIterLF));
+        if (buildTupleCall)
+          buildTupleFn = buildTupleCall->resolvedOrVirtualFunction();
+
+        if (buildTupleFn && buildTupleFn->hasFlag(FLAG_BUILD_TUPLE)) {
+          // build up the detailsVector
+          for_formals_actuals(formal, actual, buildTupleCall) {
+            // Ignore the RETARG
+            if (formal->hasFlag(FLAG_RETARG))
+              continue;
+
+            SymExpr* actualSe = toSymExpr(actual);
+            INT_ASSERT(actualSe); // otherwise not normalized
+            // actualSe is the iterable in this case
+            IteratorDetails details;
+            details.iterable = actualSe;
+            // Other details set below.
+            detailsVector.push_back(details);
+          }
         }
       }
 

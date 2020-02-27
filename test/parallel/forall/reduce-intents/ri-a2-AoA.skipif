@@ -1,2 +1,0 @@
-# This test is not doing anything correctness-check-worthy.
-CHPL_TEST_PERF != on

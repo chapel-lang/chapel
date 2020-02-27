@@ -33,7 +33,7 @@ does not yet implement all the capabilities needed by ofi-conduit.
 Users with Ethernet hardware are encouraged to consider the GASNet udp-conduit as an alternative
 to ofi-conduit with the sockets provider, as the former may provide more favorable performance.
 
-Users with Cray X{C,E,K} hardware are encouraged to consider the GASNet {gemini, aries}-conduit 
+Users with Cray XC hardware are encouraged to consider the GASNet aries-conduit
 as an alternative to ofi-conduit with the GNI provider, as the former may provide better performance.
 
 The psm1 provider (for the end-of-life TrueScale product) is no longer supported.

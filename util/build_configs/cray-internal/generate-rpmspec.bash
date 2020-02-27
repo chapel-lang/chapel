@@ -21,6 +21,16 @@ source $cwd/common.bash
 
 # Generate the first part of the spec file with shell expansion
 
+if [ "$chpl_platform" = cray-shasta ]; then
+    # Shasta rpm may be relocatable, since all %files start with %prefix.
+    platform_prefix=/opt/cray
+    set_def_subdir=admin-pe/set_default_files
+else
+    # Before Shasta, rpm is not relocatable.
+    platform_prefix=/opt
+    set_def_subdir=cray/admin-pe/set_default_files
+fi
+
 cat <<PART_1
 %define name chapel-$pkg_version
 %define real_name chapel
@@ -29,6 +39,8 @@ cat <<PART_1
 %define chpl_home_basename $( basename "$CHPL_HOME" )
 %define pkg_release $rpm_release
 %define build_type $chpl_platform
+%define platform_prefix $platform_prefix
+%define set_def_subdir $set_def_subdir
 %define _binary_payload w9.gzdio
 PART_1
 
@@ -45,14 +57,13 @@ PART_1
 # Generate the rest of the spec file, without shell expansion
 
 cat <<\PART_2
-
 Summary: Chapel language compiler and libraries
 Name:    %{name}
 Version: %{version}
 Release: %{pkg_release}
-Prefix:  /opt
-License: Copyright 2019, Cray Inc. All Rights Reserved.
-Packager: Cray, Inc
+Prefix:  %{platform_prefix}
+License: Copyright 2004-2020 Hewlett Packard Enterprise Development LP All Rights Reserved.
+Packager: Hewlett Packard Enterprise
 Group:   Development/Languages/Other
 Source:  %{chpl_home_basename}.tar.gz
 AutoReqProv: no
@@ -83,8 +94,8 @@ chmod -Rf a+rX,u+w,g-w,o-w .
 %install
 
 cd          %{_topdir}
-mkdir -p                                                $RPM_BUILD_ROOT/%{prefix}/cray/admin-pe/set_default_files
-cp -p       set_default_%{real_name}_%{pkg_version}     $RPM_BUILD_ROOT/%{prefix}/cray/admin-pe/set_default_files
+mkdir -p                                                $RPM_BUILD_ROOT/%{prefix}/%{set_def_subdir}
+cp -p       set_default_%{real_name}_%{pkg_version}     $RPM_BUILD_ROOT/%{prefix}/%{set_def_subdir}/
 mkdir -p                                                $RPM_BUILD_ROOT/%{prefix}/modulefiles/%{real_name}
 rm -f                                                   $RPM_BUILD_ROOT/%{prefix}/modulefiles/%{real_name}/%{pkg_version}
 cp -p       modulefile-%{pkg_version}                   $RPM_BUILD_ROOT/%{prefix}/modulefiles/%{real_name}/%{pkg_version}
@@ -119,7 +130,7 @@ if [ -f $RPM_INSTALL_PREFIX/modulefiles/%{real_name}/.version ]
 then
 chmod 644 $RPM_INSTALL_PREFIX/modulefiles/%{real_name}/.version
 fi
-chmod 755 $RPM_INSTALL_PREFIX/cray/admin-pe/set_default_files/set_default_%{real_name}_%{pkg_version}
+chmod 755 $RPM_INSTALL_PREFIX/%{set_def_subdir}/set_default_%{real_name}_%{pkg_version}
 
 sed --in-place "s:\[BASE_INSTALL_DIR\]:$RPM_INSTALL_PREFIX:g" $RPM_INSTALL_PREFIX/modulefiles/%{real_name}/%{pkg_version}
 
@@ -144,5 +155,5 @@ fi
 %defattr(-,root,root)
 %{prefix}/%{real_name}/%{pkg_version}
 %{prefix}/modulefiles/%{real_name}/%{pkg_version}
-%{prefix}/cray/admin-pe/set_default_files/set_default_%{real_name}_%{pkg_version}
+%{prefix}/%{set_def_subdir}/set_default_%{real_name}_%{pkg_version}
 PART_2

@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2019 Cray Inc.
+ * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -23,10 +23,10 @@ Support for Basic Linear Algebra Subprograms (BLAS) kernel routines.
 
 BLAS (Basic Linear Algebra Subprograms) are the de facto standard routines for
 low-level matrix, vector, and scalar operations. While `netlib
-<http://www.netlib.org/blas/#_documentation>`_ provides the official
+<https://www.netlib.org/blas/#_documentation>`_ provides the official
 reference version of BLAS, this documentation refers to the
-`MKL BLAS <https://software.intel.com/en-us/node/520725>`_ documentation, due
-to interface similarities.
+`MKL BLAS <https://software.intel.com/en-us/mkl-developer-reference-fortran>`_
+documentation, due to interface similarities.
 
 This module is intended to work with non-distributed dense rectangular
 (``DefaultRectangular``) arrays.
@@ -53,7 +53,7 @@ BLAS Implementations:
   `BLAS implementations <https://en.wikipedia.org/wiki/Basic_Linear_Algebra_Subprograms#Implementations>`_
   available.
   This module was built and tested with `netlib's C_BLAS
-  <http://www.netlib.org/blas/#_cblas>`_, but many other implementations are
+  <https://www.netlib.org/blas/#_cblas>`_, but many other implementations are
   compatible as well.
   Using a version of BLAS optimized for the user's system will yield the best
   performance.
@@ -116,57 +116,57 @@ in memory.
 
 .. MKL Documentation References
 
-.. _GEMM:   https://software.intel.com/en-us/node/ae8380b9-cac8-4c57-9af3-2eaac6acfc1b
-.. _HEMM:   https://software.intel.com/en-us/node/ecdcb863-3cb8-40ce-84f6-4cbc66cfc659
-.. _HERK:   https://software.intel.com/en-us/node/4ee4425c-42b6-4cc0-b2f0-6cfaa2117cb8
-.. _HER2K:  https://software.intel.com/en-us/node/5c17da7b-d8f9-44ec-921e-d6285238d48e
-.. _SYMM:   https://software.intel.com/en-us/node/8273eec0-2663-4843-90cd-12fd7a1baa6c
-.. _SYRK:   https://software.intel.com/en-us/node/04ca14b7-ec46-4836-8693-c4c7de26048e
-.. _SYR2K:  https://software.intel.com/en-us/node/d2a17c66-4265-4c56-84b9-2817ded7ee29
-.. _TRMM:   https://software.intel.com/en-us/node/60775edf-9a2b-4ad4-a627-dabbd24dcc80
-.. _TRSM:   https://software.intel.com/en-us/node/fc848297-8a33-42e6-826f-f4ae361c1800
-.. _GBMV:   https://software.intel.com/en-us/node/181e3c0c-e04a-4464-b87c-7e5d085f38a8
-.. _GEMV:   https://software.intel.com/en-us/node/78589c78-9c40-4846-b698-2c36e04b8869
-.. _GER:    https://software.intel.com/en-us/node/94156ede-4add-4830-940e-1ca5688abe88
-.. _GERC:   https://software.intel.com/en-us/node/f0469e83-40cc-40a0-9cd7-eeb8ea718aae
-.. _GERU:   https://software.intel.com/en-us/node/e62ae6d4-ba79-4034-96cc-46753ad0ec63
-.. _HBMV:   https://software.intel.com/en-us/node/02ca78c6-cad1-4c31-a6eb-5c645e862a52
-.. _HEMV:   https://software.intel.com/en-us/node/5c5972fb-d88f-4e32-8c4c-66f004945097
-.. _HER:    https://software.intel.com/en-us/node/c47a886b-8816-4cb6-be84-124b7ac70259
-.. _HER2:   https://software.intel.com/en-us/node/e2ddc00b-d8a5-4cc7-96f7-d08882151431
-.. _HPMV:   https://software.intel.com/en-us/node/fc602a99-7cb3-44f7-a22e-a89de255181a
-.. _HPR:    https://software.intel.com/en-us/node/60392a82-4400-4c9c-9c14-7a2e0cea4025
-.. _HPR2:   https://software.intel.com/en-us/node/163c6278-762f-40d7-8214-788d46ca4ea9
-.. _SBMV:   https://software.intel.com/en-us/node/9a02d0da-7aa4-4c5d-be91-78d4ce4a42e9
-.. _SPMV:   https://software.intel.com/en-us/node/fcd03a47-3896-4ad9-b0f9-1600c67deaa8
-.. _SPR:    https://software.intel.com/en-us/node/3a77ea66-38a4-42cd-ac6b-68c34c9f7e13
-.. _SPR2:   https://software.intel.com/en-us/node/9e17a098-ccbb-4cd4-9695-72c60a69904b
-.. _SYMV:   https://software.intel.com/en-us/node/687edc3e-fe76-4635-a425-40aab089cefc
-.. _SYR:    https://software.intel.com/en-us/node/08ab04b6-7aa7-4ce0-a69c-d4a4bc326ebe
-.. _SYR2:   https://software.intel.com/en-us/node/c2c54a2e-98d0-466a-a6b3-ae5f8cada666
-.. _TBMV:   https://software.intel.com/en-us/node/ae4b8c9d-8af2-4c5c-9e30-a8075cfef635
-.. _TBSV:   https://software.intel.com/en-us/node/f66b8633-aa82-4a54-ba5f-7aeaa40fc4f0
-.. _TPMV:   https://software.intel.com/en-us/node/00b446f2-5adb-4c7d-a4f5-3a63fee8f20d
-.. _TPSV:   https://software.intel.com/en-us/node/daea8c6c-7e29-461a-86d9-1ad01ae82cd6
-.. _TRMV:   https://software.intel.com/en-us/node/ce930002-ce05-4c38-a613-62931e024078
-.. _TRSV:   https://software.intel.com/en-us/node/4a450630-f24a-442e-94e2-e8f4e4ae4819
-.. _ASUM:   https://software.intel.com/en-us/node/ae455054-52b2-460a-8887-12192e01d899
-.. _AXPY:   https://software.intel.com/en-us/node/c8cbb256-eab7-4629-80ff-14029038e6b7
-.. _COPY:   https://software.intel.com/en-us/node/7e841640-7c31-4cd1-bc44-34f7d2343215
-.. _DOT:    https://software.intel.com/en-us/node/961a869b-14d9-4e4e-98fd-9ca13802c671
-.. _SDOT:   https://software.intel.com/en-us/node/7eaa9448-1ef0-404d-b8fb-c233a6b0142f
-.. _DOTC:   https://software.intel.com/en-us/node/a2c46a8c-343b-401d-88b6-9a6b88a4fa47
-.. _DOTU:   https://software.intel.com/en-us/node/e81ff20a-c401-4a15-a64f-cc0daa2bd65d
-.. _NRM2:   https://software.intel.com/en-us/node/aca1a6dc-60a0-4689-becc-2e0f4662c093
-.. _ROT:    https://software.intel.com/en-us/node/d8e66614-3ad9-4a37-90e8-3ef59e559ad6
-.. _ROTG:   https://software.intel.com/en-us/node/1a7e7c3a-e209-4c7a-b8ea-00c60e103e1f
-.. _ROTM:   https://software.intel.com/en-us/node/104aa6a5-5eef-4a3b-badf-78534ee1dee4
-.. _ROTMG:  https://software.intel.com/en-us/node/9ea3f8dd-fe3f-4a8a-ba12-ec25fabda6e6
-.. _SCAL:   https://software.intel.com/en-us/node/54f97254-4ed4-46ce-90f9-aa3c745ad840
-.. _SWAP:   https://software.intel.com/en-us/node/54a2904f-b8ed-4a5f-a0f2-a2be10d61495
-.. _AMAX:   https://software.intel.com/en-us/node/acb0d496-e032-4cf3-82f9-92b2e0bfc6d1
-.. _AMIN:   https://software.intel.com/en-us/node/50dceaa5-3463-402f-8065-a48bc68e0888
-.. _CABS1:  https://software.intel.com/en-us/node/64961e94-92d0-4671-90e6-86995e259a85
+.. _GEMM:   https://software.intel.com/en-us/mkl-developer-reference-fortran-gemm
+.. _HEMM:   https://software.intel.com/en-us/mkl-developer-reference-fortran-hemm
+.. _HERK:   https://software.intel.com/en-us/mkl-developer-reference-fortran-herk
+.. _HER2K:  https://software.intel.com/en-us/mkl-developer-reference-fortran-her2k
+.. _SYMM:   https://software.intel.com/en-us/mkl-developer-reference-fortran-symm
+.. _SYRK:   https://software.intel.com/en-us/mkl-developer-reference-fortran-syrk
+.. _SYR2K:  https://software.intel.com/en-us/mkl-developer-reference-fortran-syr2k
+.. _TRMM:   https://software.intel.com/en-us/mkl-developer-reference-fortran-trmm
+.. _TRSM:   https://software.intel.com/en-us/mkl-developer-reference-fortran-trsm
+.. _GBMV:   https://software.intel.com/en-us/mkl-developer-reference-fortran-gbmv
+.. _GEMV:   https://software.intel.com/en-us/mkl-developer-reference-fortran-gemv
+.. _GER:    https://software.intel.com/en-us/mkl-developer-reference-fortran-ger
+.. _GERC:   https://software.intel.com/en-us/mkl-developer-reference-fortran-gerc
+.. _GERU:   https://software.intel.com/en-us/mkl-developer-reference-fortran-geru
+.. _HBMV:   https://software.intel.com/en-us/mkl-developer-reference-fortran-hbmv
+.. _HEMV:   https://software.intel.com/en-us/mkl-developer-reference-fortran-hemv
+.. _HER:    https://software.intel.com/en-us/mkl-developer-reference-fortran-her
+.. _HER2:   https://software.intel.com/en-us/mkl-developer-reference-fortran-her2
+.. _HPMV:   https://software.intel.com/en-us/mkl-developer-reference-fortran-hpmv
+.. _HPR:    https://software.intel.com/en-us/mkl-developer-reference-fortran-hpr
+.. _HPR2:   https://software.intel.com/en-us/mkl-developer-reference-fortran-hpr2
+.. _SBMV:   https://software.intel.com/en-us/mkl-developer-reference-fortran-sbmv
+.. _SPMV:   https://software.intel.com/en-us/mkl-developer-reference-fortran-spmv
+.. _SPR:    https://software.intel.com/en-us/mkl-developer-reference-fortran-spr
+.. _SPR2:   https://software.intel.com/en-us/mkl-developer-reference-fortran-spr2
+.. _SYMV:   https://software.intel.com/en-us/mkl-developer-reference-fortran-symv
+.. _SYR:    https://software.intel.com/en-us/mkl-developer-reference-fortran-syr
+.. _SYR2:   https://software.intel.com/en-us/mkl-developer-reference-fortran-syr2
+.. _TBMV:   https://software.intel.com/en-us/mkl-developer-reference-fortran-tbmv
+.. _TBSV:   https://software.intel.com/en-us/mkl-developer-reference-fortran-tbsv
+.. _TPMV:   https://software.intel.com/en-us/mkl-developer-reference-fortran-tpmv
+.. _TPSV:   https://software.intel.com/en-us/mkl-developer-reference-fortran-tpsv
+.. _TRMV:   https://software.intel.com/en-us/mkl-developer-reference-fortran-trmv
+.. _TRSV:   https://software.intel.com/en-us/mkl-developer-reference-fortran-trsv
+.. _ASUM:   https://software.intel.com/en-us/mkl-developer-reference-fortran-asum
+.. _AXPY:   https://software.intel.com/en-us/mkl-developer-reference-fortran-axpy
+.. _COPY:   https://software.intel.com/en-us/mkl-developer-reference-fortran-copy
+.. _DOT:    https://software.intel.com/en-us/mkl-developer-reference-fortran-dot
+.. _SDOT:   https://software.intel.com/en-us/mkl-developer-reference-fortran-sdot
+.. _DOTC:   https://software.intel.com/en-us/mkl-developer-reference-fortran-dotc
+.. _DOTU:   https://software.intel.com/en-us/mkl-developer-reference-fortran-dotu
+.. _NRM2:   https://software.intel.com/en-us/mkl-developer-reference-fortran-nrm2
+.. _ROT:    https://software.intel.com/en-us/mkl-developer-reference-fortran-rot
+.. _ROTG:   https://software.intel.com/en-us/mkl-developer-reference-fortran-rotg
+.. _ROTM:   https://software.intel.com/en-us/mkl-developer-reference-fortran-rotm
+.. _ROTMG:  https://software.intel.com/en-us/mkl-developer-reference-fortran-rotmg
+.. _SCAL:   https://software.intel.com/en-us/mkl-developer-reference-fortran-scal
+.. _SWAP:   https://software.intel.com/en-us/mkl-developer-reference-fortran-swap
+.. _AMAX:   https://software.intel.com/en-us/mkl-developer-reference-fortran-i-amax
+.. _AMIN:   https://software.intel.com/en-us/mkl-developer-reference-fortran-amin
+.. _CABS1:  https://software.intel.com/en-us/mkl-developer-reference-fortran-cabs1
 
 .. BLAS Module TODO:
   - Support banded/packed matrix routines
@@ -210,7 +210,7 @@ module BLAS {
 
   use C_BLAS;
 
-  use SysCTypes;
+  public use SysCTypes;
 
   /* Return `true` if type is supported by BLAS */
   proc isBLASType(type t) param: bool {
@@ -2486,7 +2486,7 @@ module BLAS {
     different array element types require using different functions.
 
     Refer to the
-    `C_BLAS documentation <http://www.netlib.org/lapack/explore-html/dir_f88bc7ad48bfd56d75bf9d4836a2bb00.html>`_
+    `C_BLAS documentation <https://www.netlib.org/lapack/explore-html/dir_f88bc7ad48bfd56d75bf9d4836a2bb00.html>`_
     of the reference version for the usage of this module.
 
   */

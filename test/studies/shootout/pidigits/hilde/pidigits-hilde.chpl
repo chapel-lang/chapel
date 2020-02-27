@@ -12,6 +12,7 @@ extern proc putchar(c:int);
 
 use GMP;
 use Time;
+use SysCTypes;
 
 config const n: uint = 50;	// Compute 50 digits of Pi, usually.
 config param perfTest = false;

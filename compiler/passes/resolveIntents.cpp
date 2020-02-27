@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2019 Cray Inc.
+ * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -34,7 +34,6 @@ static IntentTag constIntentForType(Type* t) {
       is_enum_type(t) ||
       isClass(t) ||
       isDecoratedClassType(t) ||
-      isUnion(t) ||
       t == dtOpaque ||
       t == dtTaskID ||
       t == dtFile ||
@@ -55,6 +54,7 @@ static IntentTag constIntentForType(Type* t) {
              isRecordWrappedType(t) ||  // domain, array, or distribution
              isManagedPtrType(t) ||
              isAtomicType(t) ||
+             isUnion(t) ||
              isRecord(t)) { // may eventually want to decide based on size
     return INTENT_CONST_REF;
 
@@ -275,10 +275,12 @@ void resolveArgIntent(ArgSymbol* arg) {
       // records/unions.
       bool addedTmp = (isRecord(arg->type) || isUnion(arg->type));
       FnSymbol* fn = toFnSymbol(arg->defPoint->parentSymbol);
-      if (fn->hasFlag(FLAG_EXTERN))
+      if (fn->hasFlag(FLAG_EXTERN)) 
         // Q - should this check arg->type->symbol->hasFlag(FLAG_EXTERN)?
         addedTmp = false;
-
+      // Pass wrappers used in libraries/interop by value.
+      if (arg->type->symbol->hasFlag(FLAG_EXPORT_WRAPPER))
+        addedTmp = false;
       if (addedTmp) {
         if (arg->type->symbol->hasFlag(FLAG_COPY_MUTATES) ||
             (formalRequiresTemp(arg, fn) &&

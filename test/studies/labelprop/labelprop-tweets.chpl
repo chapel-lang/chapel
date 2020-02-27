@@ -52,6 +52,7 @@ config param distributed = false; // NOTE - could default to CHPL_COMM != none
 use FileSystem;
 use Spawn;
 use Time;
+use IO;
 use Graph;
 use Random;
 use HashedDist;
@@ -494,7 +495,7 @@ proc create_and_analyze_graph(Pairs)
       var maxcount = 0;
       // TODO -- performance -- this allocates memory.
       // There might not be a tie.
-      var tiebreaker = makeRandomStream(seed+vid, eltType=bool,
+      var tiebreaker = createRandomStream(seed+vid, eltType=bool,
                                         parSafe=false, algorithm=RNG.PCG);
       for (count,lab) in zip(counts, counts.domain) {
         if count > maxcount || (count == maxcount && tiebreaker.getNext()) {

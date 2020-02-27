@@ -10,7 +10,7 @@ writeln(a4);
 var a5 = a:bool(64);
 writeln(a5);
 
-var x = " true ":c_string;
+var x = c" true ";
 var x1 = x:bool;
 writeln(x1);
 var x2 = x:bool(8);

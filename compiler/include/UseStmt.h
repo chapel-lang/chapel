@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2019 Cray Inc.
+ * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -24,15 +24,16 @@
 
 class ResolveScope;
 
-class UseStmt : public Stmt {
+class UseStmt : public VisibilityStmt {
 public:
-  UseStmt(BaseAST* source, bool isPrivate);
+  UseStmt(BaseAST* source, const char* modRename, bool isPrivate);
 
-                  UseStmt(BaseAST*                            source,
-                          std::vector<const char*>*           args,
-                          bool                                exclude,
-                          std::map<const char*, const char*>* renames,
-                          bool isPrivate);
+  UseStmt(BaseAST*                            source,
+          const char*                         modRename,
+          std::vector<const char*>*           args,
+          bool                                exclude,
+          std::map<const char*, const char*>* renames,
+          bool isPrivate);
 
   DECLARE_COPY(UseStmt);
 
@@ -52,9 +53,9 @@ public:
 
   bool            hasExceptList()                                        const;
 
-  bool            isARename(const char* name)                            const;
+  bool            isARenamedSym(const char* name)                        const;
 
-  const char*     getRename(const char* name)                            const;
+  const char*     getRenamedSym(const char* name)                        const;
 
   void            scopeResolve(ResolveScope* scope);
 
@@ -63,20 +64,14 @@ public:
   bool            skipSymbolSearch(const char* name, bool methodCall)    const;
 
   bool            providesNewSymbols(const UseStmt* other)               const;
-
-  bool            isVisible(BaseAST* scope)                              const;
+  bool            providesNewSymbols(const ImportStmt* other)            const;
 
   BaseAST*        getSearchScope()                                       const;
-
-  ModuleSymbol*   checkIfModuleNameMatches(const char* name);
 
   void            writeListPredicate(FILE* mFP)                          const;
 
 private:
   bool            isEnum(const Symbol* sym)                              const;
-
-  void            updateEnclosingBlock(ResolveScope* scope,
-                                       Symbol*       sym);
 
   bool            isValid(Expr* expr)                                    const;
 
@@ -94,7 +89,6 @@ private:
   void            noRepeats()                                            const;
 
 public:
-  Expr*                              src;
   std::vector<const char*>           named;
   std::map<const char*, const char*> renamed;
   bool isPrivate;

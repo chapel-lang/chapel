@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2019 Cray Inc.
+ * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -305,17 +305,16 @@ chpl_task_ChapelData_t* chpl_task_getChapelData(void)
 uint32_t chpl_task_getMaxPar(void);
 
 //
-// Returns the number of sublocales the tasking layer knows about,
-// within the span of hardware it is managing tasks on.
-//
-c_sublocid_t chpl_task_getNumSublocales(void);
-
-//
 // returns the value of the call stack size limit being used in
 // practice; the value returned may potentially differ from one locale
 // to the next
 //
 size_t chpl_task_getCallStackSize(void);
+
+//
+// This returns whether guard pages (stack checks) are in use
+//
+chpl_bool chpl_task_guardPagesInUse(void);
 
 //
 // returns the number of tasks that are ready to run on the current locale,

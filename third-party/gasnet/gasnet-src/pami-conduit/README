@@ -1,6 +1,21 @@
 GASNet pami-conduit documentation
 Paul H. Hargrove <PHHargrove@lbl.gov>
 
+=====================================================================
+=====================================================================
+
+The pami-conduit is now DEPRECATED.
+No further development of pami-conduit is anticipated.
+It will be removed in a future release.
+
+The GASNet developers have neither the access nor the funding to keep
+this conduit working in the near future.  If you are interested in
+contributing maintenance for this conduit, please contact
+gasnet-staff@lbl.gov ASAP
+
+=====================================================================
+=====================================================================
+
 User Information:
 -----------------
 

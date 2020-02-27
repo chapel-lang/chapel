@@ -1,1 +1,3 @@
+warning: Destructors have been deprecated as of Chapel 1.21. Please use deinit instead.
+test_destroy2.chpl:3: warning: to fix, rename ~C to deinit
 In destructor

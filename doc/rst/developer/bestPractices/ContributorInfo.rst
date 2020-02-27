@@ -61,7 +61,7 @@ Get set up
 This should only need to happen once per developer.
 
 Note: these are expected to evolve over time as the governance of Chapel is
-migrated from Cray to an external/community body (the major elements are likely
+migrated to an external/community body (the major elements are likely
 to be similar, though the specific people involved are likely to change and
 grow).
 
@@ -761,7 +761,7 @@ Third-party code
 If your work will require committing any third-party code that you are not
 developing yourself (or code that you've developed as a standalone package),
 alert the chapel-developers_ mailing list of this as, presently, such code
-packages must be approved by Cray leadership before being committed.
+packages must be approved by our lawyers before being committed.
 
 Here are some guiding questions to determine whether a third-party package you
 rely on should be committed to the chapel repository:
@@ -926,7 +926,7 @@ the code review is done, make sure the text is still accurate.
 Final merge message
 +++++++++++++++++++
 
-When merging, copy and paste the PR description into the GitHub merge dialogue
+When merging, copy and paste the PR description into the GitHub merge dialog
 box. Ensure that the title of the PR is at the top.
 
 It is good practice to @-mention the reviewer(s) at the end of the PR.

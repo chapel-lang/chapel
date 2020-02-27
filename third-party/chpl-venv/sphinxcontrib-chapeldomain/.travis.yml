@@ -1,0 +1,13 @@
+language: python
+python:
+  - 2.7
+  - 3.4
+install:
+  - pip install -r requirements.txt -r test-requirements.txt -r docs-requirements.txt
+script:
+  - flake8 sphinxcontrib/
+  - nosetests --verbose --with-cov --cov-report xml --cover-package=sphinxcontrib.chapeldomain
+  - ( export PYTHONPATH=`pwd` && cd docs/ && make html )
+  - ( export PYTHONPATH=`pwd` && cd doc-test/ && make html )
+after_success:
+  - coveralls

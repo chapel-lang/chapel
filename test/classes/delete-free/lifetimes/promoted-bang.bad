@@ -1,0 +1,1 @@
+$CHPL_HOME/modules/internal/ChapelArray.chpl:4172: error: Scoped variable aa would outlive the value it is set to

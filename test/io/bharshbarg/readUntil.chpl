@@ -1,3 +1,5 @@
+use IO;
+
 config const delim = "!";
 assert(delim.numBytes == 1);
 config const lineLen = 100;

@@ -19,7 +19,6 @@ import subprocess
 import sys
 import tempfile
 import time
-from test import py3_compat
 
 # need to be able to find the util and chplenv dir even when start_test
 # doesn't live in $CHPL_HOME/util (such as for the release tarball)
@@ -31,6 +30,7 @@ sys.path.insert(0, os.path.abspath(chplenv_dir))
 from chplenv import *
 
 from test import activate_chpl_test_venv
+from test import py3_compat
 from test import re2_supports_valgrind
 import argparse
 try:
@@ -59,12 +59,11 @@ def main():
     # in case we've changed directories
     os.chdir(invocation_dir)
 
-    cleanup()
-
     finish()
 
 
 def run_tests(tests):
+    set_up_tmpdir()
     set_up_logger()
 
     files = []
@@ -159,6 +158,14 @@ def finish():
 
     logger.write()
     logger.stop()
+
+    # copy log from per-pid location (if needed) and remove tmp dir
+    cleanup()
+
+    # produce jUnit XML test output if needed
+    if args.junit_xml:
+        print("[Generating jUnit XML report]")
+        jUnit()
 
     # exit, returning 0 if no failures and 2 if there were some
     if args.clean_only or failures == 0:
@@ -361,7 +368,7 @@ def summarize():
     summary = "[Test Summary - {0}]\n".format(date_str)
 
     # scan line-by-line, logging failures, warnings, etc.. and updating counts
-    with open(log_file, "r") as log:
+    with open(tmp_log_file, "r") as log:
         for line in log:
             if re.search(error_marker, line, flags=re.M):
                 failure_summary += line
@@ -399,21 +406,16 @@ def summarize():
     summary += ("[Summary: #Passing Suppressions = {0} | "
             "#Passing Futures = {1} ]\n"
             .format(passing_suppressions, passing_futures))
-    # the actual running is done later, but in order to include it in
-    # the summary file we print it out here.  It all happens within
-    # a split second anyway
-    if args.junit_xml:
-        print("[Generating jUnit XML report]")
-        summary += jUnit()
     summary += "[END]\n"
 
     # log summary, and write it to its own .summary file
     logger.restart()
     logger.write(summary)
 
-    with open(log_file + ".summary", "w") as log_summary:
+    with open(tmp_summary_file, "w") as log_summary:
         log_summary.write(summary)
 
+    # Note: Log file & summary copied tmp_log_file to log_file in cleanup
 
 def clean(test=False):
     date_str = time.strftime("%a %b %d %H:%M:%S %Z %Y")
@@ -634,8 +636,11 @@ def check_environment_with_args():
             del os.environ["LC_ALL"]
 
     global log_file
+    global tmp_log_file
     log_file = os.path.join(logs_dir, "{0}.{1}.log"
             .format(getpass.getuser(), tgt_platform))
+    tmp_log_file = os.path.join(logs_dir, "{0}.{1}.pid{2}.log"
+            .format(getpass.getuser(), tgt_platform, os.getpid()))
 
 
 # Strip quotes that might have been added by preprocess_options()
@@ -645,14 +650,20 @@ def strip_preprocessing(arg):
     else:
         return arg
 
+def set_up_tmpdir():
+    # create temporary directory
+    global chpl_test_tmp_dir
+    if "CHPL_TEST_TMP_DIR" in os.environ:
+        chpl_test_tmp_dir = os.environ["CHPL_TEST_TMP_DIR"]
+    else:
+        chpl_test_tmp_dir = tempfile.mkdtemp(prefix="chplTestTmpDir.")
+        os.environ["CHPL_TEST_TMP_DIR"] = chpl_test_tmp_dir
+
+    # register atexit handler (cleans up temporary directory)
+    atexit.register(cleanup)
+
+
 def set_up_environment():
-    # pre-
-    if args.preexec:
-        os.environ["CHPL_SYSTEM_PREEXEC"] = args.preexec
-
-    if args.prediff:
-        os.environ["CHPL_SYSTEM_PREDIFF"] = args.prediff
-
     # compopts (note that we have to strip out our preprocessing)
     if args.compopts:
         args.compopts = [strip_preprocessing(x) for x in args.compopts]
@@ -673,19 +684,9 @@ def set_up_environment():
         memleaksfile = os.path.abspath(args.mem_leaks_log)
         args.execopts += " --memLeaksLog=" + memleaksfile
         if os.path.isfile(memleaksfile):
-            logger.write("[Error: mem leaks log file already exists: {0}]"
+            logger.write("[Removing memory leaks log file with duplicate name {0}]"
                          .format(memleaksfile))
-
-    # create temporary directory
-    global chpl_test_tmp_dir
-    if "CHPL_TEST_TMP_DIR" in os.environ:
-        chpl_test_tmp_dir = os.environ["CHPL_TEST_TMP_DIR"]
-    else:
-        chpl_test_tmp_dir = tempfile.mkdtemp(prefix="chplTestTmpDir.")
-        os.environ["CHPL_TEST_TMP_DIR"] = chpl_test_tmp_dir
-    
-    # register atexit handler (cleans up temporary directory)
-    atexit.register(cleanup)
+            os.remove(memleaksfile)
 
     # performance (linking flags to each other)
     if args.performance or args.performance_description or args.perflabel != "perf":
@@ -727,18 +728,34 @@ def set_up_environment():
 
 def set_up_logger():
     # log_file
+    global tmp_log_file
+    global tmp_summary_file
     global log_file
+    global summary_file
+
+    # Compute the paths needing to be computed
+    # Default log_file and tmp_log_file are set in check_environment_with_args
     if args.log_file:
         log_file = os.path.abspath(args.log_file)
+        # Don't use temporary log files if the user specified -logfile
+        tmp_log_file = log_file
+
+    summary_file = log_file + ".summary"
+    tmp_summary_file = tmp_log_file + ".summary"
+
     log_file_dir = os.path.dirname(log_file)
     if not os.access(log_file_dir, os.X_OK):
         print("[Permission denied for log_file directory: {0}]"
                 .format(log_file_dir))
         sys.exit(1)
+
+    # Remove log file and summary file
     if os.path.isfile(log_file):
         print()
-        print("[Removing log file with duplicate name {0}".format(log_file))
+        print("[Removing log file with duplicate name {0}]".format(log_file))
         os.remove(log_file)
+    if os.path.isfile(summary_file):
+        os.remove(summary_file)
 
     ## START LOGGING TO FILE ##
     global logger
@@ -752,6 +769,10 @@ def set_up_general():
 
     logger.write("[Starting Chapel regression tests - {0}]"
             .format(time.strftime("%y%m%d.%H%M%S")))
+
+    branch = run_git_command(["rev-parse", "--abbrev-ref", "HEAD"])
+    sha = run_git_command(["rev-parse", "--short", "HEAD"])
+    logger.write("[git branch: '{0}' ({1})]".format(branch, sha))
 
     # check to see if we are in subdir of CHPL_HOME
     if args.chpl_home_warn:
@@ -911,7 +932,7 @@ def set_up_performance_testing_B():
 
         compperf_test_name += args.comp_performance_description
 
-        temp_dat_dir = os.path.join(comp_perf_dir, "tempCompPerfDatFiles", "")
+        temp_dat_dir = os.path.join(chpl_test_tmp_dir, "tempCompPerfDatFiles", "")
         os.environ["CHPL_TEST_COMP_PERF_TEMP_DAT_DIR"] = temp_dat_dir
         #remove it if it wasn't cleaned up last time
         if os.path.isdir(temp_dat_dir):
@@ -952,7 +973,7 @@ def set_up_performance_testing_B():
         sha_out_name = os.path.join(chpl_test_tmp_dir, "sha.exec.out.tmp")
         with open(sha_out_name, "w") as sha_out:
             try:
-                output = run_command(["git", "rev-parse", "HEAD"])
+                output = run_git_command(["rev-parse", "HEAD"])
                 sha_out.write("sha " + output)
             except:
                 pass
@@ -1053,25 +1074,32 @@ def set_up_executables():
 
     # pre-exec
     if args.preexec:
-        if os.path.isfile(args.preexec) and os.access(args.preexec, os.X_OK):
-            args.preexec = os.path.abspath(args.preexec)
-            logger.write("[system-wide preexec: {0}]".format(args.preexec))
-        else:
-            logger.write("[Error: Cannot find or execute system-wide preexec:"
-                    "{0}".format(args.preexec))
-            finish()
-        os.environ["CHPL_SYSTEM_PREEXEC"] = args.preexec
+        chpl_system_preexec = []
+        for preexec in args.preexec:
+            if os.path.isfile(preexec) and os.access(preexec, os.X_OK):
+                preexec = os.path.abspath(preexec)
+                logger.write("[system-wide preexec: {0}]".format(preexec))
+            else:
+                logger.write("[Error: Cannot find or execute system-wide preexec: "
+                        "{0}".format(preexec))
+                finish()
+            chpl_system_preexec.append(preexec)
+        os.environ["CHPL_SYSTEM_PREEXEC"] = ','.join(chpl_system_preexec)
+
 
     # pre-diff
     if args.prediff:
-        if os.path.isfile(args.prediff) and os.access(args.prediff, os.X_OK):
-            args.prediff = os.path.abspath(args.prediff)
-            logger.write("[system-wide prediff: {0}]".format(args.prediff))
-        else:
-            logger.write("[Error: Cannot find or execute system-wide prediff: "
-                    "{0}".format(args.prediff))
-            finish()
-        os.environ["CHPL_SYSTEM_PREDIFF"] = args.prediff
+        chpl_system_prediff = []
+        for prediff in args.prediff:
+            if os.path.isfile(prediff) and os.access(prediff, os.X_OK):
+                prediff = os.path.abspath(prediff)
+                logger.write("[system-wide prediff: {0}]".format(prediff))
+            else:
+                logger.write("[Error: Cannot find or execute system-wide prediff: "
+                        "{0}".format(prediff))
+                finish()
+            chpl_system_prediff.append(prediff)
+        os.environ["CHPL_SYSTEM_PREDIFF"] = ','.join(chpl_system_prediff)
 
 
 def auto_generate_tests():
@@ -1080,47 +1108,7 @@ def auto_generate_tests():
     path = os.getcwd()
     with cd(home):
         if path == home or path == test_dir and not args.clean_only:
-            if args.performance:
-                # track the number of examples being tested
-                logger.write("[Generating tests from the Chapel spec in "
-                        "{0}/spec]".format(home))
-                tmp_file_path = os.path.join(home, "test", 
-                        "spectests.exec.out.tmp")
-                with open(tmp_file_path, "w") as tmp_file:
-                    try:
-                        out = run_command(["make", "spectests"])
-                        tmp_file.write(out)
-                    except:
-                        logger.write("[Error: Failed to generate Spec tests.  "
-                            "Log file: {0}]".format(tmp_file_path))
-                        finish()
-
-                dat_dir = os.path.join(perf_dir, args.performance_description)
-                with cd(test_dir):
-                    if not os.path.isdir(dat_dir):
-                        py3_compat.makedirs(dat_dir, exist_ok=True)
-
-                    logger.write("[Computing stats for spec examples]")
-                    temp_perf_path = os.path.join(home,
-                        "test", "spectests.perfStats.out.tmp")
-                    with open(temp_perf_path, "w") as temp_perf_file:
-                        try:
-                            cmd = os.path.join(util_dir, "test", 
-                                    "computePerfStats")
-                            out = run_command([cmd, "spectests",
-                                dat_dir, os.path.join(home, "test",
-                                "spectests.perfkeys"), tmp_file_path])
-                            temp_perf_file.write(out)
-                        except:
-                            logger.write("[Error: Failed to compute perf stats "
-                                    "for Spectests. Log file: {0}]"
-                                    .format(temp_perf_path))
-                            finish()
-
-                    os.remove(tmp_file_path)
-                    os.remove(temp_perf_path)
-
-            elif not args.gen_graphs:
+            if not args.gen_graphs:
                 logger.write("[Generating tests from the Chapel Spec in "
                         "{0}/spec".format(home))
                 returncode = subprocess.call(["make", "spectests"])
@@ -1225,9 +1213,20 @@ def run_and_log(cmd):
     return p.returncode
 
 def cleanup():
+    # move the log from the temp log
+    if os.path.isfile(tmp_log_file):
+        if tmp_log_file != log_file:
+            shutil.copyfile(tmp_log_file, log_file)
+            os.remove(tmp_log_file)
+
+    # move the summary from the temp summary
+    if os.path.isfile(tmp_summary_file):
+        if tmp_summary_file != summary_file:
+            shutil.copyfile(tmp_summary_file, summary_file)
+            os.remove(tmp_summary_file)
+
     if os.path.isdir(chpl_test_tmp_dir):
-        print("[Removing {0} directory]".format(chpl_test_tmp_dir))
-        shutil.rmtree(chpl_test_tmp_dir)
+      shutil.rmtree(chpl_test_tmp_dir)
 
 
 def jUnit():
@@ -1246,10 +1245,11 @@ def jUnit():
             "convert_start_test_log_to_junit_xml.py")]
 
     try:
-        out = run_command(cmd + junit_args)
-        return output
+        run_command(cmd + junit_args)
     except:
-        return ""
+        print("[ERROR generating jUnit XML report]")
+
+    return
 
 
 # PARSER
@@ -1303,11 +1303,14 @@ def parser_setup():
     parser.add_argument("-valgrindexe", "--valgrindexe", action="store_true",
             dest="valgrind_exe", help="execute tests using valgrind")
     # pre exec, pre- etc....
-    parser.add_argument("-syspreexec", "--syspreexec", action="store",
-            dest="preexec", 
-            help="set a PREEXEC script to run before execution")
-    parser.add_argument("-sysprediff", "--sysprediff", action="store",
-            dest="prediff", help="set a PREDIFF script to run on test output")
+    parser.add_argument("-syspreexec", "--syspreexec", action="append",
+                        dest="preexec",
+                        help="set a PREEXEC script to run before execution"
+                             ", may be given more than once")
+    parser.add_argument("-sysprediff", "--sysprediff", action="append",
+                        dest="prediff",
+                        help="set a PREDIFF script to run on test output"
+                             ", may be given more than once")
     # future mode args
     futures_mode = 0
     parser.add_argument("-futures", "--futures", action="store_const", const=1,
@@ -1456,7 +1459,7 @@ class Logger():
         # console stdout handlers
         self.console_out = StreamHandlerWithException(sys.stdout)
         # file handlers
-        self.file_out = FileHandlerWithException(log_file, mode="w")
+        self.file_out = FileHandlerWithException(tmp_log_file, mode="w")
         # add them
         self.logger.addHandler(self.console_out)
         self.logger.addHandler(self.file_out)
@@ -1474,7 +1477,7 @@ class Logger():
         self.logger.removeHandler(self.file_out)
 
     def restart(self):
-        self.file_out = FileHandlerWithException(log_file, mode="a")
+        self.file_out = FileHandlerWithException(tmp_log_file, mode="a")
         self.logger.addHandler(self.file_out)
 
 
@@ -1510,13 +1513,12 @@ class CommandError(Exception):
         self.output = output
     def __str__(self):
         return "Command '{0}' returned non-zero exit status {1}".format(self.cmd, self.retcode)
-
-def run_command(cmd):
+def run_command(cmd, stderr=None):
     """
     check_output like wrapper, but we're still committed to 2.6 so can't rely
     on check_output
     """
-    process = subprocess.Popen(cmd, stdout=subprocess.PIPE)
+    process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=stderr)
     output, _ = process.communicate()
     retcode = process.poll()
     if retcode:
@@ -1525,6 +1527,13 @@ def run_command(cmd):
     if sys.version_info[0] >= 3 and not isinstance(output, str):
         output = str(output, 'utf-8')
 
+    return output
+
+def run_git_command(command):
+    try:
+        output = run_command(["git"]+command, stderr=subprocess.STDOUT).strip()
+    except:
+        output = None
     return output
 
 def printout(so):

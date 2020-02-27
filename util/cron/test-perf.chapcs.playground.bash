@@ -25,11 +25,11 @@ export CHPL_NIGHTLY_TEST_CONFIG_NAME="perf.chapcs.playground"
 # 4) Update START_DATE to be today, using the format mm/dd/yy
 #
 
-# Test performance of a simplified DR standalone iterator
-GITHUB_USER=bradcray
-GITHUB_BRANCH=simplify-default-standalone
-SHORT_NAME=simplify-default-standalone
-START_DATE=06/01/19
+# Test performance of --fast not throwing --no-checks
+GITHUB_USER=ronawho
+GITHUB_BRANCH=dont-disable-checks-fast
+SHORT_NAME=dont-disable-checks-fast
+START_DATE=02/23/20
 
 git branch -D $GITHUB_USER-$GITHUB_BRANCH
 git checkout -b $GITHUB_USER-$GITHUB_BRANCH

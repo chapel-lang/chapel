@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2019 Cray Inc.
+ * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -123,6 +123,7 @@ extern ModuleSymbol*      baseModule;
 extern ModuleSymbol*      stringLiteralModule;
 extern ModuleSymbol*      standardModule;
 extern ModuleSymbol*      printModuleInitModule;
+extern ModuleSymbol*      ioModule;
 
 extern Vec<ModuleSymbol*> allModules;
 extern Vec<ModuleSymbol*> userModules;

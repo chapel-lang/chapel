@@ -7,10 +7,10 @@ proc main() {
   var a: unmanaged pair?;
 
   a   = new unmanaged pair();
-  a.x = 10;
-  a.y = 2.3;
+  a!.x = 10;
+  a!.y = 2.3;
 
-  writeln("a is: ", a.x, " ", a.y);
+  writeln("a is: ", a!.x, " ", a!.y);
 
   delete a;
 }

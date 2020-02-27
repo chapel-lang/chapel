@@ -1,5 +1,5 @@
 Error Caught in Unequal Array Same Type
-AssertionError: assert failed - 
+AssertionError: assert failed -
 '0.0 0.0 0.0 0.0 0.0 0.0
 0.0 0.0 0.0 0.0 0.0 0.0
 0.0 0.0 0.0 0.0 0.0 0.0
@@ -48,7 +48,7 @@ and
 are not of same type
 ================================================================================
 Error Caught in Equal High Array Diff Type
-AssertionError: assert failed - 
+AssertionError: assert failed -
 '0.0 0.0 0.0 0.0 0.0 0.0 0.0
 0.0 0.0 0.0 0.0 0.0 0.0 0.0
 0.0 0.0 0.0 0.0 0.0 0.0 0.0
@@ -62,30 +62,31 @@ and
 0 0 0 0 0 0 0'
 are not of same type
 ================================================================================
+Error Caught in Unequal Offset Array
+AssertionError: assert failed -
+'1 5 7'
+!=
+'1 7 6'
+================================================================================
 Error Caught in Unequal 1D Array Type 1
-AssertionError: Arrays differ: '[1, 5, 7]' != '[1, 7, 6]'
-First differing element at index 2:
-'5'
-'7'
-
+AssertionError: assert failed -
+'1 5 7'
+!=
+'1 7 6'
 ================================================================================
 Error Caught in Unequal 1D Array Type 2
-AssertionError: Arrays differ: '[1, 7, 8, 5, 8]' != '[1, 7, 6, 4]'
-First differing element at index 3:
-'8'
-'6'
-
-First Array contains 1 additionl elements.
-First extra element is at index 5
-'8'
-
+AssertionError: assert failed -
+'1 7 8 5 8'
+and
+'1 7 6 4'
+are not of same size
 ================================================================================
 Error Caught in Unequal 1D Array Type 3
-AssertionError: Arrays differ: '[1, 7, 6, 5, 8]' != '[1, 7, 6]'
-First Array contains 2 additionl elements.
-First extra element is at index 4
-'5'
-
+AssertionError: assert failed -
+'1 7 6 5 8'
+and
+'1 7 6'
+are not of same size
 ================================================================================
 Error Caught in Unequal Complex Type 1
 AssertionError: assert failed - '5' != '7.0i'

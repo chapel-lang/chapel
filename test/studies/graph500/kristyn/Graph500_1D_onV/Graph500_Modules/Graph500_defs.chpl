@@ -1,7 +1,7 @@
 module Graph500_defs
 {
 
-  use BlockDist;
+  public use BlockDist;
   config param DISTRIBUTION_TYPE = "BLOCK";
   config param REPRODUCIBLE_PROBLEMS = true;
   config param PRINT_TIMING_STATISTICS = true;
@@ -127,7 +127,7 @@ class Level_Set {
   var previous: unmanaged Level_Set (Vertex_List)?;
 }
 
- use ReplicatedDist;
+ public use ReplicatedDist;
 
 
 }

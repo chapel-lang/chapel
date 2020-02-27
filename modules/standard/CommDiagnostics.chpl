@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2019 Cray Inc.
+ * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -215,7 +215,7 @@ module CommDiagnostics
      */
     var try_nb: uint(64);
     /*
-      AMOs
+      atomic memory operations
      */
     var amo: uint(64);
     /*
@@ -232,7 +232,7 @@ module CommDiagnostics
      */
     var execute_on_nb: uint(64);
 
-    proc writeThis(c) {
+    proc writeThis(c) throws {
       use Reflection;
 
       var first = true;

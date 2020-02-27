@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2019 Cray Inc.
+ * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -44,7 +44,7 @@ Methods Available in Other Modules
 
 Besides the functions below, some other modules provide routines that are
 useful for working with strings. The :mod:`IO` module provides
-:proc:`IO.string.format` which creates a string that is the result of
+`IO.string.format` which creates a string that is the result of
 formatting. It also includes functions for reading and writing strings.
 The :mod:`Regexp` module also provides some routines for searching
 within strings.
@@ -132,16 +132,26 @@ and :proc:`~string.rfind()` return a :record:`byteIndex`.
 
  */
 module String {
-  use ChapelStandard;
-  use CString;
-  use SysCTypes;
-  use StringCasts;
+  private use ChapelStandard;
+  private use SysCTypes;
   private use ByteBufferHelpers;
   private use BytesStringCommon;
   private use SysBasic;
 
+  public use CString;
+  public use StringCasts;
+  public use BytesStringCommon only encodePolicy;  // expose encodePolicy
+
   pragma "fn synchronization free"
-  private extern proc qio_decode_char_buf(ref chr:int(32), ref nbytes:c_int, buf:c_string, buflen:ssize_t):syserr;
+  private extern proc qio_decode_char_buf(ref chr:int(32),
+                                          ref nbytes:c_int,
+                                          buf:c_string,
+                                          buflen:ssize_t): syserr;
+  pragma "fn synchronization free"
+  private extern proc qio_decode_char_buf_esc(ref chr:int(32),
+                                              ref nbytes:c_int,
+                                              buf:c_string,
+                                              buflen:ssize_t): syserr;
   pragma "fn synchronization free"
   private extern proc qio_encode_char_buf(dst:c_void_ptr, chr:int(32)):syserr;
   pragma "fn synchronization free"
@@ -205,6 +215,7 @@ module String {
        }
 
    */
+  pragma "plain old data"
   record byteIndex {
     pragma "no doc"
     var _bindex  : int;
@@ -214,9 +225,10 @@ module String {
       // Let compiler insert defaults
     }
     proc init(i: int) { _bindex = i; }
+    proc init=(other: byteIndex) { _bindex = other._bindex; }
     proc init=(i: int) { _bindex = i; }
 
-    proc writeThis(f) {
+    proc writeThis(f) throws {
       f <~> _bindex;
     }
   }
@@ -244,6 +256,7 @@ module String {
        }
 
    */
+  pragma "plain old data"
   record codepointIndex {
     pragma "no doc"
     var _cpindex  : int;
@@ -255,7 +268,7 @@ module String {
     proc init(i: int) { _cpindex = i; }
     proc init=(i: int) { _cpindex = i; }
 
-    proc writeThis(f) {
+    proc writeThis(f) throws {
       f <~> _cpindex;
     }
   }
@@ -448,10 +461,11 @@ module String {
     return x != 0;
   // End index arithmetic support
 
-  private proc deprWarning() {
-    if showStringBytesInitDeprWarnings {
-      compilerWarning("string.init is deprecated - "+
-                      "please use createStringWith* instead");
+  private proc validateEncoding(buf, len) throws {
+    extern proc chpl_enc_validate_buf(buf, len) : c_int;
+
+    if chpl_enc_validate_buf(buf, len) != 0 {
+      throw new DecodeError();
     }
   }
 
@@ -470,6 +484,7 @@ module String {
     :returns: A new `string`
   */
   inline proc createStringWithBorrowedBuffer(s: string) {
+    // we don't validate here because `s` must have been validated already
     var ret: string;
     initWithBorrowedBuffer(ret, s);
     return ret;
@@ -481,17 +496,27 @@ module String {
     it is undefined behavior.
 
     :arg s: Object to borrow the buffer from
-    :type s: c_string
+    :type s: `c_string`
 
     :arg length: Length of the `c_string` in bytes, excluding the terminating
                  null byte.
-    :type length: int
+    :type length: `int`
 
     :returns: A new `string`
   */
-  inline proc createStringWithBorrowedBuffer(s: c_string, length=s.length) {
+  inline proc createStringWithBorrowedBuffer(s: c_string, length=s.length) throws {
     return createStringWithBorrowedBuffer(s:c_ptr(uint(8)), length=length,
                                                             size=length+1);
+  }
+
+  pragma "no doc"
+  proc chpl_createStringWithLiteral(s: c_string, length:int) {
+    // NOTE: This is a "wellknown" function used by the compiler to create
+    // string literals. Inlining this creates some bloat in the AST, slowing the
+    // compilation.
+    return chpl_createStringWithBorrowedBufferNV(s:c_ptr(uint(8)),
+                                                 length=length,
+                                                 size=length+1);
   }
 
   /*
@@ -504,14 +529,29 @@ module String {
 
      :arg length: Length of the string stored in `s`, excluding the terminating
                   null byte.
-     :type length: int
+     :type length: `int`
 
      :arg size: Size of memory allocated for `s` in bytes
-     :type length: int
+     :type length: `int`
 
      :returns: A new `string`
   */
-  inline proc createStringWithBorrowedBuffer(s: bufferType, length: int, size: int) {
+  inline proc createStringWithBorrowedBuffer(s: bufferType,
+                                             length: int, size: int) throws {
+    var ret: string;
+    validateEncoding(s, length);
+    initWithBorrowedBuffer(ret, s, length,size);
+    return ret;
+  }
+
+  pragma "no doc"
+  private inline proc chpl_createStringWithBorrowedBufferNV(s: bufferType,
+                                                            length: int,
+                                                            size: int) {
+    // NOTE: This is similar to chpl_createStringWithLiteral above, but only
+    // used internally by the String module. These two functions cannot have the
+    // same names, because "wellknown" implementation in the compiler does not
+    // allow overloads.
     var ret: string;
     initWithBorrowedBuffer(ret, s, length,size);
     return ret;
@@ -525,41 +565,52 @@ module String {
 
   /*
     Creates a new string which takes ownership of the internal buffer of a
-    `c_string`. The buffer will be freed when the bytes is deinitialized.
+    `c_string`. The buffer will be freed when the string is deinitialized.
 
     :arg s: Object to take ownership of the buffer from
     :type s: `c_string`
 
     :arg length: Length of the string stored in `s`, excluding the terminating
                  null byte.
-    :type length: int
+    :type length: `int`
 
     :returns: A new `string`
   */
-  inline proc createStringWithOwnedBuffer(s: c_string, length=s.length) {
+  inline proc createStringWithOwnedBuffer(s: c_string, length=s.length) throws {
     return createStringWithOwnedBuffer(s: bufferType, length=length,
                                                       size=length+1);
   }
 
   /*
      Creates a new string which takes ownership of the memory allocated for a
-     `c_ptr(uint(8))`. The buffer will be freed when the bytes is deinitialized.
+     `c_ptr(uint(8))`. The buffer will be freed when the string is deinitialized.
 
      :arg s: Object to take ownership of the buffer from
      :type s: `bufferType` (i.e. `c_ptr(uint(8))`)
 
      :arg length: Length of the string stored in `s`, excluding the terminating
                   null byte.
-     :type length: int
+     :type length: `int`
 
      :arg size: Size of memory allocated for `s` in bytes
-     :type length: int
+     :type length: `int`
 
      :returns: A new `string`
   */
-  inline proc createStringWithOwnedBuffer(s: bufferType, length: int, size: int) {
+  inline proc createStringWithOwnedBuffer(s: bufferType,
+                                          length: int, size: int) throws {
     var ret: string;
+    validateEncoding(s, length);
     initWithOwnedBuffer(ret, s, length, size);
+    return ret;
+  }
+
+  pragma "no doc"
+  private inline proc chpl_createStringWithOwnedBufferNV(s: bufferType,
+                                                         length: int,
+                                                         size: int) {
+    var ret: string;
+    initWithOwnedBuffer(ret, s, length,size);
     return ret;
   }
 
@@ -572,6 +623,7 @@ module String {
     :returns: A new `string`
   */
   inline proc createStringWithNewBuffer(s: string) {
+    // we don't validate here because `s` must have been validated already
     var ret: string;
     initWithNewBuffer(ret, s);
     return ret;
@@ -581,17 +633,18 @@ module String {
     Creates a new string by creating a copy of the buffer of a `c_string`.
 
     :arg s: Object to copy the buffer from
-    :type s: c_string
+    :type s: `c_string`
 
     :arg length: Length of the `c_string` in bytes, excluding the terminating
                  null byte.
-    :type length: int
+    :type length: `int`
 
     :returns: A new `string`
   */
-  inline proc createStringWithNewBuffer(s: c_string, length=s.length) {
+  inline proc createStringWithNewBuffer(s: c_string, length=s.length,
+                                        errors=decodePolicy.strict) throws {
     return createStringWithNewBuffer(s: bufferType, length=length,
-                                                    size=length+1);
+                                     size=length+1, errors);
   }
 
   /*
@@ -602,16 +655,27 @@ module String {
 
      :arg length: Length of the string stored in `s`, excluding the terminating
                   null byte.
-     :type length: int
+     :type length: `int`
 
      :arg size: Size of memory allocated for `s` in bytes
-     :type length: int
+     :type length: `int`
 
      :returns: A new `string`
   */
-  inline proc createStringWithNewBuffer(s: bufferType, length: int, size: int) {
+  // TODO: size is probably unnecessary here, but maybe we keep it for
+  // consistence? Then, we can at least give it a default like length+1
+  inline proc createStringWithNewBuffer(s: bufferType,
+                                        length: int, size=length+1,
+                                        errors=decodePolicy.strict) throws {
+    return decodeByteBuffer(s, length, errors);
+  }
+
+  pragma "no doc"
+  private inline proc chpl_createStringWithNewBufferNV(s: bufferType,
+                                                       length: int,
+                                                       size: int) {
     var ret: string;
-    initWithNewBuffer(ret, s, length, size);
+    initWithNewBuffer(ret, s, length,size);
     return ret;
   }
 
@@ -642,104 +706,14 @@ module String {
       // Let compiler insert defaults
     }
 
-    /*
-      Initialize a new string from ``s``. If ``isowned`` is set to ``true`` then
-      ``s`` will be fully copied into the new instance. If it is ``false`` a
-      shallow copy will be made such that any in-place modifications to the new
-      string may appear in ``s``. It is the responsibility of the user to
-      ensure that the underlying buffer is not freed while being used as part
-      of a shallow copy.
-     
-      .. warning::
-
-          String initializers are deprecated. Use `createString*` functions,
-          instead.
-        
-     */
-    proc init(s: string, isowned: bool = true) {
-      deprWarning();
-      const sRemote = _local == false && s.locale_id != chpl_nodeID;
-      const sLen = s.len;
-      this.isowned = isowned;
-      this.complete();
-      // Don't need to do anything if s is an empty string
-      if sLen != 0 {
-        this.len = sLen;
-        if !_local && sRemote {
-          // ignore supplied value of isowned for remote strings so we don't leak
-          this.isowned = true;
-          this.buff = bufferCopyRemote(s.locale_id, s.buff, sLen);
-          this._size = sLen+1;
-        } else {
-          if this.isowned {
-            const (buf, allocSize) = bufferCopyLocal(s.buff, sLen);
-            this.buff = buf;
-            this.buff[sLen] = 0;
-            this._size = allocSize;
-          } else {
-            this.buff = s.buff;
-            this._size = s._size;
-          }
-        }
-      }
-    }
-
     proc init=(s: string) {
       this.complete();
       initWithNewBuffer(this, s);
     }
 
-    /*
-      Initialize a new string from the `c_string` `cs`. If `isowned` is set to
-      true, the backing buffer will be freed when the new record is destroyed.
-      If `needToCopy` is set to true, the `c_string` will be copied into the
-      record, otherwise it will be used directly. It is the responsibility of
-      the user to ensure that the underlying buffer is not freed if the
-      `c_string` is not copied in.
-     
-      .. warning::
-
-          String initializers are deprecated. Use `createString*` functions,
-          instead.
-        
-     */
-    proc init(cs: c_string, length: int = cs.length,
-                isowned: bool = true, needToCopy:  bool = true) {
-      deprWarning();
-      this.isowned = isowned;
-      this.complete();
-      const cs_len = length;
-      this.reinitString(cs:bufferType, cs_len, cs_len+1, needToCopy);
-    }
-
     proc init=(cs: c_string) {
       this.complete();
       initWithNewBuffer(this, cs:bufferType, length=cs.length, size=cs.length+1);
-    }
-
-    /*
-      Initialize a new string from `buff` ( `c_ptr(uint(8))` ). `size` indicates
-      the total size of the buffer available, while `len` indicates the current
-      length of the string in the buffer (the common case would be `size-1` for
-      a C-style string). If `isowned` is set to true, the backing buffer will be
-      freed when the new record is destroyed. If `needToCopy` is set to true,
-      the `c_string` will be copied into the record, otherwise it will be used
-      directly. It is the responsibility of the user to ensure that the
-      underlying buffer is not freed if the `c_string` is not copied in.
-     
-      .. warning::
-
-          String initializers are deprecated. Use `createString*` functions,
-          instead.
-        
-     */
-    // This initializer can cause a leak if isowned = false and needToCopy = true
-    proc init(buff: bufferType, length: int, size: int,
-                isowned: bool = true, needToCopy: bool = true) {
-      deprWarning();
-      this.isowned = isowned;
-      this.complete();
-      this.reinitString(buff, length, size, needToCopy);
     }
 
     pragma "no doc"
@@ -768,15 +742,20 @@ module String {
     proc type chpl__deserialize(data) {
       if data.locale_id != chpl_nodeID {
         if data.len <= CHPL_SHORT_STRING_SIZE {
-          return createStringWithNewBuffer(
-                  chpl__getInPlaceBufferData(data.shortData), data.len,
-                  data.size);
+          return chpl_createStringWithNewBufferNV(
+                      chpl__getInPlaceBufferData(data.shortData),
+                      data.len,
+                      data.size);
         } else {
           var localBuff = bufferCopyRemote(data.locale_id, data.buff, data.len);
-          return createStringWithOwnedBuffer(localBuff, data.len, data.size);
+          return chpl_createStringWithOwnedBufferNV(localBuff,
+                                                    data.len,
+                                                    data.size);
         }
       } else {
-        return createStringWithBorrowedBuffer(data.buff, data.len, data.size);
+        return chpl_createStringWithBorrowedBufferNV(data.buff,
+                                                     data.len,
+                                                     data.size);
       }
     }
 
@@ -907,10 +886,59 @@ module String {
 
     pragma "no doc"
     inline proc param c_str() param : c_string {
-      inline proc _cast(type t:c_string, x:string) {
-        return __primitive("cast", t, x);
-      }
       return this:c_string; // folded out in resolution
+    }
+
+    /*
+      Returns a :record:`~Bytes.bytes` from the given :record:`string`. If the
+      string contains some escaped non-UTF8 bytes, `errors` argument determines
+      the action.
+        
+      :arg errors: `encodePolicy.pass` directly copies the (potentially escaped)
+                    data, `encodePolicy.unescape` recovers the escaped bytes
+                    back.
+
+      :returns: :record:`~Bytes.bytes`
+    */
+    proc encode(errors=encodePolicy.pass): bytes {
+      var localThis: string = this.localize();
+
+      if errors == encodePolicy.pass {  // just copy
+        return createBytesWithNewBuffer(localThis.buff, localThis.numBytes);
+      }
+      else {  // see if there is escaped data in the string
+        var (buf, size) = bufferAlloc(this.len+1);
+
+        var readIdx = 0;
+        var writeIdx = 0;
+        while readIdx < localThis.len {
+          var cp: int(32);
+          var nbytes: c_int;
+          var multibytes = (localThis.buff + readIdx): c_string;
+          var maxbytes = (localThis.len - readIdx): ssize_t;
+          const decodeRet = qio_decode_char_buf_esc(cp, nbytes, multibytes,
+                                                    maxbytes);
+          if (0xdc80<=cp && cp<=0xdcff) {
+            buf[writeIdx] = (cp-0xdc00):byteType;
+            writeIdx += 1;
+          }
+          else if (decodeRet != 0) {
+            // the string contains invalid data
+            // at this point this can only happen due to a failure in our
+            // implementation of string encoding/decoding
+            // simply copy the data out
+            bufferMemcpyLocal(dst=(buf+writeIdx), src=multibytes, len=nbytes);
+            writeIdx += nbytes;
+          }
+          else {
+            bufferMemcpyLocal(dst=(buf+writeIdx), src=multibytes, len=nbytes);
+            writeIdx += nbytes;
+          }
+          readIdx += nbytes;
+        }
+        buf[writeIdx] = 0;
+        return createBytesWithOwnedBuffer(buf, length=writeIdx, size=size);
+      }
     }
 
     /*
@@ -932,11 +960,50 @@ module String {
         c
         d
      */
+    iter items() : string {
+      var localThis: string = this.localize();
+
+      var i = 0;
+      while i < localThis.len {
+        const curPos = localThis.buff+i;
+        var cp: int(32);
+        var nBytes: c_int;
+        var maxBytes = (localThis.len - i): ssize_t;
+        qio_decode_char_buf_esc(cp, nBytes, curPos:c_string, maxBytes);
+
+        var (newBuf, newSize) = bufferCopyLocal(curPos, nBytes);
+        newBuf[nBytes] = 0;
+
+        yield chpl_createStringWithOwnedBufferNV(newBuf, nBytes, newSize);
+
+        i += nBytes;
+      }
+    }
+
+
+    /*
+      Iterates over the string character by character, yielding 1-codepoint
+      strings. (A synonym for :iter:`items`)
+
+      For example:
+
+      .. code-block:: chapel
+
+        var str = "abcd";
+        for c in str {
+          writeln(c);
+        }
+
+      Output::
+
+        a
+        b
+        c
+        d
+     */
     iter these() : string {
-      for cp in this.codepoints() do
-        // This is pretty painful from a performance perspective right now,
-        // allocates w/ every yield
-        yield codepointToString(cp);
+      for c in this.items() do
+        yield c;
     }
 
     /*
@@ -962,7 +1029,7 @@ module String {
         var nbytes: c_int;
         var multibytes = (localThis.buff + i): c_string;
         var maxbytes = (localThis.len - i): ssize_t;
-        qio_decode_char_buf(cp, nbytes, multibytes, maxbytes);
+        qio_decode_char_buf_esc(cp, nbytes, multibytes, maxbytes);
         yield cp;
         i += nbytes;
       }
@@ -988,7 +1055,7 @@ module String {
         var nbytes: c_int;
         var multibytes = (localThis.buff + i): c_string;
         var maxbytes = (localThis.len - i): ssize_t;
-        qio_decode_char_buf(cp, nbytes, multibytes, maxbytes);
+        qio_decode_char_buf_esc(cp, nbytes, multibytes, maxbytes);
         yield (cp:int(32), (i + 1):byteIndex, nbytes:int);
         i += nbytes;
       }
@@ -1051,7 +1118,7 @@ module String {
       var nbytes: c_int;
       var multibytes = localThis.buff: c_string;
       var maxbytes = localThis.len: ssize_t;
-      qio_decode_char_buf(cp, nbytes, multibytes, maxbytes);
+      qio_decode_char_buf_esc(cp, nbytes, multibytes, maxbytes);
 
       if localThis.len != nbytes:int then
         halt("string.toCodepoint() only accepts single-codepoint strings");
@@ -1104,11 +1171,31 @@ module String {
       var multibytes = ret.buff;
       var cp: int(32);
       var nbytes: c_int;
-      qio_decode_char_buf(cp, nbytes, multibytes:c_string, maxbytes);
+      qio_decode_char_buf_esc(cp, nbytes, multibytes:c_string, maxbytes);
       ret.buff[nbytes] = 0;
       ret.len = nbytes;
 
       return ret;
+    }
+
+    /*
+      Return the `i` th codepoint in the string. (A synonym for :proc:`item`)
+
+      :returns: A string with the complete multibyte character starting at the
+                specified codepoint index from ``1..string.numCodepoints``
+     */
+    proc this(i: codepointIndex) : string {
+      return this.item(i);
+    }
+
+    /*
+      Return the `i` th codepoint in the string. (A synonym for :proc:`item`)
+
+      :returns: A string with the complete multibyte character starting at the
+                specified codepoint index from ``1..string.numCodepoints``
+     */
+    inline proc this(i: int) : string {
+      return this.item(i);
     }
 
     /*
@@ -1117,7 +1204,7 @@ module String {
       :returns: A string with the complete multibyte character starting at the
                 specified codepoint index from ``1..string.numCodepoints``
      */
-    proc this(i: codepointIndex) : string {
+    proc item(i: codepointIndex) : string {
       if this.isEmpty() then return "";
       const idx = i: int;
       return codepointToString(this.codepoint(idx));
@@ -1129,7 +1216,7 @@ module String {
       :returns: A string with the complete multibyte character starting at the
                 specified codepoint index from ``1..string.numCodepoints``
      */
-    inline proc this(i: int) : string {
+    inline proc item(i: int) : string {
       return this[i: codepointIndex];
     }
 
@@ -1249,11 +1336,11 @@ module String {
 
     // These should never be called (but are default functions for records)
     pragma "no doc"
-    proc writeThis(f) {
+    proc writeThis(f) throws {
       compilerError("not implemented: writeThis");
     }
     pragma "no doc"
-    proc readThis(f) {
+    proc readThis(f) throws {
       compilerError("not implemented: readThis");
     }
 
@@ -1314,7 +1401,7 @@ module String {
                   var nbytes: c_int;
                   var multibytes = (this.buff + i-1): c_string;
                   var maxbytes = (this.len - (i-1)): ssize_t;
-                  qio_decode_char_buf(cp, nbytes, multibytes, maxbytes);
+                  qio_decode_char_buf_esc(cp, nbytes, multibytes, maxbytes);
                   nextIdx = i-1 + nbytes;
                 }
               }
@@ -1982,6 +2069,10 @@ module String {
   proc =(ref lhs: byteIndex, rhs: int) {
     lhs._bindex = rhs: int;
   }
+  pragma "no doc"
+  proc =(ref lhs: byteIndex, const ref rhs: byteIndex) {
+    lhs._bindex = rhs._bindex;
+  }
 
   /*
      Copies the int `rhs` into the codepointIndex `lhs`.
@@ -1989,6 +2080,11 @@ module String {
   proc =(ref lhs: codepointIndex, rhs: int) {
     lhs._cpindex = rhs: int;
   }
+  pragma "no doc"
+  proc =(ref lhs: codepointIndex, const ref rhs: codepointIndex) {
+    lhs._cpindex = rhs._cpindex;
+  }
+
 
   /*
      Copies the string `rhs` into the string `lhs`.
@@ -2228,21 +2324,21 @@ module String {
 
   pragma "no doc"
   inline proc <(a: string, b: string) : bool {
-    return _strcmp(a.buff, a.len, a.locale_id, b.buff, b.len, b.locale_id) < 0;
+    return doLessThan(a, b);
   }
 
   pragma "no doc"
   inline proc >(a: string, b: string) : bool {
-    return _strcmp(a.buff, a.len, a.locale_id, b.buff, b.len, b.locale_id) > 0;
+    return doGreaterThan(a, b);
   }
 
   pragma "no doc"
   inline proc <=(a: string, b: string) : bool {
-    return _strcmp(a.buff, a.len, a.locale_id, b.buff, b.len, b.locale_id) <= 0;
+    return doLessThanOrEq(a, b);
   }
   pragma "no doc"
   inline proc >=(a: string, b: string) : bool {
-    return _strcmp(a.buff, a.len, a.locale_id, b.buff, b.len, b.locale_id) >= 0;
+    return doGreaterThanOrEq(a, b);
   }
 
 
@@ -2344,8 +2440,9 @@ module String {
     var buffer = bufferAllocExact(2);
     buffer[0] = i;
     buffer[1] = 0;
-    var s = createStringWithOwnedBuffer(buffer, 1, 2);
-    return s;
+    try! {
+      return createStringWithOwnedBuffer(buffer, 1, 2);
+    }
   }
 
   /*
@@ -2357,8 +2454,9 @@ module String {
     var (buffer, mbsize) = bufferAlloc(mblength+1);
     qio_encode_char_buf(buffer, i);
     buffer[mblength] = 0;
-    var s = createStringWithOwnedBuffer(buffer, mblength, mbsize);
-    return s;
+    try! {
+      return createStringWithOwnedBuffer(buffer, mblength, mbsize);
+    }
   }
 
   //
@@ -2418,29 +2516,6 @@ module String {
 
   pragma "no doc"
   inline proc chpl__defaultHash(x : string): uint {
-    var hash: int(64);
-    on __primitive("chpl_on_locale_num",
-                   chpl_buildLocaleID(x.locale_id, c_sublocid_any)) {
-      // Use djb2 (Dan Bernstein in comp.lang.c), XOR version
-      var locHash: int(64) = 5381;
-      for c in 0..#(x.numBytes) {
-        locHash = ((locHash << 5) + locHash) ^ x.buff[c];
-      }
-      hash = locHash;
-    }
-    return hash:uint;
-  }
-
-  //
-  // Developer Extras
-  //
-  pragma "no doc"
-  proc chpldev_refToString(ref arg) : string {
-    // print out the address of class references as well
-    proc chpldev_classToString(x: object) : string
-      return " (class = " + __primitive("ref to string", x):string + ")";
-    proc chpldev_classToString(x) : string return "";
-
-    return __primitive("ref to string", arg):string + chpldev_classToString(arg);
+    return getHash(x);
   }
 }

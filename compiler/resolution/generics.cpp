@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2019 Cray Inc.
+ * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -25,6 +25,7 @@
 #include "driver.h"
 #include "expr.h"
 #include "PartialCopyData.h"
+#include "passes.h"
 #include "resolveFunction.h"
 #include "resolveIntents.h"
 #include "stmt.h"
@@ -465,7 +466,7 @@ static bool fixupDefaultInitCopy(FnSymbol* fn,
   bool       retval = false;
 
   if (AggregateType* ct = toAggregateType(arg->type)) {
-    if (isUserDefinedRecord(ct) == true && ct->hasInitializers()) {
+    if (typeNeedsCopyInitDeinit(ct) == true && ct->hasInitializers()) {
       // If the user has defined any initializer,
       // initCopy function should call the copy-initializer.
       //
@@ -481,7 +482,9 @@ static bool fixupDefaultInitCopy(FnSymbol* fn,
       // it up completely...
       instantiateBody(newFn);
 
-      if (FnSymbol* initFn = findCopyInit(ct)) {
+      const char* err = NULL;
+
+      if (FnSymbol* initFn = findCopyInitFn(ct, err)) {
         Symbol*   thisTmp  = newTemp(ct);
         DefExpr*  def      = new DefExpr(thisTmp);
         CallExpr* initCall = NULL;
@@ -499,6 +502,15 @@ static bool fixupDefaultInitCopy(FnSymbol* fn,
         // above code adds a call that would be considered already resolved.
         resolveCallAndCallee(initCall);
 
+        // Workaround: setting init= argument to ref in case
+        // the fields were not resolved yet
+        if (recordContainingCopyMutatesField(ct)) {
+          FnSymbol* fn = initCall->resolvedFunction();
+          INT_ASSERT(fn->numFormals() == 3);
+          ArgSymbol* arg = fn->getFormal(3);
+          arg->intent = INTENT_REF;
+          arg->originalIntent = INTENT_REF;
+        }
         if (ct->hasPostInitializer() == true) {
           CallExpr* post = new CallExpr("postinit", gMethodToken, thisTmp);
 
@@ -531,7 +543,7 @@ static bool fixupDefaultInitCopy(FnSymbol* fn,
 
       } else {
         // No copy-initializer could be found
-        newFn->addFlag(FLAG_ERRONEOUS_INITCOPY);
+        markCopyErroneous(newFn, err);
       }
 
       retval = true;
@@ -590,7 +602,7 @@ FnSymbol* instantiateFunction(FnSymbol*  fn,
                               SymbolMap& allSubsBeforeDefaultExprs) {
   FnSymbol* newFn = fn->partialCopy(&map);
 
-  newFn->removeFlag(FLAG_GENERIC);
+  newFn->clearGeneric();
   newFn->addFlag(FLAG_INVISIBLE_FN);
   newFn->instantiatedFrom = fn;
   newFn->substitutions.map_union(allSubs);
@@ -758,7 +770,7 @@ void explainAndCheckInstantiation(FnSymbol* newFn, FnSymbol* fn) {
                      &explainInstantiationModule);
   }
 
-  if (!newFn->hasFlag(FLAG_GENERIC) && explainInstantiationLine) {
+  if (!newFn->isGeneric() && explainInstantiationLine) {
     explainInstantiation(newFn);
   }
 

@@ -3,7 +3,7 @@
  * asked for, and that readline(array) will read the right number of
  * bytes.
  */
-
+use IO;
 
 // I can't figure out how to get from uint(8) to a string.
 // So do the comparison the other way around.

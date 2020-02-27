@@ -1,6 +1,0 @@
-arrayClear.chpl:2: warning: push_back is deprecated - please use list.append
-arrayClear.chpl:3: warning: push_back is deprecated - please use list.append
-arrayClear.chpl:4: warning: push_back is deprecated - please use list.append
-arrayClear.chpl:6: warning: clear is deprecated - please use list.clear
-(1 2 3, 3)
-(, 0)

@@ -1,4 +1,4 @@
-# Copyright 2004-2019 Cray Inc.
+# Copyright 2004-2020 Hewlett Packard Enterprise Development LP
 # Other additional copyright holders may be indicated within.
 #
 # The entirety of this work is licensed under the Apache License,
@@ -19,43 +19,25 @@
 # Makefile.mli-static
 #
 
-include $(CHPL_MAKE_HOME)/runtime/etc/Makefile.include
+include $(CHPL_MAKE_HOME)/runtime/etc/Makefile.mli-common
 
-ifdef CHPL_ZMQ_HOME
-CHPL_MLI_INCS = -I$(CHPL_ZMQ_HOME)/include
-CHPL_ZMQ_LIB_HOME = $(CHPL_ZMQ_HOME)/lib
-CHPL_ZMQ_LIB = $(CHPL_ZMQ_LIB_HOME)/libzmq.a
-CHPL_ZMQ_LIB_SEARCH_PATH = -L$(CHPL_ZMQ_LIB_HOME)
-else
-CHPL_ZMQ_LIB = -lzmq
-endif
-CHPL_LN_LIB_DIR = $(CHPL_MAKE_RUNTIME_LIB)/$(CHPL_MAKE_LAUNCHER_SUBDIR)
+.PHONY: all
+all: checkRtLibDir buildServer buildClientAsHost runTagsCommand FORCE
 
-.PHONY: buildUserObj buildServer buildClient runTagsCommand
+.PHONY: buildClientAsHost
+buildClientAsHost:
+	$(MAKE) -f $(CHPL_MAKE_HOME)/runtime/etc/Makefile.mli-static \
+	$(TO_PROPAGATE) \
+	buildClient
 
-all: buildUserObj buildServer buildClient runTagsCommand FORCE
-
-buildUserObj:
-#
-# Compile loose source files in CHPLUSEROBJ.
-#
-	$(foreach srcFile, $(CHPLUSEROBJ), \
-		$(CC) $(CHPL_MAKE_BASE_CFLAGS) $(GEN_CFLAGS) $(COMP_GEN_CFLAGS) \
-			-c -o $(srcFile) $(CHPL_RT_INC_DIR) $(srcFile).c \
-  ;)
-
-buildServer: $(TMPSERVERNAME)
-
+.PHONY: buildClient
 buildClient: $(TMPBINNAME)
 
-runTagsCommand:
-	$(TAGS_COMMAND)
-
-$(TMPBINNAME): $(CHPL_CL_OBJS) FORCE
 #
 # Invoke the launcher script, but don't actually link up the launcher binary.
-# Do this by setting CHPL_MAKE_IS_MLI=1.
+# Do this by setting CHPL_MAKE_IS_MLI=1 when invoking the sub-make.
 #
+$(TMPBINNAME): $(CHPL_CL_OBJS) FORCE
 	$(MAKE) -f $(CHPL_MAKE_HOME)/runtime/etc/Makefile.launcher all \
 		CHPL_MAKE_HOME=$(CHPL_MAKE_HOME) \
 		TMPBINNAME=$(TMPSERVERNAME) \
@@ -65,64 +47,22 @@ $(TMPBINNAME): $(CHPL_CL_OBJS) FORCE
 		CHPL_MAKE_RUNTIME_INCL=$(CHPL_MAKE_RUNTIME_INCL) \
 		CHPL_MAKE_THIRD_PARTY=$(CHPL_MAKE_THIRD_PARTY) \
 		CHPL_MAKE_IS_MLI=1
-#
 # Compile the client bundle.
-#
 	$(CC) $(CHPL_MAKE_BASE_CFLAGS) $(GEN_CFLAGS) $(COMP_GEN_CFLAGS) \
 		-c -o $(TMPBINNAME).o \
 		$(CHPLSRC) \
 		$(COMP_GEN_MLI_EXTRA_INCLUDES) \
 		$(CHPL_RT_INC_DIR) \
 		$(CHPL_MLI_INCS)
-#
 # Throw the client object file and launcher object file into an archive.
-#
 	$(AR) -c -r -s $(TMPBINNAME) \
 		$(TMPBINNAME).o \
 		$(CHPL_CL_OBJS) \
 		$(TMPSERVERNAME)_launcher.o
-#
 # Last minute munging in case of output file name collisions.
-#
 ifneq ($(TMPBINNAME),$(BINNAME))
 	cp $(TMPBINNAME) $(BINNAME)
 	rm $(TMPBINNAME)
-endif
-
-$(TMPSERVERNAME): $(CHPL_CL_OBJS) checkRtLibDir FORCE
-ifneq ($(SKIP_COMPILE_LINK),skip)
-#
-# Compile the server bundle.
-#
-	$(CC) $(CHPL_MAKE_BASE_CFLAGS) $(GEN_CFLAGS) $(COMP_GEN_CFLAGS) \
-		-c -o $(TMPSERVERNAME).o \
-		$(CHPLSERVERSRC) \
-		$(CHPL_RT_INC_DIR) \
-		$(CHPL_MLI_INCS) \
-		$(COMP_GEN_MLI_EXTRA_INCLUDES)
-#
-# Link the Chapel runtime and the ZMQ library together into a multi-locale
-# executable.
-#
-#   - $(LIBS) contains gasnet libraries when CHPL_COMM=gasnet, and nothing
-#     otherwise.
-#   - $(CHPL_MAKE_THIRD_PARTY_LINK_ARGS) is every third party library.
-#   ^ With the exception of gasnet!
-#
-# NOTE: We remove the $(GEN_STATIC_FLAG) from the server for now, because it
-# is difficult if not impossible for us to do a completely static link
-# because of "gethostname", among other things.
-#
-	$(LD) $(CHPL_MAKE_BASE_LFLAGS) $(GEN_LFLAGS) $(COMP_GEN_LFLAGS) \
-		-o $(TMPSERVERNAME) \
-		$(TMPSERVERNAME).o $(CHPL_RT_LIB_DIR)/main.o \
-		$(CHPLUSEROBJ) $(CHPL_CL_OBJS) \
-		$(CHPL_MAKE_THIRD_PARTY_LINK_ARGS) \
-		$(LIBS) \
-		-L$(CHPL_RT_LIB_DIR) \
-		-lchpl -lm \
-		$(CHPL_ZMQ_LIB_SEARCH_PATH) \
-		-lzmq
 endif
 
 FORCE:

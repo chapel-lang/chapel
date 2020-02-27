@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2019 Cray Inc.
+ * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -90,7 +90,7 @@ The following examples demonstrate such chaining of futures.
 Future Bundling
 ---------------
 
-A set of futures can be bundled via :proc:`Future.waitAll()`, which takes a
+A set of futures can be bundled via :proc:`waitAll`, which takes a
 variable number of futures as arguments and returns a new future whose return
 type is a tuple of the return types of the arguments.  The returned future is
 ready only when all the future arguments are ready.

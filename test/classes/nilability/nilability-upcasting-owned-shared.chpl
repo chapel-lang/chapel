@@ -4,7 +4,6 @@ module test {
   class Child : Parent { var c: int; }
 
   proc main() {
-    var co:owned Child = new owned Child(1,2);
     var coq:owned Child? = new owned Child(1,2);
     var cs:shared Child = new shared Child(1,2);
     var csq:shared Child? = new shared Child(1,2);
@@ -18,10 +17,10 @@ module test {
       writeln("casts to generic Child");
       // co
       {
+        var co:owned Child = new owned Child(1,2);
         writeln("co:Child");
         var x = co:Child;
         writeln(x.type:string, " ", x);
-        co = new owned Child(1,2); // because of ownership transfer
       }
       // coq
       {
@@ -82,10 +81,10 @@ module test {
       writeln("casts to generic Child?");
       // co
       {
+        var co:owned Child = new owned Child(1,2);
         writeln("co:Child?");
         var x = co:Child?;
         writeln(x.type:string, " ", x);
-        co = new owned Child(1,2); // because of ownership transfer
       }
       // coq
       {
@@ -129,6 +128,7 @@ module test {
       writeln("casts to borrowed Child");
       // co
       {
+        var co:owned Child = new owned Child(1,2);
         writeln("co:borrowed Child");
         var x = co:borrowed Child;
         writeln(x.type:string, " ", x);
@@ -223,6 +223,7 @@ module test {
       writeln("casts to borrowed Child?");
       // co
       {
+        var co:owned Child = new owned Child(1,2);
         writeln("co:borrowed Child?");
         var x = co:borrowed Child?;
         writeln(x.type:string, " ", x);
@@ -281,13 +282,12 @@ module test {
       writeln("casts to owned Child");
       // co
       {
+        var co:owned Child = new owned Child(1,2);
         writeln("co:owned Child");
         var x = co:owned Child;
         writeln(x.type:string, " ", x);
-        co = new owned Child(1,2); // because of ownership transfer
         //var y = co:owned;
         //writeln(y.type:string, " ", y);
-        //co = new owned Child(1,2); // because of ownership transfer
       }
       // coq
       {
@@ -335,13 +335,12 @@ module test {
       writeln("casts to owned Child?");
       // co
       {
+        var co:owned Child = new owned Child(1,2);
         writeln("co:owned Child?");
         var x = co:owned Child?;
         writeln(x.type:string, " ", x);
-	co = new owned Child(1,2); // because of ownership transfer
         //var y = co:owned?;
         //writeln(y.type:string, " ", y);
-	//co = new owned Child(1,2); // because of ownership transfer
       }
       // coq
       {
@@ -448,10 +447,10 @@ module test {
       writeln("casts to generic Parent");
       // co
       {
+        var co:owned Child = new owned Child(1,2);
         writeln("co:Parent");
         var x = co:Parent;
         writeln(x.type:string, " ", x);
-        co = new owned Child(1,2); // because of ownership transfer
       }
       // coq
       {
@@ -512,10 +511,10 @@ module test {
       writeln("casts to generic Parent?");
       // co
       {
+        var co:owned Child = new owned Child(1,2);
         writeln("co:Parent?");
         var x = co:Parent?;
         writeln(x.type:string, " ", x);
-        co = new owned Child(1,2); // because of ownership transfer
       }
       // coq
       {
@@ -558,6 +557,7 @@ module test {
       writeln("casts to borrowed Parent");
       // co
       {
+        var co:owned Child = new owned Child(1,2);
         writeln("co:borrowed Parent");
         var x = co:borrowed Parent;
         writeln(x.type:string, " ", x);
@@ -620,6 +620,7 @@ module test {
       writeln("casts to borrowed Parent?");
       // co
       {
+        var co:owned Child = new owned Child(1,2);
         writeln("co:borrowed Parent?");
         var x = co:borrowed Parent?;
         writeln(x.type:string, " ", x);
@@ -664,10 +665,10 @@ module test {
       writeln("casts to owned Parent");
       // co
       {
+        var co:owned Child = new owned Child(1,2);
         writeln("co:owned Parent");
         var x = co:owned Parent;
         writeln(x.type:string, " ", x);
-        co = new owned Child(1,2); // because of ownership transfer
       }
       // coq
       {
@@ -700,6 +701,7 @@ module test {
       writeln("casts to owned Parent?");
       // co
       {
+        var co:owned Child = new owned Child(1,2);
         writeln("co:owned Parent?");
         var x = co:owned Parent?;
         writeln(x.type:string, " ", x);

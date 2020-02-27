@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2019 Cray Inc.
+ * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -48,7 +48,7 @@ void flattenNestedFunction(FnSymbol* nestedFunction) {
 
     nestedFunctions.add(nestedFunction);
 
-    flattenNestedFunctions(nestedFunctions, true);
+    flattenNestedFunctions(nestedFunctions);
   }
 }
 
@@ -124,12 +124,12 @@ isOuterVar(Symbol* sym, FnSymbol* fn, Symbol* parent = NULL) {
 static void
 findOuterVars(FnSymbol* fn, SymbolMap* uses) {
   std::vector<SymExpr*> SEs;
-  collectSymExprs(fn, SEs);
+  collectLcnSymExprs(fn, SEs);
 
   for_vector(SymExpr, symExpr, SEs) {
       Symbol* sym = symExpr->symbol();
 
-      if (isLcnSymbol(sym) && isOuterVar(sym, fn)) {
+      if (isOuterVar(sym, fn)) {
         uses->put(sym,gNil);
       }
   }
@@ -245,7 +245,7 @@ addVarsToFormals(FnSymbol* fn, SymbolMap* vars) {
       //
       // BHARSH: TODO: The arg intent set here can have a large impact on
       // RVF later on. For RVF to be more effective, this might be a good
-      // place to do some analysis and mark arguments as 'const in' and 
+      // place to do some analysis and mark arguments as 'const in' and
       // 'const ref', even if the actual is not marked with FLAG_CONST.
       //
       // Prior to the QualifiedType changes this section would make the type
@@ -281,6 +281,7 @@ addVarsToFormals(FnSymbol* fn, SymbolMap* vars) {
           arg->addFlag(FLAG_CONST_DUE_TO_TASK_FORALL_INTENT);
       if (sym->hasFlag(FLAG_COFORALL_INDEX_VAR))
           arg->addFlag(FLAG_COFORALL_INDEX_VAR);
+      arg->addFlag(FLAG_OUTER_VARIABLE);
 
       fn->insertFormalAtTail(new DefExpr(arg));
       vars->put(sym, arg);
@@ -295,6 +296,8 @@ replaceVarUsesWithFormals(FnSymbol* fn, SymbolMap* vars) {
   std::vector<SymExpr*> symExprs;
 
   collectSymExprs(fn->body, symExprs);
+
+  size_t firstInLifetimeConstraint = symExprs.size();
   if (fn->lifetimeConstraints)
     collectSymExprs(fn->lifetimeConstraints, symExprs);
 
@@ -303,6 +306,7 @@ replaceVarUsesWithFormals(FnSymbol* fn, SymbolMap* vars) {
       ArgSymbol* arg  = toArgSymbol(e->value);
       Type*      type = arg->type;
 
+      size_t i = 0;
       for_vector(SymExpr, se, symExprs) {
         if (se->symbol() == sym) {
           if (type == sym->type) {
@@ -324,14 +328,19 @@ replaceVarUsesWithFormals(FnSymbol* fn, SymbolMap* vars) {
               }
             }
 
+            // check if call is in a lifetime clause
+            if (i >= firstInLifetimeConstraint)
+              canPassToFn = true;
+
             if (( (call->isPrimitive(PRIM_MOVE)       ||
                    call->isPrimitive(PRIM_ASSIGN)     ||
                    call->isPrimitive(PRIM_SET_MEMBER) )
                   && call->get(1) == se)                                   ||
-                (call->isPrimitive(PRIM_GET_MEMBER))                       ||
-                (call->isPrimitive(PRIM_GET_MEMBER_VALUE))                 ||
-                (call->isPrimitive(PRIM_WIDE_GET_LOCALE))                  ||
-                (call->isPrimitive(PRIM_WIDE_GET_NODE))                    ||
+                call->isPrimitive(PRIM_GET_MEMBER)                         ||
+                call->isPrimitive(PRIM_GET_MEMBER_VALUE)                   ||
+                call->isPrimitive(PRIM_WIDE_GET_LOCALE)                    ||
+                call->isPrimitive(PRIM_WIDE_GET_NODE)                      ||
+                call->isPrimitive(PRIM_END_OF_STATEMENT)                   ||
                 canPassToFn) {
               se->setSymbol(arg); // do not dereference argument in these cases
 
@@ -360,6 +369,7 @@ replaceVarUsesWithFormals(FnSymbol* fn, SymbolMap* vars) {
             se->setSymbol(arg);
           }
         }
+        i++;
       }
     }
   }
@@ -383,11 +393,8 @@ static void deleteAllCalledby() {
   for_alive_in_Vec(FnSymbol, fn, gFnSymbols)  deleteCalledby(fn);
 }
 
-void flattenNestedFunctions(Vec<FnSymbol*>& nestedFunctions, bool fastCCS) {
-  if (fastCCS)
-    { if (fVerify) deleteAllCalledby(); }
-  else
-    compute_call_sites();
+void flattenNestedFunctions(Vec<FnSymbol*>& nestedFunctions) {
+  if (fVerify) deleteAllCalledby();
 
   Vec<FnSymbol*> outerFunctionSet;
   Vec<FnSymbol*> nestedFunctionSet;
@@ -415,10 +422,8 @@ void flattenNestedFunctions(Vec<FnSymbol*>& nestedFunctions, bool fastCCS) {
     change = false;
 
     forv_Vec(FnSymbol, fn, nestedFunctions) {
-      if (fastCCS) {
-        if (!fVerify) deleteCalledby(fn);
-        compute_fn_call_sites(fn, false);
-      }
+      if (!fVerify) deleteCalledby(fn);
+      computeAllCallSites(fn);
 
       std::vector<BaseAST*> asts;
       collect_top_asts(fn, asts);

@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2019 Cray Inc.
+ * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -1159,7 +1159,10 @@ static void handleRecursiveIter(ForallStmt* fs,
   PARBlock->insertAtTail(parIterCall->remove());
   PARBlock->insertAtTail(new CallExpr(PRIM_MOVE, parIter, callGetIter->remove()));
 
-  ForLoop* PARBody = new ForLoop(parIdx, parIter, NULL, /* zippered */ false, /*forall*/ true);
+  ForLoop* PARBody = new ForLoop(parIdx, parIter, NULL,
+                                 /* zippered */ false,
+                                 /*forall*/ true,
+                                 /*isForExpr*/ fs->isForallExpr());
   // not parIterCall, ex.
   //  library/standard/FileSystem/filerator/bradc/walk-par.chpl
   PARBody->astloc = fs->astloc;

@@ -1,4 +1,4 @@
-# Copyright 2004-2019 Cray Inc.
+# Copyright 2004-2020 Hewlett Packard Enterprise Development LP
 # Other additional copyright holders may be indicated within.
 # 
 # The entirety of this work is licensed under the Apache License,
@@ -17,7 +17,6 @@
 
 THREADS_SRCS =
 
-SVN_SRCS = $(THREADS_SRCS)
-SRCS = $(SVN_SRCS)
+SRCS = $(THREADS_SRCS)
 
 THREADS_OBJS = $(THREADS_SRCS:%.c=$(THREADS_OBJDIR)/%.o)

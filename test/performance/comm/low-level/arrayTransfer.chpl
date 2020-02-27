@@ -1,4 +1,4 @@
-use Memory, Time;
+use Memory, Time, SysCTypes;
 
 enum op_t {
   opGet,

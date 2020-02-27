@@ -9,10 +9,5 @@ source $CWD/common.bash
 export CHPL_TASKS=fifo
 export CHPL_TARGET_COMPILER=mpi-gnu
 
-# Load MPI environment module and confirm it has loaded
-echo >&2 module load mpi
-module load mpi
-
-set -x
-: confirm mpi module is loaded
-module list -l 2>&1 | grep -E '\bmpi/mpich\b' || exit $?
+# setup mpich 3.3.1
+source /data/cf/chapel/setup_mpich331.bash

@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2019 Cray Inc.
+ * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -19,7 +19,7 @@
 
 private use List;
 use MasonUtils;
-use MasonHelp;
+public use MasonHelp;
 
 proc MASON_HOME : string {
   const envHome = getEnv("MASON_HOME");

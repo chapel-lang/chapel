@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2019 Cray Inc.
+ * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -829,10 +829,6 @@ uint32_t chpl_task_getMaxPar(void) {
   return max;
 }
 
-c_sublocid_t chpl_task_getNumSublocales(void) {
-  return 0;
-}
-
 chpl_task_prvData_t* chpl_task_getPrvData(void) {
   return & get_current_ptask()->chpl_data.prvdata;
 }
@@ -844,6 +840,10 @@ chpl_task_bundle_t* chpl_task_getPrvBundle(void) {
 
 size_t chpl_task_getCallStackSize(void) {
   return chpl_thread_getCallStackSize();
+}
+
+chpl_bool chpl_task_guardPagesInUse(void) {
+  return chpl_use_guard_page;
 }
 
 uint32_t chpl_task_getNumQueuedTasks(void) {

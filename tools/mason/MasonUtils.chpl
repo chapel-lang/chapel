@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2019 Cray Inc.
+ * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -23,11 +23,11 @@
 private use List;
 private use Map;
 
-use Spawn;
-use FileSystem;
-use TOML;
-use Path;
-use MasonEnv;
+public use Spawn;
+public use FileSystem;
+public use TOML;
+public use Path;
+public use MasonEnv;
 
 
 /* Gets environment variables for spawn commands */
@@ -35,7 +35,7 @@ extern proc getenv(name : c_string) : c_string;
 proc getEnv(name: string): string {
   var cname: c_string = name.c_str();
   var value = getenv(cname);
-  return value:string;
+  return createStringWithNewBuffer(value);
 }
 
 
@@ -55,7 +55,6 @@ proc makeTargetFiles(binLoc: string, projectHome: string) {
 
   const target = joinPath(projectHome, 'target');
   const srcBin = joinPath(target, binLoc);
-  const test = joinPath(target, 'test');
   const example = joinPath(target, 'example');
 
   if !isDir(target) {
@@ -64,11 +63,22 @@ proc makeTargetFiles(binLoc: string, projectHome: string) {
   if !isDir(srcBin) {
     mkdir(srcBin);
   }
-  if !isDir(test) {
-    mkdir(test);
-  }
   if !isDir(example) {
     mkdir(example);
+  }
+
+  const actualTest = joinPath(projectHome,'test');
+  if isDir(actualTest) {
+    for dir in walkdirs(actualTest) {
+      const internalDir = target+dir.replace(projectHome,"");
+      if !isDir(internalDir) {
+        mkdir(internalDir);
+      }
+    }
+  }
+  const test = joinPath(target, 'test');
+  if(!isDir(test)) {
+    mkdir(test);
   }
 }
 
@@ -291,6 +301,12 @@ record VersionInfo {
   }
 }
 
+proc =(ref lhs:VersionInfo, const ref rhs:VersionInfo) {
+  lhs.major = rhs.major;
+  lhs.minor = rhs.minor;
+  lhs.bug   = rhs.bug;
+}
+
 proc >=(a:VersionInfo, b:VersionInfo) : bool {
   return a.cmp(b) >= 0;
 }
@@ -411,6 +427,8 @@ extern "struct timespec" record chpl_timespec {
 }
 
 proc getLastModified(filename: string) : int {
+  use SysCTypes;
+
   extern proc sys_stat(filename: c_string, ref chpl_stat): c_int;
 
   var file_buf: chpl_stat;
@@ -475,7 +493,7 @@ proc isIdentifier(name:string) {
    TODO custom fields returned */
 iter allFields(tomlTbl: unmanaged Toml) {
   for (k,v) in tomlTbl.A.items() {
-    if v.tag == fieldtag.fieldToml then
+    if v!.tag == fieldtag.fieldToml then
       continue;
     else yield(k,v);
   }

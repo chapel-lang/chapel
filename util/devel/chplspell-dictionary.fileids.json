@@ -36,6 +36,9 @@
   "d551f4f6-d1a9-11e8-954d-10ddb1d4c3d5": [
     "compiler/AST/LoopExpr.cpp"
   ],
+  "93ca6f88-fd34-11e9-98b5-10ddb1d4c3d5": [
+    "compiler/AST/astutil.cpp"
+  ],
   "77ab2706-1d0a-11e6-a3a6-10ddb1d4c3d5": [
     "compiler/AST/baseAST.cpp"
   ],
@@ -61,6 +64,9 @@
   "80fcfaee-ad3f-11e6-91b8-10ddb1d4c3d5": [
     "compiler/AST/symbol.cpp",
     "compiler/codegen/symbol.cpp"
+  ],
+  "b4bc8e62-253c-11ea-948f-10ddb1d4c3d5": [
+    "compiler/AST/type.cpp"
   ],
   "c0913c10-9315-11e9-a422-10ddb1d4c3d5": [
     "compiler/AST/view.cpp"
@@ -232,6 +238,9 @@
   "d7761e16-36bd-11e7-96a7-10ddb1d4c3d5": [
     "compiler/resolution/expandVarArgs.cpp"
   ],
+  "04f188f0-d205-11e9-a3be-843835579daa": [
+    "compiler/resolution/fixupExports.cpp"
+  ],
   "8983f3ac-1d84-11e6-a3a6-10ddb1d4c3d5": [
     "compiler/resolution/functionResolution.cpp"
   ],
@@ -348,6 +357,36 @@
   "d819ca0c-1e45-11e6-a3a6-10ddb1d4c3d5": [
     "doc/rst/developer/hdfs_and_chapel/intro.tex"
   ],
+  "d667ed16-fd34-11e9-98b5-10ddb1d4c3d5": [
+    "doc/rst/language/spec.rst"
+  ],
+  "7c62caa8-253d-11ea-948f-10ddb1d4c3d5": [
+    "doc/rst/language/spec/arrays.rst"
+  ],
+  "4d4f76a8-253d-11ea-948f-10ddb1d4c3d5": [
+    "doc/rst/language/spec/domains.rst"
+  ],
+  "836b6940-253d-11ea-948f-10ddb1d4c3d5": [
+    "doc/rst/language/spec/expressions.rst"
+  ],
+  "7717bf22-253d-11ea-948f-10ddb1d4c3d5": [
+    "doc/rst/language/spec/interoperability.rst"
+  ],
+  "117a9e8c-253d-11ea-948f-10ddb1d4c3d5": [
+    "doc/rst/language/spec/modules.rst"
+  ],
+  "61e57b76-253d-11ea-948f-10ddb1d4c3d5": [
+    "doc/rst/language/spec/procedures.rst"
+  ],
+  "1c00d998-253d-11ea-948f-10ddb1d4c3d5": [
+    "doc/rst/language/spec/ranges.rst"
+  ],
+  "1381859c-253d-11ea-948f-10ddb1d4c3d5": [
+    "doc/rst/language/spec/statements.rst"
+  ],
+  "466a4d0e-253d-11ea-948f-10ddb1d4c3d5": [
+    "doc/rst/language/spec/tuples.rst"
+  ],
   "3916e364-dfc3-11e6-93be-10ddb1d4c3d5": [
     "doc/rst/platforms/aws.rst"
   ],
@@ -445,6 +484,12 @@
   "c643ceac-1f14-11e6-a3a6-10ddb1d4c3d5": [
     "modules/internal/AtomicsCommon.chpl"
   ],
+  "4d6baa58-bd82-11e9-8464-10ddb1d4c3d5": [
+    "modules/internal/Bytes.chpl"
+  ],
+  "b35c0a0c-cac9-11e9-8464-10ddb1d4c3d5": [
+    "modules/internal/BytesStringCommon.chpl"
+  ],
   "5010068a-0c15-11e7-980e-10ddb1d4c3d5": [
     "modules/internal/ChapelArray.chpl"
   ],
@@ -456,6 +501,9 @@
   ],
   "dc718a6c-ab57-11e8-b963-10ddb1d4c3d5": [
     "modules/internal/ChapelIteratorSupport.chpl"
+  ],
+  "be179ce4-253d-11ea-948f-10ddb1d4c3d5": [
+    "modules/internal/ChapelLocale.chpl"
   ],
   "47cb0e3c-1f14-11e6-a3a6-10ddb1d4c3d5": [
     "modules/internal/ChapelRange.chpl"
@@ -487,6 +535,9 @@
   "d635d1bc-4aae-11e8-af7e-10ddb1d4c3d5": [
     "modules/internal/tasktable/on/ChapelTaskTable.chpl"
   ],
+  "a6c246da-cac9-11e9-8464-10ddb1d4c3d5": [
+    "modules/packages/AtomicObjects.chpl"
+  ],
   "71a525f2-43ff-11e6-907f-843835579daa": [
     "modules/packages/BLAS.chpl"
   ],
@@ -511,6 +562,9 @@
   "e9a3e440-9db7-11e7-a204-10ddb1d4c3d5": [
     "modules/packages/DistributedIters.chpl"
   ],
+  "95e5e682-cac9-11e9-8464-10ddb1d4c3d5": [
+    "modules/packages/EpochManager.chpl"
+  ],
   "f8a68c5e-1f19-11e6-a3a6-10ddb1d4c3d5": [
     "modules/packages/FFTW.chpl"
   ],
@@ -529,14 +583,23 @@
   "f8a06e7e-1f18-11e6-a3a6-10ddb1d4c3d5": [
     "modules/packages/LinearAlgebraJama.chpl"
   ],
+  "a29eae9a-cac9-11e9-8464-10ddb1d4c3d5": [
+    "modules/packages/LockFreeQueue.chpl"
+  ],
   "69fe0f48-1f2a-11e6-a3a6-10ddb1d4c3d5": [
     "modules/packages/MPI.chpl"
   ],
   "3a59da00-3376-11e6-a3a6-10ddb1d4c3d5": [
     "modules/packages/MatrixMarket.chpl"
   ],
+  "c0ac0568-bd81-11e9-8464-10ddb1d4c3d5": [
+    "modules/packages/Sort.chpl"
+  ],
   "3b5ef8a0-780c-11e7-88ba-10ddb1d4c3d5": [
     "modules/packages/TOML.chpl"
+  ],
+  "558c0f58-cac9-11e9-8464-10ddb1d4c3d5": [
+    "modules/packages/UnitTest.chpl"
   ],
   "ac12c756-4d89-11e6-907f-843835579daa": [
     "modules/packages/VisualDebug.chpl",
@@ -566,6 +629,9 @@
   ],
   "55301aa8-1f2e-11e6-a3a6-10ddb1d4c3d5": [
     "modules/standard/IO.chpl"
+  ],
+  "b6f2f694-cac9-11e9-8464-10ddb1d4c3d5": [
+    "modules/standard/List.chpl"
   ],
   "5c43053e-9317-11e9-a422-10ddb1d4c3d5": [
     "modules/standard/Lists.chpl"
@@ -606,6 +672,9 @@
   "1ae55fde-1fb5-11e6-a3a6-10ddb1d4c3d5": [
     "runtime/include/chpl-wide-ptr-fns.h"
   ],
+  "61f7efb8-bd82-11e9-8464-10ddb1d4c3d5": [
+    "runtime/include/comm/ofi/chpl-comm-task-decls.h"
+  ],
   "73aae312-d1c1-11e8-954d-10ddb1d4c3d5": [
     "runtime/include/comm/ugni/comm-ugni-heap-pages.h"
   ],
@@ -633,6 +702,9 @@
   ],
   "91c58b86-d1c1-11e8-954d-10ddb1d4c3d5": [
     "runtime/src/comm/ofi/comm-ofi-oob-pmi.c"
+  ],
+  "38c20924-fd35-11e9-98b5-10ddb1d4c3d5": [
+    "runtime/src/comm/ofi/comm-ofi-oob-slurm-pmi2.c"
   ],
   "c09c5496-ff1f-11e7-bed3-10ddb1d4c3d5": [
     "runtime/src/comm/ugni/comm-ugni-launch.c"
@@ -866,6 +938,9 @@
   "9b2d18d4-31db-11e6-a3a6-10ddb1d4c3d5": [
     "test/release/examples/primers/learnChapelInYMinutes.chpl"
   ],
+  "5b81c0c6-fd35-11e9-98b5-10ddb1d4c3d5": [
+    "test/release/examples/primers/listOps.chpl"
+  ],
   "e8974bb8-8068-11e6-ab60-00a0cc3ee663": [
     "test/release/examples/primers/ranges.chpl"
   ],
@@ -889,5 +964,35 @@
   ],
   "a717e780-d45d-11e6-b38c-acbc32c4f96b": [
     "test/release/examples/users-guide/base/typeAliases.chpl"
+  ],
+  "33179874-caca-11e9-8464-10ddb1d4c3d5": [
+    "tools/mason/MasonExample.chpl"
+  ],
+  "40a2e84a-caca-11e9-8464-10ddb1d4c3d5": [
+    "tools/mason/MasonExternal.chpl"
+  ],
+  "1157b502-caca-11e9-8464-10ddb1d4c3d5": [
+    "tools/mason/MasonHelp.chpl"
+  ],
+  "2c87d6d6-caca-11e9-8464-10ddb1d4c3d5": [
+    "tools/mason/MasonModify.chpl"
+  ],
+  "75b00dec-caca-11e9-8464-10ddb1d4c3d5": [
+    "tools/mason/MasonNew.chpl"
+  ],
+  "5e3f02e4-caca-11e9-8464-10ddb1d4c3d5": [
+    "tools/mason/MasonSystem.chpl"
+  ],
+  "52708a00-caca-11e9-8464-10ddb1d4c3d5": [
+    "tools/mason/MasonTest.chpl"
+  ],
+  "733f59d2-caca-11e9-8464-10ddb1d4c3d5": [
+    "tools/mason/MasonUpdate.chpl"
+  ],
+  "1ec7ca88-caca-11e9-8464-10ddb1d4c3d5": [
+    "tools/mason/MasonUtils.chpl"
+  ],
+  "78ea7772-caca-11e9-8464-10ddb1d4c3d5": [
+    "tools/mason/SpecParser.chpl"
   ]
 }

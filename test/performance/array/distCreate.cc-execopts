@@ -1,0 +1,4 @@
+--mode=diagMode.commCount --size=arraySize.tiny --dist=distType.block  #distCreate-cc-block
+--mode=diagMode.commCount --size=arraySize.tiny --dist=distType.cyclic   #distCreate-cc-cyclic
+--mode=diagMode.commCount --size=arraySize.tiny --dist=distType.blockCyc   #distCreate-cc-blockCyc
+--mode=diagMode.commCount --size=arraySize.tiny --dist=distType.stencil   #distCreate-cc-stencil

@@ -1,1 +1,3 @@
---no-checks --no-optimize-forall-unordered-ops
+--no-checks --no-optimize-forall-unordered-ops -scopyType=int
+--no-checks --no-optimize-forall-unordered-ops -scopyType=2*int
+--no-checks --no-optimize-forall-unordered-ops -scopyType=512*int

@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2019 Cray Inc.
+ * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -270,12 +270,10 @@ SymExpr* WhileStmt::getWhileCondDef(VarSymbol* condSym)
   std::vector<SymExpr*> symExprs;
   SymExpr*              condDef = NULL;
 
-  collectSymExprs(this, symExprs);
+  collectSymExprsFor(this, condSym, symExprs);
 
   for_vector(SymExpr, se, symExprs)
   {
-    if (se->symbol() == condSym)
-    {
       if (se == mCondExpr)
       {
         // The reference is the condition expression - not interesting.
@@ -295,7 +293,6 @@ SymExpr* WhileStmt::getWhileCondDef(VarSymbol* condSym)
         // This is what we are looking for.
         condDef = se;
       }
-    }
   }
 
   return condDef;

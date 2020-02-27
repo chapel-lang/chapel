@@ -1,5 +1,5 @@
 
-use Level_def;
+public use Level_def;
 
 
 //|\"""""""""""""""""""""""""""""""""|\

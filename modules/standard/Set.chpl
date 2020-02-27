@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2019 Cray Inc.
+ * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -41,8 +41,9 @@ module Set {
   // Use this to restrict our secondary initializer to only resolve when the
   // "iterable" argument has a method named "these".
   //
+  private use ChapelLocks only;
+  private use IO;
   private use Reflection;
-  private use ChapelLocks only ;
 
   pragma "no doc"
   private param _sanityChecks = true;
@@ -355,7 +356,7 @@ module Set {
 
       :arg ch: A channel to write to.
     */
-    proc const writeThis(ch: channel) {
+    proc const writeThis(ch: channel) throws {
       on this {
         _enter();
         var count = 1;

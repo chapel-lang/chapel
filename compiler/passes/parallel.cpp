@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2019 Cray Inc.
+ * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -1489,12 +1489,10 @@ static void passArgsToNestedFns() {
         DefExpr*              localeArg = toDefExpr(fn->formals.get(1));
         std::vector<SymExpr*> symExprs;
 
-        collectSymExprs(fn->body, symExprs);
+        collectSymExprsFor(fn->body, localeArg->sym, symExprs);
 
         for_vector(SymExpr, sym, symExprs) {
-          if (sym->symbol()->defPoint == localeArg) {
             sym->getStmtExpr()->remove();
-          }
         }
 
         localeArg->remove();

@@ -8,7 +8,7 @@
 //
 
 /*
- * Copyright 2004-2019 Cray Inc.
+ * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -175,6 +175,8 @@ chpl_qthread_tls_t chpl_qthread_comm_task_tls = {
 //
 
 static aligned_t exit_ret = 0;
+
+static chpl_bool guardPagesInUse = true;
 
 void chpl_task_yield(void)
 {
@@ -497,6 +499,24 @@ static void setupAvailableParallelism(int32_t maxThreads) {
             hwpar = maxThreads;
         }
 
+        //
+        // If we have NUMA sublocales we have to have at least that many
+        // shepherds, or we'll get internal errors when the module code
+        // tries to fire tasks on those sublocales.
+        //
+        {
+            int numNumaDomains = chpl_topo_getNumNumaDomains();
+            if (hwpar < numNumaDomains
+                && strcmp(CHPL_LOCALE_MODEL, "flat") != 0) {
+                char msg[100];
+                snprintf(msg, sizeof(msg),
+                         "%d NUMA domains but only %d Qthreads shepherds; "
+                         "may get internal errors",
+                         numNumaDomains, (int) hwpar);
+                chpl_warning(msg, 0, 0);
+            }
+        }
+
         // If there is more parallelism requested than the number of cores, set the
         // worker unit to pu, otherwise core.
         if (hwpar > chpl_topo_getNumCPUsPhysical(true)) {
@@ -559,9 +579,11 @@ static void setupCallStacks(void) {
     size_t qt_rtds_size;
 
     size_t maxPoolAllocSize;
+
     char newenv_alloc[QT_ENV_S];
 
-    guardPagesEnabled = (int)setupGuardPages();
+    guardPagesInUse = setupGuardPages();
+    guardPagesEnabled = (int)guardPagesInUse;
 
     // Setup the base call stack size (Precedence high-to-low):
     // 1) Chapel environment (CHPL_RT_CALL_STACK_SIZE)
@@ -1018,19 +1040,16 @@ uint32_t chpl_task_getMaxPar(void) {
     return (uint32_t) qthread_num_workers();
 }
 
-c_sublocid_t chpl_task_getNumSublocales(void)
-{
-    // FIXME: What we really want here is the number of NUMA
-    // sublocales we are supporting.  For now we use the number of
-    // shepherds as a proxy for that.
-    return (c_sublocid_t) qthread_num_shepherds();
-}
-
 size_t chpl_task_getCallStackSize(void)
 {
     PROFILE_INCR(profile_task_getCallStackSize,1);
 
     return qthread_readstate(STACK_SIZE);
+}
+
+chpl_bool chpl_task_guardPagesInUse(void)
+{
+  return guardPagesInUse;
 }
 
 // XXX: Should probably reflect all shepherds

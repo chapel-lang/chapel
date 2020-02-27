@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2019 Cray Inc.
+ * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -65,7 +65,7 @@
 module Path {
 
 private use List;
-use SysError;
+use SysError, IO;
 private use Sys;
 
 /* Represents generally the current directory. This starts as the directory
@@ -76,6 +76,14 @@ const curDir = ".";
 const parentDir = "..";
 /* Denotes the separator between a directory and its child. */
 const pathSep = "/";
+
+/*
+   Localizes and unescapes string to create a bytes to be used for obtaining a
+   c_string to pass to extern file system operations.
+*/
+private inline proc unescape(str: string) {
+  return str.encode(errors=encodePolicy.unescape);
+}
 
 /*
   Creates a normalized absolutized version of a path. On most platforms, when
@@ -164,9 +172,7 @@ proc basename(name: string): string {
    :return: The longest common path prefix.
    :rtype: `string`
 */
-// NOTE: Add in intent here to temporarily fix compiler memory leak related
-// to use of varargs.
-proc commonPath(in paths: string ...?n): string {
+proc commonPath(paths: string ...?n): string {
   var result: string = "";    // result string
   var inputLength = n;   // size of input array
   var firstPath = paths(1);
@@ -337,8 +343,8 @@ proc dirname(name: string): string {
    var path_p: string = path;
    var varChars: string = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890_";
    var res: string = "";
-   var ind: byteIndex = 1;
-   var pathlen: int = path_p.numBytes;
+   var ind: int = 1;
+   var pathlen: int = path_p.length;
    while (ind <= pathlen) {
      var c: string = path_p(ind);
      if (c == "$" && ind + 1 <= pathlen) {
@@ -348,7 +354,7 @@ proc dirname(name: string): string {
        } else if (path_p(ind+1) == "{") {
          path_p = path_p((ind+2)..);
          pathlen = path_p.numBytes;
-         ind = path_p.find("}");
+         ind = path_p.find("}"):int;
          if (ind == 0) {
            res += "${" +path_p;
            ind = pathlen;
@@ -356,28 +362,36 @@ proc dirname(name: string): string {
            var env_var: string = path_p(..(ind-1));
            var value: string;
            var value_c: c_string;
-           var h: int = sys_getenv(env_var.c_str(), value_c);
+           // buffer received from sys_getenv, shouldn't be freed
+           var h: int = sys_getenv(unescape(env_var).c_str(), value_c);
            if (h != 1) {
              value = "${" + env_var + "}";
            } else {
-             value = value_c: string;
+             try! {
+               value = createStringWithNewBuffer(value_c,
+                                                 errors=decodePolicy.escape);
+             }
            }
            res += value;
          }
        } else {
          var env_var: string = "";
          ind += 1;
-         while (ind <= path_p.numBytes && varChars.find(path_p(ind)) != 0) {
+         while (ind <= path_p.length && varChars.find(path_p(ind)) != 0) {
            env_var += path_p(ind);
            ind += 1;
          }
          var value: string;
          var value_c: c_string;
-         var h: int = sys_getenv(env_var.c_str(), value_c);
+         // buffer received from sys_getenv, shouldn't be freed
+         var h: int = sys_getenv(unescape(env_var).c_str(), value_c);
          if (h != 1) {
            value = "$" + env_var;
          } else {
-           value = value_c: string;
+           try! {
+             value = createStringWithNewBuffer(value_c,
+                                               errors=decodePolicy.escape);
+           }
          }
          res += value;
          if (ind <= path_p.numBytes) {
@@ -409,6 +423,7 @@ proc file.getParentName(): string throws {
   try check();
 
   try {
+    // realPath returns a string, nothing to worry about encoding-wise here
     return dirname(createStringWithNewBuffer(this.realPath()));
   } catch {
     return "unknown";
@@ -470,9 +485,7 @@ private proc joinPathComponent(comp: string, ref result: string) {
             present.
    :rtype: `string`
 */
-// NOTE: Add in intent here to temporarily fix compiler memory leak related
-// to use of varargs.
-proc joinPath(in paths: string ...?n): string {
+proc joinPath(paths: string ...?n): string {
   var result: string;
 
   for path in paths do
@@ -577,9 +590,12 @@ proc realPath(name: string): string throws {
   extern proc chpl_fs_realpath(path: c_string, ref shortened: c_string): syserr;
 
   var res: c_string;
-  var err = chpl_fs_realpath(name.localize().c_str(), res);
+  var err = chpl_fs_realpath(unescape(name).c_str(), res);
   if err then try ioerror(err, "realPath", name);
-  return createStringWithOwnedBuffer(res);
+  const ret = createStringWithNewBuffer(res, errors=decodePolicy.escape);
+  // res was qio_malloc'd by chpl_fs_realpath, so free it here
+  chpl_free_c_string(res);
+  return ret; 
 }
 
 pragma "no doc"
@@ -637,7 +653,15 @@ proc file.realPath(out error: syserr): string {
 /* Compute the common prefix length between two lists of path components. */
 private
 proc commonPrefixLength(const a1: [] string, const a2: [] string): int {
-  const ref (a, b) = if a1.size < a2.size then (a1, a2) else (a2, a1);
+  const ref a;
+  const ref b;
+  if a1.size < a2.size {
+    a = a1;
+    b = a2;
+  } else {
+    a = a2;
+    b = a1;
+  }
   var result = 0;
 
   for i in 1..a.size do

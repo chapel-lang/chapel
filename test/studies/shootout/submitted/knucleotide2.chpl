@@ -5,7 +5,7 @@
    derived from the GNU C++ version by Branimir Maksimovic
 */
 
-use Sort;
+use Sort, Map;
 
 config param tableSize = 2**16,
              columns = 61;
@@ -32,13 +32,13 @@ proc main(args: [] string) {
 
   while stdinNoLock.readline(data, lineSize, idx) do
     idx += lineSize - 1;
-  
+
   // Resize our array to the amount actually read
   dataDom = {1..idx};
 
   // Make everything uppercase
   forall d in data do
-    d -= (ascii("a") - ascii("A"));
+    d -= ("a".toByte() - "A".toByte());
 
   writeFreqs(data, 1);
   writeFreqs(data, 2);
@@ -54,39 +54,37 @@ proc writeFreqs(data, param nclSize) {
   const freqs = calculate(data, nclSize);
 
   // create an array of (frequency, sequence) tuples
-  var arr = for (s,f) in zip(freqs.domain, freqs) do (f,s);
+  var arr = for (s,f) in freqs.items() do (f,s);
 
   // print the array, sorted by decreasing frequency
   for (f, s) in arr.sorted(reverseComparator) do
-   writef("%s %.3dr\n", decode(s, nclSize), 
+   writef("%s %.3dr\n", decode(s, nclSize),
            (100.0 * f) / (data.size - nclSize));
   writeln();
 }
 
 
 proc writeCount(data, param str) {
-  const freqs = calculate(data, str.length),
-        d = hash(str.toBytes(), 1, str.length);
+  const freqs = calculate(data, str.numBytes),
+        d = hash(str.toBytes(), 1, str.numBytes);
 
-  writeln(freqs[d], "\t", decode(d, str.length));
+  writeln(freqs[d], "\t", decode(d, str.numBytes));
 }
 
 
 proc calculate(data, param nclSize) {
-  var freqDom: domain(int),
-      freqs: [freqDom] int;
+  var freqs = new map(int, int);
 
   var lock$: sync bool = true;
   const numTasks = here.maxTaskPar;
   coforall tid in 1..numTasks {
-    var myDom: domain(int),
-        myArr: [myDom] int;
+    var myFreqs = new map(int, int);
 
     for i in tid..(data.size-nclSize) by numTasks do
-      myArr[hash(data, i, nclSize)] += 1;
+      myFreqs[hash(data, i, nclSize)] += 1;
 
     lock$;        // acquire lock
-    for (k,v) in zip(myDom, myArr) do
+    for (k,v) in myFreqs.items() do
       freqs[k] += v;
     lock$ = true; // release lock
   }
@@ -99,7 +97,7 @@ const toChar: [0..3] string = ["A", "C", "T", "G"];
 var toNum: [0..127] int;
 
 forall i in toChar.domain do
-  toNum[ascii(toChar[i])] = i;
+  toNum[toChar[i].toByte()] = i;
 
 
 inline proc decode(in data, param nclSize) {
@@ -127,16 +125,16 @@ inline proc hash(str, beg, param size) {
 
 
 proc string.toBytes() {
-  var bytes: [1..this.length] uint(8);
-  for (b, i) in zip(bytes, 1..) do
-    b = ascii(this[i]);
-  return bytes;
+  var byteArr: [1..this.numBytes] uint(8);
+  for (b, i) in zip(byteArr, 1..) do
+    b = this.byte(i);
+  return byteArr;
 }
 
 
 inline proc startsWithThree(data) {
-  return data[1] == ascii(">") && 
-         data[2] == ascii("T") && 
-         data[3] == ascii("H");
+  return data[1] == ">".toByte() &&
+         data[2] == "T".toByte() &&
+         data[3] == "H".toByte();
 }
 

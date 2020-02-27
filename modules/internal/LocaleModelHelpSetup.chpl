@@ -1,6 +1,6 @@
 /*
  * Copyright 2017 Advanced Micro Devices, Inc.
- * Copyright 2004-2019 Cray Inc.
+ * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -34,6 +34,7 @@ module LocaleModelHelpSetup {
   use ChapelNumLocales;
   use ChapelEnv;
   use Sys;
+  private use SysCTypes;
 
   config param debugLocaleModel = false;
 
@@ -124,7 +125,10 @@ module LocaleModelHelpSetup {
     // at least this setup method) must be run on the node it is
     // intended to describe.
     extern proc chpl_nodeName(): c_string;
-    const _node_name = chpl_nodeName(): string;
+    var _node_name: string;
+    try! {
+      _node_name = createStringWithNewBuffer(chpl_nodeName());
+    }
     const _node_id = (chpl_nodeID: int): string;
 
     return if localSpawn() then _node_name + "-" + _node_id else _node_name;
@@ -148,11 +152,11 @@ module LocaleModelHelpSetup {
     dst.maxTaskPar = chpl_task_getMaxPar();
   }
 
-  proc helpSetupLocaleNUMA(dst:borrowed LocaleModel, out local_name:string, out numSublocales) {
+  proc helpSetupLocaleNUMA(dst:borrowed LocaleModel, out local_name:string, out numSublocales, type NumaDomain) {
     helpSetupLocaleFlat(dst, local_name);
 
-    extern proc chpl_task_getNumSublocales(): int(32);
-    numSublocales = chpl_task_getNumSublocales();
+    extern proc chpl_topo_getNumNumaDomains(): c_int;
+    numSublocales = chpl_topo_getNumNumaDomains();
 
     extern proc chpl_task_getMaxPar(): uint(32);
 
@@ -180,7 +184,8 @@ module LocaleModelHelpSetup {
     }
   }
 
-  proc helpSetupLocaleAPU(dst:borrowed LocaleModel, out local_name:string, out numSublocales) {
+  proc helpSetupLocaleAPU(dst:borrowed LocaleModel, out local_name:string, out
+      numSublocales, type CPULocale, type GPULocale) {
     helpSetupLocaleFlat(dst, local_name);
 
     extern proc chpl_task_getMaxPar(): uint(32);

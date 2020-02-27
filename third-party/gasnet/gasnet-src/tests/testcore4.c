@@ -32,8 +32,10 @@ int iters = 10;
 
 gex_Rank_t mynode = 0;
 gex_Rank_t peer = 0;
+gex_Rank_t from = 0;
 uint8_t *myseg = NULL;
 uint8_t *peerseg = NULL;
+uint8_t *fromseg = NULL;
 
 #define hidx_mybase 150
 
@@ -100,7 +102,7 @@ uint8_t *peerseg = NULL;
 #define MARGS(dest,args) (dest, hidx_Mhandler(args), rand_payload, MSZ(args), \
                           GEX_EVENT_NOW, 0, HARGS(args))
 #define LARGS(dest,args,isRep) (dest, hidx_Lhandler(args), rand_payload, \
-                                LSZ(args), peerseg + isRep*LSZ(args), \
+                                LSZ(args), (isRep?fromseg:peerseg) + isRep*LSZ(args), \
                                 GEX_EVENT_NOW, 0, HARGS(args))
 
 /* NOTE: This extra step appears needed for pgcc (bug 2796) */
@@ -117,7 +119,7 @@ enum {
 #define HBODY(args) do {                                           \
     gex_AM_Arg_t operation = arg1 - RAND_ARG(1);          \
     gex_Rank_t srcid = test_msgsource(token);                      \
-    assert_always(srcid == peer);                                  \
+    assert_always(srcid == (operation == op_done ? peer : from));  \
     HITER##args((void)0,HCHECK);                                   \
     arg1 = op_done;                                                \
     switch(operation) {                                            \
@@ -193,7 +195,7 @@ void pong_medhandler(gex_Token_t token, void *buf, size_t nbytes) {
 }
 void ping_longhandler(gex_Token_t token, void *buf, size_t nbytes) {
     MSGCHECK(LSZ(0)); memset(buf, 0xa5, nbytes);
-    gex_AM_ReplyLong0(token, hidx_pong_longhandler, rand_payload, nbytes, peerseg + LSZ(0), GEX_EVENT_NOW, 0);
+    gex_AM_ReplyLong0(token, hidx_pong_longhandler, rand_payload, nbytes, fromseg + LSZ(0), GEX_EVENT_NOW, 0);
 }
 void pong_longhandler(gex_Token_t token, void *buf, size_t nbytes) {
     MSGCHECK(LSZ(0)); memset(buf, 0xa5, nbytes);
@@ -256,14 +258,24 @@ int main(int argc, char **argv) {
   TEST_PRINT_CONDUITINFO();
 
   mynode = gex_TM_QueryRank(myteam);
-  peer = mynode ^ 1;
-  if (peer == gex_TM_QuerySize(myteam)) {
-    /* w/ odd # of nodes, last one talks to self */
-    peer = mynode;
+  gex_Rank_t nnodes = gex_TM_QuerySize(myteam);
+  if (nnodes%2) {
+    // w/ odd # of ranks, last one talks to self
+    int last = nnodes - 1;
+    if (mynode == last) {
+      peer = from = mynode;
+    } else {
+      peer = (mynode + 1) % last;
+      from = (mynode + last - 1) % last;
+    }
+  } else {
+    peer = (mynode + 1) % nnodes;
+    from = (mynode + nnodes - 1) % nnodes;
   }
 
   myseg = TEST_MYSEG();
   peerseg = TEST_SEG(peer);
+  fromseg = TEST_SEG(from);
   rand_payload = test_malloc(maxsz);
 
 

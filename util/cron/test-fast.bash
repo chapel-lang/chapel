@@ -4,6 +4,9 @@
 # linux64.
 
 CWD=$(cd $(dirname $0) ; pwd)
+
+export CHPL_TEST_PERF_CONFIG_NAME='comp-fast'
+
 source $CWD/common.bash
 source $CWD/common-fast.bash
 

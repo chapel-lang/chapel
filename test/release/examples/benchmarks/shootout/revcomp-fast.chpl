@@ -4,12 +4,14 @@
    contributed by Ben Harshbarger and Brad Chamberlain
    derived from the Rust #2 version by Matt Brubeck
 */
+use IO;
 
 const table = initTable("ATCGGCTAUAMKRYWWSSYRKMVBHDDHBVNN\n\n");
 
 proc main(args: [] string) {
   const stdin = openfd(0),
-        input = stdin.reader(iokind.native, locking=false),
+        input = stdin.reader(iokind.native, locking=false,
+                             hints=QIO_HINT_PARALLEL),
         len = stdin.length();
   var data: [0..#len] uint(8);
 

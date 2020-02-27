@@ -136,7 +136,7 @@ Recognized Environment Variables:
 * MPIRUN_CMD - a template for executing mpirun, or its equivalent.
   At configuration time this variable is used to establish a default for
   PMIRUN_CMD if it is not set.
-  At runtime this variable is ignored *except* by the gasnetrun_gemini and
-  gasnetrun_aries utilities, which use it when PMIRUN_CMD is not set.  This
+  At runtime this variable is ignored *except* by the gasnetrun_aries
+  utility, which uses it when PMIRUN_CMD is not set.  This
   behavior is *only* for compatibility with scripts written for earlier
   releases of GASNet.  Users are encourage to use PMIRUN_CMD instead.

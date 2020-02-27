@@ -82,7 +82,7 @@ GASNet's UDP conduit can be configured with many other options. Please refer
 to:
 
    * ``$CHPL_HOME/third-party/gasnet/gasnet-src/udp-conduit/README``
-   * http://gasnet.lbl.gov/dist/udp-conduit/README
+   * https://gasnet.lbl.gov/dist/udp-conduit/README
 
 
 .. _using-udp-slurm:
@@ -159,7 +159,7 @@ You need to set ``CHPL_RT_MASTERIP`` (or ``GASNET_MASTERIP``), and possibly
   * :ref:`chpl-rt-masterip`
   * :ref:`chpl-rt-workerip`
   * ``$CHPL_HOME/third-party/gasnet/gasnet-src/udp-conduit/README``
-  * http://gasnet.lbl.gov/dist/udp-conduit/README .
+  * https://gasnet.lbl.gov/dist/udp-conduit/README .
 
 
 

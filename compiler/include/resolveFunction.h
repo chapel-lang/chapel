@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2019 Cray Inc.
+ * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -26,10 +26,7 @@ class FnSymbol;
 class Type;
 
 void  resolveSignatureAndFunction(FnSymbol* fn);
-
-// Note: resolveSignature resolves declared return types
 void  resolveSignature(FnSymbol* fn);
-
 void  resolveFunction(FnSymbol* fn, CallExpr* forCall = 0);
 
 bool  isParallelIterator(FnSymbol* fn);

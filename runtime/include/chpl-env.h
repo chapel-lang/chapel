@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2019 Cray Inc.
+ * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -32,11 +32,12 @@ const char* chpl_env_rt_get(const char*, const char*);
 
 //
 // These convert string values, presumably from environment variables,
-// to typed values (boolean, int, or size), with a default.
+// to typed values (boolean, int, uint, or size), with a default.
 //
 chpl_bool chpl_env_str_to_bool(const char*, const char*, chpl_bool);
 int64_t chpl_env_str_to_int(const char*, const char*, int64_t);
 int chpl_env_str_to_int_pct(const char*, const char*, int, chpl_bool);
+uint64_t chpl_env_str_to_uint(const char*, const char*, uint64_t);
 size_t chpl_env_str_to_size(const char*, const char*, size_t);
 
 //
@@ -56,6 +57,11 @@ int64_t chpl_env_rt_get_int(const char* ev, int64_t dflt) {
 static inline
 int chpl_env_rt_get_int_pct(const char* ev, int dflt, chpl_bool doWarn) {
   return chpl_env_str_to_int_pct(ev, chpl_env_rt_get(ev, NULL), dflt, doWarn);
+}
+
+static inline
+uint64_t chpl_env_rt_get_uint(const char* ev, uint64_t dflt) {
+  return chpl_env_str_to_uint(ev, chpl_env_rt_get(ev, NULL), dflt);
 }
 
 static inline

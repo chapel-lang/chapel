@@ -81,6 +81,7 @@ module Timer {
         t = new owned CycleTimer();
       } else {
         halt("Unknown timer type");
+        t = new owned TimerImpl(); //dummy
       }
     }
 

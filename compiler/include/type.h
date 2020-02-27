@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2019 Cray Inc.
+ * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -380,6 +380,7 @@ TYPE_EXTERN Type*             dtAnyComplex;
 TYPE_EXTERN Type*             dtAnyEnumerated;
 TYPE_EXTERN Type*             dtAnyImag;
 TYPE_EXTERN Type*             dtAnyReal;
+TYPE_EXTERN Type*             dtAnyPOD;
 
 TYPE_EXTERN Type*             dtIteratorRecord;
 TYPE_EXTERN Type*             dtIteratorClass;
@@ -431,7 +432,7 @@ TYPE_EXTERN Map<Type*, Type*> wideClassMap; // class -> wide class
 TYPE_EXTERN Map<Type*, Type*> wideRefMap;   // reference -> wide reference
 
 void     initPrimitiveTypes();
-void     initChplProgram(DefExpr* objectDef);
+void     initChplProgram();
 void     initCompilerGlobals();
 
 bool is_nothing_type(Type*);
@@ -449,6 +450,9 @@ int  get_mantissa_width(Type*);
 int  get_exponent_width(Type*);
 bool isClass(Type* t); // includes ref, ddata, classes; not unmanaged
 bool isClassOrNil(Type* t);
+bool isUnmanagedClass(Type* t);
+bool isBorrowedClass(Type* t);
+bool isOwnedOrSharedOrBorrowed(Type* t);
 bool isClassLike(Type* t); // includes unmanaged, borrow, no ref
 bool isBuiltinGenericClassType(Type* t); // 'unmanaged' 'borrowed' etc
 bool isClassLikeOrManaged(Type* t); // includes unmanaged, borrow, owned, no ref
@@ -480,7 +484,9 @@ bool isArrayClass(Type* type);
 
 bool isString(Type* type);
 bool isBytes(Type* type);
-bool isUserDefinedRecord(Type* type);
+
+// Does it use record-style memory management?
+bool typeNeedsCopyInitDeinit(Type* type);
 
 bool isPrimitiveScalar(Type* type);
 
@@ -497,7 +503,7 @@ bool isGenericClassWithInitializers (Type* type);
 bool isGenericRecordWithInitializers(Type* type);
 
 bool isClassWithInitializers (Type* type);
-bool isRecordWithInitializers(Type* type);
+bool isRecordOrUnionWithInitializers(Type* type);
 
 bool needsGenericRecordInitializer(Type* type);
 

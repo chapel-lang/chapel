@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2019 Cray Inc.
+ * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -121,8 +121,14 @@ static void viewSymbolFlags(Symbol* sym) {
         printf("a TypeSymbol\n");
 
       } else if (FnSymbol* fs = toFnSymbol(sym)) {
-        printf("fn %s(%d args) %s\n",
-               fs->_this ? intentDescrString(fs->thisTag) : "",
+        printf("isGeneric %s\n", fs->isGenericIsValid() ?
+               (fs->isGeneric() ? "yes" : "no") : "unset");
+        bool isMethod = fs->_this != NULL;
+        bool isTypeMethod = isMethod && fs->_this->hasFlag(FLAG_TYPE_VARIABLE);
+        printf("fn %s%s%s(%d args) %s\n",
+               isMethod ? intentDescrString(fs->thisTag) : "",
+               isTypeMethod ? ", type method" : "",
+               isMethod ? " " : "",
                fs->numFormals(),
                retTagDescrString(fs->retTag));
 

@@ -3,4 +3,4 @@ proc f():c_string {
 }
 
 var x = f();
-writeln(x:string, " ", x.type:string);
+writeln(createStringWithNewBuffer(x), " ", x.type:string);

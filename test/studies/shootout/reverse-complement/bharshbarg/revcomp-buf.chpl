@@ -4,6 +4,7 @@
    contributed by Ben Harshbarger
    derived from the Rust #2 version by Matt Brubeck
 */
+private use IO, SysCTypes;
 
 /*
    This is very ugly because we don't have good IO support for
@@ -125,11 +126,11 @@ proc main(args: [] string) {
 
       if data[last] == ">".toByte() {
         // '-2' to skip over '\n>'
-        begin process(data, start, last-2);
+        begin with (ref data) process(data, start, last-2);
       } else {
         // Final section
         // '-1' to skip over '\n'
-        begin process(data, start, last-1);
+        begin with (ref data) process(data, start, last-1);
         break;
       }
     }
@@ -144,7 +145,7 @@ proc main(args: [] string) {
   stdoutBin.write(data.toArray());
 }
 
-proc process(data, in start, in end) {
+proc process(ref data, in start, in end) {
   proc advance(ref cursor, dir) {
     do { cursor += dir; } while data[cursor] == "\n".toByte();
   }

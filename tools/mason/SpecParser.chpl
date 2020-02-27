@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2019 Cray Inc.
+ * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -45,7 +45,7 @@ config const debugSpecParser=false;
 
   Note: Spack has a different syntax than
   Chapel for version ranges. They use ':' as a
-  sperator instead of '..'
+  separator instead of '..'
  */
 proc getSpecFields(spec: string) {
   var specFields: 4*string;
@@ -181,7 +181,7 @@ proc parseSpec(ref tokenList: list(string)) throws {
     }
     else {
       // catch corner case where some compilers like "-"
-      // include non-spec charactes e.g. clang@9.0.0-apple
+      // include non-spec characters e.g. clang@9.0.0-apple
       if !toke.startsWith("-") {
         variants.append(toke);
       }

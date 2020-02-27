@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2019 Cray Inc.
+ * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -57,22 +57,6 @@ chpl_bool chpl_comm_impl_regMemFree(void* p, size_t size);
 // Network atomic operations.
 //
 #include "chpl-comm-native-atomics.h"
-
-//
-// Unordered ops
-//
-void chpl_comm_get_unordered(void *addr, c_nodeid_t node, void* raddr,
-                             size_t size, int32_t commID, int ln, int32_t fn);
-
-void chpl_comm_put_unordered(void* addr, c_nodeid_t locale, void* raddr,
-                             size_t size, int32_t commID, int ln, int32_t fn);
-
-void chpl_comm_getput_unordered(c_nodeid_t dst_locale, void* dst_addr,
-                                c_nodeid_t src_locale, void* src_addr,
-                                size_t size, int32_t commID, 
-                                int ln, int32_t fn);
-
-void chpl_comm_getput_unordered_task_fence(void);
 
 //
 // Internal statistics gathering and reporting.

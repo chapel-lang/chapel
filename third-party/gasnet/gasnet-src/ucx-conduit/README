@@ -1,0 +1,81 @@
+GASNet ucx-conduit documentation
+Boris I. Karasev <boriska@mellanox.com>
+Artem Y. Polyakov <artemp@mellanox.com>
+
+User Information:
+-----------------
+
+Ucx-conduit implements GASNet over the Unified Communication X (UCX) framework.
+See http://www.openucx.org/ for general information on UCX.
+
+Currently, the ucx-conduit only includes the implementation of GASNet
+Active Messages and should not be used for performance measurements.
+
+Ucx-conduit is a work-in-progress and currently disabled by default.
+If you’re interested in trying it, please email gasnet-staff@lbl.gov for instructions.
+
+Where this conduit runs:
+-----------------------
+
+This conduit is based on UCX HPC communication library.
+UCX is the Unified Communication X (UCX) communication library
+(http://www.openucx.org/).  This is an open-source project
+developed in collaboration between industry, laboratories, and
+academia to create an open-source production grade communication
+framework for data centric and high-performance applications.  The
+UCX library can be downloaded from repositories (e.g.,
+Fedora/RedHat yum repositories). The UCX library is also part of
+Mellanox OFED and Mellanox HPC-X binary distributions.
+
+UCX currently supports:
+- OpenFabrics Verbs (including InfiniBand and RoCE)
+- Cray's uGNI
+- TCP
+- Shared memory
+- NVIDIA CUDA drivers
+
+It is recommended to use UCX conduit with Mellanox InfiniBand devices.
+
+Optional compile-time settings:
+------------------------------
+
+* All the compile-time settings from extended-ref (see the extended-ref README)
+
+Job spawning:
+-------------
+
+### Explain how to spawn jobs for your conduit, and any special concerns.
+
+Recognized environment variables:
+---------------------------------
+
+* All the standard GASNet environment variables (see top-level README)
+* UCX environment parameters
+    - Most commonly used variables are described by the following link
+      https://github.com/openucx/ucx/wiki/UCX-environment-parameters
+    - See also the output of `ucx_info -f` for the full list of parameters
+      supported by a particular UCX version.
+
+Known problems:
+---------------
+
+* See the GASNet Bugzilla server for details on known bugs:
+  https://gasnet-bugs.lbl.gov/
+* This version is known to have high memory consumption under certain workloads
+  (i.e. high volume of Long AMs or one-sided puts)
+
+Future work:
+------------
+
+The following features are planned of the next version of the UCX conduit:
+* Address the high memory consumption issue (See the "Known problems" section).
+* HW accelerated one-sided operations
+* HW accelerated atomics operations
+
+==============================================================================
+
+Design Overview:
+----------------
+
+### Provide overview of the design for your conduit
+

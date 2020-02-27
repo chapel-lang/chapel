@@ -1,3 +1,9 @@
+s7.chpl:106: In function 'copyToDF':
+s7.chpl:108: warning: initializing a non-distributed domain from a distributed domain. If you didn't mean to do that, add a dmapped clause to the type expression or remove the type expression altogether
+s7.chpl:73: Function 'copyToDF' instantiated as: copyToDF(A: [DimensionalDom(2,int(64),false,unmanaged DimensionalDist2D([domain(2,int(64),false)] borrowed locale,BlockCyclicDim,ReplicatedDim,int(64),2),BlockCyclic1dom(int(64),int(64),false),Replicated1dom(int(64),false))] int(64))
+s7.chpl:106: In function 'copyToDF':
+s7.chpl:108: warning: initializing a non-distributed domain from a distributed domain. If you didn't mean to do that, add a dmapped clause to the type expression or remove the type expression altogether
+s7.chpl:74: Function 'copyToDF' instantiated as: copyToDF(A: [DimensionalDom(2,int(64),false,unmanaged DimensionalDist2D([domain(2,int(64),false)] borrowed locale,ReplicatedDim,BlockCyclicDim,int(64),2),Replicated1dom(int(64),false),BlockCyclic1dom(int(64),int(64),false))] int(64))
 n 8  blkSize 2  locales 3*3
 
 11000101 12000102 1011000103 1012000104 2011000105 2012000106 11000107 12000108 0

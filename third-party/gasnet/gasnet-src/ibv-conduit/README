@@ -226,9 +226,9 @@ Paul H. Hargrove <PHHargrove@lbl.gov>
     The list of port numbers, if provided, is separated from the HCA id
     by a ':'.  If a list of ports is given, only those ports may be used.
     Otherwise the first active port on the given HCA may be used.  The
-    following example allows the first active port on HCA mlx4_0, and
-    only port 2 on mlx4_1:
-	GASNET_IBV_PORTS="mlx4_0+mlx4_1:2".
+    following example allows the first active port on HCA mlx5_0, and
+    only port 2 on mlx5_1:
+	GASNET_IBV_PORTS="mlx5_0+mlx5_1:2".
     Note that this list is a *filter*, which means:
     + Duplicate entries do not cause multiple opens of a port or HCA
     + Entries describing non-existent HCAs are silently ignored
@@ -237,9 +237,25 @@ Paul H. Hargrove <PHHargrove@lbl.gov>
       less than the number of entries in GASNET_IBV_PORTS, ports
       are opened in the order detected, regardless of their order
       in GASNET_IBV_PORTS
-    Note that in most IBV distributions the 'ibv_devinfo' utility will list
-    the available HCAs and the status of their ports.
+    See 'GASNET_IBV_LIST_PORTS' and 'GASNET_IBV_LIST_PORTS_NODES' for
+    how to enumerate available HCAs and the status of their ports.
+    In most IBV distributions the 'ibv_devinfo' utility is also
+    available to list the HCAs and the status of their ports.
     The default is no filter.
+
+  + GASNET_IBV_LIST_PORTS
+    The value is a boolean: "0" to disable or "1" to enable the reporting of
+    all detectable HCAs and and the status of their ports.
+    See 'GASNET_IBV_LIST_PORTS_NODES' for how to limit which nodes report.
+    The default is "0" (no report).
+
+  + GASNET_IBV_LIST_PORTS_NODES
+    If GASNET_IBV_LIST_PORTS is enabled, then this setting may be used to
+    limit which nodes report HCAs/ports.  The value is a list which may
+    contain one or more integers or ranges separated by commas, such as
+    "0,2-4,6".  If unset, empty, or equal to "*" then all nodes will report
+    (if enabled by GASNET_IBV_LIST_PORTS).
+    The default is no limit on which nodes report.
 
   + GASNET_IBV_PKEY
     If set, this specifies the 15-bit InfiniBand Partition Key to use.
@@ -1127,6 +1143,25 @@ Paul H. Hargrove <PHHargrove@lbl.gov>
     https://gasnet-bugs.lbl.gov/bugzilla/show_bug.cgi?id=3838
   That bug report describes more about the problem, and provides more detail
   regarding the recommended work-around(s).
+
++ Bug 3997
+  When using ibv-conduit on Linux/AARCH64 (aka ARM64 or ARMv8) systems, it has
+  been observed that some traffic patterns may lead to crashes of the IB HCA
+  or of the compute node.
+  The most up-to-date information on this bug is maintained at:
+    https://gasnet-bugs.lbl.gov/bugzilla/show_bug.cgi?id=3997
+  That bug report describes more about the problem, and provides more detail
+  regarding the recommended work-around(s).
+
++ Bugs 4008 and 4009
+  On some systems, RMA Puts and AM Longs with source buffers on read-only pages
+  (such as those that might be generated for const-qualified static variables)
+  are not handled correctly.
+  The most up-to-date information on this issue is maintained at:
+    https://gasnet-bugs.lbl.gov/bugzilla/show_bug.cgi?id=4008 (ODP)
+    https://gasnet-bugs.lbl.gov/bugzilla/show_bug.cgi?id=4009 (Solaris)
+  Those bug reports provide more details, and will provide the most current
+  information regarding any recommended work-around(s).
 
 + See the GASNet Bugzilla server for details on other known bugs:
   https://gasnet-bugs.lbl.gov/

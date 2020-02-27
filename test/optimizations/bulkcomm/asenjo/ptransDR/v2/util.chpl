@@ -1,6 +1,7 @@
 //Helper functions for stencil.chpl
 
-use ptrans;
+public use ptrans;
+private use IO;
 
 var manylocs: bool;
 proc setupGridLocales(ensureManyLocs = false) {

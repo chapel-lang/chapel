@@ -25,7 +25,7 @@ CONDUITMODE_DIST_SUBDIRS =    	\
 	smp-conduit  		\
 	udp-conduit  		\
 	ibv-conduit 		\
-	gemini-conduit          \
+	ucx-conduit 		\
 	aries-conduit           \
 	pami-conduit		\
 	ofi-conduit

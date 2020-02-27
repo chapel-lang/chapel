@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2019 Cray Inc.
+ * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -41,6 +41,8 @@ static void nestedName(ModuleSymbol* mod);
 static void checkModule(ModuleSymbol* mod);
 static void checkRecordInheritance(AggregateType* at);
 static void setupForCheckExplicitDeinitCalls();
+static void warnUnstableUnions(AggregateType* at);
+static void warnUnstableLeadingUnderscores();
 
 void
 checkParsed() {
@@ -67,6 +69,7 @@ checkParsed() {
 
   forv_Vec(DefExpr, def, gDefExprs) {
     if (toVarSymbol(def->sym)) {
+      bool needsInit = false;
       // The test for FLAG_TEMP allows compiler-generated (temporary) variables
       // to be declared without an explicit type or initializer expression.
       if ((!def->init || def->init->isNoInitExpr())
@@ -74,9 +77,20 @@ checkParsed() {
         if (isBlockStmt(def->parentExpr) && !isArgSymbol(def->parentSymbol))
           if (def->parentExpr != rootModule->block && def->parentExpr != stringLiteralModule->block)
             if (!def->sym->hasFlag(FLAG_INDEX_VAR))
-              USR_FATAL_CONT(def->sym,
-                             "Variable '%s' is not initialized or has no type",
-                             def->sym->name);
+              needsInit = true;
+
+      if (needsInit) {
+        if ((def->init && def->init->isNoInitExpr()) ||
+            def->sym->hasFlag(FLAG_CONFIG)) {
+          USR_FATAL_CONT(def->sym,
+                         "Variable '%s' is not initialized and has no type",
+                         def->sym->name);
+        } else {
+          SET_LINENO(def);
+          def->init = new SymExpr(gSplitInit);
+          parent_insert_help(def, def->init);
+        }
+      }
     }
 
     //
@@ -116,7 +130,11 @@ checkParsed() {
 
   forv_Vec(AggregateType, at, gAggregateTypes) {
     checkRecordInheritance(at);
+
+    warnUnstableUnions(at);
   }
+
+  warnUnstableLeadingUnderscores();
 
   checkExportedNames();
 
@@ -157,6 +175,22 @@ static const char* getClassKindSpecifier(CallExpr* call) {
   if (call->isNamed("_shared"))
     return "shared";
 
+  if (call->isPrimitive(PRIM_NEW) && call->numActuals() >= 1) {
+    if (NamedExpr* ne = toNamedExpr(call->get(1))) {
+      if (ne->name == astr_chpl_manager) {
+        Type* t = ne->actual->typeInfo();
+        if (t == dtBorrowed)
+          return "borrowed";
+        if (t == dtUnmanaged)
+          return "unmanaged";
+        if (t == dtOwned)
+          return "owned";
+        if (t == dtShared)
+          return "shared";
+      }
+    }
+  }
+
   return NULL;
 }
 
@@ -164,13 +198,27 @@ static void checkManagedClassKinds(CallExpr* call) {
   const char* outer = getClassKindSpecifier(call);
 
   if (outer != NULL) {
-    CallExpr* innerCall = toCallExpr(call->get(1));
+    Expr* inner = call->get(1);
+    // skip management decorator if present
+    if (NamedExpr* ne = toNamedExpr(inner))
+      if (ne->name == astr_chpl_manager)
+        inner = call->get(2);
+
+    CallExpr* innerCall = toCallExpr(inner);
     if (innerCall) {
       const char* inner = getClassKindSpecifier(innerCall);
       if (inner != NULL) {
         USR_FATAL_CONT(call,
                        "Type expression uses multiple class kinds: %s %s",
                        outer, inner);
+      }
+    }
+
+    if (call->numActuals() >= 1) {
+      if (SymExpr* se = toSymExpr(call->get(1))) {
+        if (se->symbol() == gUninstantiated) {
+          USR_FATAL(call, "Please use %s class? instead of %s?", outer, outer);
+        }
       }
     }
   }
@@ -236,30 +284,37 @@ static void checkPrivateDecls(DefExpr* def) {
                          "a class or record yet");
 
         } else if (mod->block != def->parentExpr) {
-          if (BlockStmt* block = toBlockStmt(def->parentExpr)) {
-            // Scopeless blocks are used to define multiple symbols, for
-            // instance.  Those are valid "nested" blocks for private symbols.
-            if (block->blockTag != BLOCK_SCOPELESS) {
-              // The block in which we are defined is not the top level module
-              // block.  Private symbols at this scope are meaningless, so warn
-              // the user.
+          for (Expr* cur = def->parentExpr; cur; cur = cur->parentExpr) {
+            if (cur == mod->block)
+              break;
+
+            if (BlockStmt* block = toBlockStmt(cur)) {
+              // Scopeless blocks are used to define multiple symbols, for
+              // instance.  Those are valid "nested" blocks for private symbols.
+              if (block->blockTag != BLOCK_SCOPELESS) {
+                // The block in which we are defined is not the top level module
+                // block.  Private symbols at this scope are meaningless, so warn
+                // the user.
+                USR_WARN(def,
+                         "Private declarations within nested blocks "
+                         "are meaningless");
+
+                def->sym->removeFlag(FLAG_PRIVATE);
+                break;
+              }
+
+            } else {
+              // There are many situations which could lead to this else branch.
+              // Most of them will not reach here due to being banned at parse
+              // time.  However, those that aren't excluded by syntax errors will
+              // be caught here.
               USR_WARN(def,
-                       "Private declarations within nested blocks "
-                       "are meaningless");
+                       "Private declarations are meaningless outside "
+                       "of module level declarations");
 
               def->sym->removeFlag(FLAG_PRIVATE);
+              break;
             }
-
-          } else {
-            // There are many situations which could lead to this else branch.
-            // Most of them will not reach here due to being banned at parse
-            // time.  However, those that aren't excluded by syntax errors will
-            // be caught here.
-            USR_WARN(def,
-                     "Private declarations are meaningless outside "
-                     "of module level declarations");
-
-            def->sym->removeFlag(FLAG_PRIVATE);
           }
         }
 
@@ -337,14 +392,18 @@ checkFunction(FnSymbol* fn) {
     USR_FATAL_CONT(fn, "method 'these' must have parentheses");
 
   if (fn->thisTag != INTENT_BLANK && fn->isMethod() == false) {
-    USR_FATAL_CONT(fn, "'this' intents can only be applied to methods");
+    if (fn->thisTag == INTENT_TYPE) {
+      USR_FATAL_CONT(fn, "Missing type for secondary type method");
+    } else {
+      USR_FATAL_CONT(fn, "'this' intents can only be applied to methods");
+    }
   }
 
-#if 0 // Do not issue the warning yet.
   if (fn->hasFlag(FLAG_DESTRUCTOR) && (fn->name[0] == '~')) {
-    USR_WARN(fn, "\"~classname\" naming of deinitializers is deprecated");
+    USR_WARN("Destructors have been deprecated as of Chapel 1.21. "
+             "Please use deinit instead.");
+    USR_WARN(fn, "to fix, rename %s to deinit", fn->name);
   }
-#endif
 
   std::vector<CallExpr*> calls;
   collectMyCallExprs(fn, calls, fn);
@@ -459,5 +518,26 @@ checkExportedNames()
     if (names.get(name))
       USR_FATAL_CONT(fn, "The name %s cannot be exported twice from the same compilation unit.", name);
     names.put(name, true);
+  }
+}
+
+static void warnUnstableUnions(AggregateType* at) {
+  if (fWarnUnstable && at->isUnion()) {
+    USR_WARN(at, "Unions are currently unstable and are expected to change in ways that will break their current uses.");
+  }
+}
+
+static void warnUnstableLeadingUnderscores() {
+  if (fWarnUnstable) {
+    forv_Vec(DefExpr, def, gDefExprs) {
+      const char* name = def->name();
+      
+      if (name && name[0] == '_' &&
+          def->getModule()->modTag == MOD_USER &&
+          !def->sym->hasFlag(FLAG_TEMP)) {
+        USR_WARN(def,
+                 "Symbol names with leading underscores (%s) are unstable.", name);
+      }
+    }
   }
 }

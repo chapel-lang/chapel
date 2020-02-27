@@ -1,3 +1,5 @@
+use IO;
+
 var a = stringStyleWithLength(0);
 var b = stringStyleWithLength(1);
 var c = stringStyleWithLength(2);

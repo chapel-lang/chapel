@@ -1,3 +1,5 @@
+use IO;
+
 var word: string;
 do {
   word = stdin.read(string);

@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2019 Cray Inc.
+ * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -105,7 +105,7 @@ private proc listSpkgs() {
   const status = runSpackCommand(command);
 }
 
-/* Queries spack for package existance */
+/* Queries spack for package existence */
 private proc searchSpkgs(args: [?d] string) {
   if args.size < 4 {
     listSpkgs();
@@ -240,10 +240,11 @@ private proc editCompilers() {
 proc getExternalPackages(exDeps: unmanaged Toml) {
 
   var exDom: domain(string);
-  var exDepTree: [exDom] unmanaged Toml;
+  var exDepTree: [exDom] unmanaged Toml?;
 
-  for (name, spec) in exDeps.A.items() {
+  for (name, spc) in exDeps.A.items() {
     try! {
+      var spec = spc!;
       select spec.tag {
           when fieldtag.fieldToml do continue;
           otherwise {
@@ -282,10 +283,10 @@ proc getExternalPackages(exDeps: unmanaged Toml) {
 /* Retrieves build information for MasonUpdate */
 proc getSpkgInfo(spec: string, ref dependencies: list(string)): unmanaged Toml throws {
 
-  // put above try b/c compiler comlains about return value
+  // put above try b/c compiler complains about return value
   var depList: list(unmanaged Toml);
   var spkgDom: domain(string);
-  var spkgToml: [spkgDom] unmanaged Toml;
+  var spkgToml: [spkgDom] unmanaged Toml?;
   var spkgInfo = new unmanaged Toml(spkgToml);
 
   try {

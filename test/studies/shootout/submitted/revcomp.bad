@@ -1,0 +1,3 @@
+revcomp.chpl:12: In function 'main':
+revcomp.chpl:42: error: 'iokind' undeclared (first use this function)
+revcomp.chpl:43: error: 'QIO_CH_ALWAYS_UNBUFFERED' undeclared (first use this function)

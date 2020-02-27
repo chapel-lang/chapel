@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2019 Cray Inc.
+ * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -166,6 +166,7 @@ See :mod:`GMP` for more information on how to use GMP with Chapel.
 module BigInteger {
   use GMP;
   private use HaltWrappers;
+  private use SysCTypes;
 
   enum Round {
     DOWN = -1,
@@ -390,12 +391,16 @@ module BigInteger {
       if _local {
         var tmpvar = chpl_gmp_mpz_get_str(base_, this.mpz);
 
-        ret = createStringWithOwnedBuffer(tmpvar);
+        try! {
+          ret = createStringWithOwnedBuffer(tmpvar);
+        }
 
       } else if this.localeId == chpl_nodeID {
         var tmpvar = chpl_gmp_mpz_get_str(base_, this.mpz);
 
-        ret = createStringWithOwnedBuffer(tmpvar);
+        try! {
+          ret = createStringWithOwnedBuffer(tmpvar);
+        }
 
       } else {
         const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
@@ -403,14 +408,16 @@ module BigInteger {
         on __primitive("chpl_on_locale_num", thisLoc) {
           var tmpvar = chpl_gmp_mpz_get_str(base_, this.mpz);
 
-          ret = createStringWithOwnedBuffer(tmpvar);
+          try! {
+            ret = createStringWithOwnedBuffer(tmpvar);
+          }
         }
       }
 
       return ret;
     }
 
-    proc writeThis(writer) {
+    proc writeThis(writer) throws {
       var s: string;
 
       if _local {

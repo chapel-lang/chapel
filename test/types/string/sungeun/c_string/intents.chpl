@@ -30,17 +30,17 @@ if errorCase == 1 {
   gr("hi");
 }
 
-var hi_c: c_string = "hi";
-var ss = hi_c:string + hi_c:string;
+var hi_c = c"hi";
+var ss = createStringWithNewBuffer(hi_c)+ createStringWithNewBuffer(hi_c);
 var s = ss.c_str();
 
-f(s:string);
-fi(s:string);
+f(createStringWithNewBuffer(s));
+fi(createStringWithNewBuffer(s));
 if errorCase == 2 then
-  fo(s:string);
+  fo(createStringWithNewBuffer(s));
 
 if errorCase == 3 then
-  fio(s:string);
+  fio(createStringWithNewBuffer(s));
 
 if errorCase == 4 then
-  fr(s:string);
+  fr(createStringWithNewBuffer(s));

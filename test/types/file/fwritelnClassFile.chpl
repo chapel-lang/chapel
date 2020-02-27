@@ -1,3 +1,5 @@
+use IO;
+
 class phone {
   var name: string;
   var cell: int;

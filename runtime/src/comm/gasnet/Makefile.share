@@ -1,4 +1,4 @@
-# Copyright 2004-2019 Cray Inc.
+# Copyright 2004-2020 Hewlett Packard Enterprise Development LP
 # Other additional copyright holders may be indicated within.
 # 
 # The entirety of this work is licensed under the Apache License,
@@ -23,12 +23,11 @@ COMM_SRCS = \
 	comm-gasnet.c \
 	comm-gasnet-locales.c \
 
-SVN_SRCS = \
+SRCS = \
   comm-gasnet.c \
   comm-gasnet-launch.c \
   comm-gasnet-locales.c \
 
-SRCS = $(SVN_SRCS)
 
 COMM_OBJS = \
 	$(COMM_SRCS:%.c=$(COMM_OBJDIR)/%.o)

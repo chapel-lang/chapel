@@ -125,7 +125,6 @@ endif
 
 ./start_test ${start_test_flags} -logfile Logs/testReleaseHelp.log
 
-endif
 set tmpstatus = $status
 if ($tmpstatus != 0) then
     echo "ERROR: testing of examples failed"

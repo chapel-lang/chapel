@@ -1,3 +1,5 @@
+use IO;
+
 config const outfileName = "output.bin";
 
 config const displayInput = false;

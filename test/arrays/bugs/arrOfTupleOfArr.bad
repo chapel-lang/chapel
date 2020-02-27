@@ -1,2 +1,1 @@
-arrOfTupleOfArr.chpl:2: warning: [domain(1,int(64),false)] 2*[domain(1,int(64),false)] int(64)
-arrOfTupleOfArr.chpl:1: error: attempt to dereference nil
+Conditional jump or move depends on uninitialised value(s)

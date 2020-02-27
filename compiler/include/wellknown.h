@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2019 Cray Inc.
+ * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -44,8 +44,6 @@ extern AggregateType* dtLocaleID;
 extern AggregateType* dtMainArgument;
 extern AggregateType* dtOnBundleRecord;
 extern AggregateType* dtOpaqueArray;
-extern AggregateType* dtOwned;
-extern AggregateType* dtShared;
 extern AggregateType* dtTaskBundleRecord;
 extern AggregateType* dtTuple;
 extern AggregateType* dtRef;
@@ -70,5 +68,6 @@ extern FnSymbol *gChplSaveTaskError;
 extern FnSymbol *gChplForallError;
 extern FnSymbol *gAtomicFenceFn;
 extern FnSymbol *gChplAfterForallFence;
+extern FnSymbol *gChplCreateStringWithLiteral;
 
 #endif

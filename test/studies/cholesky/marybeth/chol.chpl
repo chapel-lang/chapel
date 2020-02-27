@@ -1,5 +1,6 @@
 //Unblocked Cholesky method.  Default test matrix is generated
 //from the Matlab gallery - the lehmer matrix of order 10.
+use IO;
 
 config const inputfile = "lehmer10.dat";
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2019 Cray Inc.
+ * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -507,6 +507,7 @@ CallExpr* setIteratorRecordShape(Expr* ref, Symbol* ir, Symbol* shapeSpec,
     iRecord->fields.insertAtTail(new DefExpr(field));
     // An accessor lets us get _shape_ in Chapel code.
     FnSymbol* accessor = build_accessor(iRecord, field, false, false);
+    accessor->setGeneric(false);
     // This sidesteps the visibility issue in the presence of nested
     // LoopExprs. Ex. test/expressions/loop-expr/scoping.chpl
     theProgram->block->insertAtTail(accessor->defPoint->remove());
@@ -537,6 +538,23 @@ void setIteratorRecordShape(CallExpr* call) {
   call->replace(shapeCall);
 }
 
+// Find the parent block that is either
+//  * a loop
+//  * or, not a BlockStmt
+// Used to ignore non-loop BlockStmts
+// (these come up in particular with local and unlocal blocks).
+static Expr* loopOrNonBlockParent(Expr* expr) {
+  Expr* parent = expr->parentExpr;
+  while (parent != NULL) {
+    if (!isBlockStmt(parent))
+      break;
+    if (isLoopStmt(parent))
+      break;
+
+    parent = parent->parentExpr;
+  }
+  return parent;
+}
 
 //
 // Determines that an iterator has a single loop with a single yield
@@ -568,9 +586,16 @@ isSingleLoopIterator(FnSymbol* fn, Vec<BaseAST*>& asts) {
         // Select yield statements whose parent expression is a loop statement
         // (except for dowhile statements, for some reason....
 
+        // Find the parent block that is either
+        //  * a loop
+        //  * or, a conditional
+        // Ignore non-loop BlockStmts
+        // (conditionals could probably be allowed if both sides yielded)
+        Expr* parent = loopOrNonBlockParent(call);
+
         // This test is not logically related to the preceding quick-exit, so
         // putting "else" here would be misleading.
-        if (isLoopStmt(call->parentExpr)) {
+        if (isLoopStmt(parent)) {
           // NOAKES 2014/11/25  It is interesting the DoWhile loops aren't supported
           if (isDoWhileStmt(call->parentExpr))
             return NULL;
@@ -603,8 +628,9 @@ isSingleLoopIterator(FnSymbol* fn, Vec<BaseAST*>& asts) {
 
       Expr*      expr  = toExpr(ast);
       BlockStmt* block = toBlockStmt(ast);
+      Expr*     parent = loopOrNonBlockParent(expr);
 
-      if (expr->parentExpr == fn->body) {
+      if (parent == NULL && expr->parentSymbol == fn) {
         // This captures the first loop statement, but does not fail if there
         // is more than one.  Compare the test for a single yield above.
         // Is this intentional?
@@ -1938,6 +1964,21 @@ static inline Symbol* createICField(int& i, Symbol* local, Type* type,
   return field;
 }
 
+static std::map<Symbol*, std::vector<CallExpr*> > formalToPrimMap;
+
+void gatherPrimIRFieldValByFormal() {
+  for_alive_in_Vec(CallExpr, call, gCallExprs) {
+    if (call->isPrimitive(PRIM_ITERATOR_RECORD_FIELD_VALUE_BY_FORMAL)) {
+      Symbol* formal = toSymExpr(call->get(2))->symbol();
+      formalToPrimMap[formal].push_back(call);
+    }
+  }
+}
+
+void cleanupPrimIRFieldValByFormal() {
+  formalToPrimMap.clear();
+}
+
 // Fills in the iterator class and record types with fields corresponding to the
 // local variables defined in the iterator function (or its static context)
 // and live at any yield.
@@ -1947,20 +1988,6 @@ static void addLocalsToClassAndRecord(Vec<Symbol*>& locals, FnSymbol* fn,
                                       SymbolMap& local2field, SymbolMap& local2rfield)
 {
   IteratorInfo* ii = fn->iteratorInfo;
-
-  // For the current iterator record, create a map of formals to the primitive
-  // calls for PRIM_ITERATOR_RECORD_FIELD_VALUE_BY_FORMAL
-  std::map<Symbol*, std::vector<CallExpr*> > formalToPrimMap;
-  forv_Vec(CallExpr, call, gCallExprs) {
-    if (call->inTree() && call->isPrimitive(PRIM_ITERATOR_RECORD_FIELD_VALUE_BY_FORMAL)) {
-      Type* ir = call->get(1)->getValType();
-      if (ii->irecord == ir) {
-        Symbol* formal = toSymExpr(call->get(2))->symbol();
-        formalToPrimMap[formal].push_back(call);
-      }
-    }
-  }
-
   Symbol* valField = NULL;
 
   int i = 0;    // This numbers the fields.
@@ -1986,8 +2013,11 @@ static void addLocalsToClassAndRecord(Vec<Symbol*>& locals, FnSymbol* fn,
       // while we're creating the iterator record fields based on the original
       // iterator function arguments, replace the primitive that gets the value
       // based on the formal with prim_get_member_value of the actual value.
-      if (formalToPrimMap.count(local) > 0) {
-        for_vector(CallExpr, call, formalToPrimMap[local]) {
+      std::map<Symbol*, std::vector<CallExpr*> >::iterator localIt =
+        formalToPrimMap.find(local);
+      if (localIt != formalToPrimMap.end()) {
+        for_vector(CallExpr, call, localIt->second) {
+          INT_ASSERT(ii->irecord == call->get(1)->getValType());
           call->get(2)->replace(new SymExpr(rfield));
           call->primitive = primitives[PRIM_GET_MEMBER_VALUE];
         }
@@ -2008,6 +2038,7 @@ static void addLocalsToClassAndRecord(Vec<Symbol*>& locals, FnSymbol* fn,
 // (see protoIteratorClass())
 // This function takes a pointer to an iterator and fills in those types.
 void lowerIterator(FnSymbol* fn) {
+  INT_ASSERT(! iteratorsLowered);  // ensure formalToPrimMap is valid
   SET_LINENO(fn);
   Vec<BaseAST*> asts;
   Type* yieldedType = removeRetSymbolAndUses(fn);

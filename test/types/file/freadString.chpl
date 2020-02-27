@@ -1,3 +1,5 @@
+use IO;
+
 var myFirstString: string = "This string should never print.";
 var mySecondString: string;
 

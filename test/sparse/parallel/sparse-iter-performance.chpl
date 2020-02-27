@@ -24,12 +24,14 @@ proc test(param dim:int, d: domain(dim)) {
   populateDomain(dim, sd);
 //  writeln("sd(", dim, ") = ", sd);
 
-  tm.start();
-  var startTm = tm.elapsed(TimeUnits.milliseconds); 
-  proc st      { startTm = tm.elapsed(TimeUnits.milliseconds); }
+  proc st      {
+    tm.clear();
+    tm.start();
+  }
   proc fi(msg) {
-    var endTm = tm.elapsed(TimeUnits.milliseconds);
-    writeln(msg, " : ", endTm - startTm, " ms");
+    tm.stop();
+    var ms = tm.elapsed(TimeUnits.milliseconds);
+    writeln(msg, " : ", ms, " ms");
   }
 
   var A, B, C: [sd] int;
@@ -64,8 +66,6 @@ proc test(param dim:int, d: domain(dim)) {
 
   st; for    (a,b,c) in zip(A,B,C) { a = b + alpha * c; }
   fi("ivar1 = ivar2, ivar3 | seq");
-
-  tm.stop();
 }
 
 proc populateDomain(param dim, ref sd) where dim == 1 {

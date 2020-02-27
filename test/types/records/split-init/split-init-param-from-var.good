@@ -1,0 +1,2 @@
+split-init-param-from-var.chpl:1: In function 'main':
+split-init-param-from-var.chpl:4: error: Initializing parameter 'p' to value not known at compile time

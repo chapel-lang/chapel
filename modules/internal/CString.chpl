@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2019 Cray Inc.
+ * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -23,7 +23,7 @@
 // In terms of how they are used, c_strings are a "close to the metal"
 // representation, being in essence the common NUL-terminated C string.
 module CString {
-  use ChapelStandard;
+  private use ChapelStandard, SysCTypes;
 
   //inline proc c_string.c_str() return this;
 
@@ -130,28 +130,54 @@ module CString {
   //
   // casts from c_string to bool types
   //
-  inline proc _cast(type t:chpl_anybool, x:c_string) throws
-    return try ((x:string).strip()): t;
+  inline proc _cast(type t:chpl_anybool, x:c_string) throws {
+    var chplString: string;
+    try! {
+      chplString = createStringWithNewBuffer(x);
+    }
+    return try (chplString.strip()): t;
+  }
 
   //
   // casts from c_string to integer types
   //
-  inline proc _cast(type t:integral, x:c_string) throws
-    return try ((x:string).strip()): t;
+  inline proc _cast(type t:integral, x:c_string) throws {
+    var chplString: string;
+    try! {
+      chplString = createStringWithNewBuffer(x);
+    }
+    return try (chplString.strip()): t;
+  }
 
   //
   // casts from c_string to real/imag types
   //
-  inline proc _cast(type t:chpl_anyreal, x:c_string) throws
-    return try ((x:string).strip()): t;
-  inline proc _cast(type t:chpl_anyimag, x:c_string) throws
-    return try ((x:string).strip()): t;
+  inline proc _cast(type t:chpl_anyreal, x:c_string) throws {
+    var chplString: string;
+    try! {
+      chplString = createStringWithNewBuffer(x);
+    }
+    return try (chplString.strip()): t;
+  }
+
+  inline proc _cast(type t:chpl_anyimag, x:c_string) throws {
+    var chplString: string;
+    try! {
+      chplString = createStringWithNewBuffer(x);
+    }
+    return try (chplString.strip()): t;
+  }
 
   //
   // casts from c_string to complex types
   //
-  inline proc _cast(type t:chpl_anycomplex, x:c_string) throws
-    return try ((x:string).strip()): t;
+  inline proc _cast(type t:chpl_anycomplex, x:c_string) throws {
+    var chplString: string;
+    try! {
+      chplString = createStringWithNewBuffer(x);
+    }
+    return try (chplString.strip()): t;
+  }
 
   //
   // primitive c_string functions and methods
@@ -202,11 +228,11 @@ module CString {
     // cs = c_nil;
   }
 
-  proc c_string.writeThis(x) {
+  proc c_string.writeThis(x) throws {
     compilerError("Cannot write a c_string, cast to a string first.");
   }
 
-  proc c_string.readThis(x) {
+  proc c_string.readThis(x) throws {
     compilerError("Cannot read a c_string, use string.");
   }
 

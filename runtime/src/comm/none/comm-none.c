@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2019 Cray Inc.
+ * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -182,6 +182,32 @@ void  chpl_comm_get_strd(void* dstaddr_arg, size_t* dststrides, c_nodeid_t srcno
                   1, NULL, // "nb" xfers block, so no need for yield
                   commID, ln, fn);
 }
+
+void chpl_comm_getput_unordered(c_nodeid_t dstnode, void* dstaddr,
+                                c_nodeid_t srcnode, void* srcaddr,
+                                size_t size, int32_t commID,
+                                int ln, int32_t fn)
+{
+  assert(srcnode==0);
+  assert(dstnode==0);
+  memmove(dstaddr, srcaddr, size);
+}
+
+void chpl_comm_get_unordered(void* addr, c_nodeid_t node, void* raddr,
+                             size_t size, int32_t commID, int ln, int32_t fn)
+{
+  assert(node == 0);
+  memmove(addr, raddr, size);
+}
+
+void chpl_comm_put_unordered(void* addr, c_nodeid_t node, void* raddr,
+                             size_t size, int32_t commID, int ln, int32_t fn)
+{
+  assert(node == 0);
+  memmove(raddr, addr, size);
+}
+
+void chpl_comm_getput_unordered_task_fence(void) { }
 
 typedef struct {
   chpl_fn_int_t fid;

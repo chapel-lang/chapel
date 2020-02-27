@@ -5,10 +5,18 @@
 use UnorderedCopy;
 
 config param unordered=true;
+record R { var a, b: int; }
+type TupInt = 2*int, RecInt = R;
 config type copyType = int;
 
-inline proc iniDstValue() param { return 0:copyType; }
-inline proc iniSrcValue() param { return 1:copyType; }
+inline proc iniDstValue() param where isPrimitive(copyType) { return 0:copyType; }
+inline proc iniSrcValue() param where isPrimitive(copyType) { return 1:copyType; }
+
+inline proc iniDstValue() where copyType == TupInt { return (0, 0); }
+inline proc iniSrcValue() where copyType == TupInt { return (1, 1); }
+
+inline proc iniDstValue() where copyType == RecInt { return new R(0, 0); }
+inline proc iniSrcValue() where copyType == RecInt { return new R(1, 1); }
 
 config const printResults = false;
 proc printThem(ref dst, const ref src) {
@@ -103,11 +111,13 @@ proc srcLocalConstAssign(param compileTimeKnown: bool, dstLocal: bool) {
 
 proc srcParamAssign(dstLocal: bool) {
   var dst = iniDstValue();
-  on Locales[getLocaleID(curLocale=dstLocal)] {
-    param src = iniSrcValue();
-    if unordered then unorderedCopy(dst, src);
-                 else dst = src;
-    printThem(dst, src);
+  if isParam(iniSrcValue()) {
+    on Locales[getLocaleID(curLocale=dstLocal)] {
+      param src = iniSrcValue();
+      if unordered then unorderedCopy(dst, src);
+                   else dst = src;
+      printThem(dst, src);
+    }
   }
   writeln("srcParamAssign(dstLocal=", dstLocal, ")");
 }

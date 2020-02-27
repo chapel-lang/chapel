@@ -9,6 +9,7 @@ proc fooB(X:[BlockSpace] int) {
   writeln("In fooB!");
 }
 
+
 const CyclicSpace = Space dmapped Cyclic(startIdx=Space.low);
 var CA: [CyclicSpace] int;
 fooC(CA);
@@ -25,6 +26,7 @@ proc fooBC(X:[BlkCycSpace] int) {
   writeln("In fooBC!");
 }
 
+
 const ReplicatedSpace = Space dmapped Replicated();
 var RA: [ReplicatedSpace] int;
 fooR(RA);
@@ -32,9 +34,6 @@ proc fooR(X:[ReplicatedSpace] int) {
   writeln("In fooR!");
 }
 
-/*
- * Dimensional distributions don't support equalty checks yet
- *
 
 var (nl1, nl2) = if numLocales == 1 then (1, 1) else (2, numLocales/2);
 var MyLocaleView = {0..#nl1, 0..#nl2};
@@ -51,4 +50,3 @@ fooDRB(DRBA);
 proc fooDRB(X:[DimReplicatedBlockcyclicSpace] int) {
   writeln("In fooDRB!");
 }
-*/

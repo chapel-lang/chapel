@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2019 Cray Inc.
+ * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -102,7 +102,7 @@ private proc getBuildInfo(projectHome: string) {
   // have for good performance.
   //
   getSrcCode(sourceList, false);
-  const project = lockFile["root"]["name"].s;
+  const project = lockFile["root"]!["name"]!.s;
   const projectPath = "".join(projectHome, "/src/", project, ".chpl");
   
   // get the example names from lockfile or from example directory
@@ -132,11 +132,11 @@ private proc getExampleOptions(toml: Toml, exampleNames: list(string)) {
     const exampleName = basename(stripExt(example, ".chpl"));
     exampleOptions[exampleName] = ("", "");
     if toml.pathExists("".join("examples.", exampleName, ".compopts")) {
-      var compopts = toml["".join("examples.", exampleName)]["compopts"].s;
+      var compopts = toml["".join("examples.", exampleName)]!["compopts"]!.s;
       exampleOptions[exampleName][1] = compopts;
     }
     if toml.pathExists("".join("examples.", exampleName, ".execopts")) {
-      var execopts = toml["".join("examples.", exampleName)]["execopts"].s;
+      var execopts = toml["".join("examples.", exampleName)]!["execopts"]!.s;
       exampleOptions[exampleName][2] = execopts;
     }
   }
@@ -199,7 +199,7 @@ private proc runExamples(show: bool, run: bool, build: bool, release: bool,
 
     // Get buildInfo: dependencies, path to src code, compopts,
     // names of examples, example compopts
-    const buildInfo = getBuildInfo(projectHome);
+    var buildInfo = getBuildInfo(projectHome);
     const sourceList = buildInfo[1];
     const projectPath = buildInfo[2];
     const compopts = buildInfo[3];
@@ -318,7 +318,7 @@ private proc getExamples(toml: Toml, projectHome: string) {
 
   if toml.pathExists("examples.examples") {
 
-    var examples = toml["examples"]["examples"].toString();
+    var examples = toml["examples"]!["examples"]!.toString();
     var strippedExamples = examples.split(',').strip('[]');
     for example in strippedExamples {
       const t = example.strip().strip('"');
@@ -387,7 +387,7 @@ proc exampleModified(projectHome: string, projectName: string,
       return true;
   }
   else {
-    // check for binary existance
+    // check for binary existence
      if isFile(exampleBinPath) {
       // check for changes to example
        const exModTime = getLastModified(joinPath(examplePath, exampleName));

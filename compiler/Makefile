@@ -1,4 +1,4 @@
-# Copyright 2004-2019 Cray Inc.
+# Copyright 2004-2020 Hewlett Packard Enterprise Development LP
 # Other additional copyright holders may be indicated within.
 #
 # The entirety of this work is licensed under the Apache License,
@@ -81,7 +81,7 @@ include passes/Makefile.include
 include resolution/Makefile.include
 include util/Makefile.include
 
-SVN_SRCS =
+SRCS =
 
 CHPL_OBJS = \
 	$(ADT_OBJS) \
@@ -143,11 +143,13 @@ $(BUILD_VERSION_FILE): FORCE
 $(CHPL_MAKE_HOME)/configured-prefix:
 	echo > $(CHPL_MAKE_HOME)/configured-prefix
 
-$(CONFIGURED_PREFIX_FILE): $(COMPILER_BUILD) $(CHPL_MAKE_HOME)/configured-prefix
-	echo '"'`cat $(CHPL_MAKE_HOME)/configured-prefix`'"' \ > $(CONFIGURED_PREFIX_FILE)
+$(CONFIGURED_PREFIX_FILE): FORCE $(COMPILER_BUILD) $(CHPL_MAKE_HOME)/configured-prefix
+	@echo '"'`cat $(CHPL_MAKE_HOME)/configured-prefix`'"' \ > $(CONFIGURED_PREFIX_FILE).incoming
+	@$(CHPL_MAKE_HOME)/util/config/update-if-different $(CONFIGURED_PREFIX_FILE) $(CONFIGURED_PREFIX_FILE).incoming
 
-$(CLANG_SETTINGS_FILE): $(COMPILER_BUILD)
-	echo '{"'$(CLANG_CC)'","'$(CLANG_CXX)'","'`$(CHPL_MAKE_HOME)/util/config/gather-clang-sysroot-arguments $(CLANG_CC)`'"}' | $(FIXPATH_CMD) > $(CLANG_SETTINGS_FILE)
+$(CLANG_SETTINGS_FILE): FORCE $(COMPILER_BUILD)
+	@echo '{"'$(CLANG_CC)'","'$(CLANG_CXX)'","'`$(CHPL_MAKE_HOME)/util/config/gather-clang-sysroot-arguments $(CLANG_CC)`'"}' | $(FIXPATH_CMD) > $(CLANG_SETTINGS_FILE).incoming
+	@$(CHPL_MAKE_HOME)/util/config/update-if-different $(CLANG_SETTINGS_FILE) $(CLANG_SETTINGS_FILE).incoming
 
 $(CHPL_CONFIG_CHECK): | $(CHPL_BIN_DIR)
 	rm -rf $(CHPL_CONFIG_CHECK_PREFIX)

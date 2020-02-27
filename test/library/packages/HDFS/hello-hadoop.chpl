@@ -1,4 +1,5 @@
 use HDFS only;
+use IO;
 
 config const path = "/tmp/testfile.txt";
 

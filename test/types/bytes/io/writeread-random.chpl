@@ -1,9 +1,9 @@
-use Random;
+use Random, IO;
 
 config const nBytes = 1024;
 
 // create bytes with random bytes
-var randomStream = makeRandomStream(eltType=uint(8));
+var randomStream = createRandomStream(eltType=uint(8));
 var buf = c_malloc(uint(8), nBytes+1);
 for i in 0..#nBytes {
   buf[i] = randomStream.getNext();

@@ -1,2 +1,2 @@
-use-depth.chpl:21: error: symbol z is multiply defined
+use-depth.chpl:21: error: symbol x is multiply defined
 use-depth.chpl:37: note: also defined here

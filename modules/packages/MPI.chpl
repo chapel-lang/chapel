@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2019 Cray Inc.
+ * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -189,7 +189,7 @@ MPI Module Documentation
 
 */
 module MPI {
-  use SysCTypes;
+  public use SysCTypes;
   require "mpi.h";
 
   use ReplicatedVar;
@@ -265,8 +265,7 @@ module MPI {
       if (provided != MPI_THREAD_MULTIPLE) &&
          requireThreadedMPI
       {
-        writeln("Unable to get a high enough MPI thread support");
-        C_MPI.MPI_Abort(MPI_COMM_WORLD, 10);
+        halt("Unable to get a high enough MPI thread support.\nTry setting 'MPICH_MAX_THREAD_SAFETY=multiple' or its equivalent");
       }
       setChplComm();
     }
@@ -292,8 +291,7 @@ module MPI {
             try {
               cookieJar[lastcookie] = ((cookieJar[lastcookie]):int + 1):string;
             } catch e {
-              writeln("Unable to parse PMI_GNI_COOKIE");
-              C_MPI.MPI_Abort(MPI_COMM_WORLD, 10);
+              halt("Unable to parse PMI_GNI_COOKIE");
             }
             const newVal = ":".join(cookieJar);
             C_Env.setenv("PMI_GNI_COOKIE",newVal.c_str(),1);
@@ -309,8 +307,7 @@ module MPI {
       if (provided != MPI_THREAD_MULTIPLE) &&
          requireThreadedMPI
       {
-        writeln("Unable to get a high enough MPI thread support");
-        C_MPI.MPI_Abort(MPI_COMM_WORLD, 10);
+        halt("Unable to get a high enough MPI thread support.\nTry setting 'MPICH_MAX_THREAD_SAFETY=multiple' or its equivalent");
       }
       C_MPI.MPI_Barrier(MPI_COMM_WORLD);
     }

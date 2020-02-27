@@ -45,7 +45,7 @@ for (i, first) in zip(A, First) {
       insertPrivatized(c!, i);
     }
 
-    sum += c.i + one.i;
+    sum += c!.i + one.i;
   }
 }
 

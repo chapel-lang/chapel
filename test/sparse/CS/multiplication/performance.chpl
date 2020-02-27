@@ -56,7 +56,7 @@ proc main() {
 proc populate(ref A, ref ADom, sparsity: real, seed: int) where isSparseArr(A) {
   const nnz = (ADom._value.parentDom.size * sparsity): int;
   var indices: [1..nnz] 2*int;
-  var randomIndices = makeRandomStream(eltType=int, seed=seed);
+  var randomIndices = createRandomStream(eltType=int, seed=seed);
   for idx in indices {
     // Ensure no duplicates
     var newIdx = idx;
@@ -68,7 +68,7 @@ proc populate(ref A, ref ADom, sparsity: real, seed: int) where isSparseArr(A) {
 
   ADom += indices;
 
-  var randomReals = makeRandomStream(eltType=real, seed=seed);
+  var randomReals = createRandomStream(eltType=real, seed=seed);
   for idx in ADom {
     A[idx] = randomReals.getNext();
   }
@@ -78,7 +78,7 @@ proc populate(ref A, ref ADom, sparsity: real, seed: int) where isSparseArr(A) {
 proc populate(ref A: [?ADom], sparsity: real, seed: int) where !isSparseArr(A) {
   const nnz= (ADom.size * sparsity): int;
   var indices: [1..nnz] 2*int;
-  var randomIndices = makeRandomStream(eltType=int, seed=seed);
+  var randomIndices = createRandomStream(eltType=int, seed=seed);
   for idx in indices {
     // Ensure no duplicates
     var newIdx = idx;
@@ -88,7 +88,7 @@ proc populate(ref A: [?ADom], sparsity: real, seed: int) where !isSparseArr(A) {
     idx = newIdx;
   }
 
-  var randomReals = makeRandomStream(eltType=real, seed=seed);
+  var randomReals = createRandomStream(eltType=real, seed=seed);
   for idx in indices {
     A[idx] = randomReals.getNext();
   }

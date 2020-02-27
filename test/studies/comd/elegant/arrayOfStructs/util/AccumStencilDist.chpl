@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2017 Cray Inc.
+ * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -23,6 +23,7 @@ use ChapelUtil;
 use CommDiagnostics;
 use ChapelLocks;
 use ChapelDebugPrint;
+private use HaltWrappers;
 
 //
 // These flags are used to output debug information and run extra

@@ -11,8 +11,8 @@ setupLocales(s1, s2);
 
 /////////// distribution
 
-var vdf = new unmanaged ReplicatedDim(s1);
-var sdf = new unmanaged BlockDim(s2, 1, 3);
+var vdf = new ReplicatedDim(s1);
+var sdf = new BlockDim(s2, 1, 3);
 
 hd("new DimensionalDist2D()");
 var ddf = new unmanaged DimensionalDist2D(mylocs, vdf, sdf, "ddf");
@@ -83,42 +83,10 @@ tl();
 
 /////////// privatization
 
+fphase(91);
 hd("privatization tests");
-if manylocs {
-  if traceDimensionalDist {
-    msg("skipped because traceDimensionalDist = true");
-  } else {
-    proc test(locIds, arrIdx, expVal) {
-      on mylocs(locIds) {
-        msg(" mylocs", locIds, "  dmarr", arrIdx, "  expecting ", expVal,
-            "  on ", here.id);
-        var temp = 999999;
-        const idx = arrIdx;
-        assert(temp != expVal);
-        local {
-          temp = dmarr(idx);
-        }
-        if temp != expVal then
-          msg("*** error: expected ", expVal, ", got ", temp);
-
-      }
-    }  // proc test
-
-    test((0,0), (1,2), 12);
-    test((0,1), (2,3), 23);
-    test((1,0), (3,1), 0);
-    test((1,1), (3,3), 0);
-  }
-} else {
-  msg("skipped because of oversubscribing Locales(0)");
-}
+privTest(dmarr, (0,0), (1,2), 12);
+privTest(dmarr, (0,1), (2,3), 23);
+privTest(dmarr, (1,0), (3,1), 0);
+privTest(dmarr, (1,1), (3,3), 0);
 tl();
-
-// Does not presently work (see t3.future). Once it does, replace the above.
-//
-//hd("privatization tests");
-//privTest(dmarr, (0,0), (1,2), 12);
-//privTest(dmarr, (0,1), (2,3), 23);
-//privTest(dmarr, (1,0), (3,1), 0);
-//privTest(dmarr, (1,1), (3,3), 0);
-//tl();

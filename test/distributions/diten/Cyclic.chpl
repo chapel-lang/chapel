@@ -447,6 +447,7 @@ class LocCyclic1DDom {
   }
 }
 
+private use IO;
 
 //
 // the global array class

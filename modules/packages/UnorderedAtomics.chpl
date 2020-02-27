@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2019 Cray Inc.
+ * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -159,19 +159,5 @@ module UnorderedAtomics {
       extern proc chpl_comm_atomic_unordered_task_fence();
       chpl_comm_atomic_unordered_task_fence();
     }
-  }
-
-  /*
-     .. warning::
-       This function has been deprecated - please use
-       :proc:`unorderedAtomicTaskFence()` instead. Note that this function has
-       been deprecated without a full release of support because the previous
-       global fence semantics imposed expensive implementation requirements and
-       is not expected to be needed now that operations are implicitly fenced at
-       task/forall termination.
-   */
-  inline proc unorderedAtomicFence(): void {
-    compilerError("unorderedAtomicFence() is no longer supported - please use unorderedAtomicTaskFence() instead");
-    unorderedAtomicTaskFence();
   }
 }

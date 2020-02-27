@@ -10,7 +10,7 @@ proc makeBorrowed2(type t) type {
 }
 
 proc makeBorrowedBang1(type t) type {
-  return borrowed t!;
+  return borrowed (t :borrowed class);
 }
 proc makeBorrowedBang2(type t) type {
   return t:borrowed class;

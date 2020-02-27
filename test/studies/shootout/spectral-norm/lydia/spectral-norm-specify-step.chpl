@@ -6,6 +6,7 @@
  * Conversion to Chapel by Albert Sidelnik
  * Updated by Lydia Duncan
  */
+use IO;
 
 config const n = 500 : int(64);
 config const step = 2 : int(64);

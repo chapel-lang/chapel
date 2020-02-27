@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2019 Cray Inc.
+ * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -29,6 +29,7 @@
 #include "ForLoop.h"
 #include "ForallStmt.h"
 #include "IfExpr.h"
+#include "ImportStmt.h"
 #include "iterator.h"
 #include "LoopExpr.h"
 #include "LoopStmt.h"
@@ -77,7 +78,6 @@ void resolveSignatureAndFunction(FnSymbol* fn) {
 ************************************** | *************************************/
 
 void resolveSignature(FnSymbol* fn) {
-  if (fn->hasFlag(FLAG_GENERIC) == false) {
     // Don't resolve formals for concrete functions
     // more often than necessary.
     static std::set<FnSymbol*> done;
@@ -87,7 +87,6 @@ void resolveSignature(FnSymbol* fn) {
 
       resolveFormals(fn);
     }
-  }
 }
 
 /************************************* | **************************************
@@ -101,8 +100,6 @@ static void updateIfRefFormal(FnSymbol* fn, ArgSymbol* formal);
 static bool needRefFormal(FnSymbol* fn, ArgSymbol* formal, bool* needRefIntent);
 
 static bool shouldUpdateAtomicFormalToRef(FnSymbol* fn, ArgSymbol* formal);
-
-static bool recordContainingCopyMutatesField(Type* at);
 
 static void handleParamCNameFormal(FnSymbol* fn, ArgSymbol* formal);
 
@@ -359,7 +356,7 @@ static bool shouldUpdateAtomicFormalToRef(FnSymbol* fn, ArgSymbol* formal) {
          fn->hasFlag(FLAG_BUILD_TUPLE)         == false;
 }
 
-static bool recordContainingCopyMutatesField(Type* t) {
+bool recordContainingCopyMutatesField(Type* t) {
   AggregateType* at = toAggregateType(t);
   if (at == NULL) return false;
   if (!isRecord(at)) return false;
@@ -469,6 +466,8 @@ void resolveSpecifiedReturnType(FnSymbol* fn) {
 *                                                                             *
 ************************************** | *************************************/
 
+static void markTypesWithDefaultInitEqOrAssign(FnSymbol* fn);
+
 void resolveFunction(FnSymbol* fn, CallExpr* forCall) {
   if (fn->isResolved() == false) {
     if (fn->id == breakOnResolveID) {
@@ -478,6 +477,8 @@ void resolveFunction(FnSymbol* fn, CallExpr* forCall) {
     }
 
     fn->addFlag(FLAG_RESOLVED);
+
+    fn->tagIfGeneric();
 
     if (strcmp(fn->name, "init") == 0 && fn->isMethod()) {
       AggregateType* at = toAggregateType(fn->_this->getValType());
@@ -521,8 +522,33 @@ void resolveFunction(FnSymbol* fn, CallExpr* forCall) {
       if (forCall != NULL) {
         resolveAlsoParallelIterators(fn, forCall);
       }
+
+      markTypesWithDefaultInitEqOrAssign(fn);
     }
     popInstantiationLimit(fn);
+  }
+}
+
+static void markTypesWithDefaultInitEqOrAssign(FnSymbol* fn) {
+
+  if (fn->name == astrSassign &&
+      fn->numFormals() >= 1) {
+    ArgSymbol* lhs = fn->getFormal(1);
+    Type* t = lhs->getValType();
+    if (fn->hasFlag(FLAG_COMPILER_GENERATED))
+      t->symbol->addFlag(FLAG_TYPE_DEFAULT_ASSIGN);
+    else
+      t->symbol->addFlag(FLAG_TYPE_CUSTOM_ASSIGN);
+  }
+
+  if (fn->name == astrInitEquals &&
+      fn->numFormals() >= 2) {
+    ArgSymbol* lhs = fn->getFormal(2); // 1 is mt
+    Type* t = lhs->getValType();
+    if (fn->hasFlag(FLAG_COMPILER_GENERATED))
+      t->symbol->addFlag(FLAG_TYPE_DEFAULT_INIT_EQUAL);
+    else
+      t->symbol->addFlag(FLAG_TYPE_CUSTOM_INIT_EQUAL);
   }
 }
 
@@ -672,7 +698,7 @@ static void insertUnrefForArrayOrTupleReturn(FnSymbol* fn) {
 
           SET_LINENO(call);
           Expr*      rhs       = call->get(2)->remove();
-          VarSymbol* tmp       = newTemp(arrayUnrefName, rhsType);
+          VarSymbol* tmp       = newTemp("array_unref_ret_tmp", rhsType);
           CallExpr*  initTmp   = new CallExpr(PRIM_MOVE,     tmp, rhs);
           CallExpr*  unrefCall = new CallExpr("chpl__unref", tmp);
           CallExpr*  shapeSet  = findSetShape(call, ret);
@@ -1019,7 +1045,7 @@ void resolveIfExprType(CondStmt* stmt) {
       BlockStmt* refBranch = isReferenceType(thenType) ? stmt->thenStmt : stmt->elseStmt;
       CallExpr* call = toCallExpr(refBranch->body.tail);
       SymExpr* rhs = toSymExpr(call->get(2));
-      if (isUserDefinedRecord(rhs->getValType())) {
+      if (typeNeedsCopyInitDeinit(rhs->getValType())) {
         CallExpr* copy = new CallExpr("chpl__autoCopy", rhs->remove());
         call->insertAtTail(copy);
         resolveCallAndCallee(copy);
@@ -1354,7 +1380,7 @@ bool shouldAddFormalTempAtCallSite(ArgSymbol* formal, FnSymbol* fn) {
   if (fn && fn->retTag == RET_PARAM)
     return false;
 
-  if (isRecord(formal->getValType())) {
+  if (isRecord(formal->getValType()) || isUnion(formal->getValType())) {
     if (formal->intent == INTENT_IN ||
         formal->intent == INTENT_CONST_IN ||
         formal->originalIntent == INTENT_IN ||

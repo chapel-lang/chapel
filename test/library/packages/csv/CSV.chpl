@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2019 Cray Inc.
+ * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -23,6 +23,7 @@
    CSV files.
  */
 module CSV {
+  use IO;
   /* The `CSVIO` record can be initialized with a reader or writer channel
      for reading or writing CSV files.
    */

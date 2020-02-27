@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2019 Cray Inc.
+ * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -30,8 +30,8 @@
    :proc:`~Barriers.Barrier.reset()` method can be used change how many tasks
    per locale will participate in each barrier.
 
-   Use of this barrier is similar to :proc:`shmem_barrier_all()` or
-   :proc:`MPI_Barrier(MPI_COMM_WORLD)`, except that it's possible for multiple
+   Use of this barrier is similar to ``shmem_barrier_all()`` or
+   ``MPI_Barrier(MPI_COMM_WORLD)``, except that it's possible for multiple
    tasks on the same locale to barrier. In the following examples all tasks
    will print "Before barrier" before any print "After barrier"
 

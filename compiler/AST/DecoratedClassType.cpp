@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2019 Cray Inc.
+ * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -524,4 +524,14 @@ void convertClassTypesToCanonical() {
       }
     }
   }
+}
+
+bool isClassDecoratorPrimitive(CallExpr* call) {
+  return (call->isPrimitive(PRIM_TO_UNMANAGED_CLASS) ||
+          call->isPrimitive(PRIM_TO_UNMANAGED_CLASS_CHECKED) ||
+          call->isPrimitive(PRIM_TO_BORROWED_CLASS) ||
+          call->isPrimitive(PRIM_TO_BORROWED_CLASS_CHECKED) ||
+          call->isPrimitive(PRIM_TO_NILABLE_CLASS) ||
+          call->isPrimitive(PRIM_TO_NILABLE_CLASS_CHECKED) ||
+          call->isPrimitive(PRIM_TO_NON_NILABLE_CLASS));
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2019 Cray Inc.
+ * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -26,6 +26,8 @@
 //
 
 private use DSIUtil;
+
+private use HaltWrappers;
 
 //
 // TODO List
@@ -298,6 +300,7 @@ class BlockCyclic : BaseDist {
   }
 
   proc dsiEqualDMaps(that) param {
+    return false;
   }
 }
 
@@ -329,7 +332,7 @@ override proc BlockCyclic.dsiNewRectangularDom(param rank: int, type idxType,
 //
 // output distribution
 //
-proc BlockCyclic.writeThis(x) {
+proc BlockCyclic.writeThis(x) throws {
   x <~> "BlockCyclic\n";
   x <~> "-------\n";
   x <~> "distributes: " <~> lowIdx <~> "..." <~> "\n";
@@ -430,6 +433,33 @@ proc BlockCyclic.idxToLocaleInd(ind: rank*idxType) where rank != 1 {
   return locInd;
 }
 
+proc BlockCyclic.init(other: BlockCyclic, privatizeData,
+                      param rank = other.rank, type idxType = other.idxType) {
+  this.rank = rank;
+  this.idxType = idxType;
+  lowIdx = privatizeData[1];
+  blocksize = privatizeData[2];
+  targetLocDom = {(...privatizeData[3])};
+  dataParTasksPerLocale = privatizeData[4];
+
+  this.complete();
+
+  for i in targetLocDom {
+    targetLocales[i] = other.targetLocales[i];
+    locDist[i] = other.locDist[i];
+  }
+}
+
+proc BlockCyclic.dsiSupportsPrivatization() param return true;
+
+proc BlockCyclic.dsiGetPrivatizeData() {
+  return (lowIdx, blocksize, targetLocDom.dims(), dataParTasksPerLocale);
+}
+
+proc BlockCyclic.dsiPrivatize(privatizeData) {
+  return new unmanaged BlockCyclic(_to_unmanaged(this), privatizeData);
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // BlockCyclic Local Distribution Class
 //
@@ -473,7 +503,7 @@ class LocBlockCyclic {
 }
 
 
-proc LocBlockCyclic.writeThis(x) {
+proc LocBlockCyclic.writeThis(x) throws {
   var localeid: int;
   on this {
     localeid = here.id;
@@ -676,10 +706,10 @@ proc type BlockCyclicDom.chpl__deserialize(data) {
 
 proc BlockCyclicDom.dsiSupportsPrivatization() param return true;
 
-proc BlockCyclicDom.dsiGetPrivatizeData() return 0;
+proc BlockCyclicDom.dsiGetPrivatizeData() return dist.pid;
 
 proc BlockCyclicDom.dsiPrivatize(privatizeData) {
-  var privateDist = new unmanaged BlockCyclic(rank, idxType, dist);
+  var privateDist = chpl_getPrivatizedCopy(dist.type, privatizeData);
   var c = new unmanaged BlockCyclicDom(rank=rank, idxType=idxType, stridable=stridable, dist=privateDist);
   c.locDoms = locDoms;
   c.whole = whole;
@@ -744,7 +774,7 @@ proc LocBlockCyclicDom.computeFlatInds() {
 //
 // output local domain piece
 //
-proc LocBlockCyclicDom.writeThis(x) {
+proc LocBlockCyclicDom.writeThis(x) throws {
   x <~> myStarts;
 }
 
@@ -906,6 +936,9 @@ proc BlockCyclicArr.dsiAccess(i: rank*idxType) ref {
   }
 }
 
+proc BlockCyclicArr.dsiBoundsCheck(i: rank*idxType) {
+  return dom.dsiMember(i);
+}
 
 iter BlockCyclicArr.these() ref {
   for i in dom do
@@ -1112,7 +1145,7 @@ proc LocBlockCyclicArr.this(i) ref {
 //
 // output local array piece
 //
-proc LocBlockCyclicArr.writeThis(x) {
+proc LocBlockCyclicArr.writeThis(x) throws {
   // note on this fails; see writeThisUsingOn.chpl
   x <~> myElems;
 }

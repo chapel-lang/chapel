@@ -1,4 +1,4 @@
-use Path;
+use IO, Path;
 
 var originalPath = "resultSameAsFilePath.chpl";
 // Well, I know this file exists, better not rename it.

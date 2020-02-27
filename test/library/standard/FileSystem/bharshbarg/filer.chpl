@@ -30,6 +30,8 @@ use Sort;
 
 iter listdir(path: string, hidden=false, dirs=true, files=true, 
     listlinks=true): string {
+  use SysCTypes;
+
   extern type DIRptr;
   extern type direntptr;
   extern proc opendir(name: c_string): DIRptr;
@@ -48,7 +50,7 @@ iter listdir(path: string, hidden=false, dirs=true, files=true,
   if (!is_c_nil(dir)) {
     ent = readdir(dir);
     while (!is_c_nil(ent)) {
-      const filename = ent.d_name():string;
+      const filename = createStringWithNewBuffer(ent.d_name());
       if (hidden || filename[1] != '.') {
         if (filename != "." && filename != "..") {
           //

@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2019 Cray Inc.
+ * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -116,7 +116,7 @@ module TestResult {
       var skipped = this.numSkippedTests();
       var run = this.testsRun - skipped;
       if this.testsRun != 0 {
-        writeln("Run ", run, " ", printTest(run)," in ",timeTaken," seconds");
+        writeln("Ran ", run, " ", printTest(run)," in ",timeTaken," seconds");
         writeln();
         var infos: list((string));
         if testsPassed != 0 then 

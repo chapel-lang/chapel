@@ -1,4 +1,4 @@
-# Copyright 2004-2019 Cray Inc.
+# Copyright 2004-2020 Hewlett Packard Enterprise Development LP
 # Other additional copyright holders may be indicated within.
 # 
 # The entirety of this work is licensed under the Apache License,
@@ -20,8 +20,6 @@
 #
 
 include $(CHPL_MAKE_HOME)/runtime/etc/Makefile.include
-
-UNAME = $(shell uname)
 
 all: $(TMPBINNAME)
 
@@ -46,7 +44,7 @@ endif
 # `dyld` will emit an error of the form "library not loaded because image
 # was not found".
 #
-ifeq ($(UNAME),Darwin)
+ifeq ($(CHPL_MAKE_PLATFORM),darwin)
 	install_name_tool $(BINNAME) -id "$(BINNAME)"
 endif
 	$(TAGS_COMMAND)

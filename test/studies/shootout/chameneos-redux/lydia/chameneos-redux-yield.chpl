@@ -120,14 +120,13 @@ class Chameneos {
 
   /* Given the id of its peer, finds and updates the data of its peer and
      itself */
-  proc runMeeting (const ref population : [] owned Chameneos?, peer_idx) {
-    var peer : borrowed Chameneos?;
+  proc runMeeting (population : [] owned Chameneos?, peer_idx) {
     var is_same : int;
     var newColor : Color;
     if (id == peer_idx) {
       is_same = 1;
     }
-    peer = population[peer_idx:int(32)]!;
+    const peer = population[peer_idx:int(32)]!;
     newColor = getComplement(color, peer.color);
     peer.color = newColor;
     peer.meetings += 1;
@@ -160,17 +159,13 @@ proc populate (size : int) {
                             Color.yellow, Color.blue, Color.red, Color.yellow,
                             Color.red, Color.blue);
   const D : domain(1, int) = {1..size};
-  var population : [D] owned Chameneos?;
 
-  if (size == 10) {
-    for i in D {
-      population(i) = new owned Chameneos(i, colorsDefault10(i));
-    }
-  } else {
-    for i in D {
-      population(i) = new owned Chameneos(i, ((i-1) % numColors):Color);
-    }
-  }
+  const population =
+    for i in D do
+      let ithColor = if size == 10 then colorsDefault10(i)
+                                   else ((i-1) % numColors):Color
+        in new owned Chameneos?(i, ithColor);
+
   return population;
 }
 
@@ -179,23 +174,23 @@ proc populate (size : int) {
    met another Chameneos, spells out the number of times it met with itself,
    then spells out the total number of times all the Chameneos met
    another Chameneos. */
-proc run(const ref population : [] owned Chameneos?, meetingPlace : MeetingPlace) {
+proc run(population : [] owned Chameneos?, meetingPlace : MeetingPlace) {
   for i in population {
-    write(" ", i.color);
+    write(" ", i!.color);
   }
   writeln();
 
   coforall i in population {
-    i.start(population, meetingPlace);
+    i!.start(population, meetingPlace);
   }
 
   meetingPlace.reset();
 }
 
-proc printInfo(const ref population : [] owned Chameneos?) {
+proc printInfo(population : [] owned Chameneos?) {
   for i in population {
-    write(i.meetings);
-    spellInt(i.meetingsWithSelf);
+    write(i!.meetings);
+    spellInt(i!.meetingsWithSelf);
   }
   const totalMeetings = + reduce (population!.meetings);
   spellInt(totalMeetings);

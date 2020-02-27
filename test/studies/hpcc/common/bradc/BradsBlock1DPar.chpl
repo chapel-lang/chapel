@@ -11,6 +11,7 @@
 // TODO: Make these into an official distribution?
 
 // TODO: implement the slicing interface?
+private use IO;
 
 config param debugBradsBlock1D = false;
 

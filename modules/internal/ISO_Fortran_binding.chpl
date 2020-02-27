@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2019 Cray Inc.
+ * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -20,8 +20,8 @@
 // generated from:
 // jupiter:/opt/intel/compilers_and_libraries_2019.0.117/linux/compiler/include/ISO_Fortran_binding.h
 module ISO_Fortran_binding {
-  use SysCTypes;
-  private use ChapelRange, CPtr;
+  private use SysCTypes;
+  private use ChapelBase, ChapelRange, CPtr;
   require "chpl-ISO_Fortran_binding.h";
 
 
