@@ -3,7 +3,7 @@ use Time;
 class LocC {
   var id: int;
   
-  proc writeThis(x) {
+  proc writeThis(x) throws {
     on this {
       x.write(id);
     }
@@ -21,7 +21,7 @@ class C {
     }
   }
 
-  proc writeThis(x) {
+  proc writeThis(x) throws {
     for loc in LocaleSpace {
       on Locales(loc) {
         if loc != 0 then

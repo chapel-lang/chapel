@@ -67,7 +67,7 @@ class Statistics {
 	var maxDecisionLevel : int = 0;
 	
 	// prints out the entire assignment
-	proc writeThis(w : Writer) {
+	proc writeThis(w : Writer) throws {
 		w.write("Statistics\n");
 		w.write("Num clauses: ", nClauses, "\n");
 		w.write("Num conflicts: ", nVariables, "\n");
@@ -202,7 +202,7 @@ class Assignment {
 	} 
 	
 	// prints out the entire assignment
-	proc writeThis(w : Writer) {
+	proc writeThis(w : Writer) throws {
 		var node : IGNode = nil;
 		
   		w.write("[");
@@ -262,7 +262,7 @@ class Clause {
   	}
   	
   	// prints out this clause
-  	proc writeThis(w : Writer) {
+  	proc writeThis(w : Writer) throws {
   		w.write("[");
   		forall ltr in domLtrs {
   			if posneg(ltr) == false then
@@ -1033,7 +1033,7 @@ class List {
   // Define the style of the output when a list is passed to the write or
   // writeln functions. The values will be written separated by spaces.
   // 
-  proc writeThis(x: Writer) {
+  proc writeThis(x: Writer) throws {
     var first = true;
     for i in this do
       if first {
