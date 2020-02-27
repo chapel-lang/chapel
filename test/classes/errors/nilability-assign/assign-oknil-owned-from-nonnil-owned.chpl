@@ -2,9 +2,9 @@
 
 class MyClass {  var x: int;  }
 
-var lhs: owned MyClass? = nil;
-var rhs = new owned MyClass();
+{
+  var lhs: owned MyClass? = nil;
+  var rhs = new owned MyClass();
 
-lhs = rhs;
-
-
+  lhs = rhs;
+}

@@ -12,7 +12,7 @@ proc returnByValue(arg)
 
 proc foo() {
   writeln("in foo");
-  var x = new owned C?(1);
+  var x = new owned C(1);
   writeln(" x=", x);
 
   var y = returnByValue(x);
@@ -31,7 +31,7 @@ proc returnByValueTyped(arg:owned)
 
 proc bar() {
   writeln("in bar");
-  var x = new owned C?(1);
+  var x = new owned C(1);
   writeln(" x=", x);
 
   var y = returnByValueTyped(x);
