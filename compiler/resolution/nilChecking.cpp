@@ -367,10 +367,14 @@ static void checkForNilDereferencesInCall(
         if (formal->hasFlag(FLAG_RETARG))
           continue; // ignore ret args for this check
         if (i == 1 &&
+            calledFn->isMethod() &&
             (calledFn->name == astrInit || calledFn->name == astrInitEquals))
           continue; // ignore this in init functions for this check
         if (i == 1 && calledFn->name == astrSassign)
           continue; // ignore lhs of = for this check
+        if (formal->intent == INTENT_OUT ||
+            formal->originalIntent == INTENT_OUT)
+          continue; // ignore out formals for this check
 
         Type* valType = argSym->getValType();
         if (isRecord(valType) || isNonNilableType(valType)) {
