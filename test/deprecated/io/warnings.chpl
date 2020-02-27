@@ -44,6 +44,17 @@ writeln(f5);
 f5 = readf("%i", f4);
 writeln(f5);
 "My favorite %s is %i".format("number", 9);
+
+stdinInit();
+stdoutInit();
+stderrInit();
+{
+    use IO;
+
+    var f = open("test.txt", iomode.cw);
+}
+unlink("test.txt");
+unicodeSupported();
 /* Things left to test
 openwriter
 <~> - 4 versions
@@ -55,8 +66,6 @@ stderr
 stdinInit // TODO: document?
 stdoutInit // TODO: document?
 stderrInit // TODO: document?
-unlink
-unicodeSupported
 
 // Haven't handled most methods yet
 // I suspect those should work, it's

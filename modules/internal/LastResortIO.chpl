@@ -375,6 +375,7 @@ proc stderr {
   return IO.stderr;
 }
 */
+*/
 pragma "last resort"
 proc stdinInit() {
   compilerWarning("stdinInit will no longer be available by default,\nplease insert a use of the IO module to continue calling it.");
@@ -392,7 +393,7 @@ proc stderrInit() {
   compilerWarning("stderrInit will no longer be available by default,\nplease insert a use of the IO module to continue calling it.");
   return stderrInit();
 }
-*/
+
 
 pragma "last resort"
 proc read(ref args ...?n):bool throws {
@@ -424,7 +425,6 @@ proc read(type t ...?numTypes) throws {
   return read((...t));
 }
 
-/*
 pragma "last resort"
 proc unlink(path:string) throws {
   compilerWarning("unlink will no longer be available by default,\nplease insert a use of the IO module to continue calling it.");
@@ -436,7 +436,6 @@ proc unicodeSupported():bool {
   compilerWarning("unicodeSupported will no longer be available by default,\nplease insert a use of the IO module to continue calling it.");
   return unicodeSupported();
 }
-*/
 
 pragma "last resort"
 proc readf(fmt:string, ref args ...?k):bool throws {
