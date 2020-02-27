@@ -344,7 +344,7 @@ module SharedObject {
         compilerError("cannot retain '" + newPtr.type:string + "' " +
                       "(expected '" + _to_unmanaged(chpl_t):string + "')");
 
-      clear();
+      doClear();
       this.chpl_p = newPtr;
       if newPtr != nil {
         this.chpl_pn = new unmanaged ReferenceCount();
