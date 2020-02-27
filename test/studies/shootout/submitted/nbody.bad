@@ -1,0 +1,2 @@
+nbody.chpl:124: error: halt reached - array index out of bounds
+note: index was 5 but array bounds are 0..4
