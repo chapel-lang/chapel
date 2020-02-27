@@ -62,10 +62,11 @@ typedef enum {
 
   MUST_ALIAS_NIL,         // it refers to nil
 
-  MUST_ALIAS_DEAD,        // it refers to dead memory
-
   MUST_ALIAS_UNKNOWN,     // might have been set, might point to nil
                           // who knows what it points to
+
+  MUST_ALIAS_DEAD,        // it refers to dead memory along some path
+
 } AliasType;
 
 struct AliasLocation {
@@ -80,6 +81,8 @@ struct AliasLocation {
 };
 
 static bool isNonNilableType(Type* t);
+
+static bool isOuterVar(Symbol* sym, FnSymbol* fn);
 
 typedef std::map<Symbol*, AliasLocation> AliasMap;
 
@@ -356,7 +359,9 @@ static void checkForNilDereferencesInCall(
   }
 
   // For records and non-nilable class types, check that any argument
-  // to a user function is not storing "nil"
+  // to a user function is not dead.
+  // Also check for transfering ownership out of an unknown reference
+  // to a non-nilable owned.
   if (FnSymbol* calledFn = call->resolvedOrVirtualFunction()) {
     if (!calledFn->hasFlag(FLAG_AUTO_DESTROY_FN) &&
         !calledFn->hasFlag(FLAG_UNSAFE)) {
@@ -377,25 +382,63 @@ static void checkForNilDereferencesInCall(
           continue; // ignore out formals for this check
 
         Type* valType = argSym->getValType();
-        if (isRecord(valType) || isNonNilableType(valType)) {
+        bool isNonNilableC = isNonNilableType(valType);
+        bool isNilableC = (isNonNilableC == false && isClassIshType(valType));
+        bool isRec = isRecord(valType) && !isNonNilableC && !isNilableC;
+        if (isNonNilableC || isRec) {
+          AliasLocation loc = unknownAliasLocation();
           AliasMap::const_iterator it = aliasMap.find(argSym);
           if (it != aliasMap.end()) {
-            AliasLocation loc = it->second;
-            Symbol* referent = NULL;
-            if (loc.type == MUST_ALIAS_REFVAR) {
-              referent = getReferent(argSym, aliasMap);
-              if (referent != NULL)
-                loc = aliasLocationFromValue(referent, aliasMap, call);
-            }
+            loc = it->second;
+          }
 
-            if (loc.type == MUST_ALIAS_DEAD ||
-                (loc.type == MUST_ALIAS_NIL && isNonNilableType(valType))) {
-              if (argSym != alreadyErrorSym) {
-                issueNilError("Illegal use of dead value",
-                              call, argSym, referent, loc);
-                alreadyErrorSym = argSym;
+          Symbol* referent = NULL;
+          if (loc.type == MUST_ALIAS_REFVAR) {
+            referent = getReferent(argSym, aliasMap);
+            if (referent != NULL)
+              loc = aliasLocationFromValue(referent, aliasMap, call);
+          }
+
+          if (loc.type == MUST_ALIAS_DEAD ||
+              (loc.type == MUST_ALIAS_NIL && isNonNilableC)) {
+            if (argSym != alreadyErrorSym) {
+              issueNilError("Illegal use of dead value",
+                            call, argSym, referent, loc);
+              alreadyErrorSym = argSym;
+            }
+          }
+
+          // check for transfering ownership out of unk ref to non-nilable
+          if (formal->hasFlag(FLAG_LEAVES_ARG_NIL)) {
+            Symbol* actualSym = argSym;
+            if (referent != NULL)
+              actualSym = referent;
+
+            const char* error = NULL;
+            if (isArgSymbol(actualSym)) {
+              // leaves-arg-nil OK for e.g. owned initCopy/init= etc.
+              if (actualSym->hasFlag(FLAG_LEAVES_ARG_NIL)) {
+                // OK
+              } else if (formal->intent == INTENT_IN ||
+                         formal->intent == INTENT_CONST_IN ||
+                         formal->originalIntent == INTENT_IN ||
+                         formal->originalIntent == INTENT_CONST_IN) {
+                // OK
+              } else {
+                error = "Cannot transfer ownership from non-nilable class argument";
+              }
+            } else if (isOuterVar(actualSym, call->getFunction())) {
+              error = "Cannot transfer ownership from a non-nilable outer variable";
+            } else if (argSym->isRef()) {
+              if (actualSym->hasFlag(FLAG_TEMP) &&
+                  loc.type == MUST_ALIAS_ALLOCATED) {
+                // OK, allow for compiler reference temporaries
+              } else {
+                error = "Cannot transfer ownership from this non-nilable reference variable";
               }
             }
+            if (error != NULL)
+              issueNilError(error, call, argSym, NULL, loc);
           }
         }
         i++;
@@ -721,12 +764,21 @@ static void checkCall(
     for_formals_actuals(formal, actual, userCall) {
       if (formal->hasFlag(FLAG_LEAVES_ARG_NIL)) {
         Symbol* actualSym = toSymExpr(actual)->symbol();
+        Type* t = actualSym->getValType();
+        bool canBeNil = isClassIshType(t) && !isNonNilableType(t);
         if (actualSym->isRef()) {
           Symbol* referent = getReferent(actualSym, OUT);
-          if (referent)
-            update(OUT, referent, nilAliasLocation(call));
+          if (referent) {
+            if (canBeNil)
+              update(OUT, referent, nilAliasLocation(call));
+            else
+              update(OUT, referent, deadAliasLocation(call));
+          }
         } else {
-          update(OUT, actualSym, nilAliasLocation(call));
+          if (canBeNil)
+            update(OUT, actualSym, nilAliasLocation(call));
+          else
+            update(OUT, actualSym, deadAliasLocation(call));
         }
 
       } else if (formal->intent == INTENT_REF &&
@@ -1117,16 +1169,16 @@ static void gatherVariablesToCheck(FnSymbol* fn,
 static void setupInitialMap(FnSymbol* fn, std::vector<AliasMap>& INs,
                             std::vector<int> forwardOrder, bool debugging) {
   AliasMap& INini = INs[forwardOrder[0]];
-  for_formals(formal, fn)
-    if (isSymbolAnalyzed(formal))
-      {
-        AliasLocation loc;
-        loc.type = isNonNilableType(formal->getValType())
-                   ? MUST_ALIAS_ALLOCATED : MUST_ALIAS_UNKNOWN;
-        loc.location = formal->defPoint;
-        INini[formal] = loc;
-        if (debugging) printAliasEntry("formal", formal, loc);
-      }
+  for_formals(formal, fn) {
+    if (isSymbolAnalyzed(formal)) {
+      AliasLocation loc;
+      loc.type = isNonNilableType(formal->getValType())
+                 ? MUST_ALIAS_ALLOCATED : MUST_ALIAS_UNKNOWN;
+      loc.location = formal->defPoint;
+      INini[formal] = loc;
+      if (debugging) printAliasEntry("formal", formal, loc);
+    }
+  }
 }
 
 static bool combine(FnSymbol* fn,
@@ -1174,6 +1226,12 @@ static bool combine(FnSymbol* fn,
         }
         nextIn[sym] = loc;
         changed = true;
+      } else if (was.type == MUST_ALIAS_DEAD || loc.type == MUST_ALIAS_DEAD) {
+        // One branch in makes it dead -> keep it dead
+        if (was.type != MUST_ALIAS_DEAD) {
+          nextIn[sym] = loc;
+          changed = true;
+        }
       } else {
         // Conflicting input -> unknown
         nextIn[sym] = unknownAliasLocation();
