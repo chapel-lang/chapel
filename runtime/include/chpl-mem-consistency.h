@@ -23,10 +23,10 @@
 #include "chpl-atomics.h" // for memory_order
 
 #include "chpl-cache.h" // for chpl_cache_release, chpl_cache_acquire
+#include "chpl-comm.h" // for chpl_comm_release(), for example
 
 // These functions support memory consistency with the remote
-// data cache. They do not need to do anything if the cache is
-// not enabled.
+// data cache and comm layers.
 
 // When do these fences need to be called?
 
@@ -63,6 +63,7 @@ void chpl_rmem_consist_release(int ln, int32_t fn)
 #ifdef HAS_CHPL_CACHE_FNS
   chpl_cache_release(ln, fn);
 #endif
+  chpl_comm_release(ln, fn);
 }
 
 static inline

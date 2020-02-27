@@ -483,17 +483,6 @@ txnTrkCtx_t txnTrkDecode(void* ctx) {
 }
 
 
-static inline
-chpl_comm_taskPrvData_t* get_comm_taskPrvdata(void) {
-  chpl_task_prvData_t* task_prvData = chpl_task_getPrvData();
-  if (task_prvData != NULL) return &task_prvData->comm_data;
-
-  static chpl_comm_taskPrvData_t amHandlerCommData;
-  assert(isAmHandler);
-  return &amHandlerCommData;
-}
-
-
 ////////////////////////////////////////
 //
 // transaction ordering
@@ -588,11 +577,51 @@ int bitmapTest(struct bitmap_t* b, size_t i) {
 
 #define BITMAP_FOREACH_SET_END  } } } } } while (0);
 
+static inline
+struct bitmap_t* bitmapAlloc(size_t len) {
+  struct bitmap_t* b = chpl_mem_alloc(bitmapSizeof(len),
+                                      CHPL_RT_MD_COMM_PER_LOC_INFO, 0, 0);
+  b->len = chpl_numNodes;
+  bitmapZero(b);
+  return b;
+}
+
+static inline
+void bitmapFree(struct bitmap_t* b) {
+  if (DBG_TEST_MASK(DBG_ORDER)) {
+    BITMAP_FOREACH_SET(b, node) {
+      INTERNAL_ERROR_V("bitmapFree(): bitmap is not empty; first node %d",
+                       (int) node);
+    } BITMAP_FOREACH_SET_END
+  }
+
+  chpl_mem_free(b, 0, 0);
+}
+
+
+////////////////////////////////////////
 //
-// bitmapAlloc() and bitmapFree() aren't yet needed and may never be,
-// because so far these bitmaps are only used as appendages to the
-// {amo,get,put}_buff_task_info_t types.
+// task private data
 //
+
+static inline
+chpl_comm_taskPrvData_t* get_comm_taskPrvdata(chpl_bool makeNodeWriteInfo) {
+  chpl_task_prvData_t* task_prvData = chpl_task_getPrvData();
+  chpl_comm_taskPrvData_t* prvData;
+  if (task_prvData == NULL) {
+    assert(isAmHandler);
+    static __thread chpl_comm_taskPrvData_t amHandlerCommData;
+    prvData = &amHandlerCommData;
+  } else {
+    prvData = &task_prvData->comm_data;
+  }
+
+  if (makeNodeWriteInfo && prvData->nodeWriteInfo == NULL) {
+    prvData->nodeWriteInfo = bitmapAlloc(chpl_numNodes);
+  }
+
+  return prvData;
+}
 
 
 ////////////////////////////////////////
@@ -662,7 +691,7 @@ typedef struct {
 // Acquire a task local buffer, initializing if needed
 static inline
 void* task_local_buff_acquire(enum BuffType t, size_t extra_size) {
-  chpl_comm_taskPrvData_t* prvData = get_comm_taskPrvdata();
+  chpl_comm_taskPrvData_t* prvData = get_comm_taskPrvdata(true);
   if (prvData == NULL) return NULL;
 
 #define DEFINE_INIT(TYPE, TLS_NAME)                                           \
@@ -693,7 +722,7 @@ static void put_buff_task_info_flush(put_buff_task_info_t* info);
 // Flush one or more task local buffers
 static inline
 void task_local_buff_flush(enum BuffType t) {
-  chpl_comm_taskPrvData_t* prvData = get_comm_taskPrvdata();
+  chpl_comm_taskPrvData_t* prvData = get_comm_taskPrvdata(true);
   if (prvData == NULL) return;
 
 #define DEFINE_FLUSH(TYPE, TLS_NAME, FLUSH_NAME)                              \
@@ -714,8 +743,7 @@ void task_local_buff_flush(enum BuffType t) {
 
 // Flush and destroy one or more task local buffers
 static inline
-void task_local_buff_end(enum BuffType t) {
-  chpl_comm_taskPrvData_t* prvData = get_comm_taskPrvdata();
+void task_local_buff_end(enum BuffType t, chpl_comm_taskPrvData_t* prvData) {
   if (prvData == NULL) return;
 
 #define DEFINE_END(TYPE, TLS_NAME, FLUSH_NAME)                                \
@@ -871,15 +899,27 @@ void init_ofiFabricDomain(void) {
 
   hints->addr_format = FI_FORMAT_UNSPEC;
 
-  hints->tx_attr->op_flags = FI_COMPLETION | FI_DELIVERY_COMPLETE;
-  if (providerAvail(provType_rxm)) {
-    hints->tx_attr->msg_order = FI_ORDER_RMA_RAW;
-  }
+  //
+  // We don't specify a default completion level.  The fi_cq(3) man page
+  // says "For operations that return data to the initiator, such as RMA
+  // read or atomic-fetch, the source endpoint is also considered a
+  // destination endpoint. [FI_DELIVERY_COMPLETE] is the default
+  // completion mode for such operations."  So for such operations,
+  // we'll get a completion event after the result memory is updated,
+  // which is what we want.  For RMA write and non-fetching atomics we
+  // use the provider's default completion level and apply other methods
+  // such as forcing operation orderings with FI_ORDER_x flags to ensure
+  // that target memory is updated as the Chapel MCM requires.  AM sends
+  // use the default completion level as well, because either they are
+  // nonblocking or we'll wait for a 'done' indicator.
+  //
+  hints->tx_attr->op_flags = FI_COMPLETION;
+  hints->tx_attr->msg_order = (  FI_ORDER_RMA_RAW  // for same-address RMA
+                               | FI_ORDER_SAW);    // for PUT before execOn
 
   hints->rx_attr->op_flags = FI_COMPLETION;
-  if (providerAvail(provType_rxm)) {
-    hints->rx_attr->msg_order = FI_ORDER_RMA_RAW;
-  }
+  hints->rx_attr->msg_order = (  FI_ORDER_RMA_RAW  // for same-address RMA
+                               | FI_ORDER_SAW);    // for PUT before execOn
 
   hints->ep_attr->type = FI_EP_RDM;
 
@@ -1027,11 +1067,6 @@ void init_ofiDoProviderChecks(void) {
     //
     provCtl_sizeAvsByNumEps = true;
     provCtl_readAmoNeedsOpnd = true;
-  }
-
-  if (providerInUse(provType_rxm)) {
-    // See ofi_put_V().
-    CHK_TRUE((ofi_info->tx_attr->msg_order & FI_ORDER_RMA_RAW) != 0);
   }
 }
 
@@ -1935,6 +1970,99 @@ int mrGetLocalKey(void* addr, size_t size) {
 
 ////////////////////////////////////////
 //
+// Interface: memory consistency
+//
+
+static inline
+void releaseBodyOneNode(c_nodeid_t node, struct perTxCtxInfo_t* tcip) {
+  atomic_bool ordTxnDone;
+  atomic_init_bool(&ordTxnDone, false);
+  void* ordCtx = txnTrkEncode(txnTrkDone, &ordTxnDone);
+  ofi_get_ll(orderDummy, node, orderDummyMap[node], 1, ordCtx, tcip);
+  waitForCQThisTxn(tcip, &ordTxnDone);
+  atomic_destroy_bool(&ordTxnDone);
+}
+
+
+static
+void releaseBody(chpl_comm_taskPrvData_t* prvData, struct bitmap_t* b,
+                 struct perTxCtxInfo_t* tcip, const char* dbgOrderStr) {
+  //
+  // Do a GET from every node we did at least one PUT to.  Combined
+  // with our use of read-after-write ordering, this forces the PUTs
+  // to be visible in memory.  We don't care about the values we GET,
+  // just their completion
+  //
+  // TODO: Allow multiple of these GETs outstanding at once, instead
+  //       of waiting for each one before firing the next.
+  //
+  chpl_comm_taskPrvData_t* myPrvData = prvData;
+  if (myPrvData == NULL) {
+    myPrvData = get_comm_taskPrvdata(false);
+  }
+
+  if (myPrvData != NULL && myPrvData->nodeWriteInfo != NULL) {
+    struct bitmap_t* driverBitmap = b;
+    if (driverBitmap == NULL) {
+      driverBitmap = myPrvData->nodeWriteInfo;
+    }
+
+    struct perTxCtxInfo_t* myTcip = tcip;
+    if (myTcip == NULL) {
+      CHK_TRUE((myTcip = tciAlloc()) != NULL);
+    }
+
+    BITMAP_FOREACH_SET(driverBitmap, node) {
+      if (b != NULL) {
+        bitmapClear(b, node);
+      }
+      bitmapClear((struct bitmap_t*) myPrvData->nodeWriteInfo, node);
+      while (myTcip->numTxns >= txCQLen) { // need CQ room for at least 1 txn
+        checkTxCQ(myTcip);
+      }
+      DBG_PRINTF(DBG_ORDER,
+                 "dummy GET from %d for %s ordering",
+                 (int) node, dbgOrderStr);
+      releaseBodyOneNode(node, myTcip);
+    } BITMAP_FOREACH_SET_END
+
+    if (tcip == NULL) {
+      tciFree(myTcip);
+    }
+  }
+}
+
+
+void chpl_comm_release(int ln, int32_t fn) {
+  DBG_PRINTF(DBG_INTERFACE,
+             "chpl_comm_release(%d, %d)", ln, fn);
+
+  //
+  // Enforce Chapel MCM: force all outstanding PUTs to be visible in
+  // target memory.
+  //
+  releaseBody(NULL, NULL, NULL, "(PUT, MCM release)");
+}
+
+
+void chpl_comm_task_end(void) {
+  //
+  // Enforce Chapel MCM: force all outstanding PUTs to be visible in
+  // target memory before this task ends.
+  //
+  chpl_comm_taskPrvData_t* prvData = get_comm_taskPrvdata(false);
+  if (prvData != NULL && prvData->nodeWriteInfo != NULL) {
+    releaseBody(prvData, NULL, NULL, "(PUT, task end)");
+    bitmapFree((struct bitmap_t*) prvData->nodeWriteInfo);
+    prvData->nodeWriteInfo = NULL;
+  }
+
+  task_local_buff_end(get_buff | put_buff | amo_nf_buff, prvData);
+}
+
+
+////////////////////////////////////////
+//
 // Interface: Active Messages
 //
 
@@ -1976,11 +2104,6 @@ void ensure_progress(void) {
       (void) fi_cntr_read(ofi_rxCntrRma);
     }
   }
-}
-
-
-void chpl_comm_task_end(void) {
-  task_local_buff_end(get_buff | put_buff | amo_nf_buff);
 }
 
 
@@ -2237,6 +2360,18 @@ void amRequestCommon(c_nodeid_t node,
   atomic_bool txnDone;
   atomic_init_bool(&txnDone, false);
   void* ctx = txnTrkEncode(txnTrkDone, &txnDone);
+
+  //
+  // Enforce Chapel MCM: force all outstanding PUTs to be visible in
+  // target memory before we move execution to the target node.
+  //
+  // Note that in some cases, notably for AMs to implement user on-stmts
+  // and "network" atomics that for some reason cannot be done on the
+  // network, chpl_comm_release() will have have already been called and
+  // done this.  But if so then it also will have emptied nodeWriteInfo,
+  // and this call should be a fairly fast no-op.
+  //
+  releaseBody(NULL, NULL, tcip, "(PUT, AM)");
 
   DBG_PRINTF(DBG_AM | DBG_AMSEND,
              "tx AM req to %d: seqId %d:%" PRIu64 ", %s, size %zd, "
@@ -3232,6 +3367,8 @@ chpl_comm_nb_handle_t ofi_put(const void* addr, c_nodeid_t node,
                                  mrRaddr, mrKey, ctx),
                         checkTxCQ(tcip));
     tcip->numTxns++;
+    bitmapSet((struct bitmap_t*) get_comm_taskPrvdata(true)->nodeWriteInfo,
+              node);
 
     if (tcip->txCQ != NULL) {
       waitForCQThisTxn(tcip, &txnDone);
@@ -3300,6 +3437,7 @@ void ofi_put_ll(const void* addr, c_nodeid_t node,
                                mrRaddr, mrKey, ctx),
                       checkTxCQ(myTcip));
   myTcip->numTxns++;
+  bitmapSet(get_comm_taskPrvdata(true)->nodeWriteInfo, node);
 
   if (myTcip != tcip) {
     tciFree(myTcip);
@@ -3316,6 +3454,8 @@ void ofi_put_V(int v_len, void** addr_v, void** local_mr_v,
              v_len, (int) locale_v[0], raddr_v[0], addr_v[0], size_v[0],
              remote_mr_v[0]);
 
+  chpl_comm_taskPrvData_t* prvData = get_comm_taskPrvdata(true);
+
   struct perTxCtxInfo_t* tcip;
   CHK_TRUE((tcip = tciAlloc()) != NULL);
 
@@ -3328,12 +3468,10 @@ void ofi_put_V(int v_len, void** addr_v, void** local_mr_v,
   } while (v_len > txCQLen - tcip->numTxns);
 
   //
-  // Initiate the batch.  If we're using the RxM provider, record
-  // which nodes we PUT to; see below for why this is needed.
+  // Initiate the batch.  Record which nodes we PUT to, so that we can
+  // force them to be visible in target memory at the end.
   //
-  if (providerInUse(provType_rxm)) {
-    bitmapZero(b);
-  }
+  bitmapZero(b);
   for (int vi = 0; vi < v_len; vi++) {
     struct iovec msg_iov = (struct iovec)
                            { .iov_base = addr_v[vi],
@@ -3363,36 +3501,14 @@ void ofi_put_V(int v_len, void** addr_v, void** local_mr_v,
                                     (vi < v_len - 1) ? FI_MORE : 0),
                         checkTxCQ(tcip));
     tcip->numTxns++;
-    if (providerInUse(provType_rxm)) {
-      bitmapSet(b, locale_v[vi]);
-    }
+    bitmapSet(b, locale_v[vi]);
   }
 
-  if (providerInUse(provType_rxm)) {
-    //
-    // The verbs;ofi_rxm provider has a peculiarity: it advertises that
-    // it supports FI_DELIVERY_COMPLETE but it doesn't actually do so.
-    // It silently provides FI_TRANSMIT_COMPLETE instead.  We deal with
-    // this by asserting read-after-write ordering and then here, we
-    // do a GET from every node we did at least one PUT to.  The PUTS
-    // are thus forced to completion.  We don't care about the values
-    // we GET, just their completion, so we use the orderDummy buffers.
-    //
-    BITMAP_FOREACH_SET(b, node) {
-      while (tcip->numTxns >= txCQLen) { // need CQ room for at least 1 txn
-        checkTxCQ(tcip);
-      }
-      atomic_bool txnDone;
-      atomic_init_bool(&txnDone, false);
-      void* ctx = txnTrkEncode(txnTrkDone, &txnDone);
-      DBG_PRINTF(DBG_RMAUNORD,
-                 "put_V ordering: %p <= %d:%p",
-                 orderDummy, (int) node, orderDummyMap[node]);
-      (void) ofi_get_ll(orderDummy, node, orderDummyMap[node], 1, ctx, tcip);
-      waitForCQThisTxn(tcip, &txnDone);
-      atomic_destroy_bool(&txnDone);
-    } BITMAP_FOREACH_SET_END
-  }
+  //
+  // Enforce Chapel MCM: force all of the above PUTs to appear in
+  // target memory.
+  //
+  releaseBody(prvData, b, tcip, "unordered PUT");
 
   tciFree(tcip);
 }
@@ -3426,9 +3542,7 @@ void do_remote_put_buff(void* addr, c_nodeid_t node, void* raddr,
   uint64_t mrKey;
   uint64_t mrRaddr;
   put_buff_task_info_t* info;
-  size_t extra_size = providerInUse(provType_rxm)
-                      ? bitmapSizeofMap(chpl_numNodes)
-                      : 0;
+  size_t extra_size = bitmapSizeofMap(chpl_numNodes);
   if (size > MAX_UNORDERED_TRANS_SZ
       || mrGetKey(&mrKey, &mrRaddr, node, raddr, size) != 0
       || (info = task_local_buff_acquire(put_buff, extra_size)) == NULL) {
@@ -3516,6 +3630,24 @@ chpl_comm_nb_handle_t ofi_get(void* addr, c_nodeid_t node,
 
     struct perTxCtxInfo_t* tcip;
     CHK_TRUE((tcip = tciAlloc()) != NULL);
+
+    //
+    // Enforce Chapel MCM: if we have PUTs outstanding to this endpoint,
+    // do a dummy GET from it to force those to appear in target memory
+    // before we GET from the same address(es).
+    //
+    // TODO: Instead of this full fence, implement a write cache and
+    //       satisfy read-after-write to the same address by consulting
+    //       that.
+    //
+    chpl_comm_taskPrvData_t* prvData = get_comm_taskPrvdata(true);
+    if (bitmapTest((struct bitmap_t*) prvData->nodeWriteInfo, node)) {
+      bitmapClear((struct bitmap_t*) prvData->nodeWriteInfo, node);
+      DBG_PRINTF(DBG_ORDER,
+                 "dummy GET from %d for (PUT, GET) ordering", (int) node);
+      releaseBodyOneNode(node, tcip);
+    }
+
     DBG_PRINTF(DBG_RMA | DBG_RMAREAD,
                "tx read: %p <= %d:%p(0x%" PRIx64 "), size %zd, key 0x%" PRIx64
                ", ctx %p",

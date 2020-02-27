@@ -477,6 +477,11 @@ void chpl_comm_execute_on_fast(c_nodeid_t node, c_sublocid_t subloc,
 // like say flushing task private buffers.
 void chpl_comm_task_end(void);
 
+//
+// Memory consistency.
+//
+void chpl_comm_release(int ln, int32_t fn);
+
 void* chpl_get_global_serialize_table(int64_t idx);
 
 // Used to park and wake up the main process
