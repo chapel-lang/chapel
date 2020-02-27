@@ -59,6 +59,11 @@ chpl_bool chpl_comm_impl_regMemFree(void* p, size_t size);
 #include "chpl-comm-native-atomics.h"
 
 //
+// Memory consistency.
+//
+static inline void chpl_comm_release(int ln, int32_t fn) { }
+
+//
 // Internal statistics gathering and reporting.
 //
 void chpl_comm_statsStartHere(void);

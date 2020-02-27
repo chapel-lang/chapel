@@ -23,6 +23,9 @@
 #ifndef _chpl_comm_impl_h
 #define _chpl_comm_impl_h
 
-// Nothing to do
+//
+// Memory consistency.
+//
+static inline void chpl_comm_release(int ln, int32_t fn) { }
 
 #endif
