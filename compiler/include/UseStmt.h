@@ -61,7 +61,7 @@ public:
 
   UseStmt*        applyOuterUse(const UseStmt* outer);
 
-  bool            skipSymbolSearch(const char* name, bool methodCall)    const;
+  bool            skipSymbolSearch(const char* name)                     const;
 
   bool            providesNewSymbols(const UseStmt* other)               const;
   bool            providesNewSymbols(const ImportStmt* other)            const;
@@ -81,10 +81,7 @@ private:
 
   void            validateRenamed();
 
-  void            trackMethods();
-  bool            isAllowedMethodName(const char* name, bool methodCall) const;
-
-  bool            matchedNameOrConstructor(const char* name)             const;
+  bool            matchedNameOrRename(const char* name)             const;
 
   void            noRepeats()                                            const;
 
@@ -95,8 +92,6 @@ public:
 
 private:
   bool                               except;
-  std::vector<const char*>           methodsAndFields;
-  std::vector<const char*>           functionsToAlwaysCheck;
 };
 
 #endif
