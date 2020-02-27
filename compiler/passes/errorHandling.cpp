@@ -151,13 +151,17 @@ static void checkErrorHandling(FnSymbol* fn, implicitThrowsReasons_t * reasons);
 static bool isCompilerGeneratedFunction(FnSymbol* fn);
 static bool isUncheckedThrowsFunction(FnSymbol* fn);
 
+static Type* dtErrorNilable() {
+  return getDecoratedClass(dtError, CLASS_TYPE_UNMANAGED_NILABLE);
+}
+
 namespace {
 
 
 // Static class helper functions
 static bool catchesNotExhaustive(TryStmt* tryStmt);
 static bool shouldEnforceStrict(CallExpr* node, int taskFunctionDepth);
-static AList castToError(Symbol* error, SymExpr* &castedError);
+static AList castToErrorNilable(Symbol* error, SymExpr* &castedError);
 
 class ErrorHandlingVisitor : public AstVisitorTraverse {
 
@@ -216,7 +220,7 @@ ErrorHandlingVisitor::ErrorHandlingVisitor(ArgSymbol*   _outError,
 bool ErrorHandlingVisitor::enterTryStmt(TryStmt* node) {
   SET_LINENO(node);
 
-  VarSymbol*   errorVar     = newTemp("error", dtError);
+  VarSymbol*   errorVar     = newTemp("error", dtErrorNilable());
   errorVar->addFlag(FLAG_ERROR_VARIABLE);
   LabelSymbol* handlerLabel = new LabelSymbol("handler");
   handlerLabel->addFlag(FLAG_ERROR_LABEL);
@@ -350,7 +354,7 @@ bool ErrorHandlingVisitor::enterCallExpr(CallExpr* node) {
         errorPolicy->insertAtTail(gotoHandler());
       } else {
         // without try, need an error variable
-        errorVar = newTemp("error", dtError);
+        errorVar = newTemp("error", dtErrorNilable());
         errorVar->addFlag(FLAG_ERROR_VARIABLE);
         insert->insertBefore(new DefExpr(errorVar));
         insert->insertBefore(new CallExpr(PRIM_MOVE, errorVar, gNil));
@@ -419,7 +423,7 @@ void ErrorHandlingVisitor::setupForThrowingLoop(Stmt* node,
                                                 LabelSymbol* handlerLabel,
                                                 BlockStmt* body)
 {
-  VarSymbol*   errorVar     = newTemp("error", dtError);
+  VarSymbol*   errorVar     = newTemp("error", dtErrorNilable());
   errorVar->addFlag(FLAG_ERROR_VARIABLE);
 
   node->insertBefore(new DefExpr(errorVar));
@@ -521,7 +525,7 @@ void ErrorHandlingVisitor::exitForallLoop(Stmt* node)
   BlockStmt* handler = new BlockStmt();
   // Always wrap errors from foralls in a TaskErrors
   VarSymbol* err = info.errorVar;
-  VarSymbol* normErr = newTemp("forall_error", dtError);
+  VarSymbol* normErr = newTemp("forall_error", dtErrorNilable());
   handler->insertAtTail(new DefExpr(normErr));
 
   handler->insertAtTail(new CallExpr(PRIM_MOVE, normErr,
@@ -563,7 +567,7 @@ void ErrorHandlingVisitor::exitDeferStmt(DeferStmt* node) {
 AList ErrorHandlingVisitor::setOutGotoEpilogue(VarSymbol* error) {
 
   SymExpr* castedError = NULL;
-  AList    ret         = castToError(error, castedError);
+  AList    ret         = castToErrorNilable(error, castedError);
   // Using PRIM_ASSIGN instead of PRIM_MOVE here to work around
   // errors that come up in C compilation.
   ret.insertAtTail(new CallExpr(PRIM_ASSIGN, outError, castedError));
@@ -587,7 +591,7 @@ AList ErrorHandlingVisitor::setOuterErrorAndGotoHandler(VarSymbol* error) {
   INT_ASSERT(!tryStack.empty());
   TryInfo& outerTry    = tryStack.top();
   SymExpr* castedError = NULL;
-  AList    ret         = castToError(error, castedError);
+  AList    ret         = castToErrorNilable(error, castedError);
   ret.insertAtTail(new CallExpr(PRIM_MOVE, outerTry.errorVar, castedError));
   ret.insertAtTail(gotoHandler());
 
@@ -682,16 +686,18 @@ static bool shouldEnforceStrict(CallExpr* node, int taskFunctionDepth) {
 }
 
 
-static AList castToError(Symbol* error, SymExpr* &castedError) {
+static AList castToErrorNilable(Symbol* error, SymExpr* &castedError) {
   AList ret;
 
-  if (error->type == dtError) {
+  Type* nilableError = dtErrorNilable();
+
+  if (error->type == nilableError) {
     castedError = new SymExpr(error);
   } else {
-    VarSymbol* castedErrorVar = newTemp("castedError", dtError);
+    VarSymbol* castedErrorVar = newTemp("castedError", nilableError);
     castedError = new SymExpr(castedErrorVar);
 
-    CallExpr* castError = new CallExpr(PRIM_CAST, dtError->symbol, error);
+    CallExpr* castError = new CallExpr(PRIM_CAST, nilableError->symbol, error);
     ret.insertAtTail(new DefExpr(castedErrorVar));
     ret.insertAtTail(new CallExpr(PRIM_MOVE, castedErrorVar, castError));
   }
@@ -1133,7 +1139,7 @@ static ArgSymbol* addOutErrorArg(FnSymbol* fn)
 
   SET_LINENO(fn);
 
-  outError = new ArgSymbol(INTENT_REF, "error_out", dtError);
+  outError = new ArgSymbol(INTENT_REF, "error_out", dtErrorNilable());
   outError->addFlag(FLAG_ERROR_VARIABLE);
   fn->insertFormalAtTail(outError);
 
