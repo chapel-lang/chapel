@@ -549,14 +549,19 @@ static void getVisibleFunctions(const char*           name,
     if (block->useList != NULL) {
       // the block uses other modules
       for_actuals(expr, block->useList) {
-        UseStmt* use = toUseStmt(expr);
-
-        INT_ASSERT(use);
+        VisibilityStmt* vis = NULL;
+        if (UseStmt* use = toUseStmt(expr)) {
+          vis = use;
+        } else if (ImportStmt* import = toImportStmt(expr)) {
+          vis = import;
+        } else {
+          INT_FATAL("unexpected expr, expected ImportStmt or UseStmt");
+        }
 
         // Only traverse private use statements at this point.  Public use
         // statements will have already been handled the first time this scope
         // was seen
-        if (use->isPrivate) {
+        if (vis->isPrivate) {
           if (use->skipSymbolSearch(name) == false) {
             SymExpr* se = toSymExpr(use->src);
 

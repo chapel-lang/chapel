@@ -73,10 +73,11 @@ class VisibilityStmt: public Stmt {
                             Symbol* sym);
 
 public:
-  Expr*                              src;
+  Expr* src;
+  bool isPrivate;
 
 protected:
-  const char*                        modRename;
+  const char* modRename;
 
 };
 
