@@ -1,2 +1,2 @@
-4
-In A.foo()
+importAndImport.chpl:19: In function 'main':
+importAndImport.chpl:20: error: 'A' undeclared (first use this function)
