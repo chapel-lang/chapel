@@ -1,7 +1,7 @@
 use Random;
 
 config const nBytes = 100000;
-config const nIterations = 100;
+config const nIterations = 25;
 config const useFactory = false;
 
 var randomStream = createRandomStream(eltType=uint(8));
