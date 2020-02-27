@@ -166,7 +166,7 @@ module ChapelArray {
   use ArrayViewSlice;
   use ArrayViewRankChange;
   use ArrayViewReindex;
-  private use Reflection only;
+  import Reflection;
   private use ChapelDebugPrint;
   private use SysCTypes;
 
