@@ -9,6 +9,6 @@ FAIL test3.chpl: test3
 ----------------------------------------------------------------------
 test3 returned exitCode = 1
 ----------------------------------------------------------------------
-Run 2 tests in n seconds
+Ran 2 tests in n seconds
 
 FAILED (failures = 2 )
