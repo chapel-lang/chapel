@@ -59,6 +59,7 @@ some tips for finding a task.
 It is important to communicate with other people before working on a task. This
 will help address design questions before starting implementation and will
 avoid multiple people working on the same task simultaneously.
+
 If an issue exists for the task you are working on, you should always comment
 on that issue to let others know you are working on it. If an issue does not
 exist for the task you have chosen, you should open an issue first. In many
@@ -74,7 +75,7 @@ this.
 Design
 ------
 
-.. When design discussion is needed:
+.. _When design discussion is needed:
 
 When design discussion is needed
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
