@@ -3740,14 +3740,16 @@ module ChapelArray {
 
   inline proc chpl__bulkTransferPtrArray(ref a: [], b: []) {
     // for now assume they are both local arrays, that have the same bounds
-    if a.domain != b.domain then return false;
+    const aDom = a.domain;
+    const bDom = b.domain;
+    if aDom != bDom then return false;
     
-    if a.domain._value.isDefaultRectangular() &&
-       b.domain._value.isDefaultRectangular() {
+    if aDom._value.isDefaultRectangular() &&
+       bDom._value.isDefaultRectangular() {
          // TODO can we omit the following check and bulk transfer narrow
          // pointers, too
-        if __primitive("is wide pointer", a[a.domain.low]) {
-          var ret = chpl__bulkTransferArray(a, b);
+        if __primitive("is wide pointer", a[aDom.low]) {
+          var ret = chpl__bulkTransferArray(a, aDom, b, bDom);
           return ret;
         }
       }
