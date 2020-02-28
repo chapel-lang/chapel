@@ -78,8 +78,8 @@ struct AliasLocation {
 };
 
 static bool isNonNilableType(Type* t);
-
 static bool isOuterVar(Symbol* sym, FnSymbol* fn);
+static void findNonNilableStoringNil(FnSymbol* fn);
 
 typedef std::map<Symbol*, AliasLocation> AliasMap;
 
@@ -1375,6 +1375,7 @@ void findNilDereferences() {
     clearLastErrorLocation();
     forv_Vec(FnSymbol, fn, gFnSymbols) {
       findNilDereferencesInFn(fn);
+      findNonNilableStoringNil(fn);
     }
   }
 }
@@ -1597,13 +1598,4 @@ static void findNonNilableStoringNil(FnSymbol* fn) {
 
   FindInvalidNonNilables visitor;
   fn->body->accept(&visitor);
-}
-
-void findNonNilableStoringNil() {
-  // assumes adjustSignatureForNilChecking already was called
-  // to mark certain formals and functions with FLAG_LEAVES_ARG_NIL.
-
-  forv_Vec(FnSymbol, fn, gFnSymbols) {
-    findNonNilableStoringNil(fn);
-  }
 }

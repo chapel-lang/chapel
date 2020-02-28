@@ -1325,7 +1325,6 @@ void callDestructors() {
 
   checkForErroneousInitCopies();
 
-  findNonNilableStoringNil();
   findNilDereferences();
 
   convertClassTypesToCanonical();

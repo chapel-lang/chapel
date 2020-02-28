@@ -30,7 +30,6 @@ void checkLifetimesInFunction(FnSymbol* fn);
 void adjustSignatureForNilChecking(FnSymbol* fn);
 bool isOrContainsBorrowedClass(Type* type);
 
-void findNonNilableStoringNil();
 void findNilDereferences();
 
 #endif
