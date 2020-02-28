@@ -456,7 +456,7 @@ module SharedObject {
 
   // cast to shared?, no class downcast
   pragma "no doc"
-  inline proc _cast(type t:shared class?, in x:shared class)
+  inline proc _cast(type t:shared class?, pragma "nil from arg" in x:shared class)
     where isSubtype(x.chpl_t,_to_nonnil(t.chpl_t))
   {
     return new _shared(true, _to_nilable(t.chpl_t), x);

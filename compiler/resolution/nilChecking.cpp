@@ -49,14 +49,11 @@ static const int debugNilsForId = 0;
  */
 
 typedef enum {
-  // Note - the order of these matters for the
-  // part of the algorithm ensuring convergence by
-  // only accepting changes that increase.
-
   MUST_ALIAS_IGNORED = 0, // no information; useful starting point.
                           // ignored when combining basic blocks
 
   MUST_ALIAS_REFVAR,      // reference refers to a particular variable
+                          // (or borrow, if not a reference)
 
   MUST_ALIAS_ALLOCATED,   // refers to the statement allocating (aka 'new')
 
@@ -135,12 +132,10 @@ static Symbol* getReferent(Symbol* sym, const AliasMap& aliasMap) {
     }
   }
 
-  if (sym->isRef()) {
-    if (loc.type == MUST_ALIAS_REFVAR) {
-      Symbol* referentSym = toSymbol(loc.location);
-      INT_ASSERT(referentSym && !referentSym->isRef());
-      return referentSym;
-    }
+  if (loc.type == MUST_ALIAS_REFVAR) {
+    Symbol* referentSym = toSymbol(loc.location);
+    INT_ASSERT(referentSym && !referentSym->isRef());
+    return referentSym;
   }
 
   return NULL;
@@ -210,7 +205,9 @@ static bool isClassIshType(Symbol* sym) {
 }
 
 static bool isSymbolAnalyzed(Symbol* sym) {
-  return sym->isRef() || isClassIshType(sym) || isRecord(sym->type);
+  return sym->isRef() ||
+         isClassIshType(sym) ||
+         (isRecord(sym->type) && !sym->type->symbol->hasFlag(FLAG_POD));
 }
 
 // If 'call' invokes postfix!, return the result type.
@@ -229,10 +226,8 @@ static bool isCheckedClassMethodCall(CallExpr* call) {
   bool      retval = false;
 
   if (fn && fn->isMethod() && fn->_this) {
-    if (0 == strcmp(fn->name, "borrow")) {
+    if (fn->name == astrBorrow) {
       // Ignore .borrow()
-      // (at least until we decide that borrow-from-empty-owned
-      //  is a problem, rather than use of the resulting nil)
       // Note that .borrow is available on borrows and unmanaged.
       retval = false;
 
@@ -349,7 +344,12 @@ static void checkForNilDereferencesInCall(
           loc = aliasLocationFromValue(referent, aliasMap, call);
       }
       if (loc.type == MUST_ALIAS_NIL) {
-        issueNilError("applying postfix-! to nil", call, argSym, referent, loc);
+        issueNilError("applying postfix-! to nil",
+                      call, argSym, referent, loc);
+        alreadyErrorSym = argSym;
+      } else if (loc.type == MUST_ALIAS_DEAD) {
+        issueNilError("applying postfix-! to dead value",
+                      call, argSym, referent, loc);
         alreadyErrorSym = argSym;
       } else if (loc.type == MUST_ALIAS_ALLOCATED) {
         // Postfix-! will always succeed. Replace it with a cast.
@@ -684,14 +684,24 @@ static void checkCall(
           // for copy-init or borrow, lhs tracks rhs
           // for owned, initCopy might invalidate RHS; handled below
           } else if (userCalledFn->hasFlag(FLAG_INIT_COPY_FN) ||
-                     userCalledFn->hasFlag(FLAG_AUTO_COPY_FN) ||
-                     0 == strcmp(userCalledFn->name, "borrow")) {
+                     userCalledFn->hasFlag(FLAG_AUTO_COPY_FN)) {
             Symbol* rhsSym = toSymExpr(userCall->get(1))->symbol();
             update(OUT, lhsSym, aliasLocationFromValue(rhsSym, OUT, call));
             ignoreGlobalUpdates = true;
           } else if (userCalledFn->name == astrPostfixBang) {
             // the outcome of postfix-! is always non-nilable
             update(OUT, lhsSym, allocatedAliasLocation(call));
+          } else if (userCalledFn->name == astrBorrow &&
+                     userCalledFn->isMethod() && userCalledFn->_this) {
+            // a borrow creates an alias to the original variable
+            SymExpr* se = toSymExpr(userCall->get(1));
+            Symbol* rhs = se->symbol();
+            if (rhs->isRef())
+              // if rhs is a ref, just propagate any MUST_ALIAS_REFVAR
+              update(OUT, lhsSym, aliasLocationFrom(rhs, OUT, call));
+            else
+              // otherwise, make a new MUST_ALIAS_REFVAR
+              update(OUT, lhsSym, refAliasLocation(se->symbol()));
           } else {
             Expr* nilFromActual = NULL;
             Expr* retActual = NULL;
@@ -1078,6 +1088,14 @@ static void checkBasicBlock(
     bool storeToGlobals = false;
     AliasMap* traceCopy = NULL;
 
+    // Ignore end-of-statement calls
+    if (CallExpr* call = toCallExpr(expr))
+      if (call->isPrimitive(PRIM_END_OF_STATEMENT))
+        continue;
+    // Ignore DefExprs -- instead, find the initialization of the var
+    if (isDefExpr(expr))
+      continue;
+
     if (trace) {
       traceCopy = new AliasMap(OUT);
 
@@ -1090,10 +1108,7 @@ static void checkBasicBlock(
     if (expr->id == debugNilsForId)
       gdbShouldBreakHere();
 
-    if (isDefExpr(expr)) {
-      // Ignore DefExprs
-      // instead, find the defaultOf or whatever initializes them.
-    } else if (ForallStmt* forall = toForallStmt(expr)) {
+    if (ForallStmt* forall = toForallStmt(expr)) {
 
       for_alist(expr, forall->iteratedExpressions()) {
         if (CallExpr* call = toCallExpr(expr)) {
@@ -1232,6 +1247,8 @@ static bool combine(FnSymbol* fn,
           nextIn[sym] = loc;
           changed = true;
         }
+        nextIn[sym] = unknownAliasLocation();
+        changed = true;
       } else {
         // Conflicting input -> unknown
         nextIn[sym] = unknownAliasLocation();
@@ -1251,6 +1268,17 @@ static bool combine(FnSymbol* fn,
 static void findNilDereferencesInFn(FnSymbol* fn) {
 
   if (fn->hasFlag(FLAG_UNSAFE))
+    return;
+  if (fn == initStringLiterals)
+    return;
+  if (fn->hasFlag(FLAG_INIT_COPY_FN) ||
+      fn->hasFlag(FLAG_AUTO_COPY_FN) ||
+      fn->hasFlag(FLAG_AUTO_DESTROY_FN) ||
+      fn->hasFlag(FLAG_UNSAFE) ||
+      fn->hasFlag(FLAG_IGNORE_TRANSFER_ERRORS) ||
+      fn->hasFlag(FLAG_ERRONEOUS_COPY) ||
+      fn->hasFlag(FLAG_BUILD_TUPLE) ||
+      fn->hasFlag(FLAG_INIT_TUPLE))
     return;
 
   bool debugging = 0 == strcmp(fn->name, debugNilsForFn) ||

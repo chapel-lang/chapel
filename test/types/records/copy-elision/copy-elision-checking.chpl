@@ -1,3 +1,5 @@
+config param printInitDeinit = true;
+
 class MyClass { var x: int; }
 
 record RR {
@@ -8,7 +10,7 @@ proc RR.init(arg: int) {
   this.x = arg;
   this.c = new shared MyClass(arg);
 }
-proc RR.init=(other: R) {
+proc RR.init=(other: RR) {
   this.x = other.x;
   this.c = new shared MyClass(other.c.x);
 }
@@ -36,7 +38,55 @@ proc test2() {
 }
 test2();
 
-config param printInitDeinit = true;
+proc acceptIn(in arg) { }
+
+proc test10() {
+  var x = new RR(1);
+  ref rx = x;
+  acceptIn(x); // moves value to formal, function takes ownership, may deinit
+  writeln(rx); // use-after free
+}
+test10();
+
+proc test10a() {
+  var x = new RR(1);
+  ref rx = x;
+  var y = x; // moves value to formal, function takes ownership, may deinit
+  writeln(rx); // use-after free
+}
+test10a();
+
+proc test11() {
+  var x = new shared MyClass(1);
+  var y = x.borrow();
+  acceptIn(x); // moves, frees
+  writeln(y);
+}
+test11();
+
+proc test11a() {
+  var x = new shared MyClass(1);
+  var y = x.borrow();
+  var z = x; // moves
+  writeln(y);
+}
+test11a();
+
+proc test12() {
+  var x = new shared MyClass?(1);
+  var y = x.borrow();
+  acceptIn(x); // moves, frees
+  writeln(y!);
+}
+test12();
+
+proc test12a() {
+  var x = new shared MyClass?(1);
+  var y = x.borrow();
+  var z = x; // moves
+  writeln(y!);
+}
+test12a();
 
 class C {
   var xx: int = 0;
@@ -253,5 +303,4 @@ proc test2dD() {
   return concatenate(set1f(rx), y);
 }
 { writeln(test2dD()); }
-
 
