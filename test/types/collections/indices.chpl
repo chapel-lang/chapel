@@ -10,19 +10,19 @@ var SA: [SD] real;
 
 var M = ["brad" => 1, "ben" => 2, "bilbo" => 3];
 
-for i in A.indices() do
+for i in A.indices do
   writeln(A[i]);
 
-for i in t.indices() do
+for i in t.indices do
   writeln(t(i));
 
-for i in s.indices() do
+for i in s.indices do
   writeln(s[i]);
 
-for i in b.indices() do
+for i in b.indices do
   writeln(b[i]);
 
-for i in SA.indices() do
+for i in SA.indices do
   writeln(SA[i]);
 
 /*
