@@ -5,7 +5,7 @@ use MasonNew;
 
 proc main(){
   mkdir("project-testSrc");
-  const initArgs = ['init','project-testSrc','--moduleName=project'];
+  const initArgs = ['init','project-testSrc','--name=project'];
   masonInit(initArgs);
   //check if src and src/testSrc.chpl was created
   if isFile("./project-testSrc/src/project.chpl") {

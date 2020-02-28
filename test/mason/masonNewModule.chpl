@@ -4,7 +4,7 @@ use MasonNew;
 
 
 proc main() {
-  const args = ['new', 'project-testSrc', '--moduleName', 'project'];
+  const args = ['new', 'project-testSrc', '--name', 'project'];
   masonNew(args);
   if isFile("./project-testSrc/src/project.chpl") {
     writeln("Project.chpl has been successfully created");

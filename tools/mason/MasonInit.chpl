@@ -68,13 +68,11 @@ proc masonInit(args) throws {
         }
       }
     }
-    writeln(dirName, ' ', packageName);
     if dirName.startsWith('--name') then dirName = '';
     if dirName == '' {
       const cwd = getEnv("PWD");
       const dirName = basename(cwd);
       const path = '.';
-      writeln(dirName, ' ', packageName);
       if dirName != packageName then {
         createModule(path, packageName);
         if validatePackageName(packageName) {
