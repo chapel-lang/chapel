@@ -2743,7 +2743,7 @@ pragma "no doc"
 
 // Read routines for all primitive types.
 private proc _read_text_internal(_channel_internal:qio_channel_ptr_t,
-    ref x:?t):syserr where _isIoPrimitiveType(t) {
+    out x:?t):syserr where _isIoPrimitiveType(t) {
   if isBoolType(t) {
     var err:syserr = ENOERR;
     var got:bool = false;
