@@ -86,7 +86,7 @@ In many cases it is reasonable to start development without a full design
 review, but such efforts should be open to changing once the design is being
 discussed.
 
-If your task does require a design issue, you may skip ahead to the
+If your task does not require a design issue, you may skip ahead to the
 `Development`_ section.
 
 
