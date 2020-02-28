@@ -265,12 +265,11 @@ static void issueNilError(const char* message, Expr* ref,
     CallExpr* call = toCallExpr(fromExpr);
     FnSymbol* fn = call ? call->resolvedOrVirtualFunction() : NULL;
     const char* why = NULL;
-    Type* valType = v->getValType();
     if (call && call->isPrimitive(PRIM_ASSIGN_ELIDED_COPY))
       why = "is dead due to copy elision here";
     else if (fn && fn->hasFlag(FLAG_AUTO_DESTROY_FN))
       why = "is dead due to deinitialization here";
-    else if (isNonNilableType(valType))
+    else if (loc.type == MUST_ALIAS_DEAD)
       why = "is dead due to ownership transfer here";
     else
       why = "is set to nil here";
@@ -316,17 +315,17 @@ static void checkForNilDereferencesInCall(
 
     SymExpr* thisSe = toSymExpr(call->get(1));
     Symbol* thisSym = thisSe->symbol();
-    // Doesn't raise errors for methods on managed pointer types (e.g. owned)
-    // since:
-    //   * right now owned etc can store nil
+    Type* t = thisSym->getValType();
+    // Doesn't raise errors for methods on nilable managed pointer types
+    // (e.g. owned) since:
     //   * borrowing from nil owned isn't an error by itself
     //     but dereferencing that nil borrow would be
-    if (isClassLike(thisSym->getValType())) {
+    if (isClassLike(t) || isNonNilableType(t)) {
       // Raise an error if it was definitely nil
       AliasMap::const_iterator it = aliasMap.find(thisSym);
       if (it != aliasMap.end()) {
         AliasLocation loc = it->second;
-        if (loc.type == MUST_ALIAS_NIL) {
+        if (loc.type == MUST_ALIAS_NIL || loc.type == MUST_ALIAS_DEAD) {
           issueNilError("attempt to dereference nil", call, thisSym, NULL, loc);
           alreadyErrorSym = thisSym;
         }
@@ -354,6 +353,24 @@ static void checkForNilDereferencesInCall(
       } else if (loc.type == MUST_ALIAS_ALLOCATED) {
         // Postfix-! will always succeed. Replace it with a cast.
         replaceBangWithCast(call, resultType, argSym);
+      }
+    }
+  } else if (call->isPrimitive(PRIM_RETURN) && call->numActuals() >= 1) {
+    Symbol* argSym = toSymExpr(call->get(1))->symbol();
+    AliasMap::const_iterator it = aliasMap.find(argSym);
+    if (it != aliasMap.end()) {
+      AliasLocation loc = it->second;
+      Symbol* referent = NULL;
+      if (loc.type == MUST_ALIAS_REFVAR) {
+        referent = getReferent(argSym, aliasMap);
+        if (referent != NULL)
+          loc = aliasLocationFromValue(referent, aliasMap, call);
+      }
+
+      if (loc.type == MUST_ALIAS_DEAD) {
+        issueNilError("Illegal return of dead value",
+                      call, argSym, referent, loc);
+        alreadyErrorSym = argSym;
       }
     }
   }
