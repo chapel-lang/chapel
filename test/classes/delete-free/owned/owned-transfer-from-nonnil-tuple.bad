@@ -1,1 +1,3 @@
-owned-transfer-from-nonnil-tuple.chpl:5: error: halt reached - argument to ! is nil
+$CHPL_HOME/modules/internal/ChapelBase.chpl:1647: error: Cannot transfer ownership from this non-nilable reference variable
+owned-transfer-from-nonnil-tuple.chpl:3: error: Cannot transfer ownership from a non-nilable variable with a potentially captured alias
+owned-transfer-from-nonnil-tuple.chpl:3: error: Cannot transfer ownership from a non-nilable variable with a potentially captured alias
