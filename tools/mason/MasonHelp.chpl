@@ -130,7 +130,7 @@ proc masonNewHelp() {
   writeln('    -h, --help                   Display this message');
   writeln('        --show                   Increase verbosity');
   writeln('        --no-vcs                 Do not initialize a git repository');
-  writeln('    --moduleName <legalName>        Specify package name different from directory name');
+  writeln('    --name <legalName>           Specify package name different from directory name');
 }
 
 proc masonInitHelp(){
@@ -142,7 +142,7 @@ proc masonInitHelp(){
   writeln('Options:');
   writeln('    -h, --help                   Display this message');
   writeln('        --show                   Increase verbosity');
-  writeln('    --moduleName <legalName>        Specify package name different from directory name');
+  writeln('    --name <legalName>           Specify package name different from directory name');
 }
 
 proc masonSearchHelp() {

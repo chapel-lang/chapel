@@ -80,18 +80,18 @@ Mason enforces that the main file be named after the package to enforce namespac
 ``MyPackage.chpl`` will be the first file listed in ``src/``.
 
 You can create a package in a directory that differs from the mason 
-package name with the `mason {new,init} --moduleName` flag.
+package name with the `mason {new,init} --name` flag.
 This may be useful when creating a package in a directory that 
 is an illegal Mason package name, such as names with dashes. For example, 
 
   .. code-block:: sh
 
-  mason new illegal-module-name --moduleName=LegalModuleName
+  mason new illegal-module-name --name LegalModuleName
 
   # OR
 
   mkdir illegal-module-name
-  mason init illegal-module-name --moduleName=LegalModuleName
+  mason init illegal-module-name --name LegalModuleName
 
 
 Building and Running
