@@ -45,9 +45,9 @@ f5 = readf("%i", f4);
 writeln(f5);
 "My favorite %s is %i".format("number", 9);
 
-stdinInit();
-stdoutInit();
-stderrInit();
+stdinInit();    // TODO: document?
+stdoutInit();   // TODO: document?
+stderrInit();   // TODO: document?
 {
     use IO;
 
@@ -63,9 +63,6 @@ stringify
 stdin
 stdout
 stderr
-stdinInit // TODO: document?
-stdoutInit // TODO: document?
-stderrInit // TODO: document?
 
 // Haven't handled most methods yet
 // I suspect those should work, it's

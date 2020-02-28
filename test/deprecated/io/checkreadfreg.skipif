@@ -1,1 +1,1 @@
-REGEXP!=re2
+CHPL_REGEXP!=re2
