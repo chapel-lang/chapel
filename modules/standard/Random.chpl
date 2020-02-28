@@ -63,7 +63,7 @@ module Random {
   public use RandomSupport;
   public use NPBRandom;
   public use PCGRandom;
-  private use HaltWrappers only;
+  import HaltWrappers;
 
 
 
