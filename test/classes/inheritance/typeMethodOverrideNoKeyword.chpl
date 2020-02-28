@@ -1,9 +1,8 @@
 //
-// Test the behavior of inherited type methods that _do_ have child class
-// overrides.
 //
-
+//
 class Building { var x: int = 0; }
+class Tower: Building { var height: int = 0; }
 
 class Animal {
   var x: int = 0;
@@ -13,7 +12,8 @@ class Animal {
 
 class Cat: Animal {
   var x: int = 0;
-  override proc getSelfType() type { return this.type; }
+  proc getBuildingType() type { return Tower; }
+  proc getSelfType() type { return this.type; }
 }
 
 proc main() {
@@ -21,11 +21,11 @@ proc main() {
   var b: Cat = new Cat();
   var c: Animal = new Cat();
 
-  writeln(a.getBuildingType():string);
-  writeln(b.getBuildingType():string);
-  writeln(c.getBuildingType():string);
+  writeln(a.getBuildingType():string);  // "Building"
+  writeln(b.getBuildingType():string);  // "Building"
+  writeln(c.getBuildingType():string);  // "Building"
 
   writeln(a.getSelfType():string);  // "Animal"
-  writeln(b.getSelfType():string);  // "Cat"
+  writeln(b.getSelfType():string);  // "Animal"
   writeln(c.getSelfType():string);  // "Animal"
 }

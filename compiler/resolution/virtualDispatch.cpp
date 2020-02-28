@@ -532,8 +532,7 @@ static bool isOverrideableMethod(FnSymbol* fn) {
         return fn->name != astrInit &&
                !fn->hasFlag(FLAG_WRAPPER) &&
                !fn->hasFlag(FLAG_NO_PARENS) &&
-                fn->retTag != RET_PARAM &&
-                fn->retTag != RET_TYPE;
+                fn->retTag != RET_PARAM;
 
   return false;
 }
@@ -979,8 +978,6 @@ static void checkMethodsOverride() {
             msg = "parentheses-less methods cannot override";
           else if (fn->retTag == RET_PARAM)
              msg = "param return methods cannot override";
-          else if (fn->retTag == RET_TYPE)
-             msg = "type return methods cannot override";
           else if (!isOverrideableMethod(fn))
              msg = "signature is not overrideable";
 
