@@ -183,6 +183,8 @@ module ChapelArray {
   config param useBulkTransfer = true;
   pragma "no doc"
   config param useBulkTransferStride = true;
+  pragma "no doc"
+  config param useBulkPtrTransfer = useBulkTransfer;
 
   // Return POD values from arrays as values instead of const ref?
   pragma "no doc"
@@ -3724,11 +3726,15 @@ module ChapelArray {
   }
 
   proc chpl__compatibleForWidePtrBulkTransfer(a, b) param {
-    if !useBulkTransfer then return false;
+    if !useBulkPtrTransfer then return false;
     if a.eltType != b.eltType then return false;
 
     // only classes have pointer assignment semantics
     if !isClass(a.eltType) then return false;
+
+    // ownership transfer is complicated
+    if isOwnedClass(a.eltType) then return false;
+
     return true;
   }
 
