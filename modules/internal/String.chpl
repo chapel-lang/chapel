@@ -819,6 +819,24 @@ module String {
     inline proc size return numCodepoints;
 
     /*
+      :returns: The indices that can be used to index into the string
+      (i.e., the range `1..size`)
+    */
+    proc indices return 1..size;
+
+    /*
+      :returns: The lowest index that can be used to index into the
+      string (i.e., 1)
+    */
+    proc lowIdx param return 1;
+
+    /*
+      :returns: The lowest index that can be used to index into the
+      string (i.e., 1)
+    */
+    inline proc highIdx return this.size;
+    
+    /*
       :returns: The number of bytes in the string.
       */
     inline proc numBytes return len;

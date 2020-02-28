@@ -2293,6 +2293,18 @@ module ChapelArray {
     proc _dom return _getDomain(_value.dom);
     /* The number of dimensions in the array */
     proc rank param return this.domain.rank;
+    pragma "return not owned"
+    proc indices where isRectangularArr(this)
+      return _dom;
+    proc lowIdx where isRectangularArr(this)
+      return this.domain.low;
+    proc highIdx where isRectangularArr(this)
+      return this.domain.high;
+
+    iter indices where !isRectangularArr(this) {
+      for i in this.domain do
+        yield i;
+    }
 
     // bounds checking helpers
     pragma "insert line file info"

@@ -286,6 +286,24 @@ module ChapelTuple {
     }
   }
 
+  /* TODO: Want this for heterogeneous tuples:
+  iter _tuple.indices param {
+    for param i in 1..this.size do
+      yield i;
+  }
+  */
+  proc _tuple.indices {
+    return 1..this.size;
+  }
+
+  proc _tuple.lowIdx param {
+    return 1;
+  }
+
+  proc _tuple.highIdx param {
+    return this.size;
+  }
+
   //
   // tuple methods
   //
