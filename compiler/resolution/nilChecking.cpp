@@ -444,15 +444,13 @@ static void checkForNilDereferencesInCall(
               } else {
                 error = "Cannot transfer ownership from non-nilable class argument";
               }
+            } else if (actualSym->hasFlag(FLAG_TEMP) &&
+                       loc.type == MUST_ALIAS_ALLOCATED) {
+              // OK, allow for compiler temporaries
             } else if (isOuterVar(actualSym, call->getFunction())) {
               error = "Cannot transfer ownership from a non-nilable outer variable";
             } else if (argSym->isRef()) {
-              if (actualSym->hasFlag(FLAG_TEMP) &&
-                  loc.type == MUST_ALIAS_ALLOCATED) {
-                // OK, allow for compiler reference temporaries
-              } else {
-                error = "Cannot transfer ownership from this non-nilable reference variable";
-              }
+              error = "Cannot transfer ownership from this non-nilable reference variable";
             }
             if (error != NULL)
               issueNilError(error, call, argSym, NULL, loc);
@@ -913,9 +911,17 @@ static bool adjustTestArgChain(SymExpr* SE, bool isAllocated, AliasMap& OUT) {
   while (true) {
     AliasMap::const_iterator it = OUT.find(curr->symbol());
     if (it != OUT.end()) {
-      AliasType altype = it->second.type;
-      if ((isAllocated && altype == MUST_ALIAS_NIL)        ||
-          (!isAllocated && altype == MUST_ALIAS_ALLOCATED) )
+      AliasLocation loc = it->second;
+      if (loc.type == MUST_ALIAS_REFVAR) {
+        Symbol* sym = toSymbol(loc.location);
+        AliasMap::const_iterator it2 = OUT.find(sym);
+        if (it2 != OUT.end()) {
+          loc = it2->second;
+        }
+      }
+
+      if (( isAllocated && loc.type == MUST_ALIAS_NIL)        ||
+          (!isAllocated && loc.type == MUST_ALIAS_ALLOCATED) )
         // We are testing ==nil on something that's not nil, or visa versa.
         return true;
     }
