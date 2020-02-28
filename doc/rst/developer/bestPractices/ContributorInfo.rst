@@ -18,6 +18,7 @@ Overview:
 
 #. `Design`_
 
+    #. `When design discussion is needed`_
     #. `Creating a design issue`_
     #. `Leading a design discussion`_
 
@@ -73,15 +74,13 @@ this.
 Design
 ------
 
-.. When design discussion is needed
+.. When design discussion is needed:
 
 When design discussion is needed
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Design discussion is needed when changes impact:
-
-- language or standard library
-- software architecture
+Design discussion is necessary when proposing language or standard library
+changes. It is also necessary for any large or architectural changes.
 
 In many cases it is reasonable to start development without a full design
 review, but such efforts should be open to changing once the design is being
