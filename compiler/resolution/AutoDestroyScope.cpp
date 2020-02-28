@@ -376,7 +376,8 @@ static void deinitializeOrCopyElide(Expr* before, Expr* after, VarSymbol* var) {
     }
 
     if (copyToElide == NULL) {
-      SET_LINENO(var);
+      BaseAST* useLoc = before?before:after;
+      SET_LINENO(useLoc);
       CallExpr* autoDestroy = new CallExpr(autoDestroyFn, var);
       if (before)
         before->insertBefore(autoDestroy);
