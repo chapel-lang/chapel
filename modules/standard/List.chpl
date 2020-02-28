@@ -1444,26 +1444,6 @@ module List {
     }
 
     /*
-      Returns the lowest legal value for indexing into the list (1).
-      
-      :return: `1`
-      :rtype: `int`
-    */
-    proc lowIdx param {
-      return 1;
-    }
-
-    /*
-      Returns the highest legal value for indexing into the list (this.size).
-
-      :return: `int`
-    */
-    proc highIdx {
-      return this.size;
-    }
-                     
-
-    /*
       Returns a new DefaultRectangular array containing a copy of each of the
       elements contained in this list.
 
