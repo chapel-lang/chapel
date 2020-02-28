@@ -67,9 +67,9 @@ init 1 1
 init 0 0
 test5a.a
 lhs(0 0) = rhs(1 1)
-deinit 1 1
 test5a.b
 (1 1)
+deinit 1 1
 deinit 1 1
 test5b
 init 1 1

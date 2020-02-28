@@ -1474,11 +1474,7 @@ static bool isNonNilableVariable(Symbol* sym) {
 
 static bool isTrackedNonNilableVariable(Symbol* sym) {
   if (isNonNilableVariable(sym)) {
-    if (sym->hasFlag(FLAG_DEAD_LAST_MENTION))
-      return true;
-    if (ArgSymbol* arg = toArgSymbol(sym))
-      if (arg->intent == INTENT_IN || arg->intent == INTENT_CONST_IN)
-        return true;
+    return true;
   }
 
   return false;
