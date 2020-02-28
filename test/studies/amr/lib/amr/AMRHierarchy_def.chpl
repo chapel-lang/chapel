@@ -565,7 +565,7 @@ class PhysicalBoundary
 {
 
   const grids:        domain(unmanaged Grid);
-  const multidomains: [grids] unmanaged MultiDomain(dimension,stridable=true);
+  const multidomains: [grids] unmanaged MultiDomain(dimension,stridable=true)?;
 
 
 
@@ -854,7 +854,7 @@ proc LevelVariable.initialFill (
         unfilled_intersection.intersect( refined_coarse );
         
         for D in unfilled_intersection do
-          this(grid,D) = q_coarse(coarse_grid).refineValues(D, ref_ratio);
+          this(grid,D) = q_coarse(coarse_grid)!.refineValues(D, ref_ratio);
         
         delete unfilled_intersection;
        }

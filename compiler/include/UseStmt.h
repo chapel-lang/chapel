@@ -24,7 +24,7 @@
 
 class ResolveScope;
 
-class UseStmt : public Stmt {
+class UseStmt : public VisibilityStmt {
 public:
   UseStmt(BaseAST* source, const char* modRename, bool isPrivate);
 
@@ -53,31 +53,25 @@ public:
 
   bool            hasExceptList()                                        const;
 
-  bool            isARename(const char* name)                            const;
-  bool            isARename()                                            const;
+  bool            isARenamedSym(const char* name)                        const;
 
-  const char*     getRename(const char* name)                            const;
-  const char*     getRename()                                            const;
+  const char*     getRenamedSym(const char* name)                        const;
 
   void            scopeResolve(ResolveScope* scope);
 
   UseStmt*        applyOuterUse(const UseStmt* outer);
 
-  bool            skipSymbolSearch(const char* name, bool methodCall)    const;
+  bool            skipSymbolSearch(const char* name)                     const;
 
   bool            providesNewSymbols(const UseStmt* other)               const;
+  bool            providesNewSymbols(const ImportStmt* other)            const;
 
   BaseAST*        getSearchScope()                                       const;
-
-  Symbol*         checkIfModuleNameMatches(const char* name);
 
   void            writeListPredicate(FILE* mFP)                          const;
 
 private:
   bool            isEnum(const Symbol* sym)                              const;
-
-  void            updateEnclosingBlock(ResolveScope* scope,
-                                       Symbol*       sym);
 
   bool            isValid(Expr* expr)                                    const;
 
@@ -87,24 +81,17 @@ private:
 
   void            validateRenamed();
 
-  void            trackMethods();
-  bool            isAllowedMethodName(const char* name, bool methodCall) const;
-
-  bool            matchedNameOrConstructor(const char* name)             const;
+  bool            matchedNameOrRename(const char* name)             const;
 
   void            noRepeats()                                            const;
 
 public:
-  Expr*                              src;
   std::vector<const char*>           named;
   std::map<const char*, const char*> renamed;
   bool isPrivate;
 
 private:
-  const char*                        modRename;
   bool                               except;
-  std::vector<const char*>           methodsAndFields;
-  std::vector<const char*>           functionsToAlwaysCheck;
 };
 
 #endif

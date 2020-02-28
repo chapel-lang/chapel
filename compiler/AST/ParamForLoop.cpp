@@ -21,6 +21,7 @@
 
 #include "AstVisitor.h"
 #include "build.h"
+#include "passes.h"
 #include "resolution.h"
 #include "resolveFunction.h"
 #include "stringutil.h"
@@ -400,6 +401,8 @@ CallExpr* ParamForLoop::foldForResolve()
   // Insert an "insertion marker" for loop unrolling
   insertAfter(noop);
 
+  bool emptyLoop = true;
+
   if (is_int_type(idxType))
   {
     int64_t low    = lvar->immediate->to_int();
@@ -414,6 +417,7 @@ CallExpr* ParamForLoop::foldForResolve()
 
         map.put(idxSym, new_IntSymbol(i, idxSize));
         copyBodyHelper(noop, i, &map, this, continueSym);
+        emptyLoop = false;
       }
     }
     else
@@ -423,8 +427,8 @@ CallExpr* ParamForLoop::foldForResolve()
         SymbolMap map;
 
         map.put(idxSym, new_IntSymbol(i, idxSize));
-
         copyBodyHelper(noop, i, &map, this, continueSym);
+        emptyLoop = false;
       }
     }
   }
@@ -449,6 +453,7 @@ CallExpr* ParamForLoop::foldForResolve()
         }
 
         copyBodyHelper(noop, i, &map, this, continueSym);
+        emptyLoop = false;
       }
     }
     else
@@ -464,9 +469,13 @@ CallExpr* ParamForLoop::foldForResolve()
         }
 
         copyBodyHelper(noop, i, &map, this, continueSym);
+        emptyLoop = false;
       }
     }
   }
+
+  if (emptyLoop)
+    addMentionToEndOfStatement(this, NULL);
 
   // Remove the "insertion marker"
   noop->remove();

@@ -193,6 +193,7 @@ bool fIgnoreLocalClasses = false;
 bool fNoLifetimeChecking = false;
 bool fNoSplitInit = false;
 bool fNoEarlyDeinit = false;
+bool fNoCopyElision = false;
 bool fCompileTimeNilChecking = true;
 bool fOverrideChecking = true;
 bool fieeefloat = false;
@@ -1074,6 +1075,7 @@ static ArgumentDescription arg_desc[] = {
  {"lifetime-checking", ' ', NULL, "Enable [disable] lifetime checking pass", "n", &fNoLifetimeChecking, NULL, NULL},
  {"split-initialization", ' ', NULL, "Enable [disable] support for split initialization", "n", &fNoSplitInit, NULL, NULL},
  {"early-deinit", ' ', NULL, "Enable [disable] support for early deinit based upon expiring value analysis", "n", &fNoEarlyDeinit, NULL, NULL},
+ {"copy-elision", ' ', NULL, "Enable [disable] copy elision based upon expiring value analysis", "n", &fNoCopyElision, NULL, NULL},
  {"legacy-classes", ' ', NULL, "Deprecated flag - does not affect compilation", "N", &fLegacyClasses, NULL, &warnUponLegacyClasses},
  {"ignore-nilability-errors", ' ', NULL, "Allow compilation to continue by coercing away nilability", "N", &fIgnoreNilabilityErrors, NULL, NULL},
  {"overload-sets-checks", ' ', NULL, "Report potentially hijacked calls", "N", &fOverloadSetsChecks, NULL, NULL},

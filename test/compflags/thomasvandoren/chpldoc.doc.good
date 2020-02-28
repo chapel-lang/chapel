@@ -12,6 +12,9 @@ Documentation Options:
       --text-only                     Generate text documentation only
       --[no-]html                     [Don't] generate html documentation (on
                                       by default)
+      --project-version <projectversion>
+                                      Sets the documentation version to
+                                      <projectversion>
       --[no-]print-commands           [Don't] print system commands
 
 Information Options:

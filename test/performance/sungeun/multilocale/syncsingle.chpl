@@ -1,19 +1,20 @@
 use CommDiagnostics;
 use Time;
 config param doVerboseComm = false;
-config const dosleep = false;
 
 var si: single bool;
 resetCommDiagnostics();
 startCommDiagnostics();
 if doVerboseComm then startVerboseComm();
-coforall l in Locales do on l {
-  if l.id == numLocales-1 then
-    begin {
-      si.writeEF(true);
-      if dosleep then sleep(3);
+sync {
+  coforall l in Locales do on l {
+    if l.id == numLocales-1 {
+      begin {
+        si.writeEF(true);
+      }
     }
-  si.readFF();
+    si.readFF();
+  }
 }
 if doVerboseComm then stopVerboseComm();
 stopCommDiagnostics();
@@ -23,13 +24,15 @@ var sy: sync bool;
 resetCommDiagnostics();
 startCommDiagnostics();
 if doVerboseComm then startVerboseComm();
-coforall l in Locales do on l {
-  if l.id == numLocales-1 then
-    begin {
-      sy.writeEF(true);
-      if dosleep then sleep(3);
+sync {
+  coforall l in Locales do on l {
+    if l.id == numLocales-1 {
+      begin {
+        sy.writeEF(true);
+      }
     }
-  sy.readFF();
+    sy.readFF();
+  }
 }
 if doVerboseComm then stopVerboseComm();
 stopCommDiagnostics();

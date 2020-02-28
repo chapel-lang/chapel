@@ -153,4 +153,12 @@ CallExpr* createCast(BaseAST* src, BaseAST* toType);
 
 FnSymbol* resolvedToTaskFun(CallExpr* call);
 
+static inline bool isEndOfStatementMarker(Expr* e) {
+  if (CallExpr* call = toCallExpr(e))
+    if (call->isPrimitive(PRIM_END_OF_STATEMENT))
+      return true;
+
+  return false;
+}
+
 #endif

@@ -114,7 +114,7 @@ proc masonBuild(args) throws {
 }
 
 private proc checkChplVersion(lockFile : borrowed Toml) throws {
-  const root = lockFile["root"];
+  const root = lockFile["root"]!;
   const (success, low, hi) = verifyChapelVersion(root);
 
   if success == false {
@@ -133,7 +133,7 @@ proc buildProgram(release: bool, show: bool, force: bool, ref cmdLineCompopts: l
     const projectHome = getProjectHome(cwd, tomlName);
     const toParse = open(projectHome + "/" + lockName, iomode.r);
     var lockFile = new owned(parseToml(toParse));
-    const projectName = lockFile["root"]["name"].s;
+    const projectName = lockFile["root"]!["name"]!.s;
     
     // --fast
     var binLoc = 'debug';
@@ -200,7 +200,7 @@ proc compileSrc(lockFile: borrowed Toml, binLoc: string, show: bool,
 
   const sourceList = genSourceList(lockFile);
   const depPath = MASON_HOME + '/src/';
-  const project = lockFile["root"]["name"].s;
+  const project = lockFile["root"]!["name"]!.s;
   const pathToProj = projectHome + '/src/'+ project + '.chpl';
   const moveTo = ' -o ' + projectHome + '/target/'+ binLoc +'/'+ project;
 
@@ -244,11 +244,12 @@ proc compileSrc(lockFile: borrowed Toml, binLoc: string, show: bool,
 proc genSourceList(lockFile: borrowed Toml) {
   var sourceList: list((string, string, string));
   for (name, package) in lockFile.A.items() {
-    if package.tag == fieldtag.fieldToml {
+    if package!.tag == fieldtag.fieldToml {
       if name == "root" || name == "system" || name == "external" then continue;
       else {
-        var version = lockFile[name]["version"].s;
-        var source = lockFile[name]["source"].s;
+        var toml = lockFile[name]!;
+        var version = toml["version"]!.s;
+        var source = toml["source"]!.s;
         sourceList.append((source, name, version));
       }
     }
@@ -303,28 +304,30 @@ proc getTomlCompopts(lock: borrowed Toml, ref compopts: list(string)) {
 
   // Checks for compilation options are present in Mason.toml
   if lock.pathExists('root.compopts') {
-    const cmpFlags = lock["root"]["compopts"].s;
+    const cmpFlags = lock["root"]!["compopts"]!.s;
     compopts.append(cmpFlags);
   }
   
   if lock.pathExists('external') {
-    const exDeps = lock['external'];
+    const exDeps = lock['external']!;
     for (name, depInfo) in exDeps.A.items() {
-      for (k,v) in allFields(depInfo) {
+      for (k,v) in allFields(depInfo!) {
+        var val = v!;
         select k {
-            when "libs" do compopts.append("-L" + v.s); 
-            when "include" do compopts.append("-I" + v.s);
-            when "other" do compopts.append("-I" + v.s);
+            when "libs" do compopts.append("-L" + val.s); 
+            when "include" do compopts.append("-I" + val.s);
+            when "other" do compopts.append("-I" + val.s);
             otherwise continue;
           }
       }
     }
   }
   if lock.pathExists('system') {
-    const pkgDeps = lock['system'];
-    for (name, depInfo) in pkgDeps.A.items() {
-      compopts.append(depInfo["libs"].s);
-      compopts.append("-I" + depInfo["include"].s);
+    const pkgDeps = lock['system']!;
+    for (name, dep) in pkgDeps.A.items() {
+      var depInfo = dep!;
+      compopts.append(depInfo["libs"]!.s);
+      compopts.append("-I" + depInfo["include"]!.s);
     }
   }
   return compopts;

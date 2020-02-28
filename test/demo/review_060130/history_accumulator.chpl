@@ -15,10 +15,21 @@ record history_real {
     this.complete();
     add(r);
   }
+
+  proc init=(other : history_real) {
+    this.size = other.size;
+    this.h = other.h;
+    this.f = other.f;
+  }
 }
 
 proc =(ref x : history_real, y : real) {
   x.add(y);
+}
+
+proc =(ref x : history_real, y : x.type) {
+  x.h = y.h;
+  x.f = y.f;
 }
 
 proc >(x : history_real, y : real) {

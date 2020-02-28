@@ -537,7 +537,7 @@ static void resolveInitCall(CallExpr* call, AggregateType* newExprAlias, bool fo
 
         checkForStoringIntoTuple(call, best->fn);
 
-        resolveNormalCallCompilerWarningStuff(best->fn);
+        resolveNormalCallCompilerWarningStuff(call, best->fn);
       }
     }
 
@@ -675,7 +675,7 @@ static void resolveInitializerBody(FnSymbol* fn) {
 
   toAggregateType(fn->_this->type)->initializerResolved = true;
 
-  insertAndResolveCasts(fn);
+  fixPrimInitsAndAddCasts(fn);
 
   ensureInMethodList(fn);
 }

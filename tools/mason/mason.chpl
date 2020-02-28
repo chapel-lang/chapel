@@ -35,6 +35,7 @@ use FileSystem;
 use MasonSystem;
 use MasonExternal;
 use MasonPublish;
+use MasonInit;
 
 /*
 
@@ -78,6 +79,7 @@ proc main(args: [] string) throws {
     }
     select (args[1]) {
       when 'new' do masonNew(args);
+      when 'init' do masonInit(args);
       when 'add' do masonModify(args);
       when 'rm' do masonModify(args);
       when 'build' do masonBuild(args);

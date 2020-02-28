@@ -381,6 +381,10 @@ prototype module AtomicObjects {
 
     forwarding this.getObject()!;
   }
+  proc =(ref lhs: ABA, const ref rhs: lhs.type) {
+    lhs.__ABA_ptr = rhs.__ABA_ptr;
+    lhs.__ABA_cnt = rhs.__ABA_cnt;
+  }
 
   pragma "no doc"
   record _ABAInternal {

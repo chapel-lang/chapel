@@ -730,6 +730,10 @@ static bool postFoldMoveUpdateForParam(CallExpr* call, Symbol* lhsSym) {
 
         call->convertToNoop();
 
+        // TODO: Replace all uses of the lhsSym with rhsSym
+        // Consider PRIM_MOVE setting lhsSym and also
+        // the possibility of a PRIM_DEREF on rhsSym.
+
         retval = true;
       }
     }

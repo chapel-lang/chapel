@@ -126,7 +126,7 @@ must preserve sequential program semantics. That is, if we have a
 snippet of a Chapel program without task operations, such as ``X; Y;``,
 the statements :math:`X` and :math:`Y` will be converted into a sequence
 of *load*, *store*, and *atomic operations* in a manner that preserves
-the behavior of a this serial portion of the program. That is,
+the behavior of this serial portion of the program. That is,
 :math:`X=x_1,x_2,...` and :math:`Y=y_1,y_2,...` where :math:`x_i` and
 :math:`y_j` are each a sequence of *load*, *store*, or *atomic
 operations* and we have :math:`x_i <_p y_j`.

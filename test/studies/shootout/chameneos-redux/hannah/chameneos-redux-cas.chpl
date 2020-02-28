@@ -86,7 +86,7 @@ class Chameneos {
      with another Chameneos.  If it does, it will get the other's color and
      use this color and its own to compute the color both will have after the
      meeting has ended, setting both of their colors to this value. */
-  proc start(population : [] owned Chameneos, meetingPlace: MeetingPlace) {
+  proc start(population : [] owned Chameneos?, meetingPlace: MeetingPlace) {
     var stateTemp : uint(32);
     var peer_idx : uint(32);
     var xchg : uint(32);
@@ -111,7 +111,7 @@ class Chameneos {
             is_same = 1;
             halt("halt: chameneos met with self");
           }
-          const peer = population[peer_idx:int(32)].borrow();
+          const peer = population[peer_idx:int(32)]!;
           newColor = getComplement(color, peer.color);
           peer.color = newColor;
           peer.meetings += 1;
@@ -155,7 +155,7 @@ proc populate (size : int(32)) {
                             Color.yellow, Color.blue, Color.red, Color.yellow,
                             Color.red, Color.blue);
   const D : domain(1, int(32)) = {1..size};
-  var population : [D] owned Chameneos;
+  var population : [D] owned Chameneos?;
 
   if (size == 10) {
     for i in D {
@@ -174,26 +174,26 @@ proc populate (size : int(32)) {
    met another Chameneos, spells out the number of times it met with itself,
    then spells out the total number of times all the Chameneos met
    another Chameneos. */
-proc run(population : [] owned Chameneos, meetingPlace : MeetingPlace) {
+proc run(population : [] owned Chameneos?, meetingPlace : MeetingPlace) {
   for i in population {
-    write(" ", i.color);
+    write(" ", i!.color);
   }
   writeln();
 
   coforall i in population {
-    i.start(population, meetingPlace);
+    i!.start(population, meetingPlace);
   }
   meetingPlace.reset();
 }
 
-proc runQuiet(population : [] owned Chameneos, meetingPlace : MeetingPlace) {
+proc runQuiet(population : [] owned Chameneos?, meetingPlace : MeetingPlace) {
   coforall i in population {
-    i.start(population, meetingPlace);
+    i!.start(population, meetingPlace);
   }
   meetingPlace.reset();
 
-  const totalMeetings = + reduce population.meetings;
-  const totalMeetingsWithSelf = + reduce population.meetingsWithSelf;
+  const totalMeetings = + reduce population!.meetings;
+  const totalMeetingsWithSelf = + reduce population!.meetingsWithSelf;
   if (totalMeetings == numMeetings*2) {
     writeln("total meetings PASS");
   } else {
@@ -209,12 +209,12 @@ proc runQuiet(population : [] owned Chameneos, meetingPlace : MeetingPlace) {
   writeln();
 }
 
-proc printInfo(population : [] owned Chameneos) {
+proc printInfo(population : [] owned Chameneos?) {
   for i in population {
-    write(i.meetings);
-    spellInt(i.meetingsWithSelf);
+    write(i!.meetings);
+    spellInt(i!.meetingsWithSelf);
   }
-  const totalMeetings = + reduce population.meetings;
+  const totalMeetings = + reduce population!.meetings;
   spellInt(totalMeetings);
   writeln();
 }

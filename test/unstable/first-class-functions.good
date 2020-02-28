@@ -1,0 +1,4 @@
+first-class-functions.chpl:5: warning: First class functions are unstable.
+first-class-functions.chpl:9: warning: First class functions are unstable.
+In foo
+In anon

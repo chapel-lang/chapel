@@ -18,4 +18,5 @@ proc main {
   }
   //w.flush();
   f.close();
+  w; // mention w to prevent it from being deinited (and flushed) earlier
 }

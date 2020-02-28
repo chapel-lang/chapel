@@ -314,7 +314,7 @@
 %token TDEFER TDELETE TDMAPPED TDO TDOMAIN
 %token TELSE TENUM TEXCEPT TEXPORT TEXTERN
 %token TFALSE TFOR TFORALL TFORWARDING
-%token TIF TIMAG TIN TINDEX TINLINE TINOUT TINT TITER TINITEQUALS
+%token TIF TIMAG TIMPORT TIN TINDEX TINLINE TINOUT TINT TITER TINITEQUALS
 %token TLABEL TLAMBDA TLET TLIFETIME TLOCAL TLOCALE
 %token TMINUSMINUS TMODULE
 %token TNEW TNIL TNOINIT TNONE TNOTHING
@@ -416,7 +416,7 @@
 %type <pblockstmt> block_stmt
 %type <pblockstmt> stmt_ls
 
-%type <pblockstmt> use_stmt require_stmt
+%type <pblockstmt> use_stmt import_stmt require_stmt
 %type <ponlylist>  renames_ls opt_only_ls except_ls
 
 %type <pblockstmt> class_level_stmt_ls
@@ -521,6 +521,7 @@ stmt:
   module_decl_stmt
 | block_stmt
 | use_stmt
+| import_stmt
 | require_stmt
 | class_level_stmt
 | assignment_stmt
@@ -665,6 +666,12 @@ use_stmt:
 |use_access_control TUSE expr TAS expr TEXCEPT except_ls TSEMI    { $$ = buildUseStmt($3, $5, $7, true, $1); }
 | use_access_control TUSE expr TONLY opt_only_ls TSEMI    { $$ = buildUseStmt($3, "", $5, false, $1); }
 | use_access_control TUSE expr TAS expr TONLY opt_only_ls TSEMI    { $$ = buildUseStmt($3, $5, $7, false, $1); }
+;
+
+import_stmt:
+  TIMPORT ident_use TSEMI { $$ = buildImportStmt(new UnresolvedSymExpr($2)); }
+| TIMPORT ident_use TAS ident_use TSEMI
+  { $$ = buildImportStmt(new UnresolvedSymExpr($2), $4); }
 ;
 
 require_stmt:
@@ -922,9 +929,9 @@ loop_stmt:
 | TCOFORALL expr TIN zippered_iterator opt_task_intent_ls do_stmt { $$ = buildCoforallLoopStmt($2, $4, $5, $6, true); }
 | TCOFORALL expr opt_task_intent_ls do_stmt                       { $$ = buildCoforallLoopStmt(NULL, $2, $3, $4);     }
 | TFOR expr TIN expr do_stmt                    { $$ = ForLoop::buildForLoop(  $2, $4, $5, false, false); }
-| TFOR expr TIN zippered_iterator do_stmt       { $$ = ForLoop::buildForLoop(  $2, $4, $5, false,  true); }
+| TFOR expr TIN zippered_iterator do_stmt       { $$ = ForLoop::buildForLoop(  $2, $4, $5, true, false); }
 | TFOR expr do_stmt                             { $$ = ForLoop::buildForLoop(NULL, $2, $3, false, false); }
-| TFOR zippered_iterator do_stmt                { $$ = ForLoop::buildForLoop(NULL, $2, $3, false,  true); }
+| TFOR zippered_iterator do_stmt                { $$ = ForLoop::buildForLoop(NULL, $2, $3, true, false); }
 | TFOR TPARAM ident_def TIN expr do_stmt        { $$ = buildParamForLoopStmt($3, $5, $6); }
 | TFORALL expr TIN expr                                   do_stmt  { $$ = ForallStmt::build($2,   $4, NULL, $5, false, false); }
 | TFORALL expr TIN expr              forall_intent_clause do_stmt  { $$ = ForallStmt::build($2,   $4, $5,   $6, false, false); }

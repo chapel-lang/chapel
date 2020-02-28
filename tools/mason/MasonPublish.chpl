@@ -352,7 +352,7 @@ proc getPackageName() throws {
   try! {
     const toParse = open("Mason.toml", iomode.r);
     var tomlFile = new owned(parseToml(toParse));
-    const name = tomlFile['brick']['name'].s;
+    const name = tomlFile['brick']!['name']!.s;
     return name;
   }
   catch {
@@ -368,7 +368,7 @@ private proc addPackageToBricks(projectLocal: string, safeDir: string, name : st
   try! {
     const toParse = open(projectLocal+ "/Mason.toml", iomode.r);
     var tomlFile = new owned(parseToml(toParse));
-    const versionNum = tomlFile['brick']['version'].s;
+    const versionNum = tomlFile['brick']!['version']!.s;
     if !isLocal {
       if !exists(safeDir + '/mason-registry/Bricks/') {
         throw new owned MasonError('Registry does not have the expected structure. Ensure your registry has a Bricks directory.');
@@ -381,7 +381,7 @@ private proc addPackageToBricks(projectLocal: string, safeDir: string, name : st
         var newToml = open(safeDir + "/mason-registry/Bricks/" + name + "/" + versionNum + ".toml", iomode.cw);
         var tomlWriter = newToml.writer();
         const url = gitUrl();
-        baseToml["brick"].set("source", url[1..url.length-1]);
+        baseToml["brick"]!.set("source", url[1..url.length-1]);
         tomlWriter.write(baseToml);
         tomlWriter.close();
         return name + '@' + versionNum;
@@ -403,7 +403,7 @@ private proc addPackageToBricks(projectLocal: string, safeDir: string, name : st
         const baseToml = tomlFile;
         var newToml = open(safeDir + "/Bricks/" + name + "/" + versionNum + ".toml", iomode.cw);
         var tomlWriter = newToml.writer();
-        baseToml["brick"].set("source", projectLocal);
+        baseToml["brick"]!.set("source", projectLocal);
         tomlWriter.write(baseToml);
         tomlWriter.close();
         const gitMessageString = ('git tag -a v' + versionNum + ' -m  "' + name + '"');

@@ -29,6 +29,6 @@ def get_link_args(unwind):
       # it doesn't include -lzma when it probably should.
       # So try to get the libraries out of libunwind.la.
       libs = third_party_utils.default_get_link_args(
-                       'libunwind', libs=['libunwind.la'])
+                       'libunwind', libs=['libunwind.la', 'libunwind-x86_64.la'])
 
     return libs

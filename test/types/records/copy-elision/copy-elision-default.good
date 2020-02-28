@@ -1,0 +1,137 @@
+test1a
+C.init 1
+init 1 1
+test1a.a
+test1a.b
+(1 1)
+deinit 1 1
+C.deinit 1
+test1b
+C.init 1
+init 1 1
+test1b.a
+test1b.b
+(1 1)
+deinit 1 1
+C.deinit 1
+test1c
+C.init 1
+init 1 1
+test1c.a
+test1c.b
+(1 1)
+deinit 1 1
+C.deinit 1
+test1d
+C.init 1
+init 1 1
+test1d.a
+(1 1)
+deinit 1 1
+C.deinit 1
+test1d.b
+test1e
+C.init 1
+init 1 1
+test1e.a
+(1 1)
+deinit 1 1
+C.deinit 1
+test2a
+C.init 0
+init 0 0
+test2a.a
+test2a.b
+(1 1) (0 1)
+deinit 0 1
+C.deinit 1
+test2b
+C.init 0
+init 0 0
+test2b.a
+test2b.b
+deinit 0 1
+C.deinit 1
+(1 1) (0 1)
+test2c
+C.init 0
+init 0 0
+test2c.a
+test2c.b
+(1 1) (0 1)
+deinit 0 1
+C.deinit 1
+test2d
+C.init 0
+init 0 0
+test2d.a
+test2d.b
+deinit 0 1
+C.deinit 1
+(1 1) (0 1)
+test3a
+C.init 1
+init 1 1
+test3a.a
+test3a.b
+(1 1)
+deinit 1 1
+test3a.c
+deinit 1 1
+C.deinit 1
+test3b
+C.init 1
+init 1 1
+test3b.a
+test3b.b
+(1 1)
+deinit 1 1
+test3b.c
+deinit 1 1
+C.deinit 1
+test3c
+C.init 1
+init 1 1
+test3c.a
+test3c.b
+(1 1)
+deinit 1 1
+deinit 1 1
+C.deinit 1
+test4a
+C.init 1
+init 1 1
+test4a.a
+test4a.b
+(1 1)
+deinit 1 1
+test4a.c
+deinit 1 1
+C.deinit 1
+test5a
+C.init 1
+init 1 1
+C.init 0
+init 0 0
+test5a.a
+C.deinit 0
+test5a.b
+(1 1)
+deinit 1 1
+deinit 1 1
+C.deinit 1
+test5b
+C.init 1
+init 1 1
+test5b.a
+(1 1) 1
+deinit 1 1
+C.deinit 1
+test5c
+C.init 1
+init 1 1
+test5c.a
+(1 1) 1
+deinit 1 1
+C.deinit 1
+end

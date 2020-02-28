@@ -197,7 +197,7 @@ void deadExpressionElimination(FnSymbol* fn) {
 
         // NOAKES 2014/11/14 It's "odd" that folding is being done here
         } else {
-          cond->foldConstantCondition();
+          cond->foldConstantCondition(false);
         }
 
         // NOAKES 2014/11/14 Testing suggests this is always a NOP

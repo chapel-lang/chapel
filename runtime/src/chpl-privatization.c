@@ -20,15 +20,15 @@
 #include "chplrt.h"
 #include "chpl-privatization.h"
 #include "chpl-mem.h"
-#include "chpl-tasks.h"
+#include "chpl-atomics.h"
 
 static int64_t chpl_capPrivateObjects = 0;
-static chpl_sync_aux_t privatizationSync;
+static atomic_spinlock_t lock;
 
 chpl_privateObject_t* chpl_privateObjects = NULL;
 
 void chpl_privatization_init(void) {
-    chpl_sync_initAux(&privatizationSync);
+  atomic_init_spinlock_t(&lock);
 }
 
 static inline int64_t max(int64_t a, int64_t b) {
@@ -40,7 +40,7 @@ static inline int64_t max(int64_t a, int64_t b) {
 // then pid 2, so it has to ensure that the privatized array has at least pid+1
 // elements. Be __very__ careful if you have to update it.
 void chpl_newPrivatizedClass(void* v, int64_t pid) {
-  chpl_sync_lock(&privatizationSync);
+  atomic_lock_spinlock_t(&lock);
 
   // initialize array to a default size
   if (chpl_privateObjects == NULL) {
@@ -70,23 +70,23 @@ void chpl_newPrivatizedClass(void* v, int64_t pid) {
   }
   chpl_privateObjects[pid].obj = v;
 
-  chpl_sync_unlock(&privatizationSync);
+  atomic_unlock_spinlock_t(&lock);
 }
 
 void chpl_clearPrivatizedClass(int64_t i) {
-  chpl_sync_lock(&privatizationSync);
+  atomic_lock_spinlock_t(&lock);
   chpl_privateObjects[i].obj = NULL;
-  chpl_sync_unlock(&privatizationSync);
+  atomic_unlock_spinlock_t(&lock);
 }
 
 // Used to check for leaks of privatized classes
 int64_t chpl_numPrivatizedClasses(void) {
   int64_t ret = 0;
-  chpl_sync_lock(&privatizationSync);
+  atomic_lock_spinlock_t(&lock);
   for (int64_t i = 0; i < chpl_capPrivateObjects; i++) {
     if (chpl_privateObjects[i].obj)
       ret++;
   }
-  chpl_sync_unlock(&privatizationSync);
+  atomic_unlock_spinlock_t(&lock);
   return ret;
 }

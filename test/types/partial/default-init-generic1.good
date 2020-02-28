@@ -1,0 +1,3 @@
+default-init-generic1.chpl:21: In function 'main':
+default-init-generic1.chpl:22: error: Cannot default-initialize a variable with generic type
+default-init-generic1.chpl:22: note: 'D' has generic type 'S'

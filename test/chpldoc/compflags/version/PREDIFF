@@ -1,0 +1,3 @@
+#!/usr/bin/env bash
+
+sed -i -e '/^Running Sphinx v/,/URL_ROOT:/d;s/^ *//;/LANGUAGE:/,$d' $2
