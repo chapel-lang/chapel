@@ -666,14 +666,15 @@ initPrimitive() {
   prim_def(PRIM_INIT_VAR,   "init var",   returnInfoVoid);
 
   // indicates split initialization point of declaration
-  // If the type is provided, apply that to the value immediately
-  // The value may not be used until a later PRIM_INIT_VAR.
+  // The value may not be used until a later PRIM_INIT_VAR_SPLIT_INIT.
   //
-  // dst, optional type to default-init
+  // dst, optional type
   prim_def(PRIM_INIT_VAR_SPLIT_DECL, "init var split decl", returnInfoVoid, false);
 
   // indicates split initialization point of initialization
-  // dst, init-expr
+  // dst, init-expr, optional type
+  //
+  // if the optional type is provided, it should match PRIM_INIT_VAR_SPLIT_DECL.
   prim_def(PRIM_INIT_VAR_SPLIT_INIT, "init var split init",   returnInfoVoid);
 
   prim_def(PRIM_REF_TO_STRING, "ref to string", returnInfoStringC);

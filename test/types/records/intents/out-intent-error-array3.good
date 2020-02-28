@@ -1,0 +1,1 @@
+out-intent-error-array3.chpl:12: error: halt reached - assigning between arrays of different shapes in dimension 1: 1 vs. 2

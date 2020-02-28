@@ -3,6 +3,6 @@ match-param.chpl:6: error: unresolved call '==("hello", 100)'
 $CHPL_HOME/modules/internal/String.chpl:413: note: this candidate did not match: ==(x: ?t, y: int)
 $CHPL_HOME/modules/internal/String.chpl:413: note: because where clause evaluated to false
 match-param.chpl:1: note: candidates are: ==(_arg1: R, _arg2: R)
-$CHPL_HOME/modules/internal/CString.chpl:nnnn: note:                 ==(s0: c_string, s1: c_string)
+$CHPL_HOME/modules/internal/ChapelBase.chpl:nnnn: note:                 ==(a: _nilType, b: _nilType)
 note: and N other candidates, use --print-all-candidates to see them
 match-param.chpl:1: Function 'foo' instantiated as: foo(x: R(int(64),100))

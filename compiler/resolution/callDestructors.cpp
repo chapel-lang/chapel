@@ -1280,6 +1280,25 @@ static void removeEndOfStatementMarkers() {
 
 /************************************* | **************************************
 *                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
+
+static void removeElidedOnBlocks() {
+  for_alive_in_Vec(BlockStmt, block, gBlockStmts) {
+    if (block->isLoopStmt() == false) {
+      if (CallExpr* const info = block->blockInfoGet()) {
+        if (info->isPrimitive(PRIM_BLOCK_ELIDED_ON)) {
+          // Turn it into a regular block.
+          info->remove();
+        }
+      }
+    }
+  }
+}
+
+/************************************* | **************************************
+*                                                                             *
 * Entry point                                                                 *
 *                                                                             *
 ************************************** | *************************************/
@@ -1316,4 +1335,6 @@ void callDestructors() {
   convertClassTypesToCanonical();
 
   removeEndOfStatementMarkers();
+
+  removeElidedOnBlocks();
 }

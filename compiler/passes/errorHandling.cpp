@@ -567,7 +567,7 @@ AList ErrorHandlingVisitor::setOutGotoEpilogue(VarSymbol* error) {
   // Using PRIM_ASSIGN instead of PRIM_MOVE here to work around
   // errors that come up in C compilation.
   ret.insertAtTail(new CallExpr(PRIM_ASSIGN, outError, castedError));
-  ret.insertAtTail(new GotoStmt(GOTO_RETURN, epilogue));
+  ret.insertAtTail(new GotoStmt(GOTO_ERROR_HANDLING_RETURN, epilogue));
 
   return ret;
 }

@@ -43,7 +43,8 @@ PASSES_SRCS =                                              \
         resolveIntents.cpp                                 \
         ResolveScope.cpp                                   \
         returnStarTuplesByRefArgs.cpp                      \
-        scopeResolve.cpp
+        scopeResolve.cpp                                   \
+        splitInit.cpp
 
 SRCS        = $(PASSES_SRCS)
 

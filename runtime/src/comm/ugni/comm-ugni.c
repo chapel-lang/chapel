@@ -726,7 +726,7 @@ typedef atomic_uint_least32_t cq_cnt_atomic_t;
 // is the only one with cheap atomic reads.)
 
 typedef struct {
-  atomic_bool        busy CACHE_LINE_ALIGN;
+  atomic_spinlock_t  busy CACHE_LINE_ALIGN;
   cq_cnt_atomic_t    cq_cnt_curr CACHE_LINE_ALIGN;
   chpl_bool          firmly_bound;
   gni_nic_handle_t   nih;
@@ -756,10 +756,9 @@ static __thread int comm_dom_free_idx = -1;
 static __thread comm_dom_t* cd = NULL;
 static __thread int cd_idx = -1;
 
-#define INIT_CD_BUSY(cd)      atomic_init_bool(&(cd)->busy, false)
-#define CHECK_CD_BUSY(cd)     atomic_load_explicit_bool(&(cd)->busy, memory_order_acquire)
-#define ACQUIRE_CD_MAYBE(cd)  (!atomic_exchange_explicit_bool(&(cd)->busy, true, memory_order_acquire))
-#define RELEASE_CD(cd)        atomic_store_explicit_bool(&(cd)->busy, false, memory_order_release)
+#define INIT_CD_BUSY(cd)      atomic_init_spinlock_t(&(cd)->busy)
+#define ACQUIRE_CD_MAYBE(cd)  atomic_try_lock_spinlock_t(&(cd)->busy)
+#define RELEASE_CD(cd)        atomic_unlock_spinlock_t(&(cd)->busy)
 
 
 //
@@ -7480,7 +7479,7 @@ void acquire_comm_dom(void)
 #ifdef DEBUG_STATS
     acq_looks++;
 #endif
-    if (!CHECK_CD_BUSY(want_cd) && ACQUIRE_CD_MAYBE(want_cd)) {
+    if (ACQUIRE_CD_MAYBE(want_cd)) {
       if (CQ_CNT_LOAD(want_cd) < want_cd->cq_cnt_max) {
         break;
       } else {
@@ -7547,7 +7546,7 @@ void acquire_comm_dom_and_req_buf(c_nodeid_t remote_locale, int* p_rbi)
     acq_looks++;
 #endif
 
-    if (!CHECK_CD_BUSY(want_cd) && ACQUIRE_CD_MAYBE(want_cd)) {
+    if (ACQUIRE_CD_MAYBE(want_cd)) {
       if (CQ_CNT_LOAD(want_cd) < want_cd->cq_cnt_max) {
         for (rbi = 0; rbi < FORK_REQ_BUFS_PER_CD; rbi++) {
           if (*SEND_SIDE_FORK_REQ_FREE_ADDR(remote_locale, want_cdi, rbi)) {
