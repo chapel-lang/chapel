@@ -15,6 +15,12 @@ feature, and submitting pull requests.
 Overview:
 
 #. `Choosing a task`_
+
+#. `Design`_
+
+    #. `Creating a design issue`_
+    #. `Leading a design discussion`_
+
 #. `Development`_
 
     #. `Get set up`_
@@ -23,10 +29,6 @@ Overview:
 
        #. `Add new tests`_
 
-#. `Design`_
-
-    #. `Creating a design issue`_
-    #. `Leading a design discussion`_
 
 #. `Contributing changes`_
 
@@ -45,7 +47,7 @@ Overview:
 
 
 
-.. _Choosing a task
+.. _Choosing a task:
 
 Choosing a task
 ---------------
@@ -53,21 +55,114 @@ Choosing a task
 If you do not already know what task to work on, the `Contributing`_ page has
 some tips for finding a task.
 
-It is important to communicate with other people who might be working on the
-same area. For small tasks, this can be as simple as commenting on an issue.
-For larger projects, you should discuss the approach in a design issue on
-GitHub. See the `Design`_ section for guidance on creating a design issue.
+It is important to communicate with other people before working on a task. This
+will help address design questions before starting implementation and will
+avoid multiple people working on the same task simultaneously.
+If an issue exists for the task you are working on, you should always comment
+on that issue to let others know you are working on it. If an issue does not
+exist for the task you have chosen, you should open an issue first. In many
+cases, you will need to discuss the design of the interface or implementation
+before starting development.  See the `Design`_ section for more details on
+this.
 
-Any user-facing change to the language or standard library interface will
-require design review. It is helpful to start the design review discussion as
-early as possible.  All code changes will require code review.
 
 .. _Contributing: https://chapel-lang.org/contributing.html
 
-.. _Get set up:
+.. _Design:
+
+Design
+------
+
+.. When design discussion is needed
+
+When design discussion is needed
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Design discussion is needed when changes impact:
+
+- language or standard library
+- software architecture
+
+In many cases it is reasonable to start development without a full design
+review, but such efforts should be open to changing once the design is being
+discussed.
+
+If your task does require a design issue, you may skip ahead to the
+`Development`_ section.
+
+
+.. _Creating a design issue:
+
+Creating a design issue
+~~~~~~~~~~~~~~~~~~~~~~~
+
+The design issue should aim to clearly and concisely present some design
+decisions. Here are some strategies to make a good design issue:
+
+- Summarize issue at the top, preferably include concise code example(s).
+- Try not to make initial issue too long in order to lower the barrier for
+  someone getting involved.
+- Clearly define the problem this proposal aims to solve.
+- It can be useful to consider alternative solutions to the problem and
+  describe the trade-offs among them.
+- A design issue should have two developers not involved in the effort to review.
+- To find reviewers, send an email to chapel-developers_.
+
+  * Use a prefix of ``[Design]`` in the subject header.
+  * Include a short summary of the topic, potentially including motivation
+    and/or an example.
+      - This should not be a copy/paste of the issue contents.
+  * Include a link to your issue.
+  * Ask for people to volunteer to be involved in design discussions.
+
+    .. code-block:: text
+
+        Subject: [Design] Add feature A to module M
+
+        Hello,
+
+        I would like to add feature A to module M. This feature is motivated by
+        X, Y, and Z. For example, this would enable:
+
+          var result = M.A(args);
+
+        See the issue here: https://github.com/chapel-lang/chapel/issues/<number>
+
+        I need 2 developers to identify themselves as API reviewers for this design
+        issue.
+
+        Thanks,
+        Contributor
+
+.. _Leading a design discussion:
+
+Leading a design discussion
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Many design choices require a consensus among community members.
+It can be helpful to reach a consensus on a design decision quicker by making
+an effort to lead that discussion.
+
+Here are some ways to progress the discussion:
+
+- Ask people involved what they need to know to make a decision
+- Summarize the different solutions that were brought up in the discussion and
+  list their pros and cons
+- Compare with other languages, libraries, previous work in area
+
+It is common for new design questions to emerge during design discussion
+(or less commonly, in code review).
+It can be helpful to spin off new issues for design questions that generate a
+lot of discussion or design questions that are not completely on-topic.
+This will help keep the discussion focused and the goals of the current design
+issue clear.
+
+.. _Development:
 
 Development
 -----------
+
+.. _Get set up:
 
 Get set up
 ~~~~~~~~~~
@@ -147,71 +242,6 @@ test/directory is run with ``start_test`` (and performance tests should also
 pass testing for ``start_test -performance``).
 
 .. _Creating a Simple Test: https://github.com/chapel-lang/chapel/blob/master/doc/rst/developer/bestPractices/TestSystem.rst#creating-a-simple-test
-
-.. _Design
-
-Design
-------
-
-.. _Creating a design issue
-
-Creating a design issue
-~~~~~~~~~~~~~~~~~~~~~~~
-
-The design issue should aim to clearly and concisely present some design
-decisions. Here are some strategies to make a good design issue:
-
-- Summarize issue at the top, preferably include concise code example(s).
-- Try not to make initial issue too long in order to lower the barrier for
-  someone getting involved.
-- Clearly define the problem this proposal aims to solve.
-- It can be useful to consider alternative solutions to the problem and
-  describe the trade-offs among them.
-- A design issue should have two developers not involved in the effort to review.
-- To find reviewers, send an email to chapel-developers_.
-
-  * Use a prefix of ``[Design]`` in the subject header.
-  * Include a short summary of the topic, potentially including motivation and/or an example.
-  * Include a link to your issue.
-  * Ask for people to volunteer to be involved in design discussions.
-
-    .. code-block:: text
-
-        Subject: [Design] Add feature A to module M
-
-        Hello,
-
-        I would like to add feature A to module M. This feature is motivated by
-        X, Y, and Z. For example, this would enable:
-
-          var result = M.A(args);
-
-        See the issue here: https://github.com/chapel-lang/chapel/issues/<number>
-
-        I need 2 developers to identify themselves as API reviewers for this design
-        issue.
-
-        Thanks,
-        Contributor
-
-.. _Leading a design discussion
-
-Leading a design discussion
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-Many design choices require a consensus among community members.
-It can be helpful to reach a consensus on a design decision quicker by making
-an effort to lead that discussion.
-
-Here are some ways to progress the discussion:
-
-- Ask people involved what they need to know to make a decision
-- Summarize the different solutions that were brought up in the discussion and
-  list their pros and cons
-- Compare with other languages, libraries, previous work in area
-
-GitHub does not have nested thread comments, so it can be helpful to create
-new issues for design elements generating a lot of discussion.
 
 
 .. _Contributing changes
