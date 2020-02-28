@@ -37,13 +37,12 @@ Initialises a library project in a project directory
 */
 proc masonInit(args) throws {
   try! {
-    var name = '';
+    var dirName = '';
     var show = false;
-    var isModuleName = false;
-    var moduleName = '';
-    var i = 0;
+    var packageName = '';
+    var countArgs = 2;
     for arg in args[2..] {
-      i = i + 1;
+      countArgs += 1;
       if arg == '-h' || arg == '--help' {
         masonInitHelp();
         exit();
@@ -51,44 +50,46 @@ proc masonInit(args) throws {
       else if arg == '--show' {
         show = true;
       }
-      else if arg.startsWith('--moduleName') {
-        isModuleName = true;
-        if arg.startsWith('--moduleName=') {
+      else if arg.startsWith('--name') {
+        if arg.startsWith('--name=') {
           var res = arg.split("=");
-          moduleName = res[2];
-          name = args[2];
-          break;
+          packageName = res[2];
+          dirName = args[2];
         }
         else {
-          moduleName = args[i+2];
-          name = args[2];
-          break;
+          packageName = args[countArgs];
+          dirName = args[2];
         }
       }
       else {
-        name = arg;
+        if packageName.length == 0 then {
+          dirName = arg;
+          packageName = dirName;
+        }
       }
     }
-    if name.startsWith('--moduleName') then name='';
-    if name == '' {
+    writeln(dirName, ' ', packageName);
+    if dirName.startsWith('--name') then dirName = '';
+    if dirName == '' {
       const cwd = getEnv("PWD");
-      const name = basename(cwd);
+      const dirName = basename(cwd);
       const path = '.';
-      if isModuleName then {
-        makeLegalModule(path, moduleName);
-        if validatePackageName(moduleName) {
-          validateMasonFile(path, name, show);
+      writeln(dirName, ' ', packageName);
+      if dirName != packageName then {
+        createModule(path, packageName);
+        if validatePackageName(packageName) {
+          validateMasonFile(path, packageName, show);
           var isInitialized = validateInit(path, show);
           if isInitialized > 0 then
-          writeln("Initialized new library project: " + name);
+          writeln("Initialized new library project: " + dirName);
         }
       }
       else {
-        if validatePackageName(name) {
-          validateMasonFile(path, name, show);
+        if validatePackageName(dirName) {
+          validateMasonFile(path, dirName, show);
           var isInitialized = validateInit(path, show);
           if isInitialized > 0 then
-          writeln("Initialized new library project: " + name);
+          writeln("Initialized new library project: " + dirName);
         }
       }
     }
@@ -97,19 +98,19 @@ proc masonInit(args) throws {
       // if target directory exists, check for files && validate
       // create folders and toml file without overwriting anything
       // if TOML file exists, check for values in it and validate
-      const path = name;
+      const path = dirName;
       if isDir(path) {
-        if isModuleName then {
-          makeLegalModule(path,moduleName);
-          if validatePackageName(moduleName) {
-            validateMasonFile(path, basename(path), show);
+        if dirName != packageName then {
+          createModule(path, packageName);
+          if validatePackageName(packageName) {
+            validateMasonFile(path, packageName, show);
             var isInitialized = validateInit(path, show);
             if isInitialized > 0 then
             writeln("Initialized new library project in " + path + ": " + basename(path));
           }
         }
         else {
-          if validatePackageName(name) {
+          if validatePackageName(dirName) {
             validateMasonFile(path, basename(path), show);
             var isInitialized = validateInit(path, show);
             if isInitialized > 0 then
@@ -168,7 +169,7 @@ proc validateInit(path: string, show: bool) throws {
   }
 
   for metafile in toBeCreated {
-    const name = basename(path);
+    const dirName = basename(path);
     if metafile == "/.git" {
       gitInit(path, show);
     }
@@ -269,19 +270,24 @@ proc addSection(sectionName: string, path: string, tomlFile: unmanaged Toml, sho
   if show then writeln("Added [" + sectionName + "] section to Mason.toml");
 }
 
-proc makeLegalModule(path: string, moduleName: string) throws {
-  if validatePackageName(moduleName) {
+/*
+  validates Mason.toml for an already existing brick-name. 
+  If brick-name doesn't exist, it creates a module with the 
+  given packageName. 
+*/
+proc createModule(path: string, packageName: string) throws {
+  if validatePackageName(packageName) {
     if isFile(path + "/Mason.toml") {
       const toParse = open(path + "/Mason.toml", iomode.r);
       const tomlFile = parseToml(toParse);
       if tomlFile.pathExists("brick.name") {
-          throw new owned MasonError("Cannot use '--moduleName' here" +
+          throw new owned MasonError("Cannot use '--name' here" +
                                 " since brick name already exists.");
       }
     }
     else {
       makeSrcDir(path);
-      makeModule(path, moduleName);
+      makeModule(path, packageName);
     }
   }
 }

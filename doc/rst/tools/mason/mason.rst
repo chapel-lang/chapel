@@ -79,9 +79,10 @@ additional functionality that comes with these folders later.
 Mason enforces that the main file be named after the package to enforce namespacing.
 ``MyPackage.chpl`` will be the first file listed in ``src/``.
 
-Illegal names of the form `illegal-module-name` can be used to make packages in Mason.
-A legal name can be used as an argument to the `--moduleName` flag along with `mason new` 
-or `mason init`. For example, 
+You can create a package in a directory that differs from the mason 
+package name with the `mason {new,init} --moduleName` flag.
+This may be useful when creating a package in a directory that 
+is an illegal Mason package name, such as names with dashes. For example, 
 
   .. code-block:: sh
 
