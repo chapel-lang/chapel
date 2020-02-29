@@ -104,6 +104,10 @@ public:
 
   BlockStmt*             copyBody();
   BlockStmt*             copyBody(SymbolMap* map);
+  void                   copyBodyHelper(Expr* beforeHere,
+                                        int64_t i,
+                                        SymbolMap* map,
+                                        Symbol* continueSym);
 
   SymExpr*               indexGet()                                   const;
   SymExpr*               iteratorGet()                                const;

@@ -24,6 +24,7 @@
 #include "DecoratedClassType.h"
 #include "driver.h"
 #include "ForallStmt.h"
+#include "ForLoop.h"
 #include "iterator.h"
 #include "ParamForLoop.h"
 #include "passes.h"
@@ -105,10 +106,16 @@ static Type*          getFcfSharedWrapperType(AggregateType* parent);
 *                                                                             *
 ************************************** | *************************************/
 
+#include <view.h>
+
 Expr* preFold(CallExpr* call) {
   Expr* baseExpr = call->baseExpr;
   Expr* retval   = call;
 
+  if (call->id == 196284 || call->id == 196282) {
+    list_view(call);
+  }
+  
   if (call->isPrimitive() == true) {
     if (Expr* tmp = preFoldPrimOp(call)) {
       retval = tmp;
@@ -1998,6 +2005,65 @@ static Expr* preFoldNamed(CallExpr* call) {
              call->isNamed("chpl__dynamicFastFollowCheck")  ) {
     if (! call->isResolved())
       buildFastFollowerChecksIfNeeded(call);
+
+  // Unroll loops over heterogeneous tuples by looking for the pattern:
+  //
+  } else if (call->isNamed("_getIterator")) {
+    Type* iterType = call->get(1)->getValType();
+    if (iterType->symbol->hasFlag(FLAG_TUPLE) &&
+        !iterType->symbol->hasFlag(FLAG_STAR_TUPLE)) {
+      printf("Found loop over heterogeneous tuple: ");
+      list_view(call);
+
+      // Find the parent of the getIterator statement for the
+      // heterogeneous tuple and replace it with a no-op statement.
+      Expr* parentStmt = call->parentExpr;
+      CallExpr* noop = new CallExpr(PRIM_NOOP);
+      //      parentStmt->insertAfter(noop);
+
+      // Remove all following statements leading up to the next loop.
+      Expr* nextStmt = parentStmt->next;
+      ForLoop* nextloop = NULL;
+      do {
+        Expr* currStmt = nextStmt;
+        nextStmt = nextStmt->next;
+
+        printf("Found: ");
+        list_view(currStmt);
+
+        if (ForLoop* loopstmt = toForLoop(currStmt)) {
+          nextloop = loopstmt;
+        } else {
+          currStmt->remove();
+        }
+      } while (nextloop == NULL && nextStmt != NULL);
+
+      // remove the loop itself
+      printf("Found loop itself:\n");
+      list_view(nextloop);
+
+      // stamp out copies of the loop for each iteration
+      SymExpr* idxExpr = nextloop->indexGet();
+      Symbol* idxSym = idxExpr->symbol();
+      Symbol* continueSym = nextloop->continueLabelGet();
+
+      AggregateType* tupType = toAggregateType(iterType);
+      for (int i=2; i<=tupType->fields.length; i++) {
+        printf("Stamping out a copy of the loop for:\n");
+        list_view(tupType->getField(i));
+        
+        SymbolMap map;
+
+        map.put(idxSym, tupType->getField(i));
+        nextloop->copyBodyHelper(parentStmt, i-2, &map, continueSym);
+      }
+      nextloop->remove();
+
+      //      noop->remove();
+      parentStmt->replace(noop);
+      retval = noop;
+
+    }
   }
 
   return retval;
