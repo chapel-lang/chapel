@@ -1,6 +1,8 @@
 //
+// Compilation should fail because child class overrides do not have the
+// override keyword.
 //
-//
+
 class Building { var x: int = 0; }
 class Tower: Building { var height: int = 0; }
 
@@ -22,10 +24,10 @@ proc main() {
   var c: Animal = new Cat();
 
   writeln(a.getBuildingType():string);  // "Building"
-  writeln(b.getBuildingType():string);  // "Building"
+  writeln(b.getBuildingType():string);  // "Tower"
   writeln(c.getBuildingType():string);  // "Building"
 
   writeln(a.getSelfType():string);  // "Animal"
-  writeln(b.getSelfType():string);  // "Animal"
+  writeln(b.getSelfType():string);  // "Cat"
   writeln(c.getSelfType():string);  // "Animal"
 }

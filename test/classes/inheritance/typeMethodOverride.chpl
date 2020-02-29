@@ -4,6 +4,7 @@
 //
 
 class Building { var x: int = 0; }
+class Tower: Building { var height: int = 0; }
 
 class Animal {
   var x: int = 0;
@@ -13,6 +14,7 @@ class Animal {
 
 class Cat: Animal {
   var x: int = 0;
+  override proc getBuildingType() type { return Tower; }
   override proc getSelfType() type { return this.type; }
 }
 
@@ -21,9 +23,9 @@ proc main() {
   var b: Cat = new Cat();
   var c: Animal = new Cat();
 
-  writeln(a.getBuildingType():string);
-  writeln(b.getBuildingType():string);
-  writeln(c.getBuildingType():string);
+  writeln(a.getBuildingType():string);  // "Building"
+  writeln(b.getBuildingType():string);  // "Tower"
+  writeln(c.getBuildingType():string);  // "Building"
 
   writeln(a.getSelfType():string);  // "Animal"
   writeln(b.getSelfType():string);  // "Cat"

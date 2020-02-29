@@ -1,3 +1,7 @@
+//
+// Test behavior of inherited type methods without overrides.
+//
+
 class Building { var x: int = 0; }
 
 class Animal {

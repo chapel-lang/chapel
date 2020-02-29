@@ -155,7 +155,9 @@ static bool buildVirtualMaps() {
       if (at->isClass() == true) {
         if (at->isGeneric() == false) {
           if (fn->isResolved() && isOverrideableMethod(fn)) {
-            addAllToVirtualMaps(fn, at);
+            // Type methods are not candidate for dynamic dispatch.
+            if (fn->retTag != RET_TYPE)
+              addAllToVirtualMaps(fn, at);
           }
         }
       }
