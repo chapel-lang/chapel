@@ -238,9 +238,11 @@ module Itertools {
         else {
           select (operation) {
             when operations.subtract do
-              result -= arg[idx];
+              if result.type != bool then
+                result -= arg[idx];
             when operations.divide do
-              result /= arg[idx];
+              if result.type != bool then
+                result /= arg[idx];
           }
 
           yield result;
@@ -248,12 +250,14 @@ module Itertools {
     } else {
       select (operation) {
         when operations.add do
-          for result in + scan arg do
-            yield result;
+          if result.type != bool then
+            for result in + scan arg do
+              yield result;
 
         when operations.multiply do
-          for result in * scan arg do
-            yield result;
+          if result.type != bool then
+            for result in * scan arg do
+              yield result;
 
         when operations.bitwiseOr do
           if result.type == int || result.type == bool then
