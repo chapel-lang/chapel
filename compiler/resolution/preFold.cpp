@@ -2015,25 +2015,27 @@ static Expr* preFoldNamed(CallExpr* call) {
       printf("Found loop over heterogeneous tuple: ");
       list_view(call);
 
-      // Find the parent of the getIterator statement for the
+      // Find the parent of the getIterator expression for the
       // heterogeneous tuple and replace it with a no-op statement.
       Expr* parentStmt = call->parentExpr;
       CallExpr* noop = new CallExpr(PRIM_NOOP);
-      //      parentStmt->insertAfter(noop);
+      parentStmt->insertAfter(noop);
 
       // Remove all following statements leading up to the next loop.
-      Expr* nextStmt = parentStmt->next;
+      Expr* nextStmt = noop->next;
       ForLoop* nextloop = NULL;
       do {
         Expr* currStmt = nextStmt;
         nextStmt = nextStmt->next;
 
-        printf("Found: ");
+        printf("Found:\n");
         list_view(currStmt);
 
         if (ForLoop* loopstmt = toForLoop(currStmt)) {
+          printf("...and it was our loop\n");
           nextloop = loopstmt;
         } else {
+          printf("...and removing it\n");
           currStmt->remove();
         }
       } while (nextloop == NULL && nextStmt != NULL);
@@ -2055,14 +2057,21 @@ static Expr* preFoldNamed(CallExpr* call) {
         SymbolMap map;
 
         map.put(idxSym, tupType->getField(i));
-        nextloop->copyBodyHelper(parentStmt, i-2, &map, continueSym);
+        nextloop->copyBodyHelper(noop, i-2, &map, continueSym);
       }
       nextloop->remove();
 
-      //      noop->remove();
+      noop->remove();
       parentStmt->replace(noop);
       retval = noop;
+      printf("About to return:\n");
+      list_view(noop);
+      list_view(noop->next);
+      list_view(noop->next->next->next);
+      list_view(noop->next->next->next->next->next);
 
+      printf("Whole block:");
+      list_view(noop->parentExpr);
     }
   }
 
