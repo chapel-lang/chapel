@@ -147,8 +147,12 @@ proc main() {
   //
   if (useOn) then
     forall (_, r) in zip(Updates, RAStream()) do
-      on T[r & indexMask] do
-        T.localAccess[r & indexMask] ^= r;
+      on TableDist.idxToLocale[r & indexMask] do {
+        const myR = r;
+        local {
+          T[myR & indexMask] ^= myR;
+        }
+      }
   else
     forall (_, r) in zip(Updates, RAStream()) do
       T[r & indexMask] ^= r;
@@ -203,14 +207,18 @@ proc verifyResults(T) {
   // Reverse the updates by recomputing them, this time using locks
   // variables to ensure no conflicting updates.  The lock that
   // protects a given table element will usually be on the same locale
-  // with that table element, but not always.
+  // with that table element, but not always, so we cannot reference
+  // it safely in the "local" statement.
   //
   if (useOnVerify) then
     forall (_, r) in zip(Updates, RAStream()) do
-      on T[r & indexMask] {
-        locks[r & lockIndexMask].lock();
-        T[r & indexMask] ^= r;
-        locks[r & lockIndexMask].unlock();
+      on TableDist.idxToLocale[r & indexMask] do {
+        const myR = r;
+        locks[myR & lockIndexMask].lock();
+        local {
+          T[myR & indexMask] ^= myR;
+        }
+        locks[myR & lockIndexMask].unlock();
       }
   else
     forall (_, r) in zip(Updates, RAStream()) do {
