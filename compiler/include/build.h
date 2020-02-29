@@ -181,6 +181,12 @@ CallExpr*  buildPreDecIncWarning(Expr* expr, char sign);
 BlockStmt* convertTypesToExtern(BlockStmt*);
 BlockStmt* handleConfigTypes(BlockStmt*);
 
+CallExpr* buildBoundedRange(Expr* low, Expr* high,
+                            bool openlow=false, bool openhigh=false);
+CallExpr* buildLowBoundedRange(Expr* low, bool open=false);
+CallExpr* buildHighBoundedRange(Expr* high, bool open=false);
+CallExpr* buildUnboundedRange();
+
 Expr* tryExpr(Expr*);
 Expr* tryBangExpr(Expr*);
 
