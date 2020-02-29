@@ -106,16 +106,12 @@ static Type*          getFcfSharedWrapperType(AggregateType* parent);
 *                                                                             *
 ************************************** | *************************************/
 
-#include <view.h>
+//#include <view.h>
 
 Expr* preFold(CallExpr* call) {
   Expr* baseExpr = call->baseExpr;
   Expr* retval   = call;
 
-  if (call->id == 196284 || call->id == 196282) {
-    list_view(call);
-  }
-  
   if (call->isPrimitive() == true) {
     if (Expr* tmp = preFoldPrimOp(call)) {
       retval = tmp;
@@ -2013,8 +2009,8 @@ static Expr* preFoldNamed(CallExpr* call) {
     Type* iterType = tupExpr->getValType();
     if (iterType->symbol->hasFlag(FLAG_TUPLE) &&
         !iterType->symbol->hasFlag(FLAG_STAR_TUPLE)) {
-      printf("Found loop over heterogeneous tuple: ");
-      list_view(call);
+      // printf("Found loop over heterogeneous tuple: ");
+      // list_view(call);
 
       // Find the parent of the getIterator expression for the
       // heterogeneous tuple and replace it with a no-op statement.
@@ -2029,21 +2025,21 @@ static Expr* preFoldNamed(CallExpr* call) {
         Expr* currStmt = nextStmt;
         nextStmt = nextStmt->next;
 
-        printf("Found:\n");
-        list_view(currStmt);
+        // printf("Found:\n");
+        // list_view(currStmt);
 
         if (ForLoop* loopstmt = toForLoop(currStmt)) {
-          printf("...and it was our loop\n");
+          //          printf("...and it was our loop\n");
           nextloop = loopstmt;
         } else {
-          printf("...and removing it\n");
+          //          printf("...and removing it\n");
           currStmt->remove();
         }
       } while (nextloop == NULL && nextStmt != NULL);
 
       // remove the loop itself
-      printf("Found loop itself:\n");
-      list_view(nextloop);
+      // printf("Found loop itself:\n");
+      // list_view(nextloop);
 
       // stamp out copies of the loop for each iteration
       SymExpr* idxExpr = nextloop->indexGet();
@@ -2052,8 +2048,8 @@ static Expr* preFoldNamed(CallExpr* call) {
 
       AggregateType* tupType = toAggregateType(iterType);
       for (int i=2; i<=tupType->fields.length; i++) {
-        printf("Stamping out a copy of the loop for:\n");
-        list_view(tupType->getField(i));
+        // printf("Stamping out a copy of the loop for:\n");
+        // list_view(tupType->getField(i));
         
         SymbolMap map;
 
@@ -2072,14 +2068,14 @@ static Expr* preFoldNamed(CallExpr* call) {
       noop->remove();
       parentStmt->replace(noop);
       retval = noop;
-      printf("About to return:\n");
-      list_view(noop);
-      list_view(noop->next);
-      list_view(noop->next->next->next);
-      list_view(noop->next->next->next->next->next);
+      // printf("About to return:\n");
+      // list_view(noop);
+      // list_view(noop->next);
+      // list_view(noop->next->next->next);
+      // list_view(noop->next->next->next->next->next);
 
-      printf("Whole block:");
-      list_view(noop->parentExpr);
+      // printf("Whole block:");
+      // list_view(noop->parentExpr);
     }
   }
 
