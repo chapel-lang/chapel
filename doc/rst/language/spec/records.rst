@@ -612,9 +612,8 @@ Calling ``delete`` on a record is illegal.
 Default Comparison Operators
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-For records, the compiler will supply default comparison operators if
-they are not supplied by the user. In contrast, the user cannot redefine
-``==`` and ``!=`` for classes. The default comparison operators for a
-record examine the arguments’ fields, while the comparison operators for
-classes check whether the l.h.s. and r.h.s. refer to the same class
-instance or are both ``nil``.
+"Record comparisons have a similar behaviour to tuple comparisons (https://chapel-lang.org/docs/master/language/spec/tuples.html#relational-operators).
+The operators >, >=, <, and <= check the corresponding lexicographical order based 
+on pair-wise comparisons between the arguments' fields components.
+The operators == and != check whether the two arguments are pair-wise equal or not.
+The fields are compared in the order they are declared in the record definition. "
