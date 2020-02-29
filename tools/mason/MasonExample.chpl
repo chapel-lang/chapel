@@ -289,7 +289,7 @@ private proc runExampleBinary(projectHome: string, exampleName: string,
 
   const exampleResult = runWithStatus(command, true);
   if exampleResult != 0 {
-    throw new owned MasonError("Example has not been compiled: " + exampleName + ".chpl\nTry running: mason build --example " + exampleName + ".chpl\n\t or: mason run --example " + exampleName + ".chpl --build");
+    throw new owned MasonError("Mason failed to find and run compiled example: " + exampleName + ".chpl");
   }
 }  
 
