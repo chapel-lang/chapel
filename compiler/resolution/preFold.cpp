@@ -2009,7 +2009,8 @@ static Expr* preFoldNamed(CallExpr* call) {
   // Unroll loops over heterogeneous tuples by looking for the pattern:
   //
   } else if (call->isNamed("_getIterator")) {
-    Type* iterType = call->get(1)->getValType();
+    Expr* tupExpr = call->get(1);
+    Type* iterType = tupExpr->getValType();
     if (iterType->symbol->hasFlag(FLAG_TUPLE) &&
         !iterType->symbol->hasFlag(FLAG_STAR_TUPLE)) {
       printf("Found loop over heterogeneous tuple: ");
@@ -2056,7 +2057,14 @@ static Expr* preFoldNamed(CallExpr* call) {
         
         SymbolMap map;
 
-        map.put(idxSym, tupType->getField(i));
+        // insert temp to capture tuple expr
+        VarSymbol* tmp = newTemp(astr("tupleTemp"));
+        noop->insertBefore(new DefExpr(tmp));
+        noop->insertBefore(new CallExpr(PRIM_MOVE, tmp,
+                                        new CallExpr(PRIM_GET_MEMBER_VALUE, tupExpr->copy(), new_CStringSymbol(tupType->getField(i)->name))));
+
+        // and map idxSymbol to 
+        map.put(idxSym, tmp);
         nextloop->copyBodyHelper(noop, i-2, &map, continueSym);
       }
       nextloop->remove();
