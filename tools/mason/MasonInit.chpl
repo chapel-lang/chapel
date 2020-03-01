@@ -308,6 +308,14 @@ proc createModule(path: string, packageName: string, show: bool) throws {
   }
 }
 
+/*
+  Logic for determining legal project name : 
+  Precedence Followed : 
+  1. `--name` if thrown
+  2. Mason.toml's [brick][name] , if found
+  3. Filename of src/<project>.chpl , if found
+  4. Top Level directory name, always available
+*/
 proc validatePackageNameChecks(path: string, name: string) {
   var actualName = '';
   if isFile(path + "/Mason.toml") {
