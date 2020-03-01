@@ -4,7 +4,7 @@ use MasonUtils;
 use MasonNew;
 
 proc main(){
-  const newArgs = ['mason','new','testSrc'];
+  const newArgs = ['new','testSrc',''];
   masonNew(newArgs);
   
   const initArgs = ['init','testSrc'];
