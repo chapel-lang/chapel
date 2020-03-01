@@ -9153,7 +9153,8 @@ static void insertReturnTemps() {
             DefExpr*   def = new DefExpr(tmp);
 
             // It can't be in a variable init expr, so mark it dead last mention
-            tmp->addFlag(FLAG_DEAD_LAST_MENTION);
+            if (!fNoEarlyDeinit)
+              tmp->addFlag(FLAG_DEAD_LAST_MENTION);
 
             if (typeNeedsCopyInitDeinit(fn->retType) == true)
               tmp->addFlag(FLAG_INSERT_AUTO_DESTROY);

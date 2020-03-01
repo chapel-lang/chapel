@@ -2250,6 +2250,9 @@ static bool isInRefOrVariableInit(Expr* e) {
 }
 
 static void setDeadLastMention(VarSymbol* tmp, Expr* stmt) {
+  if (fNoEarlyDeinit)
+    return;
+
   if (tmp->hasFlag(FLAG_DEAD_END_OF_BLOCK) ||
       tmp->hasFlag(FLAG_DEAD_LAST_MENTION))
     return;
