@@ -344,7 +344,7 @@ module SharedObject {
         compilerError("cannot retain '" + newPtr.type:string + "' " +
                       "(expected '" + _to_unmanaged(chpl_t):string + "')");
 
-      clear();
+      doClear();
       this.chpl_p = newPtr;
       if newPtr != nil {
         this.chpl_pn = new unmanaged ReferenceCount();
@@ -472,7 +472,7 @@ module SharedObject {
 
   // cast to shared!, no class downcast, no casting away nilability
   pragma "no doc"
-  inline proc _cast(type t:shared class, pragma "nil from arg" in x:shared class)
+  inline proc _cast(type t:shared class, in x:shared class)
     where isSubtype(x.chpl_t,t.chpl_t)
   {
     return new _shared(true, t.chpl_t, x);
@@ -480,7 +480,7 @@ module SharedObject {
 
   // cast to shared!, no class downcast, casting away nilability
   pragma "no doc"
-  inline proc _cast(type t:shared class, pragma "nil from arg" in x:shared class?) throws
+  inline proc _cast(type t:shared class, in x:shared class?) throws
     where isSubtype(_to_nonnil(x.chpl_t),t.chpl_t)
   {
     if x.chpl_p == nil {
@@ -516,7 +516,7 @@ module SharedObject {
 
   // this version handles downcast to nilable shared
   pragma "no doc"
-  inline proc _cast(type t:shared class?, const ref x:shared class?)
+  inline proc _cast(type t:shared class?, pragma "nil from arg" const ref x:shared class?)
     where isProperSubtype(t.chpl_t,x.chpl_t)
   {
     // this cast returns nil if the dynamic type is not compatible

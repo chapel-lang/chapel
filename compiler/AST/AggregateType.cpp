@@ -1261,9 +1261,6 @@ AggregateType* AggregateType::generateType(SymbolMap& subs, CallExpr* call, cons
     }
   }
 
-  if (retval->symbol->hasFlag(FLAG_MANAGED_POINTER))
-    markManagedPointerIfNonNilable(retval, retval->symbol);
-
   return retval;
 }
 
@@ -1628,6 +1625,9 @@ AggregateType* AggregateType::getInstantiation(Symbol* sym, int index, Expr* ins
   } else {
     retval = getNewInstantiation(sym, symType, insnPoint);
   }
+
+  if (retval->symbol->hasFlag(FLAG_MANAGED_POINTER))
+    markManagedPointerIfNonNilable(retval, retval->symbol);
 
   return retval;
 }

@@ -30,3 +30,11 @@ split-init-borrow-lifetime-error.chpl:95: note: consider scope of myC
 split-init-borrow-lifetime-error.chpl:102: In function 'testRQsplitNoType':
 split-init-borrow-lifetime-error.chpl:106: error: Scoped variable x reachable after lifetime ends
 split-init-borrow-lifetime-error.chpl:105: note: consider scope of myC
+split-init-borrow-lifetime-error.chpl:21: In function 'testCborrowedC':
+split-init-borrow-lifetime-error.chpl:27: error: Illegal use of dead value
+split-init-borrow-lifetime-error.chpl:27: note: 'c' refers to 'inner'
+split-init-borrow-lifetime-error.chpl:25: note: 'inner' is dead due to deinitialization here
+split-init-borrow-lifetime-error.chpl:41: In function 'testCNoType':
+split-init-borrow-lifetime-error.chpl:47: error: Illegal use of dead value
+split-init-borrow-lifetime-error.chpl:47: note: 'c' refers to 'inner'
+split-init-borrow-lifetime-error.chpl:45: note: 'inner' is dead due to deinitialization here

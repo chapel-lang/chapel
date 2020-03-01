@@ -26,24 +26,24 @@ proc main(args: [] string) {
         input = stdin.reader(iokind.native, locking=false,
                              hints = QIO_CH_ALWAYS_UNBUFFERED);
 
-  var curSeq = new Seq(id=1);
+  var curSeq = new Seq?(id=1);
 
   do {
-    const eof = curSeq.readChunk(input);
+    const eof = curSeq!.readChunk(input);
 
     // look for one or more sequences in the chunk we just read
     do {
-      const (foundSeq, moreSeqs) = curSeq.processChunk();
+      const (foundSeq, moreSeqs) = curSeq!.processChunk();
 
       if foundSeq {
         // if the chunk completed a sequence, save it away and copy the
         // remainder into the next one
         var lastSeq = curSeq;
-        curSeq = lastSeq.copyTail();
+        curSeq = lastSeq!.copyTail();
 
         // then fire off an asynchronous task to process the last sequence
         begin with (in lastSeq) {
-          lastSeq.revcomp();
+          lastSeq!.revcomp();
         }
       }
     } while moreSeqs;

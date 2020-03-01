@@ -376,7 +376,8 @@ static void deinitializeOrCopyElide(Expr* before, Expr* after, VarSymbol* var) {
     }
 
     if (copyToElide == NULL) {
-      SET_LINENO(var);
+      BaseAST* useLoc = before?before:after;
+      SET_LINENO(useLoc);
       CallExpr* autoDestroy = new CallExpr(autoDestroyFn, var);
       if (before)
         before->insertBefore(autoDestroy);
@@ -386,7 +387,7 @@ static void deinitializeOrCopyElide(Expr* before, Expr* after, VarSymbol* var) {
       SET_LINENO(copyToElide);
       // Change the copy into a move and don't destroy the variable.
       copyToElide->convertToNoop();
-      copyToElide->insertBefore(new CallExpr(PRIM_ASSIGN, copyToLhs, var));
+      copyToElide->insertBefore(new CallExpr(PRIM_ASSIGN_ELIDED_COPY, copyToLhs, var));
     }
   }
 }
