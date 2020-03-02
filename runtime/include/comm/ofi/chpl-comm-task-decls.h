@@ -37,7 +37,6 @@ typedef struct {
   void* amo_nf_buff;
   void* get_buff;
   void* put_buff;
-  void* nodeWriteInfo;
 } chpl_comm_taskPrvData_t;
 
 //

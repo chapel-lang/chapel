@@ -577,27 +577,6 @@ int bitmapTest(struct bitmap_t* b, size_t i) {
 
 #define BITMAP_FOREACH_SET_END  } } } } } while (0);
 
-static inline
-struct bitmap_t* bitmapAlloc(size_t len) {
-  struct bitmap_t* b = chpl_mem_alloc(bitmapSizeof(len),
-                                      CHPL_RT_MD_COMM_PER_LOC_INFO, 0, 0);
-  b->len = chpl_numNodes;
-  bitmapZero(b);
-  return b;
-}
-
-static inline
-void bitmapFree(struct bitmap_t* b) {
-  if (DBG_TEST_MASK(DBG_ORDER)) {
-    BITMAP_FOREACH_SET(b, node) {
-      INTERNAL_ERROR_V("bitmapFree(): bitmap is not empty; first node %d",
-                       (int) node);
-    } BITMAP_FOREACH_SET_END
-  }
-
-  chpl_mem_free(b, 0, 0);
-}
-
 
 ////////////////////////////////////////
 //
@@ -605,7 +584,7 @@ void bitmapFree(struct bitmap_t* b) {
 //
 
 static inline
-chpl_comm_taskPrvData_t* get_comm_taskPrvdata(chpl_bool makeNodeWriteInfo) {
+chpl_comm_taskPrvData_t* get_comm_taskPrvdata(void) {
   chpl_task_prvData_t* task_prvData = chpl_task_getPrvData();
   chpl_comm_taskPrvData_t* prvData;
   if (task_prvData == NULL) {
@@ -614,10 +593,6 @@ chpl_comm_taskPrvData_t* get_comm_taskPrvdata(chpl_bool makeNodeWriteInfo) {
     prvData = &amHandlerCommData;
   } else {
     prvData = &task_prvData->comm_data;
-  }
-
-  if (makeNodeWriteInfo && prvData->nodeWriteInfo == NULL) {
-    prvData->nodeWriteInfo = bitmapAlloc(chpl_numNodes);
   }
 
   return prvData;
@@ -691,7 +666,7 @@ typedef struct {
 // Acquire a task local buffer, initializing if needed
 static inline
 void* task_local_buff_acquire(enum BuffType t, size_t extra_size) {
-  chpl_comm_taskPrvData_t* prvData = get_comm_taskPrvdata(true);
+  chpl_comm_taskPrvData_t* prvData = get_comm_taskPrvdata();
   if (prvData == NULL) return NULL;
 
 #define DEFINE_INIT(TYPE, TLS_NAME)                                           \
@@ -722,7 +697,7 @@ static void put_buff_task_info_flush(put_buff_task_info_t* info);
 // Flush one or more task local buffers
 static inline
 void task_local_buff_flush(enum BuffType t) {
-  chpl_comm_taskPrvData_t* prvData = get_comm_taskPrvdata(true);
+  chpl_comm_taskPrvData_t* prvData = get_comm_taskPrvdata();
   if (prvData == NULL) return;
 
 #define DEFINE_FLUSH(TYPE, TLS_NAME, FLUSH_NAME)                              \
@@ -743,7 +718,8 @@ void task_local_buff_flush(enum BuffType t) {
 
 // Flush and destroy one or more task local buffers
 static inline
-void task_local_buff_end(enum BuffType t, chpl_comm_taskPrvData_t* prvData) {
+void task_local_buff_end(enum BuffType t) {
+  chpl_comm_taskPrvData_t* prvData = get_comm_taskPrvdata();
   if (prvData == NULL) return;
 
 #define DEFINE_END(TYPE, TLS_NAME, FLUSH_NAME)                                \
@@ -1975,18 +1951,23 @@ int mrGetLocalKey(void* addr, size_t size) {
 
 static inline
 void releaseBodyOneNode(c_nodeid_t node, struct perTxCtxInfo_t* tcip) {
-  atomic_bool ordTxnDone;
-  atomic_init_bool(&ordTxnDone, false);
-  void* ordCtx = txnTrkEncode(txnTrkDone, &ordTxnDone);
-  ofi_get_ll(orderDummy, node, orderDummyMap[node], 1, ordCtx, tcip);
-  waitForCQThisTxn(tcip, &ordTxnDone);
-  atomic_destroy_bool(&ordTxnDone);
+  if (tcip->txCQ != NULL) {
+    atomic_bool txnDone;
+    atomic_init_bool(&txnDone, false);
+    void* ctx = txnTrkEncode(txnTrkDone, &txnDone);
+    ofi_get_ll(orderDummy, node, orderDummyMap[node], 1, ctx, tcip);
+    waitForCQThisTxn(tcip, &txnDone);
+    atomic_destroy_bool(&txnDone);
+  } else {
+    ofi_get_ll(orderDummy, node, orderDummyMap[node], 1, NULL, tcip);
+    waitForCntrAllTxns(tcip);
+  }
 }
 
 
 static
-void releaseBody(chpl_comm_taskPrvData_t* prvData, struct bitmap_t* b,
-                 struct perTxCtxInfo_t* tcip, const char* dbgOrderStr) {
+void releaseBody(struct bitmap_t* b, struct perTxCtxInfo_t* tcip,
+                 const char* dbgOrderStr) {
   //
   // Do a GET from every node we did at least one PUT to.  Combined
   // with our use of read-after-write ordering, this forces the PUTs
@@ -1996,39 +1977,24 @@ void releaseBody(chpl_comm_taskPrvData_t* prvData, struct bitmap_t* b,
   // TODO: Allow multiple of these GETs outstanding at once, instead
   //       of waiting for each one before firing the next.
   //
-  chpl_comm_taskPrvData_t* myPrvData = prvData;
-  if (myPrvData == NULL) {
-    myPrvData = get_comm_taskPrvdata(false);
+  struct perTxCtxInfo_t* myTcip = tcip;
+  if (myTcip == NULL) {
+    CHK_TRUE((myTcip = tciAlloc()) != NULL);
   }
 
-  if (myPrvData != NULL && myPrvData->nodeWriteInfo != NULL) {
-    struct bitmap_t* driverBitmap = b;
-    if (driverBitmap == NULL) {
-      driverBitmap = myPrvData->nodeWriteInfo;
+  BITMAP_FOREACH_SET(b, node) {
+    bitmapClear(b, node);
+    while (myTcip->numTxns >= txCQLen) { // need CQ room for at least 1 txn
+      checkTxCQ(myTcip);
     }
+    DBG_PRINTF(DBG_ORDER,
+               "dummy GET from %d for %s ordering",
+               (int) node, dbgOrderStr);
+    releaseBodyOneNode(node, myTcip);
+  } BITMAP_FOREACH_SET_END
 
-    struct perTxCtxInfo_t* myTcip = tcip;
-    if (myTcip == NULL) {
-      CHK_TRUE((myTcip = tciAlloc()) != NULL);
-    }
-
-    BITMAP_FOREACH_SET(driverBitmap, node) {
-      if (b != NULL) {
-        bitmapClear(b, node);
-      }
-      bitmapClear((struct bitmap_t*) myPrvData->nodeWriteInfo, node);
-      while (myTcip->numTxns >= txCQLen) { // need CQ room for at least 1 txn
-        checkTxCQ(myTcip);
-      }
-      DBG_PRINTF(DBG_ORDER,
-                 "dummy GET from %d for %s ordering",
-                 (int) node, dbgOrderStr);
-      releaseBodyOneNode(node, myTcip);
-    } BITMAP_FOREACH_SET_END
-
-    if (tcip == NULL) {
-      tciFree(myTcip);
-    }
+  if (tcip == NULL) {
+    tciFree(myTcip);
   }
 }
 
@@ -2041,23 +2007,12 @@ void chpl_comm_release(int ln, int32_t fn) {
   // Enforce Chapel MCM: force all outstanding PUTs to be visible in
   // target memory.
   //
-  releaseBody(NULL, NULL, NULL, "(PUT, MCM release)");
+  releaseBody(NULL, NULL, "(PUT, MCM release)");
 }
 
 
 void chpl_comm_task_end(void) {
-  //
-  // Enforce Chapel MCM: force all outstanding PUTs to be visible in
-  // target memory before this task ends.
-  //
-  chpl_comm_taskPrvData_t* prvData = get_comm_taskPrvdata(false);
-  if (prvData != NULL && prvData->nodeWriteInfo != NULL) {
-    releaseBody(prvData, NULL, NULL, "(PUT, task end)");
-    bitmapFree((struct bitmap_t*) prvData->nodeWriteInfo);
-    prvData->nodeWriteInfo = NULL;
-  }
-
-  task_local_buff_end(get_buff | put_buff | amo_nf_buff, prvData);
+  task_local_buff_end(get_buff | put_buff | amo_nf_buff);
 }
 
 
@@ -2360,18 +2315,6 @@ void amRequestCommon(c_nodeid_t node,
   atomic_bool txnDone;
   atomic_init_bool(&txnDone, false);
   void* ctx = txnTrkEncode(txnTrkDone, &txnDone);
-
-  //
-  // Enforce Chapel MCM: force all outstanding PUTs to be visible in
-  // target memory before we move execution to the target node.
-  //
-  // Note that in some cases, notably for AMs to implement user on-stmts
-  // and "network" atomics that for some reason cannot be done on the
-  // network, chpl_comm_release() will have have already been called and
-  // done this.  But if so then it also will have emptied nodeWriteInfo,
-  // and this call should be a fairly fast no-op.
-  //
-  releaseBody(NULL, NULL, tcip, "(PUT, AM)");
 
   DBG_PRINTF(DBG_AM | DBG_AMSEND,
              "tx AM req to %d: seqId %d:%" PRIu64 ", %s, size %zd, "
@@ -3367,8 +3310,12 @@ chpl_comm_nb_handle_t ofi_put(const void* addr, c_nodeid_t node,
                                  mrRaddr, mrKey, ctx),
                         checkTxCQ(tcip));
     tcip->numTxns++;
-    bitmapSet((struct bitmap_t*) get_comm_taskPrvdata(true)->nodeWriteInfo,
-              node);
+
+    //
+    // Enforce Chapel MCM: do a release, to force the result of this
+    // PUT to appear in target memory.
+    //
+    releaseBodyOneNode(node, tcip);
 
     if (tcip->txCQ != NULL) {
       waitForCQThisTxn(tcip, &txnDone);
@@ -3437,7 +3384,10 @@ void ofi_put_ll(const void* addr, c_nodeid_t node,
                                mrRaddr, mrKey, ctx),
                       checkTxCQ(myTcip));
   myTcip->numTxns++;
-  bitmapSet(get_comm_taskPrvdata(true)->nodeWriteInfo, node);
+
+  //
+  // We don't do an MCM release.  That's the caller's responsibility.
+  //
 
   if (myTcip != tcip) {
     tciFree(myTcip);
@@ -3453,8 +3403,6 @@ void ofi_put_V(int v_len, void** addr_v, void** local_mr_v,
              "put_V(%d): %d:%p <= %p, size %zd, key 0x%" PRIx64,
              v_len, (int) locale_v[0], raddr_v[0], addr_v[0], size_v[0],
              remote_mr_v[0]);
-
-  chpl_comm_taskPrvData_t* prvData = get_comm_taskPrvdata(true);
 
   struct perTxCtxInfo_t* tcip;
   CHK_TRUE((tcip = tciAlloc()) != NULL);
@@ -3508,7 +3456,7 @@ void ofi_put_V(int v_len, void** addr_v, void** local_mr_v,
   // Enforce Chapel MCM: force all of the above PUTs to appear in
   // target memory.
   //
-  releaseBody(prvData, b, tcip, "unordered PUT");
+  releaseBody(b, tcip, "unordered PUT");
 
   tciFree(tcip);
 }
@@ -3630,23 +3578,6 @@ chpl_comm_nb_handle_t ofi_get(void* addr, c_nodeid_t node,
 
     struct perTxCtxInfo_t* tcip;
     CHK_TRUE((tcip = tciAlloc()) != NULL);
-
-    //
-    // Enforce Chapel MCM: if we have PUTs outstanding to this endpoint,
-    // do a dummy GET from it to force those to appear in target memory
-    // before we GET from the same address(es).
-    //
-    // TODO: Instead of this full fence, implement a write cache and
-    //       satisfy read-after-write to the same address by consulting
-    //       that.
-    //
-    chpl_comm_taskPrvData_t* prvData = get_comm_taskPrvdata(true);
-    if (bitmapTest((struct bitmap_t*) prvData->nodeWriteInfo, node)) {
-      bitmapClear((struct bitmap_t*) prvData->nodeWriteInfo, node);
-      DBG_PRINTF(DBG_ORDER,
-                 "dummy GET from %d for (PUT, GET) ordering", (int) node);
-      releaseBodyOneNode(node, tcip);
-    }
 
     DBG_PRINTF(DBG_RMA | DBG_RMAREAD,
                "tx read: %p <= %d:%p(0x%" PRIx64 "), size %zd, key 0x%" PRIx64
