@@ -57,7 +57,8 @@ static found_init_t doFindInitPoints(Symbol* sym,
                                      Expr* start,
                                      std::vector<CallExpr*>& initAssigns,
                                      Expr*& usePreventingSplitInit,
-                                     bool allowReturns);
+                                     bool allowReturns,
+                                     BlockStmt*& ignoreFirstEndInBlock);
 
 bool findInitPoints(DefExpr* def,
                     std::vector<CallExpr*>& initAssigns,
@@ -76,9 +77,14 @@ bool findInitPoints(DefExpr* def,
   if (def->getStmtExpr() != NULL)
     start = def->getStmtExpr()->next;
 
+  BlockStmt* ignoreFirstEndInBlock = NULL;
+  if (start != NULL)
+    ignoreFirstEndInBlock = toBlockStmt(start->parentExpr);
+
   found_init_t found = doFindInitPoints(def->sym, start, initAssigns,
                                         usePreventingSplitInit,
-                                        allowReturns);
+                                        allowReturns,
+                                        ignoreFirstEndInBlock);
   return (found == FOUND_INIT);
 }
 
@@ -98,9 +104,15 @@ bool findInitPoints(CallExpr* defaultInit,
   // PRIM_DEFAULT_INIT_VAR should already be at statement level.
   Expr* start = defaultInit->next;
 
+  BlockStmt* ignoreFirstEndInBlock = NULL;
+  if (start != NULL)
+    ignoreFirstEndInBlock = toBlockStmt(start->parentExpr);
+
+
   found_init_t found = doFindInitPoints(sym, start, initAssigns,
                                         usePreventingSplitInit,
-                                        allowReturns);
+                                        allowReturns,
+                                        ignoreFirstEndInBlock);
   return (found == FOUND_INIT);
 }
 
@@ -142,7 +154,8 @@ static found_init_t handleReturn(found_init_t foundReturn,
                                  Expr* cur,
                                  std::vector<CallExpr*>& initAssigns,
                                  Expr*& usePreventingSplitInit,
-                                 bool allowReturns) {
+                                 bool allowReturns,
+                                 BlockStmt*& ignoreFirstEndInBlock) {
   INT_ASSERT(foundReturn == FOUND_RET || foundReturn == FOUND_THROW);
 
   // Look for initializations after the return.
@@ -150,7 +163,8 @@ static found_init_t handleReturn(found_init_t foundReturn,
                                               cur->next,
                                               initAssigns,
                                               usePreventingSplitInit,
-                                              allowReturns);
+                                              allowReturns,
+                                              ignoreFirstEndInBlock);
   if (afterReturn == FOUND_INIT) {
     // Initializations after a throw are still initializations, e.g.
     return FOUND_INIT;
@@ -167,7 +181,8 @@ static found_init_t doFindInitPoints(Symbol* sym,
                                      Expr* start,
                                      std::vector<CallExpr*>& initAssigns,
                                      Expr*& usePreventingSplitInit,
-                                     bool allowReturns) {
+                                     bool allowReturns,
+                                     BlockStmt*& ignoreFirstEndInBlock) {
   if (start == NULL)
     return FOUND_NOTHING;
 
@@ -179,26 +194,32 @@ static found_init_t doFindInitPoints(Symbol* sym,
   for (Expr* cur = start->getStmtExpr(); cur != NULL; cur = cur->next) {
     // x = ...
     if (CallExpr* call = toCallExpr(cur)) {
-      // ignore PRIM_END_OF_STATEMENT
-      if (!call->isPrimitive(PRIM_END_OF_STATEMENT)) {
-        if (call->isNamedAstr(astrSassign)) {
-          if (SymExpr* se = toSymExpr(call->get(1))) {
-            if (se->symbol() == sym) {
-              if (findSymExprFor(call->get(2), sym) == NULL) {
-                // careful with e.g.
-                //  x = x + 1;  or y = 1:y.type;
-                initAssigns.push_back(call);
-                return FOUND_INIT;
-              }
+      if (call->isNamedAstr(astrSassign)) {
+        if (SymExpr* se = toSymExpr(call->get(1))) {
+          if (se->symbol() == sym) {
+            if (findSymExprFor(call->get(2), sym) == NULL) {
+              // careful with e.g.
+              //  x = x + 1;  or y = 1:y.type;
+              initAssigns.push_back(call);
+              return FOUND_INIT;
             }
           }
         }
+      }
 
-        if (SymExpr* se = findSymExprFor(cur, sym)) {
-          // Emit an error if split initialization is required
-          usePreventingSplitInit = se;
-          return FOUND_USE;
-        }
+      // ignore the 1st PRIM_END_OF_STATEMENT we encounter in the block
+      if (call->isPrimitive(PRIM_END_OF_STATEMENT) &&
+          ignoreFirstEndInBlock != NULL &&
+          toBlockStmt(call->parentExpr) == ignoreFirstEndInBlock) {
+        // Stop looking for the 1st PRIM_END_OF_STATEMENT
+        ignoreFirstEndInBlock = NULL;
+        continue;
+      }
+
+      if (SymExpr* se = findSymExprFor(cur, sym)) {
+        // Emit an error if split initialization is required
+        usePreventingSplitInit = se;
+        return FOUND_USE;
       }
     }
 
@@ -232,11 +253,13 @@ static found_init_t doFindInitPoints(Symbol* sym,
 
         found_init_t foundReturn = regularReturn ? FOUND_RET : FOUND_THROW;
         return handleReturn(foundReturn, sym, cur, initAssigns,
-                            usePreventingSplitInit, allowReturns);
+                            usePreventingSplitInit, allowReturns,
+                            ignoreFirstEndInBlock);
       }
 
     // { x = ... }
     } else if (BlockStmt* block = toBlockStmt(cur)) {
+
       if (block->isLoopStmt() || block->isRealBlockStmt() == false) {
         // Loop / on / begin / etc - just check for uses
         if (SymExpr* se = findSymExprFor(cur, sym)) {
@@ -248,14 +271,16 @@ static found_init_t doFindInitPoints(Symbol* sym,
         Expr* start = block->body.first();
         found_init_t found = doFindInitPoints(sym, start, initAssigns,
                                               usePreventingSplitInit,
-                                              allowReturns);
+                                              allowReturns,
+                                              ignoreFirstEndInBlock);
         if (found == FOUND_INIT) {
           return FOUND_INIT;
         } else if (found == FOUND_USE) {
           return FOUND_USE;
         } else if (found == FOUND_RET || found == FOUND_THROW) {
           return handleReturn(found, sym, cur, initAssigns,
-                              usePreventingSplitInit, allowReturns);
+                              usePreventingSplitInit, allowReturns,
+                              ignoreFirstEndInBlock);
         }
       }
 
@@ -263,7 +288,8 @@ static found_init_t doFindInitPoints(Symbol* sym,
       Expr* start = tr->body()->body.first();
       found_init_t foundBody = doFindInitPoints(sym, start, initAssigns,
                                                 usePreventingSplitInit,
-                                                allowReturns);
+                                                allowReturns,
+                                                ignoreFirstEndInBlock);
 
       bool allCatchesRet = true;
       CatchStmt* nonReturningCatch = NULL;
@@ -279,7 +305,8 @@ static found_init_t doFindInitPoints(Symbol* sym,
           Expr* use = NULL;
           Expr* start = ctch->body()->body.first();
           found_init_t foundCatch = doFindInitPoints(sym, start, inits,
-                                                     use, allowReturns);
+                                                     use, allowReturns,
+                                                     ignoreFirstEndInBlock);
           if (foundCatch == FOUND_USE || foundCatch == FOUND_INIT) {
             // Consider even an assignment in a catch block as a use
             usePreventingSplitInit = findSymExprFor(ctch, sym);
@@ -304,7 +331,8 @@ static found_init_t doFindInitPoints(Symbol* sym,
         }
       } else if (foundBody == FOUND_RET || foundBody == FOUND_THROW) {
         return handleReturn(foundBody, sym, cur, initAssigns,
-                            usePreventingSplitInit, allowReturns);
+                            usePreventingSplitInit, allowReturns,
+                            ignoreFirstEndInBlock);
       }
 
     // if _ { x = ... } else { x = ... }
@@ -321,11 +349,13 @@ static found_init_t doFindInitPoints(Symbol* sym,
       Expr* ifUse = NULL;
       Expr* elseUse = NULL;
       found_init_t foundIf = doFindInitPoints(sym, ifStart, ifAssigns,
-                                              ifUse, allowReturns);
+                                              ifUse, allowReturns,
+                                              ignoreFirstEndInBlock);
       found_init_t foundElse = FOUND_NOTHING;
       if (elseStart != NULL)
         foundElse = doFindInitPoints(sym, elseStart, elseAssigns,
-                                     elseUse, allowReturns);
+                                     elseUse, allowReturns,
+                                     ignoreFirstEndInBlock);
 
       bool ifInits = foundIf == FOUND_INIT;
       bool elseInits = foundElse == FOUND_INIT;
@@ -363,7 +393,8 @@ static found_init_t doFindInitPoints(Symbol* sym,
         if (foundIf == FOUND_THROW && foundElse == FOUND_THROW)
           found = FOUND_THROW;
         return handleReturn(found, sym, cur, initAssigns,
-                            usePreventingSplitInit, allowReturns);
+                            usePreventingSplitInit, allowReturns,
+                            ignoreFirstEndInBlock);
       }
 
     } else {

@@ -1774,6 +1774,7 @@ static void addLocalCopiesAndWritebacks(FnSymbol*  fn,
             INT_ASSERT(typeFormal != NULL);
             init->insertAtTail(new SymExpr(typeFormal));
           }
+          fn->insertAtHead(new CallExpr(PRIM_END_OF_STATEMENT));
           fn->insertAtHead(init);
         }
 
@@ -1799,6 +1800,7 @@ static void addLocalCopiesAndWritebacks(FnSymbol*  fn,
         } else {
           CallExpr * init = new CallExpr(PRIM_DEFAULT_INIT_VAR, tmp,
                                          formalType->symbol);
+          fn->insertAtHead(new CallExpr(PRIM_END_OF_STATEMENT));
           fn->insertAtHead(init);
         }
       }
