@@ -506,44 +506,19 @@ static VarSymbol* definesAnAutoDestroyedVariable(const Expr* stmt) {
 static VarSymbol* possiblyInitsDestroyedVariable(Expr* e, CallExpr*& fCall) {
 
   if (CallExpr* call = toCallExpr(e)) {
-    // case 1: PRIM_MOVE/PRIM_ASSIGN into a variable
-    if (call->isPrimitive(PRIM_MOVE) || call->isPrimitive(PRIM_ASSIGN)) {
 
-      // set fCall if there is a user call in arg 2
-      if (CallExpr* subCall = toCallExpr(call->get(2)))
-        if (subCall->resolvedOrVirtualFunction() != NULL)
-          fCall = subCall;
+    SymExpr* gotSe = NULL;
+    CallExpr* gotCall = NULL;
+    if (isInitOrReturn(call, gotSe, gotCall)) {
+      fCall = gotCall;
+      if (VarSymbol* var = toVarSymbol(gotSe->symbol()))
+        if (isAutoDestroyedVariable(var))
+          return var;
 
-      if (SymExpr* se = toSymExpr(call->get(1)))
-        if (VarSymbol* var = toVarSymbol(se->symbol()))
-          if (isAutoDestroyedVariable(var))
-            return var;
-
-      return NULL;
-    }
-
-    if (FnSymbol* calledFn = call->resolvedOrVirtualFunction()) {
-
+    } else if (call->resolvedOrVirtualFunction()) {
+      // Set fCall even if it wasn't returning something, so out intents
+      // can be searched for
       fCall = call;
-
-      // case 2: init or init=
-      if (calledFn->isMethod() &&
-          (calledFn->name == astrInit || calledFn->name == astrInitEquals)) {
-        SymExpr* se = toSymExpr(call->get(1));
-        if (VarSymbol* var = toVarSymbol(se->symbol()))
-          if (isAutoDestroyedVariable(var))
-            return var;
-      }
-
-      for_formals_actuals(formal, actual, call) {
-        // case 3: return through ret-arg
-        if (formal->hasFlag(FLAG_RETARG)) {
-          if (SymExpr* actualSe = toSymExpr(actual))
-            if (VarSymbol* var = toVarSymbol(actualSe->symbol()))
-              if (isAutoDestroyedVariable(var))
-                return var;
-        }
-      }
     }
   }
 
@@ -725,11 +700,11 @@ static void gatherTempsDeadLastMention(VarSymbol* v,
   for_SymbolSymExprs(se, v) {
     if (CallExpr* call = toCallExpr(se->getStmtExpr())) {
       SymExpr* lhsSe = NULL;
-      CallExpr* initOrCtor = NULL;
-      if (call->isPrimitive(PRIM_MOVE) || call->isPrimitive(PRIM_ASSIGN)) {
-        lhsSe = toSymExpr(call->get(1));
-      } else if (isRecordInitOrReturn(call, lhsSe, initOrCtor)) {
+      CallExpr* subCall = NULL;
+      if (isInitOrReturn(call, lhsSe, subCall)) {
         // call above sets lhsSe and initOrCtor
+      } else if (call->resolvedOrVirtualFunction()) {
+        subCall = call;
       }
 
       // handle a returned variable being inited here
@@ -740,8 +715,8 @@ static void gatherTempsDeadLastMention(VarSymbol* v,
       }
 
       // also handle out intent variables being inited here
-      if (initOrCtor != NULL) {
-        for_formals_actuals(formal, actual, initOrCtor) {
+      if (subCall != NULL && subCall->resolvedOrVirtualFunction() != NULL) {
+        for_formals_actuals(formal, actual, subCall) {
           if (formal->intent == INTENT_OUT ||
               formal->originalIntent == INTENT_OUT)  {
             SymExpr* outActualSe = toSymExpr(actual);
@@ -765,12 +740,16 @@ static void markTempsDeadLastMention(std::set<VarSymbol*>& temps) {
     for_SymbolSymExprs(se, v) {
       if (CallExpr* call = toCallExpr(se->getStmtExpr())) {
         SymExpr* lhsSe = NULL;
-        CallExpr* initOrCtor = NULL;
+        CallExpr* subCall = NULL;
         if (call->isPrimitive(PRIM_MOVE) || call->isPrimitive(PRIM_ASSIGN)) {
           lhsSe = toSymExpr(call->get(1));
-        } else if (isRecordInitOrReturn(call, lhsSe, initOrCtor)) {
+        } else if (isInitOrReturn(call, lhsSe, subCall)) {
           // call above sets lhsSe and initOrCtor
+        } else if (call->resolvedOrVirtualFunction()) {
+          subCall = call;
         }
+
+
 
         // returning into a user var?
         if (lhsSe != NULL) {
@@ -782,8 +761,8 @@ static void markTempsDeadLastMention(std::set<VarSymbol*>& temps) {
           }
         }
         // out intent setting a user var?
-        if (initOrCtor != NULL) {
-          for_formals_actuals(formal, actual, initOrCtor) {
+        if (subCall != NULL && subCall->resolvedOrVirtualFunction() != NULL) {
+          for_formals_actuals(formal, actual, subCall) {
             if (formal->intent == INTENT_OUT ||
                 formal->originalIntent == INTENT_OUT)  {
               SymExpr* outActualSe = toSymExpr(actual);

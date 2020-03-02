@@ -823,36 +823,24 @@ FnSymbol* resolvedToTaskFun(CallExpr* call) {
   return retval;
 }
 
-// For use during/after resolution. Returns 'true' if the call is to
-// a function returning a record by value or an initializer.
-// Handles both 'move lhs, someCall()' and 'someCall(retarg=lhs)' forms.
-// lhsSe is the SymExpr indicating what is being set.
-// initOrCtor is the user call (e.g. someCall in the examples above).
-bool isRecordInitOrReturn(CallExpr* call, SymExpr*& lhsSe, CallExpr*& initOrCtor) {
+bool isInitOrReturn(CallExpr* call, SymExpr*& lhsSe, CallExpr*& initOrCtor)
+{
 
   if (call->isPrimitive(PRIM_MOVE) ||
       call->isPrimitive(PRIM_ASSIGN)) {
     // case 1: PRIM_MOVE/PRIM_ASSIGN into a variable
-    Expr* rhsExpr = call->get(2);
-    Type* t = NULL;
-    if (call->isPrimitive(PRIM_MOVE))
-      t = rhsExpr->typeInfo();
-    else
-      t = rhsExpr->getValType();
-    if (AggregateType* at = toAggregateType(t)) {
-      if (isRecord(at)) {
-        SymExpr* se = toSymExpr(call->get(1));
-        INT_ASSERT(se);
-        lhsSe = se;
+    SymExpr* retSe = toSymExpr(call->get(1));
+    INT_ASSERT(retSe);
 
-        if (CallExpr* rhsCallExpr = toCallExpr(rhsExpr)) {
-          if (rhsCallExpr->resolvedOrVirtualFunction()) {
-            initOrCtor = rhsCallExpr;
-          }
-        }
-        return true;
+    CallExpr* retCall = NULL;
+    if (CallExpr* rhsCallExpr = toCallExpr(call->get(2))) {
+      if (rhsCallExpr->resolvedOrVirtualFunction()) {
+        retCall = rhsCallExpr;
       }
     }
+    lhsSe = retSe;
+    initOrCtor = retCall;
+    return true;
   }
 
   if (FnSymbol* calledFn = call->resolvedOrVirtualFunction()) {
@@ -861,24 +849,48 @@ bool isRecordInitOrReturn(CallExpr* call, SymExpr*& lhsSe, CallExpr*& initOrCtor
       // case 2: init or init=
       SymExpr* se = toSymExpr(call->get(1));
       INT_ASSERT(se);
-      Symbol* sym = se->symbol();
-      if (isRecord(sym->type)) {
-        lhsSe = se;
-        initOrCtor = call;
-        return true;
-      }
+      lhsSe = se;
+      initOrCtor = call;
+      return true;
     } else if (calledFn->hasFlag(FLAG_FN_RETARG)) {
       // case 3: return through ret-arg
       for_formals_actuals(formal, actual, call) {
         if (formal->hasFlag(FLAG_RETARG)) {
-          if (isRecord(formal->getValType())) {
-            SymExpr* se = toSymExpr(actual);
-            INT_ASSERT(se);
-            lhsSe = se;
-            initOrCtor = call;
-            return true;
-          }
+          SymExpr* se = toSymExpr(actual);
+          INT_ASSERT(se);
+          lhsSe = se;
+          initOrCtor = call;
+          return true;
         }
+      }
+    }
+  }
+
+  lhsSe = NULL;
+  initOrCtor = NULL;
+  return false;
+}
+
+// For use during/after resolution. Returns 'true' if the call is to
+// a function returning a record by value or an initializer.
+// Handles both 'move lhs, someCall()' and 'someCall(retarg=lhs)' forms.
+// lhsSe is the SymExpr indicating what is being set.
+// initOrCtor is the user call (e.g. someCall in the examples above).
+bool isRecordInitOrReturn(CallExpr* call, SymExpr*& lhsSe, CallExpr*& initOrCtor) {
+  SymExpr* gotSe = NULL;
+  CallExpr* gotCall = NULL;
+  if (isInitOrReturn(call, gotSe, gotCall)) {
+    INT_ASSERT(gotSe);
+    Type* t = NULL;
+    if (call->isPrimitive(PRIM_MOVE))
+      t = gotSe->typeInfo();
+    else
+      t = gotSe->getValType();
+    if (AggregateType* at = toAggregateType(t)) {
+      if (isRecord(at)) {
+        lhsSe = gotSe;
+        initOrCtor = gotCall;
+        return true;
       }
     }
   }

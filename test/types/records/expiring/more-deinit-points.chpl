@@ -29,6 +29,9 @@ proc acceptTwoAndReturnNew(a, b) {
   return makeR();
 }
 
+proc acceptOutAndTwo(out arg, a, b) {
+}
+
 proc testIn1() {
   writeln("testIn1");
   var xx = new R();
@@ -99,6 +102,14 @@ proc testOut4() {
 }
 testOut4();
 
+proc testOut5() {
+  writeln("testOut5");
+  var x: R;
+  acceptOutAndTwo(x, makeR(), makeR());
+  writeln("end");
+}
+testOut5();
+
 proc testRet1() {
   writeln("testRet1");
   var xx:R;
@@ -145,3 +156,11 @@ proc testRet6() {
   writeln("end");
 }
 testRet6();
+
+proc testRet7() {
+  writeln("testRet7");
+  var x: R;
+  x = acceptTwoAndReturnNew(makeR(), makeR());
+  writeln("end");
+}
+testRet7();
