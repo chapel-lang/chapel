@@ -7,8 +7,6 @@ note: to formal of type owned C
 owned-return-blank-arg-value-nonnil.chpl:8: In function 'returnByValue':
 owned-return-blank-arg-value-nonnil.chpl:10: error: Cannot transfer ownership from non-nilable class argument
 owned-return-blank-arg-value-nonnil.chpl:8: note: 'arg' is set to nil here
-owned-return-blank-arg-value-nonnil.chpl:10: error: Cannot transfer ownership from non-nilable reference argument
 owned-return-blank-arg-value-nonnil.chpl:27: In function 'returnByValueTyped':
 owned-return-blank-arg-value-nonnil.chpl:29: error: Cannot transfer ownership from non-nilable class argument
 owned-return-blank-arg-value-nonnil.chpl:27: note: 'arg' is set to nil here
-owned-return-blank-arg-value-nonnil.chpl:29: error: Cannot transfer ownership from non-nilable reference argument

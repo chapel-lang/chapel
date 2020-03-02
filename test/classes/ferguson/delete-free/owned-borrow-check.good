@@ -1,1 +1,4 @@
-some kind of compilation error
+owned-borrow-check.chpl:8: error: variable 'myGlobalC' is not initialized
+note: undecorated class type C does not support default initialization
+note: consider adding a management decorator such as 'owned', 'shared', 'borrowed', or 'unmanaged'
+owned-borrow-check.chpl:8: error: split initialization is not supported for globals

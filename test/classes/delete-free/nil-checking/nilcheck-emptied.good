@@ -19,8 +19,6 @@ nilcheck-emptied.chpl:39: error: Illegal use of dead value
 nilcheck-emptied.chpl:38: note: 'x' is dead due to ownership transfer here
 nilcheck-emptied.chpl:39: error: mention of non-nilable variable after ownership is transferred out of it
 nilcheck-emptied.chpl:38: note: ownership transfer occurred here
-nilcheck-emptied.chpl:39: error: mention of non-nilable variable after ownership is transferred out of it
-nilcheck-emptied.chpl:38: note: ownership transfer occurred here
 nilcheck-emptied.chpl:43: In function 'bad3q':
 nilcheck-emptied.chpl:46: error: applying postfix-! to nil
 nilcheck-emptied.chpl:45: note: 'x' is set to nil here
@@ -32,8 +30,8 @@ nilcheck-emptied.chpl:55: error: Illegal use of dead value
 nilcheck-emptied.chpl:54: note: 'x' is dead due to ownership transfer here
 nilcheck-emptied.chpl:56: error: Illegal use of dead value
 nilcheck-emptied.chpl:54: note: 'x' is dead due to ownership transfer here
-nilcheck-emptied.chpl:53: error: Cannot transfer ownership from a non-nilable variable with a potentially captured alias
-nilcheck-emptied.chpl:54: error: Cannot transfer ownership from a non-nilable variable with a potentially captured alias
+nilcheck-emptied.chpl:55: error: mention of non-nilable variable after ownership is transferred out of it
+nilcheck-emptied.chpl:53: note: ownership transfer occurred here
 nilcheck-emptied.chpl:60: In function 'bad4q':
 nilcheck-emptied.chpl:66: error: applying postfix-! to nil
 nilcheck-emptied.chpl:64: note: 'x' is set to nil here
