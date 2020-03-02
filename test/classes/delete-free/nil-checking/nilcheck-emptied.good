@@ -1,9 +1,39 @@
 nilcheck-emptied.chpl:8: In function 'bad1':
-nilcheck-emptied.chpl:11: error: attempt to dereference nil
-nilcheck-emptied.chpl:10: note: this statement may be relevant
-nilcheck-emptied.chpl:15: In function 'bad2':
-nilcheck-emptied.chpl:18: error: attempt to dereference nil
-nilcheck-emptied.chpl:17: note: this statement may be relevant
-nilcheck-emptied.chpl:22: In function 'bad3':
-nilcheck-emptied.chpl:25: error: attempt to dereference nil
-nilcheck-emptied.chpl:24: note: this statement may be relevant
+nilcheck-emptied.chpl:11: error: Illegal use of dead value
+nilcheck-emptied.chpl:10: note: 'x' is dead due to ownership transfer here
+nilcheck-emptied.chpl:11: error: mention of non-nilable variable after ownership is transferred out of it
+nilcheck-emptied.chpl:10: note: ownership transfer occurred here
+nilcheck-emptied.chpl:15: In function 'bad1q':
+nilcheck-emptied.chpl:18: error: applying postfix-! to nil
+nilcheck-emptied.chpl:17: note: 'x' is set to nil here
+nilcheck-emptied.chpl:22: In function 'bad2':
+nilcheck-emptied.chpl:25: error: Illegal use of dead value
+nilcheck-emptied.chpl:24: note: 'x' is dead due to ownership transfer here
+nilcheck-emptied.chpl:25: error: mention of non-nilable variable after ownership is transferred out of it
+nilcheck-emptied.chpl:24: note: ownership transfer occurred here
+nilcheck-emptied.chpl:29: In function 'bad2q':
+nilcheck-emptied.chpl:32: error: applying postfix-! to nil
+nilcheck-emptied.chpl:31: note: 'x' is set to nil here
+nilcheck-emptied.chpl:36: In function 'bad3':
+nilcheck-emptied.chpl:39: error: Illegal use of dead value
+nilcheck-emptied.chpl:38: note: 'x' is dead due to ownership transfer here
+nilcheck-emptied.chpl:39: error: mention of non-nilable variable after ownership is transferred out of it
+nilcheck-emptied.chpl:38: note: ownership transfer occurred here
+nilcheck-emptied.chpl:39: error: mention of non-nilable variable after ownership is transferred out of it
+nilcheck-emptied.chpl:38: note: ownership transfer occurred here
+nilcheck-emptied.chpl:43: In function 'bad3q':
+nilcheck-emptied.chpl:46: error: applying postfix-! to nil
+nilcheck-emptied.chpl:45: note: 'x' is set to nil here
+nilcheck-emptied.chpl:50: In function 'bad4':
+nilcheck-emptied.chpl:54: error: Illegal use of dead value
+nilcheck-emptied.chpl:54: note: 'y' refers to 'x'
+nilcheck-emptied.chpl:53: note: 'x' is dead due to ownership transfer here
+nilcheck-emptied.chpl:55: error: Illegal use of dead value
+nilcheck-emptied.chpl:54: note: 'x' is dead due to ownership transfer here
+nilcheck-emptied.chpl:56: error: Illegal use of dead value
+nilcheck-emptied.chpl:54: note: 'x' is dead due to ownership transfer here
+nilcheck-emptied.chpl:53: error: Cannot transfer ownership from a non-nilable variable with a potentially captured alias
+nilcheck-emptied.chpl:54: error: Cannot transfer ownership from a non-nilable variable with a potentially captured alias
+nilcheck-emptied.chpl:60: In function 'bad4q':
+nilcheck-emptied.chpl:66: error: applying postfix-! to nil
+nilcheck-emptied.chpl:64: note: 'x' is set to nil here

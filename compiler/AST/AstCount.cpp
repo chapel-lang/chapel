@@ -191,6 +191,10 @@ void AstCount::visitUseStmt(UseStmt* node) {
   numUseStmt++;
 }
 
+void AstCount::visitImportStmt(ImportStmt* node) {
+  numImportStmt++;
+}
+
 bool AstCount::enterBlockStmt(BlockStmt* node) {
   numBlockStmt++;
   return true;

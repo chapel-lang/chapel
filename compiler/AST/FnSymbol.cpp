@@ -43,7 +43,8 @@ FnSymbol*                 gGenericTupleDestroy  = NULL;
 std::map<FnSymbol*, int>  ftableMap;
 std::vector<FnSymbol*>    ftableVec;
 
-FnSymbol::FnSymbol(const char* initName) : Symbol(E_FnSymbol, initName) {
+FnSymbol::FnSymbol(const char* initName)
+  : Symbol(E_FnSymbol, initName), userInstantiationPointLoc(0, NULL) {
   retType            = dtUnknown;
   where              = NULL;
   lifetimeConstraints= NULL;
@@ -536,6 +537,9 @@ void FnSymbol::setInstantiationPoint(Expr* expr) {
     this->_instantiationPoint = block;
     this->_backupInstantiationPoint = block->getFunction();
   }
+
+  if (expr != NULL)
+    userInstantiationPointLoc = getUserInstantiationPoint(this);
 }
 
 BlockStmt* FnSymbol::instantiationPoint() const {
@@ -909,7 +913,7 @@ bool FnSymbol::isDefaultInit() const {
 }
 
 bool FnSymbol::isCopyInit() const {
-  return isMethod() && strcmp(name, astrInitEquals) == 0;
+  return isMethod() && name == astrInitEquals;
 }
 
 // This function or method is an iterator (as opposed to a procedure).

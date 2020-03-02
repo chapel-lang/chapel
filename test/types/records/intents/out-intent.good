@@ -1,0 +1,220 @@
+test1
+init 1 1
+(x = 1, ptr = {xx = 1})
+deinit 1 1
+test1a
+init (default)
+(x = 0, ptr = {xx = 0})
+init 1 1
+lhs(0 0) = rhs(1 1)
+deinit 1 1
+(x = 1, ptr = {xx = 1})
+deinit 1 1
+test2
+init (default)
+(x = 0, ptr = {xx = 0})
+deinit 0 0
+test3
+init 1 1
+init 2 2
+init 3 3
+lhs(2 2) = rhs(3 3)
+deinit 3 3
+lhs(1 1) = rhs(3 3)
+deinit 3 3
+(x = 3, ptr = {xx = 3})
+deinit 3 3
+test4
+init (default)
+init= 0 0
+lhs(0 0) = rhs(0 0)
+deinit 0 0
+(x = 0, ptr = {xx = 0})
+deinit 0 0
+test5
+init (default)
+(x = 0, ptr = {xx = 0})
+deinit 0 0
+test6
+init (default)
+{1..1}
+(x = 0, ptr = {xx = 0})
+deinit 0 0
+test6a
+init (default)
+{1..1} (x = 0, ptr = {xx = 0})
+init (default)
+{1..1}
+lhs(0 0) = rhs(0 0)
+deinit 0 0
+(x = 0, ptr = {xx = 0})
+deinit 0 0
+test7
+init (default)
+init 1 1
+lhs(0 0) = rhs(1 1)
+deinit 1 1
+init (default)
+lhs(0 0) = rhs(1 1)
+deinit 1 1
+(x = 1, ptr = {xx = 1})
+deinit 1 1
+test7a
+init (default)
+{1..1} (x = 0, ptr = {xx = 0})
+init (default)
+init 1 1
+lhs(0 0) = rhs(1 1)
+deinit 1 1
+lhs(0 0) = rhs(1 1)
+deinit 1 1
+(x = 1, ptr = {xx = 1})
+deinit 1 1
+test8
+init (default)
+(x = 0, ptr = {xx = 0})
+deinit 0 0
+test9
+init (default)
+init 1 1
+lhs(0 0) = rhs(1 1)
+deinit 1 1
+init (default)
+lhs(0 0) = rhs(1 1)
+deinit 1 1
+(x = 1, ptr = {xx = 1})
+deinit 1 1
+test10
+init (default)
+init (default)
+lhs(0 0) = rhs(0 0)
+deinit 0 0
+(x = 0, ptr = {xx = 0})
+deinit 0 0
+test10b
+init (default)
+(x = 0, ptr = {xx = 0})
+init (default)
+lhs(0 0) = rhs(0 0)
+deinit 0 0
+(x = 0, ptr = {xx = 0})
+deinit 0 0
+test11
+init (default)
+init 1 1
+lhs(0 0) = rhs(1 1)
+deinit 1 1
+init (default)
+lhs(0 0) = rhs(1 1)
+deinit 1 1
+init (default)
+lhs(0 0) = rhs(1 1)
+deinit 1 1
+(x = 1, ptr = {xx = 1})
+deinit 1 1
+test11a
+init (default)
+{1..1} (x = 0, ptr = {xx = 0})
+init (default)
+init 1 1
+lhs(0 0) = rhs(1 1)
+deinit 1 1
+lhs(0 0) = rhs(1 1)
+deinit 1 1
+init (default)
+lhs(0 0) = rhs(1 1)
+deinit 1 1
+(x = 1, ptr = {xx = 1})
+deinit 1 1
+test12
+init (default)
+(x = 0, ptr = {xx = 0})
+deinit 0 0
+test13
+init (default)
+(x = 0, ptr = {xx = 0})
+deinit 0 0
+test14
+init (default)
+init 1 1
+lhs(0 0) = rhs(1 1)
+deinit 1 1
+(x = 1, ptr = {xx = 1})
+deinit 1 1
+test15
+init (default)
+(x = 0, ptr = {xx = 0})
+deinit 0 0
+test16
+init 1 1
+(x = 1, ptr = {xx = 1})
+deinit 1 1
+test17
+init 1 1
+(x = 1, ptr = {xx = 1})
+deinit 1 1
+test18
+init 2 2
+(x = 2, ptr = {xx = 2})
+deinit 2 2
+test19
+init (default)
+init 1 1
+lhs(0 0) = rhs(1 1)
+deinit 1 1
+(x = 1, ptr = {xx = 1})
+deinit 1 1
+test20
+init (default)
+(x = 0, ptr = {xx = 0})
+deinit 0 0
+test17p
+init 1 1
+(x = 1, ptr = {xx = 1})
+deinit 1 1
+test18p
+init 2 2
+(x = 2, ptr = {xx = 2})
+deinit 2 2
+test19p
+init 1 1
+(x = 1, ptr = {xx = 1})
+deinit 1 1
+test20p
+init (default)
+(x = 0, ptr = {xx = 0})
+deinit 0 0
+test21
+init (default)
+(x = 0, ptr = {xx = 0})
+deinit 0 0
+test21a
+init (default)
+(x = 0, ptr = {xx = 0})
+deinit 0 0
+test22
+init (default)
+deinit 0 0
+Error: 
+test23
+init 1 1
+(x = 1, ptr = {xx = 1})
+deinit 1 1
+test23a
+init 1 1
+(x = 1, ptr = {xx = 1})
+deinit 1 1
+test24
+Error: 
+test25
+Error: 
+test26
+init 1 1
+(x = 1, ptr = {xx = 1})
+deinit 1 1
+
+=================================================================================================================
+Allocated Memory (Bytes)         Number   Size     Total    Description                      Address             
+=================================================================================================================
+=================================================================================================================
+

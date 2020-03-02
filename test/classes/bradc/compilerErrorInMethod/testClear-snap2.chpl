@@ -4,6 +4,10 @@ record Wrap {
   var _value;
 }
 
+proc Wrap.init=(other: Wrap) {
+  this._value = other._value;
+}
+
 proc =(ref lhs:Wrap, rhs) {
   lhs._value.clearHelp();
 }

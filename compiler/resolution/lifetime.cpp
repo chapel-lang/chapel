@@ -21,6 +21,7 @@
 
 #include "AstVisitorTraverse.h"
 #include "DecoratedClassType.h"
+#include "DeferStmt.h"
 #include "driver.h"
 #include "expr.h"
 #include "ForallStmt.h"
@@ -292,6 +293,9 @@ namespace {
       AliasesMap *aliases;
       LifetimeState* lifetimes;
 
+      MarkCapturesVisitor() : aliases(NULL), lifetimes(NULL) { }
+
+      // only local variables being considered are added to this map
       // symbol -> 1 if potentially captured, 0 if not captured
       SymbolToCapturedMap varToPotentiallyCaptured;
 
@@ -300,6 +304,7 @@ namespace {
       void markAliasesAndSymPotentiallyCaptured(Symbol* sym, Expr* ctx);
 
       virtual bool enterDefExpr(DefExpr* def);
+      virtual bool enterDeferStmt(DeferStmt* defer);
       virtual bool enterCallExpr(CallExpr* call);
   };
 
@@ -359,7 +364,7 @@ static bool isUser(BaseAST* ast);
 
 static void markLocalVariableExpiryInFn(FnSymbol* fn, LifetimeState* state);
 
-void checkLifetimes(void) {
+void checkLifetimes() {
   // Mark all arguments with FLAG_SCOPE or FLAG_RETURN_SCOPE.
   // This needs to be done for all functions before the next
   // loop since it affects how calls are handled.
@@ -387,16 +392,6 @@ static void checkFunction(FnSymbol* fn) {
     // check lifetimes
     // e.g. borrow can't outlive borrowed-from
     checkLifetimesInFunction(fn);
-  }
-
-  if (fCompileTimeNilChecking) {
-    // Determine cases where the compiler can prove
-    // a reference-type variable is 'nil'
-    findNilDereferences(fn);
-
-    // TODO:
-    // Determine cases where the compiler can prove
-    // a class-type variable is not 'nil'
   }
 }
 
@@ -1544,48 +1539,13 @@ bool GatherTempsVisitor::enterCallExpr(CallExpr* call) {
 
 static bool isRecordInitOrReturn(CallExpr* call, Symbol*& lhs, CallExpr*& initOrCtor, LifetimeState* lifetimes) {
 
-  if (call->isPrimitive(PRIM_MOVE) ||
-      call->isPrimitive(PRIM_ASSIGN)) {
-    if (CallExpr* rhsCallExpr = toCallExpr(call->get(2))) {
-      if (rhsCallExpr->resolvedOrVirtualFunction()) {
-        if (AggregateType* at = toAggregateType(rhsCallExpr->typeInfo())) {
-          if (isRecord(at)) {
-            SymExpr* se = toSymExpr(call->get(1));
-            INT_ASSERT(se);
-            lhs = lifetimes->getCanonicalSymbol(se->symbol());
-            initOrCtor = rhsCallExpr;
-            return true;
-          }
-        }
-      }
-    }
-  }
-
-  if (FnSymbol* calledFn = call->resolvedOrVirtualFunction()) {
-    if (calledFn->isMethod() &&
-        (calledFn->name == astrInit || calledFn->name == astrInitEquals)) {
-      SymExpr* se = toSymExpr(call->get(1));
-      INT_ASSERT(se);
-      Symbol* sym = se->symbol();
-      if (isRecord(sym->type)) {
-        lhs = lifetimes->getCanonicalSymbol(sym);
-        initOrCtor = call;
-        return true;
-      }
-    } else if (calledFn->hasFlag(FLAG_FN_RETARG)) {
-      for_formals_actuals(formal, actual, call) {
-        if (formal->hasFlag(FLAG_RETARG)) {
-          if (isRecord(formal->getValType())) {
-            SymExpr* se = toSymExpr(actual);
-            INT_ASSERT(se);
-            Symbol* sym = se->symbol();
-            lhs = lifetimes->getCanonicalSymbol(sym);
-            initOrCtor = call;
-            return true;
-          }
-        }
-      }
-    }
+  SymExpr* gotLHS = NULL;
+  CallExpr* gotCall = NULL;
+  if (isRecordInitOrReturn(call, gotLHS, gotCall)) {
+    INT_ASSERT(gotLHS && gotCall);
+    lhs = lifetimes->getCanonicalSymbol(gotLHS->symbol());
+    initOrCtor = gotCall;
+    return true;
   }
 
   lhs = NULL;
@@ -2999,9 +2959,6 @@ static bool typeCanAlias(Type* t) {
   if (isClassLikeOrPtr(t) || isManagedPtrType(t))
     return true; // classes, ptrs of any flavor can alias other things
 
-  else if (t->symbol->hasFlag(FLAG_ITERATOR_RECORD))
-    return true; // iterator records generally contain aliases of arguments
-
   else if (AggregateType* at = toAggregateType(t)) {
     // Does it contain any pointer fields, recursively?
     if (isRecord(at)) {
@@ -3249,12 +3206,15 @@ static bool shouldSetCapture(Symbol* sym) {
 
 void MarkCapturesVisitor::markPotentiallyCaptured(Symbol* sym, Expr* ctx) {
   if (shouldSetCapture(sym)) {
-    if (debuggingExpiringForFn(sym->defPoint->getFunction()) ||
-        debugExpiringForId == sym->id)
-      fprintf(stderr, " %s (%i) potentially captured at %i\n",
-              sym->name, sym->id, ctx->id);
+    SymbolToCapturedMap::iterator it = varToPotentiallyCaptured.find(sym);
+    if (it != varToPotentiallyCaptured.end()) {
+      if (debuggingExpiringForFn(sym->defPoint->getFunction()) ||
+          debugExpiringForId == sym->id)
+        fprintf(stderr, " %s (%i) potentially captured at %i\n",
+                sym->name, sym->id, ctx->id);
 
-    varToPotentiallyCaptured[sym] = 1;
+      it->second = 1;
+    }
   }
 }
 
@@ -3292,12 +3252,23 @@ bool MarkCapturesVisitor::enterDefExpr(DefExpr* def) {
 
   Symbol* sym = def->sym;
   if (shouldSetCapture(sym)) {
-    if (varToPotentiallyCaptured.count(sym) == 0) {
-      // Mark not captured
-      varToPotentiallyCaptured[def->sym] = 0;
-    }
+    // Add to map which indicates that analysis is considering
+    // this variable. Set value in map to 0 to mean not captured
+    // unless something causes it to be.
+    varToPotentiallyCaptured.insert(std::make_pair(sym, 0));
+    // Note, insert call above does nothing if element already in map.
   }
 
+  return false;
+}
+
+bool MarkCapturesVisitor::enterDeferStmt(DeferStmt* defer) {
+  // Mark anything mentioned in a defer as end-of-block
+  std::vector<SymExpr*> symExprs;
+  collectSymExprs(defer, symExprs);
+  for_vector(SymExpr, se, symExprs) {
+    markAliasesAndSymPotentiallyCaptured(se->symbol(), se);
+  }
   return false;
 }
 
@@ -3306,6 +3277,26 @@ bool MarkCapturesVisitor::enterDefExpr(DefExpr* def) {
 static bool isCapturingVariable(Symbol* var) {
   return !var->hasFlag(FLAG_TEMP) ||
          var->type->symbol->hasFlag(FLAG_RUNTIME_TYPE_VALUE);
+}
+
+static bool inSyncBlock(Expr* e, DefExpr* def) {
+
+  Expr* defBlock = def->parentExpr;
+
+  for (Expr* cur = e; cur != NULL && cur != defBlock; cur = cur->parentExpr) {
+    if (BlockStmt* block = toBlockStmt(cur)) {
+      // Recognize sync blocks by the call to chpl_waitDynamicEndCount
+      // (and then a if-check-error CondStmt) at the end of them.
+      if (CondStmt* cond = toCondStmt(block->body.last()))
+        if (CallExpr* condCall = toCallExpr(cond->condExpr))
+          if (condCall->isPrimitive(PRIM_CHECK_ERROR))
+            if (CallExpr* prevCall = toCallExpr(cond->prev))
+              if (prevCall->isNamedAstr(astr_chpl_waitDynamicEndCount))
+                return true;
+    }
+  }
+
+  return false;
 }
 
 bool MarkCapturesVisitor::enterCallExpr(CallExpr* call) {
@@ -3320,13 +3311,16 @@ bool MarkCapturesVisitor::enterCallExpr(CallExpr* call) {
   // 0: Handle task functions
   if (FnSymbol* calledFn = call->resolvedOrVirtualFunction()) {
     if (isTaskFun(calledFn)) {
-      // Consider a 'begin' to be a capture
-      // TODO?: unless it is in a sync block?
+      // Consider a 'begin' to be a capture unless it is
+      // lexically enclosed in a sync block (considering only
+      // blocks nested inside the declaration block).
       if (calledFn->hasFlag(FLAG_BEGIN)) {
         for_formals_actuals(formal, actual, call) {
           SymExpr* actualSe = toSymExpr(actual);
           Symbol* actualSym = actualSe->symbol();
-          markAliasesAndSymPotentiallyCaptured(actualSym, call);
+          if (!inSyncBlock(call, actualSym->defPoint)) {
+            markAliasesAndSymPotentiallyCaptured(actualSym, call);
+          }
         }
       }
       // Descend into task functions
@@ -3521,6 +3515,10 @@ bool ReportExpiringVisitor::enterCallExpr(CallExpr* call) {
 
 static void markLocalVariableExpiryInFn(FnSymbol* fn, LifetimeState* state) {
   // add FLAG_DEAD_END_OF_BLOCK and FLAG_DEAD_LAST_MENTION
+
+  // Skip task functions because they will be traversed at their call site.
+  if (isTaskFun(fn))
+    return;
 
   if (debuggingExpiringForFn(fn))
     nprint_view(fn);

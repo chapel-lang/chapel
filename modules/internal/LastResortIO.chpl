@@ -375,6 +375,7 @@ proc stderr {
   return IO.stderr;
 }
 */
+*/
 pragma "last resort"
 proc stdinInit() {
   compilerWarning("stdinInit will no longer be available by default,\nplease insert a use of the IO module to continue calling it.");
@@ -392,6 +393,7 @@ proc stderrInit() {
   compilerWarning("stderrInit will no longer be available by default,\nplease insert a use of the IO module to continue calling it.");
   return stderrInit();
 }
+
 
 pragma "last resort"
 proc read(ref args ...?n):bool throws {
@@ -412,13 +414,13 @@ proc readln():bool throws {
 }
 
 pragma "last resort"
-proc readln(type t ...?numTypes):bool throws {
+proc readln(type t ...?numTypes) throws {
   compilerWarning("readln will no longer be available by default,\nplease insert a use of the IO module to continue calling it.");
   return readln((...t));
 }
 
 pragma "last resort"
-proc read(type t ...?numTypes):bool throws {
+proc read(type t ...?numTypes) throws {
   compilerWarning("read will no longer be available by default,\nplease insert a use of the IO module to continue calling it.");
   return read((...t));
 }
@@ -452,4 +454,3 @@ proc string.format(args ...?k): string throws {
   compilerWarning("string.format will no longer be available by default,\nplease insert a use of the IO module to continue calling it.");
   return format((...args));
 }
-*/

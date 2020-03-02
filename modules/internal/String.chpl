@@ -133,15 +133,25 @@ and :proc:`~string.rfind()` return a :record:`byteIndex`.
  */
 module String {
   private use ChapelStandard;
-  use CString;
   private use SysCTypes;
-  use StringCasts;
   private use ByteBufferHelpers;
   private use BytesStringCommon;
   private use SysBasic;
 
+  public use CString;
+  public use StringCasts;
+  public use BytesStringCommon only encodePolicy;  // expose encodePolicy
+
   pragma "fn synchronization free"
-  private extern proc qio_decode_char_buf(ref chr:int(32), ref nbytes:c_int, buf:c_string, buflen:ssize_t):syserr;
+  private extern proc qio_decode_char_buf(ref chr:int(32),
+                                          ref nbytes:c_int,
+                                          buf:c_string,
+                                          buflen:ssize_t): syserr;
+  pragma "fn synchronization free"
+  private extern proc qio_decode_char_buf_esc(ref chr:int(32),
+                                              ref nbytes:c_int,
+                                              buf:c_string,
+                                              buflen:ssize_t): syserr;
   pragma "fn synchronization free"
   private extern proc qio_encode_char_buf(dst:c_void_ptr, chr:int(32)):syserr;
   pragma "fn synchronization free"
@@ -205,6 +215,7 @@ module String {
        }
 
    */
+  pragma "plain old data"
   record byteIndex {
     pragma "no doc"
     var _bindex  : int;
@@ -214,6 +225,7 @@ module String {
       // Let compiler insert defaults
     }
     proc init(i: int) { _bindex = i; }
+    proc init=(other: byteIndex) { _bindex = other._bindex; }
     proc init=(i: int) { _bindex = i; }
 
     proc writeThis(f) throws {
@@ -244,6 +256,7 @@ module String {
        }
 
    */
+  pragma "plain old data"
   record codepointIndex {
     pragma "no doc"
     var _cpindex  : int;
@@ -628,9 +641,10 @@ module String {
 
     :returns: A new `string`
   */
-  inline proc createStringWithNewBuffer(s: c_string, length=s.length) throws {
+  inline proc createStringWithNewBuffer(s: c_string, length=s.length,
+                                        errors=decodePolicy.strict) throws {
     return createStringWithNewBuffer(s: bufferType, length=length,
-                                                    size=length+1);
+                                     size=length+1, errors);
   }
 
   /*
@@ -648,12 +662,12 @@ module String {
 
      :returns: A new `string`
   */
+  // TODO: size is probably unnecessary here, but maybe we keep it for
+  // consistence? Then, we can at least give it a default like length+1
   inline proc createStringWithNewBuffer(s: bufferType,
-                                        length: int, size: int) throws {
-    var ret: string;
-    validateEncoding(s, length);
-    initWithNewBuffer(ret, s, length, size);
-    return ret;
+                                        length: int, size=length+1,
+                                        errors=decodePolicy.strict) throws {
+    return decodeByteBuffer(s, length, errors);
   }
 
   pragma "no doc"
@@ -876,6 +890,58 @@ module String {
     }
 
     /*
+      Returns a :record:`~Bytes.bytes` from the given :record:`string`. If the
+      string contains some escaped non-UTF8 bytes, `errors` argument determines
+      the action.
+        
+      :arg errors: `encodePolicy.pass` directly copies the (potentially escaped)
+                    data, `encodePolicy.unescape` recovers the escaped bytes
+                    back.
+
+      :returns: :record:`~Bytes.bytes`
+    */
+    proc encode(errors=encodePolicy.pass): bytes {
+      var localThis: string = this.localize();
+
+      if errors == encodePolicy.pass {  // just copy
+        return createBytesWithNewBuffer(localThis.buff, localThis.numBytes);
+      }
+      else {  // see if there is escaped data in the string
+        var (buf, size) = bufferAlloc(this.len+1);
+
+        var readIdx = 0;
+        var writeIdx = 0;
+        while readIdx < localThis.len {
+          var cp: int(32);
+          var nbytes: c_int;
+          var multibytes = (localThis.buff + readIdx): c_string;
+          var maxbytes = (localThis.len - readIdx): ssize_t;
+          const decodeRet = qio_decode_char_buf_esc(cp, nbytes, multibytes,
+                                                    maxbytes);
+          if (0xdc80<=cp && cp<=0xdcff) {
+            buf[writeIdx] = (cp-0xdc00):byteType;
+            writeIdx += 1;
+          }
+          else if (decodeRet != 0) {
+            // the string contains invalid data
+            // at this point this can only happen due to a failure in our
+            // implementation of string encoding/decoding
+            // simply copy the data out
+            bufferMemcpyLocal(dst=(buf+writeIdx), src=multibytes, len=nbytes);
+            writeIdx += nbytes;
+          }
+          else {
+            bufferMemcpyLocal(dst=(buf+writeIdx), src=multibytes, len=nbytes);
+            writeIdx += nbytes;
+          }
+          readIdx += nbytes;
+        }
+        buf[writeIdx] = 0;
+        return createBytesWithOwnedBuffer(buf, length=writeIdx, size=size);
+      }
+    }
+
+    /*
       Iterates over the string character by character.
 
       For example:
@@ -894,7 +960,7 @@ module String {
         c
         d
      */
-    iter these() : string {
+    iter items() : string {
       var localThis: string = this.localize();
 
       var i = 0;
@@ -903,7 +969,7 @@ module String {
         var cp: int(32);
         var nBytes: c_int;
         var maxBytes = (localThis.len - i): ssize_t;
-        qio_decode_char_buf(cp, nBytes, curPos:c_string, maxBytes);
+        qio_decode_char_buf_esc(cp, nBytes, curPos:c_string, maxBytes);
 
         var (newBuf, newSize) = bufferCopyLocal(curPos, nBytes);
         newBuf[nBytes] = 0;
@@ -912,6 +978,32 @@ module String {
 
         i += nBytes;
       }
+    }
+
+
+    /*
+      Iterates over the string character by character, yielding 1-codepoint
+      strings. (A synonym for :iter:`items`)
+
+      For example:
+
+      .. code-block:: chapel
+
+        var str = "abcd";
+        for c in str {
+          writeln(c);
+        }
+
+      Output::
+
+        a
+        b
+        c
+        d
+     */
+    iter these() : string {
+      for c in this.items() do
+        yield c;
     }
 
     /*
@@ -937,7 +1029,7 @@ module String {
         var nbytes: c_int;
         var multibytes = (localThis.buff + i): c_string;
         var maxbytes = (localThis.len - i): ssize_t;
-        qio_decode_char_buf(cp, nbytes, multibytes, maxbytes);
+        qio_decode_char_buf_esc(cp, nbytes, multibytes, maxbytes);
         yield cp;
         i += nbytes;
       }
@@ -963,7 +1055,7 @@ module String {
         var nbytes: c_int;
         var multibytes = (localThis.buff + i): c_string;
         var maxbytes = (localThis.len - i): ssize_t;
-        qio_decode_char_buf(cp, nbytes, multibytes, maxbytes);
+        qio_decode_char_buf_esc(cp, nbytes, multibytes, maxbytes);
         yield (cp:int(32), (i + 1):byteIndex, nbytes:int);
         i += nbytes;
       }
@@ -1026,7 +1118,7 @@ module String {
       var nbytes: c_int;
       var multibytes = localThis.buff: c_string;
       var maxbytes = localThis.len: ssize_t;
-      qio_decode_char_buf(cp, nbytes, multibytes, maxbytes);
+      qio_decode_char_buf_esc(cp, nbytes, multibytes, maxbytes);
 
       if localThis.len != nbytes:int then
         halt("string.toCodepoint() only accepts single-codepoint strings");
@@ -1079,11 +1171,31 @@ module String {
       var multibytes = ret.buff;
       var cp: int(32);
       var nbytes: c_int;
-      qio_decode_char_buf(cp, nbytes, multibytes:c_string, maxbytes);
+      qio_decode_char_buf_esc(cp, nbytes, multibytes:c_string, maxbytes);
       ret.buff[nbytes] = 0;
       ret.len = nbytes;
 
       return ret;
+    }
+
+    /*
+      Return the `i` th codepoint in the string. (A synonym for :proc:`item`)
+
+      :returns: A string with the complete multibyte character starting at the
+                specified codepoint index from ``1..string.numCodepoints``
+     */
+    proc this(i: codepointIndex) : string {
+      return this.item(i);
+    }
+
+    /*
+      Return the `i` th codepoint in the string. (A synonym for :proc:`item`)
+
+      :returns: A string with the complete multibyte character starting at the
+                specified codepoint index from ``1..string.numCodepoints``
+     */
+    inline proc this(i: int) : string {
+      return this.item(i);
     }
 
     /*
@@ -1092,7 +1204,7 @@ module String {
       :returns: A string with the complete multibyte character starting at the
                 specified codepoint index from ``1..string.numCodepoints``
      */
-    proc this(i: codepointIndex) : string {
+    proc item(i: codepointIndex) : string {
       if this.isEmpty() then return "";
       const idx = i: int;
       return codepointToString(this.codepoint(idx));
@@ -1104,7 +1216,7 @@ module String {
       :returns: A string with the complete multibyte character starting at the
                 specified codepoint index from ``1..string.numCodepoints``
      */
-    inline proc this(i: int) : string {
+    inline proc item(i: int) : string {
       return this[i: codepointIndex];
     }
 
@@ -1289,7 +1401,7 @@ module String {
                   var nbytes: c_int;
                   var multibytes = (this.buff + i-1): c_string;
                   var maxbytes = (this.len - (i-1)): ssize_t;
-                  qio_decode_char_buf(cp, nbytes, multibytes, maxbytes);
+                  qio_decode_char_buf_esc(cp, nbytes, multibytes, maxbytes);
                   nextIdx = i-1 + nbytes;
                 }
               }
@@ -1957,6 +2069,10 @@ module String {
   proc =(ref lhs: byteIndex, rhs: int) {
     lhs._bindex = rhs: int;
   }
+  pragma "no doc"
+  proc =(ref lhs: byteIndex, const ref rhs: byteIndex) {
+    lhs._bindex = rhs._bindex;
+  }
 
   /*
      Copies the int `rhs` into the codepointIndex `lhs`.
@@ -1964,6 +2080,11 @@ module String {
   proc =(ref lhs: codepointIndex, rhs: int) {
     lhs._cpindex = rhs: int;
   }
+  pragma "no doc"
+  proc =(ref lhs: codepointIndex, const ref rhs: codepointIndex) {
+    lhs._cpindex = rhs._cpindex;
+  }
+
 
   /*
      Copies the string `rhs` into the string `lhs`.

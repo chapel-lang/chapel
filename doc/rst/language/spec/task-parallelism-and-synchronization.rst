@@ -567,7 +567,7 @@ memoryOrder.seqCst.
 
 ::
 
-   proc (atomic T).read(order:memoryOrder = memoryOrder.seqCst): T
+   proc (atomic T).read(param order:memoryOrder = memoryOrder.seqCst): T
 
 Reads and returns the stored value. Defined for all atomic types.
 
@@ -575,7 +575,7 @@ Reads and returns the stored value. Defined for all atomic types.
 
 ::
 
-   proc (atomic T).write(v: T, order:memoryOrder = memoryOrder.seqCst)
+   proc (atomic T).write(v: T, param order:memoryOrder = memoryOrder.seqCst)
 
 Stores ``v`` as the new value. Defined for all atomic types.
 
@@ -583,16 +583,30 @@ Stores ``v`` as the new value. Defined for all atomic types.
 
 ::
 
-   proc (atomic T).exchange(v: T, order:memoryOrder = memoryOrder.seqCst): T
+   proc (atomic T).exchange(v: T, param order:memoryOrder = memoryOrder.seqCst): T
 
 Stores ``v`` as the new value and returns the original value. Defined
 for all atomic types.
+
+::
+
+   proc (atomic T).compareExchange(ref e: T, v: T, param order:memoryOrder = memoryOrder.seqCst): bool
+   proc (atomic T).compareExchange(ref e: T, v: T, param failure:memoryOrder, param success:memoryOrder): bool
+   proc (atomic T).compareExchangeWeak(ref e: T, v: T, param order:memoryOrder = memoryOrder.seqCst): bool
+   proc (atomic T).compareExchangeWeak(ref e: T, v: T, param failure:memoryOrder, param success:memoryOrder): bool
+
+Stores ``v`` as the new value, if and only if the original value is
+equal to ``e``. Returns ``true`` if ``v`` was stored, otherwise
+returns ``false`` and updates ``e`` to the old value.  The weak
+version is allowed to spuriously fail, but when using
+``compareExchange`` in a loop anyways, it can can offer better
+performance on some platforms. Defined for all atomic types.
 
 
 
 ::
 
-   proc (atomic T).compareAndSwap(e: t, v: T, order:memoryOrder = memoryOrder.seqCst): bool
+   proc (atomic T).compareAndSwap(e: T, v: T, param order:memoryOrder = memoryOrder.seqCst): bool
 
 Stores ``v`` as the new value, if and only if the original value is
 equal to ``e``. Returns ``true`` if ``v`` was stored, ``false``
@@ -602,11 +616,11 @@ otherwise. Defined for all atomic types.
 
 ::
 
-   proc (atomic T).add(v: T, order:memoryOrder = memoryOrder.seqCst)
-   proc (atomic T).sub(v: T, order:memoryOrder = memoryOrder.seqCst)
-   proc (atomic T).or(v: T, order:memoryOrder = memoryOrder.seqCst)
-   proc (atomic T).and(v: T, order:memoryOrder = memoryOrder.seqCst)
-   proc (atomic T).xor(v: T, order:memoryOrder = memoryOrder.seqCst)
+   proc (atomic T).add(v: T, param order:memoryOrder = memoryOrder.seqCst)
+   proc (atomic T).sub(v: T, param order:memoryOrder = memoryOrder.seqCst)
+   proc (atomic T).or(v: T, param order:memoryOrder = memoryOrder.seqCst)
+   proc (atomic T).and(v: T, param order:memoryOrder = memoryOrder.seqCst)
+   proc (atomic T).xor(v: T, param order:memoryOrder = memoryOrder.seqCst)
 
 Applies the appropriate operator (``+``, ``-``, ``|``, ``&``, ``^``) to
 the original value and ``v`` and stores the result. All of the methods
@@ -623,11 +637,11 @@ for the ``bool`` atomic type.
 
 ::
 
-   proc (atomic T).fetchAdd(v: T, order:memoryOrder = memoryOrder.seqCst): T
-   proc (atomic T).fetchSub(v: T, order:memoryOrder = memoryOrder.seqCst): T
-   proc (atomic T).fetchOr(v: T, order:memoryOrder = memoryOrder.seqCst): T
-   proc (atomic T).fetchAnd(v: T, order:memoryOrder = memoryOrder.seqCst): T
-   proc (atomic T).fetchXor(v: T, order:memoryOrder = memoryOrder.seqCst): T
+   proc (atomic T).fetchAdd(v: T, param order:memoryOrder = memoryOrder.seqCst): T
+   proc (atomic T).fetchSub(v: T, param order:memoryOrder = memoryOrder.seqCst): T
+   proc (atomic T).fetchOr(v: T, param order:memoryOrder = memoryOrder.seqCst): T
+   proc (atomic T).fetchAnd(v: T, param order:memoryOrder = memoryOrder.seqCst): T
+   proc (atomic T).fetchXor(v: T, param order:memoryOrder = memoryOrder.seqCst): T
 
 Applies the appropriate operator (``+``, ``-``, ``|``, ``&``, ``^``) to
 the original value and ``v``, stores the result, and returns the original
@@ -639,7 +653,7 @@ methods are defined for the ``bool`` atomic type.
 
 ::
 
-   proc (atomic bool).testAndSet(order:memoryOrder = memoryOrder.seqCst): bool
+   proc (atomic bool).testAndSet(param order:memoryOrder = memoryOrder.seqCst): bool
 
 Stores ``true`` as the new value and returns the old value. Equivalent
 to ``exchange(true)``. Only defined for the ``bool`` atomic type.
@@ -648,7 +662,7 @@ to ``exchange(true)``. Only defined for the ``bool`` atomic type.
 
 ::
 
-   proc (atomic bool).clear(order:memoryOrder = memoryOrder.seqCst)
+   proc (atomic bool).clear(param order:memoryOrder = memoryOrder.seqCst)
 
 Stores ``false`` as the new value. Equivalent to ``write(false)``. Only
 defined for the ``bool`` atomic type.

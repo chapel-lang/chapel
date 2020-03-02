@@ -1,4 +1,0 @@
-old-copy-init.chpl:10: warning: 'init' has been deprecated as the copy-initializer, use 'init=' instead.
-R.init(int)
-R.init(R)
-R.init(R)

@@ -217,6 +217,186 @@ static FnSymbol* findForallexprFollower(FnSymbol* serialIter) {
   return NULL;
 }
 
+static bool recordContainsNonNilableOwned(Type* t) {
+  if (isManagedPtrType(t) &&
+      getManagedPtrManagerType(t) == dtOwned &&
+      isNonNilableClassType(t))
+    return true;
+
+  if (isRecord(t)) {
+    AggregateType* at = toAggregateType(t);
+
+    for_fields(field, at) {
+      if (recordContainsNonNilableOwned(field->getValType()))
+        return true;
+    }
+  }
+
+  return false;
+}
+static bool recordContainsOwned(Type* t) {
+  if (isManagedPtrType(t) &&
+      getManagedPtrManagerType(t) == dtOwned)
+    return true;
+
+  if (isRecord(t)) {
+    AggregateType* at = toAggregateType(t);
+
+    for_fields(field, at) {
+      if (recordContainsOwned(field->getValType()))
+        return true;
+    }
+  }
+
+  return false;
+}
+static bool recordContainsNonNilable(Type* t) {
+  if (isNonNilableClassType(t))
+    return true;
+
+  if (isRecord(t)) {
+    AggregateType* at = toAggregateType(t);
+
+    for_fields(field, at) {
+      if (recordContainsNonNilable(field->getValType()))
+        return true;
+    }
+  }
+
+  return false;
+}
+
+static bool isNonNilableOwned(Type* t) {
+  return isManagedPtrType(t) &&
+         getManagedPtrManagerType(t) == dtOwned &&
+         isNonNilableClassType(t);
+}
+
+static void setRecordCopyableFlags(AggregateType* at) {
+  TypeSymbol* ts = at->symbol;
+  if (!ts->hasFlag(FLAG_TYPE_INIT_EQUAL_FROM_CONST) &&
+      !ts->hasFlag(FLAG_TYPE_INIT_EQUAL_FROM_REF) &&
+      !ts->hasFlag(FLAG_TYPE_INIT_EQUAL_MISSING)) {
+
+    if (isNonNilableOwned(at)) {
+      ts->addFlag(FLAG_TYPE_INIT_EQUAL_MISSING);
+    } else {
+      // Try resolving a test init= to set the flags
+      const char* err = NULL;
+      FnSymbol* initEq = findCopyInitFn(at, err);
+      if (initEq == NULL) {
+        ts->addFlag(FLAG_TYPE_INIT_EQUAL_MISSING);
+      } else if (initEq->hasFlag(FLAG_COMPILER_GENERATED)) {
+        if (recordContainsNonNilableOwned(at))
+          ts->addFlag(FLAG_TYPE_INIT_EQUAL_MISSING);
+        else if (recordContainsOwned(at))
+          ts->addFlag(FLAG_TYPE_INIT_EQUAL_FROM_REF);
+        else
+          ts->addFlag(FLAG_TYPE_INIT_EQUAL_FROM_CONST);
+      } else {
+        // formals are mt, this, other
+        ArgSymbol* other = initEq->getFormal(3);
+        IntentTag intent = concreteIntentForArg(other);
+        if (intent == INTENT_IN ||
+            intent == INTENT_CONST_IN ||
+            intent == INTENT_CONST_REF) {
+          ts->addFlag(FLAG_TYPE_INIT_EQUAL_FROM_CONST);
+        } else {
+          // this case includes INTENT_REF_MAYBE_CONST
+          ts->addFlag(FLAG_TYPE_INIT_EQUAL_FROM_REF);
+        }
+      }
+    }
+  }
+}
+
+static void setRecordAssignableFlags(AggregateType* at) {
+  TypeSymbol* ts = at->symbol;
+  if (!ts->hasFlag(FLAG_TYPE_ASSIGN_FROM_CONST) &&
+      !ts->hasFlag(FLAG_TYPE_ASSIGN_FROM_REF) &&
+      !ts->hasFlag(FLAG_TYPE_ASSIGN_MISSING)) {
+
+    if (isNonNilableOwned(at)) {
+      ts->addFlag(FLAG_TYPE_ASSIGN_MISSING);
+    } else {
+      // Try resolving a test = to set the flags
+      FnSymbol* assign = findAssignFn(at);
+      if (assign == NULL) {
+        ts->addFlag(FLAG_TYPE_ASSIGN_MISSING);
+      } else if (assign->hasFlag(FLAG_COMPILER_GENERATED)) {
+        if (recordContainsNonNilableOwned(at))
+          ts->addFlag(FLAG_TYPE_ASSIGN_MISSING);
+        else if (recordContainsOwned(at))
+          ts->addFlag(FLAG_TYPE_ASSIGN_FROM_REF);
+        else
+          ts->addFlag(FLAG_TYPE_ASSIGN_FROM_CONST);
+      } else {
+        // formals are lhs, rhs
+        ArgSymbol* rhs = assign->getFormal(2);
+        IntentTag intent = concreteIntentForArg(rhs);
+        if (intent == INTENT_IN ||
+            intent == INTENT_CONST_IN ||
+            intent == INTENT_CONST_REF) {
+          ts->addFlag(FLAG_TYPE_ASSIGN_FROM_CONST);
+        } else {
+          // this case includes INTENT_REF_MAYBE_CONST
+          ts->addFlag(FLAG_TYPE_ASSIGN_FROM_REF);
+        }
+      }
+    }
+  }
+}
+
+static void setRecordDefaultValueFlags(AggregateType* at) {
+  TypeSymbol* ts = at->symbol;
+
+  if (!ts->hasFlag(FLAG_TYPE_DEFAULT_VALUE) &&
+      !ts->hasFlag(FLAG_TYPE_NO_DEFAULT_VALUE)) {
+
+    if (isNonNilableClassType(at)) {
+      ts->addFlag(FLAG_TYPE_NO_DEFAULT_VALUE);
+    } else if (isNilableClassType(at)) {
+      ts->addFlag(FLAG_TYPE_DEFAULT_VALUE);
+    } else if (at->symbol->hasFlag(FLAG_EXTERN)) {
+      // Currently extern records aren't initialized at all by default.
+      // But it's not necessarily reasonable to expect them to have
+      // initializers. See issue #7992.
+      ts->addFlag(FLAG_TYPE_DEFAULT_VALUE);
+    } else {
+      // Try resolving a test init() to set the flags
+      FnSymbol* initZero = findZeroArgInitFn(at);
+      if (initZero == NULL) {
+        ts->addFlag(FLAG_TYPE_NO_DEFAULT_VALUE);
+      } else if (initZero->hasFlag(FLAG_COMPILER_GENERATED)) {
+        if (recordContainsNonNilable(at))
+          ts->addFlag(FLAG_TYPE_NO_DEFAULT_VALUE);
+        else
+          ts->addFlag(FLAG_TYPE_DEFAULT_VALUE);
+      } else {
+        ts->addFlag(FLAG_TYPE_DEFAULT_VALUE);
+      }
+    }
+  }
+}
+
+static bool isDefaultInitializeable(Type* t) {
+  bool val = true;
+  if (isRecord(t)) {
+    AggregateType* at = toAggregateType(t);
+    TypeSymbol* ts = at->symbol;
+
+    setRecordDefaultValueFlags(at);
+
+    val = ts->hasFlag(FLAG_TYPE_DEFAULT_VALUE);
+
+  } else {
+    // non-nilable class types have no default value
+    val = !isNonNilableClassType(t);
+  }
+
+  return val;
+}
+
 static Expr* preFoldPrimOp(CallExpr* call) {
   Expr* retval = NULL;
 
@@ -250,7 +430,7 @@ static Expr* preFoldPrimOp(CallExpr* call) {
     if (call->numActuals() > 1) {
       USR_FATAL(call, "too many arguments to 'gather tests'");
     }
-    
+
     Type* testType = call->get(1)->getValType();
     forv_Vec(FnSymbol, fn, gFnSymbols) {
       if (fn->throwsError()) {
@@ -284,7 +464,7 @@ static Expr* preFoldPrimOp(CallExpr* call) {
 
   case PRIM_GET_TEST_BY_INDEX: {
     int64_t index    =        0;
-    
+
     if (call->numActuals() == 0) {
       USR_FATAL(call, "illegal call of 'get test by index'. Expected an argument of type 'int'");
     }
@@ -328,7 +508,7 @@ static Expr* preFoldPrimOp(CallExpr* call) {
       int index = testNameIndex[name];
       retval = testCaptureVector[index-1]->copy();
       call->replace(retval);
-      break; 
+      break;
     }
     else {
       USR_FATAL(call, "No test function with name '%s'",name);
@@ -336,14 +516,21 @@ static Expr* preFoldPrimOp(CallExpr* call) {
   }
 
   case PRIM_CALL_RESOLVES:
-  case PRIM_METHOD_CALL_RESOLVES: {
+  case PRIM_CALL_AND_FN_RESOLVES:
+  case PRIM_METHOD_CALL_RESOLVES:
+  case PRIM_METHOD_CALL_AND_FN_RESOLVES: {
     Expr* fnName   = NULL;
     Expr* callThis = NULL;
     int   firstArg = 0;
 
+    bool method = call->isPrimitive(PRIM_METHOD_CALL_RESOLVES) ||
+                  call->isPrimitive(PRIM_METHOD_CALL_AND_FN_RESOLVES);
+    bool andFn = call->isPrimitive(PRIM_CALL_AND_FN_RESOLVES) ||
+                 call->isPrimitive(PRIM_METHOD_CALL_AND_FN_RESOLVES);
+
     // this would be easier if we had a non-normalized AST!
     // That is, if this call could contain a whole expression subtree.
-    if (call->isPrimitive(PRIM_METHOD_CALL_RESOLVES) ) {
+    if (method) {
       // get(1) should be a receiver
       // get(2) should be a string function name.
       callThis = call->get(1);
@@ -372,7 +559,7 @@ static Expr* preFoldPrimOp(CallExpr* call) {
     // temporarily add a call to try resolving.
     CallExpr* tryCall = NULL;
 
-    if (call->isPrimitive(PRIM_METHOD_CALL_RESOLVES)) {
+    if (method) {
       tryCall = new CallExpr(new UnresolvedSymExpr(name),
                              gMethodToken,
                              callThis->copy());
@@ -396,7 +583,7 @@ static Expr* preFoldPrimOp(CallExpr* call) {
     }
 
     // Try to resolve it.
-    if (tryResolveCall(tryCall)) {
+    if (tryResolveCall(tryCall, andFn)) {
       retval = new SymExpr(gTrue);
 
     } else {
@@ -728,8 +915,15 @@ static Expr* preFoldPrimOp(CallExpr* call) {
   case PRIM_TO_NILABLE_CLASS:
   case PRIM_TO_NILABLE_CLASS_CHECKED:
   case PRIM_TO_NON_NILABLE_CLASS: {
-    Type* totype = call->typeInfo();
     Expr* e = call->get(1);
+    Type* totype = e->getValType(); // if error; otherwise changed below
+
+    if (call->isPrimitive(PRIM_TO_NILABLE_CLASS_CHECKED) &&
+        ! isClassLikeOrManaged(totype))
+      USR_FATAL_CONT(call, "postfix-? is not allowed on a non-class type '%s'",
+                     toString(totype));
+    else
+      totype = call->typeInfo();
 
     if (call->isPrimitive(PRIM_TO_UNMANAGED_CLASS_CHECKED) ||
         call->isPrimitive(PRIM_TO_BORROWED_CLASS_CHECKED)) {
@@ -793,6 +987,86 @@ static Expr* preFoldPrimOp(CallExpr* call) {
     } else {
       retval = new SymExpr(gFalse);
     }
+
+    call->replace(retval);
+
+    break;
+  }
+  case PRIM_IS_COPYABLE:
+  case PRIM_IS_CONST_COPYABLE: {
+    Type* t = call->get(1)->typeInfo();
+
+    bool val = true;
+    if (isRecord(t)) {
+      AggregateType* at = toAggregateType(t);
+      TypeSymbol* ts = at->symbol;
+
+      setRecordCopyableFlags(at);
+
+      if (call->isPrimitive(PRIM_IS_COPYABLE))
+        val = ts->hasFlag(FLAG_TYPE_INIT_EQUAL_FROM_CONST) ||
+              ts->hasFlag(FLAG_TYPE_INIT_EQUAL_FROM_REF);
+      else if (call->isPrimitive(PRIM_IS_CONST_COPYABLE))
+        val = ts->hasFlag(FLAG_TYPE_INIT_EQUAL_FROM_CONST);
+      else
+        INT_FATAL("not handled");
+
+    } else {
+      // Non-record types are always copyable from const
+      val = true;
+    }
+
+    if (val)
+      retval = new SymExpr(gTrue);
+    else
+      retval = new SymExpr(gFalse);
+
+    call->replace(retval);
+
+    break;
+  }
+  case PRIM_IS_ASSIGNABLE:
+  case PRIM_IS_CONST_ASSIGNABLE: {
+    Type* t = call->get(1)->typeInfo();
+
+    bool val = true;
+    if (isRecord(t)) {
+      AggregateType* at = toAggregateType(t);
+      TypeSymbol* ts = at->symbol;
+
+      setRecordAssignableFlags(at);
+
+      if (call->isPrimitive(PRIM_IS_ASSIGNABLE))
+        val = ts->hasFlag(FLAG_TYPE_ASSIGN_FROM_CONST) ||
+              ts->hasFlag(FLAG_TYPE_ASSIGN_FROM_REF);
+      else if (call->isPrimitive(PRIM_IS_CONST_ASSIGNABLE))
+        val = ts->hasFlag(FLAG_TYPE_ASSIGN_FROM_CONST);
+      else
+        INT_FATAL("not handled");
+
+    } else {
+      // Non-record types are always assignable from const
+      val = true;
+    }
+
+    if (val)
+      retval = new SymExpr(gTrue);
+    else
+      retval = new SymExpr(gFalse);
+
+    call->replace(retval);
+
+    break;
+  }
+  case PRIM_HAS_DEFAULT_VALUE: {
+    Type* t = call->get(1)->typeInfo();
+
+    bool val = isDefaultInitializeable(t);
+
+    if (val)
+      retval = new SymExpr(gTrue);
+    else
+      retval = new SymExpr(gFalse);
 
     call->replace(retval);
 
@@ -1568,7 +1842,7 @@ static Expr* preFoldNamed(CallExpr* call) {
           Type* newType = toSE->symbol()->type;
 
           bool fromEnum = is_enum_type(oldType);
-          bool fromString = (oldType == dtString || 
+          bool fromString = (oldType == dtString ||
                              oldType == dtStringC);
           bool fromBytes = oldType == dtBytes;
           bool fromIntUint = is_int_type(oldType) ||
@@ -2006,7 +2280,9 @@ static Expr* createFunctionAsValue(CallExpr *call) {
   //
   // Otherwise, we need to create a Chapel first-class function (fcf)...
   //
-
+  if (fWarnUnstable) {
+    USR_WARN(call, "First class functions are unstable.");
+  }
   AggregateType* parent;
   FnSymbol*      thisParentMethod;
 
@@ -2142,10 +2418,10 @@ static Expr* createFunctionAsValue(CallExpr *call) {
   FnSymbol* wrapper = new FnSymbol("wrapper");
 
   wrapper->addFlag(FLAG_INLINE);
-  
+
   // Insert the wrapper into the AST now so we can resolve some things.
   call->getStmtExpr()->insertBefore(new DefExpr(wrapper));
-  
+
   BlockStmt* block = new BlockStmt();
   wrapper->insertAtTail(block);
 
@@ -2153,7 +2429,7 @@ static Expr* createFunctionAsValue(CallExpr *call) {
 
   NamedExpr* usym = new NamedExpr(astr_chpl_manager,
                                   new SymExpr(dtUnmanaged->symbol));
-  
+
   // Create a new "unmanaged child".
   CallExpr* init = new CallExpr(PRIM_NEW, usym,
                                 new CallExpr(new SymExpr(undecorated->symbol)));

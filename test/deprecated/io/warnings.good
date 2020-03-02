@@ -32,6 +32,30 @@ warnings.chpl:26: warning: openfd will no longer be available by default,
 please insert a use of the IO module to continue calling it.
 warnings.chpl:30: warning: openfp will no longer be available by default,
 please insert a use of the IO module to continue calling it.
+warnings.chpl:34: warning: read will no longer be available by default,
+please insert a use of the IO module to continue calling it.
+warnings.chpl:36: warning: read will no longer be available by default,
+please insert a use of the IO module to continue calling it.
+warnings.chpl:38: warning: readln will no longer be available by default,
+please insert a use of the IO module to continue calling it.
+warnings.chpl:40: warning: readln will no longer be available by default,
+please insert a use of the IO module to continue calling it.
+warnings.chpl:42: warning: readln will no longer be available by default,
+please insert a use of the IO module to continue calling it.
+warnings.chpl:44: warning: readf will no longer be available by default,
+please insert a use of the IO module to continue calling it.
+warnings.chpl:46: warning: string.format will no longer be available by default,
+please insert a use of the IO module to continue calling it.
+warnings.chpl:48: warning: stdinInit will no longer be available by default,
+please insert a use of the IO module to continue calling it.
+warnings.chpl:49: warning: stdoutInit will no longer be available by default,
+please insert a use of the IO module to continue calling it.
+warnings.chpl:50: warning: stderrInit will no longer be available by default,
+please insert a use of the IO module to continue calling it.
+warnings.chpl:56: warning: unlink will no longer be available by default,
+please insert a use of the IO module to continue calling it.
+warnings.chpl:57: warning: unicodeSupported will no longer be available by default,
+please insert a use of the IO module to continue calling it.
 dynamic
 native
 big
@@ -49,3 +73,9 @@ len2b_data
 int(32)
 LOCALE0
 LOCALE0
+0
+false
+0
+false
+false
+false

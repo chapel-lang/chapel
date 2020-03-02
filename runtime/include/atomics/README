@@ -111,9 +111,7 @@ For Atomic Integers:
    C atomic_exchange(volatile A* object, C desired);
    C atomic_exchange_explicit(volatile A* object, C desired, memory_order order);
    
-   // strong compare-and-swap. Note that we do not currently have the same
-   // interface as C11 does. We do not set expected on failure and expected is
-   // not passed in as a pointer. 
+   // strong compare-and-swap.
    bool atomic_compare_exchange_strong(volatile A* object, C* expected, C desired);
    bool atomic_compare_exchange_strong_explicit(volatile A* object, C* expected, C desired, memory_order success, memory_order failure);
 
@@ -156,9 +154,7 @@ For Atomic Reals:
    C atomic_exchange(volatile A* object, C desired);
    C atomic_exchange_explicit(volatile A* object, C desired, memory_order order);
 
-   // strong compare-and-swap. Note that we do not currently have the same
-   // interface as C11 does. We do not set expected on failure and expected is
-   // not passed in as a pointer.
+   // strong compare-and-swap.
    bool atomic_compare_exchange_strong(volatile A* object, C* expected, C desired);
    bool atomic_compare_exchange_strong_explicit(volatile A* object, C* expected, C desired, memory_order success, memory_order failure);
 

@@ -357,304 +357,287 @@ module ChapelIO {
 
     private
     proc skipFieldsAtEnd(reader, inout needsComma:bool) throws {
+      const qioFmt = reader.styleElement(QIO_STYLE_ELEMENT_AGGREGATE);
+      const isJson = qioFmt == QIO_AGGREGATE_FORMAT_JSON;
+      const qioSkipUnknown = QIO_STYLE_ELEMENT_SKIP_UNKNOWN_FIELDS;
+      const isSkipUnknown = reader.styleElement(qioSkipUnknown) != 0;
 
-      var st = reader.styleElement(QIO_STYLE_ELEMENT_AGGREGATE);
-      var skip_unk = reader.styleElement(QIO_STYLE_ELEMENT_SKIP_UNKNOWN_FIELDS);
+      if !isSkipUnknown || !isJson then return;
 
-      if skip_unk != 0 && st == QIO_AGGREGATE_FORMAT_JSON {
+      while true {
+        if needsComma {
+          var comma = new ioLiteral(",", true);
 
-        while true {
-          if needsComma {
-            // read a comma
-            var comma = new ioLiteral(",", true);
+          // Try reading a comma. If we don't, break out of the loop.
+          try {
             reader.readwrite(comma);
+            needsComma = false; 
+          } catch err: BadFormatError {
+            break;
+          }
+        }
 
-            if !reader.error() {
-              needsComma = false; // we read a comma
-            } else if reader.error() == EFORMAT {
-              // break out of the loop if we didn't read a comma
-              // and we're expecting to read one.
-              // We clear the error since we
-              // might be at the end (without error)
-              reader.clearError();
+        // Skip an unknown JSON field.
+        var err:syserr = ENOERR;
+
+        try reader.skipField();
+        needsComma = true;
+      }
+    }
+
+    pragma "no doc"
+    proc readThisFieldsDefaultImpl(reader, type t, ref x,
+                                   inout needsComma: bool) throws
+        where !isUnionType(t) {
+
+      param numFields = __primitive("num fields", t);
+      var isBinary = reader.binary();
+
+      if isClassType(t) && _to_borrowed(t) != borrowed object {
+
+        //
+        // Only write parent fields for subclasses of object since object has
+        // no .super field.
+        //
+        type superType = x.super.type;
+
+        // Copy the pointer to pass it by ref.
+        var castTmp: superType = x;
+
+        try {
+          // Read superclass fields.
+          readThisFieldsDefaultImpl(reader, superType, castTmp,
+                                    needsComma);
+        } catch err {
+
+          // TODO: Hold superclass errors or just throw immediately?
+          throw err;
+        }
+      }
+
+      if isBinary {
+
+        // Binary is simple, just read all fields in order.
+        for param i in 1..numFields do
+          if isIoField(x, i) then
+            try reader.readwrite(__primitive("field by num", x, i));
+      } else if numFields > 0 {
+
+        // This tuple helps us not read the same field twice.
+        var readField: (numFields) * bool;
+
+        // These two help us know if we've read all the fields.
+        var numToRead = 0;
+        var numRead = 0;
+
+        for param i in 1..numFields do
+          if isIoField(x, i) then
+            numToRead += 1;
+
+        // The order should not matter.
+        while numRead < numToRead {
+
+          // Try reading a comma. If we don't, then break.
+          if needsComma then 
+            try {
+              var comma = new ioLiteral(",", true);
+              reader.readwrite(comma);
+              needsComma = false;
+            } catch err: BadFormatError {
+              // Break out of the loop if we didn't read a comma.
               break;
             }
+
+          //
+          // Find a field name that matches.
+          // 
+          // TODO: this is not particularly efficient. If we have a lot of
+          // fields, this is O(n**2), and there are other potential problems
+          // with string reallocation.
+          // We could do better if we put the field names to scan for into
+          // a regular expression, possibly with | and ( ) for capture
+          // groups so we can know which field was read.
+          //
+
+          var st = reader.styleElement(QIO_STYLE_ELEMENT_AGGREGATE);
+          const qioSkipUnknown = QIO_STYLE_ELEMENT_SKIP_UNKNOWN_FIELDS;
+          var isSkipUnknown = reader.styleElement(qioSkipUnknown) != 0;
+
+          var hasReadFieldName = false;
+
+          for param i in 1..numFields {
+            if !isIoField(x, i) || hasReadFieldName || readField[i] then
+              continue;
+
+            var fieldName = ioFieldNameLiteral(reader, t, i);
+
+            try {
+              reader.readwrite(fieldName);
+            } catch err: SystemError {
+              // Try reading again with a different union element.
+              if err.err == EFORMAT || err.err == EEOF then continue;
+              throw err;
+            }
+
+            hasReadFieldName = true;
+            needsComma = true;
+
+            var equalSign = if st == QIO_AGGREGATE_FORMAT_JSON
+              then new ioLiteral(":", true)
+              else new ioLiteral("=", true);
+
+            try reader.readwrite(equalSign);
+
+            try reader.readwrite(__primitive("field by num", x, i));
+            readField[i] = true;
+            numRead += 1;
           }
 
-          // Skip an unknown JSON field.
-          var err:syserr = ENOERR;
-          try {
-            reader.skipField();
-            needsComma = true;
-          } catch e: SystemError {
-            err = e.err;
-          } catch {
-            err = EINVAL;
-          }
-          reader.setError(err);
+          const isJson = st == QIO_AGGREGATE_FORMAT_JSON;
+
+          // Try skipping fields if we're JSON and allowed to do so.
+          if !hasReadFieldName then
+            if isSkipUnknown && isJson {
+              try reader.skipField();
+              needsComma = true;
+            } else {
+              throw new owned
+                BadFormatError("Failed to read field, could not skip");
+            }
+        }
+
+        // Check that we've read all fields, return error if not.
+        if numRead == numToRead {
+          // TODO: Do we throw superclass error here?
+        } else {
+          param tag = if isClassType(t) then "class" else "record";
+          const msg = "Read only " + numRead:string + " out of "
+              + numToRead:string + " fields of " + tag + " " + t:string;
+          throw new owned
+            BadFormatError(msg);
         }
       }
     }
 
     pragma "no doc"
     proc readThisFieldsDefaultImpl(reader, type t, ref x,
-                                   inout needsComma:bool) throws {
-      param num_fields = __primitive("num fields", t);
+                                   inout needsComma: bool) throws
+        where isUnionType(t) {
+
+      param numFields = __primitive("num fields", t);
       var isBinary = reader.binary();
-      var superclass_error : syserr = ENOERR;
+      var superclassError: syserr = ENOERR;
 
-      if (isClassType(t)) {
-        if _to_borrowed(t) != borrowed object {
-          // only write parent fields for subclasses of object
-          // since object has no .super field.
-          type superType = x.super.type;
-          var castTmp:superType = x; // make a copy of the ptr so we
-                                     // can pass it by ref
-          readThisFieldsDefaultImpl(reader, superType, castTmp, needsComma);
-          // Any error reading superclass must be preserved.
-          superclass_error = reader.error();
-        }
-      }
+      if isBinary {
+        var id = __primitive("get_union_id", x);
 
-      if !isUnionType(t) {
-        // read all fields for classes and records
-        if isBinary {
-          for param i in 1..num_fields {
-            if isIoField(x, i) {
-              reader.readwrite(__primitive("field by num", x, i));
-            }
-          }
-        } else if num_fields > 0 {
-
-          // this tuple helps us not read the same field twice.
-          var read_field:(num_fields)*bool;
-          // these two help us know if we've read all the fields.
-          var num_to_read = 0;
-          var num_read = 0;
-          for param i in 1..num_fields {
-            if isIoField(x, i) {
-              num_to_read += 1;
-            }
-          }
-
-          // the order should not matter.
-          while num_read < num_to_read {
-
-            if needsComma {
-              // read a comma
-
-              var comma = new ioLiteral(",", true);
-              reader.readwrite(comma);
-
-              if !reader.error() {
-                needsComma = false; // we read a comma
-              } else if reader.error() == EFORMAT {
-                // break out of the loop if we didn't read a comma
-                // and we're expecting to read one.
-                break;
-              }
-            }
-
-            // find a field name that matches.
-            // TODO: this is not particularly efficient. If we
-            // have a lot of fields, this is O(n**2), and there
-            // are other potential problems with string reallocation.
-            // We could do better if we put the field names to
-            // scan for into a regular expression, possibly
-            // with | and ( ) for capture groups so we can know
-            // which field was read.
-            var st = reader.styleElement(QIO_STYLE_ELEMENT_AGGREGATE);
-            var skip_unk = reader.styleElement(QIO_STYLE_ELEMENT_SKIP_UNKNOWN_FIELDS);
-
-            var read_field_name = false;
-
-            for param i in 1..num_fields {
-              if isIoField(x, i) {
-
-                if !read_field_name && !read_field[i] {
-                  var fname:ioLiteral = ioFieldNameLiteral(reader, t, i);
-
-                  reader.readwrite(fname);
-
-                  if reader.error() == EFORMAT || reader.error() == EEOF {
-                    // Try reading again with a different union element.
-                    reader.clearError();
-                  } else {
-                    read_field_name = true;
-                    needsComma = true;
-
-                    var eq:ioLiteral;
-                    if st == QIO_AGGREGATE_FORMAT_JSON {
-                      eq = new ioLiteral(":", true);
-                    } else {
-                      eq = new ioLiteral("=", true);
-                    }
-                    reader.readwrite(eq);
-
-                    reader.readwrite(__primitive("field by num", x, i));
-                    if !reader.error() {
-                      read_field[i] = true;
-                      num_read += 1;
-                    }
-                  }
-                }
-              }
-            }
-
-            // Stop with an error if we didn't read a field name
-            // ... unless we skip unknown fields...
-            if !read_field_name {
-              if skip_unk != 0 && st == QIO_AGGREGATE_FORMAT_JSON {
-
-                // Skip an unknown JSON field.
-                var err:syserr = ENOERR;
-                try {
-                  reader.skipField();
-                  needsComma = true;
-                } catch e: SystemError {
-                  err = e.err;
-                } catch {
-                  err = EINVAL;
-                }
-                reader.setError(err);
-
-              } else {
-                reader.setError(EFORMAT:syserr);
-                break;
-              }
-            }
-          }
-
-          // check that we've read all fields, return error if not.
-          {
-            var ok = num_read == num_to_read;
-
-            if ok then reader.setError(superclass_error);
-            else reader.setError(EFORMAT:syserr);
-          }
-        }
+        // Read the ID.
+        try reader.readwrite(id);
+        for param i in 1..numFields do
+          if isIoField(x, i) && i == id then
+            try reader.readwrite(__primitive("field by num", x, i));
       } else {
-        // Handle unions.
-        if isBinary {
-          var id = __primitive("get_union_id", x);
-          // Read the ID
-          reader.readwrite(id);
-          for param i in 1..num_fields {
-            if isIoField(x, i) && i == id {
-              reader.readwrite(__primitive("field by num", x, i));
-            }
+
+        // Read the field name = part until we get one that worked.
+        var hasFoundAtLeastOneField = false;
+
+        for param i in 1..numFields {
+          if !isIoField(x, i) then continue;
+
+          var st = reader.styleElement(QIO_STYLE_ELEMENT_AGGREGATE);
+          var fieldName = ioFieldNameLiteral(reader, t, i);
+
+          try {
+            reader.readwrite(fieldName);
+          } catch err: SystemError {
+
+            // Try reading again with a different union element.
+            if err.err == EFORMAT || err.err == EEOF then continue;
+            throw err;
           }
-        } else {
-          // Read the field name = part until we get one that worked.
-          var found_field = false;
-          for param i in 1..num_fields {
-            if isIoField(x, i) {
-              var st = reader.styleElement(QIO_STYLE_ELEMENT_AGGREGATE);
 
-              // the field name
-              var fname:ioLiteral = ioFieldNameLiteral(reader, t, i);
+          hasFoundAtLeastOneField = true;
 
-              reader.readwrite(fname);
+          var eq = if st == QIO_AGGREGATE_FORMAT_JSON
+            then new ioLiteral(":", true)
+            else new ioLiteral("=", true); 
 
-              // Read : or = if there was no error reading field name.
-              if reader.error() == EFORMAT || reader.error() == EEOF {
-                // Try reading again with a different union element.
-                reader.clearError();
-              } else {
-                found_field = true;
-                var eq:ioLiteral;
-                if st == QIO_AGGREGATE_FORMAT_JSON {
-                  eq = new ioLiteral(":", true);
-                } else {
-                  eq = new ioLiteral("=", true);
-                }
-                readIt(eq);
+          // TODO: Why not a `readwrite` call here?
+          try readIt(eq);
 
-                // We read the 'name = ', so now read the value!
-                reader.readwrite(__primitive("field by num", x, i));
-              }
-            }
-          }
-          // Create an error if we never found a field in our union.
-          if !found_field {
-            reader.setError(EFORMAT:syserr);
-          }
+          // We read the 'name = ', so now read the value!
+          try reader.readwrite(__primitive("field by num", x, i));
         }
+
+        if !hasFoundAtLeastOneField then
+          throw new owned
+            BadFormatError("Failed to find any union fields");
       }
     }
+
     // Note; this is not a multi-method and so must be called
     // with the appropriate *concrete* type of x; that's what
     // happens now with buildDefaultWriteFunction
     // since it has the concrete type and then calls this method.
     pragma "no doc"
     proc readThisDefaultImpl(reader, x:?t) throws where isClassType(t) {
+      const st = reader.styleElement(QIO_STYLE_ELEMENT_AGGREGATE);
+
       if !reader.binary() {
-        var st = reader.styleElement(QIO_STYLE_ELEMENT_AGGREGATE);
-        var start:ioLiteral;
-        if st == QIO_AGGREGATE_FORMAT_CHPL {
-          start = new ioLiteral("new " + t:string + "(");
-        } else {
-          // json and braces type
-          start = new ioLiteral("{");
-        }
-        reader.readwrite(start);
+        var start = if st == QIO_AGGREGATE_FORMAT_CHPL
+          then new ioLiteral("new " + t:string + "(")
+          else new ioLiteral("{");
+
+        try reader.readwrite(start);
       }
 
       var needsComma = false;
 
-      var obj = x; // make obj point to x so ref works
-      if ! reader.error() {
-        readThisFieldsDefaultImpl(reader, t, obj, needsComma);
-      }
-      if ! reader.error() {
-        skipFieldsAtEnd(reader, needsComma);
-      }
+      // Make a copy of the reference that we can modify.
+      var obj = x;
+
+      try readThisFieldsDefaultImpl(reader, t, obj, needsComma);
+      try skipFieldsAtEnd(reader, needsComma);
 
       if !reader.binary() {
-        var st = reader.styleElement(QIO_STYLE_ELEMENT_AGGREGATE);
-        var end:ioLiteral;
-        if st == QIO_AGGREGATE_FORMAT_CHPL {
-          end = new ioLiteral(")");
-        } else {
-          // json and braces type
-          end = new ioLiteral("}");
-        }
-        reader.readwrite(end);
+        var end = if st == QIO_AGGREGATE_FORMAT_CHPL
+          then new ioLiteral(")")
+          else new ioLiteral("}");
+
+        try reader.readwrite(end);
       }
     }
+
     pragma "no doc"
     proc readThisDefaultImpl(reader, ref x:?t) throws where !isClassType(t) {
+      const st = reader.styleElement(QIO_STYLE_ELEMENT_AGGREGATE);
+
       if !reader.binary() {
-        var st = reader.styleElement(QIO_STYLE_ELEMENT_AGGREGATE);
-        var start:ioLiteral;
-        if st == QIO_AGGREGATE_FORMAT_CHPL {
-          start = new ioLiteral("new " + t:string + "(");
-        } else if st == QIO_AGGREGATE_FORMAT_JSON {
-          start = new ioLiteral("{");
-        } else {
-          start = new ioLiteral("(");
+        var start: ioLiteral;
+
+        select st {
+          when QIO_AGGREGATE_FORMAT_CHPL do
+            start = new ioLiteral("new " + t:string + "(");
+          when QIO_AGGREGATE_FORMAT_JSON do
+            start = new ioLiteral("{");
+          otherwise do
+            start = new ioLiteral("(");
         }
-        reader.readwrite(start);
+
+        try reader.readwrite(start);
       }
 
       var needsComma = false;
 
-      if ! reader.error() {
-        readThisFieldsDefaultImpl(reader, t, x, needsComma);
-      }
-      if ! reader.error() {
-        skipFieldsAtEnd(reader, needsComma);
-      }
+      try readThisFieldsDefaultImpl(reader, t, x, needsComma);
+      try skipFieldsAtEnd(reader, needsComma);
 
       if !reader.binary() {
-        var st = reader.styleElement(QIO_STYLE_ELEMENT_AGGREGATE);
-        var end:ioLiteral;
-        if st == QIO_AGGREGATE_FORMAT_JSON {
-          end = new ioLiteral("}");
-        } else {
-          end = new ioLiteral(")");
-        }
-        reader.readwrite(end);
+        var end: ioLiteral = if st == QIO_AGGREGATE_FORMAT_JSON
+          then new ioLiteral("}")
+          else new ioLiteral(")");
+
+        try reader.readwrite(end);
       }
     }
 
@@ -805,35 +788,28 @@ module ChapelIO {
   }
 
   pragma "no doc"
-  proc ref range.readThis(f) throws
-  {
-    if hasLowBound() then
-      f <~> _low;
-    f <~> new ioLiteral("..");
-    if hasHighBound() then
-      f <~> _high;
-    if stride != 1 then
-      f <~> new ioLiteral(" by ") <~> stride;
+  proc ref range.readThis(f) throws {
+    if hasLowBound() then f <~> _low;
 
-    // try reading an 'align'
-    if !f.error() {
+    f <~> new ioLiteral("..");
+
+    if hasHighBound() then f <~> _high;
+
+    if stride != 1 then f <~> new ioLiteral(" by ") <~> stride;
+
+    try {
       f <~> new ioLiteral(" align ");
-      if f.error() == EFORMAT then {
-        // naturally aligned.
-        f.clearError();
+
+      if stridable {
+        var a: intIdxType;
+        f <~> a;
+        _alignment = a;
       } else {
-        if stridable {
-          // un-naturally aligned - read the un-natural alignment
-          var a: intIdxType;
-          f <~> a;
-          _alignment = a;
-        } else {
-          // If the range is not stridable, it can't store an alignment.
-          // TODO: once Channels can store Chapel errors,
-          // create a more descriptive error for this case
-          f.setError(EFORMAT:syserr);
-        }
+        throw new owned
+          BadFormatError("Range is not stridable, cannot store alignment");
       }
+    } catch err: BadFormatError {
+      // Range is naturally aligned.
     }
   }
 

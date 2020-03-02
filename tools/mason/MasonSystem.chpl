@@ -213,7 +213,7 @@ proc pkgExists(pkgName: string) : bool {
 proc getPkgInfo(pkgName: string, version: string) throws {
 
   var pkgDom: domain(string);
-  var pkgToml: [pkgDom] unmanaged Toml;
+  var pkgToml: [pkgDom] unmanaged Toml?;
   var pkgInfo = new unmanaged Toml(pkgToml);
 
   if pkgExists(pkgName) {
@@ -242,12 +242,12 @@ proc getPkgInfo(pkgName: string, version: string) throws {
 proc getPCDeps(exDeps: unmanaged Toml) {
 
   var exDom: domain(string);
-  var exDepTree: [exDom] unmanaged Toml;
+  var exDepTree: [exDom] unmanaged Toml?;
 
   for (name, vers) in exDeps.A.items() {
     try! {
       if pkgConfigExists() {
-        const pkgInfo = getPkgInfo(name, vers.s);
+        const pkgInfo = getPkgInfo(name, vers!.s);
         exDom += name;
         exDepTree[name] = pkgInfo;
       }

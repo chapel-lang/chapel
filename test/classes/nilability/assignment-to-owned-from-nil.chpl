@@ -15,34 +15,37 @@ var NILA: [1..2] owned object;
 
 var nilableNil: owned object?;
 var nonnlbLHS = new owned object();
+var nonnlbLHSb = nonnlbLHS.borrow();
 var nilableLHS: owned object?;
 proc fillNilableLHS() { nilableLHS = new owned object(); }
 
-/* nilable <- nilable */
+proc main() {
+  /* nilable <- nilable */
 
-writeln("1a ", nilableLHS);
-nilableLHS = nilableNil;
-writeln("1b ", nilableLHS);
+  writeln("1a ", nilableLHS);
+  nilableLHS = nilableNil;
+  writeln("1b ", nilableLHS);
 
-fillNilableLHS();
-writeln("2a ", nilableLHS);
-nilableLHS = nilableNil;
-writeln("2b ", nilableLHS);
+  fillNilableLHS();
+  writeln("2a ", nilableLHS);
+  nilableLHS = nilableNil;
+  writeln("2b ", nilableLHS);
 
-/* nilable <- nonnilable */
+  /* nilable <- nonnilable */
 
-writeln("3a ", nilableLHS);
-nilableLHS = new owned object();
-writeln("3b ", nilableLHS);
-nilableLHS = new owned object();
-writeln("3c ", nilableLHS);
+  writeln("3a ", nilableLHS);
+  nilableLHS = new owned object();
+  writeln("3b ", nilableLHS);
+  nilableLHS = new owned object();
+  writeln("3c ", nilableLHS);
 
-/* nonnilable <- nilable reports compiler error - tested elsewhere */
-// nonnlbLHS = nilableLHS;
+  /* nonnilable <- nilable reports compiler error - tested elsewhere */
+  // nonnlbLHS = nilableLHS;
 
-/* nonnilable <- nonnilable when RHS is nil */
-// When all holes are plugged, this section is no longer relevant.
+  /* nonnilable <- nonnilable when RHS is nil */
+  // When all holes are plugged, this section is no longer relevant.
 
-writeln("4a ", nonnlbLHS);
-nonnlbLHS = NILA[1]; // should generate runtime error
-writeln("4b ", nonnlbLHS);
+  writeln("4a ", nonnlbLHS);
+  nonnlbLHSb = NILA[1].borrow(); // should generate runtime error
+  writeln("4b ", nonnlbLHSb);
+}

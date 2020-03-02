@@ -160,8 +160,7 @@ method-call-expression as specified in :ref:`Method_Calls`.
    Then given an instance of ``C`` called ``c1``, the method call
    ``c1.foo()`` results in a call to ``bar`` where the argument is
    ``c1``. Within primary method ``C.foo()``, the (implicit) receiver
-   formal has static type ``C`` (otherwise known as ``borrowed C``) and
-   is referred to as ``this``.
+   formal has static type ``borrowed C`` and is referred to as ``this``.
 
 Methods whose receivers are objects are called *instance methods*.
 Methods may also be defined to have ``type`` receivers—these are known

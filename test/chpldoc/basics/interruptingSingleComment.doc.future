@@ -1,6 +1,0 @@
-bug: accidentally grabs multiline comment even with intervening single line comment
-
-chpldoc intentionally grabs multiline comments that precede a symbol, no matter
-the intervening space.  However, if there is an intervening single line or
-otherwise non-documentation comment, it probably shouldn't assume that the
-multiline comment is relevant.

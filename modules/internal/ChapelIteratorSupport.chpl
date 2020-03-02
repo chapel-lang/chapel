@@ -115,6 +115,7 @@ module ChapelIteratorSupport {
   // Ideally we'd get them **directly** from domType/arrType.
   //
 
+  pragma "unsafe"
   proc chpl_buildStandInRTT(type domType: domain) type
   { //
     // domType._instance has no runtime type, so accessing its type
@@ -127,6 +128,7 @@ module ChapelIteratorSupport {
     return chpl_buildStandInRTT(instanceObj);
   }
 
+  pragma "unsafe"
   proc chpl_buildStandInRTT(type arrType: []) type
   {
     // Analogously to instanceObj in chpl_buildStandInRTT(domType).

@@ -18,7 +18,8 @@
  */
 
 module StringCasts {
-  private use ChapelStandard, SysCTypes;
+  private use ChapelStandard;
+  private use SysCTypes;
 
   // TODO: I want to break all of these casts from string to T out into
   // T.parse(string), but we dont support methods on types yet. Ideally they

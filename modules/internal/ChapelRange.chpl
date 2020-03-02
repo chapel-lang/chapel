@@ -1121,28 +1121,6 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
   //#
 
   // Assignment
-  pragma "compiler generated"
-    // The "compiler generated" flag is added so this explicit definition
-    // of assignment does not disable the POD optimization.
-    // Although provided explicitly, this function is effectively trivial,
-    // since it performs what is effectively a bit-wise copy.
-    //
-    // The POD optimization currently removes initCopy, autoCopy and destructor
-    // calls whose arguments are of plain-old-data type.  Future applications
-    // of this optimization may also remove assignment calls.
-    // The determination of whether a type is POD or not is currently based on
-    // whether a destructor or any assignment operators are defined taking that
-    // that type as an operand.  In the future, the initCopy and default
-    // constructor (yet to be defined) functions and possibly the autoCopy
-    // function will be considered as well.
-    // The purpose of considering POD-ness as the criterion for removing
-    // initCopy and autoCopy calls is that destructors are removed at the same
-    // time.  So at least both functions participating in the optimization must
-    // be trivial.  In the future, the optimization may also remove assignments
-    // and default constructor calls, in which case the optimization should
-    // only be applied when all four of these functions (or their generic
-    // equivalents) are trivial.
-    // See also removePODinitDestroy() in removeUnnecessaryAutoCopyCalls.cpp.
   inline proc =(ref r1: range(stridable=?s1), r2: range(stridable=?s2))
   {
     if r1.boundedType != r2.boundedType then
@@ -1752,7 +1730,7 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
     const r = low..high by stride;
     for i in r do yield i;
   }
-  
+
 
 
   // cases for when stride is a param int (underlying iter can figure out sign

@@ -74,6 +74,17 @@ module MemConsistency {
   pragma "memory order type"
   enum memoryOrder {seqCst, acqRel, release, acquire, relaxed}
 
+
+  // Given an input memory order, return an order that can be used for an
+  // atomic load or for the compareExchange failure case.
+  proc readableOrder(param order: memoryOrder) param {
+    if order == memoryOrder.release || order == memoryOrder.acqRel {
+      return memoryOrder.acquire;
+    } else {
+      return order;
+    }
+  }
+
   inline proc c_memory_order(param order: memoryOrder) {
     use HaltWrappers only;
     select order {

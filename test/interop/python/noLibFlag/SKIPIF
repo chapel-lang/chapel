@@ -2,4 +2,6 @@
 
 if [[ $CHPL_COMM != none ]] ; then
   echo True
+elif [[ $CHPL_TARGET_PLATFORM != darwin && $CHPL_LIB_PIC != pic ]] ; then
+  echo True
 fi

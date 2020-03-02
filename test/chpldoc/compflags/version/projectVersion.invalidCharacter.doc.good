@@ -1,0 +1,2 @@
+error: Invalid version format: a.c.d due to: Invalid Characters, only digits and dots permitted before a hyphen
+cat: docs/_static/documentation_options.js: No such file or directory

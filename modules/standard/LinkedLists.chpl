@@ -259,82 +259,75 @@ record LinkedList {
 
   pragma "no doc"
   proc readThis(f) throws {
-    // Special handling for reading in order to handle
-    // reading an arbitrary length.
-    var binary = f.binary();
-    var arrayStyle = f.styleElement(QIO_STYLE_ELEMENT_ARRAY);
-    var isspace = arrayStyle == QIO_ARRAY_FORMAT_SPACE && !binary;
-    var isjson = arrayStyle == QIO_ARRAY_FORMAT_JSON && !binary;
-    var ischpl = arrayStyle == QIO_ARRAY_FORMAT_CHPL && !binary;
+
+    //
+    // Special handling for reading in order to handle reading an arbitrary
+    // length.
+    //
+    const isBinary = f.binary();
+    const arrayStyle = f.styleElement(QIO_STYLE_ELEMENT_ARRAY);
+    const isSpace = arrayStyle == QIO_ARRAY_FORMAT_SPACE && !isBinary;
+    const isJson = arrayStyle == QIO_ARRAY_FORMAT_JSON && !isBinary;
+    const isChpl = arrayStyle == QIO_ARRAY_FORMAT_CHPL && !isBinary;
 
     // How many elements should we read (for binary mode)?
     var num = 0;
 
-    if binary {
-      // Read the number of elements.
-      f <~> num;
-    }
-    if isjson || ischpl {
-      f <~> new ioLiteral("[");
-    }
+    if isBinary then f <~> num;
 
-    if ! f.error() {
-      // Clear out existing elements in the list
-      destroy();
-    }
+    if isJson || isChpl then f <~> new ioLiteral("[");
 
-    var first = true;
+    // Clear out existing elements in the list.
+    destroy();
+
+    var isFirst = true;
+    var hasReadEnd = false;
     var i = 0;
-    var read_end = false;
 
-    while ! f.error() {
-      if binary {
-        // Read only num elements.
+    while !hasReadEnd {
+      if isBinary {
         if i >= num then break;
-      } else {
-        if first {
-          first = false;
-          // but check for a ]
-          if isjson || ischpl {
+        continue;
+      }
+
+      if isFirst {
+        isFirst = false;
+
+        // Try reading an end bracket. If we don't, then continue on.
+        try {
+          if isJson || isChpl {
             f <~> new ioLiteral("]");
-          } else if isspace {
+          } else if isSpace {
             f <~> new ioNewline(skipWhitespaceOnly=true);
           }
-          if f.error() == EFORMAT {
-            f.clearError();
-          } else {
-            read_end = true;
-            break;
-          }
-        } else {
-          // read a comma or a space.
-          if isspace then f <~> new ioLiteral(" ");
-          else if isjson || ischpl then f <~> new ioLiteral(",");
 
-          if f.error() == EFORMAT {
-            f.clearError();
-            // No comma.
-            break;
+          hasReadEnd = true;
+          break;
+        } catch err: BadFormatError {
+          // Continue on if we didn't read an end bracket.
+        }
+      } else {
+
+        // Try to read a space or a comma. Break if we don't.
+        try {
+          if isSpace {
+            f <~> new ioLiteral(" ");
+          } else if isJson || isChpl {
+            f <~> new ioLiteral(",");
           }
+        } catch err: BadFormatError {
+          break;
         }
       }
 
-      var elt:eltType;
-
-      // read the element
+      var elt: eltType;
       f <~> elt;
-
-      // add it to the list
       append(elt);
-
       i += 1;
     }
 
-    if ! read_end {
-      if isjson || ischpl {
-        f <~> new ioLiteral("]");
-      }
-    }
+    if !hasReadEnd then
+      if isJson || isChpl then f <~> new ioLiteral("]");
   }
 }
 

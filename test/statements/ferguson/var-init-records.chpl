@@ -34,6 +34,7 @@ proc testb() {
   writeln("b");
   var a = makeR();
   var b:R = a;
+  a; b; // avoid copy elision to focus on checking init=
 }
 
 proc testc() {

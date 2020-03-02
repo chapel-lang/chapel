@@ -1,7 +1,7 @@
-Problem size = 1024 (2**10)
-Bytes per array = 8192
-Total memory required (GB) = 7.62939e-06
+Problem size = 65536 (2**16)
+Bytes per array = 524288
+Total memory required (GB) = 0.000488281
 Number of updates = 4096
 
-(execute_on = 212, execute_on_nb = 3) (execute_on = 849) (execute_on = 872) (execute_on = 837)
+(get = 21, execute_on_fast = 773, execute_on_nb = 3) (get = 21, execute_on_fast = 766) (get = 21, execute_on_fast = 780) (get = 21, execute_on_fast = 742)
 Validation: SUCCESS

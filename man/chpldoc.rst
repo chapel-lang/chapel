@@ -59,6 +59,11 @@ reStructuredText as an intermediate format.
 
     [Don't] generate HTML-based documentation (on by default)
 
+**--project-version <**\ *projectversion*\ **>**
+
+    Sets the documentation version to *projectversion*
+    (documentation version defaults to '0.0.1' if unspecified).
+
 **--[no-]print-commands**
 
     Prints the system commands that **chpldoc** executes in order to create

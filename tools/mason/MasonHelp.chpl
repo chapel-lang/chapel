@@ -132,6 +132,17 @@ proc masonNewHelp() {
   writeln('        --no-vcs                 Do not initialize a git repository');
 }
 
+proc masonInitHelp(){
+  writeln("Initializes a library project inside a given directory or path.");
+  writeln('Usage:');
+  writeln('    mason init [options] <directory name>');
+  writeln('    mason init [options]');
+  writeln();
+  writeln('Options:');
+  writeln('    -h, --help                   Display this message');
+  writeln('        --show                   Increase verbosity');
+}
+
 proc masonSearchHelp() {
   const desc =
 "When no query is provided, all packages in the registry will be listed. The\n" +
