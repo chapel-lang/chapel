@@ -43,7 +43,7 @@ f5 = readln(f3);
 writeln(f5);
 f5 = readf("%i", f4);
 writeln(f5);
-"My favorite %s is %i".format("number", 9);
+
 
 stdinInit();    // TODO: document?
 stdoutInit();   // TODO: document?

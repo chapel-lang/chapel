@@ -44,8 +44,6 @@ warnings.chpl:42: warning: readln will no longer be available by default,
 please insert a use of the IO module to continue calling it.
 warnings.chpl:44: warning: readf will no longer be available by default,
 please insert a use of the IO module to continue calling it.
-warnings.chpl:46: warning: string.format will no longer be available by default,
-please insert a use of the IO module to continue calling it.
 warnings.chpl:48: warning: stdinInit will no longer be available by default,
 please insert a use of the IO module to continue calling it.
 warnings.chpl:49: warning: stdoutInit will no longer be available by default,
