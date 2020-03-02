@@ -1446,6 +1446,8 @@ class FindInvalidNonNilables : public AstVisitorTraverse {
     // value - NULL if that variable isn't possibly nil now
     //         an Expr* setting it to nil if it is possibly nil now
     SymbolToNilMap varsToNil;
+    // Only present errors once per symbol
+    std::set<Symbol*> erroredSymbols;
     virtual bool enterDefExpr(DefExpr* def);
     virtual bool enterCallExpr(CallExpr* call);
     virtual void exitCallExpr(CallExpr* call);
@@ -1546,7 +1548,8 @@ void FindInvalidNonNilables::exitCallExpr(CallExpr* call) {
               error = "Cannot transfer ownership from this non-nilable variable";
             }
 
-            if (error != NULL) {
+            if (error != NULL && erroredSymbols.count(actualSym) == 0) {
+              erroredSymbols.insert(actualSym);
               if (printsUserLocation(astPoint))
                 USR_FATAL_CONT(astPoint, "%s", error);
               else
@@ -1585,7 +1588,8 @@ void FindInvalidNonNilables::visitSymExpr(SymExpr* se) {
         }
       }
 
-      if (error) {
+      if (error && erroredSymbols.count(sym) == 0) {
+        erroredSymbols.insert(sym);
         USR_FATAL_CONT(se, "mention of non-nilable variable after ownership is transferred out of it");
         USR_PRINT(e, "ownership transfer occurred here");
       }
