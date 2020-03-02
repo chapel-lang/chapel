@@ -267,6 +267,7 @@ module String {
     }
     proc init(i: int) { _cpindex = i; }
     proc init=(i: int) { _cpindex = i; }
+    proc init=(cpi: codepointIndex) { _cpindex = cpi._cpindex; }
 
     proc writeThis(f) throws {
       f <~> _cpindex;
