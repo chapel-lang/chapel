@@ -68,7 +68,7 @@ module vertexColoring {
     }
 
     /** Abstract node representation */
-    var nodeSet:[D] unmanaged Node;
+    var nodeSet:[D] owned Node?;
     var again:[D] bool;
 
     /*
@@ -111,15 +111,14 @@ module vertexColoring {
             for i in D do sumval = sumval + nval[i];
             if(sumval > 0) then writeln();
         }
-
-        cleanup();
     }
 
     /* Initializes all the fields of the abstract node. */
     proc initialize() {
-        forall (node, num_label, i) in zip(nodeSet, nlabel, D) {
+        forall (nodeElem, num_label, i) in zip(nodeSet, nlabel, D) {
             num_label = i;
-            node = new unmanaged Node();
+            nodeElem = new Node();
+            const node = nodeElem!;
             node.parent = parent[i];
             var count = 0;
             for j in D {
@@ -142,12 +141,6 @@ module vertexColoring {
         if(1<<colorLabel < nodes) then colorLabel+=1;
     }
 
-    /* Clean up memory allocated by this benchmark */
-    proc cleanup() {
-      forall node in nodeSet do
-        delete node;
-    }
-
     /*
         Aims to busy the threads by introducing the no-op instructions
         equivalent to the amount of load specified.
@@ -164,7 +157,7 @@ module vertexColoring {
 
     /* Runs the algorithm till the graph consists of atmost six colors. */
     proc run() {
-        nodeSet[root].color = 0;
+        nodeSet[root]!.color = 0;
         do {
             sixColor();
         }while(checkAgain());
@@ -181,32 +174,34 @@ module vertexColoring {
 
     /* Reduces the number of colors used in the graph to six. */
     proc sixColor(){
-        forall i in D {
-            forall j in 1..nodeSet[i].children.size {
-                sendColor(nodeSet[i].children[j], nodeSet[i].color);
+        forall (i, nodeQ) in zip(D, nodeSet) {
+            const node = nodeQ!;
+            forall j in 1..node.children.size {
+                sendColor(node.children[j], node.color);
             }
 
             if(loadValue != 0) then nval[i] = loadweight(nval[i]+i);
         }
 
-        forall i in D {
+        forall (i, nodeQ) in zip(D, nodeSet) {
+            const node = nodeQ!;
             if(i!=root){
                 again[i]=false;
-                var xored = nodeSet[i].receivedColor ^ nodeSet[i].color;
+                var xored = node.receivedColor ^ node.color;
                 for k in 0..colorLabel-1 {
                     var pval = 1<<k;
                     var nand :int = xored & pval;
                     if(nand == pval) {
-                        var nxored = nodeSet[i].color & pval;
+                        var nxored = node.color & pval;
                         if(nxored == 0) then
-                            nodeSet[i].color = 2*k + 0;
+                            node.color = 2*k + 0;
                         else
-                            nodeSet[i].color = 2*k + 1;
+                            node.color = 2*k + 1;
                         break;
                     }
                 }
 
-                if(nodeSet[i].color >= 6) then again[i] = true;
+                if(node.color >= 6) then again[i] = true;
             }
 
             if(loadValue != 0) then nval[i] = loadweight(nval[i]+i);
@@ -222,30 +217,30 @@ module vertexColoring {
             var ncolor : int = randStream.getNext(): int;
             ncolor = ncolor%3;
             shiftDown();
-            if(nodeSet[root].color == ncolor) then ncolor = (ncolor+1)%3;
-            nodeSet[root].color = ncolor;
-
-            forall i in D {
+            if(nodeSet[root]!.color == ncolor) then ncolor = (ncolor+1)%3;
+            nodeSet[root]!.color = ncolor;
+            
+            forall (i, nodeQ) in zip(D, nodeSet) {
+                const node = nodeQ!;
                 var cparent=0,cchild=0;
-                if(nodeSet[i].color == x) {
-                    cparent=getColor(nodeSet[i].parent);
-                    if(nodeSet[i].children.size >0) then
-                        cchild=getColor(nodeSet[i].children[1]);
+                if(node.color == x) {
+                    cparent=getColor(node.parent);
+                    if(node.children.size >0) then
+                        cchild=getColor(node.children[1]);
                     if(cparent+cchild == 1) then
-                        nodeSet[i].color=2;
+                        node.color=2;
                     else if(cparent+cchild == 2) then
-                        nodeSet[i].color=1;
+                        node.color=1;
                     else if( (cparent+cchild >=3) && (cparent+cchild<=5)) {
                         if(cparent != 0 && cchild != 0) then
-                            nodeSet[i].color=0;
+                            node.color=0;
                         else
-                            nodeSet[i].color=1;
-                    }
-                    else
-                        nodeSet[i].color = 0;
+                            node.color=1;
+                    } else
+                        node.color = 0;
                 }
 
-            if(loadValue != 0) then nval[i] = loadweight(nval[i]+i);
+                if(loadValue != 0) then nval[i] = loadweight(nval[i]+i);
             }
         }
 
@@ -253,14 +248,17 @@ module vertexColoring {
 
    /* Shifts the color of parent down to its children. */
    proc shiftDown() {
-        forall i in D {
-            for j in 1..nodeSet[i].children.size {
-                    sendColor(nodeSet[i].children[j], nodeSet[i].color);
+        forall (i, nodeQ) in zip(D, nodeSet) {
+            const node = nodeQ!;
+            for j in 1..node.children.size {
+                    sendColor(node.children[j], node.color);
             if(loadValue != 0) then nval[i] = loadweight(nval[i]+i);
             }
         }
-        forall i in D {
-            if(i != root) then nodeSet[i].color = nodeSet[i].receivedColor;
+
+        forall (i, nodeQ) in zip(D, nodeSet) {
+            const node = nodeQ!;
+            if(i != root) then node.color = node.receivedColor;
             if(loadValue!=0) then nval[i] = loadweight(nval[i]+i);
         }
     }
@@ -272,22 +270,22 @@ module vertexColoring {
        :rtype: int(64);
     */
     proc getColor(aNode:int):int {
-        return nodeSet[aNode].color;
+        return nodeSet[aNode]!.color;
     }
 
     /* Sends the color of the parent node to a child node.
        :arg childNode: node whose color is to be changed
     */
     proc sendColor(childNode: int, acolor:int) {
-        nodeSet[childNode].receivedColor = acolor;
+        nodeSet[childNode]!.receivedColor = acolor;
     }
 
     proc printOutput() {
         var outfile = open(outputFile, iomode.cw);
         var writer = outfile.writer();
-        for q in D {
-            writer.writeln("Node ", q, ": \t Color ", nodeSet[q].color);
-            writeln("Node ", q, ": \t Color ", nodeSet[q].color);
+        for (q, node) in zip(D, nodeSet!) {
+            writer.writeln("Node ", q, ": \t Color ", node.color);
+            writeln("Node ", q, ": \t Color ", node.color);
         }
         writer.close();
         outfile.close();
@@ -299,24 +297,26 @@ module vertexColoring {
         var colormat : [D] int = -1;
         var flag = false;
 
-        for i in D {
-            if(colormat[nodeSet[i].color] <0) {
-                colormat[nodeSet[i].color]=0;
+        for (i, nodeQ) in zip(D, nodeSet) {
+            const node = nodeQ!;
+            if(colormat[node.color] <0) {
+                colormat[node.color]=0;
                 count+=1;
             }
         }
         if(count <= 3) {
             flag = false;
-            for i in D {
+            for (i, nodeQ) in zip(D, nodeSet) {
+                const node = nodeQ!;
                 if(i != root){
-                    if(nodeSet[i].color == nodeSet[nodeSet[i].parent].color) {
+                    if(node.color == nodeSet[node.parent]!.color) {
                         flag = true;
                         break;
                     }
                 }
 
-                for j in 1..nodeSet[i].children.size {
-                    if(nodeSet[i].color == nodeSet[nodeSet[i].children[j]].color) {
+                for j in 1..node.children.size {
+                    if(node.color == nodeSet[node.children[j]]!.color) {
                         flag = true;
                         break;
                     }

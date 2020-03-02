@@ -118,10 +118,9 @@ class ForceEAM : Force {
 
   override proc epilogue() : void {
 if useChplVis then tagVdebug("setupEAMForce");
-    this.eamPot = new unmanaged EAMPot();
     const boxSpace = {1..numBoxes(1), 1..numBoxes(2), 1..numBoxes(3)};
-    const distSpace = boxSpace dmapped Block(boundingBox=boxSpace, targetLocales=locGrid);
-    ref eamDom = this.eamPot!.eamDom;
+    const distSpace = boxSpace dmapped Block(boundingBox=boxSpace, targetLocales=locGrid!);
+    var eamDom : [locDom] unmanaged EAMDomain?;
     coforall ijk in locDom {
       on locGrid[ijk] {
         const MyLocDom = distSpace.localSubdomain();
@@ -178,6 +177,7 @@ local {
 }
       }
     }
+    this.eamPot = new unmanaged EAMPot(eamDom!);
 if useChplVis then pauseVdebug();
   }
 
@@ -354,7 +354,7 @@ if useChplVis then tagVdebug("computeEAMForce");
     const ref eamDom = this.eamPot!.eamDom;
     coforall ijk in locDom {
       on locGrid[ijk] {
-        const MyDom = Grid[ijk];
+        const MyDom = Grid[ijk]!;
         const MyEAMDom = eamDom[ijk];
         const force = MyDom.force : ForceEAM;
         const neighs = {-1..1, -1..1, -1..1};
@@ -395,7 +395,7 @@ if useChplVis then pauseVdebug();
 if useChplVis then tagVdebug("computeEAMForce");
     coforall ijk in locDom {
       on locGrid[ijk] {
-        const MyDom = Grid[ijk];
+        const MyDom = Grid[ijk]!;
         const MyEAMDom = eamDom[ijk];
         const force = MyDom.force : ForceEAM;
         const neighs = {-1..1, -1..1, -1..1};
@@ -424,7 +424,7 @@ if useChplVis then tagVdebug("computeEAMForce");
     const ref eamDom = this.eamPot!.eamDom;
     coforall ijk in locDom {
       on locGrid[ijk] {
-        const MyDom = Grid[ijk];
+        const MyDom = Grid[ijk]!;
         const MyEAMDom = eamDom[ijk];
         const force = MyDom.force : ForceEAM;
 local {
@@ -467,7 +467,7 @@ if useChplVis then pauseVdebug();
 if useChplVis then tagVdebug("computeEAMForce");
     coforall ijk in locDom {
       on locGrid[ijk] {
-        const MyDom = Grid[ijk];
+        const MyDom = Grid[ijk]!;
         const MyEAMDom = eamDom[ijk];
         const force = MyDom.force : ForceEAM;
 local {

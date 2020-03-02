@@ -1440,15 +1440,20 @@ module List {
       :return: A new DefaultRectangular array.
     */
     proc const toArray(): [] eltType {
-      var result: [1.._size] eltType;
+      if isNonNilableClass(eltType) && isOwnedClass(eltType) then
+        compilerError("toArray() method is not available on a 'list'",
+                      " with elements of a non-nilable owned type, here: ",
+                      eltType:string);
+
+      // Once GitHub Issue #7704 is resolved, replace pragma "unsafe"
+      // with a remote var declaration.
+      pragma "unsafe" var result: [1.._size] eltType;
 
       on this {
         _enter();
 
-        var tmp: [1.._size] eltType;
-
-        forall i in 1.._size do
-          tmp[i] = _getRef(i);
+        var tmp: [1.._size] eltType =
+          forall i in 1.._size do _getRef(i);
 
         result = tmp;
 

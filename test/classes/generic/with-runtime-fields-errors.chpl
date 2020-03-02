@@ -8,7 +8,7 @@ module w {
   }
 
   // a runtime type
-  type RT = Locales.type;
+  type RT = [Locales.domain] int;
 
   // workaround for #14542
   if opt == 4 {

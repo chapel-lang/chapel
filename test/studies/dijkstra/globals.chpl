@@ -45,7 +45,7 @@ module NodesEdges {
     var sigma: real;
     var onStack: int;         // next node on stack; -1, EOS; -2, not on stack
     var inHeap: int;          // position in heap; -1, not in heap
-    var preEdge: unmanaged PreEdge?;     // list of edges to predecessor nodes
+    var preEdge: unmanaged PreEdge;     // list of edges to predecessor nodes
   }
 
   class Heap {

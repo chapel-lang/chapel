@@ -335,6 +335,7 @@ module LocaleModel {
   }
 
   const chpl_emptyLocaleSpace: domain(1) = {1..0};
+  pragma "unsafe"
   const chpl_emptyLocales: [chpl_emptyLocaleSpace] locale;
 
   //
@@ -348,6 +349,7 @@ module LocaleModel {
 
     var numSublocales: int; // should never be modified after first assignment
     var childSpace: domain(1);
+    pragma "unsafe"
     var childLocales: [childSpace] unmanaged NumaDomain;
 
     // This constructor must be invoked "on" the node
@@ -473,6 +475,7 @@ module LocaleModel {
   class RootLocale : AbstractRootLocale {
 
     const myLocaleSpace: domain(1) = {0..numLocales-1};
+    pragma "unsafe"
     var myLocales: [myLocaleSpace] locale;
 
     proc init() {

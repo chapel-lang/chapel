@@ -15,7 +15,7 @@ var vdf = new ReplicatedDim(s1);
 var sdf = new BlockDim(s2, 1, 3);
 
 hd("new DimensionalDist2D()");
-var ddf = new unmanaged DimensionalDist2D(mylocs, vdf, sdf, "ddf");
+var ddf = new unmanaged DimensionalDist2D(mylocs!, vdf, sdf, "ddf");
 tl();
 
 hd("wrapping ddf in dmap");

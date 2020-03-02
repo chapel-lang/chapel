@@ -20,10 +20,8 @@ type indexType = int,
 // grid dimensions
 config const tl1:indexType = tlFromNLocs(1),
              tl2:indexType = tlFromNLocs(2);
-var tla: [0..#tl1, 0..#tl2] locale;
 var tld: bool;  // whether our targetLocales are all distinct
-
-setupTargetLocales();
+var tla: [0..#tl1, 0..#tl2] locale = setupTargetLocales();
 
 // automatically compute an acceptable (reqN) or desirable (factorN) size
 config const reqN = false,
@@ -252,6 +250,7 @@ proc targetLocalesIndexForAbIndex(param dim, abIx)
 /////////////////////////////////////////////////////////////////////////////
 
 proc setupTargetLocales() {
+  var tla: [0..#tl1, 0..#tl2] locale?;
 //  writeln("setting up for ", tl1, "*", tl2, " locales");
   tld = numLocales >= tla.numElements;
   if tld {
@@ -264,6 +263,7 @@ halt();
     writeln("oversubscribing Locales(0)");
     tla = Locales(0);
   }
+  return tla!;
 }
 
 // interpreting numLocales

@@ -912,12 +912,12 @@ module ChapelBase {
     }
   }
 
-  pragma "unsafe" // work around problems storing non-nilable classes
   proc init_elts(x, s, type t) : void {
     var initMethod = chpl_getArrayInitMethod();
 
     // for uints, check that s > 0, so the `s-1` below doesn't overflow
-    if isUint(s) && s == 0 {
+    // does not need to init for ints, either
+    if isIntegral(s) && s == 0 {
       initMethod = ArrayInit.noInit;
     } else if initMethod == ArrayInit.heuristicInit {
       // Heuristically determine if we should do parallel initialization. The
@@ -974,13 +974,13 @@ module ChapelBase {
       }
       when ArrayInit.serialInit {
         for i in 0..s-1 {
-          pragma "no auto destroy" var y: t;
+          pragma "no auto destroy" pragma "unsafe" var y: t;
           __primitive("array_set_first", x, i, y);
         }
       }
       when ArrayInit.parallelInit {
         forall i in 0..s-1 {
-          pragma "no auto destroy" var y: t;
+          pragma "no auto destroy" pragma "unsafe" var y: t;
           __primitive("array_set_first", x, i, y);
         }
       }
@@ -1580,35 +1580,35 @@ module ChapelBase {
   pragma "no copy return"
   pragma "no borrow convert"
   pragma "suppress lvalue error"
-  pragma "unsafe"
   inline proc _createFieldDefault(type t, init) {
     if isNonNilableClassType(t) && isNilableClassType(init.type) then
       compilerError("default-initializing a field with a non-nilable type ",
           t:string, " from an instance of nilable ", init.type:string);
 
-    pragma "no auto destroy" var x: t = init;
+    pragma "no auto destroy" pragma "unsafe"
+    var x: t = init;
     return x;
   }
 
   pragma "dont disable remote value forwarding"
   pragma "no borrow convert"
   pragma "no copy return"
-  pragma "unsafe"
   inline proc _createFieldDefault(type t, param init) {
-    pragma "no auto destroy" var x: t = init;
+    pragma "no auto destroy" pragma "unsafe"
+    var x: t = init;
     return x;
   }
 
   pragma "dont disable remote value forwarding"
   pragma "no borrow convert"
   pragma "no copy return"
-  pragma "unsafe"
   inline proc _createFieldDefault(type t, init: _nilType) {
     if isNonNilableClassType(t) then
       compilerError("default-initializing a field with a non-nilable type ",
                     t:string, " from nil");
 
-    pragma "no auto destroy" var x: t;
+    pragma "no auto destroy" pragma "unsafe"
+    var x: t;
     return x;
   }
 

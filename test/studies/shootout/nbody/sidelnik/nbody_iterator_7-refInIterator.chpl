@@ -64,7 +64,7 @@ proc offset_momentum(B : [] unmanaged Planet) {
 }
 
 proc main() {
-  var bodies : [NBODIES] unmanaged Planet;
+  var bodies : [NBODIES] unmanaged Planet?;
   
   var p0,v0 : [vecLen] real = (0,0,0);
   bodies(0) = new unmanaged Planet(p0,v0, solar_mass);
@@ -97,12 +97,12 @@ proc main() {
                             -9.51592254519715870e-05 * days_per_year);
   bodies(4) = new unmanaged Planet(p4,v4, 5.15138902046611451e-05 * solar_mass);
   
-  offset_momentum(bodies);
-  writef("%{#.#########}\n", energy(bodies));
+  offset_momentum(bodies!);
+  writef("%{#.#########}\n", energy(bodies!));
   for 1..n {
-    advance(bodies, 0.01);
+    advance(bodies!, 0.01);
   }
-  writef("%{#.#########}\n", energy(bodies));
+  writef("%{#.#########}\n", energy(bodies!));
   
   for body in bodies do delete body;
 }

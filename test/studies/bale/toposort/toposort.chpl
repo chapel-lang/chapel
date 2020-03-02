@@ -221,8 +221,8 @@ class DistributedWorkQueue {
   type eltType;
   type lockType;
 
-  var localesDomain : domain(1) = {1..0};
-  var locales : [localesDomain] locale;
+//var localesDomain : domain(1) = {1..0};
+//var locales : [localesDomain] locale;
 
   var localInstance : unmanaged LocalDistributedWorkQueue(eltType, lockType);
   var pid = -1;
@@ -239,8 +239,9 @@ class DistributedWorkQueue {
     this.eltType = eltType;
     this.lockType = lockType;
 
-    this.localesDomain = {0..#targetLocales.domain.size};
-    // locales is initialized here
+//  this.localesDomain = {0..#targetLocales.domain.size};
+//  this.locales = reshape(targetLocales, this.localesDomain);
+
     this.localInstance = new unmanaged LocalDistributedWorkQueue(eltType, lockType, targetLocales);
     this.pid = this.localInstance.pid;
     this.complete();
