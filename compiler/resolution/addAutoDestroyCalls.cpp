@@ -681,6 +681,8 @@ class ComputeLastSymExpr : public AstVisitorTraverse
     ComputeLastSymExpr(std::vector<VarSymbol*>& inited,
                        std::map<VarSymbol*, Expr*>& last)
       : inited(inited), last(last) { }
+    virtual bool enterDefExpr(DefExpr* node);
+    void noteRecordInit(VarSymbol* v, CallExpr* call);
     virtual bool enterCallExpr(CallExpr* node);
     virtual void visitSymExpr(SymExpr* node);
     virtual void exitForallStmt(ForallStmt* node);
@@ -713,6 +715,58 @@ static void computeLastMentionPoints(LastMentionMap& lmm, FnSymbol* fn) {
   }
 }
 
+// If it's a temp added after normalize, diagnose how it is used
+// in order to mark it with FLAG_DEAD_LAST_MENTION or FLAG_DEAD_END_OF_BLOCK.
+static void markTempsDeadLastMention(Symbol* sym) {
+  if (VarSymbol* var = toVarSymbol(sym)) {
+    if (var->hasFlag(FLAG_TEMP) &&
+        !(var->hasFlag(FLAG_DEAD_LAST_MENTION) ||
+          var->hasFlag(FLAG_DEAD_END_OF_BLOCK))) {
+      // Look at how this temp is used.
+      bool makeItEndOfBlock = false;
+      for_SymbolSymExprs(se, var) {
+        if (CallExpr* call = toCallExpr(se->parentExpr)) {
+          SymExpr* lhsSe = NULL;
+          CallExpr* initOrCtor = NULL;
+          if (call->isPrimitive(PRIM_MOVE) || call->isPrimitive(PRIM_ASSIGN)) {
+            lhsSe = toSymExpr(call->get(1));
+          } else {
+            isRecordInitOrReturn(call, lhsSe, initOrCtor);
+          }
+
+          if (lhsSe != NULL) {
+            Symbol* lhs = lhsSe->symbol();
+            if (lhs != var) {
+              if (lhs->hasFlag(FLAG_TEMP)) {
+                // Mark that temp appropriately based on its use
+                markTempsDeadLastMention(lhs);
+                if (!lhs->hasFlag(FLAG_DEAD_LAST_MENTION)) {
+                  makeItEndOfBlock = true;
+                  break;
+                }
+              } else {
+                // Used in initializing a user var, so mark end of block
+                makeItEndOfBlock = true;
+                break;
+              }
+            }
+          }
+        }
+      }
+
+      if (makeItEndOfBlock)
+        var->addFlag(FLAG_DEAD_END_OF_BLOCK);
+      else
+        var->addFlag(FLAG_DEAD_LAST_MENTION);
+    }
+  }
+}
+
+bool ComputeLastSymExpr::enterDefExpr(DefExpr* node) {
+  markTempsDeadLastMention(node->sym);
+  return true;
+}
+
 static bool shouldDestroyOnLastMention(VarSymbol* var) {
   return var->hasFlag(FLAG_DEAD_LAST_MENTION) && // dead at last mention
          isAutoDestroyedVariable(var) &&
@@ -722,20 +776,22 @@ static bool shouldDestroyOnLastMention(VarSymbol* var) {
          !var->hasFlag(FLAG_FORMAL_TEMP);
 }
 
+void ComputeLastSymExpr::noteRecordInit(VarSymbol* v, CallExpr* call) {
+  if (shouldDestroyOnLastMention(v))
+    if (initedSet.insert(v).second)
+      inited.push_back(v); // the first potential initialization
+}
+
 bool ComputeLastSymExpr::enterCallExpr(CallExpr* node) {
   CallExpr* fCall = NULL;
   if (VarSymbol* v = possiblyInitsDestroyedVariable(node, fCall))
-    if (shouldDestroyOnLastMention(v))
-      if (initedSet.insert(v).second)
-        inited.push_back(v); // the first potential initialization
+    noteRecordInit(v, node);
 
   // Check also for out intent
   if (fCall != NULL) {
     for_formals_actuals(formal, actual, fCall) {
       if (VarSymbol* v = possiblyInitsDestroyedVariableOut(formal, actual))
-        if (shouldDestroyOnLastMention(v))
-          if (initedSet.insert(v).second)
-            inited.push_back(v); // the first potential initialization
+        noteRecordInit(v, node);
     }
   }
   return true;
