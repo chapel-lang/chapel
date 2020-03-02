@@ -3735,6 +3735,10 @@ module ChapelArray {
     // ownership transfer is complicated
     if isOwnedClass(a.eltType) then return false;
 
+    // shared array assignment seems to be handled differently, but prevent them
+    // here, too, just in case.
+    if isSharedClass(a.eltType) then return false;
+
     return true;
   }
 

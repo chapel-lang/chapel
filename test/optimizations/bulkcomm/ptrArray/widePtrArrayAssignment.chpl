@@ -7,18 +7,21 @@ config param mode = 0;
 
 type srcType = if mode==0 then unmanaged C?
                else if mode==1 then owned C?
-               else if mode==2 then R
+               else if mode==2 then shared C?
+               else if mode==3 then R
                else unmanaged C?;
 
 type dstType = if mode==0 then unmanaged C?
                else if mode==1 then owned C?
-               else if mode==2 then R
+               else if mode==2 then shared C?
+               else if mode==3 then R
                else unmanaged C?;
 
 proc createObj(id) {
   if mode == 0 then return new unmanaged C(id);
   else if mode == 1 then return new owned C(id);
-  else if mode == 2 then return new R(id);
+  else if mode == 2 then return new shared C(id);
+  else if mode == 3 then return new R(id);
   else return new unmanaged C(id);
 }
 
@@ -69,7 +72,7 @@ on Locales[1] {
   }
   // owned transfer can't be done in bulk
   // record arrays are transferred by value
-  else if mode==1 || mode==2 {
+  else {
     if ptrArrEq(a, b) {
       writeln("FAILED, pointer arrays should be different");
       writeln("Post assignment a");
