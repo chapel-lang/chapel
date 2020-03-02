@@ -1538,10 +1538,12 @@ static bool isRecordInitOrReturn(CallExpr* call, Symbol*& lhs, CallExpr*& initOr
   SymExpr* gotLHS = NULL;
   CallExpr* gotCall = NULL;
   if (isRecordInitOrReturn(call, gotLHS, gotCall)) {
-    INT_ASSERT(gotLHS && gotCall);
-    lhs = lifetimes->getCanonicalSymbol(gotLHS->symbol());
-    initOrCtor = gotCall;
-    return true;
+    INT_ASSERT(gotLHS);
+    if (gotCall) {
+      lhs = lifetimes->getCanonicalSymbol(gotLHS->symbol());
+      initOrCtor = gotCall;
+      return true;
+    }
   }
 
   lhs = NULL;

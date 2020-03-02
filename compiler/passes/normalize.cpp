@@ -111,9 +111,6 @@ static void        updateVariableAutoDestroy(DefExpr* defExpr);
 
 static TypeSymbol* expandTypeAlias(SymExpr* se);
 
-static bool isInRefOrVariableInit(Expr* e);
-static void setDeadLastMention(VarSymbol* tmp, Expr* stmt);
-
 static bool        firstConstructorWarning = true;
 
 /************************************* | **************************************
@@ -796,8 +793,9 @@ static void moveGlobalDeclarationsToModuleScope() {
           if (vs->hasFlag(FLAG_END_COUNT))
             continue;
 
-          // Don't move last-mention temporaries to module scope
-          if (vs->hasFlag(FLAG_DEAD_LAST_MENTION))
+          // Move temps to module scope later
+          // (after it is determined if they are last-mention or not)
+          if (vs->hasFlag(FLAG_TEMP))
             continue;
 
           // move the DefExpr
@@ -906,7 +904,6 @@ void LowerIfExprVisitor::exitIfExpr(IfExpr* ife) {
   result->addFlag(FLAG_MAYBE_TYPE);
   result->addFlag(FLAG_EXPR_TEMP);
   result->addFlag(FLAG_IF_EXPR_RESULT);
-  setDeadLastMention(result, ife);
 
   // Don't auto-destroy local result if returning from a branch of a parent
   // if-expression.
@@ -2088,9 +2085,6 @@ static void insertCallTempsWithStmt(CallExpr* call, Expr* stmt) {
 
   evaluateAutoDestroy(call, tmp);
 
-  // Set FLAG_DEAD_LAST_MENTION if it's not within a variable/ref initialization
-  setDeadLastMention(tmp, stmt);
-
   tmp->addFlag(FLAG_MAYBE_PARAM);
   tmp->addFlag(FLAG_MAYBE_TYPE);
 
@@ -2225,42 +2219,6 @@ static bool moveMakesTypeAlias(CallExpr* call) {
   }
 
   return retval;
-}
-
-static bool isInRefOrVariableInit(Expr* e) {
-  Expr* stmt = e->getStmtExpr();
-
-  if (CallExpr* call = toCallExpr(stmt)) {
-    if (call->isPrimitive(PRIM_INIT_VAR) ||
-        call->isPrimitive(PRIM_INIT_VAR_SPLIT_INIT)) {
-      return true;
-    }
-    if (call->isPrimitive(PRIM_MOVE) ||
-        call->isPrimitive(PRIM_ASSIGN)) {
-      // covers initialization of ref variables (with FLAG_REF_VAR)
-      // but also temporaries added by the compiler.
-      return true;
-    }
-  }
-  if (isDefExpr(e)) {
-    return true;
-  }
-
-  return false;
-}
-
-static void setDeadLastMention(VarSymbol* tmp, Expr* stmt) {
-  if (fNoEarlyDeinit)
-    return;
-
-  if (tmp->hasFlag(FLAG_DEAD_END_OF_BLOCK) ||
-      tmp->hasFlag(FLAG_DEAD_LAST_MENTION))
-    return;
-
-  if (isInRefOrVariableInit(stmt))
-    tmp->addFlag(FLAG_DEAD_END_OF_BLOCK);
-  else
-    tmp->addFlag(FLAG_DEAD_LAST_MENTION);
 }
 
 /************************************* | **************************************

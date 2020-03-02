@@ -715,55 +715,127 @@ static void computeLastMentionPoints(LastMentionMap& lmm, FnSymbol* fn) {
   }
 }
 
-// If it's a temp added after normalize, diagnose how it is used
-// in order to mark it with FLAG_DEAD_LAST_MENTION or FLAG_DEAD_END_OF_BLOCK.
-static void markTempsDeadLastMention(Symbol* sym) {
-  if (VarSymbol* var = toVarSymbol(sym)) {
-    if (var->hasFlag(FLAG_TEMP) &&
-        !(var->hasFlag(FLAG_DEAD_LAST_MENTION) ||
-          var->hasFlag(FLAG_DEAD_END_OF_BLOCK))) {
-      // Look at how this temp is used.
-      bool makeItEndOfBlock = false;
-      for_SymbolSymExprs(se, var) {
-        if (CallExpr* call = toCallExpr(se->parentExpr)) {
-          SymExpr* lhsSe = NULL;
-          CallExpr* initOrCtor = NULL;
-          if (call->isPrimitive(PRIM_MOVE) || call->isPrimitive(PRIM_ASSIGN)) {
-            lhsSe = toSymExpr(call->get(1));
-          } else {
-            isRecordInitOrReturn(call, lhsSe, initOrCtor);
-          }
+static void gatherTempsDeadLastMention(VarSymbol* v,
+                                       std::set<VarSymbol*>& temps) {
 
-          if (lhsSe != NULL) {
-            Symbol* lhs = lhsSe->symbol();
-            if (lhs != var) {
-              if (lhs->hasFlag(FLAG_TEMP)) {
-                // Mark that temp appropriately based on its use
-                markTempsDeadLastMention(lhs);
-                if (!lhs->hasFlag(FLAG_DEAD_LAST_MENTION)) {
-                  makeItEndOfBlock = true;
-                  break;
-                }
-              } else {
+  // store the temporary we are working on in the set
+  if (temps.insert(v).second == false)
+    return; // stop here if it was already in the set.
+
+  for_SymbolSymExprs(se, v) {
+    if (CallExpr* call = toCallExpr(se->getStmtExpr())) {
+      SymExpr* lhsSe = NULL;
+      CallExpr* initOrCtor = NULL;
+      if (call->isPrimitive(PRIM_MOVE) || call->isPrimitive(PRIM_ASSIGN)) {
+        lhsSe = toSymExpr(call->get(1));
+      } else if (isRecordInitOrReturn(call, lhsSe, initOrCtor)) {
+        // call above sets lhsSe and initOrCtor
+      }
+
+      // handle a returned variable being inited here
+      if (lhsSe != NULL) {
+        VarSymbol* lhs = toVarSymbol(lhsSe->symbol());
+        if (lhs != NULL && lhs != v && lhs->hasFlag(FLAG_TEMP))
+          gatherTempsDeadLastMention(lhs, temps);
+      }
+
+      // also handle out intent variables being inited here
+      if (initOrCtor != NULL) {
+        for_formals_actuals(formal, actual, initOrCtor) {
+          if (formal->intent == INTENT_OUT ||
+              formal->originalIntent == INTENT_OUT)  {
+            SymExpr* outActualSe = toSymExpr(actual);
+            VarSymbol* outVar = toVarSymbol(outActualSe->symbol());
+            if (outVar != NULL && outVar != v && outVar->hasFlag(FLAG_TEMP))
+              gatherTempsDeadLastMention(outVar, temps);
+          }
+        }
+      }
+    }
+  }
+}
+
+static void markTempsDeadLastMention(std::set<VarSymbol*>& temps) {
+
+  bool makeThemEndOfBlock = false;
+
+  // Look at how the temps are used
+  for_set(VarSymbol, v, temps) {
+
+    for_SymbolSymExprs(se, v) {
+      if (CallExpr* call = toCallExpr(se->getStmtExpr())) {
+        SymExpr* lhsSe = NULL;
+        CallExpr* initOrCtor = NULL;
+        if (call->isPrimitive(PRIM_MOVE) || call->isPrimitive(PRIM_ASSIGN)) {
+          lhsSe = toSymExpr(call->get(1));
+        } else if (isRecordInitOrReturn(call, lhsSe, initOrCtor)) {
+          // call above sets lhsSe and initOrCtor
+        }
+
+        // returning into a user var?
+        if (lhsSe != NULL) {
+          VarSymbol* lhs = toVarSymbol(lhsSe->symbol());
+          if (lhs != NULL && lhs != v && !lhs->hasFlag(FLAG_TEMP)) {
+            // Used in initializing a user var, so mark end of block
+            makeThemEndOfBlock = true;
+            break;
+          }
+        }
+        // out intent setting a user var?
+        if (initOrCtor != NULL) {
+          for_formals_actuals(formal, actual, initOrCtor) {
+            if (formal->intent == INTENT_OUT ||
+                formal->originalIntent == INTENT_OUT)  {
+              SymExpr* outActualSe = toSymExpr(actual);
+              VarSymbol* outVar = toVarSymbol(outActualSe->symbol());
+              if (outVar != NULL && outVar != v &&
+                  !outVar->hasFlag(FLAG_TEMP)) {
                 // Used in initializing a user var, so mark end of block
-                makeItEndOfBlock = true;
+                makeThemEndOfBlock = true;
                 break;
               }
             }
           }
         }
-      }
 
-      if (makeItEndOfBlock)
-        var->addFlag(FLAG_DEAD_END_OF_BLOCK);
-      else
-        var->addFlag(FLAG_DEAD_LAST_MENTION);
+        if (makeThemEndOfBlock)
+          break;
+      }
+    }
+  }
+
+  if (fNoEarlyDeinit)
+    makeThemEndOfBlock = true;
+
+  if (makeThemEndOfBlock) {
+    for_set(VarSymbol, temp, temps) {
+      temp->addFlag(FLAG_DEAD_END_OF_BLOCK);
+      FnSymbol* inFn = temp->defPoint->getFunction();
+      ModuleSymbol* mod = temp->defPoint->getModule();
+      if (mod && inFn && inFn->hasFlag(FLAG_MODULE_INIT)) {
+        // Move the temporary to global scope.
+        mod->block->insertAtTail(temp->defPoint->remove());
+      }
+    }
+  } else {
+    for_set(VarSymbol, temp, temps) {
+      temp->addFlag(FLAG_DEAD_LAST_MENTION);
     }
   }
 }
 
 bool ComputeLastSymExpr::enterDefExpr(DefExpr* node) {
-  markTempsDeadLastMention(node->sym);
+  if (VarSymbol* var = toVarSymbol(node->sym)) {
+    if (var->hasFlag(FLAG_TEMP) &&
+        !(var->hasFlag(FLAG_DEAD_LAST_MENTION) ||
+          var->hasFlag(FLAG_DEAD_END_OF_BLOCK))) {
+      std::set<VarSymbol*> temps;
+      gatherTempsDeadLastMention(var, temps);
+      markTempsDeadLastMention(temps);
+      INT_ASSERT(var->hasFlag(FLAG_DEAD_LAST_MENTION) ||
+                 var->hasFlag(FLAG_DEAD_END_OF_BLOCK));
+    }
+  }
   return true;
 }
 

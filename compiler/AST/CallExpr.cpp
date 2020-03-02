@@ -832,22 +832,25 @@ bool isRecordInitOrReturn(CallExpr* call, SymExpr*& lhsSe, CallExpr*& initOrCtor
 
   if (call->isPrimitive(PRIM_MOVE) ||
       call->isPrimitive(PRIM_ASSIGN)) {
-    if (CallExpr* rhsCallExpr = toCallExpr(call->get(2))) {
-      if (rhsCallExpr->resolvedOrVirtualFunction()) {
-        Type* t = NULL;
-        if (call->isPrimitive(PRIM_MOVE))
-          t = rhsCallExpr->typeInfo();
-        else
-          t = rhsCallExpr->getValType();
-        if (AggregateType* at = toAggregateType(t)) {
-          if (isRecord(at)) {
-            SymExpr* se = toSymExpr(call->get(1));
-            INT_ASSERT(se);
-            lhsSe = se;
+    // case 1: PRIM_MOVE/PRIM_ASSIGN into a variable
+    Expr* rhsExpr = call->get(2);
+    Type* t = NULL;
+    if (call->isPrimitive(PRIM_MOVE))
+      t = rhsExpr->typeInfo();
+    else
+      t = rhsExpr->getValType();
+    if (AggregateType* at = toAggregateType(t)) {
+      if (isRecord(at)) {
+        SymExpr* se = toSymExpr(call->get(1));
+        INT_ASSERT(se);
+        lhsSe = se;
+
+        if (CallExpr* rhsCallExpr = toCallExpr(rhsExpr)) {
+          if (rhsCallExpr->resolvedOrVirtualFunction()) {
             initOrCtor = rhsCallExpr;
-            return true;
           }
         }
+        return true;
       }
     }
   }
@@ -855,6 +858,7 @@ bool isRecordInitOrReturn(CallExpr* call, SymExpr*& lhsSe, CallExpr*& initOrCtor
   if (FnSymbol* calledFn = call->resolvedOrVirtualFunction()) {
     if (calledFn->isMethod() &&
         (calledFn->name == astrInit || calledFn->name == astrInitEquals)) {
+      // case 2: init or init=
       SymExpr* se = toSymExpr(call->get(1));
       INT_ASSERT(se);
       Symbol* sym = se->symbol();
@@ -864,6 +868,7 @@ bool isRecordInitOrReturn(CallExpr* call, SymExpr*& lhsSe, CallExpr*& initOrCtor
         return true;
       }
     } else if (calledFn->hasFlag(FLAG_FN_RETARG)) {
+      // case 3: return through ret-arg
       for_formals_actuals(formal, actual, call) {
         if (formal->hasFlag(FLAG_RETARG)) {
           if (isRecord(formal->getValType())) {
