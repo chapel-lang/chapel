@@ -631,7 +631,8 @@ void checkUseBeforeDefs(FnSymbol* fn) {
 
         if (isModuleSymbol(sym)                    == true  &&
             isFnSymbol(fn->defPoint->parentSymbol) == false &&
-            isUseStmt(se->parentExpr)              == false) {
+            isUseStmt(se->parentExpr)              == false &&
+            isImportStmt(se->parentExpr)           == false) {
           SymExpr* prev = toSymExpr(se->prev);
 
           if (prev == NULL || prev->symbol() != gModuleToken) {
@@ -1258,10 +1259,33 @@ bool AddEndOfStatementMarkers::enterCallExpr(CallExpr* node) {
     return false;
 
   // Don't add markers after a move setting a temp
-  if (node->isPrimitive(PRIM_MOVE) || node->isPrimitive(PRIM_ASSIGN))
+  if (node->isPrimitive(PRIM_MOVE) ||
+      node->isPrimitive(PRIM_ASSIGN))
     if (SymExpr* lhs = toSymExpr(node->get(1)))
       if (lhs->symbol()->hasFlag(FLAG_TEMP))
         return false;
+
+  // If the next statement is a PRIM_INIT_FIELD, it's a compound
+  // thing from initializer pre-normalization, so don't add an end-of-statement
+  // in-between. Instead, add an end-of-statement after the PRIM_INIT_FIELD.
+  if (CallExpr* nextCall = toCallExpr(node->next)) {
+    if (nextCall->isPrimitive(PRIM_INIT_FIELD) ||
+        nextCall->isPrimitive(PRIM_SET_MEMBER)) {
+      CallExpr* endOfStatement = NULL;
+      if (CallExpr* nextNextCall = toCallExpr(nextCall->next))
+        if (nextNextCall->isPrimitive(PRIM_END_OF_STATEMENT))
+          endOfStatement = nextNextCall;
+
+      if (endOfStatement == NULL) {
+        SET_LINENO(nextCall);
+        endOfStatement = new CallExpr(PRIM_END_OF_STATEMENT);
+        nextCall->insertAfter(endOfStatement);
+      }
+
+      addMentionToEndOfStatement(node, endOfStatement);
+      return false;
+    }
+  }
 
   addMentionToEndOfStatement(node, NULL);
   return false;
