@@ -17,7 +17,7 @@
  * limitations under the License.
  */
 
-use RangeChunk only ;
+import RangeChunk;
 
 pragma "no doc"
 /* Debug flag */
