@@ -4,7 +4,7 @@ use MasonNew;
 use IO;
 
 proc main() {
-  const args = ["a.out", "new", "newTest"];
+  const args = ["new", "newTest", ""];
 
   assert(isDir("newTest") == false);
 
