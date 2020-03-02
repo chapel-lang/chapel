@@ -29,7 +29,9 @@
 *                                                                             *
 ************************************** | *************************************/
 
-ImportStmt::ImportStmt(BaseAST* source) : VisibilityStmt(E_ImportStmt) {
+ImportStmt::ImportStmt(BaseAST* source,
+                       bool isPrivate) : VisibilityStmt(E_ImportStmt) {
+  this->isPrivate = isPrivate;
   this->modRename = astr("");
   if (Symbol* b = toSymbol(source)) {
     src = new SymExpr(b);
@@ -44,9 +46,10 @@ ImportStmt::ImportStmt(BaseAST* source) : VisibilityStmt(E_ImportStmt) {
   gImportStmts.add(this);
 }
 
-ImportStmt::ImportStmt(BaseAST* source,
-                       const char* rename) : VisibilityStmt(E_ImportStmt) {
+ImportStmt::ImportStmt(BaseAST* source, const char* rename,
+                       bool isPrivate) : VisibilityStmt(E_ImportStmt) {
 
+  this->isPrivate = isPrivate;
   this->modRename = astr(rename);
 
   if (Symbol* b = toSymbol(source)) {
@@ -63,7 +66,7 @@ ImportStmt::ImportStmt(BaseAST* source,
 }
 
 ImportStmt* ImportStmt::copyInner(SymbolMap* map) {
-  ImportStmt* _this = new ImportStmt(COPY_INT(src), modRename);
+  ImportStmt* _this = new ImportStmt(COPY_INT(src), modRename, isPrivate);
 
   return _this;
 }

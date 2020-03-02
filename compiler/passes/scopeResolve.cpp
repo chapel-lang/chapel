@@ -2164,7 +2164,8 @@ static void buildBreadthFirstModuleList(
                 SymExpr* importSE = toSymExpr(import->src);
                 INT_ASSERT(importSE);
 
-                if (!importSE->symbol()->hasFlag(FLAG_PRIVATE)) {
+                if (!import->isPrivate &&
+                    !importSE->symbol()->hasFlag(FLAG_PRIVATE)) {
                   // Imports of private modules are not transitive - the
                   // symbols in the private modules are only visible to itself
                   // and its immediate parent.  Therefore, if the symbol is
@@ -2174,7 +2175,13 @@ static void buildBreadthFirstModuleList(
                     next.add(import);
                     modules->add(import);
                   }
-                } else {
+                } else if (!import->isPrivate &&
+                           importSE->symbol()->hasFlag(FLAG_PRIVATE)) {
+                  // If we're skipping because the import was public, but the
+                  // module was private, then we shouldn't look at the module
+                  // again and should add it to the alreadySeen map.  Otherwise
+                  // there might be a later import or use that is public, so
+                  // we should allow it to be found
                   (*alreadySeen)[importSE->symbol()].push_back(import);
                 }
               } else {
