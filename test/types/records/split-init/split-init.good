@@ -49,6 +49,12 @@ init 1300
 yes14
 init 14
 (x = 14, ptr = {})
+yes15
+{}
+yes16
+{}
+yes17
+{}
 no1
 init 1000
 init 1001
@@ -95,3 +101,29 @@ no9
 init
 init 9000
 = 0 9000
+test1
+init 1
+Error: 
+test2
+init 1
+test3
+Error: 
+test4
+test5
+init 1
+test6
+init 1
+test7
+test8
+Error: 
+test9
+Error: 
+test10
+test11
+Error: 
+test12
+test13
+Error: 
+test14
+test15
+test16

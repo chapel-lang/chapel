@@ -17,22 +17,6 @@ test1d.b
 test1e
 test1e.a
 (1 1)
-test2a
-test2a.a
-test2a.b
-(1 1) (0 1)
-test2b
-test2b.a
-test2b.b
-(1 1) (0 1)
-test2c
-test2c.a
-test2c.b
-(1 1) (0 1)
-test2d
-test2d.a
-test2d.b
-(1 1) (0 1)
 test3a
 test3a.a
 test3a.b

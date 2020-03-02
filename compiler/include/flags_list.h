@@ -142,7 +142,9 @@ symbolFlag( FLAG_FIELD_ACCESSOR , npr, "field accessor" , "field setter/getter f
 symbolFlag( FLAG_FIRST_CLASS_FUNCTION_INVOCATION, npr, "first class function invocation" , "proxy for first-class function invocation" )
 symbolFlag( FLAG_FN_RETARG, npr, "fn returns via _retArg", ncm )
 symbolFlag( FLAG_FOLLOWER_INDEX, npr, "follower index", "a variable representing a follower loop index" )
-symbolFlag( FLAG_FORMAL_TEMP,     npr, "formal temp", "a formal temp to back an in, out, or inout argument" )
+symbolFlag( FLAG_FORMAL_TEMP, npr, "formal temp", "a formal temp requiring write-back for an out or inout argument" )
+symbolFlag( FLAG_FORMAL_TEMP_INOUT, npr, "formal temp inout", "a formal temp to back an inout argument" )
+symbolFlag( FLAG_FORMAL_TEMP_OUT, npr, "formal temp out", "a formal temp to back an out argument" )
 symbolFlag( FLAG_FORWARDING_FN , npr, "forwarding function" , ncm )
 symbolFlag( FLAG_FUNCTION_CLASS , npr, "function class" , "first-class function class representation" )
 symbolFlag( FLAG_FUNCTION_TERMINATES_PROGRAM, ypr, "function terminates program", "function that causes the program to exit" )
@@ -393,6 +395,7 @@ symbolFlag( FLAG_TYPE_CUSTOM_INIT_EQUAL , npr, "type uses custom init=" , "type 
 symbolFlag( FLAG_TYPE_DEFAULT_ASSIGN , npr, "type uses default =" , "type uses compiler-generated default =" )
 symbolFlag( FLAG_TYPE_CUSTOM_ASSIGN , npr, "type uses custom =" , "type has user-provided custom =" )
 
+symbolFlag( FLAG_TYPE_FORMAL_FOR_OUT , npr, "type formal for out" , "stores the runtime type for an untyped out argument" )
 symbolFlag( FLAG_TYPE_VARIABLE , npr, "type variable" , "contains a type instead of a value" )
 symbolFlag( FLAG_UNALIAS_FN,  ypr, "unalias fn" , "function to copy array slices when assigning to a user variable")
 symbolFlag( FLAG_UNCHECKED_THROWS,  ypr, "unchecked throws" , "function throws but handling the errors is not required even in strict mode")

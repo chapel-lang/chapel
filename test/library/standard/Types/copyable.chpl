@@ -76,6 +76,10 @@ class C { var x: int; }
 record R { var y: int; }
 enum MyEnum { val }
 
+record GenericRecord { var x; }
+
+record GenericRecordDefault { type t = int; var z: t; }
+
 proc main() {
 
   var ownedC = new owned C();
@@ -84,6 +88,10 @@ proc main() {
   var sharedCQ = new shared C?();
   var unmanagedC = new unmanaged C();
   var unmanagedCQ = new unmanaged C?();
+
+  var at: atomic int;
+  var genericR = new GenericRecord(1);
+  var genericRD: GenericRecordDefault;
 
   checkNormal(int, 1);
   checkNormal(real, 1.0);
@@ -105,6 +113,10 @@ proc main() {
 
   var tup = ("a", "b", "c");
   checkNormal((string, string, string), tup);
+
+  checkNormal(atomic int, at);
+  checkNormal(GenericRecord(int), genericR);
+  checkNormal(GenericRecordDefault, genericRD);
 
   delete unmanagedCQ;
   delete unmanagedC;

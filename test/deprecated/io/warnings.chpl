@@ -29,6 +29,32 @@ writeln(f1.home);
 var _f2 = chpl_cstdout();
 var f2 = openfp(_f2);
 writeln(f2.home);
+
+var f3:string;
+var f4 = read(int);
+writeln(f4);
+var f5 = read(f3);
+writeln(f5);
+f4 = readln(int);
+writeln(f4);
+f5 = readln();
+writeln(f5);
+f5 = readln(f3);
+writeln(f5);
+f5 = readf("%i", f4);
+writeln(f5);
+"My favorite %s is %i".format("number", 9);
+
+stdinInit();    // TODO: document?
+stdoutInit();   // TODO: document?
+stderrInit();   // TODO: document?
+{
+    use IO;
+
+    var f = open("test.txt", iomode.cw);
+}
+unlink("test.txt");
+unicodeSupported();
 /* Things left to test
 openwriter
 <~> - 4 versions
@@ -37,15 +63,6 @@ stringify
 stdin
 stdout
 stderr
-stdinInit // TODO: document?
-stdoutInit // TODO: document?
-stderrInit // TODO: document?
-read - 2 versions
-readln - 3 versions
-unlink
-unicodeSupported
-readf - 2 versions
-string.format
 
 // Haven't handled most methods yet
 // I suspect those should work, it's

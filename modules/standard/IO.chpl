@@ -2165,7 +2165,6 @@ proc channel._ch_ioerror(error:syserr, msg:string) throws {
     }
   }
   try ioerror(error, msg, path, offset);
-  // c_string tmp_path leaked, but ioerror will exit
 }
 
 pragma "no doc"
@@ -2186,7 +2185,6 @@ proc channel._ch_ioerror(errstr:string, msg:string) throws {
     }
   }
   try ioerror(errstr, msg, path, offset);
-  // c_string tmp_path leaked, but ioerror will exit
 }
 
 /*

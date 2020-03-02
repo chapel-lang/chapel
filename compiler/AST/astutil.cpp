@@ -204,18 +204,18 @@ void collect_top_asts(BaseAST* ast, std::vector<BaseAST*>& asts) {
   asts.push_back(ast);
 }
 
-static void do_containsSymExprFor(BaseAST* ast, Symbol* sym, bool* found) {
+static void do_containsSymExprFor(BaseAST* ast, Symbol* sym, SymExpr** found) {
   AST_CHILDREN_CALL(ast, do_containsSymExprFor, sym, found);
   if (SymExpr* symExpr = toSymExpr(ast))
     if (symExpr->symbol() == sym)
-      *found = true;
+      *found = symExpr;
 }
 
 // returns true if the AST contains a SymExpr pointing to sym
-bool containsSymExprFor(BaseAST* ast, Symbol* sym) {
-  bool found = false;
-  do_containsSymExprFor(ast, sym, &found);
-  return found;
+SymExpr* findSymExprFor(BaseAST* ast, Symbol* sym) {
+  SymExpr* ret = NULL;
+  do_containsSymExprFor(ast, sym, &ret);
+  return ret;
 }
 
 void reset_ast_loc(BaseAST* destNode, BaseAST* sourceNode) {

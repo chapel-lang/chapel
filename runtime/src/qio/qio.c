@@ -110,7 +110,7 @@ qioerr qio_lock(qio_lock_t* x) {
   }
 
   // we have to get the mutex.
-  chpl_sync_lock(&x->sv);
+  atomic_lock_spinlock_t(&x->lock);
 
   assert( chpl_task_idEquals(x->owner, NULL_OWNER) );
   x->count = 1;
@@ -132,7 +132,7 @@ void qio_unlock(qio_lock_t* x) {
   }
 
   x->owner = NULL_OWNER;
-  chpl_sync_unlock(&x->sv);
+  atomic_unlock_spinlock_t(&x->lock);
 }
 #endif
 

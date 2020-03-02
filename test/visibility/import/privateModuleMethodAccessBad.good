@@ -1,0 +1,3 @@
+privateModuleMethodAccessBad.chpl:20: In function 'main':
+privateModuleMethodAccessBad.chpl:22: error: unresolved call 'owned Foo(6,real(64)).hidden()'
+privateModuleMethodAccessBad.chpl:22: note: because no functions named hidden found in scope

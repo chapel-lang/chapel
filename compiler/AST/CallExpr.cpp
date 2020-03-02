@@ -822,3 +822,63 @@ FnSymbol* resolvedToTaskFun(CallExpr* call) {
 
   return retval;
 }
+
+// For use during/after resolution. Returns 'true' if the call is to
+// a function returning a record by value or an initializer.
+// Handles both 'move lhs, someCall()' and 'someCall(retarg=lhs)' forms.
+// lhsSe is the SymExpr indicating what is being set.
+// initOrCtor is the user call (e.g. someCall in the examples above).
+bool isRecordInitOrReturn(CallExpr* call, SymExpr*& lhsSe, CallExpr*& initOrCtor) {
+
+  if (call->isPrimitive(PRIM_MOVE) ||
+      call->isPrimitive(PRIM_ASSIGN)) {
+    if (CallExpr* rhsCallExpr = toCallExpr(call->get(2))) {
+      if (rhsCallExpr->resolvedOrVirtualFunction()) {
+        Type* t = NULL;
+        if (call->isPrimitive(PRIM_MOVE))
+          t = rhsCallExpr->typeInfo();
+        else
+          t = rhsCallExpr->getValType();
+        if (AggregateType* at = toAggregateType(t)) {
+          if (isRecord(at)) {
+            SymExpr* se = toSymExpr(call->get(1));
+            INT_ASSERT(se);
+            lhsSe = se;
+            initOrCtor = rhsCallExpr;
+            return true;
+          }
+        }
+      }
+    }
+  }
+
+  if (FnSymbol* calledFn = call->resolvedOrVirtualFunction()) {
+    if (calledFn->isMethod() &&
+        (calledFn->name == astrInit || calledFn->name == astrInitEquals)) {
+      SymExpr* se = toSymExpr(call->get(1));
+      INT_ASSERT(se);
+      Symbol* sym = se->symbol();
+      if (isRecord(sym->type)) {
+        lhsSe = se;
+        initOrCtor = call;
+        return true;
+      }
+    } else if (calledFn->hasFlag(FLAG_FN_RETARG)) {
+      for_formals_actuals(formal, actual, call) {
+        if (formal->hasFlag(FLAG_RETARG)) {
+          if (isRecord(formal->getValType())) {
+            SymExpr* se = toSymExpr(actual);
+            INT_ASSERT(se);
+            lhsSe = se;
+            initOrCtor = call;
+            return true;
+          }
+        }
+      }
+    }
+  }
+
+  lhsSe = NULL;
+  initOrCtor = NULL;
+  return false;
+}

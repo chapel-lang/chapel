@@ -91,6 +91,10 @@ proc makeR(arg:int) {
   return new R(arg);
 }
 
+proc makeC(out arg: owned C) {
+  arg = new owned C();
+}
+
 proc testRecs() {
   writeln("testRecs");
 
@@ -239,6 +243,34 @@ proc testRecs() {
   writeln(yes14);
 
 
+  writeln("yes15");
+  {
+    var yes15: owned C;
+    makeC(yes15);
+    writeln(yes15);
+  }
+
+  writeln("yes16");
+  {
+    var yes16: owned C;
+    {
+      makeC(yes16);
+      writeln(yes16);
+    }
+  }
+
+  writeln("yes17");
+  {
+    var yes17: owned C;
+    if cond {
+      makeC(yes17);
+    } else {
+      makeC(yes17);
+    }
+    writeln(yes17);
+  }
+
+
   writeln("no1");
   var no1 = new R(1000);
   no1 = new R(1001);
@@ -310,3 +342,159 @@ proc testRecs() {
   }
 }
 testRecs();
+
+
+proc test1() throws {
+  writeln("test1");
+  var x: R;
+  x = makeR(1);
+  throw new Error();
+}
+try { test1(); } catch e { writeln(e); }
+
+proc test2() {
+  writeln("test2");
+  var x: R;
+  x = makeR(1);
+  return;
+}
+test2();
+
+proc test3() throws {
+  writeln("test3");
+  var x: R;
+  throw new Error();
+  x = makeR(1);
+}
+try { test3(); } catch e { writeln(e); }
+
+proc test4() {
+  writeln("test4");
+  var x: R;
+  return;
+  x = makeR(1);
+}
+test4();
+
+proc test5() {
+  writeln("test5");
+  var x: R;
+  if cond then
+    return;
+  x = makeR(1);
+}
+test5();
+
+proc test6() throws {
+  writeln("test6");
+  var x: R;
+  if cond then
+    throw new Error();
+  x = makeR(1);
+}
+try { test6(); } catch e { writeln(e); }
+
+proc test7() {
+  writeln("test7");
+  var x: R;
+  if !cond then
+    return;
+  x = makeR(1);
+}
+test7();
+
+proc test8() throws {
+  writeln("test8");
+  var x: R;
+  if !cond then
+    throw new Error();
+  x = makeR(1);
+}
+try { test8(); } catch e { writeln(e); }
+
+proc test9() throws {
+  writeln("test9");
+  var x: R;
+  if cond then
+    throw new Error();
+  else
+    throw new Error();
+  x = makeR(1);
+}
+try { test9(); } catch e { writeln(e); }
+
+proc test10() {
+  writeln("test10");
+  var x: R;
+  if cond then
+    return;
+  else
+    return;
+  x = makeR(1);
+}
+test10();
+
+proc test11() throws {
+  writeln("test11");
+  var x: R;
+  {
+    throw new Error();
+  }
+  x = makeR(1);
+}
+try { test11(); } catch e { writeln(e); }
+
+proc test12() {
+  writeln("test12");
+  var x: R;
+  {
+    return;
+  }
+  x = makeR(1);
+}
+test12();
+
+proc test13() throws {
+  writeln("test13");
+  var x: R;
+  try {
+    throw new Error();
+  }
+  x = makeR(1);
+}
+try { test13(); } catch e { writeln(e); }
+
+proc test14() {
+  writeln("test14");
+  var x: R;
+  try {
+    return;
+  } catch e {
+  }
+  x = makeR(1);
+}
+test14();
+
+proc test15() throws {
+  writeln("test15");
+  var x: R;
+  try {
+    throw new Error();
+  } catch {
+    return;
+  }
+  x = makeR(1);
+}
+try { test15(); } catch e { writeln(e); }
+
+proc test16() {
+  writeln("test16");
+  var x: R;
+  try {
+    return;
+  } catch {
+    return;
+  }
+  x = makeR(1);
+}
+test16();

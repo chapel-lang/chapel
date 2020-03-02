@@ -551,7 +551,7 @@ BlockStmt* buildUseStmt(std::vector<PotentialRename*>* args, bool privateUse) {
 // Build an 'import' statement
 //
 BlockStmt* buildImportStmt(Expr* mod) {
-  ImportStmt* newImport = new ImportStmt(mod);
+  ImportStmt* newImport = new ImportStmt(mod, /* isPrivate =*/ true);
   addModuleToSearchList(newImport, mod);
 
   return buildChapelStmt(newImport);
@@ -561,7 +561,7 @@ BlockStmt* buildImportStmt(Expr* mod) {
 // Build an 'import' statement
 //
 BlockStmt* buildImportStmt(Expr* mod, const char* rename) {
-  ImportStmt* newImport = new ImportStmt(mod, rename);
+  ImportStmt* newImport = new ImportStmt(mod, rename, /* isPrivate =*/ true);
   addModuleToSearchList(newImport, mod);
 
   return buildChapelStmt(newImport);

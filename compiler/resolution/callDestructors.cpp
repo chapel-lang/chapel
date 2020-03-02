@@ -1270,13 +1270,27 @@ static void destroyFormalInTaskFn(ArgSymbol* formal, FnSymbol* taskFn) {
 ************************************** | *************************************/
 
 
-static void removeEndOfStatementMarkers() {
+static void removeEndOfStatementMarkersElidedCopyPrims() {
   for_alive_in_Vec(CallExpr, call, gCallExprs) {
     if (call->isPrimitive(PRIM_END_OF_STATEMENT))
       call->remove();
+    if (call->isPrimitive(PRIM_ASSIGN_ELIDED_COPY))
+      call->primitive = primitives[PRIM_ASSIGN];
   }
 }
 
+static void removeElidedOnBlocks() {
+  for_alive_in_Vec(BlockStmt, block, gBlockStmts) {
+    if (block->isLoopStmt() == false) {
+      if (CallExpr* const info = block->blockInfoGet()) {
+        if (info->isPrimitive(PRIM_BLOCK_ELIDED_ON)) {
+          // Turn it into a regular block.
+          info->remove();
+        }
+      }
+    }
+  }
+}
 
 /************************************* | **************************************
 *                                                                             *
@@ -1311,9 +1325,10 @@ void callDestructors() {
 
   checkForErroneousInitCopies();
 
-  findNonNilableStoringNil();
+  findNilDereferences();
 
   convertClassTypesToCanonical();
 
-  removeEndOfStatementMarkers();
+  removeEndOfStatementMarkersElidedCopyPrims();
+  removeElidedOnBlocks();
 }
