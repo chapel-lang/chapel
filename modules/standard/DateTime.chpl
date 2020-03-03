@@ -33,7 +33,7 @@
  */
 
 module DateTime {
-  private use HaltWrappers only ;
+  import HaltWrappers;
   private use SysCTypes;
 
   /* The minimum year allowed in `date` objects */

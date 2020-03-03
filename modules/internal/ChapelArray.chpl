@@ -166,7 +166,7 @@ module ChapelArray {
   use ArrayViewSlice;
   use ArrayViewRankChange;
   use ArrayViewReindex;
-  private use Reflection only;
+  import Reflection;
   private use ChapelDebugPrint;
   private use SysCTypes;
 
@@ -817,7 +817,7 @@ module ChapelArray {
   // return type when the declared return type specifies a particular domain
   // but not the element type.
   proc chpl__checkDomainsMatch(a: [], b) {
-    use HaltWrappers only;
+    import HaltWrappers;
     if (boundsChecking) {
       if (a.domain != b) {
         HaltWrappers.boundsCheckHalt("domain mismatch on return");
@@ -826,7 +826,7 @@ module ChapelArray {
   }
 
   proc chpl__checkDomainsMatch(a: _iteratorRecord, b) {
-    use HaltWrappers only;
+    import HaltWrappers;
     if (boundsChecking) {
       // Should use iterator.shape here to avoid copy
       var tmp = a;

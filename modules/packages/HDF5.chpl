@@ -4108,7 +4108,7 @@ module HDF5 {
    */
   class HDF5Preprocessor {
     proc preprocess(A: []) {
-      use HaltWrappers only ;
+      import HaltWrappers;
       HaltWrappers.pureVirtualMethodHalt();
     }
   }
