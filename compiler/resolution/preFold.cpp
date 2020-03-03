@@ -2045,6 +2045,15 @@ static Expr* preFoldNamed(CallExpr* call) {
       SymExpr* idxExpr = nextloop->indexGet();
       Symbol* idxSym = idxExpr->symbol();
       Symbol* continueSym = nextloop->continueLabelGet();
+      if (DefExpr* firstDefExpr = toDefExpr(nextloop->body.first())) {
+        if (VarSymbol* firstSym = toVarSymbol(firstDefExpr->sym)) {
+          printf("Marking `%s` as const ref:\n", firstSym->name);
+          //          firstSym->addFlag(FLAG_MAYBE_REF);
+          firstSym->addFlag(FLAG_REF_VAR);
+          firstSym->qual = QUAL_REF;
+        }
+      }
+        
 
       AggregateType* tupType = toAggregateType(iterType);
       for (int i=2; i<=tupType->fields.length; i++) {
@@ -2055,8 +2064,11 @@ static Expr* preFoldNamed(CallExpr* call) {
 
         // insert temp to capture tuple expr
         VarSymbol* tmp = newTemp(astr("tupleTemp"));
-        tmp->addFlag(FLAG_CONST);
-        tmp->addFlag(FLAG_REF_VAR);
+        //        tmp->addFlag(FLAG_CONST);
+        //        tmp->addFlag(FLAG_REF_VAR);
+        printf("inserted tmp %d\n", tmp->id);
+        tmp->addFlag(FLAG_MAYBE_REF);
+        tmp->qual = QUAL_REF;
 
         /*
         noop->insertBefore(new DefExpr(tmp,
@@ -2068,13 +2080,15 @@ static Expr* preFoldNamed(CallExpr* call) {
 
         noop->insertBefore(new DefExpr(tmp));
         noop->insertBefore(new CallExpr(PRIM_MOVE, tmp,
-                                        new CallExpr(PRIM_GET_MEMBER_VALUE, tupExpr->copy(), new_CStringSymbol(tupType->getField(i)->name))));
+                                        new CallExpr(PRIM_GET_MEMBER, tupExpr->copy(), new_CStringSymbol(tupType->getField(i)->name))));
 
 
 
         // and map idxSymbol to 
-        idxSym->addFlag(FLAG_CONST);
-        idxSym->addFlag(FLAG_REF_VAR);
+        //        idxSym->addFlag(FLAG_CONST);
+        //        idxSym->addFlag(FLAG_REF_VAR);
+        idxSym->addFlag(FLAG_MAYBE_REF);
+        idxSym->qual = QUAL_REF;
         map.put(idxSym, tmp);
         nextloop->copyBodyHelper(noop, i-2, &map, continueSym);
       }
