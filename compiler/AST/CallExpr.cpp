@@ -847,17 +847,33 @@ bool isInitOrReturn(CallExpr* call, SymExpr*& lhsSe, CallExpr*& initOrCtor)
     if (calledFn->isMethod() &&
         (calledFn->name == astrInit || calledFn->name == astrInitEquals)) {
       // case 2: init or init=
-      SymExpr* se = toSymExpr(call->get(1));
-      INT_ASSERT(se);
-      lhsSe = se;
-      initOrCtor = call;
-      return true;
+      for_formals_actuals(formal, actual, call) {
+        if (formal->hasFlag(FLAG_ARG_THIS)) {
+          SymExpr* se = toSymExpr(actual);
+          if (NamedExpr* ne = toNamedExpr(actual)) {
+            INT_ASSERT(ne->name == formal->name);
+            se = toSymExpr(ne->actual);
+          }
+
+          INT_ASSERT(se != NULL);
+          lhsSe = se;
+          initOrCtor = call;
+          return true;
+        }
+      }
+      INT_FATAL("init or init= pattern not handled");
+
     } else if (calledFn->hasFlag(FLAG_FN_RETARG)) {
       // case 3: return through ret-arg
       for_formals_actuals(formal, actual, call) {
         if (formal->hasFlag(FLAG_RETARG)) {
           SymExpr* se = toSymExpr(actual);
-          INT_ASSERT(se);
+          if (NamedExpr* ne = toNamedExpr(actual)) {
+            INT_ASSERT(ne->name == formal->name);
+            se = toSymExpr(ne->actual);
+          }
+
+          INT_ASSERT(se != NULL);
           lhsSe = se;
           initOrCtor = call;
           return true;
