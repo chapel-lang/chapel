@@ -382,8 +382,9 @@ static void checkForNilDereferencesInCall(
   if (FnSymbol* calledFn = call->resolvedOrVirtualFunction()) {
     if (!calledFn->hasFlag(FLAG_AUTO_DESTROY_FN) &&
         !calledFn->hasFlag(FLAG_UNSAFE)) {
-      int i = 1;
+      int i = 0;
       for_formals_actuals(formal, actual, call) {
+        i++;
         Symbol* argSym = toSymExpr(actual)->symbol();
 
         if (formal->hasFlag(FLAG_RETARG))
