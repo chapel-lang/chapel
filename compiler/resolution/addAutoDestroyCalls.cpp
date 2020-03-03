@@ -715,15 +715,27 @@ static void gatherTempsDeadLastMention(VarSymbol* v,
       }
 
       // also handle out intent variables being inited here
-      if (subCall != NULL && subCall->resolvedOrVirtualFunction() != NULL) {
+      FnSymbol* fn = subCall ? subCall->resolvedOrVirtualFunction() : NULL;
+      if (fn != NULL) {
+        int i = 1;
         for_formals_actuals(formal, actual, subCall) {
-          if (formal->intent == INTENT_OUT ||
-              formal->originalIntent == INTENT_OUT)  {
-            SymExpr* outActualSe = toSymExpr(actual);
-            VarSymbol* outVar = toVarSymbol(outActualSe->symbol());
-            if (outVar != NULL && outVar != v && outVar->hasFlag(FLAG_TEMP))
-              gatherTempsDeadLastMention(outVar, temps);
+          VarSymbol* tmpVar = toVarSymbol(toSymExpr(actual)->symbol());
+          if (tmpVar != NULL && tmpVar != v && tmpVar->hasFlag(FLAG_TEMP)) {
+            bool outIntent = (formal->intent == INTENT_OUT ||
+                              formal->originalIntent == INTENT_OUT);
+            if (outIntent) {
+              // initializing a temp with out intent
+              gatherTempsDeadLastMention(tmpVar, temps);
+            } else if (i == 1 && fn->name == astrSassign &&
+                       tmpVar->hasFlag(FLAG_INITIALIZED_LATER)) {
+              // See through default-init/assign pattern generated for arrays
+              // In that pattern, a '=' call sets a init_coerce_tmp variable
+              // marked with FLAG_INITIALIZED_LATER. If that variable is involved
+              // in user variable initialization, we need to find it.
+              gatherTempsDeadLastMention(tmpVar, temps);
+            }
           }
+          i++;
         }
       }
     }
@@ -763,12 +775,11 @@ static void markTempsDeadLastMention(std::set<VarSymbol*>& temps) {
         // out intent setting a user var?
         if (subCall != NULL && subCall->resolvedOrVirtualFunction() != NULL) {
           for_formals_actuals(formal, actual, subCall) {
-            if (formal->intent == INTENT_OUT ||
-                formal->originalIntent == INTENT_OUT)  {
-              SymExpr* outActualSe = toSymExpr(actual);
-              VarSymbol* outVar = toVarSymbol(outActualSe->symbol());
-              if (outVar != NULL && outVar != v &&
-                  !outVar->hasFlag(FLAG_TEMP)) {
+            VarSymbol* outVar = toVarSymbol(toSymExpr(actual)->symbol());
+            if (outVar != NULL && outVar != v) {
+              bool outIntent = (formal->intent == INTENT_OUT ||
+                                formal->originalIntent == INTENT_OUT);
+              if (outIntent && !outVar->hasFlag(FLAG_TEMP)) {
                 // Used in initializing a user var, so mark end of block
                 makeThemEndOfBlock = true;
                 break;
@@ -804,6 +815,14 @@ static void markTempsDeadLastMention(std::set<VarSymbol*>& temps) {
 }
 
 bool ComputeLastSymExpr::enterDefExpr(DefExpr* node) {
+  // Mark temps as dead either "last mention" or "end of block"
+  //
+  // This whole process could move to anytime before
+  // this point as long as it stays after
+  // split inits are handled in fixPrimInitsAndAddCasts.
+  // (Before that point, it is unknown if a function call
+  //  will initialize a user variable by 'out' intent).
+  //
   if (VarSymbol* var = toVarSymbol(node->sym)) {
     if (var->hasFlag(FLAG_TEMP) &&
         !(var->hasFlag(FLAG_DEAD_LAST_MENTION) ||

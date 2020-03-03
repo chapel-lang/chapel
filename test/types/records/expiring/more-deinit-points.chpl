@@ -164,3 +164,55 @@ proc testRet7() {
   writeln("end");
 }
 testRet7();
+
+proc testLit1() {
+  writeln("testLit1");
+  var x = acceptTwoAndReturnNew([new R()], [makeR(), makeR()]);
+  writeln("end");
+}
+testLit1();
+
+proc testLit2() {
+  writeln("testLit2");
+  acceptTwoAndReturnNew([new R()], [makeR(), makeR()]);
+  writeln("end");
+}
+testLit2();
+
+proc testLit3() {
+  writeln("testLit3");
+  var x = acceptTwoAndReturnNew((new R(),) , (makeR(), makeR()));
+  writeln("end");
+}
+testLit3();
+
+proc testLit4() {
+  writeln("testLit4");
+  acceptTwoAndReturnNew((new R(),), (makeR(), makeR()));
+  writeln("end");
+}
+testLit4();
+
+proc testLit5() {
+  writeln("testLit5");
+  var A:[1..2] R = [new R(), makeR()];
+  writeln("end");
+}
+testLit5();
+
+proc testLit6() {
+  writeln("testLit6");
+  var A:[1..2] R;
+  A = [new R(), makeR()];
+  writeln("end");
+}
+testLit6();
+
+proc testLit7() {
+  writeln("testLit7");
+  var A:[1..2] R;
+  A; // preventing split-init
+  A = [new R(), makeR()];
+  writeln("end");
+}
+testLit7();
