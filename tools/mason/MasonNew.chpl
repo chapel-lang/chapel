@@ -32,7 +32,8 @@ proc masonNew(args) throws {
     if args.size < 3 {
       masonNewHelp();
       exit();
-    } else {
+    } 
+    else {
       var vcs = true;
       var show = false;
       var packageName = '';
@@ -40,49 +41,62 @@ proc masonNew(args) throws {
       var countArgs = 2;
       for arg in args[2..] {
         countArgs += 1;
-        if arg == '-h' || arg == '--help' {
-          masonNewHelp();
-          exit();
-        }
-        else if arg == '--no-vcs' {
-          vcs = false;
-        }
-        else if arg == '--show' {
-          show = true;
-        }
-        else if arg.startsWith('--name') {
-          if arg.startsWith('--name=') {
-            var res = arg.split("=");
-            packageName = res[2];
-            dirName = args[2];
+        select (arg) {
+          when '-h' {
+            masonNewHelp();
+            exit();
           }
-          else {
-            packageName = args[countArgs];
-            dirName = args[2];
+          when '--help' {
+            masonNewHelp();
+            exit();
           }
-        }
-        else {
-          if packageName.length == 0 then {
-            dirName = arg;
-            packageName = dirName;
+          when '--no-vcs' {
+            vcs = false;
+          }
+          when '--show' {
+            show = true;
+          }
+          when '--name' {
+              packageName = args[countArgs];
+              dirName = args[2];
+          }
+          otherwise {
+            if arg.startsWith('--name=') {
+              var res = arg.split("=");
+              packageName = res[2];
+              dirName = args[2];
+            }
+            if packageName.length == 0 then {
+              dirName = arg;
+              packageName = dirName;
+            }
           }
         }
       }
-      if dirName != packageName then {
-        if validatePackageName(packageName) {
-          if isDir(dirName) {
-            throw new owned MasonError("A directory named '" + dirName + "' already exists");
-          }
-          InitProject(dirName, packageName, vcs, show);
+
+      writeln(dirName, ' ', packageName);
+      //make change here 
+      // if dirName != packageName then {
+      //   if validatePackageName(packageName) {
+      //     if isDir(dirName) {
+      //       throw new owned MasonError("A directory named '" + dirName + "' already exists");
+      //     }
+      //     InitProject(dirName, packageName, vcs, show);
+      //   }
+      // }
+      // else {
+      //   if validatePackageName(dirName) {
+      //     if isDir(dirName) {
+      //       throw new owned MasonError("A directory named '" + dirName + "' already exists");
+      //     }
+      //     InitProject(dirName, packageName, vcs, show);
+      //   }
+      // }
+      if validatePackageName(dirName = packageName) {
+        if isDir(dirName) {
+          throw new owned MasonError("A directory named '" + dirName + "' already exists");
         }
-      }
-      else {
-        if validatePackageName(dirName) {
-          if isDir(dirName) {
-            throw new owned MasonError("A directory named '" + dirName + "' already exists");
-          }
-          InitProject(dirName, packageName, vcs, show);
-        }
+        InitProject(dirName, packageName, vcs, show);
       }
     }
   }
@@ -120,11 +134,13 @@ proc InitProject(dirName, packageName, vcs, show) throws {
   }
   // Confirm git init before creating files
   if isDir(dirName) {
-    if dirName!=packageName then makeBasicToml(packageName, path=dirName);
-    else makeBasicToml(dirName, path=dirName);
+    // if dirName!=packageName then makeBasicToml(packageName, path=dirName);
+    // else makeBasicToml(dirName, path=dirName);
+    makeBasicToml(dirName=packageName, path=dirName);
     makeSrcDir(dirName);
-    if dirName!=packageName then makeModule(dirName, fileName=packageName);
-    else makeModule(dirName, fileName=dirName);
+    // if dirName!=packageName then makeModule(dirName, fileName=packageName);
+    // else makeModule(dirName, fileName=dirName);
+    makeModule(dirName, fileName=packageName);
     makeTestDir(dirName);
     makeExampleDir(dirName);  
     writeln("Created new library project: " + dirName);
