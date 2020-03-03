@@ -2055,11 +2055,26 @@ static Expr* preFoldNamed(CallExpr* call) {
 
         // insert temp to capture tuple expr
         VarSymbol* tmp = newTemp(astr("tupleTemp"));
+        tmp->addFlag(FLAG_CONST);
+        tmp->addFlag(FLAG_REF_VAR);
+
+        /*
+        noop->insertBefore(new DefExpr(tmp,
+                           new CallExpr(PRIM_GET_MEMBER_VALUE, tupExpr->copy(),
+                                        new_CStringSymbol(tupType->getField(i)->name)),
+                                       new SymExpr(tupType->getField(i)->type->symbol)));
+        */
+
+
         noop->insertBefore(new DefExpr(tmp));
         noop->insertBefore(new CallExpr(PRIM_MOVE, tmp,
                                         new CallExpr(PRIM_GET_MEMBER_VALUE, tupExpr->copy(), new_CStringSymbol(tupType->getField(i)->name))));
 
+
+
         // and map idxSymbol to 
+        idxSym->addFlag(FLAG_CONST);
+        idxSym->addFlag(FLAG_REF_VAR);
         map.put(idxSym, tmp);
         nextloop->copyBodyHelper(noop, i-2, &map, continueSym);
       }
