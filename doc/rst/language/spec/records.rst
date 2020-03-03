@@ -508,25 +508,11 @@ The following example demonstrates record assignment.
 Default Comparison Operators
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Default functions to overload comparison operators are defined for
-records if none are explicitly defined. ``==`` and ``!=`` functions have the
-following signatures for a record ``R``:
-
-
-
-.. code-block:: chapel
-
-   proc ==(lhs:R, rhs:R) : bool where lhs.type == rhs.type;
-   proc !=(lhs:R, rhs:R) : bool where lhs.type == rhs.type;
-
-Other comparison operator overloads (namely ``<``, ``<=``, ``>``, and ``>=``)
-have similar signatures but their where clauses also check whether the relevant
-operator is supported by each field.
-
-All of these comparison operators except ``!=`` compare the fields, one at a
-time, returning ``false`` if the property is not satisfied by the given pair of
-fields. Whereas ``!=`` returns ``true`` if the property is satisfied by any
-field.
+"Record comparisons have a similar behavior to tuple comparisons :ref:`tuple comparisons <Tuple_Relational_Operators>`.
+The operators >, >=, <, and <= check the corresponding lexicographical order based 
+on pair-wise comparisons between the arguments' fields.
+The operators == and != check whether the two arguments are pair-wise equal or not.
+The fields are compared in the order they are declared in the record definition."
 
 .. _Class_and_Record_Differences:
 
@@ -612,8 +598,8 @@ Calling ``delete`` on a record is illegal.
 Default Comparison Operators
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-"Record comparisons have a similar behavior to tuple comparisons :ref:`tuple comparisons <Tuple_Relational_Operators>`.
-The operators >, >=, <, and <= check the corresponding lexicographical order based 
-on pair-wise comparisons between the arguments' fields.
-The operators == and != check whether the two arguments are pair-wise equal or not.
-The fields are compared in the order they are declared in the record definition."
+For records, the compiler will supply default comparison operators if they are not supplied
+by the user. In contrast, the user cannot redefine == and != for classes.
+The default comparison operators for a record examine the arguments’ fields, 
+while the comparison operators for classes check whether the l.h.s. and r.h.s. 
+refer to the same class instance or are both nil.
