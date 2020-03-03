@@ -507,12 +507,26 @@ The following example demonstrates record assignment.
 
 Default Comparison Operators
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Default functions to overload comparison operators are defined for
+records if none are explicitly defined. ``==`` and ``!=`` functions have the
+following signatures for a record ``R``:
 
-"Record comparisons have a similar behavior to tuple comparisons :ref:`tuple comparisons <Tuple_Relational_Operators>`.
+
+
+.. code-block:: chapel
+
+   proc ==(lhs:R, rhs:R) : bool where lhs.type == rhs.type;
+   proc !=(lhs:R, rhs:R) : bool where lhs.type == rhs.type;
+
+Other comparison operator overloads (namely ``<``, ``<=``, ``>``, and ``>=``)
+have similar signatures but their where clauses also check whether the relevant
+operator is supported by each field.
+
+Record comparisons have a similar behavior to tuple comparisons :ref:`tuple comparisons <Tuple_Relational_Operators>`.
 The operators >, >=, <, and <= check the corresponding lexicographical order based 
 on pair-wise comparisons between the arguments' fields.
 The operators == and != check whether the two arguments are pair-wise equal or not.
-The fields are compared in the order they are declared in the record definition."
+The fields are compared in the order they are declared in the record definition.
 
 .. _Class_and_Record_Differences:
 
