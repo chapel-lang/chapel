@@ -28,9 +28,4 @@
     chpl_comm_impl_regMemHeapInfo(start_p, size_p)
 void chpl_comm_impl_regMemHeapInfo(void** start_p, size_t* size_p);
 
-//
-// Memory consistency.
-//
-static inline void chpl_comm_release(int ln, int32_t fn) { }
-
 #endif // _chpl_comm_impl_h_

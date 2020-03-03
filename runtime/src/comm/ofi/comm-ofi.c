@@ -1999,18 +1999,6 @@ void releaseBody(struct bitmap_t* b, struct perTxCtxInfo_t* tcip,
 }
 
 
-void chpl_comm_release(int ln, int32_t fn) {
-  DBG_PRINTF(DBG_INTERFACE,
-             "chpl_comm_release(%d, %d)", ln, fn);
-
-  //
-  // Enforce Chapel MCM: force all outstanding PUTs to be visible in
-  // target memory.
-  //
-  releaseBody(NULL, NULL, "(PUT, MCM release)");
-}
-
-
 void chpl_comm_task_end(void) {
   task_local_buff_end(get_buff | put_buff | amo_nf_buff);
 }
