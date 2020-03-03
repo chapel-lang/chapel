@@ -235,7 +235,7 @@ module LocaleModel {
 
     override proc getChild(idx:int) : locale {
       halt("requesting a child from a MemoryLocale locale");
-      return new locale(); //dummy
+      return this;
     }
   }
 
@@ -326,7 +326,7 @@ module LocaleModel {
 
     override proc getChild(idx:int) : locale {
       halt("requesting a child from a NumaDomain locale");
-      return new locale(); //dummy
+      return this;
     }
 
     iter getChildren() : locale {
