@@ -83,7 +83,10 @@ module LocaleModel {
     proc addChild(loc:locale) {
       halt("Cannot add children to this locale type.");
     }
-    override proc getChild(idx:int) : locale { return nil; }
+    override proc getChild(idx:int) : locale {
+      halt("requesting a child from a CPULocale locale");
+      return this;
+    }
   }
 
   class GPULocale : AbstractLocaleModel {
@@ -127,7 +130,10 @@ module LocaleModel {
     proc addChild(loc:locale) {
       halt("Cannot add children to this locale type.");
     }
-    override proc getChild(idx:int) : locale { return nil; }
+    override proc getChild(idx:int) : locale {
+      halt("requesting a child from a GPULocale locale");
+      return this;
+    }
   }
 
   const chpl_emptyLocaleSpace: domain(1) = {1..0};
