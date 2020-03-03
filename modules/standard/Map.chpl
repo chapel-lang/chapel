@@ -72,7 +72,7 @@ module Map {
     /* Type of map values. */
     type valType;
 
-    /* Tracks if map is parallel safe. */
+    /* If `true`, this set will perform parallel safe operations. */
     param parSafe = false;
 
     pragma "no doc"
