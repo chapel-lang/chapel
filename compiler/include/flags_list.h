@@ -49,6 +49,7 @@ symbolFlag( FLAG_ALWAYS_PROPAGATE_LINE_FILE_INFO , ypr, "always propagate line f
 symbolFlag( FLAG_ALWAYS_RVF, ypr, "always RVF", "attach to a type to force RVF for objects of that type" )
 symbolFlag( FLAG_DEAD_END_OF_BLOCK , ypr, "dead at end of block" , ncm )
 symbolFlag( FLAG_DEAD_LAST_MENTION , ypr, "dead after last mention" , ncm )
+symbolFlag( FLAG_DEAD_COPY_ELISION , npr, "dead after copy elision" , ncm )
 symbolFlag( FLAG_DONT_ALLOW_REF , ypr, "do not allow ref" , ncm )
 symbolFlag( FLAG_ARG_THIS, npr, "arg this", "the hidden object argument")
 symbolFlag( FLAG_ARRAY , ypr, "array" , ncm )

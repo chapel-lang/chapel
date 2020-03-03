@@ -2850,7 +2850,19 @@ static bool isLifetimeShorter(Lifetime a, Lifetime b) {
     BlockStmt* bBlock = getDefBlock(bSym);
     if (aBlock == bBlock) {
       // TODO: check the order of the declarations
-      return false;
+      bool aDeadEarly = aSym->hasFlag(FLAG_DEAD_COPY_ELISION) ||
+                        aSym->hasFlag(FLAG_DEAD_LAST_MENTION);
+      bool bDeadEarly = bSym->hasFlag(FLAG_DEAD_COPY_ELISION) ||
+                        bSym->hasFlag(FLAG_DEAD_LAST_MENTION);
+      if      (aDeadEarly == false && bDeadEarly == false)
+        return false;  // don't worry about order for end-of-block decls
+                       // doing so would prevent swap from working.
+      else if (aDeadEarly == true  && bDeadEarly == true)
+        return false; // don't worry about this order... yet
+      else if (aDeadEarly == true  && bDeadEarly == false)
+        return true; // a has shorter lifetime than b
+      else if (aDeadEarly == false && bDeadEarly == true)
+        return false; // b has shorter lifetime than a
     } else {
       return isBlockWithinBlock(aBlock, bBlock);
     }
