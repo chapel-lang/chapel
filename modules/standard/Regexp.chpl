@@ -1041,7 +1041,7 @@ proc =(ref ret:regexp(?t), x:regexp(t))
       qio_regexp_get_options(x._regexp, options);
     }
 
-    qio_regexp_create_compile(pattern, pattern.length, options, ret._regexp);
+    qio_regexp_create_compile(pattern, pattern.size, options, ret._regexp);
   }
 }
 
