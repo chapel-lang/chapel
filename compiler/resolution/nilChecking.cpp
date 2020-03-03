@@ -381,7 +381,8 @@ static void checkForNilDereferencesInCall(
   // to a non-nilable owned.
   if (FnSymbol* calledFn = call->resolvedOrVirtualFunction()) {
     if (!calledFn->hasFlag(FLAG_AUTO_DESTROY_FN) &&
-        !calledFn->hasFlag(FLAG_UNSAFE)) {
+        !calledFn->hasFlag(FLAG_UNSAFE) &&
+        !calledFn->hasFlag(FLAG_LEAVES_ARG_NIL)) {
       int i = 0;
       for_formals_actuals(formal, actual, call) {
         i++;
