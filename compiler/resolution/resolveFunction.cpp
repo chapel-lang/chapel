@@ -1191,13 +1191,15 @@ static void markTempsDeadLastMention(std::set<VarSymbol*>& temps) {
   if (makeThemEndOfBlock) {
     for_set(VarSymbol, temp, temps) {
       temp->addFlag(FLAG_DEAD_END_OF_BLOCK);
-      FnSymbol* initFn = toFnSymbol(temp->defPoint->parentSymbol);
-      if (initFn && initFn->hasFlag(FLAG_MODULE_INIT)) {
-        ModuleSymbol* mod = temp->defPoint->getModule();
-        if (mod && temp->defPoint->parentExpr == initFn->body &&
-            canMakeThemGlobal) {
-          // Move the temporary to global scope.
-          mod->block->insertAtTail(temp->defPoint->remove());
+      if (temp->defPoint != NULL) {
+        FnSymbol* initFn = toFnSymbol(temp->defPoint->parentSymbol);
+        if (initFn && initFn->hasFlag(FLAG_MODULE_INIT)) {
+          ModuleSymbol* mod = temp->defPoint->getModule();
+          if (mod && temp->defPoint->parentExpr == initFn->body &&
+              canMakeThemGlobal) {
+            // Move the temporary to global scope.
+            mod->block->insertAtTail(temp->defPoint->remove());
+          }
         }
       }
     }
