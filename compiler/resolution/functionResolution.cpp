@@ -9810,7 +9810,6 @@ static bool isInDefaultActualFunction(Expr* ref) {
 // or does not feed into a PRIM_SET_MEMBER.
 static Symbol* tempFeedsIntoSetMember(CallExpr* call, SymExpr* valSe,
                                       Symbol* val) {
-  const char* name = NULL;
   if (val->hasFlag(FLAG_TEMP) && ! val->hasFlag(FLAG_USER_VARIABLE_NAME))
    // See if it is the temp used to set a field.
    for_SymbolSymExprs(se, val)

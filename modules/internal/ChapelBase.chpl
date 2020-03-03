@@ -1580,35 +1580,35 @@ module ChapelBase {
   pragma "no copy return"
   pragma "no borrow convert"
   pragma "suppress lvalue error"
+  pragma "unsafe"
   inline proc _createFieldDefault(type t, init) {
     if isNonNilableClassType(t) && isNilableClassType(init.type) then
       compilerError("default-initializing a field with a non-nilable type ",
           t:string, " from an instance of nilable ", init.type:string);
 
-    pragma "no auto destroy" pragma "unsafe"
-    var x: t = init;
+    pragma "no auto destroy" var x: t = init;
     return x;
   }
 
   pragma "dont disable remote value forwarding"
   pragma "no borrow convert"
   pragma "no copy return"
+  pragma "unsafe"
   inline proc _createFieldDefault(type t, param init) {
-    pragma "no auto destroy" pragma "unsafe"
-    var x: t = init;
+    pragma "no auto destroy" var x: t = init;
     return x;
   }
 
   pragma "dont disable remote value forwarding"
   pragma "no borrow convert"
   pragma "no copy return"
+  pragma "unsafe"
   inline proc _createFieldDefault(type t, init: _nilType) {
     if isNonNilableClassType(t) then
       compilerError("default-initializing a field with a non-nilable type ",
                     t:string, " from nil");
 
-    pragma "no auto destroy" pragma "unsafe"
-    var x: t;
+    pragma "no auto destroy" var x: t;
     return x;
   }
 
