@@ -211,7 +211,7 @@ module Itertools {
     :throws: ``IllegalArgumentError`` on non-array arguments
 
 
-    This iterator can be called in serial contexts.
+    This iterator can only be called in serial contexts.
 
     .. note::
       Be careful to pass ``real`` arrays if division is to be performed,
