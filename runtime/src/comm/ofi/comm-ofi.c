@@ -1950,7 +1950,11 @@ int mrGetLocalKey(void* addr, size_t size) {
 //
 
 static inline
-void releaseBodyOneNode(c_nodeid_t node, struct perTxCtxInfo_t* tcip) {
+void mcmReleaseOneNode(c_nodeid_t node, struct perTxCtxInfo_t* tcip,
+                        const char* dbgOrderStr) {
+  DBG_PRINTF(DBG_ORDER,
+             "dummy GET from %d for %s ordering",
+             (int) node, dbgOrderStr);
   if (tcip->txCQ != NULL) {
     atomic_bool txnDone;
     atomic_init_bool(&txnDone, false);
@@ -1966,8 +1970,8 @@ void releaseBodyOneNode(c_nodeid_t node, struct perTxCtxInfo_t* tcip) {
 
 
 static
-void releaseBody(struct bitmap_t* b, struct perTxCtxInfo_t* tcip,
-                 const char* dbgOrderStr) {
+void mcmReleaseAllNodes(struct bitmap_t* b, struct perTxCtxInfo_t* tcip,
+                        const char* dbgOrderStr) {
   //
   // Do a GET from every node we did at least one PUT to.  Combined
   // with our use of read-after-write ordering, this forces the PUTs
@@ -1987,10 +1991,7 @@ void releaseBody(struct bitmap_t* b, struct perTxCtxInfo_t* tcip,
     while (myTcip->numTxns >= txCQLen) { // need CQ room for at least 1 txn
       checkTxCQ(myTcip);
     }
-    DBG_PRINTF(DBG_ORDER,
-               "dummy GET from %d for %s ordering",
-               (int) node, dbgOrderStr);
-    releaseBodyOneNode(node, myTcip);
+    mcmReleaseOneNode(node, myTcip, dbgOrderStr);
   } BITMAP_FOREACH_SET_END
 
   if (tcip == NULL) {
@@ -3300,10 +3301,11 @@ chpl_comm_nb_handle_t ofi_put(const void* addr, c_nodeid_t node,
     tcip->numTxns++;
 
     //
-    // Enforce Chapel MCM: do a release, to force the result of this
-    // PUT to appear in target memory.
+    // Enforce Chapel MCM using synthesized delivery_complete completion
+    // level: do a release, to force the result of this PUT to appear in
+    // target memory.
     //
-    releaseBodyOneNode(node, tcip);
+    mcmReleaseOneNode(node, tcip, "PUT");
 
     if (tcip->txCQ != NULL) {
       waitForCQThisTxn(tcip, &txnDone);
@@ -3444,7 +3446,7 @@ void ofi_put_V(int v_len, void** addr_v, void** local_mr_v,
   // Enforce Chapel MCM: force all of the above PUTs to appear in
   // target memory.
   //
-  releaseBody(b, tcip, "unordered PUT");
+  mcmReleaseAllNodes(b, tcip, "unordered PUT");
 
   tciFree(tcip);
 }
