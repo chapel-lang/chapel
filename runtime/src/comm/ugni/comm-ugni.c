@@ -1949,7 +1949,7 @@ void chpl_comm_init(int *argc_p, char ***argv_p)
 #undef _PSTAT_INIT
 
   //
-  // We can easily reach 4k memory regions on Aries.  We can reach a
+  // We can easily reach 16k memory regions on Aries.  We can reach a
   // bit more than 3500 memory regions on Gemini but getting there is
   // tricky because we start bumping up against a number of limits
   // all at once (node memory sizes, limits on number of registered
@@ -1958,7 +1958,7 @@ void chpl_comm_init(int *argc_p, char ***argv_p)
   //
   max_mem_regions =
     chpl_env_rt_get_int("COMM_UGNI_MAX_MEM_REGIONS",
-                        (nic_type == GNI_DEVICE_GEMINI) ? 2048 : 4096);
+                        (nic_type == GNI_DEVICE_GEMINI) ? 2048 : 16384);
 
   //
   // We have to create the local memory region table before the first
