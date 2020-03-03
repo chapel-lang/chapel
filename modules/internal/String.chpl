@@ -470,12 +470,12 @@ module String {
     }
   }
 
-  proc stringFactoryArgDepr() {
+  private proc stringFactoryArgDepr() {
     compilerWarning("createStringWith* with formal argument `s` is deprecated. ",
                     "Use argument name `x` instead");
   }
 
-  proc joinArgDepr() {
+  private proc joinArgDepr() {
     compilerWarning("string.join with formal argument `S` is deprecated. ",
                     "Use argument name `x` instead");
   }
