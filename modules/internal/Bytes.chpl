@@ -1094,7 +1094,7 @@ module Bytes {
     // warning
     pragma "no doc"
     pragma "last resort"
-    proc decode(param errors=decodePolicy.strict): string throws {
+    proc decode(param errors): string throws {
       compilerWarning("'errors' argument to bytes.decode is deprecated. ",
                       "Use 'policy' instead.");
       if errors == decodePolicy.ignore then
@@ -1108,7 +1108,7 @@ module Bytes {
     }
 
     pragma "no doc"
-    proc decode(param policy=decodePolicy.strict): string throws {
+    proc decode(param policy): string throws {
       if policy == decodePolicy.ignore then
         compilerWarning("decodePolicy.ignore is deprecated. ",
                         "Use decodePolicy.drop instead");
