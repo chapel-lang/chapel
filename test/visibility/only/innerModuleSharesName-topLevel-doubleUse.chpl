@@ -1,11 +1,13 @@
-module M {
-  var a: int = 42;
-
+module OuterModule {
   module M {
-    var a: int = 23;
-  }
-}
+    var a: int = 42;
 
-use M;
-use M.M;
-writeln(a);
+    module M {
+      var a: int = 23;
+    }
+  }
+
+  use M;
+  use M.M;
+  writeln(a);
+}

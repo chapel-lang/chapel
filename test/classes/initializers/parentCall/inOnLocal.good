@@ -1,2 +1,0 @@
-inOnLocal.chpl:4: In initializer:
-inOnLocal.chpl:7: error: use of this.complete() call in an on block

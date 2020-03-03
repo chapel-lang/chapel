@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2019 Cray Inc.
+ * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -20,6 +20,7 @@
 // ChapelNumLocales.chpl
 //
 module ChapelNumLocales {
+  private use ChapelBase;
 
   extern proc chpl_comm_default_num_locales(): int;
 

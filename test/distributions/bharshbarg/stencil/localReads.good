@@ -1,2 +1,4 @@
 Success
-localReads.chpl:18: error: halt reached - array index out of bounds:
+localReads.chpl:18: error: halt
+
+

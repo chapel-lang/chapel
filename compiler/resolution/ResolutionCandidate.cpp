@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2019 Cray Inc.
+ * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -36,6 +36,9 @@ static ResolutionCandidateFailureReason
 classifyTypeMismatch(Type* actualType, Type* formalType);
 static Type* getInstantiationType(Symbol* actual, ArgSymbol* formal, Expr* ctx);
 static bool shouldAllowCoercions(Symbol* actual, ArgSymbol* formal);
+static bool shouldAllowCoercionsType(Type* actualType, Type* formalType);
+
+std::map<Type*,std::map<Type*,bool>*> actualFormalCoercible;
 
 /************************************* | **************************************
 *                                                                             *
@@ -58,12 +61,21 @@ ResolutionCandidate::ResolutionCandidate(FnSymbol* function) {
 bool ResolutionCandidate::isApplicable(CallInfo& info) {
   bool retval = false;
 
-  if (fn->hasFlag(FLAG_GENERIC) == false) {
+  TagGenericResult tagResult = fn->tagIfGeneric(NULL, true);
+  if (tagResult == TGR_TAGGING_ABORTED)
+    return false;
+
+  if (! fn->isGeneric()) {
     retval = isApplicableConcrete(info);
   } else {
     retval = isApplicableGeneric (info);
   }
 
+  // Note: for generic instantiations, this code will be executed twice.
+  // This is because by the time the generic branch returns, its function will
+  // have been replaced by the instantiation, which will have already had this
+  // function called on it.  However, reducing the scope for this operation does
+  // not seem to have a noticeable impact.
   if (retval && fn->retExprType != NULL && fn->retType == dtUnknown) {
     resolveSpecifiedReturnType(fn);
   }
@@ -183,10 +195,11 @@ bool ResolutionCandidate::computeAlignment(CallInfo& info) {
 
       while (formal != NULL) {
         if (formal->variableExpr) {
-          return (fn->hasFlag(FLAG_GENERIC)) ? true : false;
+          return fn->isGeneric();
         }
 
-        if (formalIdxToActual[j] == NULL) {
+        if (formalIdxToActual[j] == NULL &&
+            !formal->hasFlag(FLAG_TYPE_FORMAL_FOR_OUT)) {
           match                = true;
           actualIdxToFormal[i] = formal;
           formalIdxToActual[j] = info.actuals.v[i];
@@ -202,7 +215,7 @@ bool ResolutionCandidate::computeAlignment(CallInfo& info) {
 
       // Fail if there are too many unnamed actuals.
       if (match == false) {
-        if (fn->hasFlag(FLAG_GENERIC) == false) {
+        if (! fn->isGeneric()) {
           failingArgument = info.actuals.v[i];
           reason = RESOLUTION_CANDIDATE_TOO_MANY_ARGUMENTS;
           return false;
@@ -218,7 +231,8 @@ bool ResolutionCandidate::computeAlignment(CallInfo& info) {
   // Make sure that any remaining formals are matched by name
   // or have a default value.
   while (formal) {
-    if (formalIdxToActual[j] == NULL && formal->defaultExpr == NULL) {
+    if (formalIdxToActual[j] == NULL && formal->defaultExpr == NULL &&
+        !formal->hasFlag(FLAG_TYPE_FORMAL_FOR_OUT)) {
       failingArgument = formal;
       reason = RESOLUTION_CANDIDATE_TOO_FEW_ARGUMENTS;
       return false;
@@ -405,28 +419,54 @@ static bool shouldAllowCoercions(Symbol* actual, ArgSymbol* formal) {
     // ... however, make an exception for class subtyping.
     Type* actualType = actual->getValType();
     Type* formalType = formal->getValType();
-    if (isClassLikeOrManaged(actualType) && isClassLikeOrManaged(formalType)) {
-      Type* canonicalActual = canonicalClassType(actualType);
-      ClassTypeDecorator actualD = classTypeDecorator(actualType);
-
-      Type* canonicalFormal = canonicalClassType(formalType);
-      ClassTypeDecorator formalD = classTypeDecorator(formalType);
-
-      AggregateType* at = toAggregateType(canonicalActual);
-
-      if (canInstantiateOrCoerceDecorators(actualD, formalD, false, false)) {
-        if (canonicalActual == canonicalFormal ||
-            isDispatchParent(canonicalActual, canonicalFormal) ||
-            (at && at->instantiatedFrom &&
-             canonicalFormal->symbol->hasFlag(FLAG_GENERIC) &&
-             getConcreteParentForGenericFormal(at, canonicalFormal) != NULL)) {
-          allowCoercions = true;
-        }
+    std::map<Type*,bool> *formalCoercible = actualFormalCoercible[actualType];
+    if (formalCoercible != NULL) {
+      if (formalCoercible->count(formalType) > 0) {
+        allowCoercions = (*formalCoercible)[formalType];
+      } else {
+        allowCoercions = shouldAllowCoercionsType(actualType, formalType);
+        (*formalCoercible)[formalType] = allowCoercions;
       }
+    } else {
+      std::map<Type*,bool> *formalCoercible = new std::map<Type*,bool>();
+      allowCoercions = shouldAllowCoercionsType(actualType, formalType);
+      (*formalCoercible)[formalType] = allowCoercions;
+      actualFormalCoercible[actualType] = formalCoercible;
     }
   }
 
   return allowCoercions;
+}
+
+static bool shouldAllowCoercionsType(Type* actualType, Type* formalType) {
+  if (isClassLikeOrManaged(actualType) && isClassLikeOrManaged(formalType)) {
+    Type* canonicalActual = canonicalClassType(actualType);
+    ClassTypeDecorator actualD = classTypeDecorator(actualType);
+
+    Type* canonicalFormal = canonicalClassType(formalType);
+    ClassTypeDecorator formalD = classTypeDecorator(formalType);
+
+    AggregateType* at = toAggregateType(canonicalActual);
+
+    if (canInstantiateOrCoerceDecorators(actualD, formalD, false, false)) {
+      if (canonicalActual == canonicalFormal ||
+          isDispatchParent(canonicalActual, canonicalFormal) ||
+          (at && at->instantiatedFrom &&
+           canonicalFormal->symbol->hasFlag(FLAG_GENERIC) &&
+           getConcreteParentForGenericFormal(at, canonicalFormal) != NULL)) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
+void clearCoercibleCache() {
+  std::map<Type*,std::map<Type*,bool>*>::iterator it;
+  for (it = actualFormalCoercible.begin(); it != actualFormalCoercible.end();
+       ++it) {
+    delete it->second;
+  }
 }
 
 // Uses formalSym and actualSym to compute allowCoercion and implicitBang
@@ -963,6 +1003,10 @@ void explainCandidateRejection(CallInfo& info, FnSymbol* fn) {
                     toString(failingActual->getValType()));
       USR_PRINT(failingFormal, "is passed to formal '%s'",
                                toString(failingFormal));
+      if (isNilableClassType(failingActual->getValType()) &&
+          isNonNilableClassType(failingFormal->getValType()))
+        USR_PRINT(call, "try to apply the postfix ! operator to %s",
+                  failingActualDesc);
       break;
     case RESOLUTION_CANDIDATE_WHERE_FAILED:
       USR_PRINT(fn, "because where clause evaluated to false");
@@ -1009,6 +1053,12 @@ void explainCandidateRejection(CallInfo& info, FnSymbol* fn) {
       break;
     case RESOLUTION_CANDIDATE_OTHER:
     case RESOLUTION_CANDIDATE_MATCH:
+      if (c.reason == RESOLUTION_CANDIDATE_MATCH &&
+          call->methodTag == true                &&
+          ! fn->hasFlag(FLAG_NO_PARENS)          ) {
+        USR_PRINT(call, "because call is written without parentheses");
+        USR_PRINT(fn, "but candidate function has parentheses");
+      }
       // Print nothing else
       break;
     // No default -> compiler warning

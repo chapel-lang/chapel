@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2019 Cray Inc.
+ * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -211,7 +211,8 @@ static Expr* postFoldNormal(CallExpr* call) {
 *                                                                             *
 ************************************** | *************************************/
 
-static void  insertValueTemp(Expr* insertPoint, Expr* actual);
+static void insertValueTemp(Expr* insertPoint, Expr* actual);
+static bool isSameTypeOrInstantiation(Type* sub, Type* super, Expr* ctx);
 
 static Expr* postFoldPrimop(CallExpr* call) {
   Expr* retval = call;
@@ -292,7 +293,7 @@ static Expr* postFoldPrimop(CallExpr* call) {
     }
 
   } else if (call->isPrimitive(PRIM_IS_SUBTYPE) ||
-             call->isPrimitive(PRIM_IS_SUBTYPE_ALLOW_VALUES) ||
+             call->isPrimitive(PRIM_IS_INSTANTIATION_ALLOW_VALUES) ||
              call->isPrimitive(PRIM_IS_PROPER_SUBTYPE) ||
              call->isPrimitive(PRIM_IS_COERCIBLE)) {
     SymExpr* parentExpr = toSymExpr(call->get(1));
@@ -302,7 +303,7 @@ static Expr* postFoldPrimop(CallExpr* call) {
     bool subIsType = isTypeExpr(subExpr);
 
 
-    if (call->isPrimitive(PRIM_IS_SUBTYPE_ALLOW_VALUES)) {
+    if (call->isPrimitive(PRIM_IS_INSTANTIATION_ALLOW_VALUES)) {
       if (parentIsType == false && subIsType == false)
         USR_FATAL_CONT(call, "Subtype query requires a type");
     } else {
@@ -338,6 +339,8 @@ static Expr* postFoldPrimop(CallExpr* call) {
       bool result = false;
       if (call->isPrimitive(PRIM_IS_COERCIBLE))
         result = isCoercibleOrInstantiation(st, pt, call);
+      else if (call->isPrimitive(PRIM_IS_INSTANTIATION_ALLOW_VALUES))
+        result = isSameTypeOrInstantiation(st, pt, call);
       else
         result = isSubtypeOrInstantiation(st, pt, call);
 
@@ -397,6 +400,8 @@ static Expr* postFoldPrimop(CallExpr* call) {
 
       if (lhs->symbol()->type == dtString) {
         retval = new SymExpr(new_StringSymbol(astr(lstr, rstr)));
+      } else if (lhs->symbol()->type == dtBytes) {
+        retval = new SymExpr(new_BytesSymbol(astr(lstr, rstr)));
       } else {
         retval = new SymExpr(new_CStringSymbol(astr(lstr, rstr)));
       }
@@ -589,6 +594,22 @@ static Expr* postFoldPrimop(CallExpr* call) {
   return retval;
 }
 
+// This function implements PRIM_IS_INSTANTIATION_ALLOW_VALUES
+static bool isSameTypeOrInstantiation(Type* sub, Type* super, Expr* ctx) {
+
+  if (sub == super)
+    return true;
+
+  // Consider instantiation
+  if (super->symbol->hasFlag(FLAG_GENERIC)) {
+    super = getInstantiationType(sub, NULL, super, NULL, ctx);
+    if (sub == super)
+      return true;
+  }
+
+  return false;
+}
+
 // This function implements PRIM_IS_SUBTYPE
 bool isSubtypeOrInstantiation(Type* sub, Type* super, Expr* ctx) {
 
@@ -709,6 +730,10 @@ static bool postFoldMoveUpdateForParam(CallExpr* call, Symbol* lhsSym) {
 
         call->convertToNoop();
 
+        // TODO: Replace all uses of the lhsSym with rhsSym
+        // Consider PRIM_MOVE setting lhsSym and also
+        // the possibility of a PRIM_DEREF on rhsSym.
+
         retval = true;
       }
     }
@@ -730,10 +755,23 @@ static bool postFoldMoveUpdateForParam(CallExpr* call, Symbol* lhsSym) {
                            lhsSym->name);
 
           } else {
-            USR_FATAL_CONT(call,
-                           "Initializing parameter '%s' to value "
-                           "not known at compile time",
-                           lhsSym->name);
+            bool failedCoercion = false;
+            if (SymExpr* rhsSe = toSymExpr(call->get(2)))
+              if (SymExpr* se = rhsSe->symbol()->getSingleDef())
+                if (CallExpr* p = toCallExpr(se->parentExpr))
+                  if (p->isPrimitive(PRIM_MOVE))
+                    if (CallExpr* rhsCall = toCallExpr(p->get(2)))
+                      if (rhsCall->isPrimitive(PRIM_COERCE))
+                        failedCoercion = true;
+
+            if (failedCoercion)
+              USR_FATAL_CONT(call,
+                             "Could not coerce param into requested type");
+            else
+              USR_FATAL_CONT(call,
+                             "Initializing parameter '%s' to value "
+                             "not known at compile time",
+                             lhsSym->name);
 
             lhsSym->removeFlag(FLAG_PARAM);
           }

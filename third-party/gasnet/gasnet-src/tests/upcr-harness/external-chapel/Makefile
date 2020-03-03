@@ -74,12 +74,10 @@ chapel-unpack-tgz:   force
 ####
 .PHONY: chapel-download chapel-unpack-unzip chapel-unpack-p7zip chapel-unpack-tgz
 
-# Save time by building for a single conduit
-CHPL_GASNET_CFG_OPTIONS += --disable-auto-conduit-detect --enable-$(CHAPEL_CONDUIT)
 ifneq ($(strip $(CHPL_COMM_DEBUG)),)
-CHPL_GASNET_CFG_OPTIONS += --enable-debug
+CHPL_GASNET_MORE_CFG_OPTIONS += --enable-debug
 endif
-CHAPEL_MAKE_ARGS += CHPL_GASNET_CFG_OPTIONS="$(CHPL_GASNET_CFG_OPTIONS)"
+CHAPEL_MAKE_ARGS += CHPL_GASNET_MORE_CFG_OPTIONS="$(CHPL_GASNET_MORE_CFG_OPTIONS)"
 
 # Define CHPL_LAUNCHER for some conduits without our desired defaults.
 # Note that these have not necessarily all been tested.

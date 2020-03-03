@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2019 Cray Inc.
+ * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -30,6 +30,7 @@
 #include "files.h"
 #include "ForallStmt.h"
 #include "ForLoop.h"
+#include "ImportStmt.h"
 #include "LoopExpr.h"
 #include "ParamForLoop.h"
 #include "parser.h"
@@ -162,6 +163,8 @@ BlockStmt* buildPragmaStmt(Vec<const char*>* pragmas,
   for_alist(expr, stmt->body) {
     if (DefExpr* def = toDefExpr(expr)) {
       addPragmaFlags(def->sym, pragmas);
+    } else if (isEndOfStatementMarker(expr)) {
+      // ignore it
     } else {
       error = true;
       break;
@@ -365,19 +368,19 @@ BlockStmt* buildErrorStandin() {
   return new BlockStmt(new CallExpr(PRIM_ERROR), BLOCK_SCOPELESS);
 }
 
-static void addModuleToSearchList(UseStmt* newUse, BaseAST* module) {
+static void addModuleToSearchList(VisibilityStmt* newStmt, BaseAST* module) {
   UnresolvedSymExpr* modNameExpr = toUnresolvedSymExpr(module);
   if (modNameExpr) {
-    addModuleToParseList(modNameExpr->unresolved, newUse);
+    addModuleToParseList(modNameExpr->unresolved, newStmt);
   } else if (CallExpr* callExpr = toCallExpr(module)) {
-    addModuleToSearchList(newUse, callExpr->argList.first());
+    addModuleToSearchList(newStmt, callExpr->argList.first());
   }
 }
 
 
-static BlockStmt* buildUseList(BaseAST* module, BlockStmt* list,
-                               bool privateUse) {
-  UseStmt* newUse = new UseStmt(module, privateUse);
+static BlockStmt* buildUseList(BaseAST* module, const char* newName,
+                               BlockStmt* list, bool privateUse) {
+  UseStmt* newUse = new UseStmt(module, newName, privateUse);
   addModuleToSearchList(newUse, module);
   if (list == NULL) {
     return buildChapelStmt(newUse);
@@ -435,7 +438,8 @@ static void useListError(Expr* expr, bool except) {
 //
 // Build a 'use' statement with an 'except'/'only' list
 //
-BlockStmt* buildUseStmt(Expr* mod, std::vector<OnlyRename*>* names, bool except,
+BlockStmt* buildUseStmt(Expr* mod, const char * rename,
+                        std::vector<PotentialRename*>* names, bool except,
                         bool privateUse) {
   std::vector<const char*> namesList;
   std::map<const char*, const char*> renameMap;
@@ -443,7 +447,7 @@ BlockStmt* buildUseStmt(Expr* mod, std::vector<OnlyRename*>* names, bool except,
   // Catch the 'except *' case and turn it into 'only <nothing>'.  This
   // case will have a single UnresolvedSymExpr named "".
   if (except && names->size() == 1) {
-    OnlyRename* listElem = (*names)[0];
+    PotentialRename* listElem = (*names)[0];
     if (UnresolvedSymExpr* name = toUnresolvedSymExpr(listElem->elem)) {
       if (name->unresolved[0] == '\0') {
         except = false;
@@ -452,9 +456,9 @@ BlockStmt* buildUseStmt(Expr* mod, std::vector<OnlyRename*>* names, bool except,
   }
 
   // Iterate through the list of names to exclude when using mod
-  for_vector(OnlyRename, listElem, *names) {
+  for_vector(PotentialRename, listElem, *names) {
     switch (listElem->tag) {
-      case OnlyRename::SINGLE:
+      case PotentialRename::SINGLE:
         if (UnresolvedSymExpr* name = toUnresolvedSymExpr(listElem->elem)) {
           namesList.push_back(name->unresolved);
         } else {
@@ -462,7 +466,7 @@ BlockStmt* buildUseStmt(Expr* mod, std::vector<OnlyRename*>* names, bool except,
           useListError(listElem->elem, except);
         }
         break;
-      case OnlyRename::DOUBLE:
+      case PotentialRename::DOUBLE:
         std::pair<Expr*, Expr*>* elem = listElem->renamed;
         // Need to check that we aren't renaming in an 'except' list
         if (except) {
@@ -485,7 +489,7 @@ BlockStmt* buildUseStmt(Expr* mod, std::vector<OnlyRename*>* names, bool except,
 
   }
 
-  UseStmt* newUse = new UseStmt(mod, &namesList, except, &renameMap,
+  UseStmt* newUse = new UseStmt(mod, rename, &namesList, except, &renameMap,
                                 privateUse);
   addModuleToSearchList(newUse, mod);
 
@@ -494,18 +498,43 @@ BlockStmt* buildUseStmt(Expr* mod, std::vector<OnlyRename*>* names, bool except,
   return buildChapelStmt(newUse);
 }
 
+BlockStmt* buildUseStmt(Expr* mod, Expr* rename,
+                        std::vector<PotentialRename*>* names, bool except,
+                        bool privateUse) {
+  if (UnresolvedSymExpr* usym = toUnresolvedSymExpr(rename)) {
+    return buildUseStmt(mod, usym->unresolved, names, except, privateUse);
+  } else {
+    USR_FATAL(rename, "incorrect expression in use statement rename, identifier expected");
+    return NULL; // should never be reached, the USR_FATAL will halt execution
+  }
+}
+
 //
 // Build a 'use' statement
 //
-BlockStmt* buildUseStmt(CallExpr* args, bool privateUse) {
+BlockStmt* buildUseStmt(std::vector<PotentialRename*>* args, bool privateUse) {
   BlockStmt* list = NULL;
 
   //
   // Iterate over the expressions being 'use'd, processing them
   //
-  for_actuals(expr, args) {
-    Expr* useArg = expr->remove();
-    list = buildUseList(useArg, list, privateUse);
+  for_vector(PotentialRename, maybeRename, *args) {
+    Expr* useArg = NULL;
+    switch (maybeRename->tag) {
+      case PotentialRename::SINGLE:
+        useArg = maybeRename->elem;
+        list = buildUseList(useArg, "", list, privateUse);
+        break;
+      case PotentialRename::DOUBLE:
+        useArg = maybeRename->renamed->first;
+        Expr* newNameExpr = maybeRename->renamed->second;
+        UnresolvedSymExpr* newName = toUnresolvedSymExpr(newNameExpr);
+        if (newName != NULL)
+          list = buildUseList(useArg, newName->unresolved, list, privateUse);
+        else
+          USR_FATAL(newNameExpr, "incorrect expression in use statement rename, identifier expected");
+        break;
+    }
   }
 
   //
@@ -518,6 +547,25 @@ BlockStmt* buildUseStmt(CallExpr* args, bool privateUse) {
   return list;
 }
 
+//
+// Build an 'import' statement
+//
+BlockStmt* buildImportStmt(Expr* mod) {
+  ImportStmt* newImport = new ImportStmt(mod, /* isPrivate =*/ true);
+  addModuleToSearchList(newImport, mod);
+
+  return buildChapelStmt(newImport);
+}
+
+//
+// Build an 'import' statement
+//
+BlockStmt* buildImportStmt(Expr* mod, const char* rename) {
+  ImportStmt* newImport = new ImportStmt(mod, rename, /* isPrivate =*/ true);
+  addModuleToSearchList(newImport, mod);
+
+  return buildChapelStmt(newImport);
+}
 
 //
 // Build a 'require' statement
@@ -561,6 +609,12 @@ BlockStmt* buildRequireStmt(CallExpr* args) {
   return list;
 }
 
+//
+// Build a queried expression like `?t`
+//
+DefExpr* buildQueriedExpr(const char *expr) {
+  return new DefExpr(new VarSymbol(&(expr[1])));
+}
 
 static void
 buildTupleVarDeclHelp(Expr* base, BlockStmt* decls, Expr* insertPoint) {
@@ -588,22 +642,6 @@ buildTupleVarDeclHelp(Expr* base, BlockStmt* decls, Expr* insertPoint) {
 BlockStmt*
 buildTupleVarDeclStmt(BlockStmt* tupleBlock, Expr* type, Expr* init) {
   VarSymbol* tmp = newTemp();
-  // MPF - without FLAG_NO_COPY, normalize adds an initCopy here,
-  // but that initCopy is unnecessary because each variable will
-  // be initialized with a tuple element (and initCopy called then).
-  // For the case where type==NULL, it was causing type mismatch
-  // errors; but when type!=NULL, normalize will change to
-  // defaultOf/assign anyway and there isn't a type issue
-  if (type == NULL) {
-    tmp->addFlag(FLAG_NO_COPY);
-
-    // additionally, don't auto-destroy tmp if the RHS
-    // is another variable (vs a call).
-    // This does not correctly handle certain no-parens calls. See
-    // tuple-string-bug.chpl and tuple-string-bug-noparens.chpl
-    if (!isCallExpr(init))
-      tmp->addFlag(FLAG_NO_AUTO_DESTROY);
-  }
   int count = 1;
   for_alist(expr, tupleBlock->body) {
     if (DefExpr* def = toDefExpr(expr)) {
@@ -665,8 +703,10 @@ buildIfStmt(Expr* condExpr, Expr* thenExpr, Expr* elseExpr) {
 
 BlockStmt*
 buildExternBlockStmt(const char* c_code) {
-  BlockStmt* ret = NULL;
-  ret = buildChapelStmt(new ExternBlockStmt(c_code));
+  BlockStmt* useSysCTypes = buildUseList(new UnresolvedSymExpr("SysCTypes"),
+                                         "", NULL, /* private = */ false);
+  useSysCTypes->insertAtTail(new ExternBlockStmt(c_code));
+  BlockStmt* ret = buildChapelStmt(useSysCTypes);
 
   // Check that the compiler supports extern blocks
   // but skip these checks for chpldoc.
@@ -737,11 +777,14 @@ CallExpr* buildPrimitiveExpr(CallExpr* exprs) {
 
 CallExpr* buildLetExpr(BlockStmt* decls, Expr* expr) {
   static int uid = 1;
-  FnSymbol* fn = new FnSymbol(astr("_let_fn", istr(uid++)));
+  FnSymbol* fn = new FnSymbol(astr("chpl_let_fn", istr(uid++)));
   fn->addFlag(FLAG_COMPILER_NESTED_FUNCTION);
   fn->addFlag(FLAG_INLINE);
   fn->insertAtTail(decls);
   fn->insertAtTail(new CallExpr(PRIM_RETURN, expr));
+  if (fWarnUnstable) {
+    USR_WARN(decls, "Let expressions are currently unstable and are expected to change in ways that will break their current uses.");
+  }
   return new CallExpr(new DefExpr(fn));
 }
 
@@ -995,7 +1038,10 @@ static BlockStmt* buildLoweredCoforall(Expr* indices,
     addByrefVars(taskBlk, byref_vars);
   }
 
-  BlockStmt* block = ForLoop::buildForLoop(indices, new SymExpr(iterator), taskBlk, true, zippered);
+  BlockStmt* block = ForLoop::buildCoforallLoop(indices,
+                                                new SymExpr(iterator),
+                                                taskBlk,
+                                                zippered);
   if (bounded) {
     if (!onBlock) { block->insertAtHead(new CallExpr("chpl_resetTaskSpawn", numTasks)); }
     block->insertAtHead(new CallExpr("_upEndCount", coforallCount, countRunningTasks, numTasks));
@@ -1352,11 +1398,23 @@ static Expr* lookupConfigValHelp(const char* cfgname, VarSymbol* var) {
 // first try looking up cfgname;
 // if it fails, try looking up currentModuleName.cfgname
 static Expr* lookupConfigVal(VarSymbol* var) {
+  extern bool parsingPrivate;
   const char* cfgname = var->name;
-  Expr* configInit = NULL;
-  configInit = lookupConfigValHelp(astr(cfgname), var);
-  if (configInit == NULL) {
-    configInit = lookupConfigValHelp(astr(currentModuleName, ".", cfgname), var);
+  Expr* configInit = lookupConfigValHelp(astr(currentModuleName, ".", cfgname), var);
+  // only public configs can be matched in an unqualified manner
+  if (!parsingPrivate) {
+    if (Expr* unqualConfigInit = lookupConfigValHelp(astr(cfgname), var)) {
+      if (configInit == NULL) {
+        configInit = unqualConfigInit;
+      } else {
+        // we may want to have the latter flag "win", but that would require
+        // storing ordering information about the order in which the flags
+        // were passed, which we don't currently maintain.  A job for a rainy
+        // day?
+        USR_FATAL_CONT(var, "config set ambiguously via '-s%s' and '-s%s.%s'",
+                       cfgname, currentModuleName, cfgname);
+      }
+    }
   }
   return configInit;
 }
@@ -1450,6 +1508,12 @@ BlockStmt* buildVarDecls(BlockStmt* stmts, const char* docs,
     stmts->blockInfoSet(NULL);
   }
 
+  // Add a PRIM_END_OF_STATEMENT.
+  if (fDocs == false) {
+    CallExpr* end = new CallExpr(PRIM_END_OF_STATEMENT);
+    stmts->insertAtTail(end);
+  }
+
   // this was allocated in buildVarDeclFlags()
   if (flags)
     delete flags;
@@ -1504,6 +1568,15 @@ DefExpr* buildClassDefExpr(const char*  name,
     ts = ct->symbol;
   } else if (strcmp("_locale", name) == 0) {
     ct = installInternalType(ct, dtLocale);
+    ts = ct->symbol;
+  } else if (strcmp("_object", name) == 0) {
+    ct = installInternalType(ct, dtObject);
+    ts = ct->symbol;
+  } else if (strcmp("_owned", name) == 0) {
+    ct = installInternalType(ct, dtOwned);
+    ts = ct->symbol;
+  } else if (strcmp("_shared", name) == 0) {
+    ct = installInternalType(ct, dtShared);
     ts = ct->symbol;
   } else {
     ts = new TypeSymbol(name, ct);
@@ -1631,7 +1704,7 @@ FnSymbol* buildLambda(FnSymbol *fn) {
    * is better to guard against this behavior then leaving someone wondering
    * why we didn't.
    */
-  if (snprintf(buffer, 100, "_chpl_lambda_%i", nextId++) >= 100) {
+  if (snprintf(buffer, 100, "chpl_lambda_%i", nextId++) >= 100) {
     INT_FATAL("Too many lambdas.");
   }
 
@@ -1829,14 +1902,14 @@ BlockStmt* buildForwardingStmt(Expr* expr) {
 // handle syntax like
 //    var instance:someType;
 //    forwarding instance only foo;
-BlockStmt* buildForwardingStmt(Expr* expr, std::vector<OnlyRename*>* names, bool except) {
+BlockStmt* buildForwardingStmt(Expr* expr, std::vector<PotentialRename*>* names, bool except) {
   std::set<const char*> namesSet;
   std::map<const char*, const char*> renameMap;
 
   // Catch the 'except *' case and turn it into 'only <nothing>'.  This
   // case will have a single UnresolvedSymExpr named "".
   if (except && names->size() == 1) {
-    OnlyRename* listElem = (*names)[0];
+    PotentialRename* listElem = (*names)[0];
     if (UnresolvedSymExpr* name = toUnresolvedSymExpr(listElem->elem)) {
       if (name->unresolved[0] == '\0') {
         except = false;
@@ -1845,9 +1918,9 @@ BlockStmt* buildForwardingStmt(Expr* expr, std::vector<OnlyRename*>* names, bool
   }
 
   // Iterate through the list of names to exclude when using mod
-  for_vector(OnlyRename, listElem, *names) {
+  for_vector(PotentialRename, listElem, *names) {
     switch (listElem->tag) {
-      case OnlyRename::SINGLE:
+      case PotentialRename::SINGLE:
         if (UnresolvedSymExpr* name = toUnresolvedSymExpr(listElem->elem)) {
           namesSet.insert(name->unresolved);
         } else {
@@ -1855,7 +1928,7 @@ BlockStmt* buildForwardingStmt(Expr* expr, std::vector<OnlyRename*>* names, bool
           useListError(listElem->elem, except);
         }
         break;
-      case OnlyRename::DOUBLE:
+      case PotentialRename::DOUBLE:
         std::pair<Expr*, Expr*>* elem = listElem->renamed;
         // Need to check that we aren't renaming in an 'except' list
         if (except) {
@@ -1893,6 +1966,12 @@ BlockStmt* buildForwardingDeclStmt(BlockStmt* stmts) {
       if (VarSymbol* var = toVarSymbol(defExpr->sym)) {
         // Append a ForwardingStmt
         BlockStmt* toAppend = buildForwardingStmt(new UnresolvedSymExpr(var->name));
+
+        // Remove the END_OF_STATEMENT marker, not used for fields
+        Expr* last = stmts->body.last();
+        if (last && isEndOfStatementMarker(stmts->body.last()))
+          last->remove();
+
         for_alist(tmp, toAppend->body) {
           stmts->insertAtTail(tmp->remove());
         }
@@ -2019,6 +2098,7 @@ buildOnStmt(Expr* expr, Expr* stmt) {
     Symbol* tmp = newTempConst();
     block->insertAtHead(new CallExpr(PRIM_MOVE, tmp, onExpr)); // evaluate the expression for side effects
     block->insertAtHead(new DefExpr(tmp));
+    block->blockInfoSet(new CallExpr(PRIM_BLOCK_ELIDED_ON, gFalse, tmp));
     return buildChapelStmt(block);
   }
 
@@ -2103,7 +2183,7 @@ buildSyncStmt(Expr* stmt) {
 
   // Note that a sync statement can contain arbitrary code,
   // including code that throws. As a result, we need to take
-  // care call _waitDynamicEndCount even if such errors are thrown.
+  // care call chpl_waitDynamicEndCount even if such errors are thrown.
 
   // This code takes the approach of wrapping the sync body with
   //
@@ -2137,7 +2217,7 @@ buildSyncStmt(Expr* stmt) {
 
   block->insertAtTail(t);
 
-  // waitDynamicEndCount might throw, but we need to clean up the
+  // chpl_waitDynamicEndCount might throw, but we need to clean up the
   // end counts either way.
 
   BlockStmt* cleanup = new BlockStmt();
@@ -2146,7 +2226,7 @@ buildSyncStmt(Expr* stmt) {
   cleanup->insertAtTail(new CallExpr(PRIM_SET_DYNAMIC_END_COUNT, endCountSave));
 
   block->insertAtTail(new DeferStmt(cleanup));
-  block->insertAtTail(new CallExpr("_waitDynamicEndCount"));
+  block->insertAtTail(new CallExpr(astr_chpl_waitDynamicEndCount));
   return block;
 }
 
@@ -2319,7 +2399,9 @@ static BlockStmt* findStmtWithTag(PrimitiveTag tag, BlockStmt* blockStmt) {
       blockStmt = NULL;
 
     // Stop if the tail is not a "real" BlockStmt (e.g. a Loop etc)
-    } else if (tail == NULL || tail->isRealBlockStmt() == false) {
+    } else if (tail == NULL ||
+               (tail->isRealBlockStmt() == false &&
+                !tail->isBlockType(PRIM_BLOCK_ELIDED_ON))) {
       blockStmt = NULL;
 
     // Step in to the block and try again

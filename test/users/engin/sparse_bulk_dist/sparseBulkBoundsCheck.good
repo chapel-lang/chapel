@@ -1,1 +1,1 @@
-sparseBulkBoundsCheck.chpl:20: error: halt reached 
+sparseBulkBoundsCheck.chpl:20: error: halt reached - Sparse domain/array index out of bounds

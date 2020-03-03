@@ -33,6 +33,9 @@ record RMyClass {
   proc init(in c:owned MyClass) {
     this.c = c;
   }
+  proc init=(ref other: RMyClass) {
+    this.c = other.c;
+  }
 }
 
 proc =(ref lhs:RMyClass, ref rhs:RMyClass) {

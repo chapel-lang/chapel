@@ -6,6 +6,7 @@
  */
 
 use Random, Time;                  // get a RNG and sleep() to introduce noise
+use IO;                            // allow use of stderr
 
 config const numProducers = 5,     // the number of producers to create
              numConsumers = 5,     // the number of consumers to create

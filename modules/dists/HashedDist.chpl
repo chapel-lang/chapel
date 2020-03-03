@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2019 Cray Inc.
+ * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -223,7 +223,7 @@ class Hashed : BaseDist {
   //
   // print out the distribution
   //
-  proc writeThis(x) {
+  proc writeThis(x) throws {
     x <~> "Hashed\n";
     x <~> "-------\n";
     x <~> "distributed using: " <~> mapper <~> "\n";
@@ -625,7 +625,7 @@ class LocUserMapAssocDom {
   //
   // how to write out this locale's indices
   //
-  proc writeThis(x) {
+  proc writeThis(x) throws {
     x.write(myInds);
   }
 
@@ -824,6 +824,7 @@ class UserMapAssocArr: AbsBaseArr {
   // how to print out the whole array, sequentially
   //
   proc dsiSerialWrite(x) {
+    use IO;
 
     var first = true;
     for locArr in locArrs {
@@ -935,7 +936,7 @@ class LocUserMapAssocArr {
   //
   // prints out this locale's piece of the array
   //
-  proc writeThis(x) {
+  proc writeThis(x) throws {
     // May want to do something like the following:
     //      on loc {
     // but it causes deadlock -- see writeThisUsingOn.chpl

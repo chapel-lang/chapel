@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2019 Cray Inc.
+ * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -665,10 +665,17 @@ initPrimitive() {
   // dst, init-expr, optional declared type
   prim_def(PRIM_INIT_VAR,   "init var",   returnInfoVoid);
 
-  // Used in a context where only a type is needed.
-  // Establishes the type of the result without
-  // generating code.
-  prim_def(PRIM_TYPE_INIT,  "type init",  returnInfoFirstDeref);
+  // indicates split initialization point of declaration
+  // The value may not be used until a later PRIM_INIT_VAR_SPLIT_INIT.
+  //
+  // dst, optional type
+  prim_def(PRIM_INIT_VAR_SPLIT_DECL, "init var split decl", returnInfoVoid, false);
+
+  // indicates split initialization point of initialization
+  // dst, init-expr, optional type
+  //
+  // if the optional type is provided, it should match PRIM_INIT_VAR_SPLIT_DECL.
+  prim_def(PRIM_INIT_VAR_SPLIT_INIT, "init var split init",   returnInfoVoid);
 
   prim_def(PRIM_REF_TO_STRING, "ref to string", returnInfoStringC);
   prim_def(PRIM_RETURN, "return", returnInfoFirst, true);
@@ -706,9 +713,13 @@ initPrimitive() {
 
   // dst, src. PRIM_ASSIGN with reference dst sets *dst
   prim_def(PRIM_ASSIGN, "=", returnInfoVoid, true);
+  // like PRIM_ASSIGN but indicates an elidided copy
+  // which means that the RHS cannot be used again after this call.
+  prim_def(PRIM_ASSIGN_ELIDED_COPY, "move=", returnInfoVoid, true);
   // like PRIM_ASSIGN but the operation can be put off until end of
   // the enclosing task or forall.
   prim_def(PRIM_UNORDERED_ASSIGN, "unordered=", returnInfoVoid, true, true);
+
   prim_def(PRIM_ADD_ASSIGN, "+=", returnInfoVoid, true);
   prim_def(PRIM_SUBTRACT_ASSIGN, "-=", returnInfoVoid, true);
   prim_def(PRIM_MULT_ASSIGN, "*=", returnInfoVoid, true);
@@ -800,9 +811,9 @@ initPrimitive() {
   // PRIM_IS_SUBTYPE arguments are (parent, sub) and it checks
   // if sub is a sub-type of parent.
   prim_def(PRIM_IS_SUBTYPE, "is_subtype", returnInfoBool);
-  // same as above but can apply to non-type
-  // this variant can be removed if normalization of type queries is updated
-  prim_def(PRIM_IS_SUBTYPE_ALLOW_VALUES, "is_subtype_allow_values", returnInfoBool);
+  // for arguments (generic, sub), checks if sub is an instantiation of generic
+  // sub can be a value as a convenience for normalization of type queries
+  prim_def(PRIM_IS_INSTANTIATION_ALLOW_VALUES, "is_instantiation_allow_values", returnInfoBool);
   // same as above but excludes same type
   prim_def(PRIM_IS_PROPER_SUBTYPE, "is_proper_subtype", returnInfoBool);
   // accepts two arguments: A class/record type expression and a param string for the field name
@@ -894,6 +905,9 @@ initPrimitive() {
   prim_def(PRIM_BLOCK_COFORALL, "coforall loop", returnInfoVoid);
   // BlockStmt::blockInfo - on block
   prim_def(PRIM_BLOCK_ON, "on block", returnInfoVoid);
+  // BlockStmt::blockInfo - elided on block
+  //   (i.e. an on block that not needed for single-locale compilation)
+  prim_def(PRIM_BLOCK_ELIDED_ON, "elided on block", returnInfoVoid);
   // BlockStmt::blockInfo - begin on block
   prim_def(PRIM_BLOCK_BEGIN_ON, "begin on block", returnInfoVoid);
   // BlockStmt::blockInfo - cobegin on block
@@ -1006,6 +1020,11 @@ initPrimitive() {
   prim_def(PRIM_IS_ABS_ENUM_TYPE, "is abstract enum type", returnInfoBool);
 
   prim_def(PRIM_IS_POD, "is pod type", returnInfoBool);
+  prim_def(PRIM_IS_COPYABLE, "is copyable type", returnInfoBool);
+  prim_def(PRIM_IS_CONST_COPYABLE, "is const copyable type", returnInfoBool);
+  prim_def(PRIM_IS_ASSIGNABLE, "is assignable type", returnInfoBool);
+  prim_def(PRIM_IS_CONST_ASSIGNABLE, "is const assignable type", returnInfoBool);
+  prim_def(PRIM_HAS_DEFAULT_VALUE, "type has default value", returnInfoBool);
 
   // This primitive allows normalize to request function resolution
   // coerce a return value to the declared return type, even though
@@ -1014,8 +1033,13 @@ initPrimitive() {
   // It coerces its first argument to the type stored in the second argument.
   prim_def(PRIM_COERCE, "coerce", returnInfoCoerce);
 
+  // Arguments to these are the actual arguments to try resolving.
+  // May or may not end up resolving the called fn.
   prim_def(PRIM_CALL_RESOLVES, "call resolves", returnInfoBool);
   prim_def(PRIM_METHOD_CALL_RESOLVES, "method call resolves", returnInfoBool);
+  // Like the previous two but also always attempts to resolve the called fn
+  prim_def(PRIM_CALL_AND_FN_RESOLVES, "call and fn resolves", returnInfoBool);
+  prim_def(PRIM_METHOD_CALL_AND_FN_RESOLVES, "method call and fn resolves", returnInfoBool);
 
   prim_def(PRIM_START_RMEM_FENCE, "chpl_rmem_consist_acquire", returnInfoVoid, true, true);
   prim_def(PRIM_FINISH_RMEM_FENCE, "chpl_rmem_consist_release", returnInfoVoid, true, true);
@@ -1054,6 +1078,13 @@ initPrimitive() {
   prim_def(PRIM_TO_NON_NILABLE_CLASS, "to non nilable class", returnInfoToNonNilable, false, false);
 
   prim_def(PRIM_NEEDS_AUTO_DESTROY, "needs auto destroy", returnInfoBool, false, false);
+
+  // Indicates the end of a statement. This is important for the
+  // deinitialization location for some variables.
+  // Any arguments are SymExprs to user variables that should be alive until
+  // after this primitive.
+  prim_def(PRIM_END_OF_STATEMENT, "end of statement", returnInfoVoid, false, false);
+
   prim_def(PRIM_AUTO_DESTROY_RUNTIME_TYPE, "auto destroy runtime type", returnInfoVoid, false, false);
 
   // Accepts 3 arguments:

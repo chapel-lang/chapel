@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2019 Cray Inc.
+ * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -21,7 +21,7 @@
 #define _PARSER_H_
 
 class BlockStmt;
-class UseStmt;
+class VisibilityStmt;
 
 #include "symbol.h"
 
@@ -49,7 +49,7 @@ void               setupModulePaths();
 void               addFlagModulePath(const char* newpath);
 
 void               addModuleToParseList(const char* name,
-                                        UseStmt*    newUse);
+                                        VisibilityStmt* newUse);
 
 BlockStmt*         parseString(const char* string,
                                const char* filename,

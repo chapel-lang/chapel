@@ -37,7 +37,8 @@ else:
 
 # Check Serial section as a whole
 # Should be a 1:1 mapping of each other
-good_serial = [ 'Hello, World!', 
+good_serial = [ "learnChapelInYMinutes.chpl:24: warning: This file-scope code is outside of any explicit module declarations (e.g., module OurModule), so an implicit module named 'learnChapelInYMinutes' is being introduced to contain the file's contents.",
+                'Hello, World!', 
                 'There are 3 commas (",") in this line of code', 
                 'This goes to standard output, just like plain writeln() does',
                 '-123, 777, false',
@@ -140,9 +141,9 @@ good_serial = [ 'Hello, World!',
                 'MyClass deinitializer called (-1, true)',
                 '{memberInt = -1, memberBool = true}',
                 '{memberInt = 0, memberBool = true}',
+                'MyClass deinitializer called (0, true)',
                 '{memberInt = 9, memberBool = true}',
                 'MyClass deinitializer called (9, true)',
-                'MyClass deinitializer called (0, true)',
                 'MyClass deinitializer called (-1, true)',
                 'MyClass deinitializer called (10, true)',
                 '2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 11.0, ',

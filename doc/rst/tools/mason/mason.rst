@@ -41,6 +41,21 @@ To initialize a new mason package, run the ``mason new [ package name ] [ option
 
 This creates a git repository by default, unless ``--no-vcs`` is included.
 
+Mason packages can also be initialized using the ``mason init [options] [directory path]`` or 
+``mason init [options]`` command outside or inside the project directory respectively. 
+
+For example, for an existing directory named MyPackage, 
+    
+  .. code-block:: sh
+    
+    mason init MyPackage 
+
+    # OR 
+
+    cd MyPackage
+    mason init  
+
+
 The package will have the following hierarchy::
 
   MyPackage/

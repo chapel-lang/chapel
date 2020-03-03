@@ -396,10 +396,32 @@ all:
     - Stop pinning the progress thread to the last CPU (#13423)
   07/16/19:
     - text: Use a blocking progress thread for gasnet-infiniband (#13473)
-      config: 16 node CS
+      config: 16-node-cs
   08/08/19:
     - text: Machine upgraded to CLE7
       config: 16 node XC
+  10/02/19:
+    - text: system update
+      config: 16 node XC
+  10/10/19:
+    - text: Optimize unorderedCopy for types larger than 8 bytes (#14255)
+      config: 16 node XC
+  12/04/19:
+    - text: Warm up the runtime before entering user code (#14567)
+      config: 16 node XC, 16-node-cs
+  01/17/20:
+    - Adjust point of deinitialization based on expiring value analysis (#14691)
+  02/07/20:
+    - text: machine update
+      config: chapcs
+  02/19/20:
+    - text:  Serialize calls to gasnet_AMPoll for IBV/Aries (#14912)
+      config: 16 node XC, 16-node-cs
+  02/21/20:
+    - text: Poll for AMs on every call to gasnet_AMPoll for Aries (#14938)
+      config: 16 node XC
+  02/28/20:
+    - Add a spinlock to the atomic runtime interface. (#15015)
 
 
 AllCompTime:
@@ -438,6 +460,10 @@ arrayPerformance-1d:
 arrayPerformance-2d:
   10/21/16:
     - Improvements to scalarReplace, refPropagation and copyPropagation (#4761)
+
+array-assign-get:
+  11/13/19:
+    - Improve performance for large transfers under --cache-remote (#14352)
 
 array-of-strings-read:
   04/14/16:
@@ -561,6 +587,12 @@ compSampler-timecomp: &timecomp-base
     - Fix compiler performance issues in nilChecking (#11396)
   08/30/19:
     - Add factory functions for string and bytes (#13914)
+  11/05/19:
+    - Remove standardModuleSet and all code involving it from the compiler (#14270)
+  11/20/19:
+    - Simplify visible function determination of use visibility (#14481)
+  02/19/20:
+    - Improve handling for tryResolve and errors to handle a bad init= (#14887)
 
 
 cg:
@@ -598,10 +630,46 @@ create-views:
     - Improve timing and stability of the create-views performance test (#11609)
   05/03/19:
     - Govern slice expressions by slicing domain (#12931)
+  11/27/19:
+    - Close some multilocale distribution and privatization memleaks (#14510)
+  12/10/19:
+    - Guard privatization checks with param flag (#14604)
 
 cs-resize:
   03/05/19:
     - Add radix sort to Sort package module (#12452)
+
+distCreate-arrays-deinit.cc-perf: &distCreate-base
+  02/12/20:
+    - Use --no-early-deinit in array creation/destruction benchmark (#14876)
+distCreate-arrays-init.cc-perf:
+  <<: *distCreate-base
+distCreate-domains-deinit.cc-perf:
+  <<: *distCreate-base
+distCreate-domains-deinit.ml-perf:
+  <<: *distCreate-base
+distCreate-domains-init.cc-perf:
+  <<: *distCreate-base
+distCreate-domains-init.ml-perf:
+  <<: *distCreate-base
+distCreate-large-deinit.ml-perf:
+  <<: *distCreate-base
+distCreate-large-init.ml-perf:
+  <<: *distCreate-base
+distCreate-small-deinit.ml-perf:
+  <<: *distCreate-base
+distCreate-small-init.ml-perf:
+  <<: *distCreate-base
+distCreate-tiny-deinit.ml-perf:
+  <<: *distCreate-base
+distCreate-tiny-init.ml-perf:
+  <<: *distCreate-base
+
+domainAssignment-similar: &domainAssign-base
+  10/26/19:
+    - Add optimized COO->CSR/CSC sparse domain assignment (#14272)
+domainAssignment-dissimilar:
+  <<: *domainAssign-base
 
 dgemm.128:
   09/06/13:
@@ -1119,6 +1187,33 @@ memleaksfull:
     - Close memory leaks in bytes type and tests (#13660)
   08/09/19:
     - fix another deletion size mismatch error (introduced leaks) (#13671)
+  09/26/19:
+    - Fix memory leak caused by use of first class functions (#14163)
+  10/17/19:
+    - Rework several sparse tests (#14283)
+  10/22/19:
+    - Starting running mason as part of memleak testing
+  11/01/19:
+    - Fix a leak in masonModify (#14375)
+  11/12/19:
+    - Move the essentials of IO.chpl into ChapelIO (#14145)
+  12/04/19:
+    - Access param, type fields without postfix-! (#14549)
+  12/06/19:
+    - Close user-level leaks in some new tests (#14586)
+    - Fix quicksort to work with owned array elements (#14204)
+  12/10/19:
+    - Allow messages in new Errors (#14545)
+  01/09/20:
+    - Resolve memory leaks with quicksort with array-of-arrays (#14635)
+  01/29/20:
+    - Propagate user thrown errors out of IO routines (#14739)
+  01/30/20:
+    - Adjust split init to allow some try, if with returns (#14814)
+  02/20/20:
+    - Use escaped strings in paths (#14907)
+  02/26/20:
+    - Closes memory leaks introduced by 14907 (#14959)
 
 meteor:
   12/18/13:
@@ -1300,6 +1395,8 @@ ra:
 ra.ml-perf:
   09/19/17:
     - machine changes, cannot reproduce old numbers
+  02/28/20:
+    - Use localAccess for ra-on (#15001)
 
 ra-atomics.ml-perf:
   10/03/17:
@@ -1324,6 +1421,10 @@ regexdna: &regexdna-base
     - Free strings leaked by Regex.subn() / qio_regexp_replace() (#6509)
   08/09/19:
     - Change string.length to measure in codepoints (#13675)
+  12/17/19:
+    - Add UTF8 validation for strings (#14384)
+  01/23/20:
+    - Add support for escaping non-UTF8 sequences in strings (#14743)
 regexdna-redux:
   <<: *regexdna-base
 regexdna-submitted:
@@ -1340,6 +1441,10 @@ remote-record-read-copy:
     - Invoke 'init' directly for init-var instead of chpl__initCopy (#11629)
   03/07/19:
     - Avoid init= for POD types (#12439)
+
+remote-unordered-gets.ml-perf:
+  02/04/20:
+    - Add unordered GET/PUT support in comm=ofi. (#14810)
 
 return-array-8: &return-array-base
   03/04/17:
@@ -1378,6 +1483,8 @@ revcomp: &revcomp-base
     - Turn "array-as-vec" deprecation warnings on (#13999)
   09/10/19:
     - Restore reverse-complement performance with qio hint (#14045)
+  02/04/20:
+    - Improve const/ref this decorators for list methods (#14809)
 revcomp-submitted:
   <<: *revcomp-base
 
@@ -1402,6 +1509,14 @@ search:
     - Tuple iteration yields (const) refs (#11866)
   09/04/19:
     - Inline small wrappers in string and bytes implementations (#13971)
+  10/25/19:
+    - Support the Chapel bytes type in single locale Python interop (#14310)
+  11/01/19:
+    - Avoid 'use'ing ByteBufferHelpers ExportWrappers (#14377)
+  11/05/19:
+    - Remove standardModuleSet and all code involving it from the compiler (#14270)
+  12/10/19:
+    - Allow messages in new Errors (#14545)
 
 spectralnorm:
   01/21/15:
@@ -1495,6 +1610,8 @@ temporary-copies:
     - Add the byteIndex type and its support, make string.find() return it, and make codepoint indexing/iteration the default (#12899)
   08/01/19:
     - Take advantage of known UTF-8 encoding to speed up strings (#13580)
+  02/20/20:
+    - Add 1st draft of copy elision (#14903)
 
 twopt-paircount:
   06/22/17:
@@ -1553,34 +1670,6 @@ time-write:
   03/05/15:
     - no strings with externs update
 
-timeVectorArray:
-  03/05/16:
-    - implemented doubling/halving for array-as-vec (#3380) (no timing from 4th)
-  03/09/16:
-    - increased array-as-vec problem size (#3422)
-  05/28/16:
-    - upgrade jemalloc to 4.2.0 (#3919)
-  01/31/17:
-    - upgrade jemalloc to 4.4.0 (#5278)
-  07/26/17:
-    - Allow domains to implement specialized assignment (#6722)
-  09/13/17:
-    - Support arrays as args to array.{push_front,push_back,insert} (#7180)
-  09/16/17:
-    - Resolve timeVectorArray regressions (#7333)
-  09/20/17:
-    - Resolve push_back / pop_front regressions w/ inline (#7397)
-  12/05/17:
-    - Enforce qualified refs after inlining (#7906)
-  06/22/18:
-    - Make 'for' loop in dsiReallocate parallel (#9895)
-  08/17/18:
-    - Add a new dsiReallocate that is aware of allocated size (#10793)
-  09/07/18:
-    - Fix performance regression in pop_front/pop_back from PR 10793 (#11017)
-  04/23/19:
-    - Denormalize the test in CondStmts (#12867)
-
 views-forall-iter:
   10/12/17:
     - Switch from these(tag) to foralls for some standalone iters (#7578)
@@ -1620,3 +1709,44 @@ distAdaptativeWS:
     - Bring in upstream fixes for qthreads sleep interception bug (#5446)
   03/04/17:
     - Use Time.sleep so that these tests play nice with qthreads (#5483)
+
+
+# Compiler performance annotations
+compilerAndTestingStats: &compiler-perf-base
+  07/25/19:
+    - Add two-array radix and sample sorts and a distributed sort (#13347)
+  07/30/19:
+    - Undecorated classes have generic management (#13447)
+  07/31/19:
+    - Add record _bytes to the internal modules (#13519)
+  08/25/19:
+    - Enable compile-time nil-checking for internal modules (#13843)
+  08/30/19:
+    - Add factory functions for string and bytes (#13914)
+  08/31/19:
+    - Require 'use' of top level modules rather than lexical scoping (#13930)
+  09/06/19:
+    - Turn "array-as-vec" deprecation warnings on (#13999)
+  10/30/19:
+    - Switched test machine
+  11/05/19:
+    - Remove standardModuleSet and all code involving it from the compiler (#14270)
+  11/20/19:
+    - Simplify visible function determination of use visibility (#14481)
+  11/21/19:
+    - Only check visibility once per scope instead of once per private function (#14492)
+  12/04/19:
+    - pinned test machine for linux64, --fast, and --no-local
+  12/10/19:
+    - Switched test machine for --fast and --no-local
+  12/13/19:
+    - Switched test machine for --no-local
+
+allTotalTime:
+  <<: *compiler-perf-base
+allPasses:
+  <<: *compiler-perf-base
+topTotalTime:
+  <<: *compiler-perf-base
+topPasses:
+  <<: *compiler-perf-base

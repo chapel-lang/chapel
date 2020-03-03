@@ -1,1 +1,1 @@
-reduceAtomics.chpl:12: error: Cannot directly add atomic variables
+reduceAtomics.chpl:12: error: + reduce cannot be used on values of the type AtomicT(int(64))

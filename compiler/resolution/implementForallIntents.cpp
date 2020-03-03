@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2019 Cray Inc.
+ * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -602,6 +602,12 @@ static ShadowVarSymbol* create_IN_Parentvar(ForallStmt* fs,
     INPovar = inptemp;
   }
 
+  // Insert a move in the init block for this shadow variable
+  // to enable other passes to understand the data flow. This
+  // move is not needed in forall lowering.
+  CallExpr* move = new CallExpr(PRIM_MOVE, INP, INPovar);
+  INP->initBlock()->insertAtTail(move);
+
   INP->outerVarSE = new SymExpr(INPovar);
   insert_help(INP->outerVarSE, NULL, INP);
 
@@ -830,13 +836,10 @@ static void doImplicitShadowVars(ForallStmt* fs, BlockStmt* block,
                                  SymbolMap& outer2shadow)
 {
   std::vector<SymExpr*> symExprs;
-  collectSymExprs(block, symExprs);
+  collectLcnSymExprs(block, symExprs);
 
   for_vector(SymExpr, se, symExprs) {
     Symbol* sym = se->symbol();
-
-    if (!isLcnSymbol(sym)) // quick filter
-      continue;
 
     if (Symbol* sub = outer2shadow.get(sym)) { // already know how to handle?
       if (sub != markPruned)
@@ -1108,9 +1111,8 @@ void convertFieldsOfRecordThis(FnSymbol* fn) {
   std::map<Symbol*, ArgSymbol*> fieldArgs;
 
   std::vector<SymExpr*> symExprs;
-  collectSymExprs(fn, symExprs);
+  collectSymExprsFor(fn, thisArg, symExprs);
   for_vector(SymExpr, se, symExprs)
-   if (se->symbol() == thisArg)
     if (Symbol* fieldSym = isFieldAccess(thisType, se))
      {
        ArgSymbol*& fieldArg = fieldArgs[fieldSym];

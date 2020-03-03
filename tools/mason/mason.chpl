@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2019 Cray Inc.
+ * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -35,6 +35,7 @@ use FileSystem;
 use MasonSystem;
 use MasonExternal;
 use MasonPublish;
+use MasonInit;
 
 /*
 
@@ -78,6 +79,7 @@ proc main(args: [] string) throws {
     }
     select (args[1]) {
       when 'new' do masonNew(args);
+      when 'init' do masonInit(args);
       when 'add' do masonModify(args);
       when 'rm' do masonModify(args);
       when 'build' do masonBuild(args);

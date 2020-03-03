@@ -21,7 +21,7 @@ var x = new shared C(1);
 var y = new shared C(2, x);
 
 var y2 = y.clone();
-var x2 = y.next.clone();
+var x2 = y.next!.clone();
 
 writeln(x);
 writeln(x2);

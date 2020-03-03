@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2019 Cray Inc.
+ * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -112,12 +112,18 @@ public:
 
   bool                        setFirstGenericField();
 
-  AggregateType*              getInstantiation(Symbol* sym, int index, Expr* insnPoint = NULL);
+  AggregateType*              getInstantiation(Symbol* sym, int index,
+                                               Expr* insnPoint);
 
   AggregateType*              getInstantiationParent(AggregateType* pt);
 
-  AggregateType*              generateType(CallExpr* call, const char* callString);
-  AggregateType*              generateType(SymbolMap& subs, CallExpr* call, const char* callString, bool evalDefaults, Expr* insnPoint = NULL);
+  AggregateType*              generateType(CallExpr* call,
+                                           const char* callString);
+  AggregateType*              generateType(SymbolMap& subs,
+                                           CallExpr* call,
+                                           const char* callString,
+                                           bool evalDefaults,
+                                           Expr* insnPoint = NULL);
   void                        resolveConcreteType();
 
   bool                        isInstantiatedFrom(const AggregateType* base)
@@ -280,7 +286,7 @@ extern AggregateType* dtObject;
 extern AggregateType* dtBytes;
 extern AggregateType* dtString;
 extern AggregateType* dtLocale;
-
-DefExpr* defineObjectClass();
+extern AggregateType* dtOwned;
+extern AggregateType* dtShared;
 
 #endif

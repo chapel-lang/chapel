@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2019 Cray Inc.
+ * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -30,10 +30,14 @@ module LocaleModel {
 
   use LocaleModelHelpNUMA;
 
+  private use IO, SysCTypes;
+
   require "hbwmalloc.h", "-lmemkind";
 
   extern proc hbw_check_available():c_int;
   extern proc hbw_malloc(size:size_t):c_void_ptr;
+  extern proc hbw_posix_memalign(out memptr:c_void_ptr,
+                                 alignment:size_t, size:size_t):c_int;
   extern proc hbw_calloc(nmemb:size_t, size:size_t):c_void_ptr;
   extern proc hbw_realloc(ptr:c_void_ptr, size:size_t):c_void_ptr;
   extern proc hbw_free(ptr:c_void_ptr);
@@ -147,9 +151,9 @@ module LocaleModel {
   export
   proc chpl_localeModel_sublocToExecutionSubloc(full_subloc:chpl_sublocID_t)
   {
-    extern proc chpl_task_getNumSublocales(): int(32);
+    extern proc chpl_topo_getNumNumaDomains(): c_int;
     const (whichNuma, memoryKind) =
-      unpackSublocID(chpl_task_getNumSublocales(),
+      unpackSublocID(chpl_topo_getNumNumaDomains(),
                      full_subloc:chpl_sublocID_t);
     return whichNuma:chpl_sublocID_t;
   }
@@ -158,8 +162,8 @@ module LocaleModel {
   proc chpl_localeModel_sublocMerge(full_subloc:chpl_sublocID_t,
                            execution_subloc:chpl_sublocID_t): chpl_sublocID_t
   {
-    extern proc chpl_task_getNumSublocales(): int(32);
-    var nNumaDomains:int = chpl_task_getNumSublocales();
+    extern proc chpl_topo_getNumNumaDomains(): c_int;
+    var nNumaDomains:int = chpl_topo_getNumNumaDomains();
     var memoryKind:int;
     //
     // Strip the memory kind out of the full_subloc and attach it
@@ -207,13 +211,13 @@ module LocaleModel {
     }
 
     proc init(_sid, _parent) {
-      extern proc chpl_task_getNumSublocales(): int(32);
+      extern proc chpl_topo_getNumNumaDomains(): c_int;
 
       super.init(_parent);
 
       sid = _sid: chpl_sublocID_t;
       const (whichNuma, kind) =
-        unpackSublocID(chpl_task_getNumSublocales(), sid);
+        unpackSublocID(chpl_topo_getNumNumaDomains(), sid);
       var kindstr:string;
       if kind == memoryKindDDR() then
         kindstr = "DDR";
@@ -222,7 +226,7 @@ module LocaleModel {
       mlName = kindstr+whichNuma:string;
     }
 
-    override proc writeThis(f) {
+    override proc writeThis(f) throws {
       parent!.writeThis(f);
       f <~> '.'+mlName;
     }
@@ -274,8 +278,8 @@ module LocaleModel {
     }
 
     proc init(_sid, _parent) {
-      extern proc chpl_task_getNumSublocales(): int(32);
-      var numSublocales = chpl_task_getNumSublocales();
+      extern proc chpl_topo_getNumNumaDomains(): c_int;
+      var numSublocales = chpl_topo_getNumNumaDomains();
 
       super.init(_parent);
 
@@ -308,7 +312,7 @@ module LocaleModel {
       delete hbm;
     }
 
-    override proc writeThis(f) {
+    override proc writeThis(f) throws {
       parent!.writeThis(f);
       f <~> '.'+ndName;
     }
@@ -434,7 +438,7 @@ module LocaleModel {
     //- Implementation (private)
     //-
     proc setup() {
-      helpSetupLocaleNUMA(this, local_name, numSublocales);
+      helpSetupLocaleNUMA(this, local_name, numSublocales, NumaDomain);
 
       ddr = new unmanaged MemoryLocale(c_sublocid_any, this);
 
@@ -498,7 +502,7 @@ module LocaleModel {
     override proc chpl_name() return local_name();
     proc local_name() return "rootLocale";
 
-    override proc writeThis(f) {
+    override proc writeThis(f) throws {
       f <~> name;
     }
 
@@ -553,15 +557,15 @@ module LocaleModel {
   //
   private inline
   proc allocatingInHbmSublocale(): bool {
-    extern proc chpl_task_getNumSublocales(): int(32);
-    return chpl_task_getRequestedSubloc() >= chpl_task_getNumSublocales();
+    extern proc chpl_topo_getNumNumaDomains(): c_int;
+    return chpl_task_getRequestedSubloc() >= chpl_topo_getNumNumaDomains();
   }
 
   private inline
   proc addrIsInHbm(addr:c_void_ptr): bool {
     extern proc chpl_topo_getMemLocality(p:c_void_ptr): chpl_sublocID_t;
-    extern proc chpl_task_getNumSublocales(): int(32);
-    return chpl_topo_getMemLocality(addr) >= chpl_task_getNumSublocales();
+    extern proc chpl_topo_getNumNumaDomains(): c_int;
+    return chpl_topo_getMemLocality(addr) >= chpl_topo_getNumNumaDomains();
   }
 
   export
@@ -574,9 +578,12 @@ module LocaleModel {
   // The allocator pragma is used by scalar replacement.
   pragma "allocator"
   pragma "locale model alloc"
+  pragma "always propagate line file info"
   proc chpl_here_alloc(size:int(64), md:chpl_mem_descInt_t): c_void_ptr {
+    pragma "fn synchronization free"
     pragma "insert line file info"
-      extern proc chpl_mem_alloc(size:size_t, md:chpl_mem_descInt_t) : c_void_ptr;
+    extern proc chpl_mem_alloc(size:size_t, md:chpl_mem_descInt_t) : c_void_ptr;
+
     if allocatingInHbmSublocale() then
       return hbw_malloc(size.safeCast(size_t));
     else
@@ -584,9 +591,11 @@ module LocaleModel {
   }
 
   pragma "allocator"
+  pragma "always propagate line file info"
   proc chpl_here_alloc(size:integral, md:chpl_mem_descInt_t): c_void_ptr {
+    pragma "fn synchronization free"
     pragma "insert line file info"
-      extern proc chpl_mem_alloc(size:size_t, md:chpl_mem_descInt_t) : c_void_ptr;
+    extern proc chpl_mem_alloc(size:size_t, md:chpl_mem_descInt_t) : c_void_ptr;
     if allocatingInHbmSublocale() then
       return hbw_malloc(size.safeCast(size_t));
     else
@@ -594,9 +603,35 @@ module LocaleModel {
   }
 
   pragma "allocator"
-  proc chpl_here_calloc(size:integral, number:int, md:chpl_mem_descInt_t): c_void_ptr {
+  pragma "always propagate line file info"
+  proc chpl_here_aligned_alloc(alignment:integral, size:integral, md:chpl_mem_descInt_t): c_void_ptr {
+    pragma "fn synchronization free"
     pragma "insert line file info"
-      extern proc chpl_mem_calloc(number:size_t, size:size_t, md:chpl_mem_descInt_t) : c_void_ptr;
+    extern proc chpl_mem_memalign(alignment:size_t, size:size_t, md:chpl_mem_descInt_t) : c_void_ptr;
+
+    if allocatingInHbmSublocale() {
+      var ptr:c_void_ptr = nil;
+      var rc = hbw_posix_memalign(ptr,
+                                  alignment.safeCast(size_t),
+                                  size.safeCast(size_t));
+      if rc != 0 then
+        halt("hbw_posix_memalign allocation call failed");
+      return ptr;
+    } else {
+      return chpl_mem_memalign(alignment.safeCast(size_t),
+                               size.safeCast(size_t),
+                               md + chpl_memhook_md_num());
+    }
+  }
+
+
+  pragma "allocator"
+  pragma "always propagate line file info"
+  proc chpl_here_calloc(size:integral, number:int, md:chpl_mem_descInt_t): c_void_ptr {
+    pragma "fn synchronization free"
+    pragma "insert line file info"
+    extern proc chpl_mem_calloc(number:size_t, size:size_t, md:chpl_mem_descInt_t) : c_void_ptr;
+
     if allocatingInHbmSublocale() then
       return hbw_calloc(number.safeCast(size_t), size.safeCast(size_t));
     else
@@ -604,9 +639,12 @@ module LocaleModel {
   }
 
   pragma "allocator"
+  pragma "always propagate line file info"
   proc chpl_here_realloc(ptr:c_void_ptr, size:integral, md:chpl_mem_descInt_t): c_void_ptr {
+    pragma "fn synchronization free"
     pragma "insert line file info"
-      extern proc chpl_mem_realloc(ptr:c_void_ptr, size:size_t, md:chpl_mem_descInt_t) : c_void_ptr;
+    extern proc chpl_mem_realloc(ptr:c_void_ptr, size:size_t, md:chpl_mem_descInt_t) : c_void_ptr;
+
     const useHbm = if ptr == nil
                    then allocatingInHbmSublocale()
                    else addrIsInHbm(ptr);
@@ -616,9 +654,12 @@ module LocaleModel {
       return chpl_mem_realloc(ptr, size.safeCast(size_t), md + chpl_memhook_md_num());
   }
 
+  pragma "always propagate line file info"
   proc chpl_here_good_alloc_size(min_size:integral): int {
+    pragma "fn synchronization free"
     pragma "insert line file info"
-      extern proc chpl_mem_good_alloc_size(min_size:size_t) : size_t;
+    extern proc chpl_mem_good_alloc_size(min_size:size_t) : size_t;
+
     // memkind doesn't seem to provide one of these, so we'll
     // just get the # from the default allocator and hope for the best.
     // That's not totally crazy since they both might use jemalloc.
@@ -626,11 +667,15 @@ module LocaleModel {
   }
 
   pragma "locale model free"
+  pragma "always propagate line file info"
   proc chpl_here_free(ptr:c_void_ptr): void {
     if ptr == nil then
       return;
+
+    pragma "fn synchronization free"
     pragma "insert line file info"
-      extern proc chpl_mem_free(ptr:c_void_ptr) : void;
+    extern proc chpl_mem_free(ptr:c_void_ptr) : void;
+
     if addrIsInHbm(ptr) then
       hbw_free(ptr);
     else

@@ -3,7 +3,7 @@ use AccumStencilDist;
 
 use Configs;
 use Potential;
-use Util;
+public use Util;
 use EAM, LJ;
 
 record SpeciesData {
@@ -35,6 +35,11 @@ record Box {
   iter readAtoms() const ref {
     for i in 1..count do yield atoms[i];
   }
+}
+
+proc Box.init=(const ref other: Box) {
+  this.count = other.count;
+  this.atoms = other.atoms;
 }
 
 proc =(ref A : Box, B : Box) {

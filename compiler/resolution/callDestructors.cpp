@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2019 Cray Inc.
+ * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -193,8 +193,7 @@ bool ReturnByRef::isTransformableFunction(FnSymbol* fn)
     else if (fn->hasFlag(FLAG_EXTERN)       == true)
       retval = false;
 
-    // Noakes: 2016/02/24.  Only "user defined records" for now
-    else if (isUserDefinedRecord(type)      == true)
+    else if (typeNeedsCopyInitDeinit(type)  == true)
       retval = true;
 
     else
@@ -206,7 +205,7 @@ bool ReturnByRef::isTransformableFunction(FnSymbol* fn)
   // Reasonable alternative: update insertCopiesForYields to handle
   // yielding a PRIM_DEREF or yielding a reference argument.
   if (fn->hasFlag(FLAG_TASK_FN_FROM_ITERATOR_FN)) {
-    if (isUserDefinedRecord(fn->iteratorInfo->yieldedType))
+    if (typeNeedsCopyInitDeinit(fn->iteratorInfo->yieldedType))
       retval = true;
   }
 
@@ -314,31 +313,44 @@ void ReturnByRef::updateAssignmentsFromRefArgToValue(FnSymbol* fn)
 
       if (lhs != NULL && rhs != NULL)
       {
-        VarSymbol* symLhs = toVarSymbol(lhs->symbol());
-        ArgSymbol* symRhs = toArgSymbol(rhs->symbol());
+        // check if the lhs is actually the return/yield symbol
+        if(lhs->symbol()->hasFlag(FLAG_RVV) ||
+           lhs->symbol()->hasFlag(FLAG_YVV)) {
+          VarSymbol* symLhs = toVarSymbol(lhs->symbol());
+          ArgSymbol* symRhs = toArgSymbol(rhs->symbol());
 
-        if (symLhs != NULL && symRhs != NULL)
-        {
-          if (isUserDefinedRecord(symLhs->type) == true &&
-              symRhs->type                      == symLhs->type)
+          if (symLhs != NULL && symRhs != NULL)
           {
-            bool fromInIntent =
-              (symRhs->originalIntent == INTENT_IN ||
-               symRhs->originalIntent == INTENT_CONST_IN);
-
-            if (symLhs->hasFlag(FLAG_ARG_THIS)   == false &&
-                symLhs->hasFlag(FLAG_NO_COPY)    == false &&
-                !fromInIntent &&
-                (symRhs->intent == INTENT_REF ||
-                 symRhs->intent == INTENT_CONST_REF))
+            // check if rhs is actually a formal
+            bool rhsIsFormal = false;
+            for_formals(formal, fn) {
+              if(formal == symRhs) {
+                rhsIsFormal = true;
+                break;
+              }
+            }
+            if (rhsIsFormal &&
+                typeNeedsCopyInitDeinit(symLhs->type) &&
+                symRhs->type == symLhs->type)
             {
-              SET_LINENO(move);
+              bool fromInIntent =
+                (symRhs->originalIntent == INTENT_IN ||
+                 symRhs->originalIntent == INTENT_CONST_IN);
 
-              CallExpr* autoCopy = NULL;
+              if (symLhs->hasFlag(FLAG_ARG_THIS)   == false &&
+                  symLhs->hasFlag(FLAG_NO_COPY)    == false &&
+                  !fromInIntent &&
+                  (symRhs->intent == INTENT_REF ||
+                   symRhs->intent == INTENT_CONST_REF))
+              {
+                SET_LINENO(move);
 
-              rhs->remove();
-              autoCopy = new CallExpr(getAutoCopyForType(symRhs->type), rhs);
-              move->insertAtTail(autoCopy);
+                CallExpr* autoCopy = NULL;
+
+                rhs->remove();
+                autoCopy = new CallExpr(getAutoCopyForType(symRhs->type), rhs);
+                move->insertAtTail(autoCopy);
+              }
             }
           }
         }
@@ -385,7 +397,7 @@ void ReturnByRef::updateAssignmentsFromRefTypeToValue(FnSymbol* fn)
         if (varLhs != NULL && symRhs != NULL)
         {
           INT_ASSERT(varLhs->isRef() == false && symRhs->isRef());
-          if (isUserDefinedRecord(varLhs->type) == true &&
+          if (typeNeedsCopyInitDeinit(varLhs->type) &&
               !varLhs->hasFlag(FLAG_NO_COPY))
           {
 
@@ -454,9 +466,9 @@ void ReturnByRef::updateAssignmentsFromModuleLevelValue(FnSymbol* fn)
 
         if (symLhs != NULL && symRhs != NULL)
         {
-          if (isUserDefinedRecord(symLhs->type) == true &&
-              symLhs->hasFlag(FLAG_NO_COPY)     == false &&
-              symRhs->type                      == symLhs->type)
+          if (typeNeedsCopyInitDeinit(symLhs->type) &&
+              !symLhs->hasFlag(FLAG_NO_COPY) &&
+              symRhs->type == symLhs->type)
           {
             DefExpr* def = symRhs->defPoint;
 
@@ -746,7 +758,7 @@ bool isCallExprTemporary(Expr* initFrom) {
 }
 
 bool doesCopyInitializationRequireCopy(Expr* initFrom) {
-  if (isUserDefinedRecord(initFrom->getValType())) {
+  if (typeNeedsCopyInitDeinit(initFrom->getValType())) {
     // RHS is a reference, need a copy
     if (initFrom->isRef())
       return true;
@@ -765,7 +777,7 @@ bool doesCopyInitializationRequireCopy(Expr* initFrom) {
 }
 
 bool doesValueReturnRequireCopy(Expr* initFrom) {
-  if (isUserDefinedRecord(initFrom->getValType())) {
+  if (typeNeedsCopyInitDeinit(initFrom->getValType())) {
     // RHS is a reference, need a copy
     if (initFrom->isRef())
       return true;
@@ -1027,7 +1039,7 @@ static void insertCopiesForYields()
     // and the yielded value is not an expression temporary
     //  (e.g. for yield someCall(), the result of someCall() doesn't need copy)
     // then we need to copy initialize into the yielded value.
-    if (isUserDefinedRecord(yieldedSym->getValType()) &&
+    if (typeNeedsCopyInitDeinit(yieldedSym->getValType()) &&
         iteratorRetTag == RET_VALUE) {
 
       SymExpr* foundSe = findSourceOfYield(call);
@@ -1065,7 +1077,7 @@ static void insertCopiesForYields()
 
 // Function resolution adds "dummy" initCopy functions for types
 // that cannot be copied. These "dummy" initCopy functions are marked
-// with the flag FLAG_ERRONEOUS_INITCOPY. This pattern enables
+// with the flag FLAG_ERRONEOUS_COPY. This pattern enables
 // the compiler to continue to operate with its current structure
 // even for types that cannot be copied. In particular, this pass
 // has the ability to remove initCopy calls in some cases.
@@ -1074,33 +1086,38 @@ static void insertCopiesForYields()
 // flag is ever called and raises an error if so.
 static void checkForErroneousInitCopies() {
 
+  std::map<FnSymbol*, const char*> errors;
+
+  // Store errors in local map
+  forv_Vec(FnSymbol, fn, gFnSymbols) {
+    if (fn->hasFlag(FLAG_ERRONEOUS_COPY)) {
+      // Store the error in the local map
+      if (const char* err = getErroneousCopyError(fn))
+        errors[fn] = err;
+    }
+  }
+
   // Mark initCopy/autoCopy functions calling functions marked with
-  // FLAG_ERRONEOUS_INITCOPY/FLAG_ERRONEOUS_AUTOCOPY with the same
+  // FLAG_ERRONEOUS_COPY with the same
   // flag. This situation can come up with the compiler-generated
   // tuple copy functions.
   bool changed;
   do {
     changed = false;
     forv_Vec(FnSymbol, fn, gFnSymbols) {
-      if (fn->hasFlag(FLAG_ERRONEOUS_INITCOPY)) {
+      if (fn->hasFlag(FLAG_ERRONEOUS_COPY)) {
         for_SymbolSymExprs(se, fn) {
           if (FnSymbol* callInFn = se->getFunction()) {
-            if (callInFn->hasFlag(FLAG_INIT_COPY_FN) &&
-                !callInFn->hasFlag(FLAG_ERRONEOUS_INITCOPY)) {
-              callInFn->addFlag(FLAG_ERRONEOUS_INITCOPY);
+            bool inCopyIsh = callInFn->hasFlag(FLAG_INIT_COPY_FN) ||
+                             callInFn->hasFlag(FLAG_AUTO_COPY_FN) ||
+                             callInFn->hasFlag(FLAG_UNALIAS_FN);
+            if (inCopyIsh && !callInFn->hasFlag(FLAG_ERRONEOUS_COPY)) {
+              callInFn->addFlag(FLAG_ERRONEOUS_COPY);
               changed = true;
-            }
-          }
-        }
-      }
 
-      if (fn->hasFlag(FLAG_ERRONEOUS_AUTOCOPY)) {
-        for_SymbolSymExprs(se, fn) {
-          if (FnSymbol* callInFn = se->getFunction()) {
-            if (callInFn->hasFlag(FLAG_AUTO_COPY_FN) &&
-                !callInFn->hasFlag(FLAG_ERRONEOUS_AUTOCOPY)) {
-              callInFn->addFlag(FLAG_ERRONEOUS_AUTOCOPY);
-              changed = true;
+              // propagate error if present
+              if (errors.count(fn) != 0)
+                errors[callInFn] = errors[fn];
             }
           }
         }
@@ -1109,38 +1126,71 @@ static void checkForErroneousInitCopies() {
   } while(changed);
 
   forv_Vec(FnSymbol, fn, gFnSymbols) {
-    if (fn->hasFlag(FLAG_ERRONEOUS_INITCOPY)) {
+    if (fn->hasFlag(FLAG_ERRONEOUS_COPY)) {
       // Error on each call site
       for_SymbolSymExprs(se, fn) {
         if (FnSymbol* callInFn = se->getFunction()) {
-          if (!callInFn->hasFlag(FLAG_INIT_COPY_FN)) {
-            USR_FATAL_CONT(se,
-                           "copy-initialization invoked for a type "
-                           "that does not have a copy initializer");
-          } else {
-            // Should have been propagated above
-            INT_ASSERT(callInFn->hasFlag(FLAG_ERRONEOUS_INITCOPY));
-          }
-        }
-      }
-    }
+          bool inCopyIsh = callInFn->hasFlag(FLAG_INIT_COPY_FN) ||
+                           callInFn->hasFlag(FLAG_AUTO_COPY_FN) ||
+                           callInFn->hasFlag(FLAG_UNALIAS_FN);
+          if (inCopyIsh == false) {
 
-    if (fn->hasFlag(FLAG_ERRONEOUS_AUTOCOPY)) {
-      // Error on each call site
-      for_SymbolSymExprs(se, fn) {
-        if (FnSymbol* callInFn = se->getFunction()) {
-          if (!callInFn->hasFlag(FLAG_AUTO_COPY_FN)) {
-            USR_FATAL_CONT(se,
-                           "implicit copy-initialization invoked for a type "
-                           "that does not allow it");
+            if (callInFn->hasFlag(FLAG_INIT_COPY_FN)) {
+              USR_FATAL_CONT(se, "invalid copy-initialization");
+            } else {
+              USR_FATAL_CONT(se, "invalid implicit copy-initialization");
+            }
+
+            if (errors.count(fn) != 0)
+              USR_FATAL_CONT(se, "%s", errors[fn]);
+
+            Type* t = fn->getFormal(1)->getValType();
+            astlocT typePoint = t->astloc;
+            if (t->symbol->userInstantiationPointLoc.filename != NULL)
+              typePoint = t->symbol->userInstantiationPointLoc;
+
+            USR_PRINT(typePoint,
+                      "%s does not have a valid init=", toString(t));
           } else {
             // Should have been propagated above
-            INT_ASSERT(callInFn->hasFlag(FLAG_ERRONEOUS_AUTOCOPY));
+            INT_ASSERT(callInFn->hasFlag(FLAG_ERRONEOUS_COPY));
           }
         }
       }
     }
   }
+
+  //
+  // Mark functions that are only called by FLAG_ERRONEOUS_COPY fns
+  // with the same flag as well (to avoid errors on these in some cases).
+  // These will generally be removed by the prune pass.
+  do {
+    changed = false;
+    forv_Vec(FnSymbol, fn, gFnSymbols) {
+      if (fn->hasFlag(FLAG_ERRONEOUS_COPY)) {
+        // do nothing
+      } else {
+        // check if all calls are inside FLAG_ERRONEOUS_COPY fns
+        bool allMentionsInErroneousFns = true;
+        bool anyMentionsInErroneousFns = false;
+        for_SymbolSymExprs(se, fn) {
+          if (FnSymbol* inFn = se->getFunction()) {
+            if (inFn->hasFlag(FLAG_ERRONEOUS_COPY)) {
+              anyMentionsInErroneousFns = true;
+              // continue to make sure they all are
+            } else {
+              allMentionsInErroneousFns = false;
+              break;
+            }
+          }
+        }
+        if (anyMentionsInErroneousFns && allMentionsInErroneousFns) {
+          fn->addFlag(FLAG_ERRONEOUS_COPY);
+          changed = true;
+        }
+      }
+    }
+  } while(changed);
 }
 
 /*
@@ -1182,7 +1232,7 @@ static void adjustCoforallIndexVariables() {
               Symbol* actual = actualSe->symbol();
               if (actual->hasFlag(FLAG_COFORALL_INDEX_VAR) &&
                   actual->hasFlag(FLAG_INSERT_AUTO_DESTROY) &&
-                  isUserDefinedRecord(actual->type)) {
+                  typeNeedsCopyInitDeinit(actual->type)) {
 
                 // Remove FLAG_INSERT_AUTO_DESTROY so it will not
                 // be destroyed in the loop creating tasks.
@@ -1215,6 +1265,35 @@ static void destroyFormalInTaskFn(ArgSymbol* formal, FnSymbol* taskFn) {
 
 /************************************* | **************************************
 *                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
+
+
+static void removeEndOfStatementMarkersElidedCopyPrims() {
+  for_alive_in_Vec(CallExpr, call, gCallExprs) {
+    if (call->isPrimitive(PRIM_END_OF_STATEMENT))
+      call->remove();
+    if (call->isPrimitive(PRIM_ASSIGN_ELIDED_COPY))
+      call->primitive = primitives[PRIM_ASSIGN];
+  }
+}
+
+static void removeElidedOnBlocks() {
+  for_alive_in_Vec(BlockStmt, block, gBlockStmts) {
+    if (block->isLoopStmt() == false) {
+      if (CallExpr* const info = block->blockInfoGet()) {
+        if (info->isPrimitive(PRIM_BLOCK_ELIDED_ON)) {
+          // Turn it into a regular block.
+          info->remove();
+        }
+      }
+    }
+  }
+}
+
+/************************************* | **************************************
+*                                                                             *
 * Entry point                                                                 *
 *                                                                             *
 ************************************** | *************************************/
@@ -1229,21 +1308,27 @@ void callDestructors() {
 
   insertDestructorCalls();
 
-  // Execute this before conversion to return by ref
-  // May fail to handle reference variables as desired
-  addAutoDestroyCalls();
-
   ReturnByRef::apply();
 
   insertCopiesForYields();
 
   checkLifetimes();
+  // Note - checkLifetimes adds flags to mark when a variable is dead:
+  //  FLAG_DEAD_END_OF_BLOCK and FLAG_DEAD_LAST_MENTION
+  // to local variables. Other parts of this pass use this.
 
   lateConstCheck(NULL);
+
+  addAutoDestroyCalls();
 
   insertGlobalAutoDestroyCalls();
 
   checkForErroneousInitCopies();
 
+  findNilDereferences();
+
   convertClassTypesToCanonical();
+
+  removeEndOfStatementMarkersElidedCopyPrims();
+  removeElidedOnBlocks();
 }

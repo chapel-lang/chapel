@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2019 Cray Inc.
+ * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -1563,7 +1563,7 @@ void lowerContextCall(ContextCallExpr* cc, choose_type_t which)
       move->insertBefore(new DefExpr(tmp));
 
       if (requiresImplicitDestroy(useCall)) {
-        if (isUserDefinedRecord(useFn->retType) == false) {
+        if (typeNeedsCopyInitDeinit(useFn->retType) == false) {
           tmp->addFlag(FLAG_INSERT_AUTO_DESTROY);
         } else {
           tmp->addFlag(FLAG_INSERT_AUTO_DESTROY);

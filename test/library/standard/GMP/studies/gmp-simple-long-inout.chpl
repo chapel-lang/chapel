@@ -1,4 +1,4 @@
-use GMP;
+use GMP, SysCTypes;
 
 var depth = 4: c_long;
 

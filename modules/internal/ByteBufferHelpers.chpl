@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2019 Cray Inc.
+ * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -18,7 +18,8 @@
  */
 
 module ByteBufferHelpers {
-  use ChapelStandard;
+  private use ChapelStandard;
+  private use SysCTypes;
 
   pragma "no doc"
   type byteType = uint(8);
@@ -76,6 +77,13 @@ module ByteBufferHelpers {
     var newBuff = chpl_here_realloc(buf, allocSize,
                                 offset_STR_COPY_DATA): bufferType;
     return (newBuff, allocSize);
+  }
+
+  proc bufferEnsureSize(buf, currentSize, requestedSize) {
+    if currentSize < requestedSize then
+      return bufferRealloc(buf, requestedSize);
+    else
+      return (buf, currentSize);
   }
 
   proc bufferCopyRemote(src_loc_id: int(64), src_addr: bufferType,

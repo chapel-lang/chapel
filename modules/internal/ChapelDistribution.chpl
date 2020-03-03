@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2019 Cray Inc.
+ * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -19,8 +19,9 @@
 
 module ChapelDistribution {
 
-  private use ChapelArray, ChapelLocks, ChapelRange;
-  use LinkedLists;
+  private use ChapelArray, ChapelRange;
+  public use ChapelLocks; // maybe make private when fields can be private?
+  public use LinkedLists; // maybe make private when fields can be private?
 
   //
   // Abstract distribution class
@@ -116,10 +117,6 @@ module ChapelDistribution {
     proc dsiNewAssociativeDom(type idxType, param parSafe: bool)
     where isEnumType(idxType) {
       compilerError("enumerated domains not supported by this distribution");
-    }
-
-    proc dsiNewOpaqueDom(type idxType, param parSafe: bool) {
-      compilerError("opaque domains not supported by this distribution");
     }
 
     proc dsiNewSparseDom(param rank: int, type idxType, dom: domain) {
@@ -652,17 +649,6 @@ module ChapelDistribution {
 
   }
 
-  class BaseOpaqueDom : BaseDom {
-    proc deinit() {
-      // this is a bug workaround
-    }
-
-    proc dsiClear() {
-      halt("clear not implemented for this distribution");
-    }
-
-  }
-
   //
   // Abstract array class
   //
@@ -965,21 +951,21 @@ module ChapelDistribution {
   // param privatized here is a workaround for the fact that
   // we can't include the privatized freeing for DefaultRectangular
   // because of resolution order issues
-  proc _delete_dist(dist:unmanaged BaseDist, param privatized:bool) {
+  proc _delete_dist(dist:unmanaged BaseDist, privatized:bool) {
     dist.dsiDestroyDist();
 
-    if privatized {
+    if _privatization && privatized {
       _freePrivatizedClass(dist.pid, dist);
     }
 
     delete dist;
   }
 
-  proc _delete_dom(dom, param privatized:bool) {
+  proc _delete_dom(dom, privatized:bool) {
 
     dom.dsiDestroyDom();
 
-    if privatized {
+    if _privatization && privatized {
       _freePrivatizedClass(dom.pid, dom);
     }
 
@@ -997,7 +983,7 @@ module ChapelDistribution {
     // refer to this inner domain.
     arr.decEltCountsIfNeeded();
 
-    if privatized {
+    if _privatization && privatized {
       _freePrivatizedClass(arr.pid, arr);
     }
 
@@ -1057,8 +1043,7 @@ module ChapelDistribution {
 
   proc chpl_assignDomainWithIndsIterSafeForRemoving(lhs:?t, rhs: domain)
     where isSubtype(_to_borrowed(t),BaseSparseDom) ||
-          isSubtype(_to_borrowed(t),BaseAssociativeDom) ||
-          isSubtype(_to_borrowed(t),BaseOpaqueDom)
+          isSubtype(_to_borrowed(t),BaseAssociativeDom)
   {
     //
     // BLC: It's tempting to do a clear + add here, but because

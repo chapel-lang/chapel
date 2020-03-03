@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2019 Cray Inc.
+ * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -28,9 +28,9 @@ module DefaultRectangular {
   if dataParMinGranularity<=0 then halt("dataParMinGranularity must be > 0");
 
   use DSIUtil, ChapelArray;
-  private use ChapelDistribution, ChapelRange, SysBasic, SysError;
+  private use ChapelDistribution, ChapelRange, SysBasic, SysError, SysCTypes;
   private use ChapelDebugPrint, ChapelLocks, OwnedObject, IO;
-  private use DefaultSparse, DefaultAssociative, DefaultOpaque;
+  private use DefaultSparse, DefaultAssociative;
   use ExternalArray;
 
   config param debugDefaultDist = false;
@@ -92,9 +92,6 @@ module DefaultRectangular {
 
     override proc dsiNewAssociativeDom(type idxType, param parSafe: bool)
       return new unmanaged DefaultAssociativeDom(idxType, parSafe, _to_unmanaged(this));
-
-    override proc dsiNewOpaqueDom(type idxType, param parSafe: bool)
-      return new unmanaged DefaultOpaqueDom(_to_unmanaged(this), parSafe);
 
     override proc dsiNewSparseDom(param rank: int, type idxType, dom: domain)
       return new unmanaged DefaultSparseDom(rank, idxType, _to_unmanaged(this), dom);
@@ -693,8 +690,7 @@ module DefaultRectangular {
                                        idxType=idxType,
                                        stridable=stridable,
                                        dom=_to_unmanaged(this),
-                                       data=data,
-                                       dataAllocRange=allocRange);
+                                       data=data);
     }
 
 
@@ -1024,12 +1020,6 @@ module DefaultRectangular {
     var _borrowed: bool = true;
     var externFreeFunc: c_void_ptr;
 
-    // 'dataAllocRange' is used by the array-vector operations (e.g. push_back,
-    // pop_back, insert, remove) to allow growing or shrinking the data
-    // buffer in a doubling/halving style.  If it is used, it will be the
-    // actual size of the 'data' buffer, while 'dom' represents the size of
-    // the user-level array.
-    var dataAllocRange: range(idxType);
     //var numelm: int = -1; // for correctness checking
 
     // end class definition here, then defined secondary methods below
@@ -1063,14 +1053,10 @@ module DefaultRectangular {
         }
       } else {
         var numElts:intIdxType = 0;
-        if dom.dsiNumIndices > 0 || dataAllocRange.size > 0 {
+        if dom.dsiNumIndices > 0 {
           param needsDestroy = __primitive("needs auto destroy",
                                            __primitive("deref", data[0]));
-          // dataAllocRange may be empty or contain a meaningful value
-          if rank == 1 && !stridable then
-            numElts = dataAllocRange.size;
-          if numElts == 0 then
-            numElts = dom.dsiNumIndices;
+          numElts = dom.dsiNumIndices;
 
           if needsDestroy {
             dsiDestroyDataHelper(data, numElts);
@@ -1212,8 +1198,6 @@ module DefaultRectangular {
       }
 
       initShiftedData();
-      if rank == 1 && !stridable then
-        dataAllocRange = dom.dsiDim(1);
     }
 
     inline proc getDataIndex(ind: idxType ...1,
@@ -1284,34 +1268,21 @@ module DefaultRectangular {
       return dsiAccess(ind);
 
     inline proc dsiAccess(ind : rank*idxType) ref {
-      if boundsChecking then
-        if !dom.dsiMember(ind) {
-          // Note -- because of module load order dependency issues,
-          // the multiple-arguments implementation of halt cannot
-          // be called at this point. So we call a special routine
-          // that does the right thing here.
-          halt("array index out of bounds: " + _stringify_tuple(ind));
-        }
+      // Note: bounds checking occurs in ChapelArray for this type.
       var dataInd = getDataIndex(ind);
       return theData(dataInd);
     }
 
     inline proc dsiAccess(ind : rank*idxType)
     where shouldReturnRvalueByValue(eltType) {
-      if boundsChecking then
-        if !dom.dsiMember(ind) {
-          halt("array index out of bounds: " + _stringify_tuple(ind));
-        }
+      // Note: bounds checking occurs in ChapelArray for this type.
       var dataInd = getDataIndex(ind);
       return theData(dataInd);
     }
 
     inline proc dsiAccess(ind : rank*idxType) const ref
     where shouldReturnRvalueByConstRef(eltType) {
-      if boundsChecking then
-        if !dom.dsiMember(ind) {
-          halt("array index out of bounds: " + _stringify_tuple(ind));
-        }
+      // Note: bounds checking occurs in ChapelArray for this type.
       var dataInd = getDataIndex(ind);
       return theData(dataInd);
     }
@@ -1327,6 +1298,10 @@ module DefaultRectangular {
     inline proc dsiLocalAccess(i) const ref
     where shouldReturnRvalueByConstRef(eltType)
       return dsiAccess(i);
+
+    inline proc dsiBoundsCheck(i) {
+      return dom.dsiMember(i);
+    }
 
     proc adjustBlkOffStrForNewDomain(d: unmanaged DefaultRectangularDom,
                                      alias: unmanaged DefaultRectangularArr)
@@ -1358,6 +1333,7 @@ module DefaultRectangular {
       }
     }
 
+    pragma "ignore transfer errors"
     override proc dsiReallocate(allocBound: range(idxType,
                                                   BoundedRangeType.bounded,
                                                   stridable),
@@ -1395,13 +1371,13 @@ module DefaultRectangular {
             shiftedData = copy.shiftedData;
           }
         }
-        dataAllocRange = copy.dataAllocRange;
         delete copy;
       }
     }
 
 
     // Reallocate the array to have space for elements specified by `bounds`
+    pragma "ignore transfer errors"
     override proc dsiReallocate(bounds: rank*range(idxType,
                                                    BoundedRangeType.bounded,
                                                    stridable)) {
@@ -1437,7 +1413,6 @@ module DefaultRectangular {
             shiftedData = copy.shiftedData;
           }
         }
-        dataAllocRange = copy.dataAllocRange;
         delete copy;
       }
     }
@@ -1550,17 +1525,17 @@ module DefaultRectangular {
     }
   }
 
-  proc DefaultRectangularDom.dsiSerialReadWrite(f /*: Reader or Writer*/) {
+  proc DefaultRectangularDom.dsiSerialReadWrite(f /*: Reader or Writer*/) throws {
     f <~> new ioLiteral("{") <~> ranges(1);
     for i in 2..rank do
       f <~> new ioLiteral(", ") <~> ranges(i);
     f <~> new ioLiteral("}");
   }
 
-  proc DefaultRectangularDom.dsiSerialWrite(f) { this.dsiSerialReadWrite(f); }
-  proc DefaultRectangularDom.dsiSerialRead(f) { this.dsiSerialReadWrite(f); }
+  proc DefaultRectangularDom.dsiSerialWrite(f) throws { this.dsiSerialReadWrite(f); }
+  proc DefaultRectangularDom.dsiSerialRead(f) throws { this.dsiSerialReadWrite(f); }
 
-  proc DefaultRectangularArr.dsiSerialReadWrite(f /*: Reader or Writer*/) {
+  proc DefaultRectangularArr.dsiSerialReadWrite(f /*: Reader or Writer*/) throws {
     chpl_serialReadWriteRectangular(f, this);
   }
 
@@ -1570,7 +1545,7 @@ module DefaultRectangular {
   // (e.g., if arr.dom is non-stridable but the 'dom' passed in is
   // stridable).
   //
-  proc chpl_serialReadWriteRectangular(f, arr) {
+  proc chpl_serialReadWriteRectangular(f, arr) throws {
     chpl_serialReadWriteRectangular(f, arr, arr.dom);
   }
 
@@ -1583,24 +1558,24 @@ module DefaultRectangular {
   // Overload sets (or a similar idea) would be a better user-facing
   // way to solve this problem (see CHIP 20).
   pragma "last resort"
-  proc chpl_serialReadWriteRectangular(f, arr, dom) {
+  proc chpl_serialReadWriteRectangular(f, arr, dom) throws {
     chpl_serialReadWriteRectangularHelper(f, arr, dom);
   }
 
-  proc chpl_serialReadWriteRectangularHelper(f, arr, dom) {
+  proc chpl_serialReadWriteRectangularHelper(f, arr, dom) throws {
     param rank = arr.rank;
     type idxType = arr.idxType;
     type idxSignedType = chpl__signedType(chpl__idxTypeToIntIdxType(idxType));
 
     const isNative = f.styleElement(QIO_STYLE_ELEMENT_IS_NATIVE_BYTE_ORDER): bool;
 
-    proc writeSpaces(dim:int) {
+    proc writeSpaces(dim:int) throws {
       for i in 1..dim {
         f <~> new ioLiteral(" ");
       }
     }
 
-    proc recursiveArrayWriter(in idx: rank*idxType, dim=1, in last=false) {
+    proc recursiveArrayWriter(in idx: rank*idxType, dim=1, in last=false) throws {
       var binary = f.binary();
       var arrayStyle = f.styleElement(QIO_STYLE_ELEMENT_ARRAY);
       var isspace = arrayStyle == QIO_ARRAY_FORMAT_SPACE && !binary;
@@ -1689,31 +1664,30 @@ module DefaultRectangular {
 
       var read_end = false;
 
-      while ! f.error() {
+      while true {
         if first {
           first = false;
           // but check for a ]
-          if isjson || ischpl {
-            f <~> new ioLiteral("]");
-          } else if isspace {
-            f <~> new ioNewline(skipWhitespaceOnly=true);
-          }
-          if f.error() == EFORMAT {
-            f.clearError();
-          } else {
+          try {
+            if isjson || ischpl {
+              f <~> new ioLiteral("]");
+            } else if isspace {
+              f <~> new ioNewline(skipWhitespaceOnly=true);
+            }
             read_end = true;
             break;
+          } catch err: BadFormatError {
+            // Continue on if we didn't read a closing bracket.
           }
         } else {
-          // read a comma or a space.
-          if isspace then f <~> new ioLiteral(" ");
-          else if isjson || ischpl then f <~> new ioLiteral(",");
 
-          if f.error() == EFORMAT {
-            f.clearError();
-            // No comma.
+          // Try reading a comma/space. Break if we don't read one.
+          try {
+            if isspace then f <~> new ioLiteral(" ");
+            else if isjson || ischpl then f <~> new ioLiteral(",");
+          } catch err: BadFormatError {
             break;
-          }
+          } 
         }
 
         if i >= dom.dsiDim(1).size {
@@ -1776,10 +1750,9 @@ module DefaultRectangular {
         } else {
           f.readBytes(_ddata_shift(arr.eltType, src, idx), size);
         }
-      } catch e: SystemError {
-        f.setError(e.err);
-      } catch {
-        f.setError(EINVAL:syserr);
+      } catch err {
+        // Setting errors in channels has no effect, so just rethrow.
+        throw err;
       }
     } else {
       const zeroTup: rank*idxType;
@@ -1787,11 +1760,11 @@ module DefaultRectangular {
     }
   }
 
-  proc DefaultRectangularArr.dsiSerialWrite(f) {
+  proc DefaultRectangularArr.dsiSerialWrite(f) throws {
     dsiSerialReadWrite(f);
   }
 
-  proc DefaultRectangularArr.dsiSerialRead(f) {
+  proc DefaultRectangularArr.dsiSerialRead(f) throws {
     dsiSerialReadWrite(f);
   }
 

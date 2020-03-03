@@ -8,8 +8,8 @@ config const str: string = """[owner]
 
 proc main() {
   var TomlData = parseToml(str);
-  var dob = TomlData["owner"]["dob"];
-  writeln(dob.toString());
+  var dob = TomlData["owner"]!["dob"];
+  writeln(dob!.toString());
 
   delete TomlData;
 }

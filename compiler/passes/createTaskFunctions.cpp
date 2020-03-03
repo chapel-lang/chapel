@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2019 Cray Inc.
+ * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -471,15 +471,13 @@ isOuterVar(Symbol* sym, FnSymbol* fn) {
 static void
 findOuterVars(FnSymbol* fn, SymbolMap& uses) {
   std::vector<SymExpr*> SEs;
-  collectSymExprs(fn, SEs);
+  collectLcnSymExprs(fn, SEs);
 
   for_vector(SymExpr, symExpr, SEs) {
       Symbol* sym = symExpr->symbol();
 
-      if (isLcnSymbol(sym)) {
-        if (considerAsOuterVar(sym, fn) && isOuterVar(sym, fn))
+      if (considerAsOuterVar(sym, fn) && isOuterVar(sym, fn))
           uses.put(sym, markUnspecified);
-      }
   }
 }
 
@@ -761,6 +759,9 @@ void createTaskFunctions(void) {
       } else if (info->isPrimitive(PRIM_BLOCK_COFORALL)) {
         fn = new FnSymbol("coforall_fn");
         fn->addFlag(FLAG_COBEGIN_OR_COFORALL);
+      } else if (info->isPrimitive(PRIM_BLOCK_ELIDED_ON)) {
+        // ignore it until after resolution. It will be removed in
+        // callDestructors.
       } else if (info->isPrimitive(PRIM_BLOCK_ON) ||
                  info->isPrimitive(PRIM_BLOCK_BEGIN_ON) ||
                  info->isPrimitive(PRIM_BLOCK_COBEGIN_ON) ||

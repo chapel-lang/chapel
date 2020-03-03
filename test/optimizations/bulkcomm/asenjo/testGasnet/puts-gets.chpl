@@ -3,7 +3,7 @@
 // 2.- get some elements from B on locale 0 to A on locale 0
 // 3.- put some elements from A on locale 0 to B on locale 1
 // 4.- put some elements from A on locale 0 to B on locale 0
-
+use SysCTypes;
 
 proc TestGetsPuts(A:[], B:[])
 {

@@ -1,6 +1,6 @@
 MASON_HOME: $PWD/tempHome *
 MASON_REGISTRY: myRegistry|$PWD/tempHome/uncached/myRegistry *
 MASON_OFFLINE: false
-Updating mason-registry
+Updating myRegistry
 multiple (0.2.0)
 simple (0.1.0)

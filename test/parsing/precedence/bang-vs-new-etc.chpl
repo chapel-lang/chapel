@@ -48,16 +48,16 @@ proc main {
   check("z01a = new C()?!", z01a, "borrowed C");
 
   var z01b = new owned C()?!;
-  check("z01b = new owned C()?!", z01b, "borrowed C"); // get owned C, #13957
+  check("z01b = new owned C()?!", z01b, "borrowed C");
 
-  var z01c = new unmanaged C()?!;  // error: duplicate decorators, #13950
+  var z01c = new unmanaged C()?!;
   check("z01c = new unmanaged C()?!", z01c, "unmanaged C");
 
   var z02 = new C?()!;
   check("z02 = new C?()!", z02, "borrowed C");
 
   // var z = new C()!?;  -- error "? on a value"
-  // var z = new C()??; -- syntax error, #13957
+  // var z = new C()??; -- syntax error
 
   var z03 = new C?()?;
   check("z03 = new C?()?", z03, "owned C?");
@@ -68,14 +68,14 @@ proc main {
   var z05 = new owned (tm())();
   check("z05 = new owned (tm())()", z05, "owned C");
 
-  var z06 = new (/*owned*/ tm())()?; // workaround for #13950
+  var z06 = new (owned tm())()?;
   check("z06 = new (owned tm())()?", z06, "owned C?");
 
   var z11 = new owned (tm())()?;
   check("z11 = new owned (tm())()?", z11, "owned C?");
 
   var z07 = new owned (tm())()?!;
-  check("z07 = new owned (tm())()?!", z07, "borrowed C"); // get owned C, #13957
+  check("z07 = new owned (tm())()?!", z07, "borrowed C");
 
   var z08 = new (owned tm())?();
   check("z08 = new (owned tm())?()", z08, "owned C?");
@@ -83,11 +83,11 @@ proc main {
   var z12 = new (tm())?();
   check("z12 = new (tm())?()", z08, "owned C?");
 
-  var z09 = new owned (tm())?()!;   // get owned C, #13957
-  check("z09 = new owned (tm())?()!", z09, "borrowed C");
+  var z09 = new owned (tm()?)()!;
+  check("z09 = new owned (tm()?)()!", z09, "borrowed C");
 
-  var z10 = new owned (tm())?()?;
-  check("z10 = new owned (tm())?()?", z10, "owned C?");
+  var z10 = new owned (tm()?)()?;
+  check("z10 = new owned (tm()?)()?", z10, "owned C?");
 
   var z13a = (xx:CN)!;
   check("z13a = (xx:CN)!", z13a, "borrowed C");
@@ -108,8 +108,8 @@ proc main {
   var z15b = xx: unmanaged C?;
   check("z15b = xx: unmanaged C?", z15b, "unmanaged C?");
 
-  var z15c = xx: unmanaged C!;  // error: duplicate decorators, #13950
-  check("z15c = xx: unmanaged C!", z15c, "unmanaged C");
+  // var z15c = xx: unmanaged C!; // parsed 'unmanaged (C!)' -- illegal
+  // check("z15c = xx: unmanaged C!", z15c, "unmanaged C");
 
   var z16a = xx!: unmanaged C;
   check("z16a = xx!: unmanaged C", z16a, "unmanaged C");
@@ -117,8 +117,8 @@ proc main {
   var z16b = xx!: unmanaged C?;
   check("z16b = xx!: unmanaged C?", z16b, "unmanaged C?");
 
-  var z16c = xx!: unmanaged C!;  // error: duplicate decorators, #13950
-  check("z16c = xx!: unmanaged C!", z16c, "unmanaged C");
+  // var z16c = xx!: unmanaged C!; // like z15c
+  // check("z16c = xx!: unmanaged C!", z16c, "unmanaged C");
 
   var z17a = xx : class? : unmanaged class; // cast binds most loosely, left associative
   check("z17a = xx : class?: unmanaged class", z17a, "unmanaged C");
@@ -152,20 +152,20 @@ proc main {
   var z19e = new borrowed C() : unmanaged class?;
   check("z19e = new borrowed C() :unmanaged class?", z19e, "unmanaged C?");
 
-  // '.' binds more tightly than 
+  // '.' binds more tightly than 'new'
   // param z = new C().meth;  -- error: C.meth is not a type method
 
-  // treated as new (C().tmeth) -- should parens after 'tmeth' be required? #13957
-  var z20a = new C().tmeth;
+  // treated as new (C().tmeth)()
+  var z20a = new C().tmeth();
   check("z20a = new C().m", z20a, "owned D(int(64))");
 
   param z20b = new C()!.meth;  // '.' is applied last
   checkCm("z20b = new C()!.meth", z20b);
 
-  var z20c = new C()?.tmeth;
+  var z20c = new C()?.tmeth();
   check("z20c = new C()?.tmeth", z20c, "owned D(int(64))");
 
-  var z20d = new unmanaged C()?.tmeth;  // like z20a
+  var z20d = new unmanaged (C()?.tmeth)();  // like z20a
   check("z20d = new unmanaged C()?.tmeth", z20d, "unmanaged D(int(64))");
 
   // same as z20 series, with parens at end

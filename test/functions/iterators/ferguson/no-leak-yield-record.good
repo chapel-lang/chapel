@@ -2,12 +2,12 @@ foo1
 copy/assign {x = 1}
 in loop, got (c = {x = 1})
 destroying {x = 1}
+destroying {x = 1}
 copy/assign {x = 2}
 in loop, got (c = {x = 2})
 destroying {x = 2}
-return at end
 destroying {x = 2}
-destroying {x = 1}
+return at end
 destroying {x = 0}
 foo2
 in loop, got (c = {x = 1})

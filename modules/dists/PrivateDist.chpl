@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2019 Cray Inc.
+ * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -74,7 +74,7 @@ class Private: BaseDist {
     return new unmanaged PrivateDom(rank=rank, idxType=idxType, stridable=stridable, dist=_to_unmanaged(this));
   }
 
-  proc writeThis(x) {
+  proc writeThis(x) throws {
     x <~> "Private Distribution\n";
   }
   // acts like a singleton
@@ -167,9 +167,6 @@ proc PrivateArr.dsiAccess(i: idxType) ref {
   else if i == here.id then
     return data;
   else {
-    if boundsChecking then
-      if i < 0 || i >= numLocales then
-        halt("array index out of bounds: ", i);
     var privarr = _to_unmanaged(this);
     on Locales(i) {
       privarr = chpl_getPrivatizedCopy(_to_unmanaged(this.type), this.pid);
@@ -180,6 +177,11 @@ proc PrivateArr.dsiAccess(i: idxType) ref {
 
 proc PrivateArr.dsiAccess(i: 1*idxType) ref
   return dsiAccess(i(1));
+
+proc PrivateArr.dsiBoundsCheck(i: 1*idxType) {
+  var idx = i(1);
+  return 0 <= idx && idx < numLocales;
+}
 
 iter PrivateArr.these() ref {
   for i in dom do

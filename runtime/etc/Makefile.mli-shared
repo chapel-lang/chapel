@@ -1,4 +1,4 @@
-# Copyright 2004-2019 Cray Inc.
+# Copyright 2004-2020 Hewlett Packard Enterprise Development LP
 # Other additional copyright holders may be indicated within.
 #
 # The entirety of this work is licensed under the Apache License,
@@ -19,44 +19,27 @@
 # Makefile.mli-shared
 #
 
-include $(CHPL_MAKE_HOME)/runtime/etc/Makefile.include
+include $(CHPL_MAKE_HOME)/runtime/etc/Makefile.mli-common
 
-ifdef CHPL_ZMQ_HOME
-CHPL_MLI_INCS = -I$(CHPL_ZMQ_HOME)/include
-CHPL_ZMQ_LIB_HOME = $(CHPL_ZMQ_HOME)/lib
-CHPL_ZMQ_LIB_SEARCH_PATH = -L$(CHPL_ZMQ_LIB_HOME)
-endif
-CHPL_LN_LIB_DIR = $(CHPL_MAKE_RUNTIME_LIB)/$(CHPL_MAKE_LAUNCHER_SUBDIR)
-UNAME = $(shell uname)
+.PHONY: all
+all: checkRtLibDir buildServer buildClientAsHost runTagsCommand FORCE
 
-.PHONY: buildUserObj buildServer buildClient runTagsCommand
+.PHONY: buildClientAsHost
+buildClientAsHost:
+	$(MAKE) -f $(CHPL_MAKE_HOME)/runtime/etc/Makefile.mli-shared \
+	$(TO_PROPAGATE) \
+	buildClient
 
-all: buildUserObj buildServer buildClient runTagsCommand FORCE
-
-buildUserObj:
-#
-# Compile loose C source files in CHPLUSEROBJ.
-#
-	$(foreach srcFile, $(CHPLUSEROBJ), \
-		$(CC) $(CHPL_MAKE_BASE_CFLAGS) $(GEN_CFLAGS) $(COMP_GEN_CFLAGS) \
-			-c -o $(srcFile) $(CHPL_RT_INC_DIR) $(srcFile).c \
-	;)
-
-buildServer: $(TMPSERVERNAME)
-
+.PHONY: buildClient
 buildClient: $(TMPBINNAME)
 
-runTagsCommand:
-	$(TAGS_COMMAND)
-
-$(TMPBINNAME): $(CHPL_CL_OBJS) FORCE
 #
 # Invoke the launcher script, but don't actually link up the launcher binary.
-# Do this by setting CHPL_MAKE_IS_MLI=1. We also need to pass on the
-# $(GEN_CFLAGS) variable, because that contains the -fPIC flag, among other
-# things. If we don't do this, then the launcher object file that is built
-# will have text relocations.
+# Do this by setting CHPL_MAKE_IS_MLI=1 when invoking the sub-make. We also
+# need to pass on the $(GEN_CFLAGS) variable, because we're building a shared
+# object and $(GEN_CFLAGS) contains the -fPIC flag.
 #
+$(TMPBINNAME): $(CHPL_CL_OBJS) FORCE
 	$(MAKE) -f $(CHPL_MAKE_HOME)/runtime/etc/Makefile.launcher all \
 		CHPL_MAKE_HOME=$(CHPL_MAKE_HOME) \
 		TMPBINNAME=$(TMPSERVERNAME) \
@@ -67,9 +50,7 @@ $(TMPBINNAME): $(CHPL_CL_OBJS) FORCE
 		CHPL_MAKE_THIRD_PARTY=$(CHPL_MAKE_THIRD_PARTY) \
 		GEN_CFLAGS="$(GEN_CFLAGS)" \
 		CHPL_MAKE_IS_MLI=1
-#
 # Compile the client bundle. Note the use of $(SHARED_LIB_CFLAGS) here.
-#
 	$(CC) $(CHPL_MAKE_BASE_CFLAGS) $(GEN_CFLAGS) $(COMP_GEN_CFLAGS) \
 		$(SHARED_LIB_CFLAGS) \
 		-c -o $(TMPBINNAME).o \
@@ -77,10 +58,7 @@ $(TMPBINNAME): $(CHPL_CL_OBJS) FORCE
 		$(COMP_GEN_MLI_EXTRA_INCLUDES) \
 		$(CHPL_RT_INC_DIR) \
 		$(CHPL_MLI_INCS)
-
-#
 # Invoke the linker to produce a shared library.
-#
 	$(LD) $(CHPL_MAKE_BASE_LFLAGS) $(GEN_LFLAGS) $(COMP_GEN_LFLAGS) \
 		$(LIB_DYNAMIC_FLAG) \
 		-o $(TMPBINNAME) \
@@ -91,10 +69,7 @@ $(TMPBINNAME): $(CHPL_CL_OBJS) FORCE
 		$(LAUNCH_LIBS) \
 		$(CHPL_ZMQ_LIB_SEARCH_PATH) \
 		-lzmq
-
-#
 # Last minute munging in case of output file name collisions.
-#
 ifneq ($(TMPBINNAME),$(BINNAME))
 	cp $(TMPBINNAME) $(BINNAME)
 	rm $(TMPBINNAME)
@@ -105,42 +80,8 @@ endif
 # `dyld` will emit an error of the form "library not loaded because image
 # was not found".
 #
-ifeq ($(UNAME),Darwin)
+ifeq ($(CHPL_MAKE_PLATFORM),darwin)
 	install_name_tool $(BINNAME) -id "$(BINNAME)"
-endif
-
-$(TMPSERVERNAME): $(CHPL_CL_OBJS) checkRtLibDir FORCE
-ifneq ($(SKIP_COMPILE_LINK),skip)
-#
-# Compile the server bundle.
-#
-	$(CC) $(CHPL_MAKE_BASE_CFLAGS) $(GEN_CFLAGS) $(COMP_GEN_CFLAGS) \
-		-c -o $(TMPSERVERNAME).o \
-		$(CHPLSERVERSRC) \
-		$(CHPL_RT_INC_DIR) \
-		$(CHPL_MLI_INCS) \
-		$(COMP_GEN_MLI_EXTRA_INCLUDES)
-
-#
-# Link the Chapel runtime and the ZMQ library together into a multi-locale
-# executable.
-#
-#   - $(LIBS) contains gasnet libraries when CHPL_COMM=gasnet, and nothing
-#     otherwise.
-#   - $(CHPL_MAKE_THIRD_PARTY_LINK_ARGS) is every third party library.
-#   ^ With the exception of gasnet!
-#
-	$(LD) $(CHPL_MAKE_BASE_LFLAGS) $(GEN_LFLAGS) $(COMP_GEN_LFLAGS) \
-		$(GEN_DYNAMIC_FLAG) \
-		-o $(TMPSERVERNAME) \
-		$(TMPSERVERNAME).o $(CHPL_RT_LIB_DIR)/main.o \
-		$(CHPLUSEROBJ) $(CHPL_CL_OBJS) \
-		$(CHPL_MAKE_THIRD_PARTY_LINK_ARGS) \
-		$(LIBS) \
-		-L$(CHPL_RT_LIB_DIR) \
-		-lchpl -lm \
-		$(CHPL_ZMQ_LIB_SEARCH_PATH) \
-		-lzmq
 endif
 
 FORCE:

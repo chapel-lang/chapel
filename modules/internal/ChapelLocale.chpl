@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2019 Cray Inc.
+ * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -68,6 +68,7 @@ module ChapelLocale {
 
   use LocaleModel;
   private use HaltWrappers only;
+  private use SysCTypes;
 
   //
   // Node and sublocale types and special sublocale values.
@@ -186,7 +187,26 @@ module ChapelLocale {
     proc localeid : chpl_localeID_t return __primitive("_wide_get_locale", this);
 
     /*
-      Get the name of this locale.
+      Get the hostname of this locale.
+
+      :returns: the hostname of the compute node associated with the locale
+      :rtype: string
+    */
+    proc hostname: string {
+      extern proc chpl_nodeName(): c_string;
+      var hname: string;
+      on this {
+        try! {
+          hname = createStringWithNewBuffer(chpl_nodeName());
+        }
+      }
+      return hname;
+    }
+
+    /*
+      Get the name of this locale.  In practice, this is often the
+      same as the hostname, though in some cases (like when using
+      local launchers), it may be modified.
 
       :returns: locale name
       :rtype: string
@@ -285,12 +305,6 @@ module ChapelLocale {
     proc highBandwidthMemory() : locale {
       HaltWrappers.pureVirtualMethodHalt();
       return this;
-    }
-
-    // A useful default definition is provided (not pure virtual).
-    pragma "no doc"
-    override proc writeThis(f) {
-      f <~> name;
     }
 
     pragma "no doc"
@@ -458,8 +472,22 @@ module ChapelLocale {
           yield locIdx;
           b.wait(locIdx, flags);
           chpl_rootLocaleInitPrivate(locIdx);
+          warmupRuntime();
         }
       }
+    }
+  }
+
+  // Warm up runtime components. For tasking layers that have a fixed number of
+  // threads, we create a task on each thread to warm it up (e.g. grab some
+  // initial call stacks.) We also warm up the memory layer, since allocators
+  // tend to have per thread pools/arenas.
+  private proc warmupRuntime() {
+    extern proc chpl_task_getFixedNumThreads(): uint(32);
+    coforall i in 0..#chpl_task_getFixedNumThreads() {
+      var p = c_malloc(int, 1);
+      p[0] = i;
+      c_free(p);
     }
   }
 

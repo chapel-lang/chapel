@@ -1,8 +1,8 @@
-use CoarseningTransfer;
-use RefiningTransfer;
-use BergerRigoutsosClustering;
+public use CoarseningTransfer;
+public use RefiningTransfer;
+public use BergerRigoutsosClustering;
 
-
+private use IO;
 
 
 //|\"""""""""""""""""""""""""""|\
@@ -407,7 +407,7 @@ proc AMRHierarchy.buildRefinedLevel ( i_refining: int )
   //---- Cluster ----
 
   var min_width: dimension*int;
-  min_width = 2;
+  min_width = min_width + 2;
   var cluster_domains = clusterFlags( buffered_flags, target_efficiency, min_width );
   
     
@@ -565,7 +565,7 @@ class PhysicalBoundary
 {
 
   const grids:        domain(unmanaged Grid);
-  const multidomains: [grids] unmanaged MultiDomain(dimension,stridable=true);
+  const multidomains: [grids] unmanaged MultiDomain(dimension,stridable=true)?;
 
 
 
@@ -816,7 +816,7 @@ proc LevelVariable.initialFill (
 
         if overlap.numIndices > 0 
         {
-          this(grid,overlap) = q_old(old_grid, overlap);
+          this(grid,overlap) = q_old!(old_grid, overlap);
           unfilled_region.subtract( overlap );
         }
         
@@ -854,7 +854,7 @@ proc LevelVariable.initialFill (
         unfilled_intersection.intersect( refined_coarse );
         
         for D in unfilled_intersection do
-          this(grid,D) = q_coarse(coarse_grid).refineValues(D, ref_ratio);
+          this(grid,D) = q_coarse(coarse_grid)!.refineValues(D, ref_ratio);
         
         delete unfilled_intersection;
        }

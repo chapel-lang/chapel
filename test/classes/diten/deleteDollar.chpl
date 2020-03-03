@@ -2,7 +2,7 @@ class c$ {
   proc writeme() {
     writeln("Hi from $");
   }
-  proc ~c$() {
+  proc deinit() {
     writeln("Destroy dollar");
   }
 }

@@ -61,6 +61,10 @@
   #endif
 #endif
 
+#if PLATFORM_OS_DARWIN
+#include <sys/utsname.h> // uname()
+#endif
+
 #if PLATFORM_COMPILER_SUN_C
   /* disable warnings triggerred by some macro idioms we use */
   #pragma error_messages(off, E_END_OF_LOOP_CODE_NOT_REACHED)
@@ -398,7 +402,7 @@ GASNETI_IDENT(gasnett_IdentString_CompilerID,
              "$GASNetCompilerID: " PLATFORM_COMPILER_IDSTR " $");
 
 GASNETI_IDENT(gasnett_IdentString_GitHash, 
-             "$GASNetGitHash: gex-2019.6.0 $");
+             "$GASNetGitHash: gex-2019.9.0 $");
 
 int GASNETT_LINKCONFIG_IDIOTCHECK(_CONCAT(RELEASE_MAJOR_,GASNET_RELEASE_VERSION_MAJOR)) = 1;
 int GASNETT_LINKCONFIG_IDIOTCHECK(_CONCAT(RELEASE_MINOR_,GASNET_RELEASE_VERSION_MINOR)) = 1;
@@ -1307,16 +1311,25 @@ static int gasneti_system_redirected_coprocess(const char *cmd, int stdout_fd) {
 
     volatile int i=0;
     if (!fork()) { /* the child - debugger co-process launcher */
-#if PLATFORM_OS_OPENBSD
+#if PLATFORM_OS_OPENBSD || PLATFORM_OS_DARWIN
       // OpenBSD refuses to ptrace attach a connected ancestor because it
       // would create a cycle in the process tree which the kernel is unable
       // to tolerate.  This behavior was introduced in OpenBSD 4.5 Errata 011
       // and has not changed though at least OpenBSD 6.1.
       // We avoid this cycle using an extra fork()+_exit() to disconnect the
       // process requesting the attach from the target.
-      pid_t childpid = getpid();
-      if (fork()) _exit(0);
-      do {} while (getppid() == childpid);
+      // It appeares macOS 10.15 (Darwin 19) also needs this separation,
+      // though it is unknown if the reason is the same as for OpenBSD.
+    #if PLATFORM_OS_DARWIN
+      struct utsname uname_data;
+      int os_ver = uname(&uname_data) ? 0 : atoi(uname_data.release);
+      if (!os_ver || os_ver >= 19) // assume extra fork() needed if fail to query os release
+    #endif
+      {
+        pid_t childpid = getpid();
+        if (fork()) _exit(0);
+        do {} while (getppid() == childpid);
+      }
 #endif
       int retval = gasneti_system_redirected(cmd, tmpfd);
       if (retval) { /* system call failed - nuke the output */

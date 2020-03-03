@@ -1,7 +1,8 @@
 
-use Grid_def;
-use MultiDomain_def;
+public use Grid_def;
+public use MultiDomain_def;
 
+private use IO;
 
 //|\""""""""""""""""""""|\
 //| >    Level class    | >
@@ -53,8 +54,8 @@ class Level {
   //---------------------------------------------------------------------
 
   var grids:                 domain(unmanaged Grid);
-  var sibling_ghost_regions: [grids] unmanaged SiblingGhostRegion;
-  var boundary:              [grids] unmanaged MultiDomain(dimension,stridable=true);
+  var sibling_ghost_regions: [grids] unmanaged SiblingGhostRegion?;
+  var boundary:              [grids] unmanaged MultiDomain(dimension,stridable=true)?;
 
 
 
@@ -279,10 +280,10 @@ proc Level.complete ()
     
     boundary(grid) = new unmanaged MultiDomain(dimension,stridable=true);
 
-    for D in grid.ghost_domains do boundary(grid).add( D );
+    for D in grid.ghost_domains do boundary(grid)!.add( D );
 
-    for overlap in sibling_ghost_regions(grid).overlaps do
-      boundary(grid).subtract( overlap );
+    for overlap in sibling_ghost_regions(grid)!.overlaps do
+      boundary(grid)!.subtract( overlap );
   }
 
 

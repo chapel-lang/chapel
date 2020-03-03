@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2019 Cray Inc.
+ * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -26,7 +26,7 @@
  */
 
 module ChapelDebugPrint {
-  use ChapelStandard;
+  private use ChapelStandard, SysCTypes;
 
   proc chpl_debug_stringify(args...) : string {
     var str = "";
@@ -85,7 +85,10 @@ module ChapelDebugPrint {
       // yet defined).
       const file_cs : c_string = __primitive("chpl_lookupFilename",
                                         __primitive("_get_user_file"));
-      const file = file_cs:string;
+      var file: string;
+      try! {
+        file = createStringWithNewBuffer(file_cs);
+      }
       const line = __primitive("_get_user_line");
       var str = chpl_debug_stringify((...args));
       extern proc printf(fmt:c_string, f:c_string, ln:c_int, s:c_string);
@@ -97,7 +100,10 @@ module ChapelDebugPrint {
     if chpl__testParFlag && chpl__testParOn {
       const file_cs : c_string = __primitive("chpl_lookupFilename",
                                         __primitive("_get_user_file"));
-      const file = file_cs:string;
+      var file: string;
+      try! {
+        file = createStringWithNewBuffer(file_cs);
+      }
       const line = __primitive("_get_user_line");
       writeln("CHPL TEST PAR (", file, ":", line, "): ", (...args));
     }

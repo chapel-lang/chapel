@@ -1,5 +1,2 @@
 semantic: what should happen to a slice if the underlying domain is changed?
-
-Suppose a slice is passed in to a function, and before the final use of the
-slice, the domain of the array from which the slice was taken is changed.
-Should the slice also change?
+#14265

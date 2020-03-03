@@ -1,0 +1,3 @@
+same_name_conflict.chpl:1: error: symbol F is multiply defined
+note: 'Foo' was renamed to 'F' at same_name_conflict.chpl:8
+same_name_conflict.chpl:4: note: also defined here

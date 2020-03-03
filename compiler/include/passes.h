@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2019 Cray Inc.
+ * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -102,10 +102,7 @@ void deadBlockElimination();
 
 // flattenFunctions.cpp
 void flattenNestedFunction(FnSymbol* nestedFunction);
-// When fastCCS=true, call sites are computed only for the functions that
-// are looked at. Such functions must not have dispatch parents/children.
-void flattenNestedFunctions(Vec<FnSymbol*>& nestedFunctions,
-                            bool fastCCS = false);
+void flattenNestedFunctions(Vec<FnSymbol*>& nestedFunctions);
 
 // foralls.cpp
 void checkTypeParamTaskIntent(SymExpr* outerSE);
@@ -130,6 +127,7 @@ bool isVirtualIterator(FnSymbol* iterFn);
 void normalize(FnSymbol* fn);
 void normalize(Expr* expr);
 void checkUseBeforeDefs(FnSymbol* fn);
+void addMentionToEndOfStatement(Expr* node, CallExpr* existingEndOfStatement);
 
 // parallel.cpp
 Type* getOrMakeRefTypeDuringCodegen(Type* type);
@@ -138,6 +136,7 @@ CallExpr* findDownEndCount(FnSymbol* fn);
 
 // resolution
 Expr*     resolveExpr(Expr* expr);
+void      resolveBlockStmt(BlockStmt* blockStmt);
 
 // type.cpp
 void initForTaskIntents();

@@ -1,4 +1,6 @@
 module Deque {
+  use SysCTypes;
+
   extern type deque_t;
   extern type deque_iterator_t;
 

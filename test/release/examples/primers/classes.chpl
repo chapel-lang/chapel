@@ -153,16 +153,11 @@ x = b2; // converting from borrowed C to borrowed C?
 // As a result, the call ``x.printFields()`` needs adjustment.
 // The ``!`` operator is available to assert that an expression
 // is not ``nil`` and return it as a non-nilable type. This operator
-// can halt if the value is actually ``nil``.
+// will halt if the value is actually ``nil``.
 //
 // Note that when applied to an ``owned`` or ``shared` variable, ``!`` will
 // result in a borrow from that variable.
 x!.printFields();
-
-// In a prototype module, the compiler will automatically add the ``!`` above.
-// Since the implicit file module is also a prototype module, it can
-// be omitted in this example program as well.
-x.printFields();
 
 // There are a few method names that cause the method to have special
 // meaning. Please see :ref:`primers-specialMethods` for details.

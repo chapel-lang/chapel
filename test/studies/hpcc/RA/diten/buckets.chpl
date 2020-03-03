@@ -15,8 +15,8 @@ class UpdateManager {
     if updateList == nil {
       return new unmanaged Update();
     } else {
-      var update = updateList;
-      updateList = updateList.forward;
+      var update = updateList!;
+      updateList = update.forward;
       return update;
     }
   }
@@ -45,8 +45,8 @@ class Buckets {
   const numLocs: int = numLocales;
   var pendingUpdates = 0;
   var BucketArray: [0..#numLocs] unmanaged Bucket; // = [0..#numLocs] new borrowed Bucket(nil, 0);
-  var heap = new borrowed MaxHeap(numLocs);
-  var updateManager = new borrowed UpdateManager();
+  var heap = new owned MaxHeap(numLocs);
+  var updateManager = new owned UpdateManager();
 
   // These postinit() and deinit() are a workaround for #11314.
   // Once that is resolved, this code can be simplified (as in #11321) by:
@@ -86,9 +86,9 @@ class Buckets {
       var i = 0;
 
       while update != nil {
-        var tmp = update.forward;
-        buf(i) = update.value;
-        updateManager.returnUpdate(update);
+        var tmp = update!.forward;
+        buf(i) = update!.value;
+        updateManager.returnUpdate(update!);
         update = tmp;
         i += 1;
       }

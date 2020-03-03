@@ -8,12 +8,6 @@ AUTOMAKE_OPTIONS = foreign 1.4
 
 CONDUIT_NAME=aries
 
-##
-## gemini-conduit holds the actual sources
-##
-gemini_srcdir = $(top_srcdir)/gemini-conduit
-gemini_install_hdrs = $(gemini_srcdir)/*.h
-
 ## generalized PMI support
 pmi_srcdir = $(top_srcdir)/other/pmi-spawner
 
@@ -24,34 +18,41 @@ SUBDIRS = contrib
 # include all headers, documentation, etc. 
 # and any subdirectories not containing Makefile.am's
 CONDUIT_FILELIST =            \
-      gasnet_empty_internal.h \
       gasnet_ratomic_fwd.h    \
       gasnet_ratomic_extra.h  \
       gasnet_ratomic.c        \
-      README                  
+      gasnet_core.c          \
+      gasnet_core.h          \
+      gasnet_core_fwd.h      \
+      gasnet_core_help.h     \
+      gasnet_core_internal.h \
+      gasnet_extended.c      \
+      gasnet_extended_fwd.h  \
+      gasnet_aries.h         \
+      gasnet_aries.c
 
 # list of conduit core and extended .c source files 
 # to be compiled into libgasnet on the compiler command line
 CONDUIT_SOURCELIST =          \
       $(srcdir)/gasnet_ratomic.c \
-      $(gemini_srcdir)/gasnet_core.c \
-      $(gemini_srcdir)/gasnet_gemini.c \
-      $(gemini_srcdir)/gasnet_extended.c \
+      $(srcdir)/gasnet_core.c \
+      $(srcdir)/gasnet_aries.c \
+      $(srcdir)/gasnet_extended.c \
       $(pmi_srcdir)/gasnet_bootstrap_pmi.c
 
 # additional -I or -D directives needed by this specific conduit
 # other than the standard GASNet includes and flags
-CONDUIT_EXTRALIBCFLAGS = @GNI_CFLAGS@ -I$(gemini_srcdir) -DGASNET_CONDUIT_ARIES -DHAVE_PMI_SPAWNER
+CONDUIT_EXTRALIBCFLAGS = @GNI_CFLAGS@ -DHAVE_PMI_SPAWNER
 
 # additional conduit header files to install from external, non-standard directories
-CONDUIT_EXTRAHEADERS = $(gemini_install_hdrs)
+CONDUIT_EXTRAHEADERS = 
 
 # headers selected by default rules that should NOT be installed
-CONDUIT_PRIVATEHEADERS = gasnet_gemini.h
+CONDUIT_PRIVATEHEADERS = gasnet_aries.h
 
 # additional file dependencies not mentioned elsewhere 
 # that should force libgasnet rebuild on update
-CONDUIT_EXTRADEPS = $(gemini_srcdir)/*.[ch] $(pmi_srcdir)/*.[ch]
+CONDUIT_EXTRADEPS = $(pmi_srcdir)/*.[ch]
 
 # additional object files to be included in libgasnet that need to be compiled 
 # using a special, conduit-specific command. These should also be included as
@@ -71,13 +72,6 @@ CONDUIT_RUNCMD = @TOP_BUILDDIR@/aries-conduit/contrib/gasnetrun_aries -np %N -c 
 
 # conduit-specific tests in ../tests directory
 CONDUIT_TESTS =
-
-# conduit-specific hook to install gemini-conduit's README as our own
-# The normal uninstall is sufficient to remove it.
-conduit_has_install_data_hook = yes
-do-install-data-conduit:
-	@rm -f $(DESTDIR)$(docdir)/README-aries
-	$(INSTALL_DATA) $(srcdir)/../gemini-conduit/README $(DESTDIR)$(docdir)/README-aries
 
 # -------- Do not modify anything below this line --------
 

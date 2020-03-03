@@ -77,12 +77,12 @@ class Tree {
   }
 
   //
-  // Add up tree node, freeing as we go
+  // Add up tree node, not freeing as we go
   //
   proc sum(): int {
     var sum = 1;
     if left {
-      sum += left.sum() + right.sum();
+      sum += left!.sum() + right!.sum();
     }
     return sum;
   }

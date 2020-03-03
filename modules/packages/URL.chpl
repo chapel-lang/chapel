@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2019 Cray Inc.
+ * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -27,7 +27,7 @@ For example, the following program downloads a web-page from http://example.com 
 
   use URL;
   var urlreader = openUrlReader("http://example.com");
-  var str:string;
+  var str:bytes;
   // Output each line read from the URL to stdout
   while(urlreader.readline(str)) {
     write(str);
@@ -41,6 +41,7 @@ For example, the following program downloads a web-page from http://example.com 
  */
 
 module URL {
+  public use IO;
 
   /*
 

@@ -1,3 +1,4 @@
+use IO;
 use FileSystem;
 use Path;
 use BlockDist;
@@ -20,7 +21,7 @@ for f in DistFiles {
     var base = basename(f);
     var uname:c_string;
     sys_getenv(c"USER", uname);
-    var to = "/tmp/" + uname:string + base;
+    var to = "/tmp/" + createStringWithNewBuffer(uname)+ base;
     if verbose then writeln("on ", here.id, " copying from ", from, " to ", to);
     copy(from, to);
     f = to;

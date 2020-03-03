@@ -62,11 +62,3 @@ true
 three
 === cast from bool
 true
-=== cast from c_string
-cs
-=== cast from c_string
-cs
-=== cast to c_string
-cs
-=== cast to c_string
-cs

@@ -1,0 +1,38 @@
+#INSTRUCTIONS# Conduit-specific Makefile fragment settings
+#INSTRUCTIONS#
+#INSTRUCTIONS# The contents of this file are embedded into the 
+#INSTRUCTIONS# *-(seq,par,parsync).mak Makefile fragments at conduit build time
+#INSTRUCTIONS# The settings in those fragments are used to build GASNet clients
+#INSTRUCTIONS# (including the GASNet tests). 
+#INSTRUCTIONS# See the conduit-writer instructions in the generated fragments
+#INSTRUCTIONS# or $(top_srcdir)/other/fragment-head.mak.in for usage info.
+
+# When using an MPI-based bootstrapper, we must link using the system MPI compiler
+@HAVE_BOOTSTRAP_MPI_TRUE@GASNET_LD_OVERRIDE = @MPI_CC@
+@HAVE_BOOTSTRAP_MPI_TRUE@GASNET_LDFLAGS_OVERRIDE = @MPI_CFLAGS@ @LDFLAGS@
+@HAVE_BOOTSTRAP_MPI_TRUE@MPI_COMPAT_LIBS = @MPI_LIBS@
+
+# Linker feature requirements embedded in GASNET_LD(FLAGS) which are not satisfied solely by GASNET_LIBS 
+# (eg possible dependence on implicit MPI or C++ libraries added by a linker wrapper in GASNET_LD):
+@HAVE_BOOTSTRAP_MPI_TRUE@GASNET_LD_REQUIRES_MPI = 1
+
+# Some platforms need extra -libs for the socket calls in ssh-spawner:
+@HAVE_BOOTSTRAP_SSH_TRUE@SSH_LIBS = @SSH_SPAWNER_LIBS@
+
+CONDUIT_LDFLAGS = @UCX_LDFLAGS@ @PMI_SPAWNER_LDFLAGS@
+CONDUIT_LIBS = @UCX_LIBS@ $(MPI_COMPAT_LIBS) $(SSH_LIBS) @PMI_SPAWNER_LIBS@
+
+# (###) If this conduit has internal conduit threads, then it needs 
+# threading flags and libs - even in GASNET_SEQ mode
+CONDUIT_DEFINES_SEQ = @GASNET_THREAD_DEFINES@
+CONDUIT_LIBS_SEQ = @GASNET_THREAD_LIBS@
+
+# Clients may want/need to know which spawners we support:
+GASNET_SPAWNER_DEFAULT = @GASNET_UCX_SPAWNER_CONF@
+@HAVE_BOOTSTRAP_PMI_TRUE@GASNET_SPAWNER_PMI = 1
+@HAVE_BOOTSTRAP_PMI_FALSE@GASNET_SPAWNER_PMI = 0
+@HAVE_BOOTSTRAP_MPI_TRUE@GASNET_SPAWNER_MPI = 1
+@HAVE_BOOTSTRAP_MPI_FALSE@GASNET_SPAWNER_MPI = 0
+@HAVE_BOOTSTRAP_SSH_TRUE@GASNET_SPAWNER_SSH = 1
+@HAVE_BOOTSTRAP_SSH_FALSE@GASNET_SPAWNER_SSH = 0
+

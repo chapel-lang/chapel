@@ -1,6 +1,7 @@
 // Test that forwarding to self is detected as an error
 class A {
-  forwarding var data: unmanaged A?;
+  var data: unmanaged A?;
+  forwarding data!;
   proc fun(i:int) {}
 }
 proc main() {

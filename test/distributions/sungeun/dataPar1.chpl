@@ -53,20 +53,17 @@ proc checkdit(distName, A, B, C) {
   }
 
   if allerr==0 then writeln(distName, ": OK"); else writeln(distName, ": NO OK");
-
-  return allerr;
 }
 
-var err = 0;
 const DDom = Space dmapped defaultDist;
 var DA, DB, DC: [DDom] real;
 dit(DDom, DA, DB, DC);
-err += checkdit("Default", DA, DB, DC);
+checkdit("Default", DA, DB, DC);
 
 const BDom = Space dmapped new dmap(new Block(boundingBox=Space));
 var BA, BB, BC: [BDom] real;
 dit(BDom, BA, BB, BC);
-err += checkdit("Block", BA, BB, BC);
+checkdit("Block", BA, BB, BC);
 
 const CDom = Space dmapped new dmap(new Cyclic(startIdx=(1:myIntType,
                                                          1:myIntType,
@@ -76,6 +73,4 @@ const CDom = Space dmapped new dmap(new Cyclic(startIdx=(1:myIntType,
                                                          1:myIntType)));
 var CA, CB, CC: [CDom] real;
 dit(CDom, CA, CB, CC);
-err += checkdit("Cyclic", CA, CB, CC);
-
-exit(err);
+checkdit("Cyclic", CA, CB, CC);

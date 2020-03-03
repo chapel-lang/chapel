@@ -1,4 +1,4 @@
-use Memory;
+use Memory, IO;
 
 config const n = 1;
 

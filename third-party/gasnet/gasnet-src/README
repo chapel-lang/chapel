@@ -430,10 +430,10 @@ Native, high-performance conduits:
 pami-conduit: IBM Parallel Active Messaging Interface (PAMI)
  The conduit of choice for GASNet on the IBM BlueGene/Q.
  Rigorously tested on BlueGene/Q, also supported on other select IBM systems.
+ THIS CONDUIT IS NOW DEPRECATED - see pami-conduit/README
 
-gemini-conduit: Cray XE/XK Gemini
 aries-conduit:  Cray XC Aries
- The conduit of choice for GASNet on the Gemini and Aries networks in recent Cray X* systems.
+ The conduit of choice for GASNet on the Aries networks in Cray XC systems.
  Rigorously tested and supported.
 
 ibv-conduit: InfiniBand Verbs
@@ -520,8 +520,8 @@ Platforms where GASNet and Berkeley UPC have been successfully tested:
 
     * CNL/Cray-XT/{gcc,PGI,PathScale,Intel}/64: smp, mpi &
 
-    * CNL/Cray-XE/{gcc,PGI,PathScale,Intel,Cray}/64: smp, mpi, gemini
-    * CNL/Cray-XK/{gcc,PGI,PathScale,Intel,Cray}/64: smp, mpi, gemini
+    * CNL/Cray-XE/{gcc,PGI,PathScale,Intel,Cray}/64: smp, mpi &
+    * CNL/Cray-XK/{gcc,PGI,PathScale,Intel,Cray}/64: smp, mpi &
 
     * CNL/Cray-XC/{gcc,Intel,Cray}/64: smp, mpi, aries, ofi
 

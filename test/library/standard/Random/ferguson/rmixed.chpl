@@ -1,7 +1,7 @@
 use Random;
 
 {
-  var rng = makeRandomStream(seed=17, parSafe=false,
+  var rng = createRandomStream(seed=17, parSafe=false,
                              eltType=real(64), algorithm=RNG.PCG);
 
   var v1 = rng.getNext();
@@ -19,7 +19,7 @@ use Random;
   var v2: uint(64);
 
   {
-    var rng = makeRandomStream(seed=17, parSafe=false,
+    var rng = createRandomStream(seed=17, parSafe=false,
                                eltType=uint(64), algorithm=RNG.PCG);
 
     var v1  = rng.getNext();
@@ -28,7 +28,7 @@ use Random;
   }
 
   {
-    var rng = makeRandomStream(seed=17, parSafe=false,
+    var rng = createRandomStream(seed=17, parSafe=false,
                                eltType=uint(64), algorithm=RNG.PCG);
 
     var v1     = rng.getNext(uint(8));
@@ -43,7 +43,7 @@ use Random;
   var v2: real;
 
   {
-    var rng = makeRandomStream(seed=17, parSafe=false,
+    var rng = createRandomStream(seed=17, parSafe=false,
                                eltType=real(64), algorithm=RNG.PCG);
 
     var v1 = rng.getNext();
@@ -52,7 +52,7 @@ use Random;
   }
 
   {
-    var rng = makeRandomStream(seed=17, parSafe=false,
+    var rng = createRandomStream(seed=17, parSafe=false,
                                eltType=real(64), algorithm=RNG.PCG);
 
     var v1 = rng.getNext(uint(8));
@@ -68,7 +68,7 @@ use Random;
   var v2: complex;
 
   {
-    var rng = makeRandomStream(seed=17, parSafe=false,
+    var rng = createRandomStream(seed=17, parSafe=false,
                                eltType=complex(64), algorithm=RNG.PCG);
 
     var v1 = rng.getNext();
@@ -77,7 +77,7 @@ use Random;
   }
 
   {
-    var rng = makeRandomStream(seed=17, parSafe=false,
+    var rng = createRandomStream(seed=17, parSafe=false,
                                eltType=complex(64), algorithm=RNG.PCG);
 
     var v1     = rng.getNext(uint(8));

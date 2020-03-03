@@ -4,6 +4,9 @@
    contributed by Ben Harshbarger
    derived from the GNU C++ RE2 version by Alexey Zolotov
 */
+use IO;
+
+use Regexp;
 
 proc main(args: [] string) {
   var variants = [

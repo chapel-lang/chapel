@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2019 Cray Inc.
+ * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -190,7 +190,10 @@ int fLinkStyle = LS_DEFAULT; // use backend compiler's default
 bool fUserSetLocal = false;
 bool fLocal;   // initialized in postLocal()
 bool fIgnoreLocalClasses = false;
-bool fLifetimeChecking = true;
+bool fNoLifetimeChecking = false;
+bool fNoSplitInit = false;
+bool fNoEarlyDeinit = false;
+bool fNoCopyElision = false;
 bool fCompileTimeNilChecking = true;
 bool fOverrideChecking = true;
 bool fieeefloat = false;
@@ -215,6 +218,7 @@ bool fPrintUnusedFns = false;
 bool fPrintUnusedInternalFns = false;
 bool fReportAliases = false;
 bool fReportBlocking = false;
+bool fReportExpiring = false;
 bool fReportOptimizedLoopIterators = false;
 bool fReportInlinedIterators = false;
 bool fReportVectorizedLoops = false;
@@ -549,14 +553,22 @@ static void setPrintIr(const ArgumentDescription* desc, const char* arg) {
   }
 }
 
-static void verifyStageAndSetStageNum(const ArgumentDescription* desc, const
-    char* arg)
+static void verifyStageAndSetStageNum(const ArgumentDescription* desc,
+                                      const char* arg)
 {
   llvmStageNum_t stageNum = llvmStageNumFromLlvmStageName(arg);
   if(stageNum == llvmStageNum::NOPRINT)
     USR_FATAL("Unknown llvm-print-ir-stage argument");
 
   llvmPrintIrStageNum = stageNum;
+}
+
+static void warnUponLegacyClasses(const ArgumentDescription* desc,
+                                  const char* arg)
+{
+  USR_WARN("'--legacy-classes' option has been deprecated"
+           " and will be removed in the next Chapel release;"
+           " it no longer affects compilation");
 }
 
 // In order to handle accumulating ccflags arguments, the argument
@@ -1038,6 +1050,7 @@ static ArgumentDescription arg_desc[] = {
  {"print-statistics", ' ', "[n|k|t]", "Print AST statistics", "S256", fPrintStatistics, NULL, NULL},
  {"report-aliases", ' ', NULL, "Report aliases in user code", "N", &fReportAliases, NULL, NULL},
  {"report-blocking", ' ', NULL, "Report blocking functions in user code", "N", &fReportBlocking, NULL, NULL},
+ {"report-expiring", ' ', NULL, "Report expiring values in user code", "N", &fReportExpiring, NULL, NULL},
  {"report-inlining", ' ', NULL, "Print inlined functions", "F", &report_inlining, NULL, NULL},
  {"report-dead-blocks", ' ', NULL, "Print dead block removal stats", "F", &fReportDeadBlocks, NULL, NULL},
  {"report-dead-modules", ' ', NULL, "Print dead module removal stats", "F", &fReportDeadModules, NULL, NULL},
@@ -1059,8 +1072,11 @@ static ArgumentDescription arg_desc[] = {
  {"denormalize", ' ', NULL, "Enable [disable] denormalization", "N", &fDenormalize, "CHPL_DENORMALIZE", NULL},
  DRIVER_ARG_DEBUGGERS,
  {"interprocedural-alias-analysis", ' ', NULL, "Enable [disable] interprocedural alias analysis", "n", &fNoInterproceduralAliasAnalysis, NULL, NULL},
- {"lifetime-checking", ' ', NULL, "Enable [disable] lifetime checking pass", "N", &fLifetimeChecking, NULL, NULL},
- {"legacy-classes", ' ', NULL, "Class variables match 1.19 - borrowed by default, can store nil", "N", &fLegacyClasses, NULL, NULL},
+ {"lifetime-checking", ' ', NULL, "Enable [disable] lifetime checking pass", "n", &fNoLifetimeChecking, NULL, NULL},
+ {"split-initialization", ' ', NULL, "Enable [disable] support for split initialization", "n", &fNoSplitInit, NULL, NULL},
+ {"early-deinit", ' ', NULL, "Enable [disable] support for early deinit based upon expiring value analysis", "n", &fNoEarlyDeinit, NULL, NULL},
+ {"copy-elision", ' ', NULL, "Enable [disable] copy elision based upon expiring value analysis", "n", &fNoCopyElision, NULL, NULL},
+ {"legacy-classes", ' ', NULL, "Deprecated flag - does not affect compilation", "N", &fLegacyClasses, NULL, &warnUponLegacyClasses},
  {"ignore-nilability-errors", ' ', NULL, "Allow compilation to continue by coercing away nilability", "N", &fIgnoreNilabilityErrors, NULL, NULL},
  {"overload-sets-checks", ' ', NULL, "Report potentially hijacked calls", "N", &fOverloadSetsChecks, NULL, NULL},
  {"compile-time-nil-checking", ' ', NULL, "Enable [disable] compile-time nil checking", "N", &fCompileTimeNilChecking, "CHPL_NO_COMPILE_TIME_NIL_CHECKS", NULL},
@@ -1448,6 +1464,15 @@ static void checkMLDebugAndLibmode(void) {
   return;
 }
 
+static void checkNotLibraryAndMinimalModules(void) {
+  const bool isLibraryCompile = fLibraryCompile || fMultiLocaleInterop;
+  if (isLibraryCompile && fMinimalModules) {
+    USR_FATAL("Libraries do not currently support \'--minimal-modules\'");
+  }
+
+  return;
+}
+
 static void postprocess_args() {
   // Processes that depend on results of passed arguments or values of CHPL_vars
 
@@ -1464,6 +1489,8 @@ static void postprocess_args() {
   postStaticLink();
 
   checkMLDebugAndLibmode();
+
+  checkNotLibraryAndMinimalModules();
 
   setPrintCppLineno();
 
@@ -1503,9 +1530,7 @@ int main(int argc, char* argv[]) {
     initPrimitive();
     initPrimitiveTypes();
 
-    DefExpr* objectClass = defineObjectClass();
-
-    initChplProgram(objectClass);
+    initChplProgram();
 
     initStringLiteralModule();
 

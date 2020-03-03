@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2019 Cray Inc.
+ * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -34,6 +34,22 @@
 #include <string.h>
 
 
+#define GRIPE(name, kind, val, kindFmt, dflt)                           \
+  do {                                                                  \
+    if (name == NULL) {                                                 \
+      chpl_msg(1,                                                       \
+               "warning: env var improper %s value \"%s\", "            \
+               "assuming %" kindFmt "\n",                               \
+               val, kind, dflt);                                        \
+    } else {                                                            \
+      chpl_msg(1,                                                       \
+               "warning: CHPL_RT_%s improper %s value \"%s\", "         \
+               "assuming %" kindFmt "\n",                               \
+               name, kind, val, dflt);                                  \
+    }                                                                   \
+  } while (0)
+
+
 const char* chpl_env_rt_get(const char* evs, const char* dflt) {
   char evName[100];
   const char* evVal;
@@ -57,15 +73,7 @@ chpl_bool chpl_env_str_to_bool(const char* evName, const char* evVal,
   if (strchr("1tTyY", evVal[0]) != NULL)
     return true;
 
-  if (evName == NULL) {
-    chpl_msg(1,
-             "warning: env var improper bool value \"%s\", assuming %c\n",
-             evVal, (dflt ? 'T' : 'F'));
-  } else {
-    chpl_msg(1,
-             "warning: CHPL_RT_%s improper bool value \"%s\", assuming %c\n",
-             evName, evVal, (dflt ? 'T' : 'F'));
-  }
+  GRIPE(evName, "bool", evVal, "c", (dflt ? 'T' : 'F'));
 
   return dflt;
 }
@@ -81,17 +89,7 @@ int64_t chpl_env_str_to_int(const char* evName, const char* evVal,
   if (sscanf(evVal, "%" SCNi64, &val) == 1)
     return val;
 
-  if (evName == NULL) {
-    chpl_msg(1,
-             "warning: env var improper int value \"%s\", assuming "
-             "%" PRId64 "\n",
-             evVal, dflt);
-  } else {
-    chpl_msg(1,
-             "warning: CHPL_RT_%s improper int value \"%s\", assuming "
-             "%" PRId64 "\n",
-             evName, evVal, dflt);
-  }
+  GRIPE(evName, "int", evVal, PRId64, dflt);
 
   return dflt;
 }
@@ -112,18 +110,25 @@ int chpl_env_str_to_int_pct(const char* evName, const char* evVal,
   }
 
   if (doWarn) {
-    if (evName == NULL) {
-      chpl_msg(1,
-               "warning: env var improper int percentage \"%s\", assuming "
-               "%d\n",
-               evVal, dflt);
-    } else {
-      chpl_msg(1,
-               "warning: CHPL_RT_%s improper int percentage \"%s\", assuming "
-               "%d\n",
-               evName, evVal, dflt);
-    }
+    GRIPE(evName, "int percentage", evVal, "d", dflt);
   }
+
+  return dflt;
+}
+
+
+uint64_t chpl_env_str_to_uint(const char* evName, const char* evVal,
+                              uint64_t dflt) {
+  int64_t val;
+
+  if (evVal == NULL)
+    return dflt;
+
+  if (isdigit(evVal[0])
+      && sscanf(evVal, "%" SCNu64, &val) == 1)
+    return val;
+
+  GRIPE(evName, "unsigned int", evVal, PRIu64, dflt);
 
   return dflt;
 }
@@ -157,17 +162,7 @@ size_t chpl_env_str_to_size(const char* evName, const char* evVal,
   }
 
   if (!okay) {
-    if (evName == NULL) {
-      chpl_msg(1,
-               "warning: env var improper size value \"%s\", assuming %zd\n",
-               evVal, dflt);
-    } else {
-      chpl_msg(1,
-               "warning: CHPL_RT_%s improper size value \"%s\", assuming "
-               "%zd\n",
-               evName, evVal, dflt);
-    }
-
+    GRIPE(evName, "size", evVal, "zd", dflt);
     return dflt;
   }
 

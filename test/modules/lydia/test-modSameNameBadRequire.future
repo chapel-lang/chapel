@@ -1,6 +1,0 @@
-feature request: support 'use' creating a submodule warning on 'require' statements for .chpl files
-
-Right now, `require Foo.chpl;` doesn't create an AST node to latch onto later
-in compilation when we actually know the full contents of the block statement,
-so we can't output the warning we do for 'use' statements and other 'require'
-statements for non-.chpl files.

@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2019 Cray Inc.
+ * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -46,6 +46,8 @@ AggregateType* dtObject = NULL;
 AggregateType* dtBytes  = NULL;
 AggregateType* dtString = NULL;
 AggregateType* dtLocale = NULL;
+AggregateType* dtOwned  = NULL;
+AggregateType* dtShared = NULL;
 
 AggregateType::AggregateType(AggregateTag initTag) :
   Type(E_AggregateType, NULL) {
@@ -203,12 +205,71 @@ int AggregateType::numFields() const {
   return fields.length;
 }
 
+struct DecoratorTypePair {
+  ClassTypeDecorator d;
+  Type* t;
+  DecoratorTypePair(ClassTypeDecorator d, Type* t) : d(d), t(t) { }
+};
+
+// Inspects a type expression and returns (class decorator, class type).
+// For non-class types, returns (CLASS_TYPE_UNMANAGED_NILABLE, NULL)
+static DecoratorTypePair getTypeExprDecorator(Expr* e) {
+  if (SymExpr* se = toSymExpr(e))
+    if (TypeSymbol* ts = toTypeSymbol(se->symbol()))
+      if (isClassLikeOrManaged(ts->type))
+        return DecoratorTypePair(classTypeDecorator(ts->type),
+                                 canonicalClassType(ts->type));
+
+  if (CallExpr* call = toCallExpr(e)) {
+    if (isClassDecoratorPrimitive(call) && call->numActuals() >= 1) {
+      DecoratorTypePair p = getTypeExprDecorator(call->get(1));
+      ClassTypeDecorator d = p.d;
+      if (call->isPrimitive(PRIM_TO_UNMANAGED_CLASS) ||
+          call->isPrimitive(PRIM_TO_UNMANAGED_CLASS_CHECKED)) {
+        if (isDecoratorNonNilable(d))
+          d = CLASS_TYPE_UNMANAGED_NONNIL;
+        else if (isDecoratorNilable(d))
+          d = CLASS_TYPE_UNMANAGED_NILABLE;
+        else
+          d = CLASS_TYPE_UNMANAGED;
+      } else if (call->isPrimitive(PRIM_TO_BORROWED_CLASS) ||
+                 call->isPrimitive(PRIM_TO_BORROWED_CLASS_CHECKED)) {
+        if (isDecoratorNonNilable(d))
+          d = CLASS_TYPE_BORROWED_NONNIL;
+        else if (isDecoratorNilable(d))
+          d = CLASS_TYPE_BORROWED_NILABLE;
+        else
+          d = CLASS_TYPE_BORROWED;
+      } else if (call->isPrimitive(PRIM_TO_NILABLE_CLASS) ||
+                 call->isPrimitive(PRIM_TO_NILABLE_CLASS_CHECKED)) {
+        d = addNilableToDecorator(d);
+      } else if (call->isPrimitive(PRIM_TO_NON_NILABLE_CLASS)) {
+        d = addNonNilToDecorator(d);
+      } else {
+        INT_FATAL("Case not handled");
+      }
+      p.d = d;
+      return p;
+    }
+  }
+
+  return DecoratorTypePair(CLASS_TYPE_UNMANAGED_NILABLE, NULL);
+}
+
 // Note that a field with generic type where that type has
 // default values for all of its generic fields is considered concrete
 // for the purposes of this function.
 static bool isFieldTypeExprGeneric(Expr* typeExpr) {
   // Look in the field declaration for a concrete type
   Symbol* sym = NULL;
+
+  DecoratorTypePair pair = getTypeExprDecorator(typeExpr);
+  if (pair.t != NULL) {
+    sym = pair.t->symbol;
+    if (isDecoratorUnknownManagement(pair.d) ||
+        isDecoratorUnknownNilability(pair.d))
+      return true;
+  }
 
   if (UnresolvedSymExpr* urse = toUnresolvedSymExpr(typeExpr)) {
     sym = lookup(urse->unresolved, urse);
@@ -450,6 +511,8 @@ void AggregateType::addDeclarations(Expr* expr) {
 
     this->forwardingTo.insertAtTail(forwarding);
 
+  } else if (isEndOfStatementMarker(expr)) {
+    // drop it
   } else {
     INT_FATAL(expr, "unexpected case");
   }
@@ -516,6 +579,13 @@ void AggregateType::addDeclaration(DefExpr* defExpr) {
 
     } else {
       ArgSymbol* arg = new ArgSymbol(fn->thisTag, "this", this);
+
+      if (fn->name == astrInitEquals) {
+        if (fn->numFormals() != 1) {
+          USR_FATAL_CONT(fn, "%s.init= must have exactly one argument",
+                         this->name());
+        }
+      }
 
       fn->_this = arg;
 
@@ -757,6 +827,55 @@ static void checkNumArgsErrors(AggregateType* at, CallExpr* call, const char* ca
   }
 }
 
+static void resolveConcreteFields(AggregateType* ret, CallExpr* call, const char* callString) {
+  if (ret->resolveStatus != RESOLVED) {
+    ret->resolveStatus = RESOLVED;
+    // TODO: How to handle cases where generic fields lean on non-generic
+    // fields for type/init-expressions:
+    //   class C {
+    //     type T;
+    //     param x : int;
+    //
+    //     var next : C(T, x);
+    //
+    //     param flag : bool = if next.type.T == int then true else false;
+    //   }
+    //
+    // In this example, the current implementation fails to resolve the type
+    // of field 'flag' because 'next' is not yet resolved. This particular
+    // example is difficult to resolve because the field 'next' requires
+    // recursive resolution of the type we're already trying to resolve. This
+    // difficulty has lead to the current implementation which resolves
+    // concrete fields after generic fields are resolved.
+    //
+
+    // TODO: Unfortunate workaround for the existing infrastructure. We need
+    // to keep types marked as generic if their type fields are generic.
+    for_fields(field, ret) {
+      if (field->hasFlag(FLAG_TYPE_VARIABLE) && field->type->symbol->hasFlag(FLAG_GENERIC)) {
+        ret->symbol->addFlag(FLAG_GENERIC);
+        break;
+      }
+    }
+
+    // Resolve the remaining non-generic fields
+    if (ret->symbol->hasFlag(FLAG_GENERIC) == false) {
+
+      makeRefType(ret);
+
+      for_fields(field, ret) {
+        if (field->hasFlag(FLAG_PARAM) == false &&
+            field->hasFlag(FLAG_TYPE_VARIABLE) == false &&
+            field->type == dtUnknown) {
+          if (Type* type = resolveFieldTypeForInstantiation(field, call, callString)) {
+            field->type = type;
+          }
+        }
+      }
+    }
+  }
+}
+
 AggregateType* AggregateType::generateType(CallExpr* call, const char* callString) {
 
   checkNumArgsErrors(this, call, callString);
@@ -810,53 +929,7 @@ AggregateType* AggregateType::generateType(CallExpr* call, const char* callStrin
   if (ret != this) {
     ret->instantiatedFrom = this;
 
-    if (ret->resolveStatus != RESOLVED) {
-      ret->resolveStatus = RESOLVED;
-      // TODO: How to handle cases where generic fields lean on non-generic
-      // fields for type/init-expressions:
-      //   class C {
-      //     type T;
-      //     param x : int;
-      //
-      //     var next : C(T, x);
-      //
-      //     param flag : bool = if next.type.T == int then true else false;
-      //   }
-      //
-      // In this example, the current implementation fails to resolve the type
-      // of field 'flag' because 'next' is not yet resolved. This particular
-      // example is difficult to resolve because the field 'next' requires
-      // recursive resolution of the type we're already trying to resolve. This
-      // difficulty has lead to the current implementation which resolves
-      // concrete fields after generic fields are resolved.
-      //
-
-      // TODO: Unfortunate workaround for the existing infrastructure. We need
-      // to keep types marked as generic if their type fields are generic.
-      for_fields(field, ret) {
-        if (field->hasFlag(FLAG_TYPE_VARIABLE) && field->type->symbol->hasFlag(FLAG_GENERIC)) {
-          ret->symbol->addFlag(FLAG_GENERIC);
-          break;
-        }
-      }
-
-      // Resolve the remaining non-generic fields
-      if (ret->symbol->hasFlag(FLAG_GENERIC) == false) {
-
-        makeRefType(ret);
-
-        for (int index = 1; index <= numFields(); index = index + 1) {
-          Symbol* field = ret->getField(index);
-          if (field->hasFlag(FLAG_PARAM) == false &&
-              field->hasFlag(FLAG_TYPE_VARIABLE) == false &&
-              field->type == dtUnknown) {
-            if (Type* type = resolveFieldTypeForInstantiation(field, call, callString)) {
-              field->type = type;
-            }
-          }
-        }
-      }
-    }
+    resolveConcreteFields(ret, call, callString);
   }
 
   return ret;
@@ -1119,6 +1192,13 @@ static void checkTypesForInstantiation(AggregateType* at, CallExpr* call, const 
   }
 }
 
+static void markManagedPointerIfNonNilable(AggregateType* mp, Symbol* mps) {
+  if (! mps->hasFlag(FLAG_GENERIC))
+    if (Symbol* chpl_t = mp->getField("chpl_t", false))
+      if (isNonNilableClassType(chpl_t->type))
+        mps->addFlag(FLAG_MANAGED_POINTER_NONNILABLE);
+}
+
 AggregateType* AggregateType::generateType(SymbolMap& subs, CallExpr* call, const char* callString, bool evalDefaults, Expr* insnPoint) {
   AggregateType* retval = this;
 
@@ -1129,6 +1209,8 @@ AggregateType* AggregateType::generateType(SymbolMap& subs, CallExpr* call, cons
     // Is the parent generic?
     if (parent->genericFields.size() > 0) {
       AggregateType* instantiatedParent = parent->generateType(subs, call, callString, evalDefaults, insnPoint);
+
+      resolveConcreteFields(instantiatedParent, call, callString);
 
       retval = instantiationWithParent(instantiatedParent, insnPoint);
     }
@@ -1190,6 +1272,9 @@ void AggregateType::resolveConcreteType() {
 
   this->resolveStatus = RESOLVING;
   this->symbol->instantiationPoint = getInstantiationPoint(this->symbol->defPoint);
+  //if (this->symbol->instantiationPoint)
+  //  this->symbol->userInstantiationPointLoc =
+  //    getUserInstantiationPoint(this->symbol);
 
   if (isClass() == true && symbol->hasFlag(FLAG_NO_OBJECT) == false) {
     AggregateType* parent = dispatchParents.v[0];
@@ -1214,9 +1299,8 @@ static void buildParentSubMap(AggregateType* at, SymbolMap& map) {
   if (root->dispatchParents.n > 0) {
     buildParentSubMap(at->dispatchParents.v[0], map);
   }
-  form_Map(SymbolMapElem, e, at->substitutions) {
-    Symbol* instantiated = e->key;
-    map.put(root->getField(instantiated->name), instantiated);
+  for_fields(field, at) {
+    map.put(root->getField(field->name), field);
   }
 }
 
@@ -1264,6 +1348,9 @@ AggregateType* AggregateType::instantiationWithParent(AggregateType* parent, Exp
 
     if (retval->symbol->instantiationPoint == NULL) {
       retval->symbol->instantiationPoint = toBlockStmt(insnPoint);
+      //if (retval->symbol->instantiationPoint)
+      //  retval->symbol->userInstantiationPointLoc =
+      //    getUserInstantiationPoint(retval->symbol);
     }
 
     // Update the type of the 'super' field
@@ -1539,6 +1626,9 @@ AggregateType* AggregateType::getInstantiation(Symbol* sym, int index, Expr* ins
     retval = getNewInstantiation(sym, symType, insnPoint);
   }
 
+  if (retval->symbol->hasFlag(FLAG_MANAGED_POINTER))
+    markManagedPointerIfNonNilable(retval, retval->symbol);
+
   return retval;
 }
 
@@ -1618,6 +1708,9 @@ AggregateType* AggregateType::getNewInstantiation(Symbol* sym, Type* symType, Ex
   retval->instantiatedFrom = this;
   if (retval->symbol->instantiationPoint == NULL) {
     retval->symbol->instantiationPoint = toBlockStmt(insnPoint);
+    //if (retval->symbol->instantiationPoint != NULL)
+    //  retval->symbol->userInstantiationPointLoc =
+    //    getUserInstantiationPoint(retval->symbol);
   }
 
   retval->symbol->copyFlags(symbol);
@@ -2380,7 +2473,7 @@ bool AggregateType::addSuperArgs(FnSymbol*                    fn,
 }
 
 void AggregateType::buildCopyInitializer() {
-  if (isRecordWithInitializers(this) == true) {
+  if (isRecordOrUnionWithInitializers(this) == true) {
     SET_LINENO(this);
 
     bool isGeneric = false;
@@ -2420,6 +2513,7 @@ void AggregateType::buildCopyInitializer() {
     fn->addFlag(FLAG_COMPILER_GENERATED);
     fn->addFlag(FLAG_LAST_RESORT);
     fn->addFlag(FLAG_COPY_INIT);
+    fn->addFlag(FLAG_SUPPRESS_LVALUE_ERRORS);
 
     _this->addFlag(FLAG_ARG_THIS);
 
@@ -2433,9 +2527,44 @@ void AggregateType::buildCopyInitializer() {
         INT_FATAL("extern type is generic");
 
       // Generate a bit-copy for extern records in order to copy unknown fields.
-      if (symbol->hasFlag(FLAG_EXTERN)) {
-        fn->insertAtHead(new CallExpr(PRIM_ASSIGN, fn->_this, other));
+      fn->insertAtHead(new CallExpr(PRIM_ASSIGN, fn->_this, other));
+
+    } else if (aggregateTag == AGGREGATE_UNION) {
+      // Copy the set field ID, then copy only the field that is set
+      fn->insertAtTail(new CallExpr(PRIM_SET_UNION_ID,
+                                    fn->_this,
+                                    new CallExpr(PRIM_GET_UNION_ID, other)));
+
+      for_fields(fieldDefExpr, this) {
+        if (VarSymbol* field = toVarSymbol(fieldDefExpr)) {
+          const char* name       = field->name;
+
+          CallExpr* thisField  = new CallExpr(".",
+                                              fn->_this,
+                                              new_CStringSymbol(name));
+
+          CallExpr* otherField = new CallExpr(".",
+                                              other,
+                                              new_CStringSymbol(name));
+
+          CallExpr* setField = new CallExpr("=", thisField, otherField);
+
+          CallExpr* thisField2  = new CallExpr(".",
+                                               fn->_this,
+                                               new_CStringSymbol(name));
+
+          CallExpr* noSetField = new CallExpr("=", thisField2, gNoInit);
+
+          CallExpr* isField =
+            new CallExpr("==", new CallExpr(PRIM_GET_UNION_ID, fn->_this),
+                               new CallExpr(PRIM_FIELD_NAME_TO_NUM,
+                                            this->symbol,
+                                            new_CStringSymbol(name)));
+
+          fn->insertAtTail(new CondStmt(isField, setField, noSetField));
+        }
       }
+
     } else {
       // Copy the fields from "other" into our fields
       for_fields(fieldDefExpr, this) {
@@ -2617,6 +2746,9 @@ AggregateType* AggregateType::discoverParentAndCheck(Expr* storesName) {
 
   if (UnresolvedSymExpr* se = toUnresolvedSymExpr(storesName)) {
     Symbol* sym = lookup(se->unresolved, storesName);
+    if (sym == NULL) {
+      USR_FATAL(se, "unable to find parent class named '%s'", se->unresolved);
+    }
     // Use AggregateType in class hierarchy rather than generic-management
     if (isDecoratedClassType(sym->type)) {
       sym = canonicalClassType(sym->type)->symbol;
@@ -2715,47 +2847,6 @@ void AggregateType::addRootType() {
       fields.insertAtHead(new DefExpr(super));
     }
   }
-}
-
-DefExpr* defineObjectClass() {
-  // The base object class looks like this:
-  //
-  //   class object {
-  //     chpl__class_id chpl__cid;
-  //   }
-  //
-  // chpl__class_id is an int32_t field identifying the classes
-  //  in the program.  We never create the actual field within the
-  //  IR (it is directly generated in the C code).  It might
-  //  be the right thing to do, so I made an attempt at adding the
-  //  field.  Unfortunately, we would need some significant changes
-  //  throughout compilation, and it seemed to me that the it might result
-  //  in possibly more special case code.
-  //
-  // Because we never create the actual field, we have a special case
-  //  for it in TypeSymbol::codegenAggMetadata().  Remember to change
-  //  that special case if we ever change the contents of object or
-  //  if we start creating the field.
-  //
-  DefExpr* retval = buildClassDefExpr("object",
-                                      NULL,
-                                      AGGREGATE_CLASS,
-                                      NULL,
-                                      new BlockStmt(),
-                                      FLAG_UNKNOWN,
-                                      NULL);
-
-  retval->sym->addFlag(FLAG_OBJECT_CLASS);
-
-  // Prevents removal in pruneResolvedTree().
-  retval->sym->addFlag(FLAG_GLOBAL_TYPE_SYMBOL);
-  retval->sym->addFlag(FLAG_NO_OBJECT);
-
-  dtObject = toAggregateType(retval->sym->type);
-
-  INT_ASSERT(isAggregateType(dtObject));
-
-  return retval;
 }
 
 /************************************* | **************************************

@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2019 Cray Inc.
+ * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -55,6 +55,31 @@ public:
 *                                                                             *
 *                                                                             *
 ************************************** | *************************************/
+class ResolveScope;
+
+class VisibilityStmt: public Stmt {
+ public:
+  VisibilityStmt(AstTag astTag);
+
+  virtual ~VisibilityStmt();
+
+  bool isARename() const;
+  const char* getRename() const;
+
+  Symbol* checkIfModuleNameMatches(const char* name);
+
+ protected:
+  void updateEnclosingBlock(ResolveScope* scope,
+                            Symbol* sym);
+
+public:
+  Expr* src;
+  bool isPrivate;
+
+protected:
+  const char* modRename;
+
+};
 
 #include "UseStmt.h"
 
@@ -130,7 +155,7 @@ public:
   int                 length()                                     const;
 
   void                useListAdd(ModuleSymbol* mod, bool isPrivate);
-  void                useListAdd(UseStmt*      use);
+  void                useListAdd(VisibilityStmt* stmt);
   bool                useListRemove(ModuleSymbol* mod);
   void                useListClear();
 
@@ -158,7 +183,8 @@ class CondStmt : public Stmt {
 public:
                       CondStmt(Expr*    iCondExpr,
                                BaseAST* iThenStmt,
-                               BaseAST* iElseStmt = NULL);
+                               BaseAST* iElseStmt = NULL,
+                               bool     isIfExpr = false);
 
                       DECLARE_COPY(CondStmt);
 
@@ -170,11 +196,16 @@ public:
   virtual Expr*       getFirstExpr();
   virtual Expr*       getNextExpr(Expr* expr);
 
-  CallExpr*           foldConstantCondition();
+  CallExpr*           foldConstantCondition(bool addEndOfStatement);
 
   Expr*               condExpr;
   BlockStmt*          thenStmt;
   BlockStmt*          elseStmt;
+
+  bool                isIfExpr() const;
+
+private:
+  bool                fIsIfExpr;
 };
 
 /************************************* | **************************************
@@ -191,7 +222,8 @@ enum GotoTag {
   GOTO_ITER_RESUME,
   GOTO_ITER_END,
   GOTO_ERROR_HANDLING,
-  GOTO_BREAK_ERROR_HANDLING
+  GOTO_BREAK_ERROR_HANDLING,
+  GOTO_ERROR_HANDLING_RETURN,
 };
 
 

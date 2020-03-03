@@ -1,1 +1,3 @@
+warning: Destructors have been deprecated as of Chapel 1.21. Please use deinit instead.
+BogusDestructors5.chpl:2: warning: to fix, rename ~foo to deinit
 BogusDestructors5.chpl:2: error: destructor name must match class/record name or deinit()

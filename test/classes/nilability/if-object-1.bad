@@ -1,3 +1,0 @@
-uncaught NilClassError: cannot convert nil class to non nilable type
-  if-object-1.chpl:10: thrown here
-  if-object-1.chpl:10: uncaught here

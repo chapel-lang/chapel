@@ -1,1 +1,2 @@
-1
+iter-return-first-ref.chpl:15: In function 'getfirstref':
+iter-return-first-ref.chpl:17: error: Reference to scoped variable i cannot be returned

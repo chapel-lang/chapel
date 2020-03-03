@@ -23,6 +23,7 @@ proc maxIndex(A:[?D]) {
 }
   
 proc initA(A,filename:string){
+  use IO;
 
   var Adat = open('Adata.dat', iomode.r).reader();
 

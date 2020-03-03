@@ -24,14 +24,16 @@ var cStr = cPtrTmp:c_string;
 {
   // there should be 1 allocation 1 free
   writeln("Initialize from c_string");
-  var sNew = createStringWithNewBuffer(cStr);
-  var sBorrowed = createStringWithBorrowedBuffer(cStr);
-  var sOwned = createStringWithOwnedBuffer(cStr);
-  /*var sOwned = new string(cStr, isowned=true, needToCopy=false);*/
+  try! {
+    var sNew = createStringWithNewBuffer(cStr);
+    var sBorrowed = createStringWithBorrowedBuffer(cStr);
+    var sOwned = createStringWithOwnedBuffer(cStr);
+    /*var sOwned = new string(cStr, isowned=true, needToCopy=false);*/
 
-  writeln(sNew);
-  writeln(sBorrowed);
-  writeln(sOwned);
+    writeln(sNew);
+    writeln(sBorrowed);
+    writeln(sOwned);
+  }
 }
 
 writeln();
@@ -45,19 +47,21 @@ cPtr[3] = 0:uint(8);
   // there should be 1 allocate, 2 frees
   writeln("Initialize from c_ptr");
 
-  var sNew = createStringWithNewBuffer(cPtr, length=3, size=4);
-  var sBorrowed = createStringWithBorrowedBuffer(cPtr, length=3, size=4);
-  var sOwned = createStringWithOwnedBuffer(cPtr, length=3, size=4);
+  try! {
+    var sNew = createStringWithNewBuffer(cPtr, length=3, size=4);
+    var sBorrowed = createStringWithBorrowedBuffer(cPtr, length=3, size=4);
+    var sOwned = createStringWithOwnedBuffer(cPtr, length=3, size=4);
 
-  writeln(sNew);
-  writeln(sBorrowed);
-  writeln(sOwned);
+    writeln(sNew);
+    writeln(sBorrowed);
+    writeln(sOwned);
 
-  cPtr[1] = 32:uint(8);
+    cPtr[1] = 32:uint(8);
 
-  writeln(sNew);
-  writeln(sBorrowed);
-  writeln(sOwned);
+    writeln(sNew);
+    writeln(sBorrowed);
+    writeln(sOwned);
+  }
 }
 
 writeln();

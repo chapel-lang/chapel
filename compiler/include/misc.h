@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2019 Cray Inc.
+ * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -22,6 +22,10 @@
 
 #include <cstdio>
 #include <cstdlib>
+
+#include "baseAST.h"
+
+#include "astlocs.h"
 
 #ifdef HAVE_LLVM
 #define exit(x) clean_exit(x)
@@ -88,13 +92,11 @@ void        setupError(const char* subdir, const char* filename, int lineno, int
 
 void        handleError(const char* fmt, ...);
 void        handleError(const BaseAST* ast, const char* fmt, ...);
-void        handleError(FILE* file, const BaseAST* ast, const char* fmt, ...);
+void        handleError(astlocT astloc, const char* fmt, ...);
 
 void        exitIfFatalErrorsEncountered();
 
 void        considerExitingEndOfPass();
-
-void        printCallStack(bool force, bool shortModule, FILE* out);
 
 void        startCatchingSignals();
 void        stopCatchingSignals();
@@ -106,6 +108,16 @@ void        printCallStackCalls();
 
 bool        fatalErrorsEncountered();
 void        clearFatalErrors();
+
+bool printsSameLocationAsLastError(const BaseAST* ast);
+void clearLastErrorLocation();
+
+astlocT getUserInstantiationLocation(const BaseAST* ast);
+
+// Returns true if an error/warning at this location
+// (e.g. with USR_FATAL(ast, ...)) would print out
+// a user line number.
+bool        printsUserLocation(const BaseAST* ast);
 
 // must be exported to avoid dead-code elimination by C++ compiler
 void        gdbShouldBreakHere();

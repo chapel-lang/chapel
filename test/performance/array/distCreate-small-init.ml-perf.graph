@@ -1,0 +1,5 @@
+perfkeys: arrInit:, arrInit:, arrInit:, arrInit:
+graphkeys: blockArrInit:, cyclicArrInit:, blockCyclicArrInit:, stencilArrInit:
+files: distCreate-small-block.dat, distCreate-small-cyclic.dat, distCreate-small-blockCyc.dat, distCreate-small-stencil.dat
+ylabel: Time (seconds)
+graphtitle: Creating distributed arrays (1M elements)

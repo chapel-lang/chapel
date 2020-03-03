@@ -1,2 +1,0 @@
-new-mgmt-q-bang.chpl:2: error: duplicate decorators - unmanaged borrowed object
-new-mgmt-q-bang.chpl:3: error: unmanaged object

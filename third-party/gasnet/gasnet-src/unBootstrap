@@ -21,8 +21,6 @@ rm -f Makefile.in              \
       ibv-conduit/contrib/Makefile.in \
       mpi-conduit/Makefile.in  \
       mpi-conduit/contrib/Makefile.in   \
-      gemini-conduit/Makefile.in \
-      gemini-conduit/contrib/Makefile.in   \
       aries-conduit/Makefile.in \
       aries-conduit/contrib/Makefile.in   \
       pami-conduit/Makefile.in \
@@ -31,6 +29,7 @@ rm -f Makefile.in              \
       ofi-conduit/contrib/Makefile.in   \
       smp-conduit/Makefile.in  \
       udp-conduit/Makefile.in  \
+      ucx-conduit/Makefile.in  \
       other/Makefile.in        \
       other/ammpi/Makefile.in  \
       other/amudp/Makefile.in  \

@@ -1,0 +1,2 @@
+renamePrivateModuleOnUse.chpl:12: In function 'main':
+renamePrivateModuleOnUse.chpl:15: error: 'In' undeclared (first use this function)

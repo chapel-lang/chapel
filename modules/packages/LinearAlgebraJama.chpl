@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2019 Cray Inc.
+ * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -2160,10 +2160,6 @@ class Matrix {
 
    proc svd () {
       return new unmanaged SingularValueDecomposition(_to_unmanaged(this));
-   }
-
-   proc rsvd() {
-      return new unmanaged RandomSingularValueDecomposition(_to_unmanaged(this));
    }
 
    /* Eigenvalue Decomposition

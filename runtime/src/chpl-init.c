@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2019 Cray Inc.
+ * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -23,6 +23,7 @@
 #include "chpl_rt_utils_static.h"
 #include "chplcast.h"
 #include "chplcgfns.h"
+#include "chpl-cache.h"
 #include "chpl-comm.h"
 #include "chplexit.h"
 #include "chplio.h"
@@ -197,6 +198,9 @@ void chpl_rt_init(int argc, char* argv[]) {
   // tasking layer is initialized.
   //
   chpl_comm_post_task_init();
+#ifdef HAS_CHPL_CACHE_FNS
+  chpl_cache_init();
+#endif
   chpl_comm_rollcall();
 
   //

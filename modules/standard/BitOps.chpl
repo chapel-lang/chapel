@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2019 Cray Inc.
+ * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -158,6 +158,7 @@ module BitOps {
  * module to hide the extern procedures
  */
 private module BitOps_internal {
+  private use SysCTypes;
   extern proc chpl_bitops_popcount_32(x: c_uint) : uint(32);
   extern proc chpl_bitops_popcount_64(x: c_ulonglong) : uint(64);
 

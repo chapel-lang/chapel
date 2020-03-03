@@ -119,6 +119,7 @@ proc runtest(param ndim : int, fn : string) {
 */
   var A,B,goodA,goodB : [D] complex(128);
   {
+    use IO;
     var f = open(fn,iomode.r).reader(kind=iokind.little);
 
     // Read in dimensions

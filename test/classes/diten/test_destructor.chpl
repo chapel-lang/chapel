@@ -21,6 +21,8 @@ config var iters = 2;
 proc main {
   for i in 1..#iters {
     var r = new R(1,2);
+    var r2 = new R(3,4);
+    ref rr2 = r2;
     writeln(i);
   }
 }

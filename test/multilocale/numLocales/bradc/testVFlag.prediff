@@ -39,11 +39,11 @@ fi
 # Address program output variations peculiar to the various configuation
 # settings.
 
-# On Cray X* systems, compute node system names aren't meaningful.
+# On Cray CS and X* systems, compute node system names aren't meaningful.
 case $target in
-  cray-x*) sed "s/\(executing on node 0 of 1 node(s): \).*/\1$uname/" \
-               < $2 > $2.tmp &&
-           mv $2.tmp $2;;
+  cray-cs|cray-x*) sed "s/\(executing on node 0 of 1 node(s): \).*/\1$uname/" \
+                       < $2 > $2.tmp &&
+                   mv $2.tmp $2;;
 esac
 
 # With Qthreads, -v results in some lines of QTHREADS info we don't need.
@@ -55,6 +55,9 @@ esac
 # If we use the amudprun launcher, there's a path on the front of it.
 # If we use the aprun launcher, the depth (-d) value may vary, and also
 # there is a resource usage line with varying contents.
+# If we use the slurm-srun launcher, the depth (--cpus-per-task) and
+# partition values may vary, and there may be a --time option and some
+# some trailing white space.
 case $launcher in
   amudprun) sed -e "s/[^ ]*amudprun/amudprun/" \
                 -e "/QTHREADS/d" $2 > $2.tmp &&
@@ -63,4 +66,10 @@ case $launcher in
              -e "s/^\(Application\) .* \(resources\): .*/\1 APID \2: .../" \
              $2 > $2.tmp &&
          mv $2.tmp $2;;
+  slurm-srun) sed -e "s/ \(--cpus-per-task\)=[1-9][0-9]* / \1=N /" \
+                  -e "s/ \(--partition\)=[^ ]* / \1=P /" \
+                  -e "s/ --time=[^ ]*//" \
+                  -e 's/ *$//' \
+                  $2 > $2.tmp &&
+              mv $2.tmp $2;;
 esac

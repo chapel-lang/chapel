@@ -1,3 +1,4 @@
-defaultLocaleVal.chpl:1: error: Cannot default-initialize x: borrowed locale
-note: non-nil class types do not support default initialization
+defaultLocaleVal.chpl:1: error: variable 'x' is not initialized
+note: non-nilable class type borrowed locale does not support default initialization
 note: Consider using the type borrowed locale? instead
+defaultLocaleVal.chpl:1: error: split initialization is not supported for globals

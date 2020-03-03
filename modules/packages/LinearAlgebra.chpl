@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2019 Cray Inc.
+ * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -783,6 +783,7 @@ proc _matmatMult(A: [?Adom] ?eltType, B: [?Bdom] eltType)
       compiler error if ``lapackImpl`` is ``none``.
 */
 proc inv (ref A: [?Adom] ?eltType, overwrite=false) where usingLAPACK {
+  use SysCTypes;
   if Adom.rank != 2 then
     halt("Wrong rank for matrix inverse");
 
@@ -1373,7 +1374,7 @@ proc cholesky(A: [] ?t, lower = true)
       compiler error if ``lapackImpl`` is ``none``.
 
 */
-proc eigvals(A: [] ?t) where isRealType(t) && A.domain.rank == 2 && usingLAPACK {
+proc eigvals(A: [] ?t) where A.domain.rank == 2 && usingLAPACK {
   return eig(A, left=false, right=false);
 }
 
@@ -1402,7 +1403,7 @@ proc eigvals(A: [] ?t) where isRealType(t) && A.domain.rank == 2 && usingLAPACK 
 
  */
 proc eig(A: [] ?t, param left = false, param right = false)
-  where isRealType(t) && A.domain.rank == 2 && usingLAPACK {
+  where A.domain.rank == 2 && usingLAPACK {
 
   proc convertToCplx(wr: [] t, wi: [] t) {
     const n = wi.numElements;
@@ -1445,41 +1446,65 @@ proc eig(A: [] ?t, param left = false, param right = false)
   if !isSquare(A) then
     halt("Matrix passed to eigvals must be square");
   var copy = A;
-  var wr, wi: [1..n] t;
+  var wr: [1..n] t;
+  var wi: if t == complex then nothing else [1..n] t;
+  var eigVals: if t == complex then [1..n] t else [1..n] complex(numBits(t)*2);
 
   if !left && !right {
     var vl, vr: [1..1, 1..n] t;
-    LAPACK.geev(lapack_memory_order.row_major, 'N', 'N', copy, wr, wi, vl, vr);
-    var eigVals = convertToCplx(wr, wi);
+    if t == complex {
+      LAPACK.geev(lapack_memory_order.row_major, 'N', 'N', copy, wr, vl, vr);
+      eigVals = wr;
+    } else {
+      LAPACK.geev(lapack_memory_order.row_major, 'N', 'N', copy, wr, wi, vl, vr);
+      eigVals = convertToCplx(wr, wi);
+    }
     return eigVals;
   } else if left && !right {
     var vl: [1..n, 1..n] t;
     var vr: [1..1, 1..n] t;
-    LAPACK.geev(lapack_memory_order.row_major, 'V', 'N', copy, wr, wi, vl, vr);
-
-    var eigVals = convertToCplx(wr, wi);
-    var vlcplx = flattenCplxEigenVecs(wi, vl);
-
+    var vlcplx: if t == complex then [1..n, 1..n] t else [1..n, 1..n] complex(numBits(t)*2);
+    if t == complex {
+      LAPACK.geev(lapack_memory_order.row_major, 'V', 'N', copy, wr, vl, vr);
+      eigVals = wr;
+      vlcplx = vl;
+    } else {
+      LAPACK.geev(lapack_memory_order.row_major, 'V', 'N', copy, wr, wi, vl, vr);
+      eigVals = convertToCplx(wr, wi);
+      vlcplx = flattenCplxEigenVecs(wi, vl);
+    }
     return (eigVals, vlcplx);
   } else if right && !left {
     var vl: [1..1, 1..n] t;
     var vr: [1..n, 1..n] t;
-    LAPACK.geev(lapack_memory_order.row_major, 'N', 'V', copy, wr, wi, vl, vr);
-
-    var eigVals = convertToCplx(wr, wi);
-    var vrcplx = flattenCplxEigenVecs(wi, vr);
-
+    var vrcplx: if t == complex then [1..n, 1..n] t else [1..n, 1..n] complex(numBits(t)*2);
+    if t == complex {
+      LAPACK.geev(lapack_memory_order.row_major, 'N', 'V', copy, wr, vl, vr);
+      eigVals = wr;
+      vrcplx = vr;
+    } else {
+      LAPACK.geev(lapack_memory_order.row_major, 'N', 'V', copy, wr, wi, vl, vr);
+      eigVals = convertToCplx(wr, wi);
+      vrcplx = flattenCplxEigenVecs(wi, vr);
+    }
     return (eigVals, vrcplx);
   } else {
     // left && right
     var vl: [1..n, 1..n] t;
     var vr: [1..n, 1..n] t;
-    LAPACK.geev(lapack_memory_order.row_major, 'V', 'V', copy, wr, wi, vl, vr);
-
-    var eigVals = convertToCplx(wr, wi);
-    var vlcplx = flattenCplxEigenVecs(wi, vl);
-    var vrcplx = flattenCplxEigenVecs(wi, vr);
-
+    var vlcplx: if t == complex then [1..n, 1..n] t else [1..n, 1..n] complex(numBits(t)*2);
+    var vrcplx: if t == complex then [1..n, 1..n] t else [1..n, 1..n] complex(numBits(t)*2);
+    if t == complex {
+      LAPACK.geev(lapack_memory_order.row_major, 'V', 'V', copy, wr, vl, vr);
+      eigVals = wr;
+      vlcplx = vl;
+      vrcplx = vr;
+    } else {
+      LAPACK.geev(lapack_memory_order.row_major, 'V', 'V', copy, wr, wi, vl, vr);
+      eigVals = convertToCplx(wr, wi);
+      vlcplx = flattenCplxEigenVecs(wi, vl);
+      vrcplx = flattenCplxEigenVecs(wi, vr);
+    }
     return (eigVals, vlcplx, vrcplx);
   }
 }
@@ -1616,7 +1641,7 @@ proc jacobi(A: [?Adom] ?eltType, ref X: [?Xdom] eltType,
 
 pragma "no doc"
 proc eig(A: [] ?t, param left = false, param right = false)
-  where isRealType(t) && A.domain.rank == 2 && !usingLAPACK {
+  where A.domain.rank == 2 && !usingLAPACK {
   compilerError("eigvals() requires LAPACK");
 }
 
@@ -1716,8 +1741,8 @@ A high-level interface to linear algebra operations and procedures for sparse
 matrices (2D arrays).
 
 Sparse matrices are represented as 2D arrays domain-mapped to a sparse *layout*.
-Only the ``CS(compressRows=true)`` (CSR) layout of the
-:mod:`LayoutCS` layout module is currently supported.
+All sparse operations support the CSR layout (``LayoutCS.CS(compressRows=true)``)
+and some operations support COO layout (default sparse array layout).
 
 See the :ref:`Sparse Primer <primers-sparse>` for more information about working
 with sparse domains and arrays in Chapel.
@@ -1769,7 +1794,7 @@ A common usage of this interface might look like this:
 */
 module Sparse {
 
-  use LayoutCS;
+  public use LayoutCS;
 
   /* Return an empty CSR domain over parent domain:
      ``{1..rows, 1..rows}``
@@ -2204,7 +2229,7 @@ module Sparse {
   /* Transpose CSR matrix */
   proc _array.T where isCSArr(this) { return transpose(this); }
 
-  /* Element-wise addition. */
+  /* Element-wise addition, supports CSR and COO. */
   proc _array.plus(A: [?Adom] ?eltType) where isCSArr(this) && isCSArr(A) {
     if Adom.rank != this.domain.rank then compilerError("Unmatched ranks");
     if this.domain.shape != Adom.shape then halt("Unmatched shapes");
@@ -2218,7 +2243,22 @@ module Sparse {
     return S;
   }
 
-  /* Element-wise subtraction. */
+  pragma "no doc"
+  proc _array.plus(A: [?Adom] ?eltType) where isSparseArr(this) && !isCSArr(this)
+                                              && isSparseArr(A) && !isCSArr(A) {
+    if Adom.rank != this.domain.rank then compilerError("Unmatched ranks");
+    if this.domain.shape != Adom.shape then halt("Unmatched shapes");
+    var sps: sparse subdomain(Adom.parentDom);
+    sps += this.domain;
+    sps += Adom;
+    var S: [sps] eltType;
+    forall (i,j) in sps {
+      S[i,j] = this[i,j] + A[i,j];
+    }
+    return S;
+  }
+
+  /* Element-wise subtraction, supports CSR and COO.  */
   proc _array.minus(A: [?Adom] ?eltType) where isCSArr(this) && isCSArr(A) {
     if Adom.rank != this.domain.rank then compilerError("Unmatched ranks");
     if this.domain.shape != Adom.shape then halt("Unmatched shapes");
@@ -2232,7 +2272,22 @@ module Sparse {
     return S;
   }
 
-  /* Element-wise multiplication. */
+  pragma "no doc"
+  proc _array.minus(A: [?Adom] ?eltType) where isSparseArr(this) && !isCSArr(this)
+                                               && isSparseArr(A) && !isCSArr(A) {
+    if Adom.rank != this.domain.rank then compilerError("Unmatched ranks");
+    if this.domain.shape != Adom.shape then halt("Unmatched shapes");
+    var sps: sparse subdomain(Adom.parentDom);
+    sps += this.domain;
+    sps += Adom;
+    var S: [sps] eltType;
+    forall (i,j) in sps {
+      S[i,j] = this[i,j] - A[i,j];
+    }
+    return S;
+  }
+
+  /* Element-wise multiplication, supports CSR and COO.  */
   proc _array.times(A) where isCSArr(this) && isCSArr(A) {
     if this.domain.parentDom != A.domain.parentDom then
       halt('Cannot subtract sparse arrays with non-matching parent domains');
@@ -2252,8 +2307,25 @@ module Sparse {
 
     return B;
   }
+  
+  pragma "no doc"
+  proc _array.times(A: [?Adom] ?eltType) where isSparseArr(this) && !isCSArr(this)
+                                               && isSparseArr(A) && !isCSArr(A) {
+    if Adom.rank != this.domain.rank then compilerError("Unmatched ranks");
+    if this.domain.shape != Adom.shape then halt("Unmatched shapes");
+    // TODO: sps should only contain non-zero entries in resulting array, 
+    //       i.e. intersection of this.domain and Adom
+    var sps: sparse subdomain(Adom.parentDom);
+    sps += this.domain;
+    sps += Adom;
+    var S: [sps] eltType;
+    forall (i,j) in sps {
+      S[i,j] = this[i,j] * A[i,j];
+    }
+    return S;
+  }
 
-  /* Element-wise division. */
+  /* Element-wise division, supports CSR and COO.  */
   proc _array.elementDiv(A) where isCSArr(this) && isCSArr(A) {
     if this.domain.parentDom != A.domain.parentDom then
       halt('Cannot element-wise divide sparse arrays with non-matching parent domains');
@@ -2272,6 +2344,23 @@ module Sparse {
     forall (i,j) in A.domain do B[i,j] /= A[i,j];
 
     return B;
+  }
+  
+  pragma "no doc"
+  proc _array.elementDiv(A: [?Adom] ?eltType) where 
+                                            isSparseArr(this) && !isCSArr(this)
+                                            && isSparseArr(A) && !isCSArr(A) {
+    if Adom.rank != this.domain.rank then compilerError("Unmatched ranks");
+    if this.domain.shape != Adom.shape then halt("Unmatched shapes");
+    // TODO: sps should only contain non-zero entries in resulting array
+    var sps: sparse subdomain(Adom.parentDom);
+    sps += this.domain;
+    sps += Adom;
+    var S: [sps] eltType;
+    forall (i,j) in Adom {
+      S[i,j] = this[i,j] / A[i,j];
+    }
+    return S;
   }
 
   /* Matrix division (solve) */

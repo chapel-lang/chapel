@@ -4,7 +4,7 @@ var cs: c_string = "this is a c_string";
 
 writeln(b);
 writeln(s);
-writeln(cs:string);
+writeln(createStringWithNewBuffer(cs));
 writeln();
 
 // TEST INITIALIZERS
@@ -38,17 +38,50 @@ writeln();
 
 // TEST ACCESSORS
 writeln("Accessor tests");
-for i in 1..b_from_c_ptr.length do
-  writeln(b_from_c_ptr[i], " as ", b_from_c_ptr[i].type:string);
-for i in 1..b_from_c_ptr.length do
-  writeln(b_from_c_ptr.byte(i), " as ", b_from_c_ptr[i].type:string);
+
+writeln("Should return uint(8)");
+for i in 1..b_from_c_ptr.length {
+  var val = b_from_c_ptr[i];
+  writeln(val, " as ", val.type:string);
+}
+
+writeln("Should return uint(8)");
+for i in 1..b_from_c_ptr.length {
+  var val = b_from_c_ptr[i:byteIndex];
+  writeln(val, " as ", val.type:string);
+}
+
+writeln("Should return uint(8)");
+for i in 1..b_from_c_ptr.length {
+  var val = b_from_c_ptr.byte(i);
+  writeln(val, " as ", val.type:string);
+}
+
+writeln("Should return bytes");
+for i in 1..b_from_c_ptr.length {
+  var val = b_from_c_ptr.item(i);
+  writeln(val, " as ", val.type:string);
+}
+
+writeln("toByte returns uint(8)");
+var singleByteBytes = b"A";
+writeln(singleByteBytes.toByte(), " as ", singleByteBytes.toByte().type:string);
+
 writeln();
 
 //TEST ITERATORS
 writeln("Iterator tests");
+
+writeln("Should yield uint(8)");
 for byte in b_from_c_ptr do
   writeln(byte, " as ", byte.type:string);
+
+writeln("Should yield uint(8)");
 for byte in b_from_c_ptr.bytes() do
+  writeln(byte, " as ", byte.type:string);
+
+writeln("Should yield bytes");
+for byte in b_from_c_ptr.items() do
   writeln(byte, " as ", byte.type:string);
 writeln();
 
@@ -95,10 +128,21 @@ writeln();
 
 // TEST SLICE
 writeln("Slice tests");
-writeln(b[..4], " -- the type is ", b[1..4].type:string); // "this"
+writeln(b[1..4], " -- the type is ", b[1..4].type:string); // "this"
+writeln(b[..4], " -- the type is ", b[..4].type:string); // "this"
 writeln(b[6..], " -- the type is ", b[6..].type:string); // "is a bytes"
 writeln(b[..], " -- the type is ", b[..].type:string); // "this is a bytes"
 writeln(b[11..b.length], " -- the type is ", b[..].type:string); // "bytes"
+writeln();
+writeln(b[1:byteIndex..4:byteIndex],
+        " -- the type is ", b[1..4].type:string); // "this"
+writeln(b[..4:byteIndex],
+        " -- the type is ", b[1..4].type:string); // "this"
+writeln(b[6:byteIndex..],
+        " -- the type is ", b[6..].type:string); // "is a bytes"
+writeln(b[..], " -- the type is ", b[..].type:string); // "this is a bytes"
+writeln(b[11:byteIndex..b.length:byteIndex],
+        " -- the type is ", b[..].type:string); // "bytes"
 writeln();
 
 // TEST SEARCH ETC. -- this is getting too much without coercion

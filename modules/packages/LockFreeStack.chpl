@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2019 Cray Inc.
+ * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -91,14 +91,14 @@
       "A scalable lock-free stack algorithm." Proceedings of the sixteenth annual 
       ACM symposium on Parallelism in algorithms and architectures. ACM, 2004.
 */
-prototype module LockFreeStack {
+module LockFreeStack {
   use EpochManager;
   use AtomicObjects;
 
   class Node {
     type eltType;
-    var val : eltType?;
-    var next : unmanaged Node(eltType?)?;
+    var val : toNilableIfClassType(eltType);
+    var next : unmanaged Node(eltType)?;
 
     proc init(val : ?eltType) {
       this.eltType = eltType;
@@ -112,8 +112,10 @@ prototype module LockFreeStack {
 
   class LockFreeStack {
     type objType;
-    var _top : AtomicObject(unmanaged Node(objType?)?, hasGlobalSupport=true, hasABASupport=false);
+    var _top : AtomicObject(unmanaged Node(objType)?, hasGlobalSupport=true, hasABASupport=false);
     var _manager = new owned LocalEpochManager();
+
+    proc objTypeOpt type return toNilableIfClassType(objType);
 
     proc init(type objType) {
       this.objType = objType;
@@ -137,7 +139,7 @@ prototype module LockFreeStack {
     }
 
     proc pop(tok : owned TokenWrapper = getToken()) : (bool, objType) {
-      var oldTop : unmanaged Node(objType?)?;
+      var oldTop : unmanaged Node(objType)?;
       tok.pin();
       var shouldYield = false;
       do {
@@ -147,17 +149,17 @@ prototype module LockFreeStack {
           var retval : objType;
           return (false, retval);
         }
-        var newTop = oldTop.next;
+        var newTop = oldTop!.next;
         if shouldYield then chpl_task_yield();
         shouldYield = true;
       } while (!_top.compareAndSwap(oldTop, newTop));
-      var retval = oldTop.val;
+      var retval = oldTop!.val;
       tok.deferDelete(oldTop);
       tok.unpin();
       return (true, retval);
     }
 
-    iter drain() : objType? {
+    iter drain() : objTypeOpt {
       var tok = getToken();
       var (hasElt, elt) = pop(tok);
       while hasElt {
@@ -167,7 +169,7 @@ prototype module LockFreeStack {
       tryReclaim();
     }
 
-    iter drain(param tag : iterKind) : objType? where tag == iterKind.standalone {
+    iter drain(param tag : iterKind) : objTypeOpt where tag == iterKind.standalone {
       coforall tid in 1..here.maxTaskPar {
         var tok = getToken();
         var (hasElt, elt) = pop(tok);

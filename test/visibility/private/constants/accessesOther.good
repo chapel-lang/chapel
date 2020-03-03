@@ -1,1 +1,1 @@
-accessesOther.chpl:6: error: Cannot access 'foo', 'foo' is private to 'M1'
+accessesOther.chpl:7: error: Cannot access 'foo', 'foo' is private to 'M1'

@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2019 Cray Inc.
+ * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -26,6 +26,7 @@
 #include "expr.h"
 #include "stmt.h"
 #include "stlUtil.h"
+#include "type.h"
 #include "TryStmt.h"
 #include "CatchStmt.h"
 
@@ -56,9 +57,24 @@ checkConstLoops() {
   }
 }
 
+static void checkForClassAssignOps(FnSymbol* fn) {
+  if (fn->getModule()->modTag == MOD_USER) {
+    if (strcmp(fn->name, "=") == 0 &&
+        fn->formals.head) {
+      ArgSymbol* formal = toArgSymbol(toDefExpr(fn->formals.head)->sym);
+      Type* formalType = formal->type->getValType();
+      if (isOwnedOrSharedOrBorrowed(formalType) ||
+          isUnmanagedClass(formalType)) {
+        USR_FATAL_CONT(fn, "Can't overload assignments for class types");
+      }
+    }
+  }
+}
+
 void
 checkResolved() {
   forv_Vec(FnSymbol, fn, gFnSymbols) {
+    checkForClassAssignOps(fn);
     checkReturnPaths(fn);
     if (fn->retType->symbol->hasFlag(FLAG_ITERATOR_RECORD) &&
         !fn->isIterator()) {

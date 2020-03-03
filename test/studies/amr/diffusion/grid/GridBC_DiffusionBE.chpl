@@ -1,4 +1,4 @@
-use GridBC_def;
+public use GridBC_def;
 
 
 //|\"""""""""""""""""""""""""""""""""""|\

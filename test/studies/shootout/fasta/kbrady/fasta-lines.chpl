@@ -4,6 +4,7 @@
  * contributed by Kyle Brady
  * modified from the Chapel version by Casey Battaglino
  */
+use IO;
 
 config const LINE_LENGTH = 60;
 config const LOOKUP_SIZE = 4*1024;

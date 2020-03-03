@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2019 Cray Inc.
+ * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -39,7 +39,7 @@ Creating :record:`bytes`
 :record:`bytes` and :record:`~String.string`
 --------------------------------------------
 
-As :record:`bytes` can store arbitrary data, any :record:`String.string` can be
+As :record:`bytes` can store arbitrary data, any :record:`~String.string` can be
 cast to :record:`bytes`. In that event, the bytes will store UTF-8 encoded
 character data. However, a :record:`bytes` can contain non-UTF-8 bytes and needs
 to be decoded to be converted to string.
@@ -92,32 +92,13 @@ To learn more about handling these errors, see the
 :ref:`Error Handling technical note <readme-errorHandling>`.
  */
 module Bytes {
-  use ChapelStandard;
-  use BytesCasts;
+  private use ChapelStandard;
   private use ByteBufferHelpers;
   private use BytesStringCommon;
+  private use SysCTypes;
 
-  /*
-     ``decodePolicy`` specifies what happens when there is malformed characters
-     when decoding a :record:`bytes` into a UTF-8 :record:`String.string`.
-       
-       - **strict**: default policy; raise error
-       - **replace**: replace with UTF-8 replacement character
-       - **ignore**: silently drop data
-  */
-  enum decodePolicy { strict, replace, ignore }
-
-  /*
-   A `DecodeError` is thrown if the `decode` method is called on a non-UTF-8
-   string.
-   */
-  class DecodeError: Error {
-    
-    pragma "no doc"
-    override proc message() {
-      return "Invalid UTF-8 character encountered.";
-    }
-  }
+  public use BytesCasts;
+  public use BytesStringCommon only decodePolicy;  // expose decodePolicy
 
   pragma "no doc"
   type idxType = int; 
@@ -267,7 +248,8 @@ module Bytes {
 
      :returns: A new :record:`bytes`
   */
-  inline proc createBytesWithNewBuffer(s: bufferType, length: int, size: int) {
+  inline proc createBytesWithNewBuffer(s: bufferType, length: int,
+                                       size=length+1) {
     var ret: bytes;
     initWithNewBuffer(ret, s, length, size);
     return ret;
@@ -303,11 +285,11 @@ module Bytes {
     }
 
     pragma "no doc"
-    proc writeThis(f) {
+    proc writeThis(f) throws {
       compilerError("not implemented: writeThis");
     }
     pragma "no doc"
-    proc readThis(f) {
+    proc readThis(f) throws {
       compilerError("not implemented: readThis");
     }
 
@@ -389,6 +371,18 @@ module Bytes {
       */
     inline proc numBytes return len;
 
+    pragma "no doc"
+    inline proc param length param
+      return __primitive("string_length_bytes", this);
+
+    pragma "no doc"
+    inline proc param size param
+      return length;
+
+    pragma "no doc"
+    inline proc param numBytes param
+      return __primitive("string_length_bytes", this);
+
     /*
        Gets a version of the :record:`bytes` that is on the currently
        executing locale.
@@ -416,20 +410,70 @@ module Bytes {
       return getCStr(this);
     }
 
+    pragma "no doc"
+    inline proc param c_str() param : c_string {
+      return this:c_string; // folded out in resolution
+    }
+
     /*
-      Gets a byte from the :record:`bytes`
+      Gets an ASCII character from the :record:`bytes`
 
       :arg i: The index
 
       :returns: A 1-length :record:`bytes` 
      */
-    proc this(i: int): bytes {
+    proc item(i: int): bytes {
       if boundsChecking && (i <= 0 || i > this.len)
         then halt("index out of bounds of bytes: ", i);
       var (buf, size) = bufferCopy(buf=this.buff, off=i-1, len=1,
                                    loc=this.locale_id);
       return createBytesWithOwnedBuffer(buf, length=1, size=size);
     }
+
+    // byteIndex overload provides a nicer interface for string/bytes
+    // generic programming
+    pragma "no doc"
+    proc item(i: byteIndex): bytes {
+      return this.item(i:int);
+    }
+
+    /*
+      Gets a byte from the :record:`bytes`
+
+      :arg i: The index
+
+      :returns: uint(8)
+     */
+    proc this(i: int): byteType {
+      return this.byte(i);
+    }
+
+    // byteIndex overload provides a nicer interface for string/bytes
+    // generic programming
+    pragma "no doc"
+    proc this(i: byteIndex): byteType {
+      return this.byte(i:int);
+    }
+
+
+
+    /*
+      :returns: The value of a single-byte :record:`bytes` as an integer.
+    */
+    proc toByte(): uint(8) {
+      if this.len != 1 {
+        halt("bytes.toByte() only accepts single-byte bytes");
+      }
+      return bufferGetByte(buf=this.buff, off=0, loc=this.locale_id);
+    }
+
+    pragma "no doc"
+    inline proc param toByte() param : uint(8) {
+      if this.numBytes != 1 then
+        compilerError("bytes.toByte() only accepts single-byte bytes");
+      return __primitive("ascii", this);
+    }
+
 
     /*
       Gets a byte from the :record:`bytes`
@@ -444,15 +488,32 @@ module Bytes {
       return bufferGetByte(buf=this.buff, off=i-1, loc=this.locale_id);
     }
 
+    pragma "no doc"
+    inline proc param byte(param i: int) param : uint(8) {
+      if i < 1 || i > this.numBytes then
+        compilerError("index out of bounds of bytes: " + i:string);
+      return __primitive("ascii", this, i);
+    }
+
     /*
-      Iterates over the :record:`bytes`
+      Iterates over the :record:`bytes`, yielding ASCII characters.
 
       :yields: 1-length :record:`bytes`
      */
-    iter these(): bytes {
+    iter items(): bytes {
       if this.isEmpty() then return;
       for i in 1..this.len do
-        yield this[i];
+        yield this.item[i];
+    }
+
+    /*
+      Iterates over the :record:`bytes`
+
+      :yields: uint(8)
+     */
+    iter these(): byteType {
+      for i in this.bytes() do
+        yield i;
     }
 
     /*
@@ -484,7 +545,7 @@ module Bytes {
     // range that can be used to iterate over a section of the string
     // TODO: move into the public interface in some form? better name if so?
     pragma "no doc"
-    proc _getView(r:range(?)) where r.idxType == int {
+    proc _getView(r:range(?)) where r.idxType == int || r.idxType == byteIndex {
       if boundsChecking {
         if r.hasLowBound() && (!r.hasHighBound() || r.size > 0) {
           if r.low:int <= 0 then
@@ -843,8 +904,7 @@ module Bytes {
       :returns: A new :record:`bytes` with `leading` and/or `trailing`
                 occurrences of characters in `chars` removed as appropriate.
     */
-    proc strip(chars: bytes = " \t\r\n":bytes,
-               leading=true, trailing=true) : bytes {
+    proc strip(chars = b" \t\r\n", leading=true, trailing=true) : bytes {
       if this.isEmpty() then return "";
       if chars.isEmpty() then return this;
 
@@ -907,7 +967,9 @@ module Bytes {
       
       :arg errors: `decodePolicy.strict` raises an error, `decodePolicy.replace`
                    replaces the malformed character with UTF-8 replacement
-                   character, `decodePolicy.ignore` drops the data silently.
+                   character, `decodePolicy.ignore` drops the data silently,
+                   `decodePolicy.escape` escapes each illegal byte with private
+                   use codepoints
       
       :throws: `DecodeError` if `decodePolicy.strict` is passed to the `errors`
                argument and the :record:`bytes` contains non-UTF-8 characters.
@@ -916,51 +978,8 @@ module Bytes {
     */
     // NOTE: In the future this could support more encodings.
     proc decode(errors=decodePolicy.strict): string throws {
-      pragma "fn synchronization free"
-      extern proc qio_decode_char_buf(ref chr:int(32), ref nbytes:c_int,
-                                      buf:c_string, buflen:ssize_t):syserr;
-
       var localThis: bytes = this.localize();
-
-      // allocate buffer the same size as this buffer assuming that the string
-      // is in fact perfectly decodable. In the worst case, the user wants the
-      // replacement policy and we grow the buffer couple of times.
-      // The alternative is to allocate more space from the beginning.
-      var ret: string;
-      var (newBuff, allocSize) = bufferAlloc(this.len+1);
-      ret.buff = newBuff;
-      ret._size = allocSize;
-      ret.isowned = true;
-
-      var thisIdx = 0;
-      var decodedIdx = 0;
-      while thisIdx < localThis.len {
-        var cp: int(32);
-        var nbytes: c_int;
-        var bufToDecode = (localThis.buff + thisIdx): c_string;
-        var maxbytes = (localThis.len - thisIdx): ssize_t;
-        qio_decode_char_buf(cp, nbytes, bufToDecode, maxbytes);
-
-        if cp == 0xfffd {  //decoder returns the replacement character
-          if errors == decodePolicy.strict {
-            throw new owned DecodeError();
-          }
-          else if errors == decodePolicy.ignore {
-            thisIdx += nbytes; //skip over the malformed bytes
-            continue;
-          }
-        }
-
-        // do a naive copy
-        bufferMemcpyLocal(dst=ret.buff, src=bufToDecode, len=nbytes,
-                          dst_off=decodedIdx);
-        thisIdx += nbytes;
-        decodedIdx += nbytes;
-      }
-
-      ret.len = decodedIdx;
-      ret.buff[ret.len] = 0;
-      return ret;
+      return decodeByteBuffer(localThis.buff, localThis.len, errors);
     }
 
     /*
@@ -1274,6 +1293,10 @@ module Bytes {
     return doConcat(s0, s1);
   }
 
+  pragma "no doc"
+  inline proc +(param s0: bytes, param s1: bytes) param
+    return __primitive("string_concat", s0, s1);
+
   /*
      :returns: A new :record:`bytes` which is the result of repeating `s` `n`
                times.  If `n` is less than or equal to 0, an empty bytes is
@@ -1289,28 +1312,86 @@ module Bytes {
   }
 
   pragma "no doc"
+  inline proc !=(a: bytes, b: bytes) : bool {
+    return !doEq(a,b);
+  }
+
+  proc comparisonDeprWarn() {
+    compilerWarning("Comparison between bytes and string is deprecated. " +
+                    "Cast the string to bytes first");
+  }
+
+  pragma "no doc"
   proc ==(a: bytes, b: string) : bool {
+    comparisonDeprWarn();
     return doEq(a,b);
   }
 
   pragma "no doc"
   proc ==(a: string, b: bytes) : bool {
+    comparisonDeprWarn();
     return doEq(a,b);
   }
 
   pragma "no doc"
-  inline proc !=(a: bytes, b: bytes) : bool {
-    return !doEq(a,b);
-  }
-
-  pragma "no doc"
   inline proc !=(a: bytes, b: string) : bool {
+    comparisonDeprWarn();
     return !doEq(a,b);
   }
 
   pragma "no doc"
   inline proc !=(a: string, b: bytes) : bool {
+    comparisonDeprWarn();
     return !doEq(a,b);
+  }
+
+  pragma "no doc"
+  inline proc <(a: bytes, b: bytes) : bool {
+    return doLessThan(a, b);
+  }
+
+  pragma "no doc"
+  inline proc >(a: bytes, b: bytes) : bool {
+    return doGreaterThan(a, b);
+  }
+
+  pragma "no doc"
+  inline proc <=(a: bytes, b: bytes) : bool {
+    return doLessThanOrEq(a, b);
+  }
+  pragma "no doc"
+  inline proc >=(a: bytes, b: bytes) : bool {
+    return doGreaterThanOrEq(a, b);
+  }
+
+  pragma "no doc"
+  inline proc ==(param s0: bytes, param s1: bytes) param  {
+    return __primitive("string_compare", s0, s1) == 0;
+  }
+
+  pragma "no doc"
+  inline proc !=(param s0: bytes, param s1: bytes) param {
+    return __primitive("string_compare", s0, s1) != 0;
+  }
+
+  pragma "no doc"
+  inline proc <=(param a: bytes, param b: bytes) param {
+    return (__primitive("string_compare", a, b) <= 0);
+  }
+
+  pragma "no doc"
+  inline proc >=(param a: bytes, param b: bytes) param {
+    return (__primitive("string_compare", a, b) >= 0);
+  }
+
+  pragma "no doc"
+  inline proc <(param a: bytes, param b: bytes) param {
+    return (__primitive("string_compare", a, b) < 0);
+  }
+
+  pragma "no doc"
+  inline proc >(param a: bytes, param b: bytes) param {
+    return (__primitive("string_compare", a, b) > 0);
   }
 
   // character-wise operation helpers
@@ -1375,6 +1456,15 @@ module Bytes {
     pragma "fn synchronization free"
     extern proc tolower(c: c_int): c_int;
     return tolower(c: c_int):byteType;
+  }
+
+  //
+  // hashing support
+  //
+
+  pragma "no doc"
+  inline proc chpl__defaultHash(x : bytes): uint {
+    return getHash(x);
   }
 
 } // end of module Bytes

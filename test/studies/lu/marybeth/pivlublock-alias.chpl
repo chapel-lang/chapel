@@ -13,6 +13,7 @@
 // with slicing to functions doesn't seem to be fully supported yet,
 // the pivot calculation and the swapping of pivot rows is coded inline
 // in the algorithm.
+use IO;
 
 param n = 10;
 param blk = 5;

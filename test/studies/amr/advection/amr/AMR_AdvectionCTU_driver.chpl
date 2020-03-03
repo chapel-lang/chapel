@@ -1,6 +1,8 @@
 use AMRHierarchy_AdvectionCTU;
 use AMRBC_AdvectionCTU;
 
+use IO;
+
 
 //|\"""""""""""""""""""""""""""""""""""""""|\
 //| >    derived class: GradientFlagger    | >
@@ -40,7 +42,7 @@ class GradientFlagger: Flagger {
     
     for grid in level_solution.level.grids {
 
-      const ref value = current_data(grid).value;
+      const ref value = current_data(grid)!.value;
       
       for cell in grid.cells {
         

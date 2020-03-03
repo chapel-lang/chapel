@@ -11,17 +11,13 @@ export CHPL_TEST_PERF_DIR=/cray/css/users/chapelu/NightlyPerformance/cray-cs/16-
 
 export CHPL_NIGHTLY_TEST_CONFIG_NAME="perf.cray-cs.gasnet-ibv.large"
 
-module load gcc
+source $CWD/common-cray-cs.bash y
+source $CWD/common-perf-cray-cs.bash
 
-export CHPL_HOST_PLATFORM=cray-cs
 export GASNET_PHYSMEM_MAX=83G
 export GASNET_ODP_VERBOSE=0
 export CHPL_LAUNCHER=slurm-gasnetrun_ibv
-export CHPL_LAUNCHER_PARTITION=bdw18
-export CHPL_TARGET_CPU=broadwell
 nightly_args="${nightly_args} -no-buildcheck"
+perf_args="-performance-description gn-ibv-large -numtrials 3"
 
-perf_args="-performance-description gn-ibv-large -performance-configs gn-ibv-large:v,gn-ibv-fast:v,gn-mpi"
-perf_args="${perf_args} -performance -perflabel ml- -numtrials 3 -startdate 07/01/19"
-
-$CWD/nightly -cron ${perf_args} ${nightly_args}
+$CWD/nightly -cron ${perf_args} ${perf_cray_cs_args} ${nightly_args}

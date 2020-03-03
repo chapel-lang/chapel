@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2019 Cray Inc.
+ * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -20,16 +20,20 @@
 #include "UseStmt.h"
 
 #include "AstVisitor.h"
+#include "ImportStmt.h"
 #include "ResolveScope.h"
 #include "scopeResolve.h"
 #include "stlUtil.h"
+#include "stringutil.h"
 #include "visibleFunctions.h"
 
 #include <algorithm>
 
-UseStmt::UseStmt(BaseAST* source, bool isPrivate) : Stmt(E_UseStmt) {
+UseStmt::UseStmt(BaseAST* source, const char* modRename,
+                 bool isPrivate) : VisibilityStmt(E_UseStmt) {
   this->isPrivate = isPrivate;
   src    = NULL;
+  this->modRename = astr(modRename);
   except = false;
 
   if (Symbol* b = toSymbol(source)) {
@@ -46,14 +50,16 @@ UseStmt::UseStmt(BaseAST* source, bool isPrivate) : Stmt(E_UseStmt) {
 }
 
 UseStmt::UseStmt(BaseAST*                            source,
+                 const char*                         modRename,
                  std::vector<const char*>*           args,
                  bool                                exclude,
                  std::map<const char*, const char*>* renames,
                  bool isPrivate) :
-  Stmt(E_UseStmt) {
+  VisibilityStmt(E_UseStmt) {
 
   this->isPrivate = isPrivate;
   src    = NULL;
+  this->modRename = astr(modRename);
   except = exclude;
 
   if (Symbol* b = toSymbol(source)) {
@@ -91,20 +97,17 @@ UseStmt* UseStmt::copyInner(SymbolMap* map) {
   UseStmt *_this = 0;
 
   if (named.size() > 0) { // MPF: should this have || renamed.size() > 0?
-    _this = new UseStmt(COPY_INT(src), &named, except, &renamed, isPrivate);
+    _this = new UseStmt(COPY_INT(src), modRename, &named, except, &renamed,
+                        isPrivate);
   } else {
-    _this = new UseStmt(COPY_INT(src), isPrivate);
-  }
-
-  for_vector(const char, sym, methodsAndFields) {
-    _this->methodsAndFields.push_back(sym);
+    _this = new UseStmt(COPY_INT(src), modRename, isPrivate);
   }
 
   return _this;
 }
 
 Expr* UseStmt::getFirstExpr() {
-  return this;
+  return src;
 }
 
 void UseStmt::replaceChild(Expr* oldAst, Expr* newAst) {
@@ -146,11 +149,11 @@ bool UseStmt::hasExceptList() const {
   return isPlainUse() == false && except == true;
 }
 
-bool UseStmt::isARename(const char* name) const {
+bool UseStmt::isARenamedSym(const char* name) const {
   return renamed.count(name) == 1;
 }
 
-const char* UseStmt::getRename(const char* name) const {
+const char* UseStmt::getRenamedSym(const char* name) const {
   std::map<const char*, const char*>::const_iterator it;
   const char*                                        retval = NULL;
 
@@ -232,15 +235,6 @@ bool UseStmt::isEnum(const Symbol* sym) const {
   return retval;
 }
 
-void UseStmt::updateEnclosingBlock(ResolveScope* scope, Symbol* sym) {
-  src->replace(new SymExpr(sym));
-
-  remove();
-  scope->asBlockStmt()->useListAdd(this);
-
-  scope->extend(this);
-}
-
 /************************************* | **************************************
 *                                                                             *
 * The parser currently accepts use statements with general expressions e.g.   *
@@ -314,7 +308,6 @@ void UseStmt::validateList() {
 
     validateNamed();
     validateRenamed();
-    trackMethods();
   }
 }
 
@@ -469,61 +462,6 @@ BaseAST* UseStmt::getSearchScope() const {
   return retval;
 }
 
-void UseStmt::trackMethods() {
-  if (SymExpr* se = toSymExpr(src)) {
-    if (ModuleSymbol* mod = toModuleSymbol(se->symbol())) {
-      std::vector<AggregateType*> types = mod->getTopLevelClasses();
-
-      // Note: stores duplicates
-      for_vector(AggregateType, t, types) {
-        forv_Vec(FnSymbol, method, t->methods) {
-          if (method != NULL)
-            methodsAndFields.push_back(method->name);
-        }
-
-        for_fields(sym, t) {
-          methodsAndFields.push_back(sym->name);
-        }
-      }
-
-      if (types.size() != 0) {
-        // These are all compiler generated functions that might (or in some
-        // cases definitely are) not defined on the type explicitly.  Allow them
-        // as well.
-        functionsToAlwaysCheck.push_back("init");
-        functionsToAlwaysCheck.push_back("_new");
-        functionsToAlwaysCheck.push_back("deinit");
-        functionsToAlwaysCheck.push_back("_defaultOf");
-      }
-
-      std::vector<FnSymbol*> fns = mod->getTopLevelFunctions(false);
-      for_vector(FnSymbol, fn, fns) {
-        if (fn->hasFlag(FLAG_METHOD)) {
-          // Again, stores duplicates.  This is probably less costly than
-          // checking for them.
-          methodsAndFields.push_back(fn->name);
-        }
-      }
-    }
-  }
-}
-
-ModuleSymbol* UseStmt::checkIfModuleNameMatches(const char* name) {
-  if (SymExpr* se = toSymExpr(src)) {
-    if (ModuleSymbol* modSym = toModuleSymbol(se->symbol())) {
-      if (strcmp(name, se->symbol()->name) == 0) {
-        return modSym;
-      }
-    }
-  } else {
-    // It seems as though we'd need to handle matches against more general
-    // expressions here (e.g., 'use M.N.O'), yet I can't seem to construct
-    // an example that requires this.  I suppose it could be because we
-    // resolve such cases element-by-element rather than wholesale...
-  }
-  return NULL;
-}
-
 /************************************* | **************************************
 *                                                                             *
 *                                                                             *
@@ -547,14 +485,14 @@ void UseStmt::writeListPredicate(FILE* mFP) const {
 *                                                                             *
 ************************************** | *************************************/
 
-bool UseStmt::skipSymbolSearch(const char* name, bool methodCall) const {
+bool UseStmt::skipSymbolSearch(const char* name) const {
   bool retval = false;
 
   if (isPlainUse() == true) {
     retval = false;
 
   } else if (except == true) {
-    if (matchedNameOrConstructor(name) == true) {
+    if (matchedNameOrRename(name) == true) {
       retval =  true;
 
     } else {
@@ -562,13 +500,7 @@ bool UseStmt::skipSymbolSearch(const char* name, bool methodCall) const {
     }
 
   } else {
-    if (matchedNameOrConstructor(name) == true) {
-      retval = false;
-
-    } else if (isAllowedMethodName(name, methodCall) == true) {
-      // Only allow the symbol if the call is a method call.  Functions with
-      // the same name should not be allowed unqualified when they are omitted
-      // from the explicit only list, except for "init", "_new", etc.
+    if (matchedNameOrRename(name) == true) {
       retval = false;
 
     } else {
@@ -579,7 +511,7 @@ bool UseStmt::skipSymbolSearch(const char* name, bool methodCall) const {
   return retval;
 }
 
-bool UseStmt::matchedNameOrConstructor(const char* name) const {
+bool UseStmt::matchedNameOrRename(const char* name) const {
   for_vector(const char, toCheck, named) {
     if (strcmp(name, toCheck) == 0) {
       return true;
@@ -591,25 +523,6 @@ bool UseStmt::matchedNameOrConstructor(const char* name) const {
       ++it) {
     if (strcmp(name, it->first) == 0) {
       return true;
-    }
-  }
-
-  return false;
-}
-
-// Returns true if the name was in the list of methods and fields defined in
-// this module, false otherwise.
-bool UseStmt::isAllowedMethodName(const char* name, bool methodCall) const {
-  for_vector(const char, toCheck, functionsToAlwaysCheck) {
-    if (strcmp(name, toCheck) == 0) {
-      return true;
-    }
-  }
-  if (methodCall) {
-    for_vector(const char, toCheck, methodsAndFields) {
-      if (strcmp(name, toCheck) == 0) {
-        return true;
-      }
     }
   }
 
@@ -682,7 +595,8 @@ UseStmt* UseStmt::applyOuterUse(const UseStmt* outer) {
         // The only list will be shorter, create a new UseStmt with it.
         SET_LINENO(this);
 
-        return new UseStmt(src, &newOnlyList, false, &newRenamed, isPrivate);
+        return new UseStmt(src, modRename, &newOnlyList, false, &newRenamed,
+                           isPrivate);
       }
 
     } else {
@@ -739,7 +653,8 @@ UseStmt* UseStmt::applyOuterUse(const UseStmt* outer) {
           // outer 'only' list)
           SET_LINENO(this);
 
-          return new UseStmt(src, &newOnlyList, false, &newRenamed, isPrivate);
+          return new UseStmt(src, modRename, &newOnlyList, false, &newRenamed,
+                             isPrivate);
 
         } else {
           // all the 'only' identifiers were in the 'except'
@@ -795,7 +710,8 @@ UseStmt* UseStmt::applyOuterUse(const UseStmt* outer) {
           // There were symbols that were in both 'only' lists, so
           // this module use is still interesting.
           SET_LINENO(this);
-          return new UseStmt(src, &newOnlyList, false, &newRenamed, isPrivate);
+          return new UseStmt(src, modRename, &newOnlyList, false, &newRenamed,
+                             isPrivate);
 
         } else {
           // all of the 'only' identifiers in the outer use
@@ -938,6 +854,49 @@ bool UseStmt::providesNewSymbols(const UseStmt* other) const {
       // If all of our 'only' list was in the 'only' list of other, we don't
       // provide anything new.
       return numSame != named.size() + renamed.size();
+    }
+  }
+}
+
+/************************************* | **************************************
+*                                                                             *
+* Returns true if the current use statement has the possibility of allowing   *
+* symbols that weren't already covered by 'other'                             *
+*                                                                             *
+* Assumes that other->mod == this->mod.  Will not verify that fact.           *
+*                                                                             *
+************************************** | *************************************/
+
+bool UseStmt::providesNewSymbols(const ImportStmt* other) const {
+  if (isPlainUse()) {
+    // We're a general use.  We know the other is an import statement, so we
+    // provide symbols it doesn't.
+    return true;
+  }
+
+  if (except) {
+    // We have an 'except' list.  `except *` have been transformed into `only;`
+    // at this point, so unless the user explicitly listed everything, this is
+    // probably fine. (and if they did, there's no harm in including it again)
+    return true;
+  } else {
+    if (renamed.size() > 0) {
+      // Anything being renamed means at least one symbols is included by this
+      // use, so that's more than the import statement provided
+      return true;
+    }
+    if (named.size() > 1) {
+      // `only;` lists (and transformed `except *;` lists) only contain a single
+      // element, so any size more than 1 means we definitely provide more
+      // symbols
+      return true;
+    } else if (named[0][0] == '\0') {
+      // If the element is "", then it is an `only;` or `except *;` list, so
+      // the import has already handled it.
+      return false;
+    } else {
+      // Otherwise, it's a new symbol
+      return true;
     }
   }
 }

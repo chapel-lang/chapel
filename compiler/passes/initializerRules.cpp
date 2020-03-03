@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2019 Cray Inc.
+ * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -197,10 +197,9 @@ void errorOnFieldsInArgList(FnSymbol* fn) {
   for_formals(formal, fn) {
     std::vector<SymExpr*> symExprs;
 
-    collectSymExprs(formal, symExprs);
+    collectSymExprsFor(formal, fn->_this, symExprs);
 
     for_vector(SymExpr, se, symExprs) {
-      if (se->symbol() == fn->_this) {
         bool error = true;
         if (fn->isCopyInit()) {
           if (CallExpr* call = toCallExpr(se->parentExpr)) {
@@ -221,9 +220,7 @@ void errorOnFieldsInArgList(FnSymbol* fn) {
                          "invalid access of class member in "
                          "initializer argument list");
         }
-
         break;
-      }
     }
   }
 }
@@ -268,7 +265,7 @@ static bool isReturnVoid(FnSymbol* fn) {
 *                                                                             *
 ************************************** | *************************************/
 
-static void          preNormalizeInitRecord(FnSymbol* fn);
+static void          preNormalizeInitRecordUnion(FnSymbol* fn);
 
 static void          preNormalizeInitClass(FnSymbol* fn);
 
@@ -288,7 +285,7 @@ static void preNormalizeInit(FnSymbol* fn) {
     USR_FATAL(fn, "initializers are not yet allowed to throw errors");
 
   } else if (at->isRecord() == true || at->isUnion()) {
-    preNormalizeInitRecord(fn);
+    preNormalizeInitRecordUnion(fn);
 
   } else if (at->isClass()  == true) {
     preNormalizeInitClass(fn);
@@ -298,7 +295,7 @@ static void preNormalizeInit(FnSymbol* fn) {
   }
 }
 
-static void preNormalizeInitRecord(FnSymbol* fn) {
+static void preNormalizeInitRecordUnion(FnSymbol* fn) {
   InitNormalize  state(fn);
 
   AggregateType* at    = toAggregateType(fn->_this->type);
@@ -689,6 +686,7 @@ static InitNormalize preNormalize(AggregateType* at,
       stmt = stmt->next;
 
     } else if (ForallStmt* forall = toForallStmt(stmt)) {
+      preNormalize(at, block, state, forall->iteratedExpressions().head);
       preNormalize(at,
                    forall->loopBody(),
                    InitNormalize(forall, state));

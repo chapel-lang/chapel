@@ -2,6 +2,7 @@
 
 use Spawn;
 use FileSystem;
+use IO;
 
 const develPath = "%s/util/devel/".format(CHPL_HOME);
 const origDat = "compilerPerformance.dat";

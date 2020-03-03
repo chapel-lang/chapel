@@ -1,3 +1,5 @@
 lifetime-checking.chpl:11: In function 'test':
 lifetime-checking.chpl:16: error: Scoped variable c cannot be returned
 lifetime-checking.chpl:12: note: consider scope of a
+lifetime-checking.chpl:11: error: Illegal return of dead value
+lifetime-checking.chpl:16: note: 'a' is dead due to deinitialization here

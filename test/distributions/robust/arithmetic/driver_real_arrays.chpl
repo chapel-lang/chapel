@@ -1,4 +1,4 @@
-use driver_domains;
+public use driver_domains;
 
 var R1D: [Dom1D] real;
 var R2D: [Dom2D] real;
