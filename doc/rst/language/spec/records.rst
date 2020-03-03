@@ -523,11 +523,12 @@ Other comparison operator overloads (namely ``<``, ``<=``, ``>``, and ``>=``)
 have similar signatures but their where clauses also check whether the relevant
 operator is supported by each field.
 
-Record comparisons have a similar behavior to tuple comparisons :ref:`tuple comparisons <Tuple_Relational_Operators>`.
-The operators >, >=, <, and <= check the corresponding lexicographical order based 
-on pair-wise comparisons between the arguments' fields.
-The operators == and != check whether the two arguments are pair-wise equal or not.
-The fields are compared in the order they are declared in the record definition.
+Record comparisons have a similar behavior to :ref:`tuple comparisons
+<Tuple_Relational_Operators>`.  The operators ``>``, ``>=``, ``<``, and ``<=``
+check the corresponding lexicographical order based on pair-wise comparisons
+between the arguments' fields.  The operators ``==`` and ``!=`` check whether
+the two arguments are pair-wise equal or not.  The fields are compared in the
+order they are declared in the record definition.
 
 .. _Class_and_Record_Differences:
 
