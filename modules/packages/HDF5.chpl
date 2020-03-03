@@ -3871,132 +3871,160 @@ module HDF5 {
     C_HDF5.H5Fclose(file_id);
   }
 
-  /* Write the Block distributed Array `A` as an HDF5 dataset named `dsetName`
-     in the file `filename` using parallel collective IO. This requires the
-     hdf5-parallel library, which requires the MPI library.
 
-     The file written by this function can be read in parallel with the
-     function `hdf5ReadDistributedArray`. The write and read operations
-     can use arrays distributed over different numbers of locales.
+  /* A class to preprocess arrays returned by HDF5 file reading procedures.
+     Procedures in this module that take an `HDF5Preprocessor` argument can
+     accept a subclass of this class with the `preprocess` method overridden
+     to do preprocessing as desired before returning the data read.
    */
-  proc hdf5WriteDistributedArray(A: [], filename: string, dsetName: string) {
-    use MPI, C_HDF5, BlockDist;
-
-    // Declare some extern symbols this function uses
-    extern type MPI_Info;
-    extern const MPI_INFO_NULL: MPI_Info;
-    param FAIL = -1;
-    extern proc H5Pset_fapl_mpio(fapl_id: C_HDF5.hid_t,
-                                 comm, info): C_HDF5.herr_t;
-    extern proc H5Pset_dxpl_mpio(xferPlist: C_HDF5.hid_t,
-                                 flag: C_HDF5.H5FD_mpio_xfer_t): C_HDF5.herr_t;
-
-    proc isBlock(D: Block) param return true;
-    proc isBlock(D) param return false;
-
-    if !isBlock(A.dom.dist) {
-      use Reflection;
-      compilerError(getRoutineName(),
-                    " requires a block distributed array argument");
-    }
-
-    coforall loc in A.domain.targetLocales() do on loc {
-      const locFilename = filename;
-      const jobSize = commSize(CHPL_COMM_WORLD),
-            jobRank = commRank(CHPL_COMM_WORLD);
-
-      const hdf5Type = getHDF5Type(A.eltType);
-
-      var info = MPI_INFO_NULL;
-      const accessTemplate = H5Pcreate(H5P_FILE_ACCESS);
-      if accessTemplate == FAIL then
-        halt("failed to create access template");
-
-      var ret = H5Pset_fapl_mpio(accessTemplate, CHPL_COMM_WORLD, info);
-      if  ret == FAIL then
-        halt("failed to store communicator information to property list");
-
-      var fid = H5Fcreate(locFilename.c_str(), H5F_ACC_TRUNC,
-                          H5P_DEFAULT, accessTemplate);
-      if fid == FAIL then
-        halt("failed to create HDF5 file");
-
-      const locDom = A.domain.localSubdomain();
-
-      ret = H5Pclose(accessTemplate);
-      if ret == FAIL then
-        halt("failed to close access template");
-
-      var dims: c_array(uint, A.rank);
-      for param i in 0..A.rank-1 {
-        dims[i] = A.domain.dim(i+1).size: uint;
-      }
-
-      var sid = H5Screate_simple(A.rank, dims, nil);
-      if sid == FAIL then
-        halt("failed to create dataspace");
-
-      var dataset = H5Dcreate1(fid, dsetName.c_str(), hdf5Type,
-                               sid, H5P_DEFAULT);
-      if dataset == FAIL then
-        halt("failed to create dataset");
-
-      // create a file dataspace
-      var fileDataspace = H5Dget_space(dataset);
-      if fileDataspace == FAIL then
-        halt("failed to create file dataspace");
-
-      var stride: c_array(uint, A.rank);
-      var count: c_array(uint, A.rank);
-      var start: c_array(uint, A.rank);
-
-      for i in 0..#A.rank {
-        stride[i] = 1;
-        count[i] = locDom.dim(i+1).size: uint;
-        start[i] = (locDom.dim(i+1).low - A.domain.dim(i+1).low): uint;
-      }
-
-      ret = H5Sselect_hyperslab(fileDataspace, H5S_SELECT_SET, start,
-                                stride, count, nil);
-      if ret == FAIL then
-        halt("failed to select hyperslab");
-
-      // create a memory dataspace
-      var memDataspace = H5Screate_simple(A.rank, count, nil);
-      if memDataspace == FAIL then
-        halt("failed to create memory dataspace");
-
-      // set up the transfer properties list
-      var xferPlist = H5Pcreate(H5P_DATASET_XFER);
-      if xferPlist == FAIL then
-        halt("failed to create transfer properties list");
-
-      ret = H5Pset_dxpl_mpio(xferPlist, H5FD_MPIO_COLLECTIVE);
-      if ret == FAIL then
-        halt("failed to set data transfer property list");
-
-      // write data
-      ret = H5Dwrite(dataset, hdf5Type, memDataspace, fileDataspace,
-                     xferPlist, c_ptrTo(A._value.myLocArr!.myElems));
-      if ret == FAIL then
-        halt("failed writing array data to file");
-
-      // release temporary handles
-      H5Sclose(fileDataspace);
-      H5Sclose(memDataspace);
-      H5Pclose(xferPlist);
-
-      H5Dclose(dataset);
-      H5Sclose(sid);
-      H5Fclose(fid);
+  class HDF5Preprocessor {
+    proc preprocess(A: []) {
+      import HaltWrappers;
+      HaltWrappers.pureVirtualMethodHalt();
     }
   }
+
+
+  /* A record that stores a rectangular array.  An array of `ArrayWrapper`
+     records can store multiple differently sized arrays.
+   */
+  record ArrayWrapper {
+    type eltType;
+    param rank: int;
+    var D: domain(rank);
+    var A: [D] eltType;
+  }
+
+  /* A module to encapsulate functions that use the MPI module so that it
+     is not initialized unless these functions are actually used.
+   */
+  module IOusingMPI {
+    /* Write the Block distributed Array `A` as an HDF5 dataset named `dsetName`
+       in the file `filename` using parallel collective IO. This requires the
+       hdf5-parallel library, which requires the MPI library.
+
+       The file written by this function can be read in parallel with the
+       function `hdf5ReadDistributedArray`. The write and read operations
+       can use arrays distributed over different numbers of locales.
+     */
+    proc hdf5WriteDistributedArray(A: [], filename: string, dsetName: string) {
+      use MPI, C_HDF5, BlockDist;
+
+      // Declare some extern symbols this function uses
+      extern type MPI_Info;
+      extern const MPI_INFO_NULL: MPI_Info;
+      param FAIL = -1;
+      extern proc H5Pset_fapl_mpio(fapl_id: C_HDF5.hid_t,
+                                   comm, info): C_HDF5.herr_t;
+      extern proc H5Pset_dxpl_mpio(xferPlist: C_HDF5.hid_t,
+                                   flag: C_HDF5.H5FD_mpio_xfer_t): C_HDF5.herr_t;
+
+      proc isBlock(D: Block) param return true;
+      proc isBlock(D) param return false;
+
+      if !isBlock(A.dom.dist) {
+        use Reflection;
+        compilerError(getRoutineName(),
+                      " requires a block distributed array argument");
+      }
+
+      coforall loc in A.domain.targetLocales() do on loc {
+        const locFilename = filename;
+        const jobSize = commSize(CHPL_COMM_WORLD),
+              jobRank = commRank(CHPL_COMM_WORLD);
+
+        const hdf5Type = getHDF5Type(A.eltType);
+
+        var info = MPI_INFO_NULL;
+        const accessTemplate = H5Pcreate(H5P_FILE_ACCESS);
+        if accessTemplate == FAIL then
+          halt("failed to create access template");
+
+        var ret = H5Pset_fapl_mpio(accessTemplate, CHPL_COMM_WORLD, info);
+        if  ret == FAIL then
+          halt("failed to store communicator information to property list");
+
+        var fid = H5Fcreate(locFilename.c_str(), H5F_ACC_TRUNC,
+                            H5P_DEFAULT, accessTemplate);
+        if fid == FAIL then
+          halt("failed to create HDF5 file");
+
+        const locDom = A.domain.localSubdomain();
+
+        ret = H5Pclose(accessTemplate);
+        if ret == FAIL then
+          halt("failed to close access template");
+
+        var dims: c_array(uint, A.rank);
+        for param i in 0..A.rank-1 {
+          dims[i] = A.domain.dim(i+1).size: uint;
+        }
+
+        var sid = H5Screate_simple(A.rank, dims, nil);
+        if sid == FAIL then
+          halt("failed to create dataspace");
+
+        var dataset = H5Dcreate1(fid, dsetName.c_str(), hdf5Type,
+                                 sid, H5P_DEFAULT);
+        if dataset == FAIL then
+          halt("failed to create dataset");
+
+        // create a file dataspace
+        var fileDataspace = H5Dget_space(dataset);
+        if fileDataspace == FAIL then
+          halt("failed to create file dataspace");
+
+        var stride: c_array(uint, A.rank);
+        var count: c_array(uint, A.rank);
+        var start: c_array(uint, A.rank);
+
+        for i in 0..#A.rank {
+          stride[i] = 1;
+          count[i] = locDom.dim(i+1).size: uint;
+          start[i] = (locDom.dim(i+1).low - A.domain.dim(i+1).low): uint;
+        }
+
+        ret = H5Sselect_hyperslab(fileDataspace, H5S_SELECT_SET, start,
+                                  stride, count, nil);
+        if ret == FAIL then
+          halt("failed to select hyperslab");
+
+        // create a memory dataspace
+        var memDataspace = H5Screate_simple(A.rank, count, nil);
+        if memDataspace == FAIL then
+          halt("failed to create memory dataspace");
+
+        // set up the transfer properties list
+        var xferPlist = H5Pcreate(H5P_DATASET_XFER);
+        if xferPlist == FAIL then
+          halt("failed to create transfer properties list");
+
+        ret = H5Pset_dxpl_mpio(xferPlist, H5FD_MPIO_COLLECTIVE);
+        if ret == FAIL then
+          halt("failed to set data transfer property list");
+
+        // write data
+        ret = H5Dwrite(dataset, hdf5Type, memDataspace, fileDataspace,
+                       xferPlist, c_ptrTo(A._value.myLocArr!.myElems));
+        if ret == FAIL then
+          halt("failed writing array data to file");
+
+        // release temporary handles
+        H5Sclose(fileDataspace);
+        H5Sclose(memDataspace);
+        H5Pclose(xferPlist);
+
+        H5Dclose(dataset);
+        H5Sclose(sid);
+        H5Fclose(fid);
+      }
+    }
 
     /* Read the HDF5 dataset named `dsetName` from the file `filename` into
        the distributed array `A`.  Each locale reads its local portion of
        the array from the file.
 
-       This function can read the file that is generated by 
+       This function can read the file that is generated by
        `hdf5WriteDistributedArray`.
 
        Currently only Block and Cyclic distributed arrays are supported.
@@ -4099,28 +4127,5 @@ module HDF5 {
         C_HDF5.H5Fclose(file_id);
       }
     }
-
-
-  /* A class to preprocess arrays returned by HDF5 file reading procedures.
-     Procedures in this module that take an `HDF5Preprocessor` argument can
-     accept a subclass of this class with the `preprocess` method overridden
-     to do preprocessing as desired before returning the data read.
-   */
-  class HDF5Preprocessor {
-    proc preprocess(A: []) {
-      import HaltWrappers;
-      HaltWrappers.pureVirtualMethodHalt();
-    }
-  }
-
-
-  /* A record that stores a rectangular array.  An array of `ArrayWrapper`
-     records can store multiple differently sized arrays.
-   */
-  record ArrayWrapper {
-    type eltType;
-    param rank: int;
-    var D: domain(rank);
-    var A: [D] eltType;
   }
 }
