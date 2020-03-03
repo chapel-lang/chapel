@@ -234,7 +234,7 @@ module ChapelTuple {
   {
 
     if !isHomogeneousTuple(this) then
-      compilerWarning("Shouldn't get here anymore");
+      compilerError("Heterogeneous tuples don't support forall loops yet");
 
     if CHPL_WARN_TUPLE_ITERATION == "true" then
       compilerWarning("Iterating over tuples. If you intended to use zippered iteration, add the new keyword 'zip' before the tuple of iteratable expressions.");

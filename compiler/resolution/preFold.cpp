@@ -2003,6 +2003,7 @@ static Expr* preFoldNamed(CallExpr* call) {
       buildFastFollowerChecksIfNeeded(call);
 
   // Unroll loops over heterogeneous tuples by looking for the pattern:
+  //   _getIterator(<heterogeneousTuple>)
   //
   } else if (call->isNamed("_getIterator")) {
 
@@ -2051,19 +2052,23 @@ static Expr* preFoldNamed(CallExpr* call) {
         //
         // Mark the index variable as being 
         //
-        bool foundIdx = false;
-        if (DefExpr* firstDefExpr = toDefExpr(theloop->body.first())) {
-          if (VarSymbol* firstSym = toVarSymbol(firstDefExpr->sym)) {
-            //            printf("Marking `%s` as const ref:\n", firstSym->name);
-            //          firstSym->addFlag(FLAG_MAYBE_REF);
-            firstSym->addFlag(FLAG_REF_VAR);
-            //          firstSym->qual = QUAL_REF;
-            firstSym->addFlag(FLAG_CONST);
-            foundIdx = true;
+        Expr* firstStmt = theloop->body.first();
+        bool foundVar = false;
+        if (DefExpr* defexp = toDefExpr(firstStmt)) {
+          if (VarSymbol* loopVar = toVarSymbol(defexp->sym)) {
+            //            printf("Marking `%s` as const ref:\n", loopVar->name);
+            //          loopVar->addFlag(FLAG_MAYBE_REF);
+            loopVar->addFlag(FLAG_REF_VAR);
+            //          loopVar->qual = QUAL_REF;
+            loopVar->addFlag(FLAG_CONST);
+            foundVar = true;
+          }
+        } else if (CallExpr* call = toCallExpr(firstStmt)) {
+          if (call->isNamed("_check_tuple_var_decl")) {
+            USR_FATAL(theloop, "Heterogeneous tuples don't currently support zippered iteration");
           }
         }
-
-        if (!foundIdx) {
+        if (!foundVar) {
           INT_FATAL(theloop, "Loop over heterogeneous tuple didn't have expected IR format");
         }
 
