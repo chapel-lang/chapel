@@ -598,8 +598,9 @@ Calling ``delete`` on a record is illegal.
 Default Comparison Operators
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-For records, the compiler will supply default comparison operators if they are not supplied
-by the user. In contrast, the user cannot redefine == and != for classes.
-The default comparison operators for a record examine the arguments’ fields, 
-while the comparison operators for classes check whether the l.h.s. and r.h.s. 
-refer to the same class instance or are both nil.
+For records, the compiler will supply default comparison operators if	For records, the compiler will supply default comparison operators if they are not supplied
+they are not supplied by the user. In contrast, the user cannot redefine	by the user. In contrast, the user cannot redefine == and != for classes.
+``==`` and ``!=`` for classes. The default comparison operators for a	The default comparison operators for a record examine the arguments’ fields, 
+record examine the arguments’ fields, while the comparison operators for	while the comparison operators for classes check whether the l.h.s. and r.h.s. 
+classes check whether the l.h.s. and r.h.s. refer to the same class	refer to the same class instance or are both nil.
+instance or are both ``nil``..
