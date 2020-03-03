@@ -161,4 +161,6 @@ static inline bool isEndOfStatementMarker(Expr* e) {
   return false;
 }
 
+bool isRecordInitOrReturn(CallExpr* call, SymExpr*& lhsSe, CallExpr*& initOrCtor);
+
 #endif

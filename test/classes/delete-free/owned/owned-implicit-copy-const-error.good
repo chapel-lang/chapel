@@ -1,4 +1,6 @@
 owned-implicit-copy-const-error.chpl:2: In function 'f':
 owned-implicit-copy-const-error.chpl:3: error: const actual is passed to 'ref' formal 'src' of implicit copy initializer
 note: to formal of type owned MyClass
+owned-implicit-copy-const-error.chpl:3: error: Cannot transfer ownership from non-nilable class argument
+owned-implicit-copy-const-error.chpl:2: note: 'arg' is set to nil here
 owned-implicit-copy-const-error.chpl:3: error: Cannot transfer ownership from non-nilable reference argument

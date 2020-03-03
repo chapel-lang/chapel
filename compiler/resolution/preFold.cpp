@@ -357,6 +357,11 @@ static void setRecordDefaultValueFlags(AggregateType* at) {
       ts->addFlag(FLAG_TYPE_NO_DEFAULT_VALUE);
     } else if (isNilableClassType(at)) {
       ts->addFlag(FLAG_TYPE_DEFAULT_VALUE);
+    } else if (at->symbol->hasFlag(FLAG_EXTERN)) {
+      // Currently extern records aren't initialized at all by default.
+      // But it's not necessarily reasonable to expect them to have
+      // initializers. See issue #7992.
+      ts->addFlag(FLAG_TYPE_DEFAULT_VALUE);
     } else {
       // Try resolving a test init() to set the flags
       FnSymbol* initZero = findZeroArgInitFn(at);
@@ -372,6 +377,24 @@ static void setRecordDefaultValueFlags(AggregateType* at) {
       }
     }
   }
+}
+
+static bool isDefaultInitializeable(Type* t) {
+  bool val = true;
+  if (isRecord(t)) {
+    AggregateType* at = toAggregateType(t);
+    TypeSymbol* ts = at->symbol;
+
+    setRecordDefaultValueFlags(at);
+
+    val = ts->hasFlag(FLAG_TYPE_DEFAULT_VALUE);
+
+  } else {
+    // non-nilable class types have no default value
+    val = !isNonNilableClassType(t);
+  }
+
+  return val;
 }
 
 static Expr* preFoldPrimOp(CallExpr* call) {
@@ -1038,22 +1061,7 @@ static Expr* preFoldPrimOp(CallExpr* call) {
   case PRIM_HAS_DEFAULT_VALUE: {
     Type* t = call->get(1)->typeInfo();
 
-    bool val = true;
-    if (isRecord(t)) {
-      AggregateType* at = toAggregateType(t);
-      TypeSymbol* ts = at->symbol;
-
-      setRecordDefaultValueFlags(at);
-
-      if (call->isPrimitive(PRIM_HAS_DEFAULT_VALUE))
-        val = ts->hasFlag(FLAG_TYPE_DEFAULT_VALUE);
-      else
-        INT_FATAL("not handled");
-
-    } else {
-      // non-nilable class types have no default value
-      val = !isNonNilableClassType(t);
-    }
+    bool val = isDefaultInitializeable(t);
 
     if (val)
       retval = new SymExpr(gTrue);

@@ -109,6 +109,9 @@ void        printCallStackCalls();
 bool        fatalErrorsEncountered();
 void        clearFatalErrors();
 
+bool printsSameLocationAsLastError(const BaseAST* ast);
+void clearLastErrorLocation();
+
 astlocT getUserInstantiationLocation(const BaseAST* ast);
 
 // Returns true if an error/warning at this location

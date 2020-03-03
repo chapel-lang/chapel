@@ -675,7 +675,7 @@ static void resolveInitializerBody(FnSymbol* fn) {
 
   toAggregateType(fn->_this->type)->initializerResolved = true;
 
-  insertAndResolveCasts(fn);
+  fixPrimInitsAndAddCasts(fn);
 
   ensureInMethodList(fn);
 }

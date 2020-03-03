@@ -1,0 +1,2 @@
+bug: missing checking of type mismatch produced by init
+#8499

@@ -73,10 +73,11 @@ class VisibilityStmt: public Stmt {
                             Symbol* sym);
 
 public:
-  Expr*                              src;
+  Expr* src;
+  bool isPrivate;
 
 protected:
-  const char*                        modRename;
+  const char* modRename;
 
 };
 
@@ -221,7 +222,8 @@ enum GotoTag {
   GOTO_ITER_RESUME,
   GOTO_ITER_END,
   GOTO_ERROR_HANDLING,
-  GOTO_BREAK_ERROR_HANDLING
+  GOTO_BREAK_ERROR_HANDLING,
+  GOTO_ERROR_HANDLING_RETURN,
 };
 
 

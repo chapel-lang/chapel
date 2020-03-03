@@ -37,38 +37,6 @@ test1e.a
 (1 1)
 deinit 1 1
 C.deinit 1
-test2a
-C.init 0
-init 0 0
-test2a.a
-test2a.b
-(1 1) (0 1)
-deinit 0 1
-C.deinit 1
-test2b
-C.init 0
-init 0 0
-test2b.a
-test2b.b
-deinit 0 1
-C.deinit 1
-(1 1) (0 1)
-test2c
-C.init 0
-init 0 0
-test2c.a
-test2c.b
-(1 1) (0 1)
-deinit 0 1
-C.deinit 1
-test2d
-C.init 0
-init 0 0
-test2d.a
-test2d.b
-deinit 0 1
-C.deinit 1
-(1 1) (0 1)
 test3a
 C.init 1
 init 1 1

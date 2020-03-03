@@ -27,7 +27,7 @@
   mode of its originating map.
 */
 module Map {
-  private use ChapelLocks only;
+  import ChapelLocks;
   private use HaltWrappers;
 
   // Lock code lifted from modules/standard/Lists.chpl.

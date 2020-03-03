@@ -1617,7 +1617,7 @@ private param _cwr = "w+";
 
 pragma "no doc"
 proc _modestring(mode:iomode) {
-  use HaltWrappers only;
+  import HaltWrappers;
   select mode {
     when iomode.r do return _r;
     when iomode.rw do return _rw;
@@ -1669,7 +1669,7 @@ proc open(path:string, mode:iomode, hints:iohints=IOHINT_NONE,
 
 proc openplugin(pluginFile: QioPluginFile, mode:iomode,
                 seekable:bool, style:iostyle) throws {
-  use HaltWrappers only;
+  import HaltWrappers;
 
   extern proc qio_file_init_plugin(ref file_out:qio_file_ptr_t,
       file_info:c_void_ptr, flags:c_int, const ref style:iostyle):syserr;
@@ -2165,7 +2165,6 @@ proc channel._ch_ioerror(error:syserr, msg:string) throws {
     }
   }
   try ioerror(error, msg, path, offset);
-  // c_string tmp_path leaked, but ioerror will exit
 }
 
 pragma "no doc"
@@ -2186,7 +2185,6 @@ proc channel._ch_ioerror(errstr:string, msg:string) throws {
     }
   }
   try ioerror(errstr, msg, path, offset);
-  // c_string tmp_path leaked, but ioerror will exit
 }
 
 /*

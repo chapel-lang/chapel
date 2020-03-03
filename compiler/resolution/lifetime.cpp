@@ -393,16 +393,6 @@ static void checkFunction(FnSymbol* fn) {
     // e.g. borrow can't outlive borrowed-from
     checkLifetimesInFunction(fn);
   }
-
-  if (fCompileTimeNilChecking) {
-    // Determine cases where the compiler can prove
-    // a reference-type variable is 'nil'
-    findNilDereferences(fn);
-
-    // TODO:
-    // Determine cases where the compiler can prove
-    // a class-type variable is not 'nil'
-  }
 }
 
 void checkLifetimesInFunction(FnSymbol* fn) {
@@ -1549,48 +1539,13 @@ bool GatherTempsVisitor::enterCallExpr(CallExpr* call) {
 
 static bool isRecordInitOrReturn(CallExpr* call, Symbol*& lhs, CallExpr*& initOrCtor, LifetimeState* lifetimes) {
 
-  if (call->isPrimitive(PRIM_MOVE) ||
-      call->isPrimitive(PRIM_ASSIGN)) {
-    if (CallExpr* rhsCallExpr = toCallExpr(call->get(2))) {
-      if (rhsCallExpr->resolvedOrVirtualFunction()) {
-        if (AggregateType* at = toAggregateType(rhsCallExpr->typeInfo())) {
-          if (isRecord(at)) {
-            SymExpr* se = toSymExpr(call->get(1));
-            INT_ASSERT(se);
-            lhs = lifetimes->getCanonicalSymbol(se->symbol());
-            initOrCtor = rhsCallExpr;
-            return true;
-          }
-        }
-      }
-    }
-  }
-
-  if (FnSymbol* calledFn = call->resolvedOrVirtualFunction()) {
-    if (calledFn->isMethod() &&
-        (calledFn->name == astrInit || calledFn->name == astrInitEquals)) {
-      SymExpr* se = toSymExpr(call->get(1));
-      INT_ASSERT(se);
-      Symbol* sym = se->symbol();
-      if (isRecord(sym->type)) {
-        lhs = lifetimes->getCanonicalSymbol(sym);
-        initOrCtor = call;
-        return true;
-      }
-    } else if (calledFn->hasFlag(FLAG_FN_RETARG)) {
-      for_formals_actuals(formal, actual, call) {
-        if (formal->hasFlag(FLAG_RETARG)) {
-          if (isRecord(formal->getValType())) {
-            SymExpr* se = toSymExpr(actual);
-            INT_ASSERT(se);
-            Symbol* sym = se->symbol();
-            lhs = lifetimes->getCanonicalSymbol(sym);
-            initOrCtor = call;
-            return true;
-          }
-        }
-      }
-    }
+  SymExpr* gotLHS = NULL;
+  CallExpr* gotCall = NULL;
+  if (isRecordInitOrReturn(call, gotLHS, gotCall)) {
+    INT_ASSERT(gotLHS && gotCall);
+    lhs = lifetimes->getCanonicalSymbol(gotLHS->symbol());
+    initOrCtor = gotCall;
+    return true;
   }
 
   lhs = NULL;

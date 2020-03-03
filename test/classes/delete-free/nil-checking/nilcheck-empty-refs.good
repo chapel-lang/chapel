@@ -1,40 +1,36 @@
 nilcheck-empty-refs.chpl:8: In function 'badRefToNilOwned':
 nilcheck-empty-refs.chpl:11: error: applying postfix-! to nil
-nilcheck-empty-refs.chpl:11: note: variable r is nil at this point
-nilcheck-empty-refs.chpl:9: note: this statement may be relevant
+nilcheck-empty-refs.chpl:11: note: 'r' refers to 'x'
+nilcheck-empty-refs.chpl:9: note: 'x' is set to nil here
 nilcheck-empty-refs.chpl:15: In function 'badSetNilByRef':
 nilcheck-empty-refs.chpl:19: error: applying postfix-! to nil
-nilcheck-empty-refs.chpl:19: note: variable x is nil at this point
-nilcheck-empty-refs.chpl:18: note: this statement may be relevant
+nilcheck-empty-refs.chpl:18: note: 'x' is set to nil here
 nilcheck-empty-refs.chpl:23: In function 'badSetNilByRefX':
 nilcheck-empty-refs.chpl:27: error: applying postfix-! to nil
-nilcheck-empty-refs.chpl:27: note: variable r is nil at this point
-nilcheck-empty-refs.chpl:26: note: this statement may be relevant
+nilcheck-empty-refs.chpl:27: note: 'r' refers to 'x'
+nilcheck-empty-refs.chpl:26: note: 'x' is set to nil here
 nilcheck-empty-refs.chpl:31: In function 'badSetNilByRefAssign':
 nilcheck-empty-refs.chpl:36: error: applying postfix-! to nil
-nilcheck-empty-refs.chpl:36: note: variable x is nil at this point
-nilcheck-empty-refs.chpl:35: note: this statement may be relevant
+nilcheck-empty-refs.chpl:35: note: 'x' is set to nil here
 nilcheck-empty-refs.chpl:40: In function 'badSetNilByRefXAssign':
-nilcheck-empty-refs.chpl:45: error: applying postfix-! to nil
-nilcheck-empty-refs.chpl:45: note: variable r is nil at this point
-nilcheck-empty-refs.chpl:44: note: this statement may be relevant
+nilcheck-empty-refs.chpl:45: error: applying postfix-! to dead value
+nilcheck-empty-refs.chpl:45: note: 'r' refers to 'x'
+nilcheck-empty-refs.chpl:44: note: 'x' is dead due to copy elision here
 nilcheck-empty-refs.chpl:51: In function 'badRefToNilOwned2':
 nilcheck-empty-refs.chpl:55: error: applying postfix-! to nil
-nilcheck-empty-refs.chpl:55: note: variable r is nil at this point
-nilcheck-empty-refs.chpl:52: note: this statement may be relevant
+nilcheck-empty-refs.chpl:55: note: 'r' refers to 'x'
+nilcheck-empty-refs.chpl:52: note: 'x' is set to nil here
 nilcheck-empty-refs.chpl:59: In function 'badSetNilByRef2':
 nilcheck-empty-refs.chpl:64: error: applying postfix-! to nil
-nilcheck-empty-refs.chpl:64: note: variable x is nil at this point
-nilcheck-empty-refs.chpl:63: note: this statement may be relevant
+nilcheck-empty-refs.chpl:63: note: 'x' is set to nil here
 nilcheck-empty-refs.chpl:68: In function 'badSetNilByRefX2':
 nilcheck-empty-refs.chpl:73: error: applying postfix-! to nil
-nilcheck-empty-refs.chpl:73: note: variable r is nil at this point
-nilcheck-empty-refs.chpl:72: note: this statement may be relevant
+nilcheck-empty-refs.chpl:73: note: 'r' refers to 'x'
+nilcheck-empty-refs.chpl:72: note: 'x' is set to nil here
 nilcheck-empty-refs.chpl:77: In function 'badSetNilByRefAssign2':
 nilcheck-empty-refs.chpl:83: error: applying postfix-! to nil
-nilcheck-empty-refs.chpl:83: note: variable x is nil at this point
-nilcheck-empty-refs.chpl:82: note: this statement may be relevant
+nilcheck-empty-refs.chpl:82: note: 'x' is set to nil here
 nilcheck-empty-refs.chpl:87: In function 'badSetNilByRefXAssign2':
-nilcheck-empty-refs.chpl:93: error: applying postfix-! to nil
-nilcheck-empty-refs.chpl:93: note: variable r is nil at this point
-nilcheck-empty-refs.chpl:92: note: this statement may be relevant
+nilcheck-empty-refs.chpl:93: error: applying postfix-! to dead value
+nilcheck-empty-refs.chpl:93: note: 'r' refers to 'x'
+nilcheck-empty-refs.chpl:92: note: 'x' is dead due to copy elision here

@@ -2135,7 +2135,7 @@ module DefaultRectangular {
   // broken out into a helper function in order to be made use of by
   // distributed array scans.
   proc DefaultRectangularArr.chpl__preScan(op, res: [] ?resType, dom) {
-    use RangeChunk only;
+    import RangeChunk;
     // Compute who owns what
     const rng = dom.dim(1);
     const numTasks = if __primitive("task_get_serial") then
