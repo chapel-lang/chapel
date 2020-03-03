@@ -4019,6 +4019,7 @@ module HDF5 {
         H5Fclose(fid);
       }
     }
+
     /* Read the HDF5 dataset named `dsetName` from the file `filename` into
        the distributed array `A`.  Each locale reads its local portion of
        the array from the file.
