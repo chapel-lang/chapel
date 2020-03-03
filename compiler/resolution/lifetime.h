@@ -23,13 +23,14 @@
 class FnSymbol;
 class Type;
 
-void checkLifetimes();
+void adjustSignatureForNilChecking(FnSymbol* fn);
+
+void checkNilDereferencesInFn(FnSymbol* fn);
 
 void checkLifetimesInFunction(FnSymbol* fn);
 
-void adjustSignatureForNilChecking(FnSymbol* fn);
 bool isOrContainsBorrowedClass(Type* type);
 
-void findNilDereferences();
+void checkLifetimesAndNilDereferences();
 
 #endif

@@ -360,7 +360,13 @@ static void checkFunction(FnSymbol* fn);
 static bool isCallToFunctionReturningNotOwned(CallExpr* call);
 static bool isUser(BaseAST* ast);
 
-void checkLifetimes() {
+void checkLifetimesAndNilDereferences() {
+  // Clear last error location so we get errors from nil checking
+  // even if previous compiler code raised error on the same line.
+  // This is necessary due to the use of printsSameLocationAsLastError
+  // to hide multiple nil-checking errors from the same line.
+  clearLastErrorLocation();
+
   // Mark all arguments with FLAG_SCOPE or FLAG_RETURN_SCOPE.
   // This needs to be done for all functions before the next
   // loop since it affects how calls are handled.
@@ -369,8 +375,10 @@ void checkLifetimes() {
     adjustSignatureForNilChecking(fn);
   }
 
-  // Perform lifetime checking on each function
   forv_Vec(FnSymbol, fn, gFnSymbols) {
+    // Perform nil checking on each function
+    checkNilDereferencesInFn(fn);
+    // Perform lifetime checking on each function
     checkFunction(fn);
   }
 

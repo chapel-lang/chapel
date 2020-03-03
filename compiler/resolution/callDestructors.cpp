@@ -1312,8 +1312,6 @@ void callDestructors() {
 
   insertCopiesForYields();
 
-  checkLifetimes();
-
   lateConstCheck(NULL);
 
   addAutoDestroyCalls();
@@ -1322,7 +1320,7 @@ void callDestructors() {
 
   checkForErroneousInitCopies();
 
-  findNilDereferences();
+  checkLifetimesAndNilDereferences();
 
   convertClassTypesToCanonical();
 

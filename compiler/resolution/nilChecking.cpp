@@ -1392,20 +1392,12 @@ static void findNilDereferencesInFn(FnSymbol* fn) {
   }
 }
 
-void findNilDereferences() {
+void checkNilDereferencesInFn(FnSymbol* fn) {
   if (fCompileTimeNilChecking) {
-    // Clear last error location so we get errors from nil checking
-    // even if previous compiler code raised error on the same line.
-    // This is necessary due to the use of printsSameLocationAsLastError
-    // to hide multiple nil-checking errors from the same line.
-    clearLastErrorLocation();
-    forv_Vec(FnSymbol, fn, gFnSymbols) {
-      findNilDereferencesInFn(fn);
-      findNonNilableStoringNil(fn);
-    }
+    findNilDereferencesInFn(fn);
+    findNonNilableStoringNil(fn);
   }
 }
-
 
 void adjustSignatureForNilChecking(FnSymbol* fn) {
   if (fn->_this != NULL) {
