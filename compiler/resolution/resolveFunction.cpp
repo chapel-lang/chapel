@@ -1210,6 +1210,16 @@ static void markTempsDeadLastMention(std::set<VarSymbol*>& temps) {
   }
 }
 
+void markTempDeadLastMention(VarSymbol* var) {
+  INT_ASSERT(var && var->hasFlag(FLAG_TEMP));
+
+  std::set<VarSymbol*> temps;
+  gatherTempsDeadLastMention(var, temps);
+  markTempsDeadLastMention(temps);
+  INT_ASSERT(var->hasFlag(FLAG_DEAD_LAST_MENTION) ||
+             var->hasFlag(FLAG_DEAD_END_OF_BLOCK));
+}
+
 bool MarkTempsVisitor::enterDefExpr(DefExpr* node) {
   // Mark temps as dead either "last mention" or "end of block"
   // and move temps marked "last mention" to global scope.
@@ -1222,11 +1232,7 @@ bool MarkTempsVisitor::enterDefExpr(DefExpr* node) {
     if (var->hasFlag(FLAG_TEMP) &&
         !(var->hasFlag(FLAG_DEAD_LAST_MENTION) ||
           var->hasFlag(FLAG_DEAD_END_OF_BLOCK))) {
-      std::set<VarSymbol*> temps;
-      gatherTempsDeadLastMention(var, temps);
-      markTempsDeadLastMention(temps);
-      INT_ASSERT(var->hasFlag(FLAG_DEAD_LAST_MENTION) ||
-                 var->hasFlag(FLAG_DEAD_END_OF_BLOCK));
+      markTempDeadLastMention(var);
     }
   }
   return true;

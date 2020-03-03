@@ -224,3 +224,9 @@ proc testLit7() {
   writeln("end");
 }
 testLit7();
+
+// test global with out intent
+writeln("testGlobalOut");
+var globalR:R;
+acceptsOutAndReturnsNew(globalR); // should split init globalR
+writeln("end");
