@@ -192,4 +192,98 @@ module Itertools {
     }
   }
 
+
+
+  /*
+    Returns accumulated sums, differences, or results of other binary
+    operations (specified via the operation argument).
+
+
+    :arg arg: The iterable on which the accumulation is to be performed
+    :type arg: `array`
+
+    :arg operation: The operation which is to be performed for the
+    accumulation
+    :type operation: `operations (enum)`
+
+    :yields: Elements of the resultant array
+
+    :throws: ``IllegalArgumentError`` on non-array arguments
+
+
+    This iterator can only be called in serial contexts.
+
+    .. note::
+      Be careful to pass ``real`` arrays if division is to be performed,
+      or the decimal part will be truncated.
+
+    .. note::
+      This tool is similar to the already available ``scan`` functionality
+      for Chapel, however, this tool also provides ``divide`` and ``subtract``
+      functionalities which are not present in ``scan``.
+  */
+
+  enum operations { add, subtract, multiply, divide,
+                    bitwiseAnd, bitwiseOr, bitwiseXor }
+
+  iter accumulate(arg: [?argDom], operation: operations) throws
+      where argDom.rank == 1 {
+
+    var result = arg[argDom.first];
+
+    if operation == operations.divide || operation == operations.subtract {
+      for idx in argDom do
+        if idx == argDom.first then
+          yield result;
+        else {
+          select (operation) {
+            when operations.subtract do
+              if result.type != bool then
+                result -= arg[idx];
+            when operations.divide do
+              if result.type != bool then
+                result /= arg[idx];
+          }
+
+          yield result;
+        }
+    } else {
+      select (operation) {
+        when operations.add do
+          if result.type != bool then
+            for result in + scan arg do
+              yield result;
+
+        when operations.multiply do
+          if result.type != bool then
+            for result in * scan arg do
+              yield result;
+
+        when operations.bitwiseOr do
+          if result.type == int || result.type == bool then
+            for result in | scan arg do
+              yield result;
+          else
+            throw new owned IllegalArgumentError(
+              "bitwise operations only work with integers and booleans");
+
+        when operations.bitwiseAnd do
+          if result.type == int || result.type == bool then
+            for result in & scan arg do
+              yield result;
+          else
+            throw new owned IllegalArgumentError(
+              "bitwise operations only work with integers and booleans");
+
+        when operations.bitwiseXor do
+          if result.type == int || result.type == bool then
+            for result in ^ scan arg do
+              yield result;
+          else
+            throw new owned IllegalArgumentError(
+              "bitwise operations only work with integers and booleans");
+      }
+    }
+  }
+
 } // end module
