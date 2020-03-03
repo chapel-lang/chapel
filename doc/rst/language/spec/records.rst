@@ -612,8 +612,8 @@ Calling ``delete`` on a record is illegal.
 Default Comparison Operators
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-"Record comparisons have a similar behaviour to tuple comparisons (https://chapel-lang.org/docs/master/language/spec/tuples.html#relational-operators).
+"Record comparisons have a similar behavior to tuple comparisons :ref:`tuple comparisons <_Tuple_Relational_Operators>`.
 The operators >, >=, <, and <= check the corresponding lexicographical order based 
-on pair-wise comparisons between the arguments' fields components.
+on pair-wise comparisons between the arguments' fields.
 The operators == and != check whether the two arguments are pair-wise equal or not.
-The fields are compared in the order they are declared in the record definition. "
+The fields are compared in the order they are declared in the record definition."
