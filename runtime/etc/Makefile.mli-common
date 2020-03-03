@@ -89,13 +89,10 @@ ifneq ($(SKIP_COMPILE_LINK),skip)
 # Link the server, the runtime, and ZMQ together.
 	$(LD) $(CHPL_MAKE_BASE_LFLAGS) $(GEN_LFLAGS) $(COMP_GEN_LFLAGS) \
 		$(GEN_DYNAMIC_FLAG) \
-		-o $(TMPSERVERNAME) \
-		$(TMPSERVERNAME).o $(CHPL_RT_LIB_DIR)/main.o \
-		$(CHPLUSEROBJ) $(CHPL_CL_OBJS) \
+		-o $(TMPSERVERNAME) $(TMPSERVERNAME).o $(CHPLUSEROBJ) \
+		$(CHPL_RT_LIB_DIR)/main.o $(CHPL_CL_OBJS) \
+		-L$(CHPL_RT_LIB_DIR) -lchpl $(LIBS) -lm \
 		$(CHPL_MAKE_THIRD_PARTY_LINK_ARGS) \
-		$(LIBS) \
-		-L$(CHPL_RT_LIB_DIR) \
-		-lchpl -lm \
 		$(CHPL_ZMQ_LIB_SEARCH_PATH) \
 		-lzmq
 endif
