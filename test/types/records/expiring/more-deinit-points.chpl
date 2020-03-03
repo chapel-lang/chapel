@@ -110,6 +110,14 @@ proc testOut5() {
 }
 testOut5();
 
+proc testOut6() {
+  writeln("testOut6");
+  var xx:R;
+  acceptsOutAndReturnsNew(xx); // split inits xx
+  writeln("end");
+}
+testOut6();
+
 proc testRet1() {
   writeln("testRet1");
   var xx:R;

@@ -9152,9 +9152,37 @@ static void insertReturnTemps() {
             VarSymbol* tmp = newTemp("_return_tmp_", fn->retType);
             DefExpr*   def = new DefExpr(tmp);
 
-            // It can't be in a variable init expr, so mark it dead last mention
-            if (!fNoEarlyDeinit)
+            // Mark the variable as last-mention or end-of-block
+            // (because this runs after fixPrimInitsAndAddCasts).
+            bool lastMention = true;
+            if (fNoEarlyDeinit)
+              lastMention = false;
+            // Check for out intent variables initialized from it
+            for_formals_actuals(formal, actual, call) {
+              bool outIntent = (formal->intent == INTENT_OUT ||
+                                formal->originalIntent == INTENT_OUT);
+              if (outIntent) {
+                SymExpr* se = toSymExpr(actual);
+                if (NamedExpr* ne = toNamedExpr(actual)) {
+                  INT_ASSERT(ne->name == formal->name);
+                  se = toSymExpr(ne->actual);
+                }
+                INT_ASSERT(se != NULL);
+
+                VarSymbol* outVar = toVarSymbol(se->symbol());
+
+                if (outVar != NULL) {
+                  if (!outVar->hasFlag(FLAG_TEMP) ||
+                      !outVar->hasFlag(FLAG_DEAD_LAST_MENTION)) {
+                    lastMention = false;
+                  }
+                }
+              }
+            }
+            if (lastMention)
               tmp->addFlag(FLAG_DEAD_LAST_MENTION);
+            else
+              tmp->addFlag(FLAG_DEAD_END_OF_BLOCK);
 
             if (typeNeedsCopyInitDeinit(fn->retType) == true)
               tmp->addFlag(FLAG_INSERT_AUTO_DESTROY);
