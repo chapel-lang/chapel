@@ -3711,7 +3711,6 @@ module ChapelArray {
   }
 
   inline proc chpl__uncheckedArrayTransfer(ref a: [], b:[]) {
-    extern proc printf(s);
     var done = false;
     if !chpl__serializeAssignment(a, b) {
       if chpl__compatibleForBulkTransfer(a, b) {
