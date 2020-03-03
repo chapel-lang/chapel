@@ -379,10 +379,11 @@ static void checkForNilDereferencesInCall(
   // to a user function is not dead.
   // Also check for transfering ownership out of an unknown reference
   // to a non-nilable owned.
+  FnSymbol* inFn = call->getFunction();
   if (FnSymbol* calledFn = call->resolvedOrVirtualFunction()) {
     if (!calledFn->hasFlag(FLAG_AUTO_DESTROY_FN) &&
         !calledFn->hasFlag(FLAG_UNSAFE) &&
-        !calledFn->hasFlag(FLAG_LEAVES_ARG_NIL)) {
+        !(inFn != NULL && inFn->hasFlag(FLAG_LEAVES_ARG_NIL))) {
       int i = 0;
       for_formals_actuals(formal, actual, call) {
         i++;
