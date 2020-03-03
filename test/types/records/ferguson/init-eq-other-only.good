@@ -1,2 +1,5 @@
-init-eq-other-only.chpl:1: error: Type 'InitEqOtherOnly' uses compiler-generated default 'init=' but also has a custom 'init=' method. Please add an 'init=' method with the same RHS type
-init-eq-other-only.chpl:4: note: 'init=' for 'InitEqOtherOnly' defined here
+init-eq-other-only.chpl:11: In function 'main':
+init-eq-other-only.chpl:13: error: unresolved call 'InitEqOtherOnly.init=(InitEqOtherOnly)'
+init-eq-other-only.chpl:4: note: this candidate did not match: InitEqOtherOnly.init=(other: int)
+init-eq-other-only.chpl:13: note: because call actual argument #1 with type InitEqOtherOnly
+init-eq-other-only.chpl:4: note: is passed to formal 'other: int(64)'
