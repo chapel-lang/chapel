@@ -22,6 +22,7 @@
 #include "astutil.h"
 #include "buildDefaultFunctions.h"
 #include "DecoratedClassType.h"
+#include "DeferStmt.h"
 #include "driver.h"
 #include "ForallStmt.h"
 #include "ForLoop.h"
@@ -2023,24 +2024,24 @@ static Expr* preFoldNamed(CallExpr* call) {
 
       // Look for the associated ForLoop statement, removing all
       // statements leading up to it (since they're unnecessary once
-      // we unroll)
+      // we unroll).  This is very sensitive to the current IR format
+      // such that if it changes, we'll likely bail out of this
+      // prefold and fall into the "Heterogeneous tuples don't support
+      // this style of loop yet" error message in ChapelTuple.chpl.
       //
       ForLoop* theloop = NULL;
       Expr* nextStmt = noop->next;
-      do {
-        Expr* currStmt = nextStmt;
+      if (DeferStmt* defer = toDeferStmt(nextStmt)) {
         nextStmt = nextStmt->next;
-
-        // printf("Found:\n");
-        // list_view(currStmt);
-
-        if (ForLoop* loopstmt = toForLoop(currStmt)) {
-          //          printf("...and it was our loop\n");
-          theloop = loopstmt;
-        } else {
-          currStmt->remove();
+        defer->remove();
+        if (BlockStmt* block = toBlockStmt(nextStmt)) {
+          nextStmt = nextStmt->next;
+          block->remove();
+          if (ForLoop* loop = toForLoop(nextStmt)) {
+            theloop = loop;
+          }
         }
-      } while (theloop == NULL && nextStmt != NULL);
+      }
 
       // assume the IR isn't as we expect until proven otherwise
       bool wellformed = false;
