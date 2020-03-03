@@ -1116,9 +1116,22 @@ static void gatherTempsDeadLastMention(VarSymbol* v,
 static void markTempsDeadLastMention(std::set<VarSymbol*>& temps) {
 
   bool makeThemEndOfBlock = false;
+  bool canMakeThemGlobal = true;
 
   // Look at how the temps are used
   for_set(VarSymbol, v, temps) {
+
+    if (v->hasFlag(FLAG_DEAD_END_OF_BLOCK) ||
+        v->hasFlag(FLAG_INDEX_VAR) ||
+        v->hasFlag(FLAG_CHPL__ITER) ||
+        v->hasFlag(FLAG_CHPL__ITER_NEWSTYLE) ||
+        v->getValType()->symbol->hasFlag(FLAG_ITERATOR_RECORD)) {
+      // index vars, iterator records are always end-of-block
+      // but shouldn't be global variables.
+      makeThemEndOfBlock = true;
+      canMakeThemGlobal = false;
+      break;
+    }
 
     for_SymbolSymExprs(se, v) {
       if (CallExpr* call = toCallExpr(se->getStmtExpr())) {
@@ -1178,11 +1191,14 @@ static void markTempsDeadLastMention(std::set<VarSymbol*>& temps) {
   if (makeThemEndOfBlock) {
     for_set(VarSymbol, temp, temps) {
       temp->addFlag(FLAG_DEAD_END_OF_BLOCK);
-      FnSymbol* inFn = temp->defPoint->getFunction();
-      ModuleSymbol* mod = temp->defPoint->getModule();
-      if (mod && inFn && inFn->hasFlag(FLAG_MODULE_INIT)) {
-        // Move the temporary to global scope.
-        mod->block->insertAtTail(temp->defPoint->remove());
+      FnSymbol* initFn = toFnSymbol(temp->defPoint->parentSymbol);
+      if (initFn && initFn->hasFlag(FLAG_MODULE_INIT)) {
+        ModuleSymbol* mod = temp->defPoint->getModule();
+        if (mod && temp->defPoint->parentExpr == initFn->body &&
+            canMakeThemGlobal) {
+          // Move the temporary to global scope.
+          mod->block->insertAtTail(temp->defPoint->remove());
+        }
       }
     }
   } else {
