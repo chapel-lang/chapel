@@ -507,6 +507,7 @@ The following example demonstrates record assignment.
 
 Default Comparison Operators
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 Default functions to overload comparison operators are defined for
 records if none are explicitly defined. ``==`` and ``!=`` functions have the
 following signatures for a record ``R``:
