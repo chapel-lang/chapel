@@ -2008,24 +2008,25 @@ static Expr* preFoldNamed(CallExpr* call) {
   } else if (call->isNamed("_getIterator")) {
 
     // See whether we're iterating over a heterogeneous tuple
+    //
     Expr* tupExpr = call->get(1);
     Type* iterType = tupExpr->getValType();
     if (iterType->symbol->hasFlag(FLAG_TUPLE) &&
         !iterType->symbol->hasFlag(FLAG_STAR_TUPLE)) {
-      // printf("Found loop over heterogeneous tuple: ");
-      // list_view(call);
 
-      // Find the parent of the getIterator expression for the
-      // heterogeneous tuple and insert a no-op statement after
-      // it in order to create a place to insert new statements.
-      Expr* parentStmt = call->parentExpr;
+      // Find the getIterator's statement and insert a no-op after it
+      // in order to create a place to insert new statements.
+      //
+      Expr* parentStmt = call->getStmtExpr();
       CallExpr* noop = new CallExpr(PRIM_NOOP);
       parentStmt->insertAfter(noop);
 
-      // Remove all following statements leading up to the next loop.
-      // If we find a forall loop rather than a for loop, issue an error.
-      Expr* nextStmt = noop->next;
+      // Look for the associated ForLoop statement, removing all
+      // statements leading up to it (since they're unnecessary once
+      // we unroll)
+      //
       ForLoop* theloop = NULL;
+      Expr* nextStmt = noop->next;
       do {
         Expr* currStmt = nextStmt;
         nextStmt = nextStmt->next;
@@ -2036,84 +2037,90 @@ static Expr* preFoldNamed(CallExpr* call) {
         if (ForLoop* loopstmt = toForLoop(currStmt)) {
           //          printf("...and it was our loop\n");
           theloop = loopstmt;
-        } else if (toForallStmt(currStmt)) {
-          USR_FATAL("forall loops over heterogeneous tuples are not yet supported; try using a coforall loop in the meantime");
         } else {
           currStmt->remove();
         }
       } while (theloop == NULL && nextStmt != NULL);
 
+      // assume the IR isn't as we expect until proven otherwise
+      bool wellformed = false;
+
       if (theloop != NULL) {
-      
-        // remove the loop itself
         // printf("Found loop itself:\n");
         // list_view(theloop);
 
         //
-        // Mark the index variable as being 
+        // Mark the loop's index variable as being 'const ref'.
+        // Ultimately, this should likely be 'ref' in some cases, but
+        // for now I'm erring on the side of avoiding any
+        // modifications to tuples rather than allowing modifications
+        // to tuple elements that shouldn't be modified.
         //
         Expr* firstStmt = theloop->body.first();
-        bool foundVar = false;
         if (DefExpr* defexp = toDefExpr(firstStmt)) {
           if (VarSymbol* loopVar = toVarSymbol(defexp->sym)) {
-            //            printf("Marking `%s` as const ref:\n", loopVar->name);
-            //          loopVar->addFlag(FLAG_MAYBE_REF);
+            wellformed = true;
             loopVar->addFlag(FLAG_REF_VAR);
-            //          loopVar->qual = QUAL_REF;
             loopVar->addFlag(FLAG_CONST);
-            foundVar = true;
           }
-        } else if (CallExpr* call = toCallExpr(firstStmt)) {
-          if (call->isNamed("_check_tuple_var_decl")) {
-            USR_FATAL(theloop, "Heterogeneous tuples don't currently support zippered iteration");
-          }
-        }
-        if (!foundVar) {
-          INT_FATAL(theloop, "Loop over heterogeneous tuple didn't have expected IR format");
-        }
-
-        // stamp out copies of the loop for each iteration
-        AggregateType* tupType = toAggregateType(iterType);
-        for (int i=2; i<=tupType->fields.length; i++) {
-          // printf("Stamping out a copy of the loop for:\n");
-          // list_view(tupType->getField(i));
-          
-          SymbolMap map;
-
-          // insert temp to capture tuple expr
-          VarSymbol* tmp = newTemp(astr("tupleTemp"));
-          //        tmp->addFlag(FLAG_CONST);
-          //        tmp->addFlag(FLAG_REF_VAR);
-          //        printf("inserted tmp %d\n", tmp->id);
-          tmp->addFlag(FLAG_REF_VAR);
-          //        tmp->addFlag(FLAG_MAYBE_REF);
-          //        tmp->qual = QUAL_REF;
-          
-          /*
-            noop->insertBefore(new DefExpr(tmp,
-            new CallExpr(PRIM_GET_MEMBER_VALUE, tupExpr->copy(),
-            new_CStringSymbol(tupType->getField(i)->name)),
-            new SymExpr(tupType->getField(i)->type->symbol)));
-          */
-          
-
-          noop->insertBefore(new DefExpr(tmp));
-          noop->insertBefore(new CallExpr(PRIM_MOVE, tmp,
-                                          new CallExpr(PRIM_GET_MEMBER, tupExpr->copy(), new_CStringSymbol(tupType->getField(i)->name))));
-          
-          
-
-          // and map idxSymbol to 
-          //        idxSym->addFlag(FLAG_CONST);
-          //        idxSym->addFlag(FLAG_REF_VAR);
-          //          idxSym->addFlag(FLAG_MAYBE_REF);
-          //          idxSym->qual = QUAL_REF;
-          Symbol* idxSym = theloop->indexGet()->symbol();
-          Symbol* continueSym = theloop->continueLabelGet();
-          map.put(idxSym, tmp);
-          theloop->copyBodyHelper(noop, i-2, &map, continueSym);
         }
       }
+      
+      if (!wellformed) {
+        return NULL;
+      }
+
+      // grab the tuple's type
+      //
+      AggregateType* tupType = toAggregateType(iterType);
+
+      // stamp out copies of the loop for each element of the tuple
+      //
+      for (int i=2; i<=tupType->fields.length; i++) {
+        // printf("Stamping out a copy of the loop for:\n");
+        // list_view(tupType->getField(i));
+          
+        SymbolMap map;
+
+        // insert temp to capture tuple expr
+        VarSymbol* tmp = newTemp(astr("tupleTemp"));
+        //        tmp->addFlag(FLAG_CONST);
+        //        tmp->addFlag(FLAG_REF_VAR);
+        //        printf("inserted tmp %d\n", tmp->id);
+        tmp->addFlag(FLAG_REF_VAR);
+        //        tmp->addFlag(FLAG_MAYBE_REF);
+        //        tmp->qual = QUAL_REF;
+          
+        /*
+          noop->insertBefore(new DefExpr(tmp,
+          new CallExpr(PRIM_GET_MEMBER_VALUE, tupExpr->copy(),
+          new_CStringSymbol(tupType->getField(i)->name)),
+          new SymExpr(tupType->getField(i)->type->symbol)));
+        */
+          
+
+        // create the AST for 'tupleTemp = tuple.field'
+        // 
+        VarSymbol* field = new_CStringSymbol(tupType->getField(i)->name);
+        noop->insertBefore(new DefExpr(tmp));
+        noop->insertBefore(new CallExpr(PRIM_MOVE, tmp,
+                                        new CallExpr(PRIM_GET_MEMBER,
+                                                     tupExpr->copy(),
+                                                     field)));
+          
+          
+
+        // and map idxSymbol to 
+        //        idxSym->addFlag(FLAG_CONST);
+        //        idxSym->addFlag(FLAG_REF_VAR);
+        //          idxSym->addFlag(FLAG_MAYBE_REF);
+        //          idxSym->qual = QUAL_REF;
+        Symbol* idxSym = theloop->indexGet()->symbol();
+        Symbol* continueSym = theloop->continueLabelGet();
+        map.put(idxSym, tmp);
+        theloop->copyBodyHelper(noop, i-2, &map, continueSym);
+      }
+
       theloop->remove();
 
       noop->remove();
