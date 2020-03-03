@@ -91,13 +91,28 @@ module ChapelLocale {
             && subloc != c_sublocid_any
             && subloc != c_sublocid_all);
 
+
+  record _locale {
+    var _instance: BaseLocale;
+
+    forwarding _instance;
+
+    proc init() { 
+      this.complete();
+    }
+
+    proc deinit() {
+      delete this._instance;
+    }
+  }
+
   /*
     ``locale`` is the abstract class from which the various
     implementations inherit.  It specifies the required interface
     and implements part of it, but requires the rest to be provided
     by the corresponding concrete classes.
    */
-  class _locale {
+  class BaseLocale {
     //- Constructor
     pragma "no doc"
     proc init() { }
@@ -346,7 +361,7 @@ module ChapelLocale {
      'here' is used before the locale hierarchy is initialized.
    */
   pragma "no doc"
-  class DummyLocale : locale {
+  class DummyLocale : BaseLocale {
     proc init() { }
 
     override proc chpl_id() : int {
@@ -372,7 +387,7 @@ module ChapelLocale {
 
 
   pragma "no doc"
-  class AbstractLocaleModel : locale {
+  class AbstractLocaleModel : BaseLocale {
     // This will be used for interfaces that will be common to all
     // (non-RootLocale) locale models
     proc init(parent_loc : locale) {
@@ -415,7 +430,7 @@ module ChapelLocale {
   var origRootLocale : unmanaged locale? = nil;
 
   pragma "no doc"
-  class AbstractRootLocale : locale {
+  class AbstractRootLocale : BaseLocale {
     proc init() { }
 
     proc init(parent_loc : locale?) {
