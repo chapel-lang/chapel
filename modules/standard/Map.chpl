@@ -67,10 +67,17 @@ module Map {
   }
 
   record map {
-    type keyType, valType;
+    /* Type of map keys. */
+    type keyType;
+    /* Type of map values. */
+    type valType;
+
+    /* Tracks if map is parallel safe. */
     param parSafe = false;
 
+    pragma "no doc"
     var myKeys: domain(keyType, parSafe=parSafe);
+    pragma "no doc"
     var vals: [myKeys] checkForNonNilableClass(valType);
 
 
