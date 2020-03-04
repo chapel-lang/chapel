@@ -3726,6 +3726,11 @@ module ChapelArray {
 
   proc chpl__compatibleForWidePtrBulkTransfer(a, b) param {
     if !useBulkPtrTransfer then return false;
+
+    // TODO: for now we are limiting ourselves to default rectangulars
+    if !(a._value.isDefaultRectangular() &&
+         b._value.isDefaultRectangular()) then return false;
+
     if a.eltType != b.eltType then return false;
 
     // only classes have pointer assignment semantics
@@ -3746,16 +3751,12 @@ module ChapelArray {
     const aDom = a.domain;
     const bDom = b.domain;
     if aDom != bDom then return false;
-    
-    if aDom._value.isDefaultRectangular() &&
-       bDom._value.isDefaultRectangular() {
-         // TODO can we omit the following check and bulk transfer narrow
-         // pointers, too
-        if __primitive("is wide pointer", a[aDom.low]) {
-          var ret = chpl__bulkTransferArray(a, aDom, b, bDom);
-          return ret;
-        }
-      }
+
+     // TODO can we omit the following check and bulk transfer narrow
+     // pointers, too
+    if __primitive("is wide pointer", a[aDom.low]) {
+      return chpl__bulkTransferArray(a, aDom, b, bDom);
+    }
     return false;
   }
 
