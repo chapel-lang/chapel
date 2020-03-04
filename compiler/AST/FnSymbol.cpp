@@ -873,6 +873,13 @@ bool FnSymbol::isMethodOnRecord() const {
   return retval;
 }
 
+bool FnSymbol::isTypeMethod() const {
+  if (isMethod() && _this != NULL) {
+    return _this->hasFlag(FLAG_TYPE_VARIABLE);
+  }
+  return false;
+}
+
 void FnSymbol::setMethod(bool value) {
   if (value == true) {
     addFlag(FLAG_METHOD);
