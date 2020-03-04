@@ -927,14 +927,17 @@ static FnSymbol* getOverrideCandidate(FnSymbol* fn) {
         ret = getTheIteratorFn(iteratorClass);
   }
 
-  // TODO: We can safely get rid of this else block when we're ready.
+  //
+  // TODO: Merging these code paths triggers weird forwaring errors for
+  // OwnedObject code. Might be because we discard "owned" in places
+  // we should not?
+  //
   if (fn->isTypeMethod()) {
-    if (AggregateType* at = getReceiverClassType(fn)) {
+    if (AggregateType* at = getReceiverClassType(ret)) {
       INT_ASSERT(at->isClass());
       return ret;
     }
   } else {
-    // Check that ret has a class _this
     if (ret->_this)
       if (AggregateType* at = toAggregateType(ret->_this->getValType()))
         if (at->isClass())
