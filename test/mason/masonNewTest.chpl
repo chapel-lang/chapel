@@ -4,7 +4,8 @@ use FileSystem;
 use MasonNew;
 
 proc main() {
-  const args = ['new', 'Test', ''];
+  const args : [0..2] string;
+  args = ['mason', 'new', 'Test'];
   masonNew(args);
 
   // Confirm structure

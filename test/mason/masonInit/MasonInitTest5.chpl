@@ -4,8 +4,9 @@ use MasonUtils;
 use MasonNew;
 
 proc main(){  
+  const initArgs : [0..2] string;
   mkdir("testSrc");
-  const initArgs = ['init','testSrc'];
+  initArgs = ['mason','init','testSrc'];
   masonInit(initArgs);
   
   runCommand('rm -rf testSrc/src/testSrc.chpl');
@@ -15,5 +16,5 @@ proc main(){
     writeln("File found !");
   }
 
-  runCommand('rm -rf testSrc');
+ rmTree("testSrc");
 }

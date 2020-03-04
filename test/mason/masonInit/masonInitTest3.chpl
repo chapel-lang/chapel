@@ -4,15 +4,17 @@ use MasonUtils;
 use MasonNew;
 
 proc main(){
-  const newArgs = ['new','testSrc',''];
+  const newArgs : [0..2] string;
+  const initArgs : [0..2] string;
+  newArgs = ['mason','new','testSrc'];
   masonNew(newArgs);
   runCommand('rm -rf testSrc/.git');
-  const initArgs = ['init','testSrc'];
+  initArgs = ['mason','init','testSrc'];
   masonInit(initArgs);
   //check if src and src/testSrc.chpl was created
   if isDir("./testSrc/.git") {
     writeln(".git has been successfully created");
   }
 
-  runCommand('rm -rf testSrc');
+  rmTree("testSrc");
 }

@@ -4,7 +4,8 @@ use MasonUtils;
 use MasonNew;
 
 proc main(){
-  const newArgs = ['new','testSrc',''];
+  const newArgs: [0..2] string;
+  newArgs = ['mason','new','testSrc'];
   masonNew(newArgs);
   runCommand('rm -rf testSrc/Mason.toml');
   const initArgs = ['init','testSrc'];
@@ -13,5 +14,5 @@ proc main(){
   if isFile("./testSrc/Mason.toml") {
     writeln("Mason.toml has been successfully created");
   }
-  runCommand('rm -rf testSrc');
+  rmTree("testSrc");
 }

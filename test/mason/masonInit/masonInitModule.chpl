@@ -5,11 +5,12 @@ use MasonNew;
 
 proc main(){
   mkdir("project-testSrc");
-  const initArgs = ['init','project-testSrc','--name=project'];
+  const initArgs: [0..3] string;
+  initArgs = ['mason', 'init', 'project-testSrc', '--name=project'];
   masonInit(initArgs);
   //check if src and src/testSrc.chpl was created
   if isFile("./project-testSrc/src/project.chpl") {
     writeln("Project.chpl has been successfully created");
   }
-  runCommand('rm -rf project-testSrc');
+  rmTree("project-testSrc");
 }

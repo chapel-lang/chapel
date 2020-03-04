@@ -5,9 +5,10 @@ use MasonInit;
 use MasonUtils;
 
 proc main(){
-  const args = ['init','testSrc'];
+  const args: [0..2] string;
+  args = ['mason','init','testSrc'];
   mkdir("testSrc");
   masonInit(args);
-  runCommand('rm -rf testSrc');
+  rmTree("testSrc");
 }
 
