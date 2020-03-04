@@ -1,0 +1,1 @@
+deeperNesting-parentImportBad.chpl:10: error: currently unable to import nested modules without specifying the full path to the module
