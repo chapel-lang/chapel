@@ -145,6 +145,7 @@ static bool isVirtualChild(FnSymbol* child, FnSymbol* parent);
 static bool isSubType(Type* sub, Type* super);
 
 static bool isOverrideableMethod(FnSymbol* fn);
+static bool isVirtualizableMethod(FnSymbol* fn);
 
 static AggregateType* getReceiverClassType(FnSymbol* fn);
 
@@ -156,11 +157,8 @@ static bool buildVirtualMaps() {
     if (AggregateType* at = fn->getReceiver()) {
       if (at->isClass() == true) {
         if (at->isGeneric() == false) {
-          if (fn->isResolved() && isOverrideableMethod(fn)) {
-            // Safeguard, since type methods cannot be virtualized.
-            if (!fn->isTypeMethod()) {
-              addAllToVirtualMaps(fn, at);
-            }
+          if (fn->isResolved() && isVirtualizableMethod(fn)) {
+            addAllToVirtualMaps(fn, at);
           }
         }
       }
@@ -555,6 +553,9 @@ static bool isOverrideableMethod(FnSymbol* fn) {
   return false;
 }
 
+static bool isVirtualizableMethod(FnSymbol *fn) {
+  return !fn->isTypeMethod() && isOverrideableMethod(fn);
+}
 
 static void virtualDispatchUpdate(FnSymbol* pfn, FnSymbol* cfn) {
   cfn->addFlag(FLAG_VIRTUAL);
