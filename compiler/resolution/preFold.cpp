@@ -2043,14 +2043,12 @@ static Expr* preFoldNamed(CallExpr* call) {
         }
       }
 
-      // assume the IR isn't as we expect until proven otherwise
+      // assume the IR isn't well-formed until we find the loop index var
+      //
       bool wellformed = false;
 
       if (theloop != NULL) {
-        // printf("Found loop itself:\n");
-        // list_view(theloop);
 
-        //
         // Mark the loop's index variable as being 'const ref'.
         // Ultimately, this should likely be 'ref' in some cases, but
         // for now I'm erring on the side of avoiding any
@@ -2066,7 +2064,11 @@ static Expr* preFoldNamed(CallExpr* call) {
           }
         }
       }
-      
+
+      // if something wasn't as we expected, bail out; we won't unroll
+      // the loop and will generate an error when we try to resolve
+      // the iterator on the heterogeneous tuple.
+      //
       if (!wellformed) {
         return NULL;
       }
@@ -2075,30 +2077,15 @@ static Expr* preFoldNamed(CallExpr* call) {
       //
       AggregateType* tupType = toAggregateType(iterType);
 
-      // stamp out copies of the loop for each element of the tuple
+      // stamp out copies of the loop body for each element of the tuple
       //
       for (int i=2; i<=tupType->fields.length; i++) {
-        // printf("Stamping out a copy of the loop for:\n");
-        // list_view(tupType->getField(i));
-          
         SymbolMap map;
 
-        // insert temp to capture tuple expr
+        // create a temp to refer to the tuple field
+        //
         VarSymbol* tmp = newTemp(astr("tupleTemp"));
-        //        tmp->addFlag(FLAG_CONST);
-        //        tmp->addFlag(FLAG_REF_VAR);
-        //        printf("inserted tmp %d\n", tmp->id);
         tmp->addFlag(FLAG_REF_VAR);
-        //        tmp->addFlag(FLAG_MAYBE_REF);
-        //        tmp->qual = QUAL_REF;
-          
-        /*
-          noop->insertBefore(new DefExpr(tmp,
-          new CallExpr(PRIM_GET_MEMBER_VALUE, tupExpr->copy(),
-          new_CStringSymbol(tupType->getField(i)->name)),
-          new SymExpr(tupType->getField(i)->type->symbol)));
-        */
-          
 
         // create the AST for 'tupleTemp = tuple.field'
         // 
@@ -2108,33 +2095,25 @@ static Expr* preFoldNamed(CallExpr* call) {
                                         new CallExpr(PRIM_GET_MEMBER,
                                                      tupExpr->copy(),
                                                      field)));
-          
-          
-
-        // and map idxSymbol to 
-        //        idxSym->addFlag(FLAG_CONST);
-        //        idxSym->addFlag(FLAG_REF_VAR);
-        //          idxSym->addFlag(FLAG_MAYBE_REF);
-        //          idxSym->qual = QUAL_REF;
+        // stamp out the loop body
+        //
         Symbol* idxSym = theloop->indexGet()->symbol();
         Symbol* continueSym = theloop->continueLabelGet();
         map.put(idxSym, tmp);
         theloop->copyBodyHelper(noop, i-2, &map, continueSym);
       }
 
+      // remove the loop itself
+      //
       theloop->remove();
 
+      // remove the no-op, replace the parent statement with it, and
+      // return it so that everything we just inserted will be
+      // resolved next
+      //
       noop->remove();
       parentStmt->replace(noop);
       retval = noop;
-      // printf("About to return:\n");
-      // list_view(noop);
-      // list_view(noop->next);
-      // list_view(noop->next->next->next);
-      // list_view(noop->next->next->next->next->next);
-
-      // printf("Whole block:");
-      // list_view(noop->parentExpr);
     }
   }
 
