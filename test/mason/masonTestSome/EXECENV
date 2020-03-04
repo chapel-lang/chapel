@@ -1,9 +1,1 @@
-#!/usr/bin/env bash
-
-bin_subdir=`$CHPL_HOME/util/chplenv/chpl_bin_subdir.py`
-echo "PATH=\$CHPL_HOME/bin/$bin_subdir:\$PATH"
-echo "MASON_HOME=\$PWD/mason_home"
-# Note, this registry should only ever be used by mason update tests
-echo "MASON_REGISTRY=registry|https://github.com/chapel-lang/mason-registry"
-echo "MASON_OFFLINE=false"
-
+../EXECENV
