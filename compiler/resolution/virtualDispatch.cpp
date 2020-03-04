@@ -528,27 +528,16 @@ static bool isSubType(Type* sub, Type* super) {
 }
 
 static bool isOverrideableMethod(FnSymbol* fn) {
-  // TODO: Only in a separate block for logic/reasoning purposes.
-  if (fn->isTypeMethod()) {
-    if (AggregateType* ct = getReceiverClassType(fn)) {
-      INT_ASSERT(isClass(ct)); 
-      return fn->name != astrInit &&
-             !fn->hasFlag(FLAG_WRAPPER) &&
-             !fn->hasFlag(FLAG_NO_PARENS) &&
-              fn->retTag != RET_PARAM &&
-              fn->retTag != RET_TYPE;
-    }
-  }
 
-  AggregateType* receiver = fn->getReceiver();
-  if (receiver)
-    if (AggregateType* ct = toAggregateType(receiver->getValType()))
-      if (isClass(ct))
-        return fn->name != astrInit &&
-               !fn->hasFlag(FLAG_WRAPPER) &&
-               !fn->hasFlag(FLAG_NO_PARENS) &&
-                fn->retTag != RET_PARAM &&
-                fn->retTag != RET_TYPE;
+  // Call returns NULL if the receiver type is not a class.
+  if (AggregateType* at = getReceiverClassType(fn)) {
+    INT_ASSERT(at->isClass()); 
+    return fn->name != astrInit &&
+           !fn->hasFlag(FLAG_WRAPPER) &&
+           !fn->hasFlag(FLAG_NO_PARENS) &&
+            fn->retTag != RET_PARAM &&
+            fn->retTag != RET_TYPE;
+  }
 
   return false;
 }
