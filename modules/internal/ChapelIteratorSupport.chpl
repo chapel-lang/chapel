@@ -340,8 +340,8 @@ module ChapelIteratorSupport {
 
   inline proc _getIteratorZip(x: _tuple) {
     inline proc _getIteratorZipInternal(x: _tuple, param dim: int) {
-      if isTuple(x) && !isHomogeneousTuple(x) then
-        compilerError("Heterogneous tuples don't support zippered iteration yet");
+      if isTuple(x(dim)) && !isHomogeneousTuple(x(dim)) then
+        compilerError("Heterogeneous tuples don't support zippered iteration yet");
       if dim == x.size then
         return (_getIterator(x(dim)),);
       else
