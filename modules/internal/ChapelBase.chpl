@@ -915,8 +915,8 @@ module ChapelBase {
   proc init_elts(x, s, type t) : void {
     var initMethod = chpl_getArrayInitMethod();
 
+    // no need to init an array of zeros
     // for uints, check that s > 0, so the `s-1` below doesn't overflow
-    // does not need to init for ints, either
     if isIntegral(s) && s == 0 {
       initMethod = ArrayInit.noInit;
     } else if initMethod == ArrayInit.heuristicInit {

@@ -423,6 +423,9 @@ class LocBlockArr {
   }
 }
 
+
+////// Block and LocBlock methods ///////////////////////////////////////////
+
 //
 // Block initializer for clients of the Block distribution
 //
@@ -561,7 +564,7 @@ override proc Block.dsiNewRectangularDom(param rank: int, type idxType,
   delete dummyLBD;
 
   var dom = new unmanaged BlockDom(rank, idxType, stridable, sparseLayoutType,
-                                   _to_unmanaged(this), locDomsTemp, whole);
+                                   this: unmanaged, locDomsTemp, whole);
 
   if debugBlockDist {
     writeln("Creating new Block domain:");
@@ -707,6 +710,8 @@ proc LocBlock.init(param rank, type idxType, param dummy: bool) where dummy {
   this.idxType = idxType;
 }
 
+
+////// BlockDom and LocBlockDom methods /////////////////////////////////////
 
 override proc BlockDom.dsiMyDist() return dist;
 
@@ -953,6 +958,9 @@ proc BlockDom.dsiIndexOrder(i) {
 // Added as a performance stopgap to avoid returning a domain
 //
 proc LocBlockDom.contains(i) return myBlock.contains(i);
+
+
+////// BlockArr and LocBlockArr methods /////////////////////////////////////
 
 override proc BlockArr.dsiDisplayRepresentation() {
   for tli in dom.dist.targetLocDom {
@@ -1230,9 +1238,9 @@ inline proc LocBlockArr.this(i) ref {
   return myElems(i);
 }
 
-//
-// Privatization
-//
+
+///// Privatization and serialization ///////////////////////////////////////
+
 proc Block.init(other: Block, privateData,
                 param rank = other.rank,
                 type idxType = other.idxType,
@@ -1365,6 +1373,8 @@ proc BlockArr.dsiPrivatize(privatizeData) {
   return c;
 }
 
+
+////// more /////////////////////////////////////////////////////////////////
 
 proc BlockArr.dsiTargetLocales() {
   return dom.dist.targetLocales;
@@ -1665,6 +1675,9 @@ proc BlockArr.doiScan(op, dom) where (rank == 1) &&
   delete op;
   return res;
 }
+
+
+////// Factory functions ////////////////////////////////////////////////////
 
 proc newBlockDom(dom: domain) {
   return dom dmapped Block(dom);

@@ -508,9 +508,9 @@ class BlockCyclicDom: BaseRectangularDom {
   // DOWN LINK: an array of local domain class descriptors -- set up in
   // setup() below
   //
-  var locDomsQ: [dist.targetLocDom] unmanaged LocBlockCyclicDom(rank, idxType, stridable)?;
+  var locDomsNil: [dist.targetLocDom] unmanaged LocBlockCyclicDom(rank, idxType, stridable)?;
 
-  inline proc locDoms(idx) return locDomsQ(idx)!;
+  inline proc locDoms(idx) return locDomsNil(idx)!;
 
 
   //
@@ -533,7 +533,7 @@ iter BlockCyclicDom.these(param tag: iterKind) where tag == iterKind.leader {
   const maxTasks      = dist.dataParTasksPerLocale;
   const ignoreRunning = getDataParIgnoreRunningTasks();
   const minSize       = getDataParMinGranularity();
-  coforall locDomQ in locDomsQ do on locDomQ {
+  coforall locDomQ in locDomsNil do on locDomQ {
     const locDom = locDomQ!;
     // TODO: There's a compiler bug when using a simple ``forall`` over ``myStarts``
     // that impacts reductions over BlockCyclic arrays. It appears that the
@@ -617,10 +617,11 @@ proc BlockCyclicDom.dsiBuildArray(type eltType) {
         myLocArrTemp = LBCA;
     }
   }
+  var locArrNN = locArrTemp!;
 
   var arr = new unmanaged BlockCyclicArr(eltType=eltType, rank=rank,
                                          idxType=idxType, stridable=stridable,
-                                         locArr = locArrTemp!,
+                                         locArr = locArrNN,
                                          myLocArr = myLocArrTemp,
                                          dom=_to_unmanaged(this));
   return arr;
@@ -669,8 +670,8 @@ override proc BlockCyclicDom.dsiMyDist() return dist;
 proc BlockCyclicDom.setup() {
   coforall localeIdx in dist.targetLocDom do
     on dist.targetLocales(localeIdx) do
-      if (locDomsQ(localeIdx) == nil) then
-        locDomsQ(localeIdx) = new unmanaged LocBlockCyclicDom(rank, idxType, stridable, _to_unmanaged(this),
+      if (locDomsNil(localeIdx) == nil) then
+        locDomsNil(localeIdx) = new unmanaged LocBlockCyclicDom(rank, idxType, stridable, _to_unmanaged(this),
                                                    dist.getStarts(whole, localeIdx));
       else {
         locDoms(localeIdx).myStarts = dist.getStarts(whole, localeIdx);
@@ -715,7 +716,7 @@ proc BlockCyclicDom.dsiGetPrivatizeData() return dist.pid;
 proc BlockCyclicDom.dsiPrivatize(privatizeData) {
   var privateDist = chpl_getPrivatizedCopy(dist.type, privatizeData);
   var c = new unmanaged BlockCyclicDom(rank=rank, idxType=idxType, stridable=stridable, dist=privateDist);
-  c.locDomsQ = locDomsQ;
+  c.locDomsNil = locDomsNil;
   c.whole = whole;
   return c;
 }
@@ -723,7 +724,7 @@ proc BlockCyclicDom.dsiPrivatize(privatizeData) {
 proc BlockCyclicDom.dsiGetReprivatizeData() return 0;
 
 proc BlockCyclicDom.dsiReprivatize(other, reprivatizeData) {
-  locDomsQ = other.locDomsQ;
+  locDomsNil = other.locDomsNil;
   whole = other.whole;
 }
 
@@ -1035,7 +1036,7 @@ iter BlockCyclicDom.dsiLocalSubdomains(loc: locale) {
   // TODO -- could be replaced by a privatized myLocDom in BlockCyclicDom
   // as it is with BlockCyclicArr
   var myLocDom:unmanaged LocBlockCyclicDom(rank, idxType, stridable)? = nil;
-  for (loc, locDom) in zip(dist.targetLocales, locDomsQ) {
+  for (loc, locDom) in zip(dist.targetLocales, locDomsNil) {
     if loc == here then
       myLocDom = locDom;
   }

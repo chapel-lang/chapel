@@ -364,7 +364,7 @@ override proc Cyclic.dsiNewRectangularDom(param rank: int, type idxType, param s
   delete dummyLCD;
 
   var dom = new unmanaged CyclicDom(rank, idxType, stridable,
-                                    _to_unmanaged(this), locDomsTemp, whole);
+                                    this: unmanaged, locDomsTemp, whole);
   return dom;
 }
 
@@ -491,19 +491,6 @@ class CyclicDom : BaseRectangularDom {
 
   var whole: domain(rank, idxType, stridable);
 }
-
-/*
-private proc createLocDoms(param rank: int, type idxType, dist, whole) {
-  var locDomsN: [dist.targetLocDom] unmanaged LocCyclicDom(rank, idxType)?;
-  coforall localeIdx in dist.targetLocDom {
-    on dist.targetLocs(localeIdx) do
-      locDomsN(localeIdx) = new unmanaged LocCyclicDom(rank, idxType, dist.getChunk(whole, localeIdx));
-  }
-  var locDomsNN: [dist.targetLocDom] unmanaged LocCyclicDom(rank, idxType)
-    = locDomsN!; //todo switch to a serial loop?
-  return locDomsNN;
-}
-*/
 
 proc CyclicDom.setup() {
     coforall localeIdx in dist.targetLocDom {

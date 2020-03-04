@@ -3548,12 +3548,14 @@ static Type* getArrayElementType(AggregateType* arrayType) {
   return eltType;
 }
 
+// Is 'actualSym' passed to an assignment (a 'proc =') ?
 static bool isAssignedTo(Symbol* actualSym, SymExpr* knownRef) {
   for_SymbolUses(use, actualSym)
     if (use != knownRef)
       if (CallExpr* parent = toCallExpr(use->parentExpr))
         if (parent->isNamedAstr(astrSassign))
-          return true;
+          if (use == parent->get(1))
+            return true;
 
   return false; // assignment is not found
 }
@@ -3573,8 +3575,10 @@ static bool corrFormalHasDefaultExpr(SymExpr* actualSE) {
 }
 
 static const char* userFieldNameForError(Symbol* actualSym) {
-  INT_ASSERT(!strncmp(actualSym->name, "default_arg_", 12));
-  return actualSym->name + 12;
+  if (strncmp(actualSym->name, "default_arg_", 12) == 0)
+    return actualSym->name + 12;
+  else
+    return actualSym->name;
 }
 
 static void checkDefaultNonnilableArrayArg(CallExpr* call, FnSymbol* fn) {

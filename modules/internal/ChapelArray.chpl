@@ -4004,17 +4004,6 @@ module ChapelArray {
       a <=> b;
   }
 
-  // Sometimes we really need the result of '!' to be an array.
-  inline proc postfix!(A: [?D]) {
-    if isNilableClassType(A.eltType) {
-      var B = forall a in A do a!;
-      return B;
-    } else {
-      // no changes are necessary
-      return A;
-    }
-  }
-
   /* Return a copy of the array ``A`` containing the same values but
      in the shape of the domain ``D``. The number of indices in the
      domain must equal the number of elements in the array. The
