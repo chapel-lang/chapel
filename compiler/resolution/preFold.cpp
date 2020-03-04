@@ -1758,8 +1758,8 @@ static Expr* unrollHetTupleLoop(CallExpr* call, Expr* tupExpr, Type* iterType) {
       block->remove();
       if (ForLoop* loop = toForLoop(nextStmt)) {
         theloop = loop;
-          }
-        }
+      }
+    }
   }
 
   // assume the IR isn't well-formed until we find the loop index var
@@ -1796,7 +1796,8 @@ static Expr* unrollHetTupleLoop(CallExpr* call, Expr* tupExpr, Type* iterType) {
   //
   AggregateType* tupType = toAggregateType(iterType);
 
-  // stamp out copies of the loop body for each element of the tuple
+  // stamp out copies of the loop body for each element of the tuple;
+  // this loop starts from 2 to skip over the size field (which is 1).
   //
   for (int i=2; i<=tupType->fields.length; i++) {
     SymbolMap map;
@@ -1814,7 +1815,8 @@ static Expr* unrollHetTupleLoop(CallExpr* call, Expr* tupExpr, Type* iterType) {
                                     new CallExpr(PRIM_GET_MEMBER,
                                                  tupExpr->copy(),
                                                  field)));
-    // stamp out the loop body
+    // stamp out the loop body; subtract 2 from i to number unrollings
+    // from 0
     //
     Symbol* idxSym = theloop->indexGet()->symbol();
     Symbol* continueSym = theloop->continueLabelGet();
