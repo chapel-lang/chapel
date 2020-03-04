@@ -9,6 +9,7 @@ var A: [D] real;
 
 testit(D, A);
 
+proc postfix!(A:[]) { var B = for a in A do a!; return B; } //#15080
 
 // test one with a shuffled locale map
 if (numLocales == 4) {

@@ -211,7 +211,7 @@ static bool isSymbolAnalyzed(Symbol* sym) {
 }
 
 // If 'call' invokes postfix!, return the result type.
-// Ignore postfix! calls on arrays.
+// Ignore postfix! calls on arrays - needed if we have a 'proc postfix!(a:[])'.
 static Type* isPostfixBangCall(CallExpr* call) {
   if (FnSymbol* fn = call->resolvedFunction()) {
     if (fn->name == astrPostfixBang) {
