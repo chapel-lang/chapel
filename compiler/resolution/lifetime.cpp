@@ -456,13 +456,6 @@ void checkLifetimesInFunction(FnSymbol* fn) {
   for_set(FnSymbol, inFn, state.inFns) {
     checkLifetimesForForallUnorderedOps(inFn, &info);
   }
-
-  /*if (fNoEarlyDeinit == false) {
-    // Mark local variables as potentially captured or not.
-    for_set(FnSymbol, inFn, state.inFns) {
-      markLocalVariableExpiryInFn(inFn, &state);
-    }
-  }*/
 }
 
 
