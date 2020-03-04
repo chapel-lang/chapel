@@ -3581,6 +3581,14 @@ static const char* userFieldNameForError(Symbol* actualSym) {
     return actualSym->name;
 }
 
+//
+// This checks for an array-typed field with a non-nilable element type
+// that is default-initialized in a compiler-generated initializer.
+// Ex. C1.A1 in
+//   test/classes/nilability/array-with-nonnilable-elttype.chpl
+// This case is represented in the AST with a default-arg function
+// being passed to the initializer.
+//
 static void checkDefaultNonnilableArrayArg(CallExpr* call, FnSymbol* fn) {
   if (! (fn->name == astrInit || fn->name == astrInitEquals ||
          fn->hasFlag(FLAG_NEW_WRAPPER)                      ))
@@ -9990,6 +9998,12 @@ void lowerPrimInit(CallExpr* call, Expr* preventingSplitInit) {
     INT_FATAL(call, "Unsupported primInit");
   }
 
+  //
+  // Check for a default-initialized array with a non-nilable element type
+  // (a) in a variable declaration, or (b) in a user-defined initializer
+  // when the field is not initialized explicitly ex. (a) x1 and (b) C2.A2 in
+  //   test/classes/nilability/array-with-nonnilable-elttype.chpl
+  //
   if (call->isPrimitive(PRIM_DEFAULT_INIT_VAR) &&
       val->type->symbol->hasFlag(FLAG_ARRAY)   &&
       ! val->hasFlag(FLAG_INITIALIZED_LATER)   &&
