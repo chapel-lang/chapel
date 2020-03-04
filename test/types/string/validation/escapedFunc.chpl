@@ -2,7 +2,7 @@ var str = b"bAb\xffbAb".decode(errors=decodePolicy.escape);
 
 // iterate over the string using indexing
 var idx = 1;
-while idx <= str.length {
+while idx <= str.size {
   writeln("Char: ", str[idx]);
   // we get all replacement characters here. we should be getting the actual
   // escape codepoint

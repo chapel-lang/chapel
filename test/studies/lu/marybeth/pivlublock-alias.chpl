@@ -110,7 +110,7 @@ writeln("Pivot Vector:");
 writeln(piv);
 
 iter IterateByBlocks(D:range,blksize) {
-  var n = D.length;
+  var n = D.size;
   var lo,hi: int;
 
   for i in D by blksize {

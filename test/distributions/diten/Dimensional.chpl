@@ -12,12 +12,12 @@ class Cyclic: DimensionDistributor {
   }
 
   override proc indToDimInd(ind: int, localeDomain) {
-    return mod(ind, localeDomain.dim(myDimension).length);
+    return mod(ind, localeDomain.dim(myDimension).size);
   }
 
   override proc localPart(localeDomain, loc, type idxType) {
     var lows:[localeDomain.dim(myDimension)] idxType;
-    var length = localeDomain.dim(myDimension).length;
+    var length = localeDomain.dim(myDimension).size;
     for i in min(idxType)..#length {
       lows(mod(i, length)) = i;
     }

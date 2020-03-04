@@ -121,7 +121,7 @@ proc randomMake(desc : string, a :[?D], n : int) {
 // Repeat sequence "alu" for n characters
 proc repeatMake(desc : string, alu : string, n : int) {
   stdout.write(desc);
-  var r : int = alu.length;
+  var r : int = alu.size;
   var s : string = alu + alu + alu[1..n%r];
   var j : int;
 
