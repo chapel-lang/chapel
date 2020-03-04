@@ -47,6 +47,8 @@ var mylocdom: domain(2);
 var mylocs: [mylocdom] locale?;
 var manylocs: bool;
 
+proc postfix!(A:[]) { var B = for a in A do a!; return B; } //#15080
+
 // Initialize 'mylocs' and 'manylocs'.
 //
 proc setupLocales(s1:int, s2:int, ensureManyLocs: bool = false) {
