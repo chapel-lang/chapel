@@ -162,10 +162,10 @@ module Collection {
       return getSize() == 0;
     }
 
-    /*
-      Syntactic sugar for `getSize`.
-    */
+    /* Deprecated - please use :proc:`Collection.size`. */
     proc length : int {
+      compilerWarning("Collection.length is deprecated - " +
+                      "please use Collection.size instead");
       return getSize();
     }
 

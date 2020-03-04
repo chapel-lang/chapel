@@ -525,7 +525,12 @@ record reMatch {
   /* 0-based offset into the string or channel that matched; -1 if matched=false */
   var offset:byteIndex; // 0-based, -1 if matched==false
   /* the length of the match. 0 if matched==false */
-  var length:int; // 0 if matched==false
+  var size:int; // 0 if matched==false
+  proc length ref {
+    compilerWarning("reMatch.length is deprecated - " +
+                    "please use reMatch.size instead");
+    return size;
+  }
 }
 
 pragma "no doc"
@@ -552,7 +557,7 @@ inline proc _cond_test(m: reMatch) return m.matched;
     :returns: the portion of ``this`` referred to by the match
  */
 proc string.this(m:reMatch) {
-  if m.matched then return this[m.offset+1..#m.length];
+  if m.matched then return this[m.offset+1..#m.size];
   else return "";
 }
 
@@ -565,7 +570,7 @@ proc string.this(m:reMatch) {
     :returns: the portion of ``this`` referred to by the match
  */
 proc bytes.this(m:reMatch) {
-  if m.matched then return this[(m.offset+1):int..#m.length];
+  if m.matched then return this[(m.offset+1):int..#m.size];
   else return b"";
 }
 

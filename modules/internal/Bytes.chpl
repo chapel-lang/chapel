@@ -356,10 +356,12 @@ module Bytes {
       this.len = s_len;
     }
 
-    /*
-      :returns: The number of bytes in the :record:`bytes`.
-    */
-    inline proc length return len;
+    /* Deprecated - please use :proc:`bytes.size`. */
+    inline proc length {
+      compilerWarning("bytes.length is deprecated - " +
+                      "please use bytes.size instead");
+      return len;
+    }
 
     /*
       :returns: The number of bytes in the :record:`bytes`.
@@ -372,12 +374,15 @@ module Bytes {
     inline proc numBytes return len;
 
     pragma "no doc"
-    inline proc param length param
-      return __primitive("string_length_bytes", this);
+    inline proc param length param {
+      compilerWarning("bytes.length is deprecated - " +
+                      "please use bytes.size instead");
+      return size;
+    }
 
     pragma "no doc"
     inline proc param size param
-      return length;
+      return __primitive("string_length_bytes", this);
 
     pragma "no doc"
     inline proc param numBytes param

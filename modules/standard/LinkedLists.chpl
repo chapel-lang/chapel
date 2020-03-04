@@ -66,7 +66,8 @@ record LinkedList {
   /*
     The number of nodes in the list.
    */
-  var length: int;
+  var size: int;
+
 
   pragma "no doc"
   proc init(type eltType, first : unmanaged listNode(eltType)? = nil, last : unmanaged listNode(eltType)? = nil) {
@@ -84,10 +85,12 @@ record LinkedList {
   }
 
   /*
-     Synonym for length.
+    Deprecated - please use :proc:`LinkedLists.size`.
    */
-  proc size {
-    return length;
+  proc length ref {
+    compilerWarning("linkedList.length is deprecated - " +
+                    "please use LinkedList.size instead");
+    return size;
   }
 
   /*
@@ -114,7 +117,7 @@ record LinkedList {
       first = new unmanaged listNode(eltType, e);
       last = first;
     }
-    length += 1;
+    size += 1;
   }
   /*
      Synonym for append.
@@ -140,7 +143,7 @@ record LinkedList {
     first = new unmanaged listNode(eltType, e, first);
     if last == nil then
       last = first;
-    length += 1;
+    size += 1;
   }
 
   /*
@@ -178,7 +181,7 @@ record LinkedList {
       if last == tmp then
         last = prev;
       delete tmp;
-      length -= 1;
+      size -= 1;
     }
   }
 
@@ -188,7 +191,7 @@ record LinkedList {
    */
    proc pop_front():eltType {
      use HaltWrappers only;
-     if boundsChecking && length < 1 {
+     if boundsChecking && size < 1 {
        HaltWrappers.boundsCheckHalt("pop_front on empty list");
      }
      var oldfirst = first!;
@@ -196,7 +199,7 @@ record LinkedList {
      var ret = oldfirst.data;
      first = newfirst;
      if last == oldfirst then last = newfirst;
-     length -= 1;
+     size -= 1;
      delete oldfirst;
      return ret;
    }
@@ -213,7 +216,7 @@ record LinkedList {
     }
     first = nil;
     last = nil;
-    length = 0;
+    size = 0;
   }
 
   /*
@@ -234,7 +237,7 @@ record LinkedList {
 
     if binary {
       // Write the number of elements.
-      f <~> length;
+      f <~> size;
     }
     if isjson || ischpl {
       f <~> new ioLiteral("[");
@@ -262,7 +265,7 @@ record LinkedList {
 
     //
     // Special handling for reading in order to handle reading an arbitrary
-    // length.
+    // size.
     //
     const isBinary = f.binary();
     const arrayStyle = f.styleElement(QIO_STYLE_ELEMENT_ARRAY);
