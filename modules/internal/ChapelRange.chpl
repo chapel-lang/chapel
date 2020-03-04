@@ -2231,7 +2231,7 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
     if boundsChecking && ! this.hasFirst() {
       if this.isEmpty() {
         if ! myFollowThis.isEmpty() then
-          HaltWrappers.boundsCheckHalt("zippered iteration with a range has non-equal sizes");
+          HaltWrappers.boundsCheckHalt("size mismatch in zippered iteration");
       } else {
         HaltWrappers.boundsCheckHalt("iteration over a range with no first index");
       }
