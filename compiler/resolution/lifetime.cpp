@@ -311,7 +311,13 @@ static void checkFunction(FnSymbol* fn);
 static bool isCallToFunctionReturningNotOwned(CallExpr* call);
 static bool isUser(BaseAST* ast);
 
-void checkLifetimes() {
+void checkLifetimesAndNilDereferences() {
+  // Clear last error location so we get errors from nil checking
+  // even if previous compiler code raised error on the same line.
+  // This is necessary due to the use of printsSameLocationAsLastError
+  // to hide multiple nil-checking errors from the same line.
+  clearLastErrorLocation();
+
   // Mark all arguments with FLAG_SCOPE or FLAG_RETURN_SCOPE.
   // This needs to be done for all functions before the next
   // loop since it affects how calls are handled.
@@ -320,8 +326,10 @@ void checkLifetimes() {
     adjustSignatureForNilChecking(fn);
   }
 
-  // Perform lifetime checking on each function
   forv_Vec(FnSymbol, fn, gFnSymbols) {
+    // Perform nil checking on each function
+    checkNilDereferencesInFn(fn);
+    // Perform lifetime checking on each function
     checkFunction(fn);
   }
 
@@ -2793,7 +2801,19 @@ static bool isLifetimeShorter(Lifetime a, Lifetime b) {
     BlockStmt* bBlock = getDefBlock(bSym);
     if (aBlock == bBlock) {
       // TODO: check the order of the declarations
-      return false;
+      bool aDeadEarly = aSym->hasFlag(FLAG_DEAD_COPY_ELISION) ||
+                        aSym->hasFlag(FLAG_DEAD_LAST_MENTION);
+      bool bDeadEarly = bSym->hasFlag(FLAG_DEAD_COPY_ELISION) ||
+                        bSym->hasFlag(FLAG_DEAD_LAST_MENTION);
+      if      (aDeadEarly == false && bDeadEarly == false)
+        return false;  // don't worry about order for end-of-block decls
+                       // doing so would prevent swap from working.
+      else if (aDeadEarly == true  && bDeadEarly == true)
+        return false; // don't worry about this order... yet
+      else if (aDeadEarly == true  && bDeadEarly == false)
+        return true; // a has shorter lifetime than b
+      else if (aDeadEarly == false && bDeadEarly == true)
+        return false; // b has shorter lifetime than a
     } else {
       return isBlockWithinBlock(aBlock, bBlock);
     }

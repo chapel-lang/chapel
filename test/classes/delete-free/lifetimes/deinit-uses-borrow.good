@@ -1,0 +1,3 @@
+deinit-uses-borrow.chpl:9: In function 'test2':
+deinit-uses-borrow.chpl:12: error: Scoped variable would outlive the value it is set to
+deinit-uses-borrow.chpl:11: note: consider scope of y

@@ -1,1 +1,6 @@
-compilation error
+ex-errors.chpl:14: In function 'ownedExample2EOB':
+ex-errors.chpl:18: error: Scoped variable b would outlive the value it is set to
+ex-errors.chpl:26: In function 'ownedExample3EOB':
+ex-errors.chpl:29: error: Actual argument does not meet called function lifetime constraint
+ex-errors.chpl:10: note: called function setit(lhs: borrowed C?, rhs: borrowed C)
+ex-errors.chpl:10: note: includes lifetime constraint lhs < rhs

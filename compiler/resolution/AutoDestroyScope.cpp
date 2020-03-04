@@ -388,6 +388,7 @@ static void deinitializeOrCopyElide(Expr* before, Expr* after, VarSymbol* var) {
       // Change the copy into a move and don't destroy the variable.
       copyToElide->convertToNoop();
       copyToElide->insertBefore(new CallExpr(PRIM_ASSIGN_ELIDED_COPY, copyToLhs, var));
+      var->addFlag(FLAG_DEAD_COPY_ELISION);
     }
   }
 }
