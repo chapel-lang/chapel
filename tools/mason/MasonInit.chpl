@@ -43,56 +43,49 @@ proc masonInit(args) throws {
     var countArgs = 2;
     for arg in args[2..] {
       countArgs += 1;
-      if arg == '-h' || arg == '--help' {
-        masonInitHelp();
-        exit();
-      }
-      else if arg == '--show' {
-        show = true;
-      }
-      else if arg.startsWith('--name') {
-        if arg.startsWith('--name=') {
-          var res = arg.split("=");
-          packageName = res[2];
-          dirName = args[2];
+      select (arg) {
+        when '-h' {
+          masonNewHelp();
+          exit();
         }
-        else {
+        when '--help' {
+          masonNewHelp();
+          exit();
+        }
+        when '--show' {
+          show = true;
+        }
+        when '--name' {
           packageName = args[countArgs];
           dirName = args[2];
         }
-      }
-      else {
-        if packageName.length == 0 then {
-          dirName = arg;
-          packageName = dirName;
+        otherwise {
+          if arg.startsWith('--name') {
+            var res = arg.split("=");
+            packageName = res[2];
+            dirName = args[2];
+          }
+          if packageName.length == 0 then {
+            dirName = arg;
+            packageName = dirName;
+          }
         }
       }
     }
+
     if dirName.startsWith('--name') then dirName = '';
+    
     if dirName == '' {
       const cwd = getEnv("PWD");
       var name = basename(cwd); 
       const path = '.';
-      if dirName != packageName then {
-        createModule(path, packageName, show);
-        if validatePackageName(packageName) {
-          validateMasonFile(path, packageName, show);
-          var isInitialized = validateInit(path, name=packageName, true, show);
-          if isInitialized > 0 then
-          writeln("Initialized new library project: " + basename(cwd));
-        }
-      }
-      else {
-        var resName = validatePackageNameChecks(path, name); 
-        var isNamesDiff = false;
-        if resName != name then {name = resName; isNamesDiff = true;} 
-        if resName == name {
-          validateMasonFile(path, name, show);
-          var isInitialized = validateInit(path, name, isNamesDiff, show);
-          if isInitialized > 0 then
-          writeln("Initialized new library project: " + basename(cwd));
-        }
-      }
+      if packageName.length > 0 then name = packageName;
+      var resName = validatePackageNameChecks(path, name);
+      name = resName;
+      validateMasonFile(path, name, show);
+      var isInitialized = validateInit(path, name, true, show);
+      if isInitialized > 0 then 
+      writeln("Initialized new library project: " + basename(cwd));
     }
     else {
       // if the target directory in path doesnt exist, throw error
@@ -101,27 +94,14 @@ proc masonInit(args) throws {
       // if TOML file exists, check for values in it and validate
       const path = dirName;
       if isDir(path) {
-        if dirName != packageName then {
-          createModule(path, packageName, show);
-          if validatePackageName(packageName) {
-            validateMasonFile(path, packageName, show);
-            var isInitialized = validateInit(path, name=packageName, true, show);
-            if isInitialized > 0 then
-            writeln("Initialized new library project in " + path + ": " + basename(path));
-          }
-        }
-        else {
-          var name = basename(dirName);
-          var resName = validatePackageNameChecks(path, name);
-          var isNamesDiff = false;
-          if resName != name then {name = resName; isNamesDiff = true;} 
-          if resName == name {
-            validateMasonFile(path, name, show);
-            var isInitialized = validateInit(path, name, isNamesDiff, show);
-            if isInitialized > 0 then
-            writeln("Initialized new library project in " + path + ": " + basename(path));
-          }
-        }
+        var name = basename(dirName);
+        if packageName.length > 0 then name = packageName;
+        var resName = validatePackageNameChecks(path, name);
+        name = resName;
+        validateMasonFile(path, name, show);
+        var isInitialized = validateInit(path, name, true, show);
+        if isInitialized > 0 then 
+        writeln("Initialized new library project: " + basename(path));
       }
       else {
         throw new owned MasonError("Directory does not exist: " + path +
@@ -171,6 +151,7 @@ proc validateInit(path: string, name: string, isNameDiff: bool, show: bool) thro
       }
     }
   }
+
   if toBeCreated.size == 0 {
       writeln("Library project has already been initialised.");
       return 0;
@@ -318,30 +299,39 @@ proc createModule(path: string, packageName: string, show: bool) throws {
 */
 proc validatePackageNameChecks(path: string, name: string) {
   var actualName = '';
-  if isFile(path + "/Mason.toml") {
-    const toParse = open(path + "/Mason.toml", iomode.r);
-    const tomlFile = parseToml(toParse);
-    if tomlFile.pathExists("brick.name") {
-      const nameTOML = tomlFile["brick"]!["name"]!.s;
-      if validateNameInit(nameTOML) then actualName = nameTOML; 
-    }
-  } 
-  else {
-    if isDir(path + '/src') {
-      const files = listdir(path + '/src');
-      const file = files[1];
-      const fileName = file.split(".");
-      const nameModule = fileName[1];
-      if validateNameInit(nameModule) then actualName = nameModule;
-    }
+  try {
+    if isFile(path + "/Mason.toml") {
+      const toParse = open(path + "/Mason.toml", iomode.r);
+      const tomlFile = parseToml(toParse);
+      if tomlFile.pathExists("brick.name") {
+        const nameTOML = tomlFile["brick"]!["name"]!.s;
+        if validateNameInit(nameTOML) then actualName = nameTOML; 
+      }
+    } 
     else {
-      const namePath = basename(name);
-      if validatePackageName(namePath) then actualName = namePath;
+      if isDir(path + '/src') {
+        const files = listdir(path + '/src');
+        const file = files[1];
+        const fileName = file.split(".");
+        const nameModule = fileName[1];
+        if validateNameInit(nameModule) then actualName = nameModule;
+      }
+      else {
+        const namePath = basename(name);
+        if validatePackageName(namePath) then actualName = namePath;
+      }
     }
+    return actualName;
   }
-  return actualName;
+  catch e {
+    writeln(e);
+    exit(0);
+  }
 }
 
+/*
+  Checks the given dirName for a legalName / illegal-name
+*/
 proc validateNameInit(dirName: string) {
   if dirName == '' then return false;
   else if !isIdentifier(dirName) then return false;

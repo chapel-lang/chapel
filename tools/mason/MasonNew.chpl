@@ -25,8 +25,10 @@ use MasonUtils;
 use MasonHelp;
 use MasonEnv;
 
-
-
+/*
+  Creates a new library project at a given directory
+  mason new <projectName/directoryName>
+*/
 proc masonNew(args) throws {
   try! {
     if args.size < 3 {
@@ -74,24 +76,6 @@ proc masonNew(args) throws {
         }
       }
 
-      writeln(dirName, ' ', packageName);
-      //make change here 
-      // if dirName != packageName then {
-      //   if validatePackageName(packageName) {
-      //     if isDir(dirName) {
-      //       throw new owned MasonError("A directory named '" + dirName + "' already exists");
-      //     }
-      //     InitProject(dirName, packageName, vcs, show);
-      //   }
-      // }
-      // else {
-      //   if validatePackageName(dirName) {
-      //     if isDir(dirName) {
-      //       throw new owned MasonError("A directory named '" + dirName + "' already exists");
-      //     }
-      //     InitProject(dirName, packageName, vcs, show);
-      //   }
-      // }
       if validatePackageName(dirName = packageName) {
         if isDir(dirName) {
           throw new owned MasonError("A directory named '" + dirName + "' already exists");
@@ -113,7 +97,7 @@ proc validatePackageName(dirName) throws {
   else if !isIdentifier(dirName) {
     throw new owned MasonError("Bad package name '" + dirName +
                         "' - only Chapel identifiers are legal package names.\n" +  
-                        "Please use mason new <illegal-name> --name <legal-name>");
+                        "Please use mason new %s --name <LegalName>".format(dirName));
   }
   else if dirName.count("$") > 0 {
     throw new owned MasonError("Bad package name '" + dirName +
@@ -124,6 +108,12 @@ proc validatePackageName(dirName) throws {
   }
 }
 
+/*
+  Takes projectName, vcs (version control), show as inputs and
+  initializes a library project at a directory of given projectName
+  A library project consists of .gitignore file, Mason.toml file, and 
+  directories such as .git, src, example, test
+*/
 proc InitProject(dirName, packageName, vcs, show) throws {
   if vcs {
     gitInit(dirName, show);
@@ -134,12 +124,8 @@ proc InitProject(dirName, packageName, vcs, show) throws {
   }
   // Confirm git init before creating files
   if isDir(dirName) {
-    // if dirName!=packageName then makeBasicToml(packageName, path=dirName);
-    // else makeBasicToml(dirName, path=dirName);
     makeBasicToml(dirName=packageName, path=dirName);
     makeSrcDir(dirName);
-    // if dirName!=packageName then makeModule(dirName, fileName=packageName);
-    // else makeModule(dirName, fileName=dirName);
     makeModule(dirName, fileName=packageName);
     makeTestDir(dirName);
     makeExampleDir(dirName);  
