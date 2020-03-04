@@ -199,7 +199,7 @@ module CPtr {
     }
 
     /*
-      Deprecated - please use `c_array.size`.
+      Deprecated - please use :var:`c_array.size`.
     */
     inline proc length {
       compilerWarning("'c_array.length' is deprecated - " +

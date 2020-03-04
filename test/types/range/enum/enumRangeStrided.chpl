@@ -13,7 +13,6 @@ proc testRange(r) {
     writeln(c);
   writeln();
 
-  writeln("length = ", r.size);
   writeln("size = ", r.size);
   writeln("first = ", r.first);
   writeln("last = ", r.last);
