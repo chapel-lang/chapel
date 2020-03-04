@@ -9184,6 +9184,10 @@ static void insertReturnTemps() {
               tmp->addFlag(FLAG_MAYBE_TYPE);
               tmp->addFlag(FLAG_MAYBE_PARAM);
             }
+
+            // Mark the variable as last-mention or end-of-block
+            // (because this runs after fixPrimInitsAndAddCasts).
+            markTempDeadLastMention(tmp);
           }
         }
       }

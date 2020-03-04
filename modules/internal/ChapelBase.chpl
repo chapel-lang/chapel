@@ -691,7 +691,7 @@ module ChapelBase {
 
   pragma "always propagate line file info"
   private inline proc checkNotNil(x:borrowed class?) {
-    use HaltWrappers only;
+    import HaltWrappers;
     // Check only if --nil-checks is enabled
     if chpl_checkNilDereferences {
       // Add check for nilable types only.
@@ -1946,6 +1946,7 @@ module ChapelBase {
   inline proc -=(ref D: domain, param idx) { D.remove(idx); }
 
   /* swap operator */
+  pragma "ignore transfer errors"
   inline proc <=>(ref lhs, ref rhs) {
     // It's tempting to make `tmp` a `const`, but it causes problems
     // for types where the RHS of an assignment is modified, such as a

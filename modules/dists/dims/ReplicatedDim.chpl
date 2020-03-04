@@ -25,7 +25,7 @@
 //
 
 private use DimensionalDist2D;
-private use RangeChunk only ;
+import RangeChunk;
 
 /*
 This Replicated dimension specifier is for use with the

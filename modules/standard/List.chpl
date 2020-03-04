@@ -52,7 +52,7 @@
   into a list is O(1).
 */
 module List {
-  private use ChapelLocks only;
+  import ChapelLocks;
   private use HaltWrappers;
   private use Sort;
 

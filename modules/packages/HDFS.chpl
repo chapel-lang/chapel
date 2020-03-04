@@ -36,7 +36,7 @@ connecting to an HDFS name node.
 
 .. code-block:: chapel
 
-  use HDFS only;
+  import HDFS;
 
   fs = HDFS.connect(); // can pass a nameNode host and port here,
                        // otherwise uses HDFS default settings.

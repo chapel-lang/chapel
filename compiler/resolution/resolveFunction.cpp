@@ -1035,6 +1035,209 @@ bool FixPrimInitsVisitor::enterCallExpr(CallExpr* call) {
   return true;
 }
 
+class MarkTempsVisitor : public AstVisitorTraverse {
+ public:
+  bool inFunction;
+  MarkTempsVisitor() : inFunction(false) { }
+  virtual bool enterFnSym(FnSymbol* node);
+  virtual bool enterDefExpr(DefExpr* node);
+};
+
+bool MarkTempsVisitor::enterFnSym(FnSymbol* node) {
+  // Only visit the top level function requested
+  if (inFunction) return false;
+  inFunction = true;
+  return true;
+}
+
+static void gatherTempsDeadLastMention(VarSymbol* v,
+                                       std::set<VarSymbol*>& temps) {
+
+  // store the temporary we are working on in the set
+  if (temps.insert(v).second == false)
+    return; // stop here if it was already in the set.
+
+  for_SymbolSymExprs(se, v) {
+    if (CallExpr* call = toCallExpr(se->getStmtExpr())) {
+      SymExpr* lhsSe = NULL;
+      CallExpr* subCall = NULL;
+      if (isInitOrReturn(call, lhsSe, subCall)) {
+        // call above sets lhsSe and initOrCtor
+      } else if (call->resolvedOrVirtualFunction()) {
+        subCall = call;
+      }
+
+      // handle a returned variable being inited here
+      if (lhsSe != NULL) {
+        VarSymbol* lhs = toVarSymbol(lhsSe->symbol());
+        if (lhs != NULL && lhs != v && lhs->hasFlag(FLAG_TEMP))
+          gatherTempsDeadLastMention(lhs, temps);
+      }
+
+      // also handle out intent variables being inited here
+      FnSymbol* fn = subCall ? subCall->resolvedOrVirtualFunction() : NULL;
+      if (fn != NULL) {
+        int i = 1;
+        for_formals_actuals(formal, actual, subCall) {
+          bool outIntent = (formal->intent == INTENT_OUT ||
+                            formal->originalIntent == INTENT_OUT);
+          bool maybeLaterAssign = (i == 1 && fn->name == astrSassign);
+
+          if (outIntent || maybeLaterAssign) {
+            SymExpr* se = toSymExpr(actual);
+            if (NamedExpr* ne = toNamedExpr(actual)) {
+              INT_ASSERT(ne->name == formal->name);
+              se = toSymExpr(ne->actual);
+            }
+            INT_ASSERT(se != NULL);
+
+            VarSymbol* tmpVar = toVarSymbol(se->symbol());
+            if (tmpVar != NULL && tmpVar != v && tmpVar->hasFlag(FLAG_TEMP)) {
+              if (outIntent) {
+                // initializing a temp with out intent
+                gatherTempsDeadLastMention(tmpVar, temps);
+              } else if (maybeLaterAssign &&
+                         tmpVar->hasFlag(FLAG_INITIALIZED_LATER)) {
+                // See through default-init/assign pattern generated for arrays
+                // In that pattern, a '=' call sets a init_coerce_tmp variable
+                // marked with FLAG_INITIALIZED_LATER. If that variable is involved
+                // in user variable initialization, we need to find it.
+                gatherTempsDeadLastMention(tmpVar, temps);
+              }
+            }
+          }
+          i++;
+        }
+      }
+    }
+  }
+}
+
+static void markTempsDeadLastMention(std::set<VarSymbol*>& temps) {
+
+  bool makeThemEndOfBlock = false;
+  bool canMakeThemGlobal = true;
+
+  // Look at how the temps are used
+  for_set(VarSymbol, v, temps) {
+
+    if (v->hasFlag(FLAG_DEAD_END_OF_BLOCK) ||
+        v->hasFlag(FLAG_INDEX_VAR) ||
+        v->hasFlag(FLAG_CHPL__ITER) ||
+        v->hasFlag(FLAG_CHPL__ITER_NEWSTYLE) ||
+        v->getValType()->symbol->hasFlag(FLAG_ITERATOR_RECORD)) {
+      // index vars, iterator records are always end-of-block
+      // but shouldn't be global variables.
+      makeThemEndOfBlock = true;
+      canMakeThemGlobal = false;
+      break;
+    }
+
+    for_SymbolSymExprs(se, v) {
+      if (CallExpr* call = toCallExpr(se->getStmtExpr())) {
+        SymExpr* lhsSe = NULL;
+        CallExpr* subCall = NULL;
+        if (call->isPrimitive(PRIM_MOVE) || call->isPrimitive(PRIM_ASSIGN)) {
+          lhsSe = toSymExpr(call->get(1));
+        } else if (isInitOrReturn(call, lhsSe, subCall)) {
+          // call above sets lhsSe and initOrCtor
+        } else if (call->resolvedOrVirtualFunction()) {
+          subCall = call;
+        }
+
+        // returning into a user var?
+        if (lhsSe != NULL) {
+          VarSymbol* lhs = toVarSymbol(lhsSe->symbol());
+          if (lhs != NULL && lhs != v && !lhs->hasFlag(FLAG_TEMP)) {
+            // Used in initializing a user var, so mark end of block
+            makeThemEndOfBlock = true;
+            break;
+          }
+        }
+        // out intent setting a user var?
+        if (subCall != NULL && subCall->resolvedOrVirtualFunction() != NULL) {
+          for_formals_actuals(formal, actual, subCall) {
+            bool outIntent = (formal->intent == INTENT_OUT ||
+                              formal->originalIntent == INTENT_OUT);
+            if (outIntent) {
+              SymExpr* se = toSymExpr(actual);
+              if (NamedExpr* ne = toNamedExpr(actual)) {
+                INT_ASSERT(ne->name == formal->name);
+                se = toSymExpr(ne->actual);
+              }
+              INT_ASSERT(se != NULL);
+
+              VarSymbol* outVar = toVarSymbol(se->symbol());
+
+              if (outVar != NULL && outVar != v &&
+                  !outVar->hasFlag(FLAG_TEMP)) {
+                // Used in initializing a user var, so mark end of block
+                makeThemEndOfBlock = true;
+                break;
+              }
+            }
+          }
+        }
+
+        if (makeThemEndOfBlock)
+          break;
+      }
+    }
+  }
+
+  if (fNoEarlyDeinit)
+    makeThemEndOfBlock = true;
+
+  if (makeThemEndOfBlock) {
+    for_set(VarSymbol, temp, temps) {
+      temp->addFlag(FLAG_DEAD_END_OF_BLOCK);
+      if (temp->defPoint != NULL) {
+        FnSymbol* initFn = toFnSymbol(temp->defPoint->parentSymbol);
+        if (initFn && initFn->hasFlag(FLAG_MODULE_INIT)) {
+          ModuleSymbol* mod = temp->defPoint->getModule();
+          if (mod && temp->defPoint->parentExpr == initFn->body &&
+              canMakeThemGlobal) {
+            // Move the temporary to global scope.
+            mod->block->insertAtTail(temp->defPoint->remove());
+          }
+        }
+      }
+    }
+  } else {
+    for_set(VarSymbol, temp, temps) {
+      temp->addFlag(FLAG_DEAD_LAST_MENTION);
+    }
+  }
+}
+
+void markTempDeadLastMention(VarSymbol* var) {
+  INT_ASSERT(var && var->hasFlag(FLAG_TEMP));
+
+  std::set<VarSymbol*> temps;
+  gatherTempsDeadLastMention(var, temps);
+  markTempsDeadLastMention(temps);
+  INT_ASSERT(var->hasFlag(FLAG_DEAD_LAST_MENTION) ||
+             var->hasFlag(FLAG_DEAD_END_OF_BLOCK));
+}
+
+bool MarkTempsVisitor::enterDefExpr(DefExpr* node) {
+  // Mark temps as dead either "last mention" or "end of block"
+  // and move temps marked "last mention" to global scope.
+  //
+  // This whole process depends on how split inits are handled
+  // and needs to happen before addAutoDestroyCalls makes decisions
+  // using the flags.
+  //
+  if (VarSymbol* var = toVarSymbol(node->sym)) {
+    if (var->hasFlag(FLAG_TEMP) &&
+        !(var->hasFlag(FLAG_DEAD_LAST_MENTION) ||
+          var->hasFlag(FLAG_DEAD_END_OF_BLOCK))) {
+      markTempDeadLastMention(var);
+    }
+  }
+  return true;
+}
+
 void fixPrimInitsAndAddCasts(FnSymbol* fn) {
   // The function may contain default-init of a variable
   // followed by assignment or passing to out intent.
@@ -1076,6 +1279,11 @@ void fixPrimInitsAndAddCasts(FnSymbol* fn) {
     FixPrimInitsVisitor visitor(splitInitPreventers);
     fn->accept(&visitor);
     changed = visitor.changed;
+  }
+
+  {
+    MarkTempsVisitor visitor;
+    fn->accept(&visitor);
   }
 }
 

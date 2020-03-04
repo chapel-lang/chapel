@@ -218,7 +218,6 @@ bool fPrintUnusedFns = false;
 bool fPrintUnusedInternalFns = false;
 bool fReportAliases = false;
 bool fReportBlocking = false;
-bool fReportExpiring = false;
 bool fReportOptimizedLoopIterators = false;
 bool fReportInlinedIterators = false;
 bool fReportVectorizedLoops = false;
@@ -1050,7 +1049,6 @@ static ArgumentDescription arg_desc[] = {
  {"print-statistics", ' ', "[n|k|t]", "Print AST statistics", "S256", fPrintStatistics, NULL, NULL},
  {"report-aliases", ' ', NULL, "Report aliases in user code", "N", &fReportAliases, NULL, NULL},
  {"report-blocking", ' ', NULL, "Report blocking functions in user code", "N", &fReportBlocking, NULL, NULL},
- {"report-expiring", ' ', NULL, "Report expiring values in user code", "N", &fReportExpiring, NULL, NULL},
  {"report-inlining", ' ', NULL, "Print inlined functions", "F", &report_inlining, NULL, NULL},
  {"report-dead-blocks", ' ', NULL, "Print dead block removal stats", "F", &fReportDeadBlocks, NULL, NULL},
  {"report-dead-modules", ' ', NULL, "Print dead module removal stats", "F", &fReportDeadModules, NULL, NULL},

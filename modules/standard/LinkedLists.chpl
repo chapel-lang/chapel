@@ -189,7 +189,7 @@ record LinkedList {
      It is an error to call this function on an empty list.
    */
    proc pop_front():eltType {
-     use HaltWrappers only;
+     import HaltWrappers;
      if boundsChecking && size < 1 {
        HaltWrappers.boundsCheckHalt("pop_front on empty list");
      }

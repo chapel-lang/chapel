@@ -67,7 +67,7 @@
 module ChapelLocale {
 
   use LocaleModel;
-  private use HaltWrappers only;
+  import HaltWrappers;
   private use SysCTypes;
 
   //

@@ -392,8 +392,8 @@ module Curl {
   pragma "no doc"
   module CurlQioIntegration {
 
-    use Sys only ;
-    use Time only ;
+    import Sys;
+    import Time;
     private use IO;
 
     class CurlFile : QioPluginFile {

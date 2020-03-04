@@ -506,44 +506,19 @@ static VarSymbol* definesAnAutoDestroyedVariable(const Expr* stmt) {
 static VarSymbol* possiblyInitsDestroyedVariable(Expr* e, CallExpr*& fCall) {
 
   if (CallExpr* call = toCallExpr(e)) {
-    // case 1: PRIM_MOVE/PRIM_ASSIGN into a variable
-    if (call->isPrimitive(PRIM_MOVE) || call->isPrimitive(PRIM_ASSIGN)) {
 
-      // set fCall if there is a user call in arg 2
-      if (CallExpr* subCall = toCallExpr(call->get(2)))
-        if (subCall->resolvedOrVirtualFunction() != NULL)
-          fCall = subCall;
+    SymExpr* gotSe = NULL;
+    CallExpr* gotCall = NULL;
+    if (isInitOrReturn(call, gotSe, gotCall)) {
+      fCall = gotCall;
+      if (VarSymbol* var = toVarSymbol(gotSe->symbol()))
+        if (isAutoDestroyedVariable(var))
+          return var;
 
-      if (SymExpr* se = toSymExpr(call->get(1)))
-        if (VarSymbol* var = toVarSymbol(se->symbol()))
-          if (isAutoDestroyedVariable(var))
-            return var;
-
-      return NULL;
-    }
-
-    if (FnSymbol* calledFn = call->resolvedOrVirtualFunction()) {
-
+    } else if (call->resolvedOrVirtualFunction()) {
+      // Set fCall even if it wasn't returning something, so out intents
+      // can be searched for
       fCall = call;
-
-      // case 2: init or init=
-      if (calledFn->isMethod() &&
-          (calledFn->name == astrInit || calledFn->name == astrInitEquals)) {
-        SymExpr* se = toSymExpr(call->get(1));
-        if (VarSymbol* var = toVarSymbol(se->symbol()))
-          if (isAutoDestroyedVariable(var))
-            return var;
-      }
-
-      for_formals_actuals(formal, actual, call) {
-        // case 3: return through ret-arg
-        if (formal->hasFlag(FLAG_RETARG)) {
-          if (SymExpr* actualSe = toSymExpr(actual))
-            if (VarSymbol* var = toVarSymbol(actualSe->symbol()))
-              if (isAutoDestroyedVariable(var))
-                return var;
-        }
-      }
     }
   }
 
@@ -681,6 +656,8 @@ class ComputeLastSymExpr : public AstVisitorTraverse
     ComputeLastSymExpr(std::vector<VarSymbol*>& inited,
                        std::map<VarSymbol*, Expr*>& last)
       : inited(inited), last(last) { }
+    virtual bool enterDefExpr(DefExpr* node);
+    void noteRecordInit(VarSymbol* v, CallExpr* call);
     virtual bool enterCallExpr(CallExpr* node);
     virtual void visitSymExpr(SymExpr* node);
     virtual void exitForallStmt(ForallStmt* node);
@@ -713,6 +690,10 @@ static void computeLastMentionPoints(LastMentionMap& lmm, FnSymbol* fn) {
   }
 }
 
+bool ComputeLastSymExpr::enterDefExpr(DefExpr* node) {
+  return true;
+}
+
 static bool shouldDestroyOnLastMention(VarSymbol* var) {
   return var->hasFlag(FLAG_DEAD_LAST_MENTION) && // dead at last mention
          isAutoDestroyedVariable(var) &&
@@ -722,20 +703,22 @@ static bool shouldDestroyOnLastMention(VarSymbol* var) {
          !var->hasFlag(FLAG_FORMAL_TEMP);
 }
 
+void ComputeLastSymExpr::noteRecordInit(VarSymbol* v, CallExpr* call) {
+  if (shouldDestroyOnLastMention(v))
+    if (initedSet.insert(v).second)
+      inited.push_back(v); // the first potential initialization
+}
+
 bool ComputeLastSymExpr::enterCallExpr(CallExpr* node) {
   CallExpr* fCall = NULL;
   if (VarSymbol* v = possiblyInitsDestroyedVariable(node, fCall))
-    if (shouldDestroyOnLastMention(v))
-      if (initedSet.insert(v).second)
-        inited.push_back(v); // the first potential initialization
+    noteRecordInit(v, node);
 
   // Check also for out intent
   if (fCall != NULL) {
     for_formals_actuals(formal, actual, fCall) {
       if (VarSymbol* v = possiblyInitsDestroyedVariableOut(formal, actual))
-        if (shouldDestroyOnLastMention(v))
-          if (initedSet.insert(v).second)
-            inited.push_back(v); // the first potential initialization
+        noteRecordInit(v, node);
     }
   }
   return true;
