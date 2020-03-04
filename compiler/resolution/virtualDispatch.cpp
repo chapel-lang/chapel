@@ -957,8 +957,6 @@ static FnSymbol* getOverrideCandidateGenericFn(FnSymbol* fn)
   return fn;
 }
 
-
-
 // This function checks that the override keyword is used appropriately
 // checkOverrides would also be a reasonable name for it.
 static void checkMethodsOverride() {
@@ -984,7 +982,11 @@ static void checkMethodsOverride() {
   forv_Vec(FnSymbol, aFn, gFnSymbols) {
     // output error for overriding for non-class methods
     if (aFn->hasFlag(FLAG_OVERRIDE)) {
-      // Type methods may have managed receiver types.
+
+      //
+      // Type methods may have managed receiver types, which would normally
+      // not be recognized as a class.
+      //
       Type* thisType = canonicalClassType(aFn->_this->getValType());
       if (!isClass(thisType)) {
         const char* type = "non-class";
