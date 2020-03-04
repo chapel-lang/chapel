@@ -431,6 +431,8 @@ module ChapelArray {
    *        possible atm due to using var args with a query type. */
   pragma "no doc"
   config param CHPL_WARN_DOMAIN_LITERAL = "unset";
+
+  pragma "ignore transfer errors"
   proc chpl__buildArrayExpr( elems ...?k ) {
 
     if CHPL_WARN_DOMAIN_LITERAL == "true" && isRange(elems(1)) {

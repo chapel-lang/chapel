@@ -7,10 +7,15 @@ module TestReturningIteratorYield {
 
   proc getfirstborrow() {
     var A:[0..3] borrowed MyClass;
-    A[0] = new borrowed MyClass(0);
-    A[1] = new borrowed MyClass(1);
-    A[2] = new borrowed MyClass(2);
-    A[3] = new borrowed MyClass(3);
+    var c0 = new MyClass(0);
+    var c1 = new MyClass(1);
+    var c2 = new MyClass(2);
+    var c3 = new MyClass(3);
+
+    A[0] = c0.borrow();
+    A[1] = c1.borrow();
+    A[2] = c2.borrow();
+    A[3] = c3.borrow();
 
     for x in A {
       return x;

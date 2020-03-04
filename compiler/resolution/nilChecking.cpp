@@ -379,11 +379,14 @@ static void checkForNilDereferencesInCall(
   // to a user function is not dead.
   // Also check for transfering ownership out of an unknown reference
   // to a non-nilable owned.
+  FnSymbol* inFn = call->getFunction();
   if (FnSymbol* calledFn = call->resolvedOrVirtualFunction()) {
     if (!calledFn->hasFlag(FLAG_AUTO_DESTROY_FN) &&
-        !calledFn->hasFlag(FLAG_UNSAFE)) {
-      int i = 1;
+        !calledFn->hasFlag(FLAG_UNSAFE) &&
+        !(inFn != NULL && inFn->hasFlag(FLAG_LEAVES_ARG_NIL))) {
+      int i = 0;
       for_formals_actuals(formal, actual, call) {
+        i++;
         Symbol* argSym = toSymExpr(actual)->symbol();
 
         if (formal->hasFlag(FLAG_RETARG))
@@ -1446,6 +1449,8 @@ class FindInvalidNonNilables : public AstVisitorTraverse {
     // value - NULL if that variable isn't possibly nil now
     //         an Expr* setting it to nil if it is possibly nil now
     SymbolToNilMap varsToNil;
+    // Only present errors once per symbol
+    std::set<Symbol*> erroredSymbols;
     virtual bool enterDefExpr(DefExpr* def);
     virtual bool enterCallExpr(CallExpr* call);
     virtual void exitCallExpr(CallExpr* call);
@@ -1474,11 +1479,7 @@ static bool isNonNilableVariable(Symbol* sym) {
 
 static bool isTrackedNonNilableVariable(Symbol* sym) {
   if (isNonNilableVariable(sym)) {
-    if (sym->hasFlag(FLAG_DEAD_LAST_MENTION))
-      return true;
-    if (ArgSymbol* arg = toArgSymbol(sym))
-      if (arg->intent == INTENT_IN || arg->intent == INTENT_CONST_IN)
-        return true;
+    return true;
   }
 
   return false;
@@ -1550,7 +1551,8 @@ void FindInvalidNonNilables::exitCallExpr(CallExpr* call) {
               error = "Cannot transfer ownership from this non-nilable variable";
             }
 
-            if (error != NULL) {
+            if (error != NULL && erroredSymbols.count(actualSym) == 0) {
+              erroredSymbols.insert(actualSym);
               if (printsUserLocation(astPoint))
                 USR_FATAL_CONT(astPoint, "%s", error);
               else
@@ -1589,7 +1591,8 @@ void FindInvalidNonNilables::visitSymExpr(SymExpr* se) {
         }
       }
 
-      if (error) {
+      if (error && erroredSymbols.count(sym) == 0) {
+        erroredSymbols.insert(sym);
         USR_FATAL_CONT(se, "mention of non-nilable variable after ownership is transferred out of it");
         USR_PRINT(e, "ownership transfer occurred here");
       }

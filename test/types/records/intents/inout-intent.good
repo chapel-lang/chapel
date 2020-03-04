@@ -82,8 +82,8 @@ init 1 1
 lhs(0 0) = rhs(1 1)
 deinit 1 1
 lhs(0 0) = rhs(1 1)
-deinit 1 1
 lhs(0 0) = rhs(1 1)
+deinit 1 1
 deinit 1 1
 (x = 1, ptr = {xx = 1})
 deinit 1 1
@@ -97,8 +97,8 @@ init 1 1
 lhs(0 0) = rhs(1 1)
 deinit 1 1
 lhs(0 0) = rhs(1 1)
-deinit 1 1
 lhs(0 0) = rhs(1 1)
+deinit 1 1
 deinit 1 1
 (x = 1, ptr = {xx = 1})
 deinit 1 1
@@ -119,8 +119,8 @@ init 1 1
 lhs(0 0) = rhs(1 1)
 deinit 1 1
 lhs(0 0) = rhs(1 1)
-deinit 1 1
 lhs(0 0) = rhs(1 1)
+deinit 1 1
 deinit 1 1
 (x = 1, ptr = {xx = 1})
 deinit 1 1
@@ -141,8 +141,8 @@ init 1 1
 lhs(0 0) = rhs(1 1)
 deinit 1 1
 lhs(0 0) = rhs(1 1)
-deinit 1 1
 lhs(0 0) = rhs(1 1)
+deinit 1 1
 deinit 1 1
 (x = 1, ptr = {xx = 1})
 deinit 1 1
@@ -156,8 +156,8 @@ init 1 1
 lhs(0 0) = rhs(1 1)
 deinit 1 1
 lhs(0 0) = rhs(1 1)
-deinit 1 1
 lhs(0 0) = rhs(1 1)
+deinit 1 1
 deinit 1 1
 (x = 1, ptr = {xx = 1})
 deinit 1 1

@@ -4,6 +4,6 @@ init 1
 after assignment
 before nested call
 init 2
-deinit 2
 after nested call
+deinit 2
 deinit 1

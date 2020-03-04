@@ -1,40 +1,40 @@
 test00 starting
 init 0
-deinit 0
 test00 ending
+deinit 0
 test10 starting
 init 10
 copy init 10
 (x = 10)
-deinit 10
 (x = 11)
-deinit 11
 test10 ending
+deinit 11
+deinit 10
 test20 starting
 init 20
 (x = 21)
-deinit 21
 test20 ending
+deinit 21
 test30 starting
 init 30
 copy init 30
 (x = 30)
-deinit 30
 (x = 31)
-deinit 31
 test30 ending
+deinit 31
+deinit 30
 test40 starting
 init 40
 (x = 41)
-deinit 41
 test40 ending
+deinit 41
 test50 starting
 init 50
 copy init 50
 deinit 50
 (x = 50)
-deinit 50
 test50 ending
+deinit 50
 test60 starting
 init 60
 deinit 60
@@ -44,8 +44,8 @@ init 70
 copy init 70
 deinit 70
 (x = 70)
-deinit 70
 test70 ending
+deinit 70
 test80 starting
 init 80
 deinit 80
