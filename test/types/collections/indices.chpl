@@ -2,8 +2,8 @@ var A: [3..6] real = [1.2, 3.4, 5.6, 7.8];
 var t = (1.2, 3.4);
 var s = "brad";
 var b = b"bradford";
-const D = {1..9, 1..9};
-var SD: sparse subdomain(D) = [i in 1..9] (i,i);
+const D = {1..3, 1..3};
+var SD: sparse subdomain(D) = [i in 1..3] (i,i);
 var SA: [SD] real;
 
 [(i,j) in SD] SA[i,j] = i + j / 10.0;
@@ -25,10 +25,8 @@ for i in b.indices do
 for i in SA.indices do
   writeln(SA[i]);
 
-/*
-writeln((A.lowIdx, A.highIdx));
+writeln(A.indices);
 writeln(t.indices);
-writeln((t2.lowIdx, t2.highIdx));
-writeln((s.lowIdx, s.highIdx));
-writeln((b.lowIdx, b.highIdx));
-*/
+writeln(s.indices);
+writeln(b.indices);
+writeln(SA.indices);

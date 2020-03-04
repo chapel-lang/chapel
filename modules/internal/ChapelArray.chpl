@@ -1573,6 +1573,14 @@ module ChapelArray {
     /* Return the high index in this domain factoring in alignment */
     proc alignedHigh return _value.dsiAlignedHigh;
 
+    /* This error overload is here because without it, the domain's
+       indices tend to be promoted across the `.indices` calls of
+       their idxType which can be very confusing. */
+    pragma "no doc"
+    proc indices {
+      compilerError("domains do not support '.indices'");
+    }
+
     pragma "no doc"
     proc contains(i: rank*_value.idxType) {
       if isRectangularDom(this) || isSparseDom(this) then
