@@ -53,6 +53,7 @@ class GenericCollection {
   var empty:borrowed MyClass?;
   var c:borrowed GenericCollection(borrowed MyClass?)? =
     new borrowed GenericCollection(empty);
-  c!.field = new owned MyClass();
+  var other = new owned MyClass();
+  c!.field = other;
   writeln("(borrowed) c ", c.type:string, " has field ", c!.field.type:string);
 }
