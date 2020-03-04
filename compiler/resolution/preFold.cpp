@@ -107,8 +107,6 @@ static Type*          getFcfSharedWrapperType(AggregateType* parent);
 *                                                                             *
 ************************************** | *************************************/
 
-//#include <view.h>
-
 Expr* preFold(CallExpr* call) {
   Expr* baseExpr = call->baseExpr;
   Expr* retval   = call;
@@ -1735,6 +1733,110 @@ static Symbol* findMatchingEnumSymbol(Immediate* imm, EnumType* typeEnum) {
 }
 
 
+static Expr* unrollHetTupleLoop(CallExpr* call, Expr* tupExpr, Type* iterType) {
+  // Find the getIterator's statement and insert a no-op after it
+  // in order to create a place to insert new statements.
+  //
+  Expr* parentStmt = call->getStmtExpr();
+  CallExpr* noop = new CallExpr(PRIM_NOOP);
+  parentStmt->insertAfter(noop);
+
+  // Look for the associated ForLoop statement, removing all
+  // statements leading up to it (since they're unnecessary once
+  // we unroll).  This is very sensitive to the current IR format
+  // such that if it changes, we'll likely bail out of this
+  // prefold and fall into the "Heterogeneous tuples don't support
+  // this style of loop yet" error message in ChapelTuple.chpl.
+  //
+  ForLoop* theloop = NULL;
+  Expr* nextStmt = noop->next;
+  if (DeferStmt* defer = toDeferStmt(nextStmt)) {
+    nextStmt = nextStmt->next;
+    defer->remove();
+    if (BlockStmt* block = toBlockStmt(nextStmt)) {
+      nextStmt = nextStmt->next;
+      block->remove();
+      if (ForLoop* loop = toForLoop(nextStmt)) {
+        theloop = loop;
+          }
+        }
+  }
+
+  // assume the IR isn't well-formed until we find the loop index var
+  //
+  bool wellformed = false;
+
+  if (theloop != NULL) {
+
+    // Mark the loop's index variable as being 'const ref'.
+    // Ultimately, this should likely be 'ref' in some cases, but
+    // for now I'm erring on the side of avoiding any
+    // modifications to tuples rather than allowing modifications
+    // to tuple elements that shouldn't be modified.
+    //
+    Expr* firstStmt = theloop->body.first();
+    if (DefExpr* defexp = toDefExpr(firstStmt)) {
+      if (VarSymbol* loopVar = toVarSymbol(defexp->sym)) {
+        wellformed = true;
+        loopVar->addFlag(FLAG_REF_VAR);
+        loopVar->addFlag(FLAG_CONST);
+      }
+    }
+  }
+
+  // if something wasn't as we expected, bail out; we won't unroll
+  // the loop and will generate an error when we try to resolve
+  // the iterator on the heterogeneous tuple.
+  //
+  if (!wellformed) {
+    return NULL;
+  }
+
+  // grab the tuple's type
+  //
+  AggregateType* tupType = toAggregateType(iterType);
+
+  // stamp out copies of the loop body for each element of the tuple
+  //
+  for (int i=2; i<=tupType->fields.length; i++) {
+    SymbolMap map;
+
+    // create a temp to refer to the tuple field
+    //
+    VarSymbol* tmp = newTemp(astr("tupleTemp"));
+    tmp->addFlag(FLAG_REF_VAR);
+
+    // create the AST for 'tupleTemp = tuple.field'
+    // 
+    VarSymbol* field = new_CStringSymbol(tupType->getField(i)->name);
+    noop->insertBefore(new DefExpr(tmp));
+    noop->insertBefore(new CallExpr(PRIM_MOVE, tmp,
+                                    new CallExpr(PRIM_GET_MEMBER,
+                                                 tupExpr->copy(),
+                                                 field)));
+    // stamp out the loop body
+    //
+    Symbol* idxSym = theloop->indexGet()->symbol();
+    Symbol* continueSym = theloop->continueLabelGet();
+    map.put(idxSym, tmp);
+    theloop->copyBodyHelper(noop, i-2, &map, continueSym);
+  }
+
+  // remove the loop itself
+  //
+  theloop->remove();
+
+  // remove the no-op, replace the parent statement with it, and
+  // return it so that everything we just inserted will be
+  // resolved next
+  //
+  noop->remove();
+  parentStmt->replace(noop);
+
+  return noop;
+}
+
+
 static Expr* preFoldNamed(CallExpr* call) {
   Expr* retval = NULL;
 
@@ -2003,117 +2105,18 @@ static Expr* preFoldNamed(CallExpr* call) {
     if (! call->isResolved())
       buildFastFollowerChecksIfNeeded(call);
 
-  // Unroll loops over heterogeneous tuples by looking for the pattern:
-  //   _getIterator(<heterogeneousTuple>)
-  //
   } else if (call->isNamed("_getIterator")) {
 
-    // See whether we're iterating over a heterogeneous tuple
+    // Unroll loops over heterogeneous tuples by looking for the pattern:
+    //   _getIterator(<heterogeneousTuple>)
     //
+
     Expr* tupExpr = call->get(1);
     Type* iterType = tupExpr->getValType();
     if (iterType->symbol->hasFlag(FLAG_TUPLE) &&
         !iterType->symbol->hasFlag(FLAG_STAR_TUPLE)) {
 
-      // Find the getIterator's statement and insert a no-op after it
-      // in order to create a place to insert new statements.
-      //
-      Expr* parentStmt = call->getStmtExpr();
-      CallExpr* noop = new CallExpr(PRIM_NOOP);
-      parentStmt->insertAfter(noop);
-
-      // Look for the associated ForLoop statement, removing all
-      // statements leading up to it (since they're unnecessary once
-      // we unroll).  This is very sensitive to the current IR format
-      // such that if it changes, we'll likely bail out of this
-      // prefold and fall into the "Heterogeneous tuples don't support
-      // this style of loop yet" error message in ChapelTuple.chpl.
-      //
-      ForLoop* theloop = NULL;
-      Expr* nextStmt = noop->next;
-      if (DeferStmt* defer = toDeferStmt(nextStmt)) {
-        nextStmt = nextStmt->next;
-        defer->remove();
-        if (BlockStmt* block = toBlockStmt(nextStmt)) {
-          nextStmt = nextStmt->next;
-          block->remove();
-          if (ForLoop* loop = toForLoop(nextStmt)) {
-            theloop = loop;
-          }
-        }
-      }
-
-      // assume the IR isn't well-formed until we find the loop index var
-      //
-      bool wellformed = false;
-
-      if (theloop != NULL) {
-
-        // Mark the loop's index variable as being 'const ref'.
-        // Ultimately, this should likely be 'ref' in some cases, but
-        // for now I'm erring on the side of avoiding any
-        // modifications to tuples rather than allowing modifications
-        // to tuple elements that shouldn't be modified.
-        //
-        Expr* firstStmt = theloop->body.first();
-        if (DefExpr* defexp = toDefExpr(firstStmt)) {
-          if (VarSymbol* loopVar = toVarSymbol(defexp->sym)) {
-            wellformed = true;
-            loopVar->addFlag(FLAG_REF_VAR);
-            loopVar->addFlag(FLAG_CONST);
-          }
-        }
-      }
-
-      // if something wasn't as we expected, bail out; we won't unroll
-      // the loop and will generate an error when we try to resolve
-      // the iterator on the heterogeneous tuple.
-      //
-      if (!wellformed) {
-        return NULL;
-      }
-
-      // grab the tuple's type
-      //
-      AggregateType* tupType = toAggregateType(iterType);
-
-      // stamp out copies of the loop body for each element of the tuple
-      //
-      for (int i=2; i<=tupType->fields.length; i++) {
-        SymbolMap map;
-
-        // create a temp to refer to the tuple field
-        //
-        VarSymbol* tmp = newTemp(astr("tupleTemp"));
-        tmp->addFlag(FLAG_REF_VAR);
-
-        // create the AST for 'tupleTemp = tuple.field'
-        // 
-        VarSymbol* field = new_CStringSymbol(tupType->getField(i)->name);
-        noop->insertBefore(new DefExpr(tmp));
-        noop->insertBefore(new CallExpr(PRIM_MOVE, tmp,
-                                        new CallExpr(PRIM_GET_MEMBER,
-                                                     tupExpr->copy(),
-                                                     field)));
-        // stamp out the loop body
-        //
-        Symbol* idxSym = theloop->indexGet()->symbol();
-        Symbol* continueSym = theloop->continueLabelGet();
-        map.put(idxSym, tmp);
-        theloop->copyBodyHelper(noop, i-2, &map, continueSym);
-      }
-
-      // remove the loop itself
-      //
-      theloop->remove();
-
-      // remove the no-op, replace the parent statement with it, and
-      // return it so that everything we just inserted will be
-      // resolved next
-      //
-      noop->remove();
-      parentStmt->replace(noop);
-      retval = noop;
+      retval = unrollHetTupleLoop(call, tupExpr, iterType);
     }
   }
 
