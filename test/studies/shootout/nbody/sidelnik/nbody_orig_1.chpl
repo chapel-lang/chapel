@@ -113,5 +113,5 @@ proc main() {
   for 1..n {
     advance(NBODIES, bodies, 0.01);
   }
-  writef("%{#.#########}\n", energy(NBODIES, bodies!));
+  writef("%{#.#########}\n", energy(NBODIES, bodies));
 }

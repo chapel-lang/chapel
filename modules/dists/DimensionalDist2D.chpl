@@ -800,7 +800,7 @@ override proc DimensionalDist2D.dsiNewRectangularDom(param rank: int,
                        doml1 = dom1.dsiNewLocalDom1d(stoIndexT, locIds(1)),
                        doml2 = dom2.dsiNewLocalDom1d(stoIndexT, locIds(2)));
 
-  var localDdescsNN = localDdescsTemp!;
+  var localDdescsNN = localDdescsTemp!; //#15080
   const result = new unmanaged DimensionalDom(rank=rank, idxType=idxType,
                                     stridable=stridable, dist=_to_unmanaged(this),
                                     localDdescs = localDdescsNN,
@@ -950,7 +950,7 @@ proc DimensionalDom.dsiBuildArray(type eltType)
     on loc do
       locAdesc = new unmanaged LocDimensionalArr(eltType, locDdesc);
 
-  var localAdescsNN = localAdescsTemp!;
+  var localAdescsNN = localAdescsTemp!; //#15080
   const result = new unmanaged DimensionalArr(rank = rank,
                                     idxType = idxType,
                                     stridable = stridable,

@@ -617,7 +617,7 @@ proc BlockCyclicDom.dsiBuildArray(type eltType) {
         myLocArrTemp = LBCA;
     }
   }
-  var locArrNN = locArrTemp!;
+  var locArrNN = locArrTemp!; //#15080
 
   var arr = new unmanaged BlockCyclicArr(eltType=eltType, rank=rank,
                                          idxType=idxType, stridable=stridable,
