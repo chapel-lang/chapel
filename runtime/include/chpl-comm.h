@@ -192,7 +192,7 @@ int chpl_comm_run_in_gdb(int argc, char* argv[], int gdbArgnum, int* status);
 
 //
 // if possible, run in lldb (because the user threw the --lldb flag)
-// using argc and argv.  gdbArgnum gives the index of the argv[]
+// using argc and argv.  lldbArgnum gives the index of the argv[]
 // element containing the --lldb flag.  Return the status of that
 // process in "status" and return 1 if it was possible to run in lldb,
 // 0 otherwise
