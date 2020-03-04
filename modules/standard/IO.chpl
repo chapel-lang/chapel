@@ -1608,13 +1608,7 @@ proc file.size:int(64) throws {
 }
 
 /*
-
-Get the current length of an open file. Note that the length can always
-change if other channels, tasks or programs are writing to the file.
-
-:returns: the current file length
-
-:throws SystemError: Thrown if the length could not be retrieved.
+  Deprecated - please use :proc:`file.size`.
 */
 proc file.length():int(64) throws {
   compilerWarning("'file.length()' is deprecated - " +

@@ -84,7 +84,7 @@ record LinkedList {
   }
 
   /*
-    Deprecated - please use :proc:`LinkedLists.size`.
+    Deprecated - please use :proc:`LinkedList.size`.
    */
   proc length ref {
     compilerWarning("'LinkedList.length' is deprecated - " +
