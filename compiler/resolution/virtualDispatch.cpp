@@ -528,8 +528,6 @@ static bool isSubType(Type* sub, Type* super) {
 }
 
 static bool isOverrideableMethod(FnSymbol* fn) {
-
-  // Call returns NULL if the receiver type is not a class.
   if (AggregateType* at = getReceiverClassType(fn)) {
     INT_ASSERT(at->isClass()); 
     return fn->name != astrInit &&
@@ -881,24 +879,17 @@ typedef std::map<const char*, std::vector<FnSymbol*> > NameToFns;
 typedef std::map<AggregateType*, NameToFns > TypeToNameToFns;
 
 static AggregateType* getReceiverClassType(FnSymbol* fn) {
-  AggregateType* result = NULL;
-
   if (fn->isMethod() && fn->_this != NULL) {
-
-    //
-    // Receiver types on type methods may be managed. This call has no effect
-    // if the receiver is not some form of class.
-    //
     if (Type* cct = canonicalClassType(fn->_this->getValType())) {
       if (AggregateType* at = toAggregateType(cct)) {
         if (at->isClass()) {
-          result = at;
+          return at;
         }
       }
     }
   }
 
-  return result;
+  return NULL;
 }
 
 static void findFunctionsProbablyMatching(TypeToNameToFns & map,
