@@ -269,55 +269,6 @@ namespace {
     CONSTRAINT_GREATER = 11,
   } constraint_t;
 
-  // It is assumed that any symbol always includes itself in its alias
-  // group.
-  typedef std::set<Symbol*> AliasesGroup;
-  typedef std::map<Symbol*, AliasesGroup*> AliasesMap;
-
-  class GatherAliasesVisitor : public AstVisitorTraverse {
-    public:
-      AliasesMap *aliases;
-      LifetimeState* lifetimes;
-      bool changed;
-      void ensureSameAliasesGroup(Symbol* a, Symbol* b);
-      void expandAliasesForPossiblyReturned(CallExpr* call, Symbol* lhsActual);
-      virtual bool enterCallExpr(CallExpr* call);
-  };
-
-  typedef std::map<Symbol*, char> SymbolToCapturedMap;
-
-  class MarkCapturesVisitor : public AstVisitorTraverse {
-    public:
-      AliasesMap *aliases;
-      LifetimeState* lifetimes;
-
-      MarkCapturesVisitor() : aliases(NULL), lifetimes(NULL) { }
-
-      // only local variables being considered are added to this map
-      // symbol -> 1 if potentially captured, 0 if not captured
-      SymbolToCapturedMap varToPotentiallyCaptured;
-
-      void markPotentiallyCaptured(Symbol* sym, Expr* ctx);
-      void markAliasesPotentiallyCaptured(Symbol* sym, Expr* ctx);
-      void markAliasesAndSymPotentiallyCaptured(Symbol* sym, Expr* ctx);
-
-      virtual bool enterDefExpr(DefExpr* def);
-      virtual bool enterDeferStmt(DeferStmt* defer);
-      virtual bool enterCallExpr(CallExpr* call);
-  };
-
-  class ReportExpiringVisitor : public AstVisitorTraverse {
-    public:
-      FnSymbol* fn;
-      bool printedAny;
-      AliasesMap *aliases;
-      LifetimeState* lifetimes;
-      std::set<Symbol*> printed;
-      virtual bool enterDefExpr(DefExpr* def);
-      virtual bool enterCallExpr(CallExpr* call);
-  };
-
-
 } /* end anon namespace */
 
 static bool typeHasInfiniteBorrowLifetime(Type* type);
