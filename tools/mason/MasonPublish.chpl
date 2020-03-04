@@ -381,7 +381,7 @@ private proc addPackageToBricks(projectLocal: string, safeDir: string, name : st
         var newToml = open(safeDir + "/mason-registry/Bricks/" + name + "/" + versionNum + ".toml", iomode.cw);
         var tomlWriter = newToml.writer();
         const url = gitUrl();
-        baseToml["brick"]!.set("source", url[1..url.length-1]);
+        baseToml["brick"]!.set("source", url[1..url.size-1]);
         tomlWriter.write(baseToml);
         tomlWriter.close();
         return name + '@' + versionNum;
