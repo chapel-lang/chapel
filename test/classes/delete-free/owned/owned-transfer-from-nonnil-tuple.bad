@@ -1,3 +1,1 @@
 $CHPL_HOME/modules/internal/ChapelBase.chpl:1647: error: Cannot transfer ownership from this non-nilable reference variable
-$CHPL_HOME/modules/internal/ChapelBase.chpl:1647: error: Cannot transfer ownership from a non-nilable variable with a potentially captured alias
-$CHPL_HOME/modules/internal/ChapelBase.chpl:1647: error: Cannot transfer ownership from a non-nilable variable with a potentially captured alias

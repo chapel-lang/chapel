@@ -14,6 +14,7 @@ proc setit(ref lhs, rhs) lifetime lhs < rhs {
 proc ownedExample2EOB() {
   writeln("ownedExample2EOB");
   var b: borrowed C?;
+  b; // no split init please
   b = (new owned C(1)).borrow();
   // point 1
   writeln(b);
