@@ -237,12 +237,12 @@ proc CandidateDomain.trim()
 
     //---- Comply with minimum width ----
 
-    if R.length < min_width(d) 
+    if R.size < min_width(d) 
     {
       
       //---- Approximately center the enlarged range ----
       
-      var n_overflow_low = (min_width(d) - R.length) / 2;
+      var n_overflow_low = (min_width(d) - R.size) / 2;
       var tmp = ((trim_low - n_overflow_low*stride .. by stride) #min_width(d));
       R = tmp.alignHigh();
 
@@ -432,7 +432,7 @@ proc CandidateDomain.inflectionCut ()
     
     //---- Must be at least 4 cells wide for an inflection cut ----
     
-    if D.dim(d).length >= 4 {
+    if D.dim(d).size >= 4 {
 
       ref sig = signatures(d).array;
       var stride = D.stride(d);

@@ -87,8 +87,8 @@ var tInit, tPS1iter, tUBR1iter, tSC1call, tLF1iter, tBScall, tVer: VTimer;
   setupTargetLocalesArray(targetIds, targetLocales, Locales);
 
   // Here are the dimensions of our grid of locales.
-  const tl1 = targetIds.dim(1).length,
-        tl2 = targetIds.dim(2).length;
+  const tl1 = targetIds.dim(1).size,
+        tl2 = targetIds.dim(2).size;
 
   if onlyBsub && tl1 != tl2 then
     halt("backwardSub() is implemented only for a square locale grid");
@@ -898,7 +898,7 @@ proc bsComputePartSums(diaFrom, diaTo, locId1, locId2, diaLocId2,
     gotBlocksArg = gotBlocks;
   }  // local
 
-  if errs.length != 0 then
+  if errs.size != 0 then
     writeln("bsComputePartSums on [", locId1, ",", locId2, "] ERRORS:", errs);
 
   //writeln("bsComputePartSums  result ", myPartSums,
