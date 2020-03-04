@@ -552,8 +552,8 @@ module ChapelRange {
 
   /* Deprecated - please use :proc:`range.size`. */
   inline proc range.length: intIdxType {
-    compilerWarning("range.length is deprecated - " +
-                    "please use range.size instead");
+    compilerWarning("'range.length' is deprecated - " +
+                    "please use 'range.size' instead");
     return this.size;
   }
 

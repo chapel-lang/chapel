@@ -164,8 +164,8 @@ module Collection {
 
     /* Deprecated - please use :proc:`Collection.size`. */
     proc length : int {
-      compilerWarning("Collection.length is deprecated - " +
-                      "please use Collection.size instead");
+      compilerWarning("'CollectionImpl.length' is deprecated - " +
+                      "please use 'CollectionImpl.size' instead");
       return getSize();
     }
 

@@ -1617,8 +1617,8 @@ change if other channels, tasks or programs are writing to the file.
 :throws SystemError: Thrown if the length could not be retrieved.
 */
 proc file.length():int(64) throws {
-  compilerWarning("file.length() is deprecated - " +
-                  "please use file.size instead");
+  compilerWarning("'file.length()' is deprecated - " +
+                  "please use 'file.size' instead");
   return this.size;
 }
 

@@ -527,8 +527,8 @@ record reMatch {
   /* the length of the match. 0 if matched==false */
   var size:int; // 0 if matched==false
   proc length ref {
-    compilerWarning("reMatch.length is deprecated - " +
-                    "please use reMatch.size instead");
+    compilerWarning("'reMatch.length' is deprecated - " +
+                    "please use 'reMatch.size' instead");
     return size;
   }
 }

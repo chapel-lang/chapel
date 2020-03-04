@@ -358,8 +358,8 @@ module Bytes {
 
     /* Deprecated - please use :proc:`bytes.size`. */
     inline proc length {
-      compilerWarning("bytes.length is deprecated - " +
-                      "please use bytes.size instead");
+      compilerWarning("'bytes.length' is deprecated - " +
+                      "please use 'bytes.size' instead");
       return len;
     }
 
@@ -375,8 +375,8 @@ module Bytes {
 
     pragma "no doc"
     inline proc param length param {
-      compilerWarning("bytes.length is deprecated - " +
-                      "please use bytes.size instead");
+      compilerWarning("'bytes.length' is deprecated - " +
+                      "please use 'bytes.size' instead");
       return size;
     }
 

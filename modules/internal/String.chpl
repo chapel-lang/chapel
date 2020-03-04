@@ -811,8 +811,8 @@ module String {
 
     /* Deprecated - please use :proc:`string.size`. */
     inline proc length {
-      compilerWarning("string.length is deprecated - " +
-                      "please use string.size instead");
+      compilerWarning("'string.length' is deprecated - " +
+                      "please use 'string.size' instead");
       return numCodepoints;
     }
 
@@ -2268,8 +2268,8 @@ module String {
 
   pragma "no doc"
   inline proc param string.length param {
-    compilerWarning("string.length is deprecated - " +
-                    "please use string.size instead");
+    compilerWarning("'string.length' is deprecated - " +
+                    "please use 'string.size' instead");
     return this.numCodepoints;
   }
 
