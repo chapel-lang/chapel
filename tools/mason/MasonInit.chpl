@@ -101,7 +101,7 @@ proc masonInit(args) throws {
         validateMasonFile(path, name, show);
         var isInitialized = validateInit(path, name, true, show);
         if isInitialized > 0 then 
-        writeln("Initialized new library project: " + basename(path));
+        writeln("Initialized new library project in " + path + ": " + basename(path));
       }
       else {
         throw new owned MasonError("Directory does not exist: " + path +
