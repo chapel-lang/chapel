@@ -390,7 +390,7 @@ module Random {
             var (found, indexChosen) = Search.binarySearch(cumulativeArr, randNum);
             if !indicesChosen.contains(indexChosen) {
               indicesChosen += indexChosen;
-              samples[i] += A[indexChosen];
+              samples[i] = A[indexChosen];
               i += 1;
             }
             P[indexChosen] = 0;
