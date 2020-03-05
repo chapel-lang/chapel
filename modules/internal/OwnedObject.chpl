@@ -189,6 +189,8 @@ module OwnedObject {
 
      */
     proc init(pragma "nil from arg" p:unmanaged) {
+      compilerWarning("the syntax 'new owned(an unmanaged pointer)' is deprecated, instead use 'owned.create(an unmanaged pointer)'");
+
       this.chpl_t = _to_borrowed(p.type);
       this.chpl_p = _to_borrowed(p);
     }
