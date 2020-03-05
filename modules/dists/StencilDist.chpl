@@ -1639,10 +1639,8 @@ proc Stencil.init(other: Stencil, privateData,
 
   this.complete();
 
-  for i in targetLocDom {
-    targetLocales(i) = other.targetLocales(i);
-    locDist(i) = other.locDist(i);
-  }
+  targetLocales = other.targetLocales;
+  locDist = other.locDist;
 }
 
 proc Stencil.dsiSupportsPrivatization() param return true;
@@ -1676,8 +1674,7 @@ proc StencilDom.dsiGetPrivatizeData() return (dist.pid, whole.dims());
 proc StencilDom.dsiPrivatize(privatizeData) {
   var privdist = chpl_getPrivatizedCopy(dist.type, privatizeData(1));
   var c = new unmanaged StencilDom(rank=rank, idxType=idxType, stridable=stridable, dist=privdist, fluff=fluff, periodic=periodic, ignoreFluff=this.ignoreFluff);
-  for i in c.dist.targetLocDom do
-    c.locDoms(i) = locDoms(i);
+  c.locDoms = locDoms;
   c.whole = {(...privatizeData(2))};
   if c.whole.size > 0 {
     var absFluff : fluff.type;
@@ -1692,8 +1689,7 @@ proc StencilDom.dsiPrivatize(privatizeData) {
 proc StencilDom.dsiGetReprivatizeData() return whole.dims();
 
 proc StencilDom.dsiReprivatize(other, reprivatizeData) {
-  for i in dist.targetLocDom do
-    locDoms(i) = other.locDoms(i);
+  locDoms = other.locDoms;
   whole = {(...reprivatizeData)};
   if whole.size > 0 {
     var absFluff : fluff.type;
@@ -1742,8 +1738,8 @@ proc StencilArr.dsiGetPrivatizeData() return dom.pid;
 proc StencilArr.dsiPrivatize(privatizeData) {
   var privdom = chpl_getPrivatizedCopy(dom.type, privatizeData);
   var c = new unmanaged StencilArr(eltType=eltType, rank=rank, idxType=idxType, stridable=stridable, dom=privdom, ignoreFluff=this.ignoreFluff);
+  c.locArr = locArr;
   for localeIdx in c.dom.dist.targetLocDom {
-    c.locArr(localeIdx) = locArr(localeIdx);
     if c.locArr(localeIdx).locale.id == here.id then
       c.myLocArr = c.locArr(localeIdx);
   }

@@ -338,10 +338,8 @@ proc Cyclic.init(other: Cyclic, privateData,
 
   this.complete();
 
-  for i in targetLocDom {
-    targetLocs[i] = other.targetLocs[i];
-    locDist[i] = other.locDist[i];
-  }
+  targetLocs = other.targetLocs;
+  locDist = other.locDist;
 }
                  
 proc Cyclic.dsiSupportsPrivatization() param return true;

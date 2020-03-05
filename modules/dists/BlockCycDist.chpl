@@ -186,8 +186,10 @@ class BlockCyclic : BaseDist {
   const lowIdx: rank*idxType;
   const blocksize: rank*int;
   const targetLocDom: domain(rank);
-  const targetLocales: [targetLocDom] locale;
-  const locDist: [targetLocDom] unmanaged LocBlockCyclic(rank, idxType);
+
+  // these need to be var, so we can bulk-assign
+  var targetLocales: [targetLocDom] locale;
+  var locDist: [targetLocDom] unmanaged LocBlockCyclic(rank, idxType);
 
   var dataParTasksPerLocale: int; // tasks per locale for forall iteration
 
@@ -444,10 +446,8 @@ proc BlockCyclic.init(other: BlockCyclic, privatizeData,
 
   this.complete();
 
-  for i in targetLocDom {
-    targetLocales[i] = other.targetLocales[i];
-    locDist[i] = other.locDist[i];
-  }
+  targetLocales = other.targetLocales;
+  locDist = other.locDist;
 }
 
 proc BlockCyclic.dsiSupportsPrivatization() param return true;
