@@ -229,7 +229,7 @@ proc printInfoQuiet(totalMeetings : int, totalMeetingsWithSelf : int) {
 /* spellInt takes an integer, and spells each of its digits out in English */
 proc spellInt(n : int) {
   var s : string = n:string;
-  for i in 1..s.length {
+  for i in 1..s.size {
     write(" ", (s[i]:int + 1):digit);
   }
   writeln();

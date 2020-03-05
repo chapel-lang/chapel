@@ -34,7 +34,7 @@ record buf {
     this.complete();
 
     chan = fi.reader(locking=false);
-    numLeft = fi.length();
+    numLeft = fi.size;
   }
 
   // Returns (by ref-ish) a slice of the buffer starting at 'low'
@@ -110,7 +110,7 @@ proc main(args: [] string) {
   // NOTE: We can't do this with lists yet.
   /*
   {
-    const r = 1..stdin.length();
+    const r = 1..stdin.size;
     data._value.dataAllocRange = r;
     data._value.dsiReallocate((r,));
     data._value.dsiPostReallocate();

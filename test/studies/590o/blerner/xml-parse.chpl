@@ -1,13 +1,13 @@
 config const sourceText = "<a><ii>end</ii><none /></a>";
-const AllIndices: domain(1) = {1..(sourceText.length)};
-const AllPairs: domain(2) = {1..(sourceText.length), 1..(sourceText.length)};
+const AllIndices: domain(1) = {1..(sourceText.size)};
+const AllPairs: domain(2) = {1..(sourceText.size), 1..(sourceText.size)};
 var StartIndices: sparse subdomain(AllIndices);
 var EndIndices: sparse subdomain(AllIndices);
 var lock: sync int = 0;
 
 
 class XmlElement {
-  var length: int;
+  var size: int;
   proc print { printHelp(""); }
   proc printHelp(indent) { }
 }
@@ -42,7 +42,7 @@ proc main {
     else if sourceText[z] == '>' then {
       lock;
       EndIndices += z;
-      if z < (sourceText.length) && sourceText[z+1] != "<" then StartIndices += z+1;
+      if z < (sourceText.size) && sourceText[z+1] != "<" then StartIndices += z+1;
       lock = 0;
     }
   }
@@ -75,7 +75,7 @@ proc hasIndex(start, stop, indices) {
 }
 
 proc hasSpace(str) {
-  for i in 1..(str.length) do
+  for i in 1..(str.size) do
      if str[i] == " " then return true;
   return false;
 }
@@ -129,7 +129,7 @@ proc processTag(i,j) {
     return;
   }
   var tagName = sourceText[stop+2..j-1];
-  var tagLen = tagName.length;
+  var tagLen = tagName.size;
   if (hasSpace(tagName)) {
     parsedElements(i,j) = nil;
     writeln("End tag has spaces in it");
@@ -163,7 +163,7 @@ proc processTag(i,j) {
         elt.childrenValueSpace = {1..curSize*2};
       elt.numChildren += 1;
       elt.childrenValues(elt.numChildren) = item!;
-      start += item!.length;
+      start += item!.size;
     }     
   }
   parsedElements(i,j) = elt;

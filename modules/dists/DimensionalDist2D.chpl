@@ -259,8 +259,8 @@ class DimensionalDist2D : BaseDist {
   // implementation note: 'rank' is not a real param; it's just that having
   // 'proc rank param return targetLocales.rank' did not work
   param rank: int = targetLocales.rank;
-  proc numLocs1: locCntT  return targetIds.dim(1).length: locCntT;
-  proc numLocs2: locCntT  return targetIds.dim(2).length: locCntT;
+  proc numLocs1: locCntT  return targetIds.dim(1).size: locCntT;
+  proc numLocs2: locCntT  return targetIds.dim(2).size: locCntT;
 
   // parallelization knobs
   var dataParTasksPerLocale: int      = getDataParTasksPerLocale();
@@ -830,7 +830,7 @@ proc DimensionalDom._dsiSetIndicesHelper(newRanges: rank * rangeT): void {
   // could omit this warning if the intersection between the old and the new
   // domains is empty; could change it to halt("unimplemented")
   if dom1.dsiSetIndicesUnimplementedCase||dom2.dsiSetIndicesUnimplementedCase
-    then if _arrs.length > 0 then
+    then if _arrs.size > 0 then
       stderr.writeln("warning: array resizing will not preserve array contents upon change in dimension stride with 1-d BlockCyclic distribution");
 
   coforall (locId, locDD) in zip(targetIds, localDdescs) do
@@ -1124,10 +1124,10 @@ iter DimensionalDom.these(param tag: iterKind) where tag == iterKind.leader {
 
       // when we know which dimension should be the parallel one
       proc compute1dNTPD(param parDim): (int,int) {
-        const myNumIndices = myDims(1).length * myDims(2).length;
+        const myNumIndices = myDims(1).size * myDims(2).size;
         const cnc:int =
           _computeNumChunks(maxTasks, ignoreRunning, minSize, myNumIndices);
-        return ( min(cnc, myDims(parDim).length:int), parDim );
+        return ( min(cnc, myDims(parDim).size:int), parDim );
       }
 
       const (numTasks, parDim) =
@@ -1213,10 +1213,10 @@ iter DimensionalDom.these(param tag: iterKind) where tag == iterKind.leader {
               // why dsiMyDensifiedRangeForTaskID1d() does not agree
               // with _computeChunkStuff (i.e. the latter returns more tasks
               // than the former wants to use) - fine. Then, replace assert with
-              //   if myPiece.length == 0 then do not yield anything
+              //   if myPiece.size == 0 then do not yield anything
 // TODO: can it be enabled for test_strided_slice1.chpl with 1d block-cyclic?
-//              assert(myPiece.length > 0);
-              if myPiece.length > 0 then
+//              assert(myPiece.size > 0);
+              if myPiece.size > 0 then
                 yield myPiece;
             }
           }

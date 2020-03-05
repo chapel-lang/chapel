@@ -53,7 +53,7 @@ module CSV {
 
       for l in ch.lines() {
         const line = l.strip(leading=false);
-        if line.length == 0 then
+        if line.size == 0 then
           continue;
         const vals = line.split(sep);
         for param i in 1..numFields(t) {
@@ -82,7 +82,7 @@ module CSV {
       var skipHeader = hasHeader;
       for l in ch.lines() {
         const line = l.strip(leading=false);
-        if line.length == 0 then
+        if line.size == 0 then
           continue;
         const vals = line.split(sep);
         for param i in 1..t.size {
@@ -125,7 +125,7 @@ module CSV {
 
       for i in 2..lines.numElements {
         const line = lines[i].strip(leading=false);
-        if line.length == 0 then
+        if line.size == 0 then
           continue;
         const vals = line.split(sep);
         const row = if skipHeader then i-1 else i;

@@ -7,7 +7,6 @@ yellow
 blue
 violet
 
-length = 4
 size = 4
 first = red
 last = violet
@@ -41,7 +40,6 @@ range(color,bounded,true)
 yellow
 blue
 
-length = 2
 size = 2
 first = yellow
 last = blue
@@ -77,7 +75,6 @@ range(color,bounded,true)
 
 green
 
-length = 1
 size = 1
 first = green
 last = green
@@ -104,7 +101,6 @@ blue..green by 2
 range(color,bounded,true)
 
 
-length = 0
 size = 0
 first = blue
 last = yellow

@@ -2834,7 +2834,7 @@ module ChapelArray {
                       " dimension(s) to " + newDims.size:string);
 
       for param i in 1..rank do
-        if newDims(i).length != _value.dom.dsiDim(i).length then
+        if newDims(i).size != _value.dom.dsiDim(i).size then
           halt("extent in dimension ", i, " does not match actual");
 
       const thisDomClass = this._value.dom;
@@ -2974,7 +2974,7 @@ module ChapelArray {
     }
 
     inline proc chpl__assertSingleArrayDomain(fnName: string) {
-      if this.domain._value._arrs.length != 1 then
+      if this.domain._value._arrs.size != 1 then
         halt("cannot call " + fnName +
              " on an array defined over a domain with multiple arrays");
     }
@@ -3527,7 +3527,7 @@ module ChapelArray {
   proc =(ref a: _distribution, b: _distribution) {
     if a._value == nil {
       __primitive("move", a, chpl__autoCopy(b.clone()));
-    } else if a._value._doms.length == 0 {
+    } else if a._value._doms.size == 0 {
       if a._value.type != b._value.type then
         compilerError("type mismatch in distribution assignment");
       if a._value == b._value {
@@ -3674,9 +3674,9 @@ module ChapelArray {
             bDims = b._value.dom.dsiDims();
       compilerAssert(aDims.size == bDims.size);
       for param i in 1..aDims.size {
-        if aDims(i).length != bDims(i).length then
+        if aDims(i).size != bDims(i).size then
           halt("assigning between arrays of different shapes in dimension ",
-               i, ": ", aDims(i).length, " vs. ", bDims(i).length);
+               i, ": ", aDims(i).size, " vs. ", bDims(i).size);
       }
     } else {
       // may not have dsiDims(), so can't check them as above

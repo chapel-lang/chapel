@@ -1,7 +1,7 @@
 use Bytes;
 
 export proc getFirstNullBytePos(in b: bytes): int {
-  for i in 1..b.length do
+  for i in 1..b.size do
     if b[i] == 0x00 then
       return (i - 1);
   return -1;

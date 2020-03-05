@@ -90,7 +90,7 @@ module vertexColoring {
 
         for i in D {
             reader.read(line);
-            for j in 0..(line.length-1) do adj_graph(i,j)=(line[j+1]:int);
+            for j in 0..(line.size-1) do adj_graph(i,j)=(line[j+1]:int);
         }
 
         for i in D do parent[i]=reader.read(int);

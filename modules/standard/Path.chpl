@@ -344,7 +344,7 @@ proc dirname(name: string): string {
    var varChars: string = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890_";
    var res: string = "";
    var ind: int = 1;
-   var pathlen: int = path_p.length;
+   var pathlen: int = path_p.size;
    while (ind <= pathlen) {
      var c: string = path_p(ind);
      if (c == "$" && ind + 1 <= pathlen) {
@@ -377,7 +377,7 @@ proc dirname(name: string): string {
        } else {
          var env_var: string = "";
          ind += 1;
-         while (ind <= path_p.length && varChars.find(path_p(ind)) != 0) {
+         while (ind <= path_p.size && varChars.find(path_p(ind)) != 0) {
            env_var += path_p(ind);
            ind += 1;
          }

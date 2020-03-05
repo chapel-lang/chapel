@@ -799,12 +799,12 @@ proc SparseBlockArr.dsiPrivatize(privatizeData) {
 
 proc SparseBlockDom.numRemoteElems(rlo,rid){
   var blo,bhi:dist.idxType;
-  if rid==(dist.targetLocDom.dim(rank).length - 1) then
+  if rid==(dist.targetLocDom.dim(rank).size - 1) then
     bhi=whole.dim(rank).high;
   else
       bhi=dist.boundingBox.dim(rank).low +
         intCeilXDivByY((dist.boundingBox.dim(rank).high - dist.boundingBox.dim(rank).low +1)*(rid+1),
-                   dist.targetLocDom.dim(rank).length) - 1;
+                   dist.targetLocDom.dim(rank).size) - 1;
 
   return(bhi - rlo + 1);
 }

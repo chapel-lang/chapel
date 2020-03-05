@@ -19,7 +19,7 @@
 
 module StringAlgorithms{
 proc minLexographicRotation(s: string): string{
-  var len = s.length;
+  var len = s.size;
   var minstr = s;
   var S = s + s;
   for i in 1..len
@@ -34,7 +34,7 @@ proc minLexographicRotation(s: string): string{
   return minstr;
 }
 proc maxLexographicRotation(s: string): string{
-  var len = s.length;
+  var len = s.size;
   var maxstr = s;
   var S = s + s;
   for i in 1..len
