@@ -387,6 +387,11 @@ failures that they may need to address:
   diagnosing any testing failures on any given night, but it's nice when
   developers notice the issue first themselves to save wasted effort).
 
+.. _Other useful information:
+
+Other useful information
+------------------------
+
 .. _Chapel git workflow:
 
 Chapel git workflow
