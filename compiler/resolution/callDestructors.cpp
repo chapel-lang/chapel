@@ -21,6 +21,7 @@
 
 #include "addAutoDestroyCalls.h"
 #include "astutil.h"
+#include "AstVisitorTraverse.h"
 #include "errorHandling.h"
 #include "DecoratedClassType.h"
 #include "ForallStmt.h"
@@ -34,6 +35,10 @@
 #include "stlUtil.h"
 #include "stringutil.h"
 #include "virtualDispatch.h"
+
+#include <vector>
+#include <algorithm>
+#include <iterator>
 
 /************************************* | **************************************
 *                                                                             *
@@ -1075,6 +1080,454 @@ static void insertCopiesForYields()
 *                                                                             *
 ************************************** | *************************************/
 
+static bool traceGlobalChecking = false;
+
+static bool isCheckedModuleScopeVariable(VarSymbol* var) {
+  if (DefExpr* def = var->defPoint) {
+    ModuleSymbol* mod = def->getModule();
+    if (mod && def->parentExpr == mod->block) {
+      if (var->hasFlag(FLAG_TYPE_VARIABLE) == false &&
+          var->hasFlag(FLAG_EXTERN) == false &&
+          var->type->symbol->hasFlag(FLAG_EXTERN) == false)
+        return true;
+    }
+  }
+  return false;
+}
+
+static VarSymbol* theCheckedModuleScopeVariable(Expr* actual) {
+  if (SymExpr* se = toSymExpr(actual))
+    if (VarSymbol* var = toVarSymbol(se->symbol()))
+      if (isCheckedModuleScopeVariable(var))
+        return var;
+
+  return NULL;
+}
+
+// There should be a single instance of this class per compilation.
+class GatherGlobalsReferredTo : public AstVisitorTraverse {
+  public:
+    // these are set and "returned" by visiting a function
+    FnSymbol* thisFunction;
+    std::set<FnSymbol*> calledThisFunction;     // calls from this function
+    std::set<VarSymbol*> mentionedThisFunction; // globals mentioned directly
+
+    // this is global state storing results of analysis
+    std::set<FnSymbol*> visited;
+    std::map<FnSymbol*, std::set<VarSymbol*>> directGlobalMentions;
+    std::map<FnSymbol*, std::set<FnSymbol*>> callGraph;
+
+    GatherGlobalsReferredTo()
+      : thisFunction(NULL)
+    { }
+    bool callUsesGlobal(CallExpr* c, std::set<VarSymbol*>& globals);
+    bool fnUsesGlobal(FnSymbol* fn, std::set<VarSymbol*>& globals);
+    virtual bool enterFnSym(FnSymbol* fn);
+    virtual void visitSymExpr(SymExpr* se);
+    virtual void exitFnSym(FnSymbol* fn);
+};
+
+bool GatherGlobalsReferredTo::enterFnSym(FnSymbol* fn) {
+  if (visited.insert(fn).second) {
+    // if the function symbol hasn't already been visited,
+    // put it in the visited set and do the visiting.
+    // do the analysis in the other visitors
+    thisFunction = fn;
+    calledThisFunction.clear();
+    mentionedThisFunction.clear();
+    return true;
+  }
+
+  return false;
+}
+
+void GatherGlobalsReferredTo::visitSymExpr(SymExpr* se) {
+  // handle function calls or mentions
+  if (FnSymbol* fn = toFnSymbol(se->symbol())) {
+    // handle root virtual method or non-virtual call
+    if (calledThisFunction.insert(fn).second) {
+
+      if (traceGlobalChecking)
+        USR_PRINT("fn '%s'[%i] calls fn '%s'[%i]",
+                  thisFunction->name, thisFunction->id, fn->name, fn->id);
+
+      bool inVirtualMethodCall = false;
+      if (CallExpr* pCall = toCallExpr(se->parentExpr))
+        if (pCall->isPrimitive(PRIM_VIRTUAL_METHOD_CALL))
+          if (FnSymbol* vFn = toFnSymbol(toSymExpr(pCall->get(1))->symbol()))
+            if (vFn == fn)
+              inVirtualMethodCall = true;
+
+      if (inVirtualMethodCall) {
+        // if we added something, also add virtual children callable
+        // handle additional children callable by virtual method
+        if (Vec<FnSymbol*>* children = virtualChildrenMap.get(fn)) {
+          forv_Vec(FnSymbol*, childFn, *children) {
+
+            if (traceGlobalChecking)
+              USR_PRINT("fn '%s'[%i] virtual calls fn '%s'[%i]",
+                        thisFunction->name, thisFunction->id,
+                        childFn->name, childFn->id);
+
+            calledThisFunction.insert(childFn);
+          }
+        }
+      }
+    }
+  }
+
+  // handle global variable mentions
+  if (VarSymbol* var = toVarSymbol(se->symbol())) {
+    if (isCheckedModuleScopeVariable(var)) {
+      // it's a module-scope variable, so add it to directGlobalMentions
+      if (mentionedThisFunction.insert(var).second) {
+
+        if (traceGlobalChecking)
+          USR_PRINT("fn '%s'[%i] mentions global '%s'[%i]",
+                    thisFunction->name, thisFunction->id,
+                    var->name, var->id);
+      }
+    }
+  }
+}
+
+void GatherGlobalsReferredTo::exitFnSym(FnSymbol* fn) {
+  INT_ASSERT(fn == thisFunction);
+  // update the global maps based on calledThisFunction / mentionedThisFunction
+  std::set<FnSymbol*>& fnCalls = callGraph[thisFunction];
+  std::set<VarSymbol*>& directMentions = directGlobalMentions[thisFunction];
+
+  for_set(FnSymbol, called, calledThisFunction) {
+    fnCalls.insert(called);
+  }
+
+  for_set(VarSymbol, mention, mentionedThisFunction) {
+    directMentions.insert(mention);
+  }
+}
+
+
+// There will be one instance of this per module, but these will
+// share a single GatherGlobalsReferredTo.
+class FindInvalidGlobalUses : public AstVisitorTraverse {
+  public:
+    GatherGlobalsReferredTo& gatherVisitor;
+    std::set<VarSymbol*> invalidGlobals;
+    std::map<VarSymbol*, CallExpr*> copyElidedGlobals;
+
+    FindInvalidGlobalUses(GatherGlobalsReferredTo& gatherVisitor)
+      : gatherVisitor(gatherVisitor)
+    { }
+    void issueError(VarSymbol* g, BaseAST* loc);
+    void gatherModuleVariables(ModuleSymbol* thisModule);
+    bool checkIfCalledUsesInvalid(CallExpr* c, bool error);
+    bool checkIfFnUsesInvalid(FnSymbol* fn);
+    bool errorIfFnUsesInvalid(FnSymbol* fn, BaseAST* loc,
+                              std::set<FnSymbol*>& visited);
+    virtual bool enterCallExpr(CallExpr* call);
+    virtual bool enterCondStmt(CondStmt* cond);
+};
+
+
+void FindInvalidGlobalUses::issueError(VarSymbol* g, BaseAST* loc) {
+  if (copyElidedGlobals.count(g) != 0) {
+    USR_PRINT(loc,
+              "mentions module-scope variable '%s'",
+              g->name);
+    USR_PRINT(copyElidedGlobals[g], "which is dead due to copy elided here");
+  } else {
+    USR_PRINT(loc,
+             "mentions module-scope variable '%s' not initialized yet",
+             g->name);
+  }
+}
+
+void FindInvalidGlobalUses::gatherModuleVariables(ModuleSymbol* thisModule) {
+  // initialize invalidGlobals with all global variables from this module
+  for_alist (expr, thisModule->block->body) {
+    if (DefExpr* def = toDefExpr(expr)) {
+      if (VarSymbol* var = toVarSymbol(def->sym)) {
+        if (isCheckedModuleScopeVariable(var)) {
+          invalidGlobals.insert(var);
+        }
+      }
+    }
+  }
+}
+
+// the error argument indicates if we should run slow error reporting.
+bool FindInvalidGlobalUses::checkIfCalledUsesInvalid(CallExpr* c, bool error) {
+
+  if (FnSymbol* calledFn = c->resolvedOrVirtualFunction()) {
+    // consider root virtual method or non-virtual call
+
+    if (checkIfFnUsesInvalid(calledFn)) {
+      if (error) {
+        std::set<FnSymbol*> visited;
+        errorIfFnUsesInvalid(calledFn, c, visited);
+      }
+      return true;
+    }
+
+    // consider additional children callable by virtual method
+    if (c->isPrimitive(PRIM_VIRTUAL_METHOD_CALL)) {
+      if (Vec<FnSymbol*>* children = virtualChildrenMap.get(calledFn)) {
+        forv_Vec(FnSymbol*, childFn, *children) {
+          if (checkIfFnUsesInvalid(childFn)) {
+            if (error) {
+              std::set<FnSymbol*> visited;
+              errorIfFnUsesInvalid(childFn, c, visited);
+            }
+            return true;
+          }
+        }
+      }
+    }
+  }
+
+  return false;
+}
+
+// returns true if there was any intersection
+// returns intersecting elements in outVector
+static
+bool computeIntersection(std::set<VarSymbol*>& a, std::set<VarSymbol*>& b,
+                         std::vector<VarSymbol*>& outVector)
+{
+  outVector.clear();
+  std::set_intersection(a.begin(), a.end(),
+                        b.begin(), b.end(),
+                        std::back_inserter(outVector));
+
+  return outVector.size() != 0;
+}
+
+// This function is intended to be relatively optimized
+bool FindInvalidGlobalUses::checkIfFnUsesInvalid(FnSymbol* startFn) {
+  std::map<FnSymbol*, std::set<VarSymbol*>>& directGlobalMentions =
+    gatherVisitor.directGlobalMentions;
+  std::map<FnSymbol*, std::set<FnSymbol*>>& callGraph =
+    gatherVisitor.callGraph;
+
+  std::set<FnSymbol*> everBeenInWork;
+  std::vector<FnSymbol*> work;
+  std::vector<VarSymbol*> inV;
+
+  everBeenInWork.insert(startFn);
+  work.push_back(startFn);
+
+  while (!work.empty()) {
+    // process a thing from the work set
+    FnSymbol* fn = work.back();
+    work.pop_back();
+
+    // compute the call graph and globals used by this function
+    // (if we haven't already)
+    fn->accept(&gatherVisitor);
+
+    // check for direct mentions of the globals in question
+    // compute the intersection of
+    // directGlobalMentions[fn] and invalidGlobals
+    if (computeIntersection(invalidGlobals, directGlobalMentions[fn], inV))
+    {
+      return true;
+    }
+
+    // add called functions to the work queue
+    std::set<FnSymbol*>& fnCalls = callGraph[fn];
+    for_set (FnSymbol, called, fnCalls) {
+      if (everBeenInWork.insert(called).second) {
+        // 1st time visiting called; already added it to everBeenInWork
+        work.push_back(called);
+      }
+    }
+  }
+
+  return false;
+}
+
+// This function is slow but handles the case in which an error needs
+// to be reported. In that event it gives a stack trace.
+bool FindInvalidGlobalUses::errorIfFnUsesInvalid(FnSymbol* fn, BaseAST* loc,
+                                                 std::set<FnSymbol*>& visited) {
+  std::map<FnSymbol*, std::set<VarSymbol*>>& directGlobalMentions =
+    gatherVisitor.directGlobalMentions;
+  std::map<FnSymbol*, std::set<FnSymbol*>>& callGraph =
+    gatherVisitor.callGraph;
+  std::vector<VarSymbol*> inV;
+
+  if (visited.insert(fn).second == false)
+    return false; // already visited
+
+  if (developer || printsUserLocation(fn))
+    USR_PRINT(loc, "calls function '%s'", fn->name);
+
+  // check for direct mentions of the globals in question
+  // compute the intersection of
+  // directGlobalMentions[otherFn] and invalidGlobals
+  if (computeIntersection(invalidGlobals, directGlobalMentions[fn], inV)) {
+    for_vector (VarSymbol, g, inV) {
+      SymExpr* se = findSymExprFor(fn, g);
+      INT_ASSERT(se);
+      issueError(g, se);
+    }
+    return true;
+  }
+
+  // check the call graph
+  std::set<FnSymbol*>& fnCalls = callGraph[fn];
+  for_set (FnSymbol, called, fnCalls) {
+    if (checkIfFnUsesInvalid(called)) {
+      BaseAST* useLoc = findSymExprFor(fn, called);
+      if (useLoc == NULL)
+        useLoc = fn;
+      if (!developer && !printsUserLocation(useLoc))
+        useLoc = loc;
+
+      errorIfFnUsesInvalid(called, useLoc, visited);
+      return true;
+    }
+  }
+  return false;
+}
+
+
+bool FindInvalidGlobalUses::enterCallExpr(CallExpr* call) {
+
+  if (call->isPrimitive(PRIM_ASSIGN_ELIDED_COPY)) {
+    if (SymExpr* rhsSe = toSymExpr(call->get(2))) {
+      if (VarSymbol* var = toVarSymbol(rhsSe->symbol())) {
+        if (isCheckedModuleScopeVariable(var)) {
+          invalidGlobals.insert(var);
+          copyElidedGlobals[var] = call;
+        }
+      }
+    }
+  }
+
+  // Nothing to do if there are no invalid globals
+  if (invalidGlobals.size() == 0)
+    return false;
+
+  SymExpr* lhsSe = NULL;
+  CallExpr* checkCall = NULL;
+
+  if (call->isPrimitive(PRIM_MOVE) ||
+      call->isPrimitive(PRIM_ASSIGN) ||
+      call->isPrimitive(PRIM_ASSIGN_ELIDED_COPY)) {
+    lhsSe = toSymExpr(call->get(1));
+    if (CallExpr* subCall = toCallExpr(call->get(2)))
+      checkCall = subCall;
+  } else {
+    // gather ret-arg etc into lhsSe
+    isInitOrReturn(call, lhsSe, checkCall);
+  }
+
+  if (checkCall == NULL) {
+    checkCall = call;
+  }
+
+  // First, check any actuals not being initialized in the call.
+  if (checkCall->resolvedOrVirtualFunction()) {
+    // check an actual function call
+    for_formals_actuals(formal, actual, checkCall) {
+      if (actual == lhsSe) {
+        // OK, ret-arg e.g.
+      } else if (formal->intent == INTENT_OUT ||
+                 formal->originalIntent == INTENT_OUT) {
+        // OK, out intents will count as initialization
+      } else if (VarSymbol* var = theCheckedModuleScopeVariable(actual)) {
+        if (invalidGlobals.count(var) != 0)
+          issueError(var, actual);
+      }
+    }
+  } else {
+    // check actuals used in primitives
+    for_actuals(actual, checkCall) {
+      if (actual != lhsSe) {
+        if (VarSymbol* var = theCheckedModuleScopeVariable(actual))
+          if (invalidGlobals.count(var) != 0)
+            issueError(var, actual);
+      }
+    }
+  }
+
+  // Then, check any called functions
+  if (checkIfCalledUsesInvalid(call, false)) {
+    USR_FATAL_CONT(call, "invalid use of module-scope variable");
+    checkIfCalledUsesInvalid(call, true);
+  }
+
+  // Then, note the variables initialized by the call
+  // move/return arg
+  if (VarSymbol* var = theCheckedModuleScopeVariable(lhsSe))
+    invalidGlobals.erase(var);
+  // out intent
+  if (checkCall->resolvedOrVirtualFunction()) {
+    for_formals_actuals(formal, actual, checkCall) {
+      if (formal->intent == INTENT_OUT ||
+          formal->originalIntent == INTENT_OUT) {
+        if (VarSymbol* var = theCheckedModuleScopeVariable(actual))
+          invalidGlobals.erase(var);
+      }
+    }
+  }
+
+  return false;
+}
+
+bool FindInvalidGlobalUses::enterCondStmt(CondStmt* cond) {
+  if (cond->elseStmt) {
+    std::set<VarSymbol*> saveInvalidGlobals = invalidGlobals;
+    std::map<VarSymbol*, CallExpr*> saveElidedGlobals = copyElidedGlobals;
+
+    cond->elseStmt->accept(this);
+
+    // put the initializations back for considering the if clause
+    invalidGlobals = saveInvalidGlobals;
+    copyElidedGlobals = saveElidedGlobals;
+  }
+
+  // visiting the if clause will make note of any inits
+  cond->thenStmt->accept(this);
+
+  return false;
+}
+
+// A global variable might be used in a function called to initialize it.
+// This function detects that case and raises an error.
+//
+// Sometimes this results in resolution errors, but that depends on the
+// order of resolution and isn't reliable.
+//
+// This analysis is interprocedural. In a separate compilation setting,
+// simply noting which global variables might be referred to in which
+// functions does not seem prohibitive.
+//
+static void checkForInvalidGlobalUses() {
+  GatherGlobalsReferredTo gatherVisitor;
+
+  forv_Vec(ModuleSymbol, mod, gModuleSymbols) {
+    if (mod->initFn != NULL &&
+        (mod->modTag != MOD_INTERNAL && mod->modTag != MOD_STANDARD)) {
+      // if we expand to internal modules, have to contend with
+      // the possibility of writeln being called in a class deinitializer
+      // and using stdout.
+
+      FindInvalidGlobalUses checkVisitor(gatherVisitor);
+      checkVisitor.gatherModuleVariables(mod);
+      mod->initFn->body->accept(&checkVisitor);
+    }
+  }
+}
+
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
+
+
 // Function resolution adds "dummy" initCopy functions for types
 // that cannot be copied. These "dummy" initCopy functions are marked
 // with the flag FLAG_ERRONEOUS_COPY. This pattern enables
@@ -1317,6 +1770,8 @@ void callDestructors() {
   addAutoDestroyCalls();
 
   insertGlobalAutoDestroyCalls();
+
+  checkForInvalidGlobalUses();
 
   checkForErroneousInitCopies();
 

@@ -1,0 +1,3 @@
+error-global-used-in-init-dispatch.chpl:8: error: invalid use of module-scope variable
+error-global-used-in-init-dispatch.chpl:8: note: calls function 'makeR'
+error-global-used-in-init-dispatch.chpl:19: note: mentions module-scope variable 'globalR' not initialized yet
