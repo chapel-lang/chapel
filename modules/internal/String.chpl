@@ -823,7 +823,7 @@ module String {
 
     /*
       :returns: The indices that can be used to index into the string
-                (i.e., the range ``1..size``)
+                (i.e., the range ``1..this.size``)
     */
     proc indices return 1..size;
 

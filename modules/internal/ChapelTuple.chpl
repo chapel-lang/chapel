@@ -29,13 +29,16 @@ Besides the functions defined here, the Chapel Language specification
 defines other operations available on tuples: indexing, iteration,
 assignment, and unary, binary, and relational operators.
 
-The following method is also available:
+.. function:: proc tuple.size param
 
-  .. code-block:: chapel
+   Returns the number of components of the tuple.
 
-    proc tuple.size param
+.. function:: proc tuple.indices
 
-It returns the number of components of the tuple.
+   Returns the range of indices that are legal for indexing into the
+   tuple: ``1..this.size``.
+
+
 */
 module ChapelTuple {
   private use ChapelStandard;

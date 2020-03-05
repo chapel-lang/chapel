@@ -831,7 +831,7 @@ Predefined Functions and Methods on Tuples
 
 .. code-block:: chapel
 
-   proc Tuple.size param
+   proc tuple.size param
 
 Returns the size of the tuple.
 
@@ -840,7 +840,7 @@ Returns the size of the tuple.
 
    proc tuple.indices
 
-Returns the range ``1..tuple.size`` representing the indices that are
+Returns the range ``1..this.size`` representing the indices that are
 legal for indexing into the tuple.
 
 
