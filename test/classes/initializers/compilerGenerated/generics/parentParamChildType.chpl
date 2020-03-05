@@ -51,7 +51,7 @@ class DummyBaseDom {
 }
 
 class DummyMyDom : DummyBaseDom {
-  var locs : [1..4] unmanaged DummyLocMyDom(rank, idxType, stridable);
+  var locs : [1..4] unmanaged DummyLocMyDom(rank, idxType, stridable)?;
 }
 
 class DummyLocMyDom {

@@ -2,7 +2,7 @@ module RunCRawLoops {
   use LCALSDataTypes;
   use Timer;
 
-  proc runCRawLoops(loop_stats:[] owned LoopStat, run_loop:[] bool, ilength: LoopLength) {
+  proc runCRawLoops(loop_stats:[] shared LoopStat, run_loop:[] bool, ilength: LoopLength) {
     var loop_suite_run_info = getLoopSuiteRunInfo();
     var loop_data = getLoopData();
     for iloop in loop_suite_run_info.loop_kernel_dom {

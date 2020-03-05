@@ -42,7 +42,7 @@ record Box {
   var atoms : [1..MAXATOMS] Atom;
 }
 
-class FaceArr {
+record FaceArr {
   var d : domain(3);
   var a : [d] Box;
 }
@@ -57,8 +57,7 @@ class Domain {
   var neighDom       : domain(1) = {1..6};                 // domain of neighbors on each face (xm, xp, ym, yp, zm, zp)
   var nM$, nP$       : sync bool;                          // sync updates to neighbors for each face pair (xm/xp, ym/yp, zm/zp)
   var neighs         : [neighDom] int3;                    // neighbors on each face (xm, xp, ym, yp, zm, zp)
-  var temps1         : [neighDom] unmanaged FaceArr;       // temp arrays for each face (xm, xp, ym, yp, zm, zp)
-  var temps2         : [neighDom] unmanaged FaceArr;       // temp arrays for each face (xm, xp, ym, yp, zm, zp)
+  var temps1         : [neighDom] FaceArr;                 // temp arrays for each face (xm, xp, ym, yp, zm, zp)
   var bufDom         : domain(1);                          // Domain for buffer size, set during grid initialization
   var recvBuf,                                             // Each face gets a receive buffer for haloExchange
       packBuf        : [neighDom] [bufDom] Atom;           // Each face gets a local packing buffer for haloExchange
@@ -85,15 +84,13 @@ class Domain {
 //  var haloTicker3    = new Ticker("      commHaloUpdt");   // ticker for halo exchange  
 
   proc deinit() {
-    for t in temps1 do delete t;
-    for t in temps2 do delete t;
     if replicateForce then delete force;
   }
 }
 
 const locDom  : domain(3) = {0..xproc-1, 0..yproc-1, 0..zproc-1};
-var locGrid   : [locDom] locale;
-var Grid      : [locDom] unmanaged Domain;
+var locGrid   : [locDom] locale?;
+var Grid      : [locDom] unmanaged Domain?;
 
 record Validate {
   var eInit      : real;

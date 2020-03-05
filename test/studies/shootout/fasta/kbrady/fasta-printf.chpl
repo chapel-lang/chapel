@@ -14,7 +14,7 @@ config const n = 1000;
 extern proc printf(s:c_string, len:int(32), ref args ...);
 extern proc printf(s:c_string, ref args ...);
 
-class Freq {
+record Freq {
   var c: int(8);
   var p: real;
 }
@@ -67,28 +67,28 @@ const ALU : [0..286] int(8) = [
 ];
 
 //Sequences to be randomly generated (probability table)
-var IUB : [0..14] unmanaged Freq;
-IUB[0] = new unmanaged Freq(97, 0.27);  // a -> 97
-IUB[1] = new unmanaged Freq(99, 0.12);  // c -> 99
-IUB[2] = new unmanaged Freq(103, 0.12); // g -> 103
-IUB[3] = new unmanaged Freq(116, 0.27); // t -> 116
-IUB[4] = new unmanaged Freq(66, 0.02);  // B -> 66
-IUB[5] = new unmanaged Freq(68, 0.02);  // D -> 68
-IUB[6] = new unmanaged Freq(72, 0.02);  // H -> 72
-IUB[7] = new unmanaged Freq(75, 0.02);  // K -> 75
-IUB[8] = new unmanaged Freq(77, 0.02);  // M -> 77
-IUB[9] = new unmanaged Freq(78, 0.02);  // N -> 78
-IUB[10] = new unmanaged Freq(82, 0.02); // R -> 82
-IUB[11] = new unmanaged Freq(83, 0.02); // S -> 83
-IUB[12] = new unmanaged Freq(86, 0.02); // V -> 86
-IUB[13] = new unmanaged Freq(87, 0.02); // W -> 87
-IUB[14] = new unmanaged Freq(89, 0.02); // Y -> 89
+var IUB : [0..14] Freq;
+IUB[0] = new Freq(97, 0.27);  // a -> 97
+IUB[1] = new Freq(99, 0.12);  // c -> 99
+IUB[2] = new Freq(103, 0.12); // g -> 103
+IUB[3] = new Freq(116, 0.27); // t -> 116
+IUB[4] = new Freq(66, 0.02);  // B -> 66
+IUB[5] = new Freq(68, 0.02);  // D -> 68
+IUB[6] = new Freq(72, 0.02);  // H -> 72
+IUB[7] = new Freq(75, 0.02);  // K -> 75
+IUB[8] = new Freq(77, 0.02);  // M -> 77
+IUB[9] = new Freq(78, 0.02);  // N -> 78
+IUB[10] = new Freq(82, 0.02); // R -> 82
+IUB[11] = new Freq(83, 0.02); // S -> 83
+IUB[12] = new Freq(86, 0.02); // V -> 86
+IUB[13] = new Freq(87, 0.02); // W -> 87
+IUB[14] = new Freq(89, 0.02); // Y -> 89
 
-var HomoSapiens : [0..3] unmanaged Freq;
-HomoSapiens[0] = new unmanaged Freq(97, 0.3029549426680);  // a -> 97
-HomoSapiens[1] = new unmanaged Freq(99, 0.1979883004921);  // c -> 99
-HomoSapiens[2] = new unmanaged Freq(103, 0.1975473066391); // g -> 103
-HomoSapiens[3] = new unmanaged Freq(116, 0.3015094502008); // t -> 116
+var HomoSapiens : [0..3] Freq;
+HomoSapiens[0] = new Freq(97, 0.3029549426680);  // a -> 97
+HomoSapiens[1] = new Freq(99, 0.1979883004921);  // c -> 99
+HomoSapiens[2] = new Freq(103, 0.1975473066391); // g -> 103
+HomoSapiens[3] = new Freq(116, 0.3015094502008); // t -> 116
 
 // (Scan operation)
 proc sumAndScale(a :[?D]) {
@@ -114,8 +114,8 @@ class Random {
   }
 }
 
-var lookup : [0..LOOKUP_SIZE-1] unmanaged Freq;
-var random = new unmanaged Random();
+var lookup : [0..LOOKUP_SIZE-1] Freq;
+var random = new Random();
 
 // Make lookup table for random sequence generation
 proc makeLookup(a :[?D]) {
@@ -181,8 +181,4 @@ proc main() {
   repeatMake(">ONE Homo sapiens alu\n", ALU, n * 2);
   randomMake(">TWO IUB ambiguity codes\n", IUB, n * 3);
   randomMake(">THREE Homo sapiens frequency\n", HomoSapiens, n * 5);
-
-  delete random;
-  for h in HomoSapiens do delete h;
-  for i in IUB         do delete i;
 }

@@ -75,7 +75,7 @@ class DimensionalDomain {
   type idxType;
   var whole: domain(nDims, idxType);
   var dist:unmanaged Dimensional(nDims, idxType);
-  var locDoms: [dist.localeDomain] unmanaged LocDimensionalDomain(nDims, idxType);
+  var locDoms: [dist.localeDomain] unmanaged LocDimensionalDomain(nDims, idxType)?;
 
   proc postinit() {
     for loc in dist.localeDomain {
@@ -103,7 +103,7 @@ class DimensionalDomain {
   iter newThese(param iteratorType:IteratorType)
     where iteratorType == IteratorType.leader {
     for locDom in locDoms {
-      yield locDom.myElems; // - whole.low;
+      yield locDom!.myElems; // - whole.low;
     }
   }
   iter newThese(param iteratorType:IteratorType, followThis)
@@ -131,12 +131,12 @@ class DimensionalArray {
   type idxType;
   type eltType;
   var dom: unmanaged DimensionalDomain(nDims, idxType);
-  var locArrs: [dom.dist.localeDomain] unmanaged LocDimensionalArray(nDims, idxType, eltType);
+  var locArrs: [dom.dist.localeDomain] unmanaged LocDimensionalArray(nDims, idxType, eltType)?;
 
   proc postinit() {
     for loc in dom.dist.localeDomain {
       on loc {
-        locArrs(loc) = new unmanaged LocDimensionalArray(nDims, idxType, eltType, _to_unmanaged(this), dom.locDoms(loc));
+        locArrs(loc) = new unmanaged LocDimensionalArray(nDims, idxType, eltType, _to_unmanaged(this), dom.locDoms(loc)!);
       }
     }
   }
@@ -150,7 +150,7 @@ class DimensionalArray {
   }
 
   proc this(ind: nDims*idxType) ref {
-    return locArrs(dom.dist.indexToLocIndex(ind)).locArr(ind);
+    return locArrs(dom.dist.indexToLocIndex(ind))!.locArr(ind);
   }
 
   iter newThese(param iteratorType:IteratorType)
@@ -182,10 +182,8 @@ proc main {
   param nLocRows = 2;
   param nLocCols = 3;
   var localeDom: domain(nDims) = {0..#nLocRows, 0..#nLocCols};
-  var locales: [localeDom] locale;
-
-  for (i,j) in localeDom do
-    locales(i,j) = Locales((i*nLocCols + j)%numLocales);
+  var locales: [localeDom] locale =
+    for (i,j) in localeDom do Locales((i*nLocCols + j)%numLocales);
 
   var dims: nDims*unmanaged DimensionDistributor = (new unmanaged Cyclic(1), new unmanaged Cyclic(2));
   var dist = new unmanaged Dimensional(2, int, dims, localeDom, locales);

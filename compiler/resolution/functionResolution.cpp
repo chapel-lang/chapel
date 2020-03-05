@@ -3541,6 +3541,85 @@ static void resolveNormalCallConstRef(CallExpr* call) {
   }
 }
 
+static Type* getArrayElementType(AggregateType* arrayType) {
+  Type* instType = arrayType->getField("_instance")->type;
+  AggregateType* instClass = toAggregateType(canonicalClassType(instType));
+  Type* eltType = instClass->getField("eltType")->getValType();
+  return eltType;
+}
+
+// Is 'actualSym' passed to an assignment (a 'proc =') ?
+static bool isAssignedTo(Symbol* actualSym, SymExpr* knownRef) {
+  for_SymbolUses(use, actualSym)
+    if (use != knownRef)
+      if (CallExpr* parent = toCallExpr(use->parentExpr))
+        if (parent->isNamedAstr(astrSassign))
+          if (use == parent->get(1))
+            return true;
+
+  return false; // assignment is not found
+}
+
+// Does the corresponding formal has a default expression?
+static bool corrFormalHasDefaultExpr(SymExpr* actualSE) {
+  ArgSymbol* formal = actual_to_formal(actualSE);
+  // Determine the presence of a default expression by checking
+  // whether defaultExpr is not _typeDefaultT.
+  // Similar to defaultedFormalUsesDefaultForType().
+  AList& defaultExprBody = formal->defaultExpr->body;
+  if (defaultExprBody.length == 1)
+    if (SymExpr* bodySE = toSymExpr(defaultExprBody.get(1)))
+      if (bodySE->symbol() == gTypeDefaultToken)
+        return false;
+  return true;
+}
+
+static const char* userFieldNameForError(Symbol* actualSym) {
+  if (strncmp(actualSym->name, "default_arg_", 12) == 0)
+    return actualSym->name + 12;
+  else
+    return actualSym->name;
+}
+
+//
+// This checks for an array-typed field with a non-nilable element type
+// that is default-initialized in a compiler-generated initializer.
+// Ex. C1.A1 in
+//   test/classes/nilability/array-with-nonnilable-elttype.chpl
+// This case is represented in the AST with a default-arg function
+// being passed to the initializer.
+//
+static void checkDefaultNonnilableArrayArg(CallExpr* call, FnSymbol* fn) {
+  if (! (fn->name == astrInit || fn->name == astrInitEquals ||
+         fn->hasFlag(FLAG_NEW_WRAPPER)                      ))
+    return; // nothing to do
+
+  for_formals_actuals(formal, actualExpr, call)
+   if (SymExpr* actualSE = toSymExpr(actualExpr))
+    if (Symbol* actualSym = actualSE->symbol())
+     if (actualSym->hasFlag(FLAG_DEFAULT_ACTUAL) &&
+         ! formal->hasFlag(FLAG_UNSAFE))
+      if (AggregateType* actualType = toAggregateType(actualSym->getValType()))
+       if (actualType->symbol->hasFlag(FLAG_ARRAY) &&
+           isNonNilableClassType(getArrayElementType(actualType)))
+        //
+        // Acceptable handling of the default actual is this:
+        //   def default_arg_xxx: _array(...)
+        //   move( default_arg_xxx call( fn _new_default_xxx ) ) 
+        //   call( fn = default_arg_xxx <whatever> ) 
+        //   move( new_temp call( fn _new default_arg_xxx ) ) 
+        //
+        // The call( fn = ... ) establishes the non-default value.
+        // It is an error if that call is missing.
+        //
+        if (! isAssignedTo(actualSym, actualSE) &&
+            ! corrFormalHasDefaultExpr(actualSE))
+         USR_FATAL_CONT(call, "cannot default-initialize the array field"
+                        " %s because it has a non-nilable element type '%s'",
+                        userFieldNameForError(actualSym),
+                        toString(getArrayElementType(actualType), true));
+}
+
 static void resolveNormalCallFinalChecks(CallExpr* call) {
   FnSymbol* fn = call->resolvedFunction();
 
@@ -3559,6 +3638,8 @@ static void resolveNormalCallFinalChecks(CallExpr* call) {
   lvalueCheck(call);
 
   checkForStoringIntoTuple(call, fn);
+
+  checkDefaultNonnilableArrayArg(call, fn);
 
   resolveNormalCallCompilerWarningStuff(call, fn);
 }
@@ -8984,17 +9065,18 @@ bool propagateNotPOD(Type* t) {
 
     } else {
       // Some special rules for special things.
-      if (isSyncType(at)                        == true ||
-          isSingleType(at)                      == true ||
-          at->symbol->hasFlag(FLAG_ATOMIC_TYPE) == true) {
+      if (isSyncType(at)                        ||
+          isSingleType(at)                      ||
+          at->symbol->hasFlag(FLAG_DOMAIN)      || // may as well check these
+          at->symbol->hasFlag(FLAG_ARRAY)       ||
+          at->symbol->hasFlag(FLAG_ATOMIC_TYPE) ) {
         retval = true;
-      }
 
+      } else if (isClass(at) == true) {
       // Most class types are POD (user classes, _ddata, c_ptr)
       // Also, there is no need to check the fields of a class type
       // since a variable of that type is a pointer to the instance.
-      if (isClass(at) == true) {
-        // don't enumerate sub-fields or check for autoCopy etc
+      // So, don't enumerate sub-fields or check for autoCopy etc.
 
       } else {
         // If any field in a record/tuple is not POD, the aggregate is not POD.
@@ -9002,6 +9084,7 @@ bool propagateNotPOD(Type* t) {
           retval = retval | propagateNotPOD(field->typeInfo());
         }
 
+       if (retval == false) {
         // Make sure we have resolved auto copy/auto destroy.
         // Except not for runtime types, because that causes
         // some sort of fatal resolution error. This is a workaround.
@@ -9015,6 +9098,7 @@ bool propagateNotPOD(Type* t) {
             isCompilerGenerated(at->getDestructor())     == false) {
           retval = true;
         }
+       }
 
         // Since hasUserAssign tries to resolve =, we only
         // check it if we think we have a POD type.
@@ -9727,6 +9811,29 @@ static void    primInitHaltForUnacceptableGeneric(CallExpr* call, Type* type, Sy
 
 static void errorInvalidParamInit(CallExpr* call, Symbol* val, Type* type);
 
+static bool isInDefaultActualFunction(Expr* ref) {
+  if (FnSymbol* parent = toFnSymbol(ref->parentSymbol))
+    if (parent->hasFlag(FLAG_DEFAULT_ACTUAL_FUNCTION))
+      return true;
+  return false;
+}
+
+// Returns NULL if 'val' is not a temp, is a temp with FLAG_USER_VARIABLE_NAME,
+// or does not feed into a PRIM_SET_MEMBER.
+static Symbol* tempFeedsIntoSetMember(CallExpr* call, SymExpr* valSe,
+                                      Symbol* val) {
+  if (val->hasFlag(FLAG_TEMP) && ! val->hasFlag(FLAG_USER_VARIABLE_NAME))
+   // See if it is the temp used to set a field.
+   for_SymbolSymExprs(se, val)
+    if (se != valSe)
+     if (CallExpr* parent = toCallExpr(se->parentExpr))
+      if (parent->isPrimitive(PRIM_SET_MEMBER))
+       if (SymExpr* fieldSE = toSymExpr(parent->get(2)))
+        return fieldSE->symbol();
+
+    return NULL;
+}
+
 // For a PRIM_DEFAULT_INIT_VAR or a PRIM_INIT_VAR_SPLIT_DECL,
 // establish the type of the initialized variable so that resolution
 // can continue.
@@ -9890,6 +9997,35 @@ void lowerPrimInit(CallExpr* call, Expr* preventingSplitInit) {
   } else {
     INT_FATAL(call, "Unsupported primInit");
   }
+
+  //
+  // Check for a default-initialized array with a non-nilable element type
+  // (a) in a variable declaration, or (b) in a user-defined initializer
+  // when the field is not initialized explicitly ex. (a) x1 and (b) C2.A2 in
+  //   test/classes/nilability/array-with-nonnilable-elttype.chpl
+  //
+  if (call->isPrimitive(PRIM_DEFAULT_INIT_VAR) &&
+      val->type->symbol->hasFlag(FLAG_ARRAY)   &&
+      ! val->hasFlag(FLAG_INITIALIZED_LATER)   &&
+      ! val->hasFlag(FLAG_UNSAFE)              &&
+      ! isInDefaultActualFunction(call)        ) {
+    const char* name = NULL;
+    if (Symbol* field = tempFeedsIntoSetMember(call, valSe, val)) {
+      if (! field->hasFlag(FLAG_UNSAFE))
+        name = astr("field ", field->name);
+    } else {
+      name = val->name;
+    }
+
+    INT_ASSERT(val->type != dtUnknown && val->type != dtAny);
+    if (name != NULL) {
+      Type* eltType = getArrayElementType(toAggregateType(val->type));
+      if (isNonNilableClassType(eltType))
+        USR_FATAL_CONT(call, "cannot default-initialize the array %s"
+                       " because it has a non-nilable element type '%s'",
+                       name, toString(eltType));
+    }
+  }
 }
 
 static Symbol* resolvePrimInitGetField(CallExpr* call) {
@@ -9960,7 +10096,8 @@ static void errorIfNonNilableType(CallExpr* call, Symbol* val,
 
   // Work around current problems in array / assoc array types
   bool unsafe = call->getFunction()->hasFlag(FLAG_UNSAFE) ||
-                call->getModule()->hasFlag(FLAG_UNSAFE);
+                call->getModule()->hasFlag(FLAG_UNSAFE)   ||
+                val->hasFlag(FLAG_UNSAFE);
   if (unsafe)
     return;
 

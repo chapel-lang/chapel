@@ -912,12 +912,12 @@ module ChapelBase {
     }
   }
 
-  pragma "unsafe" // work around problems storing non-nilable classes
   proc init_elts(x, s, type t) : void {
     var initMethod = chpl_getArrayInitMethod();
 
+    // no need to init an array of zeros
     // for uints, check that s > 0, so the `s-1` below doesn't overflow
-    if isUint(s) && s == 0 {
+    if isIntegral(s) && s == 0 {
       initMethod = ArrayInit.noInit;
     } else if initMethod == ArrayInit.heuristicInit {
       // Heuristically determine if we should do parallel initialization. The
@@ -974,13 +974,13 @@ module ChapelBase {
       }
       when ArrayInit.serialInit {
         for i in 0..s-1 {
-          pragma "no auto destroy" var y: t;
+          pragma "no auto destroy" pragma "unsafe" var y: t;
           __primitive("array_set_first", x, i, y);
         }
       }
       when ArrayInit.parallelInit {
         forall i in 0..s-1 {
-          pragma "no auto destroy" var y: t;
+          pragma "no auto destroy" pragma "unsafe" var y: t;
           __primitive("array_set_first", x, i, y);
         }
       }

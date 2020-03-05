@@ -7,8 +7,8 @@ class Unallocated {
     return str;
   }
 }
-var ARR: [LocaleSpace] unmanaged Unallocated;
+pragma "unsafe" var ARR: [LocaleSpace] unmanaged Unallocated;
 proc main {
-  var aaa = ARR[0]; // nil of non-nilablel type, due to a typechecking loophole
+  var aaa = ARR[0]; // nil of non-nilablel type, due to pragma "unsafe"
   writeln(aaa.method());
 }

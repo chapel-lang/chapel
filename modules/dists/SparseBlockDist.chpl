@@ -86,8 +86,7 @@ class SparseBlockDom: BaseSparseDomImpl {
   const dist: unmanaged Block(rank, idxType, sparseLayoutType);
   var whole: domain(rank=rank, idxType=idxType, stridable=stridable);
   var locDoms: [dist.targetLocDom] unmanaged LocSparseBlockDom(rank, idxType,
-                                                              stridable,
-                                                              sparseLayoutType);
+                                                 stridable, sparseLayoutType)?;
   var myLocDom: unmanaged LocSparseBlockDom(rank, idxType, stridable,
                                             sparseLayoutType)?;
 
@@ -135,7 +134,7 @@ class SparseBlockDom: BaseSparseDomImpl {
   }
 
   override proc getNNZ() {
-    return + reduce ([ld in locDoms] ld.mySparseBlock.size);
+    return + reduce ([ld in locDoms] ld!.mySparseBlock.size);
   }
 
   // TODO: For some reason I have to make all the methods for these classes primary
@@ -144,7 +143,7 @@ class SparseBlockDom: BaseSparseDomImpl {
   proc dsiAdd(ind: rank*idxType) {
     var _retval = 0;
     on dist.dsiIndexToLocale(ind) {
-      _retval = locDoms[dist.targetLocsIdx(ind)].dsiAdd(ind);
+      _retval = locDoms[dist.targetLocsIdx(ind)]!.dsiAdd(ind);
     }
     return _retval;
   }
@@ -154,11 +153,11 @@ class SparseBlockDom: BaseSparseDomImpl {
   }
 
   proc dsiFirst {
-    return min reduce ([l in locDoms] l.mySparseBlock.first);
+    return min reduce ([l in locDoms] l!.mySparseBlock.first);
   }
 
   proc dsiLast {
-    return max reduce ([l in locDoms] l.mySparseBlock.last);
+    return max reduce ([l in locDoms] l!.mySparseBlock.last);
   }
 
   override proc bulkAdd_help(inds: [?indsDom] index(rank,idxType),
@@ -192,8 +191,9 @@ class SparseBlockDom: BaseSparseDomImpl {
     var localeRanges: [dist.targetLocDom] range;
     on inds {
       for l in dist.targetLocDom {
-        const _first = locDoms[l].mySparseBlock._value.parentDom.first;
-        const _last = locDoms[l].mySparseBlock._value.parentDom.last;
+        const blockval = locDoms[l]!.mySparseBlock._value;
+        const _first = blockval.parentDom.first;
+        const _last = blockval.parentDom.last;
 
         var (foundFirst, locFirst) = binarySearch(inds, _first, comp);
         var (foundLast, locLast) = binarySearch(inds, _last, comp);
@@ -214,7 +214,7 @@ class SparseBlockDom: BaseSparseDomImpl {
     }
     var _totalAdded: atomic int;
     coforall l in dist.targetLocDom do on dist.targetLocales[l] {
-      const _retval = locDoms[l].mySparseBlock.bulkAdd(inds[localeRanges[l]],
+      const _retval = locDoms[l]!.mySparseBlock.bulkAdd(inds[localeRanges[l]],
           dataSorted=true, isUnique=false);
       _totalAdded.add(_retval);
     }
@@ -238,9 +238,9 @@ class SparseBlockDom: BaseSparseDomImpl {
       f <~> "{";
       for locdom in locDoms do {
         // on locdom do {
-        if (locdom.dsiNumIndices) {
+        if (locdom!.dsiNumIndices) {
             f <~> " ";
-            locdom.dsiSerialWrite(f);
+            locdom!.dsiSerialWrite(f);
           }
           //}
       }
@@ -261,7 +261,7 @@ class SparseBlockDom: BaseSparseDomImpl {
   }
 
   // stopgap to avoid accessing locDoms field (and returning an array)
-  proc getLocDom(localeIdx) return locDoms(localeIdx);
+  proc getLocDom(localeIdx) return locDoms(localeIdx)!;
 
   iter these() {
     for locDom in locDoms do
@@ -269,14 +269,14 @@ class SparseBlockDom: BaseSparseDomImpl {
       //on blk do
       // But can't currently have yields in on clauses:
       // invalid use of 'yield' within 'on' in serial iterator
-      for x in locDom.mySparseBlock.these() do
+      for x in locDom!.mySparseBlock.these() do
         yield x;
   }
 
   iter these(param tag: iterKind) where tag == iterKind.leader {
     coforall (locDom,localeIndex) in zip(locDoms,dist.targetLocDom) {
       on locDom {
-        for followThis in locDom.mySparseBlock.these(tag) {
+        for followThis in locDom!.mySparseBlock.these(tag) {
           yield (followThis, localeIndex);
         }
       }
@@ -293,12 +293,12 @@ class SparseBlockDom: BaseSparseDomImpl {
     // Ensure it is legal to invoke the standalone iterator
     // on locDom.mySparseBlock below.
     __primitive("method call resolves",
-                locDoms[createTuple(rank,int,0)].mySparseBlock._value,
+                locDoms[createTuple(rank,int,0)]!.mySparseBlock._value,
                 "these", tag)
   {
     coforall locDom in locDoms {
       on locDom {
-        forall i in locDom.mySparseBlock {
+        forall i in locDom!.mySparseBlock {
           yield i;
         }
       }
@@ -308,7 +308,7 @@ class SparseBlockDom: BaseSparseDomImpl {
   proc dsiMember(ind) : bool {
     var _retval : bool = false;
     on dist.dsiIndexToLocale(ind) {
-      _retval = locDoms[dist.targetLocsIdx(ind)].dsiMember(ind);
+      _retval = locDoms[dist.targetLocsIdx(ind)]!.dsiMember(ind);
     }
     return _retval;
   }
@@ -316,7 +316,7 @@ class SparseBlockDom: BaseSparseDomImpl {
   override proc dsiClear() {
     coforall locDom in locDoms do
       on locDom do
-        locDom.dsiClear();
+        locDom!.dsiClear();
   }
 
   override proc dsiMyDist() return dist;
@@ -391,8 +391,8 @@ class SparseBlockArr: BaseSparseArr {
   // superclass' fields cannot be used in child class' field initializers. See
   // the constructor for the workaround.
   var locArrDom: domain(rank,idxType);
-  var locArr: [locArrDom] unmanaged LocSparseBlockArr(eltType, rank, idxType, stridable,
-      sparseLayoutType);
+  var locArr: [locArrDom] unmanaged LocSparseBlockArr(eltType, rank, idxType,
+                                                 stridable, sparseLayoutType)?;
   var myLocArr: unmanaged LocSparseBlockArr(eltType, rank, idxType, stridable,
                                             sparseLayoutType)?;
 
@@ -431,8 +431,8 @@ class SparseBlockArr: BaseSparseArr {
       //on locDom do
       // But can't currently have yields in on clauses:
       // invalid use of 'yield' within 'on' in serial iterator
-      var locDom = dom.locDoms[locI];
-      var locArrI = locArr[locI];
+      var locDom = dom.locDoms[locI]!;
+      var locArrI = locArr[locI]!;
       for x in locDom.mySparseBlock {
         yield locArrI.myElems(x);
       }
@@ -447,7 +447,7 @@ class SparseBlockArr: BaseSparseArr {
   iter these(param tag: iterKind, followThis) ref where tag == iterKind.follower {
     var (locFollowThis, localeIndex) = followThis;
     for i in locFollowThis(1).these(tag, locFollowThis) {
-      yield locArr[localeIndex].dsiAccess(i);
+      yield locArr[localeIndex]!.dsiAccess(i);
     }
   }
 
@@ -455,12 +455,12 @@ class SparseBlockArr: BaseSparseArr {
     // Ensure it is legal to invoke the standalone iterator
     // on locA.myElems below.
     __primitive("method call resolves",
-                locArr[locArrDom.low].myElems._value,
+                locArr[locArrDom.low]!.myElems._value,
                 "these", tag)
    {
     coforall locA in locArr do on locA {
       // forward to sparse standalone iterator
-      forall i in locA.myElems {
+      forall i in locA!.myElems {
         yield i;
       }
     }
@@ -473,7 +473,7 @@ class SparseBlockArr: BaseSparseArr {
         return myLocArr!.dsiAccess(i);
       }
     }
-    return locArr[dom.dist.targetLocsIdx(i)].dsiAccess(i);
+    return locArr[dom.dist.targetLocsIdx(i)]!.dsiAccess(i);
   }
   proc dsiAccess(i: rank*idxType)
   where shouldReturnRvalueByValue(eltType) {
@@ -482,7 +482,7 @@ class SparseBlockArr: BaseSparseArr {
         return myLocArr!.dsiAccess(i);
       }
     }
-    return locArr[dom.dist.targetLocsIdx(i)].dsiAccess(i);
+    return locArr[dom.dist.targetLocsIdx(i)]!.dsiAccess(i);
   }
   proc dsiAccess(i: rank*idxType) const ref
   where shouldReturnRvalueByConstRef(eltType) {
@@ -491,7 +491,7 @@ class SparseBlockArr: BaseSparseArr {
         return myLocArr!.dsiAccess(i);
       }
     }
-    return locArr[dom.dist.targetLocsIdx(i)].dsiAccess(i);
+    return locArr[dom.dist.targetLocsIdx(i)]!.dsiAccess(i);
   }
 
 
@@ -529,6 +529,7 @@ class LocSparseBlockArr {
   param stridable: bool;
   type sparseLayoutType;
   const locDom: unmanaged LocSparseBlockDom(rank, idxType, stridable, sparseLayoutType);
+  pragma "local field" pragma "unsafe" // initialized separately
   var myElems: [locDom.mySparseBlock] eltType;
 
   proc dsiAccess(i) ref {
@@ -735,9 +736,9 @@ proc SparseBlockArr.dsiSerialWrite(f) {
     f <~> "[";
     for locarr in locArr do {
       // on locdom do {
-      if (locarr.locDom.dsiNumIndices) {
+      if (locarr!.locDom.dsiNumIndices) {
         f <~> " ";
-        locarr.dsiSerialWrite(f);
+        locarr!.dsiSerialWrite(f);
       }
       // }
     }
@@ -791,7 +792,7 @@ proc SparseBlockArr.dsiPrivatize(privatizeData) {
       dom=privdom);
   for localeIdx in c.dom.dist.targetLocDom {
     c.locArr(localeIdx) = locArr(localeIdx);
-    if c.locArr(localeIdx).locale.id == here.id then
+    if c.locArr(localeIdx)!.locale.id == here.id then
       c.myLocArr = c.locArr(localeIdx);
   }
   return c;
@@ -818,7 +819,7 @@ proc SparseBlockDom.dsiLocalSubdomain(loc: locale) {
                              "remote subdomain queries");
 
   const (found, targetIdx) = dist.targetLocales.find(here);
-  return locDoms[targetIdx].mySparseBlock;
+  return locDoms[targetIdx]!.mySparseBlock;
 }
 
 proc SparseBlockArr.dsiLocalSubdomain(loc: locale) {

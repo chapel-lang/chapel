@@ -2,7 +2,7 @@ module RunParallelRawLoops {
   use LCALSDataTypes;
   use Timer;
 
-  proc runParallelRawLoops(loop_stats:[] owned LoopStat, run_loop:[] bool, ilength: LoopLength) {
+  proc runParallelRawLoops(loop_stats:[] shared LoopStat, run_loop:[] bool, ilength: LoopLength) {
     var loop_suite_run_info = getLoopSuiteRunInfo();
     var loop_data = getLoopData();
 
