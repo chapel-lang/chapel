@@ -46,6 +46,7 @@
 #undef GASNETI_HAVE_CC_ATTRIBUTE_HOT
 #undef GASNETI_HAVE_CC_ATTRIBUTE_COLD
 #undef GASNETI_HAVE_CC_ATTRIBUTE_DEPRECATED
+#undef GASNETI_HAVE_CC_ATTRIBUTE_COMMON
 #undef GASNETI_HAVE_CC_ATTRIBUTE_FALLTHROUGH
 #undef GASNETI_HAVE_CC_ATTRIBUTE_FORMAT
 #undef GASNETI_HAVE_CC_ATTRIBUTE_FORMAT_FUNCPTR
@@ -66,6 +67,7 @@
 #undef GASNETI_HAVE_CXX_ATTRIBUTE_HOT
 #undef GASNETI_HAVE_CXX_ATTRIBUTE_COLD
 #undef GASNETI_HAVE_CXX_ATTRIBUTE_DEPRECATED
+#undef GASNETI_HAVE_CXX_ATTRIBUTE_COMMON
 #undef GASNETI_HAVE_CXX_ATTRIBUTE_FALLTHROUGH
 #undef GASNETI_HAVE_CXX_ATTRIBUTE_FORMAT
 #undef GASNETI_HAVE_CXX_ATTRIBUTE_FORMAT_FUNCPTR
@@ -90,6 +92,7 @@
 #undef GASNETI_HAVE_MPI_CC_ATTRIBUTE_HOT
 #undef GASNETI_HAVE_MPI_CC_ATTRIBUTE_COLD
 #undef GASNETI_HAVE_MPI_CC_ATTRIBUTE_DEPRECATED
+#undef GASNETI_HAVE_MPI_CC_ATTRIBUTE_COMMON
 #undef GASNETI_HAVE_MPI_CC_ATTRIBUTE_FALLTHROUGH
 #undef GASNETI_HAVE_MPI_CC_ATTRIBUTE_FORMAT
 #undef GASNETI_HAVE_MPI_CC_ATTRIBUTE_FORMAT_FUNCPTR
@@ -164,9 +167,6 @@
 
 /* Which inline asm style(s) are supported - these are defined only
    where we use configure to determine what a compiler supports */
-#undef GASNETI_HAVE_CC_XLC_ASM
-#undef GASNETI_HAVE_CXX_XLC_ASM
-#undef GASNETI_HAVE_MPI_CC_XLC_ASM
 #undef GASNETI_HAVE_CC_GCC_ASM
 #undef GASNETI_HAVE_CXX_GCC_ASM
 #undef GASNETI_HAVE_MPI_CC_GCC_ASM
@@ -186,6 +186,9 @@
 #undef GASNETI_ATOMIC_IMPL_CONFIGURE
 #undef GASNETI_ATOMIC32_IMPL_CONFIGURE
 #undef GASNETI_ATOMIC64_IMPL_CONFIGURE
+
+/* Decoration, if any, needed for in-library tentative definitions */
+#undef GASNETI_COMMON
 
 /* Does CXX support C99 __VA_ARGS__ */
 #undef GASNETI_CXX_HAS_VA_ARGS
@@ -269,7 +272,6 @@
 #undef GASNETI_PSHM_SYSV
 #undef GASNETI_PSHM_FILE
 #undef GASNETI_PSHM_XPMEM
-#undef GASNETI_PSHM_GHEAP
 
 /* How many cores/node must we support (255 is default) */
 #undef GASNETI_CONFIG_PSHM_MAX_NODES
@@ -409,9 +411,6 @@
 /* platform is a Linux cluster running IBM PE software */
 #undef GASNETI_ARCH_IBMPE
 
-/* platform is an IBM BlueGene/Q multiprocessor */
-#undef GASNETI_ARCH_BGQ
-
 /* platform is Microsoft Windows Subsystem for Linux */
 #undef GASNETI_ARCH_WSL
 
@@ -458,21 +457,19 @@
 #undef GASNETC_OFI_NUM_COMPLETIONS
 #undef GASNETC_OFI_HAS_MR_SCALABLE
 #undef GASNETC_OFI_USE_THREAD_DOMAIN
+#undef GASNETC_OFI_PROVIDER_LIST
 
 /* GASNet ibv-conduit features and bug work-arounds */
 #undef HAVE_IBV_SRQ
 #undef HAVE_IBV_TRANSPORT_TYPE
+#undef GASNETC_IBV_MAX_MEDIUM
 #undef GASNETC_IBV_ODP
 #undef GASNETC_IBV_ODP_DISABLED
 #undef GASNETC_IBV_RCV_THREAD
 #undef GASNETC_IBV_CONN_THREAD
-#undef GASNETC_IBV_AMRDMA
 #undef GASNETC_IBV_MAX_HCAS
 #undef GASNETC_IBV_PHYSMEM_MAX_CONFIGURE
 #undef GASNETC_IBV_PHYSMEM_PROBE_CONFIGURE
-
-/* GASNet pami-conduit settings */
-#undef GASNETI_SIZEOF_PAMI_TASK_T
 
 /* GASNet bug1389 detection/work-around */
 #undef GASNETI_BUG1389_WORKAROUND
@@ -486,7 +483,9 @@
 /* Support for pmi-spawner */
 #undef HAVE_PMI_H
 #undef HAVE_PMI2_H
+#undef GASNETI_PMIX_HACK
 #undef GASNETI_PMI2_FENCE_IS_BARRIER
+#undef HAVE_PMIX_H
 
 
 /* Define to one of `_getb67', `GETB67', `getb67' for Cray-2 and Cray-YMP
@@ -626,6 +625,9 @@
 
 /* Define to 1 if you have the `srand_deterministic' function. */
 #undef HAVE_SRAND_DETERMINISTIC
+
+/* Define to 1 if you have the <stdbool.h> header file. */
+#undef HAVE_STDBOOL_H
 
 /* Define to 1 if you have the <stddef.h> header file. */
 #undef HAVE_STDDEF_H

@@ -1,7 +1,7 @@
 use Random;
 
 config const nBytes = 100000;
-config const nIterations = 100;
+config const nIterations = 25;
 config const useFactory = false;
 
 var randomStream = createRandomStream(eltType=uint(8));
@@ -16,7 +16,7 @@ for i in 1..nIterations {
   const randomBytes = createBytesWithOwnedBuffer(buf, length=nBytes,
                                                       size=nBytes+1);
 
-  if randomBytes.length != nBytes {
+  if randomBytes.size != nBytes {
     halt("Error creating bytes object with correct length");
   }
 

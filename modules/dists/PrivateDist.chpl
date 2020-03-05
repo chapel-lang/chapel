@@ -147,6 +147,7 @@ class PrivateDom: BaseRectangularDom {
 
 class PrivateArr: BaseRectangularArr {
   var dom: unmanaged PrivateDom(rank, idxType, stridable);
+  pragma "unsafe" // initialized separately
   var data: eltType;
 }
 

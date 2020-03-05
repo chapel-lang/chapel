@@ -299,6 +299,8 @@ module DistributedDeque {
       this.targetLocales = targetLocales;
       this.nSlots        = here.maxTaskPar * targetLocales.size;
       this.slotSpace     = {0..#this.nSlots};
+      const dummyLD = new unmanaged LocalDeque(eltType);
+      this.slots = dummyLD;
 
       complete();
 
@@ -310,6 +312,7 @@ module DistributedDeque {
           slots[i] = new unmanaged LocalDeque(eltType);
         }
       }
+      delete dummyLD;
 
       // Distribute the globalHead, globalTail, and queueSize over the first 3 nodes...
       var countersLeftToAlloc = 3;

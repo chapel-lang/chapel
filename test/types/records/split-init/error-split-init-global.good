@@ -1,0 +1,4 @@
+error-split-init-global.chpl:1: error: variable 'c' is not initialized and has no type
+error-split-init-global.chpl:1: error: split initialization is not supported for globals
+error-split-init-global.chpl:3: error: type alias 'ttt' is not initialized
+error-split-init-global.chpl:3: error: split initialization is not supported for globals

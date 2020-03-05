@@ -130,6 +130,12 @@ int main(int argc, char **argv) {
     int rmin = GASNETT_RELEASE_VERSION_MINOR;
     int rpat = GASNETT_RELEASE_VERSION_PATCH;
     assert_always(smaj > 0 && smin >= 0 && rmaj > 0 && rmin >= 0 && rpat >= 0);
+    uint64_t ver = rmaj * (uint64_t)1000000 + rmin * (uint64_t)10000 + rpat;
+    assert_always(ver == gasnett_release_version());
+    const char *version_str = _STRINGIFY(GASNET_RELEASE_VERSION_MAJOR) "." 
+                              _STRINGIFY(GASNET_RELEASE_VERSION_MINOR) "." 
+                              _STRINGIFY(GASNET_RELEASE_VERSION_PATCH);
+    assert_always(!strcmp(version_str, gasnett_release_version_str()));
   }
 
   #if defined(GASNETT_PAGESIZE) && defined(GASNETT_PAGESHIFT)
@@ -1182,7 +1188,7 @@ void * thread_fn(void *arg) {
       uint64_t const share = MIN((unsigned)iters, (0xffffffffU / NUM_THREADS));
       uint64_t const one = 1;
       uint64_t const incrs[] = { one, one<<32, one + (one<<32) };
-      for (int i = 0; i < sizeof(incrs)/sizeof(incrs[0]); ++i) {
+      for (size_t i = 0; i < sizeof(incrs)/sizeof(incrs[0]); ++i) {
         uint64_t const incr = incrs[i];
         uint64_t const goal = NUM_THREADS * share * incr;
         uint64_t woncnt = 0;

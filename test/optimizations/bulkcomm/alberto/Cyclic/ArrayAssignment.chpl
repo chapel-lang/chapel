@@ -207,7 +207,7 @@ D2={1..n,2..2*n by 4,4..n-2};
 elem=1;
 for h in 1..Dom1.rank
 {
-  if D2.dim(h).length != D1.dim(h).length
+  if D2.dim(h).size != D1.dim(h).size
   {
     elem=0;
     break;
@@ -231,7 +231,7 @@ D2={1..2*(n-1) by 6,2..n by 4,4..n-2};
 elem=1;
 for h in 1..Dom1.rank
 {
-  if D2.dim(h).length != D1.dim(h).length
+  if D2.dim(h).size != D1.dim(h).size
   {
     elem=0;
     break;
@@ -255,7 +255,7 @@ D2={2..n/2 by 2,2..n by 4,n/4+1..3*n/4 by 5};
 elem=1;
 for h in 1..Dom1.rank
 {
-  if D2.dim(h).length != D1.dim(h).length
+  if D2.dim(h).size != D1.dim(h).size
   {
     elem=0;
     break;
@@ -280,7 +280,7 @@ D2={n+1..2*n by 6,n/4+1..3*n/4 by 4,n/4+1..3*n/4 by 5};
 elem=1;
 for h in 1..Dom1.rank
 {
-  if D2.dim(h).length != D1.dim(h).length
+  if D2.dim(h).size != D1.dim(h).size
   {
     elem=0;
     break;
@@ -304,7 +304,7 @@ D2={n/2+1..3*n/2 by 4,n/2+1..n by 2,n/4+1..3*n/4 by 4};
 elem=1;
 for h in 1..Dom1.rank
 {
-  if D2.dim(h).length != D1.dim(h).length
+  if D2.dim(h).size != D1.dim(h).size
   {
     elem=0;
     break;
@@ -329,7 +329,7 @@ D2={n+1..2*n by 4,3*n/2+1..2*n by 2,n/4+1..3*n/4 by 6};
 elem=1;
 for h in 1..Dom1.rank
 {
-  if D2.dim(h).length != D1.dim(h).length
+  if D2.dim(h).size != D1.dim(h).size
   {
     elem=0;
     break;
@@ -353,7 +353,7 @@ D2={n+1..5*n/4 by 1,3*n/2+1..2*n by 2,n/4+1..3*n/4 by 4};
 elem=1;
 for h in 1..Dom1.rank
 {
-  if D2.dim(h).length != D1.dim(h).length
+  if D2.dim(h).size != D1.dim(h).size
   {
     elem=0;
     break;

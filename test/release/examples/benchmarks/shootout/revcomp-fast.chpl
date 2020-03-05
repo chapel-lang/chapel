@@ -12,7 +12,7 @@ proc main(args: [] string) {
   const stdin = openfd(0),
         input = stdin.reader(iokind.native, locking=false,
                              hints=QIO_HINT_PARALLEL),
-        len = stdin.length();
+        len = stdin.size;
   var data: [0..#len] uint(8);
 
   // if the file isn't empty, wait for all tasks to complete before continuing

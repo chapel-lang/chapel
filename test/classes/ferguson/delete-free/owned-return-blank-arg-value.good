@@ -1,6 +1,6 @@
 owned-return-blank-arg-value.chpl:8: In function 'returnByValue':
 owned-return-blank-arg-value.chpl:10: error: const actual is passed to 'ref' formal 'src' of implicit copy initializer
-note: to formal of type owned C
+note: to formal of type owned C?
 owned-return-blank-arg-value.chpl:27: In function 'returnByValueTyped':
 owned-return-blank-arg-value.chpl:29: error: const actual is passed to 'ref' formal 'src' of implicit copy initializer
 note: to formal of type owned C?

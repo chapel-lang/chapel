@@ -40,11 +40,11 @@ module RangeChunk {
        
        - **Thru**: default policy; remainder elements will be distributed throughout
          ``numChunks`` chunks
-       - **Pack**: chunks at the front will receive ``ceil(range.length / numChunks)``
+       - **Pack**: chunks at the front will receive ``ceil(range.size / numChunks)``
          elements, then one chunk will receive what is left over; the actual number of chunks
          may be less than ``numChunks``
        - **Mod**: in ``numChunks`` chunks, every chunk that has an index less than
-         ``range.length % numChunks`` will receive a remainder element
+         ``range.size % numChunks`` will receive a remainder element
   */
   enum RemElems {
     Thru,
@@ -90,9 +90,9 @@ module RangeChunk {
   */
   iter chunksOrder(r: range(?RT, bounded, ?), numChunks: integral,
                    remPol: RemElems = Thru): 2*RT {
-    if r.length == 0 || numChunks <= 0 then
+    if r.size == 0 || numChunks <= 0 then
       return;
-    const nElems = r.length;
+    const nElems = r.size;
     var nChunks = min(numChunks, nElems): RT;
 
     var chunkSize, rem: RT;
@@ -128,10 +128,10 @@ module RangeChunk {
   */
   proc chunkOrder(r: range(?RT, bounded, ?), numChunks: integral, idx: integral,
                   remPol: RemElems = Thru): 2*RT {
-    if r.length == 0 || numChunks <= 0 || idx < 0 || idx >= numChunks then
+    if r.size == 0 || numChunks <= 0 || idx < 0 || idx >= numChunks then
       return (1: RT, 0: RT);
 
-    const nElems = r.length;
+    const nElems = r.size;
     const nChunks = min(numChunks, nElems): RT;
     const i = idx: RT;
 

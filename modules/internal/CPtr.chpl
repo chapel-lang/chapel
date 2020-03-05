@@ -27,7 +27,7 @@
 module CPtr {
   private use ChapelStandard;
   private use SysBasic, SysError, SysCTypes;
-  private use HaltWrappers only;
+  import HaltWrappers;
 
   /* A Chapel version of a C NULL pointer. */
   inline proc c_nil:c_void_ptr {
@@ -198,7 +198,12 @@ module CPtr {
       ch <~> new ioLiteral("]");
     }
 
+    /*
+      Deprecated - please use :var:`c_array.size`.
+    */
     inline proc length {
+      compilerWarning("'c_array.length' is deprecated - " +
+                      "please use 'c_array.size' instead");
       return size;
     }
 

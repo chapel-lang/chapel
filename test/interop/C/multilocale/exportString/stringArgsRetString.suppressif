@@ -3,8 +3,3 @@
 # a flag equivalent to GCC's "-Wno-pointer-sign".
 #
 CHPL_TARGET_COMPILER==cray-prgenv-cray
-#
-# These tests fail when CHPL_TASKS=fifo. For now, suppress them.
-# See: #13475
-#
-CHPL_TASKS==fifo

@@ -2,9 +2,9 @@
 
 class MyClass {  var x: int;  }
 
-var lhs = new owned MyClass();
-var rhs = new owned MyClass();
+{
+  var lhs = new owned MyClass();
+  var rhs = new owned MyClass();
 
-lhs = rhs;
-
-
+  lhs = rhs;
+}

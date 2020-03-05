@@ -53,7 +53,9 @@ extern std::map<Type*,     Serializers> serializeMap;
 
 bool       propagateNotPOD(Type* t);
 
-void       resolvePrimInit(CallExpr* call);
+void       lowerPrimInit(CallExpr* call, Expr* preventingSplitInit);
+void       resolveInitVar(CallExpr* call); // lowers PRIM_INIT_VAR_SPLIT_INIT
+void       fixPrimInitsAndAddCasts(FnSymbol* fn);
 
 bool       isTupleContainingOnlyReferences(Type* t);
 
@@ -75,7 +77,7 @@ bool       formalRequiresTemp(ArgSymbol* formal, FnSymbol* fn);
 // If formalRequiresTemp(formal,fn), when this function returns true,
 // the new strategy of making the temporary at the call site will be used.
 // (if it returns false, the temporary will be inside fn)
-bool       shouldAddFormalTempAtCallSite(ArgSymbol* formal, FnSymbol* fn);
+bool       shouldAddInFormalTempAtCallSite(ArgSymbol* formal, FnSymbol* fn);
 
 // This function concerns an initialization expression such as:
 //   var x = <expr>;
@@ -214,7 +216,6 @@ void      makeRefType(Type* type);
 
 // FnSymbol changes
 void      insertFormalTemps(FnSymbol* fn);
-void      insertAndResolveCasts(FnSymbol* fn);
 void      ensureInMethodList(FnSymbol* fn);
 
 

@@ -1,1 +1,1 @@
-indef_reindex.chpl:4: error: length is not defined on unbounded ranges
+indef_reindex.chpl:4: error: 'size' is not defined on unbounded ranges

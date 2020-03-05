@@ -233,8 +233,15 @@ module ChapelTuple {
   iter _tuple.these() ref
   {
 
+    // If we hit this error, it generally means that the compiler wasn't
+    // successful at unrolling a loop over a heterogeneous tuple, either
+    // because the IR changed (in the event of a regression) or because
+    // it's a pattern that isn't handled yet (such as zippered iteration
+    // or a forall loop over a heterogeneous tuple).  See preFold.cpp,
+    // specifically unrollHetTupleLoop().
+    //
     if !isHomogeneousTuple(this) then
-      compilerError("Cannot iterate over non-homogeneous tuples. If you intended to use zippered iteration, add the new keyword 'zip' before the tuple of iteratable expressions.");
+      compilerError("Heterogeneous tuples don't support this style of loop yet");
 
     if CHPL_WARN_TUPLE_ITERATION == "true" then
       compilerWarning("Iterating over tuples. If you intended to use zippered iteration, add the new keyword 'zip' before the tuple of iteratable expressions.");

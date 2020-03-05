@@ -184,10 +184,11 @@ class FTree {
 
         this.order = order;
         this.coeffDom = {0..order-1};
-        this.complete();
 
+        var tree: [LocaleSpace] unmanaged LocTree?;
         coforall loc in Locales do
             on loc do tree[loc.id] = new unmanaged LocTree(coeffDom);
+        this.tree = tree!;
     }
 
     proc deinit() {

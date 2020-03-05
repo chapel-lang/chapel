@@ -344,7 +344,7 @@ proc dirname(name: string): string {
    var varChars: string = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890_";
    var res: string = "";
    var ind: int = 1;
-   var pathlen: int = path_p.length;
+   var pathlen: int = path_p.size;
    while (ind <= pathlen) {
      var c: string = path_p(ind);
      if (c == "$" && ind + 1 <= pathlen) {
@@ -377,7 +377,7 @@ proc dirname(name: string): string {
        } else {
          var env_var: string = "";
          ind += 1;
-         while (ind <= path_p.length && varChars.find(path_p(ind)) != 0) {
+         while (ind <= path_p.size && varChars.find(path_p(ind)) != 0) {
            env_var += path_p(ind);
            ind += 1;
          }
@@ -744,7 +744,7 @@ proc relPath(name: string, start:string=curDir): string throws {
   :throws SystemError: Upon failure to get the current working directory.
 */
 proc file.relPath(start:string=curDir): string throws {
-  use Path only;
+  import Path;
   // Have to prefix module name to avoid muddying name resolution.
   return Path.relPath(this.path, start);
 }

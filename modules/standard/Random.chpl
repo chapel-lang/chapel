@@ -63,7 +63,7 @@ module Random {
   public use RandomSupport;
   public use NPBRandom;
   public use PCGRandom;
-  private use HaltWrappers only;
+  import HaltWrappers;
 
 
 
@@ -318,8 +318,8 @@ module Random {
   /* _choice branch for distribution defined by probabilities array */
   proc _choiceProbabilities(stream, arr:[], size:?sizeType, replace, prob:?probType) throws
   {
-    use Search only;
-    use Sort only;
+    import Search;
+    import Sort;
 
     // If stride, offset, or size don't match, we're in trouble
     if arr.domain != prob.domain then

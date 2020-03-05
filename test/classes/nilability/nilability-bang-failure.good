@@ -1,7 +1,5 @@
 nilability-bang-failure.chpl:8: In function 'main':
 nilability-bang-failure.chpl:14: error: applying postfix-! to nil
-nilability-bang-failure.chpl:14: note: variable nbq is nil at this point
-nilability-bang-failure.chpl:9: note: this statement may be relevant
+nilability-bang-failure.chpl:9: note: 'nbq' is set to nil here
 nilability-bang-failure.chpl:19: error: applying postfix-! to nil
-nilability-bang-failure.chpl:19: note: variable nuq is nil at this point
-nilability-bang-failure.chpl:10: note: this statement may be relevant
+nilability-bang-failure.chpl:10: note: 'nuq' is set to nil here

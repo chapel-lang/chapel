@@ -52,7 +52,7 @@ class Block1DDist {
   // DOWN: an array of local distribution class descriptors -- set up
   // in the class initializer
   //
-  var locDist: [targetLocDom] unmanaged LocBlock1DDist(idxType);
+  var locDist: [targetLocDom] unmanaged LocBlock1DDist(idxType)?;
 
 
   // INITIALIZERS:
@@ -135,7 +135,7 @@ class Block1DDist {
     //
     // TODO: Does using David's detupling trick work here?
     //
-    return locDist(locid).myChunk(inds.dim(1));
+    return locDist(locid)!.myChunk(inds.dim(1));
   }
   
   //
@@ -270,7 +270,7 @@ class Block1DDom {
   // Otherwise, would have to move the allocation into a function
   // just to get it at the statement level.
   //
-  var locDoms: [dist.targetLocDom] unmanaged LocBlock1DDom(idxType);
+  var locDoms: [dist.targetLocDom] unmanaged LocBlock1DDom(idxType)?;
 
 
   // STATE:
@@ -314,7 +314,7 @@ class Block1DDom {
       // TODO: Would want to do something like:     
       // on blk do
       // But can't currently have yields in on clauses
-        for ind in blk do
+        for ind in blk! do
           yield ind;
   }
 
@@ -364,7 +364,7 @@ class Block1DDom {
     // support? (esp. given how frequent this seems likely to be?)
     //
     for locDom in locDoms do
-      yield locDom.myBlock.translate(-whole.low);
+      yield locDom!.myBlock.translate(-whole.low);
   }
 
 
@@ -542,7 +542,7 @@ class Block1DArr {
   // Otherwise, would have to move the allocation into a function
   // just to get it at the statement level.
   //
-  var locArr: [dom.dist.targetLocDom] unmanaged LocBlock1DArr(idxType, elemType);
+  var locArr: [dom.dist.targetLocDom] unmanaged LocBlock1DArr(idxType, elemType)?;
 
 
   // INITIALIZERS:
@@ -550,7 +550,7 @@ class Block1DArr {
   proc postinit() {
     for localeIdx in dom.dist.targetLocDom do
       on dom.dist.targetLocs(localeIdx) do
-        locArr(localeIdx) = new unmanaged LocBlock1DArr(idxType, elemType, dom.locDoms(localeIdx));
+        locArr(localeIdx) = new unmanaged LocBlock1DArr(idxType, elemType, dom.locDoms(localeIdx)!);
   }
 
   proc deinit() {
@@ -568,7 +568,7 @@ class Block1DArr {
   // TODO: Do we need a global bounds check here or in idxToLocaleind?
   //
   proc this(i: idxType) ref {
-    return locArr(dom.dist.idxToLocaleInd(i))(i);
+    return locArr(dom.dist.idxToLocaleInd(i))!(i);
   }
 
   //
@@ -579,7 +579,7 @@ class Block1DArr {
       // TODO: May want to do something like:     
       // on this do
       // But can't currently have yields in on clauses
-      for elem in locArr(loc) {
+      for elem in locArr(loc)! {
         yield elem;
       }
     }
@@ -611,7 +611,7 @@ class Block1DArr {
       // May want to do something like the following:
       //      on loc {
       // but it causes deadlock -- see writeThisUsingOn.chpl
-        if (locArr(loc).numElements >= 1) {
+        if (locArr(loc)!.numElements >= 1) {
           if (first) {
             first = false;
           } else {

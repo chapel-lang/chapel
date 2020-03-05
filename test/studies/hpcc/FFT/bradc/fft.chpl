@@ -159,7 +159,7 @@ proc verifyResults(z, Z, execTime, Twiddles) {
 
 
 proc cft1st(A, W) {
-  const n = A.domain.dim(1).length;
+  const n = A.domain.dim(1).size;
   var x0 = A(0) + A(1);
   var x1 = A(0) - A(1);
   var x2 = A(2) + A(3);
@@ -222,7 +222,7 @@ proc cftmd0(span, A, W) {
 proc cftmd1(span, A, W) {
   const m = radix*span;
   const m2 = 2*m;
-  const n = A.domain.dim(1).length;
+  const n = A.domain.dim(1).size;
 
   cftmd0(span, A, W);
   forall (k,k1) in zip(m2..n-1 by m2, 1..) {
@@ -248,7 +248,7 @@ proc cftmd1(span, A, W) {
 proc cftmd2(span, A, W) {
   var m = radix*span;
   var m2 = 2*m;
-  const n = A.domain.dim(1).length;
+  const n = A.domain.dim(1).size;
 
   cftmd0(span, A, W);
   if (m2 >= n) then return;
@@ -280,7 +280,7 @@ proc cftmd2(span, A, W) {
 
 
 proc cftmd21(span, A, W) {
-  const n = A.domain.dim(1).length;
+  const n = A.domain.dim(1).size;
   var m = radix*span;
   var m2 = 2*m;
 

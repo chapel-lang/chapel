@@ -210,7 +210,9 @@ static void bootstrapExchange(void *src, size_t len, void *dest) {
 #if GASNETC_MPI_ALLGATHER_IN_PLACE
     src = MPI_IN_PLACE;
 #else
-    src = memcpy(gasneti_malloc(len), src, len);
+    void *tmp = gasneti_malloc(len);
+    GASNETI_MEMCPY(tmp, src, len);
+    src = tmp;
 #endif
   }
 
@@ -231,7 +233,9 @@ static void bootstrapAlltoall(void *src, size_t len, void *dest) {
     src = MPI_IN_PLACE;
 #else
     const size_t total_len = len * gasnetc_mpi_size;
-    src = memcpy(gasneti_malloc(total_len), src, total_len);
+    void *tmp = gasneti_malloc(total_len);
+    GASNETI_MEMCPY(tmp, src, total_len);
+    src = tmp;
 #endif
   }
 

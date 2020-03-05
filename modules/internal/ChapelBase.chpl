@@ -691,7 +691,7 @@ module ChapelBase {
 
   pragma "always propagate line file info"
   private inline proc checkNotNil(x:borrowed class?) {
-    use HaltWrappers only;
+    import HaltWrappers;
     // Check only if --nil-checks is enabled
     if chpl_checkNilDereferences {
       // Add check for nilable types only.
@@ -912,12 +912,12 @@ module ChapelBase {
     }
   }
 
-  pragma "unsafe" // work around problems storing non-nilable classes
   proc init_elts(x, s, type t) : void {
     var initMethod = chpl_getArrayInitMethod();
 
+    // no need to init an array of zeros
     // for uints, check that s > 0, so the `s-1` below doesn't overflow
-    if isUint(s) && s == 0 {
+    if isIntegral(s) && s == 0 {
       initMethod = ArrayInit.noInit;
     } else if initMethod == ArrayInit.heuristicInit {
       // Heuristically determine if we should do parallel initialization. The
@@ -974,13 +974,13 @@ module ChapelBase {
       }
       when ArrayInit.serialInit {
         for i in 0..s-1 {
-          pragma "no auto destroy" var y: t;
+          pragma "no auto destroy" pragma "unsafe" var y: t;
           __primitive("array_set_first", x, i, y);
         }
       }
       when ArrayInit.parallelInit {
         forall i in 0..s-1 {
-          pragma "no auto destroy" var y: t;
+          pragma "no auto destroy" pragma "unsafe" var y: t;
           __primitive("array_set_first", x, i, y);
         }
       }
@@ -1067,7 +1067,8 @@ module ChapelBase {
                         _ddata_sizeof_element(data));
   }
 
-  inline proc ==(a: _ddata, b: _ddata) where a.eltType == b.eltType {
+  inline proc ==(a: _ddata, b: _ddata)
+      where _to_borrowed(a.eltType) == _to_borrowed(b.eltType) {
     return __primitive("ptr_eq", a, b);
   }
   inline proc ==(a: _ddata, b: _nilType) {
@@ -1946,6 +1947,7 @@ module ChapelBase {
   inline proc -=(ref D: domain, param idx) { D.remove(idx); }
 
   /* swap operator */
+  pragma "ignore transfer errors"
   inline proc <=>(ref lhs, ref rhs) {
     // It's tempting to make `tmp` a `const`, but it causes problems
     // for types where the RHS of an assignment is modified, such as a

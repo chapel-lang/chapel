@@ -1,5 +1,5 @@
 proc split(r: range(?)) {
-  const len = r.length;
+  const len = r.size;
   const r1 = r#(len/2);  // take the first floor(len/2) elements
   const r2 = r#-((len+1)/2); // take the remaining ceil(len/2) elements
   

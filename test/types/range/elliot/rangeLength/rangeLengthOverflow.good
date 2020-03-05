@@ -1,4 +1,4 @@
-rangeLengthOverflow.chpl:8: warning overflow detected in range.length for 0..255
-rangeLengthOverflow.chpl:9: Warning overflow detected in range.length for 0..65535
-rangeLengthOverflow.chpl:10: Warning overflow detected in range.length for 0..4294967295
-rangeLengthOverflow.chpl:11: Warning overflow detected in range.length for 0..18446744073709551615
+rangeLengthOverflow.chpl:8: warning overflow detected in range.size for 0..255
+rangeLengthOverflow.chpl:9: Warning overflow detected in range.size for 0..65535
+rangeLengthOverflow.chpl:10: Warning overflow detected in range.size for 0..4294967295
+rangeLengthOverflow.chpl:11: Warning overflow detected in range.size for 0..18446744073709551615

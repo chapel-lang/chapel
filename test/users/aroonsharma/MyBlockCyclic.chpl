@@ -119,7 +119,7 @@ class MyBlockCyclic : BaseDist {
       var ranges: rank*range;
       for param i in 1..rank do {
     var thisRange = targetLocales.domain.dim(i);
-    ranges(i) = 0..#thisRange.length; 
+    ranges(i) = 0..#thisRange.size; 
       }
       
       targetLocDom = {(...ranges)};
@@ -260,7 +260,7 @@ proc MyBlockCyclic.getStarts(inds, locid) {
 proc MyBlockCyclic.idxToLocaleInd(ind: idxType) where rank == 1 {
   const ind0 = ind - lowIdx(1);
   //  compilerError((ind0/blocksize(1)%targetLocDom.dim(1).type):string);
-  return (ind0 / blocksize(1)) % targetLocDom.dim(1).length;
+  return (ind0 / blocksize(1)) % targetLocDom.dim(1).size;
 }
 
 proc MyBlockCyclic.idxToLocaleInd(ind: rank*idxType) where rank == 1 {
@@ -271,7 +271,7 @@ proc MyBlockCyclic.idxToLocaleInd(ind: rank*idxType) where rank != 1 {
   var locInd: rank*int;
   for param i in 1..rank {
     const ind0 = ind(i) - lowIdx(i);
-    locInd(i) = ((ind0 / blocksize(i)) % targetLocDom.dim(i).length): int; 
+    locInd(i) = ((ind0 / blocksize(i)) % targetLocDom.dim(i).size): int; 
   }
   return locInd;
 }
@@ -306,7 +306,7 @@ class LocMyBlockCyclic {
     } else {
       for param i in 1..rank {
         const lo = dist.lowIdx(i) + (locid(i) * dist.blocksize(i));
-        const str = dist.blocksize(i) * dist.targetLocDom.dim(i).length;
+        const str = dist.blocksize(i) * dist.targetLocDom.dim(i).size;
         myStarts(i) = lo.. by str;
       }
     }
@@ -400,7 +400,7 @@ iter MyBlockCyclicDom.these(param tag: iterKind) where tag == iterKind.leader {
 //       //        writeln("[", here.id, "] tmpblock(j) = ", tmpblock(j));
 // 
 //       var retblock: rank*range(idxType);
-//       retblock(1) = (tmpblock.low / whole.dim(1).stride:idxType)..#tmpblock.length;
+//       retblock(1) = (tmpblock.low / whole.dim(1).stride:idxType)..#tmpblock.size;
 //       //        retblock(i) = (tmpblock(i) - whole.dim(i).low);
 //       //      writeln(here.id, ": Domain leader yielding", retblock);
 //       yield retblock;
@@ -583,7 +583,7 @@ class LocMyBlockCyclicDom {
 //
 proc LocMyBlockCyclicDom.computeFlatInds() {
   //  writeln("myStarts = ", myStarts);
-  const numBlocks = * reduce [d in 1..rank] (myStarts.dim(d).length),
+  const numBlocks = * reduce [d in 1..rank] (myStarts.dim(d).size),
     indsPerBlk = * reduce [d in 1..rank] (globDom.dist.blocksize(d));
   //  writeln("Total number of inds = ", numBlocks * indsPerBlk);
   return numBlocks * indsPerBlk;
@@ -910,8 +910,8 @@ class LocMyBlockCyclicArr {
   // TODO: need to be able to access these, but is this the right place?
   const blocksize: [1..rank] int = [d in 1..rank] allocDom.globDom.dist.blocksize(d);
   const low = allocDom.globDom.dsiLow;
-  const locsize: [1..rank] int = [d in 1..rank] allocDom.globDom.dist.targetLocDom.dim(d).length;
-  const numblocks: [1..rank] int = [d in 1..rank] (allocDom.myStarts.dim(d).length);
+  const locsize: [1..rank] int = [d in 1..rank] allocDom.globDom.dist.targetLocDom.dim(d).size;
+  const numblocks: [1..rank] int = [d in 1..rank] (allocDom.myStarts.dim(d).size);
 
 }
 

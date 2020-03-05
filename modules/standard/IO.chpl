@@ -1590,21 +1590,30 @@ proc file.tryGetPath() : string {
 
 /*
 
-Get the current length of an open file. Note that the length can always
+Get the current size of an open file. Note that the size can always
 change if other channels, tasks or programs are writing to the file.
 
-:returns: the current file length
+:returns: the current file size
 
-:throws SystemError: Thrown if the length could not be retrieved.
+:throws SystemError: Thrown if the size could not be retrieved.
 */
-proc file.length():int(64) throws {
+proc file.size:int(64) throws {
   var err:syserr = ENOERR;
   var len:int(64) = 0;
   on this.home {
     err = qio_file_length(this._file_internal, len);
   }
-  if err then try ioerror(err, "in file.length()");
+  if err then try ioerror(err, "in file.size");
   return len;
+}
+
+/*
+  Deprecated - please use :proc:`file.size`.
+*/
+proc file.length():int(64) throws {
+  compilerWarning("'file.length()' is deprecated - " +
+                  "please use 'file.size' instead");
+  return this.size;
 }
 
 // these strings are here (vs in _modestring)
@@ -1617,7 +1626,7 @@ private param _cwr = "w+";
 
 pragma "no doc"
 proc _modestring(mode:iomode) {
-  use HaltWrappers only;
+  import HaltWrappers;
   select mode {
     when iomode.r do return _r;
     when iomode.rw do return _rw;
@@ -1669,7 +1678,7 @@ proc open(path:string, mode:iomode, hints:iohints=IOHINT_NONE,
 
 proc openplugin(pluginFile: QioPluginFile, mode:iomode,
                 seekable:bool, style:iostyle) throws {
-  use HaltWrappers only;
+  import HaltWrappers;
 
   extern proc qio_file_init_plugin(ref file_out:qio_file_ptr_t,
       file_info:c_void_ptr, flags:c_int, const ref style:iostyle):syserr;
@@ -2165,7 +2174,6 @@ proc channel._ch_ioerror(error:syserr, msg:string) throws {
     }
   }
   try ioerror(error, msg, path, offset);
-  // c_string tmp_path leaked, but ioerror will exit
 }
 
 pragma "no doc"
@@ -2186,7 +2194,6 @@ proc channel._ch_ioerror(errstr:string, msg:string) throws {
     }
   }
   try ioerror(errstr, msg, path, offset);
-  // c_string tmp_path leaked, but ioerror will exit
 }
 
 /*
@@ -4344,7 +4351,7 @@ proc file.getchunk(start:int(64) = 0, end:int(64) = max(int(64))):(int(64),int(6
   var e = 0;
 
   on this.home {
-    var real_end = min(end, this.length());
+    var real_end = min(end, this.size);
     var len:int(64);
 
     err = qio_get_chunk(this._file_internal, len);
@@ -6145,7 +6152,7 @@ proc channel.writef(fmtStr: ?t, const args ...?k): bool throws
     try this.lock(); defer { this.unlock(); }
     var save_style = this._style();
     var cur:size_t = 0;
-    var len:size_t = fmtStr.length:size_t;
+    var len:size_t = fmtStr.size:size_t;
     var conv:qio_conv_t;
     var gotConv:bool;
     var style:iostyle;
@@ -6298,7 +6305,7 @@ proc channel.writef(fmtStr:?t): bool throws
     try this.lock(); defer { this.unlock(); }
     var save_style = this._style();
     var cur:size_t = 0;
-    var len:size_t = fmtStr.length:size_t;
+    var len:size_t = fmtStr.size:size_t;
     var conv:qio_conv_t;
     var gotConv:bool;
     var style:iostyle;
@@ -6365,7 +6372,7 @@ proc channel.readf(fmtStr:?t, ref args ...?k): bool throws
     try this.lock(); defer { this.unlock(); }
     var save_style = this._style(); defer { this._set_style(save_style); }
     var cur:size_t = 0;
-    var len:size_t = fmtStr.length:size_t;
+    var len:size_t = fmtStr.size:size_t;
     var conv:qio_conv_t;
     var gotConv:bool;
     var style:iostyle;
@@ -6635,7 +6642,7 @@ proc channel.readf(fmtStr:?t) throws
     try this.lock(); defer { this.unlock(); }
     var save_style = this._style(); defer { this._set_style(save_style); }
     var cur:size_t = 0;
-    var len:size_t = fmtStr.length:size_t;
+    var len:size_t = fmtStr.size:size_t;
     var conv:qio_conv_t;
     var gotConv:bool;
     var style:iostyle;
@@ -6840,7 +6847,7 @@ pragma "no doc"
 proc channel._extractMatch(m:reMatch, ref arg:bytes, ref error:syserr) {
   var cur:int(64);
   var target = m.offset:int;
-  var len = m.length;
+  var len = m.size;
 
   // If there was no match, return the default value of the type
   if !m.matched {

@@ -101,7 +101,7 @@ proc test_date_computations() {
   var b = new date(1956, 1, 31);
 
   var diff = a - b;
-  assert(diff.days == 46*365 + (1956..2002 by 4).length);
+  assert(diff.days == 46*365 + (1956..2002 by 4).size);
   assert(diff.seconds == 0);
   assert(diff.microseconds == 0);
 

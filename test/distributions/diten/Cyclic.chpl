@@ -71,8 +71,9 @@ class Cyclic1DDist {
   //
   // but this doesn't work yet because an array forall initializer
   // apparently can't refer to a local member domain.
+  // Also, cannot use 'this' when initializing a field of 'this'.
   //
-  const locDist: [targetLocDom] unmanaged LocCyclic1DDist(glbIdxType);
+  const locDist: [targetLocDom] unmanaged LocCyclic1DDist(glbIdxType)?;
   //
   // WORKAROUND: Initialize in the constructor instead
   //
@@ -146,7 +147,7 @@ class Cyclic1DDist {
     // locale owns and the domain's index set
 
     // Force this to be strided
-    return locDist(locid).myChunk(inds.dim(1) by 1);
+    return locDist(locid)!.myChunk(inds.dim(1) by 1);
   }
 
   //
@@ -239,8 +240,10 @@ class Cyclic1DDom {
   // an on-clause at the expression list to make this work.
   // Otherwise, would have to move the allocation into a function
   // just to get it at the statement level.
+  // Beware that we cannot pass 'this' to 'new unmanaged LocCyclic1DDom'
+  // while initializing 'this.locDoms'.
   //
-  var locDoms: [dist.targetLocDom] unmanaged LocCyclic1DDom(glbIdxType);
+  var locDoms: [dist.targetLocDom] unmanaged LocCyclic1DDom(glbIdxType)?;
 
   proc init(type idxType, myDist, myDom) {
     glbIdxType = idxType;
@@ -271,7 +274,7 @@ class Cyclic1DDom {
       // TODO: Would want to do something like:     
       // on blk do
       // But can't currently have yields in on clauses
-        for ind in blk do
+        for ind in blk! do
         {
 	  if debugCyclic1D then
             writeln("yielding: ", ind, " in: ", blk);
@@ -321,7 +324,7 @@ class Cyclic1DDom {
     // support? (esp. given how frequent this seems likely to be?)
     //
     for locDom in locDoms do
-      yield locDom.myBlock.translate(-whole.low);
+      yield locDom!.myBlock.translate(-whole.low);
   }
 
 
@@ -477,7 +480,7 @@ class Cyclic1DArr {
   // Otherwise, would have to move the allocation into a function
   // just to get it at the statement level.
   //
-  var locArr: [dom.dist.targetLocDom] unmanaged LocCyclic1DArr(glbIdxType, elemType);
+  var locArr: [dom.dist.targetLocDom] unmanaged LocCyclic1DArr(glbIdxType, elemType)?;
 
   proc init(type idxType, type eltType, myDom) {
     glbIdxType = idxType;
@@ -486,7 +489,7 @@ class Cyclic1DArr {
     this.complete();
     for locid in dom.dist.targetLocDom do
       on dom.dist.targetLocs(locid) do
-        locArr(locid) = new unmanaged LocCyclic1DArr(glbIdxType, elemType, dom.locDoms(locid));
+        locArr(locid) = new unmanaged LocCyclic1DArr(glbIdxType, elemType, dom.locDoms(locid)!);
   }
 
   proc deinit() {
@@ -499,7 +502,7 @@ class Cyclic1DArr {
   // the global accessor for the array
   //
   proc this(i: glbIdxType) ref {
-    return locArr(dom.dist.idxToLocaleInd(i))(i);
+    return locArr(dom.dist.idxToLocaleInd(i))!(i);
   }
 
   //
@@ -510,7 +513,7 @@ class Cyclic1DArr {
       // TODO: May want to do something like:     
       // on this do
       // But can't currently have yields in on clauses
-      for elem in locArr(loc) {
+      for elem in locArr(loc)! {
         yield elem;
       }
     }
@@ -545,7 +548,7 @@ class Cyclic1DArr {
       // May want to do something like the following:
       //      on loc {
       // but it causes deadlock -- see writeThisUsingOn.chpl
-        if (locArr(loc).numElements >= 1) {
+        if (locArr(loc)!.numElements >= 1) {
           if (first) {
             first = false;
           } else {

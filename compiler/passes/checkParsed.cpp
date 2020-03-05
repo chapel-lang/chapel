@@ -399,6 +399,19 @@ checkFunction(FnSymbol* fn) {
     }
   }
 
+  if (fn->retTag == RET_TYPE || fn->retTag == RET_PARAM) {
+    for_formals(formal, fn) {
+      if (formal->intent == INTENT_OUT ||
+          formal->intent == INTENT_INOUT) {
+        USR_FATAL_CONT(formal,
+                       "Cannot use %s in a "
+                       "function returning with '%s' intent",
+                       intentDescrString(formal->intent),
+                       retTagDescrString(fn->retTag));
+      }
+    }
+  }
+
   if (fn->hasFlag(FLAG_DESTRUCTOR) && (fn->name[0] == '~')) {
     USR_WARN("Destructors have been deprecated as of Chapel 1.21. "
              "Please use deinit instead.");

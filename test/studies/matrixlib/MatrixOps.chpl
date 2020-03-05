@@ -23,7 +23,7 @@ proc blockLU(A: [?D], blk, piv: [D.dim(1)]) where (D.rank == 2) {
     halt("blockLU requires square matrix with same dimensions");
 
   // Test that 0 < blk <= n, where n = length of one dimension of A.
-  if (blk <= 0) || (blk > D.dim(1).length) then
+  if (blk <= 0) || (blk > D.dim(1).size) then
     halt(blk," is an invalid block size passed to blockLU");
 
   [i in D.dim(1)] piv(i) = i;    // initialize the pivot vector

@@ -550,19 +550,21 @@ module ChapelRange {
   }
 
 
+  /* Deprecated - please use :proc:`range.size`. */
+  inline proc range.length: intIdxType {
+    compilerWarning("'range.length' is deprecated - " +
+                    "please use 'range.size' instead");
+    return this.size;
+  }
+
   /* Returns the number of elements in this range, cast to the index type.
 
      Note: The result is undefined if the index is signed
      and the low and high bounds differ by more than ``max(``:proc:`range.intIdxType` ``)``.
    */
-  inline proc range.size: intIdxType {
-    return this.length;
-  }
-
-  /* Returns :proc:`range.size`.  */
-  proc range.length: intIdxType {
+  proc range.size: intIdxType {
     if ! isBoundedRange(this) then
-      compilerError("length is not defined on unbounded ranges");
+      compilerError("'size' is not defined on unbounded ranges");
 
     // assumes alignedHigh/alignLow always work, even for an empty range
     const ah = this.alignedHighAsInt,
@@ -730,7 +732,7 @@ module ChapelRange {
     if isBoundedRange(r1) {
 
       // gotta have a special case for length 0 or 1
-      const len = r1.length, l2 = r2.length;
+      const len = r1.size, l2 = r2.size;
       if len != l2 then return false;
       if len == 0 then return true;
       if r1.first != r2.first then return false;
@@ -866,7 +868,7 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
                           other.alignment,
                           true);
 
-    return (boundedOther.length == 0) || contains(boundedOther);
+    return (boundedOther.size == 0) || contains(boundedOther);
   }
   /* Return true if ``other`` is contained in this range and false otherwise */
   inline proc range.boundsCheck(other: idxType)
@@ -935,7 +937,7 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
 
   /* Returns the zero-based ``ord``-th element of this range's represented
      sequence. It is an error to invoke ``orderToIndex`` if the range is not
-     defined, or if ``ord`` is negative or greater than the range's length.
+     defined, or if ``ord`` is negative or greater than the range's size.
      The ``orderToIndex`` procedure is the reverse of ``indexOrder``.
 
      Example:
@@ -959,9 +961,9 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
       if ord < 0 then
         HaltWrappers.boundsCheckHalt("invoking orderToIndex on a negative integer: " + ord:string);
 
-      if isBoundedRange(this) && ord >= this.length then
+      if isBoundedRange(this) && ord >= this.size then
         HaltWrappers.boundsCheckHalt("invoking orderToIndex on an integer " +
-            ord:string + " that is larger than the range's number of indices " + this.length:string);
+            ord:string + " that is larger than the range's number of indices " + this.size:string);
     }
 
     return chpl_intToIdx(chpl__addRangeStrides(this.firstAsInt, this.stride,
@@ -1573,7 +1575,7 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
     if boundsChecking && !r.hasLast()  && count < 0 then
       boundsCheckHalt("With a negative count, the range must have a last index.");
     if boundsChecking && r.boundedType == BoundedRangeType.bounded &&
-      abs(count:chpl__maxIntTypeSameSign(count.type)):uint(64) > r.length:uint(64) then {
+      abs(count:chpl__maxIntTypeSameSign(count.type)):uint(64) > r.size:uint(64) then {
       boundsCheckHalt("bounded range is too small to access " + abs(count):string + " elements");
     }
 
@@ -2025,7 +2027,7 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
   // optimization and because it has additional control flow in it. In this
   // form it can still be inlined, but that only helps for non-zippered
   // iterators. An alternate method would be to calculate the number of
-  // iterations that will occur (possibly using length()) and have the number
+  // iterations that will occur (possibly using size()) and have the number
   // of iterations drive the loop and use a separate variable to track the
   // value to yield. This would mean you couldn't express maximal ranges for
   // int(64) and uint(64) but it's hard to see a case where those could ever be
@@ -2066,7 +2068,7 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
       chpl_debug_writeln("*** In range standalone iterator:");
     }
 
-    const len = this.length;
+    const len = this.size;
     const numChunks = if __primitive("task_get_serial") then
                       1 else _computeNumChunks(len);
 
@@ -2116,7 +2118,7 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
     const numSublocs = here.getChildCount();
 
     if localeModelHasSublocales && numSublocs != 0 {
-      const len = this.length;
+      const len = this.size;
       const tasksPerLocale = dataParTasksPerLocale;
       const ignoreRunning = dataParIgnoreRunningTasks;
       const minIndicesPerTask = dataParMinGranularity;
@@ -2156,7 +2158,7 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
             }
             const (lo,hi) = _computeBlock(len, numChunks, chunk, len-1);
             const locRange = lo..hi;
-            const locLen = locRange.length;
+            const locLen = locRange.size;
             // Divide the locale's tasks approximately evenly
             // among the sublocales
             const numSublocTasks = (if chunk < dptpl % numChunks
@@ -2179,7 +2181,7 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
       }
 
     } else {
-      var v = this.length;
+      var v = this.size;
       const numChunks = if __primitive("task_get_serial") then
                         1 else _computeNumChunks(v);
 
@@ -2229,7 +2231,7 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
     if boundsChecking && ! this.hasFirst() {
       if this.isEmpty() {
         if ! myFollowThis.isEmpty() then
-          HaltWrappers.boundsCheckHalt("zippered iteration with a range has non-equal lengths");
+          HaltWrappers.boundsCheckHalt("size mismatch in zippered iteration");
       } else {
         HaltWrappers.boundsCheckHalt("iteration over a range with no first index");
       }
@@ -2242,11 +2244,11 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
     if (isBoundedRange(myFollowThis) && !myFollowThis.stridable) ||
        myFollowThis.hasLast()
     {
-      const flwlen = myFollowThis.length;
+      const flwlen = myFollowThis.size;
       if boundsChecking && this.hasLast() {
         // this check is for typechecking only
         if isBoundedRange(this) {
-          if this.length < flwlen then
+          if this.size < flwlen then
             HaltWrappers.boundsCheckHalt("zippered iteration over a range with too few indices");
         } else
           assert(false, "hasFirst && hasLast do not imply isBoundedRange");

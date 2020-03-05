@@ -11,6 +11,7 @@ Paul H. Hargrove <PHHargrove@lbl.gov>
 @ Section: Multi-rail Support @
 @ Section: On-Demand Paging (ODP) Support @
 @ Section: HCA Configuration @
+@ Section: Advice to Client Authors @
 @ Section: Known Problems @
 @ Section: Core API @
 @ Section: Extended API @
@@ -89,10 +90,11 @@ Paul H. Hargrove <PHHargrove@lbl.gov>
   connection requests.  If needed, this can be disabled at configure
   time using '--disable-ibv-conn-thread'.
 
-  As an alternative to use of "SEND" at the ibv-level, it is possible to
-  perform AM communication using "WRITE" operations.  This is described in more
-  detail in the "AMRDMA configuration" section.  This option is available only
-  if GASNet has been configured using '--enable-ibv-amrdma'.
+  By default, ibv-conduit uses 64KB buffers for AM Mediums, to yield
+  gasnetc_AM_LUB{Request,Reply}Medium() values tens of bytes smaller due
+  to message headers.  This default can be overridden by passing
+  '--with-ibv-max-medium=N' for 'N' equal to any power-of-two from 1024 to
+  262144, inclusive.
 
   The default spawner to be used by the gasnetrun_ibv utility can be
   selected by configuring '--with-ibv-spawner=VALUE', where VALUE is one
@@ -581,6 +583,32 @@ Paul H. Hargrove <PHHargrove@lbl.gov>
     The default value is 3KB (the current maximum value).
     A value of zero disables this optimization.
 
+  + GASNET_PUT_STRIPE_SZ and GASNET_GET_STRIPE_SZ (experimental)
+    When multiple HCA ports are used, the performance of a sufficiently large
+    isolated RMA operation (one not overlapped with other communication) can
+    be increased by subdividing it into multiple pieces striped over more than
+    one path.  These parameters specify the threshold above which striping is
+    applied to RMA Put and Get operations, respectively.
+    Suffixes "K", "M" and "G" can be used to specify units of Kilobytes,
+    Megabytes and Gigabytes, respectively.  The default units are Kilobytes.
+    Use of a too-small value may limit the performance of large RMA operations
+    by subdividing them into stripes too small to saturate the network.
+    Use of a too-large value may limit the performance of RMA operations
+    which are large enough to benefit from striping but below the value.
+    Values exceeding the HCA's maximum transfer size will be silently reduced.
+    These parameters are ignored if only a single HCA/port is in use.
+    A value of zero uses the HCA's maximum transfer size as the stripe size,
+    effectively disabling this optimization.
+    The current default is zero (disabled).
+
+  + GASNET_AM_GATHER_MIN
+    This parameter sets the minimum payload size at which a multi-segment
+    gather may be used to concatenate an AM header and payload.  Below this
+    minimum payload data is copied.
+    The default value is 1500.
+    A value of -1 disables multi-segment gather, using payload data copy
+    at all payload sizes.
+
   + GASNET_USE_SRQ
     This controls whether IBV Shared Receive Queue (SRQ) support is used,
     but is ignored if GASNet was configured with --disable-ibv-srq.
@@ -611,8 +639,12 @@ Paul H. Hargrove <PHHargrove@lbl.gov>
 
   + GASNET_USE_ODP
     This boolean setting controls whether IBV On-Demand Paging (ODP) support
-    is used.  However, it is ignored if GASNet was configured with
-    --disable-ibv-odp, or if ODP support was not found at configure time.
+    should be used.  If true, then ibv-conduit uses ODP on any compute nodes
+    where the IBV library reports support is available.  When ODP is NOT
+    available on one or more compute nodes, a warning is issued.  See
+    GASNET_ODP_VERBOSE for information on controlling this warning.
+    This setting is ignored if GASNet was configured with --disable-ibv-odp,
+    or if ODP support was not found at configure time.
     This setting defaults to 1 if ODP support was enabled at configure time.
 
   + GASNET_ODP_VERBOSE
@@ -631,16 +663,6 @@ Paul H. Hargrove <PHHargrove@lbl.gov>
     may wish to enable this setting.
     If enabled when using only a single HCA a warning will be issued.
     This setting defaults to 0 (disabled).
-
-   + GASNET_PIN_MAXSZ
-    This controls the maximum size of a pinned memory region.  The value must
-    be a power-of-two, and no less than the page size.  If the value is larger
-    than the HCA(s) can support, it will be reduced (with a warning).
-    When a GASNet-level transfer spans multiple pinned regions, multiple
-    operations are required at the Verbs layer.  However, some older Mellanox
-    HCAs performed poorly with large pinned regions.  In general there is no
-    need to adjust this parameter.
-    The default is to use largest size supported by the HCA(s).
 
   Resource usage parameters:
   -------------------------
@@ -671,9 +693,9 @@ Paul H. Hargrove <PHHargrove@lbl.gov>
     from the send completion queue.  This value is the depth of each
     send work queue.  This limit is on the number of ibv-level ops
     in-flight, and the number of GASNet-level operations may be less
-    (for example, when the remote range of a PUT or GET covers more
-    than one pinned region, due to GASNET_PIN_MAXSZ, or because an AM
-    Long uses separate ops for the payload and header).
+    (for example, when the length of a PUT or GET is larger than the
+    HCA's maximum message length, or because an AM Long uses separate
+    ops for the payload and header).
     The default value is 24.
     Reducing this parameter may limit small message throughput.  If you
     believe your small message throughput is too low, you may try
@@ -699,7 +721,7 @@ Paul H. Hargrove <PHHargrove@lbl.gov>
     Reply has not yet been processed for AM flow control (described in
     another section of this README).  This is the number of buffers which
     must be preposted to each receive work queue for AM Requests.
-    The default value is 12 (48KB*(N-1) allocated for Request buffers).
+    The default value is 12 (12*MaxMedium*(N-1) allocated for Request buffers).
     Reducing this parameter may limit Active Message throughput.  If you
     believe your Active Message throughput is too low, you may try
     increasing this value.
@@ -740,7 +762,7 @@ Paul H. Hargrove <PHHargrove@lbl.gov>
     GASNET_RBUF_COUNT or a value computed from the GASNET_AM_* and
     GASNET_NETWORKDEPTH_* parameters described above.
     If set to zero, the value is limited only by the HCA's capabilities.
-    The default value is 1024 (up to 4MB for buffers).
+    The default value is 1024 (up to 1024*MaxMedium for buffers).
     Reducing this parameter may limit Active Message throughput.  If you
     believe your Active Message throughput is too low, you may try
     increasing this value (or setting it to zero), at a cost in additional
@@ -755,7 +777,7 @@ Paul H. Hargrove <PHHargrove@lbl.gov>
     network depth bounds the number of in-flight operations that might
     need these buffers.
     If set to zero, the value is set to GASNET_NETWORKDEPTH_TOTAL.
-    The default value is 1024 (up to 4MB for buffers).
+    The default value is 1024 (up to 1024*MaxMedium for buffers).
     Reducing this parameter limits the number of in-flight operations
     which consume bounce buffers.  This includes AMs too large for an
     inline send and PUTs subject to the GASNET_NONBULKPUT_BOUNCE_LIMIT.
@@ -763,63 +785,6 @@ Paul H. Hargrove <PHHargrove@lbl.gov>
     may try increasing this value (or setting it to zero), at a cost in
     additional pinned memory.
    
-  AMRDMA configuration:
-  --------------------
-  This feature is only available if GASNet has been configured
-  using --enable-ibv-amrdma
-
-  The following environment variables control the AM-over-RDMA path in
-  ibv-conduit.  These parameters must be equal across all nodes, and
-  the behavior otherwise is undefined.
-
-  As an option, ibv-conduit can send Active Message (AM) traffic
-  using RDMA PUT operations to buffers reserved for this purpose.  This
-  leads to a reduction in the end-to-end latency of such AM traffic, but
-  at the cost of increased memory usage and in the cost of a polling for
-  AMs (as done explicitly in gasnet_AMPoll(), and implicitly in many
-  GASNet calls).  On current generation systems, the added costs will
-  most often dominate and thus this feature is OFF by default (via a
-  default GASNET_AMRDMA_LIMIT of zero).
-
-  + GASNET_AMRDMA_LIMIT
-    This environment variable controls the maximum size of an AM that may
-    be sent via the AMRDMA path.  The software overhead on both the sender
-    and receiver grow with the message size.  So, as the message size grows
-    the use of AMRDMA eventually costs more than the snd/rcv alternative.
-    The maximum value is 4080 (4K minus some overheads).
-    The current default is zero, which disables AMRDMA.
-
-  + GASNET_AMRDMA_DEPTH
-    This environment variable controls the number of buffers (currently 4K
-    each) that are allocated per peer for receiving AMRDMA traffic.  Larger
-    values may potentially allow for more AMs in-flight before flow control
-    throttles the sender, but at the cost of increased memory consumption.
-    The value must be a power of 2 and the maximum is 32.
-    The current default is 16.
-
-  + GASNET_AMRDMA_MAX_PEERS
-    This environment variable limits the number of peers from which AMs may
-    be received over RDMA.  Larger values may potentially allow for lower
-    cost AM traffic, but at the cost of increased memory consumption and
-    greater overhead each time that ibv-conduit polls for AM traffic.
-    A value of zero will disable AMRDMA.
-    The current default is 32.
-
-  + GASNET_AMRDMA_CYCLE
-    This environment variable, which must be zero or a power or two, sets
-    the period between (re)assignments of AMRDMA peers, as measured by
-    of the number of AMs received of size <= GASNET_AMRDMA_LIMIT.
-    The current algorithm for selecting AMRDMA peers is very simplistic
-    and will never revoke AMRDMA status once granted to a given peer.
-    An overly large value will result in a long period of time before any
-    peers may be assigned AMRDMA status, while an overly short value may
-    select peers based on initialization activities which don't reflect the
-    communication pattern of the remainder of the run.
-    A value of zero will disable AMRDMA.
-    A value of one will result in selecting the first GASNET_AMRDMA_MAX_PEERS
-    peers from which AMs are received.
-    The current default is 1024.
-
   Firehose configuration:
   ----------------------
   These parameters must be equal across all nodes, and the behavior
@@ -981,6 +946,49 @@ Paul H. Hargrove <PHHargrove@lbl.gov>
     the value to 16 yielded approximately a 30% bandwidth improvement in an
     RDMA-GET benchmark.
 
+@ Section: Advice to Client Authors @
+
++ Negotiated-payload Active Messages (NPAM)
+
+    TL;DR:  The results below can be summarized in the following rules-of-thumb
+    for use of NPAM Medium with ibv-conduit in the current release:
+    +  Use of client-provided buffer is never advantageous.
+    +  Use of gasnet-provided buffer may be advantageous for payloads of
+       512 bytes or larger.
+
+    Calls to gex_AM_Prepare{Request,Reply}Medium() with client_buf != NULL
+    are known as "client-provided buffer" calls.  In this mode of operation,
+    there is a small penalty in CPU overhead relative to the fixed-payload
+    AM (FPAM) calls gex_AM_{Request,Reply}Medium(), due primarily to the
+    split-phase calling convention.  While the design of NPAM allows for the
+    possibility that NPAM with client-provided buffer could enable larger
+    payloads than FPAM, ibv-conduit currently does not provide that
+    capability.
+
+    Measurements with client-provided buffer NPAM on OLCF's Summit show the
+    latency penalty relative to FPAM in a Request/Reply "ping-pong" test is
+    around 2% for payload sizes below a couple hundred bytes, and 1% or
+    lower for payloads of 512 bytes or larger.  Throughput of a "flood" test
+    shows penalties of about 8% at the smallest payload sizes, declining
+    smoothly to 5% at the largest payloads.
+    Of course, your mileage may vary.
+
+    Calls to gex_AM_Prepare{Request,Reply}Medium() with client_buf == NULL
+    are known as "gasnet-provided buffer" calls.  In this mode of operation,
+    in code which assembles/generates the payload at AM injection time,
+    there is a measurable advantage to NPAM for sufficiently large payloads,
+    and a small penalty for small payloads.
+
+    Measurements with gasnet-provided buffer NPAM on OLCF's Summit show the
+    latency penalty in a Request/Reply "ping-pong" test is around 2% for
+    payload sizes below a couple hundred bytes, but that latency is improved
+    over FPAM for payloads of 512 bytes or larger (by about 9% for large
+    payloads).  Throughput of a "flood" test shows similar behavior with a
+    throughput penalty of up to 5% for payload sizes 512 bytes and below,
+    but improvements in throughput above 512 bytes (by about 17% for large
+    payloads).
+    Of course, your mileage may vary.
+
 @ Section: Known Problems @
 
 + Slow PHYSMEM probe at start-up
@@ -1076,16 +1084,6 @@ Paul H. Hargrove <PHHargrove@lbl.gov>
   returned to the OS via munmap().
   The most up-to-date information on this bug is maintained at:
     https://gasnet-bugs.lbl.gov/bugzilla/show_bug.cgi?id=495
-  That bug report describes the problem in more detail, and lists the best
-  known recommended work-around(s).
-
-+ Bug 3428
-  In this release the code used to checksum AMRDMA traffic is known to be
-  incorrect under aggressive compiler optimization.  However, an alternative
-  implementation is currently enabled for the only compiler (PathScale)
-  known to manifest the problem.
-  The most up-to-date information on this bug is maintained at:
-    https://gasnet-bugs.lbl.gov/bugzilla/show_bug.cgi?id=3428
   That bug report describes the problem in more detail, and lists the best
   known recommended work-around(s).
 
@@ -1319,11 +1317,8 @@ Notes for myself for extended API:
     implementation, and uses thread-local data to avoid locks.
 
 + The memsets can be more efficiently implemented as a _local_ memset
-  followed by a PUT, for small enough sizes.  The cutoff is
-  presently the size of one bounce buffer, but has not been tuned.
-
-  This was disabled when GASNET_PIN_MAXSZ was introduced.  Therefore,
-  all memsets are currently done by Active Messages.
+  followed by a PUT, for small enough sizes.  This is not currently
+  implemented.
   
 
 @ Section: Graceful exits @
@@ -1372,23 +1367,38 @@ locally-initiated ones.
 The second common function, _body(), is used to perform the "meat" of
 the shutdown.  It begins by ignoring SIGQUIT to avoid re-entrance, and
 then blocks all but the first caller in a polling loop to avoid
-multiple threads from executing the shutdown code.  Because strange
-things can happen if we are trying to shutdown from a signal context,
-a signal handler is installed for all the "abort signals".  This
-signal handler just calls _exit() with the exit code stored by
-_head().  Because we may have problems shutting down if certain locks
-were held when a signal arrived, we also install the signal handler
-for SIGALRM, and use the alarm() function to bound the time spent
-blocked in the shutdown code.  While there is the risk that this alarm
-might go off "too soon" if the shutdown has lots of work to do, we can
-be certain that the correct exit code is still generated.
+multiple threads from executing the shutdown code.  While the template
+uses a mutex to block additional threads, ibv-conduit is using atomics
+to avoid problems with signal context.  Once additional thread are
+blocked from making progress through _body(), the AM progress thread (if
+any) is terminated to prevent it from interfering.
 
-Once the signal handlers are established, _body closes down the
-tracing and stats gathering and flushes stdout and stderr.  Then _body
-calls gasnetc_exit_reduce() to try to perform a collective reduce-to-all
-over the exit codes.  If this completes within a given timeout then we
-know the exit is collective and skip over the master/slave logic
-described in the next 2 paragraphs.
+Because strange things can happen if we are trying to shutdown from a
+signal context, a signal handler is installed for all the "abort
+signals".  This signal handler just calls _exit() with the exit code
+stored by _head().  Because we may have problems shutting down if
+certain locks were held when a signal arrived, we also install the
+signal handler for SIGALRM, and use the alarm() function to bound the
+time spent blocked in the shutdown code.  While there is the risk that
+this alarm might go off "too soon" if the shutdown has lots of work to
+do, we can be certain that the correct exit code is still generated.
+
+An additional step to address signal context is the definition of
+GASNETC_FATALSIGNAL_CALLBACK in ibv-conduit/gasnet_core_fwd.h, which
+gives ibv-conduit the chance to set gasnetc_exit_in_signal=1 just before
+the conduit-independent signal-handling code can reach the exit path.
+If this variable is non-zero then certain operations known to be
+especially risky in signal-handler context are skipped.
+
+After signal handlers are established, _body calls gasnetc_disable_AMs()
+to zero the table of client-registered AM handlers (though preserving
+the internal ones).  This helps avoid interference.
+
+Then _body calls gasnetc_exit_reduce() to try to perform a collective
+reduce-to-all over the exit codes.  If this completes within a given
+timeout then we know the exit is collective (and "graceful" is set
+non-zero) and skip over the master/slave logic described in the next
+two paragraphs.
 
 If the reduction does not complete within the timeout, then _body next
 calls gasnetc_get_exit_role() to "elect" a master node for the exit.
