@@ -1104,6 +1104,7 @@ static VarSymbol* theCheckedModuleScopeVariable(Expr* actual) {
   return NULL;
 }
 
+// There should be a single instance of this class per compilation.
 class GatherGlobalsReferredTo : public AstVisitorTraverse {
   public:
     // these are set and "returned" by visiting a function
@@ -1206,6 +1207,8 @@ void GatherGlobalsReferredTo::exitFnSym(FnSymbol* fn) {
 }
 
 
+// There will be one instance of this per module, but these will
+// share a single GatherGlobalsReferredTo.
 class FindInvalidGlobalUses : public AstVisitorTraverse {
   public:
     GatherGlobalsReferredTo& gatherVisitor;
