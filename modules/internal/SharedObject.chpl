@@ -166,8 +166,6 @@ module SharedObject {
        :arg p: the class instance to manage. Must be of unmanaged class type.
      */
     proc init(pragma "nil from arg" p : unmanaged) {
-      compilerWarning("the syntax 'new shared(an unmanaged pointer)' is deprecated, instead use 'shared.create(an unmanaged pointer)'");
-
       this.chpl_t = _to_borrowed(p.type);
 
       // Boost version default-initializes px and pn
