@@ -318,7 +318,7 @@ void gasnete_amratomic_reqh_inner(
                 void *addr, size_t nbytes,
                 gex_AM_Arg_t ctrl, void *tgt, void *rop)
 {
-    const gasneti_op_idx_t op_idx = ctrl & 0x1F; // Low 5 bits
+    const gasneti_op_idx_t op_idx = (gasneti_op_idx_t) (ctrl & 0x1F); // Low 5 bits
     const gex_OP_t opcode = ((gex_OP_t)1 << op_idx);
     const gex_DT_t dt = ((gex_DT_t)ctrl >> 8);
 

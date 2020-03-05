@@ -151,7 +151,7 @@
     return (uint64_t)(_st * gasneti_timer_Tick);
   }
 /* ------------------------------------------------------------------------------------ */
-#elif PLATFORM_ARCH_POWERPC && ( PLATFORM_OS_LINUX || PLATFORM_OS_BGQ)
+#elif PLATFORM_ARCH_POWERPC && PLATFORM_OS_LINUX
   /* Use the 64-bit "timebase" register on both 32- and 64-bit PowerPC CPUs */
   #include <sys/types.h>
   #include <dirent.h>
@@ -194,41 +194,6 @@
   #undef GASNETI_MFTB
   #undef GASNETI_MFTBL
   #undef GASNETI_MFTBU
- #elif GASNETI_HAVE_XLC_ASM
-   #if PLATFORM_ARCH_64
-      static uint64_t gasneti_ticks_now(void);
-      #pragma mc_func gasneti_ticks_now {  \
-        "7c6c42e6"      /* mftb r3         */ \
-        /* RETURN counter in r3 */            \
-      }
-      #pragma reg_killed_by gasneti_ticks_now 
-   #else
-      static uint32_t gasneti_mftb_low(void);
-      #pragma mc_func gasneti_mftb_low {  \
-        "7c6c42e6"      /* mftb r3     */ \
-        /* RETURN counter in r3 */        \
-      }
-      #pragma reg_killed_by gasneti_mftb_low 
-      
-      static uint32_t gasneti_mftb_high(void);
-      #pragma mc_func gasneti_mftb_high {  \
-        "7c6d42e6"      /* mftbu r3     */ \
-        /* RETURN counter in r3 */         \
-      }
-      #pragma reg_killed_by gasneti_mftb_high 
-      
-      GASNETI_INLINE(gasneti_ticks_now)
-      uint64_t gasneti_ticks_now(void) {
-        uint32_t _hi, _hi2, _lo;
-        /* Note we must read hi twice to protect against wrap of lo */
-        do {
-           _hi = gasneti_mftb_high();
-           _lo = gasneti_mftb_low();        
-           _hi2 = gasneti_mftb_high();
-        } while (_hi != _hi2);
-        return ((uint64_t)_hi << 32) | _lo;
-      } 
-   #endif
  #else
    #define GASNETI_USING_SLOW_TIMERS 1
  #endif
@@ -241,10 +206,6 @@
   uint64_t gasneti_ticks_to_ns(gasneti_tick_t _st) {
     if_pf (gasneti_timer_firstTime) {
       uint32_t _freq;
-     #if PLATFORM_OS_BGQ
-      /* don't know how to query this, so hard-code it for now */
-      _freq = 1600000000;
-     #else 
       DIR *_dp = opendir("/proc/device-tree/cpus");
       struct dirent *_de = NULL;
       FILE *_fp = NULL;
@@ -286,7 +247,6 @@
         }
         fclose(_fp);
       }
-     #endif
       // ensure it looks reasonable (1MHz to 2Ghz)
       gasneti_assert_uint(_freq ,>,    1000000);
       gasneti_assert_uint(_freq ,<, 2000000000); 
