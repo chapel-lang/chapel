@@ -101,6 +101,34 @@ proc masonTest(args) throws {
       }
     }
   }
+
+    try! {
+      const cwd = getEnv("PWD");
+      const projectHome = getProjectHome(cwd);
+      const toParse = open(projectHome + "/Mason.lock", iomode.r);
+      const lockFile = new owned(parseToml(toParse));
+      var testNames = getTests(lockFile.borrow(), projectHome);
+
+      var newCompopts: list(string);
+      var isSubString: bool;
+
+      for checkSubString in compopts {
+        isSubString = false;
+        for testName in testNames {
+          if testName.find(checkSubString) != 0 {
+            isSubString = true;
+            files.append("".join('test/', testName));
+          }
+        }
+
+        if !isSubString {
+          newCompopts.append(checkSubString);
+        }
+      }
+
+      compopts = newCompopts;
+    }
+
   getRuntimeComm();
   var uargs: list(string);
   if !update then uargs.append('--no-update');
