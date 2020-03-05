@@ -483,7 +483,7 @@ proc setupTargetLocRanges(param rank, specifiedLocArr) {
     if specifiedLocArr.rank != rank then
       compilerError("specified target array of locales must equal 1 or distribution rank");
     for param i in 1..rank do
-      ranges(i) = 0..#specifiedLocArr.domain.dim(i).length;
+      ranges(i) = 0..#specifiedLocArr.domain.dim(i).size;
   }
 
   return ranges;
