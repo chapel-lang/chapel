@@ -1151,9 +1151,12 @@ void GatherGlobalsReferredTo::visitSymExpr(SymExpr* se) {
                   thisFunction->name, thisFunction->id, fn->name, fn->id);
 
       bool inVirtualMethodCall = false;
-      if (CallExpr* parentCall = toCallExpr(se->parentExpr))
-        if (parentCall->isPrimitive(PRIM_VIRTUAL_METHOD_CALL))
-          inVirtualMethodCall = true;
+      if (CallExpr* pCall = toCallExpr(se->parentExpr))
+        if (pCall->isPrimitive(PRIM_VIRTUAL_METHOD_CALL))
+          if (FnSymbol* vFn = toFnSymbol(toSymExpr(pCall->get(1))->symbol()))
+            if (vFn == fn)
+              inVirtualMethodCall = true;
+
       if (inVirtualMethodCall) {
         // if we added something, also add virtual children callable
         // handle additional children callable by virtual method
