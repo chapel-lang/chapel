@@ -11,7 +11,7 @@ define([cv_prefix],[gasnet_cv_])
 dnl Public release version packaging identifier:
 define([GASNET_RELEASE_VERSION_MAJOR_D],[2019])
 define([GASNET_RELEASE_VERSION_MINOR_D],[9])
-define([GASNET_RELEASE_VERSION_PATCH_D],[0])
+define([GASNET_RELEASE_VERSION_PATCH_D],[2])
 dnl GASNet-EX spec version:
 define([GASNETEX_SPEC_VERSION_MAJOR_D],[0])
 define([GASNETEX_SPEC_VERSION_MINOR_D],[8])
@@ -20,7 +20,7 @@ define([GASNET_SPEC_VERSION_MAJOR_D],[1])
 define([GASNET_SPEC_VERSION_MINOR_D],[8])
 dnl GASNet tools spec version:
 define([GASNETT_SPEC_VERSION_MAJOR_D],[1])
-define([GASNETT_SPEC_VERSION_MINOR_D],[14])
+define([GASNETT_SPEC_VERSION_MINOR_D],[15])
 
 define([GASNET_RELEASE_VERSION_D],
          [GASNET_RELEASE_VERSION_MAJOR_D.GASNET_RELEASE_VERSION_MINOR_D.GASNET_RELEASE_VERSION_PATCH_D])
@@ -133,26 +133,6 @@ GASNET_IF_ENABLED(conservative-local-copy, [enable use of conservative (slower) 
 
 ########################################################################
 ##
-##  Supporting Command-Line Tools
-##
-
-dnl     Store full paths, so we find right ones even if users have
-dnl     some other version in their path
-GASNET_PATH_PROGS(GMAKE, gmake make $MAKE, GNU make)
-AC_MSG_CHECKING(for GNU make)
-if $GMAKE --version | grep GNU ; then
-  AC_MSG_RESULT(yes)
-else
-# We don't actually require GNU Make at the moment
-#  AC_MSG_ERROR(cannot find a version of GNU make - please install GNU make and/or set \$GMAKE to indicate where it's located)
-  GASNET_MSG_WARN([cannot find a version of GNU make - if you encounter make problems, install GNU make and/or set \$GMAKE to indicate where it's located])
-fi
-AC_SUBST(GMAKE)
-
-dnl Other tools checked later, after PROG_CC check sets cross_compiling
-
-########################################################################
-##
 ##  Perl
 ##
 ## We do this early so we can use "$PERL -e" for complex configure tests.
@@ -161,6 +141,33 @@ AC_SUBST(PERL)
 PERLSTART=$TOP_BUILDDIR/other/perlstart
 AC_SUBST_FILE(PERLSTART)
 
+
+########################################################################
+##
+##  Supporting Command-Line Tools
+##
+
+dnl     Store full paths, so we find right ones even if users have
+dnl     some other version in their path
+GASNET_PATH_PROGS(GMAKE, gmake make $MAKE, GNU make)
+AC_MSG_CHECKING(for GNU make)
+GMAKE_VERSTR=`$GMAKE --version | grep GNU 2> /dev/null`
+if test "$GMAKE_VERSTR" = "" ; then
+  AC_MSG_RESULT(no)
+  AC_MSG_ERROR(cannot find a version of GNU make - please install GNU make and/or set \$GMAKE to indicate where it's located)
+else
+  GMAKE_VER=`echo "$GMAKE_VERSTR" | $PERL -n -e 'if (/([[0-9]]+)\.([[0-9]]+)(\.[[0-9]]+)?/) { $maj=$1; $min=$2; $pat=$3; printf "%i%03i%03i",($maj,$min,($pat?$pat=~s/\.//:0)) }'`
+  # Currently require 3.79 or newer
+  if test $GMAKE_VER -lt 3079000 ; then
+    AC_MSG_RESULT(no)
+    AC_MSG_ERROR([This software requires GNU make version 3.79 or newer, and you appear to be running: "$GMAKE_VERSTR" - please install GNU make and/or set \$GMAKE to indicate where it's located])
+  else
+    AC_MSG_RESULT($GMAKE_VERSTR)
+  fi
+fi
+AC_SUBST(GMAKE)
+
+dnl Other tools checked later, after PROG_CC check sets cross_compiling
 
 ########################################################################
 ##
@@ -757,10 +764,20 @@ case "$CC_FAMILY" in
          GASNET_TRY_CFLAG([-wd1572],
                           [MISC_CFLAGS="$MISC_CFLAGS -wd1572"])
          ;;
-  PGI) MISC_CFLAGS="-Masmkeyword -Msignextend";; # get inline assembly and sign-extended narrowing
+  PGI) MISC_CFLAGS="-Masmkeyword -Msignextend" # get inline assembly and sign-extended narrowing
+       # The following looks backwards, but is not.
+       # PGI 20.1 introduced fine-grained warning control at the same time as
+       # default-enabling a large number of useless warnings (on the level of
+       # -Wextra in other compilers).
+       GASNET_TRY_CFLAG([--diag_suppress177],
+                        [MISC_CFLAGS="-w $MISC_CFLAGS"])
+       ;;
   Sun) if test "$target_cpu" = "sparc"; then 
          GASNET_GET_ULTRASPARC_FLAGS(C,["-xarch=v8plusb" "-xarch=v8plusa" "-xarch=v8plus" "-xarch=sparcvis2" "-xarch=sparcvis" "-xarch=sparc"])
        fi
+       # Try to suppress warnings about __attribute__(__common__):
+       GASNET_TRY_CFLAG([-erroff=E_ATTRIBUTE_NOT_FUNC],
+                        [MISC_CFLAGS="$MISC_CFLAGS -erroff=E_ATTRIBUTE_NOT_FUNC"])
        MISC_CFLAGS="$MISC_CFLAGS -errtags" ;; # show warning tag ids in warnings
   XLC) GASNET_GET_PPC64_FLAGS(C)
        # Try to suppress certain warnings:
@@ -1101,14 +1118,6 @@ Sun)
       ],[ AC_DEFINE(GASNETI_HAVE_[]uppername[]_GCC_ASM) ])
   ;;
 XLC)
-    GASNET_TRY_CACHE_LINK([$1 for XLC mc_func support], lowername[]_mc_func, [
-        static void _gasneti_do_sync(void);
-        #pragma mc_func _gasneti_do_sync { "7c2004ac" }
-        #pragma reg_killed_by _gasneti_do_sync
-        #define gasneti_local_sync() _gasneti_do_sync()
-      ],
-      [ gasneti_local_sync(); ],
-      [ AC_DEFINE(GASNETI_HAVE_[]uppername[]_XLC_ASM) ])
     GASNET_CHECK_GCC_ASM($1, $2)
   ;;
 GNU|Intel|Pathscale|Open64|Clang|PGI|TINY)
@@ -1162,6 +1171,62 @@ GASNET_CHECK_BUILTINS([GASNETI_HAVE_CC])
 GASNET_GET_PLATFORM_ID([COMPILER])
 
 GASNET_IFDEF([__PIC__],[AC_DEFINE(GASNETI_CONFIGURED_PIC)])
+
+dnl Check for the historically behavior with respect to tentative
+dnl definitions, and seek means to restore this behavior when it
+dnl is lacking.
+dnl
+dnl This is only probing CC, this is only applicable to GASNet
+dnl library builds, not clients.
+dnl
+CHECK_TENTATIVE_BASE=conftest_tent
+CHECK_TENTATIVE_SRC=$CHECK_TENTATIVE_BASE.c
+CHECK_TENTATIVE_OBJ=$CHECK_TENTATIVE_BASE.o
+dnl helper:  GASNET_CHECK_TENTATIVE_TRY_RUN(msg,cv_var,extra,on_success)
+AC_DEFUN([GASNET_CHECK_TENTATIVE_TRY_RUN],[
+  GASNET_PUSHVAR(LIBS,"$CHECK_TENTATIVE_OBJ $LIBS")
+  GASNET_TRY_CACHE_RUN_WITHCC($1, $2, [
+    $3 int tentative;
+    extern void increment(void);
+  ], [
+    tentative = 1;
+    increment();
+    return (tentative != 2);
+  ],[
+    $4
+  ])
+  GASNET_POPVAR(LIBS)
+])
+AC_MSG_CHECKING([building tentative definition helper object])
+cat >$CHECK_TENTATIVE_SRC <<_GASNET_EOF
+  int tentative;
+  void increment(void) { tentative += 1; }
+_GASNET_EOF
+compile="$CC $CFLAGS $CPPFLAGS -c $CHECK_TENTATIVE_SRC -o $CHECK_TENTATIVE_OBJ"
+eval echo "$compile" >&5
+if eval $compile 2>&5 && test -s $CHECK_TENTATIVE_OBJ ; then
+  AC_MSG_RESULT(ok)
+else
+  GASNET_MSG_ERROR(failed while building tentative definition helper object)
+fi
+unset GASNETI_COMMON
+GASNET_CHECK_TENTATIVE_TRY_RUN(
+  [for tentative definition support],
+  have_tentative_normal, [],
+  [GASNETI_COMMON=''])
+if test "${GASNETI_COMMON+set}" != set; then
+  GASNET_CHECK_TENTATIVE_TRY_RUN(
+    [for tentative definition support via "common" attribute],
+    have_tentative_common_attribute,
+    [__attribute__((__common__))],
+    [GASNETI_COMMON='__attribute__((__common__))'])
+fi
+rm -f $CHECK_TENTATIVE_OBJ
+if test "${GASNETI_COMMON+set}" = set; then
+  AC_DEFINE_UNQUOTED(GASNETI_COMMON,$GASNETI_COMMON)
+else
+  AC_MSG_ERROR(could not determine how to use tentative definitions)
+fi
 
 ########################################################################
 # hunt for 16-, 32-, and 64-bit integer types
@@ -1263,8 +1328,6 @@ GASNET_LIBM()
 GASNET_PLATFORM=generic
 GASNET_THREAD_DEFINES=""
 GASNET_THREAD_LIBS=""
-SYS_HEADER_BLD=
-SYS_HEADER_INST=
 case "$target_os" in
   solaris*)  
 	GASNET_THREAD_DEFINES="-D_REENTRANT"
@@ -1288,27 +1351,6 @@ case "$target_os" in
 	    GASNET_PLATFORM=wsl
 	    AC_DEFINE(GASNETI_ARCH_WSL)
 	fi
-        case "$target" in
-          powerpc64-bgq-linux*) # apparently lacks any identifying preprocessor macro
-	    GASNETI_ARCH_BGQ=1
-	    AC_DEFINE(GASNETI_ARCH_BGQ)
-	    GASNET_PLATFORM=bgq
-
-            # Locate system directories for BG/Q
-            # TODO: Something like bgpmaster to search on?
-	    # This is the ROOT of the BGQ system dirs, containing several include directories 
-	    # used by gasnet_asm.h eg #include "cnk/include/SPI_syscalls.h"
-            bgsys_guess=/bgsys/drivers/ppcfloor
-
-            GASNET_ENV_DEFAULT(BGQ_SYS_HOME, $bgsys_guess, ppcfloor system directory for BlueGene/Q)
-            if test -d "$BGQ_SYS_HOME/cnk/include"; then
-              tmp_flag="-isystem $BGQ_SYS_HOME"
-              GASNET_TRY_CFLAG([$tmp_flag], [:], [tmp_flag="-I$BGQ_SYS_HOME"])
-              SYS_HEADER_BLD="$SYS_HEADER_BLD $tmp_flag"
-              SYS_HEADER_INST="$SYS_HEADER_INST $tmp_flag"
-            fi
-	    ;;
-        esac
 	AC_MSG_CHECKING(for Linux flavor)
 	AC_MSG_RESULT($GASNET_PLATFORM)
 	GASNET_THREAD_DEFINES="-D_REENTRANT"
@@ -1367,8 +1409,6 @@ esac
 AC_SUBST(GASNET_THREAD_DEFINES)
 AC_SUBST(GASNET_THREAD_LIBS)
 AC_SUBST(GASNET_PLATFORM)
-AC_SUBST(SYS_HEADER_BLD)
-AC_SUBST(SYS_HEADER_INST)
 
 # Find the appropriate OS suffix for executables
 if test "${ac_cv_exeext+set}" = set && test "$ac_cv_exeext" != no; then
@@ -1725,12 +1765,8 @@ if test "$enabled_pshm" != no; then
    [Enable/disable use of POSIX shm_open() for inter-process shared memory support (default is system dependent)],
    [enabled_pshm_posix=yes], [enabled_pshm_posix=no],
    [ # Default is YES except:
-     # + on BG/Q due to multiple "oddities" in CNK's implementation
      # + on Solaris due to incompatibility w/ ibv and the "robustness" of SysV
      enabled_pshm_posix=yes
-     case "$target_vendor" in
-       bgq) enabled_pshm_posix=no ;;
-     esac
      case "$target_os" in
        solaris*) enabled_pshm_posix=no ;;
      esac
@@ -1843,17 +1879,6 @@ if test "$enabled_pshm" != no; then
   GASNET_POPVAR(CPPFLAGS)
  fi
 
- # Fourth check is for gloal heap
- enabled_pshm_gheap=no
- GASNET_IF_ENABLED(pshm-gheap,
-   [Enable use of global heap for inter-process shared memory support (default disabled)],
-   [enabled_pshm_gheap=yes])
- if test "$enabled_pshm_gheap$with_pshm" = yesno; then
-  # TODO: any sanity checks available to use here?
-  AC_DEFINE(GASNETI_PSHM_GHEAP)
-  with_pshm=gheap
- fi
-
  # Next check is for mmap()ed file support on hugetlbfs
  enabled_pshm_hugetlbfs=no
  GASNET_IF_ENABLED(pshm-hugetlbfs,
@@ -1912,9 +1937,7 @@ GASNETI_DISABLE_ALIGNED_SEGMENTS=0
 GASNET_IF_ENABLED([aligned-segments],
                    [Force alignment for GASNet-allocated segment base address. Incompatible with PSHM, heterogeneous clusters and OS address randomization],
 		   [RVMFILE="/proc/sys/kernel/randomize_va_space"
-		    if test -n "$GASNETI_ARCH_BGQ"; then
-                      : # Cross-compiled and NOT applicable
-		    elif test "$segconfig" = everything ; then
+		    if test "$segconfig" = everything ; then
 		      : # Alignment not applicable to segment-everything
 		    elif test -f $RVMFILE && test "`cat $RVMFILE`" != "0" ; then
 WMSG="$RVMFILE on this node indicates the Linux VM space randomization \
@@ -2865,6 +2888,7 @@ AC_DEFUN([GASNET_LINKHELPER_TRY_RUN],[GASNET_LINKHELPER_TRY_INNER([RUN_WITHCC],$
   GASNET_ID_OTHER_COMPILER_FAMILY([CXX], [C++])
   CXXDEBUGFLAGS="-g"
   CXXOPTFLAGS="-O2"
+  DEVWARN_CXXFLAGS=
   GASNET_UDP_LIBS=""
   gxx_flag_prefix=''
   gxx_flag_delim=' '
@@ -2891,13 +2915,22 @@ AC_DEFUN([GASNET_LINKHELPER_TRY_RUN],[GASNET_LINKHELPER_TRY_INNER([RUN_WITHCC],$
        CXXDEBUGFLAGS="$CXXFLAGS"
        GASNET_POPVAR(CXXFLAGS)
     ;;
-    PGI)   MISC_CXXFLAGS="-w -Masmkeyword -Msignextend" # apparently has no way to indep control warnings
+    PGI)   MISC_CXXFLAGS="-Masmkeyword -Msignextend"
            case "$GASNETI_PTR_BITS$target_os" in
              64darwin*) # PGI seems to have a different ABI
                GASNET_TRY_CXXFLAG([-Mllalign], [MISC_CXXFLAGS="$MISC_CXXFLAGS -Mllalign"])
                ;;
            esac
            GASNET_PGI_VERSION_CHECK(CXX)
+           # DOB: don't force this in client flags by default. The payoff is small and it has potential to break clients
+           # because it's not a valid option for PGI C compilation.
+           GASNET_TRY_CXXFLAG([--display_error_number], [DEVWARN_CXXFLAGS="--display_error_number"])
+
+           GASNET_TRY_CXXFLAG([--diag_suppress177], [ 
+             # Intentionally empty - this is just to test whether surgical warning suppresion is available
+           ], [
+             MISC_CXXFLAGS="-w $MISC_CXXFLAGS" # old versions of pgc++ have no way to indep control warnings
+           ])
            ;;
     Intel) MISC_CXXFLAGS="-wd654 -wd1125 -wd279"
            GASNET_TRY_CXXFLAG([-wd1572],
@@ -2947,7 +2980,6 @@ AC_DEFUN([GASNET_LINKHELPER_TRY_RUN],[GASNET_LINKHELPER_TRY_INNER([RUN_WITHCC],$
   AC_SUBST(GASNET_OPT_CXXFLAGS)
 
   # Add GNU-style warning enable/suppression flags to MISC_CXXFLAGS
-  DEVWARN_CXXFLAGS=
   case "$CXX_FAMILY" in
     GNU | Pathscale | Open64 | Clang)
       GASNET_PUSHVAR(CXXFLAGS,"$MISC_CXXFLAGS")
@@ -3125,11 +3157,6 @@ if test "$enabled_mpi" = yes || test "$enabled_mpi_compat" = yes; then
     	  GASNET_ENV_DEFAULT(MPI_CC, mpicc)
     	  GASNET_ENV_DEFAULT(MPI_LIBS, )
 	  GASNET_ENV_DEFAULT(MPIRUN_CMD, mpirun -np %N %C)
-        fi
-        if test -n "$GASNETI_ARCH_BGQ"; then # this option only used for BG/Q, hide it to avoid confusion
-          pushdef([GASNET_SUPPRESSHELP],1)
-          GASNET_ENV_DEFAULT(MPIRUN_CMD_BATCH, "")
-          popdef([GASNET_SUPPRESSHELP])
         fi
         ;;
     *) 
@@ -3324,7 +3351,6 @@ AC_SUBST(MPI_LIBS) # libs and ldflags that must be used when linking AMMPI-based
 # we don't currently GASNET_SPLIT_LINKER_OPTS on MPI_LIBS into MPI_LDFLAGS (which doesn't exist) because
 # a client can't portably replace the MPI_CC in GASNET_LD and still have a working MPI-enabled link
 AC_SUBST(MPIRUN_CMD) # prototype command used by gasnetrun to run MPI programs
-AC_SUBST(MPIRUN_CMD_BATCH) # prototype command used by gasnetrun to run MPI programs
 CONDUIT_END([test "$enabled_mpi$have_mpi" = yesyes])
 AM_CONDITIONAL(USE_MPI_CONDUIT, test "$enabled_mpi$have_mpi" = yesyes)
 if test "$enabled_mpi$have_mpi" = yesyes; then
@@ -3447,7 +3473,7 @@ AM_CONDITIONAL(USE_SMP_CONDUIT, test "$enabled_smp" = yes)
 # UCX configuration
 #
 
-CONDUIT_BEGIN(ucx,no,[Unified Communication X conduit (ucx)])
+CONDUIT_BEGIN(ucx,exp,[Unified Communication X conduit (ucx)])
 if test "$enabled_ucx" = no; then
     :
 elif test "$have_fork" = no; then
@@ -3593,11 +3619,6 @@ if test "$enabled_ibv" = yes; then
         AC_DEFINE(GASNETC_IBV_CONN_THREAD)
       fi
 
-    GASNET_IF_ENABLED(ibv-amrdma, [See ibv-conduit/README (disabled by default)], enabled_ibv_amrdma=yes, enabled_ibv_amrdma=no)
-    if test "$enabled_ibv_amrdma" = yes; then
-      AC_DEFINE(GASNETC_IBV_AMRDMA)
-    fi
-
     CONDUIT_SPAWNER
 
     gasnetc_ibv_max_hcas=2
@@ -3677,6 +3698,22 @@ if test "$enabled_ibv" = yes; then
           AC_DEFINE(GASNETC_IBV_ODP)
         fi
       fi
+
+    GASNET_WITH(ibv-max-medium,
+       [Specify gasnet_AMMaxMedium() for ibv-conduit (default 65536)],
+       [case "$withval" in
+          1024|2048|4096|8192|16384|32768|65536|131072|262144)
+             ibv_max_medium="$withval";;
+          *)
+             GASNET_ERR_SAVE()
+             AC_MSG_ERROR([--with-ibv-max-medium="$withval" is not legal.  Value must be a power-of-two between 1024 and 262144, inclusive.])
+             ;;
+        esac
+       ],
+       [GASNET_ERR_SAVE()
+        AC_MSG_ERROR([--with-ibv-max-medium must be a power-of-two between 1024 and 262144, inclusive.])],
+       [ibv_max_medium=65536])
+    AC_DEFINE_UNQUOTED(GASNETC_IBV_MAX_MEDIUM, [$ibv_max_medium])
   fi
 fi
 AC_SUBST(IBV_CFLAGS)
@@ -3830,110 +3867,6 @@ AM_CONDITIONAL(USE_ARIES_CONDUIT, test "$enabled_aries$have_aries" = yesyes)
 
 
 #--------------------------------------------------------------------------------------------------------
-# PAMI configuration
-CONDUIT_BEGIN(pami,yes,[IBM BlueGene/Q / Power775 PAMI conduit (pami)])
-if test "$enabled_pami" = yes; then
-  have_pami=yes
-
-  if false ; then # just for help strings
-    GASNET_ENV_DEFAULT(PAMI_HOME,, [Install prefix of PAMI drivers])
-  fi
-  pami_libs_guess="-lpami"
-  if test -n "$GASNETI_ARCH_BGQ"; then
-    GASNET_ENV_DEFAULT(PAMI_HOME, [/bgsys/drivers/ppcfloor])
-    if test -d "$PAMI_HOME/comm/include"; then
-      pami_cflags_guess="-I$PAMI_HOME/comm/include"
-      pami_ldflags_guess="-L$PAMI_HOME/comm/lib"
-      if test "$BUILDCONFIG" = "debug" ; then
-        pami_libs_guess="-lpami-gcc"
-      else
-        pami_libs_guess="-lpami-gcc.ndebug"
-      fi
-    elif test "$BUILDCONFIG" = "debug" ; then
-      pami_cflags_guess="-I$PAMI_HOME/comm/sys/include"
-      pami_ldflags_guess="-L$PAMI_HOME/comm/sys/lib"
-    else
-      pami_cflags_guess="-I$PAMI_HOME/comm/sys-fast/include"
-      pami_ldflags_guess="-L$PAMI_HOME/comm/sys-fast/lib"
-    fi
-    # pickup system libraries required by libpami
-    pami_ldflags_guess="$pami_ldflags_guess -L$PAMI_HOME/spi/lib"
-    pami_libs_guess="$pami_libs_guess -lSPI_cnk -lpthread -lrt -lstdc++"
-  elif test -n "$GASNETI_ARCH_IBMPE"; then
-    # XXX: Couldn't we just be using "mpcc" instead?
-    #      Doing so would link MPI and POE libs we don't
-    #      need, but is there any harm in that?
-    GASNET_ENV_DEFAULT(PAMI_HOME, [/opt/ibmhpc/pecurrent/ppe.pami])
-    pami_cflags_guess="-I$PAMI_HOME/include"
-    # XXX: There should be a better way to find these libs.
-    #      Could/should we literally "find"?
-    if test -d "$PAMI_HOME/lib/pami${GASNETI_PTR_BITS}"; then
-        pami_ldflags_guess="-L$PAMI_HOME/lib/pami${GASNETI_PTR_BITS}"
-    elif test -d "$PAMI_HOME/gnu/lib${GASNETI_PTR_BITS}/pami${GASNETI_PTR_BITS}"; then
-        pami_ldflags_guess="-L$PAMI_HOME/gnu/lib${GASNETI_PTR_BITS}/pami${GASNETI_PTR_BITS}"
-    elif test -d "$PAMI_HOME/gnu/lib/pami${GASNETI_PTR_BITS}"; then
-        pami_ldflags_guess="-L$PAMI_HOME/gnu/lib/pami${GASNETI_PTR_BITS}"
-    fi
-  else
-    # We'll just make a reasonable guess:
-    GASNET_ENV_DEFAULT(PAMI_HOME, [/usr])
-    case "$PAMI_HOME" in
-      /usr|/) pami_cflags_guess='' ; pami_ldflags_guess='' ;;
-      *) pami_cflags_guess="-I$PAMI_HOME/include"
-         if test -d "$PAMI_HOME/lib${GASNETI_PTR_BITS}"; then
-           pami_ldflags_guess="-L$PAMI_HOME/lib${GASNETI_PTR_BITS}"
-         else
-           pami_ldflags_guess="-L$PAMI_HOME/lib"
-         fi
-      ;;
-    esac
-  fi
-
-  GASNET_ENV_DEFAULT(PAMI_CFLAGS, $pami_cflags_guess) 
-  GASNET_ENV_DEFAULT(PAMI_LDFLAGS, $pami_ldflags_guess) 
-  GASNET_ENV_DEFAULT(PAMI_LIBS, $pami_libs_guess) 
-  GASNET_SPLIT_LINKER_OPTS(PAMI_LDFLAGS,PAMI_LIBS)
-
-  GASNET_PUSHVAR(CFLAGS,"$CFLAGS $PAMI_CFLAGS")
-  GASNET_PUSHVAR(LDFLAGS,"$LDFLAGS $PAMI_LDFLAGS")
-  GASNET_PUSHVAR(LIBS,"$LIBS $PAMI_LIBS")
-  # try to compile and link a simple PAMI program
-  GASNET_TRY_CACHE_LINK(for working PAMI configuration, pami_works, [
-     #include <pami.h>
-  ], [{ pami_result_t rc = PAMI_ERROR;
-        pami_client_t client;
-        rc = PAMI_Client_create("conftest", &client, NULL, 0);
-      }], [:], [ have_pami=no GASNET_ERR_SAVE() ] )
-  if test $have_pami = yes; then
-    # NOTE: When our minumum autoconf is raised to 2.50 or higher, then
-    #       the following can be better implemented by adding an optional
-    #       3rd argument to GASNET_CHECK_SIZEOF() specify INCLUDES.
-    if test "$cross_compiling" = "yes" ; then
-      GASNET_TRY_CACHE_EXTRACT_EXPR([sizeof(pami_task_t) (binary probe)], SIZEOF_PAMI_TASK_T,
-                                    [#include <pami.h>], [(int)sizeof(pami_task_t)],
-                                     GASNETI_SIZEOF_PAMI_TASK_T)
-    else
-      GASNET_TRY_CACHE_RUN_EXPR([sizeof(pami_task_t)], SIZEOF_PAMI_TASK_T,
-                                [#include <pami.h>], [val = (int)sizeof(pami_task_t);],
-                                GASNETI_SIZEOF_PAMI_TASK_T)
-    fi
-    AC_DEFINE_UNQUOTED(GASNETI_SIZEOF_PAMI_TASK_T, [$GASNETI_SIZEOF_PAMI_TASK_T])
-  fi
-  GASNET_POPVAR(CFLAGS)
-  GASNET_POPVAR(LDFLAGS)
-  GASNET_POPVAR(LIBS)
-fi #END ENABLE PAMI
-
-AC_SUBST(PAMI_CFLAGS)
-AC_SUBST(PAMI_LDFLAGS)
-AC_SUBST(PAMI_LIBS)
-CONDUIT_END([test "$enabled_pami$have_pami" = yesyes])
-AM_CONDITIONAL(USE_PAMI_CONDUIT, test "$enabled_pami$have_pami" = yesyes)
-if test "$enabled_pami$have_pami" = yesyes; then
-  GASNET_MSG_WARN([pami-conduit has been deprecated.  Please see the pami-conduit README for more information.])
-fi
-
-#--------------------------------------------------------------------------------------------------------
 # Libfabric Conduit
 
 CONDUIT_BEGIN(ofi,g1,[Portable OpenFabrics Interfaces conduit (ofi)])
@@ -3967,10 +3900,11 @@ if test "$enabled_ofi" = yes; then
 
     ofi_provider=""
     ofi_define_mr_scalable="no"
+    ofi_known_provider="yes"
     detected_ofi_provider=""
     ofi_use_thread_domain=0
     # List of supported providers in order of preference.
-    supported_providers="psm2 gni sockets"
+    supported_providers="psm2 gni sockets tcp;ofi_rxm verbs;ofi_rxm"
     
     GASNET_WITH(ofi-provider, [Statically configure ofi-conduit for the given provider],
         ofi_provider="$withval", )
@@ -3980,7 +3914,7 @@ if test "$enabled_ofi" = yes; then
         if command -v fi_info > /dev/null 2>&1; then # Only do this if fi_info is in the $PATH
             for word in $supported_providers 
             do
-                if fi_info --provider=$word > /dev/null 2>&1; then
+                if fi_info --provider="$word" > /dev/null 2>&1; then
                     detected_ofi_provider="$word"
                     break
                 fi
@@ -3997,17 +3931,30 @@ if test "$enabled_ofi" = yes; then
         gni)
             ofi_define_mr_scalable=0
         ;;
+        verbs\;ofi_rxm)
+            ofi_define_mr_scalable=0
+        ;;
+        tcp\;ofi_rxm)  # Reports MR_SCALABLE support, but see bug 3867
+            ofi_define_mr_scalable=0
+        ;;
         sockets)
             ofi_define_mr_scalable=1
         ;;
         default|"")
+            ofi_known_provider="no"
         ;;
         *)
         GASNET_MSG_WARN([
 WARNING: Invalid or unsupported OFI provider specified via the --with-ofi-provider flag. 
 Defaulting to runtime provider feature detection for ofi-conduit.])
+            ofi_known_provider="no"
         ;;
     esac
+    if test "$ofi_known_provider" = "yes"; then
+        AC_DEFINE_UNQUOTED(GASNETC_OFI_PROVIDER_LIST, ["$ofi_provider"])
+    else
+        AC_DEFINE_UNQUOTED(GASNETC_OFI_PROVIDER_LIST, ["$supported_providers"])
+    fi
 
     GASNET_IF_ENABLED_WITH_AUTO(ofi-thread-domain, [Indicates if the conduit should use the FI_THREAD_DOMAIN threading model(advanced users only)],
                  [ofi_use_thread_domain="1"], [ofi_use_thread_domain="0"], [])
@@ -4104,7 +4051,6 @@ EOF
 
 # Order native conduits from LOW to HIGH precedence, clients use order to select defaults
 
-CONDUIT_OUTPUT(pami)    dnl Ensure pami-over-ib is lower than ibv
 CONDUIT_OUTPUT(ucx)
 CONDUIT_OUTPUT(ibv)
 CONDUIT_OUTPUT(aries)
@@ -4259,6 +4205,7 @@ have_pmi=no
 if test -n "$have_pmi_cray_h"; then
   with_pmi='no'
   have_pmi='yes'
+  pmi_version=' (Cray)'
 elif test "$enable_pmi" != 'no'; then
   pmi_guess=/usr
   GASNET_ENV_DEFAULT(PMI_HOME, $pmi_guess, [Install prefix of PMI library])
@@ -4279,13 +4226,14 @@ elif test "$enable_pmi" != 'no'; then
   unset PMI_LDFLAGS
 
   # If user specifies one PMI version then disqualify the other
-  GASNET_WITH(pmi-version, [PMI version (1 or 2)] , [
+  GASNET_WITH(pmi-version, [PMI version (x, 1, or 2)] , [
     case "$withval" in
       1) use_pmi1=yes;;
       2) use_pmi2=yes;;
-      *) GASNET_MSG_ERROR([Argument to --with-pmi-version must be '1' or '2']);;
+      x) use_pmix=yes;;
+      *) GASNET_MSG_ERROR([Argument to --with-pmi-version must be 'x', '1' or '2']);;
     esac
-    with_pmi_version="withval"
+    with_pmi_version="$withval"
   ], [
     GASNET_MSG_WARN([Ignoring --without-pmi-version])
   ])
@@ -4293,7 +4241,25 @@ elif test "$enable_pmi" != 'no'; then
   # Check for libs unless disqualifed by --with-pmi-version=
   GASNET_PUSHVAR(LDFLAGS,"$LDFLAGS $PMI_SPAWNER_LDFLAGS")
   GASNET_ENV_DEFAULT(PMI_LIBS, probe)
-  if test -z "${use_pmi1+set}"; then
+  if test -z "${use_pmi1+set}" && test -z "${use_pmi2+set}"; then
+    GASNET_PUSHVAR(LIBS,"")
+    if test "$PMI_LIBS" = 'probe'; then
+      AC_SEARCH_LIBS(PMIx_Init, [pmix], [have_pmi=yes])
+    else
+      LIBS="$PMI_LIBS"
+      AC_CHECK_FUNC(PMIx_Init, [have_pmi=yes])
+    fi
+    if test "$have_pmi" = 'yes'; then
+      use_pmix=yes
+      pmi_suffix='x'
+      pmi_version=' (version=x)'
+      AC_DEFINE(HAVE_PMIX_H)
+      PMI_SPAWNER_LIBS="$LIBS"
+      AC_CHECK_HEADERS([stdbool.h])  # TODO: see if bool really works
+    fi
+    GASNET_POPVAR(LIBS)
+  fi
+  if test -z "${use_pmi1+set}" && test -z "${use_pmix+set}"; then
     GASNET_PUSHVAR(LIBS,"")
     if test "$PMI_LIBS" = 'probe'; then
       AC_SEARCH_LIBS(PMI2_Init, [pmi2 mpich], [have_pmi=yes])
@@ -4304,6 +4270,7 @@ elif test "$enable_pmi" != 'no'; then
     if test "$have_pmi" = 'yes'; then
       use_pmi2=yes
       pmi_suffix='2'
+      pmi_version=' (version=2)'
       AC_DEFINE(HAVE_PMI2_H)
       PMI_SPAWNER_LIBS="$LIBS"
       GASNET_IF_ENABLED(pmi2-fast-barrier, Use PMI2_KVS_fence as barrier. This may not work with all PMI2 implementations,
@@ -4311,7 +4278,7 @@ elif test "$enable_pmi" != 'no'; then
     fi
     GASNET_POPVAR(LIBS)
   fi
-  if test -z "${use_pmi2+set}"; then
+  if test -z "${use_pmi2+set}" && test -z "${use_pmix+set}"; then
     GASNET_PUSHVAR(LIBS,"")
     if test "$PMI_LIBS" = 'probe'; then
       AC_SEARCH_LIBS(PMI_Init, [pmi mpich portals_runtime], [have_pmi=yes])
@@ -4322,6 +4289,7 @@ elif test "$enable_pmi" != 'no'; then
     if test "$have_pmi" = 'yes'; then
       use_pmi1=yes
       pmi_suffix=''
+      pmi_version=' (version=1)'
       AC_DEFINE(HAVE_PMI_H)
       PMI_SPAWNER_LIBS="$LIBS"
     fi
@@ -4335,17 +4303,25 @@ elif test "$enable_pmi" != 'no'; then
   # TODO: fragile if multiple PMI libs are installed
   # TODO: add a link test for a working PMI configuration
   if test "$have_pmi" = yes; then
-    if test -f "$PMI_HOME/include/slurm/pmi${pmi_suffix}.h"; then
-      PMI_SPAWNER_CFLAGS="-I$PMI_HOME/include/slurm"
-    elif test -f "$PMI_HOME/include/portals4/pmi${pmi_suffix}.h"; then
-      PMI_SPAWNER_CFLAGS="-I$PMI_HOME/include/portals4"
-    elif test -f "$PMI_HOME/include/pmi${pmi_suffix}.h"; then
-      if test "$PMI_HOME" != '/usr'; then
-        PMI_SPAWNER_CFLAGS="-I$PMI_HOME/include"
-      fi
-    else
+    for pmi_headers in "$PMI_HOME/include/slurm" "$PMI_HOME/include/portals4" "$PMI_HOME/include" 'no'; do
+      test -f "${pmi_headers}/pmi${pmi_suffix}.h" && break
+    done
+    if test "${pmi_headers}" = no; then
       have_pmi=no
+    elif test "${pmi_headers}" != '/usr/include'; then
+      PMI_SPAWNER_CFLAGS="-I${pmi_headers}"
     fi
+  fi
+
+  # Look for use of malloc/free in the corresponding PMIx header if any
+  if test "$have_pmi" = yes; then
+    AC_MSG_CHECKING(for use of malloc in PMIx headers)
+    AC_EGREP_HEADER([\<(malloc|calloc|free|strdup)\>],
+      [${pmi_headers}/pmix_common.h],
+      [ AC_DEFINE([GASNETI_PMIX_HACK])
+        AC_MSG_RESULT(yes) ],
+      [ AC_MSG_RESULT(no) ]
+    )
   fi
 fi
 
@@ -4806,9 +4782,9 @@ dnl GASNET_TOOLSONLY_FALSE_BEGIN
 elif expr "$target_os" : 'cygwin' >/dev/null 2>&1; then
   : # Cygwin uses mmap() for PSHM even though it is not supported in general
 else
-  # PSHM over SysV and GHEAP don't require mmap(), but the rest do
+  # PSHM over SysV doesn't require mmap(), but the rest do
   case "$with_pshm" in
-  no|sysv|gheap) ;;
+  no|sysv) ;;
   *)
   GASNET_MSG_ERROR([PSHM was enabled, but required mmap functionality $mmap_reason])
   ;;
@@ -5107,9 +5083,9 @@ dnl GASNET_TOOLSONLY_FALSE_END
 
 GASNET_FIX_EXEC(mpi-conduit/contrib/gasnetrun_mpi)
 GASNET_FIX_EXEC(ibv-conduit/contrib/gasnetrun_ibv)
-GASNET_FIX_EXEC(pami-conduit/contrib/gasnetrun_pami)
 GASNET_FIX_EXEC(aries-conduit/contrib/gasnetrun_aries)
 GASNET_FIX_EXEC(ofi-conduit/contrib/gasnetrun_ofi)
+GASNET_FIX_EXEC(ucx-conduit/contrib/gasnetrun_ucx)
 GASNET_FIX_EXEC(other/contrib/gasnet_trace)
 
 if test "$gasnet_toolsonly_mode" = "no" ; then
@@ -5127,6 +5103,7 @@ cat >>$CONDUIT_LIST <<EOF
   PSHM support:           $with_pshm
   BLCR support:           $have_blcr
   Atomics support:        $atomics_config
+  PMI support:            $have_pmi$pmi_version
 EOF
 else
 cat >>$CONDUIT_LIST <<EOF
@@ -5199,11 +5176,6 @@ udp-conduit/conduit.mak
 smp-conduit/Makefile
 smp-conduit/conduit.mak
 
-pami-conduit/Makefile
-pami-conduit/conduit.mak
-pami-conduit/contrib/Makefile
-pami-conduit/contrib/gasnetrun_pami
-
 ibv-conduit/Makefile
 ibv-conduit/conduit.mak
 ibv-conduit/contrib/Makefile
@@ -5211,6 +5183,8 @@ ibv-conduit/contrib/gasnetrun_ibv
 
 ucx-conduit/Makefile
 ucx-conduit/conduit.mak
+ucx-conduit/contrib/Makefile
+ucx-conduit/contrib/gasnetrun_ucx
 
 aries-conduit/Makefile
 aries-conduit/conduit.mak
