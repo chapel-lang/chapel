@@ -325,6 +325,18 @@ module SharedObject {
       chpl_pn = nil;
     }
 
+    //wass add chpldoc comment here; remove the one from the deprecated fn
+    pragma "unsafe" // 'result' may have a non-nilable type
+    proc type create(pragma "nil from arg" p) {
+      if ! isUnmanagedClass(p) then
+        compilerError("shared.create() accepts only an unmanaged pointer argument; here it is a ", p.type:string);
+      var result: (p.type : shared);
+      compilerAssert(isNilableClass(result) == isNilableClass(p)); //wass remove later
+      result.retain(p);
+compilerWarning(result.type:string);
+      return result;
+    }
+
     /*
        The deinitializer for :record:`shared` will destroy the class
        instance once there are no longer any copies of this
