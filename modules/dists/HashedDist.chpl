@@ -300,7 +300,7 @@ class UserMapAssocDom: BaseAssociativeDom {
   // SJD: note cannot do this anymore because constructor does not
   // setup (for privatization reasons)
   //
-  var locDoms: [dist.targetLocDom] unmanaged LocUserMapAssocDom(idxType, mapperType);
+  var locDoms: [dist.targetLocDom] unmanaged LocUserMapAssocDom(idxType, mapperType)?;
 
 
   // STATE:
@@ -318,20 +318,20 @@ class UserMapAssocDom: BaseAssociativeDom {
   }
 
   proc dsiAdd(i: idxType) {
-    return locDoms(dist.indexToLocaleIndex(i)).add(i);
+    return locDoms(dist.indexToLocaleIndex(i))!.add(i);
   }
 
   proc dsiRemove(i: idxType) {
-    return locDoms(dist.indexToLocaleIndex(i)).remove(i);
+    return locDoms(dist.indexToLocaleIndex(i))!.remove(i);
   }
 
   proc dsiMember(i: idxType) {
-    return locDoms(dist.indexToLocaleIndex(i)).contains(i);
+    return locDoms(dist.indexToLocaleIndex(i))!.contains(i);
   }
 
   override proc dsiClear() {
     for locDom in locDoms do on locDom {
-      locDom.clear();
+      locDom!.clear();
     }
   }
 
@@ -347,7 +347,7 @@ class UserMapAssocDom: BaseAssociativeDom {
     var nLocales = min(1, locDoms.domain.numIndices);
     const numKeysPer = 2 * numKeys / nLocales;
     for locDom in locDoms do on locDom {
-      locDom.capacity(numKeysPer);
+      locDom!.capacity(numKeysPer);
     }
   }
 
@@ -379,7 +379,7 @@ class UserMapAssocDom: BaseAssociativeDom {
 
     var idx = 0;
     for blk in locDoms {
-      for ind in blk {
+      for ind in blk! {
         tableCopy[idx] = ind;
         idx += 1;
       }
@@ -403,7 +403,7 @@ class UserMapAssocDom: BaseAssociativeDom {
       //on blk do
       // But can't currently have yields in on clauses:
       // invalid use of 'yield' within 'on' in serial iterator
-        for ind in blk do
+        for ind in blk! do
           yield ind;
   }
 
@@ -417,7 +417,7 @@ class UserMapAssocDom: BaseAssociativeDom {
         // redirect to the DefaultAssociative's leader
         // note that DefaultAssociative's leader returns (lo..hi, this)
         // ie. a range of table slots and then the DefaultAssociativeDom.
-        for follow in locDom.myInds.these(tag) do
+        for follow in locDom!.myInds.these(tag) do
           yield (follow, localeIndex);
         //  for followThis in tmpBlock.these(iterKind.leader, maxTasks,
         //                                   myIgnoreRunning, minSize,
@@ -431,7 +431,7 @@ class UserMapAssocDom: BaseAssociativeDom {
   iter these(param tag: iterKind, followThis) where tag == iterKind.follower {
     var (locFollowThis, localeIndex) = followThis;
 
-    var locDom = locDoms[localeIndex];
+    var locDom = locDoms[localeIndex]!;
 
     for i in locDom.myInds.these(tag, locFollowThis) do
       yield i;
@@ -440,7 +440,7 @@ class UserMapAssocDom: BaseAssociativeDom {
   iter these(param tag: iterKind) where tag == iterKind.standalone {
     coforall locDom in locDoms do on locDom {
       // Forward to associative domain standalone iterator
-      for i in locDom.myInds.these(tag) {
+      for i in locDom!.myInds.these(tag) {
         yield i;
       }
     }
@@ -480,7 +480,7 @@ class UserMapAssocDom: BaseAssociativeDom {
   // queries for the number of indices, low, and high bounds
   //
   proc dsiNumIndices {
-    return + reduce [loc in dist.targetLocDom] locDoms[loc].myInds.numIndices;
+    return + reduce [loc in dist.targetLocDom] locDoms[loc]!.myInds.numIndices;
   }
 
   //
@@ -665,7 +665,7 @@ class UserMapAssocArr: AbsBaseArr {
 
   //
   // DOWN: an array of local array classes
-  var locArrs: [dom.dist.targetLocDom] unmanaged LocUserMapAssocArr(idxType, mapperType, eltType);
+  var locArrs: [dom.dist.targetLocDom] unmanaged LocUserMapAssocArr(idxType, mapperType, eltType)?;
   //var locAssocDoms: domain(BaseAssociativeDom);
   //var locArrsByAssoc: [locAssocDoms] LocUserMapAssocArr(idxType, mapperType, eltType);
 
@@ -676,9 +676,9 @@ class UserMapAssocArr: AbsBaseArr {
   proc setup() {
     coforall localeIdx in dom.dist.targetLocDom do
       on dom.dist.targetLocales(localeIdx) do
-        locArrs(localeIdx) = new unmanaged LocUserMapAssocArr(idxType, mapperType, eltType, dom.locDoms(localeIdx));
+        locArrs(localeIdx) = new unmanaged LocUserMapAssocArr(idxType, mapperType, eltType, dom.locDoms(localeIdx)!);
     for localeIdx in dom.dist.targetLocDom {
-      var locDomImpl = dom.locDoms(localeIdx).myInds._value;
+      var locDomImpl = dom.locDoms(localeIdx)!.myInds._value;
       //locAssocDoms += locDomImpl;
       //locArrsByAssoc[locDomImpl] = locArrs(localeIdx);
     }
@@ -711,7 +711,7 @@ class UserMapAssocArr: AbsBaseArr {
   //
   proc dsiAccess(i: idxType) ref {
     const localeIndex = dom.dist.indexToLocaleIndex(i);
-    const locArr = locArrs[localeIndex];
+    const locArr = locArrs[localeIndex]!;
     if locArr.locale == here {
       local {
         return locArr[i];
@@ -722,7 +722,7 @@ class UserMapAssocArr: AbsBaseArr {
   proc dsiAccess(i: idxType)
   where shouldReturnRvalueByValue(eltType) {
     const localeIndex = dom.dist.indexToLocaleIndex(i);
-    const locArr = locArrs[localeIndex];
+    const locArr = locArrs[localeIndex]!;
     if locArr.locale == here {
       local {
         return locArr[i];
@@ -733,7 +733,7 @@ class UserMapAssocArr: AbsBaseArr {
   proc dsiAccess(i: idxType) const ref
   where shouldReturnRvalueByConstRef(eltType) {
     const localeIndex = dom.dist.indexToLocaleIndex(i);
-    const locArr = locArrs[localeIndex];
+    const locArr = locArrs[localeIndex]!;
     if locArr.locale == here {
       local {
         return locArr[i];
@@ -744,21 +744,21 @@ class UserMapAssocArr: AbsBaseArr {
 
   inline proc dsiLocalAccess(i) ref {
     const localeIndex = dom.dist.indexToLocaleIndex(i);
-    const locArr = locArrs[localeIndex];
+    const locArr = locArrs[localeIndex]!;
     return locArr[i];
   }
 
   inline proc dsiLocalAccess(i)
   where shouldReturnRvalueByValue(eltType) {
     const localeIndex = dom.dist.indexToLocaleIndex(i);
-    const locArr = locArrs[localeIndex];
+    const locArr = locArrs[localeIndex]!;
     return locArr[i];
   }
 
   inline proc dsiLocalAccess(i) const ref
   where shouldReturnRvalueByConstRef(eltType) {
     const localeIndex = dom.dist.indexToLocaleIndex(i);
-    const locArr = locArrs[localeIndex];
+    const locArr = locArrs[localeIndex]!;
     return locArr[i];
   }
 
@@ -771,7 +771,7 @@ class UserMapAssocArr: AbsBaseArr {
   iter dsiLocalSubdomains(loc: locale) {
     for (idx,l) in zip(dom.dist.targetLocDom, dom.dist.targetLocales) {
       if l == loc {
-        yield dom.locDoms[idx].myInds;
+        yield dom.locDoms[idx]!.myInds;
       }
     }
   }
@@ -784,7 +784,7 @@ class UserMapAssocArr: AbsBaseArr {
       // TODO: May want to do something like:
       // on this do
       // But can't currently have yields in on clauses
-      for elem in locArrs(loc) {
+      for elem in locArrs(loc)!.myElems {
         yield elem;
       }
     }
@@ -803,7 +803,7 @@ class UserMapAssocArr: AbsBaseArr {
   iter these(param tag: iterKind, followThis) ref where tag == iterKind.follower {
     var (locFollowThis, localeIndex) = followThis;
 
-    var locArr = locArrs[localeIndex];
+    var locArr = locArrs[localeIndex]!;
 
     // forward to locArr
     for i in locArr.myElems.these(tag, locFollowThis) do
@@ -813,7 +813,7 @@ class UserMapAssocArr: AbsBaseArr {
   iter these(param tag: iterKind) ref where tag == iterKind.standalone {
     coforall locArr in locArrs do on locArr {
       // Forward to associative array standalone iterator
-      for i in locArr.myElems.these(tag) {
+      for i in locArr!.myElems.these(tag) {
         yield i;
       }
     }
@@ -828,7 +828,7 @@ class UserMapAssocArr: AbsBaseArr {
 
     var first = true;
     for locArr in locArrs {
-      if locArr.numElements {
+      if locArr!.numElements {
         if first {
           first = false;
         } else {
@@ -888,6 +888,7 @@ class LocUserMapAssocArr {
   //
   // the block of local array data
   //
+  pragma "local field" pragma "unsafe" // initialized separately
   var myElems: [locDom.myInds] eltType;
 
 

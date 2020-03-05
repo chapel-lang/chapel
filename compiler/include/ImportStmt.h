@@ -26,8 +26,8 @@ class ResolveScope;
 
 class ImportStmt: public VisibilityStmt {
  public:
-  ImportStmt(BaseAST* source);
-  ImportStmt(BaseAST* source, const char* rename);
+  ImportStmt(BaseAST* source, bool isPrivate);
+  ImportStmt(BaseAST* source, const char* rename, bool isPrivate);
 
   DECLARE_COPY(ImportStmt);
 

@@ -34,7 +34,7 @@ iter DefaultRectangularDom.myIter(param tag) {
                                                      ranges);
       if debugDefaultDist {
         chpl_debug_writeln("    numChunks=", numChunks, " parDim=", parDim,
-                " ranges(", parDim, ").length=", ranges(parDim).length);
+                " ranges(", parDim, ").size=", ranges(parDim).size);
       }
 
       if debugDataPar {
@@ -52,14 +52,14 @@ iter DefaultRectangularDom.myIter(param tag) {
       } else {
         var locBlock: rank*range(intIdxType);
         for param i in 1..rank {
-          locBlock(i) = offset(i)..#(ranges(i).length);
+          locBlock(i) = offset(i)..#(ranges(i).size);
         }
         if debugDefaultDist {
           chpl_debug_writeln("*** DI: locBlock = ", locBlock);
         }
         coforall chunk in 0..#numChunks {
           var followMe: rank*range(intIdxType) = locBlock;
-          const (lo,hi) = _computeBlock(locBlock(parDim).length,
+          const (lo,hi) = _computeBlock(locBlock(parDim).size,
                                         numChunks, chunk,
                                         locBlock(parDim)._high,
                                         locBlock(parDim)._low,

@@ -417,6 +417,11 @@ all:
   02/19/20:
     - text:  Serialize calls to gasnet_AMPoll for IBV/Aries (#14912)
       config: 16 node XC, 16-node-cs
+  02/21/20:
+    - text: Poll for AMs on every call to gasnet_AMPoll for Aries (#14938)
+      config: 16 node XC
+  02/28/20:
+    - Add a spinlock to the atomic runtime interface. (#15015)
 
 
 AllCompTime:
@@ -633,6 +638,32 @@ create-views:
 cs-resize:
   03/05/19:
     - Add radix sort to Sort package module (#12452)
+
+distCreate-arrays-deinit.cc-perf: &distCreate-base
+  02/12/20:
+    - Use --no-early-deinit in array creation/destruction benchmark (#14876)
+distCreate-arrays-init.cc-perf:
+  <<: *distCreate-base
+distCreate-domains-deinit.cc-perf:
+  <<: *distCreate-base
+distCreate-domains-deinit.ml-perf:
+  <<: *distCreate-base
+distCreate-domains-init.cc-perf:
+  <<: *distCreate-base
+distCreate-domains-init.ml-perf:
+  <<: *distCreate-base
+distCreate-large-deinit.ml-perf:
+  <<: *distCreate-base
+distCreate-large-init.ml-perf:
+  <<: *distCreate-base
+distCreate-small-deinit.ml-perf:
+  <<: *distCreate-base
+distCreate-small-init.ml-perf:
+  <<: *distCreate-base
+distCreate-tiny-deinit.ml-perf:
+  <<: *distCreate-base
+distCreate-tiny-init.ml-perf:
+  <<: *distCreate-base
 
 domainAssignment-similar: &domainAssign-base
   10/26/19:
@@ -1179,8 +1210,10 @@ memleaksfull:
     - Propagate user thrown errors out of IO routines (#14739)
   01/30/20:
     - Adjust split init to allow some try, if with returns (#14814)
-  02/19/20:
-    -  Use escaped strings in paths (#14907)
+  02/20/20:
+    - Use escaped strings in paths (#14907)
+  02/26/20:
+    - Closes memory leaks introduced by 14907 (#14959)
 
 meteor:
   12/18/13:
@@ -1362,6 +1395,8 @@ ra:
 ra.ml-perf:
   09/19/17:
     - machine changes, cannot reproduce old numbers
+  02/28/20:
+    - Use localAccess for ra-on (#15001)
 
 ra-atomics.ml-perf:
   10/03/17:

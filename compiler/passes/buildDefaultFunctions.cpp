@@ -96,7 +96,9 @@ void buildDefaultFunctions() {
           ct->buildDefaultInitializer();
         }
 
-        ct->buildCopyInitializer();
+        if (!ct->hasUserDefinedInitEquals()) {
+          ct->buildCopyInitializer();
+        }
 
         if (!ct->symbol->hasFlag(FLAG_REF)) {
           buildDefaultDestructor(ct);

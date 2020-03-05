@@ -1,1 +1,0 @@
-iteratable.chpl:15: error: Cannot iterate over non-homogeneous tuples. If you intended to use zippered iteration, add the new keyword 'zip' before the tuple of iteratable expressions.

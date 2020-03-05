@@ -86,7 +86,7 @@ module MemConsistency {
   }
 
   inline proc c_memory_order(param order: memoryOrder) {
-    use HaltWrappers only;
+    import HaltWrappers;
     select order {
       when memoryOrder.relaxed do return memory_order_relaxed;
       when memoryOrder.acquire do return memory_order_acquire;

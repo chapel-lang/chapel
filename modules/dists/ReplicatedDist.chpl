@@ -469,6 +469,7 @@ class LocReplicatedArr {
   param stridable: bool;
 
   var myDom: unmanaged LocReplicatedDom(rank, idxType, stridable);
+  pragma "local field" pragma "unsafe" // initialized separately
   var arrLocalRep: [myDom.domLocalRep] eltType;
 }
 

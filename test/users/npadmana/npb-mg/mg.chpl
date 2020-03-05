@@ -49,8 +49,8 @@ var fluffTime : Timer;
 
 proc main() {
   // Allocate the levels
-  var Levels : [LevelDom] owned MGLevel;
-  for ilevel in LevelDom do Levels[ilevel] = new owned MGLevel(2**ilevel);
+  var Levels : [LevelDom] owned MGLevel =
+    for ilevel in LevelDom do new owned MGLevel(2**ilevel);
 
   var U,V,R : [Levels[numlevels].dom] real;
 

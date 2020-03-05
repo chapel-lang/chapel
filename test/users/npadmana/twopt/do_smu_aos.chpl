@@ -71,7 +71,7 @@ proc readFile(fn : string, pp : []WeightedParticle3D)  {
   for iff in ff.lines() {
    icol = 1; 
    for col1 in iff.split(spaces) {
-     if (col1.length==0) then continue;
+     if (col1.size==0) then continue;
      cols[icol] = col1 : real;
      icol += 1;
    }

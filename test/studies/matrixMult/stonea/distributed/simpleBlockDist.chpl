@@ -88,10 +88,10 @@ proc main() {
         "Matrix size must be divisible by sqrt(numLocales)");
 
     // allocate 2D mesh of locales
-    var myLocales : [1..localesAcross, 1..localesAcross] locale;
-    forall (i,j) in myLocales.domain {
-        myLocales[i,j] = Locales[(i-1) * localesAcross + (j-1)];
-    }
+    const myLocalesDomain = {1..localesAcross, 1..localesAcross};
+    var myLocales : [myLocalesDomain] locale =
+      forall (i,j) in myLocalesDomain do
+        Locales[(i-1) * localesAcross + (j-1)];
 
     // Initialize A, B, and C arrays
     var A : [myLocales.domain] WrappedArray;

@@ -21,6 +21,7 @@
 #define _chpl_atomics_h_
 
 #include "chpltypes.h"
+#include "chpl-tasks.h"
 #include <pthread.h>
 
 // Locks based atomic implementation. Note that we use pthread mutexes instead
@@ -95,6 +96,8 @@ typedef struct atomic__real64_s {
   pthread_mutex_t lock;
   _real64 v;
 } atomic__real64;
+
+typedef pthread_spinlock_t atomic_spinlock_t;
 
 typedef enum {
  memory_order_relaxed,
@@ -305,5 +308,27 @@ DECLARE_REAL_ATOMICS(_real64);
 #undef DECLARE_ATOMICS_FETCH_OPS
 #undef DECLARE_ATOMICS
 #undef MAYBE_INLINE
+
+static inline void atomic_init_spinlock_t(atomic_spinlock_t* lock) {
+  pthread_spin_init(lock, PTHREAD_PROCESS_PRIVATE);
+}
+
+static inline void atomic_destroy_spinlock_t(atomic_spinlock_t* lock) {
+  pthread_spin_destroy(lock);
+}
+
+static inline chpl_bool atomic_try_lock_spinlock_t(atomic_spinlock_t* lock) {
+  return pthread_spin_trylock(lock) == 0;
+}
+
+static inline void atomic_lock_spinlock_t(atomic_spinlock_t* lock) {
+  while(!atomic_try_lock_spinlock_t(lock)) {
+    chpl_task_yield();
+  }
+}
+
+static inline void atomic_unlock_spinlock_t(atomic_spinlock_t* lock) {
+  pthread_spin_unlock(lock);
+}
 
 #endif // _chpl_atomics_h_

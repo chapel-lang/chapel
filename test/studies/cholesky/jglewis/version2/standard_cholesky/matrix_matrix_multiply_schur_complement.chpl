@@ -50,7 +50,7 @@ module matrix_matrix_multiply_schur_complement {
        // the remainder of a block column is a dense rectangular matrix,
        // for which we can use a general matrix-matrix product
 
-       if AI_offdiag_row_indices.length > 0 then 
+       if AI_offdiag_row_indices.size > 0 then 
 	 symmetric_offdiagonal_low_rank_modification 
 	    ( L,  A (AI_offdiag_row_indices, AI_diag_row_indices) );
       }

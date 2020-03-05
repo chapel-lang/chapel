@@ -114,7 +114,8 @@ void addAutoDestroyCalls() {
 ************************************** | *************************************/
 
 static VarSymbol*   definesAnAutoDestroyedVariable(const Expr* stmt);
-static VarSymbol* possiblyInitializesDestroyedVariable(Expr* stmt);
+static VarSymbol* possiblyInitsDestroyedVariable(Expr* e, CallExpr*& fCall);
+static VarSymbol* possiblyInitsDestroyedVariableOut(ArgSymbol* formal, Expr* actual);
 static LabelSymbol* findReturnLabel(FnSymbol* fn);
 static bool         isReturnLabel(const Expr*        stmt,
                                   const LabelSymbol* returnLabel);
@@ -222,8 +223,11 @@ static Expr* walkBlockStmt(FnSymbol*         fn,
     } else if (scope.handlingFormalTemps(stmt) == true) {
       scope.insertAutoDestroys(fn, stmt, ignoredVariables);
 
-    } else if (VarSymbol* var = possiblyInitializesDestroyedVariable(stmt)) {
-      // note that this case will run also when setting the variable
+    } else if (isCallExpr(stmt)) {
+
+      // Look for a variable initialization.
+
+      // note that these cases will run also when setting the variable
       // after the 1st initialization. That should be OK though because
       // once a variable is initialized, it stays initialized, until
       // it is destroyed.
@@ -231,12 +235,23 @@ static Expr* walkBlockStmt(FnSymbol*         fn,
       // TODO: fix test/errhandling/ferguson/loopexprs-caught.chpl
       if (isCheckErrorStmt(stmt->next)) {
         // Visit the check-error block now - do not consider
-        // the variable initialized when running that check-error block.
+        // the variables initialized when running that check-error block.
         ret = walkBlockStmt(fn, scope, retLabel, false, false, stmt->next,
                             ignoredVariables, lmm);
       }
 
-      scope.addInitialization(var);
+      CallExpr* fCall = NULL;
+      // Check for returned variable
+      if (VarSymbol* v = possiblyInitsDestroyedVariable(stmt, fCall))
+        scope.addInitialization(v);
+
+      // Check also for out intent in a called function
+      if (fCall != NULL) {
+        for_formals_actuals(formal, actual, fCall) {
+          if (VarSymbol* v = possiblyInitsDestroyedVariableOut(formal, actual))
+            scope.addInitialization(v);
+        }
+      }
 
     // Recurse in to a BlockStmt (or sub-classes of BlockStmt e.g. a loop)
     } else if (BlockStmt* subBlock = toBlockStmt(stmt)) {
@@ -404,6 +419,10 @@ static void walkBlock(FnSymbol*         fn,
   if (pfs != NULL)
     addForallIndexVarToScope(&scope, pfs);
 
+  if (block == fn->body) {
+    scope.addFormalTemps();
+  }
+
   walkBlockWithScope(scope, fn, block, ignoredVariables, lmm);
 }
 
@@ -447,6 +466,7 @@ static void walkBlockWithScope(AutoDestroyScope& scope,
           case GOTO_BREAK:
           case GOTO_ERROR_HANDLING:
           case GOTO_BREAK_ERROR_HANDLING:
+          case GOTO_ERROR_HANDLING_RETURN:
             scope.insertAutoDestroys(fn, stmt, ignoredVariables);
             break;
 
@@ -477,40 +497,42 @@ static VarSymbol* definesAnAutoDestroyedVariable(const Expr* stmt) {
 // Is this a CallExpr that initializes a variable that might be destroyed?
 // If so, return the VarSymbol initialized. Otherwise, return NULL.
 //
+// If there is a user function call involved (possibly within a move)
+// return that in fCall.
+//
 // Note, this must identify the first initialization, but it can also
 // return a variable for other calls setting the variable (since the
 // variable remains initialized).
-static VarSymbol* possiblyInitializesDestroyedVariable(Expr* stmt) {
+static VarSymbol* possiblyInitsDestroyedVariable(Expr* e, CallExpr*& fCall) {
 
-  if (CallExpr* call = toCallExpr(stmt)) {
-    // case 1: PRIM_MOVE/PRIM_ASSIGN into a variable
-    if (call->isPrimitive(PRIM_MOVE) || call->isPrimitive(PRIM_ASSIGN))
-      if (SymExpr* se = toSymExpr(call->get(1)))
-        if (VarSymbol* var = toVarSymbol(se->symbol()))
-          if (isAutoDestroyedVariable(var))
-            return var;
+  if (CallExpr* call = toCallExpr(e)) {
 
-    if (FnSymbol* calledFn = call->resolvedOrVirtualFunction()) {
-      // case 2: init or init=
-      if (calledFn->isMethod() &&
-          (calledFn->name == astrInit || calledFn->name == astrInitEquals)) {
-        SymExpr* se = toSymExpr(call->get(1));
-        if (VarSymbol* var = toVarSymbol(se->symbol()))
-          if (isAutoDestroyedVariable(var))
-            return var;
+    SymExpr* gotSe = NULL;
+    CallExpr* gotCall = NULL;
+    if (isInitOrReturn(call, gotSe, gotCall)) {
+      fCall = gotCall;
+      if (VarSymbol* var = toVarSymbol(gotSe->symbol()))
+        if (isAutoDestroyedVariable(var))
+          return var;
 
-      // case 3: return through ret-arg
-      } else if (calledFn->hasFlag(FLAG_FN_RETARG)) {
-        ArgSymbol* retArg = toArgSymbol(toDefExpr(calledFn->formals.tail)->sym);
-        INT_ASSERT(retArg && retArg->hasFlag(FLAG_RETARG));
-        // Find the corresponding actual, which is the last actual
-        if (SymExpr* lastActual = toSymExpr(call->argList.tail))
-          if (VarSymbol* var = toVarSymbol(lastActual->symbol()))
-            if (isAutoDestroyedVariable(var))
-              return var;
-      }
+    } else if (call->resolvedOrVirtualFunction()) {
+      // Set fCall even if it wasn't returning something, so out intents
+      // can be searched for
+      fCall = call;
     }
   }
+
+  return NULL;
+}
+
+static VarSymbol* possiblyInitsDestroyedVariableOut(ArgSymbol* formal,
+                                                    Expr* actual) {
+
+  if (formal->intent == INTENT_OUT || formal->originalIntent == INTENT_OUT)
+    if (SymExpr* actualSe = toSymExpr(actual))
+      if (VarSymbol* var = toVarSymbol(actualSe->symbol()))
+        if (isAutoDestroyedVariable(var))
+          return var;
 
   return NULL;
 }
@@ -634,6 +656,8 @@ class ComputeLastSymExpr : public AstVisitorTraverse
     ComputeLastSymExpr(std::vector<VarSymbol*>& inited,
                        std::map<VarSymbol*, Expr*>& last)
       : inited(inited), last(last) { }
+    virtual bool enterDefExpr(DefExpr* node);
+    void noteRecordInit(VarSymbol* v, CallExpr* call);
     virtual bool enterCallExpr(CallExpr* node);
     virtual void visitSymExpr(SymExpr* node);
     virtual void exitForallStmt(ForallStmt* node);
@@ -666,24 +690,37 @@ static void computeLastMentionPoints(LastMentionMap& lmm, FnSymbol* fn) {
   }
 }
 
+bool ComputeLastSymExpr::enterDefExpr(DefExpr* node) {
+  return true;
+}
+
 static bool shouldDestroyOnLastMention(VarSymbol* var) {
   return var->hasFlag(FLAG_DEAD_LAST_MENTION) && // dead at last mention
          isAutoDestroyedVariable(var) &&
          // forall statement exception avoids certain variables
          // within forall statements such as fRecIterIRdef.
-         !isForallStmt(var->defPoint->parentExpr);
+         !isForallStmt(var->defPoint->parentExpr) &&
+         !var->hasFlag(FLAG_FORMAL_TEMP);
+}
+
+void ComputeLastSymExpr::noteRecordInit(VarSymbol* v, CallExpr* call) {
+  if (shouldDestroyOnLastMention(v))
+    if (initedSet.insert(v).second)
+      inited.push_back(v); // the first potential initialization
 }
 
 bool ComputeLastSymExpr::enterCallExpr(CallExpr* node) {
-  if (VarSymbol* var = possiblyInitializesDestroyedVariable(node)) {
-    if (shouldDestroyOnLastMention(var)) {
-      if (initedSet.insert(var).second) {
-        // the first potential initialization
-        inited.push_back(var);
-      }
+  CallExpr* fCall = NULL;
+  if (VarSymbol* v = possiblyInitsDestroyedVariable(node, fCall))
+    noteRecordInit(v, node);
+
+  // Check also for out intent
+  if (fCall != NULL) {
+    for_formals_actuals(formal, actual, fCall) {
+      if (VarSymbol* v = possiblyInitsDestroyedVariableOut(formal, actual))
+        noteRecordInit(v, node);
     }
   }
-
   return true;
 }
 

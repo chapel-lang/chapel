@@ -1,0 +1,26 @@
+length.chpl:20: warning: 'bytes.length' is deprecated - please use 'bytes.size' instead
+length.chpl:21: warning: 'bytes.length' is deprecated - please use 'bytes.size' instead
+length.chpl:22: warning: 'string.length' is deprecated - please use 'string.size' instead
+length.chpl:23: warning: 'string.length' is deprecated - please use 'string.size' instead
+length.chpl:24: warning: 'string.length' is deprecated - please use 'string.size' instead
+length.chpl:25: warning: 'string.length' is deprecated - please use 'string.size' instead
+length.chpl:26: warning: 'c_string.length' is deprecated - please use 'c_string.size' instead
+length.chpl:27: warning: 'c_array.length' is deprecated - please use 'c_array.size' instead
+length.chpl:28: warning: 'range.length' is deprecated - please use 'range.size' instead
+length.chpl:29: warning: 'file.length()' is deprecated - please use 'file.size' instead
+length.chpl:30: warning: 'LinkedList.length' is deprecated - please use 'LinkedList.size' instead
+length.chpl:31: warning: 'reMatch.length' is deprecated - please use 'reMatch.size' instead
+length.chpl:32: warning: 'CollectionImpl.length' is deprecated - please use 'CollectionImpl.size' instead
+4
+4
+4
+4
+4
+4
+4
+20
+10
+0
+0
+6
+length.chpl:32: error: halt reached - 'proc size() : int' is not supported...

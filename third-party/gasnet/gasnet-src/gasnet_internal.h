@@ -446,10 +446,13 @@ uintptr_t gasneti_segmentLimit(uintptr_t localLimit, uint64_t sharedLimit,
 void gasneti_segmentInit(uintptr_t localSegmentLimit,
                          gasneti_bootstrapExchangefn_t exchangefn,
                          gex_Flags_t flags);
-void gasneti_segmentAttach(uintptr_t segsize,
-                           gasnet_seginfo_t *all_segments,
-                           gasneti_bootstrapExchangefn_t exchangefn,
-                           gex_Flags_t flags);
+gasnet_seginfo_t gasneti_segmentAttach(
+                gex_Segment_t                 *segment_p,
+                size_t                        allocsz,
+                gex_TM_t                      tm,
+                uintptr_t                     segsize,
+                gasneti_bootstrapExchangefn_t exchangefn,
+                gex_Flags_t                   flags);
 
 extern void gasneti_legacy_segment_attach_hook(gasneti_EP_t ep);
 extern void gasneti_legacy_alloc_tm_hook(gasneti_TM_t _tm);
@@ -495,8 +498,8 @@ uintptr_t gasneti_auxseg_preinit(void);
  */
 void gasneti_auxseg_attach(gasnet_seginfo_t *auxseg_info);
 
-/* common case use of gasneti_auxseg_{prepare,attach} for conduits using gasneti_segmentAttach() */
-void gasneti_auxsegAttach(uint64_t maxsize, gasneti_bootstrapExchangefn_t exchangefn);
+/* common case use of gasneti_auxseg_{preinit,attach} for conduits using gasneti_segmentAttach() */
+gasnet_seginfo_t gasneti_auxsegAttach(uint64_t maxsize, gasneti_bootstrapExchangefn_t exchangefn);
 
 /* ------------------------------------------------------------------------------------ */
 /* GASNET-Internal OP Interface - provides a mechanism for conduit-independent services (like VIS)
@@ -679,6 +682,7 @@ extern int gasneti_VerboseErrors;
 /* ------------------------------------------------------------------------------------ */
 /* nodemap data and functions */
 
+extern uint64_t gasneti_hosthash(void);
 extern uint32_t gasneti_gethostid(void);
 
 extern gex_Rank_t *gasneti_nodemap;
@@ -765,7 +769,10 @@ typedef struct _gasneti_threaddata_t {
   // Active Message fields
   // Owned by gasnet_am.[ch]
   //
+#if GASNET_DEBUG || GASNETI_THREADINFO_OPT
+  #define GASNETI_NEED_INIT_SRCDESC 1
   int sd_is_init;
+#endif
   struct gasneti_AM_SrcDesc request_sd, reply_sd;
   void *loopback_requestBuf, *loopback_replyBuf;
 

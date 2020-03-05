@@ -23,8 +23,6 @@ rm -f Makefile.in              \
       mpi-conduit/contrib/Makefile.in   \
       aries-conduit/Makefile.in \
       aries-conduit/contrib/Makefile.in   \
-      pami-conduit/Makefile.in \
-      pami-conduit/contrib/Makefile.in   \
       ofi-conduit/Makefile.in \
       ofi-conduit/contrib/Makefile.in   \
       smp-conduit/Makefile.in  \

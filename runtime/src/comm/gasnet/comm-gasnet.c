@@ -914,6 +914,13 @@ int chpl_comm_run_in_gdb(int argc, char* argv[], int gdbArgnum, int* status) {
   return 0;
 }
 
+//
+// No support for lldb for now
+//
+int chpl_comm_run_in_lldb(int argc, char* argv[], int lldbArgnum, int* status) {
+  return 0;
+}
+
 void chpl_comm_post_task_init(void) {
   start_polling();
 }

@@ -284,7 +284,7 @@ void resolveArgIntent(ArgSymbol* arg) {
       if (addedTmp) {
         if (arg->type->symbol->hasFlag(FLAG_COPY_MUTATES) ||
             (formalRequiresTemp(arg, fn) &&
-             shouldAddFormalTempAtCallSite(arg, fn)))
+             shouldAddInFormalTempAtCallSite(arg, fn)))
           intent = INTENT_REF;
       }
       // Otherwise, leave the intent INTENT_IN so that the formal can

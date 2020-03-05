@@ -60,7 +60,7 @@
      }
 
      /* Abstract node representation */
-     var processSet: [D] unmanaged Process;
+     var processSet: [D] owned Process?;
 
     /*
         Acts as the starting point for the program execution.
@@ -92,16 +92,14 @@
             for i in 0..(processes-1) do sumval = sumval + nval[i];
             if(sumval > 0) then writeln();
         }
-
-        for p in processSet do delete p;
      }
 
 
     /* Initializes all the fields of the abstract node. */
     proc initialize() {
-        forall i in 0..(processes-1) {
+        forall (i,p) in zip(D,processSet) {
             const pid = IdStore[i];
-            processSet[i] = new unmanaged Process(id=pid, leaderId=pid, send=pid,  status=false);
+            p = new Process(id=pid, leaderId=pid, send=pid,  status=false);
         }
     }
 
@@ -121,22 +119,23 @@
 
     /* Aims at selecting the leader from a set of nodes. */
     proc leader_elect() {
-        forall i in 0..(processes-1) {
+        forall (i,p) in zip(D,processSet) {
             var x : int = (i + 1) % (processes);
-            var sval : int = processSet[i].send;
+            var sval : int = p!.send;
             sendMessage(x, sval);
 
             if(loadValue != 0) then nval[i] = loadweight(nval[i]+i);
         }
 
-        forall i in 0..(processes-1) {
-            if(processSet[i].receivedId > processSet[i].leaderId) {
-                processSet[i].send = processSet[i].receivedId;
-                processSet[i].leaderId = processSet[i].receivedId;
+        forall (i,pQ) in zip(D,processSet) {
+            const p = pQ!;
+            if(p.receivedId > p.leaderId) {
+                p.send = p.receivedId;
+                p.leaderId = p.receivedId;
             }
-            else if(processSet[i].receivedId == processSet[i].id) {
-                processSet[i].status = true;
-                processSet[i].leaderId = processSet[i].id;
+            else if(p.receivedId == p.id) {
+                p.status = true;
+                p.leaderId = p.id;
             }
 
             if(loadValue != 0) then nval[i] = loadweight(nval[i]+i);
@@ -147,8 +146,8 @@
     proc transmitLeader() {
         var leader : int;
         var k : int;
-        forall i in 0..(processes-1) with (ref k) {
-            if(processSet[i].status) then k=i+1;
+        forall (i,p) in zip(D,processSet) with (ref k) {
+            if p!.status then k=i+1;
         }
 
         leader = k;
@@ -156,7 +155,7 @@
             k = (k+1)%processes;
             setLeader(leader, k);
         }
-        processSet[leader-1].leaderId = leader;
+        processSet[leader-1]!.leaderId = leader;
     }
 
     /* Sets the leader for a node.
@@ -166,7 +165,7 @@
         :type: int(64)
     */
     proc setLeader(uNode: int, aNode: int) {
-        processSet[aNode].leaderId = uNode;
+        processSet[aNode]!.leaderId = uNode;
     }
 
     /* Sends message to the neighbor.
@@ -176,15 +175,15 @@
         :type: int(64)
     */
     proc sendMessage(receiver: int, sval: int) {
-        processSet[receiver].receivedId = sval;
+        processSet[receiver]!.receivedId = sval;
     }
 
     /* Writes the leader to the user specified file. */
     proc printLeader() {
         var outfile = open(outputFile, iomode.cw);
         var writer = outfile.writer();
-        writer.writeln("Leader: ", processSet[0].leaderId);
-        writeln("Leader: ", processSet[0].leaderId);
+        writer.writeln("Leader: ", processSet[0]!.leaderId);
+        writeln("Leader: ", processSet[0]!.leaderId);
         writer.close();
         outfile.close();
     }
@@ -195,6 +194,7 @@
         for i in 0..(processes-1) {
             if(max < IdStore[i]) then max = IdStore[i];
         }
-        if(max == processSet[(processSet[0].leaderId)-1].id) then writeln("Output verified");
+        if max == processSet[ (processSet[0]!.leaderId)-1 ]!.id then
+          writeln("Output verified");
     }
 }

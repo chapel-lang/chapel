@@ -1,7 +1,7 @@
 
 Creating B (a normal slice)
 ---------------------------
-(execute_on = 4, execute_on_nb = 3) (get = 44, put = 1, execute_on = 2) (get = 44, put = 1) (get = 44, put = 1)
+(execute_on = 4, execute_on_nb = 3) (get = 33, put = 1, execute_on = 2, execute_on_fast = 1) (get = 33, put = 1, execute_on_fast = 1) (get = 33, put = 1, execute_on_fast = 1)
 
 A is:
 0.0 0.0 0.0 0.0 0.0 1.0 1.0 1.0 1.0 1.0
@@ -17,7 +17,7 @@ A is:
 
 Incrementing B via access
 -------------------------
-(execute_on_nb = 3) (<no communication>) (<no communication>) (<no communication>)
+(execute_on_nb = 3) (execute_on_fast = 1) (execute_on_fast = 1) (execute_on_fast = 1)
 
 A is:
 0.0 0.0 0.0 0.0 0.0 1.0 1.0 1.0 1.0 1.0
@@ -33,7 +33,7 @@ A is:
 
 Incrementing B via iteration
 ----------------------------
-(execute_on_nb = 3) (<no communication>) (<no communication>) (<no communication>)
+(execute_on_nb = 3) (execute_on_fast = 1) (execute_on_fast = 1) (execute_on_fast = 1)
 
 A is:
 0.0 0.0 0.0 0.0 0.0 1.0 1.0 1.0 1.0 1.0
@@ -50,7 +50,7 @@ A is:
 Incrementing B via routine:
 Incrementing in routine by access
 ---------------------------------
-(execute_on_nb = 3) (<no communication>) (<no communication>) (<no communication>)
+(execute_on_nb = 3) (execute_on_fast = 1) (execute_on_fast = 1) (execute_on_fast = 1)
 
 A is:
 0.0 0.0 0.0 0.0 0.0 1.0 1.0 1.0 1.0 1.0
@@ -67,7 +67,7 @@ A is:
 Incrementing B via routine:
 Incrementing in routine by iteration
 ------------------------------------
-(execute_on_nb = 3) (<no communication>) (<no communication>) (<no communication>)
+(execute_on_nb = 3) (execute_on_fast = 1) (execute_on_fast = 1) (execute_on_fast = 1)
 
 A is:
 0.0 0.0 0.0 0.0 0.0 1.0 1.0 1.0 1.0 1.0

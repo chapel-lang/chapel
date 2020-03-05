@@ -1,1 +1,2 @@
-refvar-compare-nil.chpl:1: error: References must be initialized
+refvar-compare-nil.chpl:1: error: reference 'rx' is not initialized
+refvar-compare-nil.chpl:1: error: split initialization is not supported for globals

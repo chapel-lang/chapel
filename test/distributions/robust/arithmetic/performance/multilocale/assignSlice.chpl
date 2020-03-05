@@ -10,7 +10,7 @@ var B: [Dom4D] 4*int;
 resetCommDiagnostics();
 startCommDiagnostics();
 if doVerboseComm then startVerboseComm();
-B = A[1..n4,1..n4,1..n4,1..n4];
+{ B = A[1..n4,1..n4,1..n4,1..n4]; }
 if doVerboseComm then stopVerboseComm();
 stopCommDiagnostics();
 writeln(getCommDiagnostics());

@@ -129,7 +129,7 @@ module BytesCasts {
                                              "' to " + t:string);
 
       // remove underscores everywhere but the first position
-      if localX.length >= 2 then
+      if localX.size >= 2 then
         localX = localX.item(1) + localX[2..].replace(b"_", b"");
     }
 
@@ -198,7 +198,7 @@ module BytesCasts {
   }
 
   inline proc _cleanupBytesForRealCast(type t, ref s: bytes) throws {
-    var len = s.length;
+    var len = s.size;
 
     if s.isEmpty() then
       throw new owned IllegalArgumentError("bad cast from empty bytes to " +

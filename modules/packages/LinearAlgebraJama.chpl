@@ -1763,7 +1763,7 @@ class Matrix {
    */
 
    proc getMatrix (r:[?rDom] int, c:[?cDom] int) {
-      var X = new unmanaged Matrix(r.length,c.length);
+      var X = new unmanaged Matrix(r.size,c.size);
       var B = X.getArray();
          for (i,j) in {1..rDom.high, 1..cDom.high} {
                B[i,j] = A[r[i],c[j]];
@@ -1779,7 +1779,7 @@ class Matrix {
    */
 
    proc getMatrix (i0:int, i1:int, c:[?cDom] int) {
-      var X = new unmanaged Matrix(i1-i0+1,c.length);
+      var X = new unmanaged Matrix(i1-i0+1,c.size);
       var B = X.getArray();
         for (i,j) in {i0..i1, 1..cDom.high} {
                B[i-i0,j] = A[i,c[j]];
