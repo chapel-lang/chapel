@@ -361,10 +361,10 @@ proc AccumStencil.targetLocsIdx(ind: idxType) where rank == 1 {
 proc AccumStencil.targetLocsIdx(ind: rank*idxType) {
   var result: rank*int;
   for param i in 1..rank do
-    result(i) = max(0, min((targetLocDom.dim(i).length-1):int,
+    result(i) = max(0, min((targetLocDom.dim(i).size-1):int,
                            (((ind(i) - boundingBox.dim(i).low) *
-                             targetLocDom.dim(i).length:idxType) /
-                            boundingBox.dim(i).length):int));
+                             targetLocDom.dim(i).size:idxType) /
+                            boundingBox.dim(i).size):int));
   return if rank == 1 then result(1) else result;
 }
 
@@ -472,7 +472,7 @@ proc LocAccumStencil.init(param rank: int,
     const lo = boundingBox(1).low;
     const hi = boundingBox(1).high;
     const numelems = hi - lo + 1;
-    const numlocs = targetLocBox(1).length;
+    const numlocs = targetLocBox(1).size;
     const (blo, bhi) = _computeBlock(numelems, numlocs, locid,
                                      max(idxType), min(idxType), lo);
     myChunk = {blo..bhi};
@@ -482,7 +482,7 @@ proc LocAccumStencil.init(param rank: int,
       const lo = boundingBox(i).low;
       const hi = boundingBox(i).high;
       const numelems = hi - lo + 1;
-      const numlocs = targetLocBox(i).length;
+      const numlocs = targetLocBox(i).size;
       const (blo, bhi) = _computeBlock(numelems, numlocs, locid(i),
                                        max(idxType), min(idxType), lo);
       inds(i) = blo..bhi;

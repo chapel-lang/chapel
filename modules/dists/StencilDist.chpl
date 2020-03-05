@@ -560,10 +560,10 @@ proc Stencil.targetLocsIdx(ind: idxType) where rank == 1 {
 proc Stencil.targetLocsIdx(ind: rank*idxType) {
   var result: rank*int;
   for param i in 1..rank do
-    result(i) = max(0, min((targetLocDom.dim(i).length-1):int,
+    result(i) = max(0, min((targetLocDom.dim(i).size-1):int,
                            (((ind(i) - boundingBox.dim(i).low) *
-                             targetLocDom.dim(i).length:idxType) /
-                            boundingBox.dim(i).length):int));
+                             targetLocDom.dim(i).size:idxType) /
+                            boundingBox.dim(i).size):int));
   return if rank == 1 then result(1) else result;
 }
 
@@ -605,7 +605,7 @@ proc chpl__computeBlock(locid, targetLocBox, boundingBox) {
     const lo = boundingBox.dim(i).low;
     const hi = boundingBox.dim(i).high;
     const numelems = hi - lo + 1;
-    const numlocs = targetLocBox.dim(i).length;
+    const numlocs = targetLocBox.dim(i).size;
     const (blo, bhi) = _computeBlock(numelems, numlocs, chpl__tuplify(locid)(i),
                                      max(idxType), min(idxType), lo);
     inds(i) = blo..bhi;
@@ -1510,7 +1510,7 @@ proc StencilArr._packedUpdate() {
                                                 myLocDom.NeighDom) {
         // If S.size == 0, no communication is required
         if S.size != 0 {
-          const chunkSize  = max(1, S.dim(rank).length); // avoid divide by zero
+          const chunkSize  = max(1, S.dim(rank).size); // avoid divide by zero
           const numChunks = S.size / chunkSize;
           if numChunks >= stencilDistPackedUpdateMinChunks {
             const recvBufIdx = translateIdx(sendBufIdx);
@@ -1535,7 +1535,7 @@ proc StencilArr._packedUpdate() {
       forall (D, S, srcIdx, recvBufIdx) in zip(myLocDom.recvDest, myLocDom.recvSrc,
                                                myLocDom.Neighs,
                                                myLocDom.NeighDom) {
-        const chunkSize  = max(1, S.dim(rank).length); // avoid divide by zero
+        const chunkSize  = max(1, S.dim(rank).size); // avoid divide by zero
         const numChunks = S.size / chunkSize;
 
         // If we did a naive update in the previous loop, this iteration does
@@ -1639,10 +1639,8 @@ proc Stencil.init(other: Stencil, privateData,
 
   this.complete();
 
-  for i in targetLocDom {
-    targetLocales(i) = other.targetLocales(i);
-    locDist(i) = other.locDist(i);
-  }
+  targetLocales = other.targetLocales;
+  locDist = other.locDist;
 }
 
 proc Stencil.dsiSupportsPrivatization() param return true;
@@ -1676,8 +1674,7 @@ proc StencilDom.dsiGetPrivatizeData() return (dist.pid, whole.dims());
 proc StencilDom.dsiPrivatize(privatizeData) {
   var privdist = chpl_getPrivatizedCopy(dist.type, privatizeData(1));
   var c = new unmanaged StencilDom(rank=rank, idxType=idxType, stridable=stridable, dist=privdist, fluff=fluff, periodic=periodic, ignoreFluff=this.ignoreFluff);
-  for i in c.dist.targetLocDom do
-    c.locDoms(i) = locDoms(i);
+  c.locDoms = locDoms;
   c.whole = {(...privatizeData(2))};
   if c.whole.size > 0 {
     var absFluff : fluff.type;
@@ -1692,8 +1689,7 @@ proc StencilDom.dsiPrivatize(privatizeData) {
 proc StencilDom.dsiGetReprivatizeData() return whole.dims();
 
 proc StencilDom.dsiReprivatize(other, reprivatizeData) {
-  for i in dist.targetLocDom do
-    locDoms(i) = other.locDoms(i);
+  locDoms = other.locDoms;
   whole = {(...reprivatizeData)};
   if whole.size > 0 {
     var absFluff : fluff.type;
@@ -1742,8 +1738,8 @@ proc StencilArr.dsiGetPrivatizeData() return dom.pid;
 proc StencilArr.dsiPrivatize(privatizeData) {
   var privdom = chpl_getPrivatizedCopy(dom.type, privatizeData);
   var c = new unmanaged StencilArr(eltType=eltType, rank=rank, idxType=idxType, stridable=stridable, dom=privdom, ignoreFluff=this.ignoreFluff);
+  c.locArr = locArr;
   for localeIdx in c.dom.dist.targetLocDom {
-    c.locArr(localeIdx) = locArr(localeIdx);
     if c.locArr(localeIdx).locale.id == here.id then
       c.myLocArr = c.locArr(localeIdx);
   }
@@ -1804,12 +1800,12 @@ proc StencilDom.numRemoteElems(viewDom, rlo, rid) {
   // NOTE: Not bothering to check to see if rid+1, length, or rlo-1 used
   //  below can fit into idxType
   var blo, bhi:dist.idxType;
-  if rid==(dist.targetLocDom.dim(rank).length - 1) then
+  if rid==(dist.targetLocDom.dim(rank).size - 1) then
     bhi=viewDom.dim(rank).high;
   else {
       bhi = dist.boundingBox.dim(rank).low +
         intCeilXDivByY((dist.boundingBox.dim(rank).high - dist.boundingBox.dim(rank).low +1)*(rid+1):idxType,
-                       dist.targetLocDom.dim(rank).length:idxType) - 1:idxType;
+                       dist.targetLocDom.dim(rank).size:idxType) - 1:idxType;
   }
 
   return (bhi - (rlo - 1):idxType);

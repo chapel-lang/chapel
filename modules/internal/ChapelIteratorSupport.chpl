@@ -115,6 +115,7 @@ module ChapelIteratorSupport {
   // Ideally we'd get them **directly** from domType/arrType.
   //
 
+  pragma "unsafe"
   proc chpl_buildStandInRTT(type domType: domain) type
   { //
     // domType._instance has no runtime type, so accessing its type
@@ -127,6 +128,7 @@ module ChapelIteratorSupport {
     return chpl_buildStandInRTT(instanceObj);
   }
 
+  pragma "unsafe"
   proc chpl_buildStandInRTT(type arrType: []) type
   {
     // Analogously to instanceObj in chpl_buildStandInRTT(domType).
@@ -340,6 +342,8 @@ module ChapelIteratorSupport {
 
   inline proc _getIteratorZip(x: _tuple) {
     inline proc _getIteratorZipInternal(x: _tuple, param dim: int) {
+      if isTuple(x(dim)) && !isHomogeneousTuple(x(dim)) then
+        compilerError("Heterogeneous tuples don't support zippered iteration yet");
       if dim == x.size then
         return (_getIterator(x(dim)),);
       else

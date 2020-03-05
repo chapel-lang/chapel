@@ -1,10 +1,10 @@
 Dom1D
-(execute_on = 4, execute_on_nb = 6) (get = 40, put = 1, execute_on = 2, execute_on_fast = 2) (get = 40, put = 1, execute_on_fast = 2) (get = 40, put = 1, execute_on_fast = 2)
+(execute_on = 4, execute_on_nb = 6) (get = 26, put = 1, execute_on = 2, execute_on_fast = 2) (get = 26, put = 1, execute_on_fast = 2) (get = 26, put = 1, execute_on_fast = 2)
 Dom2D
-(execute_on = 4, execute_on_nb = 6) (get = 47, put = 1, execute_on = 2, execute_on_fast = 2) (get = 47, put = 1, execute_on_fast = 2) (get = 47, put = 1, execute_on_fast = 2)
+(execute_on = 4, execute_on_nb = 6) (get = 34, put = 1, execute_on = 2, execute_on_fast = 2) (get = 34, put = 1, execute_on_fast = 2) (get = 34, put = 1, execute_on_fast = 2)
 Dom3D
-(execute_on = 4, execute_on_nb = 6) (get = 62, put = 1, execute_on = 2, execute_on_fast = 2) (get = 62, put = 1, execute_on_fast = 2) (get = 62, put = 1, execute_on_fast = 2)
+(execute_on = 4, execute_on_nb = 6) (get = 44, put = 1, execute_on = 2, execute_on_fast = 2) (get = 44, put = 1, execute_on_fast = 2) (get = 44, put = 1, execute_on_fast = 2)
 Dom4D
-(execute_on = 4, execute_on_nb = 6) (get = 77, put = 1, execute_on = 2, execute_on_fast = 2) (get = 77, put = 1, execute_on_fast = 2) (get = 77, put = 1, execute_on_fast = 2)
+(execute_on = 4, execute_on_nb = 6) (get = 54, put = 1, execute_on = 2, execute_on_fast = 2) (get = 54, put = 1, execute_on_fast = 2) (get = 54, put = 1, execute_on_fast = 2)
 Dom2D32
-(execute_on = 4, execute_on_nb = 6) (get = 47, put = 1, execute_on = 2, execute_on_fast = 2) (get = 47, put = 1, execute_on_fast = 2) (get = 47, put = 1, execute_on_fast = 2)
+(execute_on = 4, execute_on_nb = 6) (get = 34, put = 1, execute_on = 2, execute_on_fast = 2) (get = 34, put = 1, execute_on_fast = 2) (get = 34, put = 1, execute_on_fast = 2)

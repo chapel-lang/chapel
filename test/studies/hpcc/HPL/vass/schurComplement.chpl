@@ -149,7 +149,7 @@ proc schurComplement(blk) {
 //        lastFullRow = Rest1end - blkSize + 1,
 //        lastFullCol = Rest2end - blkSize + 1;
 
-  reportBlocks((Rest.dim(1) by blkSize).length, (Rest.dim(2) by blkSize).length);
+  reportBlocks((Rest.dim(1) by blkSize).size, (Rest.dim(2) by blkSize).size);
 
   forall (row,col) in RestByBlkSize {
     // we have some additional stuff for debugging/tuning

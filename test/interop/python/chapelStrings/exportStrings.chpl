@@ -1,7 +1,7 @@
 use Bytes;
 
 export proc getFirstNullCodepointPos(in s: string): int {
-  for i in 1..s.length do
+  for i in 1..s.size do
     if s[i].toCodepoint() == 0x00 then
       return (i - 1);
   return -1;

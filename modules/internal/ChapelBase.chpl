@@ -691,7 +691,7 @@ module ChapelBase {
 
   pragma "always propagate line file info"
   private inline proc checkNotNil(x:borrowed class?) {
-    use HaltWrappers only;
+    import HaltWrappers;
     // Check only if --nil-checks is enabled
     if chpl_checkNilDereferences {
       // Add check for nilable types only.
@@ -1067,7 +1067,8 @@ module ChapelBase {
                         _ddata_sizeof_element(data));
   }
 
-  inline proc ==(a: _ddata, b: _ddata) where a.eltType == b.eltType {
+  inline proc ==(a: _ddata, b: _ddata)
+      where _to_borrowed(a.eltType) == _to_borrowed(b.eltType) {
     return __primitive("ptr_eq", a, b);
   }
   inline proc ==(a: _ddata, b: _nilType) {
@@ -1946,6 +1947,7 @@ module ChapelBase {
   inline proc -=(ref D: domain, param idx) { D.remove(idx); }
 
   /* swap operator */
+  pragma "ignore transfer errors"
   inline proc <=>(ref lhs, ref rhs) {
     // It's tempting to make `tmp` a `const`, but it causes problems
     // for types where the RHS of an assignment is modified, such as a

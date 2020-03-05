@@ -235,14 +235,14 @@ class Cyclic: BaseDist {
       var ranges: rank*range;
       for param i in 1..rank do {
         var thisRange = targetLocales.domain.dim(i);
-        ranges(i) = 0..#thisRange.length;
+        ranges(i) = 0..#thisRange.size;
       }
       targetLocDom = {(...ranges)};
       targetLocs = reshape(targetLocales, targetLocDom);
     }
 
     for param i in 1..rank do
-      this.startIdx(i) = chpl__mod(tupleStartIdx(i), targetLocDom.dim(i).length);
+      this.startIdx(i) = chpl__mod(tupleStartIdx(i), targetLocDom.dim(i).size);
 
     // NOTE: When these knobs stop using the global defaults, we will need
     // to add checks to make sure dataParTasksPerLocale<0 and
@@ -338,10 +338,8 @@ proc Cyclic.init(other: Cyclic, privateData,
 
   this.complete();
 
-  for i in targetLocDom {
-    targetLocs[i] = other.targetLocs[i];
-    locDist[i] = other.locDist[i];
-  }
+  targetLocs = other.targetLocs;
+  locDist = other.locDist;
 }
                  
 proc Cyclic.dsiSupportsPrivatization() param return true;
@@ -420,7 +418,7 @@ proc Cyclic.targetLocsIdx(i: idxType) {
 proc Cyclic.targetLocsIdx(ind: rank*idxType) {
   var x: rank*int;
   for param i in 1..rank {
-    var dimLen = targetLocDom.dim(i).length;
+    var dimLen = targetLocDom.dim(i).size;
     //x(i) = ((ind(i) - startIdx(i)) % dimLen):int;
     x(i) = chpl__diffMod(ind(i), startIdx(i), dimLen):int;
   }
@@ -454,7 +452,7 @@ proc chpl__computeCyclic(type idxType, locid, targetLocBox, startIdx) {
       const lo = chpl__tuplify(startIdx)(i): idxType;
       const myloc = chpl__tuplify(locid)(i): idxType;
       // NOTE: Not checking for overflow here when casting to strType
-      const numlocs = targetLocBox.dim(i).length: strType;
+      const numlocs = targetLocBox.dim(i).size: strType;
       inds(i) = chpl__computeCyclicDim(idxType, lo, myloc, numlocs);
     }
     return inds;
@@ -1048,7 +1046,7 @@ class LocCyclicRADCache /* : LocRADCache */ {
 
     for param i in 1..rank do
       // NOTE: Not bothering to check to see if length can fit into idxType
-      targetLocDomDimLength(i) = targetLocDom.dim(i).length:idxType;
+      targetLocDomDimLength(i) = targetLocDom.dim(i).size:idxType;
   }
 }
 
@@ -1089,8 +1087,8 @@ where canDoAnyToCyclic(this, destDom, Src, srcDom) {
         //were different, we need to calculate the correct stride in r1
         for param t in 1..rank {
           r1[t] = (ini[t]:el..end[t]:el by sb[t]);
-          if r1[t].length != r2[t].length then
-            r1[t] = (ini[t]:el..end[t]:el by (end[t] - ini[t]):el/(r2[t].length-1));
+          if r1[t].size != r2[t].size then
+            r1[t] = (ini[t]:el..end[t]:el by (end[t] - ini[t]):el/(r2[t].size-1));
         }
 
         if debugCyclicDistBulkTransfer then
@@ -1131,8 +1129,8 @@ where useBulkTransferDist {
         //were different, we need to calculate the correct stride in r1
         for param t in 1..rank {
           r1[t] = (ini[t]:el..end[t]:el by sa[t]);
-          if r1[t].length != r2[t].length then
-            r1[t] = (ini[t]:el..end[t]:el by (end[t] - ini[t]):el/(r2[t].length-1));
+          if r1[t].size != r2[t].size then
+            r1[t] = (ini[t]:el..end[t]:el by (end[t] - ini[t]):el/(r2[t].size-1));
         }
 
         if debugCyclicDistBulkTransfer then
@@ -1171,8 +1169,8 @@ where useBulkTransferDist {
         //were different, we need to calculate the correct stride in r1
         for param t in 1..rank {
           r1[t] = (ini[t]:el..end[t]:el by sb[t]);
-          if r1[t].length != r2[t].length then
-            r1[t] = (ini[t]:el..end[t]:el by (end[t] - ini[t]):el/(r2[t].length-1));
+          if r1[t].size != r2[t].size then
+            r1[t] = (ini[t]:el..end[t]:el by (end[t] - ini[t]):el/(r2[t].size-1));
         }
 
         if debugCyclicDistBulkTransfer then

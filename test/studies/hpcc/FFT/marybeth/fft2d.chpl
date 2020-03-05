@@ -181,7 +181,7 @@ proc fft2d(A, W, steps, phase) {
 }
 
 proc transpose(inout A:[?AD] complex) {
-  const n = AD.dim(1).length;
+  const n = AD.dim(1).size;
   var p = sqrt(n):int;
   var row, col:int;
   var temp: [AD] complex;

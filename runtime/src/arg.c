@@ -40,6 +40,7 @@
 
 
 static int gdbFlag = 0;
+static int lldbFlag = 0;
 int32_t blockreport = 0; // report locations of blocked threads on SIGINT
 int32_t taskreport = 0;  // report thread hierarchy on SIGINT
 
@@ -65,6 +66,7 @@ static const flagType flagList[] = {
   { "t", "", "taskreport",
     "report list of pending and executing tasks on SIGINT", 'g' },
   { "", "", "gdb", "run program in gdb", 'g' },
+  { "", "", "lldb", "run program in lldb", 'g' },
   { "E", "<envVar>=<val>", "",
     "set the value of an environment variable", 'g' },
 
@@ -78,6 +80,10 @@ const int numFlags = sizeof(flagList) / sizeof(flagList[0]);
 
 int _runInGDB(void) {
   return gdbFlag;
+}
+
+int _runInLLDB(void) {
+  return lldbFlag;
 }
 
 
@@ -322,6 +328,11 @@ void parseArgs(chpl_bool isLauncher, chpl_parseArgsMode_t mode,
 
           if (strcmp(flag, "gdb") == 0) {
             gdbFlag = i;
+            break;
+          }
+
+          if (strcmp(flag, "lldb") == 0) {
+            lldbFlag = i;
             break;
           }
 

@@ -101,7 +101,7 @@ proc main {
   run_loop[LoopKernelID.IMP_HYDRO_2D  ] = runC_impHydro2D;
   run_loop[LoopKernelID.FIND_FIRST_MIN] = runC_findFirstMin;
 
-  if output_dirname.length > 0 {
+  if output_dirname.size > 0 {
     mkdir(output_dirname, parents=true);
   }
 
@@ -268,7 +268,7 @@ proc generateTimingReport(loop_variants: [] bool,
   for ilv in loop_variants.domain {
     computeStats(ilv, suite_run_info.getLoopStats(ilv), do_fom);
   }
-  if output_dirname.length != 0 {
+  if output_dirname.size != 0 {
     const timing_fname = output_dirname + "/" + "timing.txt";
     var outfile = open(timing_fname, iomode.cw);
     var writer = outfile.writer();
@@ -318,7 +318,7 @@ proc writeMeanTimeReport(variant: LoopVariantID, output_dirname: string) {
 
   for iloop in suite_run_info.loop_kernel_dom {
     var stat = suite_run_info.getLoopStats(variant)[iloop].borrow();
-    if loop_names[iloop].length != 0 && stat.loop_is_run {
+    if loop_names[iloop].size != 0 && stat.loop_is_run {
       writer.write(loop_names[iloop]);
       for ilen in stat.loop_length_dom {
         writer.writef("%s%r", sepchr, stat.mean[ilen]);
@@ -357,7 +357,7 @@ proc writeRelativeTimeReport(variant: LoopVariantID, output_dirname: string) {
 
   for iloop in suite_run_info.loop_kernel_dom {
     var stat = suite_run_info.getLoopStats(variant)[iloop].borrow();
-    if loop_names[iloop].length != 0 && stat.loop_is_run {
+    if loop_names[iloop].size != 0 && stat.loop_is_run {
       writer.write(loop_names[iloop]);
       for ilen in stat.loop_length_dom {
         writer.write(sepchr, stat.meanrel2ref[ilen]);
@@ -417,14 +417,14 @@ proc writeTimingSummaryReport(loop_variants: [] bool, outchannel) {
 
   var max_name_len = 0;
   for name in loop_names {
-    max_name_len = max(max_name_len, name.length);
+    max_name_len = max(max_name_len, name.size);
   }
   var max_var_name_len = 0;
   for ilv in loop_variants.domain {
-    max_var_name_len = max(max_var_name_len, loop_variant_names[ilv].length);
+    max_var_name_len = max(max_var_name_len, loop_variant_names[ilv].size);
   }
   var var_field = "Variant(length id)";
-  var var_field_len = var_field.length;
+  var var_field_len = var_field.size;
   var prec = 10;
   var prec_buf = prec + 8;
   var reldiff_prec = 6;
@@ -448,7 +448,7 @@ proc writeTimingSummaryReport(loop_variants: [] bool, outchannel) {
 
     var ref_mean = ref_variant_stat.mean;
 
-    if loop_names[iloop].length != 0 && ref_variant_stat.loop_is_run {
+    if loop_names[iloop].size != 0 && ref_variant_stat.loop_is_run {
       if iloop:int > 1 {
         outchannel.write("\n", dash_line_part);
       }
@@ -501,7 +501,7 @@ proc buildVersionInfo() {
 proc generateChecksumReport(loop_variants: [] bool,
                             output_dirname: string) {
   if + reduce loop_variants == 0 then return;
-  if output_dirname.length != 0 {
+  if output_dirname.size != 0 {
     var checksum_fname = output_dirname + "/" + "checksum.txt";
     var outfile = open(checksum_fname, iomode.cw);
     var writer = outfile.writer();
@@ -543,15 +543,15 @@ proc writeChecksumReport(loop_variants: [] bool, outchannel) {
 
   var max_name_len = 0;
   for name in loop_names {
-    max_name_len = max(max_name_len, name.length);
+    max_name_len = max(max_name_len, name.size);
   }
   var max_var_name_len = 0;
   for ilv in loop_variant_names.domain {
-    max_var_name_len = max(max_var_name_len, loop_variant_names[ilv].length);
+    max_var_name_len = max(max_var_name_len, loop_variant_names[ilv].size);
   }
 
   var var_field = "Variant(length id)";
-  var var_field_len = max(var_field.length, max reduce [ilv in loop_variant_names.domain]  loop_variant_names[ilv].length + 3);
+  var var_field_len = max(var_field.size, max reduce [ilv in loop_variant_names.domain]  loop_variant_names[ilv].size + 3);
   var prec = 32;
   var prec_buf = prec + 8;
 
@@ -565,7 +565,7 @@ proc writeChecksumReport(loop_variants: [] bool, outchannel) {
   for iloop in suite_run_info.loop_kernel_dom {
     var ref_variant_stat = suite_run_info.getLoopStats(LoopVariantID.RAW)[iloop].borrow();
     var ref_chksum = ref_variant_stat.loop_chksum;
-    if loop_names[iloop].length != 0 && ref_variant_stat.loop_is_run {
+    if loop_names[iloop].size != 0 && ref_variant_stat.loop_is_run {
       if iloop:int > 1 then
         outchannel.write("\n", dash_line_part);
       outchannel.write(loop_names[iloop], "(", iloop:int, ") --> ");

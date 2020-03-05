@@ -21,7 +21,7 @@
 //
 module DefaultSparse {
   private use ChapelStandard;
-  private use RangeChunk only ;
+  import RangeChunk;
 
   config param debugDefaultSparse = false;
 
@@ -247,7 +247,7 @@ module DefaultSparse {
 
     override proc bulkAdd_help(inds: [?indsDom] index(rank, idxType),
         dataSorted=false, isUnique=false, addOn=nil:locale?){
-      use Sort only;
+      import Sort;
 
       if addOn != nil {
         if addOn != this.locale {

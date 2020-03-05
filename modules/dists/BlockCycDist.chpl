@@ -186,8 +186,10 @@ class BlockCyclic : BaseDist {
   const lowIdx: rank*idxType;
   const blocksize: rank*int;
   const targetLocDom: domain(rank);
-  const targetLocales: [targetLocDom] locale;
-  const locDist: [targetLocDom] unmanaged LocBlockCyclic(rank, idxType);
+
+  // these need to be var, so we can bulk-assign
+  var targetLocales: [targetLocDom] locale;
+  var locDist: [targetLocDom] unmanaged LocBlockCyclic(rank, idxType);
 
   var dataParTasksPerLocale: int; // tasks per locale for forall iteration
 
@@ -234,7 +236,7 @@ class BlockCyclic : BaseDist {
       var ranges: rank*range;
       for param i in 1..rank do {
         var thisRange = targetLocales.domain.dim(i);
-        ranges(i) = 0..#thisRange.length;
+        ranges(i) = 0..#thisRange.size;
       }
       
       targetLocDom = {(...ranges)};
@@ -307,7 +309,7 @@ class BlockCyclic : BaseDist {
 proc BlockCyclic._locsize {
   var ret : rank*int;
   for param i in 1..rank {
-    ret(i) = targetLocDom.dim(i).length;
+    ret(i) = targetLocDom.dim(i).size;
   }
   return ret;
 }
@@ -417,7 +419,7 @@ proc BlockCyclic.getStarts(inds, locid) {
 proc BlockCyclic.idxToLocaleInd(ind: idxType) where rank == 1 {
   const ind0 = ind - lowIdx(1);
   //  compilerError((ind0/blocksize(1)%targetLocDom.dim(1).type:string);
-  return (ind0 / blocksize(1)) % targetLocDom.dim(1).length;
+  return (ind0 / blocksize(1)) % targetLocDom.dim(1).size;
 }
 
 proc BlockCyclic.idxToLocaleInd(ind: rank*idxType) where rank == 1 {
@@ -428,7 +430,7 @@ proc BlockCyclic.idxToLocaleInd(ind: rank*idxType) where rank != 1 {
   var locInd: rank*int;
   for param i in 1..rank {
     const ind0 = ind(i) - lowIdx(i);
-    locInd(i) = ((ind0 / blocksize(i)) % targetLocDom.dim(i).length): int; 
+    locInd(i) = ((ind0 / blocksize(i)) % targetLocDom.dim(i).size): int;
   }
   return locInd;
 }
@@ -444,10 +446,8 @@ proc BlockCyclic.init(other: BlockCyclic, privatizeData,
 
   this.complete();
 
-  for i in targetLocDom {
-    targetLocales[i] = other.targetLocales[i];
-    locDist[i] = other.locDist[i];
-  }
+  targetLocales = other.targetLocales;
+  locDist = other.locDist;
 }
 
 proc BlockCyclic.dsiSupportsPrivatization() param return true;
@@ -495,7 +495,7 @@ class LocBlockCyclic {
     } else {
       for param i in 1..rank {
         const lo = dist.lowIdx(i) + (locid(i) * dist.blocksize(i));
-        const str = dist.blocksize(i) * dist.targetLocDom.dim(i).length;
+        const str = dist.blocksize(i) * dist.targetLocDom.dim(i).size;
         myStarts(i) = lo.. by str;
       }
     }
@@ -567,7 +567,7 @@ iter BlockCyclicDom.these(param tag: iterKind) where tag == iterKind.leader {
           temp     = temp.chpl__unTranslate(dimLow);
 
           retblock(j) = (temp.low / dim.stride:idxType)..
-                        #temp.length;
+                        #temp.size;
         }
         yield retblock;
       }
@@ -765,7 +765,7 @@ proc LocBlockCyclicDom.postinit() {
 //
 proc LocBlockCyclicDom.computeFlatInds() {
   //  writeln("myStarts = ", myStarts);
-  const numBlocks = * reduce [d in 1..rank] (myStarts.dim(d).length),
+  const numBlocks = * reduce [d in 1..rank] (myStarts.dim(d).size),
     indsPerBlk = * reduce [d in 1..rank] (globDom.dist.blocksize(d));
   //  writeln("Total number of inds = ", numBlocks * indsPerBlk);
   return numBlocks * indsPerBlk;
@@ -820,7 +820,7 @@ proc LocBlockCyclicDom.high {
 proc LocBlockCyclicDom._lens {
   var ret : rank*int;
   for param i in 1..rank {
-    ret(i) = myStarts.dim(i).length;
+    ret(i) = myStarts.dim(i).size;
   }
   return ret;
 }
@@ -834,7 +834,7 @@ proc LocBlockCyclicDom._sizes {
     var sizes : (rank+1)*int;
     sizes(rank+1) = 1;
     for i in 1..rank by -1 do
-      sizes(i) = sizes(i+1) * (globDom.dist.blocksize(i) * myStarts.dim(i).length);
+      sizes(i) = sizes(i+1) * (globDom.dist.blocksize(i) * myStarts.dim(i).size);
     return sizes;
 }
 

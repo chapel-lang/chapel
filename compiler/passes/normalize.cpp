@@ -631,7 +631,8 @@ void checkUseBeforeDefs(FnSymbol* fn) {
 
         if (isModuleSymbol(sym)                    == true  &&
             isFnSymbol(fn->defPoint->parentSymbol) == false &&
-            isUseStmt(se->parentExpr)              == false) {
+            isUseStmt(se->parentExpr)              == false &&
+            isImportStmt(se->parentExpr)           == false) {
           SymExpr* prev = toSymExpr(se->prev);
 
           if (prev == NULL || prev->symbol() != gModuleToken) {
@@ -786,12 +787,15 @@ static void moveGlobalDeclarationsToModuleScope() {
   forv_Vec(ModuleSymbol, mod, allModules) {
     for_alist(expr, mod->initFn->body->body) {
       if (DefExpr* def = toDefExpr(expr)) {
-        // Non-temporary variable declarations are moved out to module scope.
         if (VarSymbol* vs = toVarSymbol(def->sym)) {
-          // All var symbols are moved out to module scope,
-          // except for end counts (just so that parallel.cpp
-          // can find them)
+          // Don't move end counts to module scope
+          // (just so that parallel.cpp can find them)
           if (vs->hasFlag(FLAG_END_COUNT))
+            continue;
+
+          // Move temps to module scope later
+          // (after it is determined if they are last-mention or not)
+          if (vs->hasFlag(FLAG_TEMP))
             continue;
 
           // move the DefExpr
@@ -1258,10 +1262,33 @@ bool AddEndOfStatementMarkers::enterCallExpr(CallExpr* node) {
     return false;
 
   // Don't add markers after a move setting a temp
-  if (node->isPrimitive(PRIM_MOVE) || node->isPrimitive(PRIM_ASSIGN))
+  if (node->isPrimitive(PRIM_MOVE) ||
+      node->isPrimitive(PRIM_ASSIGN))
     if (SymExpr* lhs = toSymExpr(node->get(1)))
       if (lhs->symbol()->hasFlag(FLAG_TEMP))
         return false;
+
+  // If the next statement is a PRIM_INIT_FIELD, it's a compound
+  // thing from initializer pre-normalization, so don't add an end-of-statement
+  // in-between. Instead, add an end-of-statement after the PRIM_INIT_FIELD.
+  if (CallExpr* nextCall = toCallExpr(node->next)) {
+    if (nextCall->isPrimitive(PRIM_INIT_FIELD) ||
+        nextCall->isPrimitive(PRIM_SET_MEMBER)) {
+      CallExpr* endOfStatement = NULL;
+      if (CallExpr* nextNextCall = toCallExpr(nextCall->next))
+        if (nextNextCall->isPrimitive(PRIM_END_OF_STATEMENT))
+          endOfStatement = nextNextCall;
+
+      if (endOfStatement == NULL) {
+        SET_LINENO(nextCall);
+        endOfStatement = new CallExpr(PRIM_END_OF_STATEMENT);
+        nextCall->insertAfter(endOfStatement);
+      }
+
+      addMentionToEndOfStatement(node, endOfStatement);
+      return false;
+    }
+  }
 
   addMentionToEndOfStatement(node, NULL);
   return false;
@@ -2236,6 +2263,9 @@ static void normalizeTypeAlias(DefExpr* defExpr) {
     return;
   }
 
+  // all user variables are dead at end of block
+  var->addFlag(FLAG_DEAD_END_OF_BLOCK);
+
   std::vector<CallExpr*> initAssigns;
   // if there is no init expression, search for initialization
   // points written using '='
@@ -2434,6 +2464,9 @@ static void normalizeVariableDefinition(DefExpr* defExpr) {
   bool foundSplitInit = false;
   bool requestedSplitInit = isSplitInitExpr(init);
   bool refVar = var->hasFlag(FLAG_REF_VAR);
+
+  // all user variables are dead at end of block
+  var->addFlag(FLAG_DEAD_END_OF_BLOCK);
 
   // For now, disable automatic split init on non-user code
   Expr* prevent = NULL;

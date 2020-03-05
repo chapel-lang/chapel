@@ -21,8 +21,8 @@ init 3 3
 lhs(2 2) = rhs(3 3)
 deinit 3 3
 lhs(1 1) = rhs(3 3)
-deinit 3 3
 (x = 3, ptr = {xx = 3})
+deinit 3 3
 deinit 3 3
 test4
 init (default)
@@ -88,8 +88,8 @@ test10
 init (default)
 init (default)
 lhs(0 0) = rhs(0 0)
-deinit 0 0
 (x = 0, ptr = {xx = 0})
+deinit 0 0
 deinit 0 0
 test10b
 init (default)
@@ -109,8 +109,8 @@ lhs(0 0) = rhs(1 1)
 deinit 1 1
 init (default)
 lhs(0 0) = rhs(1 1)
-deinit 1 1
 (x = 1, ptr = {xx = 1})
+deinit 1 1
 deinit 1 1
 test11a
 init (default)
@@ -123,8 +123,8 @@ lhs(0 0) = rhs(1 1)
 deinit 1 1
 init (default)
 lhs(0 0) = rhs(1 1)
-deinit 1 1
 (x = 1, ptr = {xx = 1})
+deinit 1 1
 deinit 1 1
 test12
 init (default)

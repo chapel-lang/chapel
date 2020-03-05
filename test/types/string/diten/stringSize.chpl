@@ -6,4 +6,4 @@ var sz = (str1 + " " + str2).size;
 var sz2 = str4.size;
 writeln("Size: ", sz);
 writeln("Size: ", sz2);
-assert(str4.length == sz2);
+assert(str4.size == sz2);

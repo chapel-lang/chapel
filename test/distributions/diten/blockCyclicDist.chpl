@@ -9,7 +9,7 @@ class BlockCyclicDist {
   proc idxToLocaleInd(ind: idxType...nDims) {
     var locInd: nDims*idxType;
     for i in 1..nDims {
-      locInd(i) = (startLoc(i) + (ind(i)-1)/blockSize(i)) % localeDomain.dim(i).length;
+      locInd(i) = (startLoc(i) + (ind(i)-1)/blockSize(i)) % localeDomain.dim(i).size;
     }
     return locInd;
   }
@@ -20,7 +20,7 @@ class BlockCyclicDist {
   proc getBlock(ind: idxType...nDims) {
     var locInd: nDims*idxType;
     for i in 1..nDims {
-      locInd(i) = (ind(i) - 1) / (localeDomain.dim(i).length*blockSize(i));
+      locInd(i) = (ind(i) - 1) / (localeDomain.dim(i).size*blockSize(i));
     }
     return locInd;
   }
@@ -56,7 +56,7 @@ class BlockCyclicDom {
   proc postinit() {
     var blksInDim: nDims*idxType;
     for i in 1..nDims {
-      blksInDim(i) = ceil(whole.dim(i).length:real(64) /
+      blksInDim(i) = ceil(whole.dim(i).size:real(64) /
                           dist.blockSize(i)):idxType;
     }
 
@@ -65,8 +65,8 @@ class BlockCyclicDom {
       
       for dim in 1..nDims {
         var remainder: idxType;
-        locSize(dim) = dist.blockSize(dim) * (blksInDim(dim) / dist.localeDomain.dim(dim).length);
-        remainder = whole.dim(dim).length - (locSize(dim) * dist.localeDomain.dim(dim).length);
+        locSize(dim) = dist.blockSize(dim) * (blksInDim(dim) / dist.localeDomain.dim(dim).size);
+        remainder = whole.dim(dim).size - (locSize(dim) * dist.localeDomain.dim(dim).size);
         if ((1+pos(dim))*dist.blockSize(dim) <= remainder) {
           locSize(dim) += dist.blockSize(dim);
         } else if (remainder - pos(dim)*dist.blockSize(dim) > 0) {

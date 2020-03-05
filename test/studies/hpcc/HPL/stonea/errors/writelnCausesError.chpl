@@ -159,7 +159,7 @@ proc LUFactorize(n : int, A : [1..n, 1..n+1] real, piv : [1..n] int) {
 
         // update trailing submatrix (if there)
         if(br.numIndices > 0) {
-            dgemm(trailingRows.length, blockRange.length, trailingCols.length,
+            dgemm(trailingRows.size, blockRange.size, trailingCols.size,
                   A(bl), A(tr), A(br));
           }
       }
@@ -210,7 +210,7 @@ proc selfMult(n : int, A : [1..n,1..n] real, C : [1..n,1..n] real) {
 proc permuteMatrix(matrix : [?dmn], in vector) {
     //var pdmn : sparse subdomain(dmn);
     var pdmn =
-        {1..vector.domain.dim(1).length, 1..vector.domain.dim(1).length};
+        {1..vector.domain.dim(1).size, 1..vector.domain.dim(1).size};
     var p : [pdmn] int;
     //p.IRV = 0;
 
@@ -224,9 +224,9 @@ proc permuteMatrix(matrix : [?dmn], in vector) {
     var permuted = matrix;
 
     matrixMult(
-        dmn.dim(1).length,
-        dmn.dim(1).length,
-        dmn.dim(2).length,
+        dmn.dim(1).size,
+        dmn.dim(1).size,
+        dmn.dim(2).size,
         p, matrix, permuted);
 
     matrix = permuted;

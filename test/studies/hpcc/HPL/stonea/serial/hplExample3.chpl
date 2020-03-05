@@ -73,8 +73,8 @@ proc luLikeMultiply(
     forall blkCol in blk+1..blksHoriz {
         const cBlkD = {(ADmn.dim(1))(ptSol..),
                        (ABlkDmn.dim(2))((blkCol-1)*blkSize+1..#blkSize)};
-        const aBlkD = {ptSol..#cBlkD.dim(1).length,
-                       ptOp..#cBlkD.dim(2).length};
+        const aBlkD = {ptSol..#cBlkD.dim(1).size,
+                       ptOp..#cBlkD.dim(2).size};
 
         ACopies[cBlkD] = A[aBlkD];
     }
@@ -83,8 +83,8 @@ proc luLikeMultiply(
     forall blkRow in blk+1..blksVert {
         const cBlkD = {(ABlkDmn.dim(1))((blkRow-1)*blkSize+1..#blkSize),
                        (ADmn.dim(2))(ptSol..)};
-        const bBlkD = {ptOp..#cBlkD.dim(1).length,
-                       ptSol..#cBlkD.dim(2).length};
+        const bBlkD = {ptOp..#cBlkD.dim(1).size,
+                       ptSol..#cBlkD.dim(2).size};
 
         BCopies[cBlkD] = A[bBlkD];
     }
@@ -95,8 +95,8 @@ proc luLikeMultiply(
                        (ABlkDmn.dim(2))((blkCol-1)*blkSize+1..#blkSize)};
         const bBlkD = {(ABlkDmn.dim(1))((blkRow-1)*blkSize+1..#blkSize),
                        (ADmn.dim(2))((blkCol-1)*blkSize+1..#blkSize)};
-        const cBlkD = ADmn[(blkRow-1)*blkSize+1..#aBlkD.dim(1).length,
-                           (blkCol-1)*blkSize+1..#bBlkD.dim(2).length];
+        const cBlkD = ADmn[(blkRow-1)*blkSize+1..#aBlkD.dim(1).size,
+                           (blkCol-1)*blkSize+1..#bBlkD.dim(2).size];
 
         local {
             dgemm(

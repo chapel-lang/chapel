@@ -1,77 +1,77 @@
 Words words words
 +match: One word no captures
-match (matched = true, offset = 0, length = 5)
+match (matched = true, offset = 0, size = 5)
 offset 0
 +match: nothing no captures
-match (matched = false, offset = -1, length = 0)
+match (matched = false, offset = -1, size = 0)
 offset 0
 +match: one word with captures
-match (matched = true, offset = 0, length = 5)
+match (matched = true, offset = 0, size = 5)
 cap Words
 offset 0
 +match: nothing with captures
-match (matched = false, offset = -1, length = 0)
+match (matched = false, offset = -1, size = 0)
 cap 
 offset 0
 +match: nothing
-match (matched = false, offset = -1, length = 0)
+match (matched = false, offset = -1, size = 0)
 cap 
 offset 0
 +match: nothing with captures
-match (matched = false, offset = -1, length = 0)
+match (matched = false, offset = -1, size = 0)
 cap 
 offset 0
 +search: One word no captures
-match (matched = true, offset = 0, length = 5)
+match (matched = true, offset = 0, size = 5)
 offset 0
 +search: nothing no captures
-match (matched = false, offset = -1, length = 0)
+match (matched = false, offset = -1, size = 0)
 offset 17
 +search: one word with captures
-match (matched = true, offset = 0, length = 5)
+match (matched = true, offset = 0, size = 5)
 cap Words
 offset 0
 +search: nothing with captures
-match (matched = false, offset = -1, length = 0)
+match (matched = false, offset = -1, size = 0)
 cap 
 offset 17
 +search: later word
-match (matched = true, offset = 6, length = 5)
+match (matched = true, offset = 6, size = 5)
 offset 6
 +search: later word captured
-match (matched = true, offset = 6, length = 5)
+match (matched = true, offset = 6, size = 5)
 cap words
 offset 6
 +matches: One word
 offset 0
-match (matched = true, offset = 0, length = 5)
+match (matched = true, offset = 0, size = 5)
 string Words
 offset 5
 +matches: All words
 offset 0
-match (matched = true, offset = 0, length = 5)
+match (matched = true, offset = 0, size = 5)
 string Words
 offset 6
-match (matched = true, offset = 6, length = 5)
+match (matched = true, offset = 6, size = 5)
 string words
 offset 12
-match (matched = true, offset = 12, length = 5)
+match (matched = true, offset = 12, size = 5)
 string words
 offset 17
 +matches: All words capturing first letter
 offset 0
-match (matched = true, offset = 0, length = 5)
+match (matched = true, offset = 0, size = 5)
 string Words
-cap match(matched = true, offset = 0, length = 1)
+cap match(matched = true, offset = 0, size = 1)
 cap string 
 offset 6
-match (matched = true, offset = 6, length = 5)
+match (matched = true, offset = 6, size = 5)
 string words
-cap match(matched = true, offset = 6, length = 1)
+cap match(matched = true, offset = 6, size = 1)
 cap string 
 offset 12
-match (matched = true, offset = 12, length = 5)
+match (matched = true, offset = 12, size = 5)
 string words
-cap match(matched = true, offset = 12, length = 1)
+cap match(matched = true, offset = 12, size = 1)
 cap string 
 offset 17
