@@ -822,6 +822,12 @@ module String {
     inline proc size return numCodepoints;
 
     /*
+      :returns: The indices that can be used to index into the string
+                (i.e., the range ``1..this.size``)
+    */
+    proc indices return 1..size;
+
+    /*
       :returns: The number of bytes in the string.
       */
     inline proc numBytes return len;

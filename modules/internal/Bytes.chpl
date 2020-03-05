@@ -369,6 +369,12 @@ module Bytes {
     inline proc size return len;
 
     /*
+      :returns: The indices that can be used to index into the bytes
+                (i.e., the range ``1..this.size``)
+    */
+    proc indices return 1..size;
+
+    /*
       :returns: The number of bytes in the :record:`bytes`.
       */
     inline proc numBytes return len;

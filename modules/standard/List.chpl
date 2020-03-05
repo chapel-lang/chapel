@@ -1434,6 +1434,16 @@ module List {
     }
 
     /*
+      Returns the list's legal indices as the range ``1..this.size``.
+
+      :return: ``1..this.size``
+      :rtype: `range`
+    */
+    proc indices {
+      return 1..this.size;
+    }
+
+    /*
       Returns a new DefaultRectangular array containing a copy of each of the
       elements contained in this list.
 
