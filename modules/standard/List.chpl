@@ -1434,9 +1434,9 @@ module List {
     }
 
     /*
-      Returns the range `1..this.size`.
+      Returns the list's legal indices as the range ``1..this.size``.
 
-      :return: `1..this.size`
+      :return: ``1..this.size``
       :rtype: `range`
     */
     proc indices {

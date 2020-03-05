@@ -2305,6 +2305,7 @@ module ChapelArray {
     proc _dom return _getDomain(_value.dom);
     /* The number of dimensions in the array */
     proc rank param return this.domain.rank;
+    /* return the array's indices as its domain */
     pragma "return not owned"
     proc indices
       return _dom;
