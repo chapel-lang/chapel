@@ -2128,6 +2128,7 @@ void amRequestExecOn(c_nodeid_t node, c_sublocid_t subloc,
                      chpl_fn_int_t fid,
                      chpl_comm_on_bundle_t* arg, size_t argSize,
                      chpl_bool fast, chpl_bool blocking) {
+  assert(!isAmHandler);
   CHK_TRUE(!(fast && !blocking)); // handler doesn't expect fast nonblocking
   if (argSize <= AM_MAX_MSG_SIZE) {
     arg->comm.xo = (struct chpl_comm_bundleData_execOn_t)
@@ -2169,6 +2170,7 @@ void amRequestExecOn(c_nodeid_t node, c_sublocid_t subloc,
 static inline
 void amRequestRMA(c_nodeid_t node, amOp_t op,
                   void* addr, void* raddr, size_t size) {
+  assert(!isAmHandler);
   chpl_comm_on_bundle_t arg;
   arg.comm.rma = (struct chpl_comm_bundleData_RMA_t)
                    { .b = (struct chpl_comm_bundleData_base_t)
@@ -2188,7 +2190,8 @@ static inline
 void amRequestAMO(c_nodeid_t node, void* object,
                   const void* operand1, const void* operand2, void* result,
                   int ofiOp, enum fi_datatype ofiType, size_t size) {
-  DBG_PRINTF(DBG_AMO,
+  assert(!isAmHandler);
+  DBG_PRINTF((ofiOp == FI_ATOMIC_READ) ? DBG_AMOREAD : DBG_AMO,
              "AMO via AM: obj %d:%p, opnd1 <%s>, opnd2 <%s>, res %p, "
              "op %s, typ %s, sz %zd",
              (int) node, object,
@@ -2200,7 +2203,8 @@ void amRequestAMO(c_nodeid_t node, void* object,
   if (myResult != NULL) {
     if (mrGetLocalKey(myResult, resSize) != 0) {
       myResult = allocBounceBuf(resSize);
-      DBG_PRINTF(DBG_AMO, "AMO result BB: %p", myResult);
+      DBG_PRINTF((ofiOp == FI_ATOMIC_READ) ? DBG_AMOREAD : DBG_AMO,
+                 "AMO result BB: %p", myResult);
       CHK_TRUE(mrGetLocalKey(myResult, resSize) == 0);
     }
   }
@@ -2236,6 +2240,7 @@ void amRequestAMO(c_nodeid_t node, void* object,
 
 static inline
 void amRequestShutdown(c_nodeid_t node) {
+  assert(!isAmHandler);
   chpl_comm_on_bundle_t arg;
   arg.comm.b = (struct chpl_comm_bundleData_base_t)
                  { .op = am_opShutdown, .node = chpl_nodeID };
@@ -2447,12 +2452,16 @@ void amHandler(void* argNil) {
   // Process AM requests and watch transmit responses arrive.
   //
   while (!atomic_load_bool(&amHandlersExit)) {
-    int ret;
+    int ret = FI_SUCCESS;
     if (ofi_amhWaitSet != NULL) {
-      OFI_CHK_2(fi_wait(ofi_amhWaitSet, 100 /*ms*/), ret, -FI_ETIMEDOUT);
+      ret = fi_wait(ofi_amhWaitSet, 100 /*ms*/);
+      if (ret != FI_SUCCESS
+          && ret != -FI_EINTR
+          && ret != -FI_ETIMEDOUT) {
+        OFI_ERR("fi_wait(ofi_amhWaitSet)", ret, fi_strerror(ret));
+      }
     } else {
       sched_yield();
-      ret = FI_SUCCESS;
     }
     if (ret == FI_SUCCESS) {
       processRxAmReq(tcip);
@@ -2757,7 +2766,7 @@ void amHandleAMO(chpl_comm_on_bundle_t* req) {
                amo_typeName(amo->ofiType), amo->size);
   } else if (amo->result != NULL) {
     if (amo->ofiOp == FI_ATOMIC_READ) {
-      DBG_PRINTF(DBG_AM | DBG_AMRECV | DBG_AMO,
+      DBG_PRINTF(DBG_AM | DBG_AMRECV | DBG_AMOREAD,
                  "amHandleAMO(seqId %d:%" PRIu64 "): "
                  "obj %p, res %p, ofiOp %s, ofiType %s, sz %d",
                  (int) amo->b.node, amo->b.seq,
@@ -2800,7 +2809,7 @@ void amHandleAMO(chpl_comm_on_bundle_t* req) {
       //
       // We must guarantee the result has arrived at the destination
       // before we send the 'done' indicator.  Currently ofi_put() does
-      // not return until it's seen the delivery completion event, so
+      // not return until after the data is visible in target memory, so
       // the guarantee holds.  But someday we might like to get better
       // comm/compute overlap by starting the next AM while this result
       // PUT is still in flight, and sending this 'done' later once we
@@ -3772,7 +3781,8 @@ chpl_comm_nb_handle_t ofi_amo(c_nodeid_t node, uint64_t object, uint64_t mrKey,
   void* mrDescRes = NULL;
   if (myRes != NULL && mrGetDesc(&mrDescRes, myRes, size) != 0) {
     myRes = allocBounceBuf(size);
-    DBG_PRINTF(DBG_AMO, "AMO result BB: %p", myRes);
+    DBG_PRINTF((ofiOp == FI_ATOMIC_READ) ? DBG_AMOREAD : DBG_AMO,
+               "AMO result BB: %p", myRes);
     CHK_TRUE(mrGetDesc(&mrDescRes, myRes, size) == 0);
   }
 
@@ -3805,7 +3815,7 @@ chpl_comm_nb_handle_t ofi_amo(c_nodeid_t node, uint64_t object, uint64_t mrKey,
     ctx = txnTrkEncode(txnTrkDone, &txnDone);
   }
 
-  DBG_PRINTF(DBG_AMO,
+  DBG_PRINTF((ofiOp == FI_ATOMIC_READ) ? DBG_AMOREAD : DBG_AMO,
              "tx AMO: obj %d:%" PRIx64 ", opnd1 <%s>, opnd2 <%s>, "
              "op %s, typ %s, sz %zd, ctx %p",
              (int) node, object,
@@ -3856,7 +3866,7 @@ chpl_comm_nb_handle_t ofi_amo(c_nodeid_t node, uint64_t object, uint64_t mrKey,
   }
 
   if (result != NULL) {
-    DBG_PRINTF(DBG_AMO,
+    DBG_PRINTF((ofiOp == FI_ATOMIC_READ) ? DBG_AMOREAD : DBG_AMO,
                "  AMO result: %p is %s",
                result,
                DBG_VAL(result,  ofiType));
@@ -4560,7 +4570,7 @@ void doCpuAMO(void* obj,
                      ofiOp, ofiType);
   }
 
-  if (DBG_TEST_MASK(DBG_AMO)) {
+  if (DBG_TEST_MASK(DBG_AMO | DBG_AMOREAD)) {
     if (result == NULL) {
       DBG_PRINTF(DBG_AMO,
                  "doCpuAMO(%p, %s, %s, %s): now %s",
@@ -4568,7 +4578,7 @@ void doCpuAMO(void* obj,
                  DBG_VAL(myOpnd1, ofiType),
                  DBG_VAL((chpl_amo_datum_t*) obj, ofiType));
     } else if (ofiOp == FI_ATOMIC_READ) {
-      DBG_PRINTF(DBG_AMO,
+      DBG_PRINTF(DBG_AMOREAD,
                  "doCpuAMO(%p, %s, %s): res %p is %s",
                  obj, amo_opName(ofiOp), amo_typeName(ofiType), result,
                  DBG_VAL(result, ofiType));
