@@ -1,1 +1,3 @@
-(x = 42)
+split-init-global1.chpl:4: error: invalid use of module-scope variable
+split-init-global1.chpl:4: note: calls function 'f'
+split-init-global1.chpl:8: note: mentions module-scope variable 'globalRecord' not initialized yet

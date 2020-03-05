@@ -355,6 +355,9 @@ void checkLifetimesInFunction(FnSymbol* fn) {
   // No need to check lifetimes in string literal module.
   if (fn->getModule() == stringLiteralModule)
     return;
+  // No need to lifetime check extern functions
+  if (fn->hasFlag(FLAG_EXTERN))
+    return;
 
   bool debugging = debuggingLifetimesForFn(fn);
 

@@ -1,5 +1,3 @@
-init()
-(field = 0)
-init(1)
-(field = 0) = (field = 1)
-(field = 1)
+inner-fn.chpl:20: In function 'main':
+inner-fn.chpl:22: error: Illegal use of dead value
+inner-fn.chpl:21: note: 'x' is declared but not initialized here
