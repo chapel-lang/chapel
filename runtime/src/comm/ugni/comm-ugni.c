@@ -2001,6 +2001,7 @@ int chpl_comm_run_in_gdb(int argc, char* argv[], int gdbArgnum, int* status)
 int chpl_comm_run_in_lldb(int argc, char* argv[], int lldbArgnum, int* status)
 {
   return 0;
+}
 
 void chpl_comm_task_end(void) {
   task_local_buff_end(get_buff | put_buff | amo_nf_buff);
