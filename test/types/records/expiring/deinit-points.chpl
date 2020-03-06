@@ -505,6 +505,16 @@ proc t30b() {
 }
 t30b();
 
+proc t30c() {
+  writeln("t30c");
+  g(makeR());
+  {
+    writeln("nested block");
+  }
+  writeln("end outer");
+}
+t30c();
+
 proc t31() {
   writeln("t31");
   g(g(makeR()));
