@@ -166,7 +166,7 @@ proc Replicated.dsiPrivatize(privatizeData)
   const privTargetLocales: [privDom] locale = otherTargetLocales;
  
   const nonNilWrapper: [0..#privTargetLocales.size] locale =
-    for loc in otherTargetLocales do loc!; 
+    for loc in otherTargetLocales do loc; 
 
   return new unmanaged Replicated(nonNilWrapper, "used during privatization");
 }
@@ -280,7 +280,7 @@ proc ReplicatedDom.dsiReprivatize(other, reprivatizeData): void {
 proc Replicated.dsiClone(): _to_unmanaged(this.type) {
   if traceReplicatedDist then writeln("Replicated.dsiClone");
   var nonNilWrapper: [0..#targetLocales.size] locale =
-    for loc in targetLocales do loc!;
+    for loc in targetLocales do loc;
   return new unmanaged Replicated(nonNilWrapper);
 }
 
@@ -550,11 +550,11 @@ proc ReplicatedArr.dsiBoundsCheck(indexx) {
 
 // Write the array out to the given Writer serially.
 proc ReplicatedArr.dsiSerialWrite(f): void {
-  localArrs[f.readWriteThisFromLocale()!.id]!.arrLocalRep._value.dsiSerialWrite(f);
+  localArrs[f.readWriteThisFromLocale().id]!.arrLocalRep._value.dsiSerialWrite(f);
 }
 
 proc ReplicatedArr.dsiSerialRead(f, loc): void {
-  localArrs[f.readWriteThisFromLocale()!.id]!.arrLocalRep._value.dsiSerialRead(f);
+  localArrs[f.readWriteThisFromLocale().id]!.arrLocalRep._value.dsiSerialRead(f);
 }
 
 proc isReplicatedArr(arr) param {
