@@ -1,2 +1,1 @@
-0
-In A.B.C.foo()
+deeperNesting2.chpl:12: error: currently unable to import nested modules without specifying the full path to the module
