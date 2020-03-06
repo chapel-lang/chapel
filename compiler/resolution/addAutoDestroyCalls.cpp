@@ -118,8 +118,6 @@ void addAutoDestroyCalls() {
 *                                                                             *
 ************************************** | *************************************/
 
-static VarSymbol* possiblyInitsVariable(Expr* e, CallExpr*& fCall);
-static VarSymbol* possiblyInitsVariableOut(ArgSymbol* formal, Expr* actual);
 static LabelSymbol* findReturnLabel(FnSymbol* fn);
 static bool         isReturnLabel(const Expr*        stmt,
                                   const LabelSymbol* returnLabel);
@@ -162,8 +160,6 @@ static void walkBlockScopelessBlock(AutoDestroyScope& scope,
 static void checkSplitInitOrder(CondStmt* cond,
                                 std::vector<VarSymbol*>& thenOrder,
                                 std::vector<VarSymbol*>& elseOrder);
-
-static void variableUseBeforeInitError(VarSymbol* var, Expr* loc);
 
 // Returns the statement before the next statement to traverse
 static Expr* walkBlockStmt(FnSymbol*         fn,
@@ -250,14 +246,14 @@ static Expr* walkBlockStmt(FnSymbol*         fn,
 
       CallExpr* fCall = NULL;
       // Check for returned variable
-      if (VarSymbol* v = possiblyInitsVariable(stmt, fCall))
+      if (VarSymbol* v = initsVariable(stmt, fCall))
         if (isAutoDestroyedOrSplitInitedVariable(v))
           scope.addInitialization(v);
 
       if (fCall != NULL) {
         // Check also for out intent in a called function
         for_formals_actuals(formal, actual, fCall) {
-          if (VarSymbol* v = possiblyInitsVariableOut(formal, actual))
+          if (VarSymbol* v = initsVariableOut(formal, actual))
             if (isAutoDestroyedOrSplitInitedVariable(v))
               scope.addInitialization(v);
         }
@@ -423,7 +419,7 @@ static void checkSplitInitOrder(CondStmt* cond,
   }
 }
 
-static void variableUseBeforeInitError(VarSymbol* var, Expr* loc) {
+void variableUseBeforeInitError(VarSymbol* var, Expr* loc) {
   USR_FATAL_CONT(loc, "'%s' is used before it is initialized", var->name);
 
   // Find initializations to point to
@@ -432,14 +428,14 @@ static void variableUseBeforeInitError(VarSymbol* var, Expr* loc) {
   for_SymbolSymExprs(se, var) {
     if (CallExpr* call = toCallExpr(se->getStmtExpr())) {
       CallExpr* fCall = NULL;
-      if (VarSymbol* v = possiblyInitsVariable(call, fCall))
+      if (VarSymbol* v = initsVariable(call, fCall))
         if (v == var)
           inits.push_back(call);
 
       if (fCall != NULL) {
         // Check also for out intent in a called function
         for_formals_actuals(formal, actual, fCall) {
-          if (VarSymbol* v = possiblyInitsVariableOut(formal, actual))
+          if (VarSymbol* v = initsVariableOut(formal, actual))
             if (v == var)
               inits.push_back(fCall);
         }
@@ -537,11 +533,7 @@ static void walkBlockWithScope(AutoDestroyScope& scope,
 //
 // If there is a user function call involved (possibly within a move)
 // return that in fCall.
-//
-// Note, this must identify the first initialization, but it can also
-// return a variable for other calls setting the variable (since the
-// variable remains initialized).
-static VarSymbol* possiblyInitsVariable(Expr* e, CallExpr*& fCall) {
+VarSymbol* initsVariable(Expr* e, CallExpr*& fCall) {
 
   if (CallExpr* call = toCallExpr(e)) {
 
@@ -562,7 +554,7 @@ static VarSymbol* possiblyInitsVariable(Expr* e, CallExpr*& fCall) {
   return NULL;
 }
 
-static VarSymbol* possiblyInitsVariableOut(ArgSymbol* formal, Expr* actual) {
+VarSymbol* initsVariableOut(ArgSymbol* formal, Expr* actual) {
 
   if (formal->intent == INTENT_OUT || formal->originalIntent == INTENT_OUT)
     if (SymExpr* actualSe = toSymExpr(actual))
@@ -746,13 +738,13 @@ void ComputeLastSymExpr::noteRecordInit(VarSymbol* v, CallExpr* call) {
 
 bool ComputeLastSymExpr::enterCallExpr(CallExpr* node) {
   CallExpr* fCall = NULL;
-  if (VarSymbol* v = possiblyInitsVariable(node, fCall))
+  if (VarSymbol* v = initsVariable(node, fCall))
     noteRecordInit(v, node);
 
   // Check also for out intent
   if (fCall != NULL) {
     for_formals_actuals(formal, actual, fCall) {
-      if (VarSymbol* v = possiblyInitsVariableOut(formal, actual))
+      if (VarSymbol* v = initsVariableOut(formal, actual))
         noteRecordInit(v, node);
     }
   }
