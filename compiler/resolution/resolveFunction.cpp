@@ -825,8 +825,6 @@ bool SplitInitVisitor::enterDefExpr(DefExpr* def) {
 
 bool SplitInitVisitor::enterCallExpr(CallExpr* call) {
   if (call->isPrimitive(PRIM_DEFAULT_INIT_VAR)) {
-    if (call->id == 521502)
-      gdbShouldBreakHere();
 
     // Can this be replaced by a split init?
     std::vector<CallExpr*> initAssigns;
