@@ -1,2 +1,2 @@
 incorrectYieldTypes.chpl:4: In iterator 'IT':
-incorrectYieldTypes.chpl:6: error: cannot yield '[domain(1,int(64),false)] borrowed locale' when the declared return type is 'int(64)'
+incorrectYieldTypes.chpl:6: error: cannot yield '[domain(1,int(64),false)] locale' when the declared return type is 'int(64)'
