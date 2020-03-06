@@ -104,7 +104,11 @@ module ChapelLocale {
 
     var kind: localeKind;
 
-    forwarding _instance!;
+    inline proc _nonNilInstance {
+      return _instance!;
+    }
+
+    forwarding _nonNilInstance;
 
     proc init(_instance: BaseLocale) {
       this._instance = _to_unmanaged(_instance);
@@ -131,7 +135,6 @@ module ChapelLocale {
       /*delete this._instance;*/
     }
 
-    inline proc name { return this._instance!.name; }
     inline proc maxTaskPar { return this._instance!.maxTaskPar; }
     inline proc callStackSize { return this._instance!.callStackSize; }
   }
