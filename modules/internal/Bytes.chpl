@@ -501,7 +501,7 @@ module Bytes {
 
     pragma "no doc"
     inline proc param byte(param i: int) param : uint(8) {
-      if !this.indices.contains(i) then
+      if i < 1 || i > this.numBytes then
         compilerError("index out of bounds of bytes: " + i:string);
       return __primitive("ascii", this, i);
     }
