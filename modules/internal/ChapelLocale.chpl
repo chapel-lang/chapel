@@ -66,7 +66,6 @@
  */
 module ChapelLocale {
 
-  public use LocaleModelHelpSetup;
   use LocaleModel;
   import HaltWrappers;
   private use SysCTypes;
@@ -112,7 +111,10 @@ module ChapelLocale {
 
     proc init(_instance: BaseLocale) {
       this._instance = _to_unmanaged(_instance);
-      this.kind = localeKind.regular;
+      if isSubtype(_instance.type, DummyLocale) then
+        this.kind = localeKind.dummy;
+      else
+        this.kind = localeKind.regular;
     }
 
     proc init(param kind = localeKind.regular) { 
@@ -662,9 +664,9 @@ module ChapelLocale {
   // Its type should probably be renamed dummyLocale or something
   // representative.
   // The dummy locale provides system-default tasking and memory management.
-  pragma "no doc"
+  /*pragma "no doc"*/
   /*const dummyLocale = new unmanaged DummyLocale();*/
-  const dummyLocale = new locale(localeKind.dummy);
+  /*const dummyLocale = new locale(localeKind.dummy);*/
 
   pragma "fn synchronization free"
   pragma "no doc"
@@ -702,10 +704,9 @@ module ChapelLocale {
   proc chpl_localeID_to_locale(id : chpl_localeID_t) : locale {
     if rootLocale != nilLocale then
       return (rootLocale._instance:borrowed AbstractRootLocale?)!.localeIDtoLocale(id);
-      /*return rootLocale.localeIDtoLocale(id);*/
     else
       // For code prior to rootLocale initialization
-      return dummyLocale;
+      return new locale(new unmanaged DummyLocale());
   }
 
   // the type of elements in chpl_privateObjects.

@@ -30,7 +30,6 @@ module LocaleModel {
 
   use LocaleModelHelpFlat;
   use LocaleModelHelpMem;
-  public use LocaleModelHelpSetup;
 
   private use IO;
 
