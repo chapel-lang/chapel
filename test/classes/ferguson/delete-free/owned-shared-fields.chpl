@@ -15,8 +15,8 @@ record R1 {
 }
 
 record R2 {
-  var fo:owned MyClass? = owned.create(nil:unmanaged MyClass?);
-  var fs:shared MyClass? = shared.create(nil:unmanaged MyClass?);
+  var fo:owned MyClass? = nil;
+  var fs:shared MyClass? = nil;
   proc init() {
   }
 }
@@ -48,8 +48,8 @@ class C1 {
 }
 
 class C2 {
-  var fo:owned MyClass? = owned.create(nil:unmanaged MyClass?);
-  var fs:shared MyClass? = shared.create(nil:unmanaged MyClass?);
+  var fo:owned MyClass? = nil;
+  var fs:shared MyClass? = nil;
   proc init() {
   }
 }
