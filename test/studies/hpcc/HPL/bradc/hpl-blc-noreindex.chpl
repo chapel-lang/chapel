@@ -212,7 +212,7 @@ proc schurComplement(Ab: [?AbD] elemType, AD: domain, BD: domain, Rest: domain) 
 
       dgemmNativeInds(replA[aBlkD], replB[bBlkD], Ab[cBlkD]);
       /*
-      dgemmReindexed(cBlkD.dim(1).length, aBlkD.dim(2).length, cBlkD.dim(2).length,
+      dgemmReindexed(cBlkD.dim(1).size, aBlkD.dim(2).size, cBlkD.dim(2).size,
                      replA[aBlkD], replB[bBlkD], Ab[cBlkD]);
       */
       /*

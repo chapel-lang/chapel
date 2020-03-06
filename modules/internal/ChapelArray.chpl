@@ -183,6 +183,8 @@ module ChapelArray {
   config param useBulkTransfer = true;
   pragma "no doc"
   config param useBulkTransferStride = true;
+  pragma "no doc"
+  config param useBulkPtrTransfer = useBulkTransfer;
 
   // Return POD values from arrays as values instead of const ref?
   pragma "no doc"
@@ -443,6 +445,7 @@ module ChapelArray {
 
     // elements of string literals are assumed to be of type string
     type elemType = _getLiteralType(elems(1).type);
+    pragma "unsafe" // 'elemType' can be non-nilable
     var A : [1..k] elemType;  //This is unfortunate, can't use t here...
 
     for param i in 1..k {
@@ -525,7 +528,8 @@ module ChapelArray {
   proc chpl_incRefCountsForDomainsInArrayEltTypes(arr:unmanaged BaseArr, type eltType) {
     if isArrayType(eltType) {
       arr._decEltRefCounts = true;
-      var ev: eltType;
+      // todo extract ev.domain._value and ev.eltType without allocating 'ev'
+      pragma "unsafe" var ev: eltType;
       ev.domain._value.add_containing_arr(arr);
       chpl_incRefCountsForDomainsInArrayEltTypes(arr, ev.eltType);
     }
@@ -536,7 +540,8 @@ module ChapelArray {
       if arr._decEltRefCounts == false then
         halt("Decrementing array's elements' ref counts without having incremented first!");
 
-      var ev: eltType;
+      // todo extract ev.domain._value and ev.eltType without allocating 'ev'
+      pragma "unsafe" var ev: eltType;
       const refcount = ev.domain._value.remove_containing_arr(arr);
       if refcount == 0 then
         _delete_dom(ev.domain._value, _isPrivatized(ev.domain._value));
@@ -755,14 +760,14 @@ module ChapelArray {
   //
   // Support for index types
   //
-  pragma "unsafe"
   proc chpl__buildIndexType(param rank: int, type idxType) type where rank == 1 {
+    pragma "unsafe"
     var x: idxType;
     return x.type;
   }
 
-  pragma "unsafe"
   proc chpl__buildIndexType(param rank: int, type idxType) type where rank > 1 {
+    pragma "unsafe"
     var x: rank*idxType;
     return x.type;
   }
@@ -1575,6 +1580,14 @@ module ChapelArray {
     /* Return the high index in this domain factoring in alignment */
     proc alignedHigh return _value.dsiAlignedHigh;
 
+    /* This error overload is here because without it, the domain's
+       indices tend to be promoted across the `.indices` calls of
+       their idxType which can be very confusing. */
+    pragma "no doc"
+    proc indices {
+      compilerError("domains do not support '.indices'");
+    }
+
     pragma "no doc"
     proc contains(i: rank*_value.idxType) {
       if isRectangularDom(this) || isSparseDom(this) then
@@ -2007,7 +2020,7 @@ module ChapelArray {
       }
     }
 
-}  // record _domain
+  }  // record _domain
 
   /* Cast a rectangular domain to a new rectangular domain type.  If the old
      type was stridable and the new type is not stridable then assume the
@@ -2295,6 +2308,10 @@ module ChapelArray {
     proc _dom return _getDomain(_value.dom);
     /* The number of dimensions in the array */
     proc rank param return this.domain.rank;
+    /* return the array's indices as its domain */
+    pragma "return not owned"
+    proc indices
+      return _dom;
 
     // bounds checking helpers
     pragma "insert line file info"
@@ -2832,7 +2849,7 @@ module ChapelArray {
                       " dimension(s) to " + newDims.size:string);
 
       for param i in 1..rank do
-        if newDims(i).length != _value.dom.dsiDim(i).length then
+        if newDims(i).size != _value.dom.dsiDim(i).size then
           halt("extent in dimension ", i, " does not match actual");
 
       const thisDomClass = this._value.dom;
@@ -2972,7 +2989,7 @@ module ChapelArray {
     }
 
     inline proc chpl__assertSingleArrayDomain(fnName: string) {
-      if this.domain._value._arrs.length != 1 then
+      if this.domain._value._arrs.size != 1 then
         halt("cannot call " + fnName +
              " on an array defined over a domain with multiple arrays");
     }
@@ -3525,7 +3542,7 @@ module ChapelArray {
   proc =(ref a: _distribution, b: _distribution) {
     if a._value == nil {
       __primitive("move", a, chpl__autoCopy(b.clone()));
-    } else if a._value._doms.length == 0 {
+    } else if a._value._doms.size == 0 {
       if a._value.type != b._value.type then
         compilerError("type mismatch in distribution assignment");
       if a._value == b._value {
@@ -3636,7 +3653,7 @@ module ChapelArray {
     if isSubtype(t, borrowed) || isSubtype(t, unmanaged) {
       return false;
     } else {
-      var x:t;
+      pragma "unsafe" var x:t;
       return chpl__supportedDataTypeForBulkTransfer(x);
     }
   }
@@ -3672,9 +3689,9 @@ module ChapelArray {
             bDims = b._value.dom.dsiDims();
       compilerAssert(aDims.size == bDims.size);
       for param i in 1..aDims.size {
-        if aDims(i).length != bDims(i).length then
+        if aDims(i).size != bDims(i).size then
           halt("assigning between arrays of different shapes in dimension ",
-               i, ": ", aDims(i).length, " vs. ", bDims(i).length);
+               i, ": ", aDims(i).size, " vs. ", bDims(i).size);
       }
     } else {
       // may not have dsiDims(), so can't check them as above
@@ -3709,13 +3726,53 @@ module ChapelArray {
   }
 
   inline proc chpl__uncheckedArrayTransfer(ref a: [], b:[]) {
-    if !chpl__serializeAssignment(a, b) && chpl__compatibleForBulkTransfer(a, b) {
-      if chpl__bulkTransferArray(a, b) == false {
-        chpl__transferArray(a, b);
+    var done = false;
+    if !chpl__serializeAssignment(a, b) {
+      if chpl__compatibleForBulkTransfer(a, b) {
+        done = chpl__bulkTransferArray(a, b);
       }
-    } else {
-      chpl__transferArray(a, b);
+      else if chpl__compatibleForWidePtrBulkTransfer(a, b) {
+        done = chpl__bulkTransferPtrArray(a, b);
+      }
     }
+    if !done then
+      chpl__transferArray(a, b);
+  }
+
+  proc chpl__compatibleForWidePtrBulkTransfer(a, b) param {
+    if !useBulkPtrTransfer then return false;
+
+    // TODO: for now we are limiting ourselves to default rectangulars
+    if !(a._value.isDefaultRectangular() &&
+         b._value.isDefaultRectangular()) then return false;
+
+    if a.eltType != b.eltType then return false;
+
+    // only classes have pointer assignment semantics
+    if !isClass(a.eltType) then return false;
+
+    // ownership transfer is complicated
+    if isOwnedClass(a.eltType) then return false;
+
+    // shared array assignment seems to be handled differently, but prevent them
+    // here, too, just in case.
+    if isSharedClass(a.eltType) then return false;
+
+    return true;
+  }
+
+  inline proc chpl__bulkTransferPtrArray(ref a: [], b: []) {
+    // for now assume they are both local arrays, that have the same bounds
+    const aDom = a.domain;
+    const bDom = b.domain;
+    if aDom != bDom then return false;
+
+     // TODO can we omit the following check and bulk transfer narrow
+     // pointers, too
+    if __primitive("is wide pointer", a[aDom.low]) {
+      return chpl__bulkTransferArray(a, aDom, b, bDom);
+    }
+    return false;
   }
 
   inline proc chpl__bulkTransferArray(ref a: [?AD], b : [?BD]) {
@@ -3970,9 +4027,7 @@ module ChapelArray {
     if A.size != D.size then
       halt("reshape(A,D) is invoked when A has ", A.size,
            " elements, but D has ", D.size, " indices");
-    var B: [D] A.eltType;
-    for (i,a) in zip(D,A) do
-      B(i) = a;
+    var B: [D] A.eltType = for (i,a) in zip(D, A) do a;
     return B;
   }
 
@@ -4023,6 +4078,7 @@ module ChapelArray {
 
   pragma "init copy fn"
   proc chpl__initCopy(const ref a: []) {
+    pragma "unsafe" // when eltType is non-nilable
     var b : [a._dom] a.eltType;
 
     // TODO: handle !isConstAssignableType(a.eltType)
@@ -4135,6 +4191,7 @@ module ChapelArray {
     // TODO: we want to have just a single move, as is done with 'eltCopy'
     // in the other case. Ex. users/vass/km/array-of-records-crash-1.*
 
+    pragma "unsafe"
     var result: [shape] iteratorToArrayElementType(ir.type);
     if isArray(result.eltType) then
       compilerError("creating an array of arrays using a for- or forall-expression is not supported, except when using a for-expression over a range");

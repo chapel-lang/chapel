@@ -11,7 +11,7 @@ class DistribArray {
   type arrType;
   const arrSize: int;
   const localSize:int = arrSize / numLocales;
-  var internalArr: [LocaleSpace] unmanaged DistribArrayNode(arrType);
+  var internalArr: [LocaleSpace] unmanaged DistribArrayNode(arrType)?;
   var isLocalize = false;
 
   proc postinit() {
@@ -39,7 +39,7 @@ class DistribArray {
   }
 
   proc localize() {
-    var localArrays: [LocaleSpace] unmanaged DistribArray(arrType);
+    var localArrays: [LocaleSpace] unmanaged DistribArray(arrType)?;
     for loc in LocaleSpace {
       on Locales(loc) {
         var x = new unmanaged DistribArray(arrType, arrSize, localSize, isLocalize=true);
@@ -47,13 +47,13 @@ class DistribArray {
         localArrays(loc) = x;
       }
     }
-    return localArrays;
+    return localArrays!;
   }
 
   proc element(indexNum: int) ref {
     const localeNum = min(indexNum / localSize, numLocales-1);
     const localIndex = indexNum - (localeNum * localSize);
-    return internalArr(localeNum).arr(localIndex);
+    return internalArr(localeNum)!.arr(localIndex);
   }
 
   iter getLocales() {

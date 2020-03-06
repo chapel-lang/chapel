@@ -64,13 +64,13 @@ config var reproducible = false, verbose = false;
   // Compute targetLocales - required for Dimensional.
   // We hard-code 2 dimensions.
   //
-  var targetIds: domain(2);
-  var targetLocales: [targetIds] locale;
-  setupTargetLocalesArray(targetIds, targetLocales, Locales);
+  const ranges = setupTargetLocRanges(2, Locales);
+  var targetIds: domain(2) = {(...ranges)};
+  var targetLocales = reshape(Locales, targetIds);
 
   // Here are the dimensions of our grid of locales.
-  const tl1 = targetIds.dim(1).length,
-        tl2 = targetIds.dim(2).length;
+  const tl1 = targetIds.dim(1).size,
+        tl2 = targetIds.dim(2).size;
   if printParams && printStats then
     writeln("target locales ", tl1, " x ", tl2);
 

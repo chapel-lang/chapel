@@ -910,8 +910,8 @@ module ZMQ {
         // conditionally have ZeroMQ free the memory.
         // 
         // Note: the string factory below can throw DecodeError
-        var copy = if isString(T) then createStringWithNewBuffer(s=data)
-                                  else createBytesWithNewBuffer(s=data);
+        var copy = if isString(T) then createStringWithNewBuffer(x=data)
+                                  else createBytesWithNewBuffer(x=data);
         copy.isowned = false;
 
         // Create the ZeroMQ message from the data buffer

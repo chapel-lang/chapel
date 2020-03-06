@@ -74,7 +74,7 @@ domains/arrays.
 proc Block.changeBoundingBox(newBB) {
   // Comment out this check if desired. NB Block-distributed domains created
   // using 'this' will not be re-distributed upon changeBoundingBox().
-  if _doms.length != 0 then
+  if _doms.size != 0 then
     halt("changeBoundingBox: the distribution already has declared domain(s)");
 
   // From Block.dsiAssign, with mods.

@@ -1,7 +1,7 @@
-run:	 myList.length = 0
+run:	 myList.size = 0
 run:	 calling doStuff
-doStuff: myList.length = 0
+doStuff: myList.size = 0
 doStuff: added '2' to myList
-doStuff: myList.length = 1
-run:	 myList.length = 1
+doStuff: myList.size = 1
+run:	 myList.size = 1
 run:	 found '2' in myList.

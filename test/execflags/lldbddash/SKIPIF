@@ -1,5 +1,7 @@
-#!/usr/bin/env python
+#!/bin/bash
 
-from shutil import which
-
-print(which("lldb") is None)
+if which lldb >/dev/null 2>/dev/null; then
+  echo False
+else
+  echo True
+fi

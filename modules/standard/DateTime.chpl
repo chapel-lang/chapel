@@ -602,7 +602,7 @@ module DateTime {
   proc time.isoformat() {
     proc makeNDigits(n, d) {
       var ret = d: string;
-      while ret.length < n {
+      while ret.size < n {
         ret = "0" + ret;
       }
       return ret;
@@ -1124,7 +1124,7 @@ module DateTime {
   proc datetime.isoformat(sep="T") {
     proc zeroPad(nDigits: int, i: int) {
       var numStr = i: string;
-      for i in 1..nDigits-numStr.length {
+      for i in 1..nDigits-numStr.size {
         numStr = "0" + numStr;
       }
       return numStr;

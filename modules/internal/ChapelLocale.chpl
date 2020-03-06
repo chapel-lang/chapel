@@ -463,7 +463,7 @@ module ChapelLocale {
       where tag==iterKind.standalone {
       // Simple locales barrier, see implementation below for notes
       var b: localesBarrier;
-      var flags: [1..#numLocales-1] unmanaged localesSignal;
+      var flags: [1..#numLocales-1] unmanaged localesSignal?;
       coforall locIdx in 0..#numLocales /*ref(b)*/ {
         on __primitive("chpl_on_locale_num",
                        chpl_buildLocaleID(locIdx:chpl_nodeID_t,

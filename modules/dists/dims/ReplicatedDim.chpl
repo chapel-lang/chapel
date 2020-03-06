@@ -278,7 +278,7 @@ proc Replicated1dom.dsiAccess1d(indexx: idxType): (locIdT, idxType) {
 iter Replicated1locdom.dsiMyDensifiedRangeForSingleTask1d(globDD)
   : dsiMyDensifiedRangeType1d(globDD)
 {
-  yield 0:globDD.idxType..#locWholeR.length;
+  yield 0:globDD.idxType..#locWholeR.size;
 }
 
 // REQ whether this distribution can handle only a single task per locale.

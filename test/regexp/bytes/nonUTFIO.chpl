@@ -40,19 +40,19 @@ proc testRead(channel, pattern: ?t, ref capture, preCompiled:bool) throws {
 
   writeln("Case 1");
   testRead(r, "Pattern:(.*)\n", captureString, preCompiled=preCompiled);
-  writeln("Captured string length should be 7 : ", captureString.length);
+  writeln("Captured string length should be 7 : ", captureString.size);
 
   writeln("Case 2");
   testRead(r, b"Patt\xffern:(.*)\n", captureString, preCompiled=preCompiled);
-  writeln("Captured string length should be 7 : ", captureString.length);
+  writeln("Captured string length should be 7 : ", captureString.size);
 
   writeln("Case 3");
   testRead(r, b"Patt\xffern:(.*)\n", captureBytes, preCompiled=preCompiled);
-  writeln("Captured bytes length should be 8 : ", captureBytes.length);
+  writeln("Captured bytes length should be 8 : ", captureBytes.size);
 
   writeln("Case 4");
   testRead(r, b"Pattern:(.*)\n", captureBytes, preCompiled=preCompiled);
-  writeln("Captured bytes length should be 8 : ", captureBytes.length);
+  writeln("Captured bytes length should be 8 : ", captureBytes.size);
 
   r.close();
   f.close();
@@ -79,19 +79,19 @@ proc testRead(channel, pattern: ?t, ref capture, preCompiled:bool) throws {
   // you can read the first line however you want, here test reading it with a
   // bytes pattern and storing it in a string  -- should work fine
   testRead(r, b"Pattern:(.*)\n", captureString, preCompiled=preCompiled);
-  writeln("Captured string length should be 7 : ", captureString.length);
+  writeln("Captured string length should be 7 : ", captureString.size);
 
   writeln("Case 6");
   // you cannot create a string literal for this pattern anyway, so here try to
   // capture the match in a bytes -- should work fine
   testRead(r, b"Patt\xffern:(.*)\n", captureBytes, preCompiled=preCompiled);
-  writeln("Captured string length should be 7 : ", captureBytes.length);
+  writeln("Captured string length should be 7 : ", captureBytes.size);
 
   writeln("Case 7 -- Take 1");
   // here the capture is non UTF8 -- so cannot be captured in a string
   try! {  // halt if we get a different error
     testRead(r, b"Patt\xffern:(.*)\n", captureString, preCompiled=preCompiled);
-    writeln("(FAILURE) Captured string length : ", captureString.length);
+    writeln("(FAILURE) Captured string length : ", captureString.size);
   }
   catch e: SystemError {
     writeln("Caught expected error: ");
@@ -102,7 +102,7 @@ proc testRead(channel, pattern: ?t, ref capture, preCompiled:bool) throws {
   // here the channel must have been rewound back. Read it the right way to move
   // it forward
   testRead(r, b"Patt\xffern:(.*)\n", captureBytes, preCompiled=preCompiled);
-  writeln("Captured bytes length should be 8 : ", captureBytes.length);
+  writeln("Captured bytes length should be 8 : ", captureBytes.size);
 
   writeln("Case 8 -- Take 1");
   // Case 4 above can go wrong in two ways:
@@ -110,7 +110,7 @@ proc testRead(channel, pattern: ?t, ref capture, preCompiled:bool) throws {
   // BadFormatError
   try! {
     testRead(r, "Pattern:(.*)\n", captureBytes, preCompiled=preCompiled);
-    writeln("(FAILURE) Captured bytes length : ", captureBytes.length);
+    writeln("(FAILURE) Captured bytes length : ", captureBytes.size);
   }
   catch e: BadFormatError {
     writeln("Caught expected error");
@@ -122,7 +122,7 @@ proc testRead(channel, pattern: ?t, ref capture, preCompiled:bool) throws {
   // into a string -- should be argument mismatch
   try! {
     testRead(r, b"Pattern:(.*)\n", captureString, preCompiled=preCompiled);
-    writeln("(FAILURE) Captured string length : ", captureString.length);
+    writeln("(FAILURE) Captured string length : ", captureString.size);
   }
   catch e: SystemError {
     writeln("Caught expected error");
@@ -132,7 +132,7 @@ proc testRead(channel, pattern: ?t, ref capture, preCompiled:bool) throws {
   writeln("Case 8 -- Take 3");
   // read it correctly just for the sake of it
   testRead(r, b"Pattern:(.*)\n", captureBytes, preCompiled=preCompiled);
-  writeln("Captured bytes length should be 8 : ", captureBytes.length);
+  writeln("Captured bytes length should be 8 : ", captureBytes.size);
 
   r.close();
   f.close();

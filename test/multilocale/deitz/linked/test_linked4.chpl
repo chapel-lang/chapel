@@ -5,7 +5,7 @@ class C {
 }
 
 class D {
-  var cs: [0..numLocales-1] unmanaged C;
+  var cs: [0..numLocales-1] unmanaged C?;
 
   proc init() {
     this.complete();

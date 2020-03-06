@@ -54,7 +54,7 @@ module LCALSDataTypes {
     var cache_flush_data: [cache_flush_data_dom] real;
     var cache_flush_data_sum: real;
 
-    var loop_test_stats: [loop_variant_dom] [loop_kernel_dom] owned LoopStat;
+    var loop_test_stats = for loop_variant_dom.dim(1) do [loop_kernel_dom] new shared LoopStat();
 
     proc getLoopStats(loop_variant: LoopVariantID) ref {
       return loop_test_stats[loop_variant];

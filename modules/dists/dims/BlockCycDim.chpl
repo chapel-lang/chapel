@@ -703,7 +703,7 @@ proc BlockCyclic1locdom.dsiMyDensifiedRangeForTaskID1d(globDD, taskid:int, numTa
   assert(globDD.storagePerCycle == 1); // should follow from the previous
 
   // In this case, the densified range for *all* indices on this locale is:
-  //   0..#wholeR.length by numLocales align AL
+  //   0..#wholeR.size by numLocales align AL
   // where
   //   (_dsiLocNo(wholeR.low) + AL) % numLocales == this.locId
 
@@ -711,7 +711,7 @@ proc BlockCyclic1locdom.dsiMyDensifiedRangeForTaskID1d(globDD, taskid:int, numTa
   const AL = this.locId :resultIdxType + (nLocs - firstLoc);
 
   // Here is the densified range for all indices on this locale.
-  const hereDenseInds = 0:resultIdxType..#wholeR.length by nLocs align AL;
+  const hereDenseInds = 0:resultIdxType..#wholeR.size by nLocs align AL;
 
   // This is our chunk of hereDenseInds
   return RangeChunk.chunk(hereDenseInds, numTasks, taskid);

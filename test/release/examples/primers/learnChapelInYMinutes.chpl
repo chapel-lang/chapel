@@ -323,7 +323,7 @@ var range2to10by2: range(stridable=true) = 2..10 by 2; // 2, 4, 6, 8, 10
 var reverse2to10by2 = 2..10 by -2; // 10, 8, 6, 4, 2
 
 var trapRange = 10..1 by -1; // Do not be fooled, this is still an empty range
-writeln("Size of range '", trapRange, "' = ", trapRange.length);
+writeln("Size of range '", trapRange, "' = ", trapRange.size);
 
 // Note: ``range(boundedType= ...)`` and ``range(stridable= ...)`` are only
 // necessary if we explicitly type the variable.
@@ -339,7 +339,7 @@ writeln(rangeCountBy);
 // Properties of the range can be queried.
 // In this example, printing the first index, last index, number of indices,
 // stride, and if 2 is include in the range.
-writeln((rangeCountBy.first, rangeCountBy.last, rangeCountBy.length,
+writeln((rangeCountBy.first, rangeCountBy.last, rangeCountBy.size,
            rangeCountBy.stride, rangeCountBy.contains(2)));
 
 for i in rangeCountBy {

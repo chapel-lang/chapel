@@ -211,9 +211,12 @@ static bool isSymbolAnalyzed(Symbol* sym) {
 }
 
 // If 'call' invokes postfix!, return the result type.
+// Ignore postfix! calls on arrays - needed if we have a 'proc postfix!(a:[])'.
 static Type* isPostfixBangCall(CallExpr* call) {
   if (FnSymbol* fn = call->resolvedFunction()) {
     if (fn->name == astrPostfixBang) {
+      if (call->get(1)->getValType()->symbol->hasFlag(FLAG_ARRAY))
+        return NULL;
       INT_ASSERT(call->numActuals() == 1); // `!` takes a single arg
       return fn->retType;
     }
@@ -1516,7 +1519,8 @@ void FindInvalidNonNilables::exitCallExpr(CallExpr* call) {
     for_formals_actuals(formal, actual, call) {
       SymExpr* actualSe = toSymExpr(actual);
       Symbol* actualSym = actualSe->symbol();
-      if (isNonNilableVariable(actualSym)) {
+      if (isNonNilableVariable(actualSym) &&
+          ! actualSym->hasFlag(FLAG_UNSAFE) ) {
         if (formal->hasFlag(FLAG_LEAVES_ARG_NIL)) {
           if (isTrackedNonNilableVariable(actualSym) &&
               varsToNil.count(actualSym) != 0) {

@@ -80,8 +80,8 @@ compilerAssert(CHPL_NETWORK_ATOMICS == "none",
   setupTargetLocalesArray(targetIds, targetLocales, Locales);
 
   // Here are the dimensions of our grid of locales.
-  const tl1 = targetIds.dim(1).length,
-        tl2 = targetIds.dim(2).length;
+  const tl1 = targetIds.dim(1).size,
+        tl2 = targetIds.dim(2).size;
 
   if tl1 != tl2 then
     halt("backwardSub() is implemented only for a square locale grid");

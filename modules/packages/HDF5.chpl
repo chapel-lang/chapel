@@ -3595,13 +3595,13 @@ module HDF5 {
 
     var data = readAllNamedHDF5Files(Locales, filenames2D, dsetName,
                                      int, rank=2, preprocessor=preprocessor);
-    const rows = + reduce [subset in data[.., 1]] subset.D.dim(1).length;
-    const cols = + reduce [subset in data[1, ..]] subset.D.dim(2).length;
+    const rows = + reduce [subset in data[.., 1]] subset.D.dim(1).size;
+    const cols = + reduce [subset in data[1, ..]] subset.D.dim(2).size;
 
     var A: [1..rows, 1..cols] int;
 
-    const rowsPerFile = data(1,1).D.dim(1).length,
-          colsPerFile = data(1,1).D.dim(2).length;
+    const rowsPerFile = data(1,1).D.dim(1).size,
+          colsPerFile = data(1,1).D.dim(2).size;
     for (row, col) in data.domain {
       const startRow = (row-1)*rowsPerFile+1, endRow = row*rowsPerFile,
             startCol = (col-1)*colsPerFile+1, endCol = col*colsPerFile;

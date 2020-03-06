@@ -2567,6 +2567,7 @@ static void errorIfSplitInitializationRequired(DefExpr* def, Expr* cur) {
   // or reduction variables
   if (def->sym->hasFlag(FLAG_TEMP) ||
       def->sym->hasFlag(FLAG_INDEX_VAR) ||
+      def->sym->hasFlag(FLAG_UNSAFE)    ||
       isShadowVarSymbol(def->sym))
     return;
 

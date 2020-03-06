@@ -167,6 +167,7 @@ module ChapelIteratorSupport {
   {
     type shapeType = chpl_iteratorShapeStaticTypeOrNothing(irType);
 
+    pragma "unsafe" //for test/release/examples/benchmarks/lcals/LCALSMain.chpl
     proc standinType() type {
       if shapeType == nothing {
         // shapeless case
@@ -342,6 +343,8 @@ module ChapelIteratorSupport {
 
   inline proc _getIteratorZip(x: _tuple) {
     inline proc _getIteratorZipInternal(x: _tuple, param dim: int) {
+      if isTuple(x(dim)) && !isHomogeneousTuple(x(dim)) then
+        compilerError("Heterogeneous tuples don't support zippered iteration yet");
       if dim == x.size then
         return (_getIterator(x(dim)),);
       else

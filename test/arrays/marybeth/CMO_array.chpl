@@ -88,9 +88,9 @@ class CMODom: BaseRectangularDom {
   proc dsiNumIndices {
     var sum = 1:idxType;
     for param i in 1..rank do
-      sum *= ranges(i).length;
+      sum *= ranges(i).size;
     return sum;
-    // WANT: return * reduce (this(1..rank).length);
+    // WANT: return * reduce (this(1..rank).size);
   }
 
   proc dsiLow {
@@ -223,9 +223,9 @@ class CMOArr:BaseArr {
     }
     blk(1) = 1:idxType;
     for dim in 2..rank do
-      blk(dim) = blk(dim-1) * dom.dsiDim(dim-1).length;
+      blk(dim) = blk(dim-1) * dom.dsiDim(dim-1).size;
     computeFactoredOffs();
-    size = blk(rank) * dom.dsiDim(rank).length;
+    size = blk(rank) * dom.dsiDim(rank).size;
     D1 = {0:idxType..#size:idxType};
     data = 0:eltType;
   }
@@ -268,7 +268,7 @@ class CMOArr:BaseArr {
     if rank != d.rank then
       compilerError("illegal implicit rank change");
     for param i in 1..rank do
-      if d.dim(i).length != dom.dim(i).length then
+      if d.dim(i).size != dom.dim(i).size then
         halt("extent in dimension ", i, " does not match actual");
     var alias = new CMOArr(eltType=eltType, rank=d.rank, idxType=d.idxType, stridable=d.stridable, dom=d, noinit_data=true);
     //    was:  (eltType, rank, idxType, d.stridable, true, d, noinit_data=true);

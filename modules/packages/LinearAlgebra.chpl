@@ -1442,7 +1442,7 @@ proc eig(A: [] ?t, param left = false, param right = false)
     return cplx;
   }
 
-  const n = A.domain.dim(1).length;
+  const n = A.domain.dim(1).size;
   if !isSquare(A) then
     halt("Matrix passed to eigvals must be square");
   var copy = A;

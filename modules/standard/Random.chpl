@@ -254,11 +254,19 @@ module Random {
         throw new owned IllegalArgumentError('choice() array arguments must have same domain');
       }
     }
+
     if !isNothingType(sizeType) {
       if isIntegralType(sizeType) {
         if size <= 0 then
-        throw new owned IllegalArgumentError('choice() size must be greater than 0');
-      } else if !isDomainType(sizeType) {
+          throw new owned IllegalArgumentError('choice() size must be greater than 0');
+        if !replace && size > arr.size then
+          throw new owned IllegalArgumentError('choice() size must be smaller than array.size when replace=false');
+      } else if isDomainType(sizeType) {
+        if size.size <= 0 then
+          throw new owned IllegalArgumentError('choice() size domain can not be empty');
+        if !replace && size.size > arr.size then
+          throw new owned IllegalArgumentError('choice() size must be smaller than array.size when replace=false');
+      } else {
         compilerError('choice() size must be integral or domain');
       }
     }
@@ -390,7 +398,7 @@ module Random {
             var (found, indexChosen) = Search.binarySearch(cumulativeArr, randNum);
             if !indicesChosen.contains(indexChosen) {
               indicesChosen += indexChosen;
-              samples[i] += A[indexChosen];
+              samples[i] = A[indexChosen];
               i += 1;
             }
             P[indexChosen] = 0;

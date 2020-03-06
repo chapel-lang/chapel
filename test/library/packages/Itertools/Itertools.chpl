@@ -26,6 +26,9 @@ module Itertools {
 
   use RangeChunk;
 
+  // TODO: make iterators throw and remove try! blocks when non-inlined
+  //       throwing iterators are supported (#7134)
+
   /*
     Returns an object over and over again, a specified
     number of times.
@@ -38,8 +41,6 @@ module Itertools {
     :type times: `int`
 
     :yields: Object in the range ``1..times``
-
-    :throws: ``IllegalArgumentError`` on parallel infinite iteration (see below)
 
 
     If the argument ``times`` has the value 0, it will return
@@ -65,34 +66,37 @@ module Itertools {
   // Standalone parallel iterator
 
   pragma "no doc"
-  iter repeat (param tag: iterKind, arg, times = 0) throws
+  iter repeat (param tag: iterKind, arg, times = 0)
       where tag == iterKind.standalone {
-    if times == 0 then
-      throw new owned IllegalArgumentError(
-          "Infinite iteration not supported for parallel loops.");
-    else
-      forall 1..#times do yield arg;
+    try! {
+      if times == 0 then
+        throw new owned IllegalArgumentError(
+            "Infinite iteration not supported for parallel loops.");
+      else
+        forall 1..#times do yield arg;
+    }
   }
 
   // Parallel iterator - Leader
 
   pragma "no doc"
-  iter repeat (param tag: iterKind, arg, times = 0) throws
+  iter repeat (param tag: iterKind, arg, times = 0)
       where tag == iterKind.leader {
+    try! {
+      var numTasks = if dataParTasksPerLocale > 0 then dataParTasksPerLocale
+                                                    else here.maxTaskPar;
 
-    var numTasks = if dataParTasksPerLocale > 0 then dataParTasksPerLocale
-                                                  else here.maxTaskPar;
+      if numTasks > times then numTasks = times;
 
-    if numTasks > times then numTasks = times;
-
-    if times == 0 then
-      throw new owned IllegalArgumentError(
-          "Infinite iteration not supported for parallel loops.");
-    else
-      coforall tid in 0..#numTasks {
-        const workingIters = chunk(0..#times, numTasks, tid);
-        yield(workingIters,);
-      }
+      if times == 0 then
+        throw new owned IllegalArgumentError(
+            "Infinite iteration not supported for parallel loops.");
+      else
+        coforall tid in 0..#numTasks {
+          const workingIters = chunk(0..#times, numTasks, tid);
+          yield(workingIters,);
+        }
+    }
   }
 
   // Parallel iterator - Follower
@@ -120,8 +124,6 @@ module Itertools {
     :type times: `int`
 
     :yields: Elements of the iterable ``times`` times
-
-    :throws: ``IllegalArgumentError`` on parallel infinite iteration (see below)
 
 
     If the argument ``times`` has the value 0, it will return each element of
@@ -151,23 +153,26 @@ module Itertools {
   // Parallel iterator - Leader
 
   pragma "no doc"
-  iter cycle(param tag: iterKind, arg, times = 0) throws
+  iter cycle(param tag: iterKind, arg, times = 0)
       where tag == iterKind.leader {
 
-    var numTasks = if dataParTasksPerLocale > 0 then dataParTasksPerLocale
-                                                else here.maxTaskPar;
+    // Halts for errors until throwing iterators are supported (#7134)
+    try! {
+      var numTasks = if dataParTasksPerLocale > 0 then dataParTasksPerLocale
+                                                  else here.maxTaskPar;
 
-    if numTasks > times then numTasks = times;
+      if numTasks > times then numTasks = times;
 
-    if times == 0 then
-      throw new owned IllegalArgumentError(
-          "infinite iteration not supported for parallel loops");
-    else
-      coforall tid in 0..#numTasks {
-        const workingIters = chunk(0..#times, numTasks, tid);
-        workingIters.translate(-workingIters.low);
-        yield(0..#(workingIters.high * arg.size),);
-      }
+      if times == 0 then
+        throw new owned IllegalArgumentError(
+            "infinite iteration not supported for parallel loops");
+      else
+        coforall tid in 0..#numTasks {
+          const workingIters = chunk(0..#times, numTasks, tid);
+          workingIters.translate(-workingIters.low);
+          yield(0..#(workingIters.high * arg.size),);
+        }
+    }
   }
 
   // Parallel iterator - Follower
@@ -208,8 +213,6 @@ module Itertools {
 
     :yields: Elements of the resultant array
 
-    :throws: ``IllegalArgumentError`` on non-array arguments
-
 
     This iterator can only be called in serial contexts.
 
@@ -226,64 +229,66 @@ module Itertools {
   enum operations { add, subtract, multiply, divide,
                     bitwiseAnd, bitwiseOr, bitwiseXor }
 
-  iter accumulate(arg: [?argDom], operation: operations) throws
+  iter accumulate(arg: [?argDom], operation: operations)
       where argDom.rank == 1 {
 
-    var result = arg[argDom.first];
+    try! {
+      var result = arg[argDom.first];
 
-    if operation == operations.divide || operation == operations.subtract {
-      for idx in argDom do
-        if idx == argDom.first then
-          yield result;
-        else {
-          select (operation) {
-            when operations.subtract do
-              if result.type != bool then
-                result -= arg[idx];
-            when operations.divide do
-              if result.type != bool then
-                result /= arg[idx];
+      if operation == operations.divide || operation == operations.subtract {
+        for idx in argDom do
+          if idx == argDom.first then
+            yield result;
+          else {
+            select (operation) {
+              when operations.subtract do
+                if result.type != bool then
+                  result -= arg[idx];
+              when operations.divide do
+                if result.type != bool then
+                  result /= arg[idx];
+            }
+
+            yield result;
           }
+      } else {
+        select (operation) {
+          when operations.add do
+            if result.type != bool then
+              for result in + scan arg do
+                yield result;
 
-          yield result;
+          when operations.multiply do
+            if result.type != bool then
+              for result in * scan arg do
+                yield result;
+
+          when operations.bitwiseOr do
+            if result.type == int || result.type == bool then
+              for result in | scan arg do
+                yield result;
+            else
+              throw new owned IllegalArgumentError(
+                "bitwise operations only work with integers and booleans");
+
+          when operations.bitwiseAnd do
+            if result.type == int || result.type == bool then
+              for result in & scan arg do
+                yield result;
+            else
+              throw new owned IllegalArgumentError(
+                "bitwise operations only work with integers and booleans");
+
+          when operations.bitwiseXor do
+            if result.type == int || result.type == bool then
+              for result in ^ scan arg do
+                yield result;
+            else
+              throw new owned IllegalArgumentError(
+                "bitwise operations only work with integers and booleans");
         }
-    } else {
-      select (operation) {
-        when operations.add do
-          if result.type != bool then
-            for result in + scan arg do
-              yield result;
-
-        when operations.multiply do
-          if result.type != bool then
-            for result in * scan arg do
-              yield result;
-
-        when operations.bitwiseOr do
-          if result.type == int || result.type == bool then
-            for result in | scan arg do
-              yield result;
-          else
-            throw new owned IllegalArgumentError(
-              "bitwise operations only work with integers and booleans");
-
-        when operations.bitwiseAnd do
-          if result.type == int || result.type == bool then
-            for result in & scan arg do
-              yield result;
-          else
-            throw new owned IllegalArgumentError(
-              "bitwise operations only work with integers and booleans");
-
-        when operations.bitwiseXor do
-          if result.type == int || result.type == bool then
-            for result in ^ scan arg do
-              yield result;
-          else
-            throw new owned IllegalArgumentError(
-              "bitwise operations only work with integers and booleans");
       }
-    }
-  }
+    } // try!
+  } // accumulate
 
 } // end module
