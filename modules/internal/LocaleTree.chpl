@@ -37,8 +37,8 @@ module LocaleTree {
 
   proc chpl_initLocaleTree() {
     for i in LocaleSpace {
-      var left: locale;
-      var right: locale;
+      var left = nilLocale;
+      var right = nilLocale;
       var child = (i+1)*2-1;    // Assumes that indices are dense.
       if child < numLocales {
         left = rootLocale.getChild(child);
