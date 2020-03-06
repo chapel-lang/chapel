@@ -125,7 +125,7 @@ private proc runTests(show: bool, run: bool, parallel: bool, ref cmdLineCompopts
 
     // parse lockfile
     const toParse = open(projectHome + "/Mason.lock", iomode.r);
-    const lockFile = new owned(parseToml(toParse));
+    const lockFile = owned.create(parseToml(toParse));
 
     // Get project source code and dependencies
     const sourceList = genSourceList(lockFile);
