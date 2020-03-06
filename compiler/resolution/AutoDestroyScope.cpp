@@ -154,7 +154,21 @@ void AutoDestroyScope::addInitialization(VarSymbol* var) {
 }
 
 void AutoDestroyScope::checkVariableUsesAreInitialized(Expr* stmt) {
-
+  if (CallExpr* call = toCallExpr(stmt)) {
+    for_actuals(actual, call) {
+      if (SymExpr* se = toSymExpr(actual)) {
+        if (VarSymbol* var = toVarSymbol(se->symbol()))
+          if (mDeclaredVars.count(var) != 0)
+            if (mInitedVars.count(var) == 0)
+              if (var->type->symbol->hasFlag(FLAG_EXTERN) == false)
+                USR_FATAL_CONT(stmt,
+                               "Variable '%s' is used before it is initialized",
+                               var->name);
+      } else if (CallExpr* subCall = toCallExpr(actual)) {
+        checkVariableUsesAreInitialized(subCall);
+      }
+    }
+  }
 }
 
 // Forget about initializations for outer variables initialized
