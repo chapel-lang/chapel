@@ -258,7 +258,7 @@ module OwnedObject {
     pragma "unsafe" // 'result' may have a non-nilable type
     proc type create(pragma "nil from arg" p) {
       if ! isUnmanagedClass(p) then
-        compilerError("owned.create() accepts only an unmanaged pointer argument; here it is a ", p.type:string);
+        compilerError("can create an 'owned' only from an unmanaged pointer; here it is a ", p.type:string);
       var result: (p.type : owned);
       compilerAssert(isNilableClass(result) == isNilableClass(p)); //wass remove later
       result.retain(p);
