@@ -334,7 +334,7 @@ module SharedObject {
 
     /* Creates a new `shared` class reference to the argument.
        The result has the same type as the argument. */
-    inline proc type create(pragma "nil from arg" const ref src: shared) {
+    inline proc type create(pragma "nil from arg" in src: shared) {
       return src;
     }
 
