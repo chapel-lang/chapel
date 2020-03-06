@@ -84,8 +84,21 @@ module RangeChunk {
       else start..end;
   }
 
-  iter blockCyclicChunks(r: range(?), blockSize: integral, blockSize: integral, idx: integral, numInds: integral){
-  
+  /*
+    Iterates through a range ``r``, which is blocked up in repeating ```numInds```
+    blocks of size ```blockSize```. Blocks are indexed from 0..numInds-1. 
+    Emits block at index ```idx``` in a cyclic manner.
+  */
+  iter blockCyclicChunks(r: range(?t, boundedType=BoundedRangeType.bounded, ?strided), blockSize: integral, idx: integral, numInds: integral){
+    if (idx >= numInds) then
+      halt("Parameter idx must be < numInds because blocks are indexed from 0..numInds-1");
+
+    if (blockSize <= 0) then
+      halt("blockSize must a positive number");
+
+    if (numInds <= 0) then
+      halt("numInds must be a positive number");
+
     var range_stride = r.stride;
     var block_stride = blockSize * range_stride;
     var low = r.low;
@@ -107,6 +120,7 @@ module RangeChunk {
       }
     }
   }
+
   /*
      Iterates through chunks ``0`` to ``numChunks - 1`` of range ``r``, emitting each
      as a 0-based order tuple. The remainders will be distributed according to ``remPol``.
