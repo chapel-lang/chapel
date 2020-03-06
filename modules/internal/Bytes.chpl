@@ -162,7 +162,7 @@ module Bytes {
 
   pragma "last resort"
   pragma "no doc"
-  proc createBytesWithBorrowedBuffer(s: c_string, length=s.length) {
+  proc createBytesWithBorrowedBuffer(s: c_string, length=s.size) {
     bytesFactoryArgDepr();
     return createBytesWithBorrowedBuffer(x=s, length);
   }
@@ -225,7 +225,7 @@ module Bytes {
 
   pragma "last resort"
   pragma "no doc"
-  inline proc createBytesWithOwnedBuffer(s: c_string, length=s.length) {
+  inline proc createBytesWithOwnedBuffer(s: c_string, length=s.size) {
     bytesFactoryArgDepr();
     return createBytesWithOwnedBuffer(x=s, length);
   }
@@ -296,7 +296,7 @@ module Bytes {
 
   pragma "last resort"
   pragma "no doc"
-  inline proc createBytesWithNewBuffer(s: c_string, length=s.length) {
+  inline proc createBytesWithNewBuffer(s: c_string, length=s.size) {
     bytesFactoryArgDepr();
     return createBytesWithNewBuffer(x=s, length);
   }

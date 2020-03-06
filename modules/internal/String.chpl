@@ -529,7 +529,7 @@ module String {
 
   pragma "last resort"
   pragma "no doc"
-  inline proc createStringWithBorrowedBuffer(s: c_string, length=s.length) throws {
+  inline proc createStringWithBorrowedBuffer(s: c_string, length=s.size) throws {
     stringFactoryArgDepr();
     return createStringWithBorrowedBuffer(x=s, length);
   }
@@ -623,7 +623,7 @@ module String {
 
   pragma "last resort"
   pragma "no doc"
-  inline proc createStringWithOwnedBuffer(s: c_string, length=s.length) throws {
+  inline proc createStringWithOwnedBuffer(s: c_string, length=s.size) throws {
     stringFactoryArgDepr();
     return createStringWithOwnedBuffer(x=s, length);
   }
@@ -711,7 +711,7 @@ module String {
 
   pragma "last resort"
   pragma "no doc"
-  inline proc createStringWithNewBuffer(s: c_string, length=s.length,
+  inline proc createStringWithNewBuffer(s: c_string, length=s.size,
                                         errors=decodePolicy.strict) throws {
     stringFactoryArgDepr();
     return createStringWithNewBuffer(x=s, length, errors);
