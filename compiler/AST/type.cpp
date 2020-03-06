@@ -591,6 +591,9 @@ void initPrimitiveTypes() {
   dtLocale                             = new AggregateType(AGGREGATE_RECORD);
   dtLocale->symbol                     = new TypeSymbol("locale", dtLocale);
 
+  dtLocaleClass                        = new AggregateType(AGGREGATE_RECORD);
+  dtLocaleClass->symbol                = new TypeSymbol("BaseLocale", dtLocaleClass);
+
   dtOwned                              = new AggregateType(AGGREGATE_RECORD);
   dtOwned->symbol                      = new TypeSymbol("_owned", dtOwned);
 

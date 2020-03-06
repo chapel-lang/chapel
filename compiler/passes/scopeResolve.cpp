@@ -708,8 +708,10 @@ static bool isStableClassType(Type* t) {
 
   if (isClass(t)) {
     // Always consider locale type unmanaged
-    if (ts->type == dtLocale)
+    if (ts->type == dtLocaleClass) {
+      std::cout << "Warning from scopeResolve" << std::endl;
       ok = true;
+    }
     // Always consider ddata type unmanaged
     if (ts->hasFlag(FLAG_DATA_CLASS))
       ok = true;

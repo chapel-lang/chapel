@@ -2457,8 +2457,9 @@ static bool typeHasInfiniteBorrowLifetime(Type* type) {
   // Locale type has infinite lifetime
   // (since locales exist for the entire program run)
   if (Type* ct = canonicalDecoratedClassType(type))
-    if (isSubClass(ct, dtLocale))
+    if (isSubClass(ct, dtLocaleClass)) {
       return true;
+    }
 
   if (DecoratedClassType* dt = toDecoratedClassType(type))
     if (dt->isUnmanaged())

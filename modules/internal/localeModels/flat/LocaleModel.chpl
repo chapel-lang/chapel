@@ -30,6 +30,7 @@ module LocaleModel {
 
   use LocaleModelHelpFlat;
   use LocaleModelHelpMem;
+  public use LocaleModelHelpSetup;
 
   private use IO;
 
@@ -67,9 +68,9 @@ module LocaleModel {
     // to establish the equivalence the "locale" field of the locale object
     // and the node ID portion of any wide pointer referring to it.
     proc init() {
-      if doneCreatingLocales {
-        halt("Cannot create additional LocaleModel instances");
-      }
+      /*if doneCreatingLocales {*/
+        /*halt("Cannot create additional LocaleModel instances");*/
+      /*}*/
       _node_id = chpl_nodeID: int;
 
       this.complete();
@@ -78,9 +79,9 @@ module LocaleModel {
     }
 
     proc init(parent_loc : locale) {
-      if doneCreatingLocales {
-        halt("Cannot create additional LocaleModel instances");
-      }
+      /*if doneCreatingLocales {*/
+        /*halt("Cannot create additional LocaleModel instances");*/
+      /*}*/
 
       super.init(parent_loc);
 
@@ -169,7 +170,7 @@ module LocaleModel {
     var myLocales: [myLocaleSpace] locale;
 
     proc init() {
-      super.init(nil);
+      super.init(nilLocale);
       nPUsPhysAcc = 0;
       nPUsPhysAll = 0;
       nPUsLogAcc = 0;
@@ -230,7 +231,7 @@ module LocaleModel {
       for loc in myLocales {
         on loc {
           rootLocaleInitialized = false;
-          delete _to_unmanaged(loc);
+          /*delete _to_unmanaged(loc);*/
         }
       }
     }

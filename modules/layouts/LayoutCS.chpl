@@ -395,7 +395,7 @@ class CSDom: BaseSparseDomImpl {
   }
 
   override proc bulkAdd_help(inds: [?indsDom] rank*idxType,
-      dataSorted=false, isUnique=false, addOn=nil:locale?) {
+      dataSorted=false, isUnique=false, addOn=nil:locale) {
     import Sort;
 
     if addOn != nil {

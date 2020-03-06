@@ -695,7 +695,7 @@ module ChapelIO {
   }
 
   pragma "no doc"
-  override proc locale.writeThis(f) throws {
+  proc locale.writeThis(f) throws {
     f <~> name;
   }
 

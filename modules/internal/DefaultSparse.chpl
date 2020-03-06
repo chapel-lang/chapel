@@ -246,7 +246,7 @@ module DefaultSparse {
     }
 
     override proc bulkAdd_help(inds: [?indsDom] index(rank, idxType),
-        dataSorted=false, isUnique=false, addOn=nil:locale?){
+        dataSorted=false, isUnique=false, addOn=nil:locale){
       import Sort;
 
       if addOn != nil {
