@@ -157,14 +157,7 @@ module SharedObject {
       this.init(_to_unmanaged(p));
     }
 
-    /*
-       Initialize a :record:`shared` with a class instance.
-       This :record:`shared` will take over the deletion of the class
-       instance. It is an error to directly delete the class instance
-       while it is managed by :record:`shared`.
-
-       :arg p: the class instance to manage. Must be of unmanaged class type.
-     */
+    pragma "no doc"
     proc init(pragma "nil from arg" p : unmanaged) {
       this.chpl_t = _to_borrowed(p.type);
 
@@ -323,24 +316,34 @@ module SharedObject {
       chpl_pn = nil;
     }
 
-    //wass add chpldoc comment here "factory"; remove the one from the deprecated fn
+    // Issue a compiler error for illegal uses.
+    pragma "no doc"
     proc type create(source) {
-      // catch-all case
       compilerError("cannot create a 'shared' from ", source.type:string);
     }
 
-    pragma "no doc"
+    /* Changes the memory management strategy of the argument from `owned`
+       to `shared`, taking over the ownership of the argument.
+       The result type preserves nilability of the argument type.
+       If the argument is non-nilable, it must be recognized by the compiler
+       as an expiring value. */
     inline proc type create(pragma "nil from arg" in take: owned) {
       var result : shared = take;
       return result;
     }
 
-    pragma "no doc"
+    /* Creates a new `shared` class reference to the argument.
+       The result has the same type as the argument. */
     inline proc type create(pragma "nil from arg" const ref src: shared) {
       return src;
     }
 
-    pragma "no doc"
+    /* Starts managing the argument class instance `p`
+       using the `shared` memory management strategy.
+       The result type preserves nilability of the argument type.
+
+       It is an error to directly delete the class instance
+       after passing it to `shared.create()`. */
     pragma "unsafe" // 'result' may have a non-nilable type
     inline proc type create(pragma "nil from arg" p : unmanaged) {
 /*wass

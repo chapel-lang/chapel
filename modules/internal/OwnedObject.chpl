@@ -177,17 +177,7 @@ module OwnedObject {
       this.init(_to_unmanaged(p));
     }
 
-    /*
-       Initialize a :record:`owned` with a class instance.
-       When this :record:`owned` goes out of scope, it will
-       delete whatever class instance it is storing.
-
-       It is an error to directly delete the class instance
-       while it is managed by a :record:`owned`.
-
-       :arg p: the class instance to manage. Must be of unmanaged class type.
-
-     */
+    pragma "no doc"
     proc init(pragma "nil from arg" p:unmanaged) {
       this.chpl_t = _to_borrowed(p.type);
       this.chpl_p = _to_borrowed(p);
@@ -254,18 +244,26 @@ module OwnedObject {
       this.chpl_p = src.release();
     }
 
-    //wass add chpldoc comment here "factory"; remove the one from the deprecated fn
+    // Issue a compiler error for illegal uses.
+    pragma "no doc"
     proc type create(source) {
-      // catch-all case
       compilerError("cannot create an 'owned' from ", source.type:string);
     }
 
-    pragma "no doc"
+    /* Creates a new `owned` class reference, taking over the ownership
+       of the argument. The result has the same type as the argument.
+       If the argument is non-nilable, it must be recognized by the compiler
+       as an expiring value. */
     inline proc type create(pragma "nil from arg" in take: owned) {
       return take;
     }
 
-    pragma "no doc"
+    /* Starts managing the argument class instance `p`
+       using the `owned` memory management strategy.
+       The result type preserves nilability of the argument type.
+
+       It is an error to directly delete the class instance
+       after passing it to `owned.create()`. */
     pragma "unsafe" // 'result' may have a non-nilable type
     inline proc type create(pragma "nil from arg" p : unmanaged) {
 /*wass
