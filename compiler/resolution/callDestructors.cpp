@@ -1114,8 +1114,8 @@ class GatherGlobalsReferredTo : public AstVisitorTraverse {
 
     // this is global state storing results of analysis
     std::set<FnSymbol*> visited;
-    std::map<FnSymbol*, std::set<VarSymbol*>> directGlobalMentions;
-    std::map<FnSymbol*, std::set<FnSymbol*>> callGraph;
+    std::map<FnSymbol*, std::set<VarSymbol*> > directGlobalMentions;
+    std::map<FnSymbol*, std::set<FnSymbol*> > callGraph;
 
     GatherGlobalsReferredTo()
       : thisFunction(NULL)
@@ -1304,9 +1304,9 @@ bool computeIntersection(std::set<VarSymbol*>& a, std::set<VarSymbol*>& b,
 
 // This function is intended to be relatively optimized
 bool FindInvalidGlobalUses::checkIfFnUsesInvalid(FnSymbol* startFn) {
-  std::map<FnSymbol*, std::set<VarSymbol*>>& directGlobalMentions =
+  std::map<FnSymbol*, std::set<VarSymbol*> >& directGlobalMentions =
     gatherVisitor.directGlobalMentions;
-  std::map<FnSymbol*, std::set<FnSymbol*>>& callGraph =
+  std::map<FnSymbol*, std::set<FnSymbol*> >& callGraph =
     gatherVisitor.callGraph;
 
   std::set<FnSymbol*> everBeenInWork;
@@ -1350,9 +1350,9 @@ bool FindInvalidGlobalUses::checkIfFnUsesInvalid(FnSymbol* startFn) {
 // to be reported. In that event it gives a stack trace.
 bool FindInvalidGlobalUses::errorIfFnUsesInvalid(FnSymbol* fn, BaseAST* loc,
                                                  std::set<FnSymbol*>& visited) {
-  std::map<FnSymbol*, std::set<VarSymbol*>>& directGlobalMentions =
+  std::map<FnSymbol*, std::set<VarSymbol*> >& directGlobalMentions =
     gatherVisitor.directGlobalMentions;
-  std::map<FnSymbol*, std::set<FnSymbol*>>& callGraph =
+  std::map<FnSymbol*, std::set<FnSymbol*> >& callGraph =
     gatherVisitor.callGraph;
   std::vector<VarSymbol*> inV;
 
