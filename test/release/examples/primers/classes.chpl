@@ -155,7 +155,7 @@ x = b2; // converting from borrowed C to borrowed C?
 // is not ``nil`` and return it as a non-nilable type. This operator
 // will halt if the value is actually ``nil``.
 //
-// Note that when applied to an ``owned`` or ``shared` variable, ``!`` will
+// Note that when applied to an ``owned`` or ``shared`` variable, ``!`` will
 // result in a borrow from that variable.
 x!.printFields();
 
