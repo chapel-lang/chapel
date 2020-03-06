@@ -126,17 +126,6 @@ static bool allowSplitInit(Symbol* sym) {
   if (sym->hasFlag(FLAG_EXTERN))
     return false;
 
-  // Check for mentions of this variable in other functions (inner functions)
-  FnSymbol* fn = sym->defPoint->getFunction();
-  for_SymbolSymExprs(se, sym) {
-    if (se->getFunction() != fn)
-      return false; // use in inner function detected; disable split init
-  }
-
-  // Don't allow split-init of global variables
-  if (fn->hasFlag(FLAG_MODULE_INIT))
-    return false;
-
   // For now, disable split init on non-user code
   // unless there is no alternative
   if (sym->defPoint->getModule()->modTag != MOD_USER &&

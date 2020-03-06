@@ -9932,24 +9932,30 @@ static void resolvePrimInit(CallExpr* call, Symbol* val, Type* type) {
 
     // note: error for bad param initialization checked for in resolving move
 
-    if (!call->isPrimitive(PRIM_INIT_VAR_SPLIT_DECL)) {
-      Expr* defaultExpr = NULL;
-      SymExpr* typeSe = NULL;
-      if (type->defaultValue->type == type) {
-        defaultExpr = new SymExpr(type->defaultValue);
-      } else {
-        typeSe = new SymExpr(type->symbol);
-        defaultExpr = new CallExpr(PRIM_CAST, type->symbol, type->defaultValue);
-      }
+    if ((val->hasFlag(FLAG_MAYBE_PARAM) || val->isParameter())) {
+      if (!call->isPrimitive(PRIM_INIT_VAR_SPLIT_DECL)) {
+        Expr* defaultExpr = NULL;
+        SymExpr* typeSe = NULL;
+        if (type->defaultValue->type == type) {
+          defaultExpr = new SymExpr(type->defaultValue);
+        } else {
+          typeSe = new SymExpr(type->symbol);
+          defaultExpr = new CallExpr(PRIM_CAST, type->symbol, type->defaultValue);
+        }
 
-      CallExpr* moveDefault = new CallExpr(PRIM_MOVE, val, defaultExpr);
-      call->insertBefore(moveDefault);
-      if (typeSe) resolveExprTypeConstructor(typeSe);
-      resolveExpr(moveDefault);
-      call->convertToNoop();
+        CallExpr* moveDefault = new CallExpr(PRIM_MOVE, val, defaultExpr);
+        call->insertBefore(moveDefault);
+        if (typeSe) resolveExprTypeConstructor(typeSe);
+        resolveExpr(moveDefault);
+        call->convertToNoop();
+      } else {
+        call->convertToNoop(); // initialize it in PRIM_INIT_VAR_SPLIT_INIT
+                               // (important for params)
+      }
     } else {
-      call->convertToNoop(); // initialize it in PRIM_INIT_VAR_SPLIT_INIT
-                             // (important for params)
+      // non-param integers e.g. will be handled in lowerPrimInit.
+      if (call->numActuals() >= 2)
+        call->get(2)->replace(new SymExpr(type->symbol));
     }
 
   // non-generic records with initializers
@@ -9969,22 +9975,21 @@ void lowerPrimInit(CallExpr* call, Expr* preventingSplitInit) {
   Expr* valExpr = NULL;
   Expr* typeExpr = NULL;
 
-  // Establish types in case that is not already done.
-  //resolvePrimInit(call);
+  valExpr = call->get(1);
+  SymExpr* valSe = toSymExpr(valExpr);
+  INT_ASSERT(valSe);
+  Symbol* val = valSe->symbol();
+  INT_ASSERT(val);
 
   if (call->isPrimitive(PRIM_INIT_VAR_SPLIT_DECL)) {
-    // PRIM_INIT_SPLIT_DECL does nothing at this point
+    val->addFlag(FLAG_SPLIT_INITED);
+    // PRIM_INIT_SPLIT_DECL does nothing else at this point
     call->convertToNoop();
     return;
   }
 
-  valExpr = call->get(1);
   typeExpr = call->get(2);
   INT_ASSERT(valExpr && typeExpr);
-
-  SymExpr* valSe = toSymExpr(valExpr);
-  INT_ASSERT(valSe);
-  Symbol* val = valSe->symbol();
 
   if (SymExpr* se = toSymExpr(typeExpr)) {
     if (se->symbol()->hasFlag(FLAG_TYPE_VARIABLE) == true) {

@@ -825,6 +825,7 @@ bool SplitInitVisitor::enterDefExpr(DefExpr* def) {
 
 bool SplitInitVisitor::enterCallExpr(CallExpr* call) {
   if (call->isPrimitive(PRIM_DEFAULT_INIT_VAR)) {
+
     // Can this be replaced by a split init?
     std::vector<CallExpr*> initAssigns;
     Expr* prevent = NULL;

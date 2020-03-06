@@ -218,9 +218,5 @@ deinit
 deinit
 testGlobalOut
 init
-init
-init
-deinit
-deinit
 end
 deinit

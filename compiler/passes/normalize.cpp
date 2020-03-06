@@ -2286,6 +2286,8 @@ static void normalizeTypeAlias(DefExpr* defExpr) {
     emitTypeAliasInit(defExpr, var, init);
   } else {
     // handle split initialization for type aliases
+    var->addFlag(FLAG_SPLIT_INITED);
+
     for_vector(CallExpr, call, initAssigns) {
       SET_LINENO(call);
       // Consider the RHS of the '=' call to be the init expr.
@@ -2498,6 +2500,7 @@ static void normalizeVariableDefinition(DefExpr* defExpr) {
     }
   } else {
     // handle split initialization
+    var->addFlag(FLAG_SPLIT_INITED);
 
     // remove the init expression if present
     if (init != NULL)
