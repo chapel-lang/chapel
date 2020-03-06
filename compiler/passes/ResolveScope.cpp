@@ -651,8 +651,8 @@ Symbol* ResolveScope::lookupWithUses(UnresolvedSymExpr* usymExpr, bool isUse) co
     buildBreadthFirstUseImportList(useImportList);
 
     // Do not use for_vector(); it terminates on a NULL
-    for (size_t i = 0; i < useImportList.size(); i++) {
-      if (UseStmt* use = toUseStmt(useImportList[i])) {
+    for_vector_allowing_0s(VisibilityStmt, visStmt, useImportList) {
+      if (UseStmt* use = toUseStmt(visStmt)) {
         if (use->skipSymbolSearch(name) == false) {
           BaseAST*    scopeToUse = use->getSearchScope();
           const char* nameToUse  = name;
@@ -677,7 +677,7 @@ Symbol* ResolveScope::lookupWithUses(UnresolvedSymExpr* usymExpr, bool isUse) co
           }
         }
 
-      } else if (ImportStmt* import = toImportStmt(useImportList[i])) {
+      } else if (ImportStmt* import = toImportStmt(visStmt)) {
         BaseAST* scopeToUse = import->getSearchScope();
 
         if (ResolveScope* next = getScopeFor(scopeToUse)) {
