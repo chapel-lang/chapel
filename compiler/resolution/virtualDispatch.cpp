@@ -529,12 +529,18 @@ static bool isSubType(Type* sub, Type* super) {
 
 static bool isOverrideableMethod(FnSymbol* fn) {
   if (AggregateType* at = getReceiverClassType(fn)) {
-    INT_ASSERT(at->isClass()); 
-    return fn->name != astrInit &&
-           !fn->hasFlag(FLAG_WRAPPER) &&
-           !fn->hasFlag(FLAG_NO_PARENS) &&
-            fn->retTag != RET_PARAM &&
-            fn->retTag != RET_TYPE;
+    INT_ASSERT(at->isClass());
+
+    const bool isNeverOverrideable = fn->name == astrInit ||
+                                     fn->hasFlag(FLAG_WRAPPER) ||
+                                     fn->hasFlag(FLAG_NO_PARENS);
+
+    // Type methods may have param or type return types.
+    if (fn->isTypeMethod()) { return !isNeverOverrideable; }
+
+    return !isNeverOverrideable &&
+           fn->retTag != RET_PARAM &&
+           fn->retTag != RET_TYPE;
   }
 
   return false;
@@ -1015,11 +1021,12 @@ static void checkMethodsOverride() {
         // Do some initial basic checking
         if (fn->hasFlag(FLAG_OVERRIDE)) {
           const char* msg = NULL;
+
           if (fn->hasFlag(FLAG_NO_PARENS))
             msg = "parentheses-less methods cannot override";
-          else if (fn->retTag == RET_PARAM)
+          else if (!fn->isTypeMethod() && fn->retTag == RET_PARAM)
             msg = "param return methods cannot override";
-          else if (fn->retTag == RET_TYPE)
+          else if (!fn->isTypeMethod() && fn->retTag == RET_TYPE)
             msg = "type return methods cannot override";
           else if (!isOverrideableMethod(fn))
             msg = "signature is not overrideable";
