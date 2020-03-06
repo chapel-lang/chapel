@@ -1578,7 +1578,7 @@ static Expr* preFoldPrimOp(CallExpr* call) {
     SymExpr* se = toSymExpr(call->get(1));
 
     if (se->symbol()->hasFlag(FLAG_EXPR_TEMP) &&
-        !(isClassLikeOrPtr(type) || isReferenceType(type))) {
+        !(type == dtLocale || isClassLikeOrPtr(type) || isReferenceType(type))) {
       USR_WARN(se, "accessing the locale of a local expression");
     }
 
