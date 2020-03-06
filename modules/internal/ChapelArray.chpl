@@ -1561,7 +1561,7 @@ module ChapelArray {
 
     /* Return the number of indices in this domain */
     proc size return _value.dsiNumIndices;
-    /* Return the number of indices in this domain */
+    /* Deprecated - please use :proc:`size`. */
     proc numIndices {
       compilerWarning("'domain.numIndices' is deprecated - " +
                       "please use 'domain.size' instead");
@@ -2739,8 +2739,7 @@ module ChapelArray {
       }
     }
 
-    // 1/5/10: do we need this since it always returns domain.size?
-    /* Return the number of elements in the array */
+    /* Deprecated - please use :proc:`size`. */
     proc numElements {
       compilerWarning("'array.numElements' is deprecated - " +
                       "please use 'array.size' instead");
