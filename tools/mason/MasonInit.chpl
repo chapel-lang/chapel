@@ -171,7 +171,7 @@ proc validateMasonFile(path: string, name: string, show: bool) throws {
     var version = "";
     var chplVersion = "";
     const toParse = open(path + "/Mason.toml", iomode.r);
-    const tomlFile = new owned(parseToml(toParse));
+    const tomlFile = owned.create(parseToml(toParse));
 
     if !tomlFile.pathExists("brick") {
       if tomlFile.pathExists("name") ||

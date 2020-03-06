@@ -90,8 +90,8 @@ private proc getBuildInfo(projectHome: string) {
   // parse lock and toml(examples dont make it to lock file)
   const lock = open(projectHome + "/Mason.lock", iomode.r);
   const toml = open(projectHome + "/Mason.toml", iomode.r);
-  const lockFile = new owned(parseToml(lock));
-  const tomlFile = new owned(parseToml(toml));
+  const lockFile = owned.create(parseToml(lock));
+  const tomlFile = owned.create(parseToml(toml));
   
   // Get project source code and dependencies
   const sourceList = genSourceList(lockFile);
@@ -361,7 +361,7 @@ proc printAvailableExamples() {
     const cwd = getEnv("PWD");
     const projectHome = getProjectHome(cwd);
     const toParse = open(projectHome + "/Mason.toml", iomode.r);
-    const toml = new owned(parseToml(toParse));
+    const toml = owned.create(parseToml(toParse));
     const examples = getExamples(toml, projectHome);
     writeln("--- available examples ---");
     for example in examples {

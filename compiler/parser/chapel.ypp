@@ -2010,9 +2010,13 @@ new_expr:
 
   /* handles e.g. new owned(myUnmanaged) */
 | TNEW TOWNED TLP expr TRP
-    { $$ = new CallExpr(PRIM_NEW, new CallExpr(dtOwned->symbol, $4)); }
+    { USR_WARN($4, "the syntax 'new owned(an expression)' is deprecated");
+      USR_PRINT($4, "instead use 'owned.create(an expression)'");
+      $$ = new CallExpr(PRIM_NEW, new CallExpr(dtOwned->symbol, $4)); }
 | TNEW TSHARED TLP expr TRP
-    { $$ = new CallExpr(PRIM_NEW, new CallExpr(dtShared->symbol, $4)); }
+    { USR_WARN($4, "the syntax 'new shared(an expression)' is deprecated");
+      USR_PRINT($4, "instead use 'shared.create(an expression)'");
+      $$ = new CallExpr(PRIM_NEW, new CallExpr(dtShared->symbol, $4)); }
 ;
 
 let_expr:

@@ -146,7 +146,7 @@ proc findLatest(packageDir: string): VersionInfo {
     const chplVersion = getChapelVersionInfo();
 
     const manifestReader = openreader(packageDir + '/' + manifest);
-    const manifestToml = new owned(parseToml(manifestReader));
+    const manifestToml = owned.create(parseToml(manifestReader));
     const brick = manifestToml['brick'];
     var (low, high) = parseChplVersion(brick);
     if chplVersion < low || chplVersion > high then continue;
@@ -176,7 +176,7 @@ proc consumeArgs(ref args : list(string)) {
 /* Print a TOML file. Expects full path. */
 proc showToml(tomlFile : string) {
   const openFile = openreader(tomlFile);
-  const toml = new owned(parseToml(openFile));
+  const toml = owned.create(parseToml(openFile));
   writeln(toml);
   openFile.close();
 }
