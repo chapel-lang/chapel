@@ -255,10 +255,23 @@ module OwnedObject {
     }
 
     //wass add chpldoc comment here "factory"; remove the one from the deprecated fn
+    proc type create(source) {
+      // catch-all case
+      compilerError("cannot create an 'owned' from ", source.type:string);
+    }
+
+    pragma "no doc"
+    inline proc type create(pragma "nil from arg" in take: owned) {
+      return take;
+    }
+
+    pragma "no doc"
     pragma "unsafe" // 'result' may have a non-nilable type
-    proc type create(pragma "nil from arg" p) {
+    inline proc type create(pragma "nil from arg" p : unmanaged) {
+/*wass
       if ! isUnmanagedClass(p) then
         compilerError("can create an 'owned' only from an unmanaged pointer; here it is a ", p.type:string);
+*/
       var result: (p.type : owned);
       compilerAssert(isNilableClass(result) == isNilableClass(p)); //wass remove later
       result.retain(p);
