@@ -121,7 +121,7 @@ proc almostEquals(A: [], B: []): bool {
   if A.rank != B.rank then
     return false;
 
-  if A.numElements != B.numElements then
+  if A.size != B.size then
     return false;
 
   //

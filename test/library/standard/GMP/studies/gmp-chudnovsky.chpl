@@ -266,7 +266,7 @@ proc main() {
 
 
 proc build_sieve(s: [] sieve_t) {
-  const n = s.numElements*2,
+  const n = s.size*2,
         m = sqrt(n): c_long;
 
   s[1/2].fac = 1;

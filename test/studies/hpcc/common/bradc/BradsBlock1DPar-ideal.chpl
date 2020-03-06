@@ -152,7 +152,7 @@ class Block1DDist {
   //
   proc idxToLocaleInd(ind: glbIdxType) {
     const ind0 = ind - boundingBox.low;
-    const loc0 = (ind0 * targetLocs.numElements) / boundingBox.size;
+    const loc0 = (ind0 * targetLocs.size) / boundingBox.size;
     const locInd = loc0: index(targetLocs.domain) + targetLocs.domain.low;
     return locInd;
   }
@@ -517,7 +517,7 @@ class Block1DArr {
       // May want to do something like the following:
       //      on loc {
       // but it causes deadlock -- see writeThisUsingOn.chpl
-        if (locArr(loc).numElements >= 1) {
+        if (locArr(loc).size >= 1) {
           if (first) {
             first = false;
           } else {
@@ -618,6 +618,6 @@ class LocBlock1DArr {
   // query for the number of local array elements
   //
   proc numElements {
-    return myElems.numElements;
+    return myElems.size;
   }
 }

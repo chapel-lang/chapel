@@ -95,13 +95,13 @@ class MyBlockCyclic : BaseDist {
     this.lowIdx = _ensureTuple(startIdx);
     this.blocksize = _ensureTuple(blocksize);
     if rank == 1 {
-      targetLocDom = {0..#targetLocales.numElements}; // 0-based for simplicity
+      targetLocDom = {0..#targetLocales.size}; // 0-based for simplicity
       this.targetLocales = targetLocales;
     } else if targetLocales.rank == 1 then {
 
       // BLC: Common code, factor out
 
-      const factors = _factor(rank, targetLocales.numElements);
+      const factors = _factor(rank, targetLocales.size);
       var ranges: rank*range;
       for param i in 1..rank do
         ranges(i) = 0..factors(i)-1;
@@ -251,7 +251,7 @@ proc MyBlockCyclic.getStarts(inds, locid) {
 // determine which locale owns a particular index
 //
 // TODO: I jotted down a note during the code review asking whether
-// targetLocales.numElements and boundingbox.size should be
+// targetLocales.size and boundingbox.size should be
 // captured locally, or captured in the default dom/array implementation
 // or inlined.  Not sure what that point was anymore, though.  Maybe
 // someone else can help me remember it (since it was probably someone

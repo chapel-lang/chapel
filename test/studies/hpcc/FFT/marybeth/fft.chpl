@@ -57,7 +57,7 @@ proc main() {
 
 
 proc computeTwiddles(W) {
-  const n = W.numElements;
+  const n = W.size;
   const delta = 2.0 * atan(1.0) / n;
 
   W(0) = 1.0;
@@ -108,7 +108,7 @@ proc dfft(A, W) {
   var span = 1;
   var m, m2: int;
 
-  const numElements = A.numElements;
+  const numElements = A.size;
 
   for i in 2..logN by 2 {
     m = 4*span;
@@ -150,7 +150,7 @@ proc dfft(A, W) {
 
 
 proc verifyResults(z, Z, execTime, Twiddles) {
-  const N = Z.numElements;
+  const N = Z.size;
 
   // BLC: This line wants /(complex,real) to be implemented directly:
   Z = conjg(Z) / N;

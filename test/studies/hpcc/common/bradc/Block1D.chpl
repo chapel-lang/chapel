@@ -63,7 +63,7 @@ class Block1D : Distribution {
     // TODO: Create a helper function to create a domain like this for
     // arbitrary dimensions (since the k-D case is a bit harder?)
     //
-    targetLocDom = {0..#targetLocales.numElements};
+    targetLocDom = {0..#targetLocales.size};
     targetLocs = targetLocales;
 
     for locid in targetLocDom do
@@ -147,7 +147,7 @@ class Block1D : Distribution {
   // Determine which locale owns a particular index
   //
   // TODO: I jotted down a note during the code review asking whether
-  // targetLocs.numElements and boundingbox.size should be
+  // targetLocs.size and boundingbox.size should be
   // captured locally, or captured in the default dom/array implementation
   // or inlined.  Not sure what that point was anymore, though.  Maybe
   // someone else can help me remember it (since it was probably someone
@@ -156,7 +156,7 @@ class Block1D : Distribution {
   proc idxToLocaleInd(ind: idxType) {
     //    writeln("distribution = ", this);
     const ind0 = ind - boundingBox.low;
-    const locInd = (ind0 * targetLocs.numElements:idxType) / boundingBox.size;
+    const locInd = (ind0 * targetLocs.size:idxType) / boundingBox.size;
     return locInd: index(targetLocDom);
   }
 }
@@ -757,7 +757,7 @@ class Block1DArr: BaseArray {
       // May want to do something like the following:
       //      on loc {
       // but it causes deadlock -- see writeThisUsingOn.chpl
-        if (locArr(loc).numElements >= 1) {
+        if (locArr(loc).size >= 1) {
           if (first) {
             first = false;
           } else {
@@ -862,7 +862,7 @@ class LocBlock1DArr {
   // query for the number of local array elements
   //
   proc numElements {
-    return myElems.numElements;
+    return myElems.size;
   }
 
   // INTERNAL INTERFACE:

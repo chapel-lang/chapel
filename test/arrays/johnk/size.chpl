@@ -9,15 +9,15 @@ writeln(arr3.size); //10000
 writeln(dom.size); //120
 
 //Size (array) sanity checks
-if arr1.size == arr1.numElements {
+if arr1.size == arr1.size {
     writeln("match");
 }
 
-if arr2.size == arr2.numElements {
+if arr2.size == arr2.size {
     writeln("match");
 }
 
-if arr3.size == arr3.numElements {
+if arr3.size == arr3.size {
     writeln("match");
 }
 

@@ -9,7 +9,7 @@ proc jam() {
   writelnSorted(idomain);
   writeln( "numIndices = ", idomain.size);
   writelnSortedByDom(A);
-  writeln( "numElements = ", A.numElements);
+  writeln( "numElements = ", A.size);
 }
 
 for d in 1..SIZE do idomain.add( d);

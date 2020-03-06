@@ -63,7 +63,7 @@ inline proc sumOfSquares(x:_tuple) where isHomogeneousTuple(x) {
 
 record NBodySystem {
   var bodies = [sun, jupiter, saturn, uranus, neptune];
-  const numbodies = bodies.numElements;
+  const numbodies = bodies.size;
 
   proc postinit() {
     var p: 3*real;

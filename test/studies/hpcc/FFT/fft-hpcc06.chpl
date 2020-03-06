@@ -68,7 +68,7 @@ proc initVectors(Twiddles, z) {
 
 
 proc computeTwiddles(Twiddles) {
-  const numTwdls = Twiddles.numElements,
+  const numTwdls = Twiddles.size,
         delta = 2.0 * atan(1.0) / numTwdls;
 
   Twiddles(0) = 1.0;
@@ -84,7 +84,7 @@ proc computeTwiddles(Twiddles) {
 
 
 proc bitReverseShuffle(Vect: [?Dom]) {
-  const numBits = log2(Vect.numElements),
+  const numBits = log2(Vect.size),
         Perm: [Dom] index(Dom) = [i in Dom] bitReverse(i, revBits = numBits),
         Temp = Vect(Perm);
   Vect = Temp;
@@ -100,7 +100,7 @@ proc bitReverse(val: ?valType, revBits = 64) {
 
 
 proc dfft(A: [?ADom], W) {
-  const numElements = A.numElements;
+  const numElements = A.size;
   var span = 1;
 
   for i in 2..log2(numElements)-1 by 2 {

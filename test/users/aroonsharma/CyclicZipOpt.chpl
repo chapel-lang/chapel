@@ -56,10 +56,10 @@ class CyclicZipOpt: BaseDist {
     if isTuple(startIdx) then tupleStartIdx = startIdx;
                          else tupleStartIdx(1) = startIdx;
     if rank == 1  {
-      targetLocDom = {0..#targetLocales.numElements};
+      targetLocDom = {0..#targetLocales.size};
       targetLocs = targetLocales;
     } else if targetLocales.rank == 1 {
-      const factors = _factor(rank, targetLocales.numElements);
+      const factors = _factor(rank, targetLocales.size);
       var ranges: rank*range;
       for param i in 1..rank {
         ranges(i) = 0..#factors(i);

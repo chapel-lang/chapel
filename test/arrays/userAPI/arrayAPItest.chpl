@@ -17,7 +17,6 @@ proc testArrayAPI1D(lbl, X: [], sliceDom, reindexDom) {
   writeln();
   // Test simple queries
   writeln("size is: ", X.size);
-  writeln("numElements is: ", X.numElements);
   writeln("shape is: ", X.shape);
   writeln();
   // Test I/O
@@ -115,7 +114,6 @@ proc testArrayAPI2D(lbl, X: [], sliceDom, reindexDom) {
 
   // Test simple queries
   writeln("size is: ", X.size);
-  writeln("numElements is: ", X.numElements);
   writeln("shape is: ", X.shape);
   writeln();
 

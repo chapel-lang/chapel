@@ -782,7 +782,7 @@ proc bsIncorporateOthersPartSums(diaFrom, diaTo, locId1, locId2) {
   if checkBsub {
     // Our own partial sums are already available.
     assert(partSums[locId2].avail.read() != spsNA, "bsI-1");
-    assert(locX.numElements == blkSize, "bsI-3");
+    assert(locX.size == blkSize, "bsI-3");
   }
 
   // because we are reusing replK for replX

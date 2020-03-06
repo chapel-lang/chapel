@@ -67,7 +67,7 @@ proc main() {
 
 
 proc computeTwiddles(W) {
-  const n = W.numElements;
+  const n = W.size;
   const delta = 2.0 * atan(1.0) / n;
 
   W(0) = 1.0;
@@ -116,7 +116,7 @@ proc dfft(Z, W) {
     span *= radix;
   }
 
-  const n = Z.numElements;
+  const n = Z.size;
   if (radix*span == n) {
     forall j in 0..#span {
       butterfly(1.0, 1.0, 1.0, Z[j..j+3*span by span]);
@@ -133,7 +133,7 @@ proc dfft(Z, W) {
 
 
 proc verifyResults(z, Z, execTime, Twiddles) {
-  const N = Z.numElements;
+  const N = Z.size;
 
   // BLC: This line wants /(complex,real) to be implemented directly:
   Z = conjg(Z) / N;

@@ -548,7 +548,7 @@ class Cyclic1DArr {
       // May want to do something like the following:
       //      on loc {
       // but it causes deadlock -- see writeThisUsingOn.chpl
-        if (locArr(loc)!.numElements >= 1) {
+        if (locArr(loc)!.size >= 1) {
           if (first) {
             first = false;
           } else {
@@ -639,6 +639,6 @@ class LocCyclic1DArr {
   // query for the number of local array elements
   //
   proc numElements {
-    return myElems.numElements;
+    return myElems.size;
   }
 }
