@@ -536,6 +536,9 @@ static DefaultExprFnEntry buildDefaultedActualFn(FnSymbol*  fn,
   if (fn->throwsError())
     wrapper->throwsErrorInit();
 
+  if (formal->hasFlag(FLAG_UNSAFE))
+    wrapper->addFlag(FLAG_UNSAFE);
+
   if (formal->intent == INTENT_TYPE ||
       formal->hasFlag(FLAG_TYPE_VARIABLE))
     wrapper->retTag = RET_TYPE;

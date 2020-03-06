@@ -73,6 +73,15 @@
 /* #define GASNETC_HAVE_NP_REQ_LONG 1 */
 /* #define GASNETC_HAVE_NP_REP_LONG 1 */
 
+  /* uncomment for each GASNETC_HAVE_NP_* enabled above if the Commit function
+     has the numargs argument even in an NDEBUG build (it is always passed in
+     DEBUG builds).
+   */
+//#define GASNETC_AM_COMMIT_REQ_MEDIUM_NARGS 1
+//#define GASNETC_AM_COMMIT_REP_MEDIUM_NARGS 1
+//#define GASNETC_AM_COMMIT_REQ_LONG_NARGS 1
+//#define GASNETC_AM_COMMIT_REP_LONG_NARGS 1
+
   /* uncomment if your conduit's gasnetc_AMRequest{Short,Medium,Long}V()
      include a call to gasneti_AMPoll (or equivalent) for progress.
      The preferred implementation is to Poll only in the M-suffixed calls

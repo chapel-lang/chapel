@@ -1,1 +1,1 @@
-A is: 1 2 3 4 5 nilClassCheck.chpl:17: error: attempt to dereference nil
+A is: 1 2 3 4 5 nilClassCheck.chpl:17: error: halt reached - argument to ! is nil

@@ -10,7 +10,7 @@ class D:C {
   }
 }
 
-var ARR: [LocaleSpace] borrowed C;
-var c = ARR[0]; // nil of non-nilablel type, due to a typechecking loophole
+pragma "unsafe" var ARR: [LocaleSpace] borrowed C;
+var c = ARR[0]; // nil of non-nilablel type, due to pragma "unsafe"
 
 c.foo();

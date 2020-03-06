@@ -577,7 +577,7 @@ module BytesStringCommon {
     if !_local && (lhs.locale_id != chpl_nodeID) then
       halt("Cannot assign a c_string to a remote string.");
 
-    const len = rhs_c.length;
+    const len = rhs_c.size;
     const buff:bufferType = rhs_c:bufferType;
     lhs.reinitString(buff, len, len+1, needToCopy=true);
   }

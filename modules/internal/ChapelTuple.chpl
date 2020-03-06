@@ -29,13 +29,16 @@ Besides the functions defined here, the Chapel Language specification
 defines other operations available on tuples: indexing, iteration,
 assignment, and unary, binary, and relational operators.
 
-The following method is also available:
+.. function:: proc tuple.size param
 
-  .. code-block:: chapel
+   Returns the number of components of the tuple.
 
-    proc tuple.size param
+.. function:: proc tuple.indices
 
-It returns the number of components of the tuple.
+   Returns the range of indices that are legal for indexing into the
+   tuple: ``1..this.size``.
+
+
 */
 module ChapelTuple {
   private use ChapelStandard;
@@ -233,8 +236,15 @@ module ChapelTuple {
   iter _tuple.these() ref
   {
 
+    // If we hit this error, it generally means that the compiler wasn't
+    // successful at unrolling a loop over a heterogeneous tuple, either
+    // because the IR changed (in the event of a regression) or because
+    // it's a pattern that isn't handled yet (such as zippered iteration
+    // or a forall loop over a heterogeneous tuple).  See preFold.cpp,
+    // specifically unrollHetTupleLoop().
+    //
     if !isHomogeneousTuple(this) then
-      compilerError("Cannot iterate over non-homogeneous tuples. If you intended to use zippered iteration, add the new keyword 'zip' before the tuple of iteratable expressions.");
+      compilerError("Heterogeneous tuples don't support this style of loop yet");
 
     if CHPL_WARN_TUPLE_ITERATION == "true" then
       compilerWarning("Iterating over tuples. If you intended to use zippered iteration, add the new keyword 'zip' before the tuple of iteratable expressions.");
@@ -284,6 +294,18 @@ module ChapelTuple {
     for i in fThis {
       yield this(i);
     }
+  }
+
+  /* TODO: Want this for heterogeneous tuples, but we can't write it today:
+
+  iter _tuple.indices param {
+    for param i in 1..this.size do
+      yield i;
+  }
+  */
+
+  proc _tuple.indices {
+    return 1..this.size;
   }
 
   //

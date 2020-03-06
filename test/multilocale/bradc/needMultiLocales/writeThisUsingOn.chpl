@@ -11,7 +11,7 @@ class LocC {
 }
 
 class C {
-  var locCs: [LocaleSpace] unmanaged LocC;
+  var locCs: [LocaleSpace] unmanaged LocC?;
 
   proc postinit() {
     for loc in LocaleSpace {

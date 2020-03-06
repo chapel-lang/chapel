@@ -1272,9 +1272,9 @@ void AggregateType::resolveConcreteType() {
 
   this->resolveStatus = RESOLVING;
   this->symbol->instantiationPoint = getInstantiationPoint(this->symbol->defPoint);
-  if (this->symbol->instantiationPoint)
-    this->symbol->userInstantiationPointLoc =
-      getUserInstantiationPoint(this->symbol);
+  //if (this->symbol->instantiationPoint)
+  //  this->symbol->userInstantiationPointLoc =
+  //    getUserInstantiationPoint(this->symbol);
 
   if (isClass() == true && symbol->hasFlag(FLAG_NO_OBJECT) == false) {
     AggregateType* parent = dispatchParents.v[0];
@@ -1348,9 +1348,9 @@ AggregateType* AggregateType::instantiationWithParent(AggregateType* parent, Exp
 
     if (retval->symbol->instantiationPoint == NULL) {
       retval->symbol->instantiationPoint = toBlockStmt(insnPoint);
-      if (retval->symbol->instantiationPoint)
-        retval->symbol->userInstantiationPointLoc =
-          getUserInstantiationPoint(retval->symbol);
+      //if (retval->symbol->instantiationPoint)
+      //  retval->symbol->userInstantiationPointLoc =
+      //    getUserInstantiationPoint(retval->symbol);
     }
 
     // Update the type of the 'super' field
@@ -1708,9 +1708,9 @@ AggregateType* AggregateType::getNewInstantiation(Symbol* sym, Type* symType, Ex
   retval->instantiatedFrom = this;
   if (retval->symbol->instantiationPoint == NULL) {
     retval->symbol->instantiationPoint = toBlockStmt(insnPoint);
-    if (retval->symbol->instantiationPoint != NULL)
-      retval->symbol->userInstantiationPointLoc =
-        getUserInstantiationPoint(retval->symbol);
+    //if (retval->symbol->instantiationPoint != NULL)
+    //  retval->symbol->userInstantiationPointLoc =
+    //    getUserInstantiationPoint(retval->symbol);
   }
 
   retval->symbol->copyFlags(symbol);
@@ -2296,6 +2296,9 @@ void AggregateType::fieldToArg(FnSymbol*              fn,
           arg->intent = INTENT_BLANK;
           arg->addFlag(FLAG_TYPE_VARIABLE);
         }
+
+        if (field->hasFlag(FLAG_UNSAFE))
+          arg->addFlag(FLAG_UNSAFE);
 
         if (LoopExpr* fe = toLoopExpr(defPoint->init)) {
           if (field->isType() == false) {

@@ -1218,7 +1218,7 @@ module TomlReader {
 
       for token in pattern.split(line) {
         var strippedToken = token.strip(" \t");
-        if strippedToken.length != 0 {
+        if strippedToken.size != 0 {
           if debugTomlReader {
             writeln('Tokenized: ', '(', strippedToken, ')');
           }
@@ -1270,7 +1270,7 @@ module TomlReader {
       for line in tokenlist {
         if line.A.size != 0 {
           for token in line {
-            if token.length != 0 {
+            if token.size != 0 {
               write("(", token, ")");
             }
           }

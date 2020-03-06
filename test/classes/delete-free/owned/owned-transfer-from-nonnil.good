@@ -3,12 +3,11 @@ owned-transfer-from-nonnil.chpl:27: error: Illegal use of dead value
 owned-transfer-from-nonnil.chpl:26: note: 'x' is dead due to ownership transfer here
 owned-transfer-from-nonnil.chpl:27: error: mention of non-nilable variable after ownership is transferred out of it
 owned-transfer-from-nonnil.chpl:26: note: ownership transfer occurred here
-owned-transfer-from-nonnil.chpl:27: error: mention of non-nilable variable after ownership is transferred out of it
-owned-transfer-from-nonnil.chpl:26: note: ownership transfer occurred here
 owned-transfer-from-nonnil.chpl:33: In function 'test1d':
 owned-transfer-from-nonnil.chpl:37: error: Illegal use of dead value
 owned-transfer-from-nonnil.chpl:36: note: 'x' is dead due to ownership transfer here
-owned-transfer-from-nonnil.chpl:36: error: Cannot transfer ownership from a non-nilable variable with a potentially captured alias
+owned-transfer-from-nonnil.chpl:37: error: mention of non-nilable variable after ownership is transferred out of it
+owned-transfer-from-nonnil.chpl:36: note: ownership transfer occurred here
 owned-transfer-from-nonnil.chpl:66: In function 'test2c':
 owned-transfer-from-nonnil.chpl:70: error: Illegal use of dead value
 owned-transfer-from-nonnil.chpl:69: note: 'x' is dead due to ownership transfer here
@@ -17,8 +16,6 @@ owned-transfer-from-nonnil.chpl:69: note: ownership transfer occurred here
 owned-transfer-from-nonnil.chpl:76: In function 'test2d':
 owned-transfer-from-nonnil.chpl:81: error: mention of non-nilable variable after ownership is transferred out of it
 owned-transfer-from-nonnil.chpl:79: note: ownership transfer occurred here
-owned-transfer-from-nonnil.chpl:86: In function 'test2e':
-owned-transfer-from-nonnil.chpl:90: error: Cannot transfer ownership from a non-nilable variable with a potentially captured alias
 owned-transfer-from-nonnil.chpl:103: In function 'test3':
 owned-transfer-from-nonnil.chpl:105: error: Illegal use of dead value
 owned-transfer-from-nonnil.chpl:105: note: 'x' is dead due to ownership transfer here
@@ -26,31 +23,27 @@ owned-transfer-from-nonnil.chpl:105: error: mention of non-nilable variable afte
 owned-transfer-from-nonnil.chpl:105: note: ownership transfer occurred here
 owned-transfer-from-nonnil.chpl:110: In function 'test3a':
 owned-transfer-from-nonnil.chpl:112: error: Cannot transfer ownership from this non-nilable reference variable
-owned-transfer-from-nonnil.chpl:112: error: Cannot transfer ownership from a non-nilable variable with a potentially captured alias
 owned-transfer-from-nonnil.chpl:137: In function 'test4c':
 owned-transfer-from-nonnil.chpl:141: error: Illegal use of dead value
 owned-transfer-from-nonnil.chpl:140: note: 'x' is dead due to ownership transfer here
 owned-transfer-from-nonnil.chpl:141: error: mention of non-nilable variable after ownership is transferred out of it
 owned-transfer-from-nonnil.chpl:140: note: ownership transfer occurred here
-owned-transfer-from-nonnil.chpl:141: error: mention of non-nilable variable after ownership is transferred out of it
-owned-transfer-from-nonnil.chpl:140: note: ownership transfer occurred here
-owned-transfer-from-nonnil.chpl:146: In function 'test4d':
-owned-transfer-from-nonnil.chpl:150: error: Cannot transfer ownership from a non-nilable variable with a potentially captured alias
 owned-transfer-from-nonnil.chpl:189: In function 'test8':
 owned-transfer-from-nonnil.chpl:193: error: Illegal use of dead value
 owned-transfer-from-nonnil.chpl:192: note: 'x' is dead due to ownership transfer here
-owned-transfer-from-nonnil.chpl:192: error: Cannot transfer ownership from a non-nilable variable with a potentially captured alias
+owned-transfer-from-nonnil.chpl:193: error: mention of non-nilable variable after ownership is transferred out of it
+owned-transfer-from-nonnil.chpl:192: note: ownership transfer occurred here
 owned-transfer-from-nonnil.chpl:198: In function 'test9':
 owned-transfer-from-nonnil.chpl:201: error: Illegal use of dead value
 owned-transfer-from-nonnil.chpl:200: note: 'x' is dead due to ownership transfer here
-owned-transfer-from-nonnil.chpl:200: error: Cannot transfer ownership from a non-nilable variable with a potentially captured alias
+owned-transfer-from-nonnil.chpl:201: error: mention of non-nilable variable after ownership is transferred out of it
+owned-transfer-from-nonnil.chpl:200: note: ownership transfer occurred here
 owned-transfer-from-nonnil.chpl:207: In function 'test10':
-owned-transfer-from-nonnil.chpl:209: error: Cannot transfer ownership from a non-nilable variable with a potentially captured alias
+owned-transfer-from-nonnil.chpl:209: error: Cannot transfer ownership from this non-nilable reference variable
 owned-transfer-from-nonnil.chpl:220: In function 'init=':
-owned-transfer-from-nonnil.chpl:221: error: Cannot transfer ownership from a non-nilable variable with a potentially captured alias
+owned-transfer-from-nonnil.chpl:221: error: Cannot transfer ownership from this non-nilable reference variable
 owned-transfer-from-nonnil.chpl:224: In function '=':
-owned-transfer-from-nonnil.chpl:225: error: Cannot transfer ownership from a non-nilable variable with a potentially captured alias
+owned-transfer-from-nonnil.chpl:225: error: Cannot transfer ownership from this non-nilable reference variable
 owned-transfer-from-nonnil.chpl:157: In function 'acceptRefButReturn':
 owned-transfer-from-nonnil.chpl:157: error: Cannot transfer ownership from non-nilable class argument
 owned-transfer-from-nonnil.chpl:157: note: 'arg' is set to nil here
-owned-transfer-from-nonnil.chpl:157: error: Cannot transfer ownership from non-nilable reference argument

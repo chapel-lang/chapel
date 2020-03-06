@@ -24,6 +24,7 @@ class AggregateType;
 class CallExpr;
 class FnSymbol;
 class Type;
+class VarSymbol;
 
 void  resolveSignatureAndFunction(FnSymbol* fn);
 void  resolveSignature(FnSymbol* fn);
@@ -41,5 +42,7 @@ void  resolveSpecifiedReturnType(FnSymbol* fn);
 
 Type* getReturnedTupleType(FnSymbol*      fn,
                            AggregateType* retType);
+
+void markTempDeadLastMention(VarSymbol* var);
 
 #endif

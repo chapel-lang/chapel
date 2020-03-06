@@ -171,7 +171,7 @@ proc validateMasonFile(path: string, name: string, show: bool) throws {
     var version = "";
     var chplVersion = "";
     const toParse = open(path + "/Mason.toml", iomode.r);
-    const tomlFile = parseToml(toParse);
+    const tomlFile = new owned(parseToml(toParse));
 
     if !tomlFile.pathExists("brick") {
       if tomlFile.pathExists("name") ||
@@ -219,7 +219,7 @@ proc validateMasonFile(path: string, name: string, show: bool) throws {
 /*
 adds a section that is absent in the Mason.toml file
 */
-proc addSection(sectionName: string, path: string, tomlFile: unmanaged Toml, show: bool) {
+proc addSection(sectionName: string, path: string, tomlFile: owned Toml, show: bool) {
   var tdom: domain(string);
   var tomlPath = path + "/Mason.toml";
   var deps: [tdom] unmanaged Toml?;

@@ -448,9 +448,3 @@ proc readf(fmt:string):bool throws {
   compilerWarning("readf will no longer be available by default,\nplease insert a use of the IO module to continue calling it.");
   return readf(fmt);
 }
-
-pragma "last resort"
-proc string.format(args ...?k): string throws {
-  compilerWarning("string.format will no longer be available by default,\nplease insert a use of the IO module to continue calling it.");
-  return format((...args));
-}

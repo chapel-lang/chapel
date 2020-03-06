@@ -1,8 +1,8 @@
 bug: Maximal uint arrays are not initialized
 
 Arrays like `[0:uint(8)..255:uint(8)] int` are not initialized because of
-overflow. Currently range.length is passed in as the size of the array to be
-initialized, but range.length overflows for maximal uint arrays so it uses a
+overflow. Currently range.size is passed in as the size of the array to be
+initialized, but range.size overflows for maximal uint arrays so it uses a
 size of 0.
 
 I think the correct behavior is to either properly initialize maximal arrays or

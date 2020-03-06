@@ -4,12 +4,12 @@ config const gx=3, gy=3;
 const gridDom = {1..gx, 1..gy};
 const gridBig = {0..gx+1, 0..gy+1};
 
-var gridLocales: [gridDom] locale;
 var manylocs: bool;
 config const showlocales = false;
+var gridLocales: [gridDom] locale = setupGridLocales();
 
-setupGridLocales();
 proc setupGridLocales(ensureManyLocs = false) {
+  var gridLocales: [gridDom] locale?;
   manylocs = (numLocales >= gridLocales.numElements);
 
   if manylocs {
@@ -30,6 +30,8 @@ proc setupGridLocales(ensureManyLocs = false) {
   if !manylocs && ensureManyLocs then halt("not enough locales: wanted ",
     gridLocales.numElements, ", got ", numLocales);
   writeln();
+
+  return gridLocales!;
 }
 
 const gridDist = gridDom dmapped Block(gridDom, gridLocales);
@@ -67,10 +69,13 @@ class GlobalInfo {
 
 // constructor for GlobalInfo
 proc GlobalInfo.init() {
+  const dummyLI = new unmanaged LocalInfo();
+  infos = dummyLI;
   this.complete();
-  coforall ((ix,iy), inf) in zip(gridDist, infos) do on inf {
+  coforall ((ix,iy), inf, loc) in zip(gridDist, infos, gridLocales) do on loc {
     inf = new unmanaged LocalInfo(mygx=ix, mygy=iy);
   }
+  delete dummyLI;
 }
 
 proc GlobalInfo.deinit() {
@@ -104,14 +109,18 @@ class GlobalData {
 // constructor for GlobalData
 proc GlobalData.init(nameArg: string) {
   name=nameArg;
-  this.complete();
-  coforall (inf, dat, loc) in zip(WI.infos, datas, gridLocales) do on loc {
+  var datasTemp: [gridDist] unmanaged LocalData?;
+  coforall (inf, datElm, loc) in zip(WI.infos, datasTemp, gridLocales) do on loc {
+    const dat;
     dat = new unmanaged LocalData(inf);
     // sanity checks
     assert(dat.locale == loc);
     assert(dat.linfo.locale == loc);
     assert(dat.linfo == inf);
+    datElm = dat;
   }
+  this.datas = datasTemp!;
+  this.complete();
 
   /// get and store pointers to neighbor data slices ///
   forall ((ix,iy), dat, inf) in zip(gridDist, datas, WI.infos) {
