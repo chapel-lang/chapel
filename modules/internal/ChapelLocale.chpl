@@ -104,11 +104,11 @@ module ChapelLocale {
 
     var kind: localeKind;
 
-    inline proc _nonNilInstance {
+    inline proc _value {
       return _instance!;
     }
 
-    forwarding _nonNilInstance;
+    forwarding _value;
 
     proc init(_instance: BaseLocale) {
       this._instance = _to_unmanaged(_instance);
