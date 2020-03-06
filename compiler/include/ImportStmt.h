@@ -46,7 +46,7 @@ class ImportStmt: public VisibilityStmt {
   BaseAST* getSearchScope() const;
 
  private:
-  bool isValid(Expr* expr) const;
+  bool checkValid(Expr* expr) const;
 };
 
 #endif

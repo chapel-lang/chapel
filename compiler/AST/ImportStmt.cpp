@@ -106,9 +106,9 @@ void ImportStmt::verify() {
 // Resolve the module symbol referred to by the ImportStmt
 //
 void ImportStmt::scopeResolve(ResolveScope* scope) {
-  // 2020/03/02: isValid() does not currently return on failure, to generate
+  // 2020/03/02: checkValid() does not currently return on failure, to generate
   // good error messages
-  if (isValid(src) == true) {
+  if (checkValid(src) == true) {
     // 2017/05/28 The parser inserts a normalized UseStmt of ChapelBase
     if (isSymExpr(src)) {
       INT_FATAL("This should only happen for a UseStmt");
@@ -185,7 +185,7 @@ BaseAST* ImportStmt::getSearchScope() const {
 // due to ImportStmts supporting things like `import M.x;` where x is not a
 // module symbol, and due to UseStmts supporting enums.  ImportStmts may support
 // enums in the future, but that will wait on user requests
-bool ImportStmt::isValid(Expr* expr) const {
+bool ImportStmt::checkValid(Expr* expr) const {
   bool retval = false;
 
   if (isUnresolvedSymExpr(expr) == true) {
@@ -193,7 +193,7 @@ bool ImportStmt::isValid(Expr* expr) const {
 
   } else if (CallExpr* call = toCallExpr(expr)) {
     if (call->isNamedAstr(astrSdot) == true) {
-      if (isValid(call->get(1)) == true) {
+      if (checkValid(call->get(1)) == true) {
         if (SymExpr* rhs = toSymExpr(call->get(2))) {
           VarSymbol* v = toVarSymbol(rhs->symbol());
 
