@@ -139,6 +139,12 @@ module ChapelLocale {
 
     inline proc maxTaskPar { return this._instance!.maxTaskPar; }
     inline proc callStackSize { return this._instance!.callStackSize; }
+
+    // for now this is the only thing failing due to promoted forwarding
+    inline
+    proc numPUs(logical: bool = false, accessible: bool = true) {
+      return this._instance!.numPUs();
+    }
   }
 
   /*
