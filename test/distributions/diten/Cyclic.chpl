@@ -366,7 +366,7 @@ class Cyclic1DDom {
   //
   // queries for the number of indices, low, and high bounds
   //
-  proc numIndices {
+  proc size {
     return whole.size;
   }
 
@@ -437,7 +437,7 @@ class LocCyclic1DDom {
   //
   // queries for this locale's number of indices, low, and high bounds
   //
-  proc numIndices {
+  proc size {
     return myBlock.size;
   }
 
@@ -566,7 +566,7 @@ class Cyclic1DArr {
   //
   // a query for the number of elements in the array
   //
-  proc numElements {
+  proc size {
     return dom.size;
   }
 }
@@ -638,7 +638,7 @@ class LocCyclic1DArr {
   //
   // query for the number of local array elements
   //
-  proc numElements {
+  proc size {
     return myElems.size;
   }
 }

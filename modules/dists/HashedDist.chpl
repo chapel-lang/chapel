@@ -638,7 +638,7 @@ class LocUserMapAssocDom {
   // TODO: I believe these are only used by the random number generator
   // in stream -- will they always be required once that is rewritten?
   //
-  proc numIndices {
+  proc size {
     return myInds.size;
   }
 }
@@ -947,7 +947,7 @@ class LocUserMapAssocArr {
   //
   // query for the number of local array elements
   //
-  proc numElements {
+  proc size {
     return myElems.size;
   }
 
