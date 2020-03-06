@@ -156,7 +156,7 @@ Here is an example demonstrating how to use the :proc:`~Test.addNumLocales`
 
   proc test_square(test: borrowed Test) throws {
     test.addNumLocales(5);
-    var A: [1..numLocales] int;
+    var A: [Locales.domain] int;
     coforall i in 0..numLocales-1 with (ref A) {
       on Locales(i) {
         A[i+1] = (i+1)*(i+1);
@@ -203,7 +203,7 @@ Here is an example demonstrating how to use the :proc:`~Test.dependsOn`
 
    use UnitTest;
 
-   var factArray: [1..0] int;
+   var factorials: list(int);
 
    // calculates factorial
    proc factorial(x: int): int {
@@ -213,14 +213,14 @@ Here is an example demonstrating how to use the :proc:`~Test.dependsOn`
    proc testFillFact(test: borrowed Test) throws {
      test.skipIf(factorial(0) != 1,"Base condition is wrong in factorial");
      for i in 1..10 do
-       factArray.push_back(factorial(i));
+       factorials.append(factorial(i));
    }
 
    proc testSumFact(test: borrowed Test) throws {
      test.dependsOn(testFillFact);
      var s = 0;
-     for i in 1..10 do
-       s += factArray[i];
+     for i in factorials.indices do
+       s += factorials[i];
      test.assertGreaterThan(s,0);
    }
 
@@ -401,11 +401,11 @@ module UnitTest {
         tmpString = seq_type_name+"s differ: ";
         if seq_type_name == "Array" {
           tmpString += "'[";
-          for i in 1..seq1.size {
+          for i in seq1.indices {
             if i != seq1.size then tmpString+= seq1[i]:string+", ";
             else tmpString += seq1[i]:string+"]' != '[";
           }
-          for i in 1..seq2.size {
+          for i in seq2.indices {
             if i != seq2.size then tmpString+= seq2[i]:string+", ";
             else tmpString += seq2[i]:string+"]'";
           }
@@ -413,7 +413,7 @@ module UnitTest {
         else {
           tmpString += "'"+stringify(seq1)+"' != '"+stringify(seq2)+"'" ;
         }
-        for i in 1..min(len1,len2) {
+        for i in seq1.indices.low..min(len1,len2) {
           var item1 = seq1[i],
               item2 = seq2[i];
           if item1 != item2 {
@@ -645,7 +645,7 @@ module UnitTest {
         }
       }
       if tmpString == "" {
-        for i in 1..len1 {
+        for i in seq1.indices {
           var item1 = seq1[i],
               item2 = seq2[i];
           if item1 == item2 then checkequal = true;
@@ -669,11 +669,11 @@ module UnitTest {
         }
         if seq_type_name == "Array" {
           tmpString += "'[";
-          for i in 1..seq1.size {
+          for i in seq1.indices {
             if i != seq1.size then tmpString+= seq1[i]:string+", ";
             else tmpString += seq1[i]:string+"]'"+symbol+ "'[";
           }
-          for i in 1..seq2.size {
+          for i in seq2.indices {
             if i != seq2.size then tmpString+= seq2[i]:string+", ";
             else tmpString += seq2[i]:string+"]'";
           }
@@ -849,7 +849,7 @@ module UnitTest {
         }
       }
       if tmpString == "" {
-        for i in 1..len1 {
+        for i in seq1.indices {
           var item1 = seq1[i],
               item2 = seq2[i];
           if item1 == item2 then checkequal = true;
@@ -873,11 +873,11 @@ module UnitTest {
         }
         if seq_type_name == "Array" {
           tmpString += "'[";
-          for i in 1..seq1.size {
+          for i in seq1.indices {
             if i != seq1.size then tmpString+= seq1[i]:string+", ";
             else tmpString += seq1[i]:string+"]'"+symbol+ "'[";
           }
-          for i in 1..seq2.size {
+          for i in seq2.indices {
             if i != seq2.size then tmpString+= seq2[i]:string+", ";
             else tmpString += seq2[i]:string+"]'";
           }
@@ -981,6 +981,10 @@ module UnitTest {
         throw new owned AssertionError(tmpString);
       }
     }
+
+    //
+    // Locality specification
+    //
 
     /*
       Specify Max Number of Locales required to run the test
