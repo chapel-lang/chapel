@@ -808,7 +808,12 @@ static Expr* findLastExprInStatement(Expr* e, VarSymbol* v) {
       // e.g. an if-expr; keep going
     } else if (isBlockStmt(cur) || isCondStmt(cur) ||
                isLoopStmt(cur) || isForallStmt(cur)) {
-      break; // full statement reached (but see fixups below)
+      BlockStmt* block = toBlockStmt(cur);
+      if (block && block->isScopeless()) {
+        // OK, don't stop for a scopeless block
+      } else {
+        break; // full statement reached (but see fixups below)
+      }
     }
   }
 
