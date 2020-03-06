@@ -5910,7 +5910,7 @@ void do_remote_get(void* tgt_addr, c_nodeid_t locale, void* src_addr,
     //
     // The transfer will fit in a single trampoline buffer.
     //
-    tgt_addr_xmit = get_buf_alloc(size);
+    tgt_addr_xmit = get_buf_alloc(xmit_size);
 
     do_nic_get(tgt_addr_xmit, locale, remote_mr,
                src_addr_xmit, xmit_size, gnr_mreg);
