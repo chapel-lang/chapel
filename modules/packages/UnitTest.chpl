@@ -375,7 +375,7 @@ module UnitTest {
     }
 
     pragma "no doc"
-    /*An equality assertion for sequences (like arrays, tuples, strings, range).
+    /*An equality assertion for non-array sequences (like tuples, strings, range).
       Args:
       seq1: The first sequence to compare.
       seq2: The second sequence to compare.
@@ -399,20 +399,7 @@ module UnitTest {
           if all(seq1 == seq2) then return;
         }
         tmpString = seq_type_name+"s differ: ";
-        if seq_type_name == "Array" {
-          tmpString += "'[";
-          for i in seq1.indices {
-            if i != seq1.size then tmpString+= seq1[i]:string+", ";
-            else tmpString += seq1[i]:string+"]' != '[";
-          }
-          for i in seq2.indices {
-            if i != seq2.size then tmpString+= seq2[i]:string+", ";
-            else tmpString += seq2[i]:string+"]'";
-          }
-        }
-        else {
-          tmpString += "'"+stringify(seq1)+"' != '"+stringify(seq2)+"'" ;
-        }
+        tmpString += "'"+stringify(seq1)+"' != '"+stringify(seq2)+"'" ;
         for i in seq1.indices.low..min(len1,len2) {
           var item1 = seq1[i],
               item2 = seq2[i];

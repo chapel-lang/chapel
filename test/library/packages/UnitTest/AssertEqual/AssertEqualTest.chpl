@@ -45,6 +45,10 @@ proc equalArray() {
   var x0: [0..2] int = [1,7,6];
   var y0: [0..2] int  = [1,7,6];
   testAssert(x0, y0, "Equal 0-based Arrays");
+
+  var x1: [3..5] int = [1,7,6];
+  var y1: [0..2] int  = [1,7,6];
+  testAssert(x1, y1, "Equal 0- and 1-based Arrays");
 }
 
 
