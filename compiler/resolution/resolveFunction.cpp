@@ -1126,6 +1126,7 @@ static void markTempsDeadLastMention(std::set<VarSymbol*>& temps) {
         v->hasFlag(FLAG_INDEX_VAR) ||
         v->hasFlag(FLAG_CHPL__ITER) ||
         v->hasFlag(FLAG_CHPL__ITER_NEWSTYLE) ||
+        v->hasFlag(FLAG_FORMAL_TEMP) ||
         v->getValType()->symbol->hasFlag(FLAG_ITERATOR_RECORD)) {
       // index vars, iterator records are always end-of-block
       // but shouldn't be global variables.
