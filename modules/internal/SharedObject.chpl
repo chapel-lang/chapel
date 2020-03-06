@@ -323,7 +323,7 @@ module SharedObject {
       chpl_pn = nil;
     }
 
-    //wass add chpldoc comment here; remove the one from the deprecated fn
+    //wass add chpldoc comment here "factory"; remove the one from the deprecated fn
     pragma "unsafe" // 'result' may have a non-nilable type
     proc type create(pragma "nil from arg" p) {
       if ! isUnmanagedClass(p) then
@@ -331,7 +331,6 @@ module SharedObject {
       var result: (p.type : shared);
       compilerAssert(isNilableClass(result) == isNilableClass(p)); //wass remove later
       result.retain(p);
-compilerWarning(result.type:string);
       return result;
     }
 

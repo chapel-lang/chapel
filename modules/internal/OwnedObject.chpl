@@ -254,6 +254,17 @@ module OwnedObject {
       this.chpl_p = src.release();
     }
 
+    //wass add chpldoc comment here "factory"; remove the one from the deprecated fn
+    pragma "unsafe" // 'result' may have a non-nilable type
+    proc type create(pragma "nil from arg" p) {
+      if ! isUnmanagedClass(p) then
+        compilerError("owned.create() accepts only an unmanaged pointer argument; here it is a ", p.type:string);
+      var result: (p.type : owned);
+      compilerAssert(isNilableClass(result) == isNilableClass(p)); //wass remove later
+      result.retain(p);
+      return result;
+    }
+
     /*
        The deinitializer for :record:`owned` will destroy the class
        instance it manages when the :record:`owned` goes out of scope.
