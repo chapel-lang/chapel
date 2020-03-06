@@ -562,8 +562,8 @@ module Random {
 
     /*
 
-       Returns an iterable expression for generating `D.numIndices` random
-       numbers. The RNG state will be immediately advanced by `D.numIndices`
+       Returns an iterable expression for generating `D.size` random
+       numbers. The RNG state will be immediately advanced by `D.size`
        before the iterable expression yields any values.
 
        The returned iterable expression is useful in parallel contexts,
@@ -1057,8 +1057,8 @@ module Random {
 
       /*
 
-         Returns an iterable expression for generating `D.numIndices` random
-         numbers. The RNG state will be immediately advanced by `D.numIndices`
+         Returns an iterable expression for generating `D.size` random
+         numbers. The RNG state will be immediately advanced by `D.size`
          before the iterable expression yields any values.
 
          The returned iterable expression is useful in parallel contexts,
@@ -1074,7 +1074,7 @@ module Random {
       proc iterate(D: domain, type resultType=eltType) {
         _lock();
         const start = PCGRandomStreamPrivate_count;
-        PCGRandomStreamPrivate_count += D.numIndices.safeCast(int(64));
+        PCGRandomStreamPrivate_count += D.size.safeCast(int(64));
         PCGRandomStreamPrivate_skipToNth_noLock(PCGRandomStreamPrivate_count);
         _unlock();
         return PCGRandomPrivate_iterate(resultType, D, seed, start);
@@ -2463,8 +2463,8 @@ module Random {
 
       /*
 
-         Returns an iterable expression for generating `D.numIndices` random
-         numbers. The RNG state will be immediately advanced by `D.numIndices`
+         Returns an iterable expression for generating `D.size` random
+         numbers. The RNG state will be immediately advanced by `D.size`
          before the iterable expression yields any values.
 
          The returned iterable expression is useful in parallel contexts,
@@ -2480,7 +2480,7 @@ module Random {
       proc iterate(D: domain, type resultType=real) {
         _lock();
         const start = NPBRandomStreamPrivate_count;
-        NPBRandomStreamPrivate_count += D.numIndices.safeCast(int(64));
+        NPBRandomStreamPrivate_count += D.size.safeCast(int(64));
         NPBRandomStreamPrivate_skipToNth_noLock(NPBRandomStreamPrivate_count);
         _unlock();
         return NPBRandomPrivate_iterate(resultType, D, seed, start);

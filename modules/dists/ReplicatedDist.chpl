@@ -191,7 +191,7 @@ class ReplicatedDom : BaseRectangularDom {
   // NOTE: if they ever change after the initializer - Reprivatize them
   var localDoms: [dist.targetLocDom] unmanaged LocReplicatedDom(rank, idxType, stridable)?;
 
-  proc numReplicands return localDoms.numElements;
+  proc numReplicands return localDoms.size;
 
   //
   // helper function to get the local domain safely
@@ -396,7 +396,7 @@ proc ReplicatedDom.dsiAlignment
 
 // here replication is visible
 proc ReplicatedDom.dsiNumIndices
-  return redirectee().numIndices;
+  return redirectee().size;
 
 proc ReplicatedDom.dsiMember(indexx)
   return redirectee().contains(indexx);

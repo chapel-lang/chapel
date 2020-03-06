@@ -367,7 +367,7 @@ class LocSparseBlockDom {
   }
 
   proc dsiNumIndices {
-    return mySparseBlock.numIndices;
+    return mySparseBlock.size;
   }
 }
 

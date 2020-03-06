@@ -619,7 +619,7 @@ proc Block.getChunk(inds, locid) {
   //
   const chunk = locDist(locid).myChunk((...inds.getIndices()));
   if sanityCheckDistribution then
-    if chunk.numIndices > 0 {
+    if chunk.size > 0 {
       if targetLocsIdx(chunk.low) != locid then
         writeln("[", here.id, "] ", chunk.low, " is in my chunk but maps to ",
                 targetLocsIdx(chunk.low));
@@ -878,7 +878,7 @@ proc BlockDom.dsiBuildArray(type eltType) {
   return arr;
 }
 
-proc BlockDom.dsiNumIndices return whole.numIndices;
+proc BlockDom.dsiNumIndices return whole.size;
 proc BlockDom.dsiLow return whole.low;
 proc BlockDom.dsiHigh return whole.high;
 proc BlockDom.dsiStride return whole.stride;
