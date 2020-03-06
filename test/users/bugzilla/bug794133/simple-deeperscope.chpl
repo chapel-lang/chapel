@@ -1,4 +1,4 @@
-var myDom: domain(1);
+var myDom: domain(1) = {1..0};
 var myModuleArray = foo();
 myDom = {0..20};
 dump();
