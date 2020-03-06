@@ -1,0 +1,9 @@
+bytesArgNames.chpl:5: warning: createBytesWith* with formal argument `s` is deprecated. Use argument name `x` instead
+bytesArgNames.chpl:6: warning: createBytesWith* with formal argument `s` is deprecated. Use argument name `x` instead
+bytesArgNames.chpl:7: warning: createBytesWith* with formal argument `s` is deprecated. Use argument name `x` instead
+bytesArgNames.chpl:10: warning: createBytesWith* with formal argument `s` is deprecated. Use argument name `x` instead
+bytesArgNames.chpl:11: warning: createBytesWith* with formal argument `s` is deprecated. Use argument name `x` instead
+bytesArgNames.chpl:13: warning: createBytesWith* with formal argument `s` is deprecated. Use argument name `x` instead
+bytesArgNames.chpl:14: warning: createBytesWith* with formal argument `s` is deprecated. Use argument name `x` instead
+bytesArgNames.chpl:15: warning: createBytesWith* with formal argument `s` is deprecated. Use argument name `x` instead
+bytesArgNames.chpl:20: warning: bytes.join with formal argument `S` is deprecated. Use argument name `x` instead

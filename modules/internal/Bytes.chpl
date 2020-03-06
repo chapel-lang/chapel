@@ -103,6 +103,15 @@ module Bytes {
   pragma "no doc"
   type idxType = int; 
 
+  private proc bytesFactoryArgDepr() {
+    compilerWarning("createBytesWith* with formal argument `s` is deprecated. ",
+                    "Use argument name `x` instead");
+  }
+
+  private proc joinArgDepr() {
+    compilerWarning("bytes.join with formal argument `S` is deprecated. ",
+                    "Use argument name `x` instead");
+  }
   //
   // createBytes* functions
   //
@@ -116,10 +125,17 @@ module Bytes {
 
     :returns: A new :record:`bytes`
   */
-  inline proc createBytesWithBorrowedBuffer(s: bytes) {
+  inline proc createBytesWithBorrowedBuffer(x: bytes) {
     var ret: bytes;
-    initWithBorrowedBuffer(ret, s);
+    initWithBorrowedBuffer(ret, x);
     return ret;
+  }
+
+  pragma "last resort"
+  pragma "no doc"
+  inline proc createBytesWithBorrowedBuffer(s: bytes) {
+    bytesFactoryArgDepr();
+    return createBytesWithBorrowedBuffer(x=s);
   }
 
   /*
@@ -135,13 +151,20 @@ module Bytes {
 
     :returns: A new :record:`bytes`
   */
-  proc createBytesWithBorrowedBuffer(s: c_string, length=s.size) {
+  proc createBytesWithBorrowedBuffer(x: c_string, length=x.size) {
     //NOTE: This function is heavily used by the compiler to create bytes
     //literals. So, inlining this causes some bloat in the AST that increases
     //the compilation time slightly. Therefore, currently we are keeping this
     //one non-inlined.
-    return createBytesWithBorrowedBuffer(s:c_ptr(uint(8)), length=length,
-                                                            size=length+1);
+    return createBytesWithBorrowedBuffer(x:c_ptr(uint(8)), length=length,
+                                                           size=length+1);
+  }
+
+  pragma "last resort"
+  pragma "no doc"
+  proc createBytesWithBorrowedBuffer(s: c_string, length=s.size) {
+    bytesFactoryArgDepr();
+    return createBytesWithBorrowedBuffer(x=s, length);
   }
 
   /*
@@ -158,16 +181,30 @@ module Bytes {
 
      :returns: A new :record:`bytes`
   */
-  inline proc createBytesWithBorrowedBuffer(s: bufferType, length: int, size: int) {
+  inline proc createBytesWithBorrowedBuffer(x: bufferType, length: int, size: int) {
     var ret: bytes;
-    initWithBorrowedBuffer(ret, s, length,size);
+    initWithBorrowedBuffer(ret, x, length,size);
     return ret;
+  }
+
+  pragma "last resort"
+  pragma "no doc"
+  inline proc createBytesWithBorrowedBuffer(s: bufferType, length: int, size: int) {
+    bytesFactoryArgDepr();
+    return createBytesWithBorrowedBuffer(x=s, length, size);
   }
 
   pragma "no doc"
   inline proc createBytesWithOwnedBuffer(s: bytes) {
     // should we allow stealing ownership?
     compilerError("A bytes cannot be passed to createBytesWithOwnedBuffer");
+  }
+
+  pragma "last resort"
+  pragma "no doc"
+  inline proc createBytesWithOwnedBuffer(s: bytes) {
+    bytesFactoryArgDepr();
+    return createBytesWithOwnedBuffer(x=s);
   }
 
   /*
@@ -181,9 +218,16 @@ module Bytes {
 
     :returns: A new :record:`bytes`
   */
-  inline proc createBytesWithOwnedBuffer(s: c_string, length=s.size) {
-    return createBytesWithOwnedBuffer(s: bufferType, length=length,
+  inline proc createBytesWithOwnedBuffer(x: c_string, length=x.size) {
+    return createBytesWithOwnedBuffer(x: bufferType, length=length,
                                                       size=length+1);
+  }
+
+  pragma "last resort"
+  pragma "no doc"
+  inline proc createBytesWithOwnedBuffer(s: c_string, length=s.size) {
+    bytesFactoryArgDepr();
+    return createBytesWithOwnedBuffer(x=s, length);
   }
 
   /*
@@ -200,10 +244,17 @@ module Bytes {
 
      :returns: A new :record:`bytes`
   */
-  inline proc createBytesWithOwnedBuffer(s: bufferType, length: int, size: int) {
+  inline proc createBytesWithOwnedBuffer(x: bufferType, length: int, size: int) {
     var ret: bytes;
-    initWithOwnedBuffer(ret, s, length, size);
+    initWithOwnedBuffer(ret, x, length, size);
     return ret;
+  }
+
+  pragma "last resort"
+  pragma "no doc"
+  inline proc createBytesWithOwnedBuffer(s: bufferType, length: int, size: int) {
+    bytesFactoryArgDepr();
+    return createBytesWithOwnedBuffer(x=s, length, size);
   }
 
   /*
@@ -214,10 +265,17 @@ module Bytes {
 
     :returns: A new :record:`bytes`
   */
-  inline proc createBytesWithNewBuffer(s: bytes) {
+  inline proc createBytesWithNewBuffer(x: bytes) {
     var ret: bytes;
-    initWithNewBuffer(ret, s);
+    initWithNewBuffer(ret, x);
     return ret;
+  }
+
+  pragma "last resort"
+  pragma "no doc"
+  inline proc createBytesWithNewBuffer(s: bytes) {
+    bytesFactoryArgDepr();
+    return createBytesWithNewBuffer(x=s);
   }
 
   /*
@@ -231,9 +289,16 @@ module Bytes {
 
     :returns: A new :record:`bytes`
   */
-  inline proc createBytesWithNewBuffer(s: c_string, length=s.size) {
-    return createBytesWithNewBuffer(s: bufferType, length=length,
+  inline proc createBytesWithNewBuffer(x: c_string, length=x.size) {
+    return createBytesWithNewBuffer(x: bufferType, length=length,
                                                     size=length+1);
+  }
+
+  pragma "last resort"
+  pragma "no doc"
+  inline proc createBytesWithNewBuffer(s: c_string, length=s.size) {
+    bytesFactoryArgDepr();
+    return createBytesWithNewBuffer(x=s, length);
   }
 
   /*
@@ -248,11 +313,19 @@ module Bytes {
 
      :returns: A new :record:`bytes`
   */
-  inline proc createBytesWithNewBuffer(s: bufferType, length: int,
+  inline proc createBytesWithNewBuffer(x: bufferType, length: int,
                                        size=length+1) {
     var ret: bytes;
-    initWithNewBuffer(ret, s, length, size);
+    initWithNewBuffer(ret, x, length, size);
     return ret;
+  }
+
+  pragma "last resort"
+  pragma "no doc"
+  inline proc createBytesWithNewBuffer(s: bufferType, length: int,
+                                       size=length+1) {
+    bytesFactoryArgDepr();
+    return createBytesWithNewBuffer(x=s, length, size);
   }
 
   record _bytes {
@@ -880,15 +953,29 @@ module Bytes {
 
       :returns: A :record:`bytes`
     */
+    inline proc join(const ref x) : bytes where isTuple(x) {
+      if !isHomogeneousTuple(x) || !isBytes(x[1]) then
+        compilerError("join() on tuples only handles homogeneous tuples of bytes");
+      return _join(x);
+    }
+
+    pragma "last resort"
+    pragma "no doc"
     inline proc join(const ref S) : bytes where isTuple(S) {
-      if !isHomogeneousTuple(S) || !isBytes(S[1]) then
-        compilerError("join() on tuples only handles homogeneous tuples of strings");
-      return _join(S);
+      joinArgDepr();
+      return join(x=S);
     }
 
     pragma "no doc"
+    inline proc join(const ref x: [] bytes) : bytes {
+      return _join(x);
+    }
+
+    pragma "last resort"
+    pragma "no doc"
     inline proc join(const ref S: [] bytes) : bytes {
-      return _join(S);
+      joinArgDepr();
+      return join(x=S);
     }
 
     pragma "no doc"
@@ -896,6 +983,7 @@ module Bytes {
       return doJoinIterator(this, ir);
     }
 
+    // TODO: we don't need this
     pragma "no doc"
     inline proc _join(const ref S) : bytes where isTuple(S) || isArray(S) {
       return doJoin(this, S);
