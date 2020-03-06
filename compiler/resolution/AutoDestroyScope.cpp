@@ -153,22 +153,22 @@ void AutoDestroyScope::addInitialization(VarSymbol* var) {
   }
 }
 
-void AutoDestroyScope::checkVariableUsesAreInitialized(Expr* stmt) {
+VarSymbol* AutoDestroyScope::findVariableUsedBeforeInitialized(Expr* stmt) {
+
   if (CallExpr* call = toCallExpr(stmt)) {
     for_actuals(actual, call) {
-      if (SymExpr* se = toSymExpr(actual)) {
+
+      if (SymExpr* se = toSymExpr(actual))
         if (VarSymbol* var = toVarSymbol(se->symbol()))
-          if (mDeclaredVars.count(var) != 0)
-            if (mInitedVars.count(var) == 0)
-              if (var->type->symbol->hasFlag(FLAG_EXTERN) == false)
-                USR_FATAL_CONT(stmt,
-                               "Variable '%s' is used before it is initialized",
-                               var->name);
-      } else if (CallExpr* subCall = toCallExpr(actual)) {
-        checkVariableUsesAreInitialized(subCall);
-      }
+          if (var->hasFlag(FLAG_SPLIT_INITED) &&
+              !var->type->symbol->hasFlag(FLAG_EXTERN))
+            if (isVariableInitialized(var) == false &&
+                isVariableDeclared(var) == true)
+              return var;
     }
   }
+
+  return NULL;
 }
 
 // Forget about initializations for outer variables initialized
@@ -546,6 +546,18 @@ bool AutoDestroyScope::isVariableInitialized(VarSymbol* var) const {
 
   return false;
 }
+
+bool AutoDestroyScope::isVariableDeclared(VarSymbol* var) const {
+  for (const AutoDestroyScope* scope = this;
+       scope != NULL;
+       scope = scope->mParent) {
+    if (scope->mDeclaredVars.count(var) > 0)
+      return true;
+  }
+
+  return false;
+}
+
 
 // Walk backwards from the current statement to determine if a sequence of
 // moves have copied a variable that is marked for auto destruction in to

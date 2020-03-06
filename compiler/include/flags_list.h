@@ -240,7 +240,7 @@ symbolFlag( FLAG_MAYBE_ARRAY_TYPE , npr, "maybe array type" , "function may be c
 symbolFlag( FLAG_MAYBE_COPY_ELIDED , npr, "maybe copy elided" , "symbol might be dead early due to copy elision" )
 symbolFlag( FLAG_MAYBE_PARAM , npr, "maybe param" , "symbol can resolve to a param" )
 symbolFlag( FLAG_MAYBE_REF , npr, "maybe ref" , "symbol can resolve to a ref" )
-symbolFlag( FLAG_MAYBE_SPLIT_INITED , npr, "maybe split inited" , "symbol might be invalid early due to split init" )
+symbolFlag( FLAG_SPLIT_INITED , npr, "split inited" , "variable was initialized with split init" )
 symbolFlag( FLAG_MAYBE_TYPE , npr, "maybe type" , "symbol can resolve to a type" )
 symbolFlag( FLAG_MEMORY_ORDER_TYPE , ypr, "memory order type" , "type implementing chpl memory order (normally called memoryOrder)" )
 symbolFlag( FLAG_C_MEMORY_ORDER_TYPE , ypr, "c memory order type" , "type implementing c memory order (normally called memory_order)" )

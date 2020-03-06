@@ -9976,8 +9976,8 @@ void lowerPrimInit(CallExpr* call, Expr* preventingSplitInit) {
   INT_ASSERT(val);
 
   if (call->isPrimitive(PRIM_INIT_VAR_SPLIT_DECL)) {
-    val->addFlag(FLAG_MAYBE_SPLIT_INITED);
-    // PRIM_INIT_SPLIT_DECL does nothing at this point
+    val->addFlag(FLAG_SPLIT_INITED);
+    // PRIM_INIT_SPLIT_DECL does nothing else at this point
     call->convertToNoop();
     return;
   }

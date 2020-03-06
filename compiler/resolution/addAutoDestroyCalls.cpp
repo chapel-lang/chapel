@@ -163,6 +163,8 @@ static void checkSplitInitOrder(CondStmt* cond,
                                 std::vector<VarSymbol*>& thenOrder,
                                 std::vector<VarSymbol*>& elseOrder);
 
+static void variableUseBeforeInitError(VarSymbol* var, Expr* loc);
+
 // Returns the statement before the next statement to traverse
 static Expr* walkBlockStmt(FnSymbol*         fn,
                            AutoDestroyScope& scope,
@@ -252,16 +254,19 @@ static Expr* walkBlockStmt(FnSymbol*         fn,
         if (isAutoDestroyedOrSplitInitedVariable(v))
           scope.addInitialization(v);
 
-      // Check also for out intent in a called function
       if (fCall != NULL) {
+        // Check also for out intent in a called function
         for_formals_actuals(formal, actual, fCall) {
           if (VarSymbol* v = possiblyInitsVariableOut(formal, actual))
             if (isAutoDestroyedOrSplitInitedVariable(v))
               scope.addInitialization(v);
         }
-      }
 
-      scope.checkVariableUsesAreInitialized(stmt);
+        // and check for variables used before initialized
+        // (for split init and inner functions)
+        if (VarSymbol* v = scope.findVariableUsedBeforeInitialized(fCall))
+          variableUseBeforeInitError(v, stmt);
+      }
 
     // Recurse in to a BlockStmt (or sub-classes of BlockStmt e.g. a loop)
     } else if (BlockStmt* subBlock = toBlockStmt(stmt)) {
@@ -417,6 +422,41 @@ static void checkSplitInitOrder(CondStmt* cond,
     USR_PRINT(cond->elseStmt, elseMsg.c_str());
   }
 }
+
+static void variableUseBeforeInitError(VarSymbol* var, Expr* loc) {
+  USR_FATAL_CONT(loc, "'%s' is used before it is initialized", var->name);
+
+  // Find initializations to point to
+  std::vector<Expr*> inits;
+  
+  for_SymbolSymExprs(se, var) {
+    if (CallExpr* call = toCallExpr(se->getStmtExpr())) {
+      CallExpr* fCall = NULL;
+      if (VarSymbol* v = possiblyInitsVariable(call, fCall))
+        if (v == var)
+          inits.push_back(call);
+
+      if (fCall != NULL) {
+        // Check also for out intent in a called function
+        for_formals_actuals(formal, actual, fCall) {
+          if (VarSymbol* v = possiblyInitsVariableOut(formal, actual))
+            if (v == var)
+              inits.push_back(fCall);
+        }
+      }
+    }
+  }
+
+  if (var->hasFlag(FLAG_SPLIT_INITED)) {
+    USR_PRINT(var->defPoint, "'%s' declared here", var->name);
+    for_vector(Expr, ini, inits) {
+      USR_PRINT(ini, "'%s' initialized here", var->name);
+    }
+  } else {
+    USR_PRINT(var->defPoint, "'%s' declared and initialized here", var->name);
+  }
+
+} 
 
 static void walkBlock(FnSymbol*         fn,
                       AutoDestroyScope* parent,
@@ -876,7 +916,7 @@ bool isAutoDestroyedVariable(Symbol* sym) {
 
 static bool isAutoDestroyedOrSplitInitedVariable(VarSymbol* var) {
   return isAutoDestroyedVariable(var) ||
-         var->hasFlag(FLAG_MAYBE_SPLIT_INITED);
+         var->hasFlag(FLAG_SPLIT_INITED);
 }
 
 // For a yield of a variable, such as iter f() { var x=...; yield x; },

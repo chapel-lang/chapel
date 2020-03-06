@@ -1,3 +1,2 @@
 inner-fn.chpl:20: In function 'main':
-inner-fn.chpl:22: error: Illegal use of dead value
-inner-fn.chpl:21: note: 'x' is declared but not initialized here
+inner-fn.chpl:22: error: Variable 'x' is used before it is initialized

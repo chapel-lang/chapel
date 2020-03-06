@@ -41,7 +41,7 @@ public:
   // adds an initialization
   void                     addInitialization(VarSymbol* var);
 
-  void                     checkVariableUsesAreInitialized(Expr* stmt);
+  VarSymbol*               findVariableUsedBeforeInitialized(Expr* stmt);
 
   // Forget about initializations for outer variables initialized
   // in this scope. The variables will no longer be considered initialized.
@@ -77,6 +77,9 @@ private:
   // Returns true if the variable has already been initialized in
   // this or a parent scope.
   bool                     isVariableInitialized(VarSymbol* var) const;
+
+  // Returns true if the variable has been declared in this or a parent scope.
+  bool                     isVariableDeclared(VarSymbol* var) const;
 
   AutoDestroyScope*        mParent;
   const BlockStmt*         mBlock;

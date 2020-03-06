@@ -17,15 +17,31 @@ proc =(ref lhs: R, rhs: R) {
   lhs.field = rhs.field;
 }
 
+config const option = true;
+
 proc main() {
   var x:R;
   f();
   x = new R(1);
 
   writeln(x);
-  
+ 
+  var y:R;
+  {
+    g();
+    if option then
+      y = new R(1);
+    else
+      y = new R(1);
+  }
+   
   proc f() {
     writeln(x);
   }
+  
+  proc g() {
+    writeln(y);
+  }
+
 }
 
