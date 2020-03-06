@@ -324,10 +324,29 @@ module SharedObject {
     }
 
     //wass add chpldoc comment here "factory"; remove the one from the deprecated fn
+    proc type create(pointer) {
+      // catch-all case
+      compilerError("cannot create a 'shared' from ", pointer.type:string);
+    }
+
+    pragma "no doc"
+    inline proc type create(pragma "nil from arg" in take: owned) {
+      var result : shared = take;
+      return result;
+    }
+
+    pragma "no doc"
+    proc type create(pragma "nil from arg" const ref src: shared) {
+      return src;
+    }
+
+    pragma "no doc"
     pragma "unsafe" // 'result' may have a non-nilable type
-    proc type create(pragma "nil from arg" p) {
+    proc type create(pragma "nil from arg" p : unmanaged) {
+/*wass
       if ! isUnmanagedClass(p) then
         compilerError("can create a 'shared' only from an unmanaged pointer; here it is a ", p.type:string);
+*/
       var result: (p.type : shared);
       compilerAssert(isNilableClass(result) == isNilableClass(p)); //wass remove later
       result.retain(p);
