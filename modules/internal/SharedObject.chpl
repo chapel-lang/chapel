@@ -346,12 +346,7 @@ module SharedObject {
        after passing it to `shared.create()`. */
     pragma "unsafe" // 'result' may have a non-nilable type
     inline proc type create(pragma "nil from arg" p : unmanaged) {
-/*wass
-      if ! isUnmanagedClass(p) then
-        compilerError("can create a 'shared' only from an unmanaged pointer; here it is a ", p.type:string);
-*/
       var result: (p.type : shared);
-      compilerAssert(isNilableClass(result) == isNilableClass(p)); //wass remove later
       result.retain(p);
       return result;
     }
