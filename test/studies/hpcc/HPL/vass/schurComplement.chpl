@@ -134,7 +134,7 @@ proc schurComplement(blk) {
   RestByBlkSize = RestLocal by (blkSize, blkSize);
   //showCurrTime("replication; Rest");
 
-  if Rest.numIndices == 0 {
+  if Rest.size == 0 {
     writeln("schurComplement: nothing to do   Rest = ", Rest);
     return;
   }

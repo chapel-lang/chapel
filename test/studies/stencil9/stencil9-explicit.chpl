@@ -216,7 +216,7 @@ coforall (lr,lc) in LocaleGridDom {
           //
           // TODO: I think this conditional is unnecessary -- should remove
           //
-          if (Dom[Panels[ij]].numIndices > 0) {
+          if (Dom[Panels[ij]].size > 0) {
             // Update our fluff by assigning from our neighbor's array
             // using the same coordinates.
             //

@@ -55,7 +55,7 @@ proc clusterFlags (
       
       //---- If D2 is empty, split was unsuccessful ----
       
-      if D2.numIndices==0 then finished_domain_list.add(candidate.D);
+      if D2.size==0 then finished_domain_list.add(candidate.D);
 
 
       //---- Otherwise, push new candidates to stack ----
@@ -184,7 +184,7 @@ class CandidateDomain {
   //|/...................|/
   proc efficiency()
   {
-    return +reduce(signatures(1).array):real / D.numIndices:real;
+    return +reduce(signatures(1).array):real / D.size:real;
   }
   // /|'''''''''''''''''''/|
   //< |    efficiency    < |
@@ -288,7 +288,7 @@ proc CandidateDomain.split()
   
   (D1,D2) = removeHole();
   
-  if D2.numIndices==0 then
+  if D2.size==0 then
     (D1,D2) = inflectionCut();
   
   return (D1,D2);
@@ -364,7 +364,7 @@ proc CandidateDomain.removeHole()
         ranges(d) = hole_low .. hole_high by stride;
         hole = ranges;
         
-        if hole.numIndices > max_hole.numIndices
+        if hole.size > max_hole.size
         {
           max_hole = hole;
           d_cut    = d;
@@ -382,7 +382,7 @@ proc CandidateDomain.removeHole()
   
   //---- Split by removing largest hole ----
   
-  if max_hole.numIndices > 0
+  if max_hole.size > 0
   {
     
     stride = D.stride(d_cut);

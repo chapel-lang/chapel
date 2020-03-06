@@ -234,7 +234,7 @@ class Clause {
 	
 	// number of literals in this clause
 	proc numLtrs() {
-		return domLtrs.numIndices;
+		return domLtrs.size;
 	}
 	
 	// iterator over the literals in the clause

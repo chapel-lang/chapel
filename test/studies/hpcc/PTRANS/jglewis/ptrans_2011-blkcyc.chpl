@@ -275,7 +275,7 @@ module HPCC_PTRANS {
 
     const C_locale_grid = C.domain.dist.targetLocales(); // block version
     const C_grid_domain = C_locale_grid.domain,
-          n_processors  = C_grid_domain.numIndices;
+          n_processors  = C_grid_domain.size;
 
     assert ( C_grid_domain.low(1) == 0 && C_grid_domain.low(2) == 0 );
 

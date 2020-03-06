@@ -87,7 +87,7 @@ class Block1DDist {
   // TODO: Is this correct if targetLocs doesn't start with 0?
   //
   proc idxToLocale(ind: glbIdxType) {
-    return targetLocs((((ind-bbox.low)*targetLocs.numElements)/bbox.numIndices):index(targetLocs.domain));
+    return targetLocs((((ind-bbox.low)*targetLocs.numElements)/bbox.size):index(targetLocs.domain));
   }
 }
 
@@ -264,7 +264,7 @@ class Block1DDom {
   // queries for the number of indices, low, and high bounds
   //
   proc numIndices {
-    return whole.numIndices;
+    return whole.size;
   }
 
   proc low {
@@ -338,7 +338,7 @@ class LocBlock1DDom {
   // queries for this locale's number of indices, low, and high bounds
   //
   proc numIndices {
-    return myBlock.numIndices;
+    return myBlock.size;
   }
 
   proc low {
@@ -467,7 +467,7 @@ class Block1DArr {
   // a query for the number of elements in the array
   //
   proc numElements {
-    return dom.numIndices;
+    return dom.size;
   }
 }
 

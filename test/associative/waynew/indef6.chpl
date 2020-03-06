@@ -7,7 +7,7 @@ var A: [idomain] real;
 
 proc jam() {
   writelnSorted(idomain);
-  writeln( "numIndices = ", idomain.numIndices);
+  writeln( "numIndices = ", idomain.size);
   writelnSortedByDom(A);
   writeln( "numElements = ", A.numElements);
 }

@@ -154,7 +154,7 @@ class Cyclic1DDist {
   // Determine which locale owns a particular index
   //
   proc idxToLocaleInd(ind: glbIdxType) {
-    const numlocs = targetLocDom.numIndices;
+    const numlocs = targetLocDom.size;
     return (mod(mod(ind, numlocs) - mod(min(glbIdxType), numlocs),
                numlocs) + targetLocDom.low):index(targetLocs.domain);
   }
@@ -196,7 +196,7 @@ class LocCyclic1DDist {
     const locid0 = dist.targetLocDom.indexOrder(_locid); // 0-based locale ID
     const lo = min(glbIdxType) + locid0;
     const hi = max(glbIdxType);
-    const numlocs = dist.targetLocDom.numIndices;
+    const numlocs = dist.targetLocDom.size;
     myChunk = {lo..hi by numlocs};
     locid = _locid;
     loc = dist.targetLocs(locid);
@@ -367,7 +367,7 @@ class Cyclic1DDom {
   // queries for the number of indices, low, and high bounds
   //
   proc numIndices {
-    return whole.numIndices;
+    return whole.size;
   }
 
   proc low {
@@ -438,7 +438,7 @@ class LocCyclic1DDom {
   // queries for this locale's number of indices, low, and high bounds
   //
   proc numIndices {
-    return myBlock.numIndices;
+    return myBlock.size;
   }
 
   proc low {
@@ -567,7 +567,7 @@ class Cyclic1DArr {
   // a query for the number of elements in the array
   //
   proc numElements {
-    return dom.numIndices;
+    return dom.size;
   }
 }
 

@@ -84,13 +84,13 @@ class MultiDomain
 
   proc isEmpty ()
   {    
-    return (root.bisect_dim==-1 || root.Domain.numIndices==0);
+    return (root.bisect_dim==-1 || root.Domain.size==0);
   }
 
 
   proc subtract ( D: domain(rank,stridable=stridable) )
   {
-    if !isEmpty() && root.Domain(D).numIndices>0 then 
+    if !isEmpty() && root.Domain(D).size>0 then 
       root.subtract(D);
     if root.bisect_dim==-1 then root.Domain.clear();
   }  
@@ -475,7 +475,7 @@ class MDNode
     if bisect_dim == 0
     {
       Domain = Domain(D);
-      if Domain.numIndices==0 then bisect_dim = -1; 
+      if Domain.size==0 then bisect_dim = -1; 
     }
 
 
@@ -642,7 +642,7 @@ proc MDNode.extendToContain( D: domain(rank,stridable=stridable) ) : unmanaged M
   //===> Select the shortest dimension to extend ===>
   
   var dim_length     = 0;
-  var min_dim_length = Domain.numIndices+1;
+  var min_dim_length = Domain.size+1;
   var ext_d          = 0;
     
   for d in 1..rank {

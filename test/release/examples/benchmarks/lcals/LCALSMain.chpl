@@ -739,7 +739,7 @@ proc defineLoopSuiteRunInfo(run_variants, run_loop,
                             sample_frac:real, loop_length_factor:real) {
 
   var suite_info = getLoopSuiteRunInfo();
-  const num_lengths = suite_info.loop_length_dom.numIndices;
+  const num_lengths = suite_info.loop_length_dom.size;
 
   writeln("\n defineLoopSuiteRunInfo...");
 

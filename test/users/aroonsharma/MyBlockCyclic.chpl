@@ -251,7 +251,7 @@ proc MyBlockCyclic.getStarts(inds, locid) {
 // determine which locale owns a particular index
 //
 // TODO: I jotted down a note during the code review asking whether
-// targetLocales.numElements and boundingbox.numIndices should be
+// targetLocales.numElements and boundingbox.size should be
 // captured locally, or captured in the default dom/array implementation
 // or inlined.  Not sure what that point was anymore, though.  Maybe
 // someone else can help me remember it (since it was probably someone
@@ -301,7 +301,7 @@ class LocMyBlockCyclic {
                  dist: MyBlockCyclic(rank, idxType)) { // reference to glob dist
     if rank == 1 {
       const lo = dist.lowIdx(1) + (locid * dist.blocksize(1));
-      const str = dist.blocksize(1) * dist.targetLocDom.numIndices;
+      const str = dist.blocksize(1) * dist.targetLocDom.size;
       myStarts(1) = lo.. by str;
     } else {
       for param i in 1..rank {
@@ -454,7 +454,7 @@ proc MyBlockCyclicDom.dsiBuildArray(type eltType) {
   return arr;
 }
 
-proc MyBlockCyclicDom.dsiNumIndices return whole.numIndices;
+proc MyBlockCyclicDom.dsiNumIndices return whole.size;
 proc MyBlockCyclicDom.dsiLow return whole.low;
 proc MyBlockCyclicDom.dsiHigh return whole.high;
 proc MyBlockCyclicDom.dsiStride return whole.stride;
@@ -623,8 +623,8 @@ proc LocMyBlockCyclicDom.enumerateBlocks() {
 // TODO: I believe these are only used by the random number generator
 // in stream -- will they always be required once that is rewritten?
 //
-proc LocMyBlockCyclicDom.numIndices {
-  return myStarts.numIndices;
+proc LocMyBlockCyclicDom.size {
+  return myStarts.size;
 }
 
 proc LocMyBlockCyclicDom.low {

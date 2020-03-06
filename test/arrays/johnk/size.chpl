@@ -22,6 +22,6 @@ if arr3.size == arr3.numElements {
 }
 
 //Size (domain) sanity checks
-if dom.size == dom.numIndices {
+if dom.size == dom.size {
     writeln("match");
 } 

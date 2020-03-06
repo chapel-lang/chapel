@@ -319,7 +319,7 @@ proc LUFactorize(n: indexType,
 proc schurComplement(blk, AD, BD, Rest) {
 
   // Prevent replication of unequal-sized slices
-  if Rest.numIndices == 0 then return;
+  if Rest.size == 0 then return;
 
   tSC1call.start();
 
@@ -439,7 +439,7 @@ proc panelSolve(
     vmsgmore("  col");
     
     // If there are no rows below the current column return
-    if col.numIndices == 0 then { vmsg("panelSolve()"); return; }
+    if col.size == 0 then { vmsg("panelSolve()"); return; }
     
     // Find the pivot, the element with the largest absolute value.
     const (_, (pivotRow, _)) = maxloc reduce zip(abs(Ab(col)), col);

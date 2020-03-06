@@ -83,7 +83,7 @@ proc computeTwiddles(W) {
 
 
 proc bitReverseShuffle(W: [?WD]) {
-  const n = WD.numIndices;
+  const n = WD.size;
   const reverse = log2(n);
   var Perm: [WD] index(WD) = [i in WD] bitReverse(i, numBits = reverse);
   const V = W(Perm);

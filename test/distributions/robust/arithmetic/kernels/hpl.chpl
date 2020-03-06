@@ -139,13 +139,13 @@ proc LUFactorize(n: indexType, Ab: [1..n, 1..n+1] elemType,
     // computation:
     //
     panelSolve(Ab, l, piv);
-    if (tr.numIndices > 0) then
+    if (tr.size > 0) then
       updateBlockRow(Ab, tl, tr);
     
     //
     // update trailing submatrix (if any)
     //
-    if (br.numIndices > 0) then
+    if (br.size > 0) then
       schurComplement(Ab, blk);
   }
 }

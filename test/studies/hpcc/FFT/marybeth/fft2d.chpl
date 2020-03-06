@@ -75,7 +75,7 @@ proc computeTwiddles(W) {
 // Check what the NSA supports for bit reversal
 // rename this?
 proc bitReverseShuffle(W: [?WD]) {
-  const n = WD.numIndices;
+  const n = WD.size;
   const reverse = log2(n);
   var V: [WD] W.eltType;  // BLC: rename this field?
   /* BLC: could we do this as a permutation instead?
