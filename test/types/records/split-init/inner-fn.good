@@ -1,2 +1,8 @@
-inner-fn.chpl:20: In function 'main':
-inner-fn.chpl:22: error: Variable 'x' is used before it is initialized
+inner-fn.chpl:22: In function 'main':
+inner-fn.chpl:24: error: 'x' is used before it is initialized
+inner-fn.chpl:23: note: 'x' declared here
+inner-fn.chpl:25: note: 'x' initialized here
+inner-fn.chpl:31: error: 'y' is used before it is initialized
+inner-fn.chpl:29: note: 'y' declared here
+inner-fn.chpl:33: note: 'y' initialized here
+inner-fn.chpl:35: note: 'y' initialized here

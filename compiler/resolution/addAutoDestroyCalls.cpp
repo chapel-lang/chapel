@@ -260,8 +260,11 @@ static Expr* walkBlockStmt(FnSymbol*         fn,
 
         // and check for variables used before initialized
         // (for split init and inner functions)
-        if (VarSymbol* v = scope.findVariableUsedBeforeInitialized(fCall))
-          variableUseBeforeInitError(v, stmt);
+        if (VarSymbol* v = scope.findVariableUsedBeforeInitialized(fCall)) {
+          USR_FATAL_CONT(stmt,
+                         "'%s' is used before it is initialized", v->name);
+          printUseBeforeInitDetails(v);
+        }
       }
 
     // Recurse in to a BlockStmt (or sub-classes of BlockStmt e.g. a loop)
@@ -419,9 +422,7 @@ static void checkSplitInitOrder(CondStmt* cond,
   }
 }
 
-void variableUseBeforeInitError(VarSymbol* var, Expr* loc) {
-  USR_FATAL_CONT(loc, "'%s' is used before it is initialized", var->name);
-
+void printUseBeforeInitDetails(VarSymbol* var) {
   // Find initializations to point to
   std::vector<Expr*> inits;
   

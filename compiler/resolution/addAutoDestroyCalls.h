@@ -27,7 +27,7 @@ class VarSymbol;
 
 void addAutoDestroyCalls();
 
-void variableUseBeforeInitError(VarSymbol* var, Expr* loc);
+void printUseBeforeInitDetails(VarSymbol* var);
 
 // These function during callDestructors.
 // initsVariable returns a variable initialized by a PRIM_MOVE,

@@ -1214,13 +1214,16 @@ class FindInvalidGlobalUses : public AstVisitorTraverse {
     GatherGlobalsReferredTo& gatherVisitor;
     std::set<VarSymbol*> invalidGlobals;
     std::map<VarSymbol*, CallExpr*> copyElidedGlobals;
+    std::vector<VarSymbol*> errorGlobalVariables;
 
     FindInvalidGlobalUses(GatherGlobalsReferredTo& gatherVisitor)
       : gatherVisitor(gatherVisitor)
     { }
     void issueError(VarSymbol* g, BaseAST* loc);
     void gatherModuleVariables(ModuleSymbol* thisModule);
+    // stores in errorGlobalVariables the invalid variables that were used
     bool checkIfCalledUsesInvalid(CallExpr* c, bool error);
+    // stores in errorGlobalVariables the invalid variables that were used
     bool checkIfFnUsesInvalid(FnSymbol* fn);
     bool errorIfFnUsesInvalid(FnSymbol* fn, BaseAST* loc,
                               std::set<FnSymbol*>& visited);
@@ -1311,7 +1314,6 @@ bool FindInvalidGlobalUses::checkIfFnUsesInvalid(FnSymbol* startFn) {
 
   std::set<FnSymbol*> everBeenInWork;
   std::vector<FnSymbol*> work;
-  std::vector<VarSymbol*> inV;
 
   everBeenInWork.insert(startFn);
   work.push_back(startFn);
@@ -1328,7 +1330,8 @@ bool FindInvalidGlobalUses::checkIfFnUsesInvalid(FnSymbol* startFn) {
     // check for direct mentions of the globals in question
     // compute the intersection of
     // directGlobalMentions[fn] and invalidGlobals
-    if (computeIntersection(invalidGlobals, directGlobalMentions[fn], inV))
+    if (computeIntersection(invalidGlobals, directGlobalMentions[fn],
+                            errorGlobalVariables))
     {
       return true;
     }
@@ -1440,7 +1443,13 @@ bool FindInvalidGlobalUses::enterCallExpr(CallExpr* call) {
 
   // Then, check any called functions
   if (checkIfCalledUsesInvalid(call, false)) {
-    USR_FATAL_CONT(call, "invalid use of module-scope variable");
+    for_vector (VarSymbol, var, errorGlobalVariables) {
+      USR_FATAL_CONT(call,
+                     "module-scope variable '%s' may be used "
+                     "before it is initialized",
+                     var->name);
+      printUseBeforeInitDetails(var);
+    }
     checkIfCalledUsesInvalid(call, true);
   }
 

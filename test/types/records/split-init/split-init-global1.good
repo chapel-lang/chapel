@@ -1,3 +1,5 @@
-split-init-global1.chpl:4: error: invalid use of module-scope variable
+split-init-global1.chpl:4: error: module-scope variable 'globalRecord' may be used before it is initialized
+split-init-global1.chpl:3: note: 'globalRecord' declared here
+split-init-global1.chpl:5: note: 'globalRecord' initialized here
 split-init-global1.chpl:4: note: calls function 'f'
 split-init-global1.chpl:8: note: mentions module-scope variable 'globalRecord' not initialized yet
