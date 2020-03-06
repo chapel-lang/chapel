@@ -113,19 +113,10 @@ void ImportStmt::scopeResolve(ResolveScope* scope) {
     if (isSymExpr(src)) {
       INT_FATAL("This should only happen for a UseStmt");
 
-    } else if (Symbol* sym = scope->lookup(src, /*isUse=*/ true)) {
+    } else if (Symbol* sym = scope->lookupForImport(src)) {
       SET_LINENO(this);
 
       if (ModuleSymbol* modSym = toModuleSymbol(sym)) {
-        if (modSym->defPoint->parentSymbol != theProgram) {
-          // Gotta use the full path to a nested module for now
-          bool isFullPath = false;
-
-          if (!isFullPath) {
-            USR_FATAL_CONT(this, "currently unable to import nested modules"
-                           " without specifying the full path to the module");
-          }
-        }
         scope->enclosingModule()->moduleUseAdd(modSym);
 
         updateEnclosingBlock(scope, sym);
