@@ -1066,7 +1066,7 @@ module Bytes {
       
       :arg policy: `decodePolicy.strict` raises an error, `decodePolicy.replace`
                    replaces the malformed character with UTF-8 replacement
-                   character, `decodePolicy.ignore` drops the data silently,
+                   character, `decodePolicy.drop` drops the data silently,
                    `decodePolicy.escape` escapes each illegal byte with private
                    use codepoints
       
