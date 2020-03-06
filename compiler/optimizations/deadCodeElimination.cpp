@@ -177,6 +177,16 @@ void deadExpressionElimination(FnSymbol* fn) {
             if (lhs->symbol() == rhs->symbol())
               expr->remove();
 
+      // remove calls to chpl__convertValueToRuntimeType or other
+      // functions returning a runtime type where the returned value
+      // is not captured at all. Note that RUNTIME_TYPE_VALUE values
+      // are not currently subject to the return-by-ref transformation.
+      if (FnSymbol* calledFn = expr->resolvedFunction()) {
+        if (calledFn->retType->symbol->hasFlag(FLAG_RUNTIME_TYPE_VALUE))
+          if (expr->isStmtExpr())
+            expr->remove();
+      }
+
     } else if (CondStmt* cond = toCondStmt(ast)) {
       // Compensate for deadBlockElimination
       if (cond->condExpr == NULL) {
