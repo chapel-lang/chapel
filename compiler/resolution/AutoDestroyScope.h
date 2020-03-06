@@ -41,6 +41,8 @@ public:
   // adds an initialization
   void                     addInitialization(VarSymbol* var);
 
+  void                     checkVariableUsesAreInitialized(Expr* stmt);
+
   // Forget about initializations for outer variables initialized
   // in this scope. The variables will no longer be considered initialized.
   // This matters for split-init and conditionals.

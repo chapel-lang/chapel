@@ -9969,22 +9969,21 @@ void lowerPrimInit(CallExpr* call, Expr* preventingSplitInit) {
   Expr* valExpr = NULL;
   Expr* typeExpr = NULL;
 
-  // Establish types in case that is not already done.
-  //resolvePrimInit(call);
+  valExpr = call->get(1);
+  SymExpr* valSe = toSymExpr(valExpr);
+  INT_ASSERT(valSe);
+  Symbol* val = valSe->symbol();
+  INT_ASSERT(val);
 
   if (call->isPrimitive(PRIM_INIT_VAR_SPLIT_DECL)) {
+    val->addFlag(FLAG_MAYBE_SPLIT_INITED);
     // PRIM_INIT_SPLIT_DECL does nothing at this point
     call->convertToNoop();
     return;
   }
 
-  valExpr = call->get(1);
   typeExpr = call->get(2);
   INT_ASSERT(valExpr && typeExpr);
-
-  SymExpr* valSe = toSymExpr(valExpr);
-  INT_ASSERT(valSe);
-  Symbol* val = valSe->symbol();
 
   if (SymExpr* se = toSymExpr(typeExpr)) {
     if (se->symbol()->hasFlag(FLAG_TYPE_VARIABLE) == true) {

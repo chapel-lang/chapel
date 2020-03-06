@@ -59,8 +59,13 @@ static void walkBlockWithScope(AutoDestroyScope& scope,
                                std::set<VarSymbol*>& ignoredVariables,
                                LastMentionMap&   lmm);
 
+static bool isAutoDestroyedOrSplitInitedVariable(VarSymbol* var);
+
 void addAutoDestroyCalls() {
   forv_Vec(FnSymbol, fn, gFnSymbols) {
+    if (fn->hasFlag(FLAG_EXTERN))
+      continue; // no need to add auto-destroy in extern fn prototypes
+
     std::set<VarSymbol*> ignoredVariables;
     LastMentionMap lmm;
     computeLastMentionPoints(lmm, fn);
@@ -113,9 +118,8 @@ void addAutoDestroyCalls() {
 *                                                                             *
 ************************************** | *************************************/
 
-static VarSymbol*   definesAnAutoDestroyedVariable(const Expr* stmt);
-static VarSymbol* possiblyInitsDestroyedVariable(Expr* e, CallExpr*& fCall);
-static VarSymbol* possiblyInitsDestroyedVariableOut(ArgSymbol* formal, Expr* actual);
+static VarSymbol* possiblyInitsVariable(Expr* e, CallExpr*& fCall);
+static VarSymbol* possiblyInitsVariableOut(ArgSymbol* formal, Expr* actual);
 static LabelSymbol* findReturnLabel(FnSymbol* fn);
 static bool         isReturnLabel(const Expr*        stmt,
                                   const LabelSymbol* returnLabel);
@@ -211,9 +215,11 @@ static Expr* walkBlockStmt(FnSymbol*         fn,
 
   // Be conservative about unreachable code before the epilogue
   } else if (isDeadCode == false) {
-    // Collect variables that should be autoDestroyed
-    if (VarSymbol* var = definesAnAutoDestroyedVariable(stmt)) {
-      scope.variableAdd(var);
+    // Note any variables as they are declared
+    if (DefExpr* def = toDefExpr(stmt)) {
+      if (VarSymbol* v = toVarSymbol(def->sym))
+        if (isAutoDestroyedOrSplitInitedVariable(v))
+          scope.variableAdd(v);
 
     // Collect defer statements to run during cleanup
     } else if (DeferStmt* defer = toDeferStmt(stmt)) {
@@ -242,16 +248,20 @@ static Expr* walkBlockStmt(FnSymbol*         fn,
 
       CallExpr* fCall = NULL;
       // Check for returned variable
-      if (VarSymbol* v = possiblyInitsDestroyedVariable(stmt, fCall))
-        scope.addInitialization(v);
+      if (VarSymbol* v = possiblyInitsVariable(stmt, fCall))
+        if (isAutoDestroyedOrSplitInitedVariable(v))
+          scope.addInitialization(v);
 
       // Check also for out intent in a called function
       if (fCall != NULL) {
         for_formals_actuals(formal, actual, fCall) {
-          if (VarSymbol* v = possiblyInitsDestroyedVariableOut(formal, actual))
-            scope.addInitialization(v);
+          if (VarSymbol* v = possiblyInitsVariableOut(formal, actual))
+            if (isAutoDestroyedOrSplitInitedVariable(v))
+              scope.addInitialization(v);
         }
       }
+
+      scope.checkVariableUsesAreInitialized(stmt);
 
     // Recurse in to a BlockStmt (or sub-classes of BlockStmt e.g. a loop)
     } else if (BlockStmt* subBlock = toBlockStmt(stmt)) {
@@ -482,18 +492,6 @@ static void walkBlockWithScope(AutoDestroyScope& scope,
   }
 }
 
-// Is this a DefExpr that defines a variable that might be autoDestroyed?
-static VarSymbol* definesAnAutoDestroyedVariable(const Expr* stmt) {
-  VarSymbol* retval = NULL;
-
-  if (const DefExpr* expr = toConstDefExpr(stmt)) {
-    if (VarSymbol* var = toVarSymbol(expr->sym))
-      retval = (isAutoDestroyedVariable(var) == true) ? var : NULL;
-  }
-
-  return retval;
-}
-
 // Is this a CallExpr that initializes a variable that might be destroyed?
 // If so, return the VarSymbol initialized. Otherwise, return NULL.
 //
@@ -503,7 +501,7 @@ static VarSymbol* definesAnAutoDestroyedVariable(const Expr* stmt) {
 // Note, this must identify the first initialization, but it can also
 // return a variable for other calls setting the variable (since the
 // variable remains initialized).
-static VarSymbol* possiblyInitsDestroyedVariable(Expr* e, CallExpr*& fCall) {
+static VarSymbol* possiblyInitsVariable(Expr* e, CallExpr*& fCall) {
 
   if (CallExpr* call = toCallExpr(e)) {
 
@@ -512,8 +510,7 @@ static VarSymbol* possiblyInitsDestroyedVariable(Expr* e, CallExpr*& fCall) {
     if (isInitOrReturn(call, gotSe, gotCall)) {
       fCall = gotCall;
       if (VarSymbol* var = toVarSymbol(gotSe->symbol()))
-        if (isAutoDestroyedVariable(var))
-          return var;
+        return var;
 
     } else if (call->resolvedOrVirtualFunction()) {
       // Set fCall even if it wasn't returning something, so out intents
@@ -525,14 +522,12 @@ static VarSymbol* possiblyInitsDestroyedVariable(Expr* e, CallExpr*& fCall) {
   return NULL;
 }
 
-static VarSymbol* possiblyInitsDestroyedVariableOut(ArgSymbol* formal,
-                                                    Expr* actual) {
+static VarSymbol* possiblyInitsVariableOut(ArgSymbol* formal, Expr* actual) {
 
   if (formal->intent == INTENT_OUT || formal->originalIntent == INTENT_OUT)
     if (SymExpr* actualSe = toSymExpr(actual))
       if (VarSymbol* var = toVarSymbol(actualSe->symbol()))
-        if (isAutoDestroyedVariable(var))
-          return var;
+        return var;
 
   return NULL;
 }
@@ -711,13 +706,13 @@ void ComputeLastSymExpr::noteRecordInit(VarSymbol* v, CallExpr* call) {
 
 bool ComputeLastSymExpr::enterCallExpr(CallExpr* node) {
   CallExpr* fCall = NULL;
-  if (VarSymbol* v = possiblyInitsDestroyedVariable(node, fCall))
+  if (VarSymbol* v = possiblyInitsVariable(node, fCall))
     noteRecordInit(v, node);
 
   // Check also for out intent
   if (fCall != NULL) {
     for_formals_actuals(formal, actual, fCall) {
-      if (VarSymbol* v = possiblyInitsDestroyedVariableOut(formal, actual))
+      if (VarSymbol* v = possiblyInitsVariableOut(formal, actual))
         noteRecordInit(v, node);
     }
   }
@@ -877,6 +872,11 @@ bool isAutoDestroyedVariable(Symbol* sym) {
   }
 
   return retval;
+}
+
+static bool isAutoDestroyedOrSplitInitedVariable(VarSymbol* var) {
+  return isAutoDestroyedVariable(var) ||
+         var->hasFlag(FLAG_MAYBE_SPLIT_INITED);
 }
 
 // For a yield of a variable, such as iter f() { var x=...; yield x; },
