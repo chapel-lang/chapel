@@ -414,10 +414,9 @@ proc dirname(name: string): string {
      var myFile = open("/foo/bar/baz.txt", iomode.r);
      writeln(myFile.getParentName()); // Prints "/foo/bar"
 
-  Will throw a SystemError if one occurs.
-
   :return: The parent directory of the file.
   :rtype: `string`
+  :throws SystemError: If one occurs.
 */
 proc file.getParentName(): string throws {
   try check();
@@ -577,14 +576,13 @@ proc normPath(name: string): string {
    This resolves and removes any :data:`curDir` and :data:`parentDir` uses
    present, as well as any symbolic links.  Returns the result.
 
-   Will throw a SystemError if one occurs.
-
    :arg name: A path to resolve.  If the path does not refer to a valid file
               or directory, an error will occur.
    :type name: `string`
 
    :return: A canonical version of the argument.
    :rtype: `string`
+   :throws SystemError: If one occurs.
 */
 proc realPath(name: string): string throws {
   extern proc chpl_fs_realpath(path: c_string, ref shortened: c_string): syserr;
@@ -617,12 +615,11 @@ proc realPath(out error: syserr, name: string): string {
    :data:`parentDir` uses present, as well as any symbolic links.  Returns the
    result.
 
-   Will throw a SystemError if one occurs.
-
    :return: A canonical path to the file referenced by this :type:`~IO.file`
             record.  If the :type:`~IO.file` record is not valid, an error will
             occur.
    :rtype: `string`
+   :throws SystemError: If one occurs.
 */
 proc file.realPath(): string throws {
   extern proc chpl_fs_realpath_file(path: qio_file_ptr_t, ref shortened: c_string): syserr;
