@@ -11,7 +11,7 @@ class Building {
 
 class Tower: Building {
   var floors: int = 2;
-  override proc hasMultipleFloors() param { return true; }
+  proc hasMultipleFloors() param { return true; }
 }
 
 proc main() {

@@ -11,13 +11,13 @@ class Animal {
   var x: int = 0;
   proc getCarType() type { return Car; }
   proc getBuildingType() type { return Building; }
-  proc getSelfType() type { return this; }
+  proc getSelfType() type { return this.type; }
 }
 
 class Cat: Animal {
   var x: int = 0;
-  override proc getBuildingType() type { return Tower; }
-  override proc getSelfType() type { return this; }
+  proc getBuildingType() type { return Tower; }
+  proc getSelfType() type { return this.type; }
 }
 
 proc main() {
