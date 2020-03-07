@@ -531,23 +531,19 @@ static bool isOverrideableMethod(FnSymbol* fn) {
   if (AggregateType* at = getReceiverClassType(fn)) {
     INT_ASSERT(at->isClass());
 
-    const bool isNeverOverrideable = fn->name == astrInit ||
-                                     fn->hasFlag(FLAG_WRAPPER) ||
-                                     fn->hasFlag(FLAG_NO_PARENS);
-
-    // Type methods may have param or type return types.
-    if (fn->isTypeMethod()) { return !isNeverOverrideable; }
-
-    return !isNeverOverrideable &&
-           fn->retTag != RET_PARAM &&
-           fn->retTag != RET_TYPE;
+    return fn->name != astrInit &&
+           !fn->hasFlag(FLAG_WRAPPER) &&
+           !fn->hasFlag(FLAG_NO_PARENS);
   }
 
   return false;
 }
 
 static bool isVirtualizableMethod(FnSymbol *fn) {
-  return !fn->isTypeMethod() && isOverrideableMethod(fn);
+  return isOverrideableMethod(fn) &&
+         !fn->isTypeMethod() &&
+         fn->retTag != RET_PARAM &&
+         fn->retTag != RET_TYPE;
 }
 
 static void virtualDispatchUpdate(FnSymbol* pfn, FnSymbol* cfn) {
@@ -1024,10 +1020,6 @@ static void checkMethodsOverride() {
 
           if (fn->hasFlag(FLAG_NO_PARENS))
             msg = "parentheses-less methods cannot override";
-          else if (!fn->isTypeMethod() && fn->retTag == RET_PARAM)
-            msg = "param return methods cannot override";
-          else if (!fn->isTypeMethod() && fn->retTag == RET_TYPE)
-            msg = "type return methods cannot override";
           else if (!isOverrideableMethod(fn))
             msg = "signature is not overrideable";
 
