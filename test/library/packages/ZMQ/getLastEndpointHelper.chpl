@@ -8,6 +8,6 @@ socket.connect(node);
 
 var val = 42;
 socket.send(val);
-writeln("sent: " + val);
+writeln("sent: " + val:string);
 val = socket.recv(int);
-writeln("received: " + val);
+writeln("received: " + val:string);
