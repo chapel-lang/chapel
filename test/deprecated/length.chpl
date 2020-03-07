@@ -1,4 +1,4 @@
-use IO, Collection, Regexp;
+use IO, Collection;
 
 param bp = b"brad";
 var b = b"brad";
@@ -10,8 +10,8 @@ var a: c_array(int, 20);
 var r = 1..10;
 const stdin = openfd(0);
 var l = new LinkedList(int);
-var re = "foobar".match(compile(".*oob.*"));
 var c = new CollectionImpl(int);
+
 
 
 
@@ -28,5 +28,5 @@ writeln(a.length);
 writeln(r.length);
 writeln(stdin.length());
 writeln(l.length);
-writeln(re.length);
+
 writeln(c.length);
