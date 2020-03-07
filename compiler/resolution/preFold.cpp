@@ -1734,10 +1734,19 @@ static Symbol* findMatchingEnumSymbol(Immediate* imm, EnumType* typeEnum) {
 
 
 static Expr* unrollHetTupleLoop(CallExpr* call, Expr* tupExpr, Type* iterType) {
-  // Find the getIterator's statement and insert a no-op after it
-  // in order to create a place to insert new statements.
+  // Find the getIterator's statement and check that the structure is
+  // as expected; if not, return NULL (change nothing)
   //
   Expr* parentStmt = call->getStmtExpr();
+  CallExpr* parentAsCallExpr = toCallExpr(parentStmt);
+  if (parentAsCallExpr == NULL) return NULL;
+  SymExpr* lhs = toSymExpr(parentAsCallExpr->get(1));
+  if (lhs == NULL) return NULL;
+  Symbol* iteratorSym = lhs->symbol();  // grab this for later
+
+  // Insert a no-op after it
+  // in order to create a place to insert new statements.
+  //
   CallExpr* noop = new CallExpr(PRIM_NOOP);
   parentStmt->insertAfter(noop);
 
@@ -1799,6 +1808,8 @@ static Expr* unrollHetTupleLoop(CallExpr* call, Expr* tupExpr, Type* iterType) {
   // stamp out copies of the loop body for each element of the tuple;
   // this loop starts from 2 to skip over the size field (which is 1).
   //
+  Symbol* idxSym = theloop->indexGet()->symbol();
+  Symbol* continueSym = theloop->continueLabelGet();
   for (int i=2; i<=tupType->fields.length; i++) {
     SymbolMap map;
 
@@ -1815,11 +1826,9 @@ static Expr* unrollHetTupleLoop(CallExpr* call, Expr* tupExpr, Type* iterType) {
                                     new CallExpr(PRIM_GET_MEMBER,
                                                  tupExpr->copy(),
                                                  field)));
-    // stamp out the loop body; subtract 2 from i to number unrollings
-    // from 0
+
+    // clone the body; subtract 2 from i to number unrollings from 0
     //
-    Symbol* idxSym = theloop->indexGet()->symbol();
-    Symbol* continueSym = theloop->continueLabelGet();
     map.put(idxSym, tmp);
     theloop->copyBodyHelper(noop, i-2, &map, continueSym);
   }
@@ -1834,6 +1843,21 @@ static Expr* unrollHetTupleLoop(CallExpr* call, Expr* tupExpr, Type* iterType) {
   //
   noop->remove();
   parentStmt->replace(noop);
+
+  // remove some now-dead code preceding our unrolled loop; it's nice
+  // to do so, and failing to do so causes problems with --baseline
+  //
+  Expr* prevStmt = noop->prev;
+  while (prevStmt != NULL) {
+    Expr* deadStmt = prevStmt;
+    prevStmt = prevStmt->prev;
+    if (DefExpr* defexpr = toDefExpr(deadStmt)) {
+      if (defexpr->sym == iteratorSym ||  // '_iterator'
+          defexpr->sym == idxSym) {       // '_indexOfInterest'
+        defexpr->remove();
+      }
+    }
+  }
 
   return noop;
 }
