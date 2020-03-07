@@ -9,7 +9,6 @@ length.chpl:27: warning: 'c_array.length' is deprecated - please use 'c_array.si
 length.chpl:28: warning: 'range.length' is deprecated - please use 'range.size' instead
 length.chpl:29: warning: 'file.length()' is deprecated - please use 'file.size' instead
 length.chpl:30: warning: 'LinkedList.length' is deprecated - please use 'LinkedList.size' instead
-length.chpl:31: warning: 'reMatch.length' is deprecated - please use 'reMatch.size' instead
 length.chpl:32: warning: 'CollectionImpl.length' is deprecated - please use 'CollectionImpl.size' instead
 4
 4
@@ -22,5 +21,4 @@ length.chpl:32: warning: 'CollectionImpl.length' is deprecated - please use 'Col
 10
 0
 0
-6
 length.chpl:32: error: halt reached - 'proc size() : int' is not supported...
