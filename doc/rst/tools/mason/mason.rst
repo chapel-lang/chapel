@@ -294,6 +294,11 @@ producing the following output::
   -----> 1 Passed
   -----> 0 Failed
 
+Specific tests can be run using
+``mason test test/test1.chpl test/test2.chpl`` or by using substring filter as
+``mason test test1 test2``.
+While using substring filter, Mason will run all the tests found in ``test/`` with ``test1`` and ``test2`` in its name.
+
 Additional output can be displayed by throwing the ``--show flag``.
 
 .. note::
