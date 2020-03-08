@@ -83,10 +83,8 @@ writeln();
 // in which we'll store our ``numLocales`` unique locale values
 // redundantly if ``numLocales`` is less than 10:
 //
-var MyLocaleArray: [1..10] locale;
-
-for i in 1..10 do
-  MyLocaleArray[i] = Locales[(i-1)%numLocales];
+var MyLocaleArray: [1..10] locale =
+      for i in 1..10 do Locales[(i-1)%numLocales];
 
 for i in 1..10 do
   on MyLocaleArray[i] do

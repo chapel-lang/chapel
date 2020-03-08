@@ -829,6 +829,19 @@ in the two operand tuples. Otherwise, a compile-time error will result.
 Predefined Functions and Methods on Tuples
 ------------------------------------------
 
+.. code-block:: chapel
+
+   proc tuple.size param
+
+Returns the size of the tuple.
+
+
+.. code-block:: chapel
+
+   proc tuple.indices
+
+Returns the range ``1..this.size`` representing the indices that are
+legal for indexing into the tuple.
 
 
 .. code-block:: chapel
@@ -873,8 +886,3 @@ value that can be stored in its position.
 
 
 
-.. code-block:: chapel
-
-   proc Tuple.size param
-
-Returns the size of the tuple.

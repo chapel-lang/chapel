@@ -167,6 +167,7 @@ module ChapelIteratorSupport {
   {
     type shapeType = chpl_iteratorShapeStaticTypeOrNothing(irType);
 
+    pragma "unsafe" //for test/release/examples/benchmarks/lcals/LCALSMain.chpl
     proc standinType() type {
       if shapeType == nothing {
         // shapeless case

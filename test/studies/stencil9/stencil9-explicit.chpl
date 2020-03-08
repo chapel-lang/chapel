@@ -75,7 +75,7 @@ class DomArr {
 // an array of everyone's chunks of the global problem space that they own
 // in a sense it's the distributed A array in a local view
 //
-var LocalDomArrs: [LocaleGridDom] unmanaged DomArr;
+var LocalDomArrs: [LocaleGridDom] unmanaged DomArr?;
 
 var numIters: atomic int;
 
@@ -225,7 +225,7 @@ coforall (lr,lc) in LocaleGridDom {
             // way to express the copy.
             //
             // 
-            A[Panels[ij]] = LocalDomArrs[neighbor].Arr[Panels[ij]];
+            A[Panels[ij]] = LocalDomArrs[neighbor]!.Arr[Panels[ij]];
           }
         }
       }
@@ -327,8 +327,8 @@ if printArrays {
   // iterate over array of local dom/arr descriptors
   //
   for lda in LocalDomArrs {
-    var Interior = lda.Dom.expand(-1);
-    Result[Interior] = lda.Arr[Interior];
+    var Interior = lda!.Dom.expand(-1);
+    Result[Interior] = lda!.Arr[Interior];
   }
   //
   // print out the global result array

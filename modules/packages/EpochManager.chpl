@@ -546,17 +546,17 @@ module EpochManager {
     proc init() {
       allocated_list = new unmanaged LockFreeLinkedList(unmanaged _token);
       free_list = new unmanaged LockFreeQueue(unmanaged _token, false);
+      limbo_list = for i in 1..EBR_EPOCHS do new unmanaged LimboList();
       this.complete();
 
       // Initialise the free list pool with here.maxTaskPar tokens
+      // Do we want this to be a 'coforall' ?
       forall i in 0..#here.maxTaskPar {
         var tok = new unmanaged _token();
         allocated_list.append(tok);
         free_list.enqueue(tok);
       }
       global_epoch.write(1);
-      for i in 1..EBR_EPOCHS do
-        limbo_list[i] = new unmanaged LimboList();
     }
 
     /*
@@ -830,7 +830,7 @@ module EpochManager {
     //  Vector for bulk transfer of remote objects marked deleted on current
     //  locale
     pragma "no doc"
-    var objsToDelete : [LocaleSpace] unmanaged Vector(unmanaged object);
+    var objsToDelete : [LocaleSpace] unmanaged Vector(unmanaged object?);
 
     //  Initializer for master locale
     pragma "no doc"
@@ -838,6 +838,9 @@ module EpochManager {
       this.global_epoch = new unmanaged GlobalEpoch(1:uint);
       this.allocated_list = new unmanaged LockFreeLinkedList(unmanaged _token);
       this.free_list = new unmanaged LockFreeQueue(unmanaged _token, false);
+      this.limbo_list = forall 1..EBR_EPOCHS do new unmanaged LimboList();
+      this.objsToDelete = forall LocaleSpace do new unmanaged Vector(unmanaged object?);
+
       this.complete();
       this.pid = _newPrivatizedClass(this);
 
@@ -851,6 +854,8 @@ module EpochManager {
       this.global_epoch = global_epoch;
       this.allocated_list = new unmanaged LockFreeLinkedList(unmanaged _token);
       this.free_list = new unmanaged LockFreeQueue(unmanaged _token, false);
+      this.limbo_list = forall 1..EBR_EPOCHS do new unmanaged LimboList();
+      this.objsToDelete = forall LocaleSpace do new unmanaged Vector(unmanaged object?);
       this.complete();
 
       this.initializeMembers();
@@ -866,11 +871,6 @@ module EpochManager {
         this.free_list.enqueue(tok);
       }
       this.locale_epoch.write(global_epoch.read());
-      forall i in 1..EBR_EPOCHS do
-        this.limbo_list[i] = new unmanaged LimboList();
-
-      forall i in LocaleSpace do
-        this.objsToDelete[i] = new unmanaged Vector(unmanaged object);
     }
 
     pragma "no doc"

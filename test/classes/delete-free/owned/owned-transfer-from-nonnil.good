@@ -29,13 +29,9 @@ owned-transfer-from-nonnil.chpl:140: note: 'x' is dead due to ownership transfer
 owned-transfer-from-nonnil.chpl:141: error: mention of non-nilable variable after ownership is transferred out of it
 owned-transfer-from-nonnil.chpl:140: note: ownership transfer occurred here
 owned-transfer-from-nonnil.chpl:189: In function 'test8':
-owned-transfer-from-nonnil.chpl:193: error: Illegal use of dead value
-owned-transfer-from-nonnil.chpl:192: note: 'x' is dead due to ownership transfer here
 owned-transfer-from-nonnil.chpl:193: error: mention of non-nilable variable after ownership is transferred out of it
 owned-transfer-from-nonnil.chpl:192: note: ownership transfer occurred here
 owned-transfer-from-nonnil.chpl:198: In function 'test9':
-owned-transfer-from-nonnil.chpl:201: error: Illegal use of dead value
-owned-transfer-from-nonnil.chpl:200: note: 'x' is dead due to ownership transfer here
 owned-transfer-from-nonnil.chpl:201: error: mention of non-nilable variable after ownership is transferred out of it
 owned-transfer-from-nonnil.chpl:200: note: ownership transfer occurred here
 owned-transfer-from-nonnil.chpl:207: In function 'test10':

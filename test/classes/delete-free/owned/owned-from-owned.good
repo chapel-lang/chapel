@@ -1,0 +1,5 @@
+owned-from-owned.chpl:4: In function 'main':
+owned-from-owned.chpl:7: error: Illegal use of dead value
+owned-from-owned.chpl:6: note: 'oo' is dead due to ownership transfer here
+owned-from-owned.chpl:7: error: mention of non-nilable variable after ownership is transferred out of it
+owned-from-owned.chpl:6: note: ownership transfer occurred here

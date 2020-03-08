@@ -187,6 +187,12 @@ in makeR
 deinit
 deinit
 end outer
+t30c
+in makeR
+deinit
+deinit
+nested block
+end outer
 t31
 in makeR
 deinit

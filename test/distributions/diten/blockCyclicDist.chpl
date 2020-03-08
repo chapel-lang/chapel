@@ -52,7 +52,7 @@ class BlockCyclicDom {
   type idxType;
   const whole: domain(nDims, idxType);
   const dist: unmanaged BlockCyclicDist(idxType);
-  var locDoms: [dist.localeDomain] unmanaged LocBlockCyclicDom(nDims, idxType);
+  var locDoms: [dist.localeDomain] unmanaged LocBlockCyclicDom(nDims, idxType)?;
   proc postinit() {
     var blksInDim: nDims*idxType;
     for i in 1..nDims {
@@ -114,11 +114,11 @@ class BlockCyclicArr {
   type idxType;
   type eltType;
   const dom: unmanaged BlockCyclicDom(nDims, idxType);
-  var locArrs: [dom.dist.localeDomain] unmanaged LocBlockCyclicArr(nDims, idxType, eltType);
+  var locArrs: [dom.dist.localeDomain] unmanaged LocBlockCyclicArr(nDims, idxType, eltType)?;
   proc postinit() {
     for ind in dom.dist.localeDomain {
       on dom.dist.locales(ind) {
-        locArrs(ind) = new unmanaged LocBlockCyclicArr(nDims, idxType, eltType, _to_unmanaged(this), dom.locDoms(ind));
+        locArrs(ind) = new unmanaged LocBlockCyclicArr(nDims, idxType, eltType, _to_unmanaged(this), dom.locDoms(ind)!);
       }
     }
   }
@@ -129,7 +129,7 @@ class BlockCyclicArr {
   }
 
   proc this(ind:idxType...nDims) ref {
-    return locArrs(dom.dist.idxToLocaleInd((...ind))).arr(dom.dist.getLocalPosition((...ind)));
+    return locArrs(dom.dist.idxToLocaleInd((...ind)))!.arr(dom.dist.getLocalPosition((...ind)));
   }
 }
 
@@ -147,10 +147,9 @@ config const m, n = 2;
 
 proc main {
   var locDom: domain(2) = {0..#m, 0..#n};
-  var locs: [locDom] locale;
+  var locs: [locDom] locale =
+        [(i,j) in locDom] Locales((i*n + j) % numLocales);
   var undistributedDom: domain(2) = {1..5, 1..5};
-
-  [(i,j) in locDom] locs(i,j) = Locales((i*n + j) % numLocales);
 
   var dist = new unmanaged BlockCyclicDist(idxType=int, nDims=2,
                                    blockSize=(2,2), startLoc=(0,0),

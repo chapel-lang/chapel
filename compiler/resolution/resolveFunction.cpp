@@ -825,6 +825,7 @@ bool SplitInitVisitor::enterDefExpr(DefExpr* def) {
 
 bool SplitInitVisitor::enterCallExpr(CallExpr* call) {
   if (call->isPrimitive(PRIM_DEFAULT_INIT_VAR)) {
+
     // Can this be replaced by a split init?
     std::vector<CallExpr*> initAssigns;
     Expr* prevent = NULL;
@@ -1125,6 +1126,7 @@ static void markTempsDeadLastMention(std::set<VarSymbol*>& temps) {
         v->hasFlag(FLAG_INDEX_VAR) ||
         v->hasFlag(FLAG_CHPL__ITER) ||
         v->hasFlag(FLAG_CHPL__ITER_NEWSTYLE) ||
+        v->hasFlag(FLAG_FORMAL_TEMP) ||
         v->getValType()->symbol->hasFlag(FLAG_ITERATOR_RECORD)) {
       // index vars, iterator records are always end-of-block
       // but shouldn't be global variables.

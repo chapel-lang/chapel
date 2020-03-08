@@ -423,20 +423,24 @@ void gasnetc_poll(GASNETI_THREAD_FARG_ALONE);
   void gasnetc_poll_single_domain(GASNETI_THREAD_FARG_ALONE);
 #endif
 
-size_t gasnetc_rdma_put_bulk(gex_Rank_t node,
+size_t gasnetc_rdma_put_bulk(
+                 gex_TM_t tm, gex_Rank_t rank,
 		 void *dest_addr, void *source_addr,
 		 size_t nbytes, gasnetc_post_descriptor_t *gpd) GASNETI_WARN_UNUSED_RESULT;
 
-size_t gasnetc_rdma_put_lc(gex_Rank_t node,
+size_t gasnetc_rdma_put_lc(
+                 gex_TM_t tm, gex_Rank_t rank,
 		 void *dest_addr, void *source_addr,
 		 size_t nbytes, gasneti_weakatomic_val_t *initiated_lc,
 		 int last_eop_chunk, gasnetc_post_descriptor_t *gpd) GASNETI_WARN_UNUSED_RESULT;
 
-void gasnetc_rdma_put_buff(gex_Rank_t node,
+void gasnetc_rdma_put_buff(
+                 gex_TM_t tm, gex_Rank_t rank,
 		 void *dest_addr, void *source_addr,
 		 size_t nbytes, gasnetc_post_descriptor_t *gpd);
 
-void gasnetc_rdma_put_long(gex_Rank_t jobrank,
+void gasnetc_rdma_put_long(
+                 gex_TM_t tm, gex_Rank_t rank,
                  void *dest_addr, void *source_addr,
                  size_t nbytes,
                  uint32_t gpd_flags,
@@ -444,22 +448,25 @@ void gasnetc_rdma_put_long(gex_Rank_t jobrank,
                  uint32_t nonce
                  GASNETC_DIDX_FARG);
 
-size_t gasnetc_rdma_get(gex_Rank_t node,
+size_t gasnetc_rdma_get(
+                 gex_TM_t tm, gex_Rank_t rank,
 		 void *dest_addr, void *source_addr,
 		 size_t nbytes, gasnetc_post_descriptor_t *gpd) GASNETI_WARN_UNUSED_RESULT;
 
-void gasnetc_rdma_get_unaligned(gex_Rank_t node,
+void gasnetc_rdma_get_unaligned(
+                 gex_TM_t tm, gex_Rank_t rank,
 		 void *dest_addr, void *source_addr,
 		 size_t nbytes, gasnetc_post_descriptor_t *gpd);
 
-int gasnetc_rdma_get_buff(gex_Rank_t node,
+int gasnetc_rdma_get_buff(
+                 gex_TM_t tm, gex_Rank_t rank,
 		 void *dest_addr, void *source_addr,
 		 size_t nbytes, gasnetc_post_descriptor_t *gpd);
 
 #if GASNETC_BUILD_GNIRATOMIC
 void gasnetc_post_amo(
-                 gex_Rank_t tgt_rank, void *tgt_addr,
-                 gasnetc_post_descriptor_t *gpd);
+                 gasneti_TM_t i_tm, gex_Rank_t tgt_rank, void *tgt_addr,
+                 gasnetc_post_descriptor_t *gpd, gex_Flags_t flags);
 #endif
 
 

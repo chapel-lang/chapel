@@ -827,7 +827,8 @@ bool isInitOrReturn(CallExpr* call, SymExpr*& lhsSe, CallExpr*& initOrCtor)
 {
 
   if (call->isPrimitive(PRIM_MOVE) ||
-      call->isPrimitive(PRIM_ASSIGN)) {
+      call->isPrimitive(PRIM_ASSIGN) ||
+      call->isPrimitive(PRIM_ASSIGN_ELIDED_COPY)) {
     // case 1: PRIM_MOVE/PRIM_ASSIGN into a variable
     SymExpr* retSe = toSymExpr(call->get(1));
     INT_ASSERT(retSe);

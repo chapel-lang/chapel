@@ -56,14 +56,23 @@ typedef struct _firehose_client_t {
    * For a 32-bit platform
    *   GASNETC_PUTINMOVE_LIMIT_MAX <= GASNETC_MAX_MEDIUM - 168
    * NOTE: these are correct at the time of writting, but subject to change.
-   * Unfortunately we can't currently work everything out with the preprocessor.
    */
-  #if (GASNETC_BUFSZ >= 4096)
+  // Unfortunately we can't *perfectly* work everything out with the preprocessor.
+  // Assumes ABI has "natural alignment" of struct members and (sizeof(size_t) <= sizeof(void*))
+  // Assumes FH_MAX_UNPIN_REM remains at default of 4, but that is not in scope here to verify
+  #define _GASNETC_SIZEOF_FH_CLIENT_T (GASNETC_IB_MAX_HCAS*(SIZEOF_VOID_P+8))
+  #define _GASNETC_SIZEOF_FH_REGION_T (2*SIZEOF_VOID_P + _GASNETC_SIZEOF_FH_CLIENT_T)
+  #define _GASNETC_SIZEOF_FH_CB_ARGS_T (2*SIZEOF_VOID_P)
+  #define _GASNETC_PUTINMOVE_OVERHEAD ((1+4)*_GASNETC_SIZEOF_FH_REGION_T + _GASNETC_SIZEOF_FH_CB_ARGS_T)
+  #define GASNETC_PUTINMOVE_LIMIT_MAX (GASNETC_BUFSZ - _GASNETC_PUTINMOVE_OVERHEAD)
+  #if (GASNETC_PUTINMOVE_LIMIT_MAX > 3072)
     /* Diminishing returns as the value is increased beyond 3k */
+    #undef GASNETC_PUTINMOVE_LIMIT_MAX
     #define GASNETC_PUTINMOVE_LIMIT_MAX 3072
-  #else
-    /* WARNING: too large values of GASNETC_IB_MAX_HCAS could be a problem */
-    #error "Since GASNETC_BUFSZ is set to a non-default value, GASNETC_PUTINMOVE_LIMIT_MAX must also be set"
+  #elif (GASNETC_PUTINMOVE_LIMIT_MAX < 0)
+    #error Insufficient space for 'firehose moves'.  Please lower '--with-ibv-max-hcas=...' or raise '--with-ibv-max-medium=...'
+    #undef GASNETC_PUTINMOVE_LIMIT_MAX
+    #define GASNETC_PUTINMOVE_LIMIT_MAX 8 // prevents bad array size below from masking the #error above
   #endif
  #endif
   typedef struct {

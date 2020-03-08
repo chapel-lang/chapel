@@ -191,7 +191,7 @@ proc main {
   writeln("\n DONE!!! ");
 }
 
-proc computeStats(ilv: LoopVariantID, loop_stats: [] owned LoopStat, do_fom: bool) {
+proc computeStats(ilv: LoopVariantID, loop_stats: [] shared LoopStat, do_fom: bool) {
   for stat in loop_stats {
     for ilen in stat.loop_length_dom {
       if stat.loop_run_count[ilen] > 0 {
@@ -767,7 +767,7 @@ proc defineLoopSuiteRunInfo(run_variants, run_loop,
   for ilv in run_variants.domain {
     for iloop in suite_info.loop_kernel_dom {
       var loop_name = iloop:string;
-      var loop_stat = new owned LoopStat();
+      var loop_stat = new shared LoopStat();
       var max_loop_indx = 0;
       if run_loop[iloop] {
         select iloop {

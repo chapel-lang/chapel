@@ -21,7 +21,6 @@ SEPARATE_CC = @SEPARATE_CC@
 @HAVE_PTHREAD_TRUE@PTHREADS_ERROR_CHECK = :
 
 TOOLLIBINCLUDES =         \
-        @SYS_HEADER_BLD@  \
         -I$(srcdir)       \
         -I$(top_srcdir)   \
         -I$(top_builddir) \
@@ -46,7 +45,7 @@ LIBDEFINES =                        \
 
 @BUILDCONFIG_DEBUG_FALSE@ TOOLLIB_DEBUGFLAGS = -DNDEBUG
 TOOLLIBCFLAGS =                   \
-        -DGASNETT_BUILDING_TOOLS  \
+        -DGASNETI_BUILDING_TOOLS  \
         @GASNET_OPT_CFLAGS@       \
 	@DEVWARN_CFLAGS@          \
         @MISC_CFLAGS@             \
@@ -58,6 +57,7 @@ TOOLLIBCFLAGS =                   \
 	$(MANUAL_CFLAGS)
 
 LIBCFLAGS =                       \
+        -DGASNETI_BUILDING_CONDUIT \
         @GASNET_OPT_CFLAGS@       \
 	@DEVWARN_CFLAGS@          \
         @MISC_CFLAGS@             \

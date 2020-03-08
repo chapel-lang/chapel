@@ -1,0 +1,33 @@
+create-owned-shared.chpl:15: In function 'main':
+create-owned-shared.chpl:20: warning: owned CC?
+create-owned-shared.chpl:25: warning: owned CC
+create-owned-shared.chpl:15: warning: owned CC?
+create-owned-shared.chpl:15: In function 'main':
+create-owned-shared.chpl:30: warning: owned CC?
+create-owned-shared.chpl:15: warning: owned CC
+create-owned-shared.chpl:15: In function 'main':
+create-owned-shared.chpl:35: warning: owned CC
+create-owned-shared.chpl:42: warning: shared CC?
+create-owned-shared.chpl:47: warning: shared CC
+create-owned-shared.chpl:15: warning: shared CC?
+create-owned-shared.chpl:15: In function 'main':
+create-owned-shared.chpl:52: warning: shared CC?
+create-owned-shared.chpl:15: warning: shared CC
+create-owned-shared.chpl:15: In function 'main':
+create-owned-shared.chpl:57: warning: shared CC
+create-owned-shared.chpl:15: warning: shared CC?
+create-owned-shared.chpl:15: In function 'main':
+create-owned-shared.chpl:62: warning: shared CC?
+create-owned-shared.chpl:15: warning: shared CC
+create-owned-shared.chpl:15: In function 'main':
+create-owned-shared.chpl:67: warning: shared CC
+101
+102
+105
+106
+201
+202
+203
+204
+205
+206

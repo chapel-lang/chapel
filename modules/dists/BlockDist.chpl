@@ -413,7 +413,7 @@ class LocBlockArr {
   param stridable: bool;
   const locDom: unmanaged LocBlockDom(rank, idxType, stridable);
   var locRAD: unmanaged LocRADCache(eltType, rank, idxType, stridable)?; // non-nil if doRADOpt=true
-  pragma "local field"
+  pragma "local field" pragma "unsafe" // initialized separately
   var myElems: [locDom.myBlock] eltType;
   var locRADLock: chpl_LocalSpinlock;
 
@@ -422,6 +422,9 @@ class LocBlockArr {
       delete locRAD;
   }
 }
+
+
+////// Block and LocBlock methods ///////////////////////////////////////////
 
 //
 // Block initializer for clients of the Block distribution
@@ -448,16 +451,19 @@ proc Block.init(boundingBox: domain,
 
   this.boundingBox = boundingBox : domain(rank, idxType, stridable = false);
 
-  this.sparseLayoutType = _to_unmanaged(sparseLayoutType);
+  const ranges = setupTargetLocRanges(rank, targetLocales);
+  this.targetLocDom = {(...ranges)};
+  this.targetLocales = reshape(targetLocales, this.targetLocDom);
 
-  this.complete();
-
-  setupTargetLocalesArray(targetLocDom, this.targetLocales, targetLocales);
-
+  // Instead of 'dummyLB', we could give 'locDistTemp' a nilable element type.
+  const dummyLB = new unmanaged LocBlock(rank, idxType, dummy=true);
+  var locDistTemp: [targetLocDom] unmanaged LocBlock(rank, idxType) = dummyLB;
   coforall locid in targetLocDom do
     on this.targetLocales(locid) do
-      locDist(locid) = new unmanaged LocBlock(rank, idxType, locid, boundingBox,
-                                     targetLocDom);
+      locDistTemp(locid) = new unmanaged LocBlock(rank, idxType, locid,
+                                                  boundingBox, targetLocDom);
+  delete dummyLB;
+  this.locDist = locDistTemp; //make this a serial loop instead?
 
   // NOTE: When these knobs stop using the global defaults, we will need
   // to add checks to make sure dataParTasksPerLocale<0 and
@@ -467,6 +473,10 @@ proc Block.init(boundingBox: domain,
                                else dataParTasksPerLocale;
   this.dataParIgnoreRunningTasks = dataParIgnoreRunningTasks;
   this.dataParMinGranularity = dataParMinGranularity;
+
+  this.sparseLayoutType = _to_unmanaged(sparseLayoutType);
+
+  this.complete();
 
   if debugBlockDist {
     writeln("Creating new Block distribution:");
@@ -542,9 +552,20 @@ override proc Block.dsiNewRectangularDom(param rank: int, type idxType,
   if rank != this.rank then
     compilerError("Block domain rank does not match distribution's");
 
-  var dom = new unmanaged BlockDom(rank=rank, idxType=idxType, dist=_to_unmanaged(this),
-      stridable=stridable, sparseLayoutType=sparseLayoutType);
-  dom.dsiSetIndices(inds);
+  const whole = createWholeDomainForInds(rank, idxType, stridable, inds);
+
+  const dummyLBD = new unmanaged LocBlockDom(rank, idxType, stridable);
+  var locDomsTemp: [this.targetLocDom]
+                  unmanaged LocBlockDom(rank, idxType, stridable) = dummyLBD;
+  coforall localeIdx in this.targetLocDom do
+   on this.targetLocales(localeIdx) do
+    locDomsTemp(localeIdx) = new unmanaged LocBlockDom(rank, idxType, stridable,
+                                             this.getChunk(whole, localeIdx));
+  delete dummyLBD;
+
+  var dom = new unmanaged BlockDom(rank, idxType, stridable, sparseLayoutType,
+                                   this: unmanaged, locDomsTemp, whole);
+
   if debugBlockDist {
     writeln("Creating new Block domain:");
     dom.dsiDisplayRepresentation();
@@ -683,6 +704,14 @@ proc LocBlock.init(param rank: int,
   myChunk = {(...inds)};
 }
 
+// Used to create a dummy instance.
+proc LocBlock.init(param rank, type idxType, param dummy: bool) where dummy {
+  this.rank = rank;
+  this.idxType = idxType;
+}
+
+
+////// BlockDom and LocBlockDom methods /////////////////////////////////////
 
 override proc BlockDom.dsiMyDist() return dist;
 
@@ -818,10 +847,34 @@ proc BlockDom.dsiSerialWrite(x) {
 // how to allocate a new array over this domain
 //
 proc BlockDom.dsiBuildArray(type eltType) {
+  const dom = this;
+  const creationLocale = here.id;
+  const dummyLBD = new unmanaged LocBlockDom(rank, idxType, stridable);
+  const dummyLBA = new unmanaged LocBlockArr(eltType, rank, idxType,
+                                             stridable, dummyLBD);
+  var locArrTemp: [dom.dist.targetLocDom]
+        unmanaged LocBlockArr(eltType, rank, idxType, stridable) = dummyLBA;
+  var myLocArrTemp: unmanaged LocBlockArr(eltType, rank, idxType, stridable)?;
+
+  // formerly in BlockArr.setup()
+  coforall localeIdx in dom.dist.targetLocDom with (ref myLocArrTemp) {
+    on dom.dist.targetLocales(localeIdx) {
+      const LBA = new unmanaged LocBlockArr(eltType, rank, idxType, stridable,
+                                            dom.getLocDom(localeIdx));
+      locArrTemp(localeIdx) = LBA;
+      if here.id == creationLocale then
+        myLocArrTemp = LBA;
+    }
+  }
+  delete dummyLBA, dummyLBD;
+
   var arr = new unmanaged BlockArr(eltType=eltType, rank=rank, idxType=idxType,
-      stridable=stridable, sparseLayoutType=sparseLayoutType,
-      dom=_to_unmanaged(this));
-  arr.setup();
+       stridable=stridable, sparseLayoutType=sparseLayoutType,
+       dom=_to_unmanaged(dom), locArr=locArrTemp, myLocArr=myLocArrTemp);
+
+  // formerly in BlockArr.setup()
+  if arr.doRADOpt && disableBlockLazyRAD then arr.setupRADOpt();
+
   return arr;
 }
 
@@ -880,18 +933,10 @@ proc BlockDom.dsiLocalSlice(param stridable: bool, ranges) {
 }
 
 proc BlockDom.setup() {
-  if locDoms(dist.targetLocDom.low) == nil {
-    coforall localeIdx in dist.targetLocDom do {
-      on dist.targetLocales(localeIdx) do
-        locDoms(localeIdx) = new unmanaged LocBlockDom(rank, idxType, stridable,
-                                             dist.getChunk(whole, localeIdx));
-    }
-  } else {
     coforall localeIdx in dist.targetLocDom do {
       on dist.targetLocales(localeIdx) do
         locDoms(localeIdx).myBlock = dist.getChunk(whole, localeIdx);
     }
-  }
 }
 
 override proc BlockDom.dsiDestroyDom() {
@@ -913,6 +958,9 @@ proc BlockDom.dsiIndexOrder(i) {
 // Added as a performance stopgap to avoid returning a domain
 //
 proc LocBlockDom.contains(i) return myBlock.contains(i);
+
+
+////// BlockArr and LocBlockArr methods /////////////////////////////////////
 
 override proc BlockArr.dsiDisplayRepresentation() {
   for tli in dom.dist.targetLocDom {
@@ -946,20 +994,6 @@ proc BlockArr.setupRADOpt() {
       }
     }
   }
-}
-
-proc BlockArr.setup() {
-  var thisid = this.locale.id;
-  coforall localeIdx in dom.dist.targetLocDom {
-    on dom.dist.targetLocales(localeIdx) {
-      const locDom = dom.getLocDom(localeIdx);
-      locArr(localeIdx) = new unmanaged LocBlockArr(eltType, rank, idxType, stridable, locDom);
-      if thisid == here.id then
-        myLocArr = locArr(localeIdx);
-    }
-  }
-
-  if doRADOpt && disableBlockLazyRAD then setupRADOpt();
 }
 
 override proc BlockArr.dsiDestroyArr() {
@@ -1204,9 +1238,9 @@ inline proc LocBlockArr.this(i) ref {
   return myElems(i);
 }
 
-//
-// Privatization
-//
+
+///// Privatization and serialization ///////////////////////////////////////
+
 proc Block.init(other: Block, privateData,
                 param rank = other.rank,
                 type idxType = other.idxType,
@@ -1215,15 +1249,12 @@ proc Block.init(other: Block, privateData,
   this.idxType = idxType;
   boundingBox = {(...privateData(1))};
   targetLocDom = {(...privateData(2))};
+  targetLocales = other.targetLocales;
+  locDist = other.locDist;
   dataParTasksPerLocale = privateData(3);
   dataParIgnoreRunningTasks = privateData(4);
   dataParMinGranularity = privateData(5);
   this.sparseLayoutType = sparseLayoutType;
-
-  this.complete();
-
-  targetLocales = other.targetLocales;
-  locDist = other.locDist;
 }
 
 proc Block.dsiSupportsPrivatization() param return true;
@@ -1271,19 +1302,24 @@ proc BlockDom.dsiSupportsPrivatization() param return true;
 record BlockDomPrvData {
   var distpid;
   var dims;
+  var locdoms;  //todo rvf its elements along with the rest of the record
 }
 
 proc BlockDom.dsiGetPrivatizeData() {
-  return new BlockDomPrvData(dist.pid, whole.dims());
+  return new BlockDomPrvData(dist.pid, whole.dims(), locDoms);
 }
 
 proc BlockDom.dsiPrivatize(privatizeData) {
   var privdist = chpl_getPrivatizedCopy(dist.type, privatizeData.distpid);
+
+  var locDomsTemp: [privdist.targetLocDom]
+                      unmanaged LocBlockDom(rank, idxType, stridable)
+    = privatizeData.locdoms;
+
   // in initializer we have to pass sparseLayoutType as it has no default value
-  var c = new unmanaged BlockDom(rank=rank, idxType=idxType, stridable=stridable,
-      sparseLayoutType=privdist.sparseLayoutType, dist=privdist);
-  c.locDoms = locDoms;
-  c.whole = {(...privatizeData.dims)};
+  const c = new unmanaged BlockDom(rank, idxType, stridable,
+                                   privdist.sparseLayoutType, privdist,
+                                   locDomsTemp, {(...privatizeData.dims)});
   return c;
 }
 
@@ -1310,20 +1346,35 @@ proc type BlockArr.chpl__deserialize(data) {
 
 proc BlockArr.dsiSupportsPrivatization() param return true;
 
-proc BlockArr.dsiGetPrivatizeData() return dom.pid;
+record BlockArrPrvData {
+  var dompid;
+  var locarr;  //todo rvf its elements along with the rest of the record
+}
+
+proc BlockArr.dsiGetPrivatizeData() {
+  return new BlockArrPrvData(dom.pid, locArr);
+}
 
 proc BlockArr.dsiPrivatize(privatizeData) {
-  var privdom = chpl_getPrivatizedCopy(dom.type, privatizeData);
-  var c = new unmanaged BlockArr(eltType=eltType, rank=rank, idxType=idxType,
-      stridable=stridable, sparseLayoutType=sparseLayoutType, dom=privdom);
-  c.locArr = locArr;
-  for localeIdx in c.dom.dist.targetLocDom {
-    if c.locArr(localeIdx).locale.id == here.id then
-      c.myLocArr = c.locArr(localeIdx);
-  }
+  var privdom = chpl_getPrivatizedCopy(dom.type, privatizeData.dompid);
+
+  var locArrTemp: [privdom.dist.targetLocDom]
+                     unmanaged LocBlockArr(eltType, rank, idxType, stridable)
+    = privatizeData.locarr;
+
+  var myLocArrTemp: unmanaged LocBlockArr(eltType, rank, idxType, stridable)?;
+  for localeIdx in privdom.dist.targetLocDom do
+    if locArrTemp(localeIdx).locale.id == here.id then
+      myLocArrTemp = locArrTemp(localeIdx);
+
+  const c = new unmanaged BlockArr(eltType=eltType, rank=rank, idxType=idxType,
+                      stridable=stridable, sparseLayoutType=sparseLayoutType,
+                      dom=privdom, locArr=locArrTemp, myLocArr = myLocArrTemp);
   return c;
 }
 
+
+////// more /////////////////////////////////////////////////////////////////
 
 proc BlockArr.dsiTargetLocales() {
   return dom.dist.targetLocales;
@@ -1624,6 +1675,9 @@ proc BlockArr.doiScan(op, dom) where (rank == 1) &&
   delete op;
   return res;
 }
+
+
+////// Factory functions ////////////////////////////////////////////////////
 
 proc newBlockDom(dom: domain) {
   return dom dmapped Block(dom);

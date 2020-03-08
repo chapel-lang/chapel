@@ -9,16 +9,17 @@ var A: [D] real;
 
 testit(D, A);
 
+proc postfix!(A:[]) { var B = for a in A do a!; return B; } //#15080
 
 // test one with a shuffled locale map
 if (numLocales == 4) {
-  var targetLocs: [1..2, 1..2] locale;
+  var targetLocs: [1..2, 1..2] locale?;
   targetLocs[1,1] = Locales[1];
   targetLocs[1,2] = Locales[3];
   targetLocs[2,1] = Locales[0];
   targetLocs[2,2] = Locales[2];
 
-  const D = {1..n, 1..n} dmapped Block({1..n, 1..n}, targetLocales = targetLocs);
+  const D = {1..n, 1..n} dmapped Block({1..n, 1..n}, targetLocales = targetLocs!);
   var A: [D] real;
 
   testit(D, A);
@@ -31,11 +32,11 @@ if (numLocales == 4) {
 
 // test one that targets a subset of locales
 if (numLocales == 4) {
-  var targetLocs: [1..1, 1..2] locale;
+  var targetLocs: [1..1, 1..2] locale?;
   targetLocs[1,1] = Locales[3];
   targetLocs[1,2] = Locales[1];
 
-  const D = {1..n, 1..n} dmapped Block({1..n, 1..n}, targetLocales = targetLocs);
+  const D = {1..n, 1..n} dmapped Block({1..n, 1..n}, targetLocales = targetLocs!);
   var A: [D] real;
 
   testit(D, A);

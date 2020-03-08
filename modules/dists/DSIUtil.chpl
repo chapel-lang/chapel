@@ -471,6 +471,34 @@ proc setupTargetLocalesArray(ref targetLocDom, targetLocArr, specifiedLocArr) {
   }
 }
 
+proc setupTargetLocRanges(param rank, specifiedLocArr) {
+  var ranges: rank*range;
+
+  if rank != 1 && specifiedLocArr.rank == 1 {
+    const factors = _factor(rank, specifiedLocArr.numElements);
+    for param i in 1..rank do
+      ranges(i) = 0..#factors(i);
+
+  } else {
+    if specifiedLocArr.rank != rank then
+      compilerError("specified target array of locales must equal 1 or distribution rank");
+    for param i in 1..rank do
+      ranges(i) = 0..#specifiedLocArr.domain.dim(i).size;
+  }
+
+  return ranges;
+}
+
+proc createWholeDomainForInds(param rank, type idxType, param stridable, inds) {
+  if isDomain(inds) {
+    return inds;
+  } else {
+    var result: domain(rank, idxType, stridable);
+    result.setIndices(inds);
+    return result;
+  }
+}
+
 // Compute the active dimensions of this assignment. For example, LeftDims
 // could be (1..1, 1..10) and RightDims (1..10, 1..1). This indicates that
 // a rank change occurred and that the inferredRank should be '1', the

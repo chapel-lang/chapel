@@ -11,7 +11,7 @@ class C {
 }
 writeln("---");
 {
-  var A: [1..3] unmanaged C;
+  var A: [1..3] unmanaged C?;
 
   delete A;
 }

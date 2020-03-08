@@ -21,11 +21,11 @@ class XmlTag : XmlElement {
   var attValues: [attNames] string;
   var numChildren: int;
   var childrenValueSpace: domain(1) = {1..2};
-  var childrenValues: [childrenValueSpace] unmanaged XmlElement;
+  var childrenValues: [childrenValueSpace] unmanaged XmlElement?;
   override proc printHelp(indent) {
     writeln(indent, "<", name, ">");
     for child in 1..numChildren do
-       childrenValues[child].printHelp(indent + "  ");
+       childrenValues[child]!.printHelp(indent + "  ");
   }
 }
 

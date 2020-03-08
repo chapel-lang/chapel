@@ -580,6 +580,13 @@ proc bytes.this(m:reMatch) {
 
  private use IO;
 
+pragma "no doc"
+proc warnIfNoDefArg() type {
+  compilerWarning("string-by-default regexp is deprecated. ",
+                  "Use regexp(string) or regexp(bytes) instead.");
+  return string;
+}
+
 /*  This class represents a compiled regular expression. Regular expressions
     are currently cached on a per-thread basis and are reference counted.
     To create a compiled regular expression, use the proc:`compile` function.
@@ -592,7 +599,7 @@ pragma "ignore noinit"
 record regexp {
 
   pragma "no doc"
-  type exprType;
+  type exprType = warnIfNoDefArg();
   pragma "no doc"
   var home: locale = here;
   pragma "no doc"

@@ -95,8 +95,10 @@ tests-clean:
 AMMPI_RUNCMD='@MPIRUN_CMD@'
 include Makefile.tests
 
-%.o: %.c ammpi.h ammpi_spmd.h ammpi_internal.h $(top_builddir)/libgasnet_tools-seq.a
+%.o: %.c ammpi.h ammpi_spmd.h ammpi_internal.h $(amxdir)/*.h $(top_builddir)/libgasnet_tools-seq.a
 	$(compile) -DAMMPI -o $@ -c $<
+
+ammpi_ep.o: $(amxdir)/amx_internal.c
 
 $(top_builddir)/libgasnet_tools-seq.a: force
 	@cd $(top_builddir) && $(MAKE) libgasnet_tools-seq.a

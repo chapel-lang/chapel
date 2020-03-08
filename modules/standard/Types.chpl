@@ -762,6 +762,16 @@ iter type enumerated.these(){
     yield i;
 }
 
+pragma "no doc"
+proc type enumerated.first {
+  return chpl__orderToEnum(0, this);
+}
+
+pragma "no doc"
+proc type enumerated.last {
+  return chpl__orderToEnum(this.size-1, this);
+}
+
 private proc chpl_enum_minbits(type t: enumerated) param {
   if t.size <= max(uint(8)) then
     return 8;

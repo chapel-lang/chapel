@@ -470,6 +470,16 @@ module String {
     }
   }
 
+  private proc stringFactoryArgDepr() {
+    compilerWarning("createStringWith* with formal argument `s` is deprecated. ",
+                    "Use argument name `x` instead");
+  }
+
+  private proc joinArgDepr() {
+    compilerWarning("string.join with formal argument `S` is deprecated. ",
+                    "Use argument name `x` instead");
+  }
+
   //
   // createString* functions
   //
@@ -484,11 +494,18 @@ module String {
 
     :returns: A new `string`
   */
-  inline proc createStringWithBorrowedBuffer(s: string) {
-    // we don't validate here because `s` must have been validated already
+  inline proc createStringWithBorrowedBuffer(x: string) {
+    // we don't validate here because `x` must have been validated already
     var ret: string;
-    initWithBorrowedBuffer(ret, s);
+    initWithBorrowedBuffer(ret, x);
     return ret;
+  }
+
+  pragma "last resort"
+  pragma "no doc"
+  inline proc createStringWithBorrowedBuffer(s: string) {
+    stringFactoryArgDepr();
+    return createStringWithBorrowedBuffer(x=s);
   }
 
   /*
@@ -505,17 +522,24 @@ module String {
 
     :returns: A new `string`
   */
-  inline proc createStringWithBorrowedBuffer(s: c_string, length=s.size) throws {
-    return createStringWithBorrowedBuffer(s:c_ptr(uint(8)), length=length,
+  inline proc createStringWithBorrowedBuffer(x: c_string, length=x.size) throws {
+    return createStringWithBorrowedBuffer(x:c_ptr(uint(8)), length=length,
                                                             size=length+1);
   }
 
+  pragma "last resort"
   pragma "no doc"
-  proc chpl_createStringWithLiteral(s: c_string, length:int) {
+  inline proc createStringWithBorrowedBuffer(s: c_string, length=s.size) throws {
+    stringFactoryArgDepr();
+    return createStringWithBorrowedBuffer(x=s, length);
+  }
+
+  pragma "no doc"
+  proc chpl_createStringWithLiteral(x: c_string, length:int) {
     // NOTE: This is a "wellknown" function used by the compiler to create
     // string literals. Inlining this creates some bloat in the AST, slowing the
     // compilation.
-    return chpl_createStringWithBorrowedBufferNV(s:c_ptr(uint(8)),
+    return chpl_createStringWithBorrowedBufferNV(x:c_ptr(uint(8)),
                                                  length=length,
                                                  size=length+1);
   }
@@ -537,16 +561,24 @@ module String {
 
      :returns: A new `string`
   */
-  inline proc createStringWithBorrowedBuffer(s: bufferType,
+  inline proc createStringWithBorrowedBuffer(x: bufferType,
                                              length: int, size: int) throws {
     var ret: string;
-    validateEncoding(s, length);
-    initWithBorrowedBuffer(ret, s, length,size);
+    validateEncoding(x, length);
+    initWithBorrowedBuffer(ret, x, length,size);
     return ret;
   }
 
+  pragma "last resort"
   pragma "no doc"
-  private inline proc chpl_createStringWithBorrowedBufferNV(s: bufferType,
+  inline proc createStringWithBorrowedBuffer(s: bufferType,
+                                             length: int, size: int) throws {
+    stringFactoryArgDepr();
+    return createStringWithBorrowedBuffer(x=s, length, size);
+  }
+
+  pragma "no doc"
+  private inline proc chpl_createStringWithBorrowedBufferNV(x: bufferType,
                                                             length: int,
                                                             size: int) {
     // NOTE: This is similar to chpl_createStringWithLiteral above, but only
@@ -554,14 +586,21 @@ module String {
     // same names, because "wellknown" implementation in the compiler does not
     // allow overloads.
     var ret: string;
-    initWithBorrowedBuffer(ret, s, length,size);
+    initWithBorrowedBuffer(ret, x, length,size);
     return ret;
   }
 
   pragma "no doc"
-  inline proc createStringWithOwnedBuffer(s: string) {
+  inline proc createStringWithOwnedBuffer(x: string) {
     // should we allow stealing ownership?
     compilerError("A Chapel string cannot be passed to createStringWithOwnedBuffer");
+  }
+
+  pragma "last resort"
+  pragma "no doc"
+  inline proc createStringWithOwnedBuffer(s: string) {
+    stringFactoryArgDepr();
+    return createStringWithOwnedBuffer(x=s);
   }
 
   /*
@@ -577,9 +616,16 @@ module String {
 
     :returns: A new `string`
   */
-  inline proc createStringWithOwnedBuffer(s: c_string, length=s.size) throws {
-    return createStringWithOwnedBuffer(s: bufferType, length=length,
+  inline proc createStringWithOwnedBuffer(x: c_string, length=x.size) throws {
+    return createStringWithOwnedBuffer(x: bufferType, length=length,
                                                       size=length+1);
+  }
+
+  pragma "last resort"
+  pragma "no doc"
+  inline proc createStringWithOwnedBuffer(s: c_string, length=s.size) throws {
+    stringFactoryArgDepr();
+    return createStringWithOwnedBuffer(x=s, length);
   }
 
   /*
@@ -598,20 +644,28 @@ module String {
 
      :returns: A new `string`
   */
-  inline proc createStringWithOwnedBuffer(s: bufferType,
+  inline proc createStringWithOwnedBuffer(x: bufferType,
                                           length: int, size: int) throws {
     var ret: string;
-    validateEncoding(s, length);
-    initWithOwnedBuffer(ret, s, length, size);
+    validateEncoding(x, length);
+    initWithOwnedBuffer(ret, x, length, size);
     return ret;
   }
 
+  pragma "last resort"
   pragma "no doc"
-  private inline proc chpl_createStringWithOwnedBufferNV(s: bufferType,
+  inline proc createStringWithOwnedBuffer(s: bufferType,
+                                          length: int, size: int) throws {
+    stringFactoryArgDepr();
+    return createStringWithOwnedBuffer(x=s, length, size);
+  }
+
+  pragma "no doc"
+  private inline proc chpl_createStringWithOwnedBufferNV(x: bufferType,
                                                          length: int,
                                                          size: int) {
     var ret: string;
-    initWithOwnedBuffer(ret, s, length,size);
+    initWithOwnedBuffer(ret, x, length,size);
     return ret;
   }
 
@@ -623,11 +677,18 @@ module String {
 
     :returns: A new `string`
   */
-  inline proc createStringWithNewBuffer(s: string) {
-    // we don't validate here because `s` must have been validated already
+  inline proc createStringWithNewBuffer(x: string) {
+    // we don't validate here because `x` must have been validated already
     var ret: string;
-    initWithNewBuffer(ret, s);
+    initWithNewBuffer(ret, x);
     return ret;
+  }
+
+  pragma "last resort"
+  pragma "no doc"
+  inline proc createStringWithNewBuffer(s: string) {
+    stringFactoryArgDepr();
+    return createStringWithNewBuffer(x=s);
   }
 
   /*
@@ -642,10 +703,18 @@ module String {
 
     :returns: A new `string`
   */
+  inline proc createStringWithNewBuffer(x: c_string, length=x.size,
+                                        errors=decodePolicy.strict) throws {
+    return createStringWithNewBuffer(x: bufferType, length=length,
+                                     size=length+1, errors);
+  }
+
+  pragma "last resort"
+  pragma "no doc"
   inline proc createStringWithNewBuffer(s: c_string, length=s.size,
                                         errors=decodePolicy.strict) throws {
-    return createStringWithNewBuffer(s: bufferType, length=length,
-                                     size=length+1, errors);
+    stringFactoryArgDepr();
+    return createStringWithNewBuffer(x=s, length, errors);
   }
 
   /*
@@ -665,10 +734,19 @@ module String {
   */
   // TODO: size is probably unnecessary here, but maybe we keep it for
   // consistence? Then, we can at least give it a default like length+1
+  inline proc createStringWithNewBuffer(x: bufferType,
+                                        length: int, size=length+1,
+                                        errors=decodePolicy.strict) throws {
+    return decodeByteBuffer(x, length, errors);
+  }
+
+  pragma "last resort"
+  pragma "no doc"
   inline proc createStringWithNewBuffer(s: bufferType,
                                         length: int, size=length+1,
                                         errors=decodePolicy.strict) throws {
-    return decodeByteBuffer(s, length, errors);
+    stringFactoryArgDepr();
+    return createStringWithNewBuffer(x=s, length, size, errors);
   }
 
   pragma "no doc"
@@ -820,6 +898,12 @@ module String {
       :returns: The number of codepoints in the string.
       */
     inline proc size return numCodepoints;
+
+    /*
+      :returns: The indices that can be used to index into the string
+                (i.e., the range ``1..this.size``)
+    */
+    proc indices return 1..size;
 
     /*
       :returns: The number of bytes in the string.
@@ -1617,8 +1701,8 @@ module String {
           writeln(x); // prints: "a|10|d"
      */
 
-    inline proc join(const ref S: string ...) : string {
-      return _join(S);
+    inline proc join(const ref x: string ...) : string {
+      return _join(x);
     }
 
     /*
@@ -1629,10 +1713,17 @@ module String {
           var x = "|".join("a","10","d");
           writeln(x); // prints: "a|10|d"
      */
-    inline proc join(const ref S) : string where isTuple(S) {
-      if !isHomogeneousTuple(S) || !isString(S[1]) then
+    inline proc join(const ref x) : string where isTuple(x) {
+      if !isHomogeneousTuple(x) || !isString(x[1]) then
         compilerError("join() on tuples only handles homogeneous tuples of strings");
-      return _join(S);
+      return _join(x);
+    }
+
+    pragma "last resort"
+    pragma "no doc"
+    inline proc join(const ref S) : string where isTuple(S) {
+      joinArgDepr();
+      return join(S);
     }
 
     /*
@@ -1647,11 +1738,19 @@ module String {
       return _join(S);
     }
 
+    pragma "last resort"
+    pragma "no doc"
+    inline proc join(const ref S: [] string) : string {
+      joinArgDepr();
+      return join(S);
+    }
+
     pragma "no doc"
     inline proc join(ir: _iteratorRecord): string {
       return doJoinIterator(this, ir);
     }
 
+    // TODO: we don't need this
     pragma "no doc"
     inline proc _join(const ref S) : string where isTuple(S) || isArray(S) {
       return doJoin(this, S);
