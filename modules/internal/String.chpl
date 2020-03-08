@@ -2232,37 +2232,6 @@ module String {
     return doMultiply(s, n);
   }
 
-  private proc stringValDeprecated() {
-    compilerWarning("'+' between strings and non-strings is deprecated; consider explicitly casting the non-string argument to a string");
-  }
-
-  // Concatenation with other types is done by casting to string
-  private inline proc concatHelp(s: string, x:?t) where t != string {
-    stringValDeprecated();
-    var cs = x:string;
-    const ret = s + cs;
-    return ret;
-  }
-
-  private inline proc concatHelp(x:?t, s: string) where t != string  {
-    stringValDeprecated();
-    var cs = x:string;
-    const ret = cs + s;
-    return ret;
-  }
-
-  /*
-     The following concatenation functions return a new string which is the
-     result of casting the non-string argument to a string, and concatenating
-     that result with `s`.
-  */
-  inline proc +(s: string, x: numeric) return concatHelp(s, x);
-  inline proc +(x: numeric, s: string) return concatHelp(x, s);
-  inline proc +(s: string, x: enumerated) return concatHelp(s, x);
-  inline proc +(x: enumerated, s: string) return concatHelp(x, s);
-  inline proc +(s: string, x: bool) return concatHelp(s, x);
-  inline proc +(x: bool, s: string) return concatHelp(x, s);
-
   //
   // Param procs
   //
@@ -2300,42 +2269,6 @@ module String {
   pragma "no doc"
   inline proc +(param a: string, param b: string) param
     return __primitive("string_concat", a, b);
-
-  pragma "no doc"
-  inline proc +(param s: string, param x: integral) param {
-    stringValDeprecated();
-    return __primitive("string_concat", s, x:string);
-  }
-
-  pragma "no doc"
-  inline proc +(param x: integral, param s: string) param {
-    stringValDeprecated();
-    return __primitive("string_concat", x:string, s);
-  }
-
-  pragma "no doc"
-  inline proc +(param s: string, param x: enumerated) param {
-    stringValDeprecated();
-    return __primitive("string_concat", s, x:string);
-  }
-
-  pragma "no doc"
-  inline proc +(param x: enumerated, param s: string) param {
-    stringValDeprecated();
-    return __primitive("string_concat", x:string, s);
-  }
-
-  pragma "no doc"
-  inline proc +(param s: string, param x: bool) param {
-    stringValDeprecated();
-    return __primitive("string_concat", s, x:string);
-  }
-
-  pragma "no doc"
-  inline proc +(param x: bool, param s: string) param {
-    stringValDeprecated();
-    return __primitive("string_concat", x:string, s);
-  }
 
   pragma "no doc"
   inline proc ascii(param a: string) param {
