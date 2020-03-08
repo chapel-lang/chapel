@@ -51,6 +51,7 @@ proc masonTest(args) throws {
   var update = true;
   if MASON_OFFLINE then update = false;
   var compopts: list(string);
+  var searchSubStrings: list(string);
   var countArgs = 0;
   for arg in args {
     countArgs += 1;
@@ -94,40 +95,48 @@ proc masonTest(args) throws {
           else if isDir(arg) {
             dirs.append(arg);
           }
-          else {
+          else if arg.startsWith('-') {
             compopts.append(arg);
+          }
+          else {
+            searchSubStrings.append(arg);
           }
         }
       }
     }
   }
 
-    try! {
-      const cwd = getEnv("PWD");
-      const projectHome = getProjectHome(cwd);
-      const toParse = open(projectHome + "/Mason.lock", iomode.r);
-      const lockFile = new owned(parseToml(toParse));
-      var testNames = getTests(lockFile.borrow(), projectHome);
+  try! {
+    const cwd = getEnv("PWD");
+    const projectHome = getProjectHome(cwd);
+    var testNames: list(string);
+    const testPath = joinPath(projectHome, "test");
 
-      var newCompopts: list(string);
-      var isSubString: bool;
-
-      for checkSubString in compopts {
-        isSubString = false;
-        for testName in testNames {
-          if testName.find(checkSubString) != 0 {
-            isSubString = true;
-            files.append("".join('test/', testName));
-          }
+    if isDir(testPath) {
+      var tests = findfiles(startdir=testPath, recursive=true, hidden=false);
+      for test in tests {
+        if test.endsWith(".chpl") {
+          testNames.append(getTestPath(test));
         }
+      }
+    }
 
-        if !isSubString {
-          newCompopts.append(checkSubString);
+    var isSubString: bool;
+
+    for subString in searchSubStrings {
+      isSubString = false;
+      for testName in testNames {
+        if testName.find(subString) != 0 {
+          isSubString = true;
+          files.append("".join('test/', testName));
         }
       }
 
-      compopts = newCompopts;
+      if !isSubString {
+        compopts.append(subString);
+      }
     }
+  }
 
   getRuntimeComm();
   var uargs: list(string);
