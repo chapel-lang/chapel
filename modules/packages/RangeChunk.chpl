@@ -85,35 +85,39 @@ module RangeChunk {
   }
 
   /*
-    Iterates through a range ``r``, which is blocked up in repeating ```numInds```
-    blocks of size ```blockSize```. Blocks are indexed from 0..numInds-1. 
-    Emits block at index ```idx``` in a cyclic manner.
+    Iterates through a range ``r``, which is blocked up in repeating ```nTasks```
+    blocks of size ```blockSize```. Blocks are indexed from 0..nTasks-1. 
+    Emits block at index ```tid``` in a cyclic manner.
   */
-  iter blockCyclicChunks(r: range(?t, boundedType=BoundedRangeType.bounded, ?strided), blockSize: integral, idx: integral, numInds: integral){
-    if (idx >= numInds) then
-      halt("Parameter idx must be < numInds because blocks are indexed from 0..numInds-1");
+  iter blockCyclicChunks(r: range(?t, boundedType=BoundedRangeType.bounded,
+                         ?strided), blockSize: integral, tid: integral, 
+                         nTasks: integral) {
+    if (tid >= nTasks) then
+      halt("Parameter tid must be < nTasks " +
+           "because blocks are indexed from 0..nTasks-1");
 
     if (blockSize <= 0) then
       halt("blockSize must a positive number");
 
-    if (numInds <= 0) then
-      halt("numInds must be a positive number");
+    if (nTasks <= 0) then
+      halt("nTasks must be a positive number");
 
     var range_stride = r.stride;
     var block_stride = blockSize * range_stride;
     var low = r.low;
     var high = r.high;
-    var first_block_start = (if range_stride > 0 then r.low  else r.high) + block_stride * idx;
+    var first_block_start = (if range_stride > 0 then r.low  else r.high) +
+                            block_stride * tid;
     if first_block_start > r.high || first_block_start < r.low then return;
 
-    var stride_to_next_block = block_stride * numInds;
+    var stride_to_next_block = block_stride * nTasks;
   
     if range_stride > 0 {
       for block_start in first_block_start..high by stride_to_next_block {
         var block_end = min(high, block_start + block_stride - 1);
         yield block_start..block_end by range_stride;
       }
-    }else{
+    } else {
       for block_end in low..first_block_start by stride_to_next_block {
         var block_start = max(low, block_end + block_stride + 1);
         yield block_start..block_end by abs(range_stride);
