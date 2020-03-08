@@ -120,7 +120,7 @@ module RangeChunk {
     } else {
       for block_end in low..first_block_start by stride_to_next_block {
         var block_start = max(low, block_end + block_stride + 1);
-        yield block_start..block_end by abs(range_stride);
+        yield block_start..block_end by range_stride;
       }
     }
   }
