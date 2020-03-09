@@ -96,6 +96,7 @@ module ChapelLocale {
   const nilLocale = new locale(localeKind.nilLocale);
   /*const anyLocale = new locale(localeKind.any);*/
 
+  pragma "always RVF"
   record _locale {
     /*pragma "owned"*/
     /*pragma "alias scope from this"*/

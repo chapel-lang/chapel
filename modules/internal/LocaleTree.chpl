@@ -36,19 +36,22 @@ module LocaleTree {
   pragma "locale private" var chpl_localeTree: chpl_localeTreeRecord;
 
   proc chpl_initLocaleTree() {
+    extern proc printf(s, a1, a2, a3);
     for i in LocaleSpace {
-      var left = nilLocale;
-      var right = nilLocale;
+      var left: unmanaged BaseLocale? = nil;
+      var right: unmanaged BaseLocale? = nil;
       var child = (i+1)*2-1;    // Assumes that indices are dense.
       if child < numLocales {
-        left = rootLocale.getChild(child);
+        left = rootLocale.getChild(child)._instance;
+        /*printf(c"Here: %lld Left locale : %d Left instance locale : %d\n",*/
+               /*here.id, left.locale.id, left._instance.locale.id);*/
         child += 1;
         if child < numLocales then
-          right = rootLocale.getChild(child);
+          right = rootLocale.getChild(child)._instance;
       }
       on rootLocale.getChild(i) {
-        chpl_localeTree.left = left;
-        chpl_localeTree.right = right;
+        chpl_localeTree.left._instance = left;
+        chpl_localeTree.right._instance = right;
       }
     }
   }
