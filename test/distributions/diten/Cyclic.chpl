@@ -116,7 +116,7 @@ class Cyclic1DDist {
   //
 
 
-  proc writeThis(x) {
+  proc writeThis(x) throws {
     x.writeln("Cyclic1DPar");
     x.writeln("---------------");
     x.writeln("across locales: ", targetLocs);
@@ -205,7 +205,7 @@ class LocCyclic1DDist {
       writeln("locale ", locid, " owns ", myChunk);
   }
 
-  proc writeThis(x) {
+  proc writeThis(x) throws {
     x.write("locale ", loc.id, " owns chunk: ", myChunk);
   }
 }
@@ -352,7 +352,7 @@ class Cyclic1DDom {
   //
   // the print method for the domain
   //
-  proc writeThis(x) {
+  proc writeThis(x) throws {
     x.write(whole);
   }
 
@@ -430,7 +430,7 @@ class LocCyclic1DDom {
   //
   // how to write out this locale's indices
   //
-  proc writeThis(x) {
+  proc writeThis(x) throws {
     x.write(myBlock);
   }
 
@@ -542,7 +542,7 @@ class Cyclic1DArr {
   //
   // how to print out the whole array, sequentially
   //
-  proc writeThis(x) {
+  proc writeThis(x) throws {
     var first = true;
     for loc in dom.dist.targetLocDom {
       // May want to do something like the following:
@@ -628,7 +628,7 @@ class LocCyclic1DArr {
   //
   // prints out this locale's piece of the array
   //
-  proc writeThis(x) {
+  proc writeThis(x) throws {
     // May want to do something like the following:
     //      on loc {
     // but it causes deadlock -- see writeThisUsingOn.chpl

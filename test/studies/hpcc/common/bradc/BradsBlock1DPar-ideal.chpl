@@ -112,7 +112,7 @@ class Block1DDist {
   //
 
 
-  proc writeThis(x) {
+  proc writeThis(x) throws {
     x.writeln("BradsBlock1DPar");
     x.writeln("---------------");
     x.writeln("distributes: ", boundingBox);
@@ -211,7 +211,7 @@ class LocBlock1DDist {
   proc procToData(x, lo)
     return (lo + (x: lo.type) + (x:real != x:int:real));
 
-  proc writeThis(x) {
+  proc writeThis(x) throws {
     x.write("locale ", loc.id, " owns chunk: ", myChunk);
   }
 }
@@ -327,7 +327,7 @@ class Block1DDom {
   //
   // the print method for the domain
   //
-  proc writeThis(x) {
+  proc writeThis(x) throws {
     x.write(whole);
   }
 
@@ -408,7 +408,7 @@ class LocBlock1DDom {
   //
   // how to write out this locale's indices
   //
-  proc writeThis(x) {
+  proc writeThis(x) throws {
     x.write(myBlock);
   }
 
@@ -511,7 +511,7 @@ class Block1DArr {
   //
   // how to print out the whole array, sequentially
   //
-  proc writeThis(x) {
+  proc writeThis(x) throws {
     var first = true;
     for loc in dom.dist.targetLocDom {
       // May want to do something like the following:
@@ -607,7 +607,7 @@ class LocBlock1DArr {
   //
   // prints out this locale's piece of the array
   //
-  proc writeThis(x) {
+  proc writeThis(x) throws {
     // May want to do something like the following:
     //      on loc {
     // but it causes deadlock -- see writeThisUsingOn.chpl

@@ -5,7 +5,7 @@ class D {
 class C {
   var Ds: [LocaleSpace] unmanaged D?;
 
-  proc writeThis(x) {
+  proc writeThis(x) throws {
     for loc in Locales do
       on loc do
 	Ds[loc.id]!.writeThis(x);

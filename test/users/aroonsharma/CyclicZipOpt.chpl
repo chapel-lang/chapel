@@ -264,7 +264,7 @@ proc CyclicZipOpt.dsiCreateRankChangeDist(param newRank: int, args) {
   return new CyclicZipOpt(rank=newRank, idxType=idxType, startIdx=newLow, targetLocales=newTargetLocales);
 }
 
-proc CyclicZipOpt.writeThis(x: Writer) {
+proc CyclicZipOpt.writeThis(x: Writer) throws {
   x.writeln(this.type:string);
   x.writeln("------");
   for locid in targetLocDom do

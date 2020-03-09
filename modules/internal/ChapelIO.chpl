@@ -117,7 +117,7 @@ call the read or write routine, depending on the situation.
   class IntPair {
     var x: int;
     var y: int;
-    proc readWriteThis(f) {
+    proc readWriteThis(f) throws {
       f <~> x <~> new ioLiteral(",") <~> y <~> new ioNewline();
     }
   }
@@ -136,7 +136,7 @@ function resolution error if the class NoRead is read.
   class NoRead {
     var x: int;
     var y: int;
-    proc writeThis(f) {
+    proc writeThis(f) throws {
       f <~> "hello";
     }
     // Note that no readThis function will be generated.

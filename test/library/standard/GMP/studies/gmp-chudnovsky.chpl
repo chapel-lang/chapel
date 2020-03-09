@@ -602,7 +602,7 @@ proc fg2 ref return fgstack[top+1];
 var progress = 0.0;
 
 /*
-proc mpz_t.writeThis(f) {
+proc mpz_t.writeThis(f) throws {
   var outfile = f: file;
     gmp_fprintf(outfile._fp, "%Zd", this);
   if (outfile) then

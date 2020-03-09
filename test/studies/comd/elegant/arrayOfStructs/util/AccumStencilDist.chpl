@@ -324,7 +324,7 @@ override proc AccumStencil.dsiNewRectangularDom(param rank: int, type idxType,
 //
 // output distribution
 //
-proc AccumStencil.writeThis(x) {
+proc AccumStencil.writeThis(x) throws {
   x.writeln("AccumStencil");
   x.writeln("-------");
   x.writeln("distributes: ", boundingBox);

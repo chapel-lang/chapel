@@ -238,14 +238,8 @@ module CPtr {
   }
 
   pragma "no doc"
-  inline proc c_void_ptr.writeThis(ch) {
-    try {
-      ch.writef("0x%xu", this:c_uintptr);
-    } catch e: SystemError {
-      ch.setError(e.err);
-    } catch {
-      ch.setError(EINVAL:syserr);
-    }
+  inline proc c_void_ptr.writeThis(ch) throws {
+    ch.writef("0x%xu", this:c_uintptr);
   }
 
   pragma "no doc"

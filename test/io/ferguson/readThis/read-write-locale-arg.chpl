@@ -2,7 +2,7 @@ use IO;
 
 class A {
   var x:int;
-  proc writeThis(writer) {
+  proc writeThis(writer) throws {
     var loc = writer.readWriteThisFromLocale();
     writeln("in A.writeThis loc= ", loc!.id);
     writer.writeln(x);
@@ -11,7 +11,7 @@ class A {
 
 class B {
   var x:int;
-  proc readThis(writer) {
+  proc readThis(writer) throws {
     var loc = writer.readWriteThisFromLocale();
     writeln("in B.readThis loc= ", loc!.id);
     writer.readln(x);
@@ -20,7 +20,7 @@ class B {
 
 class C {
   var x:int;
-  proc readWriteThis(rw) {
+  proc readWriteThis(rw) throws {
     var loc = rw.readWriteThisFromLocale();
     writeln("in C.readWriteThis loc= ", loc!.id);
     rw.readwrite(x);
