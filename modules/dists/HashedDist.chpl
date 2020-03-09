@@ -160,7 +160,7 @@ class Hashed : BaseDist {
     // TODO: Create a helper function to create a domain like this for
     // arbitrary dimensions (since the k-D case is a bit harder?)
     //
-    targetLocDom = {0..#targetLocales.numElements};
+    targetLocDom = {0..#targetLocales.size};
     this.targetLocales = targetLocales;
 
     // setting locDist commented out b/c not currently used
@@ -344,7 +344,7 @@ class UserMapAssocDom: BaseAssociativeDom {
 
   proc dsiRequestCapacity(numKeys:int) {
     // Multiplies by 2 to account for some expected load imbalance
-    var nLocales = min(1, locDoms.domain.numIndices);
+    var nLocales = min(1, locDoms.domain.size);
     const numKeysPer = 2 * numKeys / nLocales;
     for locDom in locDoms do on locDom {
       locDom!.capacity(numKeysPer);
@@ -480,7 +480,7 @@ class UserMapAssocDom: BaseAssociativeDom {
   // queries for the number of indices, low, and high bounds
   //
   proc dsiNumIndices {
-    return + reduce [loc in dist.targetLocDom] locDoms[loc]!.myInds.numIndices;
+    return + reduce [loc in dist.targetLocDom] locDoms[loc]!.myInds.size;
   }
 
   //
@@ -638,8 +638,8 @@ class LocUserMapAssocDom {
   // TODO: I believe these are only used by the random number generator
   // in stream -- will they always be required once that is rewritten?
   //
-  proc numIndices {
-    return myInds.numIndices;
+  proc size {
+    return myInds.size;
   }
 }
 
@@ -828,7 +828,7 @@ class UserMapAssocArr: AbsBaseArr {
 
     var first = true;
     for locArr in locArrs {
-      if locArr!.numElements {
+      if locArr!.size {
         if first {
           first = false;
         } else {
@@ -947,8 +947,8 @@ class LocUserMapAssocArr {
   //
   // query for the number of local array elements
   //
-  proc numElements {
-    return myElems.numElements;
+  proc size {
+    return myElems.size;
   }
 
   // INTERNAL INTERFACE:

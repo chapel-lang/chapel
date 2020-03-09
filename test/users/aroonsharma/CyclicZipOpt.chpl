@@ -56,10 +56,10 @@ class CyclicZipOpt: BaseDist {
     if isTuple(startIdx) then tupleStartIdx = startIdx;
                          else tupleStartIdx(1) = startIdx;
     if rank == 1  {
-      targetLocDom = {0..#targetLocales.numElements};
+      targetLocDom = {0..#targetLocales.size};
       targetLocs = targetLocales;
     } else if targetLocales.rank == 1 {
-      const factors = _factor(rank, targetLocales.numElements);
+      const factors = _factor(rank, targetLocales.size);
       var ranges: rank*range;
       for param i in 1..rank {
         ranges(i) = 0..#factors(i);
@@ -272,7 +272,7 @@ proc CyclicZipOpt.writeThis(x: Writer) throws {
 }
 
 proc CyclicZipOpt.targetLocsIdx(i: idxType) {
-  const numLocs:idxType = targetLocDom.numIndices:idxType;
+  const numLocs:idxType = targetLocDom.size:idxType;
   // this is wrong if i is less than startIdx
   //return ((i - startIdx(1)) % numLocs):int;
   // this works even if i is less than startIdx
@@ -422,7 +422,7 @@ proc CyclicZipOptDom.dsiSerialWrite(x: Writer) {
   }
 }
 
-proc CyclicZipOptDom.dsiNumIndices return whole.numIndices;
+proc CyclicZipOptDom.dsiNumIndices return whole.size;
 
 iter CyclicZipOptDom.these() {
   for i in whole do
@@ -1080,7 +1080,7 @@ proc CyclicZipOptArr.doiBulkTransferTo(Barg)
     on B.dom.dist.targetLocs(i)
       {
         var regionA = B.dom.locDoms(i).myBlock;
-        if regionA.numIndices>0
+        if regionA.size>0
         {
           const ini=bulkCommConvertCoordinate(regionA.first, B, A);
           const end=bulkCommConvertCoordinate(regionA.last, B, A);
@@ -1119,7 +1119,7 @@ proc CyclicZipOptArr.doiBulkTransferFrom(Barg)
     on A.dom.dist.targetLocs(i)
     { 
       var regionA = A.dom.locDoms(i).myBlock;    
-      if regionA.numIndices>0
+      if regionA.size>0
       {
         const ini=bulkCommConvertCoordinate(regionA.first, A, B);
         const end=bulkCommConvertCoordinate(regionA.last, A, B);
@@ -1157,7 +1157,7 @@ proc CyclicZipOptArr.doiBulkTransferToDR(Barg)
     on A.dom.dist.targetLocs(j)
     {
       const inters=A.dom.locDoms(j).myBlock;
-      if(inters.numIndices>0)
+      if(inters.size>0)
       {
         const ini=bulkCommConvertCoordinate(inters.first, A, B);
         const end=bulkCommConvertCoordinate(inters.last, A, B);
@@ -1204,7 +1204,7 @@ proc CyclicZipOptArr.doiBulkTransferFromDR(Barg)
     on A.dom.dist.targetLocs(j)
     {
       const inters=A.dom.locDoms(j).myBlock;
-      if(inters.numIndices>0)
+      if(inters.size>0)
       {
         const ini=bulkCommConvertCoordinate(inters.first, A, B);
         const end=bulkCommConvertCoordinate(inters.last, A, B);

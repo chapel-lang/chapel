@@ -6,7 +6,7 @@ private use IO;
 var manylocs: bool;
 proc setupGridLocales(ensureManyLocs = false) {
   var gridLocales: [gridDom] locale?;
-  manylocs = (numLocales >= gridLocales.numElements);
+  manylocs = (numLocales >= gridLocales.size);
 
   if manylocs {
     var i = 0;
@@ -16,11 +16,11 @@ proc setupGridLocales(ensureManyLocs = false) {
     //writeln();
   } else {
     gridLocales = Locales(0);
-    //writeln("oversubscribed Locales(0) over ", gridLocales.numElements, " locales");
+    //writeln("oversubscribed Locales(0) over ", gridLocales.size, " locales");
   }
 
   if !manylocs && ensureManyLocs then halt("not enough locales: wanted ",
-    gridLocales.numElements, ", got ", numLocales);
+    gridLocales.size, ", got ", numLocales);
   writeln();
 
   return gridLocales!;

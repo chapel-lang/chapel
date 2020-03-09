@@ -266,7 +266,7 @@ proc main() {
 
 
 proc build_sieve(s: [] sieve_t) {
-  const n = s.numElements*2,
+  const n = s.size*2,
         m = sqrt(n): c_long;
 
   s[1/2].fac = 1;
@@ -425,7 +425,7 @@ proc fac_clear(ref f: fac_t) {
 
 proc fac_resize(ref f: fac_t, s: c_long)
 {
-  if (f.sdom.numIndices < s) {
+  if (f.sdom.size < s) {
     fac_clear(f);
     fac_init_size(f, s);
   }
@@ -449,7 +449,7 @@ proc fac_set_bp(ref f: fac_t, in base: c_long, pow: c_long) {
     i += 1;
   }
   f.num_facs = i;
-  assert(i<=f.sdom.numIndices);
+  assert(i<=f.sdom.size);
 }
 
 // r = f*g
@@ -485,7 +485,7 @@ proc fac_mul2(ref r: fac_t, f: fac_t, g: fac_t) {
     k += 1;
   }
   r.num_facs = k;
-  assert(k<=r.sdom.numIndices);
+  assert(k<=r.sdom.size);
 }
 
 // f *= g
@@ -566,7 +566,7 @@ proc fac_remove_gcd(ref p: mpz_t, ref fp: fac_t, ref g: mpz_t, ref fg: fac_t) {
     }
   }
   fmul.num_facs = k;
-  assert(k <= fmul.sdom.numIndices);
+  assert(k <= fmul.sdom.size);
 
   if (fmul.num_facs) {
     bs_mul(gcd, 0, fmul.num_facs);

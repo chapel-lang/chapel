@@ -87,7 +87,7 @@ class Block1DDist {
   // TODO: Is this correct if targetLocs doesn't start with 0?
   //
   proc idxToLocale(ind: glbIdxType) {
-    return targetLocs((((ind-bbox.low)*targetLocs.numElements)/bbox.numIndices):index(targetLocs.domain));
+    return targetLocs((((ind-bbox.low)*targetLocs.size)/bbox.size):index(targetLocs.domain));
   }
 }
 
@@ -133,7 +133,7 @@ class LocBlock1DDist {
     const lo = dist.bbox.low;
     const hi = dist.bbox.high;
     const numelems = hi - lo + 1;
-    const numlocs = dist.targetLocs.numElements;
+    const numlocs = dist.targetLocs.size;
     const blo = if (locid == 0) then min(glbIdxType)
                 else procToData((numelems: real * locid) / numlocs, lo);
     const bhi = if (locid == numlocs - 1) then max(glbIdxType)
@@ -264,7 +264,7 @@ class Block1DDom {
   // queries for the number of indices, low, and high bounds
   //
   proc numIndices {
-    return whole.numIndices;
+    return whole.size;
   }
 
   proc low {
@@ -338,7 +338,7 @@ class LocBlock1DDom {
   // queries for this locale's number of indices, low, and high bounds
   //
   proc numIndices {
-    return myBlock.numIndices;
+    return myBlock.size;
   }
 
   proc low {
@@ -450,7 +450,7 @@ class Block1DArr {
       // May want to do something like the following:
       //      on loc {
       // but it causes deadlock -- see writeThisUsingOn.chpl
-        if (locArr(loc).numElements >= 1) {
+        if (locArr(loc).size >= 1) {
           if (first) {
             first = false;
           } else {
@@ -467,7 +467,7 @@ class Block1DArr {
   // a query for the number of elements in the array
   //
   proc numElements {
-    return dom.numIndices;
+    return dom.size;
   }
 }
 
@@ -546,6 +546,6 @@ class LocBlock1DArr {
   // query for the number of local array elements
   //
   proc numElements {
-    return myElems.numElements;
+    return myElems.size;
   }
 }

@@ -112,7 +112,7 @@ class AMRHierarchy {
       writeln("Refining level ", i_finest, ".");
       const new_level = buildRefinedLevel(i_finest);
             
-      if new_level.grids.numIndices>0 {
+      if new_level.grids.size>0 {
         
         //---- Extend the level indices ----
         i_finest += 1;
@@ -213,7 +213,7 @@ proc AMRHierarchy.regrid ( i_base: int )
   
     //==== If level is nonempty, then add it to the hierarchy ====
     
-    if new_level.grids.numIndices > 0 {
+    if new_level.grids.size > 0 {
 
       //---- Update indices ----
       i_finest      = i_finest_old+1;
@@ -278,7 +278,7 @@ proc AMRHierarchy.regrid ( i_base: int )
 
     //==== If regridded level is nonempty, add to the hierarchy ====
 
-    if regridded_level.grids.numIndices > 0 {
+    if regridded_level.grids.size > 0 {
       
       //---- Update the finest level index ----
       
@@ -813,7 +813,7 @@ proc LevelVariable.initialFill (
       
         var overlap = grid.cells( old_grid.cells );
 
-        if overlap.numIndices > 0 
+        if overlap.size > 0 
         {
           this(grid,overlap) = q_old!(old_grid, overlap);
           unfilled_region.subtract( overlap );
@@ -845,7 +845,7 @@ proc LevelVariable.initialFill (
       
       //----If there is an overlap, remove fragments that coincide with unfilled_region ----
       
-      if refined_coarse.numIndices > 0 
+      if refined_coarse.size > 0 
       {
 
        {
@@ -866,7 +866,7 @@ proc LevelVariable.initialFill (
         // 
         //   var unfilled_overlap = refined_coarse(block);
         // 
-        //   if unfilled_overlap.numIndices > 0 then
+        //   if unfilled_overlap.size > 0 then
         //     this(grid,unfilled_overlap) 
         //         = q_coarse(coarse_grid).refineValues( unfilled_overlap, ref_ratio );
         // }
@@ -930,7 +930,7 @@ proc AMRHierarchy.clawOutput(frame_number: int)
   //---- Time file ----
 
   var n_grids: int = 0;
-  for level in levels do n_grids += level!.grids.numIndices;
+  for level in levels do n_grids += level!.grids.size;
 
   const time_file = open(time_file_name, iomode.cw).writer();
   writeTimeFile(time, 1, n_grids, 1, time_file);
@@ -957,7 +957,7 @@ proc AMRHierarchy.writeData(outfile: channel){
 
   for i in level_indices {
     level_solutions(i)!.current_data.writeData(i, base_grid_number, outfile);
-    base_grid_number += levels(i)!.grids.numIndices;
+    base_grid_number += levels(i)!.grids.size;
   }
 
 }

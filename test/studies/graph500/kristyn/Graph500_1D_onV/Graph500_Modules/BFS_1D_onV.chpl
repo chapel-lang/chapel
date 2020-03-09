@@ -87,7 +87,7 @@ proc BFS ( root : vertex_id, ParentTree, G )
 
       rcLocal(Next_Level)!.previous = rcLocal(Active_Level);
 
-      Active_Remaining[here.id] = rcLocal(Active_Level)!.Members.numIndices:bool;
+      Active_Remaining[here.id] = rcLocal(Active_Level)!.Members.size:bool;
 
       }
     }

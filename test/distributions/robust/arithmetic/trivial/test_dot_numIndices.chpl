@@ -1,16 +1,16 @@
 use driver_arrays;
 
-writeln(Dom1D.numIndices);
-writeln(Dom2D.numIndices);
-writeln(Dom3D.numIndices);
-writeln(Dom4D.numIndices);
-writeln(Dom2D32.numIndices);
+writeln(Dom1D.size);
+writeln(Dom2D.size);
+writeln(Dom3D.size);
+writeln(Dom4D.size);
+writeln(Dom2D32.size);
 
-writeln(A1D.numElements);
-writeln(A2D.numElements);
-writeln(A3D.numElements);
-writeln(A4D.numElements);
-writeln(A2D32.numElements);
+writeln(A1D.size);
+writeln(A2D.size);
+writeln(A3D.size);
+writeln(A4D.size);
+writeln(A2D32.size);
 
 var D: domain(3) dmapped Dist3D = {1..7, 1..11, 1..13};
-writeln(D.numIndices);
+writeln(D.size);

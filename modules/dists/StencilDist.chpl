@@ -560,7 +560,7 @@ proc Stencil.getChunk(inds, locid) {
   //
   const chunk = locDist(locid).myChunk((...inds.getIndices()));
   if sanityCheckDistribution then
-    if chunk.numIndices > 0 {
+    if chunk.size > 0 {
       if targetLocsIdx(chunk.low) != locid then
         writeln("[", here.id, "] ", chunk.low, " is in my chunk but maps to ",
                 targetLocsIdx(chunk.low));
@@ -809,7 +809,7 @@ proc StencilDom.dsiBuildArray(type eltType) {
   return arr;
 }
 
-proc StencilDom.dsiNumIndices return whole.numIndices;
+proc StencilDom.dsiNumIndices return whole.size;
 proc StencilDom.dsiLow return whole.low;
 proc StencilDom.dsiHigh return whole.high;
 proc StencilDom.dsiStride return whole.stride;
@@ -895,7 +895,7 @@ proc StencilDom.setup() {
 
       myLocDom.myBlock = dist.getChunk(whole, localeIdx);
 
-      if !isZeroTuple(fluff) && myLocDom.myBlock.numIndices != 0 then {
+      if !isZeroTuple(fluff) && myLocDom.myBlock.size != 0 then {
         myLocDom.myFluff = myLocDom.myBlock.expand(fluff*abstr);
       } else {
         myLocDom.myFluff = myLocDom.myBlock;

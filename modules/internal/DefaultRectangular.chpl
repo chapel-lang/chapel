@@ -1367,7 +1367,7 @@ module DefaultRectangular {
           // from removing this line seemed inconclusive, which may indicate
           // that the check is not necessary, but it seemed like unnecessary
           // work for something with no immediate reward.
-          if allocD.numIndices > 0 {
+          if allocD.size > 0 {
             shiftedData = copy.shiftedData;
           }
         }
@@ -1409,7 +1409,7 @@ module DefaultRectangular {
           // from removing this line seemed inconclusive, which may indicate
           // that the check is not necessary, but it seemed like unnecessary
           // work for something with no immediate reward.
-          if allocD.numIndices > 0 {
+          if allocD.size > 0 {
             shiftedData = copy.shiftedData;
           }
         }
@@ -1841,7 +1841,7 @@ module DefaultRectangular {
     for param i in 1..rank do
       Blo(i) = Bdims(i).first;
 
-    const len = aView.numIndices.safeCast(size_t);
+    const len = aView.size.safeCast(size_t);
 
     if len == 0 then return;
 
@@ -2021,7 +2021,7 @@ module DefaultRectangular {
     count[stridelevels+1] *= DimSizes(1).safeCast(size_t);
 
     assert(stridelevels <= inferredRank, "BulkTransferStride: stride levels greater than rank.");
-    if stridelevels == 0 then assert(count[1] == LViewDom.numIndices, "BulkTransferStride: bulk-count incorrect for stride level of 0: ", count[1], " != ", LViewDom.numIndices);
+    if stridelevels == 0 then assert(count[1] == LViewDom.size, "BulkTransferStride: bulk-count incorrect for stride level of 0: ", count[1], " != ", LViewDom.size);
 
     countDom  = {1..stridelevels+1};
     strideDom = {1..stridelevels};

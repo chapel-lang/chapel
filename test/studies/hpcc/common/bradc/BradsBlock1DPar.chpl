@@ -68,7 +68,7 @@ class Block1DDist {
     // TODO: Create a helper function to create a domain like this for
     // arbitrary dimensions (since the k-D case is a bit harder?)
     //
-    targetLocDom = {0..#targetLocales.numElements};
+    targetLocDom = {0..#targetLocales.size};
     targetLocs = targetLocales;
 
     this.complete();
@@ -142,7 +142,7 @@ class Block1DDist {
   // Determine which locale owns a particular index
   //
   // TODO: I jotted down a note during the code review asking whether
-  // targetLocs.numElements and boundingbox.numIndices should be
+  // targetLocs.size and boundingbox.size should be
   // captured locally, or captured in the default dom/array implementation
   // or inlined.  Not sure what that point was anymore, though.  Maybe
   // someone else can help me remember it (since it was probably someone
@@ -150,7 +150,7 @@ class Block1DDist {
   //
   proc idxToLocaleInd(ind: idxType) {
     const ind0 = ind - boundingBox.low;
-    const locInd = (ind0 * targetLocs.numElements) / boundingBox.numIndices;
+    const locInd = (ind0 * targetLocs.size) / boundingBox.size;
     return locInd: index(targetLocDom);
   }
 }
@@ -207,7 +207,7 @@ class LocBlock1DDist {
     const lo = dist.boundingBox.low;
     const hi = dist.boundingBox.high;
     const numelems = hi - lo + 1;
-    const numlocs = dist.targetLocDom.numIndices;
+    const numlocs = dist.targetLocDom.size;
     const blo = if (_localeIdx == 0) then min(idxType)
                 else procToData((numelems: real * _localeIdx) / numlocs, lo);
     const bhi = if (_localeIdx == numlocs - 1) then max(idxType)
@@ -403,8 +403,8 @@ class Block1DDom {
   //
   // queries for the number of indices, low, and high bounds
   //
-  proc numIndices {
-    return whole.numIndices;
+  proc size {
+    return whole.size;
   }
 
   proc low {
@@ -494,8 +494,8 @@ class LocBlock1DDom {
   // TODO: I believe these are only used by the random number generator
   // in stream -- will they always be required once that is rewritten?
   //
-  proc numIndices {
-    return myBlock.numIndices;
+  proc size {
+    return myBlock.size;
   }
 
   proc low {
@@ -611,7 +611,7 @@ class Block1DArr {
       // May want to do something like the following:
       //      on loc {
       // but it causes deadlock -- see writeThisUsingOn.chpl
-        if (locArr(loc)!.numElements >= 1) {
+        if (locArr(loc)!.size >= 1) {
           if (first) {
             first = false;
           } else {
@@ -627,8 +627,8 @@ class Block1DArr {
   //
   // a query for the number of elements in the array
   //
-  proc numElements {
-    return dom.numIndices;
+  proc size {
+    return dom.size;
   }
 }
 
@@ -711,7 +711,7 @@ class LocBlock1DArr {
   //
   // query for the number of local array elements
   //
-  proc numElements {
-    return myElems.numElements;
+  proc size {
+    return myElems.size;
   }
 }

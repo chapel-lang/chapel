@@ -1560,9 +1560,13 @@ module ChapelArray {
     }
 
     /* Return the number of indices in this domain */
-    proc size return numIndices;
-    /* Return the number of indices in this domain */
-    proc numIndices return _value.dsiNumIndices;
+    proc size return _value.dsiNumIndices;
+    /* Deprecated - please use :proc:`size`. */
+    proc numIndices {
+      compilerWarning("'domain.numIndices' is deprecated - " +
+                      "please use 'domain.size' instead");
+      return size;
+    }
     /* Return the lowest index in this domain */
     proc low return _value.dsiLow;
     /* Return the highest index in this domain */
@@ -2189,7 +2193,7 @@ module ChapelArray {
   inline proc ==(d1: domain, d2: domain) where (isAssociativeDom(d1) &&
                                                          isAssociativeDom(d2)) {
     if d1._value == d2._value then return true;
-    if d1.numIndices != d2.numIndices then return false;
+    if d1.size != d2.size then return false;
     // Should eventually be a forall+reduction
     for idx in d1 do
       if !d2.contains(idx) then return false;
@@ -2199,7 +2203,7 @@ module ChapelArray {
   inline proc !=(d1: domain, d2: domain) where (isAssociativeDom(d1) &&
                                                          isAssociativeDom(d2)) {
     if d1._value == d2._value then return false;
-    if d1.numIndices != d2.numIndices then return true;
+    if d1.size != d2.size then return true;
     // Should eventually be a forall+reduction
     for idx in d1 do
       if !d2.contains(idx) then return true;
@@ -2209,7 +2213,7 @@ module ChapelArray {
   inline proc ==(d1: domain, d2: domain) where (isSparseDom(d1) &&
                                                          isSparseDom(d2)) {
     if d1._value == d2._value then return true;
-    if d1.numIndices != d2.numIndices then return false;
+    if d1.size != d2.size then return false;
     if d1._value.parentDom != d2._value.parentDom then return false;
     // Should eventually be a forall+reduction
     for idx in d1 do
@@ -2220,7 +2224,7 @@ module ChapelArray {
   inline proc !=(d1: domain, d2: domain) where (isSparseDom(d1) &&
                                                          isSparseDom(d2)) {
     if d1._value == d2._value then return false;
-    if d1.numIndices != d2.numIndices then return true;
+    if d1.size != d2.size then return true;
     if d1._value.parentDom != d2._value.parentDom then return true;
     // Should eventually be a forall+reduction
     for idx in d1 do
@@ -2735,11 +2739,14 @@ module ChapelArray {
       }
     }
 
-    // 1/5/10: do we need this since it always returns domain.numIndices?
+    /* Deprecated - please use :proc:`size`. */
+    proc numElements {
+      compilerWarning("'array.numElements' is deprecated - " +
+                      "please use 'array.size' instead");
+      return size;
+    }
     /* Return the number of elements in the array */
-    proc numElements return _value.dom.dsiNumIndices;
-    /* Return the number of elements in the array */
-    proc size return numElements;
+    proc size return _value.dom.dsiNumIndices;
 
     //
     // This routine determines whether an actual array argument
@@ -3006,7 +3013,7 @@ module ChapelArray {
 
     /* Return true if the array has no elements */
     proc isEmpty(): bool {
-      return this.numElements == 0;
+      return this.size == 0;
     }
 
     /* Return the first value in the array */
@@ -3150,7 +3157,7 @@ module ChapelArray {
     if this.rank != that.rank then
       return false;
 
-    if this.numElements != that.numElements then
+    if this.size != that.size then
       return false;
 
     //
@@ -3430,7 +3437,7 @@ module ChapelArray {
   where isSparseDom(sd) && d.rank==sd.rank && sd.idxType==d.idxType {
     if d.size == 0 then return;
 
-    const indCount = d.numIndices;
+    const indCount = d.size;
     var arr: [{0..#indCount}] index(sd);
 
     for (i,j) in zip(d, 0..) do arr[j] = i;

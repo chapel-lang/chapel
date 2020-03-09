@@ -4418,7 +4418,7 @@ proc file.localesForRegion(start:int(64), end:int(64)) {
     }
 
     // We found no "good" locales. So any locale is just as good as the next
-    if ret.numIndices == 0 then
+    if ret.size == 0 then
       for loc in Locales do
         ret += loc;
   }

@@ -57,7 +57,7 @@ proc main() {
 
 
 proc computeTwiddles(W) {
-  const n = W.numElements;
+  const n = W.size;
   const delta = 2.0 * atan(1.0) / n;
 
   W(0) = 1.0;
@@ -75,7 +75,7 @@ proc computeTwiddles(W) {
 // Check what the NSA supports for bit reversal
 // rename this?
 proc bitReverseShuffle(W: [?WD]) {
-  const n = WD.numIndices;
+  const n = WD.size;
   const reverse = log2(n);
   var V: [WD] W.eltType;  // BLC: rename this field?
   /* BLC: could we do this as a permutation instead?
@@ -104,7 +104,7 @@ proc bitReverse(val: ?valType, numBits = 64) {
 
 proc dfft(A, W) {
 
-  const numElements = A.numElements;
+  const numElements = A.size;
   const halfLogN = (log2(numElements))/2;
 
   fft2d(A, W, halfLogN, 1);
@@ -118,7 +118,7 @@ proc dfft(A, W) {
 
 proc fft2d(A, W, steps, phase) {
 
-  const numElements = A.numElements;
+  const numElements = A.size;
   const p = sqrt(numElements):int;
 
   var span = 1;
@@ -195,7 +195,7 @@ proc transpose(inout A:[?AD] complex) {
 }
 
 proc verifyResults(z, Z, execTime, Twiddles) {
-  const N = Z.numElements;
+  const N = Z.size;
 
   // BLC: This line wants /(complex,real) to be implemented directly:
   Z = conjg(Z) / N;

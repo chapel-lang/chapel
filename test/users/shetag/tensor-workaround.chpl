@@ -58,7 +58,7 @@ class Vector {
       a = 0.0;
     }
     else {
-      n = arg.numElements;
+      n = arg.size;
       a = arg;
     }
   }
@@ -97,7 +97,7 @@ class Vector {
 
   proc getslice(lo,hi) {
     ref aslice = a(lo..hi);
-    return new unmanaged Vector(aslice.numElements,aslice);
+    return new unmanaged Vector(aslice.size,aslice);
   }
 
   proc setslice(lo,hi,value) {
@@ -219,11 +219,11 @@ proc main() {
   writeln("v1 = ",v1);
 
   var a2 : [1..6] elemType = [i in 1..6] i;
-  var v2 = new unmanaged Vector(a2.numElements,a2);
+  var v2 = new unmanaged Vector(a2.size,a2);
   writeln("v2 = ",v2);
 
   var a3 : [1..6] elemType = [1..6] 10.0;
-  var v3 = new unmanaged Vector(a3.numElements,a3);
+  var v3 = new unmanaged Vector(a3.size,a3);
   writeln("v3 = ",v3);
 
   writeln("v1.normf() = ",v1.normf());

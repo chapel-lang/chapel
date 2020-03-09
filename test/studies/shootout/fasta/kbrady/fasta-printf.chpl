@@ -97,7 +97,7 @@ proc sumAndScale(a :[?D]) {
     p += item.p;
     item.p = p * LOOKUP_SCALE;
   }
-  a[a.numElements-1].p = LOOKUP_SCALE;
+  a[a.size-1].p = LOOKUP_SCALE;
 }
 
 // Deterministic random number generator as specified

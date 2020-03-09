@@ -1,0 +1,4 @@
+numIndicesElements.chpl:4: warning: 'domain.numIndices' is deprecated - please use 'domain.size' instead
+numIndicesElements.chpl:5: warning: 'array.numElements' is deprecated - please use 'array.size' instead
+10
+10

@@ -509,7 +509,7 @@ module LocaleModel {
       f <~> name;
     }
 
-    override proc getChildCount() return this.myLocaleSpace.numIndices;
+    override proc getChildCount() return this.myLocaleSpace.size;
 
     proc getChildSpace() return this.myLocaleSpace;
 

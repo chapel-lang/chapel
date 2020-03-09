@@ -146,7 +146,7 @@ proc LUFactorize(n : int, A : [1..n, 1..n+1] real, piv : [1..n] int) {
         updateBlockRow(tlPnl, trPnl);
 
         // update trailing submatrix (if there)
-        if(brPnl.panel.domain.numIndices > 0) {
+        if(brPnl.panel.domain.size > 0) {
             dgemm(blPnl, trPnl, brPnl);
           }
       }

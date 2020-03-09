@@ -115,15 +115,15 @@ module CSV {
       var lines = ch.lines();
       var firstLine = lines[1];
       var vals = firstLine.strip().split(sep);
-      const numRows = if skipHeader then lines.numElements - 1
-                                    else lines.numElements;
-      var A: [1..numRows, 1..vals.numElements] string;
+      const numRows = if skipHeader then lines.size - 1
+                                    else lines.size;
+      var A: [1..numRows, 1..vals.size] string;
 
       if !skipHeader {
         A[1, ..] = vals;
       }
 
-      for i in 2..lines.numElements {
+      for i in 2..lines.size {
         const line = lines[i].strip(leading=false);
         if line.size == 0 then
           continue;
