@@ -1189,6 +1189,50 @@ module ShellSort {
   }
 }
 
+// pragma "no doc"
+module TimSort {
+
+  /*
+   Sort the 1D array `Data` in-place using a sequential insertion sort
+   algorithm.
+
+   :arg Data: The array to be sorted
+   :type Data: [] `eltType`
+   :arg comparator: :ref:`Comparator <comparators>` record that defines how the
+      data is sorted.
+
+   */
+  proc timSort(name: string) {
+    writeln("this is tim sort");
+    // chpl_check_comparator(comparator, eltType);
+
+    // if Dom.rank != 1 {
+    //   compilerError("insertionSort() requires 1-D array");
+    // }
+
+    // const low = lo,
+    //       high = hi,
+    //       stride = abs(Dom.stride);
+
+    // for i in low..high by stride {
+    //   var ithVal = Data[i];
+    //   var inserted = false;
+    //   for j in low..i-stride by -stride {
+    //     if chpl_compare(ithVal, Data[j], comparator) < 0 {
+    //       Data[j+stride] = Data[j];
+    //     } else {
+    //       Data[j+stride] = ithVal;
+    //       inserted = true;
+    //       break;
+    //     }
+    //   }
+    //   if (!inserted) {
+    //     Data[low] = ithVal;
+    //   }
+    // }
+  }
+}
+
 
 pragma "no doc"
 module SampleSortHelp {
