@@ -247,6 +247,11 @@ namespace {
 
     bool isLocalVariable(Symbol* sym);
     bool shouldPropagateLifetimeTo(CallExpr* call, Symbol* sym);
+
+    bool isLifetimeShorter(Lifetime a, Lifetime b);
+    Lifetime minimumLifetime(Lifetime a, Lifetime b);
+    LifetimePair minimumLifetimePair(LifetimePair a, LifetimePair b);
+    bool isLifetimeUnspecifiedFormalOrdering(Lifetime a, Lifetime b);
   };
 
   class DeinitOrderVisitor : public AstVisitorTraverse {
@@ -326,14 +331,10 @@ static bool symbolHasInfiniteLifetime(Symbol* sym);
 static BlockStmt* getDefBlock(Symbol* sym);
 static Expr* getParentExprIncludingTaskFnCalls(Expr* cur);
 static bool isBlockWithinBlock(BlockStmt* a, BlockStmt* b);
-static bool isLifetimeUnspecifiedFormalOrdering(Lifetime a, Lifetime b);
 static constraint_t orderConstraintFromClause(Expr* expr, Symbol* a, Symbol* b);
 static constraint_t orderConstraintFromClause(FnSymbol* fn, Symbol* a, Symbol* b);
 static void printOrderConstraintFromClause(Expr* expr, Symbol* a, Symbol* b);
 static void printOrderConstraintFromClause(FnSymbol* fn, Symbol* a, Symbol* b);
-static bool isLifetimeShorter(Lifetime a, Lifetime b);
-static Lifetime minimumLifetime(Lifetime a, Lifetime b);
-static LifetimePair minimumLifetimePair(LifetimePair a, LifetimePair b);
 static Lifetime scopeLifetimeForSymbol(Symbol* sym);
 static Lifetime infiniteLifetime();
 static Lifetime unknownLifetime();
@@ -2089,7 +2090,7 @@ bool InferLifetimesVisitor::enterCallExpr(CallExpr* call) {
             gdbShouldBreakHere();
 
           LifetimePair & intrinsic = lifetimes->intrinsicLifetime[lhs];
-          intrinsic = minimumLifetimePair(intrinsic, lp);
+          intrinsic = lifetimes->minimumLifetimePair(intrinsic, lp);
         }
       }
 
@@ -2225,7 +2226,7 @@ bool InferLifetimesVisitor::enterForLoop(ForLoop* forLoop) {
           gdbShouldBreakHere();
 
         LifetimePair & intrinsic = lifetimes->intrinsicLifetime[index];
-        intrinsic = minimumLifetimePair(intrinsic, lp);
+        intrinsic = lifetimes->minimumLifetimePair(intrinsic, lp);
       }
     }
 
@@ -2235,7 +2236,7 @@ bool InferLifetimesVisitor::enterForLoop(ForLoop* forLoop) {
 
     if (method == false) {
       LifetimePair loopScope = lifetimes->intrinsicLifetimeForSymbol(index);
-      lp = minimumLifetimePair(lp, loopScope);
+      lp = lifetimes->minimumLifetimePair(lp, loopScope);
     }
 
     changed |= lifetimes->setInferredLifetimeToMin(index, lp);
@@ -2453,14 +2454,15 @@ bool EmitLifetimeErrorsVisitor::enterCallExpr(CallExpr* call) {
             if (isOrRefersBorrowedClass(formal1->getValType()) &&
                 isOrRefersBorrowedClass(formal2->getValType())) {
               if ((order == CONSTRAINT_LESS || order == CONSTRAINT_LESS_EQ) &&
-                  isLifetimeShorter(a2lp.borrowed, a1lp.borrowed)) {
+                  lifetimes->isLifetimeShorter(a2lp.borrowed, a1lp.borrowed)) {
                 error = true;
                 ref = false;
                 relevantLifetime = a2lp.borrowed;
                 relevantSymbol = actual2sym;
               } else if ((order == CONSTRAINT_GREATER ||
                           order == CONSTRAINT_GREATER_EQ) &&
-                         isLifetimeShorter(a1lp.borrowed, a2lp.borrowed)) {
+                         lifetimes->isLifetimeShorter(a1lp.borrowed,
+                                                      a2lp.borrowed)) {
                 error = true;
                 ref = false;
                 relevantLifetime = a1lp.borrowed;
@@ -2581,7 +2583,8 @@ void EmitLifetimeErrorsVisitor::emitBadAssignErrors(CallExpr* call) {
     // Setting a reference so check ref lifetimes
     if (lhsIntrinsic.referent.unknown) {
       // OK, not an error
-    } else if (isLifetimeShorter(rhsLt.referent, lhsIntrinsic.referent)) {
+    } else if (lifetimes->isLifetimeShorter(rhsLt.referent,
+                                            lhsIntrinsic.referent)) {
       emitError(call,
                 "Reference to scoped variable",
                 "would outlive the value it refers to",
@@ -2590,7 +2593,8 @@ void EmitLifetimeErrorsVisitor::emitBadAssignErrors(CallExpr* call) {
     } else if (lhsInferred.referent.unknown ||
                lhsInferred.referent.infinite) {
       // OK, not an error
-    } else if (isLifetimeShorter(rhsLt.referent, lhsInferred.referent)) {
+    } else if (lifetimes->isLifetimeShorter(rhsLt.referent,
+                                            lhsInferred.referent)) {
       emitError(call,
                 "Reference to scoped variable",
                 "would outlive the value it refers to",
@@ -2603,13 +2607,16 @@ void EmitLifetimeErrorsVisitor::emitBadAssignErrors(CallExpr* call) {
     // setting a borrow, so check borrow lifetimes
     if (lhsIntrinsic.borrowed.unknown) {
       // OK, not an error
-    } else if (isLifetimeShorter(rhsLt.borrowed, lhsIntrinsic.borrowed)) {
+    } else if (lifetimes->isLifetimeShorter(rhsLt.borrowed,
+                                            lhsIntrinsic.borrowed)) {
       emitError(call,
                 "Scoped variable",
                 "would outlive the value it is set to",
                 lhs, rhsLt.borrowed, lifetimes);
       erroredSymbols.insert(lhs);
-    } else if (isLifetimeUnspecifiedFormalOrdering(rhsLt.borrowed, lhsIntrinsic.borrowed)) {
+    } else if (lifetimes->
+                 isLifetimeUnspecifiedFormalOrdering(rhsLt.borrowed,
+                                                     lhsIntrinsic.borrowed)) {
       emitError(call,
                 "Setting borrowed formal",
                 "illegal without specifying formal lifetime constraint",
@@ -2618,13 +2625,16 @@ void EmitLifetimeErrorsVisitor::emitBadAssignErrors(CallExpr* call) {
     } else if (lhsInferred.borrowed.unknown ||
                lhsInferred.borrowed.infinite) {
       // OK, not an error
-    } else if (isLifetimeShorter(rhsLt.borrowed, lhsInferred.borrowed)) {
+    } else if (lifetimes->isLifetimeShorter(rhsLt.borrowed,
+                                            lhsInferred.borrowed)) {
       emitError(call,
                 "Scoped variable",
                 "would outlive the value it is set to",
                 lhs, rhsLt.borrowed, lifetimes);
       erroredSymbols.insert(lhs);
-    } else if (isLifetimeUnspecifiedFormalOrdering(rhsLt.borrowed, lhsInferred.borrowed)) {
+    } else if (lifetimes->
+                 isLifetimeUnspecifiedFormalOrdering(rhsLt.borrowed,
+                                                     lhsInferred.borrowed)) {
       emitError(call,
                 "Setting borrowed formal",
                 "illegal without specifying formal lifetime constraint",
@@ -2653,7 +2663,8 @@ void EmitLifetimeErrorsVisitor::emitBadSetFieldErrors(CallExpr* call) {
     // Setting a reference so check ref lifetimes
     if (lhsIntrinsic.referent.unknown) {
       // OK, not an error
-    } else if (isLifetimeShorter(rhsLt.referent, lhsIntrinsic.referent)) {
+    } else if (lifetimes->isLifetimeShorter(rhsLt.referent,
+                                            lhsIntrinsic.referent)) {
       emitError(call,
                 "Reference field",
                 "would outlive the value it refers to",
@@ -2662,7 +2673,8 @@ void EmitLifetimeErrorsVisitor::emitBadSetFieldErrors(CallExpr* call) {
     } else if (lhsInferred.referent.unknown ||
                lhsInferred.referent.infinite) {
       // OK, not an error
-    } else if (isLifetimeShorter(rhsLt.referent, lhsInferred.referent)) {
+    } else if (lifetimes->isLifetimeShorter(rhsLt.referent,
+                                            lhsInferred.referent)) {
       emitError(call,
                 "Reference field",
                 "would outlive the value it refers to",
@@ -2676,7 +2688,8 @@ void EmitLifetimeErrorsVisitor::emitBadSetFieldErrors(CallExpr* call) {
     // setting a borrow, so check borrow lifetimes
     if (lhsIntrinsic.borrowed.unknown) {
       // OK, not an error
-    } else if (isLifetimeShorter(rhsLt.borrowed, lhsIntrinsic.borrowed)) {
+    } else if (lifetimes->isLifetimeShorter(rhsLt.borrowed,
+                                            lhsIntrinsic.borrowed)) {
       emitError(call,
                 "Field",
                 "would outlive the value it is set to",
@@ -2685,7 +2698,8 @@ void EmitLifetimeErrorsVisitor::emitBadSetFieldErrors(CallExpr* call) {
     } else if (lhsInferred.borrowed.unknown ||
                lhsInferred.borrowed.infinite) {
       // OK, not an error
-    } else if (isLifetimeShorter(rhsLt.borrowed, lhsInferred.borrowed)) {
+    } else if (lifetimes->isLifetimeShorter(rhsLt.borrowed,
+                                            lhsInferred.borrowed)) {
       emitError(call,
                 "Field",
                 "would outlive the value it is set to",
@@ -2722,14 +2736,15 @@ void EmitLifetimeErrorsVisitor::emitErrors() {
     if (key->isRef()) {
       if (// check if intrinsic lifetime < symbol lifetime
           (!intrinsic.referent.unknown && user &&
-           isLifetimeShorter(intrinsic.referent, scope)) ||
+           lifetimes->isLifetimeShorter(intrinsic.referent, scope)) ||
           // check if inferred lifetime < symbol lifetime
           (!inferred.referent.unknown && user &&
-           isLifetimeShorter(inferred.referent, scope)) ||
+           lifetimes->isLifetimeShorter(inferred.referent, scope)) ||
           // check if inferred lifetime < intrinsic lifetime
           (!inferred.referent.unknown &&
            !intrinsic.referent.unknown &&
-           isLifetimeShorter(inferred.referent, intrinsic.referent))) {
+           lifetimes->isLifetimeShorter(inferred.referent,
+                                        intrinsic.referent))) {
         Expr* at = key->defPoint;
         if (inferred.referent.relevantExpr)
           at = inferred.referent.relevantExpr;
@@ -2744,14 +2759,15 @@ void EmitLifetimeErrorsVisitor::emitErrors() {
     if (isOrContainsBorrowedClass(key->type)) {
       if (// check if intrinsic lifetime < symbol lifetime
           (!intrinsic.borrowed.unknown && user &&
-           isLifetimeShorter(intrinsic.borrowed, scope)) ||
+           lifetimes->isLifetimeShorter(intrinsic.borrowed, scope)) ||
           // check if inferred lifetime < symbol lifetime
           (!inferred.borrowed.unknown && user &&
-           isLifetimeShorter(inferred.borrowed, scope)) ||
+           lifetimes->isLifetimeShorter(inferred.borrowed, scope)) ||
           // check if inferred lifetime < intrinsic lifetime
           (!inferred.borrowed.unknown &&
            !intrinsic.borrowed.unknown &&
-           isLifetimeShorter(inferred.borrowed, intrinsic.borrowed))) {
+           lifetimes->isLifetimeShorter(inferred.borrowed,
+                                        intrinsic.borrowed))) {
         Expr* at = key->defPoint;
         if (inferred.borrowed.relevantExpr)
           at = inferred.borrowed.relevantExpr;
@@ -2767,7 +2783,7 @@ void EmitLifetimeErrorsVisitor::emitErrors() {
     if (isOrContainsBorrowedClass(key->type) &&
         !inferred.borrowed.unknown &&
         !inferred.referent.unknown &&
-        isLifetimeShorter(inferred.borrowed, inferred.referent)) {
+        lifetimes->isLifetimeShorter(inferred.borrowed, inferred.referent)) {
       Expr* at = key->defPoint;
       if (inferred.borrowed.relevantExpr)
         at = inferred.borrowed.relevantExpr;
@@ -3098,7 +3114,8 @@ static bool isBlockWithinBlock(BlockStmt* a, BlockStmt* b) {
   return false;
 }
 
-static bool isLifetimeUnspecifiedFormalOrdering(Lifetime a, Lifetime b) {
+bool LifetimeState::isLifetimeUnspecifiedFormalOrdering(Lifetime a,
+                                                        Lifetime b) {
   if (isLifetimeShorter(a, b)) // a < b
     return false;
   else if (isLifetimeShorter(b, a)) // b < a
@@ -3135,7 +3152,7 @@ static bool isLifetimeUnspecifiedFormalOrdering(Lifetime a, Lifetime b) {
    Is the lifetime of a strictly within the lifetime for b?
       - e.g. if a is declared in a block nested inside the lifetime of b
  */
-static bool isLifetimeShorter(Lifetime a, Lifetime b) {
+bool LifetimeState::isLifetimeShorter(Lifetime a, Lifetime b) {
   if (a.unknown) // a unknown, b unknown or not
     return false;
   else if (b.unknown) // a not unknown, b unknown
@@ -3188,7 +3205,7 @@ static bool isLifetimeShorter(Lifetime a, Lifetime b) {
   return false;
 }
 
-static Lifetime minimumLifetime(Lifetime a, Lifetime b) {
+Lifetime LifetimeState::minimumLifetime(Lifetime a, Lifetime b) {
   if (isLifetimeShorter(a, b))
     return a;
   else
@@ -3196,7 +3213,8 @@ static Lifetime minimumLifetime(Lifetime a, Lifetime b) {
 }
 
 
-static LifetimePair minimumLifetimePair(LifetimePair a, LifetimePair b) {
+LifetimePair LifetimeState::minimumLifetimePair(LifetimePair a,
+                                                LifetimePair b) {
   LifetimePair ret;
   ret.referent = minimumLifetime(a.referent, b.referent);
   ret.borrowed = minimumLifetime(a.borrowed, b.borrowed);
