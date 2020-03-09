@@ -708,8 +708,8 @@ static bool isStableClassType(Type* t) {
 
   if (isClass(t)) {
     // Always consider locale type unmanaged
+    // ENGIN: This never seems to trigger?
     if (ts->type == dtLocaleClass) {
-      std::cout << "Warning from scopeResolve" << std::endl;
       ok = true;
     }
     // Always consider ddata type unmanaged
