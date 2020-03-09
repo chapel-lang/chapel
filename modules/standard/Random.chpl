@@ -1197,8 +1197,14 @@ module Random {
        return;
 
        var mid = (l+r)/2;
-       mergeShuffle(arr, l, mid, seed);
-       mergeShuffle(arr, mid+1, r, seed);
+       sync {
+         begin {
+           mergeShuffle(arr, l, mid, seed);
+         }
+         begin {
+           mergeShuffle(arr, mid+1, r, seed);
+         }
+       }
        inplace(arr, l, mid-l+1, r-mid, seed);
      }
 
