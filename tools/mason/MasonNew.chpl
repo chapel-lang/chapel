@@ -40,8 +40,8 @@ proc masonNew(args) throws {
       var show = false;
       var packageName = '';
       var dirName = '';
-      var countArgs = 2;
-      for arg in args[2..] {
+      var countArgs = args.domain.low + 2;
+      for arg in args[args.domain.low + 2..] {
         countArgs += 1;
         select (arg) {
           when '-h' {
@@ -68,7 +68,7 @@ proc masonNew(args) throws {
               packageName = res[2];
               dirName = args[2];
             }
-            if packageName.length == 0 then {
+            if packageName.size == 0 then {
               dirName = arg;
               packageName = dirName;
             }

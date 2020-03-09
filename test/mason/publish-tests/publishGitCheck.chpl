@@ -6,7 +6,7 @@ use TOML;
 use MasonNew;
 
 proc main(){
-  masonNew(['new', 'publishCheck', '']);
+  masonNew(['mason', 'new', 'publishCheck']);
   var pwd = getEnv("PWD");
   here.chdir(pwd + '/publishCheck');
   if doesGitOriginExist() == false {

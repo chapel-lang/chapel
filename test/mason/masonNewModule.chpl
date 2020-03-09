@@ -10,5 +10,5 @@ proc main() {
   if isFile("./project-testSrc/src/project.chpl") {
     writeln("Project.chpl has been successfully created");
   }
-  runCommand('rm -rf project-testSrc');
+  rmTree('project-testSrc');
 }

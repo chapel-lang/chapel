@@ -4,12 +4,11 @@ use MasonUtils;
 use MasonNew;
 
 proc main(){  
-  const initArgs : [0..2] string;
   mkdir("testSrc");
-  initArgs = ['mason','init','testSrc'];
+  const initArgs = ['mason','init','testSrc'];
   masonInit(initArgs);
   
-  runCommand('rm -rf testSrc/src/testSrc.chpl');
+  remove('testSrc/src/testSrc.chpl');
   masonInit(initArgs);
 
   if isFile("./testSrc/src/testSrc.chpl") {

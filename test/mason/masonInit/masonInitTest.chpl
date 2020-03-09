@@ -3,15 +3,18 @@ use MasonInit;
 use MasonUtils;
 
 proc main(){
-  const args: [0..1] string;
-  args = ['mason', 'init'];
+  const args = ['mason', 'init'];
   masonInit(args);
 
   //check if files have been created 
   const pwd = getEnv('PWD');
   if isDir(pwd + '/src'){
       writeln("Init is correctly done");
-      runCommand('rm -rf src example test Mason.toml .git');
+      rmTree('src');
+      rmTree('example');
+      rmTree('.git');
+      rmTree('test');
+      remove('Mason.toml');
   }
   else {
     writeln("Init is incorrect");

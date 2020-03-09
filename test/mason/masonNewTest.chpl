@@ -4,8 +4,7 @@ use FileSystem;
 use MasonNew;
 
 proc main() {
-  const args : [0..2] string;
-  args = ['mason', 'new', 'Test'];
+  const args = ['mason', 'new', 'Test'];
   masonNew(args);
 
   // Confirm structure
@@ -13,7 +12,7 @@ proc main() {
   if isDir(pwd + '/Test/src') {
     if isFile(pwd + '/Test/src/Test.chpl') {
       writeln('File structure: correct');
-      runCommand('rm -rf Test');
+      rmTree('Test');
     }
   }
   else {

@@ -40,8 +40,8 @@ proc masonInit(args) throws {
     var dirName = '';
     var show = false;
     var packageName = '';
-    var countArgs = 2;
-    for arg in args[2..] {
+    var countArgs = args.domain.low + 2;
+    for arg in args[args.domain.low+2..] {
       countArgs += 1;
       select (arg) {
         when '-h' {
@@ -60,12 +60,12 @@ proc masonInit(args) throws {
           dirName = args[2];
         }
         otherwise {
-          if arg.startsWith('--name') {
+          if arg.startsWith('--name=') {
             var res = arg.split("=");
             packageName = res[2];
             dirName = args[2];
           }
-          if packageName.length == 0 then {
+          if packageName.size == 0 then {
             dirName = arg;
             packageName = dirName;
           }
@@ -136,17 +136,17 @@ proc validateInit(path: string, name: string, isNameDiff: bool, show: bool) thro
     const metafile = files(idx);
     const dir = metafile;
     if dir == "/Mason.toml" || dir == "/.gitignore" {
-      if isFile(path + dir) == false {
+      if !isFile(path + dir) {
         toBeCreated.append(dir);
       }
     }
     else if dir == "/src/" + moduleName {
-      if isFile(path + dir) == false {
+      if !isFile(path + dir) {
         toBeCreated.append(dir);
       }
     }
     else {
-      if isDir(path + dir) == false {
+      if !isDir(path + dir) {
         toBeCreated.append(dir);
       }
     }
