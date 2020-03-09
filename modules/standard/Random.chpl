@@ -1158,38 +1158,60 @@ module Random {
         return _choice(this, x, size=size, replace=replace, prob=prob);
       }
 
+      proc inplace(arr: [?D], s: int, n1: int, n2: int, seed: int) {
+
+        var i = s, j = s + n1, n = s + n1 + n2;
+
+        while (1) {
+          var k = randlc_bounded(D.idxType,
+                                 PCGRandomStreamPrivate_rngs,
+                                 seed, PCGRandomStreamPrivate_count,
+                                 0, 1);
+         if k == 0 {
+           if i == j {
+             break;
+           }
+         } else {
+           if j == n {
+             break;
+           }
+           arr[i] <=> arr[j];
+           j += 1;
+         }
+         i += 1;
+       }
+
+       while (i < n) {
+         var k = randlc_bounded(D.idxType,
+                                PCGRandomStreamPrivate_rngs,
+                                seed, PCGRandomStreamPrivate_count,
+                                s, i);
+         arr[i] <=> arr[k];
+         i += 1;
+       }
+     }
+
+     proc mergeShuffle(arr: [?D], l : int, r: int, seed : int) {
+
+       if l >= r then
+       return;
+
+       var mid = (l+r)/2;
+       mergeShuffle(arr, l, mid, seed);
+       mergeShuffle(arr, mid+1, r, seed);
+       inplace(arr, l, mid-l+1, r-mid, seed);
+     }
+
       /* Randomly shuffle a 1-D array. */
       proc shuffle(arr: [?D] ?eltType ) {
 
         if D.rank != 1 then
           compilerError("Shuffle requires 1-D array");
 
-        const low = D.alignedLow,
-              stride = abs(D.stride);
-
         _lock();
 
-        // Fisher-Yates shuffle
-        for i in 0..#D.size by -1 {
-          var k = randlc_bounded(D.idxType,
-                                 PCGRandomStreamPrivate_rngs,
-                                 seed, PCGRandomStreamPrivate_count,
-                                 0, i);
-
-          var j = i;
-
-          // Strided case
-          if stride > 1 {
-            k *= stride;
-            j *= stride;
-          }
-
-          // Alignment offsets
-          k += low;
-          j += low;
-
-          arr[k] <=> arr[j];
-        }
+        // Merge shuffle
+        mergeShuffle(arr, 1, D.size, seed);
 
         PCGRandomStreamPrivate_count += D.size;
 
