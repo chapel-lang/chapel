@@ -712,9 +712,9 @@ module String {
   pragma "last resort"
   pragma "no doc"
   inline proc createStringWithNewBuffer(s: c_string, length=s.size,
-                                        errors=decodePolicy.strict) throws {
+                                        policy=decodePolicy.strict) throws {
     stringFactoryArgDepr();
-    return createStringWithNewBuffer(x=s, length, errors);
+    return createStringWithNewBuffer(x=s, length, policy);
   }
 
   /*
@@ -737,7 +737,7 @@ module String {
   inline proc createStringWithNewBuffer(x: bufferType,
                                         length: int, size=length+1,
                                         policy=decodePolicy.strict) throws {
-    return decodeByteBuffer(x, length, errors);
+    return decodeByteBuffer(x, length, policy);
   }
 
   pragma "last resort"
@@ -746,7 +746,7 @@ module String {
                                         length: int, size=length+1,
                                         policy=decodePolicy.strict) throws {
     stringFactoryArgDepr();
-    return createStringWithNewBuffer(x=s, length, size, errors);
+    return createStringWithNewBuffer(x=s, length, size, policy);
   }
 
   pragma "no doc"
