@@ -267,9 +267,11 @@ namespace {
       LifetimeState* lifetimes;
       std::vector<DeinitOrderNode*> orderStack;
       bool debugging;
+      int skipEarlyDeinitsForUnconditionalReturn;
 
       DeinitOrderVisitor(LifetimeState* lifetimes, bool debugging)
-        : lifetimes(lifetimes), debugging(debugging)
+        : lifetimes(lifetimes), debugging(debugging),
+          skipEarlyDeinitsForUnconditionalReturn(0)
       { }
       bool enterScope(Expr* block);
       void exitScope(Expr* block);
@@ -1738,8 +1740,13 @@ bool DeinitOrderVisitor::enterBlockStmt(BlockStmt* node) {
   return true;
 }
 void DeinitOrderVisitor::exitBlockStmt(BlockStmt* node) {
+  if (node->id == 198342)
+    gdbShouldBreakHere();
+
   if (!node->isScopeless() && !isCondStmt(node->parentExpr)) {
     exitScope(node);
+  } else {
+    addToDeinitOrderTree(&lifetimes->blockOrder[node], orderStack.front());
   }
 }
 bool DeinitOrderVisitor::enterForallStmt(ForallStmt* node) {
@@ -1807,48 +1814,51 @@ bool DeinitOrderVisitor::enterCondStmt(CondStmt* cond) {
   if (cond->thenStmt != NULL) {
     bool returns = containsUnconditionalReturn(cond->thenStmt);
 
-    if (returns == false) {
-      DeinitOrderNode* thenNode = new DeinitOrderNode(cond->thenStmt);
-      orderStack.back()->nestedOrder = thenNode;
-      orderStack.push_back(thenNode);
+    if (returns)
+      skipEarlyDeinitsForUnconditionalReturn++;
 
-      if (debugging) {
-        printOrderSummary(orderStack);
-        printf(" cond then %i\n", cond->thenStmt->id);
-      }
+    DeinitOrderNode* thenNode = new DeinitOrderNode(cond->thenStmt);
+    orderStack.back()->nestedOrder = thenNode;
+    orderStack.push_back(thenNode);
 
-      cond->thenStmt->accept(this);
-
-      INT_ASSERT(orderStack.back() == thenNode);
-      clearDeinitOrderNodeSubtree(thenNode);
-      orderStack.pop_back();
-    } else if (debugging) {
+    if (debugging) {
       printOrderSummary(orderStack);
-      printf(" skipping cond then %i\n", cond->thenStmt->id);
+      printf(" cond then %i skip=%i\n", cond->thenStmt->id, (int) returns);
     }
+
+    cond->thenStmt->accept(this);
+
+    INT_ASSERT(orderStack.back() == thenNode);
+    clearDeinitOrderNodeSubtree(thenNode);
+    orderStack.pop_back();
+
+    if (returns)
+      skipEarlyDeinitsForUnconditionalReturn--;
+
   }
   if (cond->elseStmt != NULL) {
     bool returns = containsUnconditionalReturn(cond->thenStmt);
 
-    if (returns == false) {
-      DeinitOrderNode* elseNode = new DeinitOrderNode(cond->elseStmt);
-      orderStack.back()->elseOrder = elseNode;
-      orderStack.push_back(elseNode);
+    if (returns)
+      skipEarlyDeinitsForUnconditionalReturn++;
 
-      if (debugging) {
-        printOrderSummary(orderStack);
-        printf(" cond else %i\n", cond->elseStmt->id);
-      }
+    DeinitOrderNode* elseNode = new DeinitOrderNode(cond->elseStmt);
+    orderStack.back()->elseOrder = elseNode;
+    orderStack.push_back(elseNode);
 
-      cond->elseStmt->accept(this);
-
-      INT_ASSERT(orderStack.back() == elseNode);
-      clearDeinitOrderNodeSubtree(elseNode);
-      orderStack.pop_back();
-    } else if (debugging) {
+    if (debugging) {
       printOrderSummary(orderStack);
-      printf(" skipping cond else %i\n", cond->elseStmt->id);
+      printf(" cond else %i skip=%i\n", cond->elseStmt->id, (int) returns);
     }
+
+    cond->elseStmt->accept(this);
+
+    INT_ASSERT(orderStack.back() == elseNode);
+    clearDeinitOrderNodeSubtree(elseNode);
+    orderStack.pop_back();
+
+    if (returns)
+      skipEarlyDeinitsForUnconditionalReturn--;
   }
 
   // any calls after the cond statement should get a new order number
@@ -1876,15 +1886,23 @@ bool DeinitOrderVisitor::enterCallExpr(CallExpr* call) {
       SymExpr* se = toSymExpr(call->get(1));
       Symbol* sym = lifetimes->getCanonicalSymbol(se->symbol());
 
-      if (debugging) {
-        printOrderSummary(orderStack);
-        printf(" deinit %s[%i] in call %i\n", sym->name, sym->id, call->id);
-      }
+      if (skipEarlyDeinitsForUnconditionalReturn == 0) {
+        if (debugging) {
+          printOrderSummary(orderStack);
+          printf(" deinit %s[%i] in call %i\n", sym->name, sym->id, call->id);
+        }
 
-      addToDeinitOrderTree(&lifetimes->order[sym], orderStack.front());
+        addToDeinitOrderTree(&lifetimes->order[sym], orderStack.front());
+      } else if (debugging) {
+        printOrderSummary(orderStack);
+        printf(" skipping deinit %s[%i] in call %i\n",
+               sym->name, sym->id, call->id);
+      }
 
       // don't advance order for auto-destroy functions themselves
       // (so that deinitialization order is not enforced in analysis)
+
+      // no need to consider nested calls
       return false;
     }
   }
@@ -1893,12 +1911,18 @@ bool DeinitOrderVisitor::enterCallExpr(CallExpr* call) {
     SymExpr* se = toSymExpr(call->get(2));
     Symbol* sym = lifetimes->getCanonicalSymbol(se->symbol());
 
-    if (debugging) {
-      printOrderSummary(orderStack);
-      printf(" copy elide %s[%i] in call %i\n", sym->name, sym->id, call->id);
-    }
+    if (skipEarlyDeinitsForUnconditionalReturn == 0) {
+      if (debugging) {
+        printOrderSummary(orderStack);
+        printf(" copy elide %s[%i] in call %i\n", sym->name, sym->id, call->id);
+      }
 
-    addToDeinitOrderTree(&lifetimes->order[sym], orderStack.front());
+      addToDeinitOrderTree(&lifetimes->order[sym], orderStack.front());
+    } else if (debugging) {
+      printOrderSummary(orderStack);
+      printf(" skipping copy elide %s[%i] in call %i\n",
+             sym->name, sym->id, call->id);
+    }
   }
 
   if (call->isPrimitive(PRIM_END_OF_STATEMENT)) {
