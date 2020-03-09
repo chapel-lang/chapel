@@ -248,6 +248,7 @@ namespace {
     bool isLocalVariable(Symbol* sym);
     bool shouldPropagateLifetimeTo(CallExpr* call, Symbol* sym);
 
+    bool helpIsLifetimeShorter(DeinitOrderNode* aNode, DeinitOrderNode* bNode);
     bool isLifetimeShorter(Lifetime a, Lifetime b);
     Lifetime minimumLifetime(Lifetime a, Lifetime b);
     LifetimePair minimumLifetimePair(LifetimePair a, LifetimePair b);
@@ -259,14 +260,19 @@ namespace {
     public:
       LifetimeState* lifetimes;
       std::vector<DeinitOrderNode*> orderStack;
+      std::vector<std::set<Symbol*> > definedStack;
       bool debugging;
 
       DeinitOrderVisitor(LifetimeState* lifetimes, bool debugging)
         : lifetimes(lifetimes), debugging(debugging)
-      { }
+      {
+        std::set<Symbol*> defined;
+        definedStack.push_back(defined); // for args e.g.
+      }
       virtual bool enterBlockStmt(BlockStmt* block);
       virtual void exitBlockStmt(BlockStmt* block);
       virtual bool enterCondStmt(CondStmt* cond);
+      virtual bool enterDefExpr(DefExpr* def);
       virtual bool enterCallExpr(CallExpr* call);
   };
 
@@ -1575,14 +1581,33 @@ static void printDeinitOrderTree(const char* prefix, DeinitOrderNode* node) {
   if (node->ast != NULL)
     astId = node->ast->id;
 
-  printf("%sorder=%i ast=%i\n", prefix, node->order, astId);
-  if (node->nestedOrder != NULL) {
-    printf("%snested:\n", prefix);
-    printDeinitOrderTree(astr(prefix, "  "), node->nestedOrder);
+  bool anyElse = false;
+  for (DeinitOrderNode* cur = node; cur != NULL; cur = cur->nestedOrder) {
+    if (cur->elseOrder)
+      anyElse = true;
   }
-  if (node->elseOrder != NULL) {
-    printf("%selse:\n", prefix);
-    printDeinitOrderTree(astr(prefix, "  "), node->elseOrder);
+
+  if (anyElse == false) {
+    printf("%s", prefix);
+    for (DeinitOrderNode* cur = node; cur != NULL; cur = cur->nestedOrder) {
+      if (cur->ast)
+        astId = cur->ast->id;
+      if (cur != node)
+        printf(".");
+      printf("%i", cur->order);
+    }
+    printf(" ast=%i\n", astId);
+  } else {
+    // print something more complex
+    printf("%sorder=%i ast=%i\n", prefix, node->order, astId);
+    if (node->nestedOrder != NULL) {
+      printf("%snested:\n", prefix);
+      printDeinitOrderTree(astr(prefix, "  "), node->nestedOrder);
+    }
+    if (node->elseOrder != NULL) {
+      printf("%selse:\n", prefix);
+      printDeinitOrderTree(astr(prefix, "  "), node->elseOrder);
+    }
   }
 }
 
@@ -1645,28 +1670,31 @@ static void addToDeinitOrderTree(DeinitOrderNode* dst, DeinitOrderNode* src) {
 
 bool DeinitOrderVisitor::enterBlockStmt(BlockStmt* block) {
 
-  if (block->isScopeless() || isCondStmt(block->parentExpr)) {
-    INT_ASSERT(!orderStack.empty());
-    return true;
-  }
+  // Add to the defined stack a place to record variables in DefExprs
+  std::set<Symbol*> defined;
+  definedStack.push_back(defined);
 
-  if (orderStack.empty()) {
-    INT_ASSERT(block->parentExpr == NULL);
-    DeinitOrderNode* next = new DeinitOrderNode(block);
-    next->order = 1;
-    orderStack.push_back(next);
-  } else {
-    // count order for block being a new statement
-    nextDeinitOrderNode(orderStack.back(), block);
+  if (!block->isScopeless() && !isCondStmt(block->parentExpr)) {
 
-    if (debugging) {
-      printOrderSummary(orderStack);
-      printf(" block %i\n", block->id);
+    if (orderStack.empty()) {
+      INT_ASSERT(block->parentExpr == NULL);
+      DeinitOrderNode* next = new DeinitOrderNode(block);
+      next->order = 1;
+      orderStack.push_back(next);
+
+    } else {
+      // count order for block being a new statement
+      nextDeinitOrderNode(orderStack.back(), block);
+
+      if (debugging) {
+        printOrderSummary(orderStack);
+        printf(" block %i\n", block->id);
+      }
+
+      DeinitOrderNode* next = new DeinitOrderNode(block);
+      orderStack.back()->nestedOrder = next;
+      orderStack.push_back(next);
     }
-
-    DeinitOrderNode* next = new DeinitOrderNode(block);
-    orderStack.back()->nestedOrder = next;
-    orderStack.push_back(next);
   }
 
   return true;
@@ -1674,14 +1702,31 @@ bool DeinitOrderVisitor::enterBlockStmt(BlockStmt* block) {
 
 void DeinitOrderVisitor::exitBlockStmt(BlockStmt* block) {
 
-  if (block->isScopeless() || isCondStmt(block->parentExpr)) {
-    // Didn't add new scope so don't try to remove one.
-    return;
-  }
-
+  INT_ASSERT(!orderStack.empty());
   DeinitOrderNode* last = orderStack.back();
   clearDeinitOrderNodeSubtree(last);
-  orderStack.pop_back();
+
+  // make sure each symbel defined in this block has an order
+  std::set<Symbol*>& defined = definedStack.back();
+  for_set (Symbol, sym, defined) {
+    if (lifetimes->order.count(sym) == 0)
+      addToDeinitOrderTree(&lifetimes->order[sym], orderStack.front());
+  }
+  definedStack.pop_back();
+  // For the top-level block, also do the same for arguments.
+  if (definedStack.size() == 1) {
+    INT_ASSERT(block->parentExpr == NULL);
+    std::set<Symbol*>& defined = definedStack.back();
+    for_set (Symbol, sym, defined) {
+      if (lifetimes->order.count(sym) == 0)
+        addToDeinitOrderTree(&lifetimes->order[sym], orderStack.front());
+    }
+    definedStack.pop_back();
+  }
+
+  // remove the orderStack added in enterBlockStmt
+  if (!block->isScopeless() && !isCondStmt(block->parentExpr))
+    orderStack.pop_back();
 
   if (!orderStack.empty()) {
     // count order for whatever calls follow block being in new statements
@@ -1772,6 +1817,26 @@ bool DeinitOrderVisitor::enterCondStmt(CondStmt* cond) {
   nextDeinitOrderNode(orderStack.back(), NULL);
 
   // already visited contained AST
+  return false;
+}
+
+bool DeinitOrderVisitor::enterDefExpr(DefExpr* def) {
+
+  // ignore label symbols
+  if (isLabelSymbol(def->sym))
+    return false;
+
+  INT_ASSERT(!definedStack.empty());
+  Symbol* sym = lifetimes->getCanonicalSymbol(def->sym);
+  if (sym != NULL && !sym->isImmediate()) {
+    if (debugging) {
+      printOrderSummary(orderStack);
+      printf(" declare %s[%i] in def %i\n", sym->name, sym->id, def->id);
+    }
+    definedStack.back().insert(sym);
+  }
+
+
   return false;
 }
 
@@ -3179,6 +3244,39 @@ bool LifetimeState::isLifetimeShorter(Lifetime a, Lifetime b) {
         return (c == CONSTRAINT_LESS || c == CONSTRAINT_LESS_EQ);
       }
     }
+
+    // Check order[aSym] vs order[bSym]
+    DeinitOrderMap::iterator aIt = order.find(aSym);
+    DeinitOrderMap::iterator bIt = order.find(bSym);
+    INT_ASSERT(aIt != order.end()); // should have been added already...
+    INT_ASSERT(bIt != order.end());
+
+    DeinitOrderNode* aNode = &aIt->second;
+    DeinitOrderNode* bNode = &aIt->second;
+    DeinitOrderNode* aCur = aNode;
+    DeinitOrderNode* bCur = bNode;
+    bool anyElse = false;
+
+    while (aCur != NULL && bCur != NULL) {
+      if (aCur->order < bCur->order)
+        return true;
+      if (aCur->order > bCur->order)
+        return false;
+
+      if (aCur->elseOrder || bCur->elseOrder)
+        anyElse = true;
+
+      aCur = aCur->nestedOrder;
+      bCur = bCur->nestedOrder;
+    }
+
+    if (anyElse == false)
+      return false;
+
+    // Otherwise, do more complex figuring for both sides of conditionals
+    return helpIsLifetimeShorter(aNode, bNode);
+
+    /*
     BlockStmt* aBlock = getDefBlock(aSym);
     BlockStmt* bBlock = getDefBlock(bSym);
     if (aBlock == bBlock) {
@@ -3199,10 +3297,29 @@ bool LifetimeState::isLifetimeShorter(Lifetime a, Lifetime b) {
         return false; // b has shorter lifetime than a
     } else {
       return isBlockWithinBlock(aBlock, bBlock);
-    }
+    }*/
   }
 
   return false;
+}
+
+bool LifetimeState::helpIsLifetimeShorter(DeinitOrderNode* aNode,
+                                          DeinitOrderNode* bNode) {
+  DeinitOrderNode* aCur = aNode;
+  DeinitOrderNode* bCur = bNode;
+
+  if (aCur->order < bCur->order)
+    return true;
+  if (aCur->order > bCur->order)
+    return false;
+
+  bool shorter = false;
+  if (aCur->nestedOrder && bCur->nestedOrder)
+    shorter |= helpIsLifetimeShorter(aCur->nestedOrder, bCur->nestedOrder);
+  if (aCur->elseOrder && bCur->elseOrder)
+    shorter |= helpIsLifetimeShorter(aCur->elseOrder, bCur->elseOrder);
+
+  return shorter;
 }
 
 Lifetime LifetimeState::minimumLifetime(Lifetime a, Lifetime b) {
