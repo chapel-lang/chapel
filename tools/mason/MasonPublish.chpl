@@ -351,7 +351,7 @@ proc branchMasonReg(username: string, name: string, safeDir: string, registryPat
 proc getPackageName() throws {
   try! {
     const toParse = open("Mason.toml", iomode.r);
-    var tomlFile = new owned(parseToml(toParse));
+    var tomlFile = owned.create(parseToml(toParse));
     const name = tomlFile['brick']!['name']!.s;
     return name;
   }
@@ -367,7 +367,7 @@ proc getPackageName() throws {
 private proc addPackageToBricks(projectLocal: string, safeDir: string, name : string,registryPath : string, isLocal : bool) throws {
   try! {
     const toParse = open(projectLocal+ "/Mason.toml", iomode.r);
-    var tomlFile:owned class? = new owned(parseToml(toParse));
+    var tomlFile:owned class? = owned.create(parseToml(toParse));
     const versionNum = tomlFile!['brick']!['version']!.s;
     if !isLocal {
       if !exists(safeDir + '/mason-registry/Bricks/') {

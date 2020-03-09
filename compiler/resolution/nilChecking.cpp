@@ -207,7 +207,9 @@ static bool isClassIshType(Symbol* sym) {
 static bool isSymbolAnalyzed(Symbol* sym) {
   return sym->isRef() ||
          isClassIshType(sym) ||
-         (isRecord(sym->type) && !sym->type->symbol->hasFlag(FLAG_POD));
+         (isRecord(sym->type) &&
+          sym->hasFlag(FLAG_MAYBE_COPY_ELIDED) &&
+          !sym->type->symbol->hasFlag(FLAG_POD));
 }
 
 // If 'call' invokes postfix!, return the result type.

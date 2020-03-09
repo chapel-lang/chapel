@@ -586,7 +586,7 @@ module Bytes {
      */
     iter items(): bytes {
       if this.isEmpty() then return;
-      for i in 1..this.len do
+      for i in this.indices do
         yield this.item[i];
     }
 
@@ -606,19 +606,19 @@ module Bytes {
       :yields: uint(8)
     */
     iter chpl_bytes(): byteType {
-      for i in 1..this.len do
+      for i in this.indices do
         yield this.byte(i);
     }
 
     /*
       Slices the :record:`bytes`. Halts if r is non-empty and not completely
-      inside the range ``1..bytes.size`` when compiled with `--checks`.
+      inside the range ``this.indices`` when compiled with `--checks`.
       `--fast` disables this check.
 
       :arg r: The range of indices the new :record:`bytes` should be made from
 
       :returns: a new :record:`bytes` that is a slice within
-                ``1..bytes.size``. If the length of `r` is zero, an empty
+                ``this.indices``. If the length of `r` is zero, an empty
                 :record:`bytes` is returned.
      */
     inline proc this(r: range(?)) : bytes {
@@ -691,7 +691,7 @@ module Bytes {
 
       :arg region: an optional range defining the indices to search
                    within, default is the whole. Halts if the range is not
-                   within ``1..bytes.size``
+                   within ``this.indices``
 
       :returns: the index of the first occurrence from the left of `needle`
                 within the :record:`bytes`, or 0 if the `needle` is not in the
@@ -708,7 +708,7 @@ module Bytes {
 
       :arg region: an optional range defining the indices to search within,
                    default is the whole. Halts if the range is not
-                   within ``1..bytes.size``
+                   within ``this.indices``
 
       :returns: the index of the first occurrence from the right of `needle`
                 within the :record:`bytes`, or 0 if the `needle` is not in the
@@ -726,11 +726,11 @@ module Bytes {
 
       :arg region: an optional range defining the substring to search within,
                    default is the whole. Halts if the range is not
-                   within ``1..bytes.size``
+                   within ``this.indices``
 
       :returns: the number of times `needle` occurs in the :record:`bytes`
      */
-    inline proc count(needle: bytes, region: range(?) = 1..) : int {
+    inline proc count(needle: bytes, region: range(?) = this.indices) : int {
       return _search_helper(needle, region, count=true);
     }
 
@@ -864,7 +864,7 @@ module Bytes {
         var inChunk : bool = false;
         var chunkStart : idxType;
 
-        for (i,c) in zip(1.., localThis.bytes()) {
+        for (i,c) in zip(this.indices, localThis.bytes()) {
           // emit whole string, unless all whitespace
           // TODO Engin: Why is this inside the loop?
           if noSplits {
@@ -1014,7 +1014,7 @@ module Bytes {
       var end: idxType = localThis.len;
 
       if leading {
-        label outer for (i, thisChar) in zip(1.., localThis.bytes()) {
+        label outer for (i, thisChar) in zip(this.indices, localThis.bytes()) {
           for removeChar in localChars.bytes() {
             if thisChar == removeChar {
               start = i + 1;
@@ -1031,7 +1031,7 @@ module Bytes {
         // are already past the end of the string, and then update the end
         // point as we are proven wrong.
         end = 0;
-        label outer for (i, thisChar) in zip(1.., localThis.bytes()) {
+        label outer for (i, thisChar) in zip(this.indices, localThis.bytes()) {
           for removeChar in localChars.bytes() {
             if thisChar == removeChar {
               continue outer;

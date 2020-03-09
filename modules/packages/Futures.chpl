@@ -181,7 +181,7 @@ module Futures {
      */
     proc isReady(): bool {
       if !isValid() then halt("isReady() called on invalid future");
-      return classRef!.state.peek();
+      return classRef!.state.read(memoryOrder.relaxed);
     }
 
     /*
@@ -204,7 +204,7 @@ module Futures {
       :arg taskFn: The function to invoke as a continuation.
       :returns: A future of the return type of `taskFn`
      */
-    proc andThen(taskFn) {
+    proc andThen(in taskFn) {
       /*
       if !canResolveMethod(taskFn, "this", retType) then
         compilerError("andThen() task function arguments are incompatible with parent future return type");
@@ -214,7 +214,7 @@ module Futures {
         compilerError("cannot determine return type of andThen() task function");
       var f: Future(taskFn.retType);
       f.classRef!.valid = true;
-      begin f.set(taskFn(this.get()));
+      begin with (in taskFn) f.set(taskFn(this.get()));
       return f;
     }
 
@@ -236,6 +236,11 @@ module Futures {
       if classRef == nil then halt("release() called on nil future");
       var rc = classRef!.decRefCount();
       if rc == 1 {
+        // if the future has not already been completed,
+        // wait for that to happen to avoid a use-after-free
+        if isValid() && !isReady() then
+          classRef!.state.waitFor(true);
+
         delete classRef;
         classRef = nil;
       }
@@ -272,14 +277,14 @@ module Futures {
     :arg taskFn: A function taking no arguments
     :returns: A future of the return type of `taskFn`
    */
-  proc async(taskFn) {
+  proc async(in taskFn) {
     if !canResolveMethod(taskFn, "this") then
       compilerError("async() task function (expecting arguments) provided without arguments");
     if !canResolveMethod(taskFn, "retType") then
       compilerError("cannot determine return type of andThen() task function");
     var f: Future(taskFn.retType);
     f.classRef!.valid = true;
-    begin f.set(taskFn());
+    begin with (in taskFn) f.set(taskFn());
     return f;
   }
 
@@ -291,14 +296,14 @@ module Futures {
     :arg args...: Arguments to `taskFn`
     :returns: A future of the return type of `taskFn`
    */
-  proc async(taskFn, args...) {
+  proc async(in taskFn, args...) {
     if !canResolveMethod(taskFn, "this", (...args)) then
       compilerError("async() task function provided with mismatching arguments");
     if !canResolveMethod(taskFn, "retType") then
       compilerError("cannot determine return type of async() task function");
     var f: Future(taskFn.retType);
     f.classRef!.valid = true;
-    begin f.set(taskFn((...args)));
+    begin with (in taskFn) f.set(taskFn((...args)));
     return f;
   }
 

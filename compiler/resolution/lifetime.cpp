@@ -355,6 +355,9 @@ void checkLifetimesInFunction(FnSymbol* fn) {
   // No need to check lifetimes in string literal module.
   if (fn->getModule() == stringLiteralModule)
     return;
+  // No need to lifetime check extern functions
+  if (fn->hasFlag(FLAG_EXTERN))
+    return;
 
   bool debugging = debuggingLifetimesForFn(fn);
 
@@ -2801,18 +2804,19 @@ static bool isLifetimeShorter(Lifetime a, Lifetime b) {
     BlockStmt* bBlock = getDefBlock(bSym);
     if (aBlock == bBlock) {
       // TODO: check the order of the declarations
-      bool aDeadEarly = aSym->hasFlag(FLAG_DEAD_COPY_ELISION) ||
-                        aSym->hasFlag(FLAG_DEAD_LAST_MENTION);
-      bool bDeadEarly = bSym->hasFlag(FLAG_DEAD_COPY_ELISION) ||
-                        bSym->hasFlag(FLAG_DEAD_LAST_MENTION);
-      if      (aDeadEarly == false && bDeadEarly == false)
+      bool aMaybeDeadEarly = aSym->hasFlag(FLAG_MAYBE_COPY_ELIDED) ||
+                             aSym->hasFlag(FLAG_DEAD_LAST_MENTION);
+      bool bMaybeDeadEarly = bSym->hasFlag(FLAG_MAYBE_COPY_ELIDED) ||
+                             bSym->hasFlag(FLAG_DEAD_LAST_MENTION);
+
+      if      (aMaybeDeadEarly == false && bMaybeDeadEarly == false)
         return false;  // don't worry about order for end-of-block decls
                        // doing so would prevent swap from working.
-      else if (aDeadEarly == true  && bDeadEarly == true)
+      else if (aMaybeDeadEarly == true  && bMaybeDeadEarly == true)
         return false; // don't worry about this order... yet
-      else if (aDeadEarly == true  && bDeadEarly == false)
+      else if (aMaybeDeadEarly == true  && bMaybeDeadEarly == false)
         return true; // a has shorter lifetime than b
-      else if (aDeadEarly == false && bDeadEarly == true)
+      else if (aMaybeDeadEarly == false && bMaybeDeadEarly == true)
         return false; // b has shorter lifetime than a
     } else {
       return isBlockWithinBlock(aBlock, bBlock);

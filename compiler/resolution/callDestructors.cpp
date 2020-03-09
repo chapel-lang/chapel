@@ -1214,13 +1214,16 @@ class FindInvalidGlobalUses : public AstVisitorTraverse {
     GatherGlobalsReferredTo& gatherVisitor;
     std::set<VarSymbol*> invalidGlobals;
     std::map<VarSymbol*, CallExpr*> copyElidedGlobals;
+    std::vector<VarSymbol*> errorGlobalVariables;
 
     FindInvalidGlobalUses(GatherGlobalsReferredTo& gatherVisitor)
       : gatherVisitor(gatherVisitor)
     { }
     void issueError(VarSymbol* g, BaseAST* loc);
     void gatherModuleVariables(ModuleSymbol* thisModule);
+    // stores in errorGlobalVariables the invalid variables that were used
     bool checkIfCalledUsesInvalid(CallExpr* c, bool error);
+    // stores in errorGlobalVariables the invalid variables that were used
     bool checkIfFnUsesInvalid(FnSymbol* fn);
     bool errorIfFnUsesInvalid(FnSymbol* fn, BaseAST* loc,
                               std::set<FnSymbol*>& visited);
@@ -1311,7 +1314,6 @@ bool FindInvalidGlobalUses::checkIfFnUsesInvalid(FnSymbol* startFn) {
 
   std::set<FnSymbol*> everBeenInWork;
   std::vector<FnSymbol*> work;
-  std::vector<VarSymbol*> inV;
 
   everBeenInWork.insert(startFn);
   work.push_back(startFn);
@@ -1328,7 +1330,8 @@ bool FindInvalidGlobalUses::checkIfFnUsesInvalid(FnSymbol* startFn) {
     // check for direct mentions of the globals in question
     // compute the intersection of
     // directGlobalMentions[fn] and invalidGlobals
-    if (computeIntersection(invalidGlobals, directGlobalMentions[fn], inV))
+    if (computeIntersection(invalidGlobals, directGlobalMentions[fn],
+                            errorGlobalVariables))
     {
       return true;
     }
@@ -1409,32 +1412,17 @@ bool FindInvalidGlobalUses::enterCallExpr(CallExpr* call) {
   if (invalidGlobals.size() == 0)
     return false;
 
-  SymExpr* lhsSe = NULL;
-  CallExpr* checkCall = NULL;
-
-  if (call->isPrimitive(PRIM_MOVE) ||
-      call->isPrimitive(PRIM_ASSIGN) ||
-      call->isPrimitive(PRIM_ASSIGN_ELIDED_COPY)) {
-    lhsSe = toSymExpr(call->get(1));
-    if (CallExpr* subCall = toCallExpr(call->get(2)))
-      checkCall = subCall;
-  } else {
-    // gather ret-arg etc into lhsSe
-    isInitOrReturn(call, lhsSe, checkCall);
-  }
-
-  if (checkCall == NULL) {
-    checkCall = call;
-  }
+  CallExpr* fCall = NULL;
+  VarSymbol* retVar = initsVariable(call, fCall);
 
   // First, check any actuals not being initialized in the call.
-  if (checkCall->resolvedOrVirtualFunction()) {
+  if (fCall != NULL) {
     // check an actual function call
-    for_formals_actuals(formal, actual, checkCall) {
-      if (actual == lhsSe) {
+    for_formals_actuals(formal, actual, fCall) {
+      SymExpr* actualSe = toSymExpr(actual);
+      if (actualSe && actualSe->symbol() == retVar) {
         // OK, ret-arg e.g.
-      } else if (formal->intent == INTENT_OUT ||
-                 formal->originalIntent == INTENT_OUT) {
+      } else if (initsVariableOut(formal, actual)) {
         // OK, out intents will count as initialization
       } else if (VarSymbol* var = theCheckedModuleScopeVariable(actual)) {
         if (invalidGlobals.count(var) != 0)
@@ -1443,8 +1431,9 @@ bool FindInvalidGlobalUses::enterCallExpr(CallExpr* call) {
     }
   } else {
     // check actuals used in primitives
-    for_actuals(actual, checkCall) {
-      if (actual != lhsSe) {
+    for_actuals(actual, call) {
+      SymExpr* actualSe = toSymExpr(actual);
+      if (actualSe && actualSe->symbol() != retVar) {
         if (VarSymbol* var = theCheckedModuleScopeVariable(actual))
           if (invalidGlobals.count(var) != 0)
             issueError(var, actual);
@@ -1454,22 +1443,27 @@ bool FindInvalidGlobalUses::enterCallExpr(CallExpr* call) {
 
   // Then, check any called functions
   if (checkIfCalledUsesInvalid(call, false)) {
-    USR_FATAL_CONT(call, "invalid use of module-scope variable");
+    for_vector (VarSymbol, var, errorGlobalVariables) {
+      USR_FATAL_CONT(call,
+                     "module-scope variable '%s' may be used "
+                     "before it is initialized",
+                     var->name);
+      printUseBeforeInitDetails(var);
+    }
     checkIfCalledUsesInvalid(call, true);
   }
 
   // Then, note the variables initialized by the call
+
   // move/return arg
-  if (VarSymbol* var = theCheckedModuleScopeVariable(lhsSe))
-    invalidGlobals.erase(var);
+  if (retVar && isCheckedModuleScopeVariable(retVar))
+    invalidGlobals.erase(retVar);
   // out intent
-  if (checkCall->resolvedOrVirtualFunction()) {
-    for_formals_actuals(formal, actual, checkCall) {
-      if (formal->intent == INTENT_OUT ||
-          formal->originalIntent == INTENT_OUT) {
-        if (VarSymbol* var = theCheckedModuleScopeVariable(actual))
-          invalidGlobals.erase(var);
-      }
+  if (fCall != NULL) {
+    for_formals_actuals(formal, actual, fCall) {
+      if (VarSymbol* outVar = initsVariableOut(formal, actual))
+        if (isCheckedModuleScopeVariable(outVar))
+          invalidGlobals.erase(outVar);
     }
   }
 

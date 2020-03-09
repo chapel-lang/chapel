@@ -20,6 +20,21 @@
 #ifndef RESOLUTION_ADD_AUTO_DESTROY_CALLS_H
 #define RESOLUTION_ADD_AUTO_DESTROY_CALLS_H
 
+class ArgSymbol;
+class CallExpr;
+class Expr;
+class VarSymbol;
+
 void addAutoDestroyCalls();
+
+void printUseBeforeInitDetails(VarSymbol* var);
+
+// These function during callDestructors.
+// initsVariable returns a variable initialized by a PRIM_MOVE,
+// initializer call, or ret-arg. It returns in fCall any function call. 
+VarSymbol* initsVariable(Expr* e, CallExpr*& fCall);
+// initsVariableOut should be called in a loop on the fCall returned above
+// to find variables initialized by out intent.
+VarSymbol* initsVariableOut(ArgSymbol* formal, Expr* actual);
 
 #endif

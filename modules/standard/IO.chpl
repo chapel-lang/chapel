@@ -597,6 +597,7 @@ proc stringStyleNullTerminated() {
   This method returns the appropriate :record:`iostyle` ``str_style`` value
   to indicate a string format where strings have an exact length.
  */
+pragma "no doc"
 proc stringStyleExactLen(len:int(64)) {
   return len;
 }
@@ -606,6 +607,7 @@ proc stringStyleExactLen(len:int(64)) {
   to indicate a string format where string data is preceded by a variable-byte
   length as described in :type:`iostringstyle`.
  */
+pragma "no doc"
 proc stringStyleWithVariableLength() {
   return iostringstyle.lenVb_data: int(64);
 }
@@ -1676,6 +1678,7 @@ proc open(path:string, mode:iomode, hints:iohints=IOHINT_NONE,
   return ret;
 }
 
+pragma "no doc"
 proc openplugin(pluginFile: QioPluginFile, mode:iomode,
                 seekable:bool, style:iostyle) throws {
   import HaltWrappers;
@@ -1728,25 +1731,6 @@ proc openplugin(pluginFile: QioPluginFile, mode:iomode,
     try ioerror(err, "in openplugin", path);
   }
 
-  return ret;
-}
-
-// documented in open() throws version
-pragma "no doc"
-proc open(out error:syserr, path:string="",
-          mode:iomode, hints:iohints=IOHINT_NONE,
-          style:iostyle = defaultIOStyle()):file {
-  compilerWarning("This version of open() is deprecated; " +
-                  "please switch to a throwing version");
-  error = ENOERR;
-  var ret: file;
-  try {
-    ret = open(path, mode, hints, style);
-  } catch e: SystemError {
-    error = e.err;
-  } catch {
-    error = EINVAL;
-  }
   return ret;
 }
 
@@ -4249,18 +4233,21 @@ const stdout:channel(true, iokind.dynamic, true) = stdoutInit();
 /* standard error, otherwise known as file descriptor 2 */
 const stderr:channel(true, iokind.dynamic, true) = stderrInit();
 
+pragma "no doc"
 proc stdinInit() {
   try! {
     return openfd(0).reader();
   }
 }
 
+pragma "no doc"
 proc stdoutInit() {
   try! {
     return openfp(chpl_cstdout()).writer();
   }
 }
 
+pragma "no doc"
 proc stderrInit() {
   try! {
     return openfp(chpl_cstderr()).writer();

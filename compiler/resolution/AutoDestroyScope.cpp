@@ -153,6 +153,24 @@ void AutoDestroyScope::addInitialization(VarSymbol* var) {
   }
 }
 
+VarSymbol* AutoDestroyScope::findVariableUsedBeforeInitialized(Expr* stmt) {
+
+  if (CallExpr* call = toCallExpr(stmt)) {
+    for_actuals(actual, call) {
+
+      if (SymExpr* se = toSymExpr(actual))
+        if (VarSymbol* var = toVarSymbol(se->symbol()))
+          if (var->hasFlag(FLAG_SPLIT_INITED) &&
+              !var->type->symbol->hasFlag(FLAG_EXTERN))
+            if (isVariableInitialized(var) == false &&
+                isVariableDeclared(var) == true)
+              return var;
+    }
+  }
+
+  return NULL;
+}
+
 // Forget about initializations for outer variables initialized
 // in this scope. The variables will no longer be considered initialized.
 // This matters for split-init and conditionals.
@@ -316,80 +334,85 @@ static void findCopy(CallExpr* call, VarSymbol* var,
 }
 
 static void deinitializeOrCopyElide(Expr* before, Expr* after, VarSymbol* var) {
-  if (FnSymbol* autoDestroyFn = autoDestroyMap.get(var->type)) {
-    INT_ASSERT(autoDestroyFn->hasFlag(FLAG_AUTO_DESTROY_FN));
+  if (isAutoDestroyedVariable(var) == false)
+    return; // nothing to do for variables not to be auto-destroyed
 
-    CallExpr* copyToElide = NULL;
-    Symbol* copyToLhs = NULL;
+  FnSymbol* autoDestroyFn = autoDestroyMap.get(var->type);
+  if (autoDestroyFn == NULL)
+    return; // nothing to do if there is no auto-destroy fn
 
-    // Check to see if copy-elision is possible.
-    if (fNoCopyElision == false) {
-      // variable is dead at last mention.
-      // is copy-initialization the last mention of this variable?
-      // (Don't consider the end-of-statement marker for the copy-init itself)
+  INT_ASSERT(autoDestroyFn->hasFlag(FLAG_AUTO_DESTROY_FN));
 
-      std::vector<SymExpr*> symExprs;
+  CallExpr* copyToElide = NULL;
+  Symbol* copyToLhs = NULL;
 
-      // Scroll backwards finding uses of the variable.
-      Expr* cur = NULL;
-      if (after != NULL) cur = after;
-      if (before != NULL) cur = before->prev;
+  // Check to see if copy-elision is possible.
+  if (fNoCopyElision == false) {
+    // variable is dead at last mention.
+    // is copy-initialization the last mention of this variable?
+    // (Don't consider the end-of-statement marker for the copy-init itself)
 
-      bool foundEndOfStatementMentioning = false;
+    std::vector<SymExpr*> symExprs;
 
-      while (cur != NULL) {
-        if (isCallExpr(cur) || isDefExpr(cur)) {
-          CallExpr* call = toCallExpr(cur);
+    // Scroll backwards finding uses of the variable.
+    Expr* cur = NULL;
+    if (after != NULL) cur = after;
+    if (before != NULL) cur = before->prev;
 
-          symExprs.clear();
-          collectSymExprsFor(cur, var, symExprs);
-          if (symExprs.size() > 0) {
-            // Found a mention
-            if (call == NULL) {
-              break; // found a mention not in a call
-            } else {
-              // in a call
-              if (call->isPrimitive(PRIM_END_OF_STATEMENT)) {
-                // in an end of statement marker
-                if (foundEndOfStatementMentioning) {
-                  break; // stop if already encountered a statement mentioning
-                } else {
-                  foundEndOfStatementMentioning = true;
-                  // keep looking; ignore this end-of-statement
-                }
+    bool foundEndOfStatementMentioning = false;
+
+    while (cur != NULL) {
+      if (isCallExpr(cur) || isDefExpr(cur)) {
+        CallExpr* call = toCallExpr(cur);
+
+        symExprs.clear();
+        collectSymExprsFor(cur, var, symExprs);
+        if (symExprs.size() > 0) {
+          // Found a mention
+          if (call == NULL) {
+            break; // found a mention not in a call
+          } else {
+            // in a call
+            if (call->isPrimitive(PRIM_END_OF_STATEMENT)) {
+              // in an end of statement marker
+              if (foundEndOfStatementMentioning) {
+                break; // stop if already encountered a statement mentioning
               } else {
-                // in another call - check if it is a copy
-                findCopy(call, var, &copyToElide, &copyToLhs);
-
-                // stop the search if we found a mention.
-                break;
+                foundEndOfStatementMentioning = true;
+                // keep looking; ignore this end-of-statement
               }
+            } else {
+              // in another call - check if it is a copy
+              findCopy(call, var, &copyToElide, &copyToLhs);
+
+              // stop the search if we found a mention.
+              break;
             }
           }
-
-        } else {
-          // stop the search if it was a nested block
-          break;
         }
-        cur = cur->prev;
-      }
-    }
 
-    if (copyToElide == NULL) {
-      BaseAST* useLoc = before?before:after;
-      SET_LINENO(useLoc);
-      CallExpr* autoDestroy = new CallExpr(autoDestroyFn, var);
-      if (before)
-        before->insertBefore(autoDestroy);
-      else
-        after->insertAfter(autoDestroy);
-    } else {
-      SET_LINENO(copyToElide);
-      // Change the copy into a move and don't destroy the variable.
-      copyToElide->convertToNoop();
-      copyToElide->insertBefore(new CallExpr(PRIM_ASSIGN_ELIDED_COPY, copyToLhs, var));
-      var->addFlag(FLAG_DEAD_COPY_ELISION);
+      } else {
+        // stop the search if it was a nested block
+        break;
+      }
+      cur = cur->prev;
     }
+  }
+
+  if (copyToElide == NULL) {
+    BaseAST* useLoc = before?before:after;
+    SET_LINENO(useLoc);
+    CallExpr* autoDestroy = new CallExpr(autoDestroyFn, var);
+    if (before)
+      before->insertBefore(autoDestroy);
+    else
+      after->insertAfter(autoDestroy);
+  } else {
+    SET_LINENO(copyToElide);
+    // Change the copy into a move and don't destroy the variable.
+    copyToElide->convertToNoop();
+    copyToElide->insertBefore(new CallExpr(PRIM_ASSIGN_ELIDED_COPY, copyToLhs, var));
+    var->addFlag(FLAG_MAYBE_COPY_ELIDED);
   }
 }
 
@@ -523,6 +546,18 @@ bool AutoDestroyScope::isVariableInitialized(VarSymbol* var) const {
 
   return false;
 }
+
+bool AutoDestroyScope::isVariableDeclared(VarSymbol* var) const {
+  for (const AutoDestroyScope* scope = this;
+       scope != NULL;
+       scope = scope->mParent) {
+    if (scope->mDeclaredVars.count(var) > 0)
+      return true;
+  }
+
+  return false;
+}
+
 
 // Walk backwards from the current statement to determine if a sequence of
 // moves have copied a variable that is marked for auto destruction in to

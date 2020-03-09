@@ -81,6 +81,7 @@ static void        find_printModuleInit_stuff();
 static void        normalizeBase(BaseAST* base, bool addEndOfStatements);
 static void        processSyntacticDistributions(CallExpr* call);
 static void        processManagedNew(CallExpr* call);
+static void        processSyntacticTupleAssignment(CallExpr* call);
 static void        addEndOfStatementMarkers(BaseAST* base);
 static Expr*       getCallTempInsertPoint(Expr* expr);
 static void        addTypeBlocksForParentTypeOf(CallExpr* call);
@@ -506,6 +507,7 @@ static void normalizeBase(BaseAST* base, bool addEndOfStatements) {
     for_vector(CallExpr, call, calls1) {
       processSyntacticDistributions(call);
       processManagedNew(call);
+      processSyntacticTupleAssignment(call);
       if (call->isPrimitive(PRIM_TYPEOF))
         addTypeBlocksForParentTypeOf(call);
     }
@@ -1138,6 +1140,116 @@ static void processManagedNew(CallExpr* newCall) {
     }
   }
 }
+
+/************************************* | **************************************
+*                                                                             *
+* processSyntacticTupleAssignment / destructureTupleAssignment                *
+*                                                                             *
+*    (i,j) = expr;    ==>    i = expr(1);                                     *
+*                            j = expr(2);                                     *
+*                                                                             *
+* note: handles recursive tuple destructuring, (i,(j,k)) = ...                *
+*                                                                             *
+************************************** | *************************************/
+
+static void      insertDestructureStatements(Expr*     S1,
+                                             Expr*     S2,
+                                             CallExpr* lhs,
+                                             Expr*     rhs);
+static CallExpr* destructureChk(CallExpr* lhs, Expr* rhs);
+static CallExpr* destructureErr();
+static void destructureTupleAssignment(CallExpr* assign, CallExpr* lhsCall);
+
+static void processSyntacticTupleAssignment(CallExpr* call) {
+  if (call->isNamedAstr(astrSassign)) {
+    if (CallExpr* lhsCall = toCallExpr(call->get(1))) {
+      if (lhsCall->isNamed("_build_tuple")) {
+        destructureTupleAssignment(call, lhsCall);
+      }
+    }
+  }
+}
+
+static void destructureTupleAssignment(CallExpr* assign, CallExpr* lhsCall) {
+  SET_LINENO(assign);
+
+  VarSymbol* rtmp = newTemp();
+  Expr*      S1   = new CallExpr(PRIM_MOVE, rtmp, assign->get(2)->remove());
+  Expr*      S2   = new CallExpr(PRIM_NOOP);
+
+  rtmp->addFlag(FLAG_EXPR_TEMP);
+  rtmp->addFlag(FLAG_MAYBE_TYPE);
+  rtmp->addFlag(FLAG_MAYBE_PARAM);
+
+  assign->replace(S1);
+
+  S1->insertBefore(new DefExpr(rtmp));
+  S1->insertAfter(S2);
+
+  insertDestructureStatements(S1, S2, lhsCall, new SymExpr(rtmp));
+
+  S2->remove();
+}
+
+static void insertDestructureStatements(Expr*     S1,
+                                        Expr*     S2,
+                                        CallExpr* lhs,
+                                        Expr*     rhs) {
+  int       index = 0;
+  CallExpr* test  = destructureChk(lhs, rhs);
+  CallExpr* err   = destructureErr();
+
+  S1->getStmtExpr()->insertAfter(buildIfStmt(test, err));
+
+  for_actuals(expr, lhs) {
+    UnresolvedSymExpr* se = toUnresolvedSymExpr(expr->remove());
+
+    index = index + 1;
+
+    if (se == NULL || strcmp(se->unresolved, "chpl__tuple_blank") != 0) {
+      CallExpr* nextLHS = toCallExpr(expr);
+      Expr*     nextRHS = new CallExpr(rhs->copy(), new_IntSymbol(index));
+
+      if (nextLHS != NULL && nextLHS->isNamed("_build_tuple") == true) {
+        insertDestructureStatements(S1, S2, nextLHS, nextRHS);
+
+      } else {
+        VarSymbol* lhsTmp = newTemp();
+        CallExpr*  addrOf = new CallExpr(PRIM_ADDR_OF, expr);
+
+        lhsTmp->addFlag(FLAG_MAYBE_PARAM);
+
+        S1->insertBefore(new DefExpr(lhsTmp));
+        S1->insertBefore(new CallExpr(PRIM_MOVE, lhsTmp, addrOf));
+
+        S2->insertBefore(new CallExpr("=", lhsTmp, nextRHS));
+      }
+    }
+  }
+}
+
+static CallExpr* destructureChk(CallExpr* lhs, Expr* rhs) {
+  CallExpr* dot  = new CallExpr(".", rhs->copy(), new_CStringSymbol("size"));
+
+  return new CallExpr("!=", new_IntSymbol(lhs->numActuals()), dot);
+}
+
+static CallExpr* destructureErr() {
+  const char* msg  = NULL;
+  Symbol*     zero = new_IntSymbol(0);
+
+  msg = "tuple size must match the number of grouped variables";
+
+  return new CallExpr("compilerError", new_StringSymbol(msg), zero);
+}
+
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
+
+
 
 class AddEndOfStatementMarkers : public AstVisitorTraverse
 {
@@ -2286,6 +2398,8 @@ static void normalizeTypeAlias(DefExpr* defExpr) {
     emitTypeAliasInit(defExpr, var, init);
   } else {
     // handle split initialization for type aliases
+    var->addFlag(FLAG_SPLIT_INITED);
+
     for_vector(CallExpr, call, initAssigns) {
       SET_LINENO(call);
       // Consider the RHS of the '=' call to be the init expr.
@@ -2498,6 +2612,7 @@ static void normalizeVariableDefinition(DefExpr* defExpr) {
     }
   } else {
     // handle split initialization
+    var->addFlag(FLAG_SPLIT_INITED);
 
     // remove the init expression if present
     if (init != NULL)

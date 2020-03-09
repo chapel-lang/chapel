@@ -228,5 +228,5 @@ testLit7();
 // test global with out intent
 writeln("testGlobalOut");
 var globalR:R;
-acceptsOutAndReturnsNew(globalR); // should split init globalR
+acceptsOut(globalR); // should split init globalR
 writeln("end");
