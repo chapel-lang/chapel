@@ -533,19 +533,22 @@ Symbol* ResolveScope::lookupForImport(Expr* expr) const {
 
   if (UnresolvedSymExpr* uSym = toUnresolvedSymExpr(expr)) {
     const ResolveScope* ptr = NULL;
+    bool foundBadCloser = false;
     for (ptr = this; ptr != NULL && retval == NULL; ptr = ptr->mParent) {
       // Check if the module is defined in this scope
       Symbol* sym = ptr->lookupNameLocallyForImport(uSym->unresolved);
       if (ModuleSymbol* mod = toModuleSymbol(sym)) {
         if (mod->defPoint->parentSymbol != theProgram) {
           // if we're not in the root module scope, this is an improper match
-          USR_FATAL(expr, "currently unable to import nested modules without"
-                    " specifying the full path to the module");
+          USR_WARN(expr, "currently unable to import nested modules without"
+                   " specifying the full path to the module");
+          USR_PRINT(mod, "skipping module defined here");
+          foundBadCloser = true;
         } else {
           // if we are in the root module scope, then it is a proper match.
           retval = sym;
+          break;
         }
-        break;
       } else if (sym != NULL) {
         retval = sym;
         break;
@@ -556,6 +559,10 @@ Symbol* ResolveScope::lookupForImport(Expr* expr) const {
       //    or if the module being imported matches
       //    and if not, keep following the public use chains
       retval = followImportUseChains(uSym);
+    }
+
+    if (retval == NULL && foundBadCloser) {
+      USR_FATAL(expr, "No better match found");
     }
   } else if (CallExpr* call = toCallExpr(expr)) {
     if (call->isNamedAstr(astrSdot) == true) {
