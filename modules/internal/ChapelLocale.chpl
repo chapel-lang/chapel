@@ -113,8 +113,14 @@ module ChapelLocale {
     // default initializer for the locale record.
     // TODO: What is the default value for a locale?
     proc init() {
-      this._instance = here._instance;
-      this.kind = here.kind;
+      if doneCreatingLocales {
+        this._instance = here._instance;
+        this.kind = here.kind;
+      }
+      else {
+        this._instance = new unmanaged LocaleModel();
+        this.kind = localeKind.regular;
+      }
     }
 
     // this probably needs to be no doc'ed
@@ -127,7 +133,7 @@ module ChapelLocale {
     }
 
     // do we use it for anything other than the dummy locale?
-    proc init(param kind) { 
+    proc init(param kind) {
       if kind == localeKind.regular then
         this._instance = new unmanaged LocaleModel();
       else if kind == localeKind.dummy then
@@ -541,6 +547,7 @@ module ChapelLocale {
           b.wait(locIdx, flags);
           chpl_rootLocaleInitPrivate(locIdx);
           warmupRuntime();
+          doneCreatingLocales = true;
         }
       }
     }
