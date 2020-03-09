@@ -29,11 +29,12 @@ module BytesStringCommon {
        
        - **strict**: default policy; raise error
        - **replace**: replace with UTF-8 replacement character
-       - **ignore**: silently drop data
+       - **drop**: silently drop data
        - **escape**: escape invalid data by replacing each byte 0xXX with
                      codepoint 0xDCXX
+       - **ignore**: silently drop data (Deprecated)
   */
-  enum decodePolicy { strict, replace, ignore, escape }
+  enum decodePolicy { strict, replace, drop, escape, ignore }
 
   /*
      ``encodePolicy`` specifies what happens when there is escaped non-UTF8
@@ -83,10 +84,10 @@ module BytesStringCommon {
 
    It iterates over the buffer, trying to decode codepoints out of it. If there
    is an illegal sequence that doesn't correspond to any valid codepoint, the
-   behavior is determined by the `errors` argument. See the `decodePolicy`
+   behavior is determined by the `policy` argument. See the `decodePolicy`
    documentation above for the meaning of different policies.
   */
-  proc decodeByteBuffer(buf: bufferType, length: int, errors: decodePolicy)
+  proc decodeByteBuffer(buf: bufferType, length: int, policy: decodePolicy)
       throws {
 
     pragma "fn synchronization free"
@@ -120,7 +121,7 @@ module BytesStringCommon {
                                             bufToDecode, maxbytes);
 
       if decodeRet != 0 {  //decoder returns error
-        if errors == decodePolicy.strict {
+        if policy == decodePolicy.strict {
           throw new owned DecodeError();
         }
         else {
@@ -133,7 +134,7 @@ module BytesStringCommon {
           const nInvalidBytes = if nbytes==1 then nbytes else nbytes-1;
           thisIdx += nInvalidBytes;
 
-          if errors == decodePolicy.replace {
+          if policy == decodePolicy.replace {
             param replChar: int(32) = 0xfffd;
 
             // Replacement can cause the string to be larger than initially
@@ -149,7 +150,7 @@ module BytesStringCommon {
 
             decodedIdx += 3;  // replacement character is 3 bytes in UTF8
           }
-          else if errors == decodePolicy.escape {
+          else if policy == decodePolicy.escape {
 
             // encoded escape sequence is 3 bytes. And this is per invalid byte
             expectedSize += 2*nInvalidBytes;
@@ -161,7 +162,7 @@ module BytesStringCommon {
               decodedIdx += 3;
             }
           }
-          // if errors == decodePolicy.ignore, we don't do anything and skip over
+          // if policy == decodePolicy.ignore, we don't do anything and skip over
           // the invalid sequence
         }
       }
