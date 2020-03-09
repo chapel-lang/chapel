@@ -276,6 +276,8 @@ namespace {
       bool enterScope(Expr* block);
       void exitScope(Expr* block);
 
+      void noteUnconditionalReturnInParentBlocks(Expr* ret);
+
       // these are all just blocks for the analysis
       virtual bool enterBlockStmt(BlockStmt* node);
       virtual void exitBlockStmt(BlockStmt* node);
@@ -292,6 +294,7 @@ namespace {
 
       virtual bool enterCondStmt(CondStmt* cond);
       virtual bool enterCallExpr(CallExpr* call);
+      virtual bool enterGotoStmt(GotoStmt* g);
   };
 
   class GatherTempsVisitor : public AstVisitorTraverse {
@@ -1718,6 +1721,8 @@ void DeinitOrderVisitor::exitScope(Expr* block) {
   if (BlockStmt* b = toBlockStmt(block)) {
     // note the last statement in the block for use in finding the
     // deinit order of symbols defined in this block.
+    // The noteUnconditionalReturnInParentBlocks might take precedence
+    // over this one though.
     addToDeinitOrderTree(&lifetimes->blockOrder[b], orderStack.front());
   }
 
@@ -1740,9 +1745,6 @@ bool DeinitOrderVisitor::enterBlockStmt(BlockStmt* node) {
   return true;
 }
 void DeinitOrderVisitor::exitBlockStmt(BlockStmt* node) {
-  if (node->id == 198342)
-    gdbShouldBreakHere();
-
   if (!node->isScopeless() && !isCondStmt(node->parentExpr)) {
     exitScope(node);
   } else {
@@ -1781,19 +1783,36 @@ void DeinitOrderVisitor::exitForLoop(ForLoop* node) {
   exitScope(node);
 }
 
-static bool containsUnconditionalReturn(BlockStmt* block) {
+static Expr* findUnconditionalReturn(BlockStmt* block) {
   // Check, does the block always return?
   for (Expr* cur = block->body.first(); cur != NULL; cur = cur->next) {
     if (GotoStmt* g = toGotoStmt(cur))
       if (g->gotoTag == GOTO_RETURN ||
           g->gotoTag == GOTO_ERROR_HANDLING_RETURN)
-        return true;
+        return g;
+
     if (CallExpr* c = toCallExpr(cur))
       if (c->isPrimitive(PRIM_RETURN))
-        return true;
+        return c;
+
+    if (BlockStmt* b = toBlockStmt(cur))
+      if (b->blockTag == BLOCK_NORMAL)
+        if (Expr* e = findUnconditionalReturn(b))
+          return e;
+
+    if (CondStmt* c = toCondStmt(cur)) {
+      Expr* thenRet = NULL;
+      Expr* elseRet = NULL;
+      if (c->thenStmt != NULL)
+        thenRet = findUnconditionalReturn(c->thenStmt);
+      if (c->elseStmt != NULL)
+        elseRet = findUnconditionalReturn(c->elseStmt);
+      if (thenRet != NULL && elseRet != NULL)
+        return elseRet;
+    }
   }
 
-  return false;
+  return NULL;
 }
 
 bool DeinitOrderVisitor::enterCondStmt(CondStmt* cond) {
@@ -1811,10 +1830,16 @@ bool DeinitOrderVisitor::enterCondStmt(CondStmt* cond) {
     printf(" cond %i\n", cond->id);
   }
 
-  if (cond->thenStmt != NULL) {
-    bool returns = containsUnconditionalReturn(cond->thenStmt);
+  Expr* thenRet = NULL;
+  Expr* elseRet = NULL;
+  if (cond->thenStmt != NULL)
+    thenRet = findUnconditionalReturn(cond->thenStmt);
+  if (cond->elseStmt != NULL)
+    elseRet = findUnconditionalReturn(cond->elseStmt);
 
-    if (returns)
+  if (cond->thenStmt != NULL) {
+    bool skip = (thenRet != NULL && elseRet == NULL);
+    if (skip)
       skipEarlyDeinitsForUnconditionalReturn++;
 
     DeinitOrderNode* thenNode = new DeinitOrderNode(cond->thenStmt);
@@ -1823,7 +1848,7 @@ bool DeinitOrderVisitor::enterCondStmt(CondStmt* cond) {
 
     if (debugging) {
       printOrderSummary(orderStack);
-      printf(" cond then %i skip=%i\n", cond->thenStmt->id, (int) returns);
+      printf(" cond then %i skip=%i\n", cond->thenStmt->id, (int) skip);
     }
 
     cond->thenStmt->accept(this);
@@ -1832,14 +1857,13 @@ bool DeinitOrderVisitor::enterCondStmt(CondStmt* cond) {
     clearDeinitOrderNodeSubtree(thenNode);
     orderStack.pop_back();
 
-    if (returns)
+    if (skip)
       skipEarlyDeinitsForUnconditionalReturn--;
-
   }
   if (cond->elseStmt != NULL) {
-    bool returns = containsUnconditionalReturn(cond->thenStmt);
+    bool skip = (elseRet != NULL && thenRet == NULL);
 
-    if (returns)
+    if (skip)
       skipEarlyDeinitsForUnconditionalReturn++;
 
     DeinitOrderNode* elseNode = new DeinitOrderNode(cond->elseStmt);
@@ -1848,7 +1872,7 @@ bool DeinitOrderVisitor::enterCondStmt(CondStmt* cond) {
 
     if (debugging) {
       printOrderSummary(orderStack);
-      printf(" cond else %i skip=%i\n", cond->elseStmt->id, (int) returns);
+      printf(" cond else %i skip=%i\n", cond->elseStmt->id, (int) skip);
     }
 
     cond->elseStmt->accept(this);
@@ -1857,7 +1881,7 @@ bool DeinitOrderVisitor::enterCondStmt(CondStmt* cond) {
     clearDeinitOrderNodeSubtree(elseNode);
     orderStack.pop_back();
 
-    if (returns)
+    if (skip)
       skipEarlyDeinitsForUnconditionalReturn--;
   }
 
@@ -1866,6 +1890,23 @@ bool DeinitOrderVisitor::enterCondStmt(CondStmt* cond) {
 
   // already visited contained AST
   return false;
+}
+
+void DeinitOrderVisitor::noteUnconditionalReturnInParentBlocks(Expr* r) {
+  // Go up blocks, avoiding loops and conditionals, marking their
+  // end point in blockOrder.
+
+  for (Expr* e = r; e != NULL; e = e->parentExpr) {
+    if (BlockStmt* b = toBlockStmt(e)) {
+      if (b->blockTag == BLOCK_NORMAL)
+        addToDeinitOrderTree(&lifetimes->blockOrder[b], orderStack.front());
+      else
+        return;
+    }
+
+    if (isCondStmt(e) || isForallStmt(e) || isLoopStmt(e))
+      return;
+  }
 }
 
 bool DeinitOrderVisitor::enterCallExpr(CallExpr* call) {
@@ -1929,6 +1970,10 @@ bool DeinitOrderVisitor::enterCallExpr(CallExpr* call) {
     nextDeinitOrderNode(orderStack.back(), call);
   }
 
+  if (call->isPrimitive(PRIM_RETURN)) {
+    noteUnconditionalReturnInParentBlocks(call);
+  }
+
   if (debugging) {
     printOrderSummary(orderStack);
     if (call->isPrimitive(PRIM_END_OF_STATEMENT))
@@ -1940,6 +1985,21 @@ bool DeinitOrderVisitor::enterCallExpr(CallExpr* call) {
   // no need to visit nested calls
   return false;
 }
+
+bool DeinitOrderVisitor::enterGotoStmt(GotoStmt* g) {
+  if (g->gotoTag == GOTO_RETURN ||
+      g->gotoTag == GOTO_ERROR_HANDLING_RETURN) {
+    noteUnconditionalReturnInParentBlocks(g);
+  }
+  return false;
+}
+
+/************************************* | **************************************
+*                                                                             *
+*  IntrinsicLifetimesVisitor                                                  *
+*                                                                             *
+************************************** | *************************************/
+
 
 static bool isRecordInitOrReturn(CallExpr* call, Symbol*& lhs, CallExpr*& initOrCtor, LifetimeState* lifetimes) {
 
@@ -1958,12 +2018,6 @@ static bool isRecordInitOrReturn(CallExpr* call, Symbol*& lhs, CallExpr*& initOr
   initOrCtor = NULL;
   return false;
 }
-
-/************************************* | **************************************
-*                                                                             *
-*  IntrinsicLifetimesVisitor                                                  *
-*                                                                             *
-************************************** | *************************************/
 
 bool IntrinsicLifetimesVisitor::enterDefExpr(DefExpr* def) {
 
