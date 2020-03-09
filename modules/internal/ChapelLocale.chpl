@@ -110,6 +110,14 @@ module ChapelLocale {
 
     forwarding _value;
 
+    // default initializer for the locale record.
+    // TODO: What is the default value for a locale?
+    proc init() {
+      this._instance = here._instance;
+      this.kind = here.kind;
+    }
+
+    // this probably needs to be no doc'ed
     proc init(_instance: BaseLocale) {
       this._instance = _to_unmanaged(_instance);
       if isSubtype(_instance.type, DummyLocale) then
@@ -118,7 +126,8 @@ module ChapelLocale {
         this.kind = localeKind.regular;
     }
 
-    proc init(param kind = localeKind.regular) { 
+    // do we use it for anything other than the dummy locale?
+    proc init(param kind) { 
       if kind == localeKind.regular then
         this._instance = new unmanaged LocaleModel();
       else if kind == localeKind.dummy then
