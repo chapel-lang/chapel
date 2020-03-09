@@ -56,5 +56,7 @@ module LocalesArray {
   // LocaleSpace/ because it's small enough to not matter.
   const LocaleSpace = Locales.domain;
 
+  chpl_set_defaultLocale(Locales[0]._instance!);
+
 }
 

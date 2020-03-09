@@ -91,9 +91,19 @@ module ChapelLocale {
             && subloc != c_sublocid_any
             && subloc != c_sublocid_all);
   
-  enum localeKind { regular, any, nilLocale, dummy };
+  /*
+    regular: Has a concrete BaseLocale instance
+    nilLocale: The _instance is set to nil. Used during setup. Also, as a
+               sentinel value in locale tree operations
+    dummy: Used during initialization for `here` before it is properly setup
+    default: Used to store the default locale instance. Initially set to nil,
+             then "fixed" by LocalesArray to Locales[0]
+    any: Placeholder to represent the notion of "anywhere"
+   */
+  enum localeKind { regular, any, nilLocale, dummy, default };
 
   const nilLocale = new locale(localeKind.nilLocale);
+  var defaultLocale = new locale(localeKind.default);
 
   pragma "always RVF"
   record _locale {
@@ -109,7 +119,7 @@ module ChapelLocale {
     // TODO: What is the default value for a locale?
     proc init() {
       if doneCreatingLocales {
-        this._instance = here._instance;
+        this._instance = defaultLocale._instance;
       }
       else {
         this._instance = new unmanaged LocaleModel();
@@ -129,6 +139,8 @@ module ChapelLocale {
                       "a regular locale instance");
       else if kind == localeKind.dummy then
         this._instance = new unmanaged DummyLocale();
+      else if kind == localeKind.default then
+        this._instance = nil;
     }
 
     proc init=(other: locale) {
@@ -625,6 +637,11 @@ module ChapelLocale {
 
     origRootLocale._instance = new unmanaged RootLocale();
     (origRootLocale._instance:borrowed RootLocale?)!.setup();
+  }
+
+  pragma "no doc"
+  inline proc chpl_set_defaultLocale(_instance: unmanaged BaseLocale) {
+    defaultLocale._instance = _instance;
   }
 
   // This function sets up a private copy of rootLocale by replicating
