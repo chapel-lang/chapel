@@ -20,8 +20,10 @@
 #include "lifetime.h"
 
 #include "AstVisitorTraverse.h"
+#include "CForLoop.h"
 #include "DecoratedClassType.h"
 #include "DeferStmt.h"
+#include "DoWhileStmt.h"
 #include "driver.h"
 #include "expr.h"
 #include "ForallStmt.h"
@@ -34,6 +36,7 @@
 #include "symbol.h"
 #include "view.h"
 #include "wellknown.h"
+#include "WhileDoStmt.h"
 
 // These enable debug facilities
 static const char* debugLifetimesForFn = "";
@@ -195,6 +198,7 @@ namespace {
   typedef std::set<CallExpr*> CallExprSet;
   typedef std::set<FnSymbol*> LocalFunctionsSet;
   typedef std::map<Symbol*, DeinitOrderNode> DeinitOrderMap;
+  typedef std::map<BlockStmt*, DeinitOrderNode> DeinitOrderBlockMap;
 
   struct LifetimeState {
     // this mapping allows the pass to ignore certain compiler temps
@@ -207,6 +211,7 @@ namespace {
     // the mapping intentionally assigns several deinits at the end of a block
     // the same value.
     DeinitOrderMap order;
+    DeinitOrderBlockMap blockOrder;
 
     // We try to run the analysis as though task functions didn't
     // exist. This set is the set of functions we should consider
@@ -248,6 +253,7 @@ namespace {
     bool isLocalVariable(Symbol* sym);
     bool shouldPropagateLifetimeTo(CallExpr* call, Symbol* sym);
 
+    DeinitOrderNode* deinitOrderNodeFor(Symbol* sym);
     bool helpIsLifetimeShorter(DeinitOrderNode* aNode, DeinitOrderNode* bNode);
     bool isLifetimeShorter(Lifetime a, Lifetime b);
     Lifetime minimumLifetime(Lifetime a, Lifetime b);
@@ -260,19 +266,29 @@ namespace {
     public:
       LifetimeState* lifetimes;
       std::vector<DeinitOrderNode*> orderStack;
-      std::vector<std::set<Symbol*> > definedStack;
       bool debugging;
 
       DeinitOrderVisitor(LifetimeState* lifetimes, bool debugging)
         : lifetimes(lifetimes), debugging(debugging)
-      {
-        std::set<Symbol*> defined;
-        definedStack.push_back(defined); // for args e.g.
-      }
-      virtual bool enterBlockStmt(BlockStmt* block);
-      virtual void exitBlockStmt(BlockStmt* block);
+      { }
+      bool enterScope(Expr* block);
+      void exitScope(Expr* block);
+
+      // these are all just blocks for the analysis
+      virtual bool enterBlockStmt(BlockStmt* node);
+      virtual void exitBlockStmt(BlockStmt* node);
+      virtual bool enterForallStmt(ForallStmt* node);
+      virtual void exitForallStmt(ForallStmt* node);
+      virtual bool enterWhileDoStmt(WhileDoStmt* node);
+      virtual void exitWhileDoStmt(WhileDoStmt* node);
+      virtual bool enterDoWhileStmt(DoWhileStmt* node);
+      virtual void exitDoWhileStmt(DoWhileStmt* node);
+      virtual bool enterCForLoop(CForLoop* node);
+      virtual void exitCForLoop(CForLoop* node);
+      virtual bool enterForLoop(ForLoop* node);
+      virtual void exitForLoop(ForLoop* node);
+
       virtual bool enterCondStmt(CondStmt* cond);
-      virtual bool enterDefExpr(DefExpr* def);
       virtual bool enterCallExpr(CallExpr* call);
   };
 
@@ -1668,65 +1684,43 @@ static void addToDeinitOrderTree(DeinitOrderNode* dst, DeinitOrderNode* src) {
     addToDeinitOrderTree(dst->elseOrder, src->elseOrder);
 }
 
-bool DeinitOrderVisitor::enterBlockStmt(BlockStmt* block) {
+bool DeinitOrderVisitor::enterScope(Expr* block) {
+  if (orderStack.empty()) {
+    DeinitOrderNode* next = new DeinitOrderNode(block);
+    next->order = 1;
+    orderStack.push_back(next);
 
-  // Add to the defined stack a place to record variables in DefExprs
-  std::set<Symbol*> defined;
-  definedStack.push_back(defined);
+  } else {
+    // count order for block being a new statement
+    nextDeinitOrderNode(orderStack.back(), block);
 
-  if (!block->isScopeless() && !isCondStmt(block->parentExpr)) {
-
-    if (orderStack.empty()) {
-      INT_ASSERT(block->parentExpr == NULL);
-      DeinitOrderNode* next = new DeinitOrderNode(block);
-      next->order = 1;
-      orderStack.push_back(next);
-
-    } else {
-      // count order for block being a new statement
-      nextDeinitOrderNode(orderStack.back(), block);
-
-      if (debugging) {
-        printOrderSummary(orderStack);
-        printf(" block %i\n", block->id);
-      }
-
-      DeinitOrderNode* next = new DeinitOrderNode(block);
-      orderStack.back()->nestedOrder = next;
-      orderStack.push_back(next);
+    if (debugging) {
+      printOrderSummary(orderStack);
+      printf(" block %i\n", block->id);
     }
+
+    DeinitOrderNode* next = new DeinitOrderNode(block);
+    orderStack.back()->nestedOrder = next;
+    orderStack.push_back(next);
   }
 
   return true;
 }
 
-void DeinitOrderVisitor::exitBlockStmt(BlockStmt* block) {
+void DeinitOrderVisitor::exitScope(Expr* block) {
 
   INT_ASSERT(!orderStack.empty());
   DeinitOrderNode* last = orderStack.back();
   clearDeinitOrderNodeSubtree(last);
 
-  // make sure each symbel defined in this block has an order
-  std::set<Symbol*>& defined = definedStack.back();
-  for_set (Symbol, sym, defined) {
-    if (lifetimes->order.count(sym) == 0)
-      addToDeinitOrderTree(&lifetimes->order[sym], orderStack.front());
-  }
-  definedStack.pop_back();
-  // For the top-level block, also do the same for arguments.
-  if (definedStack.size() == 1) {
-    INT_ASSERT(block->parentExpr == NULL);
-    std::set<Symbol*>& defined = definedStack.back();
-    for_set (Symbol, sym, defined) {
-      if (lifetimes->order.count(sym) == 0)
-        addToDeinitOrderTree(&lifetimes->order[sym], orderStack.front());
-    }
-    definedStack.pop_back();
+  if (BlockStmt* b = toBlockStmt(block)) {
+    // note the last statement in the block for use in finding the
+    // deinit order of symbols defined in this block.
+    addToDeinitOrderTree(&lifetimes->blockOrder[b], orderStack.front());
   }
 
   // remove the orderStack added in enterBlockStmt
-  if (!block->isScopeless() && !isCondStmt(block->parentExpr))
-    orderStack.pop_back();
+  orderStack.pop_back();
 
   if (!orderStack.empty()) {
     // count order for whatever calls follow block being in new statements
@@ -1734,6 +1728,50 @@ void DeinitOrderVisitor::exitBlockStmt(BlockStmt* block) {
   } else {
     INT_ASSERT(block->parentExpr == NULL);
   }
+}
+
+bool DeinitOrderVisitor::enterBlockStmt(BlockStmt* node) {
+  if (!node->isScopeless() && !isCondStmt(node->parentExpr)) {
+    enterScope(node);
+  }
+
+  return true;
+}
+void DeinitOrderVisitor::exitBlockStmt(BlockStmt* node) {
+  if (!node->isScopeless() && !isCondStmt(node->parentExpr)) {
+    exitScope(node);
+  }
+}
+bool DeinitOrderVisitor::enterForallStmt(ForallStmt* node) {
+  return enterScope(node);
+}
+void DeinitOrderVisitor::exitForallStmt(ForallStmt* node) {
+  exitScope(node);
+}
+
+bool DeinitOrderVisitor::enterWhileDoStmt(WhileDoStmt* node) {
+  return enterScope(node);
+}
+void DeinitOrderVisitor::exitWhileDoStmt(WhileDoStmt* node) {
+  exitScope(node);
+}
+bool DeinitOrderVisitor::enterDoWhileStmt(DoWhileStmt* node) {
+  return enterScope(node);
+}
+void DeinitOrderVisitor::exitDoWhileStmt(DoWhileStmt* node) {
+  exitScope(node);
+}
+bool DeinitOrderVisitor::enterCForLoop(CForLoop* node) {
+  return enterScope(node);
+}
+void DeinitOrderVisitor::exitCForLoop(CForLoop* node) {
+  exitScope(node);
+}
+bool DeinitOrderVisitor::enterForLoop(ForLoop* node) {
+  return enterScope(node);
+}
+void DeinitOrderVisitor::exitForLoop(ForLoop* node) {
+  exitScope(node);
 }
 
 static bool containsUnconditionalReturn(BlockStmt* block) {
@@ -1817,26 +1855,6 @@ bool DeinitOrderVisitor::enterCondStmt(CondStmt* cond) {
   nextDeinitOrderNode(orderStack.back(), NULL);
 
   // already visited contained AST
-  return false;
-}
-
-bool DeinitOrderVisitor::enterDefExpr(DefExpr* def) {
-
-  // ignore label symbols
-  if (isLabelSymbol(def->sym))
-    return false;
-
-  INT_ASSERT(!definedStack.empty());
-  Symbol* sym = lifetimes->getCanonicalSymbol(def->sym);
-  if (sym != NULL && !sym->isImmediate()) {
-    if (debugging) {
-      printOrderSummary(orderStack);
-      printf(" declare %s[%i] in def %i\n", sym->name, sym->id, def->id);
-    }
-    definedStack.back().insert(sym);
-  }
-
-
   return false;
 }
 
@@ -3246,13 +3264,8 @@ bool LifetimeState::isLifetimeShorter(Lifetime a, Lifetime b) {
     }
 
     // Check order[aSym] vs order[bSym]
-    DeinitOrderMap::iterator aIt = order.find(aSym);
-    DeinitOrderMap::iterator bIt = order.find(bSym);
-    INT_ASSERT(aIt != order.end()); // should have been added already...
-    INT_ASSERT(bIt != order.end());
-
-    DeinitOrderNode* aNode = &aIt->second;
-    DeinitOrderNode* bNode = &aIt->second;
+    DeinitOrderNode* aNode = deinitOrderNodeFor(aSym);
+    DeinitOrderNode* bNode = deinitOrderNodeFor(bSym);
     DeinitOrderNode* aCur = aNode;
     DeinitOrderNode* bCur = bNode;
     bool anyElse = false;
@@ -3320,6 +3333,22 @@ bool LifetimeState::helpIsLifetimeShorter(DeinitOrderNode* aNode,
     shorter |= helpIsLifetimeShorter(aCur->elseOrder, bCur->elseOrder);
 
   return shorter;
+}
+
+DeinitOrderNode* LifetimeState::deinitOrderNodeFor(Symbol* sym) {
+  DeinitOrderMap::iterator it = order.find(sym);
+  if (it != order.end())
+    return &it->second;
+
+  // otherwise, use the order from the final location in the defining
+  // block as recorded in blockOrder
+  BlockStmt* block = getDefBlock(sym);
+  if (block == NULL && isArgSymbol(sym))
+    block = sym->defPoint->getFunction()->body;
+
+  DeinitOrderBlockMap::iterator it2 = blockOrder.find(block);
+  INT_ASSERT(it2 != blockOrder.end());
+  return &it2->second;
 }
 
 Lifetime LifetimeState::minimumLifetime(Lifetime a, Lifetime b) {
