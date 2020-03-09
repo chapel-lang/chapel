@@ -431,7 +431,7 @@ module ArrayViewReindex {
     // must be (or should be) some way to do it without relying on
     // methods like this...
     //
-    proc isReindexArrayView() param {
+    override proc isReindexArrayView() param {
       return true;
     }
 

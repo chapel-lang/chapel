@@ -522,7 +522,7 @@ module ArrayViewRankChange {
     // must be (or should be) some way to do it without relying on
     // methods like this...
     //
-    proc isRankChangeArrayView() param {
+    override proc isRankChangeArrayView() param {
       return true;
     }
 

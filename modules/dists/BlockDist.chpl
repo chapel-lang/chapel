@@ -1297,7 +1297,7 @@ proc type BlockDom.chpl__deserialize(data) {
            data);
 }
 
-proc BlockDom.dsiSupportsPrivatization() param return true;
+override proc BlockDom.dsiSupportsPrivatization() param return true;
 
 record BlockDomPrvData {
   var distpid;

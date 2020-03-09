@@ -160,7 +160,7 @@ module ArrayViewSlice {
     // must be (or should be) some way to do it without relying on
     // methods like this...
     //
-    proc isSliceArrayView() param {
+    override proc isSliceArrayView() param {
       return true;
     }
 

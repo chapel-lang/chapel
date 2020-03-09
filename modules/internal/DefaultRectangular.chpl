@@ -143,7 +143,7 @@ module DefaultRectangular {
     override proc dsiLinksDistribution()     return false;
 
     proc type isDefaultRectangular() param return true;
-    proc isDefaultRectangular() param return true;
+    override proc isDefaultRectangular() param return true;
 
     proc init(param rank, type idxType, param stridable, dist) {
       super.init(rank, idxType, stridable);
@@ -1797,7 +1797,7 @@ module DefaultRectangular {
     return useBulkTransferStride;
   }
 
-  proc DefaultRectangularArr.doiCanBulkTransferRankChange() param return true;
+  override proc DefaultRectangularArr.doiCanBulkTransferRankChange() param return true;
 
   proc DefaultRectangularArr.doiBulkTransferToKnown(srcDom, destClass:DefaultRectangularArr, destDom) : bool {
     return transferHelper(destClass, destDom, this, srcDom);
