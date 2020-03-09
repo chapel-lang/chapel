@@ -817,7 +817,6 @@ proc inv (ref A: [?Adom] ?eltType, overwrite=false) where usingLAPACK {
     :mod:`BLAS` implementation.
 */
 proc matPow(A: [], b) where isNumeric(b) {
-  // TODO -- flatten recursion into while-loop
   if !isIntegral(b) then
     // TODO -- support all reals with Sylvester's formula
     compilerError("matPow only support powers of integers");
@@ -842,8 +841,16 @@ private proc _expBySquaring(x: ?t, n): _wrap(t) {
   if n < 0  then halt("Negative powers not yet supported");
   else if n == 0  then return new _wrap(eye(x.domain, x.eltType));
   else if n == 1  then return new _wrap(x);
-  else if n%2 == 0  then return _expBySquaring(dot(x, x), n / 2);
-  else return new _wrap(dot(x, _expBySquaring(dot(x, x), (n - 1) / 2).value));
+  var ans = eye(x.domain, x.eltType);
+  var nx = n;
+  while(nx > 0) {
+    if(nx%2 != 0) {
+      ans = dot(ans, x);
+    }
+    x = dot(x, x);
+    nx = nx / 2;
+  }
+  return new _wrap(ans);
 }
 
 /* Return cross-product of 3-element vectors ``A`` and ``B`` with domain of
