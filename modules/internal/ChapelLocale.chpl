@@ -94,15 +94,10 @@ module ChapelLocale {
   enum localeKind { regular, any, nilLocale, dummy };
 
   const nilLocale = new locale(localeKind.nilLocale);
-  /*const anyLocale = new locale(localeKind.any);*/
 
   pragma "always RVF"
   record _locale {
-    /*pragma "owned"*/
-    /*pragma "alias scope from this"*/
     var _instance: unmanaged BaseLocale?;
-
-    var kind: localeKind;
 
     inline proc _value {
       return _instance!;
@@ -115,43 +110,32 @@ module ChapelLocale {
     proc init() {
       if doneCreatingLocales {
         this._instance = here._instance;
-        this.kind = here.kind;
       }
       else {
         this._instance = new unmanaged LocaleModel();
-        this.kind = localeKind.regular;
       }
     }
 
-    // this probably needs to be no doc'ed
+    // used internally during setup
+    pragma "no doc"
     proc init(_instance: BaseLocale) {
       this._instance = _to_unmanaged(_instance);
-      if isSubtype(_instance.type, DummyLocale) then
-        this.kind = localeKind.dummy;
-      else
-        this.kind = localeKind.regular;
     }
 
-    // do we use it for anything other than the dummy locale?
+    pragma "no doc"
     proc init(param kind) {
       if kind == localeKind.regular then
-        this._instance = new unmanaged LocaleModel();
+        compilerError("locale.init(kind) can not be used to create ",
+                      "a regular locale instance");
       else if kind == localeKind.dummy then
         this._instance = new unmanaged DummyLocale();
-      this.kind = kind;
-
-      /*this.complete();*/
-
     }
 
-    /*proc init=(other: locale) {*/
-      /*this._instance = other._instance;*/
-      /*this.kind = kind;*/
-    /*}*/
-
-    proc deinit() {
-      /*delete this._instance;*/
+    proc init=(other: locale) {
+      this._instance = other._instance;
     }
+
+    proc deinit() { }
 
     inline proc maxTaskPar { return this._instance!.maxTaskPar; }
     inline proc callStackSize { return this._instance!.callStackSize; }
@@ -161,6 +145,10 @@ module ChapelLocale {
     proc numPUs(logical: bool = false, accessible: bool = true) {
       return this._instance!.numPUs();
     }
+  } // end of record _locale
+
+  proc =(ref l1: locale, const ref l2: locale) {
+    l1._instance = l2._instance;
   }
 
   /*
@@ -729,7 +717,7 @@ module ChapelLocale {
       return (rootLocale._instance:borrowed AbstractRootLocale?)!.localeIDtoLocale(id);
     else
       // For code prior to rootLocale initialization
-      return new locale(new unmanaged DummyLocale());
+      return new locale(localeKind.dummy);
   }
 
   // the type of elements in chpl_privateObjects.
