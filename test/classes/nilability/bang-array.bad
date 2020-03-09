@@ -1,0 +1,4 @@
+bang-array.chpl:16: error: unresolved call 'Block.init(promoted expression)'
+bang-array.chpl:7: note: this candidate did not match: Block.init(targetLocales: [] locale)
+bang-array.chpl:16: note: because call actual argument #1 with type iterator
+bang-array.chpl:7: note: is passed to formal 'targetLocales: []'

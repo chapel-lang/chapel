@@ -1,0 +1,2 @@
+bug: missing compilation error for record initializer changing type
+#14945

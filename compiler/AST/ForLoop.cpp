@@ -24,6 +24,7 @@
 #include "build.h"
 #include "DeferStmt.h"
 #include "driver.h"
+#include "stringutil.h"
 
 #include <algorithm>
 
@@ -402,6 +403,24 @@ BlockStmt* ForLoop::copyBody(SymbolMap* map)
 
   return retval;
 }
+
+
+void ForLoop::copyBodyHelper(Expr* beforeHere, int64_t i, SymbolMap* map,
+                             Symbol* continueSym)
+{
+  // Replace the continue label with a per-iteration label
+  // that is at the end of that iteration.
+  LabelSymbol* continueLabel = new
+    LabelSymbol(astr("_continueLabel", istr(i)));
+  Expr* defContinueLabel = new DefExpr(continueLabel);
+
+  beforeHere->insertBefore(defContinueLabel);
+
+  map->put(continueSym, continueLabel);
+
+  defContinueLabel->insertBefore(copyBody(map));
+}
+
 
 bool ForLoop::isForLoop() const
 {

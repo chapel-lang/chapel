@@ -1,5 +1,7 @@
 .. _Chapter-Types:
 
+.. default-domain:: chpl
+
 Types
 =====
 
@@ -362,11 +364,17 @@ available:
 
 
 
-.. code-block:: chapel
+.. function:: proc enum.size: param int
 
-   proc enum.size: param int
+     Returns the number of constants in the given enumerated type.
 
-The number of constants in the given enumerated type.
+.. function:: proc enum.first: enum
+
+     Returns the first constant in the enumerated type.
+
+.. function:: proc enum.last: enum
+
+     Returns the last constant in the enumerated type.
 
 .. _Structured_Types:
 

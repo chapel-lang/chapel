@@ -9,14 +9,14 @@ class Bar : Foo
 {
   override proc doStuff(ref myList : LinkedList(int))
   {
-    writeln("doStuff: myList.length = ", myList.length);
+    writeln("doStuff: myList.size = ", myList.size);
 
     var myInt = 2;
 
     myList.append(myInt);
 
     writeln("doStuff: added '", myInt, "' to myList");
-    writeln("doStuff: myList.length = ", myList.length);
+    writeln("doStuff: myList.size = ", myList.size);
   }
 }
 
@@ -33,13 +33,13 @@ class MyClass
   {
     var bar : borrowed Foo = new borrowed Bar();
 
-    writeln("run:\t myList.length = ", myList.length);
+    writeln("run:\t myList.size = ", myList.size);
 
     writeln("run:\t calling doStuff");
 
     bar.doStuff(myList);
 
-    writeln("run:\t myList.length = ", myList.length);
+    writeln("run:\t myList.size = ", myList.size);
 
     for item in myList
     {

@@ -129,8 +129,8 @@ module BytesCasts {
                                              "' to " + t:string);
 
       // remove underscores everywhere but the first position
-      if localX.length >= 2 then
-        localX = localX[1] + localX[2..].replace(b"_", b"");
+      if localX.size >= 2 then
+        localX = localX.item(1) + localX[2..].replace(b"_", b"");
     }
 
     if localX.isEmpty() then
@@ -198,7 +198,7 @@ module BytesCasts {
   }
 
   inline proc _cleanupBytesForRealCast(type t, ref s: bytes) throws {
-    var len = s.length;
+    var len = s.size;
 
     if s.isEmpty() then
       throw new owned IllegalArgumentError("bad cast from empty bytes to " +
@@ -207,8 +207,8 @@ module BytesCasts {
     if len >= 2 && s[2..].find(b"_") != 0 {
       // Don't remove a leading underscore in the string number,
       // but remove the rest.
-      if len > 2 && s[1] == b"_" {
-        s = s[1] + s[2..].replace(b"_", b"");
+      if len > 2 && s.item(1) == b"_" {
+        s = s.item(1) + s[2..].replace(b"_", b"");
       } else {
         s = s.replace(b"_", b"");
       }

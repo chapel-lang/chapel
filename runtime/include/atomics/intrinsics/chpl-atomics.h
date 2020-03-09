@@ -22,6 +22,7 @@
 
 #include "chpltypes.h"
 #include "chpl-comp-detect-macros.h"
+#include "chpl-tasks.h"
 #include <assert.h>
 
 //
@@ -48,6 +49,8 @@ typedef uintptr_t atomic_uintptr_t;
 typedef chpl_bool atomic_bool;
 typedef SIZE_ALIGN_TYPE(uint64_t) atomic__real64;
 typedef uint32_t atomic__real32;
+
+typedef volatile uint8_t atomic_spinlock_t;
 
 #undef SIZE_ALIGN_TYPE
 
@@ -362,5 +365,26 @@ DECLARE_REAL_ATOMICS(_real64, uint64_t);
 #undef DECLARE_REAL_ATOMICS_FETCH_OPS
 #undef DECLARE_ATOMICS
 #undef DECLARE_REAL_ATOMICS
+
+
+static inline void atomic_init_spinlock_t(atomic_spinlock_t* lock) {
+  *lock = 0;
+}
+
+static inline void atomic_destroy_spinlock_t(atomic_spinlock_t* lock) { }
+
+static inline chpl_bool atomic_try_lock_spinlock_t(atomic_spinlock_t* lock) {
+  return !*lock && !__sync_lock_test_and_set(lock, 1);
+}
+
+static inline void atomic_lock_spinlock_t(atomic_spinlock_t* lock) {
+  while(!atomic_try_lock_spinlock_t(lock)) {
+    chpl_task_yield();
+  }
+}
+
+static inline void atomic_unlock_spinlock_t(atomic_spinlock_t* lock) {
+  __sync_lock_release(lock);
+}
 
 #endif // _chpl_atomics_h_

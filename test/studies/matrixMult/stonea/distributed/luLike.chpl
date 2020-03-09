@@ -26,6 +26,7 @@ config const n = 10;
 const localesAcross = sqrt(numLocales) : int;
 const blkSize = n / localesAcross : int;
 
+// can we change WrappedArray to a record?
 class WrappedArray {
     proc init() { }
 
@@ -48,14 +49,14 @@ proc luLikeMultiply(
     bLocales   : subdomain(localesDom),
     solLocales : subdomain(localesDom))
 {
-    var rowCopies : [solLocales] unmanaged WrappedArray;
-    var colCopies : [solLocales] unmanaged WrappedArray;
+    var rowCopies : [solLocales] owned WrappedArray?;
+    var colCopies : [solLocales] owned WrappedArray?;
 
     // initialize row and col copies
     coforall (locRow, locCol) in solLocales do on myLocales[locRow,locCol] {
-        rowCopies[locRow, locCol] = new unmanaged WrappedArray(
+        rowCopies[locRow, locCol] = new WrappedArray(
             (locRow-1)*blkSize+1, 1, blkSize, blkSize);
-        colCopies[locRow, locCol] = new unmanaged WrappedArray(
+        colCopies[locRow, locCol] = new WrappedArray(
             1, (locCol-1)*blkSize+1, blkSize, blkSize);
     }
 
@@ -66,7 +67,7 @@ proc luLikeMultiply(
     forall (locRow, locCol) in aLocales do on myLocales[locRow,locCol] {
         // broadcast a region to other locales on the same row
         forall col in solLocales.dim(2) {
-            rowCopies[locRow, col].data[A[locRow, locCol].dom] =
+            rowCopies[locRow, col]!.data[A[locRow, locCol].dom] =
                 A[locRow,locCol].data;
         }
     }
@@ -74,15 +75,15 @@ proc luLikeMultiply(
     forall (locRow, locCol) in bLocales do on myLocales[locRow,locCol] {
         // broadcast b region to other locales on the same col
         forall row in solLocales.dim(1) {
-            colCopies[row, locCol].data[A[locRow, locCol].dom] =
+            colCopies[row, locCol]!.data[A[locRow, locCol].dom] =
                 A[locRow,locCol].data;
         }
     }
 
     // do local matrix-multiply
     forall (locRow, locCol) in solLocales do on myLocales[locRow,locCol] {
-        ref localA   = rowCopies[locRow,locCol].data;
-        ref localB   = colCopies[locRow,locCol].data;
+        ref localA   = rowCopies[locRow,locCol]!.data;
+        ref localB   = colCopies[locRow,locCol]!.data;
         ref localSol = A[locRow,locCol].data;
 
         forall i in localSol.domain.dim(1) {
@@ -94,8 +95,6 @@ proc luLikeMultiply(
             }
         }
     }
-    for r in rowCopies do delete r;
-    for c in colCopies do delete c;
 }
 
 
@@ -128,20 +127,28 @@ proc main() {
         "Matrix size must be divisible by sqrt(numLocales)");
 
     // allocate 2D mesh of locales
-    var myLocales : [1..localesAcross, 1..localesAcross] locale;
-    forall (i,j) in myLocales.domain {
-        myLocales[i,j] = Locales[(i-1) * localesAcross + (j-1)];
-    }
+    const myLocalesDomain = {1..localesAcross, 1..localesAcross};
+    var myLocales : [myLocalesDomain] locale =
+      forall (i,j) in myLocalesDomain do
+        Locales[(i-1) * localesAcross + (j-1)];
 
     // Initialize array
-    var A : [myLocales.domain] unmanaged WrappedArray;
-    forall (i,j) in myLocales.domain do on myLocales[i,j] {
-            A[i,j] = new unmanaged WrappedArray(
+    var A : [myLocalesDomain] unmanaged WrappedArray =
+      forall (i,j) in myLocalesDomain do createWrappedArray(i,j);
+
+    proc createWrappedArray(i,j) {
+      var retval: unmanaged WrappedArray?;
+      on myLocales[i,j] {
+        const Aij = new unmanaged WrappedArray(
                 (i-1)*blkSize+1, (j-1)*blkSize+1, blkSize, blkSize);
 
-        forall (locRow, locCol) in A[i,j].dom {
-                A[i,j][locRow, locCol] = locRow + locCol;
+        forall (locRow, locCol) in Aij.dom {
+                Aij[locRow, locCol] = locRow + locCol;
         }
+
+        retval = Aij;
+      }
+      return retval!;
     }
 
     var aLocales   : subdomain(myLocales.domain) = {2..localesAcross, 1..1};

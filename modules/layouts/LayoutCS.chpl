@@ -17,7 +17,7 @@
  * limitations under the License.
  */
 
-use RangeChunk only ;
+import RangeChunk;
 
 pragma "no doc"
 /* Debug flag */
@@ -168,7 +168,7 @@ class CSDom: BaseSparseDomImpl {
       // Optimized COO -> CSR/CSC
 
       // Note: only COO->CSR can take advantage of COO having sorted indices
-      this.dsiBulkAdd(rhs._instance.indices[rhs.nnzDom.low..#rhs._nnz],
+      this.dsiBulkAdd(rhs._instance._indices[rhs.nnzDom.low..#rhs._nnz],
                       dataSorted=this.compressRows, isUnique=true);
     } else {
       // Unoptimized generic case
@@ -396,7 +396,7 @@ class CSDom: BaseSparseDomImpl {
 
   override proc bulkAdd_help(inds: [?indsDom] rank*idxType,
       dataSorted=false, isUnique=false, addOn=nil:locale?) {
-    use Sort only;
+    import Sort;
 
     if addOn != nil {
       if addOn != this.locale {

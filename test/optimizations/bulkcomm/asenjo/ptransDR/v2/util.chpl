@@ -5,6 +5,7 @@ private use IO;
 
 var manylocs: bool;
 proc setupGridLocales(ensureManyLocs = false) {
+  var gridLocales: [gridDom] locale?;
   manylocs = (numLocales >= gridLocales.numElements);
 
   if manylocs {
@@ -21,6 +22,8 @@ proc setupGridLocales(ensureManyLocs = false) {
   if !manylocs && ensureManyLocs then halt("not enough locales: wanted ",
     gridLocales.numElements, ", got ", numLocales);
   writeln();
+
+  return gridLocales!;
 }
 
 // show what we have

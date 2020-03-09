@@ -597,6 +597,7 @@ proc stringStyleNullTerminated() {
   This method returns the appropriate :record:`iostyle` ``str_style`` value
   to indicate a string format where strings have an exact length.
  */
+pragma "no doc"
 proc stringStyleExactLen(len:int(64)) {
   return len;
 }
@@ -606,6 +607,7 @@ proc stringStyleExactLen(len:int(64)) {
   to indicate a string format where string data is preceded by a variable-byte
   length as described in :type:`iostringstyle`.
  */
+pragma "no doc"
 proc stringStyleWithVariableLength() {
   return iostringstyle.lenVb_data: int(64);
 }
@@ -1590,21 +1592,30 @@ proc file.tryGetPath() : string {
 
 /*
 
-Get the current length of an open file. Note that the length can always
+Get the current size of an open file. Note that the size can always
 change if other channels, tasks or programs are writing to the file.
 
-:returns: the current file length
+:returns: the current file size
 
-:throws SystemError: Thrown if the length could not be retrieved.
+:throws SystemError: Thrown if the size could not be retrieved.
 */
-proc file.length():int(64) throws {
+proc file.size:int(64) throws {
   var err:syserr = ENOERR;
   var len:int(64) = 0;
   on this.home {
     err = qio_file_length(this._file_internal, len);
   }
-  if err then try ioerror(err, "in file.length()");
+  if err then try ioerror(err, "in file.size");
   return len;
+}
+
+/*
+  Deprecated - please use :proc:`file.size`.
+*/
+proc file.length():int(64) throws {
+  compilerWarning("'file.length()' is deprecated - " +
+                  "please use 'file.size' instead");
+  return this.size;
 }
 
 // these strings are here (vs in _modestring)
@@ -1617,7 +1628,7 @@ private param _cwr = "w+";
 
 pragma "no doc"
 proc _modestring(mode:iomode) {
-  use HaltWrappers only;
+  import HaltWrappers;
   select mode {
     when iomode.r do return _r;
     when iomode.rw do return _rw;
@@ -1667,9 +1678,10 @@ proc open(path:string, mode:iomode, hints:iohints=IOHINT_NONE,
   return ret;
 }
 
+pragma "no doc"
 proc openplugin(pluginFile: QioPluginFile, mode:iomode,
                 seekable:bool, style:iostyle) throws {
-  use HaltWrappers only;
+  import HaltWrappers;
 
   extern proc qio_file_init_plugin(ref file_out:qio_file_ptr_t,
       file_info:c_void_ptr, flags:c_int, const ref style:iostyle):syserr;
@@ -1719,25 +1731,6 @@ proc openplugin(pluginFile: QioPluginFile, mode:iomode,
     try ioerror(err, "in openplugin", path);
   }
 
-  return ret;
-}
-
-// documented in open() throws version
-pragma "no doc"
-proc open(out error:syserr, path:string="",
-          mode:iomode, hints:iohints=IOHINT_NONE,
-          style:iostyle = defaultIOStyle()):file {
-  compilerWarning("This version of open() is deprecated; " +
-                  "please switch to a throwing version");
-  error = ENOERR;
-  var ret: file;
-  try {
-    ret = open(path, mode, hints, style);
-  } catch e: SystemError {
-    error = e.err;
-  } catch {
-    error = EINVAL;
-  }
   return ret;
 }
 
@@ -2165,7 +2158,6 @@ proc channel._ch_ioerror(error:syserr, msg:string) throws {
     }
   }
   try ioerror(error, msg, path, offset);
-  // c_string tmp_path leaked, but ioerror will exit
 }
 
 pragma "no doc"
@@ -2186,7 +2178,6 @@ proc channel._ch_ioerror(errstr:string, msg:string) throws {
     }
   }
   try ioerror(errstr, msg, path, offset);
-  // c_string tmp_path leaked, but ioerror will exit
 }
 
 /*
@@ -4242,18 +4233,21 @@ const stdout:channel(true, iokind.dynamic, true) = stdoutInit();
 /* standard error, otherwise known as file descriptor 2 */
 const stderr:channel(true, iokind.dynamic, true) = stderrInit();
 
+pragma "no doc"
 proc stdinInit() {
   try! {
     return openfd(0).reader();
   }
 }
 
+pragma "no doc"
 proc stdoutInit() {
   try! {
     return openfp(chpl_cstdout()).writer();
   }
 }
 
+pragma "no doc"
 proc stderrInit() {
   try! {
     return openfp(chpl_cstderr()).writer();
@@ -4344,7 +4338,7 @@ proc file.getchunk(start:int(64) = 0, end:int(64) = max(int(64))):(int(64),int(6
   var e = 0;
 
   on this.home {
-    var real_end = min(end, this.length());
+    var real_end = min(end, this.size);
     var len:int(64);
 
     err = qio_get_chunk(this._file_internal, len);
@@ -6145,7 +6139,7 @@ proc channel.writef(fmtStr: ?t, const args ...?k): bool throws
     try this.lock(); defer { this.unlock(); }
     var save_style = this._style();
     var cur:size_t = 0;
-    var len:size_t = fmtStr.length:size_t;
+    var len:size_t = fmtStr.size:size_t;
     var conv:qio_conv_t;
     var gotConv:bool;
     var style:iostyle;
@@ -6298,7 +6292,7 @@ proc channel.writef(fmtStr:?t): bool throws
     try this.lock(); defer { this.unlock(); }
     var save_style = this._style();
     var cur:size_t = 0;
-    var len:size_t = fmtStr.length:size_t;
+    var len:size_t = fmtStr.size:size_t;
     var conv:qio_conv_t;
     var gotConv:bool;
     var style:iostyle;
@@ -6365,7 +6359,7 @@ proc channel.readf(fmtStr:?t, ref args ...?k): bool throws
     try this.lock(); defer { this.unlock(); }
     var save_style = this._style(); defer { this._set_style(save_style); }
     var cur:size_t = 0;
-    var len:size_t = fmtStr.length:size_t;
+    var len:size_t = fmtStr.size:size_t;
     var conv:qio_conv_t;
     var gotConv:bool;
     var style:iostyle;
@@ -6635,7 +6629,7 @@ proc channel.readf(fmtStr:?t) throws
     try this.lock(); defer { this.unlock(); }
     var save_style = this._style(); defer { this._set_style(save_style); }
     var cur:size_t = 0;
-    var len:size_t = fmtStr.length:size_t;
+    var len:size_t = fmtStr.size:size_t;
     var conv:qio_conv_t;
     var gotConv:bool;
     var style:iostyle;
@@ -6840,7 +6834,7 @@ pragma "no doc"
 proc channel._extractMatch(m:reMatch, ref arg:bytes, ref error:syserr) {
   var cur:int(64);
   var target = m.offset:int;
-  var len = m.length;
+  var len = m.size;
 
   // If there was no match, return the default value of the type
   if !m.matched {
@@ -6963,7 +6957,7 @@ proc channel._ch_handle_captures(matches:_ddata(qio_regexp_string_piece_t),
 
 // documented in the error= captures version
 pragma "no doc"
-proc channel.search(re:regexp, ref error:syserr):reMatch
+proc channel.search(re:regexp(?), ref error:syserr):reMatch
 {
   var m:reMatch;
   on this.home {
@@ -7004,7 +6998,7 @@ proc channel.search(re:regexp, ref error:syserr):reMatch
 
 // documented in the error= version
 pragma "no doc"
-proc channel.search(re:regexp):reMatch throws
+proc channel.search(re:regexp(?)):reMatch throws
 {
   var e:syserr = ENOERR;
   var ret = this.search(re, error=e);
@@ -7027,7 +7021,7 @@ proc channel.search(re:regexp):reMatch throws
                    in the regular expression.
     :returns: the region of the channel that matched
  */
-proc channel.search(re:regexp, ref captures ...?k): reMatch throws
+proc channel.search(re:regexp(?), ref captures ...?k): reMatch throws
 {
   var m:reMatch;
   var err:syserr = ENOERR;
@@ -7071,7 +7065,7 @@ proc channel.search(re:regexp, ref captures ...?k): reMatch throws
 
 // documented in the capture group version
 pragma "no doc"
-proc channel.match(re:regexp, ref error:syserr):reMatch
+proc channel.match(re:regexp(?), ref error:syserr):reMatch
 {
   var m:reMatch;
   on this.home {
@@ -7111,7 +7105,7 @@ proc channel.match(re:regexp, ref error:syserr):reMatch
 
 // documented in the error= version
 pragma "no doc"
-proc channel.match(re:regexp):reMatch throws
+proc channel.match(re:regexp(?)):reMatch throws
 {
   var e:syserr = ENOERR;
   var ret = this.match(re, error=e);
@@ -7133,7 +7127,7 @@ proc channel.match(re:regexp):reMatch throws
    :returns: the region of the channel that matched
  */
 
-proc channel.match(re:regexp, ref captures ...?k, ref error:syserr):reMatch
+proc channel.match(re:regexp(?), ref captures ...?k, ref error:syserr):reMatch
 {
   var m:reMatch;
   on this.home {
@@ -7175,7 +7169,7 @@ proc channel.match(re:regexp, ref captures ...?k, ref error:syserr):reMatch
 }
 // documented in the error= version
 pragma "no doc"
-proc channel.match(re:regexp, ref captures ...?k):reMatch throws
+proc channel.match(re:regexp(?), ref captures ...?k):reMatch throws
 {
   var e:syserr = ENOERR;
   var ret = this.match(re, (...captures), error=e);
@@ -7212,7 +7206,7 @@ proc channel.match(re:regexp, ref captures ...?k):reMatch throws
    :yields: tuples of :record:`Regexp.reMatch` objects, where the first element
             is the whole pattern.  The tuples will have 1+captures elements.
  */
-iter channel.matches(re:regexp, param captures=0, maxmatches:int = max(int))
+iter channel.matches(re:regexp(?), param captures=0, maxmatches:int = max(int))
 // TODO: should be throws
 {
   var m:reMatch;

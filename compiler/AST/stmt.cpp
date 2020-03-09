@@ -866,6 +866,7 @@ const char* gotoTagToString(GotoTag gotoTag) {
     case GOTO_ITER_END:       return "iter-end";
     case GOTO_ERROR_HANDLING: return "error-handling";
     case GOTO_BREAK_ERROR_HANDLING: return "break-error-handling";
+    case GOTO_ERROR_HANDLING_RETURN: return "error-handling-return";
   }
   INT_FATAL("invalid gotoTag %d", (int)gotoTag);
   return NULL;
@@ -1045,7 +1046,7 @@ Expr* GotoStmt::getFirstExpr() {
 }
 
 bool GotoStmt::isGotoReturn() const {
-  return gotoTag == GOTO_RETURN;
+  return gotoTag == GOTO_RETURN || gotoTag == GOTO_ERROR_HANDLING_RETURN;
 }
 
 LabelSymbol* GotoStmt::gotoTarget() const {

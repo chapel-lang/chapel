@@ -656,6 +656,7 @@ typedef struct gasneti_srcdesc_s *gex_AM_SrcDesc_t;
   #endif
     void *               _addr;
     size_t               _size;
+    // TODO: Want to omit _thread field when unused, but GASNETI_THREADINFO_OPT not defined until much later
     gasnet_threadinfo_t  _thread;
     void *               _tofree; // passed to gasneti_free() when sd reset
     void *               _gex_buf; // gasnet-owned buffer, if any

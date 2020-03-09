@@ -51,19 +51,22 @@ config param MAXATOMS  = 64;
 config param POT_SHIFT = 1.0;
 
 var ReshapedDom : domain(3);
-var ReshapedLocales : [ReshapedDom] locale;
+var ReshapedLocales : [ReshapedDom] locale = setupReshapedLocales();
 
+proc setupReshapedLocales() {
 if xproc == 1 && yproc == 1 && zproc == 1 {
   use DSIUtil;
-  setupTargetLocalesArray(ReshapedDom, ReshapedLocales, Locales);
-  (xproc, yproc, zproc) = ReshapedLocales.shape;
-} else {
+  const ranges = setupTargetLocRanges(3, Locales);
+  xproc = ranges(1).size;
+  yproc = ranges(2).size;
+  zproc = ranges(3).size;
+}
   if (xproc*yproc*zproc) != numLocales then
     halt("Number of locales must match xproc * yproc * zproc: ",
          xproc, " * ", yproc, " * ", zproc, " != ", numLocales);
 
   ReshapedDom     = {1..xproc, 1..yproc, 1..zproc};
-  ReshapedLocales = reshape(Locales, ReshapedDom);
+  return reshape(Locales, ReshapedDom);
 }
 
 

@@ -282,7 +282,7 @@ class MDNode
       if D.low(d) > Domain.low(d) || D.high(d) < Domain.high(d)
       {
 
-        dim_length = Domain.dim(d).length;
+        dim_length = Domain.dim(d).size;
 
         if dim_length > max_dim_length {
           max_dim_length = dim_length;
@@ -648,7 +648,7 @@ proc MDNode.extendToContain( D: domain(rank,stridable=stridable) ) : unmanaged M
   for d in 1..rank {
     
     if D.high(d) > Domain.high(d) || D.low(d) < Domain.low(d) {
-      dim_length = Domain.dim(d).length;
+      dim_length = Domain.dim(d).size;
       
       if dim_length < min_dim_length {
         min_dim_length = dim_length;

@@ -82,7 +82,7 @@ typedef uint32_t qio_hint_t;
 #endif
 
 #ifdef _chplrt_H_
-#include "chpl-tasks.h"
+#include "chpl-atomics.h"
 
 // also export iohint_t and fdflag_t
 typedef qio_hint_t iohints;
@@ -91,7 +91,7 @@ typedef qio_fdflag_t fdflag_t;
 
 // make a re-entrant lock.
 typedef struct {
-  chpl_sync_aux_t sv;
+  atomic_spinlock_t lock;
   chpl_taskID_t owner; // task ID of owner.
   uint64_t count; // how many times owner has locked.
 } qio_lock_t;
@@ -108,12 +108,12 @@ void qio_unlock(qio_lock_t* x);
 static inline qioerr qio_lock_init(qio_lock_t* x) {
   x->owner = NULL_OWNER;
   x->count = 0;
-  chpl_sync_initAux(&x->sv);
+  atomic_init_spinlock_t(&x->lock);
   return 0;
 }
 
 static inline void qio_lock_destroy(qio_lock_t* x) {
-  chpl_sync_destroyAux(&x->sv);
+  atomic_destroy_spinlock_t(&x->lock);
 }
 
 #ifdef __cplusplus

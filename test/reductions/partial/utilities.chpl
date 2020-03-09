@@ -86,7 +86,7 @@ proc fullIdxToReducedIdx(const resDims, const srcDims, const srcIdx)
 }
 
 proc isReducedDim(const resDims, const srcDims, param dim)
-  return resDims(dim).length == 1;
+  return resDims(dim).size == 1;
 
 proc isPreservedDim(const resDims, const srcDims, param dim)
   return !isReducedDim(resDims, srcDims, dim);
@@ -99,7 +99,7 @@ proc partRedHelpCheckNumDimensions(resDims, srcDims) {
 
 proc partRedHelpCheckDimensions(resDims, srcDims) throws {
   for param dim in 1..resDims.size {
-    if resDims(dim).length == 1 ||   // reduced dimension
+    if resDims(dim).size == 1 ||   // reduced dimension
        resDims(dim) == srcDims(dim)  // preserved dimension
     then ; // OK
     else throw new owned IllegalArgumentError("the preserved dimension " + dim:string + " in the shape of the partial reduction differs from that in the array being reduced");

@@ -11,10 +11,8 @@ type indexType = int, elemType = int(64);
 // locales
 config const tl1:indexType = sqrt(numLocales):int,
              tl2:indexType = sqrt(numLocales):int;
-var tla: [0..#tl1, 0..#tl2] locale;
 var tld: bool;  // whether our targetLocales are all distinct
-
-setupTargetLocales();
+var tla: [0..#tl1, 0..#tl2] locale = setupTargetLocales();
 
 config const n = 8,
              blkSize = 2;
@@ -111,6 +109,7 @@ proc copyToDF(A:[]) {
 }
 
 proc setupTargetLocales() {
+  var tla: [0..#tl1, 0..#tl2] locale?;
 //  writeln("setting up for ", tl1, "*", tl2, " locales");
   tld = numLocales >= tla.numElements;
   if tld {
@@ -123,4 +122,5 @@ halt();
     writeln("oversubscribing Locales(0)");
     tla = Locales(0);
   }
+  return tla!;
 }

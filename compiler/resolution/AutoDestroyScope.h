@@ -31,6 +31,8 @@ public:
                            AutoDestroyScope(AutoDestroyScope* parent,
                                             const BlockStmt*  block);
 
+  void                     addFormalTemps();
+
   // adds a declaration
   void                     variableAdd(VarSymbol* var);
 
@@ -38,6 +40,8 @@ public:
 
   // adds an initialization
   void                     addInitialization(VarSymbol* var);
+
+  VarSymbol*               findVariableUsedBeforeInitialized(Expr* stmt);
 
   // Forget about initializations for outer variables initialized
   // in this scope. The variables will no longer be considered initialized.
@@ -70,16 +74,18 @@ private:
   void                     destroyOuterVariables(Expr* before,
                                                  std::set<VarSymbol*>& ignored) const;
 
-
   // Returns true if the variable has already been initialized in
   // this or a parent scope.
   bool                     isVariableInitialized(VarSymbol* var) const;
+
+  // Returns true if the variable has been declared in this or a parent scope.
+  bool                     isVariableDeclared(VarSymbol* var) const;
 
   AutoDestroyScope*        mParent;
   const BlockStmt*         mBlock;
 
   bool                     mLocalsHandled;     // Manage function epilogue
-  std::vector<VarSymbol*>  mFormalTemps;       // Temps for out/inout formals
+  std::vector<CallExpr*>   mFormalTempActions; // e.g. = back for inout
   std::vector<BaseAST*>    mLocalsAndDefers;   // VarSymbol* or DeferStmt*
   // note: mLocalsAndDefers contains both VarSymbol and DeferStmt in
   // order to create a single stack for cleanup operations to be executed.

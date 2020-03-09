@@ -19,26 +19,26 @@ proc BFS ( root : vertex_id, ParentTree, G )
   var visited$ : [vertex_domain] sync int = -1;
 
   use ReplicatedVar;
-  var Active_Level: [rcDomain] unmanaged Level_Set (Vertex_List);
-  var Next_Level: [rcDomain] unmanaged Level_Set (Vertex_List);
+  var Active_Level: [rcDomain] unmanaged Level_Set (Vertex_List)?;
+  var Next_Level: [rcDomain] unmanaged Level_Set (Vertex_List)?;
   var Active_Remaining: [LocaleSpace] bool = true;
 
   var Root_vertex : vertex_id = root;
 
   coforall loc in Locales do on loc {
     rcLocal(Active_Level) = new unmanaged Level_Set (Vertex_List);
-    rcLocal(Active_Level).previous = nil;
+    rcLocal(Active_Level)!.previous = nil;
     rcLocal(Next_Level) = new unmanaged Level_Set (Vertex_List);
-    rcLocal(Next_Level).previous = rcLocal(Active_Level);
+    rcLocal(Next_Level)!.previous = rcLocal(Active_Level);
   }
 
   on G.Vertices(root) {
-    rcLocal(Active_Level).Members.add ( root );
-    rcLocal(Next_Level).Members.clear ();
+    rcLocal(Active_Level)!.Members.add ( root );
+    rcLocal(Next_Level)!.Members.clear ();
     ParentTree[root] = root;
     visited$ (root).writeFF(1);
-    rcLocal (Active_Level).previous = nil;
-    rcLocal (Next_Level).previous = rcLocal (Active_Level);
+    rcLocal (Active_Level)!.previous = nil;
+    rcLocal (Next_Level)!.previous = rcLocal (Active_Level);
   }
 
 
@@ -49,7 +49,7 @@ proc BFS ( root : vertex_id, ParentTree, G )
     var barrier: single bool;
 
     coforall loc in Locales do on loc {
-      forall u in rcLocal(Active_Level).Members do {
+      forall u in rcLocal(Active_Level)!.Members do {
 
         forall v in G.Neighbors (u) do on v {
 
@@ -58,7 +58,7 @@ proc BFS ( root : vertex_id, ParentTree, G )
             if (visited$ (v).readFE() < 0 )
             {
                 visited$ (v).writeEF (1);
-                rcLocal(Next_Level).Members.add (v);
+                rcLocal(Next_Level)!.Members.add (v);
                 ParentTree (v) = u;
             }
             else
@@ -85,9 +85,9 @@ proc BFS ( root : vertex_id, ParentTree, G )
       rcLocal(Active_Level) = rcLocal(Next_Level);
       rcLocal(Next_Level) = new unmanaged Level_Set (Vertex_List);
 
-      rcLocal(Next_Level).previous = rcLocal(Active_Level);
+      rcLocal(Next_Level)!.previous = rcLocal(Active_Level);
 
-      Active_Remaining[here.id] = rcLocal(Active_Level).Members.numIndices:bool;
+      Active_Remaining[here.id] = rcLocal(Active_Level)!.Members.numIndices:bool;
 
       }
     }

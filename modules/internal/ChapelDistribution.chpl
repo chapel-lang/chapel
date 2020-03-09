@@ -166,10 +166,9 @@ module ChapelDistribution {
     proc deinit() {
     }
 
-    pragma "unsafe"
     proc dsiMyDist(): unmanaged BaseDist {
       halt("internal error: dsiMyDist is not implemented");
-      var ret: unmanaged BaseDist; // nil
+      pragma "unsafe" var ret: unmanaged BaseDist; // nil
       return ret;
     }
 
@@ -678,10 +677,9 @@ module ChapelDistribution {
 
     proc dsiStaticFastFollowCheck(type leadType) param return false;
 
-    pragma "unsafe"
     proc dsiGetBaseDom(): unmanaged BaseDom {
       halt("internal error: dsiGetBaseDom is not implemented");
-      var ret: unmanaged BaseDom; // nil
+      pragma "unsafe" var ret: unmanaged BaseDom; // nil
       return ret;
     }
 

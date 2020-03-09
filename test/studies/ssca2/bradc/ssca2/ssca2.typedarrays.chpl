@@ -133,10 +133,10 @@ class Subgraph {
 --      believe that in any case for this benchmark it could be 
 --      written:
 -- 
---   proc adjMatrix [i:AdjD] { return weights(i).length; }
+--   proc adjMatrix [i:AdjD] { return weights(i).size; }
 */
 
-  proc adjMatrix(i: index(AdjD)) { return weights(i).length; }
+  proc adjMatrix(i: index(AdjD)) { return weights(i).size; }
 }
 
 
@@ -529,7 +529,7 @@ proc Graph.findSubGraphs(SUBGR_EDGE_LENGTH : int,
 
 -- BLC: this is another array with inferred type.  This one should
 --      either be Graph or SubGraph, I'm not sure which
-  var subgraphs: [1..(startSetIntVPairs.length+startSetStrVPairs.length)] Graph;
+  var subgraphs: [1..(startSetIntVPairs.size+startSetStrVPairs.size)] Graph;
 
   // Loop over vertex pairs in the int starting set.
 /* TMP
@@ -595,7 +595,7 @@ proc cutClusters(G, cutBoxSize, alpha) {
     var setClusters : Seq;     // set of nodes in clusters.
     var setN2 : Seq;           // set of cut nodes between clusters.
 
-    while (setG.length > 0) {
+    while (setG.size > 0) {
       var setIter :Seq;   // candidate verticies in cluster
       var iCut = 0;       // index of best cutting point so far
       var iAdj :Set;      // snapshot of setAdj at iCut

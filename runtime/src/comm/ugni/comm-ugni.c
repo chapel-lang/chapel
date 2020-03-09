@@ -726,7 +726,7 @@ typedef atomic_uint_least32_t cq_cnt_atomic_t;
 // is the only one with cheap atomic reads.)
 
 typedef struct {
-  atomic_bool        busy CACHE_LINE_ALIGN;
+  atomic_spinlock_t  busy CACHE_LINE_ALIGN;
   cq_cnt_atomic_t    cq_cnt_curr CACHE_LINE_ALIGN;
   chpl_bool          firmly_bound;
   gni_nic_handle_t   nih;
@@ -756,10 +756,9 @@ static __thread int comm_dom_free_idx = -1;
 static __thread comm_dom_t* cd = NULL;
 static __thread int cd_idx = -1;
 
-#define INIT_CD_BUSY(cd)      atomic_init_bool(&(cd)->busy, false)
-#define CHECK_CD_BUSY(cd)     atomic_load_explicit_bool(&(cd)->busy, memory_order_acquire)
-#define ACQUIRE_CD_MAYBE(cd)  (!atomic_exchange_explicit_bool(&(cd)->busy, true, memory_order_acquire))
-#define RELEASE_CD(cd)        atomic_store_explicit_bool(&(cd)->busy, false, memory_order_release)
+#define INIT_CD_BUSY(cd)      atomic_init_spinlock_t(&(cd)->busy)
+#define ACQUIRE_CD_MAYBE(cd)  atomic_try_lock_spinlock_t(&(cd)->busy)
+#define RELEASE_CD(cd)        atomic_unlock_spinlock_t(&(cd)->busy)
 
 
 //
@@ -1950,7 +1949,7 @@ void chpl_comm_init(int *argc_p, char ***argv_p)
 #undef _PSTAT_INIT
 
   //
-  // We can easily reach 4k memory regions on Aries.  We can reach a
+  // We can easily reach 16k memory regions on Aries.  We can reach a
   // bit more than 3500 memory regions on Gemini but getting there is
   // tricky because we start bumping up against a number of limits
   // all at once (node memory sizes, limits on number of registered
@@ -1959,7 +1958,7 @@ void chpl_comm_init(int *argc_p, char ***argv_p)
   //
   max_mem_regions =
     chpl_env_rt_get_int("COMM_UGNI_MAX_MEM_REGIONS",
-                        (nic_type == GNI_DEVICE_GEMINI) ? 2048 : 4096);
+                        (nic_type == GNI_DEVICE_GEMINI) ? 2048 : 16384);
 
   //
   // We have to create the local memory region table before the first
@@ -1992,6 +1991,14 @@ void chpl_comm_post_mem_init(void)
 // No support for gdb for now
 //
 int chpl_comm_run_in_gdb(int argc, char* argv[], int gdbArgnum, int* status)
+{
+  return 0;
+}
+
+//
+// No support for lldb for now
+//
+int chpl_comm_run_in_lldb(int argc, char* argv[], int lldbArgnum, int* status)
 {
   return 0;
 }
@@ -5903,7 +5910,7 @@ void do_remote_get(void* tgt_addr, c_nodeid_t locale, void* src_addr,
     //
     // The transfer will fit in a single trampoline buffer.
     //
-    tgt_addr_xmit = get_buf_alloc(size);
+    tgt_addr_xmit = get_buf_alloc(xmit_size);
 
     do_nic_get(tgt_addr_xmit, locale, remote_mr,
                src_addr_xmit, xmit_size, gnr_mreg);
@@ -7480,7 +7487,7 @@ void acquire_comm_dom(void)
 #ifdef DEBUG_STATS
     acq_looks++;
 #endif
-    if (!CHECK_CD_BUSY(want_cd) && ACQUIRE_CD_MAYBE(want_cd)) {
+    if (ACQUIRE_CD_MAYBE(want_cd)) {
       if (CQ_CNT_LOAD(want_cd) < want_cd->cq_cnt_max) {
         break;
       } else {
@@ -7547,7 +7554,7 @@ void acquire_comm_dom_and_req_buf(c_nodeid_t remote_locale, int* p_rbi)
     acq_looks++;
 #endif
 
-    if (!CHECK_CD_BUSY(want_cd) && ACQUIRE_CD_MAYBE(want_cd)) {
+    if (ACQUIRE_CD_MAYBE(want_cd)) {
       if (CQ_CNT_LOAD(want_cd) < want_cd->cq_cnt_max) {
         for (rbi = 0; rbi < FORK_REQ_BUFS_PER_CD; rbi++) {
           if (*SEND_SIDE_FORK_REQ_FREE_ADDR(remote_locale, want_cdi, rbi)) {

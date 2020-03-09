@@ -221,8 +221,8 @@ class DistributedWorkQueue {
   type eltType;
   type lockType;
 
-  var localesDomain : domain(1) = {1..0};
-  var locales : [localesDomain] locale;
+//var localesDomain : domain(1) = {1..0};
+//var locales : [localesDomain] locale;
 
   var localInstance : unmanaged LocalDistributedWorkQueue(eltType, lockType);
   var pid = -1;
@@ -239,8 +239,9 @@ class DistributedWorkQueue {
     this.eltType = eltType;
     this.lockType = lockType;
 
-    this.localesDomain = {0..#targetLocales.domain.size};
-    // locales is initialized here
+//  this.localesDomain = {0..#targetLocales.domain.size};
+//  this.locales = reshape(targetLocales, this.localesDomain);
+
     this.localInstance = new unmanaged LocalDistributedWorkQueue(eltType, lockType, targetLocales);
     this.pid = this.localInstance.pid;
     this.complete();
@@ -461,7 +462,7 @@ class PermutationMap {
   override proc writeThis( f ){
     const maxVal = max( (max reduce rowMap), (max reduce columnMap) ) : string;
     const minVal = min( (min reduce rowMap), (min reduce columnMap) ) : string;
-    const padding = max( maxVal.length, minVal.length );
+    const padding = max( maxVal.size, minVal.size );
     const formatString = "%%%nn -> %%%nn".format( max(2,padding), padding );
     const inSpace = max(padding-2,0);
     f <~> "Row map\n";
@@ -699,7 +700,7 @@ proc checkIsUperTriangularIndexList( array : [?D] 2*int ) : bool
 proc prettyPrintSparse( M : [?D] ?T, printIRV : bool = false, separateElements : bool = true )
 where D.rank == 2
 {
-  const padding = max reduce ( [i in M] (i : string).length );
+  const padding = max reduce ( [i in M] (i : string).size );
   const formatString = "%%%ns%s".format( padding, if separateElements then " " else "" );
   const blankList = [i in 1..#padding+if separateElements then 1 else 0 ] " ";
   const blankString = "".join( blankList );

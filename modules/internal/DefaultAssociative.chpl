@@ -623,9 +623,11 @@ module DefaultAssociative {
     param parSafeDom: bool;
     var dom : unmanaged DefaultAssociativeDom(idxType, parSafe=parSafeDom);
   
+    pragma "unsafe"
     var data : [dom.tableDom] eltType;
   
     var tmpDom = {0..(-1:chpl_table_index_type)};
+    pragma "unsafe"
     var tmpTable: [tmpDom] eltType;
 
     //

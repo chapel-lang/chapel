@@ -33,7 +33,7 @@ proc onetest(ri: int) {
   check(result, 5 + sum(1..t), ri);
 }
 
-proc sum(r) { const l = r.length; return l * (l+1) / 2; }
+proc sum(r) { const l = r.size; return l * (l+1) / 2; }
 
 proc check(actual, expected, ri) {
   if actual == expected then return; // OK!

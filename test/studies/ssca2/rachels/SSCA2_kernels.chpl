@@ -231,27 +231,25 @@ module SSCA2_kernels
 
       numTPVs = min(numTPVs, starting_vertices.size);
       const TPVSpace = {0..#numTPVs};
-      var TPVLocales: [TPVSpace] locale;
-
+      var TPVLocales: [TPVSpace] locale =
+        for t in TPVSpace do
       // Here we set up the locales array for our task private temporary
       // variables.  We use _computChunkStartEnd() to distribute the
       // variables approximately evenly across the 1d locales array.
-      for t in TPVSpace {
-        TPVLocales[t] = Locales[_computeChunkStartEnd(numLocales,
-                                                      numTPVs, t+1)[1]-1];
-      }
+          Locales[_computeChunkStartEnd(numLocales, numTPVs, t+1)[1]-1];
+
       const TPVLocaleSpace = TPVSpace dmapped Block(boundingBox=TPVSpace,
                                                     targetLocales=TPVLocales);
 
       // There will be numTPVs copies of the temps, thus throttling the
       // number of starting vertices being considered simultaneously.
       var TPV: [TPVLocaleSpace] unmanaged taskPrivateData(domain(index(vertex_domain)),
-                                                vertex_domain.type);
+                                                vertex_domain.type)?;
 
       // Initialize
       coforall (t, i) in zip(TPVLocaleSpace, TPVSpace) do on TPVLocaleSpace.dist.idxToLocale(t) {
-          TPV[i] = new unmanaged taskPrivateData(domain(index(vertex_domain)), vertex_domain);
-          var tpv = TPV[i];
+          const tpv = new unmanaged taskPrivateData(domain(index(vertex_domain)), vertex_domain);
+          TPV[i] = tpv;
           forall v in vertex_domain do
             tpv.BCaux[v].children_list.nd = {1..G.n_Neighbors[v]};
           for loc in Locales do on loc {
@@ -336,12 +334,13 @@ module SSCA2_kernels
         var barrier = new Barrier(numLocales);
 
         coforall loc in Locales with (ref remaining, ref barrier) do on loc {
-          Active_Level[here.id].Members.clear();
-          Active_Level[here.id].next!.Members.clear();
+          var ALhere = Active_Level[here.id]!;
+          ALhere.Members.clear();
+          ALhere.next!.Members.clear();
           if vertex_domain.dist.idxToLocale(s) == here {
             // Establish the initial level sets for the breadth-first
             // traversal from s
-            Active_Level[here.id].Members.add(s);
+            ALhere.Members.add(s);
             BCaux[s].min_distance.write(0);
             // BCaux[s].path_count$.writeXF(1);
             f2(BCaux, s);
@@ -372,7 +371,7 @@ module SSCA2_kernels
                 BCaux[v].path_count$ += BCaux[u].path_count$.readFF();
             }
 
-            forall u in Active_Level[here.id].Members do {
+            forall u in ALhere.Members do {
               forall v in G.FilteredNeighbors(u) do
                 on if useOnClause then vertex_domain.dist.idxToLocale(v) else here {
                   // --------------------------------------------
@@ -381,7 +380,7 @@ module SSCA2_kernels
   
                   if  BCaux[v].min_distance.compareAndSwap(-1, current_distance_c) {
                     var aloc = if useOnClause then here.id else vertex_domain.dist.idxToLocale(v).id;
-                    Active_Level[aloc].next!.Members.add (v);
+                    Active_Level[aloc]!.next!.Members.add (v);
                     if VALIDATE_BC then
                       Lcl_Sum_Min_Dist += current_distance_c;
                   }
@@ -411,12 +410,12 @@ module SSCA2_kernels
             // barrier.notify(); // This is expensive without network atomics
             //  for now, just do a normal barrier
 
-            if Active_Level[here.id].next!.next == nil {
-              Active_Level[here.id].next!.next = new unmanaged Level_Set (Sparse_Vertex_List);
-              Active_Level[here.id].next!.next!.previous = Active_Level[here.id].next;
-              Active_Level[here.id].next!.next!.next = nil;
+            if ALhere.next!.next == nil {
+              ALhere.next!.next = new unmanaged Level_Set (Sparse_Vertex_List);
+              ALhere.next!.next!.previous = ALhere.next;
+              ALhere.next!.next!.next = nil;
             } else {
-              Active_Level[here.id].next!.next!.Members.clear();
+              ALhere.next!.next!.Members.clear();
             }
             // barrier.wait(); // ditto
             barrier.barrier();
@@ -425,8 +424,9 @@ module SSCA2_kernels
             }
 
             barrier.barrier();
-            Active_Level[here.id] = Active_Level[here.id].next!;
-            if Active_Level[here.id].Members.numIndices:bool then
+            ALhere = ALhere.next!;
+            Active_Level[here.id] = ALhere;
+            if ALhere.Members.numIndices:bool then
               remaining = true;
 
             barrier.barrier();
@@ -468,7 +468,7 @@ module SSCA2_kernels
           }
 
           // back up to last level
-          var curr_Level =  Active_Level[here.id].previous!;
+          var curr_Level =  Active_Level[here.id]!.previous!;
   
           for current_distance in 2 .. graph_diameter by -1 {
             curr_Level = curr_Level.previous!;
@@ -519,10 +519,9 @@ module SSCA2_kernels
 
       if DELETE_KERNEL4_DS {
         coforall t in TPVSpace do on t {
-          var tpv = TPV[t];
-          var al = tpv.Active_Level;
+          var al = TPV[t]!.Active_Level;
           coforall loc in Locales do on loc {
-            var level:unmanaged Level_Set? = al[here.id];
+            var level = al[here.id];
             var prev = level!.previous;
             while prev != nil {
               var p2 = prev!.previous;
@@ -596,7 +595,7 @@ module SSCA2_kernels
     const vertex_domain;
     var used  : atomic bool;
     var BCaux : [vertex_domain] taskPrivateArrayData(index(vertex_domain));
-    var Active_Level : [PrivateSpace] unmanaged Level_Set (Sparse_Vertex_List);
+    var Active_Level : [PrivateSpace] unmanaged Level_Set (Sparse_Vertex_List)?;
   }
 
   // This is a simple class that hands out task private variables from the
@@ -607,14 +606,14 @@ module SSCA2_kernels
     proc gettid() {
       const tid = this.currTPV.fetchAdd(1)%numTPVs;
       on this.TPV[tid] do
-        while this.TPV[tid].used.testAndSet() do chpl_task_yield();
+        while this.TPV[tid]!.used.testAndSet() do chpl_task_yield();
       return tid;
     }
     proc getTPV(tid) {
-      return this.TPV[tid];
+      return this.TPV[tid]!;
     }
     proc releaseTPV(tid) {
-      this.TPV[tid].used.clear();
+      this.TPV[tid]!.used.clear();
     }
   }
 }

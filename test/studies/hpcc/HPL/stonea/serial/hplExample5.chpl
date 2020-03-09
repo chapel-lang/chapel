@@ -111,14 +111,14 @@ proc panelSolve(
     // domain
     assert(piv.domain.dim(1) == A.domain.dim(1));
 
-    if(pnlCols.length == 0) then return;
+    if(pnlCols.size == 0) then return;
 
     // iterate through the columns
     for k in pnlCols {
         var col = panel[k.., k..k];
 
         // If there are no rows below the current column return
-        if col.dim(1).length == 0 then return;
+        if col.dim(1).size == 0 then return;
 
         // The pivot is the element with the largest absolute value.
         const (_, loc) = maxloc reduce zip(abs(A(col)), col);

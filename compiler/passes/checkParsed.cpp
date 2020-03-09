@@ -41,6 +41,8 @@ static void nestedName(ModuleSymbol* mod);
 static void checkModule(ModuleSymbol* mod);
 static void checkRecordInheritance(AggregateType* at);
 static void setupForCheckExplicitDeinitCalls();
+static void warnUnstableUnions(AggregateType* at);
+static void warnUnstableLeadingUnderscores();
 
 void
 checkParsed() {
@@ -128,7 +130,11 @@ checkParsed() {
 
   forv_Vec(AggregateType, at, gAggregateTypes) {
     checkRecordInheritance(at);
+
+    warnUnstableUnions(at);
   }
+
+  warnUnstableLeadingUnderscores();
 
   checkExportedNames();
 
@@ -393,11 +399,24 @@ checkFunction(FnSymbol* fn) {
     }
   }
 
-#if 0 // Do not issue the warning yet.
-  if (fn->hasFlag(FLAG_DESTRUCTOR) && (fn->name[0] == '~')) {
-    USR_WARN(fn, "\"~classname\" naming of deinitializers is deprecated");
+  if (fn->retTag == RET_TYPE || fn->retTag == RET_PARAM) {
+    for_formals(formal, fn) {
+      if (formal->intent == INTENT_OUT ||
+          formal->intent == INTENT_INOUT) {
+        USR_FATAL_CONT(formal,
+                       "Cannot use %s in a "
+                       "function returning with '%s' intent",
+                       intentDescrString(formal->intent),
+                       retTagDescrString(fn->retTag));
+      }
+    }
   }
-#endif
+
+  if (fn->hasFlag(FLAG_DESTRUCTOR) && (fn->name[0] == '~')) {
+    USR_WARN("Destructors have been deprecated as of Chapel 1.21. "
+             "Please use deinit instead.");
+    USR_WARN(fn, "to fix, rename %s to deinit", fn->name);
+  }
 
   std::vector<CallExpr*> calls;
   collectMyCallExprs(fn, calls, fn);
@@ -512,5 +531,26 @@ checkExportedNames()
     if (names.get(name))
       USR_FATAL_CONT(fn, "The name %s cannot be exported twice from the same compilation unit.", name);
     names.put(name, true);
+  }
+}
+
+static void warnUnstableUnions(AggregateType* at) {
+  if (fWarnUnstable && at->isUnion()) {
+    USR_WARN(at, "Unions are currently unstable and are expected to change in ways that will break their current uses.");
+  }
+}
+
+static void warnUnstableLeadingUnderscores() {
+  if (fWarnUnstable) {
+    forv_Vec(DefExpr, def, gDefExprs) {
+      const char* name = def->name();
+      
+      if (name && name[0] == '_' &&
+          def->getModule()->modTag == MOD_USER &&
+          !def->sym->hasFlag(FLAG_TEMP)) {
+        USR_WARN(def,
+                 "Symbol names with leading underscores (%s) are unstable.", name);
+      }
+    }
   }
 }

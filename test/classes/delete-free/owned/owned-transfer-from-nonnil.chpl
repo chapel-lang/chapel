@@ -82,7 +82,7 @@ proc test2d() {
 }
 test2d();
 
-// error: x is end-of-block
+// ok: x not used after transfer
 proc test2e() {
   var x = new owned MyClass(1);
   ref rx = x;
@@ -142,7 +142,7 @@ proc test4c() {
 }
 test4c();
 
-// error: x is end-of-block
+// ok: x not used after transfer
 proc test4d() {
   var x = new owned MyClass(1);
   ref rx = x;

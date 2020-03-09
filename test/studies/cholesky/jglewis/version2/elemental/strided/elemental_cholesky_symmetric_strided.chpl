@@ -184,7 +184,7 @@ module elemental_cholesky_symmetric_strided {
 	    A (my_A1x_rows, my_Ax1_cols) = A11 (my_A1x_rows, my_Ax1_cols);
 	    // }
 
-	    if pos_def && A22_cols.length > 0 then {
+	    if pos_def && A22_cols.size > 0 then {
 
 	      // ---------------------------------------------------------------
 	      // Compute the remainder of the active block column of L by a

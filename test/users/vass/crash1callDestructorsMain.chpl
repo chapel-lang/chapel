@@ -62,8 +62,8 @@ class DimensionalDist : BaseDist {
   // implementation note: 'rank' is not a real param; it's just that having
   // 'proc rank param return targetLocales.rank' did not work
   param rank: int = targetLocales.rank;
-  proc numLocs1: locCntT  return targetIds.dim(1).length: locCntT;
-  proc numLocs2: locCntT  return targetIds.dim(2).length: locCntT;
+  proc numLocs1: locCntT  return targetIds.dim(1).size: locCntT;
+  proc numLocs2: locCntT  return targetIds.dim(2).size: locCntT;
 
   // parallelization knobs
   var dataParTasksPerLocale: int      = getDataParTasksPerLocale();
@@ -581,11 +581,11 @@ proc LocDimensionalDom._dsiLocalSetIndicesHelper(globDD, locId) {
   var myRange2 = local1dDdescs(2).dsiSetLocalIndices1d(globDD(2),locId(2));
 
   myBlock = {myRange1, myRange2};
-  myStorageDom = {0:stoSzT..#myRange1.length:stoSzT,
-                  0:stoSzT..#myRange2.length:stoSzT};
+  myStorageDom = {0:stoSzT..#myRange1.size:stoSzT,
+                  0:stoSzT..#myRange2.size:stoSzT};
 
   _traceddd("DimensionalDom.dsiSetIndices on ", here.id, " ", locId, " <- ",
-           myBlock, "  storage ", myRange1.length, "*", myRange2.length);
+           myBlock, "  storage ", myRange1.size, "*", myRange2.size);
 }
 
 proc DimensionalDom.dsiGetIndices(): domainT {
@@ -761,7 +761,7 @@ iter DimensionalDom.these(param tag: iterKind) where tag == iterKind.leader {
         else
           ( min(_computeNumChunks(maxTasks, ignoreRunning, minSize,
                                   locDdesc.myBlock.numIndices),
-                locDdesc.myBlock.dim(fakeDimensionalDistParDim).length):int,
+                locDdesc.myBlock.dim(fakeDimensionalDistParDim).size):int,
             fakeDimensionalDistParDim:int);
 
       // parDim gotta point to one of the dimensions that we have
@@ -806,8 +806,8 @@ iter DimensionalDom.these(param tag: iterKind) where tag == iterKind.leader {
             // why dsiMyDensifiedRangeForTaskID1d() does not agree
             // with _computeChunkStuff (i.e. the latter returns more tasks
             // than the former wants to use) - fine. Then, replace assert with
-            //   if myPiece.length == 0 then do not yield anything
-            assert(myPiece.length > 0);
+            //   if myPiece.size == 0 then do not yield anything
+            assert(myPiece.size > 0);
 
             // apply myPiece
             follow(dd) = myPiece;
@@ -1210,7 +1210,7 @@ proc vdom.dsiAccess1d(indexx: idxType, CLargs): (locIdT, stoSzT) {
 // CLargs is the same as above
 iter vdom.dsiSerialArrayIterator1d(CLargs) {
   yield (dsiIndexCurrentLocale1d(CLargs),
-         0..#wholeR.length);
+         0..#wholeR.size);
 }
 
 // REQ generate the densified range to be used in the leader iterator
@@ -1219,7 +1219,7 @@ iter vdom.dsiSerialArrayIterator1d(CLargs) {
 // and handles the case numTasks <= 1.
 // Note: should be densified w.r.t. the entire global range in this dimension.
 proc vlocdom.dsiMyDensifiedRangeForTaskID1d(taskid:int, numTasks:int) {
-  const (startIx, endIx) = _computeChunkStartEnd(locWholeR.length,
+  const (startIx, endIx) = _computeChunkStartEnd(locWholeR.size,
                                                  numTasks, taskid+1);
   return startIx - 1 .. endIx - 1;
 }
@@ -1349,7 +1349,7 @@ proc sdom.dsiAccess1d(indexx: idxType, CLargs): (locIdT, stoSzT) {
 
 iter sdom.dsiSerialArrayIterator1d(CLargs) {
   // TODO replace 0
-  yield (0, 0..#wholeR.length);
+  yield (0, 0..#wholeR.size);
 }
 
 iter sdom.dsiFollowerArrayIterator1d(denseRange, CLargs) {
@@ -1363,7 +1363,7 @@ proc slocdom.dsiMyDensifiedRangeForTaskID1d(taskid:int, numTasks:int) {
   if myLocID == 0 {
     // NB for now we can densify w.r.t. myRange (i.e. self), but will need to
     // densify w.r.t. the entire global range once we distribute things.
-    const (startIx, endIx) = _computeChunkStartEnd(myRange.length,
+    const (startIx, endIx) = _computeChunkStartEnd(myRange.size,
                                                    numTasks, taskid+1);
     return startIx - 1 .. endIx - 1;
   } else {

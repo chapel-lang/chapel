@@ -1,7 +1,49 @@
-error-never-initialized.chpl:1: In function 'error':
-error-never-initialized.chpl:2: error: Variable 'a' is not initialized and has no type
-error-never-initialized.chpl:3: error: type alias 't' is not initialized
-error-never-initialized.chpl:7: error: Variable 'b' is not initialized and has no type
-error-never-initialized.chpl:8: error: type alias 'tt' is not initialized
-error-never-initialized.chpl:10: error: split initialization is not supported for globals
-error-never-initialized.chpl:12: error: split initialization is not supported for globals
+error-never-initialized.chpl:3: In function 'error':
+error-never-initialized.chpl:5: error: variable 'a1' is not initialized and has no type
+error-never-initialized.chpl:6: error: type alias 't1' is not initialized
+error-never-initialized.chpl:7: error: reference 'r1' is not initialized
+error-never-initialized.chpl:8: error: variable 'b1' is not initialized
+note: non-nilable class type borrowed C does not support default initialization
+note: Consider using the type borrowed C? instead
+error-never-initialized.chpl:9: error: variable 'c1' is not initialized
+note: undecorated class type C does not support default initialization
+note: consider adding a management decorator such as 'owned', 'shared', 'borrowed', or 'unmanaged'
+error-never-initialized.chpl:10: error: variable 'q1' is not initialized
+note: undecorated class type C? does not support default initialization
+note: consider adding a management decorator such as 'owned', 'shared', 'borrowed', or 'unmanaged'
+error-never-initialized.chpl:13: error: variable 'a2' is not initialized and has no type
+error-never-initialized.chpl:20: note: 'a2' use here prevents split-init from establishing the type
+error-never-initialized.chpl:14: error: type alias 't2' is not initialized
+error-never-initialized.chpl:21: note: 't2' use here prevents split-init from establishing the type
+error-never-initialized.chpl:15: error: reference 'r2' is not initialized
+error-never-initialized.chpl:22: note: 'r2' use here prevents split-init from establishing the type
+error-never-initialized.chpl:16: error: variable 'b2' is not initialized
+note: non-nilable class type borrowed C does not support default initialization
+note: Consider using the type borrowed C? instead
+error-never-initialized.chpl:23: note: 'b2' use here prevents split-init
+error-never-initialized.chpl:17: error: variable 'c2' is not initialized
+note: undecorated class type C does not support default initialization
+note: consider adding a management decorator such as 'owned', 'shared', 'borrowed', or 'unmanaged'
+error-never-initialized.chpl:24: note: 'c2' use here prevents split-init from establishing the type
+error-never-initialized.chpl:18: error: variable 'q2' is not initialized
+note: undecorated class type C? does not support default initialization
+note: consider adding a management decorator such as 'owned', 'shared', 'borrowed', or 'unmanaged'
+error-never-initialized.chpl:25: note: 'q2' use here prevents split-init from establishing the type
+error-never-initialized.chpl:36: error: variable 'b' is not initialized and has no type
+error-never-initialized.chpl:36: error: split initialization is not supported for globals
+error-never-initialized.chpl:37: error: type alias 'tt' is not initialized
+error-never-initialized.chpl:37: error: split initialization is not supported for globals
+error-never-initialized.chpl:38: error: reference 'rr' is not initialized
+error-never-initialized.chpl:38: error: split initialization is not supported for globals
+error-never-initialized.chpl:39: error: variable 'bb' is not initialized
+note: non-nilable class type borrowed C does not support default initialization
+note: Consider using the type borrowed C? instead
+error-never-initialized.chpl:39: error: split initialization is not supported for globals
+error-never-initialized.chpl:40: error: variable 'cc' is not initialized
+note: undecorated class type C does not support default initialization
+note: consider adding a management decorator such as 'owned', 'shared', 'borrowed', or 'unmanaged'
+error-never-initialized.chpl:40: error: split initialization is not supported for globals
+error-never-initialized.chpl:41: error: variable 'qq' is not initialized
+note: undecorated class type C? does not support default initialization
+note: consider adding a management decorator such as 'owned', 'shared', 'borrowed', or 'unmanaged'
+error-never-initialized.chpl:41: error: split initialization is not supported for globals

@@ -551,7 +551,7 @@ BlockStmt* buildUseStmt(std::vector<PotentialRename*>* args, bool privateUse) {
 // Build an 'import' statement
 //
 BlockStmt* buildImportStmt(Expr* mod) {
-  ImportStmt* newImport = new ImportStmt(mod);
+  ImportStmt* newImport = new ImportStmt(mod, /* isPrivate =*/ true);
   addModuleToSearchList(newImport, mod);
 
   return buildChapelStmt(newImport);
@@ -561,7 +561,7 @@ BlockStmt* buildImportStmt(Expr* mod) {
 // Build an 'import' statement
 //
 BlockStmt* buildImportStmt(Expr* mod, const char* rename) {
-  ImportStmt* newImport = new ImportStmt(mod, rename);
+  ImportStmt* newImport = new ImportStmt(mod, rename, /* isPrivate =*/ true);
   addModuleToSearchList(newImport, mod);
 
   return buildChapelStmt(newImport);
@@ -777,11 +777,14 @@ CallExpr* buildPrimitiveExpr(CallExpr* exprs) {
 
 CallExpr* buildLetExpr(BlockStmt* decls, Expr* expr) {
   static int uid = 1;
-  FnSymbol* fn = new FnSymbol(astr("_let_fn", istr(uid++)));
+  FnSymbol* fn = new FnSymbol(astr("chpl_let_fn", istr(uid++)));
   fn->addFlag(FLAG_COMPILER_NESTED_FUNCTION);
   fn->addFlag(FLAG_INLINE);
   fn->insertAtTail(decls);
   fn->insertAtTail(new CallExpr(PRIM_RETURN, expr));
+  if (fWarnUnstable) {
+    USR_WARN(decls, "Let expressions are currently unstable and are expected to change in ways that will break their current uses.");
+  }
   return new CallExpr(new DefExpr(fn));
 }
 
@@ -1701,7 +1704,7 @@ FnSymbol* buildLambda(FnSymbol *fn) {
    * is better to guard against this behavior then leaving someone wondering
    * why we didn't.
    */
-  if (snprintf(buffer, 100, "_chpl_lambda_%i", nextId++) >= 100) {
+  if (snprintf(buffer, 100, "chpl_lambda_%i", nextId++) >= 100) {
     INT_FATAL("Too many lambdas.");
   }
 

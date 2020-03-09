@@ -25,7 +25,7 @@ Functions related to predefined types.
 
 */
 module Types {
-  private use HaltWrappers only;
+  import HaltWrappers;
 
 pragma "no doc" // joint documentation with the next one
 proc isType(type t) param return true;
@@ -760,6 +760,16 @@ pragma "no doc"
 iter type enumerated.these(){
   for i in chpl_enumerate(this) do
     yield i;
+}
+
+pragma "no doc"
+proc type enumerated.first {
+  return chpl__orderToEnum(0, this);
+}
+
+pragma "no doc"
+proc type enumerated.last {
+  return chpl__orderToEnum(this.size-1, this);
 }
 
 private proc chpl_enum_minbits(type t: enumerated) param {

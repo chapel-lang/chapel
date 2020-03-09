@@ -22,6 +22,7 @@
 
 #include "chpltypes.h"
 #include "chpl-comp-detect-macros.h"
+#include "chpl-tasks.h"
 
 // g++ 4.8 and 4.9 appear to support standard atomics, but have errors
 // in their <atomic> header.  Also, gcc 4.8 is missing <stdatomic.h>.
@@ -62,6 +63,8 @@
 
 typedef Atomic(_real64) atomic__real64;
 typedef Atomic(_real32) atomic__real32;
+
+typedef atomic_bool atomic_spinlock_t;
 
 static inline memory_order _defaultOfMemoryOrder(void) {
   return memory_order_seq_cst;
@@ -249,5 +252,25 @@ DECLARE_REAL_ATOMICS(_real64);
 #undef DECLARE_REAL_ATOMICS_FETCH_OPS
 #undef DECLARE_ATOMICS
 #undef DECLARE_REAL_ATOMICS
+
+static inline void atomic_init_spinlock_t(atomic_spinlock_t* lock) {
+  atomic_init(lock, false);
+}
+
+static inline void atomic_destroy_spinlock_t(atomic_spinlock_t* lock) { }
+
+static inline chpl_bool atomic_try_lock_spinlock_t(atomic_spinlock_t* lock) {
+  return !atomic_load(lock) && !atomic_exchange_explicit(lock, true, memory_order_acquire);
+}
+
+static inline void atomic_lock_spinlock_t(atomic_spinlock_t* lock) {
+  while(!atomic_try_lock_spinlock_t(lock)) {
+    chpl_task_yield();
+  }
+}
+
+static inline void atomic_unlock_spinlock_t(atomic_spinlock_t* lock) {
+  atomic_store_explicit(lock, false, memory_order_release);
+}
 
 #endif // _chpl_atomics_h_
