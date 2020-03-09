@@ -30,6 +30,7 @@
 #include "optimizations.h"
 #include "resolution.h"
 #include "stlUtil.h"
+#include "stringutil.h"
 #include "symbol.h"
 #include "view.h"
 #include "wellknown.h"
@@ -174,15 +175,38 @@ namespace {
     DetempGroup() : favorite(NULL), elements() { }
   };
 
+  struct DeinitOrderNode {
+    int order; // a kind of statement numbering
+    Expr* ast;
+    DeinitOrderNode* nestedOrder; // nested blocks, if-then blocks
+    DeinitOrderNode* elseOrder;
+    DeinitOrderNode()
+      : order(0), ast(NULL),
+        nestedOrder(NULL), elseOrder(NULL)
+    { }
+    DeinitOrderNode(Expr* e)
+      : order(1), ast(e),
+        nestedOrder(NULL), elseOrder(NULL)
+    { }
+  };
+
   typedef std::map<Symbol*,DetempGroup*> SymbolToDetempGroupMap;
   typedef std::set<DetempGroup*> DetempGroupSet;
   typedef std::set<CallExpr*> CallExprSet;
   typedef std::set<FnSymbol*> LocalFunctionsSet;
+  typedef std::map<Symbol*, DeinitOrderNode> DeinitOrderMap;
 
   struct LifetimeState {
     // this mapping allows the pass to ignore certain compiler temps
     SymbolToDetempGroupMap detemp;
     CallExprSet callsToIgnore;
+
+    // this mapping stores the order of deinitialization for each variable.
+    // if a and b are variables, and deinitPoint(a) < deinitPoint(b),
+    // then a has shorter lifetime than b.
+    // the mapping intentionally assigns several deinits at the end of a block
+    // the same value.
+    DeinitOrderMap order;
 
     // We try to run the analysis as though task functions didn't
     // exist. This set is the set of functions we should consider
@@ -223,6 +247,22 @@ namespace {
 
     bool isLocalVariable(Symbol* sym);
     bool shouldPropagateLifetimeTo(CallExpr* call, Symbol* sym);
+  };
+
+  class DeinitOrderVisitor : public AstVisitorTraverse {
+
+    public:
+      LifetimeState* lifetimes;
+      std::vector<DeinitOrderNode*> orderStack;
+      bool debugging;
+
+      DeinitOrderVisitor(LifetimeState* lifetimes, bool debugging)
+        : lifetimes(lifetimes), debugging(debugging)
+      { }
+      virtual bool enterBlockStmt(BlockStmt* block);
+      virtual void exitBlockStmt(BlockStmt* block);
+      virtual bool enterCondStmt(CondStmt* cond);
+      virtual bool enterCallExpr(CallExpr* call);
   };
 
   class GatherTempsVisitor : public AstVisitorTraverse {
@@ -300,9 +340,10 @@ static Lifetime unknownLifetime();
 static LifetimePair infiniteLifetimePair();
 static LifetimePair unknownLifetimePair();
 static bool debuggingLifetimesForFn(FnSymbol* fn);
-void printLifetime(Lifetime lt);
-void printLifetimePair(LifetimePair lt);
-void printLifetimeState(LifetimeState* state);
+static void printLifetime(Lifetime lt);
+static void printLifetimePair(LifetimePair lt);
+static void printLifetimeState(LifetimeState* state);
+static void printDeinitOrderTree(const char* prefix,  DeinitOrderNode* node);
 static void handleDebugOutputOnError(Expr* e, LifetimeState* state);
 static bool shouldCheckLifetimesInFn(FnSymbol* fn);
 static void markArgumentsReturnScope(FnSymbol* fn);
@@ -371,6 +412,10 @@ void checkLifetimesInFunction(FnSymbol* fn) {
   gather.lifetimes = &state;
   fn->accept(&gather);
 
+  // Compute the deinitialization order for local variables
+  DeinitOrderVisitor order(&state, debugging);
+  fn->accept(&order);
+
   if (debugging) {
     for_set(FnSymbol, inFn, state.inFns) {
       printf("Visiting function %s id %i\n", inFn->name, inFn->id);
@@ -378,7 +423,6 @@ void checkLifetimesInFunction(FnSymbol* fn) {
     }
     gdbShouldBreakHere();
   }
-
 
   // Figure out the scope for local variables / arguments
   IntrinsicLifetimesVisitor intrinsics;
@@ -834,7 +878,7 @@ static bool debuggingLifetimesForFn(FnSymbol* fn)
   return false;
 }
 
-void printLifetime(Lifetime lt) {
+static void printLifetime(Lifetime lt) {
   if (lt.unknown)
     printf("unknown ");
   if (lt.infinite)
@@ -847,7 +891,7 @@ void printLifetime(Lifetime lt) {
     printf("expr %i ", lt.relevantExpr->id);
 }
 
-void printLifetimePair(LifetimePair lt) {
+static void printLifetimePair(LifetimePair lt) {
   printf("ref lifetime ");
   printLifetime(lt.referent);
   printf("borrow lifetime ");
@@ -855,7 +899,7 @@ void printLifetimePair(LifetimePair lt) {
   printf("\n");
 }
 
-void printLifetimeState(LifetimeState* state)
+static void printLifetimeState(LifetimeState* state)
 {
   printf("Lifetime state:\n");
   printf("detemps:\n");
@@ -870,6 +914,18 @@ void printLifetimeState(LifetimeState* state)
              key->name, key->id, favorite->name, favorite->id);
     }
   }
+
+  printf("deinit orders:\n");
+  for (DeinitOrderMap::iterator it = state->order.begin();
+       it != state->order.end();
+       ++it) {
+    Symbol* key = it->first;
+    DeinitOrderNode& value = it->second;
+
+    printf("deinit order for %s[%i]:\n", key->name, key->id);
+    printDeinitOrderTree("", &value);
+  }
+
   printf("intrinsic lifetimes:\n");
   for (SymbolToLifetimeMap::iterator it = state->intrinsicLifetime.begin();
        it != state->intrinsicLifetime.end();
@@ -880,6 +936,7 @@ void printLifetimeState(LifetimeState* state)
     printf("Symbol %s[%i] has intrinsic lifetime: ", key->name, key->id);
     printLifetimePair(value);
   }
+
   printf("inferred lifetimes:\n");
   for (SymbolToLifetimeMap::iterator it = state->inferredLifetime.begin();
        it != state->inferredLifetime.end();
@@ -909,6 +966,13 @@ static void handleDebugOutputOnError(Expr* e, LifetimeState* state) {
     USR_STOP();
   }
 }
+
+
+/************************************* | **************************************
+*                                                                             *
+*  LifetimeState                                                              *
+*                                                                             *
+************************************** | *************************************/
 
 LifetimeState::~LifetimeState() {
   // free the detemp groups
@@ -1321,6 +1385,12 @@ bool LifetimeState::isLocalVariable(Symbol* sym) {
   return isLocal && (inFns.count(sym->defPoint->getFunction()) != 0);
 }
 
+/************************************* | **************************************
+*                                                                             *
+*  GatherTemps                                                                *
+*                                                                             *
+************************************** | *************************************/
+
 
 static void addSymbolToDetempGroup(Symbol* sym, DetempGroup* group) {
   group->elements.push_back(sym);
@@ -1430,7 +1500,11 @@ static void addPairToDetempMap(Symbol* a, Symbol* b,
 }
 
 
+
 bool GatherTempsVisitor::enterCallExpr(CallExpr* call) {
+  // Traverses into task functions below when also
+  // handling task function arguments.
+
   if (call->isPrimitive(PRIM_MOVE)) {
     SymExpr* lhsSe = toSymExpr(call->get(1));
     INT_ASSERT(lhsSe);
@@ -1488,6 +1562,277 @@ bool GatherTempsVisitor::enterCallExpr(CallExpr* call) {
   return false;
 }
 
+/************************************* | **************************************
+*                                                                             *
+*  DeinitOrder                                                                *
+*                                                                             *
+************************************** | *************************************/
+
+static void printDeinitOrderTree(const char* prefix, DeinitOrderNode* node) {
+
+  int astId = 0;
+  if (node->ast != NULL)
+    astId = node->ast->id;
+
+  printf("%sorder=%i ast=%i\n", prefix, node->order, astId);
+  if (node->nestedOrder != NULL) {
+    printf("%snested:\n", prefix);
+    printDeinitOrderTree(astr(prefix, "  "), node->nestedOrder);
+  }
+  if (node->elseOrder != NULL) {
+    printf("%selse:\n", prefix);
+    printDeinitOrderTree(astr(prefix, "  "), node->elseOrder);
+  }
+}
+
+// prints e.g. 1.3.4 with no newline
+static void printOrderSummary(std::vector<DeinitOrderNode*>& orderStack) {
+  for (size_t i = 1; i < orderStack.size(); i++) {
+    printf("  ");
+  }
+
+  for (size_t i = 0; i < orderStack.size(); i++) {
+    if (i != 0)
+      printf(".");
+    printf("%i", orderStack[i]->order);
+  }
+}
+
+static void clearDeinitOrderNodeSubtree(DeinitOrderNode* node) {
+  if (node->nestedOrder != NULL) {
+    delete node->nestedOrder;
+    node->nestedOrder = NULL;
+  }
+  if (node->elseOrder != NULL) {
+    delete node->elseOrder;
+    node->elseOrder = NULL;
+  }
+}
+
+static void nextDeinitOrderNode(DeinitOrderNode* node, Expr* e) {
+  node->order++;
+  node->ast = e;
+  clearDeinitOrderNodeSubtree(node);
+}
+
+static void addToDeinitOrderTree(DeinitOrderNode* dst, DeinitOrderNode* src) {
+
+  // If dst was referring to a different thing from src, we ignore
+  // the update from src. This comes up with chpl__autoDestroy calls
+  // added just before the function epilogue even though there was an
+  // unconditional return before that.
+  if (dst->order != 0 && dst->order != src->order)
+    return;
+
+  dst->order = src->order;
+  dst->ast = src->ast;
+
+  // create new nodes for any sub-nodes if they are not present already.
+  if (src->nestedOrder != NULL && dst->nestedOrder == NULL) {
+    dst->nestedOrder = new DeinitOrderNode();
+  }
+  if (src->elseOrder != NULL && dst->elseOrder == NULL) {
+    dst->elseOrder = new DeinitOrderNode();
+  }
+
+  // copy the sub-nodes, recursively
+  if (src->nestedOrder != NULL)
+    addToDeinitOrderTree(dst->nestedOrder, src->nestedOrder);
+  if (src->elseOrder != NULL)
+    addToDeinitOrderTree(dst->elseOrder, src->elseOrder);
+}
+
+bool DeinitOrderVisitor::enterBlockStmt(BlockStmt* block) {
+
+  if (block->isScopeless() || isCondStmt(block->parentExpr)) {
+    INT_ASSERT(!orderStack.empty());
+    return true;
+  }
+
+  if (orderStack.empty()) {
+    INT_ASSERT(block->parentExpr == NULL);
+    DeinitOrderNode* next = new DeinitOrderNode(block);
+    next->order = 1;
+    orderStack.push_back(next);
+  } else {
+    // count order for block being a new statement
+    nextDeinitOrderNode(orderStack.back(), block);
+
+    if (debugging) {
+      printOrderSummary(orderStack);
+      printf(" block %i\n", block->id);
+    }
+
+    DeinitOrderNode* next = new DeinitOrderNode(block);
+    orderStack.back()->nestedOrder = next;
+    orderStack.push_back(next);
+  }
+
+  return true;
+}
+
+void DeinitOrderVisitor::exitBlockStmt(BlockStmt* block) {
+
+  if (block->isScopeless() || isCondStmt(block->parentExpr)) {
+    // Didn't add new scope so don't try to remove one.
+    return;
+  }
+
+  DeinitOrderNode* last = orderStack.back();
+  clearDeinitOrderNodeSubtree(last);
+  orderStack.pop_back();
+
+  if (!orderStack.empty()) {
+    // count order for whatever calls follow block being in new statements
+    nextDeinitOrderNode(orderStack.back(), NULL);
+  } else {
+    INT_ASSERT(block->parentExpr == NULL);
+  }
+}
+
+static bool containsUnconditionalReturn(BlockStmt* block) {
+  // Check, does the block always return?
+  for (Expr* cur = block->body.first(); cur != NULL; cur = cur->next) {
+    if (GotoStmt* g = toGotoStmt(cur))
+      if (g->gotoTag == GOTO_RETURN ||
+          g->gotoTag == GOTO_ERROR_HANDLING_RETURN)
+        return true;
+    if (CallExpr* c = toCallExpr(cur))
+      if (c->isPrimitive(PRIM_RETURN))
+        return true;
+  }
+
+  return false;
+}
+
+bool DeinitOrderVisitor::enterCondStmt(CondStmt* cond) {
+
+  // consider anything in the condition to be in a new statement
+  nextDeinitOrderNode(orderStack.back(), cond);
+
+  // visit the conditional itself
+  if (cond->condExpr) {
+    cond->condExpr->accept(this);
+  }
+
+  if (debugging) {
+    printOrderSummary(orderStack);
+    printf(" cond %i\n", cond->id);
+  }
+
+  if (cond->thenStmt != NULL) {
+    bool returns = containsUnconditionalReturn(cond->thenStmt);
+
+    if (returns == false) {
+      DeinitOrderNode* thenNode = new DeinitOrderNode(cond->thenStmt);
+      orderStack.back()->nestedOrder = thenNode;
+      orderStack.push_back(thenNode);
+
+      if (debugging) {
+        printOrderSummary(orderStack);
+        printf(" cond then %i\n", cond->thenStmt->id);
+      }
+
+      cond->thenStmt->accept(this);
+
+      INT_ASSERT(orderStack.back() == thenNode);
+      clearDeinitOrderNodeSubtree(thenNode);
+      orderStack.pop_back();
+    } else if (debugging) {
+      printOrderSummary(orderStack);
+      printf(" skipping cond then %i\n", cond->thenStmt->id);
+    }
+  }
+  if (cond->elseStmt != NULL) {
+    bool returns = containsUnconditionalReturn(cond->thenStmt);
+
+    if (returns == false) {
+      DeinitOrderNode* elseNode = new DeinitOrderNode(cond->elseStmt);
+      orderStack.back()->elseOrder = elseNode;
+      orderStack.push_back(elseNode);
+
+      if (debugging) {
+        printOrderSummary(orderStack);
+        printf(" cond else %i\n", cond->elseStmt->id);
+      }
+
+      cond->elseStmt->accept(this);
+
+      INT_ASSERT(orderStack.back() == elseNode);
+      clearDeinitOrderNodeSubtree(elseNode);
+      orderStack.pop_back();
+    } else if (debugging) {
+      printOrderSummary(orderStack);
+      printf(" skipping cond else %i\n", cond->elseStmt->id);
+    }
+  }
+
+  // any calls after the cond statement should get a new order number
+  nextDeinitOrderNode(orderStack.back(), NULL);
+
+  // already visited contained AST
+  return false;
+}
+
+bool DeinitOrderVisitor::enterCallExpr(CallExpr* call) {
+  // Traverse into task functions
+  if (FnSymbol* calledFn = call->resolvedFunction()) {
+    if (isTaskFun(calledFn)) {
+      calledFn->body->accept(this);
+      return false;
+    }
+  }
+
+  // Ignore calls addressed by detemping
+  if (lifetimes->callsToIgnore.count(call))
+    return false;
+
+  if (FnSymbol* fn = call->resolvedFunction()) {
+    if (fn->hasFlag(FLAG_AUTO_DESTROY_FN)) {
+      SymExpr* se = toSymExpr(call->get(1));
+      Symbol* sym = lifetimes->getCanonicalSymbol(se->symbol());
+
+      if (debugging) {
+        printOrderSummary(orderStack);
+        printf(" deinit %s[%i] in call %i\n", sym->name, sym->id, call->id);
+      }
+
+      addToDeinitOrderTree(&lifetimes->order[sym], orderStack.front());
+
+      // don't advance order for auto-destroy functions themselves
+      // (so that deinitialization order is not enforced in analysis)
+      return false;
+    }
+  }
+
+  if (call->isPrimitive(PRIM_ASSIGN_ELIDED_COPY)) {
+    SymExpr* se = toSymExpr(call->get(2));
+    Symbol* sym = lifetimes->getCanonicalSymbol(se->symbol());
+
+    if (debugging) {
+      printOrderSummary(orderStack);
+      printf(" copy elide %s[%i] in call %i\n", sym->name, sym->id, call->id);
+    }
+
+    addToDeinitOrderTree(&lifetimes->order[sym], orderStack.front());
+  }
+
+  if (call->isPrimitive(PRIM_END_OF_STATEMENT)) {
+    nextDeinitOrderNode(orderStack.back(), call);
+  }
+
+  if (debugging) {
+    printOrderSummary(orderStack);
+    if (call->isPrimitive(PRIM_END_OF_STATEMENT))
+      printf(" end of statement %i\n", call->id);
+    else
+      printf(" call %i\n", call->id);
+  }
+
+  // no need to visit nested calls
+  return false;
+}
+
 static bool isRecordInitOrReturn(CallExpr* call, Symbol*& lhs, CallExpr*& initOrCtor, LifetimeState* lifetimes) {
 
   SymExpr* gotLHS = NULL;
@@ -1505,6 +1850,12 @@ static bool isRecordInitOrReturn(CallExpr* call, Symbol*& lhs, CallExpr*& initOr
   initOrCtor = NULL;
   return false;
 }
+
+/************************************* | **************************************
+*                                                                             *
+*  IntrinsicLifetimesVisitor                                                  *
+*                                                                             *
+************************************** | *************************************/
 
 bool IntrinsicLifetimesVisitor::enterDefExpr(DefExpr* def) {
 
@@ -1680,6 +2031,11 @@ bool IntrinsicLifetimesVisitor::enterCallExpr(CallExpr* call) {
   return false;
 }
 
+/************************************* | **************************************
+*                                                                             *
+*  InferLifetimesVisitor                                                      *
+*                                                                             *
+************************************** | *************************************/
 
 bool InferLifetimesVisitor::enterCallExpr(CallExpr* call) {
 
@@ -1928,6 +2284,12 @@ void InferLifetimesVisitor::inferLifetimesForConstraint(CallExpr* forCall, Expr*
   }
 }
 
+
+/************************************* | **************************************
+*                                                                             *
+*  EmitLifetimeErrorsVisitor                                                  *
+*                                                                             *
+************************************** | *************************************/
 
 static bool isDevOnly(BaseAST* ast) {
   FnSymbol* fn = ast->getFunction();
