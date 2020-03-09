@@ -1,1 +1,2 @@
-unqualified-access.chpl:5: syntax error: near '.'
+unqualified-access.chpl:5: error: 'import' of non-module symbol x
+unqualified-access.chpl:2: error: Definition of symbol x

@@ -1,18 +1,18 @@
 module A {
   module B {
-    var x = 13;
-
     proc foo() {
       writeln("In A.B.foo()");
     }
+
+    var x: int;
   }
 }
 
-module C {
-  import A.B;
+module User {
+  import A.B as C;
 
   proc main() {
-    writeln(B.x);
-    B.foo();
+    writeln(C.x);
+    C.foo();
   }
 }

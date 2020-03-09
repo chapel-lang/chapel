@@ -44,6 +44,9 @@ class ImportStmt: public VisibilityStmt {
   void scopeResolve(ResolveScope* scope);
 
   BaseAST* getSearchScope() const;
+
+ private:
+  bool checkValid(Expr* expr) const;
 };
 
 #endif

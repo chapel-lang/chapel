@@ -106,43 +106,44 @@ void ImportStmt::verify() {
 // Resolve the module symbol referred to by the ImportStmt
 //
 void ImportStmt::scopeResolve(ResolveScope* scope) {
-  // 2017/05/28 The parser inserts a normalized UseStmt of ChapelBase
-  if (isSymExpr(src)) {
-    INT_FATAL("This should only happen for a UseStmt");
+  // 2020/03/02: checkValid() does not currently return on failure, to generate
+  // good error messages
+  if (checkValid(src) == true) {
+    // 2017/05/28 The parser inserts a normalized UseStmt of ChapelBase
+    if (isSymExpr(src)) {
+      INT_FATAL("This should only happen for a UseStmt");
 
-  } else if (Symbol* sym = scope->lookup(src, /*isUse=*/ true)) {
-    SET_LINENO(this);
+    } else if (Symbol* sym = scope->lookupForImport(src)) {
+      SET_LINENO(this);
 
-    if (ModuleSymbol* modSym = toModuleSymbol(sym)) {
-      if (modSym->defPoint->parentSymbol != theProgram) {
-        USR_FATAL_CONT(this, "currently unable to import nested modules");
-      }
-      scope->enclosingModule()->moduleUseAdd(modSym);
+      if (ModuleSymbol* modSym = toModuleSymbol(sym)) {
+        scope->enclosingModule()->moduleUseAdd(modSym);
 
-      updateEnclosingBlock(scope, sym);
-
-    } else {
-      if (sym->isImmediate() == true) {
-        USR_FATAL(this,
-                  "'import' statements must refer to module symbols "
-                  "(e.g., 'import <module>;')");
-
-      } else if (sym->name != NULL) {
-        USR_FATAL_CONT(this,
-                       "'import' of non-module symbol %s",
-                       sym->name);
-        USR_FATAL_CONT(sym,  "Definition of symbol %s", sym->name);
-        USR_STOP();
+        updateEnclosingBlock(scope, sym);
 
       } else {
-        INT_FATAL(this, "'import' of non-module symbol");
+        if (sym->isImmediate() == true) {
+          USR_FATAL(this,
+                    "'import' statements must refer to module symbols "
+                    "(e.g., 'import <module>;')");
+
+        } else if (sym->name != NULL) {
+          USR_FATAL_CONT(this,
+                         "'import' of non-module symbol %s",
+                         sym->name);
+          USR_FATAL_CONT(sym,  "Definition of symbol %s", sym->name);
+          USR_STOP();
+
+        } else {
+          INT_FATAL(this, "'import' of non-module symbol");
+        }
       }
-    }
-  } else {
-    if (UnresolvedSymExpr* import = toUnresolvedSymExpr(src)) {
-      USR_FATAL(this, "Cannot find module '%s'", import->unresolved);
     } else {
-      INT_FATAL(this, "Cannot find module");
+      if (UnresolvedSymExpr* import = toUnresolvedSymExpr(src)) {
+        USR_FATAL(this, "Cannot find module '%s'", import->unresolved);
+      } else {
+        INT_FATAL(this, "Cannot find module");
+      }
     }
   }
 }
@@ -163,6 +164,71 @@ BaseAST* ImportStmt::getSearchScope() const {
 
   } else {
     INT_FATAL(this, "getSearchScope called before this import was processed");
+  }
+
+  return retval;
+}
+
+/************************************* | **************************************
+*                                                                             *
+* The parser currently accepts import statements with general expressions     *
+* e.g.                                                                        *
+*                                                                             *
+*   import a + b;                                                             *
+*   import 1.2;                                                               *
+*                                                                             *
+* This method returns true if the syntax is valid.                            *
+* The current implementation signals a FATAL error if it is not.              *
+*                                                                             *
+************************************** | *************************************/
+// Note that this implementation is expected to diverge from that of UseStmt,
+// due to ImportStmts supporting things like `import M.x;` where x is not a
+// module symbol, and due to UseStmts supporting enums.  ImportStmts may support
+// enums in the future, but that will wait on user requests
+bool ImportStmt::checkValid(Expr* expr) const {
+  bool retval = false;
+
+  if (isUnresolvedSymExpr(expr) == true) {
+    retval = true;
+
+  } else if (CallExpr* call = toCallExpr(expr)) {
+    if (call->isNamedAstr(astrSdot) == true) {
+      if (checkValid(call->get(1)) == true) {
+        if (SymExpr* rhs = toSymExpr(call->get(2))) {
+          VarSymbol* v = toVarSymbol(rhs->symbol());
+
+          if (v                        != NULL &&
+              v->immediate             != NULL &&
+              v->immediate->const_kind == CONST_KIND_STRING) {
+            retval = true;
+
+          } else {
+            INT_FATAL(this, "Bad import statement");
+          }
+
+        } else {
+          INT_FATAL(this, "Bad import statement");
+        }
+      }
+
+    } else {
+      USR_FATAL(this,
+                "'import' statements must refer to module symbols "
+                "(e.g., 'import <module>[.<submodule>]*;')");
+    }
+
+  } else if (SymExpr* symExpr = toSymExpr(expr)) {
+    if (symExpr->symbol()->isImmediate() == false) {
+      retval = true;
+
+    } else {
+      USR_FATAL(this,
+                "'import' statements must refer to module symbols "
+                "(e.g., 'import <module>[.<submodule>]*;')");
+    }
+
+  } else {
+    INT_FATAL(this, "Unexpected import stmt");
   }
 
   return retval;
