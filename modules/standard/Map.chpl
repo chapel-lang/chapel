@@ -52,23 +52,23 @@ module Map {
 
   //
   // #14861 - For now, maps of non-nilable classes are banned. Once we
-  // resolve #13602 and #14861, we can remvoe this check. The check is on
+  // resolve #13602 and #14861, we can remove this check. The check is on
   // a type method instead of `map.init` because init for associative
   // arrays (and thus their compiler error) resolves before `map.init`.
   //
   pragma "no doc"
   inline proc checkForNonNilableClass(type t) type {
     if isNonNilableClass(t) {
-      param msg = "Cannot initialize map because element type "
-                + t:string + " is a non-nilable class";
-      compilerError(msg, 2);
+      return t?;
+    } else {
+      return t;
     }
-    return t;
   }
 
   record map {
     type keyType, valType;
     param parSafe = false;
+    param chpl_nilable = true;
 
     var myKeys: domain(keyType, parSafe=parSafe);
     var vals: [myKeys] checkForNonNilableClass(valType);
@@ -96,10 +96,19 @@ module Map {
       :arg valType: The type of the values of this map.
       :arg parSafe: If `true`, this map will use parallel safe operations.
     */
-    proc init(type keyType, type valType, param parSafe=false) {
+    proc init(type keyType, type valType, param parSafe=false, chpl_nilable=true) {
       this.keyType = keyType;
       this.valType = valType;
       this.parSafe = parSafe;
+      this.chpl_nilable = true;
+    }
+
+    proc init(type keyType, type valType, param parSafe=false, chpl_nilable=false)
+    where isNonNilableClass(valType) {
+      this.keyType = keyType;
+      this.valType = valType;
+      this.parSafe = parSafe;
+      this.chpl_nilable = false;
     }
 
     /*
@@ -113,10 +122,11 @@ module Map {
       :type parSafe: bool
     */
     proc init=(pragma "intent ref maybe const formal"
-               other: map(?kt, ?vt, ?ps)) {
+               other: map(?kt, ?vt, ?ps, ?nilable)) {
       this.keyType = kt;
       this.valType = vt;
       this.parSafe = ps;
+      this.chpl_nilable = nilable;
 
       this.complete();
 
@@ -277,8 +287,14 @@ module Map {
                this map.
     */
     iter items() const ref {
-      for key in myKeys {
-        yield (key, vals[key]);
+      if chpl_nilable {
+        for key in myKeys {
+          yield (key, vals[key]);
+        }
+      } else {
+        for key in myKeys {
+          yield (key, vals[key]: valType);
+        }
       }
     }
 
@@ -288,8 +304,16 @@ module Map {
       :yields: A reference to one of the values contained in this map.
     */
     iter values() ref {
-      for val in vals {
-        yield val;
+      if chpl_nilable {
+        for val in vals {
+          yield val;
+        }
+      } else {
+        try! {
+          for val in vals {
+            yield val: valType;
+          }
+        }
       }
     }
 
@@ -334,7 +358,21 @@ module Map {
                `false` otherwise.
      :rtype: bool
     */
-    proc add(k: keyType, v: valType): bool {
+    proc add(k: keyType, v: valType): bool where !isOwnedClassType(valType) {
+      _enter();
+      if myKeys.contains(k) {
+        _leave();
+        return false;
+      }
+
+      myKeys += k;
+      vals[k] = v;
+
+      _leave();
+      return true;
+    }
+
+    proc add(k: keyType, in v: valType?): bool where isOwnedClassType(valType) {
       _enter();
       if myKeys.contains(k) {
         _leave();

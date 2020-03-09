@@ -1,4 +1,4 @@
-use Mapper;
+use Map;
 
 class C {
   var i: int;
