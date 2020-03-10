@@ -49,6 +49,7 @@ test5();
 proc test6() {
   var a:borrowed MyClass? = nil;
   a = new borrowed MyClass();
+  writeln(a);
 }
 test6();
 
