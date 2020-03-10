@@ -50,12 +50,6 @@ module Map {
 
   private use IO;
 
-  //
-  // #14861 - For now, maps of non-nilable classes are banned. Once we
-  // resolve #13602 and #14861, we can remove this check. The check is on
-  // a type method instead of `map.init` because init for associative
-  // arrays (and thus their compiler error) resolves before `map.init`.
-  //
   pragma "no doc"
   inline proc checkForNonNilableClass(type t) type {
     if isNonNilableClass(t) {
@@ -73,7 +67,6 @@ module Map {
 
     /* If `true`, this map will perform parallel safe operations. */
     param parSafe = false;
-    param chpl_nilable = true;
 
     pragma "no doc"
     var myKeys: domain(keyType, parSafe=parSafe);
@@ -103,19 +96,17 @@ module Map {
       :arg valType: The type of the values of this map.
       :arg parSafe: If `true`, this map will use parallel safe operations.
     */
-    proc init(type keyType, type valType, param parSafe=false, chpl_nilable=true) {
+    proc init(type keyType, type valType, param parSafe=false) {
       this.keyType = keyType;
       this.valType = valType;
       this.parSafe = parSafe;
-      this.chpl_nilable = true;
     }
 
-    proc init(type keyType, type valType, param parSafe=false, chpl_nilable=false)
+    proc init(type keyType, type valType, param parSafe=false)
     where isNonNilableClass(valType) {
       this.keyType = keyType;
       this.valType = valType;
       this.parSafe = parSafe;
-      this.chpl_nilable = false;
     }
 
     /*
@@ -129,11 +120,10 @@ module Map {
       :type parSafe: bool
     */
     proc init=(pragma "intent ref maybe const formal"
-               other: map(?kt, ?vt, ?ps, ?nilable)) {
+               other: map(?kt, ?vt, ?ps)) {
       this.keyType = kt;
       this.valType = vt;
       this.parSafe = ps;
-      this.chpl_nilable = nilable;
 
       this.complete();
 
@@ -294,7 +284,7 @@ module Map {
                this map.
     */
     iter items() const ref {
-      if chpl_nilable {
+      if !isNonNilableClass(valType) {
         for key in myKeys {
           yield (key, vals[key]);
         }
@@ -311,7 +301,7 @@ module Map {
       :yields: A reference to one of the values contained in this map.
     */
     iter values() ref {
-      if chpl_nilable {
+      if !isNonNilableClass(valType) {
         for val in vals {
           yield val;
         }
