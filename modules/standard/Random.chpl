@@ -230,15 +230,15 @@ module Random {
 
   pragma "no doc"
   /* Actual implementation of choice() */
-  proc _choice(stream, arr: [], size:?sizeType, replace, prob:?probType)
+  proc _choice(stream, X: domain, size:?sizeType, replace, prob:?probType)
     throws
   {
 
-    if arr.rank != 1 {
-      compilerError('choice() array must be 1 dimensional');
+    if X.rank != 1 {
+      compilerError('choice() domain must be 1 dimensional');
     }
-    if arr.size < 1 {
-      throw new owned IllegalArgumentError('choice() array.size must be greater than 0');
+    if X.size < 1 {
+      throw new owned IllegalArgumentError('choice() domain.size must be greater than 0');
     }
 
     // Check types of optional void args
@@ -251,8 +251,8 @@ module Random {
         compilerError('choice() prob array must be 1 dimensional');
       }
 
-      if prob.domain != arr.domain {
-        throw new owned IllegalArgumentError('choice() array arguments must have same domain');
+      if prob.domain != X {
+        throw new owned IllegalArgumentError('choice() prob array arguments must have similar domain');
       }
     }
 
@@ -260,35 +260,35 @@ module Random {
       if isIntegralType(sizeType) {
         if size <= 0 then
           throw new owned IllegalArgumentError('choice() size must be greater than 0');
-        if !replace && size > arr.size then
-          throw new owned IllegalArgumentError('choice() size must be smaller than array.size when replace=false');
+        if !replace && size > X.size then
+          throw new owned IllegalArgumentError('choice() size must be smaller than domain.size when replace=false');
       } else if isDomainType(sizeType) {
         if size.size <= 0 then
           throw new owned IllegalArgumentError('choice() size domain can not be empty');
-        if !replace && size.size > arr.size then
-          throw new owned IllegalArgumentError('choice() size must be smaller than array.size when replace=false');
+        if !replace && size.size > X.size then
+          throw new owned IllegalArgumentError('choice() size must be smaller than domain.size when replace=false');
       } else {
         compilerError('choice() size must be integral or domain');
       }
     }
 
     if isNothingType(probType) {
-      return _choiceUniform(stream, arr, size, replace);
+      return _choiceUniform(stream, X, size, replace);
     } else {
-      return _choiceProbabilities(stream, arr, size, replace, prob);
+      return _choiceProbabilities(stream, X, size, replace, prob);
     }
   }
 
   pragma "no doc"
   /* _choice branch for uniform distribution */
-  proc _choiceUniform(stream, arr:[], size:?sizeType, replace) throws
+  proc _choiceUniform(stream, X:domain, size:?sizeType, replace) throws
   {
-    ref A = arr.reindex(1..arr.size);
 
     if isNothingType(sizeType) {
       // Return 1 sample
-      var randIdx = stream.getNext(resultType=int, 1, A.size);
-      return A[randIdx];
+      var randVal = stream.getNext(resultType=int, 1, X.size);
+      var randIdx = X.dim(1).indexOrder(randVal);
+      return randIdx + 1;
     } else {
       // Return numElements samples
 
@@ -301,18 +301,19 @@ module Random {
                         else compilerError('choice() size type must be integral or tuple of ranges');
 
       // Return N samples
-      var samples: [1..numElements] A.eltType;
+      var samples: [1..numElements] int;
 
       if replace {
         for sample in samples {
-          var randIdx = stream.getNext(resultType=int, 1, A.size);
-          sample = A[randIdx];
+          var randVal = stream.getNext(resultType=int, 1, X.size);
+          var randIdx = X.dim(1).indexOrder(randVal);
+          sample = randIdx+1;
         }
       } else {
-        var indices: [A.domain] int = A.domain;
+        var indices: [X] int = X;
         shuffle(indices);
         for i in samples.domain {
-          samples[i] = A[indices[i]];
+          samples[i] = indices[i];
         }
       }
       if isIntegralType(sizeType) {
@@ -325,20 +326,19 @@ module Random {
 
   pragma "no doc"
   /* _choice branch for distribution defined by probabilities array */
-  proc _choiceProbabilities(stream, arr:[], size:?sizeType, replace, prob:?probType) throws
+  proc _choiceProbabilities(stream, X:domain, size:?sizeType, replace, prob:?probType) throws
   {
     import Search;
     import Sort;
 
     // If stride, offset, or size don't match, we're in trouble
-    if arr.domain != prob.domain then
-      throw new owned IllegalArgumentError('choice() arrays must have equal domains');
+    if X != prob.domain then
+      throw new owned IllegalArgumentError('choice() prob array must have similar domain');
 
     if prob.size == 0 then
-      throw new owned IllegalArgumentError('choice() arrays cannot be empty');
+      throw new owned IllegalArgumentError('choice() array cannot be empty');
 
-    ref A = arr.reindex(1..arr.size);
-    ref P = prob.reindex(1..arr.size);
+    ref P = prob.reindex(1..X.size);
 
     // Construct cumulative sum array
     var cumulativeArr = (+ scan P): real;
@@ -359,7 +359,7 @@ module Random {
       // Return 1 sample
       var randNum = stream.getNext(resultType=real);
       var (found, idx) = Search.binarySearch(cumulativeArr, randNum);
-      return A[idx];
+      return idx;
     } else {
       // Return numElements samples
 
@@ -372,13 +372,13 @@ module Random {
                         else compilerError('choice() size type must be integral or tuple of ranges');
 
       // Return N samples
-      var samples: [1..numElements] arr.eltType;
+      var samples: [1..numElements] int;
 
       if replace {
         for sample in samples {
           var randNum = stream.getNext(resultType=real);
           var (found, idx) = Search.binarySearch(cumulativeArr, randNum);
-          sample = A[idx];
+          sample = idx;
         }
       } else {
         var indicesChosen: domain(int);
@@ -399,7 +399,7 @@ module Random {
             var (found, indexChosen) = Search.binarySearch(cumulativeArr, randNum);
             if !indicesChosen.contains(indexChosen) {
               indicesChosen += indexChosen;
-              samples[i] = A[indexChosen];
+              samples[i] = indexChosen;
               i += 1;
             }
             P[indexChosen] = 0;
