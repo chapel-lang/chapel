@@ -40,13 +40,21 @@ proc masonDoc(args) throws {
 
     const projectName = tomlFile["brick"]!["name"]!.s;
     const projectFile = projectName + '.chpl';
+    const projectAuthors = tomlFile["brick"]!["authors"]!.toString();
+
+    const strippedAuthors = projectAuthors.split(',').strip('[]');
+    var authorsString:string;
+    for author in strippedAuthors {
+      authorsString += author.strip('"') + ',';
+    }
+    authorsString = '--author "' + authorsString.strip(',') + '"';
 
     if isDir(projectHome + '/src/') {
       if isFile(projectHome + '/src/' + projectFile) {
         // Must use relative paths with chpldoc to prevent baking in abs paths
         here.chdir(projectHome);
 
-        const command = 'chpldoc src/' + projectFile + ' -o doc/ --process-used-modules';
+        const command = 'chpldoc src/' + projectFile + ' -o doc/ --process-used-modules' + ' ' + authorsString;
         writeln(command);
         runCommand(command);
       }
