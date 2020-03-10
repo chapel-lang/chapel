@@ -114,11 +114,6 @@ module ChapelDistribution {
       compilerError("associative domains not supported by this distribution");
     }
 
-    proc dsiNewAssociativeDom(type idxType, param parSafe: bool)
-    where isEnumType(idxType) {
-      compilerError("enumerated domains not supported by this distribution");
-    }
-
     proc dsiNewSparseDom(param rank: int, type idxType, dom: domain) {
       compilerError("sparse domains not supported by this distribution");
     }
