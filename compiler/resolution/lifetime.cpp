@@ -1419,6 +1419,14 @@ bool LifetimeState::isLocalVariable(Symbol* sym) {
 *                                                                             *
 ************************************** | *************************************/
 
+static bool isAutoDestroyableVariable(Symbol* sym) {
+  TypeSymbol* ts = sym->getValType()->symbol;
+
+  return ts->hasFlag(FLAG_POD) == false &&
+         sym->hasFlag(FLAG_NO_AUTO_DESTROY) == false &&
+         (sym->hasFlag(FLAG_INSERT_AUTO_DESTROY) ||
+          sym->hasFlag(FLAG_INSERT_AUTO_DESTROY_FOR_EXPLICIT_NEW));
+}
 
 static void addSymbolToDetempGroup(Symbol* sym, DetempGroup* group) {
   group->elements.push_back(sym);
@@ -1442,14 +1450,8 @@ static void addSymbolToDetempGroup(Symbol* sym, DetempGroup* group) {
     bool symTemp = sym->hasFlag(FLAG_TEMP);
     bool oldRef = old->isRef();
     bool symRef = sym->isRef();
-    bool oldDestroyed =
-      (old->hasFlag(FLAG_INSERT_AUTO_DESTROY) ||
-       old->hasFlag(FLAG_INSERT_AUTO_DESTROY_FOR_EXPLICIT_NEW)) &&
-      !old->hasFlag(FLAG_NO_AUTO_DESTROY);
-    bool symDestroyed =
-      (sym->hasFlag(FLAG_INSERT_AUTO_DESTROY) ||
-       sym->hasFlag(FLAG_INSERT_AUTO_DESTROY_FOR_EXPLICIT_NEW)) &&
-      !sym->hasFlag(FLAG_NO_AUTO_DESTROY);
+    bool oldDestroyed = isAutoDestroyableVariable(old);
+    bool symDestroyed = isAutoDestroyableVariable(sym);
 
     // Prefer sym if it's in an outer block
     // (e.g. actual variable passed to task function formal,
@@ -1922,13 +1924,18 @@ bool DeinitOrderVisitor::enterCallExpr(CallExpr* call) {
   if (lifetimes->callsToIgnore.count(call))
     return false;
 
+  /* don't consider auto-destroy calls to simplify the analysis.
+     these are added by the compiler in ways that are sometimes inconsistent
+     (e.g. reduction variables) and also can be added in many return paths
+     (e.g. throwing an error from in a loop) that are not particularly
+     important here.
   if (FnSymbol* fn = call->resolvedFunction()) {
     if (fn->hasFlag(FLAG_AUTO_DESTROY_FN)) {
       SymExpr* se = toSymExpr(call->get(1));
       Symbol* sym = lifetimes->getCanonicalSymbol(se->symbol());
 
       if (skipEarlyDeinitsForUnconditionalReturn == 0 &&
-          sym->getValType()->symbol->hasFlag(FLAG_POD) == false) {
+          isAutoDestroyedVariable(sym)) {
         if (debugging) {
           printOrderSummary(orderStack);
           printf(" deinit %s[%i] in call %i\n", sym->name, sym->id, call->id);
@@ -1947,14 +1954,14 @@ bool DeinitOrderVisitor::enterCallExpr(CallExpr* call) {
       // no need to consider nested calls
       return false;
     }
-  }
+  }*/
 
   if (call->isPrimitive(PRIM_ASSIGN_ELIDED_COPY)) {
     SymExpr* se = toSymExpr(call->get(2));
     Symbol* sym = lifetimes->getCanonicalSymbol(se->symbol());
 
     if (skipEarlyDeinitsForUnconditionalReturn == 0 &&
-        sym->getValType()->symbol->hasFlag(FLAG_POD) == false) {
+        isAutoDestroyedVariable(sym)) {
       if (debugging) {
         printOrderSummary(orderStack);
         printf(" copy elide %s[%i] in call %i\n", sym->name, sym->id, call->id);
@@ -3366,34 +3373,24 @@ bool LifetimeState::isLifetimeShorter(Lifetime a, Lifetime b) {
       bCur = bCur->nestedOrder;
     }
 
-    if (anyElse == false)
-      return false;
+    if (anyElse)
+      if (helpIsLifetimeShorter(aNode, bNode))
+        return true;
 
-    // Otherwise, do more complex figuring for both sides of conditionals
-    return helpIsLifetimeShorter(aNode, bNode);
+    // Otherwise, the order was similar. Check for FLAG_DEAD_LAST_MENTION
+    // differences.
+    bool aMaybeDeadEarly = aSym->hasFlag(FLAG_DEAD_LAST_MENTION);
+    bool bMaybeDeadEarly = bSym->hasFlag(FLAG_DEAD_LAST_MENTION);
 
-    /*
-    BlockStmt* aBlock = getDefBlock(aSym);
-    BlockStmt* bBlock = getDefBlock(bSym);
-    if (aBlock == bBlock) {
-      // TODO: check the order of the declarations
-      bool aMaybeDeadEarly = aSym->hasFlag(FLAG_MAYBE_COPY_ELIDED) ||
-                             aSym->hasFlag(FLAG_DEAD_LAST_MENTION);
-      bool bMaybeDeadEarly = bSym->hasFlag(FLAG_MAYBE_COPY_ELIDED) ||
-                             bSym->hasFlag(FLAG_DEAD_LAST_MENTION);
-
-      if      (aMaybeDeadEarly == false && bMaybeDeadEarly == false)
-        return false;  // don't worry about order for end-of-block decls
-                       // doing so would prevent swap from working.
-      else if (aMaybeDeadEarly == true  && bMaybeDeadEarly == true)
-        return false; // don't worry about this order... yet
-      else if (aMaybeDeadEarly == true  && bMaybeDeadEarly == false)
-        return true; // a has shorter lifetime than b
-      else if (aMaybeDeadEarly == false && bMaybeDeadEarly == true)
-        return false; // b has shorter lifetime than a
-    } else {
-      return isBlockWithinBlock(aBlock, bBlock);
-    }*/
+    if      (aMaybeDeadEarly == false && bMaybeDeadEarly == false)
+      return false;  // don't worry about order for end-of-block decls
+                     // doing so would prevent swap from working.
+    else if (aMaybeDeadEarly == true  && bMaybeDeadEarly == true)
+      return false;  // OK: call-temps deinited together
+    else if (aMaybeDeadEarly == true  && bMaybeDeadEarly == false)
+      return true;   // a has shorter lifetime than b
+    else if (aMaybeDeadEarly == false && bMaybeDeadEarly == true)
+      return false;   // b has shorter lifetime than a
   }
 
   return false;
