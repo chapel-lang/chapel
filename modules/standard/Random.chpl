@@ -987,7 +987,43 @@ module Random {
       proc choice(arr: [], size:?sizeType=none, replace=true, prob:?probType=none)
         throws
       {
-        return _choice(this, arr, size=size, replace=replace, prob=prob);
+        var X = arr.domain;
+        return _choice(this, X, size=size, replace=replace, prob=prob);
+      }
+
+      /*
+     Returns a random sample from a given 1-D range, ``rng``.
+
+     :arg rng: a 1-D range with values that will be sampled from.
+     :arg size: An optional integral value specifying the number of elements to
+                choose, or a domain specifying the dimensions of the
+                sampled array to be filled, otherwise a single element will be
+                chosen.
+     :arg replace: an optional ``bool`` specifying whether or not to sample with
+                   replacement, i.e. elements will only be chosen up to one
+                   time when ``replace=false``.
+     :arg prob: an optional 1-D array that contains probabilities of choosing
+                each element of ``rng``, otherwise elements will be chosen over
+                a uniform distribution. ``prob`` must have integral or real
+                element type, with no negative values and at least one non-zero
+                value. The domain must be equal to that of ``rng``.
+
+     :return: An element chosen from ``rng`` is ``size == 1``, or an array of
+              element chosen from ``rng`` if ``size > 1`` or ``size`` is a
+              domain.
+
+     :throws IllegalArgumentError: if ``rng.size == 0``,
+                                   if ``rng`` contains a negative value,
+                                   if ``rng`` has no non-zero values.,
+                                   if ``rng(domain) != prob.domain``,
+                                   if ``size < 1 || size.size < 1``,
+                                   if ``replace=false`` and ``size > rng.size || size.size > rng.size``
+     */
+      proc choice(rng: range, size:?sizeType=none, replace=true, prob:?probType=none)
+        throws
+      {
+        var X: domain(1) = {rng};
+        return _choice(this, X, size=size, replace=replace, prob=prob);
       }
 
       /* Randomly shuffle a 1-D array. */
