@@ -699,7 +699,7 @@ proc type CyclicDom.chpl__deserialize(data) {
                                 data);
 }
 
-proc CyclicDom.dsiSupportsPrivatization() param return true;
+override proc CyclicDom.dsiSupportsPrivatization() param return true;
 
 proc CyclicDom.dsiGetPrivatizeData() return 0;
 
@@ -917,7 +917,7 @@ iter CyclicArr.these(param tag: iterKind) where tag == iterKind.leader {
     yield followThis;
 }
 
-proc CyclicArr.dsiStaticFastFollowCheck(type leadType) param
+override proc CyclicArr.dsiStaticFastFollowCheck(type leadType) param
   return _to_borrowed(leadType) == _to_borrowed(this.type) ||
          _to_borrowed(leadType) == _to_borrowed(this.dom.type);
 

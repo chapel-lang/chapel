@@ -283,7 +283,7 @@ module ArrayViewReindex {
       chpl_assignDomainWithGetSetIndices(this, rhs);
     }
 
-    proc isReindexDomainView() param {
+    override proc isReindexDomainView() param {
       return true;
     }
 
@@ -302,7 +302,7 @@ module ArrayViewReindex {
 
     // Don't want to privatize a DefaultRectangular, so pass the query on to
     // the wrapped array
-    proc dsiSupportsPrivatization() param
+    override proc dsiSupportsPrivatization() param
       return downdomInst.dsiSupportsPrivatization();
 
     proc dsiGetPrivatizeData() {

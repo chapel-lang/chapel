@@ -709,7 +709,7 @@ proc type BlockCyclicDom.chpl__deserialize(data) {
            data);
 }
 
-proc BlockCyclicDom.dsiSupportsPrivatization() param return true;
+override proc BlockCyclicDom.dsiSupportsPrivatization() param return true;
 
 proc BlockCyclicDom.dsiGetPrivatizeData() return dist.pid;
 
