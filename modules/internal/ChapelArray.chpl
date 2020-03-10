@@ -1176,7 +1176,7 @@ module ChapelArray {
     }
 
     /* The ``idxType`` as represented by an integer type.  When
-       ``idxType`` is an enumerated type, this evaluates to ``int``.
+       ``idxType`` is an enum type, this evaluates to ``int``.
        Otherwise, it evaluates to ``idxType``. */
     proc intIdxType type {
       return chpl__idxTypeToIntIdxType(_value.idxType);
