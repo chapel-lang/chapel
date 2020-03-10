@@ -310,7 +310,7 @@ conversions are automatically supported for enumerated types which are
 concrete or semi-concrete
 (see :ref:`Explicit_Enumeration_Conversions`).
 
-   *Example (enum.chpl)*.
+   *Example (enum-statesmen.chpl)*.
 
    The code 
 
