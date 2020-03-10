@@ -1947,38 +1947,6 @@ bool DeinitOrderVisitor::enterCallExpr(CallExpr* call) {
   if (lifetimes->callsToIgnore.count(call))
     return false;
 
-  /* don't consider auto-destroy calls to simplify the analysis.
-     these are added by the compiler in ways that are sometimes inconsistent
-     (e.g. reduction variables) and also can be added in many return paths
-     (e.g. throwing an error from in a loop) that are not particularly
-     important here.
-  if (FnSymbol* fn = call->resolvedFunction()) {
-    if (fn->hasFlag(FLAG_AUTO_DESTROY_FN)) {
-      SymExpr* se = toSymExpr(call->get(1));
-      Symbol* sym = lifetimes->getCanonicalSymbol(se->symbol());
-
-      if (skipEarlyDeinitsForUnconditionalReturn == 0 &&
-          isAutoDestroyedVariable(sym)) {
-        if (debugging) {
-          printOrderSummary(orderStack);
-          printf(" deinit %s[%i] in call %i\n", sym->name, sym->id, call->id);
-        }
-
-        addToDeinitOrderTree(&lifetimes->order[sym], orderStack.front());
-      } else if (debugging) {
-        printOrderSummary(orderStack);
-        printf(" skipping deinit %s[%i] in call %i\n",
-               sym->name, sym->id, call->id);
-      }
-
-      // don't advance order for auto-destroy functions themselves
-      // (so that deinitialization order is not enforced in analysis)
-
-      // no need to consider nested calls
-      return false;
-    }
-  }*/
-
   if (call->isPrimitive(PRIM_ASSIGN_ELIDED_COPY)) {
     SymExpr* se = toSymExpr(call->get(2));
     Symbol* sym = lifetimes->getCanonicalSymbol(se->symbol());
