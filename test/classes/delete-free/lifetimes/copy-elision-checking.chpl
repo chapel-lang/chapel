@@ -55,3 +55,15 @@ proc test5() {
   }
 }
 test5();
+
+class C { var x: int; }
+
+proc test6() {
+  var a:owned C = new C(1);
+  var b = a.borrow();
+  {
+    var b = a; // copy elision
+    return;
+  }
+}
+test6();
