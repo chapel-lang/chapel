@@ -733,8 +733,7 @@ void initPrimitiveTypes() {
   dtAnyComplex->symbol->addFlag(FLAG_GENERIC);
 
   // parses from enum
-  // TODO: remove enumerated and replace it with enum
-  dtAnyEnumerated = createInternalType ("enumerated", "enumerated");
+  dtAnyEnumerated = createInternalType ("enum", "enum");
   dtAnyEnumerated->symbol->addFlag(FLAG_GENERIC);
 
   dtAnyImag = createInternalType("chpl_anyimag", "imag");

@@ -759,6 +759,7 @@ internal_type_ident_def:
 
 scalar_type:
   TBOOL    { $$ = new SymExpr(dtBools[BOOL_SIZE_DEFAULT]->symbol); }
+| TENUM    { $$ = new SymExpr(dtAnyEnumerated->symbol); }
 | TINT     { $$ = new SymExpr(dtInt[INT_SIZE_DEFAULT]->symbol); }
 | TUINT    { $$ = new SymExpr(dtUInt[INT_SIZE_DEFAULT]->symbol); }
 | TREAL    { $$ = new SymExpr(dtReal[FLOAT_SIZE_DEFAULT]->symbol); }
@@ -1808,8 +1809,6 @@ sub_type_level_expr:
     { $$ = new SymExpr(dtAnyManagementNonNilable->symbol); }
 | TRECORD
     { $$ = new SymExpr(dtAnyRecord->symbol); }
-| TENUM
-    { $$ = new SymExpr(dtAnyEnumerated->symbol); }
 ;
 
 for_expr:
