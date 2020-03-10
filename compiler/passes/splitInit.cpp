@@ -36,6 +36,13 @@
 #include "symbol.h"
 #include "TryStmt.h"
 
+/************************************* | **************************************
+*                                                                             *
+*   split init                                                                *
+*                                                                             *
+************************************** | *************************************/
+
+
 bool isSplitInitExpr(Expr* e) {
   if (SymExpr* se = toSymExpr(e))
     if (se->symbol() == gSplitInit)
@@ -404,4 +411,108 @@ static found_init_t doFindInitPoints(Symbol* sym,
   }
 
   return FOUND_NOTHING;
+}
+
+/************************************* | **************************************
+*                                                                             *
+*   copy elision                                                              *
+*                                                                             *
+************************************** | *************************************/
+
+Symbol* findCopyElisionCandidate(CallExpr* call, VarSymbol* var) {
+  // a call to init=
+  if (call->isNamedAstr(astrInitEquals))
+    if (call->numActuals() >= 2)
+      if (SymExpr* lhsSe = toSymExpr(call->get(1)))
+        if (SymExpr* rhsSe = toSymExpr(call->get(2)))
+          if (lhsSe->getValType() == rhsSe->getValType())
+            if (rhsSe->symbol() == var)
+              return lhsSe->symbol();
+
+  // a PRIM_MOVE / PRIM_ASSIGN from chpl__initCopy / chpl__autoCopy
+  if (call->isPrimitive(PRIM_MOVE) || call->isPrimitive(PRIM_ASSIGN))
+    if (SymExpr* lhsSe = toSymExpr(call->get(1)))
+      if (CallExpr* rhsCall = toCallExpr(call->get(2)))
+        if (rhsCall->isNamed("chpl__initCopy") ||
+            rhsCall->isNamed("chpl__autoCopy"))
+          if (rhsCall->numActuals() >= 1)
+            if (SymExpr* rhsSe = toSymExpr(rhsCall->get(1)))
+              if (lhsSe->getValType() == rhsSe->getValType())
+                if (rhsSe->symbol() == var)
+                  return lhsSe->symbol();
+
+  // a chpl__initCopy / chpl__autoCopy returning through RVV
+  if (call->isNamed("chpl__initCopy") || call->isNamed("chpl__autoCopy"))
+    if (FnSymbol* calledFn = call->resolvedFunction())
+      if (calledFn->hasFlag(FLAG_FN_RETARG) && call->numActuals() >= 2)
+        if (SymExpr* rhsSe = toSymExpr(call->get(1)))
+          if (SymExpr* lhsSe = toSymExpr(call->get(2)))
+            if (lhsSe->getValType() == rhsSe->getValType())
+              if (rhsSe->symbol() == var)
+                return lhsSe->symbol();
+
+  return NULL;
+}
+
+// Making FOUND_COPY another name for FOUND_INIT allows us to use the enum
+#define FOUND_COPY FOUND_INIT
+
+static found_init_t doFindCopyElisionPoints(VarSymbol* var,
+                                            Expr* cur,
+                                            std::vector<CallExpr*>& points,
+                                            bool& foundEndOfStmtMentioning) {
+
+  while (cur != NULL) {
+    if (isCallExpr(cur) || isDefExpr(cur)) {
+      CallExpr* call = toCallExpr(cur);
+
+      if (findSymExprFor(cur, var) != NULL) {
+        // Found a mention
+        if (call == NULL) {
+          return FOUND_USE; // found a mention not in a call
+        } else {
+          // in a call
+          if (call->isPrimitive(PRIM_END_OF_STATEMENT)) {
+            // in an end of statement marker
+            if (foundEndOfStmtMentioning) {
+              return FOUND_USE; // already encountered a statement mentioning
+            } else {
+              foundEndOfStmtMentioning = true;
+              // keep looking; ignore this end-of-statement
+            }
+          } else {
+            // in another call - check if it is a copy
+            if (findCopyElisionCandidate(call, var)) {
+              points.push_back(call);
+              return FOUND_COPY;
+            } else {
+              // stop the search if we found another sort of mention.
+              return FOUND_USE;
+            }
+          }
+        }
+      }
+
+    } else {
+      // not a CallExpr or DefExpr
+      // stop the search if it was a nested block
+      return FOUND_USE;
+    }
+    cur = cur->prev;
+  }
+
+  return FOUND_NOTHING;
+}
+
+
+bool findCopyElisionPoints(VarSymbol* var,
+                           Expr* cur,
+                           std::vector<CallExpr*>& points) {
+
+  bool foundEndOfStmtMentioning = false;
+
+  found_init_t got = doFindCopyElisionPoints(var, cur, points,
+                                             foundEndOfStmtMentioning);
+
+  return got == FOUND_COPY;
 }

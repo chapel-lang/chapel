@@ -23,6 +23,7 @@
 #include "expr.h"
 #include "DeferStmt.h"
 #include "resolution.h"
+#include "splitInit.h"
 #include "stmt.h"
 #include "symbol.h"
 
@@ -283,56 +284,6 @@ void AutoDestroyScope::insertAutoDestroys(FnSymbol* fn, Expr* refStmt,
   mLocalsHandled = true;
 }
 
-static void findCopy(CallExpr* call, VarSymbol* var,
-                     CallExpr** copyToElide, Symbol** copyToLhs)
-{
-  if (call->isNamedAstr(astrInitEquals)) {
-    if (call->numActuals() >= 2) {
-      if (SymExpr* lhsSe = toSymExpr(call->get(1))) {
-        if (SymExpr* rhsSe = toSymExpr(call->get(2))) {
-          if (lhsSe->getValType() == rhsSe->getValType()) {
-            if (rhsSe->symbol() == var) {
-              *copyToElide = call;
-              *copyToLhs = lhsSe->symbol();
-            }
-          }
-        }
-      }
-    }
-  } else if (call->isPrimitive(PRIM_MOVE) || call->isPrimitive(PRIM_ASSIGN)) {
-    if (SymExpr* lhsSe = toSymExpr(call->get(1))) {
-      if (CallExpr* rhsCall = toCallExpr(call->get(2))) {
-        if (rhsCall->isNamed("chpl__initCopy") ||
-            rhsCall->isNamed("chpl__autoCopy")) {
-          if (rhsCall->numActuals() >= 1) {
-            if (SymExpr* rhsSe = toSymExpr(rhsCall->get(1))) {
-              if (lhsSe->getValType() == rhsSe->getValType()) {
-                if (rhsSe->symbol() == var) {
-                  *copyToElide = call;
-                  *copyToLhs = lhsSe->symbol();
-                }
-              }
-            }
-          }
-        }
-      }
-    }
-  } else if (call->isNamed("chpl__initCopy")||call->isNamed("chpl__autoCopy")) {
-    if (call->numActuals() >= 2) {
-      if (SymExpr* rhsSe = toSymExpr(call->get(1))) {
-        if (SymExpr* lhsSe = toSymExpr(call->get(2))) {
-          if (lhsSe->getValType() == rhsSe->getValType()) {
-            if (rhsSe->symbol() == var) {
-              *copyToElide = call;
-              *copyToLhs = lhsSe->symbol();
-            }
-          }
-        }
-      }
-    }
-  }
-}
-
 static void deinitializeOrCopyElide(Expr* before, Expr* after, VarSymbol* var) {
   if (isAutoDestroyedVariable(var) == false)
     return; // nothing to do for variables not to be auto-destroyed
@@ -343,63 +294,19 @@ static void deinitializeOrCopyElide(Expr* before, Expr* after, VarSymbol* var) {
 
   INT_ASSERT(autoDestroyFn->hasFlag(FLAG_AUTO_DESTROY_FN));
 
-  CallExpr* copyToElide = NULL;
-  Symbol* copyToLhs = NULL;
+  std::vector<CallExpr*> copiesToElide;
+  bool elideCopies = false;
 
   // Check to see if copy-elision is possible.
   if (fNoCopyElision == false) {
-    // variable is dead at last mention.
-    // is copy-initialization the last mention of this variable?
-    // (Don't consider the end-of-statement marker for the copy-init itself)
-
-    std::vector<SymExpr*> symExprs;
-
-    // Scroll backwards finding uses of the variable.
     Expr* cur = NULL;
     if (after != NULL) cur = after;
     if (before != NULL) cur = before->prev;
 
-    bool foundEndOfStatementMentioning = false;
-
-    while (cur != NULL) {
-      if (isCallExpr(cur) || isDefExpr(cur)) {
-        CallExpr* call = toCallExpr(cur);
-
-        symExprs.clear();
-        collectSymExprsFor(cur, var, symExprs);
-        if (symExprs.size() > 0) {
-          // Found a mention
-          if (call == NULL) {
-            break; // found a mention not in a call
-          } else {
-            // in a call
-            if (call->isPrimitive(PRIM_END_OF_STATEMENT)) {
-              // in an end of statement marker
-              if (foundEndOfStatementMentioning) {
-                break; // stop if already encountered a statement mentioning
-              } else {
-                foundEndOfStatementMentioning = true;
-                // keep looking; ignore this end-of-statement
-              }
-            } else {
-              // in another call - check if it is a copy
-              findCopy(call, var, &copyToElide, &copyToLhs);
-
-              // stop the search if we found a mention.
-              break;
-            }
-          }
-        }
-
-      } else {
-        // stop the search if it was a nested block
-        break;
-      }
-      cur = cur->prev;
-    }
+    elideCopies = findCopyElisionPoints(var, cur, copiesToElide);
   }
 
-  if (copyToElide == NULL) {
+  if (elideCopies == false) {
     BaseAST* useLoc = before?before:after;
     SET_LINENO(useLoc);
     CallExpr* autoDestroy = new CallExpr(autoDestroyFn, var);
@@ -408,11 +315,16 @@ static void deinitializeOrCopyElide(Expr* before, Expr* after, VarSymbol* var) {
     else
       after->insertAfter(autoDestroy);
   } else {
-    SET_LINENO(copyToElide);
-    // Change the copy into a move and don't destroy the variable.
-    copyToElide->convertToNoop();
-    copyToElide->insertBefore(new CallExpr(PRIM_ASSIGN_ELIDED_COPY, copyToLhs, var));
-    var->addFlag(FLAG_MAYBE_COPY_ELIDED);
+    for_vector (CallExpr, elide, copiesToElide) {
+      Symbol* lhs = findCopyElisionCandidate(elide, var);
+      INT_ASSERT(lhs != NULL); // or shouldn't be in vector
+
+      SET_LINENO(elide);
+      // Change the copy into a move and don't destroy the variable.
+      elide->convertToNoop();
+      elide->insertBefore(new CallExpr(PRIM_ASSIGN_ELIDED_COPY, lhs, var));
+      var->addFlag(FLAG_MAYBE_COPY_ELIDED);
+    }
   }
 }
 
