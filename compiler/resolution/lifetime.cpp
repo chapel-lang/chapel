@@ -198,7 +198,7 @@ namespace {
   typedef std::set<CallExpr*> CallExprSet;
   typedef std::set<FnSymbol*> LocalFunctionsSet;
   typedef std::map<Symbol*, DeinitOrderNode> DeinitOrderMap;
-  typedef std::map<BlockStmt*, DeinitOrderNode> DeinitOrderBlockMap;
+  typedef std::map<Stmt*, DeinitOrderNode> DeinitOrderBlockMap;
 
   struct LifetimeState {
     // this mapping allows the pass to ignore certain compiler temps
@@ -276,6 +276,7 @@ namespace {
       bool enterScope(Expr* block);
       void exitScope(Expr* block);
 
+      void noteBlockOrder(BlockStmt* b);
       void noteUnconditionalReturnInParentBlocks(Expr* ret);
 
       // these are all just blocks for the analysis
@@ -355,9 +356,9 @@ static bool containsOwnedClass(Type* type);
 static bool isOrRefersBorrowedClass(Type* type);
 static bool isAnalyzedMoveOrAssignment(CallExpr* call);
 static bool symbolHasInfiniteLifetime(Symbol* sym);
-static BlockStmt* getDefBlock(Symbol* sym);
+static Stmt* getDefBlock(Symbol* sym);
 static Expr* getParentExprIncludingTaskFnCalls(Expr* cur);
-static bool isBlockWithinBlock(BlockStmt* a, BlockStmt* b);
+static bool isBlockWithinBlock(Stmt* a, Stmt* b);
 static constraint_t orderConstraintFromClause(Expr* expr, Symbol* a, Symbol* b);
 static constraint_t orderConstraintFromClause(FnSymbol* fn, Symbol* a, Symbol* b);
 static void printOrderConstraintFromClause(Expr* expr, Symbol* a, Symbol* b);
@@ -954,6 +955,17 @@ static void printLifetimeState(LifetimeState* state)
     printDeinitOrderTree("", &value);
   }
 
+  printf("deinit blockOrders:\n");
+  for (DeinitOrderBlockMap::iterator it = state->blockOrder.begin();
+       it != state->blockOrder.end();
+       ++it) {
+    Stmt* key = it->first;
+    DeinitOrderNode& value = it->second;
+
+    printf("deinit order for block %i:\n", key->id);
+    printDeinitOrderTree("", &value);
+  }
+
   printf("intrinsic lifetimes:\n");
   for (SymbolToLifetimeMap::iterator it = state->intrinsicLifetime.begin();
        it != state->intrinsicLifetime.end();
@@ -1439,8 +1451,8 @@ static void addSymbolToDetempGroup(Symbol* sym, DetempGroup* group) {
   if (old == NULL) {
     preferSym = true;
   } else {
-    BlockStmt* oldBlock = getDefBlock(old);
-    BlockStmt* symBlock = getDefBlock(sym);
+    Stmt* oldBlock = getDefBlock(old);
+    Stmt* symBlock = getDefBlock(sym);
 
     bool oldInSym = isBlockWithinBlock(oldBlock, symBlock);
     bool symInOld = isBlockWithinBlock(symBlock, oldBlock);
@@ -1721,11 +1733,7 @@ void DeinitOrderVisitor::exitScope(Expr* block) {
   clearDeinitOrderNodeSubtree(last);
 
   if (BlockStmt* b = toBlockStmt(block)) {
-    // note the last statement in the block for use in finding the
-    // deinit order of symbols defined in this block.
-    // The noteUnconditionalReturnInParentBlocks might take precedence
-    // over this one though.
-    addToDeinitOrderTree(&lifetimes->blockOrder[b], orderStack.front());
+    noteBlockOrder(b);
   }
 
   // remove the orderStack added in enterBlockStmt
@@ -1736,6 +1744,18 @@ void DeinitOrderVisitor::exitScope(Expr* block) {
     nextDeinitOrderNode(orderStack.back(), NULL);
   } else {
     INT_ASSERT(block->parentExpr == NULL);
+  }
+}
+
+void DeinitOrderVisitor::noteBlockOrder(BlockStmt* b) {
+  if (!isShadowVarSymbol(b->parentSymbol)) {
+    // note shadow var scopes at conclusion of forall loops
+
+    // note the last statement in the block for use in finding the
+    // deinit order of symbols defined in this block.
+    // The noteUnconditionalReturnInParentBlocks might take precedence
+    // over this one though.
+    addToDeinitOrderTree(&lifetimes->blockOrder[b], orderStack.front());
   }
 }
 
@@ -1750,13 +1770,16 @@ void DeinitOrderVisitor::exitBlockStmt(BlockStmt* node) {
   if (!node->isScopeless() && !isCondStmt(node->parentExpr)) {
     exitScope(node);
   } else {
-    addToDeinitOrderTree(&lifetimes->blockOrder[node], orderStack.front());
+    noteBlockOrder(node);
   }
 }
 bool DeinitOrderVisitor::enterForallStmt(ForallStmt* node) {
   return enterScope(node);
 }
 void DeinitOrderVisitor::exitForallStmt(ForallStmt* node) {
+  // note the order for shadow-var symbols
+  addToDeinitOrderTree(&lifetimes->blockOrder[node], orderStack.front());
+
   exitScope(node);
 }
 
@@ -2978,7 +3001,7 @@ bool outlivesBlock(LifetimeInformation* info, Symbol* sym, BlockStmt* block) {
     if (lp.referent.infinite || lp.referent.returnScope) {
       referentOutlivesBlock = true;
     } else if (lp.referent.fromSymbolScope != NULL) {
-      BlockStmt* referentDefBlock = getDefBlock(lp.referent.fromSymbolScope);
+      Stmt* referentDefBlock = getDefBlock(lp.referent.fromSymbolScope);
       if (isBlockWithinBlock(referentDefBlock, block) == false)
         referentOutlivesBlock = true;
     }
@@ -3239,7 +3262,8 @@ static bool symbolHasInfiniteLifetime(Symbol* sym) {
   return false;
 }
 
-static BlockStmt* getDefBlock(Symbol* sym) {
+// Returns a BlockStmt or a ForallStmt
+static Stmt* getDefBlock(Symbol* sym) {
   Expr* defPoint = sym->defPoint;
 
   if (isTaskFunctionFormal(sym)) {
@@ -3252,6 +3276,12 @@ static BlockStmt* getDefBlock(Symbol* sym) {
     if (BlockStmt* block = toBlockStmt(defPoint))
       if (block->blockTag == BLOCK_NORMAL)
         return block;
+
+    if (ForallStmt* fs = toForallStmt(defPoint))
+      return fs;
+
+    if (ShadowVarSymbol* sv = toShadowVarSymbol(defPoint->parentSymbol))
+      defPoint = sv->defPoint;
 
     defPoint = defPoint->parentExpr;
   }
@@ -3278,7 +3308,8 @@ static Expr* getParentExprIncludingTaskFnCalls(Expr* cur) {
 }
 
 // This could definitely be implemented in a faster way.
-static bool isBlockWithinBlock(BlockStmt* a, BlockStmt* b) {
+// Works with ForallStmts and BlockStmts.
+static bool isBlockWithinBlock(Stmt* a, Stmt* b) {
   Expr* findParent = b;
   for (Expr* cur = a; cur; cur = getParentExprIncludingTaskFnCalls(cur)) {
     if (cur == findParent)
@@ -3422,7 +3453,7 @@ DeinitOrderNode* LifetimeState::deinitOrderNodeFor(Symbol* sym) {
 
   // otherwise, use the order from the final location in the defining
   // block as recorded in blockOrder
-  BlockStmt* block = getDefBlock(sym);
+  Stmt* block = getDefBlock(sym);
   if (block == NULL && isArgSymbol(sym))
     block = sym->defPoint->getFunction()->body;
 
