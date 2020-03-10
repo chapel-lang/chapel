@@ -80,6 +80,8 @@ public:
   Symbol*               lookupNameLocally(const char* name,
                                           bool isUse=false)              const;
 
+  Symbol*               lookupPublicImports(const char* name)            const;
+
   // Support for UseStmt with only/except
   // Has the potential to return multiple fields
   // Includes public and private fields

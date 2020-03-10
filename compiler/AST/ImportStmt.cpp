@@ -22,6 +22,7 @@
 #include "AstVisitor.h"
 #include "ResolveScope.h"
 #include "stringutil.h"
+#include "view.h"
 
 #include <algorithm>
 
@@ -119,6 +120,20 @@ void ImportStmt::scopeResolve(ResolveScope* scope) {
 
       if (ModuleSymbol* modSym = toModuleSymbol(sym)) {
         scope->enclosingModule()->moduleUseAdd(modSym);
+        
+        //if (!isPrivate) {
+          //if (SymExpr *se = toSymExpr(src)) {
+            //scope->extend(se->symbol());
+          //}
+          //else if (UnresolvedSymExpr *urse = toUnresolvedSymExpr(src)) {
+            //scope->extend(urse->symbol());
+          //}
+          //else {
+            //nprint_view(src);
+            //INT_FATAL("Dunno how to do that yet");
+          //}
+
+        //}
 
         updateEnclosingBlock(scope, sym);
 

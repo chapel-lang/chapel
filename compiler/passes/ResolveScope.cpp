@@ -48,6 +48,8 @@
 #include "ImportStmt.h"
 #include "LoopExpr.h"
 #include "scopeResolve.h"
+#include "stmt.h"
+#include "view.h"
 
 ResolveScope* rootScope;
 
@@ -824,6 +826,36 @@ Symbol* ResolveScope::lookupNameLocally(const char* name, bool isUse) const {
     // don't consider top-level modules to be visible unless this is a use
     if (toModuleSymbol(sym) == NULL || this != rootScope || isUse) {
       retval = sym;
+    }
+  }
+
+  return retval;
+}
+
+Symbol* ResolveScope::lookupPublicImports(const char* name) const {
+  UseImportList useImportList = mUseImportList;
+  Symbol *retval = NULL;
+
+  for (size_t i = 0; i < useImportList.size(); i++) {
+    VisibilityStmt *vs = useImportList[i];
+    if (ImportStmt *is = toImportStmt(vs)) {
+      std::cout << "Candidate import stmt\n";
+      nprint_view(is);
+      if (!is->isPrivate) {
+        std::cout << "Import statement is public\n";
+        retval = vs->checkIfModuleNameMatches(name);
+        if (retval) {
+          nprint_view(retval);
+        }
+      }
+      else {
+        std::cout << "Import statement is not public\n";
+
+      }
+    }
+    else {
+      std::cout << "Skipping nonimport stmt\n";
+      nprint_view(useImportList[i]);
     }
   }
 

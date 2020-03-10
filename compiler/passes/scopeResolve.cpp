@@ -39,6 +39,7 @@
 #include "stlUtil.h"
 #include "stringutil.h"
 #include "TryStmt.h"
+#include "view.h"
 #include "visibleFunctions.h"
 #include "wellknown.h"
 
@@ -1392,6 +1393,10 @@ static void resolveModuleCall(CallExpr* call) {
       renameLoc = resolveUnresolvedSymExpr(uSE, true);
     }
 
+    if (strncmp(call->get(1)->fname(), "main2.chpl", 10) == 0){
+      //nprint_view(call);
+      //gdbShouldBreakHere();
+    }
     // Now that we've potentially resolved the unresolved sym expr, check if
     // it's been replaced with a sym expr (or if it was one to start), and
     // operate within it if so.
@@ -1405,8 +1410,21 @@ static void resolveModuleCall(CallExpr* call) {
 
         currModule->moduleUseAdd(mod);
 
+        Symbol* sym;
+
         // First, try regular scope resolution
-        Symbol* sym = scope->lookupNameLocally(mbrName);
+        sym = scope->lookupNameLocally(mbrName);
+
+
+        // Then, try public import statements in the module
+        if (!sym) {
+          sym = scope->lookupPublicImports(mbrName);
+        }
+    //if (strncmp(call->get(1)->fname(), "main2.chpl", 10) == 0){
+        //Symbol* sym = scope->lookupPublicImports(mbrName);
+        //nprint_view(sym);
+
+    //}
 
         // Adjust class types to undecorated
         if (sym && isClass(sym->type)) {
