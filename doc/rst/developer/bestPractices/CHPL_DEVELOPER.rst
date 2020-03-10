@@ -8,7 +8,7 @@ e.g. ``true``).  In particular, all code that is committed should be
 able to be built with ``CHPL_DEVELOPER`` is set; otherwise, that code is
 considered to break the build.
 
-Setting ``CHPL_DEVELOPER`` has a number of impacts on how things behave,
+Setting ``CHPL_DEVELOPER`` has several impacts on how things behave,
 most of which are set up to serve the typical developer as best
 possible.  In particular:
 
@@ -20,7 +20,7 @@ possible.  In particular:
 
    (c) optimizations to be turned off
 
-   (d) a number of warnings to be turned on with the goal of making
+   (d) several warnings to be turned on with the goal of making
        our code as portable and bulletproof as possible
 
 2) When doing ``make clean`` on the compiler, it causes intermediate
@@ -39,7 +39,7 @@ possible.  In particular:
    We should fix this).
 
 5) Turns on ``--devel`` by default when invoking the ``chpl`` compiler.  This
-   in turn has the following effects:
+   in turn, has the following effects:
 
    (a) Prints out ``hidden`` developer flags when invoking ``chpl --help``
        (these flags are equally available to developers and

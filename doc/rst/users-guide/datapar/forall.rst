@@ -75,7 +75,7 @@ avoiding overwhelming the target system with too much concurrency.
 
 This is precisely what forall-loops are for.  While they result in
 parallel execution like coforalls, they typically use a number of
-tasks that is appropriate for the system, dividing the loop's
+tasks that are appropriate for the system, dividing the loop's
 iterations between them.  Thus, we could write this parallel loop as:
 
 .. literalinclude:: examples/users-guide/datapar/forall.chpl
@@ -85,7 +85,7 @@ iterations between them.  Thus, we could write this parallel loop as:
    
 
 In slightly more detail, the number of tasks used to implement a
-forall-loop is determined by its iterand expression(s), in this case
+forall-loop is determined by its iterand expression(s), in this case,
 the array *A*.  As declared here, *A* uses the default implementation
 (*domain map*) which causes it to be allocated locally to the
 compute node on which the active task is running.  The default
@@ -113,7 +113,7 @@ end, by using a forall-loop, the user is asserting that it is safe to
 run the iterations serially or in parallel, and in any order.
 
 Practically speaking, these characteristics mean that there can be no
-synchronization dependences between iterations of a forall-loop as
+synchronization dependencies between iterations of a forall-loop as
 there could be in a coforall-loop; doing so could cause deadlock
 depending on how the iterations are mapped to tasks.  In addition,
 there should typically be no loop-carried dependences across
@@ -152,7 +152,7 @@ that had just overwritten the intended value in the previous iteration.
 The lesson in this example is that when using a forall-loop, the
 programmer asserts that the loop's iterations can execute safely in
 parallel and is responsible for the outcome when they cannot.  Chapel
-does not prevent nondeterministic forall loops from being written, it
+does not prevent non-deterministic forall loops from being written, it
 merely implements the parallelism that the programmer specifies.
 
 Here are two variations of the previous loop which *are*

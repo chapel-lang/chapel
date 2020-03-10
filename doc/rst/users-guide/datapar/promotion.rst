@@ -266,7 +266,7 @@ In this case, the two approaches compute the same values, but the
 Chapel approach has the benefit of avoiding the need for any temporary
 arrays to store intermediate array results.  This makes memory
 requirements of Chapel programs more explicit to users while also
-tending to make better use of memory caches in modern architectures.
+tending to make better use of memory caches in modern architecture.
 
 For other computations, Chapel's promotion semantics generate a
 different result than most array languages would.  For example,

@@ -29,7 +29,7 @@ Why are my identifiers renamed in the generated code?
   from other C libraries and headers against which Chapel is linked
   (see the ``chpl`` man page for ``--[no-]munge-user-idents`` for more
   information).  This can have the downside of making the generated
-  code not correspond with the Chapel source in a way that can make
+  code does not correspond with the Chapel source in a way that can make
   reading the code, as well as debugging and profiling it, slightly
   more complicated.  Compiling with the ``--no-munge-user-idents`` flag
   can reduce the degree to which this is done (and for most programs,

@@ -42,12 +42,12 @@ declarations, etc, and code can move or be removed entirely. Using the output
 from ``--savec``, you may line up interesting code samples to see how the compiler
 changes this code over time.
 
-A key debugging concept is the unique ID associated with each AST node.
+A key debugging concept is a unique ID associated with each AST node.
 IDs are given sequentially to the nodes when they are constructed.
 See the Compiler Overview document for more details.
 
 The IDs are commonly shown in debugging and HTML printouts. In the
-above example :: 
+above example ::
  
  17 -> the void type, 70157 -> the call to writeln, etc.
 
@@ -70,7 +70,7 @@ You can also go between the ID and the node pointer:
   aid(myID)          // gives the AST pointer
 
 The intention is for the IDs to remain the same between different runs
-of the compiler, so that you restart the compiler (with the same arguments)
+of the compiler so that you restart the compiler (with the same arguments)
 to trace the ID you discovered in a previous run. (There are cases when
 IDs change, which should be fixed.)
 

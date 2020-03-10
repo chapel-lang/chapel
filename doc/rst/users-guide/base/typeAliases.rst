@@ -21,7 +21,7 @@ statement:
 
 This declaration says to create a type alias named *age* which is
 equivalent to the ``uint(8)`` type.  Imagine that we'll use this type
-to store peoples' ages, since they tend not to live more than 256
+to store peoples' ages since they tend not to live more than 256
 years.  We can then use this alias like any other type.  For example,
 the following statements use it to declare some variables and to
 declare the formal type of a procedure argument:
@@ -58,7 +58,7 @@ them.  For example, the following statement creates *float* and
   :lines: 14-15
 
 Type aliases can be used not just for simple scalar types like
-integers and floating point values, but for any Chapel type
+integers and floating-point values, but for any Chapel type
 expression.  Though we haven't introduced more complex types yet, the
 following statements create aliases corresponding to a 3-tuple and
 100-element array of ``real``:

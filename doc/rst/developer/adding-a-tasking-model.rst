@@ -16,7 +16,7 @@ create and manage tasks, along with public types describing task
 identifiers and sync variable meta-information.  All of this needs
 defining when you add a tasking layer implementation.  The easiest way
 to proceed will be to copy an existing tasking model and modify it.  The
-``fifo`` tasking implementation is a good candidate, since it is the
+``fifo`` tasking implementation is a good candidate since it is the
 simplest one.
 
 To begin, copy the existing tasking model you chose as a starting point.

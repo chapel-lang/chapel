@@ -63,7 +63,7 @@ The compiler would report the following error:
   :lines: 1
 
 As with variable declarations, the type specification or initializer
-may be omitted in a ``const`` declaration, in which case the compiler
+maybe omitted in a ``const`` declaration, in which case the compiler
 will fill in any missing details:
 
 .. literalinclude:: examples/users-guide/base/constParam.chpl
@@ -186,7 +186,7 @@ immutable variable, such as:
   nor beneficial.
 
 The ways in which a ``param`` value can affect code specialization or
-optimization may seem vague now, but should become clearer as we see
+optimization may seem vague now but should become clearer as we see
 how ``param`` values are used to create generic types and functions,
 to unroll loops, etc.
 
