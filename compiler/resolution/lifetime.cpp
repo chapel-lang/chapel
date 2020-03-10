@@ -1927,7 +1927,8 @@ bool DeinitOrderVisitor::enterCallExpr(CallExpr* call) {
       SymExpr* se = toSymExpr(call->get(1));
       Symbol* sym = lifetimes->getCanonicalSymbol(se->symbol());
 
-      if (skipEarlyDeinitsForUnconditionalReturn == 0) {
+      if (skipEarlyDeinitsForUnconditionalReturn == 0 &&
+          sym->getValType()->symbol->hasFlag(FLAG_POD) == false) {
         if (debugging) {
           printOrderSummary(orderStack);
           printf(" deinit %s[%i] in call %i\n", sym->name, sym->id, call->id);
@@ -1952,7 +1953,8 @@ bool DeinitOrderVisitor::enterCallExpr(CallExpr* call) {
     SymExpr* se = toSymExpr(call->get(2));
     Symbol* sym = lifetimes->getCanonicalSymbol(se->symbol());
 
-    if (skipEarlyDeinitsForUnconditionalReturn == 0) {
+    if (skipEarlyDeinitsForUnconditionalReturn == 0 &&
+        sym->getValType()->symbol->hasFlag(FLAG_POD) == false) {
       if (debugging) {
         printOrderSummary(orderStack);
         printf(" copy elide %s[%i] in call %i\n", sym->name, sym->id, call->id);
@@ -1964,6 +1966,9 @@ bool DeinitOrderVisitor::enterCallExpr(CallExpr* call) {
       printf(" skipping copy elide %s[%i] in call %i\n",
              sym->name, sym->id, call->id);
     }
+
+    // no need to consider nested calls
+    return false;
   }
 
   if (call->isPrimitive(PRIM_END_OF_STATEMENT)) {
