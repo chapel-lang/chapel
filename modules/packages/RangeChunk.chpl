@@ -88,6 +88,15 @@ module RangeChunk {
     Iterates through a range ``r``, which is blocked up in repeating ```nTasks```
     blocks of size ```blockSize```. Blocks are indexed from 0..nTasks-1. 
     Emits block at index ```tid``` in a cyclic manner.
+
+    Eg : 
+    1. For a range 1..15 and 4 blocks of size 2
+    2. The block indexes range : 0-2
+    3. The range is blocked up as following block indexes :
+        1,2, 3,4, 5,6, 7,8, 9,10, 11,12, 13,14, 15
+         0    1    2    3    0      1      2     3 
+    4. For a desired tid 2, the following chunks are emitted
+        (5,6) (13,14)
   */
   iter blockCyclicChunks(r: range(?t, boundedType=BoundedRangeType.bounded,
                          ?strided), blockSize: integral, tid: integral, 
