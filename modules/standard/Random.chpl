@@ -1158,7 +1158,7 @@ module Random {
         return _choice(this, x, size=size, replace=replace, prob=prob);
       }
 
-      proc inplace(arr: [?D], s: int, n1: int, n2: int, seed: int) {
+      proc inplace(tmp: [?D], s: int, n1: int, n2: int, seed: int) {
 
         var i = s, j = s + n1, n = s + n1 + n2;
 
@@ -1175,7 +1175,7 @@ module Random {
            if j == n {
              break;
            }
-           arr[i] <=> arr[j];
+           tmp[i] <=> tmp[j];
            j += 1;
          }
          i += 1;
@@ -1186,12 +1186,12 @@ module Random {
                                 PCGRandomStreamPrivate_rngs,
                                 seed, PCGRandomStreamPrivate_count,
                                 s, i);
-         arr[i] <=> arr[k];
+         tmp[i] <=> tmp[k];
          i += 1;
        }
      }
 
-     proc mergeShuffle(arr: [?D], l : int, r: int, seed : int) {
+     proc mergeShuffle(tmp: [?D], l : int, r: int, seed : int) {
 
        if l >= r then
        return;
@@ -1199,13 +1199,13 @@ module Random {
        var mid = (l+r)/2;
        sync {
          begin {
-           mergeShuffle(arr, l, mid, seed);
+           mergeShuffle(tmp, l, mid, seed);
          }
          begin {
-           mergeShuffle(arr, mid+1, r, seed);
+           mergeShuffle(tmp, mid+1, r, seed);
          }
        }
-       inplace(arr, l, mid-l+1, r-mid, seed);
+       inplace(tmp, l, mid-l+1, r-mid, seed);
      }
 
       /* Randomly shuffle a 1-D array. */
@@ -1214,10 +1214,18 @@ module Random {
         if D.rank != 1 then
           compilerError("Shuffle requires 1-D array");
 
+        var tmp = arr.reindex(1..arr.size);
+
         _lock();
 
         // Merge shuffle
-        mergeShuffle(arr, 1, D.size, seed);
+        mergeShuffle(tmp, 1, tmp.size, seed);
+
+        var j = 1;
+        for i in D {
+          arr[i] = tmp[j];
+          j += 1;
+        }
 
         PCGRandomStreamPrivate_count += D.size;
 
