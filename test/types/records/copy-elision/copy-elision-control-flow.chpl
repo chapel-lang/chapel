@@ -40,6 +40,10 @@ proc =(ref lhs:R, rhs:R) {
   lhs.ptr = new shared C(rhs.ptr.xx);
 }
 
+proc returnsBool(arg) {
+  return true;
+}
+
 proc acceptIn(in arg: R) {
 }
 
@@ -349,3 +353,15 @@ proc test11() {
   return acceptInAndReturn(x);
 }
 test11();
+
+proc test12() {
+  writeln("test12");
+  var x = new R(1);
+
+  var y = x;
+
+  if returnsBool(x) {
+  } else {
+  }
+}
+test12();

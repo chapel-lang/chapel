@@ -145,13 +145,13 @@ static bool allowSplitInit(Symbol* sym) {
 // When 'start' is a return/throw (or a block containing that, e.g),
 // decide whether the variable should be considered split-initialized
 // by a later applicable assignment statement.
-static found_init_t handleReturn(found_init_t foundReturn,
-                                 Symbol* sym,
-                                 Expr* cur,
-                                 std::vector<CallExpr*>& initAssigns,
-                                 Expr*& usePreventingSplitInit,
-                                 bool allowReturns,
-                                 BlockStmt*& ignoreFirstEndInBlock) {
+static found_init_t handleReturnForInit(found_init_t foundReturn,
+                                        Symbol* sym,
+                                        Expr* cur,
+                                        std::vector<CallExpr*>& initAssigns,
+                                        Expr*& usePreventingSplitInit,
+                                        bool allowReturns,
+                                        BlockStmt*& ignoreFirstEndInBlock) {
   INT_ASSERT(foundReturn == FOUND_RET || foundReturn == FOUND_THROW);
 
   // Look for initializations after the return.
@@ -248,9 +248,9 @@ static found_init_t doFindInitPoints(Symbol* sym,
         }
 
         found_init_t foundReturn = regularReturn ? FOUND_RET : FOUND_THROW;
-        return handleReturn(foundReturn, sym, cur, initAssigns,
-                            usePreventingSplitInit, allowReturns,
-                            ignoreFirstEndInBlock);
+        return handleReturnForInit(foundReturn, sym, cur, initAssigns,
+                                   usePreventingSplitInit, allowReturns,
+                                   ignoreFirstEndInBlock);
       }
 
     // { x = ... }
@@ -274,12 +274,13 @@ static found_init_t doFindInitPoints(Symbol* sym,
         } else if (found == FOUND_USE) {
           return FOUND_USE;
         } else if (found == FOUND_RET || found == FOUND_THROW) {
-          return handleReturn(found, sym, cur, initAssigns,
-                              usePreventingSplitInit, allowReturns,
-                              ignoreFirstEndInBlock);
+          return handleReturnForInit(found, sym, cur, initAssigns,
+                                     usePreventingSplitInit, allowReturns,
+                                     ignoreFirstEndInBlock);
         }
       }
 
+    // try { x = ... }
     } else if (TryStmt* tr = toTryStmt(cur)) {
       Expr* start = tr->body()->body.first();
       found_init_t foundBody = doFindInitPoints(sym, start, initAssigns,
@@ -326,9 +327,9 @@ static found_init_t doFindInitPoints(Symbol* sym,
           return FOUND_USE;
         }
       } else if (foundBody == FOUND_RET || foundBody == FOUND_THROW) {
-        return handleReturn(foundBody, sym, cur, initAssigns,
-                            usePreventingSplitInit, allowReturns,
-                            ignoreFirstEndInBlock);
+        return handleReturnForInit(foundBody, sym, cur, initAssigns,
+                                   usePreventingSplitInit, allowReturns,
+                                   ignoreFirstEndInBlock);
       }
 
     // if _ { x = ... } else { x = ... }
@@ -388,9 +389,9 @@ static found_init_t doFindInitPoints(Symbol* sym,
         found_init_t found = FOUND_RET;
         if (foundIf == FOUND_THROW && foundElse == FOUND_THROW)
           found = FOUND_THROW;
-        return handleReturn(found, sym, cur, initAssigns,
-                            usePreventingSplitInit, allowReturns,
-                            ignoreFirstEndInBlock);
+        return handleReturnForInit(found, sym, cur, initAssigns,
+                                   usePreventingSplitInit, allowReturns,
+                                   ignoreFirstEndInBlock);
       }
 
     } else {
@@ -418,6 +419,11 @@ static found_init_t doFindInitPoints(Symbol* sym,
 *   copy elision                                                              *
 *                                                                             *
 ************************************** | *************************************/
+
+static found_init_t doFindCopyElisionPoints(VarSymbol* var,
+                                            Expr* start,
+                                            std::vector<CallExpr*>& points,
+                                            bool& foundEndOfStmtMentioning);
 
 Symbol* findCopyElisionCandidate(CallExpr* call, VarSymbol* var) {
   // a call to init=
@@ -457,48 +463,236 @@ Symbol* findCopyElisionCandidate(CallExpr* call, VarSymbol* var) {
 // Making FOUND_COPY another name for FOUND_INIT allows us to use the enum
 #define FOUND_COPY FOUND_INIT
 
+// When 'start' is a return/throw (or a block containing that, e.g),
+// decide whether the variable should be considered copy elided
+// by an earlier applicable initialization.
+static found_init_t handleReturnForCopy(found_init_t foundReturn,
+                                        VarSymbol* var,
+                                        Expr* cur,
+                                        std::vector<CallExpr*>& points,
+                                        bool& foundEndOfStmtMentioning) {
+
+  INT_ASSERT(foundReturn == FOUND_RET || foundReturn == FOUND_THROW);
+
+  // Look for copy points before the return
+  found_init_t beforeReturn = doFindCopyElisionPoints(var,
+                                                      cur->prev,
+                                                      points,
+                                                      foundEndOfStmtMentioning);
+  if (beforeReturn == FOUND_COPY) {
+    // Copy before a throw are still initializations, e.g.
+    return FOUND_COPY;
+  } else if (beforeReturn == FOUND_USE) {
+    // use before return
+    return FOUND_USE;
+  } else {
+    // return FOUND_RET or FOUND_THROW
+    return foundReturn;
+  }
+}
+
+
 static found_init_t doFindCopyElisionPoints(VarSymbol* var,
-                                            Expr* cur,
+                                            Expr* end,
                                             std::vector<CallExpr*>& points,
                                             bool& foundEndOfStmtMentioning) {
 
-  while (cur != NULL) {
-    if (isCallExpr(cur) || isDefExpr(cur)) {
+  if (end == NULL)
+    return FOUND_NOTHING;
+
+  // Scroll backwards in the block containing start.
+  for (Expr* cur = end->getStmtExpr(); cur != NULL; cur = cur->prev) {
+    // handle calls:
+    //   copy-init e.g. var x = y
+    //   PRIM_END_OF_STATEMENT
+    if (CallExpr* call = toCallExpr(cur)) {
+      // copy-init
+      if (findCopyElisionCandidate(call, var)) {
+        points.push_back(call);
+        return FOUND_COPY;
+      }
+      // check for mentions
+      if (findSymExprFor(cur, var) != NULL) {
+        // ignore the 1st end of statement mentioning we encounter
+        if (call->isPrimitive(PRIM_END_OF_STATEMENT)) {
+          // in an end of statement marker
+          if (foundEndOfStmtMentioning) {
+            return FOUND_USE; // already encountered a statement mentioning
+          } else {
+            foundEndOfStmtMentioning = true;
+            // keep looking; ignore this end-of-statement
+          }
+        } else {
+          // stop the search if we found another sort of mention.
+          return FOUND_USE;
+        }
+      }
+    }
+
+    // var x;
+    if (isDefExpr(cur)) {
+      if (findSymExprFor(cur, var) != NULL)
+        return FOUND_USE; // found a mention not in a call
+    }
+
+    // return / throw
+    if (isGotoStmt(cur) || isCallExpr(cur)) {
+      GotoStmt* gt = toGotoStmt(cur);
       CallExpr* call = toCallExpr(cur);
 
-      if (findSymExprFor(cur, var) != NULL) {
-        // Found a mention
-        if (call == NULL) {
-          return FOUND_USE; // found a mention not in a call
-        } else {
-          // in a call
-          if (call->isPrimitive(PRIM_END_OF_STATEMENT)) {
-            // in an end of statement marker
-            if (foundEndOfStmtMentioning) {
-              return FOUND_USE; // already encountered a statement mentioning
-            } else {
-              foundEndOfStmtMentioning = true;
-              // keep looking; ignore this end-of-statement
-            }
-          } else {
-            // in another call - check if it is a copy
-            if (findCopyElisionCandidate(call, var)) {
-              points.push_back(call);
-              return FOUND_COPY;
-            } else {
-              // stop the search if we found another sort of mention.
-              return FOUND_USE;
-            }
+      bool regularReturn = false;
+      bool errorReturn = false;
+      if (gt != NULL) {
+        regularReturn = gt->gotoTag == GOTO_RETURN;
+        errorReturn = gt->gotoTag == GOTO_ERROR_HANDLING_RETURN ||
+                      gt->gotoTag == GOTO_ERROR_HANDLING;
+      } else if (call != NULL) {
+        regularReturn = call->isPrimitive(PRIM_RETURN);
+        errorReturn = call->isPrimitive(PRIM_THROW);
+      }
+
+      if (regularReturn || errorReturn) {
+        found_init_t foundReturn = regularReturn ? FOUND_RET : FOUND_THROW;
+        return handleReturnForCopy(foundReturn, var, cur, points,
+                                   foundEndOfStmtMentioning);
+      }
+
+    // { var x = y }
+    } else if (BlockStmt* block = toBlockStmt(cur)) {
+
+      if (block->isLoopStmt() || block->isRealBlockStmt() == false) {
+        // Loop / on / begin / etc - just check for uses
+        if (findSymExprFor(cur, var)) {
+          return FOUND_USE;
+        }
+      } else {
+        // non-loop block
+        Expr* end = block->body.last();
+        found_init_t found = doFindCopyElisionPoints(var, end, points,
+                                                     foundEndOfStmtMentioning);
+        if (found == FOUND_COPY) {
+          return FOUND_COPY;
+        } else if (found == FOUND_USE) {
+          return FOUND_USE;
+        } else if (found == FOUND_RET || found == FOUND_THROW) {
+          return handleReturnForCopy(found, var, cur, points,
+                                     foundEndOfStmtMentioning);
+        }
+      }
+
+
+    // try { var x = ... }
+    } else if (TryStmt* tr = toTryStmt(cur)) {
+      Expr* end = tr->body()->body.last();
+      found_init_t foundBody = doFindCopyElisionPoints(var, end, points,
+                                                       foundEndOfStmtMentioning);
+
+      bool allCatchesRet = true;
+
+      if (foundBody == FOUND_USE)
+        return FOUND_USE;
+
+      // if there are any catches, check them for uses;
+      // also a catch block prevents initialization in the try body
+      for_alist(elt, tr->_catches) {
+        if (CatchStmt* ctch = toCatchStmt(elt)) {
+          std::vector<CallExpr*> cPts;
+          Expr* end = ctch->body()->body.last();
+          bool tmpFoundEnd = true;
+          found_init_t foundCatch = doFindCopyElisionPoints(var, end, cPts,
+                                                            tmpFoundEnd);
+          if (foundCatch == FOUND_USE || foundCatch == FOUND_COPY) {
+            // Consider even a copy in a catch block as a use
+            return FOUND_USE;
+          } else if (foundCatch != FOUND_RET && foundCatch != FOUND_THROW) {
+            allCatchesRet = false;
           }
         }
       }
 
+      // if we got here, no catch used or inited the variable
+      if (foundBody == FOUND_USE) {
+        INT_FATAL("handled above");
+      } else if (foundBody == FOUND_COPY) {
+        if (allCatchesRet) {
+          // all catches are either FOUND_RET or FOUND_COPY
+          return FOUND_COPY;
+        } else {
+          return FOUND_USE;
+        }
+      } else if (foundBody == FOUND_RET || foundBody == FOUND_THROW) {
+        return handleReturnForCopy(foundBody, var, cur, points,
+                                   foundEndOfStmtMentioning);
+      }
+
+    // if _ { x = ... } else { x = ... }
+    } else if (CondStmt* cond = toCondStmt(cur)) {
+
+      bool usedInCondExpr = findSymExprFor(cond->condExpr, var) != NULL;
+
+      Expr* ifEnd = cond->thenStmt->body.last();
+      Expr* elseEnd = cond->elseStmt ? cond->elseStmt->body.last() : NULL;
+      std::vector<CallExpr*> ifPoints;
+      std::vector<CallExpr*> elsePoints;
+      bool tmpIfEnd = foundEndOfStmtMentioning;
+      bool tmpElseEnd = foundEndOfStmtMentioning;
+      found_init_t foundIf = doFindCopyElisionPoints(var, ifEnd, ifPoints,
+                                                     tmpIfEnd);
+      found_init_t foundElse = FOUND_NOTHING;
+      if (elseEnd != NULL)
+        foundElse = doFindCopyElisionPoints(var, elseEnd, elsePoints,
+                                            tmpElseEnd);
+
+      if (tmpIfEnd || tmpElseEnd)
+        foundEndOfStmtMentioning = true;
+
+      bool ifCopies = foundIf == FOUND_COPY;
+      bool elseCopies = foundElse == FOUND_COPY;
+      bool ifReturns = foundIf == FOUND_THROW ||
+                       foundIf == FOUND_RET;
+      bool elseReturns = foundElse == FOUND_THROW ||
+                         foundElse == FOUND_RET;
+      if ((ifCopies  && elseCopies) ||
+          (ifCopies  && elseReturns) ||
+          (ifReturns && elseCopies)) {
+        for_vector(CallExpr, call, ifPoints) {
+          points.push_back(call);
+        }
+        for_vector(CallExpr, call, elsePoints) {
+          points.push_back(call);
+        }
+        return FOUND_COPY;
+      } else if (foundIf == FOUND_USE || foundElse == FOUND_USE) {
+        return FOUND_USE;
+      } else if (foundIf == FOUND_COPY || foundElse == FOUND_COPY) {
+        // initialized on one side but not the other
+        return FOUND_USE;
+      } else if ((foundIf == FOUND_THROW || foundIf == FOUND_RET) &&
+                 (foundElse == FOUND_THROW || foundElse == FOUND_RET)) {
+        if (usedInCondExpr)
+          return FOUND_USE;
+        // return is more strict than throws, so if one returns
+        // but the other throws, consider it a return.
+        found_init_t found = FOUND_RET;
+        if (foundIf == FOUND_THROW && foundElse == FOUND_THROW)
+          found = FOUND_THROW;
+        return handleReturnForCopy(found, var, cur, points,
+                                   foundEndOfStmtMentioning);
+      }
+
     } else {
-      // not a CallExpr or DefExpr
-      // stop the search if it was a nested block
-      return FOUND_USE;
+      // Look for uses of 'x'
+      if (findSymExprFor(cur, var)) {
+        return FOUND_USE;
+      }
     }
-    cur = cur->prev;
+
+    if (fVerify) {
+      // Redundantly check for uses
+      if (!isEndOfStatementMarker(cur))
+        if (findSymExprFor(cur, var) != NULL)
+          INT_FATAL("use not found above");
+    }
   }
 
   return FOUND_NOTHING;

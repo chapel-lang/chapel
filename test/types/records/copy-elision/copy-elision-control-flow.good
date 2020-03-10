@@ -109,3 +109,8 @@ deinit 1 1
 test11
 init 1 1
 deinit 1 1
+test12
+init 1 1
+init= 1 1
+deinit 1 1
+deinit 1 1
