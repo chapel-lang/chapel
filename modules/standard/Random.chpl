@@ -973,7 +973,7 @@ module Random {
                 element type, with no negative values and at least one non-zero
                 value. The domain must be equal to that of ``arr.domain``.
 
-     :return: An element chosen from ``arr`` is ``size == 1``, or an array of
+     :return: An element chosen from ``arr`` if ``size == 1``, or an array of
               element chosen from ``arr`` if ``size > 1`` or ``size`` is a
               domain.
 
@@ -1008,7 +1008,7 @@ module Random {
                 element type, with no negative values and at least one non-zero
                 value. The domain must be equal to that of ``rng``.
 
-     :return: An element chosen from ``rng`` is ``size == 1``, or an array of
+     :return: An element chosen from ``rng`` if ``size == 1``, or an array of
               element chosen from ``rng`` if ``size > 1`` or ``size`` is a
               domain.
 
