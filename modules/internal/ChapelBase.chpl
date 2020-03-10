@@ -24,6 +24,8 @@ module ChapelBase {
   use ChapelStandard;
   private use ChapelEnv, SysCTypes;
 
+  config param enablePostfixBangChecks = false;
+
   // These two are called by compiler-generated code.
   extern proc chpl_config_has_value(name:c_string, module_name:c_string): bool;
   extern proc chpl_config_get_value(name:c_string, module_name:c_string): c_string;
@@ -692,8 +694,8 @@ module ChapelBase {
   pragma "always propagate line file info"
   private inline proc checkNotNil(x:borrowed class?) {
     import HaltWrappers;
-    // Check only if --nil-checks is enabled
-    if chpl_checkNilDereferences {
+    // Check only if --nil-checks is enabled or user requested
+    if chpl_checkNilDereferences || enablePostfixBangChecks {
       // Add check for nilable types only.
       if x == nil {
         HaltWrappers.nilCheckHalt("argument to ! is nil");
