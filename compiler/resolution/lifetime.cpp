@@ -3184,7 +3184,9 @@ bool LifetimeState::shouldPropagateLifetimeTo(CallExpr* call, Symbol* sym) {
 
 static bool isAnalyzedMoveOrAssignment(CallExpr* call) {
 
-  if (call->isPrimitive(PRIM_MOVE) || call->isPrimitive(PRIM_ASSIGN))
+  if (call->isPrimitive(PRIM_MOVE) ||
+      call->isPrimitive(PRIM_ASSIGN) ||
+      call->isPrimitive(PRIM_ASSIGN_ELIDED_COPY))
     return true;
 
   FnSymbol* calledFn = call->resolvedOrVirtualFunction();
