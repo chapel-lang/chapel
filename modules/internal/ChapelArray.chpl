@@ -1390,7 +1390,7 @@ module ChapelArray {
       }
 
       if chpl_warnUnstable then
-        if this.stridable then
+        if isRectangularDom(this) && this.stridable then
           if rank == 1 {
             if this.stride < 0 then
               warning("arrays with negatively strided dimensions are not particularly stable");
