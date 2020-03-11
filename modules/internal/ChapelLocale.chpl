@@ -100,6 +100,7 @@ module ChapelLocale {
              then "fixed" by LocalesArray to Locales[0]
     any: Placeholder to represent the notion of "anywhere"
    */
+  pragma "no doc"
   enum localeKind { regular, any, nilLocale, dummy, default };
 
   const nilLocale = new locale(localeKind.nilLocale);
