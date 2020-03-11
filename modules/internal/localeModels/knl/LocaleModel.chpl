@@ -181,9 +181,9 @@ module LocaleModel {
     const sid: chpl_sublocID_t;
     const mlName: string; // note: locale provides `proc name`
 
-    override proc chpl_id() return parent!.chpl_id(); // top-level node id
+    override proc chpl_id() return parent.chpl_id(); // top-level node id
     override proc chpl_localeid() {
-      return chpl_buildLocaleID(parent!.chpl_id():chpl_nodeID_t, sid);
+      return chpl_buildLocaleID(parent.chpl_id():chpl_nodeID_t, sid);
     }
     override proc chpl_name() return mlName;
 
@@ -191,20 +191,20 @@ module LocaleModel {
     // Support for different types of memory:
     // large, low latency, and high bandwidth
     //
-    proc defaultMemory() : locale {
-      return parent!.defaultMemory();
+    override proc defaultMemory() : locale {
+      return parent.defaultMemory();
     }
 
-    proc largeMemory() : locale {
-      return parent!.largeMemory();
+    override proc largeMemory() : locale {
+      return parent.largeMemory();
     }
 
-    proc lowLatencyMemory() : locale {
-      return parent!.lowLatencyMemory();
+    override proc lowLatencyMemory() : locale {
+      return parent.lowLatencyMemory();
     }
 
-    proc highBandwidthMemory() : locale {
-      return parent!.highBandwidthMemory();
+    override proc highBandwidthMemory() : locale {
+      return parent.highBandwidthMemory();
     }
 
     proc init() {
@@ -227,7 +227,7 @@ module LocaleModel {
     }
 
     override proc writeThis(f) throws {
-      parent!.writeThis(f);
+      parent.writeThis(f);
       f <~> '.'+mlName;
     }
 
@@ -248,9 +248,9 @@ module LocaleModel {
     var ddr : unmanaged MemoryLocale?; // should never be modified after first assignment
     var hbm : unmanaged MemoryLocale?; // should never be modified after first assignment
 
-    override proc chpl_id() return parent!.chpl_id(); // top-level node id
+    override proc chpl_id() return parent.chpl_id(); // top-level node id
     override proc chpl_localeid() {
-      return chpl_buildLocaleID(parent!.chpl_id():chpl_nodeID_t, sid);
+      return chpl_buildLocaleID(parent.chpl_id():chpl_nodeID_t, sid);
     }
     override proc chpl_name() return ndName;
 
@@ -313,7 +313,7 @@ module LocaleModel {
     }
 
     override proc writeThis(f) throws {
-      parent!.writeThis(f);
+      parent.writeThis(f);
       f <~> '.'+ndName;
     }
 

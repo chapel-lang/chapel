@@ -79,8 +79,8 @@ module LocaleModel {
     }
 
     override proc writeThis(f) throws {
-      if parent then
-        parent!.writeThis(f);
+      if parent._instance then
+        parent.writeThis(f);
       f <~> '.'+ndName;
     }
 
