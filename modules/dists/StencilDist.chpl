@@ -1673,7 +1673,7 @@ proc Stencil.init(other: Stencil, privateData,
   dataParMinGranularity = privateData(5);
 }
 
-proc Stencil.dsiSupportsPrivatization() param return true;
+override proc Stencil.dsiSupportsPrivatization() param return true;
 
 proc Stencil.dsiGetPrivatizeData() {
   return (boundingBox.dims(), targetLocDom.dims(),
@@ -1767,7 +1767,7 @@ proc type StencilArr.chpl__deserialize(data) {
            data);
 }
 
-proc StencilArr.dsiSupportsPrivatization() param return true;
+override proc StencilArr.dsiSupportsPrivatization() param return true;
 
 proc StencilArr.dsiGetPrivatizeData() return dom.pid;
 

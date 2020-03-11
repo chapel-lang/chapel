@@ -240,7 +240,7 @@ override proc ReplicatedDom.dsiMyDist() return dist;
 
 // privatization
 
-proc ReplicatedDom.dsiSupportsPrivatization() param return true;
+override proc ReplicatedDom.dsiSupportsPrivatization() param return true;
 
 record ReplicatedDomPrvData {
   var distpid;
@@ -502,7 +502,7 @@ override proc ReplicatedArr.dsiGetBaseDom() return dom;
 
 // privatization
 
-proc ReplicatedArr.dsiSupportsPrivatization() param return true;
+override proc ReplicatedArr.dsiSupportsPrivatization() param return true;
 
 record ReplicatedArrPrvData {
   var dompid;

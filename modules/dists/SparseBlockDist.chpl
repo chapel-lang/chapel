@@ -753,7 +753,7 @@ proc LocSparseBlockArr.dsiSerialWrite(f) {
 }
 
 
-proc SparseBlockDom.dsiSupportsPrivatization() param return true;
+override proc SparseBlockDom.dsiSupportsPrivatization() param return true;
 
 proc SparseBlockDom.dsiGetPrivatizeData() return (dist.pid, whole.dims());
 
@@ -781,7 +781,7 @@ proc SparseBlockDom.dsiReprivatize(other, reprivatizeData) {
   whole = {(...reprivatizeData)};
 }
 
-proc SparseBlockArr.dsiSupportsPrivatization() param return true;
+override proc SparseBlockArr.dsiSupportsPrivatization() param return true;
 
 proc SparseBlockArr.dsiGetPrivatizeData() return dom.pid;
 

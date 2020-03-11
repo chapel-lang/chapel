@@ -323,7 +323,7 @@ proc Cyclic.init(other: Cyclic, privateData,
   dataParMinGranularity = privateData[5];
 }
                  
-proc Cyclic.dsiSupportsPrivatization() param return true;
+override proc Cyclic.dsiSupportsPrivatization() param return true;
 
 proc Cyclic.dsiGetPrivatizeData() return (startIdx,
                                           targetLocDom.dims(),
@@ -814,7 +814,7 @@ proc type CyclicArr.chpl__deserialize(data) {
                                 data);
 }
 
-proc CyclicArr.dsiSupportsPrivatization() param return true;
+override proc CyclicArr.dsiSupportsPrivatization() param return true;
 
 proc CyclicArr.dsiGetPrivatizeData() return 0;
 
