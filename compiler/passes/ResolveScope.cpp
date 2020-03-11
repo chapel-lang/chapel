@@ -839,23 +839,23 @@ Symbol* ResolveScope::lookupPublicImports(const char* name) const {
   for (size_t i = 0; i < useImportList.size(); i++) {
     VisibilityStmt *vs = useImportList[i];
     if (ImportStmt *is = toImportStmt(vs)) {
-      std::cout << "Candidate import stmt\n";
-      nprint_view(is);
+      //std::cout << "Candidate import stmt\n";
+      //nprint_view(is);
       if (!is->isPrivate) {
-        std::cout << "Import statement is public\n";
+        //std::cout << "Import statement is public\n";
         retval = vs->checkIfModuleNameMatches(name);
-        if (retval) {
-          nprint_view(retval);
-        }
+        //if (retval) {
+          //nprint_view(retval);
+        //}
       }
       else {
-        std::cout << "Import statement is not public\n";
+        //std::cout << "Import statement is not public\n";
 
       }
     }
     else {
-      std::cout << "Skipping nonimport stmt\n";
-      nprint_view(useImportList[i]);
+      //std::cout << "Skipping nonimport stmt\n";
+      //nprint_view(useImportList[i]);
     }
   }
 
