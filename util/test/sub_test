@@ -249,6 +249,12 @@ def PerfDirFile(s):
 def PerfTFile(test_filename, sfx):
     return test_filename + '.' + perflabel + sfx
 
+# A alternative to os.path.expandvars that treats '\$' as the escape of '$'
+def expandvarsWithEscape(path):
+    escaped = path.replace('\$', 'CHPL_EXPANDVARS_ESCAPE_DOLLAR')
+    os.path.expandvars(escaped)
+    return escaped.replace('CHPL_EXPANDVARS_ESCAPE_DOLLAR', '$')
+
 # Read a file or if the file is executable read its output. If the file is
 # executable, the current chplenv is copied into the env before executing.
 # Expands shell variables and strip out comments/whitespace. Returns a list of
@@ -291,7 +297,7 @@ def ReadFileWithComments(f, ignoreLeadingSpace=True):
         else:
             if line[0] == '#': continue
         # expand shell variables
-        line = os.path.expandvars(line)
+        line = expandvarsWithEscape(line)
         mylist.append(line)
     return mylist
 
