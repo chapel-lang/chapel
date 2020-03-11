@@ -3732,12 +3732,16 @@ void chpl_comm_impl_regMemPostRealloc(void* oldp, size_t oldSize,
 
   //
   // If the reallocation didn't fit in the same hugepages, then we have
-  // to de-register the old memory and register the new.
+  // to de-register and free the old memory and register the new.
   //
   if (newp != oldp) {
     PERFSTATS_TSTAMP(dereg_ts);
     deregister_mem_region(mr);
     PERFSTATS_ADD(regMem_dereg_nsecs, PERFSTATS_TELAPSED(dereg_ts));
+
+    PERFSTATS_TSTAMP(free_ts);
+    free_huge_pages(oldp);
+    PERFSTATS_ADD(regMem_free_nsecs, PERFSTATS_TELAPSED(free_ts));
 
     mr->addr = (uint64_t) (uintptr_t) newp;
 
@@ -3745,7 +3749,6 @@ void chpl_comm_impl_regMemPostRealloc(void* oldp, size_t oldSize,
     (void) register_mem_region(mr->addr, newSize, &mr->mdh,
                                false /*allow_failure*/);
     PERFSTATS_ADD(regMem_reg_nsecs, PERFSTATS_TELAPSED(reg_ts));
-
   }
 
   mr->len = mrtl_encode(newSize, true);
