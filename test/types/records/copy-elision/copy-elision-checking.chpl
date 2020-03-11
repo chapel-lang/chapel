@@ -304,3 +304,48 @@ proc test2dD() {
 }
 { writeln(test2dD()); }
 
+proc test13() {
+  writeln("test13");
+  var x = new R(1);
+  proc inner() {
+    writeln(x);
+  }
+  var y = x;
+  inner();
+}
+test13();
+
+proc refIdentity(ref arg) ref { return arg; }
+
+proc test14() {
+  writeln("test14");
+  var x = new R(1);
+  ref r = refIdentity(x);
+  {
+    writeln("block 1 ", r);
+  }
+  {
+    writeln("block 2 ", r);
+    var y = x;
+  }
+  {
+    writeln("block 3 ", r);
+  }
+}
+test14();
+
+record BorrowRecord {
+  var b: borrowed C?;
+}
+
+proc test15() {
+  writeln("test15");
+  var outer: BorrowRecord;
+  {
+    var c = new owned C(1);
+    var x = new BorrowRecord(c.borrow());
+    var y = x; // copy elide
+    outer.b = y.b; // should be lifetime error
+  }
+}
+test15();

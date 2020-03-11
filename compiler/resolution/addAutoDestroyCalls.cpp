@@ -31,6 +31,7 @@
 #include "ForLoop.h"
 #include "LoopStmt.h"
 #include "resolution.h"
+#include "splitInit.h"
 #include "stlUtil.h"
 #include "stmt.h"
 #include "stringutil.h"
@@ -62,12 +63,17 @@ static void walkBlockWithScope(AutoDestroyScope& scope,
 static bool isAutoDestroyedOrSplitInitedVariable(VarSymbol* var);
 
 void addAutoDestroyCalls() {
+  std::set<VarSymbol*> ignoredVariables;
+  LastMentionMap lmm;
+
   forv_Vec(FnSymbol, fn, gFnSymbols) {
     if (fn->hasFlag(FLAG_EXTERN))
       continue; // no need to add auto-destroy in extern fn prototypes
 
-    std::set<VarSymbol*> ignoredVariables;
-    LastMentionMap lmm;
+    ignoredVariables.clear();
+    lmm.clear();
+
+    elideCopies(fn);
     computeLastMentionPoints(lmm, fn);
     walkBlock(fn, NULL, fn->body, ignoredVariables, lmm);
   }
@@ -193,6 +199,7 @@ static Expr* walkBlockStmt(FnSymbol*         fn,
     scope.insertAutoDestroys(fn, stmt, ignoredVariables);
 
     std::vector<VarSymbol*> outerInits = scope.getInitedOuterVars();
+    std::vector<VarSymbol*> outerDeinits = scope.getDeinitedOuterVars();
     scope.forgetOuterVariableInitializations();
 
     // Consider the catch blocks now
@@ -206,6 +213,10 @@ static Expr* walkBlockStmt(FnSymbol*         fn,
     for_vector(VarSymbol, var, outerInits) {
       scope.addInitialization(var);
     }
+    // and deinits too
+    for_vector (VarSymbol, var, outerDeinits) {
+      scope.addEarlyDeinit(var);
+    }
 
   // AutoDestroy primary locals at start of function epilogue (1)
   } else if (isReturnLabel(stmt, retLabel) == true) {
@@ -213,6 +224,7 @@ static Expr* walkBlockStmt(FnSymbol*         fn,
 
   // Be conservative about unreachable code before the epilogue
   } else if (isDeadCode == false) {
+
     // Note any variables as they are declared
     if (DefExpr* def = toDefExpr(stmt)) {
       if (VarSymbol* v = toVarSymbol(def->sym))
@@ -267,6 +279,14 @@ static Expr* walkBlockStmt(FnSymbol*         fn,
         }
       }
 
+      // mark elided copies as deinitialized
+      if (CallExpr* call = toCallExpr(stmt))
+        if (call->isPrimitive(PRIM_ASSIGN_ELIDED_COPY))
+          if (SymExpr* se = toSymExpr(call->get(2)))
+            if (VarSymbol* var = toVarSymbol(se->symbol()))
+              if (isAutoDestroyedOrSplitInitedVariable(var))
+                scope.addEarlyDeinit(var);
+
     // Recurse in to a BlockStmt (or sub-classes of BlockStmt e.g. a loop)
     } else if (BlockStmt* subBlock = toBlockStmt(stmt)) {
       // ignore scopeless blocks for deciding where to destroy
@@ -288,8 +308,14 @@ static Expr* walkBlockStmt(FnSymbol*         fn,
         walkBlock(fn, &scope, cond->thenStmt, ignoredVariables, lmm);
 
       } else if (cond->elseStmt == NULL) {
-        // Traverse into the if branch only
-        walkBlock(fn, &scope, cond->thenStmt, ignoredVariables, lmm);
+        // Traverse into the then branch only
+        AutoDestroyScope thenScope(&scope, cond->thenStmt);
+        walkBlockWithScope(thenScope, fn, cond->thenStmt, ignoredVariables, lmm);
+
+        // forget about initializations/deinitializations in the block
+        // since execution can continue afterwards.
+        thenScope.forgetOuterVariableInitializations();
+
       } else {
         // includes an if and an else. Split init is possible within these,
         // and we need to ensure that the order of initializations matches.
@@ -299,6 +325,8 @@ static Expr* walkBlockStmt(FnSymbol*         fn,
         walkBlockWithScope(thenScope, fn, cond->thenStmt, ignoredVariables, lmm);
         // Gather the inited outer vars from the then block
         std::vector<VarSymbol*> thenOrder = thenScope.getInitedOuterVars();
+        std::vector<VarSymbol*> thenDeinit = thenScope.getDeinitedOuterVars();
+
         // When we visit the else block, outer variables that were initialized
         // in the then block shouldn't be considered initialized.
         thenScope.forgetOuterVariableInitializations();
@@ -310,23 +338,39 @@ static Expr* walkBlockStmt(FnSymbol*         fn,
 
         // check that the outer variables are initialized in the same order.
         checkSplitInitOrder(cond, thenOrder, elseOrder);
+
+        // make sure that variables initialized in the if branch
+        // are initialized in their parent scope too.
+        // (else branch already accounted for by above code)
+        for_vector (VarSymbol, var, thenOrder) {
+          scope.addInitialization(var);
+        }
+
+        // make sure that variables deinitialized in the if branch
+        // are deinitialized in the parent scope too.
+        // (else branch already accounted for by above code)
+        for_vector (VarSymbol, var, thenDeinit) {
+          scope.addEarlyDeinit(var);
+        }
       }
     }
   }
 
-  // Destroy the variable after this statement if it's the last mention
-  // Since this adds the destroy immediately after this statement,
-  // it ends up destroying multiple variables to be destroyed here
-  // in the reverse order of the vector - i.e. reverse initialization order.
-  LastMentionMap::const_iterator lmmIt = lmm.find(stmt);
-  if (lmmIt != lmm.end()) {
-    const std::vector<VarSymbol*>& vars = lmmIt->second;
-    for_vector(VarSymbol, var, vars) {
-      scope.destroyVariable(stmt, var, ignoredVariables);
+  if (isDeadCode == false) {
+    // Destroy the variable after this statement if it's the last mention
+    // Since this adds the destroy immediately after this statement,
+    // it ends up destroying multiple variables to be destroyed here
+    // in the reverse order of the vector - i.e. reverse initialization order.
+    LastMentionMap::const_iterator lmmIt = lmm.find(stmt);
+    if (lmmIt != lmm.end()) {
+      const std::vector<VarSymbol*>& vars = lmmIt->second;
+      for_vector(VarSymbol, var, vars) {
 
-      // Needs a better strategy if we move last mention points within
-      // conditionals
-      ignoredVariables.insert(var);
+        if (isAutoDestroyedOrSplitInitedVariable(var)) {
+          scope.destroyVariable(stmt, var, ignoredVariables);
+          scope.addEarlyDeinit(var);
+        }
+      }
     }
   }
 
@@ -425,7 +469,7 @@ static void checkSplitInitOrder(CondStmt* cond,
 void printUseBeforeInitDetails(VarSymbol* var) {
   // Find initializations to point to
   std::vector<Expr*> inits;
-  
+
   for_SymbolSymExprs(se, var) {
     if (CallExpr* call = toCallExpr(se->getStmtExpr())) {
       CallExpr* fCall = NULL;
@@ -453,7 +497,7 @@ void printUseBeforeInitDetails(VarSymbol* var) {
     USR_PRINT(var->defPoint, "'%s' declared and initialized here", var->name);
   }
 
-} 
+}
 
 static void walkBlock(FnSymbol*         fn,
                       AutoDestroyScope* parent,

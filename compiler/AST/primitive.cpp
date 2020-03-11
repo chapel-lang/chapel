@@ -715,7 +715,7 @@ initPrimitive() {
   prim_def(PRIM_ASSIGN, "=", returnInfoVoid, true);
   // like PRIM_ASSIGN but indicates an elidided copy
   // which means that the RHS cannot be used again after this call.
-  prim_def(PRIM_ASSIGN_ELIDED_COPY, "move=", returnInfoVoid, true);
+  prim_def(PRIM_ASSIGN_ELIDED_COPY, "elided-copy=", returnInfoVoid, true);
   // like PRIM_ASSIGN but the operation can be put off until end of
   // the enclosing task or forall.
   prim_def(PRIM_UNORDERED_ASSIGN, "unordered=", returnInfoVoid, true, true);

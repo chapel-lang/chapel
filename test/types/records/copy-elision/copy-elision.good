@@ -1,3 +1,4 @@
+init (default)
 test1a
 init 1 1
 test1a.a
@@ -121,4 +122,32 @@ test7d.b
 deinit 0 0
 deinit 1 1
 (1 1) (0 0)
+test8
+init= 0 0
+deinit 0 0
+test9
+init 1 1
+init= 1 1
+deinit 1 1
+deinit 1 1
+test10
+init 1 1
+init= 1 1
+deinit 1 1
+deinit 1 1
+test11
+init 1 1
+init= 1 1
+deinit 1 1
+deinit 1 1
+test-public-global
+init= 0 0
+test-private-global
+init= 0 0
+test-default-global
+init= 0 0
 end
+deinit 0 0
+deinit 0 0
+deinit 0 0
+deinit 0 0

@@ -69,6 +69,8 @@ proc acceptTwoIn(in a, in b) {
   return concatenate(a, b);
 }
 
+var globalR:R;
+
 proc test1a() {
   writeln("test1a");
   var x = new R(1);
@@ -261,7 +263,45 @@ proc test7d() {
 { writeln(test7d()); }
 
 
+proc test8() {
+  writeln("test8");
+  var x = globalR;
+}
+test8();
+
+proc test9() {
+  writeln("test9");
+  var x = new R(1);
+  proc inner() {
+    var y = x;
+  }
+  inner();
+}
+test9();
+
+proc test10() {
+  writeln("test10");
+  var x = new R(1);
+  const ref r = x;
+  var y = r;
+}
+test10();
+
+proc test11() {
+  writeln("test11");
+  var x = new R(1);
+  ref r = x;
+  var y = r;
+}
+test11();
+
+writeln("test-public-global");
+public var global1  = globalR;
+
+writeln("test-private-global");
+private var global2 = globalR;
+
+writeln("test-default-global");
+var global3 = globalR;
+
 writeln("end");
-
-
-// TODO: array tests

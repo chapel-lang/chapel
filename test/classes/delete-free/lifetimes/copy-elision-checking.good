@@ -10,6 +10,9 @@ copy-elision-checking.chpl:20: note: consider scope of a
 copy-elision-checking.chpl:38: In function 'test4':
 copy-elision-checking.chpl:41: error: Reference to scoped variable r reachable after lifetime ends
 copy-elision-checking.chpl:39: note: consider scope of a
+copy-elision-checking.chpl:49: In function 'test5':
+copy-elision-checking.chpl:51: error: Reference to scoped variable r reachable after lifetime ends
+copy-elision-checking.chpl:50: note: consider scope of a
 copy-elision-checking.chpl:61: In function 'test6':
 copy-elision-checking.chpl:63: error: Scoped variable b would outlive the value it is set to
 copy-elision-checking.chpl:62: note: consider scope of a
