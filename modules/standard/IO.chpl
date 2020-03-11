@@ -2827,6 +2827,10 @@ private proc _write_text_internal(_channel_internal:qio_channel_ptr_t,
   } else if t == string {
     // handle string
     const local_x = x.localize();
+    // check if the string has escapes
+    if local_x.hasEscapes {
+      return EINVAL;
+    }
     return qio_channel_print_string(false, _channel_internal, local_x.c_str(), local_x.numBytes:ssize_t);
   } else if t == bytes {
     // handle bytes
@@ -2990,6 +2994,10 @@ private inline proc _write_binary_internal(_channel_internal:qio_channel_ptr_t, 
     return err;
   } else if t == string {
     var local_x = x.localize();
+    // check if the string has escapes
+    if local_x.hasEscapes {
+      return EINVAL;
+    }
     return qio_channel_write_string(false, byteorder:c_int, qio_channel_str_style(_channel_internal), _channel_internal, local_x.c_str(), local_x.numBytes: ssize_t);
   } else if t == bytes {
     var local_x = x.localize();
