@@ -83,7 +83,7 @@ module LocaleModelHelpSetup {
 
     forall locIdx in dst.chpl_initOnLocales() with (ref root_accum) {
       chpl_task_setSubloc(c_sublocid_any);
-      const node = new unmanaged LocaleModel(dst);
+      const node = new locale(new unmanaged LocaleModel(new locale (dst)));
       dst.myLocales[locIdx] = node;
       root_accum.accum(node);
     }
@@ -160,6 +160,8 @@ module LocaleModelHelpSetup {
     numSublocales = chpl_topo_getNumNumaDomains();
 
     extern proc chpl_task_getMaxPar(): uint(32);
+    /*extern proc printf(s, v);*/
+    /*printf(c"numSublocales: %lld\n", numSublocales);*/
 
     if numSublocales >= 1 {
       dst.childSpace = {0..#numSublocales};
@@ -174,7 +176,8 @@ module LocaleModelHelpSetup {
       for i in dst.childSpace {
         // allocate the structure on the proper sublocale
         chpl_task_setSubloc(i:chpl_sublocID_t);
-        dst.childLocales[i] = new unmanaged NumaDomain(i:chpl_sublocID_t, dst);
+        dst.childLocales[i] = new unmanaged NumaDomain(i:chpl_sublocID_t,
+                                                       new locale(dst));
         dst.childLocales[i].nPUsPhysAcc = nPUsPhysAccPerSubloc;
         dst.childLocales[i].nPUsPhysAll = nPUsPhysAllPerSubloc;
         dst.childLocales[i].nPUsLogAcc = nPUsLogAccPerSubloc;

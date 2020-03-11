@@ -58,10 +58,13 @@ module LocaleModel {
     const sid: chpl_sublocID_t;
     const ndName: string; // note: locale provides `proc name`
 
-    override proc chpl_id() return (parent:LocaleModel)._node_id; // top-level node id
+    // top-level node id
+    override proc chpl_id(){
+      return (parent._instance: borrowed LocaleModel?)!._node_id;
+    }
     override proc chpl_localeid() {
-      return chpl_buildLocaleID((parent:LocaleModel)._node_id:chpl_nodeID_t,
-                                sid);
+      return chpl_buildLocaleID(
+          (parent._instance:LocaleModel)._node_id:chpl_nodeID_t, sid);
     }
     override proc chpl_name() return ndName;
 
@@ -187,7 +190,7 @@ module LocaleModel {
       if boundsChecking then
         if (idx < 0) || (idx >= numSublocales) then
           halt("sublocale child index out of bounds (",idx,")");
-      return childLocales[idx];
+      return new locale(childLocales[idx]);
     }
 
     iter getChildren() : locale  {
@@ -208,8 +211,8 @@ module LocaleModel {
     //------------------------------------------------------------------------}
 
     proc deinit() {
-      for loc in childLocales do
-        delete loc;
+      /*for loc in childLocales do*/
+        /*delete loc;*/
     }
  }
 
@@ -227,7 +230,7 @@ module LocaleModel {
     var myLocales: [myLocaleSpace] locale;
 
     proc init() {
-      super.init(nil);
+      super.init(nilLocale);
       nPUsPhysAcc = 0;
       nPUsPhysAll = 0;
       nPUsLogAcc = 0;
@@ -281,15 +284,18 @@ module LocaleModel {
       const subloc = chpl_sublocFromLocaleID(id);
       if chpl_isActualSublocID(subloc) then
         return (myLocales[node:int].getChild(subloc:int)):locale;
-      else
-        return (myLocales[node:int]):locale;
+      else {
+        const n = node:int;
+        const l = myLocales[n];
+        return l:locale;
+      }
     }
 
     proc deinit() {
       for loc in myLocales {
         on loc {
           rootLocaleInitialized = false;
-          delete _to_unmanaged(loc);
+          /*delete _to_unmanaged(loc);*/
         }
       }
     }

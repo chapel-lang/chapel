@@ -527,6 +527,7 @@ module ChapelLocale {
         rootLocale = origRootLocale;
         rootLocaleInitialized = true;
       }
+      doneCreatingLocales = true;
     }
 
     // Since we are going on to all the locales here, we use the
@@ -547,9 +548,9 @@ module ChapelLocale {
           b.wait(locIdx, flags);
           chpl_rootLocaleInitPrivate(locIdx);
           warmupRuntime();
-          doneCreatingLocales = true;
         }
       }
+      doneCreatingLocales = true;
     }
   }
 
@@ -730,7 +731,7 @@ module ChapelLocale {
   pragma "no doc"
   pragma "fn returns infinite lifetime"
   proc chpl_localeID_to_locale(id : chpl_localeID_t) : locale {
-    if rootLocale != nilLocale then
+    if rootLocale._instance != nil then
       return (rootLocale._instance:borrowed AbstractRootLocale?)!.localeIDtoLocale(id);
     else
       // For code prior to rootLocale initialization
