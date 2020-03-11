@@ -275,3 +275,23 @@ bool ImportStmt::skipSymbolSearch(const char* name) {
     return true;
   }
 }
+
+/************************************* | **************************************
+*                                                                             *
+* Determine if the imported module should be considered for supporting        *
+* qualified access.                                                           *
+*                                                                             *
+************************************** | *************************************/
+
+bool ImportStmt::providesQualifiedAccess() {
+  /* Today, ImportStmts only support qualified access of all symbols in the
+     imported modules, or supports unqualified access of certain symbols in it,
+     but not both.  There are plans for enabling both if we desire it (by
+     allowing `this` in ImportStmt's unqualified access lists)
+  */
+  if (unqualified.size() == 0) {
+    return true;
+  } else {
+    return false;
+  }
+}

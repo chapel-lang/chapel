@@ -48,6 +48,7 @@ class ImportStmt: public VisibilityStmt {
   BaseAST* getSearchScope() const;
 
   bool skipSymbolSearch(const char* name);
+  bool providesQualifiedAccess();
 
  private:
   bool checkValid(Expr* expr) const;

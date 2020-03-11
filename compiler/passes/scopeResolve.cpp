@@ -1953,11 +1953,14 @@ static bool lookupThisScopeAndUses(const char*           name,
           // symbols that they define.
           forv_Vec(VisibilityStmt, stmt, *moduleUses) {
             if (stmt != NULL) {
-              if (Symbol* modSym = stmt->checkIfModuleNameMatches(name)) {
-                if (isRepeat(modSym, symbols) == false) {
-                  symbols.push_back(modSym);
-                  if (storeRenames && stmt->isARename()) {
-                    renameLocs[modSym] = &stmt->astloc;
+              if (!isImportStmt(stmt) ||
+                  toImportStmt(stmt)->providesQualifiedAccess()) {
+                if (Symbol* modSym = stmt->checkIfModuleNameMatches(name)) {
+                  if (isRepeat(modSym, symbols) == false) {
+                    symbols.push_back(modSym);
+                    if (storeRenames && stmt->isARename()) {
+                      renameLocs[modSym] = &stmt->astloc;
+                    }
                   }
                 }
               }
