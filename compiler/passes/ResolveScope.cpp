@@ -844,9 +844,10 @@ Symbol* ResolveScope::lookupPublicImports(const char* name) const {
       if (!is->isPrivate) {
         //std::cout << "Import statement is public\n";
         retval = vs->checkIfModuleNameMatches(name);
-        //if (retval) {
+        if (retval) {
           //nprint_view(retval);
-        //}
+          break;
+        }
       }
       else {
         //std::cout << "Import statement is not public\n";
