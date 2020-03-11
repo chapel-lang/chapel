@@ -145,11 +145,14 @@ void AutoDestroyScope::addInitialization(VarSymbol* var) {
       if (scope->mDeclaredVars.count(var) > 0) {
         // Add it to mDeclaredVars at the declaration scope.
         scope->mLocalsAndDefers.push_back(var);
-        break;
+        return;
       } else {
         // Or add it to mInitedOuterVars at inner scopes.
         scope->mInitedOuterVars.push_back(var);
       }
+    } else {
+      // it was already present as initialized
+      return;
     }
   }
 }

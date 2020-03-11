@@ -365,8 +365,11 @@ static Expr* walkBlockStmt(FnSymbol*         fn,
     if (lmmIt != lmm.end()) {
       const std::vector<VarSymbol*>& vars = lmmIt->second;
       for_vector(VarSymbol, var, vars) {
-        scope.destroyVariable(stmt, var, ignoredVariables);
-        scope.addEarlyDeinit(var);
+
+        if (isAutoDestroyedOrSplitInitedVariable(var)) {
+          scope.destroyVariable(stmt, var, ignoredVariables);
+          scope.addEarlyDeinit(var);
+        }
       }
     }
   }
