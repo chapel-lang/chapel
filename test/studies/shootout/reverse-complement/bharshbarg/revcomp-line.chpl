@@ -34,7 +34,7 @@ record buf {
     this.complete();
 
     chan = fi.reader(locking=false);
-    numLeft = fi.length();
+    numLeft = fi.size;
   }
 
   pragma "no copy return"
@@ -106,7 +106,7 @@ proc main(args: [] string) {
   // We don't expose similar routines for list at the moment...
   /*
   {
-    const r = 1..stdin.length();
+    const r = 1..stdin.size;
     data._value.dataAllocRange = r;
     data._value.dsiReallocate((r,));
     data._value.dsiPostReallocate();
@@ -120,7 +120,7 @@ proc main(args: [] string) {
     var sectionStart = lineStart;
     while input.readUntil("\n".toByte(), data) > 0 {
       if data[lineStart] == ">".toByte() {
-        begin process(data, sectionStart, lineStart-2);
+        begin with (ref data) process(data, sectionStart, lineStart-2);
         sectionStart = data.size+1;
       }
       lineStart = data.size + 1;
@@ -137,7 +137,7 @@ proc main(args: [] string) {
   stdoutBin.write(data.toArray());
 }
 
-proc process(data, in start, in end) {
+proc process(ref data, in start, in end) {
   proc advance(ref cursor, dir) {
     do { cursor += dir; } while data[cursor] == "\n".toByte();
   }

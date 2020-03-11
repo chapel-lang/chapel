@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2020 Cray Inc.
+ * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -186,7 +186,7 @@ are supported through submodules, such ``LinearAlgebra.Sparse`` for the
 module LinearAlgebra {
 
 use Norm; // TODO -- merge Norm into LinearAlgebra
-use BLAS only;
+import BLAS;
 use LAPACK only lapack_memory_order, isLAPACKType;
 
 /* Determines if using native Chapel implementations */
@@ -576,7 +576,7 @@ proc dot(A: [?Adom] ?eltType, B: [?Bdom] eltType) where isDenseArr(A) && isDense
 
 */
 proc _array.dot(A: []) where isDenseArr(this) && isDenseArr(A) {
-  use LinearAlgebra only;
+  import LinearAlgebra;
   return LinearAlgebra.dot(this, A);
 }
 
@@ -1374,7 +1374,7 @@ proc cholesky(A: [] ?t, lower = true)
       compiler error if ``lapackImpl`` is ``none``.
 
 */
-proc eigvals(A: [] ?t) where isRealType(t) && A.domain.rank == 2 && usingLAPACK {
+proc eigvals(A: [] ?t) where A.domain.rank == 2 && usingLAPACK {
   return eig(A, left=false, right=false);
 }
 
@@ -1403,10 +1403,10 @@ proc eigvals(A: [] ?t) where isRealType(t) && A.domain.rank == 2 && usingLAPACK 
 
  */
 proc eig(A: [] ?t, param left = false, param right = false)
-  where isRealType(t) && A.domain.rank == 2 && usingLAPACK {
+  where A.domain.rank == 2 && usingLAPACK {
 
   proc convertToCplx(wr: [] t, wi: [] t) {
-    const n = wi.numElements;
+    const n = wi.size;
     var eigVals: [1..n] complex(numBits(t)*2);
     forall (rv, re, im) in zip(eigVals, wr, wi) {
       rv = (re, im): complex(numBits(t)*2);
@@ -1415,7 +1415,7 @@ proc eig(A: [] ?t, param left = false, param right = false)
   }
 
   proc flattenCplxEigenVecs(wi: [] t, vec: [] t) {
-    const n = wi.numElements;
+    const n = wi.size;
     var cplx: [1..n, 1..n] complex(numBits(t)*2);
 
     var skipNext = false;
@@ -1442,45 +1442,69 @@ proc eig(A: [] ?t, param left = false, param right = false)
     return cplx;
   }
 
-  const n = A.domain.dim(1).length;
+  const n = A.domain.dim(1).size;
   if !isSquare(A) then
     halt("Matrix passed to eigvals must be square");
   var copy = A;
-  var wr, wi: [1..n] t;
+  var wr: [1..n] t;
+  var wi: if t == complex then nothing else [1..n] t;
+  var eigVals: if t == complex then [1..n] t else [1..n] complex(numBits(t)*2);
 
   if !left && !right {
     var vl, vr: [1..1, 1..n] t;
-    LAPACK.geev(lapack_memory_order.row_major, 'N', 'N', copy, wr, wi, vl, vr);
-    var eigVals = convertToCplx(wr, wi);
+    if t == complex {
+      LAPACK.geev(lapack_memory_order.row_major, 'N', 'N', copy, wr, vl, vr);
+      eigVals = wr;
+    } else {
+      LAPACK.geev(lapack_memory_order.row_major, 'N', 'N', copy, wr, wi, vl, vr);
+      eigVals = convertToCplx(wr, wi);
+    }
     return eigVals;
   } else if left && !right {
     var vl: [1..n, 1..n] t;
     var vr: [1..1, 1..n] t;
-    LAPACK.geev(lapack_memory_order.row_major, 'V', 'N', copy, wr, wi, vl, vr);
-
-    var eigVals = convertToCplx(wr, wi);
-    var vlcplx = flattenCplxEigenVecs(wi, vl);
-
+    var vlcplx: if t == complex then [1..n, 1..n] t else [1..n, 1..n] complex(numBits(t)*2);
+    if t == complex {
+      LAPACK.geev(lapack_memory_order.row_major, 'V', 'N', copy, wr, vl, vr);
+      eigVals = wr;
+      vlcplx = vl;
+    } else {
+      LAPACK.geev(lapack_memory_order.row_major, 'V', 'N', copy, wr, wi, vl, vr);
+      eigVals = convertToCplx(wr, wi);
+      vlcplx = flattenCplxEigenVecs(wi, vl);
+    }
     return (eigVals, vlcplx);
   } else if right && !left {
     var vl: [1..1, 1..n] t;
     var vr: [1..n, 1..n] t;
-    LAPACK.geev(lapack_memory_order.row_major, 'N', 'V', copy, wr, wi, vl, vr);
-
-    var eigVals = convertToCplx(wr, wi);
-    var vrcplx = flattenCplxEigenVecs(wi, vr);
-
+    var vrcplx: if t == complex then [1..n, 1..n] t else [1..n, 1..n] complex(numBits(t)*2);
+    if t == complex {
+      LAPACK.geev(lapack_memory_order.row_major, 'N', 'V', copy, wr, vl, vr);
+      eigVals = wr;
+      vrcplx = vr;
+    } else {
+      LAPACK.geev(lapack_memory_order.row_major, 'N', 'V', copy, wr, wi, vl, vr);
+      eigVals = convertToCplx(wr, wi);
+      vrcplx = flattenCplxEigenVecs(wi, vr);
+    }
     return (eigVals, vrcplx);
   } else {
     // left && right
     var vl: [1..n, 1..n] t;
     var vr: [1..n, 1..n] t;
-    LAPACK.geev(lapack_memory_order.row_major, 'V', 'V', copy, wr, wi, vl, vr);
-
-    var eigVals = convertToCplx(wr, wi);
-    var vlcplx = flattenCplxEigenVecs(wi, vl);
-    var vrcplx = flattenCplxEigenVecs(wi, vr);
-
+    var vlcplx: if t == complex then [1..n, 1..n] t else [1..n, 1..n] complex(numBits(t)*2);
+    var vrcplx: if t == complex then [1..n, 1..n] t else [1..n, 1..n] complex(numBits(t)*2);
+    if t == complex {
+      LAPACK.geev(lapack_memory_order.row_major, 'V', 'V', copy, wr, vl, vr);
+      eigVals = wr;
+      vlcplx = vl;
+      vrcplx = vr;
+    } else {
+      LAPACK.geev(lapack_memory_order.row_major, 'V', 'V', copy, wr, wi, vl, vr);
+      eigVals = convertToCplx(wr, wi);
+      vlcplx = flattenCplxEigenVecs(wi, vl);
+      vrcplx = flattenCplxEigenVecs(wi, vr);
+    }
     return (eigVals, vlcplx, vrcplx);
   }
 }
@@ -1617,7 +1641,7 @@ proc jacobi(A: [?Adom] ?eltType, ref X: [?Xdom] eltType,
 
 pragma "no doc"
 proc eig(A: [] ?t, param left = false, param right = false)
-  where isRealType(t) && A.domain.rank == 2 && !usingLAPACK {
+  where A.domain.rank == 2 && !usingLAPACK {
   compilerError("eigvals() requires LAPACK");
 }
 
@@ -1954,13 +1978,13 @@ module Sparse {
 
   /* Compute the dot-product */
   proc _array.dot(A: []) where isCSArr(A) || isCSArr(this) {
-    use LinearAlgebra only;
+    import LinearAlgebra;
     return LinearAlgebra.Sparse.dot(this, A);
   }
 
   /* Compute the dot-product */
   proc _array.dot(a) where isNumeric(a) && isCSArr(this) {
-    use LinearAlgebra only;
+    import LinearAlgebra;
     return LinearAlgebra.dot(this, a);
   }
 
@@ -2183,7 +2207,7 @@ module Sparse {
     const parentDT = transpose(D.parentDom);
     var Dom: sparse subdomain(parentDT) dmapped CS(sortedIndices=false);
 
-    var idxBuffer = Dom.makeIndexBuffer(size=D.numIndices);
+    var idxBuffer = Dom.makeIndexBuffer(size=D.size);
     for (i,j) in D do idxBuffer.add((j,i));
     idxBuffer.commit();
     return Dom;

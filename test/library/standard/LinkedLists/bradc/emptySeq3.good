@@ -2,4 +2,3 @@ emptySeq3.chpl:3: error: unresolved call 'LinkedList(int(64)).init=(nil)'
 $CHPL_HOME/modules/standard/LinkedLists.chpl:79: note: this candidate did not match: LinkedList.init=(l: this.type )
 emptySeq3.chpl:3: note: because call actual argument #1 with type nil
 $CHPL_HOME/modules/standard/LinkedLists.chpl:79: note: is passed to formal 'l: LinkedList'
-$CHPL_HOME/modules/standard/LinkedLists.chpl:55: note: candidates are: LinkedList.init=(other: this.type)

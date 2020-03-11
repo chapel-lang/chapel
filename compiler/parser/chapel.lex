@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2020 Cray Inc.
+ * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -152,6 +152,7 @@ forall           return processToken(yyscanner, TFORALL);
 forwarding       return processToken(yyscanner, TFORWARDING);
 if               return processToken(yyscanner, TIF);
 imag             return processToken(yyscanner, TIMAG);
+import           return processToken(yyscanner, TIMPORT);
 in               return processToken(yyscanner, TIN);
 index            return processToken(yyscanner, TINDEX);
 inline           return processToken(yyscanner, TINLINE);

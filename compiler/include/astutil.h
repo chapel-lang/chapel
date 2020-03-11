@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2020 Cray Inc.
+ * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -62,8 +62,9 @@ void collectSymExprsFor(BaseAST* ast, const Symbol* sym1, const Symbol* sym2,
 void collectLcnSymExprs(BaseAST* ast, std::vector<SymExpr*>& symExprs);
 void collectSymbols(BaseAST* ast, std::vector<Symbol*>& symbols);
 
-// returns true if the AST contains a SymExpr pointing to sym
-bool containsSymExprFor(BaseAST* ast, Symbol* sym);
+// If ast contains a SymExpr pointing to sym, return that SymExpr
+// Otherwise, return NULL
+SymExpr* findSymExprFor(BaseAST* ast, Symbol* sym);
 
 // utility routines for clearing and resetting lineno and filename
 void reset_ast_loc(BaseAST* destNode, astlocT astloc);

@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2020 Cray Inc.
+ * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -35,6 +35,7 @@
 #include "library.h"
 #include "LoopExpr.h"
 #include "scopeResolve.h"
+#include "splitInit.h"
 #include "stlUtil.h"
 #include "stringutil.h"
 #include "TransformLogicalShortCircuit.h"
@@ -77,9 +78,11 @@ static void        hack_resolve_types(ArgSymbol* arg);
 
 static void        find_printModuleInit_stuff();
 
-static void        normalizeBase(BaseAST* base);
+static void        normalizeBase(BaseAST* base, bool addEndOfStatements);
 static void        processSyntacticDistributions(CallExpr* call);
 static void        processManagedNew(CallExpr* call);
+static void        processSyntacticTupleAssignment(CallExpr* call);
+static void        addEndOfStatementMarkers(BaseAST* base);
 static Expr*       getCallTempInsertPoint(Expr* expr);
 static void        addTypeBlocksForParentTypeOf(CallExpr* call);
 static void        normalizeReturns(FnSymbol* fn);
@@ -96,10 +99,7 @@ static void        applyGetterTransform(CallExpr* call);
 static void        insertCallTemps(CallExpr* call);
 static void        insertCallTempsWithStmt(CallExpr* call, Expr* stmt);
 
-static bool isSplitInitExpr(Expr* e);
-static bool findInitPoints(DefExpr* def,
-                           std::vector<CallExpr*>& initAssigns);
-
+static void errorIfSplitInitializationRequired(DefExpr* def, Expr* cur);
 
 static void        normalizeTypeAlias(DefExpr* defExpr);
 static void        normalizeConfigVariableDefinition(DefExpr* defExpr);
@@ -166,7 +166,7 @@ void normalize() {
     }
   }
 
-  normalizeBase(theProgram);
+  normalizeBase(theProgram, true);
 
   normalized = true;
 
@@ -175,20 +175,20 @@ void normalize() {
   moveGlobalDeclarationsToModuleScope();
 
   if (!fMinimalModules) {
-    // Calls to _statementLevelSymbol() are inserted here and in
+    // Calls to chpl_statementLevelSymbol() are inserted here and in
     // function resolution to ensure that sync vars are in the correct
     // state (empty) if they are used but not assigned to anything.
     forv_Vec(SymExpr, se, gSymExprs) {
       if (FnSymbol* parentFn = toFnSymbol(se->parentSymbol)) {
         if (se == se->getStmtExpr()) {
           // Don't add these calls for the return type, since
-          // _statementLevelSymbol would do nothing in that case
+          // chpl_statementLevelSymbol would do nothing in that case
           // anyway, and it contributes to order-of-resolution issues for
           // extern functions with declared return type.
           if (parentFn->retExprType != se->parentExpr) {
             SET_LINENO(se);
 
-            CallExpr* call = new CallExpr("_statementLevelSymbol");
+            CallExpr* call = new CallExpr(astr_chpl_statementLevelSymbol);
 
             se->insertBefore(call);
 
@@ -260,13 +260,13 @@ void normalize() {
 
 void normalize(FnSymbol* fn) {
   if (fn->isNormalized() == false) {
-    normalizeBase(fn);
+    normalizeBase(fn, true);
     fn->setNormalized(true);
   }
 }
 
 void normalize(Expr* expr) {
-  normalizeBase(expr);
+  normalizeBase(expr, false);
 }
 
 /************************************* | **************************************
@@ -488,24 +488,29 @@ static void insertCallTempsForRiSpecs(BaseAST* base) {
 *                                                                             *
 ************************************** | *************************************/
 
-static void normalizeBase(BaseAST* base) {
+static void normalizeBase(BaseAST* base, bool addEndOfStatements) {
   //
   // Phase 0
   //
   normalizeErrorHandling(base);
+  if (addEndOfStatements)
+    addEndOfStatementMarkers(base);
 
   //
   // Phase 1
   //
-  std::vector<CallExpr*> calls1;
+  {
+    std::vector<CallExpr*> calls1;
 
-  collectCallExprs(base, calls1);
+    collectCallExprs(base, calls1);
 
-  for_vector(CallExpr, call, calls1) {
-    processSyntacticDistributions(call);
-    processManagedNew(call);
-    if (call->isPrimitive(PRIM_TYPEOF))
-      addTypeBlocksForParentTypeOf(call);
+    for_vector(CallExpr, call, calls1) {
+      processSyntacticDistributions(call);
+      processManagedNew(call);
+      processSyntacticTupleAssignment(call);
+      if (call->isPrimitive(PRIM_TYPEOF))
+        addTypeBlocksForParentTypeOf(call);
+    }
   }
 
 
@@ -628,7 +633,8 @@ void checkUseBeforeDefs(FnSymbol* fn) {
 
         if (isModuleSymbol(sym)                    == true  &&
             isFnSymbol(fn->defPoint->parentSymbol) == false &&
-            isUseStmt(se->parentExpr)              == false) {
+            isUseStmt(se->parentExpr)              == false &&
+            isImportStmt(se->parentExpr)           == false) {
           SymExpr* prev = toSymExpr(se->prev);
 
           if (prev == NULL || prev->symbol() != gModuleToken) {
@@ -783,12 +789,15 @@ static void moveGlobalDeclarationsToModuleScope() {
   forv_Vec(ModuleSymbol, mod, allModules) {
     for_alist(expr, mod->initFn->body->body) {
       if (DefExpr* def = toDefExpr(expr)) {
-        // Non-temporary variable declarations are moved out to module scope.
         if (VarSymbol* vs = toVarSymbol(def->sym)) {
-          // All var symbols are moved out to module scope,
-          // except for end counts (just so that parallel.cpp
-          // can find them)
+          // Don't move end counts to module scope
+          // (just so that parallel.cpp can find them)
           if (vs->hasFlag(FLAG_END_COUNT))
+            continue;
+
+          // Move temps to module scope later
+          // (after it is determined if they are last-mention or not)
+          if (vs->hasFlag(FLAG_TEMP))
             continue;
 
           // move the DefExpr
@@ -921,13 +930,17 @@ void LowerIfExprVisitor::exitIfExpr(IfExpr* ife) {
 
   CondStmt* cs = new CondStmt(new SymExpr(cond),
                               ife->getThenStmt()->remove(),
-                              ife->getElseStmt()->remove());
+                              ife->getElseStmt()->remove(),
+                              true /* isIfExpr */);
+
 
   // Remove nested BlockStmts
   toBlockStmt(cs->thenStmt->body.tail)->flattenAndRemove();
   toBlockStmt(cs->elseStmt->body.tail)->flattenAndRemove();
 
   anchor->insertBefore(cs);
+
+  INT_ASSERT(cs->isIfExpr());
 
   ife->replace(new SymExpr(result));
 }
@@ -1127,6 +1140,303 @@ static void processManagedNew(CallExpr* newCall) {
     }
   }
 }
+
+/************************************* | **************************************
+*                                                                             *
+* processSyntacticTupleAssignment / destructureTupleAssignment                *
+*                                                                             *
+*    (i,j) = expr;    ==>    i = expr(1);                                     *
+*                            j = expr(2);                                     *
+*                                                                             *
+* note: handles recursive tuple destructuring, (i,(j,k)) = ...                *
+*                                                                             *
+************************************** | *************************************/
+
+static void      insertDestructureStatements(Expr*     S1,
+                                             Expr*     S2,
+                                             CallExpr* lhs,
+                                             Expr*     rhs);
+static CallExpr* destructureChk(CallExpr* lhs, Expr* rhs);
+static CallExpr* destructureErr();
+static void destructureTupleAssignment(CallExpr* assign, CallExpr* lhsCall);
+
+static void processSyntacticTupleAssignment(CallExpr* call) {
+  if (call->isNamedAstr(astrSassign)) {
+    if (CallExpr* lhsCall = toCallExpr(call->get(1))) {
+      if (lhsCall->isNamed("_build_tuple")) {
+        destructureTupleAssignment(call, lhsCall);
+      }
+    }
+  }
+}
+
+static void destructureTupleAssignment(CallExpr* assign, CallExpr* lhsCall) {
+  SET_LINENO(assign);
+
+  VarSymbol* rtmp = newTemp();
+  Expr*      S1   = new CallExpr(PRIM_MOVE, rtmp, assign->get(2)->remove());
+  Expr*      S2   = new CallExpr(PRIM_NOOP);
+
+  rtmp->addFlag(FLAG_EXPR_TEMP);
+  rtmp->addFlag(FLAG_MAYBE_TYPE);
+  rtmp->addFlag(FLAG_MAYBE_PARAM);
+
+  assign->replace(S1);
+
+  S1->insertBefore(new DefExpr(rtmp));
+  S1->insertAfter(S2);
+
+  insertDestructureStatements(S1, S2, lhsCall, new SymExpr(rtmp));
+
+  S2->remove();
+}
+
+static void insertDestructureStatements(Expr*     S1,
+                                        Expr*     S2,
+                                        CallExpr* lhs,
+                                        Expr*     rhs) {
+  int       index = 0;
+  CallExpr* test  = destructureChk(lhs, rhs);
+  CallExpr* err   = destructureErr();
+
+  S1->getStmtExpr()->insertAfter(buildIfStmt(test, err));
+
+  for_actuals(expr, lhs) {
+    UnresolvedSymExpr* se = toUnresolvedSymExpr(expr->remove());
+
+    index = index + 1;
+
+    if (se == NULL || strcmp(se->unresolved, "chpl__tuple_blank") != 0) {
+      CallExpr* nextLHS = toCallExpr(expr);
+      Expr*     nextRHS = new CallExpr(rhs->copy(), new_IntSymbol(index));
+
+      if (nextLHS != NULL && nextLHS->isNamed("_build_tuple") == true) {
+        insertDestructureStatements(S1, S2, nextLHS, nextRHS);
+
+      } else {
+        VarSymbol* lhsTmp = newTemp();
+        CallExpr*  addrOf = new CallExpr(PRIM_ADDR_OF, expr);
+
+        lhsTmp->addFlag(FLAG_MAYBE_PARAM);
+
+        S1->insertBefore(new DefExpr(lhsTmp));
+        S1->insertBefore(new CallExpr(PRIM_MOVE, lhsTmp, addrOf));
+
+        S2->insertBefore(new CallExpr("=", lhsTmp, nextRHS));
+      }
+    }
+  }
+}
+
+static CallExpr* destructureChk(CallExpr* lhs, Expr* rhs) {
+  CallExpr* dot  = new CallExpr(".", rhs->copy(), new_CStringSymbol("size"));
+
+  return new CallExpr("!=", new_IntSymbol(lhs->numActuals()), dot);
+}
+
+static CallExpr* destructureErr() {
+  const char* msg  = NULL;
+  Symbol*     zero = new_IntSymbol(0);
+
+  msg = "tuple size must match the number of grouped variables";
+
+  return new CallExpr("compilerError", new_StringSymbol(msg), zero);
+}
+
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
+
+
+
+class AddEndOfStatementMarkers : public AstVisitorTraverse
+{
+  public:
+    virtual bool enterCallExpr(CallExpr* node);
+    virtual bool enterDefExpr(DefExpr* node);
+    virtual bool enterIfExpr(IfExpr* node);
+    virtual bool enterLoopExpr(LoopExpr* node);
+};
+
+// Note, this might be called also during resolution
+// Adds a PRIM_END_OF_STATEMENT if the second argument is NULL
+void addMentionToEndOfStatement(Expr* node, CallExpr* existingEndOfStatement) {
+
+  // Rule out several cases that shouldn't get end-of-statement markers
+  if (node->list == NULL)
+    return;
+
+  FnSymbol* fn = toFnSymbol(node->parentSymbol);
+  if (fn == NULL)
+    return;
+
+  BlockStmt* firstBlock = NULL;
+  BlockStmt* fnBlock = fn->body;
+  bool foundInBody = false;
+
+  // Check that the call is contained a FnSymbol's Block
+  // While traversing, also compute the first parent Block.
+  for (Expr* cur = node->parentExpr;
+       cur != NULL;
+       cur = cur->parentExpr) {
+
+    if (firstBlock == NULL)
+      if (BlockStmt* block = toBlockStmt(cur))
+        firstBlock = block;
+
+    if (cur == fnBlock) {
+      foundInBody = true;
+      break;
+    }
+  }
+
+  // not in a FnSymbol's body
+  //  e.g. in where clause, lifetime clause, return type expression, arg, etc
+  if (foundInBody == false)
+    return;
+
+  // Otherwise, check that the call is a statement-level call, and
+  // in that event, add the end-of-statement marker.
+  if (firstBlock != node->parentExpr)
+    return;
+
+  // Gather symexprs used in the statement
+  std::vector<SymExpr*> mentions;
+  collectSymExprs(node, mentions);
+
+  SET_LINENO(node);
+  CallExpr* call = existingEndOfStatement;
+  bool insertCall = false;
+
+  if (call == NULL) {
+    // Don't add duplicate PRIM_END_OF_STATEMENT calls, but do
+    // add mentions to an existing one.
+    if (CallExpr* next = toCallExpr(node->next))
+      if (next->isPrimitive(PRIM_END_OF_STATEMENT))
+        call = next;
+  }
+
+  if (call == NULL) {
+    call = new CallExpr(PRIM_END_OF_STATEMENT);
+    insertCall = true;
+  }
+
+  // Add SymExprs for any user variables mentioned in the statement
+  // That way, if later passes remove them, e.g. for .type,
+  // the variable lifetime still matches the user's view of the code.
+  // A reasonable alternative would be for transformations such as
+  // the removal of .type blocks to add such SymExprs.
+  for_vector(SymExpr, se, mentions) {
+    if (VarSymbol* var = toVarSymbol(se->symbol())) {
+      if (!var->hasFlag(FLAG_TEMP) &&
+          !var->isParameter() &&
+          // exclude global variables, e.g. gMethodToken
+          var->defPoint->getFunction() == node->getFunction()) {
+
+        // check that the variable is defined outside of the
+        // node (to avoid adding mentions of removed variables
+        // in param-if folding)
+        bool definedOutsideOfNode = true;
+        if (DefExpr* def = var->defPoint) {
+          for (Expr* cur = def; cur != NULL; cur = cur->parentExpr) {
+            if (cur == node) {
+              definedOutsideOfNode = false;
+              break;
+            }
+          }
+        }
+        if (definedOutsideOfNode)
+          call->insertAtTail(new SymExpr(se->symbol()));
+      }
+    }
+  }
+
+  // Don't add if already at the end of the block and no mentions are stored
+  if (insertCall && (call->numActuals() > 0 || node->next != NULL))
+    node->insertAfter(call);
+}
+
+bool AddEndOfStatementMarkers::enterIfExpr(IfExpr* node) {
+  addMentionToEndOfStatement(node, NULL);
+  return false;
+}
+
+bool AddEndOfStatementMarkers::enterLoopExpr(LoopExpr* node) {
+  addMentionToEndOfStatement(node, NULL);
+  return false;
+}
+
+bool AddEndOfStatementMarkers::enterCallExpr(CallExpr* node) {
+  // Don't add more markers after an end of statement marker.
+  if (node->isPrimitive(PRIM_END_OF_STATEMENT))
+    return false;
+
+  // Don't add markers after a move setting a temp
+  if (node->isPrimitive(PRIM_MOVE) ||
+      node->isPrimitive(PRIM_ASSIGN))
+    if (SymExpr* lhs = toSymExpr(node->get(1)))
+      if (lhs->symbol()->hasFlag(FLAG_TEMP))
+        return false;
+
+  // If the next statement is a PRIM_INIT_FIELD, it's a compound
+  // thing from initializer pre-normalization, so don't add an end-of-statement
+  // in-between. Instead, add an end-of-statement after the PRIM_INIT_FIELD.
+  if (CallExpr* nextCall = toCallExpr(node->next)) {
+    if (nextCall->isPrimitive(PRIM_INIT_FIELD) ||
+        nextCall->isPrimitive(PRIM_SET_MEMBER)) {
+      CallExpr* endOfStatement = NULL;
+      if (CallExpr* nextNextCall = toCallExpr(nextCall->next))
+        if (nextNextCall->isPrimitive(PRIM_END_OF_STATEMENT))
+          endOfStatement = nextNextCall;
+
+      if (endOfStatement == NULL) {
+        SET_LINENO(nextCall);
+        endOfStatement = new CallExpr(PRIM_END_OF_STATEMENT);
+        nextCall->insertAfter(endOfStatement);
+      }
+
+      addMentionToEndOfStatement(node, endOfStatement);
+      return false;
+    }
+  }
+
+  addMentionToEndOfStatement(node, NULL);
+  return false;
+}
+
+bool AddEndOfStatementMarkers::enterDefExpr(DefExpr* node) {
+  VarSymbol* var = toVarSymbol(node->sym);
+
+  if (var != NULL && !var->hasFlag(FLAG_TEMP)) {
+    // Scroll forward to find a PRIM_END_OF_STATEMENT
+    // (these are added in the parser along with DefExprs)
+    CallExpr* endOfStatement = NULL;
+    for (Expr* cur = node->next; cur != NULL; cur = cur->next)
+      if (CallExpr* call = toCallExpr(cur))
+        if (call->isPrimitive(PRIM_END_OF_STATEMENT))
+          endOfStatement = call;
+    addMentionToEndOfStatement(node, endOfStatement);
+    return false;
+  }
+
+  if (isModuleSymbol(node->sym))
+    return true; // look for functions in modules
+
+  if (isFnSymbol(node->sym))
+    if (!node->sym->hasFlag(FLAG_COMPILER_GENERATED))
+      return true;  // visit non-compiler-generated functions
+
+  return false; // other symbols, e.g. ArgSymbols
+}
+
+
+static void addEndOfStatementMarkers(BaseAST* base) {
+  AddEndOfStatementMarkers visitor;
+  base->accept(&visitor);
+}
+
 
 static void addTypeBlocksForParentTypeOf(CallExpr* call) {
   Expr* stmt = getCallTempInsertPoint(call);
@@ -1875,7 +2185,8 @@ static void insertCallTempsWithStmt(CallExpr* call, Expr* stmt) {
     // This flag triggers autoCopy/autoDestroy behavior.
     if (parentCall == NULL ||
         (parentCall->isNamed("chpl__initCopy")  == false &&
-         parentCall->isPrimitive(PRIM_INIT_VAR) == false)) {
+         parentCall->isPrimitive(PRIM_INIT_VAR) == false &&
+         parentCall->isPrimitive(PRIM_INIT_VAR_SPLIT_INIT) == false)) {
       tmp->addFlag(FLAG_EXPR_TEMP);
     }
   }
@@ -2064,25 +2375,20 @@ static void normalizeTypeAlias(DefExpr* defExpr) {
     return;
   }
 
-  std::vector<CallExpr*> initAssign;
+  // all user variables are dead at end of block
+  var->addFlag(FLAG_DEAD_END_OF_BLOCK);
+
+  std::vector<CallExpr*> initAssigns;
   // if there is no init expression, search for initialization
   // points written using '='
   bool foundSplitInit = false;
   bool requestedSplitInit = isSplitInitExpr(init);
-  // Error for global variables using split init
-  FnSymbol* initFn = defExpr->getModule()->initFn;
-  bool global = (initFn && defExpr->parentExpr == initFn->body);
-
-  if (requestedSplitInit && global) {
-    USR_FATAL_CONT(defExpr, "type alias '%s' is not initialized",
-                   var->name);
-    USR_PRINT(defExpr, "split initialization is not supported for globals");
-  }
 
   // For now, disable automatic split init on non-user code
-  if ((defExpr->getModule()->modTag == MOD_USER || requestedSplitInit) &&
-      global == false)
-    foundSplitInit = findInitPoints(defExpr, initAssign);
+  Expr* prevent = NULL;
+  foundSplitInit = findInitPoints(defExpr, initAssigns, prevent, true);
+  if (foundSplitInit == false)
+    errorIfSplitInitializationRequired(defExpr, prevent);
 
   INT_ASSERT(type == NULL);
   INT_ASSERT(init != NULL);
@@ -2092,7 +2398,9 @@ static void normalizeTypeAlias(DefExpr* defExpr) {
     emitTypeAliasInit(defExpr, var, init);
   } else {
     // handle split initialization for type aliases
-    for_vector(CallExpr, call, initAssign) {
+    var->addFlag(FLAG_SPLIT_INITED);
+
+    for_vector(CallExpr, call, initAssigns) {
       SET_LINENO(call);
       // Consider the RHS of the '=' call to be the init expr.
       Expr* rhs = call->get(2)->remove();
@@ -2263,7 +2571,7 @@ static void normalizeVariableDefinition(DefExpr* defExpr) {
   Expr*      type = defExpr->exprType;
   Expr*      init = defExpr->init;
   Expr*  svarMark = prepareShadowVarForNormalize(defExpr, var);
-  std::vector<CallExpr*> initAssign;
+  std::vector<CallExpr*> initAssigns;
 
   // if there is no init expression, search for initialization
   // points written using '='
@@ -2271,20 +2579,14 @@ static void normalizeVariableDefinition(DefExpr* defExpr) {
   bool requestedSplitInit = isSplitInitExpr(init);
   bool refVar = var->hasFlag(FLAG_REF_VAR);
 
-  // Error for global variables using split init
-  FnSymbol* initFn = defExpr->getModule()->initFn;
-  bool global = (initFn && defExpr->parentExpr == initFn->body);
-
-  if (requestedSplitInit && global) {
-    USR_FATAL_CONT(defExpr, "Variable '%s' is not initialized and has no type",
-                   var->name);
-    USR_PRINT(defExpr, "split initialization is not supported for globals");
-  }
+  // all user variables are dead at end of block
+  var->addFlag(FLAG_DEAD_END_OF_BLOCK);
 
   // For now, disable automatic split init on non-user code
-  if ((defExpr->getModule()->modTag == MOD_USER || requestedSplitInit) &&
-      global == false)
-    foundSplitInit = findInitPoints(defExpr, initAssign);
+  Expr* prevent = NULL;
+  foundSplitInit = findInitPoints(defExpr, initAssigns, prevent, true);
+  if (foundSplitInit == false)
+    errorIfSplitInitializationRequired(defExpr, prevent);
 
   if ((init != NULL && !requestedSplitInit) ||
       foundSplitInit == false) {
@@ -2310,22 +2612,40 @@ static void normalizeVariableDefinition(DefExpr* defExpr) {
     }
   } else {
     // handle split initialization
+    var->addFlag(FLAG_SPLIT_INITED);
 
     // remove the init expression if present
     if (init != NULL)
       init->remove();
 
+    VarSymbol* typeTemp = NULL;
+
     if (refVar == false) {
       // Emit PRIM_INIT_VAR_SPLIT for non-ref variables
       // It sets the type, if we have a type expression.
-      if (type == NULL)
+      if (type == NULL) {
         defExpr->insertAfter( new CallExpr(PRIM_INIT_VAR_SPLIT_DECL, var));
-      else
-        defExpr->insertAfter(
-            new CallExpr(PRIM_INIT_VAR_SPLIT_DECL, var, defExpr->exprType->remove()));
+      } else {
+        VarSymbol* tt = newTemp("type_tmp");
+        tt->addFlag(FLAG_MAYBE_PARAM);
+        tt->addFlag(FLAG_MAYBE_TYPE);
+
+        DefExpr* def = new DefExpr(tt);
+        CallExpr* mv = new CallExpr(PRIM_MOVE, tt, defExpr->exprType->remove());
+
+        // after the def, put
+        //   declare type_tmp
+        //   move type_tmp, type-expr
+        //   PRIM_INIT_VAR_SPLIT_DECL var type_tmp
+        defExpr->insertAfter(new CallExpr(PRIM_INIT_VAR_SPLIT_DECL, var, tt));
+        defExpr->insertAfter(mv);
+        defExpr->insertAfter(def);
+
+        typeTemp = tt;
+      }
     }
 
-    for_vector(CallExpr, call, initAssign) {
+    for_vector(CallExpr, call, initAssigns) {
       SET_LINENO(call);
 
       // Consider the RHS of the '=' call to be the init expr.
@@ -2347,8 +2667,7 @@ static void normalizeVariableDefinition(DefExpr* defExpr) {
         if (type == NULL)
           init2 = new CallExpr(PRIM_INIT_VAR_SPLIT_INIT, var, rhs);
         else
-          init2 = new CallExpr(PRIM_INIT_VAR_SPLIT_INIT, var, rhs,
-                               new CallExpr(PRIM_TYPEOF, var));
+          init2 = new CallExpr(PRIM_INIT_VAR_SPLIT_INIT, var, rhs, typeTemp);
 
         call->replace(init2);
       }
@@ -2358,181 +2677,37 @@ static void normalizeVariableDefinition(DefExpr* defExpr) {
   restoreShadowVarForNormalize(defExpr, svarMark);
 }
 
-static bool isSplitInitExpr(Expr* e) {
-  if (SymExpr* se = toSymExpr(e))
-    if (se->symbol() == gSplitInit)
-      return true;
-
-  return false;
-}
-
-static void errorIfSplitInitializationRequired(DefExpr* def, Expr* cur);
-
-typedef enum {
-  FOUND_NOTHING = 0,
-  FOUND_USE,
-  FOUND_INIT
-} found_init_t;
-
-static found_init_t doFindInitPoints(DefExpr* def,
-                                     Expr* start,
-                                     std::vector<CallExpr*>& initAssigns);
-
-static bool findInitPoints(DefExpr* def,
-                           std::vector<CallExpr*>& initAssigns) {
-  // split initialization doesn't make sense to try for e.g.
-  //  var x = 25;
-  if (def->init != NULL && !isSplitInitExpr(def->init))
-    return false;
-
-  // and it doesn't make sense for extern variables
-  if (def->sym->hasFlag(FLAG_EXTERN))
-    return false;
-
-  Expr* start = NULL;
-  if (def && def->getStmtExpr())
-    start = def->getStmtExpr()->next;
-
-  // Check for mentions of this variable in other functions (inner functions)
-  {
-    Symbol* sym = def->sym;
-    FnSymbol* fn = def->getFunction();
-    for_SymbolSymExprs(se, sym) {
-      if (se->getFunction() != fn)
-        return false; // use in inner function detected; disable split init
-    }
-  }
-
-  found_init_t found = doFindInitPoints(def, start, initAssigns);
-  return (found == FOUND_INIT);
-}
-
-static found_init_t doFindInitPoints(DefExpr* def,
-                                     Expr* start,
-                                     std::vector<CallExpr*>& initAssigns) {
-  // Regular initialization is not split initialization
-  if (def->init != NULL && !isSplitInitExpr(def->init))
-    return FOUND_NOTHING;
-
-  if (start == NULL)
-    return FOUND_NOTHING;
-
-  // Scroll forward in the block containing DefExpr for x.
-  // Find 'x = ' before any use of 'x'.
-  // Consider also { x = ... } and
-  //               if _ { x = ... } else { x = ... }
-
-  for (Expr* cur = start->getStmtExpr(); cur != NULL; cur = cur->next) {
-    // x = ...
-    if (CallExpr* call = toCallExpr(cur)) {
-      if (call->isNamedAstr(astrSassign)) {
-        if (SymExpr* se = toSymExpr(call->get(1))) {
-          if (se->symbol() == def->sym) {
-            if (containsSymExprFor(call->get(2), def->sym) == false) {
-              // careful with e.g.
-              //  x = x + 1;  or y = 1:y.type;
-              initAssigns.push_back(call);
-              return FOUND_INIT;
-            }
-          }
-        }
-      }
-
-      if (containsSymExprFor(cur, def->sym)) {
-        // Emit an error if split initialization is required
-        errorIfSplitInitializationRequired(def, cur);
-        return FOUND_USE;
-      }
-
-    // { x = ... }
-    } else if (BlockStmt* block = toBlockStmt(cur)) {
-      if (block->isLoopStmt() || block->isRealBlockStmt() == false) {
-        // Loop / on / begin / etc - just check for uses
-        if (containsSymExprFor(cur, def->sym)) {
-          errorIfSplitInitializationRequired(def, cur);
-          return FOUND_USE;
-        }
-      } else {
-        // non-loop block
-        Expr* start = block->body.first();
-        found_init_t found = doFindInitPoints(def, start, initAssigns);
-        if (found == FOUND_INIT) {
-          return FOUND_INIT;
-        } else if (found == FOUND_USE) {
-          errorIfSplitInitializationRequired(def, cur);
-          return FOUND_USE;
-        }
-      }
-
-    // if _ { x = ... } else { x = ... }
-    } else if (CondStmt* cond = toCondStmt(cur)) {
-      if (containsSymExprFor(cond->condExpr, def->sym)) {
-        errorIfSplitInitializationRequired(def, cur);
-        return FOUND_USE;
-      }
-
-      Expr* ifStart = cond->thenStmt->body.first();
-      Expr* elseStart = cond->elseStmt ? cond->elseStmt->body.first() : NULL;
-      std::vector<CallExpr*> ifAssigns;
-      std::vector<CallExpr*> elseAssigns;
-      found_init_t foundIf = doFindInitPoints(def, ifStart, ifAssigns);
-      found_init_t foundElse = FOUND_NOTHING;
-      if (elseStart != NULL)
-        foundElse = doFindInitPoints(def, elseStart, elseAssigns);
-
-      if (foundIf == FOUND_INIT && foundElse == FOUND_INIT) {
-        for_vector(CallExpr, call, ifAssigns) {
-          initAssigns.push_back(call);
-        }
-        for_vector(CallExpr, call, elseAssigns) {
-          initAssigns.push_back(call);
-        }
-        return FOUND_INIT;
-      } else if (foundIf == FOUND_INIT || foundElse == FOUND_INIT) {
-        // intialized on one side but not the other
-        errorIfSplitInitializationRequired(def, cur);
-        return FOUND_USE;
-      } else if (foundIf == FOUND_USE || foundElse == FOUND_USE) {
-        // at least one of them must be FOUND_USE, so return that
-        errorIfSplitInitializationRequired(def, cur);
-        return FOUND_USE;
-      }
-
-    } else {
-      // Look for uses of 'x' before the first assignment
-      if (containsSymExprFor(cur, def->sym)) {
-        // In that case, can't convert '=' to initialization
-        errorIfSplitInitializationRequired(def, cur);
-        return FOUND_USE;
-      }
-    }
-
-    if (fVerify) {
-      // Redundantly check for uses
-      if (containsSymExprFor(cur, def->sym))
-        INT_FATAL("use not found above");
-    }
-  }
-
-  return FOUND_NOTHING;
-}
-
 static void errorIfSplitInitializationRequired(DefExpr* def, Expr* cur) {
   // Don't worry about compiler temporaries or index variables
   // or reduction variables
   if (def->sym->hasFlag(FLAG_TEMP) ||
       def->sym->hasFlag(FLAG_INDEX_VAR) ||
+      def->sym->hasFlag(FLAG_UNSAFE)    ||
       isShadowVarSymbol(def->sym))
     return;
 
+  // Don't worry about declarations in unsafe functions
+  if (def->getFunction()->hasFlag(FLAG_UNSAFE))
+    return;
+
+  bool requestedSplitInit = isSplitInitExpr(def->init);
+  // Don't worry about non-split init
+  if (def->init != NULL && !requestedSplitInit)
+    return;
+
+  bool refVar = def->sym->hasFlag(FLAG_REF_VAR);
+
   bool canDefaultInit = true;
   Type* nonNilableType = NULL;
+  Type* genericDecoratorClass = NULL;
+  Type* genericType = NULL;
+
   // No type or init expr, so can't default init
   if (def->exprType == NULL &&
       (def->init == NULL || isSplitInitExpr(def->init)))
     canDefaultInit = false;
   // Can't default init a ref ever
-  if (def->sym->hasFlag(FLAG_REF_VAR))
+  if (refVar)
     canDefaultInit = false;
   // Check for a few other cases to give better errors now
   // (this will not catch all patterns)
@@ -2548,19 +2723,22 @@ static void errorIfSplitInitializationRequired(DefExpr* def, Expr* cur) {
       } else if (ts->hasFlag(FLAG_GENERIC) || (at && at->isGeneric())) {
         // can't default init a generic type
         canDefaultInit = false;
+        genericType = ts->type;
       }
 
       // can't default init a generic management/nilability
       if (isClassLikeOrManaged(ts->type)) {
         ClassTypeDecorator d = classTypeDecorator(ts->type);
         if (isDecoratorUnknownManagement(d) ||
-            isDecoratorUnknownNilability(d))
+            isDecoratorUnknownNilability(d)) {
           canDefaultInit = false;
+          genericDecoratorClass = ts->type;
+          genericType = ts->type;
+        }
       }
 
       // can't default init a non-nilable class type
-      // unless --legacy-classes is on
-      if (isNonNilableClassType(ts->type) && !fLegacyClasses) {
+      if (isNonNilableClassType(ts->type)) {
         canDefaultInit = false;
         nonNilableType = ts->type;
       }
@@ -2569,17 +2747,59 @@ static void errorIfSplitInitializationRequired(DefExpr* def, Expr* cur) {
 
   if (canDefaultInit == false) {
     const char* name = def->sym->name;
-    USR_FATAL_CONT(def, "'%s' cannot be default initialized", name);
-    if (cur) {
-      USR_PRINT(cur, "'%s' is used here before being initialized", name);
-    } else if (nonNilableType != NULL) {
-      USR_PRINT("non-nil class types do not support default initialization");
+    FnSymbol* initFn = def->getModule()->initFn;
+    bool global = (initFn && def->parentExpr == initFn->body);
 
-      Type* type = nonNilableType;
-      AggregateType* at = toAggregateType(canonicalDecoratedClassType(type));
-      ClassTypeDecorator d = classTypeDecorator(type);
-      Type* suggestedType = at->getDecoratedClass(addNilableToDecorator(d));
-      USR_PRINT("Consider using the type %s instead", toString(suggestedType));
+    // Don't give errors for compiler generated functions at this time.
+    FnSymbol* inFn = def->getFunction();
+    if (inFn->hasFlag(FLAG_COMPILER_GENERATED))
+      return;
+
+    if (def->sym->hasFlag(FLAG_TYPE_VARIABLE)) {
+      USR_FATAL_CONT(def, "type alias '%s' is not initialized", name);
+    } else if (refVar) {
+      USR_FATAL_CONT(def, "reference '%s' is not initialized", name);
+    } else {
+      if (def->exprType == NULL)
+        USR_FATAL_CONT(def, "variable '%s' is not initialized and has no type",
+                       name);
+      else
+        USR_FATAL_CONT(def, "variable '%s' is not initialized", name);
+
+      if (genericDecoratorClass != NULL) {
+        USR_PRINT("undecorated class type %s does not "
+                  "support default initialization",
+                  toString(genericDecoratorClass));
+        USR_PRINT("consider adding a management decorator "
+                  "such as 'owned', 'shared', 'borrowed', or 'unmanaged'");
+      } else if (nonNilableType != NULL) {
+        USR_PRINT("non-nilable class type %s does not "
+                  "support default initialization",
+                  toString(nonNilableType));
+
+        Type* type = nonNilableType;
+        AggregateType* at = toAggregateType(canonicalDecoratedClassType(type));
+        ClassTypeDecorator d = classTypeDecorator(type);
+        Type* suggestedType = at->getDecoratedClass(addNilableToDecorator(d));
+        USR_PRINT("Consider using the type %s instead", toString(suggestedType));
+      } else if (genericType != NULL) {
+        USR_PRINT("generic type %s does not support default initialization",
+                  toString(genericType));
+      }
+    }
+
+    if (global) {
+      USR_FATAL_CONT(def, "split initialization is not supported for globals");
+    } else if (cur) {
+      if (def->exprType == NULL || genericType != NULL) {
+        USR_PRINT(cur,
+                  "'%s' use here prevents split-init from establishing the type",
+                  name);
+      } else {
+        USR_PRINT(cur,
+                  "'%s' use here prevents split-init",
+                  name);
+      }
     }
   }
 }
@@ -2636,7 +2856,7 @@ static void emitRefVarInit(Expr* after, Symbol* var, Expr* init) {
       SymExpr* initSym = toSymExpr(init);
       if (initSym && initSym->symbol() == gNil)
         USR_FATAL_CONT(sym, "Cannot create a non-const reference to nil");
-      else
+      else if (!isSplitInitExpr(init))
         USR_FATAL_CONT(sym,
                        "Cannot set a non-const reference to a const variable.");
     }
@@ -2650,10 +2870,6 @@ static void emitRefVarInit(Expr* after, Symbol* var, Expr* init) {
 static void normRefVar(DefExpr* defExpr) {
   VarSymbol* var         = toVarSymbol(defExpr->sym);
   Expr*      init        = defExpr->init;
-
-  if (init == NULL || isSplitInitExpr(init)) {
-    USR_FATAL_CONT(var, "References must be initialized");
-  }
 
   if (init != NULL)
     init->remove();
@@ -2996,7 +3212,8 @@ static void fixupArrayFormals(FnSymbol* fn) {
 }
 
 static bool skipFixup(ArgSymbol* formal, Expr* domExpr, Expr* eltExpr) {
-  if (formal->intent & INTENT_FLAG_IN) {
+  if ((formal->intent & INTENT_FLAG_IN) ||
+      formal->intent == INTENT_OUT) {
     if (isDefExpr(domExpr) || isDefExpr(eltExpr)) {
       return false;
     } else if (SymExpr* se = toSymExpr(domExpr)) {
@@ -3004,6 +3221,12 @@ static bool skipFixup(ArgSymbol* formal, Expr* domExpr, Expr* eltExpr) {
         return false;
       }
     } else {
+      INT_ASSERT(domExpr);
+      if (eltExpr == NULL)
+        USR_FATAL_CONT(formal->defPoint,
+                       "%s array formals specifying a domain currently "
+                       "require an array element type",
+                       formal->intentDescrString());
       return true;
     }
   }
@@ -3599,10 +3822,14 @@ static bool isGenericActual(Expr* expr) {
   if (SymExpr* se = toSymExpr(expr)) {
     if (se->symbol() == gUninstantiated) {
       return true;
-    } else if (TypeSymbol* ts = toTypeSymbol(se->symbol()))
-      if (AggregateType* at = toAggregateType(canonicalDecoratedClassType(ts->type)))
+    } else if (TypeSymbol* ts = toTypeSymbol(se->symbol())) {
+      Type* canonicalType = canonicalDecoratedClassType(ts->type);
+      if (AggregateType* at = toAggregateType(canonicalType))
         if (at->isGeneric() && !at->isGenericWithDefaults())
           return true;
+      if (ts->hasFlag(FLAG_GENERIC))
+        return true;
+    }
   }
 
   return false;
@@ -3848,7 +4075,7 @@ static void expandQueryForGenericTypeSpecifier(FnSymbol*  fn,
 
   // Fix type constructor calls to owned e.g.
   // (call dtOwned SomeGenericClass( arg ))
-  // This is relant to test/functions/ferguson/query/owned-generic
+  // This is relevant to test/functions/ferguson/query/owned-generic
   if (call->baseExpr != NULL) {
     if (SymExpr* se = toSymExpr(call->baseExpr)) {
       if (TypeSymbol* ts = toTypeSymbol(se->symbol())) {

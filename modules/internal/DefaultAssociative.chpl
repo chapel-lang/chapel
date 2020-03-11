@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2020 Cray Inc.
+ * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -107,7 +107,7 @@ module DefaultAssociative {
                                        parSafeDom=parSafe, dom=_to_unmanaged(this));
     }
   
-    proc dsiSerialReadWrite(f /*: Reader or Writer*/) {
+    proc dsiSerialReadWrite(f /*: Reader or Writer*/) throws {
 
       var binary = f.binary();
 
@@ -150,42 +150,29 @@ module DefaultAssociative {
           var end = new ioLiteral("}");
 
           while true {
-            // Try reading an end curly
-            f <~> end;
-            if f.error() == EFORMAT {
-              // didn't find a curly, OK
-              f.clearError();
-            } else {
-              // Stop reading if we got to the end
-              // or if there was another error.
+
+            // Try reading an end curly. If we get it, then break.
+            try {
+              f <~> end;
               break;
+            } catch err: BadFormatError {
+              // We didn't read an end brace, so continue on.
             }
 
-            // Try reading a comma
-            if !first {
-              f <~> comma;
-              if f.error() {
-                // break out of the loop if we didn't read
-                // a comma and were expecting one
-                break;
-              }
-            }
+            // Try reading a comma.
+            if !first then f <~> comma;
             first = false;
 
-            // Read an index
+            // Read an index.
             var idx: idxType;
             f <~> idx;
-            if f.error() {
-              // Stop reading if we got an error
-              break;
-            }
             dsiAdd(idx);
           }
         }
       }
     }
-    proc dsiSerialWrite(f) { this.dsiSerialReadWrite(f); }
-    proc dsiSerialRead(f) { this.dsiSerialReadWrite(f); }
+    proc dsiSerialWrite(f) throws { this.dsiSerialReadWrite(f); }
+    proc dsiSerialRead(f) throws { this.dsiSerialReadWrite(f); }
   
     //
     // Standard user domain interface
@@ -636,11 +623,26 @@ module DefaultAssociative {
     param parSafeDom: bool;
     var dom : unmanaged DefaultAssociativeDom(idxType, parSafe=parSafeDom);
   
+    pragma "unsafe"
     var data : [dom.tableDom] eltType;
   
     var tmpDom = {0..(-1:chpl_table_index_type)};
+    pragma "unsafe"
     var tmpTable: [tmpDom] eltType;
-  
+
+    //
+    // #14367 - Blanket ban on non-nilable classes for the time being.
+    //
+    pragma "no doc"
+    proc postinit() {
+      if isNonNilableClass(this.eltType) {
+        param msg = "Cannot initialize associative array because"
+                  + " element type " + eltType:string
+                  + " is a non-nilable class";
+        compilerError(msg);
+      }
+    }
+
     //
     // Standard internal array interface
     // 
@@ -769,7 +771,7 @@ module DefaultAssociative {
       }
     }
 
-    proc dsiSerialReadWrite(f /*: channel*/) {
+    proc dsiSerialReadWrite(f /*: channel*/) throws {
       var binary = f.binary();
       var arrayStyle = f.styleElement(QIO_STYLE_ELEMENT_ARRAY);
       var isspace = arrayStyle == QIO_ARRAY_FORMAT_SPACE && !binary;
@@ -778,75 +780,74 @@ module DefaultAssociative {
 
       if !f.writing && ischpl {
         this.readChapelStyleAssocArray(f);
-      } else {
-        if isjson || ischpl {
-          f <~> new ioLiteral("[");
+        return;
+      }
+
+      if isjson || ischpl then f <~> new ioLiteral("[");
+
+      var first = true;
+
+      for (key, val) in zip(this.dom, this) {
+        if first then first = false;
+        else if isspace then f <~> new ioLiteral(" ");
+        else if isjson || ischpl then f <~> new ioLiteral(", ");
+
+        if f.writing && ischpl {
+          f <~> key;
+          f <~> new ioLiteral(" => ");
         }
 
-        var first = true;
-
-        for (key, val) in zip(this.dom, this) {
-          if first then first = false;
-          else if isspace then f <~> new ioLiteral(" ");
-          else if isjson || ischpl then f <~> new ioLiteral(", ");
-
-          if f.writing && ischpl {
-            f <~> key;
-            f <~> new ioLiteral(" => ");
-          }
-
-          f <~> val;
-        }
+        f <~> val;
       }
-      if isjson || ischpl {
-        f <~> new ioLiteral("]");
-      }
+
+      if isjson || ischpl then f <~> new ioLiteral("]");
     }
 
-    proc readChapelStyleAssocArray(f) {
+    proc readChapelStyleAssocArray(f) throws {
+      const openBracket = new ioLiteral("[");
+      const closedBracket = new ioLiteral("]");
       var first = true;
-      var read_end = false;
+      var readEnd = false;
 
-      f <~> new ioLiteral("[");
+      f <~> openBracket;
 
-      while ! f.error() {
+      while true {
         if first {
           first = false;
-          // but check for a ]
-          f <~> new ioLiteral("]");
-          if f.error() == EFORMAT {
-            f.clearError();
-          } else {
-            read_end = true;
+
+          // Break if we read an immediate closed bracket.
+          try {
+            f <~> closedBracket;
+            readEnd = true;
             break;
+          } catch err: BadFormatError {
+            // We didn't read a closed bracket, so continue on.
           }
         } else {
-          // read a comma or a space.
-          f <~> new ioLiteral(",");
 
-          if f.error() == EFORMAT {
-            f.clearError();
-            // No comma.
+          // Try reading a comma. If we don't, then break.
+          try {
+            f <~> new ioLiteral(",");
+          } catch err: BadFormatError {
+            // Break out of the loop if we didn't read a comma.
             break;
           }
         }
 
-        // Read a key
+        // Read a key.
         var key: idxType;
         f <~> key;
-        // Read =>
         f <~> new ioLiteral("=>");
-        // Read the value
+
+        // Read the value.
         f <~> dsiAccess(key);
       }
 
-      if ! read_end {
-        f <~> new ioLiteral("]");
-      }
+      if !readEnd then f <~> closedBracket;
     }
 
-    proc dsiSerialWrite(f) { this.dsiSerialReadWrite(f); }
-    proc dsiSerialRead(f) { this.dsiSerialReadWrite(f); }
+    proc dsiSerialWrite(f) throws { this.dsiSerialReadWrite(f); }
+    proc dsiSerialRead(f) throws { this.dsiSerialReadWrite(f); }
 
     //
     // Associative array interface

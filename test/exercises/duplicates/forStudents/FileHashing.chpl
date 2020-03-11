@@ -10,8 +10,8 @@ module FileHashing {
     /* Help `writeln` and other calls output SHA256Hash value
        in a good format.
        */
-    // Note, this ought to be throws, see issue #7261
-    proc writeThis(f) {
+
+    proc writeThis(f) throws {
       for component in hash {
         var s = try! "%08xu".format(component);
         f <~> s;
@@ -84,7 +84,7 @@ module FileHashing {
     use SHA256Implementation;
 
     var f = open(path, iomode.r);
-    var len = f.length();
+    var len = f.size;
     var r = f.reader(kind=iokind.big, locking=false,
                      start=0, end=len);
 
@@ -159,7 +159,7 @@ module FileHashing {
     }
     // If fullPath starts with currentDirectory, remove it
     if fullPath.startsWith(currentDirectory) {
-      fullPath = fullPath[currentDirectory.length+1..];
+      fullPath = fullPath[currentDirectory.size+1..];
     }
     return fullPath;
   }

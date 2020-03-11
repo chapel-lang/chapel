@@ -1,0 +1,241 @@
+t1
+deinit
+t2
+middle
+deinit
+t3
+middle
+deinit
+t4
+begin inner
+end inner
+end outer
+deinit
+t5
+end if
+end outer
+deinit
+t6
+end if
+end outer
+deinit
+t7
+end loop iter
+end loop iter
+end outer
+deinit
+t8
+end loop iter
+end outer
+deinit
+t9
+end loop iter
+end outer
+deinit
+t10
+end loop iter
+end loop iter
+end outer
+deinit
+t10a
+end loop iter
+end loop iter
+(x = 0)
+end outer
+deinit
+t10b
+end loop iter
+end loop iter
+(x = 0)
+end outer
+deinit
+t11
+end loop iter
+end loop iter
+end outer
+deinit
+t11o
+end loop iter
+end loop iter
+end outer
+deinit
+t12
+end inner
+end outer
+deinit
+t12o
+end inner
+end outer
+deinit
+t13
+end inner
+end outer
+deinit
+t14
+begin inner
+begin inner inner
+end inner
+end outer
+deinit
+t15
+begin inner
+begin inner inner
+end inner
+deinit
+end outer
+t16
+begin inner
+begin inner inner
+end inner inner
+end inner
+deinit
+end outer
+t17
+end inner
+end outer
+deinit
+t18
+task one (x = 0)
+end outer
+deinit
+t18o
+task one (x = 0)
+end outer
+deinit
+t20
+task two (x = 0)
+task one (x = 0)
+end outer
+deinit
+t21
+in makeR
+end outer
+deinit
+t21a
+in makeR
+end outer
+deinit
+t21b
+in makeR
+end outer
+deinit
+t21c
+in makeR
+end outer
+deinit
+t21d
+in makeR
+end outer
+deinit
+t21e
+in makeR
+end outer
+deinit
+t21f
+in makeR
+end outer
+deinit
+t22
+begin inner
+end inner
+deinit
+end outer
+t23
+begin inner
+end inner
+deinit
+end outer
+t24
+begin inner
+end inner
+deinit
+end outer
+t25
+begin inner
+end inner
+deinit
+end outer
+t26
+R
+deinit
+t27
+R
+end
+deinit
+t28
+begin inner
+end inner
+end outer
+deinit
+t29
+begin inner
+end inner
+end outer
+deinit
+t30
+in makeR
+deinit
+deinit
+end outer
+t30a
+in makeR
+deinit
+deinit
+end outer
+t30b
+in makeR
+deinit
+deinit
+end outer
+t30c
+in makeR
+deinit
+deinit
+nested block
+end outer
+t31
+in makeR
+deinit
+deinit
+deinit
+end outer
+t32
+in makeR
+in makeR
+deinit
+deinit
+deinit
+end outer
+t33
+in makeR
+end outer
+deinit
+deinit
+deinit
+t33a
+in makeR
+deinit
+end outer
+deinit
+t34
+in makeR
+end outer
+deinit
+deinit
+deinit
+t35
+in makeR
+end outer
+deinit
+deinit
+deinit
+t36
+in makeR
+deinit
+deinit
+end t36
+t37
+in makeR
+end t37
+deinit
+deinit

@@ -194,7 +194,7 @@ proc test3() {
   var curr_dom = local_dom;
   var next_dom = returnsR(3);
   curr_dom = next_dom;
-  writeln(globalR.c!.x); // Chapel, C++11, D print 100
+  writeln(globalR.c!.x); // C++11, D print 100
 }
 proc test4() {
   globalR.c!.x = 100;
@@ -205,7 +205,7 @@ proc test4() {
   var curr_dom = local_dom;
   var next_dom = returnsR(3);
   curr_dom.c!.x = next_dom.c!.x;
-  writeln(globalR.c!.x); // Chapel, C++11, D print 100
+  writeln(globalR.c!.x); // C++11, D print 100
 }
 
 proc test5_part2(curr_dom: R)
@@ -275,8 +275,7 @@ proc test5in()
   if debug then writeln("R curr_dom = local_dom");
   // now local_dom "aliases" globalR
   test5in_part2(local_dom); // does argument passing create a copy?
-  // The answer for Chapel is yes with in intent (prints 100).
-  // It is also yes for D and C++11 with the default of pass-by-value.
+  // D and C++ both make a copy with the default of pass-by-value
 }
 
 

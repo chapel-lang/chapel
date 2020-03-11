@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2020 Cray Inc.
+ * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -511,6 +511,8 @@ void AggregateType::addDeclarations(Expr* expr) {
 
     this->forwardingTo.insertAtTail(forwarding);
 
+  } else if (isEndOfStatementMarker(expr)) {
+    // drop it
   } else {
     INT_FATAL(expr, "unexpected case");
   }
@@ -825,6 +827,55 @@ static void checkNumArgsErrors(AggregateType* at, CallExpr* call, const char* ca
   }
 }
 
+static void resolveConcreteFields(AggregateType* ret, CallExpr* call, const char* callString) {
+  if (ret->resolveStatus != RESOLVED) {
+    ret->resolveStatus = RESOLVED;
+    // TODO: How to handle cases where generic fields lean on non-generic
+    // fields for type/init-expressions:
+    //   class C {
+    //     type T;
+    //     param x : int;
+    //
+    //     var next : C(T, x);
+    //
+    //     param flag : bool = if next.type.T == int then true else false;
+    //   }
+    //
+    // In this example, the current implementation fails to resolve the type
+    // of field 'flag' because 'next' is not yet resolved. This particular
+    // example is difficult to resolve because the field 'next' requires
+    // recursive resolution of the type we're already trying to resolve. This
+    // difficulty has lead to the current implementation which resolves
+    // concrete fields after generic fields are resolved.
+    //
+
+    // TODO: Unfortunate workaround for the existing infrastructure. We need
+    // to keep types marked as generic if their type fields are generic.
+    for_fields(field, ret) {
+      if (field->hasFlag(FLAG_TYPE_VARIABLE) && field->type->symbol->hasFlag(FLAG_GENERIC)) {
+        ret->symbol->addFlag(FLAG_GENERIC);
+        break;
+      }
+    }
+
+    // Resolve the remaining non-generic fields
+    if (ret->symbol->hasFlag(FLAG_GENERIC) == false) {
+
+      makeRefType(ret);
+
+      for_fields(field, ret) {
+        if (field->hasFlag(FLAG_PARAM) == false &&
+            field->hasFlag(FLAG_TYPE_VARIABLE) == false &&
+            field->type == dtUnknown) {
+          if (Type* type = resolveFieldTypeForInstantiation(field, call, callString)) {
+            field->type = type;
+          }
+        }
+      }
+    }
+  }
+}
+
 AggregateType* AggregateType::generateType(CallExpr* call, const char* callString) {
 
   checkNumArgsErrors(this, call, callString);
@@ -878,53 +929,7 @@ AggregateType* AggregateType::generateType(CallExpr* call, const char* callStrin
   if (ret != this) {
     ret->instantiatedFrom = this;
 
-    if (ret->resolveStatus != RESOLVED) {
-      ret->resolveStatus = RESOLVED;
-      // TODO: How to handle cases where generic fields lean on non-generic
-      // fields for type/init-expressions:
-      //   class C {
-      //     type T;
-      //     param x : int;
-      //
-      //     var next : C(T, x);
-      //
-      //     param flag : bool = if next.type.T == int then true else false;
-      //   }
-      //
-      // In this example, the current implementation fails to resolve the type
-      // of field 'flag' because 'next' is not yet resolved. This particular
-      // example is difficult to resolve because the field 'next' requires
-      // recursive resolution of the type we're already trying to resolve. This
-      // difficulty has lead to the current implementation which resolves
-      // concrete fields after generic fields are resolved.
-      //
-
-      // TODO: Unfortunate workaround for the existing infrastructure. We need
-      // to keep types marked as generic if their type fields are generic.
-      for_fields(field, ret) {
-        if (field->hasFlag(FLAG_TYPE_VARIABLE) && field->type->symbol->hasFlag(FLAG_GENERIC)) {
-          ret->symbol->addFlag(FLAG_GENERIC);
-          break;
-        }
-      }
-
-      // Resolve the remaining non-generic fields
-      if (ret->symbol->hasFlag(FLAG_GENERIC) == false) {
-
-        makeRefType(ret);
-
-        for (int index = 1; index <= numFields(); index = index + 1) {
-          Symbol* field = ret->getField(index);
-          if (field->hasFlag(FLAG_PARAM) == false &&
-              field->hasFlag(FLAG_TYPE_VARIABLE) == false &&
-              field->type == dtUnknown) {
-            if (Type* type = resolveFieldTypeForInstantiation(field, call, callString)) {
-              field->type = type;
-            }
-          }
-        }
-      }
-    }
+    resolveConcreteFields(ret, call, callString);
   }
 
   return ret;
@@ -1205,6 +1210,8 @@ AggregateType* AggregateType::generateType(SymbolMap& subs, CallExpr* call, cons
     if (parent->genericFields.size() > 0) {
       AggregateType* instantiatedParent = parent->generateType(subs, call, callString, evalDefaults, insnPoint);
 
+      resolveConcreteFields(instantiatedParent, call, callString);
+
       retval = instantiationWithParent(instantiatedParent, insnPoint);
     }
   }
@@ -1254,9 +1261,6 @@ AggregateType* AggregateType::generateType(SymbolMap& subs, CallExpr* call, cons
     }
   }
 
-  if (retval->symbol->hasFlag(FLAG_MANAGED_POINTER))
-    markManagedPointerIfNonNilable(retval, retval->symbol);
-
   return retval;
 }
 
@@ -1268,6 +1272,9 @@ void AggregateType::resolveConcreteType() {
 
   this->resolveStatus = RESOLVING;
   this->symbol->instantiationPoint = getInstantiationPoint(this->symbol->defPoint);
+  //if (this->symbol->instantiationPoint)
+  //  this->symbol->userInstantiationPointLoc =
+  //    getUserInstantiationPoint(this->symbol);
 
   if (isClass() == true && symbol->hasFlag(FLAG_NO_OBJECT) == false) {
     AggregateType* parent = dispatchParents.v[0];
@@ -1292,9 +1299,8 @@ static void buildParentSubMap(AggregateType* at, SymbolMap& map) {
   if (root->dispatchParents.n > 0) {
     buildParentSubMap(at->dispatchParents.v[0], map);
   }
-  form_Map(SymbolMapElem, e, at->substitutions) {
-    Symbol* instantiated = e->key;
-    map.put(root->getField(instantiated->name), instantiated);
+  for_fields(field, at) {
+    map.put(root->getField(field->name), field);
   }
 }
 
@@ -1342,6 +1348,9 @@ AggregateType* AggregateType::instantiationWithParent(AggregateType* parent, Exp
 
     if (retval->symbol->instantiationPoint == NULL) {
       retval->symbol->instantiationPoint = toBlockStmt(insnPoint);
+      //if (retval->symbol->instantiationPoint)
+      //  retval->symbol->userInstantiationPointLoc =
+      //    getUserInstantiationPoint(retval->symbol);
     }
 
     // Update the type of the 'super' field
@@ -1617,6 +1626,9 @@ AggregateType* AggregateType::getInstantiation(Symbol* sym, int index, Expr* ins
     retval = getNewInstantiation(sym, symType, insnPoint);
   }
 
+  if (retval->symbol->hasFlag(FLAG_MANAGED_POINTER))
+    markManagedPointerIfNonNilable(retval, retval->symbol);
+
   return retval;
 }
 
@@ -1696,6 +1708,9 @@ AggregateType* AggregateType::getNewInstantiation(Symbol* sym, Type* symType, Ex
   retval->instantiatedFrom = this;
   if (retval->symbol->instantiationPoint == NULL) {
     retval->symbol->instantiationPoint = toBlockStmt(insnPoint);
+    //if (retval->symbol->instantiationPoint != NULL)
+    //  retval->symbol->userInstantiationPointLoc =
+    //    getUserInstantiationPoint(retval->symbol);
   }
 
   retval->symbol->copyFlags(symbol);
@@ -2282,6 +2297,9 @@ void AggregateType::fieldToArg(FnSymbol*              fn,
           arg->addFlag(FLAG_TYPE_VARIABLE);
         }
 
+        if (field->hasFlag(FLAG_UNSAFE))
+          arg->addFlag(FLAG_UNSAFE);
+
         if (LoopExpr* fe = toLoopExpr(defPoint->init)) {
           if (field->isType() == false) {
             CallExpr* copy = new CallExpr("chpl__initCopy");
@@ -2498,6 +2516,7 @@ void AggregateType::buildCopyInitializer() {
     fn->addFlag(FLAG_COMPILER_GENERATED);
     fn->addFlag(FLAG_LAST_RESORT);
     fn->addFlag(FLAG_COPY_INIT);
+    fn->addFlag(FLAG_SUPPRESS_LVALUE_ERRORS);
 
     _this->addFlag(FLAG_ARG_THIS);
 

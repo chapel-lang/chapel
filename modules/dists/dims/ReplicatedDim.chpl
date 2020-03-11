@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2020 Cray Inc.
+ * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -25,7 +25,7 @@
 //
 
 private use DimensionalDist2D;
-private use RangeChunk only ;
+import RangeChunk;
 
 /*
 This Replicated dimension specifier is for use with the
@@ -278,7 +278,7 @@ proc Replicated1dom.dsiAccess1d(indexx: idxType): (locIdT, idxType) {
 iter Replicated1locdom.dsiMyDensifiedRangeForSingleTask1d(globDD)
   : dsiMyDensifiedRangeType1d(globDD)
 {
-  yield 0:globDD.idxType..#locWholeR.length;
+  yield 0:globDD.idxType..#locWholeR.size;
 }
 
 // REQ whether this distribution can handle only a single task per locale.

@@ -1,0 +1,34 @@
+Base bytes: 
+97
+98
+99
+255
+97
+
+Escaped string bytes: 
+Decimal: 97, Hexadecimal: 61
+Decimal: 98, Hexadecimal: 62
+Decimal: 99, Hexadecimal: 63
+Decimal: 237, Hexadecimal: ed
+Decimal: 179, Hexadecimal: b3
+Decimal: 191, Hexadecimal: bf
+Decimal: 97, Hexadecimal: 61
+
+Direct copy string bytes: 
+97
+98
+99
+237
+179
+191
+97
+
+Unescaped string bytes: 
+97
+98
+99
+255
+97
+
+Should be false: false
+Should be true: true

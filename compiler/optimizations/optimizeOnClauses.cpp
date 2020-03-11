@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2020 Cray Inc.
+ * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -568,23 +568,6 @@ optimizeOnClauses(void) {
   if (fNoOptimizeOnClauses) {
     addRunningTaskModifiers();
     return;
-  }
-
-  // If we're not using locks, the extern functions in
-  // atomics are local and safe for fast on.
-  if (0 != strcmp(CHPL_ATOMICS, "locks")) {
-    forv_Vec(ModuleSymbol, module, gModuleSymbols) {
-      if( module->hasFlag(FLAG_ATOMIC_MODULE) ) {
-        std::vector<FnSymbol*> moduleFunctions =
-          module->getTopLevelFunctions(true);
-        for_vector(FnSymbol, fn, moduleFunctions) {
-          if( fn->hasFlag(FLAG_EXTERN) ) {
-            fn->addFlag(FLAG_FAST_ON_SAFE_EXTERN);
-            fn->addFlag(FLAG_LOCAL_FN);
-          }
-        }
-      }
-    }
   }
 
   compute_call_sites();

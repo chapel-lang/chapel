@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2020 Cray Inc.
+ * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -910,8 +910,8 @@ module ZMQ {
         // conditionally have ZeroMQ free the memory.
         // 
         // Note: the string factory below can throw DecodeError
-        var copy = if isString(T) then createStringWithNewBuffer(s=data)
-                                  else createBytesWithNewBuffer(s=data);
+        var copy = if isString(T) then createStringWithNewBuffer(x=data)
+                                  else createBytesWithNewBuffer(x=data);
         copy.isowned = false;
 
         // Create the ZeroMQ message from the data buffer
@@ -951,7 +951,7 @@ module ZMQ {
       }
     }
 
-    // send, enumerated types
+    // send, enum types
     pragma "no doc"
     proc send(data: ?T, flags: int = 0) throws where isEnumType(T) {
       try send(chpl__enumToOrder(data), flags);
@@ -1049,7 +1049,7 @@ module ZMQ {
       return ret;
     }
 
-    // recv, enumerated types
+    // recv, enum types
     pragma "no doc"
     proc recv(type T, flags: int = 0) throws where isEnumType(T) {
       return try chpl__orderToEnum(recv(int, flags), T);

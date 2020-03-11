@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2020 Cray Inc.
+ * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -259,8 +259,8 @@ class DimensionalDist2D : BaseDist {
   // implementation note: 'rank' is not a real param; it's just that having
   // 'proc rank param return targetLocales.rank' did not work
   param rank: int = targetLocales.rank;
-  proc numLocs1: locCntT  return targetIds.dim(1).length: locCntT;
-  proc numLocs2: locCntT  return targetIds.dim(2).length: locCntT;
+  proc numLocs1: locCntT  return targetIds.dim(1).size: locCntT;
+  proc numLocs2: locCntT  return targetIds.dim(2).size: locCntT;
 
   // parallelization knobs
   var dataParTasksPerLocale: int      = getDataParTasksPerLocale();
@@ -269,6 +269,16 @@ class DimensionalDist2D : BaseDist {
 }
 
 // class LocDimensionalDist - no local distribution descriptor - for now
+
+// helper for locDdescType: any of storage index ranges can be stridable
+private proc stoStridableDom(type stoIndexT, dom1, dom2) param {
+  proc stoStridable1d(dom1d) param {
+    const dummy = dom1d.dsiNewLocalDom1d(stoIndexT, 0:locIdT)
+      .dsiSetLocalIndices1d(dom1d, 0:locIdT);
+    return dummy.stridable;
+  }
+  return stoStridable1d(dom1) || stoStridable1d(dom2);
+}
 
 private proc locDescTypeHelper(param rank : int, type idxType, dom1, dom2) type {
   type d1type = dom1.dsiNewLocalDom1d(idxType, 0).type;
@@ -307,16 +317,8 @@ class DimensionalDom : BaseRectangularDom {
   // NB it's also computed in DimensionalDist2D.dsiNewRectangularDom().
   proc stoIndexT type  return idxType;
 
-  // helper for locDdescType: any of storage index ranges can be stridable
-  proc stoStridable param {
-    proc stoStridable1d(dom1d) param {
-      const dummy = dom1d.dsiNewLocalDom1d(stoIndexT, 0:locIdT)
-        .dsiSetLocalIndices1d(dom1d, 0:locIdT);
-      return dummy.stridable;
-    }
-    return stoStridable1d(dom1) || stoStridable1d(dom2);
-  }
-
+  // replace this with 'this.stridable' for simplicity?
+  proc stoStridable param  return stoStridableDom(stoIndexT, dom1, dom2);
   proc stoRangeT type  return range(stoIndexT, stridable = stoStridable);
   proc stoDomainT type  return domain(rank, stoIndexT, stoStridable);
 
@@ -369,6 +371,7 @@ class DimensionalArr : BaseRectangularArr {
 class LocDimensionalArr {
   type eltType;
   const locDom;  // a LocDimensionalDom
+  pragma "local field" pragma "unsafe" // initialized separately
   var myStorageArr: [locDom.myStorageDom] eltType;
 }
 
@@ -732,7 +735,7 @@ proc DimensionalDom.dsiDim(param d)       return whole.dim(d);
 proc DimensionalDom.dsiLow                return whole.low;
 proc DimensionalDom.dsiHigh               return whole.high;
 proc DimensionalDom.dsiStride             return whole.stride;
-proc DimensionalDom.dsiNumIndices         return whole.numIndices;
+proc DimensionalDom.dsiNumIndices         return whole.size;
 proc DimensionalDom.dsiMember(indexx)     return whole.contains(indexx);
 proc DimensionalDom.dsiIndexOrder(indexx) return whole.indexOrder(indexx);
 
@@ -783,20 +786,31 @@ override proc DimensionalDist2D.dsiNewRectangularDom(param rank: int,
   var dom2 = di2.dsiNewRectangularDom1d(idxType, stridable, stoIndexT);
   _passLocalLocIDsDom1d(dom2, di2);
 
+  // We could try the dummyLB trick from BlockDist instead of the '?'/'!',
+  // although that would be more complex here because of 'dom1' and 'dom2'.
+  // Ditto for localAdescsTemp.
+  var localDdescsTemp: [this.targetIds]
+                         locDescTypeHelper(rank, idxType, dom1, dom2)?;
+  for (loc, locIds, locDdesc)
+   in zip(targetLocales, targetIds, localDdescsTemp) do
+    on loc do
+      locDdesc = new unmanaged LocDimensionalDom(
+              // stoDomainT -- see compilerAssert below; must be local
+              domain(rank, idxType, stoStridableDom(stoIndexT, dom1, dom2)),
+                       doml1 = dom1.dsiNewLocalDom1d(stoIndexT, locIds(1)),
+                       doml2 = dom2.dsiNewLocalDom1d(stoIndexT, locIds(2)));
+
+  var localDdescsNN = localDdescsTemp!; //#15080
   const result = new unmanaged DimensionalDom(rank=rank, idxType=idxType,
                                     stridable=stridable, dist=_to_unmanaged(this),
+                                    localDdescs = localDdescsNN,
                                     dom1 = dom1, dom2 = dom2);
   // result.whole is initialized to the default value (empty domain)
 
-  if stoIndexT != result.stoIndexT then
-    compilerError("bug in DimensionalDist2D: inconsistent stoIndexT");
+  compilerAssert(stoIndexT == result.stoIndexT, "bug in DimensionalDist2D: inconsistent stoIndexT");
+  // stoDomainT -- keep in sync with the above
+  compilerAssert(domain(rank, idxType, stoStridableDom(stoIndexT, dom1, dom2)) == result.stoDomainT, "bug in DimensionalDist2D: inconsistent stoDomainT");
 
-  coforall (loc, locIds, locDdesc)
-   in zip(targetLocales, targetIds, result.localDdescs) do
-    on loc do
-      locDdesc = new unmanaged LocDimensionalDom(result.stoDomainT,
-                       doml1 = dom1.dsiNewLocalDom1d(stoIndexT, locIds(1)),
-                       doml2 = dom2.dsiNewLocalDom1d(stoIndexT, locIds(2)));
   result.dsiSetIndices(inds);
   return result;
 }
@@ -830,7 +844,7 @@ proc DimensionalDom._dsiSetIndicesHelper(newRanges: rank * rangeT): void {
   // could omit this warning if the intersection between the old and the new
   // domains is empty; could change it to halt("unimplemented")
   if dom1.dsiSetIndicesUnimplementedCase||dom2.dsiSetIndicesUnimplementedCase
-    then if _arrs.length > 0 then
+    then if _arrs.size > 0 then
       stderr.writeln("warning: array resizing will not preserve array contents upon change in dimension stride with 1-d BlockCyclic distribution");
 
   coforall (locId, locDD) in zip(targetIds, localDdescs) do
@@ -892,10 +906,9 @@ proc DimensionalArr.dsiPrivatize(privatizeData) {
                                     idxType  = this.idxType,
                                     stridable= this.stridable,
                                     eltType  = this.eltType,
+                                    localAdescs = privatizeData(3),
                                     dom      = privDom,
                                     allocDom = privAllocDom);
-
-  result.localAdescs = privatizeData(3);
 
   assert(result.isAlias == this.isAlias);
   return result;
@@ -929,17 +942,22 @@ proc DimensionalDom.dsiBuildArray(type eltType)
     compilerError("DimensionalDist2D presently supports only 2 dimensions,",
                   " got ", rank, " dimensions");
 
+  var localAdescsTemp: [this.targetIds]
+        unmanaged LocDimensionalArr(eltType, this.locDdescType)?;
+
+  coforall (loc, locDdesc, locAdesc)
+   in zip(dist.targetLocales, localDdescs, localAdescsTemp) do
+    on loc do
+      locAdesc = new unmanaged LocDimensionalArr(eltType, locDdesc);
+
+  var localAdescsNN = localAdescsTemp!; //#15080
   const result = new unmanaged DimensionalArr(rank = rank,
                                     idxType = idxType,
                                     stridable = stridable,
                                     eltType  = eltType,
+                                    localAdescs = localAdescsNN,
                                     dom      = _to_unmanaged(this),
                                     allocDom = _to_unmanaged(this));
-  coforall (loc, locDdesc, locAdesc)
-   in zip(dist.targetLocales, localDdescs, result.localAdescs) do
-    on loc do
-      locAdesc = new unmanaged LocDimensionalArr(eltType, locDdesc);
-
   assert(!result.isAlias);
   return result;
 }
@@ -1048,8 +1066,6 @@ proc DimensionalArr.dsiLocalSlice((sliceDim1, sliceDim2)) {
   return locAdesc.myStorageArr[r1, r2];
 }
 
-/* do not use the above comment for chpldoc */
-
 proc DimensionalArr.dsiReallocate(d: domain) {
   // nothing
   // TODO: handle block-cyclic 1d when the stride changes
@@ -1124,10 +1140,10 @@ iter DimensionalDom.these(param tag: iterKind) where tag == iterKind.leader {
 
       // when we know which dimension should be the parallel one
       proc compute1dNTPD(param parDim): (int,int) {
-        const myNumIndices = myDims(1).length * myDims(2).length;
+        const myNumIndices = myDims(1).size * myDims(2).size;
         const cnc:int =
           _computeNumChunks(maxTasks, ignoreRunning, minSize, myNumIndices);
-        return ( min(cnc, myDims(parDim).length:int), parDim );
+        return ( min(cnc, myDims(parDim).size:int), parDim );
       }
 
       const (numTasks, parDim) =
@@ -1213,10 +1229,10 @@ iter DimensionalDom.these(param tag: iterKind) where tag == iterKind.leader {
               // why dsiMyDensifiedRangeForTaskID1d() does not agree
               // with _computeChunkStuff (i.e. the latter returns more tasks
               // than the former wants to use) - fine. Then, replace assert with
-              //   if myPiece.length == 0 then do not yield anything
+              //   if myPiece.size == 0 then do not yield anything
 // TODO: can it be enabled for test_strided_slice1.chpl with 1d block-cyclic?
-//              assert(myPiece.length > 0);
-              if myPiece.length > 0 then
+//              assert(myPiece.size > 0);
+              if myPiece.size > 0 then
                 yield myPiece;
             }
           }

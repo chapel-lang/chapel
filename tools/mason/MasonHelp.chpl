@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2020 Cray Inc.
+ * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -130,6 +130,17 @@ proc masonNewHelp() {
   writeln('    -h, --help                   Display this message');
   writeln('        --show                   Increase verbosity');
   writeln('        --no-vcs                 Do not initialize a git repository');
+}
+
+proc masonInitHelp(){
+  writeln("Initializes a library project inside a given directory or path.");
+  writeln('Usage:');
+  writeln('    mason init [options] <directory name>');
+  writeln('    mason init [options]');
+  writeln();
+  writeln('Options:');
+  writeln('    -h, --help                   Display this message');
+  writeln('        --show                   Increase verbosity');
 }
 
 proc masonSearchHelp() {

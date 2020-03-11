@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2020 Cray Inc.
+ * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -258,7 +258,7 @@ static char* chpl_launch_create_command(int argc, char* argv[],
     propagate_environment(envProp);
     fprintf(slurmFile, "%s", envProp);
 
-    fprintf(slurmFile, " %s ", chpl_get_real_binary_name());
+    fprintf(slurmFile, " %s %s", chpl_get_real_binary_wrapper(), chpl_get_real_binary_name());
 
     for (i=1; i<argc; i++) {
       fprintf(slurmFile, " '%s'", argv[i]);
@@ -291,7 +291,7 @@ static char* chpl_launch_create_command(int argc, char* argv[],
                    CHPL_THIRD_PARTY, WRAP_TO_STR(LAUNCH_PATH),
                    GASNETRUN_LAUNCHER, numLocales, numLocales);
     len += propagate_environment(iCom+len);
-    len += sprintf(iCom+len, " %s ", chpl_get_real_binary_name());
+    len += sprintf(iCom+len, " %s %s", chpl_get_real_binary_wrapper(), chpl_get_real_binary_name());
     for (i=1; i<argc; i++) {
       len += sprintf(iCom+len, " %s", argv[i]);
     }

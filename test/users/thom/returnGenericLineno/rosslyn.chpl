@@ -63,7 +63,7 @@ module Rosslyn
         }
 
 
-        proc writeThis(w)
+        proc writeThis(w) throws
         {
             assert(false,"BenchmarkFactory.writeThis() should be",
                          "overridden in the subclass");
@@ -100,7 +100,7 @@ module Rosslyn
 
 
             writeln("Min: ",min reduce results," ",
-                    "Avg: ",(+ reduce results)/results.numElements);
+                    "Avg: ",(+ reduce results)/results.size);
 
         }
 

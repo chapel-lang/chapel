@@ -1668,7 +1668,7 @@ for testname in testsrc:
                 continue
 
             if not os.path.isfile(goodfile) or not os.access(goodfile, os.R_OK):
-                if perftest:
+                if perftest or executebin:
                     sys.stdout.write('[Error compilation failed for %s]\n'%(test_name))
                 else:
                     sys.stdout.write('[Error cannot locate compiler output comparison file %s/%s]\n'%(localdir, goodfile))
@@ -1884,7 +1884,8 @@ for testname in testsrc:
             # binary for launchers that use a queue so we don't include the
             # time to get the reservation. These are the launchers known to
             # support timing the _real using CHPL_LAUNCHER_REAL_WRAPPER.
-            timereal = chpllauncher in ['pbs-aprun', 'aprun', 'slurm-srun']
+            timereal = (chpllauncher in ['pbs-aprun', 'aprun', 'slurm-srun'] or
+                        'slurm-gasnetrun' in chpllauncher)
 
             args=list()
             if timer and timereal:

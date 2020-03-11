@@ -1,54 +1,54 @@
 Compile/Delete
 Search 1
-(matched = true, offset = 1, length = 4)
+(matched = true, offset = 1, size = 4)
 test
-(matched = true, offset = 1, length = 4)
+(matched = true, offset = 1, size = 4)
 test
 Search 2
-(matched = true, offset = 1, length = 4)
+(matched = true, offset = 1, size = 4)
 t
 test
-(matched = true, offset = 1, length = 4)
+(matched = true, offset = 1, size = 4)
 t
 test
 Search 3
-(matched = true, offset = 1, length = 4)
-(matched = true, offset = 1, length = 1)
+(matched = true, offset = 1, size = 4)
+(matched = true, offset = 1, size = 1)
 test
-(matched = true, offset = 1, length = 4)
-(matched = true, offset = 1, length = 1)
+(matched = true, offset = 1, size = 4)
+(matched = true, offset = 1, size = 1)
 test
 Search 4
-(matched = true, offset = 1, length = 4)
-(matched = true, offset = 1, length = 4)
+(matched = true, offset = 1, size = 4)
+(matched = true, offset = 1, size = 4)
 test
-(matched = true, offset = 1, length = 4)
-(matched = true, offset = 1, length = 4)
+(matched = true, offset = 1, size = 4)
+(matched = true, offset = 1, size = 4)
 test
 Search 5
-(matched = true, offset = 1, length = 2)
+(matched = true, offset = 1, size = 2)
 57
 57
-(matched = true, offset = 1, length = 2)
+(matched = true, offset = 1, size = 2)
 57
 57
 Match 1
-(matched = true, offset = 0, length = 4)
+(matched = true, offset = 0, size = 4)
 test
-(matched = true, offset = 0, length = 4)
+(matched = true, offset = 0, size = 4)
 test
 Match 2
-(matched = true, offset = 0, length = 4)
+(matched = true, offset = 0, size = 4)
 t
 test
-(matched = true, offset = 0, length = 4)
+(matched = true, offset = 0, size = 4)
 t
 test
 Match 3
-(matched = false, offset = -1, length = 0)
+(matched = false, offset = -1, size = 0)
 
 
-(matched = false, offset = -1, length = 0)
+(matched = false, offset = -1, size = 0)
 
 
 Split 1

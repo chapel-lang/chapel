@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2020 Cray Inc.
+ * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -36,9 +36,9 @@ proc masonDoc(args) throws {
     const tomlPath = projectHome + "/" + tomlName;
 
     const toParse = open(projectHome + "/" + tomlName, iomode.r);
-    var tomlFile = new owned(parseToml(toParse));
+    var tomlFile = owned.create(parseToml(toParse));
 
-    const projectName = tomlFile["brick"]["name"].s;
+    const projectName = tomlFile["brick"]!["name"]!.s;
     const projectFile = projectName + '.chpl';
 
     if isDir(projectHome + '/src/') {

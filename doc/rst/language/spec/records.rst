@@ -11,8 +11,8 @@ record type is associated with only one piece of storage and has only
 one type throughout its lifetime. Storage is allocated for a variable of
 record type when the variable declaration is executed, and the record
 variable is also initialized at that time. When the record variable goes
-out of scope, or at the end of the program if it is a global, it is
-deinitialized and its storage is deallocated.
+out of scope, or at the end of the program if it is declared at module
+scope, it is deinitialized and its storage is deallocated.
 
 A record declaration statement creates a record
 type :ref:`Record_Declarations`. A variable of record type
@@ -508,8 +508,8 @@ The following example demonstrates record assignment.
 Default Comparison Operators
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Default functions to overload ``==`` and ``!=`` are defined for
-records if none are explicitly defined. These functions have the
+Default functions to overload comparison operators are defined for
+records if none are explicitly defined. ``==`` and ``!=`` functions have the
 following signatures for a record ``R``:
 
 
@@ -519,8 +519,16 @@ following signatures for a record ``R``:
    proc ==(lhs:R, rhs:R) : bool where lhs.type == rhs.type;
    proc !=(lhs:R, rhs:R) : bool where lhs.type == rhs.type;
 
-Each of these compare the fields, one at a time, returning ``false`` if
-the property is not satisfied by the given pair of fields.
+Other comparison operator overloads (namely ``<``, ``<=``, ``>``, and ``>=``)
+have similar signatures but their where clauses also check whether the relevant
+operator is supported by each field.
+
+Record comparisons have a similar behavior to :ref:`tuple comparisons
+<Tuple_Relational_Operators>`.  The operators ``>``, ``>=``, ``<``, and ``<=``
+check the corresponding lexicographical order based on pair-wise comparisons
+between the arguments' fields.  The operators ``==`` and ``!=`` check whether
+the two arguments are pair-wise equal or not.  The fields are compared in the
+order they are declared in the record definition.
 
 .. _Class_and_Record_Differences:
 

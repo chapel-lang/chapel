@@ -8,32 +8,33 @@ module Nodes {
     // Count number of neighbors
     var D1 = {0..(nNodes-1)};
 
-    var Nodes: [D1] unmanaged Node;
     var counts: [D1] int;
 
     // Compute Degree (Outdegree for directed)
     if (isDirected == 1) {
       // Directed graph: an edge is stored only once
-      for i in 0..(nEdges-1) do counts[Edges[i].n1] += 1;
+      for i in 0..(nEdges-1) do counts[Edges[i]!.n1] += 1;
     } else {
       // Undirected graph: every edge stored twice
       for i in 0..(nEdges-1) {
-        counts[Edges[i].n1] += 1;
-        counts[Edges[i].n2] += 1;
+        counts[Edges[i]!.n1] += 1;
+        counts[Edges[i]!.n2] += 1;
       }
     }
 
-    // Initialize node list
-    for i in D1 {
-      Nodes[i] = new unmanaged Node(id = i, NeighborD = {0..(counts[i] - 1)}, EdgeIndexD = {0..(counts[i] - 1)}, nodeType = 2);
-      Nodes[i].vb$.writeEF(0.0);
+    var Nodes: [D1] unmanaged Node = for i in D1 do createNode(i);
+
+    proc createNode(i) {
+      const node = new unmanaged Node(id = i, NeighborD = {0..(counts[i] - 1)}, EdgeIndexD = {0..(counts[i] - 1)}, nodeType = 2);
+      node.vb$.writeEF(0.0);
+      return node;
     }
 
     for i in 0..(nEdges-1) {
-      if (Edges[i].dupl != 0) {  // if i is duplicate, continue
+      if (Edges[i]!.dupl != 0) {  // if i is duplicate, continue
 
-        var u: int = Edges[i].n1;
-        var v: int = Edges[i].n2;
+        var u: int = Edges[i]!.n1;
+        var v: int = Edges[i]!.n2;
 
         var k1: int = Nodes[u].nNeighbors;
         Nodes[u].nNeighbors += 1;

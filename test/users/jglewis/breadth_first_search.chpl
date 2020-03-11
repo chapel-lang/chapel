@@ -70,10 +70,10 @@ module BFS
         // ----------------------
 
         current_level <=> next_level;
-        max_width = max ( max_width, Active_Set (current_level).numIndices );
+        max_width = max ( max_width, Active_Set (current_level).size );
 
         }
-     while Active_Set (current_level).numIndices != 0;
+     while Active_Set (current_level).size != 0;
 
      max_min_dist = current_distance;
 

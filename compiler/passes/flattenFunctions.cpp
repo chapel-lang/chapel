@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2020 Cray Inc.
+ * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -336,10 +336,11 @@ replaceVarUsesWithFormals(FnSymbol* fn, SymbolMap* vars) {
                    call->isPrimitive(PRIM_ASSIGN)     ||
                    call->isPrimitive(PRIM_SET_MEMBER) )
                   && call->get(1) == se)                                   ||
-                (call->isPrimitive(PRIM_GET_MEMBER))                       ||
-                (call->isPrimitive(PRIM_GET_MEMBER_VALUE))                 ||
-                (call->isPrimitive(PRIM_WIDE_GET_LOCALE))                  ||
-                (call->isPrimitive(PRIM_WIDE_GET_NODE))                    ||
+                call->isPrimitive(PRIM_GET_MEMBER)                         ||
+                call->isPrimitive(PRIM_GET_MEMBER_VALUE)                   ||
+                call->isPrimitive(PRIM_WIDE_GET_LOCALE)                    ||
+                call->isPrimitive(PRIM_WIDE_GET_NODE)                      ||
+                call->isPrimitive(PRIM_END_OF_STATEMENT)                   ||
                 canPassToFn) {
               se->setSymbol(arg); // do not dereference argument in these cases
 

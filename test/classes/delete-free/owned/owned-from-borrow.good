@@ -1,2 +1,2 @@
 owned-from-borrow.chpl:3: In function 'testOwned':
-owned-from-borrow.chpl:5: error: cannot initialize owned from a borrow
+owned-from-borrow.chpl:5: error: cannot create an 'owned' from borrowed MyClass

@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2020 Cray Inc.
+ * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -74,8 +74,19 @@ module MemConsistency {
   pragma "memory order type"
   enum memoryOrder {seqCst, acqRel, release, acquire, relaxed}
 
+
+  // Given an input memory order, return an order that can be used for an
+  // atomic load or for the compareExchange failure case.
+  proc readableOrder(param order: memoryOrder) param {
+    if order == memoryOrder.release || order == memoryOrder.acqRel {
+      return memoryOrder.acquire;
+    } else {
+      return order;
+    }
+  }
+
   inline proc c_memory_order(param order: memoryOrder) {
-    use HaltWrappers only;
+    import HaltWrappers;
     select order {
       when memoryOrder.relaxed do return memory_order_relaxed;
       when memoryOrder.acquire do return memory_order_acquire;

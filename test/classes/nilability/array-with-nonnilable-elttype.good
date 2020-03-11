@@ -1,0 +1,7 @@
+array-with-nonnilable-elttype.chpl:15: error: cannot default-initialize the array field A1 because it has a non-nilable element type 'borrowed object'
+array-with-nonnilable-elttype.chpl:20: In initializer:
+array-with-nonnilable-elttype.chpl:22: error: cannot default-initialize the array field A2 because it has a non-nilable element type 'borrowed object'
+array-with-nonnilable-elttype.chpl:5: error: cannot default-initialize the array x1 because it has a non-nilable element type 'owned object'
+array-with-nonnilable-elttype.chpl:6: error: cannot default-initialize the array x2 because it has a non-nilable element type 'shared object'
+array-with-nonnilable-elttype.chpl:7: error: cannot default-initialize the array x3 because it has a non-nilable element type 'borrowed object'
+array-with-nonnilable-elttype.chpl:8: error: cannot default-initialize the array x4 because it has a non-nilable element type 'unmanaged object'

@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 Cray Inc.
+ * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -19,7 +19,7 @@
 
 module StringAlgorithms{
 proc minLexographicRotation(s: string): string{
-  var len = s.length;
+  var len = s.size;
   var minstr = s;
   var S = s + s;
   for i in 1..len
@@ -34,7 +34,7 @@ proc minLexographicRotation(s: string): string{
   return minstr;
 }
 proc maxLexographicRotation(s: string): string{
-  var len = s.length;
+  var len = s.size;
   var maxstr = s;
   var S = s + s;
   for i in 1..len

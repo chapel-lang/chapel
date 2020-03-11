@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2020 Cray Inc.
+ * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -745,6 +745,10 @@ static void print_suggestions(const char* flag, const ArgumentDescription* desc)
     if (!developer && i >= firstDeveloperOnly)
       break;
 
+    // Ignore empty entries
+    if (desc[i].name[0] == '\0')
+      continue;
+
     if (usearg[0] == desc[i].key && usearg[1] == '\0') {
       // e.g. --s was used instead of -s
       fprintf(stderr, "       Did you mean -%c ?\n", desc[i].key);
@@ -769,8 +773,11 @@ static void print_suggestions(const char* flag, const ArgumentDescription* desc)
       if (!developer && i >= firstDeveloperOnly)
         break;
 
-      if (desc[i].name[0] != '\0' &&
-          startsWith(usearg, desc[i].name)) {
+      // Ignore empty entries
+      if (desc[i].name[0] == '\0')
+        continue;
+
+      if (startsWith(usearg, desc[i].name)) {
         fprintf(stderr, "       Did you mean --%s ?\n", desc[i].name);
         helped = true;
       }
@@ -784,8 +791,11 @@ static void print_suggestions(const char* flag, const ArgumentDescription* desc)
       if (!developer && i >= firstDeveloperOnly)
         break;
 
-      if (desc[i].name[0] != '\0' &&
-          startsWith(desc[i].name, usearg)) {
+      // Ignore empty entries
+      if (desc[i].name[0] == '\0')
+        continue;
+
+      if (startsWith(desc[i].name, usearg)) {
         fprintf(stderr, "       Did you mean --%s ?\n", desc[i].name);
       }
     }

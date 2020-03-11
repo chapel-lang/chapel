@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2020 Cray Inc.
+ * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -18,7 +18,8 @@
  */
 
 module StringCasts {
-  private use ChapelStandard, SysCTypes;
+  private use ChapelStandard;
+  private use SysCTypes;
 
   // TODO: I want to break all of these casts from string to T out into
   // T.parse(string), but we dont support methods on types yet. Ideally they
@@ -125,7 +126,7 @@ module StringCasts {
         throw new owned IllegalArgumentError("bad cast from string '" + x + "' to " + t:string);
 
       // remove underscores everywhere but the first position
-      if localX.length >= 2 then
+      if localX.size >= 2 then
         localX = localX[1] + localX[2..].replace("_", "");
     }
 
@@ -189,7 +190,7 @@ module StringCasts {
   }
 
   inline proc _cleanupStringForRealCast(type t, ref s: string) throws {
-    var len = s.length;
+    var len = s.size;
 
     if s.isEmpty() then
       throw new owned IllegalArgumentError("bad cast from empty string to " + t: string);

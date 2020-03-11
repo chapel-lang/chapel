@@ -88,6 +88,12 @@ and
 '1 7 6'
 are not of same size
 ================================================================================
+Error Caught in Unequal 0-based Arrays
+AssertionError: assert failed -
+'1 4 2'
+!=
+'1 7 6'
+================================================================================
 Error Caught in Unequal Complex Type 1
 AssertionError: assert failed - '5' != '7.0i'
 ================================================================================

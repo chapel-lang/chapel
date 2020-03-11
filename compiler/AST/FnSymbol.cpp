@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2020 Cray Inc.
+ * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -43,7 +43,8 @@ FnSymbol*                 gGenericTupleDestroy  = NULL;
 std::map<FnSymbol*, int>  ftableMap;
 std::vector<FnSymbol*>    ftableVec;
 
-FnSymbol::FnSymbol(const char* initName) : Symbol(E_FnSymbol, initName) {
+FnSymbol::FnSymbol(const char* initName)
+  : Symbol(E_FnSymbol, initName), userInstantiationPointLoc(0, NULL) {
   retType            = dtUnknown;
   where              = NULL;
   lifetimeConstraints= NULL;
@@ -507,36 +508,6 @@ Symbol* FnSymbol::getReturnSymbol() {
   return retval;
 }
 
-
-// Replace the return symbol with 'newRetSymbol',
-// return the previous return symbol.
-// If newRetType != NULL, also update fn->retType.
-Symbol* FnSymbol::replaceReturnSymbol(Symbol* newRetSymbol, Type* newRetType) {
-  CallExpr* ret    = toCallExpr(this->body->body.last());
-  Symbol*   retval = NULL;
-
-  if (ret != NULL && ret->isPrimitive(PRIM_RETURN) == true) {
-    if (SymExpr* sym = toSymExpr(ret->get(1))) {
-      Symbol* prevRetSymbol = sym->symbol();
-
-      sym->setSymbol(newRetSymbol);
-
-      this->retSymbol = newRetSymbol;
-
-      if (newRetType != NULL) {
-        this->retType = newRetType;
-      }
-
-      retval = prevRetSymbol;
-    }
-
-  } else {
-    INT_FATAL(this, "function is not normal");
-  }
-
-  return retval;
-}
-
 // Removes all statements from body and adds all statements from block.
 void FnSymbol::replaceBodyStmtsWithStmts(BlockStmt* block) {
   for_alist(stmt, this->body->body) {
@@ -566,6 +537,9 @@ void FnSymbol::setInstantiationPoint(Expr* expr) {
     this->_instantiationPoint = block;
     this->_backupInstantiationPoint = block->getFunction();
   }
+
+  //if (expr != NULL)
+  //  userInstantiationPointLoc = getUserInstantiationPoint(this);
 }
 
 BlockStmt* FnSymbol::instantiationPoint() const {
@@ -939,7 +913,7 @@ bool FnSymbol::isDefaultInit() const {
 }
 
 bool FnSymbol::isCopyInit() const {
-  return isMethod() && strcmp(name, astrInitEquals) == 0;
+  return isMethod() && name == astrInitEquals;
 }
 
 // This function or method is an iterator (as opposed to a procedure).

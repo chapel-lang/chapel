@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2020 Cray Inc.
+ * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -147,6 +147,7 @@ class PrivateDom: BaseRectangularDom {
 
 class PrivateArr: BaseRectangularArr {
   var dom: unmanaged PrivateDom(rank, idxType, stridable);
+  pragma "unsafe" // initialized separately
   var data: eltType;
 }
 

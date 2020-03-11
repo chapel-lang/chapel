@@ -62,8 +62,8 @@ Name:    %{name}
 Version: %{version}
 Release: %{pkg_release}
 Prefix:  %{platform_prefix}
-License: Copyright 2020, Cray Inc. All Rights Reserved.
-Packager: Cray, Inc
+License: Copyright 2004-2020 Hewlett Packard Enterprise Development LP All Rights Reserved.
+Packager: Hewlett Packard Enterprise
 Group:   Development/Languages/Other
 Source:  %{chpl_home_basename}.tar.gz
 AutoReqProv: no

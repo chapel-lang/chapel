@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2020 Cray Inc.
+ * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -29,7 +29,7 @@
 
 module Time {
   private use SysBasic;
-  private use HaltWrappers only;
+  import HaltWrappers;
 
 // Returns the number of seconds since midnight.  Has the potential for
 // microsecond resolution if supported by the runtime platform

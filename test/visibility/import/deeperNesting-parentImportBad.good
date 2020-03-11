@@ -1,0 +1,3 @@
+deeperNesting-parentImportBad.chpl:10: warning: currently unable to import nested modules without specifying the full path to the module
+deeperNesting-parentImportBad.chpl:2: note: skipping module defined here
+deeperNesting-parentImportBad.chpl:10: error: No better match found

@@ -1,0 +1,2 @@
+owned-from-shared.chpl:4: In function 'main':
+owned-from-shared.chpl:6: error: cannot create an 'owned' from shared CC?

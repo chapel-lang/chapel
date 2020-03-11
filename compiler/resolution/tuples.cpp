@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2020 Cray Inc.
+ * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -373,6 +373,7 @@ TupleInfo getTupleInfo(std::vector<TypeSymbol*>& args,
     // Create the TypeSymbol
     TypeSymbol* newTypeSymbol = new TypeSymbol(name.c_str(), newType);
     newTypeSymbol->cname = astr(cname.c_str());
+    newTypeSymbol->instantiationPoint = instantiationPoint;
 
     // Set appropriate flags on the new TypeSymbol
     newTypeSymbol->addFlag(FLAG_ALLOW_REF);

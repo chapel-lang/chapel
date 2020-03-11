@@ -42,8 +42,8 @@ Parsing module files:
   $CHPL_HOME/modules/standard/Random.chpl
   $CHPL_HOME/modules/dists/BlockDist.chpl
   $CHPL_HOME/modules/standard/Time.chpl
-  $CHPL_HOME/modules/dists/SparseBlockDist.chpl
   $CHPL_HOME/modules/layouts/LayoutCS.chpl
+  $CHPL_HOME/modules/dists/SparseBlockDist.chpl
   $CHPL_HOME/modules/dists/ReplicatedDist.chpl
 In bar
 In baz

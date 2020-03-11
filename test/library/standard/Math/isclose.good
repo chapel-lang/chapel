@@ -1,0 +1,20 @@
+a = 1e+200 e = 1e+200
+isclose(a,e) = true
+b = 1.123e-300 f = 1.123e-300
+isclose(b,f) = true
+c = 12345 g = 12345.0
+isclose(c,g) = true
+d = 0.0 h = -0.0
+isclose(d,h) = true
+i = 1e+08 l = 100000001 rtol = 1e-08
+isclose(i,l,rtol) = true
+j = -1e-08 m = -1.000000009e-08 rtol = 1e-08
+isclose(j,m,rtol) = true
+k = 1.12345678 n = 1.12345679 rtol = 1e-08
+isclose(k,n,rtol) = true
+i = 1e+08 l = 100000001 rtol = 1e-09
+isclose(i,l,rtol) = false
+j = -1e-08 m = -1.000000009e-08 rtol = 1e-09
+isclose(j,m,rtol) = false
+k = 1.12345678 n = 1.12345679 rtol = 1e-09
+isclose(k,n,rtol) = false

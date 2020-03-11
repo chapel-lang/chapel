@@ -9,11 +9,7 @@ bang-vs-new-etc.chpl:95: warning: applying the postfix-! operator to a type is d
 bang-vs-new-etc.chpl:98: warning: applying the postfix-! operator to a type is deprecated; instead use a cast to 'class' or 'borrowed class', e.g. 'MyType :borrowed class'
 bang-vs-new-etc.chpl:102: warning: applying the postfix-! operator to a type is deprecated; instead use a cast to 'class' or 'borrowed class', e.g. 'MyType :borrowed class'
 bang-vs-new-etc.chpl:109: warning: z15b = xx: unmanaged C?  expected: unmanaged C?  actual: unmanaged C?
-bang-vs-new-etc.chpl:111: warning: applying the postfix-! operator to a type is deprecated; instead use a cast to 'class' or 'borrowed class', e.g. 'MyType :borrowed class'
-bang-vs-new-etc.chpl:111: error: duplicate decorators - unmanaged borrowed C
 bang-vs-new-etc.chpl:118: warning: z16b = xx!: unmanaged C?  expected: unmanaged C?  actual: unmanaged C?
-bang-vs-new-etc.chpl:120: warning: applying the postfix-! operator to a type is deprecated; instead use a cast to 'class' or 'borrowed class', e.g. 'MyType :borrowed class'
-bang-vs-new-etc.chpl:120: error: duplicate decorators - unmanaged borrowed C
 bang-vs-new-etc.chpl:131: warning: z18a = xx : class : unmanaged class?  expected: unmanaged C?  actual: unmanaged C?
 bang-vs-new-etc.chpl:134: warning: z18b = xx : class? : unmanaged C?  expected: unmanaged C?  actual: unmanaged C?
 bang-vs-new-etc.chpl:142: warning: z19b = new C()? : unmanaged  expected: unmanaged C?  actual: unmanaged C?

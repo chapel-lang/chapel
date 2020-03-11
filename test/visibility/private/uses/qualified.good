@@ -1,0 +1,2 @@
+qualified.chpl:14: In function 'main':
+qualified.chpl:15: error: 'A' undeclared (first use this function)

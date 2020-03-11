@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2020 Cray Inc.
+ * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -1653,6 +1653,7 @@ fixupErrorHandlingExits(BlockStmt* body, bool& adjustCaller) {
 
     if (g->gotoTag == GOTO_ERROR_HANDLING ||
         g->gotoTag == GOTO_BREAK_ERROR_HANDLING ||
+        g->gotoTag == GOTO_ERROR_HANDLING_RETURN ||
         g->gotoTag == GOTO_RETURN) {
       // Does the target of this Goto exist within the same function?
       LabelSymbol* target = g->gotoTarget();
@@ -1833,7 +1834,7 @@ replaceErrorFormalWithEnclosingError(SymExpr* se) {
         }
       }
       se->setSymbol(errorArg);
-      INT_ASSERT(fixGoto->gotoTag == GOTO_RETURN);
+      INT_ASSERT(fixGoto->isGotoReturn());
     } else {
       // Just call gChplUncaughtError
       VarSymbol* tmp = newTemp("error", dtError);

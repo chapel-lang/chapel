@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2020 Cray Inc.
+ * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -32,6 +32,7 @@
 #include "ForallStmt.h"
 #include "ForLoop.h"
 #include "IfExpr.h"
+#include "ImportStmt.h"
 #include "iterator.h"
 #include "log.h"
 #include "LoopExpr.h"
@@ -166,6 +167,10 @@ static void forallPostamble(Expr* expr, ForallStmt* pfs, int indent) {
 }
 
 static void usePostamble(UseStmt* use, int indent) {
+  if (use->isARename()) {
+    printf("as %s ", use->getRename());
+  }
+
   if (use->isPlainUse())
     return;
 
@@ -275,6 +280,8 @@ list_ast(BaseAST* ast, BaseAST* parentAst = NULL, int indent = 0) {
       printf("%s ", e->unresolved);
     } else if (isUseStmt(expr)) {
       printf("use ");
+    } else if (isImportStmt(expr)) {
+      printf("import ");
     }
   }
 

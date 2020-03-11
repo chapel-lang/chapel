@@ -8,9 +8,9 @@ and ``throws`` which are described below. Chapel supports several error
 handling modes, including a mode suitable for prototype development and
 a less-permissive mode intended for production code.
 
-   *Cray’s Chapel Implementation*.
+   *Implementation Notes*.
 
-   | Additional information about the Cray Chapel implementation of
+   | Additional information about the current implementation of
      error handling and the *strict* error handling mode, which is not
      defined here, is available online in the technical note:
    | https://chapel-lang.org/docs/technotes/errorHandling.html

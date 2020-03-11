@@ -1,0 +1,29 @@
+rCopyInitEOB
+(own = {x = 1}, bor = nil)
+(own = nil, bor = {x = 1})
+rCopyInitIshEOB
+(own = {x = 1}, bor = nil)
+(own = nil, bor = {x = 1})
+rAssignEOB
+(own = {x = 1}, bor = nil)
+(own = nil, bor = {x = 1})
+rAssignFieldsEOB
+(own = {x = 1}, bor = nil)
+(own = nil, bor = {x = 1})
+(own = {x = 1}, bor = nil)
+(own = nil, bor = {x = 1})
+testRCapturesEOB
+The End {x = 1}{x = 1}
+testRCapturesaEOB
+The End {x = 1}
+testRCapturesrbEOB
+The End {x = 1}
+cInitOtherEOB
+{own = {x = 1}, bor = nil}
+{own = nil, bor = {x = 1}}
+cMakeBorrowEOB
+{own = {x = 1}, bor = nil}
+{own = nil, bor = {x = 1}}
+cAssignFieldEOB
+(own = {x = 1}, bor = nil)
+(own = nil, bor = {x = 1})

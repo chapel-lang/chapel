@@ -22,11 +22,13 @@ int mynode = 0;
 void *myseg = NULL;
 int sender, recvr;
 int peer;
+uintptr_t max_step = 0;
 void *request_addr = NULL;
 void *reply_addr = NULL;
 
 gex_Event_t *lc_opt = GEX_EVENT_NOW;
-gex_Event_t *np_lc_opt = GEX_EVENT_NOW;
+gex_Event_t *np_req_lc_opt = GEX_EVENT_NOW;
+gex_Event_t *np_rep_lc_opt = GEX_EVENT_NOW;
 
 void report(const char *desc, int64_t totaltime, int iters, uintptr_t sz, int rt) {
   if (sender) {
@@ -94,7 +96,7 @@ void prep_payload(uint8_t *dst, size_t len) {
   if (use_np) {                                                                             \
     void *cbuf = np_cbuf ? src_addr : NULL;                                                 \
     gex_AM_SrcDesc_t sd =                                                                   \
-            gex_AM_PrepareRequestMedium(tm,rank,cbuf,nbytes,nbytes,np_lc_opt,0,0);          \
+            gex_AM_PrepareRequestMedium(tm,rank,cbuf,nbytes,nbytes,np_req_lc_opt,0,0);      \
     assert(gex_AM_SrcDescSize(sd) == nbytes);                                               \
     prep_payload(gex_AM_SrcDescAddr(sd), nbytes);                                           \
     gex_AM_CommitRequestMedium0(sd, hidx, nbytes);                                          \
@@ -108,7 +110,7 @@ void prep_payload(uint8_t *dst, size_t len) {
   if (use_np) {                                                                             \
     void *cbuf = np_cbuf ? src_addr : NULL;                                                 \
     gex_AM_SrcDesc_t sd =                                                                   \
-            gex_AM_PrepareReplyMedium(token,cbuf,nbytes,nbytes,np_lc_opt,0,0);              \
+            gex_AM_PrepareReplyMedium(token,cbuf,nbytes,nbytes,np_rep_lc_opt,0,0);          \
     assert(gex_AM_SrcDescSize(sd) == nbytes);                                               \
     prep_payload(gex_AM_SrcDescAddr(sd), nbytes);                                           \
     gex_AM_CommitReplyMedium0(sd, hidx, nbytes);                                            \
@@ -122,7 +124,7 @@ void prep_payload(uint8_t *dst, size_t len) {
   if (use_np) {                                                                             \
     void *cbuf = np_cbuf ? src_addr : NULL;                                                 \
     gex_AM_SrcDesc_t sd =                                                                   \
-            gex_AM_PrepareRequestLong(tm,rank,cbuf,nbytes,nbytes,dst_addr,np_lc_opt,0,0);   \
+            gex_AM_PrepareRequestLong(tm,rank,cbuf,nbytes,nbytes,dst_addr,np_req_lc_opt,0,0);\
     assert(gex_AM_SrcDescSize(sd) == nbytes);                                               \
     prep_payload(gex_AM_SrcDescAddr(sd), nbytes);                                           \
     gex_AM_CommitRequestLong0(sd, hidx, nbytes, dst_addr);                                  \
@@ -136,7 +138,7 @@ void prep_payload(uint8_t *dst, size_t len) {
   if (use_np) {                                                                             \
     void *cbuf = np_cbuf ? src_addr : NULL;                                                 \
     gex_AM_SrcDesc_t sd =                                                                   \
-             gex_AM_PrepareReplyLong(token,cbuf,nbytes,nbytes,dst_addr,np_lc_opt,0,0);      \
+             gex_AM_PrepareReplyLong(token,cbuf,nbytes,nbytes,dst_addr,np_rep_lc_opt,0,0);  \
     assert(gex_AM_SrcDescSize(sd) == nbytes);                                               \
     prep_payload(gex_AM_SrcDescAddr(sd), nbytes);                                           \
     gex_AM_CommitReplyLong0(sd, hidx, nbytes, dst_addr);                                    \
@@ -313,6 +315,10 @@ int main(int argc, char **argv) {
     } else if (!strcmp(argv[arg], "-src-memcpy")) {
       src_mode = SRC_MEMCPY;
       ++arg;
+    } else if (!strcmp(argv[arg], "-max-step")) {
+      ++arg;
+      if (argc > arg) { max_step = atoi(argv[arg]); arg++; }
+      else help = 1;
     } else if (argv[arg][0] == '-') {
       help = 1;
       ++arg;
@@ -324,6 +330,8 @@ int main(int argc, char **argv) {
   if (argc > arg) { maxsz = atoi(argv[arg]); ++arg; }
   if (!maxsz) maxsz = 2*1024*1024;
   if (argc > arg) { TEST_SECTION_PARSE(argv[arg]); ++arg; }
+
+  if (!max_step) max_step = maxsz;
 
   GASNET_Safe(gex_Segment_Attach(&mysegment, myteam, TEST_SEGSZ_REQUEST));
   GASNET_Safe(gex_EP_RegisterHandlers(myep, htable, sizeof(htable)/sizeof(gex_AM_Entry_t)));
@@ -339,6 +347,8 @@ int main(int argc, char **argv) {
                "  The '-in' or '-out' option selects whether the requestor's\n"
                "    buffer is in the GASNet segment or not (default is 'in').\n"
                PAR_USAGE
+               "  The '-max-step N' option selects the maximum step between payload sizes,\n"
+               "    which by default advance by doubling until the max size is reached.\n"
                "  The '-sync-req' or '-async-req' option selects synchronous or asynchronous\n"
                "    local completion of Medium and Long Requests (default is synchronous).\n"
                "  The '-fp', '-np-gb' or '-np-cb' option selects Fixed- or Negotiated-Payload\n"
@@ -367,7 +377,8 @@ int main(int argc, char **argv) {
     zero_buffer = test_calloc(maxsz, 1);
   }
 
-  np_lc_opt = np_cbuf ? lc_opt : NULL;
+  np_req_lc_opt = np_cbuf ? lc_opt        : NULL;
+  np_rep_lc_opt = np_cbuf ? GEX_EVENT_NOW : NULL;
 
   if (crossmachinemode) {
     if ((numnode%2) && (mynode == numnode-1)) {
@@ -386,7 +397,7 @@ int main(int argc, char **argv) {
     }
   }
 
-  gex_Event_t *tmp_lc_opt = use_np ? np_lc_opt : lc_opt;
+  gex_Event_t *tmp_lc_opt = use_np ? np_req_lc_opt : lc_opt;
   gex_Flags_t flags = use_np ? ( np_cbuf ? GEX_FLAG_AM_PREPARE_LEAST_CLIENT
                                          : GEX_FLAG_AM_PREPARE_LEAST_ALLOC) : 0;
   maxmedreq  = MIN(maxsz, gex_AM_MaxRequestMedium(myteam,peer,tmp_lc_opt,flags,0));
@@ -545,13 +556,15 @@ void doAMShort(void) {
 }
 
 /* ------------------------------------------------------------------------------------ */
+
 #define ADVANCESZ(sz, maxsz) do {                   \
+        int step = MIN(max_step, sz);               \
         if (!sz) sz = 1;                            \
-        else if (sz < maxsz && sz*2 > maxsz) {      \
+        else if (sz < maxsz && sz+step > maxsz) {   \
            /* indicate final non-power-of-two sz */ \
            if (!mynode) printf(" max:\n"); \
            sz = maxsz;                              \
-        } else sz *= 2;                             \
+        } else sz += step;                          \
   } while (0)
 
 #define TESTAM_PERF(DESC_STR, AMREQUEST, PING_HIDX, PONG_HIDX,                   \

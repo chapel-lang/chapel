@@ -270,7 +270,7 @@ variable, the resulting array has a 1-based one-dimensional domain.
 
    .. code-block:: chapel
 
-      [i in 1..s.numElements] if i % 2 == 1 then s(i)
+      [i in 1..s.size] if i % 2 == 1 then s(i)
 
    
 
@@ -378,12 +378,6 @@ cannot have ``type-part``. A ``ref`` shadow variable is a reference to
 the ``initialization-part`` as calculated at the start of the
 corresponding task or the iterator. ``ref`` shadow variables are never
 destroyed.
-
-   *Cray’s Chapel Implementation*.
-
-   Currently task-private variables are not available for task
-   constructs. A regular variable declared at the start of the
-   begin/cobegin/coforall block can be used instead.
 
 ..
 

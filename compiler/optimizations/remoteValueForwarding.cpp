@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2020 Cray Inc.
+ * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -557,7 +557,7 @@ static void destroyArgAndDeserialized(FnSymbol* fn, ArgSymbol* arg,
 static void insertSerialization(FnSymbol*  fn,
                                 ArgSymbol* arg) {
   Type* oldArgType    = arg->type;
-  bool newStyleInIntent = shouldAddFormalTempAtCallSite(arg, fn);
+  bool newStyleInIntent = shouldAddInFormalTempAtCallSite(arg, fn);
 
   Serializers ser = serializeMap[oldArgType->getValType()];
 

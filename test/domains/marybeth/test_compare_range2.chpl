@@ -17,7 +17,7 @@ proc initMatrix(A:[?D]) {
       A = 1.0;
     }
     else {
-      var minRange = if (D.dim(1).length < D.dim(2).length) then D.dim(1) else D.dim(2); 
+      var minRange = if (D.dim(1).size < D.dim(2).size) then D.dim(1) else D.dim(2); 
       for i in minRange {
         A(i,i) = 1.0;
       }

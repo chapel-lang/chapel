@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2020 Cray Inc.
+ * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -189,6 +189,15 @@ void chpl_comm_post_mem_init(void);
 // 0 otherwise
 //
 int chpl_comm_run_in_gdb(int argc, char* argv[], int gdbArgnum, int* status);
+
+//
+// if possible, run in lldb (because the user threw the --lldb flag)
+// using argc and argv.  lldbArgnum gives the index of the argv[]
+// element containing the --lldb flag.  Return the status of that
+// process in "status" and return 1 if it was possible to run in lldb,
+// 0 otherwise
+//
+int chpl_comm_run_in_lldb(int argc, char* argv[], int lldbArgnum, int* status);
 
 //
 // Allow the communication layer to do any further initialization it

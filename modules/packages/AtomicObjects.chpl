@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2020 Cray Inc.
+ * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -380,6 +380,10 @@ prototype module AtomicObjects {
     }
 
     forwarding this.getObject()!;
+  }
+  proc =(ref lhs: ABA, const ref rhs: lhs.type) {
+    lhs.__ABA_ptr = rhs.__ABA_ptr;
+    lhs.__ABA_cnt = rhs.__ABA_cnt;
   }
 
   pragma "no doc"

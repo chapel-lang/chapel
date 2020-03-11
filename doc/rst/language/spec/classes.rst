@@ -121,10 +121,8 @@ Additionally, coercions are available that are equivalent to calling the
                                    // impact on the lifetime.
 
         var bc: borrowed C = own;  // 'bc' stores the result of own.borrow()
-                                   // due to coercion from owned C to C
-
-        var c: C = own;            // same as above
-                                   // since 'C' is equivalent to 'borrowed C'
+                                   // due to coercion from owned C to
+                                   // borrowed C
 
                                    // Note that these coercions can also apply
                                    // in the context of procedure calls.
@@ -283,7 +281,7 @@ if ``T`` is a class type, then ``T: class?`` indicates its nilable counterpart,
 or ``T`` itself if it is already nilable. ``T: borrowed class?`` produces
 the nilable ``borrowed`` variant of ``T``.
 
-To create a non-nilalble class type from a nilable class type, apply a
+To create a non-nilable class type from a nilable class type, apply a
 cast to ``class`` or to a more specific type. For example, if ``T`` is
 a class type, then ``T: class`` indicates its non-nilable counterpart,
 or ``T`` itself if it is already non-nilable. ``T: borrowed class``

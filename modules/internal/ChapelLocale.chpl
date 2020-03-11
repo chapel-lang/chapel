@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2020 Cray Inc.
+ * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -67,7 +67,7 @@
 module ChapelLocale {
 
   use LocaleModel;
-  private use HaltWrappers only;
+  import HaltWrappers;
   private use SysCTypes;
 
   //
@@ -463,7 +463,7 @@ module ChapelLocale {
       where tag==iterKind.standalone {
       // Simple locales barrier, see implementation below for notes
       var b: localesBarrier;
-      var flags: [1..#numLocales-1] unmanaged localesSignal;
+      var flags: [1..#numLocales-1] unmanaged localesSignal?;
       coforall locIdx in 0..#numLocales /*ref(b)*/ {
         on __primitive("chpl_on_locale_num",
                        chpl_buildLocaleID(locIdx:chpl_nodeID_t,

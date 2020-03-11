@@ -1,4 +1,4 @@
-unmanaged-concrete.chpl:7: warning: [domain(1,int(64),false)] borrowed GEN(int(64))
-unmanaged-concrete.chpl:7: warning: [domain(1,int(64),false)] unmanaged GEN(int(64))
+unmanaged-concrete.chpl:7: warning: [domain(1,int(64),false)] borrowed GEN(int(64))?
+unmanaged-concrete.chpl:7: warning: [domain(1,int(64),false)] unmanaged GEN(int(64))?
 unmanaged-concrete.chpl:7: warning: unmanaged GEN(int(64))
 unmanaged-concrete.chpl:7: error: done

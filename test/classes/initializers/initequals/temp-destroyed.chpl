@@ -6,6 +6,10 @@ record R {
   type T;
   var x : T;
 
+  proc init=(other: R) {
+    this.T = other.T;
+    this.x = other.x;
+  }
   proc init=(other: this.type.T) {
     this.T = this.type.T;
     this.x = other;

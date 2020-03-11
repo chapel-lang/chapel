@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2020 Cray Inc.
+ * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -18,6 +18,8 @@
  */
 
 #include "AstVisitorTraverse.h"
+
+#include "ImportStmt.h"
 
 AstVisitorTraverse::AstVisitorTraverse()
 {
@@ -179,6 +181,11 @@ void AstVisitorTraverse::visitUsymExpr(UnresolvedSymExpr* node)
 }
 
 void AstVisitorTraverse::visitUseStmt(UseStmt* node)
+{
+
+}
+
+void AstVisitorTraverse::visitImportStmt(ImportStmt* node)
 {
 
 }

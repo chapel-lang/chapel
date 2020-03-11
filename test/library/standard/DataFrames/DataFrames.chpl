@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 Cray Inc.
+ * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -54,17 +54,17 @@ module DataFrames {
     }
 
     pragma "no doc"
-    proc writeThis(f, s: borrowed TypedSeries(?)) {
+    proc writeThis(f, s: borrowed TypedSeries(?)) throws {
       halt("cannot writeThis on generic Index");
     }
 
     pragma "no doc"
-    proc writeThis(f, d: borrowed DataFrame) {
+    proc writeThis(f, d: borrowed DataFrame) throws {
       halt("cannot writeThis on generic Index");
     }
 
     pragma "no doc"
-    proc writeThis(f) {
+    proc writeThis(f) throws {
       halt("cannot writeThis on generic Index");
     }
 
@@ -223,20 +223,20 @@ module DataFrames {
       for idx in this {
         // TODO: clean up to simple cast after bugfix
         var idxStr = createStringWithNewBuffer(idx: string);
-        if idxStr.length > idxWidth then
-          idxWidth = idxStr.length;
+        if idxStr.size > idxWidth then
+          idxWidth = idxStr.size;
       }
       return idxWidth;
     }
 
     override
-    proc writeThis(f, s: borrowed TypedSeries) {
+    proc writeThis(f, s: borrowed TypedSeries) throws {
       var idxWidth = writeIdxWidth() + 4;
       for (idx, (v, d)) in zip(this, s!._these()) {
         // TODO: clean up to simple cast after bugfix
         var idxStr = createStringWithNewBuffer(idx: string);
         f <~> idx;
-        for space in 1..idxWidth-idxStr.length do
+        for space in 1..idxWidth-idxStr.size do
           f <~> " ";
 
         if v then
@@ -248,7 +248,7 @@ module DataFrames {
     }
 
     override
-    proc writeThis(f, d: borrowed DataFrame) {
+    proc writeThis(f, d: borrowed DataFrame) throws {
       var idxWidth = writeIdxWidth() + 1;
       for space in 1..idxWidth do
         f <~> " ";
@@ -261,18 +261,18 @@ module DataFrames {
         // TODO: clean up to simple cast after bugfix
         var idxStr = createStringWithNewBuffer(idx: string);
         f <~> idxStr;
-        for space in 1..idxWidth-idxStr.length do
+        for space in 1..idxWidth-idxStr.size do
           f <~> " ";
 
         for (ser, lab) in zip(d, d.labels) {
-          ser.writeElem(f, idx, lab.length);
+          ser!.writeElem(f, idx, lab.size);
           f <~> "   ";
         }
       }
     }
 
     override
-    proc writeThis(f) {
+    proc writeThis(f) throws {
       var idxWidth = writeIdxWidth() + 1;
       for space in 1..idxWidth do
         f <~> " ";
@@ -282,7 +282,7 @@ module DataFrames {
         // TODO: clean up to simple cast after bugfix
         var idxStr = createStringWithNewBuffer(idx: string);
         f <~> idxStr;
-        for space in 1..idxWidth-idxStr.length do
+        for space in 1..idxWidth-idxStr.size do
           f <~> " ";
       }
     }
@@ -398,12 +398,12 @@ module DataFrames {
     }
 
     pragma "no doc"
-    proc writeElem(f, i, len: int) {
+    proc writeElem(f, i, len: int) throws {
       halt("generic Series cannot be indexed");
     }
 
     pragma "no doc"
-    proc writeElemNoIndex(f, i: int, len: int) {
+    proc writeElemNoIndex(f, i: int, len: int) throws {
       halt("generic Series cannot be accessed");
     }
   }
@@ -731,26 +731,26 @@ module DataFrames {
 
     pragma "no doc"
     override
-    proc writeElem(f, i, len: int) {
+    proc writeElem(f, i, len: int) throws {
       // TODO: clean up to simple cast after bugfix
       var output = if this.valid(i)
                    then createStringWithNewBuffer(this[i]: string)
                    else "None";
 
-      for space in 1..len-output.length do
+      for space in 1..len-output.size do
         f <~> " ";
       f <~> output;
     }
 
     pragma "no doc"
     override
-    proc writeElemNoIndex(f, i: int, len: int) {
+    proc writeElemNoIndex(f, i: int, len: int) throws {
       // TODO: clean up to simple cast after bugfix
       var output = if this.valid_at(i)
                    then createStringWithNewBuffer(this.at(i): string)
                    else "None";
 
-      for space in 1..len-output.length do
+      for space in 1..len-output.size do
         f <~> " ";
       f <~> output;
     }
@@ -761,7 +761,7 @@ module DataFrames {
 
     // TODO: array of owned Series
     //   Currently run into confusing const errors in DefaultAssociative
-    var columns: [labels] unmanaged Series;
+    var columns: [labels] unmanaged Series?;
 
     var idx: shared Index?;
 
@@ -780,13 +780,23 @@ module DataFrames {
         this.columns[lab] = s.copy().release();
     }
 
+    pragma "no doc"
+    proc init(columns: [?D] ?E) where isSubtype(E, Series?) {
+      this.labels = D;
+      this.idx = nil;
+      this.complete();
+
+      for (lab, s) in zip(labels, columns) do
+        this.columns[lab] = s!.copy().release();
+    }
+
     proc init(columns: [?D], in idx: shared Index) {
       this.labels = D;
       this.idx = idx;
       this.complete();
 
       for (lab, s) in zip(labels, columns) do
-        this.insert(lab, s);
+        this.insert(lab, s!);
     }
 
     proc deinit() {
@@ -812,26 +822,26 @@ module DataFrames {
     proc reindex(in idx: shared Index?) {
       this.idx = idx;
       for s in columns do
-        s.reindex(idx);
+        s!.reindex(idx);
     }
 
     proc nrows() {
       var nMax = 0;
       for s in this {
-        var n = s.nrows();
+        var n = s!.nrows();
         if n > nMax then nMax = n;
       }
       return nMax;
     }
 
     override
-    proc writeThis(f) {
+    proc writeThis(f) throws {
       if idx {
         idx!.writeThis(f, _to_unmanaged(this));
       } else {
         var n = nrows();
         var nStr = createStringWithNewBuffer(n: string);
-        var idxWidth = nStr.length + 1;
+        var idxWidth = nStr.size + 1;
 
         for space in 1..idxWidth do
           f <~> " ";
@@ -843,11 +853,11 @@ module DataFrames {
           f <~> "\n";
           var iStr = createStringWithNewBuffer(i: string);
           f <~> iStr;
-          for space in 1..idxWidth-iStr.length do
+          for space in 1..idxWidth-iStr.size do
             f <~> " ";
 
           for (ser, lab) in zip(this, labels) {
-            ser.writeElemNoIndex(f, i, lab.length);
+            ser!.writeElemNoIndex(f, i, lab.size);
             f <~> "   ";
           }
         }

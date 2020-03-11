@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2020 Cray Inc.
+ * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -99,7 +99,7 @@ proc pkgSearch(args) throws {
   if pkgName == "" {
     throw new owned MasonError("Must include a package name");
   }
-  const pattern = compile(pkgName, ignorecase=true);
+  const pattern = compile(pkgName, ignoreCase=true);
   const command = "pkg-config --list-all";
   const cmd = command.split();
   var sub = spawn(cmd, stdout=PIPE);
@@ -190,7 +190,7 @@ proc getPkgVariable(pkgName: string, option: string) {
 
   var line:string;
   for line in sub.stdout.lines() {
-    if line.length > 1 then
+    if line.size > 1 then
       lines.append(line);
   }
 
@@ -213,7 +213,7 @@ proc pkgExists(pkgName: string) : bool {
 proc getPkgInfo(pkgName: string, version: string) throws {
 
   var pkgDom: domain(string);
-  var pkgToml: [pkgDom] unmanaged Toml;
+  var pkgToml: [pkgDom] unmanaged Toml?;
   var pkgInfo = new unmanaged Toml(pkgToml);
 
   if pkgExists(pkgName) {
@@ -242,12 +242,12 @@ proc getPkgInfo(pkgName: string, version: string) throws {
 proc getPCDeps(exDeps: unmanaged Toml) {
 
   var exDom: domain(string);
-  var exDepTree: [exDom] unmanaged Toml;
+  var exDepTree: [exDom] unmanaged Toml?;
 
   for (name, vers) in exDeps.A.items() {
     try! {
       if pkgConfigExists() {
-        const pkgInfo = getPkgInfo(name, vers.s);
+        const pkgInfo = getPkgInfo(name, vers!.s);
         exDom += name;
         exDepTree[name] = pkgInfo;
       }

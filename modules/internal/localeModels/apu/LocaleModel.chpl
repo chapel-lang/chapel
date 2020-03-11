@@ -1,6 +1,6 @@
 /*
  * Copyright 2017 Advanced Micro Devices, Inc.
- * Copyright 2004-2020 Cray Inc.
+ * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -83,7 +83,10 @@ module LocaleModel {
     proc addChild(loc:locale) {
       halt("Cannot add children to this locale type.");
     }
-    override proc getChild(idx:int) : locale { return nil; }
+    override proc getChild(idx:int) : locale {
+      halt("requesting a child from a CPULocale locale");
+      return this;
+    }
   }
 
   class GPULocale : AbstractLocaleModel {
@@ -127,10 +130,14 @@ module LocaleModel {
     proc addChild(loc:locale) {
       halt("Cannot add children to this locale type.");
     }
-    override proc getChild(idx:int) : locale { return nil; }
+    override proc getChild(idx:int) : locale {
+      halt("requesting a child from a GPULocale locale");
+      return this;
+    }
   }
 
   const chpl_emptyLocaleSpace: domain(1) = {1..0};
+  pragma "unsafe"
   const chpl_emptyLocales: [chpl_emptyLocaleSpace] locale;
 
   //
@@ -240,6 +247,7 @@ module LocaleModel {
   class RootLocale : AbstractRootLocale {
 
     const myLocaleSpace: domain(1) = {0..numLocales-1};
+    pragma "unsafe"
     var myLocales: [myLocaleSpace] locale;
 
     proc init() {
@@ -273,7 +281,7 @@ module LocaleModel {
       f <~> name;
     }
 
-    override proc getChildCount() return this.myLocaleSpace.numIndices;
+    override proc getChildCount() return this.myLocaleSpace.size;
 
     proc getChildSpace() return this.myLocaleSpace;
 

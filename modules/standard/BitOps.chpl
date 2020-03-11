@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2020 Cray Inc.
+ * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -21,7 +21,7 @@
   Bitwise operations implemented using C intrinsics when possible.
  */
 module BitOps {
-  private use BitOps_internal only;
+  import BitOps_internal;
 
   /*
     Count leading zeros in `x`.
