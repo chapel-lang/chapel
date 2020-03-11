@@ -28,7 +28,7 @@ const dd2 = new BlockDim(numLocales=tl2,
 
 const space = {1..n, 1..n+1};
 const AbD
-  : domain(2, int) dmapped DimensionalDist2D(mylocs!, dd1, dd2, "dim")
+  : domain(2, int) dmapped DimensionalDist2D(mylocs, dd1, dd2, "dim")
   = space;
 
 var Ab: [AbD] int;

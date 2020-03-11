@@ -119,7 +119,7 @@ class ForceEAM : Force {
   override proc epilogue() : void {
 if useChplVis then tagVdebug("setupEAMForce");
     const boxSpace = {1..numBoxes(1), 1..numBoxes(2), 1..numBoxes(3)};
-    const distSpace = boxSpace dmapped Block(boundingBox=boxSpace, targetLocales=locGrid!);
+    const distSpace = boxSpace dmapped Block(boundingBox=boxSpace, targetLocales=locGrid);
     var eamDom : [locDom] unmanaged EAMDomain?;
     coforall ijk in locDom {
       on locGrid[ijk] {
