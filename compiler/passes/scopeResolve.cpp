@@ -1902,11 +1902,25 @@ static bool lookupThisScopeAndUses(const char*           name,
                 }
               }
             }
-
-          } else if (!isImportStmt(stmt)) {
-            // break on each new depth if a symbol has been found, but don't
-            // traverse import statements at this stage, we need to only look
-            // for explicitly named symbols
+          } else if (ImportStmt* import = toImportStmt(stmt)) {
+            // Only traverse import statements that define a symbol with this
+            // name for unqualified access.  We're only looking for explicitly
+            // named symbols
+            if (import->skipSymbolSearch(name) == false) {
+              BaseAST* scopeToUse = import->getSearchScope();
+              if (Symbol* sym = inSymbolTable(name, scopeToUse)) {
+                if (sym->hasFlag(FLAG_PRIVATE) == true) {
+                  if (sym->isVisible(context) == true &&
+                      isRepeat(sym, symbols)  == false) {
+                    symbols.push_back(sym);
+                  }
+                } else if (isRepeat(sym, symbols) == false) {
+                  symbols.push_back(sym);
+                }
+              }
+            }
+          } else {
+            // break on each new depth if a symbol has been found
             if (symbols.size() > 0) {
               break;
             }

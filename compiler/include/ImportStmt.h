@@ -22,6 +22,8 @@
 
 #include "stmt.h"
 
+#include <vector>
+
 class ResolveScope;
 
 class ImportStmt: public VisibilityStmt {
@@ -45,8 +47,13 @@ class ImportStmt: public VisibilityStmt {
 
   BaseAST* getSearchScope() const;
 
+  bool skipSymbolSearch(const char* name);
+
  private:
   bool checkValid(Expr* expr) const;
+
+ public:
+  std::vector<const char*> unqualified;
 };
 
 #endif

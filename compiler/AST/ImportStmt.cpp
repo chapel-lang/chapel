@@ -124,15 +124,30 @@ void ImportStmt::scopeResolve(ResolveScope* scope) {
       } else {
         if (sym->isImmediate() == true) {
           USR_FATAL(this,
-                    "'import' statements must refer to module symbols "
+                    "'import' statements must include a module symbol "
                     "(e.g., 'import <module>;')");
 
         } else if (sym->name != NULL) {
-          USR_FATAL_CONT(this,
-                         "'import' of non-module symbol %s",
-                         sym->name);
-          USR_FATAL_CONT(sym,  "Definition of symbol %s", sym->name);
-          USR_STOP();
+          // We want to only enable unqualified access of this particular symbol
+          // in the module
+          this->unqualified.push_back(sym->name);
+
+          ModuleSymbol* parentSym = toModuleSymbol(sym->defPoint->parentSymbol);
+          if (parentSym == NULL) {
+            INT_ASSERT(sym->defPoint->parentSymbol != NULL);
+            USR_FATAL_CONT(this, "only the last symbol in an 'import' "
+                           "statement's path can be something other than a "
+                           "module");
+            USR_PRINT(this, "'%s' is not a module",
+                      sym->defPoint->parentSymbol->name);
+            USR_STOP();
+          } else if (this->isARename()) {
+            // This shouldn't be too hard, though.
+            USR_FATAL(this, "renaming imported symbols that aren't modules is "
+                      "not currently supported");
+          }
+          scope->enclosingModule()->moduleUseAdd(parentSym);
+          updateEnclosingBlock(scope, parentSym);
 
         } else {
           INT_FATAL(this, "'import' of non-module symbol");
@@ -140,7 +155,8 @@ void ImportStmt::scopeResolve(ResolveScope* scope) {
       }
     } else {
       if (UnresolvedSymExpr* import = toUnresolvedSymExpr(src)) {
-        USR_FATAL(this, "Cannot find module '%s'", import->unresolved);
+        USR_FATAL(this, "Cannot find module or symbol '%s'",
+                  import->unresolved);
       } else {
         INT_FATAL(this, "Cannot find module");
       }
@@ -213,8 +229,8 @@ bool ImportStmt::checkValid(Expr* expr) const {
 
     } else {
       USR_FATAL(this,
-                "'import' statements must refer to module symbols "
-                "(e.g., 'import <module>[.<submodule>]*;')");
+                "'import' statement paths must start with at least one module "
+                "symbol (e.g., 'import <module>[.<submodule>]*;')");
     }
 
   } else if (SymExpr* symExpr = toSymExpr(expr)) {
@@ -222,9 +238,10 @@ bool ImportStmt::checkValid(Expr* expr) const {
       retval = true;
 
     } else {
+      // This probably should be an INT_FATAL
       USR_FATAL(this,
-                "'import' statements must refer to module symbols "
-                "(e.g., 'import <module>[.<submodule>]*;')");
+                "'import' statement paths must start with at least one module "
+                "symbol (e.g., 'import <module>[.<submodule>]*;')");
     }
 
   } else {
@@ -232,4 +249,29 @@ bool ImportStmt::checkValid(Expr* expr) const {
   }
 
   return retval;
+}
+
+/************************************* | **************************************
+*                                                                             *
+* Determine whether the import permits us to search for a symbol with the     *
+* given name.  Returns true ("should skip") if the import doesn't specify any *
+* symbols for unqualified access, or if the name provided does not match any  *
+* of them                                                                     *
+*                                                                             *
+************************************** | *************************************/
+
+bool ImportStmt::skipSymbolSearch(const char* name) {
+  // We don't define any symbols for unqualified access, so we should skip this
+  // import
+  if (unqualified.size() == 0) {
+    return true;
+  } else {
+    // Otherwise, look through the list of unqualified symbol names to see if
+    // this one was listed
+    for_vector(const char, toCheck, unqualified) {
+      if (toCheck == name)
+        return false;
+    }
+    return true;
+  }
 }
