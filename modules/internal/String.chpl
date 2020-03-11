@@ -2271,12 +2271,6 @@ module String {
     return __primitive("string_concat", a, b);
 
   pragma "no doc"
-  inline proc ascii(param a: string) param {
-    compilerWarning("ascii is deprecated - please use string.toByte or string.byte");
-    return __primitive("ascii", a);
-  }
-
-  pragma "no doc"
   inline proc param string.toByte() param : uint(8) {
     if this.numBytes != 1 then
       compilerError("string.toByte() only accepts single-byte strings");
@@ -2442,49 +2436,6 @@ module String {
     pragma "fn synchronization free"
     extern proc towupper(wc: wint_t): wint_t;
     return towupper(c: wint_t): int(32);
-  }
-
-  //
-  // ascii
-  // TODO: replace with ordinal()
-  //
-  /*
-     :returns: The byte value of the first character in `a` as an integer.
-
-      .. warning::
-
-          This method is deprecated. Use `toByte` or `byte` methods,
-          instead.
-  */
-  inline proc ascii(a: string) : uint(8) {
-    compilerWarning("ascii is deprecated - please use string.toByte or string.byte");
-    if a.isEmpty() then return 0;
-
-    if _local || a.locale_id == chpl_nodeID {
-      // the string must be local so we can index into buff
-      return a.buff[0];
-    } else {
-      // a[1] grabs the first character as a string (making it local)
-      return a[1].buff[0];
-    }
-  }
-
-  /*
-     :returns: A string with the single character with the ASCII value `i`.
-
-      .. warning::
-
-          This method is deprecated. Use `codepointToString` method,
-          instead.
-  */
-  inline proc asciiToString(i: uint(8)) {
-    compilerWarning("asciiToString is deprecated - please use codepointToString instead");
-    var buffer = bufferAllocExact(2);
-    buffer[0] = i;
-    buffer[1] = 0;
-    try! {
-      return createStringWithOwnedBuffer(buffer, 1, 2);
-    }
   }
 
   /*
