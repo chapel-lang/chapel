@@ -64,7 +64,8 @@ module LocaleModel {
     }
     override proc chpl_localeid() {
       return chpl_buildLocaleID(
-          (parent._instance:LocaleModel)._node_id:chpl_nodeID_t, sid);
+          (parent._instance: borrowed LocaleModel?)!._node_id:chpl_nodeID_t,
+          sid);
     }
     override proc chpl_name() return ndName;
 
@@ -161,20 +162,21 @@ module LocaleModel {
     //
     // The numa memory model currently assumes only one memory.
     //
-    proc defaultMemory() : locale {
-      return this;
+    // ENGIN: Are these ever used?
+    override proc defaultMemory() : locale {
+      return new locale(this);
     }
 
-    proc largeMemory() : locale {
-      return this;
+    override proc largeMemory() : locale {
+      return new locale(this);
     }
 
-    proc lowLatencyMemory() : locale {
-      return this;
+    override proc lowLatencyMemory() : locale {
+      return new locale(this);
     }
 
-    proc highBandwidthMemory() : locale {
-      return this;
+    override proc highBandwidthMemory() : locale {
+      return new locale(this);
     }
 
     proc getChildSpace() return childSpace;

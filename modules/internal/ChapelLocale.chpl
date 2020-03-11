@@ -152,11 +152,60 @@ module ChapelLocale {
     inline proc maxTaskPar { return this._instance!.maxTaskPar; }
     inline proc callStackSize { return this._instance!.callStackSize; }
 
-    // for now this is the only thing failing due to promoted forwarding
-    inline
-    proc numPUs(logical: bool = false, accessible: bool = true) {
+    // the following are normally taken care of by `forwarding`. However, they
+    // don't work if they are called in a promoted expression. See 15148
+    inline proc numPUs(logical: bool = false, accessible: bool = true) {
       return this._instance!.numPUs();
     }
+
+    inline proc id {
+      return this._instance!.id;
+    }
+
+    inline proc localeid {
+      return this._instance!.localeid;
+    }
+
+    inline proc hostname {
+      return this._instance!.hostname;
+    }
+
+    inline proc name {
+      return this._instance!.name;
+    }
+
+    inline proc chpl_id() {
+      return this._instance!.chpl_id();
+    }
+
+    inline proc chpl_localeid() {
+      return this._instance!.chpl_localeid();
+    }
+
+    inline proc chpl_name() {
+      return this._instance!.chpl_name();
+    }
+
+    inline proc defaultMemory() {
+      return this._instance!.defaultMemory();
+    }
+
+    inline proc largeMemory() {
+      return this._instance!.largeMemory();
+    }
+
+    inline proc lowLatencyMemory() {
+      return this._instance!.lowLatencyMemory();
+    }
+
+    inline proc highBandwidthMemory() {
+      return this._instance!.highBandwidthMemory();
+    }
+
+    inline proc getChildCount() {
+      return this._instance!.getChildCount();
+    }
+
   } // end of record _locale
 
   proc =(ref l1: locale, const ref l2: locale) {

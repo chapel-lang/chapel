@@ -106,19 +106,19 @@ module LocaleModel {
     // The flat memory model assumes only one memory.
     //
     override proc defaultMemory() : locale {
-      return this;
+      return new locale(this);
     }
 
     override proc largeMemory() : locale {
-      return this;
+      return new locale(this);
     }
 
     override proc lowLatencyMemory() : locale {
-      return this;
+      return new locale(this);
     }
 
     override proc highBandwidthMemory() : locale {
-      return this;
+      return new locale(this);
     }
 
     proc getChildSpace() return chpl_emptyLocaleSpace;
