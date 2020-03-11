@@ -107,14 +107,12 @@ void* chpl_mem_array_realloc(void* p, size_t oldNmemb, size_t newNmemb,
   // Support for dynamic array registration by comm layers is done here
   // via *callPostAlloc, the same as for chpl_mem_array_alloc().  See
   // there for further information.
-  /*
-    TODO:
-  chpl_memhook_malloc_pre(nmemb, eltSize, CHPL_RT_MD_ARRAY_ELEMENTS,
-                          lineno, filename);
-  */
+
+  const size_t newSize = newNmemb * eltSize;
+  chpl_memhook_realloc_pre(p, newSize, CHPL_RT_MD_ARRAY_ELEMENTS,
+                           lineno, filename);
 
   const size_t oldSize = oldNmemb * eltSize;
-  const size_t newSize = newNmemb * eltSize;
   void* newp = NULL;
   *callPostAlloc = false;
   if (chpl_mem_size_justifies_comm_alloc(oldSize)) {
@@ -130,7 +128,7 @@ void* chpl_mem_array_realloc(void* p, size_t oldNmemb, size_t newNmemb,
     newp = chpl_realloc(p, newSize);
   }
 
-  if (newp != p && newp != NULL) {
+  if (newp != p) {
     //
     // We allocated new memory.  Copy the existing bytes.  If we're on
     // a NUMA compute node this will result in locality that matches
@@ -142,11 +140,8 @@ void* chpl_mem_array_realloc(void* p, size_t oldNmemb, size_t newNmemb,
     memcpy(newp, p, oldSize);
   }
 
-  /*
-  TODO:
-  chpl_memhook_malloc_post(p, nmemb, eltSize, CHPL_RT_MD_ARRAY_ELEMENTS,
+  chpl_memhook_realloc_post(newp, p, newSize, CHPL_RT_MD_ARRAY_ELEMENTS,
                            lineno, filename);
-  */
 
   return newp;
 }
