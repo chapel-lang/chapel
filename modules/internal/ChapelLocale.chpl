@@ -576,7 +576,17 @@ module ChapelLocale {
         rootLocale = origRootLocale;
         rootLocaleInitialized = true;
       }
-      doneCreatingLocales = true;
+
+      // currently, standalone version of this iterator is not called, but just
+      // to be sure, at the end, visit all locales and set their locale-private
+      // `doneCreatingLocales`
+      for locIdx in 0..#numLocales /*ref(b)*/ {
+        on __primitive("chpl_on_locale_num",
+                       chpl_buildLocaleID(locIdx:chpl_nodeID_t,
+                                          c_sublocid_any)) {
+          doneCreatingLocales = true;
+        }
+      }
     }
 
     // Since we are going on to all the locales here, we use the
@@ -597,9 +607,12 @@ module ChapelLocale {
           b.wait(locIdx, flags);
           chpl_rootLocaleInitPrivate(locIdx);
           warmupRuntime();
+          
+          // this is a locale-private variable, so it needs to be set inside the
+          // coforall-on
+          doneCreatingLocales = true;
         }
       }
-      doneCreatingLocales = true;
     }
   }
 
