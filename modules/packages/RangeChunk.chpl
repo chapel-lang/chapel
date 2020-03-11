@@ -111,25 +111,25 @@ module RangeChunk {
     if (nTasks <= 0) then
       halt("nTasks must be a positive number");
 
-    var range_stride = r.stride;
-    var block_stride = blockSize * range_stride;
+    var rangeStride = r.stride;
+    var blockStride = blockSize * rangeStride;
     var low = r.low;
     var high = r.high;
-    var first_block_start = (if range_stride > 0 then r.low  else r.high) +
-                            block_stride * tid;
-    if first_block_start > r.high || first_block_start < r.low then return;
+    var firstBlockStart = (if rangeStride > 0 then r.low  else r.high) +
+                            blockStride * tid;
+    if firstBlockStart > r.high || firstBlockStart < r.low then return;
 
-    var stride_to_next_block = block_stride * nTasks;
+    var strideToNextBlock = blockStride * nTasks;
   
-    if range_stride > 0 {
-      for block_start in first_block_start..high by stride_to_next_block {
-        var block_end = min(high, block_start + block_stride - 1);
-        yield block_start..block_end by range_stride;
+    if rangeStride > 0 {
+      for blockStart in firstBlockStart..high by strideToNextBlock {
+        var blockEnd = min(high, blockStart + blockStride - 1);
+        yield blockStart..blockEnd by rangeStride;
       }
     } else {
-      for block_end in low..first_block_start by stride_to_next_block {
-        var block_start = max(low, block_end + block_stride + 1);
-        yield block_start..block_end by range_stride;
+      for blockEnd in low..firstBlockStart by strideToNextBlock {
+        var blockStart = max(low, blockEnd + blockStride + 1);
+        yield blockStart..blockEnd by rangeStride;
       }
     }
   }
