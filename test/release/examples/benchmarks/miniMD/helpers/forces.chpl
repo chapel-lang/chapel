@@ -47,7 +47,7 @@ class ForceEAM : Force  {
 
   var FP: [DistSpace] [perBinSpace] real;
               
-  var funcfl = new owned Funcfl();
+  var funcfl = new Funcfl();
 
   proc init(cf : real) {
     this.complete();
