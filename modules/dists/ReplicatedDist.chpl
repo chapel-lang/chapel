@@ -145,7 +145,7 @@ override proc Replicated.dsiDestroyDist() {
 
 // privatization
 
-proc Replicated.dsiSupportsPrivatization() param return true;
+override proc Replicated.dsiSupportsPrivatization() param return true;
 
 proc Replicated.dsiGetPrivatizeData() {
   if traceReplicatedDist then writeln("Replicated.dsiGetPrivatizeData");

@@ -83,7 +83,7 @@ class Private: BaseDist {
   proc trackDomains() param return false;
   override proc dsiTrackDomains()    return false;
 
-  proc singleton() param return true;
+  override proc singleton() param return true;
 }
 
 class PrivateDom: BaseRectangularDom {
@@ -128,7 +128,7 @@ class PrivateDom: BaseRectangularDom {
   }
 
   proc dsiRequiresPrivatization() param return true;
-  proc linksDistribution() param return false;
+  override proc linksDistribution() param return false;
   override proc dsiLinksDistribution()     return false;
 
   proc dsiGetPrivatizeData() return 0;

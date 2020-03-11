@@ -1257,7 +1257,7 @@ proc Block.init(other: Block, privateData,
   this.sparseLayoutType = sparseLayoutType;
 }
 
-proc Block.dsiSupportsPrivatization() param return true;
+override proc Block.dsiSupportsPrivatization() param return true;
 
 proc Block.dsiGetPrivatizeData() {
   return (boundingBox.dims(), targetLocDom.dims(),
@@ -1344,7 +1344,7 @@ proc type BlockArr.chpl__deserialize(data) {
            data);
 }
 
-proc BlockArr.dsiSupportsPrivatization() param return true;
+override proc BlockArr.dsiSupportsPrivatization() param return true;
 
 record BlockArrPrvData {
   var dompid;

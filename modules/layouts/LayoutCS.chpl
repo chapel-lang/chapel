@@ -95,7 +95,7 @@ class CS: BaseDist {
     return false;
   }
 
-  proc dsiIsLayout() param {
+  override proc dsiIsLayout() param {
     return true;
   }
 } // CS

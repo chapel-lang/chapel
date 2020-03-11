@@ -958,7 +958,7 @@ iter AccumStencilArr.these(param tag: iterKind) where tag == iterKind.leader {
     yield followThis;
 }
 
-proc AccumStencilArr.dsiStaticFastFollowCheck(type leadType) param
+override proc AccumStencilArr.dsiStaticFastFollowCheck(type leadType) param
   return leadType == this.type || leadType == this.dom.type;
 
 proc AccumStencilArr.dsiDynamicFastFollowCheck(lead: [])
@@ -1503,7 +1503,7 @@ proc AccumStencil.dsiReprivatize(other, reprivatizeData) {
   dataParMinGranularity = other.dataParMinGranularity;
 }
 
-proc AccumStencilDom.dsiSupportsPrivatization() param return true;
+override proc AccumStencilDom.dsiSupportsPrivatization() param return true;
 
 proc AccumStencilDom.dsiGetPrivatizeData() return (dist.pid, whole.dims());
 

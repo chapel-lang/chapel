@@ -655,7 +655,7 @@ proc LocDimensionalDom.deinit() {
 
 //== privatization
 
-proc DimensionalDom.dsiSupportsPrivatization() param return true;
+override proc DimensionalDom.dsiSupportsPrivatization() param return true;
 
 proc DimensionalDom.dsiGetPrivatizeData() {
   _traceddd(this, ".dsiGetPrivatizeData");

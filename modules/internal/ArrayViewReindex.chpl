@@ -91,7 +91,7 @@ module ArrayViewReindex {
       //      _delete_dom(downdomInst, _isPrivatized(downdomInst));
     }
 
-    proc dsiIsLayout() param {
+    override proc dsiIsLayout() param {
       return downDistInst.dsiIsLayout();
     }
   }
@@ -676,7 +676,7 @@ module ArrayViewReindex {
       }
     }
 
-    proc doiCanBulkTransferRankChange() param
+    override proc doiCanBulkTransferRankChange() param
       return arr.doiCanBulkTransferRankChange();
 
     proc doiBulkTransferFromKnown(destDom, srcClass, srcDom) : bool {
