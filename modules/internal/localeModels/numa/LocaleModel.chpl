@@ -197,7 +197,7 @@ module LocaleModel {
 
     iter getChildren() : locale  {
       for loc in childLocales do
-        yield loc;
+        yield new locale(loc);
     }
 
     proc getChildArray() {
