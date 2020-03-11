@@ -338,15 +338,6 @@ proc test9d() {
 }
 test9d();
 
-proc test10() {
-  writeln("test10");
-  var x = new R(1);
-  ref r = x;
-
-  var y = r;
-}
-test10();
-
 proc test11() {
   writeln("test11");
   var x = new R(1);
@@ -365,3 +356,157 @@ proc test12() {
   }
 }
 test12();
+
+proc test13a() {
+  writeln("test13a");
+  var x = new R(1);
+  var y;
+
+  {
+    if option {
+      return;
+    } else {
+      y = x;
+    }
+  }
+}
+test13a();
+
+proc test13b() {
+  writeln("test13b");
+  var x = new R(1);
+  var y;
+
+  if option {
+    y = x;
+  } else {
+    return;
+  }
+}
+test13b();
+
+proc test13c() throws {
+  writeln("test13c");
+  var x = new R(1);
+  var y;
+
+  if option {
+    throw new Error();
+  } else {
+    y = x;
+  }
+}
+try { test13c(); } catch e { writeln(e); }
+
+proc test13d() throws {
+  writeln("test13d");
+  var x = new R(1);
+  {
+    if option {
+      var y = x;
+    } else {
+      throw new Error();
+    }
+  }
+}
+try { test13d(); } catch e { writeln(e); }
+
+proc test14a() {
+  writeln("test14a");
+  var x = new R(1);
+
+  if option {
+    var y = x;
+    return;
+  }
+}
+test14a();
+
+proc test14b() {
+  writeln("test14b");
+  var x = new R(1);
+
+  if !option {
+    var y = x;
+    return;
+  }
+}
+test14b();
+
+proc test14c() throws {
+  writeln("test14c");
+  var x = new R(1);
+
+  if option {
+    var y = x;
+    throw new Error();
+  }
+}
+try { test14c(); } catch e { writeln(e); }
+
+proc test14d() throws {
+  writeln("test14d");
+  var x = new R(1);
+
+  if option {
+    var y = x;
+    throw new Error();
+  }
+}
+try { test14d(); } catch e { writeln(e); }
+
+proc test15() {
+  writeln("test15");
+  var x = new R(1);
+
+  if option {
+    var y;
+    if option {
+      y = x;
+    } else {
+      y = x;
+    }
+    return;
+  }
+}
+test15();
+
+proc test16a() {
+  writeln("test16a");
+  var x = new R(1);
+  if option {
+    var y = x;
+  } else {
+  }
+}
+test16a();
+
+proc test16b() {
+  writeln("test16b");
+  var x = new R(1);
+  if option {
+  } else {
+    var y = x;
+  }
+}
+test16b();
+
+proc test16c() {
+  writeln("test16c");
+  var x = new R(1);
+  if !option {
+    var y = x;
+  } else {
+  }
+}
+test16c();
+
+proc test16d() {
+  writeln("test16d");
+  var x = new R(1);
+  if !option {
+  } else {
+    var y = x;
+  }
+}
+test16d();

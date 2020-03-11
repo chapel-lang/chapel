@@ -25,6 +25,7 @@
 class CallExpr;
 class DefExpr;
 class Expr;
+class FnSymbol;
 class Symbol;
 class SymExpr;
 class VarSymbol;
@@ -39,13 +40,6 @@ bool findInitPoints(CallExpr* defaultInit,
                     Expr*& usePreventingSplitInit,
                     bool allowReturns);
 
-// If call is a copy initialization call (e.g. chpl__autoCopy)
-// with var as the argument, return the symbol capturing the result.
-// Otherwise, returns NULL.
-Symbol* findCopyElisionCandidate(CallExpr* call, VarSymbol* var);
-
-bool findCopyElisionPoints(VarSymbol* var,
-                           Expr* cur,
-                           std::vector<CallExpr*>& points);
+void elideCopies(FnSymbol* fn);
 
 #endif

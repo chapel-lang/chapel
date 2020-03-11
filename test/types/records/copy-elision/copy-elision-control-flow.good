@@ -101,15 +101,56 @@ deinit 1 1
 test9d
 init 1 1
 deinit 1 1
-test10
-init 1 1
-init= 1 1
-deinit 1 1
-deinit 1 1
 test11
 init 1 1
 deinit 1 1
 test12
+init 1 1
+init= 1 1
+deinit 1 1
+deinit 1 1
+test13a
+init 1 1
+deinit 1 1
+test13b
+init 1 1
+deinit 1 1
+test13c
+init 1 1
+deinit 1 1
+Error: 
+test13d
+init 1 1
+deinit 1 1
+test14a
+init 1 1
+deinit 1 1
+test14b
+init 1 1
+deinit 1 1
+test14c
+init 1 1
+deinit 1 1
+Error: 
+test14d
+init 1 1
+deinit 1 1
+Error: 
+test15
+init 1 1
+deinit 1 1
+test16a
+init 1 1
+init= 1 1
+deinit 1 1
+deinit 1 1
+test16b
+init 1 1
+deinit 1 1
+test16c
+init 1 1
+deinit 1 1
+test16d
 init 1 1
 init= 1 1
 deinit 1 1

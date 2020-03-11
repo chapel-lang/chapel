@@ -304,3 +304,13 @@ proc test2dD() {
 }
 { writeln(test2dD()); }
 
+proc test13() {
+  writeln("test13");
+  var x = new R(1);
+  proc inner() {
+    writeln(x);
+  }
+  var y = x;
+  inner();
+}
+test13();

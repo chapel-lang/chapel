@@ -43,7 +43,7 @@ static VarSymbol* variableToExclude(FnSymbol*  fn, Expr* refStmt);
 
 static BlockStmt* findBlockForTarget(GotoStmt* stmt);
 
-static void deinitializeOrCopyElide(Expr* before, Expr* after, VarSymbol* var);
+static void deinitialize(Expr* before, Expr* after, VarSymbol* var);
 
 AutoDestroyScope::AutoDestroyScope(AutoDestroyScope* parent,
                                    const BlockStmt* block) {
@@ -137,21 +137,33 @@ void AutoDestroyScope::deferAdd(DeferStmt* defer) {
 
 void AutoDestroyScope::addInitialization(VarSymbol* var) {
   // Note: this will be called redundantly.
-  for (AutoDestroyScope* cur = this; cur != NULL; cur = cur->mParent) {
-    if (cur->mInitedVars.insert(var).second) {
+  for (AutoDestroyScope* scope = this; scope != NULL; scope = scope->mParent) {
+    if (scope->mInitedVars.insert(var).second) {
       // An insertion occured, meaning this was the first
       // thing that looked like initialization for this variable.
 
-      if (cur->mDeclaredVars.count(var) > 0) {
+      if (scope->mDeclaredVars.count(var) > 0) {
         // Add it to mDeclaredVars at the declaration scope.
-        cur->mLocalsAndDefers.push_back(var);
+        scope->mLocalsAndDefers.push_back(var);
         break;
       } else {
         // Or add it to mInitedOuterVars at inner scopes.
-        cur->mInitedOuterVars.push_back(var);
+        scope->mInitedOuterVars.push_back(var);
       }
     }
   }
+}
+
+void AutoDestroyScope::addEarlyDeinit(VarSymbol* var) {
+  for (AutoDestroyScope* cur = this; cur != NULL; cur = cur->mParent) {
+    cur->mDeinitedVars.insert(var);
+
+    if (cur->mDeclaredVars.count(var) > 0) {
+      return;
+    }
+  }
+
+  INT_FATAL("could not find scope declaring var");
 }
 
 VarSymbol* AutoDestroyScope::findVariableUsedBeforeInitialized(Expr* stmt) {
@@ -199,10 +211,31 @@ void AutoDestroyScope::forgetOuterVariableInitializations() {
       }
     }
   }
+
+  // iterate through DeinitedVars
+  for_set (VarSymbol, var, mDeinitedVars) {
+    // clear it from any parent scopes, stoping at the declaration point
+    for (AutoDestroyScope* s = this->mParent; s != NULL; s = s->mParent) {
+      s->mDeinitedVars.erase(var);
+
+      if (s->mDeclaredVars.count(var) > 0) {
+        break;
+      }
+    }
+  }
 }
 
 std::vector<VarSymbol*> AutoDestroyScope::getInitedOuterVars() const {
   return mInitedOuterVars;
+}
+
+std::vector<VarSymbol*> AutoDestroyScope::getDeinitedOuterVars() const {
+  std::vector<VarSymbol*> ret;
+  for_set (VarSymbol, var, mDeinitedVars) {
+    if (mDeclaredVars.count(var) == 0)
+      ret.push_back(var);
+  }
+  return ret;
 }
 
 AutoDestroyScope* AutoDestroyScope::getParentScope() const {
@@ -284,7 +317,7 @@ void AutoDestroyScope::insertAutoDestroys(FnSymbol* fn, Expr* refStmt,
   mLocalsHandled = true;
 }
 
-static void deinitializeOrCopyElide(Expr* before, Expr* after, VarSymbol* var) {
+static void deinitialize(Expr* before, Expr* after, VarSymbol* var) {
   if (isAutoDestroyedVariable(var) == false)
     return; // nothing to do for variables not to be auto-destroyed
 
@@ -294,47 +327,21 @@ static void deinitializeOrCopyElide(Expr* before, Expr* after, VarSymbol* var) {
 
   INT_ASSERT(autoDestroyFn->hasFlag(FLAG_AUTO_DESTROY_FN));
 
-  std::vector<CallExpr*> copiesToElide;
-  bool elideCopies = false;
-
-  // Check to see if copy-elision is possible.
-  if (fNoCopyElision == false) {
-    Expr* cur = NULL;
-    if (after != NULL) cur = after;
-    if (before != NULL) cur = before->prev;
-
-    elideCopies = findCopyElisionPoints(var, cur, copiesToElide);
-  }
-
-  if (elideCopies == false) {
-    BaseAST* useLoc = before?before:after;
-    SET_LINENO(useLoc);
-    CallExpr* autoDestroy = new CallExpr(autoDestroyFn, var);
-    if (before)
-      before->insertBefore(autoDestroy);
-    else
-      after->insertAfter(autoDestroy);
-  } else {
-    for_vector (CallExpr, elide, copiesToElide) {
-      Symbol* lhs = findCopyElisionCandidate(elide, var);
-      INT_ASSERT(lhs != NULL); // or shouldn't be in vector
-
-      SET_LINENO(elide);
-      // Change the copy into a move and don't destroy the variable.
-      elide->convertToNoop();
-      elide->insertBefore(new CallExpr(PRIM_ASSIGN_ELIDED_COPY, lhs, var));
-      var->addFlag(FLAG_MAYBE_COPY_ELIDED);
-    }
-  }
+  BaseAST* useLoc = before?before:after;
+  SET_LINENO(useLoc);
+  CallExpr* autoDestroy = new CallExpr(autoDestroyFn, var);
+  if (before)
+    before->insertBefore(autoDestroy);
+  else
+    after->insertAfter(autoDestroy);
 }
 
 void AutoDestroyScope::destroyVariable(Expr* after, VarSymbol* var,
                                        const std::set<VarSymbol*>& ignored) {
   INT_ASSERT(!var->hasFlag(FLAG_FORMAL_TEMP));
 
-  if (ignored.count(var) == 0) {
-    deinitializeOrCopyElide(NULL, after, var);
-  }
+  if (ignored.count(var) == 0 && isVariableInitialized(var))
+    deinitialize(NULL, after, var);
 }
 
 // Destroy outer variables and add them to the ignored set
@@ -347,8 +354,8 @@ void AutoDestroyScope::destroyOuterVariables(Expr* before,
     VarSymbol* var = mInitedOuterVars[count - i];
     INT_ASSERT(!var->hasFlag(FLAG_FORMAL_TEMP));
 
-    if (ignored.count(var) == 0) {
-      deinitializeOrCopyElide(before, NULL, var);
+    if (ignored.count(var) == 0 && isVariableInitialized(var)) {
+      deinitialize(before, NULL, var);
       ignored.insert(var);
     }
   }
@@ -429,7 +436,7 @@ void AutoDestroyScope::variablesDestroy(Expr*      refStmt,
                                        var->hasFlag(FLAG_FORMAL_TEMP_OUT);
           // No deinit for out formal returns - deinited at call site
           if (outIntentFormalReturn == false)
-            deinitializeOrCopyElide(insertBeforeStmt, NULL, var);
+            deinitialize(insertBeforeStmt, NULL, var);
         }
       }
 
@@ -453,7 +460,8 @@ bool AutoDestroyScope::isVariableInitialized(VarSymbol* var) const {
        scope != NULL;
        scope = scope->mParent) {
     if (scope->mInitedVars.count(var) > 0)
-      return true;
+      if (scope->mDeinitedVars.count(var) == 0)
+        return true;
   }
 
   return false;

@@ -32,6 +32,7 @@
 
 #include "CatchStmt.h"
 #include "expr.h"
+#include "errorHandling.h"
 #include "stmt.h"
 #include "symbol.h"
 #include "TryStmt.h"
@@ -420,123 +421,211 @@ static found_init_t doFindInitPoints(Symbol* sym,
 *                                                                             *
 ************************************** | *************************************/
 
-static found_init_t doFindCopyElisionPoints(VarSymbol* var,
-                                            Expr* start,
-                                            std::vector<CallExpr*>& points,
-                                            bool& foundEndOfStmtMentioning);
+struct CopyElisionState {
+  bool lastIsCopy;
+  bool foundEndOfStmtMentioning;
+  std::vector<CallExpr*> points;
 
-Symbol* findCopyElisionCandidate(CallExpr* call, VarSymbol* var) {
+  void reset() {
+    points.clear();
+    lastIsCopy = false;
+    foundEndOfStmtMentioning = true;
+  }
+};
+
+typedef std::map<VarSymbol*, CopyElisionState> VarToCopyElisionState;
+
+
+static bool doFindCopyElisionPoints(Expr* start, VarToCopyElisionState& map);
+
+// If call is a copy initialization call (e.g. chpl__autoCopy)
+// return the lhs and rhs variables representing the copy.
+static bool findCopyElisionCandidate(CallExpr* call,
+                                     Symbol*& lhs, Symbol*& rhs) {
   // a call to init=
-  if (call->isNamedAstr(astrInitEquals))
-    if (call->numActuals() >= 2)
-      if (SymExpr* lhsSe = toSymExpr(call->get(1)))
-        if (SymExpr* rhsSe = toSymExpr(call->get(2)))
-          if (lhsSe->getValType() == rhsSe->getValType())
-            if (rhsSe->symbol() == var)
-              return lhsSe->symbol();
+  if (call->isNamedAstr(astrInitEquals)) {
+    if (call->numActuals() >= 2) {
+      if (SymExpr* lhsSe = toSymExpr(call->get(1))) {
+        if (SymExpr* rhsSe = toSymExpr(call->get(2))) {
+          if (lhsSe->getValType() == rhsSe->getValType()) {
+            lhs = lhsSe->symbol();
+            rhs = rhsSe->symbol();
+            return true;
+          }
+        }
+      }
+    }
+  }
 
   // a PRIM_MOVE / PRIM_ASSIGN from chpl__initCopy / chpl__autoCopy
-  if (call->isPrimitive(PRIM_MOVE) || call->isPrimitive(PRIM_ASSIGN))
-    if (SymExpr* lhsSe = toSymExpr(call->get(1)))
-      if (CallExpr* rhsCall = toCallExpr(call->get(2)))
+  if (call->isPrimitive(PRIM_MOVE) || call->isPrimitive(PRIM_ASSIGN)) {
+    if (SymExpr* lhsSe = toSymExpr(call->get(1))) {
+      if (CallExpr* rhsCall = toCallExpr(call->get(2))) {
         if (rhsCall->isNamed("chpl__initCopy") ||
-            rhsCall->isNamed("chpl__autoCopy"))
-          if (rhsCall->numActuals() >= 1)
-            if (SymExpr* rhsSe = toSymExpr(rhsCall->get(1)))
-              if (lhsSe->getValType() == rhsSe->getValType())
-                if (rhsSe->symbol() == var)
-                  return lhsSe->symbol();
+            rhsCall->isNamed("chpl__autoCopy")) {
+          if (rhsCall->numActuals() >= 1) {
+            if (SymExpr* rhsSe = toSymExpr(rhsCall->get(1))) {
+              if (lhsSe->getValType() == rhsSe->getValType()) {
+                lhs = lhsSe->symbol();
+                rhs = rhsSe->symbol();
+                return true;
+              }
+            }
+          }
+        }
+      }
+    }
+  }
 
   // a chpl__initCopy / chpl__autoCopy returning through RVV
-  if (call->isNamed("chpl__initCopy") || call->isNamed("chpl__autoCopy"))
-    if (FnSymbol* calledFn = call->resolvedFunction())
-      if (calledFn->hasFlag(FLAG_FN_RETARG) && call->numActuals() >= 2)
-        if (SymExpr* rhsSe = toSymExpr(call->get(1)))
-          if (SymExpr* lhsSe = toSymExpr(call->get(2)))
-            if (lhsSe->getValType() == rhsSe->getValType())
-              if (rhsSe->symbol() == var)
-                return lhsSe->symbol();
+  if (call->isNamed("chpl__initCopy") || call->isNamed("chpl__autoCopy")) {
+    if (FnSymbol* calledFn = call->resolvedFunction()) {
+      if (calledFn->hasFlag(FLAG_FN_RETARG) && call->numActuals() >= 2) {
+        if (SymExpr* rhsSe = toSymExpr(call->get(1))) {
+          if (SymExpr* lhsSe = toSymExpr(call->get(2))) {
+            if (lhsSe->getValType() == rhsSe->getValType()) {
+              lhs = lhsSe->symbol();
+              rhs = rhsSe->symbol();
+              return true;
+            }
+          }
+        }
+      }
+    }
+  }
 
-  return NULL;
+  return false;
 }
 
-// Making FOUND_COPY another name for FOUND_INIT allows us to use the enum
-#define FOUND_COPY FOUND_INIT
+static void doElideCopies(VarToCopyElisionState &map) {
+  for (VarToCopyElisionState::iterator it = map.begin();
+       it != map.end();
+       ++it) {
+    VarSymbol* var = it->first;
+    CopyElisionState& state = it->second;
 
-// When 'start' is a return/throw (or a block containing that, e.g),
-// decide whether the variable should be considered copy elided
-// by an earlier applicable initialization.
-static found_init_t handleReturnForCopy(found_init_t foundReturn,
-                                        VarSymbol* var,
-                                        Expr* cur,
-                                        std::vector<CallExpr*>& points,
-                                        bool& foundEndOfStmtMentioning) {
+    if (state.lastIsCopy) {
+      std::vector<CallExpr*>& points = state.points;
+      for_vector (CallExpr, call, points) {
+        Symbol* lhs = NULL;
+        Symbol* rhs = NULL;
+        bool ok = false;
+        ok = findCopyElisionCandidate(call, lhs, rhs);
+        INT_ASSERT(ok && rhs == var);
 
-  INT_ASSERT(foundReturn == FOUND_RET || foundReturn == FOUND_THROW);
+        SET_LINENO(call);
+        // Change the copy into a move and don't destroy the variable.
+        call->convertToNoop();
+        call->insertBefore(new CallExpr(PRIM_ASSIGN_ELIDED_COPY, lhs, var));
+        var->addFlag(FLAG_MAYBE_COPY_ELIDED);
 
-  // Look for copy points before the return
-  found_init_t beforeReturn = doFindCopyElisionPoints(var,
-                                                      cur->prev,
-                                                      points,
-                                                      foundEndOfStmtMentioning);
-  if (beforeReturn == FOUND_COPY) {
-    // Copy before a throw are still initializations, e.g.
-    return FOUND_COPY;
-  } else if (beforeReturn == FOUND_USE) {
-    // use before return
-    return FOUND_USE;
-  } else {
-    // return FOUND_RET or FOUND_THROW
-    return foundReturn;
+        if (isCheckErrorStmt(call->next)) {
+          INT_FATAL("code needs adjustment for throwing initializers");
+        }
+
+      }
+    }
+  }
+
+  // these are now already handled.
+  map.clear();
+}
+
+static void noteUse(VarSymbol* var, VarToCopyElisionState& map) {
+  VarToCopyElisionState::iterator it = map.find(var);
+  if (it != map.end()) {
+    CopyElisionState& state = it->second;
+    state.reset();
   }
 }
 
+static void noteUses(Expr* e, VarToCopyElisionState& map) {
+  std::vector<SymExpr*> symExprs;
+  collectSymExprs(e, symExprs);
+  for_vector (SymExpr, se, symExprs) {
+    if (VarSymbol* var = toVarSymbol(se->symbol())) {
+      noteUse(var, map);
+    }
+  }
+}
 
-static found_init_t doFindCopyElisionPoints(VarSymbol* var,
-                                            Expr* end,
-                                            std::vector<CallExpr*>& points,
-                                            bool& foundEndOfStmtMentioning) {
+static bool canCopyElide(CallExpr* call, Symbol* lhs, Symbol* rhs) {
+  return isVarSymbol(rhs) &&
+         !rhs->isRef() &&
+         rhs->getValType() == lhs->getValType() &&
+         rhs->hasFlag(FLAG_NO_AUTO_DESTROY) == false &&
+         (rhs->hasFlag(FLAG_INSERT_AUTO_DESTROY) ||
+          rhs->hasFlag(FLAG_INSERT_AUTO_DESTROY_FOR_EXPLICIT_NEW)) &&
+         rhs->defPoint->parentSymbol == call->parentSymbol;
+}
 
-  if (end == NULL)
-    return FOUND_NOTHING;
+// returns true if there was an unconditional return
+static bool doFindCopyElisionPoints(Expr* start, VarToCopyElisionState& map) {
 
-  // Scroll backwards in the block containing start.
-  for (Expr* cur = end->getStmtExpr(); cur != NULL; cur = cur->prev) {
+  if (start == NULL)
+    return false;
+
+  // Scroll forwards in the block containing start.
+  for (Expr* cur = start->getStmtExpr(); cur != NULL; cur = cur->next) {
     // handle calls:
     //   copy-init e.g. var x = y
     //   PRIM_END_OF_STATEMENT
     if (CallExpr* call = toCallExpr(cur)) {
-      // copy-init
-      if (findCopyElisionCandidate(call, var)) {
-        points.push_back(call);
-        return FOUND_COPY;
-      }
-      // check for mentions
-      if (findSymExprFor(cur, var) != NULL) {
-        // ignore the 1st end of statement mentioning we encounter
-        if (call->isPrimitive(PRIM_END_OF_STATEMENT)) {
-          // in an end of statement marker
-          if (foundEndOfStmtMentioning) {
-            return FOUND_USE; // already encountered a statement mentioning
-          } else {
-            foundEndOfStmtMentioning = true;
-            // keep looking; ignore this end-of-statement
+      Symbol* lhs = NULL;
+      Symbol* rhs = NULL;
+      bool foundCopy = findCopyElisionCandidate(call, lhs, rhs);
+
+      // handle same-type copy-init from a variable
+      if (foundCopy && canCopyElide(call, lhs, rhs)) {
+        // copy-init from a variable
+        VarSymbol* var = toVarSymbol(rhs);
+        CopyElisionState& state = map[var];
+        state.lastIsCopy = true;
+        state.foundEndOfStmtMentioning = false;
+        state.points.clear();
+        state.points.push_back(call);
+
+      // handle PRIM_END_OF_STATEMENT
+      } else if (call->isPrimitive(PRIM_END_OF_STATEMENT)) {
+        std::vector<SymExpr*> symExprs;
+        collectSymExprs(call, symExprs);
+
+        // allow 1 end of statement following a copy elision.
+        // two loops to handle duplicate mentions of same variable in the prim
+        for_vector (SymExpr, se, symExprs) {
+          if (VarSymbol* var = toVarSymbol(se->symbol())) {
+            VarToCopyElisionState::iterator it = map.find(var);
+            if (it != map.end()) {
+              CopyElisionState& state = it->second;
+              if (state.lastIsCopy) {
+                if (state.foundEndOfStmtMentioning)
+                  state.reset();
+              }
+            }
           }
-        } else {
-          // stop the search if we found another sort of mention.
-          return FOUND_USE;
         }
+        for_vector (SymExpr, se, symExprs) {
+          if (VarSymbol* var = toVarSymbol(se->symbol())) {
+            VarToCopyElisionState::iterator it = map.find(var);
+            if (it != map.end()) {
+              CopyElisionState& state = it->second;
+              state.foundEndOfStmtMentioning = true;
+            }
+          }
+        }
+
+      // handle other calls
+      } else {
+        noteUses(cur, map);
       }
     }
 
     // var x;
     if (isDefExpr(cur)) {
-      if (findSymExprFor(cur, var) != NULL)
-        return FOUND_USE; // found a mention not in a call
-    }
+      noteUses(cur, map);
 
     // return / throw
-    if (isGotoStmt(cur) || isCallExpr(cur)) {
+    } else if (isGotoStmt(cur) || isCallExpr(cur)) {
       GotoStmt* gt = toGotoStmt(cur);
       CallExpr* call = toCallExpr(cur);
 
@@ -552,161 +641,151 @@ static found_init_t doFindCopyElisionPoints(VarSymbol* var,
       }
 
       if (regularReturn || errorReturn) {
-        found_init_t foundReturn = regularReturn ? FOUND_RET : FOUND_THROW;
-        return handleReturnForCopy(foundReturn, var, cur, points,
-                                   foundEndOfStmtMentioning);
+        doElideCopies(map);
+        return true; // don't look at dead code after this.
       }
 
-    // { var x = y }
+    // { ... }  (nested block)
     } else if (BlockStmt* block = toBlockStmt(cur)) {
 
       if (block->isLoopStmt() || block->isRealBlockStmt() == false) {
         // Loop / on / begin / etc - just check for uses
-        if (findSymExprFor(cur, var)) {
-          return FOUND_USE;
-        }
+        noteUses(cur, map);
       } else {
         // non-loop block
-        Expr* end = block->body.last();
-        found_init_t found = doFindCopyElisionPoints(var, end, points,
-                                                     foundEndOfStmtMentioning);
-        if (found == FOUND_COPY) {
-          return FOUND_COPY;
-        } else if (found == FOUND_USE) {
-          return FOUND_USE;
-        } else if (found == FOUND_RET || found == FOUND_THROW) {
-          return handleReturnForCopy(found, var, cur, points,
-                                     foundEndOfStmtMentioning);
-        }
+        Expr* start = block->body.first();
+        bool returned = doFindCopyElisionPoints(start, map);
+        if (returned)
+          return true; // stop traversing if it returned
       }
 
+    // try { ... }
+    } else if (isTryStmt(cur)) {
+      INT_FATAL("try statement not expected at this point in compilation");
 
-    // try { var x = ... }
-    } else if (TryStmt* tr = toTryStmt(cur)) {
-      Expr* end = tr->body()->body.last();
-      found_init_t foundBody = doFindCopyElisionPoints(var, end, points,
-                                                       foundEndOfStmtMentioning);
-
-      bool allCatchesRet = true;
-
-      if (foundBody == FOUND_USE)
-        return FOUND_USE;
-
-      // if there are any catches, check them for uses;
-      // also a catch block prevents initialization in the try body
-      for_alist(elt, tr->_catches) {
-        if (CatchStmt* ctch = toCatchStmt(elt)) {
-          std::vector<CallExpr*> cPts;
-          Expr* end = ctch->body()->body.last();
-          bool tmpFoundEnd = true;
-          found_init_t foundCatch = doFindCopyElisionPoints(var, end, cPts,
-                                                            tmpFoundEnd);
-          if (foundCatch == FOUND_USE || foundCatch == FOUND_COPY) {
-            // Consider even a copy in a catch block as a use
-            return FOUND_USE;
-          } else if (foundCatch != FOUND_RET && foundCatch != FOUND_THROW) {
-            allCatchesRet = false;
-          }
-        }
-      }
-
-      // if we got here, no catch used or inited the variable
-      if (foundBody == FOUND_USE) {
-        INT_FATAL("handled above");
-      } else if (foundBody == FOUND_COPY) {
-        if (allCatchesRet) {
-          // all catches are either FOUND_RET or FOUND_COPY
-          return FOUND_COPY;
-        } else {
-          return FOUND_USE;
-        }
-      } else if (foundBody == FOUND_RET || foundBody == FOUND_THROW) {
-        return handleReturnForCopy(foundBody, var, cur, points,
-                                   foundEndOfStmtMentioning);
-      }
-
-    // if _ { x = ... } else { x = ... }
+    // if _ { ... } else { ... }
     } else if (CondStmt* cond = toCondStmt(cur)) {
 
-      bool usedInCondExpr = findSymExprFor(cond->condExpr, var) != NULL;
+      // note uses from the CondExpr and also thenStmt and elseStmt.
+      //
+      // any copy-inits in the conditional should rule out
+      // a elision of a copy init before it.
+      //
+      // if there are copy-inits inside the conditional we will handle
+      // that below.
+      noteUses(cond, map);
 
-      Expr* ifEnd = cond->thenStmt->body.last();
-      Expr* elseEnd = cond->elseStmt ? cond->elseStmt->body.last() : NULL;
-      std::vector<CallExpr*> ifPoints;
-      std::vector<CallExpr*> elsePoints;
-      bool tmpIfEnd = foundEndOfStmtMentioning;
-      bool tmpElseEnd = foundEndOfStmtMentioning;
-      found_init_t foundIf = doFindCopyElisionPoints(var, ifEnd, ifPoints,
-                                                     tmpIfEnd);
-      found_init_t foundElse = FOUND_NOTHING;
-      if (elseEnd != NULL)
-        foundElse = doFindCopyElisionPoints(var, elseEnd, elsePoints,
-                                            tmpElseEnd);
+      Expr* ifStart = cond->thenStmt->body.first();
+      Expr* elseStart = cond->elseStmt ? cond->elseStmt->body.first() : NULL;
 
-      if (tmpIfEnd || tmpElseEnd)
-        foundEndOfStmtMentioning = true;
+      // there is an else block
 
-      bool ifCopies = foundIf == FOUND_COPY;
-      bool elseCopies = foundElse == FOUND_COPY;
-      bool ifReturns = foundIf == FOUND_THROW ||
-                       foundIf == FOUND_RET;
-      bool elseReturns = foundElse == FOUND_THROW ||
-                         foundElse == FOUND_RET;
-      if ((ifCopies  && elseCopies) ||
-          (ifCopies  && elseReturns) ||
-          (ifReturns && elseCopies)) {
-        for_vector(CallExpr, call, ifPoints) {
-          points.push_back(call);
+      // a variable copy-inited from in both the if and else is OK
+      // but a variable copy-inited from on one side but not the other is not.
+
+      VarToCopyElisionState ifMap;
+      VarToCopyElisionState elseMap;
+
+      bool ifRet = doFindCopyElisionPoints(ifStart, ifMap);
+      bool elseRet = false;
+      if (elseStart != NULL)
+        elseRet = doFindCopyElisionPoints(elseStart, elseMap);
+
+      if (ifRet || elseRet) {
+        if (ifRet == false) {
+          // elseRet == true, so just note any copy inits from if
+          for (VarToCopyElisionState::iterator it = ifMap.begin();
+               it != ifMap.end();
+               ++it) {
+            VarSymbol* var = it->first;
+            CopyElisionState& state = it->second;
+            if (state.lastIsCopy)
+              map[var] = state;
+          }
         }
-        for_vector(CallExpr, call, elsePoints) {
-          points.push_back(call);
+        if (elseRet == false) {
+          // ifRet == true, so just note any copy inits from else
+          for (VarToCopyElisionState::iterator it = elseMap.begin();
+               it != elseMap.end();
+               ++it) {
+            VarSymbol* var = it->first;
+            CopyElisionState& state = it->second;
+            if (state.lastIsCopy)
+              map[var] = state;
+          }
         }
-        return FOUND_COPY;
-      } else if (foundIf == FOUND_USE || foundElse == FOUND_USE) {
-        return FOUND_USE;
-      } else if (foundIf == FOUND_COPY || foundElse == FOUND_COPY) {
-        // initialized on one side but not the other
-        return FOUND_USE;
-      } else if ((foundIf == FOUND_THROW || foundIf == FOUND_RET) &&
-                 (foundElse == FOUND_THROW || foundElse == FOUND_RET)) {
-        if (usedInCondExpr)
-          return FOUND_USE;
-        // return is more strict than throws, so if one returns
-        // but the other throws, consider it a return.
-        found_init_t found = FOUND_RET;
-        if (foundIf == FOUND_THROW && foundElse == FOUND_THROW)
-          found = FOUND_THROW;
-        return handleReturnForCopy(found, var, cur, points,
-                                   foundEndOfStmtMentioning);
+
+        // if both if and else return, the conditional returns.
+        if (ifRet && elseRet)
+          return true;
+
+      } else {
+        // neither if nor else returns
+
+        // Look for variables copy-inited from in both the if and else
+        // and adjust the main map accordingly.
+
+        // Note that uses are already noted above.
+
+        // The loop below relies on the maps being ordered.
+        VarToCopyElisionState::key_compare comp = map.key_comp();
+        VarToCopyElisionState::iterator ifIt = ifMap.begin();
+        VarToCopyElisionState::iterator elseIt = elseMap.begin();
+
+        while (ifIt != ifMap.end() && elseIt != elseMap.end()) {
+          VarSymbol* ifVar = ifIt->first;
+          VarSymbol* elseVar = elseIt->first;
+          if (comp(ifVar, elseVar)) {
+            // if element was less, so advance if iterator
+            ++ifIt;
+          } else if (comp(elseVar, ifVar)) {
+            // else element was less, so else iterator
+            ++elseIt;
+          } else {
+            // ifVar == elseVar
+            VarSymbol* var = ifVar;
+            INT_ASSERT(var == elseVar);
+            CopyElisionState& ifState = ifIt->second;
+            CopyElisionState& elseState = elseIt->second;
+            if (ifState.lastIsCopy && elseState.lastIsCopy) {
+              // Both are copy elision candidates. Note the locations.
+              CopyElisionState& state = map[var];
+              state.lastIsCopy = true;
+              state.foundEndOfStmtMentioning = false;
+              state.points.clear();
+              for_vector (CallExpr, point, ifState.points) {
+                state.points.push_back(point);
+              }
+              for_vector (CallExpr, point, elseState.points) {
+                state.points.push_back(point);
+              }
+            }
+            ++ifIt;
+            ++elseIt;
+          }
+        }
+        // no need to handle leftovers (e.g. ifIt not at end)
+        // because we marked uses above.
       }
-
     } else {
       // Look for uses of 'x'
-      if (findSymExprFor(cur, var)) {
-        return FOUND_USE;
-      }
-    }
-
-    if (fVerify) {
-      // Redundantly check for uses
-      if (!isEndOfStatementMarker(cur))
-        if (findSymExprFor(cur, var) != NULL)
-          INT_FATAL("use not found above");
+      noteUses(cur, map);
     }
   }
 
-  return FOUND_NOTHING;
+  return false;
 }
 
+void elideCopies(FnSymbol* fn) {
+  if (fNoCopyElision == false) {
+    if (fn->id == 200836)
+      gdbShouldBreakHere();
 
-bool findCopyElisionPoints(VarSymbol* var,
-                           Expr* cur,
-                           std::vector<CallExpr*>& points) {
+    VarToCopyElisionState map;
+    doFindCopyElisionPoints(fn->body->body.first(), map);
 
-  bool foundEndOfStmtMentioning = false;
-
-  found_init_t got = doFindCopyElisionPoints(var, cur, points,
-                                             foundEndOfStmtMentioning);
-
-  return got == FOUND_COPY;
+    // run elide copies again in case the function did not terminate
+    // with a return statement.
+    doElideCopies(map);
+  }
 }
