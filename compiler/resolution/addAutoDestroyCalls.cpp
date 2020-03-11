@@ -224,6 +224,7 @@ static Expr* walkBlockStmt(FnSymbol*         fn,
 
   // Be conservative about unreachable code before the epilogue
   } else if (isDeadCode == false) {
+
     // Note any variables as they are declared
     if (DefExpr* def = toDefExpr(stmt)) {
       if (VarSymbol* v = toVarSymbol(def->sym))
@@ -355,16 +356,18 @@ static Expr* walkBlockStmt(FnSymbol*         fn,
     }
   }
 
-  // Destroy the variable after this statement if it's the last mention
-  // Since this adds the destroy immediately after this statement,
-  // it ends up destroying multiple variables to be destroyed here
-  // in the reverse order of the vector - i.e. reverse initialization order.
-  LastMentionMap::const_iterator lmmIt = lmm.find(stmt);
-  if (lmmIt != lmm.end()) {
-    const std::vector<VarSymbol*>& vars = lmmIt->second;
-    for_vector(VarSymbol, var, vars) {
-      scope.destroyVariable(stmt, var, ignoredVariables);
-      scope.addEarlyDeinit(var);
+  if (isDeadCode == false) {
+    // Destroy the variable after this statement if it's the last mention
+    // Since this adds the destroy immediately after this statement,
+    // it ends up destroying multiple variables to be destroyed here
+    // in the reverse order of the vector - i.e. reverse initialization order.
+    LastMentionMap::const_iterator lmmIt = lmm.find(stmt);
+    if (lmmIt != lmm.end()) {
+      const std::vector<VarSymbol*>& vars = lmmIt->second;
+      for_vector(VarSymbol, var, vars) {
+        scope.destroyVariable(stmt, var, ignoredVariables);
+        scope.addEarlyDeinit(var);
+      }
     }
   }
 
