@@ -88,55 +88,6 @@ void* chpl_mem_array_alloc(size_t nmemb, size_t eltSize,
 
 
 static inline
-void* chpl_mem_array_realloc(void* ptr, size_t nmemb, size_t eltSize,
-                             c_sublocid_t subloc, chpl_bool* callPostAlloc,
-                             int32_t lineno, int32_t filename) {
-  
-  //
-  // To support dynamic array registration by comm layers, in addition
-  // to the address to the allocated memory this returns either true or
-  // false in *callPostAlloc.  If we set *callPostAlloc==false then
-  // allocation is complete when we return.  But if *callPostAlloc==true
-  // then after initializing (first-touching) the memory, our caller
-  // needs to call chpl_mem_array_postAlloc() with the allocated address
-  // and the original nmemb and eltSize arguments.  At that point we will
-  // call the comm layer post-alloc function, which typically does the
-  // actual registration.  This is how we get NUMA locality correct on
-  // registered memory, when that is possible.
-  //
-  /*
-    TODO:
-  chpl_memhook_malloc_pre(nmemb, eltSize, CHPL_RT_MD_ARRAY_ELEMENTS,
-                          lineno, filename);
-  */
-
-  const size_t size = nmemb * eltSize;
-  /*
-  void* p = NULL;
-  *callPostAlloc = false;
-  if (chpl_mem_size_justifies_comm_alloc(size)) {
-    p = chpl_comm_regMemAlloc(size, CHPL_RT_MD_ARRAY_ELEMENTS,
-                              lineno, filename);
-    if (p != NULL) {
-      *callPostAlloc = true;
-    }
-  }
-  */
-
-  //  printf("Requesting a realloc of %ld\n", size);
-  ptr = chpl_realloc(ptr, size);
-
-  /*
-  TODO:
-  chpl_memhook_malloc_post(p, nmemb, eltSize, CHPL_RT_MD_ARRAY_ELEMENTS,
-                           lineno, filename);
-  */
-
-  return ptr;
-}
-
-
-static inline
 void chpl_mem_array_postAlloc(void* p, size_t nmemb, size_t eltSize,
                               int32_t lineno, int32_t filename) {
   //
@@ -144,6 +95,74 @@ void chpl_mem_array_postAlloc(void* p, size_t nmemb, size_t eltSize,
   //
   const size_t size = nmemb * eltSize;
   chpl_comm_regMemPostAlloc(p, size);
+}
+
+
+static inline
+void* chpl_mem_array_realloc(void* p, size_t oldNmemb, size_t newNmemb,
+                             size_t eltSize,
+                             c_sublocid_t subloc, chpl_bool* callPostAlloc,
+                             int32_t lineno, int32_t filename) {
+  //
+  // Support for dynamic array registration by comm layers is done here
+  // via *callPostAlloc, the same as for chpl_mem_array_alloc().  See
+  // there for further information.
+  /*
+    TODO:
+  chpl_memhook_malloc_pre(nmemb, eltSize, CHPL_RT_MD_ARRAY_ELEMENTS,
+                          lineno, filename);
+  */
+
+  const size_t oldSize = oldNmemb * eltSize;
+  const size_t newSize = newNmemb * eltSize;
+  void* newp = NULL;
+  *callPostAlloc = false;
+  if (chpl_mem_size_justifies_comm_alloc(oldSize)) {
+    newp = chpl_comm_regMemRealloc(p, oldSize, newSize,
+                                   CHPL_RT_MD_ARRAY_ELEMENTS,
+                                   lineno, filename);
+    if (newp != NULL) {
+      *callPostAlloc = true;
+    }
+  }
+
+  if (newp == NULL) {
+    newp = chpl_realloc(p, newSize);
+  }
+
+  if (newp != p && newp != NULL) {
+    //
+    // We allocated new memory.  Copy the existing bytes.  If we're on
+    // a NUMA compute node this will result in locality that matches
+    // that of the calling thread.  That's not very good but we cannot
+    // do better in the runtime.  At least with the copying here rather
+    // than in the comm layer it will be easier to hoist it into the
+    // module code if we can do better there someday.
+    //
+    memcpy(newp, p, oldSize);
+  }
+
+  /*
+  TODO:
+  chpl_memhook_malloc_post(p, nmemb, eltSize, CHPL_RT_MD_ARRAY_ELEMENTS,
+                           lineno, filename);
+  */
+
+  return newp;
+}
+
+
+static inline
+void chpl_mem_array_postRealloc(void* oldp, size_t oldNmemb,
+                                void* newp, size_t newNmemb,
+                                size_t eltSize,
+                                int32_t lineno, int32_t filename) {
+  //
+  // Do comm layer post-allocation.
+  //
+  const size_t oldSize = oldNmemb * eltSize;
+  const size_t newSize = newNmemb * eltSize;
+  chpl_comm_regMemPostRealloc(oldp, oldSize, newp, newSize);
 }
 
 

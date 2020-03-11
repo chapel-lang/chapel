@@ -49,6 +49,17 @@ void* chpl_comm_impl_regMemAlloc(size_t size,
   chpl_comm_impl_regMemPostAlloc(p, size)
 void chpl_comm_impl_regMemPostAlloc(void* p, size_t size);
 
+#define CHPL_COMM_IMPL_REG_MEM_REALLOC(p, oldSize, newSize, desc, ln, fn) \
+    chpl_comm_impl_regMemRealloc(p, oldSize, newSize, desc, ln, fn)
+void* chpl_comm_impl_regMemRealloc(void* p, size_t oldSize, size_t newSize,
+                                   chpl_mem_descInt_t desc,
+                                   int ln, int32_t fn);
+
+#define CHPL_COMM_IMPL_REG_MEM_POST_REALLOC(oldp, oldSize, newp, newSize) \
+    chpl_comm_impl_regMemPostRealloc(oldp, oldSize, newp, newSize)
+void chpl_comm_impl_regMemPostRealloc(void* oldp, size_t oldSize,
+                                      void* newp, size_t newSize);
+
 #define CHPL_COMM_IMPL_REG_MEM_FREE(p, size) \
         chpl_comm_impl_regMemFree(p, size)
 chpl_bool chpl_comm_impl_regMemFree(void* p, size_t size);

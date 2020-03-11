@@ -1094,17 +1094,30 @@ module ChapelBase {
                                 subloc = c_sublocid_none) {
     pragma "fn synchronization free"
     pragma "insert line file info"
-    extern proc chpl_mem_array_realloc(ptr: c_void_ptr, nmemb: size_t,
+    extern proc chpl_mem_array_realloc(ptr: c_void_ptr,
+                                       oldNmemb: size_t, newNmemb: size_t,
                                        eltSize: size_t,
                                        subloc: chpl_sublocID_t,
                                        ref callPostAlloc: bool): c_void_ptr;
     var callPostAlloc: bool;
-    ddata = chpl_mem_array_realloc(ddata: c_void_ptr, newSize.safeCast(size_t),
+    const oldDdata = ddata;
+    ddata = chpl_mem_array_realloc(ddata: c_void_ptr, oldSize.safeCast(size_t),
+                                   newSize.safeCast(size_t),
                                    _ddata_sizeof_element(ddata),
                                    subloc, callPostAlloc): ddata.type;
     init_elts(ddata, newSize, eltType, lo=oldSize);
-    if (callPostAlloc) then
-      halt("realloc doesn't support post-alloc hooks yet");
+    if (callPostAlloc) {
+      pragma "fn synchronization free"
+      pragma "insert line file info"
+      extern proc chpl_mem_array_postRealloc(oldData: c_void_ptr,
+                                             oldNmemb: size_t,
+                                             newData: c_void_ptr,
+                                             newNmemb: size_t,
+                                             eltSize: size_t);
+      chpl_mem_array_postRealloc(oldDdata:c_void_ptr, oldSize.safeCast(size_t),
+                                 ddata:c_void_ptr, newSize.safeCast(size_t),
+                                 _ddata_sizeof_element(ddata));
+    }
   }
 
 
