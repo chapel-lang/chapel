@@ -314,7 +314,7 @@
 %token TDEFER TDELETE TDMAPPED TDO TDOMAIN
 %token TELSE TENUM TEXCEPT TEXPORT TEXTERN
 %token TFALSE TFOR TFORALL TFORWARDING
-%token TIF TIMAG TIN TINDEX TINLINE TINOUT TINT TITER TINITEQUALS
+%token TIF TIMAG TIMPORT TIN TINDEX TINLINE TINOUT TINT TITER TINITEQUALS
 %token TLABEL TLAMBDA TLET TLIFETIME TLOCAL TLOCALE
 %token TMINUSMINUS TMODULE
 %token TNEW TNIL TNOINIT TNONE TNOTHING
@@ -416,7 +416,7 @@
 %type <pblockstmt> block_stmt
 %type <pblockstmt> stmt_ls
 
-%type <pblockstmt> use_stmt require_stmt
+%type <pblockstmt> use_stmt import_stmt require_stmt
 %type <ponlylist>  renames_ls opt_only_ls except_ls
 
 %type <pblockstmt> class_level_stmt_ls
@@ -521,6 +521,7 @@ stmt:
   module_decl_stmt
 | block_stmt
 | use_stmt
+| import_stmt
 | require_stmt
 | class_level_stmt
 | assignment_stmt
@@ -667,6 +668,12 @@ use_stmt:
 | use_access_control TUSE expr TAS expr TONLY opt_only_ls TSEMI    { $$ = buildUseStmt($3, $5, $7, false, $1); }
 ;
 
+import_stmt:
+  TIMPORT expr TSEMI { $$ = buildImportStmt($2); }
+| TIMPORT expr TAS ident_use TSEMI
+  { $$ = buildImportStmt($2, $4); }
+;
+
 require_stmt:
   TREQUIRE expr_ls TSEMI               { $$ = buildRequireStmt($2); }
 ;
@@ -752,6 +759,7 @@ internal_type_ident_def:
 
 scalar_type:
   TBOOL    { $$ = new SymExpr(dtBools[BOOL_SIZE_DEFAULT]->symbol); }
+| TENUM    { $$ = new SymExpr(dtAnyEnumerated->symbol); }
 | TINT     { $$ = new SymExpr(dtInt[INT_SIZE_DEFAULT]->symbol); }
 | TUINT    { $$ = new SymExpr(dtUInt[INT_SIZE_DEFAULT]->symbol); }
 | TREAL    { $$ = new SymExpr(dtReal[FLOAT_SIZE_DEFAULT]->symbol); }
@@ -922,9 +930,9 @@ loop_stmt:
 | TCOFORALL expr TIN zippered_iterator opt_task_intent_ls do_stmt { $$ = buildCoforallLoopStmt($2, $4, $5, $6, true); }
 | TCOFORALL expr opt_task_intent_ls do_stmt                       { $$ = buildCoforallLoopStmt(NULL, $2, $3, $4);     }
 | TFOR expr TIN expr do_stmt                    { $$ = ForLoop::buildForLoop(  $2, $4, $5, false, false); }
-| TFOR expr TIN zippered_iterator do_stmt       { $$ = ForLoop::buildForLoop(  $2, $4, $5, false,  true); }
+| TFOR expr TIN zippered_iterator do_stmt       { $$ = ForLoop::buildForLoop(  $2, $4, $5, true, false); }
 | TFOR expr do_stmt                             { $$ = ForLoop::buildForLoop(NULL, $2, $3, false, false); }
-| TFOR zippered_iterator do_stmt                { $$ = ForLoop::buildForLoop(NULL, $2, $3, false,  true); }
+| TFOR zippered_iterator do_stmt                { $$ = ForLoop::buildForLoop(NULL, $2, $3, true, false); }
 | TFOR TPARAM ident_def TIN expr do_stmt        { $$ = buildParamForLoopStmt($3, $5, $6); }
 | TFORALL expr TIN expr                                   do_stmt  { $$ = ForallStmt::build($2,   $4, NULL, $5, false, false); }
 | TFORALL expr TIN expr              forall_intent_clause do_stmt  { $$ = ForallStmt::build($2,   $4, $5,   $6, false, false); }
@@ -1801,8 +1809,6 @@ sub_type_level_expr:
     { $$ = new SymExpr(dtAnyManagementNonNilable->symbol); }
 | TRECORD
     { $$ = new SymExpr(dtAnyRecord->symbol); }
-| TENUM
-    { $$ = new SymExpr(dtAnyEnumerated->symbol); }
 ;
 
 for_expr:
@@ -2003,9 +2009,13 @@ new_expr:
 
   /* handles e.g. new owned(myUnmanaged) */
 | TNEW TOWNED TLP expr TRP
-    { $$ = new CallExpr(PRIM_NEW, new CallExpr(dtOwned->symbol, $4)); }
+    { USR_WARN($4, "the syntax 'new owned(an expression)' is deprecated");
+      USR_PRINT($4, "instead use 'owned.create(an expression)'");
+      $$ = new CallExpr(PRIM_NEW, new CallExpr(dtOwned->symbol, $4)); }
 | TNEW TSHARED TLP expr TRP
-    { $$ = new CallExpr(PRIM_NEW, new CallExpr(dtShared->symbol, $4)); }
+    { USR_WARN($4, "the syntax 'new shared(an expression)' is deprecated");
+      USR_PRINT($4, "instead use 'shared.create(an expression)'");
+      $$ = new CallExpr(PRIM_NEW, new CallExpr(dtShared->symbol, $4)); }
 ;
 
 let_expr:

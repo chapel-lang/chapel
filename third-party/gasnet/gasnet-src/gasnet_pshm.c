@@ -1139,7 +1139,7 @@ int gasneti_AMPSHM_service_incoming_msg(gasneti_pshmnet_t *vnet, int isReq GASNE
   void *msg;
   size_t msgsz;
   gasneti_pshm_rank_t from;
-  int category;
+  gasneti_category_t category;
   gex_AM_Index_t handler_id;
   gex_AM_Fn_t handler_fn;
   int numargs;
@@ -1151,7 +1151,7 @@ int gasneti_AMPSHM_service_incoming_msg(gasneti_pshmnet_t *vnet, int isReq GASNE
     return -1;
 
   handler_id = GASNETI_AMPSHM_MSG_HANDLERID(msg);
-  category = GASNETI_AMPSHM_MSG_CATEGORY(msg);
+  category = (gasneti_category_t) GASNETI_AMPSHM_MSG_CATEGORY(msg);
   gasneti_assert((category == gasneti_Short) || 
                  (category == gasneti_Medium) || 
                  (category == gasneti_Long));
@@ -1315,6 +1315,8 @@ int ampshm_prepare_inner(
     inline_long = (size <= GASNETI_AMPSHM_MSG_LONG_INLINE);
   }
 
+  gasneti_assert(sd->_tofree == NULL);  // check this before possible IMMEDIATE failure
+
   // Allocate our buffer (honoring IMMEDIATE)
   gasneti_pshmnet_t *vnet = (isReq ? gasneti_request_pshmnet : gasneti_reply_pshmnet);
   void *msg = ampshm_buf_alloc(vnet, category, isReq, pshmrank, size, flags GASNETI_THREAD_PASS);
@@ -1340,7 +1342,7 @@ int ampshm_prepare_inner(
   } else if (inline_long) {
     sd->_gex_buf = sd->_addr = GASNETI_AMPSHM_MSG_LONG_TMP(msg);
   } else {
-    gasneti_prepare_alloc_buffer(sd);
+    sd->_tofree = gasneti_prepare_alloc_buffer(sd);
   }
 
   return 0;
@@ -1398,12 +1400,17 @@ void ampshm_commit_inner(
   /* Deliver message */
   gasneti_pshmnet_t *vnet = (isReq ? gasneti_request_pshmnet : gasneti_reply_pshmnet);
   gasneti_pshmnet_deliver_send_buffer(vnet, msg, 0 /*msgsz unused*/, sd->_pshm._pshmrank);
+
+  if (sd->_tofree) { // Branch to avoid free(NULL) library call overhead for NPAM/cb
+    gasneti_free(sd->_tofree);
+    sd->_tofree = NULL;
+  }
 }
 
 // First 1 params (category, isReq) will be manifest constants
 // which should lead to specialization of the code upon inlining.
 GASNETI_INLINE(gasnetc_AMPSHM_ReqRepGeneric)
-int gasnetc_AMPSHM_ReqRepGeneric(int category, int isReq, gex_Rank_t jobrank,
+int gasnetc_AMPSHM_ReqRepGeneric(gasneti_category_t category, int isReq, gex_Rank_t jobrank,
                                  gex_AM_Index_t handler, void *source_addr, size_t nbytes,
                                  void *dest_addr, gex_Flags_t flags, int numargs, va_list argptr
                                  GASNETI_THREAD_FARG)
@@ -1416,12 +1423,14 @@ int gasnetc_AMPSHM_ReqRepGeneric(int category, int isReq, gex_Rank_t jobrank,
   }
 
   struct gasneti_AM_SrcDesc the_sd;
+  the_sd._tofree = NULL;
 
   int imm = ampshm_prepare_inner(
                 &the_sd, 1, isReq, category, jobrank, source_addr, 0, nbytes,
                 dest_addr, NULL, flags, numargs GASNETI_THREAD_PASS);
   if (imm) return imm;
 
+  gasneti_assume(the_sd._tofree == NULL); // in case the optimizer lost track
   ampshm_commit_inner(&the_sd, 1, isReq, category, handler, nbytes, dest_addr, argptr);
 
   return GASNET_OK;
@@ -1431,7 +1440,7 @@ int gasnetc_AMPSHM_ReqRepGeneric(int category, int isReq, gex_Rank_t jobrank,
 // which should lead to specialization of the code upon inlining.
 GASNETI_INLINE(ampshm_prepare)
 int ampshm_prepare(gasneti_AM_SrcDesc_t sd,
-                   const int isReq, const int category,
+                   const int isReq, const gasneti_category_t category,
                    gex_Rank_t jobrank, const void *client_buf,
                    size_t least_payload, size_t most_payload,
                    void *dest_addr, gex_Event_t *lc_opt,
@@ -1456,7 +1465,7 @@ int ampshm_prepare(gasneti_AM_SrcDesc_t sd,
 // which should lead to specialization of the code upon inlining.
 GASNETI_INLINE(ampshm_comit)
 void ampshm_commit(gasneti_AM_SrcDesc_t sd,
-                   const int isReq, const int category,
+                   const int isReq, const gasneti_category_t category,
                    gex_AM_Index_t handler, size_t nbytes,
                    void *dest_addr, va_list argptr)
 {

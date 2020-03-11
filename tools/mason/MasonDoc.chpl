@@ -36,9 +36,9 @@ proc masonDoc(args) throws {
     const tomlPath = projectHome + "/" + tomlName;
 
     const toParse = open(projectHome + "/" + tomlName, iomode.r);
-    var tomlFile = new owned(parseToml(toParse));
+    var tomlFile = owned.create(parseToml(toParse));
 
-    const projectName = tomlFile["brick"]["name"].s;
+    const projectName = tomlFile["brick"]!["name"]!.s;
     const projectFile = projectName + '.chpl';
 
     if isDir(projectHome + '/src/') {

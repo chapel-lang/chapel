@@ -597,6 +597,7 @@ proc stringStyleNullTerminated() {
   This method returns the appropriate :record:`iostyle` ``str_style`` value
   to indicate a string format where strings have an exact length.
  */
+pragma "no doc"
 proc stringStyleExactLen(len:int(64)) {
   return len;
 }
@@ -606,6 +607,7 @@ proc stringStyleExactLen(len:int(64)) {
   to indicate a string format where string data is preceded by a variable-byte
   length as described in :type:`iostringstyle`.
  */
+pragma "no doc"
 proc stringStyleWithVariableLength() {
   return iostringstyle.lenVb_data: int(64);
 }
@@ -1565,10 +1567,10 @@ proc file.path : string throws {
     }
     chpl_free_c_string(tmp);
     if !err {
-      try! {
-        ret = createStringWithOwnedBuffer(tmp2);
-      }
+      ret = createStringWithNewBuffer(tmp2,
+                                      policy=decodePolicy.escape);
     }
+    chpl_free_c_string(tmp2);
   }
   if err then try ioerror(err, "in file.path");
   return ret;
@@ -1590,21 +1592,30 @@ proc file.tryGetPath() : string {
 
 /*
 
-Get the current length of an open file. Note that the length can always
+Get the current size of an open file. Note that the size can always
 change if other channels, tasks or programs are writing to the file.
 
-:returns: the current file length
+:returns: the current file size
 
-:throws SystemError: Thrown if the length could not be retrieved.
+:throws SystemError: Thrown if the size could not be retrieved.
 */
-proc file.length():int(64) throws {
+proc file.size:int(64) throws {
   var err:syserr = ENOERR;
   var len:int(64) = 0;
   on this.home {
     err = qio_file_length(this._file_internal, len);
   }
-  if err then try ioerror(err, "in file.length()");
+  if err then try ioerror(err, "in file.size");
   return len;
+}
+
+/*
+  Deprecated - please use :proc:`file.size`.
+*/
+proc file.length():int(64) throws {
+  compilerWarning("'file.length()' is deprecated - " +
+                  "please use 'file.size' instead");
+  return this.size;
 }
 
 // these strings are here (vs in _modestring)
@@ -1617,7 +1628,7 @@ private param _cwr = "w+";
 
 pragma "no doc"
 proc _modestring(mode:iomode) {
-  use HaltWrappers only;
+  import HaltWrappers;
   select mode {
     when iomode.r do return _r;
     when iomode.rw do return _rw;
@@ -1658,16 +1669,19 @@ proc open(path:string, mode:iomode, hints:iohints=IOHINT_NONE,
   if (path == "") then
     try ioerror(ENOENT:syserr, "in open: path is the empty string");
 
-  error = qio_file_open_access(ret._file_internal, path.localize().c_str(), _modestring(mode).c_str(), hints, local_style);
+  error = qio_file_open_access(ret._file_internal,
+                               path.encode(policy=encodePolicy.unescape).c_str(),
+                               _modestring(mode).c_str(), hints, local_style);
   if error then
     try ioerror(error, "in open", path);
 
   return ret;
 }
 
+pragma "no doc"
 proc openplugin(pluginFile: QioPluginFile, mode:iomode,
                 seekable:bool, style:iostyle) throws {
-  use HaltWrappers only;
+  import HaltWrappers;
 
   extern proc qio_file_init_plugin(ref file_out:qio_file_ptr_t,
       file_info:c_void_ptr, flags:c_int, const ref style:iostyle):syserr;
@@ -1708,32 +1722,15 @@ proc openplugin(pluginFile: QioPluginFile, mode:iomode,
       if path_err {
         path = "unknown";
       } else {
-        path = try! createStringWithOwnedBuffer(str, len);
+        // doesn't throw with decodePolicy.replace
+        path = createStringWithNewBuffer(str, len,
+                                         policy=decodePolicy.replace);
       }
     }
 
     try ioerror(err, "in openplugin", path);
   }
 
-  return ret;
-}
-
-// documented in open() throws version
-pragma "no doc"
-proc open(out error:syserr, path:string="",
-          mode:iomode, hints:iohints=IOHINT_NONE,
-          style:iostyle = defaultIOStyle()):file {
-  compilerWarning("This version of open() is deprecated; " +
-                  "please switch to a throwing version");
-  error = ENOERR;
-  var ret: file;
-  try {
-    ret = open(path, mode, hints, style);
-  } catch e: SystemError {
-    error = e.err;
-  } catch {
-    error = EINVAL;
-  }
   return ret;
 }
 
@@ -1780,11 +1777,9 @@ proc openfd(fd: fd_t, hints:iohints=IOHINT_NONE, style:iostyle = defaultIOStyle(
   if err {
     var path_cs:c_string;
     var path_err = qio_file_path_for_fd(fd, path_cs);
-    var path: string;
-    try! {
-      path = if path_err then "unknown"
-                         else createStringWithOwnedBuffer(path_cs);
-    }
+    var path = if path_err then "unknown"
+                           else createStringWithNewBuffer(path_cs,
+                                                          policy=decodePolicy.replace);
     try ioerror(err, "in openfd", path);
   }
   return ret;
@@ -1825,11 +1820,10 @@ proc openfp(fp: _file, hints:iohints=IOHINT_NONE, style:iostyle = defaultIOStyle
   if err {
     var path_cs:c_string;
     var path_err = qio_file_path_for_fp(fp, path_cs);
-    var path: string;
-    try! {
-      path = if path_err then "unknown"
-                         else createStringWithOwnedBuffer(path_cs);
-    }
+    var path = if path_err then "unknown"
+                           else createStringWithNewBuffer(path_cs,
+                                                          policy=decodePolicy.replace);
+    chpl_free_c_string(path_cs);
     try ioerror(err, "in openfp", path);
   }
   return ret;
@@ -2156,14 +2150,14 @@ proc channel._ch_ioerror(error:syserr, msg:string) throws {
     var err:syserr = ENOERR;
     err = qio_channel_path_offset(locking, _channel_internal, tmp_path, tmp_offset);
     if !err {
-      try! {
-        path = createStringWithOwnedBuffer(tmp_path);
-      }
+      // shouldn't throw
+      path = createStringWithNewBuffer(tmp_path,
+                                       policy=decodePolicy.replace);
+      chpl_free_c_string(tmp_path);
       offset = tmp_offset;
     }
   }
   try ioerror(error, msg, path, offset);
-  // c_string tmp_path leaked, but ioerror will exit
 }
 
 pragma "no doc"
@@ -2176,14 +2170,14 @@ proc channel._ch_ioerror(errstr:string, msg:string) throws {
     var err:syserr = ENOERR;
     err = qio_channel_path_offset(locking, _channel_internal, tmp_path, tmp_offset);
     if !err {
-      try! {
-        path = createStringWithOwnedBuffer(tmp_path);
-      }
+      // shouldn't throw
+      path = createStringWithNewBuffer(tmp_path,
+                                       policy=decodePolicy.replace);
+      chpl_free_c_string(tmp_path);
       offset = tmp_offset;
     }
   }
   try ioerror(errstr, msg, path, offset);
-  // c_string tmp_path leaked, but ioerror will exit
 }
 
 /*
@@ -3010,19 +3004,61 @@ private inline proc _write_binary_internal(_channel_internal:qio_channel_ptr_t, 
   return EINVAL;
 }
 
-// Channel must be locked, must be running on this.home
-// x is ref (vs out) because it might contain a literal string.
+pragma "no doc"
+proc channel._constructIoErrorMsg(param kind: iokind, const x:?t): string {
+  var result: string = "while ";
+
+  result += if this.writing then "writing " else "reading ";
+  result += t:string;
+
+  select t {
+    when ioNewline do result += " " + "newline";
+    when ioLiteral do result += " " + "\"" + x:string + "\""; 
+  }
+
+  return result;
+}
+
+//
+// The channel must be locked and running on this.home.
+// The intent of x is ref (vs out) because it might contain a string literal.
+//
+pragma "no doc"
+proc channel._readOne(param kind: iokind, ref x:?t,
+                             loc:locale?) throws {
+  // TODO: Make _read_one_internal(s) a method instead.
+  var err = try _read_one_internal(_channel_internal, kind, x, loc); 
+
+  if err != ENOERR {
+    const msg = _constructIoErrorMsg(kind, x);
+    try _ch_ioerror(err, msg);
+  }
+}
+
+//
+// The channel must be locked and running on this.home.
+//
+pragma "no doc"
+proc channel._writeOne(param kind: iokind, const x:?t, loc:locale?) throws {
+  // TODO: Make _write_one_internal(s) a method instead.
+  var err = _write_one_internal(_channel_internal, kind, x, loc);
+
+  if err != ENOERR {
+    const msg = _constructIoErrorMsg(kind, x);
+    try _ch_ioerror(err, msg);
+  }
+}
+
 private inline proc _read_one_internal(_channel_internal:qio_channel_ptr_t,
                                        param kind:iokind,
                                        ref x:?t,
-                                       loc:locale?):syserr where _isIoPrimitiveTypeOrNewline(t) {
+                                       loc:locale?): syserr throws where _isIoPrimitiveTypeOrNewline(t) {
   var e:syserr = ENOERR;
   if t == ioNewline {
     return qio_channel_skip_past_newline(false, _channel_internal, x.skipWhitespaceOnly);
   } else if t == ioChar {
     return qio_channel_read_char(false, _channel_internal, x.ch);
   } else if t == ioLiteral {
-    //writeln("in scan literal ", x.val);
     return qio_channel_scan_literal(false, _channel_internal,
                                     x.val.localize().c_str(),
                                     x.val.numBytes: ssize_t, x.ignoreWhiteSpace);
@@ -3043,14 +3079,14 @@ private inline proc _read_one_internal(_channel_internal:qio_channel_ptr_t,
   } else {
     e = _read_binary_internal(_channel_internal, kind, x);
   }
+
   return e;
 }
 
-// Channel must be locked, must be running on this.home
 private inline proc _write_one_internal(_channel_internal:qio_channel_ptr_t,
                                         param kind:iokind,
-                                        x:?t,
-                                        loc:locale?):syserr where _isIoPrimitiveTypeOrNewline(t) {
+                                        const x:?t,
+                                        loc:locale?): syserr throws where _isIoPrimitiveTypeOrNewline(t) {
   var e:syserr = ENOERR;
   if t == ioNewline {
     return qio_channel_write_newline(false, _channel_internal);
@@ -3065,9 +3101,9 @@ private inline proc _write_one_internal(_channel_internal:qio_channel_ptr_t,
     var byteorder:uint(8) = qio_channel_byteorder(_channel_internal);
     if binary {
       select byteorder:iokind {
-        when iokind.big    do e = _write_binary_internal(_channel_internal, iokind.big, x);
-        when iokind.little do e = _write_binary_internal(_channel_internal, iokind.little, x);
-        otherwise             e = _write_binary_internal(_channel_internal, iokind.native, x);
+        when iokind.big    do e = try _write_binary_internal(_channel_internal, iokind.big, x);
+        when iokind.little do e = try _write_binary_internal(_channel_internal, iokind.little, x);
+        otherwise             e = try _write_binary_internal(_channel_internal, iokind.native, x);
       }
     } else {
       e = _write_text_internal(_channel_internal, x);
@@ -3075,14 +3111,14 @@ private inline proc _write_one_internal(_channel_internal:qio_channel_ptr_t,
   } else {
     e = _write_binary_internal(_channel_internal, kind, x);
   }
+
   return e;
 }
 
 private inline proc _read_one_internal(_channel_internal:qio_channel_ptr_t,
                                        param kind:iokind,
                                        ref x:?t,
-                                       loc:locale?):syserr {
-
+                                       loc:locale?): syserr throws {
   // Create a new channel that borrows the pointer in the
   // existing channel so we can avoid locking (because we
   // already have the lock)
@@ -3091,42 +3127,21 @@ private inline proc _read_one_internal(_channel_internal:qio_channel_ptr_t,
                            _channel_internal=_channel_internal,
                            _readWriteThisFromLocale=loc);
 
-  var err:syserr = ENOERR;
-
-  // Clear the channel error so we can use the error
-  // to stop reading if there was an error.
-  qio_channel_clear_error(_channel_internal);
-
-  try {
-    x.readThis(reader);
-  //
-  // TODO: What to do with the caught error besides just stuff a code in the
-  // channel? Do we want to propagate it back up?
-  // TODO: Should we store Error objects in the channel instead of just error
-  // codes? This might be a more elegant design.
-  //
-  } catch err: SystemError {
-    const code = err.err;
-    _qio_channel_set_error_unlocked(_channel_internal, code);
-  } catch err {
-    const code: syserr = EIO;
-    _qio_channel_set_error_unlocked(_channel_internal, code);
-  }
-
   // Set the channel pointer to NULL to make the
   // destruction of the local reader record safe
   // (it shouldn't release anything since it's a local copy).
-  reader._channel_internal = QIO_CHANNEL_PTR_NULL;
+  defer { reader._channel_internal = QIO_CHANNEL_PTR_NULL; }
 
-  err = qio_channel_error(_channel_internal);
-  return err;
+  try x.readThis(reader);
+
+  return ENOERR;
 }
 
 pragma "suppress lvalue error"
 private inline proc _write_one_internal(_channel_internal:qio_channel_ptr_t,
                                         param kind:iokind,
                                         const x:?t,
-                                        loc:locale?):syserr {
+                                        loc:locale?): syserr throws {
   // Create a new channel that borrows the pointer in the
   // existing channel so we can avoid locking (because we
   // already have the lock)
@@ -3135,54 +3150,36 @@ private inline proc _write_one_internal(_channel_internal:qio_channel_ptr_t,
                            _channel_internal=_channel_internal,
                            _readWriteThisFromLocale=loc);
 
-  var err:syserr = ENOERR;
-
-  // Clear the channel error so we can use the error
-  // to stop writing if there was an error.
-  qio_channel_clear_error(_channel_internal);
-
-  try {
-    if isClassType(t) || chpl_isDdata(t) || isAnyCPtr(t) {
-      if x == nil {
-        // future - write class IDs, have serialization format
-        var st = writer.styleElement(QIO_STYLE_ELEMENT_AGGREGATE);
-        var iolit:ioLiteral;
-        if st == QIO_AGGREGATE_FORMAT_JSON {
-          iolit = new ioLiteral("null");
-        } else {
-          iolit = new ioLiteral("nil");
-        }
-        _write_one_internal(_channel_internal, iokind.dynamic, iolit, loc);
-      } else if isClassType(t) {
-        var notNilX = x!;
-        notNilX.writeThis(writer);
-      } else {
-        // ddata / cptr
-        x.writeThis(writer);
-      }
-    } else {
-      x.writeThis(writer);
-    }
-  //
-  // TODO: What to do with the caught error besides just stuff a code in the
-  // channel? Do we want to propagate it back up?
-  // TODO: Should we store Error objects in the channel instead of just error
-  // codes? This might be a more elegant design.
-  //
-  } catch err: SystemError {
-    const code = err.err;
-    _qio_channel_set_error_unlocked(_channel_internal, code);
-  } catch err {
-    const code: syserr = EIO;
-    _qio_channel_set_error_unlocked(_channel_internal, code);
-  }
-
   // Set the channel pointer to NULL to make the
   // destruction of the local writer record safe
   // (it shouldn't release anything since it's a local copy).
-  writer._channel_internal = QIO_CHANNEL_PTR_NULL;
+  defer { writer._channel_internal = QIO_CHANNEL_PTR_NULL; }
 
-  err = qio_channel_error(_channel_internal);
+  var err: syserr = ENOERR;
+
+  if isClassType(t) || chpl_isDdata(t) || isAnyCPtr(t) {
+    if x == nil {
+      // future - write class IDs, have serialization format
+      var st = writer.styleElement(QIO_STYLE_ELEMENT_AGGREGATE);
+      var iolit:ioLiteral;
+      if st == QIO_AGGREGATE_FORMAT_JSON {
+        iolit = new ioLiteral("null");
+      } else {
+        iolit = new ioLiteral("nil");
+      }
+      err = try _write_one_internal(_channel_internal, iokind.dynamic,
+                                    iolit, loc);
+    } else if isClassType(t) {
+      var notNilX = x!;
+      try notNilX.writeThis(writer);
+    } else {
+      // ddata / cptr
+      try x.writeThis(writer);
+    }
+  } else {
+    try x.writeThis(writer);
+  }
+
   return err;
 }
 
@@ -3190,48 +3187,23 @@ pragma "no doc"
 proc channel.readIt(ref x) throws {
   if writing then compilerError("read on write-only channel");
   const origLocale = this.getLocaleOfIoRequest();
-  var error:syserr = ENOERR;
 
   on this.home {
-    try! this.lock();
-    var etmp:syserr;
-    etmp = qio_channel_error(_channel_internal);
-    if !etmp {
-      etmp = _read_one_internal(_channel_internal, kind, x, origLocale);
-      _qio_channel_set_error_unlocked(_channel_internal, etmp);
-    }
-    error = etmp;
-    this.unlock();
+    try! this.lock(); defer { this.unlock(); }
+    try _readOne(kind, x, origLocale);
   }
-
-  if !error then
-    try this._ch_ioerror(error, "in channel.readIt(" +
-                                _args_to_proto(x, preArg="ref ") + ")");
 }
 
 pragma "no doc"
 proc channel.writeIt(const x) throws {
   if !writing then compilerError("write on read-only channel");
   const origLocale = this.getLocaleOfIoRequest();
-  var error:syserr = ENOERR;
 
   on this.home {
-    try! this.lock();
-    var etmp:syserr;
-    etmp = qio_channel_error(_channel_internal);
-    if !etmp {
-      etmp = _write_one_internal(_channel_internal, kind, x, origLocale);
-      _qio_channel_set_error_unlocked(_channel_internal, etmp);
-    }
-    error = etmp;
-    this.unlock();
+    try! this.lock(); defer { this.unlock(); }
+    try _writeOne(kind, x, origLocale);
   }
-
-  if !error then
-    try this._ch_ioerror(error, "in channel.writeIt(" +
-                                _args_to_proto(x, preArg="ref ") + ")");
 }
-
 
 /*
    For a writing channel, writes as with :proc:`channel.write`.
@@ -3262,7 +3234,7 @@ inline proc channel.readwrite(ref x) throws where !this.writing {
    */
   inline proc <~>(const ref ch: channel, x) const ref throws
   where ch.writing {
-    try ch.writeIt(x);
+    try ch.readwrite(x);
     return ch;
   }
 
@@ -3270,7 +3242,7 @@ inline proc channel.readwrite(ref x) throws where !this.writing {
   pragma "no doc"
   inline proc <~>(const ref ch: channel, ref x) const ref throws
   where !ch.writing {
-    try ch.readIt(x);
+    try ch.readwrite(x);
     return ch;
   }
 
@@ -3511,8 +3483,10 @@ proc stringify(const args ...?k):string {
       if args[i].type == string {
         str += args[i];
       } else if args[i].type == c_string {
+        //decodePolicy.replace never throws
         try! {
-          str += createStringWithNewBuffer(args[i]);
+          str += createStringWithNewBuffer(args[i],
+                                           policy=decodePolicy.replace);
         }
       } else if args[i].type == bytes {
         //decodePolicy.replace never throws
@@ -3551,7 +3525,10 @@ proc stringify(const args ...?k):string {
       // Add the terminating NULL byte to make C string conversion easy.
       buf[offset] = 0;
 
-      return try! createStringWithOwnedBuffer(buf, offset, offset+1);
+      const ret = createStringWithNewBuffer(buf, offset, offset+1,
+                                            decodePolicy.replace);
+      c_free(buf);
+      return ret;
     }
   }
 }
@@ -3577,31 +3554,26 @@ private proc _args_to_proto(const args ...?k, preArg:string) {
 inline proc channel.read(ref args ...?k):bool throws {
   if writing then compilerError("read on write-only channel");
   const origLocale = this.getLocaleOfIoRequest();
-  var err:syserr = ENOERR;
-  on this.home {
-    try this.lock(); defer { this.unlock(); }
-    for param i in 1..k {
-      if !err {
+
+  try {
+    on this.home {
+      try this.lock(); defer { this.unlock(); }
+      for param i in 1..k {
         if args[i].locale == here {
-          err = _read_one_internal(_channel_internal, kind, args[i], origLocale);
+          _readOne(kind, args[i], origLocale);
         } else {
           var tmp = args[i];
-          err = _read_one_internal(_channel_internal, kind, tmp, origLocale);
+          _readOne(kind, tmp, origLocale);
           args[i] = tmp;
         }
       }
     }
+  } catch err: SystemError {
+    if err.err != EEOF then throw err;
+    return false;
   }
 
-  if !err {
-    return true;
-  } else if err == EEOF {
-    return false;
-  } else {
-    try this._ch_ioerror(err, "in channel.read(" +
-                              _args_to_proto((...args), preArg="ref ") + ")");
-  }
-  return false;
+  return true;
 }
 
 /*
@@ -3623,29 +3595,24 @@ inline proc channel.read(ref args ...?k):bool throws {
 proc channel.read(ref args ...?k, style:iostyle):bool throws {
   if writing then compilerError("read on write-only channel");
   const origLocale = this.getLocaleOfIoRequest();
-  var err:syserr = ENOERR;
-  on this.home {
-    try this.lock(); defer { this.unlock(); }
-    var save_style = this._style();
-    this._set_style(style);
-    for param i in 1..k {
-      if !err {
-        err = _read_one_internal(_channel_internal, kind, args[i], origLocale);
+
+  try {    
+    on this.home {
+      try this.lock(); defer { this.unlock(); }
+
+      var saveStyle = this._style(); defer { this._set_style(saveStyle); }
+      this._set_style(style);
+
+      for param i in 1..k {
+        _readOne(kind, args[i], origLocale);
       }
     }
-    this._set_style(save_style);
+  } catch err: SystemError {
+    if err.err != EEOF then throw err;
+    return false;
   }
 
-  if !err {
-    return true;
-  } else if err == EEOF {
-    return false;
-  } else {
-    try this._ch_ioerror(err, "in channel.read(" +
-                              _args_to_proto((...args), preArg="ref ") +
-                              "style:iostyle)");
-  }
-  return false;
+  return true;
 }
 
 /*
@@ -3708,26 +3675,22 @@ proc channel.readline(ref arg: ?t): bool throws where t==string || t==bytes {
   if writing then compilerError("read on write-only channel");
   const origLocale = this.getLocaleOfIoRequest();
 
-  var err:syserr = ENOERR;
-  on this.home {
-    try this.lock(); defer { this.unlock(); }
-    var save_style = this._style();
-    var mystyle = save_style.text();
-    mystyle.string_format = QIO_STRING_FORMAT_TOEND;
-    mystyle.string_end = 0x0a; // ascii newline.
-    this._set_style(mystyle);
-    err = _read_one_internal(_channel_internal, iokind.dynamic, arg, origLocale);
-    this._set_style(save_style);
+  try {
+    on this.home {
+      try this.lock(); defer { this.unlock(); }
+      var saveStyle = this._style(); defer { this._set_style(saveStyle); }
+      var myStyle = saveStyle.text();
+      myStyle.string_format = QIO_STRING_FORMAT_TOEND;
+      myStyle.string_end = 0x0a; // ascii newline.
+      this._set_style(myStyle);
+      try _readOne(iokind.dynamic, arg, origLocale);
+    }
+  } catch err: SystemError {
+    if err.err != EEOF then throw err;
+    return false;
   }
 
-  if !err {
-    return true;
-  } else if err == EEOF {
-    return false;
-  } else {
-    try this._ch_ioerror(err, "in channel.readline(ref arg)");
-  }
-  return false;
+  return true;
 }
 
 /* read a given number of bytes from a channel
@@ -3825,7 +3788,7 @@ private proc readBytesOrString(ch: channel, ref out_var: ?t,  len: int(64))
     }
 
     if t == string {
-      out_var = try! createStringWithOwnedBuffer(tx, length=lenread);
+      out_var = createStringWithOwnedBuffer(tx, length=lenread);
     }
     else {
       out_var = createBytesWithOwnedBuffer(tx, length=lenread);
@@ -4011,19 +3974,15 @@ proc channel.read(type t ...?numTypes) throws where numTypes > 1 {
 pragma "no doc"
 inline proc channel.write(const args ...?k):bool throws {
   if !writing then compilerError("write on read-only channel");
-  var err:syserr = ENOERR;
+
   const origLocale = this.getLocaleOfIoRequest();
   on this.home {
     try this.lock(); defer { this.unlock(); }
     for param i in 1..k {
-      if !err {
-        err = _write_one_internal(_channel_internal, kind, args(i), origLocale);
-      }
+      try _writeOne(kind, args(i), origLocale);
     }
   }
-  if err then try this._ch_ioerror(err, "in channel.write(" +
-                                        _args_to_proto((...args), preArg="") +
-                                        ")");
+
   return true;
 }
 
@@ -4045,22 +4004,18 @@ inline proc channel.write(const args ...?k):bool throws {
 proc channel.write(const args ...?k, style:iostyle):bool throws {
   if !writing then compilerError("write on read-only channel");
   const origLocale = this.getLocaleOfIoRequest();
-  var err:syserr = ENOERR;
+
   on this.home {
     try this.lock(); defer { this.unlock(); }
-    var save_style = this._style();
-    this._set_style(style);
+
+    var saveStyle = this._style();
+    this._set_style(style); defer { this._set_style(saveStyle); }
+
     for param i in 1..k {
-      if !err {
-        err = _write_one_internal(_channel_internal, iokind.dynamic, args(i), origLocale);
-      }
+      try _writeOne(iokind.dynamic, args(i), origLocale);
     }
-    this._set_style(save_style);
   }
 
-  if err then try this._ch_ioerror(err, "in channel.write(" +
-                                        _args_to_proto((...args), preArg="") +
-                                        "style:iostyle)");
   return true;
 }
 
@@ -4278,18 +4233,21 @@ const stdout:channel(true, iokind.dynamic, true) = stdoutInit();
 /* standard error, otherwise known as file descriptor 2 */
 const stderr:channel(true, iokind.dynamic, true) = stderrInit();
 
+pragma "no doc"
 proc stdinInit() {
   try! {
     return openfd(0).reader();
   }
 }
 
+pragma "no doc"
 proc stdoutInit() {
   try! {
     return openfp(chpl_cstdout()).writer();
   }
 }
 
+pragma "no doc"
 proc stderrInit() {
   try! {
     return openfp(chpl_cstderr()).writer();
@@ -4380,7 +4338,7 @@ proc file.getchunk(start:int(64) = 0, end:int(64) = max(int(64))):(int(64),int(6
   var e = 0;
 
   on this.home {
-    var real_end = min(end, this.length());
+    var real_end = min(end, this.size);
     var len:int(64);
 
     err = qio_get_chunk(this._file_internal, len);
@@ -4460,7 +4418,7 @@ proc file.localesForRegion(start:int(64), end:int(64)) {
     }
 
     // We found no "good" locales. So any locale is just as good as the next
-    if ret.numIndices == 0 then
+    if ret.size == 0 then
       for loc in Locales do
         ret += loc;
   }
@@ -6181,7 +6139,7 @@ proc channel.writef(fmtStr: ?t, const args ...?k): bool throws
     try this.lock(); defer { this.unlock(); }
     var save_style = this._style();
     var cur:size_t = 0;
-    var len:size_t = fmtStr.length:size_t;
+    var len:size_t = fmtStr.size:size_t;
     var conv:qio_conv_t;
     var gotConv:bool;
     var style:iostyle;
@@ -6228,7 +6186,7 @@ proc channel.writef(fmtStr: ?t, const args ...?k): bool throws
               if argType(i) == QIO_CONV_ARG_TYPE_BINARY_SIGNED then
                 err = _write_signed(style.max_width_bytes, t, i);
               else
-                err = _write_one_internal(_channel_internal, iokind.dynamic, t, origLocale);
+                try _writeOne(iokind.dynamic, t, origLocale);
             }
           } when QIO_CONV_ARG_TYPE_UNSIGNED, QIO_CONV_ARG_TYPE_BINARY_UNSIGNED {
             var (t,ok) = _toUnsigned(args(i));
@@ -6238,7 +6196,7 @@ proc channel.writef(fmtStr: ?t, const args ...?k): bool throws
               if argType(i) == QIO_CONV_ARG_TYPE_BINARY_UNSIGNED then
                 err = _write_unsigned(style.max_width_bytes, t, i);
               else
-                err = _write_one_internal(_channel_internal, iokind.dynamic, t, origLocale);
+                try _writeOne(iokind.dynamic, t, origLocale);
             }
           } when QIO_CONV_ARG_TYPE_REAL, QIO_CONV_ARG_TYPE_BINARY_REAL {
             var (t,ok) = _toReal(args(i));
@@ -6248,7 +6206,7 @@ proc channel.writef(fmtStr: ?t, const args ...?k): bool throws
               if argType(i) == QIO_CONV_ARG_TYPE_BINARY_REAL then
                 err = _write_real(style.max_width_bytes, t, i);
               else
-                err = _write_one_internal(_channel_internal, iokind.dynamic, t, origLocale);
+                try _writeOne(iokind.dynamic, t, origLocale);
             }
           } when QIO_CONV_ARG_TYPE_IMAG, QIO_CONV_ARG_TYPE_BINARY_IMAG {
             var (t,ok) = _toImag(args(i));
@@ -6258,7 +6216,7 @@ proc channel.writef(fmtStr: ?t, const args ...?k): bool throws
               if argType(i) == QIO_CONV_ARG_TYPE_BINARY_IMAG then
                 err = _write_real(style.max_width_bytes, t:real, i);
               else
-                err = _write_one_internal(_channel_internal, iokind.dynamic, t, origLocale);
+                try _writeOne(iokind.dynamic, t, origLocale);
             }
           } when QIO_CONV_ARG_TYPE_COMPLEX, QIO_CONV_ARG_TYPE_BINARY_COMPLEX {
             var (t,ok) = _toComplex(args(i));
@@ -6267,33 +6225,33 @@ proc channel.writef(fmtStr: ?t, const args ...?k): bool throws
             } else {
               if argType(i) == QIO_CONV_ARG_TYPE_BINARY_COMPLEX then
                 err = _write_complex(style.max_width_bytes, t, i);
-              else err = _write_one_internal(_channel_internal, iokind.dynamic, t, origLocale);
+              else try _writeOne(iokind.dynamic, t, origLocale);
             }
           } when QIO_CONV_ARG_TYPE_NUMERIC {
             var (t,ok) = _toNumeric(args(i));
             if ! ok {
               err = qio_format_error_arg_mismatch(i);
-            } else err = _write_one_internal(_channel_internal, iokind.dynamic, t, origLocale);
+            } else try _writeOne(iokind.dynamic, t, origLocale);
           } when QIO_CONV_ARG_TYPE_CHAR {
             var (t,ok) = _toChar(args(i));
             if ! ok {
               err = qio_format_error_arg_mismatch(i);
-            } else err = _write_one_internal(_channel_internal, iokind.dynamic, new ioChar(t), origLocale);
+            } else try _writeOne(iokind.dynamic, new ioChar(t), origLocale);
           } when QIO_CONV_ARG_TYPE_BINARY_STRING {
             var (t,ok) = _toBytes(args(i));
             if ! ok {
               err = qio_format_error_arg_mismatch(i);
-            } else err = _write_one_internal(_channel_internal, iokind.dynamic, t, origLocale);
+            } else try _writeOne(iokind.dynamic, t, origLocale);
           } when QIO_CONV_ARG_TYPE_STRING { // can only happen with string
             var (t,ok) = _toString(args(i));
             if ! ok {
               err = qio_format_error_arg_mismatch(i);
-            } else err = _write_one_internal(_channel_internal, iokind.dynamic, t, origLocale);
+            } else try _writeOne(iokind.dynamic, t, origLocale);
           } when QIO_CONV_ARG_TYPE_REGEXP { // It's not so clear what to do when printing
             // a regexp. So we just don't handle it.
             err = qio_format_error_write_regexp();
           } when QIO_CONV_ARG_TYPE_REPR {
-            err = _write_one_internal(_channel_internal, iokind.dynamic, args(i), origLocale);
+            try _writeOne(iokind.dynamic, args(i), origLocale);
           } otherwise {
             // Unhandled argument type!
             throw new owned IllegalArgumentError("args(" + i:string + ")",
@@ -6334,7 +6292,7 @@ proc channel.writef(fmtStr:?t): bool throws
     try this.lock(); defer { this.unlock(); }
     var save_style = this._style();
     var cur:size_t = 0;
-    var len:size_t = fmtStr.length:size_t;
+    var len:size_t = fmtStr.size:size_t;
     var conv:qio_conv_t;
     var gotConv:bool;
     var style:iostyle;
@@ -6385,7 +6343,7 @@ proc channel.writef(fmtStr:?t): bool throws
    :arg fmt: the format as string or bytes
    :arg args: the arguments to read
    :returns: true if all arguments were read according to the format string,
-             false on EOF or if the format did not match the input.
+             false on EOF.
 
    :throws SystemError: Thrown if the arguments could not be read.
  */
@@ -6394,12 +6352,14 @@ proc channel.readf(fmtStr:?t, ref args ...?k): bool throws
 
   if writing then compilerError("readf on write-only channel");
   const origLocale = this.getLocaleOfIoRequest();
+
   var err:syserr = ENOERR;
+
   on this.home {
     try this.lock(); defer { this.unlock(); }
-    var save_style = this._style();
+    var save_style = this._style(); defer { this._set_style(save_style); }
     var cur:size_t = 0;
-    var len:size_t = fmtStr.length:size_t;
+    var len:size_t = fmtStr.size:size_t;
     var conv:qio_conv_t;
     var gotConv:bool;
     var style:iostyle;
@@ -6416,7 +6376,8 @@ proc channel.readf(fmtStr:?t, ref args ...?k): bool throws
     }
 
     err = qio_channel_mark(false, _channel_internal);
-    if !err {
+
+    if !err then try {
       var j = 1;
 
       for param i in 1..k {
@@ -6461,7 +6422,7 @@ proc channel.readf(fmtStr:?t, ref args ...?k): bool throws
                 if argType(i) == QIO_CONV_ARG_TYPE_BINARY_SIGNED then
                   err = _read_signed(style.max_width_bytes, ti, i);
                 else
-                  err = _read_one_internal(_channel_internal, iokind.dynamic, ti, origLocale);
+                  try _readOne(iokind.dynamic, ti, origLocale);
                 if ! err then err = _setIfPrimitive(args(i),ti,i);
               }
             }
@@ -6474,7 +6435,7 @@ proc channel.readf(fmtStr:?t, ref args ...?k): bool throws
                 if argType(i) == QIO_CONV_ARG_TYPE_BINARY_UNSIGNED then
                   err = _read_unsigned(style.max_width_bytes, ti, i);
                 else
-                  err = _read_one_internal(_channel_internal, iokind.dynamic, ti, origLocale);
+                  try _readOne(iokind.dynamic, ti, origLocale);
                 if ! err then err = _setIfPrimitive(args(i),ti,i);
               }
             } when QIO_CONV_ARG_TYPE_REAL, QIO_CONV_ARG_TYPE_BINARY_REAL {
@@ -6486,7 +6447,7 @@ proc channel.readf(fmtStr:?t, ref args ...?k): bool throws
                 if argType(i) == QIO_CONV_ARG_TYPE_BINARY_REAL then
                   err = _read_real(style.max_width_bytes, ti, i);
                 else
-                  err = _read_one_internal(_channel_internal, iokind.dynamic, ti, origLocale);
+                  try _readOne(iokind.dynamic, ti, origLocale);
                 if ! err then err = _setIfPrimitive(args(i),ti,i);
               }
             } when QIO_CONV_ARG_TYPE_IMAG, QIO_CONV_ARG_TYPE_BINARY_IMAG {
@@ -6500,7 +6461,7 @@ proc channel.readf(fmtStr:?t, ref args ...?k): bool throws
                   err = _read_real(style.max_width_bytes, tr, i);
                   ti = tr:imag;
                 } else
-                  err = _read_one_internal(_channel_internal, iokind.dynamic, ti, origLocale);
+                  try _readOne(iokind.dynamic, ti, origLocale);
                 if ! err then err = _setIfPrimitive(args(i),ti,i);
               }
             } when QIO_CONV_ARG_TYPE_COMPLEX, QIO_CONV_ARG_TYPE_BINARY_COMPLEX {
@@ -6510,47 +6471,44 @@ proc channel.readf(fmtStr:?t, ref args ...?k): bool throws
               } else {
                 var ti:complex;
                 if argType(i) == QIO_CONV_ARG_TYPE_BINARY_COMPLEX then
-                 err = _read_complex(style.max_width_bytes, ti, i);
+                  err = _read_complex(style.max_width_bytes, ti, i);
                 else
-                  err = _read_one_internal(_channel_internal, iokind.dynamic, ti, origLocale);
+                  try _readOne(iokind.dynamic, ti, origLocale);
                 if ! err then err = _setIfPrimitive(args(i),ti,i);
               }
             } when QIO_CONV_ARG_TYPE_NUMERIC {
               var (t,ok) = _toNumeric(args(i));
-              if ! ok {
+              if !ok {
                 err = qio_format_error_arg_mismatch(i);
               } else {
                 var ti = t;
-                err = _read_one_internal(_channel_internal, iokind.dynamic, ti, origLocale);
-                if ! err then err = _setIfPrimitive(args(i),ti,i);
+                try _readOne(iokind.dynamic, ti, origLocale);
+                if !err then err = _setIfPrimitive(args(i),ti,i);
               }
             } when QIO_CONV_ARG_TYPE_CHAR {
               var (t,ok) = _toChar(args(i));
               var chr = new ioChar(t);
               if ! ok {
                 err = qio_format_error_arg_mismatch(i);
-              } else err = _read_one_internal(_channel_internal, iokind.dynamic, chr, origLocale);
+              } else try _readOne(iokind.dynamic, chr, origLocale);
               if ! err then _setIfChar(args(i),chr.ch);
             } when QIO_CONV_ARG_TYPE_BINARY_STRING {
               var (t,ok) = _toBytes(args(i));
               if ! ok {
                 err = qio_format_error_arg_mismatch(i);
-              }
-              else err = _read_one_internal(_channel_internal, iokind.dynamic, t, origLocale);
+              } else try _readOne(iokind.dynamic, t, origLocale);
               if ! err then err = _setIfPrimitive(args(i),t,i);
             } when QIO_CONV_ARG_TYPE_STRING {
               var (t,ok) = _toString(args(i));
               if ! ok {
                 err = qio_format_error_arg_mismatch(i);
-              }
-              else err = _read_one_internal(_channel_internal, iokind.dynamic, t, origLocale);
+              } else try _readOne(iokind.dynamic, t, origLocale);
               if ! err then err = _setIfPrimitive(args(i),t,i);
             } when QIO_CONV_ARG_TYPE_REGEXP {
               var (t,ok) = _toRegexp(args(i));
               if ! ok {
                 err = qio_format_error_arg_mismatch(i);
-              }
-              else {
+              } else {
                 // match it here.
                 if r == nil then r = new unmanaged _channel_regexp_info();
                 const rnn = r!;  // indicate that it is non-nil
@@ -6572,7 +6530,7 @@ proc channel.readf(fmtStr:?t, ref args ...?k): bool throws
                 }
               }
             } when QIO_CONV_ARG_TYPE_REPR {
-              err = _read_one_internal(_channel_internal, iokind.dynamic, args(i), origLocale);
+              try _readOne(iokind.dynamic, args(i), origLocale);
             } when QIO_CONV_SET_CAPTURE {
               if r == nil {
                 err = qio_format_error_bad_regexp();
@@ -6643,8 +6601,10 @@ proc channel.readf(fmtStr:?t, ref args ...?k): bool throws
         // revert
         qio_channel_revert_unlocked(_channel_internal);
       }
+    } catch thrownError: SystemError {
+      if thrownError.err != EEOF then throw thrownError;
+      err = EEOF;
     }
-    this._set_style(save_style);
   }
 
   if !err {
@@ -6654,6 +6614,7 @@ proc channel.readf(fmtStr:?t, ref args ...?k): bool throws
   } else {
     try this._ch_ioerror(err, "in channel.readf(fmt:string, ...)");
   }
+
   return false;
 }
 
@@ -6666,9 +6627,9 @@ proc channel.readf(fmtStr:?t) throws
   var err:syserr = ENOERR;
   on this.home {
     try this.lock(); defer { this.unlock(); }
-    var save_style = this._style();
+    var save_style = this._style(); defer { this._set_style(save_style); }
     var cur:size_t = 0;
-    var len:size_t = fmtStr.length:size_t;
+    var len:size_t = fmtStr.size:size_t;
     var conv:qio_conv_t;
     var gotConv:bool;
     var style:iostyle;
@@ -6701,13 +6662,11 @@ proc channel.readf(fmtStr:?t) throws
       // revert
       qio_channel_revert_unlocked(_channel_internal);
     }
-
-    this._set_style(save_style);
   }
 
   if !err {
     return true;
-  } else if err == EEOF || err == EFORMAT {
+  } else if err == EEOF {
     return false;
   } else {
     try this._ch_ioerror(err, "in channel.readf(fmt:string)");
@@ -6875,7 +6834,7 @@ pragma "no doc"
 proc channel._extractMatch(m:reMatch, ref arg:bytes, ref error:syserr) {
   var cur:int(64);
   var target = m.offset:int;
-  var len = m.length;
+  var len = m.size;
 
   // If there was no match, return the default value of the type
   if !m.matched {
@@ -6998,7 +6957,7 @@ proc channel._ch_handle_captures(matches:_ddata(qio_regexp_string_piece_t),
 
 // documented in the error= captures version
 pragma "no doc"
-proc channel.search(re:regexp, ref error:syserr):reMatch
+proc channel.search(re:regexp(?), ref error:syserr):reMatch
 {
   var m:reMatch;
   on this.home {
@@ -7039,7 +6998,7 @@ proc channel.search(re:regexp, ref error:syserr):reMatch
 
 // documented in the error= version
 pragma "no doc"
-proc channel.search(re:regexp):reMatch throws
+proc channel.search(re:regexp(?)):reMatch throws
 {
   var e:syserr = ENOERR;
   var ret = this.search(re, error=e);
@@ -7062,7 +7021,7 @@ proc channel.search(re:regexp):reMatch throws
                    in the regular expression.
     :returns: the region of the channel that matched
  */
-proc channel.search(re:regexp, ref captures ...?k): reMatch throws
+proc channel.search(re:regexp(?), ref captures ...?k): reMatch throws
 {
   var m:reMatch;
   var err:syserr = ENOERR;
@@ -7106,7 +7065,7 @@ proc channel.search(re:regexp, ref captures ...?k): reMatch throws
 
 // documented in the capture group version
 pragma "no doc"
-proc channel.match(re:regexp, ref error:syserr):reMatch
+proc channel.match(re:regexp(?), ref error:syserr):reMatch
 {
   var m:reMatch;
   on this.home {
@@ -7146,7 +7105,7 @@ proc channel.match(re:regexp, ref error:syserr):reMatch
 
 // documented in the error= version
 pragma "no doc"
-proc channel.match(re:regexp):reMatch throws
+proc channel.match(re:regexp(?)):reMatch throws
 {
   var e:syserr = ENOERR;
   var ret = this.match(re, error=e);
@@ -7168,7 +7127,7 @@ proc channel.match(re:regexp):reMatch throws
    :returns: the region of the channel that matched
  */
 
-proc channel.match(re:regexp, ref captures ...?k, ref error:syserr):reMatch
+proc channel.match(re:regexp(?), ref captures ...?k, ref error:syserr):reMatch
 {
   var m:reMatch;
   on this.home {
@@ -7210,7 +7169,7 @@ proc channel.match(re:regexp, ref captures ...?k, ref error:syserr):reMatch
 }
 // documented in the error= version
 pragma "no doc"
-proc channel.match(re:regexp, ref captures ...?k):reMatch throws
+proc channel.match(re:regexp(?), ref captures ...?k):reMatch throws
 {
   var e:syserr = ENOERR;
   var ret = this.match(re, (...captures), error=e);
@@ -7247,7 +7206,7 @@ proc channel.match(re:regexp, ref captures ...?k):reMatch throws
    :yields: tuples of :record:`Regexp.reMatch` objects, where the first element
             is the whole pattern.  The tuples will have 1+captures elements.
  */
-iter channel.matches(re:regexp, param captures=0, maxmatches:int = max(int))
+iter channel.matches(re:regexp(?), param captures=0, maxmatches:int = max(int))
 // TODO: should be throws
 {
   var m:reMatch;

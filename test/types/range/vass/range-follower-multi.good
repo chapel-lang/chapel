@@ -117,4 +117,4 @@
  401  (4, 4)
  401  it * it
  402  it * r
-range-follower-multi.chpl:66: error: halt reached - zippered iteration with a range has non-equal lengths
+range-follower-multi.chpl:66: error: halt reached - size mismatch in zippered iteration

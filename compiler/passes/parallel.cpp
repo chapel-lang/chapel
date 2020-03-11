@@ -195,7 +195,7 @@ static void create_arg_bundle_class(FnSymbol* fn, CallExpr* fcall, ModuleSymbol*
     if (isRecordWrappedType(var->getValType()))
       field->qual = QUAL_VAL;
     // If it's an new 'in' intent to task fn, it should be stored by value
-    else if (shouldAddFormalTempAtCallSite(formal, fn))
+    else if (shouldAddInFormalTempAtCallSite(formal, fn))
       field->qual = QUAL_VAL;
     // If we needed to auto-copy it, it should be stored by value
     else if (autoCopy)
@@ -270,7 +270,7 @@ static bool needsAutoCopyAutoDestroyForArg(ArgSymbol* formal, Expr* arg,
   Type*    baseType = arg->getValType();
 
   // new-style in intents are handled elsewhere
-  if (shouldAddFormalTempAtCallSite(formal, fn))
+  if (shouldAddInFormalTempAtCallSite(formal, fn))
     return false;
 
   if (!formal->isRef() && isRecord(baseType))
@@ -435,7 +435,7 @@ bundleArgs(CallExpr* fcall, BundleArgsFnData &baData) {
     // New "in" intent handling includes destruction in called
     // function (i.e. in the task function not in the wrapper)
     if (autoDestroy)
-      autoDestroy = !shouldAddFormalTempAtCallSite(formal, fn);
+      autoDestroy = !shouldAddInFormalTempAtCallSite(formal, fn);
 
     baData.needsDestroy.push_back(autoDestroy);
 

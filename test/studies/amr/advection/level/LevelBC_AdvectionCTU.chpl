@@ -13,9 +13,9 @@ class ZeroInflowBC: LevelBC {
 
     for grid in level.grids {
 
-      for ghost_domain in level.boundary(grid) {
+      for ghost_domain in level.boundary(grid)! {
         forall cell in ghost_domain do
-          q(grid).value(cell) = 0.0;
+          q(grid)!.value(cell) = 0.0;
       }
 
     }

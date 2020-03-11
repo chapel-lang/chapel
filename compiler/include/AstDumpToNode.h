@@ -123,6 +123,8 @@ public:
 
   virtual void     visitUseStmt        (UseStmt*           node);
 
+  virtual void     visitImportStmt     (ImportStmt*        node);
+
   virtual bool     enterBlockStmt      (BlockStmt*         node);
 
   virtual bool     enterForallStmt     (ForallStmt*        node);

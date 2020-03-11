@@ -1,0 +1,2 @@
+bug: problems returning tuple of non-nilable owned
+#14942

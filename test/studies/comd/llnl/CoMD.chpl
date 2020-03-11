@@ -28,12 +28,9 @@ proc initGrid(latticeConstant: real, const ref force: unmanaged Force) {
 
   boxSize = simSize / numBoxes;
 
-  const targetLocales : [locDom] locale;
-  var count: int(32) = 0;
-  for l in targetLocales {
-    l = Locales(count);
-    count = count + 1;
-  }
+  assert(locDom.size <= numLocales);
+  const targetLocales : [locDom] locale =
+          for (_,l) in zip(0..#locDom.size, Locales) do l;
 
   const boxSpace = {1..numBoxes(1), 1..numBoxes(2), 1..numBoxes(3)};
   const distSpace = boxSpace dmapped Block(boundingBox=boxSpace, targetLocales=targetLocales);
@@ -73,7 +70,6 @@ local {
       ref neighs = MyDom.neighs;
       const ref neighDom = MyDom.neighDom;
       ref temps1 = MyDom.temps1;
-      ref temps2 = MyDom.temps2;
       ref pbc = MyDom.pbc;
       {
         const size0 = halo.dim(2).size * halo.dim(3).size;
@@ -91,12 +87,12 @@ local {
       neighOff[5] = (0,0,-1);
       neighOff[6] = (0,0,1);
 
-      for (dest, src, t1, t2, shift, neigh, nOff) in zip(destSlice, srcSlice, temps1, temps2, pbc, neighs, neighOff) {
+      for (dest, src, t1, shift, neigh, nOff) in zip(destSlice, srcSlice, temps1, pbc, neighs, neighOff) {
         dest = halo.interior(2*nOff);
         src = dest;
         var neighbor = ijk + nOff;
         var srcOff = (0,0,0);
-        t1 = new unmanaged FaceArr(d=dest);
+        t1.d = dest;
         for i in 1..3 {
           if(neighbor(i) < 0) {
             //neighbor(i) = locDom.high(i);
@@ -115,7 +111,6 @@ local {
           }
         }
         src = src.translate(srcOff);
-        t2 = new unmanaged FaceArr(d=src);
         neigh = neighbor;
       }
 }
@@ -130,7 +125,7 @@ tArray[timerEnum.COMMREDUCE].start();
   coforall ijk in locDom {
     on locGrid[ijk] {
       var vcmTemp = (0.0, 0.0, 0.0);
-      const MyDom = Grid[ijk];
+      const MyDom = Grid[ijk]!;
 local {
       forall box in MyDom.cells[MyDom.localDom] with (+ reduce vcmTemp) {
         for i in 1..box.count {
@@ -144,7 +139,7 @@ local {
   }
   var vcm = (0.0, 0.0, 0.0);
   forall ijk in locDom with (+ reduce vcm) {
-      vcm += Grid[ijk].vcmTemp;
+      vcm += Grid[ijk]!.vcmTemp;
   }
 tArray[timerEnum.COMMREDUCE].stop();
   return vcm/numAtoms;
@@ -156,7 +151,7 @@ proc setVcm(newVcm : real3) {
 
   coforall ijk in locDom {
     on locGrid[ijk] {
-      const MyDom = Grid[ijk];
+      const MyDom = Grid[ijk]!;
 local {
       forall box in MyDom.cells[MyDom.localDom] {
         for i in 1..box.count {
@@ -174,7 +169,7 @@ tArray[timerEnum.COMMREDUCE].start();
 if useChplVis then tagVdebug("totalEnergy");
   coforall ijk in locDom {
     on locGrid[ijk] {
-      const MyDom = Grid[ijk];
+      const MyDom = Grid[ijk]!;
 local {
       var keTemp = 0.0;
       var peTemp = 0.0;
@@ -192,7 +187,7 @@ local {
   keTotal = 0.0;
   peTotal = 0.0;
   forall ijk in locDom with (+ reduce keTotal, + reduce peTotal) {
-    const e = Grid[ijk].domKEPE;
+    const e = Grid[ijk]!.domKEPE;
     keTotal += e(1);
     peTotal += e(2);
   }
@@ -203,7 +198,7 @@ tArray[timerEnum.COMMREDUCE].stop();
 proc setTemperature(const in temp : real) : void {
   coforall ijk in locDom {
     on locGrid[ijk] {
-      const MyDom = Grid[ijk];
+      const MyDom = Grid[ijk]!;
 local {
       forall box in MyDom.cells[MyDom.localDom] {
         for i in 1..box.count {
@@ -230,7 +225,7 @@ local {
 
   coforall ijk in locDom {
     on locGrid[ijk] {
-      const MyDom = Grid[ijk];
+      const MyDom = Grid[ijk]!;
 local {
       forall box in MyDom.cells[MyDom.localDom] {
         for i in 1..box.count {
@@ -249,7 +244,7 @@ local {
 proc randomDisplacements(temp : real) : void {
   coforall ijk in locDom {
     on locGrid[ijk] {
-      const MyDom = Grid[ijk];
+      const MyDom = Grid[ijk]!;
 local {
       forall box in MyDom.cells[MyDom.localDom] {
         for i in 1..box.count {
@@ -268,7 +263,7 @@ tArray[timerEnum.SORT].start();
 //  if(doeam) then {
     coforall ijk in locDom {
       on locGrid[ijk] {
-        const MyDom = Grid[ijk];
+        const MyDom = Grid[ijk]!;
 local {
         forall box in MyDom.cells {
           //QuickSort(box.atoms[1..box.count]);
@@ -296,7 +291,7 @@ tArray[timerEnum.SORT].stop();
 proc updateLinkCells() {
   coforall ijk in locDom {
     on locGrid[ijk] {
-      const MyDom = Grid[ijk];
+      const MyDom = Grid[ijk]!;
 local {
       // alias to save typing
       const ref halo = MyDom.halo;
@@ -395,7 +390,7 @@ proc haloExchange(const ref MyDom : unmanaged Domain, const in face:int) {
     counter -= 1;
   }
 
-  const g = Grid[nf];
+  const g = Grid[nf]!;
   ref actualPack = pack[1..counter];
   
   // TODO: put 'counter' into a const to avoid communication
@@ -450,10 +445,10 @@ tArray[timerEnum.ATOMHALO].start();
   for i in 1..6 by 2 {
     coforall ijk in locDom {
       on locGrid[ijk] {
-        if Grid[ijk].localDom.dim((i/2):int+1).size > 1 {
-          exchangeDataTwo(Grid[ijk], i);
+        if Grid[ijk]!.localDom.dim((i/2):int+1).size > 1 {
+          exchangeDataTwo(Grid[ijk]!, i);
         } else {
-          exchangeData(Grid[ijk], i);
+          exchangeData(Grid[ijk]!, i);
         }
       }
     }
@@ -566,7 +561,7 @@ inline proc getBoxFromCoords(const ref r : real3, const ref invBoxSize: real3) {
 proc createFccLattice(lat : real) : void {
   coforall ijk in locDom {
     on locGrid[ijk] {
-      const MyDom = Grid[ijk];
+      const MyDom = Grid[ijk]!;
       const force = MyDom.force;
       const name : string = force.name;
       const mass : real = force.mass;
@@ -626,7 +621,7 @@ tArray[timerEnum.COMMREDUCE].start();
   var maxOcc = 0;
   for ijk in locDom {
     on locGrid[ijk] {
-      const MyDom = Grid[ijk];
+      const MyDom = Grid[ijk]!;
       var maxOccTemp = 0;
       for box in MyDom.cells[MyDom.localDom] {
         maxOccTemp = max(maxOccTemp, box.count);
@@ -643,7 +638,7 @@ tArray[timerEnum.COMMREDUCE].start();
 if useChplVis then tagVdebug("sumAtoms");
   numAtoms = 0;
   forall ijk in locDom with (+ reduce numAtoms) {
-    numAtoms += Grid[ijk].numLocalAtoms;
+    numAtoms += Grid[ijk]!.numLocalAtoms;
   }
 if useChplVis then pauseVdebug();
 tArray[timerEnum.COMMREDUCE].stop();
@@ -655,7 +650,7 @@ if useChplVis then tagVdebug("advanceVelocity");
   coforall ijk in locDom {
     on locGrid[ijk] {
       // TODO: Some communication when accessing our Domain class
-      const MyDom = Grid[ijk];
+      const MyDom = Grid[ijk]!;
 local {
       forall (box, f) in zip(MyDom.cells[MyDom.localDom], MyDom.f) {
         for i in 1..box.count {
@@ -675,7 +670,7 @@ tArray[timerEnum.POSITION].start();
 if useChplVis then tagVdebug("advancePosition");
   coforall ijk in locDom {
     on locGrid[ijk] {
-      const MyDom = Grid[ijk];
+      const MyDom = Grid[ijk]!;
 local {
       forall box in MyDom.cells[MyDom.localDom] {
         for i in 1..box.count {

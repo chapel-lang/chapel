@@ -1,6 +1,0 @@
-peek-poke.chpl:2: warning: Default usage of poke() is deprecated, use PeekPoke
-peek-poke.chpl:3: warning: Default usage of peek() is deprecated, use PeekPoke
-peek-poke.chpl:6: warning: Default usage of poke() is deprecated, use PeekPoke
-peek-poke.chpl:7: warning: Default usage of peek() is deprecated, use PeekPoke
-1
-true

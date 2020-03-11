@@ -360,14 +360,12 @@ GASNET_USE_UDREG
   This variable is not required to be single-valued.
 
 GASNET_USE_CE
-  AVAILABLE ONLY ON ARIES NETWORK.
   This gives a boolean: "0" to disable or "1" to enable the use of the Aries
   Collective Engine (CE) for acceleration of certain collective operations
   (barrier in particular).
   The default is enabled.
 
 GASNET_USE_CE_PSHM
-  AVAILABLE ONLY ON ARIES NETWORK.
   This gives a boolean: "0" to disable or "1" to enable the use of the Aries
   CE when the count of processes per host exceeds what the CE can support
   directly.  This uses a hybrid CE + shared-memory implementation when the
@@ -377,7 +375,6 @@ GASNET_USE_CE_PSHM
   The default is enabled.
 
 GASNET_GNI_CE_RADIX
-  AVAILABLE ONLY ON ARIES NETWORK.
   This gives an integer in the range 1 to 31 for the radix of the N-ary tree
   tree used for inter-host communication by the Aries Collective Engine (CE).
   Increased values of this parameter come at the expense of intra-host

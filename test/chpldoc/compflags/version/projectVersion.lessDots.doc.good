@@ -1,0 +1,2 @@
+error: Invalid version format: 21.0-alpha due to: Required only two dots which separates three numbers
+cat: docs/_static/documentation_options.js: No such file or directory

@@ -3,7 +3,7 @@ use IO;
 class mything {
   var x:int;
   var y:int;
-  proc writeThis(w: Writer) {
+  proc writeThis(w: Writer) throws {
     w & x;
     w & new ioLiteral(" ");
     w & y;

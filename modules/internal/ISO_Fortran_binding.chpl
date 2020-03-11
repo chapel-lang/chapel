@@ -200,7 +200,7 @@ module ISO_Fortran_binding {
     var D = {(...dims)};
     var A = D.buildArrayWith(eltType,
                              FA.base_addr: _ddata(eltType),
-                             D.numIndices);
+                             D.size);
     A._unowned = true;
     return A;
   }

@@ -89,16 +89,18 @@ DECL_CHPL_COMM_ATOMIC_XCHG(real32)
 DECL_CHPL_COMM_ATOMIC_XCHG(real64)
 
 //
-// Do a remote atomic compare and exchange.  The value to be matched
-// is *expected on the local node.  If the match succeeds, the value
-// to be stored is *desired on the local node.  The target location to
-// be stored into is *object on the given node.  Whether the exchange
-// occurred or not is returned in *result on the local node.
+// Do a remote atomic compare and exchange.  The value to be matched is
+// *expected on the local node.  If the match succeeds, the value to be
+// stored is *desired on the local node, otherwise the old value is
+// stored in *expected.  The target location to be stored into is
+// *object on the given node.  Whether the exchange occurred or not is
+// returned in *result on the local node.
 //
 #define DECL_CHPL_COMM_ATOMIC_CMPXCHG(type)                             \
   void chpl_comm_atomic_cmpxchg_ ## type                                \
          (void* expected, void* desired, c_nodeid_t node, void* object, \
-          chpl_bool32* result, memory_order order, int ln, int32_t fn);
+          chpl_bool32* result, memory_order succ, memory_order fail,    \
+          int ln, int32_t fn);
 
 DECL_CHPL_COMM_ATOMIC_CMPXCHG(int32)
 DECL_CHPL_COMM_ATOMIC_CMPXCHG(int64)

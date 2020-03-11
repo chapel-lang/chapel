@@ -96,7 +96,7 @@ module LockFreeQueue {
 
   class Node {
     type eltType;
-    var val : eltType?;
+    var val : toNilableIfClassType(eltType);
     var next : AtomicObject(unmanaged Node(eltType)?, hasGlobalSupport=true, hasABASupport=false);
 
     proc init(val : ?eltType) {
@@ -114,6 +114,8 @@ module LockFreeQueue {
     var _head : AtomicObject(unmanaged Node(objType), hasGlobalSupport=true, hasABASupport=false);
     var _tail : AtomicObject(unmanaged Node(objType), hasGlobalSupport=true, hasABASupport=false);
     var _manager = new owned LocalEpochManager();
+
+    proc objTypeOpt type return toNilableIfClassType(objType);
 
     proc init(type objType) {
       this.objType = objType;
@@ -147,7 +149,7 @@ module LockFreeQueue {
       tok.unpin();
     }
 
-    proc dequeue(tok : owned TokenWrapper = getToken()) : (bool, objType?) {
+    proc dequeue(tok : owned TokenWrapper = getToken()) : (bool, objTypeOpt) {
       tok.pin();
       while (true) {
         var curr_head = _head.read()!;
@@ -157,7 +159,7 @@ module LockFreeQueue {
         if (curr_head == curr_tail) {
           if (next_node == nil) {
             tok.unpin();
-            var retval : objType?;
+            var retval : objTypeOpt;
             return (false, retval);
           }
           _tail.compareAndSwap(curr_tail, next_node);
@@ -174,11 +176,11 @@ module LockFreeQueue {
       }
 
       tok.unpin();
-      var retval : objType?;
+      var retval : objTypeOpt;
       return (false, retval);
     }
 
-    iter drain() : objType? {
+    iter drain() : objTypeOpt {
       var tok = getToken();
       var (hasElt, elt) = dequeue(tok);
       while hasElt {
@@ -188,7 +190,7 @@ module LockFreeQueue {
       tryReclaim();
     }
 
-    iter drain(param tag : iterKind) : objType? where tag == iterKind.standalone {
+    iter drain(param tag : iterKind) : objTypeOpt where tag == iterKind.standalone {
       coforall tid in 1..here.maxTaskPar {
         var tok = getToken();
         var (hasElt, elt) = dequeue(tok);

@@ -511,6 +511,8 @@ void AggregateType::addDeclarations(Expr* expr) {
 
     this->forwardingTo.insertAtTail(forwarding);
 
+  } else if (isEndOfStatementMarker(expr)) {
+    // drop it
   } else {
     INT_FATAL(expr, "unexpected case");
   }
@@ -1259,9 +1261,6 @@ AggregateType* AggregateType::generateType(SymbolMap& subs, CallExpr* call, cons
     }
   }
 
-  if (retval->symbol->hasFlag(FLAG_MANAGED_POINTER))
-    markManagedPointerIfNonNilable(retval, retval->symbol);
-
   return retval;
 }
 
@@ -1273,6 +1272,9 @@ void AggregateType::resolveConcreteType() {
 
   this->resolveStatus = RESOLVING;
   this->symbol->instantiationPoint = getInstantiationPoint(this->symbol->defPoint);
+  //if (this->symbol->instantiationPoint)
+  //  this->symbol->userInstantiationPointLoc =
+  //    getUserInstantiationPoint(this->symbol);
 
   if (isClass() == true && symbol->hasFlag(FLAG_NO_OBJECT) == false) {
     AggregateType* parent = dispatchParents.v[0];
@@ -1346,6 +1348,9 @@ AggregateType* AggregateType::instantiationWithParent(AggregateType* parent, Exp
 
     if (retval->symbol->instantiationPoint == NULL) {
       retval->symbol->instantiationPoint = toBlockStmt(insnPoint);
+      //if (retval->symbol->instantiationPoint)
+      //  retval->symbol->userInstantiationPointLoc =
+      //    getUserInstantiationPoint(retval->symbol);
     }
 
     // Update the type of the 'super' field
@@ -1621,6 +1626,9 @@ AggregateType* AggregateType::getInstantiation(Symbol* sym, int index, Expr* ins
     retval = getNewInstantiation(sym, symType, insnPoint);
   }
 
+  if (retval->symbol->hasFlag(FLAG_MANAGED_POINTER))
+    markManagedPointerIfNonNilable(retval, retval->symbol);
+
   return retval;
 }
 
@@ -1700,6 +1708,9 @@ AggregateType* AggregateType::getNewInstantiation(Symbol* sym, Type* symType, Ex
   retval->instantiatedFrom = this;
   if (retval->symbol->instantiationPoint == NULL) {
     retval->symbol->instantiationPoint = toBlockStmt(insnPoint);
+    //if (retval->symbol->instantiationPoint != NULL)
+    //  retval->symbol->userInstantiationPointLoc =
+    //    getUserInstantiationPoint(retval->symbol);
   }
 
   retval->symbol->copyFlags(symbol);
@@ -2286,6 +2297,9 @@ void AggregateType::fieldToArg(FnSymbol*              fn,
           arg->addFlag(FLAG_TYPE_VARIABLE);
         }
 
+        if (field->hasFlag(FLAG_UNSAFE))
+          arg->addFlag(FLAG_UNSAFE);
+
         if (LoopExpr* fe = toLoopExpr(defPoint->init)) {
           if (field->isType() == false) {
             CallExpr* copy = new CallExpr("chpl__initCopy");
@@ -2502,6 +2516,7 @@ void AggregateType::buildCopyInitializer() {
     fn->addFlag(FLAG_COMPILER_GENERATED);
     fn->addFlag(FLAG_LAST_RESORT);
     fn->addFlag(FLAG_COPY_INIT);
+    fn->addFlag(FLAG_SUPPRESS_LVALUE_ERRORS);
 
     _this->addFlag(FLAG_ARG_THIS);
 

@@ -60,6 +60,7 @@ static void checkLowerIteratorsRemovedPrims();
 static void checkFlagRelationships(); // Checks expected relationships between
                                       // flags.
 static void checkAutoCopyMap();
+static void checkDefaultInitEqAndAssign();
 static void checkFormalActualBaseTypesMatch();
 static void checkRetTypeMatchesRetVarType();
 static void checkFormalActualTypesMatch();
@@ -148,6 +149,7 @@ void check_resolve()
   check_afterNormalization();
   checkReturnTypesHaveRefTypes();
   checkAutoCopyMap();
+  checkDefaultInitEqAndAssign();
 }
 
 void check_resolveIntents()
@@ -471,6 +473,7 @@ static void check_afterResolution()
     checkFormalActualBaseTypesMatch();
     checkRetTypeMatchesRetVarType();
     checkAutoCopyMap();
+    checkDefaultInitEqAndAssign();
   }
 }
 
@@ -696,6 +699,86 @@ checkAutoCopyMap()
         Type* baseType = fn->getFormal(1)->getValType();
         INT_ASSERT(baseType == key);
       }
+    }
+  }
+}
+
+static FnSymbol* findUserInitEq(AggregateType* at) {
+  for_alive_in_Vec(FnSymbol, fn, gFnSymbols) {
+    if (fn->name == astrInitEquals &&
+        !fn->hasFlag(FLAG_COMPILER_GENERATED) &&
+        fn->numFormals() >= 1) {
+      ArgSymbol* lhs = fn->getFormal(1);
+      Type* t = lhs->getValType();
+      if (t == at)
+        return fn;
+    }
+  }
+  return NULL;
+}
+
+static FnSymbol* findUserAssign(AggregateType* at) {
+
+  for_alive_in_Vec(FnSymbol, fn, gFnSymbols) {
+    if (fn->name == astrSassign &&
+        !fn->hasFlag(FLAG_COMPILER_GENERATED) &&
+        fn->numFormals() >= 1) {
+      ArgSymbol* lhs = fn->getFormal(1);
+      Type* t = lhs->getValType();
+      if (t == at)
+        return fn;
+    }
+  }
+  return NULL;
+}
+
+
+static void
+checkDefaultInitEqAndAssign()
+{
+  for_alive_in_Vec(TypeSymbol, ts, gTypeSymbols) {
+    if (ts->hasFlag(FLAG_EXTERN))
+      continue; // can't make init= for extern types today anyway
+    if (!isRecord(ts->type) && !isUnion(ts->type))
+      continue; // can't make init= for non-records non-unions today anyway
+
+    AggregateType* at = toAggregateType(ts->type);
+    bool defaultInitEq = ts->hasFlag(FLAG_TYPE_DEFAULT_INIT_EQUAL);
+    bool customInitEq = ts->hasFlag(FLAG_TYPE_CUSTOM_INIT_EQUAL);
+    bool defaultAssign = ts->hasFlag(FLAG_TYPE_DEFAULT_ASSIGN);
+    bool customAssign = ts->hasFlag(FLAG_TYPE_CUSTOM_ASSIGN);
+    if (defaultInitEq && customAssign) {
+      USR_FATAL_CONT(ts, "Type '%s' uses compiler-generated default 'init=' "
+                         "but has a custom '=' function. "
+                         "Please add an 'init=' method",
+                         toString(ts->type));
+      if (FnSymbol* userAssign = findUserAssign(at))
+        USR_PRINT(userAssign, "'=' for '%s' defined here", toString(ts->type));
+    }
+    if (defaultInitEq && customInitEq) {
+      USR_FATAL_CONT(ts, "Type '%s' uses compiler-generated default 'init=' "
+                         "but also has a custom 'init=' method. "
+                         "Please add an 'init=' method with the same RHS type",
+                         toString(ts->type));
+      if (FnSymbol* userInitEq = findUserInitEq(at))
+        USR_PRINT(userInitEq, "'init=' for '%s' defined here", toString(ts->type));
+    }
+
+    if (customInitEq && defaultAssign) {
+      USR_FATAL_CONT(ts, "Type '%s' uses compiler-generated default '=' "
+                         "but has a custom 'init=' method. "
+                         "Please add a '=' function.",
+                         toString(ts->type));
+      if (FnSymbol* userInitEq = findUserInitEq(at))
+        USR_PRINT(userInitEq, "'init=' for '%s' defined here", toString(ts->type));
+    }
+    if (defaultAssign && customAssign) {
+      USR_FATAL_CONT(ts, "Type '%s' uses compiler-generated default '=' "
+                         "but also has a custom '=' function. "
+                         "Please add a '=' function with the same RHS type.",
+                         toString(ts->type));
+      if (FnSymbol* userAssign = findUserAssign(at))
+        USR_PRINT(userAssign, "'=' for '%s' defined here", toString(ts->type));
     }
   }
 }

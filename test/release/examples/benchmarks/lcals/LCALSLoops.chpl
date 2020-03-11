@@ -356,7 +356,7 @@ module LCALSLoops {
     use LongDouble;
 
     ref data = ra;
-    var len = ra.numElements;
+    var len = ra.size;
 
     var tchk: longdouble = stat.loop_chksum[ilength];
     for (j, dat) in zip(0..#len, data) {
@@ -370,7 +370,7 @@ module LCALSLoops {
   }
   proc updateChksum(stat: LoopStat, ilength: LoopLength, ca: [] complex, scale_factor: real = 1.0) {
     ref data = ca;
-    var len = ca.numElements;
+    var len = ca.size;
     var tchk = stat.loop_chksum[ilength];
     for (j,dat) in zip(0..#len,data) {
       tchk += (j+1)*(dat.re + dat.im)*scale_factor;

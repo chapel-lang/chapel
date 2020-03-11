@@ -2,8 +2,8 @@
 GASNet for Chapel release
 =========================
 
-This copy of GASNet-EX 2019.9.0 is being released with Chapel for
-convenience and was obtained from
+This copy of GASNet-EX 2020.3.0 pre-release (@58e79f0) is being released
+with Chapel for convenience and was obtained from
 
   https://gasnet.lbl.gov/
 

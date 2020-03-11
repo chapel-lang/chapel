@@ -96,6 +96,7 @@ users/npadmana/twopt/twopt-paircount.graph
 performance/compiler/bradc/AllCompTime.graph
 memleaksfull.graph
 studies/jacobi/jacobi.graph
+library/standard/List/perf/listBenchmark1.graph
 # suite: HPC Challenge
 studies/hpcc/STREAM_study_fragmented.graph
 studies/hpcc/STREAM_study.graph

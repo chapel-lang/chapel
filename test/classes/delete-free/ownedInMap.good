@@ -1,0 +1,4 @@
+before assignment o is: {i = 1}
+after assignment o is: nil
+before next assignment m[1] is: {i = 1}
+after next assignment m[1] is: nil

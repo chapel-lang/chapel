@@ -123,8 +123,9 @@ printlinkershared:
 	@echo $(LD) $(LIB_DYNAMIC_FLAG)
 
 printlibraries:
-	@echo $(GEN_LFLAGS) $(COMP_GEN_LFLAGS) -L$(CHPL_RT_LIB_DIR) \
-	      -lchpl $(LIBS) -lm $(CHPL_MAKE_THIRD_PARTY_LINK_ARGS) $(CHPL_MAKE_BASE_LFLAGS)
+	@echo $(CHPL_MAKE_BASE_LFLAGS) $(GEN_LFLAGS) $(COMP_GEN_LFLAGS) \
+	      -L$(CHPL_RT_LIB_DIR) -lchpl $(LIBS) -lm \
+	      $(CHPL_MAKE_THIRD_PARTY_LINK_ARGS)
 
 printlinker:
 	@echo $(LD)

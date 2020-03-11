@@ -49,7 +49,7 @@ class Block1DDist {
   // with explicit typing of locid field in LocBlock1DDist class.  Particularly
   // since I'm passing in a value from 0.. rather than an actual index value.
   //
-  var locDist: [targetLocDom] unmanaged LocBlock1DDist(glbIdxType, index(targetLocs.domain));
+  var locDist: [targetLocDom] unmanaged LocBlock1DDist(glbIdxType, index(targetLocs.domain))?;
 
   proc postinit() {
     for (loc, locid) in zip(targetLocs, 0..) do
@@ -83,7 +83,7 @@ class Block1DDist {
     // locale owns and the domain's index set
 
     // TODO: Could this be written myChunk[inds] ???
-    return locDist(here).myChunk[inds.low..inds.high];
+    return locDist(here)!.myChunk[inds.low..inds.high];
   }
   
   //
@@ -92,7 +92,7 @@ class Block1DDist {
   // TODO: Is this correct if targetLocs doesn't start with 0?
   //
   proc idxToLocale(ind: glbIdxType) {
-    return targetLocs((((ind-bbox.low)*targetLocs.numElements)/bbox.numIndices):index(targetLocs.domain));
+    return targetLocs((((ind-bbox.low)*targetLocs.size)/bbox.size):index(targetLocs.domain));
   }
 }
 
@@ -110,7 +110,7 @@ proc computeMyChunk(type glbIdxType, locid, dist) {
   const lo = dist.bbox.low;
   const hi = dist.bbox.high;
   const numelems = hi - lo + 1;
-  const numlocs = dist.targetLocs.numElements;
+  const numlocs = dist.targetLocs.size;
   const blo = if (locid == 0) then min(glbIdxType)
               else procToData((numelems: real * locid) / numlocs, lo);
   const bhi = if (locid == numlocs - 1) then max(glbIdxType)
@@ -179,7 +179,7 @@ class Block1DDom {
   // TODO: would like this to be const and initialize in-place,
   // removing the initialize method
   //
-  var locDom: [dist.targetLocDom] unmanaged LocBlock1DDom(glbIdxType, lclIdxType);
+  var locDom: [dist.targetLocDom] unmanaged LocBlock1DDom(glbIdxType, lclIdxType)?;
 
   proc postinit() {
     for loc in dist.targetLocs do
@@ -203,7 +203,7 @@ class Block1DDom {
       // May want to do something like:     
       // on blk do
       // But can't currently have yields in on clauses
-        for ind in blk do
+        for ind in blk! do
           yield ind;
   }
 
@@ -211,7 +211,7 @@ class Block1DDom {
   //
   // the print method for the domain
   //
-  proc writeThis(x) {
+  proc writeThis(x) throws {
     x.write(whole);
   }
 
@@ -225,8 +225,8 @@ class Block1DDom {
   //
   // queries for the number of indices, low, and high bounds
   //
-  proc numIndices {
-    return whole.numIndices;
+  proc size {
+    return whole.size;
   }
 
   proc low {
@@ -273,15 +273,15 @@ class LocBlock1DDom {
   //
   // how to write out this locale's indices
   //
-  proc writeThis(x) {
+  proc writeThis(x) throws {
     x.write(myBlock);
   }
 
   //
   // queries for this locale's number of indices, low, and high bounds
   //
-  proc numIndices {
-    return myBlock.numIndices;
+  proc size {
+    return myBlock.size;
   }
 
   proc low {
@@ -320,12 +320,12 @@ class Block1DArr {
   // TODO: would like this to be const and initialize in-place,
   // removing the postinit method
   //
-  var locArr: [dom.dist.targetLocDom] unmanaged LocBlock1DArr(glbIdxType, lclIdxType, elemType);
+  var locArr: [dom.dist.targetLocDom] unmanaged LocBlock1DArr(glbIdxType, lclIdxType, elemType)?;
 
   proc postinit() {
     for loc in dom.dist.targetLocs do
       on loc do
-        locArr(loc) = new unmanaged LocBlock1DArr(glbIdxType, lclIdxType, elemType, dom.locDom(loc));
+        locArr(loc) = new unmanaged LocBlock1DArr(glbIdxType, lclIdxType, elemType, dom.locDom(loc)!);
   }
 
   proc deinit() {
@@ -338,7 +338,7 @@ class Block1DArr {
   // the global accessor for the array
   //
   proc this(i: glbIdxType) ref {
-    return locArr(dom.dist.idxToLocale(i))(i);
+    return locArr(dom.dist.idxToLocale(i))![i];
   }
 
   //
@@ -349,7 +349,7 @@ class Block1DArr {
       // May want to do something like:     
       // on this do
       // But can't currently have yields in on clauses
-      for elem in locArr(loc) {
+      for elem in locArr(loc)! {
         yield elem;
       }
     }
@@ -358,25 +358,25 @@ class Block1DArr {
   iter these(param tag: iterKind) where tag == iterKind.leader {
     coforall blk in dom.locDom do
       on blk do
-        yield blk.myBlock;
+        yield blk!.myBlock;
     //    yield 1..2;
   }
 
   iter these(param tag: iterKind, followThis) ref where tag == iterKind.follower {
     for i in followThis do
-      yield this(i);
+      yield this![i];
   }
 
   //
   // how to print out the whole array, sequentially
   //
-  proc writeThis(x) {
+  proc writeThis(x) throws {
     var first = true;
     for loc in dom.dist.targetLocs {
       // May want to do something like the following:
       //      on loc {
       // but it causes deadlock -- see writeThisUsingOn.chpl
-        if (locArr(loc).numElements >= 1) {
+        if (locArr(loc)!.size >= 1) {
           if (first) {
             first = false;
           } else {
@@ -392,8 +392,8 @@ class Block1DArr {
   //
   // a query for the number of elements in the array
   //
-  proc numElements {
-    return dom.numIndices;
+  proc size {
+    return dom.size;
   }
 }
 
@@ -442,7 +442,7 @@ class LocBlock1DArr {
   //
   // prints out this locale's piece of the array
   //
-  proc writeThis(x) {
+  proc writeThis(x) throws {
     // May want to do something like the following:
     //      on loc {
     // but it causes deadlock -- see writeThisUsingOn.chpl
@@ -452,7 +452,7 @@ class LocBlock1DArr {
   //
   // query for the number of local array elements
   //
-  proc numElements {
-    return myElems.numElements;
+  proc size {
+    return myElems.size;
   }
 }

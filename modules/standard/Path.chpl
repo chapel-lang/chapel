@@ -78,6 +78,14 @@ const parentDir = "..";
 const pathSep = "/";
 
 /*
+   Localizes and unescapes string to create a bytes to be used for obtaining a
+   c_string to pass to extern file system operations.
+*/
+private inline proc unescape(str: string) {
+  return str.encode(policy=encodePolicy.unescape);
+}
+
+/*
   Creates a normalized absolutized version of a path. On most platforms, when
   given a non-absolute path this function is equivalent to the following code:
 
@@ -335,8 +343,8 @@ proc dirname(name: string): string {
    var path_p: string = path;
    var varChars: string = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890_";
    var res: string = "";
-   var ind: byteIndex = 1;
-   var pathlen: int = path_p.numBytes;
+   var ind: int = 1;
+   var pathlen: int = path_p.size;
    while (ind <= pathlen) {
      var c: string = path_p(ind);
      if (c == "$" && ind + 1 <= pathlen) {
@@ -346,7 +354,7 @@ proc dirname(name: string): string {
        } else if (path_p(ind+1) == "{") {
          path_p = path_p((ind+2)..);
          pathlen = path_p.numBytes;
-         ind = path_p.find("}");
+         ind = path_p.find("}"):int;
          if (ind == 0) {
            res += "${" +path_p;
            ind = pathlen;
@@ -354,12 +362,14 @@ proc dirname(name: string): string {
            var env_var: string = path_p(..(ind-1));
            var value: string;
            var value_c: c_string;
-           var h: int = sys_getenv(env_var.c_str(), value_c);
+           // buffer received from sys_getenv, shouldn't be freed
+           var h: int = sys_getenv(unescape(env_var).c_str(), value_c);
            if (h != 1) {
              value = "${" + env_var + "}";
            } else {
              try! {
-               value = createStringWithNewBuffer(value_c);
+               value = createStringWithNewBuffer(value_c,
+                                                 policy=decodePolicy.escape);
              }
            }
            res += value;
@@ -367,18 +377,20 @@ proc dirname(name: string): string {
        } else {
          var env_var: string = "";
          ind += 1;
-         while (ind <= path_p.numBytes && varChars.find(path_p(ind)) != 0) {
+         while (ind <= path_p.size && varChars.find(path_p(ind)) != 0) {
            env_var += path_p(ind);
            ind += 1;
          }
          var value: string;
          var value_c: c_string;
-         var h: int = sys_getenv(env_var.c_str(), value_c);
+         // buffer received from sys_getenv, shouldn't be freed
+         var h: int = sys_getenv(unescape(env_var).c_str(), value_c);
          if (h != 1) {
            value = "$" + env_var;
          } else {
            try! {
-             value = createStringWithNewBuffer(value_c);
+             value = createStringWithNewBuffer(value_c,
+                                               policy=decodePolicy.escape);
            }
          }
          res += value;
@@ -402,15 +414,15 @@ proc dirname(name: string): string {
      var myFile = open("/foo/bar/baz.txt", iomode.r);
      writeln(myFile.getParentName()); // Prints "/foo/bar"
 
-  Will throw a SystemError if one occurs.
-
   :return: The parent directory of the file.
   :rtype: `string`
+  :throws SystemError: If one occurs.
 */
 proc file.getParentName(): string throws {
   try check();
 
   try {
+    // realPath returns a string, nothing to worry about encoding-wise here
     return dirname(createStringWithNewBuffer(this.realPath()));
   } catch {
     return "unknown";
@@ -564,22 +576,24 @@ proc normPath(name: string): string {
    This resolves and removes any :data:`curDir` and :data:`parentDir` uses
    present, as well as any symbolic links.  Returns the result.
 
-   Will throw a SystemError if one occurs.
-
    :arg name: A path to resolve.  If the path does not refer to a valid file
               or directory, an error will occur.
    :type name: `string`
 
    :return: A canonical version of the argument.
    :rtype: `string`
+   :throws SystemError: If one occurs.
 */
 proc realPath(name: string): string throws {
   extern proc chpl_fs_realpath(path: c_string, ref shortened: c_string): syserr;
 
   var res: c_string;
-  var err = chpl_fs_realpath(name.localize().c_str(), res);
+  var err = chpl_fs_realpath(unescape(name).c_str(), res);
   if err then try ioerror(err, "realPath", name);
-  return createStringWithOwnedBuffer(res);
+  const ret = createStringWithNewBuffer(res, policy=decodePolicy.escape);
+  // res was qio_malloc'd by chpl_fs_realpath, so free it here
+  chpl_free_c_string(res);
+  return ret; 
 }
 
 pragma "no doc"
@@ -601,12 +615,11 @@ proc realPath(out error: syserr, name: string): string {
    :data:`parentDir` uses present, as well as any symbolic links.  Returns the
    result.
 
-   Will throw a SystemError if one occurs.
-
    :return: A canonical path to the file referenced by this :type:`~IO.file`
             record.  If the :type:`~IO.file` record is not valid, an error will
             occur.
    :rtype: `string`
+   :throws SystemError: If one occurs.
 */
 proc file.realPath(): string throws {
   extern proc chpl_fs_realpath_file(path: qio_file_ptr_t, ref shortened: c_string): syserr;
@@ -728,7 +741,7 @@ proc relPath(name: string, start:string=curDir): string throws {
   :throws SystemError: Upon failure to get the current working directory.
 */
 proc file.relPath(start:string=curDir): string throws {
-  use Path only;
+  import Path;
   // Have to prefix module name to avoid muddying name resolution.
   return Path.relPath(this.path, start);
 }

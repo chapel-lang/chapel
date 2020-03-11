@@ -318,7 +318,7 @@ if example == 0 || example == 6 {
   }
 
   record MyThing {
-    proc writeThis(w) {
+    proc writeThis(w) throws {
       w.writeln("This should be a chunk: {");
       w.writeln(" a");
       w.writeln(" b");

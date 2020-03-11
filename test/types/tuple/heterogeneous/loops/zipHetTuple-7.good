@@ -1,0 +1,1 @@
+zipHetTuple.chpl:44: error: Heterogeneous tuples don't support this style of loop yet

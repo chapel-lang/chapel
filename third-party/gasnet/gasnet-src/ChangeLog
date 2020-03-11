@@ -10,12 +10,74 @@ GASNet-EX ChangeLog
   GASNet-EX currently implements the following conduits:
   - InfiniBand Verbs (ibv-conduit)
   - Cray uGNI (aries-conduits)
-  - IBM PAMI (pami-conduit) *DEPRECATED*
   - Shared-memory (smp-conduit)
   - Portable UDP (udp-conduit)
   - Portable MPI (mpi-conduit)
   Users wishing to use other conduits are recommended to download the GASNet v1.x
   distribution from https://gasnet.lbl.gov.
+
+----------------------------------------------------------------------
+PENDING @58e79f0: GASNet-EX Work-In-Progress for 2020.3.0 release
+
+* InfiniBand Verbs (ibv-conduit)
+  - Negotiated-Payload Active Messages are implemented natively for ibv-conduit,
+    replacing use of a portable reference implementation.
+  - New environment variable GASNET_AM_GATHER_MIN controls use of gather-on-send
+    for AM Medium (and small Long) payloads.  See details in the conduit README.
+  - The gather-on-send optimization for AM Medium (and small Long) payloads is
+    now applied to out-of-segment sources when using ODP.
+  - A new --with-ibv-max-medium= can set the size of AM Medium buffers.
+    See details, including supported values, in the conduit README.
+  - The default AM Max Medium is now 64KB minus space for headers (up from 4KB).
+  - Code paths for AM Long and RDMA Put have been separated, leading to simpler
+    (faster and more maintainable) logic for each.
+  - Code paths for AM and RMA have been revised to eliminate certain global
+    state in favor of per-endpoint state.  This is work toward multi-endpoint and
+    multi-segment support to appear in a later release.
+  - AM-over-RDMA support (not compiled by default since 2019.6.0) has been
+    removed.
+  - The environment variable GASNET_PIN_MAXSZ has been removed.  This variable
+    was introduced to help work-around a misbehavior not seen in modern HCAs,
+    and its support added significant complexity to the critical code paths
+    for RMA.
+
+* Unified Communication X framework (ucx-conduit) [EXPERIMENTAL]
+  - This NEW conduit is now available for experimental use on Mellanox
+    InfiniBand devices including ConnectX-5 or newer.
+    The ucx-conduit code was contributed by Mellanox Technologies Ltd.
+  - For details, see ucx-conduit/README
+
+* IBM PAMI (pami-conduit)
+  - This conduit, deprecated since 2019.9.0, has been removed.
+
+* Portable UDP support (udp-conduit)
+  - Provide more robust default detection of shared-memory peers
+    (see GASNET_USE_GETHOSTID in udp-conduit/README for details).
+  - Improved startup error checking and reporting for DNS problems
+
+* GASNet tools (spec v1.15)
+  - Add runtime version queries gasnett_release_version*()
+
+* Platform support/portability
+  - PMI-based spawning now supports PMIx 
+  - Improve portable_inttypes to be more trusting of C99/C++11 compilers
+  - Improved warning behavior with recent versions of PGI
+  - Support for IBM BlueGene/Q has been removed.
+  - Support for native atomics on IBM XL compilers for big-endian PPC has been
+    removed.  These platforms now default to compiler-provided atomics.
+    Little-endian PPC platforms remain unchanged.
+
+* General and Misc.
+  - New make targets (run-)tests-installed-{seq,par,parsync} have been
+    added for use in post-install validation of the library.
+  - Now document and enforce use of GNU make version 3.79 or newer.
+
+* Notable bugs fixed in this release:
+  - bug4022: rare resource leak in aries-conduit AM Long protocol
+  - bug4024: erroneous behavior from `testam -async-req -np-cb`
+  - bug4025: erroneous assertion failure from loopback NPAM
+  - bug4035: link failures with GCC 10 or -fno-common
+  - bug4042: errors when configured using --with-aries-max-medium=65472
 
 ----------------------------------------------------------------------
 09-14-2019: GASNet-EX 2019.9.0 Release

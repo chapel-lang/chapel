@@ -153,6 +153,7 @@ extern bool fIgnoreLocalClasses;
 extern bool fNoLifetimeChecking;
 extern bool fNoSplitInit;
 extern bool fNoEarlyDeinit;
+extern bool fNoCopyElision;
 extern bool fCompileTimeNilChecking;
 extern bool fOverrideChecking;
 extern int  ffloatOpt;
@@ -203,7 +204,6 @@ extern bool fWarnUnstable;
 
 extern bool fReportAliases;
 extern bool fReportBlocking;
-extern bool fReportExpiring;
 extern bool fReportOptimizedLoopIterators;
 extern bool fReportInlinedIterators;
 extern bool fReportVectorizedLoops;

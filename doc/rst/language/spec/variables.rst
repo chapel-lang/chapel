@@ -82,7 +82,7 @@ The ``type-part`` of a variable declaration specifies the type of the
 variable. It is optional.
 
 The ``initialization-part`` of a variable declaration specifies an
-initialization expression for the variable. It is option. When present,
+initialization expression for the variable. It is optional. When present,
 the initialization expression will be stored into the variable as its
 initial value.
 
@@ -129,9 +129,9 @@ If the ``initialization-part`` of a local variable declaration is
 omitted, the compiler will search forward in the function for the
 earliest assignment statement(s) setting that variable that occur before
 the variable is otherwise mentioned. It will search only within block
-declarations ``{ }`` and conditionals. These assignment statements are
-called applicable assignment statements. They perform initialization, not
-assignment, of that variable.
+declarations ``{ }``, ``try`` blocks, ``try!`` blocks, and conditionals.
+These assignment statements are called applicable assignment statements.
+They perform initialization, not assignment, of that variable.
 
    *Example (simple-split-init.chpl)*
 
@@ -168,8 +168,8 @@ assignment, of that variable.
    .. BLOCK-test-chapeloutput
 
       no-split-init.chpl:1: In function 'main':
-      no-split-init.chpl:2: error: 'x' cannot be default initialized
-      no-split-init.chpl:3: note: 'x' is used here before being initialized
+      no-split-init.chpl:2: error: variable 'x' is not initialized and has no type
+      no-split-init.chpl:3: note: 'x' use here prevents split-init from establishing the type
 
 
    *Example (split-cond-blocks-init.chpl)*
@@ -209,8 +209,13 @@ Split initialization does not apply:
  * when an applicable assignment statement is in a loop, ``on``
    statement, or ``begin`` statement
  * when an applicable assignment statement is in one branch of a
-   conditional but not in the other, including when the conditional has
-   no ``else`` branch.
+   conditional but not in the other, and when the other branch
+   does not always return or throw. This rule prevents
+   split-initialization when the applicable assignment statement is
+   in a conditional that has no ``else`` branch.
+ * when an applicable assignment statement is in a ``try`` or ``try!``
+   block which has ``catch`` clauses that mention the variable
+   or which has ``catch`` clauses that do not always throw or return.
 
 In the case that the variable is declared without a ``type-part`` and
 where multiple applicable assignment statements are identified, all of
@@ -568,7 +573,7 @@ Parameter constants and expressions cannot be aliased.
    .. code-block:: chapel
 
       var myInt = 51;
-      ref refInt = myInt;                   // alias of a local or global variable
+      ref refInt = myInt;                   // alias of the previous variable
       myInt = 62;
       writeln("refInt = ", refInt);
       refInt = 73;

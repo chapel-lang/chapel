@@ -103,8 +103,8 @@ proc writeImagePPM(outfile, pixels) {
 // more portable)
 //
 proc writeImageBMP(outfile, pixels) {
-  const rows = pixels.domain.dim(1).length,
-        cols = pixels.domain.dim(2).length,
+  const rows = pixels.domain.dim(1).size,
+        cols = pixels.domain.dim(2).size,
 
         headerSize = 14,
         dibHeaderSize = 40,  // always use old BITMAPINFOHEADER

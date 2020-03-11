@@ -195,10 +195,10 @@ void CatchStmt::cleanup()
 
      catch e: SomeType
      {
-       var castedError = dynamic cast current error -> SomeType
+       var error = dynamic cast current error -> SomeType
 
-       if castedError != nil {
-         var e: owned SomeType = new owned(castedError)
+       if error != nil {
+         var e: owned SomeType = new owned(error)
          body(e)
        }
      }
@@ -221,49 +221,55 @@ void CatchStmt::cleanup()
   if (name == NULL)
     name = astr("chpl_anon_error");
 
-  VarSymbol* castedError = newTemp();
+  VarSymbol* casted = newTemp();
 
-  Expr* unmanagedType = new CallExpr(PRIM_TO_UNMANAGED_CLASS, typeExpr);
-  Expr* castedCurrentError = NULL;
+  Expr* unmNilType = new CallExpr(PRIM_TO_NILABLE_CLASS,
+                                  new CallExpr(PRIM_TO_UNMANAGED_CLASS,
+                                               typeExpr));
+  Expr* castedCurrent = NULL;
   if (catchall) {
-    castedCurrentError = new CallExpr(PRIM_CURRENT_ERROR);
+    castedCurrent = new CallExpr(PRIM_CURRENT_ERROR);
   } else {
-    castedCurrentError = new CallExpr(PRIM_DYNAMIC_CAST,
-                                      unmanagedType,
-                                      new CallExpr(PRIM_CURRENT_ERROR));
+    castedCurrent = new CallExpr(PRIM_DYNAMIC_CAST,
+                                 unmNilType,
+                                 new CallExpr(PRIM_CURRENT_ERROR));
   }
 
-  DefExpr* castedErrorDef = new DefExpr(castedError, castedCurrentError);
+  DefExpr* castedDef = new DefExpr(casted, castedCurrent);
 
   BlockStmt* newBody = new BlockStmt();
   BlockStmt* oldBody = body();
   INT_ASSERT(oldBody);
   _body->replace(newBody);
 
-  newBody->insertAtHead(castedErrorDef);
-
-  VarSymbol* error = new VarSymbol(name);
-  Expr* ownedCastedError = new CallExpr(PRIM_NEW,
-                                        new CallExpr("_owned", castedError));
-
-  DefExpr* errorDef = new DefExpr(error, ownedCastedError);
+  newBody->insertAtHead(castedDef);
 
   if (catchall) {
+    VarSymbol* error = new VarSymbol(name);
+
+    Expr* nonNilC = new CallExpr(PRIM_TO_NON_NILABLE_CLASS, casted);
+    Expr* toOwned = new CallExpr(PRIM_NEW, new CallExpr("_owned", nonNilC));
+
+    DefExpr* errorDef = new DefExpr(error, toOwned);
+
     newBody->insertAtTail(errorDef);
     newBody->insertAtTail(oldBody);
 
   } else {
-    CallExpr*  errorExists = new CallExpr(PRIM_NOTEQUAL, castedError, gNil);
+    CallExpr*  errorExists = new CallExpr(PRIM_NOTEQUAL, casted, gNil);
 
     BlockStmt* ifBody = new BlockStmt();
     BlockStmt* elseBody = new BlockStmt();
     CondStmt* cond = new CondStmt(errorExists, ifBody, elseBody);
-    castedErrorDef->insertAfter(cond);
+    castedDef->insertAfter(cond);
 
     VarSymbol* error = new VarSymbol(name);
-    Expr* ownedCastedError = new CallExpr(PRIM_NEW,
-                                          new CallExpr("_owned", castedError));
-    DefExpr* errorDef = new DefExpr(error, ownedCastedError);
+
+    Expr* nonNilC = new CallExpr(PRIM_TO_NON_NILABLE_CLASS, casted);
+    Expr* toOwned = new CallExpr(PRIM_NEW, new CallExpr("_owned", nonNilC));
+
+    DefExpr* errorDef = new DefExpr(error, toOwned);
+
     ifBody->insertAtTail(errorDef);
     ifBody->insertAtTail(oldBody);
 

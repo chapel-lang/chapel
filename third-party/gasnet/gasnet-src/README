@@ -123,7 +123,7 @@ The minimum system requirements are:
    + The free 'Cygwin' toolkit (https://www.cygwin.com/)
    + Windows 10 Subsystem for Linux, a.k.a. WSL
      (https://docs.microsoft.com/en-us/windows/wsl/)
- * Make (we recommend GNU make version 3.79 or newer).
+ * GNU make (version 3.79 or newer).
  * Perl (version 5.005 or newer).
  * The following standard Unix tools: 'awk', 'sed', 'env', 'basename', 'dirname',
    and a Bourne-compatible shell (e.g. bash).
@@ -195,11 +195,11 @@ compilers, including which GASNet conduits are supported.
 
   For cross-compilation support, look for an appropriate cross configure
 script in other/contrib/ and link it into your top-level source directory and
-invoke it in place of configure.  Example for the IBM BlueGene/Q:
+invoke it in place of configure.  Example for the Cray XC with slurm:
      cd <path-to-gasnet-src>
-     ln -s other/contrib/cross-configure-bgq .
+     ln -s other/contrib/cross-configure-cray-aries-slurm .
      cd <your-build-dir>
-     <path-to-gasnet-src>/cross-configure-bgq (configure_options)
+     <path-to-gasnet-src>/cross-configure-cray-aries-slurm (configure_options)
 
   For cross-compilation support on platforms without scripts in other/contrib
 see the instructions in other/cross-configure-help.c.
@@ -215,6 +215,8 @@ normal distribution.  If you think you need it, contact us at gasnet-devel@lbl.g
       build all the GASNet tests in a given mode
     make run-tests-{seq,par,parsync}  
       build and run all the GASNet tests in a given mode
+    make (run-)tests-installed-{seq,par,parsync}
+      use the installed library to build (and run) all the GASNet tests
     make run-tests
       run whatever tests are already built in the conduit directories
     make run-tests TESTS="test1 test2..."
@@ -232,6 +234,8 @@ normal distribution.  If you think you need it, contact us at gasnet-devel@lbl.g
       build just testXXX, in a given mode
     make run-tests-{seq,par,parsync}  
       build and run the conduit tests in a given mode
+    make (run-)tests-installed-{seq,par,parsync}
+      use the installed library to build (and run) all the GASNet tests
     make run-tests
       run whatever tests are already built in the conduit directory
     make run-tests TESTS="test1 test2..."
@@ -418,6 +422,11 @@ mpi-conduit: MPI (Message Passing Interface)
  Intended as a reference implementation for systems lacking native conduit support.
  Rigorously tested and supported on most current platforms (see below).
 
+ucx-conduit: Unified Communication X framework [EXPERIMENTAL]
+ GASNet over the Unified Communication X framework (UCX).
+ This conduit is currently experimental, and is not yet carefully tuned for performance.
+ It has only been validated on Mellanox InfiniBand devices starting from ConnectX-5.
+
 ofi-conduit: Open Fabrics Interfaces (*TEMPORARILY DISABLED*)
  GASNet over the Open Fabrics Interface framework (libfabric).
  This conduit is currently being re-implemented for GASNet-EX.
@@ -426,11 +435,6 @@ ofi-conduit: Open Fabrics Interfaces (*TEMPORARILY DISABLED*)
 
 Native, high-performance conduits:
 ---------------------------------
-
-pami-conduit: IBM Parallel Active Messaging Interface (PAMI)
- The conduit of choice for GASNet on the IBM BlueGene/Q.
- Rigorously tested on BlueGene/Q, also supported on other select IBM systems.
- THIS CONDUIT IS NOW DEPRECATED - see pami-conduit/README
 
 aries-conduit:  Cray XC Aries
  The conduit of choice for GASNet on the Aries networks in Cray XC systems.
@@ -480,7 +484,7 @@ communication (much better than udp).
 Supported Platforms
 ===================
 
-Platforms where GASNet and Berkeley UPC have been successfully tested:
+Platforms where GASNet and Berkeley UPC have been successfully tested include:
 
       OS/Architecture/compiler/ABI: network conduits
       ----------------------------------------------
@@ -493,9 +497,9 @@ Platforms where GASNet and Berkeley UPC have been successfully tested:
     * Linux/x86_64-OmniPath/gcc/64: smp, mpi, udp, ofi
     * Linux/x86_64/x86-Open64/64:   smp, udp, #
 
-    * Linux/PowerPC-Ethernet/{gcc,xlc,clang}/{32,64}: smp, mpi, udp
-    * Linux/PowerPC-HFI/{xlc,gcc}/32: smp, mpi, udp, pami &
-    * Linux/PPC64le/gcc/{32,64}:     smp, udp, #
+    * Linux/PowerPC-Ethernet/{gcc,clang}/{32,64}: smp, mpi, udp
+    * Linux/PowerPC-HFI/gcc/32: smp, mpi, udp &
+    * Linux/PPC64le/{gcc,clang,pgi,xlc}/64:     smp, mpi, udp, ibv #
 
     * Linux/MIPS/gcc/{32,n32,64}:       smp, udp, #
     * Linux/MIPS64el/gcc/{32,n32,64}:   smp, udp, #
@@ -513,7 +517,6 @@ Platforms where GASNet and Berkeley UPC have been successfully tested:
     * MSWindows-Cygwin/{x86,x86_64}/{gcc,clang}/{32,64}: smp, udp, mpi (OpenMPI)
     * MSWindows10-Linux(WSL)/{gcc,clang}/64: smp, udp, mpi
 
-    * macOS/PowerPC/{gcc,xlc}/{32,64}: smp, udp, mpi &
     * macOS/{x86,x86_64}/icc/{32,64}: smp, udp, mpi &
     * macOS/{x86,x86_64}/{gcc,clang}/{32,64}: smp, udp, mpi
     * macOS/{x86,x86_64}/PGI/{32,64}: smp, udp, #
@@ -527,15 +530,12 @@ Platforms where GASNet and Berkeley UPC have been successfully tested:
 
     * Linux/Cray-XD1/{gcc,PGI}/64: smp, mpi &
 
-    * CNK/IBM-BlueGeneQ-PowerPC/{gcc,xlc,clang}/64: smp, mpi, pami
- 
     * ucLinux/Microblaze/gcc/32: smp, udp, #%&
 
-    * Linux/ARM/gcc/32:               smp, udp, #
-    * Linux/AARCH64/{gcc,clang}/64:   smp, udp, #
+    * Linux/ARM/{gcc,clang}/32:       smp, udp, #
+    * Linux/AARCH64/{gcc,clang}/64:   smp, udp, mpi
 
-# = No working MPI implementation available, although we have every
-    reason to believe mpi conduit would work if one was available.
+# = We have not tested MPI but have no reasons to doubt that mpi-conduit would work.
 % = System lacks pthreads or they are broken
 & = System has not been tested in recent releases due to lack of access.
     Reports of success or failure on this system are strongly encouraged.
@@ -1063,14 +1063,6 @@ For Cray XE, XK and XC systems, PSHM-over-XPMEM is enabled automatically
 by the corresponding cross-configure scripts.  However, one can also
 optionally enable PSHM-over-XPMEM on an SGI Altix as follows:
         XPMEM: --enable-pshm --disable-pshm-posix --enable-pshm-xpmem
-
-For BlueGene/Q, PSHM via the "common heap" is enabled automatically by
-the corresponding cross-configure scripts.  However, one can also use:
-        GHEAP: --enable-pshm --disable-pshm-posix --enable-pshm-gheap
-Note on BG/Q one must set BG_MAPCOMMONHEAP=1 in the compute node environment.
-This is handled automatically by the gasnetrun_mpi and gasnetrun_pami
-scripts, but must be handled manually when using runjob directly (or
-a wrapper like qsub from ANL's Cobalt suite).
 
 For Linux systems with libhugetlbfs and a hugetlbfs mount, there is also
 experimental support for mmap()ed files on hugetlbfs, which can be

@@ -83,6 +83,9 @@ public:
   bool hasVectorizationHazard() const;
   void setHasVectorizationHazard(bool v);
 
+  // indicates a forall expression (vs a forall statement)
+  bool isForallExpr() const;
+
 private:
   AList          fIterVars;
   AList          fIterExprs;
@@ -95,6 +98,7 @@ private:
   bool           fAllowSerialIterator;
   bool           fRequireSerialIterator;
   bool           fVectorizationHazard;
+  bool           fIsForallExpr;
 
   // constructor
   ForallStmt(BlockStmt* body);

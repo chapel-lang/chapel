@@ -53,7 +53,7 @@ proc getSpecFields(spec: string) {
     var tokenList = readSpec(spec);
     const specInfo = parseSpec(tokenList);
     var compiler = specInfo[3];
-    if compiler.length < 1 {
+    if compiler.size < 1 {
       compiler = inferCompiler();
     }
     specFields = (specInfo[1], specInfo[2], compiler,
@@ -68,7 +68,7 @@ proc getSpecFields(spec: string) {
 
 private proc inferCompiler() throws {
   var compiler = CHPL_TARGET_COMPILER;
-  if compiler.length < 1 {
+  if compiler.size < 1 {
     throw new owned MasonError("Could not infer target compiler");
   }
   return compiler;
@@ -106,7 +106,7 @@ proc readSpec(spec: string) {
 
   if debugSpecParser then writeln(spec);
   for token in pattern.split(spec) {
-    if token.strip().length != 0 {
+    if token.strip().size != 0 {
       if debugSpecParser {
         writeln("Token: " + token);
         writeln();
@@ -144,7 +144,7 @@ proc parseSpec(ref tokenList: list(string)) throws {
     var toke = tokenList.pop(1);
 
     // get package name (should always be first token)
-    if package.length < 1 {
+    if package.size < 1 {
       package = toke;
     }
     // Match a package, compiler or dep version
@@ -154,10 +154,10 @@ proc parseSpec(ref tokenList: list(string)) throws {
       || rMinVers.match(toke).matched == true
       || rMaxVers.match(toke).matched == true {
                                                
-      if pkgVersion.length < 1 {
+      if pkgVersion.size < 1 {
         pkgVersion = toke.strip("@");
       }
-      else if compVersion.length < 1 {
+      else if compVersion.size < 1 {
         compVersion = toke;
         compiler = "".join(compiler, compVersion);
       }
@@ -168,11 +168,11 @@ proc parseSpec(ref tokenList: list(string)) throws {
     else if rCompiler.match(toke) {
       // throw an error if we reach a compiler without seeing
       // a package version.
-      if pkgVersion.length < 1 {
+      if pkgVersion.size < 1 {
         throw new owned MasonError("No package version found in spec");
       }
       // Match package compiler if one hasnt been matched
-      if compiler.length < 1 {
+      if compiler.size < 1 {
         compiler = toke.strip("%");
       }
       else {

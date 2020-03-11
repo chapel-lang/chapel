@@ -58,7 +58,7 @@
    implemented and optimized.
 */
 module Barriers {
-  private use HaltWrappers only ;
+  import HaltWrappers;
 
   /* An enumeration of the different barrier implementations.  Used to choose
      the implementation to use when constructing a new barrier object.

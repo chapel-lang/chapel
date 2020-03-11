@@ -148,7 +148,7 @@ module dataflow_block_cholesky {
 
       block_computed$ (I, I) . writeEF (true);
 
-      if pos_def && AJKJK_row_indices.length > 0 then {
+      if pos_def && AJKJK_row_indices.size > 0 then {
         
         // Initiate separate threads to compute each subdiagonal block
         // in this block column of the matrix.  Each block is subjected to

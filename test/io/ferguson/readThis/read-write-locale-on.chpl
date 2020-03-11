@@ -1,6 +1,6 @@
 record A {
   var x:int;
-  proc writeThis(writer) {
+  proc writeThis(writer) throws {
     var loc = writer.readWriteThisFromLocale();
     writer.writeln("in A.writeThis loc=", loc!.id);
     writer.writeln(x);
@@ -8,7 +8,7 @@ record A {
 }
 record B {
   var a:A;
-  proc writeThis(writer) {
+  proc writeThis(writer) throws {
     var loc = writer.readWriteThisFromLocale();
     writer.writeln("in B.writeThis loc=", loc!.id);
     on loc {

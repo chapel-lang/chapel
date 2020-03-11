@@ -45,6 +45,7 @@
 
 #include "DecoratedClassType.h"
 #include "ForallStmt.h"
+#include "ImportStmt.h"
 #include "LoopExpr.h"
 #include "scopeResolve.h"
 
@@ -417,8 +418,8 @@ bool ResolveScope::extend(Symbol* newSym, bool isTopLevel) {
   return retval;
 }
 
-bool ResolveScope::extend(const UseStmt* stmt) {
-  mUseList.push_back(stmt);
+bool ResolveScope::extend(VisibilityStmt* stmt) {
+  mUseImportList.push_back(stmt);
 
   return true;
 }
@@ -445,6 +446,154 @@ bool ResolveScope::isSymbolAndMethod(Symbol* sym0, Symbol* sym1) {
 
   if (fun0 == NULL && fun1 != NULL && fun1->_this != NULL) {
     retval = true;
+  }
+
+  return retval;
+}
+
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
+
+Symbol* ResolveScope::lookupNameLocallyForImport(const char* name) const {
+  Bindings::const_iterator it     = mBindings.find(name);
+  Symbol*                  retval = NULL;
+
+  if (it != mBindings.end()) {
+    retval = it->second;
+  }
+  return retval;
+}
+
+Symbol* ResolveScope::followImportUseChains(UnresolvedSymExpr* expr) const {
+  const char* name = expr->unresolved;
+  UseImportList useImportList = mUseImportList;
+  SymList symbols;
+
+  buildBreadthFirstUseImportList(useImportList);
+
+  // Do not use for_vector(); it terminates on a NULL
+  for (size_t i = 0; i < useImportList.size(); i++) {
+    if (UseStmt* use = toUseStmt(useImportList[i])) {
+      if (use->skipSymbolSearch(name) == false) {
+        BaseAST*    scopeToUse = use->getSearchScope();
+        const char* nameToUse  = name;
+
+        if (use->isARenamedSym(name) == true) {
+          nameToUse = use->getRenamedSym(name);
+        }
+
+        if (ResolveScope* next = getScopeFor(scopeToUse)) {
+          if (Symbol* sym = next->lookupNameLocallyForImport(nameToUse)) {
+            if (isRepeat(sym, symbols) == false) {
+              if (FnSymbol* fn = toFnSymbol(sym)) {
+                if (fn->isMethod() == false) {
+                  symbols.push_back(fn);
+                }
+
+              } else {
+                symbols.push_back(sym);
+              }
+            }
+          }
+        }
+      }
+    } else if (ImportStmt* import = toImportStmt(useImportList[i])) {
+      if (SymExpr* se = toSymExpr(import->src)) {
+        // The import statement has been resolved
+        if (import->isARename() == true) {
+          if (name == import->getRename()) {
+            symbols.push_back(se->symbol());
+          }
+        } else {
+          if (name == se->symbol()->name) {
+            symbols.push_back(se->symbol());
+          }
+        }
+      }
+
+      // Found a NULL sentinel.  Break if there are results.
+    } else {
+      if (symbols.size() > 0) {
+        break;
+      }
+    }
+  }
+  if (symbols.size() == 1) {
+    return symbols[0];
+  } else {
+    return NULL;
+  }
+}
+
+Symbol* ResolveScope::lookupForImport(Expr* expr) const {
+  Symbol* retval = NULL;
+
+  if (UnresolvedSymExpr* uSym = toUnresolvedSymExpr(expr)) {
+    const ResolveScope* ptr = NULL;
+    bool foundBadCloser = false;
+    for (ptr = this; ptr != NULL && retval == NULL; ptr = ptr->mParent) {
+      // Check if the module is defined in this scope
+      Symbol* sym = ptr->lookupNameLocallyForImport(uSym->unresolved);
+      if (ModuleSymbol* mod = toModuleSymbol(sym)) {
+        if (mod->defPoint->parentSymbol != theProgram) {
+          // if we're not in the root module scope, this is an improper match
+          USR_WARN(expr, "currently unable to import nested modules without"
+                   " specifying the full path to the module");
+          USR_PRINT(mod, "skipping module defined here");
+          foundBadCloser = true;
+        } else {
+          // if we are in the root module scope, then it is a proper match.
+          retval = sym;
+          break;
+        }
+      } else if (sym != NULL) {
+        retval = sym;
+        break;
+      }
+
+      // otherwise follow uses/imports only (breadth first)
+      //    look for the symbols defined in the used
+      //    or if the module being imported matches
+      //    and if not, keep following the public use chains
+      retval = followImportUseChains(uSym);
+    }
+
+    if (retval == NULL && foundBadCloser) {
+      USR_FATAL(expr, "No better match found");
+    }
+  } else if (CallExpr* call = toCallExpr(expr)) {
+    if (call->isNamedAstr(astrSdot) == true) {
+      Symbol* outer = lookupForImport(call->get(1));
+      if (ModuleSymbol* outerMod = toModuleSymbol(outer)) {
+        if (SymExpr* rhs = toSymExpr(call->get(2))) {
+          const char* rhsName = NULL;
+
+          if (get_string(rhs, &rhsName) == true) {
+            ResolveScope* scope = getScopeFor(outerMod->block);
+            if (Symbol* symbol = scope->getField(rhsName)) {
+              retval = symbol;
+
+            } else {
+              USR_FATAL(call, "Cannot find symbol '%s'", rhsName);
+            }
+          } else {
+            INT_FATAL(call, "Bad qualified name");
+          }
+
+        } else {
+          INT_FATAL(call, "Bad qualified name");
+        }
+      } else {
+        INT_FATAL(call, "Expected to find module");
+      }
+    } else {
+      INT_FATAL(expr, "Not a dotted expr");
+    }
+  } else {
+    INT_FATAL(expr, "Unsupported expr");
   }
 
   return retval;
@@ -502,21 +651,21 @@ Symbol* ResolveScope::lookupWithUses(UnresolvedSymExpr* usymExpr, bool isUse) co
   const char* name   = usymExpr->unresolved;
   Symbol*     retval = lookupNameLocally(name, isUse);
 
-  if (retval == NULL && mUseList.size() > 0) {
-    UseList useList = mUseList;
+  if (retval == NULL && mUseImportList.size() > 0) {
+    UseImportList useImportList = mUseImportList;
     SymList symbols;
 
-    buildBreadthFirstUseList(useList);
+    buildBreadthFirstUseImportList(useImportList);
 
     // Do not use for_vector(); it terminates on a NULL
-    for (size_t i = 0; i < useList.size(); i++) {
-      if (const UseStmt* use = useList[i]) {
-        if (use->skipSymbolSearch(name, true) == false) {
+    for_vector_allowing_0s(VisibilityStmt, visStmt, useImportList) {
+      if (UseStmt* use = toUseStmt(visStmt)) {
+        if (use->skipSymbolSearch(name) == false) {
           BaseAST*    scopeToUse = use->getSearchScope();
           const char* nameToUse  = name;
 
-          if (use->isARename(name) == true) {
-            nameToUse = use->getRename(name);
+          if (use->isARenamedSym(name) == true) {
+            nameToUse = use->getRenamedSym(name);
           }
 
           if (ResolveScope* next = getScopeFor(scopeToUse)) {
@@ -530,6 +679,24 @@ Symbol* ResolveScope::lookupWithUses(UnresolvedSymExpr* usymExpr, bool isUse) co
                 } else {
                   symbols.push_back(sym);
                 }
+              }
+            }
+          }
+        }
+
+      } else if (ImportStmt* import = toImportStmt(visStmt)) {
+        BaseAST* scopeToUse = import->getSearchScope();
+
+        if (ResolveScope* next = getScopeFor(scopeToUse)) {
+          if (Symbol* sym = next->lookupNameLocally(name, isUse)) {
+            if (isRepeat(sym, symbols) == false) {
+              if (FnSymbol* fn = toFnSymbol(sym)) {
+                if (fn->isMethod() == false) {
+                  symbols.push_back(fn);
+                }
+
+              } else {
+                symbols.push_back(sym);
               }
             }
           }
@@ -713,22 +880,22 @@ bool ResolveScope::getFieldsWithUses(const char* fieldName,
     symbols.push_back(sym);
 
   } else {
-    if (mUseList.size() > 0) {
-      std::vector<const UseStmt*> useList = mUseList;
+    if (mUseImportList.size() > 0) {
+      std::vector<VisibilityStmt*> useImportList = mUseImportList;
 
-      buildBreadthFirstUseList(useList);
+      buildBreadthFirstUseImportList(useImportList);
 
       // Do not use for_vector(); it terminates on a NULL
-      for (size_t i = 0; i < useList.size(); i++) {
-        const UseStmt* use = useList[i];
+      for (size_t i = 0; i < useImportList.size(); i++) {
+        UseStmt* use = toUseStmt(useImportList[i]);
 
         if (use != NULL) {
-          if (use->skipSymbolSearch(fieldName, true) == false) {
+          if (use->skipSymbolSearch(fieldName) == false) {
             BaseAST*    scopeToUse = use->getSearchScope();
             const char* nameToUse  = NULL;
 
-            if (use->isARename(fieldName) == true) {
-              nameToUse = use->getRename(fieldName);
+            if (use->isARenamedSym(fieldName) == true) {
+              nameToUse = use->getRenamedSym(fieldName);
             } else {
               nameToUse = fieldName;
             }
@@ -756,22 +923,23 @@ bool ResolveScope::getFieldsWithUses(const char* fieldName,
 *                                                                             *
 ************************************** | *************************************/
 
-void ResolveScope::buildBreadthFirstUseList(UseList& useList) const {
-  UseMap visited;
+void ResolveScope::buildBreadthFirstUseImportList(UseImportList& useImportList) const {
+  UseImportMap visited;
 
-  buildBreadthFirstUseList(useList, useList, visited);
+  buildBreadthFirstUseImportList(useImportList, useImportList, visited);
 }
 
-void ResolveScope::buildBreadthFirstUseList(UseList& useList,
-                                            UseList& current,
-                                            UseMap&  visited) const {
-  UseList next;
+void
+ResolveScope::buildBreadthFirstUseImportList(UseImportList& useImportList,
+                                             UseImportList& current,
+                                             UseImportMap&  visited) const {
+  UseImportList next;
 
   // use NULL as a sentinel to identify modules of equal depth
-  useList.push_back(NULL);
+  useImportList.push_back(NULL);
 
   for (size_t i = 0; i < current.size(); i++) {
-    const UseStmt* source = current[i];
+    UseStmt* source = toUseStmt(current[i]);
 
     if (source == NULL) {
       break;
@@ -784,33 +952,38 @@ void ResolveScope::buildBreadthFirstUseList(UseList& useList,
       if (ModuleSymbol* mod = toModuleSymbol(se->symbol())) {
         if (mod->block->useList != NULL) {
           for_actuals(expr, mod->block->useList) {
-            UseStmt* use      = toUseStmt(expr);
-            SymExpr* useSE    = toSymExpr(use->src);
-            UseStmt* useToAdd = NULL;
+            if (UseStmt* use = toUseStmt(expr)) {
+              SymExpr* useSE    = toSymExpr(use->src);
+              UseStmt* useToAdd = NULL;
 
-            if (useSE->symbol()->hasFlag(FLAG_PRIVATE) == false) {
-              // Uses of private modules are not transitive -
-              // the symbols in the private modules are only visible to
-              // itself and its immediate parent.  Therefore, if the symbol
-              // is private, we will not traverse it further and will merely
-              // add it to the alreadySeen map.
-              useToAdd = use->applyOuterUse(source);
+              if (useSE->symbol()->hasFlag(FLAG_PRIVATE) == false) {
+                // Uses of private modules are not transitive -
+                // the symbols in the private modules are only visible to
+                // itself and its immediate parent.  Therefore, if the symbol
+                // is private, we will not traverse it further and will merely
+                // add it to the alreadySeen map.
+                useToAdd = use->applyOuterUse(source);
 
-              if (useToAdd                   != NULL &&
-                  skipUse(visited, useToAdd) == false) {
-                next.push_back(useToAdd);
-                useList.push_back(useToAdd);
+                if (useToAdd                   != NULL &&
+                    skipUse(visited, useToAdd) == false) {
+                  next.push_back(useToAdd);
+                  useImportList.push_back(useToAdd);
+                }
+
+                // If applyOuterUse returned NULL, the number of symbols
+                // that could be provided from this use was 0,
+                // so it didn't need to be added to the alreadySeen map.
+                if (useToAdd != NULL) {
+                  visited[useSE->symbol()].push_back(useToAdd);
+                }
+
+              } else {
+                visited[useSE->symbol()].push_back(use);
               }
-
-              // If applyOuterUse returned NULL, the number of symbols
-              // that could be provided from this use was 0,
-              // so it didn't need to be added to the alreadySeen map.
-              if (useToAdd != NULL) {
-                visited[useSE->symbol()].push_back(useToAdd);
-              }
-
+            } else if (isImportStmt(expr)) {
+              // Don't do anything, imports only apply to qualified access
             } else {
-              visited[useSE->symbol()].push_back(use);
+              INT_ASSERT("Unexpected expr, expected ImportStmt or UseStmt");
             }
           }
         }
@@ -819,22 +992,24 @@ void ResolveScope::buildBreadthFirstUseList(UseList& useList,
   }
 
   if (next.size() > 0) {
-    buildBreadthFirstUseList(useList, next, visited);
+    buildBreadthFirstUseImportList(useImportList, next, visited);
   }
 }
 
 // Returns true if we should skip looking at this use, because the symbols it
 // provides have already been covered by a previous use.
-bool ResolveScope::skipUse(UseMap& visited, const UseStmt* current) const {
+bool ResolveScope::skipUse(UseImportMap& visited, const UseStmt* current) const {
   SymExpr* useSE  = toSymExpr(current->src);
-  UseList  vec    = visited[useSE->symbol()];
+  UseImportList  vec    = visited[useSE->symbol()];
   bool     retval = false;
 
   for (size_t i = 0; i < vec.size() && retval == false; i++) {
-    const UseStmt* use = vec[i];
+    UseStmt* use = toUseStmt(vec[i]);
 
-    if (current->providesNewSymbols(use) == false) {
-      retval = true;
+    if (use != NULL) {
+      if (current->providesNewSymbols(use) == false) {
+        retval = true;
+      }
     }
   }
 

@@ -114,11 +114,6 @@ module ChapelDistribution {
       compilerError("associative domains not supported by this distribution");
     }
 
-    proc dsiNewAssociativeDom(type idxType, param parSafe: bool)
-    where isEnumType(idxType) {
-      compilerError("enumerated domains not supported by this distribution");
-    }
-
     proc dsiNewSparseDom(param rank: int, type idxType, dom: domain) {
       compilerError("sparse domains not supported by this distribution");
     }
@@ -166,10 +161,9 @@ module ChapelDistribution {
     proc deinit() {
     }
 
-    pragma "unsafe"
     proc dsiMyDist(): unmanaged BaseDist {
       halt("internal error: dsiMyDist is not implemented");
-      var ret: unmanaged BaseDist; // nil
+      pragma "unsafe" var ret: unmanaged BaseDist; // nil
       return ret;
     }
 
@@ -678,10 +672,9 @@ module ChapelDistribution {
 
     proc dsiStaticFastFollowCheck(type leadType) param return false;
 
-    pragma "unsafe"
     proc dsiGetBaseDom(): unmanaged BaseDom {
       halt("internal error: dsiGetBaseDom is not implemented");
-      var ret: unmanaged BaseDom; // nil
+      pragma "unsafe" var ret: unmanaged BaseDom; // nil
       return ret;
     }
 

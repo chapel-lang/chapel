@@ -1,0 +1,6 @@
+error-global-used-in-init3.chpl:9: error: module-scope variable 'globalR' may be used before it is initialized
+error-global-used-in-init3.chpl:7: note: 'globalR' declared here
+error-global-used-in-init3.chpl:11: note: 'globalR' initialized here
+error-global-used-in-init3.chpl:9: note: calls function 'returnOtherGlobal'
+error-global-used-in-init3.chpl:4: note: calls function 'init='
+error-global-used-in-init3.chpl:28: note: mentions module-scope variable 'globalR' not initialized yet

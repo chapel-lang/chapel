@@ -426,7 +426,7 @@ Closing notes
 // be required to generalize it for strided or unbounded ranges.
 //
 proc computeChunk(r: range, myChunk, numChunks) where r.stridable == false {
-  const numElems = r.length;
+  const numElems = r.size;
   const elemsPerChunk = numElems/numChunks;
   const mylow = r.low + elemsPerChunk*myChunk;
   if (myChunk != numChunks - 1) {

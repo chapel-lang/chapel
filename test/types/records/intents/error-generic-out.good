@@ -1,0 +1,5 @@
+error-generic-out.chpl:9: In function 'test6':
+error-generic-out.chpl:11: error: variable 'c' is not initialized
+note: undecorated class type C does not support default initialization
+note: consider adding a management decorator such as 'owned', 'shared', 'borrowed', or 'unmanaged'
+error-generic-out.chpl:12: note: 'c' use here prevents split-init from establishing the type

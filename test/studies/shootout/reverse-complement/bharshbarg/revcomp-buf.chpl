@@ -34,7 +34,7 @@ record buf {
     this.complete();
 
     chan = fi.reader(locking=false);
-    numLeft = fi.length();
+    numLeft = fi.size;
   }
 
   // Returns (by ref-ish) a slice of the buffer starting at 'low'
@@ -110,7 +110,7 @@ proc main(args: [] string) {
   // NOTE: We can't do this with lists yet.
   /*
   {
-    const r = 1..stdin.length();
+    const r = 1..stdin.size;
     data._value.dataAllocRange = r;
     data._value.dsiReallocate((r,));
     data._value.dsiPostReallocate();
@@ -126,11 +126,11 @@ proc main(args: [] string) {
 
       if data[last] == ">".toByte() {
         // '-2' to skip over '\n>'
-        begin process(data, start, last-2);
+        begin with (ref data) process(data, start, last-2);
       } else {
         // Final section
         // '-1' to skip over '\n'
-        begin process(data, start, last-1);
+        begin with (ref data) process(data, start, last-1);
         break;
       }
     }
@@ -145,7 +145,7 @@ proc main(args: [] string) {
   stdoutBin.write(data.toArray());
 }
 
-proc process(data, in start, in end) {
+proc process(ref data, in start, in end) {
   proc advance(ref cursor, dir) {
     do { cursor += dir; } while data[cursor] == "\n".toByte();
   }

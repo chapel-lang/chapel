@@ -211,7 +211,7 @@ sub fullpath($)
 # Find the program (possibly a wrapper)
     $exebase = $ARGV[0] or usage "No program specified\n";
     $exepath = fullpath($exebase);
-    die "gasnetrun: unable to locate program '$exebase'\n" unless defined($exepath);
+    die "gasnetrun: unable to locate program '$exebase'\n" unless (defined($exepath) && -e $exepath);
     print "gasnetrun: located executable '$exepath'\n" if ($verbose);
     die "gasnetrun: missing execute permissions for '$exepath'\n" unless -x $exepath;
     $ARGV[0] = $exepath;

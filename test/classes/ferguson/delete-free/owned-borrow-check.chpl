@@ -5,8 +5,8 @@ class C {
   }
 }
 
-var myGlobalC:C;
-proc bar(arg:C) {
+var myGlobalC:borrowed C = (new owned C(1)).borrow();
+proc bar(arg:borrowed C) {
   myGlobalC = arg;
 }
 

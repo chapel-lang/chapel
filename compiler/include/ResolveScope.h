@@ -38,6 +38,7 @@ class Symbol;
 class TypeSymbol;
 class UnresolvedSymExpr;
 class UseStmt;
+class VisibilityStmt;
 
 // A preliminary version of a class to support the scope resolve pass
 // This is currently a thin wrapping over a previous typedef + functions
@@ -70,7 +71,9 @@ public:
 
   bool                  extend(Symbol*        sym, bool isTopLevel=false);
 
-  bool                  extend(const UseStmt* stmt);
+  bool                  extend(VisibilityStmt* stmt);
+
+  Symbol*               lookupForImport(Expr* expr) const;
 
   Symbol*               lookup(Expr*       expr, bool isUse=false)       const;
 
@@ -86,13 +89,13 @@ public:
   void                  describe()                                       const;
 
 private:
-  typedef std::vector<const UseStmt*>    UseList;
+  typedef std::vector<VisibilityStmt*>   UseImportList;
   typedef std::vector<Symbol*>           SymList;
 
   typedef std::set<const ResolveScope*>  ScopeSet;
 
   typedef std::map<const char*, Symbol*> Bindings;
-  typedef std::map<Symbol*,     UseList> UseMap;
+  typedef std::map<Symbol*, UseImportList> UseImportMap;
 
                         ResolveScope();
 
@@ -126,19 +129,22 @@ private:
   bool                  getFieldsWithUses(const char* fieldName,
                                           SymList&    symbols)           const;
 
-  void                  buildBreadthFirstUseList(UseList& useList)       const;
+  void buildBreadthFirstUseImportList(UseImportList& useList) const;
 
-  void                  buildBreadthFirstUseList(UseList& modules,
-                                                 UseList& current,
-                                                 UseMap&  visited)       const;
+  void buildBreadthFirstUseImportList(UseImportList& modules,
+                                      UseImportList& current,
+                                      UseImportMap&  visited) const;
 
-   bool                 skipUse(UseMap&        visited,
+   bool                 skipUse(UseImportMap&  visited,
                                 const UseStmt* current)                  const;
+
+   Symbol* followImportUseChains(UnresolvedSymExpr* expr) const;
+   Symbol* lookupNameLocallyForImport(const char* name) const;
 
   BaseAST*              mAstRef;
   const ResolveScope*   mParent;
   Bindings              mBindings;
-  UseList               mUseList;
+  UseImportList         mUseImportList;
 };
 
 extern ResolveScope* rootScope;

@@ -115,7 +115,7 @@ units for offsets or lengths:
  * graphemes
 
 Most methods on the Chapel string type currently work with codepoint units by
-default. For example, :proc:`~string.length` returns the length in codepoints
+default. For example, :proc:`~string.size` returns the length in codepoints
 and `int` values passed into :proc:`~string.this` are offsets in codepoint
 units.
 
@@ -133,15 +133,25 @@ and :proc:`~string.rfind()` return a :record:`byteIndex`.
  */
 module String {
   private use ChapelStandard;
-  use CString;
   private use SysCTypes;
-  use StringCasts;
   private use ByteBufferHelpers;
   private use BytesStringCommon;
   private use SysBasic;
 
+  public use CString;
+  public use StringCasts;
+  public use BytesStringCommon only encodePolicy;  // expose encodePolicy
+
   pragma "fn synchronization free"
-  private extern proc qio_decode_char_buf(ref chr:int(32), ref nbytes:c_int, buf:c_string, buflen:ssize_t):syserr;
+  private extern proc qio_decode_char_buf(ref chr:int(32),
+                                          ref nbytes:c_int,
+                                          buf:c_string,
+                                          buflen:ssize_t): syserr;
+  pragma "fn synchronization free"
+  private extern proc qio_decode_char_buf_esc(ref chr:int(32),
+                                              ref nbytes:c_int,
+                                              buf:c_string,
+                                              buflen:ssize_t): syserr;
   pragma "fn synchronization free"
   private extern proc qio_encode_char_buf(dst:c_void_ptr, chr:int(32)):syserr;
   pragma "fn synchronization free"
@@ -205,6 +215,7 @@ module String {
        }
 
    */
+  pragma "plain old data"
   record byteIndex {
     pragma "no doc"
     var _bindex  : int;
@@ -214,6 +225,7 @@ module String {
       // Let compiler insert defaults
     }
     proc init(i: int) { _bindex = i; }
+    proc init=(other: byteIndex) { _bindex = other._bindex; }
     proc init=(i: int) { _bindex = i; }
 
     proc writeThis(f) throws {
@@ -244,6 +256,7 @@ module String {
        }
 
    */
+  pragma "plain old data"
   record codepointIndex {
     pragma "no doc"
     var _cpindex  : int;
@@ -254,6 +267,7 @@ module String {
     }
     proc init(i: int) { _cpindex = i; }
     proc init=(i: int) { _cpindex = i; }
+    proc init=(cpi: codepointIndex) { _cpindex = cpi._cpindex; }
 
     proc writeThis(f) throws {
       f <~> _cpindex;
@@ -456,6 +470,16 @@ module String {
     }
   }
 
+  private proc stringFactoryArgDepr() {
+    compilerWarning("createStringWith* with formal argument `s` is deprecated. ",
+                    "Use argument name `x` instead");
+  }
+
+  private proc joinArgDepr() {
+    compilerWarning("string.join with formal argument `S` is deprecated. ",
+                    "Use argument name `x` instead");
+  }
+
   //
   // createString* functions
   //
@@ -470,11 +494,18 @@ module String {
 
     :returns: A new `string`
   */
-  inline proc createStringWithBorrowedBuffer(s: string) {
-    // we don't validate here because `s` must have been validated already
+  inline proc createStringWithBorrowedBuffer(x: string) {
+    // we don't validate here because `x` must have been validated already
     var ret: string;
-    initWithBorrowedBuffer(ret, s);
+    initWithBorrowedBuffer(ret, x);
     return ret;
+  }
+
+  pragma "last resort"
+  pragma "no doc"
+  inline proc createStringWithBorrowedBuffer(s: string) {
+    stringFactoryArgDepr();
+    return createStringWithBorrowedBuffer(x=s);
   }
 
   /*
@@ -491,17 +522,24 @@ module String {
 
     :returns: A new `string`
   */
-  inline proc createStringWithBorrowedBuffer(s: c_string, length=s.length) throws {
-    return createStringWithBorrowedBuffer(s:c_ptr(uint(8)), length=length,
+  inline proc createStringWithBorrowedBuffer(x: c_string, length=x.size) throws {
+    return createStringWithBorrowedBuffer(x:c_ptr(uint(8)), length=length,
                                                             size=length+1);
   }
 
+  pragma "last resort"
   pragma "no doc"
-  proc chpl_createStringWithLiteral(s: c_string, length:int) {
+  inline proc createStringWithBorrowedBuffer(s: c_string, length=s.size) throws {
+    stringFactoryArgDepr();
+    return createStringWithBorrowedBuffer(x=s, length);
+  }
+
+  pragma "no doc"
+  proc chpl_createStringWithLiteral(x: c_string, length:int) {
     // NOTE: This is a "wellknown" function used by the compiler to create
     // string literals. Inlining this creates some bloat in the AST, slowing the
     // compilation.
-    return chpl_createStringWithBorrowedBufferNV(s:c_ptr(uint(8)),
+    return chpl_createStringWithBorrowedBufferNV(x:c_ptr(uint(8)),
                                                  length=length,
                                                  size=length+1);
   }
@@ -523,16 +561,24 @@ module String {
 
      :returns: A new `string`
   */
-  inline proc createStringWithBorrowedBuffer(s: bufferType,
+  inline proc createStringWithBorrowedBuffer(x: bufferType,
                                              length: int, size: int) throws {
     var ret: string;
-    validateEncoding(s, length);
-    initWithBorrowedBuffer(ret, s, length,size);
+    validateEncoding(x, length);
+    initWithBorrowedBuffer(ret, x, length,size);
     return ret;
   }
 
+  pragma "last resort"
   pragma "no doc"
-  private inline proc chpl_createStringWithBorrowedBufferNV(s: bufferType,
+  inline proc createStringWithBorrowedBuffer(s: bufferType,
+                                             length: int, size: int) throws {
+    stringFactoryArgDepr();
+    return createStringWithBorrowedBuffer(x=s, length, size);
+  }
+
+  pragma "no doc"
+  private inline proc chpl_createStringWithBorrowedBufferNV(x: bufferType,
                                                             length: int,
                                                             size: int) {
     // NOTE: This is similar to chpl_createStringWithLiteral above, but only
@@ -540,14 +586,21 @@ module String {
     // same names, because "wellknown" implementation in the compiler does not
     // allow overloads.
     var ret: string;
-    initWithBorrowedBuffer(ret, s, length,size);
+    initWithBorrowedBuffer(ret, x, length,size);
     return ret;
   }
 
   pragma "no doc"
-  inline proc createStringWithOwnedBuffer(s: string) {
+  inline proc createStringWithOwnedBuffer(x: string) {
     // should we allow stealing ownership?
     compilerError("A Chapel string cannot be passed to createStringWithOwnedBuffer");
+  }
+
+  pragma "last resort"
+  pragma "no doc"
+  inline proc createStringWithOwnedBuffer(s: string) {
+    stringFactoryArgDepr();
+    return createStringWithOwnedBuffer(x=s);
   }
 
   /*
@@ -563,9 +616,16 @@ module String {
 
     :returns: A new `string`
   */
-  inline proc createStringWithOwnedBuffer(s: c_string, length=s.length) throws {
-    return createStringWithOwnedBuffer(s: bufferType, length=length,
+  inline proc createStringWithOwnedBuffer(x: c_string, length=x.size) throws {
+    return createStringWithOwnedBuffer(x: bufferType, length=length,
                                                       size=length+1);
+  }
+
+  pragma "last resort"
+  pragma "no doc"
+  inline proc createStringWithOwnedBuffer(s: c_string, length=s.size) throws {
+    stringFactoryArgDepr();
+    return createStringWithOwnedBuffer(x=s, length);
   }
 
   /*
@@ -584,20 +644,28 @@ module String {
 
      :returns: A new `string`
   */
-  inline proc createStringWithOwnedBuffer(s: bufferType,
+  inline proc createStringWithOwnedBuffer(x: bufferType,
                                           length: int, size: int) throws {
     var ret: string;
-    validateEncoding(s, length);
-    initWithOwnedBuffer(ret, s, length, size);
+    validateEncoding(x, length);
+    initWithOwnedBuffer(ret, x, length, size);
     return ret;
   }
 
+  pragma "last resort"
   pragma "no doc"
-  private inline proc chpl_createStringWithOwnedBufferNV(s: bufferType,
+  inline proc createStringWithOwnedBuffer(s: bufferType,
+                                          length: int, size: int) throws {
+    stringFactoryArgDepr();
+    return createStringWithOwnedBuffer(x=s, length, size);
+  }
+
+  pragma "no doc"
+  private inline proc chpl_createStringWithOwnedBufferNV(x: bufferType,
                                                          length: int,
                                                          size: int) {
     var ret: string;
-    initWithOwnedBuffer(ret, s, length,size);
+    initWithOwnedBuffer(ret, x, length,size);
     return ret;
   }
 
@@ -609,11 +677,18 @@ module String {
 
     :returns: A new `string`
   */
-  inline proc createStringWithNewBuffer(s: string) {
-    // we don't validate here because `s` must have been validated already
+  inline proc createStringWithNewBuffer(x: string) {
+    // we don't validate here because `x` must have been validated already
     var ret: string;
-    initWithNewBuffer(ret, s);
+    initWithNewBuffer(ret, x);
     return ret;
+  }
+
+  pragma "last resort"
+  pragma "no doc"
+  inline proc createStringWithNewBuffer(s: string) {
+    stringFactoryArgDepr();
+    return createStringWithNewBuffer(x=s);
   }
 
   /*
@@ -628,9 +703,18 @@ module String {
 
     :returns: A new `string`
   */
-  inline proc createStringWithNewBuffer(s: c_string, length=s.length) throws {
-    return createStringWithNewBuffer(s: bufferType, length=length,
-                                                    size=length+1);
+  inline proc createStringWithNewBuffer(x: c_string, length=x.size,
+                                        policy=decodePolicy.strict) throws {
+    return createStringWithNewBuffer(x: bufferType, length=length,
+                                     size=length+1, policy);
+  }
+
+  pragma "last resort"
+  pragma "no doc"
+  inline proc createStringWithNewBuffer(s: c_string, length=s.size,
+                                        policy=decodePolicy.strict) throws {
+    stringFactoryArgDepr();
+    return createStringWithNewBuffer(x=s, length, policy);
   }
 
   /*
@@ -648,12 +732,21 @@ module String {
 
      :returns: A new `string`
   */
+  // TODO: size is probably unnecessary here, but maybe we keep it for
+  // consistence? Then, we can at least give it a default like length+1
+  inline proc createStringWithNewBuffer(x: bufferType,
+                                        length: int, size=length+1,
+                                        policy=decodePolicy.strict) throws {
+    return decodeByteBuffer(x, length, policy);
+  }
+
+  pragma "last resort"
+  pragma "no doc"
   inline proc createStringWithNewBuffer(s: bufferType,
-                                        length: int, size: int) throws {
-    var ret: string;
-    validateEncoding(s, length);
-    initWithNewBuffer(ret, s, length, size);
-    return ret;
+                                        length: int, size=length+1,
+                                        policy=decodePolicy.strict) throws {
+    stringFactoryArgDepr();
+    return createStringWithNewBuffer(x=s, length, size, policy);
   }
 
   pragma "no doc"
@@ -699,7 +792,7 @@ module String {
 
     proc init=(cs: c_string) {
       this.complete();
-      initWithNewBuffer(this, cs:bufferType, length=cs.length, size=cs.length+1);
+      initWithNewBuffer(this, cs:bufferType, length=cs.size, size=cs.size+1);
     }
 
     pragma "no doc"
@@ -794,15 +887,23 @@ module String {
       this.len = s_len;
     }
 
-    /*
-      :returns: The number of codepoints in the string.
-      */
-    inline proc length return numCodepoints;
+    /* Deprecated - please use :proc:`string.size`. */
+    inline proc length {
+      compilerWarning("'string.length' is deprecated - " +
+                      "please use 'string.size' instead");
+      return numCodepoints;
+    }
 
     /*
       :returns: The number of codepoints in the string.
       */
     inline proc size return numCodepoints;
+
+    /*
+      :returns: The indices that can be used to index into the string
+                (i.e., the range ``1..this.size``)
+    */
+    proc indices return 1..size;
 
     /*
       :returns: The number of bytes in the string.
@@ -876,6 +977,58 @@ module String {
     }
 
     /*
+      Returns a :record:`~Bytes.bytes` from the given :record:`string`. If the
+      string contains some escaped non-UTF8 bytes, `policy` argument determines
+      the action.
+        
+      :arg policy: `encodePolicy.pass` directly copies the (potentially escaped)
+                    data, `encodePolicy.unescape` recovers the escaped bytes
+                    back.
+
+      :returns: :record:`~Bytes.bytes`
+    */
+    proc encode(policy=encodePolicy.pass): bytes {
+      var localThis: string = this.localize();
+
+      if policy == encodePolicy.pass {  // just copy
+        return createBytesWithNewBuffer(localThis.buff, localThis.numBytes);
+      }
+      else {  // see if there is escaped data in the string
+        var (buf, size) = bufferAlloc(this.len+1);
+
+        var readIdx = 0;
+        var writeIdx = 0;
+        while readIdx < localThis.len {
+          var cp: int(32);
+          var nbytes: c_int;
+          var multibytes = (localThis.buff + readIdx): c_string;
+          var maxbytes = (localThis.len - readIdx): ssize_t;
+          const decodeRet = qio_decode_char_buf_esc(cp, nbytes, multibytes,
+                                                    maxbytes);
+          if (0xdc80<=cp && cp<=0xdcff) {
+            buf[writeIdx] = (cp-0xdc00):byteType;
+            writeIdx += 1;
+          }
+          else if (decodeRet != 0) {
+            // the string contains invalid data
+            // at this point this can only happen due to a failure in our
+            // implementation of string encoding/decoding
+            // simply copy the data out
+            bufferMemcpyLocal(dst=(buf+writeIdx), src=multibytes, len=nbytes);
+            writeIdx += nbytes;
+          }
+          else {
+            bufferMemcpyLocal(dst=(buf+writeIdx), src=multibytes, len=nbytes);
+            writeIdx += nbytes;
+          }
+          readIdx += nbytes;
+        }
+        buf[writeIdx] = 0;
+        return createBytesWithOwnedBuffer(buf, length=writeIdx, size=size);
+      }
+    }
+
+    /*
       Iterates over the string character by character.
 
       For example:
@@ -894,7 +1047,7 @@ module String {
         c
         d
      */
-    iter these() : string {
+    iter items() : string {
       var localThis: string = this.localize();
 
       var i = 0;
@@ -903,7 +1056,7 @@ module String {
         var cp: int(32);
         var nBytes: c_int;
         var maxBytes = (localThis.len - i): ssize_t;
-        qio_decode_char_buf(cp, nBytes, curPos:c_string, maxBytes);
+        qio_decode_char_buf_esc(cp, nBytes, curPos:c_string, maxBytes);
 
         var (newBuf, newSize) = bufferCopyLocal(curPos, nBytes);
         newBuf[nBytes] = 0;
@@ -912,6 +1065,32 @@ module String {
 
         i += nBytes;
       }
+    }
+
+
+    /*
+      Iterates over the string character by character, yielding 1-codepoint
+      strings. (A synonym for :iter:`items`)
+
+      For example:
+
+      .. code-block:: chapel
+
+        var str = "abcd";
+        for c in str {
+          writeln(c);
+        }
+
+      Output::
+
+        a
+        b
+        c
+        d
+     */
+    iter these() : string {
+      for c in this.items() do
+        yield c;
     }
 
     /*
@@ -937,7 +1116,7 @@ module String {
         var nbytes: c_int;
         var multibytes = (localThis.buff + i): c_string;
         var maxbytes = (localThis.len - i): ssize_t;
-        qio_decode_char_buf(cp, nbytes, multibytes, maxbytes);
+        qio_decode_char_buf_esc(cp, nbytes, multibytes, maxbytes);
         yield cp;
         i += nbytes;
       }
@@ -963,7 +1142,7 @@ module String {
         var nbytes: c_int;
         var multibytes = (localThis.buff + i): c_string;
         var maxbytes = (localThis.len - i): ssize_t;
-        qio_decode_char_buf(cp, nbytes, multibytes, maxbytes);
+        qio_decode_char_buf_esc(cp, nbytes, multibytes, maxbytes);
         yield (cp:int(32), (i + 1):byteIndex, nbytes:int);
         i += nbytes;
       }
@@ -1026,7 +1205,7 @@ module String {
       var nbytes: c_int;
       var multibytes = localThis.buff: c_string;
       var maxbytes = localThis.len: ssize_t;
-      qio_decode_char_buf(cp, nbytes, multibytes, maxbytes);
+      qio_decode_char_buf_esc(cp, nbytes, multibytes, maxbytes);
 
       if localThis.len != nbytes:int then
         halt("string.toCodepoint() only accepts single-codepoint strings");
@@ -1079,11 +1258,31 @@ module String {
       var multibytes = ret.buff;
       var cp: int(32);
       var nbytes: c_int;
-      qio_decode_char_buf(cp, nbytes, multibytes:c_string, maxbytes);
+      qio_decode_char_buf_esc(cp, nbytes, multibytes:c_string, maxbytes);
       ret.buff[nbytes] = 0;
       ret.len = nbytes;
 
       return ret;
+    }
+
+    /*
+      Return the `i` th codepoint in the string. (A synonym for :proc:`item`)
+
+      :returns: A string with the complete multibyte character starting at the
+                specified codepoint index from ``1..string.numCodepoints``
+     */
+    proc this(i: codepointIndex) : string {
+      return this.item(i);
+    }
+
+    /*
+      Return the `i` th codepoint in the string. (A synonym for :proc:`item`)
+
+      :returns: A string with the complete multibyte character starting at the
+                specified codepoint index from ``1..string.numCodepoints``
+     */
+    inline proc this(i: int) : string {
+      return this.item(i);
     }
 
     /*
@@ -1092,7 +1291,7 @@ module String {
       :returns: A string with the complete multibyte character starting at the
                 specified codepoint index from ``1..string.numCodepoints``
      */
-    proc this(i: codepointIndex) : string {
+    proc item(i: codepointIndex) : string {
       if this.isEmpty() then return "";
       const idx = i: int;
       return codepointToString(this.codepoint(idx));
@@ -1104,7 +1303,7 @@ module String {
       :returns: A string with the complete multibyte character starting at the
                 specified codepoint index from ``1..string.numCodepoints``
      */
-    inline proc this(i: int) : string {
+    inline proc item(i: int) : string {
       return this[i: codepointIndex];
     }
 
@@ -1191,12 +1390,12 @@ module String {
 
     /*
       Slice a string. Halts if r is non-empty and not completely inside the
-      range ``1..string.length`` when compiled with `--checks`. `--fast`
+      range ``1..string.size`` when compiled with `--checks`. `--fast`
       disables this check.
 
       :arg r: range of the indices the new string should be made from
 
-      :returns: a new string that is a substring within ``1..string.length``. If
+      :returns: a new string that is a substring within ``1..string.size``. If
                 the length of `r` is zero, an empty string is returned.
      */
     // TODO: I wasn't very good about caching variables locally in this one.
@@ -1289,7 +1488,7 @@ module String {
                   var nbytes: c_int;
                   var multibytes = (this.buff + i-1): c_string;
                   var maxbytes = (this.len - (i-1)): ssize_t;
-                  qio_decode_char_buf(cp, nbytes, multibytes, maxbytes);
+                  qio_decode_char_buf_esc(cp, nbytes, multibytes, maxbytes);
                   nextIdx = i-1 + nbytes;
                 }
               }
@@ -1348,7 +1547,7 @@ module String {
       :arg needle: the string to search for
       :arg region: an optional range defining the substring to search within,
                    default is the whole string. Halts if the range is not
-                   within ``1..string.length``
+                   within ``1..string.size``
 
       :returns: the index of the first occurrence of `needle` within a
                 string, or 0 if the `needle` is not in the string.
@@ -1362,7 +1561,7 @@ module String {
       :arg needle: the string to search for
       :arg region: an optional range defining the substring to search within,
                    default is the whole string. Halts if the range is not
-                   within ``1..string.length``
+                   within ``1..string.size``
 
       :returns: the index of the first occurrence from the right of `needle`
                 within a string, or 0 if the `needle` is not in the string.
@@ -1375,7 +1574,7 @@ module String {
       :arg needle: the string to search for
       :arg region: an optional range defining the substring to search within,
                    default is the whole string. Halts if the range is not
-                   within ``1..string.length``
+                   within ``1..string.size``
 
       :returns: the number of times `needle` occurs in the string
      */
@@ -1393,7 +1592,7 @@ module String {
                 to `count` times
      */
     // TODO: not ideal - count and single allocation probably faster
-    //                 - can special case on replacement|needle.length (0, 1)
+    //                 - can special case on replacement|needle.size (0, 1)
     inline proc replace(needle: string, replacement: string, count: int = -1) : string {
       return doReplace(this, needle, replacement, count);
     }
@@ -1502,8 +1701,8 @@ module String {
           writeln(x); // prints: "a|10|d"
      */
 
-    inline proc join(const ref S: string ...) : string {
-      return _join(S);
+    inline proc join(const ref x: string ...) : string {
+      return _join(x);
     }
 
     /*
@@ -1514,10 +1713,17 @@ module String {
           var x = "|".join("a","10","d");
           writeln(x); // prints: "a|10|d"
      */
-    inline proc join(const ref S) : string where isTuple(S) {
-      if !isHomogeneousTuple(S) || !isString(S[1]) then
+    inline proc join(const ref x) : string where isTuple(x) {
+      if !isHomogeneousTuple(x) || !isString(x[1]) then
         compilerError("join() on tuples only handles homogeneous tuples of strings");
-      return _join(S);
+      return _join(x);
+    }
+
+    pragma "last resort"
+    pragma "no doc"
+    inline proc join(const ref S) : string where isTuple(S) {
+      joinArgDepr();
+      return join(S);
     }
 
     /*
@@ -1532,11 +1738,19 @@ module String {
       return _join(S);
     }
 
+    pragma "last resort"
+    pragma "no doc"
+    inline proc join(const ref S: [] string) : string {
+      joinArgDepr();
+      return join(S);
+    }
+
     pragma "no doc"
     inline proc join(ir: _iteratorRecord): string {
       return doJoinIterator(this, ir);
     }
 
+    // TODO: we don't need this
     pragma "no doc"
     inline proc _join(const ref S) : string where isTuple(S) || isArray(S) {
       return doJoin(this, S);
@@ -1957,6 +2171,10 @@ module String {
   proc =(ref lhs: byteIndex, rhs: int) {
     lhs._bindex = rhs: int;
   }
+  pragma "no doc"
+  proc =(ref lhs: byteIndex, const ref rhs: byteIndex) {
+    lhs._bindex = rhs._bindex;
+  }
 
   /*
      Copies the int `rhs` into the codepointIndex `lhs`.
@@ -1964,6 +2182,11 @@ module String {
   proc =(ref lhs: codepointIndex, rhs: int) {
     lhs._cpindex = rhs: int;
   }
+  pragma "no doc"
+  proc =(ref lhs: codepointIndex, const ref rhs: codepointIndex) {
+    lhs._cpindex = rhs._cpindex;
+  }
+
 
   /*
      Copies the string `rhs` into the string `lhs`.
@@ -2009,37 +2232,6 @@ module String {
     return doMultiply(s, n);
   }
 
-  private proc stringValDeprecated() {
-    compilerWarning("'+' between strings and non-strings is deprecated; consider explicitly casting the non-string argument to a string");
-  }
-
-  // Concatenation with other types is done by casting to string
-  private inline proc concatHelp(s: string, x:?t) where t != string {
-    stringValDeprecated();
-    var cs = x:string;
-    const ret = s + cs;
-    return ret;
-  }
-
-  private inline proc concatHelp(x:?t, s: string) where t != string  {
-    stringValDeprecated();
-    var cs = x:string;
-    const ret = cs + s;
-    return ret;
-  }
-
-  /*
-     The following concatenation functions return a new string which is the
-     result of casting the non-string argument to a string, and concatenating
-     that result with `s`.
-  */
-  inline proc +(s: string, x: numeric) return concatHelp(s, x);
-  inline proc +(x: numeric, s: string) return concatHelp(x, s);
-  inline proc +(s: string, x: enumerated) return concatHelp(s, x);
-  inline proc +(x: enumerated, s: string) return concatHelp(x, s);
-  inline proc +(s: string, x: bool) return concatHelp(s, x);
-  inline proc +(x: bool, s: string) return concatHelp(x, s);
-
   //
   // Param procs
   //
@@ -2079,42 +2271,6 @@ module String {
     return __primitive("string_concat", a, b);
 
   pragma "no doc"
-  inline proc +(param s: string, param x: integral) param {
-    stringValDeprecated();
-    return __primitive("string_concat", s, x:string);
-  }
-
-  pragma "no doc"
-  inline proc +(param x: integral, param s: string) param {
-    stringValDeprecated();
-    return __primitive("string_concat", x:string, s);
-  }
-
-  pragma "no doc"
-  inline proc +(param s: string, param x: enumerated) param {
-    stringValDeprecated();
-    return __primitive("string_concat", s, x:string);
-  }
-
-  pragma "no doc"
-  inline proc +(param x: enumerated, param s: string) param {
-    stringValDeprecated();
-    return __primitive("string_concat", x:string, s);
-  }
-
-  pragma "no doc"
-  inline proc +(param s: string, param x: bool) param {
-    stringValDeprecated();
-    return __primitive("string_concat", s, x:string);
-  }
-
-  pragma "no doc"
-  inline proc +(param x: bool, param s: string) param {
-    stringValDeprecated();
-    return __primitive("string_concat", x:string, s);
-  }
-
-  pragma "no doc"
   inline proc ascii(param a: string) param {
     compilerWarning("ascii is deprecated - please use string.toByte or string.byte");
     return __primitive("ascii", a);
@@ -2143,7 +2299,14 @@ module String {
     return __primitive("string_length_codepoints", this);
 
   pragma "no doc"
-  inline proc param string.length param
+  inline proc param string.length param {
+    compilerWarning("'string.length' is deprecated - " +
+                    "please use 'string.size' instead");
+    return this.numCodepoints;
+  }
+
+  pragma "no doc"
+  inline proc param string.size param
     return this.numCodepoints;
 
   pragma "no doc"
@@ -2351,7 +2514,7 @@ module String {
   pragma "no doc"
   proc _cast(type t, cs: c_string) where t == string {
     var ret: string;
-    ret.len = cs.length;
+    ret.len = cs.size;
     ret._size = ret.len+1;
     ret.buff = if ret.len > 0
       then __primitive("string_copy", cs): bufferType
