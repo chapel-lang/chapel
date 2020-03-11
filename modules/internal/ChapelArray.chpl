@@ -1507,6 +1507,12 @@ module ChapelArray {
          only available for sparse domains. In the future, we expect that
          these methods will be available for all irregular domains.
 
+       .. note::
+
+         ``nilLocale`` is a sentinel value to denote that the locale where this
+         addition should occur is unknown. We expect this to change in the
+         future.
+
        :arg inds: Indices to be added. ``inds`` can be an array of
                   ``rank*idxType`` or an array of ``idxType`` for
                   1-D domains.
