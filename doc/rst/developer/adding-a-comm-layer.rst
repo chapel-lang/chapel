@@ -55,7 +55,7 @@ a comm layer implementation.
   Defines data structures needed for non-blocking communication and remote value caching.
 
 These are default (``no-op``) versions of the implementation which will be
-used if no comm layer-specific versions are defined.
+used if no comm layer specific versions are defined.
 
 If any of the above are desirable for the speedy comm layer, define
 the appropriate data structures or macros in a file with the same name

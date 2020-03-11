@@ -42,7 +42,7 @@ declarations, etc, and code can move or be removed entirely. Using the output
 from ``--savec``, you may line up interesting code samples to see how the compiler
 changes this code over time.
 
-A key debugging concept is a unique ID associated with each AST node.
+A key debugging concept is the unique ID associated with each AST node.
 IDs are given sequentially to the nodes when they are constructed.
 See the Compiler Overview document for more details.
 

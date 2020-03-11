@@ -63,7 +63,7 @@ The compiler would report the following error:
   :lines: 1
 
 As with variable declarations, the type specification or initializer
-maybe omitted in a ``const`` declaration, in which case the compiler
+may be omitted in a ``const`` declaration, in which case the compiler
 will fill in any missing details:
 
 .. literalinclude:: examples/users-guide/base/constParam.chpl

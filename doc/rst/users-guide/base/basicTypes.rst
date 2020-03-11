@@ -10,7 +10,7 @@ numbers, and strings.  Specifically, these types provide support for:
 
 * Boolean values;
 * Signed and unsigned integers;
-* Real, imaginary, and complex floating-point values; and
+* Real, imaginary, and complex floating point values; and
 * Strings.
 
 These types, along with the ``void`` type (not covered in this

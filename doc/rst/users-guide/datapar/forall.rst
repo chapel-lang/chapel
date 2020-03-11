@@ -75,7 +75,7 @@ avoiding overwhelming the target system with too much concurrency.
 
 This is precisely what forall-loops are for.  While they result in
 parallel execution like coforalls, they typically use a number of
-tasks that are appropriate for the system, dividing the loop's
+tasks that is appropriate for the system, dividing the loop's
 iterations between them.  Thus, we could write this parallel loop as:
 
 .. literalinclude:: examples/users-guide/datapar/forall.chpl
@@ -152,7 +152,7 @@ that had just overwritten the intended value in the previous iteration.
 The lesson in this example is that when using a forall-loop, the
 programmer asserts that the loop's iterations can execute safely in
 parallel and is responsible for the outcome when they cannot.  Chapel
-does not prevent non-deterministic forall loops from being written, it
+does not prevent nondeterministic forall loops from being written, it
 merely implements the parallelism that the programmer specifies.
 
 Here are two variations of the previous loop which *are*

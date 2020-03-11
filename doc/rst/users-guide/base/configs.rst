@@ -144,7 +144,7 @@ they can be preserved depend on the specific shell being used and are
 beyond the scope of this article.
 
 Setting ``config`` defaults on the compiler's command-line also
-support more radical alterations to the code.  For example, we
+supports more radical alterations to the code.  For example, we
 could change *age* from an integral type to a floating-point type:
 
 .. literalinclude:: examples/users-guide/base/configs3.execopts-fake
