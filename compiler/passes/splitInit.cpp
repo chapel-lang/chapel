@@ -778,9 +778,6 @@ static bool doFindCopyElisionPoints(Expr* start, VarToCopyElisionState& map) {
 
 void elideCopies(FnSymbol* fn) {
   if (fNoCopyElision == false) {
-    if (fn->id == 200836)
-      gdbShouldBreakHere();
-
     VarToCopyElisionState map;
     doFindCopyElisionPoints(fn->body->body.first(), map);
 
