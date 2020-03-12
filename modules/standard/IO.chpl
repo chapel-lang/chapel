@@ -2829,7 +2829,7 @@ private proc _write_text_internal(_channel_internal:qio_channel_ptr_t,
     const local_x = x.localize();
     // check if the string has escapes
     if local_x.hasEscapes {
-      return EINVAL;
+      return EILSEQ;
     }
     return qio_channel_print_string(false, _channel_internal, local_x.c_str(), local_x.numBytes:ssize_t);
   } else if t == bytes {
@@ -2996,7 +2996,7 @@ private inline proc _write_binary_internal(_channel_internal:qio_channel_ptr_t, 
     var local_x = x.localize();
     // check if the string has escapes
     if local_x.hasEscapes {
-      return EINVAL;
+      return EILSEQ;
     }
     return qio_channel_write_string(false, byteorder:c_int, qio_channel_str_style(_channel_internal), _channel_internal, local_x.c_str(), local_x.numBytes: ssize_t);
   } else if t == bytes {
@@ -3052,7 +3052,11 @@ proc channel._writeOne(param kind: iokind, const x:?t, loc:locale?) throws {
   var err = _write_one_internal(_channel_internal, kind, x, loc);
 
   if err != ENOERR {
-    const msg = _constructIoErrorMsg(kind, x);
+    var msg = _constructIoErrorMsg(kind, x);
+    if err == EILSEQ {
+      msg = "Strings with escaped non-UTF8 bytes cannot be used with I/O. " +
+            "Try using string.encode(encodePolicy.unescape) first." + msg;
+    }
     try _ch_ioerror(err, msg);
   }
 }
