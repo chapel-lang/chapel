@@ -835,15 +835,11 @@ Symbol* ResolveScope::lookupPublicImports(const char* name) const {
   UseImportList useImportList = mUseImportList;
   Symbol *retval = NULL;
 
-  for (size_t i = 0; i < useImportList.size(); i++) {
-    VisibilityStmt *vs = useImportList[i];
-    if (ImportStmt *is = toImportStmt(vs)) {
+  for_vector_allowing_0s(VisibilityStmt, visStmt, useImportList) {
+    if (ImportStmt *is = toImportStmt(visStmt)) {
       if (!is->isPrivate) {
-        Symbol *importSym;
-        importSym = vs->checkIfModuleNameMatches(name);
-
-        if (importSym) {
-          if (toModuleSymbol(importSym)) {
+        if (Symbol *importSym = visStmt->checkIfModuleNameMatches(name)) {
+          if (isModuleSymbol(importSym)) {
             retval = importSym;
             break;
           }
