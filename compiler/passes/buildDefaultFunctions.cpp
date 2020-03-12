@@ -307,6 +307,69 @@ static void fixupAccessor(AggregateType* ct, Symbol *field,
     fn->addFlag(FLAG_REF_TO_CONST_WHEN_CONST_THIS);
 }
 
+// Resetting a union to store a different field requires two steps:
+//   1. deinit anything that was stored
+//   2. default-init the requested field
+// If newField == NULL, skip step 2.
+static BlockStmt* buildResetUnionField(Symbol* _this,
+                                       AggregateType* ct,
+                                       Symbol* newField) {
+
+  INT_ASSERT(ct->isUnion());
+
+  BlockStmt* block = new BlockStmt();
+
+  // First, deinitialize whatever is there.
+  for_fields(field, ct) {
+    Symbol* fieldNameSym = new_CStringSymbol(field->name);
+
+    CallExpr* checkId = new CallExpr("==",
+                              new CallExpr(PRIM_GET_UNION_ID, _this),
+                              new CallExpr(PRIM_FIELD_NAME_TO_NUM,
+                                           ct->symbol,
+                                           fieldNameSym));
+
+    BlockStmt* deinitBlock = new BlockStmt();
+    VarSymbol* tmp = newTemp("union_reset_deinit");
+    CallExpr* setTmp = new CallExpr(PRIM_MOVE,
+                                    tmp,
+                                    new CallExpr(PRIM_GET_MEMBER_VALUE,
+                                                 _this, fieldNameSym));
+    tmp->addFlag(FLAG_INSERT_AUTO_DESTROY);
+    deinitBlock->insertAtTail(new DefExpr(tmp));
+    deinitBlock->insertAtTail(setTmp);
+
+    block->insertAtTail(new CondStmt(checkId, deinitBlock));
+  }
+
+  if (newField != NULL) {
+    Symbol* newFieldNameSym = new_CStringSymbol(newField->name);
+    // Set the union ID to store the target field
+    block->insertAtTail(new CallExpr(PRIM_SET_UNION_ID,
+                                     _this,
+                                     new CallExpr(PRIM_FIELD_NAME_TO_NUM,
+                                                  ct->symbol,
+                                                  newFieldNameSym)));
+
+    // Next, initialize the requsted field.
+    VarSymbol* tmp = newTemp("union_reset_init");
+    tmp->addFlag(FLAG_NO_AUTO_DESTROY); // will transfer to the field.
+    block->insertAtTail(new DefExpr(tmp));
+
+    block->insertAtTail(new CallExpr(PRIM_DEFAULT_INIT_VAR, tmp,
+                                     new CallExpr(PRIM_STATIC_FIELD_TYPE,
+                                                  _this,
+                                                  newFieldNameSym)));
+
+    block->insertAtTail(new CallExpr(PRIM_SET_MEMBER,
+                                     _this,
+                                     newFieldNameSym,
+                                     tmp));
+  }
+
+  return block;
+}
+
 // This function builds the getter or the setter, depending on the
 // 'setter' argument.
 FnSymbol* build_accessor(AggregateType* ct, Symbol* field,
@@ -388,24 +451,33 @@ FnSymbol* build_accessor(AggregateType* ct, Symbol* field,
     baseSym = borrowOfThis;
   }
 
+  Symbol* fieldNameSym = new_CStringSymbol(field->name);
+
   if (isUnion(ct)) {
     if (setter) {
       // Set the union ID in the setter.
-      fn->insertAtTail(
-          new CallExpr(PRIM_SET_UNION_ID,
-                       _this,
-                       new CallExpr(PRIM_FIELD_NAME_TO_NUM,
-                                    ct->symbol,
-                                    new_CStringSymbol(field->name))));
+      // If the ID is different from the target, deinit whatever was
+      // there and then default-init the field.
+      CallExpr* idDiffers = new CallExpr("!=",
+                              new CallExpr(PRIM_GET_UNION_ID, _this),
+                              new CallExpr(PRIM_FIELD_NAME_TO_NUM,
+                                           ct->symbol,
+                                           fieldNameSym));
+
+      BlockStmt* resetBlock = buildResetUnionField(_this, ct, field);
+      fn->insertAtTail(new CondStmt(idDiffers, resetBlock));
+
     } else {
       // Check the union ID in the getter.
-      fn->insertAtTail(new CondStmt(
-          new CallExpr("!=",
-            new CallExpr(PRIM_GET_UNION_ID, _this),
-            new CallExpr(PRIM_FIELD_NAME_TO_NUM,
-                         ct->symbol,
-                         new_CStringSymbol(field->name))),
-          new CallExpr("halt", new_StringSymbol("illegal union access"))));
+      CallExpr* idDiffers = new CallExpr("!=",
+                              new CallExpr(PRIM_GET_UNION_ID, _this),
+                              new CallExpr(PRIM_FIELD_NAME_TO_NUM,
+                                           ct->symbol,
+                                           fieldNameSym));
+      CallExpr* halt = new CallExpr("halt",
+                                    new_StringSymbol("illegal union access"));
+
+      fn->insertAtTail(new CondStmt(idDiffers, halt));
     }
   }
 
@@ -417,7 +489,7 @@ FnSymbol* build_accessor(AggregateType* ct, Symbol* field,
   } else if (field->hasFlag(FLAG_TYPE_VARIABLE) || field->hasFlag(FLAG_SUPER_CLASS)) {
     toReturn = new CallExpr(PRIM_GET_MEMBER_VALUE,
                             new SymExpr(baseSym),
-                            new SymExpr(new_CStringSymbol(field->name)));
+                            new SymExpr(fieldNameSym));
     if (chapelClass && field->hasFlag(FLAG_TYPE_VARIABLE))
       // Issue an error when accessing a runtime-type field of a nilable class.
       toReturn = new CallExpr("chpl_checkLegalTypeFieldAccessor", _this,
@@ -425,7 +497,7 @@ FnSymbol* build_accessor(AggregateType* ct, Symbol* field,
   } else {
     toReturn = new CallExpr(PRIM_GET_MEMBER,
                             new SymExpr(baseSym),
-                            new SymExpr(new_CStringSymbol(field->name)));
+                            new SymExpr(fieldNameSym));
   }
 
   if (toReturn != NULL) {
@@ -436,7 +508,7 @@ FnSymbol* build_accessor(AggregateType* ct, Symbol* field,
       else
         alternate = dtUninstantiated->symbol;
 
-      fn->insertAtTail(new CondStmt(new CallExpr(PRIM_IS_BOUND, baseSym, new_CStringSymbol(field->name)),
+      fn->insertAtTail(new CondStmt(new CallExpr(PRIM_IS_BOUND, baseSym, fieldNameSym),
                                     new CallExpr(PRIM_RETURN, toReturn),
                                     new CallExpr(PRIM_RETURN, alternate)));
     } else {
@@ -1827,10 +1899,15 @@ void buildDefaultDestructor(AggregateType* ct) {
 
     fn->retType = dtVoid;
 
+    if (ct->isUnion()) {
+      fn->insertAtTail(buildResetUnionField(fn->_this, ct, NULL));
+    }
+
     fn->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
 
     ct->symbol->defPoint->insertBefore(new DefExpr(fn));
 
+    normalize(fn);
 
     ct->methods.add(fn);
   }

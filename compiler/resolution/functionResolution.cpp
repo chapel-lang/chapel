@@ -8904,7 +8904,7 @@ static void resolveAutoCopies() {
     if (! ts->hasFlag(FLAG_GENERIC)                 &&
         ! ts->hasFlag(FLAG_SYNTACTIC_DISTRIBUTION)) {
       if (AggregateType* at = toAggregateType(ts->type)) {
-        if (isRecord(at) == true) {
+        if (isRecord(at) || isUnion(at)) {
           // If we attempt to resolve auto-copy and co. for an infinite record
           // we may enter an infinite loop and the compiler will crash.
           checkForInfiniteRecord(at);

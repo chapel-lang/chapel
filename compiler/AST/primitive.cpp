@@ -848,6 +848,7 @@ initPrimitive() {
   // As with PRIM_STATIC_TYPEOF, returns a compile-time component of
   // the type of the field.
   // There might be uninitialized memory if the run-time type is used.
+  // Args are variable, field name.
   prim_def(PRIM_STATIC_FIELD_TYPE, "static field type", returnInfoStaticFieldType);
 
   // used modules in BlockStmt::modUses

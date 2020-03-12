@@ -1,0 +1,7 @@
+union-copy-init3.chpl:5: In function 'init=':
+union-copy-init3.chpl:7: error: unresolved call '==(U, int(64))'
+$CHPL_HOME/modules/internal/String.chpl:427: note: this candidate did not match: ==(x: ?t, y: int)
+$CHPL_HOME/modules/internal/String.chpl:427: note: because where clause evaluated to false
+$CHPL_HOME/modules/internal/ChapelBase.chpl:131: note: candidates are: ==(a: _nilType, b: _nilType)
+$CHPL_HOME/modules/internal/ChapelBase.chpl:132: note:                 ==(a: bool, b: bool)
+note: and 120 other candidates, use --print-all-candidates to see them
