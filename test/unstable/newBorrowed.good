@@ -1,0 +1,2 @@
+newBorrowed.chpl:3: In function 'test':
+newBorrowed.chpl:4: warning: new borrowed C is unstable

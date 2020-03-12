@@ -7338,6 +7338,11 @@ static void resolveNewSetupManaged(CallExpr* newExpr, Type*& manager) {
       if (manager == NULL && fWarnUnstable)
         // Generate an error on 'new MyClass' with fWarnUnstable
         handleUnstableNewError(newExpr, type);
+
+      if (manager == dtBorrowed && fWarnUnstable) {
+        Type* ct = canonicalClassType(type);
+        USR_WARN(newExpr, "new borrowed %s is unstable", ct->symbol->name);
+      }
     }
   }
 }
