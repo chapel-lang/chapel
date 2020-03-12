@@ -1479,7 +1479,7 @@ proc AccumStencil.init(other: unmanaged AccumStencil, privateData,
   dataParMinGranularity = privateData(5);
 }
 
-proc AccumStencil.dsiSupportsPrivatization() param return true;
+override proc AccumStencil.dsiSupportsPrivatization() param return true;
 
 proc AccumStencil.dsiGetPrivatizeData() {
   return (boundingBox.dims(), targetLocDom.dims(),
@@ -1536,7 +1536,7 @@ proc AccumStencilDom.dsiReprivatize(other, reprivatizeData) {
   }
 }
 
-proc AccumStencilArr.dsiSupportsPrivatization() param return true;
+override proc AccumStencilArr.dsiSupportsPrivatization() param return true;
 
 proc AccumStencilArr.dsiGetPrivatizeData() return dom.pid;
 
