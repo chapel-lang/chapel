@@ -1,3 +1,3 @@
 overload_destructure_args.chpl:14: error: ambiguous call 'foo(1, (int(64),2*int(64)))'
-overload_destructure_args.chpl:6: note: candidates are: foo(a: int(64), chpl__tuple_arg_temp: _tuple)
-overload_destructure_args.chpl:10: note:                 foo(a: int(64), chpl__tuple_arg_temp: _tuple)
+overload_destructure_args.chpl:6: note: candidates are: foo(a: int(64), chpl__tuple_arg_temp1: _tuple)
+overload_destructure_args.chpl:10: note:                 foo(a: int(64), chpl__tuple_arg_temp1: _tuple)
