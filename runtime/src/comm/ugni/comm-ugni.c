@@ -3697,6 +3697,15 @@ void* chpl_comm_impl_regMemRealloc(void* p, size_t oldSize, size_t newSize,
       DBG_P_LP(DBGF_MEMREG, "chpl_regMemRealloc(%#zx): no hugepages", newSize);
       return NULL;
     }
+
+    //
+    // Copy the existing bytes from old to new memory.  If we're on
+    // a NUMA compute node this will result in locality that matches
+    // that of the calling thread.  That's not very good but we cannot
+    // do better in the runtime.  If it ever becomes an issue we might
+    // be able to do better in module code.
+    //
+    memcpy(newp, p, oldSize);
   }
 
   DBG_P_LP(DBGF_MEMREG,

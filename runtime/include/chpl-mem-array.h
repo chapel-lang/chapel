@@ -128,18 +128,6 @@ void* chpl_mem_array_realloc(void* p, size_t oldNmemb, size_t newNmemb,
     newp = chpl_realloc(p, newSize);
   }
 
-  if (newp != p) {
-    //
-    // We allocated new memory.  Copy the existing bytes.  If we're on
-    // a NUMA compute node this will result in locality that matches
-    // that of the calling thread.  That's not very good but we cannot
-    // do better in the runtime.  At least with the copying here rather
-    // than in the comm layer it will be easier to hoist it into the
-    // module code if we can do better there someday.
-    //
-    memcpy(newp, p, oldSize);
-  }
-
   chpl_memhook_realloc_post(newp, p, newSize, CHPL_RT_MD_ARRAY_ELEMENTS,
                            lineno, filename);
 
