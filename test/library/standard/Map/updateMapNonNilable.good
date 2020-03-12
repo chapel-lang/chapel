@@ -1,0 +1,5 @@
+shared C
+shared C
+shared C
+{i = -1}
+{two: {i = 2}, one: {i = -1}}
