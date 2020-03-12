@@ -1,3 +1,4 @@
-String is :uncaught SystemError: Illegal byte sequence (Strings with escaped non-UTF8 bytes cannot be used with I/O. Try using string.encode(encodePolicy.unescape) first.while writing string with path "unknown" offset -1)
-  escapeNoIO.chpl:4: thrown here
-  escapeNoIO.chpl:4: uncaught here
+SystemError: Illegal byte sequence (Strings with escaped non-UTF8 bytes cannot be used with I/O. Try using string.encode(encodePolicy.unescape) first.while writing string with path "unknown" offset -1)
+SystemError: Illegal byte sequence (Strings with escaped non-UTF8 bytes cannot be used with I/O. Try using string.encode(encodePolicy.unescape) first.while writing string with path "unknown" offset -1)
+í³¿
+writef('%|s') should be successful
