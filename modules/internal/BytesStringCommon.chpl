@@ -107,6 +107,7 @@ module BytesStringCommon {
     ret.buff = newBuff;
     ret._size = allocSize;
     ret.isowned = true;
+    ret.hasEscapes = false;
 
     var expectedSize = ret._size;
 
@@ -152,6 +153,7 @@ module BytesStringCommon {
           }
           else if policy == decodePolicy.escape {
 
+            ret.hasEscapes = true;
             // encoded escape sequence is 3 bytes. And this is per invalid byte
             expectedSize += 2*nInvalidBytes;
             (ret.buff, ret._size) = bufferEnsureSize(ret.buff, ret._size,
@@ -184,6 +186,7 @@ module BytesStringCommon {
     assertArgType(t, "initWithBorrowedBuffer");
 
     x.isowned = false;
+    if t == string then x.hasEscapes = other.hasEscapes;
 
     const otherRemote = other.locale_id != chpl_nodeID;
     const otherLen = other.numBytes;
@@ -234,6 +237,7 @@ module BytesStringCommon {
     const otherRemote = other.locale_id != chpl_nodeID;
     const otherLen = other.numBytes;
     x.isowned = true;
+    if t == string then x.hasEscapes = other.hasEscapes;
 
     if otherLen > 0 {
       x.len = otherLen;
