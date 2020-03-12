@@ -23,6 +23,7 @@
 #include "ResolveScope.h"
 #include "stringutil.h"
 
+#include <algorithm>
 
 /************************************* | **************************************
 *                                                                             *
@@ -124,15 +125,37 @@ void ImportStmt::scopeResolve(ResolveScope* scope) {
       } else {
         if (sym->isImmediate() == true) {
           USR_FATAL(this,
-                    "'import' statements must refer to module symbols "
+                    "'import' statements must include a module symbol "
                     "(e.g., 'import <module>;')");
 
         } else if (sym->name != NULL) {
-          USR_FATAL_CONT(this,
-                         "'import' of non-module symbol %s",
-                         sym->name);
-          USR_FATAL_CONT(sym,  "Definition of symbol %s", sym->name);
-          USR_STOP();
+          if (isCallExpr(src) == false) {
+            // We found a symbol that wasn't a module, but the import statement
+            // wasn't looking in a path with one or more `.`s in it.  That
+            // means this symbol is already available for unqualified access
+            USR_FATAL(this, "Can't 'import' without naming a module");
+          }
+
+          // We want to only enable unqualified access of this particular symbol
+          // in the module
+          this->unqualified.push_back(sym->name);
+
+          ModuleSymbol* parentSym = toModuleSymbol(sym->defPoint->parentSymbol);
+          if (parentSym == NULL) {
+            INT_ASSERT(sym->defPoint->parentSymbol != NULL);
+            USR_FATAL_CONT(this, "only the last symbol in an 'import' "
+                           "statement's path can be something other than a "
+                           "module");
+            USR_PRINT(this, "'%s' is not a module",
+                      sym->defPoint->parentSymbol->name);
+            USR_STOP();
+          } else if (this->isARename()) {
+            // This shouldn't be too hard, though.
+            USR_FATAL(this, "renaming imported symbols that aren't modules is "
+                      "not currently supported");
+          }
+          scope->enclosingModule()->moduleUseAdd(parentSym);
+          updateEnclosingBlock(scope, parentSym);
 
         } else {
           INT_FATAL(this, "'import' of non-module symbol");
@@ -140,7 +163,8 @@ void ImportStmt::scopeResolve(ResolveScope* scope) {
       }
     } else {
       if (UnresolvedSymExpr* import = toUnresolvedSymExpr(src)) {
-        USR_FATAL(this, "Cannot find module '%s'", import->unresolved);
+        USR_FATAL(this, "Cannot find module or symbol '%s'",
+                  import->unresolved);
       } else {
         INT_FATAL(this, "Cannot find module");
       }
@@ -213,8 +237,8 @@ bool ImportStmt::checkValid(Expr* expr) const {
 
     } else {
       USR_FATAL(this,
-                "'import' statements must refer to module symbols "
-                "(e.g., 'import <module>[.<submodule>]*;')");
+                "'import' statement paths must start with at least one module "
+                "symbol (e.g., 'import <module>[.<submodule>]*;')");
     }
 
   } else if (SymExpr* symExpr = toSymExpr(expr)) {
@@ -222,9 +246,10 @@ bool ImportStmt::checkValid(Expr* expr) const {
       retval = true;
 
     } else {
+      // This probably should be an INT_FATAL
       USR_FATAL(this,
-                "'import' statements must refer to module symbols "
-                "(e.g., 'import <module>[.<submodule>]*;')");
+                "'import' statement paths must start with at least one module "
+                "symbol (e.g., 'import <module>[.<submodule>]*;')");
     }
 
   } else {
@@ -232,4 +257,144 @@ bool ImportStmt::checkValid(Expr* expr) const {
   }
 
   return retval;
+}
+
+/************************************* | **************************************
+*                                                                             *
+* Determine whether the import permits us to search for a symbol with the     *
+* given name.  Returns true ("should skip") if the import doesn't specify any *
+* symbols for unqualified access, or if the name provided does not match any  *
+* of them                                                                     *
+*                                                                             *
+************************************** | *************************************/
+
+bool ImportStmt::skipSymbolSearch(const char* name) {
+  // We don't define any symbols for unqualified access, so we should skip this
+  // import
+  if (unqualified.size() == 0) {
+    return true;
+  } else {
+    // Otherwise, look through the list of unqualified symbol names to see if
+    // this one was listed
+    for_vector(const char, toCheck, unqualified) {
+      if (toCheck == name)
+        return false;
+    }
+    return true;
+  }
+}
+
+/************************************* | **************************************
+*                                                                             *
+* Determine if the imported module should be considered for supporting        *
+* qualified access.                                                           *
+*                                                                             *
+************************************** | *************************************/
+
+bool ImportStmt::providesQualifiedAccess() const {
+  /* Today, ImportStmts only support qualified access of all symbols in the
+     imported modules, or supports unqualified access of certain symbols in it,
+     but not both.  There are plans for enabling both if we desire it (by
+     allowing `this` in ImportStmt's unqualified access lists)
+  */
+  if (unqualified.size() == 0) {
+    return true;
+  } else {
+    return false;
+  }
+}
+
+/************************************* | **************************************
+*                                                                             *
+* Returns true if the current import statement has the possibility of         *
+* allowing symbols that weren't already covered by 'other'                    *
+*                                                                             *
+* Assumes that other->mod == this->mod.  Will not verify that fact.           *
+*                                                                             *
+************************************** | *************************************/
+
+bool ImportStmt::providesNewSymbols(const UseStmt* other) const {
+  if (other->isPlainUse()) {
+    // Other is a general use, without an 'only' or 'except' list.  It covers
+    // everything we could possibly cover, so we don't provide new symbols.
+    return false;
+  }
+
+  if (!providesQualifiedAccess()) {
+    // UseStmts always provide qualified access, and we don't provide any
+    // symbols for unqualified access, so by definition we are covered!
+    return false;
+  }
+
+  // Otherwise, we provide symbols for unqualified access, so we might provide
+  // something that the limited UseStmt doesn't.
+  if (other->hasExceptList()) {
+    // If there's overlap between our symbols and the other's except list, then
+    // we provide new symbols
+    unsigned int numSame = 0;
+    for_vector(const char, name, unqualified) {
+      if (std::find(other->named.begin(), other->named.end(),
+                    name) != other->named.end()) {
+        numSame++;
+      }
+    }
+    return numSame > 0;
+
+  } else if (other->named.size() + other->renamed.size() < unqualified.size()) {
+    // Other has an 'only' list and it has less symbols in it than our list of
+    // unqualified symbols.  By definition, this means we are providing symbols
+    // not available in other.
+    return true;
+
+  } else {
+    unsigned int numSame = 0;
+
+    for_vector(const char, name, unqualified) {
+      if (std::find(other->named.begin(), other->named.end(),
+                    name) != other->named.end()) {
+        numSame++;
+      }
+    }
+
+    // If all of our symbols for unqualified access were in the other's 'only'
+    // list, then we don't provide anything new.
+    return numSame != unqualified.size();
+  }
+}
+
+bool ImportStmt::providesNewSymbols(const ImportStmt* other) const {
+  bool hasUnqual = providesQualifiedAccess();
+  bool otherHasUnqual = other->providesQualifiedAccess();
+
+  if (hasUnqual != otherHasUnqual) {
+    // One of us provides qualified access and the other provides unqualified
+    // access, so we provide new symbols!
+    return true;
+  } else if (!hasUnqual) {
+    // We both provide qualified access, so the current statement doesn't
+    // provide new symbols
+    return false;
+  } else {
+    // We both provide unqualified access to at least some of the symbols in the
+    // module.  It's possible that we overlap somewhat, so check to be sure
+
+    if (other->unqualified.size() < unqualified.size()) {
+      // We defined more unqualified symbols than the other import, so we
+      // definitely provide more
+      return true;
+    } else {
+      unsigned int numSame = 0;
+
+      for_vector(const char, name, unqualified) {
+        if (std::find(other->unqualified.begin(), other->unqualified.end(),
+                      name) != other->unqualified.end()) {
+          numSame++;
+        }
+      }
+
+      // If all of our provided unqualified symbols were already provided by
+      // this import, then obviously we provide no new symbols.
+      return numSame != unqualified.size();
+    }
+  }
 }
