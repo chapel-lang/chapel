@@ -1381,6 +1381,9 @@ module DefaultRectangular {
     override proc dsiReallocate(bounds: rank*range(idxType,
                                                    BoundedRangeType.bounded,
                                                    stridable)) {
+      if (!isDefaultInitializable(eltType)) {
+        halt("Can't resize domains whose arrays' elements don't have default values");
+      }
       on this {
         const allocD = {(...bounds)};
 
