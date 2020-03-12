@@ -384,7 +384,7 @@ module Map {
                `false` otherwise.
      :rtype: bool
     */
-    proc add(k: keyType, v: valType): bool where !isOwnedClassType(valType) {
+    proc add(k: keyType, v: valType): bool {
       _enter();
       if myKeys.contains(k) {
         _leave();
@@ -398,19 +398,6 @@ module Map {
       return true;
     }
 
-    proc add(k: keyType, in v: valType?): bool where isOwnedClassType(valType) {
-      _enter();
-      if myKeys.contains(k) {
-        _leave();
-        return false;
-      }
-
-      myKeys += k;
-      vals[k] = v;
-
-      _leave();
-      return true;
-    }
 
     /*
       Sets the value associated with a key. Method returns `false` if the key
