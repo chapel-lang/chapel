@@ -6,6 +6,7 @@ module A {
   }
 }
 module B {
+  // Note: this import is private, shouldn't be impacting the symbols seen
   import A.x;
 }
 

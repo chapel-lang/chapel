@@ -1,2 +1,2 @@
-importAndImport.chpl:19: In function 'main':
-importAndImport.chpl:20: error: 'A' undeclared (first use this function)
+importAndImport.chpl:21: In function 'main':
+importAndImport.chpl:22: error: 'A' undeclared (first use this function)

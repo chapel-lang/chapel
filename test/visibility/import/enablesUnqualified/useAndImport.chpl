@@ -10,6 +10,7 @@ module B {
 }
 
 module C {
+  // Note: this import is private and thus does not impact the symbols available
   import A.x;
 }
 
