@@ -293,7 +293,7 @@ bool ImportStmt::skipSymbolSearch(const char* name) {
 *                                                                             *
 ************************************** | *************************************/
 
-bool ImportStmt::providesQualifiedAccess() {
+bool ImportStmt::providesQualifiedAccess() const {
   /* Today, ImportStmts only support qualified access of all symbols in the
      imported modules, or supports unqualified access of certain symbols in it,
      but not both.  There are plans for enabling both if we desire it (by
@@ -322,7 +322,7 @@ bool ImportStmt::providesNewSymbols(const UseStmt* other) const {
     return false;
   }
 
-  if (unqualified.size() == 0) {
+  if (!providesQualifiedAccess()) {
     // UseStmts always provide qualified access, and we don't provide any
     // symbols for unqualified access, so by definition we are covered!
     return false;
@@ -365,8 +365,8 @@ bool ImportStmt::providesNewSymbols(const UseStmt* other) const {
 }
 
 bool ImportStmt::providesNewSymbols(const ImportStmt* other) const {
-  bool hasUnqual = unqualified.size() != 0;
-  bool otherHasUnqual = other->unqualified.size() != 0;
+  bool hasUnqual = providesQualifiedAccess();
+  bool otherHasUnqual = other->providesQualifiedAccess();
 
   if (hasUnqual != otherHasUnqual) {
     // One of us provides qualified access and the other provides unqualified

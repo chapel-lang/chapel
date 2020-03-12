@@ -49,7 +49,7 @@ class ImportStmt: public VisibilityStmt {
 
   bool skipSymbolSearch(const char* name);
 
-  bool providesQualifiedAccess();
+  bool providesQualifiedAccess() const;
 
   bool providesNewSymbols(const UseStmt* other) const;
   bool providesNewSymbols(const ImportStmt* other) const;
