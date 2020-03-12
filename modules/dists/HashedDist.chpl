@@ -518,7 +518,7 @@ class UserMapAssocDom: BaseAssociativeDom {
 
   }
 
-  proc dsiSupportsPrivatization() param return true;
+  override proc dsiSupportsPrivatization() param return true;
   proc dsiGetPrivatizeData() return 0;
   proc dsiGetReprivatizeData() return 0;
   proc dsiPrivatize(privatizeData) {
@@ -690,7 +690,7 @@ class UserMapAssocArr: AbsBaseArr {
         delete locArrs(localeIdx);
   }
 
-  proc dsiSupportsPrivatization() param return true;
+  override proc dsiSupportsPrivatization() param return true;
   proc dsiGetPrivatizeData() return 0;
   proc dsiPrivatize(privatizeData) {
     var privdom = chpl_getPrivatizedCopy(dom.type, dom.pid);

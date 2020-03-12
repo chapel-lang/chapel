@@ -32,7 +32,7 @@ module DefaultSparse {
     pragma "local field"
     var _indices: [nnzDom] index(rank, idxType);
 
-    proc linksDistribution() param return false;
+    override proc linksDistribution() param return false;
     override proc dsiLinksDistribution() return false;
 
     proc init(param rank, type idxType, dist: unmanaged DefaultDist,

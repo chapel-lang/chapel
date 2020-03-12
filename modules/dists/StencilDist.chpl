@@ -1200,7 +1200,7 @@ iter StencilArr.these(param tag: iterKind) where tag == iterKind.leader {
     yield followThis;
 }
 
-proc StencilArr.dsiStaticFastFollowCheck(type leadType) param
+override proc StencilArr.dsiStaticFastFollowCheck(type leadType) param
   return _to_borrowed(leadType) == _to_borrowed(this.type) ||
          _to_borrowed(leadType) == _to_borrowed(this.dom.type);
 
@@ -1673,7 +1673,7 @@ proc Stencil.init(other: Stencil, privateData,
   dataParMinGranularity = privateData(5);
 }
 
-proc Stencil.dsiSupportsPrivatization() param return true;
+override proc Stencil.dsiSupportsPrivatization() param return true;
 
 proc Stencil.dsiGetPrivatizeData() {
   return (boundingBox.dims(), targetLocDom.dims(),
@@ -1697,7 +1697,7 @@ proc Stencil.dsiReprivatize(other, reprivatizeData) {
   dataParMinGranularity = other.dataParMinGranularity;
 }
 
-proc StencilDom.dsiSupportsPrivatization() param return true;
+override proc StencilDom.dsiSupportsPrivatization() param return true;
 
 proc StencilDom.dsiGetPrivatizeData() return (dist.pid, whole.dims());
 
@@ -1767,7 +1767,7 @@ proc type StencilArr.chpl__deserialize(data) {
            data);
 }
 
-proc StencilArr.dsiSupportsPrivatization() param return true;
+override proc StencilArr.dsiSupportsPrivatization() param return true;
 
 proc StencilArr.dsiGetPrivatizeData() return dom.pid;
 
@@ -1999,5 +1999,5 @@ where !disableStencilDistBulkTransfer {
   return true;
 }
 
-proc StencilArr.doiCanBulkTransferRankChange() param return true;
+override proc StencilArr.doiCanBulkTransferRankChange() param return true;
 

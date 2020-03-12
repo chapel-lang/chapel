@@ -110,9 +110,9 @@ module DefaultRectangular {
     proc trackDomains() param return false;
     override proc dsiTrackDomains()    return false;
 
-    proc singleton() param return true;
+    override proc singleton() param return true;
 
-    proc dsiIsLayout() param return true;
+    override proc dsiIsLayout() param return true;
   }
 
   //
@@ -139,11 +139,11 @@ module DefaultRectangular {
     var dist: unmanaged DefaultDist;
     var ranges : rank*range(idxType,BoundedRangeType.bounded,stridable);
 
-    proc linksDistribution() param return false;
+    override proc linksDistribution() param return false;
     override proc dsiLinksDistribution()     return false;
 
     proc type isDefaultRectangular() param return true;
-    proc isDefaultRectangular() param return true;
+    override proc isDefaultRectangular() param return true;
 
     proc init(param rank, type idxType, param stridable, dist) {
       super.init(rank, idxType, stridable);
@@ -1797,7 +1797,7 @@ module DefaultRectangular {
     return useBulkTransferStride;
   }
 
-  proc DefaultRectangularArr.doiCanBulkTransferRankChange() param return true;
+  override proc DefaultRectangularArr.doiCanBulkTransferRankChange() param return true;
 
   proc DefaultRectangularArr.doiBulkTransferToKnown(srcDom, destClass:DefaultRectangularArr, destDom) : bool {
     return transferHelper(destClass, destDom, this, srcDom);
@@ -2104,7 +2104,7 @@ module DefaultRectangular {
     }
   }
 
-  proc DefaultRectangularArr.isDefaultRectangular() param return true;
+  override proc DefaultRectangularArr.isDefaultRectangular() param return true;
   proc type DefaultRectangularArr.isDefaultRectangular() param return true;
 
   config param debugDRScan = false;

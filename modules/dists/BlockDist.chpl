@@ -1083,7 +1083,7 @@ iter BlockArr.these(param tag: iterKind) where tag == iterKind.leader {
     yield followThis;
 }
 
-proc BlockArr.dsiStaticFastFollowCheck(type leadType) param
+override proc BlockArr.dsiStaticFastFollowCheck(type leadType) param
   return _to_borrowed(leadType) == _to_borrowed(this.type) ||
          _to_borrowed(leadType) == _to_borrowed(this.dom.type);
 
@@ -1259,7 +1259,7 @@ proc Block.init(other: Block, privateData,
   this.sparseLayoutType = sparseLayoutType;
 }
 
-proc Block.dsiSupportsPrivatization() param return true;
+override proc Block.dsiSupportsPrivatization() param return true;
 
 proc Block.dsiGetPrivatizeData() {
   return (boundingBox.dims(), targetLocDom.dims(),
@@ -1299,7 +1299,7 @@ proc type BlockDom.chpl__deserialize(data) {
            data);
 }
 
-proc BlockDom.dsiSupportsPrivatization() param return true;
+override proc BlockDom.dsiSupportsPrivatization() param return true;
 
 record BlockDomPrvData {
   var distpid;
@@ -1346,7 +1346,7 @@ proc type BlockArr.chpl__deserialize(data) {
            data);
 }
 
-proc BlockArr.dsiSupportsPrivatization() param return true;
+override proc BlockArr.dsiSupportsPrivatization() param return true;
 
 record BlockArrPrvData {
   var dompid;
@@ -1588,7 +1588,7 @@ where !disableBlockDistBulkTransfer {
   return true;
 }
 
-proc BlockArr.doiCanBulkTransferRankChange() param return true;
+override proc BlockArr.doiCanBulkTransferRankChange() param return true;
 
 config param debugBlockScan = false;
 

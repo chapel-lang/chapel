@@ -428,7 +428,7 @@ proc BlockCyclic.init(other: BlockCyclic, privatizeData,
   dataParTasksPerLocale = privatizeData[4];
 }
 
-proc BlockCyclic.dsiSupportsPrivatization() param return true;
+override proc BlockCyclic.dsiSupportsPrivatization() param return true;
 
 proc BlockCyclic.dsiGetPrivatizeData() {
   return (lowIdx, blocksize, targetLocDom.dims(), dataParTasksPerLocale);
@@ -709,7 +709,7 @@ proc type BlockCyclicDom.chpl__deserialize(data) {
            data);
 }
 
-proc BlockCyclicDom.dsiSupportsPrivatization() param return true;
+override proc BlockCyclicDom.dsiSupportsPrivatization() param return true;
 
 proc BlockCyclicDom.dsiGetPrivatizeData() return dist.pid;
 
@@ -887,7 +887,7 @@ proc type BlockCyclicArr.chpl__deserialize(data) {
            data);
 }
 
-proc BlockCyclicArr.dsiSupportsPrivatization() param return true;
+override proc BlockCyclicArr.dsiSupportsPrivatization() param return true;
 
 proc BlockCyclicArr.dsiGetPrivatizeData() return 0;
 

@@ -83,7 +83,7 @@ module DefaultAssociative {
     //       replace with a named constant/param?
     var postponeResize = false;
   
-    proc linksDistribution() param return false;
+    override proc linksDistribution() param return false;
     override proc dsiLinksDistribution() return false;
   
     proc init(type idxType,
