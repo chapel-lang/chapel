@@ -1,2 +1,1 @@
-no-param-import.chpl:4: warning: 'import' for unqualified access of symbol already available for unqualified access
-no-param-import.chpl:2: note: Definition of symbol p
+no-param-import.chpl:4: error: Can't 'import' without naming a module
