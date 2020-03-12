@@ -210,7 +210,7 @@ module Map {
 
       :returns: Reference to the value mapped to the given key.
     */
-    proc this(k: keyType) ref {
+    proc this(k: keyType) ref where !isNonNilableClass(valType) {
       _enter();
       var (found, slotNum) = myKeys._value._findFilledSlot(k, needLock=false);
 
@@ -233,7 +233,7 @@ module Map {
 
     pragma "no doc"
     proc const this(k: keyType) const
-    where shouldReturnRvalueByValue(valType) {
+    where shouldReturnRvalueByValue(valType) && !isNonNilableClass(valType) {
       _enter();
       if !myKeys.contains(k) then
         boundsCheckHalt("map index " + k:string + " out of bounds");
@@ -242,10 +242,23 @@ module Map {
       return result;
     }
 
+    pragma "no doc"
+    proc const this(k: keyType) const
+    where isNonNilableClass(valType) {
+      _enter();
+      if !myKeys.contains(k) then
+        boundsCheckHalt("map index " + k:string + " out of bounds");
+      try! {
+        const result: valType = vals[k]: valType;
+        _leave();
+        return result;
+      }
+    }
+
 
     pragma "no doc"
     proc const this(k: keyType) const ref
-    where shouldReturnRvalueByConstRef(valType) {
+    where shouldReturnRvalueByConstRef(valType) && !isNonNilableClass(valType) {
       _enter();
       if !myKeys.contains(k) then
         halt("map index ", k, " out of bounds");
@@ -254,6 +267,19 @@ module Map {
       return result;
     }
 
+/*
+    pragma "no doc"
+    proc const this(k: keyType) const ref
+    where shouldReturnRvalueByConstRef(valType) && isNonNilableClass(valType) {
+      _enter();
+      if !myKeys.contains(k) then
+        halt("map index ", k, " out of bounds");
+      
+      const ref result = try! vals[k]: valType;
+      _leave();
+      return result;
+    }
+*/
 
     /*
       Iterates over the keys of this map. This is a shortcut for :iter:`keys`.
@@ -289,8 +315,10 @@ module Map {
           yield (key, vals[key]);
         }
       } else {
-        for key in myKeys {
-          yield (key, vals[key]: valType);
+        try! {
+          for key in myKeys {
+            yield (key, vals[key]: valType);
+          }
         }
       }
     }
@@ -300,16 +328,17 @@ module Map {
 
       :yields: A reference to one of the values contained in this map.
     */
-    iter values() ref {
-      if !isNonNilableClass(valType) {
+    iter values() ref
+    where !isNonNilableClass(valType) {
+      for val in vals {
+        yield val;
+      }
+    }
+
+    iter values() const where isNonNilableClass(valType) {
+      try! {
         for val in vals {
-          yield val;
-        }
-      } else {
-        try! {
-          for val in vals {
-            yield val: valType;
-          }
+          yield val: valType;
         }
       }
     }
