@@ -1,0 +1,5 @@
+between-class-casts not working as expected
+
+In a discussion with Michael today, he was surprised to hear that
+casting `C:C?` or vice-versa didn't seem to be working.  This
+test demonstrates that as well as the hoped-for behavior.
