@@ -1,0 +1,2 @@
+owned-class-instance.chpl:1: error: 'owned' can only be applied to class types
+owned-class-instance.chpl:1: note: here it is applied to type 'int'
