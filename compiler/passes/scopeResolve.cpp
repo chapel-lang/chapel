@@ -1405,10 +1405,8 @@ static void resolveModuleCall(CallExpr* call) {
 
         currModule->moduleUseAdd(mod);
 
-        Symbol* sym;
-
         // First, try regular scope resolution
-        sym = scope->lookupNameLocally(mbrName);
+        Symbol* sym = scope->lookupNameLocally(mbrName);
 
         // Then, try public import statements in the module
         if (!sym) {
