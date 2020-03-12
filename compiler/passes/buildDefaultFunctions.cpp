@@ -1907,9 +1907,7 @@ void buildDefaultDestructor(AggregateType* ct) {
 
     ct->symbol->defPoint->insertBefore(new DefExpr(fn));
 
-    if (ct->isUnion()) {
-      normalize(fn);
-    }
+    normalize(fn);
 
     ct->methods.add(fn);
   }
