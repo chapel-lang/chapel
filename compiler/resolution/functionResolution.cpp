@@ -10371,6 +10371,8 @@ static void lowerPrimInitGenericRecordVar(CallExpr* call,
                                           AggregateType* at) {
   AggregateType* root = at->getRootInstantiation();
 
+  Type* saveType = val->type;
+
   val->type = root;
 
   CallExpr* initCall = createGenericRecordVarDefaultInitCall(val, at, call);
@@ -10378,6 +10380,13 @@ static void lowerPrimInitGenericRecordVar(CallExpr* call,
   call->insertBefore(initCall);
   resolveCallAndCallee(initCall);
   call->convertToNoop();
+
+  if (saveType != val->type) {
+    USR_FATAL_CONT(call, "initializer produces a different type");
+    USR_PRINT(call, "when default-initializing '%s' of type '%s'", val->name,
+                    toString(saveType));
+    USR_PRINT(call, "init resulted in type '%s'", toString(val->type));
+  }
 
   if (at && at->isRecord() && at->hasPostInitializer()) {
     CallExpr* postinit = new CallExpr("postinit", gMethodToken, val);
