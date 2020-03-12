@@ -23,6 +23,7 @@
 #include "ResolveScope.h"
 #include "stringutil.h"
 
+#include <algorithm>
 
 /************************************* | **************************************
 *                                                                             *
