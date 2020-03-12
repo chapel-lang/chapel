@@ -1,2 +1,2 @@
-no-param-import.chpl:4: error: 'import' of non-module symbol p
-no-param-import.chpl:2: error: Definition of symbol p
+no-param-import.chpl:4: warning: 'import' for unqualified access of symbol already available for unqualified access
+no-param-import.chpl:2: note: Definition of symbol p
