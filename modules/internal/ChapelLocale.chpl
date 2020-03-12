@@ -93,12 +93,12 @@ module ChapelLocale {
   
   /*
     regular: Has a concrete BaseLocale instance
+    any: Placeholder to represent the notion of "anywhere"
     nilLocale: The _instance is set to nil. Used during setup. Also, as a
                sentinel value in locale tree operations
     dummy: Used during initialization for `here` before it is properly setup
     default: Used to store the default locale instance. Initially set to nil,
              then "fixed" by LocalesArray to Locales[0]
-    any: Placeholder to represent the notion of "anywhere"
    */
   pragma "no doc"
   enum localeKind { regular, any, nilLocale, dummy, default };
@@ -465,7 +465,10 @@ module ChapelLocale {
   }
 
   /* This class is used during initialization and is returned when
-     'here' is used before the locale hierarchy is initialized.
+     'here' is used before the locale hierarchy is initialized.  This is due to
+     the fact that "here" is used for memory and task control in setting up the
+     architecture itself.  DummyLocale provides system-default tasking and
+     memory management.
    */
   pragma "no doc"
   class DummyLocale : BaseLocale {
@@ -737,7 +740,6 @@ module ChapelLocale {
                   __primitive("array_get", origRL, 0), 
                   numLocales:size_t);
       // Set the rootLocale to the local copy
-      /*delete rootLocale._instance;*/
       rootLocale._instance = newRootLocale;
     }
     if locIdx!=0 {
@@ -749,16 +751,6 @@ module ChapelLocale {
     }
     rootLocaleInitialized = true;
   }
-
-  // We need a temporary value for "here" before the architecture is defined.
-  // This is due to the fact that "here" is used for memory and task control
-  // in setting up the architecture itself.
-  // Its type should probably be renamed dummyLocale or something
-  // representative.
-  // The dummy locale provides system-default tasking and memory management.
-  /*pragma "no doc"*/
-  /*const dummyLocale = new unmanaged DummyLocale();*/
-  /*const dummyLocale = new locale(localeKind.dummy);*/
 
   pragma "fn synchronization free"
   pragma "no doc"
@@ -894,14 +886,9 @@ module ChapelLocale {
     here.runningTaskCntSet(0);
   }
 
-  //
-  // Free the original root locale when the program is being torn down
-  //
-  // Be careful to free only origRootLocale, and never the copy in
-  // rootLocale, or the same locales will be torn down twice.
-  //
+  // ENGIN: We store all LocaleModel instances in the Locales array which is
+  // marked "locale private" locale private variables are autoDestroy'd by the
+  // compiler. So, nothing to deinit here.
   pragma "no doc"
-  proc deinit() {
-    /*delete origRootLocale;*/
-  }
+  proc deinit() { }
 }

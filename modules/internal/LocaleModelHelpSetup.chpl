@@ -160,8 +160,6 @@ module LocaleModelHelpSetup {
     numSublocales = chpl_topo_getNumNumaDomains();
 
     extern proc chpl_task_getMaxPar(): uint(32);
-    /*extern proc printf(s, v);*/
-    /*printf(c"numSublocales: %lld\n", numSublocales);*/
 
     if numSublocales >= 1 {
       dst.childSpace = {0..#numSublocales};

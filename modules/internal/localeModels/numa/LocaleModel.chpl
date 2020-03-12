@@ -212,10 +212,10 @@ module LocaleModel {
     }
     //------------------------------------------------------------------------}
 
-    proc deinit() {
-      /*for loc in childLocales do*/
-        /*delete loc;*/
-    }
+    // ENGIN: We store all LocaleModel instances in the Locales array which is
+    // marked "locale private" locale private variables are autoDestroy'd by the
+    // compiler. So, nothing to deinit here.
+    proc deinit() { }
  }
 
   //
@@ -297,7 +297,6 @@ module LocaleModel {
       for loc in myLocales {
         on loc {
           rootLocaleInitialized = false;
-          /*delete _to_unmanaged(loc);*/
         }
       }
     }
