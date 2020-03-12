@@ -295,3 +295,98 @@ bool ImportStmt::providesQualifiedAccess() {
     return false;
   }
 }
+
+/************************************* | **************************************
+*                                                                             *
+* Returns true if the current import statement has the possibility of         *
+* allowing symbols that weren't already covered by 'other'                    *
+*                                                                             *
+* Assumes that other->mod == this->mod.  Will not verify that fact.           *
+*                                                                             *
+************************************** | *************************************/
+
+bool ImportStmt::providesNewSymbols(const UseStmt* other) const {
+  if (other->isPlainUse()) {
+    // Other is a general use, without an 'only' or 'except' list.  It covers
+    // everything we could possibly cover, so we don't provide new symbols.
+    return false;
+  }
+
+  if (unqualified.size() == 0) {
+    // UseStmts always provide qualified access, and we don't provide any
+    // symbols for unqualified access, so by definition we are covered!
+    return false;
+  }
+
+  // Otherwise, we provide symbols for unqualified access, so we might provide
+  // something that the limited UseStmt doesn't.
+  if (other->hasExceptList()) {
+    // If there's overlap between our symbols and the other's except list, then
+    // we provide new symbols
+    unsigned int numSame = 0;
+    for_vector(const char, name, unqualified) {
+      if (std::find(other->named.begin(), other->named.end(),
+                    name) != other->named.end()) {
+        numSame++;
+      }
+    }
+    return numSame > 0;
+
+  } else if (other->named.size() + other->renamed.size() < unqualified.size()) {
+    // Other has an 'only' list and it has less symbols in it than our list of
+    // unqualified symbols.  By definition, this means we are providing symbols
+    // not available in other.
+    return true;
+
+  } else {
+    unsigned int numSame = 0;
+
+    for_vector(const char, name, unqualified) {
+      if (std::find(other->named.begin(), other->named.end(),
+                    name) != other->named.end()) {
+        numSame++;
+      }
+    }
+
+    // If all of our symbols for unqualified access were in the other's 'only'
+    // list, then we don't provide anything new.
+    return numSame != unqualified.size();
+  }
+}
+
+bool ImportStmt::providesNewSymbols(const ImportStmt* other) const {
+  bool hasUnqual = unqualified.size() != 0;
+  bool otherHasUnqual = other->unqualified.size() != 0;
+
+  if (hasUnqual != otherHasUnqual) {
+    // One of us provides qualified access and the other provides unqualified
+    // access, so we provide new symbols!
+    return true;
+  } else if (!hasUnqual) {
+    // We both provide qualified access, so the current statement doesn't
+    // provide new symbols
+    return false;
+  } else {
+    // We both provide unqualified access to at least some of the symbols in the
+    // module.  It's possible that we overlap somewhat, so check to be sure
+
+    if (other->unqualified.size() < unqualified.size()) {
+      // We defined more unqualified symbols than the other import, so we
+      // definitely provide more
+      return true;
+    } else {
+      unsigned int numSame = 0;
+
+      for_vector(const char, name, unqualified) {
+        if (std::find(other->unqualified.begin(), other->unqualified.end(),
+                      name) != other->unqualified.end()) {
+          numSame++;
+        }
+      }
+
+      // If all of our provided unqualified symbols were already provided by
+      // this import, then obviously we provide no new symbols.
+      return numSame != unqualified.size();
+    }
+  }
+}

@@ -2268,13 +2268,27 @@ static bool skipUse(std::map<Symbol*, std::vector<VisibilityStmt*> >* seen,
   std::vector<VisibilityStmt*> vec = (*seen)[useSE->symbol()];
 
   if (vec.size() > 0) {
-    // We've already seen at least one use or import of this module.  Since
-    // imports only impact qualified naming, by definition any previous use or
-    // import of the same module will provide at least as much as this import
-    return true;
+    // We've already seen at least one use or import of this module, but it
+    // might not be thorough enough to justify skipping the newest 'import'
+    for_vector(VisibilityStmt, stmt, vec) {
+      if (UseStmt* use = toUseStmt(stmt)) {
+        if (current->providesNewSymbols(use) == false) {
+          // We found a prior use that covered all the symbols available
+          // from current.  We can skip looking at current
+          return true;
+        }
+      } else if (ImportStmt* import = toImportStmt(stmt)) {
+        if (current->providesNewSymbols(import) == false) {
+          // The current import statement is equivalent to a prior import
+          // statement so no need to include it
+          return true;
+        }
+      }
+    }
   }
 
-  // We didn't have a prior use or import.  Don't skip current.
+  // We didn't have a prior use or import that covered the symbols this
+  // provides.  Don't skip current.
   return false;
 }
 
