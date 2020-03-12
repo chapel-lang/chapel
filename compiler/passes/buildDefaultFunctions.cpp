@@ -330,7 +330,7 @@ static BlockStmt* buildResetUnionField(Symbol* _this,
                                            fieldNameSym));
 
     BlockStmt* deinitBlock = new BlockStmt();
-    VarSymbol* tmp = newTemp("union_reset_dnt");
+    VarSymbol* tmp = newTemp("union_reset_deinit");
     CallExpr* setTmp = new CallExpr(PRIM_MOVE,
                                     tmp,
                                     new CallExpr(PRIM_GET_MEMBER_VALUE,
@@ -352,7 +352,7 @@ static BlockStmt* buildResetUnionField(Symbol* _this,
                                                   newFieldNameSym)));
 
     // Next, initialize the requsted field.
-    VarSymbol* tmp = newTemp("union_reset_int");
+    VarSymbol* tmp = newTemp("union_reset_init");
     tmp->addFlag(FLAG_NO_AUTO_DESTROY); // will transfer to the field.
     block->insertAtTail(new DefExpr(tmp));
 
