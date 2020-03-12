@@ -248,6 +248,8 @@ static uint64_t debug_stats_flag = 0;
         MACRO(fork_amo_cnt)                                             \
         MACRO(regMemAlloc_cnt)                                          \
         MACRO(regMemPostAlloc_cnt)                                      \
+        MACRO(regMemRealloc_cnt)                                        \
+        MACRO(regMemPostRealloc_cnt)                                    \
         MACRO(regMemFree_cnt)                                           \
         MACRO(regMem_bCast_cnt)                                         \
         MACRO(regMem_locks)                                             \
@@ -3195,7 +3197,7 @@ void make_registered_heap(void)
 }
 
 
-static
+static inline
 size_t get_hugepage_size(void)
 {
   if (!hugepage_info_set
@@ -3542,8 +3544,7 @@ void* chpl_comm_impl_regMemAlloc(size_t size,
   regMemUnlock();
 
   DBG_P_LP(DBGF_MEMREG,
-           "chpl_regMemAlloc(%#" PRIx64 "): "
-           "mregs[%d] = %#" PRIx64 ", cnt %d",
+           "chpl_regMemAlloc(%#zx): mregs[%d] = %#" PRIx64 ", cnt %d",
            size, mr_i, mr->addr, (int) mem_regions->mreg_cnt);
 
 #ifdef PERFSTATS_TIME_ZERO_INIT
@@ -3576,7 +3577,7 @@ void chpl_comm_impl_regMemPostAlloc(void* p, size_t size)
                         "this isn't my memory");
 
   DBG_P_LP(DBGF_MEMREG,
-           "chpl_comm_impl_regMemPostAlloc(%p, %#" PRIx64 ")",
+           "chpl_comm_impl_regMemPostAlloc(%p, %#zx)",
            p, size);
 
   //
@@ -3616,7 +3617,7 @@ void chpl_comm_impl_regMemPostAlloc(void* p, size_t size)
   // the already-known range and the new count.  In general this will
   // include some new unregistered entries for which we have an address
   // but no length or MDH.  But the presence of those won't create
-  // confusion because the remote nodes won't by trying to address
+  // confusion because the remote nodes won't be trying to address
   // within them yet anyway, and later when we do register them we may
   // be able to send just the entries and not the count again.
   //
@@ -3645,6 +3646,144 @@ void chpl_comm_impl_regMemPostAlloc(void* p, size_t size)
 }
 
 
+void* chpl_comm_impl_regMemRealloc(void* p, size_t oldSize, size_t newSize,
+                                   chpl_mem_descInt_t desc,
+                                   int ln, int32_t fn)
+{
+  //
+  // If the old allocation isn't separately registered then we just
+  // return NULL without doing anything.  If it is registered and the
+  // new allocation will fit in the existing hugepages (smaller, or
+  // larger but not by enough to cross a hugepage boundary) then we
+  // return the old pointer.  Otherwise, we allocate anew and return
+  // that.  For the last two cases, we'll update and broadcast the
+  // table entry later, in ..._regMemPostRealloc().
+  //
+  if (get_hugepage_size() == 0)
+    return NULL;
+
+  PERFSTATS_INC(regMemRealloc_cnt);
+
+  //
+  // Is this memory in our table?
+  //
+  mem_region_t* mr;
+  int mr_i;
+  for (mr_i = mem_regions->mreg_cnt - 1, mr = &mem_regions->mregs[mr_i];
+       mr_i >= 0 && (mr->addr != (uint64_t) p || mrtl_len(mr->len) != oldSize);
+       mr_i--, mr--)
+    ;
+
+  if (mr_i < 0)
+    return NULL;
+
+  assert(mrtl_isReg(mr->len));
+
+  //
+  // If the old and new allocations will fit in the same number of
+  // hugepages then we don't need to do an allocation (or copy).
+  // Otherwise, try to get the new, larger memory.
+  //
+  size_t oldHugeSize = ALIGN_UP(oldSize, get_hugepage_size());
+  size_t newHugeSize = ALIGN_UP(newSize, get_hugepage_size());
+  void* newp;
+  if (newHugeSize <= oldHugeSize) {
+    newp = p;
+  } else {
+    PERFSTATS_TSTAMP(alloc_ts);
+    newp = get_huge_pages(newHugeSize, GHP_DEFAULT);
+    PERFSTATS_ADD(regMem_alloc_nsecs, PERFSTATS_TELAPSED(alloc_ts));
+    if (newp == NULL) {
+      DBG_P_LP(DBGF_MEMREG, "chpl_regMemRealloc(%#zx): no hugepages", newSize);
+      return NULL;
+    }
+
+    //
+    // Copy the existing bytes from old to new memory.  If we're on
+    // a NUMA compute node this will result in locality that matches
+    // that of the calling thread.  That's not very good but we cannot
+    // do better in the runtime.  If it ever becomes an issue we might
+    // be able to do better in module code.
+    //
+    memcpy(newp, p, oldSize);
+  }
+
+  DBG_P_LP(DBGF_MEMREG,
+           "chpl_regMemRealloc(%p, %#zx, %#zx): %p",
+           p, oldSize, newSize, newp);
+
+  return newp;
+}
+
+
+void chpl_comm_impl_regMemPostRealloc(void* oldp, size_t oldSize,
+                                      void* newp, size_t newSize)
+{
+  mem_region_t* mr;
+  int mr_i;
+
+  PERFSTATS_INC(regMemPostRealloc_cnt);
+
+  if (get_hugepage_size() == 0)
+    CHPL_INTERNAL_ERROR("chpl_comm_impl_regMemPostRealloc(): "
+                        "this isn't my memory");
+
+  DBG_P_LP(DBGF_MEMREG,
+           "chpl_comm_impl_regMemPostRealloc(%p, %#zx, %p, %#zx)",
+           oldp, oldSize, newp, newSize);
+
+  //
+  // Find the memory region table entry for this memory.
+  //
+  for (mr_i = mem_regions->mreg_cnt - 1, mr = &mem_regions->mregs[mr_i];
+       mr_i >= 0 &&
+         (mr->addr != (uint64_t) oldp || mrtl_len(mr->len) != oldSize);
+       mr_i--, mr--)
+    ;
+
+  if (mr_i < 0)
+    CHPL_INTERNAL_ERROR("chpl_comm_impl_regMemPostRealloc(): "
+                        "can't find the memory");
+
+  assert(mrtl_isReg(mr->len));
+
+  //
+  // If the reallocation didn't fit in the same hugepages, then we have
+  // to de-register and free the old memory and register the new.
+  //
+  if (newp != oldp) {
+    PERFSTATS_TSTAMP(dereg_ts);
+    deregister_mem_region(mr);
+    PERFSTATS_ADD(regMem_dereg_nsecs, PERFSTATS_TELAPSED(dereg_ts));
+
+    PERFSTATS_TSTAMP(free_ts);
+    free_huge_pages(oldp);
+    PERFSTATS_ADD(regMem_free_nsecs, PERFSTATS_TELAPSED(free_ts));
+
+    mr->addr = (uint64_t) (uintptr_t) newp;
+
+    PERFSTATS_TSTAMP(reg_ts);
+    (void) register_mem_region(mr->addr, newSize, &mr->mdh,
+                               false /*allow_failure*/);
+    PERFSTATS_ADD(regMem_reg_nsecs, PERFSTATS_TELAPSED(reg_ts));
+  }
+
+  mr->len = mrtl_encode(newSize, true);
+
+  //
+  // Broadcast an update to the affected table entry on all nodes.  We
+  // don't have to hold the lock while we do this.  Because this entry
+  // must be within the already-known range, nobody else will be
+  // sending it along with some other update of their own.
+  //
+  DBG_P_L(DBGF_MEMREG_BCAST,
+          "chpl_comm_impl_regMemPostRealloc(): entry %d, bcast",
+          mr_i);
+  PERFSTATS_INC(regMem_bCast_cnt);
+  regMemBroadcast(mr_i, 1, false /*send_mreg_cnt*/);
+}
+
+
 chpl_bool chpl_comm_impl_regMemFree(void* p, size_t size)
 {
   mem_region_t* mr;
@@ -3669,7 +3808,7 @@ chpl_bool chpl_comm_impl_regMemFree(void* p, size_t size)
   PERFSTATS_INC(regMemFree_cnt);
 
   DBG_P_LP(DBGF_MEMREG,
-           "chpl_comm_impl_regMemFree(%p, %#" PRIx64 "): [%d]",
+           "chpl_comm_impl_regMemFree(%p, %#zx): [%d]",
            p, size, mr_i);
 
   //

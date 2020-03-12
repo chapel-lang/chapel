@@ -914,7 +914,7 @@ module ChapelBase {
     }
   }
 
-  proc init_elts(x, s, type t) : void {
+  proc init_elts(x, s, type t, lo=0:s.type) : void {
     var initMethod = chpl_getArrayInitMethod();
 
     // no need to init an array of zeros
@@ -975,13 +975,13 @@ module ChapelBase {
         return;
       }
       when ArrayInit.serialInit {
-        for i in 0..s-1 {
+        for i in lo..s-1 {
           pragma "no auto destroy" pragma "unsafe" var y: t;
           __primitive("array_set_first", x, i, y);
         }
       }
       when ArrayInit.parallelInit {
-        forall i in 0..s-1 {
+        forall i in lo..s-1 {
           pragma "no auto destroy" pragma "unsafe" var y: t;
           __primitive("array_set_first", x, i, y);
         }
@@ -1059,6 +1059,41 @@ module ChapelBase {
     }
     return ret;
   }
+
+
+  inline proc _ddata_reallocate(ref ddata,
+                                type eltType,
+                                oldSize: integral,
+                                newSize: integral,
+                                subloc = c_sublocid_none) {
+    pragma "fn synchronization free"
+    pragma "insert line file info"
+    extern proc chpl_mem_array_realloc(ptr: c_void_ptr,
+                                       oldNmemb: size_t, newNmemb: size_t,
+                                       eltSize: size_t,
+                                       subloc: chpl_sublocID_t,
+                                       ref callPostAlloc: bool): c_void_ptr;
+    var callPostAlloc: bool;
+    const oldDdata = ddata;
+    ddata = chpl_mem_array_realloc(ddata: c_void_ptr, oldSize.safeCast(size_t),
+                                   newSize.safeCast(size_t),
+                                   _ddata_sizeof_element(ddata),
+                                   subloc, callPostAlloc): ddata.type;
+    init_elts(ddata, newSize, eltType, lo=oldSize);
+    if (callPostAlloc) {
+      pragma "fn synchronization free"
+      pragma "insert line file info"
+      extern proc chpl_mem_array_postRealloc(oldData: c_void_ptr,
+                                             oldNmemb: size_t,
+                                             newData: c_void_ptr,
+                                             newNmemb: size_t,
+                                             eltSize: size_t);
+      chpl_mem_array_postRealloc(oldDdata:c_void_ptr, oldSize.safeCast(size_t),
+                                 ddata:c_void_ptr, newSize.safeCast(size_t),
+                                 _ddata_sizeof_element(ddata));
+    }
+  }
+
 
   inline proc _ddata_free(data: _ddata, size: integral) {
     pragma "fn synchronization free"
