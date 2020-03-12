@@ -156,7 +156,7 @@ module ChapelLocale {
     // the following are normally taken care of by `forwarding`. However, they
     // don't work if they are called in a promoted expression. See 15148
     inline proc numPUs(logical: bool = false, accessible: bool = true) {
-      return this._instance!.numPUs();
+      return this._instance!.numPUs(logical, accessible);
     }
 
     inline proc id {
