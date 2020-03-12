@@ -49,7 +49,6 @@
 #include "LoopExpr.h"
 #include "scopeResolve.h"
 #include "stmt.h"
-#include "view.h"
 
 ResolveScope* rootScope;
 
