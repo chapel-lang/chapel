@@ -817,15 +817,6 @@ module ChapelDistribution {
       halt("reallocating not supported for this array type");
     }
 
-    // This dsiReallocate version is used by array vector operations, which
-    // are supported on 1-D arrays only, so can work directly with ranges
-    // instead of requiring tuples of ranges.  They require two ranges
-    // because the allocated size and logical size can differ.
-    proc dsiReallocate(allocBound: range(idxType, BoundedRangeType.bounded, stridable),
-                       arrayBound: range(idxType, BoundedRangeType.bounded, stridable)) where rank == 1 {
-       halt("reallocating not supported for this array type");
-    }
-
     override proc dsiPostReallocate() {
     }
 

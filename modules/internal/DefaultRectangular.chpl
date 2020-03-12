@@ -1333,49 +1333,6 @@ module DefaultRectangular {
       }
     }
 
-    pragma "ignore transfer errors"
-    override proc dsiReallocate(allocBound: range(idxType,
-                                                  BoundedRangeType.bounded,
-                                                  stridable),
-                                arrayBound: range(idxType,
-                                                  BoundedRangeType.bounded,
-                                                  stridable)) where rank == 1 {
-      on this {
-        const allocD = {allocBound};
-        var copy = new unmanaged DefaultRectangularArr(eltType=eltType,
-                                                       rank=rank,
-                                                       idxType=idxType,
-                                                       stridable=allocD._value.stridable,
-                                                       dom=allocD._value);
-
-        forall i in arrayBound(dom.ranges(1)) do
-          copy.dsiAccess(i) = dsiAccess(i);
-
-        off = copy.off;
-        blk = copy.blk;
-        str = copy.str;
-        factoredOffs = copy.factoredOffs;
-
-        dsiDestroyArr();
-        data = copy.data;
-        // We can't call initShiftedData here because the new domain
-        // has not yet been updated (this is called from within the
-        // = function for domains.
-        if earlyShiftData && !allocD._value.stridable {
-          // Lydia note 11/04/15: a question was raised as to whether this
-          // check on numIndices added any value.  Performance results
-          // from removing this line seemed inconclusive, which may indicate
-          // that the check is not necessary, but it seemed like unnecessary
-          // work for something with no immediate reward.
-          if allocD.size > 0 {
-            shiftedData = copy.shiftedData;
-          }
-        }
-        delete copy;
-      }
-    }
-
-
     // Reallocate the array to have space for elements specified by `bounds`
     pragma "ignore transfer errors"
     override proc dsiReallocate(bounds: rank*range(idxType,
