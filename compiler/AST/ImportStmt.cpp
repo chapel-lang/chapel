@@ -133,9 +133,7 @@ void ImportStmt::scopeResolve(ResolveScope* scope) {
             // We found a symbol that wasn't a module, but the import statement
             // wasn't looking in a path with one or more `.`s in it.  That
             // means this symbol is already available for unqualified access
-            USR_WARN(this, "'import' for unqualified access of symbol already "
-                     "available for unqualified access");
-            USR_PRINT(sym, "Definition of symbol %s", sym->name);
+            USR_FATAL(this, "Can't 'import' without naming a module");
           }
 
           // We want to only enable unqualified access of this particular symbol
