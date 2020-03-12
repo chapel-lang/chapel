@@ -2492,6 +2492,7 @@ void resolveCall(CallExpr* call) {
 
     case PRIM_INIT_VAR:
     case PRIM_INIT_VAR_SPLIT_INIT:
+      resolveGenericActuals(call);
       resolveInitVar(call);
       break;
 
