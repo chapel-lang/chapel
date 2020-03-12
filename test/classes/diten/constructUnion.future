@@ -1,3 +1,2 @@
-bug: setting a union field in initializer call leaves the field unset
-
-This currently compiles and runs, but leaves the union fields unset.
+design: union should be initializeable with a single field
+#15189
