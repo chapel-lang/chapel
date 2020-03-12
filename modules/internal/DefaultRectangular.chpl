@@ -1340,6 +1340,7 @@ module DefaultRectangular {
                                 arrayBound: range(idxType,
                                                   BoundedRangeType.bounded,
                                                   stridable)) where rank == 1 {
+      halt("Huh, this is used!");
       on this {
         const allocD = {allocBound};
         var copy = new unmanaged DefaultRectangularArr(eltType=eltType,
@@ -1381,7 +1382,7 @@ module DefaultRectangular {
     override proc dsiReallocate(bounds: rank*range(idxType,
                                                    BoundedRangeType.bounded,
                                                    stridable)) {
-      if (!isDefaultInitializable(eltType)) {
+      if (!isDomain(eltType) && !isDefaultInitializable(eltType)) {
         halt("Can't resize domains whose arrays' elements don't have default values");
       }
       on this {
