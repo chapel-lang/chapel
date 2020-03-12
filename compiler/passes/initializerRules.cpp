@@ -304,7 +304,9 @@ static void preNormalizeInitRecordUnion(FnSymbol* fn) {
   // The body contains at least one instance of this.init() or super.init()
   if (state.isPhase0() == true || state.isPhase1() == true) {
     InitNormalize finalState = preNormalize(at, fn->body, state);
-    finalState.initializeFieldsAtTail(fn->body);
+
+    if (at->isUnion() == false)
+      finalState.initializeFieldsAtTail(fn->body);
 
   } else {
     INT_ASSERT(false);
@@ -553,8 +555,13 @@ static InitNormalize preNormalize(AggregateType* at,
             stmt = stmt->next;
           }
         } else if (state.isFieldInitialized(field) == false) {
-          checkLocalPhaseOneErrors(state, field, callExpr);
-          stmt = state.fieldInitFromInitStmt(field, callExpr);
+          if (at->isUnion()) {
+            // Don't try to initialize union fields if not initialized
+            stmt = stmt->next;
+          } else {
+            checkLocalPhaseOneErrors(state, field, callExpr);
+            stmt = state.fieldInitFromInitStmt(field, callExpr);
+          }
         } else if (state.isFieldImplicitlyInitialized(field) == true) {
           USR_FATAL_CONT(stmt,
                          "Field \"%s\" initialized out of order",
