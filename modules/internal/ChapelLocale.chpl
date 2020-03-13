@@ -105,6 +105,7 @@ module ChapelLocale {
 
   const nilLocale = new locale(localeKind.nilLocale);
   var defaultLocale = new locale(localeKind.default);
+  var dummyLocale = new locale(localeKind.dummy);
 
   pragma "always RVF"
   record _locale {
@@ -798,7 +799,7 @@ module ChapelLocale {
       return (rootLocale._instance:borrowed AbstractRootLocale?)!.localeIDtoLocale(id);
     else
       // For code prior to rootLocale initialization
-      return new locale(localeKind.dummy);
+      return dummyLocale;
   }
 
   // the type of elements in chpl_privateObjects.
@@ -902,6 +903,7 @@ module ChapelLocale {
   //
   pragma "no doc"
   proc deinit() {
-    /*delete origRootLocale;*/
+    delete origRootLocale._instance;
+    delete dummyLocale._instance;
   }
 }
