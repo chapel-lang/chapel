@@ -96,7 +96,7 @@ module elemental_cholesky_symmetric_strided {
 
     const A_locale_grid = A.domain.dist.targetLocales();
     const A_grid_domain = A_locale_grid.domain,
-          n_processors  = A_grid_domain.numIndices;
+          n_processors  = A_grid_domain.size;
 
     assert ( A_grid_domain.low(1) == 0 && A_grid_domain.low(2) == 0 );
 
@@ -207,7 +207,7 @@ module elemental_cholesky_symmetric_strided {
 	      // a single processor row.  The test on non-zero length should not
 	      // be required, but is at present.
 
-	      if  I_compute_L21_indices.numIndices > 0 then {
+	      if  I_compute_L21_indices.size > 0 then {
 		I_compute_L21 [I_compute_L21_indices] =
 		  A [I_compute_L21_indices];
 	

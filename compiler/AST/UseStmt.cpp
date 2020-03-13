@@ -880,22 +880,31 @@ bool UseStmt::providesNewSymbols(const ImportStmt* other) const {
     // probably fine. (and if they did, there's no harm in including it again)
     return true;
   } else {
-    if (renamed.size() > 0) {
-      // Anything being renamed means at least one symbols is included by this
-      // use, so that's more than the import statement provided
-      return true;
-    }
-    if (named.size() > 1) {
-      // `only;` lists (and transformed `except *;` lists) only contain a single
-      // element, so any size more than 1 means we definitely provide more
-      // symbols
-      return true;
-    } else if (named[0][0] == '\0') {
-      // If the element is "", then it is an `only;` or `except *;` list, so
-      // the import has already handled it.
-      return false;
+    if (other->unqualified.size() == 0) {
+      // Other is an import of just a module.  As long as we provided something
+      // for unqualified access, we provide new symbols
+      if (renamed.size() > 0) {
+        // Anything being renamed means at least one symbols is included by this
+        // use, so that's more than the import statement provided
+        return true;
+      }
+      if (named.size() > 1) {
+        // `only;` lists (and transformed `except *;` lists) only contain a single
+        // element, so any size more than 1 means we definitely provide more
+        // symbols
+        return true;
+      } else if (named[0][0] == '\0') {
+        // If the element is "", then it is an `only;` or `except *;` list, so
+        // the import has already handled it.
+        return false;
+      } else {
+        // Otherwise, it's a new symbol
+        return true;
+      }
     } else {
-      // Otherwise, it's a new symbol
+      // Other is an import that provides unqualified access.  That means that
+      // by definition we provide new symbols, because UseStmts always enable at
+      // least qualified access (and import statements don't yet provide both)
       return true;
     }
   }

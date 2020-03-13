@@ -8,7 +8,8 @@ tests = ["sampletest.chpl",
          "dependencytest.chpl",
          "nomodule.chpl",
          "testdir/subdirectorytest.chpl",
-         "shallnotpass.chpl"]
+         "shallnotpass.chpl",
+         "docs/exampletest.chpl"]
 
 [dependencies]
 _MasonTest1 = "0.2.0"

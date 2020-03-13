@@ -8,7 +8,7 @@ ids += 7;
 */
 writeln(ids);
 
-var sz = ids.numIndices;
+var sz = ids.size;
 
 //forall (id, i) in zip(ids, 1..) {
 forall (i, id) in zip(1..sz, ids) {

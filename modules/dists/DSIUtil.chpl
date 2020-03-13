@@ -454,7 +454,7 @@ proc _undensCheck(param cond, type argtypes, param errlevel = 2) {
 proc setupTargetLocalesArray(ref targetLocDom, targetLocArr, specifiedLocArr) {
   param rank = targetLocDom.rank;
   if rank != 1 && specifiedLocArr.rank == 1 {
-    const factors = _factor(rank, specifiedLocArr.numElements);
+    const factors = _factor(rank, specifiedLocArr.size);
     var ranges: rank*range;
     for param i in 1..rank do
       ranges(i) = 0..#factors(i);
@@ -475,7 +475,7 @@ proc setupTargetLocRanges(param rank, specifiedLocArr) {
   var ranges: rank*range;
 
   if rank != 1 && specifiedLocArr.rank == 1 {
-    const factors = _factor(rank, specifiedLocArr.numElements);
+    const factors = _factor(rank, specifiedLocArr.size);
     for param i in 1..rank do
       ranges(i) = 0..#factors(i);
 

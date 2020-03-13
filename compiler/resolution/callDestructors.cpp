@@ -829,6 +829,9 @@ fixupDestructors() {
       AggregateType* ct = toAggregateType(fn->_this->getValType());
       INT_ASSERT(ct);
 
+      if (ct->isUnion())
+        continue;
+
       //
       // insert calls to destructors for all 'value' fields
       //

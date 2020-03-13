@@ -73,6 +73,8 @@ public:
 
   bool                  extend(VisibilityStmt* stmt);
 
+  Symbol*               lookupForImport(Expr* expr) const;
+
   Symbol*               lookup(Expr*       expr, bool isUse=false)       const;
 
   Symbol*               lookupNameLocally(const char* name,
@@ -135,6 +137,9 @@ private:
 
    bool                 skipUse(UseImportMap&  visited,
                                 const UseStmt* current)                  const;
+
+   Symbol* followImportUseChains(UnresolvedSymExpr* expr) const;
+   Symbol* lookupNameLocallyForImport(const char* name) const;
 
   BaseAST*              mAstRef;
   const ResolveScope*   mParent;

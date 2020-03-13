@@ -820,7 +820,7 @@ bool SplitInitVisitor::enterFnSym(FnSymbol* node) {
 }
 
 bool SplitInitVisitor::enterDefExpr(DefExpr* def) {
-  return true;
+  return false;
 }
 
 bool SplitInitVisitor::enterCallExpr(CallExpr* call) {
@@ -875,7 +875,8 @@ bool SplitInitVisitor::enterCallExpr(CallExpr* call) {
       preventMap[sym] = prevent;
     }
   }
-  return true;
+
+  return false;
 }
 
 class AddOutIntentTypeArgs : public AstVisitorTraverse {

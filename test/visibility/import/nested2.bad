@@ -1,1 +1,3 @@
-nested2.chpl:9: error: currently unable to import nested modules
+nested2.chpl:9: warning: currently unable to import nested modules without specifying the full path to the module
+nested2.chpl:2: note: skipping module defined here
+nested2.chpl:9: error: No better match found

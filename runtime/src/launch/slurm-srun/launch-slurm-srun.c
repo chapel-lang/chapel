@@ -88,11 +88,20 @@ static sbatchVersion determineSlurmVersion(void) {
   }
 }
 
+static int nomultithread(int batch) {
+  char* hint;
+  if ((hint = getenv("SLURM_HINT")) && strcmp(hint, "nomultithread") == 0)
+    return 1;
+  if (batch && (hint = getenv("SBATCH_HINT")) && strcmp(hint, "nomultithread") == 0)
+    return 1;
+  return 0;
+}
 
 // Get the number of locales from the environment variable or if that is not 
 // set just use sinfo to get the number of cpus. 
-static int getCoresPerLocale(void) {
+static int getCoresPerLocale(int nomultithread) {
   int numCores = -1;
+  int threadsPerCore = -1;
   const int buflen = 1024;
   char buf[buflen];
   char partition_arg[128];
@@ -106,12 +115,12 @@ static int getCoresPerLocale(void) {
     chpl_warning("CHPL_LAUNCHER_CORES_PER_LOCALE must be > 0.", 0, 0);
   }
 
-  argv[0] = (char *)  "sinfo";        // use sinfo to get num cpus
-  argv[1] = (char *)  "--exact";      // get exact otherwise you get 16+, etc
-  argv[2] = (char *)  "--format=%c";  // format to get num cpu per node (%c)
-  argv[3] = (char *)  "--sort=+=#c";  // sort by num cpu (lower to higher)
-  argv[4] = (char *)  "--noheader";   // don't show header (hide "CPU" header)
-  argv[5] = (char *)  "--responding"; // only care about online nodes
+  argv[0] = (char *)  "sinfo";          // use sinfo to get num cpus
+  argv[1] = (char *)  "--exact";        // get exact otherwise you get 16+, etc
+  argv[2] = (char *)  "--format=%c %Z"; // format for cpu/node and threads/cpu (%c %Z)
+  argv[3] = (char *)  "--sort=+c";      // sort by num cpu (lower to higher)
+  argv[4] = (char *)  "--noheader";     // don't show header (hide "CPU" header)
+  argv[5] = (char *)  "--responding";   // only care about online nodes
   argv[6] = NULL;
   // Set the partition if it was specified
   if (partition) {
@@ -124,9 +133,12 @@ static int getCoresPerLocale(void) {
   if (chpl_run_utility1K("sinfo", argv, buf, buflen) <= 0)
     chpl_error("Error trying to determine number of cores per node", 0, 0);
 
-  if (sscanf(buf, "%d", &numCores) != 1)
+  if (sscanf(buf, "%d %d", &numCores, &threadsPerCore) != 2)
     chpl_error("unable to determine number of cores per locale; "
                "please set CHPL_LAUNCHER_CORES_PER_LOCALE", 0, 0);
+
+  if (nomultithread)
+    numCores /= threadsPerCore;
 
   return numCores;
 }
@@ -251,7 +263,7 @@ static char* chpl_launch_create_command(int argc, char* argv[],
     fprintf(slurmFile, "#SBATCH --nodes=%d\n", numLocales);
     fprintf(slurmFile, "#SBATCH --ntasks=%d\n", numLocales);
     fprintf(slurmFile, "#SBATCH --ntasks-per-node=%d\n", procsPerNode);
-    fprintf(slurmFile, "#SBATCH --cpus-per-task=%d\n", getCoresPerLocale());
+    fprintf(slurmFile, "#SBATCH --cpus-per-task=%d\n", getCoresPerLocale(nomultithread(true)));
     
     // request specified node access
     if (nodeAccessStr != NULL)
@@ -369,7 +381,7 @@ static char* chpl_launch_create_command(int argc, char* argv[],
     len += sprintf(iCom+len, "--nodes=%d ",numLocales);
     len += sprintf(iCom+len, "--ntasks=%d ", numLocales);
     len += sprintf(iCom+len, "--ntasks-per-node=%d ", procsPerNode);
-    len += sprintf(iCom+len, "--cpus-per-task=%d ", getCoresPerLocale());
+    len += sprintf(iCom+len, "--cpus-per-task=%d ", getCoresPerLocale(nomultithread(false)));
     
     // request specified node access
     if (nodeAccessStr != NULL)

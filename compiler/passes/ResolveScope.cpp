@@ -453,6 +453,154 @@ bool ResolveScope::isSymbolAndMethod(Symbol* sym0, Symbol* sym1) {
 
 /************************************* | **************************************
 *                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
+
+Symbol* ResolveScope::lookupNameLocallyForImport(const char* name) const {
+  Bindings::const_iterator it     = mBindings.find(name);
+  Symbol*                  retval = NULL;
+
+  if (it != mBindings.end()) {
+    retval = it->second;
+  }
+  return retval;
+}
+
+Symbol* ResolveScope::followImportUseChains(UnresolvedSymExpr* expr) const {
+  const char* name = expr->unresolved;
+  UseImportList useImportList = mUseImportList;
+  SymList symbols;
+
+  buildBreadthFirstUseImportList(useImportList);
+
+  // Do not use for_vector(); it terminates on a NULL
+  for (size_t i = 0; i < useImportList.size(); i++) {
+    if (UseStmt* use = toUseStmt(useImportList[i])) {
+      if (use->skipSymbolSearch(name) == false) {
+        BaseAST*    scopeToUse = use->getSearchScope();
+        const char* nameToUse  = name;
+
+        if (use->isARenamedSym(name) == true) {
+          nameToUse = use->getRenamedSym(name);
+        }
+
+        if (ResolveScope* next = getScopeFor(scopeToUse)) {
+          if (Symbol* sym = next->lookupNameLocallyForImport(nameToUse)) {
+            if (isRepeat(sym, symbols) == false) {
+              if (FnSymbol* fn = toFnSymbol(sym)) {
+                if (fn->isMethod() == false) {
+                  symbols.push_back(fn);
+                }
+
+              } else {
+                symbols.push_back(sym);
+              }
+            }
+          }
+        }
+      }
+    } else if (ImportStmt* import = toImportStmt(useImportList[i])) {
+      if (SymExpr* se = toSymExpr(import->src)) {
+        // The import statement has been resolved
+        if (import->isARename() == true) {
+          if (name == import->getRename()) {
+            symbols.push_back(se->symbol());
+          }
+        } else {
+          if (name == se->symbol()->name) {
+            symbols.push_back(se->symbol());
+          }
+        }
+      }
+
+      // Found a NULL sentinel.  Break if there are results.
+    } else {
+      if (symbols.size() > 0) {
+        break;
+      }
+    }
+  }
+  if (symbols.size() == 1) {
+    return symbols[0];
+  } else {
+    return NULL;
+  }
+}
+
+Symbol* ResolveScope::lookupForImport(Expr* expr) const {
+  Symbol* retval = NULL;
+
+  if (UnresolvedSymExpr* uSym = toUnresolvedSymExpr(expr)) {
+    const ResolveScope* ptr = NULL;
+    bool foundBadCloser = false;
+    for (ptr = this; ptr != NULL && retval == NULL; ptr = ptr->mParent) {
+      // Check if the module is defined in this scope
+      Symbol* sym = ptr->lookupNameLocallyForImport(uSym->unresolved);
+      if (ModuleSymbol* mod = toModuleSymbol(sym)) {
+        if (mod->defPoint->parentSymbol != theProgram) {
+          // if we're not in the root module scope, this is an improper match
+          USR_WARN(expr, "currently unable to import nested modules without"
+                   " specifying the full path to the module");
+          USR_PRINT(mod, "skipping module defined here");
+          foundBadCloser = true;
+        } else {
+          // if we are in the root module scope, then it is a proper match.
+          retval = sym;
+          break;
+        }
+      } else if (sym != NULL) {
+        retval = sym;
+        break;
+      }
+
+      // otherwise follow uses/imports only (breadth first)
+      //    look for the symbols defined in the used
+      //    or if the module being imported matches
+      //    and if not, keep following the public use chains
+      retval = followImportUseChains(uSym);
+    }
+
+    if (retval == NULL && foundBadCloser) {
+      USR_FATAL(expr, "No better match found");
+    }
+  } else if (CallExpr* call = toCallExpr(expr)) {
+    if (call->isNamedAstr(astrSdot) == true) {
+      Symbol* outer = lookupForImport(call->get(1));
+      if (ModuleSymbol* outerMod = toModuleSymbol(outer)) {
+        if (SymExpr* rhs = toSymExpr(call->get(2))) {
+          const char* rhsName = NULL;
+
+          if (get_string(rhs, &rhsName) == true) {
+            ResolveScope* scope = getScopeFor(outerMod->block);
+            if (Symbol* symbol = scope->getField(rhsName)) {
+              retval = symbol;
+
+            } else {
+              USR_FATAL(call, "Cannot find symbol '%s'", rhsName);
+            }
+          } else {
+            INT_FATAL(call, "Bad qualified name");
+          }
+
+        } else {
+          INT_FATAL(call, "Bad qualified name");
+        }
+      } else {
+        INT_FATAL(call, "Expected to find module");
+      }
+    } else {
+      INT_FATAL(expr, "Not a dotted expr");
+    }
+  } else {
+    INT_FATAL(expr, "Unsupported expr");
+  }
+
+  return retval;
+}
+
+/************************************* | **************************************
+*                                                                             *
 * Lookup an object based on an expression i.e. <name>                         *
 *   1. <name> is a simple lexically scoped name                               *
 *   2. <name> is a dotted path to a field in some object                      *
@@ -510,8 +658,8 @@ Symbol* ResolveScope::lookupWithUses(UnresolvedSymExpr* usymExpr, bool isUse) co
     buildBreadthFirstUseImportList(useImportList);
 
     // Do not use for_vector(); it terminates on a NULL
-    for (size_t i = 0; i < useImportList.size(); i++) {
-      if (UseStmt* use = toUseStmt(useImportList[i])) {
+    for_vector_allowing_0s(VisibilityStmt, visStmt, useImportList) {
+      if (UseStmt* use = toUseStmt(visStmt)) {
         if (use->skipSymbolSearch(name) == false) {
           BaseAST*    scopeToUse = use->getSearchScope();
           const char* nameToUse  = name;
@@ -536,7 +684,7 @@ Symbol* ResolveScope::lookupWithUses(UnresolvedSymExpr* usymExpr, bool isUse) co
           }
         }
 
-      } else if (ImportStmt* import = toImportStmt(useImportList[i])) {
+      } else if (ImportStmt* import = toImportStmt(visStmt)) {
         BaseAST* scopeToUse = import->getSearchScope();
 
         if (ResolveScope* next = getScopeFor(scopeToUse)) {

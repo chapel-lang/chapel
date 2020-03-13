@@ -573,7 +573,7 @@ Parameter constants and expressions cannot be aliased.
    .. code-block:: chapel
 
       var myInt = 51;
-      ref refInt = myInt;                   // alias of a local or global variable
+      ref refInt = myInt;                   // alias of the previous variable
       myInt = 62;
       writeln("refInt = ", refInt);
       refInt = 73;

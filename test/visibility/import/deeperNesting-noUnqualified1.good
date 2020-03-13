@@ -1,0 +1,2 @@
+deeperNesting-noUnqualified1.chpl:16: In function 'main':
+deeperNesting-noUnqualified1.chpl:17: error: 'x' undeclared (first use this function)

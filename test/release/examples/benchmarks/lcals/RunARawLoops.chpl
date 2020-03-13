@@ -142,31 +142,31 @@ module RunARawLoops {
             var dom = new ADomain(ilength, 3);
 
             ref x0 = x;
-            ref x1 = x0[1..].reindex(0..#x0.numElements-1);
-            ref x2 = x0[dom.jp..].reindex(0..#x0.numElements-dom.jp);
-            ref x3 = x1[dom.jp..].reindex(0..#x1.numElements-dom.jp);
-            ref x4 = x0[dom.kp..].reindex(0..#x0.numElements-dom.kp);
-            ref x5 = x1[dom.kp..].reindex(0..#x1.numElements-dom.kp);
-            ref x6 = x2[dom.kp..].reindex(0..#x2.numElements-dom.kp);
-            ref x7 = x3[dom.kp..].reindex(0..#x3.numElements-dom.kp);
+            ref x1 = x0[1..].reindex(0..#x0.size-1);
+            ref x2 = x0[dom.jp..].reindex(0..#x0.size-dom.jp);
+            ref x3 = x1[dom.jp..].reindex(0..#x1.size-dom.jp);
+            ref x4 = x0[dom.kp..].reindex(0..#x0.size-dom.kp);
+            ref x5 = x1[dom.kp..].reindex(0..#x1.size-dom.kp);
+            ref x6 = x2[dom.kp..].reindex(0..#x2.size-dom.kp);
+            ref x7 = x3[dom.kp..].reindex(0..#x3.size-dom.kp);
 
             ref y0 = y;
-            ref y1 = y0[1..].reindex(0..#y0.numElements-1);
-            ref y2 = y0[dom.jp..].reindex(0..#y0.numElements-dom.jp);
-            ref y3 = y1[dom.jp..].reindex(0..#y1.numElements-dom.jp);
-            ref y4 = y0[dom.kp..].reindex(0..#y0.numElements-dom.kp);
-            ref y5 = y1[dom.kp..].reindex(0..#y1.numElements-dom.kp);
-            ref y6 = y2[dom.kp..].reindex(0..#y2.numElements-dom.kp);
-            ref y7 = y3[dom.kp..].reindex(0..#y3.numElements-dom.kp);
+            ref y1 = y0[1..].reindex(0..#y0.size-1);
+            ref y2 = y0[dom.jp..].reindex(0..#y0.size-dom.jp);
+            ref y3 = y1[dom.jp..].reindex(0..#y1.size-dom.jp);
+            ref y4 = y0[dom.kp..].reindex(0..#y0.size-dom.kp);
+            ref y5 = y1[dom.kp..].reindex(0..#y1.size-dom.kp);
+            ref y6 = y2[dom.kp..].reindex(0..#y2.size-dom.kp);
+            ref y7 = y3[dom.kp..].reindex(0..#y3.size-dom.kp);
 
             ref z0 = z;
-            ref z1 = z0[1..].reindex(0..#z0.numElements-1);
-            ref z2 = z0[dom.jp..].reindex(0..#z0.numElements-dom.jp);
-            ref z3 = z1[dom.jp..].reindex(0..#z1.numElements-dom.jp);
-            ref z4 = z0[dom.kp..].reindex(0..#z0.numElements-dom.kp);
-            ref z5 = z1[dom.kp..].reindex(0..#z1.numElements-dom.kp);
-            ref z6 = z2[dom.kp..].reindex(0..#z2.numElements-dom.kp);
-            ref z7 = z3[dom.kp..].reindex(0..#z3.numElements-dom.kp);
+            ref z1 = z0[1..].reindex(0..#z0.size-1);
+            ref z2 = z0[dom.jp..].reindex(0..#z0.size-dom.jp);
+            ref z3 = z1[dom.jp..].reindex(0..#z1.size-dom.jp);
+            ref z4 = z0[dom.kp..].reindex(0..#z0.size-dom.kp);
+            ref z5 = z1[dom.kp..].reindex(0..#z1.size-dom.kp);
+            ref z6 = z2[dom.kp..].reindex(0..#z2.size-dom.kp);
+            ref z7 = z3[dom.kp..].reindex(0..#z3.size-dom.kp);
 
             const vnormq = 0.083333333333333333;
             ltimer.start();
@@ -237,25 +237,25 @@ module RunARawLoops {
 
             var dom = new ADomain(ilength, 2);
 
-            ref x4 = x.reindex(0..#(x.numElements));
-            ref x1 = x4[1..].reindex(0..#(x.numElements-1));
-            ref x2 = x1[dom.jp..].reindex(0..#(x.numElements-1-dom.jp));
-            ref x3 = x4[dom.jp..].reindex(0..#(x.numElements-dom.jp));
+            ref x4 = x.reindex(0..#(x.size));
+            ref x1 = x4[1..].reindex(0..#(x.size-1));
+            ref x2 = x1[dom.jp..].reindex(0..#(x.size-1-dom.jp));
+            ref x3 = x4[dom.jp..].reindex(0..#(x.size-dom.jp));
 
-            ref y4 = y.reindex(0..#(y.numElements));
-            ref y1 = y4[1..].reindex(0..#(y.numElements-1));
-            ref y2 = y1[dom.jp..].reindex(0..#(y.numElements-1-dom.jp));
-            ref y3 = y4[dom.jp..].reindex(0..#(y.numElements-dom.jp));
+            ref y4 = y.reindex(0..#(y.size));
+            ref y1 = y4[1..].reindex(0..#(y.size-1));
+            ref y2 = y1[dom.jp..].reindex(0..#(y.size-1-dom.jp));
+            ref y3 = y4[dom.jp..].reindex(0..#(y.size-dom.jp));
 
-            ref fx4 = xdot.reindex(0..#(xdot.numElements));
-            ref fx1 = fx4[1..].reindex(0..#(xdot.numElements-1));
-            ref fx2 = fx1[dom.jp..].reindex(0..#(xdot.numElements-1-dom.jp));
-            ref fx3 = fx4[dom.jp..].reindex(0..#(xdot.numElements-dom.jp));
+            ref fx4 = xdot.reindex(0..#(xdot.size));
+            ref fx1 = fx4[1..].reindex(0..#(xdot.size-1));
+            ref fx2 = fx1[dom.jp..].reindex(0..#(xdot.size-1-dom.jp));
+            ref fx3 = fx4[dom.jp..].reindex(0..#(xdot.size-dom.jp));
 
-            ref fy4 = ydot.reindex(0..#(ydot.numElements));
-            ref fy1 = fy4[1..].reindex(0..#(ydot.numElements-1));
-            ref fy2 = fy1[dom.jp..].reindex(0..#(ydot.numElements-1-dom.jp));
-            ref fy3 = fy4[dom.jp..].reindex(0..#(ydot.numElements-dom.jp));
+            ref fy4 = ydot.reindex(0..#(ydot.size));
+            ref fy1 = fy4[1..].reindex(0..#(ydot.size-1));
+            ref fy2 = fy1[dom.jp..].reindex(0..#(ydot.size-1-dom.jp));
+            ref fy3 = fy4[dom.jp..].reindex(0..#(ydot.size-dom.jp));
 
             const ptiny = 1.0e-20;
             const half = 0.5;

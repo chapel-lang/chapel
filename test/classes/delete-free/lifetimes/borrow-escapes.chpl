@@ -113,6 +113,7 @@ proc bad23() {
   }
   writeln(outer);
   outer = new borrowed MyClass(1);
+  writeln(outer);
 }
 
 

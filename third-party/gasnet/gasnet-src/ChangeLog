@@ -13,11 +13,12 @@ GASNet-EX ChangeLog
   - Shared-memory (smp-conduit)
   - Portable UDP (udp-conduit)
   - Portable MPI (mpi-conduit)
-  Users wishing to use other conduits are recommended to download the GASNet v1.x
-  distribution from https://gasnet.lbl.gov.
+  - Unified Communication X (ucx-conduit) [EXPERIMENTAL]
+  Users wishing to use other retired conduits may need to download 
+  the GASNet v1.x distribution from https://gasnet.lbl.gov.
 
 ----------------------------------------------------------------------
-PENDING @58e79f0: GASNet-EX Work-In-Progress for 2020.3.0 release
+03-12-2020: GASNet-EX 2020.3.0 Release
 
 * InfiniBand Verbs (ibv-conduit)
   - Negotiated-Payload Active Messages are implemented natively for ibv-conduit,
@@ -26,7 +27,7 @@ PENDING @58e79f0: GASNet-EX Work-In-Progress for 2020.3.0 release
     for AM Medium (and small Long) payloads.  See details in the conduit README.
   - The gather-on-send optimization for AM Medium (and small Long) payloads is
     now applied to out-of-segment sources when using ODP.
-  - A new --with-ibv-max-medium= can set the size of AM Medium buffers.
+  - A new `configure --with-ibv-max-medium` can set the size of AM Medium buffers.
     See details, including supported values, in the conduit README.
   - The default AM Max Medium is now 64KB minus space for headers (up from 4KB).
   - Code paths for AM Long and RDMA Put have been separated, leading to simpler
@@ -34,12 +35,15 @@ PENDING @58e79f0: GASNet-EX Work-In-Progress for 2020.3.0 release
   - Code paths for AM and RMA have been revised to eliminate certain global
     state in favor of per-endpoint state.  This is work toward multi-endpoint and
     multi-segment support to appear in a later release.
-  - AM-over-RDMA support (not compiled by default since 2019.6.0) has been
-    removed.
+  - AM-over-RDMA (not compiled by default since 2019.6.0) has been removed.
   - The environment variable GASNET_PIN_MAXSZ has been removed.  This variable
     was introduced to help work-around a misbehavior not seen in modern HCAs,
     and its support added significant complexity to the critical code paths
     for RMA.
+
+* Cray XC uGNI (aries-conduit)
+  - AM Long request injection using GEX_EVENT_NOW may now service incoming AMs
+    while stalling for local completion of the outgoing payload.
 
 * Unified Communication X framework (ucx-conduit) [EXPERIMENTAL]
   - This NEW conduit is now available for experimental use on Mellanox

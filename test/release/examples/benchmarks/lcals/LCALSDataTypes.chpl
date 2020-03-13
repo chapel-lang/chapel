@@ -21,7 +21,7 @@ module LCALSDataTypes {
     proc push_back(e: eltType) {
       A.append(e);
     }
-    proc numElements {
+    proc size {
       return A.size;
     }
     iter these() {

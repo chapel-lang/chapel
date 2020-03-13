@@ -50,7 +50,7 @@ proc main() {
 
 proc dfft(A, W) {
 
-  const numElements = A.numElements;
+  const numElements = A.size;
   const halfLogN = (log2(numElements))/2;
 
   fft2d(A, W, halfLogN, 1);
@@ -64,7 +64,7 @@ proc dfft(A, W) {
 
 proc fft2d(A, W, steps, phase) {
 
-  const numElements = A.numElements;
+  const numElements = A.size;
   const p = sqrt(numElements):int;
 
   var span = 1;
@@ -159,7 +159,7 @@ proc initVectors(Twiddles, z) {
 
 
 proc computeTwiddles(Twiddles) {
-  const numTwdls = Twiddles.numElements,
+  const numTwdls = Twiddles.size,
         delta = 2.0 * atan(1.0) / numTwdls;
 
   Twiddles(0) = 1.0;
@@ -175,7 +175,7 @@ proc computeTwiddles(Twiddles) {
 
 
 proc bitReverseShuffle(Vect: [?Dom]) {
-  const numBits = log2(Vect.numElements),
+  const numBits = log2(Vect.size),
         Perm: [Dom] index(Dom) = [i in Dom] bitReverse(i, revBits = numBits),
         Temp = Vect(Perm);
   Vect = Temp;

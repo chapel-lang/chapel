@@ -704,17 +704,17 @@ module String {
     :returns: A new `string`
   */
   inline proc createStringWithNewBuffer(x: c_string, length=x.size,
-                                        errors=decodePolicy.strict) throws {
+                                        policy=decodePolicy.strict) throws {
     return createStringWithNewBuffer(x: bufferType, length=length,
-                                     size=length+1, errors);
+                                     size=length+1, policy);
   }
 
   pragma "last resort"
   pragma "no doc"
   inline proc createStringWithNewBuffer(s: c_string, length=s.size,
-                                        errors=decodePolicy.strict) throws {
+                                        policy=decodePolicy.strict) throws {
     stringFactoryArgDepr();
-    return createStringWithNewBuffer(x=s, length, errors);
+    return createStringWithNewBuffer(x=s, length, policy);
   }
 
   /*
@@ -736,17 +736,17 @@ module String {
   // consistence? Then, we can at least give it a default like length+1
   inline proc createStringWithNewBuffer(x: bufferType,
                                         length: int, size=length+1,
-                                        errors=decodePolicy.strict) throws {
-    return decodeByteBuffer(x, length, errors);
+                                        policy=decodePolicy.strict) throws {
+    return decodeByteBuffer(x, length, policy);
   }
 
   pragma "last resort"
   pragma "no doc"
   inline proc createStringWithNewBuffer(s: bufferType,
                                         length: int, size=length+1,
-                                        errors=decodePolicy.strict) throws {
+                                        policy=decodePolicy.strict) throws {
     stringFactoryArgDepr();
-    return createStringWithNewBuffer(x=s, length, size, errors);
+    return createStringWithNewBuffer(x=s, length, size, policy);
   }
 
   pragma "no doc"
@@ -775,6 +775,8 @@ module String {
     var buff: bufferType = nil;
     pragma "no doc"
     var isowned: bool = true;
+    pragma "no doc"
+    var hasEscapes: bool = false;
     pragma "no doc"
     // We use chpl_nodeID as a shortcut to get at here.id without actually constructing
     // a locale object. Used when determining if we should make a remote transfer.
@@ -978,19 +980,19 @@ module String {
 
     /*
       Returns a :record:`~Bytes.bytes` from the given :record:`string`. If the
-      string contains some escaped non-UTF8 bytes, `errors` argument determines
+      string contains some escaped non-UTF8 bytes, `policy` argument determines
       the action.
         
-      :arg errors: `encodePolicy.pass` directly copies the (potentially escaped)
+      :arg policy: `encodePolicy.pass` directly copies the (potentially escaped)
                     data, `encodePolicy.unescape` recovers the escaped bytes
                     back.
 
       :returns: :record:`~Bytes.bytes`
     */
-    proc encode(errors=encodePolicy.pass): bytes {
+    proc encode(policy=encodePolicy.pass): bytes {
       var localThis: string = this.localize();
 
-      if errors == encodePolicy.pass {  // just copy
+      if policy == encodePolicy.pass {  // just copy
         return createBytesWithNewBuffer(localThis.buff, localThis.numBytes);
       }
       else {  // see if there is escaped data in the string
@@ -2232,37 +2234,6 @@ module String {
     return doMultiply(s, n);
   }
 
-  private proc stringValDeprecated() {
-    compilerWarning("'+' between strings and non-strings is deprecated; consider explicitly casting the non-string argument to a string");
-  }
-
-  // Concatenation with other types is done by casting to string
-  private inline proc concatHelp(s: string, x:?t) where t != string {
-    stringValDeprecated();
-    var cs = x:string;
-    const ret = s + cs;
-    return ret;
-  }
-
-  private inline proc concatHelp(x:?t, s: string) where t != string  {
-    stringValDeprecated();
-    var cs = x:string;
-    const ret = cs + s;
-    return ret;
-  }
-
-  /*
-     The following concatenation functions return a new string which is the
-     result of casting the non-string argument to a string, and concatenating
-     that result with `s`.
-  */
-  inline proc +(s: string, x: numeric) return concatHelp(s, x);
-  inline proc +(x: numeric, s: string) return concatHelp(x, s);
-  inline proc +(s: string, x: enumerated) return concatHelp(s, x);
-  inline proc +(x: enumerated, s: string) return concatHelp(x, s);
-  inline proc +(s: string, x: bool) return concatHelp(s, x);
-  inline proc +(x: bool, s: string) return concatHelp(x, s);
-
   //
   // Param procs
   //
@@ -2300,48 +2271,6 @@ module String {
   pragma "no doc"
   inline proc +(param a: string, param b: string) param
     return __primitive("string_concat", a, b);
-
-  pragma "no doc"
-  inline proc +(param s: string, param x: integral) param {
-    stringValDeprecated();
-    return __primitive("string_concat", s, x:string);
-  }
-
-  pragma "no doc"
-  inline proc +(param x: integral, param s: string) param {
-    stringValDeprecated();
-    return __primitive("string_concat", x:string, s);
-  }
-
-  pragma "no doc"
-  inline proc +(param s: string, param x: enumerated) param {
-    stringValDeprecated();
-    return __primitive("string_concat", s, x:string);
-  }
-
-  pragma "no doc"
-  inline proc +(param x: enumerated, param s: string) param {
-    stringValDeprecated();
-    return __primitive("string_concat", x:string, s);
-  }
-
-  pragma "no doc"
-  inline proc +(param s: string, param x: bool) param {
-    stringValDeprecated();
-    return __primitive("string_concat", s, x:string);
-  }
-
-  pragma "no doc"
-  inline proc +(param x: bool, param s: string) param {
-    stringValDeprecated();
-    return __primitive("string_concat", x:string, s);
-  }
-
-  pragma "no doc"
-  inline proc ascii(param a: string) param {
-    compilerWarning("ascii is deprecated - please use string.toByte or string.byte");
-    return __primitive("ascii", a);
-  }
 
   pragma "no doc"
   inline proc param string.toByte() param : uint(8) {
@@ -2509,49 +2438,6 @@ module String {
     pragma "fn synchronization free"
     extern proc towupper(wc: wint_t): wint_t;
     return towupper(c: wint_t): int(32);
-  }
-
-  //
-  // ascii
-  // TODO: replace with ordinal()
-  //
-  /*
-     :returns: The byte value of the first character in `a` as an integer.
-
-      .. warning::
-
-          This method is deprecated. Use `toByte` or `byte` methods,
-          instead.
-  */
-  inline proc ascii(a: string) : uint(8) {
-    compilerWarning("ascii is deprecated - please use string.toByte or string.byte");
-    if a.isEmpty() then return 0;
-
-    if _local || a.locale_id == chpl_nodeID {
-      // the string must be local so we can index into buff
-      return a.buff[0];
-    } else {
-      // a[1] grabs the first character as a string (making it local)
-      return a[1].buff[0];
-    }
-  }
-
-  /*
-     :returns: A string with the single character with the ASCII value `i`.
-
-      .. warning::
-
-          This method is deprecated. Use `codepointToString` method,
-          instead.
-  */
-  inline proc asciiToString(i: uint(8)) {
-    compilerWarning("asciiToString is deprecated - please use codepointToString instead");
-    var buffer = bufferAllocExact(2);
-    buffer[0] = i;
-    buffer[1] = 0;
-    try! {
-      return createStringWithOwnedBuffer(buffer, 1, 2);
-    }
   }
 
   /*

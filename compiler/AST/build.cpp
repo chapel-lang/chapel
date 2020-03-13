@@ -1991,10 +1991,15 @@ buildFunctionFormal(FnSymbol* fn, DefExpr* def) {
     return fn;
   ArgSymbol* arg = toArgSymbol(def->sym);
   INT_ASSERT(arg);
+
+  int countFormals = fn->numFormals();
+
   fn->insertFormalAtTail(def);
   if (!strcmp(arg->name, "chpl__tuple_arg_temp")) {
     destructureTupleGroupedArgs(fn, arg->variableExpr, new SymExpr(arg));
     arg->variableExpr = NULL;
+    // append countFormals to the argument name so it is unique
+    arg->name = astr(arg->name, istr(countFormals));
   }
   return fn;
 }

@@ -28,7 +28,8 @@ $(TMPBINNAME): $(CHPL_CL_OBJS) checkRtLibDir FORCE
 ifneq ($(SKIP_COMPILE_LINK),skip)
 	$(CC) $(CHPL_MAKE_BASE_CFLAGS) $(GEN_CFLAGS) $(COMP_GEN_CFLAGS) -c -o $(TMPBINNAME).o $(CHPL_RT_INC_DIR) $(CHPLSRC)
 	$(foreach srcFile, $(CHPLUSEROBJ),$(CC) $(CHPL_MAKE_BASE_CFLAGS) $(GEN_CFLAGS) $(COMP_GEN_CFLAGS) -c -o $(srcFile) $(CHPL_RT_INC_DIR) $(srcFile).c ;)
-	$(LD) $(CHPL_MAKE_BASE_LFLAGS) $(GEN_LFLAGS) $(COMP_GEN_LFLAGS) \
+	$(LD) $(CHPL_MAKE_BASE_LFLAGS) \
+              $(COMP_GEN_USER_LDFLAGS) $(GEN_LFLAGS) $(COMP_GEN_LFLAGS) \
               -o $(TMPBINNAME) $(TMPBINNAME).o $(CHPLUSEROBJ) \
               $(CHPL_RT_LIB_DIR)/main.o $(CHPL_CL_OBJS) \
               -L$(CHPL_RT_LIB_DIR) -lchpl $(LIBS) -lm \

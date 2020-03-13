@@ -75,7 +75,7 @@ module SSCA2_kernels
       if DEBUG_KERNEL2 then {
 	writeln ();
 	writeln ( "Heaviest weight      : ", heaviest_edge_weight); 
-	writeln ( "Number of heavy edges:", heavy_edge_list.numIndices );
+	writeln ( "Number of heavy edges:", heavy_edge_list.size );
 	writeln ();
 	writeln ( "Edges with largest weight and other neighbors:" );
 	for (s,t) in heavy_edge_list do {
@@ -417,7 +417,7 @@ module SSCA2_kernels
 
             barrier.barrier();
             Active_Level[here.id] = AL.next!;
-            if Active_Level[here.id]!.Members.numIndices:bool then
+            if Active_Level[here.id]!.Members.size:bool then
               remaining = true;
 
             barrier.barrier();
@@ -475,12 +475,12 @@ module SSCA2_kernels
 	writeln ( "Elapsed time for Kernel 4: ", K4_time, " seconds");
 
 	const n_edges          = G.num_edges;
-	const N_VERTICES       = vertex_domain.numIndices;
+	const N_VERTICES       = vertex_domain.size;
 	const N_START_VERTICES = if starting_vertices == G.vertices
                                  then N_VERTICES
                                       - + reduce [v in vertex_domain]
                                         (G.n_Neighbors (v) == 0)
-                                 else starting_vertices.numIndices;
+                                 else starting_vertices.size;
 	const TEPS             = 7.0 * N_VERTICES * N_START_VERTICES / K4_time;
 	const Adjusted_TEPS    = n_edges * N_START_VERTICES / K4_time;
 

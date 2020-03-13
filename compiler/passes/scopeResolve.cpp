@@ -1902,11 +1902,25 @@ static bool lookupThisScopeAndUses(const char*           name,
                 }
               }
             }
-
-          } else if (!isImportStmt(stmt)) {
-            // break on each new depth if a symbol has been found, but don't
-            // traverse import statements at this stage, we need to only look
-            // for explicitly named symbols
+          } else if (ImportStmt* import = toImportStmt(stmt)) {
+            // Only traverse import statements that define a symbol with this
+            // name for unqualified access.  We're only looking for explicitly
+            // named symbols
+            if (import->skipSymbolSearch(name) == false) {
+              BaseAST* scopeToUse = import->getSearchScope();
+              if (Symbol* sym = inSymbolTable(name, scopeToUse)) {
+                if (sym->hasFlag(FLAG_PRIVATE) == true) {
+                  if (sym->isVisible(context) == true &&
+                      isRepeat(sym, symbols)  == false) {
+                    symbols.push_back(sym);
+                  }
+                } else if (isRepeat(sym, symbols) == false) {
+                  symbols.push_back(sym);
+                }
+              }
+            }
+          } else {
+            // break on each new depth if a symbol has been found
             if (symbols.size() > 0) {
               break;
             }
@@ -1939,11 +1953,14 @@ static bool lookupThisScopeAndUses(const char*           name,
           // symbols that they define.
           forv_Vec(VisibilityStmt, stmt, *moduleUses) {
             if (stmt != NULL) {
-              if (Symbol* modSym = stmt->checkIfModuleNameMatches(name)) {
-                if (isRepeat(modSym, symbols) == false) {
-                  symbols.push_back(modSym);
-                  if (storeRenames && stmt->isARename()) {
-                    renameLocs[modSym] = &stmt->astloc;
+              if (!isImportStmt(stmt) ||
+                  toImportStmt(stmt)->providesQualifiedAccess()) {
+                if (Symbol* modSym = stmt->checkIfModuleNameMatches(name)) {
+                  if (isRepeat(modSym, symbols) == false) {
+                    symbols.push_back(modSym);
+                    if (storeRenames && stmt->isARename()) {
+                      renameLocs[modSym] = &stmt->astloc;
+                    }
                   }
                 }
               }
@@ -2251,13 +2268,27 @@ static bool skipUse(std::map<Symbol*, std::vector<VisibilityStmt*> >* seen,
   std::vector<VisibilityStmt*> vec = (*seen)[useSE->symbol()];
 
   if (vec.size() > 0) {
-    // We've already seen at least one use or import of this module.  Since
-    // imports only impact qualified naming, by definition any previous use or
-    // import of the same module will provide at least as much as this import
-    return true;
+    // We've already seen at least one use or import of this module, but it
+    // might not be thorough enough to justify skipping the newest 'import'
+    for_vector(VisibilityStmt, stmt, vec) {
+      if (UseStmt* use = toUseStmt(stmt)) {
+        if (current->providesNewSymbols(use) == false) {
+          // We found a prior use that covered all the symbols available
+          // from current.  We can skip looking at current
+          return true;
+        }
+      } else if (ImportStmt* import = toImportStmt(stmt)) {
+        if (current->providesNewSymbols(import) == false) {
+          // The current import statement is equivalent to a prior import
+          // statement so no need to include it
+          return true;
+        }
+      }
+    }
   }
 
-  // We didn't have a prior use or import.  Don't skip current.
+  // We didn't have a prior use or import that covered the symbols this
+  // provides.  Don't skip current.
   return false;
 }
 

@@ -315,7 +315,7 @@ proc LUFactorize(n: indexType,
 proc schurComplement(blk, AD, BD, Rest) {
 
   // Prevent replication of unequal-sized slices
-  if Rest.numIndices == 0 then return;
+  if Rest.size == 0 then return;
 
   //
   // Copy data into replicated arrays so every processor has a local copy

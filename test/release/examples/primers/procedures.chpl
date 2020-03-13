@@ -94,7 +94,7 @@ proc +(p1: Point, p2: Point)
 //
 // We can also overload the ``writeThis()`` routine called by writeln.
 //
-proc Point.writeThis(w)
+proc Point.writeThis(w) throws
 {
   // Writes it out as a coordinate pair.
   w.write("(");

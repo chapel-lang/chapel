@@ -57,7 +57,7 @@ var None: [0..-1] real;
 
 // Check if we have None.
 proc isNone(x) {
-    return x.numElements == 0;
+    return x.size == 0;
 }
 
 class LocTree {
