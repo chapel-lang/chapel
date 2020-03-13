@@ -227,9 +227,11 @@ module LocaleModel {
     }
 
     proc deinit() {
+      extern proc printf(s);
       for loc in myLocales {
         on loc {
           rootLocaleInitialized = false;
+          delete loc._instance;
         }
       }
     }
@@ -243,5 +245,11 @@ module LocaleModel {
   proc chpl_getSubloc() {
     halt("called chpl_getSubloc() in a locale model that lacks sublocales");
     return c_sublocid_none;
+  }
+
+  proc deinit() {
+    for l in chpl_emptyLocales do {
+      delete l._instance;
+    }
   }
 }
