@@ -7152,8 +7152,6 @@ static void           resolveNewWithInitializer(CallExpr* newExpr,
 
 static SymExpr*       resolveNewFindTypeExpr(CallExpr* newExpr);
 
-static bool isManagedPointerInit(SymExpr* typeExpr);
-
 static void resolveNewSetupManaged(CallExpr* newExpr, Type*& manager);
 
 static void handleUnstableNewError(CallExpr* newExpr, Type* newType);
@@ -7317,7 +7315,7 @@ static void resolveNewSetupManaged(CallExpr* newExpr, Type*& manager) {
 
         // Use the class type inside a owned/shared/etc
         // unless we are initializing Owned/Shared itself
-        if (isManagedPtrType(type) && !isManagedPointerInit(typeExpr)) {
+        if (isManagedPtrType(type)) {
           Type* subtype = getManagedPtrBorrowType(type);
           // rule out dtUnknown
           if (isAggregateType(subtype) || isDecoratedClassType(subtype))
@@ -7406,32 +7404,6 @@ static bool isUndecoratedClassNew(CallExpr* newExpr, Type* newType) {
   }
 
   return isUndecorated;
-}
-
-static bool isManagedPointerInit(SymExpr* typeExpr) {
-
-  // Managed pointer init methods are:
-  //  - accepting a single unmanaged class pointer
-  //  - accepting a single managed class pointer
-
-  // everything else is forwarded
-
-  if (typeExpr->next == NULL)
-    return false;
-
-  if (typeExpr->next->next != NULL)
-    return false;
-
-  Type* singleArgumentType = typeExpr->next->getValType();
-
-  if (isManagedPtrType(singleArgumentType))
-    return true;
-
-  if (DecoratedClassType* dt = toDecoratedClassType(singleArgumentType))
-    if (dt->isUnmanaged())
-      return true;
-
-  return false;
 }
 
 static void resolveNewWithInitializer(CallExpr* newExpr, Type* manager) {
