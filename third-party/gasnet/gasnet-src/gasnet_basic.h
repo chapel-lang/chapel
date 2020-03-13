@@ -166,6 +166,12 @@
  * Where tentative these expand to a common-block annotation, if appropriate.
  * Where not tentative, these expand to extern.
  * C++ clients where tentative definitions are not supported always see these as extern.
+ *
+ * GASNETI_TENTATIVE_LIBRARY_DEFN exists as a workaround for a GCC LTO bug:
+ *   https://sourceware.org/bugzilla/show_bug.cgi?id=23350
+ *   https://gcc.gnu.org/bugzilla/show_bug.cgi?id=86490
+ * the trick is to have an extern declaration precede the tentative definition,
+ * which still places it in the common block but avoids the LTO bug.
  */
 #if defined(__cplusplus)
   #define GASNETI_TENTATIVE_CLIENT   extern
@@ -175,7 +181,8 @@
   #error Attempted to build libgasnet with an unrecognized different compiler - please re-run configure.
   #endif
   #define GASNETI_TENTATIVE_CLIENT   extern
-  #define GASNETI_TENTATIVE_LIBRARY  GASNETI_COMMON
+  #define GASNETI_TENTATIVE_LIBRARY  extern
+  #define GASNETI_TENTATIVE_LIBRARY_DEFN  GASNETI_COMMON
 #elif GASNETI_COMPILER_HAS_ATTRIBUTE(COMMON,__common__)
   #define GASNETI_TENTATIVE_CLIENT   __attribute__((__common__))
   #define GASNETI_TENTATIVE_LIBRARY  extern

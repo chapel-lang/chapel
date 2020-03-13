@@ -9,9 +9,9 @@ dnl -*- m4 -*-
 define([cv_prefix],[gasnet_cv_])
 
 dnl Public release version packaging identifier:
-define([GASNET_RELEASE_VERSION_MAJOR_D],[2019])
-define([GASNET_RELEASE_VERSION_MINOR_D],[9])
-define([GASNET_RELEASE_VERSION_PATCH_D],[2])
+define([GASNET_RELEASE_VERSION_MAJOR_D],[2020])
+define([GASNET_RELEASE_VERSION_MINOR_D],[3])
+define([GASNET_RELEASE_VERSION_PATCH_D],[0])
 dnl GASNet-EX spec version:
 define([GASNETEX_SPEC_VERSION_MAJOR_D],[0])
 define([GASNETEX_SPEC_VERSION_MINOR_D],[8])

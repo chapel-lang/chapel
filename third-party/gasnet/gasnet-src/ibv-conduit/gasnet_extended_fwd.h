@@ -79,8 +79,8 @@
 #endif
 
 // Configure default VIS tuning knobs
-// 12/15/17: Measurements on multiple systems show 256 is a good value
-#define GASNETE_VIS_MAXCHUNK_DEFAULT 256
+// 2020/3/8: Measurements on multiple systems show 3kb is a reasonable default (with NPAM and 64kb maxmedium)
+#define GASNETE_VIS_MAXCHUNK_DEFAULT 3072
 
 #endif
 
