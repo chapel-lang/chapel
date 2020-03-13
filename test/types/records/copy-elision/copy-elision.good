@@ -140,6 +140,33 @@ init 1 1
 init= 1 1
 deinit 1 1
 deinit 1 1
+test12
+init 1 1
+deinit 1 1
+test13
+init 1 1
+deinit 1 1
+test14
+init 1 1
+deinit 1 1
+test15
+init 1 1
+deinit 1 1
+test16
+init 1 1
+deinit 1 1
+test17
+init 1 1
+deinit 1 1
+test18
+init 1 1
+deinit 1 1
+test19
+init 1 1
+deinit 1 1
+test20
+init 1 1
+deinit 1 1
 test-public-global
 init= 0 0
 test-private-global
