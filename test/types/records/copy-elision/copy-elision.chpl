@@ -295,6 +295,103 @@ proc test11() {
 }
 test11();
 
+proc test12() {
+  writeln("test12");
+  var x = new R(1);
+  var y = x;
+  var z = y;
+}
+test12();
+
+proc test13() {
+  writeln("test13");
+  for i in 1..1 {
+    var x = new R(1);
+    var y = x;
+  }
+}
+test13();
+
+proc test14() {
+  writeln("test14");
+  coforall i in 1..1 {
+    var x = new R(1);
+    var y = x;
+  }
+}
+test14();
+
+proc test15() {
+  writeln("test15");
+  forall i in 1..1 {
+    var x = new R(1);
+    var y = x;
+  }
+}
+test15();
+
+proc test16() {
+  writeln("test16");
+  var i = 1;
+  do {
+    var x = new R(1);
+    var y = x;
+    i += 1;
+  } while (i <= 1);
+}
+test16();
+
+proc test17() {
+  writeln("test17");
+  var i = 1;
+  while (i <= 1) {
+    var x = new R(1);
+    var y = x;
+    i += 1;
+  }
+}
+test17();
+
+proc test18() {
+  writeln("test18");
+  cobegin {
+    {
+      var x = new R(1);
+      var y = x;
+    }
+    {
+      // do nothing
+    }
+  }
+}
+test18();
+
+proc test19() {
+  writeln("test19");
+  sync {
+    begin {
+      var x = new R(1);
+      var y = x;
+    }
+  }
+}
+test19();
+
+proc test20() {
+  writeln("test20");
+
+  var done$: sync int;
+
+  begin {
+    var x = new R(1);
+    var y = x;
+    done$ = 1;
+  }
+
+  done$; // wait
+}
+test20();
+
 writeln("test-public-global");
 public var global1  = globalR;
 
