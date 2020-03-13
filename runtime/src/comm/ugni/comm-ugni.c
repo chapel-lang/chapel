@@ -6043,8 +6043,6 @@ void do_remote_get(void* tgt_addr, c_nodeid_t locale, void* src_addr,
     return;
   }
 
-  local_mr = gnr_mreg;
-
   if (xmit_size <= gbp_max_size) {
     //
     // The transfer will fit in a single trampoline buffer.
@@ -6073,21 +6071,39 @@ void do_remote_get(void* tgt_addr, c_nodeid_t locale, void* src_addr,
     src_addr_xmit = (char*) src_addr_xmit + gbp_max_size;
     xmit_size -= gbp_max_size;
 
-    // The middle chunks are all full ones.
-    while (xmit_size > gbp_max_size) {
-      do_nic_get(tgt_addr_xmit, locale, remote_mr,
-                 src_addr_xmit, gbp_max_size, gnr_mreg);
-      memcpy(tgt_addr, tgt_addr_xmit, gbp_max_size);
-      tgt_addr = (char*) tgt_addr + gbp_max_size;
-      src_addr_xmit = (char*) src_addr_xmit + gbp_max_size;
-      xmit_size -= gbp_max_size;
+    // Peeling off the remote source misalignment allows us to do a single GET
+    // for the middle chunk on Aries, and if the local target had the same
+    // misalignment we can do this on Gemini too. PostFMA/PostDMA docs:
+    //   "On Gemini systems, GETs require 4-byte alignment for local address,
+    //   remote address, and the length. Aries systems differ in that GETs do
+    //   not require a 4-byte aligned local address."
+    if (local_mr != NULL &&
+       (IS_ALIGNED_32((size_t) (intptr_t) tgt_addr) || nic_type == GNI_DEVICE_ARIES) &&
+        xmit_size > gbp_max_size) {
+      size_t large_xmit_size = ALIGN_32_DN(xmit_size);
+      do_nic_get(tgt_addr, locale, remote_mr, src_addr_xmit, large_xmit_size, local_mr);
+      tgt_addr = (char*) tgt_addr + large_xmit_size;
+      src_addr_xmit = (char*) src_addr_xmit + large_xmit_size;
+      xmit_size -= large_xmit_size;
+    } else {
+      // The middle chunks are all full ones.
+      while (xmit_size > gbp_max_size) {
+        do_nic_get(tgt_addr_xmit, locale, remote_mr,
+                   src_addr_xmit, gbp_max_size, gnr_mreg);
+        memcpy(tgt_addr, tgt_addr_xmit, gbp_max_size);
+        tgt_addr = (char*) tgt_addr + gbp_max_size;
+        src_addr_xmit = (char*) src_addr_xmit + gbp_max_size;
+        xmit_size -= gbp_max_size;
+      }
     }
 
     // In the last chunk chunk we handle length misalignment.
-    do_nic_get(tgt_addr_xmit, locale, remote_mr,
-               src_addr_xmit, xmit_size, gnr_mreg);
-    memcpy(tgt_addr, tgt_addr_xmit, (size + src_addr_xmit_off) % gbp_max_size);
+    if (xmit_size > 0) {
+      do_nic_get(tgt_addr_xmit, locale, remote_mr,
+                 src_addr_xmit, xmit_size, gnr_mreg);
+      memcpy(tgt_addr, tgt_addr_xmit, (size + src_addr_xmit_off) % gbp_max_size);
 
+    }
     get_buf_free(tgt_addr_xmit);
   }
 }
