@@ -1141,19 +1141,12 @@ module DefaultRectangular {
 
     inline proc initShiftedData() {
       if earlyShiftData && !stridable {
-        // Lydia note 11/04/15: a question was raised as to whether this
-        // check on dsiNumIndices added any value.  Performance results
-        // from removing this line seemed inconclusive, which may indicate
-        // that the check is not necessary, but it seemed like unnecessary
-        // work for something with no immediate reward.
-        if dom.dsiNumIndices > 0 {
-          const shiftDist = if isIntType(idxType) then
-                              0:idxType - factoredOffs
-                            else
-                              // Not bothering to check for over/underflow
-                              0:idxSignedType - factoredOffs:idxSignedType;
-          shiftedData = _ddata_shift(eltType, data, shiftDist);
-        }
+        const shiftDist = if isIntType(idxType) then
+                            0:idxType - factoredOffs
+                          else
+                            // Not bothering to check for over/underflow
+                            0:idxSignedType - factoredOffs:idxSignedType;
+        shiftedData = _ddata_shift(eltType, data, shiftDist);
       }
     }
 
