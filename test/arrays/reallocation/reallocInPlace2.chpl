@@ -1,5 +1,8 @@
 record R {
   var x = 42;
+  proc deinit() {
+    writeln("In deinit");
+  }
 }
 var D = {1..10};
 var A: [D] R;
@@ -20,6 +23,6 @@ writeln(A);
 D = {0..21};
 writeln(A);
 
-// this should because the record is POD
+// this should not because it requires the deinit to run
 D = {0..10};
 writeln(A);
