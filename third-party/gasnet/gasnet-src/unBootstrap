@@ -28,6 +28,7 @@ rm -f Makefile.in              \
       smp-conduit/Makefile.in  \
       udp-conduit/Makefile.in  \
       ucx-conduit/Makefile.in  \
+      ucx-conduit/contrib/Makefile.in \
       other/Makefile.in        \
       other/ammpi/Makefile.in  \
       other/amudp/Makefile.in  \

@@ -2,8 +2,8 @@
 GASNet for Chapel release
 =========================
 
-This copy of GASNet-EX 2020.3.0 pre-release (@58e79f0) is being released
-with Chapel for convenience and was obtained from
+This copy of GASNet-EX 2020.3.0 is being released with Chapel for
+convenience and was obtained from
 
   https://gasnet.lbl.gov/
 
@@ -19,9 +19,9 @@ un-tarballed GASNet package contents.  Version updates should be done as
 follows, assuming the CWD is $CHPL_HOME/third-party/gasnet/:
 
 1. un-tarball the new package version into the directory it specifies,
-   for example GASNet-2019.9.0
+   for example GASNet-2020.3.0
 2. git rm -r gasnet-src
-3. mv GASNet-2019.9.0 gasnet-src
+3. mv GASNet-2020.3.0 gasnet-src
 4. git add --force gasnet-src
    ('--force' is needed so that the 'git add' ignores our .gitignore)
 5. commit
