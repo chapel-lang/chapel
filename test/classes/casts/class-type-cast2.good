@@ -1,10 +1,52 @@
 C?
 C
+C?
+C
+owned C?
+owned C
 owned C?
 owned C
 shared C?
 shared C
+shared C?
+shared C
+borrowed C?
+borrowed C
 borrowed C?
 borrowed C
 unmanaged C?
 unmanaged C
+unmanaged C?
+unmanaged C
+{x = 1} : owned C
+ cast to C? -> {x = 1} : owned C?
+{x = 1} : owned C?
+ cast to C -> {x = 1} : owned C
+{x = 1} : owned C?
+ cast to C? -> {x = 1} : owned C?
+{x = 1} : owned C
+ cast to C -> {x = 1} : owned C
+{x = 1} : shared C
+ cast to C? -> {x = 1} : shared C?
+{x = 1} : shared C?
+ cast to C -> {x = 1} : shared C
+{x = 1} : shared C?
+ cast to C? -> {x = 1} : shared C?
+{x = 1} : shared C
+ cast to C -> {x = 1} : shared C
+{x = 1} : borrowed C
+ cast to C? -> {x = 1} : borrowed C?
+{x = 1} : borrowed C?
+ cast to C -> {x = 1} : borrowed C
+{x = 1} : borrowed C?
+ cast to C? -> {x = 1} : borrowed C?
+{x = 1} : borrowed C
+ cast to C -> {x = 1} : borrowed C
+{x = 1} : unmanaged C
+ cast to C? -> {x = 1} : unmanaged C?
+{x = 1} : unmanaged C?
+ cast to C -> {x = 1} : unmanaged C
+{x = 1} : unmanaged C?
+ cast to C? -> {x = 1} : unmanaged C?
+{x = 1} : unmanaged C
+ cast to C -> {x = 1} : unmanaged C

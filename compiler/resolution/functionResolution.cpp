@@ -2742,14 +2742,53 @@ static bool resolveBuiltinCastCall(CallExpr* call)
   if (targetTypeSe && valueSe &&
       targetTypeSe->symbol()->hasFlag(FLAG_TYPE_VARIABLE)) {
 
-    Type* initialTargetType = targetTypeSe->symbol()->getValType();
-
     // Fix types for e.g. cast to generic-management MyClass.
     // This can change the symbols pointed to by targetTypeSe/valueSe.
     adjustClassCastCall(call);
 
     Type* targetType = targetTypeSe->symbol()->getValType();
     Type* valueType = valueSe->symbol()->getValType();
+
+    // handle casts from types
+    if (isTypeExpr(valueSe)) {
+      if (targetType == dtString) {
+        // Handle cast of type to string
+        call->primitive = primitives[PRIM_NOOP];
+        call->baseExpr->remove();
+        if (CallExpr* parentCall = toCallExpr(call->parentExpr)) {
+          if (parentCall->isPrimitive(PRIM_MOVE) ||
+              parentCall->isPrimitive(PRIM_ASSIGN)) {
+            SET_LINENO(call);
+            const char* typeName = toString(valueType);
+            Symbol* typeNameSym = new_StringSymbol(typeName);
+            call->replace(new SymExpr(typeNameSym));
+            parentCall->getStmtExpr()->insertBefore(call);
+          }
+        }
+
+        return true;
+      } else {
+        Type* cSrc = canonicalClassType(valueType);
+        Type* cDst= canonicalClassType(targetType);
+        if (isSubtypeOrInstantiation(cSrc, cDst, call) ||
+            isSubtypeOrInstantiation(cDst, cSrc, call)) {
+          // Handle e.g. owned MyClass:borrowed
+          call->primitive = primitives[PRIM_NOOP];
+          call->baseExpr->remove();
+          if (CallExpr* parentCall = toCallExpr(call->parentExpr)) {
+            if (parentCall->isPrimitive(PRIM_MOVE) ||
+                parentCall->isPrimitive(PRIM_ASSIGN)) {
+              SET_LINENO(call);
+              call->replace(new SymExpr(targetType->symbol));
+              parentCall->getStmtExpr()->insertBefore(call);
+            }
+          }
+          return true;
+        } else {
+          return false;
+        }
+      }
+    }
 
     // If it's a trivial cast, replace it with PRIM_CAST.
     // Trivial casts are those casts that:
@@ -2768,42 +2807,6 @@ static bool resolveBuiltinCastCall(CallExpr* call)
     bool dispatches = canDispatch(valueType, valueSe->symbol(),
                                   targetType, NULL, call->getFunction(),
                                   &promotes, &paramNarrows, paramCoerce);
-
-    if (isTypeExpr(valueSe)) {
-      if (targetType == dtString) {
-        // Handle cast of type to string
-        call->primitive = primitives[PRIM_NOOP];
-        call->baseExpr->remove();
-        if (CallExpr* parentCall = toCallExpr(call->parentExpr)) {
-          if (parentCall->isPrimitive(PRIM_MOVE) ||
-              parentCall->isPrimitive(PRIM_ASSIGN)) {
-            SET_LINENO(call);
-            const char* typeName = toString(valueType);
-            Symbol* typeNameSym = new_StringSymbol(typeName);
-            call->replace(new SymExpr(typeNameSym));
-            parentCall->getStmtExpr()->insertBefore(call);
-          }
-        }
-
-        return true;
-      } else if (isBuiltinGenericClassType(initialTargetType) ||
-                 isManagedPtrType(initialTargetType)) {
-        // Handle e.g. owned MyClass:borrowed
-        call->primitive = primitives[PRIM_NOOP];
-        call->baseExpr->remove();
-        if (CallExpr* parentCall = toCallExpr(call->parentExpr)) {
-          if (parentCall->isPrimitive(PRIM_MOVE) ||
-              parentCall->isPrimitive(PRIM_ASSIGN)) {
-            SET_LINENO(call);
-            call->replace(new SymExpr(targetType->symbol));
-            parentCall->getStmtExpr()->insertBefore(call);
-          }
-        }
-        return true;
-      } else {
-        return false;
-      }
-    }
 
     if (!isRecord(targetType) && !isRecord(valueType) &&
         !is_complex_type(targetType) && !is_complex_type(valueType) &&
@@ -7287,8 +7290,6 @@ static void resolveNewSetupManaged(CallExpr* newExpr, Type*& manager) {
       // the rest of the compiler (e.g. initializer resolution) uses
       // only the canonical class types.
       if (manager) {
-        AggregateType* at = toAggregateType(type);
-
         // if needed, make the manager nilable
         if (makeNilable) {
           if (isManagedPtrType(manager))
@@ -7304,7 +7305,7 @@ static void resolveNewSetupManaged(CallExpr* newExpr, Type*& manager) {
         checkManagerType(manager);
 
         // fail if it's a record
-        if (isRecord(at) && !isManagedPtrType(at))
+        if (isRecord(type) && !isManagedPtrType(type))
           USR_FATAL_CONT(newExpr, "Cannot use new %s with record %s",
                                   toString(manager), toString(type));
         else if (!isClassLikeOrManaged(type))
@@ -7312,28 +7313,27 @@ static void resolveNewSetupManaged(CallExpr* newExpr, Type*& manager) {
                                    toString(manager), toString(type));
 
 
+        Type* initType = type;
+
         // Use the class type inside a owned/shared/etc
         // unless we are initializing Owned/Shared itself
-        if (isManagedPtrType(at) && !isManagedPointerInit(typeExpr)) {
-          Type* subtype = getManagedPtrBorrowType(at);
-          if (isAggregateType(subtype)) // in particular, not dtUnknown
-            at = toAggregateType(subtype);
+        if (isManagedPtrType(type) && !isManagedPointerInit(typeExpr)) {
+          Type* subtype = getManagedPtrBorrowType(type);
+          // rule out dtUnknown
+          if (isAggregateType(subtype) || isDecoratedClassType(subtype))
+            initType = subtype;
         }
 
         // Use the canonical class to simplify the rest of initializer
         // resolution
-        if (DecoratedClassType* mt = toDecoratedClassType(type)) {
-          at = mt->getCanonicalClass();
-        // For records, just ignore the manager
-        // e.g. to support 'new owned MyRecord'
-        } else if (isRecord(at)) {
-          manager = NULL;
+        if (DecoratedClassType* mt = toDecoratedClassType(initType)) {
+          initType = mt->getCanonicalClass();
         }
 
         if (manager) {
-          if (at != type)
+          if (initType != type)
             // Set the type to initialize
-            typeExpr->setSymbol(at->symbol);
+            typeExpr->setSymbol(initType->symbol);
         }
       }
       if (manager == NULL && fWarnUnstable)
