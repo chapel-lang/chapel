@@ -1408,6 +1408,11 @@ static void resolveModuleCall(CallExpr* call) {
         // First, try regular scope resolution
         Symbol* sym = scope->lookupNameLocally(mbrName);
 
+        // Then, try public import statements in the module
+        if (!sym) {
+          sym = scope->lookupPublicImports(mbrName);
+        }
+
         // Adjust class types to undecorated
         if (sym && isClass(sym->type)) {
           // Switch to the CLASS_TYPE_GENERIC_NONNIL decorated class type.

@@ -1,0 +1,1 @@
+no-param-import.chpl:4: error: Can't 'import' without naming a module
