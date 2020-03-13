@@ -232,7 +232,6 @@ module LocaleModel {
         on loc {
           rootLocaleInitialized = false;
           delete loc._instance;
-          printf(c"deleted");
         }
       }
     }

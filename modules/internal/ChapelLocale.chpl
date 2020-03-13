@@ -124,7 +124,8 @@ module ChapelLocale {
         this._instance = defaultLocale._instance;
       }
       else {
-        this._instance = new unmanaged LocaleModel();
+        /*this._instance = new unmanaged LocaleModel();*/
+        this._instance = nil;
       }
     }
 
