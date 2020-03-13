@@ -707,11 +707,6 @@ static bool isStableClassType(Type* t) {
   TypeSymbol* ts = t->symbol;
 
   if (isClass(t)) {
-    // Always consider locale type unmanaged
-    // ENGIN: This never seems to trigger?
-    if (ts->type == dtLocaleClass) {
-      ok = true;
-    }
     // Always consider ddata type unmanaged
     if (ts->hasFlag(FLAG_DATA_CLASS))
       ok = true;

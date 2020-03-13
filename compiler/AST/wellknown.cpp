@@ -188,7 +188,6 @@ void gatherWellKnownTypes() {
     removeIfUndefinedGlobalType(dtString);
     removeIfUndefinedGlobalType(dtBytes);
     removeIfUndefinedGlobalType(dtLocale);
-    removeIfUndefinedGlobalType(dtLocaleClass);
     removeIfUndefinedGlobalType(dtOwned);
     removeIfUndefinedGlobalType(dtShared);
   }

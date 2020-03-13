@@ -46,7 +46,6 @@ AggregateType* dtObject = NULL;
 AggregateType* dtBytes  = NULL;
 AggregateType* dtString = NULL;
 AggregateType* dtLocale = NULL;
-AggregateType* dtLocaleClass = NULL;
 AggregateType* dtOwned  = NULL;
 AggregateType* dtShared = NULL;
 
