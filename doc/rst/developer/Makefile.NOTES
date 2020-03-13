@@ -2,7 +2,7 @@ In recursive Makefile structure...
 
 1) Should leave targets where they are built rather than moving them.
    If the sub-make moves it, the parent Makefile won't know that it has
-   been created.  If parent Makefile moves it, then we have an
+   been created.  If the parent Makefile moves it, then we have an
    ordering problem because it needs to be copied down before other
    subdirectories can refer to it.
 

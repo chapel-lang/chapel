@@ -69,7 +69,7 @@ To represent a smaller integral value as a ``uint``, type conversions
 .. TODO: hyperlink coercions above once that text is written
    
 
-Floating-Point Values
+Floating Point Values
 ---------------------
 
 The ``real`` type supports literal values via either decimal or

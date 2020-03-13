@@ -70,7 +70,7 @@ You can also go between the ID and the node pointer:
   aid(myID)          // gives the AST pointer
 
 The intention is for the IDs to remain the same between different runs
-of the compiler so that you restart the compiler (with the same arguments)
+of the compiler, so that you restart the compiler (with the same arguments)
 to trace the ID you discovered in a previous run. (There are cases when
 IDs change, which should be fixed.)
 

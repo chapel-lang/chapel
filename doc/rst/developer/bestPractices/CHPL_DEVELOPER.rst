@@ -39,7 +39,7 @@ possible.  In particular:
    We should fix this).
 
 5) Turns on ``--devel`` by default when invoking the ``chpl`` compiler.  This
-   in turn, has the following effects:
+   in turn has the following effects:
 
    (a) Prints out ``hidden`` developer flags when invoking ``chpl --help``
        (these flags are equally available to developers and

@@ -121,7 +121,7 @@ initializers for *bitMask*, *size*, and *age*:
 
 One of the nice things about setting ``config`` declarations on the
 compiler's command-line is that the specified value can be an
-arbitrary Chapel expression provided that the compiler can evaluate
+arbitrary Chapel expression, provided that the compiler can evaluate
 it in place of the source-based initialization expression.  Thus, we
 can use more interesting expressions when setting compile-time
 ``config`` values.  For example, the following compiler lines specify
@@ -133,7 +133,7 @@ literals and type names:
   :lines: 5-6
 
 Note the use of quotes in some of the examples above.  These are not
-required by Chapel itself but are used to pass nontrivial expressions
+required by Chapel itself, but are used to pass nontrivial expressions
 through the command-line shell (e.g., **bash**) such that they reach
 Chapel as a single uninterpreted argument.  For example, parenthesis
 have special meaning for many command-shells, so the use of quotes
@@ -145,7 +145,7 @@ beyond the scope of this article.
 
 Setting ``config`` defaults on the compiler's command-line also
 supports more radical alterations to the code.  For example, we
-could change *age* from an integral type to a floating-point type:
+could change *age* from an integral type to a floating point type:
 
 .. literalinclude:: examples/users-guide/base/configs3.execopts-fake
   :language: text

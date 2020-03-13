@@ -186,7 +186,7 @@ immutable variable, such as:
   nor beneficial.
 
 The ways in which a ``param`` value can affect code specialization or
-optimization may seem vague now but should become clearer as we see
+optimization may seem vague now, but should become clearer as we see
 how ``param`` values are used to create generic types and functions,
 to unroll loops, etc.
 

@@ -85,7 +85,7 @@ iterations between them.  Thus, we could write this parallel loop as:
    
 
 In slightly more detail, the number of tasks used to implement a
-forall-loop is determined by its iterand expression(s), in this case,
+forall-loop is determined by its iterand expression(s), in this case
 the array *A*.  As declared here, *A* uses the default implementation
 (*domain map*) which causes it to be allocated locally to the
 compute node on which the active task is running.  The default
