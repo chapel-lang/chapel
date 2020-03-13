@@ -1342,7 +1342,14 @@ module DefaultRectangular {
       on this {
         const allocD = {(...bounds)};
 
-        if (rank == 1 && allocD.low == dom.dsiLow && allocD.stride == dom.dsiStride) {
+        // For now, we'll use realloc for 1D, non-empty arrays when
+        // the low bounds and strides of the old and new domains
+        // match; and when the element type is POD or the array is
+        // growing (i.e.,(doesn't require deinit to be called).
+        if (rank == 1 &&
+            allocD.low == dom.dsiLow && allocD.stride == dom.dsiStride &&
+            dom.dsiNumIndices > 0 && allocD.size > 0 &&
+            (isPODType(eltType) || allocD.size > dom.dsiNumIndices)) {
           if reportInPlaceRealloc then
             writeln("reallocating in-place");
 
