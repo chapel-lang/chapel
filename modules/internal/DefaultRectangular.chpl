@@ -1342,7 +1342,11 @@ module DefaultRectangular {
       on this {
         const allocD = {(...bounds)};
 
-        if (rank == 1 && allocD.low == dom.dsiLow && allocD.stride == dom.dsiStride && dom.dsiNumIndices > 0) {
+        // For now, we'll use realloc for 1D, non-empty arrays when the
+        // old and new low bound and stride match one another
+        if (rank == 1 &&
+            allocD.low == dom.dsiLow && allocD.stride == dom.dsiStride &&
+            dom.dsiNumIndices > 0 && allocD.size > 0) {
           if reportInPlaceRealloc then
             writeln("reallocating in-place");
 
