@@ -1079,7 +1079,7 @@ module ChapelBase {
     // destroy any elements that are going away
     param needsDestroy = __primitive("needs auto destroy",
                                      __primitive("deref", ddata[0]));
-    if oldSize > newSize {
+    if needsDestroy && (oldSize > newSize) {
       forall i in newSize..oldSize-1 do
         chpl__autoDestroy(ddata[i]);
     }
