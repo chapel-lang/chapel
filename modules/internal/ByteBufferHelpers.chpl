@@ -88,10 +88,10 @@ module ByteBufferHelpers {
 
   proc bufferCopyRemote(src_loc_id: int(64), src_addr: bufferType,
                         len: int): bufferType {
-      const dest = chpl_here_alloc(len+1, offset_STR_COPY_REMOTE): bufferType;
-      chpl_string_comm_get(dest, src_loc_id, src_addr, len);
-      dest[len] = 0;
-      return dest;
+      const (dst, allocSize) = bufferAlloc(len+1);
+      chpl_string_comm_get(dst, src_loc_id, src_addr, len);
+      dst[len] = 0;
+      return dst;
   }
 
   inline proc bufferCopyLocal(src_addr: bufferType, len: int) {
