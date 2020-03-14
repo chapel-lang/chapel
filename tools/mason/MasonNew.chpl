@@ -41,7 +41,7 @@ proc masonNew(args) throws {
       var packageName = '';
       var dirName = '';
       var countArgs = args.domain.low + 2;
-      for arg in args[args.domain.low + 2..] {
+      for arg in args[args.domain.low+2..] {
         countArgs += 1;
         select (arg) {
           when '-h' {
@@ -67,13 +67,16 @@ proc masonNew(args) throws {
               packageName = res[2];
             }
             else {
-              if args[countArgs - 2] != "--name" then dirName = arg;
+              if args[countArgs - 2] != '--name' then
+              dirName = arg;
+              if packageName.size == 0 then
+              packageName = arg;
             }
           }
         }
       }
-
-      if validatePackageName(dirName = packageName) {
+      
+      if validatePackageName(dirName=packageName) {
         if isDir(dirName) {
           throw new owned MasonError("A directory named '" + dirName + "' already exists");
         }
