@@ -75,7 +75,7 @@ proc masonNew(args) throws {
           }
         }
       }
-      
+
       if validatePackageName(dirName=packageName) {
         if isDir(dirName) {
           throw new owned MasonError("A directory named '" + dirName + "' already exists");
