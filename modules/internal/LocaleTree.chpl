@@ -28,9 +28,6 @@ module LocaleTree {
 
   record chpl_localeTreeRecord {
     var left, right: locale;
-
-    proc init() {
-    }
   }
 
   pragma "locale private" var chpl_localeTree: chpl_localeTreeRecord;
