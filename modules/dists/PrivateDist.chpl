@@ -83,7 +83,7 @@ class Private: BaseDist {
   proc trackDomains() param return false;
   override proc dsiTrackDomains()    return false;
 
-  proc singleton() param return true;
+  override proc singleton() param return true;
 }
 
 class PrivateDom: BaseRectangularDom {
@@ -127,8 +127,8 @@ class PrivateDom: BaseRectangularDom {
     halt("cannot reassign private domain");
   }
 
-  proc dsiRequiresPrivatization() param return true;
-  proc linksDistribution() param return false;
+  override proc dsiRequiresPrivatization() param return true;
+  override proc linksDistribution() param return false;
   override proc dsiLinksDistribution()     return false;
 
   proc dsiGetPrivatizeData() return 0;
@@ -153,7 +153,7 @@ class PrivateArr: BaseRectangularArr {
 
 override proc PrivateArr.dsiGetBaseDom() return dom;
 
-proc PrivateArr.dsiRequiresPrivatization() param return true;
+override proc PrivateArr.dsiRequiresPrivatization() param return true;
 
 proc PrivateArr.dsiGetPrivatizeData() return 0;
 

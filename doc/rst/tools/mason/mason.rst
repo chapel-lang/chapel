@@ -223,13 +223,15 @@ Here is an example of a ``UnitTest``-based tests:
 
 .. code-block:: chpl
 
-   use UnitTest;
+  use UnitTest;
 
-   config const testParam: bool = true;
+  config const testParam: bool = true;
 
-   proc myTest(test: Test) {
-     test.assertTrue(testParam);
-   }
+  proc myTest(test: borrowed Test) throws{
+    test.assertTrue(testParam);
+  }
+
+  UnitTest.main();
 
 Mason testing that uses ``UnitTest`` will treat each individual function as a
 test, and the test will be considered successful if no assertions failed and no

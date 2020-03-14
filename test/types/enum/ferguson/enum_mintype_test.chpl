@@ -1,4 +1,4 @@
-/* This test makes sure enum_mintype(enumerated type)
+/* This test makes sure enum_mintype(enum type)
    works correctly. This information is used
    in binary I/O of enum values.
    */

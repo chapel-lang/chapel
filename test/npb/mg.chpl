@@ -203,7 +203,7 @@ proc rprj3(S, R) {
 proc interp(R, S) {
   const IDom: domain(3) = {-1..0, -1..0, -1..0};
   const IStn: [(i,j,k) in IDom] domain(3) = {i..0, j..0, k..0};
-  const w: [ijk in IDom] real = 1.0 / IStn.numIndices();
+  const w: [ijk in IDom] real = 1.0 / IStn.size();
 
   const SD = S.Domain(),
         Rstr = R.stride,

@@ -25,7 +25,10 @@
 class CallExpr;
 class DefExpr;
 class Expr;
+class FnSymbol;
+class Symbol;
 class SymExpr;
+class VarSymbol;
 
 bool isSplitInitExpr(Expr* e);
 bool findInitPoints(DefExpr* def,
@@ -36,5 +39,7 @@ bool findInitPoints(CallExpr* defaultInit,
                     std::vector<CallExpr*>& initAssigns,
                     Expr*& usePreventingSplitInit,
                     bool allowReturns);
+
+void elideCopies(FnSymbol* fn);
 
 #endif

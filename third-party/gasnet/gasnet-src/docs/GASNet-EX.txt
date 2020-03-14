@@ -31,9 +31,9 @@
 //
 // This takes the form YEAR.MONTH.PATCH in GASNet-EX releases,
 // providing a clear distinction from GASNet-1 with MAJOR==1.
-#define GASNET_RELEASE_VERSION_MAJOR 2019
-#define GASNET_RELEASE_VERSION_MINOR 9
-#define GASNET_RELEASE_VERSION_PATCH 2
+#define GASNET_RELEASE_VERSION_MAJOR 2020
+#define GASNET_RELEASE_VERSION_MINOR 3
+#define GASNET_RELEASE_VERSION_PATCH 0
 
 // Major and Minor versions of the GASNet-EX specification.
 //
@@ -53,7 +53,7 @@
 //
 // This is the spec version for the GASNet Tools
 #define GASNETT_SPEC_VERSION_MAJOR 1
-#define GASNETT_SPEC_VERSION_MINOR 14
+#define GASNETT_SPEC_VERSION_MINOR 15
 
 //
 // Relationship to GASNet-1 APIs:

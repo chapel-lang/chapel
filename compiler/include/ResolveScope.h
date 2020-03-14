@@ -73,10 +73,14 @@ public:
 
   bool                  extend(VisibilityStmt* stmt);
 
+  Symbol*               lookupForImport(Expr* expr) const;
+
   Symbol*               lookup(Expr*       expr, bool isUse=false)       const;
 
   Symbol*               lookupNameLocally(const char* name,
                                           bool isUse=false)              const;
+
+  Symbol*               lookupPublicImports(const char* name)            const;
 
   // Support for UseStmt with only/except
   // Has the potential to return multiple fields
@@ -135,6 +139,9 @@ private:
 
    bool                 skipUse(UseImportMap&  visited,
                                 const UseStmt* current)                  const;
+
+   Symbol* followImportUseChains(UnresolvedSymExpr* expr) const;
+   Symbol* lookupNameLocallyForImport(const char* name) const;
 
   BaseAST*              mAstRef;
   const ResolveScope*   mParent;

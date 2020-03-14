@@ -11,8 +11,8 @@ record type is associated with only one piece of storage and has only
 one type throughout its lifetime. Storage is allocated for a variable of
 record type when the variable declaration is executed, and the record
 variable is also initialized at that time. When the record variable goes
-out of scope, or at the end of the program if it is a global, it is
-deinitialized and its storage is deallocated.
+out of scope, or at the end of the program if it is declared at module
+scope, it is deinitialized and its storage is deallocated.
 
 A record declaration statement creates a record
 type :ref:`Record_Declarations`. A variable of record type

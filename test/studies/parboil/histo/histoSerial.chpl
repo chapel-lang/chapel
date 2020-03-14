@@ -8,12 +8,12 @@ proc main(args: [] string) {
   var inputFilename: string;
   var outputFilename: string;
   var inputTime, outputTime, computeTime, totalTime: Timer;
-  if args.numElements == 4 {
+  if args.size == 4 {
     inputFilename = args[1];
     outputFilename = args[2];
     numIterations = args[3]:int;
   } else {
-    writeln("num args: ", args.numElements);
+    writeln("num args: ", args.size);
     writeln(args);
     halt("Expected 4 args: a.out infile, outfile, numIterations");
   }

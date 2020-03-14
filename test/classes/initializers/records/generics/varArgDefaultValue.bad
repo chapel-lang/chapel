@@ -1,7 +1,0 @@
-varArgDefaultValue.chpl:18: internal error: MAI-CHE-CKS-nnnn chpl version mmmm
-
-Internal errors indicate a bug in the Chapel compiler ("It's us, not you"),
-and we're sorry for the hassle.  We would appreciate your reporting this bug -- 
-please see https://chapel-lang.org/bugs.html for instructions.  In the meantime,
-the filename + line number above may be useful in working around the issue.
-

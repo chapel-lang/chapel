@@ -500,9 +500,29 @@ static void getVisibleFunctions(const char*           name,
               }
             }
           }
-        } else if (isImportStmt(expr)) {
-          // Don't go into import statements to look for symbols, they only
-          // provide qualified access.
+        } else if (ImportStmt* import = toImportStmt(expr)) {
+          // Only traverse private import statements if we are in the scope
+          // that defines them
+          // If we're not already in a use chain, by definition we can see
+          // private import.  If we're in a use chain, assume that private
+          // imports are not available to us
+          if (!inUseChain || !import->isPrivate) {
+            // Not all import statements define symbols for unqualified access,
+            // traverse into those that do when the name we're seeking is
+            // specified
+            if (import->skipSymbolSearch(name) == false) {
+              SymExpr* se = toSymExpr(import->src);
+
+              INT_ASSERT(se);
+              ModuleSymbol* mod = toModuleSymbol(se->symbol());
+              INT_ASSERT(mod);
+              if (mod->isVisible(call) == true) {
+                getVisibleFunctions(name, call, mod->block, visited, visibleFns,
+                                    true);
+              }
+            }
+          }
+
         } else {
           INT_FATAL("Expected ImportStmt or UseStmt");
         }

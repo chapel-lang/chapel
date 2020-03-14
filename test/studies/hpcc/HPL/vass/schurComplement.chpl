@@ -134,7 +134,7 @@ proc schurComplement(blk) {
   RestByBlkSize = RestLocal by (blkSize, blkSize);
   //showCurrTime("replication; Rest");
 
-  if Rest.numIndices == 0 {
+  if Rest.size == 0 {
     writeln("schurComplement: nothing to do   Rest = ", Rest);
     return;
   }
@@ -252,10 +252,10 @@ proc targetLocalesIndexForAbIndex(param dim, abIx)
 proc setupTargetLocales() {
   var tla: [0..#tl1, 0..#tl2] locale?;
 //  writeln("setting up for ", tl1, "*", tl2, " locales");
-  tld = numLocales >= tla.numElements;
+  tld = numLocales >= tla.size;
   if tld {
-    if numLocales > tla.numElements then
-      writeln("UNUSED LOCALES ", numLocales - tla.numElements);
+    if numLocales > tla.size then
+      writeln("UNUSED LOCALES ", numLocales - tla.size);
     for (l,i) in zip(tla,0..) do l = Locales[i];
   } else {
 writeln("insufficient locales");
@@ -309,7 +309,7 @@ proc computeRequiredN() {
 
 //writeln("n ", nResult, "  nPrev ", nResult - multiple,
 //        "  nUnsquaredReqReal ", nUnsquaredReqReal, "  blkSize ", blkSize,
-//        "  nlocs ", tla.numElements);
+//        "  nlocs ", tla.size);
 
   // verify we computed it well
   assert(nResult > nUnsquaredReq);

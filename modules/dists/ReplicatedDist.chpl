@@ -145,7 +145,7 @@ override proc Replicated.dsiDestroyDist() {
 
 // privatization
 
-proc Replicated.dsiSupportsPrivatization() param return true;
+override proc Replicated.dsiSupportsPrivatization() param return true;
 
 proc Replicated.dsiGetPrivatizeData() {
   if traceReplicatedDist then writeln("Replicated.dsiGetPrivatizeData");
@@ -191,7 +191,7 @@ class ReplicatedDom : BaseRectangularDom {
   // NOTE: if they ever change after the initializer - Reprivatize them
   var localDoms: [dist.targetLocDom] unmanaged LocReplicatedDom(rank, idxType, stridable)?;
 
-  proc numReplicands return localDoms.numElements;
+  proc numReplicands return localDoms.size;
 
   //
   // helper function to get the local domain safely
@@ -240,7 +240,7 @@ override proc ReplicatedDom.dsiMyDist() return dist;
 
 // privatization
 
-proc ReplicatedDom.dsiSupportsPrivatization() param return true;
+override proc ReplicatedDom.dsiSupportsPrivatization() param return true;
 
 record ReplicatedDomPrvData {
   var distpid;
@@ -396,7 +396,7 @@ proc ReplicatedDom.dsiAlignment
 
 // here replication is visible
 proc ReplicatedDom.dsiNumIndices
-  return redirectee().numIndices;
+  return redirectee().size;
 
 proc ReplicatedDom.dsiMember(indexx)
   return redirectee().contains(indexx);
@@ -502,7 +502,7 @@ override proc ReplicatedArr.dsiGetBaseDom() return dom;
 
 // privatization
 
-proc ReplicatedArr.dsiSupportsPrivatization() param return true;
+override proc ReplicatedArr.dsiSupportsPrivatization() param return true;
 
 record ReplicatedArrPrvData {
   var dompid;

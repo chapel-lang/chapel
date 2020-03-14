@@ -111,10 +111,10 @@ proc copyToDF(A:[]) {
 proc setupTargetLocales() {
   var tla: [0..#tl1, 0..#tl2] locale?;
 //  writeln("setting up for ", tl1, "*", tl2, " locales");
-  tld = numLocales >= tla.numElements;
+  tld = numLocales >= tla.size;
   if tld {
-    if numLocales > tla.numElements then
-      writeln("UNUSED LOCALES ", numLocales - tla.numElements);
+    if numLocales > tla.size then
+      writeln("UNUSED LOCALES ", numLocales - tla.size);
     for (l,i) in zip(tla,0..) do l = Locales[i];
   } else {
 writeln("insufficient locales");

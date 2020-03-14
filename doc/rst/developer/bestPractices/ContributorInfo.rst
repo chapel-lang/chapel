@@ -45,6 +45,7 @@ Overview:
 
    #. `Chapel git workflow`_
    #. `Policy details`_
+   #. `Chapel release process`_
 
 
 
@@ -1138,3 +1139,23 @@ runtime, and module code file.  Browse other files of the same type to see the
 required license block.
 
 Additional copyrights may also be applied, as appropriate.
+
+.. _Chapel release process:
+
+Chapel release process
+~~~~~~~~~~~~~~~~~~~~~~
+
+When a Chapel release nears, merging of pull requests is temporarily frozen for
+a few weeks to ensure stability of the release. These freezes come in two
+phases: feature freeze and code/doc freeze.
+
+After feature freeze, only bug fixes and documentation updates will be accepted
+for the upcoming release. After code/doc freeze, no contributions will be
+accepted for the upcoming release, barring critical bug fixes. At some point
+between code/doc freeze and the release, a release branch will be "cut", and
+the master branch will begin accepting all contributions again.
+
+The dates for these freezes will be posted on the `Chapel events page`_
+sometime close to each release.
+
+.. _Chapel events page: https://chapel-lang.org/events.html

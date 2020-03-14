@@ -54,7 +54,7 @@ proc postfix!(A:[]) { var B = for a in A do a!; return B; } //#15080
 proc setupLocales(s1:int, s2:int, ensureManyLocs: bool = false) {
   hd("setupLocales ", s1, "*", s2);
   mylocdom = {0..#s1,0..#s2};
-  manylocs = (numLocales >= mylocs.numElements);
+  manylocs = (numLocales >= mylocs.size);
 
   if manylocs {
     var i = 0;
@@ -65,7 +65,7 @@ proc setupLocales(s1:int, s2:int, ensureManyLocs: bool = false) {
   }
 
   if !manylocs && ensureManyLocs then halt("not enough locales: wanted ",
-    mylocs.numElements, ", got ", numLocales);
+    mylocs.size, ", got ", numLocales);
 
   msg("mylocs");
   msgserial(mylocs);

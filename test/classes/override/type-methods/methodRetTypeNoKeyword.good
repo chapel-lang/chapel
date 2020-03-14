@@ -1,0 +1,2 @@
+methodRetTypeNoKeyword.chpl:19: error: Cat.getBuildingType override keyword required for method matching signature of superclass method
+methodRetTypeNoKeyword.chpl:20: error: Cat.getSelfType override keyword required for method matching signature of superclass method

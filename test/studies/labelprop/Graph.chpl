@@ -31,7 +31,7 @@ module Graph {
       param nid = 1;
       param weight = 2;
 
-      proc numNeighbors()  return ndom.numIndices;
+      proc numNeighbors()  return ndom.size;
 /*
       var firstAvailNeighbor$: [vertex_domain] sync int = initialFirstAvail;
 
@@ -79,7 +79,7 @@ module Graph {
           var edgeCount = firstAvail$.readXX() - 1;
           RemoveDuplicates(1, edgeCount);
           // TODO: ideally if we don't save much memory, do not resize
-          if edgeCount != ndom.numIndices {
+          if edgeCount != ndom.size {
             // statistics: shrinkCount += 1;
             ndom = 1..edgeCount;
           }

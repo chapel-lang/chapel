@@ -5,7 +5,7 @@
 
 config const testBytesDecode = false;
 
-proc createHelp(b: bytes, errors=decodePolicy.strict) throws {
+proc createHelp(b: bytes, param errors=decodePolicy.strict) throws {
   // call the string factory instead of decode to test the interface
   if testBytesDecode {
     return b.decode(errors);
@@ -25,7 +25,7 @@ writeln("Decoded string: ", createHelp(valid_utf8));
 assert(createHelp(valid_utf8) == unicodeStr);
 
 var invalid_utf8 = b"T\xc3\xbc\xffrk\xc3\xa7e"; // \xff is invalid
-const ignoredString = createHelp(invalid_utf8, errors=decodePolicy.ignore);
+const ignoredString = createHelp(invalid_utf8, errors=decodePolicy.drop);
 writeln("String with the ignore policy: ", ignoredString,
         " (length=", ignoredString.numBytes, ")");
 const replacedString = createHelp(invalid_utf8, errors=decodePolicy.replace);
@@ -90,7 +90,7 @@ writeln(createHelp(almostHwairToStringRepl:bytes));
 almostHwairToStringEscp = createHelp(almostHwairValidAscii, decodePolicy.escape);
 writeln("Should be 13: ", almostHwairToStringEscp.numBytes);
 
-var almostHwairToStringIgnr = createHelp(almostHwairValidAscii, decodePolicy.ignore);
+var almostHwairToStringIgnr = createHelp(almostHwairValidAscii, decodePolicy.drop);
 // number of bytes should be 4 -- only the last four must be in the string
 writeln("Should be 4: ", almostHwairToStringIgnr.numBytes);
 

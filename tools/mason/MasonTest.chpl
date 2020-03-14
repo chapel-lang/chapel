@@ -306,7 +306,6 @@ private proc getTests(lock: borrowed Toml, projectHome: string) {
       const t = test.strip().strip('"');
       testNames.append(t);
     }
-    return testNames;
   }
   else if isDir(testPath) {
     var tests = findfiles(startdir=testPath, recursive=true, hidden=false);
@@ -315,7 +314,6 @@ private proc getTests(lock: borrowed Toml, projectHome: string) {
         testNames.append(getTestPath(test));
       }
     }
-    return testNames;
   }
   return testNames;
 }

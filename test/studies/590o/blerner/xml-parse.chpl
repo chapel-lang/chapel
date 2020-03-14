@@ -158,7 +158,7 @@ proc processTag(i,j) {
       parsedElements(i,j) = nil;
       return;
     } else {
-      var curSize = elt.childrenValues.numElements;
+      var curSize = elt.childrenValues.size;
       if curSize == elt.numChildren then
         elt.childrenValueSpace = {1..curSize*2};
       elt.numChildren += 1;

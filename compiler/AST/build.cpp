@@ -550,8 +550,8 @@ BlockStmt* buildUseStmt(std::vector<PotentialRename*>* args, bool privateUse) {
 //
 // Build an 'import' statement
 //
-BlockStmt* buildImportStmt(Expr* mod) {
-  ImportStmt* newImport = new ImportStmt(mod, /* isPrivate =*/ true);
+BlockStmt* buildImportStmt(Expr* mod, bool privateImport) {
+  ImportStmt* newImport = new ImportStmt(mod, privateImport);
   addModuleToSearchList(newImport, mod);
 
   return buildChapelStmt(newImport);
@@ -560,8 +560,8 @@ BlockStmt* buildImportStmt(Expr* mod) {
 //
 // Build an 'import' statement
 //
-BlockStmt* buildImportStmt(Expr* mod, const char* rename) {
-  ImportStmt* newImport = new ImportStmt(mod, rename, /* isPrivate =*/ true);
+BlockStmt* buildImportStmt(Expr* mod, const char* rename, bool privateImport) {
+  ImportStmt* newImport = new ImportStmt(mod, rename, privateImport);
   addModuleToSearchList(newImport, mod);
 
   return buildChapelStmt(newImport);
@@ -1991,10 +1991,15 @@ buildFunctionFormal(FnSymbol* fn, DefExpr* def) {
     return fn;
   ArgSymbol* arg = toArgSymbol(def->sym);
   INT_ASSERT(arg);
+
+  int countFormals = fn->numFormals();
+
   fn->insertFormalAtTail(def);
   if (!strcmp(arg->name, "chpl__tuple_arg_temp")) {
     destructureTupleGroupedArgs(fn, arg->variableExpr, new SymExpr(arg));
     arg->variableExpr = NULL;
+    // append countFormals to the argument name so it is unique
+    arg->name = astr(arg->name, istr(countFormals));
   }
   return fn;
 }

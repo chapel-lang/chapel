@@ -187,9 +187,11 @@ static void checkParallelIterator(FnSymbol* serial, Expr* call,
   CallExpr* repCall = new CallExpr(new UnresolvedSymExpr(serial->name));
 
   // Use the formals of 'serial', for the purposes of resolution.
-  for_formals(formal, serial)
-    repCall->insertAtTail(
-      new NamedExpr(formal->name, createSymExprPropagatingParam(formal)) );
+  for_formals(formal, serial) {
+    if (formal->name != astrTag)
+      repCall->insertAtTail(
+        new NamedExpr(formal->name, createSymExprPropagatingParam(formal)) );
+  }
 
   // Add the tag argument.
   repCall->insertAtTail(new NamedExpr(astrTag, new SymExpr(iterKindTag)));

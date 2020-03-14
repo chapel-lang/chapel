@@ -160,7 +160,7 @@ module ArrayViewSlice {
     // must be (or should be) some way to do it without relying on
     // methods like this...
     //
-    proc isSliceArrayView() param {
+    override proc isSliceArrayView() param {
       return true;
     }
 
@@ -290,7 +290,7 @@ module ArrayViewSlice {
     // them proactively anymore.  If we're not serializing them, then we:
     // Don't want to privatize a DefaultRectangular, so pass the query on to
     // the wrapped array
-    proc dsiSupportsPrivatization() param
+    override proc dsiSupportsPrivatization() param
     {
       if chpl_serializeSlices then return false;
       return _ArrInstance.dsiSupportsPrivatization();
@@ -382,7 +382,7 @@ module ArrayViewSlice {
       return arr._getRCREView();
     }
 
-    proc doiCanBulkTransferRankChange() param {
+    override proc doiCanBulkTransferRankChange() param {
       return arr.doiCanBulkTransferRankChange();
     }
 

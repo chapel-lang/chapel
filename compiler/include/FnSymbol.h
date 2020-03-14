@@ -172,6 +172,7 @@ public:
   bool                       isMethod()                                  const;
   bool                       isMethodOnClass()                           const;
   bool                       isMethodOnRecord()                          const;
+  bool                       isTypeMethod()                              const;
 
   void                       setMethod(bool value);
 

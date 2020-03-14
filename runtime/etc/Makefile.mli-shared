@@ -59,7 +59,8 @@ $(TMPBINNAME): $(CHPL_CL_OBJS) FORCE
 		$(CHPL_RT_INC_DIR) \
 		$(CHPL_MLI_INCS)
 # Invoke the linker to produce a shared library.
-	$(LD) $(CHPL_MAKE_BASE_LFLAGS) $(GEN_LFLAGS) $(COMP_GEN_LFLAGS) \
+	$(LD) $(CHPL_MAKE_BASE_LFLAGS) \
+	        $(COMP_GEN_USER_LDFLAGS) $(GEN_LFLAGS) $(COMP_GEN_LFLAGS) \
 		$(LIB_DYNAMIC_FLAG) \
 		-o $(TMPBINNAME) \
 		$(TMPBINNAME).o $(TMPSERVERNAME)_launcher.o \

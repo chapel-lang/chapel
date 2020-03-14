@@ -597,6 +597,7 @@ proc stringStyleNullTerminated() {
   This method returns the appropriate :record:`iostyle` ``str_style`` value
   to indicate a string format where strings have an exact length.
  */
+pragma "no doc"
 proc stringStyleExactLen(len:int(64)) {
   return len;
 }
@@ -606,6 +607,7 @@ proc stringStyleExactLen(len:int(64)) {
   to indicate a string format where string data is preceded by a variable-byte
   length as described in :type:`iostringstyle`.
  */
+pragma "no doc"
 proc stringStyleWithVariableLength() {
   return iostringstyle.lenVb_data: int(64);
 }
@@ -1566,7 +1568,7 @@ proc file.path : string throws {
     chpl_free_c_string(tmp);
     if !err {
       ret = createStringWithNewBuffer(tmp2,
-                                      errors=decodePolicy.escape);
+                                      policy=decodePolicy.escape);
     }
     chpl_free_c_string(tmp2);
   }
@@ -1668,7 +1670,7 @@ proc open(path:string, mode:iomode, hints:iohints=IOHINT_NONE,
     try ioerror(ENOENT:syserr, "in open: path is the empty string");
 
   error = qio_file_open_access(ret._file_internal,
-                               path.encode(errors=encodePolicy.unescape).c_str(),
+                               path.encode(policy=encodePolicy.unescape).c_str(),
                                _modestring(mode).c_str(), hints, local_style);
   if error then
     try ioerror(error, "in open", path);
@@ -1676,6 +1678,7 @@ proc open(path:string, mode:iomode, hints:iohints=IOHINT_NONE,
   return ret;
 }
 
+pragma "no doc"
 proc openplugin(pluginFile: QioPluginFile, mode:iomode,
                 seekable:bool, style:iostyle) throws {
   import HaltWrappers;
@@ -1721,32 +1724,13 @@ proc openplugin(pluginFile: QioPluginFile, mode:iomode,
       } else {
         // doesn't throw with decodePolicy.replace
         path = createStringWithNewBuffer(str, len,
-                                         errors=decodePolicy.replace);
+                                         policy=decodePolicy.replace);
       }
     }
 
     try ioerror(err, "in openplugin", path);
   }
 
-  return ret;
-}
-
-// documented in open() throws version
-pragma "no doc"
-proc open(out error:syserr, path:string="",
-          mode:iomode, hints:iohints=IOHINT_NONE,
-          style:iostyle = defaultIOStyle()):file {
-  compilerWarning("This version of open() is deprecated; " +
-                  "please switch to a throwing version");
-  error = ENOERR;
-  var ret: file;
-  try {
-    ret = open(path, mode, hints, style);
-  } catch e: SystemError {
-    error = e.err;
-  } catch {
-    error = EINVAL;
-  }
   return ret;
 }
 
@@ -1795,7 +1779,7 @@ proc openfd(fd: fd_t, hints:iohints=IOHINT_NONE, style:iostyle = defaultIOStyle(
     var path_err = qio_file_path_for_fd(fd, path_cs);
     var path = if path_err then "unknown"
                            else createStringWithNewBuffer(path_cs,
-                                                          errors=decodePolicy.replace);
+                                                          policy=decodePolicy.replace);
     try ioerror(err, "in openfd", path);
   }
   return ret;
@@ -1838,7 +1822,7 @@ proc openfp(fp: _file, hints:iohints=IOHINT_NONE, style:iostyle = defaultIOStyle
     var path_err = qio_file_path_for_fp(fp, path_cs);
     var path = if path_err then "unknown"
                            else createStringWithNewBuffer(path_cs,
-                                                          errors=decodePolicy.replace);
+                                                          policy=decodePolicy.replace);
     chpl_free_c_string(path_cs);
     try ioerror(err, "in openfp", path);
   }
@@ -2168,7 +2152,7 @@ proc channel._ch_ioerror(error:syserr, msg:string) throws {
     if !err {
       // shouldn't throw
       path = createStringWithNewBuffer(tmp_path,
-                                       errors=decodePolicy.replace);
+                                       policy=decodePolicy.replace);
       chpl_free_c_string(tmp_path);
       offset = tmp_offset;
     }
@@ -2188,7 +2172,7 @@ proc channel._ch_ioerror(errstr:string, msg:string) throws {
     if !err {
       // shouldn't throw
       path = createStringWithNewBuffer(tmp_path,
-                                       errors=decodePolicy.replace);
+                                       policy=decodePolicy.replace);
       chpl_free_c_string(tmp_path);
       offset = tmp_offset;
     }
@@ -2843,6 +2827,10 @@ private proc _write_text_internal(_channel_internal:qio_channel_ptr_t,
   } else if t == string {
     // handle string
     const local_x = x.localize();
+    // check if the string has escapes
+    if local_x.hasEscapes {
+      return EILSEQ;
+    }
     return qio_channel_print_string(false, _channel_internal, local_x.c_str(), local_x.numBytes:ssize_t);
   } else if t == bytes {
     // handle bytes
@@ -3006,6 +2994,10 @@ private inline proc _write_binary_internal(_channel_internal:qio_channel_ptr_t, 
     return err;
   } else if t == string {
     var local_x = x.localize();
+    // check if the string has escapes
+    if local_x.hasEscapes {
+      return EILSEQ;
+    }
     return qio_channel_write_string(false, byteorder:c_int, qio_channel_str_style(_channel_internal), _channel_internal, local_x.c_str(), local_x.numBytes: ssize_t);
   } else if t == bytes {
     var local_x = x.localize();
@@ -3060,7 +3052,11 @@ proc channel._writeOne(param kind: iokind, const x:?t, loc:locale?) throws {
   var err = _write_one_internal(_channel_internal, kind, x, loc);
 
   if err != ENOERR {
-    const msg = _constructIoErrorMsg(kind, x);
+    var msg = _constructIoErrorMsg(kind, x);
+    if err == EILSEQ {
+      msg = "Strings with escaped non-UTF8 bytes cannot be used with I/O. " +
+            "Try using string.encode(encodePolicy.unescape) first." + msg;
+    }
     try _ch_ioerror(err, msg);
   }
 }
@@ -3502,7 +3498,7 @@ proc stringify(const args ...?k):string {
         //decodePolicy.replace never throws
         try! {
           str += createStringWithNewBuffer(args[i],
-                                           errors=decodePolicy.replace);
+                                           policy=decodePolicy.replace);
         }
       } else if args[i].type == bytes {
         //decodePolicy.replace never throws
@@ -4249,18 +4245,21 @@ const stdout:channel(true, iokind.dynamic, true) = stdoutInit();
 /* standard error, otherwise known as file descriptor 2 */
 const stderr:channel(true, iokind.dynamic, true) = stderrInit();
 
+pragma "no doc"
 proc stdinInit() {
   try! {
     return openfd(0).reader();
   }
 }
 
+pragma "no doc"
 proc stdoutInit() {
   try! {
     return openfp(chpl_cstdout()).writer();
   }
 }
 
+pragma "no doc"
 proc stderrInit() {
   try! {
     return openfp(chpl_cstderr()).writer();
@@ -4431,7 +4430,7 @@ proc file.localesForRegion(start:int(64), end:int(64)) {
     }
 
     // We found no "good" locales. So any locale is just as good as the next
-    if ret.numIndices == 0 then
+    if ret.size == 0 then
       for loc in Locales do
         ret += loc;
   }
