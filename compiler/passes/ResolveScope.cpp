@@ -48,6 +48,7 @@
 #include "ImportStmt.h"
 #include "LoopExpr.h"
 #include "scopeResolve.h"
+#include "stmt.h"
 
 ResolveScope* rootScope;
 
@@ -824,6 +825,26 @@ Symbol* ResolveScope::lookupNameLocally(const char* name, bool isUse) const {
     // don't consider top-level modules to be visible unless this is a use
     if (toModuleSymbol(sym) == NULL || this != rootScope || isUse) {
       retval = sym;
+    }
+  }
+
+  return retval;
+}
+
+Symbol* ResolveScope::lookupPublicImports(const char* name) const {
+  UseImportList useImportList = mUseImportList;
+  Symbol *retval = NULL;
+
+  for_vector_allowing_0s(VisibilityStmt, visStmt, useImportList) {
+    if (ImportStmt *is = toImportStmt(visStmt)) {
+      if (!is->isPrivate) {
+        if (Symbol *importSym = visStmt->checkIfModuleNameMatches(name)) {
+          if (isModuleSymbol(importSym)) {
+            retval = importSym;
+            break;
+          }
+        }
+      }
     }
   }
 

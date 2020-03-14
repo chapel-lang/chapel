@@ -669,9 +669,8 @@ use_stmt:
 ;
 
 import_stmt:
-  TIMPORT expr TSEMI { $$ = buildImportStmt($2); }
-| TIMPORT expr TAS ident_use TSEMI
-  { $$ = buildImportStmt($2, $4); }
+  use_access_control TIMPORT expr TSEMI { $$ = buildImportStmt($3, $1); }
+| use_access_control TIMPORT expr TAS ident_use TSEMI { $$ = buildImportStmt($3, $5, $1); }
 ;
 
 require_stmt:
