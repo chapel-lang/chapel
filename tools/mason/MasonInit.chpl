@@ -57,23 +57,18 @@ proc masonInit(args) throws {
         }
         when '--name' {
           packageName = args[countArgs];
-          dirName = args[2];
         }
         otherwise {
           if arg.startsWith('--name=') {
             var res = arg.split("=");
             packageName = res[2];
-            dirName = args[2];
           }
-          if packageName.size == 0 then {
-            dirName = arg;
-            packageName = dirName;
+          else {
+            if args[countArgs - 2] != "--name" then dirName = arg;
           }
         }
       }
     }
-
-    if dirName.startsWith('--name') then dirName = '';
     
     if dirName == '' {
       const cwd = getEnv("PWD");
