@@ -321,7 +321,9 @@ module TomlParser {
               skipNext(source);
             }
             else if comment.match(top(source)) {
-              skipLine(source);
+              while top(source) != "\n" {
+                skipNext(source);
+              }
             }
             else {
               var toParse = parseValue();
@@ -399,7 +401,9 @@ module TomlParser {
         }
         // Comments within arrays
         else if val == '#' {
-          skipLine(source);
+          while top(source) != "\n" {
+            skipNext(source);
+          }
           return parseValue();
         }
         else if corner.match(val) {
