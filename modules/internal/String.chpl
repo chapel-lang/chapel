@@ -185,7 +185,7 @@ module String {
 
   pragma "no doc"
   record __serializeHelper {
-    var len       : int;
+    var buffLen       : int;
     var buff      : bufferType;
     var size      : int;
     var locale_id : chpl_nodeID.type;
@@ -462,10 +462,10 @@ module String {
     return x != 0;
   // End index arithmetic support
 
-  private proc validateEncoding(buff, len) throws {
-    extern proc chpl_enc_validate_buf(buff, len) : c_int;
+  private proc validateEncoding(buf, len) throws {
+    extern proc chpl_enc_validate_buf(buf, len) : c_int;
 
-    if chpl_enc_validate_buf(buff, len) != 0 {
+    if chpl_enc_validate_buf(buf, len) != 0 {
       throw new DecodeError();
     }
   }
@@ -871,7 +871,7 @@ module String {
           this.buffSize = size;
         }
       } else {
-        // If s_len is 0, 'buff' may still have been allocated. Regardless, we
+        // If s_len is 0, 'buf' may still have been allocated. Regardless, we
         // need to free the old buffer if 'this' is isOwned.
         if this.isOwned && !this.isEmpty() then bufferFree(this.buff);
         this.buffSize = 0;
@@ -996,7 +996,7 @@ module String {
         return createBytesWithNewBuffer(localThis.buff, localThis.numBytes);
       }
       else {  // see if there is escaped data in the string
-        var (buff, size) = bufferAlloc(this.buffLen+1);
+        var (buff, size) = bufferAlloc(this.len+1);
 
         var readIdx = 0;
         var writeIdx = 0;
@@ -1016,11 +1016,11 @@ module String {
             // at this point this can only happen due to a failure in our
             // implementation of string encoding/decoding
             // simply copy the data out
-            bufferMemcpyLocal(dst=(buff+writeIdx), src=multibytes,buffLen=nbytes);
+            bufferMemcpyLocal(dst=(buff+writeIdx), src=multibytes, buffLen=nbytes);
             writeIdx += nbytes;
           }
           else {
-            bufferMemcpyLocal(dst=(buff+writeIdx), src=multibytes, buffLen=nbytes);
+            bufferMemcpyLocal(dst=(buff+writeIdx), src=multibytes, len=nbytes);
             writeIdx += nbytes;
           }
           readIdx += nbytes;
@@ -1101,7 +1101,7 @@ module String {
     iter chpl_bytes(): byteType {
       var localThis: string = this.localize();
 
-      for i in 0..#localThis.buffLen {
+      for i in 0..#localThis.len {
         yield localThis.buff[i];
       }
     }
@@ -1244,7 +1244,7 @@ module String {
      */
     proc this(i: byteIndex) : string {
       var idx = i: int;
-      if boundsChecking && (idx <= 0 || idx > this.buffLen)
+      if boundsChecking && (idx <= 0 || idx > this.len)
         then halt("index out of bounds of string: ", idx);
 
       var ret: string;
@@ -1252,8 +1252,8 @@ module String {
       if maxbytes < 0 || maxbytes > 4 then
         maxbytes = 4;
       var (newBuff, allocSize) = bufferCopy(buf=this.buff, off=idx-1,
-                                            buffLen=maxbytes, loc=this.locale_id);
-      ret.buffSize = allocSize;
+                                            len=maxbytes, loc=this.locale_id);
+      ret._size = allocSize;
       ret.buff = newBuff;
       ret.isOwned = true;
 
