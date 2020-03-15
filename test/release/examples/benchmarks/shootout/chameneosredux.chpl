@@ -64,8 +64,8 @@ record Population {
   // an array of chameneos objects representing the population
   //
   var chameneos = [i in 1..size]
-                   new owned Chameneos?(i, if size == 10 then colors10[i]
-                                                         else ((i-1)%3): Color);
+                   new Chameneos?(i, if size == 10 then colors10[i]
+                                                   else ((i-1)%3): Color);
 
   //
   // Print the colors of the current population.
