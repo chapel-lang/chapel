@@ -106,6 +106,9 @@ proc masonTest(args) throws {
     }
   }
 
+  getRuntimeComm();
+  var uargs: list(string);
+  if !update then uargs.append('--no-update');
   try! {
     const cwd = getEnv("PWD");
     const projectHome = getProjectHome(cwd);
@@ -136,19 +139,32 @@ proc masonTest(args) throws {
         compopts.append(subString);
       }
     }
-  }
 
-  getRuntimeComm();
-  var uargs: list(string);
-  if !update then uargs.append('--no-update');
-  try! {
-    const cwd = getEnv("PWD");
-    const projectHome = getProjectHome(cwd);
     UpdateLock(uargs);
     compopts.append("".join("--comm=",comm));
     runTests(show, run, parallel, compopts);
   }
   catch e: MasonError {
+    try! {
+      var testNames: list(string);
+
+      if isDir('.'){
+        var tests = findfiles(startdir='.', recursive=subdir);
+        for test in tests {
+          if test.endsWith(".chpl") {
+            testNames.append(test);
+          }
+        }
+      }
+
+      for subString in searchSubStrings {
+        for testName in testNames {
+          if testName.find(subString) != 0 {
+            files.append(testName);
+          }
+        }
+      }
+    }
     runUnitTest(compopts, show);
   }
 }
