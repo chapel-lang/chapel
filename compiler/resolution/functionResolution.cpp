@@ -3545,11 +3545,27 @@ static void resolveNormalCallConstRef(CallExpr* call) {
   }
 }
 
-static Type* getArrayElementType(AggregateType* arrayType) {
-  Type* instType = arrayType->getField("_instance")->type;
-  AggregateType* instClass = toAggregateType(canonicalClassType(instType));
-  Type* eltType = instClass->getField("eltType")->getValType();
+// Returns the element type, given an array type.
+// Recurse into it if it is still an array.
+static Type* finalArrayElementType(AggregateType* arrayType) {
+  Type* eltType = NULL;
+  do {
+    Type* instType = arrayType->getField("_instance")->type;
+    AggregateType* instClass = toAggregateType(canonicalClassType(instType));
+    eltType = instClass->getField("eltType")->getValType();
+    arrayType = toAggregateType(eltType);
+  } while
+    (arrayType != NULL && arrayType->symbol->hasFlag(FLAG_ARRAY));
+    
   return eltType;
+}
+
+// Is it OK to defalt-initialize an array with this element type?
+// Once #14854 is resolved, this should be simply
+//   isDefaultInitializeable(eltType)
+static bool okForDefaultInitializedArray(Type* eltType) {
+  // Exclude locales. Remove this exception once #15149 is merged.
+  return eltType == dtLocale || ! isNonNilableClassType(eltType);
 }
 
 // Is 'actualSym' passed to an assignment (a 'proc =') ?
@@ -3605,7 +3621,7 @@ static void checkDefaultNonnilableArrayArg(CallExpr* call, FnSymbol* fn) {
          ! formal->hasFlag(FLAG_UNSAFE))
       if (AggregateType* actualType = toAggregateType(actualSym->getValType()))
        if (actualType->symbol->hasFlag(FLAG_ARRAY) &&
-           isNonNilableClassType(getArrayElementType(actualType)))
+           ! okForDefaultInitializedArray(finalArrayElementType(actualType)))
         //
         // Acceptable handling of the default actual is this:
         //   def default_arg_xxx: _array(...)
@@ -3621,7 +3637,7 @@ static void checkDefaultNonnilableArrayArg(CallExpr* call, FnSymbol* fn) {
          USR_FATAL_CONT(call, "cannot default-initialize the array field"
                         " %s because it has a non-nilable element type '%s'",
                         userFieldNameForError(actualSym),
-                        toString(getArrayElementType(actualType), true));
+                        toString(finalArrayElementType(actualType), true));
 }
 
 static void resolveNormalCallFinalChecks(CallExpr* call) {
@@ -9997,8 +10013,8 @@ void lowerPrimInit(CallExpr* call, Expr* preventingSplitInit) {
 
     INT_ASSERT(val->type != dtUnknown && val->type != dtAny);
     if (name != NULL) {
-      Type* eltType = getArrayElementType(toAggregateType(val->type));
-      if (isNonNilableClassType(eltType))
+      Type* eltType = finalArrayElementType(toAggregateType(val->type));
+      if (! okForDefaultInitializedArray(eltType))
         USR_FATAL_CONT(call, "cannot default-initialize the array %s"
                        " because it has a non-nilable element type '%s'",
                        name, toString(eltType));
