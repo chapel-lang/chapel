@@ -296,10 +296,18 @@ producing the following output::
   -----> 1 Passed
   -----> 0 Failed
 
-Specific tests can be run using
-``mason test test/test1.chpl test/test2.chpl`` or by using substring filter as
-``mason test test1 test2``.
-While using substring filter, Mason will run all the tests found in ``test/`` with ``test1`` and ``test2`` in its name.
+Specific tests can be run by listing their names or substrings of their names as command line arguments:
+
+.. code-block:: sh
+
+    # Run these specific tests:
+    mason test test/test1.chpl test/test2.chpl
+    # Run any test file with 'test1' or 'test2' in the name
+    mason test test1 test2
+    # Run any test file with the '1' in the name
+    mason test 1
+
+Specifying tests to run in the command line ignores the list of tests in `Mason.toml`, and searches all files in `test/`.
 
 Additional output can be displayed by throwing the ``--show flag``.
 
