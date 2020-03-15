@@ -230,7 +230,7 @@ module Random {
 
   pragma "no doc"
   /* Actual implementation of choice() */
-  proc _choice(stream, X: domain, size:?sizeType, replace, prob:?probType)
+  proc _choice(stream, X: domain, stride: int, low: int, size:?sizeType, replace, prob:?probType)
     throws
   {
 
@@ -251,9 +251,12 @@ module Random {
         compilerError('choice() prob array must be 1 dimensional');
       }
 
+      //Commenting out for now, as X is domain of reindexed array.
+      /*
       if prob.domain != X {
         throw new owned IllegalArgumentError('choice() prob array arguments must have similar domain');
       }
+      */
     }
 
     if !isNothingType(sizeType) {
@@ -273,22 +276,22 @@ module Random {
     }
 
     if isNothingType(probType) {
-      return _choiceUniform(stream, X, size, replace);
+      return _choiceUniform(stream, X, stride, low, size, replace);
     } else {
-      return _choiceProbabilities(stream, X, size, replace, prob);
+      return _choiceProbabilities(stream, X, stride, low, size, replace, prob);
     }
   }
 
   pragma "no doc"
   /* _choice branch for uniform distribution */
-  proc _choiceUniform(stream, X:domain, size:?sizeType, replace) throws
+  proc _choiceUniform(stream, X:domain, stride:int, low:int, size:?sizeType, replace) throws
   {
 
     if isNothingType(sizeType) {
       // Return 1 sample
       var randVal = stream.getNext(resultType=int, 1, X.size);
       var randIdx = X.dim(1).indexOrder(randVal);
-      return randIdx + 1;
+      return randIdx * stride + low;
     } else {
       // Return numElements samples
 
@@ -307,13 +310,13 @@ module Random {
         for sample in samples {
           var randVal = stream.getNext(resultType=int, 1, X.size);
           var randIdx = X.dim(1).indexOrder(randVal);
-          sample = randIdx+1;
+          sample = randIdx * stride + low;
         }
       } else {
         var indices: [X] int = X;
         shuffle(indices);
         for i in samples.domain {
-          samples[i] = indices[i];
+          samples[i] = (indices[i]-1) * stride + low;
         }
       }
       if isIntegralType(sizeType) {
@@ -326,14 +329,16 @@ module Random {
 
   pragma "no doc"
   /* _choice branch for distribution defined by probabilities array */
-  proc _choiceProbabilities(stream, X:domain, size:?sizeType, replace, prob:?probType) throws
+  proc _choiceProbabilities(stream, X:domain, stride:int, low:int, size:?sizeType, replace, prob:?probType) throws
   {
     import Search;
     import Sort;
 
     // If stride, offset, or size don't match, we're in trouble
+    /*
     if X != prob.domain then
       throw new owned IllegalArgumentError('choice() prob array must have similar domain');
+      */
 
     if prob.size == 0 then
       throw new owned IllegalArgumentError('choice() array cannot be empty');
@@ -359,7 +364,7 @@ module Random {
       // Return 1 sample
       var randNum = stream.getNext(resultType=real);
       var (found, idx) = Search.binarySearch(cumulativeArr, randNum);
-      return idx;
+      return (idx-1) * stride + low;
     } else {
       // Return numElements samples
 
@@ -378,7 +383,7 @@ module Random {
         for sample in samples {
           var randNum = stream.getNext(resultType=real);
           var (found, idx) = Search.binarySearch(cumulativeArr, randNum);
-          sample = idx;
+          sample = (idx-1) * stride + low;
         }
       } else {
         var indicesChosen: domain(int);
@@ -399,7 +404,7 @@ module Random {
             var (found, indexChosen) = Search.binarySearch(cumulativeArr, randNum);
             if !indicesChosen.contains(indexChosen) {
               indicesChosen += indexChosen;
-              samples[i] = indexChosen;
+              samples[i] = (indexChosen-1) * stride + low;
               i += 1;
             }
             P[indexChosen] = 0;
@@ -987,8 +992,11 @@ module Random {
       proc choice(arr: [], size:?sizeType=none, replace=true, prob:?probType=none)
         throws
       {
-        var X = arr.domain;
-        return _choice(this, X, size=size, replace=replace, prob=prob);
+        var A = arr.reindex(1..arr.size);
+        const low = arr.domain.alignedLow,
+              stride = abs(arr.domain.stride);
+        var X = A.domain;
+        return _choice(this, X, stride=stride, low=low, size=size, replace=replace, prob=prob);
       }
 
       /*
@@ -1019,13 +1027,15 @@ module Random {
                                    if ``size < 1 || size.size < 1``,
                                    if ``replace=false`` and ``size > rng.size || size.size > rng.size``
      */
-      proc choice(rng: range, size:?sizeType=none, replace=true, prob:?probType=none)
+     /*
+      proc choice(rng: range(stridable=true), size:?sizeType=none, replace=true, prob:?probType=none)
         throws
       {
-        var X: domain(1) = {rng};
-        return _choice(this, X, size=size, replace=replace, prob=prob);
+        var A: domain(1,stridable=true) = {rng};
+        var VarArr: [A] int = [i in A] i;
+        return choice(VarArr, size=size, replace=replace, prob=prob);
       }
-
+      */
       /* Randomly shuffle a 1-D array. */
       proc shuffle(arr: [?D] ?eltType ) {
 
