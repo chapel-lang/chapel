@@ -66,6 +66,32 @@ ImportStmt::ImportStmt(BaseAST* source, const char* rename,
   gImportStmts.add(this);
 }
 
+ImportStmt::ImportStmt(BaseAST* source, bool isPrivate,
+                       std::vector<const char*>* namesList):
+  VisibilityStmt(E_ImportStmt) {
+
+  this->isPrivate = isPrivate;
+  this->modRename = astr("");
+  if (Symbol* b = toSymbol(source)) {
+    src = new SymExpr(b);
+
+  } else if (Expr* b = toExpr(source)) {
+    src = b;
+
+  } else {
+    INT_FATAL(this, "Bad mod in ImportStmt constructor");
+  }
+
+  if (namesList->size() > 0) {
+    // Symbols to enable unqualified access to
+    for_vector(const char, str, *namesList) {
+      unqualified.push_back(str);
+    }
+  }
+
+  gImportStmts.add(this);
+}
+
 ImportStmt* ImportStmt::copyInner(SymbolMap* map) {
   ImportStmt* _this = new ImportStmt(COPY_INT(src), modRename, isPrivate);
 
