@@ -7353,6 +7353,17 @@ static void resolveNewSetupManaged(CallExpr* newExpr, Type*& manager) {
       if (manager == NULL && fWarnUnstable)
         // Generate an error on 'new MyClass' with fWarnUnstable
         handleUnstableNewError(newExpr, type);
+
+      if (manager == dtBorrowed && fWarnUnstable) {
+        Type* ct = canonicalClassType(type);
+        USR_WARN(newExpr, "new borrowed %s is unstable", ct->symbol->name);
+        USR_PRINT(newExpr, "use 'new unmanaged %s' "
+                           "'new owned %s' or "
+                           "'new shared %s'",
+                           ct->symbol->name,
+                           ct->symbol->name,
+                           ct->symbol->name);
+      }
     }
   }
 }
@@ -7361,10 +7372,8 @@ static void handleUnstableNewError(CallExpr* newExpr, Type* newType) {
   if (isUndecoratedClassNew(newExpr, newType)) {
     USR_WARN(newExpr, "new %s is unstable", newType->symbol->name);
     USR_PRINT(newExpr, "use 'new unmanaged %s' "
-                       "'new owned %s' "
-                       "'new shared %s' or "
-                       "'new borrowed %s'",
-                       newType->symbol->name,
+                       "'new owned %s' or "
+                       "'new shared %s'",
                        newType->symbol->name,
                        newType->symbol->name,
                        newType->symbol->name);
