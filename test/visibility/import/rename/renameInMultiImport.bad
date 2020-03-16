@@ -1,0 +1,1 @@
+renameInMultiImport.chpl:6: error: cannot rename symbols 'import'ed for unqualified access
