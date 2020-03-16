@@ -570,7 +570,8 @@ BlockStmt* buildImportStmt(Expr* mod, const char* rename, bool privateImport) {
 //
 // Build an 'import' statement
 //
-BlockStmt* buildImportStmt(Expr* mod, std::vector<PotentialRename*>* names) {
+BlockStmt* buildImportStmt(Expr* mod, std::vector<PotentialRename*>* names,
+                           bool privateImport) {
   std::vector<const char*> namesList;
 
   // Iterate through the list of names for unqualified access
@@ -578,6 +579,11 @@ BlockStmt* buildImportStmt(Expr* mod, std::vector<PotentialRename*>* names) {
     switch (listElem->tag) {
       case PotentialRename::SINGLE:
         if (UnresolvedSymExpr* name = toUnresolvedSymExpr(listElem->elem)) {
+          if (!privateImport) {
+            USR_FATAL(name, "unable to apply 'public' to this style of "
+                      "'import' at this time");
+          }
+
           namesList.push_back(name->unresolved);
         } else {
           USR_FATAL(listElem->elem, "incorrect expression in 'import' for "
