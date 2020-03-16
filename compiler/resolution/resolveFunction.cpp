@@ -2246,14 +2246,15 @@ static void insertCasts(BaseAST* ast, FnSymbol* fn, Vec<CallExpr*>& casts) {
               bool involvesRuntimeType = false;
               {
                 Type* t1 = fromTypeExpr->getValType();
-                Type* t2 = fromExpr->getValType();
+                //Type* t2 = fromExpr->getValType();
 
                 involvesRuntimeType =
-                  t1->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE) ||
-                  t2->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE);
+                  t1->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE);
+                // || t2->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE);
               }
 
-              bool useAssign = involvesRuntimeType;
+              bool useCoerceCall = involvesRuntimeType;
+              bool useAssign = involvesRuntimeType && !useCoerceCall;
 
               // Use assign (to get error) if coercion isn't normally
               // allowed between these types.
@@ -2269,6 +2270,7 @@ static void insertCasts(BaseAST* ast, FnSymbol* fn, Vec<CallExpr*>& casts) {
                 useAssign = true;
               }
 
+
               // Check that lhsType == the result of coercion
               INT_ASSERT(lhsType == rhsCall->typeInfo());
 
@@ -2277,7 +2279,7 @@ static void insertCasts(BaseAST* ast, FnSymbol* fn, Vec<CallExpr*>& casts) {
               // types are the same until runtime (at least without
               // some better smarts in the compiler).
 
-              if (!typesDiffer && !useAssign) {
+              if (!typesDiffer && !useAssign && !useCoerceCall) {
                 // types are the same. remove coerce and
                 // handle reference level adjustments. No cast necessary.
 
@@ -2301,6 +2303,29 @@ static void insertCasts(BaseAST* ast, FnSymbol* fn, Vec<CallExpr*>& casts) {
                 if (toResolve) resolveExpr(toResolve);
 
                 casts.add(move);
+
+              } else if (useCoerceCall) {
+
+                INT_ASSERT(!to->isRef());
+                bool stealRHS = from->hasFlag(FLAG_TEMP) &&
+                                !from->hasFlag(FLAG_INSERT_AUTO_DESTROY) &&
+                                !from->isRef();
+
+                CallExpr* callCoerceFn = new CallExpr("chpl__coerce",
+                                                      fromType,
+                                                      from,
+                                                      stealRHS?gTrue:gFalse);
+
+                CallExpr* move = new CallExpr(PRIM_MOVE, to, callCoerceFn);
+
+                call->insertBefore(move);
+
+                // Resolve each of the new CallExprs They need to be resolved
+                // separately since resolveExpr does not recurse.
+                resolveExpr(callCoerceFn);
+                resolveExpr(move);
+
+                call->remove();
 
               } else if (useAssign) {
 
@@ -2333,13 +2358,6 @@ static void insertCasts(BaseAST* ast, FnSymbol* fn, Vec<CallExpr*>& casts) {
                 // separately since resolveExpr does not recurse.
                 resolveExpr(init);
                 resolveExpr(assign);
-
-                // Enable error messages assignment between local
-                // and distributed domains. It would be better if this
-                // could be handled by some flavor of initializer.
-                CallExpr* check = new CallExpr("chpl_checkCopyInit", to, from);
-                call->insertBefore(check);
-                resolveExpr(check);
 
                 // We've replaced the move with no-init/assign, so remove it.
                 call->remove();

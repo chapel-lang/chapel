@@ -2407,8 +2407,6 @@ module ChapelBase {
     return x;
   }
 
-  proc chpl_checkCopyInit(lhs, rhs) param { }
-
   proc enumerated type {
     compilerWarning("'enumerated' is deprecated - please use 'enum' instead");
     return enum;

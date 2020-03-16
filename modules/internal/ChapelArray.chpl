@@ -3579,9 +3579,21 @@ module ChapelArray {
     return isRangeTuple(t) && d.rank == t.size && strideSafe(d, t);
   }
 
-  proc =(ref d: domain, rt: _tuple) where chpl__isLegalRectTupDomAssign(d, rt) {
-    d = {(...rt)};
+  proc =(ref a: domain, b: _tuple) {
+    if chpl__isLegalRectTupDomAssign(a, b) {
+      a = {(...b)};
+    } else {
+      a.clear();
+      for ind in 1..b.size {
+        a.add(b(ind));
+      }
+    }
   }
+
+  proc =(ref d: domain, r: range(?)) {
+    d = {r};
+  }
+
 
   proc =(ref a: domain, b) {  // b is iteratable
     if isRectangularDom(a) then
@@ -3826,7 +3838,7 @@ module ChapelArray {
     if a.rank == 1 then
       chpl__transferArray(a, b);
     else
-      compilerError("cannot from ranges to multidimensional arrays");
+      compilerError("cannot assign from ranges to multidimensional arrays");
   }
 
   inline proc =(ref a: [], b) /* b is not an array nor a domain nor a tuple */ {
@@ -3877,6 +3889,12 @@ module ChapelArray {
 
   proc _desync(type t) type {
     return t;
+  }
+
+  private proc desyncEltType(type t:_array) type {
+    pragma "unsafe"
+    var tmp: t;
+    return _desync(tmp.eltType);
   }
 
   proc =(ref a: [], b: _desync(a.eltType)) {
@@ -4061,6 +4079,144 @@ module ChapelArray {
   pragma "auto copy fn" proc chpl__autoCopy(x: []) {
     pragma "no copy" var b = chpl__initCopy(x);
     return b;
+  }
+
+  pragma "coerce fn"
+  proc chpl__coerce(type dstType:_domain, rhs:_domain, ownsRhs:bool) {
+    param rhsIsLayout = rhs.dist._value.dsiIsLayout();
+
+    var lhs:dstType;
+    lhs; // no split init
+    lhs = rhs;
+    if ownsRhs then
+      chpl__autoDestroy(rhs);
+
+    // Error for assignment between local and distributed domains.
+    if lhs.dist._value.dsiIsLayout() && !rhsIsLayout then
+      compilerWarning("initializing a non-distributed domain from a distributed domain. If you didn't mean to do that, add a dmapped clause to the type expression or remove the type expression altogether");
+
+    return lhs;
+  }
+  pragma "coerce fn"
+  proc chpl__coerce(type dstType:_domain, rhs:_tuple, ownsRhs:bool) {
+    var lhs:dstType;
+    lhs; // no split init
+    if chpl__isLegalRectTupDomAssign(lhs, rhs) {
+      lhs = {(...rhs)};
+    } else {
+      lhs = rhs;
+    }
+    if ownsRhs then
+      chpl__autoDestroy(rhs);
+
+    return lhs;
+  }
+  pragma "coerce fn"
+  proc chpl__coerce(type dstType:_domain, rhs:range(?), ownsRhs:bool) {
+    var lhs:dstType;
+    lhs; // no split init
+    lhs = {rhs};
+    return lhs;
+  }
+  pragma "coerce fn"
+  proc chpl__coerce(type dstType:_domain, rhs, ownsRhs:bool) {
+    // assumes rhs is iterable
+    var lhs:dstType;
+    if isRectangularDom(lhs) then
+      compilerError("Illegal assignment to a rectangular domain");
+    lhs.clear();
+    for ind in rhs {
+      lhs.add(ind);
+    }
+    return lhs;
+  }
+
+  pragma "coerce fn"
+  proc chpl__coerce(type dstType:_array, rhs:_array, ownsRhs:bool) {
+    pragma "unsafe" // when eltType is non-nilable
+    var lhs : dstType;
+    if lhs.rank != rhs.rank then
+      compilerError("rank mismatch in array assignment");
+
+    if rhs._value == nil {
+      // This happens e.g. for 'new' on a record with an array field whose
+      // default initializer is a forall expr. E.g. arrayInClassRecord.chpl.
+    } else if lhs._value == rhs._value {
+      // do nothing (assert?)
+    } else if lhs.size == 0 && rhs.size == 0 {
+      // Do nothing for zero-length assignments
+    } else {
+      if boundsChecking then
+        checkArrayShapesUponAssignment(lhs, rhs);
+
+      chpl__uncheckedArrayTransfer(lhs, rhs);
+    }
+
+    if ownsRhs then
+      chpl__autoDestroy(rhs);
+
+    return lhs;
+  }
+  pragma "coerce fn"
+  proc chpl__coerce(type dstType:_array, rhs:_domain, ownsRhs:bool) {
+    pragma "unsafe" // when eltType is non-nilable
+    var lhs : dstType;
+    if lhs.rank != rhs.rank then
+      compilerError("rank mismatch in array assignment");
+    if isAssociativeDom(rhs) && isRectangularArr(lhs) then
+      compilerError("cannot assign to rectangular arrays from associative domains");
+    chpl__transferArray(lhs, rhs);
+    if ownsRhs then
+      chpl__autoDestroy(rhs);
+
+    return lhs;
+  }
+  pragma "coerce fn"
+  proc chpl__coerce(type dstType:_array, rhs:range(?), ownsRhs:bool) {
+    pragma "unsafe" // when eltType is non-nilable
+    var lhs : dstType;
+    if lhs.rank != 1 then
+      compilerError("cannot assign from ranges to multidimensional arrays");
+
+    chpl__transferArray(lhs, rhs);
+
+    return lhs;
+  }
+  pragma "coerce fn"
+  proc chpl__coerce(type dstType:_array, rhs:_tuple, ownsRhs:bool) {
+    pragma "unsafe" // when eltType is non-nilable
+    var lhs : dstType;
+    lhs; // no split-init
+    lhs = rhs;
+    if ownsRhs then
+      chpl__autoDestroy(rhs);
+
+    return lhs;
+  }
+  pragma "coerce fn"
+  proc chpl__coerce(type dstType:_array, rhs:desyncEltType(dstType), ownsRhs:bool) {
+    // assumes rhs is iterable
+    pragma "unsafe" // when eltType is non-nilable
+    var lhs : dstType;
+    lhs; // no split-init
+    forall e in lhs do
+      e = rhs;
+    if ownsRhs then
+      chpl__autoDestroy(rhs);
+
+    return lhs;
+  }
+  pragma "coerce fn"
+  proc chpl__coerce(type dstType:_array, rhs, ownsRhs:bool) {
+    // assumes rhs is iterable
+    pragma "unsafe" // when eltType is non-nilable
+    var lhs : dstType;
+    lhs; // no split-init
+    chpl__transferArray(lhs, rhs);
+    if ownsRhs then
+      chpl__autoDestroy(rhs);
+
+    return lhs;
   }
 
   // Used to implement the copy-out language semantics
@@ -4333,8 +4489,6 @@ module ChapelArray {
   }
 
   proc chpl_checkCopyInit(lhs:domain, rhs:domain) param {
-    if lhs.dist._value.dsiIsLayout() && !rhs.dist._value.dsiIsLayout() then
-      compilerWarning("initializing a non-distributed domain from a distributed domain. If you didn't mean to do that, add a dmapped clause to the type expression or remove the type expression altogether");
   }
 
 }

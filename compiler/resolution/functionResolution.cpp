@@ -6266,7 +6266,6 @@ void resolveInitVar(CallExpr* call) {
         checkMoveIntoClass(call, targetType->getValType(), src->getValType());
 
       VarSymbol* tmp = newTemp(astr_init_coerce_tmp, targetType);
-      tmp->addFlag(FLAG_EXPR_TEMP);
       if (dst->hasFlag(FLAG_PARAM))
         tmp->addFlag(FLAG_PARAM);
 
