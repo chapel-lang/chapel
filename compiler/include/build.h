@@ -71,6 +71,8 @@ BlockStmt* buildUseStmt(Expr* mod, Expr* rename,
                         bool privateUse);
 BlockStmt* buildImportStmt(Expr* mod, bool privateImport);
 BlockStmt* buildImportStmt(Expr* mod, const char* rename, bool privateImport);
+BlockStmt* buildImportStmt(Expr* mod, std::vector<PotentialRename*>* names,
+                           bool privateImport);
 bool processStringInRequireStmt(const char* str, bool parseTime,
                                 const char* modFilename);
 BlockStmt* buildRequireStmt(CallExpr* args);

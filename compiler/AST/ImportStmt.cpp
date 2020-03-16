@@ -66,6 +66,32 @@ ImportStmt::ImportStmt(BaseAST* source, const char* rename,
   gImportStmts.add(this);
 }
 
+ImportStmt::ImportStmt(BaseAST* source, bool isPrivate,
+                       std::vector<const char*>* namesList):
+  VisibilityStmt(E_ImportStmt) {
+
+  this->isPrivate = isPrivate;
+  this->modRename = astr("");
+  if (Symbol* b = toSymbol(source)) {
+    src = new SymExpr(b);
+
+  } else if (Expr* b = toExpr(source)) {
+    src = b;
+
+  } else {
+    INT_FATAL(this, "Bad mod in ImportStmt constructor");
+  }
+
+  if (namesList->size() > 0) {
+    // Symbols to enable unqualified access to
+    for_vector(const char, str, *namesList) {
+      unqualified.push_back(str);
+    }
+  }
+
+  gImportStmts.add(this);
+}
+
 ImportStmt* ImportStmt::copyInner(SymbolMap* map) {
   ImportStmt* _this = new ImportStmt(COPY_INT(src), modRename, isPrivate);
 
@@ -134,6 +160,15 @@ void ImportStmt::scopeResolve(ResolveScope* scope) {
             // wasn't looking in a path with one or more `.`s in it.  That
             // means this symbol is already available for unqualified access
             USR_FATAL(this, "Can't 'import' without naming a module");
+          }
+
+          if (unqualified.size() != 0) {
+            // We already have listed unqualified access for this import, which
+            // means this is the last symbol prior to the curly braces (e.g.
+            // this is `B` of `import A.B.{C, D};`).  This symbol is required
+            // to be a module
+            USR_FATAL(this, "Last symbol prior to `{` in import must be a "
+                      "module, symbol '%s' is not", sym->name);
           }
 
           // We want to only enable unqualified access of this particular symbol
