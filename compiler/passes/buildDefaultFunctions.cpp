@@ -1185,21 +1185,24 @@ static void buildEnumIntegerCastFunctions(EnumType* et) {
         whenstmts->insertAtTail(when);
       }
     }
-    const char * errorString = "enumerated type out of bounds";
+    // TODO: unused?
+    //    const char * errorString = "enumerated type out of bounds";
+    /*
     CondStmt* otherwise =
       new CondStmt(new CallExpr(PRIM_WHEN),
                    new BlockStmt(new CallExpr("chpl_enum_cast_error",
                                               arg2,
                                               new_StringSymbol(et->symbol->name))));
     whenstmts->insertAtTail(otherwise);
+    */
     fn->insertAtTail(buildSelectStmt(new SymExpr(arg2), whenstmts));
     fn->insertAtTail(new TryStmt(false,
                    new BlockStmt(new CallExpr("chpl_enum_cast_error",
                                               arg2,
                                               new_StringSymbol(et->symbol->name))),
                                  NULL));
-  fn->insertAtTail(new CallExpr(PRIM_RETURN,
-                                toDefExpr(et->constants.first())->sym));
+    fn->insertAtTail(new CallExpr(PRIM_RETURN,
+                                  toDefExpr(et->constants.first())->sym));
     
     def = new DefExpr(fn);
     baseModule->block->insertAtTail(def);
@@ -1216,6 +1219,7 @@ static void buildEnumIntegerCastFunctions(EnumType* et) {
     arg2 = new ArgSymbol(INTENT_BLANK, "_arg2", et);
     fn->insertFormalAtTail(arg1);
     fn->insertFormalAtTail(arg2);
+    fn->throwsErrorInit();
 
     if (et->isConcrete()) {
       // If this enum is concrete, rely on the C cast and inline
@@ -1246,10 +1250,10 @@ static void buildEnumIntegerCastFunctions(EnumType* et) {
                                              new CallExpr("+", lastInit->copy(),
                                                           new SymExpr(new_IntSymbol(count)))));
         } else {
-          const char *errorString = astr("illegal cast: ", et->symbol->name,
-                                         ".", constant->sym->name,
-                                         " has no integer value");
-          result = new CallExpr("halt", new_StringSymbol(errorString));
+          result = new CallExpr(PRIM_RETURN,
+                                new CallExpr("chpl_enum_cast_error_no_int",
+                                             new_StringSymbol(et->symbol->name),
+                                             new_StringSymbol(constant->sym->name)));
         }
         CondStmt* when =
           new CondStmt(new CallExpr(PRIM_WHEN, new SymExpr(constant->sym)),
@@ -1258,12 +1262,15 @@ static void buildEnumIntegerCastFunctions(EnumType* et) {
         whenstmts->insertAtTail(when);
       }
 
-      otherwise =
+      CondStmt* otherwise =
         new CondStmt(new CallExpr(PRIM_WHEN),
                      new BlockStmt(new CallExpr("halt",
-                                                new_StringSymbol(errorString))));
+                                                new_StringSymbol("should never get here"))));
       whenstmts->insertAtTail(otherwise);
-      fn->insertAtTail(buildSelectStmt(new SymExpr(arg2), whenstmts));
+      fn->insertAtTail(new TryStmt(false,
+                                   buildSelectStmt(new SymExpr(arg2), whenstmts),
+                                   NULL));
+      fn->insertAtTail(new CallExpr(PRIM_RETURN, new_IntSymbol(0)));
     }
 
     def = new DefExpr(fn);
