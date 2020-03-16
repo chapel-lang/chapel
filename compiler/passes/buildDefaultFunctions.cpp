@@ -1158,6 +1158,7 @@ static void buildEnumIntegerCastFunctions(EnumType* et) {
     arg2 = new ArgSymbol(INTENT_BLANK, "_arg2", dtIntegral);
     fn->insertFormalAtTail(arg1);
     fn->insertFormalAtTail(arg2);
+    fn->throwsErrorInit();
 
     // Generate a select statement with when clauses for each of the
     // enumeration constants, and an otherwise clause that calls halt.
@@ -1187,11 +1188,19 @@ static void buildEnumIntegerCastFunctions(EnumType* et) {
     const char * errorString = "enumerated type out of bounds";
     CondStmt* otherwise =
       new CondStmt(new CallExpr(PRIM_WHEN),
-                   new BlockStmt(new CallExpr("halt",
-                                 new_StringSymbol(errorString))));
+                   new BlockStmt(new CallExpr("chpl_enum_cast_error",
+                                              arg2,
+                                              new_StringSymbol(et->symbol->name))));
     whenstmts->insertAtTail(otherwise);
     fn->insertAtTail(buildSelectStmt(new SymExpr(arg2), whenstmts));
-
+    fn->insertAtTail(new TryStmt(false,
+                   new BlockStmt(new CallExpr("chpl_enum_cast_error",
+                                              arg2,
+                                              new_StringSymbol(et->symbol->name))),
+                                 NULL));
+  fn->insertAtTail(new CallExpr(PRIM_RETURN,
+                                toDefExpr(et->constants.first())->sym));
+    
     def = new DefExpr(fn);
     baseModule->block->insertAtTail(def);
     reset_ast_loc(def, et->symbol);

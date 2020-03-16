@@ -521,6 +521,14 @@ module ChapelError {
       throw new owned IllegalArgumentError("bad cast from string '" + casted + "' to " + enumName);
   }
 
+  pragma "no doc"
+  pragma "insert line file info"
+  pragma "always propagate line file info"
+  proc chpl_enum_cast_error(casted: int, enumName: string) throws {
+    throw new owned IllegalArgumentError("bad cast from int '" + casted:string + "' to enum '" + enumName, "'");
+  }
+
+
   // The compiler generates functions to cast from bytes to enums. This
   // function helps the compiler throw errors from those generated casts.
   pragma "no doc"
