@@ -162,6 +162,15 @@ void ImportStmt::scopeResolve(ResolveScope* scope) {
             USR_FATAL(this, "Can't 'import' without naming a module");
           }
 
+          if (unqualified.size() != 0) {
+            // We already have listed unqualified access for this import, which
+            // means this is the last symbol prior to the curly braces (e.g.
+            // this is `B` of `import A.B.{C, D};`).  This symbol is required
+            // to be a module
+            USR_FATAL(this, "Last symbol prior to `{` in import must be a "
+                      "module, symbol '%s' is not", sym->name);
+          }
+
           // We want to only enable unqualified access of this particular symbol
           // in the module
           this->unqualified.push_back(sym->name);
