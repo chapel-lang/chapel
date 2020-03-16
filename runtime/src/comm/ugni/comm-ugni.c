@@ -524,6 +524,10 @@ static int hugepage_info_set;
 static pthread_once_t hugepage_once_flag = PTHREAD_ONCE_INIT;
 static size_t hugepage_size;
 
+
+// Yield during comm
+static chpl_bool yield_during_comm;
+
 //
 // Memory region support.
 //
@@ -1949,6 +1953,9 @@ void chpl_comm_init(int *argc_p, char ***argv_p)
 #define _PSV_INIT(psv) atomic_init_uint_least64_t(&_PSV_VAR(psv), 0);
   PERFSTATS_DO_ALL(_PSV_INIT);
 #undef _PSTAT_INIT
+
+  yield_during_comm = chpl_env_rt_get_bool("COMM_UGNI_YIELD_DURING_COMM",
+                                           true);
 
   //
   // We can easily reach 16k memory regions on Aries.  We can reach a
@@ -7812,6 +7819,21 @@ chpl_bool reacquire_comm_dom(int want_cdi)
   return true;
 }
 
+static
+inline
+chpl_bool should_yield_during_comm(chpl_bool do_yield) {
+  do_yield = do_yield && yield_during_comm;
+  // Avoid yielding for tasks with limited comm. Avoids artificially increasing
+  // the lifetime of short-lived tasks.
+  if (do_yield) {
+    chpl_comm_taskPrvData_t* prvData = get_comm_taskPrvdata();
+    if (prvData != NULL && prvData->num_comm < 100) {
+      prvData->num_comm++;
+      do_yield = false;
+    }
+  }
+  return do_yield;
+}
 
 static
 inline
@@ -7840,15 +7862,7 @@ void post_fma_and_wait(c_nodeid_t locale, gni_post_descriptor_t* post_desc,
   atomic_bool post_done;
   uint64_t iters = 0;
 
-  // Avoid yielding for tasks with limited comm. Avoids artificially increasing
-  // the lifetime of short-lived tasks.
-  if (do_yield) {
-    chpl_comm_taskPrvData_t* prvData = get_comm_taskPrvdata();
-    if (prvData != NULL && prvData->num_fma < 100) {
-      prvData->num_fma++;
-      do_yield = false;
-    }
-  }
+  do_yield = should_yield_during_comm(do_yield);
 
   atomic_init_bool(&post_done, false);
   post_desc->post_id = (uint64_t) (intptr_t) &post_done;
@@ -7928,6 +7942,8 @@ void post_fma_ct_and_wait(c_nodeid_t* locale_v,
   int cdi;
   atomic_bool post_done;
 
+  chpl_bool do_yield = should_yield_during_comm(true);
+
   atomic_init_bool(&post_done, false);
   post_desc->post_id = (uint64_t) (intptr_t) &post_done;
 
@@ -7939,7 +7955,9 @@ void post_fma_ct_and_wait(c_nodeid_t* locale_v,
   // we can find something else to do in the meantime.
   //
   do {
-    local_yield();
+    if (do_yield) {
+      local_yield();
+    }
     consume_all_outstanding_cq_events(cdi);
   } while (!atomic_load_explicit_bool(&post_done, memory_order_acquire));
 }
@@ -7974,6 +7992,8 @@ void post_rdma_and_wait(c_nodeid_t locale, gni_post_descriptor_t* post_desc,
 {
   int cdi;
   atomic_bool post_done;
+
+  do_yield = should_yield_during_comm(do_yield);
 
   atomic_init_bool(&post_done, false);
   post_desc->post_id = (uint64_t) (intptr_t) &post_done;
