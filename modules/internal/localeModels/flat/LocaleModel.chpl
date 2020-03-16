@@ -227,7 +227,6 @@ module LocaleModel {
     }
 
     proc deinit() {
-      extern proc printf(s);
       for loc in myLocales {
         on loc {
           rootLocaleInitialized = false;
