@@ -161,12 +161,12 @@ class SparseBlockDom: BaseSparseDomImpl {
   }
 
   override proc bulkAdd_help(inds: [?indsDom] index(rank,idxType),
-      dataSorted=false, isUnique=false, addOn=nil:locale?) {
+      dataSorted=false, isUnique=false, addOn=nilLocale) {
     use Sort;
     use Search;
 
     // call local bulk addition helper if necessary
-    if addOn != nil {
+    if addOn != nilLocale {
       var retval = 0;
       on addOn {
         if inds.locale == here {

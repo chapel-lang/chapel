@@ -38,7 +38,9 @@ module LocaleModelHelpSetup {
 
   config param debugLocaleModel = false;
 
-  var doneCreatingLocales: bool = false;
+  pragma "no doc"
+  pragma "locale private"
+  var rootLocaleInitialized: bool = false;
 
   extern var chpl_nodeID: chpl_nodeID_t;
 
@@ -69,7 +71,7 @@ module LocaleModelHelpSetup {
     var root_accum:chpl_root_locale_accum;
 
     forall locIdx in dst.chpl_initOnLocales() with (ref root_accum) {
-      const node = new unmanaged LocaleModel(dst);
+      const node = new locale(new unmanaged LocaleModel(new locale(dst)));
       dst.myLocales[locIdx] = node;
       root_accum.accum(node);
     }
@@ -82,7 +84,7 @@ module LocaleModelHelpSetup {
 
     forall locIdx in dst.chpl_initOnLocales() with (ref root_accum) {
       chpl_task_setSubloc(c_sublocid_any);
-      const node = new unmanaged LocaleModel(dst);
+      const node = new locale(new unmanaged LocaleModel(new locale (dst)));
       dst.myLocales[locIdx] = node;
       root_accum.accum(node);
     }
@@ -95,7 +97,7 @@ module LocaleModelHelpSetup {
 
     forall locIdx in dst.chpl_initOnLocales() with (ref root_accum) {
       chpl_task_setSubloc(c_sublocid_any);
-      const node = new unmanaged LocaleModel(dst);
+      const node = new locale(new unmanaged LocaleModel(new locale(dst)));
       dst.myLocales[locIdx] = node;
       root_accum.accum(node);
     }
@@ -173,7 +175,8 @@ module LocaleModelHelpSetup {
       for i in dst.childSpace {
         // allocate the structure on the proper sublocale
         chpl_task_setSubloc(i:chpl_sublocID_t);
-        dst.childLocales[i] = new unmanaged NumaDomain(i:chpl_sublocID_t, dst);
+        dst.childLocales[i] = new unmanaged NumaDomain(i:chpl_sublocID_t,
+                                                       new locale(dst));
         dst.childLocales[i].nPUsPhysAcc = nPUsPhysAccPerSubloc;
         dst.childLocales[i].nPUsPhysAll = nPUsPhysAllPerSubloc;
         dst.childLocales[i].nPUsLogAcc = nPUsLogAccPerSubloc;

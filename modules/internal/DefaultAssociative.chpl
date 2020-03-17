@@ -998,6 +998,10 @@ module DefaultAssociative {
     return _gen_key(__primitive( "object2int", o));
   }
 
+  inline proc chpl__defaultHash(l: locale): uint {
+    return _gen_key(__primitive( "object2int", l._value));
+  }
+
   //
   // Implementation of chpl__defaultHash for ranges, in case the 'idxType'
   // contains a range in some way (e.g. tuple of ranges).

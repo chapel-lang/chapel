@@ -695,8 +695,9 @@ module ChapelIO {
   }
 
   pragma "no doc"
-  override proc locale.writeThis(f) throws {
-    f <~> name;
+  proc locale.writeThis(f) throws {
+    // FIXME this doesn't resolve without `this`
+    f <~> new ioLiteral("LOCALE") <~> this.chpl_id();
   }
 
   pragma "no doc"
