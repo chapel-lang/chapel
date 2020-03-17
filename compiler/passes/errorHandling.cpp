@@ -979,7 +979,7 @@ bool ErrorCheckingVisitor::enterCallExpr(CallExpr* node) {
                                "without try or try! (strict mode)");
           } else if (mode == ERROR_MODE_RELAXED && !inThrowingFunction) {
             genThrowingFnError(calledFn, node, reasons,
-                               "without try or try! (relaxed mode)");
+                               "without throws, try, or try! (relaxed mode)");
           }
         }
       }
