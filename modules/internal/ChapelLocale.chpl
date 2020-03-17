@@ -767,9 +767,17 @@ module ChapelLocale {
   proc chpl_localeID_to_locale(id : chpl_localeID_t) : locale {
     if rootLocale._instance != nil then
       return (rootLocale._instance:borrowed AbstractRootLocale?)!.localeIDtoLocale(id);
-    else
+    else {
       // For code prior to rootLocale initialization
+      // in cases where we capture functions as FCF, module initialization order
+      // changes in a way that IO is inited too early. In that scenario, we
+      // somehow don't get dummyLocale set up correctly in this scheme 
+      // remove this check, and test/exits/albrecht/exitWithNoCall fails
+      if dummyLocale._instance == nil {
+        dummyLocale._instance = new unmanaged DummyLocale();
+      }
       return dummyLocale;
+    }
   }
 
   // the type of elements in chpl_privateObjects.
@@ -865,9 +873,6 @@ module ChapelLocale {
     here.runningTaskCntSet(0);
   }
 
-  // ENGIN: We store all LocaleModel instances in the Locales array which is
-  // marked "locale private" locale private variables are autoDestroy'd by the
-  // compiler. So, nothing to deinit here.
   pragma "no doc"
   proc deinit() {
     delete origRootLocale._instance;
