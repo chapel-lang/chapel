@@ -1250,10 +1250,9 @@ static void buildEnumIntegerCastFunctions(EnumType* et) {
                                              new CallExpr("+", lastInit->copy(),
                                                           new SymExpr(new_IntSymbol(count)))));
         } else {
-          result = new CallExpr(PRIM_RETURN,
-                                new CallExpr("chpl_enum_cast_error_no_int",
-                                             new_StringSymbol(et->symbol->name),
-                                             new_StringSymbol(constant->sym->name)));
+          result = new CallExpr("chpl_enum_cast_error_no_int",
+                                new_StringSymbol(et->symbol->name),
+                                new_StringSymbol(constant->sym->name));
         }
         CondStmt* when =
           new CondStmt(new CallExpr(PRIM_WHEN, new SymExpr(constant->sym)),
