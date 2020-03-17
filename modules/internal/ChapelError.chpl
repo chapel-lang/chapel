@@ -518,7 +518,7 @@ module ChapelError {
     if casted.isEmpty() then
       throw new owned IllegalArgumentError("bad cast from empty string to " + enumName);
     else
-      throw new owned IllegalArgumentError("bad cast from string '" + casted + "' to " + enumName);
+      throw new owned IllegalArgumentError("bad cast from string '" + casted + "' to '" + enumName + "'");
   }
 
   pragma "no doc"
