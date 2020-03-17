@@ -104,9 +104,12 @@ module DefaultAssociative {
     //
     // Standard Internal Domain Interface
     //
-    proc dsiBuildArray(type eltType) {
-      return new unmanaged DefaultAssociativeArr(eltType=eltType, idxType=idxType,
-                                       parSafeDom=parSafe, dom=_to_unmanaged(this));
+    proc dsiBuildArray(type eltType, param initElts) {
+      return new unmanaged DefaultAssociativeArr(eltType=eltType,
+                                                 idxType=idxType,
+                                                 parSafeDom=parSafe,
+                                                 dom=_to_unmanaged(this),
+                                                 initElts=initElts);
     }
   
     proc dsiSerialReadWrite(f /*: Reader or Writer*/) throws {
@@ -632,11 +635,21 @@ module DefaultAssociative {
     pragma "unsafe"
     var tmpTable: [tmpDom] eltType;
 
-    //
-    // #14367 - Blanket ban on non-nilable classes for the time being.
-    //
-    pragma "no doc"
-    proc postinit() {
+    proc init(type eltType,
+              type idxType,
+              param parSafeDom,
+              dom:unmanaged DefaultAssociativeDom(idxType, parSafe=parSafeDom),
+              param initElts) {
+      super.init(eltType=eltType);
+      this.idxType = idxType;
+      this.parSafeDom = parSafeDom;
+      this.dom = dom;
+      this.data = dom.tableDom.buildArray(eltType, initElts);
+      this.complete();
+
+      //
+      // #14367 - Blanket ban on non-nilable classes for the time being.
+      //
       if isNonNilableClass(this.eltType) {
         param msg = "Cannot initialize associative array because"
                   + " element type " + eltType:string
