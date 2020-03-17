@@ -267,19 +267,6 @@ module Map {
       return result;
     }
 
-/*
-    pragma "no doc"
-    proc const this(k: keyType) const ref
-    where shouldReturnRvalueByConstRef(valType) && isNonNilableClass(valType) {
-      _enter();
-      if !myKeys.contains(k) then
-        halt("map index ", k, " out of bounds");
-      
-      const ref result = try! vals[k]: valType;
-      _leave();
-      return result;
-    }
-*/
 
     /*
       Iterates over the keys of this map. This is a shortcut for :iter:`keys`.
@@ -335,6 +322,7 @@ module Map {
       }
     }
 
+    pragma "no doc"
     iter values() const where isNonNilableClass(valType) {
       try! {
         for val in vals {
@@ -384,7 +372,7 @@ module Map {
                `false` otherwise.
      :rtype: bool
     */
-    proc add(k: keyType, v: valType): bool {
+    proc add(k: keyType, in v: valType): bool {
       _enter();
       if myKeys.contains(k) {
         _leave();
@@ -413,7 +401,7 @@ module Map {
                `false` otherwise.
      :rtype: bool
     */
-    proc set(k: keyType, v: valType): bool {
+    proc set(k: keyType, in v: valType): bool {
       _enter();
       if !myKeys.contains(k) {
         _leave();
