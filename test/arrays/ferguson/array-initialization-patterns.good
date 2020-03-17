@@ -1,0 +1,80 @@
+test0
+0 0
+test1
+0 0
+test2
+0 0
+test3
+0 0
+test4
+1
+test5
+1
+test6
+1
+test7
+1
+test8
+1
+-
+testr0
+init 1 1
+(x = 1, ptr = {xx = 1})
+deinit 1 1
+-
+testr1
+init (default)
+lhs(0 0) = rhs(1 1)
+(x = 1, ptr = {xx = 1})
+deinit 1 1
+-
+testr2
+init 1 1
+(x = 1, ptr = {xx = 1})
+deinit 1 1
+-
+testr3
+init 1 1
+init (default)
+lhs(0 0) = rhs(1 1)
+(x = 1, ptr = {xx = 1})
+deinit 1 1
+deinit 1 1
+-
+testr4
+init 1 1
+init= 1 1
+init= 1 1
+init= 1 1
+init= 1 1
+init= 1 1
+init= 1 1
+init= 1 1
+init= 1 1
+init= 1 1
+init= 1 1
+init= 1 1
+init= 1 1
+deinit 1 1
+deinit 1 1
+deinit 1 1
+(x = 1, ptr = {xx = 1}) (x = 1, ptr = {xx = 1}) (x = 1, ptr = {xx = 1}) (x = 1, ptr = {xx = 1}) (x = 1, ptr = {xx = 1}) (x = 1, ptr = {xx = 1}) (x = 1, ptr = {xx = 1}) (x = 1, ptr = {xx = 1}) (x = 1, ptr = {xx = 1}) (x = 1, ptr = {xx = 1})
+deinit 1 1
+deinit 1 1
+deinit 1 1
+deinit 1 1
+deinit 1 1
+deinit 1 1
+deinit 1 1
+deinit 1 1
+deinit 1 1
+deinit 1 1
+-
+testr5
+init (default)
+init 1 1
+lhs(0 0) = rhs(1 1)
+deinit 1 1
+(x = 1, ptr = {xx = 1})
+deinit 1 1
+-

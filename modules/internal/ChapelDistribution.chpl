@@ -703,7 +703,7 @@ module ChapelDistribution {
       return (ret_arr, ret_dom);
     }
 
-    proc dsiDestroyArr() { }
+    proc dsiDestroyArr(param deinitElts:bool) { }
 
     proc dsiReallocate(d: domain) {
       halt("reallocating not supported for this array type");
@@ -957,9 +957,10 @@ module ChapelDistribution {
     delete dom;
   }
 
-  proc _delete_arr(arr: unmanaged BaseArr, param privatized:bool) {
+  proc _delete_arr(arr: unmanaged BaseArr, param privatized:bool,
+                   param deinitElts=true) {
     // array implementation can destroy data or other members
-    arr.dsiDestroyArr();
+    arr.dsiDestroyArr(deinitElts=deinitElts);
 
     // not necessary for aliases/slices because the original
     // array will take care of it.

@@ -416,7 +416,7 @@ module ChapelArray {
   //
   pragma "runtime type init fn"
   proc chpl__buildArrayRuntimeType(dom: domain, type eltType)
-    return dom.buildArray(eltType);
+    return dom.buildArray(eltType, true);
 
   proc _getLiteralType(type t) type {
     if t != c_string then return t;
@@ -762,6 +762,26 @@ module ChapelArray {
       var dom: domainType;
       return chpl__buildDomainRuntimeType(d, dom._value.idxType, dom._value.parSafe);
     }
+  }
+
+  pragma "return not owned"
+  proc chpl__domainFromArrayRuntimeType(type rtt) {
+    proc getArrDomType() type {
+      var arr : rtt;
+      return __primitive("static typeof", arr.domain);
+    }
+
+    pragma "no copy"
+    pragma "no auto destroy"
+    var dom = __primitive("get runtime type field",
+                          getArrDomType(), rtt, "dom");
+
+    return _getDomain(dom._value);
+  }
+
+  proc chpl__eltTypeFromArrayRuntimeType(type rtt) type {
+    var arr: rtt;
+    return arr.eltType;
   }
 
   //
@@ -1411,7 +1431,7 @@ module ChapelArray {
 
     pragma "no doc"
     pragma "no copy return"
-    proc buildArray(type eltType) {
+    proc buildArray(type eltType, param initElts:bool) {
       if eltType == void {
         compilerError("array element type cannot be void");
       }
@@ -1441,7 +1461,7 @@ module ChapelArray {
                 warning("arrays with negatively strided dimensions are not particularly stable");
           }
 
-      var x = _value.dsiBuildArray(eltType);
+      var x = _value.dsiBuildArray(eltType, initElts);
       pragma "dont disable remote value forwarding"
       proc help() {
         _value.add_arr(x);
@@ -2365,12 +2385,16 @@ module ChapelArray {
 
     /* The type of elements contained in the array */
     proc eltType type return _value.eltType;
+
     /* The type of indices used in the array's domain */
     proc idxType type return _value.idxType;
+
     pragma "return not owned"
     proc _dom return _getDomain(_value.dom);
+
     /* The number of dimensions in the array */
     proc rank param return this.domain.rank;
+
     /* return the array's indices as its domain */
     pragma "return not owned"
     proc indices
@@ -3162,7 +3186,8 @@ module ChapelArray {
   // _instance is a subclass of BaseArr.  LYDIA NOTE: moved this from
   // being a method on _array so that it could be called on unwrapped
   // _instance fields
-  inline proc _do_destroy_arr(_unowned: bool, _instance) {
+  inline proc _do_destroy_arr(_unowned: bool, _instance,
+                              param deinitElts=true) {
     if ! _unowned {
       on _instance {
         param arrIsInList = !_instance.isSliceArrayView();
@@ -3187,7 +3212,8 @@ module ChapelArray {
           distIsPrivatized = _privatization && (distToRemove!.pid != nullPid);
         }
         if arrToFree != nil then
-          _delete_arr(_instance, _isPrivatized(_instance));
+          _delete_arr(_instance, _isPrivatized(_instance),
+                      deinitElts=deinitElts);
         if domToFree != nil then
           _delete_dom(instanceDom!, domIsPrivatized);
         if distToFree != nil then
@@ -3620,8 +3646,9 @@ module ChapelArray {
   }
 
   // This must be a param function
-  proc chpl__compatibleForBulkTransfer(a:[], b:[]) param {
+  proc chpl__compatibleForBulkTransfer(a:[], b:[], param move) param {
     if !useBulkTransfer then return false;
+    if move then return true;
     if a.eltType != b.eltType then return false;
     if !chpl__supportedDataTypeForBulkTransfer(a.eltType) then return false;
     return true;
@@ -3706,21 +3733,22 @@ module ChapelArray {
     chpl__uncheckedArrayTransfer(a, b);
   }
 
-  inline proc chpl__uncheckedArrayTransfer(ref a: [], b:[]) {
+  inline proc chpl__uncheckedArrayTransfer(ref a: [], b:[],
+                                           param move=false) {
     var done = false;
     if !chpl__serializeAssignment(a, b) {
-      if chpl__compatibleForBulkTransfer(a, b) {
+      if chpl__compatibleForBulkTransfer(a, b, move) {
         done = chpl__bulkTransferArray(a, b);
       }
-      else if chpl__compatibleForWidePtrBulkTransfer(a, b) {
+      else if chpl__compatibleForWidePtrBulkTransfer(a, b, move) {
         done = chpl__bulkTransferPtrArray(a, b);
       }
     }
     if !done then
-      chpl__transferArray(a, b);
+      chpl__transferArray(a, b, move);
   }
 
-  proc chpl__compatibleForWidePtrBulkTransfer(a, b) param {
+  proc chpl__compatibleForWidePtrBulkTransfer(a, b, param move) param {
     if !useBulkPtrTransfer then return false;
 
     // TODO: for now we are limiting ourselves to default rectangulars
@@ -3806,17 +3834,42 @@ module ChapelArray {
   }
 
   pragma "ignore transfer errors"
-  inline proc chpl__transferArray(ref a: [], const ref b) lifetime a <= b {
+  inline proc chpl__transferArray(ref a: [], const ref b,
+                                  param move=false) lifetime a <= b {
     if (a.eltType == b.type ||
         _isPrimitiveType(a.eltType) && _isPrimitiveType(b.type)) {
-      forall aa in a do
-        aa = b;
+      if move {
+        forall aa in a with (in b) {
+          pragma "no auto destroy"
+          var copy = b; // make a copy for this iteration
+          // move it into the array
+          __primitive("=", aa, copy);
+        }
+      } else {
+        forall aa in a with (in b) {
+          aa = b;
+        }
+      }
     } else if chpl__serializeAssignment(a, b) {
-      for (aa,bb) in zip(a,b) do
-        aa = bb;
+      if move {
+        for (aa,bb) in zip(a,b) {
+          __primitive("=", aa, bb);
+        }
+      } else {
+        for (aa,bb) in zip(a,b) {
+          aa = bb;
+        }
+      }
     } else {
-      [ (aa,bb) in zip(a,b) ]
-        aa = bb;
+      if move {
+        [ (aa,bb) in zip(a,b) ] {
+          __primitive("=", aa, bb);
+        }
+      } else {
+        [ (aa,bb) in zip(a,b) ] {
+          aa = bb;
+        }
+      }
     }
   }
 
@@ -3852,8 +3905,11 @@ module ChapelArray {
   }
 */
 
-  proc =(ref a: [], b: _tuple) where isRectangularArr(a) {
-    proc chpl__tupleInit(ref j, param rank: int, b: _tuple) lifetime a < b {
+  private proc helpInitArrFromTuple(ref j, param rank: int,
+                                    ref a: [], b: _tuple,
+                                    param move:bool)
+  lifetime a < b {
+
       type idxType = a.domain.idxType,
            strType = chpl__signedType(a.domain.intIdxType);
 
@@ -3863,17 +3919,28 @@ module ChapelArray {
       if rank == 1 {
         for param i in 0..b.size-1 {
           j(a.rank-rank) = chpl__intToIdx(idxType, start:strType + (i*stride));
-          a(j) = b(i);
+          ref dst = a(j);
+          const ref src = b(i);
+          if move {
+            __primitive("=", dst, src);
+          } else {
+            a(j) = b(i);
+          }
         }
       } else {
         for param i in 0..b.size-1 {
           j(a.rank-rank) = chpl__intToIdx(idxType, start:strType + (i*stride));
-          chpl__tupleInit(j, rank-1, b(i));
+          helpInitArrFromTuple(j, rank-1, a, b(i));
         }
       }
-    }
+  }
+  private proc initArrFromTuple(ref a: [], b: _tuple, param move:bool) {
     var j: a.rank*a.domain.idxType;
-    chpl__tupleInit(j, a.rank, b);
+    helpInitArrFromTuple(j, a.rank, a, b, move);
+  }
+
+  proc =(ref a: [], b: _tuple) where isRectangularArr(a) {
+    initArrFromTuple(a, b, false);
   }
 
   proc _desync(type t:_syncvar) type {
@@ -4082,7 +4149,7 @@ module ChapelArray {
   }
 
   pragma "coerce fn"
-  proc chpl__coerce(type dstType:_domain, rhs:_domain, ownsRhs:bool) {
+  proc chpl__coerce(type dstType:_domain, rhs:_domain, param ownsRhs:bool) {
     param rhsIsLayout = rhs.dist._value.dsiIsLayout();
 
     var lhs:dstType;
@@ -4098,7 +4165,7 @@ module ChapelArray {
     return lhs;
   }
   pragma "coerce fn"
-  proc chpl__coerce(type dstType:_domain, rhs:_tuple, ownsRhs:bool) {
+  proc chpl__coerce(type dstType:_domain, rhs:_tuple, param ownsRhs:bool) {
     var lhs:dstType;
     lhs; // no split init
     if chpl__isLegalRectTupDomAssign(lhs, rhs) {
@@ -4112,14 +4179,14 @@ module ChapelArray {
     return lhs;
   }
   pragma "coerce fn"
-  proc chpl__coerce(type dstType:_domain, rhs:range(?), ownsRhs:bool) {
+  proc chpl__coerce(type dstType:_domain, rhs:range(?), param ownsRhs:bool) {
     var lhs:dstType;
     lhs; // no split init
     lhs = {rhs};
     return lhs;
   }
   pragma "coerce fn"
-  proc chpl__coerce(type dstType:_domain, rhs, ownsRhs:bool) {
+  proc chpl__coerce(type dstType:_domain, rhs, param ownsRhs:bool) {
     // assumes rhs is iterable
     var lhs:dstType;
     if isRectangularDom(lhs) then
@@ -4132,9 +4199,14 @@ module ChapelArray {
   }
 
   pragma "coerce fn"
-  proc chpl__coerce(type dstType:_array, rhs:_array, ownsRhs:bool) {
+  proc chpl__coerce(type dstType:_array, rhs:_array, param ownsRhs:bool) {
+
+    type eltType = chpl__eltTypeFromArrayRuntimeType(dstType);
+    const ref dom = chpl__domainFromArrayRuntimeType(dstType);
+
     pragma "unsafe" // when eltType is non-nilable
-    var lhs : dstType;
+    var lhs = dom.buildArray(eltType, initElts=!ownsRhs);
+
     if lhs.rank != rhs.rank then
       compilerError("rank mismatch in array assignment");
 
@@ -4149,70 +4221,108 @@ module ChapelArray {
       if boundsChecking then
         checkArrayShapesUponAssignment(lhs, rhs);
 
-      chpl__uncheckedArrayTransfer(lhs, rhs);
+      chpl__uncheckedArrayTransfer(lhs, rhs, move=ownsRhs);
     }
 
-    if ownsRhs then
-      chpl__autoDestroy(rhs);
+    if ownsRhs {
+      // If we own the RHS, we have already moved the elements out
+      // and so should not try to deinit them.
+      // We still need to free any array memory.
+      _do_destroy_arr(rhs._unowned, rhs._instance, deinitElts=false);
+    }
 
     return lhs;
   }
   pragma "coerce fn"
-  proc chpl__coerce(type dstType:_array, rhs:_domain, ownsRhs:bool) {
-    pragma "unsafe" // when eltType is non-nilable
-    var lhs : dstType;
+  proc chpl__coerce(type dstType:_array, rhs:_domain, param ownsRhs:bool) {
+    // Always "moves" elements because they can't possibly be non-POD
+    // because RHS cannot be an associative domain.
+    // Should assign elements if non-POD becomes a possibility.
+    type eltType = chpl__eltTypeFromArrayRuntimeType(dstType);
+    const ref dom = chpl__domainFromArrayRuntimeType(dstType);
+    var lhs = dom.buildArray(eltType, initElts=false);
+
     if lhs.rank != rhs.rank then
       compilerError("rank mismatch in array assignment");
     if isAssociativeDom(rhs) && isRectangularArr(lhs) then
       compilerError("cannot assign to rectangular arrays from associative domains");
-    chpl__transferArray(lhs, rhs);
+    if !isPODType(eltType) then
+      compilerError("cannot assign to array from domain of non-POD indices");
+
+    chpl__transferArray(lhs, rhs, move=true);
     if ownsRhs then
       chpl__autoDestroy(rhs);
 
     return lhs;
   }
   pragma "coerce fn"
-  proc chpl__coerce(type dstType:_array, rhs:range(?), ownsRhs:bool) {
-    pragma "unsafe" // when eltType is non-nilable
-    var lhs : dstType;
+  proc chpl__coerce(type dstType:_array, rhs:range(?), param ownsRhs:bool) {
+    // Always "moves" elements because they can't possibly be non-POD
+    // Should assign elements if non-POD becomes a possibility.
+    type eltType = chpl__eltTypeFromArrayRuntimeType(dstType);
+    const ref dom = chpl__domainFromArrayRuntimeType(dstType);
+    var lhs = dom.buildArray(eltType, initElts=false);
+
     if lhs.rank != 1 then
       compilerError("cannot assign from ranges to multidimensional arrays");
 
-    chpl__transferArray(lhs, rhs);
+    chpl__transferArray(lhs, rhs, move=true);
 
     return lhs;
   }
   pragma "coerce fn"
-  proc chpl__coerce(type dstType:_array, rhs:_tuple, ownsRhs:bool) {
+  proc chpl__coerce(type dstType:_array, rhs:_tuple, param ownsRhs:bool) {
+
+    // For now, this uses =, because tuple is not necessarily capturing
+    // by value. Perhaps possible to fix that by using `in` intent on the tuple.
+
+    type eltType = chpl__eltTypeFromArrayRuntimeType(dstType);
+    const ref dom = chpl__domainFromArrayRuntimeType(dstType);
+
     pragma "unsafe" // when eltType is non-nilable
-    var lhs : dstType;
-    lhs; // no split-init
-    lhs = rhs;
+    var lhs = dom.buildArray(eltType, initElts=true);
+
+    if !isRectangularArr(lhs) then
+      compilerError("Cannot assign from tuple to non-rectangular array");
+
+    initArrFromTuple(lhs, rhs, false);
+
     if ownsRhs then
       chpl__autoDestroy(rhs);
 
     return lhs;
   }
+
   pragma "coerce fn"
-  proc chpl__coerce(type dstType:_array, rhs:desyncEltType(dstType), ownsRhs:bool) {
-    // assumes rhs is iterable
+  proc chpl__coerce(type dstType:_array, in rhs:desyncEltType(dstType), param ownsRhs:bool) {
+    type eltType = chpl__eltTypeFromArrayRuntimeType(dstType);
+    const ref dom = chpl__domainFromArrayRuntimeType(dstType);
+
     pragma "unsafe" // when eltType is non-nilable
-    var lhs : dstType;
-    lhs; // no split-init
-    forall e in lhs do
-      e = rhs;
-    if ownsRhs then
-      chpl__autoDestroy(rhs);
+    var lhs = dom.buildArray(eltType, initElts=false);
+
+    forall e in lhs with (in rhs) {
+      pragma "no auto destroy"
+      var copy = rhs; // make a copy for this iteration
+      // move it into the array
+      __primitive("=", e, copy);
+    }
 
     return lhs;
   }
   pragma "coerce fn"
-  proc chpl__coerce(type dstType:_array, rhs, ownsRhs:bool) {
+  proc chpl__coerce(type dstType:_array, rhs, param ownsRhs:bool) {
     // assumes rhs is iterable
+    // TODO: should be able to move from an iterator returning by value?
+
+    type eltType = chpl__eltTypeFromArrayRuntimeType(dstType);
+    const ref dom = chpl__domainFromArrayRuntimeType(dstType);
+
     pragma "unsafe" // when eltType is non-nilable
-    var lhs : dstType;
-    lhs; // no split-init
-    chpl__transferArray(lhs, rhs);
+    var lhs = dom.buildArray(eltType, initElts=true);
+
+    chpl__transferArray(lhs, rhs, move=false);
+
     if ownsRhs then
       chpl__autoDestroy(rhs);
 

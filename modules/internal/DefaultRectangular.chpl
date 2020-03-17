@@ -678,11 +678,12 @@ module DefaultRectangular {
       }
     }
 
-    proc dsiBuildArray(type eltType) {
+    proc dsiBuildArray(type eltType, param initElts) {
       return new unmanaged DefaultRectangularArr(eltType=eltType, rank=rank,
                                                  idxType=idxType,
                                                  stridable=stridable,
-                                                 dom=_to_unmanaged(this));
+                                                 dom=_to_unmanaged(this),
+                                                 initElts=initElts);
     }
 
     proc dsiBuildArrayWith(type eltType, data:_ddata(eltType), allocSize:int) {
@@ -727,7 +728,7 @@ module DefaultRectangular {
   }
 
   // helper routines for converting tuples of integers into tuple indices
-  
+
   inline proc chpl__intToIdx(type idxType, i: integral, j ...) {
     const first = chpl__intToIdx(idxType, i);
     const rest = chpl__intToIdx(idxType, (...j));
@@ -1015,9 +1016,6 @@ module DefaultRectangular {
     pragma "local field"
     var shiftedData : _ddata(eltType);
 
-    // note: used by pychapel
-    var noinit_data: bool = false;
-
     // note: used for external array support
     var externArr: bool = false;
     var _borrowed: bool = true;
@@ -1025,7 +1023,28 @@ module DefaultRectangular {
 
     //var numelm: int = -1; // for correctness checking
 
-    // end class definition here, then defined secondary methods below
+    // fields end here
+
+    proc init(type eltType, param rank, type idxType,
+              param stridable,
+              dom:unmanaged DefaultRectangularDom(rank=rank, idxType=idxType,
+                                                  stridable=stridable),
+              param initElts = true,
+              data:_ddata(eltType) = nil,
+              externArr = false,
+              _borrowed = false,
+              externFreeFunc = nil) {
+      super.init(eltType=eltType, rank=rank,
+                 idxType=idxType, stridable=stridable);
+      this.dom = dom;
+      this.data = data;
+      this.externArr = externArr;
+      this._borrowed = _borrowed;
+      this.externFreeFunc = externFreeFunc;
+
+      this.complete();
+      this.setupFieldsAndAllocate(initElts);
+    }
 
     proc intIdxType type {
       return chpl__idxTypeToIntIdxType(idxType);
@@ -1036,7 +1055,6 @@ module DefaultRectangular {
       writeln("blk=", blk);
       writeln("str=", str);
       writeln("factoredOffs=", factoredOffs);
-      writeln("noinit_data=", noinit_data);
     }
 
     // can the compiler create this automatically?
@@ -1051,14 +1069,14 @@ module DefaultRectangular {
       }
     }
 
-    override proc dsiDestroyArr() {
+    override proc dsiDestroyArr(param deinitElts:bool) {
       if (externArr) {
         if (!_borrowed) {
           chpl_call_free_func(externFreeFunc, c_ptrTo(data));
         }
       } else {
         var numElts:intIdxType = 0;
-        if dom.dsiNumIndices > 0 {
+        if deinitElts && dom.dsiNumIndices > 0 {
           param needsDestroy = __primitive("needs auto destroy",
                                            __primitive("deref", data[0]));
           numElts = dom.dsiNumIndices;
@@ -1161,8 +1179,7 @@ module DefaultRectangular {
       }
     }
 
-    proc postinit() {
-      if noinit_data == true then return;
+    proc setupFieldsAndAllocate(param initElts) {
       for param dim in 0..rank-1 {
         off(dim) = dom.dsiDim(dim).alignedLow;
         str(dim) = dom.dsiDim(dim).stride;
@@ -1193,12 +1210,13 @@ module DefaultRectangular {
       // Allow DR array initialization to pass in existing data
       if data == nil {
         if !localeModelHasSublocales {
-          data = _ddata_allocate(eltType, size);
+          data = _ddata_allocate(eltType, size, initElts=initElts);
         } else {
           data = _ddata_allocate(eltType, size,
                                  subloc = (if here.getChildCount() > 1
                                            then c_sublocid_all
-                                           else c_sublocid_none));
+                                           else c_sublocid_none),
+                                 initElts=initElts);
         }
       }
 
@@ -1402,7 +1420,9 @@ module DefaultRectangular {
           str = copy.str;
           factoredOffs = copy.factoredOffs;
 
-          dsiDestroyArr();
+          dsiDestroyArr(deinitElts=true);
+          // TODO: update to move preserved elements
+          // and separately deinit any going away above
           data = copy.data;
           // We can't call initShiftedData here because the new domain
           // has not yet been updated (this is called from within the
@@ -1692,7 +1712,7 @@ module DefaultRectangular {
             else if isjson || ischpl then f <~> new ioLiteral(",");
           } catch err: BadFormatError {
             break;
-          } 
+          }
         }
 
         if i >= dom.dsiDim(0).size {
@@ -2213,7 +2233,7 @@ module DefaultRectangular {
         op.accumulateOntoState(res[i], myadjust);
       }
     }
-    
+
     if debugDRScan then
       writeln("res = ", res);
   }

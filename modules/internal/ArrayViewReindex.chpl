@@ -671,7 +671,7 @@ module ArrayViewReindex {
       return this;
     }
 
-    override proc dsiDestroyArr() {
+    override proc dsiDestroyArr(param deinitElts:bool) {
       if ownsArrInstance {
         _delete_arr(_ArrInstance, _isPrivatized(_ArrInstance));
       }

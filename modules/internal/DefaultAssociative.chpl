@@ -900,7 +900,7 @@ module DefaultAssociative {
       }
     }
 
-    override proc dsiDestroyArr() {
+    override proc dsiDestroyArr(param deinitElts:bool) {
       //
       // BHARSH 2017-09-08: Workaround to avoid recursive iterator generation.
       //
