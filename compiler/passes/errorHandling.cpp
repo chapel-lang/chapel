@@ -920,7 +920,7 @@ static void genThrowingFnError(FnSymbol* calledFn,
   const char* desc = "cast";
   bool cast = true;
   if (strcmp(calledFn->name, "_cast") != 0) {
-    desc = astr("function '", calledFn->name, "'");
+    desc = astr("function ", calledFn->name);
     cast = false;
   }
   USR_FATAL_CONT(node, "call to throwing %s %s", desc, problem);
