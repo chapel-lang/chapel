@@ -1412,13 +1412,13 @@ module ChapelBase {
   inline proc _cast(type t:chpl_anyreal, x:chpl_anyreal)
     return __primitive("cast", t, x);
 
-  inline proc _cast(type t:chpl_anybool, x:enum)
+  inline proc _cast(type t:chpl_anybool, x:enum) throws
     return x: int: bool;
   // _cast(type t:integral, x:enum)
   // is generated for each enum in buildDefaultFunctions
   inline proc _cast(type t:enum, x:enum) where x.type == t
     return x;
-  inline proc _cast(type t:chpl_anyreal, x:enum)
+  inline proc _cast(type t:chpl_anyreal, x:enum) throws
     return x: int: real;
 
   inline proc _cast(type t:unmanaged class, x:_nilType)
@@ -1564,7 +1564,7 @@ module ChapelBase {
   inline proc _cast(type t:chpl_anycomplex, x: chpl_anycomplex)
     return (x.re, x.im):t;
 
-  inline proc _cast(type t:chpl_anycomplex, x: enum)
+  inline proc _cast(type t:chpl_anycomplex, x: enum) throws
     return (x:real, 0):t;
 
   //
@@ -1585,7 +1585,7 @@ module ChapelBase {
   inline proc _cast(type t:chpl_anyimag, x: chpl_anycomplex)
     return __primitive("cast", t, x.im);
 
-  inline proc _cast(type t:chpl_anyimag, x: enum)
+  inline proc _cast(type t:chpl_anyimag, x: enum) throws
     return x:real:imag;
 
   //
