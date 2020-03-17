@@ -5233,7 +5233,7 @@ void do_remote_put(void* src_addr, c_nodeid_t locale, void* tgt_addr,
                    size_t size, mem_region_t* remote_mr,
                    drpg_may_proxy_t may_proxy)
 {
-  gni_post_descriptor_t post_desc;
+  gni_post_descriptor_t post_desc = { 0 };
   mem_region_t* local_mr;
   chpl_bool do_rdma = false;
   size_t max_trans_sz = MAX_FMA_TRANS_SZ;
@@ -5409,7 +5409,7 @@ void do_remote_put_V(int v_len, void** src_addr_v, c_nodeid_t* locale_v,
   //
   int vi, ci = -1;
   mem_region_t* remote_mr;
-  gni_post_descriptor_t pd;
+  gni_post_descriptor_t pd = { 0 };
   gni_ct_put_post_descriptor_t pdc[MAX_CHAINED_PUT_LEN - 1];
 
   for (vi = 0, ci = -1; vi < v_len; vi++) {
@@ -5447,6 +5447,7 @@ void do_remote_put_V(int v_len, void** src_addr_v, c_nodeid_t* locale_v,
       else
         pdc[ci - 1].next_descr = &pdc[ci];
 
+      memset(&pdc[ci], 0, sizeof(pdc[ci]));
       pdc[ci].next_descr      = NULL;
       pdc[ci].local_addr      = (uint64_t) (intptr_t) src_addr_v[vi];
       pdc[ci].remote_addr     = (uint64_t) (intptr_t) tgt_addr_v[vi];
@@ -5521,7 +5522,7 @@ void do_remote_get_V(int v_len, void** tgt_addr_v, c_nodeid_t* locale_v,
   int vi, ci = -1;
   mem_region_t* local_mr;
   mem_region_t* remote_mr;
-  gni_post_descriptor_t pd;
+  gni_post_descriptor_t pd = { 0 };
   gni_ct_get_post_descriptor_t pdc[MAX_CHAINED_GET_LEN - 1];
 
   for (vi = 0, ci = -1; vi < v_len; vi++) {
@@ -5562,6 +5563,7 @@ void do_remote_get_V(int v_len, void** tgt_addr_v, c_nodeid_t* locale_v,
       else
         pdc[ci - 1].next_descr = &pdc[ci];
 
+      memset(&pdc[ci], 0, sizeof(pdc[ci]));
       pdc[ci].next_descr      = NULL;
       pdc[ci].local_addr      = (uint64_t) (intptr_t) tgt_addr_v[vi];
       pdc[ci].remote_addr     = (uint64_t) (intptr_t) src_addr_v[vi];
@@ -5621,7 +5623,7 @@ void do_nic_amo_nf_V(int v_len, uint64_t* opnd1_v, c_nodeid_t* locale_v,
     remote_mr_v += MAX_CHAINED_AMO_LEN;
   }
 
-  gni_post_descriptor_t post_desc;
+  gni_post_descriptor_t post_desc = { 0 };
   gni_ct_amo_post_descriptor_t pdc[MAX_CHAINED_AMO_LEN - 1];
   int vi, ci;
 
@@ -6120,7 +6122,7 @@ static inline
 void do_nic_get(void* tgt_addr, c_nodeid_t locale, mem_region_t* remote_mr,
                 void* src_addr, size_t size, mem_region_t* local_mr)
 {
-  gni_post_descriptor_t post_desc;
+  gni_post_descriptor_t post_desc = { 0 };
   chpl_bool do_rdma = false;
   size_t max_trans_sz = MAX_FMA_TRANS_SZ;
 
@@ -6999,7 +7001,7 @@ void do_nic_amo_nf(void* opnd1, c_nodeid_t locale,
                    gni_fma_cmd_type_t cmd,
                    mem_region_t* remote_mr)
 {
-  gni_post_descriptor_t post_desc;
+  gni_post_descriptor_t post_desc = { 0 };
 
   check_nic_amo(size, object, remote_mr);
   PERFSTATS_INC(amo_cnt);
@@ -7035,7 +7037,7 @@ void do_nic_amo(void* opnd1, void* opnd2, c_nodeid_t locale,
   mem_region_t*         local_mr = NULL;
   void*                 reg_result = result;
   fork_amo_data_t       stack_result;
-  gni_post_descriptor_t post_desc;
+  gni_post_descriptor_t post_desc = { 0 };
 
   check_nic_amo(size, object, remote_mr);
   PERFSTATS_INC(amo_cnt);
@@ -7456,7 +7458,7 @@ void do_fork_post(c_nodeid_t locale,
                   int* cdi_p, int* rbi_p)
 {
   rf_done_t              stack_rf_done;
-  gni_post_descriptor_t  stack_post_desc;
+  gni_post_descriptor_t  stack_post_desc = { 0 };
   gni_post_descriptor_t* post_desc_p;
   int                    rbi;
 
