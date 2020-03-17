@@ -1219,7 +1219,6 @@ static void buildEnumIntegerCastFunctions(EnumType* et) {
     arg2 = new ArgSymbol(INTENT_BLANK, "_arg2", et);
     fn->insertFormalAtTail(arg1);
     fn->insertFormalAtTail(arg2);
-    fn->throwsErrorInit();
 
     if (et->isConcrete()) {
       // If this enum is concrete, rely on the C cast and inline
@@ -1227,6 +1226,7 @@ static void buildEnumIntegerCastFunctions(EnumType* et) {
                                     new CallExpr(PRIM_CAST, arg1, arg2)));
       fn->addFlag(FLAG_INLINE);
     } else {
+      fn->throwsErrorInit();
       // Otherwise, it's semi-concrete, so we need errors for some cases.
       // Generate a select statement with when clauses for each of the
       // enumeration constants, and an otherwise clause that calls halt.
