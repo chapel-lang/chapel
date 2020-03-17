@@ -104,6 +104,10 @@ module Map {
 
     proc init(type keyType, type valType, param parSafe=false)
     where isNonNilableClass(valType) {
+      if isOwnedClass(valType) {
+        compilerError("maps of non-nilable owned values are not allowed");
+      }
+
       this.keyType = keyType;
       this.valType = valType;
       this.parSafe = parSafe;
@@ -297,15 +301,16 @@ module Map {
                this map.
     */
     iter items() const ref {
-      if !isNonNilableClass(valType) {
+      for key in myKeys {
+        yield (key, vals[key]);
+      }
+    }
+
+    pragma "no doc"
+    iter items() const ref where isNonNilableClass(valType) {
+      try! {
         for key in myKeys {
-          yield (key, vals[key]);
-        }
-      } else {
-        try! {
-          for key in myKeys {
-            yield (key, vals[key]: valType);
-          }
+          yield (key, vals[key]: valType);
         }
       }
     }
