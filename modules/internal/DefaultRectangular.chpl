@@ -1356,6 +1356,7 @@ module DefaultRectangular {
           if reportInPlaceRealloc then
             writeln("reallocating in-place");
 
+          sizesPerDim(1) = reallocD.dsiDim(1).size;
           _ddata_reallocate(data,
                             eltType,
                             oldSize=dom.dsiNumIndices,
