@@ -1189,12 +1189,11 @@ module ShellSort {
   }
 }
 
-// pragma "no doc"
+pragma "no doc"
 module TimSort {
 
   /*
-   Sort the 1D array `Data` in-place using a sequential insertion sort
-   algorithm.
+   Sort the 1D array `Data` in-place using tim sort algorithm.
 
    :arg Data: The array to be sorted
    :type Data: [] `eltType`
@@ -1202,34 +1201,92 @@ module TimSort {
       data is sorted.
 
    */
-  proc timSort(name: string) {
-    writeln("this is tim sort");
-    // chpl_check_comparator(comparator, eltType);
+  proc timSort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator) {
+    chpl_check_comparator(comparator, eltType);
 
-    // if Dom.rank != 1 {
-    //   compilerError("insertionSort() requires 1-D array");
-    // }
+    if Dom.rank != 1 {
+      compilerError("timSort() requires 1-D array");
+    }
 
-    // const low = lo,
-    //       high = hi,
-    //       stride = abs(Dom.stride);
+    //Size of run
+    const run = 3; 
+    var n = Data.size;
 
-    // for i in low..high by stride {
-    //   var ithVal = Data[i];
-    //   var inserted = false;
-    //   for j in low..i-stride by -stride {
-    //     if chpl_compare(ithVal, Data[j], comparator) < 0 {
-    //       Data[j+stride] = Data[j];
-    //     } else {
-    //       Data[j+stride] = ithVal;
-    //       inserted = true;
-    //       break;
-    //     }
-    //   }
-    //   if (!inserted) {
-    //     Data[low] = ithVal;
-    //   }
-    // }
+    for i in 1..n by run {
+      //Sort subarrays of size run
+      InsertionSort.insertionSort(Data, comparator, i, min(i+run-1, n));
+    }
+
+    iter timIt(n: int) {
+      var r = run;
+      for i in run..n {
+        yield r;
+        r = r*2;
+      }
+    }
+
+    for size in timIt(n) { 
+        if size >= n then break;
+        // Pick 2 arrays and merge them.
+        // After every merge,shift to 2*size 
+        for left in 1..n by 2*size { 
+          if left > n then break;
+            var mid = left + size - 1; 
+            var right = min((left + 2*size - 1), (n)); 
+            // Only 1 array
+            if(mid > right) then continue;
+            
+            // Merge sub arrays
+            _Merge(Data, left, mid, right, comparator);
+        } 
+    } 
+  }
+
+  private proc _Merge(Data: [?Dom] ?eltType, lo:int, mid:int, hi:int, comparator:?rec=defaultComparator) {
+    var size1 = mid-lo+1;
+    var size2 = hi-mid;
+
+    var left: [1..size1] int;
+    var right: [1..size2] int; 
+    for i in 1..size1 {
+      left[i] = Data[lo + i - 1];  
+    }
+    for i in 1..size2 {
+      right[i] = Data[mid + i];  
+    }
+
+    var i = 1, j = 1, k = lo;
+    // Merge the two arrays in larger sub array 
+    while (i <= size1 && j <= size2) 
+    { 
+      if (left[i] <= right[j]) 
+      { 
+        Data[k] = left[i]; 
+        i += 1; 
+      } 
+      else
+      { 
+        Data[k] = right[j]; 
+        j += 1; 
+      } 
+        k += 1; 
+    }
+
+    // Copy remaining elements of left, if any 
+    while (i <= size1) 
+    { 
+        Data[k] = left[i]; 
+        k += 1; 
+        i += 1; 
+    } 
+  
+    // Copy remaining element of right, if any 
+    while (j <= size2) 
+    { 
+        Data[k] = right[j]; 
+        k += 1; 
+        j += 1; 
+    }  
   }
 }
 
