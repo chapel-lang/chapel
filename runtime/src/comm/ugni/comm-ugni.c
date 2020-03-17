@@ -5233,7 +5233,7 @@ void do_remote_put(void* src_addr, c_nodeid_t locale, void* tgt_addr,
                    size_t size, mem_region_t* remote_mr,
                    drpg_may_proxy_t may_proxy)
 {
-  gni_post_descriptor_t post_desc = { 0 };
+  gni_post_descriptor_t post_desc;
   mem_region_t* local_mr;
   chpl_bool do_rdma = false;
   size_t max_trans_sz = MAX_FMA_TRANS_SZ;
@@ -5317,6 +5317,7 @@ void do_remote_put(void* src_addr, c_nodeid_t locale, void* tgt_addr,
   //
   // Fill in the POST descriptor.
   //
+  post_desc                 = (gni_post_descriptor_t) { 0 };
   post_desc.type            = GNI_POST_FMA_PUT;
   post_desc.cq_mode         = GNI_CQMODE_GLOBAL_EVENT;
   post_desc.dlvr_mode       = GNI_DLVMODE_PERFORMANCE;
@@ -5623,7 +5624,7 @@ void do_nic_amo_nf_V(int v_len, uint64_t* opnd1_v, c_nodeid_t* locale_v,
     remote_mr_v += MAX_CHAINED_AMO_LEN;
   }
 
-  gni_post_descriptor_t post_desc = { 0 };
+  gni_post_descriptor_t post_desc;
   gni_ct_amo_post_descriptor_t pdc[MAX_CHAINED_AMO_LEN - 1];
   int vi, ci;
 
@@ -5633,6 +5634,7 @@ void do_nic_amo_nf_V(int v_len, uint64_t* opnd1_v, c_nodeid_t* locale_v,
   //
   // Build up the base post descriptor
   //
+  post_desc                 = (gni_post_descriptor_t) { 0 };
   post_desc.next_descr      = NULL;
   post_desc.type            = GNI_POST_AMO;
   post_desc.cq_mode         = GNI_CQMODE_GLOBAL_EVENT;
@@ -6122,7 +6124,7 @@ static inline
 void do_nic_get(void* tgt_addr, c_nodeid_t locale, mem_region_t* remote_mr,
                 void* src_addr, size_t size, mem_region_t* local_mr)
 {
-  gni_post_descriptor_t post_desc = { 0 };
+  gni_post_descriptor_t post_desc;
   chpl_bool do_rdma = false;
   size_t max_trans_sz = MAX_FMA_TRANS_SZ;
 
@@ -6134,6 +6136,7 @@ void do_nic_get(void* tgt_addr, c_nodeid_t locale, mem_region_t* remote_mr,
   //
   // Fill in the POST descriptor.
   //
+  post_desc                 = (gni_post_descriptor_t) { 0 };
   post_desc.type            = GNI_POST_FMA_GET;
   post_desc.cq_mode         = GNI_CQMODE_GLOBAL_EVENT;
   post_desc.dlvr_mode       = GNI_DLVMODE_PERFORMANCE;
@@ -7001,7 +7004,7 @@ void do_nic_amo_nf(void* opnd1, c_nodeid_t locale,
                    gni_fma_cmd_type_t cmd,
                    mem_region_t* remote_mr)
 {
-  gni_post_descriptor_t post_desc = { 0 };
+  gni_post_descriptor_t post_desc;
 
   check_nic_amo(size, object, remote_mr);
   PERFSTATS_INC(amo_cnt);
@@ -7009,6 +7012,7 @@ void do_nic_amo_nf(void* opnd1, c_nodeid_t locale,
   //
   // Fill in the POST descriptor.
   //
+  post_desc                 = (gni_post_descriptor_t) { 0 };
   post_desc.type            = GNI_POST_AMO;
   post_desc.cq_mode         = GNI_CQMODE_GLOBAL_EVENT;
   post_desc.dlvr_mode       = GNI_DLVMODE_PERFORMANCE;
@@ -7037,7 +7041,7 @@ void do_nic_amo(void* opnd1, void* opnd2, c_nodeid_t locale,
   mem_region_t*         local_mr = NULL;
   void*                 reg_result = result;
   fork_amo_data_t       stack_result;
-  gni_post_descriptor_t post_desc = { 0 };
+  gni_post_descriptor_t post_desc;
 
   check_nic_amo(size, object, remote_mr);
   PERFSTATS_INC(amo_cnt);
@@ -7064,6 +7068,7 @@ void do_nic_amo(void* opnd1, void* opnd2, c_nodeid_t locale,
   //
   // Fill in the POST descriptor.
   //
+  post_desc                    = (gni_post_descriptor_t) { 0 };
   post_desc.type               = GNI_POST_AMO;
   post_desc.cq_mode            = GNI_CQMODE_GLOBAL_EVENT;
   post_desc.dlvr_mode          = GNI_DLVMODE_PERFORMANCE;
@@ -7458,7 +7463,7 @@ void do_fork_post(c_nodeid_t locale,
                   int* cdi_p, int* rbi_p)
 {
   rf_done_t              stack_rf_done;
-  gni_post_descriptor_t  stack_post_desc = { 0 };
+  gni_post_descriptor_t  stack_post_desc;
   gni_post_descriptor_t* post_desc_p;
   int                    rbi;
 
@@ -7479,6 +7484,7 @@ void do_fork_post(c_nodeid_t locale,
     *p_rf_req->rf_done = 0;
     chpl_atomic_thread_fence(memory_order_release);
 
+    stack_post_desc = (gni_post_descriptor_t) { 0 };
     post_desc_p = &stack_post_desc;
   } else {
     p_rf_req->rf_done = NULL;
