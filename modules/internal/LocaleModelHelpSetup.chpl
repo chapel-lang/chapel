@@ -38,8 +38,9 @@ module LocaleModelHelpSetup {
 
   config param debugLocaleModel = false;
 
+  pragma "no doc"
   pragma "locale private"
-  var doneCreatingLocales: bool = false;
+  var rootLocaleInitialized: bool = false;
 
   extern var chpl_nodeID: chpl_nodeID_t;
 

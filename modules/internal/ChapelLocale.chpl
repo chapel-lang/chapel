@@ -120,7 +120,7 @@ module ChapelLocale {
     // default initializer for the locale record.
     // TODO: What is the default value for a locale?
     proc init() {
-      if doneCreatingLocales {
+      if rootLocaleInitialized {
         this._instance = defaultLocale._instance;
       }
       else {
@@ -518,8 +518,8 @@ module ChapelLocale {
   // replication, set replicateRootLocale to false.
   pragma "no doc"
   pragma "locale private" var rootLocale = nilLocale;
-  pragma "no doc"
-  pragma "locale private" var rootLocaleInitialized = false;
+  /*pragma "no doc"*/
+  /*pragma "locale private" var rootLocaleInitialized = false;*/
 
   pragma "no doc"
   config param replicateRootLocale = true;
@@ -576,17 +576,6 @@ module ChapelLocale {
         rootLocale = origRootLocale;
         rootLocaleInitialized = true;
       }
-
-      // currently, standalone version of this iterator is not called, but just
-      // to be sure, at the end, visit all locales and set their locale-private
-      // `doneCreatingLocales`
-      for locIdx in 0..#numLocales /*ref(b)*/ {
-        on __primitive("chpl_on_locale_num",
-                       chpl_buildLocaleID(locIdx:chpl_nodeID_t,
-                                          c_sublocid_any)) {
-          doneCreatingLocales = true;
-        }
-      }
     }
 
     // Since we are going on to all the locales here, we use the
@@ -607,10 +596,6 @@ module ChapelLocale {
           b.wait(locIdx, flags);
           chpl_rootLocaleInitPrivate(locIdx);
           warmupRuntime();
-          
-          // this is a locale-private variable, so it needs to be set inside the
-          // coforall-on
-          doneCreatingLocales = true;
         }
       }
     }

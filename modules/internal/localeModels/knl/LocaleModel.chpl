@@ -235,6 +235,7 @@ module LocaleModel {
 
     override proc getChild(idx:int) : locale {
       halt("requesting a child from a MemoryLocale locale");
+      return defaultLocale;
     }
   }
 
@@ -356,7 +357,7 @@ module LocaleModel {
     // to establish the equivalence the "locale" field of the locale object
     // and the node ID portion of any wide pointer referring to it.
     proc init() {
-      if doneCreatingLocales {
+      if rootLocaleInitialized {
         halt("Cannot create additional LocaleModel instances");
       }
       _node_id = chpl_nodeID: int;
@@ -367,7 +368,7 @@ module LocaleModel {
     }
 
     proc init(parent_loc : locale) {
-      if doneCreatingLocales {
+      if rootLocaleInitialized {
         halt("Cannot create additional LocaleModel instances");
       }
       super.init(parent_loc);
