@@ -152,61 +152,61 @@ module ChapelLocale {
 
     proc deinit() { }
 
-    inline proc maxTaskPar { return this._instance!.maxTaskPar; }
-    inline proc callStackSize { return this._instance!.callStackSize; }
+    inline proc maxTaskPar { return this._value.maxTaskPar; }
+    inline proc callStackSize { return this._value.callStackSize; }
 
     // the following are normally taken care of by `forwarding`. However, they
     // don't work if they are called in a promoted expression. See 15148
     inline proc numPUs(logical: bool = false, accessible: bool = true) {
-      return this._instance!.numPUs(logical, accessible);
+      return this._value.numPUs(logical, accessible);
     }
 
     inline proc id {
-      return this._instance!.id;
+      return this._value.id;
     }
 
     inline proc localeid {
-      return this._instance!.localeid;
+      return this._value.localeid;
     }
 
     inline proc hostname {
-      return this._instance!.hostname;
+      return this._value.hostname;
     }
 
     inline proc name {
-      return this._instance!.name;
+      return this._value.name;
     }
 
     inline proc chpl_id() {
-      return this._instance!.chpl_id();
+      return this._value.chpl_id();
     }
 
     inline proc chpl_localeid() {
-      return this._instance!.chpl_localeid();
+      return this._value.chpl_localeid();
     }
 
     inline proc chpl_name() {
-      return this._instance!.chpl_name();
+      return this._value.chpl_name();
     }
 
     inline proc defaultMemory() {
-      return this._instance!.defaultMemory();
+      return this._value.defaultMemory();
     }
 
     inline proc largeMemory() {
-      return this._instance!.largeMemory();
+      return this._value.largeMemory();
     }
 
     inline proc lowLatencyMemory() {
-      return this._instance!.lowLatencyMemory();
+      return this._value.lowLatencyMemory();
     }
 
     inline proc highBandwidthMemory() {
-      return this._instance!.highBandwidthMemory();
+      return this._value.highBandwidthMemory();
     }
 
     inline proc getChildCount() {
-      return this._instance!.getChildCount();
+      return this._value.getChildCount();
     }
 
   } // end of record _locale
