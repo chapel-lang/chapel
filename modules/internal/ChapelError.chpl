@@ -516,9 +516,9 @@ module ChapelError {
   pragma "always propagate line file info"
   proc chpl_enum_cast_error(casted: string, enumName: string) throws {
     if casted.isEmpty() then
-      throw new owned IllegalArgumentError("bad cast from empty string to " + enumName);
+      throw new owned IllegalArgumentError("bad cast from empty string to enum '" + enumName + "'");
     else
-      throw new owned IllegalArgumentError("bad cast from string '" + casted + "' to '" + enumName + "'");
+      throw new owned IllegalArgumentError("bad cast from string '" + casted + "' to enum '" + enumName + "'");
   }
 
   pragma "no doc"
@@ -532,7 +532,7 @@ module ChapelError {
   pragma "insert line file info"
   pragma "always propagate line file info"
     proc chpl_enum_cast_error_no_int(enumName: string, constName: string) throws {
-    throw new owned IllegalArgumentError("bad cast: '" + enumName + "." +
+    throw new owned IllegalArgumentError("bad cast: enum '" + enumName + "." +
                                          constName + "' has no integer value");
     return 0;
   }
@@ -545,10 +545,10 @@ module ChapelError {
   pragma "always propagate line file info"
   proc chpl_enum_cast_error(casted: bytes, enumName: string) throws {
     if casted.isEmpty() then
-      throw new owned IllegalArgumentError("bad cast from empty bytes to " + enumName);
+      throw new owned IllegalArgumentError("bad cast from empty bytes to enum '" + enumName + "'");
     else
       throw new owned IllegalArgumentError("bad cast from bytes '" +
                                            casted.decode(decodePolicy.replace) +
-                                           "' to " + enumName);
+                                           "' to enum '" + enumName + "'");
   }
 }
