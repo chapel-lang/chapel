@@ -410,25 +410,21 @@ module ChapelLocale {
     pragma "no doc"
     proc defaultMemory() : locale {
       HaltWrappers.pureVirtualMethodHalt();
-      return new locale(this);
     }
 
     pragma "no doc"
     proc largeMemory() : locale {
       HaltWrappers.pureVirtualMethodHalt();
-      return new locale(this);
     }
 
     pragma "no doc"
     proc lowLatencyMemory() : locale {
       HaltWrappers.pureVirtualMethodHalt();
-      return new locale(this);
     }
 
     pragma "no doc"
     proc highBandwidthMemory() : locale {
       HaltWrappers.pureVirtualMethodHalt();
-      return new locale(this);
     }
 
     pragma "no doc"
@@ -453,7 +449,6 @@ module ChapelLocale {
     pragma "no doc"
     proc getChild(idx:int) : locale {
       HaltWrappers.pureVirtualMethodHalt();
-      return new locale(this);
     }
 
 // Part of the required locale interface.
@@ -567,7 +562,6 @@ module ChapelLocale {
 
     proc localeIDtoLocale(id : chpl_localeID_t) : locale {
       HaltWrappers.pureVirtualMethodHalt();
-      return new locale(this);
     }
 
     // These iterators are to be used by RootLocale:setup() to

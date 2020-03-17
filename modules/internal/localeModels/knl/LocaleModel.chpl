@@ -235,7 +235,6 @@ module LocaleModel {
 
     override proc getChild(idx:int) : locale {
       halt("requesting a child from a MemoryLocale locale");
-      return new locale(this);
     }
   }
 
