@@ -5448,7 +5448,7 @@ void do_remote_put_V(int v_len, void** src_addr_v, c_nodeid_t* locale_v,
       else
         pdc[ci - 1].next_descr = &pdc[ci];
 
-      memset(&pdc[ci], 0, sizeof(pdc[ci]));
+      pdc[ci]                 = (gni_ct_put_post_descriptor_t) { 0 };
       pdc[ci].next_descr      = NULL;
       pdc[ci].local_addr      = (uint64_t) (intptr_t) src_addr_v[vi];
       pdc[ci].remote_addr     = (uint64_t) (intptr_t) tgt_addr_v[vi];
@@ -5564,7 +5564,7 @@ void do_remote_get_V(int v_len, void** tgt_addr_v, c_nodeid_t* locale_v,
       else
         pdc[ci - 1].next_descr = &pdc[ci];
 
-      memset(&pdc[ci], 0, sizeof(pdc[ci]));
+      pdc[ci]                 = (gni_ct_get_post_descriptor_t) { 0 };
       pdc[ci].next_descr      = NULL;
       pdc[ci].local_addr      = (uint64_t) (intptr_t) tgt_addr_v[vi];
       pdc[ci].remote_addr     = (uint64_t) (intptr_t) src_addr_v[vi];
