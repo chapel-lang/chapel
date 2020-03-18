@@ -1,5 +1,5 @@
 #!/bin/sh
 grep Copyright $2 > $2.prediff.tmp
-sed -E 's/[0-9]{4}/n/' $2.prediff.tmp > $2
+sed 's/[0-9][0-9][0-9][0-9]/n/' $2.prediff.tmp > $2
 rm $2.prediff.tmp
 
