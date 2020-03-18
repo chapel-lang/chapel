@@ -412,7 +412,7 @@ static void ensureRequiredStandardModulesAreParsed() {
       UnresolvedSymExpr* oldModNameExpr = toUnresolvedSymExpr(moduleExpr);
 
       if (oldModNameExpr == NULL) {
-        INT_FATAL("It seems an internal module is using a mod.submod form");
+        continue;
       }
 
       const char* modName  = oldModNameExpr->unresolved;
