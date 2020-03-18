@@ -211,7 +211,7 @@ int chpl_enc_validate_buf(const char *buf, ssize_t buflen) {
   int offset = 0;
 
   while (offset<buflen) {
-    // you can create a chapel string with a codepoint that represens and
+    // you can create a chapel string with a codepoint that represents an
     // escaped byte, so the last argument is true
     if (chpl_enc_decode_char_buf_utf8(&cp, &nbytes, buf+offset,
                                       buflen-offset, true) != 0) {
