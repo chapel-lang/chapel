@@ -1399,6 +1399,7 @@ static void resolveModuleCall(CallExpr* call) {
         ModuleSymbol* currModule = call->getModule();
         ResolveScope* scope      = ResolveScope::getScopeFor(mod->block);
         const char*   mbrName    = get_string(call->get(2));
+        ModuleSymbol* modArg     = mod;  // module= argument to the CallExpr
 
         currModule->moduleUseAdd(mod);
 
@@ -1412,7 +1413,7 @@ static void resolveModuleCall(CallExpr* call) {
 
         // Then, try public import statements that enables unqualified access
         if (!sym) {
-          sym = scope->lookupPublicUnqualAccessSyms(mbrName);
+          sym = scope->lookupPublicUnqualAccessSyms(mbrName, modArg);
         }
 
         // Adjust class types to undecorated
@@ -1441,14 +1442,14 @@ static void resolveModuleCall(CallExpr* call) {
 
                 call->replace(new UnresolvedSymExpr(mbrName));
 
-                parent->insertAtHead(mod);
+                parent->insertAtHead(modArg);
                 parent->insertAtHead(gModuleToken);
               }
 
             } else if (CallExpr* c = resolveModuleGetNewExpr(call, sym)) {
               call->replace(new SymExpr(sym));
 
-              c->insertAtHead(mod);
+              c->insertAtHead(modArg);
               c->insertAtHead(gModuleToken);
 
             } else {

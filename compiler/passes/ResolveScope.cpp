@@ -956,7 +956,8 @@ Symbol* ResolveScope::lookupPublicImports(const char* name) const {
   return retval;
 }
 
-Symbol* ResolveScope::lookupPublicUnqualAccessSyms(const char* name) const {
+Symbol* ResolveScope::lookupPublicUnqualAccessSyms(const char* name,
+                                                   ModuleSymbol*& modArg) const {
   UseImportList useImportList = mUseImportList;
 
   for_vector_allowing_0s(VisibilityStmt, visStmt, useImportList) {
@@ -969,6 +970,7 @@ Symbol* ResolveScope::lookupPublicUnqualAccessSyms(const char* name) const {
                 ResolveScope *scope = ResolveScope::getScopeFor(ms->block);
                 Symbol *retval = scope->lookupNameLocally(name);
                 if (retval) {
+                  modArg = ms;
                   return retval;
                 }
               }
