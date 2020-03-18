@@ -73,7 +73,7 @@ public:
 
   bool                  extend(VisibilityStmt* stmt);
 
-  Symbol*               lookupForImport(Expr* expr) const;
+  Symbol*               lookupForImport(Expr* expr, bool isUse) const;
 
   Symbol*               lookup(Expr*       expr, bool isUse=false)       const;
 

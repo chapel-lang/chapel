@@ -590,7 +590,7 @@ void ResolveScope::firstImportedModuleName(Expr* expr,
   }
 }
 
-Symbol* ResolveScope::lookupForImport(Expr* expr) const {
+Symbol* ResolveScope::lookupForImport(Expr* expr, bool isUse) const {
   Symbol* retval = NULL;
 
   const char* name = NULL;
@@ -624,6 +624,10 @@ Symbol* ResolveScope::lookupForImport(Expr* expr) const {
           // if we're not in the root module scope or using relative import,
           // this is an improper match
           badCloserModule = mod;
+          if (isUse) { // TODO: remove this to disable relative use
+            retval = sym;
+            break;
+          }
         } else {
           // if we are in the root module scope, then it is a proper match.
           retval = sym;
@@ -631,6 +635,10 @@ Symbol* ResolveScope::lookupForImport(Expr* expr) const {
         }
       } else if (sym != NULL) {
         // found something other than a module
+        if (isUse && isTypeSymbol(sym) && isEnumType(sym->type)) {
+          retval = sym;
+          break;
+        }
         USR_FATAL(expr, "import must name a module ('%s' not a module)",
                   sym->name);
       }

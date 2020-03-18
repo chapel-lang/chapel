@@ -140,7 +140,7 @@ void ImportStmt::scopeResolve(ResolveScope* scope) {
     if (isSymExpr(src)) {
       INT_FATAL("This should only happen for a UseStmt");
 
-    } else if (Symbol* sym = scope->lookupForImport(src)) {
+    } else if (Symbol* sym = scope->lookupForImport(src, false)) {
       SET_LINENO(this);
 
       if (ModuleSymbol* modSym = toModuleSymbol(sym)) {
