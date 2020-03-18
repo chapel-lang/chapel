@@ -930,7 +930,7 @@ static FnSymbol* getOverrideCandidate(FnSymbol* fn) {
   }
 
   //
-  // TODO: Merging these code paths triggers weird forwaring errors for
+  // TODO: Merging these code paths triggers weird forwarding errors for
   // OwnedObject code. Might be because we discard "owned" in places
   // we should not?
   //
