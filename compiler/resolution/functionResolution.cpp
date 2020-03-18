@@ -3741,8 +3741,21 @@ void resolveNormalCallCompilerWarningStuff(CallExpr* call,
     } else {
       BaseAST* from = it->second.first;
       const char* err = it->second.second;
-      USR_FATAL_CONT(from, "%s", err);
-      USR_PRINT(call, "in function called here");
+      FnSymbol* inFn = call->getFunction();
+      bool inCopyIsh = false;
+      if (inFn != NULL) {
+        inCopyIsh = inFn->hasFlag(FLAG_INIT_COPY_FN) ||
+                    inFn->hasFlag(FLAG_AUTO_COPY_FN) ||
+                    inFn->hasFlag(FLAG_UNALIAS_FN) ||
+                    inFn->name == astrInitEquals;
+      }
+      if (inCopyIsh) {
+        inFn->addFlag(FLAG_ERRONEOUS_COPY);
+        tryResolveErrors[inFn] = std::make_pair(from,err);
+      } else {
+        USR_FATAL_CONT(from, "%s", err);
+        USR_PRINT(call, "in function called here");
+      }
     }
   }
 }
