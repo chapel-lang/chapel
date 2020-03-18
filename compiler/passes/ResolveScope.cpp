@@ -625,10 +625,6 @@ Symbol* ResolveScope::lookupForImport(Expr* expr, bool isUse) const {
           // if we're not in the root module scope or using relative import,
           // this is an improper match
           badCloserModule = mod;
-          if (isUse) { // TODO: remove this to disable relative use
-            retval = sym;
-            break;
-          }
         } else {
           // if we are in the root module scope, then it is a proper match.
           retval = sym;
