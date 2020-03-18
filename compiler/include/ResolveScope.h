@@ -137,11 +137,15 @@ private:
                                       UseImportList& current,
                                       UseImportMap&  visited) const;
 
-   bool                 skipUse(UseImportMap&  visited,
-                                const UseStmt* current)                  const;
+  bool                 skipUse(UseImportMap&  visited,
+                               const UseStmt* current)                  const;
 
-   Symbol* followImportUseChains(UnresolvedSymExpr* expr) const;
-   Symbol* lookupNameLocallyForImport(const char* name) const;
+  Symbol* followImportUseChains(const char* name) const;
+  Symbol* lookupNameLocallyForImport(const char* name) const;
+  void firstImportedModuleName(Expr* expr,
+                               const char*& name,
+                               CallExpr*& call,
+                               const ResolveScope*& scope) const;
 
   BaseAST*              mAstRef;
   const ResolveScope*   mParent;

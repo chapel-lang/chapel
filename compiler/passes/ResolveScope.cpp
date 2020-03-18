@@ -468,8 +468,7 @@ Symbol* ResolveScope::lookupNameLocallyForImport(const char* name) const {
   return retval;
 }
 
-Symbol* ResolveScope::followImportUseChains(UnresolvedSymExpr* expr) const {
-  const char* name = expr->unresolved;
+Symbol* ResolveScope::followImportUseChains(const char* name) const {
   UseImportList useImportList = mUseImportList;
   SymList symbols;
 
@@ -529,72 +528,159 @@ Symbol* ResolveScope::followImportUseChains(UnresolvedSymExpr* expr) const {
   }
 }
 
+static const char* getNameFrom(Expr* e) {
+  const char* name = NULL;
+  if (UnresolvedSymExpr* uSym = toUnresolvedSymExpr(e)) {
+    return uSym->unresolved;
+  } else if (SymExpr* se = toSymExpr(e)) {
+    if (get_string(se, &name) == true)
+      return name;
+  }
+
+  return NULL;
+}
+
+// Finds the first name (other than this/super) in the Expr
+//   name is that name
+//   call is the call contaning the name on the left branch or NULL
+//     (which is the call requiring further processing)
+//   scope is the scope indicated by any this. / super. or NULL
+void ResolveScope::firstImportedModuleName(Expr* expr,
+                                           const char*& name,
+                                           CallExpr*& call,
+                                           const ResolveScope*& scope) const {
+  if (const char* n = getNameFrom(expr)) {
+    const ResolveScope* moduleScope = this;
+    // Start with a module symbol scope (not a scope for a function body e.g.)
+    while (moduleScope && !isModuleSymbol(moduleScope->mAstRef))
+      moduleScope = moduleScope->mParent;
+
+    if (n == astrThis) {
+      scope = moduleScope;
+    } else if (n == astrSuper) {
+      if (mParent == NULL || mParent->mParent == NULL)
+        USR_FATAL(expr, "cannot import super from a toplevel module");
+      scope = moduleScope->mParent;
+    } else {
+      name = n;
+    }
+
+  } else if (CallExpr* c = toCallExpr(expr)) {
+    if (c->isNamedAstr(astrSdot) == true) {
+      const char* oldName = name;
+      const ResolveScope* curScope = this;
+      if (scope != NULL) curScope = scope;
+      curScope->firstImportedModuleName(c->get(1), name, call, scope);
+      if (call == NULL && name != NULL && oldName == NULL) {
+        // update the call the first time the left-branch set the name.
+        call = c;
+      }
+      if (name == NULL) {
+        // look in the right branch in case of e.g. super.super.M
+        // to update scope
+        if (scope != NULL) curScope = scope;
+        curScope->firstImportedModuleName(c->get(2), name, call, scope);
+      }
+
+    } else {
+      INT_FATAL("expected a . call");
+    }
+  } else {
+    INT_FATAL("expected a name or a call");
+  }
+}
+
 Symbol* ResolveScope::lookupForImport(Expr* expr) const {
   Symbol* retval = NULL;
 
-  if (UnresolvedSymExpr* uSym = toUnresolvedSymExpr(expr)) {
+  const char* name = NULL;
+  CallExpr* call = NULL;
+  const ResolveScope* relativeScope = NULL;
+
+  firstImportedModuleName(expr, name, call, relativeScope);
+  if (name == NULL) {
+    if (astrThis == getNameFrom(expr))
+      USR_FATAL(expr, "'this.' can only be used as prefix of import");
+    else if (astrSuper == getNameFrom(expr))
+      USR_FATAL(expr, "'super.' can only be used as prefix of import");
+    else
+      INT_FATAL("case not handled");
+  }
+
+  INT_ASSERT(name != NULL);
+
+  {
+    const ResolveScope* start = relativeScope!=NULL ? relativeScope : this;
     const ResolveScope* ptr = NULL;
-    bool foundBadCloser = false;
-    for (ptr = this; ptr != NULL && retval == NULL; ptr = ptr->mParent) {
+    ModuleSymbol* badCloserModule = NULL;
+    for (ptr = start; ptr != NULL && retval == NULL; ptr = ptr->mParent) {
       // Check if the module is defined in this scope
-      Symbol* sym = ptr->lookupNameLocallyForImport(uSym->unresolved);
+      Symbol* sym = ptr->lookupNameLocallyForImport(name);
       if (ModuleSymbol* mod = toModuleSymbol(sym)) {
-        if (mod->defPoint->parentSymbol != theProgram) {
-          // if we're not in the root module scope, this is an improper match
-          USR_WARN(expr, "currently unable to import nested modules without"
-                   " specifying the full path to the module");
-          USR_PRINT(mod, "skipping module defined here");
-          foundBadCloser = true;
+        if (relativeScope != NULL) {
+          retval = sym;
+          break;
+        } else if (mod->defPoint->parentSymbol != theProgram) {
+          // if we're not in the root module scope or using relative import,
+          // this is an improper match
+          badCloserModule = mod;
         } else {
           // if we are in the root module scope, then it is a proper match.
           retval = sym;
           break;
         }
       } else if (sym != NULL) {
-        retval = sym;
-        break;
+        // found something other than a module
+        USR_FATAL(expr, "import must name a module ('%s' not a module)",
+                  sym->name);
       }
 
       // otherwise follow uses/imports only (breadth first)
       //    look for the symbols defined in the used
       //    or if the module being imported matches
       //    and if not, keep following the public use chains
-      retval = followImportUseChains(uSym);
+      retval = followImportUseChains(name);
+
+      if (relativeScope != NULL)
+        break; // only consider the one scope when doing relative imports
     }
 
-    if (retval == NULL && foundBadCloser) {
-      USR_FATAL(expr, "No better match found");
+    if (retval == NULL && badCloserModule != NULL) {
+      USR_FATAL_CONT(expr, "Cannot import module '%s'", name);
+      USR_PRINT(badCloserModule, "a module named '%s' is defined here", name);
+      USR_PRINT(expr, "full path or explicit relative import required");
+      USR_PRINT(expr, "please specify the full path to the module");
+      USR_PRINT(expr, "or use a relative import e.g. 'import this.M' or 'import super.M'");
+      USR_STOP();
     }
-  } else if (CallExpr* call = toCallExpr(expr)) {
-    if (call->isNamedAstr(astrSdot) == true) {
-      Symbol* outer = lookupForImport(call->get(1));
-      if (ModuleSymbol* outerMod = toModuleSymbol(outer)) {
-        if (SymExpr* rhs = toSymExpr(call->get(2))) {
-          const char* rhsName = NULL;
+  }
 
-          if (get_string(rhs, &rhsName) == true) {
-            ResolveScope* scope = getScopeFor(outerMod->block);
-            if (Symbol* symbol = scope->getField(rhsName)) {
-              retval = symbol;
+  if (retval == NULL)
+    USR_FATAL(expr, "Cannot find symbol '%s'", name);
 
-            } else {
-              USR_FATAL(call, "Cannot find symbol '%s'", rhsName);
-            }
-          } else {
-            INT_FATAL(call, "Bad qualified name");
-          }
+  // Process further portions of import starting from call
+  while (call != NULL) {
+    INT_ASSERT(call->isNamedAstr(astrSdot));
+    if (!isModuleSymbol(retval))
+      USR_FATAL(call, "cannot make nested import from non-module '%s'",
+                 retval->name);
 
-        } else {
-          INT_FATAL(call, "Bad qualified name");
-        }
-      } else {
-        INT_FATAL(call, "Expected to find module");
-      }
+    Symbol* outer = retval;
+    ModuleSymbol* outerMod = toModuleSymbol(outer);
+
+    const char* rhsName = getNameFrom(call->get(2));
+    INT_ASSERT(rhsName != NULL);
+
+    ResolveScope* scope = getScopeFor(outerMod->block);
+    if (Symbol* symbol = scope->getField(rhsName)) {
+      retval = symbol;
+
     } else {
-      INT_FATAL(expr, "Not a dotted expr");
+      USR_FATAL(call, "Cannot find symbol '%s' in module '%s'",
+                      rhsName, outerMod->name);
     }
-  } else {
-    INT_FATAL(expr, "Unsupported expr");
+
+    call = toCallExpr(call->parentExpr);
   }
 
   return retval;
