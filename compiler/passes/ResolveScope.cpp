@@ -540,7 +540,6 @@ static const char* getNameFrom(Expr* e) {
   return NULL;
 }
 
-
 // Finds the first name (other than this/super) in the Expr
 //   name is that name
 //   call is the call contaning the name on the left branch or NULL
@@ -551,15 +550,21 @@ void ResolveScope::firstImportedModuleName(Expr* expr,
                                            CallExpr*& call,
                                            const ResolveScope*& scope) const {
   if (const char* n = getNameFrom(expr)) {
+    const ResolveScope* moduleScope = this;
+    // Start with a module symbol scope (not a scope for a function body e.g.)
+    while (moduleScope && !isModuleSymbol(moduleScope->mAstRef))
+      moduleScope = moduleScope->mParent;
+
     if (n == astrThis) {
-      scope = this;
+      scope = moduleScope;
     } else if (n == astrSuper) {
       if (mParent == NULL || mParent->mParent == NULL)
         USR_FATAL(expr, "cannot import super from a toplevel module");
-      scope = mParent;
+      scope = moduleScope->mParent;
     } else {
       name = n;
     }
+
   } else if (CallExpr* c = toCallExpr(expr)) {
     if (c->isNamedAstr(astrSdot) == true) {
       const char* oldName = name;
