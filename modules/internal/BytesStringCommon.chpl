@@ -79,6 +79,50 @@ module BytesStringCommon {
   }
 
   /*
+   This function qio_decode is used to create a wrapper for 
+   qio_decode_char_buf* and qio_decode_char_buf_esc and return 
+   the value of syserr , cp and nbytes.
+   asks for buffer , size of buffer , starting index to read buffer,
+   and choice between "qio_decode_char_buf" 
+   and "qio_decode_char_buf_esc" for escape statement
+   */
+
+   proc qio_decode(buf:c_ptr(uint(8)), buflen:int, 
+                  bufstart:int, esc: bool ):
+                  (syserr,int(32),c_int){
+    
+    pragma "fn synchronization free"
+    extern proc qio_decode_char_buf(ref chr:int(32), 
+                                    ref nbytes:c_int,
+                                    buf:c_string,
+                                    buflen:ssize_t): syserr;
+    pragma "fn synchronization free"
+    extern proc qio_decode_char_buf_esc(ref chr:int(32),
+                                        ref nbytes:c_int,
+                                        buf:c_string,
+                                        buflen:ssize_t): syserr;
+    // esc chooses between qio_decode_char_buf_esc and
+    // qio_decode_char_buf as a single wrapper function 
+    if(esc){
+    var chr: int(32);
+    var nbytes: c_int;
+    var start = bufstart:c_int;
+    var multibytes = (buf + start): c_string;
+    var maxbytes = (buflen - start): ssize_t;
+    var decodeRet = qio_decode_char_buf_esc(chr, nbytes, multibytes,maxbytes);
+    return (decodeRet,chr,nbytes);
+    }
+    else{
+    var chr: int(32);
+    var nbytes: c_int;
+    var start = bufstart:c_int;
+    var multibytes = (buf + start): c_string;
+    var maxbytes = (buflen - start): ssize_t;
+    var decodeRet = qio_decode_char_buf(chr, nbytes, multibytes,maxbytes);
+    return (decodeRet,chr,nbytes);
+    }
+  }
+  /*
    This function is called by `bytes.decode` and string factory functions that
    take a C array as the buffer.
 
