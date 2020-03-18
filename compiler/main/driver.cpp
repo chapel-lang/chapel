@@ -698,14 +698,14 @@ static void setVectorize(const ArgumentDescription* desc, const char* unused)
     fYesVectorize = true;
 }
 
-static void turnOffChecks(const ArgumentDescription* desc, const char* unused) {
-  fNoNilChecks    = true;
-  fNoBoundsChecks = true;
-  fNoFormalDomainChecks = true;
-  fNoLocalChecks  = true;
-  fNoStackChecks  = true;
-  fNoCastChecks = true;
-  fNoDivZeroChecks = true;
+static void setChecks(const ArgumentDescription* desc, const char* unused) {
+  fNoNilChecks    = fNoChecks;
+  fNoBoundsChecks = fNoChecks;
+  fNoFormalDomainChecks = fNoChecks;
+  fNoLocalChecks  = fNoChecks;
+  fNoStackChecks  = fNoChecks;
+  fNoCastChecks = fNoChecks;
+  fNoDivZeroChecks = fNoChecks;
 }
 
 static void setFastFlag(const ArgumentDescription* desc, const char* unused) {
@@ -741,7 +741,7 @@ static void setFastFlag(const ArgumentDescription* desc, const char* unused) {
   fNoOptimizeForallUnordered = false;
   optimizeCCode = true;
   specializeCCode = true;
-  turnOffChecks(desc, unused);
+  setChecks(desc, unused);
 }
 
 static void setFloatOptFlag(const ArgumentDescription* desc, const char* unused) {
@@ -936,7 +936,7 @@ static ArgumentDescription arg_desc[] = {
  {"vectorize", ' ', NULL, "Enable [disable] generation of vectorization hints", "n", &fNoVectorize, "CHPL_DISABLE_VECTORIZATION", setVectorize},
 
  {"", ' ', NULL, "Run-time Semantic Check Options", NULL, NULL, NULL, NULL},
- {"no-checks", ' ', NULL, "Disable all following run-time checks", "F", &fNoChecks, "CHPL_NO_CHECKS", turnOffChecks},
+ {"checks", ' ', NULL, "Enable [disable] all following run-time checks", "n", &fNoChecks, "CHPL_NO_CHECKS", setChecks},
  {"bounds-checks", ' ', NULL, "Enable [disable] bounds checking", "n", &fNoBoundsChecks, "CHPL_NO_BOUNDS_CHECKING", NULL},
  {"cast-checks", ' ', NULL, "Enable [disable] safeCast() value checks", "n", &fNoCastChecks, NULL, NULL},
  {"div-by-zero-checks", ' ', NULL, "Enable [disable] divide-by-zero checks", "n", &fNoDivZeroChecks, NULL, NULL},
