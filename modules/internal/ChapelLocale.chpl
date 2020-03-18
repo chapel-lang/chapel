@@ -327,6 +327,10 @@ module ChapelLocale {
       return hname;
     }
 
+    override proc writeThis(f) throws {
+      HaltWrappers.pureVirtualMethodHalt();
+    }
+
     /*
       Get the name of this locale.  In practice, this is often the
       same as the hostname, though in some cases (like when using

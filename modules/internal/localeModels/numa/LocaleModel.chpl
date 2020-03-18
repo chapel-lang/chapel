@@ -201,7 +201,7 @@ module LocaleModel {
     }
 
     proc getChildArray() {
-      return childLocales;
+      return [loc in childLocales] loc;
     }
 
     //------------------------------------------------------------------------{
