@@ -598,8 +598,14 @@ Symbol* ResolveScope::lookupForImport(Expr* expr) const {
   const ResolveScope* relativeScope = NULL;
 
   firstImportedModuleName(expr, name, call, relativeScope);
-  if (name == NULL)
-    USR_FATAL(expr, "'this.' can only be used as prefix of import");
+  if (name == NULL) {
+    if (astrThis == getNameFrom(expr))
+      USR_FATAL(expr, "'this.' can only be used as prefix of import");
+    else if (astrSuper == getNameFrom(expr))
+      USR_FATAL(expr, "'super.' can only be used as prefix of import");
+    else
+      INT_FATAL("case not handled");
+  }
 
   INT_ASSERT(name != NULL);
 
@@ -615,7 +621,8 @@ Symbol* ResolveScope::lookupForImport(Expr* expr) const {
           retval = sym;
           break;
         } else if (mod->defPoint->parentSymbol != theProgram) {
-          // if we're not in the root module scope, this is an improper match
+          // if we're not in the root module scope or using relative import,
+          // this is an improper match
           badCloserModule = mod;
         } else {
           // if we are in the root module scope, then it is a proper match.
