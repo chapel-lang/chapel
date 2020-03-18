@@ -1879,7 +1879,7 @@ module SequentialInPlacePartitioning {
 pragma "no doc"
 module TwoArrayPartitioning {
   private use BlockDist;
-  private use MSBRadixSort;
+  private use super.MSBRadixSort;
 
   private param debug = false;
   param maxBuckets = 512;
@@ -2655,8 +2655,8 @@ module TwoArrayPartitioning {
 
 pragma "no doc"
 module TwoArrayRadixSort {
-  private use TwoArrayPartitioning;
-  private use RadixSortHelp;
+  private use super.TwoArrayPartitioning;
+  private use super.RadixSortHelp;
 
   proc twoArrayRadixSort(Data:[], comparator:?rec=defaultComparator) {
 
@@ -2702,9 +2702,9 @@ module TwoArrayRadixSort {
 
 pragma "no doc"
 module TwoArraySampleSort {
-  private use TwoArrayPartitioning;
-  private use SampleSortHelp;
-  private use RadixSortHelp;
+  private use super.TwoArrayPartitioning;
+  private use super.SampleSortHelp;
+  private use super.RadixSortHelp;
 
   proc twoArraySampleSort(Data:[], comparator:?rec=defaultComparator) {
 
@@ -2751,7 +2751,7 @@ module InPlacePartitioning {
 pragma "no doc"
 module MSBRadixSort {
 
-  private use RadixSortHelp;
+  private use super.RadixSortHelp;
 
   // This structure tracks configuration for the radix sorter.
   record MSBRadixSortSettings {

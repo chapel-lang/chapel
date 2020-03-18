@@ -208,7 +208,7 @@ module BLAS {
                    else 'cblas.h'
                  else blasHeader;
 
-  use C_BLAS;
+  use this.C_BLAS;
 
   public use SysCTypes;
 

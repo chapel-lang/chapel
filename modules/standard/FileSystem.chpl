@@ -915,7 +915,7 @@ private module GlobWrappers {
    :yield: The matching filenames as strings
 */
 iter glob(pattern: string = "*"): string {
-  use GlobWrappers;
+  use this.GlobWrappers;
   var glb : glob_t;
 
   glob_w(pattern, glb);
@@ -931,7 +931,7 @@ iter glob(pattern: string = "*"): string {
 pragma "no doc"
 iter glob(pattern: string = "*", param tag: iterKind): string
        where tag == iterKind.standalone {
-  use GlobWrappers;
+  use this.GlobWrappers;
   var glb : glob_t;
 
   glob_w(pattern, glb);
@@ -955,7 +955,7 @@ iter glob(pattern: string = "*", param tag: iterKind): string
 pragma "no doc"
 iter glob(pattern: string = "*", param tag: iterKind)
        where tag == iterKind.leader {
-  use GlobWrappers;
+  use this.GlobWrappers;
   var glb : glob_t;
 
   glob_w(pattern, glb);
@@ -972,7 +972,7 @@ iter glob(pattern: string = "*", param tag: iterKind)
 pragma "no doc"
 iter glob(pattern: string = "*", followThis, param tag: iterKind): string
        where tag == iterKind.follower {
-  use GlobWrappers;
+  use this.GlobWrappers;
   var glb : glob_t;
   if (followThis.size != 1) then
     compilerError("glob() iterator can only be zipped with 1D iterators");

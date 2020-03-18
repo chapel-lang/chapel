@@ -36,8 +36,8 @@ module TOML {
 
 private use List;
 private use Map;
-public use TomlParser;
-private use TomlReader;
+public use this.TomlParser;
+private use this.TomlReader;
 use IO;
 
 

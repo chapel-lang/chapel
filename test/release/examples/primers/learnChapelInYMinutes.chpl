@@ -968,7 +968,7 @@ module OurModule {
 
 // Using ``OurModule`` also uses all the modules it uses.
 // Since ``OurModule`` uses ``Time``, we also use ``Time``.
-use OurModule;
+use this.OurModule;
 
 // At this point we have not used ``ChildModule`` or ``SiblingModule`` so
 // their symbols (i.e. ``foo``) are not available to us. However, the module
