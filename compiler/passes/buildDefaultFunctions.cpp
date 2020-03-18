@@ -1160,8 +1160,9 @@ static void buildEnumIntegerCastFunctions(EnumType* et) {
     fn->insertFormalAtTail(arg2);
     fn->throwsErrorInit();
 
-    // Generate a select statement with when clauses for each of the
-    // enumeration constants, and an otherwise clause that calls halt.
+    // Generate a select statement with a 'when' clause for each of
+    // the enumeration constants with an integer value which returns
+    // the enum constant.
     int64_t count = 0;
     BlockStmt* whenstmts = buildChapelStmt();
     Expr* lastInit = NULL;
@@ -1185,22 +1186,19 @@ static void buildEnumIntegerCastFunctions(EnumType* et) {
         whenstmts->insertAtTail(when);
       }
     }
-    // TODO: unused?
-    //    const char * errorString = "enumerated type out of bounds";
-    /*
-    CondStmt* otherwise =
-      new CondStmt(new CallExpr(PRIM_WHEN),
-                   new BlockStmt(new CallExpr("chpl_enum_cast_error",
-                                              arg2,
-                                              new_StringSymbol(et->symbol->name))));
-    whenstmts->insertAtTail(otherwise);
-    */
     fn->insertAtTail(buildSelectStmt(new SymExpr(arg2), whenstmts));
+
+    // if we get through the select statement without finding our case
+    // and returning its value (which can happen for semi-concrete
+    // enums), call chpl_enum_cast_error(), which throws an error.
     fn->insertAtTail(new TryStmt(false,
                    new BlockStmt(new CallExpr("chpl_enum_cast_error",
                                               arg2,
                                               new_StringSymbol(et->symbol->name))),
                                  NULL));
+
+    // in addition, insert a dummy return since the compiler doesn't
+    // know that chpl_enum_cast_error() always throws
     fn->insertAtTail(new CallExpr(PRIM_RETURN,
                                   toDefExpr(et->constants.first())->sym));
     
@@ -1226,10 +1224,12 @@ static void buildEnumIntegerCastFunctions(EnumType* et) {
                                     new CallExpr(PRIM_CAST, arg1, arg2)));
       fn->addFlag(FLAG_INLINE);
     } else {
+      // Otherwise, it's semi-concrete, so we need errors for some
+      // cases.  Generate a select statement with when clauses for
+      // each of the enumeration constants, where the action is to
+      // call chpl_enum_cast_error_no_int() for enums without an
+      // associated integer value.  This routine throws an error.
       fn->throwsErrorInit();
-      // Otherwise, it's semi-concrete, so we need errors for some cases.
-      // Generate a select statement with when clauses for each of the
-      // enumeration constants, and an otherwise clause that calls halt.
 
       count = 0;
       whenstmts = buildChapelStmt();
@@ -1261,11 +1261,17 @@ static void buildEnumIntegerCastFunctions(EnumType* et) {
         whenstmts->insertAtTail(when);
       }
 
+      // We should never get to the otherwise clause because it would
+      // imply that the enum expression was storing a constant that
+      // isn't part of the enum.
       CondStmt* otherwise =
         new CondStmt(new CallExpr(PRIM_WHEN),
                      new BlockStmt(new CallExpr("halt",
                                                 new_StringSymbol("should never get here"))));
       whenstmts->insertAtTail(otherwise);
+
+      // wrap a try statement around the select statement and insert a
+      // bogus return to help the compiler know that all paths return.
       fn->insertAtTail(new TryStmt(false,
                                    buildSelectStmt(new SymExpr(arg2), whenstmts),
                                    NULL));
