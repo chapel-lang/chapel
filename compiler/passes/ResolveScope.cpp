@@ -552,14 +552,10 @@ void ResolveScope::firstImportedModuleName(Expr* expr,
                                            const ResolveScope*& scope) const {
   if (const char* n = getNameFrom(expr)) {
     if (n == astrThis) {
-      if (scope != NULL || name != NULL)
-        USR_FATAL(expr, "'this.' can only be used as prefix of import");
       scope = this;
     } else if (n == astrSuper) {
-      if (mParent == NULL)
+      if (mParent == NULL || mParent->mParent == NULL)
         USR_FATAL(expr, "cannot import super from a toplevel module");
-      if (name != NULL)
-        USR_FATAL(expr, "'super.' can only be used as prefixes of import");
       scope = mParent;
     } else {
       name = n;
@@ -597,6 +593,8 @@ Symbol* ResolveScope::lookupForImport(Expr* expr) const {
   const ResolveScope* relativeScope = NULL;
 
   firstImportedModuleName(expr, name, call, relativeScope);
+  if (name == NULL)
+    USR_FATAL(expr, "'this.' can only be used as prefix of import");
 
   INT_ASSERT(name != NULL);
 
@@ -620,8 +618,9 @@ Symbol* ResolveScope::lookupForImport(Expr* expr) const {
           break;
         }
       } else if (sym != NULL) {
-        retval = sym;
-        break;
+        // found something other than a module
+        USR_FATAL(expr, "import must name a module ('%s' not a module)",
+                  sym->name);
       }
 
       // otherwise follow uses/imports only (breadth first)
@@ -664,7 +663,8 @@ Symbol* ResolveScope::lookupForImport(Expr* expr) const {
       retval = symbol;
 
     } else {
-      USR_FATAL(call, "Cannot find symbol '%s'", rhsName);
+      USR_FATAL(call, "Cannot find symbol '%s' in module '%s'",
+                      rhsName, outerMod->name);
     }
 
     call = toCallExpr(call->parentExpr);
