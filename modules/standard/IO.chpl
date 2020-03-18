@@ -6543,14 +6543,11 @@ proc channel.readf(fmtStr:?t, ref args ...?k): bool throws
                       // someone's trying to capture a non UTF8 sequence in a
                       // string -- argument type mismatch
                       err = qio_format_error_arg_mismatch(i);
-
+                      
                       // Engin: maybe in the future we can just propagate
                       // DecodeError here?
-                    } catch e: IllegalArgumentError {
-                      stdout.writeln("Caught an illegal argument error");
-                      // maybe a cast error for the enum cast
-                      throw e;
                     } catch {
+                      // maybe a cast error for the enum cast
                       err = qio_format_error_bad_regexp();
                     }
                   }
