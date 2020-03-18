@@ -665,7 +665,8 @@ Symbol* ResolveScope::lookupForImport(Expr* expr, bool isUse) const {
       USR_PRINT(expr, "please specify the full path to the module");
       USR_PRINT(expr, "or use a relative %s e.g. '%s this.M' or '%s super.M'",
                       stmtType, stmtType, stmtType);
-      USR_STOP();
+      // Try to continue compilation
+      retval = badCloserModule;
     }
   }
 

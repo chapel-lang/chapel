@@ -1,0 +1,5 @@
+require-relative-use.chpl:7: error: Cannot import module 'SubM'
+require-relative-use.chpl:3: note: a module named 'SubM' is defined here
+require-relative-use.chpl:7: note: full path or explicit relative import required
+require-relative-use.chpl:7: note: please specify the full path to the module
+require-relative-use.chpl:7: note: or use a relative import e.g. 'import this.M' or 'import super.M'
