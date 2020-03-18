@@ -4159,9 +4159,8 @@ module ChapelArray {
     param isview = (x._value.isSliceArrayView() ||
                     x._value.isRankChangeArrayView() ||
                     x._value.isReindexArrayView());
-    const isalias = x._unowned;
 
-    if isview || isalias {
+    if isview {
       // Intended to call chpl__initCopy
       pragma "no auto destroy" var ret = x;
       // Since chpl__unalias replaces a initCopy(auto/initCopy()) the
