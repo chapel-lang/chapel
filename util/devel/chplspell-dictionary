@@ -4346,7 +4346,9 @@ mdhs
 mrtl
 nbdi
 nbdp
+newp
 nopnd
+oldp
 opnd
 ppdescs
 ppdi
@@ -4742,7 +4744,11 @@ xpctd
 
 FILEID: 1873381c-2cbe-11e8-aa67-10ddb1d4c3d5
 detemp
+detemping
 detemps
+selse
+snested
+sorder
 sswap
 
 FILEID: 7626c32a-2f20-11e8-aa67-10ddb1d4c3d5
@@ -5187,6 +5193,21 @@ craycli
 FILEID: f598bef8-5f64-11ea-b972-843835579daa
 nspecify
 snuma
+
+FILEID: ca5cd802-68b8-11ea-b972-843835579daa
+newp
+oldp
+
+FILEID: ceec8a70-68b8-11ea-b972-843835579daa
+newp
+oldp
+
+FILEID: d18d2f28-68b8-11ea-b972-843835579daa
+newp
+oldp
+
+FILEID: d56c6ea6-68b8-11ea-b972-843835579daa
+nomultithread
 
 NATURAL:
 aarch
@@ -7078,6 +7099,7 @@ prediff
 preemptively
 preexec
 prefixscan
+prefold
 preformatted
 prelaunch
 preorder
@@ -7871,6 +7893,7 @@ vienna
 vinschen
 virtualenv
 virtualenvs
+virtualizable
 vlsi
 vosteen
 vptr

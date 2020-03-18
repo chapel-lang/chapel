@@ -675,11 +675,20 @@
   "af0a00d4-244e-11e9-b712-843835579daa": [
     "runtime/include/chpl-comm-diags.h"
   ],
+  "ca5cd802-68b8-11ea-b972-843835579daa": [
+    "runtime/include/chpl-comm.h"
+  ],
+  "ceec8a70-68b8-11ea-b972-843835579daa": [
+    "runtime/include/chpl-mem-array.h"
+  ],
   "1ae55fde-1fb5-11e6-a3a6-10ddb1d4c3d5": [
     "runtime/include/chpl-wide-ptr-fns.h"
   ],
   "61f7efb8-bd82-11e9-8464-10ddb1d4c3d5": [
     "runtime/include/comm/ofi/chpl-comm-task-decls.h"
+  ],
+  "d18d2f28-68b8-11ea-b972-843835579daa": [
+    "runtime/include/comm/ugni/chpl-comm-impl.h"
   ],
   "73aae312-d1c1-11e8-954d-10ddb1d4c3d5": [
     "runtime/include/comm/ugni/comm-ugni-heap-pages.h"
@@ -738,6 +747,9 @@
   ],
   "af6e03d4-2403-11e6-a3a6-10ddb1d4c3d5": [
     "runtime/src/launch/pbs-aprun/launch-pbs-aprun.c"
+  ],
+  "d56c6ea6-68b8-11ea-b972-843835579daa": [
+    "runtime/src/launch/slurm-srun/launch-slurm-srun.c"
   ],
   "c756642a-c5e5-11e7-82fe-10ddb1d4c3d5": [
     "runtime/src/launch/smp/launch-smp.c"
