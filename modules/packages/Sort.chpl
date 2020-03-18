@@ -458,8 +458,10 @@ proc sort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator) {
     return;
 
   if radixSortOk(Data, comparator) {
+    use MSBRadixSort;
     MSBRadixSort.msbRadixSort(Data, comparator=comparator);
   } else {
+    use QuickSort;
     QuickSort.quickSort(Data, comparator=comparator);
   }
 }
@@ -906,6 +908,8 @@ module QuickSort {
                  lo: int, pivIdx: int, hi: int,
                  comparator)
   {
+    use ShallowCopy;
+
     // The following section categorizes array elements as follows:
     //
     //   |  =  |  <  |  ?  |  >  |  =   |
@@ -1078,6 +1082,7 @@ module QuickSort {
     var piv = mid;
 
     if hi - lo < minlen {
+      use InsertionSort;
       // base case -- use insertion sort
       InsertionSort.insertionSort(Data, comparator=comparator, lo, hi);
       return;
@@ -2786,6 +2791,7 @@ module MSBRadixSort {
       return;
 
     if( end_n - start_n < settings.sortSwitch ) {
+      use ShellSort;
       ShellSort.shellSort(A, criterion, start=start_n, end=end_n);
       if settings.CHECK_SORTS then checkSorted(start_n, end_n, A, criterion);
       return;
