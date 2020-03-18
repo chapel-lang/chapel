@@ -6717,6 +6717,8 @@ proc channel.skipField() throws {
 proc string.format(args ...?k): string throws {
   try {
     return chpl_do_format(this, (...args));
+  } catch e: IllegalArgumentError {
+    throw e;
   } catch e: SystemError {
     try ioerror(e.err, "in string.format");
   } catch e: DecodeError {
