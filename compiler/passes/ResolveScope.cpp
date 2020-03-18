@@ -559,7 +559,7 @@ void ResolveScope::firstImportedModuleName(Expr* expr,
       scope = moduleScope;
     } else if (n == astrSuper) {
       if (mParent == NULL || mParent->mParent == NULL)
-        USR_FATAL(expr, "cannot import super from a toplevel module");
+        USR_FATAL(expr, "cannot use/import super from a toplevel module");
       scope = moduleScope->mParent;
     } else {
       name = n;
@@ -593,6 +593,7 @@ void ResolveScope::firstImportedModuleName(Expr* expr,
 Symbol* ResolveScope::lookupForImport(Expr* expr, bool isUse) const {
   Symbol* retval = NULL;
 
+  const char* type = isUse?"use":"import";
   const char* name = NULL;
   CallExpr* call = NULL;
   const ResolveScope* relativeScope = NULL;
@@ -600,9 +601,9 @@ Symbol* ResolveScope::lookupForImport(Expr* expr, bool isUse) const {
   firstImportedModuleName(expr, name, call, relativeScope);
   if (name == NULL) {
     if (astrThis == getNameFrom(expr))
-      USR_FATAL(expr, "'this.' can only be used as prefix of import");
+      USR_FATAL(expr, "'this.' can only be used as prefix of %s", type);
     else if (astrSuper == getNameFrom(expr))
-      USR_FATAL(expr, "'super.' can only be used as prefix of import");
+      USR_FATAL(expr, "'super.' can only be used as prefix of %s", type);
     else
       INT_FATAL("case not handled");
   }
@@ -639,8 +640,8 @@ Symbol* ResolveScope::lookupForImport(Expr* expr, bool isUse) const {
           retval = sym;
           break;
         }
-        USR_FATAL(expr, "import must name a module ('%s' not a module)",
-                  sym->name);
+        USR_FATAL(expr, "%s must name a module ('%s' not a module)",
+                  type, sym->name);
       }
 
       // otherwise follow uses/imports only (breadth first)
@@ -654,24 +655,28 @@ Symbol* ResolveScope::lookupForImport(Expr* expr, bool isUse) const {
     }
 
     if (retval == NULL && badCloserModule != NULL) {
-      USR_FATAL_CONT(expr, "Cannot import module '%s'", name);
+      USR_FATAL_CONT(expr, "Cannot %s module '%s'", type, name);
       USR_PRINT(badCloserModule, "a module named '%s' is defined here", name);
-      USR_PRINT(expr, "full path or explicit relative import required");
+      USR_PRINT(expr, "full path or explicit relative %s required", type);
       USR_PRINT(expr, "please specify the full path to the module");
-      USR_PRINT(expr, "or use a relative import e.g. 'import this.M' or 'import super.M'");
+      USR_PRINT(expr, "or use a relative %s e.g. '%s this.M' or '%s super.M'", type, type, type);
       USR_STOP();
     }
   }
 
-  if (retval == NULL)
-    USR_FATAL(expr, "Cannot find symbol '%s'", name);
+  if (retval == NULL) {
+    if (isUse)
+      USR_FATAL(expr, "Cannot find module or enum '%s'", name);
+    else
+      USR_FATAL(expr, "Cannot find symbol '%s'", name);
+  }
 
   // Process further portions of import starting from call
   while (call != NULL) {
     INT_ASSERT(call->isNamedAstr(astrSdot));
     if (!isModuleSymbol(retval))
-      USR_FATAL(call, "cannot make nested import from non-module '%s'",
-                 retval->name);
+      USR_FATAL(call, "cannot make nested %s from non-module '%s'",
+                type, retval->name);
 
     Symbol* outer = retval;
     ModuleSymbol* outerMod = toModuleSymbol(outer);
