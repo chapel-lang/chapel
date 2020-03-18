@@ -3735,6 +3735,9 @@ void resolveNormalCallCompilerWarningStuff(CallExpr* call,
     if (inTryResolve > 0 && tryResolveFunctions.size() > 0) {
       FnSymbol* fn = tryResolveFunctions.back();
       tryResolveErrors[fn] = it->second;
+    } else if (resolvedFn && resolvedFn->hasFlag(FLAG_ERRONEOUS_COPY)) {
+      // error will be reported later (in callDestructors) if
+      // copy is not eliminated by then.
     } else {
       BaseAST* from = it->second.first;
       const char* err = it->second.second;
