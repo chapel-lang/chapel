@@ -634,10 +634,11 @@ Symbol* ResolveScope::lookupForImport(Expr* expr) const {
     }
 
     if (retval == NULL && badCloserModule != NULL) {
-      USR_FATAL_CONT(expr, "Cannot find symbol '%s'", name);
-      USR_PRINT(badCloserModule, "skipping module defined here");
+      USR_FATAL_CONT(expr, "Cannot import module '%s'", name);
+      USR_PRINT(badCloserModule, "a module named '%s' is defined here", name);
+      USR_PRINT(expr, "full path or explicit relative import required");
       USR_PRINT(expr, "please specify the full path to the module");
-      USR_PRINT(expr, "or use a relative import e.g. 'import this.M' or 'import super.N'");
+      USR_PRINT(expr, "or use a relative import e.g. 'import this.M' or 'import super.M'");
       USR_STOP();
     }
   }
