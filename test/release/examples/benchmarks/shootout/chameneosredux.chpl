@@ -64,15 +64,15 @@ record Population {
   // an array of chameneos objects representing the population
   //
   var chameneos = [i in 1..size]
-                   new Chameneos?(i, if size == 10 then colors10[i]
-                                                   else ((i-1)%3): Color);
+                   new Chameneos(i, if size == 10 then colors10[i]
+                                                  else ((i-1)%3): Color);
 
   //
   // Print the colors of the current population.
   //
   proc printColors() {
     for c in chameneos do
-      write(" ", c!.color);
+      write(" ", c.color);
     writeln();
   }
 
@@ -84,7 +84,7 @@ record Population {
     const place = new MeetingPlace(numMeetings);
 
     coforall c in chameneos do           // create a task per chameneos
-      c!.haveMeetings(place, chameneos);
+      c.haveMeetings(place, chameneos);
   }
 
   //
@@ -95,11 +95,11 @@ record Population {
   //
   proc printNotes() {
     for c in chameneos {
-      write(c!.meetings);
-      spellInt(c!.meetingsWithSelf);
+      write(c.meetings);
+      spellInt(c.meetingsWithSelf);
     }
     
-    spellInt(+ reduce chameneos!.meetings);
+    spellInt(+ reduce chameneos.meetings);
     writeln();
   }
 }
@@ -149,7 +149,7 @@ class Chameneos {
           if firstToArrive then
             waitForMeetingToEnd();
           else
-            meetWith(chameneos[peerID]!);
+            meetWith(chameneos[peerID]);
         }
       }
     } while (meetingsLeft);
