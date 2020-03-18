@@ -1075,6 +1075,15 @@ module ChapelBase {
                                        ref callPostAlloc: bool): c_void_ptr;
     var callPostAlloc: bool;
     const oldDdata = ddata;
+
+    // destroy any elements that are going away
+    param needsDestroy = __primitive("needs auto destroy",
+                                     __primitive("deref", ddata[0]));
+    if needsDestroy && (oldSize > newSize) {
+      forall i in newSize..oldSize-1 do
+        chpl__autoDestroy(ddata[i]);
+    }
+
     ddata = chpl_mem_array_realloc(ddata: c_void_ptr, oldSize.safeCast(size_t),
                                    newSize.safeCast(size_t),
                                    _ddata_sizeof_element(ddata),
