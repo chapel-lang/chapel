@@ -3560,9 +3560,9 @@ static Type* finalArrayElementType(AggregateType* arrayType) {
   return eltType;
 }
 
-// Is it OK to defalt-initialize an array with this element type?
+// Is it OK to default-initialize an array with this element type?
 // Once #14854 is resolved, this should be simply
-//   isDefaultInitializeable(eltType)
+//   isDefaultInitializable(eltType)
 static bool okForDefaultInitializedArray(Type* eltType) {
   // Exclude locales. Remove this exception once #15149 is merged.
   return eltType == dtLocale || ! isNonNilableClassType(eltType);
