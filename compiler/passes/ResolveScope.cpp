@@ -559,7 +559,7 @@ void ResolveScope::firstImportedModuleName(Expr* expr,
       scope = moduleScope;
     } else if (n == astrSuper) {
       if (mParent == NULL || mParent->mParent == NULL)
-        USR_FATAL(expr, "cannot import super from a toplevel module");
+        USR_FATAL(expr, "cannot use/import super from a toplevel module");
       scope = moduleScope->mParent;
     } else {
       name = n;
@@ -590,9 +590,10 @@ void ResolveScope::firstImportedModuleName(Expr* expr,
   }
 }
 
-Symbol* ResolveScope::lookupForImport(Expr* expr) const {
+Symbol* ResolveScope::lookupForImport(Expr* expr, bool isUse) const {
   Symbol* retval = NULL;
 
+  const char* stmtType = isUse ? "use" : "import";
   const char* name = NULL;
   CallExpr* call = NULL;
   const ResolveScope* relativeScope = NULL;
@@ -600,9 +601,9 @@ Symbol* ResolveScope::lookupForImport(Expr* expr) const {
   firstImportedModuleName(expr, name, call, relativeScope);
   if (name == NULL) {
     if (astrThis == getNameFrom(expr))
-      USR_FATAL(expr, "'this.' can only be used as prefix of import");
+      USR_FATAL(expr, "'this.' can only be used as prefix of %s", stmtType);
     else if (astrSuper == getNameFrom(expr))
-      USR_FATAL(expr, "'super.' can only be used as prefix of import");
+      USR_FATAL(expr, "'super.' can only be used as prefix of %s", stmtType);
     else
       INT_FATAL("case not handled");
   }
@@ -624,6 +625,10 @@ Symbol* ResolveScope::lookupForImport(Expr* expr) const {
           // if we're not in the root module scope or using relative import,
           // this is an improper match
           badCloserModule = mod;
+          if (isUse) { // TODO: remove this to disable relative use
+            retval = sym;
+            break;
+          }
         } else {
           // if we are in the root module scope, then it is a proper match.
           retval = sym;
@@ -631,8 +636,16 @@ Symbol* ResolveScope::lookupForImport(Expr* expr) const {
         }
       } else if (sym != NULL) {
         // found something other than a module
-        USR_FATAL(expr, "import must name a module ('%s' not a module)",
-                  sym->name);
+        if (isUse && isTypeSymbol(sym) && isEnumType(sym->type)) {
+          retval = sym;
+          break;
+        }
+        if (isUse)
+          USR_FATAL(expr, "use must name a module or enum ('%s' is neither)",
+                          sym->name);
+        else
+          USR_FATAL(expr, "import must name a module ('%s' is not a module)",
+                          sym->name);
       }
 
       // otherwise follow uses/imports only (breadth first)
@@ -646,24 +659,29 @@ Symbol* ResolveScope::lookupForImport(Expr* expr) const {
     }
 
     if (retval == NULL && badCloserModule != NULL) {
-      USR_FATAL_CONT(expr, "Cannot import module '%s'", name);
+      USR_FATAL_CONT(expr, "Cannot %s module '%s'", stmtType, name);
       USR_PRINT(badCloserModule, "a module named '%s' is defined here", name);
-      USR_PRINT(expr, "full path or explicit relative import required");
+      USR_PRINT(expr, "full path or explicit relative %s required", stmtType);
       USR_PRINT(expr, "please specify the full path to the module");
-      USR_PRINT(expr, "or use a relative import e.g. 'import this.M' or 'import super.M'");
+      USR_PRINT(expr, "or use a relative %s e.g. '%s this.M' or '%s super.M'",
+                      stmtType, stmtType, stmtType);
       USR_STOP();
     }
   }
 
-  if (retval == NULL)
-    USR_FATAL(expr, "Cannot find symbol '%s'", name);
+  if (retval == NULL) {
+    if (isUse)
+      USR_FATAL(expr, "Cannot find module or enum '%s'", name);
+    else
+      USR_FATAL(expr, "Cannot find symbol '%s'", name);
+  }
 
   // Process further portions of import starting from call
   while (call != NULL) {
     INT_ASSERT(call->isNamedAstr(astrSdot));
     if (!isModuleSymbol(retval))
-      USR_FATAL(call, "cannot make nested import from non-module '%s'",
-                 retval->name);
+      USR_FATAL(call, "cannot make nested %s from non-module '%s'",
+                stmtType, retval->name);
 
     Symbol* outer = retval;
     ModuleSymbol* outerMod = toModuleSymbol(outer);

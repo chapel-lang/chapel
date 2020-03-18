@@ -1,2 +1,2 @@
 test_nested_use4.chpl:12: In function 'main':
-test_nested_use4.chpl:13: error: Cannot find object 'notoutermost'
+test_nested_use4.chpl:13: error: Cannot find module or enum 'notoutermost'
