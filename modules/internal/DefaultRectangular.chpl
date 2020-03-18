@@ -1342,6 +1342,15 @@ module DefaultRectangular {
     override proc dsiReallocate(bounds: rank*range(idxType,
                                                    BoundedRangeType.bounded,
                                                    stridable)) {
+
+      // This should really be isDefaultInitializable(eltType), but that
+      // doesn't always work / give correct answers yet.  The following
+      // check won't catch cases such as records with non-nilable class
+      // fields that don't have default initializers (that initialize
+      // them).
+      if (isNonNilableClass(eltType)) {
+        halt("Can't resize domains whose arrays' elements don't have default values");
+      }
       on this {
         const reallocD = {(...bounds)};
 

@@ -1,0 +1,2 @@
+{x = 1} {x = 2} {x = 3}
+resizeArrOfNonNilable.chpl:7: error: halt reached - Can't resize domains whose arrays' elements don't have default values
