@@ -1,0 +1,4 @@
+C subtype of C?: true
+G subtype of G?: true
+G(int(64)) subtype of G(int(64))?: true
+D subtype of C?: true

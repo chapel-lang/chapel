@@ -282,7 +282,7 @@ size_t chpl_comm_regMemAllocThreshold(void) {
 static inline
 void* chpl_comm_regMemAlloc(size_t size,
                             chpl_mem_descInt_t desc, int ln, int32_t fn) {
-    return CHPL_COMM_IMPL_REG_MEM_ALLOC(size, desc, ln, fn);
+  return CHPL_COMM_IMPL_REG_MEM_ALLOC(size, desc, ln, fn);
 }
 
 #ifndef CHPL_COMM_IMPL_REG_MEM_POST_ALLOC
@@ -290,7 +290,26 @@ void* chpl_comm_regMemAlloc(size_t size,
 #endif
 static inline
 void chpl_comm_regMemPostAlloc(void* p, size_t size) {
-    CHPL_COMM_IMPL_REG_MEM_POST_ALLOC(p, size);
+  CHPL_COMM_IMPL_REG_MEM_POST_ALLOC(p, size);
+}
+
+#ifndef CHPL_COMM_IMPL_REG_MEM_REALLOC
+#define CHPL_COMM_IMPL_REG_MEM_REALLOC(p, oldSize, newSize, desc, ln, fn) NULL
+#endif
+static inline
+void* chpl_comm_regMemRealloc(void* p, size_t oldSize, size_t newSize,
+                              chpl_mem_descInt_t desc, int ln, int32_t fn) {
+  return CHPL_COMM_IMPL_REG_MEM_REALLOC(p, oldSize, newSize, desc, ln, fn);
+}
+
+#ifndef CHPL_COMM_IMPL_REG_MEM_POST_REALLOC
+#define CHPL_COMM_IMPL_REG_MEM_POST_REALLOC(oldp, oldSize, newp, newSize) \
+        return
+#endif
+static inline
+void chpl_comm_regMemPostRealloc(void* oldp, size_t oldSize,
+                                 void* newp, size_t newSize) {
+  CHPL_COMM_IMPL_REG_MEM_POST_REALLOC(oldp, oldSize, newp, newSize);
 }
 
 #ifndef CHPL_COMM_IMPL_REG_MEM_FREE
@@ -298,7 +317,7 @@ void chpl_comm_regMemPostAlloc(void* p, size_t size) {
 #endif
 static inline
 chpl_bool chpl_comm_regMemFree(void* p, size_t size) {
-    return CHPL_COMM_IMPL_REG_MEM_FREE(p, size);
+  return CHPL_COMM_IMPL_REG_MEM_FREE(p, size);
 }
 
 //

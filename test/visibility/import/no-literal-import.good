@@ -1,1 +1,1 @@
-no-literal-import.chpl:2: error: 'import' statements must refer to module symbols (e.g., 'import <module>[.<submodule>]*;')
+no-literal-import.chpl:2: error: 'import' statement paths must start with at least one module symbol (e.g., 'import <module>[.<submodule>]*;')

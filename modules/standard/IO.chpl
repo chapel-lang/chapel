@@ -1942,7 +1942,7 @@ record channel {
   // we are working on a channel created for running writeThis/readThis.
   // Therefore further locking by the same task is not necessary.
   pragma "no doc"
-  var _readWriteThisFromLocale:locale?;
+  var _readWriteThisFromLocale = nilLocale;
 }
 
 pragma "no doc"
@@ -1994,7 +1994,7 @@ proc channel.init=(x: this.type) {
 pragma "no doc"
 proc channel.init(param writing:bool, param kind:iokind, param locking:bool,
                   home: locale, _channel_internal:qio_channel_ptr_t,
-                  _readWriteThisFromLocale: locale?) {
+                  _readWriteThisFromLocale: locale) {
   this.writing = writing;
   this.kind = kind;
   this.locking = locking;
@@ -2480,7 +2480,7 @@ pragma "no doc"
 inline
 proc channel.getLocaleOfIoRequest() {
   var ret = this.readWriteThisFromLocale();
-  if ret == nil then
+  if ret == nilLocale then
     ret = here;
   return ret;
 }
@@ -2827,6 +2827,10 @@ private proc _write_text_internal(_channel_internal:qio_channel_ptr_t,
   } else if t == string {
     // handle string
     const local_x = x.localize();
+    // check if the string has escapes
+    if local_x.hasEscapes {
+      return EILSEQ;
+    }
     return qio_channel_print_string(false, _channel_internal, local_x.c_str(), local_x.numBytes:ssize_t);
   } else if t == bytes {
     // handle bytes
@@ -2990,6 +2994,10 @@ private inline proc _write_binary_internal(_channel_internal:qio_channel_ptr_t, 
     return err;
   } else if t == string {
     var local_x = x.localize();
+    // check if the string has escapes
+    if local_x.hasEscapes {
+      return EILSEQ;
+    }
     return qio_channel_write_string(false, byteorder:c_int, qio_channel_str_style(_channel_internal), _channel_internal, local_x.c_str(), local_x.numBytes: ssize_t);
   } else if t == bytes {
     var local_x = x.localize();
@@ -3025,7 +3033,7 @@ proc channel._constructIoErrorMsg(param kind: iokind, const x:?t): string {
 //
 pragma "no doc"
 proc channel._readOne(param kind: iokind, ref x:?t,
-                             loc:locale?) throws {
+                             loc:locale) throws {
   // TODO: Make _read_one_internal(s) a method instead.
   var err = try _read_one_internal(_channel_internal, kind, x, loc); 
 
@@ -3039,12 +3047,16 @@ proc channel._readOne(param kind: iokind, ref x:?t,
 // The channel must be locked and running on this.home.
 //
 pragma "no doc"
-proc channel._writeOne(param kind: iokind, const x:?t, loc:locale?) throws {
+proc channel._writeOne(param kind: iokind, const x:?t, loc:locale) throws {
   // TODO: Make _write_one_internal(s) a method instead.
   var err = _write_one_internal(_channel_internal, kind, x, loc);
 
   if err != ENOERR {
-    const msg = _constructIoErrorMsg(kind, x);
+    var msg = _constructIoErrorMsg(kind, x);
+    if err == EILSEQ {
+      msg = "Strings with escaped non-UTF8 bytes cannot be used with I/O. " +
+            "Try using string.encode(encodePolicy.unescape) first." + msg;
+    }
     try _ch_ioerror(err, msg);
   }
 }
@@ -3052,7 +3064,7 @@ proc channel._writeOne(param kind: iokind, const x:?t, loc:locale?) throws {
 private inline proc _read_one_internal(_channel_internal:qio_channel_ptr_t,
                                        param kind:iokind,
                                        ref x:?t,
-                                       loc:locale?): syserr throws where _isIoPrimitiveTypeOrNewline(t) {
+                                       loc:locale): syserr throws where _isIoPrimitiveTypeOrNewline(t) {
   var e:syserr = ENOERR;
   if t == ioNewline {
     return qio_channel_skip_past_newline(false, _channel_internal, x.skipWhitespaceOnly);
@@ -3086,7 +3098,7 @@ private inline proc _read_one_internal(_channel_internal:qio_channel_ptr_t,
 private inline proc _write_one_internal(_channel_internal:qio_channel_ptr_t,
                                         param kind:iokind,
                                         const x:?t,
-                                        loc:locale?): syserr throws where _isIoPrimitiveTypeOrNewline(t) {
+                                        loc:locale): syserr throws where _isIoPrimitiveTypeOrNewline(t) {
   var e:syserr = ENOERR;
   if t == ioNewline {
     return qio_channel_write_newline(false, _channel_internal);
@@ -3118,7 +3130,7 @@ private inline proc _write_one_internal(_channel_internal:qio_channel_ptr_t,
 private inline proc _read_one_internal(_channel_internal:qio_channel_ptr_t,
                                        param kind:iokind,
                                        ref x:?t,
-                                       loc:locale?): syserr throws {
+                                       loc:locale): syserr throws {
   // Create a new channel that borrows the pointer in the
   // existing channel so we can avoid locking (because we
   // already have the lock)
@@ -3141,7 +3153,7 @@ pragma "suppress lvalue error"
 private inline proc _write_one_internal(_channel_internal:qio_channel_ptr_t,
                                         param kind:iokind,
                                         const x:?t,
-                                        loc:locale?): syserr throws {
+                                        loc:locale): syserr throws {
   // Create a new channel that borrows the pointer in the
   // existing channel so we can avoid locking (because we
   // already have the lock)

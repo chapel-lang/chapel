@@ -2631,14 +2631,13 @@ static void normalizeVariableDefinition(DefExpr* defExpr) {
         tt->addFlag(FLAG_MAYBE_TYPE);
 
         DefExpr* def = new DefExpr(tt);
-        CallExpr* mv = new CallExpr(PRIM_MOVE, tt, defExpr->exprType->remove());
 
         // after the def, put
         //   declare type_tmp
         //   move type_tmp, type-expr
         //   PRIM_INIT_VAR_SPLIT_DECL var type_tmp
         defExpr->insertAfter(new CallExpr(PRIM_INIT_VAR_SPLIT_DECL, var, tt));
-        defExpr->insertAfter(mv);
+        emitTypeAliasInit(defExpr, tt, defExpr->exprType->remove());
         defExpr->insertAfter(def);
 
         typeTemp = tt;

@@ -574,8 +574,8 @@ module SharedObject {
   pragma "always propagate line file info"
   inline proc postfix!(x:_shared) {
     import HaltWrappers;
-    // Check only if --nil-checks is enabled
-    if chpl_checkNilDereferences {
+    // Check only if --nil-checks is enabled or user requested
+    if chpl_checkNilDereferences || enablePostfixBangChecks {
       // Add check for nilable types only.
       if _to_nilable(x.chpl_t) == x.chpl_t {
         if x.chpl_p == nil {

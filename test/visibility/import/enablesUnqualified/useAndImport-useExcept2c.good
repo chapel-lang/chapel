@@ -1,0 +1,3 @@
+useAndImport-useExcept2c.chpl:22: In function 'main':
+useAndImport-useExcept2c.chpl:23: error: unresolved call 'foo()'
+useAndImport-useExcept2c.chpl:23: note: because no functions named foo found in scope

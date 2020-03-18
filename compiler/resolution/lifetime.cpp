@@ -2996,12 +2996,6 @@ static bool typeHasInfiniteBorrowLifetime(Type* type) {
       type == dtCFnPtr)
     return true;
 
-  // Locale type has infinite lifetime
-  // (since locales exist for the entire program run)
-  if (Type* ct = canonicalDecoratedClassType(type))
-    if (isSubClass(ct, dtLocale))
-      return true;
-
   if (DecoratedClassType* dt = toDecoratedClassType(type))
     if (dt->isUnmanaged())
       // unmanaged class instances have infinite lifetime

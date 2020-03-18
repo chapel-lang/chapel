@@ -31,6 +31,7 @@
 #include "splitInit.h"
 
 #include "CatchStmt.h"
+#include "ForallStmt.h"
 #include "expr.h"
 #include "errorHandling.h"
 #include "stmt.h"
@@ -434,9 +435,11 @@ struct CopyElisionState {
 };
 
 typedef std::map<VarSymbol*, CopyElisionState> VarToCopyElisionState;
+typedef std::set<Symbol*> VariablesSet;
 
-
-static bool doFindCopyElisionPoints(Expr* start, VarToCopyElisionState& map);
+static bool doFindCopyElisionPoints(Expr* start,
+                                    VarToCopyElisionState& map,
+                                    VariablesSet& eligible);
 
 // If call is a copy initialization call (e.g. chpl__autoCopy)
 // return the lhs and rhs variables representing the copy.
@@ -549,24 +552,31 @@ static void noteUses(Expr* e, VarToCopyElisionState& map) {
   }
 }
 
-static bool canCopyElide(CallExpr* call, Symbol* lhs, Symbol* rhs) {
+static bool canCopyElideVar(Symbol* rhs) {
   return isVarSymbol(rhs) &&
          !rhs->isRef() &&
-         rhs->getValType() == lhs->getValType() &&
          rhs->hasFlag(FLAG_NO_AUTO_DESTROY) == false &&
          (rhs->hasFlag(FLAG_INSERT_AUTO_DESTROY) ||
-          rhs->hasFlag(FLAG_INSERT_AUTO_DESTROY_FOR_EXPLICIT_NEW)) &&
+          rhs->hasFlag(FLAG_INSERT_AUTO_DESTROY_FOR_EXPLICIT_NEW));
+}
+
+static bool canCopyElideCall(CallExpr* call, Symbol* lhs, Symbol* rhs) {
+  return canCopyElideVar(rhs) &&
+         rhs->getValType() == lhs->getValType() &&
          rhs->defPoint->parentSymbol == call->parentSymbol;
 }
 
 // returns true if there was an unconditional return
-static bool doFindCopyElisionPoints(Expr* start, VarToCopyElisionState& map) {
+static bool doFindCopyElisionPoints(Expr* start,
+                                    VarToCopyElisionState& map,
+                                    VariablesSet& eligible) {
 
   if (start == NULL)
     return false;
 
   // Scroll forwards in the block containing start.
   for (Expr* cur = start->getStmtExpr(); cur != NULL; cur = cur->next) {
+
     // handle calls:
     //   copy-init e.g. var x = y
     //   PRIM_END_OF_STATEMENT
@@ -576,7 +586,9 @@ static bool doFindCopyElisionPoints(Expr* start, VarToCopyElisionState& map) {
       bool foundCopy = findCopyElisionCandidate(call, lhs, rhs);
 
       // handle same-type copy-init from a variable
-      if (foundCopy && canCopyElide(call, lhs, rhs)) {
+      if (foundCopy &&
+          canCopyElideCall(call, lhs, rhs) &&
+          eligible.count(rhs)) {
         // copy-init from a variable
         VarSymbol* var = toVarSymbol(rhs);
         CopyElisionState& state = map[var];
@@ -621,8 +633,13 @@ static bool doFindCopyElisionPoints(Expr* start, VarToCopyElisionState& map) {
     }
 
     // var x;
-    if (isDefExpr(cur)) {
-      noteUses(cur, map);
+    if (DefExpr* def = toDefExpr(cur)) {
+
+      // note variables that are defined as eligible
+      if (canCopyElideVar(def->sym))
+        eligible.insert(def->sym);
+
+      noteUses(def, map);
 
     // return / throw
     } else if (isGotoStmt(cur) || isCallExpr(cur)) {
@@ -650,14 +667,29 @@ static bool doFindCopyElisionPoints(Expr* start, VarToCopyElisionState& map) {
 
       if (block->isLoopStmt() || block->isRealBlockStmt() == false) {
         // Loop / on / begin / etc - just check for uses
-        noteUses(cur, map);
+        Expr* start = block->body.first();
+        VariablesSet newEligible;
+        doFindCopyElisionPoints(start, map, newEligible);
       } else {
         // non-loop block
         Expr* start = block->body.first();
-        bool returned = doFindCopyElisionPoints(start, map);
+        bool returned = doFindCopyElisionPoints(start, map, eligible);
         if (returned)
           return true; // stop traversing if it returned
       }
+
+      // If we had a reason to, we could remove variables going
+      // out of scope from `map` and from `eligible`.
+      // If we did so, we would want to run doElideCopies on
+      // those variables here.
+      //
+      // However this is not strictly necessary as variables cannot
+      // be used outside of the scope in which they are declared.
+
+    } else if (ForallStmt* forall = toForallStmt(cur)) {
+      Expr* start = forall->loopBody()->body.first();
+      VariablesSet newEligible;
+      doFindCopyElisionPoints(start, map, newEligible);
 
     // try { ... }
     } else if (isTryStmt(cur)) {
@@ -686,10 +718,17 @@ static bool doFindCopyElisionPoints(Expr* start, VarToCopyElisionState& map) {
       VarToCopyElisionState ifMap;
       VarToCopyElisionState elseMap;
 
-      bool ifRet = doFindCopyElisionPoints(ifStart, ifMap);
+      bool ifRet = false;
       bool elseRet = false;
-      if (elseStart != NULL)
-        elseRet = doFindCopyElisionPoints(elseStart, elseMap);
+      {
+        VariablesSet ifEligible = eligible;
+        ifRet = doFindCopyElisionPoints(ifStart, ifMap, ifEligible);
+      }
+
+      if (elseStart != NULL) {
+        VariablesSet elseEligible = eligible;
+        elseRet = doFindCopyElisionPoints(elseStart, elseMap, elseEligible);
+      }
 
       if (ifRet || elseRet) {
         if (ifRet == false) {
@@ -779,7 +818,9 @@ static bool doFindCopyElisionPoints(Expr* start, VarToCopyElisionState& map) {
 void elideCopies(FnSymbol* fn) {
   if (fNoCopyElision == false) {
     VarToCopyElisionState map;
-    doFindCopyElisionPoints(fn->body->body.first(), map);
+    VariablesSet eligible;
+
+    doFindCopyElisionPoints(fn->body->body.first(), map, eligible);
 
     // run elide copies again in case the function did not terminate
     // with a return statement.

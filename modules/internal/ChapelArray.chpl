@@ -244,10 +244,10 @@ module ChapelArray {
         newValue.pid = n;
       }
       cobegin {
-        if chpl_localeTree.left then
+        if chpl_localeTree.left._instance != nil then
           on chpl_localeTree.left do
             _newPrivatizedClassHelp(newValue, originalValue, n, hereID, privatizeData);
-        if chpl_localeTree.right then
+        if chpl_localeTree.right._instance != nil then
           on chpl_localeTree.right do
             _newPrivatizedClassHelp(newValue, originalValue, n, hereID, privatizeData);
       }
@@ -276,10 +276,10 @@ module ChapelArray {
       chpl_clearPrivatizedClass(pid);
 
       cobegin {
-        if chpl_localeTree.left then
+        if chpl_localeTree.left._instance != nil then
           on chpl_localeTree.left do
             _freePrivatizedClassHelp(pid, original);
-        if chpl_localeTree.right then
+        if chpl_localeTree.right._instance != nil then
           on chpl_localeTree.right do
             _freePrivatizedClassHelp(pid, original);
       }
@@ -300,10 +300,10 @@ module ChapelArray {
         newValue.dsiReprivatize(parentValue, reprivatizeData);
       }
       cobegin {
-        if chpl_localeTree.left then
+        if chpl_localeTree.left._instance != nil then
           on chpl_localeTree.left do
             _reprivatizeHelp(newValue, originalValue, pid, hereID, reprivatizeData);
-        if chpl_localeTree.right then
+        if chpl_localeTree.right._instance != nil then
           on chpl_localeTree.right do
             _reprivatizeHelp(newValue, originalValue, pid, hereID, reprivatizeData);
       }
@@ -1388,6 +1388,18 @@ module ChapelArray {
         compilerError("array element type cannot currently be generic");
         // In the future we might support it if the array is not default-inited
       }
+
+      if chpl_warnUnstable then
+        if isRectangularDom(this) && this.stridable then
+          if rank == 1 {
+            if this.stride < 0 then
+              warning("arrays with negatively strided dimensions are not particularly stable");
+          } else {
+            for s in this.stride do
+              if s < 0 then
+                warning("arrays with negatively strided dimensions are not particularly stable");
+          }
+
       var x = _value.dsiBuildArray(eltType);
       pragma "dont disable remote value forwarding"
       proc help() {
@@ -1446,7 +1458,7 @@ module ChapelArray {
 
     pragma "no doc"
     proc bulkAdd(inds: [] _value.idxType, dataSorted=false,
-        isUnique=false, preserveInds=true, addOn=nil:locale?)
+        isUnique=false, preserveInds=true, addOn=nilLocale)
         where isSparseDom(this) && _value.rank==1 {
 
       if inds.size == 0 then return 0;
@@ -1507,6 +1519,12 @@ module ChapelArray {
          only available for sparse domains. In the future, we expect that
          these methods will be available for all irregular domains.
 
+       .. note::
+
+         ``nilLocale`` is a sentinel value to denote that the locale where this
+         addition should occur is unknown. We expect this to change in the
+         future.
+
        :arg inds: Indices to be added. ``inds`` can be an array of
                   ``rank*idxType`` or an array of ``idxType`` for
                   1-D domains.
@@ -1529,7 +1547,7 @@ module ChapelArray {
        :rtype: int
     */
     proc bulkAdd(inds: [] _value.rank*_value.idxType,
-        dataSorted=false, isUnique=false, preserveInds=true, addOn=nil:locale?)
+        dataSorted=false, isUnique=false, preserveInds=true, addOn=nilLocale)
         where isSparseDom(this) && _value.rank>1 {
 
       if inds.size == 0 then return 0;

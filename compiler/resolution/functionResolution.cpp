@@ -1397,7 +1397,7 @@ bool canCoerceAsSubtype(Type*     actualType,
 
     // Check that the decorators allow coercion
     if (canCoerceDecorators(actualDecorator, formalDecorator,
-                            /*allowNonSubtypes*/ false,
+                            /*allowNonSubtypes*/ true,
                             /*implicitBang*/false)) {
       // are the decorated class types the same?
       if (actualC == formalC)
@@ -2492,6 +2492,7 @@ void resolveCall(CallExpr* call) {
 
     case PRIM_INIT_VAR:
     case PRIM_INIT_VAR_SPLIT_INIT:
+      resolveGenericActuals(call);
       resolveInitVar(call);
       break;
 
@@ -2741,14 +2742,53 @@ static bool resolveBuiltinCastCall(CallExpr* call)
   if (targetTypeSe && valueSe &&
       targetTypeSe->symbol()->hasFlag(FLAG_TYPE_VARIABLE)) {
 
-    Type* initialTargetType = targetTypeSe->symbol()->getValType();
-
     // Fix types for e.g. cast to generic-management MyClass.
     // This can change the symbols pointed to by targetTypeSe/valueSe.
     adjustClassCastCall(call);
 
     Type* targetType = targetTypeSe->symbol()->getValType();
     Type* valueType = valueSe->symbol()->getValType();
+
+    // handle casts from types
+    if (isTypeExpr(valueSe)) {
+      if (targetType == dtString) {
+        // Handle cast of type to string
+        call->primitive = primitives[PRIM_NOOP];
+        call->baseExpr->remove();
+        if (CallExpr* parentCall = toCallExpr(call->parentExpr)) {
+          if (parentCall->isPrimitive(PRIM_MOVE) ||
+              parentCall->isPrimitive(PRIM_ASSIGN)) {
+            SET_LINENO(call);
+            const char* typeName = toString(valueType);
+            Symbol* typeNameSym = new_StringSymbol(typeName);
+            call->replace(new SymExpr(typeNameSym));
+            parentCall->getStmtExpr()->insertBefore(call);
+          }
+        }
+
+        return true;
+      } else {
+        Type* cSrc = canonicalClassType(valueType);
+        Type* cDst= canonicalClassType(targetType);
+        if (isSubtypeOrInstantiation(cSrc, cDst, call) ||
+            isSubtypeOrInstantiation(cDst, cSrc, call)) {
+          // Handle e.g. owned MyClass:borrowed
+          call->primitive = primitives[PRIM_NOOP];
+          call->baseExpr->remove();
+          if (CallExpr* parentCall = toCallExpr(call->parentExpr)) {
+            if (parentCall->isPrimitive(PRIM_MOVE) ||
+                parentCall->isPrimitive(PRIM_ASSIGN)) {
+              SET_LINENO(call);
+              call->replace(new SymExpr(targetType->symbol));
+              parentCall->getStmtExpr()->insertBefore(call);
+            }
+          }
+          return true;
+        } else {
+          return false;
+        }
+      }
+    }
 
     // If it's a trivial cast, replace it with PRIM_CAST.
     // Trivial casts are those casts that:
@@ -2767,42 +2807,6 @@ static bool resolveBuiltinCastCall(CallExpr* call)
     bool dispatches = canDispatch(valueType, valueSe->symbol(),
                                   targetType, NULL, call->getFunction(),
                                   &promotes, &paramNarrows, paramCoerce);
-
-    if (isTypeExpr(valueSe)) {
-      if (targetType == dtString) {
-        // Handle cast of type to string
-        call->primitive = primitives[PRIM_NOOP];
-        call->baseExpr->remove();
-        if (CallExpr* parentCall = toCallExpr(call->parentExpr)) {
-          if (parentCall->isPrimitive(PRIM_MOVE) ||
-              parentCall->isPrimitive(PRIM_ASSIGN)) {
-            SET_LINENO(call);
-            const char* typeName = toString(valueType);
-            Symbol* typeNameSym = new_StringSymbol(typeName);
-            call->replace(new SymExpr(typeNameSym));
-            parentCall->getStmtExpr()->insertBefore(call);
-          }
-        }
-
-        return true;
-      } else if (isBuiltinGenericClassType(initialTargetType) ||
-                 isManagedPtrType(initialTargetType)) {
-        // Handle e.g. owned MyClass:borrowed
-        call->primitive = primitives[PRIM_NOOP];
-        call->baseExpr->remove();
-        if (CallExpr* parentCall = toCallExpr(call->parentExpr)) {
-          if (parentCall->isPrimitive(PRIM_MOVE) ||
-              parentCall->isPrimitive(PRIM_ASSIGN)) {
-            SET_LINENO(call);
-            call->replace(new SymExpr(targetType->symbol));
-            parentCall->getStmtExpr()->insertBefore(call);
-          }
-        }
-        return true;
-      } else {
-        return false;
-      }
-    }
 
     if (!isRecord(targetType) && !isRecord(valueType) &&
         !is_complex_type(targetType) && !is_complex_type(valueType) &&
@@ -3541,11 +3545,27 @@ static void resolveNormalCallConstRef(CallExpr* call) {
   }
 }
 
-static Type* getArrayElementType(AggregateType* arrayType) {
-  Type* instType = arrayType->getField("_instance")->type;
-  AggregateType* instClass = toAggregateType(canonicalClassType(instType));
-  Type* eltType = instClass->getField("eltType")->getValType();
+// Returns the element type, given an array type.
+// Recurse into it if it is still an array.
+static Type* finalArrayElementType(AggregateType* arrayType) {
+  Type* eltType = NULL;
+  do {
+    Type* instType = arrayType->getField("_instance")->type;
+    AggregateType* instClass = toAggregateType(canonicalClassType(instType));
+    eltType = instClass->getField("eltType")->getValType();
+    arrayType = toAggregateType(eltType);
+  } while
+    (arrayType != NULL && arrayType->symbol->hasFlag(FLAG_ARRAY));
+    
   return eltType;
+}
+
+// Is it OK to defalt-initialize an array with this element type?
+// Once #14854 is resolved, this should be simply
+//   isDefaultInitializeable(eltType)
+static bool okForDefaultInitializedArray(Type* eltType) {
+  // Exclude locales. Remove this exception once #15149 is merged.
+  return eltType == dtLocale || ! isNonNilableClassType(eltType);
 }
 
 // Is 'actualSym' passed to an assignment (a 'proc =') ?
@@ -3601,7 +3621,7 @@ static void checkDefaultNonnilableArrayArg(CallExpr* call, FnSymbol* fn) {
          ! formal->hasFlag(FLAG_UNSAFE))
       if (AggregateType* actualType = toAggregateType(actualSym->getValType()))
        if (actualType->symbol->hasFlag(FLAG_ARRAY) &&
-           isNonNilableClassType(getArrayElementType(actualType)))
+           ! okForDefaultInitializedArray(finalArrayElementType(actualType)))
         //
         // Acceptable handling of the default actual is this:
         //   def default_arg_xxx: _array(...)
@@ -3617,7 +3637,7 @@ static void checkDefaultNonnilableArrayArg(CallExpr* call, FnSymbol* fn) {
          USR_FATAL_CONT(call, "cannot default-initialize the array field"
                         " %s because it has a non-nilable element type '%s'",
                         userFieldNameForError(actualSym),
-                        toString(getArrayElementType(actualType), true));
+                        toString(finalArrayElementType(actualType), true));
 }
 
 static void resolveNormalCallFinalChecks(CallExpr* call) {
@@ -7148,8 +7168,6 @@ static void           resolveNewWithInitializer(CallExpr* newExpr,
 
 static SymExpr*       resolveNewFindTypeExpr(CallExpr* newExpr);
 
-static bool isManagedPointerInit(SymExpr* typeExpr);
-
 static void resolveNewSetupManaged(CallExpr* newExpr, Type*& manager);
 
 static void handleUnstableNewError(CallExpr* newExpr, Type* newType);
@@ -7286,8 +7304,6 @@ static void resolveNewSetupManaged(CallExpr* newExpr, Type*& manager) {
       // the rest of the compiler (e.g. initializer resolution) uses
       // only the canonical class types.
       if (manager) {
-        AggregateType* at = toAggregateType(type);
-
         // if needed, make the manager nilable
         if (makeNilable) {
           if (isManagedPtrType(manager))
@@ -7303,7 +7319,7 @@ static void resolveNewSetupManaged(CallExpr* newExpr, Type*& manager) {
         checkManagerType(manager);
 
         // fail if it's a record
-        if (isRecord(at) && !isManagedPtrType(at))
+        if (isRecord(type) && !isManagedPtrType(type))
           USR_FATAL_CONT(newExpr, "Cannot use new %s with record %s",
                                   toString(manager), toString(type));
         else if (!isClassLikeOrManaged(type))
@@ -7311,33 +7327,43 @@ static void resolveNewSetupManaged(CallExpr* newExpr, Type*& manager) {
                                    toString(manager), toString(type));
 
 
+        Type* initType = type;
+
         // Use the class type inside a owned/shared/etc
         // unless we are initializing Owned/Shared itself
-        if (isManagedPtrType(at) && !isManagedPointerInit(typeExpr)) {
-          Type* subtype = getManagedPtrBorrowType(at);
-          if (isAggregateType(subtype)) // in particular, not dtUnknown
-            at = toAggregateType(subtype);
+        if (isManagedPtrType(type)) {
+          Type* subtype = getManagedPtrBorrowType(type);
+          // rule out dtUnknown
+          if (isAggregateType(subtype) || isDecoratedClassType(subtype))
+            initType = subtype;
         }
 
         // Use the canonical class to simplify the rest of initializer
         // resolution
-        if (DecoratedClassType* mt = toDecoratedClassType(type)) {
-          at = mt->getCanonicalClass();
-        // For records, just ignore the manager
-        // e.g. to support 'new owned MyRecord'
-        } else if (isRecord(at)) {
-          manager = NULL;
+        if (DecoratedClassType* mt = toDecoratedClassType(initType)) {
+          initType = mt->getCanonicalClass();
         }
 
         if (manager) {
-          if (at != type)
+          if (initType != type)
             // Set the type to initialize
-            typeExpr->setSymbol(at->symbol);
+            typeExpr->setSymbol(initType->symbol);
         }
       }
       if (manager == NULL && fWarnUnstable)
         // Generate an error on 'new MyClass' with fWarnUnstable
         handleUnstableNewError(newExpr, type);
+
+      if (manager == dtBorrowed && fWarnUnstable) {
+        Type* ct = canonicalClassType(type);
+        USR_WARN(newExpr, "new borrowed %s is unstable", ct->symbol->name);
+        USR_PRINT(newExpr, "use 'new unmanaged %s' "
+                           "'new owned %s' or "
+                           "'new shared %s'",
+                           ct->symbol->name,
+                           ct->symbol->name,
+                           ct->symbol->name);
+      }
     }
   }
 }
@@ -7346,10 +7372,8 @@ static void handleUnstableNewError(CallExpr* newExpr, Type* newType) {
   if (isUndecoratedClassNew(newExpr, newType)) {
     USR_WARN(newExpr, "new %s is unstable", newType->symbol->name);
     USR_PRINT(newExpr, "use 'new unmanaged %s' "
-                       "'new owned %s' "
-                       "'new shared %s' or "
-                       "'new borrowed %s'",
-                       newType->symbol->name,
+                       "'new owned %s' or "
+                       "'new shared %s'",
                        newType->symbol->name,
                        newType->symbol->name,
                        newType->symbol->name);
@@ -7405,32 +7429,6 @@ static bool isUndecoratedClassNew(CallExpr* newExpr, Type* newType) {
   }
 
   return isUndecorated;
-}
-
-static bool isManagedPointerInit(SymExpr* typeExpr) {
-
-  // Managed pointer init methods are:
-  //  - accepting a single unmanaged class pointer
-  //  - accepting a single managed class pointer
-
-  // everything else is forwarded
-
-  if (typeExpr->next == NULL)
-    return false;
-
-  if (typeExpr->next->next != NULL)
-    return false;
-
-  Type* singleArgumentType = typeExpr->next->getValType();
-
-  if (isManagedPtrType(singleArgumentType))
-    return true;
-
-  if (DecoratedClassType* dt = toDecoratedClassType(singleArgumentType))
-    if (dt->isUnmanaged())
-      return true;
-
-  return false;
 }
 
 static void resolveNewWithInitializer(CallExpr* newExpr, Type* manager) {
@@ -8904,7 +8902,7 @@ static void resolveAutoCopies() {
     if (! ts->hasFlag(FLAG_GENERIC)                 &&
         ! ts->hasFlag(FLAG_SYNTACTIC_DISTRIBUTION)) {
       if (AggregateType* at = toAggregateType(ts->type)) {
-        if (isRecord(at) == true) {
+        if (isRecord(at) || isUnion(at)) {
           // If we attempt to resolve auto-copy and co. for an infinite record
           // we may enter an infinite loop and the compiler will crash.
           checkForInfiniteRecord(at);
@@ -10024,8 +10022,8 @@ void lowerPrimInit(CallExpr* call, Expr* preventingSplitInit) {
 
     INT_ASSERT(val->type != dtUnknown && val->type != dtAny);
     if (name != NULL) {
-      Type* eltType = getArrayElementType(toAggregateType(val->type));
-      if (isNonNilableClassType(eltType))
+      Type* eltType = finalArrayElementType(toAggregateType(val->type));
+      if (! okForDefaultInitializedArray(eltType))
         USR_FATAL_CONT(call, "cannot default-initialize the array %s"
                        " because it has a non-nilable element type '%s'",
                        name, toString(eltType));
@@ -10371,6 +10369,8 @@ static void lowerPrimInitGenericRecordVar(CallExpr* call,
                                           AggregateType* at) {
   AggregateType* root = at->getRootInstantiation();
 
+  Type* saveType = val->type;
+
   val->type = root;
 
   CallExpr* initCall = createGenericRecordVarDefaultInitCall(val, at, call);
@@ -10378,6 +10378,13 @@ static void lowerPrimInitGenericRecordVar(CallExpr* call,
   call->insertBefore(initCall);
   resolveCallAndCallee(initCall);
   call->convertToNoop();
+
+  if (saveType != val->type) {
+    USR_FATAL_CONT(call, "initializer produces a different type");
+    USR_PRINT(call, "when default-initializing '%s' of type '%s'", val->name,
+                    toString(saveType));
+    USR_PRINT(call, "init resulted in type '%s'", toString(val->type));
+  }
 
   if (at && at->isRecord() && at->hasPostInitializer()) {
     CallExpr* postinit = new CallExpr("postinit", gMethodToken, val);

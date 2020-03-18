@@ -1005,7 +1005,7 @@ override proc BlockArr.dsiDestroyArr() {
 }
 
 inline proc BlockArr.dsiLocalAccess(i: rank*idxType) ref {
-  return myLocArr!.this(i);
+  return _to_nonnil(myLocArr).this(i);
 }
 
 //
@@ -1018,8 +1018,8 @@ inline proc BlockArr.dsiLocalAccess(i: rank*idxType) ref {
 //
 inline proc BlockArr.dsiAccess(const in idx: rank*idxType) ref {
   local {
-    if myLocArr != nil && myLocArr!.locDom.contains(idx) then
-      return myLocArr!.this(idx);
+    if myLocArr != nil && _to_nonnil(myLocArr).locDom.contains(idx) then
+      return _to_nonnil(myLocArr).this(idx);
   }
   return nonLocalAccess(idx);
 }
@@ -1031,29 +1031,31 @@ inline proc BlockArr.dsiBoundsCheck(i: rank*idxType) {
 pragma "fn unordered safe"
 proc BlockArr.nonLocalAccess(i: rank*idxType) ref {
   if doRADOpt {
-    if myLocArr {
+    if this.myLocArr {
+      const myLocArr = _to_nonnil(this.myLocArr);
       var rlocIdx = dom.dist.targetLocsIdx(i);
       if !disableBlockLazyRAD {
-        if myLocArr!.locRAD == nil {
-          myLocArr!.locRADLock.lock();
-          if myLocArr!.locRAD == nil {
+        if myLocArr.locRAD == nil {
+          myLocArr.locRADLock.lock();
+          if myLocArr.locRAD == nil {
             var tempLocRAD = new unmanaged LocRADCache(eltType, rank, idxType, stridable, dom.dist.targetLocDom);
             tempLocRAD.RAD.blk = SENTINEL;
-            myLocArr!.locRAD = tempLocRAD;
+            myLocArr.locRAD = tempLocRAD;
           }
-          myLocArr!.locRADLock.unlock();
+          myLocArr.locRADLock.unlock();
         }
-        if myLocArr!.locRAD!.RAD(rlocIdx).blk == SENTINEL {
-          myLocArr!.locRAD!.lockRAD(rlocIdx);
-          if myLocArr!.locRAD!.RAD(rlocIdx).blk == SENTINEL {
-            myLocArr!.locRAD!.RAD(rlocIdx) =
+        const locRAD = _to_nonnil(myLocArr.locRAD);
+        if locRAD.RAD(rlocIdx).blk == SENTINEL {
+          locRAD.lockRAD(rlocIdx);
+          if locRAD.RAD(rlocIdx).blk == SENTINEL {
+            locRAD.RAD(rlocIdx) =
               locArr(rlocIdx).myElems._value.dsiGetRAD();
           }
-          myLocArr!.locRAD!.unlockRAD(rlocIdx);
+          locRAD.unlockRAD(rlocIdx);
         }
       }
-      pragma "no copy" pragma "no auto destroy" var myLocRAD = myLocArr!.locRAD;
-      pragma "no copy" pragma "no auto destroy" var radata = myLocRAD!.RAD;
+      pragma "no copy" pragma "no auto destroy" var myLocRAD = myLocArr.locRAD;
+      pragma "no copy" pragma "no auto destroy" var radata = _to_nonnil(myLocRAD).RAD;
       if radata(rlocIdx).shiftedData != nil {
         var dataIdx = radata(rlocIdx).getDataIndex(i);
         return radata(rlocIdx).getDataElem(dataIdx);
@@ -1081,7 +1083,7 @@ iter BlockArr.these(param tag: iterKind) where tag == iterKind.leader {
     yield followThis;
 }
 
-proc BlockArr.dsiStaticFastFollowCheck(type leadType) param
+override proc BlockArr.dsiStaticFastFollowCheck(type leadType) param
   return _to_borrowed(leadType) == _to_borrowed(this.type) ||
          _to_borrowed(leadType) == _to_borrowed(this.dom.type);
 
@@ -1135,11 +1137,11 @@ iter BlockArr.these(param tag: iterKind, followThis, param fast: bool = false) r
     // that we can use the local block below
     //
     if arrSection.locale.id != here.id then
-      arrSection = myLocArr!;
+      arrSection = _to_nonnil(myLocArr);
 
     local {
       const narrowArrSection = __primitive("_wide_get_addr", arrSection):arrSection.type?;
-      ref myElems = narrowArrSection!.myElems;
+      ref myElems = _to_nonnil(narrowArrSection).myElems;
       for i in myFollowThisDom do yield myElems[i];
     }
   } else {
@@ -1257,7 +1259,7 @@ proc Block.init(other: Block, privateData,
   this.sparseLayoutType = sparseLayoutType;
 }
 
-proc Block.dsiSupportsPrivatization() param return true;
+override proc Block.dsiSupportsPrivatization() param return true;
 
 proc Block.dsiGetPrivatizeData() {
   return (boundingBox.dims(), targetLocDom.dims(),
@@ -1297,7 +1299,7 @@ proc type BlockDom.chpl__deserialize(data) {
            data);
 }
 
-proc BlockDom.dsiSupportsPrivatization() param return true;
+override proc BlockDom.dsiSupportsPrivatization() param return true;
 
 record BlockDomPrvData {
   var distpid;
@@ -1344,7 +1346,7 @@ proc type BlockArr.chpl__deserialize(data) {
            data);
 }
 
-proc BlockArr.dsiSupportsPrivatization() param return true;
+override proc BlockArr.dsiSupportsPrivatization() param return true;
 
 record BlockArrPrvData {
   var dompid;
@@ -1406,7 +1408,7 @@ proc BlockArr.dsiLocalSubdomain(loc: locale) {
   if (loc == here) {
     // quick solution if we have a local array
     if myLocArr != nil then
-      return myLocArr!.locDom.myBlock;
+      return _to_nonnil(myLocArr).locDom.myBlock;
     // if not, we must not own anything
     var d: domain(rank, idxType, stridable);
     return d;
@@ -1586,7 +1588,7 @@ where !disableBlockDistBulkTransfer {
   return true;
 }
 
-proc BlockArr.doiCanBulkTransferRankChange() param return true;
+override proc BlockArr.doiCanBulkTransferRankChange() param return true;
 
 config param debugBlockScan = false;
 

@@ -2227,42 +2227,51 @@ void AggregateType::buildDefaultInitializer() {
     fn->insertFormalAtTail(_mt);
     fn->insertFormalAtTail(_this);
 
-    std::set<const char*> names;
-    SymbolMap fieldArgMap;
+    if (this->isUnion() == false) {
+      std::set<const char*> names;
+      SymbolMap fieldArgMap;
 
-    if (addSuperArgs(fn, names, fieldArgMap) == true) {
-      // Parent fields before child fields
-      fieldToArg(fn, names, fieldArgMap);
+      if (addSuperArgs(fn, names, fieldArgMap) == true) {
+        // Parent fields before child fields
+        fieldToArg(fn, names, fieldArgMap);
 
-      // Replaces field references with argument references
-      // NOTE: doesn't handle inherited fields yet!
-      update_symbols(fn, &fieldArgMap);
+        // Replaces field references with argument references
+        // NOTE: doesn't handle inherited fields yet!
+        update_symbols(fn, &fieldArgMap);
 
+        DefExpr* def = new DefExpr(fn);
+        symbol->defPoint->insertBefore(def);
+
+        fn->setMethod(true);
+        fn->addFlag(FLAG_METHOD_PRIMARY);
+
+        preNormalizeInitMethod(fn);
+
+        normalize(fn);
+
+        // BHARSH INIT TODO: Should this be part of normalize(fn)? If we did
+        // that we would emit two use-before-def errors for classes because of
+        // the generated _new function.
+        checkUseBeforeDefs(fn);
+
+        methods.add(fn);
+      } else {
+        USR_FATAL(this, "Unable to generate initializer for type '%s'", this->symbol->name);
+      }
+    } else {
       DefExpr* def = new DefExpr(fn);
-
       symbol->defPoint->insertBefore(def);
 
       fn->setMethod(true);
       fn->addFlag(FLAG_METHOD_PRIMARY);
 
-      preNormalizeInitMethod(fn);
-
-      if (this->isUnion()) {
-        fn->insertAtTail(new CallExpr(PRIM_SET_UNION_ID,
-                                      fn->_this,
-                                      new_IntSymbol(0)));
-      }
+      fn->insertAtTail(new CallExpr(PRIM_SET_UNION_ID,
+                                    fn->_this,
+                                    new_IntSymbol(0)));
 
       normalize(fn);
 
-      // BHARSH INIT TODO: Should this be part of normalize(fn)? If we did that
-      // we would emit two use-before-def errors for classes because of the
-      // generated _new function.
-      checkUseBeforeDefs(fn);
-
       methods.add(fn);
-    } else {
-      USR_FATAL(this, "Unable to generate initializer for type '%s'", this->symbol->name);
     }
 
     builtDefaultInit = true;
@@ -2533,38 +2542,33 @@ void AggregateType::buildCopyInitializer() {
       fn->insertAtHead(new CallExpr(PRIM_ASSIGN, fn->_this, other));
 
     } else if (aggregateTag == AGGREGATE_UNION) {
-      // Copy the set field ID, then copy only the field that is set
+      // set field ID to 0 and then rely on field accessor
+      // call below to set it to the right value (and default init)
       fn->insertAtTail(new CallExpr(PRIM_SET_UNION_ID,
                                     fn->_this,
-                                    new CallExpr(PRIM_GET_UNION_ID, other)));
+                                    new_IntSymbol(0)));
 
       for_fields(fieldDefExpr, this) {
         if (VarSymbol* field = toVarSymbol(fieldDefExpr)) {
-          const char* name       = field->name;
+          Symbol* fieldNameSymbol = new_CStringSymbol(field->name);
 
           CallExpr* thisField  = new CallExpr(".",
                                               fn->_this,
-                                              new_CStringSymbol(name));
+                                              fieldNameSymbol);
 
           CallExpr* otherField = new CallExpr(".",
                                               other,
-                                              new_CStringSymbol(name));
+                                              fieldNameSymbol);
 
           CallExpr* setField = new CallExpr("=", thisField, otherField);
 
-          CallExpr* thisField2  = new CallExpr(".",
-                                               fn->_this,
-                                               new_CStringSymbol(name));
-
-          CallExpr* noSetField = new CallExpr("=", thisField2, gNoInit);
-
           CallExpr* isField =
-            new CallExpr("==", new CallExpr(PRIM_GET_UNION_ID, fn->_this),
+            new CallExpr("==", new CallExpr(PRIM_GET_UNION_ID, other),
                                new CallExpr(PRIM_FIELD_NAME_TO_NUM,
                                             this->symbol,
-                                            new_CStringSymbol(name)));
+                                            fieldNameSymbol));
 
-          fn->insertAtTail(new CondStmt(isField, setField, noSetField));
+          fn->insertAtTail(new CondStmt(isField, setField));
         }
       }
 

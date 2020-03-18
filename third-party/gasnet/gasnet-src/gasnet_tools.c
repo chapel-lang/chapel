@@ -407,7 +407,7 @@ GASNETI_IDENT(gasnett_IdentString_CompilerID,
              "$GASNetCompilerID: " PLATFORM_COMPILER_IDSTR " $");
 
 GASNETI_IDENT(gasnett_IdentString_GitHash, 
-             "$GASNetGitHash: gex-2019.9.2-46-gaf0aaf5 $");
+             "$GASNetGitHash: gex-2020.3.0 $");
 
 int GASNETT_LINKCONFIG_IDIOTCHECK(_CONCAT(RELEASE_MAJOR_,GASNET_RELEASE_VERSION_MAJOR)) = 1;
 int GASNETT_LINKCONFIG_IDIOTCHECK(_CONCAT(RELEASE_MINOR_,GASNET_RELEASE_VERSION_MINOR)) = 1;
@@ -1646,7 +1646,7 @@ extern const char *gasneti_backtraceid(void); // allow conduit to provide [NODE]
 #endif
 static const char *gasneti_backtrace_list = 0;
 static int gasneti_backtrace_prctl = -2;
-GASNETI_TENTATIVE_LIBRARY
+GASNETI_TENTATIVE_LIBRARY_DEFN
 gasnett_backtrace_type_t gasnett_backtrace_user; /* allow client provided backtrace function */
 extern void gasneti_backtrace_init(const char *exename) {
   static int user_is_init = 0;

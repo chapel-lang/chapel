@@ -24,7 +24,7 @@ platform.
 Interface
 ---------
 
-A launcher has 3 entrypoints that are accessed from ``main_launcher.c``:
+A launcher has 3 entry points that are accessed from ``main_launcher.c``:
 
 .. code-block:: C
 

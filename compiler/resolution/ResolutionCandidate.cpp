@@ -165,7 +165,12 @@ bool ResolutionCandidate::computeAlignment(CallInfo& info) {
       bool match = false;
       int  j    = 0;
       for_formals(formal, fn) {
-        if (strcmp(info.actualNames.v[i], formal->name) == 0) {
+        if (info.actualNames.v[i] == formal->name) {
+
+          if (formalIdxToActual[j] != NULL)
+            USR_FATAL(info.call, "named argument '%s' provided twice",
+                      formal->name);
+
           match                = true;
           actualIdxToFormal[i] = formal;
           formalIdxToActual[j] = info.actuals.v[i];

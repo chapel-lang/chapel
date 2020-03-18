@@ -27,25 +27,25 @@ module LocaleTree {
   use ChapelLocale; // For declaration of rootLocale.
 
   record chpl_localeTreeRecord {
-    var left, right: locale?;
+    var left, right: locale;
   }
 
   pragma "locale private" var chpl_localeTree: chpl_localeTreeRecord;
 
   proc chpl_initLocaleTree() {
     for i in LocaleSpace {
-      var left: locale? = nil;
-      var right: locale? = nil;
+      var left: unmanaged BaseLocale? = nil;
+      var right: unmanaged BaseLocale? = nil;
       var child = (i+1)*2-1;    // Assumes that indices are dense.
       if child < numLocales {
-        left = rootLocale!.getChild(child);
+        left = rootLocale.getChild(child)._instance;
         child += 1;
         if child < numLocales then
-          right = rootLocale!.getChild(child);
+          right = rootLocale.getChild(child)._instance;
       }
-      on rootLocale!.getChild(i) {
-        chpl_localeTree.left = left;
-        chpl_localeTree.right = right;
+      on rootLocale.getChild(i) {
+        chpl_localeTree.left._instance = left;
+        chpl_localeTree.right._instance = right;
       }
     }
   }

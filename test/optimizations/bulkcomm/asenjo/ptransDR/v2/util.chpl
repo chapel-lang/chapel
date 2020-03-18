@@ -5,7 +5,7 @@ private use IO;
 
 var manylocs: bool;
 proc setupGridLocales(ensureManyLocs = false) {
-  var gridLocales: [gridDom] locale?;
+  var gridLocales: [gridDom] locale;
   manylocs = (numLocales >= gridLocales.size);
 
   if manylocs {
@@ -23,7 +23,7 @@ proc setupGridLocales(ensureManyLocs = false) {
     gridLocales.size, ", got ", numLocales);
   writeln();
 
-  return gridLocales!;
+  return gridLocales;
 }
 
 // show what we have

@@ -1089,7 +1089,7 @@ override proc StencilArr.dsiDestroyArr() {
 
 
 inline proc StencilArr.dsiLocalAccess(i: rank*idxType) ref {
-  return myLocArr!.this(i);
+  return _to_nonnil(myLocArr).this(i);
 }
 
 //
@@ -1101,7 +1101,7 @@ inline
 proc StencilArr.do_dsiAccess(param setter, const in idx: rank*idxType) ref {
   local {
     if myLocArr != nil {
-      const myLocArr = this.myLocArr!; // indicate it is not nil
+      const myLocArr = _to_nonnil(this.myLocArr);
       if setter || this.ignoreFluff {
         // A write: return from actual data and not fluff
         if myLocArr.locDom.contains(idx) then return myLocArr.this(idx);
@@ -1120,7 +1120,7 @@ proc StencilArr.nonLocalAccess(i: rank*idxType) ref {
 
   if doRADOpt {
     if myLocArr {
-      const myLocArr = this.myLocArr!; // indicate it is not nil
+      const myLocArr = _to_nonnil(this.myLocArr);
       var rlocIdx = dom.dist.targetLocsIdx(i);
       if !disableStencilLazyRAD {
         if myLocArr.locRAD == nil {
@@ -1132,7 +1132,7 @@ proc StencilArr.nonLocalAccess(i: rank*idxType) ref {
           }
           myLocArr.locRADLock.unlock();
         }
-        const locRAD = myLocArr.locRAD!;
+        const locRAD = _to_nonnil(myLocArr.locRAD);
         if locRAD.RAD(rlocIdx).blk == SENTINEL {
           locRAD.lockRAD(rlocIdx);
           if locRAD.RAD(rlocIdx).blk == SENTINEL {
@@ -1142,7 +1142,7 @@ proc StencilArr.nonLocalAccess(i: rank*idxType) ref {
           locRAD.unlockRAD(rlocIdx);
         }
       }
-      pragma "no copy" pragma "no auto destroy" var myLocRAD = myLocArr!.locRAD!;
+      pragma "no copy" pragma "no auto destroy" var myLocRAD = _to_nonnil(myLocArr.locRAD);
       pragma "no copy" pragma "no auto destroy" var radata = myLocRAD.RAD;
       if radata(rlocIdx).shiftedData != nil {
         var dataIdx = radata(rlocIdx).getDataIndex(i);
@@ -1200,7 +1200,7 @@ iter StencilArr.these(param tag: iterKind) where tag == iterKind.leader {
     yield followThis;
 }
 
-proc StencilArr.dsiStaticFastFollowCheck(type leadType) param
+override proc StencilArr.dsiStaticFastFollowCheck(type leadType) param
   return _to_borrowed(leadType) == _to_borrowed(this.type) ||
          _to_borrowed(leadType) == _to_borrowed(this.dom.type);
 
@@ -1253,12 +1253,12 @@ iter StencilArr.these(param tag: iterKind, followThis, param fast: bool = false)
     // that we can use the local block below
     //
     if arrSection.locale.id != here.id then
-      arrSection = myLocArr!;
+      arrSection = _to_nonnil(myLocArr);
 
     local {
       const narrowArrSection =
         __primitive("_wide_get_addr", arrSection):(arrSection.type?);
-      ref myElems = narrowArrSection!.myElems;
+      ref myElems = _to_nonnil(narrowArrSection).myElems;
       for i in myFollowThisDom do yield myElems[i];
     }
   } else {
@@ -1673,7 +1673,7 @@ proc Stencil.init(other: Stencil, privateData,
   dataParMinGranularity = privateData(5);
 }
 
-proc Stencil.dsiSupportsPrivatization() param return true;
+override proc Stencil.dsiSupportsPrivatization() param return true;
 
 proc Stencil.dsiGetPrivatizeData() {
   return (boundingBox.dims(), targetLocDom.dims(),
@@ -1697,7 +1697,7 @@ proc Stencil.dsiReprivatize(other, reprivatizeData) {
   dataParMinGranularity = other.dataParMinGranularity;
 }
 
-proc StencilDom.dsiSupportsPrivatization() param return true;
+override proc StencilDom.dsiSupportsPrivatization() param return true;
 
 proc StencilDom.dsiGetPrivatizeData() return (dist.pid, whole.dims());
 
@@ -1767,7 +1767,7 @@ proc type StencilArr.chpl__deserialize(data) {
            data);
 }
 
-proc StencilArr.dsiSupportsPrivatization() param return true;
+override proc StencilArr.dsiSupportsPrivatization() param return true;
 
 proc StencilArr.dsiGetPrivatizeData() return dom.pid;
 
@@ -1820,7 +1820,7 @@ proc StencilArr.dsiLocalSubdomain(loc: locale) {
   if (loc == here) {
     // quick solution if we have a local array
     if myLocArr != nil then
-      return myLocArr!.locDom.myBlock;
+      return _to_nonnil(myLocArr).locDom.myBlock;
     // if not, we must not own anything
     var d: domain(rank, idxType, stridable);
     return d;
@@ -1999,5 +1999,5 @@ where !disableStencilDistBulkTransfer {
   return true;
 }
 
-proc StencilArr.doiCanBulkTransferRankChange() param return true;
+override proc StencilArr.doiCanBulkTransferRankChange() param return true;
 

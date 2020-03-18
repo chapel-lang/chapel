@@ -83,7 +83,7 @@ module DefaultAssociative {
     //       replace with a named constant/param?
     var postponeResize = false;
   
-    proc linksDistribution() param return false;
+    override proc linksDistribution() param return false;
     override proc dsiLinksDistribution() return false;
   
     proc init(type idxType,
@@ -996,6 +996,10 @@ module DefaultAssociative {
   
   inline proc chpl__defaultHash(o: borrowed object): uint {
     return _gen_key(__primitive( "object2int", o));
+  }
+
+  inline proc chpl__defaultHash(l: locale): uint {
+    return _gen_key(__primitive( "object2int", l._value));
   }
 
   //
