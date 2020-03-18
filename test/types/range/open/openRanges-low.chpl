@@ -7,8 +7,8 @@ proc testRanges(type t) {
   const lo = 3: t;
   const hi = 7: t;
 
-  testRange(lo..<hi);
-  testRange(..<hi#-4);
+  testRange(lo<..hi);
+  testRange(lo<..#4);
 }
 
 proc testRange(r) {

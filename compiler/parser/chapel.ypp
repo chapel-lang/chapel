@@ -370,7 +370,7 @@
 %left TAND
 %left TEQUAL TNOTEQUAL
 %left TLESSEQUAL TGREATEREQUAL TLESS TGREATER
-%left TDOTDOT TDOTDOTOPENLOW TDOTDOTOPENHIGH TDOTDOTOPENBOTH
+%left TDOTDOT TDOTDOTOPENHIGH  // TDOTDOTOPENLOW TDOTDOTOPENBOTH
 %left TPLUS TMINUS
 %left TBOR
 %left TBXOR
@@ -2038,16 +2038,22 @@ expr:
     { $$ = createCast($1, $3); }
 | expr TDOTDOT expr
     { $$ = buildBoundedRange($1, $3); }
+/*
 | expr TDOTDOTOPENLOW expr
     { $$ = buildBoundedRange($1, $3, true, false); }
+*/
 | expr TDOTDOTOPENHIGH expr
     { $$ = buildBoundedRange($1, $3, false, true); }
+/*
 | expr TDOTDOTOPENBOTH expr
     { $$ = buildBoundedRange($1, $3, true, true); }
+*/
 | expr TDOTDOT
     { $$ = buildLowBoundedRange($1); }
+/*
 | expr TDOTDOTOPENLOW
     { $$ = buildLowBoundedRange($1, true); }
+*/
 | TDOTDOT expr
     { $$ = buildHighBoundedRange($2); }
 | TDOTDOTOPENHIGH expr

@@ -4,23 +4,6 @@
 5
 6
 
-4..7 (idxType = int(64)):
-4
-5
-6
-7
-
-4..6 (idxType = int(64)):
-4
-5
-6
-
-4..7 (idxType = int(64)):
-4
-5
-6
-7
-
 3..6 (idxType = int(64)):
 3
 4
@@ -33,23 +16,6 @@
 5
 6
 
-4..7 (idxType = int(8)):
-4
-5
-6
-7
-
-4..6 (idxType = int(8)):
-4
-5
-6
-
-4..7 (idxType = int(8)):
-4
-5
-6
-7
-
 3..6 (idxType = int(8)):
 3
 4
@@ -62,23 +28,6 @@
 5
 6
 
-4..7 (idxType = uint(8)):
-4
-5
-6
-7
-
-4..6 (idxType = uint(8)):
-4
-5
-6
-
-4..7 (idxType = uint(8)):
-4
-5
-6
-7
-
 3..6 (idxType = uint(8)):
 3
 4
@@ -90,23 +39,6 @@
 4
 5
 6
-
-4..7 (idxType = uint(64)):
-4
-5
-6
-7
-
-4..6 (idxType = uint(64)):
-4
-5
-6
-
-4..7 (idxType = uint(64)):
-4
-5
-6
-7
 
 3..6 (idxType = uint(64)):
 3

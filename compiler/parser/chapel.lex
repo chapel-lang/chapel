@@ -246,9 +246,9 @@ zip              return processToken(yyscanner, TZIP);
 
 "#"              return processToken(yyscanner, THASH);
 ".."             return processToken(yyscanner, TDOTDOT);
-"<.."            return processToken(yyscanner, TDOTDOTOPENLOW);
+                 /* "<.."            return processToken(yyscanner, TDOTDOTOPENLOW); */
 "..<"            return processToken(yyscanner, TDOTDOTOPENHIGH);
-"<..<"           return processToken(yyscanner, TDOTDOTOPENBOTH);
+                 /* "<..<"           return processToken(yyscanner, TDOTDOTOPENBOTH); */
 "..."            return processToken(yyscanner, TDOTDOTDOT);
 
 "&&"             return processToken(yyscanner, TAND);
