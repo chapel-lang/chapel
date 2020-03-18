@@ -43,6 +43,8 @@ proc makeBucketizerTest(in nBuckets:int, equalBuckets:bool, A, criterion) {
 }
 
 proc testBucketizer(nBuckets:int, equalBuckets:bool) {
+  import Sort.TwoArrayPartitioning;
+  import Sort.TwoArraySampleSort;
   var A = [0x1234567800000000:uint,
            0x1111111111111111:uint,
            0x2222222222222222:uint,
@@ -159,6 +161,8 @@ proc testBucketizer() {
 testBucketizer();
 
 proc testBucketizerRandomized(nelts:int, nBuckets:int, equalBuckets:bool) {
+  import Sort.TwoArrayPartitioning;
+  import Sort.TwoArraySampleSort;
 
   if debug then
     writeln("testBucketizerRandomized(",

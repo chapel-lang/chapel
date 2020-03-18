@@ -189,6 +189,7 @@ MPI Module Documentation
 
 */
 module MPI {
+  import MPI.C_MPI;
   public use SysCTypes;
   require "mpi.h";
 
@@ -277,6 +278,7 @@ module MPI {
      processes (world size)
      */
   proc initialize() {
+    import MPI.C_Env;
     // If we are running using the uGNI layer, then the following hack
     // appears to be necessary in order to run MPI, as well as Chapel
     // See : https://hpcrdm.lbl.gov/pipermail/upc-users/2014-May/002061.html

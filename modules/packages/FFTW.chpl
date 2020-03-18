@@ -248,6 +248,7 @@ module FFTW {
   private proc plan_dft_help(input: [] complex(128), output: [] complex(128),
                              sign: FFTW_Direction, flags: FFTW_Flag) : fftw_plan
   {
+    import FFTW.C_FFTW;
     param rank = input.rank;
 
     var dims: c_array(c_int,rank);
@@ -280,6 +281,7 @@ module FFTW {
   proc plan_dft_r2c(input : [?Din] real(64), output : [?Dout] complex(128), 
                     flags : FFTW_Flag) : fftw_plan
   {
+    import FFTW.C_FFTW;
     param rank = input.rank: c_int;
 
     if !noFFTWsizeChecks {
@@ -321,6 +323,7 @@ module FFTW {
   proc plan_dft_r2c(realDom : domain, arr : [?D] ?t, flags : FFTW_Flag) : fftw_plan
     where t == real || t == complex
   {
+    import FFTW.C_FFTW;
     if !noFFTWsizeChecks then
       if checkInPlaceDimMismatch(realDom, D, "plan_dft_r2c()", t == real) then
         halt("Incorrect array sizes in plan_dft_r2c()");
@@ -360,6 +363,7 @@ module FFTW {
   proc plan_dft_c2r(input : [?Din] complex(128), output : [?Dout] real(64), 
                     flags : FFTW_Flag) : fftw_plan
   {
+    import FFTW.C_FFTW;
     param rank = output.rank: c_int; // The dimensions are that of the real array
 
     if !noFFTWsizeChecks {
@@ -398,6 +402,7 @@ module FFTW {
   proc plan_dft_c2r(realDom : domain, arr: [?D] ?t, flags : FFTW_Flag) : fftw_plan 
     where t == real || t == complex
   {
+    import FFTW.C_FFTW;
     if !noFFTWsizeChecks then
       if checkInPlaceDimMismatch(realDom, D, "plan_dft_c2r()", t == real) then
         halt("Incorrect array sizes in plan_dft_c2r()");
@@ -427,7 +432,8 @@ module FFTW {
     :type plan: `fftw_plan`
   */
   proc execute(const plan: fftw_plan) {
-   C_FFTW.fftw_execute(plan);
+    import FFTW.C_FFTW;
+    C_FFTW.fftw_execute(plan);
   }
 
   /*
@@ -437,6 +443,7 @@ module FFTW {
     :type plan: `fftw_plan`
   */
   proc destroy_plan(plan: fftw_plan) {
+    import FFTW.C_FFTW;
     C_FFTW.fftw_destroy_plan(plan);
   }
 
@@ -445,6 +452,7 @@ module FFTW {
     Clean up FFTW overall.
   */
   proc cleanup() {
+    import FFTW.C_FFTW;
     C_FFTW.fftw_cleanup();
   }
 
@@ -644,6 +652,7 @@ module FFTW {
     locales, halting the Chapel program if any of the calls generate an error.
   */
   proc init_FFTW_MT() {
+    import FFTW.C_FFTW;
     coforall loc in Locales {
       on loc do {
         if (C_FFTW.fftw_init_threads() == 0) then
@@ -669,6 +678,7 @@ module FFTW {
     :type nthreads: `int`
   */
   proc plan_with_nthreads(nthreads: int = 0) {
+    import FFTW.C_FFTW;
     coforall loc in Locales {
       on loc do {
         const myNThreads = if nthreads < 1 then here.maxTaskPar else nthreads;
@@ -682,6 +692,7 @@ module FFTW {
     Clean up the memory used by FFTW threads on all locales.
   */
   proc cleanup_threads() {
+    import FFTW.C_FFTW;
     coforall loc in Locales {
       on loc do {
         C_FFTW.fftw_cleanup_threads();

@@ -112,9 +112,9 @@ iter listdir(path: string, hidden=false, dirs=true, files=true,
  neither follow dotfile directories nor symbolic links.  It will not
  sort the directories by default.
  */
-
 iter walkdirs(path: string=".", topdown=true, depth=max(int), hidden=false, 
     followlinks=false, sort=false): string {
+  import Sort.QuickSort;
 
   if (topdown) then
     yield path;

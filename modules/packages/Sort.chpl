@@ -908,7 +908,7 @@ module QuickSort {
                  lo: int, pivIdx: int, hi: int,
                  comparator)
   {
-    use ShallowCopy;
+    import Sort.ShallowCopy;
 
     // The following section categorizes array elements as follows:
     //
@@ -1421,6 +1421,7 @@ module SampleSortHelp {
                                    in numSamples:int,
                                    seed=1) {
     private use Random;
+    import Sort.ShallowCopy;
     var Tmp:[1..1] A.eltType;
     var randNums = createRandomStream(seed=seed, eltType=int, parSafe=false);
     while numSamples > 0 {
@@ -2014,6 +2015,7 @@ module TwoArrayPartitioning {
   proc bucketize(start_n: int, end_n: int, dst:[], src:[],
                  ref state: TwoArrayBucketizerSharedState,
                  criterion, startbit:int) {
+    import Sort.ShallowCopy;
 
     if debug then
       writeln("bucketize ", start_n..end_n, " startbit=", startbit);
@@ -2132,6 +2134,8 @@ module TwoArrayPartitioning {
           start_n:int, end_n:int, A:[], Scratch:[],
           ref state: TwoArrayBucketizerSharedState,
           criterion, startbit:int):void {
+    import Sort.SampleSortHelp;
+    import Sort.RadixSortHelp;
     // If we are doing a sample sort, we need to gather a fresh sample.
     // (Otherwise we'll never be able to solve recursive subproblems,
     //  as if in quicksort we never chose a new pivot).
@@ -2189,7 +2193,9 @@ module TwoArrayPartitioning {
           start_n:int, end_n:int, A:[], Scratch:[],
           ref state: TwoArrayBucketizerSharedState,
           criterion, startbit:int):void {
-
+    import Sort.ShallowCopy;
+    import Sort.ShellSort;
+    import Sort.RadixSortHelp;
 
     if startbit > state.endbit then
       return;
@@ -2331,6 +2337,9 @@ module TwoArrayPartitioning {
           start_n:int, end_n:int, A:[], Scratch:[],
           ref state: TwoArrayDistributedBucketizerSharedState,
           criterion, startbit:int):void {
+    import Sort.ShallowCopy;
+    import Sort.RadixSortHelp;
+    import Sort.ShellSort;
 
     if startbit > state.endbit then
       return;
@@ -2378,6 +2387,8 @@ module TwoArrayPartitioning {
           start_n:int, end_n:int, A:[], Scratch:[],
           ref state: TwoArrayDistributedBucketizerSharedState,
           criterion, startbit:int):void {
+    import Sort.RadixSortHelp;
+    import Sort.SampleSortHelp;
     // If we are doing a sample sort, we need to gather a fresh sample.
     // (Otherwise we'll never be able to solve recursive subproblems,
     //  as if in quicksort we never chose a new pivot).
@@ -2437,6 +2448,8 @@ module TwoArrayPartitioning {
           start_n:int, end_n:int, A:[], Scratch:[],
           ref state: TwoArrayDistributedBucketizerSharedState,
           criterion, startbit:int): void {
+    import Sort.ShallowCopy;
+    import Sort.ShellSort;
 
     //use BlockDist only;
 
@@ -2787,11 +2800,11 @@ module MSBRadixSort {
                     startbit:int, endbit:int,
                     settings /* MSBRadixSortSettings */)
   {
+    import Sort.ShellSort;
     if startbit > endbit then
       return;
 
     if( end_n - start_n < settings.sortSwitch ) {
-      use ShellSort;
       ShellSort.shellSort(A, criterion, start=start_n, end=end_n);
       if settings.CHECK_SORTS then checkSorted(start_n, end_n, A, criterion);
       return;

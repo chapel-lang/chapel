@@ -1,4 +1,5 @@
 use MPI;
+import MPI.C_MPI;
 
 coforall loc in Locales do on loc {
   var rank = commRank(CHPL_COMM_WORLD),

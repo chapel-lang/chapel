@@ -188,6 +188,7 @@ module LinearAlgebra {
 use Norm; // TODO -- merge Norm into LinearAlgebra
 import BLAS;
 use LAPACK only lapack_memory_order, isLAPACKType;
+import LinearAlgebra.Sparse;
 
 /* Determines if using native Chapel implementations */
 private param usingBLAS = BLAS.header != '';
@@ -1978,8 +1979,8 @@ module Sparse {
 
   /* Compute the dot-product */
   proc _array.dot(A: []) where isCSArr(A) || isCSArr(this) {
-    import LinearAlgebra;
-    return LinearAlgebra.Sparse.dot(this, A);
+    import LinearAlgebra.Sparse;
+    return Sparse.dot(this, A);
   }
 
   /* Compute the dot-product */
