@@ -49,6 +49,7 @@
 #include "LoopExpr.h"
 #include "scopeResolve.h"
 #include "stmt.h"
+#include "stringutil.h"
 
 ResolveScope* rootScope;
 
@@ -953,6 +954,32 @@ Symbol* ResolveScope::lookupPublicImports(const char* name) const {
   }
 
   return retval;
+}
+
+Symbol* ResolveScope::lookupPublicUnqualAccessSyms(const char* name) const {
+  UseImportList useImportList = mUseImportList;
+
+  for_vector_allowing_0s(VisibilityStmt, visStmt, useImportList) {
+    if (ImportStmt *is = toImportStmt(visStmt)) {
+      if (!is->isPrivate) {
+        for_vector(const char, unqualName, is->unqualified) {
+          if (astr(unqualName) == astr(name)) {
+            if (SymExpr *se = toSymExpr(is->src)) {
+              if (ModuleSymbol *ms = toModuleSymbol(se->symbol())) {
+                ResolveScope *scope = ResolveScope::getScopeFor(ms->block);
+                Symbol *retval = scope->lookupNameLocally(name);
+                if (retval) {
+                  return retval;
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
+  return NULL;
 }
 
 /************************************* | **************************************

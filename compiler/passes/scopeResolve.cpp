@@ -1410,6 +1410,11 @@ static void resolveModuleCall(CallExpr* call) {
           sym = scope->lookupPublicImports(mbrName);
         }
 
+        // Then, try public import statements that enables unqualified access
+        if (!sym) {
+          sym = scope->lookupPublicUnqualAccessSyms(mbrName);
+        }
+
         // Adjust class types to undecorated
         if (sym && isClass(sym->type)) {
           // Switch to the CLASS_TYPE_GENERIC_NONNIL decorated class type.
