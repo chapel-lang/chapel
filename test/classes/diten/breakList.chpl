@@ -19,7 +19,7 @@ module OuterModule {
   }
 
   proc bar() {
-    use LibGL;
+    use this.LibGL;
     var li = new LinkedList(real);
     li.append(3);
   }

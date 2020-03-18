@@ -11,7 +11,7 @@ module OuterModule {
     }
   }
 
-  use M1;
+  use this.M1;
 
   class D: C {
     var i: int;

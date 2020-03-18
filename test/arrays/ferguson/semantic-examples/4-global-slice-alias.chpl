@@ -7,7 +7,7 @@ module OuterModule {
     // slice freed here
   }
 
-  use bar;
+  use this.bar;
 
   proc main() {
     writeln("Setting A[1,1] to 1");

@@ -9,7 +9,7 @@ module OuterModule {
     }
   }
 
-  use A;
+  use this.A;
   var r = new A.R(1);
   writeln(r); // {a = 2}
 }
