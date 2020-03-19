@@ -914,7 +914,11 @@ module ChapelBase {
     }
   }
 
-  proc init_elts(x, s, type t, lo=0:s.type) : void {
+  proc init_elts(x, s, type t): void {
+    init_elts(x, s, t, 0);
+  }
+
+  proc init_elts(x, s, type t, lo) : void {
     var initMethod = chpl_getArrayInitMethod();
 
     // no need to init an array of zeros
