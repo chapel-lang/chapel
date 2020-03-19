@@ -5,15 +5,15 @@ use MasonNew;
 
 proc main(){  
   mkdir("testSrc");
-  const initArgs = ['init','testSrc'];
+  const initArgs = ['mason','init','testSrc'];
   masonInit(initArgs);
   
-  runCommand('rm -rf testSrc/src/testSrc.chpl');
+  remove('testSrc/src/testSrc.chpl');
   masonInit(initArgs);
 
   if isFile("./testSrc/src/testSrc.chpl") {
     writeln("File found !");
   }
 
-  runCommand('rm -rf testSrc');
+ rmTree("testSrc");
 }
