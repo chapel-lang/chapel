@@ -80,7 +80,7 @@
 
 module Crypto {
 
-  use C_OpenSSL;
+  use this.C_OpenSSL;
   use SysError;
 
   private use IO;

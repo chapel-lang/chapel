@@ -502,9 +502,9 @@ module EpochManager {
 
   }
 
-  private use LockFreeLinkedListModule;
-  private use LockFreeQueueModule;
-  private use LimboListModule;
+  private use this.LockFreeLinkedListModule;
+  private use this.LockFreeQueueModule;
+  private use this.LimboListModule;
 
   /*
     :class:`LocalEpochManager` manages reclamation of objects, ensuring
@@ -753,7 +753,7 @@ module EpochManager {
     }
   }
 
-  private use VectorModule;
+  private use this.VectorModule;
 
   /*
     :record:`EpochManager` manages reclamation of objects, ensuring

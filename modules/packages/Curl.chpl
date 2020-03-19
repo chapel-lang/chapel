@@ -121,7 +121,7 @@ module Curl {
      :proc:`URL.openUrlReader` or :proc:`URL.openUrlWriter`.
    */
   proc getCurlHandle(ch:channel):c_ptr(CURL) throws {
-    use CurlQioIntegration;
+    use this.CurlQioIntegration;
 
     if ch.home != here {
       throw SystemError.fromSyserr(EINVAL, "getCurlHandle only functions with local channels");
@@ -146,7 +146,7 @@ module Curl {
      :type arg: `int`, `string`, `bool`, or `slist`
   */
   proc setopt(ch:channel, opt:c_int, arg):bool throws {
-    use CurlQioIntegration;
+    use this.CurlQioIntegration;
 
     var err:syserr = ENOERR;
 

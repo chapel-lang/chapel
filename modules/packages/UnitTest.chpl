@@ -238,7 +238,7 @@ Output:
 */
 module UnitTest {
   use Reflection;
-  use TestError;
+  use this.TestError;
   use List, Map;
   private use IO;
 
