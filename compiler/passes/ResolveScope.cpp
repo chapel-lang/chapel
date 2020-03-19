@@ -652,7 +652,7 @@ Symbol* ResolveScope::lookupForImport(Expr* expr, bool isUse) const {
       //    look for the symbols defined in the used
       //    or if the module being imported matches
       //    and if not, keep following the public use chains
-      retval = followImportUseChains(name);
+      retval = ptr->followImportUseChains(name);
 
       if (relativeScope != NULL)
         break; // only consider the one scope when doing relative imports
