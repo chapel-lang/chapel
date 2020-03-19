@@ -127,14 +127,20 @@ module LocaleModel {
     // to establish the equivalence the "locale" field of the locale object
     // and the node ID portion of any wide pointer referring to it.
     proc init() {
+      use SysCTypes;
+      _node_id = chpl_nodeID: int;
+      extern proc chpl_topo_getNumNumaDomains(): c_int;
+      numSublocales = chpl_topo_getNumNumaDomains();
+      childSpace = {0..#numSublocales};
+
       if rootLocaleInitialized {
         halt("Cannot create additional LocaleModel instances");
       }
-      _node_id = chpl_nodeID: int;
 
       this.complete();
-
+      writeln("Heading into setup, childSpace is: ", childSpace);
       setup();
+      writeln("Coming out of setup, childSpace is: ", childSpace);
     }
 
     proc init(parent_loc : locale) {
@@ -143,7 +149,11 @@ module LocaleModel {
       }
       super.init(parent_loc);
 
+      use SysCTypes;
       _node_id = chpl_nodeID: int;
+      extern proc chpl_topo_getNumNumaDomains(): c_int;
+      numSublocales = chpl_topo_getNumNumaDomains();
+      childSpace = {0..#numSublocales};
 
       this.complete();
 
