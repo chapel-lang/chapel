@@ -85,8 +85,9 @@ static struct fid_fabric* ofi_fabric;   // fabric domain
 static struct fid_domain* ofi_domain;   // fabric access domain
 static int useScalableTxEp;             // use a scalable tx endpoint?
 static struct fid_ep* ofi_txEpScal;     // scalable transmit endpoint
-static struct fid_wait* ofi_amhWaitSet; // wait set for AM handler
-static chpl_bool useWaitset = true;     // should we use the waitset?
+static struct fid_poll* ofi_amhPollSet; // poll set for AM handler
+static int pollSetSize = 0;             // number of fids in the poll set
+
 //
 // We direct RMA traffic and AM traffic to different endpoints so we can
 // spread the progress load across all the threads when we're doing
@@ -116,6 +117,7 @@ struct perTxCtxInfo_t {
   struct fid_ep* txCtx;
   struct fid_cq* txCQ;
   struct fid_cntr* txCntr;
+  struct fid* fidInPollSet;
   uint64_t numTxns;  // CQ: num txns in flight now; Cntr: num ever initiated
 };
 
@@ -450,6 +452,7 @@ static chpl_bool provCtl_readAmoNeedsOpnd; // READ AMO needs operand (RxD)
 //
 
 static __thread chpl_bool isAmHandler = false;
+static __thread struct perTxCtxInfo_t* amTcip;
 
 typedef enum {
   txnTrkNone,  // no tracking, ptr is ignored
@@ -845,7 +848,7 @@ void init_ofi(void) {
   DBG_PRINTF(DBG_CFG,
              "AM config: recv buf size %zd MiB, %s, responses use %s",
              ofi_iov_reqs.iov_len / (1L << 20),
-             (ofi_amhWaitSet == NULL) ? "polling" : "wait set",
+             (ofi_amhPollSet == NULL) ? "polling" : "poll set",
              (tciTab[tciTabLen - 1].txCQ != NULL) ? "CQ" : "counter");
   if (useScalableTxEp) {
     DBG_PRINTF(DBG_CFG,
@@ -1024,13 +1027,6 @@ void init_ofiDoProviderChecks(void) {
     // heap on a Cray XC system, say something about that now.
     //
     emit_delayedFixedHeapMsgs();
-
-    //
-    // For now avoid using a waitset with the gni provider, because
-    // although it seems to work properly we get -FI_EBUSY when we
-    // try to close it.
-    //
-    useWaitset = false;
   }
 
   if (providerInUse(provType_rxd)) {
@@ -1059,20 +1055,16 @@ void init_ofiEp(void) {
   //
   // The AM handler is responsible not only for AM handling and progress
   // on any RMA it initiates but also progress on inbound RMA, if that
-  // is needed.  It uses a wait set to organize this.
+  // is needed.  It uses a poll set to manage this, if it can.
   //
   {
-    struct fi_wait_attr waitSetAttr = (struct fi_wait_attr)
-                                      { .wait_obj = FI_WAIT_UNSPEC, };
     int ret;
-    if (useWaitset) {
-      OFI_CHK_2(fi_wait_open(ofi_fabric, &waitSetAttr, &ofi_amhWaitSet),
-                ret, -FI_ENOSYS);
-    } else {
-      ret = -FI_ENOSYS;
-    }
+    struct fi_poll_attr pollSetAttr = (struct fi_poll_attr)
+                                      { .flags = 0, };
+    OFI_CHK_2(fi_poll_open(ofi_domain, &pollSetAttr, &ofi_amhPollSet),
+              ret, -FI_ENOSYS);
     if (ret != FI_SUCCESS) {
-      ofi_amhWaitSet = NULL;
+      ofi_amhPollSet = NULL;
     }
   }
 
@@ -1148,14 +1140,10 @@ void init_ofiEp(void) {
   // TX contexts for the AM handler(s) can just use counters, if the
   // provider supports them.  Otherwise, they have to use CQs also.
   //
-  const enum fi_wait_obj waitObj = (ofi_amhWaitSet == NULL)
-                                   ? FI_WAIT_NONE
-                                   : FI_WAIT_SET;
   if (ofi_info->domain_attr->cntr_cnt > 0) {
     cntrAttr = (struct fi_cntr_attr)
                { .events = FI_CNTR_EVENTS_COMP,
-                 .wait_obj = waitObj,
-                 .wait_set = ofi_amhWaitSet, };
+                 .wait_obj = FI_WAIT_NONE, };
     for (int i = numWorkerTxCtxs; i < tciTabLen; i++) {
       init_ofiEpTxCtx(i, true /*isAMHandler*/, NULL, &cntrAttr);
     }
@@ -1163,9 +1151,7 @@ void init_ofiEp(void) {
     cqAttr = (struct fi_cq_attr)
              { .format = FI_CQ_FORMAT_MSG,
                .size = 100,
-               .wait_obj = waitObj,
-               .wait_cond = FI_CQ_COND_NONE,
-               .wait_set = ofi_amhWaitSet, };
+               .wait_obj = FI_WAIT_NONE, };
     for (int i = numWorkerTxCtxs; i < tciTabLen; i++) {
       init_ofiEpTxCtx(i, true /*isAMHandler*/, &cqAttr, NULL);
     }
@@ -1180,17 +1166,14 @@ void init_ofiEp(void) {
   cqAttr = (struct fi_cq_attr)
            { .size = chpl_numNodes * numWorkerTxCtxs,
              .format = FI_CQ_FORMAT_DATA,
-             .wait_obj = waitObj,
-             .wait_cond = FI_CQ_COND_NONE,
-             .wait_set = ofi_amhWaitSet, };
+             .wait_obj = FI_WAIT_NONE, };
   cntrAttr = (struct fi_cntr_attr)
              { .events = FI_CNTR_EVENTS_COMP,
-               .wait_obj = waitObj,
-               .wait_set = ofi_amhWaitSet, };
+               .wait_obj = FI_WAIT_NONE, };
 
   OFI_CHK(fi_endpoint(ofi_domain, ofi_info, &ofi_rxEp, NULL));
   OFI_CHK(fi_ep_bind(ofi_rxEp, &ofi_av->fid, 0));
-  OFI_CHK(fi_cq_open(ofi_domain, &cqAttr, &ofi_rxCQ, NULL));
+  OFI_CHK(fi_cq_open(ofi_domain, &cqAttr, &ofi_rxCQ, &ofi_rxCQ));
   OFI_CHK(fi_ep_bind(ofi_rxEp, &ofi_rxCQ->fid,
                      FI_TRANSMIT | FI_RECV));
   OFI_CHK(fi_enable(ofi_rxEp));
@@ -1198,15 +1181,36 @@ void init_ofiEp(void) {
   OFI_CHK(fi_endpoint(ofi_domain, ofi_info, &ofi_rxEpRma, NULL));
   OFI_CHK(fi_ep_bind(ofi_rxEpRma, &ofi_av->fid, 0));
   if (ofi_info->domain_attr->cntr_cnt == 0) {
-    OFI_CHK(fi_cq_open(ofi_domain, &cqAttr, &ofi_rxCQRma, NULL));
+    OFI_CHK(fi_cq_open(ofi_domain, &cqAttr, &ofi_rxCQRma, &ofi_rxCQRma));
     OFI_CHK(fi_ep_bind(ofi_rxEpRma, &ofi_rxCQRma->fid,
                        FI_TRANSMIT | FI_RECV));
   } else {
-    OFI_CHK(fi_cntr_open(ofi_domain, &cntrAttr, &ofi_rxCntrRma, NULL));
+    OFI_CHK(fi_cntr_open(ofi_domain, &cntrAttr, &ofi_rxCntrRma,
+                         &ofi_rxCntrRma));
     OFI_CHK(fi_ep_bind(ofi_rxEpRma, &ofi_rxCntrRma->fid,
                        FI_TRANSMIT | FI_RECV));
   }
   OFI_CHK(fi_enable(ofi_rxEpRma));
+
+  if (ofi_amhPollSet != NULL) {
+    OFI_CHK(fi_poll_add(ofi_amhPollSet, &ofi_rxCQ->fid, 0));
+    if (ofi_rxCQRma != NULL) {
+      OFI_CHK(fi_poll_add(ofi_amhPollSet, &ofi_rxCQRma->fid, 0));
+    } else {
+      OFI_CHK(fi_poll_add(ofi_amhPollSet, &ofi_rxCntrRma->fid, 0));
+    }
+    pollSetSize = 2;
+    for (int i = numWorkerTxCtxs; i < tciTabLen; i++) {
+      struct perTxCtxInfo_t* tcip = &tciTab[i];
+      if (tcip->txCQ != NULL) {
+        tcip->fidInPollSet = &tcip->txCQ->fid;
+      } else {
+        tcip->fidInPollSet = &tcip->txCntr->fid;
+      }
+      OFI_CHK(fi_poll_add(ofi_amhPollSet, tcip->fidInPollSet, 0));
+      pollSetSize++;
+    }
+  }
 }
 
 
@@ -1307,11 +1311,11 @@ void init_ofiEpTxCtx(int i, chpl_bool isAMHandler,
     OFI_CHK(fi_ep_bind(tcip->txCtx, &ofi_av->fid, 0));
   }
   if (cqAttr != NULL) {
-    OFI_CHK(fi_cq_open(ofi_domain, cqAttr, &tcip->txCQ, NULL));
+    OFI_CHK(fi_cq_open(ofi_domain, cqAttr, &tcip->txCQ, &tcip->txCQ));
     OFI_CHK(fi_ep_bind(tcip->txCtx, &tcip->txCQ->fid,
                        FI_TRANSMIT | FI_RECV));
   } else {
-    OFI_CHK(fi_cntr_open(ofi_domain, cntrAttr, &tcip->txCntr, NULL));
+    OFI_CHK(fi_cntr_open(ofi_domain, cntrAttr, &tcip->txCntr, &tcip->txCntr));
     OFI_CHK(fi_ep_bind(tcip->txCtx, &tcip->txCntr->fid,
                        (isAMHandler ? FI_WRITE
                                     : FI_SEND | FI_READ | FI_WRITE)));
@@ -1670,6 +1674,21 @@ void fini_ofi(void) {
 
   CHPL_FREE(ofi_rxAddrs);
 
+  if (ofi_amhPollSet != NULL) {
+    OFI_CHK(fi_poll_del(ofi_amhPollSet, &ofi_rxCQ->fid, 0));
+    if (ofi_rxCQRma != NULL) {
+      OFI_CHK(fi_poll_del(ofi_amhPollSet, &ofi_rxCQRma->fid, 0));
+    } else {
+      OFI_CHK(fi_poll_del(ofi_amhPollSet, &ofi_rxCntrRma->fid, 0));
+    }
+    for (int i = 0; i < tciTabLen; i++) {
+      struct perTxCtxInfo_t* tcip = &tciTab[i];
+      if (tcip->fidInPollSet != NULL) {
+        OFI_CHK(fi_poll_del(ofi_amhPollSet, tcip->fidInPollSet, 0));
+      }
+    }
+  }
+
   OFI_CHK(fi_close(&ofi_rxEp->fid));
   OFI_CHK(fi_close(&ofi_rxCQ->fid));
   OFI_CHK(fi_close(&ofi_rxEpRma->fid));
@@ -1694,8 +1713,8 @@ void fini_ofi(void) {
 
   OFI_CHK(fi_close(&ofi_av->fid));
 
-  if (ofi_amhWaitSet != NULL) {
-    OFI_CHK(fi_close(&ofi_amhWaitSet->fid));
+  if (ofi_amhPollSet != NULL) {
+    OFI_CHK(fi_close(&ofi_amhPollSet->fid));
   }
 
   OFI_CHK(fi_close(&ofi_domain->fid));
@@ -2048,11 +2067,53 @@ static inline
 void ensure_progress(void) {
   if (isAmHandler
       && ofi_info->domain_attr->data_progress == FI_PROGRESS_MANUAL) {
-    if (ofi_rxCQRma != NULL) {
-      struct fi_cq_data_entry cqe;
-      (void) readCQ(ofi_rxCQRma, &cqe, 1);
+    if (ofi_amhPollSet != NULL) {
+      void* contexts[pollSetSize];
+      int ret = fi_poll(ofi_amhPollSet, contexts, pollSetSize);
+      if (ret > 0) {
+        //
+        // Process the CQs/counters that had events.  We really only have
+        // to take any explicit actions for our transmit endpoint.  If we
+        // have inbound AM messages we want to handle those in the main
+        // poll loop.  And for the RMA endpoint we just need to ensure
+        // progress, which the poll call itself will have done.
+        //
+        for (int i = 0; i < ret; i++) {
+          if (contexts[i] == &ofi_rxCQ) {
+            // no action
+          } else if (contexts[i] == &amTcip->txCQ) {
+            checkTxCQ(amTcip);
+          } else if (contexts[i] == &amTcip->txCntr) {
+            getTxCntr(amTcip);
+          } else if (contexts[i] == &ofi_rxCQRma) {
+            // no action
+          } else if (contexts[i] == &ofi_rxCntrRma) {
+            // no action
+          } else {
+            INTERNAL_ERROR_V("unexpected context %p from fi_poll()",
+                             contexts[i]);
+          }
+        }
+      } else if (ret < 0) {
+        if (ret != -FI_EINTR) {
+          OFI_ERR("fi_poll(ofi_amhPollSet)", ret, fi_strerror(ret));
+        }
+      }
     } else {
-      (void) fi_cntr_read(ofi_rxCntrRma);
+      //
+      // The provider can't do poll sets.
+      //
+      if (amTcip->txCQ != NULL) {
+        checkTxCQ(amTcip);
+      } else {
+        getTxCntr(amTcip);
+      }
+      if (ofi_rxCQRma != NULL) {
+        struct fi_cq_data_entry cqe;
+        (void) readCQ(ofi_rxCQRma, &cqe, 1);
+      } else {
+        (void) fi_cntr_read(ofi_rxCntrRma);
+      }
     }
   }
 }
@@ -2433,8 +2494,6 @@ void fini_amHandling(void) {
 //
 // The AM handler runs this.
 //
-static __thread struct perTxCtxInfo_t* amTcip;
-
 static
 void amHandler(void* argNil) {
   struct perTxCtxInfo_t* tcip;
@@ -2459,24 +2518,60 @@ void amHandler(void* argNil) {
   // Process AM requests and watch transmit responses arrive.
   //
   while (!atomic_load_bool(&amHandlersExit)) {
-    int ret = FI_SUCCESS;
-    if (ofi_amhWaitSet != NULL) {
-      ret = fi_wait(ofi_amhWaitSet, 100 /*ms*/);
-      if (ret != FI_SUCCESS
-          && ret != -FI_EINTR
-          && ret != -FI_ETIMEDOUT) {
-        OFI_ERR("fi_wait(ofi_amhWaitSet)", ret, fi_strerror(ret));
+    if (ofi_amhPollSet != NULL) {
+      int ret;
+      void* contexts[pollSetSize];
+      ret = fi_poll(ofi_amhPollSet, contexts, pollSetSize);
+      if (ret == 0) {
+        sched_yield();
+      } else if (ret > 0) {
+        //
+        // Process the CQs/counters that had events.  We really only have
+        // to take any explicit actions for inbound AM messages and our
+        // transmit endpoint.  For the RMA endpoint we just need to ensure
+        // progress, and the poll call itself did that.
+        //
+        for (int i = 0; i < ret; i++) {
+          if (contexts[i] == &ofi_rxCQ) {
+            processRxAmReq(tcip);
+          } else if (contexts[i] == &tcip->txCQ) {
+            checkTxCQ(tcip);
+          } else if (contexts[i] == &tcip->txCntr) {
+            getTxCntr(tcip);
+          } else if (contexts[i] == &ofi_rxCQRma) {
+            // no action
+          } else if (contexts[i] == &ofi_rxCntrRma) {
+            // no action
+          } else {
+            INTERNAL_ERROR_V("unexpected context %p from fi_poll()",
+                             contexts[i]);
+          }
+        }
+      } else if (ret < 0) {
+        if (ret != -FI_EINTR) {
+          OFI_ERR("fi_poll(ofi_amhPollSet)", ret, fi_strerror(ret));
+        }
       }
     } else {
-      sched_yield();
-    }
-    if (ret == FI_SUCCESS) {
+      //
+      // The provider can't do poll sets.
+      //
       processRxAmReq(tcip);
+
       if (tcip->txCQ != NULL) {
         checkTxCQ(tcip);
       } else {
         getTxCntr(tcip);
       }
+
+      if (ofi_rxCQRma != NULL) {
+        struct fi_cq_data_entry cqe;
+        (void) readCQ(ofi_rxCQRma, &cqe, 1);
+      } else {
+        (void) fi_cntr_read(ofi_rxCntrRma);
+      }
+
+      sched_yield();
     }
   }
 
