@@ -147,6 +147,11 @@ module LocaleModel {
       }
       super.init(parent_loc);
 
+      // Why doesn't this work (generates an internal error) to avoid
+      // the code duplication below?
+      //
+      //      this.init();
+
       use SysCTypes;
       _node_id = chpl_nodeID: int;
       extern proc chpl_topo_getNumNumaDomains(): c_int;
