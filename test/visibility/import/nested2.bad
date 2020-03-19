@@ -1,5 +1,0 @@
-nested2.chpl:9: error: Cannot import module 'B'
-nested2.chpl:2: note: a module named 'B' is defined here
-nested2.chpl:9: note: full path or explicit relative import required
-nested2.chpl:9: note: please specify the full path to the module
-nested2.chpl:9: note: or use a relative import e.g. 'import this.M' or 'import super.M'
