@@ -148,7 +148,8 @@ module LocaleModel {
       super.init(parent_loc);
 
       // Why doesn't this work (generates an internal error) to avoid
-      // the code duplication below?
+      // the code duplication below?  Or if it's not supposed to work,
+      // how could we make it a user error?
       //
       //      this.init();
 
