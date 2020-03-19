@@ -138,9 +138,7 @@ module LocaleModel {
       }
 
       this.complete();
-      writeln("Heading into setup, childSpace is: ", childSpace);
       setup();
-      writeln("Coming out of setup, childSpace is: ", childSpace);
     }
 
     proc init(parent_loc : locale) {
