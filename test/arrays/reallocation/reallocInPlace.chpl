@@ -23,3 +23,7 @@ writeln(A);
 // this should because the record is POD
 D = {0..10};
 writeln(A);
+
+// this shouldn't because no realloc is necessary
+D = {0..10};
+writeln(A);

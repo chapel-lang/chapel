@@ -1343,9 +1343,17 @@ module DefaultRectangular {
                                                    BoundedRangeType.bounded,
                                                    stridable)) {
 
-      if (|| reduce (for i in 1..rank do (bounds(i) != dom.dsiDim(i)))) == 0 {
-        return;
+      // check to see whether this realloc is actually changing the
+      // bounds of the array
+      var actuallyResizing = false;
+      for i in 1..rank {
+        if bounds(i) != dom.dsiDim(i) {
+          actuallyResizing = true;
+          break;
+        }
       }
+      if !actuallyResizing then
+        return;
 
       // This should really be isDefaultInitializable(eltType), but that
       // doesn't always work / give correct answers yet.  The following
