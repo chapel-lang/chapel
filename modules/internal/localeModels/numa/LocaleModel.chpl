@@ -115,7 +115,7 @@ module LocaleModel {
     const _node_id : int;
     var local_name : string; // should never be modified after first assignment
 
-    var numSublocales: int; // should never be modified after first assignment
+    const numSublocales: int;
     const childSpace: domain(1);
     // Todo: avoid the pragma by having helpSetupLocaleNUMA return this array
     // and initialize the field from it. Need childSpace to be const?
@@ -138,6 +138,7 @@ module LocaleModel {
       }
 
       this.complete();
+
       setup();
     }
 
