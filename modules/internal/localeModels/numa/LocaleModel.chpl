@@ -116,7 +116,7 @@ module LocaleModel {
     var local_name : string; // should never be modified after first assignment
 
     var numSublocales: int; // should never be modified after first assignment
-    var childSpace: domain(1);
+    const childSpace: domain(1);
     // Todo: avoid the pragma by having helpSetupLocaleNUMA return this array
     // and initialize the field from it. Need childSpace to be const?
     pragma "unsafe"
