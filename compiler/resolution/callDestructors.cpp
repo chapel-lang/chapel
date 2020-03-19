@@ -1560,7 +1560,9 @@ static void checkForErroneousInitCopies() {
           if (FnSymbol* callInFn = se->getFunction()) {
             bool inCopyIsh = callInFn->hasFlag(FLAG_INIT_COPY_FN) ||
                              callInFn->hasFlag(FLAG_AUTO_COPY_FN) ||
-                             callInFn->hasFlag(FLAG_UNALIAS_FN);
+                             callInFn->hasFlag(FLAG_UNALIAS_FN) ||
+                             (callInFn->hasFlag(FLAG_COPY_INIT) &&
+                              callInFn->hasFlag(FLAG_COMPILER_GENERATED));
             if (inCopyIsh && !callInFn->hasFlag(FLAG_ERRONEOUS_COPY)) {
               callInFn->addFlag(FLAG_ERRONEOUS_COPY);
               changed = true;
@@ -1582,7 +1584,9 @@ static void checkForErroneousInitCopies() {
         if (FnSymbol* callInFn = se->getFunction()) {
           bool inCopyIsh = callInFn->hasFlag(FLAG_INIT_COPY_FN) ||
                            callInFn->hasFlag(FLAG_AUTO_COPY_FN) ||
-                           callInFn->hasFlag(FLAG_UNALIAS_FN);
+                           callInFn->hasFlag(FLAG_UNALIAS_FN) ||
+                           (callInFn->hasFlag(FLAG_COPY_INIT) &&
+                            callInFn->hasFlag(FLAG_COMPILER_GENERATED));
           if (inCopyIsh == false) {
 
             if (callInFn->hasFlag(FLAG_INIT_COPY_FN)) {

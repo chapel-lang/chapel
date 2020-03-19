@@ -3735,11 +3735,27 @@ void resolveNormalCallCompilerWarningStuff(CallExpr* call,
     if (inTryResolve > 0 && tryResolveFunctions.size() > 0) {
       FnSymbol* fn = tryResolveFunctions.back();
       tryResolveErrors[fn] = it->second;
+    } else if (resolvedFn && resolvedFn->hasFlag(FLAG_ERRONEOUS_COPY)) {
+      // error will be reported later (in callDestructors) if
+      // copy is not eliminated by then.
     } else {
       BaseAST* from = it->second.first;
       const char* err = it->second.second;
-      USR_FATAL_CONT(from, "%s", err);
-      USR_PRINT(call, "in function called here");
+      FnSymbol* inFn = call->getFunction();
+      bool inCopyIsh = false;
+      if (inFn != NULL) {
+        inCopyIsh = inFn->hasFlag(FLAG_INIT_COPY_FN) ||
+                    inFn->hasFlag(FLAG_AUTO_COPY_FN) ||
+                    inFn->hasFlag(FLAG_UNALIAS_FN) ||
+                    inFn->name == astrInitEquals;
+      }
+      if (inCopyIsh) {
+        inFn->addFlag(FLAG_ERRONEOUS_COPY);
+        tryResolveErrors[inFn] = std::make_pair(from,err);
+      } else {
+        USR_FATAL_CONT(from, "%s", err);
+        USR_PRINT(call, "in function called here");
+      }
     }
   }
 }
