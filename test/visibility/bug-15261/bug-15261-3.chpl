@@ -19,7 +19,7 @@ module GenSymIO {
 
   proc write1DDistArray() throws {
     coforall i in 1..1 {
-      import C_HDF5.HDF5_WAR.HDF5_WAR.H5LTmake_dataset_WAR;
+      import C_HDF5.HDF5_WAR.H5LTmake_dataset_WAR;
       H5LTmake_dataset_WAR();
     }
   }
