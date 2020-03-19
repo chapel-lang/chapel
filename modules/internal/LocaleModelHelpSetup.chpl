@@ -154,16 +154,12 @@ module LocaleModelHelpSetup {
     dst.maxTaskPar = chpl_task_getMaxPar();
   }
 
-  proc helpSetupLocaleNUMA(dst:borrowed LocaleModel, out local_name:string, out numSublocales, type NumaDomain) {
+  proc helpSetupLocaleNUMA(dst:borrowed LocaleModel, out local_name:string, numSublocales, type NumaDomain) {
     helpSetupLocaleFlat(dst, local_name);
-
-    extern proc chpl_topo_getNumNumaDomains(): c_int;
-    numSublocales = chpl_topo_getNumNumaDomains();
 
     extern proc chpl_task_getMaxPar(): uint(32);
 
     if numSublocales >= 1 {
-      dst.childSpace = {0..#numSublocales};
       // These nPUs* values are estimates only; better values await
       // full hwloc support. In particular it assumes a homogeneous node
       const nPUsPhysAccPerSubloc = dst.nPUsPhysAcc/numSublocales;
