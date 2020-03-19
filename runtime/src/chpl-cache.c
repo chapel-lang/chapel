@@ -2795,7 +2795,7 @@ void chpl_cache_comm_put(void* addr, c_nodeid_t node, void* raddr,
                "from %p\n",
                chpl_nodeID, (int)chpl_task_getId(), chpl_lookupFilename(fn), ln,
                (int)size, node, raddr, addr));
-  chpl_comm_diags_verbose_rdma("get", node, size, ln, fn, commID);
+  chpl_comm_diags_verbose_rdma("put", node, size, ln, fn, commID);
 
 #ifdef DUMP
   chpl_cache_print();
@@ -2823,7 +2823,7 @@ void chpl_cache_comm_get(void *addr, c_nodeid_t node, void* raddr,
                "%d:%p to %p\n",
                chpl_nodeID, (int)chpl_task_getId(), chpl_lookupFilename(fn), ln,
                (int)size, node, raddr, addr));
-  chpl_comm_diags_verbose_rdma("put", node, size, ln, fn, commID);
+  chpl_comm_diags_verbose_rdma("get", node, size, ln, fn, commID);
 
 #ifdef DUMP
   chpl_cache_print();
