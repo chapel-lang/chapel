@@ -2216,10 +2216,10 @@ int should_readahead_extend(uint64_t* valid,
                             uintptr_t skip, uintptr_t len )
 {
   if(count_valid_before(valid, skip,
-        CACHE_LINES_PER_PAGE_BITMASK_WORDS) > 1)
+        CACHE_LINES_PER_PAGE_BITMASK_WORDS) > 2)
     return 1;
   if(count_valid_at_after(valid, skip+len,
-        CACHE_LINES_PER_PAGE_BITMASK_WORDS) > 1)
+        CACHE_LINES_PER_PAGE_BITMASK_WORDS) > 2)
     return -1;
   return 0;
 }
