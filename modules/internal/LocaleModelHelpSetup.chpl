@@ -154,7 +154,7 @@ module LocaleModelHelpSetup {
     dst.maxTaskPar = chpl_task_getMaxPar();
   }
 
-  proc helpSetupLocaleNUMA(dst:borrowed LocaleModel, out local_name:string, const in numSublocales, type NumaDomain) {
+  proc helpSetupLocaleNUMA(dst:borrowed LocaleModel, out local_name:string, numSublocales, type NumaDomain) {
     helpSetupLocaleFlat(dst, local_name);
 
     extern proc chpl_task_getMaxPar(): uint(32);
