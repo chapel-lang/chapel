@@ -1343,6 +1343,18 @@ module DefaultRectangular {
                                                    BoundedRangeType.bounded,
                                                    stridable)) {
 
+      // check to see whether this realloc is actually changing the
+      // bounds of the array
+      var actuallyResizing = false;
+      for i in bounds.indices {
+        if bounds(i) != dom.dsiDim(i) {
+          actuallyResizing = true;
+          break;
+        }
+      }
+      if !actuallyResizing then
+        return;
+
       // This should really be isDefaultInitializable(eltType), but that
       // doesn't always work / give correct answers yet.  The following
       // check won't catch cases such as records with non-nilable class
