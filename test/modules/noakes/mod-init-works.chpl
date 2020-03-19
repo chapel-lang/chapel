@@ -16,7 +16,7 @@ module Main {
 
 
 module M1 {
-  use M2;
+  use this.M2;
   use M3;
   use M4;
 
@@ -31,7 +31,7 @@ module M1 {
 
 
 module M2 {
-  use M1;
+  use this.M1;
   use M3;
   use M4;
 
@@ -46,7 +46,7 @@ module M2 {
 
 module M3 {
   use M1;
-  use M2;
+  use this.M2;
   use M4;
 
   writeln('1.5: Module M3');
@@ -61,7 +61,7 @@ module M3 {
 module M4 {
   use M1;
   use M2;
-  use M3;
+  use this.M3;
 
   writeln('1.4: Module M4');
 
