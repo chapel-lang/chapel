@@ -74,7 +74,7 @@ proc masonInit(args) throws {
       const cwd = getEnv("PWD");
       var name = basename(cwd); 
       const path = '.';
-      if packageName.length > 0 then name = packageName;
+      if packageName.size > 0 then name = packageName;
       var resName = validatePackageNameChecks(path, name);
       name = resName;
       validateMasonFile(path, name, show);
@@ -90,7 +90,7 @@ proc masonInit(args) throws {
       const path = dirName;
       if isDir(path) {
         var name = basename(dirName);
-        if packageName.length > 0 then name = packageName;
+        if packageName.size > 0 then name = packageName;
         var resName = validatePackageNameChecks(path, name);
         name = resName;
         validateMasonFile(path, name, show);
