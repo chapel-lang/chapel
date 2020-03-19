@@ -53,10 +53,6 @@ public:
 
   bool            hasExceptList()                                        const;
 
-  bool            isARenamedSym(const char* name)                        const;
-
-  const char*     getRenamedSym(const char* name)                        const;
-
   void            scopeResolve(ResolveScope* scope);
 
   UseStmt*        applyOuterUse(const UseStmt* outer);

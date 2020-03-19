@@ -79,6 +79,23 @@ const char* VisibilityStmt::getRename() const {
   return modRename;
 }
 
+bool VisibilityStmt::isARenamedSym(const char* name) const {
+  return renamed.count(name) == 1;
+}
+
+const char* VisibilityStmt::getRenamedSym(const char* name) const {
+  std::map<const char*, const char*>::const_iterator it;
+  const char*                                        retval = NULL;
+
+  it = renamed.find(name);
+
+  if (it != renamed.end()) {
+    retval = it->second;
+  }
+
+  return retval;
+}
+
 //
 // Returns the module symbol if the name provided matches the module imported or
 // used

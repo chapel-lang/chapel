@@ -149,23 +149,6 @@ bool UseStmt::hasExceptList() const {
   return isPlainUse() == false && except == true;
 }
 
-bool UseStmt::isARenamedSym(const char* name) const {
-  return renamed.count(name) == 1;
-}
-
-const char* UseStmt::getRenamedSym(const char* name) const {
-  std::map<const char*, const char*>::const_iterator it;
-  const char*                                        retval = NULL;
-
-  it = renamed.find(name);
-
-  if (it != renamed.end()) {
-    retval = it->second;
-  }
-
-  return retval;
-}
-
 /************************************* | **************************************
 *                                                                             *
 *                                                                             *
