@@ -183,6 +183,17 @@ CallExpr*  buildPreDecIncWarning(Expr* expr, char sign);
 BlockStmt* convertTypesToExtern(BlockStmt*);
 BlockStmt* handleConfigTypes(BlockStmt*);
 
+// In the following routines 'open[high|low]' are used to indicate
+// whether an open-range is being created, like `lo..<hi`.  At
+// present, Chapel only supports open intervals on the high bound,
+// so those that say that the low bound is open are unused, but
+// here if we decide to add `lo<..<hi` and/or `lo<..hi` later.
+CallExpr* buildBoundedRange(Expr* low, Expr* high,
+                            bool openlow=false, bool openhigh=false);
+CallExpr* buildLowBoundedRange(Expr* low, bool open=false);
+CallExpr* buildHighBoundedRange(Expr* high, bool open=false);
+CallExpr* buildUnboundedRange();
+
 Expr* tryExpr(Expr*);
 Expr* tryBangExpr(Expr*);
 

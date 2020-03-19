@@ -1,0 +1,48 @@
+3..6 (idxType = int(64)):
+3
+4
+5
+6
+
+3..6 (idxType = int(64)):
+3
+4
+5
+6
+
+3..6 (idxType = int(8)):
+3
+4
+5
+6
+
+3..6 (idxType = int(8)):
+3
+4
+5
+6
+
+3..6 (idxType = uint(8)):
+3
+4
+5
+6
+
+3..6 (idxType = uint(8)):
+3
+4
+5
+6
+
+3..6 (idxType = uint(64)):
+3
+4
+5
+6
+
+3..6 (idxType = uint(64)):
+3
+4
+5
+6
+
