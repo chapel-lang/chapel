@@ -246,9 +246,12 @@ module Map {
       return result;
     }
 
-    pragma "no doc"
-    proc const this(k: keyType) const
-    where isNonNilableClass(valType) {
+    /* Access the element at position `k`. It will be returned as a `const`
+       non-nilable `shared` class. This method is only callable if `valType` is
+       non-nilable `shared`.
+     */
+    proc const sharedThis(k: keyType) const
+    where isSharedClass(valType) && isNonNilableClass(valType) {
       _enter();
       if !myKeys.contains(k) then
         boundsCheckHalt("map index " + k:string + " out of bounds");
@@ -259,6 +262,18 @@ module Map {
       }
     }
 
+    /* Access the non-nilable element at position `k` as a borrowed object.  */
+    proc this(k: keyType)
+    where isNonNilableClass(valType) {
+      _enter();
+      if !myKeys.contains(k) then
+        boundsCheckHalt("map index " + k:string + " out of bounds");
+      try! {
+        const ref result = vals[k].borrow();
+        _leave();
+        return result!;
+      }
+    }
 
     pragma "no doc"
     proc const this(k: keyType) const ref
@@ -417,6 +432,18 @@ module Map {
 
       _leave();
       return true;
+    }
+
+    /* If the map doesn't contain a value at position `k` add one and
+       set it to `v`. If the map already contains a value at position
+       `k`, update it to the value `v`.
+     */
+    proc addOrSet(k: keyType, in v: valType) {
+      if !myKeys.contains(k) {
+        this.set(k, v);
+      } else {
+        this.add(k, v);
+      }
     }
 
     /*

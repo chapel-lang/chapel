@@ -1,5 +1,5 @@
 shared C
 shared C
-shared C
+borrowed C
 {i = -1}
 {two: {i = 2}, one: {i = -1}}
