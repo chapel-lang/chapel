@@ -5,6 +5,6 @@ module OuterModule {
     }
   }
 
-  use NNNNN;
+  use this.NNNNN;
   foo();
 }

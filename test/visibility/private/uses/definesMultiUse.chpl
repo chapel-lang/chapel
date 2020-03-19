@@ -23,7 +23,7 @@ module definesMultiUse {
     }
   }
 
-  private use Inner1, Inner2, Inner3;
+  private use this.Inner1, this.Inner2, this.Inner3;
 
   // Ensures that a private use doesn't interfere with our ability to access the
   // used modules' symbols

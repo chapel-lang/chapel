@@ -3,7 +3,7 @@ module OuterModule {
     proc getString() return "Hello World";
   }
 
-  use test;
+  use this.test;
 
   writeln(getString());
 }

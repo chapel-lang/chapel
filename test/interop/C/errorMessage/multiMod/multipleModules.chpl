@@ -8,6 +8,6 @@ module MultipleModules {
     export proc baz() { writeln("in B.baz"); }
   }
 
-  use A, B, C; // to prevent them from being removed,
-               // and to make their module init fns run
+  use this.A, this.B, C; // to prevent them from being removed,
+                         // and to make their module init fns run
 }

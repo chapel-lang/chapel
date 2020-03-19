@@ -14,7 +14,7 @@ module OuterModule {
   }
 
   proc test() {
-    use C only;
+    use this.C only;
 
     var tmp = C.make_struct();
     var f = tmp.my_field;

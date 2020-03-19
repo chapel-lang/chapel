@@ -6,7 +6,7 @@ module OuterModule {
   }
 
   proc main() {
-    use A only;
+    use this.A only;
     var r: A.R(int);
     writeln(r.type: string);
   }

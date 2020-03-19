@@ -6,12 +6,12 @@ module OuterModule {
       f();
     }
 
-    public use M2;
+    public use this.M2;
     proc g() { } // shadows other g based on call to g
     g();
 
-    public use M3;
-    public use M4;
+    public use this.M3;
+    public use this.M4;
     h();
   }
 
@@ -20,13 +20,13 @@ module OuterModule {
   }
 
   module M3 {
-    public use M5;
+    public use super.M5;
     proc h() { } // does not shadow other h based on call to h since
     // there is another path (through M4) to the other h
   }
 
   module M4 {
-    public use M5;
+    public use super.M5;
   }
 
   module M5 {

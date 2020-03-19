@@ -2,7 +2,7 @@ module foo {
   var x = 5;
 }
 
-use foo;
+use this.foo;
 
 proc main() {
   writeln(x);

@@ -13,6 +13,6 @@ prototype module OuterModule {
     }
   }
 
-  use M;
+  use this.M;
   goodFn();
 }

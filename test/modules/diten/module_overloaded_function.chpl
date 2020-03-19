@@ -11,7 +11,7 @@ module OuterModule {
   }
 
   proc main() {
-    use color;
+    use this.color;
 
     g = 1;
 

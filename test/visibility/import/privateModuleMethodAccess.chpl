@@ -1,5 +1,5 @@
 module A {
-  private use Inner;
+  private use this.Inner;
 
   class Foo {
     var x: int;

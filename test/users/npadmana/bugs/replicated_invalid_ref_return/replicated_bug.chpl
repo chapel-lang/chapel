@@ -1,6 +1,6 @@
 module OuterModule {
   use ReplicatedVar, ReplicatedDist;
-  use Utils;
+  use this.Utils;
 
   module Utils {
 

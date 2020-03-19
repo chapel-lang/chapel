@@ -10,6 +10,6 @@ module OuterModule {
   }
 
   proc main() {
-    use outermost.middlemost.innermost;
+    use this.outermost.middlemost.innermost;
   }
 }

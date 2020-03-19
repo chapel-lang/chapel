@@ -2,6 +2,6 @@ module JohannGambolputtyDeVonAusfernSchplendenSchlitterAppleBangerVonHautkopftOf
   var k = 7;
 }
 
-use JohannGambolputtyDeVonAusfernSchplendenSchlitterAppleBangerVonHautkopftOfUlm as J;
+use this.JohannGambolputtyDeVonAusfernSchplendenSchlitterAppleBangerVonHautkopftOfUlm as J;
 
 writeln(J.k);

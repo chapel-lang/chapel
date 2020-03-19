@@ -6,7 +6,7 @@ module parent {
   }
 
   proc main() {
-    use child;
+    use this.child;
     writeln(secretFunction(11)); // Should return 33;
   }
 }

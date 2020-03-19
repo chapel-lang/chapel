@@ -12,7 +12,7 @@ module OuterModule {
   }
 
   proc main() {
-    use M only;
+    use this.M only;
 
     sameName();
   }

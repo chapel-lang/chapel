@@ -1,5 +1,5 @@
 module OuterModule {
-  use M;
+  use this.M;
   var test = new Test();
 
   class Test {

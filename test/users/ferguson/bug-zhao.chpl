@@ -31,7 +31,7 @@ module OuterModule {
       }
     }
   } // end OurModule
-  use OurModule;
+  use this.OurModule;
 
   // At this point we have not used ChildModule or SiblingModule so their symbols
   // (i.e. foo ) are not available to us.

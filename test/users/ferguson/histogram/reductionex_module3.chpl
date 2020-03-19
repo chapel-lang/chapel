@@ -55,7 +55,7 @@ module OuterModule {
   var min:uint(64) = 0;
   var max:uint(64) = 16000;
 
-  use Test;
+  use this.Test;
 
   var counts = myhisto reduce array;
 

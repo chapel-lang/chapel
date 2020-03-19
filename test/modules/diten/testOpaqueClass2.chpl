@@ -14,14 +14,14 @@ module M1 {
     }
   }
   proc retCs() {
-    use M1Inner;
+    use this.M1Inner;
     return new unmanaged C();
   }
 }
 
 module M2 {
   proc main {
-    use M1;
+    use super.M1;
     var c = retCs();
     //writeln(c);
     writeln(c.a);

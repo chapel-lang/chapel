@@ -6,6 +6,6 @@ module OuterModule {
   }
 
   proc main() {
-    use Outer.Toolbox only Outer; // This should not compile
+    use this.Outer.Toolbox only Outer; // This should not compile
   }
 }

@@ -1,6 +1,6 @@
 module OuterModule {
   use secondaryMethod only Foo;
-  use Extender only Foo;
+  use this.Extender only Foo;
   // Verifies that you can define a method in a module outside of the original
   // type definition, and by specifying that type in your 'only' list, access
   // it.

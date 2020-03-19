@@ -19,12 +19,12 @@ module OuterModule {
     proc main {
       var b, c: sync int;
       begin {
-        use M1;
+        use super.M1;
         M1.init();
         b = a;
       }
       lock1;
-      use M1;
+      use super.M1;
       M1.init();
       c = a;
       lock2 = false;

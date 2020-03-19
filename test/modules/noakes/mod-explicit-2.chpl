@@ -34,7 +34,7 @@ module OuterModule {
 
 
 
-  use M1;
+  use this.M1;
 
   proc main() {
     testMod1();

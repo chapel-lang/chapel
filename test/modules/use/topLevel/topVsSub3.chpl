@@ -6,7 +6,7 @@ module M {
   }
 
   proc main() {
-    use NNNNN;
+    use this.NNNNN;
     foo();
   }
 }

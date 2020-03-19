@@ -40,7 +40,7 @@ module OuterModule {
     }
   } }
 
-  use C;
+  use this.C;
 
   var a: C.st;
   a.c = "a string".c_str();

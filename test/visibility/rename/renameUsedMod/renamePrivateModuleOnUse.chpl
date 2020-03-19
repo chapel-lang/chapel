@@ -3,7 +3,7 @@ module Outer {
     var x: int;
   }
 
-  public use Inner as In;
+  public use this.Inner as In;
 }
 
 module User {

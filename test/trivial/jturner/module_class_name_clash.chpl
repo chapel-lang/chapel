@@ -11,8 +11,8 @@ module OuterModule {
     }
   }
 
-  use M1;
-  use M2;
+  use this.M1;
+  use this.M2;
 
   var m1 = new owned M1.MyType(x=1);
   var m2 = new owned M2.MyType(y=2);

@@ -9,7 +9,7 @@ module OuterModule {
     writeln("foo2");
   }
 
-  use Bar;
+  use this.Bar;
 
   foo(42);
 }

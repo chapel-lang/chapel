@@ -9,7 +9,7 @@ module red {
 
   proc foo(i : int) {
     writeln(i);
-    use green;
+    use this.green;
     bar();
   }
 }

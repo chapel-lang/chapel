@@ -5,7 +5,7 @@ module parent {
     }
   }
 
-  use child;
+  use this.child;
   // Valid, because this module is the direct parent of the private module
 
 

@@ -6,7 +6,7 @@ module X {
     }
   }
 
-  use M;
+  use this.M;
 
   record R { // X.R
     var r : R(int); // 'R' should refer to X.R, not M.R

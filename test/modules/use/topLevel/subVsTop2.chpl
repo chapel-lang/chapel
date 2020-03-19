@@ -10,8 +10,8 @@ module OuterModule {
   }
 
   {
-    use N only;
-    use M;
+    use this.N only;
+    use this.M;
     writeln(N.x);
   }
 }

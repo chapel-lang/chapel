@@ -8,11 +8,11 @@ module OuterModule {
   module b { writeln("b"); }
 
   proc main() {
-    use a.b;
+    use this.a.b;
     foo();
   }
 
   proc foo() {
-    use b;
+    use this.b;
   }
 }

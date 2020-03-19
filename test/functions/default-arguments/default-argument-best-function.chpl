@@ -1,5 +1,5 @@
 module OuterModule {
-  use A;
+  use this.A;
 
   module A {
     proc foo() : int {

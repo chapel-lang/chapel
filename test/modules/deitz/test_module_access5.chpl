@@ -6,7 +6,7 @@ module OuterModule {
   }
 
   {
-    use M;
+    use this.M;
     M.foo(3);
   }
   foo(3);

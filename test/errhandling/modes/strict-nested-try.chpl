@@ -15,5 +15,5 @@ module OuterModule {
     }
   }
 
-  use InnerModule;
+  use this.InnerModule;
 }

@@ -1,6 +1,6 @@
 module OuterModule {
   module outermost {
-    use useMe;
+    use super.useMe;
     module middlemost {
       module innermost {
         proc f() {
@@ -21,7 +21,7 @@ module OuterModule {
   }
 
   proc main() {
-    use outermost.middlemost.innermost;
+    use this.outermost.middlemost.innermost;
     f();
   }
 }

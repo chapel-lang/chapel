@@ -4,11 +4,11 @@ module OuterModule {
   }
 
   module M {
-    use N;
+    use super.N;
     var y = 2;
   }
 
-  use M;
+  use this.M;
 
   writeln((M.x, M.y));
 }

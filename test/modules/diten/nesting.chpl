@@ -8,13 +8,13 @@ module m1 {
     }
   }
   proc foo() {
-    use m2;
+    use this.m2;
     writeln(ccc);
   }
 }
 module m3 {
   proc main() {
-    use m1;
+    use super.m1;
     foo();
   }
 }

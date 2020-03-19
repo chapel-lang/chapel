@@ -14,7 +14,7 @@ module OuterModule {
   }
 
   module M2 {
-    use M only; // require all symbols in M to be fully-qualified
+    use super.M only; // require all symbols in M to be fully-qualified
 
     proc main() {
       var foo = new borrowed M.Foo();

@@ -3,7 +3,7 @@ module OuterModule {
     var x: int = 2;
   }
 
-  use M1;
+  use this.M1;
 
   module M2 {
     proc main {

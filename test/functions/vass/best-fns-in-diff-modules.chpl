@@ -22,7 +22,7 @@ module OuterModule {
     }
   }
   proc main {
-    use M, P, Q;
+    use this.M, this.P, this.Q;
     ref r = access();
     const ref c = access();
     var v = access();

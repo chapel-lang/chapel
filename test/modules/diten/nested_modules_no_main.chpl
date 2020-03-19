@@ -5,7 +5,7 @@ module M1 {
       writeln(x);
     }
   }
-  use M2;
+  use this.M2;
   f();
 }
 

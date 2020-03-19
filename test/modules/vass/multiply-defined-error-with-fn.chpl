@@ -2,9 +2,9 @@ module OuterModule {
   // extract from test/users/npadmana/mpi/ring.chpl
   // which uses MPI and Barriers (just once)
 
-  use MPIvass;
-  use BarriersVass;
-  use BarriersVass2;
+  use this.MPIvass;
+  use this.BarriersVass;
+  use this.BarriersVass2;
 
   proc main() {
     var sendBarrier = new Barrier(numLocales);

@@ -1,5 +1,5 @@
 module M2 {
-  use M3;
+  use this.M3;
 
   module M3 {
     module M4 {

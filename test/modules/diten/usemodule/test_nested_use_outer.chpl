@@ -23,13 +23,13 @@ module OuterModule {
   }
 
   proc main() {
-    use outermost.middlemost.innermost;
+    use this.outermost.middlemost.innermost;
     f(3);
     foo(4);
   }
 
   proc foo(a: int) {
-    use outermost;
+    use this.outermost;
     writeln("foo");
     f(a);
   }

@@ -29,7 +29,7 @@ module OuterModule {
   }
 
   proc main() {
-    use Bar;
+    use this.Bar;
 
     // For 's = r' below, the compiler does actually insert the default copy
     // initializer.

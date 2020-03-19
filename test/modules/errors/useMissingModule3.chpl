@@ -1,4 +1,4 @@
-use Goober.Peas;
+use this.Goober.Peas;
 
 module Goober {
 }

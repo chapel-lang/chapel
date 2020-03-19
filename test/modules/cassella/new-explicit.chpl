@@ -40,43 +40,43 @@ module OuterModule {
   }
 
   proc printThing(x) {
-    use A; // get 'writeThis'
+    use this.A; // get 'writeThis'
     writeln(x);
   }
 
   writeln("Concrete Record");
   {         var x : A.CR = new A.CR(1); printThing(x); }
-  { use A;  var x :   CR = new A.CR(1); printThing(x); }
-  { use A;  var x        = new A.CR(1); printThing(x); }
+  { use this.A;  var x :   CR = new A.CR(1); printThing(x); }
+  { use this.A;  var x        = new A.CR(1); printThing(x); }
   {         var x        = new A.CR(1); printThing(x); }
-  { use A;  var x : A.CR = new   CR(1); printThing(x); }
-  { use A;  var x :   CR = new   CR(1); printThing(x); }
-  { use A;  var x        = new   CR(1); printThing(x); }
+  { use this.A;  var x : A.CR = new   CR(1); printThing(x); }
+  { use this.A;  var x :   CR = new   CR(1); printThing(x); }
+  { use this.A;  var x        = new   CR(1); printThing(x); }
 
   writeln("\nConcrete Class");
   {         var x : owned A.CC = new owned A.CC(1); printThing(x); }
-  { use A;  var x : owned   CC = new owned A.CC(1); printThing(x); }
-  { use A;  var x              = new owned A.CC(1); printThing(x); }
+  { use this.A;  var x : owned   CC = new owned A.CC(1); printThing(x); }
+  { use this.A;  var x              = new owned A.CC(1); printThing(x); }
   {         var x              = new owned A.CC(1); printThing(x); }
-  { use A;  var x : owned A.CC = new owned   CC(1); printThing(x); }
-  { use A;  var x : owned CC   = new owned   CC(1); printThing(x); }
-  { use A;  var x              = new owned   CC(1); printThing(x); }
+  { use this.A;  var x : owned A.CC = new owned   CC(1); printThing(x); }
+  { use this.A;  var x : owned CC   = new owned   CC(1); printThing(x); }
+  { use this.A;  var x              = new owned   CC(1); printThing(x); }
 
   writeln("\nGeneric Record");
   {         var x : A.GR(int) = new A.GR(int, 1); printThing(x); }
-  { use A;  var x :   GR(int) = new A.GR(int, 1); printThing(x); }
-  { use A;  var x             = new A.GR(int, 1); printThing(x); }
+  { use this.A;  var x :   GR(int) = new A.GR(int, 1); printThing(x); }
+  { use this.A;  var x             = new A.GR(int, 1); printThing(x); }
   {         var x             = new A.GR(int, 1); printThing(x); }
-  { use A;  var x : A.GR(int) = new   GR(int, 1); printThing(x); }
-  { use A;  var x :   GR(int) = new   GR(int, 1); printThing(x); }
-  { use A;  var x             = new   GR(int, 1); printThing(x); }
+  { use this.A;  var x : A.GR(int) = new   GR(int, 1); printThing(x); }
+  { use this.A;  var x :   GR(int) = new   GR(int, 1); printThing(x); }
+  { use this.A;  var x             = new   GR(int, 1); printThing(x); }
 
   writeln("\nGeneric Class");
   {         var x : owned A.GC(int) = new owned A.GC(int, 1); printThing(x); }
-  { use A;  var x : owned   GC(int) = new owned A.GC(int, 1); printThing(x); }
-  { use A;  var x                   = new owned A.GC(int, 1); printThing(x); }
+  { use this.A;  var x : owned   GC(int) = new owned A.GC(int, 1); printThing(x); }
+  { use this.A;  var x                   = new owned A.GC(int, 1); printThing(x); }
   {         var x                   = new owned A.GC(int, 1); printThing(x); }
-  { use A;  var x : owned A.GC(int) = new owned   GC(int, 1); printThing(x); }
-  { use A;  var x : owned   GC(int) = new owned   GC(int, 1); printThing(x); }
-  { use A;  var x                   = new owned   GC(int, 1); printThing(x); }
+  { use this.A;  var x : owned A.GC(int) = new owned   GC(int, 1); printThing(x); }
+  { use this.A;  var x : owned   GC(int) = new owned   GC(int, 1); printThing(x); }
+  { use this.A;  var x                   = new owned   GC(int, 1); printThing(x); }
 }

@@ -15,7 +15,7 @@ module OuterModule {
 
   // This function needs to 'use' M1 to access writeThis etc
   proc showIt(s) {
-    use M1;
+    use this.M1;
 
     writeln('s = ', s);
   }

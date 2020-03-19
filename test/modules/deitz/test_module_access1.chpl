@@ -5,7 +5,7 @@ module OuterModule {
     var y = 2;
   }
 
-  use M;
+  use this.M;
 
   writeln((M.x, M.y));
 }

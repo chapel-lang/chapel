@@ -7,12 +7,12 @@ module grandparent {
       }
     }
 
-    use child;
+    use this.child;
     // Valid, because this module is the direct parent of the private module
   }
 
   module sibling {
-    use parent;
+    use super.parent;
 
     proc main() {
       writeln(secretFunction(11));

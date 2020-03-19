@@ -14,12 +14,12 @@ module OuterModule {
   }
 
   proc main() {
-    use outermost.middlemost.innermost;
+    use this.outermost.middlemost.innermost;
     bar(); foo(); bar();
   }
 
   proc bar() {
-    use outermost;
+    use this.outermost;
     writeln(a);
   }
 }

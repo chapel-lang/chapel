@@ -1,5 +1,5 @@
 proc main() {
-  use bash except *;
+  use this.bash except *;
 
   var p = bash.ls();
 
@@ -7,7 +7,7 @@ proc main() {
 }
 
 module bash {
-  public use Other;
+  public use super.Other;
 
   proc ls(args='') {
     var p = Other.makeFoo();

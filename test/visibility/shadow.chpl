@@ -24,7 +24,7 @@ module OuterModule {
 
 
   proc main() {
-    use A;
+    use this.A;
     var r = new R();
 
     r.shadow();

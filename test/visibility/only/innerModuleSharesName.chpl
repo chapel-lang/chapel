@@ -9,6 +9,6 @@ module OuterModule {
     }
   }
 
-  use EvenMoreOuter.M only M;
+  use this.EvenMoreOuter.M only M;
   M.whatev();
 }

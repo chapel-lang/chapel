@@ -7,7 +7,7 @@ module OuterModule {
     }
   }
 
-  use C;
+  use this.C;
   var td_strct: C.td_struct;
   td_strct.d = 7.5;
 

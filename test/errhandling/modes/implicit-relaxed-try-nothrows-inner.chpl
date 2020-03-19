@@ -17,6 +17,6 @@ module mymodule {
   }
 }
 
-use mymodule;
+use this.mymodule;
 writeln("In outer implicit module");
 test();

@@ -7,7 +7,7 @@ module OuterModule {
     }
   }
 
-  use M;
-  use M.M;
+  use this.M;
+  use this.M.M;
   writeln(a);
 }

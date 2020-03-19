@@ -14,7 +14,7 @@ module OuterModule {
   }
 
   proc test() {
-    use C except *;
+    use this.C except *;
 
     var tmp = C.make_struct();
     var f = tmp.my_field;

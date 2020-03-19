@@ -52,7 +52,7 @@ module OuterModule {
   param NBUCKETS = 16;
   param PER = 16000/NBUCKETS;
 
-  use Test;
+  use this.Test;
 
   var counts = myhisto reduce array;
 

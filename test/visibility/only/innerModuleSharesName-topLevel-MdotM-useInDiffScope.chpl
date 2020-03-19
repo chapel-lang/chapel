@@ -7,6 +7,6 @@ module M {
 }
 
 {
-  use M only;
+  use this.M only;
   M.M.whatev();
 }
