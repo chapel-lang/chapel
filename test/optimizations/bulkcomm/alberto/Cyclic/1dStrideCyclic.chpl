@@ -22,7 +22,7 @@ LocaleDistribution(A);
 //LocaleDistribution(B);
 
 
-writeln("Example 1: B",Dom2,"(",Dom2.numIndices,") = A",Dom1,"(",Dom1.numIndices,")");
+writeln("Example 1: B",Dom2,"(",Dom2.size,") = A",Dom1,"(",Dom1.size,")");
 B[Dom2]=A[Dom1];
 
 for (a,b) in zip(A[Dom1],B[Dom2]) do if (a!=b) then {writeln("ERROR!!!!");}
@@ -36,8 +36,8 @@ for (i) in A.domain {
 //writeln("A:",A);
 //writeln("B:",B);
 
-writeln("Example 2: A",Dom1,"(",Dom1.numIndices,") = B",Dom2,"(",Dom2.numIndices,")");
-if (Dom2.numIndices == Dom1.numIndices)
+writeln("Example 2: A",Dom1,"(",Dom1.size,") = B",Dom2,"(",Dom2.size,")");
+if (Dom2.size == Dom1.size)
 {
 	A[Dom1]=B[Dom2];
 	for (a,b) in zip(A[Dom1],B[Dom2]) do if (a!=b) then {writeln("ERROR!!!!");}
@@ -47,8 +47,8 @@ if (Dom2.numIndices == Dom1.numIndices)
 
 Dom1 = {1..n/4 by 2};
 Dom2 = {1..n/2 by 4};
-writeln("Example 3: B",Dom2,"(",Dom2.numIndices,") = A",Dom1,"(",Dom1.numIndices,")");
-if (Dom2.numIndices == Dom1.numIndices)
+writeln("Example 3: B",Dom2,"(",Dom2.size,") = A",Dom1,"(",Dom1.size,")");
+if (Dom2.size == Dom1.size)
 //if ((n/4)%2 == (n/2)%4)
 {
 	B[Dom2]=A[Dom1];
@@ -57,8 +57,8 @@ if (Dom2.numIndices == Dom1.numIndices)
 
 Dom1 = {1..n by n};
 Dom2 = {1..n by 2*n};
-writeln("Example 4: B",Dom2,"(",Dom2.numIndices,") = A",Dom1,"(",Dom1.numIndices,")");
-if (Dom2.numIndices == Dom1.numIndices)
+writeln("Example 4: B",Dom2,"(",Dom2.size,") = A",Dom1,"(",Dom1.size,")");
+if (Dom2.size == Dom1.size)
 {
 	B[Dom2]=A[Dom1];
 	for (a,b) in zip(A[Dom1],B[Dom2]) do if (a!=b) then {writeln("ERROR!!!!");}
@@ -66,8 +66,8 @@ if (Dom2.numIndices == Dom1.numIndices)
 
 Dom1 = {1..n/2 by 3};
 Dom2 = {1..n/3 by 2};
-writeln("Example 5: B",Dom2,"(",Dom2.numIndices,") = A",Dom1,"(",Dom1.numIndices,")");
-if (Dom2.numIndices == Dom1.numIndices)
+writeln("Example 5: B",Dom2,"(",Dom2.size,") = A",Dom1,"(",Dom1.size,")");
+if (Dom2.size == Dom1.size)
 //if ((n/2)%3 == (n/3)%2)
 {
 	B[Dom2]=A[Dom1];
@@ -76,8 +76,8 @@ if (Dom2.numIndices == Dom1.numIndices)
 
 Dom1 = {2..n by n};
 Dom2 = {2..n by 2*n};
-writeln("Example 6: B",Dom2,"(",Dom2.numIndices,") = A",Dom1,"(",Dom1.numIndices,")");
-if (Dom2.numIndices == Dom1.numIndices)
+writeln("Example 6: B",Dom2,"(",Dom2.size,") = A",Dom1,"(",Dom1.size,")");
+if (Dom2.size == Dom1.size)
 {
 	B[Dom2]=A[Dom1];
 	for (a,b) in zip(A[Dom1],B[Dom2]) do if (a!=b) then {writeln("ERROR!!!!");}
@@ -85,8 +85,8 @@ if (Dom2.numIndices == Dom1.numIndices)
 
 Dom1 = {2..n by 4};
 Dom2 = {2..n by 4};
-writeln("Example 7: B",Dom2,"(",Dom2.numIndices,") = A",Dom1,"(",Dom1.numIndices,")");
-if (Dom2.numIndices == Dom1.numIndices)
+writeln("Example 7: B",Dom2,"(",Dom2.size,") = A",Dom1,"(",Dom1.size,")");
+if (Dom2.size == Dom1.size)
 {
 	B[Dom2]=A[Dom1];
 	for (a,b) in zip(A[Dom1],B[Dom2]) do if (a!=b) then {writeln("ERROR!!!!");}
@@ -94,8 +94,8 @@ if (Dom2.numIndices == Dom1.numIndices)
 
 Dom1 = {2..n/2 by 2};
 Dom2 = {2..n by 4};
-writeln("Example 8: B",Dom2,"(",Dom2.numIndices,") = A",Dom1,"(",Dom1.numIndices,")");
-if (Dom2.numIndices == Dom1.numIndices)
+writeln("Example 8: B",Dom2,"(",Dom2.size,") = A",Dom1,"(",Dom1.size,")");
+if (Dom2.size == Dom1.size)
 //if ((n-1)%4 == ((n-1)/2)%2)
 {
 	B[Dom2]=A[Dom1];
@@ -104,8 +104,8 @@ if (Dom2.numIndices == Dom1.numIndices)
 
 Dom1 = {2..n/2 by 2};
 Dom2 = {4..n by 4};
-writeln("Example 9: B: ",Dom2,"(",Dom2.numIndices,") = A: ",Dom1,"(",Dom1.numIndices,")");
-if (Dom2.numIndices == Dom1.numIndices)
+writeln("Example 9: B: ",Dom2,"(",Dom2.size,") = A: ",Dom1,"(",Dom1.size,")");
+if (Dom2.size == Dom1.size)
 {
 	B[Dom2]=A[Dom1];
 	for (a,b) in zip(A[Dom1],B[Dom2]) do if (a!=b) then {writeln("ERROR!!!!");}
@@ -113,8 +113,8 @@ if (Dom2.numIndices == Dom1.numIndices)
 
 Dom1 = {2..n/2-1 by 2};
 Dom2 = {4..n-1 by 4};
-writeln("Example 10: B: ",Dom2,"(",Dom2.numIndices,") = A: ",Dom1,"(",Dom1.numIndices,")");
-if (Dom2.numIndices == Dom1.numIndices)
+writeln("Example 10: B: ",Dom2,"(",Dom2.size,") = A: ",Dom1,"(",Dom1.size,")");
+if (Dom2.size == Dom1.size)
 {
 	B[Dom2]=A[Dom1];
 	for (a,b) in zip(A[Dom1],B[Dom2]) do if (a!=b) then {writeln("ERROR!!!!");}
@@ -122,8 +122,8 @@ if (Dom2.numIndices == Dom1.numIndices)
 
 Dom1 = {1..n/2-1 by 2};
 Dom2 = {1..n-1 by 4};
-writeln("Example 11: B: ",Dom2,"(",Dom2.numIndices,") = A: ",Dom1,"(",Dom1.numIndices,")");
-if (Dom2.numIndices == Dom1.numIndices)
+writeln("Example 11: B: ",Dom2,"(",Dom2.size,") = A: ",Dom1,"(",Dom1.size,")");
+if (Dom2.size == Dom1.size)
 {
 	B[Dom2]=A[Dom1];
 	for (a,b) in zip(A[Dom1],B[Dom2]) do if (a!=b) then {writeln("ERROR!!!!");}
@@ -133,8 +133,8 @@ Dom1 = {(n/2)+1..n by 2};
 //Dom2 = {8..8 by 4};
 Dom2 = {1..n by 4};
 //Dom1 = {5..5 by 4};
-writeln("Example 12: B: ",Dom2,"(",Dom2.numIndices,") = A: ",Dom1,"(",Dom1.numIndices,")");
-if (Dom2.numIndices == Dom1.numIndices)
+writeln("Example 12: B: ",Dom2,"(",Dom2.size,") = A: ",Dom1,"(",Dom1.size,")");
+if (Dom2.size == Dom1.size)
 {//writeln("Antes: B:",B[Dom2]);
 //writeln("A:",A[Dom1]);
 	B[Dom2]=A[Dom1];
@@ -145,8 +145,8 @@ if (Dom2.numIndices == Dom1.numIndices)
 
 Dom1 = {(n/2)+1..3*n/4 by 2};
 Dom2 = {1..n/2 by 4};
-writeln("Example 13: B: ",Dom2,"(",Dom2.numIndices,") = A: ",Dom1,"(",Dom1.numIndices,")");
-if (Dom2.numIndices == Dom1.numIndices)
+writeln("Example 13: B: ",Dom2,"(",Dom2.size,") = A: ",Dom1,"(",Dom1.size,")");
+if (Dom2.size == Dom1.size)
 {
 	B[Dom2]=A[Dom1];
 	for (a,b) in zip(A[Dom1],B[Dom2]) do if (a!=b) then {writeln("ERROR!!!!");}
@@ -155,8 +155,8 @@ if (Dom2.numIndices == Dom1.numIndices)
 
 Dom1 = {(n/2)+1..3*n/4 by 2};
 Dom2 = {1..n/2 by 4};
-writeln("Example 14: B: ",Dom2,"(",Dom2.numIndices,") = A: ",Dom1,"(",Dom1.numIndices,")");
-if (Dom2.numIndices == Dom1.numIndices)
+writeln("Example 14: B: ",Dom2,"(",Dom2.size,") = A: ",Dom1,"(",Dom1.size,")");
+if (Dom2.size == Dom1.size)
 {
 	B[Dom2]=A[Dom1];
 	for (a,b) in zip(A[Dom1],B[Dom2]) do if (a!=b) then {writeln("ERROR!!!!");}
@@ -165,8 +165,8 @@ if (Dom2.numIndices == Dom1.numIndices)
 
 Dom1 = {(n/2)+1..3*n/4 by 2};
 Dom2 = {(n/4)+1..3*n/4 by 4};
-writeln("Example 15: B: ",Dom2,"(",Dom2.numIndices,") = A: ",Dom1,"(",Dom1.numIndices,")");
-if (Dom2.numIndices == Dom1.numIndices)
+writeln("Example 15: B: ",Dom2,"(",Dom2.size,") = A: ",Dom1,"(",Dom1.size,")");
+if (Dom2.size == Dom1.size)
 {
 	B[Dom2]=A[Dom1];
 	for (a,b) in zip(A[Dom1],B[Dom2]) do if (a!=b) then {writeln("ERROR!!!!");}
@@ -174,8 +174,8 @@ if (Dom2.numIndices == Dom1.numIndices)
 
 Dom1 = {(n/2)+1..3*n/4 by 2};
 Dom2 = {(n/2)+1..n by 4};
-writeln("Example 16: B: ",Dom2,"(",Dom2.numIndices,") = A: ",Dom1,"(",Dom1.numIndices,")");
-if (Dom2.numIndices == Dom1.numIndices)
+writeln("Example 16: B: ",Dom2,"(",Dom2.size,") = A: ",Dom1,"(",Dom1.size,")");
+if (Dom2.size == Dom1.size)
 {
 	B[Dom2]=A[Dom1];
 	for (a,b) in zip(A[Dom1],B[Dom2]) do if (a!=b) then {writeln("ERROR!!!!");}
@@ -197,8 +197,8 @@ for (i) in C.domain {
 var Dom3 = {(n/2)+1..3*n/4 by 2};
 var Dom4 = {(n/2)+1..n by 4};
 
- writeln("Example 17: D: ",Dom4,"(",Dom4.numIndices,") = C: ",Dom3,"(",Dom3.numIndices,")");
-if (Dom4.numIndices == Dom3.numIndices)
+ writeln("Example 17: D: ",Dom4,"(",Dom4.size,") = C: ",Dom3,"(",Dom3.size,")");
+if (Dom4.size == Dom3.size)
 {
 	D[Dom4]=C[Dom3];
 	for (a,b) in zip(C[Dom3],D[Dom4]) do if (a!=b) then {writeln("ERROR!!!!");}
@@ -206,8 +206,8 @@ if (Dom4.numIndices == Dom3.numIndices)
 
 Dom3 = {3*n/4..n by 2};
 Dom4 = {(n/2)+1..n by 4};
-writeln("Example 18: D: ",Dom4,"(",Dom4.numIndices,") = C: ",Dom3,"(",Dom3.numIndices,")");
-if (Dom4.numIndices == Dom3.numIndices)
+writeln("Example 18: D: ",Dom4,"(",Dom4.size,") = C: ",Dom3,"(",Dom3.size,")");
+if (Dom4.size == Dom3.size)
 {
 	D[Dom4]=C[Dom3];
 	for (a,b) in zip(C[Dom3],D[Dom4]) do if (a!=b) then {writeln("ERROR!!!!");}
@@ -215,8 +215,8 @@ if (Dom4.numIndices == Dom3.numIndices)
 
 Dom3 = {3*n/4..5*n/4 by 2};
 Dom4 = {(n/2)+1..3*n/2 by 4};
-writeln("Example 19: D: ",Dom4,"(",Dom4.numIndices,") = C: ",Dom3,"(",Dom3.numIndices,")");
-if (Dom4.numIndices == Dom3.numIndices)
+writeln("Example 19: D: ",Dom4,"(",Dom4.size,") = C: ",Dom3,"(",Dom3.size,")");
+if (Dom4.size == Dom3.size)
 {
 	D[Dom4]=C[Dom3];
 	for (a,b) in zip(C[Dom3],D[Dom4]) do if (a!=b) then {writeln("ERROR!!!!");}
@@ -224,8 +224,8 @@ if (Dom4.numIndices == Dom3.numIndices)
 
 Dom3 = {n+1..3*n/2 by 2};
 Dom4 = {(n/2)+1..3*n/2 by 4};
-writeln("Example 20: D: ",Dom4,"(",Dom4.numIndices,") = C: ",Dom3,"(",Dom3.numIndices,")");
-if (Dom4.numIndices == Dom3.numIndices)
+writeln("Example 20: D: ",Dom4,"(",Dom4.size,") = C: ",Dom3,"(",Dom3.size,")");
+if (Dom4.size == Dom3.size)
 {
 	D[Dom4]=C[Dom3];
 	for (a,b) in zip(C[Dom3],D[Dom4]) do if (a!=b) then {writeln("ERROR!!!!");}
@@ -241,8 +241,8 @@ LocaleDistribution(E);
 //var Dom5 = {n+1..3*n/2 by 2};
 var Dom5 = {7..11 by 2};
 Dom1 = {2..10 by 4};
-writeln("Example 21: E: ",Dom5,"(",Dom5.numIndices,") = A: ",Dom1,"(",Dom1.numIndices,")");
-if (Dom1.numIndices == Dom5.numIndices)
+writeln("Example 21: E: ",Dom5,"(",Dom5.size,") = A: ",Dom1,"(",Dom1.size,")");
+if (Dom1.size == Dom5.size)
 {
 	E[Dom5]=A[Dom1];
 	writeln("");
@@ -251,8 +251,8 @@ if (Dom1.numIndices == Dom5.numIndices)
 	for (a,b) in zip(A[Dom1],E[Dom5]) do if (a!=b) then {writeln("ERROR!!!!");}
 }
 
-writeln("Example 22: E: ",Dom5,"(",Dom5.numIndices,") = A: ",Dom1,"(",Dom1.numIndices,")");
-if (Dom1.numIndices == Dom5.numIndices)
+writeln("Example 22: E: ",Dom5,"(",Dom5.size,") = A: ",Dom1,"(",Dom1.size,")");
+if (Dom1.size == Dom5.size)
 {//LocaleDistribution(E);
 //LocaleDistribution(A);
 	E[Dom5]=A[Dom1];
@@ -261,8 +261,8 @@ if (Dom1.numIndices == Dom5.numIndices)
 
 Dom5 = {(4*n/2)+1..5*n/2 by 2};
 Dom1 = {1..n by 4};
-writeln("Example 23: A: ",Dom1,"(",Dom1.numIndices,") = E: ",Dom5,"(",Dom5.numIndices,")");
-if (Dom1.numIndices == Dom5.numIndices)
+writeln("Example 23: A: ",Dom1,"(",Dom1.size,") = E: ",Dom5,"(",Dom5.size,")");
+if (Dom1.size == Dom5.size)
 {//LocaleDistribution(A);
 //LocaleDistribution(E);
 	A[Dom1]=E[Dom5];
@@ -271,8 +271,8 @@ if (Dom1.numIndices == Dom5.numIndices)
 
 Dom5 = {(8*n/4)+1..9*n/4 by 2};
 Dom1 = {(n/2)+1..n by 4};
-writeln("Example 24: A: ",Dom1,"(",Dom1.numIndices,") = E: ",Dom5,"(",Dom5.numIndices,")");
-if (Dom1.numIndices == Dom5.numIndices)
+writeln("Example 24: A: ",Dom1,"(",Dom1.size,") = E: ",Dom5,"(",Dom5.size,")");
+if (Dom1.size == Dom5.size)
 {
 	A[Dom1]=E[Dom5];
 	for (a,b) in zip(A[Dom1],E[Dom5]) do if (a!=b) then {writeln("ERROR!!!!");}
@@ -280,8 +280,8 @@ if (Dom1.numIndices == Dom5.numIndices)
 
 Dom5 = {(3*n/2)+1..7*n/4 by 2};
 Dom1 = {(n/4)+1..3*n/4 by 4};
-writeln("Example 25: A: ",Dom1,"(",Dom1.numIndices,") = E: ",Dom5,"(",Dom5.numIndices,")");
-if (Dom1.numIndices == Dom5.numIndices)
+writeln("Example 25: A: ",Dom1,"(",Dom1.size,") = E: ",Dom5,"(",Dom5.size,")");
+if (Dom1.size == Dom5.size)
 {
 	A[Dom1]=E[Dom5];
 	for (a,b) in zip(A[Dom1],E[Dom5]) do if (a!=b) then {writeln("ERROR!!!!");}
@@ -290,8 +290,8 @@ if (Dom1.numIndices == Dom5.numIndices)
 
 Dom5 = {(3*n/2)+1..5*n/2 by 4};
 Dom1 = {(n/4)+1..3*n/4 by 2};
-writeln("Example 26: A: ",Dom1,"(",Dom1.numIndices,") = E: ",Dom5,"(",Dom5.numIndices,")");
-if (Dom1.numIndices == Dom5.numIndices)
+writeln("Example 26: A: ",Dom1,"(",Dom1.size,") = E: ",Dom5,"(",Dom5.size,")");
+if (Dom1.size == Dom5.size)
 {
 	A[Dom1]=E[Dom5];
 	for (a,b) in zip(A[Dom1],E[Dom5]) do if (a!=b) then {writeln("ERROR!!!!");}

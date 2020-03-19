@@ -1,2 +1,2 @@
-bug: missing checking for transfer from non-nilable owned to tuple
+error message: on transfer from non-nilable owned to tuple
 #14942

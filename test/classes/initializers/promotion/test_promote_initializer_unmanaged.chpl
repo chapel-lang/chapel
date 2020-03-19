@@ -4,7 +4,7 @@ class C {
 }
 
 var A: [1..5] int;
-var B: [1..5] unmanaged C;
+var B: [1..5] unmanaged C?;
 
 B = new unmanaged C(A);
 

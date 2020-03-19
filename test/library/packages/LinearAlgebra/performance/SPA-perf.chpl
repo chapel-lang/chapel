@@ -121,7 +121,7 @@ proc SPAdot(A: [?Adom], B: [?Bdom]) where isCSArr(A) && isCSArr(B) {
   var C: [Cdom] A.eltType;
 
   // pre-allocate nnz(A) + nnz(B) -- TODO: shrink later
-  const nnzAB = Adom.numIndices + Bdom.numIndices;
+  const nnzAB = Adom.size + Bdom.size;
   Cdom._value.nnzDom = {1..nnzAB};
 
   var spa = new _SPA(cols={D.dim(1)}, eltType=A.eltType);

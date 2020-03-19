@@ -3,7 +3,7 @@
 # Custom sub_test to run Arkouda testing. Clones, installs dependencies, builds
 # Arkouda and runs testing.
 
-ARKOUDA_URL=git@github.com:mhmerrill/arkouda.git
+ARKOUDA_URL=https://github.com/mhmerrill/arkouda.git
 ARKOUDA_BRANCH=master
 
 CWD=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
@@ -50,13 +50,15 @@ fi
 test_end "make check"
 
 # Run benchmarks
-test_start "benchmarks"
-benchmark_opts="--gen-graphs --dat-dir $CHPL_TEST_PERF_DIR --graph-dir $CHPL_TEST_PERF_DIR/html"
-if ./benchmarks/run_benchmarks.py ${benchmark_opts} ; then
-  log_success "benchmark output"
-else
-  log_error "running benchmarks"
+if [ "${CHPL_TEST_ARKOUDA_PERF}" = "true" ] ; then
+  test_start "benchmarks"
+  benchmark_opts="--gen-graphs --dat-dir $CHPL_TEST_PERF_DIR --graph-dir $CHPL_TEST_PERF_DIR/html"
+  if ./benchmarks/run_benchmarks.py ${benchmark_opts} ; then
+    log_success "benchmark output"
+  else
+    log_error "running benchmarks"
+  fi
+  test_end "benchmarks"
 fi
-test_end "benchmarks"
 
 subtest_end

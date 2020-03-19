@@ -77,7 +77,7 @@ proc main() {
       writeln(loc, ": ", dat.get);
     }
 
-    writeln("=" * sep.length);
+    writeln("=" * sep.size);
     writeln();
   }
 }

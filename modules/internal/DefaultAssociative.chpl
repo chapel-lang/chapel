@@ -83,7 +83,7 @@ module DefaultAssociative {
     //       replace with a named constant/param?
     var postponeResize = false;
   
-    proc linksDistribution() param return false;
+    override proc linksDistribution() param return false;
     override proc dsiLinksDistribution() return false;
   
     proc init(type idxType,
@@ -623,9 +623,11 @@ module DefaultAssociative {
     param parSafeDom: bool;
     var dom : unmanaged DefaultAssociativeDom(idxType, parSafe=parSafeDom);
   
+    pragma "unsafe"
     var data : [dom.tableDom] eltType;
   
     var tmpDom = {0..(-1:chpl_table_index_type)};
+    pragma "unsafe"
     var tmpTable: [tmpDom] eltType;
 
     //
@@ -994,6 +996,10 @@ module DefaultAssociative {
   
   inline proc chpl__defaultHash(o: borrowed object): uint {
     return _gen_key(__primitive( "object2int", o));
+  }
+
+  inline proc chpl__defaultHash(l: locale): uint {
+    return _gen_key(__primitive( "object2int", l._value));
   }
 
   //

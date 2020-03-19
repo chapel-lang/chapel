@@ -186,7 +186,7 @@ are supported through submodules, such ``LinearAlgebra.Sparse`` for the
 module LinearAlgebra {
 
 use Norm; // TODO -- merge Norm into LinearAlgebra
-use BLAS only;
+import BLAS;
 use LAPACK only lapack_memory_order, isLAPACKType;
 
 /* Determines if using native Chapel implementations */
@@ -576,7 +576,7 @@ proc dot(A: [?Adom] ?eltType, B: [?Bdom] eltType) where isDenseArr(A) && isDense
 
 */
 proc _array.dot(A: []) where isDenseArr(this) && isDenseArr(A) {
-  use LinearAlgebra only;
+  import LinearAlgebra;
   return LinearAlgebra.dot(this, A);
 }
 
@@ -1406,7 +1406,7 @@ proc eig(A: [] ?t, param left = false, param right = false)
   where A.domain.rank == 2 && usingLAPACK {
 
   proc convertToCplx(wr: [] t, wi: [] t) {
-    const n = wi.numElements;
+    const n = wi.size;
     var eigVals: [1..n] complex(numBits(t)*2);
     forall (rv, re, im) in zip(eigVals, wr, wi) {
       rv = (re, im): complex(numBits(t)*2);
@@ -1415,7 +1415,7 @@ proc eig(A: [] ?t, param left = false, param right = false)
   }
 
   proc flattenCplxEigenVecs(wi: [] t, vec: [] t) {
-    const n = wi.numElements;
+    const n = wi.size;
     var cplx: [1..n, 1..n] complex(numBits(t)*2);
 
     var skipNext = false;
@@ -1442,7 +1442,7 @@ proc eig(A: [] ?t, param left = false, param right = false)
     return cplx;
   }
 
-  const n = A.domain.dim(1).length;
+  const n = A.domain.dim(1).size;
   if !isSquare(A) then
     halt("Matrix passed to eigvals must be square");
   var copy = A;
@@ -1978,13 +1978,13 @@ module Sparse {
 
   /* Compute the dot-product */
   proc _array.dot(A: []) where isCSArr(A) || isCSArr(this) {
-    use LinearAlgebra only;
+    import LinearAlgebra;
     return LinearAlgebra.Sparse.dot(this, A);
   }
 
   /* Compute the dot-product */
   proc _array.dot(a) where isNumeric(a) && isCSArr(this) {
-    use LinearAlgebra only;
+    import LinearAlgebra;
     return LinearAlgebra.dot(this, a);
   }
 
@@ -2207,7 +2207,7 @@ module Sparse {
     const parentDT = transpose(D.parentDom);
     var Dom: sparse subdomain(parentDT) dmapped CS(sortedIndices=false);
 
-    var idxBuffer = Dom.makeIndexBuffer(size=D.numIndices);
+    var idxBuffer = Dom.makeIndexBuffer(size=D.size);
     for (i,j) in D do idxBuffer.add((j,i));
     idxBuffer.commit();
     return Dom;

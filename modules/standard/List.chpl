@@ -52,7 +52,7 @@
   into a list is O(1).
 */
 module List {
-  private use ChapelLocks only;
+  import ChapelLocks;
   private use HaltWrappers;
   private use Sort;
 
@@ -1239,7 +1239,7 @@ module List {
 
       :arg comparator: A comparator used to sort this list.
     */
-    proc ref sort(comparator=Sort.defaultComparator) {
+    proc ref sort(comparator: ?rec=Sort.defaultComparator) {
       on this {
         _enter();
 
@@ -1434,21 +1434,36 @@ module List {
     }
 
     /*
+      Returns the list's legal indices as the range ``1..this.size``.
+
+      :return: ``1..this.size``
+      :rtype: `range`
+    */
+    proc indices {
+      return 1..this.size;
+    }
+
+    /*
       Returns a new DefaultRectangular array containing a copy of each of the
       elements contained in this list.
 
       :return: A new DefaultRectangular array.
     */
     proc const toArray(): [] eltType {
-      var result: [1.._size] eltType;
+      if isNonNilableClass(eltType) && isOwnedClass(eltType) then
+        compilerError("toArray() method is not available on a 'list'",
+                      " with elements of a non-nilable owned type, here: ",
+                      eltType:string);
+
+      // Once GitHub Issue #7704 is resolved, replace pragma "unsafe"
+      // with a remote var declaration.
+      pragma "unsafe" var result: [1.._size] eltType;
 
       on this {
         _enter();
 
-        var tmp: [1.._size] eltType;
-
-        forall i in 1.._size do
-          tmp[i] = _getRef(i);
+        var tmp: [1.._size] eltType =
+          forall i in 1.._size do _getRef(i);
 
         result = tmp;
 

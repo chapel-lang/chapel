@@ -2497,7 +2497,7 @@ module TwoArrayPartitioning {
                 total += localCounts[bin];
               }
             }
-            assert(total == localDomain.numIndices);
+            assert(total == localDomain.size);
           }
           // Now store the counts into the global counts array
           for bin in vectorizeOnly(0..#nBuckets) {
@@ -2685,7 +2685,7 @@ module TwoArrayRadixSort {
     } else {
       var state = new TwoArrayDistributedBucketizerSharedState(
         bucketizerType=RadixBucketizer,
-        numLocales=Data.targetLocales().numElements,
+        numLocales=Data.targetLocales().size,
         baseCaseSize=baseCaseSize,
         endbit=endbit);
 
@@ -2730,7 +2730,7 @@ module TwoArraySampleSort {
     } else {
       var state = new TwoArrayDistributedBucketizerSharedState(
         bucketizerType=SampleBucketizer(Data.eltType),
-        numLocales=Data.targetLocales().numElements,
+        numLocales=Data.targetLocales().size,
         baseCaseSize=baseCaseSize,
         endbit=endbit);
 

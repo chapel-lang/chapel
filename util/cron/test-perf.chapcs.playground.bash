@@ -25,11 +25,11 @@ export CHPL_NIGHTLY_TEST_CONFIG_NAME="perf.chapcs.playground"
 # 4) Update START_DATE to be today, using the format mm/dd/yy
 #
 
-# Test performance of --fast not throwing --no-checks
+# Test performance of always enabling postfix! nil-checks
 GITHUB_USER=ronawho
-GITHUB_BRANCH=dont-disable-checks-fast
-SHORT_NAME=dont-disable-checks-fast
-START_DATE=02/23/20
+GITHUB_BRANCH=opt-dists-for-nilability
+SHORT_NAME=opt-dists-for-nilability
+START_DATE=03/10/20
 
 git branch -D $GITHUB_USER-$GITHUB_BRANCH
 git checkout -b $GITHUB_USER-$GITHUB_BRANCH
@@ -37,4 +37,4 @@ git pull https://github.com/$GITHUB_USER/chapel.git $GITHUB_BRANCH
 
 perf_args="-performance-description $SHORT_NAME -performance-configs default:v,$SHORT_NAME:v -sync-dir-suffix $SHORT_NAME"
 perf_args="${perf_args} -numtrials 1 -startdate $START_DATE"
-$CWD/nightly -cron ${perf_args} ${nightly_args}
+$CWD/nightly -cron ${perf_args} ${nightly_args} -compopts -senablePostfixBangChecks

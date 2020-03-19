@@ -81,6 +81,7 @@ static void        find_printModuleInit_stuff();
 static void        normalizeBase(BaseAST* base, bool addEndOfStatements);
 static void        processSyntacticDistributions(CallExpr* call);
 static void        processManagedNew(CallExpr* call);
+static void        processSyntacticTupleAssignment(CallExpr* call);
 static void        addEndOfStatementMarkers(BaseAST* base);
 static Expr*       getCallTempInsertPoint(Expr* expr);
 static void        addTypeBlocksForParentTypeOf(CallExpr* call);
@@ -506,6 +507,7 @@ static void normalizeBase(BaseAST* base, bool addEndOfStatements) {
     for_vector(CallExpr, call, calls1) {
       processSyntacticDistributions(call);
       processManagedNew(call);
+      processSyntacticTupleAssignment(call);
       if (call->isPrimitive(PRIM_TYPEOF))
         addTypeBlocksForParentTypeOf(call);
     }
@@ -631,7 +633,8 @@ void checkUseBeforeDefs(FnSymbol* fn) {
 
         if (isModuleSymbol(sym)                    == true  &&
             isFnSymbol(fn->defPoint->parentSymbol) == false &&
-            isUseStmt(se->parentExpr)              == false) {
+            isUseStmt(se->parentExpr)              == false &&
+            isImportStmt(se->parentExpr)           == false) {
           SymExpr* prev = toSymExpr(se->prev);
 
           if (prev == NULL || prev->symbol() != gModuleToken) {
@@ -786,12 +789,15 @@ static void moveGlobalDeclarationsToModuleScope() {
   forv_Vec(ModuleSymbol, mod, allModules) {
     for_alist(expr, mod->initFn->body->body) {
       if (DefExpr* def = toDefExpr(expr)) {
-        // Non-temporary variable declarations are moved out to module scope.
         if (VarSymbol* vs = toVarSymbol(def->sym)) {
-          // All var symbols are moved out to module scope,
-          // except for end counts (just so that parallel.cpp
-          // can find them)
+          // Don't move end counts to module scope
+          // (just so that parallel.cpp can find them)
           if (vs->hasFlag(FLAG_END_COUNT))
+            continue;
+
+          // Move temps to module scope later
+          // (after it is determined if they are last-mention or not)
+          if (vs->hasFlag(FLAG_TEMP))
             continue;
 
           // move the DefExpr
@@ -1135,6 +1141,116 @@ static void processManagedNew(CallExpr* newCall) {
   }
 }
 
+/************************************* | **************************************
+*                                                                             *
+* processSyntacticTupleAssignment / destructureTupleAssignment                *
+*                                                                             *
+*    (i,j) = expr;    ==>    i = expr(1);                                     *
+*                            j = expr(2);                                     *
+*                                                                             *
+* note: handles recursive tuple destructuring, (i,(j,k)) = ...                *
+*                                                                             *
+************************************** | *************************************/
+
+static void      insertDestructureStatements(Expr*     S1,
+                                             Expr*     S2,
+                                             CallExpr* lhs,
+                                             Expr*     rhs);
+static CallExpr* destructureChk(CallExpr* lhs, Expr* rhs);
+static CallExpr* destructureErr();
+static void destructureTupleAssignment(CallExpr* assign, CallExpr* lhsCall);
+
+static void processSyntacticTupleAssignment(CallExpr* call) {
+  if (call->isNamedAstr(astrSassign)) {
+    if (CallExpr* lhsCall = toCallExpr(call->get(1))) {
+      if (lhsCall->isNamed("_build_tuple")) {
+        destructureTupleAssignment(call, lhsCall);
+      }
+    }
+  }
+}
+
+static void destructureTupleAssignment(CallExpr* assign, CallExpr* lhsCall) {
+  SET_LINENO(assign);
+
+  VarSymbol* rtmp = newTemp();
+  Expr*      S1   = new CallExpr(PRIM_MOVE, rtmp, assign->get(2)->remove());
+  Expr*      S2   = new CallExpr(PRIM_NOOP);
+
+  rtmp->addFlag(FLAG_EXPR_TEMP);
+  rtmp->addFlag(FLAG_MAYBE_TYPE);
+  rtmp->addFlag(FLAG_MAYBE_PARAM);
+
+  assign->replace(S1);
+
+  S1->insertBefore(new DefExpr(rtmp));
+  S1->insertAfter(S2);
+
+  insertDestructureStatements(S1, S2, lhsCall, new SymExpr(rtmp));
+
+  S2->remove();
+}
+
+static void insertDestructureStatements(Expr*     S1,
+                                        Expr*     S2,
+                                        CallExpr* lhs,
+                                        Expr*     rhs) {
+  int       index = 0;
+  CallExpr* test  = destructureChk(lhs, rhs);
+  CallExpr* err   = destructureErr();
+
+  S1->getStmtExpr()->insertAfter(buildIfStmt(test, err));
+
+  for_actuals(expr, lhs) {
+    UnresolvedSymExpr* se = toUnresolvedSymExpr(expr->remove());
+
+    index = index + 1;
+
+    if (se == NULL || strcmp(se->unresolved, "chpl__tuple_blank") != 0) {
+      CallExpr* nextLHS = toCallExpr(expr);
+      Expr*     nextRHS = new CallExpr(rhs->copy(), new_IntSymbol(index));
+
+      if (nextLHS != NULL && nextLHS->isNamed("_build_tuple") == true) {
+        insertDestructureStatements(S1, S2, nextLHS, nextRHS);
+
+      } else {
+        VarSymbol* lhsTmp = newTemp();
+        CallExpr*  addrOf = new CallExpr(PRIM_ADDR_OF, expr);
+
+        lhsTmp->addFlag(FLAG_MAYBE_PARAM);
+
+        S1->insertBefore(new DefExpr(lhsTmp));
+        S1->insertBefore(new CallExpr(PRIM_MOVE, lhsTmp, addrOf));
+
+        S2->insertBefore(new CallExpr("=", lhsTmp, nextRHS));
+      }
+    }
+  }
+}
+
+static CallExpr* destructureChk(CallExpr* lhs, Expr* rhs) {
+  CallExpr* dot  = new CallExpr(".", rhs->copy(), new_CStringSymbol("size"));
+
+  return new CallExpr("!=", new_IntSymbol(lhs->numActuals()), dot);
+}
+
+static CallExpr* destructureErr() {
+  const char* msg  = NULL;
+  Symbol*     zero = new_IntSymbol(0);
+
+  msg = "tuple size must match the number of grouped variables";
+
+  return new CallExpr("compilerError", new_StringSymbol(msg), zero);
+}
+
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
+
+
+
 class AddEndOfStatementMarkers : public AstVisitorTraverse
 {
   public:
@@ -1258,10 +1374,33 @@ bool AddEndOfStatementMarkers::enterCallExpr(CallExpr* node) {
     return false;
 
   // Don't add markers after a move setting a temp
-  if (node->isPrimitive(PRIM_MOVE) || node->isPrimitive(PRIM_ASSIGN))
+  if (node->isPrimitive(PRIM_MOVE) ||
+      node->isPrimitive(PRIM_ASSIGN))
     if (SymExpr* lhs = toSymExpr(node->get(1)))
       if (lhs->symbol()->hasFlag(FLAG_TEMP))
         return false;
+
+  // If the next statement is a PRIM_INIT_FIELD, it's a compound
+  // thing from initializer pre-normalization, so don't add an end-of-statement
+  // in-between. Instead, add an end-of-statement after the PRIM_INIT_FIELD.
+  if (CallExpr* nextCall = toCallExpr(node->next)) {
+    if (nextCall->isPrimitive(PRIM_INIT_FIELD) ||
+        nextCall->isPrimitive(PRIM_SET_MEMBER)) {
+      CallExpr* endOfStatement = NULL;
+      if (CallExpr* nextNextCall = toCallExpr(nextCall->next))
+        if (nextNextCall->isPrimitive(PRIM_END_OF_STATEMENT))
+          endOfStatement = nextNextCall;
+
+      if (endOfStatement == NULL) {
+        SET_LINENO(nextCall);
+        endOfStatement = new CallExpr(PRIM_END_OF_STATEMENT);
+        nextCall->insertAfter(endOfStatement);
+      }
+
+      addMentionToEndOfStatement(node, endOfStatement);
+      return false;
+    }
+  }
 
   addMentionToEndOfStatement(node, NULL);
   return false;
@@ -2236,6 +2375,9 @@ static void normalizeTypeAlias(DefExpr* defExpr) {
     return;
   }
 
+  // all user variables are dead at end of block
+  var->addFlag(FLAG_DEAD_END_OF_BLOCK);
+
   std::vector<CallExpr*> initAssigns;
   // if there is no init expression, search for initialization
   // points written using '='
@@ -2256,6 +2398,8 @@ static void normalizeTypeAlias(DefExpr* defExpr) {
     emitTypeAliasInit(defExpr, var, init);
   } else {
     // handle split initialization for type aliases
+    var->addFlag(FLAG_SPLIT_INITED);
+
     for_vector(CallExpr, call, initAssigns) {
       SET_LINENO(call);
       // Consider the RHS of the '=' call to be the init expr.
@@ -2435,6 +2579,9 @@ static void normalizeVariableDefinition(DefExpr* defExpr) {
   bool requestedSplitInit = isSplitInitExpr(init);
   bool refVar = var->hasFlag(FLAG_REF_VAR);
 
+  // all user variables are dead at end of block
+  var->addFlag(FLAG_DEAD_END_OF_BLOCK);
+
   // For now, disable automatic split init on non-user code
   Expr* prevent = NULL;
   foundSplitInit = findInitPoints(defExpr, initAssigns, prevent, true);
@@ -2465,6 +2612,7 @@ static void normalizeVariableDefinition(DefExpr* defExpr) {
     }
   } else {
     // handle split initialization
+    var->addFlag(FLAG_SPLIT_INITED);
 
     // remove the init expression if present
     if (init != NULL)
@@ -2483,14 +2631,13 @@ static void normalizeVariableDefinition(DefExpr* defExpr) {
         tt->addFlag(FLAG_MAYBE_TYPE);
 
         DefExpr* def = new DefExpr(tt);
-        CallExpr* mv = new CallExpr(PRIM_MOVE, tt, defExpr->exprType->remove());
 
         // after the def, put
         //   declare type_tmp
         //   move type_tmp, type-expr
         //   PRIM_INIT_VAR_SPLIT_DECL var type_tmp
         defExpr->insertAfter(new CallExpr(PRIM_INIT_VAR_SPLIT_DECL, var, tt));
-        defExpr->insertAfter(mv);
+        emitTypeAliasInit(defExpr, tt, defExpr->exprType->remove());
         defExpr->insertAfter(def);
 
         typeTemp = tt;
@@ -2534,6 +2681,7 @@ static void errorIfSplitInitializationRequired(DefExpr* def, Expr* cur) {
   // or reduction variables
   if (def->sym->hasFlag(FLAG_TEMP) ||
       def->sym->hasFlag(FLAG_INDEX_VAR) ||
+      def->sym->hasFlag(FLAG_UNSAFE)    ||
       isShadowVarSymbol(def->sym))
     return;
 

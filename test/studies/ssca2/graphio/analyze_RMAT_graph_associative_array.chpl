@@ -98,7 +98,7 @@ proc  generate_and_analyze_associative_array_RMAT_graph_representation {
     }
 
     proc   n_Neighbors (v : index (vertices) )
-    {return Row (v).Row_Neighbors.numIndices;}
+    {return Row (v).Row_Neighbors.size;}
   }
 
   var G = new unmanaged Associative_Graph (vertex_domain);

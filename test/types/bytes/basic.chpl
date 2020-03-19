@@ -28,9 +28,9 @@ writeln();
 
 // TEST length and size queries
 writeln("Length/size tests");
-writeln(b_from_s.length, " must be ", s.numBytes);
-writeln(b_from_cs.length, " must be ", cs.length);
-writeln(b_from_c_ptr.length, " must be ", 3);
+writeln(b_from_s.size, " must be ", s.numBytes);
+writeln(b_from_cs.size, " must be ", cs.size);
+writeln(b_from_c_ptr.size, " must be ", 3);
 writeln(b_from_s.size, " must be ", s.numBytes);
 writeln(b_from_cs.size, " must be ", cs.size);
 writeln(b_from_c_ptr.size, " must be ", 3);
@@ -40,25 +40,25 @@ writeln();
 writeln("Accessor tests");
 
 writeln("Should return uint(8)");
-for i in 1..b_from_c_ptr.length {
+for i in 1..b_from_c_ptr.size {
   var val = b_from_c_ptr[i];
   writeln(val, " as ", val.type:string);
 }
 
 writeln("Should return uint(8)");
-for i in 1..b_from_c_ptr.length {
+for i in 1..b_from_c_ptr.size {
   var val = b_from_c_ptr[i:byteIndex];
   writeln(val, " as ", val.type:string);
 }
 
 writeln("Should return uint(8)");
-for i in 1..b_from_c_ptr.length {
+for i in 1..b_from_c_ptr.size {
   var val = b_from_c_ptr.byte(i);
   writeln(val, " as ", val.type:string);
 }
 
 writeln("Should return bytes");
-for i in 1..b_from_c_ptr.length {
+for i in 1..b_from_c_ptr.size {
   var val = b_from_c_ptr.item(i);
   writeln(val, " as ", val.type:string);
 }
@@ -132,7 +132,7 @@ writeln(b[1..4], " -- the type is ", b[1..4].type:string); // "this"
 writeln(b[..4], " -- the type is ", b[..4].type:string); // "this"
 writeln(b[6..], " -- the type is ", b[6..].type:string); // "is a bytes"
 writeln(b[..], " -- the type is ", b[..].type:string); // "this is a bytes"
-writeln(b[11..b.length], " -- the type is ", b[..].type:string); // "bytes"
+writeln(b[11..b.size], " -- the type is ", b[..].type:string); // "bytes"
 writeln();
 writeln(b[1:byteIndex..4:byteIndex],
         " -- the type is ", b[1..4].type:string); // "this"
@@ -141,7 +141,7 @@ writeln(b[..4:byteIndex],
 writeln(b[6:byteIndex..],
         " -- the type is ", b[6..].type:string); // "is a bytes"
 writeln(b[..], " -- the type is ", b[..].type:string); // "this is a bytes"
-writeln(b[11:byteIndex..b.length:byteIndex],
+writeln(b[11:byteIndex..b.size:byteIndex],
         " -- the type is ", b[..].type:string); // "bytes"
 writeln();
 

@@ -71,7 +71,7 @@ module ArrayViewReindex {
 
     // Don't want to privatize a DefaultRectangular, so pass the query on to
     // the wrapped array
-    proc dsiSupportsPrivatization() param
+    override proc dsiSupportsPrivatization() param
       return downDistInst.dsiSupportsPrivatization();
 
     proc dsiGetPrivatizeData() {
@@ -91,7 +91,7 @@ module ArrayViewReindex {
       //      _delete_dom(downdomInst, _isPrivatized(downdomInst));
     }
 
-    proc dsiIsLayout() param {
+    override proc dsiIsLayout() param {
       return downDistInst.dsiIsLayout();
     }
   }
@@ -283,7 +283,7 @@ module ArrayViewReindex {
       chpl_assignDomainWithGetSetIndices(this, rhs);
     }
 
-    proc isReindexDomainView() param {
+    override proc isReindexDomainView() param {
       return true;
     }
 
@@ -302,7 +302,7 @@ module ArrayViewReindex {
 
     // Don't want to privatize a DefaultRectangular, so pass the query on to
     // the wrapped array
-    proc dsiSupportsPrivatization() param
+    override proc dsiSupportsPrivatization() param
       return downdomInst.dsiSupportsPrivatization();
 
     proc dsiGetPrivatizeData() {
@@ -431,7 +431,7 @@ module ArrayViewReindex {
     // must be (or should be) some way to do it without relying on
     // methods like this...
     //
-    proc isReindexArrayView() param {
+    override proc isReindexArrayView() param {
       return true;
     }
 
@@ -578,7 +578,7 @@ module ArrayViewReindex {
 
     // Don't want to privatize a DefaultRectangular, so pass the query on to
     // the wrapped array
-    proc dsiSupportsPrivatization() param
+    override proc dsiSupportsPrivatization() param
       return _ArrInstance.dsiSupportsPrivatization();
 
     proc dsiGetPrivatizeData() {
@@ -676,7 +676,7 @@ module ArrayViewReindex {
       }
     }
 
-    proc doiCanBulkTransferRankChange() param
+    override proc doiCanBulkTransferRankChange() param
       return arr.doiCanBulkTransferRankChange();
 
     proc doiBulkTransferFromKnown(destDom, srcClass, srcDom) : bool {

@@ -13,11 +13,12 @@ def get_uniq_cfg_path():
 
 @memoize
 def get_link_args():
+    # Qthreads may call back to the runtime, so re-search libchpl after.
     link_args = \
         third_party_utils.default_get_link_args('qthread',
                                                 ucp=get_uniq_cfg_path(),
-                                                libs=['-lchpl',
-                                                      'libqthread.la'])
+                                                libs=['libqthread.la',
+                                                      '-lchpl'])
     compiler_val = chpl_compiler.get('target')
     if compiler_val == 'cray-prgenv-cray':
         link_args.append('-lrt')

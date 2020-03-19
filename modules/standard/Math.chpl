@@ -47,7 +47,7 @@ exception will be generated.
 
 */
 module Math {
-  private use HaltWrappers only;
+  import HaltWrappers;
   private use SysCTypes;
 
   //////////////////////////////////////////////////////////////////////////

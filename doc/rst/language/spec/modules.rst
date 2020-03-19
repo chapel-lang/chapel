@@ -447,8 +447,8 @@ deinitialization:
 -  If the module contains a deinitializer, which is a module-scope
    function named ``deinit()``, it is executed first.
 
--  If the module declares global variables, they are deinitialized in
-   the reverse declaration order.
+-  If the module declares module-scope variables, they are deinitialized in
+   the reverse order of their declaration.
 
 Module deinitialization order is discussed
 in :ref:`Module_Deinitialization_Order`.

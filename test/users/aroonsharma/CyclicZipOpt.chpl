@@ -56,10 +56,10 @@ class CyclicZipOpt: BaseDist {
     if isTuple(startIdx) then tupleStartIdx = startIdx;
                          else tupleStartIdx(1) = startIdx;
     if rank == 1  {
-      targetLocDom = {0..#targetLocales.numElements};
+      targetLocDom = {0..#targetLocales.size};
       targetLocs = targetLocales;
     } else if targetLocales.rank == 1 {
-      const factors = _factor(rank, targetLocales.numElements);
+      const factors = _factor(rank, targetLocales.size);
       var ranges: rank*range;
       for param i in 1..rank {
         ranges(i) = 0..#factors(i);
@@ -74,14 +74,14 @@ class CyclicZipOpt: BaseDist {
       var ranges: rank*range;
       for param i in 1..rank do {
         var thisRange = targetLocales.domain.dim(i);
-        ranges(i) = 0..#thisRange.length; 
+        ranges(i) = 0..#thisRange.size; 
       }
       targetLocDom = {(...ranges)};
       targetLocs = reshape(targetLocales, targetLocDom);
     }
 
     for param i in 1..rank do
-      this.startIdx(i) = chpl__mod(tupleStartIdx(i), targetLocDom.dim(i).length);
+      this.startIdx(i) = chpl__mod(tupleStartIdx(i), targetLocDom.dim(i).size);
 
     // NOTE: When these knobs stop using the global defaults, we will need
     // to add checks to make sure dataParTasksPerLocale<0 and
@@ -138,7 +138,7 @@ proc CyclicZipOpt.getChunk(inds, locid) {
   else
     for param i in 1..rank do locidtup(i) = locid(i):idxType;
   for param i in 1..rank {
-    var distStride = targetLocDom.dim(i).length:chpl__signedType(idxType);
+    var distStride = targetLocDom.dim(i).size:chpl__signedType(idxType);
     var offset = chpl__diffMod(startIdx(i) + locidtup(i), inds.dim(i).low, distStride);
     sliceBy(i) = inds.dim(i).low + offset..inds.dim(i).high by distStride;
     // remove alignment
@@ -264,7 +264,7 @@ proc CyclicZipOpt.dsiCreateRankChangeDist(param newRank: int, args) {
   return new CyclicZipOpt(rank=newRank, idxType=idxType, startIdx=newLow, targetLocales=newTargetLocales);
 }
 
-proc CyclicZipOpt.writeThis(x: Writer) {
+proc CyclicZipOpt.writeThis(x: Writer) throws {
   x.writeln(this.type:string);
   x.writeln("------");
   for locid in targetLocDom do
@@ -272,7 +272,7 @@ proc CyclicZipOpt.writeThis(x: Writer) {
 }
 
 proc CyclicZipOpt.targetLocsIdx(i: idxType) {
-  const numLocs:idxType = targetLocDom.numIndices:idxType;
+  const numLocs:idxType = targetLocDom.size:idxType;
   // this is wrong if i is less than startIdx
   //return ((i - startIdx(1)) % numLocs):int;
   // this works even if i is less than startIdx
@@ -282,7 +282,7 @@ proc CyclicZipOpt.targetLocsIdx(i: idxType) {
 proc CyclicZipOpt.targetLocsIdx(ind: rank*idxType) {
   var x: rank*int;
   for param i in 1..rank {
-    var dimLen = targetLocDom.dim(i).length;
+    var dimLen = targetLocDom.dim(i).size;
     //x(i) = ((ind(i) - startIdx(i)) % dimLen):int;
     x(i) = chpl__diffMod(ind(i), startIdx(i), dimLen):int;
   }
@@ -322,10 +322,10 @@ class LocCyclicZipOpt {
     type strType = chpl__signedType(idxType);
     // NOTE: Not checking for overflow here when casting to strType
     for param i in 1..rank {
-      const lower = min(idxType)..(startIdx(i)+locidx(i)) by -dist.targetLocDom.dim(i).length:strType;
-      const upper = (startIdx(i) + locidx(i))..max(idxType) by dist.targetLocDom.dim(i).length:strType;
+      const lower = min(idxType)..(startIdx(i)+locidx(i)) by -dist.targetLocDom.dim(i).size:strType;
+      const upper = (startIdx(i) + locidx(i))..max(idxType) by dist.targetLocDom.dim(i).size:strType;
       const lo = lower.last, hi = upper.last;
-      inds(i) = lo..hi by dist.targetLocDom.dim(i).length:strType;
+      inds(i) = lo..hi by dist.targetLocDom.dim(i).size:strType;
     }
     myChunk = {(...inds)};
   }
@@ -422,7 +422,7 @@ proc CyclicZipOptDom.dsiSerialWrite(x: Writer) {
   }
 }
 
-proc CyclicZipOptDom.dsiNumIndices return whole.numIndices;
+proc CyclicZipOptDom.dsiNumIndices return whole.size;
 
 iter CyclicZipOptDom.these() {
   for i in whole do
@@ -1052,7 +1052,7 @@ class LocCyclicZipOptRADCache /* : LocRADCache */ {
   proc LocCyclicZipOptRADCache(param rank: int, type idxType, startIdx, targetLocDom) {
     for param i in 1..rank do
       // NOTE: Not bothering to check to see if length can fit into idxType
-      targetLocDomDimLength(i) = targetLocDom.dim(i).length:idxType;
+      targetLocDomDimLength(i) = targetLocDom.dim(i).size:idxType;
   }
 }
 
@@ -1080,7 +1080,7 @@ proc CyclicZipOptArr.doiBulkTransferTo(Barg)
     on B.dom.dist.targetLocs(i)
       {
         var regionA = B.dom.locDoms(i).myBlock;
-        if regionA.numIndices>0
+        if regionA.size>0
         {
           const ini=bulkCommConvertCoordinate(regionA.first, B, A);
           const end=bulkCommConvertCoordinate(regionA.last, B, A);
@@ -1093,8 +1093,8 @@ proc CyclicZipOptArr.doiBulkTransferTo(Barg)
           for param t in 1..rank
           {
             r1[t] = (ini[t]:el..end[t]:el by sb[t]:el);
-            if r1[t].length != r2[t].length then
-              r1[t] = (ini[t]:el..end[t]:el by (end[t] - ini[t]):el/(r2[t].length-1));
+            if r1[t].size != r2[t].size then
+              r1[t] = (ini[t]:el..end[t]:el by (end[t] - ini[t]):el/(r2[t].size-1));
           }
         
           if debugCyclicZipOptDistBulkTransfer then
@@ -1119,7 +1119,7 @@ proc CyclicZipOptArr.doiBulkTransferFrom(Barg)
     on A.dom.dist.targetLocs(i)
     { 
       var regionA = A.dom.locDoms(i).myBlock;    
-      if regionA.numIndices>0
+      if regionA.size>0
       {
         const ini=bulkCommConvertCoordinate(regionA.first, A, B);
         const end=bulkCommConvertCoordinate(regionA.last, A, B);
@@ -1132,8 +1132,8 @@ proc CyclicZipOptArr.doiBulkTransferFrom(Barg)
         for param t in 1..rank
         {
           r1[t] = (ini[t]:el..end[t]:el by sb[t]:el);
-          if r1[t].length != r2[t].length then
-            r1[t] = (ini[t]:el..end[t]:el by (end[t] - ini[t]):el/(r2[t].length-1));
+          if r1[t].size != r2[t].size then
+            r1[t] = (ini[t]:el..end[t]:el by (end[t] - ini[t]):el/(r2[t].size-1));
         }
        
         if debugCyclicZipOptDistBulkTransfer then
@@ -1157,7 +1157,7 @@ proc CyclicZipOptArr.doiBulkTransferToDR(Barg)
     on A.dom.dist.targetLocs(j)
     {
       const inters=A.dom.locDoms(j).myBlock;
-      if(inters.numIndices>0)
+      if(inters.size>0)
       {
         const ini=bulkCommConvertCoordinate(inters.first, A, B);
         const end=bulkCommConvertCoordinate(inters.last, A, B);
@@ -1172,8 +1172,8 @@ proc CyclicZipOptArr.doiBulkTransferToDR(Barg)
         for param t in 1..rank
         {
           r1[t] = (ini[t]:el..end[t]:el by sa[t]:el);
-          if r1[t].length != r2[t].length then
-            r1[t] = (ini[t]:el..end[t]:el by (end[t] - ini[t]):el/(r2[t].length-1));
+          if r1[t].size != r2[t].size then
+            r1[t] = (ini[t]:el..end[t]:el by (end[t] - ini[t]):el/(r2[t].size-1));
         }
             
         const d ={(...r1)};
@@ -1204,7 +1204,7 @@ proc CyclicZipOptArr.doiBulkTransferFromDR(Barg)
     on A.dom.dist.targetLocs(j)
     {
       const inters=A.dom.locDoms(j).myBlock;
-      if(inters.numIndices>0)
+      if(inters.size>0)
       {
         const ini=bulkCommConvertCoordinate(inters.first, A, B);
         const end=bulkCommConvertCoordinate(inters.last, A, B);
@@ -1217,8 +1217,8 @@ proc CyclicZipOptArr.doiBulkTransferFromDR(Barg)
         for param t in 1..rank
         {
           r1[t] = (ini[t]:el..end[t]:el by sb[t]:el);
-          if r1[t].length != r2[t].length then
-            r1[t] = (ini[t]:el..end[t]:el by (end[t] - ini[t]):el/(r2[t].length-1));
+          if r1[t].size != r2[t].size then
+            r1[t] = (ini[t]:el..end[t]:el by (end[t] - ini[t]):el/(r2[t].size-1));
         }
         
         if debugCyclicZipOptDistBulkTransfer then

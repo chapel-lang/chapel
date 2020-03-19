@@ -65,7 +65,7 @@ module LocaleModel {
     }
 
     proc init(_sid, _parent) {
-      super.init(_parent);
+      super.init(new locale(_parent));
       sid = _sid;
       name = _parent.chpl_name() + "-CPU" + sid:string;
     }
@@ -83,7 +83,10 @@ module LocaleModel {
     proc addChild(loc:locale) {
       halt("Cannot add children to this locale type.");
     }
-    override proc getChild(idx:int) : locale { return nil; }
+    override proc getChild(idx:int) : locale {
+      halt("requesting a child from a CPULocale locale");
+      return new locale(this);
+    }
   }
 
   class GPULocale : AbstractLocaleModel {
@@ -109,7 +112,7 @@ module LocaleModel {
 
 
     proc init(_sid, _parent) {
-      super.init(_parent);
+      super.init(new locale(_parent));
       sid = _sid;
       name = _parent.chpl_name() + "-GPU" + sid:string;
     }
@@ -127,10 +130,14 @@ module LocaleModel {
     proc addChild(loc:locale) {
       halt("Cannot add children to this locale type.");
     }
-    override proc getChild(idx:int) : locale { return nil; }
+    override proc getChild(idx:int) : locale {
+      halt("requesting a child from a GPULocale locale");
+      return new locale(this);
+    }
   }
 
   const chpl_emptyLocaleSpace: domain(1) = {1..0};
+  pragma "unsafe"
   const chpl_emptyLocales: [chpl_emptyLocaleSpace] locale;
 
   //
@@ -141,15 +148,15 @@ module LocaleModel {
     var local_name : string; // should never be modified after first assignment
 
     var numSublocales: int; // should never be modified after first assignment
-    var GPU: GPULocale;
-    var CPU: CPULocale;
+    var GPU: unmanaged GPULocale?;
+    var CPU: unmanaged CPULocale?;
 
     // This constructor must be invoked "on" the node
     // that it is intended to represent.  This trick is used
     // to establish the equivalence the "locale" field of the locale object
     // and the node ID portion of any wide pointer referring to it.
     proc init() {
-      if doneCreatingLocales {
+      if rootLocaleInitialized {
         halt("Cannot create additional LocaleModel instances");
       }
       _node_id = chpl_nodeID: int;
@@ -160,7 +167,7 @@ module LocaleModel {
     }
 
     proc init(parent_loc : locale) {
-      if doneCreatingLocales {
+      if rootLocaleInitialized {
         halt("Cannot create additional LocaleModel instances");
       }
       super.init(parent_loc);
@@ -192,9 +199,9 @@ module LocaleModel {
 
     override proc getChild(idx:int) : locale {
       if idx == 1
-        then return GPU;
+        then return new locale(GPU!);
       else
-        return CPU;
+        return new locale(CPU!);
     }
 
     iter getChildren() : locale  {
@@ -240,10 +247,11 @@ module LocaleModel {
   class RootLocale : AbstractRootLocale {
 
     const myLocaleSpace: domain(1) = {0..numLocales-1};
+    pragma "unsafe"
     var myLocales: [myLocaleSpace] locale;
 
     proc init() {
-      super.init(nil);
+      super.init(nilLocale);
       nPUsPhysAcc = 0;
       nPUsPhysAll = 0;
       nPUsLogAcc = 0;
@@ -273,7 +281,7 @@ module LocaleModel {
       f <~> name;
     }
 
-    override proc getChildCount() return this.myLocaleSpace.numIndices;
+    override proc getChildCount() return this.myLocaleSpace.size;
 
     proc getChildSpace() return this.myLocaleSpace;
 
@@ -305,7 +313,6 @@ module LocaleModel {
       for loc in myLocales {
         on loc {
           rootLocaleInitialized = false;
-          delete _to_unmanaged(loc);
         }
       }
     }

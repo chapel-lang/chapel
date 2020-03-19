@@ -239,7 +239,8 @@ directly.
    variable ``r`` is a record and has value semantics. It exists on
    ``Locales(1)`` even though it is assigned a value on a remote locale.
 
-Global (non-distributed) constants are replicated across all locales.
+Module-scope constants that are not distributed in nature are
+replicated across all locales.
 
    *Example*.
 

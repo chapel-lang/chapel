@@ -145,6 +145,9 @@ static bool isVirtualChild(FnSymbol* child, FnSymbol* parent);
 static bool isSubType(Type* sub, Type* super);
 
 static bool isOverrideableMethod(FnSymbol* fn);
+static bool isVirtualizableMethod(FnSymbol* fn);
+
+static AggregateType* getReceiverClassType(FnSymbol* fn);
 
 // Returns true if the maps are "stable" i.e. set of types is unchanged
 static bool buildVirtualMaps() {
@@ -154,7 +157,7 @@ static bool buildVirtualMaps() {
     if (AggregateType* at = fn->getReceiver()) {
       if (at->isClass() == true) {
         if (at->isGeneric() == false) {
-          if (fn->isResolved() && isOverrideableMethod(fn)) {
+          if (fn->isResolved() && isVirtualizableMethod(fn)) {
             addAllToVirtualMaps(fn, at);
           }
         }
@@ -192,7 +195,7 @@ static FnSymbol* getInstantiatedFunction(FnSymbol* pfn,
                                          AggregateType* ct,
                                          FnSymbol* cfn) {
   ArgSymbol*     _this   = cfn->getFormal(2);
-  AggregateType* _thisAt = toAggregateType(_this->type);
+  AggregateType* _thisAt = getReceiverClassType(cfn);
   SymbolMap      subs;
 
   if (_thisAt->isGeneric() == true) {
@@ -309,8 +312,6 @@ static bool checkOverrides(FnSymbol* fn) {
           // (2) the function is in the modules/ hierarchy
           //     (which we manage and want to keep clean)
           (parentMod && parentMod->modTag != MOD_USER)) &&
-          // No override checking for type methods.
-         fn->thisTag != INTENT_TYPE &&
          !fn->hasFlag(FLAG_DEFAULT_ACTUAL_FUNCTION) ;
 }
 
@@ -527,19 +528,23 @@ static bool isSubType(Type* sub, Type* super) {
 }
 
 static bool isOverrideableMethod(FnSymbol* fn) {
-  AggregateType* receiver = fn->getReceiver();
-  if (receiver)
-    if (AggregateType* ct = toAggregateType(receiver->getValType()))
-      if (isClass(ct))
-        return fn->name != astrInit &&
-               !fn->hasFlag(FLAG_WRAPPER) &&
-               !fn->hasFlag(FLAG_NO_PARENS) &&
-                fn->retTag != RET_PARAM &&
-                fn->retTag != RET_TYPE;
+  if (AggregateType* at = getReceiverClassType(fn)) {
+    INT_ASSERT(at->isClass());
+
+    return fn->name != astrInit &&
+           !fn->hasFlag(FLAG_WRAPPER) &&
+           !fn->hasFlag(FLAG_NO_PARENS);
+  }
 
   return false;
 }
 
+static bool isVirtualizableMethod(FnSymbol *fn) {
+  return isOverrideableMethod(fn) &&
+         !fn->isTypeMethod() &&
+         fn->retTag != RET_PARAM &&
+         fn->retTag != RET_TYPE;
+}
 
 static void virtualDispatchUpdate(FnSymbol* pfn, FnSymbol* cfn) {
   cfn->addFlag(FLAG_VIRTUAL);
@@ -875,11 +880,24 @@ static void filterVirtualChildren() {
 typedef std::map<const char*, std::vector<FnSymbol*> > NameToFns;
 typedef std::map<AggregateType*, NameToFns > TypeToNameToFns;
 
+static AggregateType* getReceiverClassType(FnSymbol* fn) {
+  if (fn->isMethod() && fn->_this != NULL) {
+    if (Type* cct = canonicalClassType(fn->_this->getValType())) {
+      if (AggregateType* at = toAggregateType(cct)) {
+        if (at->isClass()) {
+          return at;
+        }
+      }
+    }
+  }
+
+  return NULL;
+}
+
 static void findFunctionsProbablyMatching(TypeToNameToFns & map,
                                           FnSymbol* theFn,
                                           AggregateType* ct,
                                           std::vector<FnSymbol*> & matches) {
-
   // Find sub-map
   if (map.count(ct) &&
       map[ct].count(theFn->name)) {
@@ -887,12 +905,14 @@ static void findFunctionsProbablyMatching(TypeToNameToFns & map,
 
     // Find functions probably matching here
     for_vector(FnSymbol, fn, fns) {
-      if (possibleSignatureMatch(theFn, fn))
+      if (possibleSignatureMatch(theFn, fn)) {
         matches.push_back(fn);
+      }
     }
   }
 
   // Check parent types
+  // TODO: Should we skip "object" for type method?
   forv_Vec(AggregateType, pt, ct->dispatchParents) {
     findFunctionsProbablyMatching(map, theFn, pt, matches);
   }
@@ -901,6 +921,7 @@ static void findFunctionsProbablyMatching(TypeToNameToFns & map,
 // methods on iterator class -> the iterator defining them
 static FnSymbol* getOverrideCandidate(FnSymbol* fn) {
   FnSymbol* ret = fn;
+
   if (fn->_this && fn->hasFlag(FLAG_AUTO_II)) {
     // e.g. zip, advance, ...
     if (AggregateType* iteratorClass = toAggregateType(fn->_this->getValType()))
@@ -908,11 +929,22 @@ static FnSymbol* getOverrideCandidate(FnSymbol* fn) {
         ret = getTheIteratorFn(iteratorClass);
   }
 
-  // Check that ret has a class _this
-  if (ret->_this)
-    if (AggregateType* at = toAggregateType(ret->_this->getValType()))
-      if (at->isClass())
-        return ret;
+  //
+  // TODO: Merging these code paths triggers weird forwaring errors for
+  // OwnedObject code. Might be because we discard "owned" in places
+  // we should not?
+  //
+  if (fn->isTypeMethod()) {
+    if (AggregateType* at = getReceiverClassType(ret)) {
+      INT_ASSERT(at->isClass());
+      return ret;
+    }
+  } else {
+    if (ret->_this)
+      if (AggregateType* at = toAggregateType(ret->_this->getValType()))
+        if (at->isClass())
+          return ret;
+  }
 
   // otherwise, not a candidate.
   return NULL;
@@ -935,20 +967,29 @@ static void checkMethodsOverride() {
 
   std::set<FnSymbol*> erroredFunctions;
 
-  // populate the map
+  // Populate the map with potential override candidates.
   forv_Vec(FnSymbol, aFn, gFnSymbols) {
-    if (FnSymbol* fn = getOverrideCandidate(aFn))
-      if (checkOverrides(fn))
-        if (AggregateType* ct = toAggregateType(fn->_this->getValType()))
-          if (isOverrideableMethod(fn))
+    if (FnSymbol* fn = getOverrideCandidate(aFn)) {
+      if (checkOverrides(fn)) {
+        if (AggregateType* ct = getReceiverClassType(fn)) {
+          if (isOverrideableMethod(fn)) {
             map[ct][fn->name].push_back(fn);
+          }
+        }
+      }
+    }
   }
 
   // now check each function
   forv_Vec(FnSymbol, aFn, gFnSymbols) {
     // output error for overriding for non-class methods
     if (aFn->hasFlag(FLAG_OVERRIDE)) {
-      Type* thisType = aFn->_this->getValType();
+
+      //
+      // Type methods may have managed receiver types, which would normally
+      // not be recognized as a class.
+      //
+      Type* thisType = canonicalClassType(aFn->_this->getValType());
       if (!isClass(thisType)) {
         const char* type = "non-class";
         if (isRecord(thisType))
@@ -970,21 +1011,17 @@ static void checkMethodsOverride() {
           // ignore duplicate errors
           erroredFunctions.count(fn) == 0) {
 
-        AggregateType* ct = toAggregateType(fn->_this->getValType());
+        AggregateType* ct = getReceiverClassType(fn);
         INT_ASSERT(ct && ct->isClass());
-
 
         // Do some initial basic checking
         if (fn->hasFlag(FLAG_OVERRIDE)) {
           const char* msg = NULL;
+
           if (fn->hasFlag(FLAG_NO_PARENS))
             msg = "parentheses-less methods cannot override";
-          else if (fn->retTag == RET_PARAM)
-             msg = "param return methods cannot override";
-          else if (fn->retTag == RET_TYPE)
-             msg = "type return methods cannot override";
           else if (!isOverrideableMethod(fn))
-             msg = "signature is not overrideable";
+            msg = "signature is not overrideable";
 
           if (msg != NULL) {
             FnSymbol* eFn = getOverrideCandidateGenericFn(fn);
@@ -1131,7 +1168,6 @@ static void checkMethodsOverride() {
     }
   }
 }
-
 
 /************************************* | **************************************
 *                                                                             *

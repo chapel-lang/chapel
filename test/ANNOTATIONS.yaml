@@ -422,9 +422,11 @@ all:
       config: 16 node XC
   02/28/20:
     - Add a spinlock to the atomic runtime interface. (#15015)
+  03/05/20:
+    - Allow bulk transfer of some wide pointer arrays (#15049)
 
 
-AllCompTime:
+AllCompTime: &timecomp-base
   11/09/14:
     - disable the task table by default
   01/17/16:
@@ -437,14 +439,31 @@ AllCompTime:
     - Fix parse slowdown (#5257)
   02/07/17:
     - Loop over Defs and Uses with SymbolSymExprs (#5285)
+  05/16/18:
+    - Faster 'fixStringLiteralInit' implementation (#9506)
   05/23/18:
     - Fix problems with tuples (#9572)
   06/01/18:
     - Represent if-expressions with IfExpr node instead of if-functions (#9649)
+  07/10/18:
+    - use isSubtype in preference to ':' in where clauses (#10143)
+    - Refactor codegenPrimitive, add limit to denormalize (#10187)
+  07/14/18:
+    - Improve the speed of codegenPrimitive (#10321)
   10/05/18:
     - Compiler error for dereferencing a nil value (#11238)
   10/19/18:
     - Fix compiler performance issues in nilChecking (#11396)
+  08/30/19:
+    - Add factory functions for string and bytes (#13914)
+  11/05/19:
+    - Remove standardModuleSet and all code involving it from the compiler (#14270)
+  11/20/19:
+    - Simplify visible function determination of use visibility (#14481)
+  02/19/20:
+    - Improve handling for tryResolve and errors to handle a bad init= (#14887)
+  03/03/20:
+    - Remove calls to getUserInstantiationPoint (#15051)
 
 arguments:
   09/20/17:
@@ -569,31 +588,8 @@ CoMD-elegant-aos:
   06/12/18:
     - Convert blocking calls in Spawn module to yielding non-blocking loops (#9507)
 
-compSampler-timecomp: &timecomp-base
-  09/09/16:
-    - disable function resolution optimization (#4476)
-  09/14/16:
-    - re-enable function resolution optimization (#4517)
-  05/16/18:
-    - Faster 'fixStringLiteralInit' implementation (#9506)
-  05/23/18:
-    - Fix problems with tuples (#9572)
-  07/10/18:
-    - use isSubtype in preference to ':' in where clauses (#10143)
-    - Refactor codegenPrimitive, add limit to denormalize (#10187)
-  07/14/18:
-    - Improve the speed of codegenPrimitive (#10321)
-  10/19/18:
-    - Fix compiler performance issues in nilChecking (#11396)
-  08/30/19:
-    - Add factory functions for string and bytes (#13914)
-  11/05/19:
-    - Remove standardModuleSet and all code involving it from the compiler (#14270)
-  11/20/19:
-    - Simplify visible function determination of use visibility (#14481)
-  02/19/20:
-    - Improve handling for tryResolve and errors to handle a bad init= (#14887)
-
+compSampler-timecomp:
+  <<: *timecomp-base
 
 cg:
   09/20/16:
@@ -604,7 +600,6 @@ cg:
 cg-a:
   04/05/18:
     - Convert BaseDist-inheriting classes to use initializers (#9075)
-
 
 cg-sparse-timecomp:
   <<: *timecomp-base
@@ -769,6 +764,8 @@ fastaredux:
 fft:
   05/15/19:
     - Optimize all gets out of each Cyclic forall loop / leverage DR iterators (#13020)
+  03/05/20:
+    - Use simpler rule for deinit point (#15041)
 
 fft-timecomp:
   <<: *timecomp-base
@@ -1358,6 +1355,8 @@ prk-stencil.ml-perf:
     - Update PR 5296 (#6722)
   12/02/17:
     - Stop doing a task-yield while forking remote tasks under ugni (#7915)
+  01/31/20:
+    - Fix timeout identification for Cray-CS testing (#14838)
 
 prk-stencil-time:
   05/11/17:
@@ -1741,6 +1740,10 @@ compilerAndTestingStats: &compiler-perf-base
     - Switched test machine for --fast and --no-local
   12/13/19:
     - Switched test machine for --no-local
+  02/19/20:
+    - Improve handling for tryResolve and errors to handle a bad init= (#14887)
+  03/03/20:
+    - Remove calls to getUserInstantiationPoint (#15051)
 
 allTotalTime:
   <<: *compiler-perf-base

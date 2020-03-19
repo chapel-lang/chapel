@@ -49,7 +49,7 @@ proc calculate(data : string, size : int) {
   // Create a lock and release it.
   var lock$ : sync bool = true;
 
-  const high = data.length - size + 1;
+  const high = data.size - size + 1;
 
   coforall tid in 1..here.maxTaskPar with (ref freqs) {
     var privMap = new map(uint, int);
@@ -86,7 +86,7 @@ proc write_frequencies(data : string, size : int) {
   // sort will sort starting at the tuple's first element.
   sort(sorted, comparator=reverseComparator);
 
-  const sum = data.length - size;
+  const sum = data.size - size;
   for (f, e) in sorted do
     writef("%s %.3dr\n", decode(e, size), (100.0 * f) / sum);
 }

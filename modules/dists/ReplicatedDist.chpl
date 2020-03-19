@@ -111,7 +111,7 @@ class Replicated : BaseDist {
   var targetLocDom : domain(here.id.type);
 
   // the desired locales (an array of locales)
-  const targetLocales : [targetLocDom] locale?;
+  const targetLocales : [targetLocDom] locale;
 }
 
 
@@ -145,7 +145,7 @@ override proc Replicated.dsiDestroyDist() {
 
 // privatization
 
-proc Replicated.dsiSupportsPrivatization() param return true;
+override proc Replicated.dsiSupportsPrivatization() param return true;
 
 proc Replicated.dsiGetPrivatizeData() {
   if traceReplicatedDist then writeln("Replicated.dsiGetPrivatizeData");
@@ -163,10 +163,10 @@ proc Replicated.dsiPrivatize(privatizeData)
 
   // make private copy of targetLocales and its domain
   const privDom = otherTargetLocales.domain;
-  const privTargetLocales: [privDom] locale? = otherTargetLocales;
+  const privTargetLocales: [privDom] locale = otherTargetLocales;
  
   const nonNilWrapper: [0..#privTargetLocales.size] locale =
-    for loc in otherTargetLocales do loc!; 
+    for loc in otherTargetLocales do loc; 
 
   return new unmanaged Replicated(nonNilWrapper, "used during privatization");
 }
@@ -191,7 +191,7 @@ class ReplicatedDom : BaseRectangularDom {
   // NOTE: if they ever change after the initializer - Reprivatize them
   var localDoms: [dist.targetLocDom] unmanaged LocReplicatedDom(rank, idxType, stridable)?;
 
-  proc numReplicands return localDoms.numElements;
+  proc numReplicands return localDoms.size;
 
   //
   // helper function to get the local domain safely
@@ -240,7 +240,7 @@ override proc ReplicatedDom.dsiMyDist() return dist;
 
 // privatization
 
-proc ReplicatedDom.dsiSupportsPrivatization() param return true;
+override proc ReplicatedDom.dsiSupportsPrivatization() param return true;
 
 record ReplicatedDomPrvData {
   var distpid;
@@ -280,7 +280,7 @@ proc ReplicatedDom.dsiReprivatize(other, reprivatizeData): void {
 proc Replicated.dsiClone(): _to_unmanaged(this.type) {
   if traceReplicatedDist then writeln("Replicated.dsiClone");
   var nonNilWrapper: [0..#targetLocales.size] locale =
-    for loc in targetLocales do loc!;
+    for loc in targetLocales do loc;
   return new unmanaged Replicated(nonNilWrapper);
 }
 
@@ -396,7 +396,7 @@ proc ReplicatedDom.dsiAlignment
 
 // here replication is visible
 proc ReplicatedDom.dsiNumIndices
-  return redirectee().numIndices;
+  return redirectee().size;
 
 proc ReplicatedDom.dsiMember(indexx)
   return redirectee().contains(indexx);
@@ -469,6 +469,7 @@ class LocReplicatedArr {
   param stridable: bool;
 
   var myDom: unmanaged LocReplicatedDom(rank, idxType, stridable);
+  pragma "local field" pragma "unsafe" // initialized separately
   var arrLocalRep: [myDom.domLocalRep] eltType;
 }
 
@@ -501,7 +502,7 @@ override proc ReplicatedArr.dsiGetBaseDom() return dom;
 
 // privatization
 
-proc ReplicatedArr.dsiSupportsPrivatization() param return true;
+override proc ReplicatedArr.dsiSupportsPrivatization() param return true;
 
 record ReplicatedArrPrvData {
   var dompid;
@@ -549,11 +550,11 @@ proc ReplicatedArr.dsiBoundsCheck(indexx) {
 
 // Write the array out to the given Writer serially.
 proc ReplicatedArr.dsiSerialWrite(f): void {
-  localArrs[f.readWriteThisFromLocale()!.id]!.arrLocalRep._value.dsiSerialWrite(f);
+  localArrs[f.readWriteThisFromLocale().id]!.arrLocalRep._value.dsiSerialWrite(f);
 }
 
 proc ReplicatedArr.dsiSerialRead(f, loc): void {
-  localArrs[f.readWriteThisFromLocale()!.id]!.arrLocalRep._value.dsiSerialRead(f);
+  localArrs[f.readWriteThisFromLocale().id]!.arrLocalRep._value.dsiSerialRead(f);
 }
 
 proc isReplicatedArr(arr) param {

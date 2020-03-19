@@ -707,9 +707,6 @@ static bool isStableClassType(Type* t) {
   TypeSymbol* ts = t->symbol;
 
   if (isClass(t)) {
-    // Always consider locale type unmanaged
-    if (ts->type == dtLocale)
-      ok = true;
     // Always consider ddata type unmanaged
     if (ts->hasFlag(FLAG_DATA_CLASS))
       ok = true;
@@ -1408,6 +1405,11 @@ static void resolveModuleCall(CallExpr* call) {
         // First, try regular scope resolution
         Symbol* sym = scope->lookupNameLocally(mbrName);
 
+        // Then, try public import statements in the module
+        if (!sym) {
+          sym = scope->lookupPublicImports(mbrName);
+        }
+
         // Adjust class types to undecorated
         if (sym && isClass(sym->type)) {
           // Switch to the CLASS_TYPE_GENERIC_NONNIL decorated class type.
@@ -1902,11 +1904,25 @@ static bool lookupThisScopeAndUses(const char*           name,
                 }
               }
             }
-
-          } else if (!isImportStmt(stmt)) {
-            // break on each new depth if a symbol has been found, but don't
-            // traverse import statements at this stage, we need to only look
-            // for explicitly named symbols
+          } else if (ImportStmt* import = toImportStmt(stmt)) {
+            // Only traverse import statements that define a symbol with this
+            // name for unqualified access.  We're only looking for explicitly
+            // named symbols
+            if (import->skipSymbolSearch(name) == false) {
+              BaseAST* scopeToUse = import->getSearchScope();
+              if (Symbol* sym = inSymbolTable(name, scopeToUse)) {
+                if (sym->hasFlag(FLAG_PRIVATE) == true) {
+                  if (sym->isVisible(context) == true &&
+                      isRepeat(sym, symbols)  == false) {
+                    symbols.push_back(sym);
+                  }
+                } else if (isRepeat(sym, symbols) == false) {
+                  symbols.push_back(sym);
+                }
+              }
+            }
+          } else {
+            // break on each new depth if a symbol has been found
             if (symbols.size() > 0) {
               break;
             }
@@ -1939,11 +1955,14 @@ static bool lookupThisScopeAndUses(const char*           name,
           // symbols that they define.
           forv_Vec(VisibilityStmt, stmt, *moduleUses) {
             if (stmt != NULL) {
-              if (Symbol* modSym = stmt->checkIfModuleNameMatches(name)) {
-                if (isRepeat(modSym, symbols) == false) {
-                  symbols.push_back(modSym);
-                  if (storeRenames && stmt->isARename()) {
-                    renameLocs[modSym] = &stmt->astloc;
+              if (!isImportStmt(stmt) ||
+                  toImportStmt(stmt)->providesQualifiedAccess()) {
+                if (Symbol* modSym = stmt->checkIfModuleNameMatches(name)) {
+                  if (isRepeat(modSym, symbols) == false) {
+                    symbols.push_back(modSym);
+                    if (storeRenames && stmt->isARename()) {
+                      renameLocs[modSym] = &stmt->astloc;
+                    }
                   }
                 }
               }
@@ -2164,7 +2183,8 @@ static void buildBreadthFirstModuleList(
                 SymExpr* importSE = toSymExpr(import->src);
                 INT_ASSERT(importSE);
 
-                if (!importSE->symbol()->hasFlag(FLAG_PRIVATE)) {
+                if (!import->isPrivate &&
+                    !importSE->symbol()->hasFlag(FLAG_PRIVATE)) {
                   // Imports of private modules are not transitive - the
                   // symbols in the private modules are only visible to itself
                   // and its immediate parent.  Therefore, if the symbol is
@@ -2174,7 +2194,13 @@ static void buildBreadthFirstModuleList(
                     next.add(import);
                     modules->add(import);
                   }
-                } else {
+                } else if (!import->isPrivate &&
+                           importSE->symbol()->hasFlag(FLAG_PRIVATE)) {
+                  // If we're skipping because the import was public, but the
+                  // module was private, then we shouldn't look at the module
+                  // again and should add it to the alreadySeen map.  Otherwise
+                  // there might be a later import or use that is public, so
+                  // we should allow it to be found
                   (*alreadySeen)[importSE->symbol()].push_back(import);
                 }
               } else {
@@ -2244,13 +2270,27 @@ static bool skipUse(std::map<Symbol*, std::vector<VisibilityStmt*> >* seen,
   std::vector<VisibilityStmt*> vec = (*seen)[useSE->symbol()];
 
   if (vec.size() > 0) {
-    // We've already seen at least one use or import of this module.  Since
-    // imports only impact qualified naming, by definition any previous use or
-    // import of the same module will provide at least as much as this import
-    return true;
+    // We've already seen at least one use or import of this module, but it
+    // might not be thorough enough to justify skipping the newest 'import'
+    for_vector(VisibilityStmt, stmt, vec) {
+      if (UseStmt* use = toUseStmt(stmt)) {
+        if (current->providesNewSymbols(use) == false) {
+          // We found a prior use that covered all the symbols available
+          // from current.  We can skip looking at current
+          return true;
+        }
+      } else if (ImportStmt* import = toImportStmt(stmt)) {
+        if (current->providesNewSymbols(import) == false) {
+          // The current import statement is equivalent to a prior import
+          // statement so no need to include it
+          return true;
+        }
+      }
+    }
   }
 
-  // We didn't have a prior use or import.  Don't skip current.
+  // We didn't have a prior use or import that covered the symbols this
+  // provides.  Don't skip current.
   return false;
 }
 

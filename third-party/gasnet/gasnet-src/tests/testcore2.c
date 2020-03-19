@@ -140,6 +140,8 @@ retry:
       break;
 
     case 1: // Negotiated-payload with client-provided buffer
+      // TODO: (lc_opt = &event) is legal, but we lack logic to test/wait outside handler context
+      //       additionally, we could not safely send buf with async LC
       sd = gex_AM_PrepareReplyMedium(token, buf, least_payload, most_payload, GEX_EVENT_NOW, flags, 2);
       imm = (sd == GEX_AM_SRCDESC_NO_OP); // IMMEDIATE was NO OP
       if (imm) break;
@@ -200,6 +202,8 @@ retry:
       break;
 
     case 1: // Negotiated-payload with client-provided buffer
+      // TODO: (lc_opt = &event) is legal, but we lack logic to test/wait outside handler context
+      //       additionally, we could not safely send buf with async LC
       sd = gex_AM_PrepareReplyLong(token, srcbuf, least_payload, most_payload, maybe_dest, GEX_EVENT_NOW, flags, 2);
       imm = (sd == GEX_AM_SRCDESC_NO_OP); // IMMEDIATE was NO OP
       if (imm) break;
@@ -494,7 +498,13 @@ void *doit(void *id) {
               case 1: // Negotiated-payload with client-provided buffer
               {
                 gex_Event_t lc = GEX_EVENT_NO_OP;
-                sd = gex_AM_PrepareRequestMedium(myteam, peerproc, srcbuf, least_payload, most_payload, &lc, flags, 2);
+                gex_Event_t *lc_opt = NULL;
+                switch (TEST_RAND(0,2)) {
+                  case 0: lc_opt = &lc;             break;
+                  case 1: lc_opt = GEX_EVENT_NOW;   break;
+                  case 2: lc_opt = GEX_EVENT_GROUP; break;
+                }
+                sd = gex_AM_PrepareRequestMedium(myteam, peerproc, srcbuf, least_payload, most_payload, lc_opt, flags, 2);
                 imm = (sd == GEX_AM_SRCDESC_NO_OP); // IMMEDIATE was NO OP
                 if (imm) break;
                 assert(gex_AM_SrcDescSize(sd) >= least_payload);
@@ -502,7 +512,11 @@ void *doit(void *id) {
                 assert(gex_AM_SrcDescAddr(sd) == srcbuf);
                 len = MIN(len, gex_AM_SrcDescSize(sd));
                 gex_AM_CommitRequestMedium2(sd, hidx_ping_medhandler, len, iter, arg1);
-                gex_Event_Wait(lc);
+                if (lc_opt == GEX_EVENT_GROUP) {
+                  gex_NBI_Wait(GEX_EC_AM,0);
+                } else if (lc_opt != GEX_EVENT_NOW) {
+                  gex_Event_Wait(lc);
+                }
                 break;
               }
 
@@ -551,7 +565,13 @@ void *doit(void *id) {
               case 1: // Negotiated-payload with client-provided buffer
               {
                 gex_Event_t lc = GEX_EVENT_NO_OP;
-                sd = gex_AM_PrepareRequestLong(myteam, peerproc, srcbuf, least_payload, most_payload, maybe_dest, &lc, flags, 2);
+                gex_Event_t *lc_opt = NULL;
+                switch (TEST_RAND(0,2)) {
+                  case 0: lc_opt = &lc;             break;
+                  case 1: lc_opt = GEX_EVENT_NOW;   break;
+                  case 2: lc_opt = GEX_EVENT_GROUP; break;
+                }
+                sd = gex_AM_PrepareRequestLong(myteam, peerproc, srcbuf, least_payload, most_payload, maybe_dest, lc_opt, flags, 2);
                 imm = (sd == GEX_AM_SRCDESC_NO_OP); // IMMEDIATE was NO OP
                 if (imm) break;
                 assert(gex_AM_SrcDescSize(sd) >= least_payload);
@@ -559,7 +579,11 @@ void *doit(void *id) {
                 assert(gex_AM_SrcDescAddr(sd) == srcbuf);
                 len = MIN(len, sz);
                 gex_AM_CommitRequestLong2(sd, hidx_ping_longhandler, len, dstbuf, iter, arg1);
-                gex_Event_Wait(lc);
+                if (lc_opt == GEX_EVENT_GROUP) {
+                  gex_NBI_Wait(GEX_EC_AM,0);
+                } else if (lc_opt != GEX_EVENT_NOW) {
+                  gex_Event_Wait(lc);
+                }
                 break;
               }
 

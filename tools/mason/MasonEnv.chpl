@@ -84,7 +84,7 @@ proc MASON_REGISTRY {
       } else {
         var regTup: 2*string;
 
-        if regArr.numElements == 1 {
+        if regArr.size == 1 {
           // get the name from the last part of the location
           var name: string = getRegNameFromLoc(regArr[1]);
           regTup = (name, regArr[1]);

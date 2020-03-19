@@ -121,10 +121,8 @@ Additionally, coercions are available that are equivalent to calling the
                                    // impact on the lifetime.
 
         var bc: borrowed C = own;  // 'bc' stores the result of own.borrow()
-                                   // due to coercion from owned C to C
-
-        var c: C = own;            // same as above
-                                   // since 'C' is equivalent to 'borrowed C'
+                                   // due to coercion from owned C to
+                                   // borrowed C
 
                                    // Note that these coercions can also apply
                                    // in the context of procedure calls.
