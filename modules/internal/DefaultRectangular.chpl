@@ -1343,6 +1343,10 @@ module DefaultRectangular {
                                                    BoundedRangeType.bounded,
                                                    stridable)) {
 
+      if (|| reduce (for i in 1..rank do (bounds(i) != dom.dsiDim(i)))) == 0 {
+        return;
+      }
+
       // This should really be isDefaultInitializable(eltType), but that
       // doesn't always work / give correct answers yet.  The following
       // check won't catch cases such as records with non-nilable class
