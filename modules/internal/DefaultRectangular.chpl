@@ -1346,7 +1346,7 @@ module DefaultRectangular {
       // check to see whether this realloc is actually changing the
       // bounds of the array
       var actuallyResizing = false;
-      for i in 1..rank {
+      for i in bounds.indices {
         if bounds(i) != dom.dsiDim(i) {
           actuallyResizing = true;
           break;
