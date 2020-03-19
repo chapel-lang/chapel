@@ -87,7 +87,6 @@ private:
 
 public:
   std::vector<const char*>           named;
-  std::map<const char*, const char*> renamed;
 
 private:
   bool                               except;

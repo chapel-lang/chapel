@@ -75,6 +75,7 @@ class VisibilityStmt: public Stmt {
 public:
   Expr* src;
   bool isPrivate;
+  std::map<const char*, const char*> renamed;
 
 protected:
   const char* modRename;

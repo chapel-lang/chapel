@@ -22,6 +22,7 @@
 
 #include "stmt.h"
 
+#include <map>
 #include <vector>
 
 class ResolveScope;
@@ -31,7 +32,8 @@ class ImportStmt: public VisibilityStmt {
   ImportStmt(BaseAST* source, bool isPrivate);
   ImportStmt(BaseAST* source, const char* rename, bool isPrivate);
   ImportStmt(BaseAST* source, bool isPrivate,
-             std::vector<const char*>* namesList);
+             std::vector<const char*>* namesList,
+             std::map<const char*, const char*>* renamesList);
 
   DECLARE_COPY(ImportStmt);
 

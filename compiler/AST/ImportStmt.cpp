@@ -67,7 +67,8 @@ ImportStmt::ImportStmt(BaseAST* source, const char* rename,
 }
 
 ImportStmt::ImportStmt(BaseAST* source, bool isPrivate,
-                       std::vector<const char*>* namesList):
+                       std::vector<const char*>* namesList,
+                       std::map<const char*, const char*>* renamesList):
   VisibilityStmt(E_ImportStmt) {
 
   this->isPrivate = isPrivate;
@@ -89,11 +90,25 @@ ImportStmt::ImportStmt(BaseAST* source, bool isPrivate,
     }
   }
 
+  if (renamesList->size() > 0) {
+    // Symbols to enable unqualified access to with a different name than the
+    // name with which they were originally declared
+    for (std::map<const char*, const char*>::iterator it = renamesList->begin();
+         it != renamesList->end(); ++it) {
+      renamed[it->first] = it->second;
+    }
+  }
+
   gImportStmts.add(this);
 }
 
 ImportStmt* ImportStmt::copyInner(SymbolMap* map) {
-  ImportStmt* _this = new ImportStmt(COPY_INT(src), modRename, isPrivate);
+  ImportStmt* _this = NULL;
+  if (modRename != astr("")) {
+    _this = new ImportStmt(COPY_INT(src), modRename, isPrivate);
+  } else {
+    _this = new ImportStmt(COPY_INT(src), isPrivate, &unqualified, &renamed);
+  }
 
   return _this;
 }
