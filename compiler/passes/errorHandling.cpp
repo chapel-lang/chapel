@@ -913,13 +913,13 @@ void ErrorCheckingVisitor::checkCatches(TryStmt* tryStmt) {
   }
 }
 
-static void genThrowingFnError(FnSymbol* calledFn,
-                               CallExpr* node,
-                               implicitThrowsReasons_t* reasons,
-                               const char* problem) {
+static void issueThrowingFnError(FnSymbol* calledFn,
+                                 CallExpr* node,
+                                 implicitThrowsReasons_t* reasons,
+                                 const char* problem) {
   const char* desc = "cast";
   bool cast = true;
-  if (strcmp(calledFn->name, "_cast") != 0) {
+  if (calledFn->name != astr_cast) {
     desc = astr("function ", calledFn->name);
     cast = false;
   }
@@ -966,8 +966,8 @@ bool ErrorCheckingVisitor::enterCallExpr(CallExpr* node) {
 
       } else if(node->tryTag == TRY_TAG_IN_TRY) {
         if (!inThrowingFunction) {
-          genThrowingFnError(calledFn, node, reasons,
-                             "is in a try but not handled");
+          issueThrowingFnError(calledFn, node, reasons,
+                               "is in a try but not handled");
         }
 
         // Otherwise, OK, a try in a throwing function
@@ -975,11 +975,11 @@ bool ErrorCheckingVisitor::enterCallExpr(CallExpr* node) {
       } else {
         if (shouldEnforceStrict(node, taskFunctionDepth)) {
           if (mode == ERROR_MODE_STRICT) {
-            genThrowingFnError(calledFn, node, reasons,
-                               "without try or try! (strict mode)");
+            issueThrowingFnError(calledFn, node, reasons,
+                                 "without try or try! (strict mode)");
           } else if (mode == ERROR_MODE_RELAXED && !inThrowingFunction) {
-            genThrowingFnError(calledFn, node, reasons,
-                               "without throws, try, or try! (relaxed mode)");
+            issueThrowingFnError(calledFn, node, reasons,
+                                 "without throws, try, or try! (relaxed mode)");
           }
         }
       }
