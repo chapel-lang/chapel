@@ -314,7 +314,8 @@
 %token TDEFER TDELETE TDMAPPED TDO TDOMAIN
 %token TELSE TENUM TEXCEPT TEXPORT TEXTERN
 %token TFALSE TFOR TFORALL TFORWARDING
-%token TIF TIMAG TIMPORT TIN TINDEX TINLINE TINOUT TINT TITER TINITEQUALS
+%token TIF TIMAG TIMPORT TIN TINCLUDE
+%token TINDEX TINLINE TINOUT TINT TITER TINITEQUALS
 %token TLABEL TLAMBDA TLET TLIFETIME TLOCAL TLOCALE
 %token TMINUSMINUS TMODULE
 %token TNEW TNIL TNOINIT TNONE TNOTHING
@@ -414,6 +415,7 @@
 
 %type <pmodsymbol> module_decl_start
 %type <pblockstmt> module_decl_stmt
+%type <pblockstmt> include_module_stmt
 
 %type <pblockstmt> block_stmt
 %type <pblockstmt> stmt_ls
@@ -521,6 +523,7 @@ pragma_ls:
 // %type <pblockstmt> stmt
 stmt:
   module_decl_stmt
+| include_module_stmt
 | block_stmt
 | use_stmt
 | import_stmt
@@ -593,6 +596,10 @@ access_control:
 opt_prototype:
              { $$ = false; }
 | TPROTOTYPE { $$ = true;  }
+;
+
+include_module_stmt:
+ TINCLUDE TMODULE ident_use TSEMI { $$ = buildIncludeModule($3); }
 ;
 
 /* Grouping of statements into blocks.

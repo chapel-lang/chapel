@@ -794,7 +794,12 @@ ModuleSymbol* buildModule(const char* name,
   return mod;
 }
 
-
+BlockStmt* buildIncludeModule(const char* name) {
+  //astlocMarker markAstLoc(chplLineno, yyfilename);
+  ModuleSymbol* mod = parseIncludedSubmodule(name);
+  INT_ASSERT(mod != NULL);
+  return buildChapelStmt(new DefExpr(mod));
+}
 
 CallExpr* buildPrimitiveExpr(CallExpr* exprs) {
   INT_ASSERT(exprs->isPrimitive(PRIM_ACTUALS_LIST));
