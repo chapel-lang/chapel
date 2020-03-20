@@ -86,12 +86,12 @@ is an illegal Mason package name, such as names with dashes. For example,
 
   .. code-block:: sh
 
-  mason new illegal-module-name --name LegalModuleName
+    mason new illegal-module-name --name LegalModuleName
 
-  # OR
+    # OR
 
-  mkdir illegal-module-name
-  mason init illegal-module-name --name LegalModuleName
+    mkdir illegal-module-name
+    mason init illegal-module-name --name LegalModuleName
 
 
 Building and Running
