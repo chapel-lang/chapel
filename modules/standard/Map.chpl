@@ -285,6 +285,18 @@ module Map {
       }
     }
 
+    proc getReferenceToElt(k: keyType) const
+    where isNonNilableClass(valType) {
+      _enter();
+      if !myKeys.contains(k) then
+        boundsCheckHalt("map index " + k:string + " out of bounds");
+      try! {
+        const result = vals[k]: valType;
+        _leave();
+        return result;
+      }
+    }
+
     /* Remove the element at position `k` from the map and return its value
      */
     proc getAndRemoveElt(k: keyType) {
@@ -451,7 +463,7 @@ module Map {
        `k`, update it to the value `v`.
      */
     proc addOrSet(k: keyType, in v: valType) {
-      if !myKeys.contains(k) {
+      if myKeys.contains(k) {
         this.set(k, v);
       } else {
         this.add(k, v);
