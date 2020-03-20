@@ -963,16 +963,13 @@ Symbol* ResolveScope::lookupPublicUnqualAccessSyms(const char* name,
   for_vector_allowing_0s(VisibilityStmt, visStmt, useImportList) {
     if (ImportStmt *is = toImportStmt(visStmt)) {
       if (!is->isPrivate) {
-        for_vector(const char, unqualName, is->unqualified) {
-          if (astr(unqualName) == astr(name)) {
-            if (SymExpr *se = toSymExpr(is->src)) {
-              if (ModuleSymbol *ms = toModuleSymbol(se->symbol())) {
-                ResolveScope *scope = ResolveScope::getScopeFor(ms->block);
-                Symbol *retval = scope->lookupNameLocally(name);
-                if (retval) {
-                  modArg = ms;
-                  return retval;
-                }
+        if (!is->skipSymbolSearch(name)) {
+          if (SymExpr *se = toSymExpr(is->src)) {
+            if (ModuleSymbol *ms = toModuleSymbol(se->symbol())) {
+              ResolveScope *scope = ResolveScope::getScopeFor(ms->block);
+              if (Symbol *retval = scope->lookupNameLocally(name)) {
+                modArg = ms;
+                return retval;
               }
             }
           }
