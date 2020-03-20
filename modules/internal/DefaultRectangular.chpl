@@ -1363,7 +1363,10 @@ module DefaultRectangular {
       if (isNonNilableClass(eltType)) {
         halt("Can't resize domains whose arrays' elements don't have default values");
       }
-      on this {
+      if (this.locale != here) {
+        halt("internal error: dsiReallocate() can only be called from an array's home locale");
+      }
+      {
         const reallocD = {(...bounds)};
 
         // For now, we'll use realloc for 1D, non-empty arrays when
@@ -1378,10 +1381,10 @@ module DefaultRectangular {
             writeln("reallocating in-place");
 
           sizesPerDim(1) = reallocD.dsiDim(1).size;
-          _ddata_reallocate(data,
-                            eltType,
-                            oldSize=dom.dsiNumIndices,
-                            newSize=reallocD.size);
+          data = _ddata_reallocate(data,
+                                   eltType,
+                                   oldSize=dom.dsiNumIndices,
+                                   newSize=reallocD.size);
           initShiftedData();
         } else {
           var copy = new unmanaged DefaultRectangularArr(eltType=eltType,
