@@ -77,6 +77,7 @@ class VisibilityStmt: public Stmt {
                             Symbol* sym);
 
   void validateRenamed();
+  void noRepeatsInRenamed() const;
 
 public:
   Expr* src;

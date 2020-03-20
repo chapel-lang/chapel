@@ -61,6 +61,10 @@ class ImportStmt: public VisibilityStmt {
  private:
   bool checkValid(Expr* expr) const;
 
+  void validateList();
+  void validateUnqualified();
+  void noRepeats() const;
+
  public:
   std::vector<const char*> unqualified;
 };

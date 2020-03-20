@@ -163,6 +163,8 @@ void ImportStmt::scopeResolve(ResolveScope* scope) {
 
         updateEnclosingBlock(scope, sym);
 
+        validateList();
+
       } else {
         if (sym->isImmediate() == true) {
           USR_FATAL(this,
@@ -206,6 +208,8 @@ void ImportStmt::scopeResolve(ResolveScope* scope) {
           }
           scope->enclosingModule()->moduleUseAdd(parentSym);
           updateEnclosingBlock(scope, parentSym);
+
+          validateList();
 
         } else {
           INT_FATAL(this, "'import' of non-module symbol");
@@ -307,6 +311,82 @@ bool ImportStmt::checkValid(Expr* expr) const {
   }
 
   return retval;
+}
+
+/************************************* | **************************************
+*                                                                             *
+* Verifies that all the symbols in the list for unqualified access of import  *
+* statements refer to symbols that are visible from that module.              *
+*                                                                             *
+************************************** | *************************************/
+void ImportStmt::validateList() {
+  noRepeats();
+
+  validateUnqualified();
+  validateRenamed();
+}
+
+void ImportStmt::noRepeats() const {
+  std::vector<const char*>::const_iterator           it1;
+
+  for (it1 = unqualified.begin(); it1 != unqualified.end(); ++it1) {
+    std::vector<const char*>::const_iterator next = it1;
+    std::map<const char*, const char*>::const_iterator rit;
+
+    for (++next; next != unqualified.end(); ++next) {
+      // Check rest of named for the same name
+      if (strcmp(*it1, *next) == 0) {
+        USR_WARN(this, "identifier '%s' is repeated", *it1);
+      }
+    }
+
+    for (rit = renamed.begin(); rit != renamed.end(); ++rit) {
+      if (strcmp(*it1, rit->second) == 0) {
+        // This identifier is also used as the old name for a renaming.
+        // Probably a mistake on the user's part, but not a catastrophic one
+        USR_WARN(this, "identifier '%s' is repeated", *it1);
+      }
+
+      if (strcmp(*it1, rit->first) == 0) {
+        // The user attempted to rename a symbol to a name that was already
+        // in the 'only' list.  This causes a naming conflict.
+        USR_FATAL_CONT(this, "symbol '%s' multiply defined", *it1);
+      }
+    }
+  }
+
+  noRepeatsInRenamed();
+}
+
+void ImportStmt::validateUnqualified() {
+    BaseAST*            scopeToUse = getSearchScope();
+  const ResolveScope* scope      = ResolveScope::getScopeFor(scopeToUse);
+
+  for_vector(const char, name, unqualified) {
+    if (name[0] != '\0') {
+      std::vector<Symbol*> symbols;
+
+      scope->getFields(name, symbols);
+
+      if (symbols.size() == 0) {
+        SymExpr* srcExpr = toSymExpr(src);
+        INT_ASSERT(srcExpr); // should have been resolved by this point
+        USR_FATAL_CONT(this,
+                       "Bad identifier, no known '%s' defined in '%s'",
+                       name,
+                       srcExpr->symbol()->name);
+
+      } else {
+        for_vector(Symbol, sym, symbols) {
+          if (sym->hasFlag(FLAG_PRIVATE) == true) {
+            USR_FATAL_CONT(this,
+                           "Bad identifier, '%s' is private",
+                           name);
+          }
+        }
+      }
+    }
+  }
 }
 
 /************************************* | **************************************

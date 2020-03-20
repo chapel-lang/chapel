@@ -296,7 +296,6 @@ void UseStmt::validateList() {
 
 void UseStmt::noRepeats() const {
   std::vector<const char*>::const_iterator           it1;
-  std::map<const char*, const char*>::const_iterator it2;
 
   for (it1 = named.begin(); it1 != named.end(); ++it1) {
     std::vector<const char*>::const_iterator           next = it1;
@@ -323,36 +322,7 @@ void UseStmt::noRepeats() const {
       }
     }
   }
-
-  for (it2 = renamed.begin(); it2 != renamed.end(); ++it2) {
-    std::map<const char*, const char*>::const_iterator next = it2;
-
-    for (++next; next != renamed.end(); ++next) {
-      if (strcmp(it2->second, next->second) == 0) {
-        // Renamed this variable twice.  Probably a mistake on the user's part,
-        // but not a catastrophic one
-        USR_WARN(this, "identifier '%s' is repeated", it2->second);
-      }
-
-      if (strcmp(it2->second, next->first) == 0) {
-        // This name is the old_name in one rename and the new_name in another
-        // Did the user actually want to cut out the middle man?
-        USR_WARN(this, "identifier '%s' is repeated", it2->second);
-        USR_PRINT("Did you mean to rename '%s' to '%s'?",
-                  next->second,
-                  it2->first);
-      }
-
-      if (strcmp(it2->first, next->second) == 0) {
-        // This name is the old_name in one rename and the new_name in another
-        // Did the user actually want to cut out the middle man?
-        USR_WARN(this, "identifier '%s' is repeated", it2->first);
-        USR_PRINT("Did you mean to rename '%s' to '%s'?",
-                  it2->second,
-                  next->first);
-      }
-    }
-  }
+  noRepeatsInRenamed();
 }
 
 void UseStmt::validateNamed() {
