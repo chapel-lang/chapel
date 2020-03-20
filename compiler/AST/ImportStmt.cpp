@@ -410,6 +410,14 @@ bool ImportStmt::skipSymbolSearch(const char* name) {
       if (toCheck == name)
         return false;
     }
+
+    for(std::map<const char*, const char*>::const_iterator it = renamed.begin();
+      it != renamed.end();
+      ++it) {
+    if (strcmp(name, it->first) == 0) {
+      return false;
+    }
+  }
     return true;
   }
 }
