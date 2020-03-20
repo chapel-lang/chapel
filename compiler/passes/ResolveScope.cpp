@@ -693,10 +693,10 @@ Symbol* ResolveScope::lookupForImport(Expr* expr, bool isUse) const {
     ResolveScope* scope = getScopeFor(outerMod->block);
     if (Symbol* symbol = scope->getField(rhsName)) {
       retval = symbol;
+
     } else if (Symbol *symbol =
         scope->lookupPublicUnqualAccessSyms(rhsName)) {
       retval = symbol;
-
 
     } else {
       USR_FATAL(call, "Cannot find symbol '%s' in module '%s'",
