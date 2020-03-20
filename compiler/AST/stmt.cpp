@@ -145,6 +145,46 @@ void VisibilityStmt::updateEnclosingBlock(ResolveScope* scope, Symbol* sym) {
 
 /************************************* | **************************************
 *                                                                             *
+* Verifies that all the symbols to be renamed in an import or use statement   *
+* refer to symbols that are visible from that module.                         *
+*                                                                             *
+************************************** | *************************************/
+void VisibilityStmt::validateRenamed() {
+  std::map<const char*, const char*>::iterator it;
+
+  BaseAST*            scopeToUse = getSearchScope();
+  const ResolveScope* scope      = ResolveScope::getScopeFor(scopeToUse);
+
+  for (it = renamed.begin(); it != renamed.end(); ++it) {
+    std::vector<Symbol*> symbols;
+
+    scope->getFields(it->second, symbols);
+
+    if (symbols.size() == 0) {
+      SymExpr* se = toSymExpr(src);
+
+      USR_FATAL_CONT(this,
+                     "Bad identifier in rename, no known '%s' in '%s'",
+                     it->second,
+                     se->symbol()->name);
+
+    } else if (symbols.size() == 1) {
+      Symbol* sym = symbols[0];
+
+      if (sym->hasFlag(FLAG_PRIVATE)) {
+        USR_FATAL_CONT(this,
+                       "Bad identifier in rename, '%s' is private",
+                       it->second);
+      }
+
+    } else {
+      INT_ASSERT(false);
+    }
+  }
+}
+
+/************************************* | **************************************
+*                                                                             *
 *                                                                             *
 *                                                                             *
 ************************************** | *************************************/

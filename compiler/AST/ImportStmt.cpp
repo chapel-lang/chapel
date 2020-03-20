@@ -347,7 +347,7 @@ bool ImportStmt::providesQualifiedAccess() const {
      but not both.  There are plans for enabling both if we desire it (by
      allowing `this` in ImportStmt's unqualified access lists)
   */
-  if (unqualified.size() == 0) {
+  if (unqualified.size() == 0 && renamed.size() == 0) {
     return true;
   } else {
     return false;

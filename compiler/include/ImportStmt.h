@@ -49,7 +49,7 @@ class ImportStmt: public VisibilityStmt {
 
   void scopeResolve(ResolveScope* scope);
 
-  BaseAST* getSearchScope() const;
+  virtual BaseAST* getSearchScope() const;
 
   bool skipSymbolSearch(const char* name);
 

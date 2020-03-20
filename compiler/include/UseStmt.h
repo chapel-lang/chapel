@@ -62,7 +62,7 @@ public:
   bool            providesNewSymbols(const UseStmt* other)               const;
   bool            providesNewSymbols(const ImportStmt* other)            const;
 
-  BaseAST*        getSearchScope()                                       const;
+  virtual BaseAST* getSearchScope()                                      const;
 
   void            writeListPredicate(FILE* mFP)                          const;
 
@@ -74,8 +74,6 @@ private:
   void            validateList();
 
   void            validateNamed();
-
-  void            validateRenamed();
 
   bool            matchedNameOrRename(const char* name)             const;
 
