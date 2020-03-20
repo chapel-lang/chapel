@@ -996,7 +996,7 @@ module String {
         return createBytesWithNewBuffer(localThis.buff, localThis.numBytes);
       }
       else {  // see if there is escaped data in the string
-        var (buff, size) = bufferAlloc(this.len+1);
+        var (buff, size) = bufferAlloc(this.buffLen+1);
 
         var readIdx = 0;
         var writeIdx = 0;
@@ -1016,7 +1016,7 @@ module String {
             // at this point this can only happen due to a failure in our
             // implementation of string encoding/decoding
             // simply copy the data out
-            bufferMemcpyLocal(dst=(buff+writeIdx), src=multibytes, buffLen=nbytes);
+            bufferMemcpyLocal(dst=(buff+writeIdx), src=multibytes, len=nbytes);
             writeIdx += nbytes;
           }
           else {

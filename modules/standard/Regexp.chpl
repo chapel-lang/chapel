@@ -387,7 +387,7 @@ extern const QIO_REGEXP_ANCHOR_BOTH:c_int;
 pragma "no doc"
 extern record qio_regexp_string_piece_t {
   var offset:int(64); // counting from 0, -1 means "NULL"
-  var len:int(64);
+  var buffLen:int(64);
 }
 
 private extern proc qio_regexp_string_piece_isnull(ref sp:qio_regexp_string_piece_t):bool;
@@ -542,7 +542,7 @@ proc _to_reMatch(ref p:qio_regexp_string_piece_t):reMatch {
   if qio_regexp_string_piece_isnull(p) {
     return new reMatch(false, (-1):byteIndex, 0);
   } else {
-    return new reMatch(true, p.offset:byteIndex, p.len);
+    return new reMatch(true, p.offset:byteIndex, p.buffLen);
   }
 }
 
@@ -708,7 +708,7 @@ record regexp {
       // Now try to coerce the read strings into the captures.
       _handle_captures(text, matches, nmatches, captures);
       // Now return where we matched.
-      ret = new reMatch(got, matches[0].offset:byteIndex, matches[0].len);
+      ret = new reMatch(got, matches[0].offset:byteIndex, matches[0].buffLen);
       _ddata_free(matches, nmatches);
     }
     return ret;
@@ -734,7 +734,7 @@ record regexp {
                              pos:int, endpos:int, QIO_REGEXP_ANCHOR_UNANCHORED,
                              matches, nmatches);
       // Now return where we matched.
-      ret = new reMatch(got, matches[0].offset:byteIndex, matches[0].len);
+      ret = new reMatch(got, matches[0].offset:byteIndex, matches[0].buffLen);
       _ddata_free(matches, nmatches);
     }
     return ret;
@@ -782,7 +782,7 @@ record regexp {
       // Now try to coerce the read strings into the captures.
       _handle_captures(text, matches, nmatches, captures);
       // Now return where we matched.
-      ret = new reMatch(got, matches[0].offset:byteIndex, matches[0].len);
+      ret = new reMatch(got, matches[0].offset:byteIndex, matches[0].buffLen);
       _ddata_free(matches, nmatches);
     }
     return ret;
@@ -808,7 +808,7 @@ record regexp {
                              pos:int, endpos:int, QIO_REGEXP_ANCHOR_START,
                              matches, nmatches);
       // Now return where we matched.
-      ret = new reMatch(got, matches[0].offset:byteIndex, matches[0].len);
+      ret = new reMatch(got, matches[0].offset:byteIndex, matches[0].buffLen);
       _ddata_free(matches, nmatches);
     }
     return ret;
@@ -856,7 +856,7 @@ record regexp {
       splits += 1;
       if got && splits <= maxsplits {
         splitstart = matches[0].offset;
-        splitend = matches[0].offset + matches[0].len;
+        splitend = matches[0].offset + matches[0].buffLen;
       } else {
         splitstart = endpos;
         splitend = endpos;
@@ -878,7 +878,7 @@ record regexp {
           yield text[new reMatch(
                 !qio_regexp_string_piece_isnull(matches[i]),
                 matches[i].offset:byteIndex,
-                matches[i].len)];
+                matches[i].buffLen)];
         }
       }
 
@@ -926,10 +926,10 @@ record regexp {
       param nret = captures+1;
       var ret:nret*reMatch;
       for i in 0..captures {
-        ret[i+1] = new reMatch(got, matches[i].offset:byteIndex, matches[i].len);
+        ret[i+1] = new reMatch(got, matches[i].offset:byteIndex, matches[i].buffLen);
       }
       yield ret;
-      cur = matches[0].offset + matches[0].len;
+      cur = matches[0].offset + matches[0].buffLen;
     }
     on this.home {
       _ddata_free(matches, nmatches);

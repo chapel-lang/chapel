@@ -478,7 +478,7 @@ module BytesStringCommon {
       var first = true;
       var offset = 0;
       for s in S {
-        const sLen = s.len;
+        const sLen = s.buffLen;
 
         // copy x's contents
         if first {
