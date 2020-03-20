@@ -85,10 +85,15 @@ A :record:`Socket` may be one of the socket types in the following list of
 compatible pairs of socket types
 `[ref] <http://zguide.zeromq.org/page:all#Messaging-Patterns>`__:
 
-* :const:`PUB`  and :const:`SUB`
-* :const:`REQ`  and :const:`REP`
-* :const:`PUSH` and :const:`PULL`
-* :const:`PAIR`
+* :const:`PUB`    and :const:`SUB`
+* :const:`REQ`    and :const:`REP`
+* :const:`REQ`    and :const:`ROUTER`
+* :const:`DEALER` and :const:`REP`
+* :const:`DEALER` and :const:`ROUTER`
+* :const:`DEALER` and :const:`DEALER`
+* :const:`ROUTER` and :const:`ROUTER`
+* :const:`PUSH`   and :const:`PULL`
+* :const:`PAIR`   and :const:`PAIR`
 
 .. code-block:: chapel
 
@@ -359,7 +364,25 @@ module ZMQ {
     The exclusive pair pattern socket type.
   */
   const PAIR = ZMQ_PAIR;
+   
+  /*
+   The asynchronous requester socket type for a paired request-reply messaging pattern.
+  */ 
+  const DEALER = ZMQ_DEALER;
 
+  /*
+   The asynchronous replier socket type for a paired request-reply messaging pattern.
+  */
+  const ROUTER = ZMQ_ROUTER;
+   
+   /*
+   The asynchronous replier socket type for a paired request-reply messaging pattern.
+  */
+ 
+  const ROUTER = ZMQ_ROUTER;
+   
+   //const STREAM = ZMQ_STREAM;
+ 
   // -- Socket Options
   private extern const ZMQ_AFFINITY: c_int;
   private extern const ZMQ_IDENTITY: c_int;
