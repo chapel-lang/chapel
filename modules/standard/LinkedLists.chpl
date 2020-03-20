@@ -33,7 +33,42 @@ class listNode {
   var data: eltType;
   var next: unmanaged listNode(eltType)?;
 }
-
+pragma "no doc"
+proc ==(const ref ll1: LinkedList(?t), const ref ll2: LinkedList(?t2)) : bool where t == t2 {
+  private use HaltWrappers only;
+  if ll1.size != ll2.size {
+    HaltWrappers.boundsCheckHalt("Comparision of Linked lists having different number of elements  (" +
+        ll1.size:string + ") and (" + ll2.size:string + ")" );
+  }
+  var bool_linkedlist = new LinkedList(bool);
+  if (ll1.size == 0 && ll2.size ==0) {
+    return true;
+  }
+  if (ll1.size == 0) {
+    return false;
+  }
+  if (ll2.size ==0) {
+    return false;
+  }
+  var el_ll1 : borrowed listNode(t)? = ll1.first.borrow();
+  var el_ll2 : borrowed listNode(t2)? = ll2.first.borrow();
+  var flag: bool = false;
+  var stop: bool = false;
+  do {
+    bool_linkedlist.append(el_ll1.data == el_ll2.data);
+    el_ll1 = el_ll1.next;
+    el_ll2 = el_ll2.next;
+  } while (el_ll1 != nil);
+  while(bool_linkedlist.size>0 && stop==false)
+  { 
+   flag = bool_linkedlist.pop_front();
+   if(flag==false)
+   {
+    stop = true;
+   } 
+  }
+  return flag;
+}
 
   pragma "no doc"
   proc =(ref l1: LinkedList(?t), const ref l2: LinkedList(?t2)) {
