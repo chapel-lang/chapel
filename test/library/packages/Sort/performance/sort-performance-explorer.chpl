@@ -10,6 +10,9 @@ import Sort.MergeSort;
 import Sort.SelectionSort;
 import Sort.QuickSort;
 import Sort.HeapSort;
+import Sort.MSBRadixSort;
+import Sort.TwoArraySampleSort;
+import Sort.TwoArrayRadixSort;
 
 config const printStats = true;
 config const minSize = 1;

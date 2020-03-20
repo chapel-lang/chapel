@@ -803,6 +803,7 @@ module MergeSort {
    */
   private proc _MergeSort(Data: [?Dom], Scratch: [], lo:int, hi:int, minlen=16, comparator:?rec=defaultComparator, depth: int)
     where Dom.rank == 1 {
+    import Sort.InsertionSort;
 
     const stride = if Dom.stridable then abs(Dom.stride) else 1,
           size = (hi - lo) / stride,
@@ -1074,6 +1075,7 @@ module QuickSort {
                      minlen=16,
                      comparator:?rec=defaultComparator,
                      start:int = Dom.low, end:int = Dom.high) {
+    import Sort.InsertionSort;
 
     // grab obvious indices
     const lo = start,

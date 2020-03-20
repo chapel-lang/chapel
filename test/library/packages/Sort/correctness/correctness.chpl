@@ -10,6 +10,7 @@ import Sort.MergeSort;
 import Sort.SelectionSort;
 import Sort.QuickSort;
 import Sort.HeapSort;
+import Sort.BinaryInsertionSort;
 
 proc main() {
 
