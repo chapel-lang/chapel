@@ -1,18 +1,23 @@
 module A {
-  var x: int;
+  proc foo() {
+    writeln("A.foo()");
+  }
 }
 module B {
-  public import A.x;
+  public import A.foo;
 
-  var y: bool;
+  proc bar() {
+    writeln("B.bar()");
+  }
 }
 module C {
-  import B.y;
+  public import B.bar;
+  import B.foo;
 }
 module User {
   use C;
   proc main() {
-    writeln(C.x); // Shouldn't work
+    C.foo(); // Shouldn't work
     // we do know about C, and B does pretend it has an x, but C
     // doesn't bring that in
   }
