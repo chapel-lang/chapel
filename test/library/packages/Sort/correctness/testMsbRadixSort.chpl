@@ -3,6 +3,7 @@ use BitOps;
  use MSBRadixSort;
  use Random;
  use Time;
+import Sort.ShellSort;
 
  config const printStats = false;
  config const size = 10000;

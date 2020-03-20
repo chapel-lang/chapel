@@ -44,6 +44,8 @@ module OuterModule {
     writeln(x);
   }
 
+  import OuterModule.A;
+
   writeln("Concrete Record");
   {         var x : A.CR = new A.CR(1); printThing(x); }
   { use A;  var x :   CR = new A.CR(1); printThing(x); }

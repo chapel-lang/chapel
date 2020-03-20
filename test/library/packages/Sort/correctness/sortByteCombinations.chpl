@@ -1,6 +1,8 @@
 config const size = 100000;
 
 use Sort;
+import Sort.MSBRadixSort;
+import Sort.QuickSort;
 
 proc checkSorts(arr) {
   // check default sorter

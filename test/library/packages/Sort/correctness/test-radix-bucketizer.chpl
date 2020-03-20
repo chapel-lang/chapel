@@ -1,6 +1,10 @@
 use Sort;
 use RadixSortHelp;
 use Random;
+import Sort.TwoArrayPartitioning;
+import Sort.SequentialInPlacePartitioning;
+import Sort.TwoArrayRadixSort;
+
 
 config const debug = false;
 config var seed = SeedGenerator.oddCurrentTime;

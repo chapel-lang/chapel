@@ -6,6 +6,7 @@ module OuterModule {
   }
 
   proc bar() {
+    import OuterModule.M;
     M.foo(3);
   }
   bar();

@@ -8,6 +8,12 @@
 use Sort;
 use Random;
 use Time;
+import Sort.BubbleSort;
+import Sort.InsertionSort;
+import Sort.MergeSort;
+import Sort.SelectionSort;
+import Sort.QuickSort;
+import Sort.HeapSort;
 
 config const M: int = 6,                    // 2**M bytes
              correctness: bool = true,      // Disables output

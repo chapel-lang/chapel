@@ -1,4 +1,5 @@
 module ambiguousNestedModule {
+  import ambiguousNestedModule.M;
   module M {
     config param p = 1;
     config const c = 2;

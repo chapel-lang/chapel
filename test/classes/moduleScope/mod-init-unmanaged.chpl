@@ -1,5 +1,8 @@
 module OuterModule {
   proc main() {
+    import OuterModule.M1;
+    import OuterModule.M2;
+
     var a   = new unmanaged A(10);
 
     writeln();

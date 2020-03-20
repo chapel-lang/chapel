@@ -2,6 +2,8 @@ config const size = 100000;
 config const verbose = false;
 
 use Sort;
+import Sort.MSBRadixSort;
+import Sort.QuickSort;
 
 record UselessKeyComparator {
   proc key(x) {

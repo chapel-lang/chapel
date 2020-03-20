@@ -1,5 +1,6 @@
 use Sort;
 use BitOps;
+import Sort.RadixSortHelp;
 
 proc test(x) {
   var count = RadixSortHelp.radixSortClz(x);

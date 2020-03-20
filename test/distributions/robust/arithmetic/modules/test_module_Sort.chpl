@@ -3,6 +3,12 @@
 use driver_real_arrays;
 use Random;
 use Sort;
+import Sort.BubbleSort;
+import Sort.InsertionSort;
+import Sort.MergeSort;
+import Sort.SelectionSort;
+import Sort.QuickSort;
+import Sort.HeapSort;
 
 var rng = new owned RandomStream(real, 314159265);
 

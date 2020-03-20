@@ -14,6 +14,7 @@
    }
   
    private proc __radixSortMSB(array:[] int, place: int, startIndex: int, endIndex: int, auxArray:[] int) {
+     import Sort.InsertionSort;
 
      // comparison sorting for <=100 elements
      if(array.size<=100) {

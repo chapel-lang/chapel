@@ -30,6 +30,9 @@ module weirdEnumHiding {
   }
 
   proc main() {
+    import weirdEnumHiding.B;
+    import weirdEnumHiding.C;
+    import weirdEnumHiding.D;
     B.checkFoo();
     C.checkFoo();
     D.checkFoo();

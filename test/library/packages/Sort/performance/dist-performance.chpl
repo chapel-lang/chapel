@@ -4,6 +4,7 @@ use Memory;
 use Random;
 use Sort;
 use Time;
+import Sort.TwoArrayRadixSort;
 
 type elemType = int;
 

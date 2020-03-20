@@ -4,9 +4,9 @@ module parent {
       return a*3;
     }
   }
-
   module sibling {
     proc main() {
+      import parent.child;
       writeln(child.secretFunction(11));
     }
   }

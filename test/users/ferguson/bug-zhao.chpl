@@ -17,6 +17,7 @@ module OuterModule {
       }
     }
 
+    public import OuterModule.OurModule.ChildModule;
     // Submodules of OurModule
     // It is possible to create arbitrarily deep module nests.
     module ChildModule {
@@ -25,13 +26,15 @@ module OuterModule {
       }
     }
 
+    public import OuterModule.OurModule.SiblingModule;
     module SiblingModule {
       proc foo(){
         writeln( "SiblingModule.foo()" );
       }
     }
   } // end OurModule
-  use OurModule;
+  import OuterModule.OurModule;
+  import OuterModule.OurModule.SiblingModule;
 
   // At this point we have not used ChildModule or SiblingModule so their symbols
   // (i.e. foo ) are not available to us.

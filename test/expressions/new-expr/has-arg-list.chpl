@@ -44,6 +44,7 @@ module OuterModule {
       var b = new borrowed GI;
     }
     {
+      import OuterModule.M;
       var q = new M.Q;
     }
   }

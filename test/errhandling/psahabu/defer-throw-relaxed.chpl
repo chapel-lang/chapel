@@ -37,6 +37,7 @@ prototype module OuterModule {
     }
   }
 
+  import OuterModule.A;
   A.deferThrow();
   A.deferTry();
   A.deferTryComplete();

@@ -13,6 +13,12 @@ if debug then writeln("n=", n);
 use Time;
 use Random;
 use Sort;
+import Sort.BubbleSort;
+import Sort.InsertionSort;
+import Sort.MergeSort;
+import Sort.SelectionSort;
+import Sort.QuickSort;
+import Sort.HeapSort;
 config const seed = 13579;
 
 enum SortType { BUBBLE=0, INSERTION, MERGE, SELECTION, QUICK, HEAP };

@@ -5,8 +5,8 @@ module OuterModule {
       var y : real;
     }
   }
-
   proc main() {
+    import OuterModule.M1;
     var s = new M1.Something();
 
     showIt(s);

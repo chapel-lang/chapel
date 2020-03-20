@@ -8,12 +8,11 @@ module OuterModule {
     }
 
     proc foo() {
-      import OuterModule.M1.M2;
       M2();
     }
   }
 
   proc M2() {
-    writeln("this should be shadowed");
+    writeln("this needs an import to be shadowed");
   }
 }

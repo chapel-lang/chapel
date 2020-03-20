@@ -13,6 +13,7 @@ module OuterModule {
   }
 
   proc test() {
+    import OuterModule.C;
     var tmp = C.make_struct();
     var f = tmp.my_field;
     writeln(f);

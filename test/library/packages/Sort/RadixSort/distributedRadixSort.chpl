@@ -3,6 +3,7 @@ use BlockDist;
 use Time;
 use Sort;
 use CommDiagnostics;
+import Sort.TwoArrayRadixSort;
 
 config param debug = false;
 config const timing = true;

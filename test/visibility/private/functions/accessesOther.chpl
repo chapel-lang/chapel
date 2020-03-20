@@ -6,7 +6,7 @@ module OuterModule {
     }
 
   }
-
+  import OuterModule.M1;
   writeln(M1.foo(3));
   // Ensures that the private module level variable foo is not visible
   // via explicit naming.

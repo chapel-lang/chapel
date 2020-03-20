@@ -4,6 +4,12 @@
 use Sort;
 use Random;
 use Time;
+import Sort.BubbleSort;
+import Sort.InsertionSort;
+import Sort.MergeSort;
+import Sort.SelectionSort;
+import Sort.QuickSort;
+import Sort.HeapSort;
 
 config const printStats = true;
 config const minSize = 1;

@@ -5,6 +5,7 @@
 
 use Sort;
 use Random;
+import Sort.QuickSort;
 
 config const size = 4096;
 

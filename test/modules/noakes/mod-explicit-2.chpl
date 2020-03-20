@@ -58,6 +58,7 @@ module OuterModule {
 
 
   proc testMod2() {
+    import OuterModule.M2;
     var (A, B, C) = M2.version1;
     var (D, E, F) = M2.version2();
     var (G, H, I) = M2.version3(17, 18, 19);
