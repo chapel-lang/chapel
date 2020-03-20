@@ -246,35 +246,6 @@ module Map {
       return result;
     }
 
-    /* Access the element at position `k`. It will be returned as a `const`
-       non-nilable `shared` class. This method is only callable if `valType` is
-       non-nilable `shared`.
-     */
-    proc const sharedThis(k: keyType) const
-    where isSharedClass(valType) && isNonNilableClass(valType) {
-      _enter();
-      if !myKeys.contains(k) then
-        boundsCheckHalt("map index " + k:string + " out of bounds");
-      try! {
-        const result: valType = vals[k]: valType;
-        _leave();
-        return result;
-      }
-    }
-
-    /* Access the non-nilable element at position `k` as a borrowed object.  */
-    proc this(k: keyType)
-    where isNonNilableClass(valType) {
-      _enter();
-      if !myKeys.contains(k) then
-        boundsCheckHalt("map index " + k:string + " out of bounds");
-      try! {
-        const ref result = vals[k].borrow();
-        _leave();
-        return result!;
-      }
-    }
-
     pragma "no doc"
     proc const this(k: keyType) const ref
     where shouldReturnRvalueByConstRef(valType) && !isNonNilableClass(valType) {
@@ -286,6 +257,47 @@ module Map {
       return result;
     }
 
+    /* Get a borrowed reference to the element at position `k`.
+     */
+    proc getBorrowedElt(k: keyType) {
+      _enter();
+      if !myKeys.contains(k) then
+        boundsCheckHalt("map index " + k:string + " out of bounds");
+      try! {
+        var result = vals[k].borrow();
+        _leave();
+        return result!;
+      }
+    }
+
+    /* Get a reference to the element at position `k`. This method is not
+       available for non-nilable types.
+     */
+    proc getReferenceToElt(k: keyType) ref
+    where !isNonNilableClass(valType) {
+      _enter();
+      if !myKeys.contains(k) then
+        boundsCheckHalt("map index " + k:string + " out of bounds");
+      try! {
+        ref result = vals[k];
+        _leave();
+        return result;
+      }
+    }
+
+    /* Remove the element at position `k` from the map and return its value
+     */
+    proc getAndRemoveElt(k: keyType) {
+      _enter();
+      if !myKeys.contains(k) then
+        boundsCheckHalt("map index " + k:string + " out of bounds");
+      try! {
+        const ref result = vals[k]: valType;
+        myKeys.remove(k);
+        _leave();
+        return result: valType;
+      }
+    }
 
     /*
       Iterates over the keys of this map. This is a shortcut for :iter:`keys`.
