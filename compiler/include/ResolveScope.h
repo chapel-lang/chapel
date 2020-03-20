@@ -82,6 +82,8 @@ public:
 
   Symbol*               lookupPublicImports(const char* name)            const;
 
+  Symbol*               lookupPublicUnqualAccessSyms(const char* name)   const;
+
   Symbol*               lookupPublicUnqualAccessSyms(const char* name,
                                                      ModuleSymbol*& modArg)   const;
 

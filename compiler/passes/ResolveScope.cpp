@@ -693,6 +693,10 @@ Symbol* ResolveScope::lookupForImport(Expr* expr, bool isUse) const {
     ResolveScope* scope = getScopeFor(outerMod->block);
     if (Symbol* symbol = scope->getField(rhsName)) {
       retval = symbol;
+    } else if (Symbol *symbol =
+        scope->lookupPublicUnqualAccessSyms(rhsName)) {
+      retval = symbol;
+
 
     } else {
       USR_FATAL(call, "Cannot find symbol '%s' in module '%s'",
@@ -953,6 +957,12 @@ Symbol* ResolveScope::lookupPublicImports(const char* name) const {
     }
   }
 
+  return retval;
+}
+
+Symbol* ResolveScope::lookupPublicUnqualAccessSyms(const char* name) const {
+  ModuleSymbol *ms = NULL;
+  Symbol *retval = lookupPublicUnqualAccessSyms(name, ms);
   return retval;
 }
 
