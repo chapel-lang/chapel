@@ -351,7 +351,7 @@ static BlockStmt* buildResetUnionField(Symbol* _this,
                                                   ct->symbol,
                                                   newFieldNameSym)));
 
-    // Next, initialize the requsted field.
+    // Next, initialize the requested field.
     VarSymbol* tmp = newTemp("union_reset_init");
     tmp->addFlag(FLAG_NO_AUTO_DESTROY); // will transfer to the field.
     block->insertAtTail(new DefExpr(tmp));

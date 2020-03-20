@@ -381,7 +381,7 @@ static void setRecordDefaultValueFlags(AggregateType* at) {
   }
 }
 
-static bool isDefaultInitializeable(Type* t) {
+static bool isDefaultInitializable(Type* t) {
   bool val = true;
   if (isRecord(t)) {
     AggregateType* at = toAggregateType(t);
@@ -1063,7 +1063,7 @@ static Expr* preFoldPrimOp(CallExpr* call) {
   case PRIM_HAS_DEFAULT_VALUE: {
     Type* t = call->get(1)->typeInfo();
 
-    bool val = isDefaultInitializeable(t);
+    bool val = isDefaultInitializable(t);
 
     if (val)
       retval = new SymExpr(gTrue);
