@@ -104,6 +104,7 @@ module ChapelLocale {
   enum localeKind { regular, any, nilLocale, dummy, default };
 
   const nilLocale = new locale(localeKind.nilLocale);
+  pragma "locale private"
   var defaultLocale = new locale(localeKind.default);
   var dummyLocale = new locale(localeKind.dummy);
 
