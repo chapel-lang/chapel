@@ -169,7 +169,7 @@ astlocT getUserInstantiationPoint(const BaseAST* ast) {
           cur = instantiationPoint;
       }
     } else if (TypeSymbol* ts = toTypeSymbol(cur)) {
-      // Find the first use of the TypeSymbol at the type's instantation point
+      // Find the first use of the TypeSymbol at the type's instantiation point
       // so we can have a better error message line number.
       BlockStmt* instantiationPoint = ts->instantiationPoint;
 

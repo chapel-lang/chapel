@@ -3545,11 +3545,27 @@ static void resolveNormalCallConstRef(CallExpr* call) {
   }
 }
 
-static Type* getArrayElementType(AggregateType* arrayType) {
-  Type* instType = arrayType->getField("_instance")->type;
-  AggregateType* instClass = toAggregateType(canonicalClassType(instType));
-  Type* eltType = instClass->getField("eltType")->getValType();
+// Returns the element type, given an array type.
+// Recurse into it if it is still an array.
+static Type* finalArrayElementType(AggregateType* arrayType) {
+  Type* eltType = NULL;
+  do {
+    Type* instType = arrayType->getField("_instance")->type;
+    AggregateType* instClass = toAggregateType(canonicalClassType(instType));
+    eltType = instClass->getField("eltType")->getValType();
+    arrayType = toAggregateType(eltType);
+  } while
+    (arrayType != NULL && arrayType->symbol->hasFlag(FLAG_ARRAY));
+    
   return eltType;
+}
+
+// Is it OK to default-initialize an array with this element type?
+// Once #14854 is resolved, this should be simply
+//   isDefaultInitializable(eltType)
+static bool okForDefaultInitializedArray(Type* eltType) {
+  // Exclude locales. Remove this exception once #15149 is merged.
+  return eltType == dtLocale || ! isNonNilableClassType(eltType);
 }
 
 // Is 'actualSym' passed to an assignment (a 'proc =') ?
@@ -3605,7 +3621,7 @@ static void checkDefaultNonnilableArrayArg(CallExpr* call, FnSymbol* fn) {
          ! formal->hasFlag(FLAG_UNSAFE))
       if (AggregateType* actualType = toAggregateType(actualSym->getValType()))
        if (actualType->symbol->hasFlag(FLAG_ARRAY) &&
-           isNonNilableClassType(getArrayElementType(actualType)))
+           ! okForDefaultInitializedArray(finalArrayElementType(actualType)))
         //
         // Acceptable handling of the default actual is this:
         //   def default_arg_xxx: _array(...)
@@ -3621,7 +3637,7 @@ static void checkDefaultNonnilableArrayArg(CallExpr* call, FnSymbol* fn) {
          USR_FATAL_CONT(call, "cannot default-initialize the array field"
                         " %s because it has a non-nilable element type '%s'",
                         userFieldNameForError(actualSym),
-                        toString(getArrayElementType(actualType), true));
+                        toString(finalArrayElementType(actualType), true));
 }
 
 static void resolveNormalCallFinalChecks(CallExpr* call) {
@@ -3719,11 +3735,27 @@ void resolveNormalCallCompilerWarningStuff(CallExpr* call,
     if (inTryResolve > 0 && tryResolveFunctions.size() > 0) {
       FnSymbol* fn = tryResolveFunctions.back();
       tryResolveErrors[fn] = it->second;
+    } else if (resolvedFn && resolvedFn->hasFlag(FLAG_ERRONEOUS_COPY)) {
+      // error will be reported later (in callDestructors) if
+      // copy is not eliminated by then.
     } else {
       BaseAST* from = it->second.first;
       const char* err = it->second.second;
-      USR_FATAL_CONT(from, "%s", err);
-      USR_PRINT(call, "in function called here");
+      FnSymbol* inFn = call->getFunction();
+      bool inCopyIsh = false;
+      if (inFn != NULL) {
+        inCopyIsh = inFn->hasFlag(FLAG_INIT_COPY_FN) ||
+                    inFn->hasFlag(FLAG_AUTO_COPY_FN) ||
+                    inFn->hasFlag(FLAG_UNALIAS_FN) ||
+                    inFn->name == astrInitEquals;
+      }
+      if (inCopyIsh) {
+        inFn->addFlag(FLAG_ERRONEOUS_COPY);
+        tryResolveErrors[inFn] = std::make_pair(from,err);
+      } else {
+        USR_FATAL_CONT(from, "%s", err);
+        USR_PRINT(call, "in function called here");
+      }
     }
   }
 }
@@ -7337,6 +7369,17 @@ static void resolveNewSetupManaged(CallExpr* newExpr, Type*& manager) {
       if (manager == NULL && fWarnUnstable)
         // Generate an error on 'new MyClass' with fWarnUnstable
         handleUnstableNewError(newExpr, type);
+
+      if (manager == dtBorrowed && fWarnUnstable) {
+        Type* ct = canonicalClassType(type);
+        USR_WARN(newExpr, "new borrowed %s is unstable", ct->symbol->name);
+        USR_PRINT(newExpr, "use 'new unmanaged %s' "
+                           "'new owned %s' or "
+                           "'new shared %s'",
+                           ct->symbol->name,
+                           ct->symbol->name,
+                           ct->symbol->name);
+      }
     }
   }
 }
@@ -7345,10 +7388,8 @@ static void handleUnstableNewError(CallExpr* newExpr, Type* newType) {
   if (isUndecoratedClassNew(newExpr, newType)) {
     USR_WARN(newExpr, "new %s is unstable", newType->symbol->name);
     USR_PRINT(newExpr, "use 'new unmanaged %s' "
-                       "'new owned %s' "
-                       "'new shared %s' or "
-                       "'new borrowed %s'",
-                       newType->symbol->name,
+                       "'new owned %s' or "
+                       "'new shared %s'",
                        newType->symbol->name,
                        newType->symbol->name,
                        newType->symbol->name);
@@ -9997,8 +10038,8 @@ void lowerPrimInit(CallExpr* call, Expr* preventingSplitInit) {
 
     INT_ASSERT(val->type != dtUnknown && val->type != dtAny);
     if (name != NULL) {
-      Type* eltType = getArrayElementType(toAggregateType(val->type));
-      if (isNonNilableClassType(eltType))
+      Type* eltType = finalArrayElementType(toAggregateType(val->type));
+      if (! okForDefaultInitializedArray(eltType))
         USR_FATAL_CONT(call, "cannot default-initialize the array %s"
                        " because it has a non-nilable element type '%s'",
                        name, toString(eltType));

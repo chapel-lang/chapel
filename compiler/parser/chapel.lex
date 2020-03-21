@@ -246,6 +246,14 @@ zip              return processToken(yyscanner, TZIP);
 
 "#"              return processToken(yyscanner, THASH);
 ".."             return processToken(yyscanner, TDOTDOT);
+"..<"            return processToken(yyscanner, TDOTDOTOPENHIGH);
+                 /* The following cases would extend the current '..<'
+                    open range interval constructor to also support
+                    '<..' and '<..<'.  This concept didn't win enough
+                    support to merge as present, but are here in case
+                    we change our minds in a future release. */
+                 /* "<.."            return processToken(yyscanner, TDOTDOTOPENLOW); */
+                 /* "<..<"           return processToken(yyscanner, TDOTDOTOPENBOTH); */
 "..."            return processToken(yyscanner, TDOTDOTDOT);
 
 "&&"             return processToken(yyscanner, TAND);

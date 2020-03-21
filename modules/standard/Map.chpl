@@ -52,7 +52,7 @@ module Map {
 
   //
   // #14861 - For now, maps of non-nilable classes are banned. Once we
-  // resolve #13602 and #14861, we can remvoe this check. The check is on
+  // resolve #13602 and #14861, we can remove this check. The check is on
   // a type method instead of `map.init` because init for associative
   // arrays (and thus their compiler error) resolves before `map.init`.
   //

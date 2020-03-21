@@ -381,7 +381,7 @@ static void setRecordDefaultValueFlags(AggregateType* at) {
   }
 }
 
-static bool isDefaultInitializeable(Type* t) {
+static bool isDefaultInitializable(Type* t) {
   bool val = true;
   if (isRecord(t)) {
     AggregateType* at = toAggregateType(t);
@@ -1063,7 +1063,7 @@ static Expr* preFoldPrimOp(CallExpr* call) {
   case PRIM_HAS_DEFAULT_VALUE: {
     Type* t = call->get(1)->typeInfo();
 
-    bool val = isDefaultInitializeable(t);
+    bool val = isDefaultInitializable(t);
 
     if (val)
       retval = new SymExpr(gTrue);
@@ -1578,7 +1578,7 @@ static Expr* preFoldPrimOp(CallExpr* call) {
     SymExpr* se = toSymExpr(call->get(1));
 
     if (se->symbol()->hasFlag(FLAG_EXPR_TEMP) &&
-        !(isClassLikeOrPtr(type) || isReferenceType(type))) {
+        !(type == dtLocale || isClassLikeOrPtr(type) || isReferenceType(type))) {
       USR_WARN(se, "accessing the locale of a local expression");
     }
 
@@ -1587,7 +1587,8 @@ static Expr* preFoldPrimOp(CallExpr* call) {
     // or distribution wrapper type, apply .locale to the _value
     // field of the wrapper
     //
-    if (isRecordWrappedType(type)) {
+    if (isRecordWrappedType(type) ||
+        type == dtLocale) {
       VarSymbol* tmp = newTemp("_locale_tmp_");
 
       call->getStmtExpr()->insertBefore(new DefExpr(tmp));

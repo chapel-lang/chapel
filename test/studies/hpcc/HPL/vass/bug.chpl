@@ -174,7 +174,7 @@ vwln("  replB", replB.domain, " = Ab", BD, "  ", [BD.dim(1), 1..n+1]);
 }
 
 proc setupTargetLocales() {
-  var tla: [0..#tl1, 0..#tl2] locale?;
+  var tla: [0..#tl1, 0..#tl2] locale;
   writeln("setting up for ", tl1, "*", tl2, " locales");
   tld = numLocales >= tla.size;
   if tld {
@@ -185,7 +185,7 @@ proc setupTargetLocales() {
     tla = Locales(0);
   }
   vwln("target locales =\n", tla, "\n");
-  return tla!;
+  return tla;
 }
 
 // random initialization

@@ -128,7 +128,7 @@ module BytesStringCommon {
         else {
           // if nbytes is 1, then we must have read a single byte and found
           // that it was invalid, if nbytes is >1 then we must have read
-          // multible bytes where the last one broke the sequence. But it can
+          // multiple bytes where the last one broke the sequence. But it can
           // be a valid byte itself. So we rewind by 1 in that case
           // we use nInvalidBytes to store how many bytes we are ignoring or
           // replacing

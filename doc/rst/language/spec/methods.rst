@@ -88,7 +88,7 @@ The receiver-clause (or its absence) specifies the method’s receiver
         var name: string;
         var age: uint;
       }
-      var anActor = new owned Actor(name="Tommy", age=27);
+      var anActor = new Actor(name="Tommy", age=27);
       writeln(anActor);
 
    
@@ -148,7 +148,7 @@ method-call-expression as specified in :ref:`Method_Calls`.
 
    .. BLOCK-test-chapelpost
 
-      var c1: C = new owned C();
+      var c1: C = new C();
       c1.foo();
 
    
@@ -384,7 +384,7 @@ controlled by the ``these`` iterator.
 
    .. BLOCK-test-chapelpost
 
-      var ta = new owned ThreeArray();
+      var ta = new ThreeArray();
       for (i, j) in zip(ta, 1..) do
         i = j;
 

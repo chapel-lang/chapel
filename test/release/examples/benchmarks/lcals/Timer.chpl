@@ -74,14 +74,14 @@ module Timer {
 
     proc init(timerType: TimerType = defaultTimerType) {
       if timerType == TimerType.Chapel {
-        t = new owned ChapelTimer();
+        t = new ChapelTimer();
       } else if timerType == TimerType.Clock then {
-        t = new owned ClockTimer();
+        t = new ClockTimer();
       } else if timerType == TimerType.Cycle then {
-        t = new owned CycleTimer();
+        t = new CycleTimer();
       } else {
         halt("Unknown timer type");
-        t = new owned TimerImpl(); //dummy
+        t = new TimerImpl(); //dummy
       }
     }
 
