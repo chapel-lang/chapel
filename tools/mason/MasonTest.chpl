@@ -112,31 +112,55 @@ proc masonTest(args) throws {
   try! {
     const cwd = getEnv("PWD");
     const projectHome = getProjectHome(cwd);
-    var testNames: list(string);
-    const testPath = joinPath(projectHome, "test");
 
-    if isDir(testPath) {
-      var tests = findfiles(startdir=testPath, recursive=true, hidden=false);
-      for test in tests {
-        if test.endsWith(".chpl") {
-          testNames.append(getTestPath(test));
-        }
-      }
-    }
+    if(!searchSubStrings.isEmpty())
+    {
+      var testNames: list(string);
+      const testPath = joinPath(projectHome, "test");
+      var subTestPath = testPath: string;
 
-    var isSubString: bool;
-
-    for subString in searchSubStrings {
-      isSubString = false;
-      for testName in testNames {
-        if testName.find(subString) != 0 {
-          isSubString = true;
-          files.append("".join('test/', testName));
-        }
+      var inProjectDir = cwd==projectHome;
+      if !inProjectDir{
+        subTestPath = cwd;
       }
 
-      if !isSubString {
-        compopts.append(subString);
+      var tests = findfiles(startdir=subTestPath, recursive=true, hidden=false);
+      for test in tests{
+        if test.endsWith(".chpl"){
+          if(inProjectDir){
+            testNames.append(getTestPath(test));
+          }
+          else{
+            var testLoc = "";
+            while(test!=subTestPath){
+              var split = splitPath(test);
+              testLoc = if !testLoc.isEmpty() then joinPath(split[2], testLoc) else split[2];
+              test = split[1];
+            }
+            testNames.append(testLoc);
+          }
+        }
+      }
+
+      var isSubString: bool;
+
+      for subString in searchSubStrings {
+        isSubString = false;
+        for testName in testNames {
+          if testName.find(subString) != 0 {
+            isSubString = true;
+            if(inProjectDir){
+              files.append("".join('test/', testName));
+            }
+            else{
+              files.append(testName);
+            }
+          }
+        }
+
+        if !isSubString {
+          compopts.append(subString);
+        }
       }
     }
 
@@ -146,21 +170,23 @@ proc masonTest(args) throws {
   }
   catch e: MasonError {
     try! {
-      var testNames: list(string);
+      if !searchSubStrings.isEmpty(){
+        var testNames: list(string);
 
-      if isDir('.'){
-        var tests = findfiles(startdir='.', recursive=subdir);
-        for test in tests {
-          if test.endsWith(".chpl") {
-            testNames.append(test);
+        if isDir('.'){
+          var tests = findfiles(startdir='.', recursive=subdir);
+          for test in tests {
+            if test.endsWith(".chpl") {
+              testNames.append(test);
+            }
           }
         }
-      }
 
-      for subString in searchSubStrings {
-        for testName in testNames {
-          if testName.find(subString) != 0 {
-            files.append(testName);
+        for subString in searchSubStrings {
+          for testName in testNames {
+            if testName.find(subString) != 0 {
+              files.append(testName);
+            }
           }
         }
       }
