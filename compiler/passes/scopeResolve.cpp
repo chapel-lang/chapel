@@ -46,6 +46,8 @@
 #include <map>
 #include <set>
 
+#include "view.h"
+
 /************************************* | **************************************
 *                                                                             *
 *                                                                             *
@@ -1723,6 +1725,29 @@ void lookup(const char*           name,
   lookup(name, context, context, visited, symbols, renameLocs, storeRenames);
 }
 
+static bool debug = false;
+
+/*
+static bool scopeIsParentModule(BaseAST* scope, Symbol* currentParent) {
+  printf("In scopeIsModule()\n");
+  if (BlockStmt* blk = toBlockStmt(scope)) {
+    printf("Got a blockStmt\n");
+    if (ModuleSymbol* mod = toModuleSymbol(blk->parentSymbol)) {
+      printf("Got a module symbol\n");
+      if (mod != currentParent) {
+        printf("We're in a different module\n");
+        if (mod->block == scope) {
+          printf("Got a match\n");
+          return true;
+        }
+      }
+    }
+  }
+  printf("...Failed\n");
+  return false;
+}
+*/
+
 static void lookup(const char*           name,
                    BaseAST*              context,
 
@@ -1754,8 +1779,17 @@ static void lookup(const char*           name,
     if (scope->getModule()->block == scope) {
       BaseAST* outerScope = getScope(scope);
       if (outerScope != NULL) {
-        lookup(name, context, outerScope, visited, symbols, renameLocs,
-               storeRenames);
+        // TODO: Shouldn't this really look for `theProgram` or something?
+        //        if (outerScope->getModule()->modTag != MOD_USER) {
+        if (outerScope->getModule() == rootModule ||
+            outerScope->getModule() == theProgram) {
+          lookup(name, context, outerScope, visited, symbols, renameLocs,
+                 storeRenames);
+        } else {
+          //          printf("Skipping outer module lookup for %s\n", outerScope->getModule()->name);
+          lookup(name, context, theProgram->block, visited, symbols, renameLocs,
+                 storeRenames);
+        }
         // As a last ditch effort, see if this module's name happens to match.
         // This handles the case when we refer to the name of the module in
         // which we are declared (e.g., `module M { ...M.xyz... }`
@@ -1785,12 +1819,26 @@ static void lookup(const char*           name,
       if (symbols.size() == 0) {
         // If we didn't find something in the aggregate type that matched,
         // or we weren't in an aggregate type method, so look at next scope up.
-        lookup(name, context, getScope(scope), visited, symbols, renameLocs,
-               storeRenames);
+        BaseAST* parScope = getScope(scope);
+        if (strcmp(name, "xyz") == 0) {
+          debug = true;
+        }
+        if (debug) {
+          printf("current scope's module: %s\n", scope->getModule()->name);
+          list_view(scope);
+          printf(" parent scope's module: %s\n", parScope->getModule()->name);
+          list_view(parScope);
+        }
+        if (scope->getModule() == parScope->getModule()) {
+          lookup(name, context, parScope, visited, symbols, renameLocs,
+                 storeRenames);
+        }
+        debug = false;
       }
     }
   }
 }
+
 
 /************************************* | **************************************
 *                                                                             *
