@@ -1196,6 +1196,8 @@ proc bfEncrypt(plaintext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer, cip
     require "openssl/pem.h", "openssl/bn.h", "openssl/bio.h", "openssl/evp.h",
             "openssl/aes.h", "openssl/rand.h", "openssl/sha.h", "-lcrypto", "-lssl";
 
+    use SysCTypes;
+
     extern type EVP_PKEY_CTX;
     extern type EVP_PKEY;
     extern var EVP_PKEY_RSA: c_int;

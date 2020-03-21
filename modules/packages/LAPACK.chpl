@@ -215,6 +215,7 @@ pragma "no doc"
 module ClassicLAPACK {
 
 use SysCTypes;
+use LAPACK;
 
 pragma "no doc"
 extern proc lapack_make_complex_float(re : c_float, im : c_float) : complex(64);

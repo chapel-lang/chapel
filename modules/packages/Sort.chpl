@@ -548,6 +548,7 @@ iter sorted(x, comparator:?rec=defaultComparator) {
 
 pragma "no doc"
 module BubbleSort {
+  import Sort.defaultComparator;
 
   /*
    Sort the 1D array `Data` in-place using a sequential bubble sort algorithm.
@@ -585,6 +586,7 @@ module BubbleSort {
 
 pragma "no doc"
 module HeapSort {
+  import Sort.defaultComparator;
   /*
 
    Sort the 1D array `Data` in-place using a sequential heap sort algorithm.
@@ -803,6 +805,7 @@ module MergeSort {
    */
   private proc _MergeSort(Data: [?Dom], Scratch: [], lo:int, hi:int, minlen=16, comparator:?rec=defaultComparator, depth: int)
     where Dom.rank == 1 {
+    import Sort.InsertionSort;
 
     const stride = if Dom.stridable then abs(Dom.stride) else 1,
           size = (hi - lo) / stride,
@@ -1423,6 +1426,7 @@ module SampleSortHelp {
                                    in numSamples:int,
                                    seed=1) {
     private use Random;
+    import Sort.ShallowCopy;
     var Tmp:[1..1] A.eltType;
     var randNums = createRandomStream(seed=seed, eltType=int, parSafe=false);
     while numSamples > 0 {
@@ -1887,6 +1891,8 @@ pragma "no doc"
 module TwoArrayPartitioning {
   private use BlockDist;
   private use MSBRadixSort;
+  public use List only list;
+  import Sort.{ShellSort, RadixSortHelp, SampleSortHelp, ShallowCopy};
 
   private param debug = false;
   param maxBuckets = 512;
@@ -2191,7 +2197,6 @@ module TwoArrayPartitioning {
           start_n:int, end_n:int, A:[], Scratch:[],
           ref state: TwoArrayBucketizerSharedState,
           criterion, startbit:int):void {
-
 
     if startbit > state.endbit then
       return;
