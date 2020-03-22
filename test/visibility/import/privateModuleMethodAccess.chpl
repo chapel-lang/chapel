@@ -8,6 +8,7 @@ module A {
     const c: bool;
   }
   private module Inner {
+    import A.Foo;
     proc Foo.hidden() {
       writeln("Found the hidden module!");
     }
