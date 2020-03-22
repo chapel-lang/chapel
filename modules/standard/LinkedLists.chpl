@@ -44,22 +44,21 @@ class listNode {
 
   pragma "no doc"
   proc ==(const ref l1: LinkedList(?t), const ref l2: LinkedList(?t2)) : LinkedList(bool) where t == t2 {
-    private use HaltWrappers only;
     if l1.length != l2.length {
-      HaltWrappers.boundsCheckHalt("Element-wise equality comparison on linked lists of different lengths (" +
+      halt("Element-wise equality comparison on linked lists of different lengths (" +
           l1.length:string + ") and (" + l2.length:string + ")" );
     }
     var bool_linkedlist = new LinkedList(bool);
     if l1.length == 0 {
       return bool_linkedlist;
     }
-    var el_l1 : borrowed listNode(t)? = l1.first.borrow();
-    var el_l2 : borrowed listNode(t2)? = l2.first.borrow();
+    var elList1 : borrowed listNode(t)? = l1.first.borrow();
+    var elList2 : borrowed listNode(t2)? = l2.first.borrow();
     do {
-      bool_linkedlist.append(el_l1.data == el_l2.data);
-      el_l1 = el_l1.next;
-      el_l2 = el_l2.next;
-    } while (el_l1 != nil);
+      bool_linkedlist.append(elList1!.data == elList2!.data);
+      elList1 = elList1!.next;
+      elList2 = elList2!.next;
+    } while (elList1 != nil);
     return bool_linkedlist;
   }
 
