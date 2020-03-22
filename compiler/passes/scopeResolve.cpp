@@ -46,8 +46,6 @@
 #include <map>
 #include <set>
 
-#include "view.h"
-
 /************************************* | **************************************
 *                                                                             *
 *                                                                             *
@@ -1725,29 +1723,6 @@ void lookup(const char*           name,
   lookup(name, context, context, visited, symbols, renameLocs, storeRenames);
 }
 
-static bool debug = false;
-
-/*
-static bool scopeIsParentModule(BaseAST* scope, Symbol* currentParent) {
-  printf("In scopeIsModule()\n");
-  if (BlockStmt* blk = toBlockStmt(scope)) {
-    printf("Got a blockStmt\n");
-    if (ModuleSymbol* mod = toModuleSymbol(blk->parentSymbol)) {
-      printf("Got a module symbol\n");
-      if (mod != currentParent) {
-        printf("We're in a different module\n");
-        if (mod->block == scope) {
-          printf("Got a match\n");
-          return true;
-        }
-      }
-    }
-  }
-  printf("...Failed\n");
-  return false;
-}
-*/
-
 static void lookup(const char*           name,
                    BaseAST*              context,
 
@@ -1779,33 +1754,24 @@ static void lookup(const char*           name,
     if (scope->getModule()->block == scope) {
       BaseAST* outerScope = getScope(scope);
       if (outerScope != NULL) {
-	// if this is a top-level module, keep searching upwards to get
-	// the built-in stuff defined in the root/program modules
+        // if this is a top-level module, keep searching upwards to get
+        // the built-in stuff defined in the root/program modules
         if (outerScope->getModule() == rootModule ||
             outerScope->getModule() == theProgram) {
-	  /*
-	  if (scope->getModule()->modTag == MOD_USER) {
-	    printf("looking up lexically\n");
-	  }
-	  */
           lookup(name, context, outerScope, visited, symbols, renameLocs,
                  storeRenames);
         } else {
-	  // if it's a nested module, don't look into the parent module,
-	  // but do see if ChapelStandard or theProgram resolve things
-	  // for us.
-	  /*
-	  if (scope->getModule()->modTag == MOD_USER) {
-	    printf("jumping to the standard module\n");
-	  }
-	  */
-	  lookup(name, context, standardModule->block, visited, symbols,
-		 renameLocs, storeRenames);
-	  if (symbols.size() == 0) {
-	    
-	    lookup(name, context, theProgram->block, visited, symbols,
-		   renameLocs, storeRenames);
-	  }
+          // if it's a nested module, don't look into the parent
+          // module (a 'use' or 'import' is required to do that), but
+          // do see if ChapelStandard or theProgram resolve things for
+          // us that are not yet resolved.
+          lookup(name, context, standardModule->block, visited, symbols,
+                 renameLocs, storeRenames);
+          if (symbols.size() == 0) {
+            
+            lookup(name, context, theProgram->block, visited, symbols,
+                   renameLocs, storeRenames);
+          }
         }
         // As a last ditch effort, see if this module's name happens to match.
         // This handles the case when we refer to the name of the module in
@@ -1836,17 +1802,12 @@ static void lookup(const char*           name,
       if (symbols.size() == 0) {
         // If we didn't find something in the aggregate type that matched,
         // or we weren't in an aggregate type method, so look at next scope up.
-        BaseAST* parScope = getScope(scope);
-        if (scope->getModule() == parScope->getModule()) {
-          lookup(name, context, parScope, visited, symbols, renameLocs,
-                 storeRenames);
-        }
-        debug = false;
+        lookup(name, context, getScope(scope), visited, symbols, renameLocs,
+               storeRenames);
       }
     }
   }
 }
-
 
 /************************************* | **************************************
 *                                                                             *
