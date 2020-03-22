@@ -219,12 +219,22 @@ module ChapelReduce {
 
     proc identity return (max(eltType), min(eltType));
     proc accumulate(x){
-      value[1] = min(x[1], value[1]);
-      value[2] = max(x[2], value[2]);
+      if x.type == 2*eltType {
+        value[1] = min(x[1], value[1]);
+        value[2] = max(x[2], value[2]);
+      } else {
+        value[1] = min(x, value[1]);
+        value[2] = max(x, value[2]);
+      }
     }
     proc accumulateOntoState(ref state, x) {
-      state[1] = min(state[1], x);
-      state[2] = max(state[2], x);
+      if x.type == 2*eltType{
+        state[1] = min(state[1], x[1]);
+        state[2] = max(state[2], x[2]);
+      } else {
+        state[1] = min(state[1], x);
+        state[2] = max(state[2], x);
+      }
     }
     proc combine(x){
       value[1] = min(value[1], x.value[1]);
