@@ -375,11 +375,7 @@ module ZMQ {
   */
   const ROUTER = ZMQ_ROUTER;
    
-   /*
-   The asynchronous replier socket type for a paired request-reply messaging pattern.
-  */
- 
-  const ROUTER = ZMQ_ROUTER;
+
    
    //const STREAM = ZMQ_STREAM;
  
