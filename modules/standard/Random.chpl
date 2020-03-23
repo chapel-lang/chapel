@@ -1199,14 +1199,10 @@ module Random {
        return;
 
        var mid = (l+r)/2;
-       sync {
-         begin {
-           _mergeShuffle(tmp, l, mid, seed);
-         }
-         begin {
-           _mergeShuffle(tmp, mid+1, r, seed);
-         }
-       }
+
+       _mergeShuffle(tmp, l, mid, seed);
+       _mergeShuffle(tmp, mid+1, r, seed);
+
        _inplace(tmp, l, mid-l+1, r-mid, seed);
      }
 
