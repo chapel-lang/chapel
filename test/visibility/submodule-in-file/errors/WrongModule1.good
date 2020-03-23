@@ -1,1 +1,1 @@
-error: Cannot include module from module with different filename
+error: Cannot include modules from a module whose name doesn't match its filename
