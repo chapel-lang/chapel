@@ -55,4 +55,6 @@ BlockStmt*         parseString(const char* string,
                                const char* filename,
                                const char* msg);
 
+ModuleSymbol*      parseIncludedSubmodule(const char* name);
+
 #endif

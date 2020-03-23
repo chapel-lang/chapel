@@ -3340,6 +3340,8 @@ inline proc channel.readwrite(ref x) throws where !this.writing {
      Return any saved error code.
    */
   proc channel.error():syserr {
+    compilerWarning("The channel.error method is deprecated. " +
+                    "Catch errors instead.");
     var ret:syserr;
     on this.home {
       var local_error:syserr;
@@ -3355,6 +3357,8 @@ inline proc channel.readwrite(ref x) throws where !this.writing {
      Save an error code.
    */
   proc channel.setError(e:syserr) {
+    compilerWarning("The channel.setError method is deprecated. " +
+                    "Throw errors instead.");
     on this.home {
       var error = e;
       try! this.lock();
@@ -3367,6 +3371,8 @@ inline proc channel.readwrite(ref x) throws where !this.writing {
      Clear any saved error code.
    */
   proc channel.clearError() {
+    compilerWarning("The channel.clearError method is deprecated. " +
+                    "Throw and catch errors instead.");
     on this.home {
       try! this.lock();
       qio_channel_clear_error(_channel_internal);

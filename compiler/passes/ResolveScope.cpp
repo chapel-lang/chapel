@@ -49,6 +49,7 @@
 #include "LoopExpr.h"
 #include "scopeResolve.h"
 #include "stmt.h"
+#include "stringutil.h"
 
 ResolveScope* rootScope;
 
@@ -693,6 +694,10 @@ Symbol* ResolveScope::lookupForImport(Expr* expr, bool isUse) const {
     if (Symbol* symbol = scope->getField(rhsName)) {
       retval = symbol;
 
+    } else if (Symbol *symbol =
+        scope->lookupPublicUnqualAccessSyms(rhsName)) {
+      retval = symbol;
+
     } else {
       USR_FATAL(call, "Cannot find symbol '%s' in module '%s'",
                       rhsName, outerMod->name);
@@ -953,6 +958,37 @@ Symbol* ResolveScope::lookupPublicImports(const char* name) const {
   }
 
   return retval;
+}
+
+Symbol* ResolveScope::lookupPublicUnqualAccessSyms(const char* name) const {
+  ModuleSymbol *ms = NULL;
+  Symbol *retval = lookupPublicUnqualAccessSyms(name, ms);
+  return retval;
+}
+
+Symbol* ResolveScope::lookupPublicUnqualAccessSyms(const char* name,
+                                                   ModuleSymbol*& modArg) const {
+  UseImportList useImportList = mUseImportList;
+
+  for_vector_allowing_0s(VisibilityStmt, visStmt, useImportList) {
+    if (ImportStmt *is = toImportStmt(visStmt)) {
+      if (!is->isPrivate) {
+        if (!is->skipSymbolSearch(name)) {
+          if (SymExpr *se = toSymExpr(is->src)) {
+            if (ModuleSymbol *ms = toModuleSymbol(se->symbol())) {
+              ResolveScope *scope = ResolveScope::getScopeFor(ms->block);
+              if (Symbol *retval = scope->lookupNameLocally(name)) {
+                modArg = ms;
+                return retval;
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
+  return NULL;
 }
 
 /************************************* | **************************************

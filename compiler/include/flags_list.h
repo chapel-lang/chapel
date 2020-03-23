@@ -168,6 +168,7 @@ symbolFlag( FLAG_HEAP , npr, "heap" , ncm )
 symbolFlag( FLAG_IF_EXPR_RESULT, npr, "if-expr result", ncm )
 symbolFlag( FLAG_IMPLICIT_ALIAS_FIELD , npr, "implicit alias field" , ncm )
 symbolFlag( FLAG_IMPLICIT_MODULE, npr, "implicit top-level module", ncm )
+symbolFlag( FLAG_INCLUDED_MODULE, npr, "included sub-module", ncm )
 symbolFlag( FLAG_INDEX_VAR , npr, "index var" , ncm )
 
 // This can also mark a temp that serves as an intermediate step of

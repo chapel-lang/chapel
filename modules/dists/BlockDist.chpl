@@ -1083,9 +1083,18 @@ iter BlockArr.these(param tag: iterKind) where tag == iterKind.leader {
     yield followThis;
 }
 
-override proc BlockArr.dsiStaticFastFollowCheck(type leadType) param
-  return _to_borrowed(leadType) == _to_borrowed(this.type) ||
-         _to_borrowed(leadType) == _to_borrowed(this.dom.type);
+override proc BlockArr.dsiStaticFastFollowCheck(type leadType) param {
+  if isSubtype(leadType, BlockArr) {
+    // Comparing domains for rank/idxType/stride/sparseLayout, which allows for
+    // fast followers regardless of eltType.
+    //
+    // TODO: Remove once 'typeExpr.field' results in a type
+    var x : leadType?;
+    return _to_borrowed(x!.dom.type) == _to_borrowed(this.dom.type);
+  } else {
+    return _to_borrowed(leadType) == _to_borrowed(this.dom.type);
+  }
+}
 
 proc BlockArr.dsiDynamicFastFollowCheck(lead: [])
   return this.dsiDynamicFastFollowCheck(lead.domain);

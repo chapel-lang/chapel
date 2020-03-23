@@ -182,6 +182,13 @@ bool AstDump::enterDefExpr(DefExpr* node) {
   bool    retval = true;
 
   if (isModuleSymbol(sym)) {
+    newline();
+    write("def");
+    write("module");
+    write(sym->name);
+    if (fLogIds)
+      fprintf(mFP, "[%d]", sym->id);
+    write(" ");
     retval = false;
 
   } else {
