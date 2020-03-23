@@ -121,7 +121,7 @@ module ByteBufferHelpers {
   }
 
   //dst must be local
-  inline proc bufferMemcpy(dst: bufferType, src_loc: int(64), src: bufferType, len: int, dst_off=0, src_off=0) {
+  inline proc bufferMemcpy(dst: bufferType, src_loc: int(64), src: bufferType, len: int, dst_off: int=0, src_off: int=0) {
     if !_local && src_loc != chpl_nodeID {
       chpl_string_comm_get(dst+dst_off, src_loc, src+src_off, len);
     }
@@ -130,11 +130,11 @@ module ByteBufferHelpers {
     }
   }
 
-  inline proc bufferMemcpyLocal(dst: bufferType, src: bufferType, len: int, dst_off=0, src_off=0) {
+  inline proc bufferMemcpyLocal(dst: bufferType, src: bufferType, len: int, dst_off: int=0, src_off: int=0) {
     c_memcpy(dst:bufferType+dst_off, src:bufferType+src_off, len);
   }
 
-  inline proc bufferMemmoveLocal(dst: bufferType, src: bufferType, len: int, dst_off=0, src_off=0) {
+  inline proc bufferMemmoveLocal(dst: bufferType, src: bufferType, len: int, dst_off: int=0, src_off: int=0) {
     c_memmove(dst+dst_off, src+src_off, len);
   }
 
