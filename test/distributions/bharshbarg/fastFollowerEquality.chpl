@@ -92,4 +92,5 @@ proc main() {
   // - different eltTypes
   test(makeArray(make(block,one), real), makeArray(make(block,one), int));
   test(makeArray(make(cyclic,one), real), makeArray(make(cyclic,one), int));
+  test(makeArray(make(stencil,one), real), makeArray(make(stencil,one), int));
 }
