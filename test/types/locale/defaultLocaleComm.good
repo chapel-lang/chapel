@@ -1,0 +1,17 @@
+LOCALE0 myLocales : 10
+LOCALE0 Comm Diagnostics : (<no communication>)
+LOCALE1 myLocales : 10
+LOCALE1 Comm Diagnostics : (<no communication>)
+LOCALE2 myLocales : 10
+LOCALE2 Comm Diagnostics : (<no communication>)
+LOCALE3 myLocales : 10
+LOCALE3 Comm Diagnostics : (<no communication>)
+
+LOCALE0 isNilLocaleNil : true
+LOCALE0 Comm Diagnostics : (<no communication>)
+LOCALE1 isNilLocaleNil : true
+LOCALE1 Comm Diagnostics : (<no communication>)
+LOCALE2 isNilLocaleNil : true
+LOCALE2 Comm Diagnostics : (<no communication>)
+LOCALE3 isNilLocaleNil : true
+LOCALE3 Comm Diagnostics : (<no communication>)
