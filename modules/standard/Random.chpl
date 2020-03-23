@@ -250,13 +250,6 @@ module Random {
       if prob.rank != 1 {
         compilerError('choice() prob array must be 1 dimensional');
       }
-
-      //Commenting out for now, as X is domain of reindexed array.
-      /*
-      if prob.domain != X {
-        throw new owned IllegalArgumentError('choice() prob array arguments must have similar domain');
-      }
-      */
     }
 
     if !isNothingType(sizeType) {
@@ -333,12 +326,6 @@ module Random {
   {
     import Search;
     import Sort;
-
-    // If stride, offset, or size don't match, we're in trouble
-    /*
-    if X != prob.domain then
-      throw new owned IllegalArgumentError('choice() prob array must have similar domain');
-      */
 
     if prob.size == 0 then
       throw new owned IllegalArgumentError('choice() array cannot be empty');
