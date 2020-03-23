@@ -551,6 +551,17 @@ static void warnUnstableLeadingUnderscores() {
         USR_WARN(def,
                  "Symbol names with leading underscores (%s) are unstable.", name);
       }
+      if (name &&
+          name[0] == 'c' &&
+          name[1] == 'h' &&
+          name[2] == 'p' &&
+          name[3] == 'l' &&
+          name[4] == '_' &&
+          def->getModule()->modTag == MOD_USER &&
+          !def->sym->hasFlag(FLAG_TEMP)) {
+        USR_WARN(def,
+                 "Symbol names beginning with 'chpl_' (%s) are unstable.", name);
+      }
     }
   }
 }
