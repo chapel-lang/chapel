@@ -691,8 +691,8 @@ module ChapelLocale {
   }
 
   pragma "no doc"
-  inline proc chpl_set_defaultLocale(_instance: unmanaged BaseLocale) {
-    defaultLocale._instance = _instance;
+  inline proc chpl_set_defaultLocale(l: locale) {
+    defaultLocale._instance = l._instance;
   }
 
   // This function sets up a private copy of rootLocale by replicating
