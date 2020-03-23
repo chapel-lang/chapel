@@ -544,11 +544,14 @@ static void warnUnstableLeadingUnderscores() {
   if (fWarnUnstable) {
     forv_Vec(DefExpr, def, gDefExprs) {
       const char* name = def->name();
-      
+      Symbol* sym = def->sym;
+      ModuleSymbol* mod = def->getModule();
+      FnSymbol* fn = def->getFunction();
+
       if (name && name[0] == '_' &&
-          def->getModule()->modTag == MOD_USER &&
-          !def->sym->hasFlag(FLAG_TEMP) &&
-          def->sym->type != dtMethodToken) {
+          mod && mod->modTag == MOD_USER &&
+          !sym->hasFlag(FLAG_TEMP) &&
+          sym->type != dtMethodToken) {
         USR_WARN(def,
                  "Symbol names with leading underscores (%s) are unstable.", name);
       }
@@ -558,11 +561,11 @@ static void warnUnstableLeadingUnderscores() {
           name[2] == 'p' &&
           name[3] == 'l' &&
           name[4] == '_' &&
-          def->getModule()->modTag == MOD_USER &&
-          !def->sym->hasFlag(FLAG_TEMP) &&
-          !def->sym->hasFlag(FLAG_INDEX_VAR) &&
-          !def->sym->hasFlag(FLAG_COMPILER_NESTED_FUNCTION) &&
-          !def->getFunction()->hasFlag(FLAG_COMPILER_NESTED_FUNCTION)) {
+          mod && mod->modTag == MOD_USER &&
+          !sym->hasFlag(FLAG_TEMP) &&
+          !sym->hasFlag(FLAG_INDEX_VAR) &&
+          !sym->hasFlag(FLAG_COMPILER_NESTED_FUNCTION) &&
+          !(fn && fn->hasFlag(FLAG_COMPILER_NESTED_FUNCTION))) {
         USR_WARN(def,
                  "Symbol names beginning with 'chpl_' (%s) are unstable.", name);
       }
