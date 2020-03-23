@@ -7,7 +7,7 @@ module OuterModule {
     module middlemost {
       module innermost {
         proc foo() {
-	  import OuterModule.outermost.a;
+          import OuterModule.outermost.a;
           a = 4;
         }
       }
