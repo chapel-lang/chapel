@@ -43,7 +43,7 @@ proc masonDoc(args) throws {
     const projectAuthors = tomlFile["brick"]!["authors"]!.toString();
 
     const strippedAuthors = projectAuthors.split(',').strip('[]');
-    var authorsString:string;
+    var authorsString: string;
     for author in strippedAuthors {
       authorsString += author.strip('"') + ',';
     }
