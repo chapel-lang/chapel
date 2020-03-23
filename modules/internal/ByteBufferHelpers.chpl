@@ -121,7 +121,8 @@ module ByteBufferHelpers {
   }
 
   //dst must be local
-  inline proc bufferMemcpy(dst: bufferType, src_loc: int(64), src: bufferType, len: int, dst_off: int=0, src_off: int=0) {
+  inline proc bufferMemcpy(dst: bufferType, src_loc: int(64), src: bufferType,
+                           len: int, dst_off: int=0, src_off: int=0) {
     if !_local && src_loc != chpl_nodeID {
       chpl_string_comm_get(dst+dst_off, src_loc, src+src_off, len);
     }
@@ -130,11 +131,13 @@ module ByteBufferHelpers {
     }
   }
 
-  inline proc bufferMemcpyLocal(dst: bufferType, src, len: int, dst_off: int=0, src_off: int=0) {
+  inline proc bufferMemcpyLocal(dst: bufferType, src, len: int,
+                                dst_off: int=0, src_off: int=0) {
     c_memcpy(dst:bufferType+dst_off, src:bufferType+src_off, len);
   }
 
-  inline proc bufferMemmoveLocal(dst: bufferType, src, len: int, dst_off: int=0, src_off: int=0) {
+  inline proc bufferMemmoveLocal(dst: bufferType, src, len: int,
+                                 dst_off: int=0, src_off: int=0) {
     c_memmove(dst+dst_off, src+src_off, len);
   }
 
@@ -150,17 +153,21 @@ module ByteBufferHelpers {
     }
   }
 
-  inline proc bufferEquals(buf1: bufferType, off1: int, loc1: locIdType, buf2: bufferType, off2: int, loc2: locIdType, len: int) {
+  inline proc bufferEquals(buf1: bufferType, off1: int, loc1: locIdType,
+                           buf2: bufferType, off2: int, loc2: locIdType,
+                           len: int) {
     return _strcmp(buf1=buf1+off1,len1=len,loc1=loc1,
                    buf2=buf2+off2,len2=len,loc2=loc1) == 0;
   }
 
-  inline proc bufferEqualsLocal(buf1: bufferType, off1: int, buf2: bufferType, off2: int, len: int) {
+  inline proc bufferEqualsLocal(buf1: bufferType, off1: int,
+                                buf2: bufferType, off2: int, len: int) {
     return _strcmp_local(buf1=buf1+off1,len1=len,
                          buf2=buf2+off2,len2=len) == 0;
   }
 
-  private inline proc _strcmp_local(buf1: bufferType, len1: int, buf2: bufferType, len2: int) : int {
+  private inline proc _strcmp_local(buf1: bufferType, len1: int,
+                                    buf2: bufferType, len2: int) : int {
     // Assumes a and b are on same locale and not empty.
     const size = min(len1, len2);
     const result =  c_memcmp(buf1, buf2, size);
@@ -173,7 +180,8 @@ module ByteBufferHelpers {
     return result;
   }
 
-  inline proc _strcmp(buf1: bufferType, len1: int, loc1: locIdType, buf2: bufferType, len2: int, loc2: locIdType) {
+  inline proc _strcmp(buf1: bufferType, len1: int, loc1: locIdType,
+                      buf2: bufferType, len2: int, loc2: locIdType) {
     if loc1 == chpl_nodeID && loc2 == chpl_nodeID {
       // it's local
       return _strcmp_local(buf1, len1, buf2, len2);
