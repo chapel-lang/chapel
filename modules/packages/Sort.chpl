@@ -897,7 +897,7 @@ module MergeSort {
 pragma "no doc"
 module QuickSort {
   import Sort.defaultComparator;
-  use super.ShallowCopy;
+  use Sort.ShallowCopy;
 
   /*
    Partition the array Data[lo..hi] using the pivot at Data[pivIdx].
