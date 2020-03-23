@@ -598,12 +598,6 @@ opt_prototype:
 | TPROTOTYPE { $$ = true;  }
 ;
 
-/*include_access_control:
-  TINCLUDE { $$ = false; @$.comment = context->latestComment; context->latestComment = NULL; } // public
-| TINCLUDE TPUBLIC { $$ = false; @$.comment = context->latestComment; context->latestComment = NULL; } // also public
-| TINCLUDE TPRIVATE { $$ = true; @$.comment = context->latestComment; context->latestComment = NULL; } // private
-;*/
-
 include_access_control:
            { $$ = false; }
 | TPUBLIC  { $$ = false; }
