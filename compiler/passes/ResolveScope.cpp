@@ -49,6 +49,7 @@
 #include "LoopExpr.h"
 #include "scopeResolve.h"
 #include "stmt.h"
+#include "stringutil.h"
 
 ResolveScope* rootScope;
 
@@ -652,7 +653,7 @@ Symbol* ResolveScope::lookupForImport(Expr* expr, bool isUse) const {
       //    look for the symbols defined in the used
       //    or if the module being imported matches
       //    and if not, keep following the public use chains
-      retval = followImportUseChains(name);
+      retval = ptr->followImportUseChains(name);
 
       if (relativeScope != NULL)
         break; // only consider the one scope when doing relative imports
@@ -691,6 +692,10 @@ Symbol* ResolveScope::lookupForImport(Expr* expr, bool isUse) const {
 
     ResolveScope* scope = getScopeFor(outerMod->block);
     if (Symbol* symbol = scope->getField(rhsName)) {
+      retval = symbol;
+
+    } else if (Symbol *symbol =
+        scope->lookupPublicUnqualAccessSyms(rhsName)) {
       retval = symbol;
 
     } else {
@@ -960,6 +965,37 @@ Symbol* ResolveScope::lookupPublicImports(const char* name) const {
   }
 
   return retval;
+}
+
+Symbol* ResolveScope::lookupPublicUnqualAccessSyms(const char* name) const {
+  ModuleSymbol *ms = NULL;
+  Symbol *retval = lookupPublicUnqualAccessSyms(name, ms);
+  return retval;
+}
+
+Symbol* ResolveScope::lookupPublicUnqualAccessSyms(const char* name,
+                                                   ModuleSymbol*& modArg) const {
+  UseImportList useImportList = mUseImportList;
+
+  for_vector_allowing_0s(VisibilityStmt, visStmt, useImportList) {
+    if (ImportStmt *is = toImportStmt(visStmt)) {
+      if (!is->isPrivate) {
+        if (!is->skipSymbolSearch(name)) {
+          if (SymExpr *se = toSymExpr(is->src)) {
+            if (ModuleSymbol *ms = toModuleSymbol(se->symbol())) {
+              ResolveScope *scope = ResolveScope::getScopeFor(ms->block);
+              if (Symbol *retval = scope->lookupNameLocally(name)) {
+                modArg = ms;
+                return retval;
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
+  return NULL;
 }
 
 /************************************* | **************************************

@@ -1343,6 +1343,18 @@ module DefaultRectangular {
                                                    BoundedRangeType.bounded,
                                                    stridable)) {
 
+      // check to see whether this realloc is actually changing the
+      // bounds of the array
+      var actuallyResizing = false;
+      for i in bounds.indices {
+        if bounds(i) != dom.dsiDim(i) {
+          actuallyResizing = true;
+          break;
+        }
+      }
+      if !actuallyResizing then
+        return;
+
       // This should really be isDefaultInitializable(eltType), but that
       // doesn't always work / give correct answers yet.  The following
       // check won't catch cases such as records with non-nilable class
@@ -1351,7 +1363,10 @@ module DefaultRectangular {
       if (isNonNilableClass(eltType)) {
         halt("Can't resize domains whose arrays' elements don't have default values");
       }
-      on this {
+      if (this.locale != here) {
+        halt("internal error: dsiReallocate() can only be called from an array's home locale");
+      }
+      {
         const reallocD = {(...bounds)};
 
         // For now, we'll use realloc for 1D, non-empty arrays when
@@ -1366,10 +1381,10 @@ module DefaultRectangular {
             writeln("reallocating in-place");
 
           sizesPerDim(1) = reallocD.dsiDim(1).size;
-          _ddata_reallocate(data,
-                            eltType,
-                            oldSize=dom.dsiNumIndices,
-                            newSize=reallocD.size);
+          data = _ddata_reallocate(data,
+                                   eltType,
+                                   oldSize=dom.dsiNumIndices,
+                                   newSize=reallocD.size);
           initShiftedData();
         } else {
           var copy = new unmanaged DefaultRectangularArr(eltType=eltType,

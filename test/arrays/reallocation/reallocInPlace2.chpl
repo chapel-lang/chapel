@@ -26,3 +26,7 @@ writeln(A);
 // this should realloc in place and call deinit for 11 elements
 D = {0..10};
 writeln(A);
+
+// this shouldn't realloc at all because the domain isn't changing
+D = {0..10};
+writeln(A);

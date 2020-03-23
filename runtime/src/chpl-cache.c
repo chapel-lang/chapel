@@ -2216,10 +2216,10 @@ int should_readahead_extend(uint64_t* valid,
                             uintptr_t skip, uintptr_t len )
 {
   if(count_valid_before(valid, skip,
-        CACHE_LINES_PER_PAGE_BITMASK_WORDS) > 1)
+        CACHE_LINES_PER_PAGE_BITMASK_WORDS) > 2)
     return 1;
   if(count_valid_at_after(valid, skip+len,
-        CACHE_LINES_PER_PAGE_BITMASK_WORDS) > 1)
+        CACHE_LINES_PER_PAGE_BITMASK_WORDS) > 2)
     return -1;
   return 0;
 }
@@ -2795,7 +2795,7 @@ void chpl_cache_comm_put(void* addr, c_nodeid_t node, void* raddr,
                "from %p\n",
                chpl_nodeID, (int)chpl_task_getId(), chpl_lookupFilename(fn), ln,
                (int)size, node, raddr, addr));
-  chpl_comm_diags_verbose_rdma("get", node, size, ln, fn, commID);
+  chpl_comm_diags_verbose_rdma("put", node, size, ln, fn, commID);
 
 #ifdef DUMP
   chpl_cache_print();
@@ -2823,7 +2823,7 @@ void chpl_cache_comm_get(void *addr, c_nodeid_t node, void* raddr,
                "%d:%p to %p\n",
                chpl_nodeID, (int)chpl_task_getId(), chpl_lookupFilename(fn), ln,
                (int)size, node, raddr, addr));
-  chpl_comm_diags_verbose_rdma("put", node, size, ln, fn, commID);
+  chpl_comm_diags_verbose_rdma("get", node, size, ln, fn, commID);
 
 #ifdef DUMP
   chpl_cache_print();

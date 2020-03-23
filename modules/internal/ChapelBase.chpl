@@ -1061,7 +1061,7 @@ module ChapelBase {
   }
 
 
-  inline proc _ddata_reallocate(ref ddata,
+  inline proc _ddata_reallocate(oldDdata,
                                 type eltType,
                                 oldSize: integral,
                                 newSize: integral,
@@ -1074,21 +1074,20 @@ module ChapelBase {
                                        subloc: chpl_sublocID_t,
                                        ref callPostAlloc: bool): c_void_ptr;
     var callPostAlloc: bool;
-    const oldDdata = ddata;
 
     // destroy any elements that are going away
     param needsDestroy = __primitive("needs auto destroy",
-                                     __primitive("deref", ddata[0]));
+                                     __primitive("deref", oldDdata[0]));
     if needsDestroy && (oldSize > newSize) {
       forall i in newSize..oldSize-1 do
-        chpl__autoDestroy(ddata[i]);
+        chpl__autoDestroy(oldDdata[i]);
     }
 
-    ddata = chpl_mem_array_realloc(ddata: c_void_ptr, oldSize.safeCast(size_t),
+    const newDdata = chpl_mem_array_realloc(oldDdata: c_void_ptr, oldSize.safeCast(size_t),
                                    newSize.safeCast(size_t),
-                                   _ddata_sizeof_element(ddata),
-                                   subloc, callPostAlloc): ddata.type;
-    init_elts(ddata, newSize, eltType, lo=oldSize);
+                                   _ddata_sizeof_element(oldDdata),
+                                   subloc, callPostAlloc): oldDdata.type;
+    init_elts(newDdata, newSize, eltType, lo=oldSize);
     if (callPostAlloc) {
       pragma "fn synchronization free"
       pragma "insert line file info"
@@ -1098,9 +1097,10 @@ module ChapelBase {
                                              newNmemb: size_t,
                                              eltSize: size_t);
       chpl_mem_array_postRealloc(oldDdata:c_void_ptr, oldSize.safeCast(size_t),
-                                 ddata:c_void_ptr, newSize.safeCast(size_t),
-                                 _ddata_sizeof_element(ddata));
+                                 newDdata:c_void_ptr, newSize.safeCast(size_t),
+                                 _ddata_sizeof_element(oldDdata));
     }
+    return newDdata;
   }
 
 
@@ -1421,13 +1421,13 @@ module ChapelBase {
   inline proc _cast(type t:chpl_anyreal, x:chpl_anyreal)
     return __primitive("cast", t, x);
 
-  inline proc _cast(type t:chpl_anybool, x:enum)
+  inline proc _cast(type t:chpl_anybool, x:enum) throws
     return x: int: bool;
   // _cast(type t:integral, x:enum)
   // is generated for each enum in buildDefaultFunctions
   inline proc _cast(type t:enum, x:enum) where x.type == t
     return x;
-  inline proc _cast(type t:chpl_anyreal, x:enum)
+  inline proc _cast(type t:chpl_anyreal, x:enum) throws
     return x: int: real;
 
   inline proc _cast(type t:unmanaged class, x:_nilType)
@@ -1573,7 +1573,7 @@ module ChapelBase {
   inline proc _cast(type t:chpl_anycomplex, x: chpl_anycomplex)
     return (x.re, x.im):t;
 
-  inline proc _cast(type t:chpl_anycomplex, x: enum)
+  inline proc _cast(type t:chpl_anycomplex, x: enum) throws
     return (x:real, 0):t;
 
   //
@@ -1594,7 +1594,7 @@ module ChapelBase {
   inline proc _cast(type t:chpl_anyimag, x: chpl_anycomplex)
     return __primitive("cast", t, x.im);
 
-  inline proc _cast(type t:chpl_anyimag, x: enum)
+  inline proc _cast(type t:chpl_anyimag, x: enum) throws
     return x:real:imag;
 
   //

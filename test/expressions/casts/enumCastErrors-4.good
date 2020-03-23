@@ -1,0 +1,3 @@
+uncaught IllegalArgumentError: illegal argument 'bad cast from int '7' to enum 'color': '
+  enumCastErrors.chpl:25: thrown here
+  enumCastErrors.chpl:25: uncaught here

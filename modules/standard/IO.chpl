@@ -3340,6 +3340,8 @@ inline proc channel.readwrite(ref x) throws where !this.writing {
      Return any saved error code.
    */
   proc channel.error():syserr {
+    compilerWarning("The channel.error method is deprecated. " +
+                    "Catch errors instead.");
     var ret:syserr;
     on this.home {
       var local_error:syserr;
@@ -3355,6 +3357,8 @@ inline proc channel.readwrite(ref x) throws where !this.writing {
      Save an error code.
    */
   proc channel.setError(e:syserr) {
+    compilerWarning("The channel.setError method is deprecated. " +
+                    "Throw errors instead.");
     on this.home {
       var error = e;
       try! this.lock();
@@ -3367,6 +3371,8 @@ inline proc channel.readwrite(ref x) throws where !this.writing {
      Clear any saved error code.
    */
   proc channel.clearError() {
+    compilerWarning("The channel.clearError method is deprecated. " +
+                    "Throw and catch errors instead.");
     on this.home {
       try! this.lock();
       qio_channel_clear_error(_channel_internal);
@@ -5222,17 +5228,13 @@ proc _toIntegral(x:?t) where isIntegralType(t)
   return (x, true);
 }
 private inline
-proc _toIntegral(x:?t) where _isIoPrimitiveType(t) && !isIntegralType(t)
+proc _toIntegral(x:?t) throws where _isIoPrimitiveType(t) && !isIntegralType(t)
 {
   var ret: (int, bool);
-  try {
-    if isAbstractEnumType(t) then
-      ret = (0, false);
-    else
-      ret = (x:int, true);
-  } catch {
+  if isAbstractEnumType(t) then
     ret = (0, false);
-  }
+  else
+    ret = (x:int, true);
   return ret;
 }
 private inline
@@ -5268,17 +5270,13 @@ proc _toSigned(x:uint(64))
 }
 
 private inline
-proc _toSigned(x:?t) where _isIoPrimitiveType(t) && !isIntegralType(t)
+proc _toSigned(x:?t) throws where _isIoPrimitiveType(t) && !isIntegralType(t)
 {
   var ret: (int, bool);
-  try {
-    if isAbstractEnumType(t) then
-      ret = (0, false);
-    else
-      ret = (x:int, true);
-  } catch {
+  if isAbstractEnumType(t) then
     ret = (0, false);
-  }
+  else
+    ret = (x:int, true);
   return ret;
 }
 private inline
@@ -5315,17 +5313,13 @@ proc _toUnsigned(x:int(64))
 
 
 private inline
-proc _toUnsigned(x:?t) where _isIoPrimitiveType(t) && !isIntegralType(t)
+proc _toUnsigned(x:?t) throws where _isIoPrimitiveType(t) && !isIntegralType(t)
 {
   var ret: (uint, bool);
-  try {
-    if isAbstractEnumType(t) then
-      ret = (0:uint, false);
-    else
-      ret = (x:uint, true);
-  } catch {
+  if isAbstractEnumType(t) then
     ret = (0:uint, false);
-  }
+  else
+    ret = (x:uint, true);
   return ret;
 }
 private inline
@@ -5341,17 +5335,13 @@ proc _toReal(x:?t) where isRealType(t)
   return (x, true);
 }
 private inline
-proc _toReal(x:?t) where _isIoPrimitiveType(t) && !isRealType(t)
+proc _toReal(x:?t) throws where _isIoPrimitiveType(t) && !isRealType(t)
 {
   var ret: (real, bool);
-  try {
-    if isAbstractEnumType(t) then
-      ret = (0.0, false);
-    else
-      ret = (x:real, true);
-  } catch {
+  if isAbstractEnumType(t) then
     ret = (0.0, false);
-  }
+  else
+    ret = (x:real, true);
   return ret;
 }
 private inline
@@ -5366,17 +5356,13 @@ proc _toImag(x:?t) where isImagType(t)
   return (x, true);
 }
 private inline
-proc _toImag(x:?t) where _isIoPrimitiveType(t) && !isImagType(t)
+proc _toImag(x:?t) throws where _isIoPrimitiveType(t) && !isImagType(t)
 {
   var ret: (imag, bool);
-  try {
-    if isAbstractEnumType(t) then
-      ret = (0.0i, false);
-    else
-      ret = (x:imag, true);
-  } catch {
+  if isAbstractEnumType(t) then
     ret = (0.0i, false);
-  }
+  else
+    ret = (x:imag, true);
   return ret;
 }
 private inline
@@ -5392,17 +5378,13 @@ proc _toComplex(x:?t) where isComplexType(t)
   return (x, true);
 }
 private inline
-proc _toComplex(x:?t) where _isIoPrimitiveType(t) && !isComplexType(t)
+proc _toComplex(x:?t) throws where _isIoPrimitiveType(t) && !isComplexType(t)
 {
   var ret: (complex, bool);
-  try {
-    if isAbstractEnumType(t) then
-      ret = (0.0+0.0i, false);
-    else
-      ret = (x:complex, true);
-  } catch {
+  if isAbstractEnumType(t) then
     ret = (0.0+0.0i, false);
-  }
+  else
+    ret = (x:complex, true);
   return ret;
 }
 private inline
@@ -5438,18 +5420,14 @@ proc _toNumeric(x:?t) where isNumericType(t)
   return (x, true);
 }
 private inline
-proc _toNumeric(x:?t) where _isIoPrimitiveType(t) && !isNumericType(t)
+proc _toNumeric(x:?t) throws where _isIoPrimitiveType(t) && !isNumericType(t)
 {
   // enums, bools get cast to int.
   var ret: (int, bool);
-  try {
-    if isAbstractEnumType(t) then
-      ret = (0, false);
-    else
-      ret = (x:int, true);
-  } catch {
+  if isAbstractEnumType(t) then
     ret = (0, false);
-  }
+  else
+    ret = (x:int, true);
   return ret;
 
 }
@@ -5846,7 +5824,7 @@ proc channel._conv_sethandler(
     argtypei:c_int,
     ref style:iostyle,
     i:int, argi,
-    isReadf:bool):bool
+    isReadf:bool):bool throws
 {
   if error then return false;
   // Now, set style elements based on action
@@ -6742,6 +6720,8 @@ proc channel.skipField() throws {
 proc string.format(args ...?k): string throws {
   try {
     return chpl_do_format(this, (...args));
+  } catch e: IllegalArgumentError {
+    throw e;
   } catch e: SystemError {
     try ioerror(e.err, "in string.format");
   } catch e: DecodeError {

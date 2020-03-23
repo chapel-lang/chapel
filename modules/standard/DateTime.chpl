@@ -344,13 +344,13 @@ module DateTime {
    */
   proc date.weekday() {
     // January 1 0001 is a Monday
-    return ((toordinal() + 6) % 7): DayOfWeek;
+    return try! ((toordinal() + 6) % 7): DayOfWeek;
   }
 
   /* Return the day of the week as an `ISODayOfWeek`.
      `Monday` == 1, `Sunday` == 7 */
   proc date.isoweekday() {
-    return (weekday(): int + 1): ISODayOfWeek;
+    return try! (weekday(): int + 1): ISODayOfWeek;
   }
 
   /* Return the ISO date as a tuple containing the ISO year, ISO week number,

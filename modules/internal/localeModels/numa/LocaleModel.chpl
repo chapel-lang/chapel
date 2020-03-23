@@ -115,8 +115,8 @@ module LocaleModel {
     const _node_id : int;
     var local_name : string; // should never be modified after first assignment
 
-    var numSublocales: int; // should never be modified after first assignment
-    var childSpace: domain(1);
+    const numSublocales: int;
+    const childSpace: domain(1);
     // Todo: avoid the pragma by having helpSetupLocaleNUMA return this array
     // and initialize the field from it. Need childSpace to be const?
     pragma "unsafe"
@@ -127,10 +127,15 @@ module LocaleModel {
     // to establish the equivalence the "locale" field of the locale object
     // and the node ID portion of any wide pointer referring to it.
     proc init() {
+      use SysCTypes;
+      _node_id = chpl_nodeID: int;
+      extern proc chpl_topo_getNumNumaDomains(): c_int;
+      numSublocales = chpl_topo_getNumNumaDomains();
+      childSpace = {0..#numSublocales};
+
       if rootLocaleInitialized {
         halt("Cannot create additional LocaleModel instances");
       }
-      _node_id = chpl_nodeID: int;
 
       this.complete();
 
@@ -143,7 +148,17 @@ module LocaleModel {
       }
       super.init(parent_loc);
 
+      // Why doesn't this work (generates an internal error) to avoid
+      // the code duplication below?  Or if it's not supposed to work,
+      // how could we make it a user error?
+      //
+      //      this.init();
+
+      use SysCTypes;
       _node_id = chpl_nodeID: int;
+      extern proc chpl_topo_getNumNumaDomains(): c_int;
+      numSublocales = chpl_topo_getNumNumaDomains();
+      childSpace = {0..#numSublocales};
 
       this.complete();
 

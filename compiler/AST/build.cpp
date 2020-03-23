@@ -580,11 +580,6 @@ BlockStmt* buildImportStmt(Expr* mod, std::vector<PotentialRename*>* names,
     switch (listElem->tag) {
       case PotentialRename::SINGLE:
         if (UnresolvedSymExpr* name = toUnresolvedSymExpr(listElem->elem)) {
-          if (!privateImport) {
-            USR_FATAL(name, "unable to apply 'public' to this style of "
-                      "'import' at this time");
-          }
-
           namesList.push_back(name->unresolved);
         } else {
           USR_FATAL(listElem->elem, "incorrect expression in 'import' for "
@@ -614,8 +609,8 @@ BlockStmt* buildImportStmt(Expr* mod, std::vector<PotentialRename*>* names,
     }
   }
 
-  ImportStmt* newImport = new ImportStmt(mod, /* isPrivate= */ true,
-                                         &namesList, &renameMap);
+  ImportStmt* newImport = new ImportStmt(mod, privateImport, &namesList,
+                                         &renameMap);
   addModuleToSearchList(newImport, mod);
 
   delete names;
@@ -2425,6 +2420,45 @@ BlockStmt* handleConfigTypes(BlockStmt* blk) {
   }
   return blk;
 }
+
+static VarSymbol* one = NULL;
+
+static SymExpr* buildOneExpr() {
+  if (one == NULL) {
+    one = new_IntSymbol(1);
+  }
+  return new SymExpr(one);
+}
+
+CallExpr* buildBoundedRange(Expr* low, Expr* high,
+                            bool openlow, bool openhigh) {
+  if (openlow) {
+    low = new CallExpr("+", low, buildOneExpr());
+  }
+  if (openhigh) {
+    high = new CallExpr("-", high, buildOneExpr());
+  }
+  return new CallExpr("chpl_build_bounded_range",low, high);
+}
+
+CallExpr* buildLowBoundedRange(Expr* low, bool open) {
+  if (open) {
+    low = new CallExpr("+", low, buildOneExpr());
+  }
+  return new CallExpr("chpl_build_low_bounded_range", low);
+}
+
+CallExpr* buildHighBoundedRange(Expr* high, bool open) {
+  if (open) {
+    high = new CallExpr("-", high, buildOneExpr());
+  }
+  return new CallExpr("chpl_build_high_bounded_range", high);
+}
+
+CallExpr* buildUnboundedRange() {
+  return new CallExpr("chpl_build_unbounded_range");
+}
+
 
 // Attempt to find a stmt with a specific PrimitiveTag in a blockStmt
 //

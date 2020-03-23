@@ -4324,7 +4324,7 @@ module ChapelArray {
         i += 1;
       }
     } catch e {
-      // Deinitialize any elements that have been iniitalized.
+      // Deinitialize any elements that have been initialized.
       for j in 0..i-1 {
         chpl__autoDestroy(data[j]);
       }

@@ -1,0 +1,2 @@
+no-assign-error-where.chpl:11: In function 'main':
+no-assign-error-where.chpl:16: error: Cannot assign to R from R
