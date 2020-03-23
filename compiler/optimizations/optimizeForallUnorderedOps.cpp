@@ -267,9 +267,6 @@ void MarkOptimizableForallLastStmts::markLoopsInForall(ForallStmt* forall) {
   bool addNoTaskPrivate = forallNoTaskPrivate(forall);
   std::vector< std::vector<Expr*> > lastStatementsPerBody;
 
-  if (forall->getFunction() && forall->getFunction()->id == 1913368)
-    gdbShouldBreakHere();
-
   // Gather the last statements in each loop body
   std::vector<BlockStmt*> bodies = forall->loopBodies();
   for_vector(BlockStmt, block, bodies) {
