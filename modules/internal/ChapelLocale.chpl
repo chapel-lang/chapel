@@ -103,9 +103,14 @@ module ChapelLocale {
   pragma "no doc"
   enum localeKind { regular, any, nilLocale, dummy, default };
 
+  pragma "locale private"
   const nilLocale = new locale(localeKind.nilLocale);
   pragma "locale private"
   var defaultLocale = new locale(localeKind.default);
+
+  // dummyLocale is not locale private. We use it before locales initialized in
+  // the first place, so it should stay in the locale that started the
+  // execution.
   var dummyLocale = new locale(localeKind.dummy);
 
   pragma "always RVF"
