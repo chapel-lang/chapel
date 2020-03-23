@@ -558,7 +558,8 @@ static void warnUnstableLeadingUnderscores() {
           name[3] == 'l' &&
           name[4] == '_' &&
           def->getModule()->modTag == MOD_USER &&
-          !def->sym->hasFlag(FLAG_TEMP)) {
+          !def->sym->hasFlag(FLAG_TEMP) &&
+          !def->sym->hasFlag(FLAG_COMPILER_NESTED_FUNCTION)) {
         USR_WARN(def,
                  "Symbol names beginning with 'chpl_' (%s) are unstable.", name);
       }
