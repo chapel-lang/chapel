@@ -68,7 +68,7 @@ ImportStmt::ImportStmt(BaseAST* source, const char* rename,
 
 ImportStmt::ImportStmt(BaseAST* source, bool isPrivate,
                        std::vector<const char*>* namesList,
-                       std::map<const char*, const char*>* renamesList):
+                       std::map<const char*, const char*>* renamesMap):
   VisibilityStmt(E_ImportStmt) {
 
   this->isPrivate = isPrivate;
@@ -90,11 +90,11 @@ ImportStmt::ImportStmt(BaseAST* source, bool isPrivate,
     }
   }
 
-  if (renamesList->size() > 0) {
+  if (renamesMap->size() > 0) {
     // Symbols to enable unqualified access to with a different name than the
     // name with which they were originally declared
-    for (std::map<const char*, const char*>::iterator it = renamesList->begin();
-         it != renamesList->end(); ++it) {
+    for (std::map<const char*, const char*>::iterator it = renamesMap->begin();
+         it != renamesMap->end(); ++it) {
       renamed[it->first] = it->second;
     }
   }
@@ -415,12 +415,12 @@ bool ImportStmt::skipSymbolSearch(const char* name) {
     }
 
     for(std::map<const char*, const char*>::const_iterator it = renamed.begin();
-      it != renamed.end();
-      ++it) {
-    if (strcmp(name, it->first) == 0) {
-      return false;
+        it != renamed.end();
+        ++it) {
+      if (astr(name) == astr(it->first)) {
+        return false;
+      }
     }
-  }
     return true;
   }
 }
@@ -511,8 +511,8 @@ bool ImportStmt::providesNewSymbols(const UseStmt* other) const {
       for (std::map<const char*, const char*>::const_iterator otherIt =
              other->renamed.begin();
            otherIt != other->renamed.end(); ++otherIt) {
-        if (strcmp(it->first,  otherIt->first)  == 0 &&
-            strcmp(it->second, otherIt->second) == 0) {
+        if (astr(it->first) ==  astr(otherIt->first) &&
+            astr(it->second) == astr(otherIt->second)) {
           numSame++;
         }
       }
