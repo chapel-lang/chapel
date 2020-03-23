@@ -800,14 +800,23 @@ BlockStmt* buildIncludeModule(const char* name,
                               const char* docs) {
   astlocT loc(chplLineno, yyfilename);
   ModuleSymbol* mod = parseIncludedSubmodule(name);
+
+  // check visibility specifiers
+  //
+  //  include public/default   +  declaration public/default -> OK, public
+  //  include public/default   +  declaration private        -> error
+  //  include private          +  declaration public/default -> OK, private
+  //  include private          +  declaration private        -> OK, private
+  //
   if (priv && !mod->hasFlag(FLAG_PRIVATE)) {
     // make the module private (override public)
     mod->addFlag(FLAG_PRIVATE);
-  }
-  if (mod->hasFlag(FLAG_PRIVATE) && !priv) {
-    USR_FATAL_CONT(loc, "include public module with module declared private");
+  } else if (mod->hasFlag(FLAG_PRIVATE) && !priv) {
+    USR_FATAL_CONT(loc,
+          "cannot make a private module public through an include statement");
     USR_PRINT(mod, "module declared private here");
   }
+
   if (prototype) {
     USR_FATAL_CONT(loc, "cannot apply prototype to module in include statement");
     USR_PRINT(mod, "put prototype keyword at module declaration here");
