@@ -257,6 +257,13 @@ module Map {
       return result;
     }
 
+    pragma "no doc"
+    proc const this(k: keyType)
+    where isNonNilableClass(valType) {
+      compilerError("Cannot access nilable class directly. Use an",
+                    " appropriate accessor method instead.");
+    }
+
     /* Get a borrowed reference to the element at position `k`.
      */
     proc getBorrowedElt(k: keyType) {
@@ -266,7 +273,11 @@ module Map {
       try! {
         var result = vals[k].borrow();
         _leave();
-        return result!;
+        if isNonNilableClass(valType) {
+          return result!;
+        } else {
+          return result;
+        }
       }
     }
 
@@ -285,7 +296,7 @@ module Map {
       }
     }
 
-    proc getReferenceToElt(k: keyType) const
+    proc getElt(k: keyType) const
     where isNonNilableClass(valType) {
       _enter();
       if !myKeys.contains(k) then
