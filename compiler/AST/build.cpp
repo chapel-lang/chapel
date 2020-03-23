@@ -579,11 +579,6 @@ BlockStmt* buildImportStmt(Expr* mod, std::vector<PotentialRename*>* names,
     switch (listElem->tag) {
       case PotentialRename::SINGLE:
         if (UnresolvedSymExpr* name = toUnresolvedSymExpr(listElem->elem)) {
-          if (!privateImport) {
-            USR_FATAL(name, "unable to apply 'public' to this style of "
-                      "'import' at this time");
-          }
-
           namesList.push_back(name->unresolved);
         } else {
           USR_FATAL(listElem->elem, "incorrect expression in 'import' for "
@@ -598,8 +593,7 @@ BlockStmt* buildImportStmt(Expr* mod, std::vector<PotentialRename*>* names,
     }
   }
 
-  ImportStmt* newImport = new ImportStmt(mod, /* isPrivate= */ true,
-                                         &namesList);
+  ImportStmt* newImport = new ImportStmt(mod, privateImport, &namesList);
   addModuleToSearchList(newImport, mod);
 
   delete names;
