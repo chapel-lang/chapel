@@ -108,6 +108,11 @@ module Map {
         compilerError("maps of non-nilable owned values are not allowed");
       }
 
+      if isBorrowedClass(valType) {
+        compilerError("maps of non-nilable borrowed values are",
+                      " not currently supported");
+      }
+
       this.keyType = keyType;
       this.valType = valType;
       this.parSafe = parSafe;
@@ -266,7 +271,7 @@ module Map {
 
     /* Get a borrowed reference to the element at position `k`.
      */
-    proc getBorrowed(k: keyType) {
+    proc getBorrowed(k: keyType) where isClass(valType) {
       _enter();
       if !myKeys.contains(k) then
         boundsCheckHalt("map index " + k:string + " out of bounds");
@@ -427,7 +432,7 @@ module Map {
                `false` otherwise.
      :rtype: bool
     */
-    proc add(k: keyType, in v: valType): bool {
+    proc add(in k: keyType, in v: valType): bool {
       _enter();
       if myKeys.contains(k) {
         _leave();
@@ -473,7 +478,7 @@ module Map {
        set it to `v`. If the map already contains a value at position
        `k`, update it to the value `v`.
      */
-    proc addOrSet(k: keyType, in v: valType) {
+    proc addOrSet(in k: keyType, in v: valType) {
       if myKeys.contains(k) {
         this.set(k, v);
       } else {
