@@ -1,3 +1,4 @@
+/* ignored docs comment */
 include module SubModule;
 
 writeln("Module init");

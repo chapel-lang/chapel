@@ -800,6 +800,7 @@ BlockStmt* buildIncludeModule(const char* name,
                               const char* docs) {
   astlocT loc(chplLineno, yyfilename);
   ModuleSymbol* mod = parseIncludedSubmodule(name);
+  INT_ASSERT(mod != NULL);
 
   // check visibility specifiers
   //
@@ -821,11 +822,9 @@ BlockStmt* buildIncludeModule(const char* name,
     USR_FATAL_CONT(loc, "cannot apply prototype to module in include statement");
     USR_PRINT(mod, "put prototype keyword at module declaration here");
   }
-  if (docs != NULL) {
-    USR_FATAL_CONT(loc, "docs comment at module include line");
-    USR_PRINT(mod, "please put docs comment at module declaration here");
-  }
-  INT_ASSERT(mod != NULL);
+
+  // docs comment is ignored (the one in the module declaration is used)
+
   return buildChapelStmt(new DefExpr(mod));
 }
 
