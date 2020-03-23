@@ -266,7 +266,7 @@ module Map {
 
     /* Get a borrowed reference to the element at position `k`.
      */
-    proc getBorrowedElt(k: keyType) {
+    proc getBorrowed(k: keyType) {
       _enter();
       if !myKeys.contains(k) then
         boundsCheckHalt("map index " + k:string + " out of bounds");
@@ -284,7 +284,7 @@ module Map {
     /* Get a reference to the element at position `k`. This method is not
        available for non-nilable types.
      */
-    proc getReferenceToElt(k: keyType) ref
+    proc getReference(k: keyType) ref
     where !isNonNilableClass(valType) {
       _enter();
       if !myKeys.contains(k) then
@@ -296,7 +296,7 @@ module Map {
       }
     }
 
-    proc getElt(k: keyType) const
+    proc getValue(k: keyType) const
     where isNonNilableClass(valType) {
       _enter();
       if !myKeys.contains(k) then
@@ -310,7 +310,7 @@ module Map {
 
     /* Remove the element at position `k` from the map and return its value
      */
-    proc getAndRemoveElt(k: keyType) {
+    proc getAndRemove(k: keyType) {
       _enter();
       if !myKeys.contains(k) then
         boundsCheckHalt("map index " + k:string + " out of bounds");
