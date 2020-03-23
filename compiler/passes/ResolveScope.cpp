@@ -1055,15 +1055,31 @@ bool ResolveScope::getFieldsWithUses(const char* fieldName,
 
       // Do not use for_vector(); it terminates on a NULL
       for (size_t i = 0; i < useImportList.size(); i++) {
-        UseStmt* use = toUseStmt(useImportList[i]);
-
-        if (use != NULL) {
+        if (UseStmt* use = toUseStmt(useImportList[i])) {
           if (use->skipSymbolSearch(fieldName) == false) {
             BaseAST*    scopeToUse = use->getSearchScope();
             const char* nameToUse  = NULL;
 
             if (use->isARenamedSym(fieldName) == true) {
               nameToUse = use->getRenamedSym(fieldName);
+            } else {
+              nameToUse = fieldName;
+            }
+
+            if (ResolveScope* next = getScopeFor(scopeToUse)) {
+              if (Symbol* sym = next->lookupNameLocally(nameToUse)) {
+                symbols.push_back(sym);
+              }
+            }
+          }
+
+        } else if (ImportStmt* import = toImportStmt(useImportList[i])) {
+          if (import->skipSymbolSearch(fieldName) == false) {
+            BaseAST*    scopeToUse = import->getSearchScope();
+            const char* nameToUse  = NULL;
+
+            if (import->isARenamedSym(fieldName) == true) {
+              nameToUse = import->getRenamedSym(fieldName);
             } else {
               nameToUse = fieldName;
             }
