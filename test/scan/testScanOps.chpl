@@ -1,5 +1,6 @@
 
 use BlockDist;
+use PrivateDist;
 use Random;
 
 config const n = 100;
@@ -20,6 +21,10 @@ proc testType(type T) {
 
   var BL : [S] T = DR;
   test(BL);
+
+  var PR : [PrivateSpace] T = DR[1..numLocales];
+  test(PR);
+
 }
 
 proc test(A : []) {
