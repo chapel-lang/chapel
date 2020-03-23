@@ -491,7 +491,7 @@ static void includedStrictNames(ModuleSymbol* mod) {
     // module name should match file name
     const char* fname = filenameToModulename(parent->astloc.filename);
     if (fname != parent->name) {
-      USR_FATAL("Cannot include module from module with different file name");
+      USR_FATAL("Cannot include module from module with different filename");
     }
 
     // parent module must be top-level in its file.
@@ -508,7 +508,7 @@ static void includedStrictNames(ModuleSymbol* mod) {
     }
 
     if (lastParentSameFile != parent) {
-      USR_FATAL(parent, "Cannot include module from a inline nested module");
+      USR_FATAL(parent, "Cannot include module from an in-line nested module");
     }
   }
 }

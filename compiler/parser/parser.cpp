@@ -824,7 +824,7 @@ ModuleSymbol* parseIncludedSubmodule(const char* name) {
 
   const char* modNameFromFile = filenameToModulename(curPath.c_str());
   if (0 != strcmp(modNameFromFile, currentModuleName))
-    USR_FATAL("Cannot include module from module with different file name");
+    USR_FATAL("Cannot include module from module with different filename");
 
   ModuleSymbol* ret = parseFile(astr(includeFile), currentModuleType,
                                 /* namedOnCommandLine */ false,

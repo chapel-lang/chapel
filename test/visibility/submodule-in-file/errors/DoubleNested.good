@@ -1,1 +1,1 @@
-DoubleNested.chpl:2: error: Cannot include module from a inline nested module
+DoubleNested.chpl:2: error: Cannot include module from an in-line nested module
