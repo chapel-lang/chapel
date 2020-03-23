@@ -547,7 +547,8 @@ static void warnUnstableLeadingUnderscores() {
       
       if (name && name[0] == '_' &&
           def->getModule()->modTag == MOD_USER &&
-          !def->sym->hasFlag(FLAG_TEMP)) {
+          !def->sym->hasFlag(FLAG_TEMP) &&
+          def->sym->type != dtMethodToken) {
         USR_WARN(def,
                  "Symbol names with leading underscores (%s) are unstable.", name);
       }
@@ -559,7 +560,9 @@ static void warnUnstableLeadingUnderscores() {
           name[4] == '_' &&
           def->getModule()->modTag == MOD_USER &&
           !def->sym->hasFlag(FLAG_TEMP) &&
-          !def->sym->hasFlag(FLAG_COMPILER_NESTED_FUNCTION)) {
+          !def->sym->hasFlag(FLAG_INDEX_VAR) &&
+          !def->sym->hasFlag(FLAG_COMPILER_NESTED_FUNCTION) &&
+          !def->getFunction()->hasFlag(FLAG_COMPILER_NESTED_FUNCTION)) {
         USR_WARN(def,
                  "Symbol names beginning with 'chpl_' (%s) are unstable.", name);
       }
