@@ -48,6 +48,7 @@ bool                 chplParseString               = false;
 const char*          chplParseStringMsg            = NULL;
 
 bool                 currentFileNamedOnCommandLine = false;
+
 bool                 parsed                        = false;
 
 static bool          sFirstFile                    = true;
