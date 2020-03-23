@@ -707,24 +707,42 @@ where a comma-separated list of components is valid.
       1
       (2, 3)
 
+.. _Light_Tuples_and_Heavy_Tuples:
+
+Light Tuples and Heavy Tuples
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Throughout the next few sections, the terms "light tuple" and "heavy tuple"
+will be used frequently to describe two different ways in which tuples
+may capture their elements.
+
+Tuple expressions or tuple arguments with default argument intent are light
+tuples. They capture individual elements based on the default argument
+intent of that element's type.
+
+Tuple variables or tuple arguments with `in` intent are heavy tuples. They
+store all elements by value and will make a copy of each element.
+
+In all other respects light tuples and heavy tuples are identical.
+
 .. _Tuple_Expression_Behavior:
 
 Tuple Expression Behavior
 -------------------------
 
--- TODO: Define the terms outright at hte beginning of this section (the
-         A type tuple and the B type tuple).
-
-When a tuple expression is created, each element of the tuple is captured
-based on the default argument intent of the element's type.
+Tuple expressions are one form of light tuple. Like other light tuples, tuple
+expressions capture each element based on the default argument intent of
+the element's type.
 
    *Example (tuple-expression-behavior.chpl)*.
 
-For each element:
+More specifically:
 
 -  If the default argument intent of the element's type is a variation of
-   `ref`, then the tuple will refer to the element. 
--  Otherwise, the tuple will store the element by value.
+   `ref`, then the tuple expression will refer to the element. 
+-  Otherwise, the tuple expression will store the element by value.
+
+The above holds true for other forms of light tuple.
  
 Consider the following example:
 
@@ -743,6 +761,7 @@ Consider the following example:
         a[0] = 1;
         i = 2;
         r.x = 3;
+        writeln(tup); // Outputs (1, 0, (x = 3)).
       }
 
       writeln(a); // Outputs 1.
@@ -751,14 +770,7 @@ Consider the following example:
 
    .. BLOCK-test-chapeloutput
 
-      1
-      0
-      (x = 3)
-
--- TODO: We could have another example that has a tuple capture globals,
-         modify the globals, and then print out the tuple to illustrate
-         that it has captured them by ref.
-         (Basically, don't modify the elements through the tuple).
+      (1, 0, (x = 3))
 
 The tuple literal `(a, i, r)` will capture the array `a` and the record `r`
 by `ref`, but will create a copy of the integer `i`.
@@ -771,62 +783,15 @@ by `ref`, but will create a copy of the integer `i`.
    the element's type, the rules are made both simple to remember and follow
    the principle of least surprise.
 
-   -- TODO: Put an analogy w.r.t. argument passing and varargs here, because
-            that is what inspired this design.
+.. _Tuples_and_Return_Intent_Overloading:
 
-.. _Tuple_Expressions_Preserve_Constness:
-
-Tuple Expressions Preserve Constness
+Tuples and Return Intent Overloading
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-When a tuple element is captured by `ref` (based on the default argument
-intent of its type), whether or not that reference is `const` depends on
-the constness of the value that is captured, with respect to the current
-scope.
-
-   *Example (tuple-expression-constness.chpl)*.
-
-For each tuple element to be captured by `ref`:
-
--  If the value to be captured is `const`, then the tuple element will
-   be captured by `const ref`.
--  Otherwise, the tuple element will be captured by `ref`. 
-
-Consider the following example:
-
-   .. code-block:: chapel
-
-      record R { var x: int = 0; }
-
-      var a: [0..0] int;
-      const r: R;
-
-      // This will emit a compiler error - `r` is const!
-      (a, r)[2].x = 128;
-
-   .. BLOCK-test-chapeloutput
-
-      TODO: How to make this a future? See #14902.
-      TODO: Just remove this test?
-
-The tuple expression `(a, r)` will capture the array `a` by `ref`. However,
-since the record `r` is declared as `const`, it will be captured into
-the tuple expression by `const ref` instead of `ref`.
-
-Assignment to `r.x` through the tuple expression will fail with a compiler
-error.
-
--- TODO: Completely leave out this section.
-         If we have explained constness correctly, then that this is an error
-         should be intuitive.
--- TODO: Have we explained constness correctly?
--- TODO: We can put a section that says something like "Tuples and Return
-         Intent Overloading".
-         "The constness of an element cpatured by reference depends on how
-          it is used, just as the constness of an array argument depends on
-          whether it is modified in the body of a routine." (provide a link
-          to the relevant section).
--- TODO: Change subsection name, provide example with array "burrito".
+  -- TODO: Explain that the constness of an element captured by reference
+     depends on how it is used, just as the constness of an array argument
+     depends on whether or not it is modified in the body of a routine.
+  -- Provide an example with arrays.
 
 .. _Tuple_Variable_Behavior:
 
@@ -869,27 +834,10 @@ and the integer `i`. This is in contrast to tuple expression behavior, where
 both `a` and `r` would be captured into a tuple expression by reference.
 Since `i` is a primitive scalar, it is copied regardless.
 
--- TODO: If we want to have a "ref r = myTuple", then myTuple has to be a (B)
-         style tuple.
--- TODO: It should be the same for `const ref` as well.
-
 .. _Tuple_Argument_Behavior:
 
 Tuple Argument Behavior
 -----------------------
-
-Default argument intent for tuple is analogous to how tuple expressions
-work (?).
-
-- Define two keywords:
-    a) A tuple that is storing things by default intent
-    b) A tuple that is storing everything by value
-
-For argument passing it's OK to convert a B into an A, and for returning a
-tuple or restoring it into a variable, it is OK to convert an a into a B.
-
-"When are you allowed to store or pass your tuple into a ref variable?"
-  - Just try to answer this question.
 
 If a formal argument is a tuple and has the default argument intent, then it
 will not copy tuple elements and can accept a tuple expression as an actual
@@ -915,14 +863,6 @@ with a `blank` intent. The tuple itself is considerd `const` within the
 scope of the routine. The individual elements of the tuple are considered
 to be `const` and cannot be modified.
 
--- TODO: Describe the following in terms of the (A) and (B) tuples.
-
-- The default intent is the burrito intent
-- Ref intent
-- Const intent 
-
--- "Ref and const ref arguments" require a (B) tuple.
-
 .. _Tuple_Return_Behavior:
 
 Tuple Return Behavior
@@ -931,11 +871,6 @@ Tuple Return Behavior
 When a tuple is returned from a function with `ref` or `const ref` return
 intent, that tuple must either refer to a variable or another tuple that does
 not refer to elements. Otherwise there is a compilation error.
-
-^ (It's trying to refer to the keyword "B"!)
-
-When a tuple expression is returned from a function by value, it is converted
-into a B type tuple.
 
    .. code-block:: chapel
 
@@ -960,16 +895,6 @@ into a B type tuple.
    .. BLOCK-test-chapeloutput
 
       (0, 0, (x = 0))
-
-.. _Tuple_Burrito_Behavior:
-
-Tuple Burrito Behavior
-----------------------
-
-There is something going on here! Try to explain the tuple burrito with
-the array example, and link to the return intent overloading section
-(The intent depends on the body of the function) <- if there isn't an example
-of this then you can create a small one (ref if modified, const ref if not).
 
 .. _Tuple_Operators:
 
