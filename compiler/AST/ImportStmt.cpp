@@ -188,9 +188,16 @@ void ImportStmt::scopeResolve(ResolveScope* scope) {
                       "module, symbol '%s' is not", sym->name);
           }
 
-          // We want to only enable unqualified access of this particular symbol
-          // in the module
-          this->unqualified.push_back(sym->name);
+          if (modRename[0] != '\0') {
+            // The user wanted to rename this symbol when bringing it in.
+            // Move the module rename to be the rename for the symbol
+            renamed[modRename] = sym->name;
+            modRename = "";
+          } else {
+            // We want to only enable unqualified access of this particular
+            // symbol in the module
+            this->unqualified.push_back(sym->name);
+          }
 
           ModuleSymbol* parentSym = toModuleSymbol(sym->defPoint->parentSymbol);
           if (parentSym == NULL) {
@@ -201,10 +208,6 @@ void ImportStmt::scopeResolve(ResolveScope* scope) {
             USR_PRINT(this, "'%s' is not a module",
                       sym->defPoint->parentSymbol->name);
             USR_STOP();
-          } else if (this->isARename()) {
-            // This shouldn't be too hard, though.
-            USR_FATAL(this, "renaming imported symbols that aren't modules is "
-                      "not currently supported");
           }
           scope->enclosingModule()->moduleUseAdd(parentSym);
           updateEnclosingBlock(scope, parentSym);
@@ -467,8 +470,12 @@ bool ImportStmt::providesNewSymbols(const UseStmt* other) const {
   // Otherwise, we provide symbols for unqualified access, so we might provide
   // something that the limited UseStmt doesn't.
   if (other->hasExceptList()) {
-    // If there's overlap between our symbols and the other's except list, then
-    // we provide new symbols
+    if (renamed.size() > 0) {
+      // If we renamed any symbols, then we provide something new
+      return true;
+    }
+    // If there were no renamed symbols and there's overlap between our symbols
+    // and the other's except list, then we provide new symbols
     unsigned int numSame = 0;
     for_vector(const char, name, unqualified) {
       if (std::find(other->named.begin(), other->named.end(),
@@ -478,10 +485,11 @@ bool ImportStmt::providesNewSymbols(const UseStmt* other) const {
     }
     return numSame > 0;
 
-  } else if (other->named.size() + other->renamed.size() < unqualified.size()) {
+  } else if (other->named.size() + other->renamed.size() < unqualified.size() +
+             renamed.size()) {
     // Other has an 'only' list and it has less symbols in it than our list of
-    // unqualified symbols.  By definition, this means we are providing symbols
-    // not available in other.
+    // unqualified or renamed symbols.  By definition, this means we are
+    // providing symbols not available in other.
     return true;
 
   } else {
@@ -494,9 +502,25 @@ bool ImportStmt::providesNewSymbols(const UseStmt* other) const {
       }
     }
 
+    for(std::map<const char*, const char*>::const_iterator it = renamed.begin();
+        it != renamed.end(); ++it) {
+      // Don't check against other's only list.  A renamed version of
+      // something in their only list is a new symbol
+      // Do check against other's renamed list.  If both uses cause the exact
+      // same rename to occur, we should count it.
+      for (std::map<const char*, const char*>::const_iterator otherIt =
+             other->renamed.begin();
+           otherIt != other->renamed.end(); ++otherIt) {
+        if (strcmp(it->first,  otherIt->first)  == 0 &&
+            strcmp(it->second, otherIt->second) == 0) {
+          numSame++;
+        }
+      }
+    }
+
     // If all of our symbols for unqualified access were in the other's 'only'
     // list, then we don't provide anything new.
-    return numSame != unqualified.size();
+    return numSame != unqualified.size() + renamed.size();
   }
 }
 
@@ -516,7 +540,8 @@ bool ImportStmt::providesNewSymbols(const ImportStmt* other) const {
     // We both provide unqualified access to at least some of the symbols in the
     // module.  It's possible that we overlap somewhat, so check to be sure
 
-    if (other->unqualified.size() < unqualified.size()) {
+    if (other->unqualified.size() + other->renamed.size() < unqualified.size() +
+        renamed.size()) {
       // We defined more unqualified symbols than the other import, so we
       // definitely provide more
       return true;
@@ -530,9 +555,25 @@ bool ImportStmt::providesNewSymbols(const ImportStmt* other) const {
         }
       }
 
+      for(std::map<const char*, const char*>::const_iterator it =
+            renamed.begin(); it != renamed.end(); ++it) {
+        // Don't check against other's unqualified list.  A renamed version of
+        // something in their unqualified list is a new symbol
+        // Do check against other's renamed list.  If both uses cause the exact
+        // same rename to occur, we should count it.
+        for (std::map<const char*, const char*>::const_iterator otherIt =
+               other->renamed.begin();
+             otherIt != other->renamed.end(); ++otherIt) {
+          if (strcmp(it->first,  otherIt->first)  == 0 &&
+              strcmp(it->second, otherIt->second) == 0) {
+            numSame++;
+          }
+        }
+      }
+
       // If all of our provided unqualified symbols were already provided by
       // this import, then obviously we provide no new symbols.
-      return numSame != unqualified.size();
+      return numSame != unqualified.size() + renamed.size();
     }
   }
 }
