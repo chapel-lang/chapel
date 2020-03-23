@@ -12,6 +12,6 @@ errors-dead-early.chpl:42: In function 'test5':
 errors-dead-early.chpl:44: error: reference points to scoped variable reachable after lifetime ends
 errors-dead-early.chpl:49: In function 'test6':
 errors-dead-early.chpl:51: error: Scoped variable a would outlive the value it is set to
-errors-dead-early.chpl:113: In function 'test7':
-errors-dead-early.chpl:116: error: Scoped variable b would outlive the value it is set to
-errors-dead-early.chpl:114: note: consider scope of x
+errors-dead-early.chpl:114: In function 'test7':
+errors-dead-early.chpl:117: error: Scoped variable b would outlive the value it is set to
+errors-dead-early.chpl:115: note: consider scope of x

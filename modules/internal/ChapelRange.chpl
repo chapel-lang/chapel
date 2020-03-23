@@ -19,7 +19,7 @@
 /*
   A ``range`` is a first-class, constant-space representation of a
   regular sequence of values.  These values are typically integers,
-  though ranges over enumerated types are also supported.  Ranges
+  though ranges over enum types are also supported.  Ranges
   support iteration over the sequences they represent as well as
   operations such as counting, striding, intersection, shifting, and
   comparisons.
@@ -45,7 +45,7 @@
     ..10  // .., 8, 9, 10
     ..    // ..., -2, -1, 0, 1, 2, ...
 
-  Ranges over enumerated types respect the declaration order of its values:
+  Ranges over enum types respect the declaration order of its values:
 
   .. code-block:: chapel
 
@@ -56,7 +56,7 @@
   -----------
   Range types are generic with respect to three fields:
 
-  * ``idxType``: The type of the range's values—must an integral or enumerated type (defaults to ``int``)
+  * ``idxType``: The type of the range's values—must an integral or enum type (defaults to ``int``)
   * ``boundedType``: A :enum:`BoundedRangeType` value indicating which bounds the range stores (defaults to ``bounded``)
   * ``stridable``: A boolean indicating whether or not the range can be strided (defaults to ``false``)
 
@@ -222,7 +222,7 @@ module ChapelRange {
   }
 
   /* The ``idxType`` as represented by an integer type.  When
-     ``idxType`` is an enumerated type, this evaluates to ``int``.
+     ``idxType`` is an enum type, this evaluates to ``int``.
      Otherwise, it evaluates to ``idxType``. */
   proc range.intIdxType type {
     return chpl__idxTypeToIntIdxType(idxType);
@@ -330,7 +330,7 @@ module ChapelRange {
     return new range(int(w), _low=low, _high=high);
   proc chpl_build_bounded_range(low: uint(?w), high: uint(w))
     return new range(uint(w), _low=low, _high=high);
-  proc chpl_build_bounded_range(low: enumerated, high: enumerated) {
+  proc chpl_build_bounded_range(low: enum, high: enum) {
     if (low.type != high.type) then
       compilerError("ranges of enums must use a single enum type");
     return new range(low.type, _low=low, _high=high);
@@ -344,7 +344,7 @@ module ChapelRange {
   // Range builders for low bounded ranges
   proc chpl_build_low_bounded_range(low: integral)
     return new range(low.type, BoundedRangeType.boundedLow, _low=low);
-  proc chpl_build_low_bounded_range(low: enumerated)
+  proc chpl_build_low_bounded_range(low: enum)
     return new range(low.type, BoundedRangeType.boundedLow, _low=low);
   proc chpl_build_low_bounded_range(low: bool)
     return new range(low.type, BoundedRangeType.boundedLow, _low=low);
@@ -355,7 +355,7 @@ module ChapelRange {
   // Range builders for high bounded ranges
   proc chpl_build_high_bounded_range(high: integral)
     return new range(high.type, BoundedRangeType.boundedHigh, _high=high);
-  proc chpl_build_high_bounded_range(high: enumerated)
+  proc chpl_build_high_bounded_range(high: enum)
     return new range(high.type, BoundedRangeType.boundedHigh, _high=high);
   proc chpl_build_high_bounded_range(high: bool)
     return new range(high.type, BoundedRangeType.boundedHigh, _high=high);
@@ -1722,7 +1722,7 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
     for i in r do yield i;
   }
 
-  iter chpl_direct_range_iter(low: enumerated, high: enumerated,
+  iter chpl_direct_range_iter(low: enum, high: enum,
                               stride: integral) {
     const r = low..high by stride;
     for i in r do yield i;
@@ -1745,7 +1745,7 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
     for i in chpl_direct_param_stride_range_iter(low, high, stride) do yield i;
   }
 
-  iter chpl_direct_range_iter(low: enumerated, high: enumerated,
+  iter chpl_direct_range_iter(low: enum, high: enum,
                               param stride: integral) {
     if (stride == 1) {
         // Optimize for the stride == 1 case because I anticipate it'll be
@@ -1827,12 +1827,12 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
     for i in chpl_direct_counted_range_iter_helper(low, count) do yield i;
   }
 
-  iter chpl_direct_counted_range_iter(low: enumerated, count:int(?w)) {
+  iter chpl_direct_counted_range_iter(low: enum, count:int(?w)) {
     const r = low..;
     for i in r#count do yield i;
   }
 
-  iter chpl_direct_counted_range_iter(low: enumerated, count:uint(?w)) {
+  iter chpl_direct_counted_range_iter(low: enum, count:uint(?w)) {
     const r = low..;
     for i in r#count do yield i;
   }
@@ -2570,7 +2570,7 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
       return i: idxType;
   }
 
-  inline proc chpl__intToIdx(type idxType: enumerated, i: integral) {
+  inline proc chpl__intToIdx(type idxType: enum, i: integral) {
     return chpl__orderToEnum(i, idxType);
   }
 
@@ -2594,7 +2594,7 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
     return i;
   }
 
-  inline proc chpl__idxToInt(i: enumerated) {
+  inline proc chpl__idxToInt(i: enum) {
     return chpl__enumToOrder(i);
   }
 

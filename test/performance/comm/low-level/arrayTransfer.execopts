@@ -1,7 +1,8 @@
 #!/usr/bin/env python
 import os
-# Valgrind causes a program to "use a lot more memory", so limit mem fraction
-if os.getenv('CHPL_TEST_VGRND_EXE') == 'on':
+# Valgrind causes a program to "use a lot more memory", so limit mem fraction,
+# and this test is slower under baseline
+if os.getenv('CHPL_TEST_VGRND_EXE') == 'on' or '--baseline' in os.getenv('COMPOPTS'):
     print('--xferMB=2')
 else:
     print('--xferMB=2048')

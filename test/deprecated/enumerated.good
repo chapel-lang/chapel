@@ -1,0 +1,3 @@
+enumerated.chpl:3: In function 'foo':
+enumerated.chpl:3: warning: 'enumerated' is deprecated - please use 'enum' instead
+In foo: green

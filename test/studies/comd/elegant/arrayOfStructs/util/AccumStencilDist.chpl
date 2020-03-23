@@ -324,7 +324,7 @@ override proc AccumStencil.dsiNewRectangularDom(param rank: int, type idxType,
 //
 // output distribution
 //
-proc AccumStencil.writeThis(x) {
+proc AccumStencil.writeThis(x) throws {
   x.writeln("AccumStencil");
   x.writeln("-------");
   x.writeln("distributes: ", boundingBox);
@@ -357,7 +357,7 @@ proc AccumStencil.getChunk(inds, locid) {
   //
   const chunk = locDist(locid).myChunk((...inds.getIndices()));
   if sanityCheckDistribution then
-    if chunk.numIndices > 0 {
+    if chunk.size > 0 {
       if targetLocsIdx(chunk.low) != locid then
         writeln("[", here.id, "] ", chunk.low, " is in my chunk but maps to ",
                 targetLocsIdx(chunk.low));
@@ -669,7 +669,7 @@ proc AccumStencilDom.dsiBuildArray(type eltType) {
   return arr;
 }
 
-proc AccumStencilDom.dsiNumIndices return whole.numIndices;
+proc AccumStencilDom.dsiNumIndices return whole.size;
 proc AccumStencilDom.dsiLow return whole.low;
 proc AccumStencilDom.dsiHigh return whole.high;
 proc AccumStencilDom.dsiStride return whole.stride;
@@ -746,7 +746,7 @@ proc AccumStencilDom.setup() {
 
       myLocDom.myBlock = dist.getChunk(whole, localeIdx);
 
-      if !isZeroTuple(fluff) && myLocDom.myBlock.numIndices != 0 then {
+      if !isZeroTuple(fluff) && myLocDom.myBlock.size != 0 then {
         myLocDom.myFluff = myLocDom.myBlock.expand(fluff*abstr);
       } else {
         myLocDom.myFluff = myLocDom.myBlock;
@@ -958,7 +958,7 @@ iter AccumStencilArr.these(param tag: iterKind) where tag == iterKind.leader {
     yield followThis;
 }
 
-proc AccumStencilArr.dsiStaticFastFollowCheck(type leadType) param
+override proc AccumStencilArr.dsiStaticFastFollowCheck(type leadType) param
   return leadType == this.type || leadType == this.dom.type;
 
 proc AccumStencilArr.dsiDynamicFastFollowCheck(lead: [])
@@ -1479,7 +1479,7 @@ proc AccumStencil.init(other: unmanaged AccumStencil, privateData,
   dataParMinGranularity = privateData(5);
 }
 
-proc AccumStencil.dsiSupportsPrivatization() param return true;
+override proc AccumStencil.dsiSupportsPrivatization() param return true;
 
 proc AccumStencil.dsiGetPrivatizeData() {
   return (boundingBox.dims(), targetLocDom.dims(),
@@ -1503,7 +1503,7 @@ proc AccumStencil.dsiReprivatize(other, reprivatizeData) {
   dataParMinGranularity = other.dataParMinGranularity;
 }
 
-proc AccumStencilDom.dsiSupportsPrivatization() param return true;
+override proc AccumStencilDom.dsiSupportsPrivatization() param return true;
 
 proc AccumStencilDom.dsiGetPrivatizeData() return (dist.pid, whole.dims());
 
@@ -1536,7 +1536,7 @@ proc AccumStencilDom.dsiReprivatize(other, reprivatizeData) {
   }
 }
 
-proc AccumStencilArr.dsiSupportsPrivatization() param return true;
+override proc AccumStencilArr.dsiSupportsPrivatization() param return true;
 
 proc AccumStencilArr.dsiGetPrivatizeData() return dom.pid;
 

@@ -44,17 +44,15 @@ proc tl()         { writeln(pfx); }
 /// locales for testing /////////////////////////////////////////////////////
 
 var mylocdom: domain(2);
-var mylocs: [mylocdom] locale?;
+var mylocs: [mylocdom] locale;
 var manylocs: bool;
-
-proc postfix!(A:[]) { var B = for a in A do a!; return B; } //#15080
 
 // Initialize 'mylocs' and 'manylocs'.
 //
 proc setupLocales(s1:int, s2:int, ensureManyLocs: bool = false) {
   hd("setupLocales ", s1, "*", s2);
   mylocdom = {0..#s1,0..#s2};
-  manylocs = (numLocales >= mylocs.numElements);
+  manylocs = (numLocales >= mylocs.size);
 
   if manylocs {
     var i = 0;
@@ -65,7 +63,7 @@ proc setupLocales(s1:int, s2:int, ensureManyLocs: bool = false) {
   }
 
   if !manylocs && ensureManyLocs then halt("not enough locales: wanted ",
-    mylocs.numElements, ", got ", numLocales);
+    mylocs.size, ", got ", numLocales);
 
   msg("mylocs");
   msgserial(mylocs);
@@ -77,7 +75,7 @@ proc setupLocales(s1:int, s2:int, ensureManyLocs: bool = false) {
 //
 iter overLocales(): locale {
   if (manylocs) then
-    for l in mylocs do yield l!;
+    for l in mylocs do yield l;
   else
     yield here;
 }

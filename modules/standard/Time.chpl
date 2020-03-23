@@ -109,7 +109,7 @@ proc getCurrentDayOfWeek() : Day {
 
   chpl_timevalue_parts(now, seconds, minutes, hours, mday, month, year, wday, yday, isdst);
 
-  return wday : Day;
+  return try! wday : Day;
 }
 
 /*

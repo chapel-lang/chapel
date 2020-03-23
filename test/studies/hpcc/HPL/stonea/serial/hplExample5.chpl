@@ -212,11 +212,11 @@ proc LUFactorize(n : int, A : [1..n, 1..n+1] real, piv : [1..n] int) {
         // Now that we've sliced and diced A properly do the blocked-LU
         // computation:
         panelSolve(A, l, piv);
-        if(tr.numIndices > 0) then
+        if(tr.size > 0) then
             updateBlockRow(A, tl, tr);
 
         // update trailing submatrix (if there)
-        if(br.numIndices > 0) {
+        if(br.size > 0) {
             schurComplement(A, blk);
          }
     }

@@ -9,8 +9,8 @@ config const showlocales = false;
 var gridLocales: [gridDom] locale = setupGridLocales();
 
 proc setupGridLocales(ensureManyLocs = false) {
-  var gridLocales: [gridDom] locale?;
-  manylocs = (numLocales >= gridLocales.numElements);
+  var gridLocales: [gridDom] locale;
+  manylocs = (numLocales >= gridLocales.size);
 
   if manylocs {
     var i = 0;
@@ -23,15 +23,15 @@ proc setupGridLocales(ensureManyLocs = false) {
   } else {
     gridLocales = Locales(0);
     if showlocales then
-      writeln("oversubscribed Locales(0) over ", gridLocales.numElements,
+      writeln("oversubscribed Locales(0) over ", gridLocales.size,
               " locales");
   }
 
   if !manylocs && ensureManyLocs then halt("not enough locales: wanted ",
-    gridLocales.numElements, ", got ", numLocales);
+    gridLocales.size, ", got ", numLocales);
   writeln();
 
-  return gridLocales!;
+  return gridLocales;
 }
 
 const gridDist = gridDom dmapped Block(gridDom, gridLocales);

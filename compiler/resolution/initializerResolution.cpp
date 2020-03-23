@@ -289,6 +289,14 @@ static CallExpr* buildInitCall(CallExpr* newExpr,
       USR_FATAL(call, "initialization requires an argument for %s", arg->name);
   }
 
+  // check that the type created by init is compatible with the requested
+  // type (e.g. for `type t = C(int); var x = new t(real);`).
+  if (isSubtypeOrInstantiation(tmp->type, at, call) == false) {
+    USR_FATAL_CONT(call, "initializer produces a different type");
+    USR_PRINT(call, "new was provided type '%s'", toString(at));
+    USR_PRINT(call, "init resulted in type '%s'", toString(tmp->type));
+  }
+
   return call;
 }
 

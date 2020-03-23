@@ -1,11 +1,13 @@
---xferMem=512   --runSecs=1.0 --op=opPut # array-put-512B
---xferMem=4096  --runSecs=1.0 --op=opPut # array-put-4096B
---xferMB=1      --runSecs=1.0 --op=opPut # array-put-1M
---xferMB=1024   --runSecs=1.0 --op=opPut # array-put-1G
---memFraction=4 --runSecs=1.0 --op=opPut # array-put-FR4
+--xferMem=512   --runSecs=1.0 --op=opPut           # array-put-512B
+--xferMem=4096  --runSecs=1.0 --op=opPut           # array-put-4096B
+--xferMB=1      --runSecs=1.0 --op=opPut           # array-put-1M
+--xferMB=1      --runSecs=1.0 --op=opMisalignedPut # array-misaligned-put-1M
+--xferMB=1024   --runSecs=1.0 --op=opPut           # array-put-1G
+--memFraction=4 --runSecs=1.0 --op=opPut           # array-put-FR4
 
---xferMem=512   --runSecs=1.0 --op=opGet # array-get-512B
---xferMem=4096  --runSecs=1.0 --op=opGet # array-get-4096B
---xferMB=1      --runSecs=1.0 --op=opGet # array-get-1M
---xferMB=1024   --runSecs=1.0 --op=opGet # array-get-1G
---memFraction=4 --runSecs=1.0 --op=opGet # array-get-FR4
+--xferMem=512   --runSecs=1.0 --op=opGet           # array-get-512B
+--xferMem=4096  --runSecs=1.0 --op=opGet           # array-get-4096B
+--xferMB=1      --runSecs=1.0 --op=opGet           # array-get-1M
+--xferMB=1      --runSecs=1.0 --op=opMisalignedGet # array-misaligned-get-1M
+--xferMB=1024   --runSecs=1.0 --op=opGet           # array-get-1G
+--memFraction=4 --runSecs=1.0 --op=opGet           # array-get-FR4

@@ -161,12 +161,12 @@ class SparseBlockDom: BaseSparseDomImpl {
   }
 
   override proc bulkAdd_help(inds: [?indsDom] index(rank,idxType),
-      dataSorted=false, isUnique=false, addOn=nil:locale?) {
+      dataSorted=false, isUnique=false, addOn=nilLocale) {
     use Sort;
     use Search;
 
     // call local bulk addition helper if necessary
-    if addOn != nil {
+    if addOn != nilLocale {
       var retval = 0;
       on addOn {
         if inds.locale == here {
@@ -367,7 +367,7 @@ class LocSparseBlockDom {
   }
 
   proc dsiNumIndices {
-    return mySparseBlock.numIndices;
+    return mySparseBlock.size;
   }
 }
 
@@ -753,7 +753,7 @@ proc LocSparseBlockArr.dsiSerialWrite(f) {
 }
 
 
-proc SparseBlockDom.dsiSupportsPrivatization() param return true;
+override proc SparseBlockDom.dsiSupportsPrivatization() param return true;
 
 proc SparseBlockDom.dsiGetPrivatizeData() return (dist.pid, whole.dims());
 
@@ -781,7 +781,7 @@ proc SparseBlockDom.dsiReprivatize(other, reprivatizeData) {
   whole = {(...reprivatizeData)};
 }
 
-proc SparseBlockArr.dsiSupportsPrivatization() param return true;
+override proc SparseBlockArr.dsiSupportsPrivatization() param return true;
 
 proc SparseBlockArr.dsiGetPrivatizeData() return dom.pid;
 

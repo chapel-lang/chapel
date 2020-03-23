@@ -97,3 +97,9 @@ copy-elision-checking.chpl:303: note: 'rx' refers to 'x'
 copy-elision-checking.chpl:301: note: 'x' is dead due to copy elision here
 copy-elision-checking.chpl:299: error: Reference to scoped variable rx reachable after lifetime ends
 copy-elision-checking.chpl:298: note: consider scope of x
+copy-elision-checking.chpl:320: In function 'test14':
+copy-elision-checking.chpl:323: error: Reference to scoped variable r reachable after lifetime ends
+copy-elision-checking.chpl:322: note: consider scope of x
+copy-elision-checking.chpl:341: In function 'test15':
+copy-elision-checking.chpl:348: error: reference points to scoped variable reachable after lifetime ends
+copy-elision-checking.chpl:345: note: consider scope of c

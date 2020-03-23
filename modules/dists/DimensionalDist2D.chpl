@@ -471,7 +471,7 @@ proc DimensionalDist2D.dsiClone(): _to_unmanaged(this.type) {
 
 //== privatization
 
-proc DimensionalDist2D.dsiSupportsPrivatization() param return true;
+override proc DimensionalDist2D.dsiSupportsPrivatization() param return true;
 
 proc DimensionalDist2D.dsiGetPrivatizeData() {
   _traceddd(this, ".dsiGetPrivatizeData");
@@ -655,7 +655,7 @@ proc LocDimensionalDom.deinit() {
 
 //== privatization
 
-proc DimensionalDom.dsiSupportsPrivatization() param return true;
+override proc DimensionalDom.dsiSupportsPrivatization() param return true;
 
 proc DimensionalDom.dsiGetPrivatizeData() {
   _traceddd(this, ".dsiGetPrivatizeData");
@@ -735,7 +735,7 @@ proc DimensionalDom.dsiDim(param d)       return whole.dim(d);
 proc DimensionalDom.dsiLow                return whole.low;
 proc DimensionalDom.dsiHigh               return whole.high;
 proc DimensionalDom.dsiStride             return whole.stride;
-proc DimensionalDom.dsiNumIndices         return whole.numIndices;
+proc DimensionalDom.dsiNumIndices         return whole.size;
 proc DimensionalDom.dsiMember(indexx)     return whole.contains(indexx);
 proc DimensionalDom.dsiIndexOrder(indexx) return whole.indexOrder(indexx);
 
@@ -879,7 +879,7 @@ proc DimensionalDom.dsiGetIndices(): rank * range(idxType,
 
 //== privatization
 
-proc DimensionalArr.dsiSupportsPrivatization() param return true;
+override proc DimensionalArr.dsiSupportsPrivatization() param return true;
 
 proc DimensionalArr.dsiGetPrivatizeData() {
   _traceddd(this, ".dsiGetPrivatizeData");

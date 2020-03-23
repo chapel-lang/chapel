@@ -114,11 +114,6 @@ module ChapelDistribution {
       compilerError("associative domains not supported by this distribution");
     }
 
-    proc dsiNewAssociativeDom(type idxType, param parSafe: bool)
-    where isEnumType(idxType) {
-      compilerError("enumerated domains not supported by this distribution");
-    }
-
     proc dsiNewSparseDom(param rank: int, type idxType, dom: domain) {
       compilerError("sparse domains not supported by this distribution");
     }
@@ -378,7 +373,7 @@ module ChapelDistribution {
     }
 
     override proc dsiBulkAdd(inds: [] index(rank, idxType),
-        dataSorted=false, isUnique=false, preserveInds=true, addOn=nil:locale?){
+        dataSorted=false, isUnique=false, preserveInds=true, addOn=nilLocale){
 
       if !dataSorted && preserveInds {
         var _inds = inds;
@@ -390,7 +385,7 @@ module ChapelDistribution {
     }
 
     proc bulkAdd_help(inds: [?indsDom] index(rank, idxType),
-        dataSorted=false, isUnique=false, addOn=nil:locale?){
+        dataSorted=false, isUnique=false, addOn=nilLocale){
       halt("Helper function called on the BaseSparseDomImpl");
 
       return -1;
@@ -590,7 +585,7 @@ module ChapelDistribution {
 
     proc dsiBulkAdd(inds: [] index(rank, idxType),
         dataSorted=false, isUnique=false, preserveInds=true,
-        addOn=nil:locale?): int {
+        addOn=nilLocale): int {
 
       halt("Bulk addition is not supported by this sparse domain");
       return 0;
@@ -820,15 +815,6 @@ module ChapelDistribution {
     // Q. Should this pass in a BaseRectangularDom or ranges?
     proc dsiReallocate(bounds: rank*range(idxType,BoundedRangeType.bounded,stridable)) {
       halt("reallocating not supported for this array type");
-    }
-
-    // This dsiReallocate version is used by array vector operations, which
-    // are supported on 1-D arrays only, so can work directly with ranges
-    // instead of requiring tuples of ranges.  They require two ranges
-    // because the allocated size and logical size can differ.
-    proc dsiReallocate(allocBound: range(idxType, BoundedRangeType.bounded, stridable),
-                       arrayBound: range(idxType, BoundedRangeType.bounded, stridable)) where rank == 1 {
-       halt("reallocating not supported for this array type");
     }
 
     override proc dsiPostReallocate() {

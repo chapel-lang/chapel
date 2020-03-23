@@ -37,6 +37,8 @@ module DefaultRectangular {
   config param debugDefaultDistBulkTransfer = false;
   config param debugDataPar = false;
   config param debugDataParNuma = false;
+  config param disableArrRealloc = false;
+  config param reportInPlaceRealloc = false;
 
   config param defaultDoRADOpt = true;
   config param defaultDisableLazyRADOpt = false;
@@ -110,9 +112,9 @@ module DefaultRectangular {
     proc trackDomains() param return false;
     override proc dsiTrackDomains()    return false;
 
-    proc singleton() param return true;
+    override proc singleton() param return true;
 
-    proc dsiIsLayout() param return true;
+    override proc dsiIsLayout() param return true;
   }
 
   //
@@ -139,11 +141,11 @@ module DefaultRectangular {
     var dist: unmanaged DefaultDist;
     var ranges : rank*range(idxType,BoundedRangeType.bounded,stridable);
 
-    proc linksDistribution() param return false;
+    override proc linksDistribution() param return false;
     override proc dsiLinksDistribution()     return false;
 
     proc type isDefaultRectangular() param return true;
-    proc isDefaultRectangular() param return true;
+    override proc isDefaultRectangular() param return true;
 
     proc init(param rank, type idxType, param stridable, dist) {
       super.init(rank, idxType, stridable);
@@ -1041,6 +1043,8 @@ module DefaultRectangular {
 
     proc dsiDestroyDataHelper(dd, ddiNumIndices) {
       compilerAssert(chpl_isDdata(dd.type));
+      // TODO: Would anything be hurt if this was a forall?
+      // one guess: arrays of arrays where all inner arrays share a domain?
       for i in 0..ddiNumIndices-1 {
         chpl__autoDestroy(dd[i]);
       }
@@ -1333,87 +1337,87 @@ module DefaultRectangular {
       }
     }
 
-    pragma "ignore transfer errors"
-    override proc dsiReallocate(allocBound: range(idxType,
-                                                  BoundedRangeType.bounded,
-                                                  stridable),
-                                arrayBound: range(idxType,
-                                                  BoundedRangeType.bounded,
-                                                  stridable)) where rank == 1 {
-      on this {
-        const allocD = {allocBound};
-        var copy = new unmanaged DefaultRectangularArr(eltType=eltType,
-                                                       rank=rank,
-                                                       idxType=idxType,
-                                                       stridable=allocD._value.stridable,
-                                                       dom=allocD._value);
-
-        forall i in arrayBound(dom.ranges(1)) do
-          copy.dsiAccess(i) = dsiAccess(i);
-
-        off = copy.off;
-        blk = copy.blk;
-        str = copy.str;
-        factoredOffs = copy.factoredOffs;
-
-        dsiDestroyArr();
-        data = copy.data;
-        // We can't call initShiftedData here because the new domain
-        // has not yet been updated (this is called from within the
-        // = function for domains.
-        if earlyShiftData && !allocD._value.stridable {
-          // Lydia note 11/04/15: a question was raised as to whether this
-          // check on numIndices added any value.  Performance results
-          // from removing this line seemed inconclusive, which may indicate
-          // that the check is not necessary, but it seemed like unnecessary
-          // work for something with no immediate reward.
-          if allocD.numIndices > 0 {
-            shiftedData = copy.shiftedData;
-          }
-        }
-        delete copy;
-      }
-    }
-
-
     // Reallocate the array to have space for elements specified by `bounds`
     pragma "ignore transfer errors"
     override proc dsiReallocate(bounds: rank*range(idxType,
                                                    BoundedRangeType.bounded,
                                                    stridable)) {
-      on this {
-        const allocD = {(...bounds)};
 
-        var copy = new unmanaged DefaultRectangularArr(eltType=eltType,
-                                            rank=rank,
-                                            idxType=idxType,
-                                            stridable=allocD._value.stridable,
-                                            dom=allocD._value);
-
-        forall i in allocD((...dom.ranges)) do
-          copy.dsiAccess(i) = dsiAccess(i);
-
-        off = copy.off;
-        blk = copy.blk;
-        str = copy.str;
-        factoredOffs = copy.factoredOffs;
-
-        dsiDestroyArr();
-        data = copy.data;
-        // We can't call initShiftedData here because the new domain
-        // has not yet been updated (this is called from within the
-        // = function for domains.
-        if earlyShiftData && !allocD._value.stridable {
-          // Lydia note 11/04/15: a question was raised as to whether this
-          // check on numIndices added any value.  Performance results
-          // from removing this line seemed inconclusive, which may indicate
-          // that the check is not necessary, but it seemed like unnecessary
-          // work for something with no immediate reward.
-          if allocD.numIndices > 0 {
-            shiftedData = copy.shiftedData;
-          }
+      // check to see whether this realloc is actually changing the
+      // bounds of the array
+      var actuallyResizing = false;
+      for i in bounds.indices {
+        if bounds(i) != dom.dsiDim(i) {
+          actuallyResizing = true;
+          break;
         }
-        delete copy;
+      }
+      if !actuallyResizing then
+        return;
+
+      // This should really be isDefaultInitializable(eltType), but that
+      // doesn't always work / give correct answers yet.  The following
+      // check won't catch cases such as records with non-nilable class
+      // fields that don't have default initializers (that initialize
+      // them).
+      if (isNonNilableClass(eltType)) {
+        halt("Can't resize domains whose arrays' elements don't have default values");
+      }
+      if (this.locale != here) {
+        halt("internal error: dsiReallocate() can only be called from an array's home locale");
+      }
+      {
+        const reallocD = {(...bounds)};
+
+        // For now, we'll use realloc for 1D, non-empty arrays when
+        // the low bounds and strides of the old and new domains
+        // match; and when the element type is POD or the array is
+        // growing (i.e.,(doesn't require deinit to be called).
+        if (!disableArrRealloc && rank == 1 &&
+            reallocD.low == dom.dsiLow && reallocD.stride == dom.dsiStride &&
+            dom.dsiNumIndices > 0 && reallocD.size > 0) {
+
+          if reportInPlaceRealloc then
+            writeln("reallocating in-place");
+
+          sizesPerDim(1) = reallocD.dsiDim(1).size;
+          data = _ddata_reallocate(data,
+                                   eltType,
+                                   oldSize=dom.dsiNumIndices,
+                                   newSize=reallocD.size);
+          initShiftedData();
+        } else {
+          var copy = new unmanaged DefaultRectangularArr(eltType=eltType,
+                                                         rank=rank,
+                                                         idxType=idxType,
+                                                         stridable=reallocD._value.stridable,
+                                                         dom=reallocD._value);
+
+          forall i in reallocD((...dom.ranges)) do
+            copy.dsiAccess(i) = dsiAccess(i);
+
+          off = copy.off;
+          blk = copy.blk;
+          str = copy.str;
+          factoredOffs = copy.factoredOffs;
+
+          dsiDestroyArr();
+          data = copy.data;
+          // We can't call initShiftedData here because the new domain
+          // has not yet been updated (this is called from within the
+          // = function for domains.
+          if earlyShiftData && !reallocD._value.stridable {
+            // Lydia note 11/04/15: a question was raised as to whether this
+            // check on numIndices added any value.  Performance results
+            // from removing this line seemed inconclusive, which may indicate
+            // that the check is not necessary, but it seemed like unnecessary
+            // work for something with no immediate reward.
+            if reallocD.size > 0 {
+              shiftedData = copy.shiftedData;
+            }
+          }
+          delete copy;
+        }
       }
     }
 
@@ -1797,7 +1801,7 @@ module DefaultRectangular {
     return useBulkTransferStride;
   }
 
-  proc DefaultRectangularArr.doiCanBulkTransferRankChange() param return true;
+  override proc DefaultRectangularArr.doiCanBulkTransferRankChange() param return true;
 
   proc DefaultRectangularArr.doiBulkTransferToKnown(srcDom, destClass:DefaultRectangularArr, destDom) : bool {
     return transferHelper(destClass, destDom, this, srcDom);
@@ -1841,7 +1845,7 @@ module DefaultRectangular {
     for param i in 1..rank do
       Blo(i) = Bdims(i).first;
 
-    const len = aView.numIndices.safeCast(size_t);
+    const len = aView.size.safeCast(size_t);
 
     if len == 0 then return;
 
@@ -2021,7 +2025,7 @@ module DefaultRectangular {
     count[stridelevels+1] *= DimSizes(1).safeCast(size_t);
 
     assert(stridelevels <= inferredRank, "BulkTransferStride: stride levels greater than rank.");
-    if stridelevels == 0 then assert(count[1] == LViewDom.numIndices, "BulkTransferStride: bulk-count incorrect for stride level of 0: ", count[1], " != ", LViewDom.numIndices);
+    if stridelevels == 0 then assert(count[1] == LViewDom.size, "BulkTransferStride: bulk-count incorrect for stride level of 0: ", count[1], " != ", LViewDom.size);
 
     countDom  = {1..stridelevels+1};
     strideDom = {1..stridelevels};
@@ -2104,7 +2108,7 @@ module DefaultRectangular {
     }
   }
 
-  proc DefaultRectangularArr.isDefaultRectangular() param return true;
+  override proc DefaultRectangularArr.isDefaultRectangular() param return true;
   proc type DefaultRectangularArr.isDefaultRectangular() param return true;
 
   config param debugDRScan = false;

@@ -28,6 +28,7 @@
 #include "driver.h"
 #include "resolution.h"
 #include "stmt.h"
+#include "stringutil.h"
 #include "symbol.h"
 #include "TryStmt.h"
 #include "wellknown.h"
@@ -912,6 +913,24 @@ void ErrorCheckingVisitor::checkCatches(TryStmt* tryStmt) {
   }
 }
 
+static void issueThrowingFnError(FnSymbol* calledFn,
+                                 CallExpr* node,
+                                 implicitThrowsReasons_t* reasons,
+                                 const char* problem) {
+  const char* desc = "cast";
+  bool cast = true;
+  if (calledFn->name != astr_cast) {
+    desc = astr("function ", calledFn->name);
+    cast = false;
+  }
+  USR_FATAL_CONT(node, "call to throwing %s %s", desc, problem);
+  if (!cast) {
+    USR_PRINT(calledFn, "throwing function %s defined here", calledFn->name);
+  }
+  printReason(node, reasons);
+}
+
+
 bool ErrorCheckingVisitor::enterCallExpr(CallExpr* node) {
   bool insideTry = (tryDepth > 0);
 
@@ -947,12 +966,8 @@ bool ErrorCheckingVisitor::enterCallExpr(CallExpr* node) {
 
       } else if(node->tryTag == TRY_TAG_IN_TRY) {
         if (!inThrowingFunction) {
-          USR_FATAL_CONT(node, "call to throwing function %s "
-                               "is in a try but not handled",
-                               calledFn->name);
-          USR_PRINT(calledFn, "throwing function %s defined here",
-                              calledFn->name);
-          printReason(node, reasons);
+          issueThrowingFnError(calledFn, node, reasons,
+                               "is in a try but not handled");
         }
 
         // Otherwise, OK, a try in a throwing function
@@ -960,19 +975,11 @@ bool ErrorCheckingVisitor::enterCallExpr(CallExpr* node) {
       } else {
         if (shouldEnforceStrict(node, taskFunctionDepth)) {
           if (mode == ERROR_MODE_STRICT) {
-            USR_FATAL_CONT(node, "call to throwing function %s "
-                                 "without try or try! (strict mode)",
-                                 calledFn->name);
-            USR_PRINT(calledFn, "throwing function %s defined here",
-                                calledFn->name);
-            printReason(node, reasons);
+            issueThrowingFnError(calledFn, node, reasons,
+                                 "without try or try! (strict mode)");
           } else if (mode == ERROR_MODE_RELAXED && !inThrowingFunction) {
-            USR_FATAL_CONT(node, "call to throwing function %s "
-                                 "without throws, try, or try! (relaxed mode)",
-                                 calledFn->name);
-            USR_PRINT(calledFn, "throwing function %s defined here",
-                                calledFn->name);
-            printReason(node, reasons);
+            issueThrowingFnError(calledFn, node, reasons,
+                                 "without throws, try, or try! (relaxed mode)");
           }
         }
       }

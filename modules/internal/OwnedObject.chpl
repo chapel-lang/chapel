@@ -370,8 +370,8 @@ module OwnedObject {
     if lhs.chpl_p == nil && rhs.chpl_p == nil then
         return;
 
-    // Check only if --nil-checks is enabled
-    if chpl_checkNilDereferences {
+    // Check only if --nil-checks is enabled or user requested
+    if chpl_checkNilDereferences || enablePostfixBangChecks {
       // Add check for lhs non-nilable.
       // Do it even if rhs non-nilable, as for now static checking has holes.
       if isNonNilableClass(lhs.chpl_t) {

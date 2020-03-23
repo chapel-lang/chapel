@@ -200,7 +200,7 @@ proc test_date_iso_long_years() {
       L.append(i);
   }
 
-  assert(L.size == ISO_LONG_YEARS_TABLE.numElements);
+  assert(L.size == ISO_LONG_YEARS_TABLE.size);
   for (a, b) in zip(ISO_LONG_YEARS_TABLE, L) {
     assert(a == b);
   }

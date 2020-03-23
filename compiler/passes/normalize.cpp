@@ -2631,14 +2631,13 @@ static void normalizeVariableDefinition(DefExpr* defExpr) {
         tt->addFlag(FLAG_MAYBE_TYPE);
 
         DefExpr* def = new DefExpr(tt);
-        CallExpr* mv = new CallExpr(PRIM_MOVE, tt, defExpr->exprType->remove());
 
         // after the def, put
         //   declare type_tmp
         //   move type_tmp, type-expr
         //   PRIM_INIT_VAR_SPLIT_DECL var type_tmp
         defExpr->insertAfter(new CallExpr(PRIM_INIT_VAR_SPLIT_DECL, var, tt));
-        defExpr->insertAfter(mv);
+        emitTypeAliasInit(defExpr, tt, defExpr->exprType->remove());
         defExpr->insertAfter(def);
 
         typeTemp = tt;
@@ -2747,8 +2746,6 @@ static void errorIfSplitInitializationRequired(DefExpr* def, Expr* cur) {
 
   if (canDefaultInit == false) {
     const char* name = def->sym->name;
-    FnSymbol* initFn = def->getModule()->initFn;
-    bool global = (initFn && def->parentExpr == initFn->body);
 
     // Don't give errors for compiler generated functions at this time.
     FnSymbol* inFn = def->getFunction();
@@ -2788,9 +2785,7 @@ static void errorIfSplitInitializationRequired(DefExpr* def, Expr* cur) {
       }
     }
 
-    if (global) {
-      USR_FATAL_CONT(def, "split initialization is not supported for globals");
-    } else if (cur) {
+    if (cur) {
       if (def->exprType == NULL || genericType != NULL) {
         USR_PRINT(cur,
                   "'%s' use here prevents split-init from establishing the type",

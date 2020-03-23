@@ -93,7 +93,7 @@ proc printConfig() {
 
 proc initData(testArray) {
   testArray = 2;
-  return 2 * testArray.numElements;
+  return 2 * testArray.size;
 }
 
 ////// single measurement //////

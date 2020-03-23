@@ -22,12 +22,16 @@
 
 #include "stmt.h"
 
+#include <vector>
+
 class ResolveScope;
 
 class ImportStmt: public VisibilityStmt {
  public:
   ImportStmt(BaseAST* source, bool isPrivate);
   ImportStmt(BaseAST* source, const char* rename, bool isPrivate);
+  ImportStmt(BaseAST* source, bool isPrivate,
+             std::vector<const char*>* namesList);
 
   DECLARE_COPY(ImportStmt);
 
@@ -44,6 +48,19 @@ class ImportStmt: public VisibilityStmt {
   void scopeResolve(ResolveScope* scope);
 
   BaseAST* getSearchScope() const;
+
+  bool skipSymbolSearch(const char* name);
+
+  bool providesQualifiedAccess() const;
+
+  bool providesNewSymbols(const UseStmt* other) const;
+  bool providesNewSymbols(const ImportStmt* other) const;
+
+ private:
+  bool checkValid(Expr* expr) const;
+
+ public:
+  std::vector<const char*> unqualified;
 };
 
 #endif

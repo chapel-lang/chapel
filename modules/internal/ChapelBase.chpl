@@ -24,6 +24,8 @@ module ChapelBase {
   use ChapelStandard;
   private use ChapelEnv, SysCTypes;
 
+  config param enablePostfixBangChecks = false;
+
   // These two are called by compiler-generated code.
   extern proc chpl_config_has_value(name:c_string, module_name:c_string): bool;
   extern proc chpl_config_get_value(name:c_string, module_name:c_string): c_string;
@@ -95,7 +97,7 @@ module ChapelBase {
   inline proc =(ref a: imag(?w), b: imag(w)) { __primitive("=", a, b); }
   inline proc =(ref a: complex(?w), b: complex(w)) { __primitive("=", a, b); }
   inline proc =(ref a:opaque, b:opaque) {__primitive("=", a, b); }
-  inline proc =(ref a:enumerated, b:enumerated) where (a.type == b.type) {__primitive("=", a, b); }
+  inline proc =(ref a:enum, b:enum) where (a.type == b.type) {__primitive("=", a, b); }
 
   inline proc =(ref a, b: a.type) where isBorrowedOrUnmanagedClassType(a.type)
   {
@@ -136,11 +138,11 @@ module ChapelBase {
   inline proc ==(a: imag(?w), b: imag(w)) return __primitive("==", a, b);
   inline proc ==(a: complex(?w), b: complex(w)) return a.re == b.re && a.im == b.im;
   inline proc ==(a: borrowed object?, b: borrowed object?) return __primitive("ptr_eq", a, b);
-  inline proc ==(a: enumerated, b: enumerated) where (a.type == b.type) {
+  inline proc ==(a: enum, b: enum) where (a.type == b.type) {
     return __primitive("==", a, b);
   }
   pragma "last resort"
-  inline proc ==(a: enumerated, b: enumerated) where (a.type != b.type) {
+  inline proc ==(a: enum, b: enum) where (a.type != b.type) {
     compilerError("Comparisons between mixed enumerated types not supported by default");
     return false;
   }
@@ -153,11 +155,11 @@ module ChapelBase {
   inline proc !=(a: imag(?w), b: imag(w)) return __primitive("!=", a, b);
   inline proc !=(a: complex(?w), b: complex(w)) return a.re != b.re || a.im != b.im;
   inline proc !=(a: borrowed object?, b: borrowed object?) return __primitive("ptr_neq", a, b);
-  inline proc !=(a: enumerated, b: enumerated) where (a.type == b.type) {
+  inline proc !=(a: enum, b: enum) where (a.type == b.type) {
     return __primitive("!=", a, b);
   }
   pragma "last resort"
-  inline proc !=(a: enumerated, b: enumerated) where (a.type != b.type) {
+  inline proc !=(a: enum, b: enum) where (a.type != b.type) {
     compilerError("Comparisons between mixed enumerated types not supported by default");
     return true;
   }
@@ -166,7 +168,7 @@ module ChapelBase {
   inline proc ==(param a: int(?w), param b: int(w)) param return __primitive("==", a, b);
   inline proc ==(param a: uint(?w), param b: uint(w)) param return __primitive("==", a, b);
   //
-  inline proc ==(param a: enumerated, param b: enumerated) param where (a.type == b.type) return __primitive("==", a, b);
+  inline proc ==(param a: enum, param b: enum) param where (a.type == b.type) return __primitive("==", a, b);
   //
   // NOTE: For param enums, Only '==' is implemented in the compiler
   // as a primitive. It assumes that the two param enums are of the
@@ -183,7 +185,7 @@ module ChapelBase {
   inline proc !=(param a: int(?w), param b: int(w)) param return __primitive("!=", a, b);
   inline proc !=(param a: uint(?w), param b: uint(w)) param return __primitive("!=", a, b);
 
-  inline proc !=(param a: enumerated, param b: enumerated) param where (a.type == b.type) return __primitive("!=", chpl__enumToOrder(a), chpl__enumToOrder(b));
+  inline proc !=(param a: enum, param b: enum) param where (a.type == b.type) return __primitive("!=", chpl__enumToOrder(a), chpl__enumToOrder(b));
 
   inline proc !=(param a: real(?w), param b: real(w)) param return __primitive("!=", a, b);
   inline proc !=(param a: imag(?w), param b: imag(w)) param return __primitive("!=", a, b);
@@ -196,11 +198,11 @@ module ChapelBase {
   inline proc <=(a: int(?w), b: int(w)) return __primitive("<=", a, b);
   inline proc <=(a: uint(?w), b: uint(w)) return __primitive("<=", a, b);
   inline proc <=(a: real(?w), b: real(w)) return __primitive("<=", a, b);
-  proc <=(a: enumerated, b: enumerated) where (a.type == b.type) {
+  proc <=(a: enum, b: enum) where (a.type == b.type) {
     return __primitive("<=", chpl__enumToOrder(a), chpl__enumToOrder(b));
   }
   pragma "last resort"
-  inline proc <=(a: enumerated, b: enumerated) where (a.type != b.type) {
+  inline proc <=(a: enum, b: enum) where (a.type != b.type) {
     compilerError("Comparisons between mixed enumerated types not supported by default");
     return false;
   }
@@ -208,11 +210,11 @@ module ChapelBase {
   inline proc >=(a: int(?w), b: int(w)) return __primitive(">=", a, b);
   inline proc >=(a: uint(?w), b: uint(w)) return __primitive(">=", a, b);
   inline proc >=(a: real(?w), b: real(w)) return __primitive(">=", a, b);
-  proc >=(a: enumerated, b: enumerated) where (a.type == b.type) {
+  proc >=(a: enum, b: enum) where (a.type == b.type) {
     return __primitive(">=", chpl__enumToOrder(a), chpl__enumToOrder(b));
   }
   pragma "last resort"
-  inline proc >=(a: enumerated, b: enumerated) where (a.type != b.type) {
+  inline proc >=(a: enum, b: enum) where (a.type != b.type) {
     compilerError("Comparisons between mixed enumerated types not supported by default");
     return false;
   }
@@ -220,11 +222,11 @@ module ChapelBase {
   inline proc <(a: int(?w), b: int(w)) return __primitive("<", a, b);
   inline proc <(a: uint(?w), b: uint(w)) return __primitive("<", a, b);
   inline proc <(a: real(?w), b: real(w)) return __primitive("<", a, b);
-  proc <(a: enumerated, b: enumerated) where (a.type == b.type) {
+  proc <(a: enum, b: enum) where (a.type == b.type) {
     return __primitive("<", chpl__enumToOrder(a), chpl__enumToOrder(b));
   }
   pragma "last resort"
-  inline proc <(a: enumerated, b: enumerated) where (a.type != b.type) {
+  inline proc <(a: enum, b: enum) where (a.type != b.type) {
     compilerError("Comparisons between mixed enumerated types not supported by default");
     return false;
   }
@@ -232,33 +234,33 @@ module ChapelBase {
   inline proc >(a: int(?w), b: int(w)) return __primitive(">", a, b);
   inline proc >(a: uint(?w), b: uint(w)) return __primitive(">", a, b);
   inline proc >(a: real(?w), b: real(w)) return __primitive(">", a, b);
-  proc >(a: enumerated, b: enumerated) where (a.type == b.type) {
+  proc >(a: enum, b: enum) where (a.type == b.type) {
     return __primitive(">", chpl__enumToOrder(a), chpl__enumToOrder(b));
   }
   pragma "last resort"
-  inline proc >(a: enumerated, b: enumerated) where (a.type != b.type) {
+  inline proc >(a: enum, b: enum) where (a.type != b.type) {
     compilerError("Comparisons between mixed enumerated types not supported by default");
     return false;
   }
 
   inline proc <=(param a: int(?w), param b: int(w)) param return __primitive("<=", a, b);
   inline proc <=(param a: uint(?w), param b: uint(w)) param return __primitive("<=", a, b);
-  inline proc <=(param a: enumerated, param b: enumerated) param where (a.type == b.type) return __primitive("<=", chpl__enumToOrder(a), chpl__enumToOrder(b));
+  inline proc <=(param a: enum, param b: enum) param where (a.type == b.type) return __primitive("<=", chpl__enumToOrder(a), chpl__enumToOrder(b));
   inline proc <=(param a: real(?w), param b: real(w)) param return __primitive("<=", a, b);
 
   inline proc >=(param a: int(?w), param b: int(w)) param return __primitive(">=", a, b);
   inline proc >=(param a: uint(?w), param b: uint(w)) param return __primitive(">=", a, b);
-  inline proc >=(param a: enumerated, param b: enumerated) param where (a.type == b.type) return __primitive(">=", chpl__enumToOrder(a), chpl__enumToOrder(b));
+  inline proc >=(param a: enum, param b: enum) param where (a.type == b.type) return __primitive(">=", chpl__enumToOrder(a), chpl__enumToOrder(b));
   inline proc >=(param a: real(?w), param b: real(w)) param return __primitive(">=", a, b);
 
   inline proc <(param a: int(?w), param b: int(w)) param return __primitive("<", a, b);
   inline proc <(param a: uint(?w), param b: uint(w)) param return __primitive("<", a, b);
-  inline proc <(param a: enumerated, param b: enumerated) param where (a.type == b.type) return __primitive("<", chpl__enumToOrder(a), chpl__enumToOrder(b));
+  inline proc <(param a: enum, param b: enum) param where (a.type == b.type) return __primitive("<", chpl__enumToOrder(a), chpl__enumToOrder(b));
   inline proc <(param a: real(?w), param b: real(w)) param return __primitive("<", a, b);
 
   inline proc >(param a: int(?w), param b: int(w)) param return __primitive(">", a, b);
   inline proc >(param a: uint(?w), param b: uint(w)) param return __primitive(">", a, b);
-  inline proc >(param a: enumerated, param b: enumerated) param where (a.type == b.type) return __primitive(">", chpl__enumToOrder(a), chpl__enumToOrder(b));
+  inline proc >(param a: enum, param b: enum) param where (a.type == b.type) return __primitive(">", chpl__enumToOrder(a), chpl__enumToOrder(b));
   inline proc >(param a: real(?w), param b: real(w)) param return __primitive(">", a, b);
 
   //
@@ -692,8 +694,8 @@ module ChapelBase {
   pragma "always propagate line file info"
   private inline proc checkNotNil(x:borrowed class?) {
     import HaltWrappers;
-    // Check only if --nil-checks is enabled
-    if chpl_checkNilDereferences {
+    // Check only if --nil-checks is enabled or user requested
+    if chpl_checkNilDereferences || enablePostfixBangChecks {
       // Add check for nilable types only.
       if x == nil {
         HaltWrappers.nilCheckHalt("argument to ! is nil");
@@ -912,7 +914,7 @@ module ChapelBase {
     }
   }
 
-  proc init_elts(x, s, type t) : void {
+  proc init_elts(x, s, type t, lo=0:s.type) : void {
     var initMethod = chpl_getArrayInitMethod();
 
     // no need to init an array of zeros
@@ -973,13 +975,13 @@ module ChapelBase {
         return;
       }
       when ArrayInit.serialInit {
-        for i in 0..s-1 {
+        for i in lo..s-1 {
           pragma "no auto destroy" pragma "unsafe" var y: t;
           __primitive("array_set_first", x, i, y);
         }
       }
       when ArrayInit.parallelInit {
-        forall i in 0..s-1 {
+        forall i in lo..s-1 {
           pragma "no auto destroy" pragma "unsafe" var y: t;
           __primitive("array_set_first", x, i, y);
         }
@@ -1057,6 +1059,50 @@ module ChapelBase {
     }
     return ret;
   }
+
+
+  inline proc _ddata_reallocate(oldDdata,
+                                type eltType,
+                                oldSize: integral,
+                                newSize: integral,
+                                subloc = c_sublocid_none) {
+    pragma "fn synchronization free"
+    pragma "insert line file info"
+    extern proc chpl_mem_array_realloc(ptr: c_void_ptr,
+                                       oldNmemb: size_t, newNmemb: size_t,
+                                       eltSize: size_t,
+                                       subloc: chpl_sublocID_t,
+                                       ref callPostAlloc: bool): c_void_ptr;
+    var callPostAlloc: bool;
+
+    // destroy any elements that are going away
+    param needsDestroy = __primitive("needs auto destroy",
+                                     __primitive("deref", oldDdata[0]));
+    if needsDestroy && (oldSize > newSize) {
+      forall i in newSize..oldSize-1 do
+        chpl__autoDestroy(oldDdata[i]);
+    }
+
+    const newDdata = chpl_mem_array_realloc(oldDdata: c_void_ptr, oldSize.safeCast(size_t),
+                                   newSize.safeCast(size_t),
+                                   _ddata_sizeof_element(oldDdata),
+                                   subloc, callPostAlloc): oldDdata.type;
+    init_elts(newDdata, newSize, eltType, lo=oldSize);
+    if (callPostAlloc) {
+      pragma "fn synchronization free"
+      pragma "insert line file info"
+      extern proc chpl_mem_array_postRealloc(oldData: c_void_ptr,
+                                             oldNmemb: size_t,
+                                             newData: c_void_ptr,
+                                             newNmemb: size_t,
+                                             eltSize: size_t);
+      chpl_mem_array_postRealloc(oldDdata:c_void_ptr, oldSize.safeCast(size_t),
+                                 newDdata:c_void_ptr, newSize.safeCast(size_t),
+                                 _ddata_sizeof_element(oldDdata));
+    }
+    return newDdata;
+  }
+
 
   inline proc _ddata_free(data: _ddata, size: integral) {
     pragma "fn synchronization free"
@@ -1375,13 +1421,13 @@ module ChapelBase {
   inline proc _cast(type t:chpl_anyreal, x:chpl_anyreal)
     return __primitive("cast", t, x);
 
-  inline proc _cast(type t:chpl_anybool, x:enumerated)
+  inline proc _cast(type t:chpl_anybool, x:enum) throws
     return x: int: bool;
-  // _cast(type t:integral, x:enumerated)
+  // _cast(type t:integral, x:enum)
   // is generated for each enum in buildDefaultFunctions
-  inline proc _cast(type t:enumerated, x:enumerated) where x.type == t
+  inline proc _cast(type t:enum, x:enum) where x.type == t
     return x;
-  inline proc _cast(type t:chpl_anyreal, x:enumerated)
+  inline proc _cast(type t:chpl_anyreal, x:enum) throws
     return x: int: real;
 
   inline proc _cast(type t:unmanaged class, x:_nilType)
@@ -1527,7 +1573,7 @@ module ChapelBase {
   inline proc _cast(type t:chpl_anycomplex, x: chpl_anycomplex)
     return (x.re, x.im):t;
 
-  inline proc _cast(type t:chpl_anycomplex, x: enumerated)
+  inline proc _cast(type t:chpl_anycomplex, x: enum) throws
     return (x:real, 0):t;
 
   //
@@ -1548,7 +1594,7 @@ module ChapelBase {
   inline proc _cast(type t:chpl_anyimag, x: chpl_anycomplex)
     return __primitive("cast", t, x.im);
 
-  inline proc _cast(type t:chpl_anyimag, x: enumerated)
+  inline proc _cast(type t:chpl_anyimag, x: enum) throws
     return x:real:imag;
 
   //
@@ -2392,4 +2438,9 @@ module ChapelBase {
   }
 
   proc chpl_checkCopyInit(lhs, rhs) param { }
+
+  proc enumerated type {
+    compilerWarning("'enumerated' is deprecated - please use 'enum' instead");
+    return enum;
+  }
 }

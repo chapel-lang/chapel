@@ -1,2 +1,2 @@
 test_nested_use2.chpl:12: In function 'main':
-test_nested_use2.chpl:13: error: Cannot find field 'notinnermost'
+test_nested_use2.chpl:13: error: Cannot find symbol 'notinnermost' in module 'middlemost'

@@ -1,3 +1,6 @@
+partial-instantiation-equivalence.chpl:24: error: initializer produces a different type
+partial-instantiation-equivalence.chpl:24: note: new was provided type 'R(1,1)'
+partial-instantiation-equivalence.chpl:24: note: init resulted in type 'R(1,1)'
 partial-instantiation-equivalence.chpl:32: error: unresolved call 'oof(R(1,1))'
 partial-instantiation-equivalence.chpl:27: note: this candidate did not match: oof(rr: Ryx)
 partial-instantiation-equivalence.chpl:32: note: because call actual argument #1 with type R(1,1)

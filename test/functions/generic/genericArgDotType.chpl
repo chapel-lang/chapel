@@ -1,7 +1,7 @@
 enum color {red, green, blue};
 enum size {small, medium, large};
 
-proc foo(x: enumerated, y: x.type) {
+proc foo(x: enum, y: x.type) {
   writeln("In foo()");
 }
 

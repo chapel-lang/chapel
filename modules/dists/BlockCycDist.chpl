@@ -391,7 +391,7 @@ proc BlockCyclic.getStarts(inds, locid) {
 // determine which locale owns a particular index
 //
 // TODO: I jotted down a note during the code review asking whether
-// targetLocales.numElements and boundingbox.numIndices should be
+// targetLocales.size and boundingbox.size should be
 // captured locally, or captured in the default dom/array implementation
 // or inlined.  Not sure what that point was anymore, though.  Maybe
 // someone else can help me remember it (since it was probably someone
@@ -428,7 +428,7 @@ proc BlockCyclic.init(other: BlockCyclic, privatizeData,
   dataParTasksPerLocale = privatizeData[4];
 }
 
-proc BlockCyclic.dsiSupportsPrivatization() param return true;
+override proc BlockCyclic.dsiSupportsPrivatization() param return true;
 
 proc BlockCyclic.dsiGetPrivatizeData() {
   return (lowIdx, blocksize, targetLocDom.dims(), dataParTasksPerLocale);
@@ -468,7 +468,7 @@ class LocBlockCyclic {
 
     if rank == 1 {
       const lo = lowIdx(1) + (locid * blocksize(1));
-      const str = blocksize(1) * targetLocDom.numIndices;
+      const str = blocksize(1) * targetLocDom.size;
       myStarts(1) = lo.. by str;
     } else {
       for param i in 1..rank {
@@ -627,7 +627,7 @@ proc BlockCyclicDom.dsiBuildArray(type eltType) {
   return arr;
 }
 
-proc BlockCyclicDom.dsiNumIndices return whole.numIndices;
+proc BlockCyclicDom.dsiNumIndices return whole.size;
 proc BlockCyclicDom.dsiLow return whole.low;
 proc BlockCyclicDom.dsiHigh return whole.high;
 proc BlockCyclicDom.dsiStride return whole.stride;
@@ -709,7 +709,7 @@ proc type BlockCyclicDom.chpl__deserialize(data) {
            data);
 }
 
-proc BlockCyclicDom.dsiSupportsPrivatization() param return true;
+override proc BlockCyclicDom.dsiSupportsPrivatization() param return true;
 
 proc BlockCyclicDom.dsiGetPrivatizeData() return dist.pid;
 
@@ -810,8 +810,8 @@ proc LocBlockCyclicDom.enumerateBlocks() {
 // TODO: I believe these are only used by the random number generator
 // in stream -- will they always be required once that is rewritten?
 //
-proc LocBlockCyclicDom.numIndices {
-  return myStarts.numIndices;
+proc LocBlockCyclicDom.size {
+  return myStarts.size;
 }
 
 proc LocBlockCyclicDom.low {
@@ -887,7 +887,7 @@ proc type BlockCyclicArr.chpl__deserialize(data) {
            data);
 }
 
-proc BlockCyclicArr.dsiSupportsPrivatization() param return true;
+override proc BlockCyclicArr.dsiSupportsPrivatization() param return true;
 
 proc BlockCyclicArr.dsiGetPrivatizeData() return 0;
 

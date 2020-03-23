@@ -1,4 +1,0 @@
-array-of-owned-return.chpl:9: In function 'main':
-array-of-owned-return.chpl:10: error: invalid implicit copy-initialization
-array-of-owned-return.chpl:10: error: Cannot copy array with element type that cannot be assigned
-$CHPL_HOME/modules/internal/ChapelArray.chpl:2248: note: [domain(1,int(64),false)] owned C does not have a valid init=

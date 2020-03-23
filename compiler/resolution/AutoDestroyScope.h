@@ -41,6 +41,8 @@ public:
   // adds an initialization
   void                     addInitialization(VarSymbol* var);
 
+  void                     addEarlyDeinit(VarSymbol* var);
+
   VarSymbol*               findVariableUsedBeforeInitialized(Expr* stmt);
 
   // Forget about initializations for outer variables initialized
@@ -50,6 +52,8 @@ public:
 
   // Returns outer variables initialized in this scope
   std::vector<VarSymbol*>  getInitedOuterVars() const;
+  // Returns variables in outer scopes deinited early (from copy elision)
+  std::vector<VarSymbol*>  getDeinitedOuterVars() const;
 
   AutoDestroyScope*        getParentScope() const;
 
@@ -74,8 +78,9 @@ private:
   void                     destroyOuterVariables(Expr* before,
                                                  std::set<VarSymbol*>& ignored) const;
 
-  // Returns true if the variable has already been initialized in
-  // this or a parent scope.
+  // Returns true if the variable has already been initialized - and
+  // has not already been deinitialized - in this or a parent scope.
+  // Returns false otherwise.
   bool                     isVariableInitialized(VarSymbol* var) const;
 
   // Returns true if the variable has been declared in this or a parent scope.
@@ -105,6 +110,10 @@ private:
   // Which outer variables have been initialized in this scope?
   // This vector lists them in initialization order.
   std::vector<VarSymbol*>  mInitedOuterVars;
+
+  // Which variables have been deinitialized early in this scope
+  // (possibly including outer variables)?
+  std::set<VarSymbol*>     mDeinitedVars;
 };
 
 #endif

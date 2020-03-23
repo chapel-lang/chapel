@@ -271,7 +271,7 @@ proc panelSolve(Ab: [] elemType,
     const col = panel[k.., k..k];
     
     // If there are no rows below the current column return
-    if col.numIndices == 0 then return;
+    if col.size == 0 then return;
     
     // Find the pivot, the element with the largest absolute value.
     const (dum1 , (pivotRow, dum2)) = maxloc reduce(abs(Ab(col)), col);

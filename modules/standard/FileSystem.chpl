@@ -159,7 +159,7 @@ extern const S_ISVTX: int;
    c_string to pass to extern file system operations.
 */
 private inline proc unescape(str: string) {
-  return str.encode(errors=encodePolicy.unescape);
+  return str.encode(policy=encodePolicy.unescape);
 }
 
 /* Change the current working directory of the locale in question to the
@@ -605,7 +605,7 @@ proc locale.cwd(): string throws {
     // c_strings can't cross on statements.
     err = chpl_fs_cwd(tmp);
     try! {
-      ret = createStringWithNewBuffer(tmp, errors=decodePolicy.escape);
+      ret = createStringWithNewBuffer(tmp, policy=decodePolicy.escape);
     }
     // tmp was qio_malloc'd by chpl_fs_cwd
     chpl_free_c_string(tmp);
@@ -894,7 +894,7 @@ private module GlobWrappers {
     try! {
       return createStringWithNewBuffer(chpl_glob_index(glb,
                                                        idx.safeCast(size_t)),
-                                       errors=decodePolicy.escape);
+                                       policy=decodePolicy.escape);
     }
   }
 
@@ -1203,7 +1203,7 @@ iter listdir(path: string = ".", hidden: bool = false, dirs: bool = true,
       var filename: string;
       try! {
         filename = createStringWithNewBuffer(ent.d_name(),
-                                             errors=decodePolicy.escape);
+                                             policy=decodePolicy.escape);
       }
       if (hidden || filename[1] != '.') {
         if (filename != "." && filename != "..") {

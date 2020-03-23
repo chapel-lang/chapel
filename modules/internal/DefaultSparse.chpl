@@ -32,7 +32,7 @@ module DefaultSparse {
     pragma "local field"
     var _indices: [nnzDom] index(rank, idxType);
 
-    proc linksDistribution() param return false;
+    override proc linksDistribution() param return false;
     override proc dsiLinksDistribution() return false;
 
     proc init(param rank, type idxType, dist: unmanaged DefaultDist,
@@ -246,10 +246,10 @@ module DefaultSparse {
     }
 
     override proc bulkAdd_help(inds: [?indsDom] index(rank, idxType),
-        dataSorted=false, isUnique=false, addOn=nil:locale?){
+        dataSorted=false, isUnique=false, addOn=nilLocale){
       import Sort;
 
-      if addOn != nil {
+      if addOn != nilLocale {
         if addOn != this.locale {
           halt("Bulk index addition is only possible on the locale where the\
               sparse domain is created");

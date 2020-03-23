@@ -1062,23 +1062,61 @@ module Bytes {
 
     /*
       Returns a UTF-8 string from the given :record:`bytes`. If the data is
-      malformed for UTF-8, `errors` argument determines the action.
+      malformed for UTF-8, `policy` argument determines the action.
       
-      :arg errors: `decodePolicy.strict` raises an error, `decodePolicy.replace`
+      :arg policy: `decodePolicy.strict` raises an error, `decodePolicy.replace`
                    replaces the malformed character with UTF-8 replacement
-                   character, `decodePolicy.ignore` drops the data silently,
+                   character, `decodePolicy.drop` drops the data silently,
                    `decodePolicy.escape` escapes each illegal byte with private
                    use codepoints
       
-      :throws: `DecodeError` if `decodePolicy.strict` is passed to the `errors`
+      :throws: `DecodeError` if `decodePolicy.strict` is passed to the `policy`
                argument and the :record:`bytes` contains non-UTF-8 characters.
 
       :returns: A UTF-8 string.
     */
     // NOTE: In the future this could support more encodings.
+    proc decode(policy=decodePolicy.strict): string throws {
+      var localThis: bytes = this.localize();
+      return decodeByteBuffer(localThis.buff, localThis.len, policy);
+    }
+
+    // to capture the deprecated formal name "errors"
+    pragma "no doc"
+    pragma "last resort"
     proc decode(errors=decodePolicy.strict): string throws {
+      compilerWarning("'errors' argument to bytes.decode is deprecated. ",
+                      "Use 'policy' instead.");
+      return this.decode(policy=errors);
+    }
+
+    // just to capture the deprecated decodePolicy.ignore and give a compiler
+    // warning
+    pragma "no doc"
+    pragma "last resort"
+    proc decode(param errors: decodePolicy): string throws {
+      compilerWarning("'errors' argument to bytes.decode is deprecated. ",
+                      "Use 'policy' instead.");
+      if errors == decodePolicy.ignore then
+        compilerWarning("decodePolicy.ignore is deprecated. ",
+                        "Use decodePolicy.drop instead");
+
+      // have to repeat this as above to avoid recursion. That's the cleanest
+      // way I could think of.
       var localThis: bytes = this.localize();
       return decodeByteBuffer(localThis.buff, localThis.len, errors);
+    }
+
+    pragma "no doc"
+    proc decode(param policy: decodePolicy): string throws {
+      if policy == decodePolicy.ignore then
+        compilerWarning("decodePolicy.ignore is deprecated. ",
+                        "Use decodePolicy.drop instead");
+
+      // have to repeat this as above to avoid recursion. That's the cleanest
+      // way I could think of.
+      var localThis: bytes = this.localize();
+      return decodeByteBuffer(localThis.buff, localThis.len, policy);
     }
 
     /*

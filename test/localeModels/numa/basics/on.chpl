@@ -1,5 +1,5 @@
 inline proc writestuff(newLine=true) {
-  writeln((here, here:LocaleModel?, here:NumaDomain?));
+  writeln((here, here._instance:LocaleModel?, here._instance:NumaDomain?));
   if newLine then writeln();
 }
 
@@ -12,16 +12,16 @@ on (Locales[numLocales-1]) {
 
 writestuff();
 
-const subloc = (Locales[numLocales-1]:LocaleModel).numSublocales-1;
-writeln((Locales[numLocales-1]:LocaleModel).getChild(subloc));
-on (Locales[numLocales-1]:LocaleModel).getChild(subloc) {
+const subloc = Locales[numLocales-1].getChildCount()-1;
+writeln(Locales[numLocales-1].getChild(subloc));
+on Locales[numLocales-1].getChild(subloc) {
   writestuff();
 }
 
 writestuff();
 
-writeln((here:LocaleModel).getChild(subloc));
-on (here:LocaleModel).getChild(subloc) {
+writeln(here.getChild(subloc));
+on here.getChild(subloc) {
   writestuff();
 }
 

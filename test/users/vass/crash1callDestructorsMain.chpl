@@ -488,7 +488,7 @@ proc DimensionalDom.dsiMyDist() return dist;
 
 proc DimensionalDom.dsiDims()     return whole.dims();
 
-proc DimensionalDom.dsiNumIndices return whole.numIndices;
+proc DimensionalDom.dsiNumIndices return whole.size;
 
 proc DimensionalDom.subordinate1dDist(param dim: int) {
   return dist.subordinate1dDist(dim);
@@ -760,7 +760,7 @@ iter DimensionalDom.these(param tag: iterKind) where tag == iterKind.leader {
           _computeChunkStuff(maxTasks, ignoreRunning, minSize, myDims)
         else
           ( min(_computeNumChunks(maxTasks, ignoreRunning, minSize,
-                                  locDdesc.myBlock.numIndices),
+                                  locDdesc.myBlock.size),
                 locDdesc.myBlock.dim(fakeDimensionalDistParDim).size):int,
             fakeDimensionalDistParDim:int);
 

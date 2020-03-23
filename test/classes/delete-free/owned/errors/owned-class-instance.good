@@ -1,0 +1,2 @@
+owned-class-instance.chpl:5: error: 'owned' can only be applied to class types
+owned-class-instance.chpl:5: note: here it is applied to a class value

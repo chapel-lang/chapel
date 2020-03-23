@@ -368,9 +368,10 @@ extern int yydebug;
      TLSBR = 422,
      TRSBR = 423,
      TNOELSE = 424,
-     TUMINUS = 425,
-     TUPLUS = 426,
-     TLNOT = 427
+     TDOTDOTOPENHIGH = 425,
+     TUMINUS = 426,
+     TUPLUS = 427,
+     TLNOT = 428
    };
 #endif
 
@@ -430,6 +431,6 @@ void yypstate_delete ();
 
 
 /* Line 2058 of yacc.c  */
-#line 434 "../include/bison-chapel.h"
+#line 435 "../include/bison-chapel.h"
 
 #endif /* !YY_YY_INCLUDE_BISON_CHAPEL_H_INCLUDED  */

@@ -370,7 +370,9 @@
 %left TAND
 %left TEQUAL TNOTEQUAL
 %left TLESSEQUAL TGREATEREQUAL TLESS TGREATER
-%left TDOTDOT
+%left TDOTDOT TDOTDOTOPENHIGH
+// These are not currently supported, though we've discussed adding them
+//%left TDOTDOTOPENLOW TDOTDOTOPENBOTH
 %left TPLUS TMINUS
 %left TBOR
 %left TBXOR
@@ -669,9 +671,9 @@ use_stmt:
 ;
 
 import_stmt:
-  TIMPORT ident_use TSEMI { $$ = buildImportStmt(new UnresolvedSymExpr($2)); }
-| TIMPORT ident_use TAS ident_use TSEMI
-  { $$ = buildImportStmt(new UnresolvedSymExpr($2), $4); }
+  use_access_control TIMPORT expr TSEMI { $$ = buildImportStmt($3, $1); }
+| use_access_control TIMPORT expr TAS ident_use TSEMI { $$ = buildImportStmt($3, $5, $1); }
+| use_access_control TIMPORT expr TDOT TLCBR renames_ls TRCBR { $$ = buildImportStmt($3, $6, $1); }
 ;
 
 require_stmt:
@@ -759,6 +761,7 @@ internal_type_ident_def:
 
 scalar_type:
   TBOOL    { $$ = new SymExpr(dtBools[BOOL_SIZE_DEFAULT]->symbol); }
+| TENUM    { $$ = new SymExpr(dtAnyEnumerated->symbol); }
 | TINT     { $$ = new SymExpr(dtInt[INT_SIZE_DEFAULT]->symbol); }
 | TUINT    { $$ = new SymExpr(dtUInt[INT_SIZE_DEFAULT]->symbol); }
 | TREAL    { $$ = new SymExpr(dtReal[FLOAT_SIZE_DEFAULT]->symbol); }
@@ -1808,8 +1811,6 @@ sub_type_level_expr:
     { $$ = new SymExpr(dtAnyManagementNonNilable->symbol); }
 | TRECORD
     { $$ = new SymExpr(dtAnyRecord->symbol); }
-| TENUM
-    { $$ = new SymExpr(dtAnyEnumerated->symbol); }
 ;
 
 for_expr:
@@ -2041,13 +2042,30 @@ expr:
 | expr TCOLON expr
     { $$ = createCast($1, $3); }
 | expr TDOTDOT expr
-    { $$ = new CallExpr("chpl_build_bounded_range", $1, $3); }
+    { $$ = buildBoundedRange($1, $3); }
+| expr TDOTDOTOPENHIGH expr
+    { $$ = buildBoundedRange($1, $3, false, true); }
+
+/* The following cases would extend the current '..<' open range
+   interval constructor to also support '<..' and '<..<'.  This
+   concept didn't win enough support to merge as present, but are here
+   in case we change our minds in a future release.
+
+| expr TDOTDOTOPENLOW expr
+    { $$ = buildBoundedRange($1, $3, true, false); }
+| expr TDOTDOTOPENBOTH expr
+    { $$ = buildBoundedRange($1, $3, true, true); }
+| expr TDOTDOTOPENLOW
+    { $$ = buildLowBoundedRange($1, true); }
+*/
 | expr TDOTDOT
-    { $$ = new CallExpr("chpl_build_low_bounded_range", $1); }
+    { $$ = buildLowBoundedRange($1); }
 | TDOTDOT expr
-    { $$ = new CallExpr("chpl_build_high_bounded_range", $2); }
+    { $$ = buildHighBoundedRange($2); }
+| TDOTDOTOPENHIGH expr
+    { $$ = buildHighBoundedRange($2, true); }
 | TDOTDOT
-    { $$ = new CallExpr("chpl_build_unbounded_range"); }
+    { $$ = buildUnboundedRange(); }
 ;
 
 opt_expr:

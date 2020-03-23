@@ -14,6 +14,7 @@ export CHPL_NIGHTLY_TEST_CONFIG_NAME="perf.chapcs.arkouda.release"
 
 source /cray/css/users/chapelu/setup_python36.bash
 export CHPL_TEST_ARKOUDA=true
+export CHPL_TEST_ARKOUDA_PERF=true
 
 # check out 1.20.0, but then grab the current tests
 currentSha=`git rev-parse HEAD`

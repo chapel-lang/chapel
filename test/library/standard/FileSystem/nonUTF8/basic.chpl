@@ -8,7 +8,7 @@ config param useNonUTF8 = true;
 //helper to create \xffstr\xffstr\xff
 proc s(str) {
   if useNonUTF8 then
-    return b"\xff%s\xff%s\xff".format(str, str).decode(errors=decodePolicy.escape);
+    return b"\xff%s\xff%s\xff".format(str, str).decode(policy=decodePolicy.escape);
   else
     return str;
 }
@@ -111,7 +111,7 @@ for f in listdir(dirname1) {
   l.append(f);
 }
 for f in sorted(l.toArray()) {
-  writef("%ht\n", f.encode(errors=encodePolicy.unescape));
+  writef("%ht\n", f.encode(policy=encodePolicy.unescape));
 }
 writeln();
 

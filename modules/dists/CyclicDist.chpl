@@ -323,7 +323,7 @@ proc Cyclic.init(other: Cyclic, privateData,
   dataParMinGranularity = privateData[5];
 }
                  
-proc Cyclic.dsiSupportsPrivatization() param return true;
+override proc Cyclic.dsiSupportsPrivatization() param return true;
 
 proc Cyclic.dsiGetPrivatizeData() return (startIdx,
                                           targetLocDom.dims(),
@@ -400,7 +400,7 @@ proc Cyclic.writeThis(x) throws {
 }
 
 proc Cyclic.targetLocsIdx(i: idxType) {
-  const numLocs:idxType = targetLocDom.numIndices:idxType;
+  const numLocs:idxType = targetLocDom.size:idxType;
   // this is wrong if i is less than startIdx
   //return ((i - startIdx(1)) % numLocs):int;
   // this works even if i is less than startIdx
@@ -603,7 +603,7 @@ proc CyclicDom.dsiSerialWrite(x) {
   }
 }
 
-proc CyclicDom.dsiNumIndices return whole.numIndices;
+proc CyclicDom.dsiNumIndices return whole.size;
 
 iter CyclicDom.these() {
   for i in whole do
@@ -699,7 +699,7 @@ proc type CyclicDom.chpl__deserialize(data) {
                                 data);
 }
 
-proc CyclicDom.dsiSupportsPrivatization() param return true;
+override proc CyclicDom.dsiSupportsPrivatization() param return true;
 
 proc CyclicDom.dsiGetPrivatizeData() return 0;
 
@@ -814,7 +814,7 @@ proc type CyclicArr.chpl__deserialize(data) {
                                 data);
 }
 
-proc CyclicArr.dsiSupportsPrivatization() param return true;
+override proc CyclicArr.dsiSupportsPrivatization() param return true;
 
 proc CyclicArr.dsiGetPrivatizeData() return 0;
 
@@ -849,42 +849,44 @@ inline proc _remoteAccessData.getDataIndex(
 
 proc CyclicArr.dsiAccess(i:rank*idxType) ref {
   local {
-    if myLocArr != nil && myLocArr!.locDom.contains(i) then
-      return myLocArr!.this(i);
+    if myLocArr != nil && _to_nonnil(myLocArr).locDom.contains(i) then
+      return _to_nonnil(myLocArr).this(i);
   }
   if doRADOpt && !stridable {
-    if myLocArr {
+    if this.myLocArr {
+      const myLocArr = _to_nonnil(this.myLocArr);
       var rlocIdx = dom.dist.targetLocsIdx(i);
       if !disableCyclicLazyRAD {
-        if myLocArr!.locRAD == nil {
-          myLocArr!.locRADLock.lock();
-          if myLocArr!.locRAD == nil {
+        if myLocArr.locRAD == nil {
+          myLocArr.locRADLock.lock();
+          if myLocArr.locRAD == nil {
             var tempLocRAD = new unmanaged LocRADCache(eltType, rank, idxType,
                 stridable=true, dom.dist.targetLocDom);
-            if myLocArr!.locCyclicRAD != nil {
-              delete myLocArr!.locCyclicRAD;
-              myLocArr!.locCyclicRAD = nil;
+            if myLocArr.locCyclicRAD != nil {
+              delete myLocArr.locCyclicRAD;
+              myLocArr.locCyclicRAD = nil;
             }
-            myLocArr!.locCyclicRAD = new unmanaged LocCyclicRADCache(rank, idxType, dom.dist.startIdx, dom.dist.targetLocDom);
+            myLocArr.locCyclicRAD = new unmanaged LocCyclicRADCache(rank, idxType, dom.dist.startIdx, dom.dist.targetLocDom);
             tempLocRAD.RAD.blk = SENTINEL;
-            myLocArr!.locRAD = tempLocRAD;
+            myLocArr.locRAD = tempLocRAD;
           }
-          myLocArr!.locRADLock.unlock();
+          myLocArr.locRADLock.unlock();
         }
-        if myLocArr!.locRAD!.RAD(rlocIdx).blk == SENTINEL {
-          myLocArr!.locRAD!.lockRAD(rlocIdx);
-          if myLocArr!.locRAD!.RAD(rlocIdx).blk == SENTINEL {
-            myLocArr!.locRAD!.RAD(rlocIdx) =
+        const locRAD = _to_nonnil(myLocArr.locRAD);
+        if locRAD.RAD(rlocIdx).blk == SENTINEL {
+          locRAD.lockRAD(rlocIdx);
+          if locRAD.RAD(rlocIdx).blk == SENTINEL {
+            locRAD.RAD(rlocIdx) =
               locArr(rlocIdx).myElems._value.dsiGetRAD();
           }
-          myLocArr!.locRAD!.unlockRAD(rlocIdx);
+          locRAD.unlockRAD(rlocIdx);
         }
       }
-      pragma "no copy" pragma "no auto destroy" var myLocRAD = myLocArr!.locRAD;
-      pragma "no copy" pragma "no auto destroy" var radata = myLocRAD!.RAD;
+      pragma "no copy" pragma "no auto destroy" var myLocRAD = myLocArr.locRAD;
+      pragma "no copy" pragma "no auto destroy" var radata = _to_nonnil(myLocRAD).RAD;
       if radata(rlocIdx).data != nil {
-        const startIdx = myLocArr!.locCyclicRAD!.startIdx;
-        const dimLength = myLocArr!.locCyclicRAD!.targetLocDomDimLength;
+        const startIdx = _to_nonnil(myLocArr.locCyclicRAD).startIdx;
+        const dimLength = _to_nonnil(myLocArr.locCyclicRAD).targetLocDomDimLength;
         type strType = chpl__signedType(idxType);
         var str: rank*strType;
         for param i in 1..rank {
@@ -917,7 +919,7 @@ iter CyclicArr.these(param tag: iterKind) where tag == iterKind.leader {
     yield followThis;
 }
 
-proc CyclicArr.dsiStaticFastFollowCheck(type leadType) param
+override proc CyclicArr.dsiStaticFastFollowCheck(type leadType) param
   return _to_borrowed(leadType) == _to_borrowed(this.type) ||
          _to_borrowed(leadType) == _to_borrowed(this.dom.type);
 
@@ -965,8 +967,8 @@ iter CyclicArr.these(param tag: iterKind, followThis, param fast: bool = false) 
   } else {
     proc accessHelper(i) ref {
       if myLocArr then local {
-        if myLocArr!.locDom.contains(i) then
-          return myLocArr!.this(i);
+        if _to_nonnil(myLocArr).locDom.contains(i) then
+          return _to_nonnil(myLocArr).this(i);
       }
       return dsiAccess(i);
     }
@@ -1078,7 +1080,7 @@ where canDoAnyToCyclic(this, destDom, Src, srcDom) {
     on Dest.dom.dist.targetLocs(i) {
       const regionDest = Dest.dom.locDoms(i).myBlock[destDom];
       const regionSrc = Src.dom.locDoms(i).myBlock[srcDom];
-      if regionDest.numIndices > 0 {
+      if regionDest.size > 0 {
         const ini = bulkCommConvertCoordinate(regionDest.first, destDom, srcDom);
         const end = bulkCommConvertCoordinate(regionDest.last, destDom, srcDom);
         const sb  = chpl__tuplify(regionSrc.stride);
@@ -1117,7 +1119,7 @@ where useBulkTransferDist {
   coforall j in Src.dom.dist.targetLocDom {
     on Src.dom.dist.targetLocs(j) {
       const inters = Src.dom.locDoms(j).myBlock[srcDom];
-      if inters.numIndices > 0 {
+      if inters.size > 0 {
         const ini = bulkCommConvertCoordinate(inters.first, srcDom, destDom);
         const end = bulkCommConvertCoordinate(inters.last, srcDom, destDom);
         const sa  = chpl__tuplify(destDom.stride);
@@ -1160,7 +1162,7 @@ where useBulkTransferDist {
   coforall j in Dest.dom.dist.targetLocDom {
     on Dest.dom.dist.targetLocs(j) {
       const inters = Dest.dom.locDoms(j).myBlock[destDom];
-      if inters.numIndices > 0 {
+      if inters.size > 0 {
         const ini = bulkCommConvertCoordinate(inters.first, destDom, srcDom);
         const end = bulkCommConvertCoordinate(inters.last, destDom, srcDom);
         const sb  = chpl__tuplify(srcDom.stride);
@@ -1206,7 +1208,7 @@ proc CyclicArr.dsiLocalSubdomain(loc: locale) {
   if (loc == here) {
     // quick solution if we have a local array
     if myLocArr != nil then
-      return myLocArr!.locDom.myBlock;
+      return _to_nonnil(myLocArr).locDom.myBlock;
     // if not, we must not own anything
     var d: domain(rank, idxType, stridable=true);
     return d;

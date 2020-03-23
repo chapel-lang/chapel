@@ -45,7 +45,7 @@ module BytesCasts {
       return false;
     } else {
       throw new owned IllegalArgumentError("bad cast from bytes '" +
-                                           x.decode(decodePolicy.ignore) +
+                                           x.decode(decodePolicy.drop) +
                                            "' to bool");
     }
     return false;
@@ -125,7 +125,7 @@ module BytesCasts {
       }
       if numElements > 1 then
         throw new owned IllegalArgumentError("bad cast from bytes '" + 
-                                             x.decode(decodePolicy.ignore) +
+                                             x.decode(decodePolicy.drop) +
                                              "' to " + t:string);
 
       // remove underscores everywhere but the first position
@@ -159,7 +159,7 @@ module BytesCasts {
 
     if isErr then
       throw new owned IllegalArgumentError("bad cast from bytes '" +
-                                           x.decode(decodePolicy.ignore) +
+                                           x.decode(decodePolicy.drop) +
                                            "' to " + t:string);
 
     return retVal;
@@ -238,7 +238,7 @@ module BytesCasts {
 
     if isErr then
       throw new owned IllegalArgumentError("bad cast from bytes '" +
-                                           x.decode(decodePolicy.ignore) +
+                                           x.decode(decodePolicy.drop) +
                                            "' to real(" + numBits(t):string + ")");
 
     return retVal;
@@ -267,7 +267,7 @@ module BytesCasts {
 
     if isErr then
       throw new owned IllegalArgumentError("bad cast from bytes '" +
-                                           x.decode(decodePolicy.ignore) +
+                                           x.decode(decodePolicy.drop) +
                                            "' to imag(" + numBits(t):string + ")");
 
     return retVal;
@@ -325,7 +325,7 @@ module BytesCasts {
 
     if isErr then
       throw new owned IllegalArgumentError("bad cast from bytes '" +
-                                           x.decode(decodePolicy.ignore) +
+                                           x.decode(decodePolicy.drop) +
                                            "' to complex(" + numBits(t):string + ")");
 
     return retVal;
