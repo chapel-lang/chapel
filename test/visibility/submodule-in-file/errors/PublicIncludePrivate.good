@@ -1,0 +1,2 @@
+PublicIncludePrivate.chpl:1: error: cannot make a private module public through an include statement
+PublicIncludePrivate/SubModule.chpl:1: note: module declared private here

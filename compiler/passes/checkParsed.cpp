@@ -38,6 +38,7 @@ static void checkParsedVar(VarSymbol* var);
 static void checkFunction(FnSymbol* fn);
 static void checkExportedNames();
 static void nestedName(ModuleSymbol* mod);
+static void includedStrictNames(ModuleSymbol* mod);
 static void checkModule(ModuleSymbol* mod);
 static void checkRecordInheritance(AggregateType* at);
 static void setupForCheckExplicitDeinitCalls();
@@ -124,7 +125,7 @@ checkParsed() {
 
   forv_Vec(ModuleSymbol, mod, gModuleSymbols) {
     nestedName(mod);
-
+    includedStrictNames(mod);
     checkModule(mod);
   }
 
@@ -476,6 +477,39 @@ static void nestedName(ModuleSymbol* mod) {
              mod->name);
     USR_PRINT(mod->defPoint,
               "did you mean to include all statements in the module declaration?");
+  }
+}
+
+static void includedStrictNames(ModuleSymbol* mod) {
+  if (mod->defPoint == NULL) {
+    return;
+  }
+
+  if (mod->hasFlag(FLAG_INCLUDED_MODULE)) {
+    ModuleSymbol* parent = mod->defPoint->getModule();
+
+    // module name should match file name
+    const char* fname = filenameToModulename(parent->astloc.filename);
+    if (fname != parent->name) {
+      USR_FATAL("Cannot include modules from a module whose name doesn't match its filename");
+    }
+
+    // parent module must be top-level in its file.
+    // in is not necessarily a top-level module, though.
+    ModuleSymbol* lastParentSameFile = parent;
+    for (ModuleSymbol* cur = parent;
+         cur != NULL && cur->defPoint != NULL;
+         cur = cur->defPoint->getModule()) {
+      if (parent->astloc.filename == cur->astloc.filename) {
+        lastParentSameFile = cur;
+      } else {
+        break;
+      }
+    }
+
+    if (lastParentSameFile != parent) {
+      USR_FATAL(parent, "Cannot include module from an in-line nested module");
+    }
   }
 }
 
