@@ -6,4 +6,6 @@ module MultipleModules {
   }
 }
 module OtherModule {
+  var otherVar = 1;
+  proc otherFn() { return 2; }
 }
