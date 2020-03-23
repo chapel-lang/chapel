@@ -919,9 +919,14 @@ iter CyclicArr.these(param tag: iterKind) where tag == iterKind.leader {
     yield followThis;
 }
 
-override proc CyclicArr.dsiStaticFastFollowCheck(type leadType) param
-  return _to_borrowed(leadType) == _to_borrowed(this.type) ||
-         _to_borrowed(leadType) == _to_borrowed(this.dom.type);
+override proc CyclicArr.dsiStaticFastFollowCheck(type leadType) param {
+  if isSubtype(leadType, CyclicArr) {
+    var x : leadType?;
+    return _to_borrowed(x!.dom.type) == _to_borrowed(this.dom.type);
+  } else {
+    return _to_borrowed(leadType) == _to_borrowed(this.dom.type);
+  }
+}
 
 proc CyclicArr.dsiDynamicFastFollowCheck(lead: [])
   return this.dsiDynamicFastFollowCheck(lead.domain);
