@@ -404,7 +404,7 @@ void ImportStmt::validateUnqualified() {
 bool ImportStmt::skipSymbolSearch(const char* name) {
   // We don't define any symbols for unqualified access, so we should skip this
   // import
-  if (unqualified.size() == 0) {
+  if (unqualified.size() == 0 && renamed.size() == 0) {
     return true;
   } else {
     // Otherwise, look through the list of unqualified symbol names to see if

@@ -1909,15 +1909,23 @@ static bool lookupThisScopeAndUses(const char*           name,
             // name for unqualified access.  We're only looking for explicitly
             // named symbols
             if (import->skipSymbolSearch(name) == false) {
+              const char* nameToUse = import->isARenamedSym(name) ?
+                import->getRenamedSym(name) : name;
               BaseAST* scopeToUse = import->getSearchScope();
-              if (Symbol* sym = inSymbolTable(name, scopeToUse)) {
+              if (Symbol* sym = inSymbolTable(nameToUse, scopeToUse)) {
                 if (sym->hasFlag(FLAG_PRIVATE) == true) {
                   if (sym->isVisible(context) == true &&
                       isRepeat(sym, symbols)  == false) {
                     symbols.push_back(sym);
+                    if (storeRenames && import->isARenamedSym(name)) {
+                      renameLocs[sym] = &import->astloc;
+                    }
                   }
                 } else if (isRepeat(sym, symbols) == false) {
                   symbols.push_back(sym);
+                  if (storeRenames && import->isARenamedSym(name)) {
+                    renameLocs[sym] = &import->astloc;
+                  }
                 }
               }
             }
