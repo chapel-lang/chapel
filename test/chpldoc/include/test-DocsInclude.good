@@ -1,0 +1,2 @@
+./DocsInclude.chpl:2: error: docs comment at module include line
+./DocsInclude/SubModule.chpl:2: note: please put docs comment at module declaration here

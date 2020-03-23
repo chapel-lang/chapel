@@ -794,9 +794,28 @@ ModuleSymbol* buildModule(const char* name,
   return mod;
 }
 
-BlockStmt* buildIncludeModule(const char* name) {
-  //astlocMarker markAstLoc(chplLineno, yyfilename);
+BlockStmt* buildIncludeModule(const char* name,
+                              bool priv,
+                              bool prototype,
+                              const char* docs) {
+  astlocT loc(chplLineno, yyfilename);
   ModuleSymbol* mod = parseIncludedSubmodule(name);
+  if (priv && !mod->hasFlag(FLAG_PRIVATE)) {
+    // make the module private (override public)
+    mod->addFlag(FLAG_PRIVATE);
+  }
+  if (mod->hasFlag(FLAG_PRIVATE) && !priv) {
+    USR_FATAL_CONT(loc, "include public module with module declared private");
+    USR_PRINT(mod, "module declared private here");
+  }
+  if (prototype) {
+    USR_FATAL_CONT(loc, "cannot apply prototype to module in include statement");
+    USR_PRINT(mod, "put prototype keyword at module declaration here");
+  }
+  if (docs != NULL) {
+    USR_FATAL_CONT(loc, "docs comment at module include line");
+    USR_PRINT(mod, "please put docs comment at module declaration here");
+  }
   INT_ASSERT(mod != NULL);
   return buildChapelStmt(new DefExpr(mod));
 }

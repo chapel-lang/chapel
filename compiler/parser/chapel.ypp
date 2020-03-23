@@ -391,7 +391,7 @@
 %left TDOT TLP TRSBR TLCBR
 %nonassoc TPRAGMA
 
-%type <b> access_control use_access_control
+%type <b> access_control use_access_control include_access_control
 %type <b> opt_prototype
 %type <b> opt_throws_error
 
@@ -598,8 +598,28 @@ opt_prototype:
 | TPROTOTYPE { $$ = true;  }
 ;
 
+/*include_access_control:
+  TINCLUDE { $$ = false; @$.comment = context->latestComment; context->latestComment = NULL; } // public
+| TINCLUDE TPUBLIC { $$ = false; @$.comment = context->latestComment; context->latestComment = NULL; } // also public
+| TINCLUDE TPRIVATE { $$ = true; @$.comment = context->latestComment; context->latestComment = NULL; } // private
+;*/
+
+include_access_control:
+           { $$ = false; }
+| TPUBLIC  { $$ = false; }
+| TPRIVATE { $$ = true; }
+;
+
 include_module_stmt:
- TINCLUDE TMODULE ident_use TSEMI { $$ = buildIncludeModule($3); }
+ TINCLUDE
+  {
+    @1.comment = context->latestComment;
+    context->latestComment = NULL;
+  }
+ include_access_control opt_prototype TMODULE ident_def TSEMI
+ {
+   $$ = buildIncludeModule($6, $3, $4, @1.comment);
+ }
 ;
 
 /* Grouping of statements into blocks.

@@ -724,7 +724,7 @@ static bool containsOnlyModules(BlockStmt* block, const char* path) {
     if (DefExpr* defExpr = toDefExpr(stmt)) {
       ModuleSymbol* modSym = toModuleSymbol(defExpr->sym);
 
-      if (modSym != NULL) {
+      if (modSym != NULL && !modSym->hasFlag(FLAG_INCLUDED_MODULE)) {
         lastModSym     = modSym;
         lastModSymStmt = stmt;
 
@@ -828,6 +828,8 @@ ModuleSymbol* parseIncludedSubmodule(const char* name) {
   ModuleSymbol* ret = parseFile(astr(includeFile), currentModuleType,
                                 /* namedOnCommandLine */ false,
                                 /* include */ true);
+
+  ret->addFlag(FLAG_INCLUDED_MODULE);
 
   // restore parser global variables
   yyblock = s_yyblock;
