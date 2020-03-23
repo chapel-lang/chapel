@@ -4,9 +4,10 @@ use CommDiagnostics;
 // make sure that this doesn't incur communication
 for l in Locales do on l {
   startCommDiagnosticsHere();
-  var myLocales: [1..10] locale;
+  var myLocales: [1..1] locale;
   stopCommDiagnosticsHere();
-  writeln(here, " myLocales : ", myLocales.size);
+  writeln(here, " myLocales values are default : ",
+          myLocales[1] == Locales[0]);
   writeln(here, " Comm Diagnostics : ", getCommDiagnosticsHere());
   resetCommDiagnosticsHere();
 }

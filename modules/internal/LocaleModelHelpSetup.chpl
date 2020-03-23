@@ -73,10 +73,6 @@ module LocaleModelHelpSetup {
     forall locIdx in dst.chpl_initOnLocales() with (ref root_accum) {
       const node = new locale(new unmanaged LocaleModel(new locale(dst)));
       dst.myLocales[locIdx] = node;
-      // set the defaultLocale here to avoid extra ons during startup
-      if locIdx == 0 {
-        chpl_set_defaultLocale(node);
-      }
       root_accum.accum(node);
     }
 
@@ -90,10 +86,6 @@ module LocaleModelHelpSetup {
       chpl_task_setSubloc(c_sublocid_any);
       const node = new locale(new unmanaged LocaleModel(new locale (dst)));
       dst.myLocales[locIdx] = node;
-      // set the defaultLocale here to avoid extra ons during startup
-      if locIdx == 0 {
-        chpl_set_defaultLocale(node);
-      }
       root_accum.accum(node);
     }
 
@@ -107,10 +99,6 @@ module LocaleModelHelpSetup {
       chpl_task_setSubloc(c_sublocid_any);
       const node = new locale(new unmanaged LocaleModel(new locale(dst)));
       dst.myLocales[locIdx] = node;
-      // set the defaultLocale here to avoid extra ons during startup
-      if locIdx == 0 {
-        chpl_set_defaultLocale(node);
-      }
       root_accum.accum(node);
     }
 
