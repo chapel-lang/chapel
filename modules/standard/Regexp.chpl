@@ -1018,20 +1018,17 @@ record regexp {
     var litOne = new ioLiteral("new regexp(\"");
     var litTwo = new ioLiteral("\")");
 
-    try {
-      if (f.read(litOne, pattern, litTwo)) {
-        on this.home {
-          var localPattern = pattern.localize();
-          var opts:qio_regexp_options_t;
-          qio_regexp_init_default_options(opts);
-          qio_regexp_create_compile(localPattern.c_str(), localPattern.numBytes, opts, this._regexp);
-        }
+    if (f.read(litOne, pattern, litTwo)) then
+      on this.home {
+        var localPattern = pattern.localize();
+        var opts: qio_regexp_options_t;
+
+        qio_regexp_init_default_options(opts);
+        qio_regexp_create_compile(localPattern.c_str(),
+                                  localPattern.numBytes,
+                                  opts,
+                                  this._regexp);
       }
-    } catch e: SystemError {
-      f.setError(e.err);
-    } catch {
-      f.setError(EINVAL:syserr);
-    }
   }
 }
 
