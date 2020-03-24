@@ -325,6 +325,14 @@ static void getVisibleMethods(const char* name, CallExpr* call,
     if (block != rootModule->block) {
       BlockStmt* next  = getVisibilityScope(block);
 
+      ModuleSymbol* blockMod = block->getModule();
+      ModuleSymbol* nextMod = next->getModule();
+      if (blockMod != nextMod && nextMod != theProgram && nextMod != rootModule) {
+        // printf("A: Skipping a module between %s and %s\n",
+        //        block->getModule()->name, next->getModule()->name);
+        next = theProgram->block;
+      }
+
       // Recurse in the enclosing block
       getVisibleMethods(name, call, next, visited, visibleFns);
 
@@ -537,6 +545,14 @@ static void getVisibleFunctions(const char*           name,
     if (block != rootModule->block) {
       BlockStmt* next  = getVisibilityScope(block);
 
+      ModuleSymbol* blockMod = block->getModule();
+      ModuleSymbol* nextMod = next->getModule();
+      if (blockMod != nextMod && nextMod != theProgram && nextMod != rootModule) {
+        // printf("B: Skipping a module between %s and %s\n",
+        //        block->getModule()->name, next->getModule()->name);
+        next = theProgram->block;
+      }
+
       // Recurse in the enclosing block
       getVisibleFunctions(name, call, next, visited, visibleFns, inUseChain);
 
@@ -642,6 +658,14 @@ static void getVisibleFunctions(const char*           name,
     // uses that were skipped.
     if (block != rootModule->block) {
       BlockStmt* next  = getVisibilityScope(block);
+
+      ModuleSymbol* blockMod = block->getModule();
+      ModuleSymbol* nextMod = next->getModule();
+      if (blockMod != nextMod && nextMod != theProgram && nextMod != rootModule) {
+        // printf("C: Skipping a module between %s and %s\n",
+        //        block->getModule()->name, next->getModule()->name);
+        next = theProgram->block;
+      }
 
       // Recurse in the enclosing block
       getVisibleFunctions(name, call, next, visited, visibleFns, inUseChain);
