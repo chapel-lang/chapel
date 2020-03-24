@@ -1,8 +1,6 @@
 module parent {
   private module child {
-    proc secretFunction(a: int) {
-      return a*3;
-    }
+    var secretVariable = 33;
   }
 
   use child;
@@ -11,7 +9,7 @@ module parent {
   module sibling {
     use parent;
     proc main() {
-      writeln(child.secretFunction(11));
+      writeln(child.secretVariable);
     }
   }
 }
