@@ -56,6 +56,7 @@ public:
   void            scopeResolve(ResolveScope* scope);
 
   UseStmt*        applyOuterUse(const UseStmt* outer);
+  ImportStmt*     applyOuterImport(const ImportStmt* outer);
 
   bool            skipSymbolSearch(const char* name)                     const;
 
