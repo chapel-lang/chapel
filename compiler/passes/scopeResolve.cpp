@@ -1545,8 +1545,25 @@ static void lookup(const char*           name,
     if (scope->getModule()->block == scope) {
       BaseAST* outerScope = getScope(scope);
       if (outerScope != NULL) {
-        lookup(name, context, outerScope, visited, symbols, renameLocs,
-               storeRenames);
+        // if this is a top-level module, keep searching upwards to get
+        // the built-in stuff defined in the root/program modules
+        if (outerScope->getModule() == rootModule ||
+            outerScope->getModule() == theProgram) {
+          lookup(name, context, outerScope, visited, symbols, renameLocs,
+                 storeRenames);
+        } else {
+          // if it's a nested module, don't look into the parent
+          // module (a 'use' or 'import' is required to do that), but
+          // do see if ChapelStandard or theProgram resolve things for
+          // us that are not yet resolved.
+          lookup(name, context, standardModule->block, visited, symbols,
+                 renameLocs, storeRenames);
+          if (symbols.size() == 0) {
+            
+            lookup(name, context, theProgram->block, visited, symbols,
+                   renameLocs, storeRenames);
+          }
+        }
         // As a last ditch effort, see if this module's name happens to match.
         // This handles the case when we refer to the name of the module in
         // which we are declared (e.g., `module M { ...M.xyz... }`

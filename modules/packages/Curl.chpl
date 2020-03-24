@@ -395,6 +395,7 @@ module Curl {
     import Sys;
     import Time;
     private use IO;
+    use Curl;
 
     class CurlFile : QioPluginFile {
 

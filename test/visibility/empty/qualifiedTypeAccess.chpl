@@ -1,6 +1,4 @@
 module OuterModule {
-  config param accessPrimary = false;
-
   module M {
     class Foo {
       proc primaryMethod() {
@@ -14,6 +12,8 @@ module OuterModule {
   }
 
   module M2 {
+    config param accessPrimary = false;
+
     use M only; // require all symbols in M to be fully-qualified
 
     proc main() {

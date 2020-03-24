@@ -548,6 +548,7 @@ iter sorted(x, comparator:?rec=defaultComparator) {
 
 pragma "no doc"
 module BubbleSort {
+  import Sort.defaultComparator;
 
   /*
    Sort the 1D array `Data` in-place using a sequential bubble sort algorithm.
@@ -585,6 +586,7 @@ module BubbleSort {
 
 pragma "no doc"
 module HeapSort {
+  import Sort.defaultComparator;
   /*
 
    Sort the 1D array `Data` in-place using a sequential heap sort algorithm.
@@ -650,7 +652,7 @@ module HeapSort {
 
 pragma "no doc"
 module InsertionSort {
-
+  import Sort.defaultComparator;
   /*
    Sort the 1D array `Data` in-place using a sequential insertion sort
    algorithm.
@@ -693,6 +695,7 @@ module InsertionSort {
 
 pragma "no doc"
 module BinaryInsertionSort {
+  import Sort.defaultComparator;
   /*
     Sort the 1D array `Data` in-place using a sequential, stable binary
     insertion sort algorithm.
@@ -762,6 +765,7 @@ module BinaryInsertionSort {
 
 pragma "no doc"
 module MergeSort {
+  import Sort.defaultComparator;
   /*
     Sort the 1D array `Data` using a parallel merge sort algorithm.
 
@@ -801,6 +805,7 @@ module MergeSort {
    */
   private proc _MergeSort(Data: [?Dom], Scratch: [], lo:int, hi:int, minlen=16, comparator:?rec=defaultComparator, depth: int)
     where Dom.rank == 1 {
+    import Sort.InsertionSort;
 
     const stride = if Dom.stridable then abs(Dom.stride) else 1,
           size = (hi - lo) / stride,
@@ -891,6 +896,8 @@ module MergeSort {
 
 pragma "no doc"
 module QuickSort {
+  import Sort.defaultComparator;
+  use Sort.ShallowCopy;
 
   /*
    Partition the array Data[lo..hi] using the pivot at Data[pivIdx].
@@ -1070,6 +1077,7 @@ module QuickSort {
                      minlen=16,
                      comparator:?rec=defaultComparator,
                      start:int = Dom.low, end:int = Dom.high) {
+    import Sort.InsertionSort;
 
     // grab obvious indices
     const lo = start,
@@ -1122,6 +1130,7 @@ module QuickSort {
 
 pragma "no doc"
 module SelectionSort {
+  import Sort.defaultComparator;
   /*
     Sort the 1D array `Data` in-place using a sequential selection sort
     algorithm.
@@ -1156,6 +1165,7 @@ module SelectionSort {
 
 pragma "no doc"
 module ShellSort {
+  import Sort.defaultComparator;
   proc shellSort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator,
                  start=Dom.alignedLow, end=Dom.alignedHigh)
   {
@@ -1416,6 +1426,7 @@ module SampleSortHelp {
                                    in numSamples:int,
                                    seed=1) {
     private use Random;
+    import Sort.ShallowCopy;
     var Tmp:[1..1] A.eltType;
     var randNums = createRandomStream(seed=seed, eltType=int, parSafe=false);
     while numSamples > 0 {
@@ -1437,6 +1448,8 @@ module SampleSortHelp {
 
 pragma "no doc"
 module RadixSortHelp {
+  import Sort.{defaultComparator, DefaultComparator};
+  import Reflection.canResolveMethod;
 
   // This is the number of bits to sort at a time in the radix sorter.
   // The code assumes that all integer types are a multiple of it.
@@ -1643,7 +1656,6 @@ module RadixSortHelp {
 
 pragma "no doc"
 module ShallowCopy {
-
   private use SysCTypes;
 
   // The shallowCopy / shallowSwap code needs to be able to copy/swap
@@ -1880,6 +1892,8 @@ pragma "no doc"
 module TwoArrayPartitioning {
   private use BlockDist;
   private use MSBRadixSort;
+  public use List only list;
+  import Sort.{ShellSort, RadixSortHelp, SampleSortHelp, ShallowCopy};
 
   private param debug = false;
   param maxBuckets = 512;
@@ -2184,7 +2198,6 @@ module TwoArrayPartitioning {
           start_n:int, end_n:int, A:[], Scratch:[],
           ref state: TwoArrayBucketizerSharedState,
           criterion, startbit:int):void {
-
 
     if startbit > state.endbit then
       return;
@@ -2655,6 +2668,7 @@ module TwoArrayPartitioning {
 
 pragma "no doc"
 module TwoArrayRadixSort {
+  import Sort.defaultComparator;
   private use TwoArrayPartitioning;
   private use RadixSortHelp;
 
@@ -2702,6 +2716,7 @@ module TwoArrayRadixSort {
 
 pragma "no doc"
 module TwoArraySampleSort {
+  import Sort.defaultComparator;
   private use TwoArrayPartitioning;
   private use SampleSortHelp;
   private use RadixSortHelp;
@@ -2750,7 +2765,7 @@ module InPlacePartitioning {
 
 pragma "no doc"
 module MSBRadixSort {
-
+  import Sort.{defaultComparator, ShellSort};
   private use RadixSortHelp;
 
   // This structure tracks configuration for the radix sorter.
