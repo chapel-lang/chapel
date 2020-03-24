@@ -1671,10 +1671,9 @@ static void printConflictingSymbols(std::vector<Symbol*>& symbols, Symbol* sym,
 
 static void checkConflictingSymbols(std::vector<Symbol *>& symbols,
                                     const char* name,
-                             BaseAST* context,
-                             bool storeRenames,
-                             std::map<Symbol*, astlocT*>& renameLocs,
-                             bool allowMultiDefFuncs) {
+                                    BaseAST* context,
+                                    bool storeRenames,
+                                    std::map<Symbol*, astlocT*>& renameLocs) {
 
   // If they're all functions
   //   then      assume function resolution will be applied
@@ -1702,7 +1701,7 @@ void checkConflictingSymbols(std::vector<Symbol *>& symbols,
                                     const char* name,
                                     BaseAST* context) {
   std::map<Symbol*, astlocT*> junkMap;
-  checkConflictingSymbols(symbols, name, context, false, junkMap, false);
+  checkConflictingSymbols(symbols, name, context, false, junkMap);
 }
 
 // Given a name and a calling context, determine the symbol referred to
@@ -1734,7 +1733,7 @@ Symbol* lookupAndCount(const char*           name,
 
   } else {
     // Multiple symbols found for this name.
-    checkConflictingSymbols(symbols, name, context, storeRenames, renameLocs, true);
+    checkConflictingSymbols(symbols, name, context, storeRenames, renameLocs);
     retval = NULL;
   }
 
@@ -1922,8 +1921,7 @@ static bool lookupThisScopeAndUses(const char*           name,
               Symbol* sym = inSymbolTable(nameToUse, scopeToUse);
               if (!sym) {
                 if (ResolveScope* rs = ResolveScope::getScopeFor(scopeToUse)) {
-                  sym = rs->lookupPublicUnqualAccessSyms(nameToUse,
-                                                         context);
+                  sym = rs->lookupPublicUnqualAccessSyms(nameToUse, context);
                 }
               }
               if (sym) {
