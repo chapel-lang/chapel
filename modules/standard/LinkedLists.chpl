@@ -204,6 +204,30 @@ record LinkedList {
    }
 
   /*
+    Returns the data stored in the first element of the list
+    It is an error to call front() on an empty list
+   */
+  proc front() {
+    import HaltWrappers;
+     if boundsChecking && size < 1 {
+      HaltWrappers.boundsCheckHalt("front() called on empty list");
+    }
+    return first!.data;
+  }
+
+  /*
+    Returns the data stored in the last element of the list
+    It is an error to call back() on an empty list
+   */
+  proc back() {
+    import HaltWrappers;
+    if boundsChecking && size < 1 {
+      HaltWrappers.boundsCheckHalt("back() called on empty list");
+    }
+    return last!.data;
+  }
+  
+  /*
     Delete every node in the list.
    */
   proc destroy() {
