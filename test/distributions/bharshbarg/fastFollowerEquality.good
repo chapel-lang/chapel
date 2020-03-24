@@ -512,3 +512,44 @@ fast follower invoked for Cyclic array
 fast follower invoked for Cyclic array
 ----------
 
+--- [StencilDom(1,int(64),false,false)] real(64) vs. [StencilDom(1,int(64),false,false)] int(64) ---
+boundingBox = {1..10}
+targetLocDom = {0..3}
+targetLocales = 0 1 2 3
+dataParTasksPerLocale = 2
+dataParIgnoreRunningTasks = false
+dataParMinGranularity = 1
+locDist[0].myChunk = {-9223372036854775808..3}
+locDist[1].myChunk = {4..5}
+locDist[2].myChunk = {6..8}
+locDist[3].myChunk = {9..9223372036854775807}
+
+boundingBox = {1..10}
+targetLocDom = {0..3}
+targetLocales = 0 1 2 3
+dataParTasksPerLocale = 2
+dataParIgnoreRunningTasks = false
+dataParMinGranularity = 1
+locDist[0].myChunk = {-9223372036854775808..3}
+locDist[1].myChunk = {4..5}
+locDist[2].myChunk = {6..8}
+locDist[3].myChunk = {9..9223372036854775807}
+
+fast follower invoked for Stencil array
+fast follower invoked for Stencil array
+fast follower invoked for Stencil array
+fast follower invoked for Stencil array
+fast follower invoked for Stencil array
+fast follower invoked for Stencil array
+fast follower invoked for Stencil array
+fast follower invoked for Stencil array
+fast follower invoked for Stencil array
+fast follower invoked for Stencil array
+fast follower invoked for Stencil array
+fast follower invoked for Stencil array
+fast follower invoked for Stencil array
+fast follower invoked for Stencil array
+fast follower invoked for Stencil array
+fast follower invoked for Stencil array
+----------
+
