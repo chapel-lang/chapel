@@ -1680,7 +1680,7 @@ static void checkConflictingSymbols(std::vector<Symbol *>& symbols,
   //   then      assume function resolution will be applied
   //   otherwise fail
   for_vector(Symbol, sym, symbols) {
-    if (!allowMultiDefFuncs || !isFnSymbol(sym)) {
+    if (!isFnSymbol(sym)) {
       if (std::count(failedUSymExprs.begin(),
                      failedUSymExprs.end(),
                      context) == 0) {
