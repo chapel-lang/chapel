@@ -204,6 +204,19 @@ record LinkedList {
    }
 
   /*
+    find `e` in the list.
+    returns true if item is found, otherwise returns false
+   */
+  proc search(e : eltType) {
+     for item in this {
+       if (e == item) {
+         return true;
+       }
+     }
+    return false;
+  }
+  
+  /*
     Returns the data stored in the first element of the list
     It is an error to call front() on an empty list
    */
