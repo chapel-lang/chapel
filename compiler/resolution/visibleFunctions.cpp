@@ -328,8 +328,6 @@ static void getVisibleMethods(const char* name, CallExpr* call,
       ModuleSymbol* blockMod = block->getModule();
       ModuleSymbol* nextMod = next->getModule();
       if (blockMod != nextMod && nextMod != theProgram && nextMod != rootModule) {
-        // printf("A: Skipping a module between %s and %s\n",
-        //        block->getModule()->name, next->getModule()->name);
         next = standardModule->block;
       }
 
@@ -548,8 +546,6 @@ static void getVisibleFunctions(const char*           name,
       ModuleSymbol* blockMod = block->getModule();
       ModuleSymbol* nextMod = next->getModule();
       if (blockMod != nextMod && nextMod != theProgram && nextMod != rootModule) {
-        // printf("B: Skipping a module between %s and %s\n",
-        //        block->getModule()->name, next->getModule()->name);
         next = standardModule->block;
       }
 
@@ -662,8 +658,6 @@ static void getVisibleFunctions(const char*           name,
       ModuleSymbol* blockMod = block->getModule();
       ModuleSymbol* nextMod = next->getModule();
       if (blockMod != nextMod && nextMod != theProgram && nextMod != rootModule) {
-        // printf("C: Skipping a module between %s and %s\n",
-        //        block->getModule()->name, next->getModule()->name);
         next = standardModule->block;
       }
 

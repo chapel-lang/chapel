@@ -1077,7 +1077,7 @@ module QuickSort {
                      minlen=16,
                      comparator:?rec=defaultComparator,
                      start:int = Dom.low, end:int = Dom.high) {
-    import super.InsertionSort;
+    import Sort.InsertionSort;
 
     // grab obvious indices
     const lo = start,
