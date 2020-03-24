@@ -1449,6 +1449,7 @@ module SampleSortHelp {
 pragma "no doc"
 module RadixSortHelp {
   import Sort.{defaultComparator, DefaultComparator};
+  import Reflection.canResolveMethod;
 
   // This is the number of bits to sort at a time in the radix sorter.
   // The code assumes that all integer types are a multiple of it.

@@ -15,6 +15,7 @@ module Outer {
               Reflection.getModuleName(), ".", Reflection.getRoutineName());
     }
     import Reflection;
+    import Outer.foo;
   }
   use Reflection only ;
 }
