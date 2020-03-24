@@ -120,11 +120,9 @@ if mode == diagMode.correctness || dist == distType.block {
     endDiag("domInit", blockDom);
     if createArrays {
       {
-        writeln("vvvvvv");
         startDiag("arrInit");
         const blockArr: [blockDom] elemType;
         endDiag("arrInit", blockArr);
-        writeln("^^^^^^");
 
         startDiag("arrDeinit");
       }
