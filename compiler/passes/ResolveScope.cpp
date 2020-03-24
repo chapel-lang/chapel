@@ -50,6 +50,7 @@
 #include "scopeResolve.h"
 #include "stmt.h"
 #include "stringutil.h"
+#include "view.h"
 
 ResolveScope* rootScope;
 
@@ -981,13 +982,17 @@ Symbol* ResolveScope::lookupPublicUnqualAccessSyms(const char* name,
   std::vector<Symbol *> symbols;
 
   for_vector_allowing_0s(VisibilityStmt, visStmt, useImportList) {
-    if (ImportStmt *is = toImportStmt(visStmt)) {
-      if (!is->isPrivate) {
-        if (!is->skipSymbolSearch(name)) {
-          if (SymExpr *se = toSymExpr(is->src)) {
+    if (ImportStmt *impStmt = toImportStmt(visStmt)) {
+      if (!impStmt->isPrivate) {
+        if (!impStmt->skipSymbolSearch(name)) {
+          const char *nameToUse = name;
+          if (impStmt->isARenamedSym(name)) {
+            nameToUse = impStmt->getRenamedSym(name);
+          }
+          if (SymExpr *se = toSymExpr(impStmt->src)) {
             if (ModuleSymbol *ms = toModuleSymbol(se->symbol())) {
               ResolveScope *scope = ResolveScope::getScopeFor(ms->block);
-              if (Symbol *retval = scope->lookupNameLocally(name)) {
+              if (Symbol *retval = scope->lookupNameLocally(nameToUse)) {
                 modArg = ms;
                 symbols.push_back(retval);
               }
