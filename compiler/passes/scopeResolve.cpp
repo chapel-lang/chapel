@@ -39,6 +39,7 @@
 #include "stlUtil.h"
 #include "stringutil.h"
 #include "TryStmt.h"
+#include "view.h"
 #include "visibleFunctions.h"
 #include "wellknown.h"
 
@@ -1413,7 +1414,7 @@ static void resolveModuleCall(CallExpr* call) {
 
         // Then, try public import statements that enables unqualified access
         if (!sym) {
-          sym = scope->lookupPublicUnqualAccessSyms(mbrName, modArg);
+          sym = scope->lookupPublicUnqualAccessSyms(mbrName, modArg, call);
         }
 
         // Adjust class types to undecorated
@@ -1478,20 +1479,27 @@ static void resolveModuleCall(CallExpr* call) {
           }
 
         } else {
-          if (!uSE || uSE->unresolved == mod->name) {
-            USR_FATAL_CONT(call,
-                           "Symbol '%s' undeclared in module '%s'",
-                           mbrName,
-                           mod->name);
+          // we didn't get a symbol, but it maybe due to multiply defined
+          // symbols. To check that see if this call wasn't added to
+          // failedUSymExprs
+          if (std::count(failedUSymExprs.begin(),
+                         failedUSymExprs.end(),
+                         call) == 0) {
+            if (!uSE || uSE->unresolved == mod->name) {
+              USR_FATAL_CONT(call,
+                             "Symbol '%s' undeclared in module '%s'",
+                             mbrName,
+                             mod->name);
 
-          } else {
-            USR_FATAL_CONT(call,
-                           "Symbol '%s' undeclared in module '%s'",
-                           mbrName,
-                           uSE->unresolved);
-            USR_PRINT("module '%s' was renamed from '%s' at %s:%d",
-                      uSE->unresolved, mod->name, renameLoc->filename,
-                      renameLoc->lineno);
+            } else {
+              USR_FATAL_CONT(call,
+                             "Symbol '%s' undeclared in module '%s'",
+                             mbrName,
+                             uSE->unresolved);
+              USR_PRINT("module '%s' was renamed from '%s' at %s:%d",
+                        uSE->unresolved, mod->name, renameLoc->filename,
+                        renameLoc->lineno);
+            }
           }
         }
       }
@@ -1665,22 +1673,27 @@ static void checkConflictingSymbols(std::vector<Symbol *>& symbols,
                                     const char* name,
                              BaseAST* context,
                              bool storeRenames,
-                             std::map<Symbol*, astlocT*>& renameLocs) {
+                             std::map<Symbol*, astlocT*>& renameLocs,
+                             bool allowMultiDefFuncs) {
 
   // If they're all functions
   //   then      assume function resolution will be applied
   //   otherwise fail
   for_vector(Symbol, sym, symbols) {
-    if (! isFnSymbol(sym)) {
-      failedUSymExprs.push_back(context);
-      astlocT* symRenameLoc = renameLocs[sym];
-      USR_FATAL_CONT(sym, "symbol %s is multiply defined", name);
-      if (storeRenames && symRenameLoc != NULL) {
-        USR_PRINT("'%s' was renamed to '%s' at %s:%d", sym->name,
-                  name, symRenameLoc->filename, symRenameLoc->lineno);
+    if (!allowMultiDefFuncs || !isFnSymbol(sym)) {
+      if (std::count(failedUSymExprs.begin(),
+                     failedUSymExprs.end(),
+                     context) == 0) {
+        failedUSymExprs.push_back(context);
+        astlocT* symRenameLoc = renameLocs[sym];
+        USR_FATAL_CONT(sym, "symbol %s is multiply defined", name);
+        if (storeRenames && symRenameLoc != NULL) {
+          USR_PRINT("'%s' was renamed to '%s' at %s:%d", sym->name,
+                    name, symRenameLoc->filename, symRenameLoc->lineno);
+        }
+        printConflictingSymbols(symbols, sym, name, storeRenames, renameLocs);
+        break;
       }
-      printConflictingSymbols(symbols, sym, name, storeRenames, renameLocs);
-      break;
     }
   }
 }
@@ -1689,7 +1702,7 @@ void checkConflictingSymbols(std::vector<Symbol *>& symbols,
                                     const char* name,
                                     BaseAST* context) {
   std::map<Symbol*, astlocT*> junkMap;
-  checkConflictingSymbols(symbols, name, context, false, junkMap);
+  checkConflictingSymbols(symbols, name, context, false, junkMap, false);
 }
 
 // Given a name and a calling context, determine the symbol referred to
@@ -1721,7 +1734,7 @@ Symbol* lookupAndCount(const char*           name,
 
   } else {
     // Multiple symbols found for this name.
-    checkConflictingSymbols(symbols, name, context, storeRenames, renameLocs);
+    checkConflictingSymbols(symbols, name, context, storeRenames, renameLocs, true);
     retval = NULL;
   }
 
@@ -1909,7 +1922,8 @@ static bool lookupThisScopeAndUses(const char*           name,
               Symbol* sym = inSymbolTable(nameToUse, scopeToUse);
               if (!sym) {
                 if (ResolveScope* rs = ResolveScope::getScopeFor(scopeToUse)) {
-                  sym = rs->lookupPublicUnqualAccessSyms(nameToUse);
+                  sym = rs->lookupPublicUnqualAccessSyms(nameToUse,
+                                                         context);
                 }
               }
               if (sym) {

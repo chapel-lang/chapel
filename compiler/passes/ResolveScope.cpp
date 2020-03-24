@@ -695,7 +695,7 @@ Symbol* ResolveScope::lookupForImport(Expr* expr, bool isUse) const {
       retval = symbol;
 
     } else if (Symbol *symbol =
-        scope->lookupPublicUnqualAccessSyms(rhsName)) {
+        scope->lookupPublicUnqualAccessSyms(rhsName, call)) {
       retval = symbol;
 
     } else {
@@ -967,14 +967,16 @@ Symbol* ResolveScope::lookupPublicImports(const char* name) const {
   return retval;
 }
 
-Symbol* ResolveScope::lookupPublicUnqualAccessSyms(const char* name) const {
+Symbol* ResolveScope::lookupPublicUnqualAccessSyms(const char* name,
+                                                   BaseAST *context) const {
   ModuleSymbol *ms = NULL;
-  Symbol *retval = lookupPublicUnqualAccessSyms(name, ms);
+  Symbol *retval = lookupPublicUnqualAccessSyms(name, ms, context);
   return retval;
 }
 
 Symbol* ResolveScope::lookupPublicUnqualAccessSyms(const char* name,
-                                                   ModuleSymbol*& modArg) const {
+                                                   ModuleSymbol*& modArg,
+                                                   BaseAST *context) const {
   UseImportList useImportList = mUseImportList;
   std::vector<Symbol *> symbols;
 
@@ -988,7 +990,6 @@ Symbol* ResolveScope::lookupPublicUnqualAccessSyms(const char* name,
               if (Symbol *retval = scope->lookupNameLocally(name)) {
                 modArg = ms;
                 symbols.push_back(retval);
-                //return retval;
               }
             }
           }
@@ -998,14 +999,12 @@ Symbol* ResolveScope::lookupPublicUnqualAccessSyms(const char* name,
   }
 
   if (symbols.size() == 1) {
-    // modArg must be set correctly above
+    // modArg must have been set correctly above
     return symbols[0];
   }
   else if (symbols.size() > 1) {
-    checkConflictingSymbols(symbols, name, this->asBlockStmt());
-    // we can optionally stop compilation here. if this module never uses the
-    // multiply defined symbols itself but just reexports them we may see
-    // duplicate errors
+    // potentially start the error process here
+    checkConflictingSymbols(symbols, name, context);
   }
   return NULL;
 }
