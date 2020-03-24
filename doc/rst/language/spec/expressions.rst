@@ -1074,10 +1074,6 @@ The value of ``b`` must be non-negative.
 
 The value of ``b`` must be less than the number of bits in ``a``.
 
-Conforming implementations may add both compile-time and run-time
-checks to ensure that the value of the second actual argument ``b``
-meets the above constraints.
-
 .. _Logical_Operators:
 
 Logical Operators
