@@ -53,10 +53,6 @@ public:
 
   bool            hasExceptList()                                        const;
 
-  bool            isARenamedSym(const char* name)                        const;
-
-  const char*     getRenamedSym(const char* name)                        const;
-
   void            scopeResolve(ResolveScope* scope);
 
   UseStmt*        applyOuterUse(const UseStmt* outer);
@@ -66,7 +62,7 @@ public:
   bool            providesNewSymbols(const UseStmt* other)               const;
   bool            providesNewSymbols(const ImportStmt* other)            const;
 
-  BaseAST*        getSearchScope()                                       const;
+  virtual BaseAST* getSearchScope()                                      const;
 
   void            writeListPredicate(FILE* mFP)                          const;
 
@@ -79,15 +75,12 @@ private:
 
   void            validateNamed();
 
-  void            validateRenamed();
-
   bool            matchedNameOrRename(const char* name)             const;
 
   void            noRepeats()                                            const;
 
 public:
   std::vector<const char*>           named;
-  std::map<const char*, const char*> renamed;
 
 private:
   bool                               except;
