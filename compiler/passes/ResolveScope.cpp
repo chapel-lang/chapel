@@ -976,6 +976,7 @@ Symbol* ResolveScope::lookupPublicUnqualAccessSyms(const char* name) const {
 Symbol* ResolveScope::lookupPublicUnqualAccessSyms(const char* name,
                                                    ModuleSymbol*& modArg) const {
   UseImportList useImportList = mUseImportList;
+  std::vector<Symbol *> symbols;
 
   for_vector_allowing_0s(VisibilityStmt, visStmt, useImportList) {
     if (ImportStmt *is = toImportStmt(visStmt)) {
@@ -986,7 +987,8 @@ Symbol* ResolveScope::lookupPublicUnqualAccessSyms(const char* name,
               ResolveScope *scope = ResolveScope::getScopeFor(ms->block);
               if (Symbol *retval = scope->lookupNameLocally(name)) {
                 modArg = ms;
-                return retval;
+                symbols.push_back(retval);
+                //return retval;
               }
             }
           }
@@ -995,6 +997,16 @@ Symbol* ResolveScope::lookupPublicUnqualAccessSyms(const char* name,
     }
   }
 
+  if (symbols.size() == 1) {
+    // modArg must be set correctly above
+    return symbols[0];
+  }
+  else if (symbols.size() > 1) {
+    checkConflictingSymbols(symbols, name, this->asBlockStmt());
+    // we can optionally stop compilation here. if this module never uses the
+    // multiply defined symbols itself but just reexports them we may see
+    // duplicate errors
+  }
   return NULL;
 }
 

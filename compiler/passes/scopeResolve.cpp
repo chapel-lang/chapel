@@ -1661,6 +1661,37 @@ static void printConflictingSymbols(std::vector<Symbol*>& symbols, Symbol* sym,
               "also defined as a function here (and possibly elsewhere)");
 }
 
+static void checkConflictingSymbols(std::vector<Symbol *>& symbols,
+                                    const char* name,
+                             BaseAST* context,
+                             bool storeRenames,
+                             std::map<Symbol*, astlocT*>& renameLocs) {
+
+  // If they're all functions
+  //   then      assume function resolution will be applied
+  //   otherwise fail
+  for_vector(Symbol, sym, symbols) {
+    if (! isFnSymbol(sym)) {
+      failedUSymExprs.push_back(context);
+      astlocT* symRenameLoc = renameLocs[sym];
+      USR_FATAL_CONT(sym, "symbol %s is multiply defined", name);
+      if (storeRenames && symRenameLoc != NULL) {
+        USR_PRINT("'%s' was renamed to '%s' at %s:%d", sym->name,
+                  name, symRenameLoc->filename, symRenameLoc->lineno);
+      }
+      printConflictingSymbols(symbols, sym, name, storeRenames, renameLocs);
+      break;
+    }
+  }
+}
+
+void checkConflictingSymbols(std::vector<Symbol *>& symbols,
+                                    const char* name,
+                                    BaseAST* context) {
+  std::map<Symbol*, astlocT*> junkMap;
+  checkConflictingSymbols(symbols, name, context, false, junkMap);
+}
+
 // Given a name and a calling context, determine the symbol referred to
 // by that name in the context of that call
 Symbol* lookupAndCount(const char*           name,
@@ -1690,24 +1721,7 @@ Symbol* lookupAndCount(const char*           name,
 
   } else {
     // Multiple symbols found for this name.
-    // If they're all functions
-    //   then      assume function resolution will be applied
-    //   otherwise fail
-
-    for_vector(Symbol, sym, symbols) {
-      if (! isFnSymbol(sym)) {
-        failedUSymExprs.push_back(context);
-        astlocT* symRenameLoc = renameLocs[sym];
-        USR_FATAL_CONT(sym, "symbol %s is multiply defined", name);
-        if (storeRenames && symRenameLoc != NULL) {
-          USR_PRINT("'%s' was renamed to '%s' at %s:%d", sym->name,
-                    name, symRenameLoc->filename, symRenameLoc->lineno);
-        }
-        printConflictingSymbols(symbols, sym, name, storeRenames, renameLocs);
-        break;
-      }
-    }
-
+    checkConflictingSymbols(symbols, name, context, storeRenames, renameLocs);
     retval = NULL;
   }
 
@@ -1892,7 +1906,13 @@ static bool lookupThisScopeAndUses(const char*           name,
                 use->getRenamedSym(name) : name;
               BaseAST* scopeToUse = use->getSearchScope();
 
-              if (Symbol* sym = inSymbolTable(nameToUse, scopeToUse)) {
+              Symbol* sym = inSymbolTable(nameToUse, scopeToUse);
+              if (!sym) {
+                if (ResolveScope* rs = ResolveScope::getScopeFor(scopeToUse)) {
+                  sym = rs->lookupPublicUnqualAccessSyms(nameToUse);
+                }
+              }
+              if (sym) {
                 if (sym->hasFlag(FLAG_PRIVATE) == true) {
                   if (sym->isVisible(context) == true &&
                       isRepeat(sym, symbols)  == false) {
@@ -2008,11 +2028,7 @@ static Symbol* inSymbolTable(const char* name, BaseAST* ast) {
   Symbol* retval = NULL;
 
   if (ResolveScope* scope = ResolveScope::getScopeFor(ast)) {
-    Symbol* sym = scope->lookupNameLocally(name);
-    if (!sym) {
-      sym = scope->lookupPublicUnqualAccessSyms(name);
-    }
-    if (sym) {
+    if (Symbol* sym = scope->lookupNameLocally(name)) {
       if (FnSymbol* fn = toFnSymbol(sym)) {
         if (fn->isMethod() == false || methodMatched(ast, fn) == true) {
           retval = sym;
