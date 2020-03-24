@@ -2008,7 +2008,11 @@ static Symbol* inSymbolTable(const char* name, BaseAST* ast) {
   Symbol* retval = NULL;
 
   if (ResolveScope* scope = ResolveScope::getScopeFor(ast)) {
-    if (Symbol* sym = scope->lookupNameLocally(name)) {
+    Symbol* sym = scope->lookupNameLocally(name);
+    if (!sym) {
+      sym = scope->lookupPublicUnqualAccessSyms(name);
+    }
+    if (sym) {
       if (FnSymbol* fn = toFnSymbol(sym)) {
         if (fn->isMethod() == false || methodMatched(ast, fn) == true) {
           retval = sym;
