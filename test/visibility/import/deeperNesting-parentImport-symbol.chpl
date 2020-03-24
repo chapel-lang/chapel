@@ -7,11 +7,10 @@ module A {
     var x: int;
 
     module C {
-      import A.B;
+      import A.B.foo;
 
       proc main() {
-        foo(); // Should not work; import does not name foo and C doesn't see
-               // B's symbols lexically.
+        foo(); // Should work: import gets us directly to foo()
       }
     }
   }
