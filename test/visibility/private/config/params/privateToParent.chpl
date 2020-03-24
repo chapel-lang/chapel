@@ -3,7 +3,7 @@ module M1 {
 
   module M2 {
     proc main() {
-      import M1.foo;
+      use M1;
       writeln(foo);
       // Should work, because we are under the parent of the private param.
     }
