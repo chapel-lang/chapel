@@ -2228,76 +2228,74 @@ static void buildBreadthFirstModuleList(
       } else if (ImportStmt* srcImport = toImportStmt(source)) {
         // Don't traverse the use statements of a module we imported for
         // qualified access, their contents aren't brought into scope.
-        if (srcImport->unqualified.size() + srcImport->renamed.size() > 0) {
-          SymExpr* se = toSymExpr(srcImport->src);
-          INT_ASSERT(se);
-          ModuleSymbol* mod = toModuleSymbol(se->symbol());
-          INT_ASSERT(mod);
-          if (mod->block->useList != NULL) {
-            for_actuals(expr, mod->block->useList) {
-              if (UseStmt* use = toUseStmt(expr)) {
-                SymExpr* useSE = toSymExpr(use->src);
-                INT_ASSERT(useSE);
+        SymExpr* se = toSymExpr(srcImport->src);
+        INT_ASSERT(se);
+        ModuleSymbol* mod = toModuleSymbol(se->symbol());
+        INT_ASSERT(mod);
+        if (mod->block->useList != NULL) {
+          for_actuals(expr, mod->block->useList) {
+            if (UseStmt* use = toUseStmt(expr)) {
+              SymExpr* useSE = toSymExpr(use->src);
+              INT_ASSERT(useSE);
 
-                ImportStmt* importToAdd = NULL;
-                if (!use->isPrivate &&
-                    !useSE->symbol()->hasFlag(FLAG_PRIVATE)) {
-                  // Uses of private modules are not transitive - the symbols
-                  // in the private modules are only visible to itself and its
-                  // immediate parent.  Therefore, if the symbol is private,
-                  // we will not traverse it further and will merely add it to
-                  // the alreadySeen map.
-                  importToAdd = use->applyOuterImport(srcImport);
+              ImportStmt* importToAdd = NULL;
+              if (!use->isPrivate &&
+                  !useSE->symbol()->hasFlag(FLAG_PRIVATE)) {
+                // Uses of private modules are not transitive - the symbols
+                // in the private modules are only visible to itself and its
+                // immediate parent.  Therefore, if the symbol is private,
+                // we will not traverse it further and will merely add it to
+                // the alreadySeen map.
+                importToAdd = use->applyOuterImport(srcImport);
 
-                  if (importToAdd                       != NULL &&
-                      skipUse(alreadySeen, importToAdd) == false) {
-                    next.add(importToAdd);
-                    modules->add(importToAdd);
-                  }
-
-                  // if applyOuterUse returned NULL, the number of symbols
-                  // that could be provided from this use was 0, so it didn't
-                  // need to be added to the alreadySeen map.
-                  if (importToAdd != NULL) {
-                    (*alreadySeen)[useSE->symbol()].push_back(importToAdd);
-                  }
-
-                } else if (!use->isPrivate &&
-                           useSE->symbol()->hasFlag(FLAG_PRIVATE)) {
-                  // Private uses should be skipped, but should not prevent us
-                  // from traversing the module in a later use of it, if that
-                  // later use is not private.
-                  (*alreadySeen)[useSE->symbol()].push_back(use);
+                if (importToAdd                       != NULL &&
+                    skipUse(alreadySeen, importToAdd) == false) {
+                  next.add(importToAdd);
+                  modules->add(importToAdd);
                 }
-              } else if (ImportStmt* import = toImportStmt(expr)) {
-                SymExpr* importSE = toSymExpr(import->src);
-                INT_ASSERT(importSE);
 
-                // TODO: applyOuterImport implementation, and use it here
-
-                if (!import->isPrivate &&
-                    !importSE->symbol()->hasFlag(FLAG_PRIVATE)) {
-                  // Imports of private modules are not transitive - the
-                  // symbols in the private modules are only visible to itself
-                  // and its immediate parent.  Therefore, if the symbol is
-                  // private, we will not traverse it further and will merely
-                  // add it to the alreadySeen map.
-                  if (skipUse(alreadySeen, import) == false) {
-                    next.add(import);
-                    modules->add(import);
-                  }
-                } else if (!import->isPrivate &&
-                           importSE->symbol()->hasFlag(FLAG_PRIVATE)) {
-                  // If we're skipping because the import was public, but the
-                  // module was private, then we shouldn't look at the module
-                  // again and should add it to the alreadySeen map.  Otherwise
-                  // there might be a later import or use that is public, so
-                  // we should allow it to be found
-                  (*alreadySeen)[importSE->symbol()].push_back(import);
+                // if applyOuterUse returned NULL, the number of symbols
+                // that could be provided from this use was 0, so it didn't
+                // need to be added to the alreadySeen map.
+                if (importToAdd != NULL) {
+                  (*alreadySeen)[useSE->symbol()].push_back(importToAdd);
                 }
-              } else {
-                INT_ASSERT("Bad use list, expected UseStmt or ImportStmt");
+
+              } else if (!use->isPrivate &&
+                         useSE->symbol()->hasFlag(FLAG_PRIVATE)) {
+                // Private uses should be skipped, but should not prevent us
+                // from traversing the module in a later use of it, if that
+                // later use is not private.
+                (*alreadySeen)[useSE->symbol()].push_back(use);
               }
+            } else if (ImportStmt* import = toImportStmt(expr)) {
+              SymExpr* importSE = toSymExpr(import->src);
+              INT_ASSERT(importSE);
+
+              // TODO: applyOuterImport implementation, and use it here
+
+              if (!import->isPrivate &&
+                  !importSE->symbol()->hasFlag(FLAG_PRIVATE)) {
+                // Imports of private modules are not transitive - the
+                // symbols in the private modules are only visible to itself
+                // and its immediate parent.  Therefore, if the symbol is
+                // private, we will not traverse it further and will merely
+                // add it to the alreadySeen map.
+                if (skipUse(alreadySeen, import) == false) {
+                  next.add(import);
+                  modules->add(import);
+                }
+              } else if (!import->isPrivate &&
+                         importSE->symbol()->hasFlag(FLAG_PRIVATE)) {
+                // If we're skipping because the import was public, but the
+                // module was private, then we shouldn't look at the module
+                // again and should add it to the alreadySeen map.  Otherwise
+                // there might be a later import or use that is public, so
+                // we should allow it to be found
+                (*alreadySeen)[importSE->symbol()].push_back(import);
+              }
+            } else {
+              INT_ASSERT("Bad use list, expected UseStmt or ImportStmt");
             }
           }
         }
