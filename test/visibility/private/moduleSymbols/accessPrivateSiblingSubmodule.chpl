@@ -6,6 +6,7 @@ module parent {
   }
 
   module sibling {
+    import parent.child;
     proc main() {
       writeln(child.secretFunction(11));
     }
