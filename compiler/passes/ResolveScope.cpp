@@ -795,18 +795,25 @@ Symbol* ResolveScope::lookupWithUses(UnresolvedSymExpr* usymExpr, bool isUse) co
         }
 
       } else if (ImportStmt* import = toImportStmt(visStmt)) {
-        BaseAST* scopeToUse = import->getSearchScope();
+        if (import->skipSymbolSearch(name) == false) {
+          BaseAST* scopeToUse = import->getSearchScope();
+          const char* nameToUse  = name;
 
-        if (ResolveScope* next = getScopeFor(scopeToUse)) {
-          if (Symbol* sym = next->lookupNameLocally(name, isUse)) {
-            if (isRepeat(sym, symbols) == false) {
-              if (FnSymbol* fn = toFnSymbol(sym)) {
-                if (fn->isMethod() == false) {
-                  symbols.push_back(fn);
+          if (import->isARenamedSym(name) == true) {
+            nameToUse = import->getRenamedSym(name);
+          }
+
+          if (ResolveScope* next = getScopeFor(scopeToUse)) {
+            if (Symbol* sym = next->lookupNameLocally(nameToUse, isUse)) {
+              if (isRepeat(sym, symbols) == false) {
+                if (FnSymbol* fn = toFnSymbol(sym)) {
+                  if (fn->isMethod() == false) {
+                    symbols.push_back(fn);
+                  }
+
+                } else {
+                  symbols.push_back(sym);
                 }
-
-              } else {
-                symbols.push_back(sym);
               }
             }
           }
@@ -1048,15 +1055,31 @@ bool ResolveScope::getFieldsWithUses(const char* fieldName,
 
       // Do not use for_vector(); it terminates on a NULL
       for (size_t i = 0; i < useImportList.size(); i++) {
-        UseStmt* use = toUseStmt(useImportList[i]);
-
-        if (use != NULL) {
+        if (UseStmt* use = toUseStmt(useImportList[i])) {
           if (use->skipSymbolSearch(fieldName) == false) {
             BaseAST*    scopeToUse = use->getSearchScope();
             const char* nameToUse  = NULL;
 
             if (use->isARenamedSym(fieldName) == true) {
               nameToUse = use->getRenamedSym(fieldName);
+            } else {
+              nameToUse = fieldName;
+            }
+
+            if (ResolveScope* next = getScopeFor(scopeToUse)) {
+              if (Symbol* sym = next->lookupNameLocally(nameToUse)) {
+                symbols.push_back(sym);
+              }
+            }
+          }
+
+        } else if (ImportStmt* import = toImportStmt(useImportList[i])) {
+          if (import->skipSymbolSearch(fieldName) == false) {
+            BaseAST*    scopeToUse = import->getSearchScope();
+            const char* nameToUse  = NULL;
+
+            if (import->isARenamedSym(fieldName) == true) {
+              nameToUse = import->getRenamedSym(fieldName);
             } else {
               nameToUse = fieldName;
             }

@@ -517,8 +517,13 @@ static void getVisibleFunctions(const char*           name,
               ModuleSymbol* mod = toModuleSymbol(se->symbol());
               INT_ASSERT(mod);
               if (mod->isVisible(call) == true) {
-                getVisibleFunctions(name, call, mod->block, visited, visibleFns,
-                                    true);
+                if (import->isARenamedSym(name) == true) {
+                  getVisibleFunctions(import->getRenamedSym(name), call,
+                                      mod->block, visited, visibleFns, true);
+                } else {
+                  getVisibleFunctions(name, call, mod->block, visited,
+                                      visibleFns, true);
+                }
               }
             }
           }
@@ -602,9 +607,31 @@ static void getVisibleFunctions(const char*           name,
               }
             }
           }
-        } else if (isImportStmt(expr)) {
-          // Don't go into import statements to look for symbols, they only
-          // provide qualified access.
+        } else if (ImportStmt* import = toImportStmt(expr)) {
+          // Only traverse private import statements at this point.  Public
+          // import statements will have already been handled the first time
+          // this scope was seen
+          if (import->isPrivate) {
+            // Not all import statements define symbols for unqualified access,
+            // traverse into those that do when the name we're seeking is
+            // specified
+            if (import->skipSymbolSearch(name) == false) {
+              SymExpr* se = toSymExpr(import->src);
+
+              INT_ASSERT(se);
+              ModuleSymbol* mod = toModuleSymbol(se->symbol());
+              INT_ASSERT(mod);
+              if (mod->isVisible(call) == true) {
+                if (import->isARenamedSym(name) == true) {
+                  getVisibleFunctions(import->getRenamedSym(name), call,
+                                      mod->block, visited, visibleFns, true);
+                } else {
+                  getVisibleFunctions(name, call, mod->block, visited,
+                                      visibleFns, true);
+                }
+              }
+            }
+          }
         } else {
           INT_FATAL("Expected ImportStmt or UseStmt");
         }

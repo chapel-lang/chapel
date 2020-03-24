@@ -1,0 +1,1 @@
+testBorrowedMap.chpl:10: error: maps of non-nilable borrowed values are not currently supported

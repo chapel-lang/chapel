@@ -573,6 +573,7 @@ BlockStmt* buildImportStmt(Expr* mod, const char* rename, bool privateImport) {
 BlockStmt* buildImportStmt(Expr* mod, std::vector<PotentialRename*>* names,
                            bool privateImport) {
   std::vector<const char*> namesList;
+  std::map<const char*, const char*> renameMap;
 
   // Iterate through the list of names for unqualified access
   for_vector(PotentialRename, listElem, *names) {
@@ -587,13 +588,29 @@ BlockStmt* buildImportStmt(Expr* mod, std::vector<PotentialRename*>* names,
         break;
       case PotentialRename::DOUBLE:
         std::pair<Expr*, Expr*>* elem = listElem->renamed;
-        USR_FATAL(elem->first, "cannot rename symbols 'import'ed for "
-                  "unqualified access");
+        UnresolvedSymExpr* old_name = toUnresolvedSymExpr(elem->first);
+        UnresolvedSymExpr* new_name = toUnresolvedSymExpr(elem->second);
+
+        if (old_name != NULL && new_name != NULL) {
+          // Verify that the new name isn't already in the renameMap
+          if (renameMap.count(new_name->unresolved) == 0) {
+            renameMap[new_name->unresolved] = old_name->unresolved;
+          } else {
+            USR_FATAL_CONT(elem->first, "already renamed '%s' to '%s', renaming"
+                           "'%s' would conflict",
+                           renameMap[new_name->unresolved],
+                           new_name->unresolved, old_name->unresolved);
+          }
+        } else {
+          USR_FATAL(elem->first, "incorrect expression in 'import' list rename,"
+                    " identifier expected");
+        }
         break;
     }
   }
 
-  ImportStmt* newImport = new ImportStmt(mod, privateImport, &namesList);
+  ImportStmt* newImport = new ImportStmt(mod, privateImport, &namesList,
+                                         &renameMap);
   addModuleToSearchList(newImport, mod);
 
   delete names;
