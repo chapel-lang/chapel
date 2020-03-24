@@ -1,2 +1,2 @@
-What should happen here?  It seems like we're currently inconsistent?
-
+accessPrivateUsedSibling2a.chpl:18: In function 'main':
+accessPrivateUsedSibling2a.chpl:20: error: 'secretVariable' undeclared (first use this function)
