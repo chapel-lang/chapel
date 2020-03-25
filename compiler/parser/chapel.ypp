@@ -2131,7 +2131,12 @@ call_expr:
 dot_expr:
   expr TDOT ident_use          { $$ = buildDotExpr($1, $3); }
 | expr TDOT TTYPE              { $$ = new CallExpr(PRIM_TYPEOF, $1); }
-| expr TDOT TDOMAIN            { $$ = buildDotExpr($1, "_dom"); }
+| expr TDOT TDOMAIN            { if (fWarnUnstable &&
+                                     currentModuleType == MOD_USER) {
+                                   USR_WARN($1, "'.domain' may be deprecated in the future in favor of '.indices'");
+                                 }
+                                 $$ = buildDotExpr($1, "_dom");
+                               }
 | expr TDOT TLOCALE            { $$ = buildDotExpr($1, "locale"); }
 | expr TDOT TBYTES TLP TRP     { $$ = new CallExpr(buildDotExpr($1, "chpl_bytes")); }
 ;

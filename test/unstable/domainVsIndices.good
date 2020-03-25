@@ -1,0 +1,2 @@
+domainVsIndices.chpl:2: warning: '.domain' may be deprecated in the future in favor of '.indices'
+{1..10}
