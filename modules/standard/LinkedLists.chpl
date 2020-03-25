@@ -207,7 +207,7 @@ record LinkedList {
     find `e` in the list.
     returns true if item is found, otherwise returns false
    */
-  proc search(e : eltType) {
+  proc search(e : eltType): bool {
      for item in this {
        if (e == item) {
          return true;
@@ -220,7 +220,7 @@ record LinkedList {
     Returns the data stored in the first element of the list
     It is an error to call front() on an empty list
    */
-  proc front() {
+  proc front(): eltType throws {
     import HaltWrappers;
      if boundsChecking && size < 1 {
       HaltWrappers.boundsCheckHalt("front() called on empty list");
@@ -232,7 +232,7 @@ record LinkedList {
     Returns the data stored in the last element of the list
     It is an error to call back() on an empty list
    */
-  proc back() {
+  proc back(): eltType throws {
     import HaltWrappers;
     if boundsChecking && size < 1 {
       HaltWrappers.boundsCheckHalt("back() called on empty list");
