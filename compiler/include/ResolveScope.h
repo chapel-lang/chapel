@@ -25,6 +25,7 @@
 #include <string>
 #include <vector>
 
+class astlocT;
 class BaseAST;
 class BlockStmt;
 class CallExpr;
@@ -82,10 +83,21 @@ public:
 
   Symbol*               lookupPublicImports(const char* name)            const;
 
-  Symbol*               lookupPublicUnqualAccessSyms(const char* name)   const;
+  Symbol*               lookupPublicUnqualAccessSyms(const char* name,
+                                                     BaseAST *context)   const;
 
   Symbol*               lookupPublicUnqualAccessSyms(const char* name,
-                                                     ModuleSymbol*& modArg)   const;
+                          BaseAST *context,
+                          std::map<Symbol *, astlocT *>& renameLocs)      const;
+
+  Symbol*               lookupPublicUnqualAccessSyms(const char* name,
+                          ModuleSymbol*& modArg,
+                          BaseAST *context)                              const;
+
+  Symbol*               lookupPublicUnqualAccessSyms(const char* name,
+                          ModuleSymbol*& modArg,
+                          BaseAST *context,
+                          std::map<Symbol *, astlocT *>& renameLocs)      const;
 
   // Support for UseStmt with only/except
   // Has the potential to return multiple fields

@@ -9,9 +9,9 @@ module C {
   public import B.x;
 }
 module D {
-  use C;
+  import C;
 
   proc main() {
-    writeln(x); // Should be a conflict, which one should it pick?
+    writeln(C.x); // Should be a conflict, which one should it pick?
   }
 }

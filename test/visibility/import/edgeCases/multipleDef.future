@@ -1,2 +1,0 @@
-bug: `x`es brought in through `C` and `B` are at the same level and should
-conflict. Potentially resulting in "multiply defined" errors.

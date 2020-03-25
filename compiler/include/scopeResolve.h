@@ -49,6 +49,11 @@ Symbol*  lookupAndCount(const char*           name,
                         bool storeRenames = false,
                         astlocT** renameLoc = NULL);
 
+void checkConflictingSymbols(std::vector<Symbol *>& symbols,
+                             const char* name,
+                             BaseAST* context,
+                             bool storeRenames,
+                             std::map<Symbol*, astlocT*>& renameLocs);
 
 BaseAST* getScope(BaseAST* ast);
 
