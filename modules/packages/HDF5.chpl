@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -80,7 +81,7 @@ module HDF5 {
     require "hdf5_hl.h";
     require "-lhdf5", "-lhdf5_hl";
 
-    use HDF5_WAR;
+    public use HDF5_WAR;
 
     extern proc H5open() : herr_t;
 
@@ -3466,6 +3467,7 @@ module HDF5 {
     pragma "no doc"
     module HDF5_WAR {
       require "HDF5Helper/hdf5_helper.h";
+      use C_HDF5;
 
       extern proc H5LTget_dataset_info_WAR(loc_id: hid_t,
                                            dset_name: c_string,
@@ -4042,7 +4044,7 @@ module HDF5 {
       // instead of:
       // A11, A12, B11, B12
       // A21, A22, B21, B22
-      use BlockDist, CyclicDist;
+      use BlockDist, CyclicDist, C_HDF5;
       proc isBlock(D: Block) param return true;
       proc isBlock(D) param return false;
       proc isCyclic(D: Cyclic) param return true;

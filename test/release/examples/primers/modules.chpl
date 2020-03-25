@@ -431,14 +431,16 @@ module OuterNested {
   }
 
   /* A module defined within another module is called a nested module.  These
-     submodules can refer to symbols defined within their parent module, but
-     their parent module can't directly access the contents of the nested
-     module without a ``use`` statement or fully qualified name.
+     submodules cannot refer to symbols defined within their parent module,
+     without a ``use`` or ``import`` of the parent module.  The
+     parent module can only access the contents of the nested module using
+     a ``use`` or ``import`` statement or a fully qualified name.
 
      The variable ``foobar`` references OuterNested's ``foo`` and ``bar``
      variables.
    */
   module Inner1 {
+    use OuterNested;
     var foobar = foo + bar;
   }
 

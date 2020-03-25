@@ -1,0 +1,2 @@
+test_nested_use_outer-super.chpl:5: In function 'f':
+test_nested_use_outer-super.chpl:6: error: import must name a module ('c' is not a module)

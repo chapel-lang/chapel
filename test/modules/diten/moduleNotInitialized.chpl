@@ -3,6 +3,7 @@ module OuterModule {
   var lock2: sync bool;
 
   module M1 {
+    use OuterModule;
     class C {
       var field: int;
     }
@@ -19,6 +20,7 @@ module OuterModule {
   }
 
   module M2 {
+    use OuterModule;
     proc main {
       var b, c: sync borrowed object?;
       begin {

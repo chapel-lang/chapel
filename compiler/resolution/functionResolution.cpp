@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -7186,8 +7187,6 @@ static SymExpr*       resolveNewFindTypeExpr(CallExpr* newExpr);
 
 static void resolveNewSetupManaged(CallExpr* newExpr, Type*& manager);
 
-static void handleUnstableNewError(CallExpr* newExpr, Type* newType);
-
 static bool isUndecoratedClassNew(CallExpr* newExpr, Type* newType);
 
 static void resolveNew(CallExpr* newExpr) {
@@ -7366,9 +7365,6 @@ static void resolveNewSetupManaged(CallExpr* newExpr, Type*& manager) {
             typeExpr->setSymbol(initType->symbol);
         }
       }
-      if (manager == NULL && fWarnUnstable)
-        // Generate an error on 'new MyClass' with fWarnUnstable
-        handleUnstableNewError(newExpr, type);
 
       if (manager == dtBorrowed && fWarnUnstable) {
         Type* ct = canonicalClassType(type);
@@ -7381,18 +7377,6 @@ static void resolveNewSetupManaged(CallExpr* newExpr, Type*& manager) {
                            ct->symbol->name);
       }
     }
-  }
-}
-
-static void handleUnstableNewError(CallExpr* newExpr, Type* newType) {
-  if (isUndecoratedClassNew(newExpr, newType)) {
-    USR_WARN(newExpr, "new %s is unstable", newType->symbol->name);
-    USR_PRINT(newExpr, "use 'new unmanaged %s' "
-                       "'new owned %s' or "
-                       "'new shared %s'",
-                       newType->symbol->name,
-                       newType->symbol->name,
-                       newType->symbol->name);
   }
 }
 

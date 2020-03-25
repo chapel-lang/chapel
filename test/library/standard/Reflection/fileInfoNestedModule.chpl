@@ -14,6 +14,8 @@ module Outer {
       writeln(Reflection.getFileName(), ":", Reflection.getLineNumber(), " ",
               Reflection.getModuleName(), ".", Reflection.getRoutineName());
     }
+    import Reflection;
+    import Outer.foo;
   }
   use Reflection only ;
 }

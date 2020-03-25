@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -578,12 +579,30 @@ static void warnUnstableLeadingUnderscores() {
   if (fWarnUnstable) {
     forv_Vec(DefExpr, def, gDefExprs) {
       const char* name = def->name();
-      
+      Symbol* sym = def->sym;
+      ModuleSymbol* mod = def->getModule();
+      FnSymbol* fn = def->getFunction();
+
       if (name && name[0] == '_' &&
-          def->getModule()->modTag == MOD_USER &&
-          !def->sym->hasFlag(FLAG_TEMP)) {
+          mod && mod->modTag == MOD_USER &&
+          !sym->hasFlag(FLAG_TEMP) &&
+          sym->type != dtMethodToken) {
         USR_WARN(def,
                  "Symbol names with leading underscores (%s) are unstable.", name);
+      }
+      if (name &&
+          name[0] == 'c' &&
+          name[1] == 'h' &&
+          name[2] == 'p' &&
+          name[3] == 'l' &&
+          name[4] == '_' &&
+          mod && mod->modTag == MOD_USER &&
+          !sym->hasFlag(FLAG_TEMP) &&
+          !sym->hasFlag(FLAG_INDEX_VAR) &&
+          !sym->hasFlag(FLAG_COMPILER_NESTED_FUNCTION) &&
+          !(fn && fn->hasFlag(FLAG_COMPILER_NESTED_FUNCTION))) {
+        USR_WARN(def,
+                 "Symbol names beginning with 'chpl_' (%s) are unstable.", name);
       }
     }
   }

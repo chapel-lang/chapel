@@ -9,7 +9,7 @@ module C {
   public import B.x;
 }
 module D {
-  use C; // or import C for C.x
+  use C;
 
   proc main() {
     writeln(x); // Should be a conflict, which one should it pick?

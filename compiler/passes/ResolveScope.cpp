@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -50,6 +51,7 @@
 #include "scopeResolve.h"
 #include "stmt.h"
 #include "stringutil.h"
+#include "view.h"
 
 ResolveScope* rootScope;
 
@@ -695,7 +697,7 @@ Symbol* ResolveScope::lookupForImport(Expr* expr, bool isUse) const {
       retval = symbol;
 
     } else if (Symbol *symbol =
-        scope->lookupPublicUnqualAccessSyms(rhsName)) {
+        scope->lookupPublicUnqualAccessSyms(rhsName, call)) {
       retval = symbol;
 
     } else {
@@ -967,26 +969,61 @@ Symbol* ResolveScope::lookupPublicImports(const char* name) const {
   return retval;
 }
 
-Symbol* ResolveScope::lookupPublicUnqualAccessSyms(const char* name) const {
+// This version is used in resolving the calls in an import statement
+Symbol* ResolveScope::lookupPublicUnqualAccessSyms(const char* name,
+                                                   BaseAST *context) const {
+  std::map<Symbol *, astlocT *> renameLocs;
   ModuleSymbol *ms = NULL;
-  Symbol *retval = lookupPublicUnqualAccessSyms(name, ms);
+  Symbol *retval = lookupPublicUnqualAccessSyms(name, ms, context, renameLocs);
+  return retval;
+}
+
+// This version is used in resolveModuleCall in scope resolution
+Symbol* ResolveScope::lookupPublicUnqualAccessSyms(const char* name,
+                                                   ModuleSymbol*& modArg,
+                                                   BaseAST *context) const {
+  std::map<Symbol *, astlocT *> renameLocs;
+  Symbol *retval = lookupPublicUnqualAccessSyms(name, modArg, context,
+                                                renameLocs);
+  return retval;
+
+}
+
+// This version is used in regular unresolvedsymexpr scope resolution
+Symbol* ResolveScope::lookupPublicUnqualAccessSyms(const char* name,
+            BaseAST *context, std::map<Symbol*, astlocT*>& renameLocs) const {
+  ModuleSymbol *ms = NULL;
+  Symbol *retval = lookupPublicUnqualAccessSyms(name, ms, context, renameLocs);
   return retval;
 }
 
 Symbol* ResolveScope::lookupPublicUnqualAccessSyms(const char* name,
-                                                   ModuleSymbol*& modArg) const {
-  UseImportList useImportList = mUseImportList;
+         ModuleSymbol*& modArg, BaseAST *context,
+         std::map<Symbol*, astlocT*>& renameLocs) const {
 
+  UseImportList useImportList = mUseImportList;
+  std::vector<Symbol *> symbols;
+
+  bool traversedRenames = false;
   for_vector_allowing_0s(VisibilityStmt, visStmt, useImportList) {
-    if (ImportStmt *is = toImportStmt(visStmt)) {
-      if (!is->isPrivate) {
-        if (!is->skipSymbolSearch(name)) {
-          if (SymExpr *se = toSymExpr(is->src)) {
+    if (ImportStmt *impStmt = toImportStmt(visStmt)) {
+      if (!impStmt->isPrivate) {
+        if (!impStmt->skipSymbolSearch(name)) {
+          const char *nameToUse = name;
+          const bool isSymRenamed = impStmt->isARenamedSym(name);
+          if (isSymRenamed) {
+            nameToUse = impStmt->getRenamedSym(name);
+          }
+          if (SymExpr *se = toSymExpr(impStmt->src)) {
             if (ModuleSymbol *ms = toModuleSymbol(se->symbol())) {
               ResolveScope *scope = ResolveScope::getScopeFor(ms->block);
-              if (Symbol *retval = scope->lookupNameLocally(name)) {
+              if (Symbol *retval = scope->lookupNameLocally(nameToUse)) {
                 modArg = ms;
-                return retval;
+                symbols.push_back(retval);
+                if (isSymRenamed) {
+                  renameLocs[retval] = &impStmt->astloc;
+                  traversedRenames = true;
+                }
               }
             }
           }
@@ -995,6 +1032,15 @@ Symbol* ResolveScope::lookupPublicUnqualAccessSyms(const char* name,
     }
   }
 
+  if (symbols.size() == 1) {
+    // modArg must have been set correctly above
+    return symbols[0];
+  }
+  else if (symbols.size() > 1) {
+    // potentially start the error process here
+    checkConflictingSymbols(symbols, name, context,
+                            traversedRenames, renameLocs);
+  }
   return NULL;
 }
 

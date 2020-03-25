@@ -1,1 +1,3 @@
-In A.B.foo()
+deeperNesting-parentImport-unqualified.chpl:12: In function 'main':
+deeperNesting-parentImport-unqualified.chpl:13: error: unresolved call 'foo()'
+deeperNesting-parentImport-unqualified.chpl:13: note: because no functions named foo found in scope
