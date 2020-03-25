@@ -445,6 +445,14 @@ bool ImportStmt::providesQualifiedAccess() const {
   }
 }
 
+bool ImportStmt::providesUnqualifiedAccess() const {
+  if (unqualified.size() != 0 || renamed.size() != 0) {
+    return true;
+  } else {
+    return false;
+  }
+}
+
 /************************************* | **************************************
 *                                                                             *
 * Returns true if the current import statement has the possibility of         *
@@ -461,7 +469,7 @@ bool ImportStmt::providesNewSymbols(const UseStmt* other) const {
     return false;
   }
 
-  if (!providesQualifiedAccess()) {
+  if (providesQualifiedAccess() && !providesUnqualifiedAccess()) {
     // UseStmts always provide qualified access, and we don't provide any
     // symbols for unqualified access, so by definition we are covered!
     return false;
