@@ -1669,11 +1669,11 @@ static void printConflictingSymbols(std::vector<Symbol*>& symbols, Symbol* sym,
               "also defined as a function here (and possibly elsewhere)");
 }
 
-static void checkConflictingSymbols(std::vector<Symbol *>& symbols,
-                                    const char* name,
-                                    BaseAST* context,
-                                    bool storeRenames,
-                                    std::map<Symbol*, astlocT*>& renameLocs) {
+void checkConflictingSymbols(std::vector<Symbol *>& symbols,
+                             const char* name,
+                             BaseAST* context,
+                             bool storeRenames,
+                             std::map<Symbol*, astlocT*>& renameLocs) {
 
   // If they're all functions
   //   then      assume function resolution will be applied
@@ -1695,13 +1695,6 @@ static void checkConflictingSymbols(std::vector<Symbol *>& symbols,
       }
     }
   }
-}
-
-void checkConflictingSymbols(std::vector<Symbol *>& symbols,
-                                    const char* name,
-                                    BaseAST* context) {
-  std::map<Symbol*, astlocT*> junkMap;
-  checkConflictingSymbols(symbols, name, context, false, junkMap);
 }
 
 // Given a name and a calling context, determine the symbol referred to
@@ -1733,7 +1726,14 @@ Symbol* lookupAndCount(const char*           name,
 
   } else {
     // Multiple symbols found for this name.
-    checkConflictingSymbols(symbols, name, context, storeRenames, renameLocs);
+    if (renameLocs.size() > 0) {
+      // this can be the case when we resolved an urse through a public import
+      // that renames the symbol
+      checkConflictingSymbols(symbols, name, context, true, renameLocs);
+    }
+    else {
+      checkConflictingSymbols(symbols, name, context, storeRenames, renameLocs);
+    }
     retval = NULL;
   }
 
@@ -1921,7 +1921,8 @@ static bool lookupThisScopeAndUses(const char*           name,
               Symbol* sym = inSymbolTable(nameToUse, scopeToUse);
               if (!sym) {
                 if (ResolveScope* rs = ResolveScope::getScopeFor(scopeToUse)) {
-                  sym = rs->lookupPublicUnqualAccessSyms(nameToUse, context);
+                  sym = rs->lookupPublicUnqualAccessSyms(nameToUse, context,
+                                                         renameLocs);
                 }
               }
               if (sym) {

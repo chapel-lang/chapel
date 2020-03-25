@@ -51,7 +51,9 @@ Symbol*  lookupAndCount(const char*           name,
 
 void checkConflictingSymbols(std::vector<Symbol *>& symbols,
                              const char* name,
-                             BaseAST* context);
+                             BaseAST* context,
+                             bool storeRenames,
+                             std::map<Symbol*, astlocT*>& renameLocs);
 
 BaseAST* getScope(BaseAST* ast);
 

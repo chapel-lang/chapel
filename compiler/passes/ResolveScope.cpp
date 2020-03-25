@@ -968,25 +968,49 @@ Symbol* ResolveScope::lookupPublicImports(const char* name) const {
   return retval;
 }
 
+// This version is used in resolving the calls in an import statement
 Symbol* ResolveScope::lookupPublicUnqualAccessSyms(const char* name,
                                                    BaseAST *context) const {
+  std::map<Symbol *, astlocT *> renameLocs;
   ModuleSymbol *ms = NULL;
-  Symbol *retval = lookupPublicUnqualAccessSyms(name, ms, context);
+  Symbol *retval = lookupPublicUnqualAccessSyms(name, ms, context, renameLocs);
+  return retval;
+}
+
+// This version is used in resolveModuleCall in scope resolution
+Symbol* ResolveScope::lookupPublicUnqualAccessSyms(const char* name,
+                                                   ModuleSymbol*& modArg,
+                                                   BaseAST *context) const {
+  std::map<Symbol *, astlocT *> renameLocs;
+  Symbol *retval = lookupPublicUnqualAccessSyms(name, modArg, context,
+                                                renameLocs);
+  return retval;
+
+}
+
+// This version is used in regular unresolvedsymexpr scope resolution
+Symbol* ResolveScope::lookupPublicUnqualAccessSyms(const char* name,
+            BaseAST *context, std::map<Symbol*, astlocT*>& renameLocs) const {
+  ModuleSymbol *ms = NULL;
+  Symbol *retval = lookupPublicUnqualAccessSyms(name, ms, context, renameLocs);
   return retval;
 }
 
 Symbol* ResolveScope::lookupPublicUnqualAccessSyms(const char* name,
-                                                   ModuleSymbol*& modArg,
-                                                   BaseAST *context) const {
+         ModuleSymbol*& modArg, BaseAST *context,
+         std::map<Symbol*, astlocT*>& renameLocs) const {
+
   UseImportList useImportList = mUseImportList;
   std::vector<Symbol *> symbols;
 
+  bool traversedRenames = false;
   for_vector_allowing_0s(VisibilityStmt, visStmt, useImportList) {
     if (ImportStmt *impStmt = toImportStmt(visStmt)) {
       if (!impStmt->isPrivate) {
         if (!impStmt->skipSymbolSearch(name)) {
           const char *nameToUse = name;
-          if (impStmt->isARenamedSym(name)) {
+          const bool isSymRenamed = impStmt->isARenamedSym(name);
+          if (isSymRenamed) {
             nameToUse = impStmt->getRenamedSym(name);
           }
           if (SymExpr *se = toSymExpr(impStmt->src)) {
@@ -995,6 +1019,10 @@ Symbol* ResolveScope::lookupPublicUnqualAccessSyms(const char* name,
               if (Symbol *retval = scope->lookupNameLocally(nameToUse)) {
                 modArg = ms;
                 symbols.push_back(retval);
+                if (isSymRenamed) {
+                  renameLocs[retval] = &impStmt->astloc;
+                  traversedRenames = true;
+                }
               }
             }
           }
@@ -1009,7 +1037,8 @@ Symbol* ResolveScope::lookupPublicUnqualAccessSyms(const char* name,
   }
   else if (symbols.size() > 1) {
     // potentially start the error process here
-    checkConflictingSymbols(symbols, name, context);
+    checkConflictingSymbols(symbols, name, context,
+                            traversedRenames, renameLocs);
   }
   return NULL;
 }
