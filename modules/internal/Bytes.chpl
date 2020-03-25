@@ -1076,8 +1076,8 @@ module Bytes {
 
       :returns: A UTF-8 string.
     */
-    // NOTE: In the future this could support more encodings.
     proc decode(policy=decodePolicy.strict): string throws {
+      // NOTE: In the future this method could support more encodings.
       var localThis: bytes = this.localize();
       return decodeByteBuffer(localThis.buff, localThis.len, policy);
     }
