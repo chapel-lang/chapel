@@ -1479,7 +1479,7 @@ static void resolveModuleCall(CallExpr* call) {
           }
 
         } else {
-          // we didn't get a symbol, but it maybe due to multiply defined
+          // we didn't get a symbol, but it may be due to multiply defined
           // symbols. To check that see if this call wasn't added to
           // failedUSymExprs
           if (std::count(failedUSymExprs.begin(),
