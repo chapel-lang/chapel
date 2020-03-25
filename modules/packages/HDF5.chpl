@@ -3466,6 +3466,7 @@ module HDF5 {
     pragma "no doc"
     module HDF5_WAR {
       require "HDF5Helper/hdf5_helper.h";
+      use C_HDF5;
 
       extern proc H5LTget_dataset_info_WAR(loc_id: hid_t,
                                            dset_name: c_string,
