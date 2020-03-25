@@ -271,7 +271,7 @@ proc createModule(path: string, packageName: string, show: bool) throws {
   if validatePackageName(packageName) {
     if isFile(path + "/Mason.toml") {
       const toParse = open(path + "/Mason.toml", iomode.r);
-      const tomlFile = parseToml(toParse);
+      const tomlFile = owned.create(parseToml(toParse));
       if tomlFile.pathExists("brick.name") {
           throw new owned MasonError("Cannot use '--name' here" +
                                 " since brick name already exists.");
@@ -298,7 +298,7 @@ proc validatePackageNameChecks(path: string, name: string) {
   try {
     if isFile(path + "/Mason.toml") {
       const toParse = open(path + "/Mason.toml", iomode.r);
-      const tomlFile = parseToml(toParse);
+      const tomlFile = owned.create(parseToml(toParse));
       if tomlFile.pathExists("brick.name") {
         const nameTOML = tomlFile["brick"]!["name"]!.s;
         if validateNameInit(nameTOML) then actualName = nameTOML; 
