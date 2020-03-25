@@ -12,13 +12,8 @@ module C {
 }
 
 module Z {
-  import C.{x, foo}; // I can't do this at the moment
-  /* The following is the workaround
+  import C.{x, foo}; // This used to not work, while individual forms did
 
-    import C.x;
-    import C.foo;
-
-  */
   proc main() {
     writeln(x);
     foo();
