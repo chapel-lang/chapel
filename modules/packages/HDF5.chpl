@@ -80,7 +80,7 @@ module HDF5 {
     require "hdf5_hl.h";
     require "-lhdf5", "-lhdf5_hl";
 
-    use HDF5_WAR;
+    public use HDF5_WAR;
 
     extern proc H5open() : herr_t;
 
@@ -4043,7 +4043,7 @@ module HDF5 {
       // instead of:
       // A11, A12, B11, B12
       // A21, A22, B21, B22
-      use BlockDist, CyclicDist;
+      use BlockDist, CyclicDist, C_HDF5;
       proc isBlock(D: Block) param return true;
       proc isBlock(D) param return false;
       proc isCyclic(D: Cyclic) param return true;
