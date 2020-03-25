@@ -1231,6 +1231,14 @@ static void buildEnumIntegerCastFunctions(EnumType* et) {
       // associated integer value.  This routine throws an error.
       fn->throwsErrorInit();
 
+      if (fWarnUnstable) {
+        USR_WARN(et->symbol, "it has been suggested that support for "
+                 "semi-concrete enums like this (in which initial members "
+                 "have no integer values, but later ones do) should be "
+                 "deprecated, so this enum could be considered unstable; "
+                 "if you value such enums, please let the Chapel team know.");
+      }
+
       count = 0;
       whenstmts = buildChapelStmt();
       lastInit = NULL;
