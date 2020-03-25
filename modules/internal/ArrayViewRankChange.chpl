@@ -1,4 +1,5 @@
 /*
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -40,7 +41,7 @@
 //   classes... should I?
 //
 module ArrayViewRankChange {
-  use ChapelStandard;
+  private use ChapelStandard;
 
   //
   // This class represents a distribution that knows how to create
@@ -92,7 +93,7 @@ module ArrayViewRankChange {
 
     // Don't want to privatize a DefaultRectangular, so pass the query on to
     // the wrapped array
-    proc dsiSupportsPrivatization() param
+    override proc dsiSupportsPrivatization() param
       return downDistInst.dsiSupportsPrivatization();
 
     proc dsiGetPrivatizeData() {
@@ -109,7 +110,7 @@ module ArrayViewRankChange {
     override proc dsiDestroyDist() {
     }
 
-    proc dsiIsLayout() param {
+    override proc dsiIsLayout() param {
       return downDistInst.dsiIsLayout();
     }
   }
@@ -310,7 +311,7 @@ module ArrayViewRankChange {
     }
 
     // TODO: Is there something we can re-use here?
-    proc dsiSerialWrite(f) {
+    proc dsiSerialWrite(f) throws {
       var first = true;
       for d in 1..downrank do
         if !collapsedDim(d) {
@@ -363,7 +364,7 @@ module ArrayViewRankChange {
       return chpl_rankChangeConvertDownToUp(dims, rank, collapsedDim);
     }
 
-    proc isRankChangeDomainView() param {
+    override proc isRankChangeDomainView() param {
       return true;
     }
 
@@ -384,7 +385,7 @@ module ArrayViewRankChange {
 
     // Don't want to privatize a DefaultRectangular, so pass the query on to
     // the wrapped array
-    proc dsiSupportsPrivatization() param
+    override proc dsiSupportsPrivatization() param
       return downDomInst!.dsiSupportsPrivatization();
 
     proc dsiGetPrivatizeData() {
@@ -522,7 +523,7 @@ module ArrayViewRankChange {
     // must be (or should be) some way to do it without relying on
     // methods like this...
     //
-    proc isRankChangeArrayView() param {
+    override proc isRankChangeArrayView() param {
       return true;
     }
 
@@ -579,11 +580,11 @@ module ArrayViewRankChange {
     // I/O
     //
 
-    proc dsiSerialWrite(f) {
+    proc dsiSerialWrite(f) throws {
       chpl_serialReadWriteRectangular(f, this, privDom);
     }
 
-    proc dsiSerialRead(f) {
+    proc dsiSerialRead(f) throws {
       chpl_serialReadWriteRectangular(f, this, privDom);
     }
 
@@ -620,7 +621,6 @@ module ArrayViewRankChange {
     }
 
     inline proc dsiAccess(i) ref {
-      checkBounds(i);
       if shouldUseIndexCache() {
         const dataIdx = indexCache.getDataIndex(i);
         return indexCache.getDataElem(dataIdx);
@@ -631,7 +631,6 @@ module ArrayViewRankChange {
 
     inline proc dsiAccess(i)
       where shouldReturnRvalueByValue(eltType) {
-      checkBounds(i);
       if shouldUseIndexCache() {
         const dataIdx = indexCache.getDataIndex(i);
         return indexCache.getDataElem(dataIdx);
@@ -642,7 +641,6 @@ module ArrayViewRankChange {
 
     inline proc dsiAccess(i) const ref
       where shouldReturnRvalueByConstRef(eltType) {
-      checkBounds(i);
       if shouldUseIndexCache() {
         const dataIdx = indexCache.getDataIndex(i);
         return indexCache.getDataElem(dataIdx);
@@ -662,11 +660,10 @@ module ArrayViewRankChange {
       where shouldReturnRvalueByConstRef(eltType)
       return arr.dsiLocalAccess(chpl_rankChangeConvertIdx(i, collapsedDim, idx));
 
-    inline proc checkBounds(i) {
-      if boundsChecking then
-        if !privDom.dsiMember(i) then
-          halt("array index out of bounds: ", i);
+    inline proc dsiBoundsCheck(i) {
+      return privDom.dsiMember(i);
     }
+
 
 
     //
@@ -686,7 +683,7 @@ module ArrayViewRankChange {
 
     // Don't want to privatize a DefaultRectangular, so pass the query on to
     // the wrapped array
-    proc dsiSupportsPrivatization() param
+    override proc dsiSupportsPrivatization() param
       return _ArrInstance.dsiSupportsPrivatization();
 
     proc dsiGetPrivatizeData() {
@@ -791,7 +788,7 @@ module ArrayViewRankChange {
     // part.
     //
 
-    proc doiCanBulkTransferRankChange() param
+    override proc doiCanBulkTransferRankChange() param
       return arr.doiCanBulkTransferRankChange();
 
     proc doiBulkTransferFromKnown(destDom, srcClass, srcDom) : bool

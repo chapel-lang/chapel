@@ -1,1 +1,1 @@
-innerModuleSharesName-topLevel.chpl:10: error: cannot resolve symbol 'M', multiple symbols with that name in scope
+innerModuleSharesName-topLevel.chpl:11: error: Symbol 'whatev' undeclared in module 'M'

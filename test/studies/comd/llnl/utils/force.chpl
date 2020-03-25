@@ -15,6 +15,6 @@ class Force {
   proc compute() : void { }
   proc computeLocal() : void { }
   proc print() : void {}
-  proc replicate() : unmanaged Force { return nil; }
+  proc replicate() : unmanaged Force? { return nil; }
   proc epilogue() : void { }
 }

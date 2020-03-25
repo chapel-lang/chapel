@@ -17,10 +17,10 @@
 
 use Math;
 use Tensor;
-use FTree;
+public use FTree;
 use Quadrature;
 use TwoScale;
-use AnalyticFcn;
+public use AnalyticFcn;
 
 config const verbose = false;
 config const debug   = false;
@@ -28,7 +28,7 @@ config const debug   = false;
 class Function {
     const k            : int;  // use first k Legendre polynomials as the basis in each box
     const thresh       : real; // truncation threshold for small wavelet coefficients
-    var   f            : unmanaged AFcn; // analytic f(x) to project into the numerical represntation
+    var   f            : unmanaged AFcn?; // analytic f(x) to project into the numerical represntation
     const initial_level: int;  // initial level of refinement
     const max_level    : int;  // maximum level of refinement mostly as a sanity check
     const autorefine   : bool; // automatically refine during multiplication
@@ -59,7 +59,7 @@ class Function {
     const r0   : [dcDom] real;
     const rp   : [dcDom] real;
 
-    proc init(k:int=5, thresh:real=1e-5, f:unmanaged AFcn=nil, initial_level:int=2,
+    proc init(k:int=5, thresh:real=1e-5, f:unmanaged AFcn?=nil, initial_level:int=2,
               max_level:int=30, autorefine:bool=true, compressed:bool=false,
               sumC:unmanaged FTree=new unmanaged FTree(order=k),
               diffC:unmanaged FTree=new unmanaged FTree(order=k)) {
@@ -165,7 +165,7 @@ class Function {
 
         for mu in quad_phiDom.dim(1) {
             var x  = (l + quad_x[mu]) * h;
-            var fx = f(x);
+            var fx = f!(x);
             for i in quad_phiDom.dim(2) do
                 s[i] += scale * fx * quad_phiw[mu, i];
         }
@@ -598,7 +598,7 @@ class Function {
      */
     proc evalNPT(npt) {
         for i in 0..npt {
-            var (fval, Fval) = (f(i/npt:real), this(i/npt:real));
+            var (fval, Fval) = (f!(i/npt:real), this(i/npt:real));
             writef(" -- %.2dr:  F_numeric()=% .8dr  f_analytic()=% .8dr%s\n",
 		   i/npt:real, truncate(Fval), truncate(fval), 
 		   if abs(Fval-fval) > thresh then " err > thresh" else "");

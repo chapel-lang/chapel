@@ -2,6 +2,7 @@ use Regexp;
 use Histogram;
 use Time;
 use Random;
+use IO;
 
 // Use the test/twopt code
 config const isTest=false;
@@ -70,7 +71,7 @@ proc readFile(fn : string, pp : []WeightedParticle3D)  {
   for iff in ff.lines() {
    icol = 1; 
    for col1 in iff.split(spaces) {
-     if (col1.length==0) then continue;
+     if (col1.size==0) then continue;
      cols[icol] = col1 : real;
      icol += 1;
    }
@@ -141,7 +142,7 @@ class KDNode {
   var dom : domain(1);
   var xcen : NDIM*real;
   var rcell : real;
-  var left, right : owned KDNode;
+  var left, right : owned KDNode?;
 
   proc isLeaf() : bool {
     return (left==nil) && (right==nil);
@@ -216,24 +217,24 @@ proc TreeAccumulate(hh : UniformBins, p1, p2 : []WeightedParticle3D, node1, node
 
   // If one node is a leaf 
   if (node1.isLeaf()) {
-    TreeAccumulate(hh, p1, p2, node1, node2.left);
-    TreeAccumulate(hh, p1, p2, node1, node2.right);
+    TreeAccumulate(hh, p1, p2, node1, node2.left!);
+    TreeAccumulate(hh, p1, p2, node1, node2.right!);
     return;
   }
   if (node2.isLeaf()) {
-    TreeAccumulate(hh, p1, p2, node1.left, node2);
-    TreeAccumulate(hh, p1, p2, node1.right, node2);
+    TreeAccumulate(hh, p1, p2, node1.left!, node2);
+    TreeAccumulate(hh, p1, p2, node1.right!, node2);
     return;
   }
 
   // Split the larger case;
   if (node1.npart > node2.npart) {
-    TreeAccumulate(hh, p1, p2, node1.left, node2);
-    TreeAccumulate(hh, p1, p2, node1.right, node2);
+    TreeAccumulate(hh, p1, p2, node1.left!, node2);
+    TreeAccumulate(hh, p1, p2, node1.right!, node2);
     return;
   } else {
-    TreeAccumulate(hh, p1, p2, node1, node2.left);
-    TreeAccumulate(hh, p1, p2, node1, node2.right);
+    TreeAccumulate(hh, p1, p2, node1, node2.left!);
+    TreeAccumulate(hh, p1, p2, node1, node2.right!);
     return;
   }
 

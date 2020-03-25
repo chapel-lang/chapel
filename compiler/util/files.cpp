@@ -1,4 +1,5 @@
 /*
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -853,8 +854,10 @@ void codegen_makefile(fileinfo* mainfile, const char** tmpbinname,
     lmode = dyn ? "$(LIB_DYNAMIC_FLAG)" : "$(LIB_STATIC_FLAG)";
   }
 
-  fprintf(makefile.fptr, "COMP_GEN_LFLAGS = %s %s\n",
-          lmode, ldflags.c_str());
+  fprintf(makefile.fptr, "COMP_GEN_LFLAGS = %s\n",
+          lmode);
+  fprintf(makefile.fptr, "COMP_GEN_USER_LDFLAGS = %s\n",
+          ldflags.c_str());
 
   // Block of code for generating TAGS command, developer convenience.
   fprintf(makefile.fptr, "TAGS_COMMAND = ");
@@ -1027,7 +1030,6 @@ void expandInstallationPaths(std::vector<std::string>& args) {
 }
 
 // would just use realpath, but it is not supported on all platforms.
-static
 char* chplRealPath(const char* path)
 {
   // We would really rather use

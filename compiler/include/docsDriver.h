@@ -1,4 +1,5 @@
 /*
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -32,6 +33,7 @@ extern bool fDocsTextOnly;
 extern char fDocsSphinxDir[256];
 extern bool fDocsHTML;
 extern bool fDocsProcessUsedModules;
+extern char fDocsProjectVersion[256];
 
 // TODO: Whether or not to support this flag is an open discussion. Currently,
 //       it is not supported, so the flag is always true.

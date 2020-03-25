@@ -5,8 +5,8 @@ module M1 {
     }
   }
 }
-
 module M4 {
+  use M1 only ;
   var a = 4;
   proc main() {
     foo();

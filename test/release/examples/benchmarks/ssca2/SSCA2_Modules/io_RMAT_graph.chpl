@@ -3,6 +3,7 @@
 // Presently, uses the XMT/KM RMAT graph storage format for SSCA#2.
 //
 use SSCA2_compilation_config_params, Time, ReplicatedDist;
+private use IO;
 
 //
 // The data is stored in 5 files per graph.
@@ -81,7 +82,7 @@ proc Writeout_RMAT_graph(G, snapshot_prefix:string, dstyle = "-"): void {
     if dRow then writeln();
   }
 
-  const numVertices = G.vertices.numIndices;
+  const numVertices = G.vertices.size;
   debug("done writing ", numVertices, " vertices, ", startIx, " edges");
   assert(startIx == graphTotalEdges(G));
   const sb = numBytes(IONumType);
@@ -483,7 +484,7 @@ proc reportProgress() {
 ///////// graph helpers /////////
 
 proc graphTotalEdges(G)  return + reduce [v in G.Row] v.numNeighbors();
-proc graphNumVertices(G) return G.vertices.numIndices;
+proc graphNumVertices(G) return G.vertices.size;
 
 ///////// I/O helpers /////////
 

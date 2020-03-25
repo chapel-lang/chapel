@@ -59,6 +59,11 @@ reStructuredText as an intermediate format.
 
     [Don't] generate HTML-based documentation (on by default)
 
+**--project-version <**\ *projectversion*\ **>**
+
+    Sets the documentation version to *projectversion*
+    (documentation version defaults to '0.0.1' if unspecified).
+
 **--[no-]print-commands**
 
     Prints the system commands that **chpldoc** executes in order to create
@@ -142,5 +147,5 @@ See $CHPL\_HOME/CONTRIBUTORS.md for a list of contributors to Chapel.
 COPYRIGHT
 ---------
 
-Copyright (c) 2004-2018 Cray Inc. (See $CHPL\_HOME/LICENSE for more
-details.)
+| Copyright 2020 Hewlett Packard Enterprise Development LP
+| Copyright 2004-2019 Cray Inc.

@@ -1,4 +1,5 @@
 /*
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -108,6 +109,7 @@ module GMP {
   use SysBasic;
   use SysError;
   use BigInteger;
+  private use SysCTypes;
 
   require "GMPHelper/chplgmp.h";
 

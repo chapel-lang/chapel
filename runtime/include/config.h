@@ -1,4 +1,5 @@
 /*
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
@@ -29,7 +30,7 @@ void initSetValue(const char* varName, const char* value,
                   const char* moduleName, int32_t lineno, int32_t filename);
 const char* lookupSetValue(const char* varName, const char* moduleName);
 void installConfigVar(const char* varName, const char* value, 
-                      const char* moduleName);
+                      const char* moduleName, int private);
 
 int handlePossibleConfigVar(int* argc, char* argv[], int argnum, 
                             int32_t lineno, int32_t filename);

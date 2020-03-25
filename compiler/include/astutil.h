@@ -1,4 +1,5 @@
 /*
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -43,7 +44,6 @@ void collectTreeBoundGotosAndIteratorBreakBlocks(BaseAST* ast,
                                                  std::vector<CondStmt*>& IBBs);
 
 // collect Stmts and Exprs in the AST and return them in vectors
-// Versions ending in 'STL' use the C++ std::vector class
 void collect_asts(BaseAST* ast, std::vector<BaseAST*>& asts);
 void collect_asts_postorder(BaseAST*, std::vector<BaseAST*>& asts);
 void collect_top_asts(BaseAST* ast, std::vector<BaseAST*>& asts);
@@ -57,16 +57,23 @@ void collectMyCallExprs(BaseAST* ast,
                         FnSymbol* fn);
 void collectGotoStmts(BaseAST* ast, std::vector<GotoStmt*>& gotoStmts);
 void collectSymExprs(BaseAST* ast, std::vector<SymExpr*>& symExprs);
-void collectMySymExprs(Symbol* me, std::vector<SymExpr*>& symExprs);
+void collectSymExprsFor(BaseAST* ast, Symbol* sym, std::vector<SymExpr*>& symExprs);
+void collectSymExprsFor(BaseAST* ast, const Symbol* sym1, const Symbol* sym2,
+                        std::vector<SymExpr*>& symExprs);
+void collectLcnSymExprs(BaseAST* ast, std::vector<SymExpr*>& symExprs);
 void collectSymbols(BaseAST* ast, std::vector<Symbol*>& symbols);
+
+// If ast contains a SymExpr pointing to sym, return that SymExpr
+// Otherwise, return NULL
+SymExpr* findSymExprFor(BaseAST* ast, Symbol* sym);
 
 // utility routines for clearing and resetting lineno and filename
 void reset_ast_loc(BaseAST* destNode, astlocT astloc);
 void reset_ast_loc(BaseAST* destNode, BaseAST* sourceNode);
 
-// compute call sites FnSymbol::calls
-void compute_fn_call_sites(FnSymbol* fn);
 void compute_call_sites();
+void computeNonvirtualCallSites(FnSymbol* fn);
+void computeAllCallSites(FnSymbol* fn);
 
 //
 // collect set of symbols and vector of SymExpr; can be used to
@@ -192,7 +199,5 @@ Symbol* getSvecSymbol(CallExpr* call);
 void collectUsedFnSymbols(BaseAST* ast, std::set<FnSymbol*>& fnSymbols);
 
 void convertToQualifiedRefs();
-
-bool isTupleTypeConstructor(FnSymbol* fn);
 
 #endif

@@ -87,8 +87,8 @@ var tInit, tPS1iter, tUBR1iter, tSC1call, tLF1iter, tBScall, tVer: VTimer;
   setupTargetLocalesArray(targetIds, targetLocales, Locales);
 
   // Here are the dimensions of our grid of locales.
-  const tl1 = targetIds.dim(1).length,
-        tl2 = targetIds.dim(2).length;
+  const tl1 = targetIds.dim(1).size,
+        tl2 = targetIds.dim(2).size;
 
   if onlyBsub && tl1 != tl2 then
     halt("backwardSub() is implemented only for a square locale grid");
@@ -116,14 +116,14 @@ var tInit, tPS1iter, tUBR1iter, tSC1call, tLF1iter, tBScall, tVer: VTimer;
   // Create individual dimension descriptors
   const
     // block-cyclic for 1st dimension
-    bdim1 = new unmanaged BlockCyclicDim(lowIdx=1, blockSize=blkSize, numLocales=tl1),
+    bdim1 = new BlockCyclicDim(lowIdx=1, blockSize=blkSize, numLocales=tl1),
     // replicated for 1st dimension
-    rdim1 = new unmanaged ReplicatedDim(tl1),
+    rdim1 = new ReplicatedDim(tl1),
 
     // block-cyclic for 2nd dimension
-    bdim2 = new unmanaged BlockCyclicDim(lowIdx=1, blockSize=blkSize, numLocales=tl2),
+    bdim2 = new BlockCyclicDim(lowIdx=1, blockSize=blkSize, numLocales=tl2),
     // replicated for 2nd dimension
-    rdim2 = new unmanaged ReplicatedDim(tl2);
+    rdim2 = new ReplicatedDim(tl2);
 
   const
     dist1b2b = new unmanaged DimensionalDist2D(targetLocales, bdim1, bdim2, "dist1b2b"),
@@ -319,7 +319,7 @@ proc LUFactorize(n: indexType,
 proc schurComplement(blk, AD, BD, Rest) {
 
   // Prevent replication of unequal-sized slices
-  if Rest.numIndices == 0 then return;
+  if Rest.size == 0 then return;
 
   tSC1call.start();
 
@@ -439,7 +439,7 @@ proc panelSolve(
     vmsgmore("  col");
     
     // If there are no rows below the current column return
-    if col.numIndices == 0 then { vmsg("panelSolve()"); return; }
+    if col.size == 0 then { vmsg("panelSolve()"); return; }
     
     // Find the pivot, the element with the largest absolute value.
     const (_, (pivotRow, _)) = maxloc reduce zip(abs(Ab(col)), col);
@@ -782,7 +782,7 @@ proc bsIncorporateOthersPartSums(diaFrom, diaTo, locId1, locId2) {
   if checkBsub {
     // Our own partial sums are already available.
     assert(partSums[locId2].avail.read() != spsNA, "bsI-1");
-    assert(locX.numElements == blkSize, "bsI-3");
+    assert(locX.size == blkSize, "bsI-3");
   }
 
   // because we are reusing replK for replX
@@ -898,7 +898,7 @@ proc bsComputePartSums(diaFrom, diaTo, locId1, locId2, diaLocId2,
     gotBlocksArg = gotBlocks;
   }  // local
 
-  if errs.length != 0 then
+  if errs.size != 0 then
     writeln("bsComputePartSums on [", locId1, ",", locId2, "] ERRORS:", errs);
 
   //writeln("bsComputePartSums  result ", myPartSums,

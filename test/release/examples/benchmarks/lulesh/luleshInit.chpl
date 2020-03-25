@@ -1,3 +1,5 @@
+private use IO;
+
 config const debugInit = false;
 
 
@@ -175,12 +177,12 @@ inline proc initSyms(ref Sym, dir) {
   }
 
   if debugInit {
-    writeln(Sym.numIndices);
+    writeln(Sym.size);
     for n in Sym do
       writeln(n);
   }
 
-  return (Sym.numIndices, Sym);
+  return (Sym.size, Sym);
 }
 
 inline proc initXSyms(ref XSym) {
@@ -228,7 +230,7 @@ inline proc initFreeSurface(ref freeSurface) {
     for b in sortedSurface do
       writeln(b);
   }
-  return (freeSurface.numIndices, freeSurface);
+  return (freeSurface.size, freeSurface);
 }
 
 

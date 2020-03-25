@@ -1,4 +1,5 @@
 /*
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -21,6 +22,7 @@
 
 #include "addAutoDestroyCalls.h"
 #include "astutil.h"
+#include "AstVisitorTraverse.h"
 #include "errorHandling.h"
 #include "DecoratedClassType.h"
 #include "ForallStmt.h"
@@ -34,6 +36,10 @@
 #include "stlUtil.h"
 #include "stringutil.h"
 #include "virtualDispatch.h"
+
+#include <vector>
+#include <algorithm>
+#include <iterator>
 
 /************************************* | **************************************
 *                                                                             *
@@ -193,8 +199,7 @@ bool ReturnByRef::isTransformableFunction(FnSymbol* fn)
     else if (fn->hasFlag(FLAG_EXTERN)       == true)
       retval = false;
 
-    // Noakes: 2016/02/24.  Only "user defined records" for now
-    else if (isUserDefinedRecord(type)      == true)
+    else if (typeNeedsCopyInitDeinit(type)  == true)
       retval = true;
 
     else
@@ -206,7 +211,7 @@ bool ReturnByRef::isTransformableFunction(FnSymbol* fn)
   // Reasonable alternative: update insertCopiesForYields to handle
   // yielding a PRIM_DEREF or yielding a reference argument.
   if (fn->hasFlag(FLAG_TASK_FN_FROM_ITERATOR_FN)) {
-    if (isUserDefinedRecord(fn->iteratorInfo->yieldedType))
+    if (typeNeedsCopyInitDeinit(fn->iteratorInfo->yieldedType))
       retval = true;
   }
 
@@ -314,31 +319,44 @@ void ReturnByRef::updateAssignmentsFromRefArgToValue(FnSymbol* fn)
 
       if (lhs != NULL && rhs != NULL)
       {
-        VarSymbol* symLhs = toVarSymbol(lhs->symbol());
-        ArgSymbol* symRhs = toArgSymbol(rhs->symbol());
+        // check if the lhs is actually the return/yield symbol
+        if(lhs->symbol()->hasFlag(FLAG_RVV) ||
+           lhs->symbol()->hasFlag(FLAG_YVV)) {
+          VarSymbol* symLhs = toVarSymbol(lhs->symbol());
+          ArgSymbol* symRhs = toArgSymbol(rhs->symbol());
 
-        if (symLhs != NULL && symRhs != NULL)
-        {
-          if (isUserDefinedRecord(symLhs->type) == true &&
-              symRhs->type                      == symLhs->type)
+          if (symLhs != NULL && symRhs != NULL)
           {
-            bool fromInIntent =
-              (symRhs->originalIntent == INTENT_IN ||
-               symRhs->originalIntent == INTENT_CONST_IN);
-
-            if (symLhs->hasFlag(FLAG_ARG_THIS)   == false &&
-                symLhs->hasFlag(FLAG_NO_COPY)    == false &&
-                !fromInIntent &&
-                (symRhs->intent == INTENT_REF ||
-                 symRhs->intent == INTENT_CONST_REF))
+            // check if rhs is actually a formal
+            bool rhsIsFormal = false;
+            for_formals(formal, fn) {
+              if(formal == symRhs) {
+                rhsIsFormal = true;
+                break;
+              }
+            }
+            if (rhsIsFormal &&
+                typeNeedsCopyInitDeinit(symLhs->type) &&
+                symRhs->type == symLhs->type)
             {
-              SET_LINENO(move);
+              bool fromInIntent =
+                (symRhs->originalIntent == INTENT_IN ||
+                 symRhs->originalIntent == INTENT_CONST_IN);
 
-              CallExpr* autoCopy = NULL;
+              if (symLhs->hasFlag(FLAG_ARG_THIS)   == false &&
+                  symLhs->hasFlag(FLAG_NO_COPY)    == false &&
+                  !fromInIntent &&
+                  (symRhs->intent == INTENT_REF ||
+                   symRhs->intent == INTENT_CONST_REF))
+              {
+                SET_LINENO(move);
 
-              rhs->remove();
-              autoCopy = new CallExpr(getAutoCopyForType(symRhs->type), rhs);
-              move->insertAtTail(autoCopy);
+                CallExpr* autoCopy = NULL;
+
+                rhs->remove();
+                autoCopy = new CallExpr(getAutoCopyForType(symRhs->type), rhs);
+                move->insertAtTail(autoCopy);
+              }
             }
           }
         }
@@ -385,7 +403,7 @@ void ReturnByRef::updateAssignmentsFromRefTypeToValue(FnSymbol* fn)
         if (varLhs != NULL && symRhs != NULL)
         {
           INT_ASSERT(varLhs->isRef() == false && symRhs->isRef());
-          if (isUserDefinedRecord(varLhs->type) == true &&
+          if (typeNeedsCopyInitDeinit(varLhs->type) &&
               !varLhs->hasFlag(FLAG_NO_COPY))
           {
 
@@ -454,9 +472,9 @@ void ReturnByRef::updateAssignmentsFromModuleLevelValue(FnSymbol* fn)
 
         if (symLhs != NULL && symRhs != NULL)
         {
-          if (isUserDefinedRecord(symLhs->type) == true &&
-              symLhs->hasFlag(FLAG_NO_COPY)     == false &&
-              symRhs->type                      == symLhs->type)
+          if (typeNeedsCopyInitDeinit(symLhs->type) &&
+              !symLhs->hasFlag(FLAG_NO_COPY) &&
+              symRhs->type == symLhs->type)
           {
             DefExpr* def = symRhs->defPoint;
 
@@ -746,7 +764,7 @@ bool isCallExprTemporary(Expr* initFrom) {
 }
 
 bool doesCopyInitializationRequireCopy(Expr* initFrom) {
-  if (isUserDefinedRecord(initFrom->getValType())) {
+  if (typeNeedsCopyInitDeinit(initFrom->getValType())) {
     // RHS is a reference, need a copy
     if (initFrom->isRef())
       return true;
@@ -765,7 +783,7 @@ bool doesCopyInitializationRequireCopy(Expr* initFrom) {
 }
 
 bool doesValueReturnRequireCopy(Expr* initFrom) {
-  if (isUserDefinedRecord(initFrom->getValType())) {
+  if (typeNeedsCopyInitDeinit(initFrom->getValType())) {
     // RHS is a reference, need a copy
     if (initFrom->isRef())
       return true;
@@ -811,6 +829,9 @@ fixupDestructors() {
       }
       AggregateType* ct = toAggregateType(fn->_this->getValType());
       INT_ASSERT(ct);
+
+      if (ct->isUnion())
+        continue;
 
       //
       // insert calls to destructors for all 'value' fields
@@ -1027,7 +1048,7 @@ static void insertCopiesForYields()
     // and the yielded value is not an expression temporary
     //  (e.g. for yield someCall(), the result of someCall() doesn't need copy)
     // then we need to copy initialize into the yielded value.
-    if (isUserDefinedRecord(yieldedSym->getValType()) &&
+    if (typeNeedsCopyInitDeinit(yieldedSym->getValType()) &&
         iteratorRetTag == RET_VALUE) {
 
       SymExpr* foundSe = findSourceOfYield(call);
@@ -1063,9 +1084,451 @@ static void insertCopiesForYields()
 *                                                                             *
 ************************************** | *************************************/
 
+static bool traceGlobalChecking = false;
+
+static bool isCheckedModuleScopeVariable(VarSymbol* var) {
+  if (DefExpr* def = var->defPoint) {
+    ModuleSymbol* mod = def->getModule();
+    if (mod && def->parentExpr == mod->block) {
+      if (var->hasFlag(FLAG_TYPE_VARIABLE) == false &&
+          var->hasFlag(FLAG_EXTERN) == false &&
+          var->type->symbol->hasFlag(FLAG_EXTERN) == false)
+        return true;
+    }
+  }
+  return false;
+}
+
+static VarSymbol* theCheckedModuleScopeVariable(Expr* actual) {
+  if (SymExpr* se = toSymExpr(actual))
+    if (VarSymbol* var = toVarSymbol(se->symbol()))
+      if (isCheckedModuleScopeVariable(var))
+        return var;
+
+  return NULL;
+}
+
+// There should be a single instance of this class per compilation.
+class GatherGlobalsReferredTo : public AstVisitorTraverse {
+  public:
+    // these are set and "returned" by visiting a function
+    FnSymbol* thisFunction;
+    std::set<FnSymbol*> calledThisFunction;     // calls from this function
+    std::set<VarSymbol*> mentionedThisFunction; // globals mentioned directly
+
+    // this is global state storing results of analysis
+    std::set<FnSymbol*> visited;
+    std::map<FnSymbol*, std::set<VarSymbol*> > directGlobalMentions;
+    std::map<FnSymbol*, std::set<FnSymbol*> > callGraph;
+
+    GatherGlobalsReferredTo()
+      : thisFunction(NULL)
+    { }
+    bool callUsesGlobal(CallExpr* c, std::set<VarSymbol*>& globals);
+    bool fnUsesGlobal(FnSymbol* fn, std::set<VarSymbol*>& globals);
+    virtual bool enterFnSym(FnSymbol* fn);
+    virtual void visitSymExpr(SymExpr* se);
+    virtual void exitFnSym(FnSymbol* fn);
+};
+
+bool GatherGlobalsReferredTo::enterFnSym(FnSymbol* fn) {
+  if (visited.insert(fn).second) {
+    // if the function symbol hasn't already been visited,
+    // put it in the visited set and do the visiting.
+    // do the analysis in the other visitors
+    thisFunction = fn;
+    calledThisFunction.clear();
+    mentionedThisFunction.clear();
+    return true;
+  }
+
+  return false;
+}
+
+void GatherGlobalsReferredTo::visitSymExpr(SymExpr* se) {
+  // handle function calls or mentions
+  if (FnSymbol* fn = toFnSymbol(se->symbol())) {
+    // handle root virtual method or non-virtual call
+    if (calledThisFunction.insert(fn).second) {
+
+      if (traceGlobalChecking)
+        USR_PRINT("fn '%s'[%i] calls fn '%s'[%i]",
+                  thisFunction->name, thisFunction->id, fn->name, fn->id);
+
+      bool inVirtualMethodCall = false;
+      if (CallExpr* pCall = toCallExpr(se->parentExpr))
+        if (pCall->isPrimitive(PRIM_VIRTUAL_METHOD_CALL))
+          if (FnSymbol* vFn = toFnSymbol(toSymExpr(pCall->get(1))->symbol()))
+            if (vFn == fn)
+              inVirtualMethodCall = true;
+
+      if (inVirtualMethodCall) {
+        // if we added something, also add virtual children callable
+        // handle additional children callable by virtual method
+        if (Vec<FnSymbol*>* children = virtualChildrenMap.get(fn)) {
+          forv_Vec(FnSymbol*, childFn, *children) {
+
+            if (traceGlobalChecking)
+              USR_PRINT("fn '%s'[%i] virtual calls fn '%s'[%i]",
+                        thisFunction->name, thisFunction->id,
+                        childFn->name, childFn->id);
+
+            calledThisFunction.insert(childFn);
+          }
+        }
+      }
+    }
+  }
+
+  // handle global variable mentions
+  if (VarSymbol* var = toVarSymbol(se->symbol())) {
+    if (isCheckedModuleScopeVariable(var)) {
+      // it's a module-scope variable, so add it to directGlobalMentions
+      if (mentionedThisFunction.insert(var).second) {
+
+        if (traceGlobalChecking)
+          USR_PRINT("fn '%s'[%i] mentions global '%s'[%i]",
+                    thisFunction->name, thisFunction->id,
+                    var->name, var->id);
+      }
+    }
+  }
+}
+
+void GatherGlobalsReferredTo::exitFnSym(FnSymbol* fn) {
+  INT_ASSERT(fn == thisFunction);
+  // update the global maps based on calledThisFunction / mentionedThisFunction
+  std::set<FnSymbol*>& fnCalls = callGraph[thisFunction];
+  std::set<VarSymbol*>& directMentions = directGlobalMentions[thisFunction];
+
+  for_set(FnSymbol, called, calledThisFunction) {
+    fnCalls.insert(called);
+  }
+
+  for_set(VarSymbol, mention, mentionedThisFunction) {
+    directMentions.insert(mention);
+  }
+}
+
+
+// There will be one instance of this per module, but these will
+// share a single GatherGlobalsReferredTo.
+class FindInvalidGlobalUses : public AstVisitorTraverse {
+  public:
+    GatherGlobalsReferredTo& gatherVisitor;
+    std::set<VarSymbol*> invalidGlobals;
+    std::map<VarSymbol*, CallExpr*> copyElidedGlobals;
+    std::vector<VarSymbol*> errorGlobalVariables;
+
+    FindInvalidGlobalUses(GatherGlobalsReferredTo& gatherVisitor)
+      : gatherVisitor(gatherVisitor)
+    { }
+    void issueError(VarSymbol* g, BaseAST* loc);
+    void gatherModuleVariables(ModuleSymbol* thisModule);
+    // stores in errorGlobalVariables the invalid variables that were used
+    bool checkIfCalledUsesInvalid(CallExpr* c, bool error);
+    // stores in errorGlobalVariables the invalid variables that were used
+    bool checkIfFnUsesInvalid(FnSymbol* fn);
+    bool errorIfFnUsesInvalid(FnSymbol* fn, BaseAST* loc,
+                              std::set<FnSymbol*>& visited);
+    virtual bool enterCallExpr(CallExpr* call);
+    virtual bool enterCondStmt(CondStmt* cond);
+};
+
+
+void FindInvalidGlobalUses::issueError(VarSymbol* g, BaseAST* loc) {
+  if (copyElidedGlobals.count(g) != 0) {
+    USR_PRINT(loc,
+              "mentions module-scope variable '%s'",
+              g->name);
+    USR_PRINT(copyElidedGlobals[g], "which is dead due to copy elided here");
+  } else {
+    USR_PRINT(loc,
+             "mentions module-scope variable '%s' not initialized yet",
+             g->name);
+  }
+}
+
+void FindInvalidGlobalUses::gatherModuleVariables(ModuleSymbol* thisModule) {
+  // initialize invalidGlobals with all global variables from this module
+  for_alist (expr, thisModule->block->body) {
+    if (DefExpr* def = toDefExpr(expr)) {
+      if (VarSymbol* var = toVarSymbol(def->sym)) {
+        if (isCheckedModuleScopeVariable(var)) {
+          invalidGlobals.insert(var);
+        }
+      }
+    }
+  }
+}
+
+// the error argument indicates if we should run slow error reporting.
+bool FindInvalidGlobalUses::checkIfCalledUsesInvalid(CallExpr* c, bool error) {
+
+  if (FnSymbol* calledFn = c->resolvedOrVirtualFunction()) {
+    // consider root virtual method or non-virtual call
+
+    if (checkIfFnUsesInvalid(calledFn)) {
+      if (error) {
+        std::set<FnSymbol*> visited;
+        errorIfFnUsesInvalid(calledFn, c, visited);
+      }
+      return true;
+    }
+
+    // consider additional children callable by virtual method
+    if (c->isPrimitive(PRIM_VIRTUAL_METHOD_CALL)) {
+      if (Vec<FnSymbol*>* children = virtualChildrenMap.get(calledFn)) {
+        forv_Vec(FnSymbol*, childFn, *children) {
+          if (checkIfFnUsesInvalid(childFn)) {
+            if (error) {
+              std::set<FnSymbol*> visited;
+              errorIfFnUsesInvalid(childFn, c, visited);
+            }
+            return true;
+          }
+        }
+      }
+    }
+  }
+
+  return false;
+}
+
+// returns true if there was any intersection
+// returns intersecting elements in outVector
+static
+bool computeIntersection(std::set<VarSymbol*>& a, std::set<VarSymbol*>& b,
+                         std::vector<VarSymbol*>& outVector)
+{
+  outVector.clear();
+  std::set_intersection(a.begin(), a.end(),
+                        b.begin(), b.end(),
+                        std::back_inserter(outVector));
+
+  return outVector.size() != 0;
+}
+
+// This function is intended to be relatively optimized
+bool FindInvalidGlobalUses::checkIfFnUsesInvalid(FnSymbol* startFn) {
+  std::map<FnSymbol*, std::set<VarSymbol*> >& directGlobalMentions =
+    gatherVisitor.directGlobalMentions;
+  std::map<FnSymbol*, std::set<FnSymbol*> >& callGraph =
+    gatherVisitor.callGraph;
+
+  std::set<FnSymbol*> everBeenInWork;
+  std::vector<FnSymbol*> work;
+
+  everBeenInWork.insert(startFn);
+  work.push_back(startFn);
+
+  while (!work.empty()) {
+    // process a thing from the work set
+    FnSymbol* fn = work.back();
+    work.pop_back();
+
+    // compute the call graph and globals used by this function
+    // (if we haven't already)
+    fn->accept(&gatherVisitor);
+
+    // check for direct mentions of the globals in question
+    // compute the intersection of
+    // directGlobalMentions[fn] and invalidGlobals
+    if (computeIntersection(invalidGlobals, directGlobalMentions[fn],
+                            errorGlobalVariables))
+    {
+      return true;
+    }
+
+    // add called functions to the work queue
+    std::set<FnSymbol*>& fnCalls = callGraph[fn];
+    for_set (FnSymbol, called, fnCalls) {
+      if (everBeenInWork.insert(called).second) {
+        // 1st time visiting called; already added it to everBeenInWork
+        work.push_back(called);
+      }
+    }
+  }
+
+  return false;
+}
+
+// This function is slow but handles the case in which an error needs
+// to be reported. In that event it gives a stack trace.
+bool FindInvalidGlobalUses::errorIfFnUsesInvalid(FnSymbol* fn, BaseAST* loc,
+                                                 std::set<FnSymbol*>& visited) {
+  std::map<FnSymbol*, std::set<VarSymbol*> >& directGlobalMentions =
+    gatherVisitor.directGlobalMentions;
+  std::map<FnSymbol*, std::set<FnSymbol*> >& callGraph =
+    gatherVisitor.callGraph;
+  std::vector<VarSymbol*> inV;
+
+  if (visited.insert(fn).second == false)
+    return false; // already visited
+
+  if (developer || printsUserLocation(fn))
+    USR_PRINT(loc, "calls function '%s'", fn->name);
+
+  // check for direct mentions of the globals in question
+  // compute the intersection of
+  // directGlobalMentions[otherFn] and invalidGlobals
+  if (computeIntersection(invalidGlobals, directGlobalMentions[fn], inV)) {
+    for_vector (VarSymbol, g, inV) {
+      SymExpr* se = findSymExprFor(fn, g);
+      INT_ASSERT(se);
+      issueError(g, se);
+    }
+    return true;
+  }
+
+  // check the call graph
+  std::set<FnSymbol*>& fnCalls = callGraph[fn];
+  for_set (FnSymbol, called, fnCalls) {
+    if (checkIfFnUsesInvalid(called)) {
+      BaseAST* useLoc = findSymExprFor(fn, called);
+      if (useLoc == NULL)
+        useLoc = fn;
+      if (!developer && !printsUserLocation(useLoc))
+        useLoc = loc;
+
+      errorIfFnUsesInvalid(called, useLoc, visited);
+      return true;
+    }
+  }
+  return false;
+}
+
+
+bool FindInvalidGlobalUses::enterCallExpr(CallExpr* call) {
+
+  if (call->isPrimitive(PRIM_ASSIGN_ELIDED_COPY)) {
+    if (SymExpr* rhsSe = toSymExpr(call->get(2))) {
+      if (VarSymbol* var = toVarSymbol(rhsSe->symbol())) {
+        if (isCheckedModuleScopeVariable(var)) {
+          invalidGlobals.insert(var);
+          copyElidedGlobals[var] = call;
+        }
+      }
+    }
+  }
+
+  // Nothing to do if there are no invalid globals
+  if (invalidGlobals.size() == 0)
+    return false;
+
+  CallExpr* fCall = NULL;
+  VarSymbol* retVar = initsVariable(call, fCall);
+
+  // First, check any actuals not being initialized in the call.
+  if (fCall != NULL) {
+    // check an actual function call
+    for_formals_actuals(formal, actual, fCall) {
+      SymExpr* actualSe = toSymExpr(actual);
+      if (actualSe && actualSe->symbol() == retVar) {
+        // OK, ret-arg e.g.
+      } else if (initsVariableOut(formal, actual)) {
+        // OK, out intents will count as initialization
+      } else if (VarSymbol* var = theCheckedModuleScopeVariable(actual)) {
+        if (invalidGlobals.count(var) != 0)
+          issueError(var, actual);
+      }
+    }
+  } else {
+    // check actuals used in primitives
+    for_actuals(actual, call) {
+      SymExpr* actualSe = toSymExpr(actual);
+      if (actualSe && actualSe->symbol() != retVar) {
+        if (VarSymbol* var = theCheckedModuleScopeVariable(actual))
+          if (invalidGlobals.count(var) != 0)
+            issueError(var, actual);
+      }
+    }
+  }
+
+  // Then, check any called functions
+  if (checkIfCalledUsesInvalid(call, false)) {
+    for_vector (VarSymbol, var, errorGlobalVariables) {
+      USR_FATAL_CONT(call,
+                     "module-scope variable '%s' may be used "
+                     "before it is initialized",
+                     var->name);
+      printUseBeforeInitDetails(var);
+    }
+    checkIfCalledUsesInvalid(call, true);
+  }
+
+  // Then, note the variables initialized by the call
+
+  // move/return arg
+  if (retVar && isCheckedModuleScopeVariable(retVar))
+    invalidGlobals.erase(retVar);
+  // out intent
+  if (fCall != NULL) {
+    for_formals_actuals(formal, actual, fCall) {
+      if (VarSymbol* outVar = initsVariableOut(formal, actual))
+        if (isCheckedModuleScopeVariable(outVar))
+          invalidGlobals.erase(outVar);
+    }
+  }
+
+  return false;
+}
+
+bool FindInvalidGlobalUses::enterCondStmt(CondStmt* cond) {
+  if (cond->elseStmt) {
+    std::set<VarSymbol*> saveInvalidGlobals = invalidGlobals;
+    std::map<VarSymbol*, CallExpr*> saveElidedGlobals = copyElidedGlobals;
+
+    cond->elseStmt->accept(this);
+
+    // put the initializations back for considering the if clause
+    invalidGlobals = saveInvalidGlobals;
+    copyElidedGlobals = saveElidedGlobals;
+  }
+
+  // visiting the if clause will make note of any inits
+  cond->thenStmt->accept(this);
+
+  return false;
+}
+
+// A global variable might be used in a function called to initialize it.
+// This function detects that case and raises an error.
+//
+// Sometimes this results in resolution errors, but that depends on the
+// order of resolution and isn't reliable.
+//
+// This analysis is interprocedural. In a separate compilation setting,
+// simply noting which global variables might be referred to in which
+// functions does not seem prohibitive.
+//
+static void checkForInvalidGlobalUses() {
+  GatherGlobalsReferredTo gatherVisitor;
+
+  forv_Vec(ModuleSymbol, mod, gModuleSymbols) {
+    if (mod->initFn != NULL &&
+        (mod->modTag != MOD_INTERNAL && mod->modTag != MOD_STANDARD)) {
+      // if we expand to internal modules, have to contend with
+      // the possibility of writeln being called in a class deinitializer
+      // and using stdout.
+
+      FindInvalidGlobalUses checkVisitor(gatherVisitor);
+      checkVisitor.gatherModuleVariables(mod);
+      mod->initFn->body->accept(&checkVisitor);
+    }
+  }
+}
+
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
+
+
 // Function resolution adds "dummy" initCopy functions for types
 // that cannot be copied. These "dummy" initCopy functions are marked
-// with the flag FLAG_ERRONEOUS_INITCOPY. This pattern enables
+// with the flag FLAG_ERRONEOUS_COPY. This pattern enables
 // the compiler to continue to operate with its current structure
 // even for types that cannot be copied. In particular, this pass
 // has the ability to remove initCopy calls in some cases.
@@ -1074,33 +1537,40 @@ static void insertCopiesForYields()
 // flag is ever called and raises an error if so.
 static void checkForErroneousInitCopies() {
 
+  std::map<FnSymbol*, const char*> errors;
+
+  // Store errors in local map
+  forv_Vec(FnSymbol, fn, gFnSymbols) {
+    if (fn->hasFlag(FLAG_ERRONEOUS_COPY)) {
+      // Store the error in the local map
+      if (const char* err = getErroneousCopyError(fn))
+        errors[fn] = err;
+    }
+  }
+
   // Mark initCopy/autoCopy functions calling functions marked with
-  // FLAG_ERRONEOUS_INITCOPY/FLAG_ERRONEOUS_AUTOCOPY with the same
+  // FLAG_ERRONEOUS_COPY with the same
   // flag. This situation can come up with the compiler-generated
   // tuple copy functions.
   bool changed;
   do {
     changed = false;
     forv_Vec(FnSymbol, fn, gFnSymbols) {
-      if (fn->hasFlag(FLAG_ERRONEOUS_INITCOPY)) {
+      if (fn->hasFlag(FLAG_ERRONEOUS_COPY)) {
         for_SymbolSymExprs(se, fn) {
           if (FnSymbol* callInFn = se->getFunction()) {
-            if (callInFn->hasFlag(FLAG_INIT_COPY_FN) &&
-                !callInFn->hasFlag(FLAG_ERRONEOUS_INITCOPY)) {
-              callInFn->addFlag(FLAG_ERRONEOUS_INITCOPY);
+            bool inCopyIsh = callInFn->hasFlag(FLAG_INIT_COPY_FN) ||
+                             callInFn->hasFlag(FLAG_AUTO_COPY_FN) ||
+                             callInFn->hasFlag(FLAG_UNALIAS_FN) ||
+                             (callInFn->hasFlag(FLAG_COPY_INIT) &&
+                              callInFn->hasFlag(FLAG_COMPILER_GENERATED));
+            if (inCopyIsh && !callInFn->hasFlag(FLAG_ERRONEOUS_COPY)) {
+              callInFn->addFlag(FLAG_ERRONEOUS_COPY);
               changed = true;
-            }
-          }
-        }
-      }
 
-      if (fn->hasFlag(FLAG_ERRONEOUS_AUTOCOPY)) {
-        for_SymbolSymExprs(se, fn) {
-          if (FnSymbol* callInFn = se->getFunction()) {
-            if (callInFn->hasFlag(FLAG_AUTO_COPY_FN) &&
-                !callInFn->hasFlag(FLAG_ERRONEOUS_AUTOCOPY)) {
-              callInFn->addFlag(FLAG_ERRONEOUS_AUTOCOPY);
-              changed = true;
+              // propagate error if present
+              if (errors.count(fn) != 0)
+                errors[callInFn] = errors[fn];
             }
           }
         }
@@ -1109,38 +1579,73 @@ static void checkForErroneousInitCopies() {
   } while(changed);
 
   forv_Vec(FnSymbol, fn, gFnSymbols) {
-    if (fn->hasFlag(FLAG_ERRONEOUS_INITCOPY)) {
+    if (fn->hasFlag(FLAG_ERRONEOUS_COPY)) {
       // Error on each call site
       for_SymbolSymExprs(se, fn) {
         if (FnSymbol* callInFn = se->getFunction()) {
-          if (!callInFn->hasFlag(FLAG_INIT_COPY_FN)) {
-            USR_FATAL_CONT(se,
-                           "copy-initialization invoked for a type "
-                           "that does not have a copy initializer");
-          } else {
-            // Should have been propagated above
-            INT_ASSERT(callInFn->hasFlag(FLAG_ERRONEOUS_INITCOPY));
-          }
-        }
-      }
-    }
+          bool inCopyIsh = callInFn->hasFlag(FLAG_INIT_COPY_FN) ||
+                           callInFn->hasFlag(FLAG_AUTO_COPY_FN) ||
+                           callInFn->hasFlag(FLAG_UNALIAS_FN) ||
+                           (callInFn->hasFlag(FLAG_COPY_INIT) &&
+                            callInFn->hasFlag(FLAG_COMPILER_GENERATED));
+          if (inCopyIsh == false) {
 
-    if (fn->hasFlag(FLAG_ERRONEOUS_AUTOCOPY)) {
-      // Error on each call site
-      for_SymbolSymExprs(se, fn) {
-        if (FnSymbol* callInFn = se->getFunction()) {
-          if (!callInFn->hasFlag(FLAG_AUTO_COPY_FN)) {
-            USR_FATAL_CONT(se,
-                           "implicit copy-initialization invoked for a type "
-                           "that does not allow it");
+            if (callInFn->hasFlag(FLAG_INIT_COPY_FN)) {
+              USR_FATAL_CONT(se, "invalid copy-initialization");
+            } else {
+              USR_FATAL_CONT(se, "invalid implicit copy-initialization");
+            }
+
+            if (errors.count(fn) != 0)
+              USR_FATAL_CONT(se, "%s", errors[fn]);
+
+            Type* t = fn->getFormal(1)->getValType();
+            astlocT typePoint = t->astloc;
+            if (t->symbol->userInstantiationPointLoc.filename != NULL)
+              typePoint = t->symbol->userInstantiationPointLoc;
+
+            USR_PRINT(typePoint,
+                      "%s does not have a valid init=", toString(t));
           } else {
             // Should have been propagated above
-            INT_ASSERT(callInFn->hasFlag(FLAG_ERRONEOUS_AUTOCOPY));
+            INT_ASSERT(callInFn->hasFlag(FLAG_ERRONEOUS_COPY));
           }
         }
       }
     }
   }
+
+  //
+  // Mark functions that are only called by FLAG_ERRONEOUS_COPY fns
+  // with the same flag as well (to avoid errors on these in some cases).
+  // These will generally be removed by the prune pass.
+  do {
+    changed = false;
+    forv_Vec(FnSymbol, fn, gFnSymbols) {
+      if (fn->hasFlag(FLAG_ERRONEOUS_COPY)) {
+        // do nothing
+      } else {
+        // check if all calls are inside FLAG_ERRONEOUS_COPY fns
+        bool allMentionsInErroneousFns = true;
+        bool anyMentionsInErroneousFns = false;
+        for_SymbolSymExprs(se, fn) {
+          if (FnSymbol* inFn = se->getFunction()) {
+            if (inFn->hasFlag(FLAG_ERRONEOUS_COPY)) {
+              anyMentionsInErroneousFns = true;
+              // continue to make sure they all are
+            } else {
+              allMentionsInErroneousFns = false;
+              break;
+            }
+          }
+        }
+        if (anyMentionsInErroneousFns && allMentionsInErroneousFns) {
+          fn->addFlag(FLAG_ERRONEOUS_COPY);
+          changed = true;
+        }
+      }
+    }
+  } while(changed);
 }
 
 /*
@@ -1182,7 +1687,7 @@ static void adjustCoforallIndexVariables() {
               Symbol* actual = actualSe->symbol();
               if (actual->hasFlag(FLAG_COFORALL_INDEX_VAR) &&
                   actual->hasFlag(FLAG_INSERT_AUTO_DESTROY) &&
-                  isUserDefinedRecord(actual->type)) {
+                  typeNeedsCopyInitDeinit(actual->type)) {
 
                 // Remove FLAG_INSERT_AUTO_DESTROY so it will not
                 // be destroyed in the loop creating tasks.
@@ -1215,6 +1720,35 @@ static void destroyFormalInTaskFn(ArgSymbol* formal, FnSymbol* taskFn) {
 
 /************************************* | **************************************
 *                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
+
+
+static void removeEndOfStatementMarkersElidedCopyPrims() {
+  for_alive_in_Vec(CallExpr, call, gCallExprs) {
+    if (call->isPrimitive(PRIM_END_OF_STATEMENT))
+      call->remove();
+    if (call->isPrimitive(PRIM_ASSIGN_ELIDED_COPY))
+      call->primitive = primitives[PRIM_ASSIGN];
+  }
+}
+
+static void removeElidedOnBlocks() {
+  for_alive_in_Vec(BlockStmt, block, gBlockStmts) {
+    if (block->isLoopStmt() == false) {
+      if (CallExpr* const info = block->blockInfoGet()) {
+        if (info->isPrimitive(PRIM_BLOCK_ELIDED_ON)) {
+          // Turn it into a regular block.
+          info->remove();
+        }
+      }
+    }
+  }
+}
+
+/************************************* | **************************************
+*                                                                             *
 * Entry point                                                                 *
 *                                                                             *
 ************************************** | *************************************/
@@ -1229,21 +1763,24 @@ void callDestructors() {
 
   insertDestructorCalls();
 
-  // Execute this before conversion to return by ref
-  // May fail to handle reference variables as desired
-  addAutoDestroyCalls();
-
   ReturnByRef::apply();
 
   insertCopiesForYields();
 
-  checkLifetimes();
-
   lateConstCheck(NULL);
+
+  addAutoDestroyCalls();
 
   insertGlobalAutoDestroyCalls();
 
+  checkForInvalidGlobalUses();
+
   checkForErroneousInitCopies();
 
+  checkLifetimesAndNilDereferences();
+
   convertClassTypesToCanonical();
+
+  removeEndOfStatementMarkersElidedCopyPrims();
+  removeElidedOnBlocks();
 }

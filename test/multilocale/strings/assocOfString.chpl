@@ -8,6 +8,7 @@
 // problems, but see failures with 3 entries where no resizing should
 // be done).
 //
+use IO;
 
 config const ENTRIES = 15,
              debug = false;
@@ -27,7 +28,7 @@ on Locales [numLocales-1] {
 		
   for i in 0..#ENTRIES {
     writeln("assign array [\"%s\"] = 12345".format(keys[i]));
-			
+    D += keys[i];
     array[keys[i]] = 12345;
   }
 

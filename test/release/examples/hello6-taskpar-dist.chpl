@@ -60,7 +60,7 @@ coforall loc in Locales {
 // message based on the task ID.
 //
       if (tasksPerLocale > 1) then
-        message += "task " + tid + " of " + tasksPerLocale + " on ";
+        message += "task " + tid:string + " of " + tasksPerLocale:string + " on ";
 
 //
 // Specialize the message based on the locale on which this task is
@@ -71,7 +71,7 @@ coforall loc in Locales {
 // * `.name` queries its name (similar to UNIX ``hostname``)
 // * `numLocales` refers to the number of locales (as specified by -nl)
 //
-      message += "locale " + here.id + " of " + numLocales;
+      message += "locale " + here.id:string + " of " + numLocales:string;
 
       if printLocaleName then message += " named " + loc.name;
 

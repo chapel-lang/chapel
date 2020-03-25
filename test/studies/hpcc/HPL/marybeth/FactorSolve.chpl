@@ -23,7 +23,7 @@
 proc rightBlockLU(A: [?D], blk) where (D.rank == 2) {
 
   // Test that 0 < blk <= n, where n = length of one dimension of A.
-  if (blk <= 0) || (blk > D.dim(1).length) then
+  if (blk <= 0) || (blk > D.dim(1).size) then
     halt(blk," is an invalid block size passed to blockLU");
 
   var piv: [D.dim(1)] int;
@@ -221,7 +221,7 @@ proc computePivotRow(A:[?D]) {
 //  The LU solve routine takes A = [L U y] and solves for x.
 proc LUSolve (A: [?ADom], x: [?xDom]) {
 
-   var n = ADom.dim(1).length;
+   var n = ADom.dim(1).size;
    var AD1 = ADom.dim(1);
    ref b = A(.., n+1);
 

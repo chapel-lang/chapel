@@ -1,19 +1,20 @@
-// Test calling a throwing function from a non-throwing function via a for loop
-use ExampleErrors;
+prototype module OuterModule {
+  // Test calling a throwing function from a non-throwing function via a for loop
+  use ExampleErrors;
 
-config const n = 1000;
+  module M {
+    config const n = 1000;
+    proc throwingFn() throws { }
 
-module M {
-  proc throwingFn() throws { }
-
-  proc test() {
-    writeln("before for block");
-    for i in 1..n {
-      throwingFn();
+    proc test() {
+      writeln("before for block");
+      for i in 1..n {
+        throwingFn();
+      }
+      writeln("after for block");
     }
-    writeln("after for block");
   }
-}
 
-use M;
-test();
+  use M;
+  test();
+}

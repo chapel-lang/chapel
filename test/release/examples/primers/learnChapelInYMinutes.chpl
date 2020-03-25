@@ -29,6 +29,8 @@ writeln("World!");
 writeln("There are ", 3, " commas (\",\") in this line of code");
 
 // Different output channels:
+use IO; // Required for accessing the alternative output channels
+
 stdout.writeln("This goes to standard output, just like plain writeln() does");
 stderr.writeln("This goes to standard error");
 
@@ -321,7 +323,7 @@ var range2to10by2: range(stridable=true) = 2..10 by 2; // 2, 4, 6, 8, 10
 var reverse2to10by2 = 2..10 by -2; // 10, 8, 6, 4, 2
 
 var trapRange = 10..1 by -1; // Do not be fooled, this is still an empty range
-writeln("Size of range '", trapRange, "' = ", trapRange.length);
+writeln("Size of range '", trapRange, "' = ", trapRange.size);
 
 // Note: ``range(boundedType= ...)`` and ``range(stridable= ...)`` are only
 // necessary if we explicitly type the variable.
@@ -337,7 +339,7 @@ writeln(rangeCountBy);
 // Properties of the range can be queried.
 // In this example, printing the first index, last index, number of indices,
 // stride, and if 2 is include in the range.
-writeln((rangeCountBy.first, rangeCountBy.last, rangeCountBy.length,
+writeln((rangeCountBy.first, rangeCountBy.last, rangeCountBy.size,
            rangeCountBy.stride, rangeCountBy.contains(2)));
 
 for i in rangeCountBy {
@@ -441,9 +443,9 @@ for value in realArray {
 writeln(rSum, "\n", realArray);
 
 // Associative arrays (dictionaries) can be created using associative domains.
-var dictDomain: domain(string) = { "one", "two" };
-var dict: [dictDomain] int = ["one" => 1, "two" => 2];
-dict["three"] = 3; // Adds 'three' to 'dictDomain' implicitly
+var dictDomain: domain(string) = { "one", "two", "three"};
+var dict: [dictDomain] int = ["one" => 1, "two" => 2, "three" => 3];
+
 for key in dictDomain.sorted() do
   writeln(dict[key]);
 
@@ -814,18 +816,18 @@ class MyClass {
 
 // Call compiler-generated initializer, using default value for memberBool.
 {
-  var myObject = new owned MyClass(10);
-      myObject = new owned MyClass(memberInt = 10); // Equivalent
+  var myObject = new MyClass(10);
+      myObject = new MyClass(memberInt = 10); // Equivalent
   writeln(myObject.getMemberInt());
 
   // Same, but provide a memberBool value explicitly.
-  var myDiffObject = new owned MyClass(-1, true);
-      myDiffObject = new owned MyClass(memberInt = -1,
+  var myDiffObject = new MyClass(-1, true);
+      myDiffObject = new MyClass(memberInt = -1,
                                        memberBool = true); // Equivalent
   writeln(myDiffObject);
 
   // Similar, but rely on the default value of memberInt, passing in memberBool.
-  var myThirdObject = new owned MyClass(memberBool = true);
+  var myThirdObject = new MyClass(memberBool = true);
   writeln(myThirdObject);
 
   // If the user-defined initializer above had been uncommented, we could
@@ -842,16 +844,16 @@ class MyClass {
   // the definition has to be outside the class definition.
   proc +(A : MyClass, B : MyClass) : owned MyClass {
     return
-      new owned MyClass(memberInt = A.getMemberInt() + B.getMemberInt(),
-                        memberBool = A.getMemberBool() || B.getMemberBool());
+      new MyClass(memberInt = A.getMemberInt() + B.getMemberInt(),
+                  memberBool = A.getMemberBool() || B.getMemberBool());
   }
 
   var plusObject = myObject + myDiffObject;
   writeln(plusObject);
 
   // Destruction of an object: calls the deinit() routine and frees its memory.
-  // ``unmanaged`` variables should have ``delete`` called on them.
-  // ``owned`` variables are destroyed when they go out of scope.
+  // ``unmanaged`` objects should have ``delete`` called on them.
+  // ``owned`` objects (the default) are destroyed when they go out of scope.
 }
 
 // Classes can inherit from one or more parent classes
@@ -901,7 +903,7 @@ class GenericClass {
 } // end GenericClass
 
 // Allocate an owned instance of our class
-var realList = new owned GenericClass(real, 10);
+var realList = new GenericClass(real, 10);
 
 // We can assign to the member array of the object using the bracket
 // notation that we defined.
@@ -913,12 +915,12 @@ for value in realList do write(value, ", ");
 writeln();
 
 // Make a copy of realList using the copy initializer.
-var copyList = new owned GenericClass(realList);
+var copyList = new GenericClass(realList);
 for value in copyList do write(value, ", ");
 writeln();
 
 // Make a copy of realList and change the type, also using the copy initializer.
-var copyNewTypeList = new owned GenericClass(realList, int);
+var copyNewTypeList = new GenericClass(realList, int);
 for value in copyNewTypeList do write(value, ", ");
 writeln();
 
@@ -1103,7 +1105,7 @@ proc main() {
   writeln("uranium was ", was, " but is now ", replaceWith);
 
   var isEqualTo = 235;
-  if uranium.compareExchange(isEqualTo, replaceWith) {
+  if uranium.compareAndSwap(isEqualTo, replaceWith) {
     writeln("uranium was equal to ", isEqualTo,
              " so replaced value with ", replaceWith);
   } else {
@@ -1162,14 +1164,14 @@ proc main() {
     }
   }
 
-// Heres an example using atomics and a ``sync`` variable to create a
+// Here's an example using atomics and a ``sync`` variable to create a
 // count-down mutex (also known as a multiplexer).
   var count: atomic int; // our counter
   var lock$: sync bool;   // the mutex lock
 
   count.write(2);       // Only let two tasks in at a time.
   lock$.writeXF(true);  // Set lock$ to full (unlocked)
-  // Note: The value doesnt actually matter, just the state
+  // Note: The value doesn't actually matter, just the state
   // (full:unlocked / empty:locked)
   // Also, writeXF() fills (F) the sync var regardless of its state (X)
 

@@ -192,6 +192,15 @@ GASNETI_BEGIN_NOWARN
   #error bad defn of GASNETI_CONDUIT_THREADS
 #endif
 
+/* GASNET_HIDDEN_AM_CONCURRENCY_LEVEL: non-zero iff the conduit may run AM
+ * handlers on a thread not owned by the client 
+ */
+#if GASNETI_CONDUIT_THREADS
+  #define GASNET_HIDDEN_AM_CONCURRENCY_LEVEL 1
+#else
+  #define GASNET_HIDDEN_AM_CONCURRENCY_LEVEL 0
+#endif
+
 /* GASNETI_THREADS = Threads exist at conduit and/or client level, 
                      and/or compiling for a tools-only client with thread-safety
 */
@@ -536,8 +545,9 @@ extern void gex_System_QueryMyPosition(
 
   /*  the largest unsigned integer type that can fit entirely in a single CPU register for the current architecture and ABI.  */
   /*  SIZEOF_GEX_RMA_VALUE_T is a preprocess-time literal integer constant (i.e. not "sizeof()")indicating the size of this type in bytes */
-typedef uintptr_t gex_RMA_Value_t;
-#define SIZEOF_GEX_RMA_VALUE_T  SIZEOF_VOID_P
+  // Bug 3953: Our implementation guarantees a 64-bit gex_RMA_Value_t, although this is not currently required by the GASNet spec
+typedef uint64_t gex_RMA_Value_t;
+#define SIZEOF_GEX_RMA_VALUE_T  8
 
 #ifndef _GEX_MEMVEC_T
 #define _GEX_MEMVEC_T
@@ -646,6 +656,7 @@ typedef struct gasneti_srcdesc_s *gex_AM_SrcDesc_t;
   #endif
     void *               _addr;
     size_t               _size;
+    // TODO: Want to omit _thread field when unused, but GASNETI_THREADINFO_OPT not defined until much later
     gasnet_threadinfo_t  _thread;
     void *               _tofree; // passed to gasneti_free() when sd reset
     void *               _gex_buf; // gasnet-owned buffer, if any
@@ -770,6 +781,7 @@ extern void (*gasnet_client_attach_hook)(void *, uintptr_t);
              "THREADMODEL=" _STRINGIFY(GASNETI_THREAD_MODEL) ","          \
              "SEGMENT=" _STRINGIFY(GASNETI_SEGMENT_CONFIG) ","            \
              "PTR=" _STRINGIFY(GASNETI_PTR_CONFIG) ","                    \
+             "CACHE_LINE_BYTES=" _STRINGIFY(GASNETI_CACHE_LINE_BYTES) "," \
              _STRINGIFY(GASNETI_ALIGN_CONFIG) ","                         \
              _STRINGIFY(GASNETI_PSHM_CONFIG) ","                          \
              _STRINGIFY(GASNETI_DEBUG_CONFIG) ","                         \
@@ -781,7 +793,8 @@ extern void (*gasnet_client_attach_hook)(void *, uintptr_t);
              _STRINGIFY(GASNETI_MEMBAR_CONFIG) ","                        \
              _STRINGIFY(GASNETI_ATOMIC_CONFIG) ","                        \
              _STRINGIFY(GASNETI_ATOMIC32_CONFIG) ","                      \
-             _STRINGIFY(GASNETI_ATOMIC64_CONFIG)                          \
+             _STRINGIFY(GASNETI_ATOMIC64_CONFIG) ","                      \
+             _STRINGIFY(GASNETI_TIOPT_CONFIG)                             \
              GASNETC_BUG1389_CONFIG_INFO                                  \
              GASNETC_EXTRA_CONFIG_INFO                                    \
              GASNETE_EXTRA_CONFIG_INFO                                    
@@ -813,6 +826,8 @@ extern int GASNETI_LINKCONFIG_IDIOTCHECK(GASNETI_ATOMIC_CONFIG);
 extern int GASNETI_LINKCONFIG_IDIOTCHECK(GASNETI_ATOMIC32_CONFIG);
 extern int GASNETI_LINKCONFIG_IDIOTCHECK(GASNETI_ATOMIC64_CONFIG);
 extern int GASNETI_LINKCONFIG_IDIOTCHECK(GASNETI_TIOPT_CONFIG);
+extern int GASNETI_LINKCONFIG_IDIOTCHECK(_CONCAT(HIDDEN_AM_CONCUR_,GASNET_HIDDEN_AM_CONCURRENCY_LEVEL));
+extern int GASNETI_LINKCONFIG_IDIOTCHECK(_CONCAT(CACHE_LINE_BYTES_,GASNETI_CACHE_LINE_BYTES));
 extern int GASNETI_LINKCONFIG_IDIOTCHECK(_CONCAT(CORE_,GASNET_CORE_NAME));
 extern int GASNETI_LINKCONFIG_IDIOTCHECK(_CONCAT(EXTENDED_,GASNET_EXTENDED_NAME));
 
@@ -844,6 +859,8 @@ static int *gasneti_linkconfig_idiotcheck(void) {
         + GASNETI_LINKCONFIG_IDIOTCHECK(GASNETI_ATOMIC32_CONFIG)
         + GASNETI_LINKCONFIG_IDIOTCHECK(GASNETI_ATOMIC64_CONFIG)
         + GASNETI_LINKCONFIG_IDIOTCHECK(GASNETI_TIOPT_CONFIG)
+        + GASNETI_LINKCONFIG_IDIOTCHECK(_CONCAT(HIDDEN_AM_CONCUR_,GASNET_HIDDEN_AM_CONCURRENCY_LEVEL))
+        + GASNETI_LINKCONFIG_IDIOTCHECK(_CONCAT(CACHE_LINE_BYTES_,GASNETI_CACHE_LINE_BYTES))
         + GASNETI_LINKCONFIG_IDIOTCHECK(_CONCAT(CORE_,GASNET_CORE_NAME))
         + GASNETI_LINKCONFIG_IDIOTCHECK(_CONCAT(EXTENDED_,GASNET_EXTENDED_NAME))
         ;

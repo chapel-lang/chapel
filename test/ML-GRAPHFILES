@@ -1,6 +1,7 @@
 # suite: <empty>
 # suite: Performance Tracking
 npb/ep/mcahir/ep.ml-perf.graph
+npb/ft/npadmana/ft_transposed.ml-perf.graph
 release/examples/benchmarks/hpcc/fft.ml-perf.graph
 release/examples/benchmarks/hpcc/hpl.ml-perf.graph
 release/examples/benchmarks/hpcc/ptrans.ml-perf.graph
@@ -19,6 +20,7 @@ studies/isx/isx.ml-time.graph
 # suite: <empty>
 # suite: All (perf)
 npb/ep/mcahir/ep.ml-perf.graph
+npb/ft/npadmana/ft_transposed.ml-perf.graph
 release/examples/benchmarks/hpcc/fft.ml-perf.graph
 release/examples/benchmarks/hpcc/hpl.ml-perf.graph
 release/examples/benchmarks/hpcc/ptrans.ml-perf.graph
@@ -36,6 +38,7 @@ studies/bale/indexgather/ig-variants.ml-perf.graph
 
 # suite: - NAS Parallel Benchmarks (perf)
 npb/ep/mcahir/ep.ml-perf.graph
+npb/ft/npadmana/ft_transposed.ml-perf.graph
 # suite: - HPCC (perf)
 release/examples/benchmarks/hpcc/fft.ml-perf.graph
 release/examples/benchmarks/hpcc/hpl.ml-perf.graph
@@ -113,7 +116,7 @@ studies/bale/histogram/histo-atomics.ml-time.graph
 studies/bale/indexgather/ig.ml-time.graph
 
 # suite: <empty>
-# suite: Studies (time)
+# suite: Studies
 studies/nbody/md.ml-time.graph
 reductions/vass/reductions-perf.ml-time.graph
 parallel/taskCompare/elliot/taskSpawn.ml-time.graph
@@ -136,3 +139,12 @@ runtime/configMatters/comm/unordered/many-to-many-getputs.ml-perf.graph
 runtime/configMatters/comm/unordered/one-locale-serial-amos.ml-perf.graph
 runtime/configMatters/comm/unordered/one-locale-parallel-amos.ml-perf.graph
 optimizations/bulkcomm/block/exchange.ml-time.graph
+performance/array/distCreate-domains-init.ml-perf.graph
+performance/array/distCreate-domains-deinit.ml-perf.graph
+performance/array/distCreate-tiny-init.ml-perf.graph
+performance/array/distCreate-tiny-deinit.ml-perf.graph
+performance/array/distCreate-small-init.ml-perf.graph
+performance/array/distCreate-small-deinit.ml-perf.graph
+performance/array/distCreate-large-init.ml-perf.graph
+performance/array/distCreate-large-deinit.ml-perf.graph
+library/packages/Sort/performance/dist-performance.ml-perf.graph

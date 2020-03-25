@@ -1,5 +1,0 @@
-bug: default argument 'new C()' leaks
-
-This test demonstrates that when a default argument value is 'new
-C()', that class is leaked as demonstrated by the lack of a
-deinitializer print message and the output of --memleaks.

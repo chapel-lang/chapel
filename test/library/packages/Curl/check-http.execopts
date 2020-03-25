@@ -1,0 +1,6 @@
+--bufsz=0
+--bufsz=1
+--bufsz=8
+--bufsz=16
+--bufsz=128
+--bufsz=4096

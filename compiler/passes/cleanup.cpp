@@ -1,4 +1,5 @@
 /*
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -34,14 +35,15 @@
 #include "stmt.h"
 #include "stringutil.h"
 #include "symbol.h"
+#include "wellknown.h"
 
 static void cleanup(ModuleSymbol* module);
 
 static void normalizeNestedFunctionExpressions(FnSymbol* fn);
 
-static void destructureTupleAssignment(CallExpr* call);
-
-static void replaceIsSubtypeWithPrimitive(CallExpr* call, bool proper);
+static void replaceIsSubtypeWithPrimitive(CallExpr* call,
+                                          bool proper, bool coerce);
+static void addIntentRefMaybeConst(ArgSymbol* arg);
 
 static void flattenPrimaryMethod(TypeSymbol* ts, FnSymbol* fn);
 
@@ -92,12 +94,12 @@ static void cleanup(ModuleSymbol* module) {
       }
 
     } else if (CallExpr* call = toCallExpr(ast)) {
-      if (call->isNamed("_build_tuple"))
-        destructureTupleAssignment(call);
-      else if (call->isNamed("isSubtype"))
-        replaceIsSubtypeWithPrimitive(call, false);
+      if (call->isNamed("isSubtype"))
+        replaceIsSubtypeWithPrimitive(call, false, false);
       else if (call->isNamed("isProperSubtype"))
-        replaceIsSubtypeWithPrimitive(call, true);
+        replaceIsSubtypeWithPrimitive(call, true, false);
+      else if (call->isNamed("isCoercible"))
+        replaceIsSubtypeWithPrimitive(call, false, true);
 
     } else if (DefExpr* def = toDefExpr(ast)) {
       if (FnSymbol* fn = toFnSymbol(def->sym)) {
@@ -111,6 +113,29 @@ static void cleanup(ModuleSymbol* module) {
       }
     } else if (CatchStmt* catchStmt = toCatchStmt(ast)) {
       catchStmt->cleanup();
+    } else if (ArgSymbol* arg = toArgSymbol(ast)) {
+      addIntentRefMaybeConst(arg);
+    }
+  }
+
+  if (module == stringLiteralModule && !fMinimalModules) {
+    // Fix calls to chpl_createStringWithLiteral to use resolved expression.
+    // For compiler performance reasons, we'd like to have new_StringSymbol
+    // emit calls to a resolved function; however new_StringSymbol might
+    // run before that function is parsed. So fix up any literals created
+    // during parsing here.
+    INT_ASSERT(gChplCreateStringWithLiteral != NULL);
+    const char* name = gChplCreateStringWithLiteral->name;
+
+    for_vector(BaseAST, ast, asts) {
+      if (CallExpr* call = toCallExpr(ast)) {
+        if (UnresolvedSymExpr* urse = toUnresolvedSymExpr(call->baseExpr)) {
+          if (urse->unresolved == name) {
+            SET_LINENO(urse);
+            urse->replace(new SymExpr(gChplCreateStringWithLiteral));
+          }
+        }
+      }
     }
   }
 }
@@ -151,60 +176,25 @@ static void normalizeNestedFunctionExpressions(FnSymbol* fn) {
 }
 
 
-/************************************* | **************************************
-*                                                                             *
-* destructureTupleAssignment                                                  *
-*                                                                             *
-*    (i,j) = expr;    ==>    i = expr(1);                                     *
-*                            j = expr(2);                                     *
-*                                                                             *
-* note: handles recursive tuple destructuring, (i,(j,k)) = ...                *
-*                                                                             *
-************************************** | *************************************/
-
-static void      insertDestructureStatements(Expr*     S1,
-                                             Expr*     S2,
-                                             CallExpr* lhs,
-                                             Expr*     rhs);
-
-static CallExpr* destructureChk(CallExpr* lhs, Expr* rhs);
-
-static CallExpr* destructureErr();
-
-static void destructureTupleAssignment(CallExpr* call) {
-  CallExpr* parent = toCallExpr(call->parentExpr);
-
-  if (parent               != NULL &&
-      parent->isNamedAstr(astrSequals) &&
-      parent->get(1)       == call) {
-    VarSymbol* rtmp = newTemp();
-    Expr*      S1   = new CallExpr(PRIM_MOVE, rtmp, parent->get(2)->remove());
-    Expr*      S2   = new CallExpr(PRIM_NOOP);
-
-    rtmp->addFlag(FLAG_EXPR_TEMP);
-    rtmp->addFlag(FLAG_MAYBE_TYPE);
-    rtmp->addFlag(FLAG_MAYBE_PARAM);
-
-    call->getStmtExpr()->replace(S1);
-
-    S1->insertBefore(new DefExpr(rtmp));
-    S1->insertAfter(S2);
-
-    insertDestructureStatements(S1, S2, call, new SymExpr(rtmp));
-
-    S2->remove();
-  }
-}
-
-
-static void replaceIsSubtypeWithPrimitive(CallExpr* call, bool proper) {
+static void replaceIsSubtypeWithPrimitive(CallExpr* call,
+                                          bool proper, bool coerce) {
   Expr* sub = call->get(1);
   Expr* sup = call->get(2);
   sub->remove();
   sup->remove();
 
   PrimitiveTag prim = proper ? PRIM_IS_PROPER_SUBTYPE : PRIM_IS_SUBTYPE;
+  if (coerce)
+    prim = PRIM_IS_COERCIBLE;
+
   call->replace(new CallExpr(prim, sup, sub));
+}
+
+
+static void addIntentRefMaybeConst(ArgSymbol* arg) {
+  if (arg->hasFlag(FLAG_INTENT_REF_MAYBE_CONST_FORMAL)) {
+    arg->intent = INTENT_REF_MAYBE_CONST;
+  }
 }
 
 //
@@ -251,59 +241,6 @@ static void fixupVoidReturnFn(FnSymbol* fn) {
   if (!foundReturn) {
     fn->addFlag(FLAG_VOID_NO_RETURN_VALUE);
   }
-}
-
-
-static void insertDestructureStatements(Expr*     S1,
-                                        Expr*     S2,
-                                        CallExpr* lhs,
-                                        Expr*     rhs) {
-  int       index = 0;
-  CallExpr* test  = destructureChk(lhs, rhs);
-  CallExpr* err   = destructureErr();
-
-  S1->getStmtExpr()->insertAfter(buildIfStmt(test, err));
-
-  for_actuals(expr, lhs) {
-    UnresolvedSymExpr* se = toUnresolvedSymExpr(expr->remove());
-
-    index = index + 1;
-
-    if (se == NULL || strcmp(se->unresolved, "chpl__tuple_blank") != 0) {
-      CallExpr* nextLHS = toCallExpr(expr);
-      Expr*     nextRHS = new CallExpr(rhs->copy(), new_IntSymbol(index));
-
-      if (nextLHS != NULL && nextLHS->isNamed("_build_tuple") == true) {
-        insertDestructureStatements(S1, S2, nextLHS, nextRHS);
-
-      } else {
-        VarSymbol* lhsTmp = newTemp();
-        CallExpr*  addrOf = new CallExpr(PRIM_ADDR_OF, expr);
-
-        lhsTmp->addFlag(FLAG_MAYBE_PARAM);
-
-        S1->insertBefore(new DefExpr(lhsTmp));
-        S1->insertBefore(new CallExpr(PRIM_MOVE, lhsTmp, addrOf));
-
-        S2->insertBefore(new CallExpr("=", lhsTmp, nextRHS));
-      }
-    }
-  }
-}
-
-static CallExpr* destructureChk(CallExpr* lhs, Expr* rhs) {
-  CallExpr* dot  = new CallExpr(".", rhs->copy(), new_CStringSymbol("size"));
-
-  return new CallExpr("!=", new_IntSymbol(lhs->numActuals()), dot);
-}
-
-static CallExpr* destructureErr() {
-  const char* msg  = NULL;
-  Symbol*     zero = new_IntSymbol(0);
-
-  msg = "tuple size must match the number of grouped variables";
-
-  return new CallExpr("compilerError", new_StringSymbol(msg), zero);
 }
 
 /************************************* | **************************************

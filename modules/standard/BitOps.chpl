@@ -1,4 +1,5 @@
 /*
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
@@ -21,6 +22,7 @@
   Bitwise operations implemented using C intrinsics when possible.
  */
 module BitOps {
+  import BitOps_internal;
 
   /*
     Count leading zeros in `x`.
@@ -157,6 +159,7 @@ module BitOps {
  * module to hide the extern procedures
  */
 private module BitOps_internal {
+  private use SysCTypes;
   extern proc chpl_bitops_popcount_32(x: c_uint) : uint(32);
   extern proc chpl_bitops_popcount_64(x: c_ulonglong) : uint(64);
 

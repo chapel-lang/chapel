@@ -1,4 +1,5 @@
 /*
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
@@ -23,6 +24,8 @@ pragma "unsafe" // workaround for trying to default-initialize nil objects
 module DefaultAssociative {
 
   use DSIUtil;
+  private use ChapelDistribution, ChapelRange, SysBasic, ChapelArray;
+  private use ChapelBase, ChapelLocks, IO;
   config param debugDefaultAssoc = false;
   config param debugAssocDataPar = false;
 
@@ -81,7 +84,7 @@ module DefaultAssociative {
     //       replace with a named constant/param?
     var postponeResize = false;
   
-    proc linksDistribution() param return false;
+    override proc linksDistribution() param return false;
     override proc dsiLinksDistribution() return false;
   
     proc init(type idxType,
@@ -105,20 +108,72 @@ module DefaultAssociative {
                                        parSafeDom=parSafe, dom=_to_unmanaged(this));
     }
   
-    proc dsiSerialReadWrite(f /*: Reader or Writer*/) {
-      var first = true;
-      f <~> new ioLiteral("{");
-      for idx in this {
-        if first then 
-          first = false; 
-        else 
-          f <~> new ioLiteral(", ");
-        f <~> idx;
+    proc dsiSerialReadWrite(f /*: Reader or Writer*/) throws {
+
+      var binary = f.binary();
+
+      if f.writing {
+        if binary {
+          var numIndices: int = dsiNumIndices;
+          f <~> numIndices;
+          for idx in this {
+            f <~> idx;
+          }
+        } else {
+          var first = true;
+          f <~> new ioLiteral("{");
+          for idx in this {
+            if first then 
+              first = false; 
+            else 
+              f <~> new ioLiteral(", ");
+            f <~> idx;
+          }
+          f <~> new ioLiteral("}");
+        }
+      } else {
+        // Clear the domain so it only contains indices read in.
+        dsiClear();
+
+        if binary {
+          var numIndices: int;
+          f <~> numIndices;
+          for i in 1..numIndices {
+            var idx: idxType;
+            f <~> idx;
+            dsiAdd(idx);
+          }
+        } else {
+          f <~> new ioLiteral("{");
+
+          var first = true;
+          var comma = new ioLiteral(",", true);
+          var end = new ioLiteral("}");
+
+          while true {
+
+            // Try reading an end curly. If we get it, then break.
+            try {
+              f <~> end;
+              break;
+            } catch err: BadFormatError {
+              // We didn't read an end brace, so continue on.
+            }
+
+            // Try reading a comma.
+            if !first then f <~> comma;
+            first = false;
+
+            // Read an index.
+            var idx: idxType;
+            f <~> idx;
+            dsiAdd(idx);
+          }
+        }
       }
-      f <~> new ioLiteral("}");
     }
-    proc dsiSerialWrite(f) { this.dsiSerialReadWrite(f); }
-    proc dsiSerialRead(f) { this.dsiSerialReadWrite(f); }
+    proc dsiSerialWrite(f) throws { this.dsiSerialReadWrite(f); }
+    proc dsiSerialRead(f) throws { this.dsiSerialReadWrite(f); }
   
     //
     // Standard user domain interface
@@ -435,8 +490,8 @@ module DefaultAssociative {
 
         unlockTable();
       } else if entries > numKeys {
-        warning("Requested capacity (" + numKeys + ") " +
-                "is less than current size (" + entries + ")");
+        warning("Requested capacity (", numKeys, ") ",
+                "is less than current size (", entries, ")");
       }
     }
   
@@ -569,11 +624,26 @@ module DefaultAssociative {
     param parSafeDom: bool;
     var dom : unmanaged DefaultAssociativeDom(idxType, parSafe=parSafeDom);
   
+    pragma "unsafe"
     var data : [dom.tableDom] eltType;
   
     var tmpDom = {0..(-1:chpl_table_index_type)};
+    pragma "unsafe"
     var tmpTable: [tmpDom] eltType;
-  
+
+    //
+    // #14367 - Blanket ban on non-nilable classes for the time being.
+    //
+    pragma "no doc"
+    proc postinit() {
+      if isNonNilableClass(this.eltType) {
+        param msg = "Cannot initialize associative array because"
+                  + " element type " + eltType:string
+                  + " is a non-nilable class";
+        compilerError(msg);
+      }
+    }
+
     //
     // Standard internal array interface
     // 
@@ -581,7 +651,7 @@ module DefaultAssociative {
     override proc dsiGetBaseDom() return dom;
   
     override proc clearEntry(idx: idxType) {
-      const initval: eltType;
+      var initval: eltType;
       dsiAccess(idx) = initval;
     }
 
@@ -594,30 +664,9 @@ module DefaultAssociative {
       if found {
         return data[slotNum];
 
-      // if the element didn't exist, then this is either:
-      //
-      // - an error if the array does not own the domain (it's
-      //   trying to get a reference to an element that doesn't exist)
-      //
-      // - an indication that we should grow the domain + array to
-      //   include the element
-      } else if slotNum != -1 {
-
-        const arrOwnsDom = dom._arrs.length == 1;
-        if !arrOwnsDom {
-          // here's the error case
-          halt("cannot implicitly add to an array's domain when the domain is used by more than one array: ", dom._arrs.length);
-          return data(0);
-        } else {
-          // grow the table
-          const (newSlot, _) = dom._addWrapper(idx, slotNum, needLock=false);
-
-          // and return the element
-          return data[newSlot];
-        }
+      // if the element didn't exist, then it is an error
       } else {
         halt("array index out of bounds: ", idx);
-        return data(0);
       }
     }
 
@@ -723,7 +772,7 @@ module DefaultAssociative {
       }
     }
 
-    proc dsiSerialReadWrite(f /*: channel*/) {
+    proc dsiSerialReadWrite(f /*: channel*/) throws {
       var binary = f.binary();
       var arrayStyle = f.styleElement(QIO_STYLE_ELEMENT_ARRAY);
       var isspace = arrayStyle == QIO_ARRAY_FORMAT_SPACE && !binary;
@@ -732,75 +781,74 @@ module DefaultAssociative {
 
       if !f.writing && ischpl {
         this.readChapelStyleAssocArray(f);
-      } else {
-        if isjson || ischpl {
-          f <~> new ioLiteral("[");
+        return;
+      }
+
+      if isjson || ischpl then f <~> new ioLiteral("[");
+
+      var first = true;
+
+      for (key, val) in zip(this.dom, this) {
+        if first then first = false;
+        else if isspace then f <~> new ioLiteral(" ");
+        else if isjson || ischpl then f <~> new ioLiteral(", ");
+
+        if f.writing && ischpl {
+          f <~> key;
+          f <~> new ioLiteral(" => ");
         }
 
-        var first = true;
-
-        for (key, val) in zip(this.dom, this) {
-          if first then first = false;
-          else if isspace then f <~> new ioLiteral(" ");
-          else if isjson || ischpl then f <~> new ioLiteral(", ");
-
-          if f.writing && ischpl {
-            f <~> key;
-            f <~> new ioLiteral(" => ");
-          }
-
-          f <~> val;
-        }
+        f <~> val;
       }
-      if isjson || ischpl {
-        f <~> new ioLiteral("]");
-      }
+
+      if isjson || ischpl then f <~> new ioLiteral("]");
     }
 
-    proc readChapelStyleAssocArray(f) {
+    proc readChapelStyleAssocArray(f) throws {
+      const openBracket = new ioLiteral("[");
+      const closedBracket = new ioLiteral("]");
       var first = true;
-      var read_end = false;
+      var readEnd = false;
 
-      f <~> new ioLiteral("[");
+      f <~> openBracket;
 
-      while ! f.error() {
+      while true {
         if first {
           first = false;
-          // but check for a ]
-          f <~> new ioLiteral("]");
-          if f.error() == EFORMAT {
-            f.clearError();
-          } else {
-            read_end = true;
+
+          // Break if we read an immediate closed bracket.
+          try {
+            f <~> closedBracket;
+            readEnd = true;
             break;
+          } catch err: BadFormatError {
+            // We didn't read a closed bracket, so continue on.
           }
         } else {
-          // read a comma or a space.
-          f <~> new ioLiteral(",");
 
-          if f.error() == EFORMAT {
-            f.clearError();
-            // No comma.
+          // Try reading a comma. If we don't, then break.
+          try {
+            f <~> new ioLiteral(",");
+          } catch err: BadFormatError {
+            // Break out of the loop if we didn't read a comma.
             break;
           }
         }
 
-        // Read a key
+        // Read a key.
         var key: idxType;
         f <~> key;
-        // Read =>
         f <~> new ioLiteral("=>");
-        // Read the value
+
+        // Read the value.
         f <~> dsiAccess(key);
       }
 
-      if ! read_end {
-        f <~> new ioLiteral("]");
-      }
+      if !readEnd then f <~> closedBracket;
     }
 
-    proc dsiSerialWrite(f) { this.dsiSerialReadWrite(f); }
-    proc dsiSerialRead(f) { this.dsiSerialReadWrite(f); }
+    proc dsiSerialWrite(f) throws { this.dsiSerialReadWrite(f); }
+    proc dsiSerialRead(f) throws { this.dsiSerialReadWrite(f); }
 
     //
     // Associative array interface
@@ -874,19 +922,23 @@ module DefaultAssociative {
   }
   
   
-  // Thomas Wang's 64b mix function - see
-  // https://web.archive.org/web/20060705164341/http://www.concentric.net/~Ttwang/tech/inthash.htm
+  // Mix the bits, so that e.g. numbers in 0..N generate
+  // random-looking data across all the bits even if N is small.
   proc _gen_key(i: uint): uint {
+    // Thomas Wang's 64b mix function - 2007 version - see
+    // http://web.archive.org/web/20071223173210/http://www.concentric.net/~Ttwang/tech/inthash.htm
     var key = i;
-    key += ~(key << 32);
-    key ^= (key >> 22);
-    key += ~(key << 13);
-    key ^= (key >> 8);
-    key += (key << 3);
-    key ^= (key >> 15);
-    key += ~(key << 27);
-    key ^= (key >> 31);
+    key = (~key) + (key << 21); // key = (key << 21) - key - 1;
+    key = key ^ (key >> 24);
+    key = (key + (key << 3)) + (key << 8); // key * 265
+    key = key ^ (key >> 14);
+    key = (key + (key << 2)) + (key << 4); // key * 21
+    key = key ^ (key >> 28);
+    key = key + (key << 31);
     return key;
+
+    // See commit history for this comment for some other mixers
+    // worth considering.
   }
   proc _gen_key(i: int): uint {
     return _gen_key(i:uint);
@@ -895,7 +947,7 @@ module DefaultAssociative {
   inline proc chpl__defaultHashCombine(a:uint, b:uint, fieldnum:int): uint {
     extern proc chpl_bitops_rotl_64(x: uint(64), n: uint(64)) : uint(64);
     var n:uint = (17 + fieldnum):uint;
-    return a ^ chpl_bitops_rotl_64(b, n);
+    return _gen_key(a ^ chpl_bitops_rotl_64(b, n));
   }
 
   inline proc chpl__defaultHash(b: bool): uint {
@@ -947,6 +999,10 @@ module DefaultAssociative {
     return _gen_key(__primitive( "object2int", o));
   }
 
+  inline proc chpl__defaultHash(l: locale): uint {
+    return _gen_key(__primitive( "object2int", l._value));
+  }
+
   //
   // Implementation of chpl__defaultHash for ranges, in case the 'idxType'
   // contains a range in some way (e.g. tuple of ranges).
@@ -954,11 +1010,11 @@ module DefaultAssociative {
   inline proc chpl__defaultHash(r : range): uint {
     use Reflection;
     var ret : uint;
-    for param i in 1..numFields(r.type) {
-      if isParam(getField(r, i)) == false &&
-         isType(getField(r, i)) == false &&
-         isNothingType(getField(r, i).type) == false {
-        const ref field = getField(r, i);
+    for param i in 1..numImplementationFields(r.type) {
+      if isParam(getImplementationField(r, i)) == false &&
+         isType(getImplementationField(r, i)) == false &&
+         isNothingType(getImplementationField(r, i).type) == false {
+        const ref field = getImplementationField(r, i);
         const fieldHash = chpl__defaultHash(field);
         if i == 1 then
           ret = fieldHash;
@@ -971,7 +1027,7 @@ module DefaultAssociative {
   
   // Is 'idxType' legal to create a default associative domain with?
   // Currently based on the availability of chpl__defaultHash().
-  // Enumerated, opaque, and sparse domains are handled separately.
+  // Enumerated and sparse domains are handled separately.
   // Tuples and records also work, somehow.
   proc chpl__validDefaultAssocDomIdxType(type idxType) param return false;
   
@@ -985,6 +1041,7 @@ module DefaultAssociative {
       isComplexType(idxType)     ||
       idxType == chpl_taskID_t    ||
       idxType == string           ||
+      idxType == bytes            ||
       idxType == c_string         ||
       isClassType(idxType)        ||
       // these are handled differently

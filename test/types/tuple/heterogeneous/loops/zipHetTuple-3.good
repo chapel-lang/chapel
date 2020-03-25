@@ -1,0 +1,1 @@
+zipHetTuple.chpl:28: error: Heterogeneous tuples don't support zippered iteration yet

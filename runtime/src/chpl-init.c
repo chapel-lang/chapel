@@ -1,4 +1,5 @@
 /*
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
@@ -23,6 +24,7 @@
 #include "chpl_rt_utils_static.h"
 #include "chplcast.h"
 #include "chplcgfns.h"
+#include "chpl-cache.h"
 #include "chpl-comm.h"
 #include "chplexit.h"
 #include "chplio.h"
@@ -133,6 +135,7 @@ void chpl_rt_postUserCodeHook(void) {
 void chpl_rt_init(int argc, char* argv[]) {
   int32_t execNumLocales;
   int runInGDB;
+  int runInLLDB;
 
   // Check that we can get the page size.
   assert( sys_page_size() > 0 );
@@ -184,6 +187,14 @@ void chpl_rt_init(int argc, char* argv[]) {
     }
   }
 
+  runInLLDB = _runInLLDB();
+  if (runInLLDB) {
+    int status;
+    if (chpl_comm_run_in_lldb(argc, argv, runInLLDB, &status)) {
+      chpl_exit_all(status);
+    }
+  }
+
   //
   // Initialize the task management layer.
   //
@@ -197,6 +208,9 @@ void chpl_rt_init(int argc, char* argv[]) {
   // tasking layer is initialized.
   //
   chpl_comm_post_task_init();
+#ifdef HAS_CHPL_CACHE_FNS
+  chpl_cache_init();
+#endif
   chpl_comm_rollcall();
 
   //

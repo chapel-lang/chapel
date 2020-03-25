@@ -1,6 +1,6 @@
 require "err-return.h";
 
-use ExampleErrors;
+use ExampleErrors, SysCTypes;
 
 extern record my_struct {
   var x:c_int;
@@ -29,11 +29,13 @@ proc returnOrThrow(i:int):MyRecord throws {
 proc test() {
   try {
     var x = returnOrThrow(1);
+    ref rx = x;
     writeln(x);
     var y = returnOrThrow(2);
     writeln(y);
     var z = returnOrThrow(3);
     writeln(z);
+    y;
   } catch e {
     writeln(e);
   }

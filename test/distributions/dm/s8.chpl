@@ -19,10 +19,8 @@ setupLocales(tl1, tl2);
 var phase = 0;
 proc leapphase() { phase += 20; fphase(phase); }
 
-const dd1 =new unmanaged BlockCyclicDim(lowIdx=st1, blockSize=blkSize, numLocales=tl1,
-                               name="D1");
-const dd2 =new unmanaged BlockCyclicDim(lowIdx=st2, blockSize=blkSize, numLocales=tl2,
-                               name="D2");
+const dd1 = new BlockCyclicDim(lowIdx=st1, blockSize=blkSize, numLocales=tl1);
+const dd2 = new BlockCyclicDim(lowIdx=st2, blockSize=blkSize, numLocales=tl2);
 
 const space = {1..n, 1..n+1};
 const AbD

@@ -1,7 +1,0 @@
-bug: User-defined initCopy routines are ignored in removedUnnecessaryAutoCopyCalls.
-
-If the user defines a version of chpl__initCopy() which overrides the
-compiler-defined version, the user's version should always be called.
-
-Right now, it is being replaced by a _move, unless the --no-remove-copy-calls
-compiler flag is specified.

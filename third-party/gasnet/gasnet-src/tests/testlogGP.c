@@ -122,7 +122,7 @@ void put_tests(int iters, int nbytes)
 		}
 		end = TIME();
 	 	update_stat(&st, (end - begin), iters);
-		print_stat(myproc, &st, "put: EEL - put", PRINT_EEL);
+		print_stat(myproc, &st, "put: EEL - PutBlocking", PRINT_EEL);
 	}
 	
 	BARRIER();
@@ -152,7 +152,7 @@ void put_tests(int iters, int nbytes)
 		}
 		end = TIME();
 	 	update_stat(&st, (end - begin) - delay_time, iters);
-		print_stat(myproc, &st, "put: o_i - put_nb_bulk", PRINT_OVERHEAD);
+		print_stat(myproc, &st, "put: o_i - PutNB+DEFER", PRINT_OVERHEAD);
 	}
 
 	BARRIER();
@@ -191,7 +191,7 @@ void put_tests(int iters, int nbytes)
 		}
 		end = TIME();
 	 	update_stat(&st, (end - begin) - delay_time, iters);
-		print_stat(myproc, &st, "put: o_t - put_nb_bulk", PRINT_OVERHEAD);
+		print_stat(myproc, &st, "put: o_t - PutNB+DEFER", PRINT_OVERHEAD);
 	}
 
 	BARRIER();
@@ -206,7 +206,7 @@ void put_tests(int iters, int nbytes)
 		gex_NBI_Wait(GEX_EC_PUT,0);
 		end = TIME();
 	 	update_stat(&st, (end - begin), iters);
-		print_stat(myproc, &st, "put: gap - put_nbi", PRINT_GAP);
+		print_stat(myproc, &st, "put: gap - PutNBI+NOW", PRINT_GAP);
 	}
 	
 	BARRIER();
@@ -221,7 +221,7 @@ void put_tests(int iters, int nbytes)
 		gex_NBI_Wait(GEX_EC_PUT,0);
 		end = TIME();
 	 	update_stat(&st, (end - begin), iters);
-		print_stat(myproc, &st, "put: G   - put_nbi", PRINT_BIG_G);
+		print_stat(myproc, &st, "put: G   - PutNBI+DEFER", PRINT_BIG_G);
 	}
 }	
 
@@ -245,7 +245,7 @@ void get_tests(int iters, int nbytes)
 		}
 		end = TIME();
 	 	update_stat(&st, (end - begin), iters);
-		print_stat(myproc, &st, "get: EEL - get", PRINT_EEL);
+		print_stat(myproc, &st, "get: EEL - GetBlocking", PRINT_EEL);
 	}
 	
 	BARRIER();
@@ -275,7 +275,7 @@ void get_tests(int iters, int nbytes)
 		}
 		end = TIME();
 	 	update_stat(&st, (end - begin) - delay_time, iters);
-		print_stat(myproc, &st, "get: o_i - get_nb", PRINT_OVERHEAD);
+		print_stat(myproc, &st, "get: o_i - GetNB", PRINT_OVERHEAD);
 	}
 
 	BARRIER();
@@ -314,7 +314,7 @@ void get_tests(int iters, int nbytes)
 		}
 		end = TIME();
 	 	update_stat(&st, (end - begin) - delay_time, iters);
-		print_stat(myproc, &st, "get: o_t - get_nb", PRINT_OVERHEAD);
+		print_stat(myproc, &st, "get: o_t - GetNB", PRINT_OVERHEAD);
 	}
 
 	BARRIER();
@@ -329,7 +329,7 @@ void get_tests(int iters, int nbytes)
 		gex_NBI_Wait(GEX_EC_GET,0);
 		end = TIME();
 	 	update_stat(&st, (end - begin), iters);
-		print_stat(myproc, &st, "get: gap - get_nbi", PRINT_GAP);
+		print_stat(myproc, &st, "get: gap - GetNBI", PRINT_GAP);
 	}
 	
 	BARRIER();
@@ -344,7 +344,7 @@ void get_tests(int iters, int nbytes)
 		gex_NBI_Wait(GEX_EC_GET,0);
 		end = TIME();
 	 	update_stat(&st, (end - begin), iters);
-    		print_stat(myproc, &st, "get: G   - get_nbi", PRINT_BIG_G);
+    		print_stat(myproc, &st, "get: G   - GetNBI", PRINT_BIG_G);
 	}
 }
 

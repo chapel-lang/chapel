@@ -1,0 +1,1 @@
+bitshiftByNegative.chpl:10: error: halt reached - Cannot bitshift 128 by -8 because -8 is less than 0

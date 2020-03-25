@@ -18,11 +18,11 @@ record ListStack {
   class MyNode {
     type itemType;              // type of item
     var item: itemType;         // item in node
-    var next: unmanaged MyNode(itemType); // reference to next node (same type)
+    var next: unmanaged MyNode(itemType)?; // reference to next node (same type)
   }
 
   type itemType;             // type of items
-  var top: unmanaged MyNode(itemType); // top node on stack linked list
+  var top: unmanaged MyNode(itemType)?; // top node on stack linked list
 
   // push method: add an item to the top of the stack
   proc push(item: itemType) {
@@ -35,8 +35,8 @@ record ListStack {
     if isEmpty then
       halt("attempt to pop an item off an empty stack");
     var oldTop = top;
-    var oldItem = top.item;
-    top = top.next;
+    var oldItem = top!.item;
+    top = top!.next;
     delete oldTop;
     return oldItem;
   }
@@ -58,7 +58,7 @@ record ArrayStack {
   // push method: add an item to the top of the stack
   // note: the array is doubled if it is full
   proc push(item: itemType) {
-    var height = data.numElements;
+    var height = data.size;
     if numItems == height then
       dataSpace = {1..height*2};
     data(numItems+1) = item;

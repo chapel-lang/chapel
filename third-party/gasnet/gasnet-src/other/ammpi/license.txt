@@ -24,7 +24,7 @@
  * ---------------------------------------------------------------------------
  *
  * For more information about AMMPI, visit our home page at:
- *  http://gasnet.lbl.gov/ammpi
+ *  https://gasnet.lbl.gov/ammpi
  * Or send email to:
  *  gasnet-devel@lbl.gov
  *

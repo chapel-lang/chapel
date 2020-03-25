@@ -1,0 +1,1 @@
+list-of-owned-nil.chpl:11: error: halt reached - argument to ! is nil

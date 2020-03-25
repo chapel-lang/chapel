@@ -7,7 +7,7 @@ proc main {
   var filenameDom = {1..8, 1..1};
   var filenames: [filenameDom] string;
   for (i,j) in filenameDom {
-    filenames[i,j] = inputDir + "/datafile_" + i + "_" + j + ".h5";
+    filenames[i,j] = inputDir + "/datafile_" + i:string + "_" + j:string + ".h5";
   }
   var p = new owned AddNPreprocessor(2);
   var A = readNamedHDF5FilesInto1DArrayInt(filenames[.., 1], 8, 1, dsetName, preprocessor=p);

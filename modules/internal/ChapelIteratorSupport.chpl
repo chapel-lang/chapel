@@ -1,4 +1,5 @@
 /*
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -38,7 +39,8 @@
 pragma "error mode fatal" // avoid compiler errors here
 pragma "unsafe"
 module ChapelIteratorSupport {
-  use ChapelStandard;
+  private use ChapelStandard;
+  private use Reflection;
 
   //
   // module support for iterators
@@ -114,6 +116,7 @@ module ChapelIteratorSupport {
   // Ideally we'd get them **directly** from domType/arrType.
   //
 
+  pragma "unsafe"
   proc chpl_buildStandInRTT(type domType: domain) type
   { //
     // domType._instance has no runtime type, so accessing its type
@@ -126,6 +129,7 @@ module ChapelIteratorSupport {
     return chpl_buildStandInRTT(instanceObj);
   }
 
+  pragma "unsafe"
   proc chpl_buildStandInRTT(type arrType: []) type
   {
     // Analogously to instanceObj in chpl_buildStandInRTT(domType).
@@ -162,8 +166,9 @@ module ChapelIteratorSupport {
   //
   proc chpl_buildStandInRTT(type irType: _iteratorRecord) type
   {
-    type shapeType = chpl_iteratorShapeStaticTypeOrVoid(irType);
+    type shapeType = chpl_iteratorShapeStaticTypeOrNothing(irType);
 
+    pragma "unsafe" //for test/release/examples/benchmarks/lcals/LCALSMain.chpl
     proc standinType() type {
       if shapeType == nothing {
         // shapeless case
@@ -255,21 +260,18 @@ module ChapelIteratorSupport {
   }
 
   proc chpl_iteratorHasShape(ir: _iteratorRecord) param {
-    use Reflection;
     if hasField(ir.type, "_shape_") then
       return ir._shape_.type != void;
     else
       return false;
   }
   inline proc chpl_iteratorHasDomainShape(ir: _iteratorRecord) param {
-    use Reflection;
     if hasField(ir.type, "_shape_") then
       return isSubtype(ir._shape_.type, BaseDom);
     else
       return false;
   }
   inline proc chpl_iteratorHasRangeShape(ir: _iteratorRecord) param {
-    use Reflection;
     if hasField(ir.type, "_shape_") then
       return isRange(ir._shape_.type);
     else
@@ -277,13 +279,12 @@ module ChapelIteratorSupport {
   }
 
   // This is the static type of chpl_computeIteratorShape(ir).
-  proc chpl_iteratorShapeStaticTypeOrVoid(type ir: _iteratorRecord) type
+  proc chpl_iteratorShapeStaticTypeOrNothing(type ir: _iteratorRecord) type
   {
-    use Reflection;
     if hasField(ir, "_shape_") then
       return __primitive("static field type", ir, "_shape_");
     else
-      return none;
+      return nothing;
   }
 
   proc chpl_iteratorFromForExpr(ir: _iteratorRecord) param {
@@ -299,7 +300,7 @@ module ChapelIteratorSupport {
     return false;
   }
 
-  proc _iteratorRecord.writeThis(f) {
+  proc _iteratorRecord.writeThis(f) throws {
     var first: bool = true;
     for e in this {
       if !first then
@@ -343,6 +344,8 @@ module ChapelIteratorSupport {
 
   inline proc _getIteratorZip(x: _tuple) {
     inline proc _getIteratorZipInternal(x: _tuple, param dim: int) {
+      if isTuple(x(dim)) && !isHomogeneousTuple(x(dim)) then
+        compilerError("Heterogeneous tuples don't support zippered iteration yet");
       if dim == x.size then
         return (_getIterator(x(dim)),);
       else

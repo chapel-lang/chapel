@@ -1,4 +1,5 @@
 /*
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -31,6 +32,8 @@ module LocaleModel {
   use LocaleModelHelpFlat;
   use LocaleModelHelpMem;
 
+  private use IO;
+
   //
   // The task layer calls these to convert between full sublocales and
   // execution sublocales.  Full sublocales may contain more information
@@ -50,6 +53,7 @@ module LocaleModel {
   }
 
   const chpl_emptyLocaleSpace: domain(1) = {1..0};
+  pragma "unsafe"
   const chpl_emptyLocales: [chpl_emptyLocaleSpace] locale;
 
   //
@@ -64,7 +68,7 @@ module LocaleModel {
     // to establish the equivalence the "locale" field of the locale object
     // and the node ID portion of any wide pointer referring to it.
     proc init() {
-      if doneCreatingLocales {
+      if rootLocaleInitialized {
         halt("Cannot create additional LocaleModel instances");
       }
       _node_id = chpl_nodeID: int;
@@ -75,7 +79,7 @@ module LocaleModel {
     }
 
     proc init(parent_loc : locale) {
-      if doneCreatingLocales {
+      if rootLocaleInitialized {
         halt("Cannot create additional LocaleModel instances");
       }
 
@@ -103,27 +107,19 @@ module LocaleModel {
     // The flat memory model assumes only one memory.
     //
     override proc defaultMemory() : locale {
-      return this;
+      return new locale(this);
     }
 
     override proc largeMemory() : locale {
-      return this;
+      return new locale(this);
     }
 
     override proc lowLatencyMemory() : locale {
-      return this;
+      return new locale(this);
     }
 
     override proc highBandwidthMemory() : locale {
-      return this;
-    }
-
-
-    override proc writeThis(f) {
-      // Most classes will define it like this:
-      //      f <~> name;
-      // but here it is defined thus for backward compatibility.
-      f <~> new ioLiteral("LOCALE") <~> _node_id;
+      return new locale(this);
     }
 
     proc getChildSpace() return chpl_emptyLocaleSpace;
@@ -170,10 +166,11 @@ module LocaleModel {
   class RootLocale : AbstractRootLocale {
 
     const myLocaleSpace: domain(1) = {0..numLocales-1};
+    pragma "unsafe"
     var myLocales: [myLocaleSpace] locale;
 
     proc init() {
-      super.init(nil);
+      super.init(nilLocale);
       nPUsPhysAcc = 0;
       nPUsPhysAll = 0;
       nPUsLogAcc = 0;
@@ -199,11 +196,11 @@ module LocaleModel {
     override proc chpl_name() return local_name();
     proc local_name() return "rootLocale";
 
-    override proc writeThis(f) {
+    override proc writeThis(f) throws {
       f <~> name;
     }
 
-    override proc getChildCount() return this.myLocaleSpace.numIndices;
+    override proc getChildCount() return this.myLocaleSpace.size;
 
     proc getChildSpace() return this.myLocaleSpace;
 
@@ -234,7 +231,7 @@ module LocaleModel {
       for loc in myLocales {
         on loc {
           rootLocaleInitialized = false;
-          delete _to_unmanaged(loc);
+          delete loc._instance;
         }
       }
     }
@@ -248,5 +245,11 @@ module LocaleModel {
   proc chpl_getSubloc() {
     halt("called chpl_getSubloc() in a locale model that lacks sublocales");
     return c_sublocid_none;
+  }
+
+  proc deinit() {
+    for l in chpl_emptyLocales do {
+      delete l._instance;
+    }
   }
 }

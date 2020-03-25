@@ -1,11 +1,13 @@
+use IO;
+
 class C
 {
-  proc writeThis(w) { w.write("C"); }
+  proc writeThis(w) throws { w.write("C"); }
 }
 
 class SubC : C
 {
-  override proc writeThis(w) { w.write("SubC"); }
+  override proc writeThis(w) throws { w.write("SubC"); }
 }
 
 class OverrideMe
@@ -38,9 +40,7 @@ class OverridesIt : OverrideMe
 
 proc main()
 {
-  var o : unmanaged OverrideMe;
-
-  o = new unmanaged OverridesIt();
+  var o : unmanaged OverrideMe = new unmanaged OverridesIt();
 
   var t1 = o.getC();
 

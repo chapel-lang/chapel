@@ -10,45 +10,45 @@ use BitOps;
  record uintCriterion8 {
    inline
    proc keyPart(x, start:int):(int(8),uint(8)) {
-     var section:int(8) = if start > 8 then -1:int(8) else 0;
+     if start > 8 then return (-1:int(8), 0:uint(8));
      var key:uint = (x:uint) >> (64 - 8*start);
      //writef("in keyPart8(%016xu, %u)\n", x, start);
-     return (section, (key & 0xff):uint(8));
+     return (0:int(8), (key & 0xff):uint(8));
    }
  }
  record uintCriterion16 {
    inline
    proc keyPart(x, start:int):(int(8),uint(16)) {
-     var section:int(8) = if start > 4 then -1:int(8) else 0;
+     if start > 4 then return (-1:int(8), 0:uint(8));
      var key:uint = (x:uint) >> (64 - 16*start);
      //writef("in keyPart16(%016xu, %u)\n", x, start);
-     return (section, (key & 0xffff):uint(16));
+     return (0:int(8), (key & 0xffff):uint(16));
    }
  }
  record uintCriterion32 {
    inline
    proc keyPart(x, start:int):(int, uint(32)) {
-     var section = if start > 2 then -1 else 0;
+     if start > 2 then return (-1:int, 0:uint(32));
      var key:uint = (x:uint) >> (64 - 32*start);
      //writef("in keyPart32(%016xu, %u)\n", x, start);
-     return (section, (key & 0xffffffff):uint(32));
+     return (0:int, (key & 0xffffffff):uint(32));
    }
  }
  record uintCriterion64 {
    inline
    proc keyPart(x, start:int):(int(8), uint(64)) {
-     var section:int(8) = if start > 1 then -1:int(8) else 0;
+     if start > 1 then return (-1:int(8), 0:uint(64));
      var key:uint = x:uint;
      //writef("in keyPart64(%016xu, %u)\n", x, start);
-     return (section, key);
+     return (0:int(8), key);
    }
  }
  record intCriterion {
    inline
    proc keyPart(x, start:int):(int, int) {
-     var section = if start > 1 then -1 else 0;
+     if start > 1 then return (-1:int, 0:int);
      //writef("in intCriterion64(%016xu, %u)\n", x, start);
-     return (section, x);
+     return (0:int, x);
    }
  }
  record intTupleCriterion {
@@ -65,7 +65,7 @@ use BitOps;
    inline
    proc keyPart(x:string, start:int):(int(8), uint(8)) {
      var ptr = x.c_str():c_ptr(uint(8));
-     var len = x.length;
+     var len = x.numBytes;
      var section = if start <= len then 0:int(8)     else -1:int(8);
      var part =    if start <= len then ptr[start-1] else  0:uint(8);
      return (section, part);

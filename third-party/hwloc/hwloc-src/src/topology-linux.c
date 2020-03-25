@@ -1,6 +1,6 @@
 /*
  * Copyright © 2009 CNRS
- * Copyright © 2009-2018 Inria.  All rights reserved.
+ * Copyright © 2009-2019 Inria.  All rights reserved.
  * Copyright © 2009-2013, 2015 Université Bordeaux
  * Copyright © 2009-2014 Cisco Systems, Inc.  All rights reserved.
  * Copyright © 2015 Intel, Inc.  All rights reserved.
@@ -97,6 +97,8 @@ struct hwloc_linux_backend_data_s {
 #         define __NR_sched_setaffinity 311
 #       elif defined(__powerpc__) || defined(__ppc__) || defined(__PPC__) || defined(__powerpc64__) || defined(__ppc64__)
 #         define __NR_sched_setaffinity 222
+#       elif defined(__aarch64__)
+#         define __NR_sched_setaffinity 122
 #       elif defined(__arm__)
 #         define __NR_sched_setaffinity 241
 #       elif defined(__cris__)
@@ -130,6 +132,8 @@ struct hwloc_linux_backend_data_s {
 #         define __NR_sched_getaffinity 312
 #       elif defined(__powerpc__) || defined(__ppc__) || defined(__PPC__) || defined(__powerpc64__) || defined(__ppc64__)
 #         define __NR_sched_getaffinity 223
+#       elif defined(__aarch64__)
+#         define __NR_sched_getaffinity 123
 #       elif defined(__arm__)
 #         define __NR_sched_getaffinity 242
 #       elif defined(__cris__)
@@ -3490,7 +3494,7 @@ look_sysfsnode(struct hwloc_topology *topology,
 static int
 look_sysfscpu(struct hwloc_topology *topology,
 	      struct hwloc_linux_backend_data_s *data,
-	      const char *path,
+	      const char *path, int old_filenames,
 	      struct hwloc_linux_cpuinfo_proc * cpuinfo_Lprocs, unsigned cpuinfo_numprocs)
 {
   hwloc_bitmap_t cpuset; /* Set of cpus for which we have topology information */
@@ -3501,6 +3505,8 @@ look_sysfscpu(struct hwloc_topology *topology,
   unsigned caches_added, merge_buggy_core_siblings;
   hwloc_obj_t packages = NULL; /* temporary list of packages before actual insert in the tree */
   int threadwithcoreid = data->is_amd_with_CU ? -1 : 0; /* -1 means we don't know yet if threads have their own coreids within thread_siblings */
+  int dont_merge_die_groups;
+  const char *env;
 
   /* fill the cpuset of interesting cpus */
   dir = hwloc_opendir(path, data->root_fd);
@@ -3551,14 +3557,35 @@ look_sysfscpu(struct hwloc_topology *topology,
 
   merge_buggy_core_siblings = (data->arch == HWLOC_LINUX_ARCH_X86);
   caches_added = 0;
+  env = getenv("HWLOC_DONT_MERGE_DIE_GROUPS");
+  dont_merge_die_groups = env && atoi(env);
   hwloc_bitmap_foreach_begin(i, cpuset) {
-    hwloc_bitmap_t packageset, coreset, bookset, threadset;
-    unsigned mypackageid, mycoreid, mybookid;
+    hwloc_bitmap_t packageset, coreset, bookset, threadset, dieset = NULL;
+    unsigned mypackageid, mydieid, mycoreid, mybookid;
     int tmpint;
 
+    /* look at the die */
+    sprintf(str, "%s/cpu%d/topology/die_cpus", path, i);
+    dieset = hwloc__alloc_read_path_as_cpumask(str, data->root_fd);
+    if (dieset) {
+      if (hwloc_bitmap_first(dieset) == i) {
+	hwloc_bitmap_free(dieset);
+	dieset = NULL;
+      }
+      /* look at packages before deciding whether we keep that die or not */
+    }
+
     /* look at the package */
-    sprintf(str, "%s/cpu%d/topology/core_siblings", path, i);
+    if (old_filenames)
+      sprintf(str, "%s/cpu%d/topology/core_siblings", path, i);
+    else
+      sprintf(str, "%s/cpu%d/topology/package_cpus", path, i);
     packageset = hwloc__alloc_read_path_as_cpumask(str, data->root_fd);
+    if (packageset && dieset && hwloc_bitmap_isequal(packageset, dieset)) {
+      /* die is identical to package, ignore it */
+      hwloc_bitmap_free(dieset);
+      dieset = NULL;
+    }
     if (packageset && hwloc_bitmap_first(packageset) == i) {
       /* first cpu in this package, add the package */
       struct hwloc_obj *package;
@@ -3629,8 +3656,29 @@ look_sysfscpu(struct hwloc_topology *topology,
 package_done:
     hwloc_bitmap_free(packageset);
 
+    if (dieset) {
+      struct hwloc_obj *die;
+
+      mydieid = (unsigned) -1;
+      sprintf(str, "%s/cpu%d/topology/die_id", path, i); /* contains %d when added in 5.2 */
+      if (hwloc_read_path_as_int(str, &tmpint, data->root_fd) == 0) {
+	mydieid = (unsigned) tmpint;
+
+	die = hwloc_alloc_setup_object(HWLOC_OBJ_GROUP, mydieid);
+	die->cpuset = dieset;
+	hwloc_debug_1arg_bitmap("os die %u has cpuset %s\n",
+				  mydieid, dieset);
+	hwloc_obj_add_info(die, "Type", "Die");
+	die->attr->group.dont_merge = dont_merge_die_groups;
+	hwloc_insert_object_by_cpuset(topology, die);
+      }
+    }
+
     /* look at the core */
-    sprintf(str, "%s/cpu%d/topology/thread_siblings", path, i);
+    if (old_filenames)
+      sprintf(str, "%s/cpu%d/topology/thread_siblings", path, i);
+    else
+      sprintf(str, "%s/cpu%d/topology/core_cpus", path, i);
     coreset = hwloc__alloc_read_path_as_cpumask(str, data->root_fd);
 
     if (coreset) {
@@ -3724,7 +3772,10 @@ package_done:
 	if (hwloc_bitmap_iszero(cacheset)) {
 	  hwloc_bitmap_t tmpset;
 	  /* ia64 returning empty L3 and L2i? use the core set instead */
-	  sprintf(str, "%s/cpu%d/topology/thread_siblings", path, i);
+	  if (old_filenames)
+	    sprintf(str, "%s/cpu%d/topology/thread_siblings", path, i);
+	  else
+	    sprintf(str, "%s/cpu%d/topology/core_cpus", path, i);
 	  tmpset = hwloc__alloc_read_path_as_cpumask(str, data->root_fd);
 	  /* only use it if we actually got something */
 	  if (tmpset) {
@@ -4488,12 +4539,13 @@ hwloc_look_linuxfs(struct hwloc_backend *backend)
   unsigned global_infos_count = 0;
   int numprocs;
   int already_pus;
+  int old_siblings_filenames;
   int err;
 
   already_pus = (topology->levels[0][0]->complete_cpuset != NULL
 		 && !hwloc_bitmap_iszero(topology->levels[0][0]->complete_cpuset));
   /* if there are PUs, still look at memory information
-   * since x86 misses NUMA node information (unless the processor supports topoext)
+   * since x86 misses NUMA node information (unless we forced AMD topoext NUMA nodes)
    * memory size.
    */
 
@@ -4644,11 +4696,20 @@ hwloc_look_linuxfs(struct hwloc_backend *backend)
     hwloc__move_infos(&hwloc_get_root_obj(topology)->infos, &hwloc_get_root_obj(topology)->infos_count,
 		      &global_infos, &global_infos_count);
 
-    if (getenv("HWLOC_LINUX_USE_CPUINFO")
-	|| (hwloc_access("/sys/devices/system/cpu/cpu0/topology/core_siblings", R_OK, data->root_fd) < 0
-	    && hwloc_access("/sys/devices/system/cpu/cpu0/topology/thread_siblings", R_OK, data->root_fd) < 0
-	    && hwloc_access("/sys/bus/cpu/devices/cpu0/topology/thread_siblings", R_OK, data->root_fd) < 0
-	    && hwloc_access("/sys/bus/cpu/devices/cpu0/topology/core_siblings", R_OK, data->root_fd) < 0)) {
+    if (!hwloc_access("/sys/devices/system/cpu/cpu0/topology/core_cpus", R_OK, data->root_fd)
+	|| !hwloc_access("/sys/devices/system/cpu/cpu0/topology/package_cpus", R_OK, data->root_fd)
+	|| !hwloc_access("/sys/bus/cpu/devices/cpu0/topology/core_cpus", R_OK, data->root_fd)
+	|| !hwloc_access("/sys/bus/cpu/devices/cpu0/topology/package_cpus", R_OK, data->root_fd))
+      old_siblings_filenames = 0;
+    else if (!hwloc_access("/sys/devices/system/cpu/cpu0/topology/core_siblings", R_OK, data->root_fd)
+	     || !hwloc_access("/sys/devices/system/cpu/cpu0/topology/thread_siblings", R_OK, data->root_fd)
+	     || !hwloc_access("/sys/bus/cpu/devices/cpu0/topology/thread_siblings", R_OK, data->root_fd)
+	     || !hwloc_access("/sys/bus/cpu/devices/cpu0/topology/core_siblings", R_OK, data->root_fd))
+      old_siblings_filenames = 1;
+    else
+      old_siblings_filenames = -1;
+
+    if (getenv("HWLOC_LINUX_USE_CPUINFO") || old_siblings_filenames == -1) {
 	/* revert to reading cpuinfo only if /sys/.../topology unavailable (before 2.6.16)
 	 * or not containing anything interesting */
       if (numprocs > 0)
@@ -4661,8 +4722,8 @@ hwloc_look_linuxfs(struct hwloc_backend *backend)
 
     } else {
       /* sysfs */
-      if (look_sysfscpu(topology, data, "/sys/bus/cpu/devices", Lprocs, numprocs) < 0)
-        if (look_sysfscpu(topology, data, "/sys/devices/system/cpu", Lprocs, numprocs) < 0)
+      if (look_sysfscpu(topology, data, "/sys/bus/cpu/devices", old_siblings_filenames, Lprocs, numprocs) < 0)
+        if (look_sysfscpu(topology, data, "/sys/devices/system/cpu", old_siblings_filenames, Lprocs, numprocs) < 0)
 	  /* sysfs but we failed to read cpu topology, fallback */
 	  hwloc_setup_pu_level(topology, data->fallback_nbprocessors);
     }
@@ -5733,6 +5794,14 @@ hwloc_look_linuxfs_pci(struct hwloc_backend *backend)
 
     if (sscanf(dirent->d_name, "%04x:%02x:%02x.%01x", &domain, &bus, &dev, &func) != 4)
       continue;
+
+    if (domain > 0xffff) {
+      static int warned = 0;
+      if (!warned)
+	fprintf(stderr, "Ignoring PCI device with non-16bit domain\n");
+      warned = 1;
+      continue;
+    }
 
     os_index = (domain << 20) + (bus << 12) + (dev << 4) + func;
     obj = hwloc_alloc_setup_object(HWLOC_OBJ_PCI_DEVICE, os_index);

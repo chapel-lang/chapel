@@ -1,4 +1,4 @@
-.TH "hwlocality_api_version" 3 "Sun Sep 2 2018" "Version 1.11.11" "Hardware Locality (hwloc)" \" -*- nroff -*-
+.TH "hwlocality_api_version" 3 "Mon Jun 3 2019" "Version 1.11.13" "Hardware Locality (hwloc)" \" -*- nroff -*-
 .ad l
 .nh
 .SH NAME
@@ -31,7 +31,7 @@ hwlocality_api_version
 .SS "#define HWLOC_API_VERSION   0x00010b06"
 
 .PP
-Indicate at build time which hwloc API version is being used\&. This number is updated to (X>>16)+(Y>>8)+Z when a new release X\&.Y\&.Z actually modifies the API\&.
+Indicate at build time which hwloc API version is being used\&. This number is updated to (X<<16)+(Y<<8)+Z when a new release X\&.Y\&.Z actually modifies the API\&.
 .PP
 Users may check for available features at build time using this number (see \fBHow do I handle ABI breaks and API upgrades?\fP)\&. 
 .SS "#define HWLOC_COMPONENT_ABI   4"

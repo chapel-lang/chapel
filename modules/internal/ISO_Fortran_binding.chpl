@@ -1,4 +1,5 @@
 /*
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -20,7 +21,8 @@
 // generated from:
 // jupiter:/opt/intel/compilers_and_libraries_2019.0.117/linux/compiler/include/ISO_Fortran_binding.h
 module ISO_Fortran_binding {
-  use SysCTypes;
+  private use SysCTypes;
+  private use ChapelBase, ChapelRange, CPtr;
   require "chpl-ISO_Fortran_binding.h";
 
 
@@ -199,7 +201,7 @@ module ISO_Fortran_binding {
     var D = {(...dims)};
     var A = D.buildArrayWith(eltType,
                              FA.base_addr: _ddata(eltType),
-                             D.numIndices);
+                             D.size);
     A._unowned = true;
     return A;
   }

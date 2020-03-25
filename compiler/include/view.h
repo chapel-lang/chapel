@@ -1,4 +1,5 @@
 /*
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
@@ -80,8 +81,10 @@ void        vec_view(Vec<Symbol*,   VEC_INTEGRAL_SIZE>* v);
 void        vec_view(Vec<Symbol*,   VEC_INTEGRAL_SIZE>& v);
 void        vec_view(Vec<FnSymbol*, VEC_INTEGRAL_SIZE>* v);
 void        vec_view(Vec<FnSymbol*, VEC_INTEGRAL_SIZE>& v);
-void        vec_view(std::vector<Symbol*>* vec);
-void        vec_view(std::vector<Symbol*>& vec);
+void        vec_view(std::vector<Symbol*>* syms);
+void        vec_view(std::vector<Symbol*>& syms);
+void        vec_view(std::vector<FnSymbol*>* syms);
+void        vec_view(std::vector<FnSymbol*>& syms);
 
 
 void        fnsWithName(const char* name);

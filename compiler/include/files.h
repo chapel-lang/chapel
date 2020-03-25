@@ -1,4 +1,5 @@
 /*
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -103,6 +104,7 @@ void readArgsFromFile(std::string path, std::vector<std::string>& cmds);
 void expandInstallationPaths(std::string& arg);
 void expandInstallationPaths(std::vector<std::string>& args);
 
+char*       chplRealPath(const char* path);
 char*       dirHasFile(const char* dir, const char* file);
 char*       findProgramPath(const char* argv0);
 bool        isSameFile(const char* pathA, const char* pathB);

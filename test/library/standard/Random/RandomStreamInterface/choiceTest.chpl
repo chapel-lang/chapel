@@ -1,11 +1,11 @@
-use Random;
+use Random, Map;
 
 config const debug = false;
 
 proc main() {
-  var pcg = makeRandomStream(real, algorithm=RNG.PCG, seed=42);
+  var pcg = createRandomStream(real, algorithm=RNG.PCG, seed=42);
   runTests(pcg);
-  var pcgInt = makeRandomStream(int, algorithm=RNG.PCG, seed=420);
+  var pcgInt = createRandomStream(int, algorithm=RNG.PCG, seed=420);
   runTests(pcgInt);
 }
 
@@ -18,6 +18,13 @@ proc runTests(stream) {
 
   var real32s: [1..4] real(32) = [0.1:real(32), 0.2:real(32), 0.3:real(32), 0.4:real(32)];
   testArray(stream, real32s);
+
+  // user-defined type
+  var rArr = [new R(1), new R(2), new R(3)];
+  testArray(stream, rArr, trials=1);
+
+  var pArr = [1, 1, 2];
+  testArray(stream, rArr, prob=pArr, size=2, replace=false, trials=1);
 
   // offset & strided domain
   var strideDom = {10..#10 by 3};
@@ -70,9 +77,14 @@ proc runTests(stream) {
     writeln('error: domain reference not maintained');
 }
 
-proc testArray(stream, arr: [], size:?sizeType=none, replace=true, prob:?probType=none, trials=10000) throws {
-  var countsDom: domain(arr.eltType);
-  var counts: [countsDom] int;
+/* User-defined type */
+record R {
+  var value = 0;
+  var tag = "someValue";
+}
+
+proc testArray(stream, arr: [] ?eltType, size:?sizeType=none, replace=true, prob:?probType=none, trials=10000) throws {
+  var counts = new map(eltType, int);
 
   // Collect statistics
   if isNothingType(probType) {
@@ -104,7 +116,7 @@ proc testArray(stream, arr: [], size:?sizeType=none, replace=true, prob:?probTyp
 
   if debug {
     writeln('Counts for array: ', arr);
-    for value in counts.domain {
+    for value in counts {
       writeln(value, ' : ', counts[value]/trials:real);
     }
   }
@@ -113,11 +125,13 @@ proc testArray(stream, arr: [], size:?sizeType=none, replace=true, prob:?probTyp
   if isDomainType(sizeType) then m = size.size;
   else if isIntegralType(sizeType) then m = size;
 
-
-  var actualRatios = if isNothingType(sizeType) then counts / trials:real
-                     else counts / (trials*m): real;
-
-
+  var actualRatios = new map(eltType, real);
+  for (k,v) in actualRatios.items() {
+    if isNothingType(sizeType) then
+      actualRatios[k] = v / trials:real;
+    else
+      actualRatios[k] = v / (trials*m): real;
+  }
 
   var ones: [arr.domain] real = 1;
 
@@ -125,7 +139,7 @@ proc testArray(stream, arr: [], size:?sizeType=none, replace=true, prob:?probTyp
 
   // Get expected ratios
   var uniqueValues: domain(arr.eltType);
-  var expectedRatios: [uniqueValues] real;
+  var expectedRatios = new map(arr.eltType, real);
 
   var total = (+ reduce probabilities):real;
 
@@ -136,7 +150,7 @@ proc testArray(stream, arr: [], size:?sizeType=none, replace=true, prob:?probTyp
   // Confirm that resulting ratios are within 0.05 of expected ratios
   var success = true;
   if replace {
-    for value in actualRatios.domain {
+    for value in actualRatios {
       if !isClose(actualRatios[value], expectedRatios[value]) {
         success = false;
       }
@@ -148,9 +162,9 @@ proc testArray(stream, arr: [], size:?sizeType=none, replace=true, prob:?probTyp
       if !isNothingType(prob.type) then write('prob = ', prob, ', ');
       if !isNothingType(size.type) then writeln('size = ', size, ', ');
       writeln('replace = ', replace, ');');
-      for value in actualRatios.domain {
+      for value in actualRatios {
         writeln('value   expected   actual');
-        writeln(value, '       ', expectedRatios[value],'        ', actualRatios[value]);
+        writeln(value, '       ', expectedRatios[value:arr.eltType],'        ', actualRatios[value]);
       }
     }
   }

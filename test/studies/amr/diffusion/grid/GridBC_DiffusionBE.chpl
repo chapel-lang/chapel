@@ -1,4 +1,4 @@
-use GridBC_def;
+public use GridBC_def;
 
 
 //|\"""""""""""""""""""""""""""""""""""|\
@@ -7,13 +7,13 @@ use GridBC_def;
 
 class ZeroFluxDiffusionBC: GridBC {
   
-  proc apply(q: unmanaged GridVariable, t: real)
+  override proc apply(q: unmanaged GridVariable, t: real)
   {
     apply_Homogeneous(q);
   }
 
 
-  proc apply_Homogeneous(q: unmanaged GridVariable) {
+  override proc apply_Homogeneous(q: unmanaged GridVariable) {
 
     for ghost_domain in grid.ghost_domains {
       var loc = grid.relativeLocation(ghost_domain);

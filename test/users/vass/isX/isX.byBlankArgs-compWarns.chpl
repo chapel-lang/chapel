@@ -83,7 +83,7 @@ var enm:    EnumType;
 var homtup: HomTupType;
 var hettup: HetTupType;
 
-var cls:  borrowed ClassType;
+var cls:  borrowed ClassType = new borrowed ClassType();
 var rec1: RecordSmall;
 var unn:  UnionType;
 

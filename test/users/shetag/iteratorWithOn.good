@@ -1,2 +1,11 @@
-iteratorWithOn.chpl:5: In iterator 'g':
-iteratorWithOn.chpl:8: error: invalid use of 'yield' within 'on' in serial iterator
+0:i=0
+0:i=10
+0:i=5
+1:i=1
+1:i=6
+2:i=2
+2:i=7
+3:i=3
+3:i=8
+4:i=4
+4:i=9

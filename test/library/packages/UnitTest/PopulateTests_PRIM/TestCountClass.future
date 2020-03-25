@@ -1,0 +1,4 @@
+Feature Request: Class methods should be considered as tests
+
+Issue: https://github.com/chapel-lang/chapel/issues/13098,
+https://github.com/chapel-lang/chapel/issues/8724

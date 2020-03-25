@@ -13,13 +13,6 @@ class AssocC {
   var x: [assocDom] t;
 }
 
-class OpaqueC {
-  type t;
-
-  var opaqueDom: domain(opaque);
-  var x: [opaqueDom] t;
-}
-
 class SparseC {
   type t;
   
@@ -51,7 +44,6 @@ type vec = [vecDom] real;
 
 var myArithC = new unmanaged ArithC(vec);
 var myAssocC = new unmanaged AssocC(vec);
-var myOpaqueC = new unmanaged OpaqueC(vec);
 var mySparseC = new unmanaged SparseC(vec);
 var myEnumC = new unmanaged EnumC(vec);
 
@@ -62,9 +54,6 @@ var myEnumC = new unmanaged EnumC(vec);
 myAssocC.assocDom += "two";
 [j in vecDom] myAssocC.x("two")(j) = 2 + j/10.0;
 
-const newInd = myOpaqueC.opaqueDom.create();
-[j in vecDom] myOpaqueC.x(newInd)(j) = 2 + j/10.0;
-
 mySparseC.sparseDom += 2;
 [j in vecDom] mySparseC.x(2)(j) = 2 + j/10.0;
 
@@ -74,12 +63,10 @@ mySparseC.sparseDom += 2;
 
 foo(myArithC);
 foo(myAssocC);
-foo(myOpaqueC);
 foo(mySparseC);
 foo(myEnumC);
 
 delete myArithC;
 delete myAssocC;
-delete myOpaqueC;
 delete mySparseC;
 delete myEnumC;

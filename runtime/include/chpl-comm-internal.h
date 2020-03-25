@@ -1,4 +1,5 @@
 /*
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
@@ -71,8 +72,7 @@ void chpl_comm_init_prv_bcast_tab(void);
 static inline
 void chpl_comm_really_bcast_rt_private(int id) {
   chpl_comm_broadcast_private(chpl_private_broadcast_table_len + id,
-                              chpl_rt_priv_bcast_lens[id],
-                              -1);
+                              chpl_rt_priv_bcast_lens[id]);
 }
 
 #endif

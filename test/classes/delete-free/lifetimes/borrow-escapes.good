@@ -2,7 +2,9 @@ borrow-escapes.chpl:45: In function 'bad1':
 borrow-escapes.chpl:48: error: Scoped variable global would outlive the value it is set to
 borrow-escapes.chpl:46: note: consider scope of r
 borrow-escapes.chpl:52: In function 'bad2':
-borrow-escapes.chpl:57: error: Scoped variable outer would outlive the value it is set to
+borrow-escapes.chpl:57: error: Scoped variable would outlive the value it is set to
+borrow-escapes.chpl:55: note: consider scope of r
+borrow-escapes.chpl:57: error: Scoped variable outer reachable after lifetime ends
 borrow-escapes.chpl:55: note: consider scope of r
 borrow-escapes.chpl:63: In function 'bad3':
 borrow-escapes.chpl:67: error: Scoped variable global would outlive the value it is set to
@@ -19,5 +21,6 @@ borrow-escapes.chpl:94: In function 'bad22':
 borrow-escapes.chpl:100: error: Scoped variable outer would outlive the value it is set to
 borrow-escapes.chpl:97: note: consider scope of r
 borrow-escapes.chpl:106: In function 'bad23':
-borrow-escapes.chpl:111: error: Scoped variable outer would outlive the value it is set to
+borrow-escapes.chpl:111: error: Scoped variable would outlive the value it is set to
 borrow-escapes.chpl:109: note: consider scope of r
+borrow-escapes.chpl:115: error: Scoped variable outer would outlive the value it is set to

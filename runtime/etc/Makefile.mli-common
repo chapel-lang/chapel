@@ -1,0 +1,102 @@
+# Copyright 2020 Hewlett Packard Enterprise Development LP
+# Copyright 2004-2019 Cray Inc.
+# Other additional copyright holders may be indicated within.
+#
+# The entirety of this work is licensed under the Apache License,
+# Version 2.0 (the "License"); you may not use this file except
+# in compliance with the License.
+#
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+#
+# Makefile.mli-common
+#
+
+include $(CHPL_MAKE_HOME)/runtime/etc/Makefile.include
+
+# If CHPL_ZMQ_HOME is set, use it to configure search paths.
+ifdef CHPL_ZMQ_HOME
+CHPL_MLI_INCS = -I$(CHPL_ZMQ_HOME)/include
+CHPL_ZMQ_LIB_HOME = $(CHPL_ZMQ_HOME)/lib
+CHPL_ZMQ_LIB_SEARCH_PATH = -L$(CHPL_ZMQ_LIB_HOME)
+endif
+
+# Get the Chapel launcher library directory.
+CHPL_LN_LIB_DIR = $(CHPL_MAKE_RUNTIME_LIB)/$(CHPL_MAKE_LAUNCHER_SUBDIR)
+
+# Variables passed to the sub-make session that builds the client.
+TO_PROPAGATE = \
+	CHPL_MAKE_HOST_TARGET="--host" \
+	CHPL_MAKE_HOME="$(CHPL_MAKE_HOME)" \
+	COMP_GEN_MLI_EXTRA_INCLUDES="$(COMP_GEN_MLI_EXTRA_INCLUDES)" \
+	TMPBINNAME="$(TMPBINNAME)" \
+	BINNAME="$(BINNAME)" \
+	TMPSERVERNAME="$(TMPSERVERNAME)" \
+	SERVERNAME="$(SERVERNAME)" \
+	CHPLSRC="$(CHPLSRC)" \
+	LIBS="$(LIBS)" \
+	CHPL_CL_OBJS="$(CHPL_CL_OBJS)" \
+	CHPL_MAKE_IS_MLI="$(CHPL_MAKE_IS_MLI)" \
+	TMPDIRNAME="$(TMPDIRNAME)"
+
+.PHONY: buildServer
+buildServer: $(TMPSERVERNAME)
+
+.PHONY: runTagsCommand
+runTagsCommand:
+	$(TAGS_COMMAND)
+
+#
+# This code was introduced to Makefile.exe in 909897ea and our confidence in
+# it is low. For now, don't bother supporting incremental compilation for
+# multilocale libraries at all.
+#
+.PHONY: buildUserObj
+buildUserObj:
+ifneq ($(CHPLUSEROBJ),)
+	$(error Multi-locale libraries do not support incremental compilation)
+endif
+	$(foreach srcFile, $(CHPLUSEROBJ), \
+		$(CC) $(CHPL_MAKE_BASE_CFLAGS) $(GEN_CFLAGS) $(COMP_GEN_CFLAGS) \
+			-c -o $(srcFile) $(CHPL_RT_INC_DIR) $(srcFile).c \
+	;)
+
+#
+# Compile and link the Chapel runtime and the ZMQ library together into a
+# multi-locale executable. This will be the multi-locale library server.
+#
+#   - $(LIBS) contains gasnet libraries when CHPL_COMM=gasnet, and nothing
+#     otherwise.
+#   - $(CHPL_MAKE_THIRD_PARTY_LINK_ARGS) is every third party library.
+#   ^ With the exception of gasnet!
+#
+$(TMPSERVERNAME): $(CHPL_CL_OBJS)
+ifneq ($(SKIP_COMPILE_LINK),skip)
+# Compile the server bundle.
+	$(CC) $(CHPL_MAKE_BASE_CFLAGS) $(GEN_CFLAGS) $(COMP_GEN_CFLAGS) \
+		-c -o $(TMPSERVERNAME).o \
+		$(CHPLSERVERSRC) \
+		$(CHPL_RT_INC_DIR) \
+		$(CHPL_MLI_INCS) \
+		$(COMP_GEN_MLI_EXTRA_INCLUDES)
+# Link the server, the runtime, and ZMQ together.
+	$(LD) $(CHPL_MAKE_BASE_LFLAGS) \
+	        $(COMP_GEN_USER_LDFLAGS) $(GEN_LFLAGS) $(COMP_GEN_LFLAGS) \
+		$(GEN_DYNAMIC_FLAG) \
+		-o $(TMPSERVERNAME) $(TMPSERVERNAME).o $(CHPLUSEROBJ) \
+		$(CHPL_RT_LIB_DIR)/main.o $(CHPL_CL_OBJS) \
+		-L$(CHPL_RT_LIB_DIR) -lchpl $(LIBS) -lm \
+		$(CHPL_MAKE_THIRD_PARTY_LINK_ARGS) \
+		$(CHPL_ZMQ_LIB_SEARCH_PATH) \
+		-lzmq
+endif
+
+FORCE:

@@ -1,4 +1,5 @@
 /*
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
@@ -31,11 +32,23 @@
 */
 module Reflection {
 
+/* Ensure that a query about fields is applied to a class/record/union type.
+   Return that type. If it is a class type, strip any decorators/mem managers.
+*/
+private proc checkQueryT(type t) type {
+  if isClassType(t) then
+    return t: borrowed class;
+  else if isRecordType(t) || isUnionType(t) then
+    return t;
+  else
+    compilerError(t:string, " is not a class, record, or union type", 2);
+}
+
 /* Return the number of fields in a class or record as a param.
    The count of fields includes types and param fields.
  */
 proc numFields(type t) param : int
-  return __primitive("num fields", t);
+  return __primitive("num fields", checkQueryT(t));
 
 /* Get the name of the ith field in a class or record.
    Causes a compilation error if `i` is not in 1..numFields(t).
@@ -45,7 +58,7 @@ proc numFields(type t) param : int
    :returns: the name of the field, as a param string
  */
 proc getFieldName(type t, param i:int) param : string
-  return __primitive("field num to name", t, i);
+  return __primitive("field num to name", checkQueryT(t), i);
 
 // Note, since this version has a where clause, it is preferred
 // over the const ref one.
@@ -132,10 +145,49 @@ proc getField(const ref x:?t, param s: string) type
    :returns: an rvalue referring to that field.
  */
 pragma "unsafe"
+inline
 proc getField(const ref x:?t, param s:string) const ref {
   param i = __primitive("field name to num", t, s);
   if i == 0 then
     compilerError("field ", s, " not found in ", t:string);
+  return __primitive("field by num", x, i);
+}
+
+/* numImplementationFields() and getImplementationField()
+   allows querying non-record types that are implemented using records.
+   Restricting their applicability with isImplementedWithRecords()
+   prevents an internal error that currently would happen
+   when they are invoked on `int`, for example. Additional
+   types can be added to isImplementedWithRecords() as needed.
+*/
+
+pragma "no doc"
+proc isImplementedWithRecords(type t) param
+  return isRangeType(t) || isStringType(t);
+
+pragma "no doc"
+proc numImplementationFields(type t) param : int
+  where isImplementedWithRecords(t)
+  return __primitive("num fields", t);
+
+pragma "no doc"
+proc getImplementationField(const ref x:?t, param i: int) type
+  where isImplementedWithRecords(t) &&
+        isType(__primitive("field by num", x, i))
+  return __primitive("field by num", x, i);
+
+pragma "no doc"
+proc getImplementationField(const ref x:?t, param i: int) param
+  where isImplementedWithRecords(t) &&
+        isParam(__primitive("field by num", x, i))
+  return __primitive("field by num", x, i);
+
+pragma "no doc"
+pragma "unsafe"
+proc getImplementationField(const ref x:?t, param i:int) const ref {
+  if !isImplementedWithRecords(t) then
+    compilerError("an argument of the type ", t:string,
+                  " is not valid for getImplementationField()");
   return __primitive("field by num", x, i);
 }
 
@@ -176,7 +228,7 @@ proc getFieldRef(ref x:?t, param s:string) ref {
    :returns: an index `i` usable in getField, or 0 if the field was not found.
  */
 proc getFieldIndex(type t, param s:string) param : int
-  return __primitive("field name to num", t, s);
+  return __primitive("field name to num", checkQueryT(t), s);
 
 /* Returns `true` if a class or record has a field named `s`,
    or `false` otherwise.
@@ -189,17 +241,40 @@ proc getFieldIndex(type t, param s:string) param : int
 proc hasField(type t, param s:string) param : bool
   return getFieldIndex(t, s) > 0;
 
+/* Returns `true` if the given class or record's ith field
+   has been instantiated.
+
+   :arg t: a class or record type
+   :arg i: which field to query
+   :returns: `true` if the field is instantiated
+*/
+proc isFieldBound(type t, param i: int) param : bool {
+  return __primitive("is bound", checkQueryT(t),
+                     getFieldName(checkQueryT(t), i));
+}
+
+/* Returns `true` if the given class or record's field named `s`
+   has been instantiated.
+
+   :arg t: a class or record type
+   :arg s: the name of a field
+   :returns: `true` if the field is instantiated
+*/
+proc isFieldBound(type t, param s : string) param : bool {
+  return __primitive("is bound", checkQueryT(t), s);
+}
+
 /* Returns true if a function named `fname` taking no arguments
    could be called in the current scope.
    */
 proc canResolve(param fname : string) param : bool
-  return __primitive("call resolves", fname);
+  return __primitive("call and fn resolves", fname);
 
 /* Returns true if a function named `fname` taking the arguments in `args`
    could be called in the current scope.
    */
 proc canResolve(param fname : string, args ...) param : bool
-  return __primitive("call resolves", fname, (...args));
+  return __primitive("call and fn resolves", fname, (...args));
 
 // TODO -- how can this work with by-name argument passing?
 
@@ -207,26 +282,42 @@ proc canResolve(param fname : string, args ...) param : bool
    could be called on `obj` in the current scope.
    */
 proc canResolveMethod(obj, param fname : string) param : bool
-  return __primitive("method call resolves", obj, fname);
+  return __primitive("method call and fn resolves", obj, fname);
 
 /* Returns true if a method named `fname` taking the arguments in `args`
    could be called on `obj` in the current scope.
    */
 proc canResolveMethod(obj, param fname : string, args ...) param : bool
-  return __primitive("method call resolves", obj, fname, (...args));
+  return __primitive("method call and fn resolves", obj, fname, (...args));
 
 /* Returns true if a type method named `fname` taking no
    arguments could be called on type `t` in the current scope.
    */
 proc canResolveTypeMethod(type t, param fname : string) param : bool
-  return __primitive("method call resolves", t, fname);
+  return __primitive("method call and fn resolves", t, fname);
  
 /* Returns true if a type method named `fname` taking the
    arguments in `args` could be called on type `t` in the current scope.
    */
 proc canResolveTypeMethod(type t, param fname : string, args ...) param : bool
-  return __primitive("method call resolves", t, fname, (...args));
+  return __primitive("method call and fn resolves", t, fname, (...args));
 
 // TODO -- do we need a different version of can resolve with ref this?
+
+/* Returns the line number of the call to this function. */
+pragma "get line number"
+proc getLineNumber() param : int { }
+
+/* Returns the file name this function was called from. */
+pragma "get file name"
+proc getFileName() param : string { }
+
+/* Returns the name of the function this function was called from. */
+pragma "get function name"
+proc getRoutineName() param : string { }
+
+/* Returns the name of the module this function was called from. */
+pragma "get module name"
+proc getModuleName() param : string { }
 
 } // module Reflection

@@ -10,7 +10,7 @@ module M {
   use foo, Other;
 
   proc main() {
-    writeln(a + " " + b + " " + c);
+    writeln(a, " ", b, " ", c);
     writeln(d);
   }
 }

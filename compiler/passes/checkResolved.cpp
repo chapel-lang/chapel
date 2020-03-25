@@ -1,4 +1,5 @@
 /*
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -26,6 +27,7 @@
 #include "expr.h"
 #include "stmt.h"
 #include "stlUtil.h"
+#include "type.h"
 #include "TryStmt.h"
 #include "CatchStmt.h"
 
@@ -56,9 +58,24 @@ checkConstLoops() {
   }
 }
 
+static void checkForClassAssignOps(FnSymbol* fn) {
+  if (fn->getModule()->modTag == MOD_USER) {
+    if (strcmp(fn->name, "=") == 0 &&
+        fn->formals.head) {
+      ArgSymbol* formal = toArgSymbol(toDefExpr(fn->formals.head)->sym);
+      Type* formalType = formal->type->getValType();
+      if (isOwnedOrSharedOrBorrowed(formalType) ||
+          isUnmanagedClass(formalType)) {
+        USR_FATAL_CONT(fn, "Can't overload assignments for class types");
+      }
+    }
+  }
+}
+
 void
 checkResolved() {
   forv_Vec(FnSymbol, fn, gFnSymbols) {
+    checkForClassAssignOps(fn);
     checkReturnPaths(fn);
     if (fn->retType->symbol->hasFlag(FLAG_ITERATOR_RECORD) &&
         !fn->isIterator()) {
@@ -99,8 +116,17 @@ checkResolved() {
 }
 
 
-// Returns the smallest number of definitions of ret on any path through the
-// given expression.
+// This routine returns '0' if we can find a path through the given
+// expression that does not return (assign to 'ret'), halt, throw,
+// etc.  I.e., if there is a path that would constitute an error for a
+// function that was meant to return something and is not.  It returns
+// non-zero if all paths are covered, and the result _may_ indicate
+// something about the smallest number of definitions of 'ret' along
+// any path through the expression (though the behavior of throws,
+// halts, etc. may influence that number...).  In the only use-case in
+// our compiler, we are currently only relying on zero / non-zero
+// behavior and care should be taken before reading too much into the
+// non-zero value.
 static int
 isDefinedAllPaths(Expr* expr, Symbol* ret, RefSet& refs)
 {
@@ -124,6 +150,10 @@ isDefinedAllPaths(Expr* expr, Symbol* ret, RefSet& refs)
 
     if (call->isPrimitive(PRIM_RT_ERROR))
       return 1;
+
+    if (call->isPrimitive(PRIM_THROW)) {
+      return 1;
+    }
 
     if (call->isPrimitive(PRIM_MOVE) ||
         call->isPrimitive(PRIM_ASSIGN))
@@ -183,14 +213,34 @@ isDefinedAllPaths(Expr* expr, Symbol* ret, RefSet& refs)
   if (TryStmt* tryStmt = toTryStmt(expr))
   {
     int result = INT_MAX;
-    for_alist(c, tryStmt->_catches)
-      result = std::min(result, isDefinedAllPaths(c, ret, refs));
 
-    return std::min(result, isDefinedAllPaths(tryStmt->body(), ret, refs));
+    // This indicates whether or not we find a catch-all case, in
+    // which case nothing can escape us unless the individual clauses
+    // let it; if this is a try! statement, it doesn't need a
+    // catch-all case, so set it to true
+    //
+    bool foundCatchall = tryStmt->tryBang();
+    for_alist(c, tryStmt->_catches) {
+      result = std::min(result, isDefinedAllPaths(c, ret, refs));
+      if (toCatchStmt(c)->isCatchall()) {
+        foundCatchall = true;
+      }
+    }
+
+    result = std::min(result, isDefinedAllPaths(tryStmt->body(), ret, refs));
+
+    // even if the try and all catches are air-tight, if there's no
+    // catch-all, we can escape via an uncaught error, and will need
+    // for our parent statement to contain returns as well...
+    if (result == 1 && !foundCatchall) {
+      result = 0;
+    }
+    return result;
   }
 
-  if (CatchStmt* catchStmt = toCatchStmt(expr))
-    return isDefinedAllPaths(catchStmt->body(), ret, refs);
+  if (CatchStmt* catchStmt = toCatchStmt(expr)) {
+    return isDefinedAllPaths(catchStmt->bodyWithoutTest(), ret, refs);
+  }
 
   if (BlockStmt* block = toBlockStmt(expr))
   {
@@ -389,7 +439,6 @@ checkReturnPaths(FnSymbol* fn) {
       fn->retTag == RET_TYPE ||
       fn->hasFlag(FLAG_EXTERN) ||
       fn->hasFlag(FLAG_INIT_TUPLE) ||
-      fn->hasFlag(FLAG_TYPE_CONSTRUCTOR) ||
       fn->hasFlag(FLAG_AUTO_II))
     return; // No.
 
@@ -484,7 +533,8 @@ static void checkExternProcs() {
       continue;
 
     for_formals(formal, fn) {
-      if (formal->typeInfo() == dtString) {
+      if (formal->typeInfo() == dtString &&
+          !formal->hasFlag(FLAG_TYPE_VARIABLE)) {
         if (!fn->hasFlag(FLAG_INSTANTIATED_GENERIC)) {
           USR_FATAL_CONT(fn, "extern procedures should not take arguments of "
                              "type string, use c_string instead");
@@ -511,18 +561,6 @@ static void checkExportedProcs() {
   forv_Vec(FnSymbol, fn, gFnSymbols) {
     if (!fn->hasFlag(FLAG_EXPORT))
       continue;
-
-    for_formals(formal, fn) {
-      if (formal->typeInfo() == dtString) {
-        USR_FATAL_CONT(fn, "exported procedures should not take arguments of "
-                       "type string, use c_string instead");
-      }
-    }
-
-    if (fn->retType == dtString) {
-      USR_FATAL_CONT(fn, "exported procedures should not return strings, use "
-                     "c_strings instead");
-    }
 
     if (fn->retType->symbol->hasFlag(FLAG_C_ARRAY)) {
       USR_FATAL_CONT(fn, "exported procedures should not return c_array");

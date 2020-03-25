@@ -1,5 +1,5 @@
 /*
- * Copyright © 2012-2017 Inria.  All rights reserved.
+ * Copyright © 2012-2018 Inria.  All rights reserved.
  * See COPYING in top-level directory.
  */
 
@@ -19,6 +19,7 @@
 #include <fcntl.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <private/misc.h> /* for S_IRWXU */
 static inline int mkstemp(char *name)
 {
   mktemp(name);

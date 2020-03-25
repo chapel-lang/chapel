@@ -1,4 +1,5 @@
 /*
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -18,18 +19,14 @@
  */
 
 module StringCasts {
-  use ChapelStandard;
+  private use ChapelStandard;
+  private use SysCTypes;
 
   // TODO: I want to break all of these casts from string to T out into
   // T.parse(string), but we dont support methods on types yet. Ideally they
   // would use a tagged union return val as well.
 
-  //
-  // Type -- Foo.type:string
-  //
-  proc _cast(type t:string, type x)  param : string {
-    return __primitive("typeToString", x);
-  }
+  // SomeType:string or Foo.type:string is handled directly by compiler.
 
   //
   // Bool
@@ -130,7 +127,7 @@ module StringCasts {
         throw new owned IllegalArgumentError("bad cast from string '" + x + "' to " + t:string);
 
       // remove underscores everywhere but the first position
-      if localX.length >= 2 then
+      if localX.size >= 2 then
         localX = localX[1] + localX[2..].replace("_", "");
     }
 
@@ -194,7 +191,7 @@ module StringCasts {
   }
 
   inline proc _cleanupStringForRealCast(type t, ref s: string) throws {
-    var len = s.length;
+    var len = s.size;
 
     if s.isEmpty() then
       throw new owned IllegalArgumentError("bad cast from empty string to " + t: string);
@@ -231,7 +228,7 @@ module StringCasts {
     }
 
     if isErr then
-      throw new owned IllegalArgumentError("bad cast from string '" + x + "' to real(" + numBits(t) + ")");
+      throw new owned IllegalArgumentError("bad cast from string '" + x + "' to real(" + numBits(t):string + ")");
 
     return retVal;
   }
@@ -257,7 +254,7 @@ module StringCasts {
     }
 
     if isErr then
-      throw new owned IllegalArgumentError("bad cast from string '" + x + "' to imag(" + numBits(t) + ")");
+      throw new owned IllegalArgumentError("bad cast from string '" + x + "' to imag(" + numBits(t):string + ")");
 
     return retVal;
   }
@@ -302,7 +299,7 @@ module StringCasts {
     const localX = x.localize();
 
     if localX.isEmpty() then
-      throw new owned IllegalArgumentError("bad cast from empty string to complex(" + numBits(t) + ")");
+      throw new owned IllegalArgumentError("bad cast from empty string to complex(" + numBits(t):string + ")");
 
     select numBits(t) {
       when 64 do retVal = c_string_to_complex64(localX.c_str(), isErr);
@@ -311,7 +308,7 @@ module StringCasts {
     }
 
     if isErr then
-      throw new owned IllegalArgumentError("bad cast from string '" + x + "' to complex(" + numBits(t) + ")");
+      throw new owned IllegalArgumentError("bad cast from string '" + x + "' to complex(" + numBits(t):string + ")");
 
     return retVal;
   }

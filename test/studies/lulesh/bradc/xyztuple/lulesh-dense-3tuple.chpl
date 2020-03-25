@@ -34,7 +34,8 @@
 
 
 use Time,       // to get timing routines for benchmarking
-    BlockDist;  // for block-distributed arrays
+    BlockDist,  // for block-distributed arrays
+    IO;         // for file operations
 
 use luleshInit3, luleshTupleHelp;   // to get I/O version of setting up data structures
 
@@ -256,7 +257,7 @@ proc main() {
     }
     if showProgress then
       writef("time = %er, dt=%er%s\n", time, deltatime, 
-       if doTiming then ", elapsed = " + (getCurrentTime()-iterTime) 
+       if doTiming then ", elapsed = " + (getCurrentTime()-iterTime):string
                    else "");
   }
   if (cycle == maxcycles) {

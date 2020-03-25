@@ -1,4 +1,5 @@
 /*
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -17,9 +18,11 @@
  * limitations under the License.
  */
 
+private use List;
 use MasonBuild;
 use MasonHelp;
 use MasonUtils;
+use MasonExample;
 use FileSystem;
 use TOML;
 
@@ -29,12 +32,12 @@ proc masonRun(args) throws {
   var example = false;
   var release = false;
   var exec = false;
-  var execopts: [1..0] string;
+  var execopts: list(string);
 
   if args.size > 2 {
     for arg in args[2..] {
       if exec == true {
-        execopts.push_back(arg);
+        execopts.append(arg);
       }
       else if arg == '-h' || arg == '--help' {
         masonRunHelp();
@@ -65,26 +68,26 @@ proc masonRun(args) throws {
         exit(0);
       }
       else {
-        execopts.push_back(arg);
+        execopts.append(arg);
       }
     }
   }
   runProjectBinary(show, release, execopts);
 }
 
-proc runProjectBinary(show: bool, release: bool, execopts: [?d] string) throws {
+proc runProjectBinary(show: bool, release: bool, execopts: list(string)) throws {
 
   try! {
 
     const cwd = getEnv("PWD");
     const projectHome = getProjectHome(cwd);
     const toParse = open(projectHome + "/Mason.toml", iomode.r);
-    const tomlFile = new owned(parseToml(toParse));
-    const project = tomlFile["brick"]["name"].s;
+    const tomlFile = owned.create(parseToml(toParse));
+    const project = tomlFile["brick"]!["name"]!.s;
  
     // Find the Binary and execute
     if isDir(joinPath(projectHome, 'target')) {
-      var execs = ' '.join(execopts);
+      var execs = ' '.join(execopts.these());
     
       // decide which binary(release or debug) to run
       var command: string;
@@ -146,10 +149,10 @@ private proc masonBuildRun(args: [?d] string) {
     var exec = false;
     var buildExample = false;
     var updateRegistry = true;
-    var execopts: [1..0] string;  
+    var execopts: list(string);
     for arg in args[2..] {
       if exec == true {
-        execopts.push_back(arg);
+        execopts.append(arg);
       }
       else if arg == "--" {
         if example then
@@ -176,22 +179,26 @@ private proc masonBuildRun(args: [?d] string) {
       }
       else {
         // could be examples or execopts
-        execopts.push_back(arg);
+        execopts.append(arg);
       }
     }
     if example {
-      if !buildExample then execopts.push_back("--no-build");
-      if release then execopts.push_back("--release");
-      if force then execopts.push_back("--force");
-      if show then execopts.push_back("--show");
+      if !buildExample then execopts.append("--no-build");
+      if release then execopts.append("--release");
+      if force then execopts.append("--force");
+      if show then execopts.append("--show");
       masonExample(execopts);
     }
     else {
-      var buildArgs: [0..1] string = ["mason", "build"];
-      if !updateRegistry then buildArgs.push_back("--no-update");
-      if release then buildArgs.push_back("--release");
-      if force then buildArgs.push_back("--force");
-      if show then buildArgs.push_back("--show");
+      var buildArgs: list(string);
+      //var buildArgs: [0..1] string = ["mason", "build"];
+      buildArgs.append("mason");
+      buildArgs.append("build");
+      if !updateRegistry then buildArgs.append("--no-update");
+      if release then buildArgs.append("--release");
+      if force then buildArgs.append("--force");
+      if show then buildArgs.append("--show");
+
       masonBuild(buildArgs);
       runProjectBinary(show, release, execopts);
     }

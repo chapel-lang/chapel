@@ -1,9 +1,10 @@
+use Map;
+
 // strMap - map string keys to string values
-var D: domain(string),
-  strMap: [D] string;
-const a: c_string = "a";
+var strMap = new map(string, string);
+const a: string = "a";
 
-strMap[a:string] = "123";
+strMap[a] = "123";
 
-for key in strMap.domain do
+for key in strMap do
   writeln(key, " = ", strMap[key]);

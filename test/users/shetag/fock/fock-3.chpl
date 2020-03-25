@@ -39,10 +39,9 @@ proc buildjk() {
 }
 
 proc consumer() {
-  var bI, copyofbI : unmanaged blockIndices;
-  bI = t.remove();
-  while (bI.ilo != 0) {
-    copyofbI = bI;
+  var bI = t.remove();
+  while (bI!.ilo != 0) {
+    const copyofbI = bI!;
     cobegin with (ref bI) {
       buildjk_atom4(copyofbI);
       bI = t.remove();

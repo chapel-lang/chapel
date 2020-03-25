@@ -3,7 +3,7 @@ class C {
 }
 
 class D {
-  var y: borrowed C;
+  var y: borrowed C?;
 }
 
 proc foo(c: borrowed C) {
@@ -11,7 +11,7 @@ proc foo(c: borrowed C) {
 }
 
 proc foo(d: borrowed D) {
-  foo(d.y);
+  foo(d.y!);
 }
 
 proc foo(n: _nilType) {
@@ -22,7 +22,8 @@ proc main() {
   var myC = new borrowed C(x=1);
   foo(myC);
   var myD = new borrowed D();
-  myD.y = new borrowed C();
-  myD.y.x = 2;
+  var otherC = new C();
+  myD.y = otherC.borrow();
+  myD.y!.x = 2;
   foo(myD);
 }

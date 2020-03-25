@@ -1,5 +1,5 @@
 Copyright © 2009 CNRS
-Copyright © 2009-2018 Inria.  All rights reserved.
+Copyright © 2009-2019 Inria.  All rights reserved.
 Copyright © 2009-2013 Université Bordeaux
 Copyright © 2009-2011 Cisco Systems, Inc.  All rights reserved.
 
@@ -15,6 +15,27 @@ This file contains the main features as well as overviews of specific
 bug fixes (and other actions) for each version of hwloc since version
 0.9 (as initially released as "libtopology", then re-branded to "hwloc"
 in v0.9.1).
+
+
+Version 1.11.13 (also included in 2.0.4)
+---------------
+* Add support for Linux 5.3 new sysfs cpu topology files with Die information.
+* Add support for Intel v2 Extended Topology Enumeration in the x86 backend.
+* Tiles, Modules and Dies are exposed as Groups for now.
+  + HWLOC_DONT_MERGE_DIE_GROUPS=1 may be set in the environment to prevent
+    Die groups from being automatically merged with identical parent or children.
+* Ignore NUMA node information from AMD topoext in the x86 backend,
+  unless HWLOC_X86_TOPOEXT_NUMANODES=1 is set in the environment.
+* Group objects have a new "dont_merge" attribute to prevent them from
+  being automatically merged with identical parent or children.
+
+
+Version 1.11.12 (also included in 2.0.3)
+---------------
+* Fix a corner case of hwloc_topology_restrict() where children would
+  become out-of-order.
+* Fix the return length of export_xmlbuffer() functions to always
+  include the ending \0.
 
 
 Version 1.11.11 (also included in 2.0.2)

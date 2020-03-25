@@ -1,4 +1,5 @@
 /*
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -28,6 +29,7 @@ class AggregateType;
 class BaseAST;
 class Expr;
 class FnSymbol;
+class LoopStmt;
 class ModuleSymbol;
 class Symbol;
 
@@ -75,6 +77,8 @@ public:
   virtual void     exitLoopExpr   (LoopExpr*        node);
 
   virtual void     visitUseStmt     (UseStmt*           node);
+
+  virtual void     visitImportStmt  (ImportStmt*        node);
 
   virtual bool     enterBlockStmt   (BlockStmt*         node);
   virtual void     exitBlockStmt    (BlockStmt*         node);
@@ -133,6 +137,7 @@ private:
   void             write(bool spaceBefore, const char* text, bool spaceAfter);
 
   void             printBlockID(Expr* expr);
+  void             printLoopStmtDetails(LoopStmt* loop);
   void             newline();
 
   const char*      mName;           // The name of the file for the log

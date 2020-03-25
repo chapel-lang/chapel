@@ -12,11 +12,11 @@ class cPair {
 
 config type myType = rPair;
 
-proc f(p:myType) {
+proc f(p: toNilableIfClassType(myType)) {
   writeln("p = ", p);
 }
 
-var p: myType;
+var p: toNilableIfClassType(myType);
 
 f(p);
 writeln("numBits(myIdxType) = ", numBits(myIdxType));

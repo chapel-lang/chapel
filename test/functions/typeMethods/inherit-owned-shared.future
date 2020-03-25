@@ -1,6 +1,0 @@
-bug: type methods on shared/owned do not dispatch
-#13109
-
-When this issue is fixed, need to change the currently-incorrect false
-to the expected true for `(owned D).mo()` and `(shared D).ms()` in
-test/functions/typeMethods/anymanaged.good

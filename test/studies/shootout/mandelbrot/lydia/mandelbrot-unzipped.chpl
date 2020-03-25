@@ -1,3 +1,4 @@
+use IO;
 
 config const size : uint = 200;
 
@@ -7,7 +8,7 @@ proc main()
   const byteRange = 0..#bytesRequired:int(64);
   const sizeRange = 0..#size:int(64);
 
-  var bytes : [sizeRange, byteRange] uint(8);
+  var byteArr : [sizeRange, byteRange] uint(8);
 
   const limit : real = 4.0;
   const maxIter : int = 50;
@@ -43,7 +44,7 @@ proc main()
               byte_acc |= 0x01;
           }
 
-        bytes(y, bytex) = byte_acc;
+        byteArr(y, bytex) = byte_acc;
       }
     }
 
@@ -52,6 +53,6 @@ proc main()
   w.writef("P4\n%i %i\n", size, size);
 
   
-  w.write(bytes);
+  w.write(byteArr);
 }
 

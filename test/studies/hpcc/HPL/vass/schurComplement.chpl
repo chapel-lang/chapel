@@ -20,10 +20,8 @@ type indexType = int,
 // grid dimensions
 config const tl1:indexType = tlFromNLocs(1),
              tl2:indexType = tlFromNLocs(2);
-var tla: [0..#tl1, 0..#tl2] locale;
 var tld: bool;  // whether our targetLocales are all distinct
-
-setupTargetLocales();
+var tla: [0..#tl1, 0..#tl2] locale = setupTargetLocales();
 
 // automatically compute an acceptable (reqN) or desirable (factorN) size
 config const reqN = false,
@@ -52,18 +50,15 @@ const st1=1, st2=1;
 
 // 1-d descriptors for Dimensional
 const
-  bdim1 = new unmanaged BlockCyclicDim(lowIdx=st1, blockSize=blkSize, numLocales=tl1, name="D1"),
-  rdim1 = new unmanaged ReplicatedDim(tl1),
-  bdim2 = new unmanaged BlockCyclicDim(lowIdx=st2, blockSize=blkSize, numLocales=tl2, name="D2"),
-  rdim2 = new unmanaged ReplicatedDim(tl2);
+  bdim1 = new BlockCyclicDim(lowIdx=st1, blockSize=blkSize, numLocales=tl1),
+  rdim1 = new ReplicatedDim(tl1),
+  bdim2 = new BlockCyclicDim(lowIdx=st2, blockSize=blkSize, numLocales=tl2),
+  rdim2 = new ReplicatedDim(tl2);
 
 const dimdist = new dmap(new unmanaged DimensionalDist2D(tla, bdim1, bdim2, "dim"));
 
 // the distributed domain for Ab
-const AbD: domain(2, indexType)
-   dmapped dimdist
-   //DimensionalDist2D(tla, bdim1, bdim2, "dim")
-  = MatVectSpace;
+const AbD: domain(2, indexType) dmapped dimdist = MatVectSpace;
 
 // temporaries
 var Rest: domain(2, indexType) dmapped dimdist; //AbD.dist;
@@ -139,7 +134,7 @@ proc schurComplement(blk) {
   RestByBlkSize = RestLocal by (blkSize, blkSize);
   //showCurrTime("replication; Rest");
 
-  if Rest.numIndices == 0 {
+  if Rest.size == 0 {
     writeln("schurComplement: nothing to do   Rest = ", Rest);
     return;
   }
@@ -152,7 +147,7 @@ proc schurComplement(blk) {
 //        lastFullRow = Rest1end - blkSize + 1,
 //        lastFullCol = Rest2end - blkSize + 1;
 
-  reportBlocks((Rest.dim(1) by blkSize).length, (Rest.dim(2) by blkSize).length);
+  reportBlocks((Rest.dim(1) by blkSize).size, (Rest.dim(2) by blkSize).size);
 
   forall (row,col) in RestByBlkSize {
     // we have some additional stuff for debugging/tuning
@@ -255,11 +250,12 @@ proc targetLocalesIndexForAbIndex(param dim, abIx)
 /////////////////////////////////////////////////////////////////////////////
 
 proc setupTargetLocales() {
+  var tla: [0..#tl1, 0..#tl2] locale;
 //  writeln("setting up for ", tl1, "*", tl2, " locales");
-  tld = numLocales >= tla.numElements;
+  tld = numLocales >= tla.size;
   if tld {
-    if numLocales > tla.numElements then
-      writeln("UNUSED LOCALES ", numLocales - tla.numElements);
+    if numLocales > tla.size then
+      writeln("UNUSED LOCALES ", numLocales - tla.size);
     for (l,i) in zip(tla,0..) do l = Locales[i];
   } else {
 writeln("insufficient locales");
@@ -267,6 +263,7 @@ halt();
     writeln("oversubscribing Locales(0)");
     tla = Locales(0);
   }
+  return tla;
 }
 
 // interpreting numLocales
@@ -312,7 +309,7 @@ proc computeRequiredN() {
 
 //writeln("n ", nResult, "  nPrev ", nResult - multiple,
 //        "  nUnsquaredReqReal ", nUnsquaredReqReal, "  blkSize ", blkSize,
-//        "  nlocs ", tla.numElements);
+//        "  nlocs ", tla.size);
 
   // verify we computed it well
   assert(nResult > nUnsquaredReq);

@@ -9,7 +9,5 @@ on nil: LOCALE1
 PART 2
 on x: LOCALE1
 on 3+4: LOCALE2
-PART 3a
-on loc: LOCALE2
 PART 3b
 on obj: LOCALE2

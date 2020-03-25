@@ -3,7 +3,7 @@ class MyClass {
 }
 
 proc test() {
-  var x: unmanaged MyClass;
+  var x: unmanaged MyClass?;
   writeln(x);
 }
 test();

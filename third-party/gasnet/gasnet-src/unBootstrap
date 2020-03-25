@@ -21,26 +21,18 @@ rm -f Makefile.in              \
       ibv-conduit/contrib/Makefile.in \
       mpi-conduit/Makefile.in  \
       mpi-conduit/contrib/Makefile.in   \
-      mxm-conduit/Makefile.in \
-      mxm-conduit/contrib/Makefile.in \
-      psm-conduit/Makefile.in \
-      psm-conduit/contrib/Makefile.in \
-      portals4-conduit/Makefile.in  \
-      gemini-conduit/Makefile.in \
-      gemini-conduit/contrib/Makefile.in   \
       aries-conduit/Makefile.in \
       aries-conduit/contrib/Makefile.in   \
-      pami-conduit/Makefile.in \
-      pami-conduit/contrib/Makefile.in   \
       ofi-conduit/Makefile.in \
       ofi-conduit/contrib/Makefile.in   \
       smp-conduit/Makefile.in  \
       udp-conduit/Makefile.in  \
+      ucx-conduit/Makefile.in  \
+      ucx-conduit/contrib/Makefile.in \
       other/Makefile.in        \
       other/ammpi/Makefile.in  \
       other/amudp/Makefile.in  \
       other/blcr/Makefile.in \
       other/contrib/Makefile.in \
-      other/fca/Makefile.in \
       other/firehose/Makefile.in \
       tests/Makefile

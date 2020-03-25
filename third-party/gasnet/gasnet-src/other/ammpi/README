@@ -2,7 +2,7 @@ AMMPI Documentation
 ===================
 Author: Dan Bonachea
 Contact email: gasnet-devel@lbl.gov
-Home page: http://gasnet.lbl.gov/ammpi
+Home page: https://gasnet.lbl.gov/ammpi
 
 AMMPI is an implementation of the AM-2 specification over MPI-1.
 
@@ -25,9 +25,9 @@ communicator, which is strongly guaranteed by the MPI spec to isolate it from
 any other MPI communication in the application, so there's never a possibility
 of deadlock or hard-limit resource contention between the two.
 
-AMMPI is used to implement the GASNet communication system (http://gasnet.lbl.gov). 
+AMMPI is used to implement the GASNet communication system (https://gasnet.lbl.gov). 
 Further documentation about using AMMPI is available in the mpi-conduit
-documentation: http://gasnet.lbl.gov/dist/mpi-conduit/README
+documentation: https://gasnet.lbl.gov/dist/mpi-conduit/README
 
 Requirements
 ------------

@@ -6,6 +6,6 @@ if (!exists(dirToRemove)) {
   copyTree("copyToKeep", dirToRemove);
 }
 
-writeln("Pre-removal, removeMe/ exists: " + exists(dirToRemove));
+writeln("Pre-removal, removeMe/ exists: ", exists(dirToRemove));
 rmTree(dirToRemove);
-writeln("Post-removal, removeMe/ exists: " + exists(dirToRemove));
+writeln("Post-removal, removeMe/ exists: ", exists(dirToRemove));

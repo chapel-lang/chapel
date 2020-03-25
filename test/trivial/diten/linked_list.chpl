@@ -1,6 +1,6 @@
 class ll {
   type itemType;
-  var  list: unmanaged ll_entry(itemType);
+  var  list: unmanaged ll_entry(itemType)?;
 
   class a_class {
     var a: int;
@@ -14,7 +14,7 @@ class ll {
     while l != nil {
       var h = l;
 
-      l = l.next;
+      l = l!.next;
 
       delete h;
     }
@@ -30,8 +30,8 @@ class ll {
     if list != nil {
       var l = list;
 
-      e    = list.element;
-      list = list.next;
+      e    = list!.element;
+      list = list!.next;
 
       delete l;
     }
@@ -93,34 +93,34 @@ class ll {
   }
 
   proc remove_all_matching(e) {
-    var mylist = list;
-
     if list == nil then
       return;
 
+    var mylist = list!;
+
     while mylist.next != nil do
-      if mylist.next.element == e then {
+      if mylist.next!.element == e then {
         var h = mylist.next;
 
-        mylist.next = mylist.next.next;
+        mylist.next = mylist.next!.next;
 
         delete h;
       }
       else
-        mylist = mylist.next;
+        mylist = mylist.next!;
 
     // if the first element item in the list is equal to e, remove it
-    if list.element == e then {
+    if list!.element == e then {
       var h = list;
 
-      list = list.next;
+      list = list!.next;
 
       delete h;
     }
   }
 
   proc reverse() {
-    var mylist: unmanaged ll_entry(itemType);
+    var mylist: unmanaged ll_entry(itemType)?;
     var e: itemType;
 
     if list == nil then
@@ -129,9 +129,9 @@ class ll {
     while list != nil {
       var h = list;
 
-      e      = list.element;
+      e      = list!.element;
       mylist = new unmanaged ll_entry(itemType, e, mylist);
-      list   = list.next;
+      list   = list!.next;
 
       delete h;
     }
@@ -146,9 +146,9 @@ class ll {
     var mylist = list2.list;
 
     while mylist != nil {
-      add_front(mylist.element);
+      add_front(mylist!.element);
 
-      mylist = mylist.next;
+      mylist = mylist!.next;
     }
   }
 
@@ -156,9 +156,9 @@ class ll {
     var mylist = list;
 
     while mylist != nil {
-      writeln(mylist.element);
+      writeln(mylist!.element);
 
-      mylist = mylist.next;
+      mylist = mylist!.next;
     }
   }
 
@@ -169,7 +169,7 @@ class ll_entry {
   // But class nesting is not yet implemented
   type elementType;
   var element: elementType;
-  var next: unmanaged ll_entry(elementType);
+  var next: unmanaged ll_entry(elementType)?;
 }
 
 proc main(){

@@ -1,0 +1,2 @@
+shared-default-arg-nil-ref.chpl:13: error: value from coercion passed to ref formal 'opt'
+shared-default-arg-nil-ref.chpl:7: note: to function 'foo' defined here

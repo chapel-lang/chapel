@@ -42,29 +42,11 @@ on Locales[1] {
   }
 }
 
-
-// PART 3a: where EXPR is of a locale type and EXPR == nil
-// Should it execute STMT on the current locale?
-// on the locale where EXPR is stored?
-
-writeln("PART 3a");
-{
-  var loc = here;
-  on Locales[1] {
-    loc = nil;
-    on Locales[2] {
-      on loc do
-        writeln("on loc: ", here);
-    }
-  }
-}
-
-
-// PART 3b: the same except EXPR is not of a locale type.
+// PART 3: EXPR is nil
 
 writeln("PART 3b");
 {
-  var obj = new object();
+  var obj:object? = new object();
   on Locales[1] {
     obj = nil;
     on Locales[2] {

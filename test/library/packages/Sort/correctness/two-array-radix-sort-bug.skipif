@@ -1,0 +1,5 @@
+# This test runs too long for valgrind
+# Not worth customizing the problem size
+# since valgrind will test smaller problems
+# elsewhere.
+CHPL_TEST_VGRND_EXE == on

@@ -1,4 +1,5 @@
 /*
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -91,6 +92,8 @@ public:
   // The sub-classes of Stmt
   //
   virtual void   visitUseStmt        (UseStmt*           node);
+
+  virtual void   visitImportStmt     (ImportStmt*        node);
 
   virtual bool   enterBlockStmt      (BlockStmt*         node);
   virtual void   exitBlockStmt       (BlockStmt*         node);

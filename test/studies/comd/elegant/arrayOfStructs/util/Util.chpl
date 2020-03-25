@@ -1,7 +1,7 @@
-use Time;
+public use Time;
 
 use Configs;
-use Potential;
+public use Potential;
 
 record SubTimer {
   var D : domain(string);

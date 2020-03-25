@@ -1,4 +1,5 @@
 /*
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -27,6 +28,8 @@
 //
 pragma "export init"
 module PrintModuleInitOrder {
+  private use ChapelBase;
+
   config const printModuleInitOrder = false;
   pragma "print module init indent level" var moduleInitLevel = 2:int(32);
 

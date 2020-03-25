@@ -298,7 +298,7 @@ proc main() {
     }
     if showProgress then
       writef("time = %er, dt=%er, %s", time, deltatime,
-             if doTiming then ", elapsed = " + (getCurrentTime()-iterTime) +"\n"
+             if doTiming then ", elapsed = " + (getCurrentTime()-iterTime):string +"\n"
                          else "\n");
   }
   if (cycle == maxcycles) {
@@ -310,6 +310,8 @@ proc main() {
     writeln("Time/Cycle: ", (et-st)/cycle);
   }
   writeln("Number of cycles: ", cycle);
+
+  use IO;
 
   if printCoords {
     var outfile = open("coords.out", iomode.cw);
@@ -1691,5 +1693,5 @@ proc deprintatomic(title:string, x:[?D] atomic real, y:[] atomic real, z:[] atom
   for i in D do
     writef("%3i: %3.4er %3.4er %3.4er\n", 
            if use3DRepresentation then idx3DTo1D(i, D.dim(1).size) else i, 
-           x[i].peek(), y[i].peek(), z[i].peek());
+           x[i].read(), y[i].read(), z[i].read());
 }

@@ -37,12 +37,12 @@ class contain {
   }
 
   proc xxx() {
-    var something: borrowed somedata(int);
+    var something: borrowed somedata(int)?;
 
     something = new owned somedata( int, 10);
 
     for e in objs do
-       e.jam( 99, something);
+       e.jam( 99, something!);
   }
 }
 

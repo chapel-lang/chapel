@@ -14,7 +14,7 @@ class MyClass {
  */
 
 record R {
-  var borrow:borrowed MyClass;
+  var borrow:borrowed MyClass?;
 }
 var global:R;
 

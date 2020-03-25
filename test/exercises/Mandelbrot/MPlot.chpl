@@ -35,6 +35,8 @@ config const maxColor = 15;
 // system to the output file specified by the filename config const.
 //
 proc plot(NumSteps:[]) where NumSteps.rank == 2 {
+  use IO;
+
   //
   // An array mapping from the image type enum to file extensions.
   //
@@ -74,8 +76,8 @@ proc plotToFilePPM(NumSteps: [?Dom], outfile) {
   //
   // Capture the number of rows and columns in the array to be plotted
   //
-  const rows = Dom.dim(1).length,
-        cols = Dom.dim(2).length;
+  const rows = Dom.dim(1).size,
+        cols = Dom.dim(2).size;
 
   //
   // Write the image header corresponding to the file type
@@ -140,8 +142,8 @@ proc plotToFileBMP(NumSteps: [?Dom], outfile) {
   //
   // Capture the number of rows and columns in the array to be plotted
   //
-  const rows = Dom.dim(1).length,
-        cols = Dom.dim(2).length;
+  const rows = Dom.dim(1).size,
+        cols = Dom.dim(2).size;
 
   const header_size = 14;
   const dib_header_size = 40;  // always use old BITMAPINFOHEADER

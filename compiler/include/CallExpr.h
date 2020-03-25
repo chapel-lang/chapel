@@ -1,4 +1,5 @@
 /*
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -152,5 +153,17 @@ CallExpr* callChplHereFree(BaseAST* p);
 CallExpr* createCast(BaseAST* src, BaseAST* toType);
 
 FnSymbol* resolvedToTaskFun(CallExpr* call);
+
+static inline bool isEndOfStatementMarker(Expr* e) {
+  if (CallExpr* call = toCallExpr(e))
+    if (call->isPrimitive(PRIM_END_OF_STATEMENT))
+      return true;
+
+  return false;
+}
+
+// TODO: rename these
+bool isInitOrReturn(CallExpr* call, SymExpr*& lhsSe, CallExpr*& initOrCtor);
+bool isRecordInitOrReturn(CallExpr* call, SymExpr*& lhsSe, CallExpr*& initOrCtor);
 
 #endif

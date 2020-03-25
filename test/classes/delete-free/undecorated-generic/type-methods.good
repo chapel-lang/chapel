@@ -1,0 +1,45 @@
+MyClass.f()
+in f MyClass
+MyClass.g()
+in g MyClass
+
+(owned MyClass).f()
+in f owned MyClass
+(owned MyClass).g()
+in g owned MyClass
+
+(shared MyClass).f()
+in f shared MyClass
+(shared MyClass).g()
+in g shared MyClass
+
+(unmanaged MyClass).f()
+in f unmanaged MyClass
+(unmanaged MyClass).g()
+in g unmanaged MyClass
+
+(borrowed MyClass).f()
+in f borrowed MyClass
+(borrowed MyClass).g()
+in g borrowed MyClass
+
+(owned MyClass?).f()
+in f owned MyClass?
+(owned MyClass?).g()
+in g owned MyClass?
+
+(shared MyClass?).f()
+in f shared MyClass?
+(shared MyClass?).g()
+in g shared MyClass?
+
+(unmanaged MyClass?).f()
+in f unmanaged MyClass?
+(unmanaged MyClass?).g()
+in g unmanaged MyClass?
+
+(borrowed MyClass?).f()
+in f borrowed MyClass?
+(borrowed MyClass?).g()
+in g borrowed MyClass?
+

@@ -24,7 +24,7 @@
  * ---------------------------------------------------------------------------
  *
  * For more information about AMUDP, visit our home page at:
- *  http://gasnet.lbl.gov/amudp
+ *  https://gasnet.lbl.gov/amudp
  * Or send email to:
  *  gasnet-devel@lbl.gov
  *

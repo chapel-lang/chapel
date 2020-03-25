@@ -1,5 +1,5 @@
-export proc cstringDefault(x: c_string = "blah") {
-  writeln(x: string);
+export proc cstringDefault(in x: c_string = "blah") {
+  writeln(createStringWithNewBuffer(x));
 }
 
 export proc intDefault(x: int = 3) {

@@ -1,14 +1,16 @@
+use IO;
+
 class mything {
   var x:int;
   var y:int;
 
-  proc readThis(r) {
+  proc readThis(r) throws {
     r <~> x;
     r <~> new ioLiteral(" ");
     r <~> y;
   }
 
-  proc writeThis(w) {
+  proc writeThis(w) throws {
     w <~> x;
     w <~> new ioLiteral(" ");
     w <~> y;

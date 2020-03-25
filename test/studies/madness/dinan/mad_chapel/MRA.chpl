@@ -13,10 +13,10 @@
 
 use Math;
 use Tensor;
-use FTree;
+public use FTree;
 use Quadrature;
 use TwoScale;
-use AnalyticFcn;
+public use AnalyticFcn;
 
 config const verbose = false;
 config const debug   = false;
@@ -24,7 +24,7 @@ config const debug   = false;
 class Function {
     const k             = 5;    // use first k Legendre polynomials as the basis in each box
     const thresh        = 1e-5; // truncation threshold for small wavelet coefficients
-    var   f: unmanaged AFcn       = nil;  // analytic f(x) to project into the numerical represntation
+    var   f: unmanaged AFcn?       = nil;  // analytic f(x) to project into the numerical represntation
     const initial_level = 2;    // initial level of refinement
     const max_level     = 30;   // maximum level of refinement mostly as a sanity check
     var   autorefine    = true; // automatically refine during multiplication
@@ -148,7 +148,7 @@ class Function {
 
         for mu in quad_phiDom.dim(1) {
             var x  = (l + quad_x[mu]) * h;
-            var fx = f(x);
+            var fx = f!(x);
             for i in quad_phiDom.dim(2) do
                 s[i] += scale * fx * quad_phiw[mu, i];
         }
@@ -572,7 +572,7 @@ class Function {
         for i in 0..npt {
 	    // This truncation may lead to a loss of precision in the error calculation.
             // var (fval, Fval) = (truncate(f(i/npt:real)), truncate(this(i/npt:real)));
-            var (fval, Fval) = (f(i/npt:real), this(i/npt:real));
+            var (fval, Fval) = (f!(i/npt:real), this(i/npt:real));
             writef(" -- %.2dr:  F_numeric()=% .8dr  f_analytic()=% .8dr err=% .8dr%s\n",
 		   i/npt:real, truncate(Fval), truncate(fval), truncate(Fval-fval), 
 		   if abs(Fval-fval) > thresh then "  > thresh" else "");

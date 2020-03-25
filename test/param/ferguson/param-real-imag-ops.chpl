@@ -3,14 +3,14 @@
 config type t32 = real(32);
 config type t64 = real(64);
 
-param neg32:t32 = -1.0;
-param neg64:t64 = -1.0;
-param one32:t32 = 1.0;
-param one64:t64 = 1.0;
-param two32:t32 = 2.0;
-param two64:t64 = 2.0;
-param four32:t32 = 4.0;
-param four64:t64 = 4.0;
+param neg32:t32 = (-1.0):t32;
+param neg64:t64 = (-1.0):t64;
+param one32:t32 = 1.0:t32;
+param one64:t64 = 1.0:t64;
+param two32:t32 = 2.0:t32;
+param two64:t64 = 2.0:t64;
+param four32:t32 = 4.0:t32;
+param four64:t64 = 4.0:t64;
 
 proc checkYes(param arg:bool) {
   if arg == false then
@@ -41,7 +41,7 @@ checkNo(one64 != one64);
 checkNo(one32 != one64);
 checkNo(one64 != one32);
 
-if !isComplexType(t32) {
+if !isComplexType(t32) && !isImagType(t32) {
   // <
   checkYes(one32 < two32);
   checkYes(one64 < two64);

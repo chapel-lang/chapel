@@ -1,4 +1,5 @@
 /*
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
@@ -190,9 +191,6 @@ void beautify(fileinfo* origfile) {
   char* znptr;
   fileinfo* tmpfile;
 
-  mysystem(astr("# beautifying ", origfile->filename),
-           "generating comment for --print-commands option");
-
   zline = -1;
   
   openfile(origfile, "r");
@@ -275,7 +273,7 @@ void beautify(fileinfo* origfile) {
   closefile(origfile);
 
   command = astr("mv ", tmpfile->pathname, " ", origfile->pathname);
-  mysystem(command, "moving beautified file");
+  mysystem(command, "moving beautified file", false, true);
   
   if (justification.size() != 0) {
     INT_FATAL( "Parentheses or curly braces are not balanced "

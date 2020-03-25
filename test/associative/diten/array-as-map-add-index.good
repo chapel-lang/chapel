@@ -1,0 +1,1 @@
+array-as-map-add-index.chpl:4: error: halt reached - array index out of bounds: hello

@@ -17,15 +17,6 @@ loghome=/data/sea/chapel
 loghistdir=/data/sea/chapel/NightlyHistory
 logsources="\
 Nightly \
-NightlyMemLeaks \
-NightlyPerformance/bradc-lnx \
-NightlyPerformance/chap01 \
-NightlyPerformance/chap04 \
-NightlyPerformance/chap08 \
-NightlyPerformance/chap12 \
-NightlyPerformance/chapcs \
-NightlyPerformance/chapcs.comm-counts \
-NightlyPerformance/shootout \
 "
 
 # logs for "Cray hardware" configurations
@@ -33,6 +24,14 @@ loghomeCrayHW=/cray/css/users/chapelu
 logsourcesCrayHW="\
 Nightly \
 NightlyWbOnCray \
+NightlyMemLeaks \
+NightlyPerformance/chap01 \
+NightlyPerformance/chap04 \
+NightlyPerformance/chap08 \
+NightlyPerformance/chap12 \
+NightlyPerformance/chapcs \
+NightlyPerformance/chapcs.comm-counts \
+NightlyPerformance/shootout \
 "
 
 verbose=false

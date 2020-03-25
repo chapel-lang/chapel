@@ -1,8 +1,8 @@
 class C { var x : int; }
 
 record R {
-  var c : unmanaged C;
-  proc length return c.x;
+  var c : unmanaged C?;
+  proc length return c!.x;
   proc deinit() {
     writeln("destroying ", c);
     delete c;
@@ -27,6 +27,7 @@ config const earlyReturn = false;
 
 iter foo1() {
   var state = new R(new unmanaged C(0));
+  ref rstate = state;
   var r1 = new R(new unmanaged C(1));
   var r2 = new R(new unmanaged C(2));
 
@@ -34,18 +35,19 @@ iter foo1() {
 
   if earlyReturn {
     writeln("early return");
-    // destroy state, r1, r2
+    // destroy state
     return;
   }
 
   yield r2;
 
   writeln("return at end");
-  // destroy state, r1, r2
+  // destroy state
 }
 
 iter foo2() {
   var state = new R(new unmanaged C(0));
+  ref rstate = state;
 
   for i in 1..3 {
     yield new R(new unmanaged C(i));
@@ -66,6 +68,7 @@ proc makeR(i:int) {
 
 iter foo3() {
   var state = new R(new unmanaged C(0));
+  ref rstate = state;
 
   for i in 1..3 {
     yield makeR(i);
@@ -83,6 +86,7 @@ iter foo3() {
 
 iter foo4() {
   var state = new R(new unmanaged C(0));
+  ref rstate = state;
 
   for i in 1..3 {
     delete state.c;

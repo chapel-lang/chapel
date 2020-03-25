@@ -13,8 +13,10 @@ proc test() {
     }
     writeln("after sync block");
   } catch errors: TaskErrors {
-    for e in errors { 
-      writeln("Caught group error e ", e.message());
+    for e in errors {
+      if e != nil {
+        writeln("Caught group error e ", e!.message());
+      }
     }
   } catch e {
     writeln("Caught other error ", e.message());

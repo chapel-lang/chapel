@@ -1,1 +1,1 @@
--I$FFTW_DIR/include -L$FFTW_DIR/lib -M../../../release/examples/primers -lfftw3
+-sautoInitFFTW_MT=true -M../../../release/examples/primers -lfftw3_threads -lfftw3

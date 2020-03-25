@@ -1,4 +1,5 @@
 /*
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -445,6 +446,38 @@ void Expr::insertAfter(Expr* new_ast) {
   list->length++;
 }
 
+void Expr::insertAfter(Expr* e1, Expr* e2) {
+  insertAfter(e2);
+  insertAfter(e1);
+}
+void Expr::insertAfter(Expr* e1, Expr* e2, Expr* e3) {
+  insertAfter(e3);
+  insertAfter(e2);
+  insertAfter(e1);
+}
+void Expr::insertAfter(Expr* e1, Expr* e2, Expr* e3, Expr* e4) {
+  insertAfter(e4);
+  insertAfter(e3);
+  insertAfter(e2);
+  insertAfter(e1);
+}
+void Expr::insertAfter(Expr* e1, Expr* e2, Expr* e3, Expr* e4, Expr* e5) {
+  insertAfter(e5);
+  insertAfter(e4);
+  insertAfter(e3);
+  insertAfter(e2);
+  insertAfter(e1);
+}
+void Expr::insertAfter(Expr* e1, Expr* e2, Expr* e3, Expr* e4,
+                       Expr* e5, Expr* e6) {
+  insertAfter(e6);
+  insertAfter(e5);
+  insertAfter(e4);
+  insertAfter(e3);
+  insertAfter(e2);
+  insertAfter(e1);
+}
+
 
 void Expr::insertBefore(AList exprs) {
   Expr* curr = this;
@@ -534,7 +567,12 @@ void SymExpr::verify() {
     INT_FATAL(this, "SymExpr::verify %12d: var is NULL", id);
 
   if (var->defPoint) {
-    if (!var->defPoint->inTree())
+    bool isEndOfStatement = false;
+    if (CallExpr* call = toCallExpr(parentExpr))
+      if (call->isPrimitive(PRIM_END_OF_STATEMENT))
+        isEndOfStatement = true;
+
+    if (!var->defPoint->inTree() && !isEndOfStatement)
       INT_FATAL(this, "SymExpr::verify %12d:  var->defPoint is not in AST", id);
   } else {
     if (var != rootModule)

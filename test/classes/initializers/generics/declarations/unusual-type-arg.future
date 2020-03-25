@@ -1,5 +1,4 @@
-feature request: new initializer story
+semantic: do initializers affect class type construction?
 
-This test is not expected to pass until at least part of the initializers story
-is on master.  Make it a future so that Lydia can stay in step with master
-without disrupting testing overly much.
+This test creates initializers and expects these initializers
+to affect type construction for a class type.

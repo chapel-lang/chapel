@@ -32,7 +32,7 @@ config const numTasks = here.maxTaskPar;
 // prevent finer-grained interleaving of the messages themselves.
 //
 coforall tid in 0..#numTasks do
-  writeln("Hello, world! (from task " + tid + " of " + numTasks + ")");
+  writeln("Hello, world! (from task ", tid, " of ", numTasks, ")");
 
 
 //

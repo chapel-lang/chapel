@@ -1,2 +1,2 @@
-invalidMode.chpl:2: error: unresolved enumerated type symbol or call 'type iomode.q'
-invalidMode.chpl:2: note: because no functions named q found in scope
+invalidMode.chpl:4: error: unresolved enumerated type symbol or call 'type iomode.q'
+invalidMode.chpl:4: note: because no functions named q found in scope

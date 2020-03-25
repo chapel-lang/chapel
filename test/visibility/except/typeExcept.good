@@ -1,1 +1,3 @@
-typeExcept.chpl:5: error: 'foo' undeclared (first use this function)
+typeExcept.chpl:5: In function 'main':
+typeExcept.chpl:6: error: Attempt to 'new' a function or undefined symbol
+typeExcept.chpl:6: error: 'foo' undeclared (first use this function)

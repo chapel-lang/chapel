@@ -53,6 +53,7 @@ int dogets = 1;
 
 size_t min_payload;
 size_t max_payload;
+size_t max_step = 0;
 
 char *tgtmem;
 void *msgbuf;
@@ -105,8 +106,18 @@ void _print_stat(int myproc, stat_struct_t *st, const char *name, int operation)
 	}
 }
 
-/* Double payload at each iter, but include max_payload which may not be power-of-2 */
-#define NEXT_SZ(sz) (MIN(sz*2,max_payload)+(sz==max_payload))
+// Double payload at each iter, subject to max_step
+// but include max_payload which may not otherwise be visited
+#define ADVANCE(sz) do {                           \
+        int step = MIN(max_step, sz);              \
+        if (!sz) {                                 \
+          sz = 1;                                  \
+        } else if (sz < max_payload && sz+step > max_payload) { \
+          sz = max_payload;                        \
+        } else {                                   \
+          sz += step;                              \
+        }                                          \
+  } while (0)
 
 void bulk_test(int iters) {GASNET_BEGIN_FUNCTION();
     int i;
@@ -114,7 +125,7 @@ void bulk_test(int iters) {GASNET_BEGIN_FUNCTION();
     stat_struct_t stget, stput;
     size_t payload;
     
-	for (payload = min_payload; payload <= max_payload && payload > 0; payload = NEXT_SZ(payload)) {
+	for (payload = min_payload; payload <= max_payload && payload > 0; ) {
 		init_stat(&stput, payload);
 
 		BARRIER();
@@ -132,7 +143,7 @@ void bulk_test(int iters) {GASNET_BEGIN_FUNCTION();
 		BARRIER();
 
 		if (iamsender && doputs) {
-			print_stat(myproc, &stput, "put_bulk throughput", PRINT_THROUGHPUT);
+			print_stat(myproc, &stput, "PutBlocking throughput", PRINT_THROUGHPUT);
 		}	
 	
 		init_stat(&stget, payload);
@@ -150,9 +161,10 @@ void bulk_test(int iters) {GASNET_BEGIN_FUNCTION();
 		BARRIER();
 
 		if (iamsender && dogets) {
-			print_stat(myproc, &stget, "get_bulk throughput", PRINT_THROUGHPUT);
+			print_stat(myproc, &stget, "GetBlocking throughput", PRINT_THROUGHPUT);
 		}	
 
+                ADVANCE(payload);
 	}
 
 }
@@ -163,7 +175,7 @@ void bulk_test_nbi(int iters) {GASNET_BEGIN_FUNCTION();
     stat_struct_t stget, stput;
     size_t payload;
     
-	for (payload = min_payload; payload <= max_payload && payload > 0; payload = NEXT_SZ(payload)) {
+	for (payload = min_payload; payload <= max_payload && payload > 0; ) {
 		init_stat(&stput, payload);
 
 		BARRIER();
@@ -182,7 +194,7 @@ void bulk_test_nbi(int iters) {GASNET_BEGIN_FUNCTION();
 		BARRIER();
 
 		if (iamsender && doputs) {
-			print_stat(myproc, &stput, "put_nbi throughput", PRINT_THROUGHPUT);
+			print_stat(myproc, &stput, "PutNBI+DEFER throughput", PRINT_THROUGHPUT);
 		}	
 	
 		init_stat(&stget, payload);
@@ -201,9 +213,10 @@ void bulk_test_nbi(int iters) {GASNET_BEGIN_FUNCTION();
 		BARRIER();
 
 		if (iamsender && dogets) {
-			print_stat(myproc, &stget, "get_nbi throughput", PRINT_THROUGHPUT);
+			print_stat(myproc, &stget, "GetNBI throughput", PRINT_THROUGHPUT);
 		}	
 
+                ADVANCE(payload);
 	}
 
 }
@@ -217,7 +230,7 @@ void bulk_test_nb(int iters) {GASNET_BEGIN_FUNCTION();
     
 	events = (gex_Event_t *) test_malloc(sizeof(gex_Event_t) * iters);
 
-	for (payload = min_payload; payload <= max_payload && payload > 0; payload = NEXT_SZ(payload)) {
+	for (payload = min_payload; payload <= max_payload && payload > 0; ) {
 		init_stat(&stput, payload);
 
 		BARRIER();
@@ -236,7 +249,7 @@ void bulk_test_nb(int iters) {GASNET_BEGIN_FUNCTION();
 		BARRIER();
        
 		if (iamsender && doputs) {
-			print_stat(myproc, &stput, "put_nb_bulk throughput", PRINT_THROUGHPUT);
+			print_stat(myproc, &stput, "PutNB+DEFER throughput", PRINT_THROUGHPUT);
 		}	
 	
 		init_stat(&stget, payload);
@@ -255,9 +268,10 @@ void bulk_test_nb(int iters) {GASNET_BEGIN_FUNCTION();
 		BARRIER();
 
 		if (iamsender && dogets) {
-			print_stat(myproc, &stget, "get_nb throughput", PRINT_THROUGHPUT);
+			print_stat(myproc, &stget, "GetNB throughput", PRINT_THROUGHPUT);
 		}	
 
+                ADVANCE(payload);
 	}
 
 	test_free(events);
@@ -309,6 +323,10 @@ int main(int argc, char **argv)
       } else if (!strcmp(argv[arg], "-s")) {
         skipwarmup = 1;
         ++arg;
+      } else if (!strcmp(argv[arg], "-max-step")) {
+        ++arg;
+        if (argc > arg) { max_step = atoi(argv[arg]); arg++; }
+        else help = 1;
       } else if (argv[arg][0] == '-') {
         help = 1;
         ++arg;
@@ -321,6 +339,8 @@ int main(int argc, char **argv)
     if (!maxsz) maxsz = 2*1024*1024; /* 2 MB default */
     if (argc > arg) { TEST_SECTION_PARSE(argv[arg]); arg++; }
 
+    if (!max_step) max_step = maxsz;
+
     /* get SPMD info (needed for segment size) */
     myproc = gex_TM_QueryRank(myteam);
     numprocs = gex_TM_QuerySize(myteam);
@@ -331,14 +351,16 @@ int main(int argc, char **argv)
     GASNET_Safe(gex_Segment_Attach(&mysegment, myteam, TEST_SEGSZ_REQUEST));
     test_init("testlarge",1, "[options] (iters) (maxsz) (test_sections)\n"
                "  The '-in' or '-out' option selects whether the initiator-side\n"
-               "   memory is in the GASNet segment or not (default is not).\n"
+               "   memory is in the GASNet segment or not (default is 'in').\n"
                "  The -p/-g option selects puts only or gets only (default is both).\n"
                "  The -s option skips warm-up iterations\n"
                "  The -m option enables MB/sec units for bandwidth output (MB=2^20 bytes).\n"
                "  The -a option enables full-duplex mode, where all nodes send.\n"
                "  The -c option enables cross-machine pairing, default is nearest neighbor.\n"
                "  The -f option enables 'first/last' mode, where the first/last\n"
-               "   nodes communicate with each other, while all other nodes sit idle.");
+               "   nodes communicate with each other, while all other nodes sit idle.\n"
+               "  The '-max-step N' option selects the maximum step between transfer sizes,\n"
+               "    which by default advance by doubling until maxsz is reached.");
     if (help || argc > arg) test_usage();
     
     min_payload = 16;

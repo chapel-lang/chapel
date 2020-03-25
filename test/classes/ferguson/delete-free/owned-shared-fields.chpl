@@ -8,15 +8,15 @@ class MyClass {
 }
 
 record R1 {
-  var fo:owned MyClass;
-  var fs:shared MyClass;
+  var fo:owned MyClass?;
+  var fs:shared MyClass?;
   proc init() {
   }
 }
 
 record R2 {
-  var fo:owned MyClass = new owned(nil:unmanaged MyClass);
-  var fs:shared MyClass = new shared(nil:unmanaged MyClass);
+  var fo:owned MyClass? = nil;
+  var fs:shared MyClass? = nil;
   proc init() {
   }
 }
@@ -25,31 +25,31 @@ record R3 {
   var fo:owned MyClass;
   var fs:shared MyClass;
   proc init(a:unmanaged MyClass, b:unmanaged MyClass) {
-    fo = new owned(a);
-    fs = new shared(b);
+    fo = owned.create(a);
+    fs = shared.create(b);
   }
 }
 
 record R4 {
-  var fo:owned MyClass;
-  var fs:shared MyClass;
+  var fo:owned MyClass?;
+  var fs:shared MyClass?;
   proc init(a:unmanaged MyClass, b:unmanaged MyClass) {
     this.complete();
-    fo = new owned(a);
-    fs = new shared(b);
+    fo = owned.create(a);
+    fs = shared.create(b);
   }
 }
 
 class C1 {
-  var fo:owned MyClass;
-  var fs:shared MyClass;
+  var fo:owned MyClass?;
+  var fs:shared MyClass?;
   proc init() {
   }
 }
 
 class C2 {
-  var fo:owned MyClass = new owned(nil:unmanaged MyClass);
-  var fs:shared MyClass = new shared(nil:unmanaged MyClass);
+  var fo:owned MyClass? = nil;
+  var fs:shared MyClass? = nil;
   proc init() {
   }
 }
@@ -58,8 +58,8 @@ class C3 {
   var fo:owned MyClass;
   var fs:shared MyClass;
   proc init(a:unmanaged MyClass, b:unmanaged MyClass) {
-    fo = new owned(a);
-    fs = new shared(b);
+    fo = owned.create(a);
+    fs = shared.create(b);
   }
 }
 
@@ -68,8 +68,8 @@ class C4 {
   var fs:shared MyClass;
   proc init(a:unmanaged MyClass, b:unmanaged MyClass) {
     super.init();
-    fo = new owned(a);
-    fs = new shared(b);
+    fo = owned.create(a);
+    fs = shared.create(b);
   }
 }
 

@@ -1,9 +1,11 @@
+use SysCTypes;
+
   /*forall i in 1..4 {
     writeln("This should be a chunk: {", "\n a", "\n b", "\n}");
   }
 
   record MyThing {
-    proc writeThis(w:Writer) {
+    proc writeThis(w:Writer) throws {
       w.writeln("This should be a chunk: {");
       w.writeln(" a");
       w.writeln(" b");

@@ -1,4 +1,5 @@
 /*
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -27,6 +28,8 @@
   Address Space Programming Models*, October 2011.
 */
 module DynamicIters {
+
+  private use ChapelLocks;
 
 /*
    Toggle debugging output.
@@ -79,7 +82,7 @@ where tag == iterKind.leader
   assert(chunkSize > 0); // caller's responsibility
 
   // # of tasks the range can fill. (fast) ceil so all work is represented
-  const chunkTasks = divceilpos(c.length, chunkSize): int;
+  const chunkTasks = divceilpos(c.size, chunkSize): int;
 
   // Check if the number of tasks is 0, in that case it returns a default value
   const nTasks = min(chunkTasks, defaultNumTasks(numTasks));
@@ -262,7 +265,7 @@ iter guided(param tag:iterKind, c:range(?), numTasks:int=0)
 where tag == iterKind.leader
 {
   // Check if the number of tasks is 0, in that case it returns a default value
-  const nTasks=min(c.length, defaultNumTasks(numTasks));
+  const nTasks=min(c.size, defaultNumTasks(numTasks));
   type rType=c.type;
   var remain:rType = densify(c,c);
   // If the number of tasks is insufficient, yield in serial
@@ -281,7 +284,7 @@ where tag == iterKind.leader
       while undone.read() do {
         // There is local work in remain(tid)
         const current:rType=adaptSplit(remain, factor, undone, lock);
-        if current.length !=0 then {
+        if current.size !=0 then {
           if debugDynamicIters then
             writeln("Parallel guided Iterator. Working at tid ", tid, " with range ", unDensify(current,c), " yielded as ", current);
           yield (current,);
@@ -466,7 +469,7 @@ where tag == iterKind.leader
     compilerError("methodStealing value must be between 0 and 2");*/
 
   // Check if the number of tasks is 0, in that case it returns a default value
-  const nTasks=min(c.length, defaultNumTasks(numTasks));
+  const nTasks=min(c.size, defaultNumTasks(numTasks));
   type rType=c.type;
 
   // If the number of tasks is insufficient, yield in serial
@@ -497,10 +500,10 @@ where tag == iterKind.leader
       // Step 1: Initial range per Thread/Task
 
       // Initial Local range in localWork[tid]
-      const chunkSize = c.length/nTasks;
+      const chunkSize = c.size/nTasks;
       localWork[tid]=
       if tid==nTasks-1 then
-        r#(chunkSize*(nTasks-1)-r.length)
+        r#(chunkSize*(nTasks-1)-r.size)
       else
         (r+tid*chunkSize)#chunkSize;
       barrier.add(1);
@@ -517,7 +520,7 @@ where tag == iterKind.leader
         // There is local work
         // The current range we get after splitting locally
         const zeroBasedIters:rType=adaptSplit(localWork[tid], factorSteal, moreLocalWork[tid], locks[tid]);
-        if zeroBasedIters.length !=0 then {
+        if zeroBasedIters.size !=0 then {
           if debugDynamicIters then
             writeln("Parallel adaptive Iterator. Working locally at tid ", tid, " with range yielded as ", zeroBasedIters);
           yield (zeroBasedIters,);
@@ -540,7 +543,7 @@ where tag == iterKind.leader
           if moreLocalWork[victim] then {
             // There is work in victim
             const zeroBasedIters2:rType=adaptSplit(localWork[victim], factorSteal, moreLocalWork[victim], locks[victim]);
-            if zeroBasedIters2.length !=0 then {
+            if zeroBasedIters2.size !=0 then {
               if debugDynamicIters then
                 writeln("Range stolen at victim ", victim," yielded as ", zeroBasedIters2," by tid ", tid);
               yield (zeroBasedIters2,);
@@ -553,7 +556,7 @@ where tag == iterKind.leader
             // There is work in victim
             const zeroBasedIters2:rType=adaptSplit(localWork[victim], factorSteal, moreLocalWork[victim], locks[victim], methodStealing==Method.WholeTail);
                                           //after splitting from a victim range
-            if zeroBasedIters2.length !=0 then {
+            if zeroBasedIters2.size !=0 then {
               if debugDynamicIters then
                 writeln("Range stolen at victim ", victim," yielded as ", zeroBasedIters2," by tid ", tid);
               yield (zeroBasedIters2,);
@@ -691,7 +694,7 @@ private proc defaultNumTasks(nTasks:int)
       dnTasks = dataParTasksPerLocale;
 
     if nTasks < 0 then
-      warning("'numTasks' < 0, defaulting to numTasks=" + dnTasks);
+      warning("'numTasks' < 0, defaulting to numTasks=", dnTasks);
   }
   return dnTasks;
 }
@@ -699,12 +702,12 @@ private proc defaultNumTasks(nTasks:int)
 private proc adaptSplit(ref rangeToSplit:range(?), splitFactor:int, ref itLeft, lock:chpl_LocalSpinlock, splitTail:bool=false)
 {
   type rType=rangeToSplit.type;
-  type lenType=rangeToSplit.length.type;
+  type lenType=rangeToSplit.size.type;
   var totLen, size:lenType;
   const profThreshold=1;
 
   lock.lock();
-  totLen=rangeToSplit.length;
+  totLen=rangeToSplit.size;
   if totLen > profThreshold then
     size=max(totLen/splitFactor, profThreshold);
   else {

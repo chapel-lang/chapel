@@ -13,12 +13,12 @@ proc callin(in x: unmanaged pair) {
 }
 
 
-proc callout(out x: unmanaged pair) {
+proc callout(out x: unmanaged pair?) {
   writeln("in callout, x ought to be nil");
   x = new unmanaged pair();
-  x.a = 12;
-  x.b = 4.5;
-  writeln("re-assigned to be new instance: ", x.a, " ", x.b);
+  x!.a = 12;
+  x!.b = 4.5;
+  writeln("re-assigned to be new instance: ", x!.a, " ", x!.b);
 }
 
 
@@ -50,9 +50,12 @@ proc main() {
   writeln("back at callsite, a is: ", a.a, " ", a.b);
   writeln();
 
-  callout(a);
-  writeln("back at callsite, a is: ", a.a, " ", a.b);
-  writeln();
+  {
+    var aa: unmanaged pair? = a;
+    callout(aa);
+    writeln("back at callsite, a is: ", aa!.a, " ", aa!.b);
+    writeln();
+  }
 
   callinout(a);
   writeln("back at callsite, a is: ", a.a, " ", a.b);

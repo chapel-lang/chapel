@@ -7,7 +7,7 @@ var generalString = (1, "hello", 3.1+4i);
 
 writeln("Plus");
 writeln(integral1 + general1);
-writeln(general1 + generalString);
+//writeln(general1 + generalString);
 
 writeln();
 writeln("Unary Plus");

@@ -5,7 +5,7 @@ class blockIndices {
 
 class taskpool {
   const poolSize;
-  var taskarr : [0..poolSize-1] sync unmanaged blockIndices; 
+  var taskarr : [0..poolSize-1] sync unmanaged blockIndices?;
   var head, tail : sync int = 0;
 
   proc add(bI) {

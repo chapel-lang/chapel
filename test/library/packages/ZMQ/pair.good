@@ -1,0 +1,5 @@
+val = 546.0
+val = D
+val = The quick brown fox...jumps over the lazy dog.
+val = The quick ÿÿÿ brown fox...jumps over the ÿÿÿ non-UTF8 bytes.
+val = (a = 84, b = 42.0, c = HELLO, d = (a = 8.0 - 4.0i, b = Good Bye))

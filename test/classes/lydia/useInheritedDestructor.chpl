@@ -4,7 +4,7 @@ class storage {
 
 class A {
   var stored: unmanaged storage = new unmanaged storage();
-  var uninit: unmanaged storage;
+  var uninit: unmanaged storage?;
 
   proc deinit() {
     delete stored;

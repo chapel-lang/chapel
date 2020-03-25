@@ -1,7 +1,7 @@
 class Node {
   type t;
   var data:t;
-  var next: borrowed Node(t);
+  var next: borrowed Node(t)?;
   proc init(type t) {
     this.t = t;
     this.next = nil;
@@ -16,23 +16,20 @@ class Node {
 config const n = 5;
 
 proc test1() {
-  var nodes:[1..n] unmanaged Node(int);
-
-  for i in 1..n {
-    nodes[i] = new unmanaged Node(i);
-  }
+  var nodes:[1..n] unmanaged Node(int) =
+    for i in 1..n do new unmanaged Node(i);
 
   var head:borrowed Node(int) = nodes[1];
-  var current = head;
+  var current: borrowed Node(int)? = head;
   for i in 1..n-1 {
-    current.next = nodes[i+1];
-    current      = current.next;
+    current!.next = nodes[i+1];
+    current       = current!.next;
   }
 
   current = head;
   while current {
-    var ptr = current;
-    current = current.next;
+    var ptr = current!;
+    current = current!.next;
     writeln(ptr.data);
   }
   

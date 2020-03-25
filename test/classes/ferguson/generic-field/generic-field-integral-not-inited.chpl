@@ -4,7 +4,7 @@ class GenericClass {
 
 
 proc test() {
-  var x:borrowed GenericClass(int);
+  var x:borrowed GenericClass(int)?;
 
   writeln(x.type:string, " ", x);
 }

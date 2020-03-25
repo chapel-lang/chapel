@@ -79,8 +79,8 @@ proc main() {
   //
   const MatVectSpace: domain(2)
     dmapped DimensionalDist2D(targetLocales,
-                              new unmanaged BlockCyclicDim(gridRows, lowIdx=1, blkSize),
-                              new unmanaged BlockCyclicDim(gridCols, lowIdx=1, blkSize))
+                              new BlockCyclicDim(gridRows, lowIdx=1, blkSize),
+                              new BlockCyclicDim(gridCols, lowIdx=1, blkSize))
                     = {1..n, 1..n+1},
         MatrixSpace = MatVectSpace[.., ..n];
 
@@ -155,7 +155,7 @@ proc LUFactorize(n: int, Ab: [?AbD] elemType,
     //
     // update trailing submatrix (if any)
     //
-    if br.numIndices > 0 then
+    if br.size > 0 then
       schurComplement(Ab, bl, tr, br);
   }
 }
@@ -218,8 +218,8 @@ proc schurComplement(Ab: [?AbD] elemType, AD: domain, BD: domain, Rest: domain) 
 proc replicateD1(Ab, BD) {
   const replBD = {1..blkSize, 1..n+1}
     dmapped DimensionalDist2D(targetLocales,
-                              new unmanaged ReplicatedDim(gridRows),
-                              new unmanaged BlockCyclicDim(gridCols, lowIdx=1, blkSize));
+                              new ReplicatedDim(gridRows),
+                              new BlockCyclicDim(gridCols, lowIdx=1, blkSize));
   var replB: [replBD] elemType;
 
   coforall dest in targetLocales[.., 0] do
@@ -235,8 +235,8 @@ proc replicateD1(Ab, BD) {
 proc replicateD2(Ab, AD) {
   const replAD = {1..n, 1..blkSize}
     dmapped DimensionalDist2D(targetLocales,
-                              new unmanaged BlockCyclicDim(gridRows, lowIdx=1, blkSize),
-                              new unmanaged ReplicatedDim(gridCols));
+                              new BlockCyclicDim(gridRows, lowIdx=1, blkSize),
+                              new ReplicatedDim(gridCols));
   var replA: [replAD] elemType;
 
   coforall dest in targetLocales[0, ..] do
@@ -259,7 +259,7 @@ proc panelSolve(Ab: [] elemType,
     const col = panel[k.., k..k];
     
     // If there are no rows below the current column return
-    if col.numIndices == 0 then return;
+    if col.size == 0 then return;
     
     // Find the pivot, the element with the largest absolute value.
     const (_, (pivotRow, _)) = maxloc reduce zip(abs(Ab(col)), col);

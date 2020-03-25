@@ -22,7 +22,7 @@ use nightlysubs;
 # Mailing lists.
 $failuremail = "chapel-test-results-regressions\@lists.sourceforge.net chapel_cronmail\@cray.com";
 $allmail = "chapel-test-results-all\@lists.sourceforge.net chapel_cronmail_all\@cray.com";
-$replymail = "chapel-developers\@lists.sourceforge.net";
+$replymail = "";
 
 $valgrind = 0;
 $interpret = 0;
@@ -62,6 +62,7 @@ $startdate = "-1";
 $numtrials = "";
 $cronrecipient = "";
 $junit_xml = 0;
+$mason_build = 0;
 
 while (@ARGV) {
     $flag = shift @ARGV;
@@ -146,6 +147,8 @@ while (@ARGV) {
         $junit_xml = 1;
     } elsif ($flag eq "-asserts") {
         $asserts = 1;
+    } elsif ($flag eq "-mason") {
+        $mason_build = 1;
     } else {
         $printusage = 1;
         last;
@@ -197,6 +200,7 @@ if ($printusage == 1) {
     print "\t-hellos                        : run the release/examples/hello*.chpl tests only\n";
     print "\t-junit-xml                     : create jUnit XML style report (default is \"on\" in Jenkins environment)\n";
     print "\t-llvm                          : run tests using --llvm\n";
+    print "\t-mason                         : build mason before running tests\n";
     print "\t-memleaks <log>                : run memleaks tests\n";
     print "\t-multilocale                   : run multilocale tests only\n";
     print "\t-no-buildcheck                 : do not run `make check` before running tests\n";
@@ -289,7 +293,7 @@ if ($perfConfigName eq "") {
 
 if ($cronlogdir eq "") {
     if ($performance == 1) {
-        $cronlogdir = "/data/sea/chapel/NightlyPerformance/$perfConfigName";
+        $cronlogdir = "/cray/css/users/chapelu/NightlyPerformance/$perfConfigName";
     } else {
         $cronlogdir = "/data/sea/chapel/Nightly";
     }
@@ -328,7 +332,7 @@ if ($memleaks ne "") {
     if ($debug == 1 && $memleaksdir eq "") {
         $memleaksdir = $logdir;
     } elsif ($memleaksdir eq "") {
-        $memleaksdir = "/data/sea/chapel/NightlyMemLeaks";
+        $memleaksdir = "/cray/css/users/chapelu/NightlyMemLeaks";
     }
 
     unless(-d $memleaksdir) {
@@ -389,7 +393,12 @@ if ($mailer eq "") {
     $chplsendemail = "$chplhomedir/util/test/send_email.py";
     `$chplsendemail --help >/dev/null 2>&1`;
     if ($? == 0) {
-        $mailer = "$chplsendemail --header=Reply-To=$replymail,Precedence=bulk";
+        $header = "";
+        if ($replymail ne "") {
+          $header = "Reply-To=$replymail,";
+        }
+        $header .= "Precedence=bulk";
+        $mailer = "$chplsendemail --header=$header";
     } else {
         print "[Error: send_email.py failed to run. Defaulting to 'mail'.]\n";
         $mailer = "mail";
@@ -550,6 +559,11 @@ if ($makestat != 0) {
 print "Making modules\n";
 $makestat = mysystem("cd $chplhomedir && $make -j$num_procs $make_vars_opt modules", "making chapel modules", 1, 1);
 
+# Build mason
+if ($mason_build == 1) {
+  print "Making mason\n";
+  mysystem("cd $chplhomedir && $make -j$num_procs mason", "making mason", 1, 1);
+}
 
 #
 # run tests
@@ -831,18 +845,24 @@ if ($runtests == 0) {
 # analyze memory leaks tests
 #
     if (!($memleaks eq "")) {
-        mysystem("$chplhomedir/util/devel/analyzeMemLeaksLog $basetmpdir/$memleaks > $memleaksdir/$memleaks");
+        mysystem("$chplhomedir/util/devel/analyzeMemLeaksLog $basetmpdir/$memleaks > $memleaksdir/$memleaks", "analyzeMemLeaksLog", 1, 0, 0);
 
         # Update the memory leaks status for performance testing runs to
         #  generate graphs for the memory leaks data
         #
         # This is not ideal (we may be a day behind depending on when
-        #  the tests finish), but it good enough for now.
+        #  the tests finish), but it is good enough for now.
+        $memleaksmode = "memleaks";
         if ($examples == 0) {
-            mysystem("cd $testdir && cp $memleaksdir/$memleaks ./memleaksfull.exec.out.tmp && $chplhomedir/util/test/computePerfStats memleaksfull $memleaksdir");
-        } else {
-            mysystem("cd $testdir && cp $memleaksdir/$memleaks ./memleaks.exec.out.tmp && $chplhomedir/util/test/computePerfStats memleaks $memleaksdir");
+            if ($multilocale == 0) {
+              $memleaksmode = "memleaksfull";
+            }
+            else {
+              $memleaksmode = "ml-memleaksfull";
+            }
         }
+
+        mysystem("cd $testdir && cp $memleaksdir/$memleaks ./$memleaksmode.exec.out.tmp && $chplhomedir/util/test/computePerfStats $memleaksmode $memleaksdir", "memLeak computePerfStats", 1, 0, 0);
     }
 }
 

@@ -1,4 +1,4 @@
-use SysBasic;
+use SysBasic, SysCTypes;
 
 /*********** Extern declarations **********/
 extern type glob_t;
@@ -45,10 +45,10 @@ iter my_wordexp(pattern:string, recursive:bool = false, flags:int = 0, directory
   for i in 0..wordexpNum -1 {
     tx = wordexp_index(glb, i);
     if recursive && chpl_isdir(tx) == 1 {
-      const pth = tx:string + "/";
+      const pth = createStringWithNewBuffer(tx)+ "/";
       for fl in my_wordexp(pattern, recursive, flags, pth) do
         yield fl;
-    } else yield tx:string;
+    } else yield createStringWithNewBuffer(tx);
   }
 
   wordfree(glb);
@@ -65,7 +65,7 @@ iter my_wordexp(param tag:iterKind, pattern:string, recursive:bool = false,
   while (true) {
 
     // No more work left to accomplish
-    if (dirBuff.numIndices == 0) then
+    if (dirBuff.size == 0) then
       break;
 
     //
@@ -107,10 +107,10 @@ iter my_glob(pattern:string, recursive:bool = false, flags:int = 0, directory:st
   for i in 0..globNum - 1 {
     tx = glob_index(glb, i);
     if recursive && chpl_isdir(tx) == 1 {
-      const pth = tx:string + "/";
+      const pth = createStringWithNewBuffer(tx)+ "/";
       for fl in my_glob(pattern, recursive, flags, pth) do
         yield fl;
-    } else yield tx:string;
+    } else yield createStringWithNewBuffer(tx);
   }
 
   globfree(glb);
@@ -128,7 +128,7 @@ iter my_glob(param tag:iterKind, pattern:string, recursive:bool = false,
   while (true) {
 
     // No more work left to accomplish
-    if (dirBuff.numIndices == 0) then
+    if (dirBuff.size == 0) then
       break;
 
     //

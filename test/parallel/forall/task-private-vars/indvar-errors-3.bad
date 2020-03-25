@@ -1,3 +1,4 @@
+indvar-errors-3.chpl:4: In function 'main':
 indvar-errors-3.chpl:6: error: 'idx1' undeclared (first use this function)
 indvar-errors-3.chpl:7: error: 'idx2' undeclared (first use this function)
 indvar-errors-3.chpl:8: error: 'idx3' undeclared (first use this function)

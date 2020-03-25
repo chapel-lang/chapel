@@ -1,0 +1,5 @@
+perfkeys: domDeinit:, domDeinit:, domDeinit:, domDeinit:
+graphkeys: blockDomDeinit:, cyclicDomDeinit:, blockCyclicDomDeinit:, stencilDomDeinit:
+files: distCreate-tiny-block.dat, distCreate-tiny-cyclic.dat, distCreate-tiny-blockCyc.dat, distCreate-tiny-stencil.dat
+ylabel: Time (seconds)
+graphtitle: Destroying distributed domains

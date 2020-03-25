@@ -1,4 +1,5 @@
 /*
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -40,6 +41,7 @@ ForallStmt::ForallStmt(BlockStmt* body):
   fAllowSerialIterator(false),
   fRequireSerialIterator(false),
   fVectorizationHazard(false),
+  fIsForallExpr(false),
   fContinueLabel(NULL),
   fErrorHandlerLabel(NULL),
   fRecIterIRdef(NULL),
@@ -71,6 +73,7 @@ ForallStmt* ForallStmt::copyInner(SymbolMap* map) {
   _this->fAllowSerialIterator   = fAllowSerialIterator;
   _this->fRequireSerialIterator = fRequireSerialIterator;
   _this->fVectorizationHazard   = fVectorizationHazard;
+  _this->fIsForallExpr          = fIsForallExpr;
   // todo: fContinueLabel, fErrorHandlerLabel
 
   _this->fRecIterIRdef        = COPY_INT(fRecIterIRdef);
@@ -615,6 +618,7 @@ ForallStmt* ForallStmt::fromReduceExpr(VarSymbol* idx, SymExpr* dataExpr,
   result->fZippered   = zippered;
   result->fFromReduce = true;
   result->fAllowSerialIterator = true;
+  result->fIsForallExpr = true;
   result->fRequireSerialIterator = requireSerial;
   result->shadowVariables().insertAtTail(new DefExpr(svar));
 
@@ -640,6 +644,10 @@ bool ForallStmt::hasVectorizationHazard() const {
 
 void ForallStmt::setHasVectorizationHazard(bool v) {
   fVectorizationHazard = v;
+}
+
+bool ForallStmt::isForallExpr() const {
+  return fIsForallExpr;
 }
 
 static void gatherFollowerLoopBodies(BlockStmt* block,

@@ -6,6 +6,7 @@
  */
 
 use Random, Time;                  // get a RNG and sleep() to introduce noise
+use IO;                            // allow use of stderr
 
 config const numProducers = 1,     // the number of producers to create
              numConsumers = 1,     // the number of consumers to create
@@ -181,7 +182,7 @@ proc consumer(b: BoundedBuffer, cid: int) {
 //     ... put your code to initialize the atomics here ...
 //   }
 //
-// (2) read(), write() and compareExchange() are going to be the most
+// (2) read(), write() and compareAndSwap() are going to be the most
 // useful methods on atomics for this exercise.  If you haven't worked
 // with atomics before, refer to the online documentation or ask one
 // of the helpers for a hint:

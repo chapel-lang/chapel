@@ -1,4 +1,5 @@
 /*
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
@@ -41,6 +42,7 @@ void parseArgs(chpl_bool isLauncher, chpl_parseArgsMode_t mode,
 int32_t getArgNumLocales(void);
 int32_t chpl_baseUniqueLocaleID(int32_t r);
 int _runInGDB(void);
+int _runInLLDB(void);
 int chpl_specify_locales_error(void);
 
 //

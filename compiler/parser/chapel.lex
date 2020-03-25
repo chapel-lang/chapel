@@ -1,4 +1,5 @@
 /*
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -61,10 +62,11 @@
 // And redefine it to call our exit routine:
 #define exit(x) clean_exit(x)
 
-static int  processIdentifier(yyscan_t scanner);
+static int  processIdentifier(yyscan_t scanner, bool queried);
 static int  processToken(yyscan_t scanner, int t);
 static int  processStringLiteral(yyscan_t scanner, const char* q, int type);
-static int  processMultilineStringLiteral(yyscan_t scanner, const char* q);
+static int  processMultilineStringLiteral(yyscan_t scanner, const char* q,
+                                          int type);
 
 static int  processExtern(yyscan_t scanner);
 static int  processExternCode(yyscan_t scanner);
@@ -88,6 +90,7 @@ hexDigit         [0-9a-fA-F]
 letter           [_a-zA-Z]
 
 ident            {letter}({letter}|{digit}|"$")*
+queriedIdent     \?{ident}
 
 binaryLiteral    0[bB]{bit}(_|{bit})*
 octalLiteral     0[oO]{octDigit}(_|{octDigit})*
@@ -125,6 +128,7 @@ bool             return processToken(yyscanner, TBOOL);
 borrowed         return processToken(yyscanner, TBORROWED);
 break            return processToken(yyscanner, TBREAK);
 by               return processToken(yyscanner, TBY);
+bytes            return processToken(yyscanner, TBYTES);
 catch            return processToken(yyscanner, TCATCH);
 class            return processToken(yyscanner, TCLASS);
 cobegin          return processToken(yyscanner, TCOBEGIN);
@@ -149,7 +153,9 @@ forall           return processToken(yyscanner, TFORALL);
 forwarding       return processToken(yyscanner, TFORWARDING);
 if               return processToken(yyscanner, TIF);
 imag             return processToken(yyscanner, TIMAG);
+import           return processToken(yyscanner, TIMPORT);
 in               return processToken(yyscanner, TIN);
+include          return processToken(yyscanner, TINCLUDE);
 index            return processToken(yyscanner, TINDEX);
 inline           return processToken(yyscanner, TINLINE);
 inout            return processToken(yyscanner, TINOUT);
@@ -242,6 +248,14 @@ zip              return processToken(yyscanner, TZIP);
 
 "#"              return processToken(yyscanner, THASH);
 ".."             return processToken(yyscanner, TDOTDOT);
+"..<"            return processToken(yyscanner, TDOTDOTOPENHIGH);
+                 /* The following cases would extend the current '..<'
+                    open range interval constructor to also support
+                    '<..' and '<..<'.  This concept didn't win enough
+                    support to merge as present, but are here in case
+                    we change our minds in a future release. */
+                 /* "<.."            return processToken(yyscanner, TDOTDOTOPENLOW); */
+                 /* "<..<"           return processToken(yyscanner, TDOTDOTOPENBOTH); */
 "..."            return processToken(yyscanner, TDOTDOTDOT);
 
 "&&"             return processToken(yyscanner, TAND);
@@ -293,11 +307,17 @@ zip              return processToken(yyscanner, TZIP);
 {intLiteral}i    return processToken(yyscanner, IMAGLITERAL);
 {floatLiteral}i  return processToken(yyscanner, IMAGLITERAL);
 
-{ident}          return processIdentifier(yyscanner);
-"\"\"\""         return processMultilineStringLiteral(yyscanner, "\"");
-"'''"            return processMultilineStringLiteral(yyscanner, "'");
+{ident}          return processIdentifier(yyscanner, false);
+{queriedIdent}   return processIdentifier(yyscanner, true);
+
+"\"\"\""         return processMultilineStringLiteral(yyscanner, "\"", STRINGLITERAL);
+"'''"            return processMultilineStringLiteral(yyscanner, "'", STRINGLITERAL);
+"b\"\"\""        return processMultilineStringLiteral(yyscanner, "\"", BYTESLITERAL);
+"b'''"           return processMultilineStringLiteral(yyscanner, "'", BYTESLITERAL);
 "\""             return processStringLiteral(yyscanner, "\"", STRINGLITERAL);
 "\'"             return processStringLiteral(yyscanner, "\'", STRINGLITERAL);
+"b\""            return processStringLiteral(yyscanner, "\"", BYTESLITERAL);
+"b\'"            return processStringLiteral(yyscanner, "\'", BYTESLITERAL);
 "c\""            return processStringLiteral(yyscanner, "\"", CSTRINGLITERAL);
 "c\'"            return processStringLiteral(yyscanner, "\'", CSTRINGLITERAL);
 "//"             return processSingleLineComment(yyscanner);
@@ -361,9 +381,9 @@ void stringBufferInit() {
   stringBuffer.clear();
 }
 
-static int  processIdentifier(yyscan_t scanner) {
+static int  processIdentifier(yyscan_t scanner, bool queried) {
   YYSTYPE* yyLval = yyget_lval(scanner);
-  int      retval = processToken(scanner, TIDENT);
+  int      retval = processToken(scanner, queried ? TQUERIEDIDENT : TIDENT);
 
   yyLval->pch = astr(yyget_text(scanner));
 
@@ -443,7 +463,8 @@ static int processStringLiteral(yyscan_t scanner, const char* q, int type) {
   return type;
 }
 
-static int processMultilineStringLiteral(yyscan_t scanner, const char* q) {
+static int processMultilineStringLiteral(yyscan_t scanner, const char* q,
+                                         int type) {
   const char* yyText = yyget_text(scanner);
   YYSTYPE* yyLval = yyget_lval(scanner);
   yyLval->pch = eatMultilineStringLiteral(scanner, q);
@@ -455,7 +476,7 @@ static int processMultilineStringLiteral(yyscan_t scanner, const char* q) {
     captureString.append(yyLval->pch);
     captureString.append(yyText);
   }
-  return STRINGLITERAL;
+  return type;
 }
 
 static const char* eatStringLiteral(yyscan_t scanner, const char* startChar) {

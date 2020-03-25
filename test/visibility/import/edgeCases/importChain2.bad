@@ -1,0 +1,2 @@
+importChain2.chpl:22: In function 'main':
+importChain2.chpl:23: error: 'x' undeclared (first use this function)

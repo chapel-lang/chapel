@@ -1,11 +1,11 @@
 // Credit goes to Bryant for this test of a former bug in string.join().
 
-use Random.PCGRandom only RandomStream;
+use Random.PCGRandom only PCGRandomStream;
 
 config const count = 100;
 
 proc get_str_with_concat(x: int, y: int): string {
-  return "out_" + x + "_" + y;
+  return "out_" + x:string + "_" + y:string;
 }
 
 proc get_str_with_join(x: int, y: int): string {
@@ -13,7 +13,7 @@ proc get_str_with_join(x: int, y: int): string {
 }
 
 proc main() {
-  var r = new owned RandomStream(int);
+  var r = new owned PCGRandomStream(int);
 
   for i in 1..count {
     var x = r.getNext(1, 20000);
@@ -28,9 +28,9 @@ proc main() {
     if s1c != s2c {
       writeln("Mismatched!");
       writeln("  s1  = ", s1);
-      writeln("  s1c = ", s1c :string);
+      writeln("  s1c = ", createStringWithNewBuffer(s1c));
       writeln("  s2  = ", s2);
-      writeln("  s2c = ", s2c :string);
+      writeln("  s2c = ", createStringWithNewBuffer(s2c));
     }
   }
 }

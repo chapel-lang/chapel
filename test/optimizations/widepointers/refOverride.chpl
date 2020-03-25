@@ -16,7 +16,7 @@ class SubPrinter : SuperPrinter {
 class Foo { var x = 10; }
 
 proc main() {
-  var printer: owned SuperPrinter;
+  var printer: owned SuperPrinter?;
   printer = new owned SubPrinter();
 
   //
@@ -26,5 +26,5 @@ proc main() {
   // the type mismatch between a narrow/local actual and a wide formal.
   //
   var data = new borrowed Foo();
-  printer.print(data);
+  printer!.print(data);
 }

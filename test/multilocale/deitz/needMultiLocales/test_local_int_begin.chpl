@@ -8,7 +8,7 @@ proc main {
 
 proc foo() {
   var x: int = 17;
-  printf("%s\n", (here.id + " x=" + x).c_str());
+  printf("%s\n", (here.id:string + " x=" + x:string).c_str());
   x += 1;
   // Now x is 18
 
@@ -17,15 +17,15 @@ proc foo() {
       // wait for statement A below
       sleep(2);
       // Now x should be 18
-      printf("%s\n", (here.id + " x=" + x).c_str());
+      printf("%s\n", (here.id:string + " x=" + x:string).c_str());
       x += 1;
       // Now x should be 19
-      printf("%s\n", (here.id + " x=" + x).c_str());
+      printf("%s\n", (here.id:string + " x=" + x:string).c_str());
     }
   }
 
   // statement A. x should still be 18 because of the sleep above.
-  printf("%s\n", (here.id + " x=" + x).c_str());
+  printf("%s\n", (here.id:string + " x=" + x:string).c_str());
 
   // make sure this stack frame does not exit since x is stack allocated
   sleep(5);

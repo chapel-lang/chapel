@@ -64,27 +64,27 @@ config var reproducible = false, verbose = false;
   // Compute targetLocales - required for Dimensional.
   // We hard-code 2 dimensions.
   //
-  var targetIds: domain(2);
-  var targetLocales: [targetIds] locale;
-  setupTargetLocalesArray(targetIds, targetLocales, Locales);
+  const ranges = setupTargetLocRanges(2, Locales);
+  var targetIds: domain(2) = {(...ranges)};
+  var targetLocales = reshape(Locales, targetIds);
 
   // Here are the dimensions of our grid of locales.
-  const tl1 = targetIds.dim(1).length,
-        tl2 = targetIds.dim(2).length;
+  const tl1 = targetIds.dim(1).size,
+        tl2 = targetIds.dim(2).size;
   if printParams && printStats then
     writeln("target locales ", tl1, " x ", tl2);
 
   // Create individual dimension descriptors
   const
     // block-cyclic for 1st dimension
-    bdim1 = new unmanaged BlockCyclicDim(lowIdx=1, blockSize=blkSize, numLocales=tl1),
+    bdim1 = new BlockCyclicDim(lowIdx=1, blockSize=blkSize, numLocales=tl1),
     // replicated for 1st dimension
-    rdim1 = new unmanaged ReplicatedDim(tl1),
+    rdim1 = new ReplicatedDim(tl1),
 
     // block-cyclic for 2nd dimension
-    bdim2 = new unmanaged BlockCyclicDim(lowIdx=1, blockSize=blkSize, numLocales=tl2),
+    bdim2 = new BlockCyclicDim(lowIdx=1, blockSize=blkSize, numLocales=tl2),
     // replicated for 2nd dimension
-    rdim2 = new unmanaged ReplicatedDim(tl2);
+    rdim2 = new ReplicatedDim(tl2);
 
   //
   // MatVectSpace is a 2D domain of type indexType that represents the
@@ -220,7 +220,7 @@ proc LUFactorize(n: indexType,
 proc schurComplement(AD: domain, BD: domain, Rest: domain) {
 
   // Prevent replication of unequal-sized slices
-  if Rest.numIndices == 0 then return;
+  if Rest.size == 0 then return;
 
   //
   // Copy data into replicated arrays so every processor has a local copy
@@ -264,7 +264,7 @@ proc panelSolve(
     const col = panel[k.., k..k];
     
     // If there are no rows below the current column return
-    if col.numIndices == 0 then return;
+    if col.size == 0 then return;
     
     // Find the pivot, the element with the largest absolute value.
     const (_, (pivotRow, _)) = maxloc reduce zip(abs(Ab(col)), col);

@@ -17,19 +17,34 @@ Running in gdb
 The compiler-generated executable has a ``--gdb`` flag that can be used
 to launch the program within a ``gdb`` session.  For best results, make
 sure that your program has been compiled using the chpl compiler's
-``-g`` flag.  With ``CHPL_COMM=gasnet`` when using the ``amudprun``
-launcher, you can launch ``gdb`` by setting the environment variable
-``CHPL_COMM_USE_GDB`` when running the program.  This will open up a
-separate terminal emulator window for each locale,
-each running the designated debugger on that locale's program instance.
-On the Mac OS X (darwin) platform, you can launch ``lldb`` instead,
-by setting the ``CHPL_COMM_USE_LLDB`` environment variable.
+``-g`` flag.
+
+When using almost any launcher, you can launch ``gdb`` by setting the
+environment variable ``CHPL_COMM_USE_GDB`` when running the program.
+This will open up a separate terminal emulator window for each locale,
+each running the debugger on that locale's program instance.  On the Mac
+OS X (darwin) platform, you can launch ``lldb`` instead, by setting the
+``CHPL_COMM_USE_LLDB`` environment variable.  This works in all of these
+launchers::
+
+  amudprun
+  aprun
+  gasnetrun_ibv
+  gasnetrun_mpi
+  gasnetrun_ofi
+  gasnetrun_psm
+  mpirun4ofi
+  pbs-aprun
+  smp
 
 The default terminal emulator program is ``xterm``,
 but by setting the environment variable ``CHPL_COMM_DBG_TERM=urxvt``
 you can force use of ``urxvt`` instead.
 Whichever terminal emulator is used must be in your ``PATH``
 on the compute node or an error will result.
+Note that it is the user's responsibility to make sure things are set up
+so the terminal emulator run in the target environment can open its
+display window in the launch environment.
 
 The utility of this feature depends greatly on your familiarity with
 the Chapel generated code.  However, if your program is crashing or

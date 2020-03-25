@@ -1,5 +1,5 @@
-use Grid_def;
-use GridSolution_def;
+public use Grid_def;
+public use GridSolution_def;
 
 
 
@@ -30,13 +30,13 @@ class GridBC {
 class PeriodicGridBC: GridBC {
 
 
-  proc apply(q: unmanaged GridVariable, t: real) {
+  override proc apply(q: unmanaged GridVariable, t: real) {
     //==== Periodic BCs are homogeneous ====
     apply_Homogeneous(q);
   }
 
 
-  proc apply_Homogeneous(q: unmanaged GridVariable) {
+  override proc apply_Homogeneous(q: unmanaged GridVariable) {
 
     for ghost_domain in grid.ghost_domains {
       var loc = grid.relativeLocation(ghost_domain);

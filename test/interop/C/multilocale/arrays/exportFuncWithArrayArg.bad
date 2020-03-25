@@ -1,0 +1,1 @@
+exportFuncWithArrayArg.chpl:1: error: Multi-locale libraries do not support formal type: chpl_external_array

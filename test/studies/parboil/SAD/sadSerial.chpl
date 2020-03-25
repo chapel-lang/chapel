@@ -1,3 +1,5 @@
+use IO;
+
 config param useConfigFiles = true;
 config param printTimers = 0;
 
@@ -19,7 +21,7 @@ proc main(args:[] string) {
   use Time;
   var IOTimer, ComputeTimer, WallTimer: Timer;
   WallTimer.start();
-  if args.numElements == 3 {
+  if args.size == 3 {
     filename1 = args[1];
     filename2 = args[2];
     outfilename = args[3];

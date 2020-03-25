@@ -25,6 +25,7 @@
 // +=========================================================================+
 
 use SSCA2_compilation_config_params;
+private use IO;
 
 record directed_vertex_pair {
   var start = 1: int;
@@ -333,7 +334,7 @@ proc reportProgress() {
 ///////// graph helpers /////////
 
 proc graphTotalEdges(G)  return + reduce [v in G.vertices] G.n_Neighbors(v);
-proc graphNumVertices(G) return G.vertices.numIndices;
+proc graphNumVertices(G) return G.vertices.size;
 
 ///////// I/O helpers /////////
 
@@ -456,7 +457,7 @@ proc Writeout_RMAT_graph(G, snapshot_prefix:string, dstyle = "-"): void {
     if dRow then writeln();
   }
 
-  const numVertices = G.vertices.numIndices;
+  const numVertices = G.vertices.size;
   debug("done writing ", numVertices, " vertices, ", startIx, " edges");
   assert(startIx == graphTotalEdges(G));
   const sb = numBytes(IONumType);

@@ -12,5 +12,5 @@ class Foo {
   }
 }
 
-var foo: borrowed Foo(3);
-writeln(foo.type:string);
+var foo: borrowed Foo(3)?;
+writeln(foo.type :class :string);

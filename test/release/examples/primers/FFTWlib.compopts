@@ -1,1 +1,1 @@
--I$FFTW_DIR/include -L$FFTW_DIR/lib -lfftw3
+-I$FFTW_DIR/include -L$FFTW_DIR/lib -sautoInitFFTW_MT=false  -lfftw3

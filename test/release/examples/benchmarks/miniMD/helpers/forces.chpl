@@ -1,7 +1,8 @@
 // defines the computation for LJ and EAM style computations
 
-use initMD;
-use Time;
+public use initMD;
+public use Time;
+private use IO;
 
 // define the interface for a force object
 class Force {
@@ -46,7 +47,7 @@ class ForceEAM : Force  {
 
   var FP: [DistSpace] [perBinSpace] real;
               
-  var funcfl : owned Funcfl;
+  var funcfl = new Funcfl();
 
   proc init(cf : real) {
     this.complete();
@@ -57,7 +58,6 @@ class ForceEAM : Force  {
   }
 
   proc coeff(fname : string) {
-    funcfl = new owned Funcfl();
     funcfl.eamFile = fname;
     var fchan = open(fname, iomode.r);
     var rd = fchan.reader();

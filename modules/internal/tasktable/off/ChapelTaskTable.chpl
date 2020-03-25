@@ -1,4 +1,5 @@
 /*
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -55,6 +56,7 @@ module ChapelTaskTable {
 
   export proc chpldev_taskTable_print()
   {
+    use ChapelIO;
     halt("To use task tracking, you must recompile with --task-tracking");
   }
 }

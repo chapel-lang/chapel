@@ -4,8 +4,6 @@ class C {
   var x: t;
 }
 
-var c: borrowed C(int);
-
-c = new borrowed C(int);
+var c = new C(int);
 
 writeln("{p = ", c.p, ", x = ", c.x, "}");

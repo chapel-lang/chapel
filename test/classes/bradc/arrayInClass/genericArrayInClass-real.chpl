@@ -13,13 +13,6 @@ class AssocC {
   var x: [assocDom] t;
 }
 
-class OpaqueC {
-  type t;
-
-  var opaqueDom: domain(opaque);
-  var x: [opaqueDom] t;
-}
-
 class SparseC {
   type t;
   
@@ -48,14 +41,12 @@ proc foo(C) {
 
 var myArithC = new unmanaged ArithC(real);
 var myAssocC = new unmanaged AssocC(real);
-var myOpaqueC = new unmanaged OpaqueC(real);
 var mySparseC = new unmanaged SparseC(real);
 var myEnumC = new unmanaged EnumC(real);
 
 proc deinit() {
   delete myEnumC;
   delete mySparseC;
-  delete myOpaqueC;
   delete myAssocC;
   delete myArithC;
 }
@@ -67,9 +58,6 @@ proc deinit() {
 myAssocC.assocDom += "two";
 myAssocC.x("two") = 2.1;
 
-const newInd = myOpaqueC.opaqueDom.create();
-myOpaqueC.x(newInd) = 2.2;
-
 mySparseC.sparseDom += 2;
 mySparseC.x(2) = 2.3;
 
@@ -79,6 +67,5 @@ mySparseC.x(2) = 2.3;
 
 foo(myArithC);
 foo(myAssocC);
-foo(myOpaqueC);
 foo(mySparseC);
 foo(myEnumC);

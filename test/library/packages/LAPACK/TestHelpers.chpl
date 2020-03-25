@@ -1,5 +1,5 @@
 module TestHelpers {
-  use LAPACK;
+  public use LAPACK;
   param default_epsilon: real = 10.0e-14;  
 
   class LAPACK_Matrix {
@@ -80,7 +80,7 @@ module TestHelpers {
       
     }
     
-    proc init( matrix: LAPACK_Matrix(?t), type data_type = t ){
+    proc init( matrix: borrowed LAPACK_Matrix, type data_type = matrix.data_type ){
       this.data_type = data_type;
       this.row_major = matrix.row_major;
       this.rows = matrix.rows;
@@ -159,7 +159,7 @@ module TestHelpers {
                                else ( "  " );
                               
         for j in this.columnRange {
-          retstring += ( this[i,j] + ", " );
+          retstring += ( this[i,j]:string + ", " );
         }
         
         retstring += if i == this.rows then ( "]" )
@@ -191,7 +191,11 @@ module TestHelpers {
     return (matrix_order == lapack_memory_order.row_major);
   }
   
-  proc *( A: LAPACK_Matrix(?t), B: LAPACK_Matrix(t) ): owned LAPACK_Matrix(t) {
+  // Not using type queries to work around issue #13721
+  proc *( A: borrowed LAPACK_Matrix, B: borrowed LAPACK_Matrix ): owned LAPACK_Matrix(A.data_type) {
+    if A.data_type != B.data_type then
+      compilerError("data_type mismatch in *");
+
     assert( A.columns == B.rows );
     var row_ordered = if ( A.isRowMajor &&  B.isRowMajor)
                       || (!A.isRowMajor && !B.isRowMajor) 
@@ -199,7 +203,7 @@ module TestHelpers {
                     else
                       true;
     
-    var retmatrix = new owned LAPACK_Matrix( t, A.rows, B.columns, row_ordered, error = min( A.epsilon, B.epsilon ) );
+    var retmatrix = new owned LAPACK_Matrix( A.data_type, A.rows, B.columns, row_ordered, error = min( A.epsilon, B.epsilon ) );
     
     for i in A.rowRange do
       for j in B.columnRange do
@@ -209,7 +213,10 @@ module TestHelpers {
     return retmatrix;
   }
   
-  proc ==( A: LAPACK_Matrix(?t), B: LAPACK_Matrix(t) ): bool {
+  proc ==( A: borrowed LAPACK_Matrix, B: borrowed LAPACK_Matrix ): bool {
+    if A.data_type != B.data_type then
+      compilerError("data_type mismatch in ==");
+
     //if A == nil then halt( "A is nil" );
     //if B == nil then halt( "B is nil" );
     if !( A.rows == B.rows && A.columns == B.columns ) then

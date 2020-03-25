@@ -1,6 +1,7 @@
 use Histogram;
 use Random;
 use Time;
+use IO;
 
 // Test flags
 config const isTest=false;
@@ -171,7 +172,7 @@ class KDNode {
   var dom : domain(1);
   var xcen : [DimSpace]real;
   var rcell : real;
-  var left, right : owned KDNode;
+  var left, right : owned KDNode?;
 
   proc isLeaf() : bool {
     return (left==nil) && (right==nil);
@@ -239,24 +240,24 @@ proc TreeAccumulate(hh : UniformBins, p1, p2 : Particle3D, node1, node2 :  KDNod
 
   // If one node is a leaf 
   if (node1.isLeaf()) {
-    TreeAccumulate(hh, p1, p2, node1, node2.left);
-    TreeAccumulate(hh, p1, p2, node1, node2.right);
+    TreeAccumulate(hh, p1, p2, node1, node2.left!);
+    TreeAccumulate(hh, p1, p2, node1, node2.right!);
     return;
   }
   if (node2.isLeaf()) {
-    TreeAccumulate(hh, p1, p2, node1.left, node2);
-    TreeAccumulate(hh, p1, p2, node1.right, node2);
+    TreeAccumulate(hh, p1, p2, node1.left!, node2);
+    TreeAccumulate(hh, p1, p2, node1.right!, node2);
     return;
   }
 
   // Split the larger case;
   if (node1.npart > node2.npart) {
-    TreeAccumulate(hh, p1, p2, node1.left, node2);
-    TreeAccumulate(hh, p1, p2, node1.right, node2);
+    TreeAccumulate(hh, p1, p2, node1.left!, node2);
+    TreeAccumulate(hh, p1, p2, node1.right!, node2);
     return;
   } else {
-    TreeAccumulate(hh, p1, p2, node1, node2.left);
-    TreeAccumulate(hh, p1, p2, node1, node2.right);
+    TreeAccumulate(hh, p1, p2, node1, node2.left!);
+    TreeAccumulate(hh, p1, p2, node1, node2.right!);
     return;
   }
 
@@ -295,18 +296,21 @@ proc doPairs() {
 
   // Read in the file
   tt.clear(); tt.start();
-  var pp1, pp2 : owned Particle3D;
+  var pp1 = initialPP(fn1);
+  var pp2 = initialPP(fn2);
+
+proc initialPP(fn) {
   if isPerf {
-    pp1 = new owned Particle3D(nParticles, true);
-    pp2 = new owned Particle3D(nParticles, true);
+    return new Particle3D(nParticles, true);
   } else {
-    pp1 = readFile(fn1);
-    pp2 = readFile(fn2);
+    var pp = readFile(fn);
     if !isTest {
-      writef("Read in %i lines from file %s \n", pp1.npart, fn1);
-      writef("Read in %i lines from file %s \n", pp2.npart, fn2);
+      writef("Read in %i lines from file %s \n", pp.npart, fn);
     }
+    return pp;
   }
+}
+
   tt.stop();
   if !isTest {
     writef("Time to read : %r \n", tt.elapsed());

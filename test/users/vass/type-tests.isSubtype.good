@@ -1,5 +1,5 @@
 type-tests.isSubtype.chpl:15: warning: isSubtype - scalars
-type-tests.isSubtype.chpl:16: warning: int, real   true
+type-tests.isSubtype.chpl:16: warning: int, real   false
 type-tests.isSubtype.chpl:17: warning: real, real  true
 type-tests.isSubtype.chpl:19: warning: isSubtype - domains and arrays
 type-tests.isSubtype.chpl:20: warning: D1, D2            true
@@ -60,9 +60,7 @@ type-tests.isSubtype.chpl:94: warning: U1,       AA1.type false
 type-tests.isSubtype.chpl:95: warning: U1,       C1       false
 type-tests.isSubtype.chpl:96: warning: U1,       R1       false
 type-tests.isSubtype.chpl:98: warning: isProperSubtype - scalars
-type-tests.isSubtype.chpl:99: warning: int, real   true
-Note: This source location is a guess.
-type-tests.isSubtype.chpl:99: warning: int, real   true
+type-tests.isSubtype.chpl:99: warning: int, real   false
 type-tests.isSubtype.chpl:100: warning: real, real  false
 type-tests.isSubtype.chpl:102: warning: isProperSubtype - domains and arrays
 type-tests.isSubtype.chpl:103: warning: D1, D2            false
@@ -73,137 +71,55 @@ type-tests.isSubtype.chpl:107: warning: {AA1,AA2}._value  false
 type-tests.isSubtype.chpl:109: warning: isProperSubtype - classes
 type-tests.isSubtype.chpl:110: warning: C1, C1  false
 type-tests.isSubtype.chpl:111: warning: C1, C2  false
-Note: This source location is a guess.
-type-tests.isSubtype.chpl:111: warning: C1, C2  false
-type-tests.isSubtype.chpl:112: warning: C1, C3  false
-Note: This source location is a guess.
 type-tests.isSubtype.chpl:112: warning: C1, C3  false
 type-tests.isSubtype.chpl:113: warning: C1, C4  false
-Note: This source location is a guess.
-type-tests.isSubtype.chpl:113: warning: C1, C4  false
-type-tests.isSubtype.chpl:114: warning: C2, C1  true
-Note: This source location is a guess.
 type-tests.isSubtype.chpl:114: warning: C2, C1  true
 type-tests.isSubtype.chpl:115: warning: C2, C2  false
 type-tests.isSubtype.chpl:116: warning: C2, C3  false
-Note: This source location is a guess.
-type-tests.isSubtype.chpl:116: warning: C2, C3  false
-type-tests.isSubtype.chpl:117: warning: C2, C4  false
-Note: This source location is a guess.
 type-tests.isSubtype.chpl:117: warning: C2, C4  false
 type-tests.isSubtype.chpl:118: warning: C3, C1  true
-Note: This source location is a guess.
-type-tests.isSubtype.chpl:118: warning: C3, C1  true
-type-tests.isSubtype.chpl:119: warning: C3, C2  false
-Note: This source location is a guess.
 type-tests.isSubtype.chpl:119: warning: C3, C2  false
 type-tests.isSubtype.chpl:120: warning: C3, C3  false
 type-tests.isSubtype.chpl:121: warning: C3, C4  false
-Note: This source location is a guess.
-type-tests.isSubtype.chpl:121: warning: C3, C4  false
-type-tests.isSubtype.chpl:122: warning: C4, C1  true
-Note: This source location is a guess.
 type-tests.isSubtype.chpl:122: warning: C4, C1  true
 type-tests.isSubtype.chpl:123: warning: C4, C2  true
-Note: This source location is a guess.
-type-tests.isSubtype.chpl:123: warning: C4, C2  true
-type-tests.isSubtype.chpl:124: warning: C4, C3  false
-Note: This source location is a guess.
 type-tests.isSubtype.chpl:124: warning: C4, C3  false
 type-tests.isSubtype.chpl:125: warning: C4, C4  false
 type-tests.isSubtype.chpl:127: warning: isProperSubtype - records
 type-tests.isSubtype.chpl:128: warning: R1, R1  false
 type-tests.isSubtype.chpl:147: warning: isProperSubtype - mixing up
 type-tests.isSubtype.chpl:148: warning: real,     D1.type  false
-Note: This source location is a guess.
-type-tests.isSubtype.chpl:148: warning: real,     D1.type  false
-type-tests.isSubtype.chpl:149: warning: real,     AA1.type false
-Note: This source location is a guess.
 type-tests.isSubtype.chpl:149: warning: real,     AA1.type false
 type-tests.isSubtype.chpl:150: warning: real,     C1       false
-Note: This source location is a guess.
-type-tests.isSubtype.chpl:150: warning: real,     C1       false
-type-tests.isSubtype.chpl:151: warning: real,     R1       false
-Note: This source location is a guess.
 type-tests.isSubtype.chpl:151: warning: real,     R1       false
 type-tests.isSubtype.chpl:152: warning: real,     U1       false
-Note: This source location is a guess.
-type-tests.isSubtype.chpl:152: warning: real,     U1       false
-type-tests.isSubtype.chpl:153: warning: D1.type,  real     false
-Note: This source location is a guess.
 type-tests.isSubtype.chpl:153: warning: D1.type,  real     false
 type-tests.isSubtype.chpl:154: warning: D1.type,  D1.type  false
 type-tests.isSubtype.chpl:155: warning: D1.type,  AA1.type false
-Note: This source location is a guess.
-type-tests.isSubtype.chpl:155: warning: D1.type,  AA1.type false
-type-tests.isSubtype.chpl:156: warning: D1.type,  C1       false
-Note: This source location is a guess.
 type-tests.isSubtype.chpl:156: warning: D1.type,  C1       false
 type-tests.isSubtype.chpl:157: warning: D1.type,  R1       false
-Note: This source location is a guess.
-type-tests.isSubtype.chpl:157: warning: D1.type,  R1       false
-type-tests.isSubtype.chpl:158: warning: D1.type,  U1       false
-Note: This source location is a guess.
 type-tests.isSubtype.chpl:158: warning: D1.type,  U1       false
 type-tests.isSubtype.chpl:159: warning: AA1.type, real     false
-Note: This source location is a guess.
-type-tests.isSubtype.chpl:159: warning: AA1.type, real     false
-type-tests.isSubtype.chpl:160: warning: AA1.type, D1.type  false
-Note: This source location is a guess.
 type-tests.isSubtype.chpl:160: warning: AA1.type, D1.type  false
 type-tests.isSubtype.chpl:161: warning: AA1.type, AA1.type false
 type-tests.isSubtype.chpl:162: warning: AA1.type, C        false
 type-tests.isSubtype.chpl:163: warning: AA1.type, R        false
 type-tests.isSubtype.chpl:164: warning: AA1.type, U1       false
-Note: This source location is a guess.
-type-tests.isSubtype.chpl:164: warning: AA1.type, U1       false
-type-tests.isSubtype.chpl:165: warning: C1,       real     false
-Note: This source location is a guess.
 type-tests.isSubtype.chpl:165: warning: C1,       real     false
 type-tests.isSubtype.chpl:166: warning: C1,       D1.type  false
-Note: This source location is a guess.
-type-tests.isSubtype.chpl:166: warning: C1,       D1.type  false
-type-tests.isSubtype.chpl:167: warning: C1,       AA1.type false
-Note: This source location is a guess.
 type-tests.isSubtype.chpl:167: warning: C1,       AA1.type false
 type-tests.isSubtype.chpl:168: warning: C1,       R1       false
-Note: This source location is a guess.
-type-tests.isSubtype.chpl:168: warning: C1,       R1       false
-type-tests.isSubtype.chpl:169: warning: C1,       U1       false
-Note: This source location is a guess.
 type-tests.isSubtype.chpl:169: warning: C1,       U1       false
 type-tests.isSubtype.chpl:170: warning: R1,       real     false
-Note: This source location is a guess.
-type-tests.isSubtype.chpl:170: warning: R1,       real     false
-type-tests.isSubtype.chpl:171: warning: R1,       D1.type  false
-Note: This source location is a guess.
 type-tests.isSubtype.chpl:171: warning: R1,       D1.type  false
 type-tests.isSubtype.chpl:172: warning: R1,       AA1.type false
-Note: This source location is a guess.
-type-tests.isSubtype.chpl:172: warning: R1,       AA1.type false
-type-tests.isSubtype.chpl:173: warning: R1,       C1       false
-Note: This source location is a guess.
 type-tests.isSubtype.chpl:173: warning: R1,       C1       false
 type-tests.isSubtype.chpl:174: warning: R1,       U1       false
-Note: This source location is a guess.
-type-tests.isSubtype.chpl:174: warning: R1,       U1       false
-type-tests.isSubtype.chpl:175: warning: U1,       real     false
-Note: This source location is a guess.
 type-tests.isSubtype.chpl:175: warning: U1,       real     false
 type-tests.isSubtype.chpl:176: warning: U1,       D1.type  false
-Note: This source location is a guess.
-type-tests.isSubtype.chpl:176: warning: U1,       D1.type  false
-type-tests.isSubtype.chpl:177: warning: U1,       AA1.type false
-Note: This source location is a guess.
 type-tests.isSubtype.chpl:177: warning: U1,       AA1.type false
 type-tests.isSubtype.chpl:178: warning: U1,       C1       false
-Note: This source location is a guess.
-type-tests.isSubtype.chpl:178: warning: U1,       C1       false
-type-tests.isSubtype.chpl:179: warning: U1,       R1       false
-Note: This source location is a guess.
 type-tests.isSubtype.chpl:179: warning: U1,       R1       false
 type-tests.isSubtype.chpl:182: warning: U1, U2  false
-type-tests.isSubtype.chpl:183: warning: U1, U2  false
-Note: This source location is a guess.
 type-tests.isSubtype.chpl:183: warning: U1, U2  false
 type-tests.isSubtype.chpl:185: error: done

@@ -1,5 +1,6 @@
 /*
  * Copyright 2017 Advanced Micro Devices, Inc.
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -533,10 +534,9 @@ static void buildLocalDefUseMaps(Loop* loop, symToVecSymExprMap& localDefMap, sy
 
       //Check each symExpr to see if its a use and or def and add to the appropriate lists
       std::vector<SymExpr*> symExprs;
-      collectSymExprs(expr, symExprs);
+      collectLcnSymExprs(expr, symExprs);
       for_vector(SymExpr, symExpr, symExprs) {
         if(symExpr->parentSymbol) {
-          if(isLcnSymbol(symExpr->symbol())) {
             localMap[symExpr] = block->id;
             int result = isDefAndOrUse(symExpr);
             //Add defs
@@ -561,7 +561,6 @@ static void buildLocalDefUseMaps(Loop* loop, symToVecSymExprMap& localDefMap, sy
                 }
               }
             }
-          }
         }
       }
     }
@@ -1088,10 +1087,9 @@ static bool defDominatesAllExits(Loop* loop, SymExpr* def, std::vector<BitVec*>&
 static bool containsSynchronizationVar(BaseAST* ast) {
   std::vector<SymExpr*> symExprs;
 
-  collectSymExprs(ast, symExprs);
+  collectLcnSymExprs(ast, symExprs);
 
   for_vector(SymExpr, symExpr, symExprs) {
-    if (isLcnSymbol(symExpr->symbol())) {
       Type* symType = symExpr->symbol()->type;
       Type* valType = symType->getValType();
 
@@ -1105,7 +1103,6 @@ static bool containsSynchronizationVar(BaseAST* ast) {
 
         return true;
       }
-    }
   }
 
   return false;

@@ -12,8 +12,8 @@ proc foo(c : borrowed C) {
   writeln(c.x);
 }
 
-var c : borrowed C;
+var c : borrowed C?;
 c = new borrowed D1();
-foo(c);
+foo(c!);
 c = new borrowed D2();
-foo(c);
+foo(c!);

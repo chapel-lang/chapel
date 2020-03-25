@@ -86,10 +86,10 @@ int main(int argc, char **argv) {
     eb_t eb1, eb2;
     ep_t ep1;
     en_t en1, en2;
-    int i,n,m;
+    int i=0,n,m;
     handler_t h;
     size_t sz;
-    void *vp;
+    void *vp=0;
     tag_t t1 = (tag_t)0x1234ABCDU;
     AM_Safe(AM_AllocateBundle(AM_SEQ,&eb1));
     AM_Safe(AM_AllocateBundle(AM_SEQ,&eb2));

@@ -1,4 +1,5 @@
 /*
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -22,7 +23,9 @@
    arrays
  */
 module Search {
-  use Sort;
+  public use Sort only defaultComparator, DefaultComparator,
+                       reverseComparator, ReverseComparator;
+  private use Sort;
 
 
 /*

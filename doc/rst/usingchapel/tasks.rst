@@ -43,7 +43,7 @@ please send them to :disguise:`chapel_info@cray.com`.
 Task Implementation Layers
 --------------------------
 
-This release contains four distinct tasking layers for Chapel tasks.
+This release contains two distinct tasking layers for Chapel tasks.
 The user can select between these options by setting the ``CHPL_TASKS``
 environment variable to one of the following values:
 
@@ -52,9 +52,6 @@ environment variable to one of the following values:
 
 :fifo:
   most portable, but heavyweight; default for NetBSD and Cygwin
-
-:massivethreads:
-  based on U Tokyo's MassiveThreads library
 
 Each tasking layer is described in more detail below:
 
@@ -258,31 +255,6 @@ long-lived and can host many tasks over their lifespan, on a per-task
 basis we don't expect stack overflow detection to be expensive.
 
 
-CHPL_TASKS == massivethreads
-----------------------------
-
-The MassiveThreads team at the University of Tokyo has provided an
-implementation of Chapel tasking via their MassiveThreads library
-('massivethreads') in order to create a lighter-weight implementation
-of Chapel tasks.  To try MassiveThreads tasking, please take the
-following steps:
-
-1) Ensure that the environment variable ``CHPL_HOME`` points to the
-   top-level Chapel directory.
-
-2) Set up your environment to use MassiveThreads:
-
-   .. code-block:: sh
-
-     export CHPL_TASKS=massivethreads
-
-3) Follow the :ref:`chapelhome-quickstart` 
-   to set up, compile and run your Chapel programs.
-
-For more information on MassiveThreads, please see its entry in:
-$CHPL_HOME/third-party/README.
-
-
 ---------------------------------
 Controlling the Number of Threads
 ---------------------------------
@@ -342,14 +314,6 @@ CHPL_TASKS == qthreads
   default is to use a number of threads equal to the number of physical
   CPUs on the locale.
 
-CHPL_TASKS == massivethreads
-----------------------------
-  In the MassiveThreads tasking layer, ``CHPL_RT_NUM_THREADS_PER_LOCALE``
-  specifies the number of system threads used to execute tasks.  If the
-  value is 0, the massivethreads tasking layer will create a number of
-  threads equal to the number of logical CPUs on the locale.
-
-
 ----------------
 Task Call Stacks
 ----------------
@@ -399,13 +363,6 @@ CHPL_TASKS == qthreads
   control over stack overflow checks is provided by the ``QT_GUARD_PAGE``
   environment variable.  See the qthreads subsection of `Task
   Implementation Layers`_ for more information.
-
-CHPL_TASKS == massivethreads
-----------------------------
-  No stack overflow detection is available.  If the ``--stack-checks``
-  option is given to the compiler and ``CHPL_TASKS==massivethreads``,
-  the compiler emits a warning that stack checks cannot be done.
-
 
 ----------------------------------------------
 Task-Related Quantification Methods on Locales

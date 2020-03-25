@@ -1,4 +1,5 @@
 /*
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -21,7 +22,8 @@
  * Collection of mutexes/locks.
  */
 module ChapelLocks {
-  use MemConsistency;
+  private use Atomics, ChapelBase;
+  private use MemConsistency;
   /*
    * Local processor atomic spinlock. Intended for situations with minimal
    * contention or very short critical sections.
@@ -32,12 +34,12 @@ module ChapelLocks {
 
     inline proc lock() {
       on this do
-        while l.read() || l.testAndSet(memory_order_acquire) do
+        while l.read() || l.testAndSet(memoryOrder.acquire) do
           chpl_task_yield();
     }
 
     inline proc unlock() {
-      l.clear(memory_order_release);
+      l.clear(memoryOrder.release);
     }
   }
 }

@@ -1,18 +1,20 @@
-config param qualifiedAccess = false;
-
-module M {
-  proc foo() {
-    writeln("In foo");
+module OuterModule {
+  module M {
+    proc foo() {
+      writeln("In foo");
+    }
   }
-}
 
-module M2 {
-  use M except *;  // require all symbols in M to be fully-qualified.
+  module M2 {
+    config param qualifiedAccess = false;
 
-  proc main() {
-    if qualifiedAccess then
-      M.foo();
-    else
-      foo();
+    use M except *;  // require all symbols in M to be fully-qualified.
+
+    proc main() {
+      if qualifiedAccess then
+        M.foo();
+      else
+        foo();
+    }
   }
 }

@@ -1,4 +1,5 @@
 /*
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
@@ -24,6 +25,7 @@
 
 #include <list>
 #include <map>
+#include <set>
 #include <stack>
 #include <string>
 #include <vector>
@@ -102,6 +104,7 @@ struct GenInfo {
   llvm::TargetMachine* targetMachine;
 
   std::stack<LoopData> loopStack;
+  std::vector<std::pair<llvm::Value*, llvm::Type*> > currentStackVariables;
 
   llvm::LLVMContext llvmContext;
   llvm::MDNode* tbaaRootNode;

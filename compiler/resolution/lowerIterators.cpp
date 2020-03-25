@@ -1,4 +1,5 @@
 /*
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -107,7 +108,7 @@ FnSymbol* debugGetTheIteratorFn(ForLoop* forLoop) {
 // This consistency check should probably be moved earlier in the compilation.
 // It needs to be after resolution because it sets FLAG_INLINE_ITERATOR.
 // Does it need to be recursive? (Currently, it is not.)
-static void nonLeaderParCheckInt(FnSymbol* fn, bool allowYields);
+static void nonLeaderParCheckInt(FnSymbol* origfn, FnSymbol* fn, bool allowYields);
 
 static void nonLeaderParCheck()
 {
@@ -116,7 +117,7 @@ static void nonLeaderParCheck()
   //
   forv_Vec(FnSymbol, fn, gFnSymbols) {
     if (fn->isIterator() && !fn->hasFlag(FLAG_INLINE_ITERATOR)) {
-      nonLeaderParCheckInt(fn, true);
+      nonLeaderParCheckInt(fn, fn, false);
     }
   }
   USR_STOP();
@@ -161,7 +162,7 @@ bool isVirtualIterator(FnSymbol* iterFn) {
   return retval;
 }
 
-static void nonLeaderParCheckInt(FnSymbol* fn, bool allowYields)
+static void nonLeaderParCheckInt(FnSymbol* origfn, FnSymbol* fn, bool markYields)
 {
   std::vector<CallExpr*> calls;
 
@@ -197,15 +198,15 @@ static void nonLeaderParCheckInt(FnSymbol* fn, bool allowYields)
       // If they are not, check for PRIM_YIELD like below.
       INT_ASSERT(false);
     }
-    if (!allowYields) {
+    if (markYields) {
       if (call->isPrimitive(PRIM_YIELD)) {
-        USR_FATAL_CONT(call, "invalid use of 'yield' within 'on' in serial iterator");
+        origfn->addFlag(FLAG_YIELD_WITHIN_ON);
       }
     }
     if (taskFn) {
       // This used to be the body of the parallel or 'on' construct
       // so need to descend into it.
-      nonLeaderParCheckInt(taskFn, !taskFn->hasFlag(FLAG_ON));
+      nonLeaderParCheckInt(origfn, taskFn, taskFn->hasFlag(FLAG_ON));
     }
   }
 }
@@ -512,9 +513,13 @@ static void computeRecursiveIteratorSet() {
 
     // Determine if the iterator calls itself, either directly or indirectly.
     Vec<FnSymbol*> fnSet;   // Used to avoid recursion
-    if (find_recursive_caller(iter, iter, fnSet))
+    if (find_recursive_caller(iter, iter, fnSet)) {
       // If so, add the recursive iterator flag.
       iter->addFlag(FLAG_RECURSIVE_ITERATOR);
+      if (iter->hasFlag(FLAG_YIELD_WITHIN_ON)) {
+        USR_FATAL_CONT(iter, "'yield' within 'on' not currently supported within recursive serial iterators");
+      }
+    }
   }
 
   // Mark task functions, too, by adding to taskFunInRecursiveIteratorSet
@@ -1649,6 +1654,7 @@ fixupErrorHandlingExits(BlockStmt* body, bool& adjustCaller) {
 
     if (g->gotoTag == GOTO_ERROR_HANDLING ||
         g->gotoTag == GOTO_BREAK_ERROR_HANDLING ||
+        g->gotoTag == GOTO_ERROR_HANDLING_RETURN ||
         g->gotoTag == GOTO_RETURN) {
       // Does the target of this Goto exist within the same function?
       LabelSymbol* target = g->gotoTarget();
@@ -1829,7 +1835,7 @@ replaceErrorFormalWithEnclosingError(SymExpr* se) {
         }
       }
       se->setSymbol(errorArg);
-      INT_ASSERT(fixGoto->gotoTag == GOTO_RETURN);
+      INT_ASSERT(fixGoto->isGotoReturn());
     } else {
       // Just call gChplUncaughtError
       VarSymbol* tmp = newTemp("error", dtError);
@@ -2224,7 +2230,7 @@ isBoundedIterator(FnSymbol* fn) {
 static void getIteratorChildren(Vec<Type*>& children, Type* type) {
   if (AggregateType* at = toAggregateType(type)) {
     forv_Vec(AggregateType, child, at->dispatchChildren) {
-      if (child != dtObject) {
+      if (child && child != dtObject) {
         children.add_exclusive(child);
         getIteratorChildren(children, child);
       }
@@ -2410,6 +2416,10 @@ expandForLoop(ForLoop* forLoop) {
       forLoop->insertAfter (buildIteratorCall(NULL, ZIP4, iterators.v[i], children));
 
       FnSymbol* iterFn = getTheIteratorFn(iterators.v[i]);
+      if (iterFn->hasFlag(FLAG_YIELD_WITHIN_ON)) {
+        USR_FATAL_CONT(forLoop, "'yield' statements within 'on' clauses are not currently supported for iterators that are not inlined (e.g., within zippered loops)");
+        break;
+      }
 
       if (isBoundedIterator(iterFn)) {
         if (testBlock == NULL) {
@@ -2744,7 +2754,7 @@ static void reconstructIRAutoCopy(FnSymbol* fn)
 
     // Now auto-copy it if appropriate
     Symbol* copyResult = fieldValue;
-    if (isUserDefinedRecord(field->type) && !field->isRef() ) {
+    if (typeNeedsCopyInitDeinit(field->type) && !field->isRef() ) {
       FnSymbol* autoCopy = getAutoCopyForType(field->type);
       Symbol* valueToCopy = fieldValue;
       Type* copyArgType = autoCopy->getFormal(1)->type;
@@ -2776,7 +2786,7 @@ static void reconstructIRAutoDestroy(FnSymbol* fn)
   AggregateType* irt = toAggregateType(arg->type);
   for_fields(field, irt) {
     SET_LINENO(field);
-    if (isUserDefinedRecord(field->type) && !field->isRef() ) {
+    if (typeNeedsCopyInitDeinit(field->type) && !field->isRef() ) {
       if (FnSymbol* autoDestroy = autoDestroyMap.get(field->type)) {
         Symbol* tmp = newTemp(field->name, field->type);
         block->insertAtTail(new DefExpr(tmp));
@@ -2970,6 +2980,7 @@ void lowerIterators() {
   }
 
   fragmentLocalBlocks();
+  gatherPrimIRFieldValByFormal();
 
   for_alive_in_Vec(FnSymbol, fn, gFnSymbols) {
     if (fn->isIterator()) {
@@ -2979,6 +2990,8 @@ void lowerIterators() {
       lowerIterator(fn);
     }
   }
+
+  USR_STOP();
 
   removeUncalledIterators();
 
@@ -2992,6 +3005,7 @@ void lowerIterators() {
 
   cleanupTemporaryVectors();
   cleanupIteratorBreakToken();
+  cleanupPrimIRFieldValByFormal();
 
   iteratorsLowered = true;
 }

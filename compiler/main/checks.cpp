@@ -1,4 +1,5 @@
 /*
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -49,9 +50,6 @@ static void check_afterCallDestructors(); // Checks to be performed after every
                                           // pass following callDestructors.
 static void check_afterLowerIterators();
 static void checkIsIterator(); // Ensure each iterator is flagged so.
-static void checkAggregateTypes(); // Checks that class and record types have
-                                   // default initializers and default type
-                                   // constructors.
 static void check_afterInlineFunctions();
 static void checkResolveRemovedPrims(void); // Checks that certain primitives
                                             // are removed after resolution
@@ -63,6 +61,7 @@ static void checkLowerIteratorsRemovedPrims();
 static void checkFlagRelationships(); // Checks expected relationships between
                                       // flags.
 static void checkAutoCopyMap();
+static void checkDefaultInitEqAndAssign();
 static void checkFormalActualBaseTypesMatch();
 static void checkRetTypeMatchesRetVarType();
 static void checkFormalActualTypesMatch();
@@ -151,6 +150,7 @@ void check_resolve()
   check_afterNormalization();
   checkReturnTypesHaveRefTypes();
   checkAutoCopyMap();
+  checkDefaultInitEqAndAssign();
 }
 
 void check_resolveIntents()
@@ -445,7 +445,6 @@ static void check_afterScopeResolve()
 {
   if (fVerify)
   {
-    checkAggregateTypes();
   }
 }
 
@@ -475,6 +474,7 @@ static void check_afterResolution()
     checkFormalActualBaseTypesMatch();
     checkRetTypeMatchesRetVarType();
     checkAutoCopyMap();
+    checkDefaultInitEqAndAssign();
   }
 }
 
@@ -582,19 +582,6 @@ static void checkIsIterator() {
 
 
 //
-// Checks that class and record types have a default initializer and a default
-// type constructor.
-//
-static void checkAggregateTypes() {
-  for_alive_in_Vec(AggregateType, at, gAggregateTypes) {
-    if (at->typeConstructor == NULL) {
-      INT_FATAL(at, "aggregate type has no type constructor");
-    }
-  }
-}
-
-
-//
 // Checks that certain primitives are removed after function resolution
 //
 static void
@@ -607,7 +594,6 @@ checkResolveRemovedPrims(void) {
         case PRIM_DEFAULT_INIT_VAR:
         case PRIM_INIT_FIELD:
         case PRIM_INIT_VAR:
-        case PRIM_TYPE_INIT:
 
         case PRIM_LOGICAL_FOLDER:
         case PRIM_TYPEOF:
@@ -623,6 +609,7 @@ checkResolveRemovedPrims(void) {
         case PRIM_QUERY_TYPE_FIELD:
         case PRIM_ERROR:
         case PRIM_COERCE:
+        case PRIM_GATHER_TESTS:
           if (call->parentSymbol)
             INT_FATAL("Primitive should no longer be in AST");
           break;
@@ -717,6 +704,86 @@ checkAutoCopyMap()
   }
 }
 
+static FnSymbol* findUserInitEq(AggregateType* at) {
+  for_alive_in_Vec(FnSymbol, fn, gFnSymbols) {
+    if (fn->name == astrInitEquals &&
+        !fn->hasFlag(FLAG_COMPILER_GENERATED) &&
+        fn->numFormals() >= 1) {
+      ArgSymbol* lhs = fn->getFormal(1);
+      Type* t = lhs->getValType();
+      if (t == at)
+        return fn;
+    }
+  }
+  return NULL;
+}
+
+static FnSymbol* findUserAssign(AggregateType* at) {
+
+  for_alive_in_Vec(FnSymbol, fn, gFnSymbols) {
+    if (fn->name == astrSassign &&
+        !fn->hasFlag(FLAG_COMPILER_GENERATED) &&
+        fn->numFormals() >= 1) {
+      ArgSymbol* lhs = fn->getFormal(1);
+      Type* t = lhs->getValType();
+      if (t == at)
+        return fn;
+    }
+  }
+  return NULL;
+}
+
+
+static void
+checkDefaultInitEqAndAssign()
+{
+  for_alive_in_Vec(TypeSymbol, ts, gTypeSymbols) {
+    if (ts->hasFlag(FLAG_EXTERN))
+      continue; // can't make init= for extern types today anyway
+    if (!isRecord(ts->type) && !isUnion(ts->type))
+      continue; // can't make init= for non-records non-unions today anyway
+
+    AggregateType* at = toAggregateType(ts->type);
+    bool defaultInitEq = ts->hasFlag(FLAG_TYPE_DEFAULT_INIT_EQUAL);
+    bool customInitEq = ts->hasFlag(FLAG_TYPE_CUSTOM_INIT_EQUAL);
+    bool defaultAssign = ts->hasFlag(FLAG_TYPE_DEFAULT_ASSIGN);
+    bool customAssign = ts->hasFlag(FLAG_TYPE_CUSTOM_ASSIGN);
+    if (defaultInitEq && customAssign) {
+      USR_FATAL_CONT(ts, "Type '%s' uses compiler-generated default 'init=' "
+                         "but has a custom '=' function. "
+                         "Please add an 'init=' method",
+                         toString(ts->type));
+      if (FnSymbol* userAssign = findUserAssign(at))
+        USR_PRINT(userAssign, "'=' for '%s' defined here", toString(ts->type));
+    }
+    if (defaultInitEq && customInitEq) {
+      USR_FATAL_CONT(ts, "Type '%s' uses compiler-generated default 'init=' "
+                         "but also has a custom 'init=' method. "
+                         "Please add an 'init=' method with the same RHS type",
+                         toString(ts->type));
+      if (FnSymbol* userInitEq = findUserInitEq(at))
+        USR_PRINT(userInitEq, "'init=' for '%s' defined here", toString(ts->type));
+    }
+
+    if (customInitEq && defaultAssign) {
+      USR_FATAL_CONT(ts, "Type '%s' uses compiler-generated default '=' "
+                         "but has a custom 'init=' method. "
+                         "Please add a '=' function.",
+                         toString(ts->type));
+      if (FnSymbol* userInitEq = findUserInitEq(at))
+        USR_PRINT(userInitEq, "'init=' for '%s' defined here", toString(ts->type));
+    }
+    if (defaultAssign && customAssign) {
+      USR_FATAL_CONT(ts, "Type '%s' uses compiler-generated default '=' "
+                         "but also has a custom '=' function. "
+                         "Please add a '=' function with the same RHS type.",
+                         toString(ts->type));
+      if (FnSymbol* userAssign = findUserAssign(at))
+        USR_PRINT(userAssign, "'=' for '%s' defined here", toString(ts->type));
+    }
+  }
+}
+
 
 // TODO: Can this be merged with checkFormalActualTypesMatch()?
 static void
@@ -804,7 +871,7 @@ checkFormalActualTypesMatch()
             // Exact match, so OK.
             continue;
 
-          if (isClass(formal->type))
+          if (isClassLikeOrPtr(formal->type))
             // dtNil can be converted to any class type, so OK.
             continue;
 

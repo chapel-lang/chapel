@@ -1,6 +1,9 @@
 use FileSystem;
 use Spawn;
 use Sort;
+use List;
+use IO;
+use SysCTypes;
 
 // a SHA-1 hash is 160 bits, so it fits in 3 64-bit ints.
 type Hash = (20*uint(8));
@@ -15,14 +18,14 @@ extern proc SHA1(d:c_ptr(uint(8)), n:size_t, md:c_ptr(uint(8)));
 
 proc main(args:[] string)
 {
-  var paths:[1..0] string;
+  var paths: list(string);
 
   for arg in args[1..] {
     if isFile(arg) then
-      paths.push_back(arg);
+      paths.append(arg);
     else if isDir(arg) then
       for path in findfiles(arg, recursive=true) do
-        paths.push_back(path);
+        paths.append(path);
   }
 
   // Create an array of hashes and file ids
@@ -30,12 +33,13 @@ proc main(args:[] string)
   var hashAndFileId:[1..paths.size] (Hash, int);
 
   // Compute the SHA1 sums using the extern calls
-  forall (id,path) in zip(paths.domain, paths) {
+  var pathsArray = paths.toArray();
+  forall (id,path) in zip(pathsArray.domain, pathsArray) {
     var mdArray:[1..20] uint(8);
     var data:string;
     var f = open(path, iomode.r);
     f.reader(kind=iokind.native).readstring(data);
-    SHA1(data.c_str():c_ptr(uint(8)), data.length:uint, c_ptrTo(mdArray));
+    SHA1(data.c_str():c_ptr(uint(8)), data.numBytes:uint, c_ptrTo(mdArray));
     var hash:Hash;
     for i in 1..20 do
       hash(i) = mdArray(i);

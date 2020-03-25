@@ -29,7 +29,7 @@ proc doit() {
   writeln("p=", p, " q=", q);
   p.x = 1.0; p.y = 0;
   q.x = 1.0;
-  foo(10, p, p:C);
+  foo(10, p, p:borrowed C);
   writeln("p=", p, " q=", q);
 }
 

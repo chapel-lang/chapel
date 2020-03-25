@@ -1,1 +1,2 @@
-init2.chpl:8: error: halt reached - array index out of bounds: (1)
+init2.chpl:8: error: halt reached - array index out of bounds
+note: index was 1 but array bounds are 0..10 by 3

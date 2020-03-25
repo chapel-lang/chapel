@@ -29,10 +29,8 @@ type indexType = int,
 //
 config const tl1 = 2,
              tl2 = 2;
-var tla: [0..#tl1, 0..#tl2] locale;
 var tld: bool;  // whether our targetLocales are all distinct
-
-setupTargetLocales();
+var tla: [0..#tl1, 0..#tl2] locale = setupTargetLocales();
 
 config const useRandomSeed = true,
              seed = if useRandomSeed then SeedGenerator.oddCurrentTime else 31415;
@@ -57,14 +55,14 @@ const MatVectSpace = {1..n, 1..n+1};
 
 const
   bdim1 =
-    new unmanaged BlockDim(tl1, 1, nbb1), //MBD //BD
-//  new BlockCyclicDim(lowIdx=st1, blockSize=blkSize, numLocales=tl1, name="D1"), //MBC //BC
-  rdim1 = new unmanaged ReplicatedDim(tl1),
+    new BlockDim(tl1, 1, nbb1), //MBD //BD
+//  new BlockCyclicDim(lowIdx=st1, blockSize=blkSize, numLocales=tl1), //MBC //BC
+  rdim1 = new ReplicatedDim(tl1),
 
   bdim2 =
-    new unmanaged BlockDim(tl2, 1, nbb2), //MBD //BD
-//  new BlockCyclicDim(lowIdx=st2, blockSize=blkSize, numLocales=tl2, name="D2"), //MBC //BC
-  rdim2 = new unmanaged ReplicatedDim(tl2);
+    new BlockDim(tl2, 1, nbb2), //MBD //BD
+//  new BlockCyclicDim(lowIdx=st2, blockSize=blkSize, numLocales=tl2), //MBC //BC
+  rdim2 = new ReplicatedDim(tl2);
 
 const AbD: domain(2, indexType)
 // dmapped Block(boundingBox={1..nbb1, 1..nbb2}, targetLocales=tla) //MBD
@@ -142,7 +140,7 @@ proc schurComplement(AD, BD, Rest) {
 
 // If Rest is empty, panelSolve and updateBlockRow are still meaningful?
 // Otherwise don't invoke schurComplement at all.
-  if Rest.numIndices == 0 {
+  if Rest.size == 0 {
     vwln("  Rest is empty");
     return;
   }
@@ -185,8 +183,9 @@ proc schurComplement(AD, BD, Rest) {
 }
 
 proc setupTargetLocales() {
+  var tla: [0..#tl1, 0..#tl2] locale;
   writeln("setting up for ", tl1, "*", tl2, " locales");
-  tld = numLocales >= tla.numElements;
+  tld = numLocales >= tla.size;
   if tld {
     var i = 0;
     for l in tla { l = Locales[i]; i += 1; }
@@ -195,6 +194,7 @@ proc setupTargetLocales() {
     tla = Locales(0);
   }
   vwln("target locales =\n", tla, "\n");
+  return tla;
 }
 
 // random initialization

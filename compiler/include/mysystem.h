@@ -1,4 +1,5 @@
 /*
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
@@ -24,6 +25,7 @@ extern bool printSystemCommands;
 
 int mysystem(const char* command, 
              const char* description, 
-             bool        ignorestatus = false);
+             bool        ignorestatus = false,
+             bool        quiet = false);
 
 #endif

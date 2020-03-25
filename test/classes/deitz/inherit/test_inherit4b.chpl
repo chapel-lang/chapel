@@ -16,9 +16,9 @@ proc foo(c : borrowed C) {
   c.print();
 }
 
-var c : borrowed C;
+var c : borrowed C?;
 
 c = new borrowed C();
-foo(c);
+foo(c!);
 c = new borrowed D();
-foo(c);
+foo(c!);

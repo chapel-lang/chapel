@@ -13,6 +13,7 @@
 // with slicing to functions doesn't seem to be fully supported yet,
 // the pivot calculation and the swapping of pivot rows is coded inline
 // in the algorithm.
+use IO;
 
 param n = 10;
 param blk = 5;
@@ -109,7 +110,7 @@ writeln("Pivot Vector:");
 writeln(piv);
 
 iter IterateByBlocks(D:range,blksize) {
-  var n = D.length;
+  var n = D.size;
   var lo,hi: int;
 
   for i in D by blksize {

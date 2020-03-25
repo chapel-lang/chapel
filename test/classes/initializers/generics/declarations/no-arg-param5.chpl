@@ -13,10 +13,10 @@ class Foo {
 }
 
 var foo3 = new borrowed Foo();
-var foo: borrowed Foo(4); // We can create an instantiation with p = 4
-var foo2: borrowed Foo(4);
+var foo: borrowed Foo(4)?; // We can create an instantiation with p = 4
+var foo2: borrowed Foo(4)?;
 writeln(foo.type == foo2.type);
-writeln(foo.type == foo3.type);
+writeln(foo.type == foo3.type?);
 writeln(foo.type:string);
 writeln(foo2.type: string);
 writeln(foo3.type: string);

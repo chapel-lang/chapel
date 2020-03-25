@@ -1,7 +1,7 @@
 all: 
 	@echo This Makefile is not intended to be called directly.
 	@echo It is used for running unit tests within the automated testing harness provided with the Berkeley UPC runtime.
-	@echo For information on downloading and using Berkeley UPC, see: http://upc.lbl.gov
+	@echo For information on downloading and using Berkeley UPC, see: https://upc.lbl.gov
 	@exit 1
 
 PERL ?= perl

@@ -1,3 +1,4 @@
+# Copyright 2020 Hewlett Packard Enterprise Development LP
 # Copyright 2004-2019 Cray Inc.
 # Other additional copyright holders may be indicated within.
 # 
@@ -33,9 +34,8 @@ include $(COMPILER_ROOT)/make/Makefile.compiler.head
 #
 
 MAKE_PRIMS = make_prims$(EXE_SUFFIX)
-MAKE_PRIMS_SVN_SRCS = \
+MAKE_PRIMS_SRCS = \
 	make_prims.cpp
-MAKE_PRIMS_SRCS = $(MAKE_PRIMS_SVN_SRCS)
 MAKE_PRIMS_OBJS = $(MAKE_PRIMS_SRCS:%.cpp=$(OBJ_SUBDIR)/%.o)
 
 
@@ -43,7 +43,7 @@ MAKE_PRIMS_OBJS = $(MAKE_PRIMS_SRCS:%.cpp=$(OBJ_SUBDIR)/%.o)
 # standard subdirectory variables
 #
 
-SVN_SRCS = $(MAKE_PRIMS_SVN_SRCS)
+SRCS = $(MAKE_PRIMS_SRCS)
 EXECS = $(MAKE_PRIMS)
 
 

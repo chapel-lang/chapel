@@ -1,3 +1,5 @@
+use SysCTypes;
+
 extern proc sizeof(e): size_t;
 
 /* Testing that the size reported is correct */

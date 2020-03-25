@@ -1,0 +1,4 @@
+> GET /test.txt HTTP/1.1
+< HTTP/1.0 200 OK
+> GET /test.txt HTTP/1.1
+< HTTP/1.0 200 OK

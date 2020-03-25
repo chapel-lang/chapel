@@ -1,0 +1,8 @@
+#!/bin/bash
+
+# Ignore line numbers in "note" lines for module files.
+
+outfile=$2
+regex='\|CHPL_HOME/modules|s/:[0-9:]*: note:/:nnnn: note:/'
+sed -e "$regex" $outfile > $outfile.tmp
+mv $outfile.tmp $outfile

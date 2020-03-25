@@ -4,7 +4,6 @@ module test {
   class Child : Parent { var c: int; }
 
   proc main() {
-    var co:owned Child = new owned Child(1,2);
     var coq:owned Child? = new owned Child(1,2);
     var cs:shared Child = new shared Child(1,2);
     var csq:shared Child? = new shared Child(1,2);
@@ -12,16 +11,128 @@ module test {
     var noq:owned Child? = nil;
     var nsq:shared Child? = nil;
 
+    // casting to generic Child
+    {
+      writeln();
+      writeln("casts to generic Child");
+      // co
+      {
+        var co:owned Child = new owned Child(1,2);
+        writeln("co:Child");
+        var x = co:Child;
+        writeln(x.type:string, " ", x);
+      }
+      // coq
+      {
+        writeln("coq:Child");
+        try {
+          var x = coq:Child;
+          writeln(x.type:string, " ", x);
+          coq = new owned Child(1,2); // because of ownership transfer
+        } catch e {
+          writeln(e);
+          halt("fail");
+        }
+      }
+      // cs
+      {
+        writeln("cs:Child");
+        var x = cs:Child;
+        writeln(x.type:string, " ", x);
+      }
+      // csq
+      {
+        writeln("csq:Child");
+        try {
+          var x = csq:Child;
+          writeln(x.type:string, " ", x);
+        } catch e {
+          writeln(e);
+          halt("fail");
+        }
+      }
+      // noq
+      {
+        writeln("noq:Child");
+        try {
+          var x = noq:Child;
+          writeln(x.type:string, " ", x);
+          halt("fail");
+        } catch e {
+          writeln(e);
+        }
+      }
+      // nsq
+      {
+        writeln("nsq:Child");
+        try {
+          var x = nsq:Child;
+          writeln(x.type:string, " ", x);
+          halt("fail");
+        } catch e {
+          writeln(e);
+        }
+      }
+    }
+
+    // casting to generic Child?
+    {
+      writeln();
+      writeln("casts to generic Child?");
+      // co
+      {
+        var co:owned Child = new owned Child(1,2);
+        writeln("co:Child?");
+        var x = co:Child?;
+        writeln(x.type:string, " ", x);
+      }
+      // coq
+      {
+        writeln("coq:Child?");
+        var x = coq:Child?;
+        writeln(x.type:string, " ", x);
+        coq = new owned Child(1,2); // because of ownership transfer
+      }
+      // cs
+      {
+        writeln("cs:Child?");
+        var x = cs:Child?;
+        writeln(x.type:string, " ", x);
+      }
+      // csq
+      {
+        writeln("csq:Child?");
+        var x = csq:Child?;
+        writeln(x.type:string, " ", x);
+      }
+      // noq
+      {
+        writeln("noq:Child?");
+        var x = noq:Child?;
+        writeln(x.type:string, " ", x);
+        assert(x == nil);
+      }
+      // nsq
+      {
+        writeln("nsq:Child?");
+        var x = nsq:Child?;
+        writeln(x.type:string, " ", x);
+        assert(x == nil);
+      }
+    }
+
+
     // casting to borrowed Child
     {
       writeln();
       writeln("casts to borrowed Child");
       // co
       {
+        var co:owned Child = new owned Child(1,2);
         writeln("co:borrowed Child");
         var x = co:borrowed Child;
         writeln(x.type:string, " ", x);
-        var y = co:borrowed;
+        var y = co:borrowed class;
         writeln(y.type:string, " ", y);
       }
       // coq
@@ -35,7 +146,7 @@ module test {
           halt("fail");
         }
         try {
-          var y = coq:borrowed;
+          var y = coq:borrowed class;
           writeln(y.type:string, " ", y);
         } catch e {
           writeln(e);
@@ -47,7 +158,7 @@ module test {
         writeln("cs:borrowed Child");
         var x = cs:borrowed Child;
         writeln(x.type:string, " ", x);
-        var y = cs:borrowed;
+        var y = cs:borrowed class;
         writeln(y.type:string, " ", y);
       }
       // csq
@@ -61,7 +172,7 @@ module test {
           halt("fail");
         }
         try {
-          var y = csq:borrowed;
+          var y = csq:borrowed class;
           writeln(y.type:string, " ", y);
         } catch e {
           writeln(e);
@@ -79,7 +190,7 @@ module test {
           writeln(e);
         }
         try {
-          var y = noq:borrowed;
+          var y = noq:borrowed class;
           writeln(y.type:string, " ", y);
           halt("fail");
         } catch e {
@@ -97,7 +208,7 @@ module test {
           writeln(e);
         }
         try {
-          var y = nsq:borrowed;
+          var y = nsq:borrowed class;
           writeln(y.type:string, " ", y);
           halt("fail");
         } catch e {
@@ -112,10 +223,11 @@ module test {
       writeln("casts to borrowed Child?");
       // co
       {
+        var co:owned Child = new owned Child(1,2);
         writeln("co:borrowed Child?");
         var x = co:borrowed Child?;
         writeln(x.type:string, " ", x);
-        var y = co:borrowed?;
+        var y = co:borrowed class?;
         writeln(y.type:string, " ", y);
       }
       // coq
@@ -123,7 +235,7 @@ module test {
         writeln("coq:borrowed Child?");
         var x = coq:borrowed Child?;
         writeln(x.type:string, " ", x);
-        var y = coq:borrowed?;
+        var y = coq:borrowed class?;
         writeln(y.type:string, " ", y);
       }
       // cs
@@ -131,7 +243,7 @@ module test {
         writeln("cs:borrowed Child?");
         var x = cs:borrowed Child?;
         writeln(x.type:string, " ", x);
-        var y = cs:borrowed?;
+        var y = cs:borrowed class?;
         writeln(y.type:string, " ", y);
       }
       // csq
@@ -139,7 +251,7 @@ module test {
         writeln("csq:borrowed Child?");
         var x = csq:borrowed Child?;
         writeln(x.type:string, " ", x);
-        var y = csq:borrowed?;
+        var y = csq:borrowed class?;
         writeln(y.type:string, " ", y);
       }
       // noq
@@ -148,7 +260,7 @@ module test {
         var x = noq:borrowed Child?;
         writeln(x.type:string, " ", x);
         assert(x == nil);
-        var y = noq:borrowed?;
+        var y = noq:borrowed class?;
         writeln(y.type:string, " ", y);
         assert(y == nil);
       }
@@ -158,7 +270,7 @@ module test {
         var x = nsq:borrowed Child?;
         writeln(x.type:string, " ", x);
         assert(x == nil);
-        var y = nsq:borrowed?;
+        var y = nsq:borrowed class?;
         writeln(y.type:string, " ", y);
         assert(y == nil);
       }
@@ -170,13 +282,12 @@ module test {
       writeln("casts to owned Child");
       // co
       {
+        var co:owned Child = new owned Child(1,2);
         writeln("co:owned Child");
         var x = co:owned Child;
         writeln(x.type:string, " ", x);
-        co = new owned Child(1,2); // because of ownership transfer
         //var y = co:owned;
         //writeln(y.type:string, " ", y);
-        //co = new owned Child(1,2); // because of ownership transfer
       }
       // coq
       {
@@ -224,13 +335,12 @@ module test {
       writeln("casts to owned Child?");
       // co
       {
+        var co:owned Child = new owned Child(1,2);
         writeln("co:owned Child?");
         var x = co:owned Child?;
         writeln(x.type:string, " ", x);
-	co = new owned Child(1,2); // because of ownership transfer
         //var y = co:owned?;
         //writeln(y.type:string, " ", y);
-	//co = new owned Child(1,2); // because of ownership transfer
       }
       // coq
       {
@@ -331,12 +441,123 @@ module test {
       }
     }
 
+    // casting to generic Parent
+    {
+      writeln();
+      writeln("casts to generic Parent");
+      // co
+      {
+        var co:owned Child = new owned Child(1,2);
+        writeln("co:Parent");
+        var x = co:Parent;
+        writeln(x.type:string, " ", x);
+      }
+      // coq
+      {
+        writeln("coq:Parent");
+        try {
+          var x = coq:Parent;
+          writeln(x.type:string, " ", x);
+          coq = new owned Child(1,2); // because of ownership transfer
+        } catch e {
+          writeln(e);
+          halt("fail");
+        }
+      }
+      // cs
+      {
+        writeln("cs:Parent");
+        var x = cs:Parent;
+        writeln(x.type:string, " ", x);
+      }
+      // csq
+      {
+        writeln("csq:Parent");
+        try {
+          var x = csq:Parent;
+          writeln(x.type:string, " ", x);
+        } catch e {
+          writeln(e);
+          halt("fail");
+        }
+      }
+      // noq
+      {
+        writeln("noq:Parent");
+        try {
+          var x = noq:Parent;
+          writeln(x.type:string, " ", x);
+          halt("fail");
+        } catch e {
+          writeln(e);
+        }
+      }
+      // nsq
+      {
+        writeln("nsq:Parent");
+        try {
+          var x = nsq:Parent;
+          writeln(x.type:string, " ", x);
+          halt("fail");
+        } catch e {
+          writeln(e);
+        }
+      }
+    }
+
+    // casting to generic Parent?
+    {
+      writeln();
+      writeln("casts to generic Parent?");
+      // co
+      {
+        var co:owned Child = new owned Child(1,2);
+        writeln("co:Parent?");
+        var x = co:Parent?;
+        writeln(x.type:string, " ", x);
+      }
+      // coq
+      {
+        writeln("coq:Parent?");
+        var x = coq:Parent?;
+        writeln(x.type:string, " ", x);
+        coq = new owned Child(1,2); // because of ownership transfer
+      }
+      // cs
+      {
+        writeln("cs:Parent?");
+        var x = cs:Parent?;
+        writeln(x.type:string, " ", x);
+      }
+      // csq
+      {
+        writeln("csq:Parent?");
+        var x = csq:Parent?;
+        writeln(x.type:string, " ", x);
+      }
+      // noq
+      {
+        writeln("noq:Parent?");
+        var x = noq:Parent?;
+        writeln(x.type:string, " ", x);
+        assert(x == nil);
+      }
+      // nsq
+      {
+        writeln("nsq:Parent?");
+        var x = nsq:Parent?;
+        writeln(x.type:string, " ", x);
+        assert(x == nil);
+      }
+    }
+
     // casting to borrowed Parent
     {
       writeln();
       writeln("casts to borrowed Parent");
       // co
       {
+        var co:owned Child = new owned Child(1,2);
         writeln("co:borrowed Parent");
         var x = co:borrowed Parent;
         writeln(x.type:string, " ", x);
@@ -399,6 +620,7 @@ module test {
       writeln("casts to borrowed Parent?");
       // co
       {
+        var co:owned Child = new owned Child(1,2);
         writeln("co:borrowed Parent?");
         var x = co:borrowed Parent?;
         writeln(x.type:string, " ", x);
@@ -443,10 +665,10 @@ module test {
       writeln("casts to owned Parent");
       // co
       {
+        var co:owned Child = new owned Child(1,2);
         writeln("co:owned Parent");
         var x = co:owned Parent;
         writeln(x.type:string, " ", x);
-        co = new owned Child(1,2); // because of ownership transfer
       }
       // coq
       {
@@ -479,6 +701,7 @@ module test {
       writeln("casts to owned Parent?");
       // co
       {
+        var co:owned Child = new owned Child(1,2);
         writeln("co:owned Parent?");
         var x = co:owned Parent?;
         writeln(x.type:string, " ", x);

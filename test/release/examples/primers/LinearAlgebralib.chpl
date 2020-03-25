@@ -7,7 +7,7 @@
   .. contents:: Table of Contents
 
 */
-use LinearAlgebra;
+use LinearAlgebra, Norm;
 
 /*
 
@@ -392,7 +392,7 @@ writeln(isTriu(upper, k=1));    // false (k=1 does not include diagonal)
   LinearAlgebra.Sparse
   --------------------
 
-  The :mod:`LinearAlgebra.Sparse` submodule supports operations on sparse
+  The :mod:`Sparse` submodule supports operations on sparse
   matrices.
 
   When using the :mod:`LinearAlgebra` module, this submodule can be accessed
@@ -454,7 +454,7 @@ use LinearAlgebra.Sparse;
   Factory Functions
   ~~~~~~~~~~~~~~~~~
 
-  The :mod:`LinearAlgebra.Sparse` submodule provides
+  The :mod:`Sparse` submodule provides
   factory functions for both sparse domains and sparse matrices.
 
   In Chapel, sparse domains can only be modified directly, so it is important

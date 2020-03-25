@@ -1,5 +1,6 @@
 use LinearAlgebra;
 use TestUtils;
+use IO;
 
 /* LinearAlgebra correctness tests that do not depend on BLAS/LAPACK
 
@@ -916,4 +917,82 @@ use TestUtils;
                                    "Error in matPow with sparse matrices : non-standard domain");
      */
   }
+
+  // Matrix Properties
+  {
+    // Create dense, COO, and CSR domains
+    var domDense: domain(2) = {1..3, 1..3},
+        domCOO: sparse subdomain(domDense),
+        domCSR: sparse subdomain(domDense) dmapped CS();
+
+    // Create dense, COO, and CSR matrices (arrays)
+    var matDense: [domDense] complex,
+        matCOO: [domCOO] complex,
+        matCSR: [domCSR] complex;
+
+
+    // Make matrices diagonal
+    matDense[2,2] = 1.0;
+
+    domCOO += (2,2);
+    matCOO[2,2] = 1.0;
+
+    domCSR += (2,2);
+    matCSR[2,2] = 1.0;
+
+    // Verify matrices are diagonal
+    assertTrue(isDiag(matDense), 'isDiag(matDense)');
+    assertTrue(isDiag(matCOO), 'isDiag(matCOO)');
+    assertTrue(isDiag(matCSR), 'isDiag(matCSR)');
+
+
+    // Make matrices non-symmetric and non-diagonal
+    matDense[1,2] = 1.0i;
+
+    domCOO += (1,2);
+    matCOO[1,2] = 1.0i;
+
+    domCSR += (1,2);
+    matCSR[1,2] = 1.0i;
+
+    // Verify matrices are not diagonal
+    assertFalse(isDiag(matDense), 'isDiag(matDense)');
+    assertFalse(isDiag(matCOO), 'isDiag(matCOO)');
+    assertFalse(isDiag(matCSR), 'isDiag(matCSR)');
+
+    // Verify matrices are not symmetric
+    assertFalse(isSymmetric(matDense), 'isSymmetric(matDense)');
+    assertFalse(isSymmetric(matCOO), 'isSymmetric(matCOO)');
+    assertFalse(isSymmetric(matCSR), 'isSymmetric(matCSR)');
+
+    // Verify matrices are not Hermitian
+    assertFalse(isHermitian(matDense), 'isHermitian(matDense)');
+    assertFalse(isHermitian(matCOO), 'isHermitian(matCOO)');
+    assertFalse(isHermitian(matCSR), 'isHermitian(matCSR)');
+
+    // Make matrices symmetric
+    matDense[2,1] = 1.0i;
+
+    domCOO += (2,1);
+    matCOO[2,1] = 1.0i;
+
+    domCSR += (2,1);
+    matCSR[2,1] = 1.0i;
+
+    // Verify matrices are symmetric
+    assertTrue(isSymmetric(matDense), 'isSymmetric(matDense)');
+    assertTrue(isSymmetric(matCOO), 'isSymmetric(matCOO)');
+    assertTrue(isSymmetric(matCSR), 'isSymmetric(matCSR)');
+
+    // Make matrices Hermitian
+    matDense[2,1] = -1.0i;
+    matCOO[2,1] = -1.0i;
+    matCSR[2,1] = -1.0i;
+
+    // Verify matrices are Hermitian
+    assertTrue(isHermitian(matDense), 'isHermitian(matDense)');
+    assertTrue(isHermitian(matCOO), 'isHermitian(matCOO)');
+    assertTrue(isHermitian(matCSR), 'isHermitian(matCSR)');
+
+  } // Matrix Properties
 } // LinearAlgebra.Sparse

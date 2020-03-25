@@ -238,10 +238,10 @@ int main(int argc, char **argv) {
       (testid > NUMTEST && testid < 100) || 
       numpthreads <= 1) test_usage_early();
 
-  peer = mynode ^ 1;
+  peer = mynode + 1;
   if (peer == nodes) {
-    /* w/ odd # of nodes, last one talks to self */
-    peer = mynode;
+    // w/ odd # of ranks, last one talks to self, else to 0
+    peer = (nodes%2) ? mynode : 0;
   }
 
   if (testid < 100) {
@@ -412,8 +412,15 @@ void do_crash_test(int crashid) {
         *(float volatile *)p = *(float volatile *)p + 10;
         *(double volatile *)p = *(double volatile *)p + 10;
         gasnett_sched_yield();
+        sleep(1);
+        MSG("Failed to generate implicit SIGBUS, trying raise(SIGBUS)..");
+        raise(SIGBUS);
+        gasnett_sched_yield();
+        sleep(1);
+        MSG("Failed to generate implicit SIGBUS, trying kill(%li,SIGBUS)..",(long)getpid());
         kill(getpid(), SIGBUS);
         gasnett_sched_yield();
+        sleep(1);
         FATALERR("Failed to generate a bus error");
       }
       BARRIER();
@@ -429,8 +436,15 @@ void do_crash_test(int crashid) {
         for (;i < 1000;i++) d /= 1.0E30;
         i = 16 / i;
         gasnett_sched_yield();
+        sleep(1);
+        MSG("Failed to generate implicit SIGFPE, trying raise(SIGFPE)..");
+        raise(SIGFPE);
+        gasnett_sched_yield();
+        sleep(1);
+        MSG("Failed to generate implicit SIGFPE, trying kill(%li,SIGFPE)..",(long)getpid());
         kill(getpid(), SIGFPE);
         gasnett_sched_yield();
+        sleep(1);
         FATALERR("Failed to generate a floating-point exception");
       }
       BARRIER();

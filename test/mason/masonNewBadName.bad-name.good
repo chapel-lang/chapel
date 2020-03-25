@@ -1,1 +1,2 @@
-Bad package name 'bad-name' - only Chapel identifiers are legal package names
+Bad package name 'bad-name' - only Chapel identifiers are legal package names.
+Please use mason new bad-name --name <LegalName>

@@ -1,4 +1,5 @@
 /*
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -20,11 +21,8 @@
 // ChapelReduce.chpl
 //
 module ChapelReduce {
-  use ChapelStandard;
-
-  config param enableParScan = false;
-  if enableParScan then
-    compilerWarning("'enableParScan' has been deprecated (it is now always enabled)");
+  private use ChapelStandard;
+  private use ChapelLocks;
 
   proc chpl__scanStateResTypesMatch(op) param {
     type resType = op.generate().type;
@@ -311,22 +309,15 @@ module ChapelReduce {
     var value = _maxloc_id(eltType);
 
     proc identity return _maxloc_id(eltType);
-    proc accumulate(x) {
-      if x(1) > value(1) ||
-        ((x(1) == value(1)) && (x(2) < value(2))) then
-        value = x;
-    }
+    proc accumulate(x) { accumulateOntoState(value, x); }
     proc accumulateOntoState(ref state, x) {
       if x(1) > state(1) ||
-        ((x(1) == state(1)) && (x(2) < state(2))) then
+        ((x(1) == state(1)) && (x(2) < state(2))) ||
+        (gotNaN(x(1)) && ( (! gotNaN(state(1))) || (x(2) < state(2)) ))
+      then
         state = x;
     }
-    proc combine(x) {
-      if x.value(1) > value(1) ||
-        ((x.value(1) == value(1)) && (x.value(2) < value(2))) {
-          value = x.value;
-      }
-    }
+    proc combine(x) { accumulateOntoState(value, x.value); }
     proc generate() return value;
     proc clone() return new unmanaged maxloc(eltType=eltType);
   }
@@ -336,24 +327,19 @@ module ChapelReduce {
     var value = _minloc_id(eltType);
 
     proc identity return _minloc_id(eltType);
-    proc accumulate(x) {
-      if x(1) < value(1) ||
-        ((x(1) == value(1)) && (x(2) < value(2))) then
-        value = x;
-    }
+    proc accumulate(x) { accumulateOntoState(value, x); }
     proc accumulateOntoState(ref state, x) {
       if x(1) < state(1) ||
-        ((x(1) == state(1)) && (x(2) < state(2))) then
+        ((x(1) == state(1)) && (x(2) < state(2))) ||
+        (gotNaN(x(1)) && ( (! gotNaN(state(1))) || (x(2) < state(2)) ))
+      then
         state = x;
     }
-    proc combine(x) {
-      if x.value(1) < value(1) ||
-        ((x.value(1) == value(1)) && (x.value(2) < value(2))) {
-          value = x.value;
-      }
-    }
+    proc combine(x) { accumulateOntoState(value, x.value); }
     proc generate() return value;
     proc clone() return new unmanaged minloc(eltType=eltType);
   }
 
+  private inline proc gotNaN(value) where isReal(value) return isnan(value);
+  private        proc gotNaN(value) param return false;
 }

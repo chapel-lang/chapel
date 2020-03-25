@@ -109,8 +109,8 @@ int main(int argc, char **argv) {
   }
   BARRIER();
 
+  TEST_SET_WAITMODE_RESERVE(pollers+1, 1);
 #ifdef GASNET_PAR
-  TEST_SET_WAITMODE(pollers+1);
   if (pollers)
       test_createandjoin_pthreads(pollers+1,doTest,NULL,0);
   else
@@ -191,6 +191,19 @@ static void * doTest(void *arg) {
     } else if (0 != result) {
       MSG("ERROR: Wrong gasnet_barrier_result() value from named notify with anonymous wait.");
       gasnet_exit(1);
+    }
+
+    // GASNet-EX barriers can overlap
+    { gex_Event_t ev[8];
+      const int count = sizeof(ev) / sizeof(*ev);
+      // Initiate multiple split-phase barriers:
+      for (int i = 0; i < count; ++i) {
+        ev[i] = gex_Coll_BarrierNB(myteam, 0);
+      }
+      // Retire them out-of-order
+      for (int i = 0; i < count; ++i) {
+        gex_Event_Wait(ev[(mynode + i) % count]);
+      }
     }
 
     if (nodes > 1) {

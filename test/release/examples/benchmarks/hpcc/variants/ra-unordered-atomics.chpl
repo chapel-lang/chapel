@@ -9,7 +9,7 @@ use BlockDist, Time;
 //
 use HPCCProblemSize, RARandomStream;
 
-use UnorderedAtomics;
+use UnorderedAtomics, PeekPoke;
 
 //
 // The number of tables as well as the element and index types of

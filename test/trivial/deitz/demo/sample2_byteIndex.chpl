@@ -1,7 +1,7 @@
 use LinkedLists;
 
 config var phrase : string = "shuffle me please";
-const n = (phrase.length);
+const n = (phrase.numBytes);
 
 var encoded = phrase[1:byteIndex..n:byteIndex by 2] + phrase[2:byteIndex..n:byteIndex by 2];
 

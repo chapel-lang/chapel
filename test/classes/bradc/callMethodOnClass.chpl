@@ -9,7 +9,7 @@ proc newC() {
 }
 
 class D {
-  var y: owned C;
+  var y: owned C?;
 
   proc start {
     y = newC();

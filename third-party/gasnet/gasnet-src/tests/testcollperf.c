@@ -703,8 +703,8 @@ int main(int argc, char **argv)
   /* Need to test_init before gasnet_attach to use TEST_LOCALPROCS() */
   test_init_early("testcollperf",(performance_iters != 0),
                   "[options] (max data size) (outer_verification_iters) (inner_verification_iters) (performance_iters) " PAR_USAGE "(test sections)\n"
-                  "  The '-{src,dst}-{-out} options selects whether src and dst\n"
-                  "  buffers are in the GASNet segment or not (defaults are 'in').\n"
+                  "  The '-{src,dst}-{in,out} options selects whether src and dst\n"
+                  "   buffers are in the GASNet segment or not (defaults are 'in').\n"
                   "  -szfactor <f>   \n"
                   "            selects f as growth factor for data sizes."
                  );

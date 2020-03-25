@@ -10,6 +10,6 @@ class Foo {
   }
 }
 
-var foo: borrowed Foo(real); // We can create an instantiation with t = real, but we
+var foo: borrowed Foo(real)?; // We can create an instantiation with t = real, but we
 // can never initialize it
 writeln(foo.type:string);

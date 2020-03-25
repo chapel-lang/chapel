@@ -1,0 +1,15 @@
+
+======================================================================
+FAIL test_WithModule.chpl: test_temperature()
+----------------------------------------------------------------------
+AssertionError: assertFalse failed. Given expression is True
+
+======================================================================
+SKIPPED test_WithModule.chpl: test3()
+----------------------------------------------------------------------
+TestSkipped: Skipping Test 3
+
+----------------------------------------------------------------------
+Ran 3 tests in n seconds
+
+FAILED (passed = 2 failures = 1 skipped = 1 )

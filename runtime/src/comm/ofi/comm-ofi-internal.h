@@ -1,4 +1,5 @@
 /*
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
@@ -53,6 +54,7 @@ FILE* chpl_comm_ofi_dbg_file;
 #define DBG_CFGAV                  0x80UL
 #define DBG_THREADS               0x100UL
 #define DBG_THREADDETAILS         0x200UL
+#define DBG_TCIPS                 0x800UL
 #define DBG_INTERFACE            0x1000UL
 #define DBG_AM                  0x10000UL
 #define DBG_AMSEND              0x20000UL
@@ -60,8 +62,11 @@ FILE* chpl_comm_ofi_dbg_file;
 #define DBG_RMA                0x100000UL
 #define DBG_RMAWRITE           0x200000UL
 #define DBG_RMAREAD            0x400000UL
+#define DBG_RMAUNORD           0x800000UL
 #define DBG_AMO               0x1000000UL
-#define DBG_ACK               0x2000000UL
+#define DBG_AMOREAD           0x2000000UL
+#define DBG_ACK               0x4000000UL
+#define DBG_ORDER             0x8000000UL
 #define DBG_MR               0x10000000UL
 #define DBG_MRDESC           0x20000000UL
 #define DBG_MRKEY            0x40000000UL
@@ -155,6 +160,16 @@ int chpl_comm_ofi_abort_on_error;
 //
 
 // wish we had typeof() in all target compilers ...
+
+#define CHK_SYS_MALLOC_SZ(p, n, s)                                      \
+    do {                                                                \
+      if ((p = sys_malloc((n) * (s))) == NULL) {                        \
+        INTERNAL_ERROR_V("sys_malloc(%#zx): out of memory",             \
+                         (size_t) (n) * (size_t) (s));                  \
+      }                                                                 \
+    } while (0)
+
+#define CHK_SYS_MALLOC(p, n) CHK_SYS_MALLOC_SZ(p, n, sizeof(*(p)))
 
 #define CHK_SYS_CALLOC_SZ(p, n, s)                                      \
     do {                                                                \

@@ -1,4 +1,5 @@
 /*
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -23,7 +24,7 @@
 // represent reindexings of another array via a domain.
 //
 module ArrayViewReindex {
-  use ChapelStandard;
+  private use ChapelStandard;
 
   //
   // This class represents a distribution that knows how to create
@@ -71,7 +72,7 @@ module ArrayViewReindex {
 
     // Don't want to privatize a DefaultRectangular, so pass the query on to
     // the wrapped array
-    proc dsiSupportsPrivatization() param
+    override proc dsiSupportsPrivatization() param
       return downDistInst.dsiSupportsPrivatization();
 
     proc dsiGetPrivatizeData() {
@@ -91,7 +92,7 @@ module ArrayViewReindex {
       //      _delete_dom(downdomInst, _isPrivatized(downdomInst));
     }
 
-    proc dsiIsLayout() param {
+    override proc dsiIsLayout() param {
       return downDistInst.dsiIsLayout();
     }
   }
@@ -283,7 +284,7 @@ module ArrayViewReindex {
       chpl_assignDomainWithGetSetIndices(this, rhs);
     }
 
-    proc isReindexDomainView() param {
+    override proc isReindexDomainView() param {
       return true;
     }
 
@@ -302,7 +303,7 @@ module ArrayViewReindex {
 
     // Don't want to privatize a DefaultRectangular, so pass the query on to
     // the wrapped array
-    proc dsiSupportsPrivatization() param
+    override proc dsiSupportsPrivatization() param
       return downdomInst.dsiSupportsPrivatization();
 
     proc dsiGetPrivatizeData() {
@@ -431,7 +432,7 @@ module ArrayViewReindex {
     // must be (or should be) some way to do it without relying on
     // methods like this...
     //
-    proc isReindexArrayView() param {
+    override proc isReindexArrayView() param {
       return true;
     }
 
@@ -481,11 +482,11 @@ module ArrayViewReindex {
     // I/O
     //
 
-    proc dsiSerialWrite(f) {
+    proc dsiSerialWrite(f) throws {
       chpl_serialReadWriteRectangular(f, this, privDom.updom);
     }
 
-    proc dsiSerialRead(f) {
+    proc dsiSerialRead(f) throws {
       chpl_serialReadWriteRectangular(f, this, privDom.updom);
     }
 
@@ -518,7 +519,6 @@ module ArrayViewReindex {
     }
 
     inline proc dsiAccess(i) ref {
-      checkBounds(i);
       if shouldUseIndexCache() {
         const dataIdx = indexCache.getDataIndex(i);
         return indexCache.getDataElem(dataIdx);
@@ -529,7 +529,6 @@ module ArrayViewReindex {
 
     inline proc dsiAccess(i)
       where shouldReturnRvalueByValue(eltType) {
-      checkBounds(i);
       if shouldUseIndexCache() {
         const dataIdx = indexCache.getDataIndex(i);
         return indexCache.getDataElem(dataIdx);
@@ -540,7 +539,6 @@ module ArrayViewReindex {
 
     inline proc dsiAccess(i) const ref
       where shouldReturnRvalueByConstRef(eltType) {
-      checkBounds(i);
       if shouldUseIndexCache() {
         const dataIdx = indexCache.getDataIndex(i);
         return indexCache.getDataElem(dataIdx);
@@ -560,12 +558,9 @@ module ArrayViewReindex {
       where shouldReturnRvalueByConstRef(eltType)
       return arr.dsiLocalAccess(chpl_reindexConvertIdx(i, privDom, downdom));
 
-    inline proc checkBounds(i) {
-      if boundsChecking then
-        if !privDom.dsiMember(i) then
-          halt("array index out of bounds: ", i);
+    inline proc dsiBoundsCheck(i) {
+      return privDom.dsiMember(i);
     }
-
 
     //
     // locality-oriented queries
@@ -584,7 +579,7 @@ module ArrayViewReindex {
 
     // Don't want to privatize a DefaultRectangular, so pass the query on to
     // the wrapped array
-    proc dsiSupportsPrivatization() param
+    override proc dsiSupportsPrivatization() param
       return _ArrInstance.dsiSupportsPrivatization();
 
     proc dsiGetPrivatizeData() {
@@ -682,7 +677,7 @@ module ArrayViewReindex {
       }
     }
 
-    proc doiCanBulkTransferRankChange() param
+    override proc doiCanBulkTransferRankChange() param
       return arr.doiCanBulkTransferRankChange();
 
     proc doiBulkTransferFromKnown(destDom, srcClass, srcDom) : bool {

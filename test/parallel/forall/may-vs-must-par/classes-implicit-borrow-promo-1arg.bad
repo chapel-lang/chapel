@@ -1,1 +1,0 @@
-classes-implicit-borrow-promo-1arg.chpl:7: error: non-lvalue actual is passed to a 'ref' formal of chpl__initCopy()

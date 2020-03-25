@@ -1,4 +1,5 @@
 /*
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
  * Copyright 2015-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -44,7 +45,7 @@
 #define MAX_LINE_LEN 1024
 
 #define EXPECTED_VMAJOR 1
-#define EXPECTED_VMINOR 3
+#define EXPECTED_VMINOR 4
 
 void DataModel::newList()
 {
@@ -884,7 +885,6 @@ int DataModel::LoadFile (const char *fileToOpen, int index, double seq)
     long locAddr;  // local address
     long remAddr;  // remote address
     int eSize;     // element size
-    int typeIx;    // type Index
     int dlen;      // data length
 
     // fork & task
@@ -1064,10 +1064,10 @@ int DataModel::LoadFile (const char *fileToOpen, int index, double seq)
       case 'g':  // regular get
       case 'p':  // regular put
         // All comm data:
-        // s.u nodeID otherNode loc-addr rem-addr elemSize typeIndex len commID lineno fileToOpen
-        if (sscanf (&linedata[nextCh], "%d %d %d 0x%lx 0x%lx %d %d %d %d %d %d",
-                    &nid, &rnid, &taskid, &locAddr, &remAddr, &eSize, & typeIx, &dlen,
-                    &commID, &nlineno, &nfileno) != 11) {
+        // s.u nodeID otherNode loc-addr rem-addr elemSize len commID lineno fileToOpen
+        if (sscanf (&linedata[nextCh], "%d %d %d 0x%lx 0x%lx %d %d %d %d %d",
+                    &nid, &rnid, &taskid, &locAddr, &remAddr, &eSize, &dlen,
+                    &commID, &nlineno, &nfileno) != 10) {
           fprintf (stderr, "Bad comm line: %s\n  '%s'\n", fileToOpen, line);
           nErrs++;
         } else {

@@ -1,0 +1,13 @@
+nilable-equalities.chpl:22: warning: owned MyClass
+nilable-equalities.chpl:23: warning: borrowed MyClass
+nilable-equalities.chpl:24: warning: owned MyClass?
+nilable-equalities.chpl:25: warning: shared MyClass
+nilable-equalities.chpl:26: warning: borrowed MyClass
+nilable-equalities.chpl:27: warning: shared MyClass?
+nilable-equalities.chpl:28: warning: borrowed MyClass
+nilable-equalities.chpl:29: warning: borrowed MyClass
+nilable-equalities.chpl:30: warning: borrowed MyClass?
+nilable-equalities.chpl:31: warning: unmanaged MyClass
+nilable-equalities.chpl:32: warning: borrowed MyClass
+nilable-equalities.chpl:33: warning: unmanaged MyClass?
+nilable-equalities.chpl:195: error: done

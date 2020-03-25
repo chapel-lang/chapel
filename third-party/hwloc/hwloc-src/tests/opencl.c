@@ -35,8 +35,10 @@ int main(void)
   if (!platform_ids)
     return 0;
   clret = clGetPlatformIDs(nrp, platform_ids, &nrp);
-  if (CL_SUCCESS != clret || !nrp)
+  if (CL_SUCCESS != clret || !nrp) {
+    free(platform_ids);
     return 0;
+  }
 
   count = 0;
   for(i=0; i<nrp; i++) {
@@ -49,8 +51,10 @@ int main(void)
     if (!device_ids)
       continue;
     clret = clGetDeviceIDs(platform_ids[i], CL_DEVICE_TYPE_ALL, nrd, device_ids, &nrd);
-    if (CL_SUCCESS != clret || !nrd)
+    if (CL_SUCCESS != clret || !nrd) {
+      free(device_ids);
       continue;
+    }
 
     for(j=0; j<nrd; j++) {
       hwloc_bitmap_t set;
@@ -104,7 +108,9 @@ int main(void)
 
       count++;
     }
+    free(device_ids);
   }
+  free(platform_ids);
 
   hwloc_topology_destroy(topology);
 

@@ -28,7 +28,7 @@ class blockIndices {
 }
 
 // config const nlocales = 5;
-var task : sync unmanaged blockIndices;
+var task : sync unmanaged blockIndices?;
  
 proc buildjk() {
   cobegin {
@@ -37,13 +37,12 @@ proc buildjk() {
       begin  
     */ 
         {	      	
-          var bI, copyofbI : unmanaged blockIndices;
-          bI = task;
+          var bI = task!;
           while (bI.ilo != 0) {
-            copyofbI = bI;
+            const copyofbI = bI;
             cobegin with (ref bI) {
               buildjk_atom4(copyofbI);
-              bI = task;
+              bI = task!;
             }
           }
           delete bI;

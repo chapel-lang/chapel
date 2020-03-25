@@ -1,4 +1,5 @@
 /*
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -128,6 +129,9 @@ other task is consuming it.
 
  */
 module Spawn {
+  public use IO;
+  public use SysError;
+  private use SysCTypes;
 
   private extern proc qio_openproc(argv:c_ptr(c_string),
                                    env:c_ptr(c_string),
@@ -178,7 +182,7 @@ module Spawn {
     param locking:bool;
 
     pragma "no doc"
-    var home:locale;
+    var home:locale = here;
 
     /* The Process ID number of the spawned process */
     var pid:int(64);
@@ -261,8 +265,7 @@ module Spawn {
        can write to the subprocess through this pipe if the subprocess
        was created with stdin=PIPE.
 
-       Causes a fatal error if the subprocess does not have a
-       stdin pipe open.
+       :throws SystemError: If the subprocess does not have a stdin pipe open.
      */
     proc stdin throws {
       try _throw_on_launch_error();
@@ -278,8 +281,7 @@ module Spawn {
        can read from the subprocess through this pipe if the subprocess
        was created with stdout=PIPE.
 
-       Causes a fatal error if the subprocess does not have a
-       stdout pipe open.
+       :throws SystemError: If the subprocess does not have a stdout pipe open.
      */
     proc stdout throws {
       try _throw_on_launch_error();
@@ -295,8 +297,7 @@ module Spawn {
        can read from the subprocess through this pipe if the subprocess
        was created with stderr=PIPE.
 
-       Causes a fatal error if the subprocess does not have a
-       stderr pipe open.
+       :throws SystemError: If the subprocess does not have a stderr pipe open.
      */
     proc stderr throws {
       try _throw_on_launch_error();
@@ -657,10 +658,10 @@ module Spawn {
   {
     if command.isEmpty() then
       throw new owned IllegalArgumentError('command cannot be an empty string');
+    
+    var args = if shellarg == "" then [executable, command]
+        else [executable, shellarg, command];
 
-    var args = [command];
-    if shellarg != "" then args.push_front(shellarg);
-    args.push_front(executable);
     return spawn(args, env, executable,
                  stdin=stdin, stdout=stdout, stderr=stderr,
                  kind=kind, locking=locking);
@@ -1033,7 +1034,7 @@ module Spawn {
     on home {
       err = qio_send_signal(pid, signal:c_int);
     }
-    if err then try ioerror(err, "in subprocess.send_signal, with signal " + signal);
+    if err then try ioerror(err, "in subprocess.send_signal, with signal " + signal:string);
   }
 
   // documented in the throws version

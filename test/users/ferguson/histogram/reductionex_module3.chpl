@@ -1,5 +1,6 @@
-
+module OuterModule {
   module Test {
+    import OuterModule.{NBUCKETS, min, max};
     /* these should already be defined:
     param NBUCKETS;
     var min;
@@ -60,4 +61,4 @@
   var counts = myhisto reduce array;
 
   writeln(counts);
-
+}

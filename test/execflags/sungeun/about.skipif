@@ -3,7 +3,6 @@ COMPOPTS <= --no-inline
 COMPOPTS <= --no-local
 COMPOPTS <= --fast
 COMPOPTS <= --verify
-COMPOPTS <= --llvm
 COMPOPTS <= --incremental
 COMPOPTS <= --denormalize
 COMPOPTS <= --warn-unstable

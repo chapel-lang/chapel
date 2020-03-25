@@ -6,8 +6,8 @@ class Thing {
 
 }
 class Container {
-  var a: unmanaged Thing;
-  var b: unmanaged Thing;
+  var a: unmanaged Thing?;
+  var b: unmanaged Thing?;
   proc deinit() {
     writeln("in Container.deinit");
   }
@@ -49,7 +49,7 @@ proc create_thing() {
     maybeThrows(3);
     // success!
     success = true;
-    return container;
+    return container:class?;
   } catch {
     return nil;
   }
@@ -58,7 +58,7 @@ proc create_thing() {
 var thing = create_thing();
 if thing {
   writeln(thing);
-  delete thing.a;
-  delete thing.b;
+  delete thing!.a;
+  delete thing!.b;
   delete thing;
 }

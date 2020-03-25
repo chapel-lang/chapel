@@ -6,7 +6,6 @@ These primers are small Chapel program with narrative comments that
 demonstrate Chapel feature areas in detail.
 
      arrays.chpl                 : Rectangular arrays/domains
-     arrayVectorOps.chpl         : Vector-like operations on 1D arrays
      associative.chpl            : Associative arrays/domains and set operations
      atomics.chpl                : Atomic variables
      chpldoc.doc.chpl            : The chpldoc feature
@@ -21,10 +20,10 @@ demonstrate Chapel feature areas in detail.
      LAPACKlib.chpl              : the LAPACK standard library
      LinearAlgebralib.chpl       : LinearAlgebra module
      learnChapelInYMinutes.chpl  : Chapel's entry for learnxinyminutes.com
+     listOps.chpl                : Using the `list` type
      locales.chpl                : Chapel Locale types
      modules.chpl                : Chapel modules and use statements
      nothingVariables.chpl       : Using nothing for variable and field types
-     opaque-domains.chpl         : Opaque domains and arrays
      parIters.chpl               : Introduction to parallel iterators
      procedures.chpl             : Procedure examples
      randomNumbers.chpl          : Usage of the standard module Random

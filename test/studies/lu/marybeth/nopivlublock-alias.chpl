@@ -9,6 +9,7 @@
 // the output of the iterator IterateByBlocks is two ranges rather
 // than two subdomains of A1D and the temporary range, slice, is 
 // needed to represent the indefinite subdomain, CurrentBlockInds(k+1..). 
+use IO;
 
 param n = 10;
 param blk = 5;
@@ -79,7 +80,7 @@ writeln("Factored Matrix:");
 writeln(A);
 
 iter IterateByBlocks(D:range,blksize) {
-  var n = D.length;
+  var n = D.size;
   var lo,hi: int;
 
   for i in D by blksize {

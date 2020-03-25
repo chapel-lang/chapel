@@ -1,2 +1,2 @@
-enumerate.chpl:12: error: illegal use of module 'enumerate'
-enumerate.chpl:17: error: illegal use of module 'enumerate'
+enumerate.chpl:12: error: modules (like 'enumerate' here) cannot be called like procedures
+enumerate.chpl:17: error: modules (like 'enumerate' here) cannot be called like procedures

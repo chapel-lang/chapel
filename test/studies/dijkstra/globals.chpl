@@ -2,7 +2,7 @@ module NodesEdges {
 
   class PreEdge {
     var edge: int;
-    var next: unmanaged PreEdge;
+    var next: unmanaged PreEdge?;
   }
 
   class Edge {
@@ -36,7 +36,7 @@ module NodesEdges {
     var id: int;              // group id
     var size: int;            // size of group
     var vb: real;
-    var EdgeList: unmanaged SimpleEdge; // Vector of edges
+    var EdgeList: unmanaged SimpleEdge?; // Vector of edges
   }
 
   class Record {

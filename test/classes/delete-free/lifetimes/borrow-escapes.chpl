@@ -8,12 +8,12 @@ class MyClass {
 }
 
 record R {
-  // TODO - get init with owned fields working
-  var c:owned MyClass;// = new Owned(nil:MyClass);
+
+  var c = new owned MyClass(234);
   proc init() {
-    //var tmp = new Owned(new MyClass(data));
-    //c = tmp;
-    //c.retain(new MyClass(data));
+    // A whole lot of nothing.
+    // To preserve the line numbers
+    // in the .good file for this test
   }
   proc get(): borrowed MyClass {
     return c.borrow();
@@ -36,11 +36,11 @@ record MyCollection {
     yield b.get();
   }
   proc returnsNil() {
-    return nil:borrowed MyClass;
+    return nil:borrowed MyClass?;
   }
 }
 
-var global:borrowed MyClass;
+var global:borrowed MyClass?;
 
 proc bad1() {
   var r:R;
@@ -50,7 +50,7 @@ proc bad1() {
 }
 
 proc bad2() {
-  var outer:borrowed MyClass;
+  var outer:borrowed MyClass?;
   {
     var r:R;
     r.c.retain(new unmanaged MyClass(1));
@@ -81,7 +81,7 @@ proc bad10() : borrowed MyClass {
 }
 
 proc bad21() {
-  var outer:borrowed MyClass = nil;
+  var outer:borrowed MyClass? = nil;
   {
     var r:R;
     r.c.retain(new unmanaged MyClass(1));
@@ -104,7 +104,7 @@ proc bad22() {
 }
 
 proc bad23() {
-  var outer:borrowed MyClass;
+  var outer:borrowed MyClass?;
   {
     var r:R;
     r.c.retain(new unmanaged MyClass(1));
@@ -113,13 +113,14 @@ proc bad23() {
   }
   writeln(outer);
   outer = new borrowed MyClass(1);
+  writeln(outer);
 }
 
 
 proc ok1() {
   var unm = new unmanaged MyClass(10);
   global = unm;
-  var a:borrowed MyClass = global; // OK: lifetime global > lifetime a
+  var a:borrowed MyClass? = global; // OK: lifetime global > lifetime a
   a = global;
   {
     var x = a; // OK: x has shorter lifetime than a
@@ -135,7 +136,7 @@ proc ok2() {
 }
 
 proc ok3() {
-  var x:borrowed MyClass = nil;
+  var x:borrowed MyClass? = nil;
 
   var r:R;
   r.c.retain(new unmanaged MyClass(1));
@@ -148,7 +149,7 @@ proc ok4() {
   group.a.c.retain(new unmanaged MyClass(1));
   group.b.c.retain(new unmanaged MyClass(2));
 
-  var first:borrowed MyClass = nil;
+  var first:borrowed MyClass? = nil;
 
   for i in 1..2 {
     var cur = group[i];
@@ -162,7 +163,7 @@ proc ok5() {
   group.a.c.retain(new unmanaged MyClass(1));
   group.b.c.retain(new unmanaged MyClass(2));
 
-  var first:borrowed MyClass = nil;
+  var first:borrowed MyClass? = nil;
 
   for i in group {
     if first == nil then

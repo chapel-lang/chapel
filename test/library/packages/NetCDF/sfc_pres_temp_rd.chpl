@@ -52,8 +52,10 @@ proc main {
       lonsIn: [0..#nlon] real(32);
 
   /* To check the units attributes. */
-  var presUnitsIn = new bytes(maxAttLen), tempUnitsIn = new bytes(maxAttLen);
-  var latUnitsIn = new bytes(maxAttLen), lonUnitsIn = new bytes(maxAttLen);
+  var presUnitsIn = new byteBuffer(maxAttLen),
+      tempUnitsIn = new byteBuffer(maxAttLen);
+  var latUnitsIn = new byteBuffer(maxAttLen),
+      lonUnitsIn = new byteBuffer(maxAttLen);
 
   /* We will learn about the data file and store results in these
      program variables. */

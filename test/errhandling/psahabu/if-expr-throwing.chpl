@@ -7,7 +7,7 @@ module X {
 
   try {
     var v = if giveFlag(1) then 100 else 1;
-    writeln("everything is ok: " + v);
+    writeln("everything is ok: ", v);
   } catch {
     writeln("nothing is ok");
   }

@@ -64,7 +64,7 @@ proc main() {
 // A simple balanced tree node class
 //
 class Tree {
-  var left, right: unmanaged Tree;
+  var left, right: unmanaged Tree?;
 
   //
   // A Tree-building initializer
@@ -77,12 +77,12 @@ class Tree {
   }
 
   //
-  // Add up tree node, freeing as we go
+  // Add up tree node, not freeing as we go
   //
   proc sum(): int {
     var sum = 1;
     if left {
-      sum += left.sum() + right.sum();
+      sum += left!.sum() + right!.sum();
     }
     return sum;
   }

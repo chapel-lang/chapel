@@ -1,7 +1,8 @@
-var indices: domain(int);
-var elems  : [indices] real;
+use Map;
+
+var elems = new map(int, real);
 
 elems[5] += 1;
 
-writeln("indices is: ", indices);
-writeln("elems is: ", elems);
+writeln("indices is: ", elems.keysToArray());
+writeln("elems is: ", elems.valuesToArray());

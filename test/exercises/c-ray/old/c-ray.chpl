@@ -24,6 +24,8 @@
  */
 
 use Image;    // use helper module related to writing out images
+use IO;       // allows access to stderr, stdin, iomode
+use List;
 
 //
 // Configuration constants
@@ -108,9 +110,9 @@ record camera {
 //
 // variables used to store the scene
 //
-var objects: [1..0] owned sphere,  // the scene's spheres; initially empty
-    lights: [1..0] vec3,           // the scene's lights;  "
-    cam: camera;                   // camera (there will be only one)
+var objects: list(owned sphere),  // the scene's spheres; initially empty
+    lights: list(vec3),           // the scene's lights;
+    cam: camera;                  // camera (there will only be one)
 
 //
 // arrays for storing random numbers
@@ -229,7 +231,7 @@ proc trace(ray, depth=0): vec3 {
     return (0.0, 0.0, 0.0);
 
   // find the nearest intersection...
-  var nearestObj: borrowed sphere,
+  var nearestObj: borrowed sphere?,
       nearestSp: spoint;
 
   for obj in objects {
@@ -242,7 +244,7 @@ proc trace(ray, depth=0): vec3 {
 
   // and perform shading calculations as needed by calling shade()
   if nearestObj then
-    return shade(nearestObj, nearestSp, depth);
+    return shade(nearestObj!, nearestSp, depth);
   else
     return (0.0, 0.0, 0.0);
 }
@@ -408,16 +410,16 @@ proc loadScene() {
   // be problematic in any way.
   //
   if scene == "built-in" {
-    objects.push_back(new owned sphere((-1.5, -0.3, -1), 0.7,
+    objects.append(new owned sphere((-1.5, -0.3, -1), 0.7,
                                  new material((1.0, 0.2, 0.05), 50.0, 0.3)));
-    objects.push_back(new owned sphere((1.5, -0.4, 0), 0.6,
+    objects.append(new owned sphere((1.5, -0.4, 0), 0.6,
                                  new material((0.1, 0.85, 1.0), 50.0, 0.4)));
-    objects.push_back(new owned sphere((0, -1000, 2), 999,
+    objects.append(new owned sphere((0, -1000, 2), 999,
                                  new material((0.1, 0.2, 0.6), 80.0, 0.8)));
-    objects.push_back(new owned sphere((0, 0, 2), 1,
+    objects.append(new owned sphere((0, 0, 2), 1,
                                  new material((1.0, 0.5, 0.1), 60.0, 0.7)));
-    lights.push_back((-50, 100, -50));
-    lights.push_back((40, 40, 150));
+    lights.append((-50, 100, -50));
+    lights.append((40, 40, 150));
     cam = new camera((0, 6, -17), (0, -1, 0), 45);
     return;
   }
@@ -460,7 +462,7 @@ proc loadScene() {
 
     // if this is a light, store it as such
     if inType == 'l' {
-      lights.push_back(pos);
+      lights.append(pos);
       continue;
     }
 
@@ -481,7 +483,7 @@ proc loadScene() {
           refl = columns[10]: real;
 
     // this must be a sphere, so store it
-    objects.push_back(new owned sphere(pos, rad, new material(col, spow, refl)));
+    objects.append(new owned sphere(pos, rad, new material(col, spow, refl)));
 
     // helper routine for printing errors in the input file
     proc inputError(msg) {
@@ -497,6 +499,8 @@ proc loadScene() {
 // its results are portable, and it can optionally be used in parallel).
 //
 proc initRands() {
+  use SysCTypes;
+
   if useCRand {
     // extern declarations of C's random number generators.
     extern const RAND_MAX: c_int;

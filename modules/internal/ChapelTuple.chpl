@@ -1,4 +1,5 @@
 /*
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -29,16 +30,19 @@ Besides the functions defined here, the Chapel Language specification
 defines other operations available on tuples: indexing, iteration,
 assignment, and unary, binary, and relational operators.
 
-The following method is also available:
+.. function:: proc tuple.size param
 
-  .. code-block:: chapel
+   Returns the number of components of the tuple.
 
-    proc tuple.size param
+.. function:: proc tuple.indices
 
-It returns the number of components of the tuple.
+   Returns the range of indices that are legal for indexing into the
+   tuple: ``1..this.size``.
+
+
 */
 module ChapelTuple {
-  use ChapelStandard;
+  private use ChapelStandard;
 
   pragma "tuple" record _tuple {
     param size : int;
@@ -100,7 +104,7 @@ module ChapelTuple {
   pragma "no doc"
   proc *(param p: uint, type t) type {
     if p > max(int) then
-      compilerError("Tuples of size >" + max(int) + " are not currently supported");
+      compilerError("Tuples of size >" + max(int):string + " are not currently supported");
     param pAsInt = p: int;
     return pAsInt*t;
   }
@@ -233,8 +237,15 @@ module ChapelTuple {
   iter _tuple.these() ref
   {
 
+    // If we hit this error, it generally means that the compiler wasn't
+    // successful at unrolling a loop over a heterogeneous tuple, either
+    // because the IR changed (in the event of a regression) or because
+    // it's a pattern that isn't handled yet (such as zippered iteration
+    // or a forall loop over a heterogeneous tuple).  See preFold.cpp,
+    // specifically unrollHetTupleLoop().
+    //
     if !isHomogeneousTuple(this) then
-      compilerError("Cannot iterate over non-homogeneous tuples. If you intended to use zippered iteration, add the new keyword 'zip' before the tuple of iteratable expressions.");
+      compilerError("Heterogeneous tuples don't support this style of loop yet");
 
     if CHPL_WARN_TUPLE_ITERATION == "true" then
       compilerWarning("Iterating over tuples. If you intended to use zippered iteration, add the new keyword 'zip' before the tuple of iteratable expressions.");
@@ -286,47 +297,21 @@ module ChapelTuple {
     }
   }
 
+  /* TODO: Want this for heterogeneous tuples, but we can't write it today:
+
+  iter _tuple.indices param {
+    for param i in 1..this.size do
+      yield i;
+  }
+  */
+
+  proc _tuple.indices {
+    return 1..this.size;
+  }
+
   //
   // tuple methods
   //
-  pragma "no doc"
-  proc _tuple.readWriteThis(f) {
-    var st = f.styleElement(QIO_STYLE_ELEMENT_TUPLE);
-    var start:ioLiteral;
-    var comma:ioLiteral;
-    var end:ioLiteral;
-    var binary = f.binary();
-
-    if st == QIO_TUPLE_FORMAT_SPACE {
-      start = new ioLiteral("");
-      comma = new ioLiteral(" ");
-      end = new ioLiteral("");
-    } else if st == QIO_TUPLE_FORMAT_JSON {
-      start = new ioLiteral("[");
-      comma = new ioLiteral(", ");
-      end = new ioLiteral("]");
-    } else {
-      start = new ioLiteral("(");
-      comma = new ioLiteral(", ");
-      end = new ioLiteral(")");
-    }
-
-    if !binary {
-      f <~> start;
-    }
-    if size != 0 {
-      f <~> this(1);
-      for param i in 2..size {
-        if !binary {
-          f <~> comma;
-        }
-        f <~> this(i);
-      }
-    }
-    if !binary {
-      f <~> end;
-    }
-  }
 
   //
   // tuple casts to complex(64) and complex(128)
@@ -701,20 +686,24 @@ module ChapelTuple {
   }
 
   inline proc ==(a: _tuple, b: _tuple) {
-    if a.size != b.size then
+    if a.size != b.size {
       return false;
-    for param i in 1..a.size do
-      if a(i) != b(i) then
-        return false;
+    } else {
+      for param i in 1..a.size do
+        if a(i) != b(i) then
+          return false;
+    }
     return true;
   }
 
   inline proc !=(a: _tuple, b: _tuple) {
-    if a.size != b.size then
+    if a.size != b.size {
       return true;
-    for param i in 1..a.size do
-      if a(i) != b(i) then
-        return true;
+    } else {
+      for param i in 1..a.size do
+        if a(i) != b(i) then
+          return true;
+    }
     return false;
   }
 

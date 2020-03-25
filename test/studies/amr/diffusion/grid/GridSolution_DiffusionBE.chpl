@@ -1,5 +1,5 @@
-use GridVariable_DiffusionBE;
-use GridBC_def;
+public use GridVariable_DiffusionBE;
+public use GridBC_def;
 
 
 

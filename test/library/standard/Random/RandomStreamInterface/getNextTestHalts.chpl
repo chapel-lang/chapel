@@ -2,7 +2,7 @@ use Random;
 
 proc main() throws {
 
-  var pcgStream = makeRandomStream(int, algorithm=RNG.PCG);
+  var pcgStream = createRandomStream(int, algorithm=RNG.PCG);
   // Note: getNext(min, max) is not available for NPB
 
   var x = pcgStream.getNext(2, 1);

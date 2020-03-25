@@ -1,0 +1,66 @@
+own:owned MyClass
+borrow:borrowed MyClass
+shr:shared MyClass
+unm:unmanaged MyClass
+ownQ:owned MyClass?
+borrowQ:borrowed MyClass?
+shrQ:shared MyClass?
+unmQ:unmanaged MyClass?
+r:MyRecord
+one:int(64)
+
+
+=== isNilableClass ===
+own false false
+borrow false false
+shr false false
+unm false false
+
+ownQ true true
+borrowQ true true
+shrQ true true
+unmQ true true
+
+r false false
+one false false
+
+owned MyClass false
+borrowed MyClass false
+shared MyClass false
+unmanaged MyClass false
+
+owned MyClass? true
+borrowed MyClass? true
+shared MyClass? true
+unmanaged MyClass? true
+
+MyRecord false
+int false
+
+
+=== isNonNilableClass ===
+own true true
+borrow true true
+shr true true
+unm true true
+
+ownQ false false
+borrowQ false false
+shrQ false false
+unmQ false false
+
+r false false
+one false false
+
+owned MyClass true
+borrowed MyClass true
+shared MyClass true
+unmanaged MyClass true
+
+owned MyClass? false
+borrowed MyClass? false
+shared MyClass? false
+unmanaged MyClass? false
+
+MyRecord false
+int false

@@ -1,3 +1,5 @@
+use SysCTypes;
+
 var A:[0..10] int;
 
 var eltZero = c_ptrTo(A[0]);

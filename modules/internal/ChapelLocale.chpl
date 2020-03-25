@@ -1,4 +1,5 @@
 /*
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -67,6 +68,8 @@
 module ChapelLocale {
 
   use LocaleModel;
+  import HaltWrappers;
+  private use SysCTypes;
 
   //
   // Node and sublocale types and special sublocale values.
@@ -88,6 +91,130 @@ module ChapelLocale {
     return (subloc != c_sublocid_none
             && subloc != c_sublocid_any
             && subloc != c_sublocid_all);
+  
+  /*
+    regular: Has a concrete BaseLocale instance
+    any: Placeholder to represent the notion of "anywhere"
+    nilLocale: The _instance is set to nil. Used during setup. Also, as a
+               sentinel value in locale tree operations
+    dummy: Used during initialization for `here` before it is properly setup
+    default: Used to store the default locale instance. Initially set to nil,
+             then "fixed" by LocalesArray to Locales[0]
+   */
+  pragma "no doc"
+  enum localeKind { regular, any, nilLocale, dummy, default };
+
+  const nilLocale = new locale(localeKind.nilLocale);
+  var defaultLocale = new locale(localeKind.default);
+  var dummyLocale = new locale(localeKind.dummy);
+
+  pragma "always RVF"
+  record _locale {
+    var _instance: unmanaged BaseLocale?;
+
+    inline proc _value {
+      return _instance!;
+    }
+
+    forwarding _value;
+
+    // default initializer for the locale record.
+    // TODO: What is the default value for a locale?
+    proc init() {
+      if rootLocaleInitialized {
+        this._instance = defaultLocale._instance;
+      }
+      else {
+        /*this._instance = new unmanaged LocaleModel();*/
+        this._instance = nil;
+      }
+    }
+
+    // used internally during setup
+    pragma "no doc"
+    proc init(_instance: BaseLocale) {
+      this._instance = _to_unmanaged(_instance);
+    }
+
+    pragma "no doc"
+    proc init(param kind) {
+      if kind == localeKind.regular then
+        compilerError("locale.init(kind) can not be used to create ",
+                      "a regular locale instance");
+      else if kind == localeKind.dummy then
+        this._instance = new unmanaged DummyLocale();
+      else if kind == localeKind.default then
+        this._instance = nil;
+    }
+
+    proc init=(other: locale) {
+      this._instance = other._instance;
+    }
+
+    proc deinit() { }
+
+    inline proc maxTaskPar { return this._value.maxTaskPar; }
+    inline proc callStackSize { return this._value.callStackSize; }
+
+    // the following are normally taken care of by `forwarding`. However, they
+    // don't work if they are called in a promoted expression. See 15148
+    inline proc numPUs(logical: bool = false, accessible: bool = true) {
+      return this._value.numPUs(logical, accessible);
+    }
+
+    inline proc id {
+      return this._value.id;
+    }
+
+    inline proc localeid {
+      return this._value.localeid;
+    }
+
+    inline proc hostname {
+      return this._value.hostname;
+    }
+
+    inline proc name {
+      return this._value.name;
+    }
+
+    inline proc chpl_id() {
+      return this._value.chpl_id();
+    }
+
+    inline proc chpl_localeid() {
+      return this._value.chpl_localeid();
+    }
+
+    inline proc chpl_name() {
+      return this._value.chpl_name();
+    }
+
+    inline proc defaultMemory() {
+      return this._value.defaultMemory();
+    }
+
+    inline proc largeMemory() {
+      return this._value.largeMemory();
+    }
+
+    inline proc lowLatencyMemory() {
+      return this._value.lowLatencyMemory();
+    }
+
+    inline proc highBandwidthMemory() {
+      return this._value.highBandwidthMemory();
+    }
+
+    inline proc getChildCount() {
+      return this._value.getChildCount();
+    }
+
+  } // end of record _locale
+
+  proc =(ref l1: locale, const ref l2: locale) {
+    l1._instance = l2._instance;
+  }
 
   /*
     ``locale`` is the abstract class from which the various
@@ -95,13 +222,13 @@ module ChapelLocale {
     and implements part of it, but requires the rest to be provided
     by the corresponding concrete classes.
    */
-  class _locale {
+  class BaseLocale {
     //- Constructor
     pragma "no doc"
     proc init() { }
 
     pragma "no doc"
-    proc init(parent: locale?) {
+    proc init(parent: locale) {
       this.parent = parent;
     }
 
@@ -112,7 +239,7 @@ module ChapelLocale {
     // Every locale has a parent, except for the root locale.
     // The parent of the root locale is nil (by definition).
     pragma "no doc"
-    const parent : locale?;
+    const parent = nilLocale;
 
     pragma "no doc" var nPUsLogAcc: int;     // HW threads, accessible
     pragma "no doc" var nPUsLogAll: int;     // HW threads, all
@@ -185,7 +312,30 @@ module ChapelLocale {
     proc localeid : chpl_localeID_t return __primitive("_wide_get_locale", this);
 
     /*
-      Get the name of this locale.
+      Get the hostname of this locale.
+
+      :returns: the hostname of the compute node associated with the locale
+      :rtype: string
+    */
+    proc hostname: string {
+      extern proc chpl_nodeName(): c_string;
+      var hname: string;
+      on this {
+        try! {
+          hname = createStringWithNewBuffer(chpl_nodeName());
+        }
+      }
+      return hname;
+    }
+
+    override proc writeThis(f) throws {
+      HaltWrappers.pureVirtualMethodHalt();
+    }
+
+    /*
+      Get the name of this locale.  In practice, this is often the
+      same as the hostname, though in some cases (like when using
+      local launchers), it may be modified.
 
       :returns: locale name
       :rtype: string
@@ -214,22 +364,22 @@ module ChapelLocale {
 
     pragma "no doc"
     inline proc runningTaskCntSet(val : int) {
-      runningTaskCounter.write(val, memory_order_relaxed);
+      runningTaskCounter.write(val, memoryOrder.relaxed);
     }
 
     pragma "no doc"
     inline proc runningTaskCntAdd(val : int) {
-      runningTaskCounter.add(val, memory_order_relaxed);
+      runningTaskCounter.add(val, memoryOrder.relaxed);
     }
 
     pragma "no doc"
     inline proc runningTaskCntSub(val : int) {
-      runningTaskCounter.sub(val, memory_order_relaxed);
+      runningTaskCounter.sub(val, memoryOrder.relaxed);
     }
 
     pragma "no doc"
     inline proc runningTaskCnt() {
-      var rtc = runningTaskCounter.read(memory_order_relaxed);
+      var rtc = runningTaskCounter.read(memoryOrder.relaxed);
       return if (rtc <= 0) then 1 else rtc;
     }
     //------------------------------------------------------------------------}
@@ -265,31 +415,21 @@ module ChapelLocale {
     pragma "no doc"
     proc defaultMemory() : locale {
       HaltWrappers.pureVirtualMethodHalt();
-      return this;
     }
 
     pragma "no doc"
     proc largeMemory() : locale {
       HaltWrappers.pureVirtualMethodHalt();
-      return this;
     }
 
     pragma "no doc"
     proc lowLatencyMemory() : locale {
       HaltWrappers.pureVirtualMethodHalt();
-      return this;
     }
 
     pragma "no doc"
     proc highBandwidthMemory() : locale {
       HaltWrappers.pureVirtualMethodHalt();
-      return this;
-    }
-
-    // A useful default definition is provided (not pure virtual).
-    pragma "no doc"
-    override proc writeThis(f) {
-      f <~> name;
     }
 
     pragma "no doc"
@@ -314,7 +454,6 @@ module ChapelLocale {
     pragma "no doc"
     proc getChild(idx:int) : locale {
       HaltWrappers.pureVirtualMethodHalt();
-      return this;
     }
 
 // Part of the required locale interface.
@@ -328,11 +467,16 @@ module ChapelLocale {
   }
 
   /* This class is used during initialization and is returned when
-     'here' is used before the locale hierarchy is initialized.
+     'here' is used before the locale hierarchy is initialized.  This is due to
+     the fact that "here" is used for memory and task control in setting up the
+     architecture itself.  DummyLocale provides system-default tasking and
+     memory management.
    */
   pragma "no doc"
-  class DummyLocale : locale {
-    proc init() { }
+  class DummyLocale : BaseLocale {
+    proc init() { 
+      super.init(nilLocale);
+    }
 
     override proc chpl_id() : int {
       return -1;
@@ -347,7 +491,7 @@ module ChapelLocale {
       return 0;
     }
     override proc getChild(idx:int) : locale {
-      return this;
+      return new locale(this);
     }
     override proc addChild(loc:locale)
     {
@@ -357,7 +501,7 @@ module ChapelLocale {
 
 
   pragma "no doc"
-  class AbstractLocaleModel : locale {
+  class AbstractLocaleModel : BaseLocale {
     // This will be used for interfaces that will be common to all
     // (non-RootLocale) locale models
     proc init(parent_loc : locale) {
@@ -378,9 +522,7 @@ module ChapelLocale {
   // initialized until LocaleModel is initialized.  To disable this
   // replication, set replicateRootLocale to false.
   pragma "no doc"
-  pragma "locale private" var rootLocale : locale? = nil;
-  pragma "no doc"
-  pragma "locale private" var rootLocaleInitialized = false;
+  pragma "locale private" var rootLocale = nilLocale;
 
   pragma "no doc"
   config param replicateRootLocale = true;
@@ -397,13 +539,13 @@ module ChapelLocale {
   // module.
   //
   pragma "no doc"
-  var origRootLocale : locale? = nil;
+  var origRootLocale = nilLocale;
 
   pragma "no doc"
-  class AbstractRootLocale : locale {
+  class AbstractRootLocale : BaseLocale {
     proc init() { }
 
-    proc init(parent_loc : locale?) {
+    proc init(parent_loc : locale) {
       super.init(parent_loc);
     }
 
@@ -423,7 +565,6 @@ module ChapelLocale {
 
     proc localeIDtoLocale(id : chpl_localeID_t) : locale {
       HaltWrappers.pureVirtualMethodHalt();
-      return this;
     }
 
     // These iterators are to be used by RootLocale:setup() to
@@ -433,7 +574,7 @@ module ChapelLocale {
     iter chpl_initOnLocales() {
       if numLocales > 1 then
         halt("The locales must be initialized in parallel");
-      for locIdx in (origRootLocale:borrowed RootLocale?)!.getDefaultLocaleSpace() {
+      for locIdx in (origRootLocale._instance:borrowed RootLocale?)!.getDefaultLocaleSpace() {
         yield locIdx;
         rootLocale = origRootLocale;
         rootLocaleInitialized = true;
@@ -448,7 +589,7 @@ module ChapelLocale {
       where tag==iterKind.standalone {
       // Simple locales barrier, see implementation below for notes
       var b: localesBarrier;
-      var flags: [1..#numLocales-1] unmanaged localesSignal;
+      var flags: [1..#numLocales-1] unmanaged localesSignal?;
       coforall locIdx in 0..#numLocales /*ref(b)*/ {
         on __primitive("chpl_on_locale_num",
                        chpl_buildLocaleID(locIdx:chpl_nodeID_t,
@@ -457,8 +598,22 @@ module ChapelLocale {
           yield locIdx;
           b.wait(locIdx, flags);
           chpl_rootLocaleInitPrivate(locIdx);
+          warmupRuntime();
         }
       }
+    }
+  }
+
+  // Warm up runtime components. For tasking layers that have a fixed number of
+  // threads, we create a task on each thread to warm it up (e.g. grab some
+  // initial call stacks.) We also warm up the memory layer, since allocators
+  // tend to have per thread pools/arenas.
+  private proc warmupRuntime() {
+    extern proc chpl_task_getFixedNumThreads(): uint(32);
+    coforall i in 0..#chpl_task_getFixedNumThreads() {
+      var p = c_malloc(int, 1);
+      p[0] = i;
+      c_free(p);
     }
   }
 
@@ -494,7 +649,7 @@ module ChapelLocale {
           // have some risk of getting part of a wide pointer).
           // Without this fence, there is a race condition on
           // a weakly-ordered architecture.
-          atomic_fence();
+          atomicFence();
           var count = 0;
           for f in flags do
             if f then count += 1;
@@ -505,7 +660,7 @@ module ChapelLocale {
         }
         // Let the others go
         for f in flags do
-          f.s.testAndSet();
+          f!.s.testAndSet();
       } else {
         var f = new unmanaged localesSignal();
         // expose my flag to locale 0
@@ -531,8 +686,13 @@ module ChapelLocale {
     if numLocales > 1 && _local then
       halt("Cannot run a program compiled with --local in more than 1 locale");
 
-    origRootLocale = new unmanaged RootLocale();
-    (origRootLocale:borrowed RootLocale?)!.setup();
+    origRootLocale._instance = new unmanaged RootLocale();
+    (origRootLocale._instance:borrowed RootLocale?)!.setup();
+  }
+
+  pragma "no doc"
+  inline proc chpl_set_defaultLocale(_instance: unmanaged BaseLocale) {
+    defaultLocale._instance = _instance;
   }
 
   // This function sets up a private copy of rootLocale by replicating
@@ -552,7 +712,7 @@ module ChapelLocale {
       // as they require additional tasks.  We know we don't need them
       // so tell the compiler to not insert them.
       pragma "no copy" pragma "no auto destroy"
-      const ref origLocales = (origRootLocale:borrowed RootLocale?)!.getDefaultLocaleArray();
+      const ref origLocales = (origRootLocale._instance:borrowed RootLocale?)!.getDefaultLocaleArray();
       var origRL = origLocales._value.theData;
       var newRL = newRootLocale.getDefaultLocaleArray()._value.theData;
       // We must directly implement a bulk copy here, as the mechanisms
@@ -564,26 +724,17 @@ module ChapelLocale {
                   __primitive("array_get", origRL, 0), 
                   numLocales:size_t);
       // Set the rootLocale to the local copy
-      rootLocale = newRootLocale;
+      rootLocale._instance = newRootLocale;
     }
     if locIdx!=0 {
       // We mimic a private Locales array alias by using the move
       // primitive.
       pragma "no auto destroy"
-      const ref tmp = (rootLocale:borrowed RootLocale?)!.getDefaultLocaleArray();
+      const ref tmp = (rootLocale._instance:borrowed RootLocale?)!.getDefaultLocaleArray();
       __primitive("move", Locales, tmp);
     }
     rootLocaleInitialized = true;
   }
-
-  // We need a temporary value for "here" before the architecture is defined.
-  // This is due to the fact that "here" is used for memory and task control
-  // in setting up the architecture itself.
-  // Its type should probably be renamed dummyLocale or something
-  // representative.
-  // The dummy locale provides system-default tasking and memory management.
-  pragma "no doc"
-  const dummyLocale = new unmanaged DummyLocale();
 
   pragma "fn synchronization free"
   pragma "no doc"
@@ -619,11 +770,19 @@ module ChapelLocale {
   pragma "no doc"
   pragma "fn returns infinite lifetime"
   proc chpl_localeID_to_locale(id : chpl_localeID_t) : locale {
-    if rootLocale then
-      return (rootLocale:borrowed AbstractRootLocale?)!.localeIDtoLocale(id);
-    else
+    if rootLocale._instance != nil then
+      return (rootLocale._instance:borrowed AbstractRootLocale?)!.localeIDtoLocale(id);
+    else {
       // For code prior to rootLocale initialization
+      // in cases where we capture functions as FCF, module initialization order
+      // changes in a way that IO is inited too early. In that scenario, we
+      // somehow don't get dummyLocale set up correctly in this scheme 
+      // remove this check, and test/exits/albrecht/exitWithNoCall fails
+      if dummyLocale._instance == nil {
+        dummyLocale._instance = new unmanaged DummyLocale();
+      }
       return dummyLocale;
+    }
   }
 
   // the type of elements in chpl_privateObjects.
@@ -719,14 +878,9 @@ module ChapelLocale {
     here.runningTaskCntSet(0);
   }
 
-  //
-  // Free the original root locale when the program is being torn down
-  //
-  // Be careful to free only origRootLocale, and never the copy in
-  // rootLocale, or the same locales will be torn down twice.
-  //
   pragma "no doc"
   proc deinit() {
-    delete _to_unmanaged(origRootLocale);
+    delete origRootLocale._instance;
+    delete dummyLocale._instance;
   }
 }

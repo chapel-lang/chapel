@@ -13,6 +13,9 @@ EXTRA_DIST = \
 			 README.md \
 			 README.affinity \
 			 README.multinode \
+			 README.performance-monitoring.md \
+			 SCHEDULING \
+			 TODO.md \
 			 autogen.sh
 
 SUBDIRS = man include src test

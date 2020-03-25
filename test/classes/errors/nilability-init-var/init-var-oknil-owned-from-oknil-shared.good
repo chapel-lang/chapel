@@ -1,0 +1,1 @@
+init-var-oknil-owned-from-oknil-shared.chpl:9: error: cannot create an owned variable from a shared class instance

@@ -1,4 +1,5 @@
 /*
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -23,7 +24,7 @@
 // In terms of how they are used, c_strings are a "close to the metal"
 // representation, being in essence the common NUL-terminated C string.
 module CString {
-  use ChapelStandard;
+  private use ChapelStandard, SysCTypes;
 
   //inline proc c_string.c_str() return this;
 
@@ -90,14 +91,6 @@ module CString {
     __primitive("=", a, b.c_str());
   }
 
-  pragma "fn synchronization free"
-  extern proc chpl_bool_to_c_string(x:bool) : c_string;
-
-  inline proc _cast(type t:c_string, x: chpl_anybool) {
-    compilerWarning("cast from bool to c_string is deprecated");
-    return chpl_bool_to_c_string(x:bool);
-  }
-
   //
   // casts from nil to c_string
   //
@@ -138,99 +131,85 @@ module CString {
   //
   // casts from c_string to bool types
   //
-  inline proc _cast(type t:chpl_anybool, x:c_string) throws
-    return try ((x:string).strip()): t;
+  inline proc _cast(type t:chpl_anybool, x:c_string) throws {
+    var chplString: string;
+    try! {
+      chplString = createStringWithNewBuffer(x);
+    }
+    return try (chplString.strip()): t;
+  }
 
   //
   // casts from c_string to integer types
   //
-  inline proc _cast(type t:integral, x:c_string) throws
-    return try ((x:string).strip()): t;
+  inline proc _cast(type t:integral, x:c_string) throws {
+    var chplString: string;
+    try! {
+      chplString = createStringWithNewBuffer(x);
+    }
+    return try (chplString.strip()): t;
+  }
 
   //
   // casts from c_string to real/imag types
   //
-  inline proc _cast(type t:chpl_anyreal, x:c_string) throws
-    return try ((x:string).strip()): t;
-  inline proc _cast(type t:chpl_anyimag, x:c_string) throws
-    return try ((x:string).strip()): t;
+  inline proc _cast(type t:chpl_anyreal, x:c_string) throws {
+    var chplString: string;
+    try! {
+      chplString = createStringWithNewBuffer(x);
+    }
+    return try (chplString.strip()): t;
+  }
+
+  inline proc _cast(type t:chpl_anyimag, x:c_string) throws {
+    var chplString: string;
+    try! {
+      chplString = createStringWithNewBuffer(x);
+    }
+    return try (chplString.strip()): t;
+  }
 
   //
   // casts from c_string to complex types
   //
-  inline proc _cast(type t:chpl_anycomplex, x:c_string) throws
-    return try ((x:string).strip()): t;
-
-  pragma "fn synchronization free"
-  extern proc real_to_c_string(x:real(64), isImag: bool) : c_string;
-  //
-  // casts from real
-  //
-  inline proc _cast(type t:c_string, x:chpl_anyreal) {
-    compilerWarning("cast from real to c_string is deprecated");
-    return real_to_c_string(x:real(64), false);
-  }
-
-  //
-  // casts from imag
-  //
-  inline proc _cast(type t:c_string, x:chpl_anyimag) {
-    compilerWarning("cast from imag to c_string is deprecated");
-    // The Chapel version of the imag --> real cast smashes it flat rather than
-    // just stripping off the "i".  See ChapelBase:965.
-    var r = __primitive("cast", real(64), x);
-    return real_to_c_string(r, true);
-  }
-
-  //
-  // casts from integral
-  //
-  proc _cast(type t:c_string, x: integral) {
-    compilerWarning("cast from integral to c_string is deprecated");
-    pragma "fn synchronization free"
-    extern proc integral_to_c_string(x:int(64), size:uint(32), isSigned: bool, ref err: bool) : c_string;
-
-    var isErr: bool;
-    var csc = integral_to_c_string(x:int(64), numBytes(x.type), isIntType(x.type), isErr);
-
-    // this should only happen if the runtime is broken
-    if isErr {
-      try! {
-        throw new owned IllegalArgumentError("Unexpected case in integral_to_c_string");
-      }
+  inline proc _cast(type t:chpl_anycomplex, x:c_string) throws {
+    var chplString: string;
+    try! {
+      chplString = createStringWithNewBuffer(x);
     }
-
-    return csc;
+    return try (chplString.strip()): t;
   }
-
 
   //
   // primitive c_string functions and methods
   //
 
-  //
-  // Deprecated, no replacement needed.
-  //
-  inline proc ascii(a: c_string) {
-    compilerWarning("calling ascii() on a c_string is deprecated");
-    return __primitive("ascii", a);
+  inline proc c_string.size return __primitive("string_length_bytes", this);
+  inline proc c_string.length {
+    compilerWarning("'c_string.length' is deprecated - " +
+                    "please use 'c_string.size' instead");
+    return this.size;
   }
-
-  inline proc c_string.length return __primitive("string_length", this);
-  inline proc c_string.size return this.length;
 
   inline proc c_string.substring(i: int)
     return __primitive("string_index", this, i);
 
   inline proc c_string.substring(r: range(?)) {
-    var r2 = r[1..this.length];  // This may warn about ambiguously aligned ranges.
+    var r2 = r[1..this.size];  // This may warn about ambiguously aligned ranges.
     var lo:int = r2.alignedLow, hi:int = r2.alignedHigh;
     return __primitive("string_select", this, lo, hi, r2.stride);
   }
 
   pragma "last resort" // avoids param string to c_string coercion
-  inline proc param c_string.length param
-    return __primitive("string_length", this);
+  inline proc param c_string.length param {
+    compilerWarning("'c_string.length' is deprecated - " +
+                    "please use 'c_string.size' instead");
+    return __primitive("string_length_bytes", this);
+  }
+  pragma "last resort" // avoids param string to c_string coercion
+  inline proc param c_string.size param {
+    return __primitive("string_length_bytes", this);
+  }
   pragma "last resort" // avoids param string to c_string coercion
   inline proc _string_contains(param a: c_string, param b: c_string) param
     return __primitive("string_contains", a, b);
@@ -253,11 +232,11 @@ module CString {
     // cs = c_nil;
   }
 
-  proc c_string.writeThis(x) {
+  proc c_string.writeThis(x) throws {
     compilerError("Cannot write a c_string, cast to a string first.");
   }
 
-  proc c_string.readThis(x) {
+  proc c_string.readThis(x) throws {
     compilerError("Cannot read a c_string, use string.");
   }
 

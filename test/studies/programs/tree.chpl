@@ -17,7 +17,7 @@ config const treeHeight: uint = 4;
 //
 class node {
   var id: int;
-  var left, right: unmanaged node;
+  var left, right: unmanaged node?;
   proc deinit() {
     if left then delete left;
     if right then delete right;
@@ -63,8 +63,8 @@ proc sum(n: unmanaged node): int {
   if n.left != nil {
     var sumLeft, sumRight: int;
     cobegin with (ref sumLeft, ref sumRight) {
-      sumLeft = sum(n.left);
-      sumRight = sum(n.right);
+      sumLeft = sum(n.left!);
+      sumRight = sum(n.right!);
     }
     total += (sumLeft + sumRight);
   }

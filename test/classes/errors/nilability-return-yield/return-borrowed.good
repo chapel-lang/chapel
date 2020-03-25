@@ -1,0 +1,2 @@
+return-borrowed.chpl:3: In function 'P':
+return-borrowed.chpl:3: error: cannot return 'borrowed C?' when the declared return type is 'borrowed C'

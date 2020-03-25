@@ -1,4 +1,5 @@
 /*
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -19,7 +20,7 @@
 /*
   A ``range`` is a first-class, constant-space representation of a
   regular sequence of values.  These values are typically integers,
-  though ranges over enumerated types are also supported.  Ranges
+  though ranges over enum types are also supported.  Ranges
   support iteration over the sequences they represent as well as
   operations such as counting, striding, intersection, shifting, and
   comparisons.
@@ -45,7 +46,7 @@
     ..10  // .., 8, 9, 10
     ..    // ..., -2, -1, 0, 1, 2, ...
 
-  Ranges over enumerated types respect the declaration order of its values:
+  Ranges over enum types respect the declaration order of its values:
 
   .. code-block:: chapel
 
@@ -56,7 +57,7 @@
   -----------
   Range types are generic with respect to three fields:
 
-  * ``idxType``: The type of the range's values—must an integral or enumerated type (defaults to ``int``)
+  * ``idxType``: The type of the range's values—must an integral or enum type (defaults to ``int``)
   * ``boundedType``: A :enum:`BoundedRangeType` value indicating which bounds the range stores (defaults to ``bounded``)
   * ``stridable``: A boolean indicating whether or not the range can be strided (defaults to ``false``)
 
@@ -152,6 +153,8 @@
  */
 module ChapelRange {
 
+  private use ChapelBase, SysBasic, HaltWrappers;
+
   use Math;
 
   // Turns on range iterator debugging.
@@ -220,7 +223,7 @@ module ChapelRange {
   }
 
   /* The ``idxType`` as represented by an integer type.  When
-     ``idxType`` is an enumerated type, this evaluates to ``int``.
+     ``idxType`` is an enum type, this evaluates to ``int``.
      Otherwise, it evaluates to ``idxType``. */
   proc range.intIdxType type {
     return chpl__idxTypeToIntIdxType(idxType);
@@ -290,17 +293,20 @@ module ChapelRange {
 
   pragma "no doc"
   proc range.init=(other : range(?i,?b,?s)) {
-    type idxType = this.type.idxType;
-    if this.type.boundedType != b {
+    type idxType      = if this.type.idxType     == ? then i else this.type.idxType;
+    param boundedType = if this.type.boundedType == ? then b else this.type.boundedType;
+    param stridable   = if this.type.stridable   == ? then s else this.type.stridable;
+
+    if boundedType != b {
       compilerError("range(boundedType=" + this.type.boundedType:string + ") cannot be initialized from range(boundedType=" + b:string + ")");
     }
 
-    if !this.type.stridable && s then
+    if !stridable && s then
       compilerError("cannot initialize a non-stridable range from a stridable range");
 
-    const str = if this.type.stridable && s then other.stride else 1:chpl__rangeStrideType(idxType);
+    const str = if stridable && s then other.stride else 1:chpl__rangeStrideType(idxType);
 
-    this.init(idxType, this.type.boundedType, this.type.stridable,
+    this.init(idxType, boundedType, stridable,
               chpl__intToIdx(idxType, other._low), chpl__intToIdx(idxType, other._high),
               str,
               chpl__intToIdx(idxType, chpl__idxToInt(other.alignment)),
@@ -325,7 +331,7 @@ module ChapelRange {
     return new range(int(w), _low=low, _high=high);
   proc chpl_build_bounded_range(low: uint(?w), high: uint(w))
     return new range(uint(w), _low=low, _high=high);
-  proc chpl_build_bounded_range(low: enumerated, high: enumerated) {
+  proc chpl_build_bounded_range(low: enum, high: enum) {
     if (low.type != high.type) then
       compilerError("ranges of enums must use a single enum type");
     return new range(low.type, _low=low, _high=high);
@@ -339,7 +345,7 @@ module ChapelRange {
   // Range builders for low bounded ranges
   proc chpl_build_low_bounded_range(low: integral)
     return new range(low.type, BoundedRangeType.boundedLow, _low=low);
-  proc chpl_build_low_bounded_range(low: enumerated)
+  proc chpl_build_low_bounded_range(low: enum)
     return new range(low.type, BoundedRangeType.boundedLow, _low=low);
   proc chpl_build_low_bounded_range(low: bool)
     return new range(low.type, BoundedRangeType.boundedLow, _low=low);
@@ -350,7 +356,7 @@ module ChapelRange {
   // Range builders for high bounded ranges
   proc chpl_build_high_bounded_range(high: integral)
     return new range(high.type, BoundedRangeType.boundedHigh, _high=high);
-  proc chpl_build_high_bounded_range(high: enumerated)
+  proc chpl_build_high_bounded_range(high: enum)
     return new range(high.type, BoundedRangeType.boundedHigh, _high=high);
   proc chpl_build_high_bounded_range(high: bool)
     return new range(high.type, BoundedRangeType.boundedHigh, _high=high);
@@ -545,19 +551,21 @@ module ChapelRange {
   }
 
 
+  /* Deprecated - please use :proc:`range.size`. */
+  inline proc range.length: intIdxType {
+    compilerWarning("'range.length' is deprecated - " +
+                    "please use 'range.size' instead");
+    return this.size;
+  }
+
   /* Returns the number of elements in this range, cast to the index type.
 
      Note: The result is undefined if the index is signed
      and the low and high bounds differ by more than ``max(``:proc:`range.intIdxType` ``)``.
    */
-  inline proc range.size: intIdxType {
-    return this.length;
-  }
-
-  /* Returns :proc:`range.size`.  */
-  proc range.length: intIdxType {
+  proc range.size: intIdxType {
     if ! isBoundedRange(this) then
-      compilerError("length is not defined on unbounded ranges");
+      compilerError("'size' is not defined on unbounded ranges");
 
     // assumes alignedHigh/alignLow always work, even for an empty range
     const ah = this.alignedHighAsInt,
@@ -725,7 +733,7 @@ module ChapelRange {
     if isBoundedRange(r1) {
 
       // gotta have a special case for length 0 or 1
-      const len = r1.length, l2 = r2.length;
+      const len = r1.size, l2 = r2.size;
       if len != l2 then return false;
       if len == 0 then return true;
       if r1.first != r2.first then return false;
@@ -861,7 +869,7 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
                           other.alignment,
                           true);
 
-    return (boundedOther.length == 0) || contains(boundedOther);
+    return (boundedOther.size == 0) || contains(boundedOther);
   }
   /* Return true if ``other`` is contained in this range and false otherwise */
   inline proc range.boundsCheck(other: idxType)
@@ -930,7 +938,7 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
 
   /* Returns the zero-based ``ord``-th element of this range's represented
      sequence. It is an error to invoke ``orderToIndex`` if the range is not
-     defined, or if ``ord`` is negative or greater than the range's length.
+     defined, or if ``ord`` is negative or greater than the range's size.
      The ``orderToIndex`` procedure is the reverse of ``indexOrder``.
 
      Example:
@@ -952,11 +960,11 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
         HaltWrappers.boundsCheckHalt("invoking orderToIndex on a range that is ambiguously aligned");
 
       if ord < 0 then
-        HaltWrappers.boundsCheckHalt("invoking orderToIndex on a negative integer: " + ord);
+        HaltWrappers.boundsCheckHalt("invoking orderToIndex on a negative integer: " + ord:string);
 
-      if isBoundedRange(this) && ord >= this.length then
+      if isBoundedRange(this) && ord >= this.size then
         HaltWrappers.boundsCheckHalt("invoking orderToIndex on an integer " +
-            ord + " that is larger than the range's number of indices " + this.length);
+            ord:string + " that is larger than the range's number of indices " + this.size:string);
     }
 
     return chpl_intToIdx(chpl__addRangeStrides(this.firstAsInt, this.stride,
@@ -1116,28 +1124,6 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
   //#
 
   // Assignment
-  pragma "compiler generated"
-    // The "compiler generated" flag is added so this explicit definition
-    // of assignment does not disable the POD optimization.
-    // Although provided explicitly, this function is effectively trivial,
-    // since it performs what is effectively a bit-wise copy.
-    //
-    // The POD optimization currently removes initCopy, autoCopy and destructor
-    // calls whose arguments are of plain-old-data type.  Future applications
-    // of this optimization may also remove assignment calls.
-    // The determination of whether a type is POD or not is currently based on
-    // whether a destructor or any assignment operators are defined taking that
-    // that type as an operand.  In the future, the initCopy and default
-    // constructor (yet to be defined) functions and possibly the autoCopy
-    // function will be considered as well.
-    // The purpose of considering POD-ness as the criterion for removing
-    // initCopy and autoCopy calls is that destructors are removed at the same
-    // time.  So at least both functions participating in the optimization must
-    // be trivial.  In the future, the optimization may also remove assignments
-    // and default constructor calls, in which case the optimization should
-    // only be applied when all four of these functions (or their generic
-    // equivalents) are trivial.
-    // See also removePODinitDestroy() in removeUnnecessaryAutoCopyCalls.cpp.
   inline proc =(ref r1: range(stridable=?s1), r2: range(stridable=?s2))
   {
     if r1.boundedType != r2.boundedType then
@@ -1553,24 +1539,45 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
     type resultType = r.intIdxType;
     type strType = chpl__rangeStrideType(resultType);
 
-    if (count == 0) then
-      // Return a degenerate range.
-      return new range(idxType = r.idxType,
-                       boundedType = BoundedRangeType.bounded,
-                       stridable = r.stridable,
-                       _low = r.chpl_intToIdx(1),
-                       _high = r.chpl_intToIdx(0),
-                       _stride = r.stride,
-                       _alignment = r.chpl_intToIdx(0),
-                       _aligned = false);
+    proc absSameType(str) {
+      if (r.stride < 0) {
+        return (-r.stride):resultType;
+      } else {
+        return r.stride:resultType;
+      }
+    }
+
+    if (count == 0) {
+      if (r.hasLowBound()) {
+        return new range(idxType = r.idxType,
+                         boundedType = BoundedRangeType.bounded,
+                         stridable = r.stridable,
+                         _low = chpl__intToIdx(r.idxType, r._low),
+                         _high = chpl__intToIdx(r.idxType, r._low - absSameType(r.stride)),
+                         _stride = r.stride,
+                         _alignment = chpl__intToIdx(r.idxType, r._alignment),
+                         _aligned = r.aligned);
+      } else if (r.hasHighBound()) {
+        return new range(idxType = r.idxType,
+                         boundedType = BoundedRangeType.bounded,
+                         stridable = r.stridable,
+                         _low = chpl__intToIdx(r.idxType, r._high + absSameType(r.stride)),
+                         _high = chpl__intToIdx(r.idxType, r._high),
+                         _stride = r.stride,
+                         _alignment = chpl__intToIdx(r.idxType, r._alignment),
+                         _aligned = r.aligned);
+      } else {
+        halt("Internal error: Unexpected case in chpl_count_help");
+      }
+    }
 
     if boundsChecking && !r.hasFirst() && count > 0 then
       boundsCheckHalt("With a positive count, the range must have a first index.");
     if boundsChecking && !r.hasLast()  && count < 0 then
       boundsCheckHalt("With a negative count, the range must have a last index.");
     if boundsChecking && r.boundedType == BoundedRangeType.bounded &&
-      abs(count:chpl__maxIntTypeSameSign(count.type)):uint(64) > r.length:uint(64) then {
-      boundsCheckHalt("bounded range is too small to access " + abs(count) + " elements");
+      abs(count:chpl__maxIntTypeSameSign(count.type)):uint(64) > r.size:uint(64) then {
+      boundsCheckHalt("bounded range is too small to access " + abs(count):string + " elements");
     }
 
     //
@@ -1716,7 +1723,7 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
     for i in r do yield i;
   }
 
-  iter chpl_direct_range_iter(low: enumerated, high: enumerated,
+  iter chpl_direct_range_iter(low: enum, high: enum,
                               stride: integral) {
     const r = low..high by stride;
     for i in r do yield i;
@@ -1726,7 +1733,7 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
     const r = low..high by stride;
     for i in r do yield i;
   }
-  
+
 
 
   // cases for when stride is a param int (underlying iter can figure out sign
@@ -1739,7 +1746,7 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
     for i in chpl_direct_param_stride_range_iter(low, high, stride) do yield i;
   }
 
-  iter chpl_direct_range_iter(low: enumerated, high: enumerated,
+  iter chpl_direct_range_iter(low: enum, high: enum,
                               param stride: integral) {
     if (stride == 1) {
         // Optimize for the stride == 1 case because I anticipate it'll be
@@ -1821,12 +1828,12 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
     for i in chpl_direct_counted_range_iter_helper(low, count) do yield i;
   }
 
-  iter chpl_direct_counted_range_iter(low: enumerated, count:int(?w)) {
+  iter chpl_direct_counted_range_iter(low: enum, count:int(?w)) {
     const r = low..;
     for i in r#count do yield i;
   }
 
-  iter chpl_direct_counted_range_iter(low: enumerated, count:uint(?w)) {
+  iter chpl_direct_counted_range_iter(low: enum, count:uint(?w)) {
     const r = low..;
     for i in r#count do yield i;
   }
@@ -1859,7 +1866,9 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
     if boundsChecking && isIntType(count.type) && count < 0 then
       HaltWrappers.boundsCheckHalt("With a negative count, the range must have a last index.");
 
-    const (start, end) = if count == 0 then (1:low.type, 0:low.type)
+    // The casts in the 'then' clause are seemingly unnecessary, but
+    // avoid C compile-time warnings when 'low' is min(int)
+    const (start, end) = if count == 0 then (low, (low:uint - 1):low.type)
                                        else (low, low + (count:low.type - 1));
 
     for i in chpl_direct_param_stride_range_iter(start, end, 1) do yield i;
@@ -2019,7 +2028,7 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
   // optimization and because it has additional control flow in it. In this
   // form it can still be inlined, but that only helps for non-zippered
   // iterators. An alternate method would be to calculate the number of
-  // iterations that will occur (possibly using length()) and have the number
+  // iterations that will occur (possibly using size()) and have the number
   // of iterations drive the loop and use a separate variable to track the
   // value to yield. This would mean you couldn't express maximal ranges for
   // int(64) and uint(64) but it's hard to see a case where those could ever be
@@ -2060,7 +2069,7 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
       chpl_debug_writeln("*** In range standalone iterator:");
     }
 
-    const len = this.length;
+    const len = this.size;
     const numChunks = if __primitive("task_get_serial") then
                       1 else _computeNumChunks(len);
 
@@ -2110,7 +2119,7 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
     const numSublocs = here.getChildCount();
 
     if localeModelHasSublocales && numSublocs != 0 {
-      const len = this.length;
+      const len = this.size;
       const tasksPerLocale = dataParTasksPerLocale;
       const ignoreRunning = dataParIgnoreRunningTasks;
       const minIndicesPerTask = dataParMinGranularity;
@@ -2131,10 +2140,10 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
                                                   minIndicesPerTask,
                                                   len);
       if debugDataParNuma {
-        chpl_debug_writeln("### numSublocs = ", numSublocs, "\n" +
-                           "### numTasksPerSubloc = ", numSublocTasks, "\n" +
-                           "### ignoreRunning = ", ignoreRunning, "\n" +
-                           "### minIndicesPerTask = ", minIndicesPerTask, "\n" +
+        chpl_debug_writeln("### numSublocs = ", numSublocs, "\n",
+                           "### numTasksPerSubloc = ", numSublocTasks, "\n",
+                           "### ignoreRunning = ", ignoreRunning, "\n",
+                           "### minIndicesPerTask = ", minIndicesPerTask, "\n",
                            "### numChunks = ", numChunks);
       }
 
@@ -2145,12 +2154,12 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
           local do on here.getChild(chunk) {
             if debugDataParNuma {
               if chunk!=chpl_getSubloc() then
-                chpl_debug_writeln("*** ERROR: ON WRONG SUBLOC (should be "+
-                                   chunk+", on "+chpl_getSubloc()+") ***");
+                chpl_debug_writeln("*** ERROR: ON WRONG SUBLOC (should be ",
+                                   chunk, ", on ", chpl_getSubloc(), ") ***");
             }
             const (lo,hi) = _computeBlock(len, numChunks, chunk, len-1);
             const locRange = lo..hi;
-            const locLen = locRange.length;
+            const locLen = locRange.size;
             // Divide the locale's tasks approximately evenly
             // among the sublocales
             const numSublocTasks = (if chunk < dptpl % numChunks
@@ -2163,7 +2172,7 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
             coforall core in 0..#numTasks {
               const (low, high) = _computeBlock(locLen, numTasks, core, hi, lo, lo);
               if debugDataParNuma {
-                chpl_debug_writeln("### chunk = ", chunk, "  core = ", core, "  " +
+                chpl_debug_writeln("### chunk = ", chunk, "  core = ", core, "  ",
                                    "locRange = ", locRange, "  coreRange = ", low..high);
               }
               yield (low..high,);
@@ -2173,7 +2182,7 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
       }
 
     } else {
-      var v = this.length;
+      var v = this.size;
       const numChunks = if __primitive("task_get_serial") then
                         1 else _computeNumChunks(v);
 
@@ -2223,7 +2232,7 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
     if boundsChecking && ! this.hasFirst() {
       if this.isEmpty() {
         if ! myFollowThis.isEmpty() then
-          HaltWrappers.boundsCheckHalt("zippered iteration with a range has non-equal lengths");
+          HaltWrappers.boundsCheckHalt("size mismatch in zippered iteration");
       } else {
         HaltWrappers.boundsCheckHalt("iteration over a range with no first index");
       }
@@ -2236,11 +2245,11 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
     if (isBoundedRange(myFollowThis) && !myFollowThis.stridable) ||
        myFollowThis.hasLast()
     {
-      const flwlen = myFollowThis.length;
+      const flwlen = myFollowThis.size;
       if boundsChecking && this.hasLast() {
         // this check is for typechecking only
         if isBoundedRange(this) {
-          if this.length < flwlen then
+          if this.size < flwlen then
             HaltWrappers.boundsCheckHalt("zippered iteration over a range with too few indices");
         } else
           assert(false, "hasFirst && hasLast do not imply isBoundedRange");
@@ -2320,12 +2329,12 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
     var ret: string;
 
     if x.hasLowBound() then
-      ret += x.low;
+      ret += x.low:string;
     ret += "..";
     if x.hasHighBound() then
-      ret += x.high;
+      ret += x.high:string;
     if x.stride != 1 then
-      ret += " by " + x.stride;
+      ret += " by " + x.stride:string;
 
     var alignCheckRange = x;
     alignCheckRange.normalizeAlignment();
@@ -2333,7 +2342,7 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
     // Write out the alignment only if it differs from natural alignment.
     // We take alignment modulo the stride for consistency.
     if !(alignCheckRange.isNaturallyAligned()) then
-      ret += " align " + chpl__mod(chpl__idxToInt(x.alignment), x.stride);
+      ret += " align " + chpl__mod(chpl__idxToInt(x.alignment), x.stride):string;
     return ret;
   }
 
@@ -2352,63 +2361,6 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
           0;
       // could verify that we succeeded:
       //assert(isNaturallyAligned());
-    }
-  }
-
-  // Write implementation for ranges
-  pragma "no doc"
-  proc range.writeThis(f)
-  {
-    // a range with a more normalized alignment
-    // a separate variable so 'this' can be const
-    var alignCheckRange = this;
-    if f.writing {
-      alignCheckRange.normalizeAlignment();
-    }
-
-    if hasLowBound() then
-      f <~> low;
-    f <~> new ioLiteral("..");
-    if hasHighBound() then
-      f <~> high;
-    if stride != 1 then
-      f <~> new ioLiteral(" by ") <~> stride;
-
-    // Write out the alignment only if it differs from natural alignment.
-    // We take alignment modulo the stride for consistency.
-    if ! alignCheckRange.isNaturallyAligned() && aligned then
-      f <~> new ioLiteral(" align ") <~> chpl_intToIdx(chpl__mod(chpl__idxToInt(alignment), stride));
-  }
-  pragma "no doc"
-  proc ref range.readThis(f)
-  {
-    if hasLowBound() then
-      f <~> _low;
-    f <~> new ioLiteral("..");
-    if hasHighBound() then
-      f <~> _high;
-    if stride != 1 then
-      f <~> new ioLiteral(" by ") <~> stride;
-
-    // try reading an 'align'
-    if !f.error() {
-      f <~> new ioLiteral(" align ");
-      if f.error() == EFORMAT then {
-        // naturally aligned.
-        f.clearError();
-      } else {
-        if stridable {
-          // un-naturally aligned - read the un-natural alignment
-          var a: intIdxType;
-          f <~> a;
-          _alignment = a;
-        } else {
-          // If the range is not stridable, it can't store an alignment.
-          // TODO: once Channels can store Chapel errors,
-          // create a more descriptive error for this case
-          f.setError(EFORMAT:syserr);
-        }
-      }
     }
   }
 
@@ -2579,7 +2531,19 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
 
   pragma "no doc"
   proc chpl__idxTypeToIntIdxType(type idxType) type {
-    if isEnumType(idxType) || isBoolType(idxType) then return int; else return idxType;
+    if isBoolType(idxType) {
+      return int;
+    } else if isEnumType(idxType) {
+      // Most range/array code currently relies on being able to store
+      // empty ranges like 1..0.  If an enum only defines a single
+      // symbol, we can't create such a range, so print the following
+      // error message to avoid going off the rails.
+      if idxType.size < 2 then
+        compilerError("ranges are not currently supported for enums with fewer than two values");
+      return int;
+    } else {
+      return idxType;
+    }
   }
 
   // convenience method for converting integers to index types in
@@ -2607,7 +2571,7 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
       return i: idxType;
   }
 
-  inline proc chpl__intToIdx(type idxType: enumerated, i: integral) {
+  inline proc chpl__intToIdx(type idxType: enum, i: integral) {
     return chpl__orderToEnum(i, idxType);
   }
 
@@ -2619,6 +2583,10 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
     return i: bool;
   }
 
+  inline proc chpl__intToIdx(type idxType, i: nothing) {
+    return none;
+  }
+
   inline proc chpl__idxToInt(i: integral) {
     return i;
   }
@@ -2627,7 +2595,7 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
     return i;
   }
 
-  inline proc chpl__idxToInt(i: enumerated) {
+  inline proc chpl__idxToInt(i: enum) {
     return chpl__enumToOrder(i);
   }
 

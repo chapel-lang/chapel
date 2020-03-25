@@ -8,8 +8,8 @@ class MyClass {
   }
 }
 
-var global: owned MyClass;
-proc saveit(arg: owned MyClass) {
+var global: owned MyClass?;
+proc saveit(in arg: owned MyClass) {
   global = arg; // OK! Transfers ownership from 'arg' to 'global'
   // now instance will be deleted at end of program
 }

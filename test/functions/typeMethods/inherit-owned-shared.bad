@@ -1,4 +1,0 @@
-inherit-owned-shared.chpl:7: error: unresolved call 'type owned D.mOwned()'
-inherit-owned-shared.chpl:4: note: this candidate did not match: type (owned C).mOwned()
-inherit-owned-shared.chpl:7: note: because method call receiver with type owned D
-inherit-owned-shared.chpl:4: note: is passed to formal 'this: owned C'

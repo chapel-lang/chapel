@@ -4,13 +4,13 @@ export proc foo() {
 }
 
 export proc takesAndReturns(x: int): int {
-  writeln("arg was: " + x + ", return is: " + (x + 1));
+  writeln("arg was: ", x, ", return is: ", (x + 1));
   return x + 1;
 }
 
 export proc parallelProg(numTasksToRun: int) {
   coforall i in 1..numTasksToRun {
-    writeln("In task " + i);
+    writeln("In task ", i);
   }
 }
 

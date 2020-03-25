@@ -1,4 +1,5 @@
 /*
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -120,35 +121,28 @@ int chpl_comm_diags_is_enabled(void) {
   return (atomic_load_int_least16_t(&chpl_comm_diags_disable_flag) <= 0);
 }
 
-static inline
-void chpl_comm_diags_verbose_printf(chpl_bool, const char*, ...)
-  __attribute__((format(printf, 2, 3)));
-static inline
-void chpl_comm_diags_verbose_printf(chpl_bool is_unstable,
-                                    const char* format, ...) {
-  if (chpl_verbose_comm
-      && chpl_comm_diags_is_enabled()
-      && (!is_unstable || chpl_comm_diags_print_unstable)) {
-    char myFmt[100];
-    snprintf(myFmt, sizeof(myFmt), "%d: %s\n", chpl_nodeID, format);
-    va_list ap;
-    va_start(ap, format);
-    vfprintf(stdout, myFmt, ap);
-    va_end(ap);
-  }
-}
+#define chpl_comm_diags_verbose_printf(is_unstable, format, ...)   \
+  do {                                                             \
+    if (chpl_verbose_comm                                          \
+        && chpl_comm_diags_is_enabled()                            \
+        && (!is_unstable || chpl_comm_diags_print_unstable)) {     \
+      printf("%d: " format "\n", chpl_nodeID, __VA_ARGS__);        \
+    }                                                              \
+  } while(0)
 
-#define chpl_comm_diags_verbose_rdma(op, node, size, ln, fn)            \
-  chpl_comm_diags_verbose_printf(false,                                 \
-                                 "%s:%d: remote %s, node %d, %zu bytes",\
-                                 chpl_lookupFilename(fn), ln, op,       \
-                                 (int) node, size)
+#define chpl_comm_diags_verbose_rdma(op, node, size, ln, fn, commid)     \
+  chpl_comm_diags_verbose_printf(false,                                  \
+                                 "%s:%d: remote %s, node %d, %zu bytes, " \
+                                 "commid %d",                            \
+                                 chpl_lookupFilename(fn), ln, op,        \
+                                 (int) node, size, (int) commid)
 
-#define chpl_comm_diags_verbose_rdmaStrd(op, node, ln, fn)              \
+#define chpl_comm_diags_verbose_rdmaStrd(op, node, ln, fn, commid)      \
   chpl_comm_diags_verbose_printf(false,                                 \
-                                 "%s:%d: remote strided %s, node %d",   \
+                                 "%s:%d: remote strided %s, node %d, "  \
+                                 "commid %d",                           \
                                  chpl_lookupFilename(fn), ln, op,       \
-                                 (int) node)
+                                 (int) node, (int) commid)
 
 #define chpl_comm_diags_verbose_amo(op, node, ln, fn)                   \
   chpl_comm_diags_verbose_printf(true,                                  \

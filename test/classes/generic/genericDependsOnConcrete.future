@@ -1,0 +1,2 @@
+bug: cannot resolve generic field that depends on prior concrete field
+#13323

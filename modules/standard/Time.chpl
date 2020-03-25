@@ -1,4 +1,5 @@
 /*
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -28,6 +29,8 @@
  */
 
 module Time {
+  private use SysBasic;
+  import HaltWrappers;
 
 // Returns the number of seconds since midnight.  Has the potential for
 // microsecond resolution if supported by the runtime platform
@@ -107,7 +110,7 @@ proc getCurrentDayOfWeek() : Day {
 
   chpl_timevalue_parts(now, seconds, minutes, hours, mday, month, year, wday, yday, isdst);
 
-  return wday : Day;
+  return try! wday : Day;
 }
 
 /*
@@ -125,7 +128,7 @@ inline proc sleep(t: real, unit: TimeUnits = TimeUnits.seconds) : void {
   extern proc chpl_task_sleep(s:c_double) : void;
 
   if t < 0 {
-    warning("sleep() called with negative time parameter: '"+t+"'");
+    warning("sleep() called with negative time parameter: '", t, "'");
     return;
   }
   chpl_task_sleep(_convert_to_seconds(unit, t:real):c_double);

@@ -1,0 +1,3 @@
+unmanaged-borrow-mismatch2.chpl:16: error: unresolved call 'g(Wrapper(GenericClass(int(64))))'
+unmanaged-borrow-mismatch2.chpl:10: note: this candidate did not match: g(x: Wrapper(unmanaged GenericClass))
+unmanaged-borrow-mismatch2.chpl:10: note: because an argument was incompatible

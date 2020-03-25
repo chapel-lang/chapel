@@ -1,1 +1,1 @@
-myNewLoc = createNewLocale.chpl:2: error: halt reached - pure virtual method called
+myNewLoc = LOCALE0

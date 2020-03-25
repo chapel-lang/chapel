@@ -1,3 +1,5 @@
+use IO;
+
 record MyRecord {
   var numbers:LinkedList(int); // could it be [1..0] int ?
 

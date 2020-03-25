@@ -1,4 +1,5 @@
 /*
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -21,7 +22,7 @@
 //
 module ChapelTaskData {
 
-  use ChapelStandard;
+  private use ChapelStandard, SysCTypes;
 
   // Chapel task-local data format:
   // up to 16 bytes of wide pointer for _remoteEndCountType

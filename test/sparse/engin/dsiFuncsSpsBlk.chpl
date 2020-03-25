@@ -5,10 +5,7 @@ config const N = 10;
 const ParentDom = {7..#2*N align 1, 17..#3*N align 5}
   dmapped Block({7..#2*N, 17..#3*N});
 
-config type sparseLayoutType = DefaultDist;
-const layout = new unmanaged sparseLayoutType();
-
-var SparseDom: sparse subdomain (ParentDom) dmapped new dmap(layout); 
+var SparseDom: sparse subdomain (ParentDom);
 var SparseMat: [SparseDom] int;
 
 writeln(ParentDom.alignedLow);
@@ -31,7 +28,6 @@ for i in ParentDom.dim(1) {
 }
 
 writeln("size:\t\t", SparseDom.size);
-writeln("numIndices:\t",SparseDom.numIndices);
 writeln("low:\t\t",SparseDom.low);
 writeln("high:\t\t",SparseDom.high);
 writeln("stride:\t\t",SparseDom.stride);

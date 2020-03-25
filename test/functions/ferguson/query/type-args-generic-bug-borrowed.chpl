@@ -13,7 +13,7 @@ proc foo(type t : borrowed G) {
   writeln("G");
 }
 
-proc foo(type t : object) {
+proc foo(type t : borrowed object) {
   writeln("object");
 }
 

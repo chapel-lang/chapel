@@ -1,4 +1,5 @@
 /*
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -115,7 +116,7 @@ class RecordReader {
   /* The channel to read from */
   var myReader;
   /* The regular expression to read (using match on the channel) */
-  var matchRegexp: regexp;
+  var matchRegexp: regexp(string);
   pragma "no doc"
   param num_fields = numFields(t); // Number of fields in record
 

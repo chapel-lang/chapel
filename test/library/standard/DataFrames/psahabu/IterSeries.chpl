@@ -5,11 +5,11 @@ var I = ["A", "B", "C", "D", "E"];
 
 var letters = new owned TypedSeries(A, new shared TypedIndex(I));
 
-for i in letters.idx.these(string) do
+for i in letters.idx!.these(string) do
   writeln(i);
 
 writeln();
-for i in letters.idx.items(string) do
+for i in letters.idx!.items(string) do
   writeln(i);
 
 writeln();

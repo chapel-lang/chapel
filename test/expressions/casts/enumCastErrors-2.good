@@ -1,0 +1,3 @@
+uncaught IllegalArgumentError: bad cast from string 'reed' to enum 'color'
+  enumCastErrors.chpl:17: thrown here
+  enumCastErrors.chpl:17: uncaught here

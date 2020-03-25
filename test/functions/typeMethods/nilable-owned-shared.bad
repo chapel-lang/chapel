@@ -1,2 +1,0 @@
-nilable-owned-shared.chpl:8: error: unresolved call 'type owned C?.typeme()'
-nilable-owned-shared.chpl:3: note: this candidate did not match: C.type typeme()
