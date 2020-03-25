@@ -3690,6 +3690,7 @@ module ChapelArray {
   proc chpl__supportedDataTypeForBulkTransfer(x: domain) param return false;
   proc chpl__supportedDataTypeForBulkTransfer(x: []) param return false;
   proc chpl__supportedDataTypeForBulkTransfer(x: _distribution) param return true;
+  proc chpl__supportedDataTypeForBulkTransfer(x: locale) param return true;
   proc chpl__supportedDataTypeForBulkTransfer(x: chpl_anycomplex) param return true;
   proc chpl__supportedDataTypeForBulkTransfer(x: ?t) param where isRecordType(t) || isTupleType(t) {
     // TODO: The current implementations of isPODType and

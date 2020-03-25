@@ -104,8 +104,14 @@ module ChapelLocale {
   pragma "no doc"
   enum localeKind { regular, any, nilLocale, dummy, default };
 
+  pragma "locale private"
   const nilLocale = new locale(localeKind.nilLocale);
+  pragma "locale private"
   var defaultLocale = new locale(localeKind.default);
+
+  // dummyLocale is not locale private. We use it before locales initialized in
+  // the first place, so it should stay in the locale that started the
+  // execution.
   var dummyLocale = new locale(localeKind.dummy);
 
   pragma "always RVF"
@@ -598,6 +604,7 @@ module ChapelLocale {
           yield locIdx;
           b.wait(locIdx, flags);
           chpl_rootLocaleInitPrivate(locIdx);
+          chpl_defaultLocaleInitPrivate();
           warmupRuntime();
         }
       }
@@ -691,8 +698,13 @@ module ChapelLocale {
   }
 
   pragma "no doc"
-  inline proc chpl_set_defaultLocale(_instance: unmanaged BaseLocale) {
-    defaultLocale._instance = _instance;
+  inline proc chpl_defaultLocaleInitPrivate() {
+    // We don't want to be doing unnecessary ref count updates here
+    // as they require additional tasks.  We know we don't need them
+    // so tell the compiler to not insert them.
+    pragma "no copy" pragma "no auto destroy"
+    const ref rl = (rootLocale._instance:borrowed RootLocale?)!.getDefaultLocaleArray();
+    defaultLocale._instance = rl[0]._instance;
   }
 
   // This function sets up a private copy of rootLocale by replicating
