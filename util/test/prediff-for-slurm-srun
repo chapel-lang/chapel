@@ -11,6 +11,8 @@ msgs = (
 """,
 """srun: error: .+: task [0-9]+: Terminated
 """,
+"""srun: Force Terminated job step [0-9.]+
+""",
 """srun: Terminating job step [0-9.]+
 """,
 """slurmstepd: error: \*\*\* STEP [0-9.]+ ON .+ CANCELLED AT [-0-9T.:]+ \*\*\*
