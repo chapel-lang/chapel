@@ -585,3 +585,130 @@ bool ImportStmt::providesNewSymbols(const ImportStmt* other) const {
     }
   }
 }
+
+/************************************* | **************************************
+*                                                                             *
+* If the outer use statement would limit this one, return a new use of our    *
+* module with the additional symbols accounted for.  This new use will not    *
+* be added to the AST, but will be reused in scopeResolution if the same use  *
+* path is followed.                                                           *
+*                                                                             *
+* If the outer use does not require us to alter ourself, return ourself.      *
+* If the combination of the two uses results in no new symbols being provided *
+* by this module, return NULL.                                                *
+*                                                                             *
+************************************** | *************************************/
+
+ImportStmt* ImportStmt::applyOuterUse(const UseStmt* outer) {
+  if (outer->isPlainUse() == true) {
+    // The outer use would not modify us, return ourself.
+    return this;
+  } else if (outer->hasExceptList() == true) {
+    // The outer use specifies an 'except' list
+    // We want to check if any of the identifiers in the 'except' list are
+    // specified by the 'only' list, and not place them in the new 'only' list.
+    std::vector<const char*> newUnqualifiedList;
+
+    for_vector(const char, includeMe, unqualified) {
+      if (std::find(outer->named.begin(), outer->named.end(),
+                    includeMe) == outer->named.end()) {
+
+        // We didn't find this symbol in the list to exclude, so
+        // add it.
+        newUnqualifiedList.push_back(includeMe);
+      }
+    }
+
+    std::map<const char*, const char*> newRenamed;
+
+    for (std::map<const char*, const char*>::iterator it = renamed.begin();
+         it != renamed.end(); ++it) {
+      if (std::find(outer->named.begin(), outer->named.end(), it->first) ==
+          outer->named.end()) {
+        // We didn't find the new name in the list to exclude, so the rename
+        // is still interesting.  Add it.
+        newRenamed[it->first] = it->second;
+      }
+    }
+
+    if (newUnqualifiedList.size() == unqualified.size() &&
+        newRenamed.size() == renamed.size()) {
+      // The except list didn't cut down on our list.
+      // No need to create a new ImportStmt, just return ourself.
+      return this;
+
+    } else if (newUnqualifiedList.size() == 0 && newRenamed.size() == 0) {
+      // All of our list was in the 'except' list,
+      // so we don't provide new symbols.
+      return NULL;
+
+    } else {
+      // The list will be shorter, create a new ImportStmt with it.
+      SET_LINENO(this);
+
+      return new ImportStmt(src, isPrivate, &newUnqualifiedList, &newRenamed);
+    }
+
+  } else {
+    // The outer use has an 'only' list
+    // We need to narrow that list down to just the names that are in both
+    // lists.
+
+    SET_LINENO(this);
+
+    std::vector<const char*> newUnqualifiedList;
+    std::map<const char*, const char*> newRenamed;
+
+    for_vector(const char, includeMe, outer->named) {
+      if (std::find(unqualified.begin(), unqualified.end(),
+                    includeMe) != unqualified.end()) {
+        // We found this symbol in both lists, so add it
+        // to the union of them.
+        newUnqualifiedList.push_back(includeMe);
+
+      } else {
+        std::map<const char*, const char*>::iterator it =
+          renamed.find(includeMe);
+
+        if (it != renamed.end()) {
+          // We found this symbol in the renamed list and the outer 'only'
+          // list so add it to the new renamed list.
+          newRenamed[it->first] = it->second;
+        }
+      }
+    }
+
+    for (std::map<const char*, const char*>::const_iterator it =
+           outer->renamed.begin(); it != outer->renamed.end(); ++it) {
+      if (std::find(unqualified.begin(), unqualified.end(),
+                    it->second) != unqualified.end()) {
+        // The old name was in our list.  We need to rename it.
+        newRenamed[it->first] = it->second;
+      } else {
+
+        std::map<const char*, const char*>::const_iterator innerIt =
+          renamed.find(it->second);
+
+        if (innerIt != renamed.end()) {
+          // We found this symbol in the renamed list and the outer
+          // renamed list so add the outer use's new name as the key, and
+          // our old name as the old name to use.
+          newRenamed[it->first] = innerIt->second;
+        }
+      }
+    }
+
+    if (newUnqualifiedList.size() > 0 || newRenamed.size() > 0) {
+      // There were symbols that were in both lists, so this module use is still
+      // interesting.
+      SET_LINENO(this);
+      return new ImportStmt(src, isPrivate, &newUnqualifiedList, &newRenamed);
+
+    } else {
+      // all of the 'only' identifiers in the outer use
+      // were missing from the inner import's list, so this
+      // module use will give us nothing.
+      return NULL;
+    }
+  }
+}
