@@ -2197,8 +2197,6 @@ static void buildBreadthFirstModuleList(
                 SymExpr* importSE = toSymExpr(import->src);
                 INT_ASSERT(importSE);
 
-                // TODO: applyOuterUse implementation, and use it here
-
                 if (!import->isPrivate &&
                     !importSE->symbol()->hasFlag(FLAG_PRIVATE)) {
                   ImportStmt* importToAdd = import->applyOuterUse(srcUse);
@@ -2278,18 +2276,22 @@ static void buildBreadthFirstModuleList(
               SymExpr* importSE = toSymExpr(import->src);
               INT_ASSERT(importSE);
 
-              // TODO: applyOuterImport implementation, and use it here
-
               if (!import->isPrivate &&
                   !importSE->symbol()->hasFlag(FLAG_PRIVATE)) {
+                ImportStmt* importToAdd = import->applyOuterImport(srcImport);
                 // Imports of private modules are not transitive - the
                 // symbols in the private modules are only visible to itself
                 // and its immediate parent.  Therefore, if the symbol is
                 // private, we will not traverse it further and will merely
                 // add it to the alreadySeen map.
-                if (skipUse(alreadySeen, import) == false) {
-                  next.add(import);
-                  modules->add(import);
+                if (importToAdd != NULL &&
+                    skipUse(alreadySeen, importToAdd) == false) {
+                  next.add(importToAdd);
+                  modules->add(importToAdd);
+                }
+
+                if (importToAdd != NULL) {
+                  (*alreadySeen)[importSE->symbol()].push_back(importToAdd);
                 }
               } else if (!import->isPrivate &&
                          importSE->symbol()->hasFlag(FLAG_PRIVATE)) {

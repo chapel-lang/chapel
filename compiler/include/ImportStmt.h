@@ -56,8 +56,8 @@ class ImportStmt: public VisibilityStmt {
   bool providesQualifiedAccess() const;
   bool providesUnqualifiedAccess() const;
 
-  ImportStmt* applyOuterUse(const UseStmt* other);
-  ImportStmt* applyOuterImport(const ImportStmt* other);
+  ImportStmt* applyOuterUse(const UseStmt* outer);
+  ImportStmt* applyOuterImport(const ImportStmt* outer);
 
   bool providesNewSymbols(const UseStmt* other) const;
   bool providesNewSymbols(const ImportStmt* other) const;
