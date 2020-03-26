@@ -226,7 +226,7 @@ record LinkedList {
     :rtype: `ref eltType`
     :throws SystemError: if the list is empty
    */
-  proc ref front() ref throws {
+  proc ref front() ref: eltType throws {
     import HaltWrappers;
     if boundsChecking && size < 1 {
       HaltWrappers.boundsCheckHalt("front() called on empty list");
@@ -238,10 +238,10 @@ record LinkedList {
     Returns the data stored in the last element of the list
 
     :return: the data stored at the back of the list
-    :rtype: `ref`
+    :rtype: `ref eltType`
     :throws SystemError: if the list is empty
    */
-  proc ref back(): ref throws {
+  proc ref back() ref: eltType throws {
     import HaltWrappers;
      if boundsChecking && size < 1 {
       HaltWrappers.boundsCheckHalt("front() called on empty list");
