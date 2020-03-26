@@ -1101,9 +1101,9 @@ def set_up_executables():
             chpl_system_prediff.append(prediff)
     if launcher == "slurm-srun":
         # With Slurm-based launcher, auto-run prediff-for-slurm-srun.
-        pdSlurm = os.path.join(util_dir, "test", "prediff-for-slurm-srun")
-        if not any(pdSlurm in csp for csp in chpl_system_prediff):
-            chpl_system_prediff.append(pdSlurm)
+        prediff_for_slurm = os.path.join(util_dir, "test", "prediff-for-slurm-srun")
+        if prediff_for_slurm not in chpl_system_prediff:
+            chpl_system_prediff.append(prediff_for_slurm)
     if chpl_system_prediff:
         os.environ["CHPL_SYSTEM_PREDIFF"] = ','.join(chpl_system_prediff)
 
