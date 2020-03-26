@@ -734,8 +734,8 @@ heavy tuples. They store all elements by value and will make a copy of
 each element. Heavy tuples may be viewed as analagous to a group of
 routine arguments that each have the `in` intent.
 
-Light tuples and heavy tuples differ in how their individual elements
-are stored. In all other respects the two forms of tuple are identical.
+In short, some or all of the elements of a light tuple may be references,
+while a heavy tuple will never contain a reference.
 
 .. _Tuple_Expression_Behavior:
 
