@@ -2002,6 +2002,14 @@ static Expr* preFoldNamed(CallExpr* call) {
           if (imm != NULL && (fromEnum || fromIntEtc) && toIntEtc) {
             Immediate coerce = getDefaultImmediate(newType);
 
+            if (fWarnUnstable && !toIntUint) {
+              if (is_bool_type(newType)) {
+                USR_WARN(call, "enum-to-bool casts are likely to be deprecated in the future");
+              } else {
+                USR_WARN(call, "enum-to-float casts are likely to be deprecated in the future");
+              }
+            }
+
             coerce_immediate(imm, &coerce);
 
             retval = new SymExpr(new_ImmediateSymbol(&coerce));
