@@ -490,8 +490,8 @@ module String {
     the buffer is freed before the string returned from this function, accessing
     it is undefined behavior.
 
-    :arg s: Object to borrow the buffer from
-    :type s: `string`
+    :arg x: Object to borrow the buffer from
+    :type x: `string`
 
     :returns: A new `string`
   */
@@ -514,12 +514,14 @@ module String {
     the buffer is freed before the string returned from this function, accessing
     it is undefined behavior.
 
-    :arg s: Object to borrow the buffer from
-    :type s: `c_string`
+    :arg x: Object to borrow the buffer from
+    :type x: `c_string`
 
-    :arg length: Length of the `c_string` in bytes, excluding the terminating
-                 null byte.
+    :arg length: Length of the string stored in `x` in bytes, excluding the
+                 terminating null byte.
     :type length: `int`
+
+    :throws: `DecodeError` if `x` contains non-UTF-8 characters.
 
     :returns: A new `string`
   */
@@ -550,15 +552,17 @@ module String {
      `c_ptr(uint(8))`. If the buffer is freed before the string returned from
      this function, accessing it is undefined behavior.
 
-     :arg s: Object to borrow the buffer from
-     :type s: `bufferType` (i.e. `c_ptr(uint(8))`)
+     :arg x: Object to borrow the buffer from
+     :type x: `bufferType` (i.e. `c_ptr(uint(8))`)
 
-     :arg length: Length of the string stored in `s`, excluding the terminating
-                  null byte.
+     :arg length: Length of the string stored in `x` in bytes, excluding the
+                  terminating null byte.
      :type length: `int`
 
-     :arg size: Size of memory allocated for `s` in bytes
+     :arg size: Size of memory allocated for `x` in bytes
      :type length: `int`
+
+     :throws: `DecodeError` if `x` contains non-UTF-8 characters.
 
      :returns: A new `string`
   */
@@ -608,12 +612,14 @@ module String {
     Creates a new string which takes ownership of the internal buffer of a
     `c_string`. The buffer will be freed when the string is deinitialized.
 
-    :arg s: Object to take ownership of the buffer from
-    :type s: `c_string`
+    :arg x: Object to take ownership of the buffer from
+    :type x: `c_string`
 
-    :arg length: Length of the string stored in `s`, excluding the terminating
-                 null byte.
+    :arg length: Length of the string stored in `x` in bytes, excluding the
+                 terminating null byte.
     :type length: `int`
+
+     :throws: `DecodeError` if `x` contains non-UTF-8 characters.
 
     :returns: A new `string`
   */
@@ -633,15 +639,17 @@ module String {
      Creates a new string which takes ownership of the memory allocated for a
      `c_ptr(uint(8))`. The buffer will be freed when the string is deinitialized.
 
-     :arg s: Object to take ownership of the buffer from
-     :type s: `bufferType` (i.e. `c_ptr(uint(8))`)
+     :arg x: Object to take ownership of the buffer from
+     :type x: `bufferType` (i.e. `c_ptr(uint(8))`)
 
-     :arg length: Length of the string stored in `s`, excluding the terminating
-                  null byte.
+     :arg length: Length of the string stored in `x` in bytes, excluding the
+                  terminating null byte.
      :type length: `int`
 
-     :arg size: Size of memory allocated for `s` in bytes
+     :arg size: Size of memory allocated for `x` in bytes
      :type length: `int`
+
+     :throws: `DecodeError` if `x` contains non-UTF-8 characters.
 
      :returns: A new `string`
   */
@@ -673,8 +681,8 @@ module String {
   /*
     Creates a new string by creating a copy of the buffer of another string.
 
-    :arg s: Object to copy the buffer from
-    :type s: `string`
+    :arg x: Object to copy the buffer from
+    :type x: `string`
 
     :returns: A new `string`
   */
@@ -695,12 +703,21 @@ module String {
   /*
     Creates a new string by creating a copy of the buffer of a `c_string`.
 
-    :arg s: Object to copy the buffer from
-    :type s: `c_string`
+    :arg x: Object to copy the buffer from
+    :type x: `c_string`
 
-    :arg length: Length of the `c_string` in bytes, excluding the terminating
-                 null byte.
+    :arg length: Length of the string stored in `x` in bytes, excluding the
+                 terminating null byte.
     :type length: `int`
+
+    :arg policy: `decodePolicy.strict` raises an error, `decodePolicy.replace`
+                 replaces the malformed character with UTF-8 replacement
+                 character, `decodePolicy.drop` drops the data silently,
+                 `decodePolicy.escape` escapes each illegal byte with private
+                 use codepoints
+
+    :throws: `DecodeError` if `decodePolicy.strict` is passed to the `policy`
+             argument and `x` contains non-UTF-8 characters.
 
     :returns: A new `string`
   */
@@ -721,23 +738,33 @@ module String {
   /*
      Creates a new string by creating a copy of a buffer.
 
-     :arg s: The buffer to copy
-     :type s: `bufferType` (i.e. `c_ptr(uint(8))`)
+     :arg x: The buffer to copy
+     :type x: `bufferType` (i.e. `c_ptr(uint(8))`)
 
-     :arg length: Length of the string stored in `s`, excluding the terminating
-                  null byte.
+     :arg length: Length of the string stored in `x` in bytes, excluding the
+                  terminating null byte.
      :type length: `int`
 
-     :arg size: Size of memory allocated for `s` in bytes
-     :type length: `int`
+     :arg size: Size of memory allocated for `x` in bytes. This argument is
+                ignored by this function.
+     :type size: `int`
+
+      :arg policy: `decodePolicy.strict` raises an error, `decodePolicy.replace`
+                   replaces the malformed character with UTF-8 replacement
+                   character, `decodePolicy.drop` drops the data silently,
+                   `decodePolicy.escape` escapes each illegal byte with private
+                   use codepoints
+
+     :throws: `DecodeError` if `x` contains non-UTF-8 characters.
 
      :returns: A new `string`
   */
-  // TODO: size is probably unnecessary here, but maybe we keep it for
-  // consistence? Then, we can at least give it a default like length+1
   inline proc createStringWithNewBuffer(x: bufferType,
                                         length: int, size=length+1,
                                         policy=decodePolicy.strict) throws {
+    // size argument is not used, because we're allocating our own buffer
+    // anyways. But it has a default and probably it's good to keep it here for
+    // interface consistency
     return decodeByteBuffer(x, length, policy);
   }
 
