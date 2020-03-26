@@ -622,10 +622,19 @@ Overriding Base Class Methods
 
 If a method in a derived class is declared with a signature identical to
 that of a method in a base class, then it is said to override the base
-class’s method. Such methods are considered for dynamic dispatch. In
-particular, dynamic dispatch will be used when the method receiver has a
-static type of the base class but refers to an instance of a derived
-class type.
+class’s method. Such methods may be considered for dynamic dispatch if
+certain criteria are met. In particular, dynanmic dispatch will be used
+when the method receiver has a static type of the base class but refers
+to an instance of a derived class type. Additionally, a method eligible
+for dynamic dispatch must not be a class method (see :ref:`Class_Methods`,
+must not return `type`, and must not return `param`.
+
+   *Rationale*.
+
+   Class methods, methods that return `type`, and methods that return
+   `param` are not considered as candidates for dynamic dispatch because
+   they are resolved at compile-time based on the static type of the
+   method receiver.
 
 In order to have identical signatures, two methods must have the same
 the names, intents, types, and order of formal arguments. The return
