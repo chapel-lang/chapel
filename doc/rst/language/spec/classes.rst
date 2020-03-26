@@ -345,6 +345,10 @@ class type.
 
 The default value of a concrete nilable class type is ``nil``. Generic
 class types and non-nilable class types do not have a default value.
+For this reason, rectangular arrays of non-nilable classes cannot be
+resized, since the new array values don't have a logical default
+value.  For similar reasons, associative and sparse arrays of
+non-nilable classes are not currently supported.
 
    *Example (declaration.chpl)*.
 
