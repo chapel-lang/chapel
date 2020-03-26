@@ -106,15 +106,15 @@ checkResolved() {
                            def->sym->name);
           } else if (fWarnUnstable) {
             Immediate* imm = toVarSymbol(sym->symbol())->immediate;
-            std::string enumval = imm->to_string();
-            if (enumVals.count(enumval) != 0) {
+            std::string enumVal = imm->to_string();
+            if (enumVals.count(enumVal) != 0) {
               USR_WARN(sym, "it has been suggested that support for enums "
                        "with duplicate integer values should be deprecated, "
                        "so this enum could be considered unstable; if you "
                        "value such enums, please let the Chapel team know.");
               break;
             }
-            enumVals.insert(enumval);
+            enumVals.insert(enumVal);
           }
         }
       }
