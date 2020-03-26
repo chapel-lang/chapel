@@ -2620,12 +2620,12 @@ proc openwriter(path:string,
 
    :throws SystemError: Thrown if a file reader channel could not be returned.
  */
-// It is the responsibility of the caller to release the returned channel
-// if the error code is nonzero.
-// The return error code should be checked to avoid double-deletion errors.
 proc file.reader(param kind=iokind.dynamic, param locking=true, start:int(64) = 0,
                  end:int(64) = max(int(64)), hints:iohints = IOHINT_NONE,
                  style:iostyle = this._style): channel(false, kind, locking) throws {
+  // It is the responsibility of the caller to release the returned channel
+  // if the error code is nonzero.
+  // The return error code should be checked to avoid double-deletion errors.
   var ret:channel(false, kind, locking);
   var err:syserr = ENOERR;
   on this.home {
@@ -2705,13 +2705,13 @@ proc file.lines(param locking:bool = true, start:int(64) = 0, end:int(64) = max(
 
    :throws SystemError: Thrown if a file writer channel could not be returned.
  */
-// It is the responsibility of the caller to retain and release the returned
-// channel.
-// If the return error code is nonzero, the ref count will be 0 not 1.
-// The error code should be checked to avoid double-deletion errors.
 proc file.writer(param kind=iokind.dynamic, param locking=true, start:int(64) = 0,
                  end:int(64) = max(int(64)), hints:c_int = 0, style:iostyle = this._style):
                  channel(true,kind,locking) throws {
+  // It is the responsibility of the caller to retain and release the returned
+  // channel.
+  // If the return error code is nonzero, the ref count will be 0 not 1.
+  // The error code should be checked to avoid double-deletion errors.
   var ret:channel(true, kind, locking);
   var err:syserr = ENOERR;
   on this.home {
