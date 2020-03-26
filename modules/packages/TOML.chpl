@@ -169,8 +169,8 @@ module TomlParser {
         if !source.isEmpty() {
           while(readLine(source)) {
             var token = top(source);
-
-            if token == '#' {
+         
+            if comment.match(token) {
               parseComment();
             }
             else if inBrackets.match(token) {
@@ -321,9 +321,7 @@ module TomlParser {
               skipNext(source);
             }
             else if comment.match(top(source)) {
-              while top(source) != "\n" {
-                skipNext(source);
-              }
+              skipNext(source);
             }
             else {
               var toParse = parseValue();
@@ -401,9 +399,7 @@ module TomlParser {
         }
         // Comments within arrays
         else if val == '#' {
-          while top(source) != "\n" {
-            skipNext(source);
-          }
+          skipLine(source);
           return parseValue();
         }
         else if corner.match(val) {
@@ -1205,6 +1201,7 @@ module TomlReader {
     }
 
     proc splitLine(line) {
+      var idx = 0; 
       var linetokens: list(string);
       var nonEmptyChar: bool = false;
 
@@ -1221,20 +1218,25 @@ module TomlReader {
                                        singleQuotes,
                                        bracketContents,
                                        brackets,
-                                       comments,
                                        commas,
                                        curly,
                                        equals));
 
       for token in pattern.split(line) {
+        idx += 1;
         var strippedToken = token.strip(" \t");
         if strippedToken.size != 0 {
           if debugTomlReader {
             writeln('Tokenized: ', '(', strippedToken, ')');
           }
-
           nonEmptyChar = true;
-          linetokens.append(strippedToken);
+          
+          var isComment = strippedToken.match(compile(comments));
+          if isComment.matched && idx <= 1 {
+            linetokens.append(strippedToken);
+          } else if !isComment.matched {
+            linetokens.append(strippedToken);
+          }
         }
       }
 
