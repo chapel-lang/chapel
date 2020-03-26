@@ -734,7 +734,7 @@ heavy tuples. They store all elements by value and will make a copy of
 each element. Heavy tuples may be viewed as analagous to a group of
 routine arguments that each have the `in` intent.
 
-Light tuples and heavy tuples only differ in how their individual elements
+Light tuples and heavy tuples differ in how their individual elements
 are stored. In all other respects the two forms of tuple are identical.
 
 .. _Tuple_Expression_Behavior:
@@ -742,9 +742,9 @@ are stored. In all other respects the two forms of tuple are identical.
 Tuple Expression Behavior
 -------------------------
 
-Tuple expressions are a form of light tuple. Like other light tuples, tuple
-expressions capture each element based on the default argument intent of
-the element's type.
+Tuple expressions are a form of light tuple. Like most other light tuples,
+tuple expressions capture each element based on the default argument intent
+of the element's type.
 
    *Example (tuple-expression-behavior.chpl)*.
 
@@ -755,8 +755,6 @@ More specifically:
    capturing it by value.
 -  Otherwise, the tuple expression will capture the element by value.
 
-The above holds true for other forms of light tuple.
- 
 Consider the following example:
 
    .. code-block:: chapel
@@ -802,24 +800,6 @@ The tuple expression ``(a, i, r)`` will capture the array ``a`` and the record
    capture the value by reference in order to avoid a potentially
    expensive copy operation.
 
-   *Rationale*
-
-   -- TODO: Add analogy w.r.t. to varargs here? Or save for the tuple
-      arguments section? 
-
-.. _Tuples_and_Return_Intent_Overloading:
-
-Tuples and Return Intent Overloading
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-  -- TODO: Explain that the constness of an element captured by reference
-     depends on how it is used, just as the constness of an array argument
-     depends on whether or not it is modified in the body of a routine.
-  -- Provide an example with arrays.
-  -- Do we need this section at all?
-
-.. _Tuple_Variable_Behavior:
-
 Tuple Variable Behavior
 -----------------------
 
@@ -834,6 +814,7 @@ For example, in this code:
    .. code-block:: chapel
 
       record R { var x: int; }
+
       var a: [0..0] int;
       var i: int;
       var r = new R(0);
@@ -874,9 +855,9 @@ If the tuple argument has the `in` intent, then it is a heavy tuple and all
 of its elements are captured by value, as though each element has the `in`
 intent.
 
-If a routine argument is a tuple with the default argument intent or the
-`ref` intent and a heavy tuple (such as a tuple variable) is passed to it,
-the heavy tuple will be silently converted into a light tuple.
+If a routine argument is a tuple with the default argument intent and a
+heavy tuple (such as a tuple variable) is passed to it, the heavy tuple
+will be silently converted into a light tuple.
 
 A conversion from light to heavy tuple also occurs when a light tuple
 (such as a tuple expression) is passed to a tuple argument with the `in`
@@ -922,16 +903,19 @@ to the default argument intent. When the module variable ``modTup`` is
 passed to ``lightTupleArg``, its first element is copied while its second
 element is passed as though it were `const ref`.
 
-When the light tuple argument ``tup`` is passed to ``heavyTupleArg``, a
-copy of it is made because the argument ``heavy`` is a heavy tuple due to
-the `in` intent.
+When the tuple argument ``tup`` is passed to ``heavyTupleArg``, a copy of it
+is made because the argument ``heavy`` is a heavy tuple due to the `in`
+intent.
 
    *Example (tuple-argument-ref-intent.chpl)*.
 
+Tuple arguments with the `ref` intent are considered to be a special form
+of light tuple where every element is passed by reference.
+
 If a tuple argument has the `ref` intent, then actual arguments are
-restricted to heavy tuples (a tuple variable or a returned tuple). When a
-tuple argument has the `ref` intent, each individual element behaves as
-though it was an argument with the `ref` intent. 
+restricted to heavy tuples (a tuple variable or a returned tuple). Each
+individual element behaves as though it was an argument with the `ref`
+intent.
 
    .. code-block:: chapel
 
@@ -970,7 +954,11 @@ When a tuple is returned from a function with `ref` or `const ref` return
 intent, it must refer to some form of heavy tuple that exists outside of
 the current scope. Otherwise there is a compilation error.
   
-Both light tuples and heavy tuples can be 
+Both light tuples and heavy tuples can be returned by a routine. Since
+the default return intent is to return by value, a light tuple must be
+converted to a heavy tuple when it is returned from a routine.
+
+   *Example (tuple-return-behavior.chpl)*.
 
    .. code-block:: chapel
 
@@ -995,6 +983,17 @@ Both light tuples and heavy tuples can be
    .. BLOCK-test-chapeloutput
 
       (0, 0, (x = 0))
+
+In the above example, ``returnTuple`` returns a heavy tuple that contains
+a copy of the array ``a``, the integer ``i``, and the record ``r``.
+
+The heavy tuple returned by ``returnTuple`` is passed to the routine
+``updateGlobalsAndOutput``. It is silently converted into a light
+tuple because the formal argument ``tup`` has the default argument intent.
+
+Because the tuple passed to ``updateGlobalsAndOutput`` is heavy and contains
+no references, the assignments made to ``a``, ``i`` and ``r`` are not
+reflected in ``tup`` when it is printed to standard output.
 
 .. _Tuple_Operators:
 
