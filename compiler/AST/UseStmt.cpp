@@ -666,7 +666,10 @@ UseStmt* UseStmt::applyOuterUse(const UseStmt* outer) {
 }
 
 ImportStmt* UseStmt::applyOuterImport(const ImportStmt* outer) {
-  if (outer->unqualified.size() + outer->renamed.size() == 0) {
+  if (outer->providesQualifiedAccess()) {
+    // This assert is here in case we change it so imports can provide both
+    // unqualified and qualified access in the same statement.
+    INT_ASSERT(!outer->providesUnqualifiedAccess());
     // The outer import provides qualified access only.  Therefore, just return
     // a new import of our used module
     SET_LINENO(this);

@@ -589,14 +589,14 @@ bool ImportStmt::providesNewSymbols(const ImportStmt* other) const {
 
 /************************************* | **************************************
 *                                                                             *
-* If the outer use statement would limit this one, return a new use of our    *
-* module with the additional symbols accounted for.  This new use will not    *
+* If the outer use statement would limit this one, return a new import of our *
+* module with the additional symbols accounted for.  This new import will not *
 * be added to the AST, but will be reused in scopeResolution if the same use  *
 * path is followed.                                                           *
 *                                                                             *
 * If the outer use does not require us to alter ourself, return ourself.      *
-* If the combination of the two uses results in no new symbols being provided *
-* by this module, return NULL.                                                *
+* If the combination of the two stmts results in no new symbols being         *
+* provided by this module, return NULL.                                       *
 *                                                                             *
 ************************************** | *************************************/
 
