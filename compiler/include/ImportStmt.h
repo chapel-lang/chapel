@@ -55,6 +55,10 @@ class ImportStmt: public VisibilityStmt {
   bool skipSymbolSearch(const char* name);
 
   bool providesQualifiedAccess() const;
+  bool providesUnqualifiedAccess() const;
+
+  ImportStmt* applyOuterUse(const UseStmt* outer);
+  ImportStmt* applyOuterImport(const ImportStmt* outer);
 
   bool providesNewSymbols(const UseStmt* other) const;
   bool providesNewSymbols(const ImportStmt* other) const;

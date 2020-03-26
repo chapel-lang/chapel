@@ -15,7 +15,6 @@ module Z {
   import C.{x, foo}; // This used to not work, while individual forms did
 
   proc main() {
-    writeln(x);
-    foo();
+    writeln(C.x);
   }
 }
