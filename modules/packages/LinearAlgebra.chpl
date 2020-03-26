@@ -995,6 +995,14 @@ proc tril(A: [?D] ?eltType, k=0) {
   return L;
 }
 
+/* An iterator for the lower tirangular part of matrix */
+iter trilIter(A: [?D] ?eltType, k=0) {
+  if D.rank != 2 then
+    compilerError("Rank is not 2");
+  for (i, j) in D do
+    if (i >= j-k) then yield A[i, j];
+}
+
 
 /*
    Return upper triangular part of matrix, above the diagonal + ``k``,
@@ -1042,6 +1050,13 @@ proc triu(A: [?D] ?eltType, k=0) {
   return U;
 }
 
+/* An iterator for the upper tirangular part of matrix */
+iter triuIter(A: [?D] ?eltType, k=0) {
+  if D.rank != 2 then
+    compilerError("Rank is not 2");
+  for (i, j) in D do
+    if (i <= j-k) then yield A[i, j];
+}
 
 
 /* Return `true` if matrix is diagonal. */
@@ -1153,10 +1168,10 @@ private proc _lu (in A: [?Adom] ?eltType) {
   var L, U, LU: [LUDom] eltType;
 
   var ipiv: [{1..n}] int = [i in {1..n}] i;
-  
+
   var numSwap: int = 0;
 
-  for i in 1..n { 
+  for i in 1..n {
 
     var max = A[i,i], swaprow = i;
     for row in (i+1)..n {
@@ -1183,7 +1198,7 @@ private proc _lu (in A: [?Adom] ?eltType) {
       var sum = + reduce (L[k,..] * U[..,i]);
       L[k,i] = (A[k,i] - sum) / U[i,i];
     }
-  } 
+  }
 
   LU = L + U;
   forall i in 1..n {
@@ -1194,16 +1209,16 @@ private proc _lu (in A: [?Adom] ?eltType) {
 }
 
 /*
-  Compute an LU factorization of square matrix `A` 
+  Compute an LU factorization of square matrix `A`
   using partial pivoting, such that `A = P * L * U` where P
   is a permutation matrix. Return a tuple of size 2 `(LU, ipiv)`.
-  
-  `L` and `U` are stored in the same matrix `LU` where 
+
+  `L` and `U` are stored in the same matrix `LU` where
   the unit diagonal elements of L are not stored.
-  
-  `ipiv` contains the pivot indices such that row i of `A` 
+
+  `ipiv` contains the pivot indices such that row i of `A`
   was interchanged with row `ipiv(i)`.
-  
+
 */
 proc lu (A: [?Adom] ?eltType) {
   if Adom.rank != 2 then
@@ -1216,13 +1231,13 @@ proc lu (A: [?Adom] ?eltType) {
   return (LU,ipiv);
 }
 
-/* Return a new array as the permuted form of `A` according to 
+/* Return a new array as the permuted form of `A` according to
     permutation array `ipiv`.*/
 private proc permute (ipiv: [] int, A: [?Adom] ?eltType, transpose=false) {
   const n = Adom.shape(1);
-  
+
   var B: [Adom] eltType;
-  
+
   if Adom.rank == 1 {
     if transpose {
       forall (i,pi) in zip(1..n, ipiv) {
@@ -1254,9 +1269,9 @@ private proc permute (ipiv: [] int, A: [?Adom] ?eltType, transpose=false) {
 
     .. note::
 
-      This procedure performs LU factorization to compute the 
+      This procedure performs LU factorization to compute the
       determinant. In certain cases, e.g. having a lower/upper
-      triangular matrix, it is more desirable to compute the 
+      triangular matrix, it is more desirable to compute the
       determinant manually.
 */
 
@@ -1270,54 +1285,54 @@ proc det (A: [?Adom] ?eltType) {
   var (LU,ipiv,numSwap) = _lu(A);
   const pdet = if numSwap % 2 == 0 then 1 else -1;
 
-  // L[i,i] always = 1, so we only need to take the 
+  // L[i,i] always = 1, so we only need to take the
   // diagonal product of U
 
   return (* reduce [i in Adom.dim(1)] LU[i,i]) * pdet;
 }
 
-/* Return the solution ``x`` to the linear system `` L * x = b `` 
+/* Return the solution ``x`` to the linear system `` L * x = b ``
     where ``L`` is a lower triangular matrix. Setting `unit_diag` to true
-    will assume the diagonal elements as `1` and will not be referenced 
+    will assume the diagonal elements as `1` and will not be referenced
     within this procedure.
 */
-proc solve_tril (const ref L: [?Ldom] ?eltType, const ref b: [?bdom] eltType, 
+proc solve_tril (const ref L: [?Ldom] ?eltType, const ref b: [?bdom] eltType,
                   unit_diag = true) {
   const n = Ldom.shape(1);
   var y = b;
-  
+
   for i in 1..n {
     const sol = if unit_diag then y(i) else y(i) / L(i,i);
     y(i) = sol;
-    
+
     if (i < n) {
       forall j in (i+1)..n {
         y(j) -= L(j,i) * sol;
       }
     }
   }
-  
+
   return y;
 }
 
-/* Return the solution ``x`` to the linear system `` U * x = b `` 
+/* Return the solution ``x`` to the linear system `` U * x = b ``
     where ``U`` is an upper triangular matrix.
 */
 proc solve_triu (const ref U: [?Udom] ?eltType, const ref b: [?bdom] eltType) {
   const n = Udom.shape(1);
   var y = b;
-  
+
   for i in 1..n by -1 {
     const sol = y(i) / U(i,i);
     y(i) = sol;
-    
+
     if (i > 1) {
       forall j in 1..(i-1) by -1 {
         y(j) -= U(j,i) * sol;
       }
     }
   }
-  
+
   return y;
 }
 
@@ -1596,19 +1611,19 @@ proc svd(A: [?Adom] ?t) throws
   return (u, s, vt);
 }
 
-/* 
+/*
   Compute the approximate solution to ``A * x = b`` using the Jacobi method.
   iteration will stop when ``maxiter`` is reached or error is smaller than
   ``tol``, whichever comes first. Return the number of iterations performed.
-  
+
   .. note::
     ``X`` is passed as a reference, meaning the initial solution guess can be
-    stored in ``X`` before calling the procedure, and the approximate solution 
+    stored in ``X`` before calling the procedure, and the approximate solution
     will be stored in the same array.
-    
+
     Dense and CSR arrays are supported.
 */
-proc jacobi(A: [?Adom] ?eltType, ref X: [?Xdom] eltType, 
+proc jacobi(A: [?Adom] ?eltType, ref X: [?Xdom] eltType,
             b: [Xdom] eltType, tol = 0.0001, maxiter = 1000) {
   if Adom.rank != 2 || X.rank != 1 || b.rank != 1 then
     halt("Wrong shape of input matrix or vector");
@@ -2308,13 +2323,13 @@ module Sparse {
 
     return B;
   }
-  
+
   pragma "no doc"
   proc _array.times(A: [?Adom] ?eltType) where isSparseArr(this) && !isCSArr(this)
                                                && isSparseArr(A) && !isCSArr(A) {
     if Adom.rank != this.domain.rank then compilerError("Unmatched ranks");
     if this.domain.shape != Adom.shape then halt("Unmatched shapes");
-    // TODO: sps should only contain non-zero entries in resulting array, 
+    // TODO: sps should only contain non-zero entries in resulting array,
     //       i.e. intersection of this.domain and Adom
     var sps: sparse subdomain(Adom.parentDom);
     sps += this.domain;
@@ -2346,9 +2361,9 @@ module Sparse {
 
     return B;
   }
-  
+
   pragma "no doc"
-  proc _array.elementDiv(A: [?Adom] ?eltType) where 
+  proc _array.elementDiv(A: [?Adom] ?eltType) where
                                             isSparseArr(this) && !isCSArr(this)
                                             && isSparseArr(A) && !isCSArr(A) {
     if Adom.rank != this.domain.rank then compilerError("Unmatched ranks");
@@ -2384,9 +2399,9 @@ module Sparse {
     }
     return A;
   }
-  
+
   pragma "no doc"
-  proc jacobi(A: [?Adom] ?eltType, ref X: [?Xdom] eltType, 
+  proc jacobi(A: [?Adom] ?eltType, ref X: [?Xdom] eltType,
               b: [Xdom] eltType, tol = 0.0001, maxiter = 1000) where isCSArr(A) {
     if Adom.rank != 2 || X.rank != 1 || b.rank != 1 then
       halt("Wrong shape of input matrix or vector");
@@ -2394,11 +2409,11 @@ module Sparse {
       halt("Matrix A is not a square");
     if Adom.shape(1) != Xdom.shape(1) then
       halt("Mismatch shape between matrix side length and vector length");
-  
+
     var itern = 0, err: eltType = 1;
-  
+
     var t: [Xdom] eltType = 0;
-  
+
     while (itern < maxiter) {
       itern = itern + 1;
       forall i in Adom.dim(1) {
