@@ -712,25 +712,29 @@ where a comma-separated list of components is valid.
 Light Tuples and Heavy Tuples
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Throughout the next few sections, the terms "light tuple" and "heavy tuple"
-will be used frequently to describe two different ways in which tuples
-may capture their elements.
+Throughout the next few sections, the terms light tuple and heavy tuple
+are used frequently to describe two different ways that tuples can
+capture elements.
 
-Tuple expressions or tuple arguments with default argument intent are light
-tuples. They capture individual elements based on the default argument
-intent of that element's type.
+Tuple expressions or tuple arguments with default argument intent are two
+examples of light tuples. They store elements by reference where it makes
+sense to do so. Light tuples may be viewed as analagous to a group of
+routine arguments that each have default argument intent.
 
-Tuple variables or tuple arguments with `in` intent are heavy tuples. They
-store all elements by value and will make a copy of each element.
+Tuple variables or tuple arguments with `in` intent are two examples of
+heavy tuples. They store all elements by value and will make a copy of
+each element. Heavy tuples may be viewed as analagous to a group of
+routine arguments that each have the `in` intent.
 
-In all other respects light tuples and heavy tuples are identical.
+Light tuples and heavy tuples only differ in how their individual elements
+are stored. In all other respects the two forms of tuple are identical.
 
 .. _Tuple_Expression_Behavior:
 
 Tuple Expression Behavior
 -------------------------
 
-Tuple expressions are one form of light tuple. Like other light tuples, tuple
+Tuple expressions are a form of light tuple. Like other light tuples, tuple
 expressions capture each element based on the default argument intent of
 the element's type.
 
@@ -739,8 +743,9 @@ the element's type.
 More specifically:
 
 -  If the default argument intent of the element's type is a variation of
-   `ref`, then the tuple expression will refer to the element. 
--  Otherwise, the tuple expression will store the element by value.
+   `ref`, then the tuple expression will refer to the element instead of
+   capturing it by value.
+-  Otherwise, the tuple expression will capture the element by value.
 
 The above holds true for other forms of light tuple.
  
@@ -757,31 +762,42 @@ Consider the following example:
       // The int `i` is copied when captured, but `a` and `r` are not.
       test((a, i, r));
 
+      // Modify the globals, then print the tuple.
       proc test(tup) {
         a[0] = 1;
         i = 2;
         r.x = 3;
-        writeln(tup); // Outputs (1, 0, (x = 3)).
-      }
 
-      writeln(a); // Outputs 1.
-      writeln(i); // Outputs 0.
-      writeln(r); // Outputs (x = 3).
+        // Outputs (1, 0, (x = 3)).
+        writeln(tup);
+      }
 
    .. BLOCK-test-chapeloutput
 
       (1, 0, (x = 3))
 
-The tuple literal `(a, i, r)` will capture the array `a` and the record `r`
-by `ref`, but will create a copy of the integer `i`.
+The tuple expression ``(a, i, r)`` will capture the array ``a`` and the record
+``r`` by `ref`, but will create a copy of the integer ``i``.
 
-   *Rationale*.
+   *Rationale*
 
-   Use of tuple expressions would be prohibitively expensive if certain types
-   (such as arrays) were copied by default. By determining whether or not to
-   capture an element by reference based on the default argument intent of
-   the element's type, the rules are made both simple to remember and follow
-   the principle of least surprise.
+   Tuple expressions and other forms of light tuple are designed to act like
+   a lightweight bundle of arguments. They behave similarly to the
+   individual arguments of a routine call.
+
+   It would be prohibitively expensive for some argument types (such as
+   arrays) to be copied by default when passed as an argument to a
+   routine call.
+
+   The same logic applies to tuple expressions. When the default argument
+   intent of a value's type is some form of `ref`, a tuple expression will
+   capture the value by reference in order to avoid a potentially
+   expensive copy operation.
+
+   *Rationale*
+
+   -- TODO: Add analogy w.r.t. to varargs here? Or save for the tuple
+      arguments section? 
 
 .. _Tuples_and_Return_Intent_Overloading:
 
@@ -792,18 +808,16 @@ Tuples and Return Intent Overloading
      depends on how it is used, just as the constness of an array argument
      depends on whether or not it is modified in the body of a routine.
   -- Provide an example with arrays.
+  -- Do we need this section at all?
 
 .. _Tuple_Variable_Behavior:
 
 Tuple Variable Behavior
 -----------------------
 
-When a `var` or a `const` variable is created from a tuple...
-
-When a tuple variable is created, the variable will not refer to any
-elements by reference. Instead, the tuple variable will contain a
-copy of each element, as though assignment had been performed on each
-element of the tuple in component order.
+Tuple variables are a form of heavy tuple. Like other heavy tuples, tuple
+variables will copy elements as though the element is an argument with
+the `in` intent.
 
    *Example (tuple-variable-behavior.chpl)*.
 
@@ -816,52 +830,128 @@ For example, in this code:
       var i: int;
       var r = new R(0);
 
-      // `a`, `i`, and `r` are all copied into tup.
+      // The tuple variable `tup` copies `a`, `i`, and `r`.
       var tup = (a, i, r);
 
       a[0] = 1;
       i = 2;
       r.x = 3;
 
-      writeln(tup); // This will output (0, 0, (x = 0)).
+      // This will output (0, 0, (x = 0)).
+      writeln(tup);
 
    .. BLOCK-test-chapeloutput
 
       (0, 0, (x = 0))
 
-The variable tup will contain a copy of the array `a`, the record `r`,
-and the integer `i`. This is in contrast to tuple expression behavior, where
-both `a` and `r` would be captured into a tuple expression by reference.
-Since `i` is a primitive scalar, it is copied regardless.
+The tuple variable ``tup`` will make a copy of the array ``a``, the record
+``r``, and the module integer ``i``.
+
+When these three variables are subsequently modified, changes to them are
+not reflected in ``tup`` when it is written to standard output.
 
 .. _Tuple_Argument_Behavior:
 
 Tuple Argument Behavior
 -----------------------
 
-If a formal argument is a tuple and has the default argument intent, then it
-will not copy tuple elements and can accept a tuple expression as an actual
-argument. The tuple itself is considered `const` within the scope of the
-routine and cannot be modified. The individual elements that make up the
-tuple are considered to be mutable and can be modified.
+A tuple argument to a routine may be either a light tuple or a heavy tuple
+depending on its argument intent.
 
-Passing a tuple expression containing an element captured by `const ref` to
-a tuple formal argument that has the default argument intent will trigger a
-compiler error. In order to pass a tuple containing an element captured by
-`const ref`, the tuple formal must have the `const` intent.
+If the tuple argument has the default argument intent, then it is a light
+tuple and some of its elements may be captured by `ref` depending on
+their default argument intent.
 
-If a formal argument is a tuple and has the `ref` intent, then actual
-arguments are restricted to `lvalues` (a variable or a returned tuple).
-Tuple elements will not be copied.
+If the tuple argument has the `in` intent, then it is a heavy tuple and all
+of its elements are captured by value, as though each element has the `in`
+intent.
 
-If a routine has a formal argument of type tuple and the argument has the
-`ref` intent, then actual arguments are restricted to `lvalues` (a variable
-or a returned tuple). Tuple elements will not be copied.
+If a routine argument is a tuple with the default argument intent or the
+`ref` intent and a heavy tuple (such as a tuple variable) is passed to it,
+the heavy tuple will be silently converted into a light tuple.
+
+A conversion from light to heavy tuple also occurs when a light tuple
+(such as a tuple expression) is passed to a tuple argument with the `in`
+intent.
+
+   *Example (tuple-argument-behavior.chpl)*.
+
+Consider the following example:
+
+   .. code-block:: chapel
+
+      record R { var x: int; }
+
+      var modTup = (0, new R(0));
+
+      proc lightTupleArg(light) {
+
+        // Modify the module variable `modTup`.
+        modTup = (3, new R(6));
+
+        // Should print (0, (x = 6)).
+        writeln(light);
+
+        heavyTupleArg(light);
+
+        // Should still print (0, (x = 6)).
+        writeln(light);
+      }
+
+      proc heavyTupleArg(in heavy) {
+        heavy = (64, new R(128));
+      }
+
+      lightTupleArg(modTup);
+
+   .. BLOCK-test-chapeloutput
+
+      (0, (x = 6))
+      (0, (x = 6))
+
+The argument ``tup`` of the routine ``lightTupleArg`` is a light tuple due
+to the default argument intent. When the module variable ``modTup`` is
+passed to ``lightTupleArg``, its first element is copied while its second
+element is passed as though it were `const ref`.
+
+When the light tuple argument ``tup`` is passed to ``heavyTupleArg``, a
+copy of it is made because the argument ``heavy`` is a heavy tuple due to
+the `in` intent.
+
+   *Example (tuple-argument-ref-intent.chpl)*.
+
+If a tuple argument has the `ref` intent, then actual arguments are
+restricted to heavy tuples (a tuple variable or a returned tuple). When a
+tuple argument has the `ref` intent, each individual element behaves as
+though it was an argument with the `ref` intent. 
+
+   .. code-block:: chapel
+
+      proc passTupleByRef(ref tup) {
+        tup = (64, 128);
+      }
+
+      var modTup = (0, 0);
+
+      passTupleByRef(modTup);
+
+      // Should print (64, 128).
+      writeln(modTup);
+
+   .. BLOCK-test-chapeloutput
+
+      (64, 128)
+
+When a tuple argument has the default argument intent, primitive types like
+integers are copied because their default intent is `in`. In the above
+example the intent of the formal argument ``tup`` is `ref`, and so the two
+integer elements of ``modTup`` are passed by reference. Any modifications
+made to the elements of ``tup`` will be visible when ``modTup`` is written
+to standard output.
 
 A tuple argument declared with `const` intent will work similarly to one
-with a `blank` intent. The tuple itself is considerd `const` within the
-scope of the routine. The individual elements of the tuple are considered
-to be `const` and cannot be modified.
+with a default intent, except that all the elements of the tuple are
+considered to be `const` and cannot be modified.
 
 .. _Tuple_Return_Behavior:
 
@@ -869,8 +959,10 @@ Tuple Return Behavior
 ---------------------
 
 When a tuple is returned from a function with `ref` or `const ref` return
-intent, that tuple must either refer to a variable or another tuple that does
-not refer to elements. Otherwise there is a compilation error.
+intent, it must refer to some form of heavy tuple that exists outside of
+the current scope. Otherwise there is a compilation error.
+  
+Both light tuples and heavy tuples can be 
 
    .. code-block:: chapel
 
