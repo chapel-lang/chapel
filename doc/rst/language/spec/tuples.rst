@@ -175,6 +175,14 @@ To specify a 1-tuple, use the form with the trailing comma ``(1,)``.
 
       (7)
 
+Tuple expressions are evaluated similarly to function calls where the	
+arguments are all generic with no explicit intent. So a tuple expression	
+containing an array does not copy the array.	
+
+When a tuple is passed as an argument to a function, it is passed as if	
+it is a record type containing fields of the same type and in the same	
+order as in the tuple.
+
 .. _Tuple_Indexing:
 
 Tuple Indexing
