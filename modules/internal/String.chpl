@@ -73,40 +73,74 @@ To learn more about handling these errors, see the
 :ref:`Error Handling technical note <readme-errorHandling>`.
 
 
-Activating Unicode Support
---------------------------
+Unicode Support
+---------------
 
-Chapel strings normally use the UTF-8 encoding. Note that ASCII strings are a
-simple subset of UTF-8 strings, because every ASCII character is a UTF-8
-character with the same meaning.
+Chapel strings use the UTF-8 encoding. Note that ASCII strings are a simple
+subset of UTF-8 strings, because every ASCII character is a UTF-8 character with
+the same meaning.
 
-Certain environment variables may need to be set in order to enable UTF-8
-support. Setting these environment variables may not be necessary at all on
-some systems.
+UTF-8 strings might not work properly if a UTF-8 environment is not used. See
+:ref:`character set environment <readme-chplenv.character_set>` for more
+information.
+
+.. _string.nonunicode:
+
+Non-Unicode Data and Chapel Strings
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+For doing string operations on non-Unicode or arbitrary data, consider using
+:record:`~Bytes.bytes` instead of string. However, there may be cases where
+:record:`string` must be used with non-Unicode data. Examples of this are file
+system and path operations on systems where UTF-8 file names are not enforced.
+
+
+In such scenarios, non-UTF-8 data can be escaped and stored in a string in a way
+that it can be restored when needed. For example:
+
+.. code-block:: chapel
+
+ var myBytes = b"Illegal \xff sequence";  // \xff is non UTF-8
+ var myEscapedString = myBytes.decode(policy=decodePolicy.escape);
+
+will store the illegal `0xFF` byte in the string. The escaping strategy is
+similar to Python's "surrogate escapes" and is as follows. Each individual byte
+in an illegal sequence is bitwise-or'ed with `0xDC00` to create a 2-byte
+codepoint. Then, this codepoint is encoded in UTF-8 and stored in the string
+buffer. This strategy typically results in storing 3 bytes for each byte in the
+illegal sequence. Escaped strings can also be created with
+:proc:`createStringWithNewBuffer` using a C buffer.
+
+An escaped data sequence can be reconstructed with :proc:`~string.encode`:
+
+.. code-block:: chapel
+
+ var reconstructedBytes = myEscapedString.encode(policy=encodePolicy.unescape);
+ writeln(myBytes == reconstructedBytes);  // prints true
+
+Alternatively, escaped sequence can be used as-is without reconstructing the
+bytes:
+
+.. code-block:: chapel
+
+ var escapedBytes = myEscapedString.encode(policy=encodePolicy.pass);
+ writeln(myBytes == escapedBytes);  // prints false
 
 .. note::
 
-  For example, Chapel is currently tested with the following settings:
-
-  ``export LANG=en_US.UTF-8``
-
-  ``export LC_COLLATE=C``
-
-  ``unset LC_ALL``
-
-  LANG sets the default character set.  LC_COLLATE overrides it for
-  sorting, so that we get consistent results.  Anything in LC_ALL
-  would override everything, so we unset it.
+  Strings that contain escaped sequences cannot be directly used with
+  unformatted I/O functions such as ``writeln``. :ref:`Formatted I/O
+  <about-io-formatted-io>` can be used to print such strings with binary
+  formatters such as ``%|s``.
 
 .. note::
 
-  Chapel currently relies upon C multibyte character support and may work
-  with other settings of these variables that request non-Unicode multibyte
-  character sets. However such a configuration is not regularly tested and
-  may not work in the future.
+  The standard :mod:`FileSystem`, :mod:`Path` and :mod:`IO` modules can use
+  strings described above for paths and file names.
+
 
 Lengths and Offsets in Unicode Strings
---------------------------------------
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 For Unicode strings, and in particular UTF-8 strings, there are several possible
 units for offsets or lengths:

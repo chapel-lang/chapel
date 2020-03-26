@@ -180,6 +180,12 @@ To release any resources associated with a file, it is necessary to first close
 any channels using that file (with :proc:`channel.close`) and then the file
 itself (with :proc:`file.close`).
 
+ .. note::
+
+    :ref:`Escaped strings <string.nonunicode>` can be used for paths on systems
+    where UTF-8 file names are not enforced.
+
+
 .. _about-io-channel-creation:
 
 Functions for Channel Creation

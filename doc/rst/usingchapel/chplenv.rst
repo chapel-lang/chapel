@@ -698,6 +698,8 @@ CHPL_LIB_PIC
 
    If unset, ``CHPL_LIB_PIC`` defaults to ``none``
 
+.. _readme-chplenv.character_set:
+
 Character Set
 -------------
    Chapel works with the Unicode character set with UTF-8 encoding and the
