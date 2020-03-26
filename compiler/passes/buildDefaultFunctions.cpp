@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -1230,6 +1231,14 @@ static void buildEnumIntegerCastFunctions(EnumType* et) {
       // call chpl_enum_cast_error_no_int() for enums without an
       // associated integer value.  This routine throws an error.
       fn->throwsErrorInit();
+
+      if (fWarnUnstable) {
+        USR_WARN(et->symbol, "it has been suggested that support for "
+                 "semi-concrete enums like this (in which initial members "
+                 "have no integer values, but later ones do) should be "
+                 "deprecated, so this enum could be considered unstable; "
+                 "if you value such enums, please let the Chapel team know.");
+      }
 
       count = 0;
       whenstmts = buildChapelStmt();

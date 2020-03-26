@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -25,6 +26,7 @@
 #include <string>
 #include <vector>
 
+class astlocT;
 class BaseAST;
 class BlockStmt;
 class CallExpr;
@@ -81,6 +83,22 @@ public:
                                           bool isUse=false)              const;
 
   Symbol*               lookupPublicImports(const char* name)            const;
+
+  Symbol*               lookupPublicUnqualAccessSyms(const char* name,
+                                                     BaseAST *context)   const;
+
+  Symbol*               lookupPublicUnqualAccessSyms(const char* name,
+                          BaseAST *context,
+                          std::map<Symbol *, astlocT *>& renameLocs)      const;
+
+  Symbol*               lookupPublicUnqualAccessSyms(const char* name,
+                          ModuleSymbol*& modArg,
+                          BaseAST *context)                              const;
+
+  Symbol*               lookupPublicUnqualAccessSyms(const char* name,
+                          ModuleSymbol*& modArg,
+                          BaseAST *context,
+                          std::map<Symbol *, astlocT *>& renameLocs)      const;
 
   // Support for UseStmt with only/except
   // Has the potential to return multiple fields

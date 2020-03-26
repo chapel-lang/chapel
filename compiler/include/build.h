@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -88,6 +89,10 @@ ModuleSymbol* buildModule(const char* name,
                           bool        priv,
                           bool        prototype,
                           const char* docs);
+BlockStmt* buildIncludeModule(const char* name,
+                              bool priv,
+                              bool prototype,
+                              const char* docs);
 
 CallExpr* buildPrimitiveExpr(CallExpr* exprs);
 

@@ -335,7 +335,7 @@ be declared with parentheses even if the argument list is empty.
 
    .. BLOCK-test-chapelpost
 
-      var ta = new borrowed ThreeArray();
+      var ta = new ThreeArray();
       ta(1) = 1;
       ta(2) = 2;
       ta(3) = 3;

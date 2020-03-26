@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -150,18 +151,6 @@ static void resolveFormals(FnSymbol* fn) {
 
     if (formal->defaultExpr != NULL && fn->hasFlag(FLAG_EXPORT)) {
       storeDefaultValuesForPython(fn, formal);
-    }
-
-    // Warn for default-intent owned/shared, since these used to
-    // mean the same as `in` intent but now mean the same as `const ref`.
-    if (fWarnUnstable &&
-        formal->getModule()->modTag == MOD_USER &&
-        isManagedPtrType(formal->getValType()) &&
-        formal->originalIntent == INTENT_BLANK) {
-      USR_WARN(formal,
-               "default intent for %s has changed from `in` to `const ref`",
-               toString(formal->getValType()));
-
     }
   }
 }

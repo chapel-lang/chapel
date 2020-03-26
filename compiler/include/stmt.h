@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -64,7 +65,11 @@ class VisibilityStmt: public Stmt {
   virtual ~VisibilityStmt();
 
   bool isARename() const;
+  bool isARenamedSym(const char* name) const;
   const char* getRename() const;
+  const char* getRenamedSym(const char* name) const;
+
+  virtual BaseAST* getSearchScope() const = 0;
 
   Symbol* checkIfModuleNameMatches(const char* name);
 
@@ -72,9 +77,13 @@ class VisibilityStmt: public Stmt {
   void updateEnclosingBlock(ResolveScope* scope,
                             Symbol* sym);
 
+  void validateRenamed();
+  void noRepeatsInRenamed() const;
+
 public:
   Expr* src;
   bool isPrivate;
+  std::map<const char*, const char*> renamed;
 
 protected:
   const char* modRename;

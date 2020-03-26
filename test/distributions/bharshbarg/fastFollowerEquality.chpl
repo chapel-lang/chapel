@@ -8,8 +8,8 @@ proc test(Orig : domain) {
   test(Orig, Copy);
 }
 
-proc makeArray(D : domain) {
-  var ret : [D] int;
+proc makeArray(D : domain, type eltType = int) {
+  var ret : [D] eltType;
   var cur = 0;
   for i in D {
     ret[i] = cur;
@@ -21,8 +21,11 @@ proc makeArray(D : domain) {
 proc test(DA : domain, DB : domain) {
   var A = makeArray(DA);
   var B = makeArray(DB);
+  test(A,B);
+}
 
-  writeln("--- ", DA.type:string, " vs. ", DB.type:string, " ---");
+proc test(A : [?DA], B : [?DB]) {
+  writeln("--- ", A.type:string, " vs. ", B.type:string, " ---");
   DA.dist.displayRepresentation();
   writeln();
   DB.dist.displayRepresentation();
@@ -85,4 +88,9 @@ proc main() {
 
   // - different startIdx
   test(make(cyclic,one),make(cyclic,one,startIdx=(2,)));
+
+  // - different eltTypes
+  test(makeArray(make(block,one), real), makeArray(make(block,one), int));
+  test(makeArray(make(cyclic,one), real), makeArray(make(cyclic,one), int));
+  test(makeArray(make(stencil,one), real), makeArray(make(stencil,one), int));
 }

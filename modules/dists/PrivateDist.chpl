@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -208,6 +209,24 @@ proc PrivateArr.dsiSerialWrite(x) {
     if first then first = !first; else x <~> " ";
     x <~> dsiAccess(i);
   }
+}
+
+proc PrivateArr.doiScan(op, dom) where (rank == 1) &&
+                                  chpl__scanStateResTypesMatch(op) {
+  type resType = op.generate().type;
+  var res: [dom] resType;
+
+  var localArr: [0..numLocales-1] resType;
+
+  coforall loc in Locales do on loc do
+    localArr[here.id] = if _isPrivatized(this) then chpl_getPrivatizedCopy(this.type, this.pid).data else data;
+
+  var localRes = localArr._scan(op);
+
+  forall r in res do r = localRes[here.id];
+
+  // localArr deletes op
+  return res;
 }
 
 // TODO: Fix 'new Private()' leak -- Discussed in #6726

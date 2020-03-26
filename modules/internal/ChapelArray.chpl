@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -3253,112 +3254,6 @@ module ChapelArray {
   /* Return true if ``e`` is an array. Otherwise return false. */
   proc isArrayValue(e)     param  return false;
 
-//
-//     The following functions define set operations on associative arrays.
-//
-
-  // promotion for associative array addition doesn't really make sense. instead,
-  // we really just want a union
-  proc +(a :_array, b: _array) where (a._value.type == b._value.type) && isAssociativeArr(a) {
-    compilerWarning("Array-as-set operators are deprecated. Use Maps.map instead.");
-    return a | b;
-  }
-
-  proc +=(ref a :_array, b: _array) where (a._value.type == b._value.type) && isAssociativeArr(a) {
-    compilerWarning("Array-as-set operators are deprecated. Use Maps.map instead.");
-    a.chpl__assertSingleArrayDomain("+=");
-    a |= b;
-  }
-
-  proc |(a :_array, b: _array) where (a._value.type == b._value.type) && isAssociativeArr(a) {
-    compilerWarning("Array-as-set operators are deprecated. Use Maps.map instead.");
-    var newDom = a.domain | b.domain;
-    var ret : [newDom] a.eltType;
-    serial !newDom._value.parSafe {
-      forall (k,v) in zip(a.domain, a) do ret[k] = v;
-      forall (k,v) in zip(b.domain, b) do ret[k] = v;
-    }
-    return ret;
-  }
-
-  proc |=(ref a :_array, b: _array) where (a._value.type == b._value.type) && isAssociativeArr(a) {
-    compilerWarning("Array-as-set operators are deprecated. Use Maps.map instead.");
-    a.chpl__assertSingleArrayDomain("|=");
-    serial !a.domain._value.parSafe {
-      forall i in b.domain do a.domain.add(i);
-      forall (k,v) in zip(b.domain, b) do a[k] = v;
-    }
-  }
-
-  proc &(a :_array, b: _array) where (a._value.type == b._value.type) && isAssociativeArr(a) {
-    compilerWarning("Array-as-set operators are deprecated. Use Maps.map instead.");
-    var newDom = a.domain & b.domain;
-    var ret : [newDom] a.eltType;
-
-    serial !newDom._value.parSafe do
-      forall k in newDom do ret[k] = a[k];
-    return ret;
-  }
-
-  proc &=(ref a :_array, b: _array) where (a._value.type == b._value.type) && isAssociativeArr(a) {
-    compilerWarning("Array-as-set operators are deprecated. Use Maps.map instead.");
-    a.chpl__assertSingleArrayDomain("&=");
-    serial !a.domain._value.parSafe {
-      forall k in a.domain {
-        if !b.domain.contains(k) then a.domain.remove(k);
-      }
-    }
-  }
-
-  proc -(a :_array, b: _array) where (a._value.type == b._value.type) && isAssociativeArr(a) {
-    compilerWarning("Array-as-set operators are deprecated. Use Maps.map instead.");
-    var newDom = a.domain - b.domain;
-    var ret : [newDom] a.eltType;
-
-    serial !newDom._value.parSafe do
-      forall k in newDom do ret[k] = a[k];
-
-    return ret;
-  }
-
-  proc -=(ref a :_array, b: _array) where (a._value.type == b._value.type) && isAssociativeArr(a) {
-    compilerWarning("Array-as-set operators are deprecated. Use Maps.map instead.");
-    a.chpl__assertSingleArrayDomain("-=");
-    serial !a.domain._value.parSafe do
-      forall k in a.domain do
-        if b.domain.contains(k) then a.domain.remove(k);
-  }
-
-
-  proc ^(a :_array, b: _array) where (a._value.type == b._value.type) && isAssociativeArr(a) {
-    compilerWarning("Array-as-set operators are deprecated. Use Maps.map instead.");
-    var newDom = a.domain ^ b.domain;
-    var ret : [newDom] a.eltType;
-
-    serial !newDom._value.parSafe {
-      forall k in a.domain do
-        if !b.domain.contains(k) then ret[k] = a[k];
-      forall k in b.domain do
-        if !a.domain.contains(k) then ret[k] = b[k];
-    }
-
-    return ret;
-  }
-
-  proc ^=(ref a :_array, b: _array) where (a._value.type == b._value.type) && isAssociativeArr(a) {
-    compilerWarning("Array-as-set operators are deprecated. Use Maps.map instead.");
-    a.chpl__assertSingleArrayDomain("^=");
-    serial !a.domain._value.parSafe {
-      forall k in b.domain {
-        if a.domain.contains(k) then a.domain.remove(k);
-        else a.domain.add(k);
-      }
-      forall k in b.domain {
-        if a.domain.contains(k) then a[k] = b[k];
-      }
-    }
-  }
-
   proc -(a :domain, b :domain) where (a.type == b.type) && isAssociativeDom(a) {
     var newDom : a.type;
     serial !newDom._value.parSafe do
@@ -3689,6 +3584,7 @@ module ChapelArray {
   proc chpl__supportedDataTypeForBulkTransfer(x: domain) param return false;
   proc chpl__supportedDataTypeForBulkTransfer(x: []) param return false;
   proc chpl__supportedDataTypeForBulkTransfer(x: _distribution) param return true;
+  proc chpl__supportedDataTypeForBulkTransfer(x: locale) param return true;
   proc chpl__supportedDataTypeForBulkTransfer(x: chpl_anycomplex) param return true;
   proc chpl__supportedDataTypeForBulkTransfer(x: ?t) param where isRecordType(t) || isTupleType(t) {
     // TODO: The current implementations of isPODType and

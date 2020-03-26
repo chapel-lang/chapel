@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -2619,12 +2620,12 @@ proc openwriter(path:string,
 
    :throws SystemError: Thrown if a file reader channel could not be returned.
  */
-// It is the responsibility of the caller to release the returned channel
-// if the error code is nonzero.
-// The return error code should be checked to avoid double-deletion errors.
 proc file.reader(param kind=iokind.dynamic, param locking=true, start:int(64) = 0,
                  end:int(64) = max(int(64)), hints:iohints = IOHINT_NONE,
                  style:iostyle = this._style): channel(false, kind, locking) throws {
+  // It is the responsibility of the caller to release the returned channel
+  // if the error code is nonzero.
+  // The return error code should be checked to avoid double-deletion errors.
   var ret:channel(false, kind, locking);
   var err:syserr = ENOERR;
   on this.home {
@@ -2704,13 +2705,13 @@ proc file.lines(param locking:bool = true, start:int(64) = 0, end:int(64) = max(
 
    :throws SystemError: Thrown if a file writer channel could not be returned.
  */
-// It is the responsibility of the caller to retain and release the returned
-// channel.
-// If the return error code is nonzero, the ref count will be 0 not 1.
-// The error code should be checked to avoid double-deletion errors.
 proc file.writer(param kind=iokind.dynamic, param locking=true, start:int(64) = 0,
                  end:int(64) = max(int(64)), hints:c_int = 0, style:iostyle = this._style):
                  channel(true,kind,locking) throws {
+  // It is the responsibility of the caller to retain and release the returned
+  // channel.
+  // If the return error code is nonzero, the ref count will be 0 not 1.
+  // The error code should be checked to avoid double-deletion errors.
   var ret:channel(true, kind, locking);
   var err:syserr = ENOERR;
   on this.home {
@@ -3340,6 +3341,8 @@ inline proc channel.readwrite(ref x) throws where !this.writing {
      Return any saved error code.
    */
   proc channel.error():syserr {
+    compilerWarning("The channel.error method is deprecated. " +
+                    "Catch errors instead.");
     var ret:syserr;
     on this.home {
       var local_error:syserr;
@@ -3355,6 +3358,8 @@ inline proc channel.readwrite(ref x) throws where !this.writing {
      Save an error code.
    */
   proc channel.setError(e:syserr) {
+    compilerWarning("The channel.setError method is deprecated. " +
+                    "Throw errors instead.");
     on this.home {
       var error = e;
       try! this.lock();
@@ -3367,6 +3372,8 @@ inline proc channel.readwrite(ref x) throws where !this.writing {
      Clear any saved error code.
    */
   proc channel.clearError() {
+    compilerWarning("The channel.clearError method is deprecated. " +
+                    "Throw and catch errors instead.");
     on this.home {
       try! this.lock();
       qio_channel_clear_error(_channel_internal);
@@ -5205,8 +5212,8 @@ FormattedIO Functions and Types
 
  */
 module FormattedIO {
-
-//use SysBasic;
+  use IO;
+  use SysCTypes;
 //use SysError;
 //use IO;
 

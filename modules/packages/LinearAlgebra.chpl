@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -380,8 +381,6 @@ proc Matrix(const Arrays: ?t  ...?n) where isArrayType(t) && t.rank == 1 {
 
 */
 proc Matrix(const Arrays: ?t ...?n, type eltType) where isArrayType(t) && t.rank == 1 {
-  // TODO -- assert all array domains are same length
-  //         Can this be done via type query?
 
   if Arrays(1).domain.rank != 1 then compilerError("Matrix() expected 1D arrays");
 
@@ -390,8 +389,10 @@ proc Matrix(const Arrays: ?t ...?n, type eltType) where isArrayType(t) && t.rank
 
   var M: [{dim1, dim2}] eltType;
 
-  for i in dim1 do
+  forall i in dim1 do {
+    if Arrays(i).size != Arrays(1).size then halt("Matrix() expected arrays of equal length");
     M[i, ..] = Arrays(i)[..]: eltType;
+  }
 
   return M;
 }

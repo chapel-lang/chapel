@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -573,17 +574,13 @@ BlockStmt* buildImportStmt(Expr* mod, const char* rename, bool privateImport) {
 BlockStmt* buildImportStmt(Expr* mod, std::vector<PotentialRename*>* names,
                            bool privateImport) {
   std::vector<const char*> namesList;
+  std::map<const char*, const char*> renameMap;
 
   // Iterate through the list of names for unqualified access
   for_vector(PotentialRename, listElem, *names) {
     switch (listElem->tag) {
       case PotentialRename::SINGLE:
         if (UnresolvedSymExpr* name = toUnresolvedSymExpr(listElem->elem)) {
-          if (!privateImport) {
-            USR_FATAL(name, "unable to apply 'public' to this style of "
-                      "'import' at this time");
-          }
-
           namesList.push_back(name->unresolved);
         } else {
           USR_FATAL(listElem->elem, "incorrect expression in 'import' for "
@@ -592,14 +589,29 @@ BlockStmt* buildImportStmt(Expr* mod, std::vector<PotentialRename*>* names,
         break;
       case PotentialRename::DOUBLE:
         std::pair<Expr*, Expr*>* elem = listElem->renamed;
-        USR_FATAL(elem->first, "cannot rename symbols 'import'ed for "
-                  "unqualified access");
+        UnresolvedSymExpr* old_name = toUnresolvedSymExpr(elem->first);
+        UnresolvedSymExpr* new_name = toUnresolvedSymExpr(elem->second);
+
+        if (old_name != NULL && new_name != NULL) {
+          // Verify that the new name isn't already in the renameMap
+          if (renameMap.count(new_name->unresolved) == 0) {
+            renameMap[new_name->unresolved] = old_name->unresolved;
+          } else {
+            USR_FATAL_CONT(elem->first, "already renamed '%s' to '%s', renaming"
+                           "'%s' would conflict",
+                           renameMap[new_name->unresolved],
+                           new_name->unresolved, old_name->unresolved);
+          }
+        } else {
+          USR_FATAL(elem->first, "incorrect expression in 'import' list rename,"
+                    " identifier expected");
+        }
         break;
     }
   }
 
-  ImportStmt* newImport = new ImportStmt(mod, /* isPrivate= */ true,
-                                         &namesList);
+  ImportStmt* newImport = new ImportStmt(mod, privateImport, &namesList,
+                                         &renameMap);
   addModuleToSearchList(newImport, mod);
 
   delete names;
@@ -794,7 +806,43 @@ ModuleSymbol* buildModule(const char* name,
   return mod;
 }
 
+BlockStmt* buildIncludeModule(const char* name,
+                              bool priv,
+                              bool prototype,
+                              const char* docs) {
+  astlocT loc(chplLineno, yyfilename);
+  ModuleSymbol* mod = parseIncludedSubmodule(name);
+  INT_ASSERT(mod != NULL);
 
+  // check visibility specifiers
+  //
+  //  include public/default   +  declaration public/default -> OK, public
+  //  include public/default   +  declaration private        -> error
+  //  include private          +  declaration public/default -> OK, private
+  //  include private          +  declaration private        -> OK, private
+  //
+  if (priv && !mod->hasFlag(FLAG_PRIVATE)) {
+    // make the module private (override public)
+    mod->addFlag(FLAG_PRIVATE);
+  } else if (mod->hasFlag(FLAG_PRIVATE) && !priv) {
+    USR_FATAL_CONT(loc,
+          "cannot make a private module public through an include statement");
+    USR_PRINT(mod, "module declared private here");
+  }
+
+  if (prototype) {
+    USR_FATAL_CONT(loc, "cannot apply prototype to module in include statement");
+    USR_PRINT(mod, "put prototype keyword at module declaration here");
+  }
+
+  // docs comment is ignored (the one in the module declaration is used)
+
+  if (fWarnUnstable) {
+    USR_WARN(loc, "module include statements are not yet stable and may change");
+  }
+
+  return buildChapelStmt(new DefExpr(mod));
+}
 
 CallExpr* buildPrimitiveExpr(CallExpr* exprs) {
   INT_ASSERT(exprs->isPrimitive(PRIM_ACTUALS_LIST));

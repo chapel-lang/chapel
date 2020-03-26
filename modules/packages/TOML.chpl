@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -122,7 +123,10 @@ module TomlParser {
 
   private use Regexp;
   use DateTime;
-
+  use Map, List;
+  import IO.channel;
+  import TOML.TomlReader.Source;
+  import TOML.TomlError;
 
   /* Prints a line by line output of parsing process */
   config const debugTomlParser = false;
@@ -1118,6 +1122,8 @@ pragma "no doc"
  Reader module for use in the Parser Class.
  */
 module TomlReader {
+ use List;
+ import TOML.TomlError;
 
  private use Regexp;
 

@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -220,12 +221,12 @@ proc getPkgInfo(pkgName: string, version: string) throws {
     // Pass "these" to join instead of converting the list to an array.
     const pcVersion = "".join(getPkgVariable(pkgName, "--modversion").these()).strip();
     const libs = "".join(getPkgVariable(pkgName, "--libs").these()).strip();
-    const include = "".join(getPkgVariable(pkgName, "--variable=includedir").these()).strip();
+    const includePath = "".join(getPkgVariable(pkgName, "--variable=includedir").these()).strip();
 
     pkgInfo.set("name", pkgName);
     pkgInfo.set("version", pcVersion);
     pkgInfo.set("libs", libs);
-    pkgInfo.set("include", include);
+    pkgInfo.set("include", includePath);
 
     if pcVersion != version && version != "*" {
       throw new owned MasonError("Unable to locate " + pkgName + ": " +version + "\n Found " + pcVersion);

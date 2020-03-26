@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -55,8 +56,5 @@ module LocalesArray {
   // We don't use the same private "trick" as with Locales above with
   // LocaleSpace/ because it's small enough to not matter.
   const LocaleSpace = Locales.domain;
-
-  chpl_set_defaultLocale(Locales[0]._value);
-
 }
 

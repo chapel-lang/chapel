@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -1200,9 +1201,14 @@ iter StencilArr.these(param tag: iterKind) where tag == iterKind.leader {
     yield followThis;
 }
 
-override proc StencilArr.dsiStaticFastFollowCheck(type leadType) param
-  return _to_borrowed(leadType) == _to_borrowed(this.type) ||
-         _to_borrowed(leadType) == _to_borrowed(this.dom.type);
+override proc StencilArr.dsiStaticFastFollowCheck(type leadType) param {
+  if isSubtype(leadType, StencilArr) {
+    var x : leadType?;
+    return _to_borrowed(x!.dom.type) == _to_borrowed(this.dom.type);
+  } else {
+    return _to_borrowed(leadType) == _to_borrowed(this.dom.type);
+  }
+}
 
 proc StencilArr.dsiDynamicFastFollowCheck(lead: [])
   return this.dsiDynamicFastFollowCheck(lead.domain);

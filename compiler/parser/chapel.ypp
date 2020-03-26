@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -314,7 +315,8 @@
 %token TDEFER TDELETE TDMAPPED TDO TDOMAIN
 %token TELSE TENUM TEXCEPT TEXPORT TEXTERN
 %token TFALSE TFOR TFORALL TFORWARDING
-%token TIF TIMAG TIMPORT TIN TINDEX TINLINE TINOUT TINT TITER TINITEQUALS
+%token TIF TIMAG TIMPORT TIN TINCLUDE
+%token TINDEX TINLINE TINOUT TINT TITER TINITEQUALS
 %token TLABEL TLAMBDA TLET TLIFETIME TLOCAL TLOCALE
 %token TMINUSMINUS TMODULE
 %token TNEW TNIL TNOINIT TNONE TNOTHING
@@ -390,7 +392,7 @@
 %left TDOT TLP TRSBR TLCBR
 %nonassoc TPRAGMA
 
-%type <b> access_control use_access_control
+%type <b> access_control use_access_control include_access_control
 %type <b> opt_prototype
 %type <b> opt_throws_error
 
@@ -414,6 +416,7 @@
 
 %type <pmodsymbol> module_decl_start
 %type <pblockstmt> module_decl_stmt
+%type <pblockstmt> include_module_stmt
 
 %type <pblockstmt> block_stmt
 %type <pblockstmt> stmt_ls
@@ -521,6 +524,7 @@ pragma_ls:
 // %type <pblockstmt> stmt
 stmt:
   module_decl_stmt
+| include_module_stmt
 | block_stmt
 | use_stmt
 | import_stmt
@@ -593,6 +597,24 @@ access_control:
 opt_prototype:
              { $$ = false; }
 | TPROTOTYPE { $$ = true;  }
+;
+
+include_access_control:
+           { $$ = false; }
+| TPUBLIC  { $$ = false; }
+| TPRIVATE { $$ = true; }
+;
+
+include_module_stmt:
+ TINCLUDE
+  {
+    @1.comment = context->latestComment;
+    context->latestComment = NULL;
+  }
+ include_access_control opt_prototype TMODULE ident_def TSEMI
+ {
+   $$ = buildIncludeModule($6, $3, $4, @1.comment);
+ }
 ;
 
 /* Grouping of statements into blocks.
