@@ -205,24 +205,30 @@ record LinkedList {
 
   /*
     find `e` in the list.
-    returns true if item is found, otherwise returns false
+
+    :arg e: The element to be checked for
+    :return: True if the item was found, otherwise returns false
+    :rtyle: `bool`
    */
-  proc search(e : eltType): bool {
-     for item in this {
-       if (e == item) {
-         return true;
-       }
-     }
+  proc contains(e : eltType): bool {
+    for item in this {
+      if (e == item) {
+        return true;
+      }
+    }
     return false;
   }
   
   /*
     Returns the data stored in the first element of the list
-    It is an error to call front() on an empty list
+    
+    :return: the data stored at the front of the list
+    :rtype: `ref eltType`
+    :throws SystemError: if the list is empty
    */
-  proc front(): eltType throws {
+  proc ref front() ref throws {
     import HaltWrappers;
-     if boundsChecking && size < 1 {
+    if boundsChecking && size < 1 {
       HaltWrappers.boundsCheckHalt("front() called on empty list");
     }
     return first!.data;
@@ -230,12 +236,15 @@ record LinkedList {
 
   /*
     Returns the data stored in the last element of the list
-    It is an error to call back() on an empty list
+
+    :return: the data stored at the back of the list
+    :rtype: `ref`
+    :throws SystemError: if the list is empty
    */
-  proc back(): eltType throws {
+  proc ref back(): ref throws {
     import HaltWrappers;
-    if boundsChecking && size < 1 {
-      HaltWrappers.boundsCheckHalt("back() called on empty list");
+     if boundsChecking && size < 1 {
+      HaltWrappers.boundsCheckHalt("front() called on empty list");
     }
     return last!.data;
   }
