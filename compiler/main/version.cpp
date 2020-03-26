@@ -79,22 +79,24 @@ get_clang_sysroot_args() {
 }
 
 void makeVersionModule(const ArgumentDescription *arg, const char* str) {
-  printf("module ChplVersion {\n");
+  printf("module ChapelVersion {\n");
   printf("/* A ``string`` representing the version of `chpl` */\n");
-  printf("  param CHPL_VERSION: string = \"%d.%s.%s",
+  printf("  param versionString: string = \"%d.%s.%s",
          MAJOR_VERSION, MINOR_VERSION, UPDATE_VERSION);
   if (!official) {
     printf(" pre-release (%s)", BUILD_VERSION);
   }
   printf("\";\n");
+  printf("/* A tuple representing the major, minor, and update version of `chpl` */\n");
+  printf("  const versionTuple = (%d,%s,%s);\n", MAJOR_VERSION, MINOR_VERSION, UPDATE_VERSION);
   printf("/* An ``int`` representing the major version number of `chpl` */\n");
-  printf("  param CHPL_VERSION_MAJOR: int = %d;\n", MAJOR_VERSION);
+  printf("  param versionMajor: int = %d;\n", MAJOR_VERSION);
   printf("/* An ``int`` representing the minor version number of `chpl` */\n");
-  printf("  param CHPL_VERSION_MINOR: int = %s;\n", MINOR_VERSION);
+  printf("  param versionMinor: int = %s;\n", MINOR_VERSION);
   printf("/* An ``int`` representing the update version number of `chpl` */\n");
-  printf("  param CHPL_VERSION_UPDATE: int = %s;\n", UPDATE_VERSION);
+  printf("  param versionUpdate: int = %s;\n", UPDATE_VERSION);
   printf("/* A ``bool`` indicating whether or not this is an official release of `chpl` */\n");
-  printf("  param CHPL_VERSION_OFFICIAL: bool = ");
+  printf("  param versionIsRelease: bool = ");
   if (official) {
     printf("true");
   } else {
@@ -102,7 +104,7 @@ void makeVersionModule(const ArgumentDescription *arg, const char* str) {
   }
   printf(";\n");
   printf("/* A ``string`` indicating the SHA of the compiler if this is not an official release of `chpl` */\n");
-  printf("  param CHPL_VERSION_SHA: string = \"");
+  printf("  param versionSHA: string = \"");
   if (!official) {
     printf("%s", BUILD_VERSION);
   } else {

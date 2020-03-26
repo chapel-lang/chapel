@@ -16,6 +16,7 @@ MINOR_VERSION=$(echo $VERSION | cut -f2 -d.)
 UPDATE_VERSION=$(echo $VERSION | cut -f3 -d.)
 
 echo $version_line" : string" > testChplVersion.good
+echo "("$MAJOR_VERSION", "$MINOR_VERSION", "$UPDATE_VERSION") : 3*int(64)" >> testChplVersion.good
 echo $MAJOR_VERSION" : int(64)" >> testChplVersion.good
 echo $MINOR_VERSION" : int(64)" >> testChplVersion.good
 echo $UPDATE_VERSION" : int(64)" >> testChplVersion.good

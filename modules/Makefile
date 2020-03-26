@@ -38,8 +38,8 @@ SYS_CTYPES_MODULE_DOC=standard/SysCTypes.chpl
 SYS_CTYPES_MODULE=$(SYS_MODULES_DIR)/SysCTypes.chpl
 
 CHPL_MODULES_DIR=standard/gen/$(CHPL_MAKE_HOST_BIN_SUBDIR)
-VERSION_MODULE_DOC=standard/ChplVersion.chpl
-VERSION_MODULE=$(CHPL_MODULES_DIR)/ChplVersion.chpl
+VERSION_MODULE_DOC=standard/ChapelVersion.chpl
+VERSION_MODULE=$(CHPL_MODULES_DIR)/ChapelVersion.chpl
 
 MODULE_SPHINX=${CHPL_MAKE_HOME}/modules/sphinx
 DOC=${CHPL_MAKE_HOME}/doc/rst

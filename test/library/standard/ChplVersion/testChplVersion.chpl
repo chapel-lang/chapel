@@ -1,13 +1,14 @@
-use ChplVersion;
+use ChapelVersion;
 
 proc writeit(param x) {
   writeln(x," : ", x.type:string);
 }
 
 write("chpl version ");
-writeit(CHPL_VERSION);
-writeit(CHPL_VERSION_MAJOR);
-writeit(CHPL_VERSION_MINOR);
-writeit(CHPL_VERSION_UPDATE);
-writeit(CHPL_VERSION_OFFICIAL);
-writeit(CHPL_VERSION_SHA);
+writeit(versionString);
+writeln(versionTuple, " : ", versionTuple.type:string);
+writeit(versionMajor);
+writeit(versionMinor);
+writeit(versionUpdate);
+writeit(versionIsRelease);
+writeit(versionSHA);
