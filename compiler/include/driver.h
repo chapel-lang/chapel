@@ -121,6 +121,7 @@ extern const char* CHPL_LLVM;
 extern const char* CHPL_AUX_FILESYS;
 extern const char* CHPL_UNWIND;
 extern const char* CHPL_LIB_PIC;
+extern const char* CHPL_HOST_BIN_SUBDIR;
 extern const char* CHPL_RUNTIME_SUBDIR;
 extern const char* CHPL_LAUNCHER_SUBDIR;
 extern const char* CHPL_LLVM_UNIQ_CFG_PATH;
