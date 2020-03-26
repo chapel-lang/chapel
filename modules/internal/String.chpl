@@ -103,12 +103,15 @@ that it can be restored when needed. For example:
  var myBytes = b"Illegal \xff sequence";  // \xff is non UTF-8
  var myEscapedString = myBytes.decode(policy=decodePolicy.escape);
 
-will store the illegal `0xFF` byte in the string. The escaping strategy is
-similar to Python's "surrogate escapes" and is as follows. Each individual byte
-in an illegal sequence is bitwise-or'ed with `0xDC00` to create a 2-byte
-codepoint. Then, this codepoint is encoded in UTF-8 and stored in the string
-buffer. This strategy typically results in storing 3 bytes for each byte in the
-illegal sequence. Escaped strings can also be created with
+will escape the illegal `0xFF` byte and store it in the string. The escaping
+strategy is similar to Python's "surrogate escapes" and is as follows.
+
+ - Each individual byte in an illegal sequence is bitwise-or'ed with `0xDC00` to
+   create a 2-byte codepoint.
+ - Then, this codepoint is encoded in UTF-8 and stored in the string buffer.
+
+This strategy typically results in storing 3 bytes for each byte in the illegal
+sequence. Similarly escaped strings can also be created with
 :proc:`createStringWithNewBuffer` using a C buffer.
 
 An escaped data sequence can be reconstructed with :proc:`~string.encode`:
@@ -744,11 +747,12 @@ module String {
                  terminating null byte.
     :type length: `int`
 
-    :arg policy: `decodePolicy.strict` raises an error, `decodePolicy.replace`
-                 replaces the malformed character with UTF-8 replacement
-                 character, `decodePolicy.drop` drops the data silently,
-                 `decodePolicy.escape` escapes each illegal byte with private
-                 use codepoints
+    :arg policy: - `decodePolicy.strict` raises an error
+                 - `decodePolicy.replace` replaces the malformed character with
+                   UTF-8 replacement character
+                 - `decodePolicy.drop` drops the data silently
+                 - `decodePolicy.escape` escapes each illegal byte with private
+                   use codepoints
 
     :throws: `DecodeError` if `decodePolicy.strict` is passed to the `policy`
              argument and `x` contains non-UTF-8 characters.

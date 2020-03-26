@@ -1065,11 +1065,12 @@ module Bytes {
       Returns a UTF-8 string from the given :record:`bytes`. If the data is
       malformed for UTF-8, `policy` argument determines the action.
       
-      :arg policy: `decodePolicy.strict` raises an error, `decodePolicy.replace`
-                   replaces the malformed character with UTF-8 replacement
-                   character, `decodePolicy.drop` drops the data silently,
-                   `decodePolicy.escape` escapes each illegal byte with private
-                   use codepoints
+      :arg policy: - `decodePolicy.strict` raises an error
+                   - `decodePolicy.replace` replaces the malformed character
+                     with UTF-8 replacement character
+                   - `decodePolicy.drop` drops the data silently
+                   - `decodePolicy.escape` escapes each illegal byte with
+                     private use codepoints
       
       :throws: `DecodeError` if `decodePolicy.strict` is passed to the `policy`
                argument and the :record:`bytes` contains non-UTF-8 characters.
