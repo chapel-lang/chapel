@@ -837,8 +837,8 @@ For example, in this code:
 Initialization of the tuple variable ``tup`` will make a copy of the
 array ``a``, the record ``r``, and the integer ``i``.
 
-When these three variables are subsequently modified, changes to them are
-not reflected in ``tup`` when it is written to standard output.
+Because ``tup`` stores a copy of these three variables, changes made to them
+are not visible in ``tup`` when it is written to standard output.
 
 .. _Tuple_Argument_Behavior:
 
@@ -852,17 +852,23 @@ If the tuple argument has the default argument intent, then it is a light
 tuple and some of its elements may be captured by ``ref`` depending on
 their default argument intent.
 
-If the tuple argument has the ``in`` intent, then it is a value tuple and all
-of its elements are captured by value, as though each element has the ``in``
-intent.
+A tuple argument declared with ``const`` intent will work similarly to one
+with a default intent, except that all the elements of the tuple are
+considered to be ``const`` and cannot be modified.
+
+If the tuple argument has the ``in`` or ``const in`` intent, then it is a
+value tuple. All of its elements are captured by value as though each
+element is passed to an ``in`` intent argument.
 
 If a function argument is a tuple with the default argument intent and a
 value tuple (such as a tuple variable) is passed to it, the value tuple
-will be silently converted into a referential tuple.
+will be implicitly converted into a referential tuple. The resulting
+referential tuple may refer to elements from the original value tuple.
 
-A conversion from light to value tuple also occurs when a referential tuple
-(such as a tuple expression) is passed to a tuple argument with the ``in``
-intent.
+A conversion from referential tuple to value tuple also occurs when a
+referential tuple (such as a tuple expression) is passed to a tuple argument
+that has the ``in`` intent. The referential tuple will be converted to
+a value tuple by copy initializing each element.
 
    *Example (tuple-argument-behavior.chpl)*.
 
@@ -874,58 +880,58 @@ Consider the following example:
 
       var modTup = (0, new R(0));
 
-      proc lightTupleArg(light) {
+      // The argument `tup` of `referentialTupleArg` is a referential tuple
+      // due to the default argument intent.
+      proc referentialTupleArg(tup) {
 
         // Modify the module variable `modTup`.
         modTup = (3, new R(6));
 
         // Should print (0, (x = 6)).
-        writeln(light);
+        writeln(tup);
 
-        heavyTupleArg(light);
+        // When `tup` is passed to `valueTupleArg`, a copy of each element
+        // is made because the `valueTup` argument has the `in` intent.
+        valueTupleArg(tup);
 
         // Should still print (0, (x = 6)).
-        writeln(light);
+        writeln(tup);
       }
 
-      proc heavyTupleArg(in heavy) {
-        heavy = (64, new R(128));
+      // The argument `valueTup` is a value tuple due to the `in` intent.
+      proc valueTupleArg(in valueTup) {
+        valueTup = (64, new R(128));
       }
 
-      lightTupleArg(modTup);
+      // When `modTup` is passed to `referentialTupleArg`, its first
+      // element is copied while its second element is passed as though
+      // it were `const ref`.
+      referentialTupleArg(modTup);
 
    .. BLOCK-test-chapeloutput
 
       (0, (x = 6))
       (0, (x = 6))
 
-The argument ``tup`` of the function ``lightTupleArg`` is a referential tuple
-due to the default argument intent. When the module variable ``modTup`` is
-passed to ``lightTupleArg``, its first element is copied while its second
-element is passed as though it were ``const ref``.
-
-When the tuple argument ``tup`` is passed to ``heavyTupleArg``, a copy of it
-is made because the argument ``heavy`` is a value tuple due to the ``in``
-intent.
+Tuple arguments with the ``ref`` intent are references to value tuples.
+Actual arguments are restricted to value tuples (a tuple variable or a
+returned tuple). Since the argument itself is passed by ``ref``, the
+entire tuple will refer to a tuple from the call site.
 
    *Example (tuple-argument-ref-intent.chpl)*.
 
-Tuple arguments with the ``ref`` intent are considered to be a special form
-of referential tuple where every element is passed by reference.
-
-If a tuple argument has the ``ref`` intent, then actual arguments are
-restricted to value tuples (a tuple variable or a returned tuple). Each
-individual element behaves as though it was an argument with the ``ref``
-intent.
-
    .. code-block:: chapel
 
+      // Because the intent of `tup` is `ref`, only value tuples can be
+      // passed to `passTupleByRef`.
       proc passTupleByRef(ref tup) {
         tup = (64, 128);
       }
 
       var modTup = (0, 0);
 
+      // Passing `modTup` to `passTupleByRef` will construct a referential
+      // tuple where each element refers to an element from `modTup`.
       passTupleByRef(modTup);
 
       // Should print (64, 128).
@@ -934,17 +940,6 @@ intent.
    .. BLOCK-test-chapeloutput
 
       (64, 128)
-
-When a tuple argument has the default argument intent, primitive types like
-integers are copied because their default intent is ``in``. In the above
-example the intent of the formal argument ``tup`` is ``ref``, and so the two
-integer elements of ``modTup`` are passed by reference. Any modifications
-made to the elements of ``tup`` will be visible when ``modTup`` is written
-to standard output.
-
-A tuple argument declared with ``const`` intent will work similarly to one
-with a default intent, except that all the elements of the tuple are
-considered to be ``const`` and cannot be modified.
 
 .. _Tuple_Return_Behavior:
 
@@ -955,9 +950,9 @@ When a tuple is returned from a function with ``ref`` or ``const ref`` return
 intent, it must refer to some form of value tuple that exists outside of
 the current scope. Otherwise there is a compilation error.
   
-Both referential tuples and value tuples can be returned by a function. Since
-the default return intent is to return by value, a referential tuple must be
-converted to a value tuple when it is returned from a function.
+Functions that return by value always return a value tuple. If an expression
+returned by such a function is a referential tuple, it will be implicitly
+converted to a value tuple.
 
    *Example (tuple-return-behavior.chpl)*.
 
@@ -968,33 +963,33 @@ converted to a value tuple when it is returned from a function.
       var i: int;
       var r = new R(0);
 
+      // The value tuple returned by `returnTuple` is passed to the
+      // function `updateGlobalsAndOutput`. It is implicitly converted
+      // into a referential tuple because the formal argument `tup`
+      // has the default argument intent.
       updateGlobalsAndOutput(returnTuple());
 
+      // The function `returnTuple` returns a value tuple that contains
+      // a copy of the array `a`, the integer `i`, and the record `r`.
       proc returnTuple() {
-        return (a, i, r); // Returns a copy of a, i, and r.
+        return (a, i, r);
       }
       
       proc updateGlobalsAndOutput(tup) {
         a[1] = 1;
         i = 2;
         r.x = 3;
-        writeln(tup); // Will output (0, 0, (x = 0)).
+
+        // Because the tuple passed to `updateGlobalsAndOutput` is a value
+        // tuple and contains no references, the assignments made to `a`,
+        // `i`, and `r` above are not visible in `tup` when it is printed.
+        // This `writeln` will output (0, 0, (x = 0)).
+        writeln(tup);
       }
 
    .. BLOCK-test-chapeloutput
 
       (0, 0, (x = 0))
-
-In the above example, ``returnTuple`` returns a value tuple that contains
-a copy of the array ``a``, the integer ``i``, and the record ``r``.
-
-The value tuple returned by ``returnTuple`` is passed to the function 
-``updateGlobalsAndOutput``. It is silently converted into a light
-tuple because the formal argument ``tup`` has the default argument intent.
-
-Because the tuple passed to ``updateGlobalsAndOutput`` is heavy and contains
-no references, the assignments made to ``a``, ``i`` and ``r`` are not
-reflected in ``tup`` when it is printed to standard output.
 
 .. _Tuple_Operators:
 
