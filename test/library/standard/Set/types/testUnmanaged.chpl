@@ -1,4 +1,4 @@
-import MapTest;
+import SetTest;
 
 class T {
   var value = 0;
@@ -6,4 +6,4 @@ class T {
 
 type t = unmanaged T;
 
-MapTest.testMap(t);
+SetTest.testSet(t);
