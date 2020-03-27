@@ -93,6 +93,7 @@ Feature Improvements
 * added `bytes.format()`, similar to `string.format()`
 * `bytes` can be indexed with `byteIndex`
 * `bytes` can now be cast to `enum`
+* a non-nilable class is now considered a subtype of its nilable counterpart
 
 Deprecated / Unstable / Removed Language Features
 -------------------------------------------------
@@ -186,6 +187,7 @@ Performance Optimizations / Improvements
 * improved the performance of `on`-statements for InfiniBand networks 
 * improved the performance of serial I/O
 * enabled warming up the runtime before calling user-code
+* increased cases where zippered distributed array iteration can be optimized
 
 Cray-specific Performance Optimizations/Improvements
 ----------------------------------------------------
