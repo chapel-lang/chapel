@@ -4,7 +4,8 @@ Including Sub-Modules from Separate Files
 =========================================
 
 This document describes draft support for including a submodule from a
-separate file.
+separate file. This support is new in 1.21 and is considered unstable -
+it might change in future releases.
 
 Example
 +++++++
