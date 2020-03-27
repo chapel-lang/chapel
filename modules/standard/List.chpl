@@ -101,6 +101,23 @@ module List {
     }
   }
 
+  /* Check that element type is supported by list */
+  proc _checkType(type eltType) {
+    // Also unsupported but not checked: tuples of non-nilable class types
+    if isBorrowedClass(eltType) {
+      compilerError('list element type cannot currently be borrowed');
+    }
+    if isGenericType(eltType) {
+      compilerWarning("creating a list with element type " +
+                      eltType:string);
+      if isClassType(eltType) && !isGenericType(borrowed eltType) {
+        compilerWarning("which now means class type with generic management");
+      }
+      compilerError("list element type cannot currently be generic");
+      // In the future we might support it if the list is not default-inited
+    }
+  }
+
   private use IO;
 
   /*
@@ -148,19 +165,7 @@ module List {
       :type parSafe: `param bool`
     */
     proc init(type eltType, param parSafe=false) {
-      // Also unsupported but not checked: tuples of non-nilable class types
-      if isBorrowedClass(eltType) {
-        compilerError('list element type cannot currently be borrowed');
-      }
-      if isGenericType(eltType) {
-        compilerWarning("creating a list with element type " +
-                        eltType:string);
-        if isClassType(eltType) && !isGenericType(borrowed eltType) {
-          compilerWarning("which now means class type with generic management");
-        }
-        compilerError("list element type cannot currently be generic");
-        // In the future we might support it if the list is not default-inited
-      }
+      _checkType(eltType);
       this.eltType = eltType;
       this.parSafe = parSafe;
       this.complete();
@@ -179,7 +184,6 @@ module List {
       :type parSafe: `param bool`
     */
     proc init(other: list(?t), param parSafe=false) {
-      _checkType(t);
       if !isCopyableType(this.type.eltType) then
         compilerError("Cannot copy list with element type that cannot be copied");
       this.eltType = t;
