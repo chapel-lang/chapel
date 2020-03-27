@@ -1033,7 +1033,7 @@ converted to a value tuple.
       }
       
       proc updateGlobalsAndOutput(tup) {
-        a[1] = 1;
+        a[0] = 1;
         i = 2;
         r.x = 3;
 
