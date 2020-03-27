@@ -270,7 +270,7 @@ variable, the resulting array has a 1-based one-dimensional domain.
 
    .. code-block:: chapel
 
-      [i in 1..s.numElements] if i % 2 == 1 then s(i)
+      [i in 1..s.size] if i % 2 == 1 then s(i)
 
    
 

@@ -97,7 +97,7 @@ module analyze_RMAT_graph_associative_array {
       }
 
       proc   n_Neighbors (v : index (vertices) ) 
-      {return Row (v).Row_Neighbors.numIndices;}
+      {return Row (v).Row_Neighbors.size;}
     }
 
     var G = new Associative_Graph (vertex_domain);

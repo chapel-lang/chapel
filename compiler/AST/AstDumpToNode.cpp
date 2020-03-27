@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -28,6 +29,7 @@
 #include "flags.h"
 #include "ForallStmt.h"
 #include "ForLoop.h"
+#include "ImportStmt.h"
 #include "log.h"
 #include "ParamForLoop.h"
 #include "stlUtil.h"
@@ -1129,6 +1131,26 @@ void AstDumpToNode::visitUseStmt(UseStmt* node)
   exitNode(node);
 }
 
+void AstDumpToNode::visitImportStmt(ImportStmt* node)
+{
+  enterNode(node);
+
+  mOffset = mOffset + 2;
+
+  if (compact)
+  {
+    mNeedSpace = true;
+    fprintf(mFP, " 'import'");
+  }
+
+  newline();
+  node->src->accept(this);
+
+  mOffset = mOffset - 2;
+  newline();
+  exitNode(node);
+}
+
 //
 //
 //
@@ -1230,6 +1252,9 @@ bool AstDumpToNode::enterGotoStmt(GotoStmt* node)
       fprintf(mFP, "tag:   gotoBreakErrorHandling");
       break;
 
+    case GOTO_ERROR_HANDLING_RETURN:
+      fprintf(mFP, "tag:   gotoErrorHandlingReturn");
+      break;
   }
 
   if (SymExpr* label = toSymExpr(node->label))

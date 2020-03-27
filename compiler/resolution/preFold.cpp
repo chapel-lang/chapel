@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -22,8 +23,10 @@
 #include "astutil.h"
 #include "buildDefaultFunctions.h"
 #include "DecoratedClassType.h"
+#include "DeferStmt.h"
 #include "driver.h"
 #include "ForallStmt.h"
+#include "ForLoop.h"
 #include "iterator.h"
 #include "ParamForLoop.h"
 #include "passes.h"
@@ -266,7 +269,136 @@ static bool recordContainsNonNilable(Type* t) {
   return false;
 }
 
+static bool isNonNilableOwned(Type* t) {
+  return isManagedPtrType(t) &&
+         getManagedPtrManagerType(t) == dtOwned &&
+         isNonNilableClassType(t);
+}
 
+static void setRecordCopyableFlags(AggregateType* at) {
+  TypeSymbol* ts = at->symbol;
+  if (!ts->hasFlag(FLAG_TYPE_INIT_EQUAL_FROM_CONST) &&
+      !ts->hasFlag(FLAG_TYPE_INIT_EQUAL_FROM_REF) &&
+      !ts->hasFlag(FLAG_TYPE_INIT_EQUAL_MISSING)) {
+
+    if (isNonNilableOwned(at)) {
+      ts->addFlag(FLAG_TYPE_INIT_EQUAL_MISSING);
+    } else {
+      // Try resolving a test init= to set the flags
+      const char* err = NULL;
+      FnSymbol* initEq = findCopyInitFn(at, err);
+      if (initEq == NULL) {
+        ts->addFlag(FLAG_TYPE_INIT_EQUAL_MISSING);
+      } else if (initEq->hasFlag(FLAG_COMPILER_GENERATED)) {
+        if (recordContainsNonNilableOwned(at))
+          ts->addFlag(FLAG_TYPE_INIT_EQUAL_MISSING);
+        else if (recordContainsOwned(at))
+          ts->addFlag(FLAG_TYPE_INIT_EQUAL_FROM_REF);
+        else
+          ts->addFlag(FLAG_TYPE_INIT_EQUAL_FROM_CONST);
+      } else {
+        // formals are mt, this, other
+        ArgSymbol* other = initEq->getFormal(3);
+        IntentTag intent = concreteIntentForArg(other);
+        if (intent == INTENT_IN ||
+            intent == INTENT_CONST_IN ||
+            intent == INTENT_CONST_REF) {
+          ts->addFlag(FLAG_TYPE_INIT_EQUAL_FROM_CONST);
+        } else {
+          // this case includes INTENT_REF_MAYBE_CONST
+          ts->addFlag(FLAG_TYPE_INIT_EQUAL_FROM_REF);
+        }
+      }
+    }
+  }
+}
+
+static void setRecordAssignableFlags(AggregateType* at) {
+  TypeSymbol* ts = at->symbol;
+  if (!ts->hasFlag(FLAG_TYPE_ASSIGN_FROM_CONST) &&
+      !ts->hasFlag(FLAG_TYPE_ASSIGN_FROM_REF) &&
+      !ts->hasFlag(FLAG_TYPE_ASSIGN_MISSING)) {
+
+    if (isNonNilableOwned(at)) {
+      ts->addFlag(FLAG_TYPE_ASSIGN_MISSING);
+    } else {
+      // Try resolving a test = to set the flags
+      FnSymbol* assign = findAssignFn(at);
+      if (assign == NULL) {
+        ts->addFlag(FLAG_TYPE_ASSIGN_MISSING);
+      } else if (assign->hasFlag(FLAG_COMPILER_GENERATED)) {
+        if (recordContainsNonNilableOwned(at))
+          ts->addFlag(FLAG_TYPE_ASSIGN_MISSING);
+        else if (recordContainsOwned(at))
+          ts->addFlag(FLAG_TYPE_ASSIGN_FROM_REF);
+        else
+          ts->addFlag(FLAG_TYPE_ASSIGN_FROM_CONST);
+      } else {
+        // formals are lhs, rhs
+        ArgSymbol* rhs = assign->getFormal(2);
+        IntentTag intent = concreteIntentForArg(rhs);
+        if (intent == INTENT_IN ||
+            intent == INTENT_CONST_IN ||
+            intent == INTENT_CONST_REF) {
+          ts->addFlag(FLAG_TYPE_ASSIGN_FROM_CONST);
+        } else {
+          // this case includes INTENT_REF_MAYBE_CONST
+          ts->addFlag(FLAG_TYPE_ASSIGN_FROM_REF);
+        }
+      }
+    }
+  }
+}
+
+static void setRecordDefaultValueFlags(AggregateType* at) {
+  TypeSymbol* ts = at->symbol;
+
+  if (!ts->hasFlag(FLAG_TYPE_DEFAULT_VALUE) &&
+      !ts->hasFlag(FLAG_TYPE_NO_DEFAULT_VALUE)) {
+
+    if (isNonNilableClassType(at)) {
+      ts->addFlag(FLAG_TYPE_NO_DEFAULT_VALUE);
+    } else if (isNilableClassType(at)) {
+      ts->addFlag(FLAG_TYPE_DEFAULT_VALUE);
+    } else if (at->symbol->hasFlag(FLAG_EXTERN)) {
+      // Currently extern records aren't initialized at all by default.
+      // But it's not necessarily reasonable to expect them to have
+      // initializers. See issue #7992.
+      ts->addFlag(FLAG_TYPE_DEFAULT_VALUE);
+    } else {
+      // Try resolving a test init() to set the flags
+      FnSymbol* initZero = findZeroArgInitFn(at);
+      if (initZero == NULL) {
+        ts->addFlag(FLAG_TYPE_NO_DEFAULT_VALUE);
+      } else if (initZero->hasFlag(FLAG_COMPILER_GENERATED)) {
+        if (recordContainsNonNilable(at))
+          ts->addFlag(FLAG_TYPE_NO_DEFAULT_VALUE);
+        else
+          ts->addFlag(FLAG_TYPE_DEFAULT_VALUE);
+      } else {
+        ts->addFlag(FLAG_TYPE_DEFAULT_VALUE);
+      }
+    }
+  }
+}
+
+static bool isDefaultInitializable(Type* t) {
+  bool val = true;
+  if (isRecord(t)) {
+    AggregateType* at = toAggregateType(t);
+    TypeSymbol* ts = at->symbol;
+
+    setRecordDefaultValueFlags(at);
+
+    val = ts->hasFlag(FLAG_TYPE_DEFAULT_VALUE);
+
+  } else {
+    // non-nilable class types have no default value
+    val = !isNonNilableClassType(t);
+  }
+
+  return val;
+}
 
 static Expr* preFoldPrimOp(CallExpr* call) {
   Expr* retval = NULL;
@@ -786,8 +918,15 @@ static Expr* preFoldPrimOp(CallExpr* call) {
   case PRIM_TO_NILABLE_CLASS:
   case PRIM_TO_NILABLE_CLASS_CHECKED:
   case PRIM_TO_NON_NILABLE_CLASS: {
-    Type* totype = call->typeInfo();
     Expr* e = call->get(1);
+    Type* totype = e->getValType(); // if error; otherwise changed below
+
+    if (call->isPrimitive(PRIM_TO_NILABLE_CLASS_CHECKED) &&
+        ! isClassLikeOrManaged(totype))
+      USR_FATAL_CONT(call, "postfix-? is not allowed on a non-class type '%s'",
+                     toString(totype));
+    else
+      totype = call->typeInfo();
 
     if (call->isPrimitive(PRIM_TO_UNMANAGED_CLASS_CHECKED) ||
         call->isPrimitive(PRIM_TO_BORROWED_CLASS_CHECKED)) {
@@ -857,136 +996,75 @@ static Expr* preFoldPrimOp(CallExpr* call) {
     break;
   }
   case PRIM_IS_COPYABLE:
-  case PRIM_IS_CONST_COPYABLE:
-  case PRIM_IS_ASSIGNABLE:
-  case PRIM_IS_CONST_ASSIGNABLE:
-  case PRIM_HAS_DEFAULT_VALUE: {
+  case PRIM_IS_CONST_COPYABLE: {
     Type* t = call->get(1)->typeInfo();
 
     bool val = true;
     if (isRecord(t)) {
       AggregateType* at = toAggregateType(t);
+      TypeSymbol* ts = at->symbol;
 
-      bool isNonNilableOwned = isManagedPtrType(t) &&
-                               getManagedPtrManagerType(t) == dtOwned &&
-                               isNonNilableClassType(t);
-
-      TypeSymbol* ts = t->symbol;
-      if (!ts->hasFlag(FLAG_TYPE_ASSIGN_FROM_CONST) &&
-          !ts->hasFlag(FLAG_TYPE_ASSIGN_FROM_REF) &&
-          !ts->hasFlag(FLAG_TYPE_ASSIGN_MISSING)) {
-
-        if (isNonNilableOwned) {
-          ts->addFlag(FLAG_TYPE_ASSIGN_MISSING);
-        } else {
-          // Try resolving a test = to set the flags
-          FnSymbol* assign = findAssignFn(at);
-          if (assign == NULL) {
-            ts->addFlag(FLAG_TYPE_ASSIGN_MISSING);
-          } else if (assign->hasFlag(FLAG_COMPILER_GENERATED)) {
-            if (recordContainsNonNilableOwned(t))
-              ts->addFlag(FLAG_TYPE_ASSIGN_MISSING);
-            else if (recordContainsOwned(t))
-              ts->addFlag(FLAG_TYPE_ASSIGN_FROM_REF);
-            else
-              ts->addFlag(FLAG_TYPE_ASSIGN_FROM_CONST);
-          } else {
-            // formals are lhs, rhs
-            ArgSymbol* rhs = assign->getFormal(2);
-            IntentTag intent = concreteIntentForArg(rhs);
-            if (intent == INTENT_IN ||
-                intent == INTENT_CONST_IN ||
-                intent == INTENT_CONST_REF) {
-              ts->addFlag(FLAG_TYPE_ASSIGN_FROM_CONST);
-            } else {
-              // this case includes INTENT_REF_MAYBE_CONST
-              ts->addFlag(FLAG_TYPE_ASSIGN_FROM_REF);
-            }
-          }
-        }
-      }
-      if (!ts->hasFlag(FLAG_TYPE_INIT_EQUAL_FROM_CONST) &&
-          !ts->hasFlag(FLAG_TYPE_INIT_EQUAL_FROM_REF) &&
-          !ts->hasFlag(FLAG_TYPE_INIT_EQUAL_MISSING)) {
-
-        if (isNonNilableOwned) {
-          ts->addFlag(FLAG_TYPE_INIT_EQUAL_MISSING);
-        } else {
-          // Try resolving a test init= to set the flags
-          FnSymbol* initEq = findCopyInitFn(at);
-          if (initEq == NULL) {
-            ts->addFlag(FLAG_TYPE_INIT_EQUAL_MISSING);
-          } else if (initEq->hasFlag(FLAG_COMPILER_GENERATED)) {
-            if (recordContainsNonNilableOwned(t))
-              ts->addFlag(FLAG_TYPE_INIT_EQUAL_MISSING);
-            else if (recordContainsOwned(t))
-              ts->addFlag(FLAG_TYPE_INIT_EQUAL_FROM_REF);
-            else
-              ts->addFlag(FLAG_TYPE_INIT_EQUAL_FROM_CONST);
-          } else {
-            // formals are mt, this, other
-            ArgSymbol* other = initEq->getFormal(3);
-            IntentTag intent = concreteIntentForArg(other);
-            if (intent == INTENT_IN ||
-                intent == INTENT_CONST_IN ||
-                intent == INTENT_CONST_REF) {
-              ts->addFlag(FLAG_TYPE_INIT_EQUAL_FROM_CONST);
-            } else {
-              // this case includes INTENT_REF_MAYBE_CONST
-              ts->addFlag(FLAG_TYPE_INIT_EQUAL_FROM_REF);
-            }
-          }
-        }
-      }
-
-      if (!ts->hasFlag(FLAG_TYPE_DEFAULT_VALUE) &&
-          !ts->hasFlag(FLAG_TYPE_NO_DEFAULT_VALUE)) {
-
-        if (isNonNilableClassType(t)) {
-          ts->addFlag(FLAG_TYPE_NO_DEFAULT_VALUE);
-        } else if (isNilableClassType(t)) {
-          ts->addFlag(FLAG_TYPE_DEFAULT_VALUE);
-        } else {
-          // Try resolving a test init() to set the flags
-          FnSymbol* initZero = findZeroArgInitFn(at);
-          if (initZero == NULL) {
-            ts->addFlag(FLAG_TYPE_NO_DEFAULT_VALUE);
-          } else if (initZero->hasFlag(FLAG_COMPILER_GENERATED)) {
-            if (recordContainsNonNilable(t))
-              ts->addFlag(FLAG_TYPE_NO_DEFAULT_VALUE);
-            else
-              ts->addFlag(FLAG_TYPE_DEFAULT_VALUE);
-          } else {
-            ts->addFlag(FLAG_TYPE_DEFAULT_VALUE);
-          }
-        }
-      }
-
+      setRecordCopyableFlags(at);
 
       if (call->isPrimitive(PRIM_IS_COPYABLE))
         val = ts->hasFlag(FLAG_TYPE_INIT_EQUAL_FROM_CONST) ||
               ts->hasFlag(FLAG_TYPE_INIT_EQUAL_FROM_REF);
       else if (call->isPrimitive(PRIM_IS_CONST_COPYABLE))
         val = ts->hasFlag(FLAG_TYPE_INIT_EQUAL_FROM_CONST);
-      else if (call->isPrimitive(PRIM_IS_ASSIGNABLE))
-        val = ts->hasFlag(FLAG_TYPE_ASSIGN_FROM_CONST) ||
-              ts->hasFlag(FLAG_TYPE_ASSIGN_FROM_REF);
-      else if (call->isPrimitive(PRIM_IS_CONST_ASSIGNABLE))
-        val = ts->hasFlag(FLAG_TYPE_ASSIGN_FROM_CONST);
-      else if (call->isPrimitive(PRIM_HAS_DEFAULT_VALUE))
-        val = ts->hasFlag(FLAG_TYPE_DEFAULT_VALUE);
       else
         INT_FATAL("not handled");
 
     } else {
-      // Non-record types are always copyable/assignable from const
-      // and almost always default initializeable
-      if (call->isPrimitive(PRIM_HAS_DEFAULT_VALUE))
-        val = !isNonNilableClassType(t);
-      else
-        val = true;
+      // Non-record types are always copyable from const
+      val = true;
     }
 
+    if (val)
+      retval = new SymExpr(gTrue);
+    else
+      retval = new SymExpr(gFalse);
+
+    call->replace(retval);
+
+    break;
+  }
+  case PRIM_IS_ASSIGNABLE:
+  case PRIM_IS_CONST_ASSIGNABLE: {
+    Type* t = call->get(1)->typeInfo();
+
+    bool val = true;
+    if (isRecord(t)) {
+      AggregateType* at = toAggregateType(t);
+      TypeSymbol* ts = at->symbol;
+
+      setRecordAssignableFlags(at);
+
+      if (call->isPrimitive(PRIM_IS_ASSIGNABLE))
+        val = ts->hasFlag(FLAG_TYPE_ASSIGN_FROM_CONST) ||
+              ts->hasFlag(FLAG_TYPE_ASSIGN_FROM_REF);
+      else if (call->isPrimitive(PRIM_IS_CONST_ASSIGNABLE))
+        val = ts->hasFlag(FLAG_TYPE_ASSIGN_FROM_CONST);
+      else
+        INT_FATAL("not handled");
+
+    } else {
+      // Non-record types are always assignable from const
+      val = true;
+    }
+
+    if (val)
+      retval = new SymExpr(gTrue);
+    else
+      retval = new SymExpr(gFalse);
+
+    call->replace(retval);
+
+    break;
+  }
+  case PRIM_HAS_DEFAULT_VALUE: {
+    Type* t = call->get(1)->typeInfo();
+
+    bool val = isDefaultInitializable(t);
 
     if (val)
       retval = new SymExpr(gTrue);
@@ -1501,7 +1579,7 @@ static Expr* preFoldPrimOp(CallExpr* call) {
     SymExpr* se = toSymExpr(call->get(1));
 
     if (se->symbol()->hasFlag(FLAG_EXPR_TEMP) &&
-        !(isClassLikeOrPtr(type) || isReferenceType(type))) {
+        !(type == dtLocale || isClassLikeOrPtr(type) || isReferenceType(type))) {
       USR_WARN(se, "accessing the locale of a local expression");
     }
 
@@ -1510,7 +1588,8 @@ static Expr* preFoldPrimOp(CallExpr* call) {
     // or distribution wrapper type, apply .locale to the _value
     // field of the wrapper
     //
-    if (isRecordWrappedType(type)) {
+    if (isRecordWrappedType(type) ||
+        type == dtLocale) {
       VarSymbol* tmp = newTemp("_locale_tmp_");
 
       call->getStmtExpr()->insertBefore(new DefExpr(tmp));
@@ -1656,6 +1735,136 @@ static Symbol* findMatchingEnumSymbol(Immediate* imm, EnumType* typeEnum) {
 }
 
 
+static Expr* unrollHetTupleLoop(CallExpr* call, Expr* tupExpr, Type* iterType) {
+  // Find the getIterator's statement and check that the structure is
+  // as expected; if not, return NULL (change nothing)
+  //
+  Expr* parentStmt = call->getStmtExpr();
+  CallExpr* parentAsCallExpr = toCallExpr(parentStmt);
+  if (parentAsCallExpr == NULL) return NULL;
+  SymExpr* lhs = toSymExpr(parentAsCallExpr->get(1));
+  if (lhs == NULL) return NULL;
+  Symbol* iteratorSym = lhs->symbol();  // grab this for later
+
+  // Insert a no-op after it
+  // in order to create a place to insert new statements.
+  //
+  CallExpr* noop = new CallExpr(PRIM_NOOP);
+  parentStmt->insertAfter(noop);
+
+  // Look for the associated ForLoop statement, removing all
+  // statements leading up to it (since they're unnecessary once
+  // we unroll).  This is very sensitive to the current IR format
+  // such that if it changes, we'll likely bail out of this
+  // prefold and fall into the "Heterogeneous tuples don't support
+  // this style of loop yet" error message in ChapelTuple.chpl.
+  //
+  ForLoop* theloop = NULL;
+  Expr* nextStmt = noop->next;
+  if (DeferStmt* defer = toDeferStmt(nextStmt)) {
+    nextStmt = nextStmt->next;
+    defer->remove();
+    if (BlockStmt* block = toBlockStmt(nextStmt)) {
+      nextStmt = nextStmt->next;
+      block->remove();
+      if (ForLoop* loop = toForLoop(nextStmt)) {
+        theloop = loop;
+      }
+    }
+  }
+
+  // assume the IR isn't well-formed until we find the loop index var
+  //
+  bool wellformed = false;
+
+  if (theloop != NULL) {
+
+    // Mark the loop's index variable as being 'const ref'.
+    // Ultimately, this should likely be 'ref' in some cases, but
+    // for now I'm erring on the side of avoiding any
+    // modifications to tuples rather than allowing modifications
+    // to tuple elements that shouldn't be modified.
+    //
+    Expr* firstStmt = theloop->body.first();
+    if (DefExpr* defexp = toDefExpr(firstStmt)) {
+      if (VarSymbol* loopVar = toVarSymbol(defexp->sym)) {
+        wellformed = true;
+        loopVar->addFlag(FLAG_REF_VAR);
+        loopVar->addFlag(FLAG_CONST);
+      }
+    }
+  }
+
+  // if something wasn't as we expected, bail out; we won't unroll
+  // the loop and will generate an error when we try to resolve
+  // the iterator on the heterogeneous tuple.
+  //
+  if (!wellformed) {
+    return NULL;
+  }
+
+  // grab the tuple's type
+  //
+  AggregateType* tupType = toAggregateType(iterType);
+
+  // stamp out copies of the loop body for each element of the tuple;
+  // this loop starts from 2 to skip over the size field (which is 1).
+  //
+  Symbol* idxSym = theloop->indexGet()->symbol();
+  Symbol* continueSym = theloop->continueLabelGet();
+  for (int i=2; i<=tupType->fields.length; i++) {
+    SymbolMap map;
+
+    // create a temp to refer to the tuple field
+    //
+    VarSymbol* tmp = newTemp(astr("tupleTemp"));
+    tmp->addFlag(FLAG_REF_VAR);
+
+    // create the AST for 'tupleTemp = tuple.field'
+    // 
+    VarSymbol* field = new_CStringSymbol(tupType->getField(i)->name);
+    noop->insertBefore(new DefExpr(tmp));
+    noop->insertBefore(new CallExpr(PRIM_MOVE, tmp,
+                                    new CallExpr(PRIM_GET_MEMBER,
+                                                 tupExpr->copy(),
+                                                 field)));
+
+    // clone the body; subtract 2 from i to number unrollings from 0
+    //
+    map.put(idxSym, tmp);
+    theloop->copyBodyHelper(noop, i-2, &map, continueSym);
+  }
+
+  // remove the loop itself
+  //
+  theloop->remove();
+
+  // remove the no-op, replace the parent statement with it, and
+  // return it so that everything we just inserted will be
+  // resolved next
+  //
+  noop->remove();
+  parentStmt->replace(noop);
+
+  // remove some now-dead code preceding our unrolled loop; it's nice
+  // to do so, and failing to do so causes problems with --baseline
+  //
+  Expr* prevStmt = noop->prev;
+  while (prevStmt != NULL) {
+    Expr* deadStmt = prevStmt;
+    prevStmt = prevStmt->prev;
+    if (DefExpr* defexpr = toDefExpr(deadStmt)) {
+      if (defexpr->sym == iteratorSym ||  // '_iterator'
+          defexpr->sym == idxSym) {       // '_indexOfInterest'
+        defexpr->remove();
+      }
+    }
+  }
+
+  return noop;
+}
+
+
 static Expr* preFoldNamed(CallExpr* call) {
   Expr* retval = NULL;
 
@@ -1793,6 +2002,14 @@ static Expr* preFoldNamed(CallExpr* call) {
           if (imm != NULL && (fromEnum || fromIntEtc) && toIntEtc) {
             Immediate coerce = getDefaultImmediate(newType);
 
+            if (fWarnUnstable && fromEnum && !toIntUint) {
+              if (is_bool_type(newType)) {
+                USR_WARN(call, "enum-to-bool casts are likely to be deprecated in the future");
+              } else {
+                USR_WARN(call, "enum-to-float casts are likely to be deprecated in the future");
+              }
+            }
+
             coerce_immediate(imm, &coerce);
 
             retval = new SymExpr(new_ImmediateSymbol(&coerce));
@@ -1923,6 +2140,20 @@ static Expr* preFoldNamed(CallExpr* call) {
              call->isNamed("chpl__dynamicFastFollowCheck")  ) {
     if (! call->isResolved())
       buildFastFollowerChecksIfNeeded(call);
+
+  } else if (call->isNamed("_getIterator")) {
+
+    // Unroll loops over heterogeneous tuples by looking for the pattern:
+    //   _getIterator(<heterogeneousTuple>)
+    //
+
+    Expr* tupExpr = call->get(1);
+    Type* iterType = tupExpr->getValType();
+    if (iterType->symbol->hasFlag(FLAG_TUPLE) &&
+        !iterType->symbol->hasFlag(FLAG_STAR_TUPLE)) {
+
+      retval = unrollHetTupleLoop(call, tupExpr, iterType);
+    }
   }
 
   return retval;
@@ -2205,7 +2436,9 @@ static Expr* createFunctionAsValue(CallExpr *call) {
   //
   // Otherwise, we need to create a Chapel first-class function (fcf)...
   //
-
+  if (fWarnUnstable) {
+    USR_WARN(call, "First class functions are unstable.");
+  }
   AggregateType* parent;
   FnSymbol*      thisParentMethod;
 

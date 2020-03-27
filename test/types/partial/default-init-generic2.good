@@ -1,0 +1,3 @@
+default-init-generic2.chpl:12: In function 'main':
+default-init-generic2.chpl:13: error: Cannot default-initialize a variable with generic type
+default-init-generic2.chpl:13: note: 'B' has generic type 'R(real(64))'

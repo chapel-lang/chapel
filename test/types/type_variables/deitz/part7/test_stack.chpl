@@ -38,7 +38,7 @@ proc stack.pop() : eltType {
   return v;
 }
 
-proc stack.writeThis(f) {
+proc stack.writeThis(f) throws {
   var tmp = top;
   while tmp != nil {
     f.write(tmp!.value, " ");

@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -25,6 +26,7 @@
 #include <string>
 #include <vector>
 
+class astlocT;
 class BaseAST;
 class BlockStmt;
 class CallExpr;
@@ -38,6 +40,7 @@ class Symbol;
 class TypeSymbol;
 class UnresolvedSymExpr;
 class UseStmt;
+class VisibilityStmt;
 
 // A preliminary version of a class to support the scope resolve pass
 // This is currently a thin wrapping over a previous typedef + functions
@@ -70,12 +73,32 @@ public:
 
   bool                  extend(Symbol*        sym, bool isTopLevel=false);
 
-  bool                  extend(const UseStmt* stmt);
+  bool                  extend(VisibilityStmt* stmt);
+
+  Symbol*               lookupForImport(Expr* expr, bool isUse) const;
 
   Symbol*               lookup(Expr*       expr, bool isUse=false)       const;
 
   Symbol*               lookupNameLocally(const char* name,
                                           bool isUse=false)              const;
+
+  Symbol*               lookupPublicImports(const char* name)            const;
+
+  Symbol*               lookupPublicUnqualAccessSyms(const char* name,
+                                                     BaseAST *context)   const;
+
+  Symbol*               lookupPublicUnqualAccessSyms(const char* name,
+                          BaseAST *context,
+                          std::map<Symbol *, astlocT *>& renameLocs)      const;
+
+  Symbol*               lookupPublicUnqualAccessSyms(const char* name,
+                          ModuleSymbol*& modArg,
+                          BaseAST *context)                              const;
+
+  Symbol*               lookupPublicUnqualAccessSyms(const char* name,
+                          ModuleSymbol*& modArg,
+                          BaseAST *context,
+                          std::map<Symbol *, astlocT *>& renameLocs)      const;
 
   // Support for UseStmt with only/except
   // Has the potential to return multiple fields
@@ -86,13 +109,13 @@ public:
   void                  describe()                                       const;
 
 private:
-  typedef std::vector<const UseStmt*>    UseList;
+  typedef std::vector<VisibilityStmt*>   UseImportList;
   typedef std::vector<Symbol*>           SymList;
 
   typedef std::set<const ResolveScope*>  ScopeSet;
 
   typedef std::map<const char*, Symbol*> Bindings;
-  typedef std::map<Symbol*,     UseList> UseMap;
+  typedef std::map<Symbol*, UseImportList> UseImportMap;
 
                         ResolveScope();
 
@@ -126,19 +149,26 @@ private:
   bool                  getFieldsWithUses(const char* fieldName,
                                           SymList&    symbols)           const;
 
-  void                  buildBreadthFirstUseList(UseList& useList)       const;
+  void buildBreadthFirstUseImportList(UseImportList& useList) const;
 
-  void                  buildBreadthFirstUseList(UseList& modules,
-                                                 UseList& current,
-                                                 UseMap&  visited)       const;
+  void buildBreadthFirstUseImportList(UseImportList& modules,
+                                      UseImportList& current,
+                                      UseImportMap&  visited) const;
 
-   bool                 skipUse(UseMap&        visited,
-                                const UseStmt* current)                  const;
+  bool                 skipUse(UseImportMap&  visited,
+                               const UseStmt* current)                  const;
+
+  Symbol* followImportUseChains(const char* name) const;
+  Symbol* lookupNameLocallyForImport(const char* name) const;
+  void firstImportedModuleName(Expr* expr,
+                               const char*& name,
+                               CallExpr*& call,
+                               const ResolveScope*& scope) const;
 
   BaseAST*              mAstRef;
   const ResolveScope*   mParent;
   Bindings              mBindings;
-  UseList               mUseList;
+  UseImportList         mUseImportList;
 };
 
 extern ResolveScope* rootScope;

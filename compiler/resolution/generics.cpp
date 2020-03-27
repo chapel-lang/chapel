@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -59,6 +60,11 @@ FnSymbol* instantiateFunction(FnSymbol*  fn,
 static bool            fixupDefaultInitCopy(FnSymbol* fn,
                                             FnSymbol* newFn,
                                             CallExpr* call);
+
+static void            fixupUntypedOutArgRTTs(FnSymbol* fn,
+                                              FnSymbol* newFn,
+                                              CallExpr* call);
+
 
 static void
 explainInstantiation(FnSymbol* fn) {
@@ -450,6 +456,9 @@ FnSymbol* instantiateSignature(FnSymbol*  fn,
       resolveSignature(newFn);
       newFn->tagIfGeneric(&subs);
 
+      // Fix up out intent arguments
+      fixupUntypedOutArgRTTs(fn, newFn, call);
+
       explainAndCheckInstantiation(newFn, fn);
 
       return newFn;
@@ -482,7 +491,9 @@ static bool fixupDefaultInitCopy(FnSymbol* fn,
       // it up completely...
       instantiateBody(newFn);
 
-      if (FnSymbol* initFn = findCopyInitFn(ct)) {
+      const char* err = NULL;
+
+      if (FnSymbol* initFn = findCopyInitFn(ct, err)) {
         Symbol*   thisTmp  = newTemp(ct);
         DefExpr*  def      = new DefExpr(thisTmp);
         CallExpr* initCall = NULL;
@@ -541,7 +552,7 @@ static bool fixupDefaultInitCopy(FnSymbol* fn,
 
       } else {
         // No copy-initializer could be found
-        newFn->addFlag(FLAG_ERRONEOUS_INITCOPY);
+        markCopyErroneous(newFn, err);
       }
 
       retval = true;
@@ -551,6 +562,30 @@ static bool fixupDefaultInitCopy(FnSymbol* fn,
   return retval;
 }
 
+static void fixupUntypedOutArgRTTs(FnSymbol* fn,
+                                   FnSymbol* newFn,
+                                   CallExpr* call) {
+  // Add an associated argument for out arguments that are
+  // untyped for types with runtime types
+
+  // This argument passes the runtime type from the call site
+  // to the function for use when constructing the out value.
+  for_formals(formal, newFn) {
+    if (formal->typeExpr == NULL &&
+        (formal->intent == INTENT_OUT ||
+         formal->originalIntent == INTENT_OUT)) {
+      Type* formalType = formal->type->getValType();
+      if (formalType->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE)) {
+        ArgSymbol* newFormal = new ArgSymbol(INTENT_BLANK,
+                                             astr("chpl_type_", formal->name),
+                                             formalType);
+        newFormal->addFlag(FLAG_TYPE_FORMAL_FOR_OUT);
+        newFormal->addFlag(FLAG_TYPE_VARIABLE);
+        formal->defPoint->insertBefore(new DefExpr(newFormal));
+      }
+    }
+  }
+}
 
 //
 // determine root function in the case of partial instantiation

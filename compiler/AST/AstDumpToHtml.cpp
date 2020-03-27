@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -24,6 +25,7 @@
 #include "AstDumpToHtml.h"
 
 #include "expr.h"
+#include "ImportStmt.h"
 #include "log.h"
 #include "LoopExpr.h"
 #include "runpasses.h"
@@ -481,6 +483,25 @@ void AstDumpToHtml::visitUseStmt(UseStmt* node) {
   }
 }
 
+//
+// ImportStmt
+//
+void AstDumpToHtml::visitImportStmt(ImportStmt* node) {
+  if (isBlockStmt(node->parentExpr)) {
+    fprintf(mFP, "%s\n", HTML_DL_open_tag);
+  }
+
+  fprintf(mFP, " (%d 'import' ", node->id);
+
+  node->src->accept(this);
+
+  fprintf(mFP, ")");
+
+  if (isBlockStmt(node->parentExpr)) {
+    fprintf(mFP, "%s\n", HTML_DL_close_tag);
+  }
+}
+
 
 //
 // BlockStmt
@@ -686,7 +707,9 @@ bool AstDumpToHtml::enterGotoStmt(GotoStmt* node) {
     case GOTO_BREAK_ERROR_HANDLING:
       fprintf(mFP, "<B>gotoBreakErrorHandling</B> ");
       break;
-
+    case GOTO_ERROR_HANDLING_RETURN:
+      fprintf(mFP, "<B>gotoErrorHandlingReturn</B> ");
+      break;
   }
 
   if (SymExpr* label = toSymExpr(node->label))

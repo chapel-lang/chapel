@@ -247,9 +247,9 @@ necessarily compile-time constants.
 Iteration over Tuples
 ---------------------
 
-Only homogeneous tuples support iteration via standard ``for``,
-``forall`` and ``coforall`` loops. These loops iterate over all of the
-tuple’s elements. A loop of the form:
+Homogeneous tuples support iteration via standard ``for``, ``forall``
+and ``coforall`` loops. These loops iterate over all of the tuple’s
+elements. A loop of the form:
 
 
 
@@ -268,9 +268,43 @@ to:
    [for|forall|coforall] i in 1..n do
      ...t(i)...
 
-The iterator variable for an tuple iteration is a either a const value
+The iterator variable for a tuple iteration is a either a const value
 or a reference to the tuple element type, following default intent
 semantics.
+
+Heterogeneous tuples support iteration via standard ``for`` and
+``coforall`` loops.  These loops iterate over all of the tuple's
+elements, giving each iteration its own index variable that is a
+``const ref`` to the tuple element (note: this may change in the
+future to include ``const`` or ``ref`` index variables).  Thus, a
+loop of the form:
+
+.. code-block:: chapel
+
+  for e in t do
+    ...e...
+
+where t is a heterogeneous tuple of size ``n`` is semantically
+equivalent to:
+
+.. code-block:: chapel
+
+  { // iteration 1
+    const ref e = t(1);
+    ...e...
+  }
+  { // iteration 2
+    const ref e = t(2);
+    ...e...
+  }
+  ...
+  { // iteration n
+    const ref e = t(n);
+    ...e...
+  }
+
+Similarly, a `coforall` loop is equivalent to the `cobegin` statement
+whose body is the series of compound statements from the serial case.
 
 .. _Tuple_Assignment:
 
@@ -1129,6 +1163,19 @@ in the two operand tuples. Otherwise, a compile-time error will result.
 Predefined Functions and Methods on Tuples
 ------------------------------------------
 
+.. code-block:: chapel
+
+   proc tuple.size param
+
+Returns the size of the tuple.
+
+
+.. code-block:: chapel
+
+   proc tuple.indices
+
+Returns the range ``1..this.size`` representing the indices that are
+legal for indexing into the tuple.
 
 
 .. code-block:: chapel
@@ -1173,8 +1220,3 @@ value that can be stored in its position.
 
 
 
-.. code-block:: chapel
-
-   proc Tuple.size param
-
-Returns the size of the tuple.

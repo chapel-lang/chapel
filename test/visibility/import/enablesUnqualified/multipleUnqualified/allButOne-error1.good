@@ -1,0 +1,2 @@
+allButOne-error1.chpl:12: In function 'main':
+allButOne-error1.chpl:13: error: 'd' undeclared (first use this function)

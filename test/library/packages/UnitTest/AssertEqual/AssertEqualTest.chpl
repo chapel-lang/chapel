@@ -21,11 +21,11 @@ proc main() {
   unequalHighArraySameType();
   equalHighArrayDiffType();
   unequalOffsetArray();
-  Unequal1DArray();
-  UnequalComplex();
-  UnequalPrimitive();
-  UnequalRanges();
-  UnequalTuples();
+  unequal1DArray();
+  unequalComplex();
+  unequalPrimitive();
+  unequalRanges();
+  unequalTuples();
 }
 
 proc equalArray() {
@@ -42,7 +42,15 @@ proc equalArray() {
   var yOff : [2..5,3..7] real;
   testAssert(xOff,yOff,"Equal Offset Arrays");
 
+  var x0: [0..2] int = [1,7,6];
+  var y0: [0..2] int  = [1,7,6];
+  testAssert(x0, y0, "Equal 0-based Arrays");
+
+  var x1: [3..5] int = [1,7,6];
+  var y1: [0..2] int  = [1,7,6];
+  testAssert(x1, y1, "Equal 0- and 1-based Arrays");
 }
+
 
 proc equalIntegers() {
   var x1 = 1.0;
@@ -80,7 +88,7 @@ proc equalHighArrayDiffType() {
   testAssert(x2,y2,"Equal High Array Diff Type");
 }
 
-proc Unequal1DArray() {
+proc unequal1DArray() {
   // Type 1
   var x1 = [1,5,7];
   var y1 = [1,7,6];
@@ -93,9 +101,13 @@ proc Unequal1DArray() {
   var x3 = [1,7,6,5,8];
   var y3 = [1,7,6];
   testAssert(x3,y3,"Unequal 1D Array Type 3");
+
+  var x0: [0..2] int = [1,4,2];
+  var y0: [0..2] int  = [1,7,6];
+  testAssert(x0, y0, "Unequal 0-based Arrays");
 }
 
-proc UnequalComplex() {
+proc unequalComplex() {
   // Type 1
   var x1 = 5;
   var y1 = 7i;
@@ -106,7 +118,7 @@ proc UnequalComplex() {
   testAssert(x2,y2,"Unequal Complex Type 2");
 }
 
-proc UnequalPrimitive() {
+proc unequalPrimitive() {
   //Type 1
   var x1 = true;
   var y1 = false;
@@ -121,7 +133,7 @@ proc UnequalPrimitive() {
   testAssert(x,y,"Unequal String");
 }
 
-proc UnequalRanges() {
+proc unequalRanges() {
   //Type 1
   var x1 = ..6;
   var y1 = ..7;
@@ -132,7 +144,7 @@ proc UnequalRanges() {
   testAssert(x2,y2,"Unequal Ranges Type 2");
 }
 
-proc UnequalTuples() {
+proc unequalTuples() {
   var x1 = (1,2,3);
   var y1 = (1,2);
   testAssert(x1,y1,"Unequal Tuples Type 1");

@@ -387,7 +387,6 @@ MISC_CPPFLAGS = @MISC_CPPFLAGS@
 MISC_CXXFLAGS = @MISC_CXXFLAGS@
 MKDIR_P = @MKDIR_P@
 MPIRUN_CMD = @MPIRUN_CMD@
-MPIRUN_CMD_BATCH = @MPIRUN_CMD_BATCH@
 MPI_CC = @MPI_CC@
 MPI_CC_FAMILY = @MPI_CC_FAMILY@
 MPI_CC_SUBFAMILY = @MPI_CC_SUBFAMILY@
@@ -407,9 +406,6 @@ PACKAGE_STRING = @PACKAGE_STRING@
 PACKAGE_TARNAME = @PACKAGE_TARNAME@
 PACKAGE_URL = @PACKAGE_URL@
 PACKAGE_VERSION = @PACKAGE_VERSION@
-PAMI_CFLAGS = @PAMI_CFLAGS@
-PAMI_LDFLAGS = @PAMI_LDFLAGS@
-PAMI_LIBS = @PAMI_LIBS@
 PATH_SEPARATOR = @PATH_SEPARATOR@
 PERL = @PERL@
 PGDBG_PATH = @PGDBG_PATH@
@@ -443,8 +439,6 @@ SSH_SPAWNER_LIBS = @SSH_SPAWNER_LIBS@
 STRIP = @STRIP@
 SYSTEM_NAME = @SYSTEM_NAME@
 SYSTEM_TUPLE = @SYSTEM_TUPLE@
-SYS_HEADER_BLD = @SYS_HEADER_BLD@
-SYS_HEADER_INST = @SYS_HEADER_INST@
 TIMECMD = @TIMECMD@
 TOOL_PREFIX = @TOOL_PREFIX@
 TOP_BUILDDIR = @TOP_BUILDDIR@
@@ -535,7 +529,6 @@ CONDUITMODE_DIST_SUBDIRS = \
 	ibv-conduit 		\
 	ucx-conduit 		\
 	aries-conduit           \
-	pami-conduit		\
 	ofi-conduit
 
 CONDUITMODE_headers = \
@@ -630,6 +623,10 @@ pkgconfig = $(pkgconfig_seq) $(pkgconfig_par)
 lib_LIBRARIES = $(libraries)
 @CONDUIT_MODE_TRUE@TESTINSTANCE = $${PPID:-xxxx}
 @CONDUIT_MODE_TRUE@TESTLOG = `pwd`/.test-results
+@CONDUIT_MODE_TRUE@RUN_TEST_TARGETS = \
+@CONDUIT_MODE_TRUE@  run-tests run-tests-seq run-tests-parsync run-tests-par \
+@CONDUIT_MODE_TRUE@  run-tests-installed-seq run-tests-installed-parsync run-tests-installed-par
+
 @CONDUIT_MODE_FALSE@CLEANFILES = $(TOOLSONLY_TESTS)
 @CONDUIT_MODE_TRUE@CLEANFILES = $(TESTLOG) 
 @CONDUIT_MODE_FALSE@TOOLSONLY_CHECK = run-tests
@@ -1118,6 +1115,7 @@ distclean-generic:
 maintainer-clean-generic:
 	@echo "This command is intended for maintainers to use"
 	@echo "it deletes files that may require special tools to rebuild."
+@CONDUIT_MODE_FALSE@installcheck-local:
 clean: clean-recursive
 
 clean-am: clean-generic clean-libLIBRARIES clean-local mostlyclean-am
@@ -1164,7 +1162,7 @@ install-ps: install-ps-recursive
 
 install-ps-am:
 
-installcheck-am:
+installcheck-am: installcheck-local
 
 maintainer-clean: maintainer-clean-recursive
 	-rm -f $(am__CONFIG_DISTCLEAN_FILES)
@@ -1203,12 +1201,12 @@ uninstall-am: uninstall-configDATA uninstall-includeHEADERS \
 	install-html-am install-includeHEADERS install-info \
 	install-info-am install-libLIBRARIES install-man install-pdf \
 	install-pdf-am install-ps install-ps-am install-strip \
-	installcheck installcheck-am installdirs installdirs-am \
-	maintainer-clean maintainer-clean-generic mostlyclean \
-	mostlyclean-compile mostlyclean-generic pdf pdf-am ps ps-am \
-	tags tags-am uninstall uninstall-am uninstall-configDATA \
-	uninstall-includeHEADERS uninstall-libLIBRARIES \
-	uninstall-local
+	installcheck installcheck-am installcheck-local installdirs \
+	installdirs-am maintainer-clean maintainer-clean-generic \
+	mostlyclean mostlyclean-compile mostlyclean-generic pdf pdf-am \
+	ps ps-am tags tags-am uninstall uninstall-am \
+	uninstall-configDATA uninstall-includeHEADERS \
+	uninstall-libLIBRARIES uninstall-local
 
 .PRECIOUS: Makefile
 
@@ -1245,18 +1243,24 @@ Makefile: $(srcdir)/Makefile.in
 echovar: force
 	@echo $(VARNAME)=\"$($(VARNAME))\"
 
-@CONDUIT_MODE_TRUE@test: tests-seq
-@CONDUIT_MODE_TRUE@tests: tests-seq
+@CONDUIT_MODE_TRUE@@BUILD_PAR_LIBS_TRUE@  DEFAULT_TEST_MODE=par
+@CONDUIT_MODE_TRUE@@BUILD_PAR_LIBS_FALSE@ DEFAULT_TEST_MODE=seq
+@CONDUIT_MODE_TRUE@test: tests-$(DEFAULT_TEST_MODE)
+@CONDUIT_MODE_TRUE@tests: tests-$(DEFAULT_TEST_MODE)
+@CONDUIT_MODE_TRUE@tests-installed: tests-installed-$(DEFAULT_TEST_MODE)
+# automake name, used by distcheck:
+@CONDUIT_MODE_TRUE@installcheck-local: tests-installed-$(DEFAULT_TEST_MODE)
+# xSDK alias:
+@CONDUIT_MODE_TRUE@test_install: run-tests-installed-$(DEFAULT_TEST_MODE)
 
 @CONDUIT_MODE_TRUE@other-tests:
 @CONDUIT_MODE_TRUE@	@cd $(top_builddir)/other && $(MAKE) all tests
 
-@CONDUIT_MODE_TRUE@tests-seq tests-parsync tests-par: other-tests
+@CONDUIT_MODE_TRUE@tests-seq tests-parsync tests-par tests-installed-seq tests-installed-par tests-installed-parsync: other-tests
 @CONDUIT_MODE_TRUE@	@for conduit in $(CONDUITS) ; do                                       \
 @CONDUIT_MODE_TRUE@	  ( cd "$(top_builddir)/$$conduit-conduit" && $(MAKE) $@ ) || exit $$?; \
 @CONDUIT_MODE_TRUE@	done
-
-@CONDUIT_MODE_TRUE@run-tests run-tests-seq run-tests-parsync run-tests-par: do-begin-tests
+@CONDUIT_MODE_TRUE@$(RUN_TEST_TARGETS): do-begin-tests
 @CONDUIT_MODE_TRUE@	@testinst=$(TESTINSTANCE) ; 							\
 @CONDUIT_MODE_TRUE@	testlog=$(TESTLOG) ; 								\
 @CONDUIT_MODE_TRUE@        err=0 ; 									\
@@ -1350,6 +1354,12 @@ install-data-local:
 	if test -f $(top_srcdir)/extended-ref/README ; then \
 	  $(INSTALL_DATA) $(top_srcdir)/extended-ref/README $(DESTDIR)$(docdir)/README-extref || exit $$? ; \
 	fi
+	@: Automake 1.4 correct handling of headers given by relative path: ensure nested ext-ref headers get correctly installed in top-level include
+	@for file in $(include_HEADERS) ; do \
+	  if test -f "$(srcdir)/$$file" ; then ( b=`basename $$file` ; set -x ;  \
+            $(INSTALL_DATA) "$(srcdir)/$$file" "$(DESTDIR)$(includedir)/$$b" ) || exit $$?; \
+	  fi; \
+	done
 	for file in $(INSTALL_DOCS) ; do \
 	    $(INSTALL_DATA) $(top_srcdir)/$$file $(DESTDIR)$(docdir)/`basename $$file` || exit $$? ; \
 	done

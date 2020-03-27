@@ -1,8 +1,8 @@
-var l: locale?;
+var l: locale;
 writeln(l);
 
 on Locales(numLocales-1) {
-  var l: locale?;
+  var l: locale;
   writeln(l);
 }
 

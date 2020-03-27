@@ -1,0 +1,8 @@
+Bug: Promoted expressions cannot be passed to array formals
+
+#7936
+#15080
+
+The second issue captures another symptom of this, which is passing an array of
+nilables into an array argument using postfix-! which should return an array of
+non-nilables.

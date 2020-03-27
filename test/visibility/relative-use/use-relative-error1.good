@@ -1,0 +1,1 @@
+use-relative-error1.chpl:5: error: use must name a module or enum ('x' is neither)

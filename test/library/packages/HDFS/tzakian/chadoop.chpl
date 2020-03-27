@@ -148,7 +148,7 @@ sync coforall loc in Locales { // look at this more
         // ==== Read in characters from the file
         //writeln("Positional read with startByte=" + startByte + " length=" + length);
         var s = HDFS.chadoopReadFilePositional(hdfsFS, dataFileLocal, startByte, length):string;
-        // writeln("Read " + s.length + " characters from " + dataFile);
+        // writeln("Read " + s.size + " characters from " + dataFile);
 
         // Read through the string and load it into the problem domain record
         var acc: BeerAdvocateRecord;
@@ -169,13 +169,13 @@ sync coforall loc in Locales { // look at this more
           }
 
           // Get the end of the review as well
-          var j = indexOf(recordEnd, s, i + recordStart.length);
+          var j = indexOf(recordEnd, s, i + recordStart.size);
 
           if (j == -1) {
             // Find records at end of file
             if (block == blockCount - 1) {
               // Assume the current record extends to the end of file
-              j = s.length;
+              j = s.size;
               base = j;
             } else {
               writeln("End of data reached");

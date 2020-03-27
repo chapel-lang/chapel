@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -211,8 +212,10 @@ int chpl_enc_validate_buf(const char *buf, ssize_t buflen) {
   int offset = 0;
 
   while (offset<buflen) {
+    // you can create a chapel string with a codepoint that represents an
+    // escaped byte, so the last argument is true
     if (chpl_enc_decode_char_buf_utf8(&cp, &nbytes, buf+offset,
-                                      buflen-offset, false) != 0) {
+                                      buflen-offset, true) != 0) {
       return -1;  // invalid : return EILSEQ
     }
     offset += nbytes;

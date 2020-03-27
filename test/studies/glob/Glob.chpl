@@ -65,7 +65,7 @@ iter my_wordexp(param tag:iterKind, pattern:string, recursive:bool = false,
   while (true) {
 
     // No more work left to accomplish
-    if (dirBuff.numIndices == 0) then
+    if (dirBuff.size == 0) then
       break;
 
     //
@@ -128,7 +128,7 @@ iter my_glob(param tag:iterKind, pattern:string, recursive:bool = false,
   while (true) {
 
     // No more work left to accomplish
-    if (dirBuff.numIndices == 0) then
+    if (dirBuff.size == 0) then
       break;
 
     //

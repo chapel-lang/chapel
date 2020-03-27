@@ -1,0 +1,3 @@
+owned-int-value.chpl:1: error: invalid type specifier '_owned(3)'
+owned-int-value.chpl:1: note: type specifier did not match: _owned(type chpl_t)
+owned-int-value.chpl:1: note: cannot instantiate type field 'chpl_t' with non-type

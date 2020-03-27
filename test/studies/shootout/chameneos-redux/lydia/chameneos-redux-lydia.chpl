@@ -178,7 +178,7 @@ proc populate (size) {
                             Color.yellow, Color.blue, Color.red, Color.yellow,
                             Color.red, Color.blue);
   const D : domain(1, int) = {1..size};
-  var population : [D] owned Chameneos;
+  var population : [D] owned Chameneos?;
 
   if (size == 10) {
     for i in D {
@@ -189,7 +189,7 @@ proc populate (size) {
       population(i) = new owned Chameneos(i, ((i-1) % numColors):Color);
     }
   }
-  return population;
+  return try! population:owned Chameneos;
 }
 
 /* run takes a population of Chameneos and a MeetingPlace, then allows the
@@ -223,7 +223,7 @@ proc printInfo(population : [] owned Chameneos) {
 /* spellInt takes an integer, and spells each of its digits out in English */
 proc spellInt(n : int) {
   var s : string = n:string;
-  for i in 1..s.length {
+  for i in 1..s.size {
     write(" ", (s[i]:int):Digit);
   }
   writeln();

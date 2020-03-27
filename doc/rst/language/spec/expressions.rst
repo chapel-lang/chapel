@@ -374,7 +374,9 @@ Precedence and Associativity
 | | ``-``            |                | | subtraction                        |
 |                    |                |                                      |
 +--------------------+----------------+--------------------------------------+
-| ``..``             | left           | range initialization                 |
+| | ``..``           | | left         | | range initialization               |
+| | ``..<``          | | left         | | open-interval range initialization |
+|                    |                |                                      |
 +--------------------+----------------+--------------------------------------+
 | | ``<=``           | left           | | less-than-or-equal-to comparison   |
 | | ``>=``           |                | | greater-than-or-equal-to comparison|
@@ -1071,6 +1073,8 @@ When ``a`` is negative, the new high-order bits are set to one;
 otherwise the new high-order bits are set to zero.
 
 The value of ``b`` must be non-negative.
+
+The value of ``b`` must be less than the number of bits in ``a``.
 
 .. _Logical_Operators:
 

@@ -96,7 +96,7 @@ proc run(ref todo:LinkedList(string), ref Pairs) {
   var t:Timer;
   t.start();
 
-  const FilesSpace = {1..todo.length};
+  const FilesSpace = {1..todo.size};
   const BlockSpace = if distributed then
                        FilesSpace dmapped Block(boundingBox=FilesSpace)
                      else
@@ -249,7 +249,7 @@ proc process_json(logfile:channel, fname:string, ref Pairs) {
 proc process_json(fname: string, ref Pairs)
 {
 
-  var last3chars = fname[fname.length-2..fname.length];
+  var last3chars = fname[fname.size-2..fname.size];
   if last3chars == ".gz" {
     var sub = spawn(["gunzip", "-c", fname], stdout=PIPE);
     process_json(sub.stdout, fname, Pairs);

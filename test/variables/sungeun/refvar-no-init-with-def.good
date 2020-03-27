@@ -1,1 +1,1 @@
-refvar-no-init-with-def.chpl:1: error: References must be initialized
+refvar-no-init-with-def.chpl:2: error: Cannot set a reference to a param variable.

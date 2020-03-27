@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -22,6 +23,7 @@
 #include "callInfo.h"
 #include "driver.h"
 #include "expr.h"
+#include "ImportStmt.h"
 #include "map.h"
 #include "resolution.h"
 #include "resolveIntents.h"
@@ -32,6 +34,7 @@
 
 #include <map>
 #include <set>
+#include <utility>
 
 
 /*
@@ -62,6 +65,9 @@ static Map<BlockStmt*, VisibleFunctionBlock*> visibleFunctionMap;
 
 static int                                    nVisibleFunctions       = 0;
 
+static std::map<std::pair<BlockStmt*, BlockStmt*>, bool> scopeIsVisForMethods;
+static std::set<const char*> typeHelperNames;
+bool builtTypeHelperNames = false;
 
 
 /************************************* | **************************************
@@ -70,11 +76,33 @@ static int                                    nVisibleFunctions       = 0;
 *                                                                             *
 ************************************** | *************************************/
 
+static void getVisibleMethods(const char* name, CallExpr* call,
+                              Vec<FnSymbol*>& visibleFns);
+
 static void  buildVisibleFunctionMap();
 
 void findVisibleFunctions(CallInfo&       info,
                           Vec<FnSymbol*>& visibleFns) {
   CallExpr* call = info.call;
+
+  if (!builtTypeHelperNames) {
+    // Build the cache of names we care about even though they aren't methods
+    typeHelperNames.insert(astrSassign);
+    typeHelperNames.insert(astrSeq);
+    typeHelperNames.insert(astrSne);
+    typeHelperNames.insert(astrSgt);
+    typeHelperNames.insert(astrSgte);
+    typeHelperNames.insert(astrSlt);
+    typeHelperNames.insert(astrSlte);
+    typeHelperNames.insert(astrSswap); // ?
+    typeHelperNames.insert(astr_cast);
+    typeHelperNames.insert(astr_defaultOf);
+    typeHelperNames.insert(astrNew);
+    typeHelperNames.insert(astr("chpl__initCopy"));
+    typeHelperNames.insert(astr("chpl__autoCopy"));
+    typeHelperNames.insert(astr("chpl__autoDestroy"));
+    builtTypeHelperNames = true;
+  }
 
   //
   // update visible function map as necessary
@@ -91,10 +119,21 @@ void findVisibleFunctions(CallInfo&       info,
         visibleFns.append(*fns);
       }
     }
-
   } else {
-    getVisibleFunctions(info.name, call, visibleFns);
+    // Methods, fields, and type helper functions should ignore the privacy and
+    // limitations on use statements.  All other symbols should respect them.
+    if (call->numActuals() >=2 && isSymExpr(call->get(1)) &&
+        toSymExpr(call->get(1))->symbol() == gMethodToken) {
 
+      getVisibleMethods(info.name, call, visibleFns);
+
+    } else if (typeHelperNames.find(info.name) != typeHelperNames.end()) {
+      getVisibleMethods(info.name, call, visibleFns);
+
+    } else {
+      getVisibleFunctions(info.name, call, visibleFns);
+
+    }
   }
 
   if ((explainCallLine && explainCallMatch(call)) ||
@@ -145,6 +184,166 @@ static void buildVisibleFunctionMap() {
   }
   nVisibleFunctions = gFnSymbols.n;
 }
+
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
+
+static void getVisibleMethods(const char* name, CallExpr* call,
+                              BlockStmt* block, std::set<BlockStmt*>& visited,
+                              Vec<FnSymbol*>& visibleFns);
+
+
+static void getVisibleMethods(const char* name, CallExpr* call,
+                              Vec<FnSymbol*>& visibleFns) {
+  BlockStmt*           block    = getVisibilityScope(call);
+  std::set<BlockStmt*> visited;
+
+  getVisibleMethods(name, call, block, visited, visibleFns);
+
+}
+
+static void getVisibleMethods(const char* name, CallExpr* call,
+                              BlockStmt* block, std::set<BlockStmt*>& visited,
+                              Vec<FnSymbol*>& visibleFns) {
+  //
+  // avoid infinite recursion due to modules with mutual uses
+  //
+  if (visited.find(block) == visited.end()) {
+
+    bool moduleBlock = false;
+    bool fnBlock = false;
+    ModuleSymbol* inMod = block->getModule();
+    FnSymbol* inFn = block->getFunction();
+    BlockStmt* instantiationPt = NULL;
+    if (block->parentExpr != NULL) {
+      // not a module or function level block
+    } else if (inMod && block == inMod->block) {
+      moduleBlock = true;
+    } else if (inFn != NULL) {
+      INT_ASSERT(block->parentSymbol == inFn ||
+                 isArgSymbol(block->parentSymbol) ||
+                 isShadowVarSymbol(block->parentSymbol));
+      fnBlock = true;
+      BlockStmt* inFnInstantiationPoint = inFn->instantiationPoint();
+      if (inFnInstantiationPoint && !inFnInstantiationPoint->parentSymbol) {
+        INT_FATAL(inFn, "instantiation point not in tree\n"
+                        "try --break-on-remove-id %i and consider making\n"
+                        "that block scopeless",
+                        inFnInstantiationPoint->id);
+      }
+      if (inFnInstantiationPoint && inFnInstantiationPoint->parentSymbol)
+        instantiationPt = inFnInstantiationPoint;
+    }
+
+    if (call->id == breakOnResolveID) {
+      if (moduleBlock)
+        printf("visible methods: block %i  module %s  %s\n",
+               block->id, inMod->name, debugLoc(block));
+      else if (fnBlock)
+        printf("visible methods: block %i  fn %s  %s\n",
+               block->id, inFn->name, debugLoc(block));
+      else
+        printf("visible methods: block %i  %s\n",
+               block->id, debugLoc(block));
+
+      if (instantiationPt) {
+        printf("  instantiated from block %i  %s\n",
+               instantiationPt->id, debugLoc(instantiationPt));
+      }
+    }
+
+    // The following statement causes this to apply to all blocks,
+    // and not just module or function blocks.
+    //
+    // This is because e.g. in associative.chpl primer, instantiation occurs in
+    // a block that isn't a fn or module block.
+    visited.insert(block);
+
+    if (VisibleFunctionBlock* vfb = visibleFunctionMap.get(block)) {
+      // the block defines functions
+
+      if (Vec<FnSymbol*>* fns = vfb->visibleFunctions.get(name)) {
+        forv_Vec(FnSymbol, fn, *fns) {
+          // When private methods and fields are supported, we'll need to extend
+          // this
+          visibleFns.add(fn);
+        }
+      }
+    }
+
+    if (block->useList != NULL) {
+      // the block uses other modules
+      for_actuals(expr, block->useList) {
+        SymExpr* se = NULL;
+        if (UseStmt* use = toUseStmt(expr)) {
+          se = toSymExpr(use->src);
+        } else if (ImportStmt* import = toImportStmt(expr)) {
+          se = toSymExpr(import->src);
+        } else {
+          INT_FATAL("bad expr in useList, expected ImportStmt or UseStmt");
+        }
+        // Intentionally ignore use/import privacy and limitations
+        // Methods, fields, and special type support functions cannot be
+        // re-enabled via only lists (or doing so is not easy for the user).
+
+        // A use statement could be of an enum instead of a module, but only
+        // modules can define functions.
+        if (ModuleSymbol* mod = toModuleSymbol(se->symbol())) {
+          bool isVisible;
+
+          if (mod->hasFlag(FLAG_PRIVATE)) {
+            // Get potential scope pair.
+            std::pair<BlockStmt*, BlockStmt*> curPair =
+              std::make_pair(getVisibilityScope(call),
+                             mod->block);
+            // See if it's already in the map
+            std::map<std::pair<BlockStmt*, BlockStmt*>, bool>::iterator it =
+              scopeIsVisForMethods.find(curPair);
+            // If not, determine and record the result, otherwise use the cached
+            // version.
+            if (it == scopeIsVisForMethods.end()) {
+              isVisible = mod->isVisible(call);
+              scopeIsVisForMethods[curPair] = isVisible;
+            } else {
+              isVisible = it->second;
+            }
+          } else {
+            isVisible = true;
+          }
+
+          if (isVisible) {
+            getVisibleMethods(name, call, mod->block, visited, visibleFns);
+          }
+        }
+      }
+    }
+
+    if (block != rootModule->block) {
+      BlockStmt* next  = getVisibilityScope(block);
+
+      ModuleSymbol* blockMod = block->getModule();
+      ModuleSymbol* nextMod = next->getModule();
+      if (blockMod != nextMod && nextMod != theProgram && nextMod != rootModule) {
+        next = standardModule->block;
+      }
+
+      // Recurse in the enclosing block
+      getVisibleMethods(name, call, next, visited, visibleFns);
+
+      if (instantiationPt != NULL) {
+        // Also look at the instantiation point
+        getVisibleMethods(name, call, instantiationPt, visited, visibleFns);
+      }
+    }
+
+  }
+}
+
 
 /************************************* | **************************************
 *                                                                             *
@@ -273,55 +472,83 @@ static void getVisibleFunctions(const char*           name,
     if (block->useList != NULL) {
       // the block uses other modules
       for_actuals(expr, block->useList) {
-        UseStmt* use = toUseStmt(expr);
+        if (UseStmt* use = toUseStmt(expr)) {
+          // Only traverse private use statements if we are in the scope that
+          // defines them
+          // If we're not already in a use chain, by definition we can see
+          // private uses.  If we're in a use chain, assume that private uses
+          // are not available to us
+          if (!inUseChain || !use->isPrivate) {
+            if (use->skipSymbolSearch(name) == false) {
+              SymExpr* se = toSymExpr(use->src);
 
-        INT_ASSERT(use);
+              INT_ASSERT(se);
 
-        // Only traverse private use statements if we are in the scope that
-        // defines them
-        // If we're not already in a use chain, by definition we can see private
-        // uses.  If we're in a use chain, assume that private uses are not
-        // available to us
-        if (!inUseChain || !use->isPrivate) {
+              if (ModuleSymbol* mod = toModuleSymbol(se->symbol())) {
+                // The use statement could be of an enum instead of a module,
+                // but only modules can define functions.
 
-          bool isMethodCall = false;
-          if (call->numActuals() >= 2 &&
-              call->get(1)->typeInfo() == dtMethodToken)
-            isMethodCall = true;
+                if (mod->isVisible(call) == true) {
+                  if (use->isARenamedSym(name) == true) {
+                    getVisibleFunctions(use->getRenamedSym(name),
+                                        call,
+                                        mod->block,
+                                        visited,
+                                        visibleFns,
+                                        true);
+                  } else {
+                    getVisibleFunctions(name,
+                                        call,
+                                        mod->block,
+                                        visited,
+                                        visibleFns, true);
+                  }
+                }
+              }
+            }
+          }
+        } else if (ImportStmt* import = toImportStmt(expr)) {
+          // Only traverse private import statements if we are in the scope
+          // that defines them
+          // If we're not already in a use chain, by definition we can see
+          // private import.  If we're in a use chain, assume that private
+          // imports are not available to us
+          if (!inUseChain || !import->isPrivate) {
+            // Not all import statements define symbols for unqualified access,
+            // traverse into those that do when the name we're seeking is
+            // specified
+            if (import->skipSymbolSearch(name) == false) {
+              SymExpr* se = toSymExpr(import->src);
 
-          if (use->skipSymbolSearch(name, isMethodCall) == false) {
-            SymExpr* se = toSymExpr(use->src);
-
-            INT_ASSERT(se);
-
-            if (ModuleSymbol* mod = toModuleSymbol(se->symbol())) {
-              // The use statement could be of an enum instead of a module,
-              // but only modules can define functions.
-
+              INT_ASSERT(se);
+              ModuleSymbol* mod = toModuleSymbol(se->symbol());
+              INT_ASSERT(mod);
               if (mod->isVisible(call) == true) {
-                if (use->isARename(name) == true) {
-                  getVisibleFunctions(use->getRename(name),
-                                      call,
-                                      mod->block,
-                                      visited,
-                                      visibleFns,
-                                      true);
+                if (import->isARenamedSym(name) == true) {
+                  getVisibleFunctions(import->getRenamedSym(name), call,
+                                      mod->block, visited, visibleFns, true);
                 } else {
-                  getVisibleFunctions(name,
-                                      call,
-                                      mod->block,
-                                      visited,
+                  getVisibleFunctions(name, call, mod->block, visited,
                                       visibleFns, true);
                 }
               }
             }
           }
+
+        } else {
+          INT_FATAL("Expected ImportStmt or UseStmt");
         }
       }
     }
 
     if (block != rootModule->block) {
       BlockStmt* next  = getVisibilityScope(block);
+
+      ModuleSymbol* blockMod = block->getModule();
+      ModuleSymbol* nextMod = next->getModule();
+      if (blockMod != nextMod && nextMod != theProgram && nextMod != rootModule) {
+        next = standardModule->block;
+      }
 
       // Recurse in the enclosing block
       getVisibleFunctions(name, call, next, visited, visibleFns, inUseChain);
@@ -360,47 +587,66 @@ static void getVisibleFunctions(const char*           name,
     if (block->useList != NULL) {
       // the block uses other modules
       for_actuals(expr, block->useList) {
-        UseStmt* use = toUseStmt(expr);
+        if (UseStmt* use = toUseStmt(expr)) {
+          // Only traverse private use statements at this point.  Public use
+          // statements will have already been handled the first time this scope
+          // was seen
+          if (use->isPrivate) {
+            if (use->skipSymbolSearch(name) == false) {
+              SymExpr* se = toSymExpr(use->src);
 
-        INT_ASSERT(use);
+              INT_ASSERT(se);
 
-        // Only traverse private use statements at this point.  Public use
-        // statements will have already been handled the first time this scope
-        // was seen
-        if (use->isPrivate) {
+              if (ModuleSymbol* mod = toModuleSymbol(se->symbol())) {
+                // The use statement could be of an enum instead of a module,
+                // but only modules can define functions.
 
-          bool isMethodCall = false;
-          if (call->numActuals() >= 2 &&
-              call->get(1)->typeInfo() == dtMethodToken)
-            isMethodCall = true;
+                if (mod->isVisible(call) == true) {
+                  if (use->isARenamedSym(name) == true) {
+                    getVisibleFunctions(use->getRenamedSym(name),
+                                        call,
+                                        mod->block,
+                                        visited,
+                                        visibleFns,
+                                        true);
+                  } else {
+                    getVisibleFunctions(name,
+                                        call,
+                                        mod->block,
+                                        visited,
+                                        visibleFns, true);
+                  }
+                }
+              }
+            }
+          }
+        } else if (ImportStmt* import = toImportStmt(expr)) {
+          // Only traverse private import statements at this point.  Public
+          // import statements will have already been handled the first time
+          // this scope was seen
+          if (import->isPrivate) {
+            // Not all import statements define symbols for unqualified access,
+            // traverse into those that do when the name we're seeking is
+            // specified
+            if (import->skipSymbolSearch(name) == false) {
+              SymExpr* se = toSymExpr(import->src);
 
-          if (use->skipSymbolSearch(name, isMethodCall) == false) {
-            SymExpr* se = toSymExpr(use->src);
-
-            INT_ASSERT(se);
-
-            if (ModuleSymbol* mod = toModuleSymbol(se->symbol())) {
-              // The use statement could be of an enum instead of a module,
-              // but only modules can define functions.
-
+              INT_ASSERT(se);
+              ModuleSymbol* mod = toModuleSymbol(se->symbol());
+              INT_ASSERT(mod);
               if (mod->isVisible(call) == true) {
-                if (use->isARename(name) == true) {
-                  getVisibleFunctions(use->getRename(name),
-                                      call,
-                                      mod->block,
-                                      visited,
-                                      visibleFns,
-                                      true);
+                if (import->isARenamedSym(name) == true) {
+                  getVisibleFunctions(import->getRenamedSym(name), call,
+                                      mod->block, visited, visibleFns, true);
                 } else {
-                  getVisibleFunctions(name,
-                                      call,
-                                      mod->block,
-                                      visited,
+                  getVisibleFunctions(name, call, mod->block, visited,
                                       visibleFns, true);
                 }
               }
             }
           }
+        } else {
+          INT_FATAL("Expected ImportStmt or UseStmt");
         }
       }
     }
@@ -409,6 +655,12 @@ static void getVisibleFunctions(const char*           name,
     // uses that were skipped.
     if (block != rootModule->block) {
       BlockStmt* next  = getVisibilityScope(block);
+
+      ModuleSymbol* blockMod = block->getModule();
+      ModuleSymbol* nextMod = next->getModule();
+      if (blockMod != nextMod && nextMod != theProgram && nextMod != rootModule) {
+        next = standardModule->block;
+      }
 
       // Recurse in the enclosing block
       getVisibleFunctions(name, call, next, visited, visibleFns, inUseChain);

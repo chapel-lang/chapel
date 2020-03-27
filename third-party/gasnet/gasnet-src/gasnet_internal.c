@@ -156,10 +156,8 @@ gasneti_TM_t gasneti_thing_that_goes_thunk_in_the_dark = NULL;
   gasneti_progressfn_t gasneti_debug_progressfn_counted = gasneti_disabled_progressfn;
 #endif
 
-#ifdef _GASNETI_SEGINFO_DEFAULT
-  gasnet_seginfo_t *gasneti_seginfo = NULL;
-  gasnet_seginfo_t *gasneti_seginfo_aux = NULL;
-#endif
+gasnet_seginfo_t *gasneti_seginfo = NULL;
+gasnet_seginfo_t *gasneti_seginfo_aux = NULL;
 
 /* ------------------------------------------------------------------------------------ */
 /* conduit-independent sanity checks */
@@ -422,10 +420,12 @@ gex_Client_t gasneti_export_client(gasneti_Client_t _real_client) {
 gasneti_Client_t gasneti_alloc_client(
                        const char *name,
                        gex_Flags_t flags,
-                       size_t alloc_size)
+                       size_t requested_sz)
 {
-  gasneti_Client_t client = gasneti_malloc(alloc_size ? alloc_size : sizeof(*client));
-  if (alloc_size) gasneti_assert_uint(alloc_size ,>=, sizeof(*client));
+  gasneti_Client_t client;
+  if (requested_sz) gasneti_assert_uint(requested_sz ,>=, sizeof(*client));
+  size_t alloc_size = requested_sz ? requested_sz : sizeof(*client);
+  client = gasneti_malloc(alloc_size);
   GASNETI_INIT_MAGIC(client, GASNETI_CLIENT_MAGIC);
   client->_tm0 = NULL;
   client->_name = gasneti_strdup(name);
@@ -433,6 +433,8 @@ gasneti_Client_t gasneti_alloc_client(
   client->_flags = flags;
 #ifdef GASNETI_CLIENT_ALLOC_EXTRA
   GASNETI_CLIENT_ALLOC_EXTRA(client);
+#else
+  if (requested_sz) memset(client + 1, 0, alloc_size - sizeof(*client));
 #endif
   return client;
 }
@@ -471,10 +473,12 @@ gasneti_Segment_t gasneti_alloc_segment(
                        void *addr,
                        uintptr_t size,
                        gex_Flags_t flags,
-                       size_t alloc_size)
+                       size_t requested_sz)
 {
-  gasneti_Segment_t segment = gasneti_malloc(alloc_size ? alloc_size : sizeof(*segment));
-  if (alloc_size) gasneti_assert_uint(alloc_size ,>=, sizeof(*segment));
+  gasneti_Segment_t segment;
+  if (requested_sz) gasneti_assert_uint(requested_sz ,>=, sizeof(*segment));
+  size_t alloc_size = requested_sz ? requested_sz : sizeof(*segment);
+  segment = gasneti_malloc(alloc_size);
   GASNETI_INIT_MAGIC(segment, GASNETI_SEGMENT_MAGIC);
   segment->_client = client;
   segment->_cdata = NULL;
@@ -484,6 +488,8 @@ gasneti_Segment_t gasneti_alloc_segment(
   segment->_size = size;
 #ifdef GASNETI_SEGMENT_ALLOC_EXTRA
   GASNETI_SEGMENT_ALLOC_EXTRA(segment);
+#else
+  if (requested_sz) memset(segment + 1, 0, alloc_size - sizeof(*segment));
 #endif
   return segment;
 }
@@ -519,10 +525,12 @@ gex_EP_t gasneti_export_ep(gasneti_EP_t _real_ep) {
 extern gasneti_EP_t gasneti_alloc_ep(
                        gasneti_Client_t client,
                        gex_Flags_t flags,
-                       size_t alloc_size)
+                       size_t requested_sz)
 {
-  gasneti_EP_t endpoint = gasneti_malloc(alloc_size ? alloc_size : sizeof(*endpoint));
-  if (alloc_size) gasneti_assert_uint(alloc_size ,>=, sizeof(*endpoint));
+  gasneti_EP_t endpoint;
+  if (requested_sz) gasneti_assert_uint(requested_sz ,>=, sizeof(*endpoint));
+  size_t alloc_size = requested_sz ? requested_sz : sizeof(*endpoint);
+  endpoint = gasneti_malloc(alloc_size);
   GASNETI_INIT_MAGIC(endpoint, GASNETI_EP_MAGIC);
   endpoint->_client = client;
   endpoint->_cdata = NULL;
@@ -531,6 +539,8 @@ extern gasneti_EP_t gasneti_alloc_ep(
   gasneti_amtbl_init(endpoint->_amtbl);
 #ifdef GASNETI_EP_ALLOC_EXTRA
   GASNETI_EP_ALLOC_EXTRA(endpoint);
+#else
+  if (requested_sz) memset(endpoint + 1, 0, alloc_size - sizeof(*endpoint));
 #endif
   return endpoint;
 }
@@ -593,6 +603,8 @@ extern gasneti_TM_t gasneti_alloc_tm(
   tm->_coll_team = NULL;
 #ifdef GASNETI_TM_ALLOC_EXTRA
   GASNETI_TM_ALLOC_EXTRA(tm);
+#else
+  if (requested_sz) memset(tm + 1, 0, (actual_sz - disalign) - sizeof(*tm));
 #endif
   
   if (is_tm0) {
@@ -894,7 +906,7 @@ extern size_t gasneti_decodestr(char *dst, const char *src) {
   #undef IS_HEX_DIGIT
 }
 
-static const char *gasneti_decode_envval(const char *val) {
+extern const char *gasneti_decode_envval(const char *val) {
   static struct _gasneti_envtable_S {
     const char *pre;
     char *post;
@@ -939,15 +951,14 @@ static const char *gasneti_decode_envval(const char *val) {
   }
   return val;
 }
-/* expose environment decode to external packages in case we ever need it */
-extern const char * (*gasnett_decode_envval_fn)(const char *);
-const char * (*gasnett_decode_envval_fn)(const char *) = &gasneti_decode_envval;
 
-/* expression that defines whether the given process should report to the console
+/* gasneti_verboseenv_fn returns an expression that defines whether the given process should report to the console
    on env queries - needs to work before gasnet_init
    1 = yes, 0 = no, -1 = not yet / don't know
  */
+#ifndef GASNETI_ENV_OUTPUT_NODE
 #define GASNETI_ENV_OUTPUT_NODE()  (gasneti_mynode == 0)
+#endif
 extern int _gasneti_verboseenv_fn(void) {
   static int verboseenv = -1;
   if (verboseenv == -1) {
@@ -962,14 +973,14 @@ extern int _gasneti_verboseenv_fn(void) {
   } else gasneti_sync_reads();
   return verboseenv;
 }
+extern int (*gasneti_verboseenv_fn)(void);
 int (*gasneti_verboseenv_fn)(void) = &_gasneti_verboseenv_fn;
 
-extern const char * _gasneti_backtraceid_fn(void) {
+extern const char * gasneti_backtraceid(void) {
   static char myid[255];
   sprintf(myid, "[%i] ", (int)gasneti_mynode);
   return myid;
 }
-const char *(*gasneti_backtraceid_fn)(void) = &_gasneti_backtraceid_fn;
 
 extern void gasneti_decode_args(int *argc, char ***argv) {
   static int firsttime = 1;
@@ -1024,9 +1035,7 @@ extern void gasneti_propagate_env_helper(const char *environ, const char * keyna
       char *var = gasneti_strdup(p);
       char *val = strchr(var, '=');
       *(val++) = '\0';
-      if (gasnett_decode_envval_fn) {
-        val = (char *)((*gasnett_decode_envval_fn)(val));
-      }
+      val = (char *)gasneti_decode_envval(val);
       gasnett_setenv(var, val);
       GASNETI_TRACE_PRINTF(I,("gasneti_propagate_env(%s) => '%s'", var, val));
       gasneti_free(var);
@@ -1164,9 +1173,6 @@ static void gasneti_check_portable_conduit(void) { /* check for portable conduit
         const char *desc;
         int hwid;
       } known_devs[] = {
-      #if PLATFORM_OS_BGQ
-        { "/dont_probe_an_io_node", S_IFDIR, "", 0 }
-      #else
         #if PLATFORM_OS_LINUX && PLATFORM_ARCH_IA64 && GASNET_SEQ
           { "/dev/hw/cpunum",      S_IFDIR, "SGI Altix", 0 },
           { "/dev/xpmem",          S_IFCHR, "SGI Altix", 0 },
@@ -1178,7 +1184,6 @@ static void gasneti_check_portable_conduit(void) { /* check for portable conduit
           { "/proc/kgnilnd",         S_IFDIR, "Cray Gemini", 6 },
         #endif
         { "/list_terminator", S_IFDIR, "", 9999 }
-      #endif
       };
       int i, lim = sizeof(known_devs)/sizeof(known_devs[0]);
       for (i = 0; i < lim; i++) {
@@ -1195,9 +1200,6 @@ static void gasneti_check_portable_conduit(void) { /* check for portable conduit
       #if PLATFORM_OS_CNL
         if (strlen(natives)) strcat(natives,", ");
         strcat(natives,"Cray Gemini (XE and XK) or Aries (XC)");
-      #elif PLATFORM_OS_BGQ
-        if (strlen(natives)) strcat(natives,", ");
-        strcat(natives,"IBM PAMI (BG/Q)");
       #endif
       if (natives[0]) {
         sprintf(reason, "WARNING: This system appears to contain recognized network hardware: %s\n"
@@ -1370,6 +1372,33 @@ void gasneti_nodemap_trivial(void) {
   for (i = 0; i < gasneti_nodes; ++i) gasneti_nodemap[i] = i;
 }
 
+// gasneti_hosthash(): 64-bit hash of hostname
+//
+// NOTE: gasneti_checksum() is not suitable
+// e.g. "4001.0004" and "1001.0001" hash the same, and when
+// we fold down to 32-bits the problem would get even worse.
+// At 32-bits the cancellation is at period 4, so that names
+// "c03-00", "c13-01" and "c23-02" share the same hash, as
+// would the pair "172.16.0.6" and "172.18.0.8".
+extern uint64_t gasneti_hosthash(void) {
+  const char *myname = gasneti_gethostname();
+  const uint8_t *buf = (uint8_t *)myname;
+  size_t len = strlen(myname);
+  uint64_t csum = 0;
+  for (int i=0;i<len;i++) {
+    uint8_t c = *(buf++);
+    /* The "c = ..." squeezes ASCII down to 6 bits, while encoding
+     * all chars valid in hostnames and IP addresses (IPV4 and IPV6).
+     * A unique value is assigned to each of the digits, the lower
+     * case letters, '-', '.' and ':'.  The upper case letters map
+     * to the same values as the corresponding lower-case.
+     */
+    c = ((c & 0x40) >> 1) | (c & 0x1f);
+    csum = ((csum << 6) | ((csum >> 58) & 0x3F)) ^ c;
+  }
+  return csum;
+}
+
 /* Wrapper around gethostid() */
 extern uint32_t gasneti_gethostid(void) {
     static uint32_t myid = 0;
@@ -1395,29 +1424,7 @@ extern uint32_t gasneti_gethostid(void) {
           || (myid == 0x0000017f)
           || (myid == 0x0001007f)
           || (myid == 0x0100007f)) {
-        /* NOTE: gasneti_checksum() is too weak
-         * e.g. "4001.0004" and "1001.0001" hash the same, and when
-         * we fold down to 32-bits the problem would get even worse.
-         * At 32-bits the cancellation is at period 4, so that names
-         * "c03-00", "c13-01" and "c23-02" share the same hash, as
-         * would the pair "172.16.0.6" and "172.18.0.8".
-         */
-        const char *myname = gasneti_gethostname();
-        const uint8_t *buf = (uint8_t *)myname;
-        size_t len = strlen(myname);
-        uint64_t csum = 0;
-        int i;
-        for (i=0;i<len;i++) {
-          uint8_t c = *(buf++);
-          /* The "c = ..." squeezes ASCII down to 6 bits, while encoding
-           * all chars valid in hostnames and IP addresses (IPV4 and IPV6).
-           * A unique value is assigned to each of the digits, the lower
-           * case letters, '-', '.' and ':'.  The upper case letters map
-           * to the same values as the corresponding lower-case.
-           */
-          c = ((c & 0x40) >> 1) | (c & 0x1f);
-          csum = ((csum << 6) | ((csum >> 58) & 0x3F)) ^ c;
-        }
+        uint64_t csum = gasneti_hosthash();
         myid = GASNETI_HIWORD(csum) ^ GASNETI_LOWORD(csum);
       }
     }
@@ -1429,39 +1436,7 @@ extern uint32_t gasneti_gethostid(void) {
  * Used when no conduit-specific IDs are provided.
  */
 static void gasneti_nodemap_dflt(gasneti_bootstrapExchangefn_t exchangefn) {
-#if PLATFORM_OS_BGQ && GASNETI_HAVE_BGQ_INLINES
-  #if 0 /* "Clean" but not usable in general due to (non)inlined implementation */
-    uint64_t count, size = gasneti_nodes * sizeof(BG_CoordinateMapping_t);
-    BG_CoordinateMapping_t *allids = gasneti_malloc(size);
-    int i;
-
-    gasneti_assert_zeroret(Kernel_RanksToCoords(size, allids, &count));
-    gasneti_assert(count == gasneti_nodes);
-
-    /* Zero out the fields we don't want to have significance and then comparison */
-    for (i = 0; i < gasneti_nodes; ++i) {
-      allids[i].reserved = allids[i].t = 0;
-    }
-    gasneti_nodemap_helper(allids, sizeof(BG_CoordinateMapping_t), sizeof(BG_CoordinateMapping_t));
-
-    gasneti_free(allids);
-  #else /* Same as above but w/o the candy-coating provided by location.h */
-    uint64_t count, size = gasneti_nodes * sizeof(uint32_t);
-    uint32_t *allids = gasneti_malloc(size);
-    int i;
-
-    gasneti_assert_zeroret(CNK_SPI_SYSCALL_3(RANKS2COORDS, size, allids, &count));
-    gasneti_assert_uint(count ,==, gasneti_nodes);
-
-    /* Zero out the fields we don't want to have significance and then comparison */
-    for (i = 0; i < gasneti_nodes; ++i) {
-      allids[i] &= 0xbfffffc0;
-    }
-    gasneti_nodemap_helper(allids, sizeof(uint32_t), sizeof(uint32_t));
-
-    gasneti_free(allids);
-  #endif
-#elif PLATFORM_OS_BGQ || !HAVE_GETHOSTID
+#if !HAVE_GETHOSTID
     /* Nodes are either (at least effectively) single process,
      * or we don't have a usable gethostid().  So, build a trivial nodemap. */
     gasneti_nodemap_trivial();
@@ -1526,18 +1501,6 @@ extern void gasneti_nodemapParse(void) {
   /* Check for user-imposed limit: 0 (or negative) means no limit */
 #if GASNET_PSHM
   limit = gasneti_getenv_int_withdefault("GASNET_SUPERNODE_MAXSIZE", 0, 0);
- #ifdef GASNETI_PSHM_GHEAP
-  if (limit != 1) {
-    char *envval = getenv("BG_MAPCOMMONHEAP"); /* Yes, plain getenv is intended here */
-    if (!envval || atoi(envval) != 1) {
-      if (!gasneti_mynode) {
-        fprintf(stderr, "WARNING: BG_MAPCOMMONHEAP is not '1' - disabing PSHM-over-gheap.\n");
-        fflush(stderr);
-      }
-      limit = 1;
-    }
-  }
- #endif
  #if GASNET_CONDUIT_SMP
   if (limit && !gasneti_mynode) {
     fprintf(stderr, "WARNING: ignoring GASNET_SUPERNODE_MAXSIZE for smp-conduit with PSHM.\n");
@@ -1645,16 +1608,27 @@ extern void gasneti_nodemapParse(void) {
  *     This results in the trivial [0,1,2,...] nodemap.
  *     The 'sz' and 'stride' arguments are unused.
  *   Case 4: exchangefn != NULL  and  ids != NULL
- *     This case is not supported.
+ *     The conduit has provided an exchange function and a *local* ID:
+ *       'ids' is address of the local ID
+ *       'sz' is length of an ID in bytes
+ *     The 'stride' argument is unused.
  */
 extern void gasneti_nodemapInit(gasneti_bootstrapExchangefn_t exchangefn,
                                 const void *ids, size_t sz, size_t stride) {
   gasneti_nodemap = gasneti_malloc(gasneti_nodes * sizeof(gex_Rank_t));
 
   if (ids) {
-    /* Case 1: conduit-provided vector of IDs */
-    gasneti_assert(!exchangefn); /* Prohibit 'Case 4' */
+    /* Cases 1 or 4: conduit-provided vector of all IDs or a single local ID*/
+    void *tmp = NULL;
+    if (exchangefn) {
+      // Perform exchange for 'Case 4'
+      tmp = gasneti_malloc(gasneti_nodes * sz);
+      (*exchangefn)((void*)ids, sz, tmp);
+      ids = tmp;
+      stride = sz;
+    }
     gasneti_nodemap_helper(ids, sz, stride);
+    gasneti_free(tmp);
   } else if (exchangefn) {
     /* Case 2: conduit-provided exchange fn, platform-default IDs */
     gasneti_nodemap_dflt(exchangefn);
@@ -2067,7 +2041,9 @@ extern gasneti_spawnerfn_t const *gasneti_spawnerInit(int *argc_p, char ***argv_
         (beginpost != GASNETI_MEM_BEGINPOST || endpost != GASNETI_MEM_ENDPOST)) {
       const char *diagnosis = "a bad pointer or local heap corruption";
       #if !GASNET_SEGMENT_EVERYTHING
-        if (gasneti_attach_done && gasneti_in_segment(NULL/*tm*/,gasneti_mynode,ptr,1))
+        // TODO-EX: multi-segment equivalent?
+        gasneti_EP_t i_ep = gasneti_import_ep(gasneti_THUNK_EP);
+        if (gasneti_attach_done && gasneti_in_local_segment(i_ep,ptr,1))
           diagnosis = "a bad pointer, referencing the shared segment (outside malloc heap)";
         else 
       #endif

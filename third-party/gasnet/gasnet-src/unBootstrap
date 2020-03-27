@@ -23,13 +23,12 @@ rm -f Makefile.in              \
       mpi-conduit/contrib/Makefile.in   \
       aries-conduit/Makefile.in \
       aries-conduit/contrib/Makefile.in   \
-      pami-conduit/Makefile.in \
-      pami-conduit/contrib/Makefile.in   \
       ofi-conduit/Makefile.in \
       ofi-conduit/contrib/Makefile.in   \
       smp-conduit/Makefile.in  \
       udp-conduit/Makefile.in  \
       ucx-conduit/Makefile.in  \
+      ucx-conduit/contrib/Makefile.in \
       other/Makefile.in        \
       other/ammpi/Makefile.in  \
       other/amudp/Makefile.in  \

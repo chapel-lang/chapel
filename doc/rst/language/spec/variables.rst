@@ -128,10 +128,13 @@ declaration statement.
 If the ``initialization-part`` of a local variable declaration is
 omitted, the compiler will search forward in the function for the
 earliest assignment statement(s) setting that variable that occur before
-the variable is otherwise mentioned. It will search only within block
-declarations ``{ }``, ``try`` blocks, ``try!`` blocks, and conditionals.
-These assignment statements are called applicable assignment statements.
-They perform initialization, not assignment, of that variable.
+the variable is otherwise mentioned. It will consider the variable passed
+to an ``out`` intent argument as an assignment statement for this
+purpose.  It will search only within block declarations ``{ }``, ``try``
+blocks, ``try!`` blocks, and conditionals.  These assignment statements
+and calls to functions with ``out`` intent are called applicable
+assignment statements.  They perform initialization, not assignment, of
+that variable.
 
    *Example (simple-split-init.chpl)*
 
@@ -168,9 +171,8 @@ They perform initialization, not assignment, of that variable.
    .. BLOCK-test-chapeloutput
 
       no-split-init.chpl:1: In function 'main':
-      no-split-init.chpl:2: error: 'x' cannot be default initialized
-      no-split-init.chpl:3: note: 'x' is used here before being initialized
-      no-split-init.chpl:2: error: Variable 'x' is not initialized and has no type
+      no-split-init.chpl:2: error: variable 'x' is not initialized and has no type
+      no-split-init.chpl:3: note: 'x' use here prevents split-init from establishing the type
 
 
    *Example (split-cond-blocks-init.chpl)*
@@ -199,10 +201,31 @@ They perform initialization, not assignment, of that variable.
 
       4
 
+   A function call passing a variable to an ``out`` intent serves as an
+   applicable assignment statement, provided that the variable was
+   declared with a type. For example:
+
+   *Example (split-init-out.chpl)*
+
+   .. code-block:: chapel
+
+      proc setArgToFive(out arg: int) {
+        arg = 5;
+      }
+      proc main() {
+        var x:int;
+        setArgToFive(x); // initializes x
+        writeln(x);
+      }
+
+   .. BLOCK-test-chapeloutput
+
+      5
+
+
 Split initialization does not apply:
 
- * when the variable is a module-level variable, fields, config variable,
-   or ``extern`` variable.
+ * when the variable is a field, config variable, or ``extern`` variable.
  * when an applicable assignment statement setting the variable could not
    be identified
  * when the variable is mentioned before the earliest assignment
@@ -574,7 +597,7 @@ Parameter constants and expressions cannot be aliased.
    .. code-block:: chapel
 
       var myInt = 51;
-      ref refInt = myInt;                   // alias of a local or global variable
+      ref refInt = myInt;                   // alias of the previous variable
       myInt = 62;
       writeln("refInt = ", refInt);
       refInt = 73;

@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -43,6 +44,7 @@ class UnresolvedSymExpr;
 class LoopExpr;
 
 class UseStmt;
+class ImportStmt;
 class BlockStmt;
 class ForallStmt;
 class WhileDoStmt;
@@ -148,6 +150,8 @@ public:
   // The sub-classes of Stmt
   //
   virtual void   visitUseStmt        (UseStmt*           node) = 0;
+
+  virtual void   visitImportStmt     (ImportStmt*        node) = 0;
 
   virtual bool   enterBlockStmt      (BlockStmt*         node) = 0;
   virtual void   exitBlockStmt       (BlockStmt*         node) = 0;

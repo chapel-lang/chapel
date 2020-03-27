@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -25,6 +26,7 @@
 #include "driver.h"
 #include "expr.h"
 #include "files.h"
+#include "ImportStmt.h"
 #include "LayeredValueTable.h"
 #include "llvmDebug.h"
 #include "misc.h"
@@ -87,6 +89,17 @@ void codegenStmt(Expr* stmt) {
 GenRet UseStmt::codegen() {
   GenRet ret;
   INT_FATAL(this, "UseStmt::codegen not implemented");
+  return ret;
+}
+
+/******************************** | *********************************
+*                                                                   *
+*                                                                   *
+********************************* | ********************************/
+
+GenRet ImportStmt::codegen() {
+  GenRet ret;
+  INT_FATAL(this, "ImportStmt::codegen not implemented");
   return ret;
 }
 

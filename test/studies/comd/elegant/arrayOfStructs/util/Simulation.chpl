@@ -37,6 +37,11 @@ record Box {
   }
 }
 
+proc Box.init=(const ref other: Box) {
+  this.count = other.count;
+  this.atoms = other.atoms;
+}
+
 proc =(ref A : Box, B : Box) {
   A.count = B.count;
   if A.count > 0 then

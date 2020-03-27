@@ -53,10 +53,12 @@ proc testArrays() {
   var x = makeArr(-1);
   writeln(x);
 
-  writeln("y (assignment example)");
-  var y:[1..2] R;
-  y; y = makeArr(-2);
-  writeln(y);
+  {
+    writeln("y (assignment example)");
+    var y:[1..2] R;
+    y; y = makeArr(-2);
+    writeln(y);
+  }
 
   {
     writeln("yes1");

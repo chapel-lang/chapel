@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -85,7 +86,7 @@ proc makeTargetFiles(binLoc: string, projectHome: string) {
 
 proc stripExt(toStrip: string, ext: string) : string {
   if toStrip.endsWith(ext) {
-    var stripped = toStrip[..toStrip.size - ext.length];
+    var stripped = toStrip[..toStrip.size - ext.size];
     return stripped;
   }
   else {
@@ -301,6 +302,12 @@ record VersionInfo {
   }
 }
 
+proc =(ref lhs:VersionInfo, const ref rhs:VersionInfo) {
+  lhs.major = rhs.major;
+  lhs.minor = rhs.minor;
+  lhs.bug   = rhs.bug;
+}
+
 proc >=(a:VersionInfo, b:VersionInfo) : bool {
   return a.cmp(b) >= 0;
 }
@@ -487,7 +494,7 @@ proc isIdentifier(name:string) {
    TODO custom fields returned */
 iter allFields(tomlTbl: unmanaged Toml) {
   for (k,v) in tomlTbl.A.items() {
-    if v.tag == fieldtag.fieldToml then
+    if v!.tag == fieldtag.fieldToml then
       continue;
     else yield(k,v);
   }

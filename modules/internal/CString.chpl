@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -183,29 +184,32 @@ module CString {
   // primitive c_string functions and methods
   //
 
-  //
-  // Deprecated, no replacement needed.
-  //
-  inline proc ascii(a: c_string) {
-    compilerWarning("calling ascii() on a c_string is deprecated");
-    return __primitive("ascii", a);
+  inline proc c_string.size return __primitive("string_length_bytes", this);
+  inline proc c_string.length {
+    compilerWarning("'c_string.length' is deprecated - " +
+                    "please use 'c_string.size' instead");
+    return this.size;
   }
-
-  inline proc c_string.length return __primitive("string_length_bytes", this);
-  inline proc c_string.size return this.length;
 
   inline proc c_string.substring(i: int)
     return __primitive("string_index", this, i);
 
   inline proc c_string.substring(r: range(?)) {
-    var r2 = r[1..this.length];  // This may warn about ambiguously aligned ranges.
+    var r2 = r[1..this.size];  // This may warn about ambiguously aligned ranges.
     var lo:int = r2.alignedLow, hi:int = r2.alignedHigh;
     return __primitive("string_select", this, lo, hi, r2.stride);
   }
 
   pragma "last resort" // avoids param string to c_string coercion
-  inline proc param c_string.length param
+  inline proc param c_string.length param {
+    compilerWarning("'c_string.length' is deprecated - " +
+                    "please use 'c_string.size' instead");
     return __primitive("string_length_bytes", this);
+  }
+  pragma "last resort" // avoids param string to c_string coercion
+  inline proc param c_string.size param {
+    return __primitive("string_length_bytes", this);
+  }
   pragma "last resort" // avoids param string to c_string coercion
   inline proc _string_contains(param a: c_string, param b: c_string) param
     return __primitive("string_contains", a, b);

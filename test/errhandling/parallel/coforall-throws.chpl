@@ -9,7 +9,9 @@ proc test() {
     writeln("after coforall block");
   } catch errors: TaskErrors {
     for e in errors { 
-      writeln("Caught group error e ", e.message());
+      if e != nil {
+        writeln("Caught group error e ", e!.message());
+      }
     }
   } catch e {
     writeln("Caught other error ", e.message());

@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -25,7 +26,7 @@ Functions related to predefined types.
 
 */
 module Types {
-  private use HaltWrappers only;
+  import HaltWrappers;
 
 pragma "no doc" // joint documentation with the next one
 proc isType(type t) param return true;
@@ -98,7 +99,7 @@ proc isUintType(type t) param return
 
 /* Returns `true` if the type `t` is an `enum` type. */
 proc isEnumType(type t) param {
-  proc isEnumHelp(type t: enumerated) param return true;
+  proc isEnumHelp(type t: enum) param return true;
   proc isEnumHelp(type t) param return false;
   return isEnumHelp(t);
 }
@@ -149,7 +150,7 @@ and this pointer is POD).
 
 c_ptr is a POD type.
 
-Primitive numeric/boolean/enumerated Chapel types are POD types as well.
+Primitive numeric/boolean/enum Chapel types are POD types as well.
  */
 pragma "no doc" // I don't think we want to make this public yet
 proc isPODType(type t) param {
@@ -568,14 +569,7 @@ proc chpl_isSyncSingleAtomic(e: single) param  return true;
 pragma "no doc"
 proc chpl_isSyncSingleAtomic(e)  param where isAtomicType(e.type)  return true;
 
-
-// Is 'sub' a subtype (or equal to) 'super'?
-/* isSubtype Returns `true` if the type `sub` is a subtype of the type `super`. */
-// isSubtype is directly handled by compiler
-
-// Is 'sub' a proper subtype of 'super'?
-// isProperSubtype returns true if so
-// isProperSubtype is directly handled by compiler.
+// isSubtype(), isProperSubtype() are now directly handled by compiler
 
 // Returns true if it is legal to coerce t1 to t2, false otherwise.
 pragma "no doc"
@@ -596,7 +590,6 @@ proc chpl__legalIntCoerce(type t1, type t2) param
   }
 }
 
-
 // Returns the type with which both s and t are compatible
 // That is, both s and t can be coerced to the returned type.
 private proc chpl__commonType(type s, type t) type
@@ -615,6 +608,15 @@ private proc chpl__commonType(type s, type t) type
 
   return s;
 }
+
+/* If the argument is a class type, returns its nilable version like `arg?`.
+   Otherwise returns the argument unchanged. */
+proc toNilableIfClassType(type arg) type {
+  if isNonNilableClassType(arg)   // btw #14920
+  then return arg?;
+  else return arg;
+}
+
 
 //
 // numBits(type) -- returns the number of bits in a type
@@ -750,18 +752,28 @@ proc max(type t) where isComplexType(t) {
 }
 
 pragma "no doc"
-iter chpl_enumerate(type t: enumerated) {
+iter chpl_enumerate(type t: enum) {
   const enumTuple = chpl_enum_enumerate(t);
   for i in 1..enumTuple.size do
     yield enumTuple(i);
 }
 pragma "no doc"
-iter type enumerated.these(){
+iter type enum.these(){
   for i in chpl_enumerate(this) do
     yield i;
 }
 
-private proc chpl_enum_minbits(type t: enumerated) param {
+pragma "no doc"
+proc type enum.first {
+  return chpl__orderToEnum(0, this);
+}
+
+pragma "no doc"
+proc type enum.last {
+  return chpl__orderToEnum(this.size-1, this);
+}
+
+private proc chpl_enum_minbits(type t: enum) param {
   if t.size <= max(uint(8)) then
     return 8;
   if t.size <= max(uint(16)) then
@@ -773,7 +785,7 @@ private proc chpl_enum_minbits(type t: enumerated) param {
 // TODO - maybe this function can be useful for the user, for C interop?
 // If so, give it a different name.
 pragma "no doc"
-proc chpl_enum_mintype(type t: enumerated) type {
+proc chpl_enum_mintype(type t: enum) type {
   return uint(chpl_enum_minbits(t));
 }
 

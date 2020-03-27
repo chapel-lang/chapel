@@ -1,0 +1,2 @@
+out-domain-no-elt.chpl:1: In function 'f':
+out-domain-no-elt.chpl:1: error: 'out' array formals specifying a domain currently require an array element type

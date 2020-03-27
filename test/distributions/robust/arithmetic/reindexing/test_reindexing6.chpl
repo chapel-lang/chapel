@@ -23,10 +23,10 @@ proc foo(TD: domain, A: [TD] int, TA, offset) {
 }
 
 proc dit() {
-  const ReindexSpace4 = {min(int)+s1..#Space4.dim(1).length,
-                         min(int)+s2..#Space4.dim(2).length,
-                         min(int)+s3..#Space4.dim(3).length,
-                         min(int)+s4..#Space4.dim(4).length};
+  const ReindexSpace4 = {min(int)+s1..#Space4.dim(1).size,
+                         min(int)+s2..#Space4.dim(2).size,
+                         min(int)+s3..#Space4.dim(3).size,
+                         min(int)+s4..#Space4.dim(4).size};
   const ReindexDom4D: domain(4) = ReindexSpace4;
   const offset = (MySpace4.dim(1).low-ReindexSpace4.dim(1).low,
                   MySpace4.dim(2).low-ReindexSpace4.dim(2).low,

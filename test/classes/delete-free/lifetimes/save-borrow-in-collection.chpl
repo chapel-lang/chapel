@@ -5,7 +5,7 @@ class MyClass {
   var x:int;
 }
 
-var A:[1..1] borrowed MyClass;
+var A:[1..1] borrowed MyClass?;
 
 proc setA(arg: borrowed MyClass) {
   A[1] = arg;
@@ -45,7 +45,7 @@ proc call_error5(arg: borrowed MyClass) {
   globalB.error5(arg);
 }
 
-var globalA: [1..1] borrowed MyClass;
+var globalA: [1..1] borrowed MyClass?;
 
 proc error6(arg: borrowed MyClass) {
   globalA[1] = arg;

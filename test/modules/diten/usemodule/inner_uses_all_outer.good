@@ -1,3 +1,2 @@
-Here's f!
-3.0 + 4.0i
-Here's g!
+inner_uses_all_outer.chpl:6: In function 'f':
+inner_uses_all_outer.chpl:9: error: 'a' undeclared (first use this function)

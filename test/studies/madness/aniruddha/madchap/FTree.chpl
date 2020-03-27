@@ -57,7 +57,7 @@ var None: [0..-1] real;
 
 // Check if we have None.
 proc isNone(x) {
-    return x.numElements == 0;
+    return x.size == 0;
 }
 
 class LocTree {
@@ -184,10 +184,11 @@ class FTree {
 
         this.order = order;
         this.coeffDom = {0..order-1};
-        this.complete();
 
+        var tree: [LocaleSpace] unmanaged LocTree?;
         coforall loc in Locales do
             on loc do tree[loc.id] = new unmanaged LocTree(coeffDom);
+        this.tree = tree!;
     }
 
     proc deinit() {

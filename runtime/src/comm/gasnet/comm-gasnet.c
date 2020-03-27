@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -151,6 +152,8 @@ void init_done_obj(done_t* done, int target) {
   done->flag = 0;
 }
 
+static inline void am_poll_try(void);
+
 static inline
 void wait_done_obj(done_t* done, chpl_bool do_yield)
 {
@@ -158,7 +161,7 @@ void wait_done_obj(done_t* done, chpl_bool do_yield)
   GASNET_BLOCKUNTIL(done->flag);
 #else
   while (!done->flag) {
-    (void) gasnet_AMPoll();
+    am_poll_try();
     if (do_yield)
       chpl_task_yield();
   }
@@ -720,12 +723,28 @@ int32_t chpl_comm_getMaxThreads(void) {
 static volatile int pollingRunning;
 static volatile int pollingQuit;
 static chpl_bool pollingRequired;
+static atomic_bool pollingLock;
+
+static inline void am_poll_try(void) {
+  // Serialize polling for IBV and Aries. Concurrent polling causes contention
+  // in these configurations. For other configurations that are AM-based
+  // (udp/amudp, mpi/ammpi) serializing can hurt performance.
+#if defined(GASNET_CONDUIT_IBV) || defined(GASNET_CONDUIT_ARIES)
+  if (!atomic_load_explicit_bool(&pollingLock, memory_order_acquire) &&
+      !atomic_exchange_explicit_bool(&pollingLock, true, memory_order_acquire)) {
+    (void) gasnet_AMPoll();
+    atomic_store_explicit_bool(&pollingLock, false, memory_order_release);
+  }
+#else
+    (void) gasnet_AMPoll();
+#endif
+}
 
 static void polling(void* x) {
   pollingRunning = 1;
 
   while (!pollingQuit) {
-    (void) gasnet_AMPoll();
+    am_poll_try();
     chpl_task_yield();
   }
 
@@ -733,6 +752,7 @@ static void polling(void* x) {
 }
 
 static void setup_polling(void) {
+  atomic_init_bool(&pollingLock, false);
 #if defined(GASNET_CONDUIT_IBV)
   pollingRequired = false;
   chpl_env_set("GASNET_RCV_THREAD", "1", 1);
@@ -787,7 +807,7 @@ static void set_num_comm_domains() {
 #if defined(GASNET_CONDUIT_ARIES)
   const int num_cpus = chpl_topo_getNumCPUsPhysical(true) + 1;
   chpl_env_set_uint("GASNET_DOMAIN_COUNT", num_cpus, 0);
-  chpl_env_set("GASNET_AM_DOMAIN_POLL_MASK", "3", 0);
+  chpl_env_set("GASNET_AM_DOMAIN_POLL_MASK", "0", 0);
 
   // GASNET_DOMAIN_COUNT increases the shutdown time. Work around this for now.
   // See https://github.com/chapel-lang/chapel/issues/7251 and
@@ -892,6 +912,13 @@ void chpl_comm_post_mem_init(void) {
 // No support for gdb for now
 //
 int chpl_comm_run_in_gdb(int argc, char* argv[], int gdbArgnum, int* status) {
+  return 0;
+}
+
+//
+// No support for lldb for now
+//
+int chpl_comm_run_in_lldb(int argc, char* argv[], int lldbArgnum, int* status) {
   return 0;
 }
 

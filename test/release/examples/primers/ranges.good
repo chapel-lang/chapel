@@ -1,5 +1,7 @@
 Basic range r
 Range 1..10 = 1, 2, 3, 4, 5, 6, 7, 8, 9, 10
+Open interval range rOpen
+Range 3..9 = 3, 4, 5, 6, 7, 8, 9
 The sum of the values in 1..10 is 55
 The sum of the values in 1..10 as computed by reduce is also 55
 

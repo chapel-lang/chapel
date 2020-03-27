@@ -1,6 +1,6 @@
   Fetch: <time>.  Build: <time>.  Total: <time>.
 Installing Spack backend ...
-Updating mason-registry
+Updating registry
 Compiling [debug] target: masonLA
 Build Successful
 

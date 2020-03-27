@@ -45,4 +45,18 @@ proc main() throws {
   } catch e: IllegalArgumentError {
     if debug then writeln(e.message());
   }
+
+  try {
+    var c = stream.choice([1,2], replace=false, size=3);
+    writeln('Error: size > arr.size with replace=false did not throw error');
+  } catch e: IllegalArgumentError {
+    if debug then writeln(e.message());
+  }
+
+  try {
+    var c = stream.choice([1,2], replace=false, size={1..4});
+    writeln('Error: (size:domain).size > arr.size with replace=false did not throw error');
+  } catch e: IllegalArgumentError {
+    if debug then writeln(e.message());
+  }
 }

@@ -1,2 +1,4 @@
-()
-()
+constructUnion.chpl:6: error: unresolved call 'IntOrReal.init(i=1)'
+constructUnion.chpl:1: note: this candidate did not match: IntOrReal.init()
+constructUnion.chpl:6: note: because call uses named argument i
+constructUnion.chpl:1: note: but function contains no formal named i

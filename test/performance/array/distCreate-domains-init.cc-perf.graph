@@ -1,5 +1,5 @@
-perfkeys: domInit-GETS:, domDeinit-PUTS:, domDeinit-ONS:, domDeinit-GETS:, domDeinit-PUTS:, domDeinit-ONS:, domDeinit-GETS:, domDeinit-PUTS:, domDeinit-ONS:, domDeinit-GETS:, domDeinit-PUTS:, domDeinit-ONS:
-graphkeys: blockDomInit-GETS:, blockDomDeinit-PUTS:, blockDomDeinit-ONS:, cyclicDomDeinit-GETS:, cyclicDomDeinit-PUTS:, cyclicDomDeinit-ONS:, blockCycDomDeinit-GETS:, blockCycDomDeinit-PUTS:, blockCycDomDeinit-ONS:, stencilDomDeinit-GETS:, stencilDomDeinit-PUTS:, stencilDomDeinit-ONS:
+perfkeys: domInit-GETS:, domInit-PUTS:, domInit-ONS:, domInit-GETS:, domInit-PUTS:, domInit-ONS:, domInit-GETS:, domInit-PUTS:, domInit-ONS:, domInit-GETS:, domInit-PUTS:, domInit-ONS:
+graphkeys: blockDomInit-GETS:, blockDomInit-PUTS:, blockDomInit-ONS:, cyclicDomInit-GETS:, cyclicDomInit-PUTS:, cyclicDomInit-ONS:, blockCycDomInit-GETS:, blockCycDomInit-PUTS:, blockCycDomInit-ONS:, stencilDomInit-GETS:, stencilDomInit-PUTS:, stencilDomInit-ONS:
 repeat-files: distCreate-cc-block.dat, distCreate-cc-cyclic.dat, distCreate-cc-blockCyc.dat, distCreate-cc-stencil.dat
 ylabel: Count
 graphtitle: Creating distributed domains

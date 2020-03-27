@@ -1,0 +1,1 @@
+import-relative-error5.chpl:5: error: 'this.' can only be used as prefix of import

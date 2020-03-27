@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -22,12 +23,14 @@
 #include "astutil.h"
 #include "expr.h"
 #include "files.h"
+#include "ImportStmt.h"
 #include "misc.h"
 #include "passes.h"
 #include "stlUtil.h"
 #include "stringutil.h"
 
 #include "AstVisitor.h"
+#include "ResolveScope.h"
 
 #include <cstring>
 #include <algorithm>
@@ -54,6 +57,171 @@ Stmt::~Stmt() {
 
 bool Stmt::isStmt() const {
   return true;
+}
+
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
+
+VisibilityStmt::VisibilityStmt(AstTag astTag): Stmt(astTag) {
+}
+
+VisibilityStmt::~VisibilityStmt() {
+}
+
+// Specifically for when the module being used or imported is renamed
+bool VisibilityStmt::isARename() const {
+  return modRename[0] != '\0';
+}
+
+const char* VisibilityStmt::getRename() const {
+  return modRename;
+}
+
+bool VisibilityStmt::isARenamedSym(const char* name) const {
+  return renamed.count(name) == 1;
+}
+
+const char* VisibilityStmt::getRenamedSym(const char* name) const {
+  std::map<const char*, const char*>::const_iterator it;
+  const char*                                        retval = NULL;
+
+  it = renamed.find(name);
+
+  if (it != renamed.end()) {
+    retval = it->second;
+  }
+
+  return retval;
+}
+
+//
+// Returns the module symbol if the name provided matches the module imported or
+// used
+//
+Symbol* VisibilityStmt::checkIfModuleNameMatches(const char* name) {
+  if (isARename()) {
+    // Statements that rename the module should only allow us to find the
+    // new name, not the original one.
+    if (name == getRename()) {
+      SymExpr* actualSe = toSymExpr(src);
+      INT_ASSERT(actualSe);
+      // Could be either an enum or a module, but either way we should be able
+      // to find the new name
+      Symbol* actualSym = toSymbol(actualSe->symbol());
+      INT_ASSERT(actualSym);
+      return actualSym;
+    }
+  } else if (SymExpr* se = toSymExpr(src)) {
+    if (ModuleSymbol* modSym = toModuleSymbol(se->symbol())) {
+      if (name == se->symbol()->name) {
+        return modSym;
+      }
+    }
+  } else {
+    // Things like `use M.N.O` (and though we don't support it yet, things like
+    // `import M.N.O`) probably wouldn't reach here because we resolve such
+    // cases element-by-element rather than wholesale.  Nothing else should fall
+    // under this category
+    INT_FATAL("Malformed src");
+  }
+  return NULL;
+}
+
+
+//
+// Extends the scope's block statement to store this node, after replacing the
+// UnresolvedSymExpr we store with the found symbol
+//
+void VisibilityStmt::updateEnclosingBlock(ResolveScope* scope, Symbol* sym) {
+  src->replace(new SymExpr(sym));
+
+  remove();
+  scope->asBlockStmt()->useListAdd(this);
+
+  scope->extend(this);
+}
+
+/************************************* | **************************************
+*                                                                             *
+* Verifies that all the symbols to be renamed in an import or use statement   *
+* refer to symbols that are visible from that module.                         *
+*                                                                             *
+************************************** | *************************************/
+void VisibilityStmt::validateRenamed() {
+  std::map<const char*, const char*>::iterator it;
+
+  BaseAST*            scopeToUse = getSearchScope();
+  const ResolveScope* scope      = ResolveScope::getScopeFor(scopeToUse);
+
+  for (it = renamed.begin(); it != renamed.end(); ++it) {
+    std::vector<Symbol*> symbols;
+
+    scope->getFields(it->second, symbols);
+
+    if (symbols.size() == 0) {
+      SymExpr* se = toSymExpr(src);
+
+      USR_FATAL_CONT(this,
+                     "Bad identifier in rename, no known '%s' in '%s'",
+                     it->second,
+                     se->symbol()->name);
+
+    } else if (symbols.size() == 1) {
+      Symbol* sym = symbols[0];
+
+      if (sym->hasFlag(FLAG_PRIVATE)) {
+        USR_FATAL_CONT(this,
+                       "Bad identifier in rename, '%s' is private",
+                       it->second);
+      }
+
+    } else {
+      INT_ASSERT(false);
+    }
+  }
+}
+
+/************************************* | **************************************
+*                                                                             *
+* Verifies that all the symbols to be renamed in an import or use statement   *
+* are not repeats                                                             *
+*                                                                             *
+************************************** | *************************************/
+void VisibilityStmt::noRepeatsInRenamed() const {
+  std::map<const char*, const char*>::const_iterator it2;
+
+  for (it2 = renamed.begin(); it2 != renamed.end(); ++it2) {
+    std::map<const char*, const char*>::const_iterator next = it2;
+
+    for (++next; next != renamed.end(); ++next) {
+      if (strcmp(it2->second, next->second) == 0) {
+        // Renamed this variable twice.  Probably a mistake on the user's part,
+        // but not a catastrophic one
+        USR_WARN(this, "identifier '%s' is repeated", it2->second);
+      }
+
+      if (strcmp(it2->second, next->first) == 0) {
+        // This name is the old_name in one rename and the new_name in another
+        // Did the user actually want to cut out the middle man?
+        USR_WARN(this, "identifier '%s' is repeated", it2->second);
+        USR_PRINT("Did you mean to rename '%s' to '%s'?",
+                  next->second,
+                  it2->first);
+      }
+
+      if (strcmp(it2->first, next->second) == 0) {
+        // This name is the old_name in one rename and the new_name in another
+        // Did the user actually want to cut out the middle man?
+        USR_WARN(this, "identifier '%s' is repeated", it2->first);
+        USR_PRINT("Did you mean to rename '%s' to '%s'?",
+                  it2->second,
+                  next->first);
+      }
+    }
+  }
 }
 
 /************************************* | **************************************
@@ -456,7 +624,7 @@ BlockStmt::useListAdd(ModuleSymbol* mod, bool privateUse) {
 }
 
 void
-BlockStmt::useListAdd(UseStmt* use) {
+BlockStmt::useListAdd(VisibilityStmt* stmt) {
   if (useList == NULL) {
     useList = new CallExpr(PRIM_USED_MODULES_LIST);
 
@@ -464,7 +632,7 @@ BlockStmt::useListAdd(UseStmt* use) {
       insert_help(useList, this, parentSymbol);
   }
 
-  useList->insertAtTail(use);
+  useList->insertAtTail(stmt);
 }
 
 
@@ -796,6 +964,7 @@ const char* gotoTagToString(GotoTag gotoTag) {
     case GOTO_ITER_END:       return "iter-end";
     case GOTO_ERROR_HANDLING: return "error-handling";
     case GOTO_BREAK_ERROR_HANDLING: return "break-error-handling";
+    case GOTO_ERROR_HANDLING_RETURN: return "error-handling-return";
   }
   INT_FATAL("invalid gotoTag %d", (int)gotoTag);
   return NULL;
@@ -975,7 +1144,7 @@ Expr* GotoStmt::getFirstExpr() {
 }
 
 bool GotoStmt::isGotoReturn() const {
-  return gotoTag == GOTO_RETURN;
+  return gotoTag == GOTO_RETURN || gotoTag == GOTO_ERROR_HANDLING_RETURN;
 }
 
 LabelSymbol* GotoStmt::gotoTarget() const {

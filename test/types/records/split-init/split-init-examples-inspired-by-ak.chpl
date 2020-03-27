@@ -8,13 +8,13 @@ module M {
   }
 
   class Table {
-    var tab: map(string, shared Entry);
+    var tab: map(string, shared Entry?);
 
     proc store(name: string, x: int) {
       if tab.contains(name) {
-        tab[name].x = x;
+        tab[name]!.x = x;
       } else {
-        tab.add(name, new shared Entry(x));
+        tab.add(name, new shared Entry(x)?);
       }
     }
   }
@@ -26,7 +26,7 @@ module M {
     }
 
     ref r = tab[name]; // workaround for an issue solved by 14793
-    return r.borrow();
+    return r!.borrow();
   }
 
   proc Table.tryLookup(name:string): borrowed Entry? {

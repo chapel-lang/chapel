@@ -6,6 +6,7 @@ class myC {
 record myR {
   var c: unmanaged myC;
   proc init() { c = new unmanaged myC(); }
+  proc init=(other: myR) { c = other.c; }
   proc deinit() { delete c; }
 }
 

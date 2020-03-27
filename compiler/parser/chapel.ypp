@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -314,7 +315,8 @@
 %token TDEFER TDELETE TDMAPPED TDO TDOMAIN
 %token TELSE TENUM TEXCEPT TEXPORT TEXTERN
 %token TFALSE TFOR TFORALL TFORWARDING
-%token TIF TIMAG TIN TINDEX TINLINE TINOUT TINT TITER TINITEQUALS
+%token TIF TIMAG TIMPORT TIN TINCLUDE
+%token TINDEX TINLINE TINOUT TINT TITER TINITEQUALS
 %token TLABEL TLAMBDA TLET TLIFETIME TLOCAL TLOCALE
 %token TMINUSMINUS TMODULE
 %token TNEW TNIL TNOINIT TNONE TNOTHING
@@ -370,7 +372,9 @@
 %left TAND
 %left TEQUAL TNOTEQUAL
 %left TLESSEQUAL TGREATEREQUAL TLESS TGREATER
-%left TDOTDOT
+%left TDOTDOT TDOTDOTOPENHIGH
+// These are not currently supported, though we've discussed adding them
+//%left TDOTDOTOPENLOW TDOTDOTOPENBOTH
 %left TPLUS TMINUS
 %left TBOR
 %left TBXOR
@@ -388,7 +392,7 @@
 %left TDOT TLP TRSBR TLCBR
 %nonassoc TPRAGMA
 
-%type <b> access_control use_access_control
+%type <b> access_control use_access_control include_access_control
 %type <b> opt_prototype
 %type <b> opt_throws_error
 
@@ -412,11 +416,12 @@
 
 %type <pmodsymbol> module_decl_start
 %type <pblockstmt> module_decl_stmt
+%type <pblockstmt> include_module_stmt
 
 %type <pblockstmt> block_stmt
 %type <pblockstmt> stmt_ls
 
-%type <pblockstmt> use_stmt require_stmt
+%type <pblockstmt> use_stmt import_stmt require_stmt
 %type <ponlylist>  renames_ls opt_only_ls except_ls
 
 %type <pblockstmt> class_level_stmt_ls
@@ -519,8 +524,10 @@ pragma_ls:
 // %type <pblockstmt> stmt
 stmt:
   module_decl_stmt
+| include_module_stmt
 | block_stmt
 | use_stmt
+| import_stmt
 | require_stmt
 | class_level_stmt
 | assignment_stmt
@@ -590,6 +597,24 @@ access_control:
 opt_prototype:
              { $$ = false; }
 | TPROTOTYPE { $$ = true;  }
+;
+
+include_access_control:
+           { $$ = false; }
+| TPUBLIC  { $$ = false; }
+| TPRIVATE { $$ = true; }
+;
+
+include_module_stmt:
+ TINCLUDE
+  {
+    @1.comment = context->latestComment;
+    context->latestComment = NULL;
+  }
+ include_access_control opt_prototype TMODULE ident_def TSEMI
+ {
+   $$ = buildIncludeModule($6, $3, $4, @1.comment);
+ }
 ;
 
 /* Grouping of statements into blocks.
@@ -665,6 +690,12 @@ use_stmt:
 |use_access_control TUSE expr TAS expr TEXCEPT except_ls TSEMI    { $$ = buildUseStmt($3, $5, $7, true, $1); }
 | use_access_control TUSE expr TONLY opt_only_ls TSEMI    { $$ = buildUseStmt($3, "", $5, false, $1); }
 | use_access_control TUSE expr TAS expr TONLY opt_only_ls TSEMI    { $$ = buildUseStmt($3, $5, $7, false, $1); }
+;
+
+import_stmt:
+  use_access_control TIMPORT expr TSEMI { $$ = buildImportStmt($3, $1); }
+| use_access_control TIMPORT expr TAS ident_use TSEMI { $$ = buildImportStmt($3, $5, $1); }
+| use_access_control TIMPORT expr TDOT TLCBR renames_ls TRCBR { $$ = buildImportStmt($3, $6, $1); }
 ;
 
 require_stmt:
@@ -752,6 +783,7 @@ internal_type_ident_def:
 
 scalar_type:
   TBOOL    { $$ = new SymExpr(dtBools[BOOL_SIZE_DEFAULT]->symbol); }
+| TENUM    { $$ = new SymExpr(dtAnyEnumerated->symbol); }
 | TINT     { $$ = new SymExpr(dtInt[INT_SIZE_DEFAULT]->symbol); }
 | TUINT    { $$ = new SymExpr(dtUInt[INT_SIZE_DEFAULT]->symbol); }
 | TREAL    { $$ = new SymExpr(dtReal[FLOAT_SIZE_DEFAULT]->symbol); }
@@ -1801,8 +1833,6 @@ sub_type_level_expr:
     { $$ = new SymExpr(dtAnyManagementNonNilable->symbol); }
 | TRECORD
     { $$ = new SymExpr(dtAnyRecord->symbol); }
-| TENUM
-    { $$ = new SymExpr(dtAnyEnumerated->symbol); }
 ;
 
 for_expr:
@@ -2003,9 +2033,13 @@ new_expr:
 
   /* handles e.g. new owned(myUnmanaged) */
 | TNEW TOWNED TLP expr TRP
-    { $$ = new CallExpr(PRIM_NEW, new CallExpr(dtOwned->symbol, $4)); }
+    { USR_WARN($4, "the syntax 'new owned(an expression)' is deprecated");
+      USR_PRINT($4, "instead use 'owned.create(an expression)'");
+      $$ = new CallExpr(PRIM_NEW, new CallExpr(dtOwned->symbol, $4)); }
 | TNEW TSHARED TLP expr TRP
-    { $$ = new CallExpr(PRIM_NEW, new CallExpr(dtShared->symbol, $4)); }
+    { USR_WARN($4, "the syntax 'new shared(an expression)' is deprecated");
+      USR_PRINT($4, "instead use 'shared.create(an expression)'");
+      $$ = new CallExpr(PRIM_NEW, new CallExpr(dtShared->symbol, $4)); }
 ;
 
 let_expr:
@@ -2030,13 +2064,30 @@ expr:
 | expr TCOLON expr
     { $$ = createCast($1, $3); }
 | expr TDOTDOT expr
-    { $$ = new CallExpr("chpl_build_bounded_range", $1, $3); }
+    { $$ = buildBoundedRange($1, $3); }
+| expr TDOTDOTOPENHIGH expr
+    { $$ = buildBoundedRange($1, $3, false, true); }
+
+/* The following cases would extend the current '..<' open range
+   interval constructor to also support '<..' and '<..<'.  This
+   concept didn't win enough support to merge as present, but are here
+   in case we change our minds in a future release.
+
+| expr TDOTDOTOPENLOW expr
+    { $$ = buildBoundedRange($1, $3, true, false); }
+| expr TDOTDOTOPENBOTH expr
+    { $$ = buildBoundedRange($1, $3, true, true); }
+| expr TDOTDOTOPENLOW
+    { $$ = buildLowBoundedRange($1, true); }
+*/
 | expr TDOTDOT
-    { $$ = new CallExpr("chpl_build_low_bounded_range", $1); }
+    { $$ = buildLowBoundedRange($1); }
 | TDOTDOT expr
-    { $$ = new CallExpr("chpl_build_high_bounded_range", $2); }
+    { $$ = buildHighBoundedRange($2); }
+| TDOTDOTOPENHIGH expr
+    { $$ = buildHighBoundedRange($2, true); }
 | TDOTDOT
-    { $$ = new CallExpr("chpl_build_unbounded_range"); }
+    { $$ = buildUnboundedRange(); }
 ;
 
 opt_expr:
