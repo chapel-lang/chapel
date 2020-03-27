@@ -63,6 +63,7 @@
 
       coforall loc in Locales { on loc { ... } }
 
+  The default value for a ``locale`` variable is ``Locales[0]``
 
  */
 module ChapelLocale {
@@ -105,19 +106,25 @@ module ChapelLocale {
   enum localeKind { regular, any, nilLocale, dummy, default };
 
   pragma "locale private"
+  pragma "no doc"
   const nilLocale = new locale(localeKind.nilLocale);
   pragma "locale private"
+  pragma "no doc"
   var defaultLocale = new locale(localeKind.default);
 
   // dummyLocale is not locale private. We use it before locales initialized in
   // the first place, so it should stay in the locale that started the
   // execution.
+  pragma "no doc"
   var dummyLocale = new locale(localeKind.dummy);
 
   pragma "always RVF"
   record _locale {
+
+    pragma "no doc"
     var _instance: unmanaged BaseLocale?;
 
+    pragma "no doc"
     inline proc _value {
       return _instance!;
     }
@@ -125,7 +132,7 @@ module ChapelLocale {
     forwarding _value;
 
     // default initializer for the locale record.
-    // TODO: What is the default value for a locale?
+    pragma "no doc"
     proc init() {
       if rootLocaleInitialized {
         this._instance = defaultLocale._instance;
@@ -153,104 +160,34 @@ module ChapelLocale {
         this._instance = nil;
     }
 
+    pragma "no doc"
     proc init=(other: locale) {
       this._instance = other._instance;
     }
 
+    pragma "no doc"
     proc deinit() { }
 
+    /*
+      This is the maximum task concurrency that one can expect to
+      achieve on this locale.  The value is an estimate by the
+      runtime tasking layer.  Typically it is the number of physical
+      processor cores available to the program.  Creating more tasks
+      than this will probably increase walltime rather than decrease
+      it.
+     */
     inline proc maxTaskPar { return this._value.maxTaskPar; }
+
+    /*
+      ``callStackSize`` holds the size of a task stack on a given
+      locale.  Thus, ``here.callStackSize`` is the size of the call
+      stack for any task on the current locale, including the
+      caller.
+    */
     inline proc callStackSize { return this._value.callStackSize; }
 
     // the following are normally taken care of by `forwarding`. However, they
     // don't work if they are called in a promoted expression. See 15148
-    inline proc numPUs(logical: bool = false, accessible: bool = true) {
-      return this._value.numPUs(logical, accessible);
-    }
-
-    inline proc id {
-      return this._value.id;
-    }
-
-    inline proc localeid {
-      return this._value.localeid;
-    }
-
-    inline proc hostname {
-      return this._value.hostname;
-    }
-
-    inline proc name {
-      return this._value.name;
-    }
-
-    inline proc chpl_id() {
-      return this._value.chpl_id();
-    }
-
-    inline proc chpl_localeid() {
-      return this._value.chpl_localeid();
-    }
-
-    inline proc chpl_name() {
-      return this._value.chpl_name();
-    }
-
-    inline proc defaultMemory() {
-      return this._value.defaultMemory();
-    }
-
-    inline proc largeMemory() {
-      return this._value.largeMemory();
-    }
-
-    inline proc lowLatencyMemory() {
-      return this._value.lowLatencyMemory();
-    }
-
-    inline proc highBandwidthMemory() {
-      return this._value.highBandwidthMemory();
-    }
-
-    inline proc getChildCount() {
-      return this._value.getChildCount();
-    }
-
-  } // end of record _locale
-
-  proc =(ref l1: locale, const ref l2: locale) {
-    l1._instance = l2._instance;
-  }
-
-  /*
-    ``locale`` is the abstract class from which the various
-    implementations inherit.  It specifies the required interface
-    and implements part of it, but requires the rest to be provided
-    by the corresponding concrete classes.
-   */
-  class BaseLocale {
-    //- Constructor
-    pragma "no doc"
-    proc init() { }
-
-    pragma "no doc"
-    proc init(parent: locale) {
-      this.parent = parent;
-    }
-
-    //------------------------------------------------------------------------{
-    //- Fields and accessors defined for all locale types (not overridable)
-    //-
-
-    // Every locale has a parent, except for the root locale.
-    // The parent of the root locale is nil (by definition).
-    pragma "no doc"
-    const parent = nilLocale;
-
-    pragma "no doc" var nPUsLogAcc: int;     // HW threads, accessible
-    pragma "no doc" var nPUsLogAll: int;     // HW threads, all
-    pragma "no doc" var nPUsPhysAcc: int;    // HW cores, accessible
-    pragma "no doc" var nPUsPhysAll: int;    // HW cores, all
 
     /*
       A *processing unit* or *PU* is an instance of the processor
@@ -282,29 +219,9 @@ module ChapelLocale {
       running programs within Cray batch jobs that have been set up
       with limited processor resources.
      */
-    inline
-    proc numPUs(logical: bool = false, accessible: bool = true)
-      return if logical
-             then if accessible then nPUsLogAcc else nPUsLogAll
-             else if accessible then nPUsPhysAcc else nPUsPhysAll;
-
-    /*
-      This is the maximum task concurrency that one can expect to
-      achieve on this locale.  The value is an estimate by the
-      runtime tasking layer.  Typically it is the number of physical
-      processor cores available to the program.  Creating more tasks
-      than this will probably increase walltime rather than decrease
-      it.
-     */
-    var maxTaskPar: int;
-
-    /*
-      ``callStackSize`` holds the size of a task stack on a given
-      locale.  Thus, ``here.callStackSize`` is the size of the call
-      stack for any task on the current locale, including the
-      caller.
-    */
-    var callStackSize: size_t;
+    inline proc numPUs(logical: bool = false, accessible: bool = true) {
+      return this._value.numPUs(logical, accessible);
+    }
 
     /*
       Get the integer identifier for this locale.
@@ -312,10 +229,14 @@ module ChapelLocale {
       :returns: locale number, in the range ``0..numLocales-1``
       :rtype: int
      */
-    proc id : int return chpl_nodeFromLocaleID(__primitive("_wide_get_locale", this));
+    inline proc id {
+      return this._value.id;
+    }
 
     pragma "no doc"
-    proc localeid : chpl_localeID_t return __primitive("_wide_get_locale", this);
+    inline proc localeid {
+      return this._value.localeid;
+    }
 
     /*
       Get the hostname of this locale.
@@ -323,6 +244,116 @@ module ChapelLocale {
       :returns: the hostname of the compute node associated with the locale
       :rtype: string
     */
+    inline proc hostname {
+      return this._value.hostname;
+    }
+
+    /*
+      Get the name of this locale.  In practice, this is often the
+      same as the hostname, though in some cases (like when using
+      local launchers), it may be modified.
+
+      :returns: locale name
+      :rtype: string
+     */
+    inline proc name {
+      return this._value.name;
+    }
+
+    pragma "no doc"
+    inline proc chpl_id() {
+      return this._value.chpl_id();
+    }
+
+    pragma "no doc"
+    inline proc chpl_localeid() {
+      return this._value.chpl_localeid();
+    }
+
+    pragma "no doc"
+    inline proc chpl_name() {
+      return this._value.chpl_name();
+    }
+
+    pragma "no doc"
+    inline proc defaultMemory() {
+      return this._value.defaultMemory();
+    }
+
+    pragma "no doc"
+    inline proc largeMemory() {
+      return this._value.largeMemory();
+    }
+
+    pragma "no doc"
+    inline proc lowLatencyMemory() {
+      return this._value.lowLatencyMemory();
+    }
+
+    pragma "no doc"
+    inline proc highBandwidthMemory() {
+      return this._value.highBandwidthMemory();
+    }
+
+    pragma "no doc"
+    inline proc getChildCount() {
+      return this._value.getChildCount();
+    }
+
+  } // end of record _locale
+
+
+  pragma "no doc"
+  proc =(ref l1: locale, const ref l2: locale) {
+    l1._instance = l2._instance;
+  }
+
+  /*
+    ``locale`` is the abstract class from which the various
+    implementations inherit.  It specifies the required interface
+    and implements part of it, but requires the rest to be provided
+    by the corresponding concrete classes.
+   */
+  pragma "no doc"
+  class BaseLocale {
+    //- Constructor
+    pragma "no doc"
+    proc init() { }
+
+    pragma "no doc"
+    proc init(parent: locale) {
+      this.parent = parent;
+    }
+
+    //------------------------------------------------------------------------{
+    //- Fields and accessors defined for all locale types (not overridable)
+    //-
+
+    // Every locale has a parent, except for the root locale.
+    // The parent of the root locale is nil (by definition).
+    pragma "no doc"
+    const parent = nilLocale;
+
+    pragma "no doc" var nPUsLogAcc: int;     // HW threads, accessible
+    pragma "no doc" var nPUsLogAll: int;     // HW threads, all
+    pragma "no doc" var nPUsPhysAcc: int;    // HW cores, accessible
+    pragma "no doc" var nPUsPhysAll: int;    // HW cores, all
+
+    inline
+    proc numPUs(logical: bool = false, accessible: bool = true)
+      return if logical
+             then if accessible then nPUsLogAcc else nPUsLogAll
+             else if accessible then nPUsPhysAcc else nPUsPhysAll;
+
+    var maxTaskPar: int;
+
+    var callStackSize: size_t;
+
+    proc id : int return chpl_nodeFromLocaleID(__primitive("_wide_get_locale", this));
+
+    pragma "no doc"
+    proc localeid : chpl_localeID_t return __primitive("_wide_get_locale", this);
+
     proc hostname: string {
       extern proc chpl_nodeName(): c_string;
       var hname: string;
@@ -338,14 +369,6 @@ module ChapelLocale {
       HaltWrappers.pureVirtualMethodHalt();
     }
 
-    /*
-      Get the name of this locale.  In practice, this is often the
-      same as the hostname, though in some cases (like when using
-      local launchers), it may be modified.
-
-      :returns: locale name
-      :rtype: string
-     */
     proc name return chpl_name() : string;
 
     // This many tasks are running on this locale.
@@ -798,9 +821,12 @@ module ChapelLocale {
   }
 
   // the type of elements in chpl_privateObjects.
+  pragma "no doc"
   extern record chpl_privateObject_t {
     var obj:c_void_ptr;
   }
+
+  pragma "no doc"
   extern var chpl_privateObjects:c_ptr(chpl_privateObject_t);
 
   pragma "no doc"
