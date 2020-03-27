@@ -133,6 +133,12 @@ module Set {
       }
       if isTuple(eltType) then
         compilerError('Sets do not support tuple types');
+      if isGenericType(eltType) {
+        compilerWarning("creating a set with element type " +
+                        eltType:string);
+        compilerError("set element type cannot currently be generic");
+        // In the future we might support it if the list is not default-inited
+      }
       this.eltType = eltType;
       this.parSafe = parSafe;
     }
@@ -152,6 +158,12 @@ module Set {
         compilerError('Sets do not support class types');
       if isTuple(eltType) then
         compilerError('Sets do not support tuple types');
+      if isGenericType(eltType) {
+        compilerWarning("creating a set with element type " +
+                        eltType:string);
+        compilerError("set element type cannot currently be generic");
+        // In the future we might support it if the list is not default-inited
+      }
       this.eltType = eltType;
       this.parSafe = parSafe;
       this.complete();
