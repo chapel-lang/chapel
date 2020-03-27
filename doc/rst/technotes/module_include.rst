@@ -11,7 +11,7 @@ Example
 
 The basic idea is that a module ``M`` in a file ``M.chpl`` can break its
 submodules across multiple files by placing them in a directory called
-`M/`.
+``M/``.
 
 The following example shows both the directory layout and file contents:
 
@@ -67,7 +67,7 @@ L``.
 
 Module visibility can additionally be specified inside the file declaring
 the submodule. For example, ``L.chpl`` could contain
-``public module L { }` or ``private module L { }``. If the module
+``public module L { }`` or ``private module L { }``. If the module
 declaration indicates ``private`` visibility but the ``include module``
 line does not, the compiler will issue an error. Otherwise, the
 visibility at the ``include module`` line will be used.
