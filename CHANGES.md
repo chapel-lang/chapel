@@ -24,37 +24,37 @@ Semantic Changes / Changes to Chapel Language
 ---------------------------------------------
 * made `use` private by default
   (see https://chapel-lang.org/docs/1.21/language/spec/statements.html#the-use-statement)
-* sub-modules no longer have lexical visibility into their parent module
+* sub-modules no longer have lexical visibility into their parent modules
   (see https://chapel-lang.org/docs/1.21/language/spec/modules.html#nested-modules)
-* added an execution-time check to guard against resizing arrays of non-nilable
-  (see https://chapel-lang.org/docs/1.21/language/spec/classes.html#class-values)
-* made enum casts that may fail throw an error rather than halt
-  (see https://chapel-lang.org/docs/1.21/language/spec/conversions.html#explicit-enumeration-conversions)
-* made the compiler no longer tolerate assignment overloads for classes
+* the `locale` type now has value semantics and a default value of `Locales[0]`
+* values of type `string` are now UTF8-validated
+* `bytes.this` and `bytes.these` now return/yield `unit(8)` instead of `bytes`
+  (see https://chapel-lang.org/docs/1.21/builtins/Bytes.html)
+* stopped generating `init=` functions for records with a user-defined `init=`
+* an `init=` containing compilerError() now indicates the type is not copyable
+  (TODO: PR #14887 - not sure where this should be documented?)
 * added support for split initialization of variables, refs, types, and params
   (see https://chapel-lang.org/docs/1.21/language/spec/variables.html#split-initialization)
   (TODO language evolution link)
-* added suport for copy elision
+* added support for copy elision transformations
   (TODO: where to document?)
-* `record` temporaries may now be deinitialized at the end of a statement
-  (TODO: where to document?)
-* an `init=` containing compilerError() now indicates the type is not copyable
-  (PR #14887 - not sure where this should be documented?)
 * improved `out` intents to support split initialization and to reduce copies
   (TODO language evolution link? spec?)
+* `record` temporaries may now be deinitialized at the end of a statement
+  (TODO: where to document?)
 * compile-time (`type`, `param`) methods now require `overload` when overloaded
-* records now support lexicographical comparison with `<`, `<=`, `>`, `>=`
-  (see https://chapel-lang.org/docs/1.21/language/spec/records.html#default-comparison-operators)
-* `bytes.this` and `bytes.these` now return/yield `unit(8)` instead of `bytes`
-  (see https://chapel-lang.org/docs/1.21/builtins/Bytes.html)
-* the `locale` type now has value semantics and a default value of `Locales[0]`
-* values of type `string` are now UTF8-validated
-* added atomic `compareExchange()` that matches the semantics of C++
-  (see https://chapel-lang.org/docs/1.21/builtins/Atomics.html#Atomics.compareExchange)
-* stopped generating `init=` functions for records with a user-defined `init=`
+* made `enum` casts that may fail throw an error rather than halt
+  (see https://chapel-lang.org/docs/1.21/language/spec/conversions.html#explicit-enumeration-conversions)
+* added an execution-time check to guard against resizing arrays of non-nilable
+  (see https://chapel-lang.org/docs/1.21/language/spec/classes.html#class-values)
+* made the compiler no longer tolerate assignment overloads for classes
 
 New Features
 ------------
+* added atomic `compareExchange()` that matches the semantics of C++
+  (see https://chapel-lang.org/docs/1.21/builtins/Atomics.html#Atomics.compareExchange)
+* records now support lexicographical comparison with `<`, `<=`, `>`, `>=`
+  (see https://chapel-lang.org/docs/1.21/language/spec/records.html#default-comparison-operators)
 * added a `.hostname` method to locales
   (see https://chapel-lang.org/docs/1.21/builtins/ChapelLocale.html#ChapelLocale.locale.hostname)
 * added support for looping directly over heterogeneous tuples
@@ -78,6 +78,10 @@ New Features
   (TODO: where to document?)
 * added `string.encode()` to convert strings with escaped data to `bytes`
   (see https://chapel-lang.org/docs/1.21/builtins/String.html#String.string.encode)
+* added support for renaming a module in its `use` statement
+  (see <TODO> doc link)
+* added support for `import` statements as a more precise way of using modules
+  (see <TODO> doc link)
 
 Feature Improvements
 --------------------
@@ -95,6 +99,7 @@ Feature Improvements
 * `bytes` can be indexed with `byteIndex`
 * `bytes` can now be cast to `enum`
 * a non-nilable class is now considered a subtype of its nilable counterpart
+* improved resolution of methods and fields, particularly for private types
 
 Deprecated / Unstable / Removed Language Features
 -------------------------------------------------
@@ -130,6 +135,8 @@ Deprecated / Removed Library Features
 * `makeRandomStream()` is deprecated in favor of `createRandomStream()`
   (see https://chapel-lang.org/docs/master/modules/standard/Random.html)
 * `regexp` is now deprecated in favor of `regexp(string)`
+* removed `LINGER`, `SUBSCRIBE`, `UNSUBSCRIBE` and `setsockopt` from 'ZMQ'
+* removed deprecated versions of `open()` from 'IO'
 
 Standard Library Modules
 ------------------------
@@ -159,6 +166,10 @@ Standard Library Modules
   (see https://chapel-lang.org/docs/1.21/modules/standard/Map.html#Map.map)
 * updated `map` to work with nilable `owned` and non-nilable `shared` classes
   (see https://chapel-lang.org/docs/1.21/modules/standard/Map.html#Map.map.getBorrowed)
+* stopped including the 'CommDiagnostics' module by default
+* stopped including most 'IO' symbols by default
+  (see https://chapel-lang.org/docs/1.21/builtins/ChapelIO.html and
+  https://chapel-lang.org/docs/1.21/modules/standard/IO.html)
 
 Package Modules
 ---------------
@@ -186,6 +197,10 @@ New Tools / Tool Changes
 * added feature to run a subset of tests in a mason package with `mason test`
   (see https://chapel-lang.org/docs/1.21/tools/mason/mason.html#testing-your-package)
 * improved output for `mason update` with multiple registries
+* added a `--project-version` flag to `chpldoc`
+  (see https://chapel-lang.org/docs/1.21/tools/chpldoc/man.html)
+* improved syntax highlighting for `highlight`
+* removed trailing comma and period from `chpldoc` copyrights without an author
 
 Interoperability Improvements
 -----------------------------
@@ -243,6 +258,8 @@ Documentation
   (see https://chapel-lang.org/docs/1.21/language/spec/tuples.html)
 * added details about special I/O methods to the forwarding technote
   (see https://chapel-lang.org/docs/1.21/technotes/forwarding.html#resolving-forwarded-methods)
+* removed online documentation for some internal functions in the 'IO' module
+* increased usage of the `:throws:` tag in library documentation
 
 Example Codes
 -------------
@@ -291,6 +308,7 @@ Error Messages / Semantic Checks
 * added an error for copy initializers that do not have exactly one argument
 * improved the error message for secondary methods that are missing their types
 * improved the error message when `mason run` is used without building first
+* improved the error message for modules declared in function bodies
 
 Bug Fixes
 ---------
@@ -315,6 +333,7 @@ Bug Fixes
 * fixed a bug where 'UnitTest' methods expected 1-based arrays
 * fixed a bug where `RandomStream.choice()` failed for non-numeric types
 * fixed a bug where comparing tuples of mismatched size caused a compiler error
+* fixed a bug in `chpldoc` with intervening single line comments
 
 Packaging / Configuration Changes
 ---------------------------------
@@ -356,6 +375,7 @@ Developer-oriented changes: Module changes
 * changed ddata initialization to be param-controlled
 * improved the statistical properties of hash functions for records and tuples
 * `locale` is now implemented using a `record` type
+* replaced `use _ only;` with `import _;` in modules
 
 Developer-oriented changes: Makefile improvements
 -------------------------------------------------
@@ -372,6 +392,11 @@ Developer-oriented changes: Compiler improvements/changes
 * print loop information and submodules xin AST logs
 * removed `PRIM_TYPE_INIT`
 * dead-code eliminated unused calls to `chpl__convertValueToRuntimeType`
+* improved debugging output for multilocale interop. marshalling routines
+* removed a bad optimization that was breaking internal module visibility rules
+* simplified visible function determination of `use` statement visibility
+* only check visibility of symbols once per scope
+* added a cache for determining if an actual's type is coercible
 
 Developer-oriented changes: Runtime improvements
 ------------------------------------------------
@@ -497,10 +522,6 @@ New Features
   (see https://chapel-lang.org/docs/1.20/builtins/String.html#String.string.toByte)
 * added an atomic fence
   (see https://chapel-lang.org/docs/1.20/builtins/Atomics.html#Atomics.atomicFence)
-* added support for renaming a module in its `use` statement
-  (see <TODO> doc link)
-* added support for `import` statements as a more precise way of using modules
-  (see <TODO> doc link)
 
 Feature Improvements
 --------------------
@@ -521,7 +542,6 @@ Feature Improvements
 * added support for passing the `string` type to `extern` procedures
 * improved how first-class functions print themselves out
 * enabled `in`-intents of POD record types in follower iterators
-* improved resolution of methods and fields, particularly for private types
 
 Deprecated / Removed Language Features
 --------------------------------------
@@ -554,8 +574,6 @@ Deprecated / Removed Library Features
    see https://chapel-lang.org/docs/1.20/modules/packages/ZMQ.html#ZMQ.Socket.setsockopt)
 * retired deprecated usage of `LinearAlgebra.eigvals()`
 * removed previously deprecated functions with `out error` arguments from `IO`
-* removed `LINGER`, `SUBSCRIBE`, `UNSUBSCRIBE` and `setsockopt` from 'ZMQ'
-* removed deprecated versions of `open()` from 'IO'
 
 Standard Library Modules
 ------------------------
@@ -581,10 +599,6 @@ Standard Library Modules
   (see https://chapel-lang.org/docs/1.20/modules/standard/CommDiagnostics.html)
 * added file:line for executeOn in verbose comm diagnostics, matching other ops
 * reduced the degree to which standard modules leak symbols into user code
-* stopped including the 'CommDiagnostics' module by default
-* stopped including most 'IO' symbols by default
-  (see https://chapel-lang.org/docs/1.21/builtins/ChapelIO.html and
-  https://chapel-lang.org/docs/1.21/modules/standard/IO.html)
 
 Package Modules
 ---------------
@@ -661,10 +675,6 @@ New Tools / Tool Changes
 * added `MASON_OFFLINE` to improve offline experience for mason users
   (see https://chapel-lang.org/docs/1.20/tools/mason/mason.html#environment-variables)
 * pinned the version of `Pygments` relied upon by `chpldoc`
-* added a `--project-version` flag to `chpldoc`
-  (see https://chapel-lang.org/docs/1.21/tools/chpldoc/man.html)
-* improved syntax highlighting for `highlight`
-* removed trailing comma and period from `chpldoc` copyrights without an author
 
 Interoperability Improvements
 -----------------------------
@@ -727,8 +737,6 @@ Documentation
   (see https://chapel-lang.org/docs/1.20/modules/standard/IO/FormattedIO.html#FormattedIO.channel.readf)
 * removed a reference to old assignment behavior from interoperability technote
 * fixed several broken links in the online documentation
-* removed online documentation for some internal functions in the 'IO' module
-* increased usage of the `:throws:` tag in library documentation
 
 Example Codes
 -------------
@@ -785,7 +793,6 @@ Error Messages / Semantic Checks
    and https://chapel-lang.org/docs/1.20/technotes/libraries.html#intents-in-python-interoperability)
 * improved error message wording for type mismatches in assignment
 * made a user-facing "the type of the actual argument is generic" error
-* improved the error message for modules declared in function bodies
 
 Bug Fixes
 ---------
@@ -835,7 +842,6 @@ Bug Fixes
 * fixed `make mason` such that it will not hang if hugepages is unavailable
 * fixed `make mason` to detect changes in any mason source files
 * fixed `make clobber` such that it clobbers mason
-* fixed a bug in `chpldoc` with intervening single line comments
 
 Packaging / Configuration Changes
 ---------------------------------
@@ -887,7 +893,6 @@ Developer-oriented changes: Module changes
 * new internal module 'ByteBufferHelpers' for bytes/string buffer management
 * new internal module 'BytesStringCommons' for common bytes/string helpers
 * added minimum string allocation size 'param chpl_minStringAllocSize=0'
-* replaced `use _ only;` with `import _;` in modules
 
 Developer-oriented changes: Makefile improvements
 -------------------------------------------------
@@ -920,11 +925,6 @@ Developer-oriented changes: Compiler improvements/changes
 * the compiler now handles certain cast calls directly
 * added 'FLAG_CHAPEL_BYTES_LITERAL' AggregateType
 * fixed an override checking bug with --devel flag
-* improved debugging output for multilocale interop. marshalling routines
-* removed a bad optimization that was breaking internal module visibility rules
-* simplified visible function determination of `use` statement visibility
-* only check visibility of symbols once per scope
-* added a cache for determining if an actual's type is coercible
 
 Developer-oriented changes: Runtime improvements
 ------------------------------------------------
