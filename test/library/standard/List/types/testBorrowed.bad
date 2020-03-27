@@ -1,0 +1,3 @@
+$CHPL_HOME/modules/standard/List.chpl:159: In initializer:
+$CHPL_HOME/modules/standard/List.chpl:160: error: List does not support non-nilable borrowed class types
+./ListTest.chpl:5: Initializer instantiated as: init(type eltType = borrowed T, param parSafe = 0)
