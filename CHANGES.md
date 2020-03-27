@@ -1,6 +1,12 @@
 Release Changes List
 ====================
 
+TODO:
+* guard against docs/master
+* any last-minute contributions / contributors?
+* '' vs. ``
+* sort
+
 version 1.21.0
 ==============
 
@@ -24,6 +30,17 @@ Semantic Changes / Changes to Chapel Language
 * made enum casts that may fail throw an error rather than halt
   (see https://chapel-lang.org/docs/1.21/language/spec/conversions.html#explicit-enumeration-conversions)
 * made the compiler no longer tolerate assignment overloads for classes
+* added support for split initialization of variables, refs, types, and params
+  (see https://chapel-lang.org/docs/1.21/language/spec/variables.html#split-initialization)
+  (TODO language evolution link)
+* added suport for copy elision
+  (TODO: where to document?)
+* `record` temporaries may now be deinitialized at the end of a statement
+  (TODO: where to document?)
+* an `init=` containing compilerError() now indicates the type is not copyable
+  (PR #14887 - not sure where this should be documented?)
+* improved `out` intents to support split initialization and to reduce copies
+  (TODO language evolution link? spec?)
 
 New Features
 ------------
@@ -44,6 +61,10 @@ New Features
   (see https://chapel-lang.org/docs/1.21/language/spec/ranges.html#range-literals)
 * added support for `enum` serving as an "any enumerated type" type constraint
   (e.g., `proc foo(e: enum) ...` can take any enum as an argument)
+* added explicit relative `import` and `use` chains via `this.` and `super.`
+  (TODO: where to document?)
+* implemented prototypical support for submodules in different files
+  (TODO: where to document?)
 
 Feature Improvements
 --------------------
@@ -60,15 +81,26 @@ Deprecated / Unstable / Removed Language Features
 * removed `ascii()` and `asciiToString()`
 * removed comparison operators for `imag` values
 * removed the experimental `enableParScan` configuration parameter
+* deprecated C++-style deinitializer names e.g. `proc ~C()`
+* removed support for deprecated `init` copy initializers
 
 Deprecated / Removed Library Features
 -------------------------------------
+* removed deprecated sort functions
 
 Standard Library Modules
 ------------------------
+* added `c_aligned_alloc` to the 'CPtr' module
+  (see https://chapel-lang.org/docs/1.21/builtins/CPtr.html#CPtr.c_aligned_alloc)
+* addressed problems with updating lists contained within a map
+* updated `canResolve` to return `false` when encountering a `compilerError`
+  (see https://chapel-lang.org/docs/1.21/modules/standard/Reflection.html#Reflection.canResolve)
+* added `isCopyable()`, `isAssignable()`, `isDefaultInitializable()` to 'Types'
+  (see https://chapel-lang.org/docs/1.21/modules/standard/Types.html#Types.isCopyable)
 
 Package Modules
 ---------------
+* improved comparison sort to better handle arrays containing `owned` classes
 
 Standard Domain Maps (Layouts and Distributions)
 ------------------------------------------------
@@ -80,19 +112,33 @@ New Tools / Tool Changes
 Interoperability Improvements
 -----------------------------
 
-Performance Optimizations/Improvements
---------------------------------------
+Performance Optimizations / Improvements
+----------------------------------------
 * optimized 1D array reallocations to be in-place when possible
 * added short-circuiting for array reallocations whose indices didn't change
+* improved the unordered compiler optimization to optimize more cases
+  (see `--optimize-forall-unordered-ops` in `man chpl`)
+* improved the performance of comparison sorts
+* improved the performance of mergeSort()
+* improved the performance of the 'EpochManager' by removing a counter
 
 Cray-specific Performance Optimizations/Improvements
 ----------------------------------------------------
 
 Memory Improvements
 -------------------
+* fix problems with memory management of unions
+* addressed memory leaks with comparison sorts
 
 Documentation
 -------------
+* converted the language specification from LaTeX to RST/HTML
+  (see https://chapel-lang.org/docs/1.21/language/spec/index.html)
+* added the `prototype` keyword to the keywords section of the spec
+  (see https://chapel-lang.org/docs/1.21/language/spec/lexical-structure.html#keywords)
+* improved the documentation for `owned` and `shared` classes
+  (see https://chapel-lang.org/docs/1.21/builtins/OwnedObject.html and
+   https://chapel-lang.org/docs/1.21/builtins/SharedObject.html)
 
 Example Codes
 -------------
@@ -108,6 +154,8 @@ Cray-specific Changes and Bug Fixes
 
 Compiler Improvements
 ---------------------
+* improved the compiler to raise an error for `new owned X;`
+* stopped printing blank flag suggestions for unrecognized flags
 
 Compiler Flags
 --------------
@@ -120,6 +168,16 @@ Error Messages / Semantic Checks
 --------------------------------
 * added an error for assigning an associative domain to a rectangular array
 * changed an internal error for unsupported type queries to a user-facing error
+* improved error messages for failed array bounds checks
+* improved checks for generic fields to include undecorated class types
+* added a warning for potentially surprising implicit modules
+* improved error messages for uninitialized variables
+* added an error for mixing user- and compiler-generated `init=` and `=`
+* added errors for most ownership transfers from non-nilable owned
+* improved compile-time nil-checking to consider copy elision
+* improved lifetime checking to consider copy elision
+* added checking for uses of global variables before they are initialized
+* added errors for certain confusing generic initialization patterns
 
 Bug Fixes
 ---------
@@ -128,13 +186,23 @@ Bug Fixes
 * fixed `.localSlice` for Block and Cyclic arrays
 * fixed a bug in which user identifiers could conflict with internal ones
 * fixed a bug in which 'DistributedIters' still relied on string + value ops
+* fixed several problems with type queries of class types
+* fixed a problem with arguments of nested generic type such as `list(Error)`
+* fixed a problem with symbol munging with `--llvm`
+* fixed problems with casts between class types like `C: C?`
+* fixed a problem with returning an array of non-nilable owned classes
+* fixed a problem with tuples containing `owned` classes passed by `in` intent
+* addressed two memory errors within the 'Futures' package module
 
 Packaging / Configuration Changes
 ---------------------------------
 * updated copyrights to reflect HPE's purchase of Cray Inc.
+* recompute settings files used by `--llvm` in more `make` invocations
 
 Third-Party Software Changes
 ----------------------------
+* updated chpldoc to use a bundled chapeldomain
+* updated the sphinx version used for chpldoc
 
 Runtime Library Changes
 -----------------------
@@ -144,6 +212,7 @@ Launchers
 
 Testing System
 --------------
+* `start_test` can now be run simultaneously in different directories
 
 Developer-oriented changes: Module changes
 ------------------------------------------
@@ -151,6 +220,7 @@ Developer-oriented changes: Module changes
 * made most uses of 'ChapelStandard' in internal modules `private`
 * made the 'Bytes' module more index-neutral
 * changed ddata initialization to be param-controlled
+* improved the statistical properties of hash functions for records and tuples
 
 Developer-oriented changes: Makefile improvements
 -------------------------------------------------
@@ -161,9 +231,14 @@ Developer-oriented changes: Compiler Flags
 Developer-oriented changes: Compiler improvements/changes
 ---------------------------------------------------------
 * made the compiler munge internal module symbols and stopped munging fields
+* improved resolution of calls performing string literal initialization
+* print loop information and submodules xin AST logs
+* removed `PRIM_TYPE_INIT`
+* dead-code eliminated unused calls to `chpl__convertValueToRuntimeType`
 
 Developer-oriented changes: Runtime improvements
 ------------------------------------------------
+* updated verbose communication output to include comm ID numbers
 
 Developer-oriented changes: Testing System
 ------------------------------------------
@@ -263,7 +338,7 @@ New Features
 * added support for partial instantiation of generic types
   (see https://chapel-lang.org/docs/1.20/technotes/partialInstantiations.html)
 * generic types can now be passed as `type` arguments and returned
-  (https://chapel-lang.org/docs/1.20/technotes/partialInstantiations.html#passing-and-returning-generic-types)
+  (see https://chapel-lang.org/docs/1.20/technotes/partialInstantiations.html#passing-and-returning-generic-types)
 * added factory functions for creating strings using existing buffers
 * added support for slicing dense arrays using sparse domains
 * added a `nothing` type with the singleton value `none`
