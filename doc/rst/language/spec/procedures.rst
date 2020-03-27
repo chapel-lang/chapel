@@ -1132,6 +1132,8 @@ The arity and precedence of the operator must be maintained when it is
 overloaded. Operator resolution follows the same algorithm as function
 resolution.
 
+Assignment overloads are not supported for class types.
+
 .. _Function_Resolution:
 
 Function Resolution
