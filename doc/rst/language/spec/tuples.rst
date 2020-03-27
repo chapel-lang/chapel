@@ -805,8 +805,8 @@ Tuple Variable Behavior
 -----------------------
 
 Tuple variables are a form of value tuple. Like other value tuples, tuple
-variables will copy elements as though the element is an argument with
-the ``in`` intent.
+variables will copy elements in a manner similar to passing the element
+to an ``in`` intent argument.
 
    *Example (tuple-variable-behavior.chpl)*.
 
