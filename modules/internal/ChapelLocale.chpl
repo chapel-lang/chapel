@@ -118,13 +118,12 @@ module ChapelLocale {
   pragma "no doc"
   var dummyLocale = new locale(localeKind.dummy);
 
+  pragma "no doc"
   pragma "always RVF"
   record _locale {
 
-    pragma "no doc"
     var _instance: unmanaged BaseLocale?;
 
-    pragma "no doc"
     inline proc _value {
       return _instance!;
     }
@@ -132,7 +131,6 @@ module ChapelLocale {
     forwarding _value;
 
     // default initializer for the locale record.
-    pragma "no doc"
     proc init() {
       if rootLocaleInitialized {
         this._instance = defaultLocale._instance;
@@ -144,7 +142,6 @@ module ChapelLocale {
     }
 
     // used internally during setup
-    pragma "no doc"
     proc init(_instance: BaseLocale) {
       this._instance = _to_unmanaged(_instance);
     }
@@ -168,140 +165,143 @@ module ChapelLocale {
     pragma "no doc"
     proc deinit() { }
 
-    /*
-      This is the maximum task concurrency that one can expect to
-      achieve on this locale.  The value is an estimate by the
-      runtime tasking layer.  Typically it is the number of physical
-      processor cores available to the program.  Creating more tasks
-      than this will probably increase walltime rather than decrease
-      it.
-     */
-    inline proc maxTaskPar { return this._value.maxTaskPar; }
-
-    /*
-      ``callStackSize`` holds the size of a task stack on a given
-      locale.  Thus, ``here.callStackSize`` is the size of the call
-      stack for any task on the current locale, including the
-      caller.
-    */
-    inline proc callStackSize { return this._value.callStackSize; }
-
-    // the following are normally taken care of by `forwarding`. However, they
-    // don't work if they are called in a promoted expression. See 15148
-
-    /*
-      A *processing unit* or *PU* is an instance of the processor
-      architecture, basically the thing that executes instructions.
-      :proc:`numPUs` tells how many of these are present on this
-      locale.  It can count either physical PUs (commonly known as
-      *cores*) or hardware threads such as hyperthreads and the like.
-      It can also either take into account any OS limits on which PUs
-      the program has access to or do its best to ignore such limits.
-      By default it returns the number of accessible physical cores.
-
-      :arg logical: Count logical PUs (hyperthreads and the like),
-                    or physical ones (cores)?  Defaults to `false`,
-                    for cores.
-      :type logical: `bool`
-      :arg accessible: Count only PUs that can be reached, or all of
-                       them?  Defaults to `true`, for accessible PUs.
-      :type accessible: `bool`
-      :returns: number of PUs
-      :rtype: `int`
-
-      There are several things that can cause the OS to limit the
-      processor resources available to a Chapel program.  On plain
-      Linux systems using the ``taskset(1)`` command will do it.  On
-      Cray systems the ``CHPL_LAUNCHER_CORES_PER_LOCALE`` environment
-      variable may do it, indirectly via the system job launcher.
-      Also on Cray systems, using a system job launcher (``aprun`` or
-      ``slurm``) to run a Chapel program manually may do it, as can
-      running programs within Cray batch jobs that have been set up
-      with limited processor resources.
-     */
-    inline proc numPUs(logical: bool = false, accessible: bool = true) {
-      return this._value.numPUs(logical, accessible);
-    }
-
-    /*
-      Get the integer identifier for this locale.
-
-      :returns: locale number, in the range ``0..numLocales-1``
-      :rtype: int
-     */
-    inline proc id {
-      return this._value.id;
-    }
-
-    pragma "no doc"
     inline proc localeid {
       return this._value.localeid;
     }
 
-    /*
-      Get the hostname of this locale.
-
-      :returns: the hostname of the compute node associated with the locale
-      :rtype: string
-    */
-    inline proc hostname {
-      return this._value.hostname;
-    }
-
-    /*
-      Get the name of this locale.  In practice, this is often the
-      same as the hostname, though in some cases (like when using
-      local launchers), it may be modified.
-
-      :returns: locale name
-      :rtype: string
-     */
-    inline proc name {
-      return this._value.name;
-    }
-
-    pragma "no doc"
     inline proc chpl_id() {
       return this._value.chpl_id();
     }
 
-    pragma "no doc"
     inline proc chpl_localeid() {
       return this._value.chpl_localeid();
     }
 
-    pragma "no doc"
     inline proc chpl_name() {
       return this._value.chpl_name();
     }
 
-    pragma "no doc"
     inline proc defaultMemory() {
       return this._value.defaultMemory();
     }
 
-    pragma "no doc"
     inline proc largeMemory() {
       return this._value.largeMemory();
     }
 
-    pragma "no doc"
     inline proc lowLatencyMemory() {
       return this._value.lowLatencyMemory();
     }
 
-    pragma "no doc"
     inline proc highBandwidthMemory() {
       return this._value.highBandwidthMemory();
     }
 
-    pragma "no doc"
     inline proc getChildCount() {
       return this._value.getChildCount();
     }
 
   } // end of record _locale
 
+
+  /*
+    This returns the locale from which the call is made.
+
+    :return: current locale
+    :rtype: locale
+  */
+  inline proc here {
+    return chpl_localeID_to_locale(here_id);
+  }
+
+  // Locale methods we want to have show up in chpldoc start here:
+
+  /*
+    Get the hostname of this locale.
+
+    :returns: the hostname of the compute node associated with the locale
+    :rtype: string
+  */
+  inline proc locale.hostname {
+    return this._value.hostname;
+  }
+
+  /*
+    Get the name of this locale.  In practice, this is often the
+    same as the hostname, though in some cases (like when using
+    local launchers), it may be modified.
+
+    :returns: locale name
+    :rtype: string
+  */
+  inline proc locale.name {
+    return this._value.name;
+  }
+
+  /*
+    Get the integer identifier for this locale.
+
+    :returns: locale number, in the range ``0..numLocales-1``
+    :rtype: int
+  */
+  inline proc locale.id {
+    return this._value.id;
+  }
+
+  /*
+    This is the maximum task concurrency that one can expect to
+    achieve on this locale.  The value is an estimate by the
+    runtime tasking layer.  Typically it is the number of physical
+    processor cores available to the program.  Creating more tasks
+    than this will probably increase walltime rather than decrease
+    it.
+  */
+  inline proc locale.maxTaskPar { return this._value.maxTaskPar; }
+
+  // the following are normally taken care of by `forwarding`. However, they
+  // don't work if they are called in a promoted expression. See 15148
+
+  /*
+    A *processing unit* or *PU* is an instance of the processor
+    architecture, basically the thing that executes instructions.
+    :proc:`locale.numPUs` tells how many of these are present on this
+    locale.  It can count either physical PUs (commonly known as
+    *cores*) or hardware threads such as hyperthreads and the like.
+    It can also either take into account any OS limits on which PUs
+    the program has access to or do its best to ignore such limits.
+    By default it returns the number of accessible physical cores.
+
+    :arg logical: Count logical PUs (hyperthreads and the like),
+                  or physical ones (cores)?  Defaults to `false`,
+                  for cores.
+    :type logical: `bool`
+    :arg accessible: Count only PUs that can be reached, or all of
+                     them?  Defaults to `true`, for accessible PUs.
+    :type accessible: `bool`
+    :returns: number of PUs
+    :rtype: `int`
+
+    There are several things that can cause the OS to limit the
+    processor resources available to a Chapel program.  On plain
+    Linux systems using the ``taskset(1)`` command will do it.  On
+    Cray systems the ``CHPL_LAUNCHER_CORES_PER_LOCALE`` environment
+    variable may do it, indirectly via the system job launcher.
+    Also on Cray systems, using a system job launcher (``aprun`` or
+    ``slurm``) to run a Chapel program manually may do it, as can
+    running programs within Cray batch jobs that have been set up
+    with limited processor resources.
+  */
+  inline proc locale.numPUs(logical: bool = false, accessible: bool = true) {
+    return this._value.numPUs(logical, accessible);
+  }
+
+  /*
+    ``callStackSize`` holds the size of a task stack on a given
+    locale.  Thus, ``here.callStackSize`` is the size of the call
+    stack for any task on the current locale, including the
+    caller.
+  */
+  inline proc locale.callStackSize { return this._value.callStackSize; }
 
   pragma "no doc"
   proc =(ref l1: locale, const ref l2: locale) {
@@ -791,16 +791,6 @@ module ChapelLocale {
       return chpl_rt_buildLocaleID(chpl_nodeID, c_sublocid_any);
   }
 
-  /*
-    This returns the locale from which the call is made.
-
-    :return: current locale
-    :rtype: locale
-  */
-  inline proc here {
-    return chpl_localeID_to_locale(here_id);
-  }
-  
   // Returns a wide pointer to the locale with the given id.
   pragma "no doc"
   pragma "fn returns infinite lifetime"
