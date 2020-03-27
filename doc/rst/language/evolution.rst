@@ -57,7 +57,8 @@ declared, as in the following code:
 .. code-block:: chapel
 
   var x: myRecord;
-  x; // adding this mention avoid split-initialization
+  x; // adding this mention prevents split-initialization
+     // instead, x is default-initialized at its declaration point above
   x = new myRecord();
 
 .. _readme-evolution.copy-elision:
