@@ -1,4 +1,4 @@
-import ListTest;
+import SparseTest;
 
 class T {
   var value = 0;
@@ -6,4 +6,4 @@ class T {
 
 type t = unmanaged T;
 
-ListTest.testList(t);
+SparseTest.testSparse(t);
