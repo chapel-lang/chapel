@@ -32,6 +32,12 @@
    (:ref:`locale-state`).  The module also contains iterators for traversing the
    file system (:ref:`filerator`).
 
+   .. note::
+
+      Functions in this module can use and return :ref:`escaped strings
+      <string.nonunicode>` on systems where UTF-8 file names are not enforced.
+
+
    .. _file-manip:
 
    File/Directory Manipulations

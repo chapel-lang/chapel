@@ -1422,14 +1422,21 @@ module ChapelBase {
   inline proc _cast(type t:chpl_anyreal, x:chpl_anyreal)
     return __primitive("cast", t, x);
 
-  inline proc _cast(type t:chpl_anybool, x:enum) throws
-    return x: int: bool;
+  inline proc _cast(type t:chpl_anybool, x:enum) throws {
+    if chpl_warnUnstable {
+      compilerWarning("enum-to-bool casts are likely to be deprecated in the future");
+    }    return x: int: bool;
+  }
   // _cast(type t:integral, x:enum)
   // is generated for each enum in buildDefaultFunctions
   inline proc _cast(type t:enum, x:enum) where x.type == t
     return x;
-  inline proc _cast(type t:chpl_anyreal, x:enum) throws
+  inline proc _cast(type t:chpl_anyreal, x:enum) throws {
+    if chpl_warnUnstable {
+      compilerWarning("enum-to-float casts are likely to be deprecated in the future");
+    }
     return x: int: real;
+  }
 
   inline proc _cast(type t:unmanaged class, x:_nilType)
   {

@@ -798,6 +798,17 @@ This program is equivalent to:
       In M2's main.
       In M1's foo.
 
+The ``module-or-enum-name`` in a ``use`` statement must begin with one of
+the following:
+
+ * a top-level module name
+ * a submodule of the current module
+ * a module name currently in scope due to another ``use`` statement
+ * any number of ``super`` components to indicate a number of parents of
+   the current module (e.g. ``super.super.SomeModule``)
+ * ``this`` to indicate the requested module is a submodule of the
+   current module
+
 The names that are imported by a use statement are inserted in to a new
 scope that immediately encloses the scope within which the statement
 appears. This implies that the position of the use statement within a
@@ -810,21 +821,23 @@ module-level symbols would be inserted into this enclosing scope with
 the same name, and that name is referenced by other statements in the
 same scope as the use.
 
-Use statements are transitive by default: if a module A uses a module B,
-and module B contains a use of a module or enumerated type C, then C’s
-public symbols may also be visible within A. The exception to this
-occurs when B has public symbols that shadow symbols with the same name
-in C, or when the use of C has been declared explicitly ``private``. If
-a use statement is declared to be ``private``, then the symbols it makes
-visible will only be visible to the scope containing the use.
+Use statements may be explicitly delared ``public`` or ``private``.
+By default, uses are ``private``.  Making a use ``public`` causes its
+symbols to be transitively visible: if module A uses module B, and
+module B contains a public use of a module or enumerated type C, then
+C’s public symbols will also be visible to A unless they are shadowed
+by symbols of the same name in B.  Conversely, if B's use of C is
+``private`` then A will not be able to see C's symbols due to that
+``use``.
 
-This notion of transitivity extends to the case in which a scope imports
-symbols from multiple modules or constants from multiple enumeration
-types. For example if a module A uses modules B1, B2, B3 and modules B1,
-B2, B3 use modules C1, C2, C3 respectively, then all of the public
-symbols in B1, B2, B3 have the potential to shadow the public symbols of
-C1, C2, and C3. However an error is signaled if C1, C2, C3 have public
-module level definitions of the same symbol.
+This notion of transitivity extends to the case in which a scope
+imports symbols from multiple modules or constants from multiple
+enumeration types. For example if a module A uses modules B1, B2, B3
+and modules B1, B2, B3 publicly use modules C1, C2, C3 respectively,
+then all of the public symbols in B1, B2, B3 have the potential to
+shadow the public symbols of C1, C2, and C3. However an error is
+signaled if C1, C2, C3 have conflicting public module-level
+definitions of the same symbol.
 
 An optional ``limitation-clause`` may be provided to limit the symbols
 made available by a given use statement. If an ``except`` list is

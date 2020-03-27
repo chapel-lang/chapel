@@ -98,6 +98,24 @@ module Map {
       :arg parSafe: If `true`, this map will use parallel safe operations.
     */
     proc init(type keyType, type valType, param parSafe=false) {
+      if isGenericType(keyType) {
+        compilerWarning("creating a map with key type " +
+                        keyType:string);
+        if isClassType(keyType) && !isGenericType(borrowed keyType) {
+          compilerWarning("which now means class type with generic management");
+        }
+        compilerError("map key type cannot currently be generic");
+        // In the future we might support it if the list is not default-inited
+      }
+      if isGenericType(valType) {
+        compilerWarning("creating a map with value type " +
+                        valType:string);
+        if isClassType(valType) && !isGenericType(borrowed valType) {
+          compilerWarning("which now means class type with generic management");
+        }
+        compilerError("map value type cannot currently be generic");
+        // In the future we might support it if the list is not default-inited
+      }
       this.keyType = keyType;
       this.valType = valType;
       this.parSafe = parSafe;
@@ -112,6 +130,24 @@ module Map {
       if isBorrowedClass(valType) {
         compilerError("maps of non-nilable borrowed values are",
                       " not currently supported");
+      }
+      if isGenericType(keyType) {
+        compilerWarning("creating a map with key type " +
+                        keyType:string);
+        if isClassType(keyType) && !isGenericType(borrowed keyType) {
+          compilerWarning("which now means class type with generic management");
+        }
+        compilerError("map key type cannot currently be generic");
+        // In the future we might support it if the list is not default-inited
+      }
+      if isGenericType(valType) {
+        compilerWarning("creating a map with value type " +
+                        valType:string);
+        if isClassType(valType) && !isGenericType(borrowed valType) {
+          compilerWarning("which now means class type with generic management");
+        }
+        compilerError("map value type cannot currently be generic");
+        // In the future we might support it if the list is not default-inited
       }
 
       this.keyType = keyType;
