@@ -51,6 +51,7 @@ Semantic Changes / Changes to Chapel Language
 * values of type `string` are now UTF8-validated
 * added atomic `compareExchange()` that matches the semantics of C++
   (see https://chapel-lang.org/docs/1.21/builtins/Atomics.html#Atomics.compareExchange)
+* stopped generating `init=` functions for records with a user-defined `init=`
 
 New Features
 ------------
@@ -117,6 +118,10 @@ Deprecated / Unstable / Removed Language Features
 * removed previously deprecated `string` initializers
 * deprecated `decodePolicy.ignore` in favor of new `decodePolicy.drop`
   (see https://chapel-lang.org/docs/1.21/builtins/Bytes.html#Bytes.bytes.decode)
+* removed deprecated array-as-set and array-as-map capabilities
+* added an unstable warning for identifiers beginning with `chpl_` or `_`
+* added an unstable warning for using first-class functions
+* added an unstable warning for the `union` type
 
 Deprecated / Removed Library Features
 -------------------------------------
@@ -150,11 +155,19 @@ Standard Library Modules
 * added `math.isclose()` for approximate equality checking
   (https://chapel-lang.org/docs/master/modules/standard/Math.html#Math.isclose)
 * adjusted I/O routines to support non-UTF8 paths/filenames via escaped strings
+* moved the `parSafe` field in `map` to be after `keyType` and `valType`
+  (see https://chapel-lang.org/docs/1.21/modules/standard/Map.html#Map.map)
+* updated `map` to work with nilable `owned` and non-nilable `shared` classes
+  (see https://chapel-lang.org/docs/1.21/modules/standard/Map.html#Map.map.getBorrowed)
 
 Package Modules
 ---------------
 * improved comparison sort to better handle arrays containing `owned` classes
 * added support for `bytes` messages in 'ZMQ'
+* changed `MPI_Abort()` calls into `halt()`s in the 'MPI' package
+* added a routine to write a single HDF5 file in parallel with multiple locales
+  (see https://chapel-lang.org/docs/1.21/modules/packages/HDF5/IOusingMPI.html#IOusingMPI.hdf5WriteDistributedArray)
+* added `extern` declarations for additional 'HDF5' defines
 
 Standard Domain Maps (Layouts and Distributions)
 ------------------------------------------------
@@ -284,6 +297,7 @@ Bug Fixes
 * fixed a bug with remote `bytes` copies
 * improved our running task counter for inlined functions with `on`-statements
 * stopped considering network atomics as safe for fast-ons
+* fixed a bug with taking the `.type` of a first-class function
 
 Packaging / Configuration Changes
 ---------------------------------
