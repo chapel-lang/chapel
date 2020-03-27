@@ -5,4 +5,4 @@ class T {
 
 type t = owned T?;
 
-TupleTest.testTuple(t);
+TupleTest.test(t);

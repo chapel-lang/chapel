@@ -5,4 +5,4 @@ class T {
 
 type t = unmanaged T?;
 
-TupleTest.testTuple(t);
+TupleTest.test(t);

@@ -5,4 +5,4 @@ class T {
 
 type t = (shared T, shared T);
 
-TupleTest.testTuple(t);
+TupleTest.test(t);

@@ -6,4 +6,4 @@ class T {
 
 type t = borrowed T;
 
-TupleTest.testTuple(t);
+TupleTest.test(t);
