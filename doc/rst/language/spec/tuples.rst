@@ -799,8 +799,10 @@ Consider the following example:
       var i: int;
       var r: R;
 
+      //
       // The int `i` is copied when captured into the tuple expression,
       // but `a` and `r` are not.
+      //
       test((a, i, r));
 
       // Modify the globals, then print the tuple.
@@ -995,7 +997,7 @@ entire tuple will refer to a tuple from the call site.
 .. _Tuple_Return_Behavior:
 
 Tuple Return Behavior
----------------------
+~~~~~~~~~~~~~~~~~~~~~
 
 When a tuple is returned from a function with ``ref`` or ``const ref`` return
 intent, it must refer to some form of value tuple that exists outside of
