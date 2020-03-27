@@ -41,6 +41,8 @@ Semantic Changes / Changes to Chapel Language
   (PR #14887 - not sure where this should be documented?)
 * improved `out` intents to support split initialization and to reduce copies
   (TODO language evolution link? spec?)
+* compile-time (`type`, `param`) methods now require `overload` when overloaded
+* disabled associative arrays of non-nilable classes
 
 New Features
 ------------
@@ -69,6 +71,9 @@ New Features
 Feature Improvements
 --------------------
 * made `extern` blocks automatically generate an implicit `use SysCTypes`
+* made thrown errors preserve the original line number when rethrown
+* made all `Error` classes store a string to describe the error
+* improved implementation of left shift (`<<`) for integers
 
 Deprecated / Unstable / Removed Language Features
 -------------------------------------------------
@@ -83,10 +88,13 @@ Deprecated / Unstable / Removed Language Features
 * removed the experimental `enableParScan` configuration parameter
 * deprecated C++-style deinitializer names e.g. `proc ~C()`
 * removed support for deprecated `init` copy initializers
+* added an unstable warning for `new borrowed C()`
+* removed deprecated "array-as-vector" functionality
 
 Deprecated / Removed Library Features
 -------------------------------------
 * removed deprecated sort functions
+* deprecated methods on `channel` used to get, set, or clear error codes
 
 Standard Library Modules
 ------------------------
@@ -97,6 +105,9 @@ Standard Library Modules
   (see https://chapel-lang.org/docs/1.21/modules/standard/Reflection.html#Reflection.canResolve)
 * added `isCopyable()`, `isAssignable()`, `isDefaultInitializable()` to 'Types'
   (see https://chapel-lang.org/docs/1.21/modules/standard/Types.html#Types.isCopyable)
+* enabled special methods for I/O such as `readThis` or `writeThis` to `throw`
+* adjusted several `channel` methods in the 'IO' module to `throw`
+* added an initializer to the `Error` base class that accepts a `string`
 
 Package Modules
 ---------------
@@ -111,6 +122,9 @@ New Tools / Tool Changes
 
 Interoperability Improvements
 -----------------------------
+* added support for the `bytes` type to Python interoperability
+* remapped Chapel strings to Python strings instead of Python bytes
+* added support for passing strings with embedded null bytes externally
 
 Performance Optimizations / Improvements
 ----------------------------------------
@@ -129,6 +143,7 @@ Memory Improvements
 -------------------
 * fix problems with memory management of unions
 * addressed memory leaks with comparison sorts
+* fixed memory leaks related to first-class functions
 
 Documentation
 -------------
@@ -139,6 +154,8 @@ Documentation
 * improved the documentation for `owned` and `shared` classes
   (see https://chapel-lang.org/docs/1.21/builtins/OwnedObject.html and
    https://chapel-lang.org/docs/1.21/builtins/SharedObject.html)
+* improved the description of tuple semantics in the language specification
+  (see https://chapel-lang.org/docs/1.21/language/spec/tuples.html)
 
 Example Codes
 -------------
@@ -178,6 +195,7 @@ Error Messages / Semantic Checks
 * improved lifetime checking to consider copy elision
 * added checking for uses of global variables before they are initialized
 * added errors for certain confusing generic initialization patterns
+* added safety checks for shift operations on integers by default
 
 Bug Fixes
 ---------
@@ -193,6 +211,7 @@ Bug Fixes
 * fixed a problem with returning an array of non-nilable owned classes
 * fixed a problem with tuples containing `owned` classes passed by `in` intent
 * addressed two memory errors within the 'Futures' package module
+* fixed a bug in which `list.sort()` did not support different comparator types
 
 Packaging / Configuration Changes
 ---------------------------------
