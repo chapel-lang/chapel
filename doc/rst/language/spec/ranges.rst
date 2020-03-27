@@ -287,7 +287,9 @@ Range literals are specified with the following syntax.
 
 The expressions to the left and to the right of ``..`` or ``..<``,
 when given, are called the `lower bound expression` and the `upper
-bound expression`, respectively.
+bound expression`, respectively.  The ``..`` operator defines a
+closed-interval range, whereas the ``..<`` operator defines a
+half-open interval.
 
 The type of a range literal is a range with the following parameters:
 
@@ -323,16 +325,15 @@ The type of a range literal is a range with the following parameters:
 
 The value of a range literal is as follows:
 
--  The low bound is given by the lower bound expression, if present, and
-   is -:math:`\infty` otherwise.
+- The low bound is given by the lower bound expression, if present, and
+  is -:math:`\infty` otherwise.
 
-- For ranges constructed with ``..``, the high bound is given by the
-  upper bound expression, if present, and is +\ :math:`\infty`
-  otherwise.
-
-- For ranges constructed with ``..<``, the high bound is one less than
-  the upper bound expression, if present, and is +\ :math:`\infty`
-  otherwise.
+- When the range has an upper bound expression, a closed-interval
+  range (``..``) takes the expression's value as its high bound;
+  whereas the high bound of a half-open interval range (``..<``)
+  excludes the upper bound and is therefore one less than the upper
+  bound expression.  If there is no upper bound expression, the high
+  bound is +\ :math:`\infty`.
 
 -  The stride is 1.
 
