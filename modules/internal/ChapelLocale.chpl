@@ -63,6 +63,7 @@
 
       coforall loc in Locales { on loc { ... } }
 
+  The default value for a ``locale`` variable is ``Locales[0]``
 
  */
 module ChapelLocale {
@@ -131,10 +132,7 @@ module ChapelLocale {
     forwarding _value;
 
     // default initializer for the locale record.
-    /*
-      Default initializer for locale. The default value for a ``locale``
-      variable is ``Locales[0]``
-     */
+    pragma "no doc"
     proc init() {
       if rootLocaleInitialized {
         this._instance = defaultLocale._instance;
