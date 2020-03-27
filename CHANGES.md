@@ -49,6 +49,8 @@ Semantic Changes / Changes to Chapel Language
   (see https://chapel-lang.org/docs/1.21/builtins/Bytes.html)
 * the `locale` type now has value semantics and a default value of `Locales[0]`
 * values of type `string` are now UTF8-validated
+* added atomic `compareExchange()` that matches the semantics of C++
+  (see https://chapel-lang.org/docs/1.21/builtins/Atomics.html#Atomics.compareExchange)
 
 New Features
 ------------
@@ -156,6 +158,8 @@ Package Modules
 Standard Domain Maps (Layouts and Distributions)
 ------------------------------------------------
 * implemented `.localSlice()` for Replicated arrays
+* optimized distributions for when nil-checks are enabled
+* parallelized scan operations for `PrivateDist`
 
 New Tools / Tool Changes
 ------------------------
@@ -177,9 +181,17 @@ Performance Optimizations / Improvements
 * improved the performance of the 'EpochManager' by removing a counter
 * improved the performance and scalability of distributed array/domain creation
 * improved the performance of assigning an empty sparse domain
+* significantly improved the performance and correctness of `--cache-remote`
+* extended `unorderedCopy()` to all trivially copyable types
+* improved the performance of on-statements for InfiniBand networks 
+* improved the performance of serial I/O
+* enabled warming up the runtime before calling user-code
 
 Cray-specific Performance Optimizations/Improvements
 ----------------------------------------------------
+* improved the performance of misaligned GETs under `ugni` communication
+* increased the default number of memory regions under `ugni` communication
+* minimized memory pressure from short-lived tasks issuing bulk communications
 
 Memory Improvements
 -------------------
@@ -208,6 +220,7 @@ Example Codes
 -------------
 * updated example codes to typically use `new C()` over `new owned C()`
 * updated example codes to typically avoid using `new borrowed C()`
+* updated `ra.chpl` to use `localAccess()` rather than a `local` block
 
 Portability
 -----------
@@ -215,7 +228,7 @@ Portability
 
 Cray-specific Changes and Bug Fixes
 -----------------------------------
-* fixed bugs in the presence of misaligned `ugni` communication
+* fixed several bugs related to misaligned transfers in `ugni` communication
 
 Compiler Improvements
 ---------------------
@@ -264,22 +277,28 @@ Bug Fixes
 * fixed a bug in which `list.sort()` did not support different comparator types
 * fixed some bugs in `bytes.decode()`
 * fixed a bug with remote `bytes` copies
+* improved our running task counter for inlined functions with on-statements
+* stopped considering network atomics as safe for fast-ons
 
 Packaging / Configuration Changes
 ---------------------------------
 * updated copyrights to reflect HPE's purchase of Cray Inc.
 * recompute settings files used by `--llvm` in more `make` invocations
+* removed GASNet support for Cray XE/XK
 
 Third-Party Software Changes
 ----------------------------
 * updated chpldoc to use a bundled chapeldomain
 * updated the sphinx version used for chpldoc
+* upgraded GASNet-EX to version 2020.3.0 
+* upgraded qthreads to version 1.15
 
 Runtime Library Changes
 -----------------------
 
 Launchers
 ---------
+* fixed the CPU count for slurm-srun on systems with hyperthreading disabled
 
 Testing System
 --------------
@@ -302,6 +321,7 @@ Developer-oriented changes: Module changes
 
 Developer-oriented changes: Makefile improvements
 -------------------------------------------------
+* squashed back-end warnings about incompatible pointer types
 
 Developer-oriented changes: Compiler Flags
 ------------------------------------------
@@ -317,10 +337,16 @@ Developer-oriented changes: Compiler improvements/changes
 Developer-oriented changes: Runtime improvements
 ------------------------------------------------
 * updated verbose communication output to include comm ID numbers
+* simplified and improved `ugni`'s processor atomic implementation
+* optimized verbose comm diagnostics calls
 
 Developer-oriented changes: Testing System
 ------------------------------------------
 * nightly memory leak testing now reports errors if postprocessing fails
+* fixed annotations for compiler performance graphs
+* added current git branch/sha to `start_test` output
+* improved testing error message when compilation fails
+* added support for `CHPL_LAUNCHER_REAL_WRAPPER` for slurm-gasnetrun launchers
 
 
 version 1.20.0
