@@ -169,13 +169,15 @@ Nested Modules
 --------------
 
 A *nested module* (or *sub-module*) is a module that is defined within
-another module, known as the outer, or parent, module. A nested module
-automatically has access to all of the symbols in its outer module.
-However, an outer module needs to explicitly name or use a nested module
-in order to access its symbols.
+another module, known as the outer, or parent, module.  An outer
+module can refer to the names of its sub-modules directly without a
+``use`` or ``import`` statement.  However, a sub-module must ``use``
+or ``import`` its parent module in order to refer to its name or
+symbols.
 
-A nested module can be used without using the outer module by explicitly
-naming the outer module in the use statement.
+An inner module's symbols can be referenced without accessing those of
+its parent module by naming the inner module in a qualified manner
+within the ``use`` statement.
 
    *Example (nested-use.chpl)*.
 
@@ -207,7 +209,7 @@ naming the outer module in the use statement.
       Initializing libsci
       	Initializing blas
 
-   uses a module named ``blas`` that is nested inside a module named
+   uses a module named ``blas`` that is nested within a module named
    ``libsci``.
 
 Files with both module declarations and file-scope statements result in
