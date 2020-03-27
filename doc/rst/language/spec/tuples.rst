@@ -727,12 +727,12 @@ capture elements.
 Tuple expressions or tuple arguments with default argument intent are two
 examples of referential tuples. They store elements by reference where it
 makes sense to do so. Light tuples may be viewed as analagous to a group of
-routine arguments that each have default argument intent.
+function arguments that each have default argument intent.
 
 Tuple variables or tuple arguments with ``in`` intent are two examples of
 value tuples. They store all elements by value and will make a copy of
 each element. Heavy tuples may be viewed as analagous to a group of
-routine arguments that each have the ``in`` intent.
+function arguments that each have the ``in`` intent.
 
 In short, some or all of the elements of a referential tuple may be
 references, while a value tuple will never contain a reference.
@@ -789,11 +789,11 @@ record ``r`` by ``ref``, but will create a copy of the integer ``i``.
 
    Tuple expressions and other forms of referential tuple are designed to act
    like a lightweight bundle of arguments. They behave similarly to the
-   individual arguments of a routine call.
+   individual arguments of a function call.
 
    It would be prohibitively expensive for some argument types (such as
    arrays) to be copied by default when passed as an argument to a
-   routine call.
+   function call.
 
    The same logic applies to tuple expressions. When the default argument
    intent of a value's type is some form of ``ref``, a tuple expression will
@@ -844,7 +844,7 @@ not reflected in ``tup`` when it is written to standard output.
 Tuple Argument Behavior
 -----------------------
 
-A tuple argument to a routine may be either a referential tuple or a value
+A tuple argument to a function may be either a referential tuple or a value
 tuple depending on its argument intent.
 
 If the tuple argument has the default argument intent, then it is a light
@@ -855,7 +855,7 @@ If the tuple argument has the ``in`` intent, then it is a value tuple and all
 of its elements are captured by value, as though each element has the ``in``
 intent.
 
-If a routine argument is a tuple with the default argument intent and a
+If a function argument is a tuple with the default argument intent and a
 value tuple (such as a tuple variable) is passed to it, the value tuple
 will be silently converted into a referential tuple.
 
@@ -898,7 +898,7 @@ Consider the following example:
       (0, (x = 6))
       (0, (x = 6))
 
-The argument ``tup`` of the routine ``lightTupleArg`` is a referential tuple
+The argument ``tup`` of the function ``lightTupleArg`` is a referential tuple
 due to the default argument intent. When the module variable ``modTup`` is
 passed to ``lightTupleArg``, its first element is copied while its second
 element is passed as though it were ``const ref``.
@@ -954,9 +954,9 @@ When a tuple is returned from a function with ``ref`` or ``const ref`` return
 intent, it must refer to some form of value tuple that exists outside of
 the current scope. Otherwise there is a compilation error.
   
-Both referential tuples and value tuples can be returned by a routine. Since
+Both referential tuples and value tuples can be returned by a function. Since
 the default return intent is to return by value, a referential tuple must be
-converted to a value tuple when it is returned from a routine.
+converted to a value tuple when it is returned from a function.
 
    *Example (tuple-return-behavior.chpl)*.
 
@@ -987,7 +987,7 @@ converted to a value tuple when it is returned from a routine.
 In the above example, ``returnTuple`` returns a value tuple that contains
 a copy of the array ``a``, the integer ``i``, and the record ``r``.
 
-The value tuple returned by ``returnTuple`` is passed to the routine
+The value tuple returned by ``returnTuple`` is passed to the function 
 ``updateGlobalsAndOutput``. It is silently converted into a light
 tuple because the formal argument ``tup`` has the default argument intent.
 
