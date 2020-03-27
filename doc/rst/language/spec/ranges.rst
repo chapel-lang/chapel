@@ -279,21 +279,24 @@ Range literals are specified with the following syntax.
 
    range-literal:
      expression .. expression
+     expression ..< expression
      expression ..
      .. expression
+     ..< expression
      ..
 
-The expressions to the left and to the right of ``..``, when given, are
-called the low bound and the high bound expression, respectively.
+The expressions to the left and to the right of ``..`` or ``..<``,
+when given, are called the `lower bound expression` and the `upper
+bound expression`, respectively.
 
 The type of a range literal is a range with the following parameters:
 
 -  ``idxType`` is determined as follows:
 
-   -  If both the low bound and the high bound expressions are given and
+   -  If both the lower bound and the upper bound expressions are given and
       have the same type, then ``idxType`` is that type.
 
-   -  If both the low bound and the high bound expressions are given and
+   -  If both the lower bound and the upper bound expressions are given and
       an implicit conversion is allowed from one expression’s type to
       the other’s, then ``idxType`` is that type.
 
@@ -307,12 +310,12 @@ The type of a range literal is a range with the following parameters:
 -  ``boundedType`` is a value of the type ``BoundedRangeType`` that is
    determined as follows:
 
-   -  ``bounded``, if both the low bound and the high bound expressions
+   -  ``bounded``, if both the lower bound and the upper bound expressions
       are given,
 
-   -  ``boundedLow``, if only the high bound expression is given,
+   -  ``boundedLow``, if only the upper bound expression is given,
 
-   -  ``boundedHigh``, if only the low bound expression is given,
+   -  ``boundedHigh``, if only the lower bound expression is given,
 
    -  ``boundedNone``, if neither bound expression is given.
 
@@ -320,11 +323,16 @@ The type of a range literal is a range with the following parameters:
 
 The value of a range literal is as follows:
 
--  The low bound is given by the low bound expression, if present, and
+-  The low bound is given by the lower bound expression, if present, and
    is -:math:`\infty` otherwise.
 
--  The high bound is given by the upper bound expression, if present,
-   and is +\ :math:`\infty` otherwise.
+- For ranges constructed with ``..``, the high bound is given by the
+  upper bound expression, if present, and is +\ :math:`\infty`
+  otherwise.
+
+- For ranges constructed with ``..<``, the high bound is one less than
+  the upper bound expression, if present, and is +\ :math:`\infty`
+  otherwise.
 
 -  The stride is 1.
 
