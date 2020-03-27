@@ -816,8 +816,8 @@ symbols to be transitively visible: if module A uses module B, and
 module B contains a public use of a module or enumerated type C, then
 C’s public symbols will also be visible to A unless they are shadowed
 by symbols of the same name in B.  Conversely, if B's use of C is
-``private`` then A will not be able to see C's symbols by virtue of
-that ``use``.
+``private`` then A will not be able to see C's symbols due to that
+``use``.
 
 This notion of transitivity extends to the case in which a scope
 imports symbols from multiple modules or constants from multiple
