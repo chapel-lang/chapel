@@ -623,7 +623,7 @@ Overriding Base Class Methods
 If a method in a derived class is declared with a signature identical to
 that of a method in a base class, then it is said to override the base
 class’s method. Such methods may be considered for dynamic dispatch if
-certain criteria are met. In particular, dynanmic dispatch will be used
+certain criteria are met. In particular, dynamic dispatch will be used
 when the method receiver has a static type of the base class but refers
 to an instance of a derived class type. Additionally, a method eligible
 for dynamic dispatch must not be a class method (see :ref:`Class_Methods`),
@@ -637,10 +637,12 @@ must not return ``type``, and must not return ``param``.
    method receiver.
 
 In order to have identical signatures, two methods must have the same
-the names, intents, types, and order of formal arguments. The return
-type of the overriding method must either be the same as the return type
-of the base class’s method or be a subclass of the base class method’s
-return type.
+names, and their formal arguments must have the same names, intents, types,
+and order.
+
+The return type of the overriding method must either be the same as the
+return type of the base class’s method or be a subclass of the base class
+method’s return type.
 
 Methods that override a base class method must be marked with the
 ``override`` keyword in the ``procedure-kind``. Additionally, methods
