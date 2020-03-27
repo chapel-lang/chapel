@@ -101,6 +101,15 @@ module List {
     }
   }
 
+  /* Emit clean error message for types not yet supported */
+  pragma "no doc"
+  proc _checkType(type t) {
+    if isBorrowedClass(t) && isNonNilableClass(t) {
+      compilerError('List does not support non-nilable borrowed class types');
+    }
+    // Also not yet supported: tuples of non-nilable classes
+  }
+
   private use IO;
 
   /*
@@ -148,6 +157,7 @@ module List {
       :type parSafe: `param bool`
     */
     proc init(type eltType, param parSafe=false) {
+      _checkType(eltType);
       this.eltType = eltType;
       this.parSafe = parSafe;
       this.complete();
@@ -166,9 +176,9 @@ module List {
       :type parSafe: `param bool`
     */
     proc init(other: list(?t), param parSafe=false) {
+      _checkType(t);
       if !isCopyableType(this.type.eltType) then
         compilerError("Cannot copy list with element type that cannot be copied");
-
       this.eltType = t;
       this.parSafe = parSafe;
       this.complete();
@@ -187,6 +197,7 @@ module List {
       :type parSafe: `param bool`
     */
     proc init(other: [?d] ?t, param parSafe=false) {
+      _checkType(t);
       if !isCopyableType(t) then
         compilerError("Cannot construct list from array with element type that cannot be copied");
 
@@ -213,6 +224,7 @@ module List {
       :type parSafe: `param bool`
     */
     proc init(other: range(?t), param parSafe=false) {
+      _checkType(t);
       this.eltType = t;
       this.parSafe = parSafe;
 
@@ -285,6 +297,7 @@ module List {
       this.complete();
       _commonInitFromIterable(other);
     }
+
 
     pragma "no doc"
     proc _commonInitFromIterable(iterable) {
