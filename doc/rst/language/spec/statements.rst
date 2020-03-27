@@ -798,6 +798,17 @@ This program is equivalent to:
       In M2's main.
       In M1's foo.
 
+The ``module-or-enum-name`` in a ``use`` statement must begin with one of
+the following:
+
+ * a top-level module name
+ * a submodule of the current module
+ * a module name currently in scope due to another ``use`` statement
+ * any number of ``super`` components to indicate a number of parents of
+   the current module (e.g. ``super.super.SomeModule``)
+ * ``this`` to indicate the requested module is a submodule of the
+   current module
+
 The names that are imported by a use statement are inserted in to a new
 scope that immediately encloses the scope within which the statement
 appears. This implies that the position of the use statement within a
