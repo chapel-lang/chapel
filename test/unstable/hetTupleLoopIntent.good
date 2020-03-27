@@ -1,0 +1,4 @@
+hetTupleLoopIntent.chpl:3: warning: index variables for loops over heterogeneous tuples are currently `const ref` but are likely to change to `const` and/or `ref` in some cases in the future
+1
+2.3
+hi

@@ -1785,6 +1785,11 @@ static Expr* unrollHetTupleLoop(CallExpr* call, Expr* tupExpr, Type* iterType) {
     // modifications to tuples rather than allowing modifications
     // to tuple elements that shouldn't be modified.
     //
+    if (fWarnUnstable) {
+      USR_WARN(theloop, "index variables for loops over heterogeneous tuples "
+               "are currently `const ref` but are likely to change to `const` "
+               "and/or `ref` in some cases in the future");
+    }
     Expr* firstStmt = theloop->body.first();
     if (DefExpr* defexp = toDefExpr(firstStmt)) {
       if (VarSymbol* loopVar = toVarSymbol(defexp->sym)) {
