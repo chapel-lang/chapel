@@ -146,7 +146,6 @@ module ChapelLocale {
       this._instance = _to_unmanaged(_instance);
     }
 
-    pragma "no doc"
     proc init(param kind) {
       if kind == localeKind.regular then
         compilerError("locale.init(kind) can not be used to create ",
@@ -157,12 +156,10 @@ module ChapelLocale {
         this._instance = nil;
     }
 
-    pragma "no doc"
     proc init=(other: locale) {
       this._instance = other._instance;
     }
 
-    pragma "no doc"
     proc deinit() { }
 
     inline proc localeid {
