@@ -18,6 +18,7 @@ Highlights (see subsequent sections for further details)
 Syntactic/Naming Changes
 ------------------------
 * `private config`s must now be fully qualified when set on the command-line
+* made minor adjustments to the argument names of `string` and `bytes` methods
 
 Semantic Changes / Changes to Chapel Language
 ---------------------------------------------
@@ -42,7 +43,12 @@ Semantic Changes / Changes to Chapel Language
 * improved `out` intents to support split initialization and to reduce copies
   (TODO language evolution link? spec?)
 * compile-time (`type`, `param`) methods now require `overload` when overloaded
-* disabled associative arrays of non-nilable classes
+* records now support lexicographical comparison with `<`, `<=`, `>`, `>=`
+  (see https://chapel-lang.org/docs/1.21/language/spec/records.html#default-comparison-operators)
+* `bytes.this` and `bytes.these` now return/yield `unit(8)` instead of `bytes`
+  (see https://chapel-lang.org/docs/1.21/builtins/Bytes.html)
+* the `locale` type now has value semantics and a default value of `Locales[0]`
+* values of type `string` are now UTF8-validated
 
 New Features
 ------------
@@ -67,16 +73,29 @@ New Features
   (TODO: where to document?)
 * implemented prototypical support for submodules in different files
   (TODO: where to document?)
+* added `string.encode()` to convert strings with escaped data to `bytes`
+  (see https://chapel-lang.org/docs/1.21/builtins/String.html#String.string.encode)
 
 Feature Improvements
 --------------------
 * made `extern` blocks automatically generate an implicit `use SysCTypes`
 * made thrown errors preserve the original line number when rethrown
 * made all `Error` classes store a string to describe the error
-* improved implementation of left shift (`<<`) for integers
+* improved the implementation of left shift (`<<`) on integers
+  (see https://chapel-lang.org/docs/1.21/language/spec/expressions.html#shift-operators)
+* the `bytes` type now supports `param` values
+* added a `policy` argument to some `string` factories to escape non-UTF8 data
+* the `bytes` type now supports `toByte()` and comparison operators
+  (see https://chapel-lang.org/docs/1.21/builtins/Bytes.html)
+* `bytes` can now be used as the index type for associative domains
+* added `bytes.format()`, similar to `string.format()`
+* `bytes` can be indexed with `byteIndex`
+* `bytes` can now be cast to `enum`
 
 Deprecated / Unstable / Removed Language Features
 -------------------------------------------------
+* deprecated support for spaces in query expressions
+  (e.g. `proc foo(arg: ? t)` or `proc foo(args... ? n)`)
 * deprecated `.length`/`.numIndices`/`.numElements` queries in favor of `.size`
 * added an unstable warning for arrays with negative strides
 * added an unstable warning for enums with repeated values
@@ -90,11 +109,19 @@ Deprecated / Unstable / Removed Language Features
 * removed support for deprecated `init` copy initializers
 * added an unstable warning for `new borrowed C()`
 * removed deprecated "array-as-vector" functionality
+* disabled associative arrays of non-nilable classes
+* deprecated `string` vs. `bytes` comparisons 
+* removed previously deprecated `string` initializers
+* deprecated `decodePolicy.ignore` in favor of new `decodePolicy.drop`
+  (see https://chapel-lang.org/docs/1.21/builtins/Bytes.html#Bytes.bytes.decode)
 
 Deprecated / Removed Library Features
 -------------------------------------
 * removed deprecated sort functions
 * deprecated methods on `channel` used to get, set, or clear error codes
+* `makeRandomStream()` is deprecated in favor of `createRandomStream()`
+  (see https://chapel-lang.org/docs/master/modules/standard/Random.html)
+* `regexp` is now deprecated in favor of `regexp(string)`
 
 Standard Library Modules
 ------------------------
@@ -106,12 +133,25 @@ Standard Library Modules
 * added `isCopyable()`, `isAssignable()`, `isDefaultInitializable()` to 'Types'
   (see https://chapel-lang.org/docs/1.21/modules/standard/Types.html#Types.isCopyable)
 * enabled special methods for I/O such as `readThis` or `writeThis` to `throw`
+  (see https://chapel-lang.org/docs/1.21/builtins/ChapelIO.html#readthis-writethis-readwritethis)
 * adjusted several `channel` methods in the 'IO' module to `throw`
-* added an initializer to the `Error` base class that accepts a `string`
+* added an initializer to the `Error` base class that accepts a string message
+  (https://chapel-lang.org/docs/1.21/builtins/ChapelError.html#ChapelError.Error)
+* the regular expression type `regexp` is now generic and supports `bytes`
+* `defaultRNG` can now be used to select the default random number generator
+  (see https://chapel-lang.org/docs/master/modules/standard/Random.html)
+* added `channel.readbytes` and updated `channel.readline` to support `bytes`
+  (see https://chapel-lang.org/docs/master/modules/standard/IO.html)
+* added a `map.keys()` iterator
+  (see https://chapel-lang.org/docs/master/modules/standard/Map.html)
+* added `math.isclose()` for approximate equality checking
+  (https://chapel-lang.org/docs/master/modules/standard/Math.html#Math.isclose)
+* adjusted I/O routines to support non-UTF8 paths/filenames via escaped strings
 
 Package Modules
 ---------------
 * improved comparison sort to better handle arrays containing `owned` classes
+* added support for `bytes` messages in 'ZMQ'
 
 Standard Domain Maps (Layouts and Distributions)
 ------------------------------------------------
@@ -135,6 +175,8 @@ Performance Optimizations / Improvements
 * improved the performance of comparison sorts
 * improved the performance of mergeSort()
 * improved the performance of the 'EpochManager' by removing a counter
+* improved the performance and scalability of distributed array/domain creation
+* improved the performance of assigning an empty sparse domain
 
 Cray-specific Performance Optimizations/Improvements
 ----------------------------------------------------
@@ -144,6 +186,11 @@ Memory Improvements
 * fix problems with memory management of unions
 * addressed memory leaks with comparison sorts
 * fixed memory leaks related to first-class functions
+* closed a leak in array views
+* closed leaks in `Cyclic` and `BlockCyclic` distributions
+* closed a leak when returning a tuple from a paren-less function
+* closed a leak in functions with variadic string arguments
+* closed a leak in loop-based array initialization with throwing functions
 
 Documentation
 -------------
@@ -168,6 +215,7 @@ Portability
 
 Cray-specific Changes and Bug Fixes
 -----------------------------------
+* fixed bugs in the presence of misaligned `ugni` communication
 
 Compiler Improvements
 ---------------------
@@ -196,12 +244,14 @@ Error Messages / Semantic Checks
 * added checking for uses of global variables before they are initialized
 * added errors for certain confusing generic initialization patterns
 * added safety checks for shift operations on integers by default
+* added an error for copy initializers that do not have exactly one argument
+* improved the error message for secondary methods that are missing their types
 
 Bug Fixes
 ---------
 * fixed a bug preventing records with `owned` fields from being swapped (`<=>`)
 * fixed a bug in which domain-to-string casts were not working as intended
-* fixed `.localSlice` for Block and Cyclic arrays
+* fixed `.localSlice` for `Block` and `Cyclic` arrays
 * fixed a bug in which user identifiers could conflict with internal ones
 * fixed a bug in which 'DistributedIters' still relied on string + value ops
 * fixed several problems with type queries of class types
@@ -212,6 +262,8 @@ Bug Fixes
 * fixed a problem with tuples containing `owned` classes passed by `in` intent
 * addressed two memory errors within the 'Futures' package module
 * fixed a bug in which `list.sort()` did not support different comparator types
+* fixed some bugs in `bytes.decode()`
+* fixed a bug with remote `bytes` copies
 
 Packaging / Configuration Changes
 ---------------------------------
@@ -232,6 +284,12 @@ Launchers
 Testing System
 --------------
 * `start_test` can now be run simultaneously in different directories
+* `start_test -memleaks` now deletes the existing log file
+
+Developer-oriented changes: Documentation improvements
+------------------------------------------------------
+* added documentation for multilocale performance/communication count testing
+  (see https://github.com/chapel-lang/chapel/blob/master/doc/rst/developer/bestPractices/TestSystem.rst#multilocale-performance-testing)
 
 Developer-oriented changes: Module changes
 ------------------------------------------
@@ -240,6 +298,7 @@ Developer-oriented changes: Module changes
 * made the 'Bytes' module more index-neutral
 * changed ddata initialization to be param-controlled
 * improved the statistical properties of hash functions for records and tuples
+* `locale` is now implemented using a `record` type
 
 Developer-oriented changes: Makefile improvements
 -------------------------------------------------
@@ -261,6 +320,7 @@ Developer-oriented changes: Runtime improvements
 
 Developer-oriented changes: Testing System
 ------------------------------------------
+* nightly memory leak testing now reports errors if postprocessing fails
 
 
 version 1.20.0
