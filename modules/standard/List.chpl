@@ -148,6 +148,15 @@ module List {
       :type parSafe: `param bool`
     */
     proc init(type eltType, param parSafe=false) {
+      if isGenericType(eltType) {
+        compilerWarning("creating a list with element type " +
+                        eltType:string);
+        if isClassType(eltType) && !isGenericType(borrowed eltType) {
+          compilerWarning("which now means class type with generic management");
+        }
+        compilerError("list element type cannot currently be generic");
+        // In the future we might support it if the list is not default-inited
+      }
       this.eltType = eltType;
       this.parSafe = parSafe;
       this.complete();
