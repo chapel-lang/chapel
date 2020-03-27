@@ -1074,6 +1074,8 @@ otherwise the new high-order bits are set to zero.
 
 The value of ``b`` must be non-negative.
 
+The value of ``b`` must be less than the number of bits in ``a``.
+
 .. _Logical_Operators:
 
 Logical Operators
