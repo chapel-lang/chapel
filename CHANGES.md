@@ -183,7 +183,7 @@ Performance Optimizations / Improvements
 * improved the performance of assigning an empty sparse domain
 * significantly improved the performance and correctness of `--cache-remote`
 * extended `unorderedCopy()` to all trivially copyable types
-* improved the performance of on-statements for InfiniBand networks 
+* improved the performance of `on`-statements for InfiniBand networks 
 * improved the performance of serial I/O
 * enabled warming up the runtime before calling user-code
 
@@ -277,7 +277,7 @@ Bug Fixes
 * fixed a bug in which `list.sort()` did not support different comparator types
 * fixed some bugs in `bytes.decode()`
 * fixed a bug with remote `bytes` copies
-* improved our running task counter for inlined functions with on-statements
+* improved our running task counter for inlined functions with `on`-statements
 * stopped considering network atomics as safe for fast-ons
 
 Packaging / Configuration Changes
@@ -456,6 +456,10 @@ New Features
   (see https://chapel-lang.org/docs/1.20/builtins/String.html#String.string.toByte)
 * added an atomic fence
   (see https://chapel-lang.org/docs/1.20/builtins/Atomics.html#Atomics.atomicFence)
+* added support for renaming a module in its `use` statement
+  (see <TODO> doc link)
+* added support for `import` statements as a more precise way of using modules
+  (see <TODO> doc link)
 
 Feature Improvements
 --------------------
@@ -476,6 +480,7 @@ Feature Improvements
 * added support for passing the `string` type to `extern` procedures
 * improved how first-class functions print themselves out
 * enabled `in`-intents of POD record types in follower iterators
+* improved resolution of methods and fields, particularly for private types
 
 Deprecated / Removed Language Features
 --------------------------------------
@@ -508,6 +513,8 @@ Deprecated / Removed Library Features
    see https://chapel-lang.org/docs/1.20/modules/packages/ZMQ.html#ZMQ.Socket.setsockopt)
 * retired deprecated usage of `LinearAlgebra.eigvals()`
 * removed previously deprecated functions with `out error` arguments from `IO`
+* removed `LINGER`, `SUBSCRIBE`, `UNSUBSCRIBE` and `setsockopt` from 'ZMQ'
+* removed deprecated versions of `open()` from 'IO'
 
 Standard Library Modules
 ------------------------
@@ -533,6 +540,10 @@ Standard Library Modules
   (see https://chapel-lang.org/docs/1.20/modules/standard/CommDiagnostics.html)
 * added file:line for executeOn in verbose comm diagnostics, matching other ops
 * reduced the degree to which standard modules leak symbols into user code
+* stopped including the 'CommDiagnostics' module by default
+* stopped including most 'IO' symbols by default
+  (see https://chapel-lang.org/docs/1.21/builtins/ChapelIO.html and
+  https://chapel-lang.org/docs/1.21/modules/standard/IO.html)
 
 Package Modules
 ---------------
@@ -609,6 +620,10 @@ New Tools / Tool Changes
 * added `MASON_OFFLINE` to improve offline experience for mason users
   (see https://chapel-lang.org/docs/1.20/tools/mason/mason.html#environment-variables)
 * pinned the version of `Pygments` relied upon by `chpldoc`
+* added a `--project-version` flag to `chpldoc`
+  (see https://chapel-lang.org/docs/1.21/tools/chpldoc/man.html)
+* improved syntax highlighting for `highlight`
+* removed trailing comma and period from `chpldoc` copyrights without an author
 
 Interoperability Improvements
 -----------------------------
@@ -671,6 +686,8 @@ Documentation
   (see https://chapel-lang.org/docs/1.20/modules/standard/IO/FormattedIO.html#FormattedIO.channel.readf)
 * removed a reference to old assignment behavior from interoperability technote
 * fixed several broken links in the online documentation
+* removed online documentation for some internal functions in the 'IO' module
+* increased usage of the `:throws:` tag in library documentation
 
 Example Codes
 -------------
@@ -727,6 +744,7 @@ Error Messages / Semantic Checks
    and https://chapel-lang.org/docs/1.20/technotes/libraries.html#intents-in-python-interoperability)
 * improved error message wording for type mismatches in assignment
 * made a user-facing "the type of the actual argument is generic" error
+* improved the error message for modules declared in function bodies
 
 Bug Fixes
 ---------
@@ -776,6 +794,7 @@ Bug Fixes
 * fixed `make mason` such that it will not hang if hugepages is unavailable
 * fixed `make mason` to detect changes in any mason source files
 * fixed `make clobber` such that it clobbers mason
+* fixed a bug in `chpldoc` with intervening single line comments
 
 Packaging / Configuration Changes
 ---------------------------------
@@ -827,6 +846,7 @@ Developer-oriented changes: Module changes
 * new internal module 'ByteBufferHelpers' for bytes/string buffer management
 * new internal module 'BytesStringCommons' for common bytes/string helpers
 * added minimum string allocation size 'param chpl_minStringAllocSize=0'
+* replaced `use _ only;` with `import _;` in modules
 
 Developer-oriented changes: Makefile improvements
 -------------------------------------------------
@@ -859,6 +879,11 @@ Developer-oriented changes: Compiler improvements/changes
 * the compiler now handles certain cast calls directly
 * added 'FLAG_CHAPEL_BYTES_LITERAL' AggregateType
 * fixed an override checking bug with --devel flag
+* improved debugging output for multilocale interop. marshalling routines
+* removed a bad optimization that was breaking internal module visibility rules
+* simplified visible function determination of `use` statement visibility
+* only check visibility of symbols once per scope
+* added a cache for determining if an actual's type is coercible
 
 Developer-oriented changes: Runtime improvements
 ------------------------------------------------
