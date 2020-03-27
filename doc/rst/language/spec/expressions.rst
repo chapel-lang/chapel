@@ -374,7 +374,9 @@ Precedence and Associativity
 | | ``-``            |                | | subtraction                        |
 |                    |                |                                      |
 +--------------------+----------------+--------------------------------------+
-| ``..``             | left           | range initialization                 |
+| | ``..``           | | left         | | range initialization               |
+| | ``..<``          | | left         | | open-interval range initialization |
+|                    |                |                                      |
 +--------------------+----------------+--------------------------------------+
 | | ``<=``           | left           | | less-than-or-equal-to comparison   |
 | | ``>=``           |                | | greater-than-or-equal-to comparison|
