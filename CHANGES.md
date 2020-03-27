@@ -225,10 +225,13 @@ Example Codes
 Portability
 -----------
 * imporved the portability of the HDFS and Curl modules for 32-bit platforms
+* reduced third-party linking support scripts' reliance on `libtool`
+* increased user program linking consistency across configurations
 
 Cray-specific Changes and Bug Fixes
 -----------------------------------
 * fixed several bugs related to misaligned transfers in `ugni` communication
+* brought Cray Shasta support into the mainline Chapel module build system
 
 Compiler Improvements
 ---------------------
@@ -295,6 +298,7 @@ Third-Party Software Changes
 
 Runtime Library Changes
 -----------------------
+* improved CHPL_COMM=ofi functionality, portability, and performance
 
 Launchers
 ---------
@@ -304,6 +308,7 @@ Testing System
 --------------
 * `start_test` can now be run simultaneously in different directories
 * `start_test -memleaks` now deletes the existing log file
+* adapted testing system to work more dependably on Slurm-based systems 
 
 Developer-oriented changes: Documentation improvements
 ------------------------------------------------------
@@ -339,6 +344,8 @@ Developer-oriented changes: Runtime improvements
 * updated verbose communication output to include comm ID numbers
 * simplified and improved `ugni`'s processor atomic implementation
 * optimized verbose comm diagnostics calls
+* added support for testing the `numa` locale model on non-NUMA systems
+* added `debug`/`nodbg` to runtime library paths, reducing the need to rebuild
 
 Developer-oriented changes: Testing System
 ------------------------------------------
