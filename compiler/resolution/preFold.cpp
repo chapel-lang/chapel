@@ -2002,7 +2002,7 @@ static Expr* preFoldNamed(CallExpr* call) {
           if (imm != NULL && (fromEnum || fromIntEtc) && toIntEtc) {
             Immediate coerce = getDefaultImmediate(newType);
 
-            if (fWarnUnstable && !toIntUint) {
+            if (fWarnUnstable && fromEnum && !toIntUint) {
               if (is_bool_type(newType)) {
                 USR_WARN(call, "enum-to-bool casts are likely to be deprecated in the future");
               } else {
