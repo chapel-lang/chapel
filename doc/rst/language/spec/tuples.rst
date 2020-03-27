@@ -718,7 +718,7 @@ where a comma-separated list of components is valid.
 .. _Value_Tuples_and_Referential_Tuples:
 
 Value Tuples and Referential Tuples
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+-----------------------------------
 
 Throughout the next few sections, the terms referential tuple and value
 tuple are used frequently to describe two different ways that tuples can
@@ -740,7 +740,7 @@ references, while a value tuple will never contain a reference.
 .. _Tuple_Expression_Behavior:
 
 Tuple Expression Behavior
--------------------------
+~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Tuple expressions are a form of referential tuple. Like most other
 referential tuples, tuple expressions capture each element based on the
@@ -802,7 +802,7 @@ record ``r`` by ``ref``, but will create a copy of the integer ``i``.
    expensive copy operation.
 
 Tuple Variable Behavior
------------------------
+~~~~~~~~~~~~~~~~~~~~~~~
 
 Tuple variables are a form of value tuple. Like other value tuples, tuple
 variables will copy elements in a manner similar to passing the element
@@ -835,15 +835,14 @@ For example, in this code:
       (0, 0, (x = 0))
 
 Initialization of the tuple variable ``tup`` will make a copy of the
-array ``a``, the record ``r``, and the integer ``i``.
+array ``a``, the record ``r``, and the integer ``i``. Because ``tup`` stores
+a copy of these three variables, changes made to them are not visible
+in ``tup`` when it is written to standard output.
 
-Because ``tup`` stores a copy of these three variables, changes made to them
-are not visible in ``tup`` when it is written to standard output.
+.. _Tuple_Argument_Intents:
 
-.. _Tuple_Argument_Behavior:
-
-Tuple Argument Behavior
------------------------
+Tuple Argument Intents
+~~~~~~~~~~~~~~~~~~~~~~
 
 A tuple argument to a function may be either a referential tuple or a value
 tuple depending on its argument intent.
@@ -860,6 +859,11 @@ If the tuple argument has the ``in`` or ``const in`` intent, then it is a
 value tuple. All of its elements are captured by value as though each
 element is passed to an ``in`` intent argument.
 
+.. _Tuple_Argument_Behavior:
+
+Tuple Argument Behavior
+~~~~~~~~~~~~~~~~~~~~~~~
+
 If a function argument is a tuple with the default argument intent and a
 value tuple (such as a tuple variable) is passed to it, the value tuple
 will be implicitly converted into a referential tuple. The resulting
@@ -870,9 +874,9 @@ referential tuple (such as a tuple expression) is passed to a tuple argument
 that has the ``in`` intent. The referential tuple will be converted to
 a value tuple by copy initializing each element.
 
-   *Example (tuple-argument-behavior.chpl)*.
-
 Consider the following example:
+
+   *Example (tuple-argument-behavior.chpl)*.
 
    .. code-block:: chapel
 
@@ -880,18 +884,25 @@ Consider the following example:
 
       var modTup = (0, new R(0));
 
+      //
       // The argument `tup` of `referentialTupleArg` is a referential tuple
       // due to the default argument intent.
+      //
       proc referentialTupleArg(tup) {
 
         // Modify the module variable `modTup`.
         modTup = (3, new R(6));
 
-        // Should print (0, (x = 6)).
+        //
+        // Should print (0, (x = 6)). Recall that a tuple argument with the
+        // default argument intent copies integer elements.
+        //
         writeln(tup);
 
+        //
         // When `tup` is passed to `valueTupleArg`, a copy of each element
         // is made because the `valueTup` argument has the `in` intent.
+        //
         valueTupleArg(tup);
 
         // Should still print (0, (x = 6)).
@@ -903,9 +914,11 @@ Consider the following example:
         valueTup = (64, new R(128));
       }
 
+      //
       // When `modTup` is passed to `referentialTupleArg`, its first
       // element is copied while its second element is passed as though
       // it were `const ref`.
+      //
       referentialTupleArg(modTup);
 
    .. BLOCK-test-chapeloutput
@@ -922,16 +935,20 @@ entire tuple will refer to a tuple from the call site.
 
    .. code-block:: chapel
 
+      //
       // Because the intent of `tup` is `ref`, only value tuples can be
       // passed to `passTupleByRef`.
+      //
       proc passTupleByRef(ref tup) {
         tup = (64, 128);
       }
 
       var modTup = (0, 0);
 
+      //
       // Passing `modTup` to `passTupleByRef` will construct a referential
       // tuple where each element refers to an element from `modTup`.
+      //
       passTupleByRef(modTup);
 
       // Should print (64, 128).
@@ -963,14 +980,18 @@ converted to a value tuple.
       var i: int;
       var r = new R(0);
 
+      //
       // The value tuple returned by `returnTuple` is passed to the
       // function `updateGlobalsAndOutput`. It is implicitly converted
       // into a referential tuple because the formal argument `tup`
       // has the default argument intent.
+      //
       updateGlobalsAndOutput(returnTuple());
 
+      //
       // The function `returnTuple` returns a value tuple that contains
       // a copy of the array `a`, the integer `i`, and the record `r`.
+      //
       proc returnTuple() {
         return (a, i, r);
       }
@@ -980,10 +1001,12 @@ converted to a value tuple.
         i = 2;
         r.x = 3;
 
+        //
         // Because the tuple passed to `updateGlobalsAndOutput` is a value
         // tuple and contains no references, the assignments made to `a`,
         // `i`, and `r` above are not visible in `tup` when it is printed.
         // This `writeln` will output (0, 0, (x = 0)).
+        //
         writeln(tup);
       }
 
