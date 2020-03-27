@@ -126,6 +126,10 @@ module Set {
       :arg parSafe: If `true`, this set will use parallel safe operations.
     */
     proc init(type eltType, param parSafe=false) {
+      if isClass(eltType) then
+        compilerError('Sets do not support class types');
+      if isTuple(eltType) then
+        compilerError('Sets do not support tuple types');
       this.eltType = eltType;
       this.parSafe = parSafe;
     }
@@ -141,6 +145,10 @@ module Set {
     */
     proc init(type eltType, iterable, param parSafe=false)
             where canResolveMethod(iterable, "these") {
+      if isClass(eltType) then
+        compilerError('Sets do not support class types');
+      if isTuple(eltType) then
+        compilerError('Sets do not support tuple types');
       this.eltType = eltType;
       this.parSafe = parSafe;
       this.complete();
