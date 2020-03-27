@@ -726,13 +726,13 @@ capture elements.
 
 Tuple expressions or tuple arguments with default argument intent are two
 examples of referential tuples. They store elements by reference where it
-makes sense to do so. Light tuples may be viewed as analagous to a group of
-function arguments that each have default argument intent.
+makes sense to do so. Referential tuples may be viewed as analagous to a
+group of function arguments that each have default argument intent.
 
 Tuple variables or tuple arguments with ``in`` intent are two examples of
-value tuples. They store all elements by value and will make a copy of
-each element. Heavy tuples may be viewed as analagous to a group of
-function arguments that each have the ``in`` intent.
+value tuples. They store all elements by value and may store elements copy
+initialized from another tuple. Value tuples may be viewed as analagous to
+a group of function arguments that each have the ``in`` intent.
 
 In short, some or all of the elements of a referential tuple may be
 references, while a value tuple will never contain a reference.
@@ -746,8 +746,6 @@ Tuple expressions are a form of referential tuple. Like most other
 referential tuples, tuple expressions capture each element based on the
 default argument intent of the element's type.
 
-   *Example (tuple-expression-behavior.chpl)*.
-
 More specifically:
 
 -  If the default argument intent of the element's type is a variation of
@@ -756,6 +754,8 @@ More specifically:
 -  Otherwise, the tuple expression will capture the element by value.
 
 Consider the following example:
+
+   *Example (tuple-expression-behavior.chpl)*.
 
    .. code-block:: chapel
 
