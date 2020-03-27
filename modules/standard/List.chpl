@@ -101,12 +101,6 @@ module List {
     }
   }
 
-  /* Emit clean error message for types not yet supported */
-  pragma "no doc"
-  proc _checkType(type t) {
-    // Also not yet supported: tuples of non-nilable classes
-  }
-
   private use IO;
 
   /*
@@ -154,8 +148,9 @@ module List {
       :type parSafe: `param bool`
     */
     proc init(type eltType, param parSafe=false) {
-      if isBorrowedClass(t) && isNonNilableClass(t) {
-        compilerError('List does not support non-nilable borrowed class types');
+      // Also unsupported but not checked: tuples of non-nilable class types
+      if isBorrowedClass(eltType) {
+        compilerError('list element type cannot currently be borrowed');
       }
       if isGenericType(eltType) {
         compilerWarning("creating a list with element type " +

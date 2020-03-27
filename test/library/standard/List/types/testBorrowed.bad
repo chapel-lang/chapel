@@ -1,3 +1,3 @@
-$CHPL_HOME/modules/standard/List.chpl:159: In initializer:
-$CHPL_HOME/modules/standard/List.chpl:160: error: List does not support non-nilable borrowed class types
-./ListTest.chpl:5: Initializer instantiated as: init(type eltType = borrowed T, param parSafe = 0)
+./ListTest.chpl:3: In function 'testList':
+./ListTest.chpl:5: error: list element type cannot currently be borrowed
+testBorrowed.chpl:9: Function 'testList' instantiated as: testList(type t = borrowed T)
