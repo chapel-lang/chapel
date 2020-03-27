@@ -633,21 +633,17 @@ module List {
       :return: A reference to the first item in this list.
       :rtype: `ref eltType`
     */
-    proc ref first() ref throws {
-      // Hack to initialize a reference (may be invalid memory).
-      ref result = _getRef(1);
+    proc ref first() ref {
+      _enter();
 
-      on this {
-        _enter();
-
-        if boundsChecking && _size == 0 {
-          _leave();
-          boundsCheckHalt("Called \"list.first\" on an empty list.");
-        }
-
-        result = _getRef(1);
+      if boundsChecking && _size == 0 {
         _leave();
+        boundsCheckHalt("Called \"list.first\" on an empty list.");
       }
+
+      // TODO: How to make this work with on clauses?
+      ref result = _getRef(1);
+      _leave();
 
       return result;
     }
@@ -665,22 +661,18 @@ module List {
       :rtype: `ref eltType`
     */
     proc ref last() ref {
-      // Hack to initialize a reference (may be invalid memory).
-      ref result = _getRef(1);
+      _enter();
 
-      on this {
-        _enter();
-
-        if boundsChecking && _size == 0 {
-          _leave();
-          boundsCheckHalt("Called \"list.last\" on an empty list.");
-        }
-
-        result = _getRef(_size);
+      if boundsChecking && _size == 0 {
         _leave();
+        boundsCheckHalt("Called \"list.last\" on an empty list.");
       }
-    
-      return result;
+     
+      // TODO: How to make this work with on clauses?
+      ref result = _getRef(_size);
+      _leave();
+
+      return result;  
     }
 
     pragma "no doc"
