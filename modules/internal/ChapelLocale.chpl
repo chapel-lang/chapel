@@ -162,6 +162,9 @@ module ChapelLocale {
 
     proc deinit() { }
 
+    // the following are normally taken care of by `forwarding`. However, they
+    // don't work if they are called in a promoted expression. See 15148
+
     inline proc localeid {
       return this._value.localeid;
     }
