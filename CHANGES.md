@@ -11,18 +11,55 @@ Highlights (see subsequent sections for further details)
 
 Syntactic/Naming Changes
 ------------------------
+* `private config`s must now be fully qualified when set on the command-line
 
 Semantic Changes / Changes to Chapel Language
 ---------------------------------------------
+* made `use` private by default
+  (see https://chapel-lang.org/docs/1.21/language/spec/statements.html#the-use-statement)
+* sub-modules no longer have lexical visibility into their parent module
+  (see https://chapel-lang.org/docs/1.21/language/spec/modules.html#nested-modules)
+* added an execution-time check to guard against resizing arrays of non-nilable
+  (see https://chapel-lang.org/docs/1.21/language/spec/classes.html#class-values)
+* made enum casts that may fail throw an error rather than halt
+  (see https://chapel-lang.org/docs/1.21/language/spec/conversions.html#explicit-enumeration-conversions)
+* made the compiler no longer tolerate assignment overloads for classes
 
 New Features
 ------------
+* added a `.hostname` method to locales
+  (see https://chapel-lang.org/docs/1.21/builtins/ChapelLocale.html#ChapelLocale.locale.hostname)
+* added support for looping directly over heterogeneous tuples
+  (see https://chapel-lang.org/docs/1.21/language/spec/tuples.html#iteration-over-tuples)
+* added a `.indices` query for tuples, strings, bytes, arrays, and lists
+  (see https://chapel-lang.org/docs/1.21/builtins/ChapelTuple.html#ChapelTuple.tuple.indices,
+   https://chapel-lang.org/docs/1.21/builtins/Bytes.html#Bytes.bytes.indices,
+   https://chapel-lang.org/docs/1.21/builtins/String.html#String.string.indices,
+   https://chapel-lang.org/docs/1.21/builtins/ChapelArray.html#ChapelArray.indices, and
+   https://chapel-lang.org/docs/1.21/modules/standard/List.html#List.list.indices)
+* added support for `.first` and `.last` queries on an `enum` type
+  (see https://chapel-lang.org/docs/1.21/language/spec/types.html#enum.first)
+* added support for (upper) open-interval ranges
+  (e.g., `lo..<hi` represents 'lo, lo+1, lo+2, ..., hi-2, hi-1')
+  (see https://chapel-lang.org/docs/1.21/language/spec/ranges.html#range-literals)
+* added support for `enum` serving as an "any enumerated type" type constraint
+  (e.g., `proc foo(e: enum) ...` can take any enum as an argument)
 
 Feature Improvements
 --------------------
+* made `extern` blocks automatically generate an implicit `use SysCTypes`
 
-Deprecated / Removed Language Features
---------------------------------------
+Deprecated / Unstable / Removed Language Features
+-------------------------------------------------
+* deprecated `.length`/`.numIndices`/`.numElements` queries in favor of `.size`
+* added an unstable warning for arrays with negative strides
+* added an unstable warning for enums with repeated values
+* added an unstable warning for semi-concrete enums
+* removed overloads of `+` between strings and non-string values
+* removed opaque domains and arrays
+* removed `ascii()` and `asciiToString()`
+* removed comparison operators for `imag` values
+* removed the experimental `enableParScan` configuration parameter
 
 Deprecated / Removed Library Features
 -------------------------------------
@@ -35,6 +72,7 @@ Package Modules
 
 Standard Domain Maps (Layouts and Distributions)
 ------------------------------------------------
+* implemented `.localSlice()` for Replicated arrays
 
 New Tools / Tool Changes
 ------------------------
@@ -44,6 +82,8 @@ Interoperability Improvements
 
 Performance Optimizations/Improvements
 --------------------------------------
+* optimized 1D array reallocations to be in-place when possible
+* added short-circuiting for array reallocations whose indices didn't change
 
 Cray-specific Performance Optimizations/Improvements
 ----------------------------------------------------
@@ -56,9 +96,12 @@ Documentation
 
 Example Codes
 -------------
+* updated example codes to typically use `new C()` over `new owned C()`
+* updated example codes to typically avoid using `new borrowed C()`
 
 Portability
 -----------
+* imporved the portability of the HDFS and Curl modules for 32-bit platforms
 
 Cray-specific Changes and Bug Fixes
 -----------------------------------
@@ -69,14 +112,26 @@ Compiler Improvements
 Compiler Flags
 --------------
 
+Generated Executable Flags
+--------------------------
+* added an `--lldb` flag to generated executables to aid with debugging
+
 Error Messages / Semantic Checks
 --------------------------------
+* added an error for assigning an associative domain to a rectangular array
+* changed an internal error for unsupported type queries to a user-facing error
 
 Bug Fixes
 ---------
+* fixed a bug preventing records with `owned` fields from being swapped (`<=>`)
+* fixed a bug in which domain-to-string casts were not working as intended
+* fixed `.localSlice` for Block and Cyclic arrays
+* fixed a bug in which user identifiers could conflict with internal ones
+* fixed a bug in which 'DistributedIters' still relied on string + value ops
 
 Packaging / Configuration Changes
 ---------------------------------
+* updated copyrights to reflect HPE's purchase of Cray Inc.
 
 Third-Party Software Changes
 ----------------------------
@@ -92,6 +147,10 @@ Testing System
 
 Developer-oriented changes: Module changes
 ------------------------------------------
+* made most uses of standard modules within internal modules `private`
+* made most uses of 'ChapelStandard' in internal modules `private`
+* made the 'Bytes' module more index-neutral
+* changed ddata initialization to be param-controlled
 
 Developer-oriented changes: Makefile improvements
 -------------------------------------------------
@@ -101,6 +160,7 @@ Developer-oriented changes: Compiler Flags
 
 Developer-oriented changes: Compiler improvements/changes
 ---------------------------------------------------------
+* made the compiler munge internal module symbols and stopped munging fields
 
 Developer-oriented changes: Runtime improvements
 ------------------------------------------------
