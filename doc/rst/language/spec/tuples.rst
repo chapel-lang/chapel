@@ -765,7 +765,8 @@ Consider the following example:
       var i: int;
       var r: R;
 
-      // The int `i` is copied when captured, but `a` and `r` are not.
+      // The int `i` is copied when captured into the tuple expression,
+      // but `a` and `r` are not.
       test((a, i, r));
 
       // Modify the globals, then print the tuple.
