@@ -275,7 +275,9 @@ semantics.
 Heterogeneous tuples support iteration via standard ``for`` and
 ``coforall`` loops.  These loops iterate over all of the tuple's
 elements, giving each iteration its own index variable that is a
-``const ref`` to the tuple element.  Thus, a loop of the form:
+``const ref`` to the tuple element (note: this may change in the
+future to include ``const`` or ``ref`` index variables).  Thus, a
+loop of the form:
 
 .. code-block:: chapel
 
