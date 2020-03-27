@@ -825,7 +825,7 @@ record ``r`` by ``ref``, but will create a copy of the integer ``i``.
    *Rationale*
 
    Tuple expressions and other forms of referential tuple are designed to act
-   like a lightweight bundle of arguments. They behave similarly to the
+   like a light-weight bundle of arguments. They behave similarly to the
    individual arguments of a function call.
 
    It would be prohibitively expensive for some argument types (such as
@@ -883,9 +883,9 @@ Tuple Argument Intents
 A tuple argument to a function may be either a referential tuple or a value
 tuple depending on its argument intent.
 
-If the tuple argument has the default argument intent, then it is a light
-tuple and some of its elements may be captured by ``ref`` depending on
-their default argument intent.
+If the tuple argument has the default argument intent, then it is a 
+referential tuple and some of its elements may be captured by ``ref``
+depending on their default argument intent.
 
 A tuple argument declared with ``const`` intent will work similarly to one
 with a default intent, except that all the elements of the tuple are
