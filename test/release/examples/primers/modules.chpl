@@ -504,7 +504,7 @@ module UserModule2 {
 */
 module UsesTheUser2 {
   proc func2() {
-    use UserModule;
+    use UserModule2;
     publiclyAvailableProc(); // available due to ``use`` of ModuleThatIsUsed
   }
 }
