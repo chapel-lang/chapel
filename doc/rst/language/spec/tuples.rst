@@ -808,9 +808,9 @@ Tuple variables are a form of value tuple. Like other value tuples, tuple
 variables will copy elements in a manner similar to passing the element
 to an ``in`` intent argument.
 
-   *Example (tuple-variable-behavior.chpl)*.
-
 For example, in this code:
+
+   *Example (tuple-variable-behavior.chpl)*.
 
    .. code-block:: chapel
 
@@ -820,7 +820,7 @@ For example, in this code:
       var i: int;
       var r = new R(0);
 
-      // The tuple variable `tup` copies `a`, `i`, and `r`.
+      // The tuple variable `tup` stores copies of `a`, `i`, and `r`.
       var tup = (a, i, r);
 
       a[0] = 1;
@@ -834,8 +834,8 @@ For example, in this code:
 
       (0, 0, (x = 0))
 
-The tuple variable ``tup`` will make a copy of the array ``a``, the record
-``r``, and the module integer ``i``.
+Initialization of the tuple variable ``tup`` will make a copy of the
+array ``a``, the record ``r``, and the integer ``i``.
 
 When these three variables are subsequently modified, changes to them are
 not reflected in ``tup`` when it is written to standard output.
