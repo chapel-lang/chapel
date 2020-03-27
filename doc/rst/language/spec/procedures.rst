@@ -414,7 +414,7 @@ The Out Intent
 
 When ``out`` is specified as the intent, the actual argument is ignored
 when the call is made, but when the function returns, the actual argument
-assigned to the value of the formal argument.  An implicit conversion
+is assigned to the value of the formal argument.  An implicit conversion
 occurs from the type of the formal to the type of the actual. The actual
 argument must be a valid lvalue. Within the function body, the formal
 argument is initialized to its default value if one is supplied, or to

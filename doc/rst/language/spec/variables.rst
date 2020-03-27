@@ -201,7 +201,7 @@ that variable.
 
       4
 
-   A function call passing a variable to an ``out`` intent serve as an
+   A function call passing a variable to an ``out`` intent serves as an
    applicable assignment statement, provided that the variable was
    declared with a type. For example:
 
