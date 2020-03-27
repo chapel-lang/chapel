@@ -168,6 +168,8 @@ Package Modules
 * added a routine to write a single HDF5 file in parallel with multiple locales
   (see https://chapel-lang.org/docs/1.21/modules/packages/HDF5/IOusingMPI.html#IOusingMPI.hdf5WriteDistributedArray)
 * added `extern` declarations for additional 'HDF5' defines
+* extended `LinearAlgebra.eig()` to support `complex` types
+  (see https://chapel-lang.org/docs/1.21/modules/packages/LinearAlgebra.html#LinearAlgebra.eig)
 
 Standard Domain Maps (Layouts and Distributions)
 ------------------------------------------------
@@ -177,6 +179,13 @@ Standard Domain Maps (Layouts and Distributions)
 
 New Tools / Tool Changes
 ------------------------
+* added `mason init` subcommand for creating a package in an existing directory
+  (see https://chapel-lang.org/docs/1.21/tools/mason/mason.html#starting-a-new-package)
+* added `mason new --name` flag to differentiate package name from directory
+  (see https://chapel-lang.org/docs/1.21/tools/mason/mason.html#starting-a-new-package)
+* added feature to run a subset of tests in a mason package with `mason test`
+  (see https://chapel-lang.org/docs/1.21/tools/mason/mason.html#testing-your-package)
+* improved output for `mason update` with multiple registries
 
 Interoperability Improvements
 -----------------------------
@@ -201,6 +210,8 @@ Performance Optimizations / Improvements
 * improved the performance of serial I/O
 * enabled warming up the runtime before calling user-code
 * increased cases where zippered distributed array iteration can be optimized
+* optimized sparse domain assignment between COO and CSR/CSC
+* enabled remote value forwarding for `DistributedDeque` and `DistributedBag`
 
 Cray-specific Performance Optimizations/Improvements
 ----------------------------------------------------
@@ -230,6 +241,8 @@ Documentation
    https://chapel-lang.org/docs/1.21/builtins/SharedObject.html)
 * improved the description of tuple semantics in the language specification
   (see https://chapel-lang.org/docs/1.21/language/spec/tuples.html)
+* added details about special I/O methods to the forwarding technote
+  (see https://chapel-lang.org/docs/1.21/technotes/forwarding.html#resolving-forwarded-methods)
 
 Example Codes
 -------------
@@ -277,6 +290,7 @@ Error Messages / Semantic Checks
 * added safety checks for shift operations on integers by default
 * added an error for copy initializers that do not have exactly one argument
 * improved the error message for secondary methods that are missing their types
+* improved the error message when `mason run` is used without building first
 
 Bug Fixes
 ---------
@@ -298,6 +312,9 @@ Bug Fixes
 * improved our running task counter for inlined functions with `on`-statements
 * stopped considering network atomics as safe for fast-ons
 * fixed a bug with taking the `.type` of a first-class function
+* fixed a bug where 'UnitTest' methods expected 1-based arrays
+* fixed a bug where `RandomStream.choice()` failed for non-numeric types
+* fixed a bug where comparing tuples of mismatched size caused a compiler error
 
 Packaging / Configuration Changes
 ---------------------------------
@@ -343,6 +360,7 @@ Developer-oriented changes: Module changes
 Developer-oriented changes: Makefile improvements
 -------------------------------------------------
 * squashed back-end warnings about incompatible pointer types
+* set nitpick flag to default to catch cross-reference errors in docs builds
 
 Developer-oriented changes: Compiler Flags
 ------------------------------------------
