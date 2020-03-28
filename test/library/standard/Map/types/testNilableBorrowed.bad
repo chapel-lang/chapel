@@ -1,0 +1,11 @@
+./MapTest.chpl:3: In function 'testMap':
+./MapTest.chpl:11: error: Scoped variable would outlive the value it is set to
+./MapTest.chpl:22: error: Scoped variable would outlive the value it is set to
+./MapTest.chpl:11: error: Scoped variable x reachable after lifetime ends
+./MapTest.chpl:22: error: Scoped variable y reachable after lifetime ends
+$CHPL_HOME/modules/standard/Map.chpl:436: In function 'add':
+$CHPL_HOME/modules/standard/Map.chpl:444: error: Setting borrowed formal illegal without specifying formal lifetime constraint
+$CHPL_HOME/modules/standard/Map.chpl:436: note: consider scope of v
+$CHPL_HOME/modules/standard/Map.chpl:132: In function 'init=':
+$CHPL_HOME/modules/standard/Map.chpl:142: error: Setting borrowed formal illegal without specifying formal lifetime constraint
+$CHPL_HOME/modules/standard/Map.chpl:132: note: consider scope of other
