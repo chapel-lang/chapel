@@ -5,11 +5,8 @@ TODO:
 * guard against docs/master
 * any last-minute contributions / contributors?
 * '' vs. ``
-* sort
-* example code changes
 * check users guide code
-* new compiler flags
-* removed empty sections
+* remove empty sections
 
 version 1.21.0
 ==============
@@ -270,6 +267,12 @@ Example Codes
 * updated `ra.chpl` to use `localAccess()` rather than a `local` block
 * updated example codes to typically use `new C()` over `new owned C()`
 * updated example codes to typically avoid using `new borrowed C()`
+* updated examples to avoid `.length`, `.numElements`, `.numIndices`
+* updated examples to add `throws` to `readThis()`/`writeThis()` routines
+* updated example codes with respect to nilability changes
+* updated example codes with respect to deinitialization and expiritng values
+* updated example codes with respect to required `use` statements
+* updated `miniMD.chpl` with respect to split initialization changes
 
 Portability
 -----------
@@ -387,6 +390,9 @@ Developer-oriented changes: Makefile improvements
 
 Developer-oriented changes: Compiler Flags
 ------------------------------------------
+* added a `--[no]-split-initialization` to disable/enable split initialization
+* added a `--[no]-early-deinit` flag to disable/enable early deinitialization
+* added a `--[no]-copy-elision` flag to disable/enable copy elision
 
 Developer-oriented changes: Compiler improvements/changes
 ---------------------------------------------------------
