@@ -2,7 +2,7 @@ Release Changes List
 ====================
 
 TODO:
-* guard against docs/master
+* check for docs/master
 * any last-minute contributions / contributors?
 * '' vs. ``
 * check users guide code
@@ -133,7 +133,7 @@ Deprecated / Unstable / Removed Language Features
 Deprecated / Removed Library Features
 -------------------------------------
 * deprecated `makeRandomStream()` in favor of `createRandomStream()`
-  (see https://chapel-lang.org/docs/master/modules/standard/Random.html)
+  (see https://chapel-lang.org/docs/1.21/modules/standard/Random.html)
 * deprecated `regexp` in favor of `regexp(string)`
 * deprecated methods on `channel` used to get, set, or clear error codes
 * removed deprecated sort functions
@@ -150,18 +150,18 @@ Standard Library Modules
   (see https://chapel-lang.org/docs/1.21/builtins/ChapelIO.html#readthis-writethis-readwritethis)
 * adjusted several `channel` methods in the 'IO' module to `throw`
 * added `channel.readbytes` and updated `channel.readline` to support `bytes`
-  (see https://chapel-lang.org/docs/master/modules/standard/IO.html)
+  (see https://chapel-lang.org/docs/1.21/modules/standard/IO.html)
 * the regular expression type `regexp` is now generic and supports `bytes`
 * updated `map` to work with nilable `owned` and non-nilable `shared` classes
   (see https://chapel-lang.org/docs/1.21/modules/standard/Map.html#Map.map.getBorrowed)
 * added a `map.keys()` iterator
-  (see https://chapel-lang.org/docs/master/modules/standard/Map.html)
+  (see https://chapel-lang.org/docs/1.21/modules/standard/Map.html)
 * addressed problems with updating lists contained within a map
 * moved the `parSafe` field in `map` to be after `keyType` and `valType`
 * added an initializer to the `Error` base class that accepts a string message
   (https://chapel-lang.org/docs/1.21/builtins/ChapelError.html#ChapelError.Error)
 * added `math.isclose()` for approximate equality checking
-  (https://chapel-lang.org/docs/master/modules/standard/Math.html#Math.isclose)
+  (https://chapel-lang.org/docs/1.21/modules/standard/Math.html#Math.isclose)
 * updated `canResolve()` to return `false` when encountering a `compilerError`
   (see https://chapel-lang.org/docs/1.21/modules/standard/Reflection.html#Reflection.canResolve)
 * added `isCopyable()`, `isAssignable()`, `isDefaultInitializable()` to 'Types'
@@ -170,7 +170,7 @@ Standard Library Modules
   (see https://chapel-lang.org/docs/1.21/builtins/CPtr.html#CPtr.c_aligned_alloc)
   (see https://chapel-lang.org/docs/1.21/modules/standard/Map.html#Map.map)
 * `defaultRNG` can now be used to select the default random number generator
-  (see https://chapel-lang.org/docs/master/modules/standard/Random.html)
+  (see https://chapel-lang.org/docs/1.21/modules/standard/Random.html)
 * stopped including the 'CommDiagnostics' module by default
 
 Package Modules
