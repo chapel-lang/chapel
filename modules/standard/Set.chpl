@@ -126,8 +126,11 @@ module Set {
       :arg parSafe: If `true`, this set will use parallel safe operations.
     */
     proc init(type eltType, param parSafe=false) {
-      if isClass(eltType) then
-        compilerError('Sets do not support class types');
+      // Only non-nilable borrowed classes work so far
+      if isClass(eltType) {
+        if !(isBorrowedClass(eltType) && isNonNilableClass(eltType)) then
+          compilerError('Sets do not support class types');
+      }
       if isTuple(eltType) then
         compilerError('Sets do not support tuple types');
       this.eltType = eltType;
@@ -220,7 +223,7 @@ module Set {
     */
     proc const contains(const ref x: eltType): bool {
       var result = false;
-    
+
       on this {
         _enter();
         result = _dom.contains(x);
@@ -260,7 +263,7 @@ module Set {
               break;
             }
         }
-        
+
         _leave();
       }
 
@@ -288,7 +291,7 @@ module Set {
 
         Removing an element from this set may invalidate existing references
         to the elements contained in this set.
-    
+
       :arg x: The element to remove.
       :return: Whether or not an element equal to `x` was removed.
       :rtype: `bool`
@@ -393,7 +396,7 @@ module Set {
     */
     inline proc const isEmpty(): bool {
       var result = false;
-     
+
       on this {
         _enter();
         result = _dom.isEmpty();
@@ -459,7 +462,7 @@ module Set {
       the set `lhs`.
 
     :arg lhs: The set to assign to.
-    :arg rhs: The set to assign from. 
+    :arg rhs: The set to assign from.
   */
   proc =(ref lhs: set(?t, ?), const ref rhs: set(t, ?)) {
     lhs.clear();
@@ -625,7 +628,7 @@ module Set {
   */
   proc ^(const ref a: set(?t, ?), const ref b: set(t, ?)): set(t) {
     var result: set(t, (a.parSafe || b.parSafe));
-    
+
     if a.parSafe && b.parSafe {
       forall x in a do
         if !b.contains(x) then
