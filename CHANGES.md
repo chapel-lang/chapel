@@ -10,23 +10,23 @@ Highlights (see subsequent sections for further details)
 --------------------------------------------------------
 * namespace/module improvements:
   - added support for `import` statements as a precise way of using modules
-  - added support for relative `import`/`use` chains via `this.` and `super.`
+  - added support for relative `import`/`use` chains via `this` and `super`
   - implemented prototypical support for storing submodules in different files
   - made `use` private by default and added support for renaming modules
   - sub-modules no longer have lexical visibility into their parent modules
   - reduced the degree to which standard module symbols leak into user code
 * language:
   - the `locale` type now has value semantics
-  - values of type `string` are now validated to ensure they are UTF8
-  - the `bytes` type is now far more full-featured
+  - strings are now validated to ensure they are UTF8
+  - significantly improved the `bytes` type, making it on par with `string`
   - added support for split-initialization of variables, types, params, refs
   - improved the compiler's support for copy elision and deinitialization
-  - made `Error` classes store strings and preserve line numbers better
+  - made `Error` classes store strings and preserve line numbers
   - added several features in support of index-neutral programming
-  - generally, brought core language closer to our envisioned Chapel 2.0
+  - addressed numerous core features related to backwards-breaking changes
 * performance:
   - improved the performance/scalability of creating distributed arrays/domains
-  - improved the unordered compiler optimization to cover more cases
+  - improved the compiler's optimization via unordered ops to cover more cases
   - extended `unorderedCopy()` to all trivially copyable types
   - improved the performance of `on`-statements for Infiniband networks
   - improved the performance and correctness of misaligned `ugni` transfers
@@ -53,8 +53,8 @@ Semantic Changes / Changes to Chapel Language
 * sub-modules no longer have lexical visibility into their parent modules
   (see https://chapel-lang.org/docs/1.21/language/spec/modules.html#nested-modules)
 * the `locale` type now has value semantics and a default value of `Locales[0]`
-* values of type `string` are now UTF8-validated
-* `bytes.this` and `bytes.these` now return/yield `unit(8)` instead of `bytes`
+* strings are now validated to ensure they are UTF8
+* `bytes.this` and `bytes.these` now return/yield `uint(8)` instead of `bytes`
   (see https://chapel-lang.org/docs/1.21/builtins/Bytes.html)
 * stopped generating `init=` functions for records with a user-defined `init=`
 * an `init=` containing compilerError() now indicates the type is not copyable
@@ -84,7 +84,7 @@ New Features
 ------------
 * added support for `import` statements as a more precise way of using modules
 * added support for renaming a module in its `use` statement
-* added explicit relative `import` and `use` chains via `this.` and `super.`
+* added explicit relative `import` and `use` chains via `this` and `super`
   (see https://chapel-lang.org/docs/1.21/language/spec/statements.html#the-use-statement)
 * implemented prototypical support for storing submodules in different files
   (see https://chapel-lang.org/docs/1.21/technotes/module_include.html)
@@ -166,7 +166,7 @@ Deprecated / Unstable / Removed Language Features
 Deprecated / Removed Library Features
 -------------------------------------
 * deprecated `makeRandomStream()` in favor of `createRandomStream()`
-  (see https://chapel-lang.org/docs/1.21/modules/standard/Random.html)
+  (see https://chapel-lang.org/docs/1.21/modules/standard/Random.html#Random.createRandomStream)
 * deprecated `regexp` in favor of `regexp(string)`
 * deprecated methods on `channel` used to get, set, or clear error codes
 * removed deprecated sort functions
@@ -183,16 +183,18 @@ Standard Library Modules
   (see https://chapel-lang.org/docs/1.21/builtins/ChapelIO.html#readthis-writethis-readwritethis and
    https://chapel-lang.org/docs/1.21/primers/specialMethods.html#io-methods)
 * adjusted several `channel` methods in the 'IO' module to `throw`
-  (see https://chapel-lang.org/docs/1.21/modules/standard/IO.html#io)
-* added `channel.readbytes` and updated `channel.readline` to support `bytes`
   (see https://chapel-lang.org/docs/1.21/modules/standard/IO.html)
+* added `channel.readbytes` and updated `channel.readline` to support `bytes`
+  (see https://chapel-lang.org/docs/1.21/modules/standard/IO.html#IO.channel.readbytes and
+   https://chapel-lang.org/docs/1.21/modules/standard/IO.html#IO.channel.readline)
 * the regular expression type `regexp` is now generic and supports `bytes`
+  (see https://chapel-lang.org/docs/1.21/modules/standard/Regexp.html#Regexp.regexp)
 * updated `map` to work with nilable `owned` and non-nilable `shared` classes
   (see https://chapel-lang.org/docs/1.21/modules/standard/Map.html#Map.map.getBorrowed)
 * added a `map.keys()` iterator
-  (see https://chapel-lang.org/docs/1.21/modules/standard/Map.html)
-* addressed problems with updating lists contained within a map
+  (see https://chapel-lang.org/docs/1.21/modules/standard/Map.html#Map.map.keys)
 * moved the `parSafe` field in `map` to be after `keyType` and `valType`
+  (see https://chapel-lang.org/docs/1.21/modules/standard/Map.html#Map.map)
 * added an initializer to the `Error` base class that accepts a string message
   (https://chapel-lang.org/docs/1.21/builtins/ChapelError.html#ChapelError.Error)
 * added `math.isclose()` for approximate equality checking
@@ -203,9 +205,8 @@ Standard Library Modules
   (see https://chapel-lang.org/docs/1.21/modules/standard/Types.html#Types.isCopyable)
 * added `c_aligned_alloc()` to the 'CPtr' module
   (see https://chapel-lang.org/docs/1.21/builtins/CPtr.html#CPtr.c_aligned_alloc)
-  (see https://chapel-lang.org/docs/1.21/modules/standard/Map.html#Map.map)
 * `defaultRNG` can now be used to select the default random number generator
-  (see https://chapel-lang.org/docs/1.21/modules/standard/Random.html)
+  (see https://chapel-lang.org/docs/1.21/modules/standard/Random.html#Random.defaultRNG)
 * stopped including the 'CommDiagnostics' module by default
 
 Package Modules
@@ -392,6 +393,7 @@ Bug Fixes
 * fixed a bug in which `RandomStream.choice()` failed for non-numeric types
 * addressed two memory errors within the 'Futures' package module
 * fixed a bug in which 'DistributedIters' still relied on string + value ops
+* addressed problems with updating lists contained within a `map`
 
 Packaging / Configuration Changes
 ---------------------------------
