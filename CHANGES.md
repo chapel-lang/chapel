@@ -9,7 +9,7 @@ Twenty-fourth public release of Chapel, April 9, 2020
 Highlights (see subsequent sections for further details)
 --------------------------------------------------------
 * namespace/module improvements:
-  - added support for `import` statements as a precise way of using modules
+  - added support for `import` statements as a precise way of accessing modules
   - added support for relative `import`/`use` chains via `this` and `super`
   - implemented prototypical support for storing submodules in different files
   - made `use` private by default and added support for renaming modules
@@ -23,10 +23,10 @@ Highlights (see subsequent sections for further details)
   - improved the compiler's support for copy elision and deinitialization
   - made `Error` classes store strings and preserve line numbers
   - added several features in support of index-neutral programming
-  - addressed numerous core features related to backwards-breaking changes
+  - improved numerous core features related to backwards-breaking changes
 * performance:
   - improved the performance/scalability of creating distributed arrays/domains
-  - improved the compiler's optimization via unordered ops to cover more cases
+  - improved the compiler's unordered operation optimization
   - extended `unorderedCopy()` to all trivially copyable types
   - improved the performance of `on`-statements for Infiniband networks
   - improved the performance and correctness of misaligned `ugni` transfers
@@ -39,7 +39,7 @@ Highlights (see subsequent sections for further details)
   - improved support for Python-Chapel interoperability
   - significantly improved `ofi` functionality, portability, and performance
   - added a routine for writing arrays to HDF5 files in parallel across locales
-  - closed a number of remaining memory leaks
+  - closed a number of memory leaks
 
 Syntactic / Naming Changes
 --------------------------
@@ -75,7 +75,6 @@ Semantic Changes / Changes to Chapel Language
 * made `enum` casts that may fail throw an error rather than halt
   (see https://chapel-lang.org/docs/1.21/language/spec/conversions.html#explicit-enumeration-conversions)
 * prototype modules are no longer treated specially with respect to nilability
-  (see https://chapel-lang.org/docs/1.21/language/spec/classes.html#nilable-class-types)
 * added an execution-time check to guard against resizing arrays of non-nilable
   (see https://chapel-lang.org/docs/1.21/language/spec/classes.html#class-values)
 * assignment overloads for classes are no longer permitted
@@ -119,8 +118,9 @@ Feature Improvements
 --------------------
 * improvements to the `bytes` type:
   - `bytes` now supports `param` values
-  - `bytes` now supports `toByte()` and comparison operators
-    (see https://chapel-lang.org/docs/1.21/builtins/Bytes.html)
+  - `bytes` now supports `toByte()`
+    (https://chapel-lang.org/docs/1.21/builtins/Bytes.html#Bytes.bytes.toByte)
+  - `bytes` now supports comparison operations
   - added `bytes.format()`, similar to `string.format()`
   - `bytes` can now be cast to `enum`
   - `bytes` can now be indexed with `byteIndex`
@@ -417,7 +417,6 @@ Testing System
 Developer-oriented changes: Documentation improvements
 ------------------------------------------------------
 * added documentation for multilocale performance/communication count testing
-  (see https://github.com/chapel-lang/chapel/blob/master/doc/rst/developer/bestPractices/TestSystem.rst#multilocale-performance-testing)
 * removed online documentation for some internal functions in the 'IO' module
 
 Developer-oriented changes: Module changes
