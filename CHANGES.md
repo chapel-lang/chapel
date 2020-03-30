@@ -219,7 +219,7 @@ Package Modules
   (see https://chapel-lang.org/docs/1.21/modules/packages/HDF5/C_HDF5.html)
 * extended `LinearAlgebra.eig()` to support `complex` types
   (see https://chapel-lang.org/docs/1.21/modules/packages/LinearAlgebra.html#LinearAlgebra.eig)
-* added support for `bytes` messages in 'ZMQ'
+* added support for `bytes` messages to the 'ZMQ' module
 * improved comparison sort to better handle arrays containing `owned` classes
 * improved the performance of `mergeSort()`
 * improved the performance of the 'EpochManager' by removing a counter
@@ -239,11 +239,11 @@ New Tools / Tool Changes
   (see https://chapel-lang.org/docs/1.21/tools/mason/mason.html#starting-a-new-package)
 * added a feature to run a subset of tests in a mason package with `mason test`
   (see https://chapel-lang.org/docs/1.21/tools/mason/mason.html#testing-your-package)
-* improved output for `mason update` with multiple registries
+* improved the output for `mason update` with multiple registries
 * improved the error message when `mason run` is used without building first
 * added a `--project-version` flag to `chpldoc`
   (see https://chapel-lang.org/docs/1.21/tools/chpldoc/man.html)
-* removed trailing comma and period from `chpldoc` copyrights without an author
+* fixed copyright formatting bugs in `chpldoc` when run without an author
 * fixed a bug in `chpldoc` with intervening single line comments
 * improved syntax highlighting for `highlight`
 
@@ -358,7 +358,7 @@ Error Messages / Semantic Checks
 * added an error for mixing user- and compiler-generated `init=` and `=`
 * added an error for copy initializers that do not have exactly one argument
 * improved error messages for uninitialized variables
-* improved error messages for unresolved calls due to missing parenthesis
+* improved error messages for unresolved calls due to missing parentheses
 * added errors for certain confusing generic initialization patterns
 * improved the error message for secondary methods that are missing their types
 * improved error messages for bad var args input to `LinearAlgebra.Matrix()`
@@ -445,7 +445,7 @@ Developer-oriented changes: Compiler Flags
 Developer-oriented changes: Compiler improvements/changes
 ---------------------------------------------------------
 * improved debugging output for multilocale interop. marshalling routines
-* print loop information and submodules in AST logs
+* started printing loop information and submodules in AST logs
 * removed a bad optimization that was breaking internal module visibility rules
 * simplified visible function determination of `use` statement visibility
 * added a cache for determining if an actual's type is coercible
