@@ -411,8 +411,8 @@ Copy Initialization of Records
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 When a new record variable is created based upon an existing variable,
-it is copy initialized or move initialized as described in
-:ref:`Copy_and_Move_Initialization`. When a record is copy initialized,
+it is *copy initialized* or *move initialized* as described in
+:ref:`Copy_and_Move_Initialization`. When a record is *copy initialized*,
 its ``init=`` initializer will be used to create the new record.
 
 .. _Record_Assignment:

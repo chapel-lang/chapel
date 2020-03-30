@@ -657,7 +657,7 @@ call the record ``deinit`` method at the deinitialization point. See
 Module-scope variables are destroyed at program tear-down as described in
 :ref:`Module_Deinitialization`.
 
-Fields are deinitialized when when the containing record or class is
+Fields are deinitialized when the containing class instance or record is 
 deinitialized.
 
 Regular local variables are destroyed at the end of the containing block.
@@ -754,31 +754,36 @@ are deinitialized at the end of the containing statement.
 Copy and Move Initialization
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-This section uses the terminology copy and move. These terms
-describe how a Chapel program initializes a record variable based upon an
-existing record variable. Both copy and move create a new variable
+This section uses the terminology *copy* and *move*. These terms
+describe how a Chapel program initializes a variable based upon an
+existing variable. Both *copy* and *move* create a new variable
 from an initial variable.
 
-After a copy, both the new variable and the initial variable exist
+Since records can use ``init=`` and ``deinit`` methods to adjust the
+behavior of copy initialization, this section is particularly relevant
+for records. In is also relevant for non-nilable ``owned`` class types
+since copies of those types will not be allowed by the compiler.
+
+After a *copy*, both the new variable and the initial variable exist
 separately. Generally speaking, they can both be modified.  However, they
 should generally refer to different storage. In particular, changing a
 field in the new record variable should not change the corresponding
 field in the initial record variable.
 
-A move is when a variable changes storage location. It is similar to a
-copy initialization but it represents a transfer rather than
+A *move* is when a variable changes storage location. It is similar to a
+*copy initialization* but it represents a transfer rather than
 duplication. In particular, the initial record is no longer available
-after the move.  A move can be thought of as an optimized form a
-copy followed by destruction of the initial record.  After a move,
-there is only one record variable - where after a copy there are two.
+after the *move*.  A *move* can be thought of as an optimized form a
+*copy* followed by destruction of the initial record.  After a *move*,
+there is only one record variable - where after a *copy* there are two.
 
-When a record is copied, it will run its copy initializer otherwise known
+When a record is copied, it will run its *copy initializer* otherwise known
 as ``proc init=``.
 
-The compiler will choose whether to add copy or move initialization based
+The compiler will choose whether to add *copy* or *move* initialization based
 upon the pattern of variable mentions.
 
-Here is an example of when copy initialization occurs:
+Here is an example of when *copy initialization* occurs:
 
 .. code-block:: chapel
 
@@ -786,7 +791,7 @@ Here is an example of when copy initialization occurs:
   var y:R = x;    // copy initialization occurs here
   ... uses of both x and y ...;
 
-Here is an example of when the compiler uses move initialization:
+Here is an example of when the compiler uses *move initialization*:
 
 .. code-block:: chapel
 
@@ -797,18 +802,19 @@ Here is an example of when the compiler uses move initialization:
   var x = makeR();    // move initialization occurs here
 
 
-The remainder of this section describes situations in which a copy
-or a move is added by the compiler to implement some kind of initialization.
+The remainder of this section describes situations in which a *copy*
+or a *move* is added by the compiler to implement some kind of initialization.
 
 .. _copy-move-table:
 
 When one variable is initialized from another variable or from a call
-expression, the compiler must choose whether to perform copy
-initialization or move initialization.
+expression, the compiler must choose whether to perform *copy
+initialization* or *move initialization*.
 
-The following table shows in which situations a copy or move initialization is
-added. Each row in this table corresponds to a particular use of an expression
-`<expr>`. Each column indicates the kind the expression `<expr>`.
+The following table shows in which situations a *copy* or *move
+initialization* is added. Each row in this table corresponds to a
+particular use of an expression `<expr>`. Each column indicates the kind
+the expression `<expr>`.
 
 ========================  ==========  ============  ==========  =========
 operation                 value call  local var     local var   outer/ref
@@ -829,8 +835,8 @@ value return
   means that an expression is returned from a function by value
 
 value call
-  means a function call that does not return with ref or const ref return
-  intent
+  means a function call that does not return with ``ref`` or ``const ref``
+  return intent
 
 local var last mention
   means a use of a function-local variable which is not mentioned
@@ -849,14 +855,127 @@ outer/ref
 Copy Elision
 ~~~~~~~~~~~~
 
-The compiler elides a copy-initialization from a local (non-ref) variable
-when the source variable is not mentioned again. When a copy is elided,
-the copy initialization is changed into move initialization and the
-source variable is considered dead. Compile-time analysis will provide
-compilation errors when a variable is used after it is dead in common
-cases.
+The compiler elides a *copy initialization* from a local ``var`` or
+``const`` variable when the source variable is not mentioned again. When
+a *copy* is elided, the *copy initialization* is changed into *move
+initialization* and the source variable is considered dead. Compile-time
+analysis provides compilation errors when a variable is used after it is
+dead in common cases.
 
-Like split-init - if a conditional has one branch that returns and the
-other has a candidate copy-init; or if both branches have candidate
-copy-inits - then copy elision will apply. Like split-init it will go
-into nested blocks or try statements but not loops or on statements.
+Like split initialization, copy elision considers mentions of variables
+to determine whether or not a copy can be elided. Since a ``return`` or
+``throw`` exits a function, a copy can be elided if it is followed
+immediately by a ``return`` or ``throw``. Copy elision considers eliding
+copies only within block declarations ``{ }``, ``try`` blocks, ``try!``
+blocks, and conditionals.
+
+   *Example (copy-elision.chpl)*
+
+   .. BLOCK-test-chapelpre
+
+      record R {
+        var x: int = 0;
+        proc init() {
+          this.x = 0;
+          writeln("init (default)");
+        }
+        proc init(arg:int) {
+          this.x = arg;
+          writeln("init ", arg, " ", arg);
+        }
+        proc init=(other: R) {
+          this.x = other.x;
+          writeln("init= ", other.x);
+        }
+        proc deinit() {
+          writeln("deinit ", x);
+        }
+      }
+      proc =(ref lhs:R, rhs:R) {
+        writeln("lhs ", lhs.x, " = rhs ", rhs.x);
+        lhs.x = rhs.x;
+      }
+
+
+   .. code-block:: chapel
+
+      config const option = true;
+
+      proc makeRecord() {
+        return new R(); // creates a new R record
+      }
+
+      proc elideCopy() {
+        var x = makeRecord();
+        var y = x; // copy elided because 'x' is not used again
+        writeln("block ending");
+      }
+      elideCopy();
+
+      proc noElideCopy() {
+        var x = makeRecord();
+        var y = x;  // copy is not elided because 'x' is used again
+        writeln(x); // 'x' used here
+        writeln("block ending");
+      }
+      noElideCopy();
+
+      proc elideCopyInReturningConditional() {
+        var x = makeRecord();
+        if option {
+          var y = x; // copy elided because 'x' is not used again
+          writeln("returning");
+          return;    // because this branch of conditional returns
+        }
+        writeln(x);  // mention of 'x' here not relevant
+        writeln("block ending");
+      }
+      elideCopyInReturningConditional();
+
+      proc elideCopyBothConditional() {
+        var x = makeRecord();
+        var y; // split initialization below
+        if option {
+          y = x;
+        } else {
+          y = x;
+        }
+        // copy is elided because 'x' is not used after the copy
+        // (in either branch of the conditional or after it)
+        writeln("block ending");
+      }
+      elideCopyBothConditional();
+
+   .. BLOCK-test-chapeloutput
+
+      init (default)
+      block ending
+      deinit 0
+      init (default)
+      init= 0
+      (x = 0)
+      block ending
+      deinit 0
+      deinit 0
+      init (default)
+      returning
+      deinit 0
+      init (default)
+      block ending
+      deinit 0
+
+
+Copy elision does not apply:
+
+ * when the source variable is a reference, field, or module-level
+   variable
+ * when the source variable is mentioned after the copy statement
+ * when the copy statement is in a loop, ``on`` statement, or ``begin``
+   statement
+ * when the copy statement is in one branch of a conditional but not in
+   the other, or when the other branch does not always ``return`` or
+   ``throw``.
+ * when the copy statament is in a ``try`` or ``try!`` block which has
+   ``catch`` clauses that mention the variable or which has ``catch``
+   clauses that do not always ``throw`` or ``return``.
+
