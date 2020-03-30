@@ -1,1 +1,0 @@
-testTuple.chpl:8: error: modules (like 'testTuple' here) cannot be called like procedures
