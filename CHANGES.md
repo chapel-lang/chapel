@@ -299,6 +299,8 @@ Documentation
 * increased usage of the `:throws:` tag in library documentation
 * added details about special I/O methods to the forwarding technote
   (see https://chapel-lang.org/docs/1.21/technotes/forwarding.html#resolving-forwarded-methods)
+* improved the documentation of the `UnitTest` module
+  (see https://chapel-lang.org/docs/1.21/modules/packages/UnitTest.html)
 
 Example Codes
 -------------
