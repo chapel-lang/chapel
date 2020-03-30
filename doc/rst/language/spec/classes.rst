@@ -2109,14 +2109,14 @@ Class Deinitializer
 
 A class author may create a deinitializer to specify additional actions
 to be performed when a class instance is deleted. A class deinitializer
-is a method named ``deinit()``. It must take no arguments (aside from
-the implicit ``this`` argument). If defined, the deinitializer is called
-each time a ``delete`` statement is invoked with a valid instance of
-that class type. The deinitializer is not called if the argument of
-``delete`` evaluates to ``nil``. Note that when an ``owned`` or
-``shared`` variable goes out of scope, it may call ``delete`` on a class
-instance which in turn will run the deinitializer and then reclaim the
-memory.
+is a method named ``deinit()``. It must take no arguments (aside from the
+implicit ``this`` argument). If defined, the deinitializer is called each
+time a ``delete`` statement is invoked with a valid instance of that
+class type. The deinitializer is not called if the argument of ``delete``
+evaluates to ``nil``. Note that when an ``owned`` or ``shared`` reaches
+its deinit point (see :ref:`Deinit_Points`), it may call ``delete`` on a
+class instance which in turn will run the deinitializer and then reclaim
+the memory.
 
    *Example (classDeinitializer.chpl)*.
 
