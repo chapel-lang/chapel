@@ -261,6 +261,7 @@ Documentation
 -------------
 * converted the language specification from LaTeX to RST/HTML
   (see https://chapel-lang.org/docs/1.21/language/spec/index.html)
+* generally updated documentation with respect to the changes in this release
 * improved the documentation for `owned` and `shared` classes
   (see https://chapel-lang.org/docs/1.21/builtins/OwnedObject.html and
    https://chapel-lang.org/docs/1.21/builtins/SharedObject.html)
@@ -320,6 +321,9 @@ Error Messages / Semantic Checks
 * improved error messages for uninitialized variables
 * added errors for certain confusing generic initialization patterns
 * improved the error message for secondary methods that are missing their types
+* improved error messages for bad var args input to `LinearAlgebra.Matrix()`
+  (see https://chapel-lang.org/docs/1.21/modules/packages/LinearAlgebra.html#LinearAlgebra.Matrix)
+* improved error messages for unsupported element types in Set and List
 * added safety checks for shift operations on integers by default
 * improved checks for generic fields to include undecorated class types
 * changed an internal error for unsupported type queries to a user-facing error
