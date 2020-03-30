@@ -34,10 +34,8 @@ pure shared memory machine would be defined as a single locale.
 Locale Types
 ~~~~~~~~~~~~
 
-The identifier ``locale`` is a class type that abstracts a locale as
-described above. Both data and tasks can be associated with a value of
-locale type. A Chapel implementation may define subclass(es) of
-``locale`` for a richer description of the target architecture.
+The identifier ``locale`` is a type that abstracts a locale as described above.
+Both data and tasks can be associated with a value of locale type.
 
 .. _Locale_Methods:
 
@@ -86,7 +84,7 @@ Returns the name of the locale.
 
 .. code-block:: chapel
 
-   proc numPUs(logical: bool = false, accessible: bool = true);
+   proc locale.numPUs(logical: bool = false, accessible: bool = true);
 
 Returns the number of processing unit instances available on a given
 locale. Basically these are the things that execute instructions. If
