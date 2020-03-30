@@ -19,19 +19,24 @@
  */
 
 /*
-Module UnitTest provides support for automated testing in Chapel.
-Any function of the form
+The UnitTest module provides support for automated testing in Chapel.
+
+The UnitTest module is intended to be used with the `mason test
+<https://chapel-lang.org/docs/tools/mason/mason.html>`_ command, which
+automates execution of any test function.
+
+A unit test function is defined as any function with the following signature:
 
 .. code-block:: chapel
 
   proc funcName(test: borrowed Test) throws {}
 
-is treated as a test function. These functions must accept an object of Test
-Class. We use :proc:`~UnitTest.main()` to run the tests.
+These functions must accept an argument of type ``borrowed Test``, and have a
+``throws``.
 
-.. note::
+A program containing tests must execute the ``UnitTest``
+:proc:`~UnitTest.main()` function to run the tests.
 
-  It is intended to be used in concert with the `mason test <https://chapel-lang.org/docs/tools/mason/mason.html>`_ command, which automates execution of any test function.
 
 Assert Functions
 ----------------
@@ -196,9 +201,7 @@ You can mention the range of locales using :proc:`~Test.maxLocales` and
 Specifying Dependencies
 ^^^^^^^^^^^^^^^^^^^^^^^
 
-:proc:`~Test.dependsOn`
-
-Here is an example demonstrating how to use the :proc:`~Test.dependsOn`
+You can specify the order in which tests should run using :proc:`~Test.dependsOn`:
 
 .. code-block:: chapel
 
@@ -273,7 +276,6 @@ module UnitTest {
     /* Unconditionally skip a test.
 
       :arg reason: the reason for skipping
-      :type reason: `string`
       :throws TestSkipped: Always
 
     */
@@ -285,10 +287,8 @@ module UnitTest {
     Skip a test if the condition is true.
 
     :arg condition: the boolean condition
-    :type condition: `bool`
 
     :arg reason: the reason for skipping
-    :type reason: `string`
     :throws TestSkipped: If the `condition` is true.
    */
     proc skipIf(condition: bool, reason: string = "") throws {
@@ -297,12 +297,10 @@ module UnitTest {
     }
 
     /*
-      Assert that a boolean condition is true.  If it is false, prints
-      ``assert failed``.
+      Assert that ``test`` is `true`.
 
       :arg test: the boolean condition
-      :type test: `bool`
-      :throws AssertionError: If the assertion is false.
+      :throws AssertionError: If the assertion is `false`.
     */
     pragma "insert line file info"
     pragma "always propagate line file info"
@@ -312,12 +310,10 @@ module UnitTest {
     }
 
     /*
-      Assert that a boolean condition is false.  If it is true, prints
-      ``assert failed``.
+      Assert that ``test`` is `false`.
 
       :arg test: the boolean condition
-      :type test: `bool`
-      :throws AssertionError: If the assertion is true.
+      :throws AssertionError: If the assertion is `true`.
     */
     pragma "insert line file info"
     pragma "always propagate line file info"
@@ -511,7 +507,7 @@ module UnitTest {
     }
 
     /*
-      Fail if the two objects are unequal as determined by the ``==`` operator.
+      Assert that ``first == second``.
 
       :arg first: The first object to compare.
       :arg second: The second object to compare.
@@ -544,9 +540,7 @@ module UnitTest {
 
 
     /*
-      Assert that a first argument is not equal to second argument.
-      Uses ``==`` operator and type to determine if both are equal
-      or not.
+      Assert that ``first != second``.
 
       :arg first: The first object to compare.
       :arg second: The second object to compare.
@@ -562,8 +556,7 @@ module UnitTest {
     }
 
     /*
-      Assert that a first argument is greater than second argument.  If it is false, prints
-      ``assert failed`` and raises AssertionError.
+      Assert that ``first > second``.
 
       :arg first: The first object to compare.
       :arg second: The second object to compare.
@@ -767,7 +760,7 @@ module UnitTest {
     }
 
     /*
-      Assert that a first argument is less than second argument.  If it is false, raises AssertionError.
+      Assert that ``first < second``.
 
       :arg first: The first object to compare.
       :arg second: The second object to compare.
@@ -975,12 +968,11 @@ module UnitTest {
     //
 
     /*
-      Specify Max Number of Locales required to run the test
+      Specify maximum number of locales this test can run on.
 
-      :arg value: Maximum number of locales with which the test can be ran.
-      :type value: `int`.
+      :arg value: Maximum number of locales with which the test can be run.
 
-      :throws UnexpectedLocalesError: If `value` is less than 1 or `minNumLocales`
+      :throws UnexpectedLocales: If `value` is less than 1 or `minNumLocales`
     */
     proc maxLocales(value: int) throws {
       this.numMaxLocales = value;
@@ -996,12 +988,11 @@ module UnitTest {
     }
 
     /*
-      Specify Min Number of Locales required to run the test
+      Specify minimum number of locales required to run the test.
 
-      :arg value: Minimum number of locales with which the test can be ran.
-      :type value: `int`.
+      :arg value: Minimum number of locales with which the test can be run.
 
-      :throws UnexpectedLocalesError: If `value` is more than `maxNumLocales`
+      :throws UnexpectedLocales: If `value` is more than `maxNumLocales`
     */
     proc minLocales(value: int) throws {
       this.numMinLocales = value;
@@ -1014,11 +1005,20 @@ module UnitTest {
     }
 
     /*
-      To add locales in which test can be run.
+      Indicate how many locales to run the test on.
 
-      :arg locales: Multiple ``,`` separated locale values
+      If a test can run on multiple different locale counts, they can be
+      specified using multiple arguments. Only one of the locale counts
+      specified will be run in testing.
 
-      :throws UnexpectedLocalesError: If `locales` are already added.
+      .. note::
+
+        To run a single test with multiple locale counts, create multiple tests
+        where each test requires a specific locale count.
+
+      :arg locales: locale counts
+
+      :throws UnexpectedLocales: If `locales` are already added.
 
     */
     proc addNumLocales(locales: int ...?n) throws {
@@ -1039,10 +1039,10 @@ module UnitTest {
       }
     }
 
-    /*Adds the tests in which the given test is depending.
+    /* Adds the tests which must run before this test.
 
-      :arg tests: Multiple ``,`` separated First Class Test Functions.
-      :throws DependencyFound: If Called for the first time in a function.
+      :arg tests: First class functions
+      :throws DependencyFound: If called for the first time in a function.
 
     */
     proc dependsOn(tests: argType ...?n) throws {
@@ -1354,6 +1354,9 @@ module UnitTest {
     testStatus[testName] = true;
   }
 
+  pragma "no doc"
+  /* These errors are used for implementation purposes (communication between
+     the tests and test runner). Not intended for user consumption. */
   module TestError {
     /*
     :class:`TestError` is a base class.
