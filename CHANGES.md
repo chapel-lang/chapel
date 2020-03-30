@@ -182,10 +182,10 @@ Package Modules
 ---------------
 * added a routine to write a single HDF5 file in parallel with multiple locales
   (see https://chapel-lang.org/docs/1.21/modules/packages/HDF5/IOusingMPI.html#IOusingMPI.hdf5WriteDistributedArray)
-* added `extern` declarations for additional 'HDF5' defines
-  (see TODO)
 * moved `hdf5ReadDistributedArray() into a sub-module named 'HDF5.IOusingMPI'
   (see https://chapel-lang.org/docs/1.21/modules/packages/HDF5/IOusingMPI.html#IOusingMPI.hdf5ReadDistributedArray)
+* added `extern` declarations for additional 'HDF5' defines
+  (see https://chapel-lang.org/docs/1.21/modules/packages/HDF5/C_HDF5.html)
 * extended `LinearAlgebra.eig()` to support `complex` types
   (see https://chapel-lang.org/docs/1.21/modules/packages/LinearAlgebra.html#LinearAlgebra.eig)
 * added support for `bytes` messages in 'ZMQ'
