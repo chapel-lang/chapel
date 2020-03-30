@@ -73,7 +73,7 @@
 #define SELECT_ASSERT(_1, _2, NAME) NAME
 #define INT_ASSERT(...) SELECT_ASSERT(__VA_ARGS__, INT_ASSERT2, INT_ASSERT1)(__VA_ARGS__)
 #define INT_ASSERT1(x) do { if (!(x)) INT_FATAL("assertion error"); } while (0)
-#define INT_ASSERT2(x, s) do { if (!(x)) INT_FATAL((s), "assertion error"); } while (0)
+#define INT_ASSERT2(s, x) do { if (!(x)) INT_FATAL((s), "assertion error"); } while (0)
 
 #define iterKindTypename          "iterKind"
 #define iterKindLeaderTagname     "leader"
