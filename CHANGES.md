@@ -46,6 +46,7 @@ Semantic Changes / Changes to Chapel Language
   (see https://chapel-lang.org/docs/1.21/language/evolution.html#deinitialization-point-of-nested-call-expressions and
    https://chapel-lang.org/docs/1.21/language/spec/variables.html#deinit-points)
 * compile-time (`type`, `param`) methods now require `override` when overridden
+  (see https://chapel-lang.org/docs/1.21/language/spec/classes.html#overriding-base-class-methods)
 * made `enum` casts that may fail throw an error rather than halt
   (see https://chapel-lang.org/docs/1.21/language/spec/conversions.html#explicit-enumeration-conversions)
 * added an execution-time check to guard against resizing arrays of non-nilable
@@ -149,8 +150,10 @@ Standard Library Modules
   (see https://chapel-lang.org/docs/1.21/builtins/ChapelIO.html and
   https://chapel-lang.org/docs/1.21/modules/standard/IO.html)
 * enabled special methods for I/O such as `readThis` or `writeThis` to `throw`
-  (see https://chapel-lang.org/docs/1.21/builtins/ChapelIO.html#readthis-writethis-readwritethis)
+  (see https://chapel-lang.org/docs/1.21/builtins/ChapelIO.html#readthis-writethis-readwritethis and
+   https://chapel-lang.org/docs/1.21/primers/specialMethods.html#io-methods)
 * adjusted several `channel` methods in the 'IO' module to `throw`
+  (see https://chapel-lang.org/docs/1.21/modules/standard/IO.html#io)
 * added `channel.readbytes` and updated `channel.readline` to support `bytes`
   (see https://chapel-lang.org/docs/1.21/modules/standard/IO.html)
 * the regular expression type `regexp` is now generic and supports `bytes`
@@ -262,7 +265,7 @@ Documentation
   (see https://chapel-lang.org/docs/1.21/builtins/OwnedObject.html and
    https://chapel-lang.org/docs/1.21/builtins/SharedObject.html)
 * improved the description of tuple semantics in the language specification
-  (see https://chapel-lang.org/docs/1.21/language/spec/tuples.html)
+  (see https://chapel-lang.org/docs/1.21/language/spec/tuples.html#value-tuples-and-referential-tuples)
 * increased usage of the `:throws:` tag in library documentation
 * added details about special I/O methods to the forwarding technote
   (see https://chapel-lang.org/docs/1.21/technotes/forwarding.html#resolving-forwarded-methods)
