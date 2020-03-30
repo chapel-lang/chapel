@@ -4,7 +4,7 @@ Release Changes List
 TODO:
 * check for docs/master
 * any last-minute contributions / contributors?
-* '' vs. ``
+* '' vs. `` (I'm using '' for module names, `` for code snippets)
 * check users guide code
 * remove empty sections
 
@@ -15,9 +15,41 @@ Twenty-fourth public release of Chapel, April 9, 2020
 
 Highlights (see subsequent sections for further details)
 --------------------------------------------------------
+* namespace/module improvements:
+  - added support for `import` statements as a precise way of using modules
+  - added support for relative `import`/`use` chains via `this.` and `super.`
+  - implemented prototypical support for storing submodules in different files
+  - made `use` private by default and added support for renaming modules
+  - sub-modules no longer have lexical visibility into their parent modules
+  - reduced the degree to which standard module symbols leak into user code
+* language:
+  - the `locale` type now has value semantics
+  - values of type `string` are now UTF8-validated
+  - the `bytes` type is now far more full-featured
+  - added support for split-initialization of variables, types, params, refs
+  - improved the compiler's support for copy elision and deinitialization
+  - made `Error` classes store strings and preserve line numbers better
+  - added several features in support of index-neutral programming
+  - generally, brought core language closer to our envisioned Chapel 2.0
+* performance:
+  - improved the performance/scalability of creating distributed arrays/domains
+  - improved the unordered compiler optimization to cover more cases
+  - extended `unorderedCopy()` to all trivially copyable types
+  - improved the performance of `on`-statements for Infiniband networks
+  - improved the performance and correctness of misaligned `ugni` transfers
+  - optimized more cases involving zippered loops over distributed arrays
+  - optimized 1D array re-allocations to be in-place when possible
+  - improved the performance of serial I/O
+* additional highlights:
+  - converted the language specification from PDF to HTML
+  - made several usability improvements to the `mason` package manager
+  - improved support for Python-Chapel interoperability
+  - significantly improved `ofi` functionality, portability, and performance
+  - added a routine for writing arrays to HDF5 files in parallel across locales
+  - closed a number of remaining memory leaks
 
-Syntactic/Naming Changes
-------------------------
+Syntactic / Naming Changes
+--------------------------
 * `private config`s must now be fully qualified when set on the command-line
 * made minor adjustments to the argument names of `string` and `bytes` methods
 
@@ -33,7 +65,7 @@ Semantic Changes / Changes to Chapel Language
   (see https://chapel-lang.org/docs/1.21/builtins/Bytes.html)
 * stopped generating `init=` functions for records with a user-defined `init=`
 * an `init=` containing compilerError() now indicates the type is not copyable
-  (see https://chapel-lang.org/docs/1.21/technotes/initequals.html)
+  (see https://chapel-lang.org/docs/master/technotes/initequals.html#disabling-copyability)
 * added support for split initialization of variables, refs, types, and params
   (see https://chapel-lang.org/docs/1.21/language/spec/variables.html#split-initialization and
    https://chapel-lang.org/docs/1.21/language/evolution.html#split-initialization)
@@ -58,9 +90,7 @@ Semantic Changes / Changes to Chapel Language
 New Features
 ------------
 * added support for `import` statements as a more precise way of using modules
-  (see <TODO> doc link)
 * added support for renaming a module in its `use` statement
-  (see <TODO> doc link)
 * added explicit relative `import` and `use` chains via `this.` and `super.`
   (see https://chapel-lang.org/docs/1.21/language/spec/statements.html#the-use-statement)
 * implemented prototypical support for storing submodules in different files
@@ -237,7 +267,7 @@ Performance Optimizations / Improvements
 * increased cases where zippered distributed array iteration can be optimized
 * significantly improved the performance and correctness of `--cache-remote`
 * improved the performance of `on`-statements for InfiniBand networks
-* optimized 1D array reallocations to be in-place when possible
+* optimized 1D array re-allocations to be in-place when possible
 * added short-circuiting for array reallocations whose indices didn't change
 * improved the performance of serial I/O
 * optimized sparse domain assignment between COO and CSR/CSC
@@ -267,7 +297,7 @@ Memory Improvements
 
 Documentation
 -------------
-* converted the language specification from LaTeX to RST/HTML
+* converted the language specification from PDF (LaTeX) to HTML (rst)
   (see https://chapel-lang.org/docs/1.21/language/spec/index.html)
 * generally updated documentation with respect to the changes in this release
 * improved the documentation for `owned` and `shared` classes
@@ -302,14 +332,18 @@ Cray-specific Changes and Bug Fixes
 * brought Cray Shasta support into the mainline Chapel module build system
 * fixed several bugs related to misaligned transfers in `ugni` communication
 
-Compiler Improvements
----------------------
-* improved the compiler to raise an error for `new owned X;`
-* stopped printing blank flag suggestions for unrecognized flags
-
 Compiler Flags
 --------------
+* stopped printing blank flag suggestions for unrecognized flags
 * deprecated the `--legacy-classes` flag
+
+Runtime Library Changes
+-----------------------
+* significantly improved `ofi` functionality, portability, and performance
+
+Launchers
+---------
+* fixed the CPU count for `slurm-srun` on systems with hyperthreading disabled
 
 Generated Executable Flags
 --------------------------
@@ -320,6 +354,7 @@ Error Messages / Semantic Checks
 * added a warning for potentially surprising implicit modules
 * improved the error message for modules declared in function bodies
 * added errors for most ownership transfers from non-nilable owned
+* added an error for `new owned X`
 * improved compile-time nil-checking to consider copy elision
 * improved detection of unsound uses of nilable types
 * improved lifetime checking to consider copy elision
@@ -377,14 +412,6 @@ Third-Party Software Changes
 * upgraded Qthreads to version 1.15
 * updated `chpldoc` to use a bundled chapel domain
 * updated the sphinx version used for `chpldoc`
-
-Runtime Library Changes
------------------------
-* significantly improved `ofi` functionality, portability, and performance
-
-Launchers
----------
-* fixed the CPU count for `slurm-srun` on systems with hyperthreading disabled
 
 Testing System
 --------------
