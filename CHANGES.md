@@ -1,13 +1,6 @@
 Release Changes List
 ====================
 
-TODO:
-* check for docs/master
-* any last-minute contributions / contributors?
-* '' vs. `` (I'm using '' for module names, `` for code snippets)
-* check users guide code
-* remove empty sections
-
 version 1.21.0
 ==============
 
@@ -24,7 +17,7 @@ Highlights (see subsequent sections for further details)
   - reduced the degree to which standard module symbols leak into user code
 * language:
   - the `locale` type now has value semantics
-  - values of type `string` are now UTF8-validated
+  - values of type `string` are now validated to ensure they are UTF8
   - the `bytes` type is now far more full-featured
   - added support for split-initialization of variables, types, params, refs
   - improved the compiler's support for copy elision and deinitialization
@@ -65,7 +58,7 @@ Semantic Changes / Changes to Chapel Language
   (see https://chapel-lang.org/docs/1.21/builtins/Bytes.html)
 * stopped generating `init=` functions for records with a user-defined `init=`
 * an `init=` containing compilerError() now indicates the type is not copyable
-  (see https://chapel-lang.org/docs/master/technotes/initequals.html#disabling-copyability)
+  (see https://chapel-lang.org/docs/1.21/technotes/initequals.html#disabling-copyability)
 * added support for split initialization of variables, refs, types, and params
   (see https://chapel-lang.org/docs/1.21/language/spec/variables.html#split-initialization and
    https://chapel-lang.org/docs/1.21/language/evolution.html#split-initialization)
@@ -85,7 +78,7 @@ Semantic Changes / Changes to Chapel Language
   (see https://chapel-lang.org/docs/1.21/language/spec/classes.html#nilable-class-types)
 * added an execution-time check to guard against resizing arrays of non-nilable
   (see https://chapel-lang.org/docs/1.21/language/spec/classes.html#class-values)
-* made the compiler no longer tolerate assignment overloads for classes
+* assignment overloads for classes are no longer permitted
 
 New Features
 ------------
@@ -99,8 +92,7 @@ New Features
   (see https://chapel-lang.org/docs/1.21/builtins/Atomics.html#Atomics.compareExchange)
 * added support for changing the memory management policy of a class object
   (see https://chapel-lang.org/docs/1.21/builtins/OwnedObject.html#OwnedObject.owned.create and
-   https://chapel-lang.org/docs/1.21/builtins/SharedObject.html#SharedObject.
-shared.create)
+   https://chapel-lang.org/docs/1.21/builtins/SharedObject.html#SharedObject.shared.create)
 * added support for looping directly over heterogeneous tuples
   (see https://chapel-lang.org/docs/1.21/language/spec/tuples.html#iteration-over-tuples)
 * added a `.indices` query for tuples, strings, bytes, arrays, and lists
@@ -147,7 +139,7 @@ Deprecated / Unstable / Removed Language Features
 -------------------------------------------------
 * disabled associative arrays of non-nilable classes
 * deprecated `.length`/`.numIndices`/`.numElements` queries in favor of `.size`
-* deprecated `new owned(c)` and `new shared(c)` for a class instance `c`
+* deprecated `new owned/shared(c)` in favor of `owned/shared.create(c)`
 * deprecated `string` vs. `bytes` comparisons
 * deprecated `decodePolicy.ignore` in favor of new `decodePolicy.drop`
   (see https://chapel-lang.org/docs/1.21/builtins/Bytes.html#Bytes.bytes.decode)
@@ -222,13 +214,15 @@ Package Modules
   (see https://chapel-lang.org/docs/1.21/modules/packages/HDF5/IOusingMPI.html#IOusingMPI.hdf5WriteDistributedArray)
 * moved `hdf5ReadDistributedArray() into a sub-module named 'HDF5.IOusingMPI'
   (see https://chapel-lang.org/docs/1.21/modules/packages/HDF5/IOusingMPI.html#IOusingMPI.hdf5ReadDistributedArray)
-* added `extern` declarations for additional 'HDF5' defines
+* added additional HDF5 symbols to the 'C_HDF5' module
   (see https://chapel-lang.org/docs/1.21/modules/packages/HDF5/C_HDF5.html)
 * extended `LinearAlgebra.eig()` to support `complex` types
   (see https://chapel-lang.org/docs/1.21/modules/packages/LinearAlgebra.html#LinearAlgebra.eig)
 * added support for `bytes` messages in 'ZMQ'
 * improved comparison sort to better handle arrays containing `owned` classes
-* changed `MPI_Abort()` calls into `halt()`s in the 'MPI' package
+* improved the performance of `mergeSort()`
+* improved the performance of the 'EpochManager' by removing a counter
+* enabled remote value forwarding for `DistributedDeque` and `DistributedBag`
 
 Standard Domain Maps (Layouts and Distributions)
 ------------------------------------------------
@@ -273,10 +267,7 @@ Performance Optimizations / Improvements
 * optimized sparse domain assignment between COO and CSR/CSC
 * improved the performance of assigning an empty sparse domain
 * improved the performance of comparison sorts
-* improved the performance of `mergeSort()`
 * enabled warming up the runtime before calling user-code
-* improved the performance of the 'EpochManager' by removing a counter
-* enabled remote value forwarding for `DistributedDeque` and `DistributedBag`
 
 Cray-specific Performance Optimizations/Improvements
 ----------------------------------------------------
@@ -434,6 +425,7 @@ Developer-oriented changes: Module changes
 * replaced `use _ only;` with `import _;` in modules
 * made the 'Bytes' module more index-neutral
 * changed `_ddata` initialization to be param-controlled
+* changed `MPI_Abort()` calls into `halt()`s in 'MPI' for cleaner teardowns
 
 Developer-oriented changes: Makefile improvements
 -------------------------------------------------
