@@ -2,7 +2,7 @@
 use TOML;
 
 config const str: string = """[owner]
-                            name = ["Foo Bar"] #something 
+                            name = "Foo Bar" # something new
                             # Another comment 
                             dob = 2000-30-04-23
                             """;

@@ -2,8 +2,8 @@
 use TOML;
 
 config const str: string = """[owner]
-                            name = "Foo Bar"
-                            timestamp1 = 06:30:30
+                            name = "Foo Bar" # a name 
+                            timestamp1 = 06:30:30 #some
                             timestamp2 = 06:30:30.123456
                             timestamp3 = 06:30:30.1234567 # rounding up
                             timestamp4 = 06:30:30.1234564 # rounding down

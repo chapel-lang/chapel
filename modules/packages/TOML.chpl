@@ -1206,7 +1206,10 @@ module TomlReader {
             comments = "(\\#)",                 // #
             commas = "(\\,)",                   // ,
             equals = "(\\=)",                   // =
-            curly = "(\\{)|(\\})";              // {}
+            curly = "(\\{)|(\\})",              // {}
+            dt = "^\\d{4}-\\d{2}-\\d{2}[ T]\\d{2}:\\d{2}:\\d{2}",
+            ld = "^\\d{4}-\\d{2}-\\d{2}",
+            ti = "^\\d{2}:\\d{2}:\\d{2}(.\\d{6,})?";
 
       const pattern = compile('|'.join(doubleQuotes,
                                        singleQuotes,
@@ -1214,7 +1217,10 @@ module TomlReader {
                                        brackets,
                                        commas,
                                        curly,
-                                       equals));
+                                       equals,
+                                       dt,
+                                       ti,
+                                       ld));
 
       for token in pattern.split(line) {
         idx += 1;
@@ -1224,7 +1230,12 @@ module TomlReader {
             writeln('Tokenized: ', '(', strippedToken, ')');
           }
           nonEmptyChar = true;
-          
+          // check for date/time in a line and avoid comment        
+          var toke = strippedToken; 
+          var isWhiteSpace = compile("\\s");
+          var dateTimeToken = isWhiteSpace.split(toke);
+          if strippedToken.match(compile('|'.join(dt,ti,ld))).matched then 
+          strippedToken = dateTimeToken[1];
           var isComment = strippedToken.match(compile(comments));
           if isComment.matched && idx <= 1 {
             linetokens.append(strippedToken);
