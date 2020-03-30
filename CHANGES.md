@@ -311,7 +311,7 @@ Example Codes
 * updated examples to avoid `.length`, `.numElements`, `.numIndices`
 * updated examples to add `throws` to `readThis()`/`writeThis()` routines
 * updated example codes with respect to nilability changes
-* updated example codes with respect to deinitialization and expiritng values
+* updated example codes with respect to deinitialization and expiring values
 * updated example codes with respect to required `use` statements
 * updated `miniMD.chpl` with respect to split initialization changes
 
@@ -319,7 +319,7 @@ Portability
 -----------
 * reduced third-party linking support scripts' reliance on `libtool`
 * increased user program linking consistency across configurations
-* imporved the portability of the HDFS and Curl modules for 32-bit platforms
+* improved the portability of the HDFS and Curl modules for 32-bit platforms
 
 Cray-specific Changes and Bug Fixes
 -----------------------------------
