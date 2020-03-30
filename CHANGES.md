@@ -49,6 +49,8 @@ Semantic Changes / Changes to Chapel Language
   (see https://chapel-lang.org/docs/1.21/language/spec/classes.html#overriding-base-class-methods)
 * made `enum` casts that may fail throw an error rather than halt
   (see https://chapel-lang.org/docs/1.21/language/spec/conversions.html#explicit-enumeration-conversions)
+* prototype modules are no longer treated specially with respect to nilability
+  (see https://chapel-lang.org/docs/master/language/spec/classes.html#nilable-class-types)
 * added an execution-time check to guard against resizing arrays of non-nilable
   (see https://chapel-lang.org/docs/1.21/language/spec/classes.html#class-values)
 * made the compiler no longer tolerate assignment overloads for classes
@@ -65,6 +67,10 @@ New Features
   (see https://chapel-lang.org/docs/1.21/technotes/module_include.html)
 * added atomic `compareExchange()` that matches the semantics of C++
   (see https://chapel-lang.org/docs/1.21/builtins/Atomics.html#Atomics.compareExchange)
+* added support for changing the memory management policy of a class object
+  (see https://chapel-lang.org/docs/master/builtins/OwnedObject.html#OwnedObject.owned.create and
+   https://chapel-lang.org/docs/master/builtins/SharedObject.html#SharedObject.
+shared.create)
 * added support for looping directly over heterogeneous tuples
   (see https://chapel-lang.org/docs/1.21/language/spec/tuples.html#iteration-over-tuples)
 * added a `.indices` query for tuples, strings, bytes, arrays, and lists
@@ -90,16 +96,17 @@ New Features
 Feature Improvements
 --------------------
 * improvements to the `bytes` type:
-  - the `bytes` type now supports `param` values
-  - the `bytes` type now supports `toByte()` and comparison operators
+  - `bytes` now supports `param` values
+  - `bytes` now supports `toByte()` and comparison operators
     (see https://chapel-lang.org/docs/1.21/builtins/Bytes.html)
   - added `bytes.format()`, similar to `string.format()`
   - `bytes` can now be cast to `enum`
-  - `bytes` can be indexed with `byteIndex`
+  - `bytes` can now be indexed with `byteIndex`
   - `bytes` can now be used as the index type for associative domains
 * added a `policy` argument to some `string` factories to escape non-UTF8 data
 * made all `Error` classes store a string to describe the error
 * made thrown errors preserve the original line number when rethrown
+* made postfix-`!` no longer required to access `param` and `type` fields
 * improved resolution of methods and fields, particularly for private types
 * non-nilable classes are now considered subtypes of their nilable counterparts
 * improved the implementation of left shift (`<<`) on integers
@@ -110,6 +117,7 @@ Deprecated / Unstable / Removed Language Features
 -------------------------------------------------
 * disabled associative arrays of non-nilable classes
 * deprecated `.length`/`.numIndices`/`.numElements` queries in favor of `.size`
+* deprecated `new owned(c)` and `new shared(c)` for a class instance `c`
 * deprecated `string` vs. `bytes` comparisons
 * deprecated `decodePolicy.ignore` in favor of new `decodePolicy.drop`
   (see https://chapel-lang.org/docs/1.21/builtins/Bytes.html#Bytes.bytes.decode)
@@ -301,6 +309,7 @@ Compiler Improvements
 
 Compiler Flags
 --------------
+* deprecated the `--legacy-classes` flag
 
 Generated Executable Flags
 --------------------------
@@ -312,6 +321,7 @@ Error Messages / Semantic Checks
 * improved the error message for modules declared in function bodies
 * added errors for most ownership transfers from non-nilable owned
 * improved compile-time nil-checking to consider copy elision
+* improved detection of unsound uses of nilable types
 * improved lifetime checking to consider copy elision
 * improved error messages for failed array bounds checks
 * added an error for assigning an associative domain to a rectangular array
@@ -319,20 +329,23 @@ Error Messages / Semantic Checks
 * added an error for mixing user- and compiler-generated `init=` and `=`
 * added an error for copy initializers that do not have exactly one argument
 * improved error messages for uninitialized variables
+* improved error messages for unresolved calls due to missing parenthesis
 * added errors for certain confusing generic initialization patterns
 * improved the error message for secondary methods that are missing their types
 * improved error messages for bad var args input to `LinearAlgebra.Matrix()`
   (see https://chapel-lang.org/docs/1.21/modules/packages/LinearAlgebra.html#LinearAlgebra.Matrix)
-* improved error messages for unsupported element types in Set and List
+* improved error messages for unsupported element types in 'Set' and 'List'
 * added safety checks for shift operations on integers by default
 * improved checks for generic fields to include undecorated class types
 * changed an internal error for unsupported type queries to a user-facing error
+* eliminated spurious "this source location is a guess" in some warnings
 
 Bug Fixes
 ---------
 * fixed a bug in which domain-to-string casts were not working as intended
 * fixed a bug in which user identifiers could conflict with internal ones
 * fixed a bug preventing records with `owned` fields from being swapped (`<=>`)
+* fixed a bug involving task-private variables and throwing initializers
 * fixed `.localSlice` for `Block` and `Cyclic` arrays
 * fixed several problems with type queries of class types
 * fixed problems with casts between class types like `C: C?`
@@ -341,7 +354,7 @@ Bug Fixes
 * fixed a bug where comparing tuples of mismatched size caused a compiler error
 * fixed a bug in which `list.sort()` did not support different comparator types
 * fixed a problem with arguments of nested generic type such as `list(Error)`
-* fixed a problem with symbol munging with `--llvm`
+* fixed compiler crashes for some uses of `numFields()` and `compilerWarning()`
 * improved our running task counter for inlined functions with `on`-statements
 * stopped considering network atomics as safe for fast-ons
 * fixed some bugs in `bytes.decode()`
