@@ -33,17 +33,19 @@ Semantic Changes / Changes to Chapel Language
   (see https://chapel-lang.org/docs/1.21/builtins/Bytes.html)
 * stopped generating `init=` functions for records with a user-defined `init=`
 * an `init=` containing compilerError() now indicates the type is not copyable
-  (TODO: PR #14887 - not sure where this should be documented?)
+  (see https://chapel-lang.org/docs/1.21/technotes/initequals.html)
 * added support for split initialization of variables, refs, types, and params
-  (see https://chapel-lang.org/docs/1.21/language/spec/variables.html#split-initialization)
-  (TODO language evolution link)
+  (see https://chapel-lang.org/docs/1.21/language/spec/variables.html#split-initialization and
+   https://chapel-lang.org/docs/1.21/language/evolution.html#split-initialization)
 * added support for copy elision transformations
-  (TODO: where to document?)
+  (see https://chapel-lang.org/docs/1.21/language/evolution.html#copy-elision and
+   https://chapel-lang.org/docs/1.21/language/spec/variables.html#copy-elision)
 * improved `out` intents to support split initialization and to reduce copies
-  (TODO language evolution link? spec?)
+  (see https://chapel-lang.org/docs/1.21/language/spec/procedures.html#the-out-intent)
 * `record` temporaries may now be deinitialized at the end of a statement
-  (TODO: where to document?)
-* compile-time (`type`, `param`) methods now require `overload` when overloaded
+  (see https://chapel-lang.org/docs/1.21/language/evolution.html#deinitialization-point-of-nested-call-expressions and
+   https://chapel-lang.org/docs/1.21/language/spec/variables.html#deinit-points)
+* compile-time (`type`, `param`) methods now require `override` when overridden
 * made `enum` casts that may fail throw an error rather than halt
   (see https://chapel-lang.org/docs/1.21/language/spec/conversions.html#explicit-enumeration-conversions)
 * added an execution-time check to guard against resizing arrays of non-nilable
@@ -57,9 +59,9 @@ New Features
 * added support for renaming a module in its `use` statement
   (see <TODO> doc link)
 * added explicit relative `import` and `use` chains via `this.` and `super.`
-  (TODO: where to document?)
+  (see https://chapel-lang.org/docs/1.21/language/spec/statements.html#the-use-statement)
 * implemented prototypical support for storing submodules in different files
-  (TODO: where to document?)
+  (see https://chapel-lang.org/docs/1.21/technotes/module_include.html)
 * added atomic `compareExchange()` that matches the semantics of C++
   (see https://chapel-lang.org/docs/1.21/builtins/Atomics.html#Atomics.compareExchange)
 * added support for looping directly over heterogeneous tuples
@@ -178,6 +180,9 @@ Package Modules
 * added a routine to write a single HDF5 file in parallel with multiple locales
   (see https://chapel-lang.org/docs/1.21/modules/packages/HDF5/IOusingMPI.html#IOusingMPI.hdf5WriteDistributedArray)
 * added `extern` declarations for additional 'HDF5' defines
+  (see TODO)
+* moved `hdf5ReadDistributedArray() into a sub-module named 'HDF5.IOusingMPI'
+  (see https://chapel-lang.org/docs/1.21/modules/packages/HDF5/IOusingMPI.html#IOusingMPI.hdf5ReadDistributedArray)
 * extended `LinearAlgebra.eig()` to support `complex` types
   (see https://chapel-lang.org/docs/1.21/modules/packages/LinearAlgebra.html#LinearAlgebra.eig)
 * added support for `bytes` messages in 'ZMQ'
