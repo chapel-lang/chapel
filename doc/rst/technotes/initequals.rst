@@ -285,7 +285,8 @@ so by implementing an ``init=`` method with a ``false`` where-clause:
    // method body may be empty in this case
   }
 
-The ``compilerError`` utility function can be used for the same purpose:
+A call to the ``compilerError`` utility function can be used for the same
+purpose:
 
 .. code-block:: chapel
 
@@ -300,7 +301,8 @@ In the 1.20 release users could choose to implement either the ``init=`` method
 or ``=`` operator for a given type, or implement both, or rely entirely on the
 compiler-generated implementation. This could lead to hard-to-debug problems
 when both functions appeared to be user-defined, but a user mistake in the
-function signature caused the compiler-generated version to be used instead.
+function signature caused it to be ignored and the compiler-generated version
+to be used instead.
 
 In the 1.21 release users are now required to implement both the ``init=``
 method and ``=`` operator for a given type, or rely entirely on the
