@@ -50,7 +50,7 @@ Semantic Changes / Changes to Chapel Language
 * made `enum` casts that may fail throw an error rather than halt
   (see https://chapel-lang.org/docs/1.21/language/spec/conversions.html#explicit-enumeration-conversions)
 * prototype modules are no longer treated specially with respect to nilability
-  (see https://chapel-lang.org/docs/master/language/spec/classes.html#nilable-class-types)
+  (see https://chapel-lang.org/docs/1.21/language/spec/classes.html#nilable-class-types)
 * added an execution-time check to guard against resizing arrays of non-nilable
   (see https://chapel-lang.org/docs/1.21/language/spec/classes.html#class-values)
 * made the compiler no longer tolerate assignment overloads for classes
@@ -68,8 +68,8 @@ New Features
 * added atomic `compareExchange()` that matches the semantics of C++
   (see https://chapel-lang.org/docs/1.21/builtins/Atomics.html#Atomics.compareExchange)
 * added support for changing the memory management policy of a class object
-  (see https://chapel-lang.org/docs/master/builtins/OwnedObject.html#OwnedObject.owned.create and
-   https://chapel-lang.org/docs/master/builtins/SharedObject.html#SharedObject.
+  (see https://chapel-lang.org/docs/1.21/builtins/OwnedObject.html#OwnedObject.owned.create and
+   https://chapel-lang.org/docs/1.21/builtins/SharedObject.html#SharedObject.
 shared.create)
 * added support for looping directly over heterogeneous tuples
   (see https://chapel-lang.org/docs/1.21/language/spec/tuples.html#iteration-over-tuples)
