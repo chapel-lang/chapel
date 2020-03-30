@@ -265,8 +265,9 @@ module OwnedObject {
 
        It is an error to directly delete the class instance
        after passing it to `owned.create()`. */
-    pragma "unsafe" // 'result' may have a non-nilable type
+    pragma "unsafe"
     inline proc type create(pragma "nil from arg" p : unmanaged) {
+      // 'result' may have a non-nilable type
       var result: (p.type : owned);
       result.retain(p);
       return result;
