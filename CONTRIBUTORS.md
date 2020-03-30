@@ -19,6 +19,7 @@ Contributors to the current release
 * Michael Ferguson, [HPE]
 * Rahul Ghangas, individual contributor
 * Ben Harshbarger, [HPE]
+* Samuel Howard, individual contributor
 * Sai Rajendra Immadi, individual contributor
 * David Iten, [HPE]
 * Engin Kayraklioglu, [HPE] (former [GSoC 2017] mentor, [Cray Inc.] intern from [George Washington University])
