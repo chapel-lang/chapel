@@ -137,7 +137,7 @@ module Set {
         compilerWarning("creating a set with element type " +
                         eltType:string);
         compilerError("set element type cannot currently be generic");
-        // In the future we might support it if the list is not default-inited
+        // In the future we might support it if the set is not default-inited
       }
       this.eltType = eltType;
       this.parSafe = parSafe;
@@ -162,7 +162,7 @@ module Set {
         compilerWarning("creating a set with element type " +
                         eltType:string);
         compilerError("set element type cannot currently be generic");
-        // In the future we might support it if the list is not default-inited
+        // In the future we might support it if the set is not default-inited
       }
       this.eltType = eltType;
       this.parSafe = parSafe;
