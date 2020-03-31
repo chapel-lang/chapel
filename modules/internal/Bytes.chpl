@@ -640,7 +640,7 @@ module Bytes {
             halt("range out of bounds of bytes");
         }
       }
-      const r1 = r[1:r.idxType..this.len:r.idxType];
+      const r1 = r[1:r.idxType..this.buffLen:r.idxType];
       if r1.stridable {
         const ret = r1.low:int..r1.high:int by r1.stride;
         return ret;
@@ -741,7 +741,7 @@ module Bytes {
     pragma "no doc"
     inline proc _search_helper(needle: bytes, region: range(?),
                                param count: bool, param fromLeft: bool = true) {
-      // needle.len is <= than this.len, so go to the home locale
+      // needle.buffLen is <= than this.buffLen, so go to the home locale
       var ret: int = 0;
       on __primitive("chpl_on_locale_num",
                      chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
@@ -859,7 +859,7 @@ module Bytes {
         const noSplits : bool = maxsplit == 0;
         const limitSplits : bool = maxsplit > 0;
         var splitCount: int = 0;
-        const iEnd: idxType = localThis.len - 1;
+        const iEnd: idxType = localThis.buffLen - 1;
 
         var inChunk : bool = false;
         var chunkStart : idxType;
@@ -1011,7 +1011,7 @@ module Bytes {
       const localChars: bytes = chars.localize();
 
       var start: idxType = 1;
-      var end: idxType = localThis.len;
+      var end: idxType = localThis.buffLen;
 
       if leading {
         label outer for (i, thisChar) in zip(this.indices, localThis.bytes()) {
