@@ -907,7 +907,7 @@ proc DimensionalArr.dsiPrivatize(privatizeData) {
                                     idxType  = this.idxType,
                                     stridable= this.stridable,
                                     eltType  = this.eltType,
-                                    localAdescs = privatizeData(3),
+                                    localAdescs = privatizeData(2),
                                     dom      = privDom,
                                     allocDom = privAllocDom);
 
