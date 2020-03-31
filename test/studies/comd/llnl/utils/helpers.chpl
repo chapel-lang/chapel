@@ -10,6 +10,8 @@ inline proc dot(const in v1:real3, const in v2:real3) : real {
   return r;
 }
 
+proc postfix!(A:[]) { var B = for a in A do a!; return B; } //#15080
+
 class Ticker {
   var name : string;
   var tick : Timer;

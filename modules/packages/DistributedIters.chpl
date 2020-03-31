@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -175,7 +176,7 @@ where tag == iterKind.leader
   }
   else // c is a range.
   {
-    const iterCount = c.length;
+    const iterCount = c.size;
 
     if iterCount == 0 then halt("DistributedIters: Dynamic iterator (leader):",
                                 " the range is empty");
@@ -261,8 +262,8 @@ where tag == iterKind.leader
             if debugDistributedIters
             then writeln("DistributedIters: Dynamic iterator (leader): ",
                          here.locale, ": yielding ", unDensify(taskRange,c),
-                         " (", taskRange.length,
-                         "/", localeRange.length,
+                         " (", taskRange.size,
+                         "/", localeRange.size,
                          " locale-owned of ", iterCount,
                          " total) as ", taskRange);
             yield (taskRange,);
@@ -437,7 +438,7 @@ where tag == iterKind.leader
   }
   else // c is a range.
   {
-    const iterCount = c.length;
+    const iterCount = c.size;
 
     if iterCount == 0 then halt("DistributedIters: Guided iterator (leader): ",
                                 "the range is empty");
@@ -519,8 +520,8 @@ where tag == iterKind.leader
             if debugDistributedIters
             then writeln("DistributedIters: Guided iterator (leader): ",
                          here.locale, ": yielding ", unDensify(taskRange,c),
-                         " (", taskRange.length,
-                         "/", localeRange.length,
+                         " (", taskRange.size,
+                         "/", localeRange.size,
                          " locale-owned of ", iterCount,
                          " total) as ", taskRange);
             yield (taskRange,);
@@ -644,7 +645,7 @@ private proc guidedSubrange(c:range(?),
 {
   assert(workerCount > 0, ("DistributedIters: guidedSubrange: "
                            + "'workerCount' must be positive"));
-  const cLength = c.length;
+  const cLength = c.size;
   var low:int = c.low;
   var chunkSize:int = (cLength / workerCount);
   var remainder:int = (cLength - chunkSize);

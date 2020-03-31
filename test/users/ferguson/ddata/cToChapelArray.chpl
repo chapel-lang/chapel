@@ -5,7 +5,7 @@ use SysCTypes;
   }
 
   record MyThing {
-    proc writeThis(w:Writer) {
+    proc writeThis(w:Writer) throws {
       w.writeln("This should be a chunk: {");
       w.writeln(" a");
       w.writeln(" b");

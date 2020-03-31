@@ -21,7 +21,7 @@ proc writelnFragArray(startStr, X, endStr) {
     write(startStr);
   }
   waitForTurn();
-  if (here.id != 0 && X.numElements != 0) {
+  if (here.id != 0 && X.size != 0) {
     write(" ");
   }
   write(X);

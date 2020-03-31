@@ -247,9 +247,9 @@ necessarily compile-time constants.
 Iteration over Tuples
 ---------------------
 
-Only homogeneous tuples support iteration via standard ``for``,
-``forall`` and ``coforall`` loops. These loops iterate over all of the
-tuple’s elements. A loop of the form:
+Homogeneous tuples support iteration via standard ``for``, ``forall``
+and ``coforall`` loops. These loops iterate over all of the tuple’s
+elements. A loop of the form:
 
 
 
@@ -268,9 +268,43 @@ to:
    [for|forall|coforall] i in 0..n-1 do
      ...t(i)...
 
-The iterator variable for an tuple iteration is a either a const value
+The iterator variable for a tuple iteration is a either a const value
 or a reference to the tuple element type, following default intent
 semantics.
+
+Heterogeneous tuples support iteration via standard ``for`` and
+``coforall`` loops.  These loops iterate over all of the tuple's
+elements, giving each iteration its own index variable that is a
+``const ref`` to the tuple element (note: this may change in the
+future to include ``const`` or ``ref`` index variables).  Thus, a
+loop of the form:
+
+.. code-block:: chapel
+
+  for e in t do
+    ...e...
+
+where t is a heterogeneous tuple of size ``n`` is semantically
+equivalent to:
+
+.. code-block:: chapel
+
+  { // iteration 1
+    const ref e = t(1);
+    ...e...
+  }
+  { // iteration 2
+    const ref e = t(2);
+    ...e...
+  }
+  ...
+  { // iteration n
+    const ref e = t(n);
+    ...e...
+  }
+
+Similarly, a `coforall` loop is equivalent to the `cobegin` statement
+whose body is the series of compound statements from the serial case.
 
 .. _Tuple_Assignment:
 
@@ -571,8 +605,9 @@ An implicit ``where`` clause is created when arguments are grouped using
 tuple notation, to ensure that the function is called with an actual
 tuple of the correct size. Arguments grouped in tuples may be nested
 arbitrarily. Functions with arguments grouped into tuples may not be
-called using named-argument passing on the tuple-grouped arguments. In
-addition, tuple-grouped arguments may not be specified individually with
+called using named-argument passing on the tuple-grouped arguments. 
+
+In addition, tuple-grouped arguments may not be specified individually with
 types or default values (only in aggregate). They may not be specified
 with any qualifier appearing before the group of arguments (or
 individual arguments) such as ``inout`` or ``type``. They may not be
@@ -714,6 +749,307 @@ where a comma-separated list of components is valid.
       1
       (2, 3)
 
+.. _Value_Tuples_and_Referential_Tuples:
+
+Value Tuples and Referential Tuples
+-----------------------------------
+
+Throughout the next few sections, the terms referential tuple and value
+tuple are used frequently to describe two different ways that tuples can
+capture elements.
+
+Tuple expressions or tuple arguments with default argument intent are two
+examples of referential tuples. They store elements by reference where it
+makes sense to do so. Referential tuples may be viewed as analagous to a
+group of function arguments that each have default argument intent.
+
+Tuple variables or tuple arguments with ``in`` intent are two examples of
+value tuples. They store all elements by value and may store elements copy
+initialized from another tuple. Value tuples may be viewed as analagous to
+a group of function arguments that each have the ``in`` intent.
+
+In short, some or all of the elements of a referential tuple may be
+references, while a value tuple will never contain a reference.
+
+.. _Tuple_Expression_Behavior:
+
+Tuple Expression Behavior
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Tuple expressions are a form of referential tuple. Like most other
+referential tuples, tuple expressions capture each element based on the
+default argument intent of the element's type.
+
+More specifically:
+
+-  If the default argument intent of the element's type is a variation of
+   ``ref``, then the tuple expression will refer to the element instead of
+   capturing it by value.
+-  Otherwise, the tuple expression will capture the element by value.
+
+Consider the following example:
+
+   *Example (tuple-expression-behavior.chpl)*.
+
+   .. code-block:: chapel
+
+      record R { var x: int; }
+
+      var a: [0..0] int;
+      var i: int;
+      var r: R;
+
+      //
+      // The int `i` is copied when captured into the tuple expression,
+      // but `a` and `r` are not.
+      //
+      test((a, i, r));
+
+      // Modify the globals, then print the tuple.
+      proc test(tup) {
+        a[0] = 1;
+        i = 2;
+        r.x = 3;
+
+        // Outputs (1, 0, (x = 3)).
+        writeln(tup);
+      }
+
+   .. BLOCK-test-chapeloutput
+
+      (1, 0, (x = 3))
+
+The tuple expression ``(a, i, r)`` will capture the array ``a`` and the
+record ``r`` by ``ref``, but will create a copy of the integer ``i``.
+
+   *Rationale*
+
+   Tuple expressions and other forms of referential tuple are designed to act
+   like a light-weight bundle of arguments. They behave similarly to the
+   individual arguments of a function call.
+
+   It would be prohibitively expensive for some argument types (such as
+   arrays) to be copied by default when passed as an argument to a
+   function call.
+
+   The same logic applies to tuple expressions. When the default argument
+   intent of a value's type is some form of ``ref``, a tuple expression will
+   capture the value by reference in order to avoid a potentially
+   expensive copy operation.
+
+Tuple Variable Behavior
+~~~~~~~~~~~~~~~~~~~~~~~
+
+Tuple variables are a form of value tuple. Like other value tuples, tuple
+variables will copy elements in a manner similar to passing the element
+to an ``in`` intent argument.
+
+For example, in this code:
+
+   *Example (tuple-variable-behavior.chpl)*.
+
+   .. code-block:: chapel
+
+      record R { var x: int; }
+
+      var a: [0..0] int;
+      var i: int;
+      var r = new R(0);
+
+      // The tuple variable `tup` stores copies of `a`, `i`, and `r`.
+      var tup = (a, i, r);
+
+      a[0] = 1;
+      i = 2;
+      r.x = 3;
+
+      // This will output (0, 0, (x = 0)).
+      writeln(tup);
+
+   .. BLOCK-test-chapeloutput
+
+      (0, 0, (x = 0))
+
+Initialization of the tuple variable ``tup`` will make a copy of the
+array ``a``, the record ``r``, and the integer ``i``. Because ``tup`` stores
+a copy of these three variables, changes made to them are not visible
+in ``tup`` when it is written to standard output.
+
+.. _Tuple_Argument_Intents:
+
+Tuple Argument Intents
+~~~~~~~~~~~~~~~~~~~~~~
+
+A tuple argument to a function may be either a referential tuple or a value
+tuple depending on its argument intent.
+
+If the tuple argument has the default argument intent, then it is a 
+referential tuple and some of its elements may be captured by ``ref``
+depending on their default argument intent.
+
+A tuple argument declared with ``const`` intent will work similarly to one
+with a default intent, except that all the elements of the tuple are
+considered to be ``const`` and cannot be modified.
+
+If the tuple argument has the ``in`` or ``const in`` intent, then it is a
+value tuple. All of its elements are captured by value as though each
+element is passed to an ``in`` intent argument.
+
+.. _Tuple_Argument_Behavior:
+
+Tuple Argument Behavior
+~~~~~~~~~~~~~~~~~~~~~~~
+
+If a function argument is a tuple with the default argument intent and a
+value tuple (such as a tuple variable) is passed to it, the value tuple
+will be implicitly converted into a referential tuple. The resulting
+referential tuple may refer to elements from the original value tuple.
+
+A conversion from referential tuple to value tuple also occurs when a
+referential tuple (such as a tuple expression) is passed to a tuple argument
+that has the ``in`` intent. The referential tuple will be converted to
+a value tuple by copy initializing each element.
+
+Consider the following example:
+
+   *Example (tuple-argument-behavior.chpl)*.
+
+   .. code-block:: chapel
+
+      record R { var x: int; }
+
+      var modTup = (0, new R(0));
+
+      //
+      // The argument `tup` of `referentialTupleArg` is a referential tuple
+      // due to the default argument intent.
+      //
+      proc referentialTupleArg(tup) {
+
+        // Modify the module variable `modTup`.
+        modTup = (3, new R(6));
+
+        //
+        // Should print (0, (x = 6)). Recall that a tuple argument with the
+        // default argument intent copies integer elements.
+        //
+        writeln(tup);
+
+        //
+        // When `tup` is passed to `valueTupleArg`, a copy of each element
+        // is made because the `valueTup` argument has the `in` intent.
+        //
+        valueTupleArg(tup);
+
+        // Should still print (0, (x = 6)).
+        writeln(tup);
+      }
+
+      // The argument `valueTup` is a value tuple due to the `in` intent.
+      proc valueTupleArg(in valueTup) {
+        valueTup = (64, new R(128));
+      }
+
+      //
+      // When `modTup` is passed to `referentialTupleArg`, its first
+      // element is copied while its second element is passed as though
+      // it were `const ref`.
+      //
+      referentialTupleArg(modTup);
+
+   .. BLOCK-test-chapeloutput
+
+      (0, (x = 6))
+      (0, (x = 6))
+
+Tuple arguments with the ``ref`` intent are references to value tuples.
+Actual arguments are restricted to value tuples (a tuple variable or a
+returned tuple). Since the argument itself is passed by ``ref``, the
+entire tuple will refer to a tuple from the call site.
+
+   *Example (tuple-argument-ref-intent.chpl)*.
+
+   .. code-block:: chapel
+
+      //
+      // Because the intent of `tup` is `ref`, only value tuples can be
+      // passed to `passTupleByRef`.
+      //
+      proc passTupleByRef(ref tup) {
+        tup = (64, 128);
+      }
+
+      var modTup = (0, 0);
+
+      //
+      // Passing `modTup` to `passTupleByRef` will construct a referential
+      // tuple where each element refers to an element from `modTup`.
+      //
+      passTupleByRef(modTup);
+
+      // Should print (64, 128).
+      writeln(modTup);
+
+   .. BLOCK-test-chapeloutput
+
+      (64, 128)
+
+.. _Tuple_Return_Behavior:
+
+Tuple Return Behavior
+~~~~~~~~~~~~~~~~~~~~~
+
+When a tuple is returned from a function with ``ref`` or ``const ref`` return
+intent, it must refer to some form of value tuple that exists outside of
+the current scope. Otherwise there is a compilation error.
+  
+Functions that return by value always return a value tuple. If an expression
+returned by such a function is a referential tuple, it will be implicitly
+converted to a value tuple.
+
+   *Example (tuple-return-behavior.chpl)*.
+
+   .. code-block:: chapel
+
+      record R { var x: int; }
+      var a: [0..0] int;
+      var i: int;
+      var r = new R(0);
+
+      //
+      // The value tuple returned by `returnTuple` is passed to the
+      // function `updateGlobalsAndOutput`. It is implicitly converted
+      // into a referential tuple because the formal argument `tup`
+      // has the default argument intent.
+      //
+      updateGlobalsAndOutput(returnTuple());
+
+      //
+      // The function `returnTuple` returns a value tuple that contains
+      // a copy of the array `a`, the integer `i`, and the record `r`.
+      //
+      proc returnTuple() {
+        return (a, i, r);
+      }
+      
+      proc updateGlobalsAndOutput(tup) {
+        a[0] = 1;
+        i = 2;
+        r.x = 3;
+
+        //
+        // Because the tuple passed to `updateGlobalsAndOutput` is a value
+        // tuple and contains no references, the assignments made to `a`,
+        // `i`, and `r` above are not visible in `tup` when it is printed.
+        // This `writeln` will output (0, 0, (x = 0)).
+        //
+        writeln(tup);
+      }
+
+   .. BLOCK-test-chapeloutput
+
+      (0, 0, (x = 0))
+
 .. _Tuple_Operators:
 
 Tuple Operators
@@ -829,6 +1165,19 @@ in the two operand tuples. Otherwise, a compile-time error will result.
 Predefined Functions and Methods on Tuples
 ------------------------------------------
 
+.. code-block:: chapel
+
+   proc tuple.size param
+
+Returns the size of the tuple.
+
+
+.. code-block:: chapel
+
+   proc tuple.indices
+
+Returns the range ``1..this.size`` representing the indices that are
+legal for indexing into the tuple.
 
 
 .. code-block:: chapel
@@ -873,8 +1222,3 @@ value that can be stored in its position.
 
 
 
-.. code-block:: chapel
-
-   proc Tuple.size param
-
-Returns the size of the tuple.

@@ -1,5 +1,5 @@
 #!/bin/sh
 
 # Throw out any --waltime argument (added by sub_test).
-sed "s/ --walltime=[^ ]*//" $2 > $2.tmp &&
+grep -v "^--walltime=" $2 > $2.tmp &&
 mv $2.tmp $2

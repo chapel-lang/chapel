@@ -91,7 +91,7 @@ module block_bordering_cholesky {
       // performisng a block forward solve with a block lower triangular 
       // matrix where every diagonal block is a unit lower triangular matrix
 
-      if prev_rows.length > 0 then {
+      if prev_rows.size > 0 then {
 	block_transposed_block_triangular_solve 
 	            ( A (prev_rows, prev_rows), A (leading_rows, prev_rows ) );
 	

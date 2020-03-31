@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -87,6 +88,8 @@ Expr* findLocationIgnoringInternalInlining(Expr* cur) {
     if (inlined == false || preserveInlinedLineNumbers)
       return cur;
 
+    Expr* last = cur;
+
     // Look for a call to that function
     for_SymbolSymExprs(se, curFn) {
       CallExpr* call = toCallExpr(se->parentExpr);
@@ -96,6 +99,10 @@ Expr* findLocationIgnoringInternalInlining(Expr* cur) {
         break;
       }
     }
+
+    // Stop if we didn't find any calls.
+    if (cur == last)
+      return cur;
   }
 
   return cur; // never reached
@@ -163,7 +170,7 @@ astlocT getUserInstantiationPoint(const BaseAST* ast) {
           cur = instantiationPoint;
       }
     } else if (TypeSymbol* ts = toTypeSymbol(cur)) {
-      // Find the first use of the TypeSymbol at the type's instantation point
+      // Find the first use of the TypeSymbol at the type's instantiation point
       // so we can have a better error message line number.
       BlockStmt* instantiationPoint = ts->instantiationPoint;
 

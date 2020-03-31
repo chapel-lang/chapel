@@ -13,7 +13,7 @@ const greaterThan = ">".toByte();
 
 proc main(args: [] string) {
   var inFile = openfd(0);
-  const fileLen = inFile.length();
+  const fileLen = inFile.size;
   var data : [1..fileLen] uint(8);
   var r = inFile.reader(locking=false);
 

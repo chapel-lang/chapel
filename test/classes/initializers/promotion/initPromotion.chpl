@@ -86,7 +86,7 @@ proc promote(x) {
   writeln("-1 * x = ", negate);
   writeln(" x + x = ", add);
 
-  writeln("-" * header.length);
+  writeln("-" * header.size);
   writeln();
 }
 

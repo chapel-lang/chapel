@@ -14,7 +14,7 @@ proc testUndensify(whole, r, dense) {
 
 proc t2(arg) {
   const result = densifySelf(arg);
-  proc shouldbe(r) return 0:r.length.type..#r.length;
+  proc shouldbe(r) return 0:r.size.type..#r.size;
   writeln("densifySelf ", arg, " -> ", result,
           " : ", result.type:string);
 

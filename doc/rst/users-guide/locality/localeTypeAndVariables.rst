@@ -23,7 +23,7 @@ Locale values support methods that permit a programmer to make queries
 about the target architecture's capabilities, such as the maximum
 amount of task parallelism supported or the amount of physical memory
 available on the locale.  For details on this interface, refer to
-:chpl:class:`ChapelLocale.locale`.
+:chpl:mod:`ChapelLocale`.
 
 As a simple example, each locale value supports an ``id`` method that
 reports its unique (0-based) ID.  We'll see the use of this method in

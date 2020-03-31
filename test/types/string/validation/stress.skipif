@@ -1,0 +1,7 @@
+#!/bin/bash
+
+if which python3 >/dev/null 2>/dev/null; then
+  echo False
+else
+  echo True
+fi

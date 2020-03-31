@@ -1,0 +1,3 @@
+useAndImport-useOnlyNothing2c.chpl:21: In function 'main':
+useAndImport-useOnlyNothing2c.chpl:22: error: unresolved call 'foo()'
+useAndImport-useOnlyNothing2c.chpl:22: note: because no functions named foo found in scope

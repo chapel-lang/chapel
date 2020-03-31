@@ -891,9 +891,9 @@ Resets this domain’s index set to the empty set.
 
       enum Counter { one, two, three };
       var D : domain ( Counter ) = {Counter.one, Counter.two};
-      writeln("D has ", D.numIndices, " indices.");
+      writeln("D has ", D.size, " indices.");
       D.clear();
-      writeln("D has ", D.numIndices, " indices.");
+      writeln("D has ", D.size, " indices.");
 
    prints out 
 
@@ -997,12 +997,6 @@ set, and false otherwise.
 
 
 
-.. code-block:: chapel
-
-   proc domain.numIndices: capType
-
-Returns the number of indices in the domain as a value of the capacity
-type.
 
 Methods on Regular Domains
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1107,7 +1101,8 @@ Returns the rank of the domain.
 
    proc domain.size: capType
 
-Same as :math:`Domain`.numIndices.
+Returns the number of indices in the domain as a value of the capacity
+type.
 
 
 

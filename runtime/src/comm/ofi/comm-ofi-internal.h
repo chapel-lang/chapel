@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -63,7 +64,9 @@ FILE* chpl_comm_ofi_dbg_file;
 #define DBG_RMAREAD            0x400000UL
 #define DBG_RMAUNORD           0x800000UL
 #define DBG_AMO               0x1000000UL
-#define DBG_ACK               0x2000000UL
+#define DBG_AMOREAD           0x2000000UL
+#define DBG_ACK               0x4000000UL
+#define DBG_ORDER             0x8000000UL
 #define DBG_MR               0x10000000UL
 #define DBG_MRDESC           0x20000000UL
 #define DBG_MRKEY            0x40000000UL

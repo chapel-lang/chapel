@@ -1,5 +1,6 @@
 module OuterModule {
   module Test {
+    import OuterModule.{NBUCKETS, PER};
     /* these should already be defined:
     param NBUCKETS;
     param PER;

@@ -1,4 +1,5 @@
-# Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+# Copyright 2020 Hewlett Packard Enterprise Development LP
+# Copyright 2004-2019 Cray Inc.
 # Other additional copyright holders may be indicated within.
 # 
 # The entirety of this work is licensed under the Apache License,
@@ -123,15 +124,19 @@ printlinkershared:
 	@echo $(LD) $(LIB_DYNAMIC_FLAG)
 
 printlibraries:
-	@echo $(GEN_LFLAGS) $(COMP_GEN_LFLAGS) -L$(CHPL_RT_LIB_DIR) \
-	      -lchpl $(LIBS) -lm $(CHPL_MAKE_THIRD_PARTY_LINK_ARGS) $(CHPL_MAKE_BASE_LFLAGS)
+	@echo $(CHPL_MAKE_BASE_LFLAGS) \
+	      $(COMP_GEN_USER_LDFLAGS) $(GEN_LFLAGS) $(COMP_GEN_LFLAGS) \
+	      -L$(CHPL_RT_LIB_DIR) -lchpl $(LIBS) -lm \
+	      $(CHPL_MAKE_THIRD_PARTY_LINK_ARGS)
 
 printlinker:
 	@echo $(LD)
 
 printlinkline:
-	@echo $(LD) $(GEN_LFLAGS) $(COMP_GEN_LFLAGS) -L$(CHPL_RT_LIB_DIR) \
-	      -lchpl $(LIBS) -lm $(CHPL_MAKE_THIRD_PARTY_LINK_ARGS) $(CHPL_MAKE_BASE_LFLAGS)
+	@echo $(LD) $(CHPL_MAKE_BASE_LFLAGS) \
+              $(COMP_GEN_USER_LDFLAGS) $(GEN_LFLAGS) $(COMP_GEN_LFLAGS) \
+              -L$(CHPL_RT_LIB_DIR) -lchpl $(LIBS) -lm \
+              $(CHPL_MAKE_THIRD_PARTY_LINK_ARGS)
 
 printoverrideld:
 	@echo $(LD)

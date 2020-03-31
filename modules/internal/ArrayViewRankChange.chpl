@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -92,7 +93,7 @@ module ArrayViewRankChange {
 
     // Don't want to privatize a DefaultRectangular, so pass the query on to
     // the wrapped array
-    proc dsiSupportsPrivatization() param
+    override proc dsiSupportsPrivatization() param
       return downDistInst.dsiSupportsPrivatization();
 
     proc dsiGetPrivatizeData() {
@@ -109,7 +110,7 @@ module ArrayViewRankChange {
     override proc dsiDestroyDist() {
     }
 
-    proc dsiIsLayout() param {
+    override proc dsiIsLayout() param {
       return downDistInst.dsiIsLayout();
     }
   }
@@ -363,7 +364,7 @@ module ArrayViewRankChange {
       return chpl_rankChangeConvertDownToUp(dims, rank, collapsedDim);
     }
 
-    proc isRankChangeDomainView() param {
+    override proc isRankChangeDomainView() param {
       return true;
     }
 
@@ -384,7 +385,7 @@ module ArrayViewRankChange {
 
     // Don't want to privatize a DefaultRectangular, so pass the query on to
     // the wrapped array
-    proc dsiSupportsPrivatization() param
+    override proc dsiSupportsPrivatization() param
       return downDomInst!.dsiSupportsPrivatization();
 
     proc dsiGetPrivatizeData() {
@@ -522,7 +523,7 @@ module ArrayViewRankChange {
     // must be (or should be) some way to do it without relying on
     // methods like this...
     //
-    proc isRankChangeArrayView() param {
+    override proc isRankChangeArrayView() param {
       return true;
     }
 
@@ -682,7 +683,7 @@ module ArrayViewRankChange {
 
     // Don't want to privatize a DefaultRectangular, so pass the query on to
     // the wrapped array
-    proc dsiSupportsPrivatization() param
+    override proc dsiSupportsPrivatization() param
       return _ArrInstance.dsiSupportsPrivatization();
 
     proc dsiGetPrivatizeData() {
@@ -787,7 +788,7 @@ module ArrayViewRankChange {
     // part.
     //
 
-    proc doiCanBulkTransferRankChange() param
+    override proc doiCanBulkTransferRankChange() param
       return arr.doiCanBulkTransferRankChange();
 
     proc doiBulkTransferFromKnown(destDom, srcClass, srcDom) : bool

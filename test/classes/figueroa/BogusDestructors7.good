@@ -1,1 +1,3 @@
+warning: Destructors have been deprecated as of Chapel 1.21. Please use deinit instead.
+BogusDestructors7.chpl:5: warning: to fix, rename ~_Class_1bar to deinit
 BogusDestructors7.chpl:5: error: destructor name must match class/record name or deinit()

@@ -87,8 +87,8 @@ var tInit, tPS1iter, tUBR1iter, tSC1call, tLF1iter, tBScall, tVer: VTimer;
   setupTargetLocalesArray(targetIds, targetLocales, Locales);
 
   // Here are the dimensions of our grid of locales.
-  const tl1 = targetIds.dim(0).length,
-        tl2 = targetIds.dim(1).length;
+  const tl1 = targetIds.dim(0).size,
+        tl2 = targetIds.dim(1).size;
 
   if onlyBsub && tl1 != tl2 then
     halt("backwardSub() is implemented only for a square locale grid");
@@ -319,7 +319,7 @@ proc LUFactorize(n: indexType,
 proc schurComplement(blk, AD, BD, Rest) {
 
   // Prevent replication of unequal-sized slices
-  if Rest.numIndices == 0 then return;
+  if Rest.size == 0 then return;
 
   tSC1call.start();
 
@@ -439,7 +439,7 @@ proc panelSolve(
     vmsgmore("  col");
     
     // If there are no rows below the current column return
-    if col.numIndices == 0 then { vmsg("panelSolve()"); return; }
+    if col.size == 0 then { vmsg("panelSolve()"); return; }
     
     // Find the pivot, the element with the largest absolute value.
     const (_, (pivotRow, _)) = maxloc reduce zip(abs(Ab(col)), col);
@@ -782,7 +782,7 @@ proc bsIncorporateOthersPartSums(diaFrom, diaTo, locId1, locId2) {
   if checkBsub {
     // Our own partial sums are already available.
     assert(partSums[locId2].avail.read() != spsNA, "bsI-1");
-    assert(locX.numElements == blkSize, "bsI-3");
+    assert(locX.size == blkSize, "bsI-3");
   }
 
   // because we are reusing replK for replX
@@ -898,7 +898,7 @@ proc bsComputePartSums(diaFrom, diaTo, locId1, locId2, diaLocId2,
     gotBlocksArg = gotBlocks;
   }  // local
 
-  if errs.length != 0 then
+  if errs.size != 0 then
     writeln("bsComputePartSums on [", locId1, ",", locId2, "] ERRORS:", errs);
 
   //writeln("bsComputePartSums  result ", myPartSums,

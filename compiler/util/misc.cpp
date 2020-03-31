@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -19,6 +20,7 @@
 
 #include "misc.h"
 
+#include "astlocs.h"
 #include "baseAST.h"
 #include "chpl.h"
 #include "driver.h"
@@ -55,6 +57,8 @@ static int         err_ignore       =    0;
 static FnSymbol*   err_fn           = NULL;
 static int         err_fn_id        = 0;
 static bool        err_fn_header_printed = false;
+
+astlocT            last_error_loc(0, NULL);
 
 static bool forceWidePtrs();
 
@@ -398,6 +402,11 @@ static bool printErrorHeader(BaseAST* ast, astlocT astloc) {
   bool guess = filename && !have_ast_line;
 
   if (filename) {
+    if (err_fatal && err_user) {
+      // save the error location for printsSameLocationAsLastError
+      last_error_loc.filename = filename;
+      last_error_loc.lineno = linenum;
+    }
     print_error("%s:%d: ", filename, linenum);
   }
 
@@ -649,6 +658,22 @@ bool fatalErrorsEncountered() {
 void clearFatalErrors() {
   exit_eventually = false;
   exit_end_of_pass = false;
+}
+
+bool printsSameLocationAsLastError(const BaseAST* ast) {
+  astlocT loc(0, NULL);
+
+  if ( ast && ast->linenum() ) {
+    loc.filename = cleanFilename(ast);
+    loc.lineno = ast->linenum();
+  }
+
+  return loc == last_error_loc;
+}
+
+void clearLastErrorLocation() {
+  last_error_loc.filename = NULL;
+  last_error_loc.lineno = 0;
 }
 
 static void handleInterrupt(int sig) {

@@ -1,0 +1,5 @@
+union-init1.chpl:6: In function 'main':
+union-init1.chpl:7: error: unresolved call 'U.init(x=1, y=20.0)'
+union-init1.chpl:1: note: this candidate did not match: U.init()
+union-init1.chpl:7: note: because call uses named argument x
+union-init1.chpl:1: note: but function contains no formal named x

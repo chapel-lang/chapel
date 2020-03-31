@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -90,8 +91,8 @@ private proc getBuildInfo(projectHome: string) {
   // parse lock and toml(examples dont make it to lock file)
   const lock = open(projectHome + "/Mason.lock", iomode.r);
   const toml = open(projectHome + "/Mason.toml", iomode.r);
-  const lockFile = new owned(parseToml(lock));
-  const tomlFile = new owned(parseToml(toml));
+  const lockFile = owned.create(parseToml(lock));
+  const tomlFile = owned.create(parseToml(toml));
   
   // Get project source code and dependencies
   const sourceList = genSourceList(lockFile);
@@ -289,7 +290,9 @@ private proc runExampleBinary(projectHome: string, exampleName: string,
 
   const exampleResult = runWithStatus(command, true);
   if exampleResult != 0 {
-    throw new owned MasonError("Mason failed to find and run compiled example: " + exampleName + ".chpl");
+    throw new owned MasonError("Example has not been compiled: " + exampleName + ".chpl\n" +
+    "Try running: mason build --example " + exampleName + ".chpl\n" +
+    "         or: mason run --example " + exampleName + ".chpl --build");
   }
 }  
 
@@ -361,7 +364,7 @@ proc printAvailableExamples() {
     const cwd = getEnv("PWD");
     const projectHome = getProjectHome(cwd);
     const toParse = open(projectHome + "/Mason.toml", iomode.r);
-    const toml = new owned(parseToml(toParse));
+    const toml = owned.create(parseToml(toParse));
     const examples = getExamples(toml, projectHome);
     writeln("--- available examples ---");
     for example in examples {

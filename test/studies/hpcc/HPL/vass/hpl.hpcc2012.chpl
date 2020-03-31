@@ -80,8 +80,8 @@ compilerAssert(CHPL_NETWORK_ATOMICS == "none",
   setupTargetLocalesArray(targetIds, targetLocales, Locales);
 
   // Here are the dimensions of our grid of locales.
-  const tl1 = targetIds.dim(0).length,
-        tl2 = targetIds.dim(1).length;
+  const tl1 = targetIds.dim(0).size,
+        tl2 = targetIds.dim(1).size;
 
   if tl1 != tl2 then
     halt("backwardSub() is implemented only for a square locale grid");
@@ -315,7 +315,7 @@ proc LUFactorize(n: indexType,
 proc schurComplement(blk, AD, BD, Rest) {
 
   // Prevent replication of unequal-sized slices
-  if Rest.numIndices == 0 then return;
+  if Rest.size == 0 then return;
 
   //
   // Copy data into replicated arrays so every processor has a local copy

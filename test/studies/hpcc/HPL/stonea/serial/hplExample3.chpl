@@ -73,8 +73,8 @@ proc luLikeMultiply(
     forall blkCol in blk+1..blksHoriz {
         const cBlkD = {(ADmn.dim(0))(ptSol..),
                        (ABlkDmn.dim(1))((blkCol-1)*blkSize+1..#blkSize)};
-        const aBlkD = {ptSol..#cBlkD.dim(0).length,
-                       ptOp..#cBlkD.dim(1).length};
+        const aBlkD = {ptSol..#cBlkD.dim(0).size,
+                       ptOp..#cBlkD.dim(1).size};
 
         ACopies[cBlkD] = A[aBlkD];
     }
@@ -83,8 +83,8 @@ proc luLikeMultiply(
     forall blkRow in blk+1..blksVert {
         const cBlkD = {(ABlkDmn.dim(0))((blkRow-1)*blkSize+1..#blkSize),
                        (ADmn.dim(1))(ptSol..)};
-        const bBlkD = {ptOp..#cBlkD.dim(0).length,
-                       ptSol..#cBlkD.dim(1).length};
+        const bBlkD = {ptOp..#cBlkD.dim(0).size,
+                       ptSol..#cBlkD.dim(1).size};
 
         BCopies[cBlkD] = A[bBlkD];
     }
@@ -95,8 +95,8 @@ proc luLikeMultiply(
                        (ABlkDmn.dim(1))((blkCol-1)*blkSize+1..#blkSize)};
         const bBlkD = {(ABlkDmn.dim(0))((blkRow-1)*blkSize+1..#blkSize),
                        (ADmn.dim(1))((blkCol-1)*blkSize+1..#blkSize)};
-        const cBlkD = ADmn[(blkRow-1)*blkSize+1..#aBlkD.dim(0).length,
-                           (blkCol-1)*blkSize+1..#bBlkD.dim(1).length];
+        const cBlkD = ADmn[(blkRow-1)*blkSize+1..#aBlkD.dim(0).size,
+                           (blkCol-1)*blkSize+1..#bBlkD.dim(1).size];
 
         local {
             dgemm(
@@ -241,7 +241,7 @@ proc LUFactorize(n : int, A : [1..n, 1..n+1] real, piv : [1..n] int) {
         updateBlockRow(A, tl, tr);
 
         // update trailing submatrix (if there)
-        if(br.numIndices > 0) {
+        if(br.size > 0) {
             var blkID : int = (blk/blkSize):int + 1;
             luLikeMultiply(A, blkID);
           }

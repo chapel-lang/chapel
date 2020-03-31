@@ -5,7 +5,6 @@ rank             = 2
 idxType          = color
 stridable        = false
 size             = 9
-numIndices       = 9
 isEmpty()        = false
 low              = (orange, yellow)
 high             = (green, blue)
@@ -54,7 +53,6 @@ Copying...
 Clearing...
 {orange..red, orange..red}
 size             = 0
-numIndices       = 0
 isEmpty()        = true
 low              = (orange, orange)
 high             = (red, red)
@@ -68,7 +66,6 @@ rank             = 2
 idxType          = color
 stridable        = true
 size             = 4
-numIndices       = 4
 isEmpty()        = false
 low              = (orange, yellow)
 high             = (green, blue)
@@ -117,7 +114,6 @@ Copying...
 Clearing...
 {orange..red, orange..red}
 size             = 0
-numIndices       = 0
 isEmpty()        = true
 low              = (orange, orange)
 high             = (red, red)

@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -186,7 +187,7 @@ are supported through submodules, such ``LinearAlgebra.Sparse`` for the
 module LinearAlgebra {
 
 use Norm; // TODO -- merge Norm into LinearAlgebra
-use BLAS only;
+import BLAS;
 use LAPACK only lapack_memory_order, isLAPACKType;
 
 /* Determines if using native Chapel implementations */
@@ -380,18 +381,18 @@ proc Matrix(const Arrays: ?t  ...?n) where isArrayType(t) && t.rank == 1 {
 
 */
 proc Matrix(const Arrays: ?t ...?n, type eltType) where isArrayType(t) && t.rank == 1 {
-  // TODO -- assert all array domains are same length
-  //         Can this be done via type query?
 
   if Arrays(0).domain.rank != 1 then compilerError("Matrix() expected 1D arrays");
 
   const dim2 = 1..Arrays(0).domain.dim(0).size,
-        dim1 = 1..n;
+        dim1 = 0..n-1;
 
   var M: [{dim1, dim2}] eltType;
 
-  for i in dim1 do
-    M[i, ..] = Arrays(i-1)[..]: eltType;
+  forall i in dim1 do {
+    if Arrays(i).size != Arrays(0).size then halt("Matrix() expected arrays of equal length");
+    M[i, ..] = Arrays(i)[..]: eltType;
+  }
 
   return M;
 }
@@ -576,7 +577,7 @@ proc dot(A: [?Adom] ?eltType, B: [?Bdom] eltType) where isDenseArr(A) && isDense
 
 */
 proc _array.dot(A: []) where isDenseArr(this) && isDenseArr(A) {
-  use LinearAlgebra only;
+  import LinearAlgebra;
   return LinearAlgebra.dot(this, A);
 }
 
@@ -1406,7 +1407,7 @@ proc eig(A: [] ?t, param left = false, param right = false)
   where A.domain.rank == 2 && usingLAPACK {
 
   proc convertToCplx(wr: [] t, wi: [] t) {
-    const n = wi.numElements;
+    const n = wi.size;
     var eigVals: [1..n] complex(numBits(t)*2);
     forall (rv, re, im) in zip(eigVals, wr, wi) {
       rv = (re, im): complex(numBits(t)*2);
@@ -1415,7 +1416,7 @@ proc eig(A: [] ?t, param left = false, param right = false)
   }
 
   proc flattenCplxEigenVecs(wi: [] t, vec: [] t) {
-    const n = wi.numElements;
+    const n = wi.size;
     var cplx: [1..n, 1..n] complex(numBits(t)*2);
 
     var skipNext = false;
@@ -1442,7 +1443,7 @@ proc eig(A: [] ?t, param left = false, param right = false)
     return cplx;
   }
 
-  const n = A.domain.dim(0).length;
+  const n = A.domain.dim(0).size;
   if !isSquare(A) then
     halt("Matrix passed to eigvals must be square");
   var copy = A;
@@ -1978,13 +1979,13 @@ module Sparse {
 
   /* Compute the dot-product */
   proc _array.dot(A: []) where isCSArr(A) || isCSArr(this) {
-    use LinearAlgebra only;
+    import LinearAlgebra;
     return LinearAlgebra.Sparse.dot(this, A);
   }
 
   /* Compute the dot-product */
   proc _array.dot(a) where isNumeric(a) && isCSArr(this) {
-    use LinearAlgebra only;
+    import LinearAlgebra;
     return LinearAlgebra.dot(this, a);
   }
 
@@ -2207,7 +2208,7 @@ module Sparse {
     const parentDT = transpose(D.parentDom);
     var Dom: sparse subdomain(parentDT) dmapped CS(sortedIndices=false);
 
-    var idxBuffer = Dom.makeIndexBuffer(size=D.numIndices);
+    var idxBuffer = Dom.makeIndexBuffer(size=D.size);
     for (i,j) in D do idxBuffer.add((j,i));
     idxBuffer.commit();
     return Dom;

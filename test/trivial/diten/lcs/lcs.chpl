@@ -17,8 +17,8 @@ proc main() {
   var len1, len2: int;
 
   get_strings(s1, s2);
-  len1 = (s1.length);
-  len2 = (s2.length);
+  len1 = (s1.size);
+  len2 = (s2.size);
 
   var b: [0..len1, 0..len2] (int, int);
   var c: [0..len1, 0..len2] int;
@@ -45,8 +45,8 @@ proc lcs_length(s1: string, s2: string, b, c) {
      to s1(i), s2(j).  B contains directions to follow back to
      within the one of the strings to build an actual LCS.
   */
-  var m = (s1.length);
-  var n = (s2.length);
+  var m = (s1.size);
+  var n = (s2.size);
   for i in 1..m {
     for j in 1..n {
       if s1[i] == s2[j] {

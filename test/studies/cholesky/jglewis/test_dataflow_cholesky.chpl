@@ -170,7 +170,7 @@ module test_dataflow_cholesky {
 
     const mat_dom  = A.domain,
 	  mat_rows = A.domain.dim(0),
-	  n        = A.domain.dim(0).length;
+	  n        = A.domain.dim(0).size;
 
     const unit_roundoff = 2.0 ** (-53), // IEEE 64 bit floating point
 	  gamma_n1      = (n * unit_roundoff) / (1.0 - n * unit_roundoff);

@@ -1,0 +1,1 @@
+domIndices.chpl:3: error: domains do not support '.indices'

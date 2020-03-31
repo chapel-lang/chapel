@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -298,7 +299,7 @@ proc getSpkgInfo(spec: string, ref dependencies: list(string)): unmanaged Toml t
     if spkgInstalled(spec) {      
       const spkgPath = getSpkgPath(spec);
       const libs = joinPath(spkgPath, "lib");
-      const include = joinPath(spkgPath, "include");
+      const includePath = joinPath(spkgPath, "include");
       const other = joinPath(spkgPath, "other");
 
       if isDir(other) {
@@ -308,7 +309,7 @@ proc getSpkgInfo(spec: string, ref dependencies: list(string)): unmanaged Toml t
       spkgInfo.set("version", version);
       spkgInfo.set("compiler", compiler);
       spkgInfo.set("libs", libs);
-      spkgInfo.set("include", include);
+      spkgInfo.set("include", includePath);
 
       while dependencies.size > 0 {
         var dep = dependencies[1];

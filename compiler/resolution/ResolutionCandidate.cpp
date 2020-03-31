@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -165,7 +166,12 @@ bool ResolutionCandidate::computeAlignment(CallInfo& info) {
       bool match = false;
       int  j    = 0;
       for_formals(formal, fn) {
-        if (strcmp(info.actualNames.v[i], formal->name) == 0) {
+        if (info.actualNames.v[i] == formal->name) {
+
+          if (formalIdxToActual[j] != NULL)
+            USR_FATAL(info.call, "named argument '%s' provided twice",
+                      formal->name);
+
           match                = true;
           actualIdxToFormal[i] = formal;
           formalIdxToActual[j] = info.actuals.v[i];
@@ -198,7 +204,8 @@ bool ResolutionCandidate::computeAlignment(CallInfo& info) {
           return fn->isGeneric();
         }
 
-        if (formalIdxToActual[j] == NULL) {
+        if (formalIdxToActual[j] == NULL &&
+            !formal->hasFlag(FLAG_TYPE_FORMAL_FOR_OUT)) {
           match                = true;
           actualIdxToFormal[i] = formal;
           formalIdxToActual[j] = info.actuals.v[i];
@@ -230,7 +237,8 @@ bool ResolutionCandidate::computeAlignment(CallInfo& info) {
   // Make sure that any remaining formals are matched by name
   // or have a default value.
   while (formal) {
-    if (formalIdxToActual[j] == NULL && formal->defaultExpr == NULL) {
+    if (formalIdxToActual[j] == NULL && formal->defaultExpr == NULL &&
+        !formal->hasFlag(FLAG_TYPE_FORMAL_FOR_OUT)) {
       failingArgument = formal;
       reason = RESOLUTION_CANDIDATE_TOO_FEW_ARGUMENTS;
       return false;

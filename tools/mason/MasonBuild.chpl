@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -132,7 +133,7 @@ proc buildProgram(release: bool, show: bool, force: bool, ref cmdLineCompopts: l
     const cwd = getEnv("PWD");
     const projectHome = getProjectHome(cwd, tomlName);
     const toParse = open(projectHome + "/" + lockName, iomode.r);
-    var lockFile = new owned(parseToml(toParse));
+    var lockFile = owned.create(parseToml(toParse));
     const projectName = lockFile["root"]!["name"]!.s;
     
     // --fast

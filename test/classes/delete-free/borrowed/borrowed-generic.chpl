@@ -16,11 +16,8 @@ class Node {
 config const n = 5;
 
 proc test1() {
-  var nodes:[1..n] unmanaged Node(int);
-
-  for i in 1..n {
-    nodes[i] = new unmanaged Node(i);
-  }
+  var nodes:[1..n] unmanaged Node(int) =
+    for i in 1..n do new unmanaged Node(i);
 
   var head:borrowed Node(int) = nodes[1];
   var current: borrowed Node(int)? = head;

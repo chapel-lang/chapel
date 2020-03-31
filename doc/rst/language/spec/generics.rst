@@ -373,8 +373,8 @@ concrete* for the purpose of function resolution.
 
    .. BLOCK-test-chapelpost
 
-      var cc = new borrowed Container(int);
-      var c = new borrowed C(real, int, cc.type);
+      var cc = new Container(int);
+      var c = new C(real, int, cc.type);
       f(c);
       g(c);
 

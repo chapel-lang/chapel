@@ -431,14 +431,16 @@ module OuterNested {
   }
 
   /* A module defined within another module is called a nested module.  These
-     submodules can refer to symbols defined within their parent module, but
-     their parent module can't directly access the contents of the nested
-     module without a ``use`` statement or fully qualified name.
+     submodules cannot refer to symbols defined within their parent module,
+     without a ``use`` or ``import`` of the parent module.  The
+     parent module can only access the contents of the nested module using
+     a ``use`` or ``import`` statement or a fully qualified name.
 
      The variable ``foobar`` references OuterNested's ``foo`` and ``bar``
      variables.
    */
   module Inner1 {
+    use OuterNested;
     var foobar = foo + bar;
   }
 
@@ -453,16 +455,16 @@ module OuterNested {
   }
 } // end of OuterNested module
 
-/* Private Uses
-   ------------
+/* Public vs. Private Uses
+   -----------------------
 
-   It is important to note that a module with a ``use`` of other modules will
-   by default make those symbols available to scopes that ``use`` it.
-   Considering the following pair of modules:
+   Use statements can be labeled as being either ``public`` or ``private``.
+   By default ``use`` statements are ``private``.  This means that if one
+   module uses a second, it will only see the symbols defined by that module,
+   not by other modules that it happens to use.  For example, consider the
+   following library module:
 */
-module UserModule {
-  use ModuleThatIsUsed;
-}
+
 
 module ModuleThatIsUsed {
   proc publiclyAvailableProc() {
@@ -470,30 +472,41 @@ module ModuleThatIsUsed {
   }
 }
 
-/* A scope with a ``use`` of ``UserModule`` will also be able to see the
-   symbols defined by ``ModuleThatIsUsed``.
+/* And a module that uses it:
+ */
+module UserModule {
+  use ModuleThatIsUsed;  // or `private use ModuleThatIsUsed`
+}
+
+/* When a scope has a ``use`` of ``UserModule``, the symbols from
+   ``ModuleThatIsUsed`` will not be available due to the ``private`` nature of
+   ``UserModule`` 's ``use``, so the following code would not compile.
 */
+
 module UsesTheUser {
   proc func1() {
     use UserModule;
+    // publiclyAvailableProc(); // Won't compile, since ``UserModule``'s ``use`` is ``private``
+  }
+}
+
+/* By contrast, a ``public use`` will permit symbols used by one module to
+   be seen by those that use it.  For example, consider the following
+   variation of the previous example:
+*/
+module UserModule2 {
+  public use ModuleThatIsUsed;
+}
+
+
+/* Since its use is ``public``, A scope with a ``use`` of ``UserModule2`` will 
+   also be able to see the symbols defined by ``ModuleThatIsUsed``.
+*/
+module UsesTheUser2 {
+  proc func2() {
+    use UserModule2;
     publiclyAvailableProc(); // available due to ``use`` of ModuleThatIsUsed
   }
 }
 
-/* To avoid this, ``use`` statements can be declared as ``private``:
- */
-module UserModule2 {
-  private use ModuleThatIsUsed;
-}
 
-/* When a scope has a ``use`` of ``UserModule2``, the symbols from
-   ``ModuleThatIsUsed`` will not be available due to the ``private`` modifier on
-   ``UserModule2`` 's ``use`` of it, so the following code would not compile.
-*/
-
-module UsesTheUser2 {
-  proc func2() {
-    use UserModule2;
-    //publiclyAvailableProc(); // Won't compile, the ``use`` is ``private``
-  }
-}

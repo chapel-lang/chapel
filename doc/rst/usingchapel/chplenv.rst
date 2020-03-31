@@ -35,7 +35,7 @@ CHPL_HOME
 
     .. code-block:: sh
 
-        export CHPL_HOME=~/chapel-1.20.0
+        export CHPL_HOME=~/chapel-1.21.0
 
    .. note::
      This, and all other examples in the Chapel documentation, assumes you're
@@ -697,6 +697,8 @@ CHPL_LIB_PIC
        ===== ================================
 
    If unset, ``CHPL_LIB_PIC`` defaults to ``none``
+
+.. _readme-chplenv.character_set:
 
 Character Set
 -------------

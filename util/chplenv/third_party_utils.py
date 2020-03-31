@@ -149,4 +149,6 @@ def default_get_link_args(pkg, ucp='', libs=[]):
             all_args.extend(handle_la(la))
         else:
             all_args.append(lib_arg)
+    if all_args == []:
+        all_args.append('-l' + pkg)
     return all_args

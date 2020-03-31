@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -38,9 +39,12 @@ static void checkParsedVar(VarSymbol* var);
 static void checkFunction(FnSymbol* fn);
 static void checkExportedNames();
 static void nestedName(ModuleSymbol* mod);
+static void includedStrictNames(ModuleSymbol* mod);
 static void checkModule(ModuleSymbol* mod);
 static void checkRecordInheritance(AggregateType* at);
 static void setupForCheckExplicitDeinitCalls();
+static void warnUnstableUnions(AggregateType* at);
+static void warnUnstableLeadingUnderscores();
 
 void
 checkParsed() {
@@ -122,13 +126,17 @@ checkParsed() {
 
   forv_Vec(ModuleSymbol, mod, gModuleSymbols) {
     nestedName(mod);
-
+    includedStrictNames(mod);
     checkModule(mod);
   }
 
   forv_Vec(AggregateType, at, gAggregateTypes) {
     checkRecordInheritance(at);
+
+    warnUnstableUnions(at);
   }
+
+  warnUnstableLeadingUnderscores();
 
   checkExportedNames();
 
@@ -393,11 +401,24 @@ checkFunction(FnSymbol* fn) {
     }
   }
 
-#if 0 // Do not issue the warning yet.
-  if (fn->hasFlag(FLAG_DESTRUCTOR) && (fn->name[0] == '~')) {
-    USR_WARN(fn, "\"~classname\" naming of deinitializers is deprecated");
+  if (fn->retTag == RET_TYPE || fn->retTag == RET_PARAM) {
+    for_formals(formal, fn) {
+      if (formal->intent == INTENT_OUT ||
+          formal->intent == INTENT_INOUT) {
+        USR_FATAL_CONT(formal,
+                       "Cannot use %s in a "
+                       "function returning with '%s' intent",
+                       intentDescrString(formal->intent),
+                       retTagDescrString(fn->retTag));
+      }
+    }
   }
-#endif
+
+  if (fn->hasFlag(FLAG_DESTRUCTOR) && (fn->name[0] == '~')) {
+    USR_WARN("Destructors have been deprecated as of Chapel 1.21. "
+             "Please use deinit instead.");
+    USR_WARN(fn, "to fix, rename %s to deinit", fn->name);
+  }
 
   std::vector<CallExpr*> calls;
   collectMyCallExprs(fn, calls, fn);
@@ -460,6 +481,39 @@ static void nestedName(ModuleSymbol* mod) {
   }
 }
 
+static void includedStrictNames(ModuleSymbol* mod) {
+  if (mod->defPoint == NULL) {
+    return;
+  }
+
+  if (mod->hasFlag(FLAG_INCLUDED_MODULE)) {
+    ModuleSymbol* parent = mod->defPoint->getModule();
+
+    // module name should match file name
+    const char* fname = filenameToModulename(parent->astloc.filename);
+    if (fname != parent->name) {
+      USR_FATAL("Cannot include modules from a module whose name doesn't match its filename");
+    }
+
+    // parent module must be top-level in its file.
+    // in is not necessarily a top-level module, though.
+    ModuleSymbol* lastParentSameFile = parent;
+    for (ModuleSymbol* cur = parent;
+         cur != NULL && cur->defPoint != NULL;
+         cur = cur->defPoint->getModule()) {
+      if (parent->astloc.filename == cur->astloc.filename) {
+        lastParentSameFile = cur;
+      } else {
+        break;
+      }
+    }
+
+    if (lastParentSameFile != parent) {
+      USR_FATAL(parent, "Cannot include module from an in-line nested module");
+    }
+  }
+}
+
 //
 // This is a special test to ensure that there are no instances of a return
 // or yield statement at the top level of a module.  This "special" semantic
@@ -512,5 +566,44 @@ checkExportedNames()
     if (names.get(name))
       USR_FATAL_CONT(fn, "The name %s cannot be exported twice from the same compilation unit.", name);
     names.put(name, true);
+  }
+}
+
+static void warnUnstableUnions(AggregateType* at) {
+  if (fWarnUnstable && at->isUnion()) {
+    USR_WARN(at, "Unions are currently unstable and are expected to change in ways that will break their current uses.");
+  }
+}
+
+static void warnUnstableLeadingUnderscores() {
+  if (fWarnUnstable) {
+    forv_Vec(DefExpr, def, gDefExprs) {
+      const char* name = def->name();
+      Symbol* sym = def->sym;
+      ModuleSymbol* mod = def->getModule();
+      FnSymbol* fn = def->getFunction();
+
+      if (name && name[0] == '_' &&
+          mod && mod->modTag == MOD_USER &&
+          !sym->hasFlag(FLAG_TEMP) &&
+          sym->type != dtMethodToken) {
+        USR_WARN(def,
+                 "Symbol names with leading underscores (%s) are unstable.", name);
+      }
+      if (name &&
+          name[0] == 'c' &&
+          name[1] == 'h' &&
+          name[2] == 'p' &&
+          name[3] == 'l' &&
+          name[4] == '_' &&
+          mod && mod->modTag == MOD_USER &&
+          !sym->hasFlag(FLAG_TEMP) &&
+          !sym->hasFlag(FLAG_INDEX_VAR) &&
+          !sym->hasFlag(FLAG_COMPILER_NESTED_FUNCTION) &&
+          !(fn && fn->hasFlag(FLAG_COMPILER_NESTED_FUNCTION))) {
+        USR_WARN(def,
+                 "Symbol names beginning with 'chpl_' (%s) are unstable.", name);
+      }
+    }
   }
 }

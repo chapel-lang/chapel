@@ -6,11 +6,12 @@ for loc in Locales do on loc {
             "] Wrong subloc (wanted ", c_sublocid_any,
             ", got ", chpl_getSubloc(), ")");
 
-  for i in 0..#(here:LocaleModel).numSublocales do
-    on (here:LocaleModel).getChild(i) do
+  for i in 0..#here.getChildCount() {
+    on here.getChild(i) do
       if i!=chpl_getSubloc() then
         writeln("[", here.id,
                 "] Wrong subloc (wanted ", i,
                 ", got ", chpl_getSubloc(), ")");
+  }
 }
 

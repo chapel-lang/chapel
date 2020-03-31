@@ -12,16 +12,11 @@ class cPair {
 
 config type myType = rPair;
 
-proc toNonNilableIfClassType(type arg) type {
-  if isClassType(arg) then return arg?;
-  else                     return arg;  // #14920
-}
-
 proc f(p) {
   writeln("p = ", p);
 }
 
-var p: toNonNilableIfClassType(myType);
+var p: toNilableIfClassType(myType);
 
 f(p);
 writeln("numBits(myIdxType) = ", numBits(myIdxType));

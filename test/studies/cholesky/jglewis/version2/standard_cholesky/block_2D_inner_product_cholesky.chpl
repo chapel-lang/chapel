@@ -64,7 +64,7 @@ module block_2D_inner_product_cholesky  {
       // modify the active block column of A with the combined effects of the
       // elimination steps on all previous block columns
 
-      if A00_rc_indices.length > 0 then {
+      if A00_rc_indices.size > 0 then {
 	var reduced_mtx_rc_indices = A11_rc_indices.low .. A22_rc_indices.high;
 	block_2D_inner_product ( A (reduced_mtx_rc_indices, A00_rc_indices), 
 				 A (reduced_mtx_rc_indices, A11_rc_indices ) );
@@ -75,7 +75,7 @@ module block_2D_inner_product_cholesky  {
       pos_def = scalar_inner_product_cholesky 
 	                           ( A (A11_rc_indices, A11_rc_indices) );
 
-      if pos_def && A22_rc_indices.length > 0 then {
+      if pos_def && A22_rc_indices.size > 0 then {
 
 	// compute the remainder of the active block column of L by a
 	// block triangular solve realizing the equation

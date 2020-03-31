@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -49,14 +50,11 @@ static const int debugNilsForId = 0;
  */
 
 typedef enum {
-  // Note - the order of these matters for the
-  // part of the algorithm ensuring convergence by
-  // only accepting changes that increase.
-
   MUST_ALIAS_IGNORED = 0, // no information; useful starting point.
                           // ignored when combining basic blocks
 
   MUST_ALIAS_REFVAR,      // reference refers to a particular variable
+                          // (or borrow, if not a reference)
 
   MUST_ALIAS_ALLOCATED,   // refers to the statement allocating (aka 'new')
 
@@ -64,6 +62,9 @@ typedef enum {
 
   MUST_ALIAS_UNKNOWN,     // might have been set, might point to nil
                           // who knows what it points to
+
+  MUST_ALIAS_DEAD,        // it refers to dead memory along some path
+
 } AliasType;
 
 struct AliasLocation {
@@ -71,17 +72,28 @@ struct AliasLocation {
   // MUST_ALIAS_ALLOCATED -> CallExpr for the allocation
   //                         or condExpr of CondStmt establishing non-nil-ness
   // MUST_ALIAS_REFVAR -> ArgSymbol or VarSymbol being referred to
-  // MUST_ALIAS_NIL -> a reason it is nil ex. assignment from nil
-  //                   or condExpr of CondStmt establishing nil-ness
+  // MUST_ALIAS_NIL, -> a reason it is nil ex. assignment from nil
+  // MUST_ALIAS_DEAD    or condExpr of CondStmt establishing nil-ness
   BaseAST* location;
   AliasLocation() : type(MUST_ALIAS_IGNORED), location(NULL) { }
 };
+
+static bool isNonNilableType(Type* t);
+static bool isOuterVar(Symbol* sym, FnSymbol* fn);
+static void findNonNilableStoringNil(FnSymbol* fn);
 
 typedef std::map<Symbol*, AliasLocation> AliasMap;
 
 static inline AliasLocation nilAliasLocation(BaseAST* reason) {
   AliasLocation ret;
   ret.type = MUST_ALIAS_NIL;
+  ret.location = reason;
+  return ret;
+}
+
+static inline AliasLocation deadAliasLocation(BaseAST* reason) {
+  AliasLocation ret;
+  ret.type = MUST_ALIAS_DEAD;
   ret.location = reason;
   return ret;
 }
@@ -121,12 +133,10 @@ static Symbol* getReferent(Symbol* sym, const AliasMap& aliasMap) {
     }
   }
 
-  if (sym->isRef()) {
-    if (loc.type == MUST_ALIAS_REFVAR) {
-      Symbol* referentSym = toSymbol(loc.location);
-      INT_ASSERT(referentSym && !referentSym->isRef());
-      return referentSym;
-    }
+  if (loc.type == MUST_ALIAS_REFVAR) {
+    Symbol* referentSym = toSymbol(loc.location);
+    INT_ASSERT(referentSym && !referentSym->isRef());
+    return referentSym;
   }
 
   return NULL;
@@ -186,20 +196,30 @@ static AliasLocation aliasLocationFrom(Symbol* copyFrom,
 
 
 
-static bool isClassIshType(Symbol* sym) {
-  TypeSymbol* ts = sym->getValType()->symbol;
+static bool isClassIshType(Type* t) {
+  TypeSymbol* ts = t->getValType()->symbol;
   return (isClassLike(ts->type) ||
           ts->hasFlag(FLAG_MANAGED_POINTER));
 }
+static bool isClassIshType(Symbol* sym) {
+  return isClassIshType(sym->getValType());
+}
 
 static bool isSymbolAnalyzed(Symbol* sym) {
-  return sym->isRef() || isClassIshType(sym);
+  return sym->isRef() ||
+         isClassIshType(sym) ||
+         (isRecord(sym->type) &&
+          sym->hasFlag(FLAG_MAYBE_COPY_ELIDED) &&
+          !sym->type->symbol->hasFlag(FLAG_POD));
 }
 
 // If 'call' invokes postfix!, return the result type.
+// Ignore postfix! calls on arrays - needed if we have a 'proc postfix!(a:[])'.
 static Type* isPostfixBangCall(CallExpr* call) {
   if (FnSymbol* fn = call->resolvedFunction()) {
     if (fn->name == astrPostfixBang) {
+      if (call->get(1)->getValType()->symbol->hasFlag(FLAG_ARRAY))
+        return NULL;
       INT_ASSERT(call->numActuals() == 1); // `!` takes a single arg
       return fn->retType;
     }
@@ -212,10 +232,8 @@ static bool isCheckedClassMethodCall(CallExpr* call) {
   bool      retval = false;
 
   if (fn && fn->isMethod() && fn->_this) {
-    if (0 == strcmp(fn->name, "borrow")) {
+    if (fn->name == astrBorrow) {
       // Ignore .borrow()
-      // (at least until we decide that borrow-from-empty-owned
-      //  is a problem, rather than use of the resulting nil)
       // Note that .borrow is available on borrows and unmanaged.
       retval = false;
 
@@ -233,12 +251,40 @@ static bool isCheckedClassMethodCall(CallExpr* call) {
 }
 
 static void issueNilError(const char* message, Expr* ref,
-                          Symbol* arg, AliasLocation loc) {
+                          Symbol* var, Symbol* referent, AliasLocation loc) {
+
+  // Ignore multiple errors on the same line
+  if (printsSameLocationAsLastError(ref))
+    return;
+
   USR_FATAL_CONT(ref, message);
-  if (!arg->hasFlag(FLAG_TEMP))
-    USR_PRINT(ref, "variable %s is nil at this point", arg->name);
-  if (Expr* fromExpr = toExpr(loc.location))
-    USR_PRINT(fromExpr, "this statement may be relevant");
+
+  Symbol* v  = var;
+  if (referent != NULL) {
+    if (!var->hasFlag(FLAG_TEMP) && !referent->hasFlag(FLAG_TEMP))
+      USR_PRINT(ref, "'%s' refers to '%s'", var->name, referent->name);
+    if (!referent->hasFlag(FLAG_TEMP))
+      v = referent;
+  }
+
+  if (Expr* fromExpr = toExpr(loc.location)) {
+    CallExpr* call = toCallExpr(fromExpr);
+    FnSymbol* fn = call ? call->resolvedOrVirtualFunction() : NULL;
+    const char* why = NULL;
+    if (call && call->isPrimitive(PRIM_ASSIGN_ELIDED_COPY))
+      why = "is dead due to copy elision here";
+    else if (fn && fn->hasFlag(FLAG_AUTO_DESTROY_FN))
+      why = "is dead due to deinitialization here";
+    else if (loc.type == MUST_ALIAS_DEAD)
+      why = "is dead due to ownership transfer here";
+    else
+      why = "is set to nil here";
+
+    if (v->hasFlag(FLAG_TEMP))
+      USR_PRINT(fromExpr, "value %s", why);
+    else
+      USR_PRINT(fromExpr, "'%s' %s", v->name, why);
+  }
 }
 
 static void replaceBangWithCast(CallExpr* call, Type* type, Symbol* arg) {
@@ -264,6 +310,8 @@ static void checkForNilDereferencesInCall(
     CallExpr* call,
     const AliasMap& aliasMap) {
 
+  Symbol* alreadyErrorSym = NULL;
+
   if (call->isPrimitive(PRIM_GET_MEMBER)       ||
       call->isPrimitive(PRIM_GET_MEMBER_VALUE) ||
       call->isPrimitive(PRIM_SET_MEMBER)       ||
@@ -273,18 +321,19 @@ static void checkForNilDereferencesInCall(
 
     SymExpr* thisSe = toSymExpr(call->get(1));
     Symbol* thisSym = thisSe->symbol();
-    // Doesn't raise errors for methods on managed pointer types (e.g. owned)
-    // since:
-    //   * right now owned etc can store nil
+    Type* t = thisSym->getValType();
+    // Doesn't raise errors for methods on nilable managed pointer types
+    // (e.g. owned) since:
     //   * borrowing from nil owned isn't an error by itself
     //     but dereferencing that nil borrow would be
-    if (isClassLike(thisSym->getValType())) {
+    if (isClassLike(t) || isNonNilableType(t)) {
       // Raise an error if it was definitely nil
       AliasMap::const_iterator it = aliasMap.find(thisSym);
       if (it != aliasMap.end()) {
         AliasLocation loc = it->second;
-        if (loc.type == MUST_ALIAS_NIL) {
-          issueNilError("attempt to dereference nil", call, thisSym, loc);
+        if (loc.type == MUST_ALIAS_NIL || loc.type == MUST_ALIAS_DEAD) {
+          issueNilError("attempt to dereference nil", call, thisSym, NULL, loc);
+          alreadyErrorSym = thisSym;
         }
       }
     }
@@ -293,14 +342,130 @@ static void checkForNilDereferencesInCall(
     AliasMap::const_iterator it = aliasMap.find(argSym);
     if (it != aliasMap.end()) {
       AliasLocation loc = it->second;
-      if (loc.type == MUST_ALIAS_REFVAR)
-        if (Symbol* referent = getReferent(argSym, aliasMap))
+      Symbol* referent = NULL;
+      if (loc.type == MUST_ALIAS_REFVAR) {
+        referent = getReferent(argSym, aliasMap);
+        if (referent != NULL)
           loc = aliasLocationFromValue(referent, aliasMap, call);
+      }
       if (loc.type == MUST_ALIAS_NIL) {
-        issueNilError("applying postfix-! to nil", call, argSym, loc);
+        issueNilError("applying postfix-! to nil",
+                      call, argSym, referent, loc);
+        alreadyErrorSym = argSym;
+      } else if (loc.type == MUST_ALIAS_DEAD) {
+        issueNilError("applying postfix-! to dead value",
+                      call, argSym, referent, loc);
+        alreadyErrorSym = argSym;
       } else if (loc.type == MUST_ALIAS_ALLOCATED) {
         // Postfix-! will always succeed. Replace it with a cast.
         replaceBangWithCast(call, resultType, argSym);
+      }
+    }
+  } else if (call->isPrimitive(PRIM_RETURN) && call->numActuals() >= 1) {
+    Symbol* argSym = toSymExpr(call->get(1))->symbol();
+    AliasMap::const_iterator it = aliasMap.find(argSym);
+    if (it != aliasMap.end()) {
+      AliasLocation loc = it->second;
+      Symbol* referent = NULL;
+      if (loc.type == MUST_ALIAS_REFVAR) {
+        referent = getReferent(argSym, aliasMap);
+        if (referent != NULL)
+          loc = aliasLocationFromValue(referent, aliasMap, call);
+      }
+
+      if (loc.type == MUST_ALIAS_DEAD) {
+        issueNilError("Illegal return of dead value",
+                      call, argSym, referent, loc);
+        alreadyErrorSym = argSym;
+      }
+    }
+  }
+
+  // For records and non-nilable class types, check that any argument
+  // to a user function is not dead.
+  // Also check for transferring ownership out of an unknown reference
+  // to a non-nilable owned.
+  FnSymbol* inFn = call->getFunction();
+  if (FnSymbol* calledFn = call->resolvedOrVirtualFunction()) {
+    if (!calledFn->hasFlag(FLAG_AUTO_DESTROY_FN) &&
+        !calledFn->hasFlag(FLAG_UNSAFE) &&
+        !(inFn != NULL && inFn->hasFlag(FLAG_LEAVES_ARG_NIL))) {
+      int i = 0;
+      for_formals_actuals(formal, actual, call) {
+        i++;
+        Symbol* argSym = toSymExpr(actual)->symbol();
+
+        if (formal->hasFlag(FLAG_RETARG))
+          continue; // ignore ret args for this check
+        if (i == 1 &&
+            calledFn->isMethod() &&
+            (calledFn->name == astrInit || calledFn->name == astrInitEquals))
+          continue; // ignore this in init functions for this check
+        if (i == 1 && calledFn->name == astrSassign)
+          continue; // ignore lhs of = for this check
+        if (formal->intent == INTENT_OUT ||
+            formal->originalIntent == INTENT_OUT)
+          continue; // ignore out formals for this check
+
+        Type* valType = argSym->getValType();
+        bool isNonNilableC = isNonNilableType(valType);
+        bool isNilableC = (isNonNilableC == false && isClassIshType(valType));
+        bool isRec = isRecord(valType) && !isNonNilableC && !isNilableC;
+        if (isNonNilableC || isRec) {
+          AliasLocation loc = unknownAliasLocation();
+          AliasMap::const_iterator it = aliasMap.find(argSym);
+          if (it != aliasMap.end()) {
+            loc = it->second;
+          }
+
+          Symbol* referent = NULL;
+          if (loc.type == MUST_ALIAS_REFVAR) {
+            referent = getReferent(argSym, aliasMap);
+            if (referent != NULL)
+              loc = aliasLocationFromValue(referent, aliasMap, call);
+          }
+
+          if (loc.type == MUST_ALIAS_DEAD ||
+              (loc.type == MUST_ALIAS_NIL && isNonNilableC)) {
+            if (argSym != alreadyErrorSym) {
+              issueNilError("Illegal use of dead value",
+                            call, argSym, referent, loc);
+              alreadyErrorSym = argSym;
+            }
+          }
+
+          // check for transferring ownership out of unk ref to non-nilable
+          if (formal->hasFlag(FLAG_LEAVES_ARG_NIL)) {
+            Symbol* actualSym = argSym;
+            if (referent != NULL)
+              actualSym = referent;
+
+            const char* error = NULL;
+            if (isArgSymbol(actualSym)) {
+              // leaves-arg-nil OK for e.g. owned initCopy/init= etc.
+              if (actualSym->hasFlag(FLAG_LEAVES_ARG_NIL)) {
+                // OK
+              } else if (formal->intent == INTENT_IN ||
+                         formal->intent == INTENT_CONST_IN ||
+                         formal->originalIntent == INTENT_IN ||
+                         formal->originalIntent == INTENT_CONST_IN) {
+                // OK
+              } else {
+                error = "Cannot transfer ownership from non-nilable class argument";
+              }
+            } else if (actualSym->hasFlag(FLAG_TEMP) &&
+                       loc.type == MUST_ALIAS_ALLOCATED) {
+              // OK, allow for compiler temporaries
+            } else if (isOuterVar(actualSym, call->getFunction())) {
+              error = "Cannot transfer ownership from a non-nilable outer variable";
+            } else if (argSym->isRef()) {
+              error = "Cannot transfer ownership from this non-nilable reference variable";
+            }
+            if (error != NULL)
+              issueNilError(error, call, argSym, NULL, loc);
+          }
+        }
+        i++;
       }
     }
   }
@@ -314,6 +479,9 @@ static void printAliasEntry(const char* prefix, Symbol* sym, AliasLocation loc)
       break;
     case MUST_ALIAS_NIL:
       printf("%s nil: %i %s", prefix, sym->id, sym->name);
+      break;
+    case MUST_ALIAS_DEAD:
+      printf("%s ded: %i %s", prefix, sym->id, sym->name);
       break;
     case MUST_ALIAS_UNKNOWN:
       printf("%s unk: %i %s", prefix, sym->id, sym->name);
@@ -370,55 +538,6 @@ static void printAliasMap(const char* prefix,
   }
 }
 
-static bool isRecordInitOrReturn(CallExpr* call, SymExpr*& lhsSe, CallExpr*& initOrCtor) {
-
-  if (call->isPrimitive(PRIM_MOVE) ||
-      call->isPrimitive(PRIM_ASSIGN)) {
-    if (CallExpr* rhsCallExpr = toCallExpr(call->get(2))) {
-      if (rhsCallExpr->resolvedOrVirtualFunction()) {
-        if (AggregateType* at = toAggregateType(rhsCallExpr->typeInfo())) {
-          if (isRecord(at)) {
-            SymExpr* se = toSymExpr(call->get(1));
-            INT_ASSERT(se);
-            lhsSe = se;
-            initOrCtor = rhsCallExpr;
-            return true;
-          }
-        }
-      }
-    }
-  }
-
-  if (FnSymbol* calledFn = call->resolvedOrVirtualFunction()) {
-    if (calledFn->isMethod() && calledFn->name == astrInit) {
-      SymExpr* se = toSymExpr(call->get(1));
-      INT_ASSERT(se);
-      Symbol* sym = se->symbol();
-      if (isRecord(sym->type)) {
-        lhsSe = se;
-        initOrCtor = call;
-        return true;
-      }
-    } else if (calledFn->hasFlag(FLAG_FN_RETARG)) {
-      for_formals_actuals(formal, actual, call) {
-        if (formal->hasFlag(FLAG_RETARG)) {
-          if (isRecord(formal->getValType())) {
-            SymExpr* se = toSymExpr(actual);
-            INT_ASSERT(se);
-            lhsSe = se;
-            initOrCtor = call;
-            return true;
-          }
-        }
-      }
-    }
-  }
-
-  lhsSe = NULL;
-  initOrCtor = NULL;
-  return false;
-}
-
 static bool isOuterVar(Symbol* sym, FnSymbol* fn) {
 
   if (sym == gVoid)
@@ -465,9 +584,13 @@ static void checkCall(
   SymExpr* initSe = NULL;
   CallExpr* initCall = NULL;
 
+  if (call->id == debugNilsForId)
+    gdbShouldBreakHere();
+
   // set moveLike and userCall
   if (call->isPrimitive(PRIM_MOVE) ||
-      call->isPrimitive(PRIM_ASSIGN)) {
+      call->isPrimitive(PRIM_ASSIGN) ||
+      call->isPrimitive(PRIM_ASSIGN_ELIDED_COPY)) {
     initSe = toSymExpr(call->get(1));
     lhsSym = initSe->symbol();
     rhsExpr = call->get(2);
@@ -585,14 +708,24 @@ static void checkCall(
           // for copy-init or borrow, lhs tracks rhs
           // for owned, initCopy might invalidate RHS; handled below
           } else if (userCalledFn->hasFlag(FLAG_INIT_COPY_FN) ||
-                     userCalledFn->hasFlag(FLAG_AUTO_COPY_FN) ||
-                     0 == strcmp(userCalledFn->name, "borrow")) {
+                     userCalledFn->hasFlag(FLAG_AUTO_COPY_FN)) {
             Symbol* rhsSym = toSymExpr(userCall->get(1))->symbol();
             update(OUT, lhsSym, aliasLocationFromValue(rhsSym, OUT, call));
             ignoreGlobalUpdates = true;
           } else if (userCalledFn->name == astrPostfixBang) {
             // the outcome of postfix-! is always non-nilable
             update(OUT, lhsSym, allocatedAliasLocation(call));
+          } else if (userCalledFn->name == astrBorrow &&
+                     userCalledFn->isMethod() && userCalledFn->_this) {
+            // a borrow creates an alias to the original variable
+            SymExpr* se = toSymExpr(userCall->get(1));
+            Symbol* rhs = se->symbol();
+            if (rhs->isRef())
+              // if rhs is a ref, just propagate any MUST_ALIAS_REFVAR
+              update(OUT, lhsSym, aliasLocationFrom(rhs, OUT, call));
+            else
+              // otherwise, make a new MUST_ALIAS_REFVAR
+              update(OUT, lhsSym, refAliasLocation(se->symbol()));
           } else {
             Expr* nilFromActual = NULL;
             Expr* retActual = NULL;
@@ -628,7 +761,9 @@ static void checkCall(
           }
 
         } else {
-          update(OUT, lhsSym, unknownAliasLocation());
+          // Assume record init or by-value return produces something not
+          // storing nil.
+          update(OUT, lhsSym, allocatedAliasLocation(call));
         }
 
       } else {
@@ -663,17 +798,29 @@ static void checkCall(
     for_formals_actuals(formal, actual, userCall) {
       if (formal->hasFlag(FLAG_LEAVES_ARG_NIL)) {
         Symbol* actualSym = toSymExpr(actual)->symbol();
+        Type* t = actualSym->getValType();
+        bool canBeNil = isClassIshType(t) && !isNonNilableType(t);
         if (actualSym->isRef()) {
           Symbol* referent = getReferent(actualSym, OUT);
-          if (referent)
-            update(OUT, referent, nilAliasLocation(call));
+          if (referent) {
+            if (canBeNil)
+              update(OUT, referent, nilAliasLocation(call));
+            else
+              update(OUT, referent, deadAliasLocation(call));
+          }
         } else {
-          update(OUT, actualSym, nilAliasLocation(call));
+          if (canBeNil)
+            update(OUT, actualSym, nilAliasLocation(call));
+          else
+            update(OUT, actualSym, deadAliasLocation(call));
         }
 
       } else if (formal->intent == INTENT_REF &&
                  /* ignoring functions returning record by ref */
-                 actual != initSe) {
+                 actual != initSe &&
+                 /* ignoring field accessors */
+                 !userCalledFn->hasFlag(FLAG_FIELD_ACCESSOR)
+                 ) {
         // It could set the actual
         Symbol* actualSym = toSymExpr(actual)->symbol();
         if (actualSym->isRef()) {
@@ -687,6 +834,33 @@ static void checkCall(
           update(OUT, actualSym, unknownAliasLocation());
         }
       }
+    }
+  }
+
+  // Handle making the RHS of PRIM_ASSIGN_ELIDED_COPY dead
+  if (call->isPrimitive(PRIM_ASSIGN_ELIDED_COPY)) {
+    if (SymExpr* rhsSe = toSymExpr(rhsExpr)) {
+      Symbol* actualSym = rhsSe->symbol();
+      if (actualSym->isRef()) {
+        Symbol* referent = getReferent(actualSym, OUT);
+        if (referent)
+          update(OUT, referent, deadAliasLocation(call));
+      } else {
+        update(OUT, actualSym, deadAliasLocation(call));
+      }
+    }
+  }
+
+  // Handle making destroyed record variables dead
+  if (userCalledFn != NULL && userCalledFn->hasFlag(FLAG_AUTO_DESTROY_FN)) {
+    SymExpr* se = toSymExpr(userCall->get(1));
+    Symbol* sym = se->symbol();
+    if (sym->isRef()) {
+      Symbol* referent = getReferent(sym, OUT);
+      if (referent)
+        update(OUT, referent, deadAliasLocation(call));
+    } else {
+      update(OUT, sym, deadAliasLocation(call));
     }
   }
 }
@@ -746,9 +920,17 @@ static bool adjustTestArgChain(SymExpr* SE, bool isAllocated, AliasMap& OUT) {
   while (true) {
     AliasMap::const_iterator it = OUT.find(curr->symbol());
     if (it != OUT.end()) {
-      AliasType altype = it->second.type;
-      if ((isAllocated && altype == MUST_ALIAS_NIL)        ||
-          (!isAllocated && altype == MUST_ALIAS_ALLOCATED) )
+      AliasLocation loc = it->second;
+      if (loc.type == MUST_ALIAS_REFVAR) {
+        Symbol* sym = toSymbol(loc.location);
+        AliasMap::const_iterator it2 = OUT.find(sym);
+        if (it2 != OUT.end()) {
+          loc = it2->second;
+        }
+      }
+
+      if (( isAllocated && loc.type == MUST_ALIAS_NIL)        ||
+          (!isAllocated && loc.type == MUST_ALIAS_ALLOCATED) )
         // We are testing ==nil on something that's not nil, or visa versa.
         return true;
     }
@@ -938,6 +1120,14 @@ static void checkBasicBlock(
     bool storeToGlobals = false;
     AliasMap* traceCopy = NULL;
 
+    // Ignore end-of-statement calls
+    if (CallExpr* call = toCallExpr(expr))
+      if (call->isPrimitive(PRIM_END_OF_STATEMENT))
+        continue;
+    // Ignore DefExprs -- instead, find the initialization of the var
+    if (isDefExpr(expr))
+      continue;
+
     if (trace) {
       traceCopy = new AliasMap(OUT);
 
@@ -950,10 +1140,7 @@ static void checkBasicBlock(
     if (expr->id == debugNilsForId)
       gdbShouldBreakHere();
 
-    if (isDefExpr(expr)) {
-      // Ignore DefExprs
-      // instead, find the defaultOf or whatever initializes them.
-    } else if (ForallStmt* forall = toForallStmt(expr)) {
+    if (ForallStmt* forall = toForallStmt(expr)) {
 
       for_alist(expr, forall->iteratedExpressions()) {
         if (CallExpr* call = toCallExpr(expr)) {
@@ -974,8 +1161,17 @@ static void checkBasicBlock(
     if (storeToGlobals || storeToUnknown) {
       for_vector(Symbol, sym, symbols) {
         if (sym->isConstValWillNotChange() == false) {
-          if (storeToUnknown || isOuterVar(sym, fn))
-            OUT[sym] = unknownAliasLocation();
+          if (storeToUnknown || isOuterVar(sym, fn)) {
+            Type* t = sym->getValType();
+            if (OUT[sym].type == MUST_ALIAS_DEAD ||
+                (OUT[sym].type == MUST_ALIAS_NIL && isNonNilableType(t))) {
+              // Don't reset it - using a dead variable or a non-nilable
+              // class storing nil is a type system error. Setting it back
+              // to a value once it was nil is still an error.
+            } else {
+              OUT[sym] = unknownAliasLocation();
+            }
+          }
         }
       }
     }
@@ -1020,16 +1216,16 @@ static void gatherVariablesToCheck(FnSymbol* fn,
 static void setupInitialMap(FnSymbol* fn, std::vector<AliasMap>& INs,
                             std::vector<int> forwardOrder, bool debugging) {
   AliasMap& INini = INs[forwardOrder[0]];
-  for_formals(formal, fn)
-    if (isSymbolAnalyzed(formal))
-      {
-        AliasLocation loc;
-        loc.type = isNonNilableType(formal->getValType())
-                   ? MUST_ALIAS_ALLOCATED : MUST_ALIAS_UNKNOWN;
-        loc.location = formal->defPoint;
-        INini[formal] = loc;
-        if (debugging) printAliasEntry("formal", formal, loc);
-      }
+  for_formals(formal, fn) {
+    if (isSymbolAnalyzed(formal)) {
+      AliasLocation loc;
+      loc.type = isNonNilableType(formal->getValType())
+                 ? MUST_ALIAS_ALLOCATED : MUST_ALIAS_UNKNOWN;
+      loc.location = formal->defPoint;
+      INini[formal] = loc;
+      if (debugging) printAliasEntry("formal", formal, loc);
+    }
+  }
 }
 
 static bool combine(FnSymbol* fn,
@@ -1077,6 +1273,14 @@ static bool combine(FnSymbol* fn,
         }
         nextIn[sym] = loc;
         changed = true;
+      } else if (was.type == MUST_ALIAS_DEAD || loc.type == MUST_ALIAS_DEAD) {
+        // One branch in makes it dead -> keep it dead
+        if (was.type != MUST_ALIAS_DEAD) {
+          nextIn[sym] = loc;
+          changed = true;
+        }
+        nextIn[sym] = unknownAliasLocation();
+        changed = true;
       } else {
         // Conflicting input -> unknown
         nextIn[sym] = unknownAliasLocation();
@@ -1093,7 +1297,21 @@ static bool combine(FnSymbol* fn,
   return changed;
 }
 
-void findNilDereferences(FnSymbol* fn) {
+static void findNilDereferencesInFn(FnSymbol* fn) {
+
+  if (fn->hasFlag(FLAG_UNSAFE))
+    return;
+  if (fn == initStringLiterals)
+    return;
+  if (fn->hasFlag(FLAG_INIT_COPY_FN) ||
+      fn->hasFlag(FLAG_AUTO_COPY_FN) ||
+      fn->hasFlag(FLAG_AUTO_DESTROY_FN) ||
+      fn->hasFlag(FLAG_UNSAFE) ||
+      fn->hasFlag(FLAG_IGNORE_TRANSFER_ERRORS) ||
+      fn->hasFlag(FLAG_ERRONEOUS_COPY) ||
+      fn->hasFlag(FLAG_BUILD_TUPLE) ||
+      fn->hasFlag(FLAG_INIT_TUPLE))
+    return;
 
   bool debugging = 0 == strcmp(fn->name, debugNilsForFn) ||
                    fn->id == debugNilsForId;
@@ -1180,6 +1398,13 @@ void findNilDereferences(FnSymbol* fn) {
   }
 }
 
+void checkNilDereferencesInFn(FnSymbol* fn) {
+  if (fCompileTimeNilChecking) {
+    findNilDereferencesInFn(fn);
+    findNonNilableStoringNil(fn);
+  }
+}
+
 void adjustSignatureForNilChecking(FnSymbol* fn) {
   if (fn->_this != NULL) {
     if (fn->hasFlag(FLAG_NIL_FROM_THIS))
@@ -1187,4 +1412,215 @@ void adjustSignatureForNilChecking(FnSymbol* fn) {
     if (fn->hasFlag(FLAG_LEAVES_THIS_NIL))
       fn->_this->addFlag(FLAG_LEAVES_ARG_NIL);
   }
+
+  // adjust compiler-generated = and init= for types containing owned
+  if (fn->name == astrSassign &&
+      fn->hasFlag(FLAG_COMPILER_GENERATED) &&
+      fn->numFormals() >= 1) {
+    ArgSymbol* rhs = fn->getFormal(2);
+    Type* t = rhs->getValType();
+    if (t->symbol->hasFlag(FLAG_COPY_MUTATES))
+      rhs->addFlag(FLAG_LEAVES_ARG_NIL);
+  } else if (fn->name == astrInitEquals &&
+             fn->hasFlag(FLAG_COMPILER_GENERATED) &&
+             fn->numFormals() >= 2) {
+    ArgSymbol* rhs = fn->getFormal(2);
+    Type* t = rhs->getValType();
+    if (t->symbol->hasFlag(FLAG_COPY_MUTATES))
+      rhs->addFlag(FLAG_LEAVES_ARG_NIL);
+  }
+
+  bool leavesAnyArgNil = false;
+  for_formals(formal, fn) {
+    if (formal->hasFlag(FLAG_LEAVES_ARG_NIL))
+      leavesAnyArgNil = true;
+  }
+  if (leavesAnyArgNil)
+    fn->addFlag(FLAG_LEAVES_ARG_NIL);
+}
+
+typedef std::map<Symbol*,Expr*> SymbolToNilMap;
+
+class FindInvalidNonNilables : public AstVisitorTraverse {
+  public:
+    // key - a variable of interest
+    // value - NULL if that variable isn't possibly nil now
+    //         an Expr* setting it to nil if it is possibly nil now
+    SymbolToNilMap varsToNil;
+    // Only present errors once per symbol
+    std::set<Symbol*> erroredSymbols;
+    virtual bool enterDefExpr(DefExpr* def);
+    virtual bool enterCallExpr(CallExpr* call);
+    virtual void exitCallExpr(CallExpr* call);
+    virtual void visitSymExpr(SymExpr* se);
+};
+
+static bool isNonNilableTypeOrRecordContaining(Type* t) {
+  if (isNonNilableType(t))
+    return true;
+
+  if (isRecord(t)) {
+    AggregateType* at = toAggregateType(t);
+    for_fields(field, at) {
+      if (isNonNilableTypeOrRecordContaining(field->type))
+        return true;
+    }
+  }
+
+  return false;
+}
+
+static bool isNonNilableVariable(Symbol* sym) {
+  return (isVarSymbol(sym) || isArgSymbol(sym)) &&
+         isNonNilableTypeOrRecordContaining(sym->getValType());
+}
+
+static bool isTrackedNonNilableVariable(Symbol* sym) {
+  if (isNonNilableVariable(sym)) {
+    return true;
+  }
+
+  return false;
+}
+
+bool FindInvalidNonNilables::enterDefExpr(DefExpr* def) {
+
+  Symbol* sym = def->sym;
+
+  if (isTrackedNonNilableVariable(sym)) {
+    if (varsToNil.count(sym) == 0) {
+      // Assume that the variable is not nil at initialization-time.
+      varsToNil[sym] = NULL;
+    }
+  }
+
+  return true;
+}
+
+bool FindInvalidNonNilables::enterCallExpr(CallExpr* call) {
+  if (FnSymbol* calledFn = call->resolvedOrVirtualFunction()) {
+    if (isTaskFun(calledFn)) {
+      calledFn->body->accept(this);
+      return false;
+    }
+  }
+  return true;
+}
+
+void FindInvalidNonNilables::exitCallExpr(CallExpr* call) {
+  if (call->isPrimitive(PRIM_MOVE) || call->isPrimitive(PRIM_ASSIGN)) {
+    // handle some compiler-added temps
+    SymExpr* lhsSe = toSymExpr(call->get(1));
+    Symbol* lhs = lhsSe->symbol();
+    if (SymExpr* rhsSe = toSymExpr(call->get(2))) {
+      Symbol* rhs = rhsSe->symbol();
+      if (isTrackedNonNilableVariable(lhs) && isTrackedNonNilableVariable(rhs))
+        if (varsToNil[rhs] != NULL)
+          varsToNil[lhs] = call;
+    }
+  } else if (call->resolvedOrVirtualFunction() != NULL) {
+    for_formals_actuals(formal, actual, call) {
+      SymExpr* actualSe = toSymExpr(actual);
+      Symbol* actualSym = actualSe->symbol();
+      if (isNonNilableVariable(actualSym) &&
+          ! actualSym->hasFlag(FLAG_UNSAFE) ) {
+        if (formal->hasFlag(FLAG_LEAVES_ARG_NIL)) {
+          if (isTrackedNonNilableVariable(actualSym) &&
+              varsToNil.count(actualSym) != 0) {
+            varsToNil[actualSym] = call;
+          } else if (actualSym->hasFlag(FLAG_TEMP) && !actualSym->isRef()) {
+            // No error for now for value temps.
+          } else {
+            Expr* astPoint = findLocationIgnoringInternalInlining(call);
+            FnSymbol* inFn = astPoint->getFunction();
+            astlocT point = astPoint->astloc;
+            if (inFn->userInstantiationPointLoc.filename != NULL)
+              point = inFn->userInstantiationPointLoc;
+
+            const char* error = NULL;
+            if (isArgSymbol(actualSym)) {
+              // leaves-arg-nil OK for e.g. owned initCopy/init= etc.
+              if (actualSym->hasFlag(FLAG_LEAVES_ARG_NIL) == false)
+                error = "Cannot transfer ownership from non-nilable reference argument";
+            } else if (isOuterVar(actualSym, call->getFunction())) {
+              error = "Cannot transfer ownership from a non-nilable outer variable";
+            } else if (!actualSym->hasFlag(FLAG_DEAD_LAST_MENTION)) {
+              error = "Cannot transfer ownership from a non-nilable variable with a potentially captured alias";
+            } else {
+              error = "Cannot transfer ownership from this non-nilable variable";
+            }
+
+            if (error != NULL && erroredSymbols.count(actualSym) == 0) {
+              erroredSymbols.insert(actualSym);
+              if (printsUserLocation(astPoint))
+                USR_FATAL_CONT(astPoint, "%s", error);
+              else
+                USR_FATAL_CONT(point, "%s", error);
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+void FindInvalidNonNilables::visitSymExpr(SymExpr* se) {
+  Symbol* sym = se->symbol();
+  if (isNonNilableVariable(sym)) {
+    if (Expr* e = varsToNil[sym]) {
+      bool error = true;
+      // Don't worry about a PRIM_END_OF_STATEMENT if it follows the
+      // expression
+      // Don't worry about autoDestroy calls
+      if (CallExpr* parentCall = toCallExpr(se->getStmtExpr())) {
+        if (parentCall->isPrimitive(PRIM_END_OF_STATEMENT)) {
+          error = false;
+          for (Expr* cur = e; cur != NULL; cur = cur->next) {
+            if (CallExpr* curCall = toCallExpr(cur)) {
+              if (curCall->isPrimitive(PRIM_END_OF_STATEMENT)) {
+                if (curCall != parentCall)
+                  error = true;
+                break;
+              }
+            }
+          }
+        } else if (FnSymbol* calledFn = parentCall->resolvedFunction()) {
+          if (calledFn->hasFlag(FLAG_AUTO_DESTROY_FN))
+            error = false;
+        }
+      }
+
+      if (error && erroredSymbols.count(sym) == 0) {
+        erroredSymbols.insert(sym);
+        USR_FATAL_CONT(se, "mention of non-nilable variable after ownership is transferred out of it");
+        USR_PRINT(e, "ownership transfer occurred here");
+      }
+    }
+  }
+}
+
+static void findNonNilableStoringNil(FnSymbol* fn) {
+  // don't check special functions (owned/shared etc need to write these)
+  if (fn->hasFlag(FLAG_INIT_COPY_FN) ||
+      fn->hasFlag(FLAG_AUTO_COPY_FN) ||
+      fn->hasFlag(FLAG_AUTO_DESTROY_FN) ||
+      fn->hasFlag(FLAG_UNSAFE) ||
+      fn->hasFlag(FLAG_IGNORE_TRANSFER_ERRORS) ||
+      fn->hasFlag(FLAG_ERRONEOUS_COPY) ||
+      fn->hasFlag(FLAG_BUILD_TUPLE) ||
+      fn->hasFlag(FLAG_INIT_TUPLE))
+    return;
+
+  // don't check inside functions already saying they leave an argument nil
+  // (we could.. but we'd have to track through references etc, and
+  //  these are by definition internal)
+  if (fn->hasFlag(FLAG_LEAVES_ARG_NIL))
+    return;
+
+  // We'll check task functions while traversing the rest
+  if (isTaskFun(fn))
+    return;
+
+  FindInvalidNonNilables visitor;
+  fn->body->accept(&visitor);
 }

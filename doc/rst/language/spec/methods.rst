@@ -88,7 +88,7 @@ The receiver-clause (or its absence) specifies the method’s receiver
         var name: string;
         var age: uint;
       }
-      var anActor = new owned Actor(name="Tommy", age=27);
+      var anActor = new Actor(name="Tommy", age=27);
       writeln(anActor);
 
    
@@ -148,7 +148,7 @@ method-call-expression as specified in :ref:`Method_Calls`.
 
    .. BLOCK-test-chapelpost
 
-      var c1: C = new owned C();
+      var c1: C = new C();
       c1.foo();
 
    
@@ -160,8 +160,7 @@ method-call-expression as specified in :ref:`Method_Calls`.
    Then given an instance of ``C`` called ``c1``, the method call
    ``c1.foo()`` results in a call to ``bar`` where the argument is
    ``c1``. Within primary method ``C.foo()``, the (implicit) receiver
-   formal has static type ``C`` (otherwise known as ``borrowed C``) and
-   is referred to as ``this``.
+   formal has static type ``borrowed C`` and is referred to as ``this``.
 
 Methods whose receivers are objects are called *instance methods*.
 Methods may also be defined to have ``type`` receivers—these are known
@@ -336,7 +335,7 @@ be declared with parentheses even if the argument list is empty.
 
    .. BLOCK-test-chapelpost
 
-      var ta = new borrowed ThreeArray();
+      var ta = new ThreeArray();
       ta(1) = 1;
       ta(2) = 2;
       ta(3) = 3;
@@ -385,7 +384,7 @@ controlled by the ``these`` iterator.
 
    .. BLOCK-test-chapelpost
 
-      var ta = new owned ThreeArray();
+      var ta = new ThreeArray();
       for (i, j) in zip(ta, 1..) do
         i = j;
 

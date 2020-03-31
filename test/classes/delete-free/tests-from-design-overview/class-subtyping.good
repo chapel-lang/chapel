@@ -9,5 +9,5 @@ in ParentClass.deinit
 in test3
 in method, this.type is borrowed ChildClass
 in parentMethod, this.type is borrowed ParentClass
-in ParentClass.deinit
 back in test3
+in ParentClass.deinit

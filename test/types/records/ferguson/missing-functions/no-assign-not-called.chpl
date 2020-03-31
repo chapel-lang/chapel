@@ -1,8 +1,10 @@
 record R {
   var x: int;
 }
-
-// record opts out of being copyable
+proc R.init=(other: R) {
+  this.x = other.x;
+}
+// record opts out of being assignable
 proc =(ref lhs: R, const ref rhs: R) {
   compilerError("You can't assign an R");
 }

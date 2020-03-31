@@ -49,7 +49,7 @@ proc buildSlices(param rank : int, Orig : domain(rank, stridable=true)) {
 
     var mine : list(range(stridable=true));
 
-    if cur.length == 1 {
+    if cur.size == 1 {
       mine.append(cur by str);
     } else {
       // dense ranges

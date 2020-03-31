@@ -1,8 +1,9 @@
 module OuterModule {
   module Test {
+    import OuterModule.{NBUCKETS, per};
     /* these should already be defined:
     param NBUCKETS;
-    param PER;
+    var per;
     */
 
     class myhisto: ReduceScanOp {

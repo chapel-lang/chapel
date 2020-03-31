@@ -30,7 +30,7 @@ proc main(args: [] string) {
 
   var data: bytes;
   stdin.readbytes(data); // read in the entire file
-  const initLen = data.length;
+  const initLen = data.size;
 
   // remove newlines
   data = compile(b">.*\n|\n").sub(b"", data);
@@ -58,6 +58,6 @@ proc main(args: [] string) {
   writeln();
 
   writeln(initLen);
-  writeln(data.length);
-  writeln(copy.length);
+  writeln(data.size);
+  writeln(copy.size);
 }

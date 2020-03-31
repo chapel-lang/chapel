@@ -65,7 +65,7 @@ module block_1D_outer_product_cholesky {
       pos_def = scalar_outer_product_cholesky
 	                            ( A (A11_rc_indices, A11_rc_indices) );
 
-      if pos_def && A22_rc_indices.length > 0 then {
+      if pos_def && A22_rc_indices.size > 0 then {
 
 	// compute the remainder of the active block column of L by a
 	// block triangular solve realizing the equation

@@ -1,7 +1,7 @@
 module OuterModule {
-  use LinkedLists;
-
   module M1 {
+    use LinkedLists;
+
     class C {
       var s: LinkedList(int);
 

@@ -361,7 +361,6 @@ proc main() {
 
 proc writeDSI(D) {
   writeln("size:\t\t", D.size);
-  writeln("numIndices:\t",D.numIndices);
   writeln("low:\t\t",D.low);
   writeln("high:\t\t",D.high);
   writeln("stride:\t\t",D.stride);

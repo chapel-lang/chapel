@@ -144,7 +144,7 @@ line - specifying multiple lines will result in multiple compilations of the
 test file.
 
 For instance, to specify that the program should be compiled statically, this
-file would provided:
+file would be provided:
 
 ``hi.compopts``
 
@@ -563,7 +563,7 @@ like to graph, you'll create a ``.graph`` file indicating which data from
 which ``.dat`` files should be graphed.  For example, to compare the
 timing data from the ``foo.chpl`` and ``foo-c.c`` tests described above, one
 might use the following ``foo.graph`` file (note that the graph file's
-base name need not have any relation to the tests it is graphing since
+basename need not have any relation to the tests it is graphing since
 they are typically pulling from multiple ``.dat`` files; making the
 filename useful to human readers is the main consideration).
 
@@ -906,7 +906,7 @@ PREEXEC             directory-wide script that is run prior to execution
 -------------------------------------------------------------------------------
 **Testing System Settings**
 -------------------------------------------------------------------------------
-foo.cleanfiles      line separated list of files to remove before next test run
+foo.cleanfiles      line separated list of files to remove before the next test run
 CLEANFILES          directory-wide list of files to remove before test runs
 foo.noexec          empty file. Indicates .chpl file should only be compiled,
                     not executed.  See `Controlling How It Runs`_ for more

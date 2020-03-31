@@ -1,6 +1,7 @@
 
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -215,6 +216,7 @@ pragma "no doc"
 module ClassicLAPACK {
 
 use SysCTypes;
+use LAPACK;
 
 pragma "no doc"
 extern proc lapack_make_complex_float(re : c_float, im : c_float) : complex(64);

@@ -1,0 +1,5 @@
+unstable-chpl_.chpl:1: warning: Symbol names beginning with 'chpl_' (chpl_fn) are unstable.
+unstable-chpl_.chpl:5: In function 'main':
+unstable-chpl_.chpl:6: warning: Symbol names beginning with 'chpl_' (chpl_variable) are unstable.
+1
+2

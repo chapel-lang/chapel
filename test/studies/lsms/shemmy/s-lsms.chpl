@@ -52,7 +52,7 @@ proc main() {
 			}
 		}
 	}
-	if displayLIZ then writeln("LIZ counts: ", [liz in lizDoms] liz.numIndices);
+	if displayLIZ then writeln("LIZ counts: ", [liz in lizDoms] liz.size);
 
 	//initialize atoms
 	var atoms: [GridDom] AtomMatrix;

@@ -87,7 +87,7 @@ proc test_computations() {
   var a = new datetime(2002, 1, 31);
   var b = new datetime(1956, 1, 31);
   var diff = a-b;
-  assert(diff.days == 46*365 + (1956..2001 by 4).length);
+  assert(diff.days == 46*365 + (1956..2001 by 4).size);
   assert(diff.seconds == 0);
   assert(diff.microseconds == 0);
   a = new datetime(2002, 3, 2, 17, 6);

@@ -13,6 +13,117 @@ useful when migrating programs to the current version of the language.
 The purpose of this flag is to identify  portions of a program that use a
 language feature that has changed meaning.
 
+version 1.21, September 2019
+----------------------------
+
+Version 1.21 made several improvements related to record initialization,
+assignment, and deinitialization.
+
+In summary:
+
+ * Some patterns of default initialization followed by assignment are now
+   converted to initialization. See :ref:`readme-evolution.split-init`.
+ * Some patterns of copy initialization followed by deinitialization are
+   converted to move initialization. See :ref:`readme-evolution.copy-elision`.
+ * The result of a nested call expression can now be deinitialized at the end of
+   the containing statement. See :ref:`readme-evolution.statement-deinit`.
+
+.. _readme-evolution.split-init:
+
+split initialization
+********************
+
+Split initialization a new language feature in 1.21 that is described in
+the language specification - see :ref:`Split_Initialization`.
+
+Consider the following example:
+
+.. code-block:: chapel
+
+  var x: myRecord;    // default-initialization in 1.20
+  x = new myRecord(); // assignment in 1.20 -- initialization in 1.21
+
+In 1.21, instead of default-initializing ``x`` and then assigning to it,
+``x`` will be initialized on the second line.
+
+Note that split initialization also changes the copy and assignment
+behavior of ``out`` intent formal arguments.
+
+Occasionally programs that are written to test assignment (separately
+from copy initialization) need to avoid split initialization. One way to
+do so is to add a mention of the variable immediately after it is
+declared, as in the following code:
+
+.. code-block:: chapel
+
+  var x: myRecord;
+  x; // adding this mention prevents split-initialization
+     // instead, x is default-initialized at its declaration point above
+  x = new myRecord();
+
+.. _readme-evolution.copy-elision:
+
+copy elision
+************
+
+Copy elision a new language feature in 1.21.
+When the last mention of a variable is the source of a copy-initialization,
+the copy-initialization is replaced by move-initialization.
+
+For example:
+
+.. code-block:: chapel
+
+  class MyClass {
+    var field;
+    proc init(in arg) {
+      this.field = arg;
+    }
+  }
+
+  proc copyElisionExample() {
+    var a = new myRecord();
+    var b = a;             // now move-initializes `b` from `a`
+    return new MyClass(b); // now move-initializes the field from `b`
+  }
+
+
+.. _readme-evolution.statement-deinit:
+
+deinitialization point of nested call expressions
+*************************************************
+
+In 1.20, all variables are deinitialized at the end of the enclosing
+block. That changed in 1.21. Compiler-introduced temporary
+variables storing the result of a nested call expression can now be
+deinitialized at the end of a statement. In particular, results of nested
+call expressions are now deinitialized at the end of the statement unless the
+statement is initializing a user variable.
+
+For example:
+
+.. code-block:: chapel
+
+  proc makeRecord() {
+    return new myRecord();
+  }
+  proc f(arg) {
+    return arg;
+  }
+  proc deinitExample() {
+    f(makeRecord());
+    // Compiler converts the above statement into
+    //   var tmp = makeRecord();
+    //   f(tmp);
+    // In 1.20, tmp is destroyed at the end of the block.
+    // In 1.21, tmp is destroyed at the end of the above statement.
+
+    var x = f(makeRecord());
+    // In both 1.20 and 1.21, the temporary storing the result of
+    // `makeRecord()` is deinitialized at the end of the block.
+  }
+
+
 version 1.20, September 2019
 ----------------------------
 

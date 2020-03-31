@@ -65,7 +65,7 @@ module cholesky_block_algorithms {
 	pos_def = scalar_outer_product_cholesky 
 	                        ( A (active_cols, active_cols) );
 
-	if pos_def && later_cols.length > 0 then {
+	if pos_def && later_cols.size > 0 then {
 
 	  // compute the remainder of the active block column of L by a
 	  // block triangular solve realizing the equation
@@ -141,7 +141,7 @@ module cholesky_block_algorithms {
 	             ( L (A_top_rows, ..), 
 		       A (A_top_rows, A_top_rows) );
 
-	if A_bottom_rows.length > 0 then
+	if A_bottom_rows.size > 0 then
 	  symmetric_offdiagonal_low_rank_modification 
 	          ( L (A_top_and_bottom_rows, ..), 
 		    A (A_bottom_rows, A_top_rows) );
@@ -211,7 +211,7 @@ module cholesky_block_algorithms {
     //    the rows in the off-diagonal block
     // -----------------------------------------------------
     
-    var n_block_steps = ( idx_range.length + block_size - 1 ) / block_size;
+    var n_block_steps = ( idx_range.size + block_size - 1 ) / block_size;
     var block_low      = idx_range.low;
     var next_block_low = block_low + block_size;
 
@@ -240,7 +240,7 @@ module cholesky_block_algorithms {
 
   iter block_partition ( idx_range, block_size )
   {
-    var n_block_steps = ( idx_range.length  + block_size - 1 ) / block_size;
+    var n_block_steps = ( idx_range.size  + block_size - 1 ) / block_size;
 
     var block_low = idx_range.low;
 

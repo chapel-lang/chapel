@@ -1,0 +1,5 @@
+#! /usr/bin/env bash
+
+# grep to avoid unrelated error lines
+cat $2 | grep -v 'value from coercion passed to ref formal' | grep -v 'defined here' > $2.prediff.tmp
+mv $2.prediff.tmp $2

@@ -2,7 +2,7 @@ proc *(A:[?D1],B:[?D2]) {
   var x = A(D1.low)*B(D2.low);
   var C:[D1.dim(0),D2.dim(1)] x.type;
 
-  if (D1.dim(1).length != D2.dim(0).length) then
+  if (D1.dim(1).size != D2.dim(0).size) then
     halt("Matrix multiplication with incompatible matrices");
 
   for (i,j,k1,k2) in MMIterator(D1, D2) {

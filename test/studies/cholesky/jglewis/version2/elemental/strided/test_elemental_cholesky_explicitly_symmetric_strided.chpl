@@ -156,13 +156,13 @@ module test_elemental_explicitly_strided_cholesky {
     where ( A.domain.rank == 2 ) {
 
     assert ( A.domain.dim (0)               == A.domain.dim (1)         &&
-	     L_formal.domain.dim (0).length == A.domain.dim (0).length  &&
-	     L_formal.domain.dim (1).length == A.domain.dim (1).length 
+	     L_formal.domain.dim (0).size == A.domain.dim (0).size  &&
+	     L_formal.domain.dim (1).size == A.domain.dim (1).size 
 	     );
     
     const mat_dom  = A.domain,
           mat_rows = A.domain.dim(0),
-          n        = A.domain.dim(0).length;
+          n        = A.domain.dim(0).size;
 
     ref L = L_formal.reindex(mat_dom);
 

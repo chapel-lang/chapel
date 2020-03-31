@@ -1,0 +1,2 @@
+unqualified-access-no-qualified.chpl:9: In function 'main':
+unqualified-access-no-qualified.chpl:12: error: 'M' undeclared (first use this function)

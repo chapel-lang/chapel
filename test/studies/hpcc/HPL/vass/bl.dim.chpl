@@ -29,10 +29,8 @@ type indexType = int,
 //
 config const tl1 = 2,
              tl2 = 2;
-var tla: [0..#tl1, 0..#tl2] locale;
 var tld: bool;  // whether our targetLocales are all distinct
-
-setupTargetLocales();
+var tla: [0..#tl1, 0..#tl2] locale = setupTargetLocales();
 
 config const useRandomSeed = true,
              seed = if useRandomSeed then SeedGenerator.oddCurrentTime else 31415;
@@ -142,7 +140,7 @@ proc schurComplement(AD, BD, Rest) {
 
 // If Rest is empty, panelSolve and updateBlockRow are still meaningful?
 // Otherwise don't invoke schurComplement at all.
-  if Rest.numIndices == 0 {
+  if Rest.size == 0 {
     vwln("  Rest is empty");
     return;
   }
@@ -185,8 +183,9 @@ proc schurComplement(AD, BD, Rest) {
 }
 
 proc setupTargetLocales() {
+  var tla: [0..#tl1, 0..#tl2] locale;
   writeln("setting up for ", tl1, "*", tl2, " locales");
-  tld = numLocales >= tla.numElements;
+  tld = numLocales >= tla.size;
   if tld {
     var i = 0;
     for l in tla { l = Locales[i]; i += 1; }
@@ -195,6 +194,7 @@ proc setupTargetLocales() {
     tla = Locales(0);
   }
   vwln("target locales =\n", tla, "\n");
+  return tla;
 }
 
 // random initialization

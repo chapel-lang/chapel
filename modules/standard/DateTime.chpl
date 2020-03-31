@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -33,7 +34,7 @@
  */
 
 module DateTime {
-  private use HaltWrappers only ;
+  import HaltWrappers;
   private use SysCTypes;
 
   /* The minimum year allowed in `date` objects */
@@ -344,13 +345,13 @@ module DateTime {
    */
   proc date.weekday() {
     // January 1 0001 is a Monday
-    return ((toordinal() + 6) % 7): DayOfWeek;
+    return try! ((toordinal() + 6) % 7): DayOfWeek;
   }
 
   /* Return the day of the week as an `ISODayOfWeek`.
      `Monday` == 1, `Sunday` == 7 */
   proc date.isoweekday() {
-    return (weekday(): int + 1): ISODayOfWeek;
+    return try! (weekday(): int + 1): ISODayOfWeek;
   }
 
   /* Return the ISO date as a tuple containing the ISO year, ISO week number,
@@ -602,7 +603,7 @@ module DateTime {
   proc time.isoformat() {
     proc makeNDigits(n, d) {
       var ret = d: string;
-      while ret.length < n {
+      while ret.size < n {
         ret = "0" + ret;
       }
       return ret;
@@ -1124,7 +1125,7 @@ module DateTime {
   proc datetime.isoformat(sep="T") {
     proc zeroPad(nDigits: int, i: int) {
       var numStr = i: string;
-      for i in 1..nDigits-numStr.length {
+      for i in 1..nDigits-numStr.size {
         numStr = "0" + numStr;
       }
       return numStr;

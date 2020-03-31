@@ -53,47 +53,19 @@ proc R.verify() {
   }
 }
 
-pragma "auto copy fn"
-proc chpl__autoCopy(arg: R) {
+proc R.init=(const ref arg: R) {
   if arg.canary != 42 {
-    writeln("autoCopy with uninitialized record!");
+    writeln("init= with uninitialized record!");
     assert(arg.canary == 42);
   }
 
-
-  // TODO - is no auto destroy necessary here?
-  pragma "no auto destroy"
-  var ret: R;
-
+  this.complete();
   // allow copies of a default-initialized record.
-  ret.setup(x = arg.x, true);
+  this.setup(x = arg.x, true);
 
   if debug {
-    writeln("leaving auto copy");
+    writeln("leaving init=");
   }
-
-  return ret;
-}
-
-// I'd like this to be ref, but that breaks
-//    var outerX: R; begin { var x = outerX; }
-pragma "init copy fn"
-proc chpl__initCopy(arg: R) {
-  if arg.canary != 42 {
-    writeln("initCopy with uninitialized record!");
-    assert(arg.canary == 42);
-  }
-
-  var ret: R;
-
-  // allow copies of a default-initialized record.
-  ret.setup(x = arg.x, true);
-
-  if debug {
-    writeln("leaving init copy");
-  }
-
-  return ret;
 }
 
 proc =(ref lhs: R, rhs: R) {

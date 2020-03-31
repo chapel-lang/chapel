@@ -51,10 +51,8 @@ proc main() {
 	//list of atoms in LIZ for each atom
 	var lizDoms: [GridDist] sparse subdomain(GridDom);
 	//list of atoms accessed by local atoms, for each locale
-	var caches: [LocalesDist] unmanaged Cache;
-	forall cache in caches {
-		cache = new unmanaged Cache();
-	}
+	var caches: [LocalesDist] unmanaged Cache =
+                      [LocalesDist] new unmanaged Cache();
 
 	//compute LIZ and caches
         serial serialForall do // TODO: enable 'forall' in parallel
@@ -69,7 +67,7 @@ proc main() {
 			}
 		}
 	}
-	if displayLIZ then writeln("LIZ counts: ", [liz in lizDoms] liz.numIndices);
+	if displayLIZ then writeln("LIZ counts: ", [liz in lizDoms] liz.size);
 
 	//initialize atom values
 	forall (i, atom) in zip(GridDist, atoms) {

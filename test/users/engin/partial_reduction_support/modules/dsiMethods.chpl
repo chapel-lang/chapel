@@ -110,11 +110,11 @@ proc DefaultSparseDom.__private_findRowRange(r) {
   var done: atomic bool;
   begin with (ref end) {
     var found: bool;
-    (found, end) = binarySearch(indices, ((...r),endDummy), hi=_nnz);
+    (found, end) = binarySearch(_indices, ((...r),endDummy), hi=_nnz);
     done.write(true);
   }
   var found: bool;
-  (found, start) = binarySearch(indices, ((...r),startDummy), hi=_nnz);
+  (found, start) = binarySearch(_indices, ((...r),startDummy), hi=_nnz);
   done.waitFor(true);
   return start..min(_nnz,end-1);
 }
@@ -136,12 +136,12 @@ iter DefaultSparseDom.dsiPartialThese(param onlyDim: int, otherIdx,
 
   if onlyDim != this.rank-1 {
     for i in nnzDom.low..#_nnz do
-      if indices[i].withoutIdx(onlyDim) == otherIdxTup then 
-        yield indices[i][onlyDim];
+      if _indices[i].withoutIdx(onlyDim) == otherIdxTup then 
+        yield _indices[i][onlyDim];
   }
   else { //here we are sure that we are looking for the last index
     for i in __private_findRowRange(otherIdxTup) do
-      yield indices[i][onlyDim];
+      yield _indices[i][onlyDim];
   }
 }
 
@@ -183,11 +183,11 @@ iter DefaultSparseDom.dsiPartialThese(param onlyDim: int, otherIdx,
 
   if onlyDim!=rank-1 then
     for i in followRange do
-      if indices[i].withoutIdx(onlyDim) == otherIdxTup then
-        yield indices[i][onlyDim];
+      if _indices[i].withoutIdx(onlyDim) == otherIdxTup then
+        yield _indices[i][onlyDim];
       else 
         for i in followRange do
-          yield indices[i][onlyDim];
+          yield _indices[i][onlyDim];
 }
 
 iter DefaultSparseDom.dsiPartialThese(param onlyDim: int, otherIdx,
@@ -205,7 +205,7 @@ iter DefaultSparseDom.dsiPartialThese(param onlyDim: int, otherIdx,
   var rowRange: range;
   if onlyDim==rank-1 then rowRange = __private_findRowRange(otherIdxTup);
 
-  const l = if onlyDim!=rank-1 then indices.domain.low else rowRange.low;
+  const l = if onlyDim!=rank-1 then _indices.domain.low else rowRange.low;
   const h = if onlyDim!=rank-1 then _nnz else rowRange.high;
   const numElems = h-l+1;
   if numElems <= -2 then return;
@@ -214,15 +214,15 @@ iter DefaultSparseDom.dsiPartialThese(param onlyDim: int, otherIdx,
     coforall t in 0..#numTasks {
       const myChunk = _computeBlock(numElems, numTasks, t, h, l, l);
       for i in myChunk[0]..min(_nnz,myChunk[1]) do
-        if indices[i].withoutIdx(onlyDim) == otherIdxTup then
-          yield indices[i][onlyDim];
+        if _indices[i].withoutIdx(onlyDim) == otherIdxTup then
+          yield _indices[i][onlyDim];
     }
   }
   else {
     coforall t in 0..#numTasks {
       const myChunk = _computeBlock(numElems, numTasks, t, h, l, l);
       for i in myChunk[0]..myChunk[1] do {
-        yield indices[i][onlyDim];
+        yield _indices[i][onlyDim];
       }
     }
   }

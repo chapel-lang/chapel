@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -83,7 +84,7 @@ class Private: BaseDist {
   proc trackDomains() param return false;
   override proc dsiTrackDomains()    return false;
 
-  proc singleton() param return true;
+  override proc singleton() param return true;
 }
 
 class PrivateDom: BaseRectangularDom {
@@ -127,8 +128,8 @@ class PrivateDom: BaseRectangularDom {
     halt("cannot reassign private domain");
   }
 
-  proc dsiRequiresPrivatization() param return true;
-  proc linksDistribution() param return false;
+  override proc dsiRequiresPrivatization() param return true;
+  override proc linksDistribution() param return false;
   override proc dsiLinksDistribution()     return false;
 
   proc dsiGetPrivatizeData() return 0;
@@ -147,12 +148,13 @@ class PrivateDom: BaseRectangularDom {
 
 class PrivateArr: BaseRectangularArr {
   var dom: unmanaged PrivateDom(rank, idxType, stridable);
+  pragma "unsafe" // initialized separately
   var data: eltType;
 }
 
 override proc PrivateArr.dsiGetBaseDom() return dom;
 
-proc PrivateArr.dsiRequiresPrivatization() param return true;
+override proc PrivateArr.dsiRequiresPrivatization() param return true;
 
 proc PrivateArr.dsiGetPrivatizeData() return 0;
 
@@ -207,6 +209,24 @@ proc PrivateArr.dsiSerialWrite(x) {
     if first then first = !first; else x <~> " ";
     x <~> dsiAccess(i);
   }
+}
+
+proc PrivateArr.doiScan(op, dom) where (rank == 1) &&
+                                  chpl__scanStateResTypesMatch(op) {
+  type resType = op.generate().type;
+  var res: [dom] resType;
+
+  var localArr: [0..numLocales-1] resType;
+
+  coforall loc in Locales do on loc do
+    localArr[here.id] = if _isPrivatized(this) then chpl_getPrivatizedCopy(this.type, this.pid).data else data;
+
+  var localRes = localArr._scan(op);
+
+  forall r in res do r = localRes[here.id];
+
+  // localArr deletes op
+  return res;
 }
 
 // TODO: Fix 'new Private()' leak -- Discussed in #6726

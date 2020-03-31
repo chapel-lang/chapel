@@ -60,7 +60,7 @@ module block_inner_product_cholesky  {
       // modify the active block column of A with the combined effects of the
       // elimination steps on all previous block columns
 
-      if prev_cols.length > 0 then
+      if prev_cols.size > 0 then
 	block_inner_product ( A ( reduced_mtx_cols, prev_cols), 
 			      A ( reduced_mtx_cols, leading_cols ) );
 
@@ -69,7 +69,7 @@ module block_inner_product_cholesky  {
       pos_def = scalar_inner_product_cholesky ( A (leading_cols, leading_cols) );
 
 
-      if pos_def && trailing_cols.length > 0 then {
+      if pos_def && trailing_cols.size > 0 then {
 
 	// compute the remainder of the active block column of L by a
 	// block triangular solve realizing the equation

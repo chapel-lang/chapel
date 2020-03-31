@@ -207,7 +207,7 @@ module symmetric_blas {
        // the remainder of a block column is a dense rectangular matrix,
        // for which we can use a general matrix-matrix product
 
-       if trailing_rows.length > 0 then
+       if trailing_rows.size > 0 then
 	 symmetric_offdiagonal_low_rank_modification 
 	    ( L (lower_triangle_rows, ..), 
 	      A (trailing_rows, leading_rows) );

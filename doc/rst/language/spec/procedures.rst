@@ -413,14 +413,19 @@ The Out Intent
 ^^^^^^^^^^^^^^
 
 When ``out`` is specified as the intent, the actual argument is ignored
-when the call is made, but when the function returns, the formal
-argument is copied back to the actual argument. An implicit conversion
+when the call is made, but when the function returns, the actual argument
+is assigned to the value of the formal argument.  An implicit conversion
 occurs from the type of the formal to the type of the actual. The actual
-argument must be a valid lvalue. The formal argument is initialized to
-its default value if one is supplied, or to its type’s default value
-otherwise. The formal argument can be modified within the function.
+argument must be a valid lvalue. Within the function body, the formal
+argument is initialized to its default value if one is supplied, or to
+its type’s default value otherwise. The formal argument can be modified
+within the function.
 
-.. _The_Inout_Intent:
+The assigment implementing the ``out`` intent is a candidate for
+:ref:`Split_Initialization`. As a result, an actual argument might be
+initialized by a call passing the actual by ``out`` intent.
+
+_The_Inout_Intent:
 
 The Inout Intent
 ^^^^^^^^^^^^^^^^
@@ -1131,6 +1136,8 @@ binary   ``&=`` ``|=`` ``^=`` ``<<=`` ``>>=`` ``<=>`` ``<~>``
 The arity and precedence of the operator must be maintained when it is
 overloaded. Operator resolution follows the same algorithm as function
 resolution.
+
+Assignment overloads are not supported for class types.
 
 .. _Function_Resolution:
 

@@ -8,7 +8,6 @@ proc testDomainAPI2D(lbl, D: domain, idx, OOBidx1, OOBidx2, intDom) {
   writeln("idxType          = ", D.idxType:string);
   writeln("stridable        = ", D.stridable);
   writeln("size             = ", D.size);
-  writeln("numIndices       = ", D.numIndices);
   writeln("isEmpty()        = ", D.isEmpty());
   writeln("low              = ", D.low);
   writeln("high             = ", D.high);
@@ -69,7 +68,6 @@ proc testDomainAPI2D(lbl, D: domain, idx, OOBidx1, OOBidx2, intDom) {
   D2.clear();
   writeln(D2);
   writeln("size             = ", D2.size);
-  writeln("numIndices       = ", D2.numIndices);
   writeln("isEmpty()        = ", D2.isEmpty());
   writeln("low              = ", D2.low);
   writeln("high             = ", D2.high);

@@ -146,7 +146,7 @@ proc LUFactorize(n : int, A : [1..n, 1..n+1] real, piv : [1..n] int) {
         updateBlockRow(tlPnl, trPnl);
 
         // update trailing submatrix (if there)
-        if(brPnl.panel.domain.numIndices > 0) {
+        if(brPnl.panel.domain.size > 0) {
             dgemm(blPnl, trPnl, brPnl);
           }
       }
@@ -198,7 +198,7 @@ proc selfMult(n : int, A : [1..n,1..n] real, C : [1..n,1..n] real) {
 proc permuteMatrix(matrix : [?dmn], in vector) {
     //var pdmn : sparse subdomain(dmn);
     var pdmn =
-        {1..vector.domain.dim(0).length, 1..vector.domain.dim(0).length};
+        {1..vector.domain.dim(0).size, 1..vector.domain.dim(0).size};
     var p : [pdmn] int;
     //p.IRV = 0;
 
@@ -212,9 +212,9 @@ proc permuteMatrix(matrix : [?dmn], in vector) {
     var permuted = matrix;
 
     matrixMult(
-        dmn.dim(0).length,
-        dmn.dim(0).length,
-        dmn.dim(1).length,
+        dmn.dim(0).size,
+        dmn.dim(0).size,
+        dmn.dim(1).size,
         p, matrix, permuted);
 
     matrix = permuted;
@@ -291,7 +291,7 @@ proc test_panelSolve(rprt = true) : bool {
     param offset = 3;
     param blkSize = 3;
     var pnl = new Panel2D(
-        A, offset, offset, (A.domain.dim(0).length)-offset+1, blkSize);
+        A, offset, offset, (A.domain.dim(0).size)-offset+1, blkSize);
     panelSolve(pnl, piv[offset..]);
 
     // to test multiply the L and U parts of the top portion of the panel

@@ -19,15 +19,15 @@ defSps += diag;
 csrSps += diag;
 blkSps += diag;
 
-writeln(defSps.numIndices);
-writeln(csrSps.numIndices);
-writeln(blkSps.numIndices);
+writeln(defSps.size);
+writeln(csrSps.size);
+writeln(blkSps.size);
 
 defSps += col;
 csrSps += col;
 blkSps += col;
 
-writeln(defSps.numIndices);
-writeln(csrSps.numIndices);
-writeln(blkSps.numIndices);
+writeln(defSps.size);
+writeln(csrSps.size);
+writeln(blkSps.size);
 

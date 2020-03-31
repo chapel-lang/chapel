@@ -8,7 +8,7 @@ record Matrix {
   proc const ref this(i: int, j: int) const ref return A(i,j);
 }
 
-proc Matrix.writeThis(f) {
+proc Matrix.writeThis(f) throws {
   f.write(A);
 }
 

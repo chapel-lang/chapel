@@ -85,7 +85,7 @@ proc timingResults(ofile, n, timeData) {
 proc testSolution(A: [?ADom], x: [?xDom], in eps: real, 
      out resid: 3*real, out norms: 5*real) {
  
-  var n = ADom.dim(0).length;
+  var n = ADom.dim(0).size;
   ref b = A(..,n+1);
   var bHat: [xDom] real;
 

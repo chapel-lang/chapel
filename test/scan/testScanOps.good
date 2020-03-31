@@ -38,6 +38,26 @@ minloc scan
 ^ scan
   Success
 
+Testing type '[PrivateDom(1,int(64),false)] int(64)'
++ scan
+  Success
+min scan
+  Success
+max scan
+  Success
+* scan
+  Success
+maxloc scan
+  Success
+minloc scan
+  Success
+& scan
+  Success
+| scan
+  Success
+^ scan
+  Success
+
 Testing type '[domain(1,int(64),false)] real(64)'
 + scan
   Success
@@ -66,6 +86,20 @@ maxloc scan
 minloc scan
   Success
 
+Testing type '[PrivateDom(1,int(64),false)] real(64)'
++ scan
+  Success
+min scan
+  Success
+max scan
+  Success
+* scan
+  Success
+maxloc scan
+  Success
+minloc scan
+  Success
+
 Testing type '[domain(1,int(64),false)] bool'
 && scan
   Success
@@ -73,6 +107,12 @@ Testing type '[domain(1,int(64),false)] bool'
   Success
 
 Testing type '[BlockDom(1,int(64),false,unmanaged DefaultDist)] bool'
+&& scan
+  Success
+|| scan
+  Success
+
+Testing type '[PrivateDom(1,int(64),false)] bool'
 && scan
   Success
 || scan

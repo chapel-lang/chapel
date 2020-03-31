@@ -14,7 +14,7 @@ proc main(args: [] string) {
   const consoleIn = openfd(0),
         stdinNoLock = consoleIn.reader(locking=false);
 
-  var data: [1..consoleIn.length()] uint(8),
+  var data: [1..consoleIn.size] uint(8),
       idx = 1,
       start = 0;
 
