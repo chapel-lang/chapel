@@ -136,7 +136,9 @@ module ByteBufferHelpers {
   inline proc bufferGetByte(buf, off, loc) {
     if !_local && loc != chpl_nodeID {
       const newBuf = bufferCopyRemote(src_loc_id=loc, src_addr=buf+off, len=1);
-      return newBuf[0];
+      const ret = newBuf[0];
+      bufferFree(newBuf);
+      return ret;
     }
     else {
       return buf[off];
@@ -173,16 +175,23 @@ module ByteBufferHelpers {
     } 
     else if loc1 != chpl_nodeID && loc2 == chpl_nodeID {
       var locBuf1 = bufferCopyRemote(loc1, buf1, len1);
-      return _strcmp_local(locBuf1, len1, buf2, len2);
+      const ret = _strcmp_local(locBuf1, len1, buf2, len2);
+      bufferFree(locBuf1);
+      return ret;
     }
     else if loc1 == chpl_nodeID && loc2 != chpl_nodeID {
       var locBuf2 = bufferCopyRemote(loc2, buf2, len2);
-      return _strcmp_local(buf1, len1, locBuf2, len2);
+      const ret = _strcmp_local(buf1, len1, locBuf2, len2);
+      bufferFree(locBuf2);
+      return ret;
     }
     else {
       var locBuf1 = bufferCopyRemote(loc1, buf1, len1);
       var locBuf2 = bufferCopyRemote(loc2, buf2, len2);
-      return _strcmp_local(locBuf1, len1, locBuf2, len2);
+      const ret = _strcmp_local(locBuf1, len1, locBuf2, len2);
+      bufferFree(locBuf1);
+      bufferFree(locBuf2);
+      return ret;
     }
   }
 }
