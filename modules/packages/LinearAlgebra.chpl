@@ -385,13 +385,13 @@ proc Matrix(const Arrays: ?t ...?n, type eltType) where isArrayType(t) && t.rank
   if Arrays(0).domain.rank != 1 then compilerError("Matrix() expected 1D arrays");
 
   const dim2 = 1..Arrays(0).domain.dim(0).size,
-        dim1 = 0..n-1;
+        dim1 = 1..n;
 
   var M: [{dim1, dim2}] eltType;
 
   forall i in dim1 do {
-    if Arrays(i).size != Arrays(0).size then halt("Matrix() expected arrays of equal length");
-    M[i, ..] = Arrays(i)[..]: eltType;
+    if Arrays(i-1).size != Arrays(0).size then halt("Matrix() expected arrays of equal length");
+    M[i, ..] = Arrays(i-1)[..]: eltType;
   }
 
   return M;
@@ -633,7 +633,7 @@ private proc _matvecMult(A: [?Adom] ?eltType, X: [?Xdom] eltType, trans=false)
   var op = if trans then BLAS.Op.T
            else BLAS.Op.N;
 
-  var Ydom = if trans then {Adom.dim()}
+  var Ydom = if trans then {Adom.dim(1)}
              else {Adom.dim(0)};
 
   var Y: [Ydom] eltType;
