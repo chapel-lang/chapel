@@ -1159,6 +1159,9 @@ module ChapelArray {
             _delete_dist(distToFree!, _isPrivatized(inst.dist));
         }
       }
+      else {
+        // Do we need to worry about RVF'ed domain views?
+      }
     }
     pragma "no doc"
     proc deinit () {
@@ -3168,6 +3171,14 @@ module ChapelArray {
           _delete_dom(instanceDom!, domIsPrivatized);
         if distToFree != nil then
           _delete_dist(distToFree!, distIsPrivatized);
+      }
+    }
+    else {
+      // we have _unowned set, so we don't have data to free up, but our
+      // instance might be an rvf'ed array view that itself needs to be cleaned
+      // up
+      if chpl__isArrayView(_instance) {
+        delete _instance;
       }
     }
   }
