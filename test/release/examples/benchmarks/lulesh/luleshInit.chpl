@@ -42,7 +42,7 @@ if initFromFile {
 param numDims = 3;
 
 const nodesPerEdge = elemsPerEdge + 1,
-      DimNodeRange = 0..#nodesPerEdge,
+      DimNodeRange = 0..<nodesPerEdge,
       DimNodeFace  = {DimNodeRange, DimNodeRange};
 
 
@@ -89,7 +89,7 @@ proc initElemToNodeMapping(elemToNode: [?D]) {
   if (initFromFile) {
     param nodesPerElem = elemToNode[D.low].size;
     for nodelist in elemToNode do 
-      for i in 0..#nodesPerElem do
+      for i in 0..<nodesPerElem do
         reader.read(nodelist[i]);
     
     if debugInit {
@@ -113,7 +113,7 @@ proc initElemToNodeMapping(elemToNode: [?D]) {
 
   if debugInit then
     for nodelist in elemToNode {
-      for i in 0..#nodelist.size do
+      for i in 0..<nodelist.size do
         write(nodelist(i), " ");
       writeln();
     }
@@ -219,7 +219,7 @@ inline proc initFreeSurface(ref freeSurface) {
     use Sort;
 
     const size = freeSurface.size;
-    var sortedSurface: [0..#size] if (freeSurface.rank == 1) 
+    var sortedSurface: [0..<size] if (freeSurface.rank == 1)
                                     then freeSurface.idxType 
                                     else freeSurface.rank*freeSurface.idxType;
 
@@ -243,7 +243,7 @@ proc readNodeset(ref nodeset) {
   if (nodeset.rank == 1) {
     const arrSize = reader.read(int);
 
-    for a in 0..#arrSize do
+    for a in 0..<arrSize do
       nodeset += reader.read(int);
   } else {
     halt("We shouldn't get here -- no file I/O with the 3D representation");
@@ -294,7 +294,7 @@ inline proc elemIdxTo3D(ind) {
 
 inline proc node2DToIdx(param rank, ij, newdim, newval) {
   var ijk: 3*int;
-  for i in 0..numDims-1 do
+  for i in 0..<numDims do
     ijk[i] = if (i==newdim) then newval else ij[i - (i>newdim):int];
   return node3DToIdx(rank, (...ijk));
 }

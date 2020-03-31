@@ -123,17 +123,17 @@ proc runtest(param ndim : int, fn : string) {
     var f = open(fn,iomode.r).reader(kind=iokind.little);
 
     // Read in dimensions
-    for ii in 0..#ndim {
-      f.read(dims(ii));
+    for d in dims {
+      f.read(d);
     }
 
 //
 // Set the domain ``D``, handling the different rank cases.
 //
     select ndim {
-      when 1 do D = 0.. #dims(0);
-      when 2 do D = {0.. #dims(0), 0.. #dims(1)};
-      when 3 do D = {0.. #dims(0), 0.. #dims(1), 0.. #dims(2)};
+      when 1 do D = 0..<dims(0);
+      when 2 do D = {0..<dims(0), 0..<dims(1)};
+      when 3 do D = {0..<dims(0), 0..<dims(1), 0..<dims(2)};
     }
 
     // Read in the arrays
@@ -159,8 +159,8 @@ proc runtest(param ndim : int, fn : string) {
       //
       // Domains for real FFT
       //
-      rD = 0.. #(2*ldim); // Padding to do in-place transforms
-      cD = 0.. #ldim;
+      rD = 0..<(2*ldim); // Padding to do in-place transforms
+      cD = 0..<ldim;
       //
       // Define domains to extract the real and imaginary parts for
       // in-place transforms
@@ -173,28 +173,28 @@ proc runtest(param ndim : int, fn : string) {
       // Domains for real FFT
       //
       var ldim = dims(1)/2+1;
-      rD = {0.. #dims(0),0.. #(2*ldim)}; // Padding to do in-place transforms
-      cD = {0.. #dims(0),0.. #ldim};
+      rD = {0..<dims(0), 0..<(2*ldim)}; // Padding to do in-place transforms
+      cD = {0..<dims(0), 0..<ldim};
       //
       // Define domains to extract the real and imaginary parts for
       // in-place transforms
       //
-      reD = rD[..,0..(2*ldim-1) by 2];
-      imD = rD[..,1..(2*ldim-1) by 2];
+      reD = rD[.., 0..(2*ldim-1) by 2];
+      imD = rD[.., 1..(2*ldim-1) by 2];
     }
     when 3 {
       //
       // Domains for real FFT
       //
       var ldim = dims(2)/2+1;
-      rD = {0.. #dims(0),0.. #dims(1),0.. #(2*ldim)}; // Padding to do in-place transforms
-      cD = {0.. #dims(0),0.. #dims(1),0.. #ldim};
+      rD = {0..<dims(0), 0..<dims(1), 0..<(2*ldim)}; // Padding to do in-place transforms
+      cD = {0..<dims(0), 0..<dims(1), 0..<ldim};
       //
       // Define domains to extract the real and imaginary parts for
       // in-place transforms
       //
-      reD = rD[..,..,0..(2*ldim-1) by 2];
-      imD = rD[..,..,1..(2*ldim-1) by 2];
+      reD = rD[.., .., 0..(2*ldim-1) by 2];
+      imD = rD[.., .., 1..(2*ldim-1) by 2];
     }
   }
 

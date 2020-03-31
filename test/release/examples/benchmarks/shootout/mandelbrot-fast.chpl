@@ -52,7 +52,7 @@ proc main() {
 
     // store 'bitsPerElt' pixels compactly into the final image
     var pixval: eltType;
-    for param i in 0..bitsPerElt-1 do
+    for param i in 0..<bitsPerElt do
       if (Tr(i) + Ti(i) <= limit) then      // if 'C' is within the limit,
         pixval |= 0x1 << (bitsPerElt-i-1);  // turn the corresponding pixel on
 
@@ -77,7 +77,7 @@ inline proc +(cr, ci) {
 }
 
 inline proc >(x, y) {
-  for param i in 0..bitsPerElt-1 do
+  for param i in 0..<bitsPerElt do
     if x(i) <= y then
       return false;
   return true;

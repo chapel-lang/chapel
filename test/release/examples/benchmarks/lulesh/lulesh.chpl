@@ -125,11 +125,11 @@ const (numElems, numNodes) = initProblemSize();
 /* Declare abstract problem domains */
 
 const ElemSpace = if use3DRepresentation
-                    then {0..#elemsPerEdge, 0..#elemsPerEdge, 0..#elemsPerEdge}
-                    else {0..#numElems},
+                    then {0..<elemsPerEdge, 0..<elemsPerEdge, 0..<elemsPerEdge}
+                    else {0..<numElems},
       NodeSpace = if use3DRepresentation
-                    then {0..#nodesPerEdge, 0..#nodesPerEdge, 0..#nodesPerEdge}
-                    else {0..#numNodes};
+                    then {0..<nodesPerEdge, 0..<nodesPerEdge, 0..<nodesPerEdge}
+                    else {0..<numNodes};
 
 
 /* Declare the (potentially distributed) problem domains */
@@ -403,7 +403,7 @@ proc initBoundaryConditions() {
 
   forall e in Elems do {
     var mask: int;
-    for i in 0..#nodesPerElem do
+    for i in 0..<nodesPerElem do
       mask += surfaceNode[elemToNode[e][i]] << i;
 
     // TODO: make an inlined function for this little idiom? (and below)
@@ -452,7 +452,7 @@ proc initBoundaryConditions() {
 
   forall e in Elems do {
     var mask: int;
-    for i in 0..#nodesPerElem do
+    for i in 0..<nodesPerElem do
       mask += surfaceNode[elemToNode[e][i]] << i;
 
     if ((mask & 0x0f) == 0x0f) then elemBC[e] |= ZETA_M_FREE;
@@ -479,7 +479,7 @@ inline proc localizeNeighborNodes(eli: index(Elems),
                                   y: [] real, ref y_local: 8*real,
                                   z: [] real, ref z_local: 8*real) {
 
-  for i in 0..#nodesPerElem {
+  for i in 0..<nodesPerElem {
     const noi = elemToNode[eli][i];
 
     x_local[i] = x[noi];
@@ -1669,12 +1669,12 @@ proc CalcSoundSpeedForElems(vnewc, rho0:real, enewc, pnewc, pbvc, bvc) {
 
 
 iter elemToNodes(elem) {
-  for i in 0..#nodesPerElem do
+  for i in 0..<nodesPerElem do
     yield elemToNode[elem][i];
 }
                                  
 iter elemToNodesTuple(e) {
-  for i in 0..#nodesPerElem do
+  for i in 0..<nodesPerElem do
     yield (elemToNode[e][i], i);
 }
 

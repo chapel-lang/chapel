@@ -65,7 +65,7 @@ record R {
 // The ``this`` method gives the record the ability to be accessed like an
 // array.  Here we use the the argument as an index to choose a tuple element.
 proc R.this(n: int) ref {
-  if n < 0 || n >= size then
+  if !vals.indices.contains(n) then
     halt("index out of bounds accessing R");
   return vals[n];
 }
@@ -91,7 +91,7 @@ writeln(r.vals);
 // called when a record or class instance is used in the iterator position
 // of a ``for`` loop.
 iter R.these() ref {
-  for i in 0..#size {
+  for i in vals.indices {
     yield vals[i];
   }
 }
