@@ -140,6 +140,7 @@ Deprecated / Unstable / Removed Language Features
 * disabled associative arrays of non-nilable classes
 * deprecated `.length`/`.numIndices`/`.numElements` queries in favor of `.size`
 * deprecated `new owned/shared(c)` in favor of `owned/shared.create(c)`
+* deprecated postfix-`!` on class types in favor of using casts
 * deprecated `string` vs. `bytes` comparisons
 * deprecated `decodePolicy.ignore` in favor of new `decodePolicy.drop`
   (see https://chapel-lang.org/docs/1.21/builtins/Bytes.html#Bytes.bytes.decode)
