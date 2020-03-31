@@ -1010,7 +1010,8 @@ domains only.
 
    proc domain.dim(d: int): range
 
-Returns the range of indices described by dimension ``d`` of the domain.
+Returns the range of indices described by dimension ``d`` of the domain,
+where ``d`` is a value from ``0`` to ``rank-1``.
 
    *Example*.
 
@@ -1022,8 +1023,8 @@ Returns the range of indices described by dimension ``d`` of the domain.
         for j in D.dim(1) do
           writeln(A(i,j));
 
-   domain ``D`` is iterated over by two nested loops. The first
-   dimension of ``D`` is iterated over in the outer loop. The second
+   domain ``D`` is iterated over by two nested loops. The initial
+   dimension of ``D`` is iterated over in the outer loop. The other
    dimension is iterated over in the inner loop.
 
 

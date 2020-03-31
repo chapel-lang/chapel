@@ -134,7 +134,7 @@ this function at a call site. The formal argument is a parameter.
 
       proc fillTuple(param p: int, x: int) {
         var result: p*int;
-        for param i in 0..p-1 do
+        for i in result.indices do
           result(i) = x;
         return result;
       }
@@ -178,7 +178,7 @@ each unique actual type.
 
       proc fillTuple(param p, x) {
         var result: p*x.type;
-        for param i in 0..p-1 do
+        for i in result.indices do
           result(i) = x;
         return result;
       }
@@ -223,7 +223,7 @@ semantics of a type alias.
 
       proc fillTuple(param p: int, x: ?t) {
         var result: p*t;
-        for param i in 0..p-1 do
+        for i in result.indices do
           result(i) = x;
         return result;
       }

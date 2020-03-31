@@ -289,17 +289,17 @@ equivalent to:
 
 .. code-block:: chapel
 
+  { // iteration 0
+    const ref e = t(0);
+    ...e...
+  }
   { // iteration 1
     const ref e = t(1);
     ...e...
   }
-  { // iteration 2
-    const ref e = t(2);
-    ...e...
-  }
   ...
-  { // iteration n
-    const ref e = t(n);
+  { // iteration n-1
+    const ref e = t(n-1);
     ...e...
   }
 

@@ -643,9 +643,9 @@ argument expression is a tuple of the actual arguments.
 
    .. code-block:: chapel
 
-      proc mywriteln(x ...?k) {
-        for param i in 0..k-1 do
-          writeln(x(i));
+      proc mywriteln(xs ...?k) {
+        for x in xs do
+          writeln(x);
       }
 
    
@@ -667,14 +667,12 @@ argument expression is a tuple of the actual arguments.
       4.0
 
    defines a generic procedure called ``mywriteln`` that takes a
-   variable number of arguments of any type and then writes them out on
-   separate lines. The parameter
-   for-loop (:ref:`Parameter_For_Loops`) is unrolled by the
-   compiler so that ``i`` is a parameter, rather than a variable. This
-   needs to be a parameter for-loop because the expression ``x(i)`` will
-   have a different type on each iteration. The type of ``x`` can be
-   specified in the formal argument list to ensure that the actuals all
-   have the same type.
+   variable number of arguments of any type and then writes them out
+   on separate lines. The for-loop over the heterogeneous
+   tuple (:ref:`Iteration_over_Tuples`) is unrolled by the compiler so
+   that each iteration has its own copy of ``x`` with the appropriate
+   type. The type of ``xs`` can also be specified in the formal
+   argument list to ensure that the actuals all have the same type.
 
 ..
 
