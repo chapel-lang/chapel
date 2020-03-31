@@ -6,9 +6,9 @@ proc testList(type t) {
 
   var x: t;
   if isTuple(t) {
-    x = (new t[1](1), new t[2](2));
+    x = (new t[0](1), new t[1](2));
   } else {
-    x = new t(1);
+    x = new t(0);
   }
 
   l.append(x);

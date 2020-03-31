@@ -7,8 +7,8 @@ proc testSparse(type t) {
   sparseD += 1;
 
   var A: [sparseD] t;
-  A[1] = if isTuple(t) then (new t[1](1), new t[2](2))
-          else new t(1);
+  A[1] = if isTuple(t) then (new t[0](1), new t[1](2))
+          else new t(0);
 
   assert(A.size == 1);
 }
