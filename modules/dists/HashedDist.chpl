@@ -171,7 +171,6 @@ class Hashed : BaseDist {
   //
   proc init(type idxType,
             mapper,
-            /*other) {*/
             other: unmanaged Hashed(idxType, mapper.type)) {
     this.idxType = idxType;
     this.mapper = mapper; // normally == other.mapper;
