@@ -144,7 +144,8 @@ proc plotToFileBMP(NumSteps: [?Dom], outfile) {
   //
   const rows = Dom.dim(0).size,
         cols = Dom.dim(1).size;
-  const header_size = 14;
+
+const header_size = 14;
   const dib_header_size = 40;  // always use old BITMAPINFOHEADER
   const   bits_per_pixel = 24;
 
