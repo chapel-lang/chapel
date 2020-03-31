@@ -308,7 +308,7 @@ module ChapelTuple {
   */
 
   proc _tuple.indices {
-    return 1..this.size;
+    return 0..<this.size;
   }
 
   //
