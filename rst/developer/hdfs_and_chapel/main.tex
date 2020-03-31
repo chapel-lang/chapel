@@ -1,0 +1,106 @@
+
+
+%\documentclass[preprint]{sigplanconf}
+\documentclass[10pt]{article}
+\usepackage{graphicx}
+\usepackage{epstopdf}
+\usepackage{float}
+\usepackage{hyperref}
+
+% The following \documentclass options may be useful:
+%
+% 10pt          To set in 10-point type instead of 9-point.
+% 11pt          To set in 11-point type instead of 9-point.
+% authoryear    To obtain author/year citation style instead of numeric.
+
+\input{macro-defs}
+\input{editingmarks}
+
+
+\begin{document}
+%\conferenceinfo{} {}
+% \CopyrightYear{}
+% \copyrightdata{}
+
+%\titlebanner{Working Draft -- NON-FINAL VERSION}
+% \titlebanner{preprint - Submitted to ICFP 2012}   % These are ignored unless
+%\preprintfooter{OOPSLA 2013 Submission}  % 'preprint' option specified.
+
+\title{Adding in memory MapReduce operations and IO interfaces to Chapel}
+% \title{Lightweight Parallel Frameworks for Legacy Languages Should Provide Concurrency Too}
+%\subtitle{So many things, so little time...}
+
+\author{Tim Zakian \and Brad Chamberlain \and Michael Ferguson}
+
+\maketitle
+
+\begin{abstract}
+
+%% 1. State the problem
+%% 2. Say why it’s an interesting problem
+%% 3. Say what your solution achieves
+%% 4. Say what follows from your solution
+
+As big data becomes more and more prevalent in day-to-day computing,
+there is a need to be able to deal with large sets of data. However
+conventional systems such as Hadoop and Hive rely heavily on a divide and conquer method distributed throughout a
+cluster of computers. This method has been proven to be extremely efficient
+at a number of tasks, however this method can lead to problems when dealing
+with data in a contextual, iterative or interactive environment. In this
+document we not only offer an implementation of a framework that allows in memory MapReduce
+operations in Chapel and shows the benefits that can be achieved this way,
+but also offers up an API so that it can integrate seamlessly with other
+filesystems. 
+\end{abstract}
+
+
+% \category{D.3.2}{Concurrent, Distributed, and Parallel Languages}{}
+
+% \terms
+% Design, Languages, Performance
+
+% \keywords
+% Work-stealing, Composability, Haskell, GPU
+
+% ================================================================================
+%  Use the @ symbol for simple inline code within prose:
+% \makeatactive
+%\lstMakeShortInline[]@
+
+
+% ================================================================================
+%% Main Sections:
+
+\input{intro}
+\input{API}
+\input{examples}
+\input{future}
+\input{otherFSs}
+
+%\input{progmodel}
+%% \input{semantics}
+%\input{implementation}
+%\input{evaluation}
+%%\input{related}
+%\input{conclusion}
+
+\newpage
+% \input{appendix}
+{ \small
+\bibliographystyle{abbrv}
+%\bibliographystyle{abbrvnat}
+\bibliography{refs}
+}
+%% The bibliography should be embedded for final submission.
+%
+%\begin{thebibliography}{}
+%\softraggedright
+
+%\bibitem[Smith et~al.(2009)Smith, Jones]{smith02}
+%P. Q. Smith, and X. Y. Jones. ...reference text...
+
+%\end{thebibliography}
+
+% \input{appendix}
+
+\end{document}

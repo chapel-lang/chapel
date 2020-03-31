@@ -1,0 +1,40 @@
+
+
+\usepackage{color}
+
+\newcommand{\tz}[1]{\pgwrapper{TZ}{#1}}
+
+\InputIfFileExists{activateeditingmarks}{
+}{
+    \def\noeditingmarks{}
+}
+
+\ifx\noeditingmarks\undefined
+   \definecolor{comment-red}{rgb}{0.8,0,0}
+   \newcommand{\textred}[1]{\textcolor{comment-red}{#1}}
+   \newcommand{\pgwrapper}[2]{\textred{#1: #2}}
+   \newcommand{\note}[1]{\begin{itemize}\item{\textcolor{blue}{#1}}\end{itemize}}
+   \newcommand{\new}[1]{\textcolor{blue}{#1}}
+   \newcommand{\const}[1]{\textred{#1}}
+
+   %\definecolor{mygrey}{rgb}{0.6,0.6,0.6}
+   \definecolor{mygrey}{rgb}{0.7,0.7,0.7}
+
+   %%  I don't know a way based on user or host name, so...
+   %%  instead I just signal on a file, activategreybg.tex which I 
+   %%  don't then checkin.
+   \InputIfFileExists{activategreybg}{
+       \definecolor{comment-red}{rgb}{0.5,0,0}
+       \pagecolor{mygrey}
+   }{} 
+
+\else
+   \newcommand{\textred}[1]{#1}
+   \newcommand{\pgwrapper}[2]{}
+   \newcommand{\note}[1]{}
+   \newcommand{\new}[1]{#1}
+%   \newcommand{\new}[1]{\textcolor{blue}{#1}}
+   \newcommand{\const}[1]{#1}
+\fi
+
+
