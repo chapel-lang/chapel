@@ -798,8 +798,8 @@ override proc DimensionalDist2D.dsiNewRectangularDom(param rank: int,
       locDdesc = new unmanaged LocDimensionalDom(
               // stoDomainT -- see compilerAssert below; must be local
               domain(rank, idxType, stoStridableDom(stoIndexT, dom1, dom2)),
-                       doml1 = dom1.dsiNewLocalDom1d(stoIndexT, locIds(1)),
-                       doml2 = dom2.dsiNewLocalDom1d(stoIndexT, locIds(2)));
+                       doml1 = dom1.dsiNewLocalDom1d(stoIndexT, locIds(0)),
+                       doml2 = dom2.dsiNewLocalDom1d(stoIndexT, locIds(1)));
 
   var localDdescsNN = localDdescsTemp!; //#15080
   const result = new unmanaged DimensionalDom(rank=rank, idxType=idxType,
