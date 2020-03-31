@@ -149,7 +149,7 @@ class Hashed : BaseDist {
             mapper:?t = new DefaultMapper(),
             targetLocales: [] locale = Locales) {
     this.idxType = idxType;
-    this.mapper = mapper;
+    this.mapper = _to_unmanaged(mapper);
     //
     // 0-base the local capture of the targetLocDom for simplicity
     // later on
@@ -171,6 +171,7 @@ class Hashed : BaseDist {
   //
   proc init(type idxType,
             mapper,
+            /*other) {*/
             other: unmanaged Hashed(idxType, mapper.type)) {
     this.idxType = idxType;
     this.mapper = mapper; // normally == other.mapper;
