@@ -1169,7 +1169,7 @@ module DefaultRectangular {
       }
       if storageOrder == ArrayStorageOrder.RMO {
         blk(rank-1) = 1:intIdxType;
-        for param dim in 1..(rank-2) by -1 do
+        for param dim in 0..(rank-2) by -1 do
           blk(dim) = blk(dim+1) * dom.dsiDim(dim+1).size;
       } else if storageOrder == ArrayStorageOrder.CMO {
         blk(0) = 1:intIdxType;
@@ -1216,6 +1216,7 @@ module DefaultRectangular {
         var sum = 0:intIdxType;
         for param i in 0..rank-1 do
           sum += (chpl__idxToInt(ind(i)) - chpl__idxToInt(off(i))) * blk(i) / abs(str(i)):intIdxType;
+        //        writeln("C: sum", sum);
         return sum;
       } else {
         param wantShiftedIndex = getShifted && earlyShiftData;
@@ -1238,11 +1239,13 @@ module DefaultRectangular {
                useInd(i) = chpl__idxToInt(useInd(i)) - chpl__idxToInt(off(i));
              }
            }
+            //            writeln("B sum: ", polly_array_index(useOffset, (...useSizesPerDim), (...useInd)));
            return polly_array_index(useOffset, (...useSizesPerDim), (...useInd));
           } else {
             if storageOrder == ArrayStorageOrder.RMO {
               for param i in 0..rank-2 {
                 sum += chpl__idxToInt(ind(i)) * blk(i);
+                //                writeln("dim ", i, ", sum = ", sum);
               }
               sum += chpl__idxToInt(ind(rank-1));
             } else {
@@ -1252,6 +1255,7 @@ module DefaultRectangular {
               sum += chpl__idxToInt(ind(0));
             }
             if !wantShiftedIndex then sum -= factoredOffs;
+            //            writeln("A sum: ", sum);
             return sum;
           }
         }
