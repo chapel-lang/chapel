@@ -1745,7 +1745,7 @@ module ChapelArray {
       for i in 0..rank-1 do {
         ranges(i) = ranges(i).expand(off(i));
         if (ranges(i).low > ranges(i).high) {
-          halt("***Error: Degenerate dimension created in dimension ", i+1, "***");
+          halt("***Error: Degenerate dimension created in dimension ", i, "***");
         }
       }
 
@@ -1822,7 +1822,7 @@ module ChapelArray {
       for i in 0..rank-1 do {
         if ((off(i) > 0) && (dim(i)._high+1-off(i) < dim(i)._low) ||
             (off(i) < 0) && (dim(i)._low-1-off(i) > dim(i)._high)) {
-          halt("***Error: Argument to 'interior' function out of range in dimension ", i+1, "***");
+          halt("***Error: Argument to 'interior' function out of range in dimension ", i, "***");
         }
         ranges(i) = _value.dsiDim(i).interior(off(i));
       }
@@ -1999,7 +1999,7 @@ module ChapelArray {
 
         for param dim in 0..inds.size-1 {
           if inds(dim).stride != 1 then
-            halt("non-stridable domain assigned non-unit stride in dimension ", dim+1);
+            halt("non-stridable domain assigned non-unit stride in dimension ", dim);
           unstridableInds(dim) = inds(dim).safeCast(range(tmpD.idxType,
                                                           stridable=false));
         }
