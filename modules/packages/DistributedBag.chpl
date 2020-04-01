@@ -125,7 +125,7 @@ module DistributedBag {
   public use Collection;
   use BlockDist;
   private use SysCTypes;
-
+  private use IO only channel;
   /*
     Below are segment statuses, which is a way to make visible to outsiders the
     current ongoing operation. In segments, we use test-and-test-and-set spinlocks
@@ -254,6 +254,11 @@ module DistributedBag {
       return chpl_getPrivatizedCopy(unmanaged DistributedBagImpl(eltType), _pid);
     }
 
+    proc readWriteThis(ch: channel) throws {
+      ch <~> "[";
+      for i in this do ch <~> i <~> ", ";
+      ch <~> "\b\b]";
+    }
     forwarding _value;
   }
 
@@ -600,6 +605,7 @@ module DistributedBag {
         yield buffer[i];
       }
     }
+
   }
 
   /*
