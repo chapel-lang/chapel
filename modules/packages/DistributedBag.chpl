@@ -254,6 +254,12 @@ module DistributedBag {
       return chpl_getPrivatizedCopy(unmanaged DistributedBagImpl(eltType), _pid);
     }
 
+    proc readWriteThis(ch: channel) throws {
+      ch <~> "[";
+      for i in this do ch <~> i <~> ", ";
+      ch <~> "\b\b]";
+    }
+    
     forwarding _value;
   }
 
