@@ -634,8 +634,10 @@ expression contains an expression without a question mark, that
 expression must evaluate to an integer parameter value requiring the
 call site to pass that number of arguments to the function.
 
-Within the function, the formal argument that is marked with a variable
-argument expression is a tuple of the actual arguments.
+Within the function, the formal argument that is marked with a
+variable argument expression is a tuple of the actual arguments.  If
+the actual arguments all have the same type, the formal will be a
+homogeneous tuple, otherwise it will be a heterogeneous tuple.
 
    *Example (varargs.chpl)*.
 
@@ -668,11 +670,10 @@ argument expression is a tuple of the actual arguments.
 
    defines a generic procedure called ``mywriteln`` that takes a
    variable number of arguments of any type and then writes them out
-   on separate lines. The for-loop over the heterogeneous
-   tuple (:ref:`Iteration_over_Tuples`) is unrolled by the compiler so
-   that each iteration has its own copy of ``x`` with the appropriate
-   type. The type of ``xs`` can also be specified in the formal
-   argument list to ensure that the actuals all have the same type.
+   on separate lines.  The type of ``xs`` can also be constrained in
+   the formal argument list to require that the actuals all have the
+   same type.  For example ``xs: string...?k`` would accept a variable
+   number of string arguments.
 
 ..
 
