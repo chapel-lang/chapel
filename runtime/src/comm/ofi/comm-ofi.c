@@ -255,13 +255,13 @@ static void ofiErrReport(const char*, int, const char*);
 // it seems like something we might encounter with other providers as
 // well.
 //
-#define OFI_RIDE_OUT_EAGAIN(expr, progFnCall)                           \
+#define OFI_RIDE_OUT_EAGAIN(tcip, expr)                                 \
   do {                                                                  \
     ssize_t _ret;                                                       \
     do {                                                                \
       OFI_CHK_2(expr, _ret, -FI_EAGAIN);                                \
       if (_ret == -FI_EAGAIN) {                                         \
-        progFnCall;                                                     \
+        ensureProgress(tcip);                                           \
       }                                                                 \
     } while (_ret == -FI_EAGAIN);                                       \
   } while (0)
@@ -2361,9 +2361,9 @@ void amRequestCommon(c_nodeid_t node,
              "pAmDone %p, ctx %p",
              node, chpl_nodeID, myArg->comm.b.seq,
              am_opName(myArg->comm.b.op), argSize, pAmDone, ctx);
-  OFI_RIDE_OUT_EAGAIN(fi_send(tcip->txCtx, myArg, argSize,
-                              mrDesc, rxMsgAddr(tcip, node), ctx),
-                      ensureProgress(tcip));
+  OFI_RIDE_OUT_EAGAIN(tcip,
+                      fi_send(tcip->txCtx, myArg, argSize,
+                              mrDesc, rxMsgAddr(tcip, node), ctx));
   tcip->numTxnsOut++;
   tcip->numTxnsSent++;
   waitForTxnComplete(tcip, ctx);
@@ -3373,10 +3373,10 @@ chpl_comm_nb_handle_t ofi_put(const void* addr, c_nodeid_t node,
     DBG_PRINTF(DBG_RMA | DBG_RMAWRITE,
                "tx write: %d:%p <= %p, size %zd, key 0x%" PRIx64 ", ctx %p",
                (int) node, raddr, myAddr, size, mrKey, ctx);
-    OFI_RIDE_OUT_EAGAIN(fi_write(tcip->txCtx, myAddr, size,
+    OFI_RIDE_OUT_EAGAIN(tcip,
+                        fi_write(tcip->txCtx, myAddr, size,
                                  mrDesc, rxRmaAddr(tcip, node),
-                                 mrRaddr, mrKey, ctx),
-                        ensureProgress(tcip));
+                                 mrRaddr, mrKey, ctx));
     tcip->numTxnsOut++;
     tcip->numTxnsSent++;
 
@@ -3442,10 +3442,10 @@ void ofi_put_ll(const void* addr, c_nodeid_t node,
   DBG_PRINTF(DBG_RMA | DBG_RMAWRITE,
              "tx write ll: %d:%p <= %p, size %zd, key 0x%" PRIx64 ", ctx %p",
              (int) node, raddr, myAddr, size, mrKey, ctx);
-  OFI_RIDE_OUT_EAGAIN(fi_write(myTcip->txCtx, myAddr, size,
+  OFI_RIDE_OUT_EAGAIN(myTcip,
+                      fi_write(myTcip->txCtx, myAddr, size,
                                mrDesc, rxRmaAddr(myTcip, node),
-                               mrRaddr, mrKey, ctx),
-                      ensureProgress(myTcip));
+                               mrRaddr, mrKey, ctx));
   myTcip->numTxnsOut++;
   myTcip->numTxnsSent++;
 
@@ -3513,9 +3513,9 @@ void ofi_put_V(int v_len, void** addr_v, void** local_mr_v,
     // Add another transaction to the group and go on without waiting.
     // Throw FI_MORE except for the last one in the batch.
     //
-    OFI_RIDE_OUT_EAGAIN(fi_writemsg(tcip->txCtx, &msg,
-                                    (vi < v_len - 1) ? FI_MORE : 0),
-                        ensureProgress(tcip));
+    OFI_RIDE_OUT_EAGAIN(tcip,
+                        fi_writemsg(tcip->txCtx, &msg,
+                                    (vi < v_len - 1) ? FI_MORE : 0));
     tcip->numTxnsOut++;
     tcip->numTxnsSent++;
     bitmapSet(b, locale_v[vi]);
@@ -3654,10 +3654,10 @@ chpl_comm_nb_handle_t ofi_get(void* addr, c_nodeid_t node,
                "tx read: %p <= %d:%p(0x%" PRIx64 "), size %zd, key 0x%" PRIx64
                ", ctx %p",
                myAddr, (int) node, raddr, mrRaddr, size, mrKey, ctx);
-    OFI_RIDE_OUT_EAGAIN(fi_read(tcip->txCtx, myAddr, size,
+    OFI_RIDE_OUT_EAGAIN(tcip,
+                        fi_read(tcip->txCtx, myAddr, size,
                                 mrDesc, rxRmaAddr(tcip, node),
-                                mrRaddr, mrKey, ctx),
-                        ensureProgress(tcip));
+                                mrRaddr, mrKey, ctx));
     tcip->numTxnsOut++;
     tcip->numTxnsSent++;
     waitForTxnComplete(tcip, ctx);
@@ -3716,10 +3716,10 @@ void ofi_get_ll(void* addr, c_nodeid_t node,
              "tx read: %p <= %d:%p(0x%" PRIx64 "), size %zd, key 0x%" PRIx64
              ", ctx %p",
              myAddr, (int) node, raddr, mrRaddr, size, mrKey, ctx);
-  OFI_RIDE_OUT_EAGAIN(fi_read(myTcip->txCtx, myAddr, size,
+  OFI_RIDE_OUT_EAGAIN(myTcip,
+                      fi_read(myTcip->txCtx, myAddr, size,
                               mrDesc, rxRmaAddr(myTcip, node),
-                              mrRaddr, mrKey, ctx),
-                      ensureProgress(myTcip));
+                              mrRaddr, mrKey, ctx));
   myTcip->numTxnsOut++;
   myTcip->numTxnsSent++;
 
@@ -3779,12 +3779,12 @@ void ofi_get_V(int v_len, void** addr_v, void** local_mr_v,
     tcip->numTxnsSent++;
     if (tcip->numTxnsOut < txCQLen && vi < v_len - 1) {
       // Add another transaction to the group and go on without waiting.
-      OFI_RIDE_OUT_EAGAIN(fi_readmsg(tcip->txCtx, &msg, FI_MORE),
-                          ensureProgress(tcip));
+      OFI_RIDE_OUT_EAGAIN(tcip,
+                          fi_readmsg(tcip->txCtx, &msg, FI_MORE));
     } else {
       // Initiate last transaction in group and wait for whole group.
-      OFI_RIDE_OUT_EAGAIN(fi_readmsg(tcip->txCtx, &msg, 0),
-                          ensureProgress(tcip));
+      OFI_RIDE_OUT_EAGAIN(tcip,
+                          fi_readmsg(tcip->txCtx, &msg, 0));
       while (tcip->numTxnsOut > 0) {
         ensureProgress(tcip);
       }
@@ -4028,9 +4028,9 @@ void ofi_amo_nf_V(int v_len, uint64_t* opnd1_v, void* local_mr,
     // Add another transaction to the group and go on without waiting.
     // Throw FI_MORE except for the last one in the batch.
     //
-    OFI_RIDE_OUT_EAGAIN(fi_atomicmsg(tcip->txCtx, &msg,
-                                     (vi < v_len - 1) ? FI_MORE : 0),
-                        ensureProgress(tcip));
+    OFI_RIDE_OUT_EAGAIN(tcip,
+                        fi_atomicmsg(tcip->txCtx, &msg,
+                                     (vi < v_len - 1) ? FI_MORE : 0));
     tcip->numTxnsOut++;
     tcip->numTxnsSent++;
   }
