@@ -165,8 +165,6 @@ module ChapelTuple {
     if p == x.size {
       return true;
     } else {
-//return true;
-      /* TODO: restore */
       compilerError("tuple size ("+x.size:string+") must match the number of grouped variables (" + p:string + ")");
       return false;
     }
