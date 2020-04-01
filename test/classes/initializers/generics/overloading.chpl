@@ -13,7 +13,7 @@ class D : C {
 
     this.complete();
 
-    for i in ranges.indices do
+    for i in 0..<rank do
       ranges(i) = 1..i+1;
   }
 
