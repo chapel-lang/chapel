@@ -182,7 +182,7 @@ module MainModule {
       use modToUse as other;
 
       writeln(other.bar);
-      // writeln(modToUse.bar);
+      // writeln(modToUse.bar); // would be an error, modToUse not visible
       writeln(bar);
     }
 
