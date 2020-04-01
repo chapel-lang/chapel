@@ -13,18 +13,18 @@ class D : C {
 
     this.complete();
 
-    for i in 1..rank do
-      ranges(i-1) = 1..i;
+    for i in ranges.indices do
+      ranges(i) = 1..i+1;
   }
 
   override proc bbox(x: int) {
-    return ranges(x-1);
+    return ranges(x);
   }
 }
 
 var d: C = new D(4);
 
+writeln(d.bbox(0));
 writeln(d.bbox(1));
 writeln(d.bbox(2));
 writeln(d.bbox(3));
-writeln(d.bbox(4));
