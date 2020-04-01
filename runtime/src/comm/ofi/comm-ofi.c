@@ -119,7 +119,8 @@ struct perTxCtxInfo_t {
   struct fid_ep* txCtx;
   struct fid_cq* txCQ;
   struct fid_cntr* txCntr;
-  uint64_t numTxns;  // CQ: num txns in flight now; Cntr: num ever initiated
+  uint64_t numTxnsOut;   // number of transactions in flight now
+  uint64_t numTxnsSent;  // number of transactions ever initiated
 };
 
 static int tciTabLen;
@@ -184,13 +185,12 @@ static inline void ofi_get_ll(void*, c_nodeid_t,
 static inline void do_remote_get_buff(void*, c_nodeid_t, void*, size_t);
 static inline void do_remote_amo_nf_buff(void*, c_nodeid_t, void*, size_t,
                                          enum fi_op, enum fi_datatype);
-static inline void waitForCQThisTxn(struct perTxCtxInfo_t*, atomic_bool*);
+static void ensureProgress(struct perTxCtxInfo_t*);
+static inline void waitForTxnComplete(struct perTxCtxInfo_t*, void* ctx);
 static inline void checkTxCQ(struct perTxCtxInfo_t*);
 static inline ssize_t readCQ(struct fid_cq*, void*, size_t);
 static void reportCQError(struct fid_cq*);
-
-static void waitForCntrAllTxns(struct perTxCtxInfo_t*);
-static inline uint64_t getTxCntr(struct perTxCtxInfo_t*);
+static inline void getTxCntr(struct perTxCtxInfo_t*);
 static void* allocBounceBuf(size_t);
 static void freeBounceBuf(void*);
 static inline void local_yield(void);
@@ -261,7 +261,6 @@ static void ofiErrReport(const char*, int, const char*);
     do {                                                                \
       OFI_CHK_2(expr, _ret, -FI_EAGAIN);                                \
       if (_ret == -FI_EAGAIN) {                                         \
-        sched_yield();                                                  \
         progFnCall;                                                     \
       }                                                                 \
     } while (_ret == -FI_EAGAIN);                                       \
@@ -461,7 +460,6 @@ static chpl_bool provCtl_readAmoNeedsOpnd; // READ AMO needs operand (RxD)
 //
 
 static __thread chpl_bool isAmHandler = false;
-static __thread struct perTxCtxInfo_t* amTcip;
 
 typedef enum {
   txnTrkNone,  // no tracking, ptr is ignored
@@ -2020,11 +2018,11 @@ void mcmReleaseOneNode(c_nodeid_t node, struct perTxCtxInfo_t* tcip,
     atomic_init_bool(&txnDone, false);
     void* ctx = txnTrkEncode(txnTrkDone, &txnDone);
     ofi_get_ll(orderDummy, node, orderDummyMap[node], 1, ctx, tcip);
-    waitForCQThisTxn(tcip, &txnDone);
+    waitForTxnComplete(tcip, ctx);
     atomic_destroy_bool(&txnDone);
   } else {
     ofi_get_ll(orderDummy, node, orderDummyMap[node], 1, NULL, tcip);
-    waitForCntrAllTxns(tcip);
+    waitForTxnComplete(tcip, NULL);
   }
 }
 
@@ -2048,7 +2046,9 @@ void mcmReleaseAllNodes(struct bitmap_t* b, struct perTxCtxInfo_t* tcip,
 
   BITMAP_FOREACH_SET(b, node) {
     bitmapClear(b, node);
-    while (myTcip->numTxns >= txCQLen) { // need CQ room for at least 1 txn
+    checkTxCQ(myTcip);
+    while (myTcip->numTxnsOut >= txCQLen) { // need CQ room for at least 1 txn
+      sched_yield();
       checkTxCQ(myTcip);
     }
     mcmReleaseOneNode(node, myTcip, dbgOrderStr);
@@ -2095,58 +2095,6 @@ static void amRequestAMO(c_nodeid_t, void*, const void*, const void*, void*,
                          int, enum fi_datatype, size_t);
 static void amRequestCommon(c_nodeid_t, chpl_comm_on_bundle_t*, size_t,
                             chpl_comm_amDone_t**, chpl_bool);
-
-
-static inline
-void ensure_progress(void) {
-  if (isAmHandler
-      && ofi_info->domain_attr->data_progress == FI_PROGRESS_MANUAL) {
-    if (ofi_amhPollSet != NULL) {
-      void* contexts[pollSetSize];
-      int ret;
-      OFI_CHK_COUNT(fi_poll(ofi_amhPollSet, contexts, pollSetSize), ret);
-
-      //
-      // Process the CQs/counters that had events.  We really only have
-      // to take any explicit actions for our transmit endpoint.  If we
-      // have inbound AM messages we want to handle those in the main
-      // poll loop.  And for the RMA endpoint we just need to ensure
-      // progress, which the poll call itself will have done.
-      //
-      for (int i = 0; i < ret; i++) {
-        if (contexts[i] == &ofi_rxCQ) {
-          // no action
-        } else if (contexts[i] == &amTcip->txCQ) {
-          checkTxCQ(amTcip);
-        } else if (contexts[i] == &amTcip->txCntr) {
-          getTxCntr(amTcip);
-        } else if (contexts[i] == &ofi_rxCQRma) {
-          // no action
-        } else if (contexts[i] == &ofi_rxCntrRma) {
-          // no action
-        } else {
-          INTERNAL_ERROR_V("unexpected context %p from fi_poll()",
-                           contexts[i]);
-        }
-      }
-    } else {
-      //
-      // The provider can't do poll sets.
-      //
-      if (amTcip->txCQ != NULL) {
-        checkTxCQ(amTcip);
-      } else {
-        getTxCntr(amTcip);
-      }
-      if (ofi_rxCQRma != NULL) {
-        struct fi_cq_data_entry cqe;
-        (void) readCQ(ofi_rxCQRma, &cqe, 1);
-      } else {
-        (void) fi_cntr_read(ofi_rxCntrRma);
-      }
-    }
-  }
-}
 
 
 void chpl_comm_execute_on(c_nodeid_t node, c_sublocid_t subloc,
@@ -2415,29 +2363,12 @@ void amRequestCommon(c_nodeid_t node,
              am_opName(myArg->comm.b.op), argSize, pAmDone, ctx);
   OFI_RIDE_OUT_EAGAIN(fi_send(tcip->txCtx, myArg, argSize,
                               mrDesc, rxMsgAddr(tcip, node), ctx),
-                      checkTxCQ(tcip));
-  tcip->numTxns++;
-
-  //
-  // Wait for the network completion.  Yield initially while doing so;
-  // the minimum round trip time on the network isn't small and maybe
-  // we can find something else to do in the meantime.  After that,
-  // only yield every 64 attempts.
-  //
-  tciFree(tcip);
-
-  int iters = 0;
-  do {
-    if (yieldDuringTxnWait && (iters++ & 0x3f) == 0) {
-      local_yield();
-    }
-    if (tciTryRealloc(tcip)) {
-      checkTxCQ(tcip);
-      tciFree(tcip);
-    }
-  } while (!atomic_load_explicit_bool(&txnDone, memory_order_acquire));
-
+                      ensureProgress(tcip));
+  tcip->numTxnsOut++;
+  tcip->numTxnsSent++;
+  waitForTxnComplete(tcip, ctx);
   atomic_destroy_bool(&txnDone);
+  tciFree(tcip);
 
   if (myArg != arg) {
     freeBounceBuf(myArg);
@@ -2524,6 +2455,8 @@ void fini_amHandling(void) {
 //
 // The AM handler runs this.
 //
+static __thread struct perTxCtxInfo_t* amTcip;
+
 static
 void amHandler(void* argNil) {
   struct perTxCtxInfo_t* tcip;
@@ -3427,13 +3360,15 @@ chpl_comm_nb_handle_t ofi_put(const void* addr, c_nodeid_t node,
       memcpy(myAddr, addr, size);
     }
 
-    atomic_bool txnDone;
-    atomic_init_bool(&txnDone, false);
-
-    void* ctx = txnTrkEncode(txnTrkDone, &txnDone);
-
     struct perTxCtxInfo_t* tcip;
     CHK_TRUE((tcip = tciAlloc()) != NULL);
+
+    atomic_bool txnDone = { 0 };
+    void* ctx = NULL;
+    if (tcip->txCQ != NULL) {
+      atomic_init_bool(&txnDone, false);
+      ctx = txnTrkEncode(txnTrkDone, &txnDone);
+    }
 
     DBG_PRINTF(DBG_RMA | DBG_RMAWRITE,
                "tx write: %d:%p <= %p, size %zd, key 0x%" PRIx64 ", ctx %p",
@@ -3441,8 +3376,9 @@ chpl_comm_nb_handle_t ofi_put(const void* addr, c_nodeid_t node,
     OFI_RIDE_OUT_EAGAIN(fi_write(tcip->txCtx, myAddr, size,
                                  mrDesc, rxRmaAddr(tcip, node),
                                  mrRaddr, mrKey, ctx),
-                        checkTxCQ(tcip));
-    tcip->numTxns++;
+                        ensureProgress(tcip));
+    tcip->numTxnsOut++;
+    tcip->numTxnsSent++;
 
     //
     // Enforce Chapel MCM using synthesized delivery_complete completion
@@ -3451,17 +3387,10 @@ chpl_comm_nb_handle_t ofi_put(const void* addr, c_nodeid_t node,
     //
     mcmReleaseOneNode(node, tcip, "PUT");
 
+    waitForTxnComplete(tcip, ctx);
     if (tcip->txCQ != NULL) {
-      waitForCQThisTxn(tcip, &txnDone);
-    } else {
-      //
-      // TODO: This is the AM handler and we could optimize this to
-      //       let us return more quickly and handle the completion
-      //       later.  But for now just wait for it.
-      //
-      waitForCntrAllTxns(tcip);
+      atomic_destroy_bool(&txnDone);
     }
-
     tciFree(tcip);
   } else {
     //
@@ -3516,8 +3445,9 @@ void ofi_put_ll(const void* addr, c_nodeid_t node,
   OFI_RIDE_OUT_EAGAIN(fi_write(myTcip->txCtx, myAddr, size,
                                mrDesc, rxRmaAddr(myTcip, node),
                                mrRaddr, mrKey, ctx),
-                      checkTxCQ(myTcip));
-  myTcip->numTxns++;
+                      ensureProgress(myTcip));
+  myTcip->numTxnsOut++;
+  myTcip->numTxnsSent++;
 
   //
   // We don't do an MCM release.  That's the caller's responsibility.
@@ -3545,9 +3475,13 @@ void ofi_put_V(int v_len, void** addr_v, void** local_mr_v,
   // Make sure we have enough free CQ entries to initiate the entire
   // batch of transactions.
   //
-  do {
+  if (v_len > txCQLen - tcip->numTxnsOut) {
     checkTxCQ(tcip);
-  } while (v_len > txCQLen - tcip->numTxns);
+    while (v_len > txCQLen - tcip->numTxnsOut) {
+      sched_yield();
+      checkTxCQ(tcip);
+    }
+  }
 
   //
   // Initiate the batch.  Record which nodes we PUT to, so that we can
@@ -3581,8 +3515,9 @@ void ofi_put_V(int v_len, void** addr_v, void** local_mr_v,
     //
     OFI_RIDE_OUT_EAGAIN(fi_writemsg(tcip->txCtx, &msg,
                                     (vi < v_len - 1) ? FI_MORE : 0),
-                        checkTxCQ(tcip));
-    tcip->numTxns++;
+                        ensureProgress(tcip));
+    tcip->numTxnsOut++;
+    tcip->numTxnsSent++;
     bitmapSet(b, locale_v[vi]);
   }
 
@@ -3705,13 +3640,15 @@ chpl_comm_nb_handle_t ofi_get(void* addr, c_nodeid_t node,
       CHK_TRUE(mrGetDesc(&mrDesc, myAddr, size) == 0);
     }
 
-    atomic_bool txnDone;
-    atomic_init_bool(&txnDone, false);
-
-    void* ctx = txnTrkEncode(txnTrkDone, &txnDone);
-
     struct perTxCtxInfo_t* tcip;
     CHK_TRUE((tcip = tciAlloc()) != NULL);
+
+    atomic_bool txnDone = { 0 };
+    void* ctx = NULL;
+    if (tcip->txCQ != NULL) {
+      atomic_init_bool(&txnDone, false);
+      ctx = txnTrkEncode(txnTrkDone, &txnDone);
+    }
 
     DBG_PRINTF(DBG_RMA | DBG_RMAREAD,
                "tx read: %p <= %d:%p(0x%" PRIx64 "), size %zd, key 0x%" PRIx64
@@ -3720,11 +3657,14 @@ chpl_comm_nb_handle_t ofi_get(void* addr, c_nodeid_t node,
     OFI_RIDE_OUT_EAGAIN(fi_read(tcip->txCtx, myAddr, size,
                                 mrDesc, rxRmaAddr(tcip, node),
                                 mrRaddr, mrKey, ctx),
-                        checkTxCQ(tcip));
-    tcip->numTxns++;
-    waitForCQThisTxn(tcip, &txnDone);
+                        ensureProgress(tcip));
+    tcip->numTxnsOut++;
+    tcip->numTxnsSent++;
+    waitForTxnComplete(tcip, ctx);
+    if (tcip->txCQ != NULL) {
+      atomic_destroy_bool(&txnDone);
+    }
     tciFree(tcip);
-    atomic_destroy_bool(&txnDone);
   } else {
     //
     // The remote address is not RMA-accessible.  Make sure that the
@@ -3779,8 +3719,9 @@ void ofi_get_ll(void* addr, c_nodeid_t node,
   OFI_RIDE_OUT_EAGAIN(fi_read(myTcip->txCtx, myAddr, size,
                               mrDesc, rxRmaAddr(myTcip, node),
                               mrRaddr, mrKey, ctx),
-                      checkTxCQ(myTcip));
-  myTcip->numTxns++;
+                      ensureProgress(myTcip));
+  myTcip->numTxnsOut++;
+  myTcip->numTxnsSent++;
 
   if (myTcip != tcip) {
     tciFree(myTcip);
@@ -3800,8 +3741,14 @@ void ofi_get_V(int v_len, void** addr_v, void** local_mr_v,
   struct perTxCtxInfo_t* tcip;
   CHK_TRUE((tcip = tciAlloc()) != NULL);
 
-  if (tcip->numTxns >= txCQLen) {
-    while (tcip->numTxns > 0) {
+  //
+  // Make sure we have enough free CQ entries to initiate the entire
+  // batch of transactions.
+  //
+  if (v_len > txCQLen - tcip->numTxnsOut) {
+    checkTxCQ(tcip);
+    while (v_len > txCQLen - tcip->numTxnsOut) {
+      sched_yield();
       checkTxCQ(tcip);
     }
   }
@@ -3828,17 +3775,19 @@ void ofi_get_V(int v_len, void** addr_v, void** local_mr_v,
                msg.msg_iov->iov_base, (int) locale_v[vi],
                (void*) msg.rma_iov->addr, msg.msg_iov->iov_len,
                msg.rma_iov->key);
-    if (++(tcip->numTxns) >= txCQLen || vi == v_len - 1) {
-      // Initiate last transaction in group and wait for whole group.
-      OFI_RIDE_OUT_EAGAIN(fi_readmsg(tcip->txCtx, &msg, 0),
-                          checkTxCQ(tcip));
-      while (tcip->numTxns > 0) {
-        checkTxCQ(tcip);
-      }
-    } else {
+    tcip->numTxnsOut++;
+    tcip->numTxnsSent++;
+    if (tcip->numTxnsOut < txCQLen && vi < v_len - 1) {
       // Add another transaction to the group and go on without waiting.
       OFI_RIDE_OUT_EAGAIN(fi_readmsg(tcip->txCtx, &msg, FI_MORE),
-                          checkTxCQ(tcip));
+                          ensureProgress(tcip));
+    } else {
+      // Initiate last transaction in group and wait for whole group.
+      OFI_RIDE_OUT_EAGAIN(fi_readmsg(tcip->txCtx, &msg, 0),
+                          ensureProgress(tcip));
+      while (tcip->numTxnsOut > 0) {
+        ensureProgress(tcip);
+      }
     }
   }
 
@@ -3939,14 +3888,13 @@ chpl_comm_nb_handle_t ofi_amo(c_nodeid_t node, uint64_t object, uint64_t mrKey,
     memcpy(myOpnd2, operand2, size);
   }
 
-  atomic_bool txnDone;
-  atomic_init_bool(&txnDone, false);
-
-  void* ctx = NULL;
-
   struct perTxCtxInfo_t* tcip;
   CHK_TRUE((tcip = tciAlloc()) != NULL);
+
+  atomic_bool txnDone = { 0 };
+  void* ctx = NULL;
   if (tcip->txCQ != NULL) {
+    atomic_init_bool(&txnDone, false);
     ctx = txnTrkEncode(txnTrkDone, &txnDone);
   }
 
@@ -3982,16 +3930,17 @@ chpl_comm_nb_handle_t ofi_amo(c_nodeid_t node, uint64_t object, uint64_t mrKey,
                       rxRmaAddr(tcip, node), object, mrKey,
                       ofiType, ofiOp, ctx));
   }
-  tcip->numTxns++;
+  tcip->numTxnsOut++;
+  tcip->numTxnsSent++;
 
   //
   // Wait for network completion.
   //
+  waitForTxnComplete(tcip, ctx);
   if (tcip->txCQ != NULL) {
-    waitForCQThisTxn(tcip, &txnDone);
-  } else {
-    waitForCntrAllTxns(tcip);
+    atomic_destroy_bool(&txnDone);
   }
+  tciFree(tcip);
 
   if (result != NULL) {
     if (myRes != result) {
@@ -4039,9 +3988,13 @@ void ofi_amo_nf_V(int v_len, uint64_t* opnd1_v, void* local_mr,
   // Make sure we have enough free CQ entries to initiate the entire
   // batch of transactions.
   //
-  do {
+  if (v_len > txCQLen - tcip->numTxnsOut) {
     checkTxCQ(tcip);
-  } while (v_len > txCQLen - tcip->numTxns);
+    while (v_len > txCQLen - tcip->numTxnsOut) {
+      sched_yield();
+      checkTxCQ(tcip);
+    }
+  }
 
   //
   // Initiate the batch.
@@ -4077,18 +4030,94 @@ void ofi_amo_nf_V(int v_len, uint64_t* opnd1_v, void* local_mr,
     //
     OFI_RIDE_OUT_EAGAIN(fi_atomicmsg(tcip->txCtx, &msg,
                                      (vi < v_len - 1) ? FI_MORE : 0),
-                        checkTxCQ(tcip));
-    tcip->numTxns++;
+                        ensureProgress(tcip));
+    tcip->numTxnsOut++;
+    tcip->numTxnsSent++;
   }
 
   tciFree(tcip);
 }
 
 
-static inline
-void waitForCQThisTxn(struct perTxCtxInfo_t* tcip, atomic_bool* pTxnDone) {
-  while (!atomic_load_explicit_bool(pTxnDone, memory_order_acquire)) {
+void ensureAmProgress(void);
+void ensureAmProgress(void) {
+  if (ofi_amhPollSet != NULL) {
+    void* contexts[pollSetSize];
+    int ret;
+    OFI_CHK_COUNT(fi_poll(ofi_amhPollSet, contexts, pollSetSize), ret);
+
+    //
+    // Process the CQs/counters that had events.  We really only have
+    // to take any explicit actions for our transmit endpoint.  If we
+    // have inbound AM messages we want to handle those in the main
+    // poll loop.  And for the RMA endpoint we just need to ensure
+    // progress, which the poll call itself will have done.
+    //
+    for (int i = 0; i < ret; i++) {
+      if (contexts[i] == &ofi_rxCQ) {
+        // no action
+      } else if (contexts[i] == &amTcip->txCQ) {
+        checkTxCQ(amTcip);
+      } else if (contexts[i] == &amTcip->txCntr) {
+        getTxCntr(amTcip);
+      } else if (contexts[i] == &ofi_rxCQRma) {
+        // no action
+      } else if (contexts[i] == &ofi_rxCntrRma) {
+        // no action
+      } else {
+        INTERNAL_ERROR_V("unexpected context %p from fi_poll()",
+                         contexts[i]);
+      }
+    }
+  } else {
+    //
+    // The provider can't do poll sets.
+    //
+    if (amTcip->txCQ != NULL) {
+      checkTxCQ(amTcip);
+    } else {
+      getTxCntr(amTcip);
+    }
+    if (ofi_rxCQRma != NULL) {
+      struct fi_cq_data_entry cqe;
+      (void) readCQ(ofi_rxCQRma, &cqe, 1);
+    } else {
+      (void) fi_cntr_read(ofi_rxCntrRma);
+    }
+  }
+}
+
+
+static
+void ensureProgress(struct perTxCtxInfo_t* tcip) {
+  if (tcip->txCQ != NULL) {
     checkTxCQ(tcip);
+  } else {
+    getTxCntr(tcip);
+  }
+
+  if (isAmHandler
+      && ofi_info->domain_attr->data_progress == FI_PROGRESS_MANUAL) {
+    ensureAmProgress();
+  }
+}
+
+
+static inline
+void waitForTxnComplete(struct perTxCtxInfo_t* tcip, void* ctx) {
+  ensureProgress(tcip);
+  if (ctx != NULL) {
+    const txnTrkCtx_t trk = txnTrkDecode(ctx);
+    while (!atomic_load_explicit_bool((atomic_bool*) trk.ptr,
+                                      memory_order_acquire)) {
+      sched_yield();
+      ensureProgress(tcip);
+    }
+  } else {
+    while (tcip->numTxnsOut > 0) {
+      sched_yield();
+      ensureProgress(tcip);
+    }
   }
 }
 
@@ -4099,11 +4128,8 @@ void checkTxCQ(struct perTxCtxInfo_t* tcip) {
   const int cqesSize = sizeof(cqes) / sizeof(cqes[0]);
   const ssize_t numEvents = readCQ(tcip->txCQ, cqes, cqesSize);
 
-  if (numEvents == 0) {
-    sched_yield();
-    ensure_progress();
-  } else {
-    tcip->numTxns -= numEvents;
+  if (numEvents > 0) {
+    tcip->numTxnsOut -= numEvents;
     for (int i = 0; i < numEvents; i++) {
       struct fi_cq_msg_entry* cqe = &cqes[i];
       DBG_PRINTF(DBG_ACK, "CQ ack tx, flags %#" PRIx64, cqe->flags);
@@ -4165,23 +4191,14 @@ void reportCQError(struct fid_cq* cq) {
 }
 
 
-static
-void waitForCntrAllTxns(struct perTxCtxInfo_t* tcip) {
-  while (getTxCntr(tcip) < tcip->numTxns) {
-    sched_yield();
-    ensure_progress();
-  }
-}
-
-
 static inline
-uint64_t getTxCntr(struct perTxCtxInfo_t* tcip) {
-  const uint64_t count = fi_cntr_read(tcip->txCntr);
-  if (count > tcip->numTxns) {
-    INTERNAL_ERROR_V("fi_cntr_read() %" PRIu64 ", but numTxns %" PRIu64,
-                     count, tcip->numTxns);
+void getTxCntr(struct perTxCtxInfo_t* tcip) {
+  uint64_t count = fi_cntr_read(tcip->txCntr);
+  if (count > tcip->numTxnsSent) {
+    INTERNAL_ERROR_V("fi_cntr_read() %" PRIu64 ", but numTxnsSent %" PRIu64,
+                     count, tcip->numTxnsSent);
   }
-  return count;
+  tcip->numTxnsOut = tcip->numTxnsSent - count;
 }
 
 
