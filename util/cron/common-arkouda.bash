@@ -17,6 +17,11 @@ export CHPL_NIGHTLY_TEST_DIRS=studies/arkouda/
 export CHPL_TEST_ARKOUDA=true
 export CHPL_TEST_ARKOUDA_PERF=true
 
+# Use personal branch (just as we get perf testing up and running to make sure
+# things are working before upstream'ing.)
+export ARKOUDA_URL=https://github.com/ronawho/arkouda.git
+export ARKOUDA_BRANCH=improve-benchmarking
+
 currentSha=`git rev-parse HEAD`
 
 # test against Chapel release
