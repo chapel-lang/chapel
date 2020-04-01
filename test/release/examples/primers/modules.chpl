@@ -171,6 +171,21 @@ module MainModule {
       writeln(bazBarFoo);
     }
 
+    /* Modules that are being used can be given a different name than the ones
+       they were declared with.  In this example, ``modToUse.bar`` can be
+       accessed using the new name, ``other``, as the module prefix.  The old
+       name is not visible in that scope, though, so writing just
+       ``modToUse.bar`` will not work.  However, unprefixed access to the
+       module's symbols remains unchanged.
+    */
+    {
+      use modToUse as other;
+
+      writeln(other.bar);
+      // writeln(modToUse.bar); // would be an error, modToUse not visible
+      writeln(bar);
+    }
+
 
     /* The symbols provided by a ``use`` statement are only considered when
        the name in question cannot be resolved directly within the local
