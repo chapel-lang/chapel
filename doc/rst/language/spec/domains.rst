@@ -1015,7 +1015,7 @@ where ``d`` is a value from ``0`` to ``rank-1``.
 
    *Example*.
 
-   In the code 
+   The code:
 
    .. code-block:: chapel
 
@@ -1023,9 +1023,9 @@ where ``d`` is a value from ``0`` to ``rank-1``.
         for j in D.dim(1) do
           writeln(A(i,j));
 
-   domain ``D`` is iterated over by two nested loops. The initial
-   dimension of ``D`` is iterated over in the outer loop. The other
-   dimension is iterated over in the inner loop.
+   iterates over the indices of a dense 2D domain ``D`` using two
+   nested loops, one per dimension.
+
 
 
 

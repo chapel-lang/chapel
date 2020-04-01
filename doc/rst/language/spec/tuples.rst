@@ -134,11 +134,11 @@ An underscore can be used to omit components when splitting a tuple (see
           x3: 3*int = (4, 5, 6);
 
    defines three tuple variables. Variable ``x1`` is a 2-tuple with
-   component types ``string`` and ``real``. It is initialized such that
-   the initial component is ``"hello"`` and the next component is
-   ``3.14``. Variables ``x2`` and ``x3`` are homogeneous 3-tuples with
-   component type ``int``. Their initialization expressions specify
-   3-tuples of integers. 
+   component types ``string`` and ``real``. It is initialized such
+   that the two components are ``"hello"`` and ``3.14``, respectively.
+   Variables ``x2`` and ``x3`` are homogeneous 3-tuples with component
+   type ``int``. Their initialization expressions specify 3-tuples of
+   integers.
 
    .. BLOCK-test-chapelpost
 
@@ -721,8 +721,7 @@ where a comma-separated list of components is valid.
 
    The following code defines two functions, a function ``first`` that
    returns the initial component of a tuple and a function ``rest`` that
-   returns a tuple containing all of the components of a tuple other
-   than the initial one:
+   returns a tuple containing all of the remaining components:
 
    .. code-block:: chapel
 
