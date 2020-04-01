@@ -68,12 +68,12 @@ master_doc = 'index'
 # 'version' adds a redundant version number onto the top of the sidebar
 # automatically (rtd-theme). We also don't use |version| anywhere in rst
 
-chplversion = '1.21'                  # TODO -- parse from `chpl --version`
+chplversion = '1.22'                  # TODO -- parse from `chpl --version`
 shortversion = chplversion.replace('-', '&#8209') # prevent line-break at hyphen, if any
 html_context = {"chplversion":chplversion}
 
 # The full version, including alpha/beta/rc tags.
-release = '1.21.0'
+release = '1.22.0'
 
 # General information about the project.
 project = u'Chapel Documentation'
