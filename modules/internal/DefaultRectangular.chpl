@@ -306,7 +306,7 @@ module DefaultRectangular {
         chpl_debug_writeln("### numTasksPerLoc = ", numTasks, "\n",
                            "### ignoreRunning = ", ignoreRunning, "\n",
                            "### minIndicesPerTask = ", minIndicesPerTask, "\n",
-                           "### numChunks = ", numChunks, " (parDim = ", parDim+1, ")\n",
+                           "### numChunks = ", numChunks, " (parDim = ", parDim, ")\n",
                            "### nranges = ", ranges);
       }
       if numChunks <= 1 {
@@ -376,7 +376,7 @@ module DefaultRectangular {
                  "### numTasksPerSubloc = ", numSublocTasks, "\n",
                   "### ignoreRunning = ", ignoreRunning, "\n",
                   "### minIndicesPerTask = ", minIndicesPerTask, "\n",
-                  "### numChunks = ", numChunks, " (parDim = ", parDim+1, ")\n",
+                  "### numChunks = ", numChunks, " (parDim = ", parDim, ")\n",
                   "### nranges = ", ranges);
         }
 
@@ -461,7 +461,7 @@ module DefaultRectangular {
           chpl_debug_writeln("### numTasksPerLoc = ", numTasks, "\n",
                  "### ignoreRunning = ", ignoreRunning, "\n",
                  "### minIndicesPerTask = ", minIndicesPerTask, "\n",
-                 "### numChunks = ", numChunks, " (parDim = ", parDim+1, ")\n",
+                 "### numChunks = ", numChunks, " (parDim = ", parDim, ")\n",
                   "### nranges = ", ranges);
         }
 
