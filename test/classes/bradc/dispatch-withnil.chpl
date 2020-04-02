@@ -22,7 +22,8 @@ proc main() {
   var myC = new borrowed C(x=1);
   foo(myC);
   var myD = new borrowed D();
-  myD.y = new borrowed C();
+  var otherC = new C();
+  myD.y = otherC.borrow();
   myD.y!.x = 2;
   foo(myD);
 }

@@ -9,7 +9,7 @@ config const printTimers = 0;
 proc main(args: [] string) {
   use Time;
 
-  if args.numElements != 5 then
+  if args.size != 5 then
     halt("Usage: a.out nx ny nz iterations");
 
   const nx = args[1]:int;

@@ -8,7 +8,7 @@ use Time, Random;
 // assert indices for Values starts at 0
 proc radix_sort(Values, Permute, radix:int(64), nbits:int(64)): void {
 
-    var nelem:int(64) = Values.numElements;
+    var nelem:int(64) = Values.size;
     var nbuckets:int(64) = 1 << radix;   // Number of keys in counting sort
 
     var D1 = {0..(nelem-1)};

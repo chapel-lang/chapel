@@ -47,7 +47,7 @@ IDs are given sequentially to the nodes when they are constructed.
 See the Compiler Overview document for more details.
 
 The IDs are commonly shown in debugging and HTML printouts. In the
-above example :: 
+above example ::
  
  17 -> the void type, 70157 -> the call to writeln, etc.
 

@@ -212,7 +212,7 @@ proc schurComplement(Ab: [?AbD] elemType, AD: domain, BD: domain, Rest: domain) 
 
       dgemmNativeInds(replA[aBlkD], replB[bBlkD], Ab[cBlkD]);
       /*
-      dgemmReindexed(cBlkD.dim(1).length, aBlkD.dim(2).length, cBlkD.dim(2).length,
+      dgemmReindexed(cBlkD.dim(1).size, aBlkD.dim(2).size, cBlkD.dim(2).size,
                      replA[aBlkD], replB[bBlkD], Ab[cBlkD]);
       */
       /*
@@ -272,7 +272,7 @@ proc panelSolve(Ab: [] elemType,
     var col = panel[k.., k..k];
     
     // If there are no rows below the current column return
-    if col.numIndices == 0 then return;
+    if col.size == 0 then return;
     
     // Find the pivot, the element with the largest absolute value.
     const (_, (pivotRow, _)) = maxloc reduce zip(abs(Ab(col)), col);

@@ -3,6 +3,7 @@ module OuterModule {
   var lock2: sync bool;
 
   module M1 {
+    use OuterModule;
     var a: int;
     var raninit = false;
     proc init() {
@@ -16,6 +17,7 @@ module OuterModule {
   }
 
   module M2 {
+    use OuterModule;
     proc main {
       var b, c: sync int;
       begin {

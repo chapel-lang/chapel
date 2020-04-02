@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -538,8 +539,8 @@ void FnSymbol::setInstantiationPoint(Expr* expr) {
     this->_backupInstantiationPoint = block->getFunction();
   }
 
-  if (expr != NULL)
-    userInstantiationPointLoc = getUserInstantiationPoint(this);
+  //if (expr != NULL)
+  //  userInstantiationPointLoc = getUserInstantiationPoint(this);
 }
 
 BlockStmt* FnSymbol::instantiationPoint() const {
@@ -871,6 +872,13 @@ bool FnSymbol::isMethodOnRecord() const {
   }
 
   return retval;
+}
+
+bool FnSymbol::isTypeMethod() const {
+  if (isMethod() && _this != NULL) {
+    return _this->hasFlag(FLAG_TYPE_VARIABLE);
+  }
+  return false;
 }
 
 void FnSymbol::setMethod(bool value) {

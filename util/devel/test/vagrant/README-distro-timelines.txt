@@ -29,8 +29,8 @@ x 24 EOL Aug 2017 (released June 2016)
 x 25 EOL Dec 2017 (released Nov 2016)
 x 26 EOL May 2018 (released Jul 2017)
 x 27 EOL Nov 2018 (released Nov 2017)
-  28 est EOL May 2019 (released May 2018)
-  29 est EOL Oct 2019 (released Oct 2018)
+x 28 est EOL May 2019 (released May 2018)
+x 29 est EOL Oct 2019 (released Oct 2018)
 
 FreeBSD:
 x 10.2 EOL Dec 2016
@@ -42,25 +42,25 @@ x 11.1 EOL Sep 2018 (released Jul 2017)
   12.0 est EOL Dec 2019 (released Dec 2018)
 
 NetBSD:
-  7.0 released Oct 2015
-  7.1 released Mar 2017
-  7.2 released Aug 2018
-  8.0 released Jul 2018
+x 7.0 released Oct 2015
+x 7.1 released Mar 2017
+x 7.2 released Aug 2018
+x 8.0 released Jul 2018
 
 OmniOS:
-  r151020 released Nov 2016 but "archived"
-  r151022 LTS
-  r151026 supported until 2019-05-05
+x r151020 released Nov 2016 but "archived"
+x r151022 LTS
+x r151026 supported until 2019-05-05
 
 OpenSuse:
 x 13.1 EOL Feb 2016 / evergreen in Nov 2016
 x 13.2 EOL Jan 2017
 x 42.1 EOL May 2017
 x 42.2 EOL Jan 2018
-  42.3 EOL Jun 2019
+x 42.3 EOL Jun 2019
 
 OpenSuse Leap:
-  15.0 EOL Nov 2019
+x 15.0 EOL Nov 2019
 
 Ubuntu LTS:
 x 12.04 "Precise Pangolin"  LTS until Apr 2017
@@ -76,5 +76,5 @@ x 15.10 "Wily Werewolf"     EOL July 2016
 x 16.10 "Yakkety Yak"       EOL July 2017
 x 17.04 "Zesty Zapus"       EOL Jan 2018
 x 17.10 "Artful Aardvark"   EOL July 2018
-  18.10 "Cosmic Cuttlefish" EOL July 2019
+x 18.10 "Cosmic Cuttlefish" EOL July 2019
 

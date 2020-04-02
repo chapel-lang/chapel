@@ -1,5 +1,6 @@
 module OuterModule {
   module Test {
+    import OuterModule.{NBUCKETS, min, max};
     /* these should already be defined:
     param NBUCKETS;
     var min;

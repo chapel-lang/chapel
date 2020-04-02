@@ -187,7 +187,7 @@ proc Board.nextPlacementIsLegal(col: int): bool {
 //
 config var show1line: bool = true;
 
-override proc Board.writeThis(f) {
+override proc Board.writeThis(f) throws {
   if boardSize <= 0 {
     f.write( taskNum, ": the board is empty");
     return;

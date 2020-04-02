@@ -1,0 +1,15 @@
+./Module/SubModule.chpl:2: warning: module include statements are not yet stable and may change
+./Module.chpl:2: warning: module include statements are not yet stable and may change
+./Module.chpl:3: warning: module include statements are not yet stable and may change
+Module init
+SubTwo init
+SubModule init
+SubSubModule init
+100
+200
+1000
+2000
+10
+20
+1
+2

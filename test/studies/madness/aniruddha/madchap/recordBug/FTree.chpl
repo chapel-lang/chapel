@@ -24,7 +24,7 @@ const emptyNode = (-1,-1);
 
 // Check if we have None.
 proc isNone(x) {
-    return x.numElements == 0;
+    return x.size == 0;
 }
 
 record LocTree {

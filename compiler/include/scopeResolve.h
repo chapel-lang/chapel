@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -49,6 +50,11 @@ Symbol*  lookupAndCount(const char*           name,
                         bool storeRenames = false,
                         astlocT** renameLoc = NULL);
 
+void checkConflictingSymbols(std::vector<Symbol *>& symbols,
+                             const char* name,
+                             BaseAST* context,
+                             bool storeRenames,
+                             std::map<Symbol*, astlocT*>& renameLocs);
 
 BaseAST* getScope(BaseAST* ast);
 

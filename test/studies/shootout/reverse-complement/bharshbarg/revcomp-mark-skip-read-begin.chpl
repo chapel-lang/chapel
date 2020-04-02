@@ -13,7 +13,7 @@ proc main(args: [] string) {
   const stdin = openfd(0);
   var input = stdin.reader(iokind.native, locking=false,
                            hints=QIO_HINT_PARALLEL);
-  var len = stdin.length();
+  var len = stdin.size;
   var data : [0..#len] uint(8);
   
   sync { // wait for all process() tasks to complete before continuing

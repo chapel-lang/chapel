@@ -1,2 +1,1 @@
-accessSecondary.chpl:7: error: unresolved call 'Foo.other()'
-accessSecondary.chpl:7: note: because no functions named other found in scope
+I'm a secondary on Foo!

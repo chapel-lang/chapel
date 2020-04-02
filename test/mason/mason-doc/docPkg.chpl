@@ -32,3 +32,4 @@ if !exists(SubPkg) then
 // Sanity check to confirm we're not creating docs for standard library pkgs
 if exists(FS) then
   writeln('Error: ', FS, ' was generated');
+

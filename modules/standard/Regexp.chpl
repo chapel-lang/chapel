@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -525,7 +526,16 @@ record reMatch {
   /* 0-based offset into the string or channel that matched; -1 if matched=false */
   var offset:byteIndex; // 0-based, -1 if matched==false
   /* the length of the match. 0 if matched==false */
-  var length:int; // 0 if matched==false
+  var size:int; // 0 if matched==false
+
+  /*
+    Deprecated - please use :proc:`reMatch.size`.
+   */
+  proc length ref {
+    compilerWarning("'reMatch.length' is deprecated - " +
+                    "please use 'reMatch.size' instead");
+    return size;
+  }
 }
 
 pragma "no doc"
@@ -552,7 +562,7 @@ inline proc _cond_test(m: reMatch) return m.matched;
     :returns: the portion of ``this`` referred to by the match
  */
 proc string.this(m:reMatch) {
-  if m.matched then return this[m.offset..#m.length];
+  if m.matched then return this[m.offset..#m.size];
   else return "";
 }
 
@@ -565,11 +575,18 @@ proc string.this(m:reMatch) {
     :returns: the portion of ``this`` referred to by the match
  */
 proc bytes.this(m:reMatch) {
-  if m.matched then return this[m.offset:int..#m.length];
+  if m.matched then return this[m.offset:int..#m.size];
   else return b"";
 }
 
  private use IO;
+
+pragma "no doc"
+proc warnIfNoDefArg() type {
+  compilerWarning("string-by-default regexp is deprecated. ",
+                  "Use regexp(string) or regexp(bytes) instead.");
+  return string;
+}
 
 /*  This class represents a compiled regular expression. Regular expressions
     are currently cached on a per-thread basis and are reference counted.
@@ -583,7 +600,7 @@ pragma "ignore noinit"
 record regexp {
 
   pragma "no doc"
-  type exprType;
+  type exprType = warnIfNoDefArg();
   pragma "no doc"
   var home: locale = here;
   pragma "no doc"
@@ -1002,20 +1019,17 @@ record regexp {
     var litOne = new ioLiteral("new regexp(\"");
     var litTwo = new ioLiteral("\")");
 
-    try {
-      if (f.read(litOne, pattern, litTwo)) {
-        on this.home {
-          var localPattern = pattern.localize();
-          var opts:qio_regexp_options_t;
-          qio_regexp_init_default_options(opts);
-          qio_regexp_create_compile(localPattern.c_str(), localPattern.numBytes, opts, this._regexp);
-        }
+    if (f.read(litOne, pattern, litTwo)) then
+      on this.home {
+        var localPattern = pattern.localize();
+        var opts: qio_regexp_options_t;
+
+        qio_regexp_init_default_options(opts);
+        qio_regexp_create_compile(localPattern.c_str(),
+                                  localPattern.numBytes,
+                                  opts,
+                                  this._regexp);
       }
-    } catch e: SystemError {
-      f.setError(e.err);
-    } catch {
-      f.setError(EINVAL:syserr);
-    }
   }
 }
 
@@ -1041,7 +1055,7 @@ proc =(ref ret:regexp(?t), x:regexp(t))
       qio_regexp_get_options(x._regexp, options);
     }
 
-    qio_regexp_create_compile(pattern, pattern.length, options, ret._regexp);
+    qio_regexp_create_compile(pattern, pattern.size, options, ret._regexp);
   }
 }
 

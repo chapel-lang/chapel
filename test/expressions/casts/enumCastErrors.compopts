@@ -1,0 +1,10 @@
+-scase=1  # enumCastErrors-1.good
+-scase=2  # enumCastErrors-2.good
+-scase=3  # enumCastErrors-3.good
+-scase=4  # enumCastErrors-4.good
+-scase=5  # enumCastErrors-5.good
+-scase=6  # enumCastErrors-6.good
+-scase=7  # enumCastErrors-7.good
+-scase=8  # enumCastErrors-8.good
+-scase=9  # enumCastErrors-9.good
+-scase=10 # enumCastErrors-10.good

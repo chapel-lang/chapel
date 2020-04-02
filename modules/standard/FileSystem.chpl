@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -30,6 +31,12 @@
    process's file system state, which are performed on a specified locale
    (:ref:`locale-state`).  The module also contains iterators for traversing the
    file system (:ref:`filerator`).
+
+   .. note::
+
+      Functions in this module can use and return :ref:`escaped strings
+      <string.nonunicode>` on systems where UTF-8 file names are not enforced.
+
 
    .. _file-manip:
 
@@ -159,7 +166,7 @@ extern const S_ISVTX: int;
    c_string to pass to extern file system operations.
 */
 private inline proc unescape(str: string) {
-  return str.encode(errors=encodePolicy.unescape);
+  return str.encode(policy=encodePolicy.unescape);
 }
 
 /* Change the current working directory of the locale in question to the
@@ -605,7 +612,7 @@ proc locale.cwd(): string throws {
     // c_strings can't cross on statements.
     err = chpl_fs_cwd(tmp);
     try! {
-      ret = createStringWithNewBuffer(tmp, errors=decodePolicy.escape);
+      ret = createStringWithNewBuffer(tmp, policy=decodePolicy.escape);
     }
     // tmp was qio_malloc'd by chpl_fs_cwd
     chpl_free_c_string(tmp);
@@ -861,12 +868,17 @@ proc getUID(out error: syserr, name: string): int {
 //
 private module GlobWrappers {
   extern type glob_t;
+  use SysCTypes;
 
   private extern const GLOB_NOMATCH: c_int;
   private extern const GLOB_NOSPACE: c_int;
 
   // glob wrapper that takes care of casting and error checking
   inline proc glob_w(pattern: string, ref ret_glob:glob_t): void {
+    // want:
+    //  import FileSystem.unescape;
+    // but see issue #15308, so:
+    use FileSystem;
     extern proc chpl_glob(pattern: c_string, flags: c_int,
                           ref ret_glob: glob_t): c_int;
 
@@ -894,7 +906,7 @@ private module GlobWrappers {
     try! {
       return createStringWithNewBuffer(chpl_glob_index(glb,
                                                        idx.safeCast(size_t)),
-                                       errors=decodePolicy.escape);
+                                       policy=decodePolicy.escape);
     }
   }
 
@@ -1203,7 +1215,7 @@ iter listdir(path: string = ".", hidden: bool = false, dirs: bool = true,
       var filename: string;
       try! {
         filename = createStringWithNewBuffer(ent.d_name(),
-                                             errors=decodePolicy.escape);
+                                             policy=decodePolicy.escape);
       }
       if (hidden || filename[0] != '.') {
         if (filename != "." && filename != "..") {

@@ -1,7 +1,7 @@
 use Random;
 
 config const nBytes = 100000;
-config const nIterations = 100;
+config const nIterations = 25;
 config const useFactory = false;
 
 var randomStream = createRandomStream(eltType=uint(8));
@@ -16,7 +16,7 @@ for i in 1..nIterations {
   const randomBytes = createBytesWithOwnedBuffer(buf, length=nBytes,
                                                       size=nBytes+1);
 
-  if randomBytes.length != nBytes {
+  if randomBytes.size != nBytes {
     halt("Error creating bytes object with correct length");
   }
 
@@ -25,9 +25,9 @@ for i in 1..nIterations {
      randomEscapedString =
         if useFactory then
           createStringWithNewBuffer(buf, length=nBytes, size=nBytes+1,
-                                    errors=decodePolicy.escape)
+                                    policy=decodePolicy.escape)
         else
-          randomBytes.decode(errors=decodePolicy.escape);
+          randomBytes.decode(policy=decodePolicy.escape);
   }
   catch e: DecodeError {
     halt("Unexpected decode error");
@@ -37,7 +37,7 @@ for i in 1..nIterations {
   }
 
   // unescaped string must be equal to the initial `bytes`
-  if randomEscapedString.encode(errors=encodePolicy.unescape) != randomBytes {
+  if randomEscapedString.encode(policy=encodePolicy.unescape) != randomBytes {
     halt("Failed. Seed:", randomStream.seed, " Iteration:" , i);
   }
 }

@@ -79,6 +79,20 @@ additional functionality that comes with these folders later.
 Mason enforces that the main file be named after the package to enforce namespacing.
 ``MyPackage.chpl`` will be the first file listed in ``src/``.
 
+You can create a package in a directory that differs from the mason 
+package name with the `mason {new,init} --name` flag.
+This may be useful when creating a package in a directory that 
+is an illegal Mason package name, such as names with dashes. For example, 
+
+  .. code-block:: sh
+
+    mason new illegal-module-name --name LegalModuleName
+
+    # OR
+
+    mkdir illegal-module-name
+    mason init illegal-module-name --name LegalModuleName
+
 
 Building and Running
 ~~~~~~~~~~~~~~~~~~~~
@@ -223,13 +237,15 @@ Here is an example of a ``UnitTest``-based tests:
 
 .. code-block:: chpl
 
-   use UnitTest;
+  use UnitTest;
 
-   config const testParam: bool = true;
+  config const testParam: bool = true;
 
-   proc myTest(test: Test) {
-     test.assertTrue(testParam);
-   }
+  proc myTest(test: borrowed Test) throws{
+    test.assertTrue(testParam);
+  }
+
+  UnitTest.main();
 
 Mason testing that uses ``UnitTest`` will treat each individual function as a
 test, and the test will be considered successful if no assertions failed and no

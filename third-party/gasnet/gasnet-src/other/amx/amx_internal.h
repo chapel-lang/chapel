@@ -48,9 +48,14 @@ extern "C" {
 #endif
 
 // Attributes
+#if defined(__has_attribute) // introduced around gcc 5.x (2015)
+  #define AMX_HAS_ATTRIBUTE(x) __has_attribute(x)
+#else
+  #define AMX_HAS_ATTRIBUTE(x) 0
+#endif
 #ifdef HAVE_GASNET_TOOLS 
   #define AMX_FORMAT_PRINTF GASNETT_FORMAT_PRINTF
-#elif defined (__GNUC__) || defined (__attribute__)
+#elif defined (__GNUC__) || AMX_HAS_ATTRIBUTE(__format__)
   #define AMX_FORMAT_PRINTF(fnname,fmtarg,firstvararg,declarator) \
             __attribute__((__format__ (__printf__, fmtarg, firstvararg))) declarator
 #else
@@ -139,10 +144,16 @@ static void *_AMX_realloc(void *ptr, size_t S, const char *curloc) {
 static void _AMX_free(void *ptr, const char *curloc) {
   free(ptr);
 }
-#if __cplusplus
-  #define AMX_TENTATIVE_EXTERN extern
-#else
-  #define AMX_TENTATIVE_EXTERN 
+#ifndef AMX_TENTATIVE_EXTERN
+  #if __cplusplus
+    #define AMX_TENTATIVE_EXTERN extern
+  #elif AMX_HAS_ATTRIBUTE(__common__)
+    // This attribute is notably available in or before:
+    // gcc 4.8.5, clang 4.0.0, Intel 2017.0, PGI 18.4, Xcode 8.2.1
+    #define AMX_TENTATIVE_EXTERN __attribute__((__common__))
+  #else
+    #define AMX_TENTATIVE_EXTERN 
+  #endif
 #endif
 #if AMX_DEBUG
   // use the gasnet debug malloc functions if a debug libgasnet is linked

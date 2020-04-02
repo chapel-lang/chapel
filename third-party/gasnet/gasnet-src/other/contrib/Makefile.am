@@ -12,7 +12,6 @@ EXTRA_DIST = $(dotpl_DATA) $(vg_DATA) \
 	gasnet_handler.h \
 	gasnetrun_mic \
 	gasnet_ibrun \
- 	cross-configure-bgq \
 	cross-configure-cray-aries-alps \
 	cross-configure-cray-aries-slurm \
 	cross-configure-intel-knc \

@@ -4,7 +4,7 @@ class C {
 }
 
 var A: [1..5] int;
-var B: [1..5] shared C;
+var B: [1..5] shared C?;
 
 B = new shared C(A);
 

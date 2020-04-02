@@ -29,7 +29,6 @@ proc testAssocArrayAPI(X: []) {
 
   // Test simple queries
   writeln("size is: ", X.size);
-  writeln("numElements is: ", X.numElements);
   writeln("shape is: ", X.shape);
   writeln();
 

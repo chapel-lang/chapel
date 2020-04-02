@@ -1,5 +1,5 @@
 proc split(d: domain) where d.rank == 1 {
-  const len = d.numIndices;
+  const len = d.size;
   const r = d.dim(1);
   const d1 = d#(len/2);  // take the first floor(len/2) elements
   const d2 = d#-((len+1)/2); // take the remaining ceil(len/2) elements

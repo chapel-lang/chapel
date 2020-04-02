@@ -1,1 +1,4 @@
-warning: assigning to an execution-time variable in a param function
+param-fun-intents.chpl:7: error: Cannot use 'out' intent in a function returning with 'param' intent
+param-fun-intents.chpl:7: error: Cannot use 'out' intent in a function returning with 'param' intent
+param-fun-intents.chpl:13: error: Cannot use 'inout' intent in a function returning with 'param' intent
+param-fun-intents.chpl:17: error: Cannot use 'out' intent in a function returning with 'type' intent

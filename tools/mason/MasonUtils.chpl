@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -85,7 +86,7 @@ proc makeTargetFiles(binLoc: string, projectHome: string) {
 
 proc stripExt(toStrip: string, ext: string) : string {
   if toStrip.endsWith(ext) {
-    var stripped = toStrip[..toStrip.size - ext.length - 1];
+    var stripped = toStrip[..toStrip.size - ext.size - 1];
     return stripped;
   }
   else {

@@ -411,7 +411,7 @@ class Graph {
     __treeNodes = false;
     var treeSize = tight_tree();
     writeln("treeSize == ",treeSize);
-    while( treeSize < NodeDom.numIndices ) do {
+    while( treeSize < NodeDom.size ) do {
 	/* tight_tree() will set booleans in treeEdges and treeNodes
 	 * From the non-treeEdges, we must find one with minimum slack
 	 */
@@ -577,8 +577,8 @@ proc readGraph(filename) {
   }
 
   // Declare a domain
-  var N: domain(1) = {1..ND.numIndices};
-  var E: domain(1) = {1..ED.numIndices};
+  var N: domain(1) = {1..ND.size};
+  var E: domain(1) = {1..ED.size};
 
   var X: [N] unmanaged Node? = NameMap.sorted();
   var Y: [E] unmanaged Edge? = EdgeMap.sorted();

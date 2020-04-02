@@ -106,9 +106,8 @@ gex_Event_t gasnete_get_nb(
  {
   gasnete_eop_t *op = gasnete_eop_new(GASNETI_MYTHREAD);
 
-  gex_Rank_t jobrank = gasneti_e_tm_rank_to_jobrank(tm, rank);
   /* XXX check error returns */
-  gasnetc_rdma_get(jobrank, src, dest, nbytes, flags,
+  gasnetc_rdma_get(tm, rank, src, dest, nbytes, flags,
                    &op->initiated_cnt, gasnetc_cb_eop_get
                    GASNETI_THREAD_PASS);
   return (gex_Event_t)op;
@@ -125,12 +124,11 @@ gex_Event_t gasnete_put_nb(
 {
   GASNETI_CHECKPSHM_PUT(tm,rank,dest,src,nbytes);
 
-  gex_Rank_t jobrank = gasneti_e_tm_rank_to_jobrank(tm, rank);
   gasnete_eop_t *op = gasnete_eop_new(GASNETI_MYTHREAD);
 
   /* XXX check error returns */
   #define GASNETC_RDMA_PUT(local_cnt, local_cb)              \
-    gasnetc_rdma_put(jobrank, src, dest, nbytes, flags,      \
+    gasnetc_rdma_put(tm, rank, src, dest, nbytes, flags,     \
                      local_cnt, local_cb,                    \
                      &op->initiated_cnt, gasnetc_cb_eop_put  \
                      GASNETI_THREAD_PASS)
@@ -186,9 +184,8 @@ int gasnete_get_nbi (gex_TM_t tm,
   gasneti_threaddata_t * const mythread = GASNETI_MYTHREAD;
   gasnete_iop_t *op = mythread->current_iop;
 
-  gex_Rank_t jobrank = gasneti_e_tm_rank_to_jobrank(tm, rank);
   /* XXX check error returns */ 
-  gasnetc_rdma_get(jobrank, src, dest, nbytes, flags,
+  gasnetc_rdma_get(tm, rank, src, dest, nbytes, flags,
                    &op->initiated_get_cnt,
                    op->next ? gasnetc_cb_nar_get : gasnetc_cb_iop_get
                    GASNETI_THREAD_PASS);
@@ -224,9 +221,8 @@ int gasnete_put_nbi (gex_TM_t tm,
     gasneti_fatalerror("Invalid lc_opt argument to Put_nbi");
   }
 
-  gex_Rank_t jobrank = gasneti_e_tm_rank_to_jobrank(tm, rank);
   /* XXX check error returns */ 
-  gasnetc_rdma_put(jobrank, src, dest, nbytes, flags,
+  gasnetc_rdma_put(tm, rank, src, dest, nbytes, flags,
                    local_cnt, local_cb,
                    &op->initiated_put_cnt,
                    op->next ? gasnetc_cb_nar_put : gasnetc_cb_iop_put
@@ -251,9 +247,9 @@ extern int gasnete_get  (gex_TM_t tm,
   GASNETI_CHECKPSHM_GET(tm,dest,rank,src,nbytes);
  {
   gasnetc_counter_t req_oust = GASNETC_COUNTER_INITIALIZER;
-  gex_Rank_t jobrank = gasneti_e_tm_rank_to_jobrank(tm, rank);
+
   /* XXX check error returns */ 
-  gasnetc_rdma_get(jobrank, src, dest, nbytes, flags,
+  gasnetc_rdma_get(tm, rank, src, dest, nbytes, flags,
                    &req_oust.initiated, gasnetc_cb_counter_rel
                    GASNETI_THREAD_PASS);
   gasnetc_counter_wait(&req_oust, 0 GASNETI_THREAD_PASS);
@@ -270,9 +266,9 @@ extern int gasnete_put  (gex_TM_t tm,
   GASNETI_CHECKPSHM_PUT_NOLC(tm,rank,dest,src,nbytes);
  {
   gasnetc_counter_t req_oust = GASNETC_COUNTER_INITIALIZER;
-  gex_Rank_t jobrank = gasneti_e_tm_rank_to_jobrank(tm, rank);
+
   /* XXX check error returns */ 
-  gasnetc_rdma_put(jobrank, src, dest, nbytes, flags,
+  gasnetc_rdma_put(tm, rank, src, dest, nbytes, flags,
                    NULL, NULL,
                    &req_oust.initiated, gasnetc_cb_counter
                    GASNETI_THREAD_PASS);
@@ -355,7 +351,7 @@ static int gasnete_conduit_rdmabarrier(const char *barrier, gasneti_auxseg_reque
 typedef struct {
   GASNETE_RMDBARRIER_LOCK(barrier_lock) /* no semicolon */
   struct {
-    gex_Rank_t node;
+    gex_Rank_t    jobrank;
     uintptr_t     addr;
   } *barrier_peers;           /*  precomputed list of peers to communicate with */
 #if GASNETI_PSHM_BARRIER_HIER
@@ -398,14 +394,14 @@ void gasnete_ibdbarrier_send(gasnete_coll_ibdbarrier_t *barrier_data,
   gasneti_assert(state < barrier_data->barrier_goal);
 
   for (i = 0; i < numsteps; ++i, state += 2, step += 1) {
-    const gex_Rank_t node = barrier_data->barrier_peers[step].node;
+    const gex_Rank_t jobrank = barrier_data->barrier_peers[step].jobrank;
     void * const addr = GASNETE_RDMABARRIER_INBOX_REMOTE(barrier_data, step, state);
 #if GASNET_PSHM
-    if (gasneti_pshm_jobrank_in_supernode(node)) {
+    if (gasneti_pshm_jobrank_in_supernode(jobrank)) {
       *(volatile gasnete_coll_rmdbarrier_inbox_t *)addr = *payload;
     } else
 #endif
-    (void) gasnetc_rdma_put(node, (void*)payload, addr, sizeof(*payload), 0,
+    (void) gasnetc_rdma_put(gasneti_THUNK_TM, jobrank, (void*)payload, addr, sizeof(*payload), 0,
                             NULL, NULL, NULL, NULL GASNETI_THREAD_PASS);
   }
 }
@@ -772,12 +768,12 @@ static void gasnete_ibdbarrier_init(gasnete_coll_team_t team) {
     gasneti_leak(barrier_data->barrier_peers);
   
     for (step = 0; step < steps; ++step) {
-      gex_Rank_t node = peers->fwd[step];
-      void *addr = gasnete_rdmabarrier_auxseg[node].addr;
-      barrier_data->barrier_peers[1+step].node = node;
+      gex_Rank_t jobrank = peers->fwd[step]; // is always a jobrank
+      void *addr = gasnete_rdmabarrier_auxseg[jobrank].addr;
+      barrier_data->barrier_peers[1+step].jobrank = jobrank;
     #if GASNET_PSHM
-      if (gasneti_pshm_jobrank_in_supernode(node)) {
-        barrier_data->barrier_peers[1+step].addr = (uintptr_t)gasneti_pshm_jobrank_addr2local(node, addr);
+      if (gasneti_pshm_jobrank_in_supernode(jobrank)) {
+        barrier_data->barrier_peers[1+step].addr = (uintptr_t)gasneti_pshm_jobrank_addr2local(jobrank, addr);
       } else
     #endif
       barrier_data->barrier_peers[1+step].addr = (uintptr_t)addr;

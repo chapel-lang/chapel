@@ -1,6 +1,7 @@
 knucleotide2.chpl:14: In function 'main':
 knucleotide2.chpl:16: warning: openfd will no longer be available by default,
 please insert a use of the IO module to continue calling it.
+knucleotide2.chpl:17: warning: 'file.length()' is deprecated - please use 'file.size' instead
 knucleotide2.chpl:18: warning: ionative will no longer be available by default, please
 insert a use of the IO module to access it.
 knucleotide2.chpl:14: Function 'main' instantiated as: main(args: [domain(1,int(64),false)] string)

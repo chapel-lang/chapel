@@ -8,17 +8,7 @@ module w {
   }
 
   // a runtime type
-  type RT = Locales.type;
-
-  // workaround for #14542
-  if opt == 4 {
-    var inst = new owned CC(RT)?;
-    var arr: inst.tField;
-  }
-  if opt == 6 {
-    var inst = new shared CC(RT)?;
-    var arr: inst.tField;
-  }
+  type RT = [Locales.domain] int;
 
   // instance type
   type IT =
