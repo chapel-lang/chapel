@@ -1,0 +1,1 @@
+no-literal.chpl:6: error: incorrect expression in 'import' for unqualified access, identifier expected

@@ -59,6 +59,13 @@ GASNETT_BEGIN_EXTERNC
   #endif
 #endif
 
+// this macro is for annotating variables as "used" so compilers don't warn
+#if PLATFORM_COMPILER_OPEN64
+  #define test_mark_used(var) ((void)var)
+#else
+  #define test_mark_used(var) ((void)(&var?0:0))
+#endif
+
 #if HAVE_SRAND_DETERMINISTIC
   /* OpenBSD "breaks" rand() by design */
   #define srand(seed) srand_deterministic(seed)
@@ -86,6 +93,7 @@ GASNETT_BEGIN_EXTERNC
 // safe to use multiple times per line (eg in a macro expansion)
 #define test_static_assert(cond) do { \
   static const char *_test_static_assert[ (cond) ?1:-1] = { "Static assertion: " #cond }; \
+  test_mark_used(_test_static_assert); \
 } while (0)
 
 // static assertion at file scope
@@ -604,10 +612,7 @@ GASNETT_IDENT(GASNetT_TiCompiler_IdentString,
    TEST_USE_PRIMORDIAL_THREAD can be defined to spawn only numthreads-1 new pthreads and run the last on this thread
  */
 #ifndef TEST_USE_PRIMORDIAL_THREAD
-  #if PLATFORM_OS_BGQ
-    /* some systems have strict limits on how many threads can exist */
-    #define TEST_USE_PRIMORDIAL_THREAD 1
-  #elif PLATFORM_OS_CNL
+  #if PLATFORM_OS_CNL
     /* some do default thread pinning that can mess with our results */
     #define TEST_USE_PRIMORDIAL_THREAD 1
   #else
@@ -627,12 +632,6 @@ GASNETT_IDENT(GASNetT_TiCompiler_IdentString,
 static int test_thread_limit(int numthreads) {
     int limit = gasnett_getenv_int_withdefault("GASNET_TEST_THREAD_LIMIT", TEST_MAXTHREADS, 0);
     limit = MIN(limit, TEST_MAXTHREADS); /* Ignore attempt to raise above TEST_MAXTHREADS */
-  #if PLATFORM_OS_BGQ
-    { int cores = gasnett_cpu_count();
-      int depth = gasnett_getenv_int_withdefault("BG_APPTHREADDEPTH", 1, 0); /* V1R4M0 and later */
-      limit = MIN(limit, cores*depth);
-    }
-  #endif
     return MIN(numthreads, limit);
 }
 #if HAVE_PTHREAD_SETCONCURRENCY && __cplusplus
@@ -1144,9 +1143,6 @@ static void _test_set_waitmode(int threads, int reserve_cores) {
     }
   }
 #endif
-#if PLATFORM_OS_BGQ
-  /* assume no overcommit, since gasnett_cpu_count() reports cores per proc, NOT per node */
-#else
   threads *= local_procs;
   if (threads + reserve_cores > gasnett_cpu_count()) {
     if (_test_firstnode == TEST_MYPROC) {
@@ -1160,7 +1156,6 @@ static void _test_set_waitmode(int threads, int reserve_cores) {
     gasnet_set_waitmode(GASNET_WAIT_BLOCK);
     _test_in_polite_mode = 1;
   }
-#endif
 }
 // Compute whether `th` (single-valued) threads per process for the current host
 // would lead to overcommit, and set waitmode appropriately.
@@ -1326,8 +1321,8 @@ static void _test_init(const char *testname, int reports_performance, int early,
   
 
 #define TEST_TRACING_MACROS() do {                                                 \
-  const char *file;                                                                \
-  unsigned int line;                                                               \
+  const char *file; test_mark_used(file);                                          \
+  unsigned int line; test_mark_used(line);                                         \
   GASNETT_TRACE_GETSOURCELINE(&file, &line);                                       \
   GASNETT_TRACE_SETSOURCELINE(file, line);                                         \
   GASNETT_TRACE_FREEZESOURCELINE();                                                \

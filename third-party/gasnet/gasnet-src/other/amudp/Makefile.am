@@ -25,9 +25,9 @@ else
 endif
 
 CC  = @CC@
-CFLAGS = @GASNET_OPT_CFLAGS@ @DEVWARN_CFLAGS@ @MISC_CFLAGS@ @MISC_CPPFLAGS@ @SYS_HEADER_BLD@ $(MANUAL_CFLAGS) $(apputils_flags)
+CFLAGS = @GASNET_OPT_CFLAGS@ @DEVWARN_CFLAGS@ @MISC_CFLAGS@ @MISC_CPPFLAGS@ $(MANUAL_CFLAGS) $(apputils_flags)
 CXX = @CXX@
-CXXFLAGS = @GASNET_OPT_CXXFLAGS@ @DEVWARN_CXXFLAGS@ @MISC_CXXFLAGS@ @MISC_CPPFLAGS@ @SYS_HEADER_BLD@ $(MANUAL_CXXFLAGS)
+CXXFLAGS = @GASNET_OPT_CXXFLAGS@ @DEVWARN_CXXFLAGS@ @MISC_CXXFLAGS@ @MISC_CPPFLAGS@ $(MANUAL_CXXFLAGS)
 LDFLAGS = @LDFLAGS@ @cxxLDFLAGS@ $(MANUAL_LDFLAGS)
 
 PERL = @PERL@
@@ -133,11 +133,13 @@ apputils.o : $(amxdir)/apputils.c $(amxdir)/apputils.h $(allheaders)
 amudprun$(EXEEXT): amudprun.o $(headers) libamudp.a
 	$(link) -o $@ $< -L. -lamudp $(linkend)
 
-%.o: %.c $(allheaders)
+%.o: %.c $(allheaders) $(amxdir)/*.h
 	$(compile) -o $@ -c `test -f $(srcdir)/$< && echo "$(srcdir)/"`$<
 
-%.o: %.cpp $(allheaders) $(top_builddir)/libgasnet_tools-seq.a
+%.o: %.cpp $(allheaders) $(amxdir)/*.h $(top_builddir)/libgasnet_tools-seq.a
 	$(cxxcompile) -o $@ -c `test -f $(srcdir)/$< && echo "$(srcdir)/"`$<
+
+amudp_cdefs.o: $(amxdir)/amx_internal.c
 
 $(top_builddir)/libgasnet_tools-seq.a: force
 	@cd $(top_builddir) && $(MAKE) libgasnet_tools-seq.a
@@ -155,7 +157,7 @@ amudprun-host$(EXEEXT): force
 	ln -sf $$srcdir/../portable_inttypes.h . && \
 	ln -sf $$srcdir/../gasnet_portable_platform.h amx_portable_platform.h && \
 	ln -sf $$srcdir/../amx/*.[ch] . && \
-	$(MAKE) amudprun -f Makefile.standalone srcdir=$$srcdir altincdir=. MANUAL_DEFINES="-DAMX_ENV_PREFIX=GASNET $(MANUAL_DEFINES)" && \
+	$(MAKE) amudprun -f Makefile.standalone srcdir=$$srcdir amxdir=. altincdir=. MANUAL_DEFINES="-DAMX_ENV_PREFIX=GASNET $(MANUAL_DEFINES)" && \
 	mv amudprun ../amudprun-host && \
 	cd .. && rm -Rf .host
 

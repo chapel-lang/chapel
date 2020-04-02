@@ -387,7 +387,7 @@ else
 
         # pin to mpich/libsci versions compatible with the gen compiler
         load_module_version cray-mpich 7.7.7
-        load_module_version cray-libsci 19.04.1.1
+        load_module_version cray-libsci 18.07.1
     }
 
     function load_target_cpu() {

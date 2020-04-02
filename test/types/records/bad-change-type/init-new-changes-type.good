@@ -1,0 +1,6 @@
+init-new-changes-type.chpl:12: error: initializer produces a different type
+init-new-changes-type.chpl:12: note: new was provided type 'borrowed C(int(64))'
+init-new-changes-type.chpl:12: note: init resulted in type 'borrowed C(real(64))'
+init-new-changes-type.chpl:26: error: initializer produces a different type
+init-new-changes-type.chpl:26: note: new was provided type 'R(int(64))'
+init-new-changes-type.chpl:26: note: init resulted in type 'R(real(64))'

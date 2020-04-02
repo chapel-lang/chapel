@@ -16,6 +16,8 @@ nilcheck-empty-refs.chpl:40: In function 'badSetNilByRefXAssign':
 nilcheck-empty-refs.chpl:45: error: applying postfix-! to dead value
 nilcheck-empty-refs.chpl:45: note: 'r' refers to 'x'
 nilcheck-empty-refs.chpl:44: note: 'x' is dead due to copy elision here
+nilcheck-empty-refs.chpl:43: error: Reference to scoped variable r reachable after lifetime ends
+nilcheck-empty-refs.chpl:41: note: consider scope of x
 nilcheck-empty-refs.chpl:51: In function 'badRefToNilOwned2':
 nilcheck-empty-refs.chpl:55: error: applying postfix-! to nil
 nilcheck-empty-refs.chpl:55: note: 'r' refers to 'x'
@@ -34,3 +36,7 @@ nilcheck-empty-refs.chpl:87: In function 'badSetNilByRefXAssign2':
 nilcheck-empty-refs.chpl:93: error: applying postfix-! to dead value
 nilcheck-empty-refs.chpl:93: note: 'r' refers to 'x'
 nilcheck-empty-refs.chpl:92: note: 'x' is dead due to copy elision here
+nilcheck-empty-refs.chpl:90: error: Reference to scoped variable q reachable after lifetime ends
+nilcheck-empty-refs.chpl:88: note: consider scope of x
+nilcheck-empty-refs.chpl:91: error: Reference to scoped variable r reachable after lifetime ends
+nilcheck-empty-refs.chpl:88: note: consider scope of x

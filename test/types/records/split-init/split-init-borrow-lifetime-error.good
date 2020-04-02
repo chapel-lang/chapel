@@ -2,6 +2,9 @@ split-init-borrow-lifetime-error.chpl:11: In function 'testCborrowedCQassign':
 split-init-borrow-lifetime-error.chpl:15: error: Scoped variable c would outlive the value it is set to
 split-init-borrow-lifetime-error.chpl:14: note: consider scope of inner
 split-init-borrow-lifetime-error.chpl:21: In function 'testCborrowedC':
+split-init-borrow-lifetime-error.chpl:27: error: Illegal use of dead value
+split-init-borrow-lifetime-error.chpl:27: note: 'c' refers to 'inner'
+split-init-borrow-lifetime-error.chpl:25: note: 'inner' is dead due to deinitialization here
 split-init-borrow-lifetime-error.chpl:25: error: Scoped variable c would outlive the value it is set to
 split-init-borrow-lifetime-error.chpl:24: note: consider scope of inner
 split-init-borrow-lifetime-error.chpl:31: In function 'testCborrowedCQ':
@@ -10,6 +13,9 @@ split-init-borrow-lifetime-error.chpl:34: note: consider scope of inner
 split-init-borrow-lifetime-error.chpl:35: error: Scoped variable c reachable after lifetime ends
 split-init-borrow-lifetime-error.chpl:34: note: consider scope of inner
 split-init-borrow-lifetime-error.chpl:41: In function 'testCNoType':
+split-init-borrow-lifetime-error.chpl:47: error: Illegal use of dead value
+split-init-borrow-lifetime-error.chpl:47: note: 'c' refers to 'inner'
+split-init-borrow-lifetime-error.chpl:45: note: 'inner' is dead due to deinitialization here
 split-init-borrow-lifetime-error.chpl:45: error: Scoped variable c would outlive the value it is set to
 split-init-borrow-lifetime-error.chpl:44: note: consider scope of inner
 split-init-borrow-lifetime-error.chpl:51: In function 'testRassign':
@@ -30,11 +36,3 @@ split-init-borrow-lifetime-error.chpl:95: note: consider scope of myC
 split-init-borrow-lifetime-error.chpl:102: In function 'testRQsplitNoType':
 split-init-borrow-lifetime-error.chpl:106: error: Scoped variable x reachable after lifetime ends
 split-init-borrow-lifetime-error.chpl:105: note: consider scope of myC
-split-init-borrow-lifetime-error.chpl:21: In function 'testCborrowedC':
-split-init-borrow-lifetime-error.chpl:27: error: Illegal use of dead value
-split-init-borrow-lifetime-error.chpl:27: note: 'c' refers to 'inner'
-split-init-borrow-lifetime-error.chpl:25: note: 'inner' is dead due to deinitialization here
-split-init-borrow-lifetime-error.chpl:41: In function 'testCNoType':
-split-init-borrow-lifetime-error.chpl:47: error: Illegal use of dead value
-split-init-borrow-lifetime-error.chpl:47: note: 'c' refers to 'inner'
-split-init-borrow-lifetime-error.chpl:45: note: 'inner' is dead due to deinitialization here

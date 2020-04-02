@@ -8,14 +8,14 @@ proc main() {
   var sum = 0;
 
   // Check that all digits are legal
-  [i in 1..(roman.length)]
+  [i in 1..(roman.size)]
     select roman[i] {
       when "I","V","X","L","C","D","M" do {}
       otherwise halt("Bad digit: ", roman[i]);
     }
 
   do {
-    if (i == (roman.length)) {
+    if (i == (roman.size)) {
       sum += roman[i]:numeral:int;
       i += 1;
     } else if (roman[i]:numeral:int < roman[i+1]:numeral:int) {
@@ -27,7 +27,7 @@ proc main() {
       sum += roman[i]:numeral:int;
       i += 1;
     }
-  } while i <= (roman.length);
+  } while i <= (roman.size);
 
   writeln(roman, " is: ", sum);
 }

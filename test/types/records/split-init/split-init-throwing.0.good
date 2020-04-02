@@ -1,7 +1,7 @@
 test1
 init 100
-deinit 100
 end test1
+deinit 100
 test2
 init 100
 end test2

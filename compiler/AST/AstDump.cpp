@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -182,6 +183,13 @@ bool AstDump::enterDefExpr(DefExpr* node) {
   bool    retval = true;
 
   if (isModuleSymbol(sym)) {
+    newline();
+    write("def");
+    write("module");
+    write(sym->name);
+    if (fLogIds)
+      fprintf(mFP, "[%d]", sym->id);
+    write(" ");
     retval = false;
 
   } else {

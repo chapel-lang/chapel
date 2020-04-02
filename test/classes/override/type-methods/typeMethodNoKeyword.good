@@ -1,0 +1,2 @@
+typeMethodNoKeyword.chpl:16: error: Cat.doMakeBuilding override keyword required for method matching signature of superclass method
+typeMethodNoKeyword.chpl:17: error: Cat.doMakeSelf override keyword required for method matching signature of superclass method

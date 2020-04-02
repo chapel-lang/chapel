@@ -49,8 +49,8 @@ writeln();
 // type of the elements that the instance should generate. If a particular seed
 // is desired, it should be specified upon creation of this instance.
 //
-var randStream = new owned RandomStream(real);
-var randStreamSeeded = new owned RandomStream(real, seed);
+var randStream = new RandomStream(real);
+var randStreamSeeded = new RandomStream(real, seed);
 
 //
 // Then the instance can be used to obtain the numbers.  This can be done in a
@@ -109,14 +109,14 @@ for i in randStreamSeeded.iterate({5..10}, real) {
 // stream during class creation.  As a result, two parallel accesses or updates
 // to the position from which reading is intended may conflict.
 //
-var parallelUnsafe       = new owned RandomStream(real, parSafe=false);
-var parallelSeededUnsafe = new owned RandomStream(real, seed, false);
+var parallelUnsafe       = new RandomStream(real, parSafe=false);
+var parallelSeededUnsafe = new RandomStream(real, seed, false);
 
 // Now :class:`~PCGRandom.PCGRandomStream` functions, such as
 // ``parallelUnsafe.getNext()`` and ``parallelSeededUnsafe.getNext()`` can be
 // called.
 
 //
-// The ``RandomStream`` instances above were created with ``new owned``
+// The ``RandomStream`` instances above were created with ``new [owned]``
 // and so are automatically deleted when they go out of scope.
 //

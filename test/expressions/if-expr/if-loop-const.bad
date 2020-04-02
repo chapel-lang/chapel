@@ -1,4 +1,4 @@
 if-loop-const.chpl:4: In function 'main':
 if-loop-const.chpl:8: error: Unable to resolve type of if-expression
-note: 'then' branch returns type "_ir_chpl__loopexpr_iter7"
-note: 'else' branch returns type "_ir_chpl__loopexpr_iter8"
+note: 'then' branch returns type "_ir_chpl__loopexpr_iter8"
+note: 'else' branch returns type "_ir_chpl__loopexpr_iter9"

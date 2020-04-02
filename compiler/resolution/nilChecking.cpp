@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -207,13 +208,18 @@ static bool isClassIshType(Symbol* sym) {
 static bool isSymbolAnalyzed(Symbol* sym) {
   return sym->isRef() ||
          isClassIshType(sym) ||
-         (isRecord(sym->type) && !sym->type->symbol->hasFlag(FLAG_POD));
+         (isRecord(sym->type) &&
+          sym->hasFlag(FLAG_MAYBE_COPY_ELIDED) &&
+          !sym->type->symbol->hasFlag(FLAG_POD));
 }
 
 // If 'call' invokes postfix!, return the result type.
+// Ignore postfix! calls on arrays - needed if we have a 'proc postfix!(a:[])'.
 static Type* isPostfixBangCall(CallExpr* call) {
   if (FnSymbol* fn = call->resolvedFunction()) {
     if (fn->name == astrPostfixBang) {
+      if (call->get(1)->getValType()->symbol->hasFlag(FLAG_ARRAY))
+        return NULL;
       INT_ASSERT(call->numActuals() == 1); // `!` takes a single arg
       return fn->retType;
     }
@@ -377,13 +383,16 @@ static void checkForNilDereferencesInCall(
 
   // For records and non-nilable class types, check that any argument
   // to a user function is not dead.
-  // Also check for transfering ownership out of an unknown reference
+  // Also check for transferring ownership out of an unknown reference
   // to a non-nilable owned.
+  FnSymbol* inFn = call->getFunction();
   if (FnSymbol* calledFn = call->resolvedOrVirtualFunction()) {
     if (!calledFn->hasFlag(FLAG_AUTO_DESTROY_FN) &&
-        !calledFn->hasFlag(FLAG_UNSAFE)) {
-      int i = 1;
+        !calledFn->hasFlag(FLAG_UNSAFE) &&
+        !(inFn != NULL && inFn->hasFlag(FLAG_LEAVES_ARG_NIL))) {
+      int i = 0;
       for_formals_actuals(formal, actual, call) {
+        i++;
         Symbol* argSym = toSymExpr(actual)->symbol();
 
         if (formal->hasFlag(FLAG_RETARG))
@@ -425,7 +434,7 @@ static void checkForNilDereferencesInCall(
             }
           }
 
-          // check for transfering ownership out of unk ref to non-nilable
+          // check for transferring ownership out of unk ref to non-nilable
           if (formal->hasFlag(FLAG_LEAVES_ARG_NIL)) {
             Symbol* actualSym = argSym;
             if (referent != NULL)
@@ -1389,20 +1398,12 @@ static void findNilDereferencesInFn(FnSymbol* fn) {
   }
 }
 
-void findNilDereferences() {
+void checkNilDereferencesInFn(FnSymbol* fn) {
   if (fCompileTimeNilChecking) {
-    // Clear last error location so we get errors from nil checking
-    // even if previous compiler code raised error on the same line.
-    // This is necessary due to the use of printsSameLocationAsLastError
-    // to hide multiple nil-checking errors from the same line.
-    clearLastErrorLocation();
-    forv_Vec(FnSymbol, fn, gFnSymbols) {
-      findNilDereferencesInFn(fn);
-      findNonNilableStoringNil(fn);
-    }
+    findNilDereferencesInFn(fn);
+    findNonNilableStoringNil(fn);
   }
 }
-
 
 void adjustSignatureForNilChecking(FnSymbol* fn) {
   if (fn->_this != NULL) {
@@ -1446,6 +1447,8 @@ class FindInvalidNonNilables : public AstVisitorTraverse {
     // value - NULL if that variable isn't possibly nil now
     //         an Expr* setting it to nil if it is possibly nil now
     SymbolToNilMap varsToNil;
+    // Only present errors once per symbol
+    std::set<Symbol*> erroredSymbols;
     virtual bool enterDefExpr(DefExpr* def);
     virtual bool enterCallExpr(CallExpr* call);
     virtual void exitCallExpr(CallExpr* call);
@@ -1474,11 +1477,7 @@ static bool isNonNilableVariable(Symbol* sym) {
 
 static bool isTrackedNonNilableVariable(Symbol* sym) {
   if (isNonNilableVariable(sym)) {
-    if (sym->hasFlag(FLAG_DEAD_LAST_MENTION))
-      return true;
-    if (ArgSymbol* arg = toArgSymbol(sym))
-      if (arg->intent == INTENT_IN || arg->intent == INTENT_CONST_IN)
-        return true;
+    return true;
   }
 
   return false;
@@ -1523,7 +1522,8 @@ void FindInvalidNonNilables::exitCallExpr(CallExpr* call) {
     for_formals_actuals(formal, actual, call) {
       SymExpr* actualSe = toSymExpr(actual);
       Symbol* actualSym = actualSe->symbol();
-      if (isNonNilableVariable(actualSym)) {
+      if (isNonNilableVariable(actualSym) &&
+          ! actualSym->hasFlag(FLAG_UNSAFE) ) {
         if (formal->hasFlag(FLAG_LEAVES_ARG_NIL)) {
           if (isTrackedNonNilableVariable(actualSym) &&
               varsToNil.count(actualSym) != 0) {
@@ -1550,7 +1550,8 @@ void FindInvalidNonNilables::exitCallExpr(CallExpr* call) {
               error = "Cannot transfer ownership from this non-nilable variable";
             }
 
-            if (error != NULL) {
+            if (error != NULL && erroredSymbols.count(actualSym) == 0) {
+              erroredSymbols.insert(actualSym);
               if (printsUserLocation(astPoint))
                 USR_FATAL_CONT(astPoint, "%s", error);
               else
@@ -1589,7 +1590,8 @@ void FindInvalidNonNilables::visitSymExpr(SymExpr* se) {
         }
       }
 
-      if (error) {
+      if (error && erroredSymbols.count(sym) == 0) {
+        erroredSymbols.insert(sym);
         USR_FATAL_CONT(se, "mention of non-nilable variable after ownership is transferred out of it");
         USR_PRINT(e, "ownership transfer occurred here");
       }

@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -82,7 +83,7 @@ const pathSep = "/";
    c_string to pass to extern file system operations.
 */
 private inline proc unescape(str: string) {
-  return str.encode(errors=encodePolicy.unescape);
+  return str.encode(policy=encodePolicy.unescape);
 }
 
 /*
@@ -344,7 +345,7 @@ proc dirname(name: string): string {
    var varChars: string = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890_";
    var res: string = "";
    var ind: int = 1;
-   var pathlen: int = path_p.length;
+   var pathlen: int = path_p.size;
    while (ind <= pathlen) {
      var c: string = path_p(ind);
      if (c == "$" && ind + 1 <= pathlen) {
@@ -369,7 +370,7 @@ proc dirname(name: string): string {
            } else {
              try! {
                value = createStringWithNewBuffer(value_c,
-                                                 errors=decodePolicy.escape);
+                                                 policy=decodePolicy.escape);
              }
            }
            res += value;
@@ -377,7 +378,7 @@ proc dirname(name: string): string {
        } else {
          var env_var: string = "";
          ind += 1;
-         while (ind <= path_p.length && varChars.find(path_p(ind)) != 0) {
+         while (ind <= path_p.size && varChars.find(path_p(ind)) != 0) {
            env_var += path_p(ind);
            ind += 1;
          }
@@ -390,7 +391,7 @@ proc dirname(name: string): string {
          } else {
            try! {
              value = createStringWithNewBuffer(value_c,
-                                               errors=decodePolicy.escape);
+                                               policy=decodePolicy.escape);
            }
          }
          res += value;
@@ -414,10 +415,9 @@ proc dirname(name: string): string {
      var myFile = open("/foo/bar/baz.txt", iomode.r);
      writeln(myFile.getParentName()); // Prints "/foo/bar"
 
-  Will throw a SystemError if one occurs.
-
   :return: The parent directory of the file.
   :rtype: `string`
+  :throws SystemError: If one occurs.
 */
 proc file.getParentName(): string throws {
   try check();
@@ -577,14 +577,13 @@ proc normPath(name: string): string {
    This resolves and removes any :data:`curDir` and :data:`parentDir` uses
    present, as well as any symbolic links.  Returns the result.
 
-   Will throw a SystemError if one occurs.
-
    :arg name: A path to resolve.  If the path does not refer to a valid file
               or directory, an error will occur.
    :type name: `string`
 
    :return: A canonical version of the argument.
    :rtype: `string`
+   :throws SystemError: If one occurs.
 */
 proc realPath(name: string): string throws {
   extern proc chpl_fs_realpath(path: c_string, ref shortened: c_string): syserr;
@@ -592,7 +591,7 @@ proc realPath(name: string): string throws {
   var res: c_string;
   var err = chpl_fs_realpath(unescape(name).c_str(), res);
   if err then try ioerror(err, "realPath", name);
-  const ret = createStringWithNewBuffer(res, errors=decodePolicy.escape);
+  const ret = createStringWithNewBuffer(res, policy=decodePolicy.escape);
   // res was qio_malloc'd by chpl_fs_realpath, so free it here
   chpl_free_c_string(res);
   return ret; 
@@ -617,12 +616,11 @@ proc realPath(out error: syserr, name: string): string {
    :data:`parentDir` uses present, as well as any symbolic links.  Returns the
    result.
 
-   Will throw a SystemError if one occurs.
-
    :return: A canonical path to the file referenced by this :type:`~IO.file`
             record.  If the :type:`~IO.file` record is not valid, an error will
             occur.
    :rtype: `string`
+   :throws SystemError: If one occurs.
 */
 proc file.realPath(): string throws {
   extern proc chpl_fs_realpath_file(path: qio_file_ptr_t, ref shortened: c_string): syserr;
@@ -744,7 +742,7 @@ proc relPath(name: string, start:string=curDir): string throws {
   :throws SystemError: Upon failure to get the current working directory.
 */
 proc file.relPath(start:string=curDir): string throws {
-  use Path only;
+  import Path;
   // Have to prefix module name to avoid muddying name resolution.
   return Path.relPath(this.path, start);
 }

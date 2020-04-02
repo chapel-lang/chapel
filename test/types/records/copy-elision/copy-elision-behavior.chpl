@@ -187,6 +187,7 @@ proc test5a() {
 }
 test5a();
 
+pragma "unsafe" // avoid lifetime checker errors here
 proc test5b() {
   writeln("test5b");
   var x = new R(1);

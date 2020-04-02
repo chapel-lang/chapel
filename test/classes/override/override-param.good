@@ -1,3 +1,0 @@
-override-param.chpl:28: error: Child.returns_type override keyword present but type return methods cannot override
-override-param.chpl:35: error: Child.returns_param override keyword present but param return methods cannot override
-override-param.chpl:39: error: Child.returns_rtt override keyword present but type return methods cannot override

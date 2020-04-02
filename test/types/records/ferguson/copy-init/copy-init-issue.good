@@ -1,6 +1,6 @@
 (y = 1)
-deinit 1
 (y = 2)
 (y = 3)
 deinit 3
 deinit 2
+deinit 1

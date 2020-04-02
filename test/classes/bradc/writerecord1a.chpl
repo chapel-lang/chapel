@@ -2,7 +2,7 @@ record myrecord {
   var x: int;
   var y: real;
 
-  proc writeThis(f) {
+  proc writeThis(f) throws {
     f.write(x, " ", y);
   }
 }

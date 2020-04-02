@@ -71,7 +71,7 @@ proc initVectors(B, C, ProblemSpace) {
 
   randlist.skipToNth(B.domain.low);
   randlist.fillRandom(B);
-  randlist.skipToNth(ProblemSpace.numIndices + C.domain.low);
+  randlist.skipToNth(ProblemSpace.size + C.domain.low);
   randlist.fillRandom(C);
 
   if (printArrays) {

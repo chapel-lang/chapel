@@ -41,7 +41,7 @@ proc calculate(data : string, size : int) {
   var freqDom : domain(uint);
   var freqs : [freqDom] atomic int;
 
-  const high = data.length - size + 1;
+  const high = data.size - size + 1;
   forall i in 1..high {
     const key = hash(data[i:byteIndex..#size]);
     freqDom.add(key);
@@ -66,7 +66,7 @@ proc write_frequencies(data : string, size : int) {
   // sort will sort starting at the tuple's first element.
   sort(sorted, comparator=reverseComparator);
 
-  const sum = data.length - size;
+  const sum = data.size - size;
   for (f, e) in sorted do
     writef("%s %.3dr\n", decode(e, size), (100.0 * f) / sum);
 }

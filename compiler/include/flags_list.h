@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -168,6 +169,7 @@ symbolFlag( FLAG_HEAP , npr, "heap" , ncm )
 symbolFlag( FLAG_IF_EXPR_RESULT, npr, "if-expr result", ncm )
 symbolFlag( FLAG_IMPLICIT_ALIAS_FIELD , npr, "implicit alias field" , ncm )
 symbolFlag( FLAG_IMPLICIT_MODULE, npr, "implicit top-level module", ncm )
+symbolFlag( FLAG_INCLUDED_MODULE, npr, "included sub-module", ncm )
 symbolFlag( FLAG_INDEX_VAR , npr, "index var" , ncm )
 
 // This can also mark a temp that serves as an intermediate step of
@@ -237,8 +239,10 @@ symbolFlag( FLAG_MANAGED_POINTER , ypr, "managed pointer" , "e.g. Owned and Shar
 symbolFlag( FLAG_MANAGED_POINTER_NONNILABLE , npr, "managed pointer nonnilable" , "e.g. non-nilable Owned and Shared" )
 symbolFlag( FLAG_MARKED_GENERIC , npr, "marked generic" , "formal is marked generic using the type query syntax" )
 symbolFlag( FLAG_MAYBE_ARRAY_TYPE , npr, "maybe array type" , "function may be computing array type")
+symbolFlag( FLAG_MAYBE_COPY_ELIDED , npr, "maybe copy elided" , "symbol might be dead early due to copy elision" )
 symbolFlag( FLAG_MAYBE_PARAM , npr, "maybe param" , "symbol can resolve to a param" )
 symbolFlag( FLAG_MAYBE_REF , npr, "maybe ref" , "symbol can resolve to a ref" )
+symbolFlag( FLAG_SPLIT_INITED , npr, "split inited" , "variable was initialized with split init" )
 symbolFlag( FLAG_MAYBE_TYPE , npr, "maybe type" , "symbol can resolve to a type" )
 symbolFlag( FLAG_MEMORY_ORDER_TYPE , ypr, "memory order type" , "type implementing chpl memory order (normally called memoryOrder)" )
 symbolFlag( FLAG_C_MEMORY_ORDER_TYPE , ypr, "c memory order type" , "type implementing c memory order (normally called memory_order)" )

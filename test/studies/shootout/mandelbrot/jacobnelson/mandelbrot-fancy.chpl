@@ -11,13 +11,7 @@ proc main()
   const bytesRequired : uint = (size + 7) / 8;
   const byteRange = 0..#bytesRequired:int(64);
   const sizeRange = 0..#size:int(64);
-
-
-  //const myLocales : [ell in 0..#(bytesRequired:int)] locale = Locales(ell % numLocales);
-  var myLocales : [0..#(bytesRequired:int)] locale;
-  forall loc in 0..#(bytesRequired:int) do {
-    myLocales(loc) = Locales(loc % numLocales);
-  }
+  const myLocales = [loc in 0..#(bytesRequired:int)] Locales[loc % numLocales];
 
   var ByteDist = new dmap(new Block(rank=2,idxType=int(64),
                                     targetLocales=reshape(myLocales, {1..#(bytesRequired:int), 1..1}),

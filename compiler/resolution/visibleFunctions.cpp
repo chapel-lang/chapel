@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -325,6 +326,12 @@ static void getVisibleMethods(const char* name, CallExpr* call,
     if (block != rootModule->block) {
       BlockStmt* next  = getVisibilityScope(block);
 
+      ModuleSymbol* blockMod = block->getModule();
+      ModuleSymbol* nextMod = next->getModule();
+      if (blockMod != nextMod && nextMod != theProgram && nextMod != rootModule) {
+        next = standardModule->block;
+      }
+
       // Recurse in the enclosing block
       getVisibleMethods(name, call, next, visited, visibleFns);
 
@@ -500,9 +507,34 @@ static void getVisibleFunctions(const char*           name,
               }
             }
           }
-        } else if (isImportStmt(expr)) {
-          // Don't go into import statements to look for symbols, they only
-          // provide qualified access.
+        } else if (ImportStmt* import = toImportStmt(expr)) {
+          // Only traverse private import statements if we are in the scope
+          // that defines them
+          // If we're not already in a use chain, by definition we can see
+          // private import.  If we're in a use chain, assume that private
+          // imports are not available to us
+          if (!inUseChain || !import->isPrivate) {
+            // Not all import statements define symbols for unqualified access,
+            // traverse into those that do when the name we're seeking is
+            // specified
+            if (import->skipSymbolSearch(name) == false) {
+              SymExpr* se = toSymExpr(import->src);
+
+              INT_ASSERT(se);
+              ModuleSymbol* mod = toModuleSymbol(se->symbol());
+              INT_ASSERT(mod);
+              if (mod->isVisible(call) == true) {
+                if (import->isARenamedSym(name) == true) {
+                  getVisibleFunctions(import->getRenamedSym(name), call,
+                                      mod->block, visited, visibleFns, true);
+                } else {
+                  getVisibleFunctions(name, call, mod->block, visited,
+                                      visibleFns, true);
+                }
+              }
+            }
+          }
+
         } else {
           INT_FATAL("Expected ImportStmt or UseStmt");
         }
@@ -511,6 +543,12 @@ static void getVisibleFunctions(const char*           name,
 
     if (block != rootModule->block) {
       BlockStmt* next  = getVisibilityScope(block);
+
+      ModuleSymbol* blockMod = block->getModule();
+      ModuleSymbol* nextMod = next->getModule();
+      if (blockMod != nextMod && nextMod != theProgram && nextMod != rootModule) {
+        next = standardModule->block;
+      }
 
       // Recurse in the enclosing block
       getVisibleFunctions(name, call, next, visited, visibleFns, inUseChain);
@@ -582,9 +620,31 @@ static void getVisibleFunctions(const char*           name,
               }
             }
           }
-        } else if (isImportStmt(expr)) {
-          // Don't go into import statements to look for symbols, they only
-          // provide qualified access.
+        } else if (ImportStmt* import = toImportStmt(expr)) {
+          // Only traverse private import statements at this point.  Public
+          // import statements will have already been handled the first time
+          // this scope was seen
+          if (import->isPrivate) {
+            // Not all import statements define symbols for unqualified access,
+            // traverse into those that do when the name we're seeking is
+            // specified
+            if (import->skipSymbolSearch(name) == false) {
+              SymExpr* se = toSymExpr(import->src);
+
+              INT_ASSERT(se);
+              ModuleSymbol* mod = toModuleSymbol(se->symbol());
+              INT_ASSERT(mod);
+              if (mod->isVisible(call) == true) {
+                if (import->isARenamedSym(name) == true) {
+                  getVisibleFunctions(import->getRenamedSym(name), call,
+                                      mod->block, visited, visibleFns, true);
+                } else {
+                  getVisibleFunctions(name, call, mod->block, visited,
+                                      visibleFns, true);
+                }
+              }
+            }
+          }
         } else {
           INT_FATAL("Expected ImportStmt or UseStmt");
         }
@@ -595,6 +655,12 @@ static void getVisibleFunctions(const char*           name,
     // uses that were skipped.
     if (block != rootModule->block) {
       BlockStmt* next  = getVisibilityScope(block);
+
+      ModuleSymbol* blockMod = block->getModule();
+      ModuleSymbol* nextMod = next->getModule();
+      if (blockMod != nextMod && nextMod != theProgram && nextMod != rootModule) {
+        next = standardModule->block;
+      }
 
       // Recurse in the enclosing block
       getVisibleFunctions(name, call, next, visited, visibleFns, inUseChain);

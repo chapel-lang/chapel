@@ -129,13 +129,14 @@ var dataReader : channel(false, iokind.dynamic,false);
 // no data file, use input file to generate uniform lattice
 if generating {
 
+  numAtoms = (4 * problemSize(1) * problemSize(2) * problemSize(3)) : int;
+
   // let the density inform box size
   const lattice : real = (4.0 / density) ** (1.0 / 3.0);
   box = problemSize * (lattice,lattice,lattice);
   volume = box(1) * box(2) * box(3);
 
   boxhi = box;
-  numAtoms = (4 * problemSize(1) * problemSize(2) * problemSize(3)) : int;
 
   // compute the number of bins we need in each direction
   for i in 1..3 do
@@ -243,8 +244,8 @@ var Dest, Src: [NeighDom] domain(3);
 setupComms();
 
 var fobj : owned Force =
-  if force == "lj" then new owned ForceLJ(force_cut): owned Force
-                   else new owned ForceEAM(force_cut);
+  if force == "lj" then new ForceLJ(force_cut): owned Force
+                   else new ForceEAM(force_cut);
 
 if force != "lj" then
   mass = fobj.mass;

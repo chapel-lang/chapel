@@ -4,6 +4,7 @@ LEGION_BLDDIR     ?= $(TOP_BUILDDIR)/legion
 LEGION_TMPDIR     ?= $(TOP_BUILDDIR)/legion-tmp
 LEGION_GASNET     ?= # Path to an existing installation, if any
 LEGION_CONDUIT    ?= $(NETWORK) # Default to same conduit as the enclosing harness run
+LEGION_MAKE_ARGS  ?= -j4
 
 HARNESS_LOGDIR    ?= .
 LOGFILE = $(HARNESS_LOGDIR)/legion.log
@@ -38,7 +39,7 @@ COMMON_ENV = \
 	LG_RT_DIR="$(LEGION_BLDDIR)/runtime" USE_GASNET=1 \
 	GASNET="$(LEGION_GASNET_INST)" CONDUIT=$(LEGION_CONDUIT) \
 	$(GASNET_VARS)
-DO_MAKE = env $(COMMON_ENV) $(LEGION_TEST_ENV) $(MAKE)
+DO_MAKE = env $(COMMON_ENV) $(LEGION_TEST_ENV) $(MAKE) $(LEGION_MAKE_ARGS)
 
 # Parametrized support for download/unpack
 LEGION_DOWNLOAD ?=# one of "unzip", "p7zip" or "tgz", default auto-detects using LEGION_URL suffix

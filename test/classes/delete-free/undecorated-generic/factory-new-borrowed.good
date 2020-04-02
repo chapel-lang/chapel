@@ -6,7 +6,7 @@ factory-new-borrowed.chpl:19: warning: factory(MyClass) : owned MyClass
 factory-new-borrowed.chpl:21: warning: factory(owned MyClass) : owned MyClass
 factory-new-borrowed.chpl:23: warning: factory(borrowed MyClass) : borrowed MyClass
 factory-new-borrowed.chpl:3: In function 'factory':
-factory-new-borrowed.chpl:6: error: Scoped variable y cannot be returned
-factory-new-borrowed.chpl:4: note: consider result here
 factory-new-borrowed.chpl:3: error: Illegal return of dead value
 factory-new-borrowed.chpl:6: note: value is dead due to deinitialization here
+factory-new-borrowed.chpl:6: error: Scoped variable y cannot be returned
+factory-new-borrowed.chpl:4: note: consider result here

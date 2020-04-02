@@ -1,4 +1,4 @@
-best-fns-in-diff-modules.chpl:24: In function 'main':
-best-fns-in-diff-modules.chpl:26: error: the best ref and const ref overloads are in different modules
-best-fns-in-diff-modules.chpl:7: note: the best ref overload is here
-best-fns-in-diff-modules.chpl:13: note: the best const ref overload is here
+best-fns-in-diff-modules.chpl:27: In function 'main':
+best-fns-in-diff-modules.chpl:29: error: the best ref and const ref overloads are in different modules
+best-fns-in-diff-modules.chpl:8: note: the best ref overload is here
+best-fns-in-diff-modules.chpl:15: note: the best const ref overload is here

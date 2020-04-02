@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -53,7 +54,7 @@ module CSV {
 
       for l in ch.lines() {
         const line = l.strip(leading=false);
-        if line.length == 0 then
+        if line.size == 0 then
           continue;
         const vals = line.split(sep);
         for param i in 1..numFields(t) {
@@ -82,7 +83,7 @@ module CSV {
       var skipHeader = hasHeader;
       for l in ch.lines() {
         const line = l.strip(leading=false);
-        if line.length == 0 then
+        if line.size == 0 then
           continue;
         const vals = line.split(sep);
         for param i in 1..t.size {
@@ -115,17 +116,17 @@ module CSV {
       var lines = ch.lines();
       var firstLine = lines[1];
       var vals = firstLine.strip().split(sep);
-      const numRows = if skipHeader then lines.numElements - 1
-                                    else lines.numElements;
-      var A: [1..numRows, 1..vals.numElements] string;
+      const numRows = if skipHeader then lines.size - 1
+                                    else lines.size;
+      var A: [1..numRows, 1..vals.size] string;
 
       if !skipHeader {
         A[1, ..] = vals;
       }
 
-      for i in 2..lines.numElements {
+      for i in 2..lines.size {
         const line = lines[i].strip(leading=false);
-        if line.length == 0 then
+        if line.size == 0 then
           continue;
         const vals = line.split(sep);
         const row = if skipHeader then i-1 else i;

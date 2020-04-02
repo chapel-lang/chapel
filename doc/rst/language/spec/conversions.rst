@@ -366,43 +366,43 @@ Explicit Enumeration Conversions
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Explicit conversions are allowed from any enumerated type to ``bytes``
-or ``string`` and vice-versa, and include ``param`` conversions. For
-enumerated types that are either concrete or semi-concrete
-(:ref:`Enumerated_Types`), conversions are supported between the
-enum’s constants and any numeric type or ``bool``, including ``param``
-conversions. For a semi-concrete enumerated type, if a conversion is
-attempted involving a constant with no underlying integer value, it will
-generate a compile-time error for a ``param`` conversion or an
-execution-time error otherwise.
+or ``string`` and vice-versa, including ``param`` conversions. For
+enumerated types that are either `concrete` or `semi-concrete` (see
+:ref:`Enumerated_Types`), conversions are supported from the enum to
+any numeric or boolean type, including ``param`` conversions.
+Explicit conversions are also supported from integer values back to
+concrete or semi-concrete enumerated types.
 
-When the target type is an integer type, the value is first converted to
-its underlying integer type and then to the target type, following the
-rules above for converting between integers.
+When converting from an enum to a ``bytes`` or ``string``, the value
+becomes the name of the enumerator.
 
-When the target type is a real, imaginary, or complex type, the value is
-first converted to its underlying integer type and then to the target
-type.
+When converting from a ``bytes`` or ``string`` to an enum, the result
+is the constant whose name matches the source value. If no matching
+value exists, an ``IllegalArgumentError`` is thrown.
 
-When the target type is ``bool``, the value is first converted to its
-underlying integer type. If the result is zero, the value of the
-``bool`` is ``false``; otherwise, it is ``true``.
+For a semi-concrete enumerated type, if a numeric conversion is
+attempted for a constant with no underlying integer value, it will
+generate a compile-time error for a ``param`` conversion or throw an
+``IllegalArgumentError`` otherwise.
 
-When the target type is ``bytes`` or ``string``, the value becomes the
-name of the enumerator.
+When converting from an enum to an integer type, the value is first
+converted to the enum's underlying integer type and then to the target
+type, following the rules above for converting between integers.
 
-When the source type is ``bool``, enumerators corresponding to the
-values 0 and 1 in the underlying integer type are selected,
-corresponding to input values of ``false`` and ``true``, respectively.
+When converting from an enum to a real, imaginary, or complex type,
+the value is first converted to the enum's underlying integer type and
+then to the target type.
 
-When the source type is a real or integer type, the value is converted
-to the target type’s underlying integer type.
+When converting from an enum to a boolean type, the value is first
+converted to the enum's underlying integer type. If the result is
+zero, the value of the ``bool`` is ``false``; otherwise, it is
+``true``.
 
-The conversion from ``complex`` and ``imag`` types to an enumerated type
-is not permitted.
+When converting from an integer value to an enum, the value is
+converted to the enum’s underlying integer type and then converted to
+the matching symbol.  If no symbol has the given integer value, an
+``IllegalArgumentError`` is thrown.
 
-When the source type is ``bytes`` or ``string``, the enumerator whose
-name matches value of the input is selected. If no such enumerator
-exists, an ``IllegalArgumentError`` is thrown.
 
 .. _Explicit_Class_Conversions:
 

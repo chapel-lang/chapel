@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -25,7 +26,10 @@
 class CallExpr;
 class DefExpr;
 class Expr;
+class FnSymbol;
+class Symbol;
 class SymExpr;
+class VarSymbol;
 
 bool isSplitInitExpr(Expr* e);
 bool findInitPoints(DefExpr* def,
@@ -36,5 +40,7 @@ bool findInitPoints(CallExpr* defaultInit,
                     std::vector<CallExpr*>& initAssigns,
                     Expr*& usePreventingSplitInit,
                     bool allowReturns);
+
+void elideCopies(FnSymbol* fn);
 
 #endif

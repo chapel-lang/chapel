@@ -1,3 +1,21 @@
+ig-variants.chpl:75: note: Optimized assign to be unordered
+ig-variants.chpl:75: note: Optimized assign to be unordered
+ig-variants.chpl:75: note: Optimized assign to be unordered
+ig-variants.chpl:75: note: Optimized assign to be unordered
+ig-variants.chpl:82: note: Optimized assign to be unordered
+ig-variants.chpl:82: note: Optimized assign to be unordered
+ig-variants.chpl:75: note: Optimized assign to be unordered
+ig-variants.chpl:75: note: Optimized assign to be unordered
+ig-variants.chpl:75: note: Optimized assign to be unordered
+ig-variants.chpl:75: note: Optimized assign to be unordered
+ig-variants.chpl:59: note: Optimized assign to be unordered
+ig-variants.chpl:59: note: Optimized assign to be unordered
+ig-variants.chpl:67: note: Optimized assign to be unordered
+ig-variants.chpl:67: note: Optimized assign to be unordered
+ig-variants.chpl:59: note: Optimized assign to be unordered
+ig-variants.chpl:59: note: Optimized assign to be unordered
+ig-variants.chpl:67: note: Optimized assign to be unordered
+ig-variants.chpl:67: note: Optimized assign to be unordered
 17 1 4 19 14 19 7 19 11 2 12 2 14 14 9 17 0 19 3 6 10 2 3 8 6 6 8 7 13 15 9 5 5 18 15 18 1 2 0 18
 17 1 4 19 14 19 7 19 11 2 12 2 14 14 9 17 0 19 3 6 10 2 3 8 6 6 8 7 13 15 9 5 5 18 15 18 1 2 0 18
 17 1 4 19 14 19 7 19 11 2 12 2 14 14 9 17 0 19 3 6 10 2 3 8 6 6 8 7 13 15 9 5 5 18 15 18 1 2 0 18

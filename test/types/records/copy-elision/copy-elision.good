@@ -1,3 +1,4 @@
+init (default)
 test1a
 init 1 1
 test1a.a
@@ -67,9 +68,9 @@ init 1 1
 init 0 0
 test5a.a
 lhs(0 0) = rhs(1 1)
-deinit 1 1
 test5a.b
 (1 1)
+deinit 1 1
 deinit 1 1
 test5b
 init 1 1
@@ -121,4 +122,59 @@ test7d.b
 deinit 0 0
 deinit 1 1
 (1 1) (0 0)
+test8
+init= 0 0
+deinit 0 0
+test9
+init 1 1
+init= 1 1
+deinit 1 1
+deinit 1 1
+test10
+init 1 1
+init= 1 1
+deinit 1 1
+deinit 1 1
+test11
+init 1 1
+init= 1 1
+deinit 1 1
+deinit 1 1
+test12
+init 1 1
+deinit 1 1
+test13
+init 1 1
+deinit 1 1
+test14
+init 1 1
+deinit 1 1
+test15
+init 1 1
+deinit 1 1
+test16
+init 1 1
+deinit 1 1
+test17
+init 1 1
+deinit 1 1
+test18
+init 1 1
+deinit 1 1
+test19
+init 1 1
+deinit 1 1
+test20
+init 1 1
+deinit 1 1
+test-public-global
+init= 0 0
+test-private-global
+init= 0 0
+test-default-global
+init= 0 0
 end
+deinit 0 0
+deinit 0 0
+deinit 0 0
+deinit 0 0

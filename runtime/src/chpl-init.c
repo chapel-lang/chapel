@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -134,6 +135,7 @@ void chpl_rt_postUserCodeHook(void) {
 void chpl_rt_init(int argc, char* argv[]) {
   int32_t execNumLocales;
   int runInGDB;
+  int runInLLDB;
 
   // Check that we can get the page size.
   assert( sys_page_size() > 0 );
@@ -181,6 +183,14 @@ void chpl_rt_init(int argc, char* argv[]) {
   if (runInGDB) {
     int status;
     if (chpl_comm_run_in_gdb(argc, argv, runInGDB, &status)) {
+      chpl_exit_all(status);
+    }
+  }
+
+  runInLLDB = _runInLLDB();
+  if (runInLLDB) {
+    int status;
+    if (chpl_comm_run_in_lldb(argc, argv, runInLLDB, &status)) {
       chpl_exit_all(status);
     }
   }

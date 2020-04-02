@@ -51,7 +51,7 @@ matrixDom.bulkAdd(indBuf, preserveInds=false);
 
 //do a sanitiy check to make sure we have created correct numver of
 //indicese in the sparse domain
-if matrixDom.numIndices != size2*stencilSize then
+if matrixDom.size != size2*stencilSize then
   halt("Incorrect number of indices created");
 
 var matrix: [matrixDom] real;
@@ -88,7 +88,7 @@ t.stop();
 
 // verify the result
 const epsilon = 1e-8;
-const referenceSum = 0.5 * matrixDom.numIndices * (iterations+1) *
+const referenceSum = 0.5 * matrixDom.size * (iterations+1) *
     (iterations+2);
 const vectorSum = + reduce result;
 if abs(vectorSum-referenceSum) > epsilon then
@@ -98,7 +98,7 @@ if abs(vectorSum-referenceSum) > epsilon then
 writeln("Validation successful");
 
 if !correctness {
-  const nflop = 2.0*matrixDom.numIndices;
+  const nflop = 2.0*matrixDom.size;
   const avgTime = t.elapsed()/iterations;
   writeln("Rate (MFlops/s): ", 1e-6*nflop/avgTime, " Avg time (s): ",
       avgTime);

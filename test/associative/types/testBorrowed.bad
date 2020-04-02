@@ -1,0 +1,3 @@
+./ArrayTest.chpl:1: In function 'testArray':
+./ArrayTest.chpl:8: error: Cannot initialize associative array because element type borrowed T is a non-nilable class
+testBorrowed.chpl:9: Function 'testArray' instantiated as: testArray(type t = borrowed T)

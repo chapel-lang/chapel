@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -146,13 +147,13 @@ proc findLatest(packageDir: string): VersionInfo {
     const chplVersion = getChapelVersionInfo();
 
     const manifestReader = openreader(packageDir + '/' + manifest);
-    const manifestToml = new owned(parseToml(manifestReader));
+    const manifestToml = owned.create(parseToml(manifestReader));
     const brick = manifestToml['brick'];
     var (low, high) = parseChplVersion(brick);
     if chplVersion < low || chplVersion > high then continue;
 
     // Check that Chapel version is supported
-    const end = manifest.length - suffix.length;
+    const end = manifest.size - suffix.size;
     const ver = new VersionInfo(manifest[1..end]);
     if ver > ret then ret = ver;
   }
@@ -176,7 +177,7 @@ proc consumeArgs(ref args : list(string)) {
 /* Print a TOML file. Expects full path. */
 proc showToml(tomlFile : string) {
   const openFile = openreader(tomlFile);
-  const toml = new owned(parseToml(openFile));
+  const toml = owned.create(parseToml(openFile));
   writeln(toml);
   openFile.close();
 }
