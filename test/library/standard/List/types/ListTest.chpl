@@ -8,7 +8,7 @@ proc testList(type t) {
   if isTuple(t) {
     x = (new t[0](1), new t[1](2));
   } else {
-    x = new t(0);
+    x = new t(1);
   }
 
   l.append(x);
