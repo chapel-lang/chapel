@@ -599,9 +599,9 @@ module FFTW {
   // domain.
   //
   private proc checkRealCplxDimMismatch(realDom, complexDom, fnname, cplxarrdesc="") {
-    const dim = realDom.rank;
-    const realDim = realDom.dim(dim-1).size/2+1;
-    const complexDim = complexDom.dim(dim-1).size;
+    const dim = realDom.rank-1;
+    const realDim = realDom.dim(dim).size/2+1;
+    const complexDim = complexDom.dim(dim).size;
 
     if (realDim == complexDim) then
       return false;
@@ -619,9 +619,9 @@ module FFTW {
   // second describes the domain describing the padded array allocation.
   //
   private proc checkRealInPlaceDimMismatch(logDom, physDom, fnname) {
-    const dim = logDom.rank;
-    const arrDim = physDom.dim(dim-1).size;
-    const domDim = 2*(logDom.dim(dim-1).size/2+1);
+    const dim = logDom.rank-1;
+    const arrDim = physDom.dim(dim).size;
+    const domDim = 2*(logDom.dim(dim).size/2+1);
     if (arrDim == domDim) then
       return false;
 
