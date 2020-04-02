@@ -97,33 +97,65 @@ module ExternalArray {
   }
 
   proc convertToExternalArray(in arr: []): chpl_external_array
-    where (getExternalArrayType(arr) == chpl_external_array) {
-    if (!isExternArrEltType(arr.eltType)) {
+    where getExternalArrayType(arr) == chpl_external_array {
+
+    if !isExternArrEltType(arr.eltType) {
       use HaltWrappers;
       safeCastCheckHalt("Cannot build an external array that stores " +
                         arr.eltType: string);
     }
-    if (!isIntegralType(arr.domain.idxType)) {
-      // Probably not reachable any more, but may become reachable again
-      // once support for interoperability with array types expands.
+
+    // Probably not reachable any more, but may become reachable again
+    // once support for interoperability with array types expands.
+    if !isIntegralType(arr.domain.idxType) then
       compilerError("cannot return an array with indices that are not " +
                     "integrals");
-    }
-    if (arr.domain.stridable) {
+
+    if arr.domain.stridable then
       compilerError("cannot return a strided array");
-    }
-    if (arr.domain.rank != 1) {
+    
+    if arr.domain.rank != 1 then
       compilerError("cannot return an array with rank != 1");
-    }
-    if (arr.domain.low != 0) {
+  
+    // 
+    // Can we just normalize the domain instead? Or would that be too
+    // unexpected?
+    // 
+    if arr.domain.low != 0 then
       halt("cannot return an array when the lower bounds is not 0");
+
+    //
+    // TODO: If the array element type is string or bytes, then we need to
+    // silently convert it to an array of 'chpl_byte_buffer'. Then in
+    // compiler code, we should iterate through the elements and cast then
+    // to string/bytes as desired (in both cases creating a numpy array
+    // of Python 'objects'.
+    //
+    if arr.eltType == string || arr.eltType == bytes {
+      use ExportWrappers;
+
+      var wrapper: [0..arr.size] chpl_byte_buffer;
+
+      // Copy new 
+      for i in 0..#arr.zize {
+        ref itm = arr[i];
+        ref val = chpl__exportRetStringOrBytes(item);
+        wrapper[i] = val;
+      }
+
     }
+
+    if arr.eltType == string || arr.eltType == bytes then
+      compilerWarning("IN CONVERSION TO EXTERNAL ARRAY, ELEMENT TYPE IS: " + arr.eltType:string);
+
     var externalArr = chpl_make_external_array_ptr_free(c_ptrTo(arr[0]),
                                                         arr.size: uint);
+
     // Change the source array so that it does not clean up its memory, so we
     // can safely return a chpl_external_array wrapper using it.
     arr.externArr = true;
     arr._borrowed = true;
+
     return externalArr;
   }
 
@@ -148,7 +180,7 @@ module ExternalArray {
   // extern array.
   // NOTE: once we can export types, those should also be supported here.
   private proc isExternArrEltType(type t) param {
-    if (isPrimitive(t) && t != string) {
+    if (isPrimitive(t)) {
       return true;
     } else if (t == c_string) {
       return true;
