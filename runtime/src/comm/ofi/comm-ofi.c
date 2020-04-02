@@ -100,6 +100,8 @@ static struct fid_cq* ofi_rxCQ;         // AM req receive endpoint CQ
 static struct fid_ep* ofi_rxEpRma;      // RMA/AMO target endpoint
 static struct fid_cq* ofi_rxCQRma;      // RMA/AMO target endpoint CQ
 static struct fid_cntr* ofi_rxCntrRma;  // RMA/AMO target endpoint counter
+static struct fid* ofi_rxCmplFidRma;    // rxCQRma or rxCntrRma fid
+static void (*checkRxRmaCmplsFn)(void); // fn: check for RMA/AMO EP completions
 
 static struct fid_av* ofi_av;           // address vector
 static fi_addr_t* ofi_rxAddrs;          // table of remote endpoint addresses
@@ -188,6 +190,8 @@ static inline void do_remote_amo_nf_buff(void*, c_nodeid_t, void*, size_t,
 static void ensureProgress(struct perTxCtxInfo_t*);
 static inline void waitForTxnComplete(struct perTxCtxInfo_t*, void* ctx);
 static inline void checkTxCQ(struct perTxCtxInfo_t*);
+static void checkRxRmaCmplsCQ(void);
+static void checkRxRmaCmplsCntr(void);
 static inline ssize_t readCQ(struct fid_cq*, void*, size_t);
 static void reportCQError(struct fid_cq*);
 static inline void getTxCntr(struct perTxCtxInfo_t*);
@@ -1212,15 +1216,17 @@ void init_ofiEp(void) {
   OFI_CHK(fi_endpoint(ofi_domain, ofi_info, &ofi_rxEpRma, NULL));
   OFI_CHK(fi_ep_bind(ofi_rxEpRma, &ofi_av->fid, 0));
   if (ofi_info->domain_attr->cntr_cnt == 0) {
-    OFI_CHK(fi_cq_open(ofi_domain, &cqAttr, &ofi_rxCQRma, &ofi_rxCQRma));
-    OFI_CHK(fi_ep_bind(ofi_rxEpRma, &ofi_rxCQRma->fid,
-                       FI_TRANSMIT | FI_RECV));
+    OFI_CHK(fi_cq_open(ofi_domain, &cqAttr, &ofi_rxCQRma,
+                       &checkRxRmaCmplsFn));
+    ofi_rxCmplFidRma = &ofi_rxCQRma->fid;
+    checkRxRmaCmplsFn = checkRxRmaCmplsCQ;
   } else {
     OFI_CHK(fi_cntr_open(ofi_domain, &cntrAttr, &ofi_rxCntrRma,
-                         &ofi_rxCntrRma));
-    OFI_CHK(fi_ep_bind(ofi_rxEpRma, &ofi_rxCntrRma->fid,
-                       FI_TRANSMIT | FI_RECV));
+                         &checkRxRmaCmplsFn));
+    ofi_rxCmplFidRma = &ofi_rxCntrRma->fid;
+    checkRxRmaCmplsFn = checkRxRmaCmplsCntr;
   }
+  OFI_CHK(fi_ep_bind(ofi_rxEpRma, ofi_rxCmplFidRma, FI_TRANSMIT | FI_RECV));
   OFI_CHK(fi_enable(ofi_rxEpRma));
 
   //
@@ -1229,11 +1235,7 @@ void init_ofiEp(void) {
   //
   if (ofi_amhPollSet != NULL) {
     OFI_CHK(fi_poll_add(ofi_amhPollSet, &ofi_rxCQ->fid, 0));
-    OFI_CHK(fi_poll_add(ofi_amhPollSet,
-                        ((ofi_rxCQRma != NULL)
-                         ? &ofi_rxCQRma->fid
-                         : &ofi_rxCntrRma->fid),
-                        0));
+    OFI_CHK(fi_poll_add(ofi_amhPollSet, ofi_rxCmplFidRma, 0));
     struct perTxCtxInfo_t* tcip = &tciTab[tciTabLen - 1];
     OFI_CHK(fi_poll_add(ofi_amhPollSet,
                         ((tcip->txCQ != NULL)
@@ -1712,22 +1714,14 @@ void fini_ofi(void) {
                          ? &tcip->txCQ->fid
                          : &tcip->txCntr->fid),
                         0));
-    OFI_CHK(fi_poll_del(ofi_amhPollSet,
-                        ((ofi_rxCQRma != NULL)
-                         ? &ofi_rxCQRma->fid
-                         : &ofi_rxCntrRma->fid),
-                        0));
+    OFI_CHK(fi_poll_del(ofi_amhPollSet, ofi_rxCmplFidRma, 0));
     OFI_CHK(fi_poll_del(ofi_amhPollSet, &ofi_rxCQ->fid, 0));
   }
 
   OFI_CHK(fi_close(&ofi_rxEp->fid));
   OFI_CHK(fi_close(&ofi_rxCQ->fid));
   OFI_CHK(fi_close(&ofi_rxEpRma->fid));
-  if (ofi_rxCQRma != NULL) {
-    OFI_CHK(fi_close(&ofi_rxCQRma->fid));
-  } else {
-    OFI_CHK(fi_close(&ofi_rxCntrRma->fid));
-  }
+  OFI_CHK(fi_close(ofi_rxCmplFidRma));
 
   for (int i = 0; i < tciTabLen; i++) {
     OFI_CHK(fi_close(&tciTab[i].txCtx->fid));
@@ -2509,9 +2503,7 @@ void amHandler(void* argNil) {
           checkTxCQ(tcip);
         } else if (contexts[i] == &tcip->txCntr) {
           getTxCntr(tcip);
-        } else if (contexts[i] == &ofi_rxCQRma) {
-          // no action
-        } else if (contexts[i] == &ofi_rxCntrRma) {
+        } else if (contexts[i] == &checkRxRmaCmplsFn) {
           // no action
         } else {
           INTERNAL_ERROR_V("unexpected context %p from fi_poll()",
@@ -2530,12 +2522,7 @@ void amHandler(void* argNil) {
         getTxCntr(tcip);
       }
 
-      if (ofi_rxCQRma != NULL) {
-        struct fi_cq_data_entry cqe;
-        (void) readCQ(ofi_rxCQRma, &cqe, 1);
-      } else {
-        (void) fi_cntr_read(ofi_rxCntrRma);
-      }
+      (*checkRxRmaCmplsFn)();
 
       sched_yield();
     }
@@ -4060,9 +4047,7 @@ void ensureAmProgress(void) {
         checkTxCQ(amTcip);
       } else if (contexts[i] == &amTcip->txCntr) {
         getTxCntr(amTcip);
-      } else if (contexts[i] == &ofi_rxCQRma) {
-        // no action
-      } else if (contexts[i] == &ofi_rxCntrRma) {
+      } else if (contexts[i] == &checkRxRmaCmplsFn) {
         // no action
       } else {
         INTERNAL_ERROR_V("unexpected context %p from fi_poll()",
@@ -4078,12 +4063,7 @@ void ensureAmProgress(void) {
     } else {
       getTxCntr(amTcip);
     }
-    if (ofi_rxCQRma != NULL) {
-      struct fi_cq_data_entry cqe;
-      (void) readCQ(ofi_rxCQRma, &cqe, 1);
-    } else {
-      (void) fi_cntr_read(ofi_rxCntrRma);
-    }
+    (*checkRxRmaCmplsFn)();
   }
 }
 
@@ -4147,6 +4127,19 @@ void checkTxCQ(struct perTxCtxInfo_t* tcip) {
       }
     }
   }
+}
+
+
+static
+void checkRxRmaCmplsCQ(void) {
+  struct fi_cq_data_entry cqe;
+  (void) readCQ(ofi_rxCQRma, &cqe, 1);
+}
+
+
+static
+void checkRxRmaCmplsCntr(void) {
+  (void) fi_cntr_read(ofi_rxCntrRma);
 }
 
 
