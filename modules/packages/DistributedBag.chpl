@@ -255,17 +255,17 @@ module DistributedBag {
       return chpl_getPrivatizedCopy(unmanaged DistributedBagImpl(eltType), _pid);
     }
   
-	// printing the contents of DistBag onto a channel
+    // printing the contents of DistBag onto a channel
     proc readWriteThis(ch: channel) throws {
       ch <~> "[";
 	  var iterations=0;
-	  var size = this.getSize();
+      var size = this.getSize();
       for i in this {
-	    iterations+=1;
-	    ch <~> i;
-		if iterations < size then ch <~> ", "; 
-	  }
-	  ch <~> "]";
+        iterations+=1;
+        ch <~> i;
+        if iterations < size then ch <~> ", ";
+      }
+      ch <~> "]";
     }
     
     forwarding _value;
