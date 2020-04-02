@@ -7,4 +7,4 @@
 //-----------------------------------------------------
 
 config param dimension = 2;
-const dimensions = 1..dimension;
+const dimensions = 0..#dimension;

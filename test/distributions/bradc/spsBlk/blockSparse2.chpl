@@ -78,10 +78,10 @@ forall ij in MatElems do
 // Manually print out the sparse array as a dense array for now.
 //
 writeln("Sps is:");
-for i in Elems.dim(1) do
-  for j in Elems.dim(2) {
+for i in Elems.dim(0) do
+  for j in Elems.dim(1) {
     write(Sps[i,j]);
-    if (j == Elems.dim(2).high) then
+    if (j == Elems.dim(1).high) then
       writeln();
     else
       write(" ");

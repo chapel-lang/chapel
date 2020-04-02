@@ -26,7 +26,7 @@ var BD = D dmapped Block(D);
 }
 
 {
-  var F = [d in D] d(1)*100 + d(2);
+  var F = [d in D] d(0)*100 + d(1);
 
   compilerWarning("F.domain #1 : ", F.domain._value.type:string);
   writeln(F.domain);
@@ -41,7 +41,7 @@ var BD = D dmapped Block(D);
 }
 
 {
-  var F = [d in BD] d(1)*200 + d(2);
+  var F = [d in BD] d(0)*200 + d(1);
 
   compilerWarning("F.domain #2 : ", F.domain._value.type:string);
   writeln(F.domain);

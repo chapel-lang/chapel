@@ -786,7 +786,7 @@ static void addParIdxVarsAndRestruct(ForallStmt* fs, VarSymbol* parIdx) {
   else {
     for_alist_backward(def, indvars)
       userLoopBody->insertAtHead("'move'(%S,%S(%S))", toDefExpr(def)->sym,
-                                 followIdx, new_IntSymbol(idx--));
+                                 followIdx, new_IntSymbol(--idx));
   }
 
   // Move induction variables' DefExprs to the loop body.

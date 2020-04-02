@@ -311,7 +311,7 @@ TupleInfo getTupleInfo(std::vector<TypeSymbol*>& args,
     typeCtorArgs.push_back(sizeArg);
 
     for(size_t i = 0; i < args.size(); i++) {
-      const char* name = astr("x", istr(i+1));
+      const char* name = astr("x", istr(i));
       ArgSymbol* typeArg = new ArgSymbol(INTENT_TYPE, name, args[i]->type);
       typeArg->addFlag(FLAG_TYPE_VARIABLE);
       typeCtorArgs.push_back(typeArg);
@@ -456,7 +456,7 @@ instantiate_tuple_hash( FnSymbol* fn) {
 
   CallExpr* call = NULL;
   bool first = true;
-  for (int i=1; i<ct->fields.length; i++) {
+  for (int i=0; i<ct->fields.length-1; i++) {
     CallExpr *field_access = new CallExpr( arg, new_IntSymbol(i));
     if (first) {
       call =  new CallExpr( "chpl__defaultHash", field_access);

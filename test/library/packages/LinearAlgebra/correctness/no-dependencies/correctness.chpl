@@ -169,7 +169,7 @@ use IO;
 
   {
     var Identity: [MDom] real;
-    for i in MDom.dim(1) do Identity[i, i] = 1.0;
+    for i in MDom.dim(0) do Identity[i, i] = 1.0;
 
     var I = eye(MDom);
     assertEqual(I, Identity, "eye(D)");
@@ -857,7 +857,7 @@ use IO;
     var B = transpose(A);
 
     assertEqual(B.domain, tDomT, "transpose(A)");
-    for i in A.domain.dim(1) {
+    for i in A.domain.dim(0) {
       assertEqual(A[i,1], B[1, i], "transpose(A) values");
     }
   }
@@ -868,7 +868,7 @@ use IO;
     var B = A.T;
 
     assertEqual(B.domain, tDomT, "transpose(A)");
-    for i in A.domain.dim(1) {
+    for i in A.domain.dim(0) {
       assertEqual(A[i,1], B[1, i], "transpose(A) values");
     }
   }

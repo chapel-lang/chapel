@@ -134,11 +134,11 @@ private proc getExampleOptions(toml: Toml, exampleNames: list(string)) {
     exampleOptions[exampleName] = ("", "");
     if toml.pathExists("".join("examples.", exampleName, ".compopts")) {
       var compopts = toml["".join("examples.", exampleName)]!["compopts"]!.s;
-      exampleOptions[exampleName][1] = compopts;
+      exampleOptions[exampleName][0] = compopts;
     }
     if toml.pathExists("".join("examples.", exampleName, ".execopts")) {
       var execopts = toml["".join("examples.", exampleName)]!["execopts"]!.s;
-      exampleOptions[exampleName][2] = execopts;
+      exampleOptions[exampleName][1] = execopts;
     }
   }
   return exampleOptions;
@@ -201,11 +201,11 @@ private proc runExamples(show: bool, run: bool, build: bool, release: bool,
     // Get buildInfo: dependencies, path to src code, compopts,
     // names of examples, example compopts
     var buildInfo = getBuildInfo(projectHome);
-    const sourceList = buildInfo[1];
-    const projectPath = buildInfo[2];
-    const compopts = buildInfo[3];
-    const exampleNames = buildInfo[4];
-    const perExampleOptions = buildInfo[5];
+    const sourceList = buildInfo[0];
+    const projectPath = buildInfo[1];
+    const compopts = buildInfo[2];
+    const exampleNames = buildInfo[3];
+    const perExampleOptions = buildInfo[4];
     const projectName = basename(stripExt(projectPath, ".chpl"));
     
     var numExamples = exampleNames.size;
@@ -222,8 +222,8 @@ private proc runExamples(show: bool, run: bool, build: bool, release: bool,
 
         // retrieves compopts and execopts found per example in the toml file      
         const optsFromToml = perExampleOptions[exampleName];
-        var exampleCompopts = optsFromToml[1];
-        var exampleExecopts = optsFromToml[2];
+        var exampleCompopts = optsFromToml[0];
+        var exampleExecopts = optsFromToml[1];
 
         if release then exampleCompopts += " --fast";
 
@@ -344,16 +344,16 @@ private proc getExamples(toml: Toml, projectHome: string) {
 /* Gets the path of the example by following the example dir */
 proc getExamplePath(fullPath: string, examplePath = "") : string {
   var split = splitPath(fullPath);
-  if split[2] == "example" {
+  if split[1] == "example" {
     return examplePath;
   }
   else {
     if examplePath == "" {
-      return getExamplePath(split[1], split[2]);
+      return getExamplePath(split[0], split[1]);
     }
     else {
-      var appendedPath = joinPath(split[2], examplePath);
-      return getExamplePath(split[1], appendedPath);
+      var appendedPath = joinPath(split[1], examplePath);
+      return getExamplePath(split[0], appendedPath);
     }
   }
 }

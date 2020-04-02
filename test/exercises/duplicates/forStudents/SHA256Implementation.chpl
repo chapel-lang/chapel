@@ -23,7 +23,7 @@ module SHA256Implementation {
      to uint(32) and returns the result. */
   inline proc ul(x:8*int) {
     var ret:8*uint(32);
-    for i in 1..8 {
+    for i in 0..7 {
       ret[i] = x[i]:uint(32);
     }
     return ret;
@@ -98,24 +98,24 @@ module SHA256Implementation {
     var W:64*uint(32);
 
     // Prepare the message schedule
-    for i in 1..16 {
+    for i in 0..15 {
       W[i] = msg[i];
     }
-    for i in 17..64 {
+    for i in 16..63 {
       W[i] = Gamma1(W[i - 2]) + W[i - 7] + Gamma0(W[i - 15]) + W[i - 16];
     }
 
     // Initialize the working variables
-    var a = state.H[1];
-    var b = state.H[2];
-    var c = state.H[3];
-    var d = state.H[4];
-    var e = state.H[5];
-    var f = state.H[6];
-    var g = state.H[7];
-    var h = state.H[8];
+    var a = state.H[0];
+    var b = state.H[1];
+    var c = state.H[2];
+    var d = state.H[3];
+    var e = state.H[4];
+    var f = state.H[5];
+    var g = state.H[6];
+    var h = state.H[7];
 
-    for i in 1..64 {
+    for i in 0..63 {
       var t1:uint(32);
       var t2:uint(32);
       t1 = h + Sigma1(e) + Ch(e, f, g) + K[i] + W[i];
@@ -131,14 +131,14 @@ module SHA256Implementation {
     }
 
     // compute the intermediate hash value
-    state.H[1] += a;
-    state.H[2] += b;
-    state.H[3] += c;
-    state.H[4] += d;
-    state.H[5] += e;
-    state.H[6] += f;
-    state.H[7] += g;
-    state.H[8] += h;
+    state.H[0] += a;
+    state.H[1] += b;
+    state.H[2] += c;
+    state.H[3] += d;
+    state.H[4] += e;
+    state.H[5] += f;
+    state.H[6] += g;
+    state.H[7] += h;
 
   }
 
@@ -150,7 +150,6 @@ module SHA256Implementation {
     assert(bit < 512);
     var whichword = ul(bit / 32);
     var inword = ul(bit % 32);
-    whichword += 1; // use 1-based indexing
     msg[whichword] |= ul(1) << (31 - inword);
   }
 
@@ -162,7 +161,6 @@ module SHA256Implementation {
     assert(nbits < 512);
     var whichword = ul(nbits / 32);
     var inword = ul(nbits % 32);
-    whichword += 1; // use 1-based indexing
 
     var word:uint(32) = msg[whichword];
     // Clear the bits after inword in word
@@ -177,7 +175,7 @@ module SHA256Implementation {
     msg[whichword] = word;
 
     // Clear the remaining words
-    for i in whichword+1..16 {
+    for i in whichword+1..15 {
       msg[i] = 0;
     }
   }
@@ -236,8 +234,8 @@ module SHA256Implementation {
 
     // Now store the 64-bit length quantity in the last two words
     // of the message.
-    msg[15] = ul((this.length >> 32) & ul(0xffffffff));
-    msg[16] = ul(this.length & ul(0xffffffff));
+    msg[14] = ul((this.length >> 32) & ul(0xffffffff));
+    msg[15] = ul(this.length & ul(0xffffffff));
 
     // hash the final block
     sha256_compute(this, msg);
@@ -252,63 +250,63 @@ module SHA256Implementation {
     var ones:16*uint(32);
     var msg:16*uint(32);
 
-    for i in 1..16 {
+    for i in 0..15 {
       ones[i] = ~zeros[i];
     }
 
     msg = ones;
     clear_bits_after(msg, 0);
-    assert(msg[1] == 0 && msg[2] == 0 && msg[16] == 0);
+    assert(msg[0] == 0 && msg[1] == 0 && msg[15] == 0);
 
     msg = ones;
     clear_bits_after(msg, 1);
-    assert(msg[1] == 0x80000000 && msg[2] == 0 && msg[16] == 0);
+    assert(msg[0] == 0x80000000 && msg[1] == 0 && msg[15] == 0);
 
     msg = ones;
     clear_bits_after(msg, 2);
-    assert(msg[1] == 0xc0000000 && msg[2] == 0 && msg[16] == 0);
+    assert(msg[0] == 0xc0000000 && msg[1] == 0 && msg[15] == 0);
 
     msg = ones;
     clear_bits_after(msg, 31);
-    assert(msg[1] == 0xfffffffe && msg[2] == 0 && msg[16] == 0);
+    assert(msg[0] == 0xfffffffe && msg[1] == 0 && msg[15] == 0);
 
     msg = ones;
     clear_bits_after(msg, 32);
-    assert(msg[1] == 0xffffffff && msg[2] == 0 && msg[16] == 0);
+    assert(msg[0] == 0xffffffff && msg[1] == 0 && msg[15] == 0);
 
     msg = ones;
     clear_bits_after(msg, 33);
-    assert(msg[1] == 0xffffffff && msg[2] == 0x80000000 &&
-           msg[3] == 0 && msg[16] == 0);
+    assert(msg[0] == 0xffffffff && msg[1] == 0x80000000 &&
+           msg[3] == 0 && msg[15] == 0);
 
     msg = ones;
     clear_bits_after(msg, 34);
-    assert(msg[1] == 0xffffffff && msg[2] == 0xc0000000 &&
-           msg[3] == 0 && msg[16] == 0);
+    assert(msg[0] == 0xffffffff && msg[1] == 0xc0000000 &&
+           msg[3] == 0 && msg[15] == 0);
 
     msg = zeros;
     set_bit(msg, 0);
-    assert(msg[1] == 0x80000000 && msg[2] == 0);
+    assert(msg[0] == 0x80000000 && msg[1] == 0);
 
     msg = zeros;
     set_bit(msg, 1);
-    assert(msg[1] == 0x40000000 && msg[2] == 0);
+    assert(msg[0] == 0x40000000 && msg[1] == 0);
 
     msg = zeros;
     set_bit(msg, 2);
-    assert(msg[1] == 0x20000000 && msg[2] == 0);
+    assert(msg[0] == 0x20000000 && msg[1] == 0);
 
     msg = zeros;
     set_bit(msg, 31);
-    assert(msg[1] == 0x00000001 && msg[2] == 0);
+    assert(msg[0] == 0x00000001 && msg[1] == 0);
 
     msg = zeros;
     set_bit(msg, 32);
-    assert(msg[1] == 0 && msg[2] == 0x80000000 && msg[3] == 0);
+    assert(msg[0] == 0 && msg[1] == 0x80000000 && msg[3] == 0);
 
     msg = zeros;
     set_bit(msg, 33);
-    assert(msg[1] == 0 && msg[2] == 0x40000000 && msg[3] == 0);
+    assert(msg[0] == 0 && msg[1] == 0x40000000 && msg[3] == 0);
 
 
     var startingState:SHA256State;
@@ -317,7 +315,7 @@ module SHA256Implementation {
 
     state = startingState;
     msg = zeros;
-    msg[1] = 0x61000000;
+    msg[0] = 0x61000000;
     hash = state.lastblock(msg, 1*8);
     assert(hash==ul( ( 0xca978112, 0xca1bbdca, 0xfac231b3, 0x9a23dc4d,
                        0xa786eff8, 0x147c4e72, 0xb9807785, 0xafee48bb) ));

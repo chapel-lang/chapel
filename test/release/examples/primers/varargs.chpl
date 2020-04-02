@@ -11,8 +11,8 @@
 // call. The args argument is an ``n``-tuple of ``int`` values.
 //
 proc intWriteln(args: int ...?n) {
-  for i in 1..n {
-    if i != n then
+  for i in args.indices {
+    if i != n-1 then
       write(args(i), " ");
     else
       writeln(args(i));
@@ -30,8 +30,8 @@ intWriteln(1, 2, 3, 4);
 // independently.
 //
 proc anyTypeWriteln(args...?n) {
-  for param i in 1..n {
-    if i != n then
+  for param i in 0..<n {
+    if i != n-1 then
       write(args(i), " ");
     else
       writeln(args(i));

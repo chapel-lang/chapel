@@ -33,7 +33,7 @@ module RARandomStream {
   // are required for parallel zippered iteration.
   //
   iter RAStream(param tag: iterKind, followThis) where tag == iterKind.follower {
-    var val = getNthRandom(followThis(1).low);
+    var val = getNthRandom(followThis(0).low);
     for zip((...followThis)) {
       getNextRandom(val);
       yield val;

@@ -12,7 +12,7 @@ writeln();
 
 // should discern the boundedness
 const tests = (0..0, 0.., ..0, ..);
-for param i1 in 1..4 do for param i2 in 1..4 {
+for param i1 in 0..3 do for param i2 in 0..3 {
   const cmp = (tests(i1) == tests(i2));
   writeln(cmp, if cmp == (i1 == i2) then " ok" else " error");
 }

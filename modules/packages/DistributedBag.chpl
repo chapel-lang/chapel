@@ -1170,7 +1170,7 @@ module DistributedBag {
 
                                 // Allocate storage...
                                 on stolenWork do stolenWork[loc.id] = (toSteal, c_malloc(eltType, toSteal));
-                                var destPtr = stolenWork[here.id][2];
+                                var destPtr = stolenWork[here.id][1];
                                 targetSegment.transferElements(destPtr, toSteal, stolenWork.locale.id);
                                 targetSegment.releaseStatus();
 

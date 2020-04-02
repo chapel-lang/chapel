@@ -20,8 +20,8 @@ module symmetric_blas {
     // overwrites the values of A.
     // ------------------------------------------------------
 
-    const diag_block_cols    = L_diag.domain.dim(2),
-          offdiag_block_rows = L_offdiag.domain.dim(1);
+    const diag_block_cols    = L_diag.domain.dim(1),
+          offdiag_block_rows = L_offdiag.domain.dim(0);
 
     // next loop nest is embarassingly parallel over rows of the off-diagonal
     // block and not parallel within each row, due to the triangular solve.
@@ -56,8 +56,8 @@ module symmetric_blas {
     // overwrites the values of A.
     // ------------------------------------------------------
 
-    const diag_block_cols    = L_diag.domain.dim(1),
-          offdiag_block_rows = L_offdiag.domain.dim(1);
+    const diag_block_cols    = L_diag.domain.dim(0),
+          offdiag_block_rows = L_offdiag.domain.dim(0);
 
     // next loop is embarassingly parallel when we get a parallel iterator
 
@@ -100,8 +100,8 @@ module symmetric_blas {
     // overwrites the values of A.
     // ----------------------------------------------------------
 
-    const active_rows = A.domain.dim (1),
-          prev_rows   = A.domain.dim(2);
+    const active_rows = A.domain.dim(0),
+          prev_rows   = A.domain.dim(1);
 
     // The block solve proceeds blockwise over the block triangular
     // coefficent matrix.  We use a right-looking (outer-product) form of 
@@ -148,8 +148,8 @@ module symmetric_blas {
     // overwrites the values of A.
     // ----------------------------------------------------------
 
-    const active_rows = A.domain.dim (1),
-          prev_rows   = A.domain.dim(2);
+    const active_rows = A.domain.dim(0),
+          prev_rows   = A.domain.dim(1);
 
     // The block solve proceeds blockwise over the block triangular
     // coefficent matrix.  We use a right-looking (outer-product) form of 
@@ -185,7 +185,7 @@ module symmetric_blas {
 
     where ( A.domain.rank == 2 && L.domain.rank == 2) {
 
-    const schur_complement_rows = (L.domain.dim (1));
+    const schur_complement_rows = (L.domain.dim (0));
 
     // The low rank modification to Schur Complement must be computed
     // block column by block column because we only want to touch
@@ -224,7 +224,7 @@ module symmetric_blas {
     where ( A.domain.rank == 2 && L.domain.rank == 2) {
 
 
-    const schur_complement_rows = (L.domain.dim (1));
+    const schur_complement_rows = (L.domain.dim (0));
 
     // The low rank modification to Schur Complement must be computed
     // block column by block column because we only want to touch
@@ -264,11 +264,11 @@ module symmetric_blas {
     // are submatrices of a single larger matrix.
     // -----------------------------------------------------------
 
-    assert ( A.domain.dim (1) == A.domain.dim (2) &&
-	     A.domain.dim (1) == L.domain.dim (1) );
+    assert ( A.domain.dim (0) == A.domain.dim (1) &&
+	     A.domain.dim (0) == L.domain.dim (0) );
 
-    const A_diag_rows   = A.domain.dim (1),
-          L_active_cols = L.domain.dim (2);
+    const A_diag_rows   = A.domain.dim (0),
+          L_active_cols = L.domain.dim (1);
 
     forall i in A_diag_rows do 
       forall j in A_diag_rows (..i) do
@@ -290,7 +290,7 @@ module symmetric_blas {
     // where L and A are submatrices of a common larger matrix.
     // -------------------------------------------------------------
 
-    const L_active_cols  = L.domain.dim (2);
+    const L_active_cols  = L.domain.dim (1);
 
     forall (i,j) in A.domain do 
       A (i,j) -= + reduce [k in L_active_cols] L (i,k) * L (j,k);
@@ -313,13 +313,13 @@ module symmetric_blas {
     // overwrites the values of A.
     // -----------------------------------------------------------
 
-    assert ( A.domain.dim (1) == L.domain.dim (1) );
+    assert ( A.domain.dim (0) == L.domain.dim (0) );
 
-    const row_range = A.domain.dim (1);
+    const row_range = A.domain.dim (0);
 
-    const diag_block_cols        = A.domain.dim (2),
+    const diag_block_cols        = A.domain.dim (1),
           subdiagonal_block_rows = row_range (diag_block_cols.high + 1 ..),
-          L_prev_cols            = L.domain.dim (2);
+          L_prev_cols            = L.domain.dim (1);
 
     //  Symmetric modification to diagonal block, which is symmetric,
     //  so we cannot use a standard matrix-matrix product
@@ -355,13 +355,13 @@ module symmetric_blas {
     // overwrites the values of A.
     // -----------------------------------------------------------
 
-    assert ( A.domain.dim (1) == L.domain.dim (1) );
+    assert ( A.domain.dim (0) == L.domain.dim (0) );
 
-    const row_range = A.domain.dim (1);
+    const row_range = A.domain.dim (0);
 
-    const diag_block_cols        = A.domain.dim (2),
+    const diag_block_cols        = A.domain.dim (1),
           subdiagonal_block_rows = row_range (diag_block_cols.high + 1 ..),
-          L_prev_cols            = L.domain.dim (2);
+          L_prev_cols            = L.domain.dim (1);
 
     //  Symmetric modification to diagonal block
 

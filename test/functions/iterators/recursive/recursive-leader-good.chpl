@@ -20,7 +20,7 @@ iter asdf(param tag):int {
     }
     forall xdi in zip(asdf(),jjj()) {
       writeln("  asdf 1y: ", xdi);
-      yield xdi(1)+xdi(2);
+      yield xdi(0)+xdi(1);
     }
     writeln("  asdf 1z: 661");
     yield 661;

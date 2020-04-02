@@ -1418,7 +1418,7 @@ GenRet codegenElementPtr(GenRet base, GenRet index, bool ddataPtr=false) {
   if( fLLVMWideOpt && isWide(base) ) ret.isLVPtr = GEN_WIDE_PTR;
 
   if( baseType->symbol->hasFlag(FLAG_STAR_TUPLE) ) {
-    eltType = baseType->getField("x1")->typeInfo();
+    eltType = baseType->getField("x0")->typeInfo();
     isStarTuple = true;
     // Star tuples should only be passed by reference here...
     INT_ASSERT(base.isLVPtr != GEN_VAL);
@@ -3495,22 +3495,6 @@ void codegenAssign(GenRet to_ptr, GenRet from)
 }
 
 
-static GenRet
-codegenExprMinusOne(Expr* expr)
-{
-  int64_t i;
-  IF1_int_type width = INT_SIZE_64;
-  if( get_width(expr->typeInfo()) <= 8 ) width = INT_SIZE_8;
-  else if( get_width(expr->typeInfo()) <= 16 ) width = INT_SIZE_16;
-  else if( get_width(expr->typeInfo()) <= 32 ) width = INT_SIZE_32;
-
-  if (get_int(expr, &i)) {
-    return new_IntSymbol(i-1, width)->codegen();
-  } else {
-    return codegenSub(expr, new_IntSymbol(1, width));
-  }
-}
-
 /************************************* | **************************************
 *                                                                             *
 *                                                                             *
@@ -4502,7 +4486,7 @@ DEFINE_PRIM(PRIM_GET_UNION_ID) {
 
 DEFINE_PRIM(PRIM_SET_SVEC_MEMBER) {
     // set tuple base=get(1) at index=get(2) to value=get(3)
-    GenRet ptr = codegenElementPtr(call->get(1), codegenExprMinusOne(call->get(2)));
+    GenRet ptr = codegenElementPtr(call->get(1), call->get(2));
     GenRet val = call->get(3);
     // BHARSH TODO: 'getSvecSymbol' may also be useful here...
     if (call->get(3)->isRefOrWideRef() && !ptr.chplType->symbol->isRefOrWideRef()) {
@@ -4528,9 +4512,9 @@ DEFINE_PRIM(PRIM_GET_SVEC_MEMBER) {
     // get tuple base=get(1) at index=get(2)
     Type* tupleType = call->get(1)->getValType();
 
-    ret = codegenElementPtr(call->get(1), codegenExprMinusOne(call->get(2)));
+    ret = codegenElementPtr(call->get(1), call->get(2));
 
-    if (tupleType->getField("x1")->type->symbol->hasFlag(FLAG_REF) == false)
+    if (tupleType->getField("x0")->type->symbol->hasFlag(FLAG_REF) == false)
       ret = codegenAddrOf(ret);
 }
 DEFINE_PRIM(PRIM_SET_MEMBER) {
@@ -5671,8 +5655,7 @@ static bool codegenIsSpecialPrimitive(BaseAST* target, Expr* e, GenRet& ret) {
     case PRIM_GET_SVEC_MEMBER: {
       if (call->get(1)->isWideRef()) {
         /* Get a pointer to the i'th element of a homogeneous tuple */
-        GenRet elemPtr = codegenElementPtr(call->get(1),
-                                           codegenExprMinusOne(call->get(2)));
+        GenRet elemPtr = codegenElementPtr(call->get(1), call->get(2));
 
         INT_ASSERT( elemPtr.isLVPtr == GEN_WIDE_PTR );
 
@@ -5684,8 +5667,7 @@ static bool codegenIsSpecialPrimitive(BaseAST* target, Expr* e, GenRet& ret) {
         retval = true;
 
       } else if (target && (target->getValType() != call->getValType())) {
-        GenRet getElem = codegenElementPtr(call->get(1),
-                                           codegenExprMinusOne(call->get(2)));
+        GenRet getElem = codegenElementPtr(call->get(1), call->get(2));
 
 
         ret =  codegenAddrOf(codegenWideThingField(getElem, WIDE_GEP_ADDR));
@@ -5701,7 +5683,7 @@ static bool codegenIsSpecialPrimitive(BaseAST* target, Expr* e, GenRet& ret) {
 
       //there was an if/else block checking if call->get(1) is wide or narrow,
       //however if/else blocks were identical. It may not be in the future.
-      ret =  codegenElementPtr(call->get(1), codegenExprMinusOne(call->get(2)));
+      ret =  codegenElementPtr(call->get(1), call->get(2));
 
       retval = true;
       break;

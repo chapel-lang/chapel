@@ -6,7 +6,7 @@ record my_record {
 
 var r: my_record;
 
-for i in 1..s do r.my_tuple[i] = i*i;
+for i in 1..s do r.my_tuple[i-1] = i*i;
 
 writeln(r.my_tuple);
 

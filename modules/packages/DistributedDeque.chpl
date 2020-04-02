@@ -609,8 +609,8 @@ module DistributedDeque {
             yield node!.elements[headIdx];
 
             headIdx += 1;
-            if headIdx > distributedDequeBlockSize {
-              headIdx = 1;
+            if headIdx >= distributedDequeBlockSize {
+              headIdx = 0;
             }
           }
           node = node!.next;
@@ -661,8 +661,8 @@ module DistributedDeque {
         // Update state...
         size -= 1;
         headIdx += 1;
-        if headIdx > distributedDequeBlockSize {
-          headIdx = 1;
+        if headIdx >= distributedDequeBlockSize {
+          headIdx = 0;
         }
 
         // Advance...
@@ -717,8 +717,8 @@ module DistributedDeque {
         }
 
         tailIdx -= 1;
-        if tailIdx == 0 {
-          tailIdx = distributedDequeBlockSize;
+        if tailIdx < 0 {
+          tailIdx = distributedDequeBlockSize-1;
         }
         yield node!.elements[tailIdx];
 
@@ -766,8 +766,8 @@ module DistributedDeque {
           yield node!.elements[headIdx];
 
           headIdx += 1;
-          if headIdx > distributedDequeBlockSize {
-            headIdx = 1;
+          if headIdx >= distributedDequeBlockSize {
+            headIdx = 0;
           }
         }
         node = node!.next;
@@ -792,8 +792,8 @@ module DistributedDeque {
   class LocalDequeNode {
     type eltType;
     var elements : distributedDequeBlockSize * eltType;
-    var headIdx : int = 1;
-    var tailIdx : int = 1;
+    var headIdx : int = 0;
+    var tailIdx : int = 0;
     var size : int;
     var next : unmanaged LocalDequeNode(eltType)?;
     var prev : unmanaged LocalDequeNode(eltType)?;
@@ -810,16 +810,16 @@ module DistributedDeque {
       elements[tailIdx] = elt;
 
       tailIdx += 1;
-      if tailIdx > distributedDequeBlockSize {
-        tailIdx = 1;
+      if tailIdx >= distributedDequeBlockSize {
+        tailIdx = 0;
       }
       size += 1;
     }
 
     inline proc popBack() : eltType {
       tailIdx -= 1;
-      if tailIdx == 0 {
-        tailIdx = distributedDequeBlockSize;
+      if tailIdx < 0 {
+        tailIdx = distributedDequeBlockSize-1;
       }
 
       size -= 1;
@@ -828,8 +828,8 @@ module DistributedDeque {
 
     inline proc pushFront(elt : eltType) {
       headIdx -= 1;
-      if headIdx == 0 {
-        headIdx = distributedDequeBlockSize;
+      if headIdx == -1 {
+        headIdx = distributedDequeBlockSize-1;
       }
 
       elements[headIdx] = elt;
@@ -839,8 +839,8 @@ module DistributedDeque {
     inline proc popFront() : eltType {
       var elt = elements[headIdx];
       headIdx += 1;
-      if headIdx > distributedDequeBlockSize {
-        headIdx = 1;
+      if headIdx >= distributedDequeBlockSize {
+        headIdx = 0;
       }
 
       size -= 1;
@@ -878,8 +878,8 @@ module DistributedDeque {
         cached = nil;
 
         // Clean...
-        tmp.headIdx = 1;
-        tmp.tailIdx = 1;
+        tmp.headIdx = 0;
+        tmp.tailIdx = 0;
         tmp.size = 0;
         tmp.next = nil;
         tmp.prev = nil;

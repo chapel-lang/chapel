@@ -31,10 +31,10 @@ const samples = (
 // Otherwise it is OK to vary stridability among samples' members.
 
 /*param*/ const nt = samples.size / 2;
-proc w(/*param*/ i) return samples(2 * i - 1);
-proc r(/*param*/ i) return samples(2 * i);
+proc w(/*param*/ i) return samples(2 * i);
+proc r(/*param*/ i) return samples(2 * i + 1);
 
-for /*param*/ i1 in 1..nt {
+for /*param*/ i1 in 0..#nt {
 
   // 1-tuples
   const w1 = w(i1), r1 = r(i1);
@@ -42,7 +42,7 @@ for /*param*/ i1 in 1..nt {
   const b1 = densifyBounded((w1,), (r1,));
   check(a1, (...b1), (w1, r1));
 
-  for /*param*/ i2 in 1..nt {
+  for /*param*/ i2 in 0..#nt {
 
     // 2-tuples
     const w2 = w(i2), r2 = r(i2);
@@ -50,7 +50,7 @@ for /*param*/ i1 in 1..nt {
     const b2 = densifyBounded((w1, w2), (r1, r2));
     check((a1,a2), b2, ((w1, w2), (r1, r2)));
 
-    for /*param*/ i3 in 1..nt {
+    for /*param*/ i3 in 0..#nt {
 
       // 3-tuples
       const w3 = w(i3), r3 = r(i3);
@@ -71,6 +71,6 @@ proc check(a, b, msg) where isTuple(a) && isTuple(b) {
   if a.size != b.size then
     compilerError("check: size mismatch", (a.size, b.size),
                   "  context:", msg.type);
-  for /*param*/ i in 1..a.size do
+  for /*param*/ i in 0..#a.size do
     check(a(i), b(i), ((...msg), "  component ", i));
 }

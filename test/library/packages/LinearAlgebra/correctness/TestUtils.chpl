@@ -128,7 +128,7 @@ proc almostEquals(A: [], B: []): bool {
   // check B size/shape are the same to permit legal zippering
   //
   if isRectangularDom(A.domain) && isRectangularDom(B.domain) {
-    for d in 1..A.rank do
+    for d in 0..#A.rank do
       if A.domain.dim(d).size != B.domain.dim(d).size then
         return false;
   }

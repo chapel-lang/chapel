@@ -1,1 +1,1 @@
-tuple-size-mismatch-forall.chpl:3: error: tuple size must match the number of grouped variables
+tuple-size-mismatch-forall.chpl:3: error: tuple size (2) must match the number of grouped variables (3)

@@ -1,1 +1,1 @@
-typeTupleOOB.chpl:4: error: type index expression '0' out of bounds
+typeTupleOOB.chpl:4: error: type index expression '-1' out of bounds (0..2)

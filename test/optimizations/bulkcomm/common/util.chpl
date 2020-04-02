@@ -3,7 +3,7 @@ var errorIfMismatch = false;
 var debugDefault = false;
 
 proc checkShape(A : [?ad], B : [?bd]) {
-  for param i in 1..ad.rank {
+  for param i in 0..ad.rank-1 {
     if ad.dim(i).size != bd.dim(i).size then return false;
   }
   return true;
@@ -35,7 +35,7 @@ proc stridedAssign(A : [], sa, B : [], sb, debug=debugDefault) {
         return memberDom.contains(idx);
       } else {
         var ret = true;
-        for param i in 1..sa.size {
+        for param i in 0..sa.size-1 {
           if isRange(sa(i)) then ret &&= sa(i).contains(idx(i));
           else ret &&= (idx(i) == sa(i));
         }

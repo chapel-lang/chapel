@@ -17,22 +17,22 @@ proc sha256hash(a:uint, b:uint=0, c:uint=0, d:uint=0,
   var msg:16*uint(32);
   var state:SHA256State;
 
-  msg[ 1] = (a >> 32         ):uint(32);
-  msg[ 2] = (a & 0xffffffff  ):uint(32);
-  msg[ 3] = (b >> 32         ):uint(32);
-  msg[ 4] = (b & 0xffffffff  ):uint(32);
-  msg[ 5] = (c >> 32         ):uint(32);
-  msg[ 6] = (c & 0xffffffff  ):uint(32);
-  msg[ 7] = (d >> 32         ):uint(32);
-  msg[ 8] = (d & 0xffffffff  ):uint(32);
-  msg[ 9] = (e >> 32         ):uint(32);
-  msg[10] = (e & 0xffffffff  ):uint(32);
-  msg[11] = (f >> 32         ):uint(32);
-  msg[12] = (f & 0xffffffff  ):uint(32);
-  msg[13] = (g >> 32         ):uint(32);
-  msg[14] = (g & 0xffffffff  ):uint(32);
-  msg[15] = (h >> 32         ):uint(32);
-  msg[16] = (h & 0xffffffff  ):uint(32);
+  msg[ 0] = (a >> 32         ):uint(32);
+  msg[ 1] = (a & 0xffffffff  ):uint(32);
+  msg[ 2] = (b >> 32         ):uint(32);
+  msg[ 3] = (b & 0xffffffff  ):uint(32);
+  msg[ 4] = (c >> 32         ):uint(32);
+  msg[ 5] = (c & 0xffffffff  ):uint(32);
+  msg[ 6] = (d >> 32         ):uint(32);
+  msg[ 7] = (d & 0xffffffff  ):uint(32);
+  msg[ 8] = (e >> 32         ):uint(32);
+  msg[ 9] = (e & 0xffffffff  ):uint(32);
+  msg[10] = (f >> 32         ):uint(32);
+  msg[11] = (f & 0xffffffff  ):uint(32);
+  msg[12] = (g >> 32         ):uint(32);
+  msg[13] = (g & 0xffffffff  ):uint(32);
+  msg[14] = (h >> 32         ):uint(32);
+  msg[15] = (h & 0xffffffff  ):uint(32);
 
   var hash:8*uint(32) = state.lastblock(msg, 16*32);
   var ret: uint(64);

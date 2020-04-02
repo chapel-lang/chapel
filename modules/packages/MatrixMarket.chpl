@@ -175,8 +175,8 @@ proc mmwrite(const fname:string, mat:[?Dmat] ?T) where mat.domain.rank == 2 {
    var (nrows, poslast) = (-1,-1);
    var n_cols = -1;
 
-   const DmatHighRow = high(Dmat)(1);
-   const DmatHighCol = high(Dmat)(2);
+   const DmatHighRow = high(Dmat)(0);
+   const DmatHighCol = high(Dmat)(1);
 
    for r in 1..DmatHighRow {
      const dom = 1..DmatHighCol;
@@ -293,8 +293,8 @@ class MMReader {
       if T == complex {
         tfmt = "%r %r";
         // double-loop to ensure correct ordering
-        for col in toret.domain.dim(2) {
-          for row in toret.domain.dim(1) {
+        for col in toret.domain.dim(1) {
+          for row in toret.domain.dim(0) {
             var wr:real;
             var wi:real;
             fin.readf(tfmt, wr, wi);
@@ -314,8 +314,8 @@ class MMReader {
         }
 
         // double-loop to ensure correct ordering
-        for col in toret.domain.dim(2) {
-          for row in toret.domain.dim(1) {
+        for col in toret.domain.dim(1) {
+          for row in toret.domain.dim(0) {
             var w:T;
             fin.readf(tfmt, w);
             if isSparse then

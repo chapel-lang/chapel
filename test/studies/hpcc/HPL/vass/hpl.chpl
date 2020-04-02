@@ -69,8 +69,8 @@ config var reproducible = false, verbose = false;
   var targetLocales = reshape(Locales, targetIds);
 
   // Here are the dimensions of our grid of locales.
-  const tl1 = targetIds.dim(1).size,
-        tl2 = targetIds.dim(2).size;
+  const tl1 = targetIds.dim(0).size,
+        tl2 = targetIds.dim(1).size;
   if printParams && printStats then
     writeln("target locales ", tl1, " x ", tl2);
 
@@ -226,22 +226,22 @@ proc schurComplement(AD: domain, BD: domain, Rest: domain) {
   // Copy data into replicated arrays so every processor has a local copy
   // of the data it will need to perform a local matrix-multiply.
   //
-  coforall dest in targetLocales[targetIds.dim(1).high, targetIds.dim(2)] do
+  coforall dest in targetLocales[targetIds.dim(0).high, targetIds.dim(1)] do
     on dest do
       // replA on tgLocales[d1,i] gets a copy of Ab from tgLocales[d1,..]
-      replA = Ab[1..n, AD.dim(2)];
+      replA = Ab[1..n, AD.dim(1)];
 
-  coforall dest in targetLocales[targetIds.dim(1), targetIds.dim(2).high] do
+  coforall dest in targetLocales[targetIds.dim(0), targetIds.dim(1).high] do
     on dest do
       // replB on tgLocales[i,d2] gets a copy of Ab from tgLocales[..,d2]
-      replB = Ab[BD.dim(1), 1..n+1];
+      replB = Ab[BD.dim(0), 1..n+1];
 
   // do local matrix-multiply on a block-by-block basis
   forall (row,col) in Rest by (blkSize, blkSize) {
     // localize Rest explicitly as a workaround;
     // also hoist the innerRange computation
-    const outterRange = Rest.dim(1)(row..#blkSize),
-          innerRange  = Rest.dim(2)(col..#blkSize);
+    const outterRange = Rest.dim(0)(row..#blkSize),
+          innerRange  = Rest.dim(1)(col..#blkSize);
 
     local {
       for a in outterRange do
@@ -260,7 +260,7 @@ proc panelSolve(
                panel: domain,
                piv: [] indexType) {
 
-  for k in panel.dim(2) {             // iterate through the columns
+  for k in panel.dim(1) {             // iterate through the columns
     const col = panel[k.., k..k];
     
     // If there are no rows below the current column return
@@ -302,9 +302,9 @@ proc updateBlockRow(
                    tl: domain,
                    tr: domain) {
 
-  for row in tr.dim(1) {
+  for row in tr.dim(0) {
     const activeRow = tr[row..row, ..],
-          prevRows = tr.dim(1).low..row-1;
+          prevRows = tr.dim(0).low..row-1;
 
     forall (i,j) in activeRow do
       for k in prevRows do
@@ -317,7 +317,7 @@ proc updateBlockRow(
 // compute the backwards substitution
 //
 proc backwardSub(n: indexType) {
-  const bd = Ab.domain.dim(1);  // or simply 1..n
+  const bd = Ab.domain.dim(0);  // or simply 1..n
   var x: [bd] elemType;
 
   for i in bd by -1 do

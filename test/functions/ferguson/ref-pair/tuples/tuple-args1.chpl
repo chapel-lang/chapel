@@ -14,20 +14,20 @@ config const n = 1;
 
 proc readsOne( tup )
 {
-  writeln(tup(1));
+  writeln(tup(0));
 }
 proc readsComputed( tup )
 {
-  writeln(tup(n));
+  writeln(tup(n-1));
 }
 proc writesOne( tup )
 {
-  tup(1) = 1;
+  tup(0) = 1;
 }
 
 proc writesOneNested( tup )
 {
-  tup(1)(1) = 1;
+  tup(0)(1) = 1;
 }
 
 writeln("readsOne");

@@ -15,7 +15,7 @@ for (a, b, c) in zip(A, B, C) {
 writeln((A, B, C));
 
 for t in zip(A, B, C) {
-  t(2) += t(1) + t(3);
+  t(1) += t(0) + t(2);
 }
 
 writeln((A, B, C));

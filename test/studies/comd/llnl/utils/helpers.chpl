@@ -6,7 +6,7 @@ use Time;
 
 inline proc dot(const in v1:real3, const in v2:real3) : real {
   var r : real = 0.0;
-  for i in 1..3 do r += v1(i) * v2(i);
+  for i in 0..2 do r += v1(i) * v2(i);
   return r;
 }
 

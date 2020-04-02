@@ -1,5 +1,5 @@
 proc output(xs ...?n) {
-  for param i in 1..n do
+  for param i in 0..n-1 do
     foutput(xs(i));
 }
 

@@ -73,7 +73,7 @@ proc main() {
   {
     var isSortedWorks= true;
 
-    for param i in 1..tests.size {
+    for param i in 0..tests.size-1 {
       var (arr, cmp) = tests(i);
 
       if !isSorted(arr, comparator=cmp) {
@@ -94,7 +94,7 @@ proc main() {
   /* Correctness tests for sort routines */
   // TODO -- functionalize these tests when FCF support allows it
   {
-    for param i in 1..tests.size {
+    for param i in 1..tests.size-1 {
       var (arr, cmp) = tests(i);
       resetArray(arr, cmp);
       sort(arr, comparator=cmp);
@@ -102,7 +102,7 @@ proc main() {
         writeln('  for sort() function.\n');
     }
 
-    for param i in 1..tests.size {
+    for param i in 1..tests.size-1 {
       ref (arr, cmp) = tests(i);
       resetArray(arr, cmp);
       BubbleSort.bubbleSort(arr, comparator=cmp);
@@ -110,7 +110,7 @@ proc main() {
         writeln('  for bubbleSort() function.\n');
     }
 
-    for param i in 1..tests.size {
+    for param i in 1..tests.size-1 {
       var (arr, cmp) = tests(i);
       resetArray(arr, cmp);
       InsertionSort.insertionSort(arr, comparator=cmp);
@@ -118,7 +118,7 @@ proc main() {
         writeln('  for insertionSort() function.\n');
     }
 
-    for param i in 1..tests.size {
+    for param i in 1..tests.size-1 {
       var (arr, cmp) = tests(i);
       resetArray(arr, cmp);
       BinaryInsertionSort.binaryInsertionSort(arr, comparator=cmp);
@@ -126,7 +126,7 @@ proc main() {
         writeln('  for binaryInsertionSort() function.\n');
     }
 
-    for param i in 1..tests.size {
+    for param i in 1..tests.size-1 {
       var (arr, cmp) = tests(i);
       resetArray(arr, cmp);
       QuickSort.quickSort(arr, comparator=cmp);
@@ -134,7 +134,7 @@ proc main() {
         writeln('  for quickSort() function.\n');
     }
 
-    for param i in 1..tests.size {
+    for param i in 1..tests.size-1 {
       var (arr, cmp) = tests(i);
       resetArray(arr, cmp);
       HeapSort.heapSort(arr, comparator=cmp);
@@ -142,7 +142,7 @@ proc main() {
         writeln('  for heapSort() function.\n');
     }
 
-    for param i in 1..tests.size {
+    for param i in 1..tests.size-1 {
       var (arr, cmp) = tests(i);
       resetArray(arr, cmp);
       SelectionSort.selectionSort(arr, comparator=cmp);
@@ -150,7 +150,7 @@ proc main() {
         writeln('  for selectionSort() function.\n');
     }
 
-    for param i in 1..tests.size {
+    for param i in 1..tests.size-1 {
       var (arr, cmp) = tests(i);
       resetArray(arr, cmp);
       MergeSort.mergeSort(arr, comparator=cmp);

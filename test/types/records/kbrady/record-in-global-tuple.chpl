@@ -20,6 +20,6 @@ module foo {
   use bar;
 
   proc main() {
-    writeln(tuple_failure[1].x[1]);
+    writeln(tuple_failure[0].x[1]);
   }
 }

@@ -901,7 +901,7 @@ module ChapelDistribution {
       // fill all new indices i s.t. i > indices[oldnnz]
       forall i in shiftMap.domain.high+1..dom.nnzDom.high do data[i] = irv;
 
-      for (i, _newIdx) in zip(1..oldnnz by -1, shiftMap.domain.dim(1) by -1) {
+      for (i, _newIdx) in zip(1..oldnnz by -1, shiftMap.domain.dim(0) by -1) {
         newIdx = shiftMap[_newIdx];
         data[newIdx] = data[i];
 
@@ -1004,7 +1004,7 @@ module ChapelDistribution {
         var tmp:rank * range(idxType,BoundedRangeType.bounded,stridable);
 
         // set tmp = inds with some error checking
-        for param i in 1..rank {
+        for param i in 0..rank-1 {
           var from = inds(i);
           tmp(i) =
             from.safeCast(range(idxType,BoundedRangeType.bounded,stridable));

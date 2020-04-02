@@ -80,8 +80,8 @@ compilerAssert(CHPL_NETWORK_ATOMICS == "none",
   setupTargetLocalesArray(targetIds, targetLocales, Locales);
 
   // Here are the dimensions of our grid of locales.
-  const tl1 = targetIds.dim(1).size,
-        tl2 = targetIds.dim(2).size;
+  const tl1 = targetIds.dim(0).size,
+        tl2 = targetIds.dim(1).size;
 
   if tl1 != tl2 then
     halt("backwardSub() is implemented only for a square locale grid");
@@ -321,12 +321,12 @@ proc schurComplement(blk, AD, BD, Rest) {
   // Copy data into replicated arrays so every processor has a local copy
   // of the data it will need to perform a local matrix-multiply.
   //
-  replicateA(blk, AD.dim(2));
+  replicateA(blk, AD.dim(1));
   //
-  replicateB(blk, BD.dim(1));
+  replicateB(blk, BD.dim(0));
 
-    const low1 = Rest.dim(1).low,
-          low2 = Rest.dim(2).low;
+    const low1 = Rest.dim(0).low,
+          low2 = Rest.dim(1).low;
     coforall lid1 in 0..#tl1 do
       coforall lid2 in 0..#tl2 do
         on targetLocalesRepl[lid1, lid2] do
@@ -384,10 +384,10 @@ proc DimensionalArr.dsiLocalSlice1((sliceDim1, sliceDim2)) {
         l2 = dist.di2.dsiIndexToLocale1d(toScalar(sliceDim2)),
         locAdesc = this.localAdescs[l1, l2],
         r1 = if dom.dom1.dsiStorageUsesUserIndices()
-             then if origScalar(1) then sliceDim1 else dom.whole.dim(1)(sliceDim1)
+             then if origScalar(1) then sliceDim1 else dom.whole.dim(0)(sliceDim1)
              else toOrig(1, locAdesc.locDom.doml1.dsiLocalSliceStorageIndices1d(dom.dom1, toRange(sliceDim1))),
         r2 = if dom.dom2.dsiStorageUsesUserIndices()
-             then if origScalar(2) then sliceDim2 else dom.whole.dim(2)(sliceDim2)
+             then if origScalar(2) then sliceDim2 else dom.whole.dim(1)(sliceDim2)
              else toOrig(2, locAdesc.locDom.doml2.dsiLocalSliceStorageIndices1d(dom.dom2, toRange(sliceDim2)));
 
   const reindexExpr =
@@ -411,8 +411,8 @@ proc panelSolve(
                panel: domain,
                piv: [] indexType) {
 
-  const blk = panel.dim(1).low;
-  const dim2 = panel.dim(2);
+  const blk = panel.dim(0).low;
+  const dim2 = panel.dim(1);
   const cornerLocale = targetLocaleCorner(blk);
   var tStart, tReduce, tSwap, tRepl, tComp: real;
   var tSwapMsg: string;
@@ -520,7 +520,7 @@ proc psReduce(blk, k) {
 
 proc psCompute(panel, blk, k, pivotVal) {
   if k == n then return; // nothing to do
-  const dim2end = panel.dim(2).alignedHigh;
+  const dim2end = panel.dim(1).alignedHigh;
   const lid2 = targetLocalesIndexForAbIndex(2, k);
 
   coforall lid1 in 0..#tl1 {
@@ -629,9 +629,9 @@ proc updateBlockRow(
                    tl: domain,
                    tr: domain) {
   // Note: the last call to updateBlockRow may have shorter dim1.
-  if boundsChecking then assert(tl.dim(1) == tr.dim(1));
-  const dim1 = tl.dim(1);
-  const dim2 = tl.dim(2);
+  if boundsChecking then assert(tl.dim(0) == tr.dim(0));
+  const dim1 = tl.dim(0);
+  const dim2 = tl.dim(1);
   const blk = dim1.low;
   const cornerLocale = targetLocaleCorner(blk);
 
@@ -645,7 +645,7 @@ proc updateBlockRow(
     replicateU(blk);
   }
 
-  const blkStarts = tr.dim(2)[.. by blkSize align 1];
+  const blkStarts = tr.dim(1)[.. by blkSize align 1];
   const lid1 = targetLocalesIndexForAbIndex(1, blk);
   const blkStartsStart = blkStarts.alignedLow;
 

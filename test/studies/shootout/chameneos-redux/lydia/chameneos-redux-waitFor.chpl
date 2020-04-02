@@ -159,7 +159,7 @@ proc populate (size : int) {
 
   if (size == 10) {
     for i in D {
-      population(i) = new owned Chameneos(i, colorsDefault10(i));
+      population(i) = new owned Chameneos(i, colorsDefault10(i-1));
     }
   } else {
     for i in D {

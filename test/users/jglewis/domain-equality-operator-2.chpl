@@ -11,7 +11,7 @@ proc main
  
 proc traditional_outer_product_cholesky ( A : [], L : [] )
 {
-  assert ( A.domain.dim (1) == A.domain.dim (2)  &&
+  assert ( A.domain.dim (0) == A.domain.dim (1)  &&
            L.domain == A.domain );
   writeln("traditional_outer_product_cholesky OK");
 }

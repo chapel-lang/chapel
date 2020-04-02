@@ -162,7 +162,7 @@ proc populate (size : int) {
 
   const population =
     for i in D do
-      let ithColor = if size == 10 then colorsDefault10(i)
+      let ithColor = if size == 10 then colorsDefault10(i-1)
                                    else ((i-1) % numColors):Color
         in new owned Chameneos(i, ithColor);
 

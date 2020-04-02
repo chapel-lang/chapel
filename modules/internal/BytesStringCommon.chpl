@@ -399,7 +399,7 @@ module BytesStringCommon {
   inline proc startsEndsWith(const ref x: ?t, needles,
                              param fromLeft: bool) : bool 
                              where isHomogeneousTuple(needles) &&
-                                   needles[1].type==t {
+                                   needles[0].type==t {
     assertArgType(t, "startsEndsWith");
 
     var ret: bool = false;
@@ -459,7 +459,7 @@ module BytesStringCommon {
       if (isArray(S)) {
         ret = S[S.domain.first];
       } else {
-        ret = S[1];
+        ret = S[0];
       }
       return ret;
     } else {

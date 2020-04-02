@@ -34,7 +34,7 @@
 config param traceDimensionalDist = false;
 config param traceDimensionalDistDsiAccess = false;
 config param traceDimensionalDistIterators = false;
-config param fakeDimensionalDistParDim = 0;
+config param fakeDimensionalDistParDim = -1;
 
 // so user-specified phases can be retained while sorting verbose output
 var traceDimensionalDistPrefix = "";
@@ -260,8 +260,8 @@ class DimensionalDist2D : BaseDist {
   // implementation note: 'rank' is not a real param; it's just that having
   // 'proc rank param return targetLocales.rank' did not work
   param rank: int = targetLocales.rank;
-  proc numLocs1: locCntT  return targetIds.dim(1).size: locCntT;
-  proc numLocs2: locCntT  return targetIds.dim(2).size: locCntT;
+  proc numLocs1: locCntT  return targetIds.dim(0).size: locCntT;
+  proc numLocs2: locCntT  return targetIds.dim(1).size: locCntT;
 
   // parallelization knobs
   var dataParTasksPerLocale: int      = getDataParTasksPerLocale();
@@ -487,27 +487,27 @@ proc DimensionalDist2D.dsiPrivatize(privatizeData) {
 
   // ensure we get a local copy of targetLocales
   // todo - provide the following as utility functions (for domains, arrays)
-  const pdTargetLocales = privatizeData(1);
+  const pdTargetLocales = privatizeData(0);
   const privTargetIds: domain(pdTargetLocales.domain.rank,
                               pdTargetLocales.domain.idxType,
                               pdTargetLocales.domain.stridable
                               ) = pdTargetLocales.domain;
   const privTargetLocales: [privTargetIds] locale = pdTargetLocales;
 
-  var di1new = di1.type.dsiPrivatize1d(privatizeData(6));
-  var di2new = di2.type.dsiPrivatize1d(privatizeData(7));
+  var di1new = di1.type.dsiPrivatize1d(privatizeData(5));
+  var di2new = di2.type.dsiPrivatize1d(privatizeData(6));
   const plliddDummy: privTargetLocales.domain.low.type;
   _passLocalLocIDsDist(di1new, true, di2new, true,
                        privTargetLocales, false, plliddDummy);
 
   return new unmanaged DimensionalDist2D(targetLocales = privTargetLocales,
-                             name          = privatizeData(2),
+                             name          = privatizeData(1),
                              idxType       = this.idxType,
                              di1           = di1new,
                              di2           = di2new,
-                             dataParTasksPerLocale     = privatizeData(3),
-                             dataParIgnoreRunningTasks = privatizeData(4),
-                             dataParMinGranularity     = privatizeData(5),
+                             dataParTasksPerLocale     = privatizeData(2),
+                             dataParIgnoreRunningTasks = privatizeData(3),
+                             dataParMinGranularity     = privatizeData(4),
                              dummy = 0);
 }
 
@@ -571,8 +571,8 @@ proc DimensionalDist2D.dsiIndexToLocale(indexx: indexT): locale {
                   " 2-tuples; got an index of the type ",
                   indexx.type:string);
 
-  return targetLocales(di1.dsiIndexToLocale1d(indexx(1)):int,
-                       di2.dsiIndexToLocale1d(indexx(2)):int);
+  return targetLocales(di1.dsiIndexToLocale1d(indexx(0)):int,
+                       di2.dsiIndexToLocale1d(indexx(1)):int);
 }
 
 // Find ix such that targetLocales(ix) == here.
@@ -619,8 +619,8 @@ proc _passLocalLocIDsDist(ref d1, param doD1:bool, ref d2, param doD2:bool,
      else
        _CurrentLocaleToLocIDs(targetLocales);
 
-   if d1.dsiUsesLocalLocID1d() && doD1 then d1.dsiStoreLocalLocID1d(lIds(1),l);
-   if d2.dsiUsesLocalLocID1d() && doD2 then d2.dsiStoreLocalLocID1d(lIds(2),l);
+   if d1.dsiUsesLocalLocID1d() && doD1 then d1.dsiStoreLocalLocID1d(lIds(0),l);
+   if d2.dsiUsesLocalLocID1d() && doD2 then d2.dsiStoreLocalLocID1d(lIds(1),l);
   }
  }
 }
@@ -669,12 +669,12 @@ proc DimensionalDom.dsiPrivatize(privatizeData) {
   _traceddd(this, ".dsiPrivatize on ", here.id);
 
   var privdist = chpl_getPrivatizedCopy(objectType = this.dist.type,
-                                        objectPid  = privatizeData(1));
+                                        objectPid  = privatizeData(0));
 
-    var dom1new = dom1.type.dsiPrivatize1d(privdist.di1, privatizeData(2));
+    var dom1new = dom1.type.dsiPrivatize1d(privdist.di1, privatizeData(1));
     _passLocalLocIDsDom1d(dom1new, privdist.di1);
 
-    var dom2new = dom2.type.dsiPrivatize1d(privdist.di2, privatizeData(3));
+    var dom2new = dom2.type.dsiPrivatize1d(privdist.di2, privatizeData(2));
     _passLocalLocIDsDom1d(dom2new, privdist.di2);
 
   const result = new unmanaged DimensionalDom(rank      = this.rank,
@@ -683,8 +683,8 @@ proc DimensionalDom.dsiPrivatize(privatizeData) {
                                     dist = privdist,
                                     dom1 = dom1new,
                                     dom2 = dom2new,
-                                    whole       = {(...privatizeData(4))},
-                                    localDdescs = privatizeData(5));
+                                    whole       = {(...privatizeData(3))},
+                                    localDdescs = privatizeData(4));
 
   // update local-to-global pointers as needed
   param lg1 = dom1new.dsiLocalDescUsesPrivatizedGlobalDesc1d();
@@ -719,10 +719,10 @@ proc DimensionalDom.dsiReprivatize(other, reprivatizeData) {
                  this.idxType == other.idxType &&
                  this.stridable == other.stridable);
 
-  dom1.dsiReprivatize1d(reprivatizeData(1));
-  dom2.dsiReprivatize1d(reprivatizeData(2));
+  dom1.dsiReprivatize1d(reprivatizeData(0));
+  dom2.dsiReprivatize1d(reprivatizeData(1));
 
-  this.whole = reprivatizeData(3);
+  this.whole = reprivatizeData(2);
 }
 
 
@@ -798,8 +798,8 @@ override proc DimensionalDist2D.dsiNewRectangularDom(param rank: int,
       locDdesc = new unmanaged LocDimensionalDom(
               // stoDomainT -- see compilerAssert below; must be local
               domain(rank, idxType, stoStridableDom(stoIndexT, dom1, dom2)),
-                       doml1 = dom1.dsiNewLocalDom1d(stoIndexT, locIds(1)),
-                       doml2 = dom2.dsiNewLocalDom1d(stoIndexT, locIds(2)));
+                       doml1 = dom1.dsiNewLocalDom1d(stoIndexT, locIds(0)),
+                       doml2 = dom2.dsiNewLocalDom1d(stoIndexT, locIds(1)));
 
   var localDdescsNN = localDdescsTemp!; //#15080
   const result = new unmanaged DimensionalDom(rank=rank, idxType=idxType,
@@ -839,8 +839,8 @@ proc DimensionalDom._dsiSetIndicesHelper(newRanges: rank * rangeT): void {
     compilerError("DimensionalDist2D presently supports only 2 dimensions,",
                   " got a domain with ", rank, " dimensions");
 
-  dom1.dsiSetIndices1d(newRanges(1));
-  dom2.dsiSetIndices1d(newRanges(2));
+  dom1.dsiSetIndices1d(newRanges(0));
+  dom2.dsiSetIndices1d(newRanges(1));
 
   // could omit this warning if the intersection between the old and the new
   // domains is empty; could change it to halt("unimplemented")
@@ -858,8 +858,8 @@ proc DimensionalDom._dsiSetIndicesHelper(newRanges: rank * rangeT): void {
 // in the intersection of the old and new domains' index sets
 proc LocDimensionalDom._dsiLocalSetIndicesHelper(type stoRangeT, globDD, locId)
 {
-  var myRange1: stoRangeT = doml1.dsiSetLocalIndices1d(globDD(1),locId(1));
-  var myRange2: stoRangeT = doml2.dsiSetLocalIndices1d(globDD(2),locId(2));
+  var myRange1: stoRangeT = doml1.dsiSetLocalIndices1d(globDD(0),locId(0));
+  var myRange2: stoRangeT = doml2.dsiSetLocalIndices1d(globDD(1),locId(1));
 
   myStorageDom = {myRange1, myRange2};
 
@@ -891,8 +891,8 @@ proc DimensionalArr.dsiGetPrivatizeData() {
 proc DimensionalArr.dsiPrivatize(privatizeData) {
   _traceddd(this, ".dsiPrivatize on ", here.id);
 
-  const idDom = privatizeData(1);
-  const idAllocDom = privatizeData(2);
+  const idDom = privatizeData(0);
+  const idAllocDom = privatizeData(1);
 
   const privDom = chpl_getPrivatizedCopy(objectType = this.dom.type,
                                          objectPid  = idDom);
@@ -907,7 +907,7 @@ proc DimensionalArr.dsiPrivatize(privatizeData) {
                                     idxType  = this.idxType,
                                     stridable= this.stridable,
                                     eltType  = this.eltType,
-                                    localAdescs = privatizeData(3),
+                                    localAdescs = privatizeData(2),
                                     dom      = privDom,
                                     allocDom = privAllocDom);
 
@@ -988,8 +988,8 @@ proc DimensionalArr.dsiAccess(indexx: dom.indexT) ref: eltType {
                   indexx.type:string);
 
   const alDom = this.allocDom;
-  const (l1,i1):(locIdT, alDom.stoIndexT) = alDom.dom1.dsiAccess1d(indexx(1));
-  const (l2,i2):(locIdT, alDom.stoIndexT) = alDom.dom2.dsiAccess1d(indexx(2));
+  const (l1,i1):(locIdT, alDom.stoIndexT) = alDom.dom1.dsiAccess1d(indexx(0));
+  const (l2,i2):(locIdT, alDom.stoIndexT) = alDom.dom2.dsiAccess1d(indexx(1));
   const locAdesc = this.localAdescs[l1,l2];
 //writeln("locAdesc.myStorageArr on ", locAdesc.myStorageArr.locale.id);
   return locAdesc.myStorageArr(i1,i2);
@@ -1011,13 +1011,13 @@ proc DimensionalArr.dsiSerialWrite(f): void {
        // Go to the original array and invoke the follower iterator on it,
        // giving the alias's entire domain as the index set to follow.
        // (NB dsiFollowerArrayIterator1d's argument is not densified.)
-      const dom1d = if d == 1 then this.allocDom.dom1 else this.allocDom.dom2;
+      const dom1d = if d == 0 then this.allocDom.dom1 else this.allocDom.dom2;
       for l_i in dom1d.dsiFollowerArrayIterator1d(this.dom.whole.dim(d)) do
         yield l_i;
 
     } else {
       const alDom = this.dom;
-      const dom1d = if d == 1 then alDom.dom1 else alDom.dom2;
+      const dom1d = if d == 0 then alDom.dom1 else alDom.dom2;
       for (l,r) in dom1d.dsiSerialArrayIterator1d() do
         for i in r do
           yield (l,i);
@@ -1029,12 +1029,12 @@ proc DimensionalArr.dsiSerialWrite(f): void {
   if this.dom.dsiNumIndices == 0 then return;
 
   var nextD1 = false;
-  for (l1,i1) in iHelp(1) {
+  for (l1,i1) in iHelp(0) {
       if nextD1 then f.writeln();
       nextD1 = true;
 
       var nextD2 = false;
-      for (l2,i2) in iHelp(2) {
+      for (l2,i2) in iHelp(1) {
           const locAdesc = this.localAdescs[l1,l2];
           const elem = locAdesc.myStorageArr(i1,i2);
           if nextD2 then f.write(" ");
@@ -1058,10 +1058,10 @@ proc DimensionalArr.dsiLocalSlice((sliceDim1, sliceDim2)) {
         l2 = dist.di2.dsiIndexToLocale1d(sliceDim2.low),
         locAdesc = this.localAdescs[l1, l2],
         r1 = if dom.dom1.dsiStorageUsesUserIndices()
-             then dom.whole.dim(1)(sliceDim1)
+             then dom.whole.dim(0)(sliceDim1)
              else locAdesc.locDom.doml1.dsiLocalSliceStorageIndices1d(dom.dom1, sliceDim1),
         r2 = if dom.dom2.dsiStorageUsesUserIndices()
-             then dom.whole.dim(2)(sliceDim2)
+             then dom.whole.dim(1)(sliceDim2)
              else locAdesc.locDom.doml2.dsiLocalSliceStorageIndices1d(dom.dom2, sliceDim2);
 
   return locAdesc.myStorageArr[r1, r2];
@@ -1120,7 +1120,7 @@ iter DimensionalDom.these(param tag: iterKind) where tag == iterKind.leader {
       return targetIds.dim(dd);
   }
   const overTargetIds = if dom1.dsiIsReplicated1d() || dom2.dsiIsReplicated1d()
-    then {helpTargetIds(dom1,1), helpTargetIds(dom2,2)}
+    then {helpTargetIds(dom1,0), helpTargetIds(dom2,1)}
     else targetIds; // in this case, avoid re-building the domain
 
   // todo: lls is needed only for debugging printing?
@@ -1141,14 +1141,14 @@ iter DimensionalDom.these(param tag: iterKind) where tag == iterKind.leader {
 
       // when we know which dimension should be the parallel one
       proc compute1dNTPD(param parDim): (int,int) {
-        const myNumIndices = myDims(1).size * myDims(2).size;
+        const myNumIndices = myDims(0).size * myDims(1).size;
         const cnc:int =
           _computeNumChunks(maxTasks, ignoreRunning, minSize, myNumIndices);
         return ( min(cnc, myDims(parDim).size:int), parDim );
       }
 
       const (numTasks, parDim) =
-        if fakeDimensionalDistParDim > 0 then
+        if fakeDimensionalDistParDim >= 0 then
           // a debugging hook
           compute1dNTPD(fakeDimensionalDistParDim)
         else
@@ -1159,21 +1159,21 @@ iter DimensionalDom.these(param tag: iterKind) where tag == iterKind.leader {
             if dom2.dsiSingleTaskPerLocaleOnly1d() then
               (1, 1)
             else
-              compute1dNTPD(2)
+              compute1dNTPD(1)
           else
             if dom2.dsiSingleTaskPerLocaleOnly1d() then
-              compute1dNTPD(1)
+              compute1dNTPD(0)
             else
               _computeChunkStuff(maxTasks, ignoreRunning, minSize, myDims);
 
 
       // parDim gotta point to one of the dimensions that we have
-      assert(numTasks == 0 || (1 <= parDim && parDim <= rank));
+      assert(numTasks == 0 || (0 <= parDim && parDim < rank));
 
       // parDim cannot point to a single-task-only dimension
       assert(numTasks <= 1 ||
-             ( (parDim !=1 || !dom1.dsiSingleTaskPerLocaleOnly1d()) &&
-               (parDim !=2 || !dom2.dsiSingleTaskPerLocaleOnly1d()) ));
+             ( (parDim !=0 || !dom1.dsiSingleTaskPerLocaleOnly1d()) &&
+               (parDim !=1 || !dom2.dsiSingleTaskPerLocaleOnly1d()) ));
 
       if numTasks == 0 then
         _traceddc(traceDimensionalDist || traceDimensionalDistIterators,
@@ -1238,8 +1238,8 @@ iter DimensionalDom.these(param tag: iterKind) where tag == iterKind.leader {
             }
           }
 
-          for r1 in iter1dCheck(1, dom1, locDdesc.doml1, myDims(1)) do
-            for r2 in iter1dCheck(2, dom2, locDdesc.doml2, myDims(2)) do
+          for r1 in iter1dCheck(0, dom1, locDdesc.doml1, myDims(0)) do
+            for r2 in iter1dCheck(1, dom2, locDdesc.doml2, myDims(1)) do
             {
               const follow: followT = (r1, r2);
               _traceddc(traceDimensionalDistIterators, "  leader on ", lls,
@@ -1331,8 +1331,8 @@ iter DimensionalArr.these(param tag: iterKind, followThis) ref where tag == iter
   assert(this.rank == 2);
 
   // Convert the followThis ranges to user index space.
-  const f1 = unDensify(followThis(1), this.dom.whole.dim(1));
-  const f2 = unDensify(followThis(2), this.dom.whole.dim(2));
+  const f1 = unDensify(followThis(0), this.dom.whole.dim(0));
+  const f2 = unDensify(followThis(1), this.dom.whole.dim(1));
 
   // If this is an alias, we will invoke dsiFollowerArrayIterator1d
   // on the original array's domain descriptors.

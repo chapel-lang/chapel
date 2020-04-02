@@ -196,12 +196,12 @@ var diffTup: (int,real,complex) = (5, 1.928, myCplx);
 var diffTupe2 = (7, 5.64, 6.0+1.5i);
 
 // Tuples can be accessed using square brackets or parentheses, and are
-// 1-indexed.
-writeln("(", sameTup[1], ",", sameTup(2), ")");
+// 0-indexed.
+writeln("(", sameTup[0], ",", sameTup(1), ")");
 writeln(diffTup);
 
 // Tuples can also be written into.
-diffTup(1) = -1;
+diffTup(0) = -1;
 
 // Tuple values can be expanded into their own variables.
 var (tupInt, tupReal, tupCplx) = diffTup;
@@ -420,7 +420,8 @@ var realArray2: [1..5,1..7] real;   // equivalent
 var realArray3: [{1..5,1..7}] real; // equivalent
 
 for i in 1..5 {
-  for j in realDomain.dim(2) {   // Only use the 2nd dimension of the domain
+  const (rows,cols) = realDomain.dims();
+  for j in cols {   // Only use the "column" dimension of the domain
     realArray[i,j] = -1.61803 * i + 0.5 * j;  // Access using index list
     var idx: 2*int = (i,j);                   // Note: 'index' is a keyword
     realArray[idx] = - realArray[(i,j)];      // Index using tuples
@@ -429,7 +430,7 @@ for i in 1..5 {
 
 // Arrays have domains as members, and can be iterated over as normal.
 for idx in realArray.domain {  // Again, idx is a 2*int tuple
-  realArray[idx] = 1 / realArray[idx[1], idx[2]]; // Access by tuple and list
+  realArray[idx] = 1 / realArray[idx[0], idx[1]]; // Access by tuple and list
 }
 
 writeln(realArray);
@@ -515,10 +516,10 @@ proc addThree(n) {
 doublePrint(addThree(fibonacci(20)));
 
 // It is also possible to take a variable number of parameters.
-proc maxOf(x ...?k) {
-  // x refers to a tuple of one type, with k elements
-  var maximum = x[1];
-  for i in 2..k do maximum = if maximum < x[i] then x[i] else maximum;
+proc maxOf(x:?t ...?k) {
+  // x refers to a tuple of one type, t, with k elements
+  var maximum = min(t);
+  for i in x.indices do maximum = if maximum < x[i] then x[i] else maximum;
   return maximum;
 }
 writeln(maxOf(1, -10, 189, -9071982, 5, 17, 20001, 42));

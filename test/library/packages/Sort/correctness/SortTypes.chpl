@@ -12,9 +12,9 @@ record UselessKeyComparator {
 record UselessKeyPartComparator {
   proc keyPart(x, i:int) {
     if isTuple(x) {
-      type tt = x(1).type;
+      type tt = x(0).type;
       if i <= x.size then
-        return (0, x(i));
+        return (0, x(i-1));  // JUST CHANGED THIS
       else
         return (-1, 0:tt);
 
@@ -34,7 +34,7 @@ record UselessKeyPartComparator {
 proc isTupleOfString(type t) param {
   if isHomogeneousTupleType(t) {
     var tmp:t;
-    return tmp(1).type == string;
+    return tmp(0).type == string;
   }
   
   return false;
@@ -43,7 +43,7 @@ proc isTupleOfString(type t) param {
 proc isFloatOrTupleOfFloat(type t) param {
   if isHomogeneousTupleType(t) {
     var tmp:t;
-    return isFloatOrTupleOfFloat(tmp(1).type);
+    return isFloatOrTupleOfFloat(tmp(0).type);
   }
   
   return isFloatType(t);
@@ -90,15 +90,15 @@ proc checkSorts(arr) {
 proc generate(type t, i:int) {
   if isTupleType(t) {
     var ret:t;
-    type t1 = ret(1).type;
-    type t2 = ret(2).type;
-    ret(1) = ((if i < 100 then 100 else 0) + (i % 17)): t1;
-    ret(2) = (i % 777):t2;
+    type t1 = ret(0).type;
+    type t2 = ret(1).type;
+    ret(0) = ((if i < 100 then 100 else 0) + (i % 17)): t1;
+    ret(1) = (i % 777):t2;
     if t1 != string { 
       if i == 0 then
-        ret(1) = max(ret(1).type);
+        ret(0) = max(ret(0).type);
       if i == 1 then
-        ret(2) = max(ret(1).type);
+        ret(1) = max(ret(0).type);
     }
     return ret;
   } else if isIntType(t) || isUintType(t) {

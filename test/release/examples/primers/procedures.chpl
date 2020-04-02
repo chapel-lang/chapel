@@ -298,11 +298,11 @@ writeln();
 // Note: see the :doc:`varargs` primer for further information on procedures
 // with a variable number of arguments
 //
-proc writeList(x ...?k) {
+proc writeList(xs ...?k) {
   var first = true;
-  for param i in 1..k {
+  for x in xs {
     if first then first = false; else write(" ");
-    write(x(i));
+    write(x);
   }
   writeln();
 }

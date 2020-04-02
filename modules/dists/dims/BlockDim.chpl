@@ -123,9 +123,9 @@ proc type BlockDim.dsiPrivatize1d(privatizeData) {
 // initializer for privatization
 proc BlockDim.init(privatizeData, type idxType) {
   this.idxType = idxType;
-  numLocales = privatizeData(1);
-  bbStart = privatizeData(2);
-  bbLength = privatizeData(3);
+  numLocales = privatizeData(0);
+  bbStart = privatizeData(1);
+  bbLength = privatizeData(2);
 }
 
 proc BlockDim.dsiUsesLocalLocID1d() param return false;
@@ -138,7 +138,7 @@ proc type Block1dom.dsiPrivatize1d(privDist, privatizeData) {
   assert(privDist.locale == here); // sanity check
   return new Block1dom(idxType   = this.idxType,
                   stridable = this.stridable,
-                  wholeR    = privatizeData(1),
+                  wholeR    = privatizeData(0),
                   pdist     = privDist);
 }
 
@@ -147,7 +147,7 @@ proc Block1dom.dsiGetReprivatizeData1d() {
 }
 
 proc Block1dom.dsiReprivatize1d(reprivatizeData) {
-  this.wholeR = reprivatizeData(1);
+  this.wholeR = reprivatizeData(0);
 }
 
 proc Block1dom.dsiUsesLocalLocID1d() param return false;

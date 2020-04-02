@@ -92,8 +92,8 @@ class Matrix {
   proc Matrix(arg0,arg1=-1) {
     if (arg1 == -1)
     then {
-      n = arg0.domain.dim(1).high;
-      m = arg0.domain.dim(2).high;
+      n = arg0.domain.dim(0).high;
+      m = arg0.domain.dim(1).high;
       a = arg0;
     }
     else {
@@ -108,8 +108,8 @@ class Matrix {
   //due to default constructor semantics i think?
   /*
   proc Matrix(arg0) {
-    n = arg0.domain.dim(1).high;
-    m = arg0.domain.dim(2).high;
+    n = arg0.domain.dim(0).high;
+    m = arg0.domain.dim(1).high;
     a = arg0;
   }
 
@@ -232,7 +232,7 @@ proc main() {
   writeln("m1 = ",m1);
 
   var a4 : [1..3,1..6] elemType = [(i,j) in {1..3, 1..6}] i+j;
-  var m4 = new Matrix(a4.domain.dim(1).high,a4.domain.dim(2).high,a4);
+  var m4 = new Matrix(a4.domain.dim(0).high,a4.domain.dim(1).high,a4);
   writeln("m4 = ",m4);
 
   writeln("m1.dims() = ",m1.dims());

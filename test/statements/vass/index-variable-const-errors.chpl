@@ -42,15 +42,15 @@ proc main() {
   // _indexOfInterest: _ref(2*int)
   for itVar in tupleVar() {
     itVar = (13001, 13002);
-    itVar(1) = 13003;
-    itVar(2) = 13004;
+    itVar(0) = 13003;
+    itVar(1) = 13004;
   }
 
   // _indexOfInterest: 2*int
   for itVal in tupleVal() {
     itVal = (14001, 14002);   // error
-    itVal(1) = 14003;         // error
-    itVal(2) = 14004;         // error
+    itVal(0) = 14003;         // error
+    itVal(1) = 14004;         // error
   }
 
 

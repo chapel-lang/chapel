@@ -1,5 +1,5 @@
 F1
 F1
-uncaught SystemError: Invalid argument: Argument type mismatch in argument 1 (in string.format)
+uncaught SystemError: Invalid argument: Argument type mismatch in argument 0 (in string.format)
   readAbstractEnum.chpl:6: thrown here
   readAbstractEnum.chpl:6: uncaught here

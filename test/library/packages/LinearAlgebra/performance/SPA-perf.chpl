@@ -116,7 +116,7 @@ proc memberCheck(A) {
 
 proc SPAdot(A: [?Adom], B: [?Bdom]) where isCSArr(A) && isCSArr(B) {
 
-  const D = {Adom.dim(1), Bdom.dim(2)};
+  const D = {Adom.dim(0), Bdom.dim(1)};
   var Cdom: sparse subdomain(D) dmapped CS(sortedIndices=false);
   var C: [Cdom] A.eltType;
 
@@ -124,7 +124,7 @@ proc SPAdot(A: [?Adom], B: [?Bdom]) where isCSArr(A) && isCSArr(B) {
   const nnzAB = Adom.size + Bdom.size;
   Cdom._value.nnzDom = {1..nnzAB};
 
-  var spa = new _SPA(cols={D.dim(1)}, eltType=A.eltType);
+  var spa = new _SPA(cols={D.dim(0)}, eltType=A.eltType);
 
   /*
    IR (row)     - nnz-rows  - A.domain._value.startIdx
@@ -132,7 +132,7 @@ proc SPAdot(A: [?Adom], B: [?Bdom]) where isCSArr(A) && isCSArr(B) {
    VAL (values) - nnz       - A._value.data
   */
 
-  for i in A.domain.dim(1) {
+  for i in A.domain.dim(0) {
     const colRange = A.IR(i)..(A.IR(i+1)-1);
     for k in colRange {
       const jRange = B.IR(A.JC(k))..(B.IR(A.JC(k)+1)-1);

@@ -1142,7 +1142,7 @@ module GMP {
     _mpz_realloc(ret, new_size);
 
     // get a pointer to the limbs
-    var dst_limbs_ptr = chpl_gmp_mpz_struct_limbs(ret[1]);
+    var dst_limbs_ptr = chpl_gmp_mpz_struct_limbs(ret[0]);
 
     __primitive("chpl_comm_get", dst_limbs_ptr[0],
                                  src_locale, src_limbs_ptr[0],
@@ -1154,7 +1154,7 @@ module GMP {
 
   /* Return the number of limbs used in the number */
   proc chpl_gmp_mpz_nlimbs(const ref from: mpz_t) : uint(64) {
-    var x = chpl_gmp_mpz_struct_sign_size(from[1]);
+    var x = chpl_gmp_mpz_struct_sign_size(from[0]);
     return (abs(x)):uint(64);
   }
 

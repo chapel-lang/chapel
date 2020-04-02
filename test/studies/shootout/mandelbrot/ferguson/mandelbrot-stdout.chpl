@@ -20,8 +20,8 @@ proc in_set8(ipart: int, rpart8: int):uint(8) {
 
   for i in 0..#8 {
     var rpart = rpart8 + i;
-    c8[i+1].re = (upper.re - lower.re) * rpart / size + lower.re;
-    c8[i+1].im = c_im;
+    c8[i].re = (upper.re - lower.re) * rpart / size + lower.re;
+    c8[i].im = c_im;
   }
 
   var z8: 8*complex;
@@ -29,10 +29,10 @@ proc in_set8(ipart: int, rpart8: int):uint(8) {
   var mask:int = 0xff;
 
   for it in 1..iterations {
-    for param i in 1..8 {
+    for param i in 0..7 {
       z8[i] = z8[i] * z8[i] + c8[i];
       var diverged:int = (z8[i].re*z8[i].re + z8[i].im*z8[i].im) > limit;
-      var clearbit:int = (diverged << (8-i));
+      var clearbit:int = (diverged << (7-i));
       mask &= ~clearbit;
     }
     if mask == 0 then break;
