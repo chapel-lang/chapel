@@ -2,12 +2,12 @@ use IO;
 
 class C
 {
-  proc writeThis(w) { w.write("C"); }
+  proc writeThis(w) throws { w.write("C"); }
 }
 
 class SubC : C
 {
-  override proc writeThis(w) { w.write("SubC"); }
+  override proc writeThis(w) throws { w.write("SubC"); }
 }
 
 class OverrideMe

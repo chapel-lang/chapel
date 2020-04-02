@@ -1,6 +1,0 @@
-bug: should not get "error: owned only works with classes"
-#14542
-
-When this future is fixed, remove it. To test this pattern,
-remove the workaround in with-runtime-fields-errors.chpl
-

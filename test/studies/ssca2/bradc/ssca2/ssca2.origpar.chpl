@@ -85,7 +85,7 @@ module declareGlobals {
       start = s;
       end   = e;
     }
-    proc adjMatrix [i:AdjD] { return weights(i).length; }
+    proc adjMatrix [i:AdjD] { return weights(i).size; }
   }
 }
 
@@ -398,7 +398,7 @@ proc Graph.findSubGraphs(SUBGR_EDGE_LENGTH : int,
     [e in AdjD] weights(e) =  complete.weights(e);
   }
 
-  var subgraphs: [1..(startSetIntVPairs.length+startSetStrVPairs.length)];
+  var subgraphs: [1..(startSetIntVPairs.size+startSetStrVPairs.size)];
   // Loop over vertex pairs in the int starting set.
   cobegin {
     forall (i,v) in (1.., startSetIntVPairs) {
@@ -472,7 +472,7 @@ proc cutClusters(G, cutBoxSize, alpha) {
 
     var setG : seq of index of VertexD = VertexD;
     var roots: Set = _seq( );
-    while (setG.length > 0) {
+    while (setG.size > 0) {
       var adjMin = min(adjCounts(setG));
       var active = [v in setG] if adjCounts(v) == adjMin then v;
       {

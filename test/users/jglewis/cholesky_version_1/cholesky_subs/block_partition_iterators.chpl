@@ -51,7 +51,7 @@ module block_partition_iterators {
     //    the rows in the off-diagonal block
     // -----------------------------------------------------
     
-    //    var n_block_steps  = ( idx_range.length + block_size - 1 ) / block_size;
+    //    var n_block_steps  = ( idx_range.size + block_size - 1 ) / block_size;
     //    var block_low      = idx_range.low;
     //    var next_block_low = block_low + block_size;
     //

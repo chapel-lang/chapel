@@ -64,25 +64,34 @@ writeln(threeReals); // output: (0.0, 0.0, 0.0)
 threeReals += 1.0;
 writeln(threeReals); // output: (1.0, 1.0, 1.0)
 
-// Tuples with only one component type are also called
-// homogeneous tuples.
+// Tuples with only one component type are also called homogeneous
+// tuples whereas tuples with mixed types are called heterogeneous
+// tuples.
 
 // Tuple Iteration
 // ***************
 
-// Tuples with only one component type can be iterated over using a for loop:
+// Tuples can be iterated over using for loops:
+
 var sum = 0.0;
 for r in threeReals {
   sum += r;
 }
 writeln(sum);
 
-// To iterate over a tuple with multiple component types, use a
-// ``for param`` loop.
-// This kind of loop is always unrolled by the compiler so the loop body can
-// use different types in different iterations.
-for param i in 1..myTuple.size {
-  writeln("myTuple(", i, ") = ", myTuple(i));
+// In addition, homogeneous tuples can be iterated over using forall
+// and coforall loops.
+
+// Heterogeneous tuples can also be traversed using for and coforall
+// loops.  Such loops are always unrolled by the compiler so that each
+// iteration has its own index variable of the appropriate type.  For
+// example, in the following loop, the index ``t`` of the first
+// iteration would be of type ``int`` while the index ``t`` of the
+// second iteration would be of type ``string`` since ``myTuple`` has
+// type ``(int, string)``:
+
+for t in myTuple {
+  writeln(t);
 }
 
 // Tuple Unpacking

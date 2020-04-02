@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -95,6 +96,57 @@ void chpl_mem_array_postAlloc(void* p, size_t nmemb, size_t eltSize,
   //
   const size_t size = nmemb * eltSize;
   chpl_comm_regMemPostAlloc(p, size);
+}
+
+
+static inline
+void* chpl_mem_array_realloc(void* p, size_t oldNmemb, size_t newNmemb,
+                             size_t eltSize,
+                             c_sublocid_t subloc, chpl_bool* callPostAlloc,
+                             int32_t lineno, int32_t filename) {
+  //
+  // Support for dynamic array registration by comm layers is done here
+  // via *callPostAlloc, the same as for chpl_mem_array_alloc().  See
+  // there for further information.
+
+  const size_t newSize = newNmemb * eltSize;
+  chpl_memhook_realloc_pre(p, newSize, CHPL_RT_MD_ARRAY_ELEMENTS,
+                           lineno, filename);
+
+  const size_t oldSize = oldNmemb * eltSize;
+  void* newp = NULL;
+  *callPostAlloc = false;
+  if (chpl_mem_size_justifies_comm_alloc(oldSize)) {
+    newp = chpl_comm_regMemRealloc(p, oldSize, newSize,
+                                   CHPL_RT_MD_ARRAY_ELEMENTS,
+                                   lineno, filename);
+    if (newp != NULL) {
+      *callPostAlloc = true;
+    }
+  }
+
+  if (newp == NULL) {
+    newp = chpl_realloc(p, newSize);
+  }
+
+  chpl_memhook_realloc_post(newp, p, newSize, CHPL_RT_MD_ARRAY_ELEMENTS,
+                           lineno, filename);
+
+  return newp;
+}
+
+
+static inline
+void chpl_mem_array_postRealloc(void* oldp, size_t oldNmemb,
+                                void* newp, size_t newNmemb,
+                                size_t eltSize,
+                                int32_t lineno, int32_t filename) {
+  //
+  // Do comm layer post-allocation.
+  //
+  const size_t oldSize = oldNmemb * eltSize;
+  const size_t newSize = newNmemb * eltSize;
+  chpl_comm_regMemPostRealloc(oldp, oldSize, newp, newSize);
 }
 
 

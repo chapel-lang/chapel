@@ -1,0 +1,2 @@
+range-init2.chpl:1: In function 'test':
+range-init2.chpl:6: error: cannot initialize a non-stridable range from a stridable range

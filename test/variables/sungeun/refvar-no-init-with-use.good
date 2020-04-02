@@ -1,2 +1,2 @@
 refvar-no-init-with-use.chpl:1: error: reference 'r' is not initialized
-refvar-no-init-with-use.chpl:1: error: split initialization is not supported for globals
+refvar-no-init-with-use.chpl:2: note: 'r' use here prevents split-init

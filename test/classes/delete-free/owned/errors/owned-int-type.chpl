@@ -1,0 +1,1 @@
+writeln(owned int:string);

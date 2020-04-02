@@ -4,7 +4,7 @@ var debugDefault = false;
 
 proc checkShape(A : [?ad], B : [?bd]) {
   for param i in 1..ad.rank {
-    if ad.dim(i).length != bd.dim(i).length then return false;
+    if ad.dim(i).size != bd.dim(i).size then return false;
   }
   return true;
 }

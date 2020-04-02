@@ -47,10 +47,8 @@ proc main() {
   {
     var lines: list(R);
 
-    // First copy is here.
     lines.append(r);
 
-    // Second copy is here (not bound).
     const elem = lines.pop(1);
   }
 }

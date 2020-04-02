@@ -1,6 +1,6 @@
 class A {
   var x: int;
-  var b: [1..x] unmanaged B;
+  var b: [1..x] unmanaged B?;
 }
 
 class B {

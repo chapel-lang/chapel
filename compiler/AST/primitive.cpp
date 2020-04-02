@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -713,9 +714,13 @@ initPrimitive() {
 
   // dst, src. PRIM_ASSIGN with reference dst sets *dst
   prim_def(PRIM_ASSIGN, "=", returnInfoVoid, true);
+  // like PRIM_ASSIGN but indicates an elided copy
+  // which means that the RHS cannot be used again after this call.
+  prim_def(PRIM_ASSIGN_ELIDED_COPY, "elided-copy=", returnInfoVoid, true);
   // like PRIM_ASSIGN but the operation can be put off until end of
   // the enclosing task or forall.
   prim_def(PRIM_UNORDERED_ASSIGN, "unordered=", returnInfoVoid, true, true);
+
   prim_def(PRIM_ADD_ASSIGN, "+=", returnInfoVoid, true);
   prim_def(PRIM_SUBTRACT_ASSIGN, "-=", returnInfoVoid, true);
   prim_def(PRIM_MULT_ASSIGN, "*=", returnInfoVoid, true);
@@ -844,6 +849,7 @@ initPrimitive() {
   // As with PRIM_STATIC_TYPEOF, returns a compile-time component of
   // the type of the field.
   // There might be uninitialized memory if the run-time type is used.
+  // Args are variable, field name.
   prim_def(PRIM_STATIC_FIELD_TYPE, "static field type", returnInfoStaticFieldType);
 
   // used modules in BlockStmt::modUses

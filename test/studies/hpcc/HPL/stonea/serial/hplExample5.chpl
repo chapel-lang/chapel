@@ -111,14 +111,14 @@ proc panelSolve(
     // domain
     assert(piv.domain.dim(1) == A.domain.dim(1));
 
-    if(pnlCols.length == 0) then return;
+    if(pnlCols.size == 0) then return;
 
     // iterate through the columns
     for k in pnlCols {
         var col = panel[k.., k..k];
 
         // If there are no rows below the current column return
-        if col.dim(1).length == 0 then return;
+        if col.dim(1).size == 0 then return;
 
         // The pivot is the element with the largest absolute value.
         const (_, loc) = maxloc reduce zip(abs(A(col)), col);
@@ -212,11 +212,11 @@ proc LUFactorize(n : int, A : [1..n, 1..n+1] real, piv : [1..n] int) {
         // Now that we've sliced and diced A properly do the blocked-LU
         // computation:
         panelSolve(A, l, piv);
-        if(tr.numIndices > 0) then
+        if(tr.size > 0) then
             updateBlockRow(A, tl, tr);
 
         // update trailing submatrix (if there)
-        if(br.numIndices > 0) {
+        if(br.size > 0) {
             schurComplement(A, blk);
          }
     }

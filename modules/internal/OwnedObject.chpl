@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -177,17 +178,7 @@ module OwnedObject {
       this.init(_to_unmanaged(p));
     }
 
-    /*
-       Initialize a :record:`owned` with a class instance.
-       When this :record:`owned` goes out of scope, it will
-       delete whatever class instance it is storing.
-
-       It is an error to directly delete the class instance
-       while it is managed by a :record:`owned`.
-
-       :arg p: the class instance to manage. Must be of unmanaged class type.
-
-     */
+    pragma "no doc"
     proc init(pragma "nil from arg" p:unmanaged) {
       this.chpl_t = _to_borrowed(p.type);
       this.chpl_p = _to_borrowed(p);
@@ -252,6 +243,34 @@ module OwnedObject {
     proc init(pragma "leaves arg nil" pragma "nil from arg" ref src:_owned) {
       this.chpl_t = src.chpl_t;
       this.chpl_p = src.release();
+    }
+
+    // Issue a compiler error for illegal uses.
+    pragma "no doc"
+    proc type create(source) {
+      compilerError("cannot create an 'owned' from ", source.type:string);
+    }
+
+    /* Creates a new `owned` class reference, taking over the ownership
+       of the argument. The result has the same type as the argument.
+       If the argument is non-nilable, it must be recognized by the compiler
+       as an expiring value. */
+    inline proc type create(pragma "nil from arg" in take: owned) {
+      return take;
+    }
+
+    /* Starts managing the argument class instance `p`
+       using the `owned` memory management strategy.
+       The result type preserves nilability of the argument type.
+
+       It is an error to directly delete the class instance
+       after passing it to `owned.create()`. */
+    pragma "unsafe"
+    inline proc type create(pragma "nil from arg" p : unmanaged) {
+      // 'result' may have a non-nilable type
+      var result: (p.type : owned);
+      result.retain(p);
+      return result;
     }
 
     /*
@@ -347,14 +366,14 @@ module OwnedObject {
          ref rhs: _owned)
     where ! (isNonNilableClass(lhs) && isNilableClass(rhs))
   {
-    use HaltWrappers only;
+    import HaltWrappers;
     // Work around issues in associative arrays of owned
     // TODO: remove this workaround
     if lhs.chpl_p == nil && rhs.chpl_p == nil then
         return;
 
-    // Check only if --nil-checks is enabled
-    if chpl_checkNilDereferences {
+    // Check only if --nil-checks is enabled or user requested
+    if chpl_checkNilDereferences || enablePostfixBangChecks {
       // Add check for lhs non-nilable.
       // Do it even if rhs non-nilable, as for now static checking has holes.
       if isNonNilableClass(lhs.chpl_t) {
@@ -449,7 +468,7 @@ module OwnedObject {
 
   // cast to owned!, no class downcast, casting away nilability
   pragma "no doc"
-  inline proc _cast(type t:owned class, pragma "nil from arg" in x:owned class?) throws
+  inline proc _cast(type t:owned class, in x:owned class?) throws
     where isSubtype(_to_nonnil(x.chpl_t),t.chpl_t)
   {
     var castPtr = x.chpl_p:_to_nilable(_to_unmanaged(t.chpl_t));
@@ -487,7 +506,7 @@ module OwnedObject {
 
   // this version handles downcast to nilable owned
   pragma "no doc"
-  inline proc _cast(type t:owned class?, ref x:owned class?)
+  inline proc _cast(type t:owned class?, pragma "nil from arg" ref x:owned class?)
     where isProperSubtype(t.chpl_t,x.chpl_t)
   {
     // this cast returns nil if the dynamic type is not compatible
@@ -510,9 +529,6 @@ module OwnedObject {
     return new _owned(castPtr);
   }
 
-
-
-
   // cast from nil to owned
   pragma "no doc"
   inline proc _cast(type t:_owned, pragma "nil from arg" x:_nilType) {
@@ -526,7 +542,7 @@ module OwnedObject {
   pragma "no doc"
   pragma "always propagate line file info"
   inline proc postfix!(const ref x:_owned) {
-    use HaltWrappers only;
+    import HaltWrappers;
     // Check only if --nil-checks is enabled
     if chpl_checkNilDereferences {
       // Add check for nilable types only.

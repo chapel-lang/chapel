@@ -1,0 +1,8 @@
+./ArrayTest.chpl:1: In function 'testArray':
+./ArrayTest.chpl:4: error: Cannot default-initialize a tuple component of the type shared T
+note: non-nil class types do not support default initialization
+note: Consider using the type shared T? instead
+./ArrayTest.chpl:4: error: Cannot default-initialize a tuple component of the type shared T
+note: non-nil class types do not support default initialization
+note: Consider using the type shared T? instead
+testTuple.chpl:8: Function 'testArray' instantiated as: testArray(type t = 2*shared T)

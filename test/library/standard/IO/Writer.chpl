@@ -3,7 +3,7 @@ class C: Writer {
   proc writeIt(s: string) {
     data += s[1];
   }
-  proc writeThis(x: Writer) {
+  proc writeThis(x: Writer) throws {
     x.write(data);
   }
 }

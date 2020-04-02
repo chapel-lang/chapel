@@ -7,7 +7,7 @@ class trio {
     return x1 + x2 + x3;
 }
 
-override proc trio.writeThis(f) {
+override proc trio.writeThis(f) throws {
   f.write("(", x1, " & ", x2, " & ", x3, ")");
 }
 

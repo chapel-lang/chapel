@@ -88,4 +88,16 @@ proc test5() {
   acceptst5( (a, b) ); // should be nil by here
 }
 test5();
+
+proc acceptsIn6(in t: (int, owned C?)) {
+  return;
 }
+
+proc test6() {
+  var t = (128, new owned C?(256));
+  acceptsIn6(t);
+  assert(t[2] == nil);
+}
+test6();
+
+} // end module

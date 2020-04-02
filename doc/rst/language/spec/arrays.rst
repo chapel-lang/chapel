@@ -980,14 +980,6 @@ by modifying the domain directly.
 
 .. code-block:: chapel
 
-   proc Array.numElements: this.domain.dim_type
-
-Returns the number of elements in the array.
-
-
-
-.. code-block:: chapel
-
    proc reshape(A: Array, D: Domain): Array
 
 Returns a copy of the array containing the same values but in the shape
@@ -999,6 +991,6 @@ into the new array using the default iteration orders over both arrays.
 
 .. code-block:: chapel
 
-   proc Array.size: this.domain.dim_type
+   proc Array.size: this.domain.idxType
 
-Same as :math:`Array`.numElements.
+Returns the number of elements in the array.

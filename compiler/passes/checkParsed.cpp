@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -38,6 +39,7 @@ static void checkParsedVar(VarSymbol* var);
 static void checkFunction(FnSymbol* fn);
 static void checkExportedNames();
 static void nestedName(ModuleSymbol* mod);
+static void includedStrictNames(ModuleSymbol* mod);
 static void checkModule(ModuleSymbol* mod);
 static void checkRecordInheritance(AggregateType* at);
 static void setupForCheckExplicitDeinitCalls();
@@ -124,7 +126,7 @@ checkParsed() {
 
   forv_Vec(ModuleSymbol, mod, gModuleSymbols) {
     nestedName(mod);
-
+    includedStrictNames(mod);
     checkModule(mod);
   }
 
@@ -479,6 +481,39 @@ static void nestedName(ModuleSymbol* mod) {
   }
 }
 
+static void includedStrictNames(ModuleSymbol* mod) {
+  if (mod->defPoint == NULL) {
+    return;
+  }
+
+  if (mod->hasFlag(FLAG_INCLUDED_MODULE)) {
+    ModuleSymbol* parent = mod->defPoint->getModule();
+
+    // module name should match file name
+    const char* fname = filenameToModulename(parent->astloc.filename);
+    if (fname != parent->name) {
+      USR_FATAL("Cannot include modules from a module whose name doesn't match its filename");
+    }
+
+    // parent module must be top-level in its file.
+    // in is not necessarily a top-level module, though.
+    ModuleSymbol* lastParentSameFile = parent;
+    for (ModuleSymbol* cur = parent;
+         cur != NULL && cur->defPoint != NULL;
+         cur = cur->defPoint->getModule()) {
+      if (parent->astloc.filename == cur->astloc.filename) {
+        lastParentSameFile = cur;
+      } else {
+        break;
+      }
+    }
+
+    if (lastParentSameFile != parent) {
+      USR_FATAL(parent, "Cannot include module from an in-line nested module");
+    }
+  }
+}
+
 //
 // This is a special test to ensure that there are no instances of a return
 // or yield statement at the top level of a module.  This "special" semantic
@@ -544,12 +579,30 @@ static void warnUnstableLeadingUnderscores() {
   if (fWarnUnstable) {
     forv_Vec(DefExpr, def, gDefExprs) {
       const char* name = def->name();
-      
+      Symbol* sym = def->sym;
+      ModuleSymbol* mod = def->getModule();
+      FnSymbol* fn = def->getFunction();
+
       if (name && name[0] == '_' &&
-          def->getModule()->modTag == MOD_USER &&
-          !def->sym->hasFlag(FLAG_TEMP)) {
+          mod && mod->modTag == MOD_USER &&
+          !sym->hasFlag(FLAG_TEMP) &&
+          sym->type != dtMethodToken) {
         USR_WARN(def,
                  "Symbol names with leading underscores (%s) are unstable.", name);
+      }
+      if (name &&
+          name[0] == 'c' &&
+          name[1] == 'h' &&
+          name[2] == 'p' &&
+          name[3] == 'l' &&
+          name[4] == '_' &&
+          mod && mod->modTag == MOD_USER &&
+          !sym->hasFlag(FLAG_TEMP) &&
+          !sym->hasFlag(FLAG_INDEX_VAR) &&
+          !sym->hasFlag(FLAG_COMPILER_NESTED_FUNCTION) &&
+          !(fn && fn->hasFlag(FLAG_COMPILER_NESTED_FUNCTION))) {
+        USR_WARN(def,
+                 "Symbol names beginning with 'chpl_' (%s) are unstable.", name);
       }
     }
   }

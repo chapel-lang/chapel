@@ -63,7 +63,7 @@ inline proc sumOfSquares(x:_tuple) where isHomogeneousTuple(x) {
 
 record NBodySystem {
   var bodies = [sun, jupiter, saturn, uranus, neptune];
-  const lastBody = bodies.domain.last;
+  const numbodies = bodies.size;
 
   proc postinit() {
     var p: 3*real;
@@ -74,7 +74,7 @@ record NBodySystem {
 
   proc advance(dt) {
     for (b1, i) in zip(bodies, bodies.domain.low..) {
-      for j in i+1..lastBody {
+      for j in i+1..<numbodies {
         var b2 = bodies[j];  // TODO: add ref support (?)
         const dpos = b1.pos - b2.pos,
               mag = dt / sqrt(sumOfSquares(dpos))**3;
@@ -93,7 +93,7 @@ record NBodySystem {
 
     for (b1, i) in zip(bodies, bodies.domain.low..) {
       e += 0.5 * b1.mass * sumOfSquares(b1.v);
-      for j in i+1..lastBody {
+      for j in i+1..<numbodies {
         const b2 = bodies[j];
         e -= (b1.mass * b2.mass) / sqrt(sumOfSquares(b1.pos - b2.pos));
       }

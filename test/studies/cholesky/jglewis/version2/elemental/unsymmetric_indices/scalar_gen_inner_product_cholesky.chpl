@@ -26,7 +26,7 @@ module scalar_gen_inner_product_cholesky {
     // equations.
     // -----------------------------------------------------------------------
 
-    assert ( A.domain.dim (1).length == A.domain.dim (2).length );
+    assert ( A.domain.dim (1).size == A.domain.dim (2).size );
 
     const row_indices = A.domain.dim (1), col_indices = A.domain.dim (2);
 

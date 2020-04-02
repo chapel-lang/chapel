@@ -16,7 +16,7 @@ var chan = f.reader();
 
 var b: bytes;
 while chan.readbytes(b) {
-  writeln(b.decode(errors=decodePolicy.replace));
+  writeln(b.decode(policy=decodePolicy.replace));
 }
 chan.close();
 f.close();

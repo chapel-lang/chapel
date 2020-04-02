@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -22,7 +23,7 @@
 //
 
 private use DimensionalDist2D;
-private use RangeChunk only ;
+import RangeChunk;
 
 config const BlockCyclicDim_allowParLeader = true;
 config param BlockCyclicDim_enableArrayIterWarning = false;  // 'false' for testing
@@ -703,7 +704,7 @@ proc BlockCyclic1locdom.dsiMyDensifiedRangeForTaskID1d(globDD, taskid:int, numTa
   assert(globDD.storagePerCycle == 1); // should follow from the previous
 
   // In this case, the densified range for *all* indices on this locale is:
-  //   0..#wholeR.length by numLocales align AL
+  //   0..#wholeR.size by numLocales align AL
   // where
   //   (_dsiLocNo(wholeR.low) + AL) % numLocales == this.locId
 
@@ -711,7 +712,7 @@ proc BlockCyclic1locdom.dsiMyDensifiedRangeForTaskID1d(globDD, taskid:int, numTa
   const AL = this.locId :resultIdxType + (nLocs - firstLoc);
 
   // Here is the densified range for all indices on this locale.
-  const hereDenseInds = 0:resultIdxType..#wholeR.length by nLocs align AL;
+  const hereDenseInds = 0:resultIdxType..#wholeR.size by nLocs align AL;
 
   // This is our chunk of hereDenseInds
   return RangeChunk.chunk(hereDenseInds, numTasks, taskid);

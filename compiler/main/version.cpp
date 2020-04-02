@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -35,7 +36,7 @@ void
 get_version(char *v) {
   v += sprintf(v, "%d.%s.%s", MAJOR_VERSION, MINOR_VERSION, UPDATE_VERSION);
   if (strcmp(BUILD_VERSION, "0") != 0 || developer)
-    sprintf(v, " pre-release (%s)", BUILD_VERSION);
+    sprintf(v, ".%s", BUILD_VERSION);
 }
 
 void

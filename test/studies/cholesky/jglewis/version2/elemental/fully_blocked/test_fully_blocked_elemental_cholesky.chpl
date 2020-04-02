@@ -119,7 +119,7 @@ module test_fully_blocked_elemental_cholesky {
     
     const mat_dom  = A.domain,
           mat_rows = A.domain.dim(1),
-          n        = A.domain.dim(1).length;
+          n        = A.domain.dim(1).size;
 
     const unit_roundoff = 2.0 ** (-53), // IEEE 64 bit floating point
           gamma_n1      = (n * unit_roundoff) / (1.0 - n * unit_roundoff);

@@ -1,1 +1,1 @@
-wrongType3.chpl:7: error: enumerated domains not supported by this distribution
+wrongType3.chpl:7: error: associative domains not supported by this distribution

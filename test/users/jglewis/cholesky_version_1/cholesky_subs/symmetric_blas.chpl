@@ -165,7 +165,7 @@ module symmetric_blas {
 	  ( L (leading_rows, ..), 
 	    A (leading_rows, leading_rows) );
 
-	if trailing_rows.length > 0 then
+	if trailing_rows.size > 0 then
 	  symmetric_offdiagonal_low_rank_modification 
 	    ( L (reduced_mtx_rows, ..), 
 	      A (trailing_rows, leading_rows) );

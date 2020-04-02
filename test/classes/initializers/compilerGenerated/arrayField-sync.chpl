@@ -2,7 +2,7 @@
 class C {
   var A : [1..10] sync int;
 
-  override proc writeThis(f) {
+  override proc writeThis(f) throws {
     f.write(A.readXX());
   }
 }

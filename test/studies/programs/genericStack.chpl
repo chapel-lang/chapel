@@ -58,7 +58,7 @@ record ArrayStack {
   // push method: add an item to the top of the stack
   // note: the array is doubled if it is full
   proc push(item: itemType) {
-    var height = data.numElements;
+    var height = data.size;
     if numItems == height then
       dataSpace = {1..height*2};
     data(numItems+1) = item;

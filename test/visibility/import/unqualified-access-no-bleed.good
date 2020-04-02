@@ -1,0 +1,2 @@
+unqualified-access-no-bleed.chpl:8: In function 'main':
+unqualified-access-no-bleed.chpl:9: error: 'y' undeclared (first use this function)

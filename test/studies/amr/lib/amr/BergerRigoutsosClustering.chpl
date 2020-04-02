@@ -55,7 +55,7 @@ proc clusterFlags (
       
       //---- If D2 is empty, split was unsuccessful ----
       
-      if D2.numIndices==0 then finished_domain_list.add(candidate.D);
+      if D2.size==0 then finished_domain_list.add(candidate.D);
 
 
       //---- Otherwise, push new candidates to stack ----
@@ -184,7 +184,7 @@ class CandidateDomain {
   //|/...................|/
   proc efficiency()
   {
-    return +reduce(signatures(1).array):real / D.numIndices:real;
+    return +reduce(signatures(1).array):real / D.size:real;
   }
   // /|'''''''''''''''''''/|
   //< |    efficiency    < |
@@ -237,12 +237,12 @@ proc CandidateDomain.trim()
 
     //---- Comply with minimum width ----
 
-    if R.length < min_width(d) 
+    if R.size < min_width(d) 
     {
       
       //---- Approximately center the enlarged range ----
       
-      var n_overflow_low = (min_width(d) - R.length) / 2;
+      var n_overflow_low = (min_width(d) - R.size) / 2;
       var tmp = ((trim_low - n_overflow_low*stride .. by stride) #min_width(d));
       R = tmp.alignHigh();
 
@@ -288,7 +288,7 @@ proc CandidateDomain.split()
   
   (D1,D2) = removeHole();
   
-  if D2.numIndices==0 then
+  if D2.size==0 then
     (D1,D2) = inflectionCut();
   
   return (D1,D2);
@@ -364,7 +364,7 @@ proc CandidateDomain.removeHole()
         ranges(d) = hole_low .. hole_high by stride;
         hole = ranges;
         
-        if hole.numIndices > max_hole.numIndices
+        if hole.size > max_hole.size
         {
           max_hole = hole;
           d_cut    = d;
@@ -382,7 +382,7 @@ proc CandidateDomain.removeHole()
   
   //---- Split by removing largest hole ----
   
-  if max_hole.numIndices > 0
+  if max_hole.size > 0
   {
     
     stride = D.stride(d_cut);
@@ -432,7 +432,7 @@ proc CandidateDomain.inflectionCut ()
     
     //---- Must be at least 4 cells wide for an inflection cut ----
     
-    if D.dim(d).length >= 4 {
+    if D.dim(d).size >= 4 {
 
       ref sig = signatures(d).array;
       var stride = D.stride(d);

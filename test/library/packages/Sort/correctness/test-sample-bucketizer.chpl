@@ -7,7 +7,7 @@ config const debug = false;
 proc makeBucketizerTest(in nBuckets:int, equalBuckets:bool, A, criterion) {
   var AA = A;
 
-  var n = A.domain.numIndices;
+  var n = A.domain.size;
 
   if nBuckets >= n then
     nBuckets = n;

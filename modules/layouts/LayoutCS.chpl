@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -17,7 +18,7 @@
  * limitations under the License.
  */
 
-use RangeChunk only ;
+import RangeChunk;
 
 pragma "no doc"
 /* Debug flag */
@@ -95,7 +96,7 @@ class CS: BaseDist {
     return false;
   }
 
-  proc dsiIsLayout() param {
+  override proc dsiIsLayout() param {
     return true;
   }
 } // CS
@@ -168,7 +169,7 @@ class CSDom: BaseSparseDomImpl {
       // Optimized COO -> CSR/CSC
 
       // Note: only COO->CSR can take advantage of COO having sorted indices
-      this.dsiBulkAdd(rhs._instance.indices[rhs.nnzDom.low..#rhs._nnz],
+      this.dsiBulkAdd(rhs._instance._indices[rhs.nnzDom.low..#rhs._nnz],
                       dataSorted=this.compressRows, isUnique=true);
     } else {
       // Unoptimized generic case
@@ -395,10 +396,10 @@ class CSDom: BaseSparseDomImpl {
   }
 
   override proc bulkAdd_help(inds: [?indsDom] rank*idxType,
-      dataSorted=false, isUnique=false, addOn=nil:locale?) {
-    use Sort only;
+      dataSorted=false, isUnique=false, addOn=nilLocale) {
+    import Sort;
 
-    if addOn != nil {
+    if addOn != nilLocale {
       if addOn != this.locale {
         halt("Bulk index addition is only possible on the locale where the\
             sparse domain is created");

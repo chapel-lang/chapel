@@ -1,4 +1,3 @@
 demo2.chpl:11: error: variable 'a' is not initialized
 note: non-nilable class type borrowed C does not support default initialization
 note: Consider using the type borrowed C? instead
-demo2.chpl:11: error: split initialization is not supported for globals
