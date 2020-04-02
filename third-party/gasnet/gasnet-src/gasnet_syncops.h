@@ -698,11 +698,11 @@ gasneti_atomic_val_t gasneti_semaphore_trydown_partial_SEQ(gasneti_semaphore_t_S
 #elif defined(GASNETI_USE_GENERIC_ATOMICOPS)
   /* If using mutexes, then just use the mutex code */
 #elif PLATFORM_ARCH_POWERPC && GASNETI_HAVE_ATOMIC_PTR_CAS && \
-      (GASNETI_HAVE_GCC_ASM || GASNETI_HAVE_XLC_ASM)
+      GASNETI_HAVE_GCC_ASM
   /* Among the platforms we currently support, PPC is unique in having an LL/SC
    * construct which allows a load between the LL and the SC.
    */
-  #if GASNETI_HAVE_GCC_ASM && !(PLATFORM_COMPILER_XLC && GASNETI_HAVE_XLC_ASM)
+  #if GASNETI_HAVE_GCC_ASM
     typedef struct {
       /* Ensure list head pointer is the only item on its cache line.
        * This prevents a live-lock which would result if a list element fell
@@ -767,77 +767,6 @@ gasneti_atomic_val_t gasneti_semaphore_trydown_partial_SEQ(gasneti_semaphore_t_S
       #endif
       return (void *)head;
     }
-    GASNETI_INLINE(_gasneti_lifo_init)
-    void _gasneti_lifo_init(gasneti_lifo_head_t_PAR *p) {
-      gasneti_atomic_ptr_set(&p->head, 0);
-    }
-    GASNETI_INLINE(_gasneti_lifo_destroy)
-    void _gasneti_lifo_destroy(gasneti_lifo_head_t_PAR *p) {
-      /* NOTHING */
-    }
-    #define GASNETI_LIFO_INITIALIZER_PAR {{0,}, gasneti_atomic_ptr_init(0), {0,}}
-    #define GASNETI_HAVE_ARCH_LIFO	1
-  #elif GASNETI_HAVE_XLC_ASM
-    typedef struct {
-      /* Ensure list head pointer is the only item on its cache line.
-       * This prevents a live-lock which would result if a list element fell
-       * on the same cache line.
-       * XXX: Can't use GASNETI_CACHE_LINE_BYTES w/o some extra indirection.
-       */
-      char			_pad0[128];
-      gasneti_atomic_ptr_t	head;
-      char			_pad1[128 - sizeof(void **)];
-    } gasneti_lifo_head_t_PAR;
-
-    GASNETI_INLINE(_gasneti_lifo_push)
-    void _gasneti_lifo_push(gasneti_lifo_head_t_PAR *p, void **head, void **tail) {
-      /* RELEASE semantics */
-      uintptr_t oldhead;
-      do {
-	oldhead = gasneti_atomic_ptr_read(&p->head);
-	*tail = (void *)oldhead;
-      } while (!gasneti_atomic_ptr_cas(&p->head, oldhead, (uintptr_t)head, GASNETI_ATOMIC_REL));
-    }
-
-    static void *_gasneti_lifo_pop(gasneti_lifo_head_t_PAR *p);
-    /* ARGS: r3 = p  LOCAL: r0 = next, r4 = head */
-    #if PLATFORM_ARCH_32
-      #pragma mc_func _gasneti_lifo_pop {\
-	"80830080"	/* lwz		r4,128(r3)	*/ \
-	"38630080"	/* addi		r3,r3,128	*/ \
-	"2c040000"	/* cmpwi	r4,0		*/ \
-	"38800000"	/* li		r4,0		*/ \
-	"41820020"	/* beq-		2f		*/ \
-	"7c801828"	/* 1: lwarx	r4,0,r3		*/ \
-	"2c040000"	/* cmpwi	r4,0		*/ \
-	"41820014"	/* beq-		2f		*/ \
-	GASNETI_PPC_RMB_ASM				\
-	"80040000"	/* lwz		r0,0(r4)	*/ \
-	"7c00192d"	/* stwcx.	r0,0,r3		*/ \
-	"40a2ffe8"	/* bne-		1b		*/ \
-	"7c832378"	/* 2: mr	r3,r4		*/ \
-      }
-    #elif PLATFORM_ARCH_64
-      #pragma mc_func _gasneti_lifo_pop {\
-	"e8830080"	/* ld		r4,128(r3)	*/ \
-	"38630080"	/* addi		r3,r3,128	*/ \
-	"2c240000"	/* cmpdi	r4,0		*/ \
-	"38800000"	/* li		r4,0		*/ \
-	"41820020"	/* beq-		2f		*/ \
-	"7c8018a8"	/* 1: ldarx	r4,0,r3		*/ \
-	"2c240000"	/* cmpdi	r4,0		*/ \
-	"41820014"	/* beq-		2f		*/ \
-	GASNETI_PPC_RMB_ASM				\
-	"e8040000"	/* ld		r0,0(r4)	*/ \
-	"7c0019ad"	/* stdcx.	r0,0,r3		*/ \
-	"40a2ffe8"	/* bne-		1b		*/ \
-	"7c832378"	/* mr		r3,r4		*/ \
-      }
-    #else
-      #error "PPC w/ unknown word size"
-    #endif
-    #pragma reg_killed_by _gasneti_lifo_pop cr0, gr0, gr4
-
     GASNETI_INLINE(_gasneti_lifo_init)
     void _gasneti_lifo_init(gasneti_lifo_head_t_PAR *p) {
       gasneti_atomic_ptr_set(&p->head, 0);

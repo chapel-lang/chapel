@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -223,8 +224,8 @@ module DataFrames {
       for idx in this {
         // TODO: clean up to simple cast after bugfix
         var idxStr = createStringWithNewBuffer(idx: string);
-        if idxStr.length > idxWidth then
-          idxWidth = idxStr.length;
+        if idxStr.size > idxWidth then
+          idxWidth = idxStr.size;
       }
       return idxWidth;
     }
@@ -236,7 +237,7 @@ module DataFrames {
         // TODO: clean up to simple cast after bugfix
         var idxStr = createStringWithNewBuffer(idx: string);
         f <~> idx;
-        for space in 1..idxWidth-idxStr.length do
+        for space in 1..idxWidth-idxStr.size do
           f <~> " ";
 
         if v then
@@ -261,11 +262,11 @@ module DataFrames {
         // TODO: clean up to simple cast after bugfix
         var idxStr = createStringWithNewBuffer(idx: string);
         f <~> idxStr;
-        for space in 1..idxWidth-idxStr.length do
+        for space in 1..idxWidth-idxStr.size do
           f <~> " ";
 
         for (ser, lab) in zip(d, d.labels) {
-          ser!.writeElem(f, idx, lab.length);
+          ser!.writeElem(f, idx, lab.size);
           f <~> "   ";
         }
       }
@@ -282,7 +283,7 @@ module DataFrames {
         // TODO: clean up to simple cast after bugfix
         var idxStr = createStringWithNewBuffer(idx: string);
         f <~> idxStr;
-        for space in 1..idxWidth-idxStr.length do
+        for space in 1..idxWidth-idxStr.size do
           f <~> " ";
       }
     }
@@ -737,7 +738,7 @@ module DataFrames {
                    then createStringWithNewBuffer(this[i]: string)
                    else "None";
 
-      for space in 1..len-output.length do
+      for space in 1..len-output.size do
         f <~> " ";
       f <~> output;
     }
@@ -750,7 +751,7 @@ module DataFrames {
                    then createStringWithNewBuffer(this.at(i): string)
                    else "None";
 
-      for space in 1..len-output.length do
+      for space in 1..len-output.size do
         f <~> " ";
       f <~> output;
     }
@@ -841,7 +842,7 @@ module DataFrames {
       } else {
         var n = nrows();
         var nStr = createStringWithNewBuffer(n: string);
-        var idxWidth = nStr.length + 1;
+        var idxWidth = nStr.size + 1;
 
         for space in 1..idxWidth do
           f <~> " ";
@@ -853,11 +854,11 @@ module DataFrames {
           f <~> "\n";
           var iStr = createStringWithNewBuffer(i: string);
           f <~> iStr;
-          for space in 1..idxWidth-iStr.length do
+          for space in 1..idxWidth-iStr.size do
             f <~> " ";
 
           for (ser, lab) in zip(this, labels) {
-            ser!.writeElemNoIndex(f, i, lab.length);
+            ser!.writeElemNoIndex(f, i, lab.size);
             f <~> "   ";
           }
         }

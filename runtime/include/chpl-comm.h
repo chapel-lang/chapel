@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -191,6 +192,15 @@ void chpl_comm_post_mem_init(void);
 int chpl_comm_run_in_gdb(int argc, char* argv[], int gdbArgnum, int* status);
 
 //
+// if possible, run in lldb (because the user threw the --lldb flag)
+// using argc and argv.  lldbArgnum gives the index of the argv[]
+// element containing the --lldb flag.  Return the status of that
+// process in "status" and return 1 if it was possible to run in lldb,
+// 0 otherwise
+//
+int chpl_comm_run_in_lldb(int argc, char* argv[], int lldbArgnum, int* status);
+
+//
 // Allow the communication layer to do any further initialization it
 // needs to, after the tasking layer is initialized.
 //
@@ -273,7 +283,7 @@ size_t chpl_comm_regMemAllocThreshold(void) {
 static inline
 void* chpl_comm_regMemAlloc(size_t size,
                             chpl_mem_descInt_t desc, int ln, int32_t fn) {
-    return CHPL_COMM_IMPL_REG_MEM_ALLOC(size, desc, ln, fn);
+  return CHPL_COMM_IMPL_REG_MEM_ALLOC(size, desc, ln, fn);
 }
 
 #ifndef CHPL_COMM_IMPL_REG_MEM_POST_ALLOC
@@ -281,7 +291,26 @@ void* chpl_comm_regMemAlloc(size_t size,
 #endif
 static inline
 void chpl_comm_regMemPostAlloc(void* p, size_t size) {
-    CHPL_COMM_IMPL_REG_MEM_POST_ALLOC(p, size);
+  CHPL_COMM_IMPL_REG_MEM_POST_ALLOC(p, size);
+}
+
+#ifndef CHPL_COMM_IMPL_REG_MEM_REALLOC
+#define CHPL_COMM_IMPL_REG_MEM_REALLOC(p, oldSize, newSize, desc, ln, fn) NULL
+#endif
+static inline
+void* chpl_comm_regMemRealloc(void* p, size_t oldSize, size_t newSize,
+                              chpl_mem_descInt_t desc, int ln, int32_t fn) {
+  return CHPL_COMM_IMPL_REG_MEM_REALLOC(p, oldSize, newSize, desc, ln, fn);
+}
+
+#ifndef CHPL_COMM_IMPL_REG_MEM_POST_REALLOC
+#define CHPL_COMM_IMPL_REG_MEM_POST_REALLOC(oldp, oldSize, newp, newSize) \
+        return
+#endif
+static inline
+void chpl_comm_regMemPostRealloc(void* oldp, size_t oldSize,
+                                 void* newp, size_t newSize) {
+  CHPL_COMM_IMPL_REG_MEM_POST_REALLOC(oldp, oldSize, newp, newSize);
 }
 
 #ifndef CHPL_COMM_IMPL_REG_MEM_FREE
@@ -289,7 +318,7 @@ void chpl_comm_regMemPostAlloc(void* p, size_t size) {
 #endif
 static inline
 chpl_bool chpl_comm_regMemFree(void* p, size_t size) {
-    return CHPL_COMM_IMPL_REG_MEM_FREE(p, size);
+  return CHPL_COMM_IMPL_REG_MEM_FREE(p, size);
 }
 
 //

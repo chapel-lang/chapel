@@ -2,80 +2,228 @@ GASNet ucx-conduit documentation
 Boris I. Karasev <boriska@mellanox.com>
 Artem Y. Polyakov <artemp@mellanox.com>
 
-User Information:
------------------
+@ TOC: @
+@ Section: Overview @
+@ Section: Where this conduit runs @
+@ Section: Build-time Configuration @
+@ Section: Job Spawning @
+@ Section: Runtime Configuration @
+@ Section: Multi-rail Support @
+@ Section: On-Demand Paging (ODP) Support @
+@ Section: HCA Configuration @
+@ Section: Known Problems @
+@ Section: Design Overview @
+@ Section: Graceful exits @
+@ Section: References @
 
-Ucx-conduit implements GASNet over the Unified Communication X (UCX) framework.
-See http://www.openucx.org/ for general information on UCX.
+@ Section: Overview @
 
-Currently, the ucx-conduit only includes the implementation of GASNet
-Active Messages and should not be used for performance measurements.
+  Ucx-conduit implements GASNet over the Unified Communication X (UCX) framework
+  (see http://www.openucx.org/ for general information on UCX).
+  
+  This is the first version of the conduit is feature complete and supports 
+  Active Messages and hardware-offloaded One-Sided and Atomic operaions.
+  A performance assessment and fine-tuning is planned for the next release.
 
-Ucx-conduit is a work-in-progress and currently disabled by default.
-If you’re interested in trying it, please email gasnet-staff@lbl.gov for instructions.
+  As this is an initial version of the conduit, it is disabled by default.
+  It can be enabled at GASNet configure time using the `--enable-ucx` option.
 
-Where this conduit runs:
------------------------
+@ Section: Where this conduit runs @
 
-This conduit is based on UCX HPC communication library.
-UCX is the Unified Communication X (UCX) communication library
-(http://www.openucx.org/).  This is an open-source project
-developed in collaboration between industry, laboratories, and
-academia to create an open-source production grade communication
-framework for data centric and high-performance applications.  The
-UCX library can be downloaded from repositories (e.g.,
-Fedora/RedHat yum repositories). The UCX library is also part of
-Mellanox OFED and Mellanox HPC-X binary distributions.
+  The conduit is based on Unified Communication X (UCX) communication library (see 
+  http://www.openucx.org/ for general information on UCX). UCX is an open-source project
+  developed in collaboration between industry, laboratories, and academia to create 
+  an open-source production grade communication framework for data-centric and 
+  high-performance applications.  The UCX library can be downloaded from repositories
+  (e.g., Fedora/RedHat yum repositories). The UCX library is also part of Mellanox OFED 
+  and Mellanox HPC-X binary distributions.
 
-UCX currently supports:
-- OpenFabrics Verbs (including InfiniBand and RoCE)
-- Cray's uGNI
-- TCP
-- Shared memory
-- NVIDIA CUDA drivers
+  The conduit is tested and known to work with
+    - Mellanox InfiniBand devices starting from ConnectX-5, while UCX also supports 
+      Mellanox RoCE devices, it wasn't yet experimentally confirmed to work with GASNet.
+    - UCX library version 1.6 and above
+    - Linux platform.
+    
+  For Mellanox adapters, UCX conduit supports all transports: RC, UD and DC. For large-scale
+  applications, it is recommended to use DC transport for scalability reasons.
 
-It is recommended to use UCX conduit with Mellanox InfiniBand devices.
+@ Section: Build-time Configuration @
+  
+  In order to enable the conduit, '--with-ucx[=<path-to-ucx>]' parameter needs to be specified.
+  By default, ucx-conduit will not be built. Currently, the conduit does not provide any other
+  configuration-time parameters. 
+  See the extended-ref README for the GASNet general-purpose configuration parameters.
 
-Optional compile-time settings:
-------------------------------
+@ Section: Job Spawning @
 
-* All the compile-time settings from extended-ref (see the extended-ref README)
+If using UPC, Titanium, etc. the language-specific commands should be used
+to launch applications.  Otherwise, applications can be launched using
+the gasnetrun_ucx utility:
++ usage summary:
+gasnetrun_ucx -n <n> [options] [--] prog [program args]
+options:
+  -n <n>                 number of processes to run (required)
+  -N <N>                 number of nodes to run on (not supported by all MPIs)
+  -E <VAR1[,VAR2...]>    list of environment vars to propagate
+  -v                     be verbose about what is happening
+  -t                     test only, don't execute anything (implies -v)
+  -k                     keep any temporary files created (implies -v)
+  -spawner=(ssh|mpi|pmi) force use of a specific spawner (if available)
 
-Job spawning:
--------------
+There are as many as three possible methods (ssh, mpi and pmi) by which one
+can launch an ucx-conduit application.  Ssh-based spawning is always
+available, and mpi- and pmi-based spawning are available if the respective
+support was located at configure time.  The default is established at
+configure time (see section "Build-time Configuration").
 
-### Explain how to spawn jobs for your conduit, and any special concerns.
+To select a non-default spawner one may either use the "-spawner=" command-
+line argument or set the environment variable GASNET_UCX_SPAWNER to "ssh",
+"mpi" or "pmi".  If both are used, then the command line argument takes
+precedence.
 
-Recognized environment variables:
----------------------------------
+@ Section: Runtime Configuration @
 
-* All the standard GASNet environment variables (see top-level README)
-* UCX environment parameters
-    - Most commonly used variables are described by the following link
-      https://github.com/openucx/ucx/wiki/UCX-environment-parameters
-    - See also the output of `ucx_info -f` for the full list of parameters
-      supported by a particular UCX version.
+  In order to control UCX parameters (i.e. device or transport selection), environment
+  variables are used. 
+  
+  Most commonly used variables are described on the UCX Wiki page
+  https://github.com/openucx/ucx/wiki/UCX-environment-parameters
+  
+  For the full list of tuning knobs supported by a particular UCX version,
+  see the output of `ucx_info -f`.
+  
+  For software stacks allowing concurrent use of UCX library in its different components
+  or layers, UCX conduit supports personalized prefix "UCX_GASNET" (i.e. "UCX_GASNET_TLS", 
+  "UCX_GASNET_NET_DEVICES") that allows specifying unique parameters for the 
+  ucx-conduit that will not affect or conflict with global parameters (i.e. "UCX_TLS", 
+  "UCX_NET_DEVICES") and/or other personalized parameters.
+  
+  "UCX_TLS" environment variable controls transport selection and is one of the most commonly
+  used UCX parameters. Available options are:
 
-Known problems:
----------------
+    $ ucx_info -f | grep UCX_TLS -B 23 | head -n 20
+      #
+      # Comma-separated list of transports to use. The order is not meaningful.
+      #  - all     : use all the available transports.
+      #  - sm/shm  : all shared memory transports (mm, cma, knem).
+      #  - mm      : shared memory transports - only memory mappers.
+      #  - ugni    : ugni_smsg and ugni_rdma (uses ugni_udt for bootstrap).
+      #  - ib      : all infiniband transports (rc/rc_mlx5, ud/ud_mlx5, dc_mlx5).
+      #  - rc_v    : rc verbs (uses ud for bootstrap).
+      #  - rc_x    : rc with accelerated verbs (uses ud_mlx5 for bootstrap).
+      #  - rc      : rc_v and rc_x (preferably if available).
+      #  - ud_v    : ud verbs.
+      #  - ud_x    : ud with accelerated verbs.
+      #  - ud      : ud_v and ud_x (preferably if available).
+      #  - dc/dc_x : dc with accelerated verbs.
+      #  - tcp     : sockets over TCP/IP.
+      #  - cuda    : CUDA (NVIDIA GPU) memory support.
+      #  - rocm    : ROCm (AMD GPU) memory support.
+      #  Using a \ prefix before a transport name treats it as an explicit transport name
+      #  and disables aliasing.
+      # 
 
-* See the GASNet Bugzilla server for details on known bugs:
-  https://gasnet-bugs.lbl.gov/
-* This version is known to have high memory consumption under certain workloads
-  (i.e. high volume of Long AMs or one-sided puts)
+  In order to make sure that ucx-conduit is being used with Mellanox devices, the following
+  transport set is recommended: "UCX_GASNET_TLS=ib,sm,self".
 
-Future work:
-------------
+  Ucx-conduit supports all of the standard and the optional GASNET_EXITTIMEOUT GASNet
+  environment variables. See GASNet's top-level README for documentation.
 
-The following features are planned of the next version of the UCX conduit:
-* Address the high memory consumption issue (See the "Known problems" section).
-* HW accelerated one-sided operations
-* HW accelerated atomics operations
+@ Section: Multi-rail Support @
 
-==============================================================================
+  While UCX supports multi-rail configurations, the conduit wasn't tested in this mode
+  and currently considered as not-supporting this feature.
 
-Design Overview:
-----------------
+@ Section: On-Demand Paging (ODP) Support @
 
-### Provide overview of the design for your conduit
+  The conduit supports ODP through UCX, see "UCX_IB_REG_METHODS" UCX environemtn variable.
 
+@ Section: HCA Configuration @
+
+  Consult corresponding section in ibv-conduit README file.
+  TODO: Check if UCX provides any aditional/conflicting advices.
+
+@ Section: Known Problems @
+
+  + See the GASNet Bugzilla server for details on known bugs:
+    https://gasnet-bugs.lbl.gov/
+  + This version is known to have issues with Mellanox ConnectX-4 adapters
+
+@ Section: Design Overview @
+
+  The UCX conduit implements GASNet core and extended API for UCX-compatible
+  network adapters. Where:
+  (a) Core API includes conduit resource initialization and cleanup functionality
+  along with Active Message communication;
+  (b) Extended API includes one-sided and atomic operations support.
+
+  References:
+  + UCX API documentation:
+    http://openucx.github.io/ucx/api/v1.6/html/index.html
+
+  Resource allocation and initialization:
+    During GASNet initialization, every process creates a UCX worker, participates
+    in the exchange of worker addresses (with Allgather communication pattern), and
+    creates UCP endpoints representing connections to all other processes in the
+    GASNet job. In addition, a set of service buffers for Active Messages is
+    allocated and all required UCP memory registrations and memory key exchanges
+    are performed.
+
+  Active Message:
+    UCX conduit implementation is using a pool of pre-allocated AM header buffers
+    that are used for all types of AMs.
+    For Medium size messages, for both sends and recvs, the payload is transferred
+    through the bounce buffers to reduce the latency in absence of local completion
+    options ("lc_opt") support. This behavior will be reconsidered in future.
+    For Large AMs payload transfer is implemented using RDMA Put operation.
+
+  RDMA/AMO:
+    Implementation of RDMA Put and Atomic operations is a thin layer on top of UCP
+    primitives. In addition, "ucp_ep_flush_nb" is used to implement remote completion
+    tracking for single-rail configurations. Currently, UCX conduit doesn't support
+    multi-rail configurations.
+
+    UCX directly supports a fixed set of atomic operations, unsupported operations
+    are handled by generic GASNet implementation. The status of atomic operation
+    support is described in the table below:
+
+                I32/U32/I64/U64
+    ---         ---------------
+    SET:        Y
+    GET:        Y
+    SWAP:       Y
+    (F)CAS:     Y
+    (F)ADD:     Y
+    (F)SUB:     Y
+    (F)INC:     Y
+    (F)DEC:     Y
+    (F)MULT:    N
+    (F)MIN:     N
+    (F)MAX:     N
+    (F)AND:     Y
+    (F)OR:      Y
+    (F)XOR:     Y
+
+    Y = offload is supported
+    N = offload is not supported
+
+@ Section: Graceful exits @
+
+  Graceful exits are supported by the conduit. The design is based
+  on ib-conduit description (see ib-conduit README).
+  The main difference from ibv-conduit design is an "election" procedure
+  in case global exit experienced timeout.
+  In ibv-conduit, rank 0 is used to arbitrate between other ranks in 
+  competition for "master" role.
+  In ucx-conduit, rank 0 is always considered to be "master". It takes this
+  role when it receives the request to perform exit from other ranks.
+  There might be a further improvement of the non-global exit protocol by
+  sequentially trying ranks 1, 2, ..., <myself> if rank 0 failed to confirm
+  it has taken "master" role (noted in the Further work section).
+
+@ Section: Future work @
+
+  + Implement support for local completion options ("lc_opt").
+  + Additional round of performance analysis and tuning.
+  + Investigate older UCX versions and hardware compatibility and update README.
+  + Support Graceful exits if rank 0 has failed.

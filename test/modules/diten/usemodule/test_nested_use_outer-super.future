@@ -1,0 +1,4 @@
+bug: `super.var` doesn't work, only `super.mod`
+
+This test seems to indicate that `super` can't be used to refer to a
+parent module's symbol.

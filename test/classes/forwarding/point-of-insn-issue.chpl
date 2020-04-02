@@ -26,6 +26,7 @@ module OuterModule {
   }
 
   module other {
+    import OuterModule.ForwardingRecord;
     record R {}
     proc main() {
       var rec = new ForwardingRecord(R);

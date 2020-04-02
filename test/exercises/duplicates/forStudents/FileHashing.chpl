@@ -84,7 +84,7 @@ module FileHashing {
     use SHA256Implementation;
 
     var f = open(path, iomode.r);
-    var len = f.length();
+    var len = f.size;
     var r = f.reader(kind=iokind.big, locking=false,
                      start=0, end=len);
 
@@ -159,7 +159,7 @@ module FileHashing {
     }
     // If fullPath starts with currentDirectory, remove it
     if fullPath.startsWith(currentDirectory) {
-      fullPath = fullPath[currentDirectory.length+1..];
+      fullPath = fullPath[currentDirectory.size+1..];
     }
     return fullPath;
   }

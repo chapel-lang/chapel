@@ -1,1 +1,1 @@
-useMissingModule2.chpl:1: error: Cannot find object 'Goober'
+useMissingModule2.chpl:1: error: Cannot find module or enum 'Goober'

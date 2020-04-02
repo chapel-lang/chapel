@@ -1,0 +1,47 @@
+.. default-domain:: chpl
+
+.. module:: Include
+
+Include
+=======
+**Usage**
+
+.. code-block:: chapel
+
+   use Include;
+
+**Submodules**
+
+.. toctree::
+   :maxdepth: 1
+   :glob:
+
+   Include/*
+
+.. data:: var v = 100
+
+.. function:: proc f()
+
+.. default-domain:: chpl
+
+.. module:: SubModule
+   :synopsis: SubModule docs string 
+
+SubModule
+=========
+**Usage**
+
+.. code-block:: chapel
+
+   use Include.SubModule;
+
+SubModule docs string 
+
+.. data:: var subVar = 10
+
+   SubModule variable 
+
+.. function:: proc subFn()
+
+   SubModule function 
+

@@ -6,6 +6,7 @@ FLAGS:
                            (equivalent to setting the numLocales config const)
   -v, --verbose          : run program in verbose mode
   --gdb                  : run program in gdb
+  --lldb                 : run program in lldb
 
 CONFIG VAR FLAGS:
 =================

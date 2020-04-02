@@ -155,7 +155,7 @@ class Level {
   // sensible.  Mainly for testing and debugging.
   //-----------------------------------------------------------
   
-  proc writeThis(w) {
+  proc writeThis(w) throws {
     writeln("Level bounds: ", x_low, "  ", x_high);
     writeln("Number of cells: ", n_cells);
     writeln("Number of ghost cells: ", n_ghost_cells);
@@ -333,7 +333,7 @@ class SiblingGhostRegion {
       if sibling != grid 
       {
         var overlap = grid.extended_cells( sibling.cells );
-        if overlap.numIndices>0 
+        if overlap.size>0 
         {
           neighbors.add(sibling);
           overlaps(sibling) = overlap;
@@ -414,7 +414,7 @@ class SiblingGhostRegion {
 iter Level.ordered_grids {    
   var grid_list = grids;
   
-  while grid_list.numIndices > 0 {
+  while grid_list.size > 0 {
     var lowest_grid: unmanaged Grid?;
     var i_lowest = possible_ghost_cells.high;
 

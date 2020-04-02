@@ -1,4 +1,4 @@
-proc f(x:enumerated) {
+proc f(x:enum) {
   writeln(x);
 }
 

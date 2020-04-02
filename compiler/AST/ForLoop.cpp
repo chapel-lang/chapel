@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -24,6 +25,7 @@
 #include "build.h"
 #include "DeferStmt.h"
 #include "driver.h"
+#include "stringutil.h"
 
 #include <algorithm>
 
@@ -402,6 +404,24 @@ BlockStmt* ForLoop::copyBody(SymbolMap* map)
 
   return retval;
 }
+
+
+void ForLoop::copyBodyHelper(Expr* beforeHere, int64_t i, SymbolMap* map,
+                             Symbol* continueSym)
+{
+  // Replace the continue label with a per-iteration label
+  // that is at the end of that iteration.
+  LabelSymbol* continueLabel = new
+    LabelSymbol(astr("_continueLabel", istr(i)));
+  Expr* defContinueLabel = new DefExpr(continueLabel);
+
+  beforeHere->insertBefore(defContinueLabel);
+
+  map->put(continueSym, continueLabel);
+
+  defContinueLabel->insertBefore(copyBody(map));
+}
+
 
 bool ForLoop::isForLoop() const
 {

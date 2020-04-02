@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -89,10 +90,47 @@ static void getLastStmts(BlockStmt* loop, std::vector<Expr*>& stmts) {
   helpGetLastStmts(last, stmts);
 }
 
+static Expr* skipIgnoredStmts(Expr* last) {
+
+  while (true) {
+    CallExpr* call = toCallExpr(last);
+    FnSymbol* calledFn = NULL;
+    if (call)
+      calledFn = call->resolvedFunction();
+
+    // Ignore calls to chpl_rmem_consist_maybe_acquire that were added
+    // by the compiler. We will remove these if we optimize an atomic op.
+    if (calledFn && calledFn->hasFlag(FLAG_COMPILER_ADDED_REMOTE_FENCE)) {
+      last = last->prev;
+
+    // Ignore calls to PRIM_END_OF_STATEMENT
+    } else if (call && call->isPrimitive(PRIM_END_OF_STATEMENT)) {
+      last = last->prev;
+
+    // Ignore PRIM_OPTIMIZATION_INFO and related DefExpr
+    // (move last before these if they are present)
+    } else if (call && call->isPrimitive(PRIM_OPTIMIZATION_INFO)) {
+      Symbol* optSym = toSymExpr(call->get(1))->symbol();
+      last = last->prev;
+      if (DefExpr* def = toDefExpr(last)) {
+        if (def->sym == optSym)
+          last = last->prev;
+      }
+
+    } else {
+      break; // stop looking
+    }
+  }
+
+  return last;
+}
+
 static void helpGetLastStmts(Expr* last, std::vector<Expr*>& stmts) {
 
   if (last == NULL)
     return;
+
+  last = skipIgnoredStmts(last);
 
   if (CondStmt* cond = toCondStmt(last)) {
     helpGetLastStmts(cond->thenStmt->body.last(), stmts);
@@ -121,19 +159,7 @@ static void helpGetLastStmts(Expr* last, std::vector<Expr*>& stmts) {
     }
   }
 
-  // Ignore calls to chpl_rmem_consist_maybe_acquire that were added
-  // by the compiler. We will remove these if we optimize an atomic op.
-  if (CallExpr* call = toCallExpr(last))
-    if (FnSymbol* fn = call->resolvedFunction())
-      if (fn->hasFlag(FLAG_COMPILER_ADDED_REMOTE_FENCE))
-        last = last->prev;
-
-  // Ignore calls to PRIM_END_OF_STATEMENT
-  if (CallExpr* call = toCallExpr(last))
-    if (call->isPrimitive(PRIM_END_OF_STATEMENT))
-      last = last->prev;
-
-  // Otherwise, add what we got.
+  last = skipIgnoredStmts(last);
   stmts.push_back(last);
 }
 

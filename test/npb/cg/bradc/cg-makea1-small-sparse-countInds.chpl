@@ -34,5 +34,5 @@ proc main() {
     MatrixSpace += ind;
   }
 
-  writeln("MatrixSpace has ", MatrixSpace.numIndices, " indices");
+  writeln("MatrixSpace has ", MatrixSpace.size, " indices");
 }

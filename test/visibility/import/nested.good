@@ -1,1 +1,2 @@
-nested.chpl:12: syntax error: near '.'
+13
+In A.B.foo()

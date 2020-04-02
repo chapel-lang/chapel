@@ -13,8 +13,6 @@ noAliasSets: no-aliases for function acceptsArrays:
 noAliasSets: no-aliases for function acceptsClasses:
 noAliasSets: no-aliases for function acceptsIntRefs:
   A may alias ret
-  A may alias ret
-  B may alias ret
   B may alias ret
 LICM: may-alias report for a loop in function acceptsArrays:
 LICM: may-alias report for a loop in function acceptsClasses:

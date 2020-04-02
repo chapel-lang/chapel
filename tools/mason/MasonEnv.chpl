@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -84,7 +85,7 @@ proc MASON_REGISTRY {
       } else {
         var regTup: 2*string;
 
-        if regArr.numElements == 1 {
+        if regArr.size == 1 {
           // get the name from the last part of the location
           var name: string = getRegNameFromLoc(regArr[0]);
           regTup = (name, regArr[0]);

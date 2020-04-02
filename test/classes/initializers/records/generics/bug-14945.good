@@ -1,1 +1,3 @@
-some sort of compilation error
+bug-14945.chpl:8: error: initializer produces a different type
+bug-14945.chpl:8: note: when default-initializing 'foo1' of type 'Foo(bool)'
+bug-14945.chpl:8: note: init resulted in type 'Foo(int(64))'

@@ -1,5 +1,21 @@
-init()
-(field = 0)
-init(1)
-(field = 0) = (field = 1)
-(field = 1)
+inner-fn.chpl:22: In function 'test1':
+inner-fn.chpl:24: error: 'x1' is used before it is initialized
+inner-fn.chpl:23: note: 'x1' declared here
+inner-fn.chpl:25: note: 'x1' initialized here
+inner-fn.chpl:35: In function 'test2':
+inner-fn.chpl:38: error: 'x2' is used before it is initialized
+inner-fn.chpl:36: note: 'x2' declared here
+inner-fn.chpl:40: note: 'x2' initialized here
+inner-fn.chpl:42: note: 'x2' initialized here
+inner-fn.chpl:50: In function 'test3':
+inner-fn.chpl:52: error: 'x3' is used before it is initialized
+inner-fn.chpl:51: note: 'x3' declared here
+inner-fn.chpl:53: note: 'x3' initialized here
+inner-fn.chpl:63: In function 'test4':
+inner-fn.chpl:65: error: 'x4' is used before it is initialized
+inner-fn.chpl:64: note: 'x4' declared here
+inner-fn.chpl:66: note: 'x4' initialized here
+inner-fn.chpl:74: In function 'test5':
+inner-fn.chpl:76: error: 'x5' is used before it is initialized
+inner-fn.chpl:75: note: 'x5' declared here
+inner-fn.chpl:77: note: 'x5' initialized here

@@ -228,7 +228,7 @@ proc LUFactorize(n : int, A : [1..n, 1..n+1] real, piv : [1..n] int) {
         updateBlockRow(A, tl, tr);
 
         // update trailing submatrix (if there)
-        if(br.numIndices > 0) {
+        if(br.size > 0) {
             var blkID : int = (blk/blkSize):int + 1;
             luLikeMultiply(A, blkID);
          }

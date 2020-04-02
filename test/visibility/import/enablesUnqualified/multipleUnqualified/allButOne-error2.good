@@ -1,0 +1,2 @@
+allButOne-error2.chpl:12: In function 'main':
+allButOne-error2.chpl:13: error: 'A' undeclared (first use this function)

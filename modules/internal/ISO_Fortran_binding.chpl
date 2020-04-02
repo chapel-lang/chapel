@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -200,7 +201,7 @@ module ISO_Fortran_binding {
     var D = {(...dims)};
     var A = D.buildArrayWith(eltType,
                              FA.base_addr: _ddata(eltType),
-                             D.numIndices);
+                             D.size);
     A._unowned = true;
     return A;
   }

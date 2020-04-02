@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -104,6 +105,10 @@ public:
 
   BlockStmt*             copyBody();
   BlockStmt*             copyBody(SymbolMap* map);
+  void                   copyBodyHelper(Expr* beforeHere,
+                                        int64_t i,
+                                        SymbolMap* map,
+                                        Symbol* continueSym);
 
   SymExpr*               indexGet()                                   const;
   SymExpr*               iteratorGet()                                const;

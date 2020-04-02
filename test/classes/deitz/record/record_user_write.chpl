@@ -4,7 +4,7 @@ record foo {
   var z : int = 3;
 }
 
-proc foo.writeThis(fp) {
+proc foo.writeThis(fp) throws {
   fp.write("(---", x, " ", y, " ", z, "---)");
 }
 

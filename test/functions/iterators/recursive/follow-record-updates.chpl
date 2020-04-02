@@ -43,7 +43,7 @@ proc report(const ref REPO: RRR) {
 /////////////////////////////////
 
 // The former bug was not seen if we add 'const ref' to 'ARG'.
-proc WriteThis(ARG: RRR) {
+proc displayThis(ARG: RRR) {
 
   for node in postorder(GlobalTree) {
     if node.first {
@@ -55,5 +55,5 @@ proc WriteThis(ARG: RRR) {
 }
 
 proc main {
-  WriteThis(GlobalRec);
+  displayThis(GlobalRec);
 }

@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -176,6 +177,16 @@ void deadExpressionElimination(FnSymbol* fn) {
           if (SymExpr* rhs = toSymExpr(expr->get(2)))
             if (lhs->symbol() == rhs->symbol())
               expr->remove();
+
+      // remove calls to chpl__convertValueToRuntimeType or other
+      // functions returning a runtime type where the returned value
+      // is not captured at all. Note that RUNTIME_TYPE_VALUE values
+      // are not currently subject to the return-by-ref transformation.
+      if (FnSymbol* calledFn = expr->resolvedFunction()) {
+        if (calledFn->retType->symbol->hasFlag(FLAG_RUNTIME_TYPE_VALUE))
+          if (expr->isStmtExpr())
+            expr->remove();
+      }
 
     } else if (CondStmt* cond = toCondStmt(ast)) {
       // Compensate for deadBlockElimination

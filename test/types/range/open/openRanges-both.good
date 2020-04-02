@@ -1,0 +1,3 @@
+openRanges-both.chpl:6: In function 'testRanges':
+openRanges-both.chpl:10: error: parallel iteration is not supported over unbounded ranges
+openRanges-both.chpl:1: Function 'testRanges' instantiated as: testRanges(type t = int(64))
