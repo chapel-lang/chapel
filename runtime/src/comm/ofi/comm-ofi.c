@@ -116,13 +116,18 @@ static int numTxCtxs;
 static int numRxCtxs;
 
 struct perTxCtxInfo_t {
-  atomic_bool allocated;
-  chpl_bool bound;
-  struct fid_ep* txCtx;
-  struct fid_cq* txCQ;
-  struct fid_cntr* txCntr;
-  uint64_t numTxnsOut;   // number of transactions in flight now
-  uint64_t numTxnsSent;  // number of transactions ever initiated
+  atomic_bool allocated;        // true: in use; false: available
+  chpl_bool bound;              // true: bound to an owner (usually a thread)
+  struct fid_ep* txCtx;         // transmit context (endpoint, if not scalable)
+  struct fid_cq* txCQ;          // completion CQ
+  struct fid_cntr* txCntr;      // completion counter (AM handler tx ctx only)
+  struct fid* txCmplFid;        // CQ or counter fid
+                                // fn: check for tx completions
+  void (*checkTxCmplsFn)(struct perTxCtxInfo_t*);
+                                // fn: ensure progress
+  void (*ensureProgressFn)(struct perTxCtxInfo_t*);
+  uint64_t numTxnsOut;          // number of transactions in flight now
+  uint64_t numTxnsSent;         // number of transactions ever initiated
 };
 
 static int tciTabLen;
@@ -187,14 +192,14 @@ static inline void ofi_get_ll(void*, c_nodeid_t,
 static inline void do_remote_get_buff(void*, c_nodeid_t, void*, size_t);
 static inline void do_remote_amo_nf_buff(void*, c_nodeid_t, void*, size_t,
                                          enum fi_op, enum fi_datatype);
-static void ensureProgress(struct perTxCtxInfo_t*);
-static inline void waitForTxnComplete(struct perTxCtxInfo_t*, void* ctx);
-static inline void checkTxCQ(struct perTxCtxInfo_t*);
+static void amEnsureProgress(struct perTxCtxInfo_t*);
 static void checkRxRmaCmplsCQ(void);
 static void checkRxRmaCmplsCntr(void);
-static inline ssize_t readCQ(struct fid_cq*, void*, size_t);
+static void checkTxCmplsCQ(struct perTxCtxInfo_t*);
+static void checkTxCmplsCntr(struct perTxCtxInfo_t*);
+static inline size_t readCQ(struct fid_cq*, void*, size_t);
 static void reportCQError(struct fid_cq*);
-static inline void getTxCntr(struct perTxCtxInfo_t*);
+static inline void waitForTxnComplete(struct perTxCtxInfo_t*, void* ctx);
 static void* allocBounceBuf(size_t);
 static void freeBounceBuf(void*);
 static inline void local_yield(void);
@@ -265,7 +270,7 @@ static void ofiErrReport(const char*, int, const char*);
     do {                                                                \
       OFI_CHK_2(expr, _ret, -FI_EAGAIN);                                \
       if (_ret == -FI_EAGAIN) {                                         \
-        ensureProgress(tcip);                                           \
+        (*tcip->ensureProgressFn)(tcip);                                \
       }                                                                 \
     } while (_ret == -FI_EAGAIN);                                       \
   } while (0)
@@ -1209,8 +1214,7 @@ void init_ofiEp(void) {
   OFI_CHK(fi_endpoint(ofi_domain, ofi_info, &ofi_rxEp, NULL));
   OFI_CHK(fi_ep_bind(ofi_rxEp, &ofi_av->fid, 0));
   OFI_CHK(fi_cq_open(ofi_domain, &cqAttr, &ofi_rxCQ, &ofi_rxCQ));
-  OFI_CHK(fi_ep_bind(ofi_rxEp, &ofi_rxCQ->fid,
-                     FI_TRANSMIT | FI_RECV));
+  OFI_CHK(fi_ep_bind(ofi_rxEp, &ofi_rxCQ->fid, FI_TRANSMIT | FI_RECV));
   OFI_CHK(fi_enable(ofi_rxEp));
 
   OFI_CHK(fi_endpoint(ofi_domain, ofi_info, &ofi_rxEpRma, NULL));
@@ -1236,12 +1240,7 @@ void init_ofiEp(void) {
   if (ofi_amhPollSet != NULL) {
     OFI_CHK(fi_poll_add(ofi_amhPollSet, &ofi_rxCQ->fid, 0));
     OFI_CHK(fi_poll_add(ofi_amhPollSet, ofi_rxCmplFidRma, 0));
-    struct perTxCtxInfo_t* tcip = &tciTab[tciTabLen - 1];
-    OFI_CHK(fi_poll_add(ofi_amhPollSet,
-                        ((tcip->txCQ != NULL)
-                         ? &tcip->txCQ->fid
-                         : &tcip->txCntr->fid),
-                        0));
+    OFI_CHK(fi_poll_add(ofi_amhPollSet, tciTab[tciTabLen - 1].txCmplFid, 0));
     pollSetSize = 3;
   }
 }
@@ -1337,23 +1336,36 @@ void init_ofiEpTxCtx(int i, chpl_bool isAMHandler,
   struct perTxCtxInfo_t* tcip = &tciTab[i];
   atomic_init_bool(&tcip->allocated, false);
   tcip->bound = false;
+
   if (useScalableTxEp) {
     OFI_CHK(fi_tx_context(ofi_txEpScal, i, NULL, &tcip->txCtx, NULL));
   } else {
     OFI_CHK(fi_endpoint(ofi_domain, ofi_info, &tcip->txCtx, NULL));
     OFI_CHK(fi_ep_bind(tcip->txCtx, &ofi_av->fid, 0));
   }
+
   if (cqAttr != NULL) {
-    OFI_CHK(fi_cq_open(ofi_domain, cqAttr, &tcip->txCQ, &tcip->txCQ));
-    OFI_CHK(fi_ep_bind(tcip->txCtx, &tcip->txCQ->fid,
-                       FI_TRANSMIT | FI_RECV));
+    OFI_CHK(fi_cq_open(ofi_domain, cqAttr, &tcip->txCQ,
+                       &tcip->checkTxCmplsFn));
+    tcip->txCmplFid = &tcip->txCQ->fid;
+    OFI_CHK(fi_ep_bind(tcip->txCtx, tcip->txCmplFid, FI_TRANSMIT | FI_RECV));
+    tcip->checkTxCmplsFn = checkTxCmplsCQ;
   } else {
-    OFI_CHK(fi_cntr_open(ofi_domain, cntrAttr, &tcip->txCntr, &tcip->txCntr));
-    OFI_CHK(fi_ep_bind(tcip->txCtx, &tcip->txCntr->fid,
+    OFI_CHK(fi_cntr_open(ofi_domain, cntrAttr, &tcip->txCntr,
+                         &tcip->checkTxCmplsFn));
+    tcip->txCmplFid = &tcip->txCntr->fid;
+    OFI_CHK(fi_ep_bind(tcip->txCtx, tcip->txCmplFid,
                        (isAMHandler ? FI_WRITE
                                     : FI_SEND | FI_READ | FI_WRITE)));
+    tcip->checkTxCmplsFn = checkTxCmplsCntr;
   }
+
   OFI_CHK(fi_enable(tcip->txCtx));
+
+  tcip->ensureProgressFn = isAMHandler
+                           ? amEnsureProgress
+                           : tcip->checkTxCmplsFn;
+
 }
 
 
@@ -1708,12 +1720,7 @@ void fini_ofi(void) {
   CHPL_FREE(ofi_rxAddrs);
 
   if (ofi_amhPollSet != NULL) {
-    struct perTxCtxInfo_t* tcip = &tciTab[tciTabLen - 1];
-    OFI_CHK(fi_poll_del(ofi_amhPollSet,
-                        ((tcip->txCQ != NULL)
-                         ? &tcip->txCQ->fid
-                         : &tcip->txCntr->fid),
-                        0));
+    OFI_CHK(fi_poll_del(ofi_amhPollSet, tciTab[tciTabLen - 1].txCmplFid, 0));
     OFI_CHK(fi_poll_del(ofi_amhPollSet, ofi_rxCmplFidRma, 0));
     OFI_CHK(fi_poll_del(ofi_amhPollSet, &ofi_rxCQ->fid, 0));
   }
@@ -1725,11 +1732,7 @@ void fini_ofi(void) {
 
   for (int i = 0; i < tciTabLen; i++) {
     OFI_CHK(fi_close(&tciTab[i].txCtx->fid));
-    if (tciTab[i].txCQ != NULL) {
-      OFI_CHK(fi_close(&tciTab[i].txCQ->fid));
-    } else {
-      OFI_CHK(fi_close(&tciTab[i].txCntr->fid));
-    }
+    OFI_CHK(fi_close(tciTab[i].txCmplFid));
   }
 
   if (useScalableTxEp) {
@@ -2040,10 +2043,11 @@ void mcmReleaseAllNodes(struct bitmap_t* b, struct perTxCtxInfo_t* tcip,
 
   BITMAP_FOREACH_SET(b, node) {
     bitmapClear(b, node);
-    checkTxCQ(myTcip);
-    while (myTcip->numTxnsOut >= txCQLen) { // need CQ room for at least 1 txn
+    (*tcip->checkTxCmplsFn)(myTcip);
+    // If using CQ, need room for at least 1 txn.
+    while (tcip->txCQ != NULL && myTcip->numTxnsOut >= txCQLen) {
       sched_yield();
-      checkTxCQ(myTcip);
+      (*tcip->checkTxCmplsFn)(myTcip);
     }
     mcmReleaseOneNode(node, myTcip, dbgOrderStr);
   } BITMAP_FOREACH_SET_END
@@ -2499,10 +2503,8 @@ void amHandler(void* argNil) {
       for (int i = 0; i < ret; i++) {
         if (contexts[i] == &ofi_rxCQ) {
           processRxAmReq(tcip);
-        } else if (contexts[i] == &tcip->txCQ) {
-          checkTxCQ(tcip);
-        } else if (contexts[i] == &tcip->txCntr) {
-          getTxCntr(tcip);
+        } else if (contexts[i] == &tcip->checkTxCmplsFn) {
+          (*tcip->checkTxCmplsFn)(tcip);
         } else if (contexts[i] == &checkRxRmaCmplsFn) {
           // no action
         } else {
@@ -2515,13 +2517,7 @@ void amHandler(void* argNil) {
       // The provider can't do poll sets.
       //
       processRxAmReq(tcip);
-
-      if (tcip->txCQ != NULL) {
-        checkTxCQ(tcip);
-      } else {
-        getTxCntr(tcip);
-      }
-
+      (*tcip->checkTxCmplsFn)(tcip);
       (*checkRxRmaCmplsFn)();
 
       sched_yield();
@@ -3351,11 +3347,10 @@ chpl_comm_nb_handle_t ofi_put(const void* addr, c_nodeid_t node,
     CHK_TRUE((tcip = tciAlloc()) != NULL);
 
     atomic_bool txnDone = { 0 };
-    void* ctx = NULL;
-    if (tcip->txCQ != NULL) {
-      atomic_init_bool(&txnDone, false);
-      ctx = txnTrkEncode(txnTrkDone, &txnDone);
-    }
+    atomic_init_bool(&txnDone, false);
+    void* ctx = (tcip->txCQ == NULL)
+                ? NULL
+                : txnTrkEncode(txnTrkDone, &txnDone);
 
     DBG_PRINTF(DBG_RMA | DBG_RMAWRITE,
                "tx write: %d:%p <= %p, size %zd, key 0x%" PRIx64 ", ctx %p",
@@ -3375,9 +3370,7 @@ chpl_comm_nb_handle_t ofi_put(const void* addr, c_nodeid_t node,
     mcmReleaseOneNode(node, tcip, "PUT");
 
     waitForTxnComplete(tcip, ctx);
-    if (tcip->txCQ != NULL) {
-      atomic_destroy_bool(&txnDone);
-    }
+    atomic_destroy_bool(&txnDone);
     tciFree(tcip);
   } else {
     //
@@ -3455,6 +3448,8 @@ void ofi_put_V(int v_len, void** addr_v, void** local_mr_v,
              v_len, (int) locale_v[0], raddr_v[0], addr_v[0], size_v[0],
              remote_mr_v[0]);
 
+  assert(!isAmHandler);
+
   struct perTxCtxInfo_t* tcip;
   CHK_TRUE((tcip = tciAlloc()) != NULL);
 
@@ -3462,11 +3457,11 @@ void ofi_put_V(int v_len, void** addr_v, void** local_mr_v,
   // Make sure we have enough free CQ entries to initiate the entire
   // batch of transactions.
   //
-  if (v_len > txCQLen - tcip->numTxnsOut) {
-    checkTxCQ(tcip);
+  if (tcip->txCQ != NULL && v_len > txCQLen - tcip->numTxnsOut) {
+    (*tcip->checkTxCmplsFn)(tcip);
     while (v_len > txCQLen - tcip->numTxnsOut) {
       sched_yield();
-      checkTxCQ(tcip);
+      (*tcip->checkTxCmplsFn)(tcip);
     }
   }
 
@@ -3631,11 +3626,10 @@ chpl_comm_nb_handle_t ofi_get(void* addr, c_nodeid_t node,
     CHK_TRUE((tcip = tciAlloc()) != NULL);
 
     atomic_bool txnDone = { 0 };
-    void* ctx = NULL;
-    if (tcip->txCQ != NULL) {
-      atomic_init_bool(&txnDone, false);
-      ctx = txnTrkEncode(txnTrkDone, &txnDone);
-    }
+    atomic_init_bool(&txnDone, false);
+    void* ctx = (tcip->txCQ == NULL)
+                ? NULL
+                : txnTrkEncode(txnTrkDone, &txnDone);
 
     DBG_PRINTF(DBG_RMA | DBG_RMAREAD,
                "tx read: %p <= %d:%p(0x%" PRIx64 "), size %zd, key 0x%" PRIx64
@@ -3648,9 +3642,7 @@ chpl_comm_nb_handle_t ofi_get(void* addr, c_nodeid_t node,
     tcip->numTxnsOut++;
     tcip->numTxnsSent++;
     waitForTxnComplete(tcip, ctx);
-    if (tcip->txCQ != NULL) {
-      atomic_destroy_bool(&txnDone);
-    }
+    atomic_destroy_bool(&txnDone);
     tciFree(tcip);
   } else {
     //
@@ -3725,6 +3717,8 @@ void ofi_get_V(int v_len, void** addr_v, void** local_mr_v,
              v_len, addr_v[0], (int) locale_v[0], raddr_v[0], size_v[0],
              remote_mr_v[0]);
 
+  assert(!isAmHandler);
+
   struct perTxCtxInfo_t* tcip;
   CHK_TRUE((tcip = tciAlloc()) != NULL);
 
@@ -3732,11 +3726,11 @@ void ofi_get_V(int v_len, void** addr_v, void** local_mr_v,
   // Make sure we have enough free CQ entries to initiate the entire
   // batch of transactions.
   //
-  if (v_len > txCQLen - tcip->numTxnsOut) {
-    checkTxCQ(tcip);
+  if (tcip->txCQ != NULL && v_len > txCQLen - tcip->numTxnsOut) {
+    (*tcip->checkTxCmplsFn)(tcip);
     while (v_len > txCQLen - tcip->numTxnsOut) {
       sched_yield();
-      checkTxCQ(tcip);
+      (*tcip->checkTxCmplsFn)(tcip);
     }
   }
 
@@ -3773,7 +3767,7 @@ void ofi_get_V(int v_len, void** addr_v, void** local_mr_v,
       OFI_RIDE_OUT_EAGAIN(tcip,
                           fi_readmsg(tcip->txCtx, &msg, 0));
       while (tcip->numTxnsOut > 0) {
-        ensureProgress(tcip);
+        (*tcip->ensureProgressFn)(tcip);
       }
     }
   }
@@ -3878,12 +3872,11 @@ chpl_comm_nb_handle_t ofi_amo(c_nodeid_t node, uint64_t object, uint64_t mrKey,
   struct perTxCtxInfo_t* tcip;
   CHK_TRUE((tcip = tciAlloc()) != NULL);
 
-  atomic_bool txnDone = { 0 };
-  void* ctx = NULL;
-  if (tcip->txCQ != NULL) {
-    atomic_init_bool(&txnDone, false);
-    ctx = txnTrkEncode(txnTrkDone, &txnDone);
-  }
+  atomic_bool txnDone;
+  atomic_init_bool(&txnDone, false);
+  void* ctx = (tcip->txCQ == NULL)
+              ? NULL
+              : txnTrkEncode(txnTrkDone, &txnDone);
 
   DBG_PRINTF((ofiOp == FI_ATOMIC_READ) ? DBG_AMOREAD : DBG_AMO,
              "tx AMO: obj %d:%" PRIx64 ", opnd1 <%s>, opnd2 <%s>, "
@@ -3924,9 +3917,7 @@ chpl_comm_nb_handle_t ofi_amo(c_nodeid_t node, uint64_t object, uint64_t mrKey,
   // Wait for network completion.
   //
   waitForTxnComplete(tcip, ctx);
-  if (tcip->txCQ != NULL) {
-    atomic_destroy_bool(&txnDone);
-  }
+  atomic_destroy_bool(&txnDone);
   tciFree(tcip);
 
   if (result != NULL) {
@@ -3968,6 +3959,8 @@ void ofi_amo_nf_V(int v_len, uint64_t* opnd1_v, void* local_mr,
              amo_opName(cmd_v[0]), amo_typeName(type_v[0]), size_v[0],
              remote_mr_v[0]);
 
+  assert(!isAmHandler);
+
   struct perTxCtxInfo_t* tcip;
   CHK_TRUE((tcip = tciAlloc()) != NULL);
 
@@ -3975,11 +3968,11 @@ void ofi_amo_nf_V(int v_len, uint64_t* opnd1_v, void* local_mr,
   // Make sure we have enough free CQ entries to initiate the entire
   // batch of transactions.
   //
-  if (v_len > txCQLen - tcip->numTxnsOut) {
-    checkTxCQ(tcip);
+  if (tcip->txCQ != NULL && v_len > txCQLen - tcip->numTxnsOut) {
+    (*tcip->checkTxCmplsFn)(tcip);
     while (v_len > txCQLen - tcip->numTxnsOut) {
       sched_yield();
-      checkTxCQ(tcip);
+      (*tcip->checkTxCmplsFn)(tcip);
     }
   }
 
@@ -4026,8 +4019,17 @@ void ofi_amo_nf_V(int v_len, uint64_t* opnd1_v, void* local_mr,
 }
 
 
-void ensureAmProgress(void);
-void ensureAmProgress(void) {
+void amEnsureProgress(struct perTxCtxInfo_t* tcip) {
+  (*tcip->checkTxCmplsFn)(tcip);
+
+  //
+  // We only have responsibility for inbound AMs and RMA if we're doing
+  // manual progress.
+  //
+  if (ofi_info->domain_attr->data_progress != FI_PROGRESS_MANUAL) {
+    return;
+  }
+
   if (ofi_amhPollSet != NULL) {
     void* contexts[pollSetSize];
     int ret;
@@ -4043,10 +4045,8 @@ void ensureAmProgress(void) {
     for (int i = 0; i < ret; i++) {
       if (contexts[i] == &ofi_rxCQ) {
         // no action
-      } else if (contexts[i] == &amTcip->txCQ) {
-        checkTxCQ(amTcip);
-      } else if (contexts[i] == &amTcip->txCntr) {
-        getTxCntr(amTcip);
+      } else if (contexts[i] == &tcip->checkTxCmplsFn) {
+        (*tcip->checkTxCmplsFn)(tcip);
       } else if (contexts[i] == &checkRxRmaCmplsFn) {
         // no action
       } else {
@@ -4058,74 +4058,8 @@ void ensureAmProgress(void) {
     //
     // The provider can't do poll sets.
     //
-    if (amTcip->txCQ != NULL) {
-      checkTxCQ(amTcip);
-    } else {
-      getTxCntr(amTcip);
-    }
+    (*tcip->checkTxCmplsFn)(tcip);
     (*checkRxRmaCmplsFn)();
-  }
-}
-
-
-static
-void ensureProgress(struct perTxCtxInfo_t* tcip) {
-  if (tcip->txCQ != NULL) {
-    checkTxCQ(tcip);
-  } else {
-    getTxCntr(tcip);
-  }
-
-  if (isAmHandler
-      && ofi_info->domain_attr->data_progress == FI_PROGRESS_MANUAL) {
-    ensureAmProgress();
-  }
-}
-
-
-static inline
-void waitForTxnComplete(struct perTxCtxInfo_t* tcip, void* ctx) {
-  ensureProgress(tcip);
-  if (ctx != NULL) {
-    const txnTrkCtx_t trk = txnTrkDecode(ctx);
-    while (!atomic_load_explicit_bool((atomic_bool*) trk.ptr,
-                                      memory_order_acquire)) {
-      sched_yield();
-      ensureProgress(tcip);
-    }
-  } else {
-    while (tcip->numTxnsOut > 0) {
-      sched_yield();
-      ensureProgress(tcip);
-    }
-  }
-}
-
-
-static inline
-void checkTxCQ(struct perTxCtxInfo_t* tcip) {
-  struct fi_cq_msg_entry cqes[txCQLen];
-  const int cqesSize = sizeof(cqes) / sizeof(cqes[0]);
-  const ssize_t numEvents = readCQ(tcip->txCQ, cqes, cqesSize);
-
-  if (numEvents > 0) {
-    tcip->numTxnsOut -= numEvents;
-    for (int i = 0; i < numEvents; i++) {
-      struct fi_cq_msg_entry* cqe = &cqes[i];
-      DBG_PRINTF(DBG_ACK, "CQ ack tx, flags %#" PRIx64, cqe->flags);
-      const txnTrkCtx_t trk = txnTrkDecode(cqe->op_context);
-      switch (trk.typ) {
-      case txnTrkNone:
-        break;
-      case txnTrkDone:
-        atomic_store_explicit_bool((atomic_bool*) trk.ptr, true,
-                                   memory_order_release);
-        break;
-      default:
-        INTERNAL_ERROR_V("unexpected trk.typ %d", trk.typ);
-        break;
-      }
-    }
   }
 }
 
@@ -4143,8 +4077,43 @@ void checkRxRmaCmplsCntr(void) {
 }
 
 
+static
+void checkTxCmplsCQ(struct perTxCtxInfo_t* tcip) {
+  struct fi_cq_msg_entry cqes[txCQLen];
+  const size_t cqesSize = sizeof(cqes) / sizeof(cqes[0]);
+  const size_t numEvents = readCQ(tcip->txCQ, cqes, cqesSize);
+
+  tcip->numTxnsOut -= numEvents;
+  for (int i = 0; i < numEvents; i++) {
+    struct fi_cq_msg_entry* cqe = &cqes[i];
+    DBG_PRINTF(DBG_ACK, "CQ ack tx, flags %#" PRIx64 ", ctx %p",
+               cqe->flags, cqe->op_context);
+    if (cqe->op_context != NULL) {
+      const txnTrkCtx_t trk = txnTrkDecode(cqe->op_context);
+      if (trk.typ == txnTrkDone) {
+        atomic_store_explicit_bool((atomic_bool*) trk.ptr, true,
+                                   memory_order_release);
+      } else {
+        INTERNAL_ERROR_V("unexpected trk.typ %d", trk.typ);
+      }
+    }
+  }
+}
+
+
+static
+void checkTxCmplsCntr(struct perTxCtxInfo_t* tcip) {
+  uint64_t count = fi_cntr_read(tcip->txCntr);
+  if (count > tcip->numTxnsSent) {
+    INTERNAL_ERROR_V("fi_cntr_read() %" PRIu64 ", but numTxnsSent %" PRIu64,
+                     count, tcip->numTxnsSent);
+  }
+  tcip->numTxnsOut = tcip->numTxnsSent - count;
+}
+
+
 static inline
-ssize_t readCQ(struct fid_cq* cq, void* buf, size_t count) {
+size_t readCQ(struct fid_cq* cq, void* buf, size_t count) {
   ssize_t ret;
   CHK_TRUE((ret = fi_cq_read(cq, buf, count)) > 0
            || ret == -FI_EAGAIN
@@ -4185,13 +4154,21 @@ void reportCQError(struct fid_cq* cq) {
 
 
 static inline
-void getTxCntr(struct perTxCtxInfo_t* tcip) {
-  uint64_t count = fi_cntr_read(tcip->txCntr);
-  if (count > tcip->numTxnsSent) {
-    INTERNAL_ERROR_V("fi_cntr_read() %" PRIu64 ", but numTxnsSent %" PRIu64,
-                     count, tcip->numTxnsSent);
+void waitForTxnComplete(struct perTxCtxInfo_t* tcip, void* ctx) {
+  (*tcip->ensureProgressFn)(tcip);
+  if (ctx != NULL) {
+    const txnTrkCtx_t trk = txnTrkDecode(ctx);
+    while (!atomic_load_explicit_bool((atomic_bool*) trk.ptr,
+                                      memory_order_acquire)) {
+      sched_yield();
+      (*tcip->ensureProgressFn)(tcip);
+    }
+  } else {
+    while (tcip->numTxnsOut > 0) {
+      sched_yield();
+      (*tcip->ensureProgressFn)(tcip);
+    }
   }
-  tcip->numTxnsOut = tcip->numTxnsSent - count;
 }
 
 
