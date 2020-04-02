@@ -258,7 +258,7 @@ module DistributedBag {
     // printing the contents of DistBag onto a channel
     proc readWriteThis(ch: channel) throws {
       ch <~> "[";
-	  var iterations=0;
+      var iterations=0;
       var size = this.getSize();
       for i in this {
         iterations+=1;
