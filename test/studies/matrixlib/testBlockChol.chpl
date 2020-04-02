@@ -61,14 +61,14 @@ proc writeCholFactor(A:[?D],fac:string) {
   var G:[D] A.eltType;
 
   if (fac == "U") {
-    for i in D.dim(1) {
+    for i in D.dim(0) {
       for j in i..D.high(1){
         G(i,j) = A(i,j);
       }
     }
   }
   else {
-    for j in D.dim(1) {
+    for j in D.dim(0) {
       for i in j..D.high(1) {
         G(i,j) = A(i,j);
       }

@@ -4,7 +4,7 @@ config const inputfile = "blockLU-Mat.dat";
 config const filterfile = "aafilter3x3.dat";
 
 proc AA(Img:[?D], Filter:[?FD], fx: int, fy: int, out outImg:[D] real){
-  for (NeighborDom,i,j) in aawindow(D.dim(1),D.dim(2),fx,fy){ 
+  for (NeighborDom,i,j) in aawindow(D.dim(0),D.dim(1),fx,fy){ 
     
     var newPixel : real = 0;
     var newPixelSum : real = 0;
@@ -13,7 +13,7 @@ proc AA(Img:[?D], Filter:[?FD], fx: int, fy: int, out outImg:[D] real){
     for (ind,jnd) in NeighborDom do { //ind,jnd is the pixel around the pixel we're at
         //i is the pixel that we're on. ind is the pixel around this pixel
         //j is the pixel that we're on. jnd is the pixel around this pixel 
-        if(ind > 0 && ind < D.dim(1).high && jnd > 0 && jnd < D.dim(2).high){
+        if(ind > 0 && ind < D.dim(0).high && jnd > 0 && jnd < D.dim(1).high){
           newPixel += Img(ind,jnd) * Filter[f_i];
           newPixelSum += Filter[f_i];
         }

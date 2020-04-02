@@ -147,7 +147,7 @@ class Cyclic1DDist {
     // locale owns and the domain's index set
 
     // Force this to be strided
-    return locDist(locid)!.myChunk(inds.dim(1) by 1);
+    return locDist(locid)!.myChunk(inds.dim(0) by 1);
   }
 
   //

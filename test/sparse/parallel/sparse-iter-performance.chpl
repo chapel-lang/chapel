@@ -76,9 +76,9 @@ proc populateDomain(param dim, ref sd) where dim == 1 {
 proc populateDomain(param dim, ref sd) where dim > 1 {
   for i in 1..n-1 {
     var member: index(sd);
-    for param dm in 1..dim do member(dm) =
+    for param dm in 0..dim-1 do member(dm) =
       // feeble attempt at something more sophisticated than just a diagonal
-      if dm % 2 == 0 then i else i + 1;
+      if dm % 2 == 1 then i else i + 1;
     sd += member;
   }
 }

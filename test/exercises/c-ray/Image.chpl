@@ -20,9 +20,9 @@ type colorType = uint(bitsPerColor);
 //
 // set helper params for colors
 //
-param red = 1,        // names for referring to colors
-      green = 2,
-      blue = 3,
+param red = 0,        // names for referring to colors
+      green = 1,
+      blue = 2,
       numColors = 3;
 
 //
@@ -63,7 +63,7 @@ proc extToFmt(filename) {
 // how far to shift a color component when packing into a pixelType
 //
 inline proc colorOffset(param color) param {
-  return (color - 1) * bitsPerColor;
+  return color * bitsPerColor;
 }
 
 //
@@ -91,10 +91,10 @@ proc writeImage(image, format, pixels: [] pixelType) {
 //
 proc writeImagePPM(outfile, pixels) {
   outfile.writeln("P6");
-  outfile.writeln(pixels.domain.dim(2).size, " ", pixels.domain.dim(1).size);
+  outfile.writeln(pixels.domain.dim(1).size, " ", pixels.domain.dim(0).size);
   outfile.writeln(255);
   for p in pixels do
-    for param c in 1..numColors do
+    for param c in 0..numColors-1 do
       outfile.writef("%|1i", ((p >> colorOffset(c)) & colorMask));
 }
 
@@ -103,8 +103,8 @@ proc writeImagePPM(outfile, pixels) {
 // more portable)
 //
 proc writeImageBMP(outfile, pixels) {
-  const rows = pixels.domain.dim(1).size,
-        cols = pixels.domain.dim(2).size,
+  const rows = pixels.domain.dim(0).size,
+        cols = pixels.domain.dim(1).size,
 
         headerSize = 14,
         dibHeaderSize = 40,  // always use old BITMAPINFOHEADER
@@ -137,9 +137,9 @@ proc writeImageBMP(outfile, pixels) {
                  0 /* colors in palette */,
                  0 /* "important" colors */);
 
-  for i in pixels.domain.dim(1) {
+  for i in pixels.domain.dim(0) {
     var nbits = 0;
-    for j in pixels.domain.dim(2) {
+    for j in pixels.domain.dim(1) {
       var p = pixels[i,j];
       var redv = (p >> colorOffset(red)) & colorMask;
       var greenv = (p >> colorOffset(green)) & colorMask;

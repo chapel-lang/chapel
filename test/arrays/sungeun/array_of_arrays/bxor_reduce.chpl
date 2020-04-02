@@ -5,7 +5,7 @@ const D = {1..n};
 var AxA: [D] [D] uint;
 var bxor: [D] uint;
 
-for (i,j) in {D.dim(1), D.dim(1)} do
+for (i,j) in {D.dim(0), D.dim(0)} do
   AxA[i][j] = max(uint)-(i*j+j):uint;
 
 bxor = ^ reduce AxA;

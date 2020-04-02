@@ -1,1 +1,1 @@
-feature_locreduce.chpl:17: error: unresolved access of 'int(64)' by '(1)'
+feature_locreduce.chpl:17: error: unresolved access of 'int(64)' by '(0)'

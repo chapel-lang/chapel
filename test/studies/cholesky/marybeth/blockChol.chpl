@@ -33,10 +33,10 @@ proc main() {
 }
 
 proc blockChol(A:[?D],blk) where (D.rank == 2) {
-  if (D.dim(1) != D.dim(2)) then
+  if (D.dim(0) != D.dim(1)) then
     halt("error:  blockChol requires a square matrix with same dimensions");
 
-  var A1D = D.dim(1);
+  var A1D = D.dim(0);
   const zero = 0.0:A.eltType;
 
   for (PrecedingBlockInds,CurrentBlockInds,TrailingBlockInds) in IterateByBlocks(A1D,blk) {
@@ -122,7 +122,7 @@ proc initA(A,Adat){
 proc writelower(A:[?D]) {
   var L:[D] A.eltType;
 
-  for i in D.dim(1) {
+  for i in D.dim(0) {
     for j in D.low(1)..i {
       L(i,j) = A(i,j);
     }

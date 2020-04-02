@@ -52,7 +52,7 @@ proc _determineRankFromArg(startIdx) param {
 }
 
 proc _determineIdxTypeFromArg(startIdx) type {
-  return if isTuple(startIdx) then startIdx(1).type else startIdx.type;
+  return if isTuple(startIdx) then startIdx(0).type else startIdx.type;
 }
 
 proc _ensureTuple(arg) {
@@ -290,7 +290,7 @@ class BlockCyclic : BaseDist {
 
 proc BlockCyclic._locsize {
   var ret : rank*int;
-  for param i in 1..rank {
+  for param i in 0..rank-1 {
     ret(i) = targetLocDom.dim(i).size;
   }
   return ret;
@@ -353,7 +353,7 @@ proc BlockCyclic.getStarts(inds, locid) {
   //
   var D: domain(rank, idxType, stridable=true);
   var R: rank*range(idxType, stridable=true);
-  for i in 1..rank {
+  for i in 0..rank-1 {
     var lo, hi: idxType;
     const domlo = inds.dim(i).low, 
           domhi = inds.dim(i).high;
@@ -399,18 +399,18 @@ proc BlockCyclic.getStarts(inds, locid) {
 // else's suggestion).
 //
 proc BlockCyclic.idxToLocaleInd(ind: idxType) where rank == 1 {
-  const ind0 = ind - lowIdx(1);
-  //  compilerError((ind0/blocksize(1)%targetLocDom.dim(1).type:string);
-  return (ind0 / blocksize(1)) % targetLocDom.dim(1).size;
+  const ind0 = ind - lowIdx(0);
+  //  compilerError((ind0/blocksize(0)%targetLocDom.dim(0).type:string);
+  return (ind0 / blocksize(0)) % targetLocDom.dim(0).size;
 }
 
 proc BlockCyclic.idxToLocaleInd(ind: rank*idxType) where rank == 1 {
-  return idxToLocaleInd(ind(1));
+  return idxToLocaleInd(ind(0));
 }
 
 proc BlockCyclic.idxToLocaleInd(ind: rank*idxType) where rank != 1 {
   var locInd: rank*int;
-  for param i in 1..rank {
+  for param i in 0..rank-1 {
     const ind0 = ind(i) - lowIdx(i);
     locInd(i) = ((ind0 / blocksize(i)) % targetLocDom.dim(i).size): int;
   }
@@ -421,12 +421,12 @@ proc BlockCyclic.init(other: BlockCyclic, privatizeData,
                       param rank = other.rank, type idxType = other.idxType) {
   this.rank = rank;
   this.idxType = idxType;
-  lowIdx = privatizeData[1];
-  blocksize = privatizeData[2];
-  targetLocDom = {(...privatizeData[3])};
+  lowIdx = privatizeData[0];
+  blocksize = privatizeData[1];
+  targetLocDom = {(...privatizeData[2])};
   targetLocales = other.targetLocales;
   locDist = other.locDist;
-  dataParTasksPerLocale = privatizeData[4];
+  dataParTasksPerLocale = privatizeData[3];
 }
 
 override proc BlockCyclic.dsiSupportsPrivatization() param return true;
@@ -455,7 +455,7 @@ class LocBlockCyclic {
   const myStarts: rank*range(idxType, BoundedRangeType.boundedLow, stridable=true);
 
   //
-  // Constructor computes what chunk of index(1) is owned by the
+  // Constructor computes what chunk of index(0) is owned by the
   // current locale
   //
   proc init(param rank: int,
@@ -468,11 +468,11 @@ class LocBlockCyclic {
     this.complete();
 
     if rank == 1 {
-      const lo = lowIdx(1) + (locid * blocksize(1));
-      const str = blocksize(1) * targetLocDom.size;
-      myStarts(1) = lo.. by str;
+      const lo = lowIdx(0) + (locid * blocksize(0));
+      const str = blocksize(0) * targetLocDom.size;
+      myStarts(0) = lo.. by str;
     } else {
-      for param i in 1..rank {
+      for param i in 0..rank-1 {
         const lo = lowIdx(i) + (locid(i) * blocksize(i));
         const str = blocksize(i) * targetLocDom.dim(i).size;
         myStarts(i) = lo.. by str;
@@ -544,7 +544,7 @@ iter BlockCyclicDom.these(param tag: iterKind) where tag == iterKind.leader {
     for follow in locDom.myStarts.these(iterKind.leader, maxTasks, ignoreRunning, minSize) {
       for i in locDom.myStarts.these(iterKind.follower, follow, maxTasks, ignoreRunning, minSize) {
         var retblock: rank*range(idxType);
-        for param j in 1..rank {
+        for param j in 0..rank-1 {
           const lo     = if rank == 1 then i else i(j);
           const dim    = whole.dim(j);
           const dimLow = dim.low;
@@ -579,7 +579,7 @@ iter BlockCyclicDom.these(param tag: iterKind) where tag == iterKind.leader {
 iter BlockCyclicDom.these(param tag: iterKind, followThis) where tag == iterKind.follower {
   var t: rank*range(idxType, stridable=stridable);
 
-  for param i in 1..rank {
+  for param i in 0..rank-1 {
     const curFollow = followThis(i);
     const dim       = whole.dim(i);
     const stride    = dim.stride: idxType;
@@ -649,7 +649,7 @@ proc BlockCyclicDom.dsiSetIndices(x: domain) {
 proc BlockCyclicDom.dsiSetIndices(x) {
   if x.size != rank then
     compilerError("rank mismatch in domain assignment");
-  if x(1).idxType != idxType then
+  if x(0).idxType != idxType then
     compilerError("index type mismatch in domain assignment");
   //
   // TODO: This seems weird:
@@ -771,8 +771,8 @@ proc LocBlockCyclicDom.postinit() {
 //
 proc LocBlockCyclicDom.computeFlatInds() {
   //  writeln("myStarts = ", myStarts);
-  const numBlocks = * reduce [d in 1..rank] (myStarts.dim(d).size),
-    indsPerBlk = * reduce [d in 1..rank] (globDom.dist.blocksize(d));
+  const numBlocks = * reduce [d in 0..rank-1] (myStarts.dim(d).size),
+    indsPerBlk = * reduce [d in 0..rank-1] (globDom.dist.blocksize(d));
   //  writeln("Total number of inds = ", numBlocks * indsPerBlk);
   return numBlocks * indsPerBlk;
 }
@@ -787,8 +787,8 @@ proc LocBlockCyclicDom.writeThis(x) throws {
 proc LocBlockCyclicDom.enumerateBlocks() {
   for i in myStarts {
     write(here.id, ": {");
-    for param j in 1..rank {
-      if (j != 1) {
+    for param j in 0..rank-1 {
+      if (j != 0) {
         write(", ");
       }
       // TODO: support a tuple-oriented iteration of vectors to avoid this?
@@ -825,7 +825,7 @@ proc LocBlockCyclicDom.high {
 
 proc LocBlockCyclicDom._lens {
   var ret : rank*int;
-  for param i in 1..rank {
+  for param i in 0..rank-1 {
     ret(i) = myStarts.dim(i).size;
   }
   return ret;
@@ -838,8 +838,8 @@ proc LocBlockCyclicDom._sizes {
     // to ``blk`` in DefaultRectangular.
     //
     var sizes : (rank+1)*int;
-    sizes(rank+1) = 1;
-    for i in 1..rank by -1 do
+    sizes(rank) = 1;
+    for i in 0..rank-1 by -1 do
       sizes(i) = sizes(i+1) * (globDom.dist.blocksize(i) * myStarts.dim(i).size);
     return sizes;
 }
@@ -928,7 +928,7 @@ proc BlockCyclicArr.dsiAccess(i: rank*idxType) ref {
 //       return myLocArr.this(i);
 //   }
   if rank == 1 {
-    return dsiAccess(i(1));
+    return dsiAccess(i(0));
   } else {
     return locArr(dom.dist.idxToLocaleInd(i))(i);
   }
@@ -951,7 +951,7 @@ iter BlockCyclicArr.these(param tag: iterKind) where tag == iterKind.leader {
 iter BlockCyclicArr.these(param tag: iterKind, followThis) ref where tag == iterKind.follower {
   var myFollowThis: rank*range(idxType=idxType, stridable=stridable);
 
-  for param i in 1..rank {
+  for param i in 0..rank-1 {
     const curFollow = followThis(i);
     const dim       = dom.whole.dim(i);
     const stride    = dim.stride;
@@ -1014,7 +1014,7 @@ iter do_dsiLocalSubdomains(indexDom) {
     var temp : rank*range(idxType);
     const blockSizes = indexDom.globDom.dist.blocksize;
     const globDims = indexDom.globDom.whole.dims();
-    for param j in 1..rank {
+    for param j in 0..rank-1 {
       var lo: idxType;
       if rank == 1 then lo = i;
       else lo = i(j);
@@ -1080,7 +1080,7 @@ class LocBlockCyclicArr {
 }
 
 
-proc LocBlockCyclicArr.mdInd2FlatInd(i: ?t, dim = 1) where t == idxType {
+proc LocBlockCyclicArr.mdInd2FlatInd(i: ?t, dim = 0) where t == idxType {
   //  writeln("blksize");
   const blksize = blocksize(dim);
   //  writeln("ind0");
@@ -1095,11 +1095,11 @@ proc LocBlockCyclicArr.mdInd2FlatInd(i: ?t, dim = 1) where t == idxType {
 
 proc LocBlockCyclicArr.mdInd2FlatInd(i: ?t) where t == rank*idxType {
   if (false) {  // CMO
-    var blkmults = * scan [d in 1..rank] blocksize(d);
+    var blkmults = * scan [d in 0..rank-1] blocksize(d);
     //    writeln("blkmults = ", blkmults);
     var numwholeblocks = 0;
     var blkOff = 0;
-    for param d in 1..rank by -1 {
+    for param d in 0..rank-1 by -1 {
       const blksize = blocksize(d);
       const ind0 = (i(d) - low(d)): int;
       const blkNum = ind0 / (blksize * locsize(d));
@@ -1116,7 +1116,7 @@ proc LocBlockCyclicArr.mdInd2FlatInd(i: ?t) where t == rank*idxType {
 
     var idx = 0;
 
-    for param d in 1..rank {
+    for param d in 0..rank-1 {
       const bs              = blocksize(d);  // cache for performance
       const base            = i(d) - low(d); // zero-based index
       const localBlockNum   = base / (bs * locsize(d));

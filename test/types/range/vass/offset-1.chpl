@@ -26,7 +26,7 @@ proc suite(r:range(?)) {
 proc supersuite(r:range) {
   const steps = (1, 2, -1, -2);
   suite(r);
-  for param i in 1..steps.size do suite(r by steps(i));
+  for param i in 0..steps.size-1 do suite(r by steps(i));
 }
 
 // no first index: supersuite(1..0);

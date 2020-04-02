@@ -106,9 +106,9 @@ const Elems = if useBlockDist then ElemSpace dmapped Block(ElemSpace)
 
                               
 param numdims = 3,
-            X = 1,
-            Y = 2,
-            Z = 3;
+            X = 0,
+            Y = 1,
+            Z = 2;
                               
 /* The coordinates */
 
@@ -125,7 +125,7 @@ param nodesPerElem = 8;
                                  
 // We could name this, but chose not to since it doesn't add that much clarity
 //
-// const elemNeighbors = 1..nodesPerElem;
+// const elemNeighbors = 0..nodesPerElem-1;
 
 
 /* The element-to-node mapping */
@@ -366,8 +366,8 @@ proc initBoundaryConditions() {
 
   forall e in Elems do {
     var mask: int;
-    for i in 1..nodesPerElem do
-      mask += surfaceNode[elemToNode[e][i]] << (i-1);
+    for i in 0..#nodesPerElem do
+      mask += surfaceNode[elemToNode[e][i]] << i;
 
     // TODO: make an inlined function for this little idiom? (and below)
 
@@ -415,8 +415,8 @@ proc initBoundaryConditions() {
 
   forall e in Elems do {
     var mask: int;
-    for i in 1..nodesPerElem do
-      mask += surfaceNode[elemToNode[e][i]] << (i-1);
+    for i in 0..#nodesPerElem do
+      mask += surfaceNode[elemToNode[e][i]] << i;
 
     if ((mask & 0x0f) == 0x0f) then elemBC[e] |= ZETA_M_FREE;
     if ((mask & 0xf0) == 0xf0) then elemBC[e] |= ZETA_P_FREE;
@@ -442,7 +442,7 @@ inline proc localizeNeighborNodes(eli: index(Elems),
                                   y: [] real, ref y_local: 8*real,
                                   z: [] real, ref z_local: 8*real) {
 
-  for param i in 1..nodesPerElem {
+  for param i in 0..nodesPerElem-1 {
     const noi = elemToNode[eli][i];
     
     x_local[i] = x[noi];
@@ -455,11 +455,11 @@ inline proc localizeNeighborNodes(eli: index(Elems),
 inline proc localizeNeighborNodes(eli: index(Elems),
                                   xyz: [] 3*real, ref xyz_local: 3*(8*real)) {
 
-  for param i in 1..nodesPerElem {
+  for param i in 0..nodesPerElem-1 {
     const noi = elemToNode[eli][i];
     const locxyz = xyz[noi];
 
-    for param j in 1..3 do
+    for param j in 0..2 do
       xyz_local[j][i] = locxyz[j];
   }
 }
@@ -468,7 +468,7 @@ inline proc localizeNeighborNodes(eli: index(Elems),
 inline proc localizeNeighborNodes(eli: index(Elems),
                                   xyz: [] 3*real, ref xyz_local: 8*(3*real)) {
 
-  for param i in 1..nodesPerElem {
+  for param i in 0..nodesPerElem-1 {
     const noi = elemToNode[eli][i];
 
     xyz_local[i] = xyz[noi];
@@ -483,18 +483,18 @@ inline proc TripleProduct(xyz1, xyz2, xyz3) {
 
 
 proc CalcElemVolume(xyz) {
-  var dxyz61 = xyz[7] - xyz[2],
-      dxyz70 = xyz[8] - xyz[1],
-      dxyz63 = xyz[7] - xyz[4],
-      dxyz20 = xyz[3] - xyz[1],
-      dxyz50 = xyz[6] - xyz[1],
-      dxyz64 = xyz[7] - xyz[5],
-      dxyz31 = xyz[4] - xyz[2],
-      dxyz72 = xyz[8] - xyz[3],
-      dxyz43 = xyz[5] - xyz[4],
-      dxyz57 = xyz[6] - xyz[8],
-      dxyz14 = xyz[2] - xyz[5],
-      dxyz25 = xyz[3] - xyz[6];
+  var dxyz61 = xyz[6] - xyz[1],
+      dxyz70 = xyz[7] - xyz[0],
+      dxyz63 = xyz[6] - xyz[3],
+      dxyz20 = xyz[2] - xyz[0],
+      dxyz50 = xyz[5] - xyz[0],
+      dxyz64 = xyz[6] - xyz[4],
+      dxyz31 = xyz[3] - xyz[1],
+      dxyz72 = xyz[7] - xyz[2],
+      dxyz43 = xyz[4] - xyz[3],
+      dxyz57 = xyz[5] - xyz[7],
+      dxyz14 = xyz[1] - xyz[4],
+      dxyz25 = xyz[2] - xyz[5];
 
   var volume = TripleProduct(dxyz31 + dxyz72, dxyz63, dxyz20) +
                TripleProduct(dxyz43 + dxyz57, dxyz64, dxyz70) +
@@ -515,9 +515,9 @@ proc CalcElemShapeFunctionDerivatives(xyz: 8*(3*real),
                                       ref b_xyz: 8*(3*real),
                                       ref volume: real) {
 
-  const fjxyzxi = .125 * ( (xyz[7]-xyz[1]) + (xyz[6]-xyz[4]) - (xyz[8]-xyz[2]) - (xyz[5]-xyz[3]) ),
-      fjxyzet = .125 * ( (xyz[7]-xyz[1]) - (xyz[6]-xyz[4]) + (xyz[8]-xyz[2]) - (xyz[5]-xyz[3]) ),
-      fjxyzze = .125 * ( (xyz[7]-xyz[1]) + (xyz[6]-xyz[4]) + (xyz[8]-xyz[2]) + (xyz[5]-xyz[3]) );
+  const fjxyzxi = .125 * ( (xyz[6]-xyz[0]) + (xyz[5]-xyz[3]) - (xyz[7]-xyz[1]) - (xyz[4]-xyz[2]) ),
+      fjxyzet = .125 * ( (xyz[6]-xyz[0]) - (xyz[5]-xyz[3]) + (xyz[7]-xyz[1]) - (xyz[4]-xyz[2]) ),
+      fjxyzze = .125 * ( (xyz[6]-xyz[0]) + (xyz[5]-xyz[3]) + (xyz[7]-xyz[1]) + (xyz[4]-xyz[2]) );
 
   /* compute cofactors */
   var cjxyzxi, cjxyzet, cjxyzze: 3*real;
@@ -538,14 +538,14 @@ proc CalcElemShapeFunctionDerivatives(xyz: 8*(3*real),
      this need only be done for l = 0,1,2,3   since , by symmetry ,
      (6,7,4,5) = - (0,1,2,3) .
   */
-  b_xyz[1] =   -  cjxyzxi  -  cjxyzet  -  cjxyzze;
-  b_xyz[2] =      cjxyzxi  -  cjxyzet  -  cjxyzze;
-  b_xyz[3] =      cjxyzxi  +  cjxyzet  -  cjxyzze;
-  b_xyz[4] =   -  cjxyzxi  +  cjxyzet  -  cjxyzze;
+  b_xyz[0] =   -  cjxyzxi  -  cjxyzet  -  cjxyzze;
+  b_xyz[1] =      cjxyzxi  -  cjxyzet  -  cjxyzze;
+  b_xyz[2] =      cjxyzxi  +  cjxyzet  -  cjxyzze;
+  b_xyz[3] =   -  cjxyzxi  +  cjxyzet  -  cjxyzze;
+  b_xyz[4] = -b_xyz[2];
   b_xyz[5] = -b_xyz[3];
-  b_xyz[6] = -b_xyz[4];
+  b_xyz[6] = -b_xyz[0];
   b_xyz[7] = -b_xyz[1];
-  b_xyz[8] = -b_xyz[2];
 
   /* calculate jacobian determinant (volume) */
   volume = 8.0 * sumOfProduct(fjxyzet, cjxyzet);
@@ -569,16 +569,16 @@ proc CalcElemNodeNormals(ref pfxyz: 8*(3*real), xyz: 8*(3*real)) {
   }
 
   //calculate total normal from each face (faces are made up of combinations of nodes)
-  pfxyz = ElemFaceNormal(1,2,3,4) + ElemFaceNormal(1,5,6,2) +
-          ElemFaceNormal(2,6,7,3) + ElemFaceNormal(3,7,8,4) +
-          ElemFaceNormal(4,8,5,1) + ElemFaceNormal(5,8,7,6);
+  pfxyz = ElemFaceNormal(0,1,2,3) + ElemFaceNormal(0,4,5,1) +
+          ElemFaceNormal(1,5,6,2) + ElemFaceNormal(2,6,7,3) +
+          ElemFaceNormal(3,7,4,0) + ElemFaceNormal(4,7,6,5);
 }
 
 
 proc SumElemStressesToNodeForces(b_xyz: 8*(3*real),
                                  stress_xxyz:3*real,
                                  ref fxyz: 8*(3*real)) {
-  for param i in 1..8 do
+  for param i in 0..7 do
     fxyz[i] = -(stress_xxyz * b_xyz[i]);
 }
 
@@ -601,14 +601,14 @@ proc CalcElemVolumeDerivative(xyz: 8*(3*real)) {
 
   var dvdxyz: 8*(3*real);
 
-  dvdxyz[1] = VoluDer(2,3,4,5,6,8);
-  dvdxyz[4] = VoluDer(1,2,3,8,5,7);
-  dvdxyz[3] = VoluDer(4,1,2,7,8,6);
-  dvdxyz[2] = VoluDer(3,4,1,6,7,5);
-  dvdxyz[5] = VoluDer(8,7,6,1,4,2);
-  dvdxyz[6] = VoluDer(5,8,7,2,1,3);
-  dvdxyz[7] = VoluDer(6,5,8,3,2,4);
-  dvdxyz[8] = VoluDer(7,6,5,4,3,1);
+  dvdxyz[0] = VoluDer(1,2,3,4,5,7);
+  dvdxyz[3] = VoluDer(0,1,2,7,4,6);
+  dvdxyz[2] = VoluDer(3,0,1,6,7,5);
+  dvdxyz[1] = VoluDer(2,3,0,5,6,4);
+  dvdxyz[4] = VoluDer(7,6,5,0,3,1);
+  dvdxyz[5] = VoluDer(4,7,6,1,0,2);
+  dvdxyz[6] = VoluDer(5,4,7,2,1,3);
+  dvdxyz[7] = VoluDer(6,5,4,3,2,0);
 
   return dvdxyz;
 }
@@ -620,15 +620,15 @@ inline proc CalcElemFBHourglassForce(xyzd: 8*(3*real),
   var hxyz: 4*(3*real);
 
   // reduction
-  for param i in 1..4 {
-    for param j in 1..8 {
+  for param i in 0..3 {
+    for param j in 0..7 {
       hxyz[i] += hourgam(j)(i) * xyzd[j];
     }
   }
 
-  for param i in 1..8 {
+  for param i in 0..7 {
     var shxyz: 3*real;
-    for param j in 1..4 do
+    for param j in 0..3 do
       shxyz += hourgam(i)(j) * hxyz[j];
     hgfxyz[i] = coefficient * shxyz;
   }
@@ -645,12 +645,12 @@ proc CalcElemCharacteristicLength(xyz, volume) {
     return area ;
   }
 
-  var charLength = max(AreaFace(1, 2, 3, 4),
-                       AreaFace(5, 6, 7, 8),
+  var charLength = max(AreaFace(0, 1, 2, 3),
+                       AreaFace(4, 5, 6, 7),
+                       AreaFace(0, 1, 5, 4),
                        AreaFace(1, 2, 6, 5),
                        AreaFace(2, 3, 7, 6),
-                       AreaFace(3, 4, 8, 7),
-                       AreaFace(4, 1, 5, 8));
+                       AreaFace(3, 0, 4, 7));
 
   return 4.0 * volume / sqrt(charLength);
 }
@@ -659,12 +659,12 @@ proc CalcElemCharacteristicLength(xyz, volume) {
 proc CalcElemVelocityGradient(xyzvel, pfxyz, detJ, ref d3: 3*real) {
   const inv_detJ = 1.0 / detJ;
 
-  d3 = inv_detJ * ( pfxyz[1] * (xyzvel[1]-xyzvel[7])
-                  + pfxyz[2] * (xyzvel[2]-xyzvel[8])
-                  + pfxyz[3] * (xyzvel[3]-xyzvel[5])
-                  + pfxyz[4] * (xyzvel[4]-xyzvel[6]) );
+  d3 = inv_detJ * ( pfxyz[0] * (xyzvel[0]-xyzvel[6])
+                  + pfxyz[1] * (xyzvel[1]-xyzvel[7])
+                  + pfxyz[2] * (xyzvel[2]-xyzvel[4])
+                  + pfxyz[3] * (xyzvel[3]-xyzvel[5]) );
 
-  /* Unused?
+  /* Unused?  And now off-by-one in indexing (I was too lazy to update)
 
   var dyddx  = inv_detJ * ( pfx[1] * (yvel[1]-yvel[7])
                           + pfx[2] * (yvel[2]-yvel[8])
@@ -960,7 +960,7 @@ proc CalcFBHourglassForceForElems(determ, xyz8n, dvdxyz) {
     var xyzd1: 8*(3*real);
 
     /*
-    for param i in 1..nodesPerElem {
+    for param i in 0..nodesPerElem-1 {
       const noi = elemToNode[eli][i];
     
       xd1[i] = xd[noi];
@@ -973,14 +973,14 @@ proc CalcFBHourglassForceForElems(determ, xyz8n, dvdxyz) {
 
     //    startCommDiagnostics();
     local {
-      for param i in 1..4 {
+      for param i in 0..3 {
         var hourmodxyz: 3*real;
         // reduction
-        for param j in 1..8 {
+        for param j in 0..7 {
           hourmodxyz += xyz8n[eli][j] * gammaCoef[i][j];
         }
 
-        for param j in 1..8 {
+        for param j in 0..7 {
           hourgam[j][i] = gammaCoef[i][j] - volinv * 
             (dvdxyz[eli][j][X] * hourmodxyz[X] +
              dvdxyz[eli][j][Y] * hourmodxyz[Y] +
@@ -1002,7 +1002,7 @@ proc CalcFBHourglassForceForElems(determ, xyz8n, dvdxyz) {
     //    writeln(getCommDiagnostics());
 
     const myElemToNode = elemToNode[eli];
-    for param i in 1..nodesPerElem {
+    for param i in 0..nodesPerElem-1 {
       const noi = myElemToNode[i];
 
       fx[noi].add(hgfxyz[i][X]);
@@ -1098,7 +1098,7 @@ proc CalcKinematicsForElems(dxxyyzz, const dt: real) {
       //set characteristic length
       arealg[k] = CalcElemCharacteristicLength(xyz_local, volume);
 
-      for param i in 1..8 {
+      for param i in 0..7 {
         xyz_local[i] -= dt2 * xyzd_local[i];
       }
 
@@ -1195,11 +1195,11 @@ proc CalcMonotonicQGradientsForElems(delv_xi, delv_eta, delv_zeta,
           norm = 1.0 / (vol + ptiny);
       var axyz, dxyzv: 3*real;
 
-      var dxyzj = -0.25 * ((xyzl[1]+xyzl[2]+xyzl[6]+xyzl[5]) - (xyzl[4]+xyzl[3]+xyzl[7]+xyzl[8])),
+      var dxyzj = -0.25 * ((xyzl[0]+xyzl[1]+xyzl[5]+xyzl[4]) - (xyzl[3]+xyzl[2]+xyzl[6]+xyzl[7])),
       
-          dxyzi =  0.25 * ((xyzl[2]+xyzl[3]+xyzl[7]+xyzl[6]) - (xyzl[1]+xyzl[4]+xyzl[8]+xyzl[5])),
+          dxyzi =  0.25 * ((xyzl[1]+xyzl[2]+xyzl[6]+xyzl[5]) - (xyzl[0]+xyzl[3]+xyzl[7]+xyzl[4])),
       
-          dxyzk =  0.25 * ((xyzl[5]+xyzl[6]+xyzl[7]+xyzl[8]) - (xyzl[1]+xyzl[2]+xyzl[3]+xyzl[4]));
+          dxyzk =  0.25 * ((xyzl[4]+xyzl[5]+xyzl[6]+xyzl[7]) - (xyzl[0]+xyzl[1]+xyzl[2]+xyzl[3]));
 
       /* find delvk and delxk ( i cross j ) */
 
@@ -1211,7 +1211,7 @@ proc CalcMonotonicQGradientsForElems(delv_xi, delv_eta, delv_zeta,
 
       axyz *= norm;
 
-      dxyzv = 0.25 * ((xyzvl[5]+xyzvl[6]+xyzvl[7]+xyzvl[8]) - (xyzvl[1]+xyzvl[2]+xyzvl[3]+xyzvl[4]));
+      dxyzv = 0.25 * ((xyzvl[4]+xyzvl[5]+xyzvl[6]+xyzvl[7]) - (xyzvl[0]+xyzvl[1]+xyzvl[2]+xyzvl[3]));
 
       delv_zeta[eli] = sumOfProduct(axyz,dxyzv);
 
@@ -1225,7 +1225,7 @@ proc CalcMonotonicQGradientsForElems(delv_xi, delv_eta, delv_zeta,
 
       axyz *= norm;
 
-      dxyzv = 0.25 * ((xyzvl[2]+xyzvl[3]+xyzvl[7]+xyzvl[6]) - (xyzvl[1]+xyzvl[4]+xyzvl[8]+xyzvl[5]));
+      dxyzv = 0.25 * ((xyzvl[1]+xyzvl[2]+xyzvl[6]+xyzvl[5]) - (xyzvl[0]+xyzvl[3]+xyzvl[7]+xyzvl[4]));
 
       delv_xi[eli] = sumOfProduct(axyz,dxyzv);
 
@@ -1239,7 +1239,7 @@ proc CalcMonotonicQGradientsForElems(delv_xi, delv_eta, delv_zeta,
 
       axyz *= norm;
 
-      dxyzv = -0.25 * ((xyzvl[1]+xyzvl[2]+xyzvl[6]+xyzvl[5]) - (xyzvl[4]+xyzvl[3]+xyzvl[7]+xyzvl[8]));
+      dxyzv = -0.25 * ((xyzvl[0]+xyzvl[1]+xyzvl[5]+xyzvl[4]) - (xyzvl[3]+xyzvl[2]+xyzvl[6]+xyzvl[7]));
 
       delv_eta[eli] = sumOfProduct(axyz, dxyzv);
     } /* local */
@@ -1514,12 +1514,12 @@ proc CalcSoundSpeedForElems(vnewc, rho0:real, enewc, pnewc, pbvc, bvc) {
 
 
 iter elemToNodes(elem) {
-  for param i in 1..nodesPerElem do
+  for param i in 0..nodesPerElem-1 do
     yield elemToNode[elem][i];
 }
                                  
 iter elemToNodesTuple(e) {
-  for i in 1..nodesPerElem do
+  for i in 0..#nodesPerElem do
     yield (elemToNode[e][i], i);
 }
 

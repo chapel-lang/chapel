@@ -38,7 +38,7 @@ proc testio(x)
   // Set up some I/O styles.
   var styles = ( defaultIOStyle().native(), defaultIOStyle().little(), defaultIOStyle().big(), defaultIOStyle().text() );
 
-  for i in 1..styles.size {
+  for i in 0..#styles.size {
     var style = styles[i];
     if noisy then writeln("STYLE ", i, " iodynamic");
     testio(iodynamic, style, x);

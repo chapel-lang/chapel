@@ -166,8 +166,8 @@ A lighter-weight way to do this would be to simply write your own
 standalone iterator:
 
  	def CMO(D: domain(2)) {
- 	  for i in D.dim(2) {
- 	    for j in D.dim(2) {
+ 	  for i in D.dim(1) {
+ 	    for j in D.dim(1) {
  	      yield (i,j);
  	    }
  	  }

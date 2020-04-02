@@ -61,9 +61,9 @@ for i in 1..k {
 // print a generation
 proc printGrid() {
   write("+"); for i in 1..n do write("-"); writeln("+");
-  for i in D.dim(1) {
+  for i in D.dim(0) {
     write("|");
-    for j in D.dim(2) {
+    for j in D.dim(1) {
       write(if Grid(i,j) then "o" else " ");
     }
     writeln("|");

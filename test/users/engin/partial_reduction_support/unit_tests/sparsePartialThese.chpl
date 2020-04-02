@@ -22,8 +22,8 @@ var SparseDom = if layoutType == layoutTypes.csr then
 var SparseMat: [SparseDom] int;
 
 // create cool set of sparse indices
-for i in ParentDom.dim(1) {
-  for j in ParentDom.dim(2) by 2 align i%2 {
+for i in ParentDom.dim(0) {
+  for j in ParentDom.dim(1) by 2 align i%2 {
     SparseDom += (i, j);
   }
 } 
@@ -32,44 +32,44 @@ for (i,n) in zip(SparseDom, 1..) {
   SparseMat[i] = n;
 }
 
-for i in ParentDom.dim(1) {
-  for j in ParentDom.dim(2) {
+for i in ParentDom.dim(0) {
+  for j in ParentDom.dim(1) {
     writef("%2i ", SparseMat[i, j]);
   }
   writeln();
 }
 
 writeln("Even rows:");
-for r in ParentDom.dim(1) by 2 {
+for r in ParentDom.dim(0) by 2 {
   write("Row ", r, ":\t");
-  forall i in SparseDom._value.dsiPartialThese(2, r) {
+  forall i in SparseDom._value.dsiPartialThese(1, r) {
     writef("%2i ", SparseMat[r, i]);
   }
   writeln();
 }
 
 writeln("Odd rows:");
-for r in ParentDom.dim(1) by 2 align 1{
+for r in ParentDom.dim(0) by 2 align 1{
   write("Row ", r, ":\t");
-  forall i in SparseDom._value.dsiPartialThese(2, r) {
+  forall i in SparseDom._value.dsiPartialThese(1, r) {
     writef("%2i ", SparseMat[r, i]);
   }
   writeln();
 }
 
 writeln("Even cols:");
-for c in ParentDom.dim(2) by 2 {
+for c in ParentDom.dim(1) by 2 {
   write("Col ", c, ":\t");
-  forall i in SparseDom._value.dsiPartialThese(1, c) {
+  forall i in SparseDom._value.dsiPartialThese(0, c) {
     writef("%2i ", SparseMat[i, c]);
   }
   writeln();
 }
 
 writeln("Odd cols:");
-for c in ParentDom.dim(2) by 2 align 1{
+for c in ParentDom.dim(1) by 2 align 1{
   write("Col ", c, ":\t");
-  forall i in SparseDom._value.dsiPartialThese(1, c) {
+  forall i in SparseDom._value.dsiPartialThese(0, c) {
     writef("%2i ", SparseMat[i, c]);
   }
   writeln();

@@ -126,12 +126,12 @@ module ArrayViewSlice {
     proc type chpl__deserialize(data) {
       type domType = __primitive("static field type", this, "dom");
       type arrType = __primitive("static field type", this, "_ArrInstance");
-      const dom = _to_borrowed(domType).chpl__deserialize(data(1));
-      const arr = _to_borrowed(arrType).chpl__deserialize(data(2));
+      const dom = _to_borrowed(domType).chpl__deserialize(data(0));
+      const arr = _to_borrowed(arrType).chpl__deserialize(data(1));
       return new unmanaged ArrayViewSliceArr(eltType=arr.eltType,
-                                             _DomPid=data(1),
+                                             _DomPid=data(0),
                                              dom = dom,
-                                             _ArrPid=data(2),
+                                             _ArrPid=data(1),
                                              _ArrInstance=arr);
     }
 
@@ -303,10 +303,10 @@ module ArrayViewSlice {
 
     proc dsiPrivatize(privatizeData) {
       return new unmanaged ArrayViewSliceArr(eltType=this.eltType,
-                                   _DomPid=privatizeData(1),
-                                   dom=privatizeData(2),
-                                   _ArrPid=privatizeData(3),
-                                   _ArrInstance=privatizeData(4));
+                                   _DomPid=privatizeData(0),
+                                   dom=privatizeData(1),
+                                   _ArrPid=privatizeData(2),
+                                   _ArrInstance=privatizeData(3));
     }
 
     //

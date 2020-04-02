@@ -15,6 +15,6 @@ for (i,j) in ParentDom {
   arr[i,j] = i*N**1 + j*N**0;
 }
 
-writeln(partialReduce(arr._value, 1));
+writeln(partialReduce(arr._value, 0));
 writeln();
-writeln(partialReduce(arr._value, 2));
+writeln(partialReduce(arr._value, 1));

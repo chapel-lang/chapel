@@ -2,22 +2,22 @@ config param digits = 4;
 
 proc number2tuple(n: int) {
   var nn: digits*int;
-  for param i in 1..digits do
-    nn(i) = n/10**(digits-i)%10;
+  for param i in 0..digits-1 do
+    nn(i) = n/10**(digits-(i+1))%10;
   return nn;
 }
 
 proc tuple2number(nn: digits*int) {
   var n: int;
-  for param i in 1..digits do
-    n += nn(i)*10**(digits-i);
+  for param i in 0..digits-1 do
+    n += nn(i)*10**(digits-(i+1));
   return n;
 }
 
 proc smallest(n: int) {
   var nn = number2tuple(n);
-  for param i in 1..digits-1 do
-    for param j in 1..digits-1 do
+  for param i in 0..digits-2 do
+    for param j in 0..digits-2 do
       if nn(j) > nn(j+1) then
         nn(j) <=> nn(j+1);
   return tuple2number(nn);
@@ -25,8 +25,8 @@ proc smallest(n: int) {
 
 proc biggest(n: int) {
   var nn = number2tuple(n);
-  for param i in 1..digits-1 do
-    for param j in 1..digits-1 do
+  for param i in 0..digits-2 do
+    for param j in 0..digits-2 do
       if nn(j) < nn(j+1) then
         nn(j) <=> nn(j+1);
   return tuple2number(nn);

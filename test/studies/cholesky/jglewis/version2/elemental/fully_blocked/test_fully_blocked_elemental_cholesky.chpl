@@ -62,7 +62,7 @@ module test_fully_blocked_elemental_cholesky {
     A = 0.0;
 
     forall (i,j) in mat_dom do
-      A (i,j) = + reduce (  [k in mat_dom.dim (1) ] 
+      A (i,j) = + reduce (  [k in mat_dom.dim (0) ] 
     			    B (i, k) * B (j, k) );
 
     // factorization algorithms overwrite a copy of A, leaving
@@ -112,14 +112,14 @@ module test_fully_blocked_elemental_cholesky {
 
     where ( A.domain.rank == 2 ) {
 
-    assert ( A.domain.dim (1) == A.domain.dim (2)  &&
-	     L.domain.dim (1) == A.domain.dim (1)  &&
-	     L.domain.dim (2) == A.domain.dim (2) 
+    assert ( A.domain.dim (0) == A.domain.dim (1)  &&
+	     L.domain.dim (0) == A.domain.dim (0)  &&
+	     L.domain.dim (1) == A.domain.dim (1) 
 	     );
     
     const mat_dom  = A.domain,
-          mat_rows = A.domain.dim(1),
-          n        = A.domain.dim(1).size;
+          mat_rows = A.domain.dim(0),
+          n        = A.domain.dim(0).size;
 
     const unit_roundoff = 2.0 ** (-53), // IEEE 64 bit floating point
           gamma_n1      = (n * unit_roundoff) / (1.0 - n * unit_roundoff);
@@ -134,7 +134,7 @@ module test_fully_blocked_elemental_cholesky {
     forall (i,j) in mat_dom with (ref max_ratio) do { // race
       const resid: real =
                abs (A (i,j) - 
-		    + reduce ( [k in mat_dom.dim(1) (..min (i,j))]
+		    + reduce ( [k in mat_dom.dim(0) (..min (i,j))]
 			       L (i,k) * L (j,k) ) ) ;
       max_ratio = max ( max_ratio,
 			resid * (1 - gamma_n1) /
@@ -151,7 +151,7 @@ module test_fully_blocked_elemental_cholesky {
   proc print_lower_triangle ( L : [] ) {
    
     if print_matrix_details then
-      for (i_row, i_col) in zip( L.domain.dim(1), L.domain.dim(2) ) do
+      for (i_row, i_col) in zip( L.domain.dim(0), L.domain.dim(1) ) do
 	writeln (i_row, ":  ", L(i_row, ..i_col) );
   }
 

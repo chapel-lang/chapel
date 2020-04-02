@@ -4,9 +4,9 @@ proc main {
   writeln(t);
   on Locales(1) {
     var tmp: string;
-    tmp = t(1);
-    t(1) = t(2);
-    t(2) = tmp;
+    tmp = t(0);
+    t(0) = t(1);
+    t(1) = tmp;
   }
   writeln(t);
 }

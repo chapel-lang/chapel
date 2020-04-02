@@ -1,4 +1,4 @@
 variadic-mix-type-var.chpl:4: error: unresolved call 'foo(type int(64), "blah")'
 variadic-mix-type-var.chpl:1: note: this candidate did not match: foo(args ...)
 variadic-mix-type-var.chpl:4: note: because type call actual argument #1
-variadic-mix-type-var.chpl:1: note: is passed to non-type formal '_e1_args'
+variadic-mix-type-var.chpl:1: note: is passed to non-type formal '_e0_args'

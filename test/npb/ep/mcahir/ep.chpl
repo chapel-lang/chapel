@@ -104,7 +104,7 @@ proc gaussPairsBatch(k: int(64), numPairs: int) {
 			t2 = sqrt(-2.0 * log(t1) / t1);
 			tx = x1 * t2;
 			ty = x2 * t2;
-			var l = max(abs(tx), abs(ty)):int+1;
+			var l = max(abs(tx), abs(ty)):int;
 			q[l] += 1;
 			sx += tx;
 			sy += ty;
@@ -119,7 +119,7 @@ var (total_q, total_sx, total_sy) =
 		+ reduce [k in WorkDist] gaussPairsBatch(k, nk);
 
 //calculate total gaussian count (should equal prob size)
-var gc = + reduce [i in 1..nq] total_q[i];
+var gc = + reduce [i in 0..#nq] total_q[i];
 
 totalTime.stop();
 var tm = totalTime.elapsed();
@@ -138,8 +138,8 @@ writeln("N = 2^", m);
 writeln("No. Gaussian Pairs = ", gc);
 writef("Sums = %25.12er, %25.12er\n", total_sx, total_sy);
 writeln("Counts:");
-for i in 1..nq do
-  writef("%3i %13i\n", i, total_q[i]);
+for i in 0..#nq do
+  writef("%3i %13i\n", i+1, total_q[i]);
 writeln();
 
 //print_results()

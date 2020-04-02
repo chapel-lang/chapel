@@ -120,7 +120,7 @@ param nodesPerElem = 8;
                                  
 // We could name this, but chose not to since it doesn't add that much clarity
 //
-// const elemNeighbors = 1..nodesPerElem;
+// const elemNeighbors = 0..#nodesPerElem;
 
 
 /* The element-to-node mapping */
@@ -352,8 +352,8 @@ proc initBoundaryConditions() {
 
   forall e in Elems do {
     var mask: int;
-    for i in 1..nodesPerElem do
-      mask += surfaceNode[elemToNode.localAccess[e][i]] << (i-1);
+    for i in 0..#nodesPerElem do
+      mask += surfaceNode[elemToNode.localAccess[e][i]] << i;
 
     // TODO: make an inlined function for this little idiom? (and below)
 
@@ -402,8 +402,8 @@ proc initBoundaryConditions() {
 
   forall e in Elems do {
     var mask: int;
-    for i in 1..nodesPerElem do
-      mask += surfaceNode[elemToNode[e][i]] << (i-1);
+    for i in 0..#nodesPerElem do
+      mask += surfaceNode[elemToNode[e][i]] << i;
 
     if ((mask & 0x0f) == 0x0f) then elemBC.localAccess[e] |= ZETA_M_FREE;
     if ((mask & 0xf0) == 0xf0) then elemBC.localAccess[e] |= ZETA_P_FREE;
@@ -429,7 +429,7 @@ inline proc localizeNeighborNodes(eli: index(Elems),
                                   y: [] real, ref y_local: 8*real,
                                   z: [] real, ref z_local: 8*real) {
 
-  for param i in 1..nodesPerElem {
+  for param i in 0..nodesPerElem-1 {
     const noi = elemToNode.localAccess[eli][i];  // can this always be localAccess
     
     x_local[i] = x[noi];
@@ -444,53 +444,53 @@ inline proc TripleProduct(x1, y1, z1, x2, y2, z2, x3, y3, z3) {
 
 
 proc CalcElemVolume(x, y, z) {
-  const dx61 = x[7] - x[2],
-        dy61 = y[7] - y[2],
-        dz61 = z[7] - z[2],
+  const dx61 = x[6] - x[1],
+        dy61 = y[6] - y[1],
+        dz61 = z[6] - z[1],
 
-        dx70 = x[8] - x[1],
-        dy70 = y[8] - y[1],
-        dz70 = z[8] - z[1],
+        dx70 = x[7] - x[0],
+        dy70 = y[7] - y[0],
+        dz70 = z[7] - z[0],
 
-        dx63 = x[7] - x[4],
-        dy63 = y[7] - y[4],
-        dz63 = z[7] - z[4],
+        dx63 = x[6] - x[3],
+        dy63 = y[6] - y[3],
+        dz63 = z[6] - z[3],
 
-        dx20 = x[3] - x[1],
-        dy20 = y[3] - y[1],
-        dz20 = z[3] - z[1],
+        dx20 = x[2] - x[0],
+        dy20 = y[2] - y[0],
+        dz20 = z[2] - z[0],
 
-        dx50 = x[6] - x[1],
-        dy50 = y[6] - y[1],
-        dz50 = z[6] - z[1],
+        dx50 = x[5] - x[0],
+        dy50 = y[5] - y[0],
+        dz50 = z[5] - z[0],
 
-        dx64 = x[7] - x[5],
-        dy64 = y[7] - y[5],
-        dz64 = z[7] - z[5],
+        dx64 = x[6] - x[4],
+        dy64 = y[6] - y[4],
+        dz64 = z[6] - z[4],
 
-        dx31 = x[4] - x[2],
-        dy31 = y[4] - y[2],
-        dz31 = z[4] - z[2],
+        dx31 = x[3] - x[1],
+        dy31 = y[3] - y[1],
+        dz31 = z[3] - z[1],
 
-        dx72 = x[8] - x[3],
-        dy72 = y[8] - y[3],
-        dz72 = z[8] - z[3],
+        dx72 = x[7] - x[2],
+        dy72 = y[7] - y[2],
+        dz72 = z[7] - z[2],
 
-        dx43 = x[5] - x[4],
-        dy43 = y[5] - y[4],
-        dz43 = z[5] - z[4],
+        dx43 = x[4] - x[3],
+        dy43 = y[4] - y[3],
+        dz43 = z[4] - z[3],
 
-        dx57 = x[6] - x[8],
-        dy57 = y[6] - y[8],
-        dz57 = z[6] - z[8],
+        dx57 = x[5] - x[7],
+        dy57 = y[5] - y[7],
+        dz57 = z[5] - z[7],
 
-        dx14 = x[2] - x[5],
-        dy14 = y[2] - y[5],
-        dz14 = z[2] - z[5],
+        dx14 = x[1] - x[4],
+        dy14 = y[1] - y[4],
+        dz14 = z[1] - z[4],
 
-        dx25 = x[3] - x[6],
-        dy25 = y[3] - y[6],
-        dz25 = z[3] - z[6];
+        dx25 = x[2] - x[5],
+        dy25 = y[2] - y[5],
+        dz25 = z[2] - z[5];
 
   const volume = TripleProduct(dx31 + dx72, dx63, dx20,
                                dy31 + dy72, dy63, dy20,
@@ -521,17 +521,17 @@ proc CalcElemShapeFunctionDerivatives(x: 8*real, y: 8*real, z: 8*real,
                                       ref b_z: 8*real, 
                                       ref volume: real) {
 
-  const fjxxi = .125 * ((x[7]-x[1]) + (x[6]-x[4]) - (x[8]-x[2]) - (x[5]-x[3])),
-        fjxet = .125 * ((x[7]-x[1]) - (x[6]-x[4]) + (x[8]-x[2]) - (x[5]-x[3])),
-        fjxze = .125 * ((x[7]-x[1]) + (x[6]-x[4]) + (x[8]-x[2]) + (x[5]-x[3])),
+  const fjxxi = .125 * ((x[6]-x[0]) + (x[5]-x[3]) - (x[7]-x[1]) - (x[4]-x[2])),
+        fjxet = .125 * ((x[6]-x[0]) - (x[5]-x[3]) + (x[7]-x[1]) - (x[4]-x[2])),
+        fjxze = .125 * ((x[6]-x[0]) + (x[5]-x[3]) + (x[7]-x[1]) + (x[4]-x[2])),
 
-        fjyxi = .125 * ((y[7]-y[1]) + (y[6]-y[4]) - (y[8]-y[2]) - (y[5]-y[3])),
-        fjyet = .125 * ((y[7]-y[1]) - (y[6]-y[4]) + (y[8]-y[2]) - (y[5]-y[3])),
-        fjyze = .125 * ((y[7]-y[1]) + (y[6]-y[4]) + (y[8]-y[2]) + (y[5]-y[3])),
+        fjyxi = .125 * ((y[6]-y[0]) + (y[5]-y[3]) - (y[7]-y[1]) - (y[4]-y[2])),
+        fjyet = .125 * ((y[6]-y[0]) - (y[5]-y[3]) + (y[7]-y[1]) - (y[4]-y[2])),
+        fjyze = .125 * ((y[6]-y[0]) + (y[5]-y[3]) + (y[7]-y[1]) + (y[4]-y[2])),
 
-        fjzxi = .125 * ((z[7]-z[1]) + (z[6]-z[4]) - (z[8]-z[2]) - (z[5]-z[3])),
-        fjzet = .125 * ((z[7]-z[1]) - (z[6]-z[4]) + (z[8]-z[2]) - (z[5]-z[3])),
-        fjzze = .125 * ((z[7]-z[1]) + (z[6]-z[4]) + (z[8]-z[2]) + (z[5]-z[3]));
+        fjzxi = .125 * ((z[6]-z[0]) + (z[5]-z[3]) - (z[7]-z[1]) - (z[4]-z[2])),
+        fjzet = .125 * ((z[6]-z[0]) - (z[5]-z[3]) + (z[7]-z[1]) - (z[4]-z[2])),
+        fjzze = .125 * ((z[6]-z[0]) + (z[5]-z[3]) + (z[7]-z[1]) + (z[4]-z[2]));
 
   /* compute cofactors */
   const cjxxi =    (fjyet * fjzze) - (fjzet * fjyze),
@@ -550,32 +550,32 @@ proc CalcElemShapeFunctionDerivatives(x: 8*real, y: 8*real, z: 8*real,
      this need only be done for l = 0,1,2,3   since , by symmetry ,
      (6,7,4,5) = - (0,1,2,3) .
   */
-  b_x[1] =   -  cjxxi  -  cjxet  -  cjxze;
-  b_x[2] =      cjxxi  -  cjxet  -  cjxze;
-  b_x[3] =      cjxxi  +  cjxet  -  cjxze;
-  b_x[4] =   -  cjxxi  +  cjxet  -  cjxze;
+  b_x[0] =   -  cjxxi  -  cjxet  -  cjxze;
+  b_x[1] =      cjxxi  -  cjxet  -  cjxze;
+  b_x[2] =      cjxxi  +  cjxet  -  cjxze;
+  b_x[3] =   -  cjxxi  +  cjxet  -  cjxze;
+  b_x[4] = -b_x[2];
   b_x[5] = -b_x[3];
-  b_x[6] = -b_x[4];
+  b_x[6] = -b_x[0];
   b_x[7] = -b_x[1];
-  b_x[8] = -b_x[2];
 
-  b_y[1] =   -  cjyxi  -  cjyet  -  cjyze;
-  b_y[2] =      cjyxi  -  cjyet  -  cjyze;
-  b_y[3] =      cjyxi  +  cjyet  -  cjyze;
-  b_y[4] =   -  cjyxi  +  cjyet  -  cjyze;
+  b_y[0] =   -  cjyxi  -  cjyet  -  cjyze;
+  b_y[1] =      cjyxi  -  cjyet  -  cjyze;
+  b_y[2] =      cjyxi  +  cjyet  -  cjyze;
+  b_y[3] =   -  cjyxi  +  cjyet  -  cjyze;
+  b_y[4] = -b_y[2];
   b_y[5] = -b_y[3];
-  b_y[6] = -b_y[4];
+  b_y[6] = -b_y[0];
   b_y[7] = -b_y[1];
-  b_y[8] = -b_y[2];
 
-  b_z[1] =   -  cjzxi  -  cjzet  -  cjzze;
-  b_z[2] =      cjzxi  -  cjzet  -  cjzze;
-  b_z[3] =      cjzxi  +  cjzet  -  cjzze;
-  b_z[4] =   -  cjzxi  +  cjzet  -  cjzze;
+  b_z[0] =   -  cjzxi  -  cjzet  -  cjzze;
+  b_z[1] =      cjzxi  -  cjzet  -  cjzze;
+  b_z[2] =      cjzxi  +  cjzet  -  cjzze;
+  b_z[3] =   -  cjzxi  +  cjzet  -  cjzze;
+  b_z[4] = -b_z[2];
   b_z[5] = -b_z[3];
-  b_z[6] = -b_z[4];
+  b_z[6] = -b_z[0];
   b_z[7] = -b_z[1];
-  b_z[8] = -b_z[2];
 
   /* calculate jacobian determinant (volume) */
   volume = 8.0 * ( fjxet * cjxet + fjyet * cjyet + fjzet * cjzet);
@@ -609,9 +609,9 @@ proc CalcElemNodeNormals(ref pfx: 8*real, ref pfy: 8*real, ref pfz: 8*real,
   // calculate total normal from each face (faces are made up of
   // combinations of nodes)
 
-  (pfx, pfy, pfz) = ElemFaceNormal(1,2,3,4) + ElemFaceNormal(1,5,6,2) +
-                    ElemFaceNormal(2,6,7,3) + ElemFaceNormal(3,7,8,4) +
-                    ElemFaceNormal(4,8,5,1) + ElemFaceNormal(5,8,7,6);
+  (pfx, pfy, pfz) = ElemFaceNormal(0,1,2,3) + ElemFaceNormal(0,4,5,1) +
+                    ElemFaceNormal(1,5,6,2) + ElemFaceNormal(2,6,7,3) +
+                    ElemFaceNormal(3,7,4,0) + ElemFaceNormal(4,7,6,5);
 }
 
 
@@ -623,7 +623,7 @@ proc SumElemStressesToNodeForces(b_x: 8*real, b_y: 8*real, b_z: 8*real,
                                  ref fx: 8*real,
                                  ref fy: 8*real,
                                  ref fz: 8*real) {
-  for param i in 1..8 {
+  for param i in 0..7 {
     fx[i] = -(stress_xx * b_x[i]);
     fy[i] = -(stress_yy * b_y[i]);
     fz[i] = -(stress_zz * b_z[i]);
@@ -657,14 +657,14 @@ inline proc CalcElemVolumeDerivative(x: 8*real, y: 8*real, z: 8*real) {
 
   var dvdx, dvdy, dvdz: 8*real;
 
-  (dvdx[1], dvdy[1], dvdz[1]) = VoluDer(2,3,4,5,6,8);
-  (dvdx[4], dvdy[4], dvdz[4]) = VoluDer(1,2,3,8,5,7);
-  (dvdx[3], dvdy[3], dvdz[3]) = VoluDer(4,1,2,7,8,6);
-  (dvdx[2], dvdy[2], dvdz[2]) = VoluDer(3,4,1,6,7,5);
-  (dvdx[5], dvdy[5], dvdz[5]) = VoluDer(8,7,6,1,4,2);
-  (dvdx[6], dvdy[6], dvdz[6]) = VoluDer(5,8,7,2,1,3);
-  (dvdx[7], dvdy[7], dvdz[7]) = VoluDer(6,5,8,3,2,4);
-  (dvdx[8], dvdy[8], dvdz[8]) = VoluDer(7,6,5,4,3,1);
+  (dvdx[0], dvdy[0], dvdz[0]) = VoluDer(1,2,3,4,5,7);
+  (dvdx[3], dvdy[3], dvdz[3]) = VoluDer(0,1,2,7,4,6);
+  (dvdx[2], dvdy[2], dvdz[2]) = VoluDer(3,0,1,6,7,5);
+  (dvdx[1], dvdy[1], dvdz[1]) = VoluDer(2,3,0,5,6,4);
+  (dvdx[4], dvdy[4], dvdz[4]) = VoluDer(7,6,5,0,3,1);
+  (dvdx[5], dvdy[5], dvdz[5]) = VoluDer(4,7,6,1,0,2);
+  (dvdx[6], dvdy[6], dvdz[6]) = VoluDer(5,4,7,2,1,3);
+  (dvdx[7], dvdy[7], dvdz[7]) = VoluDer(6,5,4,3,2,0);
 
   return (dvdx, dvdy, dvdz);
 }
@@ -678,17 +678,17 @@ inline proc CalcElemFBHourglassForce(xd: 8*real, yd: 8*real, zd: 8*real,
   var hx, hy, hz: 4*real;
 
   // reduction
-  for param i in 1..4 {
-    for param j in 1..8 {
+  for param i in 0..3 {
+    for param j in 0..7 {
       hx[i] += hourgam[j][i] * xd[j];
       hy[i] += hourgam[j][i] * yd[j];
       hz[i] += hourgam[j][i] * zd[j];
     }
   }
 
-  for param i in 1..8 {
+  for param i in 0..7 {
     var shx, shy, shz: real;
-    for param j in 1..4 {
+    for param j in 0..3 {
       shx += hourgam[i][j] * hx[j];
       shy += hourgam[i][j] * hy[j];
       shz += hourgam[i][j] * hz[j];
@@ -716,12 +716,12 @@ proc CalcElemCharacteristicLength(x, y, z, volume) {
     return area ;
   }
 
-  const charLength = max(AreaFace(1, 2, 3, 4),
-                         AreaFace(5, 6, 7, 8),
+  const charLength = max(AreaFace(0, 1, 2, 3),
+                         AreaFace(4, 5, 6, 7),
+                         AreaFace(0, 1, 5, 4),
                          AreaFace(1, 2, 6, 5),
                          AreaFace(2, 3, 7, 6),
-                         AreaFace(3, 4, 8, 7),
-                         AreaFace(4, 1, 5, 8));
+                         AreaFace(3, 0, 4, 7));
 
   return 4.0 * volume / sqrt(charLength);
 }
@@ -731,52 +731,52 @@ proc CalcElemVelocityGradient(xvel, yvel, zvel, pfx,  pfy, pfz,
                               detJ, ref d: 6*real) {
   const inv_detJ = 1.0 / detJ;
 
-  d[1] = inv_detJ * ( pfx[1] * (xvel[1]-xvel[7])
-                    + pfx[2] * (xvel[2]-xvel[8])
-                    + pfx[3] * (xvel[3]-xvel[5])
-                    + pfx[4] * (xvel[4]-xvel[6]) );
-  d[2] = inv_detJ * ( pfy[1] * (yvel[1]-yvel[7])
-                    + pfy[2] * (yvel[2]-yvel[8])
-                    + pfy[3] * (yvel[3]-yvel[5])
-                    + pfy[4] * (yvel[4]-yvel[6]) );
-  d[3] = inv_detJ * ( pfz[1] * (zvel[1]-zvel[7])
-                    + pfz[2] * (zvel[2]-zvel[8])
-                    + pfz[3] * (zvel[3]-zvel[5])
-                    + pfz[4] * (zvel[4]-zvel[6]) );
+  d[0] = inv_detJ * ( pfx[0] * (xvel[0]-xvel[6])
+                    + pfx[1] * (xvel[1]-xvel[7])
+                    + pfx[2] * (xvel[2]-xvel[4])
+                    + pfx[3] * (xvel[3]-xvel[5]) );
+  d[1] = inv_detJ * ( pfy[0] * (yvel[0]-yvel[6])
+                    + pfy[1] * (yvel[1]-yvel[7])
+                    + pfy[2] * (yvel[2]-yvel[4])
+                    + pfy[3] * (yvel[3]-yvel[5]) );
+  d[2] = inv_detJ * ( pfz[0] * (zvel[0]-zvel[6])
+                    + pfz[1] * (zvel[1]-zvel[7])
+                    + pfz[2] * (zvel[2]-zvel[4])
+                    + pfz[3] * (zvel[3]-zvel[5]) );
 
-  const dyddx  = inv_detJ * ( pfx[1] * (yvel[1]-yvel[7])
-                            + pfx[2] * (yvel[2]-yvel[8])
-                            + pfx[3] * (yvel[3]-yvel[5])
-                            + pfx[4] * (yvel[4]-yvel[6]) ),
+  const dyddx  = inv_detJ * ( pfx[0] * (yvel[0]-yvel[6])
+                            + pfx[1] * (yvel[1]-yvel[7])
+                            + pfx[2] * (yvel[2]-yvel[4])
+                            + pfx[3] * (yvel[3]-yvel[5]) ),
 
-        dxddy  = inv_detJ * ( pfy[1] * (xvel[1]-xvel[7])
-                            + pfy[2] * (xvel[2]-xvel[8])
-                            + pfy[3] * (xvel[3]-xvel[5])
-                            + pfy[4] * (xvel[4]-xvel[6]) ),
+        dxddy  = inv_detJ * ( pfy[0] * (xvel[0]-xvel[6])
+                            + pfy[1] * (xvel[1]-xvel[7])
+                            + pfy[2] * (xvel[2]-xvel[4])
+                            + pfy[3] * (xvel[3]-xvel[5]) ),
 
-        dzddx  = inv_detJ * ( pfx[1] * (zvel[1]-zvel[7])
-                            + pfx[2] * (zvel[2]-zvel[8])
-                            + pfx[3] * (zvel[3]-zvel[5])
-                            + pfx[4] * (zvel[4]-zvel[6]) ),
+        dzddx  = inv_detJ * ( pfx[0] * (zvel[0]-zvel[6])
+                            + pfx[1] * (zvel[1]-zvel[7])
+                            + pfx[2] * (zvel[2]-zvel[4])
+                            + pfx[3] * (zvel[3]-zvel[5]) ),
 
-        dxddz  = inv_detJ * ( pfz[1] * (xvel[1]-xvel[7])
-                            + pfz[2] * (xvel[2]-xvel[8])
-                            + pfz[3] * (xvel[3]-xvel[5])
-                            + pfz[4] * (xvel[4]-xvel[6]) ),
+        dxddz  = inv_detJ * ( pfz[0] * (xvel[0]-xvel[6])
+                            + pfz[1] * (xvel[1]-xvel[7])
+                            + pfz[2] * (xvel[2]-xvel[4])
+                            + pfz[3] * (xvel[3]-xvel[5]) ),
 
-        dzddy  = inv_detJ * ( pfy[1] * (zvel[1]-zvel[7])
-                            + pfy[2] * (zvel[2]-zvel[8])
-                            + pfy[3] * (zvel[3]-zvel[5])
-                            + pfy[4] * (zvel[4]-zvel[6]) ),
+        dzddy  = inv_detJ * ( pfy[0] * (zvel[0]-zvel[6])
+                            + pfy[1] * (zvel[1]-zvel[7])
+                            + pfy[2] * (zvel[2]-zvel[4])
+                            + pfy[3] * (zvel[3]-zvel[5]) ),
 
-        dyddz  = inv_detJ * ( pfz[1] * (yvel[1]-yvel[7])
-                            + pfz[2] * (yvel[2]-yvel[8])
-                            + pfz[3] * (yvel[3]-yvel[5])
-                            + pfz[4] * (yvel[4]-yvel[6]) );
+        dyddz  = inv_detJ * ( pfz[0] * (yvel[0]-yvel[6])
+                            + pfz[1] * (yvel[1]-yvel[7])
+                            + pfz[2] * (yvel[2]-yvel[4])
+                            + pfz[3] * (yvel[3]-yvel[5]) );
 
-  d[6]  = 0.5 * ( dxddy + dyddx );
-  d[5]  = 0.5 * ( dxddz + dzddx );
-  d[4]  = 0.5 * ( dzddy + dyddz );
+  d[5]  = 0.5 * ( dxddy + dyddx );
+  d[4]  = 0.5 * ( dxddz + dzddx );
+  d[3]  = 0.5 * ( dzddy + dyddz );
 }
 
 
@@ -1030,7 +1030,7 @@ proc CalcHourglassControlForElems(determ) {
 }
 
 
-const gammaCoef: 4*(8*real) = // WAS: [1..4, 1..8] real = 
+const gammaCoef: 4*(8*real) = // WAS: [0..3, 0..7] real = 
                 (( 1.0,  1.0, -1.0, -1.0, -1.0, -1.0,  1.0,  1.0),
                  ( 1.0, -1.0, -1.0,  1.0, -1.0,  1.0,  1.0, -1.0),
                  ( 1.0, -1.0,  1.0, -1.0,  1.0, -1.0,  1.0, -1.0),
@@ -1050,7 +1050,7 @@ proc CalcFBHourglassForceForElems(determ, x8n, y8n, z8n, dvdx, dvdy, dvdz) {
     var xd1, yd1, zd1: 8*real;
 
     /*
-    for param i in 1..nodesPerElem {
+    for param i in 0..nodesPerElem-1 {
       const noi = elemToNode[eli][i];
     
       xd1[i] = xd[noi];
@@ -1062,16 +1062,16 @@ proc CalcFBHourglassForceForElems(determ, x8n, y8n, z8n, dvdx, dvdy, dvdz) {
     localizeNeighborNodes(eli, xd, xd1, yd, yd1, zd, zd1);
 
     local {
-      for param i in 1..4 {
+      for param i in 0..3 {
         var hourmodx, hourmody, hourmodz: real;
         // reduction
-        for param j in 1..8 {
+        for param j in 0..7 {
           hourmodx += x8n.localAccess[eli][j] * gammaCoef[i][j];
           hourmody += y8n.localAccess[eli][j] * gammaCoef[i][j];
           hourmodz += z8n.localAccess[eli][j] * gammaCoef[i][j];
         }
 
-        for param j in 1..8 {
+        for param j in 0..7 {
           hourgam[j][i] = gammaCoef[i][j] - volinv * 
             (dvdx.localAccess[eli][j] * hourmodx +
              dvdy.localAccess[eli][j] * hourmody +
@@ -1091,7 +1091,7 @@ proc CalcFBHourglassForceForElems(determ, x8n, y8n, z8n, dvdx, dvdy, dvdz) {
     } // end local
 
     const myElemToNode = elemToNode.localAccess[eli];
-    for param i in 1..nodesPerElem {
+    for param i in 0..nodesPerElem-1 {
         const noi = myElemToNode[i];
       if useNetworkAtomics {
           fx[noi].add(hgfx[i]);
@@ -1207,7 +1207,7 @@ proc CalcKinematicsForElems(dxx, dyy, dzz, const dt: real) {
       arealg.localAccess[k] = CalcElemCharacteristicLength(x_local, y_local, z_local,
                                                volume);
 
-      for param i in 1..8 {
+      for param i in 0..7 {
         x_local[i] -= dt2 * xd_local[i];
         y_local[i] -= dt2 * yd_local[i];
         z_local[i] -= dt2 * zd_local[i];
@@ -1222,9 +1222,9 @@ proc CalcKinematicsForElems(dxx, dyy, dzz, const dt: real) {
     }
 
     // put velocity gradient quantities into their global arrays.
-    dxx.localAccess[k] = d[1];
-    dyy.localAccess[k] = d[2];
-    dzz.localAccess[k] = d[3];
+    dxx.localAccess[k] = d[0];
+    dyy.localAccess[k] = d[1];
+    dzz.localAccess[k] = d[2];
   }
 }
 
@@ -1310,17 +1310,17 @@ proc CalcMonotonicQGradientsForElems(delv_xi, delv_eta, delv_zeta,
             norm = 1.0 / (vol + ptiny);
       var ax, ay, az, dxv, dyv, dzv: real;
 
-      const dxj = -0.25*((xl[1]+xl[2]+xl[6]+xl[5])-(xl[4]+xl[3]+xl[7]+xl[8])),
-            dyj = -0.25*((yl[1]+yl[2]+yl[6]+yl[5])-(yl[4]+yl[3]+yl[7]+yl[8])),
-            dzj = -0.25*((zl[1]+zl[2]+zl[6]+zl[5])-(zl[4]+zl[3]+zl[7]+zl[8])),
+      const dxj = -0.25*((xl[0]+xl[1]+xl[5]+xl[4])-(xl[3]+xl[2]+xl[6]+xl[7])),
+            dyj = -0.25*((yl[0]+yl[1]+yl[5]+yl[4])-(yl[3]+yl[2]+yl[6]+yl[7])),
+            dzj = -0.25*((zl[0]+zl[1]+zl[5]+zl[4])-(zl[3]+zl[2]+zl[6]+zl[7])),
       
-            dxi =  0.25*((xl[2]+xl[3]+xl[7]+xl[6])-(xl[1]+xl[4]+xl[8]+xl[5])),
-            dyi =  0.25*((yl[2]+yl[3]+yl[7]+yl[6])-(yl[1]+yl[4]+yl[8]+yl[5])),
-            dzi =  0.25*((zl[2]+zl[3]+zl[7]+zl[6])-(zl[1]+zl[4]+zl[8]+zl[5])),
+            dxi =  0.25*((xl[1]+xl[2]+xl[6]+xl[5])-(xl[0]+xl[3]+xl[7]+xl[4])),
+            dyi =  0.25*((yl[1]+yl[2]+yl[6]+yl[5])-(yl[0]+yl[3]+yl[7]+yl[4])),
+            dzi =  0.25*((zl[1]+zl[2]+zl[6]+zl[5])-(zl[0]+zl[3]+zl[7]+zl[4])),
       
-            dxk =  0.25*((xl[5]+xl[6]+xl[7]+xl[8])-(xl[1]+xl[2]+xl[3]+xl[4])),
-            dyk =  0.25*((yl[5]+yl[6]+yl[7]+yl[8])-(yl[1]+yl[2]+yl[3]+yl[4])),
-            dzk =  0.25*((zl[5]+zl[6]+zl[7]+zl[8])-(zl[1]+zl[2]+zl[3]+zl[4]));
+            dxk =  0.25*((xl[4]+xl[5]+xl[6]+xl[7])-(xl[0]+xl[1]+xl[2]+xl[3])),
+            dyk =  0.25*((yl[4]+yl[5]+yl[6]+yl[7])-(yl[0]+yl[1]+yl[2]+yl[3])),
+            dzk =  0.25*((zl[4]+zl[5]+zl[6]+zl[7])-(zl[0]+zl[1]+zl[2]+zl[3]));
 
       /* find delvk and delxk ( i cross j ) */
 
@@ -1334,9 +1334,9 @@ proc CalcMonotonicQGradientsForElems(delv_xi, delv_eta, delv_zeta,
       ay *= norm;
       az *= norm;
 
-      dxv = 0.25*((xvl[5]+xvl[6]+xvl[7]+xvl[8])-(xvl[1]+xvl[2]+xvl[3]+xvl[4]));
-      dyv = 0.25*((yvl[5]+yvl[6]+yvl[7]+yvl[8])-(yvl[1]+yvl[2]+yvl[3]+yvl[4]));
-      dzv = 0.25*((zvl[5]+zvl[6]+zvl[7]+zvl[8])-(zvl[1]+zvl[2]+zvl[3]+zvl[4]));
+      dxv = 0.25*((xvl[4]+xvl[5]+xvl[6]+xvl[7])-(xvl[0]+xvl[1]+xvl[2]+xvl[3]));
+      dyv = 0.25*((yvl[4]+yvl[5]+yvl[6]+yvl[7])-(yvl[0]+yvl[1]+yvl[2]+yvl[3]));
+      dzv = 0.25*((zvl[4]+zvl[5]+zvl[6]+zvl[7])-(zvl[0]+zvl[1]+zvl[2]+zvl[3]));
 
       delv_zeta.localAccess[eli] = ax*dxv + ay*dyv + az*dzv;
 
@@ -1352,9 +1352,9 @@ proc CalcMonotonicQGradientsForElems(delv_xi, delv_eta, delv_zeta,
       ay *= norm;
       az *= norm;
 
-      dxv = 0.25*((xvl[2]+xvl[3]+xvl[7]+xvl[6])-(xvl[1]+xvl[4]+xvl[8]+xvl[5]));
-      dyv = 0.25*((yvl[2]+yvl[3]+yvl[7]+yvl[6])-(yvl[1]+yvl[4]+yvl[8]+yvl[5]));
-      dzv = 0.25*((zvl[2]+zvl[3]+zvl[7]+zvl[6])-(zvl[1]+zvl[4]+zvl[8]+zvl[5]));
+      dxv = 0.25*((xvl[1]+xvl[2]+xvl[6]+xvl[5])-(xvl[0]+xvl[3]+xvl[7]+xvl[4]));
+      dyv = 0.25*((yvl[1]+yvl[2]+yvl[6]+yvl[5])-(yvl[0]+yvl[3]+yvl[7]+yvl[4]));
+      dzv = 0.25*((zvl[1]+zvl[2]+zvl[6]+zvl[5])-(zvl[0]+zvl[3]+zvl[7]+zvl[4]));
 
       delv_xi.localAccess[eli] = ax*dxv + ay*dyv + az*dzv ;
 
@@ -1370,9 +1370,9 @@ proc CalcMonotonicQGradientsForElems(delv_xi, delv_eta, delv_zeta,
       ay *= norm;
       az *= norm;
 
-      dxv= -0.25*((xvl[1]+xvl[2]+xvl[6]+xvl[5])-(xvl[4]+xvl[3]+xvl[7]+xvl[8]));
-      dyv= -0.25*((yvl[1]+yvl[2]+yvl[6]+yvl[5])-(yvl[4]+yvl[3]+yvl[7]+yvl[8]));
-      dzv= -0.25*((zvl[1]+zvl[2]+zvl[6]+zvl[5])-(zvl[4]+zvl[3]+zvl[7]+zvl[8]));
+      dxv= -0.25*((xvl[0]+xvl[1]+xvl[5]+xvl[4])-(xvl[3]+xvl[2]+xvl[6]+xvl[7]));
+      dyv= -0.25*((yvl[0]+yvl[1]+yvl[5]+yvl[4])-(yvl[3]+yvl[2]+yvl[6]+yvl[7]));
+      dzv= -0.25*((zvl[0]+zvl[1]+zvl[5]+zvl[4])-(zvl[3]+zvl[2]+zvl[6]+zvl[7]));
 
       delv_eta.localAccess[eli] = ax*dxv + ay*dyv + az*dzv ;
     } /* local */
@@ -1649,12 +1649,12 @@ proc CalcSoundSpeedForElems(vnewc, rho0:real, enewc, pnewc, pbvc, bvc) {
 
 
 iter elemToNodes(elem) {
-  for param i in 1..nodesPerElem do
+  for param i in 0..nodesPerElem-1 do
     yield elemToNode[elem][i];
 }
                                  
 iter elemToNodesTuple(e) {
-  for i in 1..nodesPerElem do
+  for i in 0..nodesPerElem-1 do
     yield (elemToNode[e][i], i);
 }
 

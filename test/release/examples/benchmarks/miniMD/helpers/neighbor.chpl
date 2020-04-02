@@ -32,7 +32,7 @@ proc updateFluff() {
 proc pbc() {
   forall (pos, c) in zip(RealPos, RealCount) {
     for x in pos[1..c] {
-      for i in 1..3 {
+      for i in 0..2 {
         if x(i) < 0 then x(i) += box(i);
         else if x(i) >= box(i) then x(i) -= box(i);
       }
@@ -171,7 +171,7 @@ proc coord2bin(x : v3){
 
   // create a simple mask on a per-dimension basis
   var mask : v3int;
-  for i in 1..3 do 
+  for i in 0..2 do
     mask(i) = if x(i) >= box(i) then 1 else 0;
 
   // if the position has drifted outside the physical space, 
@@ -180,7 +180,7 @@ proc coord2bin(x : v3){
   const temp = (x - box*mask) * bininv + (1,1,1);
 
   // can't cast from 3*real to 3*int (yet?)
-  for i in 1..3 do 
+  for i in 0..2 do
     cur(i) = temp(i) : int;
 
   return cur;

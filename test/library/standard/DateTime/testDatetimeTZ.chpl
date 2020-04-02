@@ -383,7 +383,7 @@ proc test_replace() {
   var base = new datetime((...args), z100);
   assert(base == base.replace(tzinfo=base.tzinfo));
 
-  var i = 1;
+  var i = 0;
   for (name, newval) in (("year", 2),
                          ("month", 3),
                          ("day", 4),

@@ -138,9 +138,9 @@ proc populate (size : int) {
                             color.yellow, color.blue, color.red, color.yellow,
                             color.red, color.blue);
 
-  var population = [i in 1..size]
+  var population = [i in 0..size-1]
     new unmanaged Chameneos(i, if size == 10 then colorsDefault10(i)
-                                             else ((i-1) % 3):color  );
+                                             else (i % 3):color     );
   return population;
 }
 

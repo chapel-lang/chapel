@@ -43,7 +43,7 @@ proc main
   var t: Timer;
   if perfTest then t.start();
 
-  for n in digitDom.dim(1) by blkSz align 0 do
+  for n in digitDom.dim(0) by blkSz align 0 do
   {
     var nd = next_block(n);
     if debug > 0 then {write("= ");print_digits(n, nd);writeln();}

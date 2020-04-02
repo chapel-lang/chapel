@@ -102,7 +102,7 @@ class Function {
         quad_x   = gl_getPoints(k);
         quad_w   = gl_getWeights(k);
 
-        for i in quad_phiDom.dim(1) {
+        for i in quad_phiDom.dim(0) {
             var p = phi(quad_x[i], k);
             quad_phi [i, ..] = p;
             quad_phiw[i, ..] = quad_w[i] * p;
@@ -117,10 +117,10 @@ class Function {
      */
     proc make_dc_periodic() {
         var iphase = 1.0;
-        for i in dcDom.dim(1) {
+        for i in dcDom.dim(0) {
             var jphase = 1.0;
 
-            for j in dcDom.dim(2) {
+            for j in dcDom.dim(1) {
                 var gammaij = sqrt((2*i+1) * (2*j+1));
                 var Kij = if (i-j) > 0 && ((i-j) % 2) == 1 then
                         2.0 else 0.0;
@@ -162,10 +162,10 @@ class Function {
         var scale = sqrt(h);
         var s  : [0..k-1] real;
 
-        for mu in quad_phiDom.dim(1) {
+        for mu in quad_phiDom.dim(0) {
             var x  = (l + quad_x[mu]) * h;
             var fx = f(x);
-            for i in quad_phiDom.dim(2) do
+            for i in quad_phiDom.dim(1) do
                 s[i] += scale * fx * quad_phiw[mu, i];
         }
 
@@ -182,8 +182,8 @@ class Function {
         ref s1 = sc[k..2*k-1];
 
         const child = curNode.get_children();
-        s0 = project(child(1));
-        s1 = project(child(2));
+        s0 = project(child(0));
+        s1 = project(child(1));
 
         // apply the two scale relationship to get difference coeff
         // in 1d this is O(k^2) flops
@@ -194,14 +194,14 @@ class Function {
         var nf = normf(dc[k..2*k-1]);
         const (n,_) = curNode.get_coords();
         if((nf < thresh) || (n >= (max_level-1))) {
-            sumC[child(1)] = s0;
-            sumC[child(2)] = s1;
+            sumC[child(0)] = s0;
+            sumC[child(1)] = s1;
         }
         else {
             // these recursive calls on sub-trees can go in parallel
             // if the HashMap is syncronized
+            refine(child(0));
             refine(child(1));
-            refine(child(2));
         }
     }
 
@@ -230,9 +230,9 @@ class Function {
         } else {
             const child = curNode.get_children();
             if (2*x < 1) then
-                return evaluate (child(1), 2*x); 
+                return evaluate (child(0), 2*x); 
             else
-                return evaluate (child(2), 2*x-1);
+                return evaluate (child(1), 2*x-1);
         }
     }
 
@@ -252,19 +252,19 @@ class Function {
         const (n,_) = curNode.get_coords();
         if ( n+1 < log2(numThreadsPerLocale) ) then
             cobegin {	
+                on sumC.node2loc(child(0)) do
+                    if !sumC.has_coeffs(child(0)) then compress(child(0));
                 on sumC.node2loc(child(1)) do
                     if !sumC.has_coeffs(child(1)) then compress(child(1));
-                on sumC.node2loc(child(2)) do
-                    if !sumC.has_coeffs(child(2)) then compress(child(2));
             }
         else {
+            if !sumC.has_coeffs(child(0)) then compress(child(0));
             if !sumC.has_coeffs(child(1)) then compress(child(1));
-            if !sumC.has_coeffs(child(2)) then compress(child(2));
         }
 
         var sc: [0..2*k-1] real;
-        sc[0..k-1]   = sumC(child(1));
-        sc[k..2*k-1] = sumC(child(2));
+        sc[0..k-1]   = sumC(child(0));
+        sc[k..2*k-1] = sumC(child(1));
 
         // apply the two scale relationship to get difference coeff
         // in 1d this is O(k^2) flops (in 3d this is O(k^4) flops)
@@ -273,8 +273,8 @@ class Function {
         sumC[curNode] = dc[0..k-1];
         diffC[curNode] = dc[k..2*k-1];
         
+        sumC.remove(child(0));
         sumC.remove(child(1));
-        sumC.remove(child(2));
 
         if n==0 then compressed = true;
     }
@@ -300,12 +300,12 @@ class Function {
             var sc = dc*hg;
             
             const child = curNode.get_children();
-            sumC[child(1)] = sc[0..k-1];
-            sumC[child(2)] = sc[k..2*k-1];
+            sumC[child(0)] = sc[0..k-1];
+            sumC[child(1)] = sc[k..2*k-1];
             
             // sub-trees can be done in parallel
+            reconstruct(child(0));
             reconstruct(child(1));
-            reconstruct(child(2));
         }
         
         const (n,_) = curNode.get_coords();
@@ -325,8 +325,8 @@ class Function {
 
         var new_sc = sc*hg;
         const child = curNode.get_children();
-        sumC(child(1)) = new_sc[0..k-1];
-        sumC(child(2)) = new_sc[k..2*k-1];
+        sumC(child(0)) = new_sc[0..k-1];
+        sumC(child(1)) = new_sc[k..2*k-1];
     }
 
     
@@ -385,10 +385,10 @@ class Function {
         const (n,_) = curNode.get_coords();
         if n < max_level {
             const child = curNode.get_children();
+            if !cleaning || sumC.has_coeffs(child(0)) then
+                sclean(child(0), cleaning);
             if !cleaning || sumC.has_coeffs(child(1)) then
                 sclean(child(1), cleaning);
-            if !cleaning || sumC.has_coeffs(child(2)) then
-                sclean(child(2), cleaning);
         }
     }
 
@@ -407,15 +407,15 @@ class Function {
             // Sub trees can run in parallel
             // Run down tree until we hit scaling function coefficients
             const child = curNode.get_children();
+            diffHelper(child(0), result);
             diffHelper(child(1), result);
-            diffHelper(child(2), result);
         } else {
             // These can also go in parallel since may involve
             // recurring up & down the tree.
             const neighbor = curNode.get_neighbors();
             if debug then writeln(" * diff: coeffs at ",curNode);
-            var sm = get_coeffs(neighbor(1));
-            var sp = get_coeffs(neighbor(2));
+            var sm = get_coeffs(neighbor(0));
+            var sp = get_coeffs(neighbor(1));
             var s0 = sumC[curNode];
 
             // We have s0, check if we found sm and sp at this level
@@ -426,8 +426,8 @@ class Function {
                 recur_down(curNode);
                 // Sub trees can run in parallel
                 const child = curNode.get_children();
+                diffHelper(child(0), result);
                 diffHelper(child(1), result);
-                diffHelper(child(2), result);
             }
         }
     }
@@ -506,16 +506,16 @@ class Function {
                 var scale_factor = sqrt(2.0**(n+1));
 
                 // multiply f1.s[n+1][2*l] and f2.s[n+1][2*l]
-                var f = f1.sumC[child(1)] * quad_phiT;
-                var g = f2.sumC[child(1)] * quad_phiT;
+                var f = f1.sumC[child(0)] * quad_phiT;
+                var g = f2.sumC[child(0)] * quad_phiT;
                 f *= g; // Note: Element-wise multiplication
-                sumC[child(1)] = (f * quad_phiw) * scale_factor;
+                sumC[child(0)] = (f * quad_phiw) * scale_factor;
 
                 // multiply f1.s[n+1][2*l+1] and f2.s[n+1][2*l+1]
-                f  =  f1.sumC[child(2)] * quad_phiT;
-                g  =  f2.sumC[child(2)] * quad_phiT;
+                f  =  f1.sumC[child(1)] * quad_phiT;
+                g  =  f2.sumC[child(1)] * quad_phiT;
                 f *= g;
-                sumC[child(2)] = (f * quad_phiw) * scale_factor;
+                sumC[child(1)] = (f * quad_phiw) * scale_factor;
 
             } else {
                 // if autorefine is not set or we are at the max_level
@@ -537,8 +537,8 @@ class Function {
                 f2.recur_down(curNode);
 
             // calls on sub-trees can go in parallel
+            multiply(f1, f2, child(0));
             multiply(f1, f2, child(1));
-            multiply(f1, f2, child(2));
         }
     }
 

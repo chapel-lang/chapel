@@ -52,7 +52,7 @@ proc performant(order, param subOrder, iterations): real {
 
   var Dom = {1..order, 1..order};
   var Array: [Dom] real = 1.0;
-  const subDom = {1..subOrder, 1..subOrder};
+  const subDom = {0..#subOrder, 0..#subOrder};
   var subArray: subOrder*(subOrder*(real));
 
   for (i,j) in subDom do
@@ -67,7 +67,7 @@ proc performant(order, param subOrder, iterations): real {
 
   for 1..iterations do
     for (i,j) in Dom do
-      for k in 1..subOrder do
+      for k in 0..#subOrder do
         Array[i, j] += Array[i, j] * subArray[k][k];
 
   return t.elapsed()/iterations;

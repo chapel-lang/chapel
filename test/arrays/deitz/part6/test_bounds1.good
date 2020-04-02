@@ -1,3 +1,3 @@
 test_bounds1.chpl:3: error: halt reached - array index out of bounds
 note: index was (6, 1) but array bounds are (1..5, 1..5)
-note: out of bounds in dimension 1 because index 6 is not in 1..5
+note: out of bounds in dimension 0 because index 6 is not in 1..5

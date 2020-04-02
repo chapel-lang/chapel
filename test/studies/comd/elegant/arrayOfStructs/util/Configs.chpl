@@ -57,9 +57,9 @@ proc setupReshapedLocales() {
 if xproc == 1 && yproc == 1 && zproc == 1 {
   use DSIUtil;
   const ranges = setupTargetLocRanges(3, Locales);
-  xproc = ranges(1).size;
-  yproc = ranges(2).size;
-  zproc = ranges(3).size;
+  xproc = ranges(0).size;
+  yproc = ranges(1).size;
+  zproc = ranges(2).size;
 }
   if (xproc*yproc*zproc) != numLocales then
     halt("Number of locales must match xproc * yproc * zproc: ",

@@ -22,7 +22,7 @@ for jblk in 1..n by blk {
   var D21 = {hi+1..n,low..hi};
   var D12 = {low..hi,hi+1..n};
   var D22 = {hi+1..n,hi+1..n};
-  for k in D11.dim(2) {
+  for k in D11.dim(1) {
     if (A(k,k) != 0.0) {
       for i in k+1..hi {
         A(i,k) = A(i,k)/A(k,k);
@@ -35,19 +35,19 @@ for jblk in 1..n by blk {
     }
   }
   if (hi < n) {
-    for k in D21.dim(2) {
+    for k in D21.dim(1) {
       if A(k,k) != 0.0 {
-        for i in D21.dim(1) {
+        for i in D21.dim(0) {
           A(i,k) = A(i,k)/A(k,k);
         }
-        for i in D21.dim(1) {
+        for i in D21.dim(0) {
           for j in k+1..hi {
             A(i,j) -= A(i,k)*A(k,j);
           }
         }
       }
     }
-    for j in D12.dim(2) {
+    for j in D12.dim(1) {
       for k in low..hi {
         if (A(k,j)!= 0.0) {
           for i in k+1..hi {
@@ -57,8 +57,8 @@ for jblk in 1..n by blk {
       }
     }
     for ind in D22 {
-      var i = ind(1);
-      var j = ind(2);
+      var i = ind(0);
+      var j = ind(1);
       for k in low..hi {
         A(i,j) -= A(i,k)*A(k,j);
       }

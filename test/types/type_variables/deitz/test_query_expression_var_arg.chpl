@@ -8,13 +8,13 @@ var c2 = new borrowed C(6,2);
 var c3 = new borrowed C(6,3);
 
 proc f(c: borrowed C(1+1,?p)...) {
-  writeln("p1=2 p2=", p, ": ({p1 = ", c(1).p1, ", p2 = ", c(1).p2, "})");
+  writeln("p1=2 p2=", p, ": ({p1 = ", c(0).p1, ", p2 = ", c(0).p2, "})");
 }
 
 proc f(c: borrowed C(1+2+3,?p)...) {
-  write("p1=6 p2=", p, ": ({p1 = ", c(1).p1, ", p2 = ", c(1).p2, "}");
+  write("p1=6 p2=", p, ": ({p1 = ", c(0).p1, ", p2 = ", c(0).p2, "}");
   if c.size > 1 {
-    write(", {p1 = ", c(2).p1, ", p2 = ", c(2).p2, "}");
+    write(", {p1 = ", c(1).p1, ", p2 = ", c(1).p2, "}");
   }
   writeln(")");
 }

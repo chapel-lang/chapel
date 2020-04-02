@@ -42,7 +42,7 @@ writeln(A);
   writeln((A, t));
   A = 4..6;
   writeln((A, t));
-  t(1)(1) = 7;
+  t(0)(1) = 7;
   writeln((A, t));
 }
 

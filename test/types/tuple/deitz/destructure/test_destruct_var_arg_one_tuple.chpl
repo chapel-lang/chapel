@@ -14,10 +14,10 @@ var t2 = (3, 4);
 var tt = ((...t1), (...t2));
 writeln(tt);
 
-param pu: uint = 3;
+param pu: uint = 2;
 writeln(tt(pu));
 
-var vu: uint = 3;
+var vu: uint = 2;
 writeln(tt(vu));
 
 var ttt = (1, 2.0, 3.0i);

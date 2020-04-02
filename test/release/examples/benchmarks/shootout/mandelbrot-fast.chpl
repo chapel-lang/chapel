@@ -52,9 +52,9 @@ proc main() {
 
     // store 'bitsPerElt' pixels compactly into the final image
     var pixval: eltType;
-    for param i in 1..bitsPerElt do
-      if (Tr(i) + Ti(i) <= limit) then    // if 'C' is within the limit,
-        pixval |= 0x1 << (bitsPerElt-i);  //   turn the corresponding pixel on
+    for param i in 0..<bitsPerElt do
+      if (Tr(i) + Ti(i) <= limit) then      // if 'C' is within the limit,
+        pixval |= 0x1 << (bitsPerElt-i-1);  // turn the corresponding pixel on
 
     image[y, xelt] = pixval;
   }
@@ -72,12 +72,12 @@ proc main() {
 // Helper functions to add/compare an 8-tuple and a singleton
 //
 inline proc +(cr, ci) {
-  return (cr(1)+ci, cr(2)+ci, cr(3)+ci, cr(4)+ci,
-          cr(5)+ci, cr(6)+ci, cr(7)+ci, cr(8)+ci);
+  return (cr(0)+ci, cr(1)+ci, cr(2)+ci, cr(3)+ci,
+          cr(4)+ci, cr(5)+ci, cr(6)+ci, cr(7)+ci);
 }
 
 inline proc >(x, y) {
-  for param i in 1..bitsPerElt do
+  for param i in 0..<bitsPerElt do
     if x(i) <= y then
       return false;
   return true;

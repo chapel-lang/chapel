@@ -42,8 +42,8 @@ iter filter(arr, op) {
 
 proc array(x...?n) {
   var ret : [1..n] x(1).type;
-  for param i in 1..n do
-    ret(i) = x(i);
+  for param i in 0..n-1 do
+    ret(i+1) = x(i);
   
   return ret;
 }

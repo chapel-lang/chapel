@@ -24,8 +24,8 @@ proc backwardSubVerifyLocal(Ab, xToCheck, n: indexType) {
   return true;
 
   const bd = 1..n; // did not work: xToCheck.domain;  // or simply 1..n
-//  assert(bd.dim(1) == Ab.domain.dim(1));
-//  assert(bd == Ab.domain.dim(1), "bsVL-1");
+//  assert(bd.dim(0) == Ab.domain.dim(0));
+//  assert(bd == Ab.domain.dim(0), "bsVL-1");
   var x: [bd] elemType;
 
   for i in bd by -1 do

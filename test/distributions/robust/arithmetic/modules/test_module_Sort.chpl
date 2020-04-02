@@ -102,7 +102,7 @@ for param st in 0..5 /* this is life without FCFs...*/ {
 
 
 writeln("Sort rank changed array (2D->1D)");
-ref rc2DR1D = R2D(n2-1, Dom2D.dim(2));
+ref rc2DR1D = R2D(n2-1, Dom2D.dim(1));
 
 rng.fillRandom(rc2DR1D);
 BubbleSort.bubbleSort(rc2DR1D);
@@ -130,7 +130,7 @@ if !isSorted(rc2DR1D) then writeln('heapSort failed');
 
 
 writeln("Sort rank changed array (3D->1D)");
-ref rc3DR1D = R3D(n3-1, n3-1, Dom3D.dim(3));
+ref rc3DR1D = R3D(n3-1, n3-1, Dom3D.dim(2));
 
 rng.fillRandom(rc3DR1D);
 BubbleSort.bubbleSort(rc3DR1D);
@@ -158,7 +158,7 @@ if !isSorted(rc3DR1D) then writeln('heapSort failed');
 
 
 writeln("Sort rank changed array (4D->1D)");
-ref rc4DR1D = R4D(n4-1, n4-1, n4-1, Dom4D.dim(4));
+ref rc4DR1D = R4D(n4-1, n4-1, n4-1, Dom4D.dim(3));
 
 rng.fillRandom(rc4DR1D);
 BubbleSort.bubbleSort(rc4DR1D);

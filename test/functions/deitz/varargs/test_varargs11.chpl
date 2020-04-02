@@ -3,7 +3,7 @@ proc bar(x1 : int, x2 : int, x3 : int) {
 }
 
 proc foo(x : int ...3) {
-  bar(x(1), x(2), x(3));
+  bar(x(0), x(1), x(2));
   bar((...x));
 }
 

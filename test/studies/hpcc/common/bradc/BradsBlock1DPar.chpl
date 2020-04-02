@@ -135,7 +135,7 @@ class Block1DDist {
     //
     // TODO: Does using David's detupling trick work here?
     //
-    return locDist(locid)!.myChunk(inds.dim(1));
+    return locDist(locid)!.myChunk(inds.dim(0));
   }
   
   //

@@ -15,18 +15,18 @@ proc blockLU(x: [?D], piv, blk) where (D.rank != 2) {
   compilerError("blockLU factors a matrix.  The first input parameter to blockLU must be a two-dimensional array.");
 }
 
-proc blockLU(A: [?D], blk, piv: [D.dim(1)]) where (D.rank == 2) {
+proc blockLU(A: [?D], blk, piv: [D.dim(0)]) where (D.rank == 2) {
 
   // Test that the domain of A is square with the same index set for
   // each dimension.
-  if (D.dim(1) != D.dim(2)) then
+  if (D.dim(0) != D.dim(1)) then
     halt("blockLU requires square matrix with same dimensions");
 
   // Test that 0 < blk <= n, where n = length of one dimension of A.
-  if (blk <= 0) || (blk > D.dim(1).size) then
+  if (blk <= 0) || (blk > D.dim(0).size) then
     halt(blk," is an invalid block size passed to blockLU");
 
-  [i in D.dim(1)] piv(i) = i;    // initialize the pivot vector
+  [i in D.dim(0)] piv(i) = i;    // initialize the pivot vector
 
   // Main loop of block LU uses an iterator to compute three sets of
   // index ranges -- those that are unfactored, divided into those
@@ -140,9 +140,9 @@ proc blockLU(A: [?D], blk, piv: [D.dim(1)]) where (D.rank == 2) {
 // not necessary.
 
 iter generateBlockLURanges(D:domain(2), blksize) {
-  const stop = D.dim(1).high;
+  const stop = D.dim(0).high;
 
-  for i in D.dim(1) by blksize {
+  for i in D.dim(0) by blksize {
     const hi = min(i + blksize-1, stop);
     yield (i..stop, i..hi, hi+1..stop); 
   }
@@ -156,9 +156,9 @@ iter generateBlockLURanges(D:domain(2), blksize) {
 // multiplication).
 
 iter MMIterator(D1, D2) {
-  for j in D2.dim(2) do
-    for (k1, k2) in zip(D1.dim(2), D2.dim(1)) do
-      for i in D1.dim(1) do
+  for j in D2.dim(1) do
+    for (k1, k2) in zip(D1.dim(1), D2.dim(0)) do
+      for i in D1.dim(0) do
         yield (i,j,k1,k2);
 }
 
@@ -170,14 +170,14 @@ iter MMIterator(D1, D2) {
 
 proc computePivotRow(A:[?D]) {
    const (_, ind) = maxloc reduce zip(abs(A), D);
-   return ind(1);
+   return ind(0);
 }
 
 proc blockChol(A:[?D],blk,factor:string) where (D.rank == 2) {
-  if (D.dim(1) != D.dim(2)) then
+  if (D.dim(0) != D.dim(1)) then
     halt("error:  blockChol requires a square matrix with same dimensions");
 
-  var A1D = D.dim(1);
+  var A1D = D.dim(0);
   const zero = 0.0:A.eltType;
   const upper = (factor == "U");
 

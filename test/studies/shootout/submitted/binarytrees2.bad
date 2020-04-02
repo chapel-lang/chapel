@@ -1,0 +1,3 @@
+binarytrees2.chpl:13: In function 'main':
+binarytrees2.chpl:54: error: tuple index 2 is out of bounds
+binarytrees2.chpl:54: note: this tuple contains elements 0..1 (inclusive)

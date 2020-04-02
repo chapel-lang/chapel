@@ -47,7 +47,7 @@ proc getSize(type t) param {
 }
 
 proc getFirst(type t) type {
-  return t(1);
+  return t(0);
 }
 
 proc test3() {

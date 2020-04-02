@@ -213,7 +213,7 @@ module FFTW {
     if !noFFTWsizeChecks {
       var error = false;
 
-      for i in 1..input.rank do
+      for i in 0..<input.rank do
         error |= checkDimMismatch(Din, Dout, i, "plan_dft()");
 
       if error then
@@ -252,8 +252,8 @@ module FFTW {
     param rank = input.rank;
 
     var dims: c_array(c_int,rank);
-    for param i in 1..rank do
-      dims(i-1) = input.domain.dim(i).size.safeCast(c_int);
+    for param i in 0..<rank do
+      dims(i) = input.domain.dim(i).size.safeCast(c_int);
 
     return C_FFTW.fftw_plan_dft(rank.safeCast(c_int), dims, c_ptrTo(input), 
                                      c_ptrTo(output), sign, flags);
@@ -286,7 +286,7 @@ module FFTW {
     if !noFFTWsizeChecks {
       var error = false;
 
-      for i in 1..rank-1 do
+      for i in 0..<(rank-1) do
         error |= checkDimMismatch(Din, Dout, i, "plan_dft_r2c()");
 
       error |= checkRealCplxDimMismatch(Din, Dout, "plan_dft_r2c()", "output ");
@@ -296,8 +296,8 @@ module FFTW {
     }
 
     var dims: c_array(c_int,rank);
-    for param i in 1..rank do
-      dims(i-1) = input.domain.dim(i).size: c_int;
+    for param i in 0..<rank do
+      dims(i) = input.domain.dim(i).size: c_int;
 
     return C_FFTW.fftw_plan_dft_r2c(rank, dims,
                                     c_ptrTo(input),
@@ -328,8 +328,8 @@ module FFTW {
         
     param rank = realDom.rank: c_int;
     var dims: c_array(c_int, rank);
-    for param i in 1..rank do
-      dims(i-1) = realDom.dim(i).size: c_int;
+    for param i in 0..<rank do
+      dims(i) = realDom.dim(i).size: c_int;
 
     return C_FFTW.fftw_plan_dft_r2c(rank, dims,
                                     c_ptrTo(arr) : c_ptr(real),
@@ -366,7 +366,7 @@ module FFTW {
     if !noFFTWsizeChecks {
       var error = false;
 
-      for i in 1..rank-1 do
+      for i in 0..<(rank-1) do
         error |= checkDimMismatch(Din, Dout, i, "plan_dft_c2r()");
 
       error |= checkRealCplxDimMismatch(Dout, Din, "plan_dft_c2r()", "input ");
@@ -376,8 +376,8 @@ module FFTW {
     }
 
     var dims: c_array(c_int,rank);
-    for param i in 1..rank do
-      dims(i-1) = output.domain.dim(i).size: c_int;
+    for param i in 0..<rank do
+      dims(i) = output.domain.dim(i).size: c_int;
 
     return C_FFTW.fftw_plan_dft_c2r(rank, dims, c_ptrTo(input), c_ptrTo(output), flags);
   }
@@ -405,8 +405,8 @@ module FFTW {
 
     param rank = realDom.rank: c_int;
     var dims: c_array(c_int,rank);
-    for param i in 1..rank do
-      dims(i-1) = realDom.dim(i).size: c_int;
+    for param i in 0..<rank do
+      dims(i) = realDom.dim(i).size: c_int;
 
     return C_FFTW.fftw_plan_dft_c2r(rank, dims,
                                     c_ptrTo(arr) : c_ptr(complex),
@@ -580,7 +580,7 @@ module FFTW {
   private proc checkInPlaceDimMismatch(logDom, physDom, fnname, realElems) {
     var error = false;
 
-    for i in 1..logDom.rank-1 do
+    for i in 0..<(logDom.rank-1) do
       error |= checkDimMismatch(logDom, physDom, i, fnname, inplace=true);
 
     if realElems {
@@ -599,7 +599,7 @@ module FFTW {
   // domain.
   //
   private proc checkRealCplxDimMismatch(realDom, complexDom, fnname, cplxarrdesc="") {
-    const dim = realDom.rank;
+    const dim = realDom.rank-1;
     const realDim = realDom.dim(dim).size/2+1;
     const complexDim = complexDom.dim(dim).size;
 
@@ -619,7 +619,7 @@ module FFTW {
   // second describes the domain describing the padded array allocation.
   //
   private proc checkRealInPlaceDimMismatch(logDom, physDom, fnname) {
-    const dim = logDom.rank;
+    const dim = logDom.rank-1;
     const arrDim = physDom.dim(dim).size;
     const domDim = 2*(logDom.dim(dim).size/2+1);
     if (arrDim == domDim) then

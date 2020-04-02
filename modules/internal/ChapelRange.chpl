@@ -264,7 +264,7 @@ module ChapelRange {
   }
 
   private proc _isAnyNothing(args...) param : bool {
-    for param i in 1..args.size {
+    for param i in 0..args.size-1 {
       if isNothingType(args(i).type) then return true;
     }
     return false;
@@ -2224,7 +2224,7 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
     if debugChapelRange then
       chpl_debug_writeln("In range follower code: Following ", followThis);
 
-    var myFollowThis = followThis(1);
+    var myFollowThis = followThis(0);
 
     if debugChapelRange then
       chpl_debug_writeln("Range = ", myFollowThis);
@@ -2486,17 +2486,17 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
     var U = (one, zero, u);
     var V = (zero, one, v);
 
-    while V(3) != 0 {
+    while V(2) != 0 {
       // This is a workaround for a bug.
       // The previous version was:
       //(U, V) = let q = U(3)/V(3) in (V, U - V * (q, q, q));
       var oldU = U;
-      var q = U(3)/V(3);
+      var q = U(2)/V(2);
       U = V;
       V = oldU - V * (q, q, q);
     }
 
-    return (U(3), U(1));
+    return (U(2), U(0));
   }
 
   inline proc chpl__extendedEuclid(u:int(32), v:int(32))

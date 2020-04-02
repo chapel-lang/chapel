@@ -12,8 +12,8 @@ proc make(i:int, j:int) : (R,R) {
 
 proc myfunction() {
   var x = make(1,2);
+  x(0).verify();
   x(1).verify();
-  x(2).verify();
 }
 
 myfunction();
