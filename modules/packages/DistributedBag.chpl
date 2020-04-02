@@ -125,6 +125,7 @@ module DistributedBag {
   public use Collection;
   use BlockDist;
   private use SysCTypes;
+  use IO only channel;
 
   /*
     Below are segment statuses, which is a way to make visible to outsiders the
@@ -253,11 +254,18 @@ module DistributedBag {
       }
       return chpl_getPrivatizedCopy(unmanaged DistributedBagImpl(eltType), _pid);
     }
-
+  
+	// printing the contents of DistBag onto a channel
     proc readWriteThis(ch: channel) throws {
       ch <~> "[";
-      for i in this do ch <~> i <~> ", ";
-      ch <~> "\b\b]";
+	  var iterations=0;
+	  var size = this.getSize();
+      for i in this {
+	    iterations+=1;
+	    ch <~> i;
+		if iterations < size then ch <~> ", "; 
+	  }
+	  ch <~> "]";
     }
     
     forwarding _value;
