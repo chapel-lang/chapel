@@ -1,9 +1,0 @@
-#!/usr/bin/env bash
-#
-# Filter out any slurm messages. Some spawn tests halt which results in a
-# non-zero exit code. Slurm prints out a bunch of errors (that can't be
-# silenced) when any task exists with a non-zero code.
-
-outfile=$2
-cat $outfile | grep -v -E 'srun.*' | grep -v -E 'slurm.*'  > $outfile.tmp
-mv $outfile.tmp $outfile
