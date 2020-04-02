@@ -1386,9 +1386,11 @@ module String {
             halt("range ", r, " out of bounds for string");
         }
         if r.hasHighBound() && (!r.hasLowBound() || r.size > 0) {
-          // This seems suspicious... why would a range whose high bound
-          // was -1 be in-bounds but one whose high bound was -2 be out?
-          // (This pre-dated this PR, though the numbers were 0 and -1).
+          // This seems suspicious... why would a range with a high bound
+          // of -1 be in-bounds yet one whose high bound was -2 be out?
+          // It seems as though any bound < 0 or >= len should be OOB.
+          // (This logic pre-dated this PR, though the numbers differed
+          // in the 1-based string/bytes indexing world).
           // I think that this exists in order to permit the doReplace()
           // call to work when `find()` returns 0, but this doesn't
           // seem principled.  See also the similar case in Bytes.chpl.
