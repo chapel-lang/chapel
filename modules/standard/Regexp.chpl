@@ -865,10 +865,7 @@ record regexp {
 
       if pos < splitstart {
         // Yield splitted value
-        if exprType == string then
-          yield text[pos..splitstart-1];
-        else 
-          yield text[pos:int..(splitstart-1):int];
+        yield text[pos..splitstart-1];
       } else {
         yield "":exprType;
       }
