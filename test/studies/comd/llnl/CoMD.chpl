@@ -551,7 +551,7 @@ inline proc getBoxFromCoords(const ref r : real3, const ref invBoxSize: real3) {
   const temp = r * invBoxSize + (1,1,1);
 
   // can't cast from 3*real to 3*int (yet?)
-  for i in 0..2 do 
+  for i in 0..2 do
     boxCoords(i) = temp(i) : int;
 
   return boxCoords;

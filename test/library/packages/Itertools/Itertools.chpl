@@ -185,7 +185,7 @@ module Itertools {
     const workingIters = followThis(0);
 
     const offset = if isTuple(arg) then 0 else 1;
-    
+
     if isString(arg) || isArray(arg) || isTuple(arg) then
       for idx in workingIters do
         yield arg[(idx % arg.size) + offset];
