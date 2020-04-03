@@ -1159,74 +1159,93 @@ module Random {
       }
 
       pragma "no doc"
-      proc _inplace(tmp: [?D], s: int, n1: int, n2: int, seed: int) {
+      proc _fisherYatesShuffle(arr : [?D], start : int, blockSize : int, seed: int) {
+        for i in start+1..#blockSize-1 {
+          var k = randlc_bounded(D.idxType,
+                                 PCGRandomStreamPrivate_rngs,
+                                 seed, PCGRandomStreamPrivate_count,
+                                 start+1, i);
+          arr[i] <=> arr[k];
+        }
+      }
 
-        var i = s, j = s + n1, n = s + n1 + n2;
+      pragma "no doc"
+      proc _mergeShuffleMerge(arr : [?D], start : int, lArraySize : int, totalSize : int, seed: int) {
+        var i = start;
+        var j = start + lArraySize;
+        var n = start + totalSize;
 
-        while (1) {
+        while true {
           var k = randlc_bounded(D.idxType,
                                  PCGRandomStreamPrivate_rngs,
                                  seed, PCGRandomStreamPrivate_count,
                                  0, 1);
-         if k == 0 {
-           if i == j {
-             break;
-           }
-         } else {
-           if j == n {
-             break;
-           }
-           tmp[i] <=> tmp[j];
-           j += 1;
-         }
-         i += 1;
-       }
+          if k == 0 {
+            if i == j then break;
+          } else {
+            if j == n then break;
+            arr[i] <=> arr[j];
+            j += 1;
+          }
+          i += 1;
+        }
 
-       while (i < n) {
-         var k = randlc_bounded(D.idxType,
-                                PCGRandomStreamPrivate_rngs,
-                                seed, PCGRandomStreamPrivate_count,
-                                s, i);
-         tmp[i] <=> tmp[k];
-         i += 1;
-       }
-     }
+        while i < n {
+          var k = randlc_bounded(D.idxType,
+                                 PCGRandomStreamPrivate_rngs,
+                                 seed, PCGRandomStreamPrivate_count,
+                                 start, i);
+          arr[i] <=> arr[k];
+          i += 1;
+        }
+      }
 
-     pragma "no doc"
-     proc _mergeShuffle(tmp: [?D], l : int, r: int, seed : int) {
-
-       if l >= r then
-       return;
-
-       var mid = (l+r)/2;
-
-       _mergeShuffle(tmp, l, mid, seed);
-       _mergeShuffle(tmp, mid+1, r, seed);
-
-       _inplace(tmp, l, mid-l+1, r-mid, seed);
-     }
-
-      /* Randomly shuffle a 1-D array. */
-      proc shuffle(arr: [?D] ?eltType ) {
+      proc shuffle(arr: [?D], const cutoff : int = 10000) {
 
         if D.rank != 1 then
           compilerError("Shuffle requires 1-D array");
 
-        var tmp = arr.reindex(1..arr.size);
-
         _lock();
 
-        // Merge shuffle
-        _mergeShuffle(tmp, 1, tmp.size, seed);
+        var array = arr.reindex(0..arr.size-1);
+        var arraySize = array.size;
+        var c : uint = 0;
+        while((arraySize >> c) > cutoff) {
+          c += 1;
+        }
+        var numOfSplits : int = 1 << c;
 
-        var j = 1;
+        forall i in 0..numOfSplits-1 {
+          var start : int = arraySize * i >> c;
+          var end : int = arraySize * (i+1) >> c;
+          _fisherYatesShuffle(array, start, end-start, seed);
+        }
+
+        iter mergeLevels(const numOfSplits : int) {
+          var mergeLevel : int = 1;
+          while mergeLevel < numOfSplits {
+            yield mergeLevel;
+            mergeLevel += mergeLevel;
+          }
+        }
+
+        for mergeLevel in mergeLevels(numOfSplits) {
+          forall blockIdx in 0..numOfSplits-1 by 2*mergeLevel {
+            var j = arraySize * blockIdx >> c;
+            var k = arraySize * (blockIdx + mergeLevel) >> c;
+            var l = arraySize * (blockIdx + 2*mergeLevel) >> c;
+            _mergeShuffleMerge(array, j, k-j, l-j, seed);
+          }
+        }
+
+        // work around for strided case
+        var j = 0;
         for i in D {
-          arr[i] = tmp[j];
+          arr[i] = array[j];
           j += 1;
         }
 
         PCGRandomStreamPrivate_count += D.size;
-
         _unlock();
       }
 
