@@ -40,25 +40,25 @@ writeln();
 writeln("Accessor tests");
 
 writeln("Should return uint(8)");
-for i in 1..b_from_c_ptr.size {
+for i in 0..<b_from_c_ptr.size {
   var val = b_from_c_ptr[i];
   writeln(val, " as ", val.type:string);
 }
 
 writeln("Should return uint(8)");
-for i in 1..b_from_c_ptr.size {
+for i in 0..<b_from_c_ptr.size {
   var val = b_from_c_ptr[i:byteIndex];
   writeln(val, " as ", val.type:string);
 }
 
 writeln("Should return uint(8)");
-for i in 1..b_from_c_ptr.size {
+for i in 0..<b_from_c_ptr.size {
   var val = b_from_c_ptr.byte(i);
   writeln(val, " as ", val.type:string);
 }
 
 writeln("Should return bytes");
-for i in 1..b_from_c_ptr.size {
+for i in 0..<b_from_c_ptr.size {
   var val = b_from_c_ptr.item(i);
   writeln(val, " as ", val.type:string);
 }
@@ -128,20 +128,20 @@ writeln();
 
 // TEST SLICE
 writeln("Slice tests");
-writeln(b[1..4], " -- the type is ", b[1..4].type:string); // "this"
-writeln(b[..4], " -- the type is ", b[..4].type:string); // "this"
-writeln(b[6..], " -- the type is ", b[6..].type:string); // "is a bytes"
+writeln(b[0..3], " -- the type is ", b[0..3].type:string); // "this"
+writeln(b[..3], " -- the type is ", b[..3].type:string); // "this"
+writeln(b[5..], " -- the type is ", b[5..].type:string); // "is a bytes"
 writeln(b[..], " -- the type is ", b[..].type:string); // "this is a bytes"
-writeln(b[11..b.size], " -- the type is ", b[..].type:string); // "bytes"
+writeln(b[10..<b.size], " -- the type is ", b[..].type:string); // "bytes"
 writeln();
-writeln(b[1:byteIndex..4:byteIndex],
-        " -- the type is ", b[1..4].type:string); // "this"
-writeln(b[..4:byteIndex],
-        " -- the type is ", b[1..4].type:string); // "this"
-writeln(b[6:byteIndex..],
-        " -- the type is ", b[6..].type:string); // "is a bytes"
+writeln(b[0:byteIndex..3:byteIndex],
+        " -- the type is ", b[0..3].type:string); // "this"
+writeln(b[..3:byteIndex],
+        " -- the type is ", b[..3].type:string); // "this"
+writeln(b[5:byteIndex..],
+        " -- the type is ", b[5..].type:string); // "is a bytes"
 writeln(b[..], " -- the type is ", b[..].type:string); // "this is a bytes"
-writeln(b[11:byteIndex..b.size:byteIndex],
+writeln(b[10:byteIndex..<b.size:byteIndex],
         " -- the type is ", b[..].type:string); // "bytes"
 writeln();
 
@@ -155,15 +155,15 @@ writeln(bytes_to_search.endsWith(b"start"));  //f
 writeln(bytes_to_search.endsWith(b"lorem", b"ipsum"));  //f
 writeln(bytes_to_search.endsWith(b"end"));   //t
 
-writeln(b.find(b"is")); //3
-writeln(b.rfind(b"is")); //6
+writeln(b.find(b"is")); //2
+writeln(b.rfind(b"is")); //5
 writeln(b.count(b"is")); //2
 
-writeln(b.find(b"is", region=4..)); //6
-writeln(b.rfind(b"is", region=..5)); //3
-writeln(b.count(b"is", region=..5)); //1
+writeln(b.find(b"is", region=3..)); //5
+writeln(b.rfind(b"is", region=..4)); //2
+writeln(b.count(b"is", region=..4)); //1
 
-writeln(b.find(b"is is")); //3
+writeln(b.find(b"is is")); //2
 writeln("Make it plural ", b.replace(b"is is a", b"ese are"));
 writeln();
 

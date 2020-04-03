@@ -1217,7 +1217,7 @@ iter listdir(path: string = ".", hidden: bool = false, dirs: bool = true,
         filename = createStringWithNewBuffer(ent.d_name(),
                                              policy=decodePolicy.escape);
       }
-      if (hidden || filename[1] != '.') {
+      if (hidden || filename[0] != '.') {
         if (filename != "." && filename != "..") {
           const fullpath = path + "/" + filename;
 

@@ -108,7 +108,7 @@ AssertionError: assert failed - '1.5' != '1.55'
 ================================================================================
 Error Caught in Unequal String
 AssertionError: Strings differ: 'unequalstring' != 'unequalString'
-First differing element at index 8:
+First differing element at index 7:
 's'
 'S'
 

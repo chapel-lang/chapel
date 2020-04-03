@@ -113,7 +113,7 @@ module StringCasts {
     var isErr: bool;
     // localize the string and remove leading and trailing whitespace
     var localX = x.localize();
-    const hasUnderscores = localX.find("_") != 0;
+    const hasUnderscores = localX.find("_") != -1;
 
     if hasUnderscores {
       localX = localX.strip();
@@ -128,7 +128,7 @@ module StringCasts {
 
       // remove underscores everywhere but the first position
       if localX.size >= 2 then
-        localX = localX[1] + localX[2..].replace("_", "");
+        localX = localX[0] + localX[1..].replace("_", "");
     }
 
     if localX.isEmpty() then
@@ -196,11 +196,11 @@ module StringCasts {
     if s.isEmpty() then
       throw new owned IllegalArgumentError("bad cast from empty string to " + t: string);
 
-    if len >= 2 && s[2..].find("_") != 0 {
+    if len >= 2 && s[1..].find("_") != -1 {
       // Don't remove a leading underscore in the string number,
       // but remove the rest.
-      if len > 2 && s[1] == "_" {
-        s = s[1] + s[2..].replace("_", "");
+      if len > 2 && s[0] == "_" {
+        s = s[0] + s[1..].replace("_", "");
       } else {
         s = s.replace("_", "");
       }

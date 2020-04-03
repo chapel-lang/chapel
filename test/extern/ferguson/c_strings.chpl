@@ -39,9 +39,9 @@ proc go() {
 
   print_c_string_len(arg2c, len);
 
-  writeln((arg2c:string)[1..len]);
+  writeln((arg2c:string)[0..len-1]);
 
-  var arg2s = (arg2c:string)[1..len];
+  var arg2s = (arg2c:string)[0..len-1];
   writeln(arg2s);
 }
 

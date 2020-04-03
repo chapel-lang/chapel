@@ -562,7 +562,7 @@ inline proc _cond_test(m: reMatch) return m.matched;
     :returns: the portion of ``this`` referred to by the match
  */
 proc string.this(m:reMatch) {
-  if m.matched then return this[m.offset+1..#m.size];
+  if m.matched then return this[m.offset..#m.size];
   else return "";
 }
 
@@ -575,7 +575,7 @@ proc string.this(m:reMatch) {
     :returns: the portion of ``this`` referred to by the match
  */
 proc bytes.this(m:reMatch) {
-  if m.matched then return this[(m.offset+1):int..#m.size];
+  if m.matched then return this[m.offset:int..#m.size];
   else return b"";
 }
 
@@ -865,10 +865,7 @@ record regexp {
 
       if pos < splitstart {
         // Yield splitted value
-        if exprType == string then
-          yield text[pos+1..splitstart];
-        else 
-          yield text[(pos+1):int..splitstart:int];
+        yield text[pos..splitstart-1];
       } else {
         yield "":exprType;
       }

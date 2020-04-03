@@ -482,7 +482,7 @@ static Expr* postFoldPrimop(CallExpr* call) {
         bool found_int = get_int(ie, &val);
         INT_ASSERT(found_int);
 
-        idx = static_cast<size_t>(val) - 1;
+        idx = static_cast<size_t>(val);
       }
 
       retval = new SymExpr(new_UIntSymbol((int)unescaped[idx], INT_SIZE_8));

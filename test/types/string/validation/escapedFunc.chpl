@@ -1,8 +1,8 @@
 var str = b"bAb\xffbAb".decode(policy=decodePolicy.escape);
 
 // iterate over the string using indexing
-var idx = 1;
-while idx <= str.size {
+var idx = 0;
+while idx < str.size {
   writeln("Char: ", str[idx]);
   // we get all replacement characters here. we should be getting the actual
   // escape codepoint
@@ -40,11 +40,11 @@ var strBad = b"\xff".decode(policy=decodePolicy.escape);
 writeln("Should be 2: ", str.count(strGood));
 writeln("Should be 1: ", str.count(strBad));
 
-writeln("Should be 2: ", str.find(strGood));
-writeln("Should be 4: ", str.find(strBad));
+writeln("Should be 1: ", str.find(strGood));
+writeln("Should be 3: ", str.find(strBad));
 
-writeln("Should be 8: ", str.rfind(strGood));
-writeln("Should be 4: ", str.rfind(strBad));
+writeln("Should be 7: ", str.rfind(strGood));
+writeln("Should be 3: ", str.rfind(strBad));
 writeln();
 
 writeln("split");

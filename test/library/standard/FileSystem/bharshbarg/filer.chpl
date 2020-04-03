@@ -51,7 +51,7 @@ iter listdir(path: string, hidden=false, dirs=true, files=true,
     ent = readdir(dir);
     while (!is_c_nil(ent)) {
       const filename = createStringWithNewBuffer(ent.d_name());
-      if (hidden || filename[1] != '.') {
+      if (hidden || filename[0] != '.') {
         if (filename != "." && filename != "..") {
           //
           // use FileSystem;  // Doesn't work, see comment below

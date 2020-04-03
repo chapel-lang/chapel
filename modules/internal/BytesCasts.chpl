@@ -114,7 +114,7 @@ module BytesCasts {
     var isErr: bool;
     // localize the bytes and remove leading and trailing whitespace
     var localX = x.localize();
-    const hasUnderscores = localX.find(b"_") != 0;
+    const hasUnderscores = localX.find(b"_") != -1;
 
     if hasUnderscores {
       localX = localX.strip();
@@ -131,7 +131,7 @@ module BytesCasts {
 
       // remove underscores everywhere but the first position
       if localX.size >= 2 then
-        localX = localX.item(1) + localX[2..].replace(b"_", b"");
+        localX = localX.item(0) + localX[1..].replace(b"_", b"");
     }
 
     if localX.isEmpty() then
@@ -205,11 +205,11 @@ module BytesCasts {
       throw new owned IllegalArgumentError("bad cast from empty bytes to " +
                                            t: string);
 
-    if len >= 2 && s[2..].find(b"_") != 0 {
+    if len >= 2 && s[1..].find(b"_") != -1 {
       // Don't remove a leading underscore in the string number,
       // but remove the rest.
       if len > 2 && s.item(1) == b"_" {
-        s = s.item(1) + s[2..].replace(b"_", b"");
+        s = s.item(0) + s[1..].replace(b"_", b"");
       } else {
         s = s.replace(b"_", b"");
       }

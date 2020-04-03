@@ -1,1 +1,1 @@
-writeln("".byte(1));
+writeln("".byte(0));

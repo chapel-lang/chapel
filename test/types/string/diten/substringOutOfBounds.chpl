@@ -1,3 +1,3 @@
 var str = "abcdefghijklmnopqrstuvwxyz";
 
-writeln(str[22..28]);
+writeln(str[21..27]);

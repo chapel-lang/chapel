@@ -184,7 +184,7 @@ module Itertools {
 
     const workingIters = followThis(0);
 
-    const offset = if isTuple(arg) then 0 else 1;
+    const offset = if isTuple(arg) || isString(arg) || isBytes(arg) then 0 else 1;
 
     if isString(arg) || isArray(arg) || isTuple(arg) then
       for idx in workingIters do

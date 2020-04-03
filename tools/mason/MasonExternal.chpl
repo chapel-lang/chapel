@@ -115,9 +115,9 @@ private proc searchSpkgs(args: [?d] string) {
   else {
     var command = "spack list";
     var pkgName: string;
-    if args[3].find('-') > 0 {
+    if args[3].find('-') != -1 {
       for arg in args[3..] {
-        if arg.find('h') {
+        if arg.find('h') != -1 {
           masonExternalSearchHelp();
           exit(0);
         }
@@ -148,7 +148,7 @@ private proc findSpkg(args: [?d] string) {
     listInstalled();
     exit(0);
   }
-  if args[3].find('-') {
+  if args[3].find('-') != -1 {
     for arg in args[3..] {
       if arg == "-h" || arg == "--help" {  
         masonExternalFindHelp();
@@ -195,7 +195,7 @@ proc spkgInstalled(spec: string) {
   var found = false;
   var dependencies: [1..0] string; // a list of pkg dependencies
   for item in pkgInfo.split() {  
-    if item.rfind(spec) != 0 {
+    if item.rfind(spec) != -1 {
       return true;
     }
   }
@@ -362,7 +362,7 @@ proc getSpkgDependencies(spec: string) throws {
   var dependencies: list(string);
   for item in pkgInfo.split() {
 
-    if item.rfind(spec) != 0 {
+    if item.rfind(spec) != -1 {
       found = true;
     }
     else if found == true {
