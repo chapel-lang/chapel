@@ -438,6 +438,7 @@ module ChapelArray {
   // the low bound to use for array literals
   pragma "no doc"
   config param arrayLiteralLowBound = defaultLowBound;
+  config param capturedIteratorLowBound = defaultLowBound;
 
   pragma "ignore transfer errors"
   proc chpl__buildArrayExpr( elems ...?k ) {
@@ -4255,7 +4256,9 @@ module ChapelArray {
       r = r #i;
 
     if !shapeful then
-      r = 0 .. #i;
+      // return 1..0 (the empty range value) if the size is 0; 0.. #i otherwise
+      // (unless capturedIteratorLowBound is overridden)
+      r = if i == 0 then 1..0 else capturedIteratorLowBound .. #i;
 
     pragma "insert auto destroy"
     var D = { r };
