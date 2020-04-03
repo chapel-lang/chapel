@@ -255,9 +255,9 @@ proc getExternalPackages(exDeps: unmanaged Toml) {
               tempSpec = "@".join(name, spec.s);
             }
             const specFields = getSpecFields(tempSpec);
-            var version = specFields[2];
-            var compiler = specFields[3];
-            //var variants = specFields[4];
+            var version = specFields[1];
+            var compiler = specFields[2];
+            //var variants = specFields[3];
 
             // TODO: allow dependency search to include variants
             var fullSpec = "%".join("@".join(name, version), compiler);
@@ -292,9 +292,9 @@ proc getSpkgInfo(spec: string, ref dependencies: list(string)): unmanaged Toml t
 
   try {
     const specFields = getSpecFields(spec);
-    var pkgName = specFields[1];
-    var version = specFields[2];
-    var compiler = specFields[3];
+    var pkgName = specFields[0];
+    var version = specFields[1];
+    var compiler = specFields[2];
 
     if spkgInstalled(spec) {      
       const spkgPath = getSpkgPath(spec);
