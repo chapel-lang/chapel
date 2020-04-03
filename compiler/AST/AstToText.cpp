@@ -25,6 +25,7 @@
 #include "expr.h"
 #include "stmt.h"
 #include "symbol.h"
+#include "IfExpr.h"
 
 AstToText::AstToText()
 {
@@ -711,6 +712,9 @@ void AstToText::appendExpr(Expr* expr, bool printingType)
   else if (NamedExpr*         sel = toNamedExpr(expr))
     appendExpr(sel, printingType);
 
+  else if (IfExpr*         sel = toIfExpr(expr))
+    appendExpr(sel, printingType);
+
   else
   {
     // NOAKES 2015/02/05  Debugging support.
@@ -1307,6 +1311,27 @@ void AstToText::appendExpr(NamedExpr* expr, bool printingType)
   mText += expr->name;
   mText += " = ";
   appendExpr(expr->actual, printingType);
+}
+
+void AstToText::appendExpr(IfExpr* expr, bool printingType)
+{
+  mText += "if ";
+  if (Expr* sel = toExpr(expr->getCondition()))
+  {
+    appendExpr(sel, printingType);
+  }
+  mText += " then ";
+  if (BlockStmt* thenBlockStmt = toBlockStmt(expr->getThenStmt()))
+  {
+    Expr* exp = thenBlockStmt->body.get(1);
+    appendExpr(exp, printingType);
+  }
+  mText += " else ";
+  if (BlockStmt* elseBlockStmt = toBlockStmt(expr->getElseStmt()))
+  {
+    Expr* exp = elseBlockStmt->body.get(1);
+    appendExpr(exp, printingType);
+  }
 }
 
 void AstToText::appendExpr(CallExpr* expr, const char* fnName, bool printingType)
