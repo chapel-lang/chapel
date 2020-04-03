@@ -85,9 +85,9 @@ proc readSpec(spec: string) {
         dependency = "(\\^[a-zA-Z]*?[0-9]*?)",
         arch = "([A-Za-z0-9\\-\\_]+\\=[A-Za-z0-9\\-\\_]+)",
         emptyArch = "([A-Za-z0-9\\-\\_]+\\=)",
-        versRange = "(\\@.+\\:{1}\\.+)",
+        versRange = "(\\@.+\\:{1}\\.[^%]+)",
         minVers = "(\\@.+\\:)",
-        maxVers = "(\\@\\:.+)";
+        maxVers = "(\\@\\:.[^%]+)";
 
   var tokenList: list(string);
   const pattern = compile("|".join(versRange,
@@ -122,8 +122,8 @@ proc parseSpec(ref tokenList: list(string)) throws {
   const rVers = compile("(\\@.+)");
   const rCompiler = compile("(\\%[A-Za-z0-9\\-\\_]+[\\-a-zA-Z]*)");
   const rMinVers = compile("(\\@.+\\:)");
-  const rMaxVers = compile("(\\@\\:.+)");
-  const rVersRange = compile("(\\@.+\\:{1}\\.+)");
+  const rMaxVers = compile("(\\@\\:.[^%]+)");
+  const rVersRange = compile("(\\@.+\\:{1}\\.[^%]+)");
 
   // required fields
   //   - package name
