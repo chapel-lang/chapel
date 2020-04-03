@@ -1,6 +1,5 @@
-  Fetch: <time>.  Build: <time>.  Total: <time>.
 Installing Spack backend ...
 Updating registry
-Compiling [debug] target: masonLA
+Compiling [debug] target: CToml
 Build Successful
 

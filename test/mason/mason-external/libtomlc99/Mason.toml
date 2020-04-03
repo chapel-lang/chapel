@@ -1,6 +1,6 @@
 
 [brick]
-name = "masonLA"
+name = "CToml"
 version = "0.1.0"
 chplVersion = "1.18.0"
 compopts = "-ltoml --ccflags -w"
@@ -8,6 +8,6 @@ compopts = "-ltoml --ccflags -w"
 [dependencies]
 
 [external]
-libtomlc99 = "0.2019.06.24%clang"
+libtomlc99 = "0.2019.06.24"
 
 
