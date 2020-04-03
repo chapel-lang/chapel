@@ -1072,9 +1072,28 @@ imports or uses of that module from other contexts.
 
 Import statements may be explicitly declared ``public`` or ``private``.  By
 default, imports are ``private``.  Making an import ``public`` causes its
-symbols to be visible as though they were defined in the scope with the import:
-if module A imports (TODO)
+symbols to be visible as though they were defined in the scope with the import,
+a strategy which will be referred to as re-exporting.  However, symbols with the
+same name in the scope with the import will still take precedence.  If module A
+imports module B, and module B contains a public import of module C, then C will
+be visible to A as though it was a submodule of B.  This means that A could
+contain references like ``B.C.cSymbol`` if cSymbol was a symbol defined in C,
+regardless of if C was actually a submodule of B.  Similarly, if module B
+contains a public import of some public symbols defined in module C, then those
+symbols will be visible to A as though they were defined in module B, unless
+they are shadowed by symbols of the same name in B.  This means that A could
+contain references like ``B.cSymbol`` and it would reference C's cSymbol.
+Conversely, if B's import of C is ``private`` then A will not be able to see C's
+symbols due to that ``import``.
 
+This notion of re-exporting extends to the case in which a scope imports symbols
+from multiple modules.  For example, if a module A imports a module B, and
+module B contains a public import of modules C1, C2, and C3, then all three of
+those modules will be referenceable by A as though they were submodules of B.
+Similarly, if module B instead publicly imports specific symbols from C1, C2,
+and C3, A will be able to reference those symbols as though they were defined
+directly in B.  However, an error is signaled if symbols with the same name are
+imported from these modules.
 
 The import statement may specify a single module or module-level symbol, or it
 may specify multiple module-level symbols in the ``unqualified-list``.  Unlike
@@ -1106,7 +1125,9 @@ symbol to a name present in the respective module which was not specified via
 that ``unqualified-list``.
 
 The list of symbols for unqualified access can also be applied transitively -
-(TODO).
+in the second example of re-exporting, if module A's import of B only allowed
+access to certain symbols, that list will also limit which of the symbols from
+C1, C2, and C3 will be available to A.
 
 For more information on modules in general, please see :ref:`Chapter-Modules`.
 
