@@ -53,7 +53,7 @@ proc getSpecFields(spec: string) {
   try! {
     var tokenList = readSpec(spec);
     const specInfo = parseSpec(tokenList);
-    var compiler = specInfo[3];
+    var compiler = specInfo[2];
     if compiler.size < 1 {
       compiler = inferCompiler();
     }
