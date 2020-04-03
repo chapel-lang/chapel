@@ -383,7 +383,6 @@ void ModuleSymbol::printDocs(std::ostream* file,
 
   *file << name << ";" << std::endl << std::endl;
 
-  // Now that we have a new import statement, add that too:
   *file << std::endl << "or" << std::endl << std::endl;
    
   if (fDocsTextOnly == false) {
