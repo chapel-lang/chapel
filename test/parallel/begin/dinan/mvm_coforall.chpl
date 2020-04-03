@@ -27,8 +27,8 @@ if !quiet {
   t.start();
 }
 
-coforall i in A.domain.dim(1) {
-  for j in A.domain.dim(2) {
+coforall i in A.domain.dim(0) {
+  for j in A.domain.dim(1) {
     C[i] += A[i,j] * B[j];
   }
 }

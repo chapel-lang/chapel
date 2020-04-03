@@ -353,9 +353,9 @@ proc main(){
   var gesvd_row_major_result = gesvd_row_major_test();
   var gesvd_col_major_result = gesvd_col_major_test();
   
-  writeln( "LAPACKE_dgesvd_row_major ", if LAPACKE_dgesvd_row_major_result[1] then "passed" else "FAILED!" );
-  writeln( "LAPACKE_dgesvd_col_major ", if LAPACKE_dgesvd_col_major_result[1] then "passed" else "FAILED!" );  
-  writeln( "gesvd_row_major ", if gesvd_row_major_result[1] then "passed" else "FAILED!" );
-  writeln( "gesvd_col_major ", if gesvd_col_major_result[1] then "passed" else "FAILED!" ); 
+  writeln( "LAPACKE_dgesvd_row_major ", if LAPACKE_dgesvd_row_major_result[0] then "passed" else "FAILED!" );
+  writeln( "LAPACKE_dgesvd_col_major ", if LAPACKE_dgesvd_col_major_result[0] then "passed" else "FAILED!" );  
+  writeln( "gesvd_row_major ", if gesvd_row_major_result[0] then "passed" else "FAILED!" );
+  writeln( "gesvd_col_major ", if gesvd_col_major_result[0] then "passed" else "FAILED!" ); 
   
 }

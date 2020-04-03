@@ -13,7 +13,7 @@ class GenericClass {
   iter these() {
     for i in 1..10 {
       var ret : rank*idxType;
-      for r in 1..rank do ret(r) = i*r;
+      for r in 0..rank-1 do ret(r) = i*(r+1);
       yield ret;
     }
   }

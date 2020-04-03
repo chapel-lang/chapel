@@ -16,7 +16,7 @@ writeln();
 
 var D = { 1..2, 1..3 };
 
-var A = [d in D] 100**d(1);
+var A = [d in D] 100**d(0);
 
 writeln("input #1");
 writeln(A.domain);
@@ -52,7 +52,7 @@ writeln();
 var FE1 = PR(
   perElemOp = new borrowed SumReduceScanOp(eltType=int),
   resultDom = { 1..1, 1..3 },
-  sourceExp = [d in D] 100**d(1)
+  sourceExp = [d in D] 100**d(0)
 );
 
 writeln("forall expression - preserving columns");
@@ -63,7 +63,7 @@ writeln();
 var FE2 = PR(
   perElemOp = new borrowed SumReduceScanOp(eltType=int),
   resultDom = { 1..2, 1..1 },
-  sourceExp = [d in D] 100**d(1)
+  sourceExp = [d in D] 100**d(0)
 );
 
 writeln("forall expression - preserving rows");
@@ -73,7 +73,7 @@ writeln();
 
 //---------------------------------
 
-var B = [d in D] d(2);
+var B = [d in D] d(1);
 var C = A + B;
 
 writeln("input #2");

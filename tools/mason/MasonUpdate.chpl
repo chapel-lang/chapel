@@ -252,7 +252,7 @@ proc parseChplVersion(brick: borrowed Toml?): (VersionInfo, VersionInfo) {
 
 proc verifyChapelVersion(brick:borrowed Toml) {
   const tupInfo = getChapelVersionInfo();
-  const current = new VersionInfo(tupInfo(1), tupInfo(2), tupInfo(3));
+  const current = new VersionInfo(tupInfo(0), tupInfo(1), tupInfo(2));
   var low, hi : VersionInfo;
 
   var ret = false;
@@ -274,9 +274,9 @@ proc prettyVersionRange(low, hi) {
 
 proc chplVersionError(brick:borrowed Toml) {
   const info = verifyChapelVersion(brick);
-  if info(1) == false {
-    const low  = info(2);
-    const hi   = info(3);
+  if info(0) == false {
+    const low  = info(1);
+    const hi   = info(2);
     const name = brick["name"]!.s + "-" + brick["version"]!.s;
     const msg  = name + " :  expecting " + prettyVersionRange(low, hi);
     failedChapelVersion.append(msg);
@@ -449,8 +449,8 @@ private proc IVRS(A: borrowed Toml, B: borrowed Toml) {
 private proc getManifests(deps: list((string, unmanaged Toml?))) {
   var manifests: list(unmanaged Toml);
   for dep in deps {
-    var name = dep(1);
-    var version: string = dep(2)!.s;
+    var name = dep(0);
+    var version: string = dep(1)!.s;
     var toAdd = retrieveDep(name, version);
     manifests.append(toAdd);
   }

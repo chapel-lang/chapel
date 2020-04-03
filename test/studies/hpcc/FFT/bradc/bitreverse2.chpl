@@ -18,7 +18,7 @@ writeln("V is: ", V);
 
 proc bitReverse(W: [?WD] complex) {
   const mask: uint(64) = 0x0102040810204080;
-  const n = WD.dim(1).size;
+  const n = WD.dim(0).size;
   const shift = log2(n);
   var V: [WD] complex;
   for i in WD {

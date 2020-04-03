@@ -3528,17 +3528,20 @@ module HDF5 {
   proc readAllHDF5Files(locs: [] locale, dirName: string, dsetName: string,
                         filenameStart: string, type eltType, param rank,
                         preprocessor: borrowed HDF5Preprocessor? = nil) {
-    use FileSystem;
+    use FileSystem, List;
 
-    var filenames: [1..0] string;
+    var filenames: list(string);
     for f in findfiles(dirName) {
       if f.startsWith(dirName + '/' + filenameStart:string) &&
          f.endsWith(".h5") {
-        filenames.push_back(f);
+        filenames.append(f);
       }
     }
-
-    return readAllNamedHDF5Files(locs, filenames, dsetName,
+    var fArray: [1..filenames.size] string;
+    for (l, a) in zip(filenames, fArray) {
+      a = l;
+    }
+    return readAllNamedHDF5Files(locs, fArray, dsetName,
                                  eltType, rank, preprocessor=preprocessor);
   }
 
@@ -3569,7 +3572,7 @@ module HDF5 {
       readHDF5Dataset(file_id, dsetName, data);
 
       var rngTup: rank*range;
-      for param i in 0..rank-1 do rngTup[i+1] = 1..dims[i]:int;
+      for param i in 0..rank-1 do rngTup[i] = 1..dims[i]:int;
 
       const D = {(...rngTup)};
 
@@ -3597,13 +3600,13 @@ module HDF5 {
 
     var data = readAllNamedHDF5Files(Locales, filenames2D, dsetName,
                                      int, rank=2, preprocessor=preprocessor);
-    const rows = + reduce [subset in data[.., 1]] subset.D.dim(1).size;
-    const cols = + reduce [subset in data[1, ..]] subset.D.dim(2).size;
+    const rows = + reduce [subset in data[.., 1]] subset.D.dim(0).size;
+    const cols = + reduce [subset in data[1, ..]] subset.D.dim(1).size;
 
     var A: [1..rows, 1..cols] int;
 
-    const rowsPerFile = data(1,1).D.dim(1).size,
-          colsPerFile = data(1,1).D.dim(2).size;
+    const rowsPerFile = data(1,1).D.dim(0).size,
+          colsPerFile = data(1,1).D.dim(1).size;
     for (row, col) in data.domain {
       const startRow = (row-1)*rowsPerFile+1, endRow = row*rowsPerFile,
             startCol = (col-1)*colsPerFile+1, endCol = col*colsPerFile;
@@ -3704,7 +3707,7 @@ module HDF5 {
       }
       var dims: [0..#rank] C_HDF5.hsize_t;
       for param i in 0..rank-1 {
-        dims[i] = arr.D.dim(i+1).size: C_HDF5.hsize_t;
+        dims[i] = arr.D.dim(i).size: C_HDF5.hsize_t;
       }
       C_HDF5.HDF5_WAR.H5LTmake_dataset_WAR(file_id, dsetName.c_str(), rank,
                                            c_ptrTo(dims),
@@ -3746,7 +3749,7 @@ module HDF5 {
 
     C_HDF5.H5LTget_dataset_ndims(file_id, dset.c_str(), dsetRank);
 
-    var dims: [1..dsetRank] C_HDF5.hsize_t;
+    var dims: [0..#dsetRank] C_HDF5.hsize_t;
     C_HDF5.HDF5_WAR.H5LTget_dataset_info_WAR(file_id, dset.c_str(),
                                              c_ptrTo(dims), nil, nil);
 
@@ -3758,9 +3761,9 @@ module HDF5 {
 
     if outRank == 1 {
       if dsetRank == 1 {
-        for inOffset in 0..#dims[1] by chunkShape.size {
-          const readCount = min(dims[1]:int-inOffset, chunkShape.size);
-          var A: [1..readCount] eltType;
+        for inOffset in 0..#dims[0] by chunkShape.size {
+          const readCount = min(dims[0]:int-inOffset, chunkShape.size);
+          var A: [0..#readCount] eltType;
 
           var inOffsetArr = [inOffset: C_HDF5.hsize_t],
               inCountArr  = [readCount: C_HDF5.hsize_t];
@@ -3806,15 +3809,15 @@ module HDF5 {
       //
       // The set of all of these blocks make the full space
       // representing the data set in the file to be read.
-      iter blockStartsCounts(param dim=1) {
+      iter blockStartsCounts(param dim=0) {
         for inOffset in 0..#dims[dim] by chunkShape.dim[dim].size {
           const readCount = min(dims[dim]:int - inOffset, chunkShape.dim[dim].size);
-          if dim == outRank {
+          if dim == outRank-1 {
             yield ((inOffset,), (readCount,));
           } else {
             for inOffset2 in blockStartsCounts(dim+1) {
-              yield ((inOffset, (...inOffset2(1))),
-                     (readCount, (...inOffset2(2))));
+              yield ((inOffset, (...inOffset2(0))),
+                     (readCount, (...inOffset2(1))));
             }
           }
         }
@@ -3830,9 +3833,9 @@ module HDF5 {
         var rangeTup: outRank * range;
 
         var inOffsetArr, inCountArr,
-            outOffsetArr, outCountArr: [1..outRank] C_HDF5.hsize_t;
+            outOffsetArr, outCountArr: [0..#outRank] C_HDF5.hsize_t;
 
-        for param i in 1..outRank {
+        for param i in 0..<outRank {
           inOffsetArr[i] = starts(i): C_HDF5.hsize_t;
           inCountArr[i] = counts(i): C_HDF5.hsize_t;
           outOffsetArr[i] = 0: C_HDF5.hsize_t;
@@ -3959,7 +3962,7 @@ module HDF5 {
 
         var dims: c_array(uint, A.rank);
         for param i in 0..A.rank-1 {
-          dims[i] = A.domain.dim(i+1).size: uint;
+          dims[i] = A.domain.dim(i).size: uint;
         }
 
         var sid = H5Screate_simple(A.rank, dims, nil);
@@ -3982,8 +3985,8 @@ module HDF5 {
 
         for i in 0..#A.rank {
           stride[i] = 1;
-          count[i] = locDom.dim(i+1).size: uint;
-          start[i] = (locDom.dim(i+1).low - A.domain.dim(i+1).low): uint;
+          count[i] = locDom.dim(i).size: uint;
+          start[i] = (locDom.dim(i).low - A.domain.dim(i).low): uint;
         }
 
         ret = H5Sselect_hyperslab(fileDataspace, H5S_SELECT_SET, start,
@@ -4085,13 +4088,13 @@ module HDF5 {
 
           // Arrays to represent locations with the file
           var dsetOffsetArr, dsetCountArr,
-              dsetStrideArr: [1..dom.rank] C_HDF5.hsize_t;
+              dsetStrideArr: [0..#dom.rank] C_HDF5.hsize_t;
 
           // Arrays to represent locations in the distributed array
           var memOffsetArr, memCountArr,
-              memStrideArr: [1..dom.rank] C_HDF5.hsize_t;
+              memStrideArr: [0..#dom.rank] C_HDF5.hsize_t;
 
-          for param i in 1..dom.rank {
+          for param i in 0..dom.rank-1 {
             dsetOffsetArr[i] = dsetBlock.dim(i).low: C_HDF5.hsize_t;
             dsetCountArr[i]  = dsetBlock.dim(i).size: C_HDF5.hsize_t;
             dsetStrideArr[i] = dsetBlock.dim(i).stride: C_HDF5.hsize_t;

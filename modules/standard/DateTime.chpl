@@ -42,7 +42,7 @@ module DateTime {
   /* The maximum year allowed in `date` objects */
   param MAXYEAR = 9999;
 
-  private const DAYS_IN_MONTH = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+  private const DAYS_IN_MONTH: [1..12] int = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
   private const DAYS_BEFORE_MONTH = init_days_before_month();
 
   /* The Unix Epoch date and time */
@@ -284,8 +284,8 @@ module DateTime {
   /* A `date` object representing the current day */
   proc type date.today() {
     const timeSinceEpoch = getTimeOfDay();
-    const td = new timedelta(seconds=timeSinceEpoch(1),
-                             microseconds=timeSinceEpoch(2));
+    const td = new timedelta(seconds=timeSinceEpoch(0),
+                             microseconds=timeSinceEpoch(1));
 
     return unixEpoch.getdate() + td;
   }
@@ -931,11 +931,11 @@ module DateTime {
       return new datetime(year=lt.tm_year+1900, month=lt.tm_mon+1,
                           day=lt.tm_mday,       hour=lt.tm_hour,
                           minute=lt.tm_min,     second=lt.tm_sec,
-                          microsecond=timeSinceEpoch(2));
+                          microsecond=timeSinceEpoch(1));
     } else {
       const timeSinceEpoch = getTimeOfDay();
-      const td = new timedelta(seconds=timeSinceEpoch(1),
-                               microseconds=timeSinceEpoch(2));
+      const td = new timedelta(seconds=timeSinceEpoch(0),
+                               microseconds=timeSinceEpoch(1));
       const utcNow = unixEpoch + td;
 
       return (utcNow + tz!.utcoffset(utcNow)).replace(tzinfo=tz);
@@ -945,8 +945,8 @@ module DateTime {
   /* Return a `datetime` value representing the current time and date in UTC */
   proc type datetime.utcnow() {
     const timeSinceEpoch = getTimeOfDay();
-    const td = new timedelta(seconds=timeSinceEpoch(1),
-                             microseconds=timeSinceEpoch(2));
+    const td = new timedelta(seconds=timeSinceEpoch(0),
+                             microseconds=timeSinceEpoch(1));
     return unixEpoch + td;
   }
 
@@ -959,7 +959,7 @@ module DateTime {
       return new datetime(year=lt.tm_year+1900, month=lt.tm_mon+1,
                           day=lt.tm_mday,       hour=lt.tm_hour,
                           minute=lt.tm_min,     second=lt.tm_sec,
-                          microsecond=t(2));
+                          microsecond=t(1));
     } else {
       var dt = datetime.utcfromtimestamp(timestamp);
       return (dt + tz!.utcoffset(dt)).replace(tzinfo=tz);

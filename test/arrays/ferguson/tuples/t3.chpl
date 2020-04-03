@@ -11,8 +11,8 @@ proc foo() : getTupArrayType() //1* ([1..4] int)
 }
 
 proc bar(tup) {
-  tup(1)[1] = 2;
-  writeln(tup(1)[1]);
+  tup(0)[1] = 2;
+  writeln(tup(0)[1]);
 }
 
 proc run() {

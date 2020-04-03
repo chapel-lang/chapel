@@ -14,8 +14,8 @@ inline proc _defaultOf(type t) where t == (int, borrowed foo?) {
 
 var tup: (int, borrowed foo?) = noinit; // Should not print message
 
-tup(2) = new borrowed foo(2);
-tup(1) = 5;
+tup(1) = new borrowed foo(2);
+tup(0) = 5;
 writeln(tup);
 
 
@@ -23,5 +23,5 @@ writeln(tup);
 
 var otherTup: (int, borrowed foo?);     // Should print message
 
-otherTup(2) = new borrowed foo(3);
+otherTup(1) = new borrowed foo(3);
 writeln(otherTup);

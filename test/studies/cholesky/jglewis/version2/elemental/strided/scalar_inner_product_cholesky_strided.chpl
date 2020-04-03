@@ -26,9 +26,9 @@ module scalar_inner_product_cholesky_strided {
     // equations.
     // -----------------------------------------------------------------------
 
-    assert ( A.domain.dim (1) == A.domain.dim (2) );
+    assert ( A.domain.dim (0) == A.domain.dim (1) );
 
-    const mtx_range = A.domain.dim (1);  // indices of either row or column
+    const mtx_range = A.domain.dim (0);  // indices of either row or column
 
     // compute L from A
 

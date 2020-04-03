@@ -27,19 +27,19 @@ proc main() {
 
   // search
   result = search(A, 2);
-  checkSearch(result, (true, 3), A, 'search');
+  checkSearch(result, (true, 2), A, 'search');
 
   // linearSearch
   result = linearSearch(A, 2);
-  checkSearch(result, (true, 3), A, 'linearSearch');
+  checkSearch(result, (true, 2), A, 'linearSearch');
 
   // binarySearch
   result = binarySearch(A, 2);
-  checkSearch(result, (true, 3), A, 'binarySearch');
+  checkSearch(result, (true, 2), A, 'binarySearch');
 
   // eltType = string
   result = search(strA, 'ben');
-  checkSearch(result, (true, 3), strA, 'search');
+  checkSearch(result, (true, 2), strA, 'search');
 
   /* Strided Arrays */
   result = linearSearch(strideA, 2);
@@ -69,13 +69,13 @@ proc main() {
   /* Comparators */
 
   result = search(revA, 2, comparator=reverseComparator, sorted=true);
-  checkSearch(result, (true, 2), revA, 'search');
+  checkSearch(result, (true, 1), revA, 'search');
 
   result = search(absA, 2, comparator=absKey, sorted=true);
-  checkSearch(result, (true, 2), absA, 'search');
+  checkSearch(result, (true, 1), absA, 'search');
 
   result = search(absA, 2, comparator=absComp, sorted=true);
-  checkSearch(result, (true, 2), absA, 'search');
+  checkSearch(result, (true, 1), absA, 'search');
 
   /* Not Found */
 
@@ -86,7 +86,7 @@ proc main() {
   checkSearch(result, (false, A.domain.low), A, 'search');
 
   result = search(A, 0, sorted=true);
-  checkSearch(result, (false, 3), A, 'search');
+  checkSearch(result, (false, 2), A, 'search');
 
 }
 

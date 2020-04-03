@@ -25,11 +25,11 @@ var expect32_1_2_31_30_1 = [ 0x4df1ccf9, 0x25838751, 0x58ed9e10,
 
   tmprng.srandom(seed:uint, tmpinc);
 
-  for i in 1..6 {
+  for e32 in expect32_1_2_31_1 {
     var got = tmprng.bounded_random(tmpinc, bound);
 
     if verbose then writef("%xu\n", got);
-    assert( got == expect32_1_2_31_1[i] );
+    assert( got == e32 );
   }
 }
 
@@ -44,11 +44,11 @@ var expect32_1_2_31_30_1 = [ 0x4df1ccf9, 0x25838751, 0x58ed9e10,
 
   tmprng.srandom(seed:uint, tmpinc);
 
-  for i in 1..6 {
+  for e32 in expect32_1_2_31_30_1 {
     var got = tmprng.bounded_random(tmpinc, bound);
 
     if verbose then writef("%xu\n", got);
-    assert( got == expect32_1_2_31_30_1[i] );
+    assert( got == e32 );
   }
 }
 

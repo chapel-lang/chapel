@@ -6,8 +6,8 @@ writeln(a, ", ", b, ", ", c);
 
 proc foo(x : (int, int), y : (int, int)) {
   var t : (int, int);
+  t(0) = x(0) + y(0);
   t(1) = x(1) + y(1);
-  t(2) = x(2) + y(2);
   return t;
 }
 

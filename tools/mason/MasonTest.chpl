@@ -322,16 +322,16 @@ private proc getTests(lock: borrowed Toml, projectHome: string) {
 /* Gets the path of the test following the test dir */
 proc getTestPath(fullPath: string, testPath = "") : string {
   var split = splitPath(fullPath);
-  if split[2] == "test" {
+  if split[1] == "test" {
     return testPath;
   }
   else {
     if testPath == "" {
-      return getTestPath(split[1], split[2]);
+      return getTestPath(split[0], split[1]);
     }
     else {
-      var appendedPath = joinPath(split[2], testPath);
-      return getTestPath(split[1], appendedPath);
+      var appendedPath = joinPath(split[1], testPath);
+      return getTestPath(split[0], appendedPath);
     }
   }
 }

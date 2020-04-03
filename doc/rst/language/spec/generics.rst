@@ -134,7 +134,7 @@ this function at a call site. The formal argument is a parameter.
 
       proc fillTuple(param p: int, x: int) {
         var result: p*int;
-        for param i in 1..p do
+        for i in result.indices do
           result(i) = x;
         return result;
       }
@@ -178,7 +178,7 @@ each unique actual type.
 
       proc fillTuple(param p, x) {
         var result: p*x.type;
-        for param i in 1..p do
+        for i in result.indices do
           result(i) = x;
         return result;
       }
@@ -223,7 +223,7 @@ semantics of a type alias.
 
       proc fillTuple(param p: int, x: ?t) {
         var result: p*t;
-        for param i in 1..p do
+        for i in result.indices do
           result(i) = x;
         return result;
       }
@@ -411,7 +411,7 @@ Homogeneous tuple arguments of generic type are also supported:
 
    .. BLOCK-test-chapelpost
 
-      f( (new Number(1), new Number(2)) );
+      f( (new Number(0), new Number(1)) );
 
    specifies that ``f`` accepts a tuple with 2 elements, where each
    element has the same type, and that type is instantiation of

@@ -45,15 +45,15 @@ proc runTests(stream) {
   testArray(stream, [1,1,2], prob=[0.1, 0.4, 0.5]);
 
   // Numeric types
-  var preal32: [1..2] real(32) = 1;
+  var preal32: [0..1] real(32) = 1;
   testArray(stream, [1,2], prob=preal32, size=1000, trials=1);
-  var pint: [1..2] int = 1;
+  var pint: [0..1] int = 1;
   testArray(stream, [1,2], prob=pint, size=1000, trials=1);
-  var pint32: [1..2] int(32) = 1;
+  var pint32: [0..1] int(32) = 1;
   testArray(stream, [1,2], prob=pint32, size=1000, trials=1);
-  var puint32: [1..2] uint(32) = 1;
+  var puint32: [0..1] uint(32) = 1;
   testArray(stream, [1,2], prob=puint32, size=1000, trials=1);
-  var puint16: [1..2] uint(16) = 1;
+  var puint16: [0..1] uint(16) = 1;
   testArray(stream, [1,2], prob=puint16, size=1000, trials=1);
 
   // replace=false
@@ -62,17 +62,17 @@ proc runTests(stream) {
   //// domain-type size
   var A = [1,2,3,4];
   var p = [0.1, 0.2, 0.3, 0.4];
-  testArray(stream, A, prob=p, size={1..4});
-  testArray(stream, A, prob=p, size={1..4, 1..3});
-  testArray(stream, A, prob=p, size={1..4, 1..3, 1..2});
+  testArray(stream, A, prob=p, size={0..3});
+  testArray(stream, A, prob=p, size={0..3, 0..2});
+  testArray(stream, A, prob=p, size={0..3, 0..2, 0..1});
 
   // Ensure we maintain reference to domain passed in
-  var dom = {1..5};
+  var dom = {0..4};
   var B: [dom] int;
 
   var ret = stream.choice([1,2,3,4,5], size=dom);
 
-  dom = {1..10};
+  dom = {0..9};
   if ret.size != 10 then
     writeln('error: domain reference not maintained');
 }

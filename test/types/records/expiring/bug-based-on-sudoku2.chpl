@@ -30,7 +30,7 @@ proc val(arg: R) {
 }
 
 iter iterateAllOf(tuple...?k) {
-  for param i in 1..k {
+  for param i in 0..k-1 {
     for j in tuple(i) {
       yield j;
     }

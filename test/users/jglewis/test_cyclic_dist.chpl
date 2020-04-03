@@ -80,7 +80,7 @@ module test_elemental_explicitly_strided_cholesky {
     A = 0.0;
 
     forall (i,j) in unstrided_mat_dom do
-      A (i,j) = + reduce (  [k in unstrided_mat_dom.dim (1) ] 
+      A (i,j) = + reduce (  [k in unstrided_mat_dom.dim (0) ] 
     			    B (i, k) * B (j, k) );
 
     // factorization algorithms overwrite a copy of A, leaving
@@ -97,14 +97,14 @@ module test_elemental_explicitly_strided_cholesky {
 
     where ( A.domain.rank == 2 ) {
 
-    assert ( A.domain.dim (1)               == A.domain.dim (2)         &&
-	     L_formal.domain.dim (1).size == A.domain.dim (1).size  &&
-	     L_formal.domain.dim (2).size == A.domain.dim (2).size 
+    assert ( A.domain.dim (0)               == A.domain.dim (1)         &&
+	     L_formal.domain.dim (0).size == A.domain.dim (0).size  &&
+	     L_formal.domain.dim (1).size == A.domain.dim (1).size 
 	     );
     
     const mat_dom  = A.domain,
-          mat_rows = A.domain.dim(1),
-          n        = A.domain.dim(1).size;
+          mat_rows = A.domain.dim(0),
+          n        = A.domain.dim(0).size;
     
     //    ref L = L_formal.reindex(mat_rows, mat_row);
     ref L = L_formal.reindex(mat_dom);
@@ -121,8 +121,8 @@ module test_elemental_explicitly_strided_cholesky {
   proc print_lower_triangle ( L : [] ) {
    
     if print_matrix_details then
-      for (i_row, i_col) in ( L.domain.dim(1), L.domain.dim(2) ) do
-	writeln (i_row, ":  ", L(i_row, L.domain.dim(2)(..i_col)) );
+      for (i_row, i_col) in ( L.domain.dim(0), L.domain.dim(1) ) do
+	writeln (i_row, ":  ", L(i_row, L.domain.dim(1)(..i_col)) );
   }
 
 }

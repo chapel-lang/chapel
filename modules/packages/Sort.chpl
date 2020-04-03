@@ -381,8 +381,8 @@ proc chpl_check_comparator(comparator, type eltType) param {
     if !isTupleType(partType) then
       compilerError(errorDepth=errorDepth, "The keyPart method in ", comparator.type:string, " must return a tuple when used with ", eltType:string, " elements");
     var tmp: partType;
-    var expectInt = tmp(1);
-    var expectIntUint = tmp(2);
+    var expectInt = tmp(0);
+    var expectIntUint = tmp(1);
     if !isInt(expectInt.type) then
       compilerError(errorDepth=errorDepth, "The keyPart method in ", comparator.type:string, " must return a tuple with 1st element int(?) when used with ", eltType:string, " elements");
     if !(isInt(expectIntUint) || isUint(expectIntUint)) then
@@ -1476,7 +1476,7 @@ module RadixSortHelp {
   {
     // We have keyPart(element, start):(section:int(8), part:int/uint)
     const testRet: criterion.keyPart(a, 1).type;
-    const testPart = testRet(2);
+    const testPart = testRet(1);
     param bitsPerPart = numBits(testPart.type);
     param bitsPerPartModRadixBits = bitsPerPart % RADIX_BITS;
     if bitsPerPartModRadixBits != 0 then
@@ -1537,7 +1537,7 @@ module RadixSortHelp {
 
     if (isHomogeneousTuple(eltTy)) {
       var tmp:eltTy;
-      return tmp.size * numBits(tmp(1).type);
+      return tmp.size * numBits(tmp(0).type);
     }
 
     return -1;
@@ -1848,7 +1848,7 @@ module SequentialInPlacePartitioning {
 
       // Fill buf with up to max_buf records from the end of this bin.
       while i < end {
-        buf[used_buf+1] <=> A[i];
+        buf[used_buf] <=> A[i];
         used_buf += 1;
         i += 1;
       }
@@ -1867,8 +1867,8 @@ module SequentialInPlacePartitioning {
       // Now, handle elements in bufstart...end_offsets[cur_bin]
       while offsets[curbin] < end {
         // Put buf[j] into its right home
-        var j = 1;
-        while used_buf > 0 && j <= used_buf {
+        var j = 0;
+        while used_buf >= 0 && j < used_buf {
           const bin = bucketizer.bucketForRecord(buf[j], criterion, startbit);
           // Swap buf[j] into its appropriate bin.
           var offset = offsets[bin];
@@ -1877,8 +1877,8 @@ module SequentialInPlacePartitioning {
           // Leave buf[j] with the next unsorted item.
           // But offsets[bin] might be in the region we already read.
           if bin == curbin && offset >= bufstart {
-            buf[j] <=> buf[used_buf];
             used_buf -= 1;
+            buf[j] <=> buf[used_buf];
           }
           j += 1;
         }
@@ -2815,7 +2815,7 @@ module MSBRadixSort {
     // 0th bin is for records where we've consumed all the key.
     var offsets:[0..radix] int;
     var end_offsets:[0..radix] int;
-    type ubitsType = binForRecord(A[start_n], criterion, startbit)(2).type;
+    type ubitsType = binForRecord(A[start_n], criterion, startbit)(1).type;
     var min_ubits: ubitsType = max(ubitsType);
     var max_ubits: ubitsType = 0;
     var min_bin = radix+1;
@@ -2911,7 +2911,7 @@ module MSBRadixSort {
 
       // Fill buf with up to max_buf records from the end of this bin.
       while i < end {
-        buf[used_buf+1] <=> A[i];
+        buf[used_buf] <=> A[i];
         used_buf += 1;
         i += 1;
       }
@@ -2919,7 +2919,7 @@ module MSBRadixSort {
       while offsets[curbin] < endfast {
         // Now go through the records in buf
         // putting them in their right home.
-        for param j in 1..max_buf {
+        for param j in 0..max_buf-1 {
           const (bin, _) = binForRecord(buf[j], criterion, startbit);
           // prefetch(A[offsets[bin]]) could be here but doesn't help
 
@@ -2932,8 +2932,8 @@ module MSBRadixSort {
       // Now, handle elements in bufstart...end_offsets[cur_bin]
       while offsets[curbin] < end {
         // Put buf[j] into its right home
-        var j = 1;
-        while used_buf > 0 && j <= used_buf {
+        var j = 0;
+        while used_buf >= 0 && j < used_buf {
           const (bin, _) = binForRecord(buf[j], criterion, startbit);
           // Swap buf[j] into its appropriate bin.
           var offset = offsets[bin];
@@ -2942,8 +2942,8 @@ module MSBRadixSort {
           // Leave buf[j] with the next unsorted item.
           // But offsets[bin] might be in the region we already read.
           if bin == curbin && offset >= bufstart {
-            buf[j] <=> buf[used_buf];
             used_buf -= 1;
+            buf[j] <=> buf[used_buf];
           }
           j += 1;
         }
@@ -3107,10 +3107,10 @@ record DefaultComparator {
    */
   inline
   proc keyPart(x: _tuple, i:int) where isHomogeneousTuple(x) &&
-                                       (isInt(x(1)) || isUint(x(1)) ||
-                                        isReal(x(1)) || isImag(x(1))) {
+                                       (isInt(x(0)) || isUint(x(0)) ||
+                                        isReal(x(0)) || isImag(x(0))) {
     // Re-use the keyPart for imag, real
-    const (_,part) = this.keyPart(x(i), 1);
+    const (_,part) = this.keyPart(x(i-1), 1);
     if i > x.size then
       return (-1, 0:part.type);
     else
@@ -3206,7 +3206,7 @@ record ReverseComparator {
   proc typeIsBitReversible(type t) param {
     if isHomogeneousTupleType(t) {
       var tmp:t;
-      return typeIsBitReversible(tmp(1).type);
+      return typeIsBitReversible(tmp(0).type);
     }
     if isUintType(t) then
       return true;
@@ -3219,7 +3219,7 @@ record ReverseComparator {
   proc typeIsNegateReversible(type t) param {
     if isHomogeneousTupleType(t) {
       var tmp:t;
-      return typeIsNegateReversible(tmp(1).type);
+      return typeIsNegateReversible(tmp(0).type);
     }
     if isIntType(t) || isUintType(t) then
       // You might think that int(8) should have its sort order

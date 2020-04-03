@@ -7,7 +7,7 @@
 // This workaround may be costly when eltType(1) is an array.
 proc miniIdentity(type eltType) {
   var result: eltType;
-  result(1) = max(result(1).type);
+  result(0) = max(result(0).type);
   return result;
 }
 
@@ -20,7 +20,7 @@ class mini : ReduceScanOp {
   }
 
   proc accumulateOntoState(ref state: eltType, t: eltType) {
-    if t(1) < state(1) then
+    if t(0) < state(0) then
       state = t;
   }
 

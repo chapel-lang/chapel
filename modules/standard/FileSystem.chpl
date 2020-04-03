@@ -988,7 +988,7 @@ iter glob(pattern: string = "*", followThis, param tag: iterKind): string
   var glb : glob_t;
   if (followThis.size != 1) then
     compilerError("glob() iterator can only be zipped with 1D iterators");
-  var r = followThis(1);
+  var r = followThis(0);
 
   glob_w(pattern, glb);
   const num = glob_num_w(glb);
@@ -1217,7 +1217,7 @@ iter listdir(path: string = ".", hidden: bool = false, dirs: bool = true,
         filename = createStringWithNewBuffer(ent.d_name(),
                                              policy=decodePolicy.escape);
       }
-      if (hidden || filename[1] != '.') {
+      if (hidden || filename[0] != '.') {
         if (filename != "." && filename != "..") {
           const fullpath = path + "/" + filename;
 
