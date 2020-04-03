@@ -1181,6 +1181,41 @@ void AstToText::appendExpr(CallExpr* expr, bool printingType)
       }
     }
 
+    else if (isCallExpr(expr->baseExpr))
+    {
+      CallExpr* subCall = toCallExpr(expr->baseExpr);
+      appendExpr(subCall->get(1), printingType);
+      mText += '.';
+      appendExpr(subCall->get(2), printingType);
+
+      if (expr->numActuals() == 0)
+      {
+        mText += "()";
+      }
+
+      else if (expr->numActuals() == 1)
+      {
+        mText += '(';
+        appendExpr(expr->get(1), printingType);
+        mText += ')';
+      }
+
+      else
+      {
+        mText += '(';
+
+        for (int i = 1; i <= expr->numActuals(); i++)
+        {
+          if (i > 1)
+            mText += ", ";
+
+          appendExpr(expr->get(i), printingType);
+        }
+
+        mText += ')';
+      }
+    }
+
     else
     {
       // NOAKES 2015/02/05  Debugging support.
