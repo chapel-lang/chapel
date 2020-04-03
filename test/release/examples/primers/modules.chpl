@@ -430,7 +430,7 @@ module MainModule {
        ``only`` lists on ``use`` statements, though the syntax is different.
        We saw how to ``import`` a single symbol for unqualified access earlier,
        so this example demonstrates how to ``import`` multiple symbols for
-       unqualified access
+       unqualified access.
     */
     {
       use modToUse;
@@ -467,6 +467,16 @@ module MainModule {
       writeln(boop); // Outputs Conflict.bar ('5')
     }
 
+    /* Similarly, ``import`` statements allow renaming symbols within the curly
+       braces.
+    */
+    {
+      use modToUse;
+      import Conflict.{bar as boop};
+      writeln(bar); // Outputs modToUse.bar ('2')
+      writeln(boop); // Outputs Conflict.bar ('5')
+    }
+
     /* You can also ``use`` a module without making any symbols
        available in an unqualified manner using an asterisk after
        ``except``...
@@ -490,7 +500,17 @@ module MainModule {
       // writeln(bar);        // this won't resolve since bar isn't available
     }
 
-    /* When either of these are present, any instances of classes or records
+    /* Again, these are similar to an ``import`` of just the module itself
+     */
+    {
+      import modToUse;
+      import Conflict;
+      writeln(modToUse.bar);  // Outputs modToUse.bar ('2')
+      writeln(Conflict.bar);  // Outputs Conflict.bar ('5')
+      // writeln(bar);        // this won't resolve since bar isn't available
+    }
+
+    /* When any of these are present, any instances of classes or records
        will be able to access their symbols defined in that module.
     */
     {
@@ -645,5 +665,3 @@ module UsesTheUser2 {
     publiclyAvailableProc(); // available due to ``use`` of ModuleThatIsUsed
   }
 }
-
-
