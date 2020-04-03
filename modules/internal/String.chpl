@@ -909,7 +909,7 @@ module String {
     // This is assumed to be called from this.locale
     pragma "no doc"
     proc ref reinitString(buf: bufferType, s_len: int, size: int,
-                          needToCopy:bool = true) {
+                          needToCopy:bool = true, ownBuffer = false) {
       if this.isEmpty() && buf == nil then return;
 
       // If the this.buff is longer than buf, then reuse the buffer if we are
@@ -951,6 +951,8 @@ module String {
           this.buff = buf;
         }
       }
+
+      if ownBuffer then this.isowned = true;
 
       this.len = s_len;
     }

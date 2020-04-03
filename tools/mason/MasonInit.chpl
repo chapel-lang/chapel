@@ -128,7 +128,7 @@ proc validateInit(path: string, name: string, isNameDiff: bool, show: bool) thro
 
   var files = [ "/Mason.toml", "/src" , "/test" , "/example", "/.git", "/.gitignore", "/src/" + moduleName ];
   var toBeCreated : list(string);
-  for idx in 1..files.size do {
+  for idx in 0..<files.size do {
     const metafile = files(idx);
     const dir = metafile;
     if dir == "/Mason.toml" || dir == "/.gitignore" {
