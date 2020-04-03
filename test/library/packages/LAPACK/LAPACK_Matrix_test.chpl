@@ -10,7 +10,7 @@ proc putInto2D( arrayOfArrays: [?D1] ?t, twoArray: [?D2] ?o): void{
   var trans = ( D2.dim(0).low - formed.dim(0).low, D2.dim(1).low - formed.dim(1).low ); 
   
   for (i,j) in D2 {
-    twoArray[i,j] = arrayOfArrays[i+trans[1]][j+trans[2]];
+    twoArray[i,j] = arrayOfArrays[i+trans[0]][j+trans[1]];
   }
 
 }
