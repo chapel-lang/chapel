@@ -67,7 +67,7 @@ var bodies = [/* sun */
               ];
 
 
-const lastBody = bodies.domain.last;  // the index of the last body
+const numBodies = bodies.size;    // the number of bodies being simulated
 
 
 proc main() {
@@ -93,8 +93,8 @@ proc initSun() {
 // advance the positions and velocities of all the bodies
 //
 proc advance(dt) {
-  for i in 0..lastBody {
-    for j in i+1..lastBody {
+  for i in 0..<numBodies {
+    for j in i+1..<numBodies {
       ref b1 = bodies[i],
           b2 = bodies[j];
 
@@ -116,12 +116,12 @@ proc advance(dt) {
 proc energy() {
   var e = 0.0;
 
-  for i in 0..lastBody {
+  for i in 0..<numBodies {
     const b1 = bodies[i];
 
     e += 0.5 * b1.mass * sumOfSquares(b1.vel);
 
-    for j in i+1..lastBody {
+    for j in i+1..<numBodies {
       const b2 = bodies[j];
 
       e -= (b1.mass * b2.mass) / sqrt(sumOfSquares(b1.pos - b2.pos));
