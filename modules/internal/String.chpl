@@ -2358,7 +2358,7 @@ module String {
   pragma "no doc"
   inline proc param string.byte(param i: int) param : uint(8) {
     if i < 0 || i > this.numBytes-1 then
-      compilerError("index " + i:string + " out of bounds for string with " + this.size:string + " bytes");
+      compilerError("index " + i:string + " out of bounds for string with " + this.numBytes:string + " bytes");
     return __primitive("ascii", this, i);
   }
 
