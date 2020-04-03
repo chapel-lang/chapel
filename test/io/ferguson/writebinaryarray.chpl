@@ -23,7 +23,7 @@ var A = [1,2,3,4,5];
   var r = f.reader(kind=iobig);
   var num:int;
   var B = [0,0,0,0,0];
-  var i=1;
+  var i=0;
   while r.read(num) {
     B[i] = num;
     i += 1;

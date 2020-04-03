@@ -15,54 +15,54 @@ writeln("Checking 32-bit RNG seq 1");
 {
   var rs = createRandomStream(seed = seed, parSafe=false,
                             eltType = uint(32), algorithm=RNG.PCG);
-  for i in 1..6 {
+  for e32 in expect32_1 {
     //writef("%xu\n", rs.RandomStreamPrivate_rng_states(1));
     var got = rs.getNext();
     if verbose then writef("%xu\n", got);
-    assert( got == expect32_1[i] );
+    assert( got == e32 );
   }
 
   rs.skipToNth(1);
 
-  for i in 1..6 {
+  for e32 in expect32_1 {
     //writef("%xu\n", rs.RandomStreamPrivate_rng_states(1));
     var got = rs.getNext();
 
     if verbose then writef("%xu\n", got);
-    assert( got == expect32_1[i] );
+    assert( got == e32 );
   }
 
-  for i in 1..6 {
+  for (i, e32) in zip(1..6, expect32_1) {
     var got = rs.getNth(i);
 
     if verbose then writef("%xu\n", got);
-    assert( got == expect32_1[i] );
+    assert( got == e32 );
   }
 }
 
 {
   var rs = createRandomStream(seed = seed, parSafe=false,
                             eltType = int(32), algorithm=RNG.PCG);
-  for i in 1..6 {
+  for e32 in expect32_1 {
     //writef("%xu\n", rs.RandomStreamPrivate_rng_states(1));
     var got = rs.getNext();
     if verbose then writef("%xu\n", got);
-    assert( got:uint(32) == expect32_1[i] );
+    assert( got:uint(32) == e32 );
   }
 
   rs.skipToNth(1);
 
-  for i in 1..6 {
+  for e32 in expect32_1 {
     //writef("%xu\n", rs.RandomStreamPrivate_rng_states(1));
     var got = rs.getNext();
     if verbose then writef("%xu\n", got);
-    assert( got:uint(32) == expect32_1[i] );
+    assert( got:uint(32) == e32 );
   }
 
-  for i in 1..6 {
+  for (i, e32) in zip(1..6, expect32_1) {
     var got = rs.getNth(i);
     if verbose then writef("%xu\n", got);
-    assert( got:uint(32) == expect32_1[i] );
+    assert( got:uint(32) == e32 );
   }
 }
 
@@ -71,29 +71,29 @@ writeln("Checking 32-bit RNG seq 1");
 {
   var rs = createRandomStream(seed = seed, parSafe=false,
                             eltType = uint(8), algorithm=RNG.PCG);
-  for i in 1..6 {
+  for e32 in expect32_1 {
     //writef("%xu\n", rs.RandomStreamPrivate_rng_states(1));
     var got = rs.getNext();
 
     if verbose then writef("%xu\n", got);
-    assert( got == expect32_1[i] >> 24 );
+    assert( got == e32 >> 24 );
   }
 
   rs.skipToNth(1);
 
-  for i in 1..6 {
+  for e32 in expect32_1 {
     //writef("%xu\n", rs.RandomStreamPrivate_rng_states(1));
     var got = rs.getNext();
 
     if verbose then writef("%xu\n", got);
-    assert( got == expect32_1[i] >> 24 );
+    assert( got == e32 >> 24 );
   }
 
-  for i in 1..6 {
+  for (i, e32) in zip(1..6, expect32_1) {
     var got = rs.getNth(i);
 
     if verbose then writef("%xu\n", got);
-    assert( got == expect32_1[i] >> 24 );
+    assert( got == e32 >> 24 );
   }
 }
 
@@ -102,29 +102,29 @@ writeln("Checking 32-bit RNG seq 1");
   var rs = createRandomStream(seed = seed, parSafe=false,
                             eltType = uint(16), algorithm=RNG.PCG);
 
-  for i in 1..6 {
+  for e32 in expect32_1 {
     //writef("%xu\n", rs.RandomStreamPrivate_rng_states(1));
     var got = rs.getNext();
 
     if verbose then writef("%xu\n", got);
-    assert( got == expect32_1[i] >> 16 );
+    assert( got == e32 >> 16 );
   }
 
   rs.skipToNth(1);
 
-  for i in 1..6 {
+  for e32 in expect32_1 {
     //writef("%xu\n", rs.RandomStreamPrivate_rng_states(1));
     var got = rs.getNext();
 
     if verbose then writef("%xu\n", got);
-    assert( got == expect32_1[i] >> 16 );
+    assert( got == e32 >> 16 );
   }
 
-  for i in 1..6 {
+  for (i, e32) in zip(1..6, expect32_1) {
     var got = rs.getNth(i);
 
     if verbose then writef("%xu\n", got);
-    assert( got == expect32_1[i] >> 16 );
+    assert( got == e32 >> 16 );
   }
 }
 
@@ -134,29 +134,29 @@ writeln("Checking 2x 32-bit RNG seq 1 seq 2");
 {
   var rs = createRandomStream(seed = seed, parSafe=false,
                             eltType = uint(64), algorithm=RNG.PCG);
-  for i in 1..6 {
+  for (e32_1, e32_2) in zip(expect32_1, expect32_2) {
     //writef("%xu\n", rs.RandomStreamPrivate_rng_states(1));
     var got = rs.getNext();
 
     if verbose then writef("%xu\n", got);
-    assert( got == (expect32_1[i]:uint(64) << 32) | expect32_2[i]:uint(64) );
+    assert( got == (e32_1:uint(64) << 32) | e32_2:uint(64) );
   }
 
   rs.skipToNth(1);
 
-  for i in 1..6 {
+  for (e32_1, e32_2) in zip(expect32_1, expect32_2) {
     //writef("%xu\n", rs.RandomStreamPrivate_rng_states(1));
     var got = rs.getNext();
 
     if verbose then writef("%xu\n", got);
-    assert( got == (expect32_1[i]:uint(64) << 32) | expect32_2[i]:uint(64) );
+    assert( got == (e32_1:uint(64) << 32) | e32_2:uint(64) );
   }
 
-  for i in 1..6 {
+  for (i, e32_1, e32_2) in zip(1..6, expect32_1, expect32_2) {
     var got = rs.getNth(i);
 
     if verbose then writef("%xu\n", got);
-    assert( got == (expect32_1[i]:uint(64) << 32) | expect32_2[i]:uint(64) );
+    assert( got == (e32_1:uint(64) << 32) | e32_2:uint(64) );
   }
 }
 
