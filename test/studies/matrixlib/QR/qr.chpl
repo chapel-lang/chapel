@@ -20,8 +20,8 @@ config const inputfile = "prolate5.dat";
 //
 proc QR(A: [?D]) where (D.rank == 2) {
 
-  const m = D.dim(1).size,
-        n = D.dim(2).size,
+  const m = D.dim(0).size,
+        n = D.dim(1).size,
         minDim = min(m,n),
         zero: A.eltType,
         one = 1.0: A.eltType,
@@ -85,7 +85,7 @@ proc norm(x...?n) {
   const zero = 0.0:x(1).type;
 
   sum = one;
-  for i in 1..n {
+  for i in 0..#n {
     if (x(i) != zero) {
       absXi = abs(x(i));
       if (scale < absXi) {

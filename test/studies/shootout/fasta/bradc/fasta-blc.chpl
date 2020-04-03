@@ -70,8 +70,8 @@ const ALU: [0..286] nucleotide = [
 //
 // Index aliases for use with (nucleotide, probability) tuples
 //
-param nucl = 1,
-      prob = 2;
+param nucl = 0,
+      prob = 1;
 
 //
 // Probability tables for sequences to be randomly generated

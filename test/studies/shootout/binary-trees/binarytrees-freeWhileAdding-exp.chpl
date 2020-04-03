@@ -49,9 +49,8 @@ proc main() {
   //
   // Print out the stats for the trees of varying depths.
   //
-  for depth in depths do
-    writeln(stats[depth](1), "\t trees of depth ", depth, "\t check: ",
-            stats[depth](2));
+  for (depth, (numTrees, checksum)) in zip(depths, stats) do
+    writeln(numTrees, "\t trees of depth ", depth, "\t check: ", checksum);
 
   //
   // Checksum the long-lived tree, print its stats, and free it.

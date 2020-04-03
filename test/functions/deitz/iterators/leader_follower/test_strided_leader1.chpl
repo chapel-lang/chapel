@@ -11,7 +11,7 @@ iter foo(param tag: iterKind, n: int) where tag == iterKind.leader {
 }
 
 iter foo(param tag: iterKind, followThis, n: int) where tag == iterKind.follower {
-  for i in followThis(1)+1 do
+  for i in followThis(0)+1 do
     yield i;
 }
 

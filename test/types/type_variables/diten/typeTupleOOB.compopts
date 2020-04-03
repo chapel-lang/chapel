@@ -1,2 +1,2 @@
--sidx=0 # typeTupleOOB.0.good
+-sidx=-1 # typeTupleOOB.0.good
 -sidx=4 # typeTupleOOB.4.good

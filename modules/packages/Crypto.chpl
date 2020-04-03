@@ -132,7 +132,7 @@ module Crypto {
       if (this._len == 0) {
         halt("Enter a string with length greater than 0 in order to create a buffer");
       }
-      this.buffDomain = {1..this._len};
+      this.buffDomain = {0..<this._len};
       for i in this.buffDomain do {
         this.buff[i] = s.byte(i);
       }

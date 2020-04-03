@@ -1831,7 +1831,7 @@ module ChapelBase {
   // delete two or more things
   inline proc chpl__delete(arg, args...) {
     chpl__delete(arg);
-    for param i in 1..args.size do
+    for param i in 0..args.size-1 do
       chpl__delete(args(i));
   }
 

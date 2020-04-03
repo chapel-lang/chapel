@@ -204,8 +204,8 @@ proc schurComplement(Ab: [?AbD] elemType, AD: domain, BD: domain, Rest: domain) 
     // replication correct, so we'll want to assert that fact
     //
     //    local {
-      for a in Rest.dim(1)(row..#blkSize) do
-        for b in Rest.dim(2)(col..#blkSize) do
+      for a in Rest.dim(0)(row..#blkSize) do
+        for b in Rest.dim(1)(col..#blkSize) do
           for w in 1..blkSize do
             Ab[a,b] -= replA[a,w] * replB[w,b];
       //    }
@@ -224,7 +224,7 @@ proc replicateD1(Ab, BD) {
 
   coforall dest in targetLocales[.., 0] do
     on dest do
-      replB = Ab[BD.dim(1), 1..n+1];
+      replB = Ab[BD.dim(0), 1..n+1];
 
   return replB;
 }
@@ -241,7 +241,7 @@ proc replicateD2(Ab, AD) {
 
   coforall dest in targetLocales[0, ..] do
     on dest do
-      replA = Ab[1..n, AD.dim(2)];
+      replA = Ab[1..n, AD.dim(1)];
 
   return replA;
 }
@@ -255,7 +255,7 @@ proc panelSolve(Ab: [] elemType,
                panel: domain,
                piv: [] int) {
 
-  for k in panel.dim(2) {             // iterate through the columns
+  for k in panel.dim(1) {             // iterate through the columns
     const col = panel[k.., k..k];
     
     // If there are no rows below the current column return
@@ -297,9 +297,9 @@ proc updateBlockRow(Ab: [] elemType,
                    tl: domain,
                    tr: domain) {
 
-  for row in tr.dim(1) {
+  for row in tr.dim(0) {
     const activeRow = tr[row..row, ..],
-          prevRows = tr.dim(1).low..row-1;
+          prevRows = tr.dim(0).low..row-1;
 
     forall (i,j) in activeRow do
       for k in prevRows do
@@ -313,7 +313,7 @@ proc updateBlockRow(Ab: [] elemType,
 //
 proc backwardSub(n: int,
                  Ab: [] elemType) {
-  const bd = Ab.domain.dim(1);
+  const bd = Ab.domain.dim(0);
   var x: [bd] elemType;
 
   for i in bd by -1 do

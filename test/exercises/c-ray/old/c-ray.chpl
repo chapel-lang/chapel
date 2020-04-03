@@ -55,11 +55,11 @@ if usage then printUsage();
 
 const ssize = size.partition("x");    // split size string into 3-tuple (W,x,H)
 
-if (ssize.size != 3 || ssize[2] != "x") then
+if (ssize.size != 3 || ssize[1] != "x") then
   halt("--s option requires argument to be in WxH format");
 
-const xres = ssize[1]:int,                // x- and y-resolutions of the image
-      yres = ssize[3]:int;
+const xres = ssize[0]:int,                // x- and y-resolutions of the image
+      yres = ssize[2]:int;
 
 const rcpSamples = 1.0 / samples,         // the reciprocal of the # of samples
       halfFieldOfView = fieldOfView / 2;  // compute half the field-of-view
@@ -67,9 +67,9 @@ const rcpSamples = 1.0 / samples,         // the reciprocal of the # of samples
 //
 // set params representing dimensions symbolically
 //
-param X = 1,          // names for accessing vec3 elements
-      Y = 2,
-      Z = 3,
+param X = 0,          // names for accessing vec3 elements
+      Y = 1,
+      Z = 2,
       numdims = 3;
 
 //
@@ -206,7 +206,7 @@ proc getPrimaryRay(xy, sample) {
   const i = crossProduct((0.0, 1.0, 0.0), k),
         j = crossProduct(k, i);
 
-  const m: [1..numdims] vec3 = [i, j, k];
+  const m: [0..#numdims] vec3 = [i, j, k];
 
   var pRay = new ray();
   (pRay.dir(X), pRay.dir(Y)) = getSamplePos(xy, sample);

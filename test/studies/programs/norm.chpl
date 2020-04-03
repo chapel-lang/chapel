@@ -42,13 +42,13 @@ module MyNorm {
   proc norm(x: [?D], p: normType) where x.rank == 2 {
     select (p) {
       when normType.norm1 do
-        return max reduce [j in D.dim(2)] (+ reduce abs(x[D.dim(1), j]));
+        return max reduce [j in D.dim(1)] (+ reduce abs(x[D.dim(0), j]));
 
       when normType.norm2 do
         halt("Haven't implemented 2-norm for 2D arrays yet");
 
       when normType.normInf do
-        return max reduce [i in D.dim(1)] (+ reduce abs(x[i, D.dim(2)]));
+        return max reduce [i in D.dim(0)] (+ reduce abs(x[i, D.dim(1)]));
 
       when normType.normFrob do return sqrt(+ reduce (abs(x)*abs(x)));
 

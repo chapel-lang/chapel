@@ -13,4 +13,4 @@ var D = {r, r};
 writeln("D.idxType = ", D.idxType:string);
 
 for ij in D do
-  writeln("ij: ", ij, "(", ij(1).type:string, ",", ij(2).type:string, ")");
+  writeln("ij: ", ij, "(", ij(0).type:string, ",", ij(1).type:string, ")");

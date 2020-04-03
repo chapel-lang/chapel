@@ -213,9 +213,9 @@ proc schurComplement(Ab: [?AbD] elemType, AD: domain, BD: domain, Rest: domain) 
 proc dgemmNativeInds(A: [] elemType,
                     B: [] elemType,
                     C: [] elemType) {
-  for (iA, iC) in (A.domain.dim(1), C.domain.dim(1)) do
-    for (jA, iB) in (A.domain.dim(2), B.domain.dim(1)) do
-      for (jB, jC) in (B.domain.dim(2), C.domain.dim(2)) do
+  for (iA, iC) in (A.domain.dim(0), C.domain.dim(0)) do
+    for (jA, iB) in (A.domain.dim(1), B.domain.dim(0)) do
+      for (jB, jC) in (B.domain.dim(1), C.domain.dim(1)) do
         C[iC,jC] -= A[iA, jA] * B[iB, jB];
 }
 
@@ -229,7 +229,7 @@ proc panelSolve(Ab: [] elemType,
                panel: domain,
                piv: [] indexType) {
 
-  for k in panel.dim(2) {             // iterate through the columns
+  for k in panel.dim(1) {             // iterate through the columns
     var col = panel[k.., k..k];
     
     // If there are no rows below the current column return
@@ -281,9 +281,9 @@ proc panelSolve(Ab: [] elemType,
     //
     const AbRowReplDom: domain(1) 
                         dmapped Replicated(targetLocales=Ab.targetLocales[.., Ab.domain.indexToLocaleDim(dim=2, idx=k)])
-                      = [k+1..panel.dim(2).high];
+                      = [k+1..panel.dim(1).high];
 
-    var AbRowRepl: [AbRowReplDom] = Ab[k, AbRowReplDom.dim(1)];
+    var AbRowRepl: [AbRowReplDom] = Ab[k, AbRowReplDom.dim(0)];
     
     // update all other values below the pivot
     forall (i,j) in panel[k+1.., k+1..] do
@@ -294,9 +294,9 @@ proc panelSolve(Ab: [] elemType,
     //
     const AbRowReplDom: domain(1) 
                         dmapped Replicated(targetLocales=Ab.targetLocales[.., Ab.domain.indexToLocaleDim(dim=2, idx=k)])
-                      = [panel.dim(2)];
+                      = [panel.dim(1)];
 
-    var AbRowRepl: [AbRowReplDom] = Ab[k, AbRowReplDom.dim(1)];
+    var AbRowRepl: [AbRowReplDom] = Ab[k, AbRowReplDom.dim(0)];
     
     // update all other values below the pivot
     forall (i,j) in panel[k+1.., k+1..] do
@@ -321,7 +321,7 @@ proc panelSolve(Ab: [] elemType,
     // of indices.  One particular challenge is that the answer may be
     // disjoint or not expressible using a dense/regular array of locales.
     //
-    var AbRowRepl: [AbRowReplDom] = Ab[k, panel[k, ..].dim(2)];
+    var AbRowRepl: [AbRowReplDom] = Ab[k, panel[k, ..].dim(1)];
     
     // update all other values below the pivot
     forall (i,j) in panel[k+1.., k+1..] do
@@ -339,9 +339,9 @@ proc updateBlockRow(Ab: [] elemType,
                    tl: domain,
                    tr: domain) {
 
-  for row in tr.dim(1) {
+  for row in tr.dim(0) {
     const activeRow = tr[row..row, ..],
-          prevRows = tr.dim(1).low..row-1;
+          prevRows = tr.dim(0).low..row-1;
 
     forall (i,j) in activeRow do
       for k in prevRows do
@@ -355,7 +355,7 @@ proc updateBlockRow(Ab: [] elemType,
 //
 proc backwardSub(n: indexType,
                  Ab: [] elemType) {
-  const bd = Ab.domain.dim(1);
+  const bd = Ab.domain.dim(0);
   var x: [bd] elemType;
 
   for i in bd by -1 do

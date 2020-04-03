@@ -339,16 +339,16 @@ module BigInteger {
       var ret: __mpz_struct;
 
       if _local {
-        ret = this.mpz[1];
+        ret = this.mpz[0];
 
       } else if this.localeId == chpl_nodeID {
-        ret = this.mpz[1];
+        ret = this.mpz[0];
 
       } else {
         const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
 
         on __primitive("chpl_on_locale_num", thisLoc) {
-          ret = this.mpz[1];
+          ret = this.mpz[0];
         }
       }
 
@@ -525,7 +525,7 @@ module BigInteger {
         mpz_set(lhs.mpz, rhs.mpz);
 
       } else {
-        chpl_gmp_get_mpz(lhs.mpz, rhs.localeId, rhs.mpz[1]);
+        chpl_gmp_get_mpz(lhs.mpz, rhs.localeId, rhs.mpz[0]);
       }
     }
 

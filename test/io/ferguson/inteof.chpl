@@ -4,7 +4,7 @@ config const filename = "inteof-test.nums";
 config const verbose = false;
 const sizes = ( 1, 100, 1000, 10000, 100000, 1000000 );
 
-for i in 1..sizes.size
+for i in 0..sizes.size-1
 {
   var n = sizes[i];
   for reopen in 1..1 // TODO 0..1

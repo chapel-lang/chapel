@@ -23,11 +23,11 @@
 proc rightBlockLU(A: [?D], blk) where (D.rank == 2) {
 
   // Test that 0 < blk <= n, where n = length of one dimension of A.
-  if (blk <= 0) || (blk > D.dim(1).size) then
+  if (blk <= 0) || (blk > D.dim(0).size) then
     halt(blk," is an invalid block size passed to blockLU");
 
-  var piv: [D.dim(1)] int;
-  [i in D.dim(1)] piv(i) = i;    // initialize the pivot vector
+  var piv: [D.dim(0)] int;
+  [i in D.dim(0)] piv(i) = i;    // initialize the pivot vector
 
   // Main loop of block LU uses an iterator to compute four sets of
   // index ranges -- those that are unfactored, divided into those
@@ -101,7 +101,7 @@ proc rightBlockLU(A: [?D], blk) where (D.rank == 2) {
 
       // Compute the k-th elimination step: 
       //   store multipliers...
-      if k+1 <= A1.domain.high(1) then
+      if k+1 <= A1.domain.high(0) then
         A1[k+1.., k] /= pivot;
 
       //   ..and subtract scaled kth row from remaining 
@@ -177,10 +177,10 @@ proc rightBlockLU(A: [?D], blk) where (D.rank == 2) {
 // not necessary.
 
 iter generateBlockLURanges(D:domain(2), blksize) {
-  const stop = D.dim(1).high;
-  const endcol = D.dim(2).high;
+  const stop = D.dim(0).high;
+  const endcol = D.dim(1).high;
 
-  for i in D.dim(1) by blksize {
+  for i in D.dim(0) by blksize {
     const hi = min(i + blksize-1, stop);
     yield (i..stop, i..hi, hi+1..stop, hi+1..endcol); 
   }
@@ -215,14 +215,14 @@ iter blkIter2D(rowRange, colRange, blksize) {
 
 proc computePivotRow(A:[?D]) {
    const (_, ind) = maxloc reduce zip(abs(A), D);
-   return ind(1);
+   return ind(0);
 }
 
 //  The LU solve routine takes A = [L U y] and solves for x.
 proc LUSolve (A: [?ADom], x: [?xDom]) {
 
-   var n = ADom.dim(1).size;
-   var AD1 = ADom.dim(1);
+   var n = ADom.dim(0).size;
+   var AD1 = ADom.dim(0);
    ref b = A(.., n+1);
 
    x = b;

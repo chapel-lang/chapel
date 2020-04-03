@@ -142,7 +142,7 @@ prototype module DistributedFFT {
       :returns: Returns a slab-distributed domain.
   */
   proc newSlabDom(dom: domain) where isRectangularDom(dom) {
-    if dom.rank !=3 then compilerError("The domain must be 3D");
+    if dom.rank != 3 then compilerError("The domain must be 3D");
     const targetLocales = reshape(Locales, {0.. #numLocales, 0..0, 0..0});
     return dom dmapped Block(boundingBox=dom, targetLocales=targetLocales);
   }
@@ -156,9 +156,9 @@ prototype module DistributedFFT {
       :returns: Returns a slab-distributed domain.
   */
   proc newSlabDom(sz) where isHomogeneousTupleType(sz.type) {
-    var tup : (sz.size)*range;
-    for param ii in 1..sz.size do tup(ii) = 0.. #sz(ii);
-    return newSlabDom({(...tup)});
+    if sz.size != 3 then compilerError("The tuple must be 3D");
+    var (x, y, z) = sz;
+    return newSlabDom({0..#x, 0..#y, 0..#z});
   }
 
   /*
@@ -201,11 +201,7 @@ prototype module DistributedFFT {
                               Src: [?SrcDom] ?T,
                               Dst : [?DstDom] T,
                               signOrKind) {
-    // Sanity checks
-    if SrcDom.rank != 3 || DstDom.rank != 3 then compilerError("Code is designed for 3D arrays only");
-    if SrcDom.dim(1) != DstDom.dim(2) then halt("Mismatched x-y ranges");
-    if SrcDom.dim(2) != DstDom.dim(1) then halt("Mismatched y-x ranges");
-    if SrcDom.dim(3) != DstDom.dim(3) then halt("Mismatched z ranges");
+    checkDims(SrcDom, DstDom);
 
     coforall loc in Locales do on loc {
       var timeTrack = new TimeTracker();
@@ -266,11 +262,7 @@ prototype module DistributedFFT {
                                    Src: [?SrcDom] ?T,
                                    Dst : [?DstDom] T,
                                    signOrKind) {
-    // Sanity checks
-    if SrcDom.rank != 3 || DstDom.rank != 3 then compilerError("Code is designed for 3D arrays only");
-    if SrcDom.dim(1) != DstDom.dim(2) then halt("Mismatched x-y ranges");
-    if SrcDom.dim(2) != DstDom.dim(1) then halt("Mismatched y-x ranges");
-    if SrcDom.dim(3) != DstDom.dim(3) then halt("Mismatched z ranges");
+    checkDims(SrcDom, DstDom);
 
     coforall loc in Locales do on loc {
       var timeTrack = new TimeTracker();
@@ -381,7 +373,8 @@ prototype module DistributedFFT {
 
     proc init(type arrType, param ftType : FFTtype, dom : domain(2), parDim : int, signOrKind, in flags : c_uint) {
       this.ftType = ftType;
-      this.parRange = dom.dim(parDim);
+      const (dim1, dim2) = dom.dims();
+      this.parRange = if parDim == 2 then dim2 else dim1;
       this.numTasks = min(here.maxTaskPar, parRange.size);
       this.batchSizeSm = parRange.size/numTasks;
       this.batchSizeLg = parRange.size/numTasks+1;
@@ -425,16 +418,17 @@ prototype module DistributedFFT {
     var nnp = c_ptrTo(nn[0]);
     var rank = 1 : c_int;
     var stride, idist : c_int;
+    const (dim1, dim2) = dom.dims();
     if (parDim == 2) {
       // FFT columns
-      nn[0] = dom.dim(1).size : c_int;
-      stride = dom.dim(2).size  : c_int;
+      nn[0] = dim1.size : c_int;
+      stride = dim2.size  : c_int;
       idist = 1 : c_int;
     } else {
       assert(parDim==1, "parDim can only be 1 or 2");
-      nn[0] = dom.dim(2).size : c_int;
+      nn[0] = dim2.size : c_int;
       stride = 1  : c_int;
-      idist = dom.dim(2).size : c_int;
+      idist = dim2.size : c_int;
     }
     flags = flags | FFTW_UNALIGNED;
 
@@ -466,6 +460,15 @@ prototype module DistributedFFT {
   private proc _signOrKindType(param ftType : FFTtype) type
     where (ftType==FFTtype.R2R) {
     return c_ptr(fftw_r2r_kind);
+  }
+
+  private inline proc checkDims(SrcDom, DstDom) {
+    if SrcDom.rank != 3 || DstDom.rank != 3 then compilerError("Code is designed for 3D arrays only");
+    const (xSrc, ySrc, zSrc) = SrcDom.dims();
+    const (xDst, yDst, zDst) = DstDom.dims();
+    if xSrc != yDst then halt("Mismatched x-y ranges");
+    if ySrc != xDst then halt("Mismatched y-x ranges");
+    if zSrc != zDst then halt("Mismatched z ranges");
   }
 
   pragma "no doc"

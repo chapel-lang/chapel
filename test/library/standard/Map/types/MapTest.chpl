@@ -6,7 +6,7 @@ proc testMap(type t) {
 
   var x: t;
   if isTuple(t) {
-    x = (new t[1](1), new t[2](2));
+    x = (new t[0](1), new t[1](2));
   } else {
     x = new t(1);
   }
@@ -17,7 +17,7 @@ proc testMap(type t) {
 
   var y: t;
   if isTuple(t) {
-    y = (new t[1](-1), new t[2](-2));
+    y = (new t[0](-1), new t[1](-2));
   } else {
     y = new t(-1);
   }

@@ -105,7 +105,7 @@ module Itertools {
   pragma "no doc"
   iter repeat (param tag: iterKind, arg, times = 0, followThis)
       where tag == iterKind.follower && followThis.size == 1 {
-    const workingIters = followThis(1);
+    const workingIters = followThis(0);
 
     for workingIters do yield arg;
   }
@@ -182,14 +182,12 @@ module Itertools {
   iter cycle(param tag: iterKind, arg, times = 0, followThis)
       where tag == iterKind.follower && followThis.size == 1 {
 
-    const workingIters = followThis(1);
+    const workingIters = followThis(0);
 
-    if isString(arg) || isArray(arg) || isTuple(arg) {
-      // once strings, arrays, and tuples are all 0-based this can be simplified
-      const off = if isArray(arg) then 0 else 1;
+    if isString(arg) || isBytes(arg) || isArray(arg) || isTuple(arg) then
       for idx in workingIters do
-        yield arg[(idx % arg.size) + off];
-    } else {
+        yield arg[idx % arg.size];
+    else {
       var tempObject: [1..#arg.size] arg.low.type;
 
       for (idx, element) in zip(1..#arg.size, arg) do

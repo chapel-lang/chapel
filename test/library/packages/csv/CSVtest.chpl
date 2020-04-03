@@ -60,10 +60,10 @@ module CSVtest {
       var labels: [1..myData.size] string;
 
       for i in 1..myData.size {
-        for param j in 1..myData[1].size-1 {
-          A[i,j] = myData[i][j];
+        for param j in 0..myData[1].size-2 {
+          A[i,j+1] = myData[i][j];
         }
-        labels[i] = myData[i][myData[1].size];
+        labels[i] = myData[i][myData[1].size-1];
       }
 
       writeln(A);

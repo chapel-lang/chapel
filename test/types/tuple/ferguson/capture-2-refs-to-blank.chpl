@@ -4,8 +4,8 @@ proc singleVar1() ref { return GLOBAL1; }
 proc singleVar2() ref { return GLOBAL2; }
 
 proc test( x:(int, int) ) {
-    x(1) = 1;
-    x(2) = 2;
+    x(0) = 1;
+    x(1) = 2;
 }
 
 proc main {

@@ -5720,7 +5720,7 @@ void printTaskOrForallConstErrorNote(Symbol* aVar) {
 
 /************************************* | **************************************
 *                                                                             *
-*                                                                             *
+* This resolves the `(...myTuple)` style of expression form                   *
 *                                                                             *
 ************************************** | *************************************/
 
@@ -5761,7 +5761,7 @@ static void resolveTupleExpand(CallExpr* call) {
 
   stmt->insertBefore(noop);
 
-  for (int i = 1; i <= size; i++) {
+  for (int i = 0; i < size; i++) {
     VarSymbol* tmp = newTemp(astr("_tuple_expand_tmp_", istr(i)));
     CallExpr*  e   = NULL;
 
@@ -10068,7 +10068,7 @@ static Symbol* resolvePrimInitGetField(CallExpr* call) {
 
 // Does 'val' feed into a tuple? Ex.:
 //   default init var( elt_x1 type owned Foo )
-//   .=( tup "x1" elt_x1 )
+//   .=( tup "x0" elt_x1 )
 static bool isTupleComponent(Symbol* val, CallExpr* call) {
   CallExpr* otherUse = NULL;
   for_SymbolSymExprs(se, val)

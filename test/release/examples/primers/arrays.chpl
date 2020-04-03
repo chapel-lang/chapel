@@ -168,7 +168,7 @@ writeln("After initializing C, its value is:\n", C, "\n");
 //
 
 for ij in ProbSpace do
-  D(ij) = ij(1) == ij(2);
+  D(ij) = ij(0) == ij(1);
 
 writeln("After initializing D, its value is:\n", D, "\n");
 

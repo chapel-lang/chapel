@@ -7,8 +7,8 @@ proc foo() : A2.type
 }
 
 proc bar(tup) {
-  tup(1)[0] = 2;
-  writeln(tup(2)[0]);
+  tup(0)[0] = 2;
+  writeln(tup(1)[0]);
 }
 
 proc run() {

@@ -162,7 +162,7 @@ proc populate (size : int) {
 
   const population =
     for i in D do
-      let ithColor = if size == 10 then colorsDefault10(i)
+      let ithColor = if size == 10 then colorsDefault10(i-1)
                                    else ((i-1) % numColors):Color
         in new owned Chameneos(i, ithColor);
 
@@ -200,7 +200,7 @@ proc printInfo(population : [] owned Chameneos) {
 /* spellInt takes an integer, and spells each of its digits out in English */
 proc spellInt(n : int) {
   var s : string = n:string;
-  for i in 1..s.size {
+  for i in 0..<s.size {
     write(" ", (s[i]:int):Digit);
   }
   writeln();

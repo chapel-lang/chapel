@@ -92,8 +92,8 @@ proc masonModify(args) throws {
     const projectHome = getProjectHome(cwd, "Mason.toml");
 
     const result = modifyToml(add, dep, external, system, projectHome);
-    generateToml(result[1], result[2]);
-    delete result[1];
+    generateToml(result[0], result[1]);
+    delete result[0];
   }
   catch e: MasonError {
     writeln(e.message());
@@ -113,7 +113,7 @@ proc modifyToml(add: bool, spec: string, external: bool, system: bool,
 
     // Adding a dependency
     if add {
-      if spec.find("@") == 0 {
+      if spec.find("@") == -1 {
         throw new owned MasonError("Dependency formatted incorrectly.\nFormat: package@version");
       }
       const split = spec.split('@');
@@ -139,7 +139,7 @@ proc modifyToml(add: bool, spec: string, external: bool, system: bool,
     // Removing a dependency
     else {
       var depName: string;
-      if spec.find('@') != 0 {
+      if spec.find('@') != -1 {
         const split = spec.split('@');
         depName = split[1];
       }

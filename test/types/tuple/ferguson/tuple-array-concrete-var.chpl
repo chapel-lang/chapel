@@ -6,7 +6,7 @@ var tmp = (g,g);
 proc t1( tup: tmp.type )
 {
   g[0] = 2;
-  writeln(tup(2)[0]);
+  writeln(tup(1)[0]);
 }
 
 proc t2( tup: tmp.type )

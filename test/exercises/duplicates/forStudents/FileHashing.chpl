@@ -42,7 +42,7 @@ module FileHashing {
    */
   proc compare(a: SHA256Hash, b: SHA256Hash): int {
 
-    for i in 1..8 {
+    for i in 0..7 {
       var aa = a.hash[i];
       var bb = b.hash[i];
       if aa < bb {
@@ -104,12 +104,12 @@ module FileHashing {
 
 
     // clear msg before last block, so unused data are zeros
-    for i in 1..16 {
+    for i in 0..15 {
       msg[i] = 0;
     }
 
     var nbits:uint = 0;
-    var msgi = 1;
+    var msgi = 0;
     // Now handle the last 4-byte words
     while offset+4 <= len {
       r.read(msg[msgi]);
@@ -159,7 +159,7 @@ module FileHashing {
     }
     // If fullPath starts with currentDirectory, remove it
     if fullPath.startsWith(currentDirectory) {
-      fullPath = fullPath[currentDirectory.size+1..];
+      fullPath = fullPath[currentDirectory.size..];
     }
     return fullPath;
   }

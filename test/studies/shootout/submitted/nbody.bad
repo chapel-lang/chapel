@@ -1,2 +1,2 @@
-nbody.chpl:124: error: halt reached - array index out of bounds
-note: index was 5 but array bounds are 0..4
+nbody.chpl:137: error: tuple index 3 is out of bounds
+nbody.chpl:137: note: this tuple contains elements 0..2 (inclusive)

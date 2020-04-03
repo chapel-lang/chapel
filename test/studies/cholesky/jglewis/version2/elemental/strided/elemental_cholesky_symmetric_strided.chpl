@@ -83,9 +83,9 @@ module elemental_cholesky_symmetric_strided {
     // a cyclically distributed array.  We do check that the matrix is
     // square, with identical row and column index ranges
 
-    const A_idx_range = A.domain.dim (1);  // indices of either row or column
+    const A_idx_range = A.domain.dim (0);  // indices of either row or column
 
-    assert ( A_idx_range == A.domain.dim (2) );
+    assert ( A_idx_range == A.domain.dim (1) );
 
     const stride = A_idx_range.stride;
 
@@ -98,7 +98,7 @@ module elemental_cholesky_symmetric_strided {
     const A_grid_domain = A_locale_grid.domain,
           n_processors  = A_grid_domain.size;
 
-    assert ( A_grid_domain.low(1) == 0 && A_grid_domain.low(2) == 0 );
+    assert ( A_grid_domain.low == (0,0) );
 
     assert ( A (A.domain.low).locale.id == 0 );
 	     

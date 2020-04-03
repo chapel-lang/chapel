@@ -140,7 +140,7 @@ class Block1D : Distribution {
     //
     // TODO: Does using David's detupling trick work here?
     //
-    return locDist(locid).myChunk(inds.dim(1));
+    return locDist(locid).myChunk(inds.dim(0));
   }
   
   //
@@ -871,6 +871,6 @@ class LocBlock1DArr {
     //
     // TODO: When this is multidimensional need to do a reduction or something:
     //
-    return locDom.myBlock.dim(1).boundsCheck(x.dim(1));
+    return locDom.myBlock.dim(0).boundsCheck(x.dim(0));
   }
 }

@@ -24,9 +24,9 @@ proc dgemm(
     C : [?CD] t)
 {
     // Calculate (i,j) using a dot product of a row of A and a column of B.
-    for i in AD.dim(1) {
-        for j in CD.dim(2) {
-            for k in AD.dim(2) {
+    for i in AD.dim(0) {
+        for j in CD.dim(1) {
+            for k in AD.dim(1) {
                 C[i,j] -= A[i, k] * B[k, j];
             }
         }
@@ -104,12 +104,12 @@ proc panelSolve(
     panel : domain(2),
     piv : [] int)
 {
-    const pnlRows = panel.dim(1);
-    const pnlCols = panel.dim(2);
+    const pnlRows = panel.dim(0);
+    const pnlCols = panel.dim(1);
 
     // Ideally some type of assertion to ensure panel is embedded in A's
     // domain
-    assert(piv.domain.dim(1) == A.domain.dim(1));
+    assert(piv.domain.dim(0) == A.domain.dim(0));
 
     if(pnlCols.size == 0) then return;
 
@@ -118,7 +118,7 @@ proc panelSolve(
         var col = panel[k.., k..k];
 
         // If there are no rows below the current column return
-        if col.dim(1).size == 0 then return;
+        if col.dim(0).size == 0 then return;
 
         // The pivot is the element with the largest absolute value.
         const (_, loc) = maxloc reduce zip(abs(A(col)), col);
@@ -154,10 +154,10 @@ proc panelSolve(
 // right of the block.
 proc updateBlockRow(A : [] ?t, tl : domain(2), tr : domain(2))
 {
-    const tlRows = tl.dim(1);
-    const tlCols = tl.dim(2);
-    const trRows = tr.dim(1);
-    const trCols = tr.dim(2);
+    const tlRows = tl.dim(0);
+    const tlCols = tl.dim(1);
+    const trRows = tr.dim(0);
+    const trCols = tr.dim(1);
 
     assert(tlCols == trRows);
 
