@@ -96,6 +96,26 @@ module ExternalArray {
     return ret;
   }
 
+  proc convertStringOrBytes(ref arr: []): chpl_external_array
+    where arr.eltType == string || arr.eltType == bytes {
+
+    var wrapper: [arr.domain] chpl_byte_buffer;
+
+    // Move existing string buffers over to a new shell.
+    for i in 0..#arr.size {
+      ref item = arr[i];
+
+      // This call assumes ownership of the string's buffer.
+      var val = chpl__exportRetStringOrBytes(item);
+      wrapper[i] = val;
+    }
+
+    var ext = chpl_make_external_array_ptr_free(c_ptrTo(wrapper[0]),
+                                                wrapper.size: uint);
+
+    return ext;
+  }
+
   proc convertToExternalArray(in arr: []): chpl_external_array
     where getExternalArrayType(arr) == chpl_external_array {
 
@@ -120,33 +140,19 @@ module ExternalArray {
     // 
     // Can we just normalize the domain instead? Or would that be too
     // unexpected?
-    // 
+    //
     if arr.domain.low != 0 then
       halt("cannot return an array when the lower bounds is not 0");
 
     //
     // TODO: If the array element type is string or bytes, then we need to
     // silently convert it to an array of 'chpl_byte_buffer'. Then in
-    // compiler code, we should iterate through the elements and cast then
+    // compiler code, we should iterate through the elements and cast them
     // to string/bytes as desired (in both cases creating a numpy array
-    // of Python 'objects'.
+    // of Python objects).
     //
-    if arr.eltType == string || arr.eltType == bytes {
-      use ExportWrappers;
-
-      var wrapper: [0..arr.size] chpl_byte_buffer;
-
-      // Copy new 
-      for i in 0..#arr.zize {
-        ref itm = arr[i];
-        ref val = chpl__exportRetStringOrBytes(item);
-        wrapper[i] = val;
-      }
-
-    }
-
     if arr.eltType == string || arr.eltType == bytes then
-      compilerWarning("IN CONVERSION TO EXTERNAL ARRAY, ELEMENT TYPE IS: " + arr.eltType:string);
+      return convertStringOrBytes(arr);
 
     var externalArr = chpl_make_external_array_ptr_free(c_ptrTo(arr[0]),
                                                         arr.size: uint);

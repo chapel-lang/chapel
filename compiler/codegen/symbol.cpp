@@ -2321,14 +2321,70 @@ void pythonRetExternalArray(FnSymbol* fn, std::string& funcCall,
                             std::string& returnStmt) {
   INT_ASSERT(fn->retType == dtExternalArray);
 
-  Symbol* eltType = exportedArrayElementType[fn];
-  if (eltType == NULL) { return; }
+  Symbol* eltTypeSym = exportedArrayElementType[fn];
+  if (eltTypeSym == NULL) { return; }
+
+  Type* eltType = eltTypeSym->type;
 
   funcCall += "cdef chpl_external_array ret_arr = ";
 
-  std::string typeStr = getPythonTypeName(eltType->type, PYTHON_PYX);
-  std::string typeStrCDefs = getPythonTypeName(eltType->type, C_PYX);
+  std::string typeStr = getPythonTypeName(eltType, PYTHON_PYX);
+  std::string typeStrCDefs = getPythonTypeName(eltType, C_PYX);
 
+  //
+  // TODO: Refactor this code and the code in 'pythonRetByteBuffer' so that
+  // I can use both here.
+  //
+  if (eltType == dtBytes || eltType == dtString) {
+
+    std::string res;
+
+    //
+    // Create the numpy array to return. The form looks like:
+    //
+    //  cdef numpy.ndarray [object, ndim=1] ret =
+    //    numpy.zeros(shape = ret_arr.num_elts, dtype = (numpy dtype))
+    //
+    // TODO: Add the 'object' type to the getPythonTypeName table.
+    //
+    res += "\tcdef numpy.ndarray [object, ndim=1] ret = ";
+    res += "numpy.zeros(shape = ret_arr.num_elts, dtype = object)\n";
+
+    //
+    // TODO: Add this to a function we can call with a flag for string or
+    // bytes? Can we also do the same for the opaque array code?
+    //
+    //    cdef chpl_byte_buffer rv
+    //    for i in range(ret_arr.num_elts):
+    //      rv = (<chpl_byte_buffer*>ret_arr.elts)[i]
+    //      slot = PyBytes_FromStringAndSize(rv.data, rv.size)
+    //      chpl_byte_buffer_free(rv)
+    //      # Only execute this line if type is dtString:
+    //      slot = slot.decode('utf-8')
+    //      ret[i] = slot
+    //    chpl_free_external_array(ret_arr)
+    //
+    res += "\tcdef chpl_byte_buffer rv\n";
+    res += "\tfor i in range(ret_arr.num_elts):\n";
+    res += "\t\trv = (<chpl_byte_buffer*>ret_arr.elts)[i]\n";
+    res += "\t\tslot = PyBytes_FromStringAndSize(rv.data, rv.size)\n";
+    res += "\t\tchpl_byte_buffer_free(rv)\n";
+    
+    if (eltType == dtString) {
+      res += "\t\tslot = slot.decode(\'utf-8\')\n";
+    }
+
+    res += "\t\tret[i] = slot\n";
+    res += "\tchpl_free_external_array(ret_arr)\n";
+
+    returnStmt += res;
+
+    return;
+  }
+
+  //
+  // TODO: When we add the string/bytes to the numpy table, move this code
+  // above.
   //
   // Create the numpy array to return. The form looks like:
   //
