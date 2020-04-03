@@ -321,7 +321,8 @@ or use statement is required before referring to the module's name or the
 symbols it contains within a given lexical scope.
 
 Import statements can also rename the set of symbols that it makes available
-within the scope.
+within the scope.  For further information about import statements, see
+:ref:`The_Import_Statement`.
 
 .. _Explicit_Naming:
 
