@@ -1,3 +1,0 @@
-revcomp.chpl:24: In function 'main':
-revcomp.chpl:42: error: mention of non-nilable variable after ownership is transferred out of it
-revcomp.chpl:41: note: ownership transfer occurred here

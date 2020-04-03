@@ -80,6 +80,7 @@ proc main() {
 //
 // Redefine stdout to use lock-free binary I/O and capture a newline
 //
+use IO;
 const stdout = openfd(1).writer(kind=iokind.native, locking=false);
 param newline = "\n".toByte();
 

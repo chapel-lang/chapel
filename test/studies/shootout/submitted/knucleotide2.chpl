@@ -5,7 +5,7 @@
    derived from the GNU C++ version by Branimir Maksimovic
 */
 
-use Sort, Map;
+use Sort, Map, IO;
 
 config param tableSize = 2**16,
              columns = 61;
@@ -14,7 +14,7 @@ config param tableSize = 2**16,
 proc main(args: [] string) {
   // Open stdin and a binary reader channel
   const consoleIn = openfd(0),
-        fileLen = consoleIn.length(),
+        fileLen = consoleIn.size,
         stdinNoLock = consoleIn.reader(kind=ionative, locking=false);
 
   // Read line-by-line until we see a line beginning with '>TH'
