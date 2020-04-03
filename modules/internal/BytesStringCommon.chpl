@@ -561,7 +561,8 @@ module BytesStringCommon {
         var remote_buf:bufferType = nil;
         if len != 0 then
           remote_buf = bufferCopyRemote(rhs.locale_id, rhs.buff, len);
-        lhs.reinitString(remote_buf, len, len+1, needToCopy=false);
+        lhs.reinitString(remote_buf, len, len+1, needToCopy=false,
+                                                 ownBuffer=true);
       }
     }
 
