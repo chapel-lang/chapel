@@ -150,7 +150,7 @@ private proc findSpkg(args: [?d] string) {
   }
   if args[3].find('-') != -1 {
     for arg in args[3..] {
-      if arg == "-h" || arg == "--help" {  
+      if arg == "-h" || arg == "--help" {
         masonExternalFindHelp();
         exit(0);
       }
@@ -194,7 +194,7 @@ proc spkgInstalled(spec: string) {
   const pkgInfo = getSpackResult(command, quiet=true);
   var found = false;
   var dependencies: [1..0] string; // a list of pkg dependencies
-  for item in pkgInfo.split() {  
+  for item in pkgInfo.split() {
     if item.rfind(spec) != -1 {
       return true;
     }
@@ -259,9 +259,10 @@ proc getExternalPackages(exDeps: unmanaged Toml) {
             var compiler = specFields[2];
             //var variants = specFields[3];
 
+            // TODO: Add spaces between spec to allow version ranges
             // TODO: allow dependency search to include variants
             var fullSpec = "%".join("@".join(name, version), compiler);
-            
+
             var dependencies = getSpkgDependencies(fullSpec);
             const pkgInfo = getSpkgInfo(fullSpec, dependencies);
 
@@ -296,7 +297,7 @@ proc getSpkgInfo(spec: string, ref dependencies: list(string)): unmanaged Toml t
     var version = specFields[1];
     var compiler = specFields[2];
 
-    if spkgInstalled(spec) {      
+    if spkgInstalled(spec) {
       const spkgPath = getSpkgPath(spec);
       const libs = joinPath(spkgPath, "lib");
       const includePath = joinPath(spkgPath, "include");
@@ -362,10 +363,11 @@ proc getSpkgDependencies(spec: string) throws {
   var dependencies: list(string);
   for item in pkgInfo.split() {
 
+    // TODO: This does not work if spec contains a version range
     if item.rfind(spec) != -1 {
       found = true;
     }
-    else if found == true {
+    else if found {
       const dep = item.strip("^");
       dependencies.append(dep);
     }
@@ -420,7 +422,7 @@ proc uninstallSpkg(args: [?d] string) throws {
   }
   else {
     var pkgName: string;
-    var command = "spack uninstall -y";    
+    var command = "spack uninstall -y";
     var confirm: string;
     var uninstallArgs = "";
     if args[3] == "-h" || args[3] == "--help" {
@@ -447,7 +449,7 @@ proc uninstallSpkg(args: [?d] string) throws {
       writeln("Aborting...");
       exit(0);
     }
-   
+
 
     const status = runSpackCommand(" ".join(command, uninstallArgs, pkgName));
     if status != 0 {
