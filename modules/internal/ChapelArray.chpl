@@ -488,13 +488,13 @@ module ChapelArray {
       type elemValType = _getLiteralType(elemVal.type);
 
       if elemKeyType != keyType {
-        compilerError("Associative array key element " + ((i+1)/2):string +
+        compilerError("Associative array key element " + (i/2):string +
                        " expected to be of type " + keyType:string +
                        " but is of type " + elemKeyType:string);
       }
 
       if elemValType != valType {
-        compilerError("Associative array value element " + ((i+1)/2):string
+        compilerError("Associative array value element " + (i/2):string
                       + " expected to be of type " + valType:string
                       + " but is of type " + elemValType:string);
       }
