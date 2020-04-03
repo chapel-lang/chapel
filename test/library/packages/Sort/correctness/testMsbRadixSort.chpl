@@ -58,7 +58,7 @@ use BitOps;
        return (-1, 0);
 
      //writef("in intTupleCriterion(%016xu %016xu %u)\n", x(1), x(2), start);
-     return (0, x(start));
+     return (0, x(start-1));
    }
  }
  record stringCriterion {
@@ -112,7 +112,7 @@ use BitOps;
    writef("shellSort- %ht\n", Ar);
    testReverseSorted(Ar, comparator);
 
-   for param i in 1..settingsTuple.size {
+   for param i in 0..settingsTuple.size-1 {
      var s = settingsTuple(i);
      var B = input;
      MSBRadixSort.msbRadixSort(start, end, B, comparator,

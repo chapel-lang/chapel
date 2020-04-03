@@ -8,7 +8,7 @@ i1 = (1,2);
 tuple = i1;
 (i, j) = tuple;
 
-writeln("tuple.1 is ", tuple(1));
-writeln("tuple.2 is ", tuple(2));
+writeln("tuple.1 is ", tuple(0));
+writeln("tuple.2 is ", tuple(1));
 writeln("i is ", i);
 writeln("j is ", j);

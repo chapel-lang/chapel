@@ -1,3 +1,3 @@
 outOfBoundsSlice.chpl:3: error: halt reached - array slice out of bounds
 note: slice index was (11..12, 11..12) but array bounds are (1..9, 1..9)
-note: out of bounds in dimension 1 because slice index 11..12 is not in 1..9
+note: out of bounds in dimension 0 because slice index 11..12 is not in 1..9

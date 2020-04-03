@@ -1585,16 +1585,16 @@ class Matrix {
          n = 1;
       }
       else {
-        m = aDom.high(1);
-        n = aDom.high(2);
+        m = aDom.high(0);
+        n = aDom.high(1);
       }
 
       this.aDom = {1..m, 1..n};
       this.complete();
 
       for i in 1..m {
-         if (this.aDom.high(2) != n) {
-            assert((this.aDom.high(2) != n), "All rows must have the same length.");
+         if (this.aDom.high(1) != n) {
+            assert((this.aDom.high(1) != n), "All rows must have the same length.");
          }
       }
 
@@ -1633,7 +1633,7 @@ class Matrix {
          assert(m*n != vals.domain.high, "Array length must be a multiple of m.");
       }
       var revDom = {1..n, 1..m};
-      for (ij, val) in zip(revDom, vals) { A(ij(2), ij(1)) = val; }
+      for (ij, val) in zip(revDom, vals) { A(ij(1), ij(0)) = val; }
    }
 
    /* Construct a matrix from a copy of a 2-D array.
@@ -1641,8 +1641,8 @@ class Matrix {
    */
 
    proc constructWithCopy(A : [?aDom] real) where aDom.rank == 2 {
-      var m = aDom.high(1);
-      var n = aDom.high(2);
+      var m = aDom.high(0);
+      var n = aDom.high(1);
       var X = new unmanaged Matrix(m,n);
       var C = X.getArray();
 

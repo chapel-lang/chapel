@@ -98,7 +98,7 @@ proc ReplicatedDim.dsiGetPrivatizeData1d() {
 
 // REQ - same purpose as dsiPrivatize()
 proc type ReplicatedDim.dsiPrivatize1d(privatizeData) {
-  return new ReplicatedDim(numLocales = privatizeData(1));
+  return new ReplicatedDim(numLocales = privatizeData(0));
 }
 
 // REQ does this class need -- and provide -- the localLocID?
@@ -143,7 +143,7 @@ proc type Replicated1dom.dsiPrivatize1d(privDist, privatizeData) {
   assert(privDist.locale == here); // sanity check
   return new Replicated1dom(idxType   = this.idxType,
                             stridable = this.stridable,
-                            wholeR    = privatizeData(1));
+                            wholeR    = privatizeData(0));
 }
 
 // REQ - same purpose as dsiGetReprivatizeData()
@@ -153,7 +153,7 @@ proc Replicated1dom.dsiGetReprivatizeData1d() {
 
 // REQ - same purpose as dsiReprivatize()
 proc Replicated1dom.dsiReprivatize1d(reprivatizeData) {
-  this.wholeR = reprivatizeData(1);
+  this.wholeR = reprivatizeData(0);
 }
 
 // REQ does this class need the localLocID?

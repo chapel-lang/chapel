@@ -9,7 +9,7 @@ start();
 
 on Locales[1] {
   for tup in A {
-    for j in 1..tupleLen {
+    for j in 0..#tupleLen {
       tup[j] = 1;
     }
   }

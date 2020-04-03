@@ -1,7 +1,7 @@
 var t : (int, (int, int));
-t(1) = 1;
-t(2)(1) = 2;
-t(2)(2) = 3;
+t(0) = 1;
+t(1)(0) = 2;
+t(1)(1) = 3;
 writeln(t);
 
 var i : int, j : int, k : int;

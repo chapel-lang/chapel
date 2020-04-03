@@ -1,7 +1,7 @@
 class C {
   param rank : int;
   proc this(ii : int ...rank) : int {
-    for i in 1..rank do
+    for i in 0..#rank do
       writeln(ii(i));
     return 4;
   }

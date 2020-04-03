@@ -1904,8 +1904,8 @@ static Expr* preFoldNamed(CallExpr* call) {
         USR_FATAL(call, "illegal type index expression");
       }
 
-      if (index <= 0 || index > at->fields.length-1) {
-        USR_FATAL(call, "type index expression '%i' out of bounds", index);
+      if (index < 0 || index > at->fields.length-2) {
+        USR_FATAL(call, "type index expression '%i' out of bounds (0..%d)", index, at->fields.length-2);
       }
 
       sprintf(field, "x%" PRId64, index);
@@ -2185,16 +2185,15 @@ static Expr* resolveTupleIndexing(CallExpr* call, Symbol* baseVar) {
 
   if (get_int(call->get(3), &index)) {
     sprintf(field, "x%" PRId64, index);
-    if (index <= 0 || index >= baseType->fields.length) {
+    if (index < 0 || index >= baseType->fields.length-1) {
       USR_FATAL_CONT(call, "tuple index %ld is out of bounds", index);
-      if (index == 0) zero_error = true;
+      if (index < 0) zero_error = true;
       error = true;
     }
   } else if (get_uint(call->get(3), &uindex)) {
     sprintf(field, "x%" PRIu64, uindex);
-    if (uindex <= 0 || uindex >= (unsigned long)baseType->fields.length) {
+    if (uindex >= (unsigned long)baseType->fields.length-1) {
       USR_FATAL_CONT(call, "tuple index %lu is out of bounds", uindex);
-      if (uindex == 0) zero_error = true;
       error = true;
     }
   } else {
@@ -2203,10 +2202,10 @@ static Expr* resolveTupleIndexing(CallExpr* call, Symbol* baseVar) {
 
   if (error) {
     if (zero_error)
-      USR_PRINT(call, "tuple elements start at index 1");
+      USR_PRINT(call, "tuple elements start at index 0");
     else
       USR_PRINT(call, "this tuple contains elements %i..%i (inclusive)",
-                1, baseType->fields.length-1);
+                0, baseType->fields.length-2);
     USR_STOP();
   }
 

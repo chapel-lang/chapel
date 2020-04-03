@@ -277,7 +277,7 @@ record VersionInfo {
   proc cmp(other:VersionInfo) {
     const A = (major, minor, bug);
     const B = (other.major, other.minor, other.bug);
-    for i in 1..3 {
+    for i in 0..2 {
       if A(i) > B(i) then return 1;
       else if A(i) < B(i) then return -1;
     }
@@ -286,11 +286,11 @@ record VersionInfo {
 
   proc this(i: int): int {
     select i {
-      when 1 do
+      when 0 do
         return this.major;
-      when 2 do
+      when 1 do
         return this.minor;
-      when 3 do
+      when 2 do
         return this.bug;
       otherwise
         halt('Out of bounds access of VersionInfo');
@@ -334,7 +334,7 @@ private var chplVersionInfo = new VersionInfo(-1, -1, -1);
 proc getChapelVersionInfo(): VersionInfo {
   use Regexp;
 
-  if chplVersionInfo(1) == -1 {
+  if chplVersionInfo(0) == -1 {
     try {
 
       var ret : VersionInfo;
@@ -381,7 +381,7 @@ private var chplVersion = "";
 proc getChapelVersionStr() {
   if chplVersion == "" {
     const version = getChapelVersionInfo();
-    chplVersion = version(1):string + "." + version(2):string + "." + version(3):string;
+    chplVersion = version(0):string + "." + version(1):string + "." + version(2):string;
   }
   return chplVersion;
 }

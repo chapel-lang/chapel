@@ -27,7 +27,7 @@ proc foo() {
   type  retTypes = bar((...arg1s));
   var   retval   : retTypes;
 
-  for param i in 1 .. 3 {
+  for param i in 0 .. 2 {
     retval(i) = arg1s(i).val;
   }
 

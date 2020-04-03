@@ -100,10 +100,10 @@ proc MASON_REGISTRY {
     // Make sure all of the registry names are unique
     for i in 1..registries.size {
       for j in i+1..registries.size {
-        if registries(i)(1) == registries(j)(1) {
+        if registries(i)(0) == registries(j)(0) {
           stderr.writeln("registry names specified in MASON_REGISTRY must be unique:");
-          stderr.writeln(registries(i)(1), " - ", registries(i)(2));
-          stderr.writeln(registries(j)(1), " - ", registries(j)(2));
+          stderr.writeln(registries(i)(0), " - ", registries(i)(1));
+          stderr.writeln(registries(j)(0), " - ", registries(j)(1));
           exit(1);
         }
       }
@@ -150,7 +150,7 @@ proc masonEnv(args) {
         write(",");
       }
       first = false;
-      write(v(1), "|", v(2));
+      write(v(0), "|", v(1));
     }
     writeln(star);
   }

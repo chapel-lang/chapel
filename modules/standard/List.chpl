@@ -1341,7 +1341,7 @@ module List {
 
       coforall tid in 0..#numTasks {
         var chunk = _computeChunk(tid, chunkSize, trailing);
-        for i in chunk(1) do
+        for i in chunk(0) do
           yield this[i + 1];
       }
     }
@@ -1384,7 +1384,7 @@ module List {
       // TODO: A faster scheme would access the _ddata directly to avoid
       // the penalty of logarithmic indexing over and over again.
       //
-      for i in followThis(1) do
+      for i in followThis(0) do
         yield this[i + 1];
     }
 

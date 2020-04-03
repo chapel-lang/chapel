@@ -161,7 +161,7 @@ proc file.absPath(): string throws {
    :type name: `string`
 */
 proc basename(name: string): string {
-   return splitPath(name)[2];
+   return splitPath(name)[1];
 }
 
 /* Determines and returns the longest common path prefix of
@@ -176,7 +176,7 @@ proc basename(name: string): string {
 proc commonPath(paths: string ...?n): string {
   var result: string = "";    // result string
   var inputLength = n;   // size of input array
-  var firstPath = paths(1);
+  var firstPath = paths(0);
   var flag: int = 0;
 
   // if input is empty, return empty string.
@@ -196,7 +196,7 @@ proc commonPath(paths: string ...?n): string {
   var pos = prefixList.size;   // rightmost index of common prefix
   var minPathLength = prefixList.size;
 
-  for i in 2..n do {
+  for i in 1..n-1 do {
 
     var tempList = new list(string);
     for x in paths(i).split(pathSep, -1, false) do
@@ -325,7 +325,7 @@ proc commonPath(paths: []): string {
    :type name: `string`
 */
 proc dirname(name: string): string {
-  return splitPath(name)[1];
+  return splitPath(name)[0];
 }
 
 /* Expands any environment variables in the path of the form ``$<name>`` or

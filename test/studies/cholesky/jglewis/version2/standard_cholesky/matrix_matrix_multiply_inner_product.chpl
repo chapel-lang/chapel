@@ -17,13 +17,13 @@ module matrix_matrix_multiply_inner_product {
     // overwrites the values of A.
     // -----------------------------------------------------------
 
-    assert ( A.domain.dim (1) == L.domain.dim (1) );
+    assert ( A.domain.dim (0) == L.domain.dim (0) );
 
-    const row_range = A.domain.dim (1);
+    const row_range = A.domain.dim (0);
 
-    const AJ_diag_rc_indices     = A.domain.dim (2),
+    const AJ_diag_rc_indices     = A.domain.dim (1),
           AJ_subdiag_row_indices = row_range (AJ_diag_rc_indices.high + 1 ..),
-          L_prev_cols            = L.domain.dim (2);
+          L_prev_cols            = L.domain.dim (1);
 
     //  Symmetric modification to diagonal block, which is symmetric,
     //  so we cannot use a standard matrix-matrix product
@@ -61,13 +61,13 @@ module matrix_matrix_multiply_inner_product {
     // overwrites the values of A.
     // -----------------------------------------------------------
 
-    assert ( A.domain.dim (1) == L.domain.dim (1) );
+    assert ( A.domain.dim (0) == L.domain.dim (0) );
 
-    const row_range = A.domain.dim (1);
+    const row_range = A.domain.dim (0);
 
-    const AJJ_rc_indices        = A.domain.dim (2),
+    const AJJ_rc_indices        = A.domain.dim (1),
           AJ_subdiag_row_indices = row_range (AJJ_rc_indices.high + 1 ..),
-          L_prev_cols            = L.domain.dim (2);
+          L_prev_cols            = L.domain.dim (1);
 
     //  Symmetric modification to diagonal block
 

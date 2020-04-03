@@ -11,7 +11,7 @@ class Test {
   { }                                       // varargs not mentioned in body
   proc dependsOnX(tests: object...)
     lifetime this < tests
-  { writeln(tests(1)); }                    // access a single vararg
+  { writeln(tests(0)); }                    // access a single vararg
   proc dependsOnY(tests: object...)
     lifetime this < tests
   { var quests = tests; writeln(quests); }  // access all varargs collectively

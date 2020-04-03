@@ -3,8 +3,8 @@
 # Custom sub_test to run Arkouda testing. Clones, installs dependencies, builds
 # Arkouda and runs testing.
 
-ARKOUDA_URL=https://github.com/mhmerrill/arkouda.git
-ARKOUDA_BRANCH=master
+ARKOUDA_URL=${ARKOUDA_URL:-https://github.com/mhmerrill/arkouda.git}
+ARKOUDA_BRANCH=${ARKOUDA_BRANCH:-master}
 
 CWD=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
 source $CWD/functions.bash
@@ -21,23 +21,23 @@ rm -rf ${ARKOUDA_HOME}
 
 # Clone Arkouda 
 if ! git clone --depth=1 ${ARKOUDA_URL} --branch=${ARKOUDA_BRANCH} ; then
-  log_error "cloning Arkouda"
+  log_fatal_error "cloning Arkouda"
 fi
 cd ${ARKOUDA_HOME}
 
 # Install dependencies
 if ! nice make -j $($CHPL_HOME/util/buildRelease/chpl-make-cpu_count) install-deps ; then
-  log_error "installing dependencies"
+  log_fatal_error "installing dependencies"
 fi
 
 # Compile Arkouda
 if ! make ; then
-  log_error "compiling arkouda"
+  log_fatal_error "compiling arkouda"
 fi
 
 # Install Arkouda and python dependencies
 if ! pip3 install -e .[test] --user ; then
-  log_error "installing arkouda"
+  log_fatal_error "installing arkouda"
 fi
 
 # Check installation
@@ -45,14 +45,28 @@ test_start "make check"
 if make check ; then
   log_success "make check output"
 else
-  log_error "running make check"
+  test_end "make check"
+  log_fatal_error "running make check"
 fi
 test_end "make check"
 
 # Run benchmarks
 if [ "${CHPL_TEST_ARKOUDA_PERF}" = "true" ] ; then
+  benchmark_opts="--gen-graphs --dat-dir $CHPL_TEST_PERF_DIR --description $CHPL_TEST_PERF_DESCRIPTION --graph-dir $CHPL_TEST_PERF_DIR/html"
+  if [[ -n $CHPL_TEST_PERF_CONFIG_NAME ]]; then
+    benchmark_opts="${benchmark_opts} --platform $CHPL_TEST_PERF_CONFIG_NAME"
+  fi
+  if [[ -n $CHPL_TEST_NUM_TRIALS ]]; then
+    benchmark_opts="${benchmark_opts} --numtrials $CHPL_TEST_NUM_TRIALS"
+  fi
+  if [[ -n $CHPL_TEST_PERF_START_DATE ]]; then
+    benchmark_opts="${benchmark_opts} --start-date $CHPL_TEST_PERF_START_DATE"
+  fi
+  if [[ -n $CHPL_TEST_PERF_CONFIGS ]]; then
+    benchmark_opts="${benchmark_opts} --configs $CHPL_TEST_PERF_CONFIGS"
+  fi
+
   test_start "benchmarks"
-  benchmark_opts="--gen-graphs --dat-dir $CHPL_TEST_PERF_DIR --graph-dir $CHPL_TEST_PERF_DIR/html"
   if ./benchmarks/run_benchmarks.py ${benchmark_opts} ; then
     log_success "benchmark output"
   else

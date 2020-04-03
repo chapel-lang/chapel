@@ -46,13 +46,13 @@ proc simpleDistMultiply(
     // broadcast rows and columns
     forall (locRow, locCol) in localesDom do on myLocales[locRow,locCol] {
         // broadcast A to other locales on the same row
-        forall col in localesDom.dim(2) {
+        forall col in localesDom.dim(1) {
             rowCopies[locRow, col].data[A[locRow, locCol].dom] =
                 A[locRow,locCol].data;
         }
 
         // broadcast B to other locales on the same column
-        forall row in localesDom.dim(1) {
+        forall row in localesDom.dim(0) {
             colCopies[row, locCol].data[B[locRow, locCol].dom] =
                 B[locRow,locCol].data;
         }
@@ -64,9 +64,9 @@ proc simpleDistMultiply(
         ref localB = colCopies[locRow,locCol].data;
         ref localC = C[locRow,locCol].data;
 
-        forall i in localC.domain.dim(1) {
-            forall j in localC.domain.dim(2) {
-                for k in localA.domain.dim(2) {
+        forall i in localC.domain.dim(0) {
+            forall j in localC.domain.dim(1) {
+                for k in localA.domain.dim(1) {
                     localC[i,j] += localA[i,k] * localB[k,j];
                 }
             }

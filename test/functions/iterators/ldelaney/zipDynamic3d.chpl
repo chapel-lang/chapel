@@ -20,7 +20,7 @@ proc main(){
     if (xyz1 != xyz2) then writeln("ZIPPED WRONG");
     else{
       count.add(1);
-      bigArr[xyz1(1)][xyz1(2)][xyz1(3)] += 1;
+      bigArr[xyz1(0)][xyz1(1)][xyz1(2)] += 1;
     }
 
   }
@@ -34,7 +34,7 @@ proc main(){
     if (xyz1 != xyz2) then writeln("ZIPPED WRONG");
     else{
       count.add(1);
-      bigArr[xyz1(1)][xyz1(2)][xyz1(3)] += 2;
+      bigArr[xyz1(0)][xyz1(1)][xyz1(2)] += 2;
     }
   }
   prevCount += count.read();
@@ -47,7 +47,7 @@ proc main(){
     if (xyz1 != xyz2) then writeln("ZIPPED WRONG");
     else{
       count.add(1);
-      bigArr[xyz1(1)][xyz1(2)][xyz1(3)] += 4;
+      bigArr[xyz1(0)][xyz1(1)][xyz1(2)] += 4;
     }
   }
   prevCount += count.read();
@@ -60,7 +60,7 @@ proc main(){
     if (xyz1 != xyz2) then writeln("ZIPPED WRONG");
     else{
       count.add(1);
-      bigArr[xyz1(1)][xyz1(2)][xyz1(3)] += 8;
+      bigArr[xyz1(0)][xyz1(1)][xyz1(2)] += 8;
     }
   }
   writeln("Dynamic multidimensional iter followed ", count.read(), " correct zippered iterations.");

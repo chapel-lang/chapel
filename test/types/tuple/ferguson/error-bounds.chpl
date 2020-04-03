@@ -1,4 +1,4 @@
 var x = (1,2);
 
-writeln(x(3));
+writeln(x(2));
 
