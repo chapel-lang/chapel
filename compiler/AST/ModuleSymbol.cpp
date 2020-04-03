@@ -400,7 +400,7 @@ void ModuleSymbol::printDocs(std::ostream* file,
 
   *file << name << ".[symbol];" << std::endl << std::endl;
 
-  *file << "where [symbol] is the symbol that needs to be imported." << std::endl << std::endl;
+  *file << "(where [symbol] is the symbol that needs to be imported.)" << std::endl << std::endl;
 
   // If we had submodules, be sure to link to them
   if (hasTopLevelModule() == true) {
