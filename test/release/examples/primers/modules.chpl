@@ -119,10 +119,10 @@ module MainModule {
 
     /* Access From Outside a Module
        ----------------------------
-       In multi-module programs, it is common for modules to access
-       the contents of other modules.  The starting point for doing so
-       is the "``use`` statement" in Chapel.  These statements can be
-       inserted at any lexical scope that contains executable code.
+       In multi-module programs, it is common for modules to access the contents
+       of other modules.  The starting point for doing so is the "``use``
+       statement" or the "``import`` statement" in Chapel.  These statements can
+       be inserted at any lexical scope that contains executable code.
 
        By default, a ``use`` statement makes all of a specific
        module's visible symbols available to the scope that contains
@@ -150,6 +150,36 @@ module MainModule {
     // var twiceFoo = 2 * foo;
 
 
+    /* An ``import`` statement, in contrast to a ``use`` statement, either
+       enables qualified access to the visible symbols of a module or enables
+       unqualified access to a specified subset of those symbols.
+
+       This demonstrates an ``import`` that enables qualified access.  In this
+       example, ``bazBarFoo`` should store the result of calling
+       ``modToUse.baz`` on ``modToUse.bar`` and ``modToUse.foo``, which is in
+       this case ``28``.
+    */
+    {
+      import modToUse;
+
+      var bazBarFoo = modToUse.baz(modToUse.bar, modToUse.foo);
+      writeln(bazBarFoo);
+    }
+    /* This case demonstrates an ``import`` that enables unqualified access to
+       a single symbol within ``modToUse``.
+    */
+    {
+      import modToUse.bar;
+
+      writeln(bar);
+    }
+
+    /* ``import`` statements also only affect their containing scope, so
+       similarly the following line would generate an error if uncommented, due
+       to being outside a scope with an import of ``modToUse``.
+    */
+    // var twiceFoo = 2 * modToUse.foo;
+
 
     /* ``use`` statements apply to the entire scope in which they are defined.
        Even if the ``use`` statement occurs after code which would directly
@@ -171,6 +201,23 @@ module MainModule {
       writeln(bazBarFoo);
     }
 
+    /* Similarly, ``import`` statements also apply to the entire scope in which
+       they are defined.  Even if the ``import`` statement occurs after code
+       which would directly refer to its symbols, these references are still
+       valid.
+
+       Thus, the following declaration of ``bazBarFoo`` will store the result of
+       calling ``modToUse.baz`` on ``modToUse.bar`` and ``modToUse.foo``, which
+       is again ``28``.
+    */
+    {
+      var bazBarFoo = modToUse.baz(modToUse.bar, modToUse.foo);
+
+      import modToUse;
+
+      writeln(bazBarFoo);
+    }
+
     /* Modules that are being used can be given a different name than the ones
        they were declared with.  In this example, ``modToUse.bar`` can be
        accessed using the new name, ``other``, as the module prefix.  The old
@@ -186,6 +233,14 @@ module MainModule {
       writeln(bar);
     }
 
+    /* The same is also true of modules that are imported.
+     */
+    {
+      import modToUse as other;
+
+      writeln(other.bar);
+      // writeln(modToUse.bar); // would be an error, modToUse not visible
+    }
 
     /* The symbols provided by a ``use`` statement are only considered when
        the name in question cannot be resolved directly within the local
@@ -197,6 +252,18 @@ module MainModule {
       var bar = 4.0;
 
       use modToUse;
+
+      writeln(bar);
+      // Will output the value of the bar defined in this scope (which is
+      // '4.0'), rather than the value of modToUse.bar (which is '2')
+    }
+
+    /* Again, the same is true of symbols provided by an ``import`` statement.
+     */
+    {
+      var bar = 4.0;
+
+      import modToUse.bar;
 
       writeln(bar);
       // Will output the value of the bar defined in this scope (which is
@@ -225,6 +292,20 @@ module MainModule {
       }
     }
 
+    /* The same is also true of symbols provided by an ``import`` statement.
+     */
+    {
+      var bar = false;
+      {
+
+        import modToUse.bar;
+        writeln(bar);
+        // Will output the value of modToUse.bar (which is '2'), rather
+        // than the value of the bar defined outside of this scope (which
+        // is 'false')
+      }
+    }
+
     /* Multiple modules may be named in a single ``use`` statement  */
     {
       use modToUse, AnotherModule, ThirdModule;
@@ -238,6 +319,11 @@ module MainModule {
       } // Will output modToUse.foo (which is '12')
     }
 
+    /* The only way to import multiple modules in a single statement is to name
+       a shared parent module (TODO - nested modules aren't mentioned until
+       later)
+    */
+
 
     /* Equivalently, a scope may contain multiple ``use`` statements  */
     {
@@ -249,14 +335,35 @@ module MainModule {
       // '12')
     }
 
+    /* A scope may also contain multiple ``import`` statements */
+    {
+      import modToUse.foo;
+      import AnotherModule.a;
 
-    /* In either case, the modules used in this way are considered in concert
+      writeln(a && foo > 15);
+      // outputs false (because AnotherModule.a is 'false' and modToUse.foo is
+      // '12')
+    }
+
+    /* It can even contain a mix of ``import`` and ``use`` statements */
+    {
+      use modToUse;
+      import AnotherModule.a;
+
+      writeln(a && foo > 15);
+      // outputs false (because AnotherModule.a is 'false' and modToUse.foo is
+      // '12')
+    }
+
+
+    /* In any case, the modules referenced in this way are considered in concert
        (after symbols defined at this scope but before symbols defined outside
        of it) - the ordering within a ``use`` statement or across multiple
-       ``use`` statements does not affect the precedence of symbols that share
-       a name. This means that if two modules each define a symbol with the
-       same name, and both modules are used at the same scope, attempts to
-       access a symbol by that name will result in a naming conflict.
+       ``use`` or ``import`` statements does not affect the precedence of
+       symbols that share a name. This means that if two modules each define a
+       symbol with the same name, and both modules are brought in at the same
+       scope, attempts to access a symbol by that name will result in a naming
+       conflict.
 
        The commented-out line below would fail because both ``modToUse`` and
        ``Conflict`` define a symbol named ``bar``:
@@ -313,6 +420,21 @@ module MainModule {
     {
       use modToUse;
       use Conflict only other, another;
+
+      writeln(foo); // Outputs modToUse.foo ('12')
+      writeln(bar); // Outputs modToUse.bar ('2')
+      writeln(other); // Outputs Conflict.other ('5.0 + 3.0i')
+    }
+
+    /* ``import`` statements for unqualified access are somewhat similar to
+       ``only`` lists on ``use`` statements, though the syntax is different.
+       We saw how to ``import`` a single symbol for unqualified access earlier,
+       so this example demonstrates how to ``import`` multiple symbols for
+       unqualified access
+    */
+    {
+      use modToUse;
+      import Conflict.{other, another};
 
       writeln(foo); // Outputs modToUse.foo ('12')
       writeln(bar); // Outputs modToUse.bar ('2')
