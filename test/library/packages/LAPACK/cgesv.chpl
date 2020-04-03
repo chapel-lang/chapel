@@ -224,10 +224,10 @@ proc main(){
   var gesv_row_major_result = gesv_row_major_test();
   var gesv_col_major_result = gesv_col_major_test();
   
-  writeln( "LAPACK_cgesv ", if LAPACK_cgesv_result[1] then "passed" else "FAILED!" );
-  writeln( "LAPACKE_cgesv_row_major ", if LAPACKE_cgesv_row_major_result[1] then "passed" else "FAILED!" );
-  writeln( "LAPACKE_cgesv_col_major ", if LAPACKE_cgesv_col_major_result[1] then "passed" else "FAILED!" );
-  writeln( "gesv_row_major ", if gesv_row_major_result[1] then "passed" else "FAILED!" );
-  writeln( "gesv_col_major ", if gesv_col_major_result[1] then "passed" else "FAILED!" );
+  writeln( "LAPACK_cgesv ", if LAPACK_cgesv_result[0] then "passed" else "FAILED!" );
+  writeln( "LAPACKE_cgesv_row_major ", if LAPACKE_cgesv_row_major_result[0] then "passed" else "FAILED!" );
+  writeln( "LAPACKE_cgesv_col_major ", if LAPACKE_cgesv_col_major_result[0] then "passed" else "FAILED!" );
+  writeln( "gesv_row_major ", if gesv_row_major_result[0] then "passed" else "FAILED!" );
+  writeln( "gesv_col_major ", if gesv_col_major_result[0] then "passed" else "FAILED!" );
 
 }

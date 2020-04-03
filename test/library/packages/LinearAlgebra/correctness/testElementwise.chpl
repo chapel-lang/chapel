@@ -33,7 +33,7 @@ proc print_sparsearr(A: [?D] ?eltType) {
     else
       write(". ");
 
-    if (j == D.shape(2)) then writeln();
+    if (j == D.shape(1)) then writeln();
   }
 }
 
