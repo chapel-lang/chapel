@@ -89,7 +89,7 @@ proc canPlaceQueen(board, row, col) {
   // Horizontal - Left/Right
   var x = 1;
   while x <= nQueens {
-    if board[x] == col then return false;
+    if board[x-1] == col then return false;
     x = x + 1;
   }
 
@@ -99,7 +99,7 @@ proc canPlaceQueen(board, row, col) {
   x = row + 1;
   var y = col + 1;
   while x <= nQueens && y <= nQueens {
-    if board[x] == y then return false;
+    if board[x-1] == y then return false;
 
     x = x + 1;
     y = y + 1;
@@ -109,7 +109,7 @@ proc canPlaceQueen(board, row, col) {
   x = row - 1;
   y = col - 1;
   while x > 0 && y > 0 {
-    if board[x] == y then return false;
+    if board[x-1] == y then return false;
     x = x - 1;
     y = y - 1;
   }
@@ -118,7 +118,7 @@ proc canPlaceQueen(board, row, col) {
   x = row - 1;
   y = col + 1;
   while x > 0 && y <= nQueens {
-    if board[x] == y then return false;
+    if board[x-1] == y then return false;
     x = x - 1;
     y = y + 1;
   }
@@ -127,7 +127,7 @@ proc canPlaceQueen(board, row, col) {
   x = row + 1;
   y = col - 1;
   while x <= nQueens && y > 0 {
-    if board[x] == y then return false;
+    if board[x-1] == y then return false;
     x = x + 1;
     y = y - 1;
   }
@@ -181,7 +181,7 @@ coforall loc in Locales do on loc {
       for j in 1..nQueens {
         if canPlaceQueen(myBoard, firstEmptyRow, j) {
           var newBoard = myBoard;
-          newBoard[firstEmptyRow] = j;
+          newBoard[firstEmptyRow-1] = j;
           c.add(newBoard);
         }
       }

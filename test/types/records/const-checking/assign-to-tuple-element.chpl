@@ -3,7 +3,7 @@ proc intfn(const ref arg: int) {
   arg = 0;
 }
 proc tupfn(arg: 1*int) {
-  arg(1) = 0;
+  arg(0) = 0;
 }
 
 
@@ -15,5 +15,5 @@ proc main() {
   tupfn(tup);
 
   writeln(i);
-  writeln(tup(1));
+  writeln(tup(0));
 }

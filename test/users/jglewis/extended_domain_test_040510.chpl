@@ -23,8 +23,8 @@ module SSCA2_main
     const extended_domain = vertex_domain.expand(1);
     var   torus_vertex : [extended_domain] vertex = extended_domain;
 
-    const h1 = vertex_domain.high (1), l1 = vertex_domain.low (1);
-    const h2 = vertex_domain.high (2), l2 = vertex_domain.low (2);
+    const h1 = vertex_domain.high (0), l1 = vertex_domain.low (0);
+    const h2 = vertex_domain.high (1), l2 = vertex_domain.low (1);
 
     // torus_vertex wraps the torus with an additional plane in each dimension
     // fill in the wrap-around vertices in the ghost cells

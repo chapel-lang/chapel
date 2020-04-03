@@ -17,7 +17,7 @@ writeln("V is: ", V);
 
 
 proc bitReverse(W: [?WD] complex) {
-  const n = WD.dim(1).size;
+  const n = WD.dim(0).size;
   const reverse = log2(n);
   var V: [WD] complex;
   for i in WD {

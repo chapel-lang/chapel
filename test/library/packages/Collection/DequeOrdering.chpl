@@ -80,7 +80,7 @@ for i in 0 .. #nElems {
 // Sanity Check: Ensures size is correct
 assert(deque.size == 0 && deque.isEmpty());
 // Sanity Check: Ensures that we handle being empty.
-hasElem = deque.pop()[1];
+hasElem = deque.pop()[0];
 assert(deque.size == 0 && deque.isEmpty() && !hasElem);
 
 // Total Ordering Test

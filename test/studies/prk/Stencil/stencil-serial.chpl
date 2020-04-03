@@ -27,8 +27,7 @@ const activePoints = (order-2*R)*(order-2*R),
 
 param stencilSize = 4*R + 1,
       weightSize = 2*R + 1,
-      Wsize = 2*R + 1,
-      R1 = R+1;
+      Wsize = 2*R + 1;
 
 var timer: Timer;
 
@@ -75,10 +74,10 @@ var weight: Wsize*(Wsize*(dtype));
 // Set up weight matrix
 for i in 1..R {
   const element : dtype = 1 / (2*i*R) : dtype;
-  weight[R1][R1+i]  =  element;
-  weight[R1+i][R1]  =  element;
-  weight[R1-i][R1] = -element;
-  weight[R1][R1-i] = -element;
+  weight[R][R+i]  =  element;
+  weight[R+i][R]  =  element;
+  weight[R-i][R] = -element;
+  weight[R][R-i] = -element;
 }
 
 // Initialize the input and output arrays
@@ -114,13 +113,13 @@ for iteration in 0..iterations {
     for (i,j) in innerDom {
       var tmpout: dtype = 0.0;
       if (!compact) {
-        for param jj in -R..-1 do tmpout += weight[R1][R1+jj] * input[i, j+jj];
-        for param jj in 1..R   do tmpout += weight[R1][R1+jj] * input[i, j+jj];
-        for param ii in -R..-1 do tmpout += weight[R1+ii][R1] * input[i+ii, j];
-        for param ii in 1..R   do tmpout += weight[R1+ii][R1] * input[i+ii, j];
+        for param jj in -R..-1 do tmpout += weight[R][R+jj] * input[i, j+jj];
+        for param jj in 1..R   do tmpout += weight[R][R+jj] * input[i, j+jj];
+        for param ii in -R..-1 do tmpout += weight[R+ii][R] * input[i+ii, j];
+        for param ii in 1..R   do tmpout += weight[R+ii][R] * input[i+ii, j];
       } else {
         for (ii, jj) in weightDom do
-          tmpout += weight[R1+ii][R1+jj] * input[i+ii, j+jj];
+          tmpout += weight[R+ii][R+jj] * input[i+ii, j+jj];
       }
       output[i, j] += tmpout;
     }
@@ -130,13 +129,13 @@ for iteration in 0..iterations {
         for j in jt .. # min(order - R - jt, tileSize) {
           var tmpout: dtype = 0.0;
           if (!compact) {
-            for param jj in -R..-1 do tmpout += weight[R1][R1+jj] * input[i, j+jj];
-            for param jj in 1..R   do tmpout += weight[R1][R1+jj] * input[i, j+jj];
-            for param ii in -R..-1 do tmpout += weight[R1+ii][R1] * input[i+ii, j];
-            for param ii in 1..R   do tmpout += weight[R1+ii][R1] * input[i+ii, j];
+            for param jj in -R..-1 do tmpout += weight[R][R+jj] * input[i, j+jj];
+            for param jj in 1..R   do tmpout += weight[R][R+jj] * input[i, j+jj];
+            for param ii in -R..-1 do tmpout += weight[R+ii][R] * input[i+ii, j];
+            for param ii in 1..R   do tmpout += weight[R+ii][R] * input[i+ii, j];
           } else {
             for (ii, jj) in weightDom do
-              tmpout += weight[R1+ii][R1+jj] * input[i+ii, j+jj];
+              tmpout += weight[R+ii][R+jj] * input[i+ii, j+jj];
           }
           output[i, j] += tmpout;
         }

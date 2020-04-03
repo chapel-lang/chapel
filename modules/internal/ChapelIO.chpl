@@ -467,7 +467,7 @@ module ChapelIO {
           var hasReadFieldName = false;
 
           for param i in 1..numFields {
-            if !isIoField(x, i) || hasReadFieldName || readField[i] then
+            if !isIoField(x, i) || hasReadFieldName || readField[i-1] then
               continue;
 
             var fieldName = ioFieldNameLiteral(reader, t, i);
@@ -490,7 +490,7 @@ module ChapelIO {
             try reader.readwrite(equalSign);
 
             try reader.readwrite(__primitive("field by num", x, i));
-            readField[i] = true;
+            readField[i-1] = true;
             numRead += 1;
           }
 
@@ -750,8 +750,8 @@ module ChapelIO {
       f <~> start;
     }
     if size != 0 {
-      f <~> this(1);
-      for param i in 2..size {
+      f <~> this(0);
+      for param i in 1..size-1 {
         if !binary {
           f <~> comma;
         }

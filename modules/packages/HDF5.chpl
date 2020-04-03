@@ -3597,13 +3597,13 @@ module HDF5 {
 
     var data = readAllNamedHDF5Files(Locales, filenames2D, dsetName,
                                      int, rank=2, preprocessor=preprocessor);
-    const rows = + reduce [subset in data[.., 1]] subset.D.dim(1).size;
-    const cols = + reduce [subset in data[1, ..]] subset.D.dim(2).size;
+    const rows = + reduce [subset in data[.., 1]] subset.D.dim(0).size;
+    const cols = + reduce [subset in data[1, ..]] subset.D.dim(1).size;
 
     var A: [1..rows, 1..cols] int;
 
-    const rowsPerFile = data(1,1).D.dim(1).size,
-          colsPerFile = data(1,1).D.dim(2).size;
+    const rowsPerFile = data(1,1).D.dim(0).size,
+          colsPerFile = data(1,1).D.dim(1).size;
     for (row, col) in data.domain {
       const startRow = (row-1)*rowsPerFile+1, endRow = row*rowsPerFile,
             startCol = (col-1)*colsPerFile+1, endCol = col*colsPerFile;
@@ -3704,7 +3704,7 @@ module HDF5 {
       }
       var dims: [0..#rank] C_HDF5.hsize_t;
       for param i in 0..rank-1 {
-        dims[i] = arr.D.dim(i+1).size: C_HDF5.hsize_t;
+        dims[i] = arr.D.dim(i).size: C_HDF5.hsize_t;
       }
       C_HDF5.HDF5_WAR.H5LTmake_dataset_WAR(file_id, dsetName.c_str(), rank,
                                            c_ptrTo(dims),
@@ -4085,13 +4085,13 @@ module HDF5 {
 
           // Arrays to represent locations with the file
           var dsetOffsetArr, dsetCountArr,
-              dsetStrideArr: [1..dom.rank] C_HDF5.hsize_t;
+              dsetStrideArr: [0..#dom.rank] C_HDF5.hsize_t;
 
           // Arrays to represent locations in the distributed array
           var memOffsetArr, memCountArr,
-              memStrideArr: [1..dom.rank] C_HDF5.hsize_t;
+              memStrideArr: [0..#dom.rank] C_HDF5.hsize_t;
 
-          for param i in 1..dom.rank {
+          for param i in 0..dom.rank-1 {
             dsetOffsetArr[i] = dsetBlock.dim(i).low: C_HDF5.hsize_t;
             dsetCountArr[i]  = dsetBlock.dim(i).size: C_HDF5.hsize_t;
             dsetStrideArr[i] = dsetBlock.dim(i).stride: C_HDF5.hsize_t;

@@ -1,241 +1,241 @@
 tuple-vararg-in-lt-clause.errors.chpl:41: In function 'main':
 tuple-vararg-in-lt-clause.errors.chpl:48: error: Actual argument obj does not meet called function lifetime constraint
 tuple-vararg-in-lt-clause.errors.chpl:45: note: consider result here
-tuple-vararg-in-lt-clause.errors.chpl:9: note: called function Test.dependsOnN1(_e1_tests: borrowed object)
-tuple-vararg-in-lt-clause.errors.chpl:9: note: includes lifetime constraint this < _e1_tests
+tuple-vararg-in-lt-clause.errors.chpl:9: note: called function Test.dependsOnN1(_e0_tests: borrowed object)
+tuple-vararg-in-lt-clause.errors.chpl:9: note: includes lifetime constraint this < _e0_tests
 tuple-vararg-in-lt-clause.errors.chpl:50: error: Actual argument obj does not meet called function lifetime constraint
 tuple-vararg-in-lt-clause.errors.chpl:45: note: consider result here
-tuple-vararg-in-lt-clause.errors.chpl:9: note: called function Test.dependsOnN1(_e1_tests: borrowed object, _e2_tests: borrowed object)
-tuple-vararg-in-lt-clause.errors.chpl:9: note: includes lifetime constraint this < _e1_tests
+tuple-vararg-in-lt-clause.errors.chpl:9: note: called function Test.dependsOnN1(_e0_tests: borrowed object, _e1_tests: borrowed object)
+tuple-vararg-in-lt-clause.errors.chpl:9: note: includes lifetime constraint this < _e0_tests
 tuple-vararg-in-lt-clause.errors.chpl:50: error: Actual argument obj does not meet called function lifetime constraint
 tuple-vararg-in-lt-clause.errors.chpl:45: note: consider result here
-tuple-vararg-in-lt-clause.errors.chpl:9: note: called function Test.dependsOnN1(_e1_tests: borrowed object, _e2_tests: borrowed object)
-tuple-vararg-in-lt-clause.errors.chpl:9: note: includes lifetime constraint this < _e2_tests
+tuple-vararg-in-lt-clause.errors.chpl:9: note: called function Test.dependsOnN1(_e0_tests: borrowed object, _e1_tests: borrowed object)
+tuple-vararg-in-lt-clause.errors.chpl:9: note: includes lifetime constraint this < _e1_tests
 tuple-vararg-in-lt-clause.errors.chpl:51: error: Actual argument obj does not meet called function lifetime constraint
 tuple-vararg-in-lt-clause.errors.chpl:45: note: consider result here
-tuple-vararg-in-lt-clause.errors.chpl:9: note: called function Test.dependsOnN1(_e1_tests: borrowed object, _e2_tests: borrowed object)
-tuple-vararg-in-lt-clause.errors.chpl:9: note: includes lifetime constraint this < _e1_tests
+tuple-vararg-in-lt-clause.errors.chpl:9: note: called function Test.dependsOnN1(_e0_tests: borrowed object, _e1_tests: borrowed object)
+tuple-vararg-in-lt-clause.errors.chpl:9: note: includes lifetime constraint this < _e0_tests
 tuple-vararg-in-lt-clause.errors.chpl:52: error: Actual argument obj does not meet called function lifetime constraint
 tuple-vararg-in-lt-clause.errors.chpl:45: note: consider result here
-tuple-vararg-in-lt-clause.errors.chpl:9: note: called function Test.dependsOnN1(_e1_tests: borrowed object, _e2_tests: borrowed object)
-tuple-vararg-in-lt-clause.errors.chpl:9: note: includes lifetime constraint this < _e2_tests
+tuple-vararg-in-lt-clause.errors.chpl:9: note: called function Test.dependsOnN1(_e0_tests: borrowed object, _e1_tests: borrowed object)
+tuple-vararg-in-lt-clause.errors.chpl:9: note: includes lifetime constraint this < _e1_tests
 tuple-vararg-in-lt-clause.errors.chpl:56: error: Actual argument obj does not meet called function lifetime constraint
 tuple-vararg-in-lt-clause.errors.chpl:45: note: consider result here
-tuple-vararg-in-lt-clause.errors.chpl:12: note: called function Test.dependsOnX1(_e1_tests: borrowed object)
-tuple-vararg-in-lt-clause.errors.chpl:12: note: includes lifetime constraint this < _e1_tests
+tuple-vararg-in-lt-clause.errors.chpl:12: note: called function Test.dependsOnX1(_e0_tests: borrowed object)
+tuple-vararg-in-lt-clause.errors.chpl:12: note: includes lifetime constraint this < _e0_tests
 tuple-vararg-in-lt-clause.errors.chpl:58: error: Actual argument obj does not meet called function lifetime constraint
 tuple-vararg-in-lt-clause.errors.chpl:45: note: consider result here
-tuple-vararg-in-lt-clause.errors.chpl:12: note: called function Test.dependsOnX1(_e1_tests: borrowed object, _e2_tests: borrowed object)
-tuple-vararg-in-lt-clause.errors.chpl:12: note: includes lifetime constraint this < _e1_tests
+tuple-vararg-in-lt-clause.errors.chpl:12: note: called function Test.dependsOnX1(_e0_tests: borrowed object, _e1_tests: borrowed object)
+tuple-vararg-in-lt-clause.errors.chpl:12: note: includes lifetime constraint this < _e0_tests
 tuple-vararg-in-lt-clause.errors.chpl:58: error: Actual argument obj does not meet called function lifetime constraint
 tuple-vararg-in-lt-clause.errors.chpl:45: note: consider result here
-tuple-vararg-in-lt-clause.errors.chpl:12: note: called function Test.dependsOnX1(_e1_tests: borrowed object, _e2_tests: borrowed object)
-tuple-vararg-in-lt-clause.errors.chpl:12: note: includes lifetime constraint this < _e2_tests
+tuple-vararg-in-lt-clause.errors.chpl:12: note: called function Test.dependsOnX1(_e0_tests: borrowed object, _e1_tests: borrowed object)
+tuple-vararg-in-lt-clause.errors.chpl:12: note: includes lifetime constraint this < _e1_tests
 tuple-vararg-in-lt-clause.errors.chpl:59: error: Actual argument obj does not meet called function lifetime constraint
 tuple-vararg-in-lt-clause.errors.chpl:45: note: consider result here
-tuple-vararg-in-lt-clause.errors.chpl:12: note: called function Test.dependsOnX1(_e1_tests: borrowed object, _e2_tests: borrowed object)
-tuple-vararg-in-lt-clause.errors.chpl:12: note: includes lifetime constraint this < _e1_tests
+tuple-vararg-in-lt-clause.errors.chpl:12: note: called function Test.dependsOnX1(_e0_tests: borrowed object, _e1_tests: borrowed object)
+tuple-vararg-in-lt-clause.errors.chpl:12: note: includes lifetime constraint this < _e0_tests
 tuple-vararg-in-lt-clause.errors.chpl:60: error: Actual argument obj does not meet called function lifetime constraint
 tuple-vararg-in-lt-clause.errors.chpl:45: note: consider result here
-tuple-vararg-in-lt-clause.errors.chpl:12: note: called function Test.dependsOnX1(_e1_tests: borrowed object, _e2_tests: borrowed object)
-tuple-vararg-in-lt-clause.errors.chpl:12: note: includes lifetime constraint this < _e2_tests
+tuple-vararg-in-lt-clause.errors.chpl:12: note: called function Test.dependsOnX1(_e0_tests: borrowed object, _e1_tests: borrowed object)
+tuple-vararg-in-lt-clause.errors.chpl:12: note: includes lifetime constraint this < _e1_tests
 tuple-vararg-in-lt-clause.errors.chpl:64: error: Actual argument obj does not meet called function lifetime constraint
 tuple-vararg-in-lt-clause.errors.chpl:45: note: consider result here
-tuple-vararg-in-lt-clause.errors.chpl:15: note: called function Test.dependsOnY1(_e1_tests: borrowed object)
-tuple-vararg-in-lt-clause.errors.chpl:15: note: includes lifetime constraint this < _e1_tests
+tuple-vararg-in-lt-clause.errors.chpl:15: note: called function Test.dependsOnY1(_e0_tests: borrowed object)
+tuple-vararg-in-lt-clause.errors.chpl:15: note: includes lifetime constraint this < _e0_tests
 tuple-vararg-in-lt-clause.errors.chpl:66: error: Actual argument obj does not meet called function lifetime constraint
 tuple-vararg-in-lt-clause.errors.chpl:45: note: consider result here
-tuple-vararg-in-lt-clause.errors.chpl:15: note: called function Test.dependsOnY1(_e1_tests: borrowed object, _e2_tests: borrowed object)
-tuple-vararg-in-lt-clause.errors.chpl:15: note: includes lifetime constraint this < _e1_tests
+tuple-vararg-in-lt-clause.errors.chpl:15: note: called function Test.dependsOnY1(_e0_tests: borrowed object, _e1_tests: borrowed object)
+tuple-vararg-in-lt-clause.errors.chpl:15: note: includes lifetime constraint this < _e0_tests
 tuple-vararg-in-lt-clause.errors.chpl:66: error: Actual argument obj does not meet called function lifetime constraint
 tuple-vararg-in-lt-clause.errors.chpl:45: note: consider result here
-tuple-vararg-in-lt-clause.errors.chpl:15: note: called function Test.dependsOnY1(_e1_tests: borrowed object, _e2_tests: borrowed object)
-tuple-vararg-in-lt-clause.errors.chpl:15: note: includes lifetime constraint this < _e2_tests
+tuple-vararg-in-lt-clause.errors.chpl:15: note: called function Test.dependsOnY1(_e0_tests: borrowed object, _e1_tests: borrowed object)
+tuple-vararg-in-lt-clause.errors.chpl:15: note: includes lifetime constraint this < _e1_tests
 tuple-vararg-in-lt-clause.errors.chpl:67: error: Actual argument obj does not meet called function lifetime constraint
 tuple-vararg-in-lt-clause.errors.chpl:45: note: consider result here
-tuple-vararg-in-lt-clause.errors.chpl:15: note: called function Test.dependsOnY1(_e1_tests: borrowed object, _e2_tests: borrowed object)
-tuple-vararg-in-lt-clause.errors.chpl:15: note: includes lifetime constraint this < _e1_tests
+tuple-vararg-in-lt-clause.errors.chpl:15: note: called function Test.dependsOnY1(_e0_tests: borrowed object, _e1_tests: borrowed object)
+tuple-vararg-in-lt-clause.errors.chpl:15: note: includes lifetime constraint this < _e0_tests
 tuple-vararg-in-lt-clause.errors.chpl:68: error: Actual argument obj does not meet called function lifetime constraint
 tuple-vararg-in-lt-clause.errors.chpl:45: note: consider result here
-tuple-vararg-in-lt-clause.errors.chpl:15: note: called function Test.dependsOnY1(_e1_tests: borrowed object, _e2_tests: borrowed object)
-tuple-vararg-in-lt-clause.errors.chpl:15: note: includes lifetime constraint this < _e2_tests
+tuple-vararg-in-lt-clause.errors.chpl:15: note: called function Test.dependsOnY1(_e0_tests: borrowed object, _e1_tests: borrowed object)
+tuple-vararg-in-lt-clause.errors.chpl:15: note: includes lifetime constraint this < _e1_tests
 tuple-vararg-in-lt-clause.errors.chpl:72: error: Actual argument obj does not meet called function lifetime constraint
 tuple-vararg-in-lt-clause.errors.chpl:45: note: consider result here
-tuple-vararg-in-lt-clause.errors.chpl:20: note: called function Test.dependsOnN2(_e1_tests: borrowed object)
-tuple-vararg-in-lt-clause.errors.chpl:20: note: includes lifetime constraint _e1_tests > this
-tuple-vararg-in-lt-clause.errors.chpl:20: note: called function Test.dependsOnN2(_e1_tests: borrowed object)
-tuple-vararg-in-lt-clause.errors.chpl:20: note: includes lifetime constraint this < _e1_tests
+tuple-vararg-in-lt-clause.errors.chpl:20: note: called function Test.dependsOnN2(_e0_tests: borrowed object)
+tuple-vararg-in-lt-clause.errors.chpl:20: note: includes lifetime constraint _e0_tests > this
+tuple-vararg-in-lt-clause.errors.chpl:20: note: called function Test.dependsOnN2(_e0_tests: borrowed object)
+tuple-vararg-in-lt-clause.errors.chpl:20: note: includes lifetime constraint this < _e0_tests
 tuple-vararg-in-lt-clause.errors.chpl:74: error: Actual argument obj does not meet called function lifetime constraint
 tuple-vararg-in-lt-clause.errors.chpl:45: note: consider result here
-tuple-vararg-in-lt-clause.errors.chpl:20: note: called function Test.dependsOnN2(_e1_tests: borrowed object, _e2_tests: borrowed object)
-tuple-vararg-in-lt-clause.errors.chpl:20: note: includes lifetime constraint _e1_tests > this
-tuple-vararg-in-lt-clause.errors.chpl:20: note: called function Test.dependsOnN2(_e1_tests: borrowed object, _e2_tests: borrowed object)
-tuple-vararg-in-lt-clause.errors.chpl:20: note: includes lifetime constraint this < _e1_tests
+tuple-vararg-in-lt-clause.errors.chpl:20: note: called function Test.dependsOnN2(_e0_tests: borrowed object, _e1_tests: borrowed object)
+tuple-vararg-in-lt-clause.errors.chpl:20: note: includes lifetime constraint _e0_tests > this
+tuple-vararg-in-lt-clause.errors.chpl:20: note: called function Test.dependsOnN2(_e0_tests: borrowed object, _e1_tests: borrowed object)
+tuple-vararg-in-lt-clause.errors.chpl:20: note: includes lifetime constraint this < _e0_tests
 tuple-vararg-in-lt-clause.errors.chpl:74: error: Actual argument obj does not meet called function lifetime constraint
 tuple-vararg-in-lt-clause.errors.chpl:45: note: consider result here
-tuple-vararg-in-lt-clause.errors.chpl:20: note: called function Test.dependsOnN2(_e1_tests: borrowed object, _e2_tests: borrowed object)
-tuple-vararg-in-lt-clause.errors.chpl:20: note: includes lifetime constraint _e2_tests > this
-tuple-vararg-in-lt-clause.errors.chpl:20: note: called function Test.dependsOnN2(_e1_tests: borrowed object, _e2_tests: borrowed object)
-tuple-vararg-in-lt-clause.errors.chpl:20: note: includes lifetime constraint this < _e2_tests
+tuple-vararg-in-lt-clause.errors.chpl:20: note: called function Test.dependsOnN2(_e0_tests: borrowed object, _e1_tests: borrowed object)
+tuple-vararg-in-lt-clause.errors.chpl:20: note: includes lifetime constraint _e1_tests > this
+tuple-vararg-in-lt-clause.errors.chpl:20: note: called function Test.dependsOnN2(_e0_tests: borrowed object, _e1_tests: borrowed object)
+tuple-vararg-in-lt-clause.errors.chpl:20: note: includes lifetime constraint this < _e1_tests
 tuple-vararg-in-lt-clause.errors.chpl:75: error: Actual argument obj does not meet called function lifetime constraint
 tuple-vararg-in-lt-clause.errors.chpl:45: note: consider result here
-tuple-vararg-in-lt-clause.errors.chpl:20: note: called function Test.dependsOnN2(_e1_tests: borrowed object, _e2_tests: borrowed object)
-tuple-vararg-in-lt-clause.errors.chpl:20: note: includes lifetime constraint _e1_tests > this
-tuple-vararg-in-lt-clause.errors.chpl:20: note: called function Test.dependsOnN2(_e1_tests: borrowed object, _e2_tests: borrowed object)
-tuple-vararg-in-lt-clause.errors.chpl:20: note: includes lifetime constraint this < _e1_tests
+tuple-vararg-in-lt-clause.errors.chpl:20: note: called function Test.dependsOnN2(_e0_tests: borrowed object, _e1_tests: borrowed object)
+tuple-vararg-in-lt-clause.errors.chpl:20: note: includes lifetime constraint _e0_tests > this
+tuple-vararg-in-lt-clause.errors.chpl:20: note: called function Test.dependsOnN2(_e0_tests: borrowed object, _e1_tests: borrowed object)
+tuple-vararg-in-lt-clause.errors.chpl:20: note: includes lifetime constraint this < _e0_tests
 tuple-vararg-in-lt-clause.errors.chpl:76: error: Actual argument obj does not meet called function lifetime constraint
 tuple-vararg-in-lt-clause.errors.chpl:45: note: consider result here
-tuple-vararg-in-lt-clause.errors.chpl:20: note: called function Test.dependsOnN2(_e1_tests: borrowed object, _e2_tests: borrowed object)
-tuple-vararg-in-lt-clause.errors.chpl:20: note: includes lifetime constraint _e2_tests > this
-tuple-vararg-in-lt-clause.errors.chpl:20: note: called function Test.dependsOnN2(_e1_tests: borrowed object, _e2_tests: borrowed object)
-tuple-vararg-in-lt-clause.errors.chpl:20: note: includes lifetime constraint this < _e2_tests
+tuple-vararg-in-lt-clause.errors.chpl:20: note: called function Test.dependsOnN2(_e0_tests: borrowed object, _e1_tests: borrowed object)
+tuple-vararg-in-lt-clause.errors.chpl:20: note: includes lifetime constraint _e1_tests > this
+tuple-vararg-in-lt-clause.errors.chpl:20: note: called function Test.dependsOnN2(_e0_tests: borrowed object, _e1_tests: borrowed object)
+tuple-vararg-in-lt-clause.errors.chpl:20: note: includes lifetime constraint this < _e1_tests
 tuple-vararg-in-lt-clause.errors.chpl:80: error: Actual argument obj does not meet called function lifetime constraint
 tuple-vararg-in-lt-clause.errors.chpl:45: note: consider result here
-tuple-vararg-in-lt-clause.errors.chpl:23: note: called function Test.dependsOnX2(_e1_tests: borrowed object)
-tuple-vararg-in-lt-clause.errors.chpl:23: note: includes lifetime constraint _e1_tests > this
-tuple-vararg-in-lt-clause.errors.chpl:23: note: called function Test.dependsOnX2(_e1_tests: borrowed object)
-tuple-vararg-in-lt-clause.errors.chpl:23: note: includes lifetime constraint this < _e1_tests
+tuple-vararg-in-lt-clause.errors.chpl:23: note: called function Test.dependsOnX2(_e0_tests: borrowed object)
+tuple-vararg-in-lt-clause.errors.chpl:23: note: includes lifetime constraint _e0_tests > this
+tuple-vararg-in-lt-clause.errors.chpl:23: note: called function Test.dependsOnX2(_e0_tests: borrowed object)
+tuple-vararg-in-lt-clause.errors.chpl:23: note: includes lifetime constraint this < _e0_tests
 tuple-vararg-in-lt-clause.errors.chpl:82: error: Actual argument obj does not meet called function lifetime constraint
 tuple-vararg-in-lt-clause.errors.chpl:45: note: consider result here
-tuple-vararg-in-lt-clause.errors.chpl:23: note: called function Test.dependsOnX2(_e1_tests: borrowed object, _e2_tests: borrowed object)
-tuple-vararg-in-lt-clause.errors.chpl:23: note: includes lifetime constraint _e1_tests > this
-tuple-vararg-in-lt-clause.errors.chpl:23: note: called function Test.dependsOnX2(_e1_tests: borrowed object, _e2_tests: borrowed object)
-tuple-vararg-in-lt-clause.errors.chpl:23: note: includes lifetime constraint this < _e1_tests
+tuple-vararg-in-lt-clause.errors.chpl:23: note: called function Test.dependsOnX2(_e0_tests: borrowed object, _e1_tests: borrowed object)
+tuple-vararg-in-lt-clause.errors.chpl:23: note: includes lifetime constraint _e0_tests > this
+tuple-vararg-in-lt-clause.errors.chpl:23: note: called function Test.dependsOnX2(_e0_tests: borrowed object, _e1_tests: borrowed object)
+tuple-vararg-in-lt-clause.errors.chpl:23: note: includes lifetime constraint this < _e0_tests
 tuple-vararg-in-lt-clause.errors.chpl:82: error: Actual argument obj does not meet called function lifetime constraint
 tuple-vararg-in-lt-clause.errors.chpl:45: note: consider result here
-tuple-vararg-in-lt-clause.errors.chpl:23: note: called function Test.dependsOnX2(_e1_tests: borrowed object, _e2_tests: borrowed object)
-tuple-vararg-in-lt-clause.errors.chpl:23: note: includes lifetime constraint _e2_tests > this
-tuple-vararg-in-lt-clause.errors.chpl:23: note: called function Test.dependsOnX2(_e1_tests: borrowed object, _e2_tests: borrowed object)
-tuple-vararg-in-lt-clause.errors.chpl:23: note: includes lifetime constraint this < _e2_tests
+tuple-vararg-in-lt-clause.errors.chpl:23: note: called function Test.dependsOnX2(_e0_tests: borrowed object, _e1_tests: borrowed object)
+tuple-vararg-in-lt-clause.errors.chpl:23: note: includes lifetime constraint _e1_tests > this
+tuple-vararg-in-lt-clause.errors.chpl:23: note: called function Test.dependsOnX2(_e0_tests: borrowed object, _e1_tests: borrowed object)
+tuple-vararg-in-lt-clause.errors.chpl:23: note: includes lifetime constraint this < _e1_tests
 tuple-vararg-in-lt-clause.errors.chpl:83: error: Actual argument obj does not meet called function lifetime constraint
 tuple-vararg-in-lt-clause.errors.chpl:45: note: consider result here
-tuple-vararg-in-lt-clause.errors.chpl:23: note: called function Test.dependsOnX2(_e1_tests: borrowed object, _e2_tests: borrowed object)
-tuple-vararg-in-lt-clause.errors.chpl:23: note: includes lifetime constraint _e1_tests > this
-tuple-vararg-in-lt-clause.errors.chpl:23: note: called function Test.dependsOnX2(_e1_tests: borrowed object, _e2_tests: borrowed object)
-tuple-vararg-in-lt-clause.errors.chpl:23: note: includes lifetime constraint this < _e1_tests
+tuple-vararg-in-lt-clause.errors.chpl:23: note: called function Test.dependsOnX2(_e0_tests: borrowed object, _e1_tests: borrowed object)
+tuple-vararg-in-lt-clause.errors.chpl:23: note: includes lifetime constraint _e0_tests > this
+tuple-vararg-in-lt-clause.errors.chpl:23: note: called function Test.dependsOnX2(_e0_tests: borrowed object, _e1_tests: borrowed object)
+tuple-vararg-in-lt-clause.errors.chpl:23: note: includes lifetime constraint this < _e0_tests
 tuple-vararg-in-lt-clause.errors.chpl:84: error: Actual argument obj does not meet called function lifetime constraint
 tuple-vararg-in-lt-clause.errors.chpl:45: note: consider result here
-tuple-vararg-in-lt-clause.errors.chpl:23: note: called function Test.dependsOnX2(_e1_tests: borrowed object, _e2_tests: borrowed object)
-tuple-vararg-in-lt-clause.errors.chpl:23: note: includes lifetime constraint _e2_tests > this
-tuple-vararg-in-lt-clause.errors.chpl:23: note: called function Test.dependsOnX2(_e1_tests: borrowed object, _e2_tests: borrowed object)
-tuple-vararg-in-lt-clause.errors.chpl:23: note: includes lifetime constraint this < _e2_tests
+tuple-vararg-in-lt-clause.errors.chpl:23: note: called function Test.dependsOnX2(_e0_tests: borrowed object, _e1_tests: borrowed object)
+tuple-vararg-in-lt-clause.errors.chpl:23: note: includes lifetime constraint _e1_tests > this
+tuple-vararg-in-lt-clause.errors.chpl:23: note: called function Test.dependsOnX2(_e0_tests: borrowed object, _e1_tests: borrowed object)
+tuple-vararg-in-lt-clause.errors.chpl:23: note: includes lifetime constraint this < _e1_tests
 tuple-vararg-in-lt-clause.errors.chpl:88: error: Actual argument obj does not meet called function lifetime constraint
 tuple-vararg-in-lt-clause.errors.chpl:45: note: consider result here
-tuple-vararg-in-lt-clause.errors.chpl:26: note: called function Test.dependsOnY2(_e1_tests: borrowed object)
-tuple-vararg-in-lt-clause.errors.chpl:26: note: includes lifetime constraint _e1_tests > this
-tuple-vararg-in-lt-clause.errors.chpl:26: note: called function Test.dependsOnY2(_e1_tests: borrowed object)
-tuple-vararg-in-lt-clause.errors.chpl:26: note: includes lifetime constraint this < _e1_tests
+tuple-vararg-in-lt-clause.errors.chpl:26: note: called function Test.dependsOnY2(_e0_tests: borrowed object)
+tuple-vararg-in-lt-clause.errors.chpl:26: note: includes lifetime constraint _e0_tests > this
+tuple-vararg-in-lt-clause.errors.chpl:26: note: called function Test.dependsOnY2(_e0_tests: borrowed object)
+tuple-vararg-in-lt-clause.errors.chpl:26: note: includes lifetime constraint this < _e0_tests
 tuple-vararg-in-lt-clause.errors.chpl:90: error: Actual argument obj does not meet called function lifetime constraint
 tuple-vararg-in-lt-clause.errors.chpl:45: note: consider result here
-tuple-vararg-in-lt-clause.errors.chpl:26: note: called function Test.dependsOnY2(_e1_tests: borrowed object, _e2_tests: borrowed object)
-tuple-vararg-in-lt-clause.errors.chpl:26: note: includes lifetime constraint _e1_tests > this
-tuple-vararg-in-lt-clause.errors.chpl:26: note: called function Test.dependsOnY2(_e1_tests: borrowed object, _e2_tests: borrowed object)
-tuple-vararg-in-lt-clause.errors.chpl:26: note: includes lifetime constraint this < _e1_tests
+tuple-vararg-in-lt-clause.errors.chpl:26: note: called function Test.dependsOnY2(_e0_tests: borrowed object, _e1_tests: borrowed object)
+tuple-vararg-in-lt-clause.errors.chpl:26: note: includes lifetime constraint _e0_tests > this
+tuple-vararg-in-lt-clause.errors.chpl:26: note: called function Test.dependsOnY2(_e0_tests: borrowed object, _e1_tests: borrowed object)
+tuple-vararg-in-lt-clause.errors.chpl:26: note: includes lifetime constraint this < _e0_tests
 tuple-vararg-in-lt-clause.errors.chpl:90: error: Actual argument obj does not meet called function lifetime constraint
 tuple-vararg-in-lt-clause.errors.chpl:45: note: consider result here
-tuple-vararg-in-lt-clause.errors.chpl:26: note: called function Test.dependsOnY2(_e1_tests: borrowed object, _e2_tests: borrowed object)
-tuple-vararg-in-lt-clause.errors.chpl:26: note: includes lifetime constraint _e2_tests > this
-tuple-vararg-in-lt-clause.errors.chpl:26: note: called function Test.dependsOnY2(_e1_tests: borrowed object, _e2_tests: borrowed object)
-tuple-vararg-in-lt-clause.errors.chpl:26: note: includes lifetime constraint this < _e2_tests
+tuple-vararg-in-lt-clause.errors.chpl:26: note: called function Test.dependsOnY2(_e0_tests: borrowed object, _e1_tests: borrowed object)
+tuple-vararg-in-lt-clause.errors.chpl:26: note: includes lifetime constraint _e1_tests > this
+tuple-vararg-in-lt-clause.errors.chpl:26: note: called function Test.dependsOnY2(_e0_tests: borrowed object, _e1_tests: borrowed object)
+tuple-vararg-in-lt-clause.errors.chpl:26: note: includes lifetime constraint this < _e1_tests
 tuple-vararg-in-lt-clause.errors.chpl:91: error: Actual argument obj does not meet called function lifetime constraint
 tuple-vararg-in-lt-clause.errors.chpl:45: note: consider result here
-tuple-vararg-in-lt-clause.errors.chpl:26: note: called function Test.dependsOnY2(_e1_tests: borrowed object, _e2_tests: borrowed object)
-tuple-vararg-in-lt-clause.errors.chpl:26: note: includes lifetime constraint _e1_tests > this
-tuple-vararg-in-lt-clause.errors.chpl:26: note: called function Test.dependsOnY2(_e1_tests: borrowed object, _e2_tests: borrowed object)
-tuple-vararg-in-lt-clause.errors.chpl:26: note: includes lifetime constraint this < _e1_tests
+tuple-vararg-in-lt-clause.errors.chpl:26: note: called function Test.dependsOnY2(_e0_tests: borrowed object, _e1_tests: borrowed object)
+tuple-vararg-in-lt-clause.errors.chpl:26: note: includes lifetime constraint _e0_tests > this
+tuple-vararg-in-lt-clause.errors.chpl:26: note: called function Test.dependsOnY2(_e0_tests: borrowed object, _e1_tests: borrowed object)
+tuple-vararg-in-lt-clause.errors.chpl:26: note: includes lifetime constraint this < _e0_tests
 tuple-vararg-in-lt-clause.errors.chpl:92: error: Actual argument obj does not meet called function lifetime constraint
 tuple-vararg-in-lt-clause.errors.chpl:45: note: consider result here
-tuple-vararg-in-lt-clause.errors.chpl:26: note: called function Test.dependsOnY2(_e1_tests: borrowed object, _e2_tests: borrowed object)
-tuple-vararg-in-lt-clause.errors.chpl:26: note: includes lifetime constraint _e2_tests > this
-tuple-vararg-in-lt-clause.errors.chpl:26: note: called function Test.dependsOnY2(_e1_tests: borrowed object, _e2_tests: borrowed object)
-tuple-vararg-in-lt-clause.errors.chpl:26: note: includes lifetime constraint this < _e2_tests
+tuple-vararg-in-lt-clause.errors.chpl:26: note: called function Test.dependsOnY2(_e0_tests: borrowed object, _e1_tests: borrowed object)
+tuple-vararg-in-lt-clause.errors.chpl:26: note: includes lifetime constraint _e1_tests > this
+tuple-vararg-in-lt-clause.errors.chpl:26: note: called function Test.dependsOnY2(_e0_tests: borrowed object, _e1_tests: borrowed object)
+tuple-vararg-in-lt-clause.errors.chpl:26: note: includes lifetime constraint this < _e1_tests
 tuple-vararg-in-lt-clause.errors.chpl:96: error: Actual argument obj does not meet called function lifetime constraint
 tuple-vararg-in-lt-clause.errors.chpl:45: note: consider result here
-tuple-vararg-in-lt-clause.errors.chpl:31: note: called function Test.dependsOnN3(_e1_tests: borrowed object)
-tuple-vararg-in-lt-clause.errors.chpl:31: note: includes lifetime constraint _e1_tests > this
-tuple-vararg-in-lt-clause.errors.chpl:31: note: called function Test.dependsOnN3(_e1_tests: borrowed object)
-tuple-vararg-in-lt-clause.errors.chpl:31: note: includes lifetime constraint this < _e1_tests
+tuple-vararg-in-lt-clause.errors.chpl:31: note: called function Test.dependsOnN3(_e0_tests: borrowed object)
+tuple-vararg-in-lt-clause.errors.chpl:31: note: includes lifetime constraint _e0_tests > this
+tuple-vararg-in-lt-clause.errors.chpl:31: note: called function Test.dependsOnN3(_e0_tests: borrowed object)
+tuple-vararg-in-lt-clause.errors.chpl:31: note: includes lifetime constraint this < _e0_tests
 tuple-vararg-in-lt-clause.errors.chpl:98: error: Actual argument obj does not meet called function lifetime constraint
 tuple-vararg-in-lt-clause.errors.chpl:45: note: consider result here
-tuple-vararg-in-lt-clause.errors.chpl:31: note: called function Test.dependsOnN3(_e1_tests: borrowed object, _e2_tests: borrowed object)
-tuple-vararg-in-lt-clause.errors.chpl:31: note: includes lifetime constraint _e1_tests > this
-tuple-vararg-in-lt-clause.errors.chpl:31: note: called function Test.dependsOnN3(_e1_tests: borrowed object, _e2_tests: borrowed object)
-tuple-vararg-in-lt-clause.errors.chpl:31: note: includes lifetime constraint this < _e1_tests
+tuple-vararg-in-lt-clause.errors.chpl:31: note: called function Test.dependsOnN3(_e0_tests: borrowed object, _e1_tests: borrowed object)
+tuple-vararg-in-lt-clause.errors.chpl:31: note: includes lifetime constraint _e0_tests > this
+tuple-vararg-in-lt-clause.errors.chpl:31: note: called function Test.dependsOnN3(_e0_tests: borrowed object, _e1_tests: borrowed object)
+tuple-vararg-in-lt-clause.errors.chpl:31: note: includes lifetime constraint this < _e0_tests
 tuple-vararg-in-lt-clause.errors.chpl:98: error: Actual argument obj does not meet called function lifetime constraint
 tuple-vararg-in-lt-clause.errors.chpl:45: note: consider result here
-tuple-vararg-in-lt-clause.errors.chpl:31: note: called function Test.dependsOnN3(_e1_tests: borrowed object, _e2_tests: borrowed object)
-tuple-vararg-in-lt-clause.errors.chpl:31: note: includes lifetime constraint _e2_tests > this
-tuple-vararg-in-lt-clause.errors.chpl:31: note: called function Test.dependsOnN3(_e1_tests: borrowed object, _e2_tests: borrowed object)
-tuple-vararg-in-lt-clause.errors.chpl:31: note: includes lifetime constraint this < _e2_tests
+tuple-vararg-in-lt-clause.errors.chpl:31: note: called function Test.dependsOnN3(_e0_tests: borrowed object, _e1_tests: borrowed object)
+tuple-vararg-in-lt-clause.errors.chpl:31: note: includes lifetime constraint _e1_tests > this
+tuple-vararg-in-lt-clause.errors.chpl:31: note: called function Test.dependsOnN3(_e0_tests: borrowed object, _e1_tests: borrowed object)
+tuple-vararg-in-lt-clause.errors.chpl:31: note: includes lifetime constraint this < _e1_tests
 tuple-vararg-in-lt-clause.errors.chpl:99: error: Actual argument obj does not meet called function lifetime constraint
 tuple-vararg-in-lt-clause.errors.chpl:45: note: consider result here
-tuple-vararg-in-lt-clause.errors.chpl:31: note: called function Test.dependsOnN3(_e1_tests: borrowed object, _e2_tests: borrowed object)
-tuple-vararg-in-lt-clause.errors.chpl:31: note: includes lifetime constraint _e1_tests > this
-tuple-vararg-in-lt-clause.errors.chpl:31: note: called function Test.dependsOnN3(_e1_tests: borrowed object, _e2_tests: borrowed object)
-tuple-vararg-in-lt-clause.errors.chpl:31: note: includes lifetime constraint this < _e1_tests
+tuple-vararg-in-lt-clause.errors.chpl:31: note: called function Test.dependsOnN3(_e0_tests: borrowed object, _e1_tests: borrowed object)
+tuple-vararg-in-lt-clause.errors.chpl:31: note: includes lifetime constraint _e0_tests > this
+tuple-vararg-in-lt-clause.errors.chpl:31: note: called function Test.dependsOnN3(_e0_tests: borrowed object, _e1_tests: borrowed object)
+tuple-vararg-in-lt-clause.errors.chpl:31: note: includes lifetime constraint this < _e0_tests
 tuple-vararg-in-lt-clause.errors.chpl:100: error: Actual argument obj does not meet called function lifetime constraint
 tuple-vararg-in-lt-clause.errors.chpl:45: note: consider result here
-tuple-vararg-in-lt-clause.errors.chpl:31: note: called function Test.dependsOnN3(_e1_tests: borrowed object, _e2_tests: borrowed object)
-tuple-vararg-in-lt-clause.errors.chpl:31: note: includes lifetime constraint _e2_tests > this
-tuple-vararg-in-lt-clause.errors.chpl:31: note: called function Test.dependsOnN3(_e1_tests: borrowed object, _e2_tests: borrowed object)
-tuple-vararg-in-lt-clause.errors.chpl:31: note: includes lifetime constraint this < _e2_tests
+tuple-vararg-in-lt-clause.errors.chpl:31: note: called function Test.dependsOnN3(_e0_tests: borrowed object, _e1_tests: borrowed object)
+tuple-vararg-in-lt-clause.errors.chpl:31: note: includes lifetime constraint _e1_tests > this
+tuple-vararg-in-lt-clause.errors.chpl:31: note: called function Test.dependsOnN3(_e0_tests: borrowed object, _e1_tests: borrowed object)
+tuple-vararg-in-lt-clause.errors.chpl:31: note: includes lifetime constraint this < _e1_tests
 tuple-vararg-in-lt-clause.errors.chpl:104: error: Actual argument obj does not meet called function lifetime constraint
 tuple-vararg-in-lt-clause.errors.chpl:45: note: consider result here
-tuple-vararg-in-lt-clause.errors.chpl:34: note: called function Test.dependsOnX3(_e1_tests: borrowed object)
-tuple-vararg-in-lt-clause.errors.chpl:34: note: includes lifetime constraint _e1_tests > this
-tuple-vararg-in-lt-clause.errors.chpl:34: note: called function Test.dependsOnX3(_e1_tests: borrowed object)
-tuple-vararg-in-lt-clause.errors.chpl:34: note: includes lifetime constraint this < _e1_tests
+tuple-vararg-in-lt-clause.errors.chpl:34: note: called function Test.dependsOnX3(_e0_tests: borrowed object)
+tuple-vararg-in-lt-clause.errors.chpl:34: note: includes lifetime constraint _e0_tests > this
+tuple-vararg-in-lt-clause.errors.chpl:34: note: called function Test.dependsOnX3(_e0_tests: borrowed object)
+tuple-vararg-in-lt-clause.errors.chpl:34: note: includes lifetime constraint this < _e0_tests
 tuple-vararg-in-lt-clause.errors.chpl:106: error: Actual argument obj does not meet called function lifetime constraint
 tuple-vararg-in-lt-clause.errors.chpl:45: note: consider result here
-tuple-vararg-in-lt-clause.errors.chpl:34: note: called function Test.dependsOnX3(_e1_tests: borrowed object, _e2_tests: borrowed object)
-tuple-vararg-in-lt-clause.errors.chpl:34: note: includes lifetime constraint _e1_tests > this
-tuple-vararg-in-lt-clause.errors.chpl:34: note: called function Test.dependsOnX3(_e1_tests: borrowed object, _e2_tests: borrowed object)
-tuple-vararg-in-lt-clause.errors.chpl:34: note: includes lifetime constraint this < _e1_tests
+tuple-vararg-in-lt-clause.errors.chpl:34: note: called function Test.dependsOnX3(_e0_tests: borrowed object, _e1_tests: borrowed object)
+tuple-vararg-in-lt-clause.errors.chpl:34: note: includes lifetime constraint _e0_tests > this
+tuple-vararg-in-lt-clause.errors.chpl:34: note: called function Test.dependsOnX3(_e0_tests: borrowed object, _e1_tests: borrowed object)
+tuple-vararg-in-lt-clause.errors.chpl:34: note: includes lifetime constraint this < _e0_tests
 tuple-vararg-in-lt-clause.errors.chpl:106: error: Actual argument obj does not meet called function lifetime constraint
 tuple-vararg-in-lt-clause.errors.chpl:45: note: consider result here
-tuple-vararg-in-lt-clause.errors.chpl:34: note: called function Test.dependsOnX3(_e1_tests: borrowed object, _e2_tests: borrowed object)
-tuple-vararg-in-lt-clause.errors.chpl:34: note: includes lifetime constraint _e2_tests > this
-tuple-vararg-in-lt-clause.errors.chpl:34: note: called function Test.dependsOnX3(_e1_tests: borrowed object, _e2_tests: borrowed object)
-tuple-vararg-in-lt-clause.errors.chpl:34: note: includes lifetime constraint this < _e2_tests
+tuple-vararg-in-lt-clause.errors.chpl:34: note: called function Test.dependsOnX3(_e0_tests: borrowed object, _e1_tests: borrowed object)
+tuple-vararg-in-lt-clause.errors.chpl:34: note: includes lifetime constraint _e1_tests > this
+tuple-vararg-in-lt-clause.errors.chpl:34: note: called function Test.dependsOnX3(_e0_tests: borrowed object, _e1_tests: borrowed object)
+tuple-vararg-in-lt-clause.errors.chpl:34: note: includes lifetime constraint this < _e1_tests
 tuple-vararg-in-lt-clause.errors.chpl:107: error: Actual argument obj does not meet called function lifetime constraint
 tuple-vararg-in-lt-clause.errors.chpl:45: note: consider result here
-tuple-vararg-in-lt-clause.errors.chpl:34: note: called function Test.dependsOnX3(_e1_tests: borrowed object, _e2_tests: borrowed object)
-tuple-vararg-in-lt-clause.errors.chpl:34: note: includes lifetime constraint _e1_tests > this
-tuple-vararg-in-lt-clause.errors.chpl:34: note: called function Test.dependsOnX3(_e1_tests: borrowed object, _e2_tests: borrowed object)
-tuple-vararg-in-lt-clause.errors.chpl:34: note: includes lifetime constraint this < _e1_tests
+tuple-vararg-in-lt-clause.errors.chpl:34: note: called function Test.dependsOnX3(_e0_tests: borrowed object, _e1_tests: borrowed object)
+tuple-vararg-in-lt-clause.errors.chpl:34: note: includes lifetime constraint _e0_tests > this
+tuple-vararg-in-lt-clause.errors.chpl:34: note: called function Test.dependsOnX3(_e0_tests: borrowed object, _e1_tests: borrowed object)
+tuple-vararg-in-lt-clause.errors.chpl:34: note: includes lifetime constraint this < _e0_tests
 tuple-vararg-in-lt-clause.errors.chpl:108: error: Actual argument obj does not meet called function lifetime constraint
 tuple-vararg-in-lt-clause.errors.chpl:45: note: consider result here
-tuple-vararg-in-lt-clause.errors.chpl:34: note: called function Test.dependsOnX3(_e1_tests: borrowed object, _e2_tests: borrowed object)
-tuple-vararg-in-lt-clause.errors.chpl:34: note: includes lifetime constraint _e2_tests > this
-tuple-vararg-in-lt-clause.errors.chpl:34: note: called function Test.dependsOnX3(_e1_tests: borrowed object, _e2_tests: borrowed object)
-tuple-vararg-in-lt-clause.errors.chpl:34: note: includes lifetime constraint this < _e2_tests
+tuple-vararg-in-lt-clause.errors.chpl:34: note: called function Test.dependsOnX3(_e0_tests: borrowed object, _e1_tests: borrowed object)
+tuple-vararg-in-lt-clause.errors.chpl:34: note: includes lifetime constraint _e1_tests > this
+tuple-vararg-in-lt-clause.errors.chpl:34: note: called function Test.dependsOnX3(_e0_tests: borrowed object, _e1_tests: borrowed object)
+tuple-vararg-in-lt-clause.errors.chpl:34: note: includes lifetime constraint this < _e1_tests
 tuple-vararg-in-lt-clause.errors.chpl:112: error: Actual argument obj does not meet called function lifetime constraint
 tuple-vararg-in-lt-clause.errors.chpl:45: note: consider result here
-tuple-vararg-in-lt-clause.errors.chpl:37: note: called function Test.dependsOnY3(_e1_tests: borrowed object)
-tuple-vararg-in-lt-clause.errors.chpl:37: note: includes lifetime constraint _e1_tests > this
-tuple-vararg-in-lt-clause.errors.chpl:37: note: called function Test.dependsOnY3(_e1_tests: borrowed object)
-tuple-vararg-in-lt-clause.errors.chpl:37: note: includes lifetime constraint this < _e1_tests
+tuple-vararg-in-lt-clause.errors.chpl:37: note: called function Test.dependsOnY3(_e0_tests: borrowed object)
+tuple-vararg-in-lt-clause.errors.chpl:37: note: includes lifetime constraint _e0_tests > this
+tuple-vararg-in-lt-clause.errors.chpl:37: note: called function Test.dependsOnY3(_e0_tests: borrowed object)
+tuple-vararg-in-lt-clause.errors.chpl:37: note: includes lifetime constraint this < _e0_tests
 tuple-vararg-in-lt-clause.errors.chpl:114: error: Actual argument obj does not meet called function lifetime constraint
 tuple-vararg-in-lt-clause.errors.chpl:45: note: consider result here
-tuple-vararg-in-lt-clause.errors.chpl:37: note: called function Test.dependsOnY3(_e1_tests: borrowed object, _e2_tests: borrowed object)
-tuple-vararg-in-lt-clause.errors.chpl:37: note: includes lifetime constraint _e1_tests > this
-tuple-vararg-in-lt-clause.errors.chpl:37: note: called function Test.dependsOnY3(_e1_tests: borrowed object, _e2_tests: borrowed object)
-tuple-vararg-in-lt-clause.errors.chpl:37: note: includes lifetime constraint this < _e1_tests
+tuple-vararg-in-lt-clause.errors.chpl:37: note: called function Test.dependsOnY3(_e0_tests: borrowed object, _e1_tests: borrowed object)
+tuple-vararg-in-lt-clause.errors.chpl:37: note: includes lifetime constraint _e0_tests > this
+tuple-vararg-in-lt-clause.errors.chpl:37: note: called function Test.dependsOnY3(_e0_tests: borrowed object, _e1_tests: borrowed object)
+tuple-vararg-in-lt-clause.errors.chpl:37: note: includes lifetime constraint this < _e0_tests
 tuple-vararg-in-lt-clause.errors.chpl:114: error: Actual argument obj does not meet called function lifetime constraint
 tuple-vararg-in-lt-clause.errors.chpl:45: note: consider result here
-tuple-vararg-in-lt-clause.errors.chpl:37: note: called function Test.dependsOnY3(_e1_tests: borrowed object, _e2_tests: borrowed object)
-tuple-vararg-in-lt-clause.errors.chpl:37: note: includes lifetime constraint _e2_tests > this
-tuple-vararg-in-lt-clause.errors.chpl:37: note: called function Test.dependsOnY3(_e1_tests: borrowed object, _e2_tests: borrowed object)
-tuple-vararg-in-lt-clause.errors.chpl:37: note: includes lifetime constraint this < _e2_tests
+tuple-vararg-in-lt-clause.errors.chpl:37: note: called function Test.dependsOnY3(_e0_tests: borrowed object, _e1_tests: borrowed object)
+tuple-vararg-in-lt-clause.errors.chpl:37: note: includes lifetime constraint _e1_tests > this
+tuple-vararg-in-lt-clause.errors.chpl:37: note: called function Test.dependsOnY3(_e0_tests: borrowed object, _e1_tests: borrowed object)
+tuple-vararg-in-lt-clause.errors.chpl:37: note: includes lifetime constraint this < _e1_tests
 tuple-vararg-in-lt-clause.errors.chpl:115: error: Actual argument obj does not meet called function lifetime constraint
 tuple-vararg-in-lt-clause.errors.chpl:45: note: consider result here
-tuple-vararg-in-lt-clause.errors.chpl:37: note: called function Test.dependsOnY3(_e1_tests: borrowed object, _e2_tests: borrowed object)
-tuple-vararg-in-lt-clause.errors.chpl:37: note: includes lifetime constraint _e1_tests > this
-tuple-vararg-in-lt-clause.errors.chpl:37: note: called function Test.dependsOnY3(_e1_tests: borrowed object, _e2_tests: borrowed object)
-tuple-vararg-in-lt-clause.errors.chpl:37: note: includes lifetime constraint this < _e1_tests
+tuple-vararg-in-lt-clause.errors.chpl:37: note: called function Test.dependsOnY3(_e0_tests: borrowed object, _e1_tests: borrowed object)
+tuple-vararg-in-lt-clause.errors.chpl:37: note: includes lifetime constraint _e0_tests > this
+tuple-vararg-in-lt-clause.errors.chpl:37: note: called function Test.dependsOnY3(_e0_tests: borrowed object, _e1_tests: borrowed object)
+tuple-vararg-in-lt-clause.errors.chpl:37: note: includes lifetime constraint this < _e0_tests
 tuple-vararg-in-lt-clause.errors.chpl:116: error: Actual argument obj does not meet called function lifetime constraint
 tuple-vararg-in-lt-clause.errors.chpl:45: note: consider result here
-tuple-vararg-in-lt-clause.errors.chpl:37: note: called function Test.dependsOnY3(_e1_tests: borrowed object, _e2_tests: borrowed object)
-tuple-vararg-in-lt-clause.errors.chpl:37: note: includes lifetime constraint _e2_tests > this
-tuple-vararg-in-lt-clause.errors.chpl:37: note: called function Test.dependsOnY3(_e1_tests: borrowed object, _e2_tests: borrowed object)
-tuple-vararg-in-lt-clause.errors.chpl:37: note: includes lifetime constraint this < _e2_tests
+tuple-vararg-in-lt-clause.errors.chpl:37: note: called function Test.dependsOnY3(_e0_tests: borrowed object, _e1_tests: borrowed object)
+tuple-vararg-in-lt-clause.errors.chpl:37: note: includes lifetime constraint _e1_tests > this
+tuple-vararg-in-lt-clause.errors.chpl:37: note: called function Test.dependsOnY3(_e0_tests: borrowed object, _e1_tests: borrowed object)
+tuple-vararg-in-lt-clause.errors.chpl:37: note: includes lifetime constraint this < _e1_tests

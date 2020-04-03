@@ -64,9 +64,9 @@ module dataflow_block_cholesky {
 
     where ( A.domain.rank == 2 ) {
 
-    assert ( A.domain.dim (1) == A.domain.dim (2) );
+    assert ( A.domain.dim (0) == A.domain.dim (1) );
 
-    const col_indices = A.domain.dim (1);  // indices of either row or column
+    const col_indices = A.domain.dim (0);  // indices of either row or column
     var   pos_def : bool;
 
     // --------------------------------------------------------------------

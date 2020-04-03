@@ -101,7 +101,7 @@ proc test_replace() {
   var base = new time((...args), z100);
   assert(base == base.replace(tzinfo=base.tzinfo));
 
-  var i = 1;
+  var i = 0;
   for (name, newval) in (("hour", 5),
                          ("minute", 6),
                          ("second", 7),

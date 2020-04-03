@@ -10,8 +10,8 @@ class MyClass {
 
 proc run() {
   var myC = new unmanaged MyClass();
-  myC.tup(1).arr[1].verify();
-  assert(myC.tup(1).arr[1].x == 1);
+  myC.tup(0).arr[1].verify();
+  assert(myC.tup(0).arr[1].x == 1);
   delete myC;
 }
 

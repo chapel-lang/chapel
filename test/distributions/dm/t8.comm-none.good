@@ -14,10 +14,10 @@
 1042  storage
 1043  
 1043   5   (0, -95)
-1043  dsiAccess1d dim1
+1043  dsiAccess1d dim0
 1044  
 1044   7   (0, 7)
-1044  dsiAccess1d dim2
+1044  dsiAccess1d dim1
 1045  
 1045   (5, 7)
 1045  serial iterator over the domain
@@ -46,10 +46,10 @@
 1062  storage
 1063  
 1063   5   (0, -95)
-1063  dsiAccess1d dim1
+1063  dsiAccess1d dim0
 1064  
 1064   12   (1, 7)
-1064  dsiAccess1d dim2
+1064  dsiAccess1d dim1
 1065  
 1065   (5, 12)
 1065  serial iterator over the domain
@@ -78,10 +78,10 @@
 1082  storage
 1083  
 1083   5   (0, -95)
-1083  dsiAccess1d dim1
+1083  dsiAccess1d dim0
 1084  
 1084   18   (2, 8)
-1084  dsiAccess1d dim2
+1084  dsiAccess1d dim1
 1085  
 1085   (5, 18)
 1085  serial iterator over the domain
@@ -110,14 +110,14 @@
 1102  storage
 1103  
 1103   5   (0, -95)
-1103  dsiAccess1d dim1
+1103  dsiAccess1d dim0
 1104  
 1104   5   (0, 5)
 1104   6   (0, 6)
 1104   7   (0, 7)
 1104   8   (0, 8)
 1104   9   (0, 9)
-1104  dsiAccess1d dim2
+1104  dsiAccess1d dim1
 1105  
 1105   (5, 5) (5, 6) (5, 7) (5, 8) (5, 9)
 1105  serial iterator over the domain
@@ -158,14 +158,14 @@
 1122  storage
 1123  
 1123   5   (0, -95)
-1123  dsiAccess1d dim1
+1123  dsiAccess1d dim0
 1124  
 1124   10   (1, 5)
 1124   11   (1, 6)
 1124   12   (1, 7)
 1124   13   (1, 8)
 1124   14   (1, 9)
-1124  dsiAccess1d dim2
+1124  dsiAccess1d dim1
 1125  
 1125   (5, 10) (5, 11) (5, 12) (5, 13) (5, 14)
 1125  serial iterator over the domain
@@ -206,14 +206,14 @@
 1142  storage
 1143  
 1143   5   (0, -95)
-1143  dsiAccess1d dim1
+1143  dsiAccess1d dim0
 1144  
 1144   15   (2, 5)
 1144   16   (2, 6)
 1144   17   (2, 7)
 1144   18   (2, 8)
 1144   19   (2, 9)
-1144  dsiAccess1d dim2
+1144  dsiAccess1d dim1
 1145  
 1145   (5, 15) (5, 16) (5, 17) (5, 18) (5, 19)
 1145  serial iterator over the domain
@@ -254,14 +254,14 @@
 1162  storage
 1163  
 1163   5   (0, -95)
-1163  dsiAccess1d dim1
+1163  dsiAccess1d dim0
 1164  
 1164   3   (2, 3)
 1164   4   (2, 4)
 1164   5   (0, 5)
 1164   6   (0, 6)
 1164   7   (0, 7)
-1164  dsiAccess1d dim2
+1164  dsiAccess1d dim1
 1165  
 1165   (5, 3) (5, 4) (5, 5) (5, 6) (5, 7)
 1165  serial iterator over the domain
@@ -302,7 +302,7 @@
 1182  storage
 1183  
 1183   5   (0, -95)
-1183  dsiAccess1d dim1
+1183  dsiAccess1d dim0
 1184  
 1184   10   (1, 5)
 1184   11   (1, 6)
@@ -314,7 +314,7 @@
 1184   7   (0, 7)
 1184   8   (0, 8)
 1184   9   (0, 9)
-1184  dsiAccess1d dim2
+1184  dsiAccess1d dim1
 1185  
 1185   (5, 3) (5, 4) (5, 5) (5, 6) (5, 7) (5, 8) (5, 9) (5, 10) (5, 11) (5, 12)
 1185  serial iterator over the domain
@@ -370,7 +370,7 @@
 1202  storage
 1203  
 1203   5   (0, -95)
-1203  dsiAccess1d dim1
+1203  dsiAccess1d dim0
 1204  
 1204   10   (1, 5)
 1204   11   (1, 6)
@@ -385,7 +385,7 @@
 1204   7   (0, 7)
 1204   8   (0, 8)
 1204   9   (0, 9)
-1204  dsiAccess1d dim2
+1204  dsiAccess1d dim1
 1205  
 1205   (5, 3) (5, 4) (5, 5) (5, 6) (5, 7) (5, 8) (5, 9) (5, 10) (5, 11) (5, 12) (5, 13) (5, 14) (5, 15)
 1205  serial iterator over the domain
@@ -450,7 +450,7 @@
 1222  storage
 1223  
 1223   5   (0, -95)
-1223  dsiAccess1d dim1
+1223  dsiAccess1d dim0
 1224  
 1224   10   (1, 5)
 1224   11   (1, 6)
@@ -466,7 +466,7 @@
 1224   7   (0, 7)
 1224   8   (0, 8)
 1224   9   (0, 9)
-1224  dsiAccess1d dim2
+1224  dsiAccess1d dim1
 1225  
 1225   (5, 3) (5, 4) (5, 5) (5, 6) (5, 7) (5, 8) (5, 9) (5, 10) (5, 11) (5, 12) (5, 13) (5, 14) (5, 15) (5, 16)
 1225  serial iterator over the domain
@@ -534,7 +534,7 @@
 1242  storage
 1243  
 1243   5   (0, -95)
-1243  dsiAccess1d dim1
+1243  dsiAccess1d dim0
 1244  
 1244   10   (1, 5)
 1244   11   (1, 6)
@@ -551,7 +551,7 @@
 1244   7   (0, 7)
 1244   8   (0, 8)
 1244   9   (0, 9)
-1244  dsiAccess1d dim2
+1244  dsiAccess1d dim1
 1245  
 1245   (5, 3) (5, 4) (5, 5) (5, 6) (5, 7) (5, 8) (5, 9) (5, 10) (5, 11) (5, 12) (5, 13) (5, 14) (5, 15) (5, 16) (5, 17)
 1245  serial iterator over the domain
@@ -622,7 +622,7 @@
 1262  storage
 1263  
 1263   5   (0, -95)
-1263  dsiAccess1d dim1
+1263  dsiAccess1d dim0
 1264  
 1264   10   (1, 5)
 1264   11   (1, 6)
@@ -640,7 +640,7 @@
 1264   7   (0, 7)
 1264   8   (0, 8)
 1264   9   (0, 9)
-1264  dsiAccess1d dim2
+1264  dsiAccess1d dim1
 1265  
 1265   (5, 3) (5, 4) (5, 5) (5, 6) (5, 7) (5, 8) (5, 9) (5, 10) (5, 11) (5, 12) (5, 13) (5, 14) (5, 15) (5, 16) (5, 17) (5, 18)
 1265  serial iterator over the domain
@@ -714,7 +714,7 @@
 1282  storage
 1283  
 1283   5   (0, -95)
-1283  dsiAccess1d dim1
+1283  dsiAccess1d dim0
 1284  
 1284   10   (1, 5)
 1284   11   (1, 6)
@@ -733,7 +733,7 @@
 1284   7   (0, 7)
 1284   8   (0, 8)
 1284   9   (0, 9)
-1284  dsiAccess1d dim2
+1284  dsiAccess1d dim1
 1285  
 1285   (5, 3) (5, 4) (5, 5) (5, 6) (5, 7) (5, 8) (5, 9) (5, 10) (5, 11) (5, 12) (5, 13) (5, 14) (5, 15) (5, 16) (5, 17) (5, 18) (5, 19)
 1285  serial iterator over the domain
@@ -810,7 +810,7 @@
 1302  storage
 1303  
 1303   5   (0, -95)
-1303  dsiAccess1d dim1
+1303  dsiAccess1d dim0
 1304  
 1304   0   (2, 0)
 1304   1   (2, 1)
@@ -829,7 +829,7 @@
 1304   7   (0, 7)
 1304   8   (0, 8)
 1304   9   (0, 9)
-1304  dsiAccess1d dim2
+1304  dsiAccess1d dim1
 1305  
 1305   (5, 0) (5, 1) (5, 2) (5, 3) (5, 4) (5, 5) (5, 6) (5, 7) (5, 8) (5, 9) (5, 10) (5, 11) (5, 12) (5, 13) (5, 14) (5, 15) (5, 16)
 1305  serial iterator over the domain
@@ -906,7 +906,7 @@
 1322  storage
 1323  
 1323   5   (0, -95)
-1323  dsiAccess1d dim1
+1323  dsiAccess1d dim0
 1324  
 1324   1   (2, 1)
 1324   10   (1, 5)
@@ -924,7 +924,7 @@
 1324   7   (0, 7)
 1324   8   (0, 8)
 1324   9   (0, 9)
-1324  dsiAccess1d dim2
+1324  dsiAccess1d dim1
 1325  
 1325   (5, 1) (5, 2) (5, 3) (5, 4) (5, 5) (5, 6) (5, 7) (5, 8) (5, 9) (5, 10) (5, 11) (5, 12) (5, 13) (5, 14) (5, 15) (5, 16)
 1325  serial iterator over the domain
@@ -998,7 +998,7 @@
 1342  storage
 1343  
 1343   5   (0, -95)
-1343  dsiAccess1d dim1
+1343  dsiAccess1d dim0
 1344  
 1344   10   (1, 5)
 1344   11   (1, 6)
@@ -1015,7 +1015,7 @@
 1344   7   (0, 7)
 1344   8   (0, 8)
 1344   9   (0, 9)
-1344  dsiAccess1d dim2
+1344  dsiAccess1d dim1
 1345  
 1345   (5, 2) (5, 3) (5, 4) (5, 5) (5, 6) (5, 7) (5, 8) (5, 9) (5, 10) (5, 11) (5, 12) (5, 13) (5, 14) (5, 15) (5, 16)
 1345  serial iterator over the domain
@@ -1086,7 +1086,7 @@
 1362  storage
 1363  
 1363   5   (0, -95)
-1363  dsiAccess1d dim1
+1363  dsiAccess1d dim0
 1364  
 1364   10   (1, 5)
 1364   11   (1, 6)
@@ -1102,7 +1102,7 @@
 1364   7   (0, 7)
 1364   8   (0, 8)
 1364   9   (0, 9)
-1364  dsiAccess1d dim2
+1364  dsiAccess1d dim1
 1365  
 1365   (5, 3) (5, 4) (5, 5) (5, 6) (5, 7) (5, 8) (5, 9) (5, 10) (5, 11) (5, 12) (5, 13) (5, 14) (5, 15) (5, 16)
 1365  serial iterator over the domain
@@ -1170,7 +1170,7 @@
 1382  storage
 1383  
 1383   5   (0, -95)
-1383  dsiAccess1d dim1
+1383  dsiAccess1d dim0
 1384  
 1384   10   (1, 5)
 1384   11   (1, 6)
@@ -1185,7 +1185,7 @@
 1384   7   (0, 7)
 1384   8   (0, 8)
 1384   9   (0, 9)
-1384  dsiAccess1d dim2
+1384  dsiAccess1d dim1
 1385  
 1385   (5, 4) (5, 5) (5, 6) (5, 7) (5, 8) (5, 9) (5, 10) (5, 11) (5, 12) (5, 13) (5, 14) (5, 15) (5, 16)
 1385  serial iterator over the domain
@@ -1250,7 +1250,7 @@
 1402  storage
 1403  
 1403   5   (0, -95)
-1403  dsiAccess1d dim1
+1403  dsiAccess1d dim0
 1404  
 1404   0   (2, 0)
 1404   12   (1, 2)
@@ -1259,7 +1259,7 @@
 1404   3   (2, 1)
 1404   6   (0, 2)
 1404   9   (0, 3)
-1404  dsiAccess1d dim2
+1404  dsiAccess1d dim1
 1405  
 1405   (5, 0) (5, 3) (5, 6) (5, 9) (5, 12) (5, 15) (5, 18)
 1405  serial iterator over the domain
@@ -1306,7 +1306,7 @@
 1422  storage
 1423  
 1423   5   (0, -95)
-1423  dsiAccess1d dim1
+1423  dsiAccess1d dim0
 1424  
 1424   1   (2, 0)
 1424   10   (1, 2)
@@ -1315,7 +1315,7 @@
 1424   19   (2, 3)
 1424   4   (2, 1)
 1424   7   (0, 2)
-1424  dsiAccess1d dim2
+1424  dsiAccess1d dim1
 1425  
 1425   (5, 1) (5, 4) (5, 7) (5, 10) (5, 13) (5, 16) (5, 19)
 1425  serial iterator over the domain
@@ -1362,7 +1362,7 @@
 1442  storage
 1443  
 1443   5   (0, -95)
-1443  dsiAccess1d dim1
+1443  dsiAccess1d dim0
 1444  
 1444   11   (1, 2)
 1444   14   (1, 3)
@@ -1370,7 +1370,7 @@
 1444   2   (2, 0)
 1444   5   (0, 2)
 1444   8   (0, 3)
-1444  dsiAccess1d dim2
+1444  dsiAccess1d dim1
 1445  
 1445   (5, 2) (5, 5) (5, 8) (5, 11) (5, 14) (5, 17)
 1445  serial iterator over the domain
@@ -1414,13 +1414,13 @@
 1462  storage
 1463  
 1463   5   (0, -95)
-1463  dsiAccess1d dim1
+1463  dsiAccess1d dim0
 1464  
 1464   1   (2, 0)
 1464   11   (1, 1)
 1464   16   (2, 1)
 1464   6   (0, 1)
-1464  dsiAccess1d dim2
+1464  dsiAccess1d dim1
 1465  
 1465   (5, 1) (5, 6) (5, 11) (5, 16)
 1465  serial iterator over the domain
@@ -1458,12 +1458,12 @@
 1482  storage
 1483  
 1483   5   (0, -95)
-1483  dsiAccess1d dim1
+1483  dsiAccess1d dim0
 1484  
 1484   1   (2, 0)
 1484   15   (2, 1)
 1484   8   (0, 1)
-1484  dsiAccess1d dim2
+1484  dsiAccess1d dim1
 1485  
 1485   (5, 1) (5, 8) (5, 15)
 1485  serial iterator over the domain
@@ -1498,12 +1498,12 @@
 1502  storage
 1503  
 1503   5   (0, -95)
-1503  dsiAccess1d dim1
+1503  dsiAccess1d dim0
 1504  
 1504   1   (2, 0)
 1504   17   (2, 1)
 1504   9   (0, 1)
-1504  dsiAccess1d dim2
+1504  dsiAccess1d dim1
 1505  
 1505   (5, 1) (5, 9) (5, 17)
 1505  serial iterator over the domain
@@ -1538,12 +1538,12 @@
 1522  storage
 1523  
 1523   5   (0, -95)
-1523  dsiAccess1d dim1
+1523  dsiAccess1d dim0
 1524  
 1524   1   (2, 0)
 1524   10   (1, 1)
 1524   19   (2, 1)
-1524  dsiAccess1d dim2
+1524  dsiAccess1d dim1
 1525  
 1525   (5, 1) (5, 10) (5, 19)
 1525  serial iterator over the domain
@@ -1578,11 +1578,11 @@
 1542  storage
 1543  
 1543   5   (0, -95)
-1543  dsiAccess1d dim1
+1543  dsiAccess1d dim0
 1544  
 1544   1   (2, 0)
 1544   11   (1, 1)
-1544  dsiAccess1d dim2
+1544  dsiAccess1d dim1
 1545  
 1545   (5, 1) (5, 11)
 1545  serial iterator over the domain
@@ -1614,11 +1614,11 @@
 1562  storage
 1563  
 1563   5   (0, -95)
-1563  dsiAccess1d dim1
+1563  dsiAccess1d dim0
 1564  
 1564   1   (2, 0)
 1564   16   (2, 1)
-1564  dsiAccess1d dim2
+1564  dsiAccess1d dim1
 1565  
 1565   (5, 1) (5, 16)
 1565  serial iterator over the domain
@@ -1650,11 +1650,11 @@
 1582  storage
 1583  
 1583   5   (0, -95)
-1583  dsiAccess1d dim1
+1583  dsiAccess1d dim0
 1584  
 1584   1   (2, 0)
 1584   19   (2, 1)
-1584  dsiAccess1d dim2
+1584  dsiAccess1d dim1
 1585  
 1585   (5, 1) (5, 19)
 1585  serial iterator over the domain
@@ -1686,10 +1686,10 @@
 1602  storage
 1603  
 1603   5   (0, -95)
-1603  dsiAccess1d dim1
+1603  dsiAccess1d dim0
 1604  
 1604   1   (2, 0)
-1604  dsiAccess1d dim2
+1604  dsiAccess1d dim1
 1605  
 1605   (5, 1)
 1605  serial iterator over the domain
@@ -1718,10 +1718,10 @@
 1622  storage
 1623  
 1623   5   (0, -95)
-1623  dsiAccess1d dim1
+1623  dsiAccess1d dim0
 1624  
 1624   1   (2, 0)
-1624  dsiAccess1d dim2
+1624  dsiAccess1d dim1
 1625  
 1625   (5, 1)
 1625  serial iterator over the domain
@@ -1750,10 +1750,10 @@
 1642  storage
 1643  
 1643   1   (0, -99)
-1643  dsiAccess1d dim1
+1643  dsiAccess1d dim0
 1644  
 1644   7   (0, 7)
-1644  dsiAccess1d dim2
+1644  dsiAccess1d dim1
 1645  
 1645   (1, 7)
 1645  serial iterator over the domain
@@ -1782,10 +1782,10 @@
 1662  storage
 1663  
 1663   1   (0, -99)
-1663  dsiAccess1d dim1
+1663  dsiAccess1d dim0
 1664  
 1664   12   (1, 7)
-1664  dsiAccess1d dim2
+1664  dsiAccess1d dim1
 1665  
 1665   (1, 12)
 1665  serial iterator over the domain
@@ -1814,10 +1814,10 @@
 1682  storage
 1683  
 1683   1   (0, -99)
-1683  dsiAccess1d dim1
+1683  dsiAccess1d dim0
 1684  
 1684   18   (2, 8)
-1684  dsiAccess1d dim2
+1684  dsiAccess1d dim1
 1685  
 1685   (1, 18)
 1685  serial iterator over the domain
@@ -1852,14 +1852,14 @@
 1703   7   (0, -93)
 1703   8   (0, -92)
 1703   9   (0, -91)
-1703  dsiAccess1d dim1
+1703  dsiAccess1d dim0
 1704  
 1704   5   (0, 5)
 1704   6   (0, 6)
 1704   7   (0, 7)
 1704   8   (0, 8)
 1704   9   (0, 9)
-1704  dsiAccess1d dim2
+1704  dsiAccess1d dim1
 1705  
 1705   (5, 5) (5, 6) (5, 7) (5, 8) (5, 9) (6, 5) (6, 6) (6, 7) (6, 8) (6, 9) (7, 5) (7, 6) (7, 7) (7, 8) (7, 9) (8, 5) (8, 6) (8, 7) (8, 8) (8, 9) (9, 5) (9, 6) (9, 7) (9, 8) (9, 9) (10, 5) (10, 6) (10, 7) (10, 8) (10, 9) (11, 5) (11, 6) (11, 7) (11, 8) (11, 9)
 1705  serial iterator over the domain
@@ -1996,14 +1996,14 @@
 1723   7   (0, -93)
 1723   8   (0, -92)
 1723   9   (0, -91)
-1723  dsiAccess1d dim1
+1723  dsiAccess1d dim0
 1724  
 1724   10   (1, 5)
 1724   11   (1, 6)
 1724   12   (1, 7)
 1724   13   (1, 8)
 1724   14   (1, 9)
-1724  dsiAccess1d dim2
+1724  dsiAccess1d dim1
 1725  
 1725   (5, 10) (5, 11) (5, 12) (5, 13) (5, 14) (6, 10) (6, 11) (6, 12) (6, 13) (6, 14) (7, 10) (7, 11) (7, 12) (7, 13) (7, 14) (8, 10) (8, 11) (8, 12) (8, 13) (8, 14) (9, 10) (9, 11) (9, 12) (9, 13) (9, 14) (10, 10) (10, 11) (10, 12) (10, 13) (10, 14) (11, 10) (11, 11) (11, 12) (11, 13) (11, 14)
 1725  serial iterator over the domain
@@ -2140,13 +2140,13 @@
 1743   7   (0, -93)
 1743   8   (0, -92)
 1743   9   (0, -91)
-1743  dsiAccess1d dim1
+1743  dsiAccess1d dim0
 1744  
 1744   16   (2, 6)
 1744   17   (2, 7)
 1744   18   (2, 8)
 1744   19   (2, 9)
-1744  dsiAccess1d dim2
+1744  dsiAccess1d dim1
 1745  
 1745   (5, 16) (5, 17) (5, 18) (5, 19) (6, 16) (6, 17) (6, 18) (6, 19) (7, 16) (7, 17) (7, 18) (7, 19) (8, 16) (8, 17) (8, 18) (8, 19) (9, 16) (9, 17) (9, 18) (9, 19) (10, 16) (10, 17) (10, 18) (10, 19) (11, 16) (11, 17) (11, 18) (11, 19)
 1745  serial iterator over the domain
@@ -2262,10 +2262,10 @@
 1763   7   (0, -93)
 1763   8   (0, -92)
 1763   9   (0, -91)
-1763  dsiAccess1d dim1
+1763  dsiAccess1d dim0
 1764  
 1764   12   (1, 7)
-1764  dsiAccess1d dim2
+1764  dsiAccess1d dim1
 1765  
 1765   (5, 12) (6, 12) (7, 12) (8, 12) (9, 12) (10, 12) (11, 12)
 1765  serial iterator over the domain
@@ -2312,7 +2312,7 @@
 1782  storage
 1783  
 1783   1   (0, -99)
-1783  dsiAccess1d dim1
+1783  dsiAccess1d dim0
 1784  
 1784   3   (2, 3)
 1784   4   (2, 4)
@@ -2321,7 +2321,7 @@
 1784   7   (0, 7)
 1784   8   (0, 8)
 1784   9   (0, 9)
-1784  dsiAccess1d dim2
+1784  dsiAccess1d dim1
 1785  
 1785   (1, 3) (1, 4) (1, 5) (1, 6) (1, 7) (1, 8) (1, 9)
 1785  serial iterator over the domain
@@ -2368,7 +2368,7 @@
 1802  storage
 1803  
 1803   1   (0, -99)
-1803  dsiAccess1d dim1
+1803  dsiAccess1d dim0
 1804  
 1804   3   (2, 3)
 1804   4   (2, 4)
@@ -2377,7 +2377,7 @@
 1804   7   (0, 7)
 1804   8   (0, 8)
 1804   9   (0, 9)
-1804  dsiAccess1d dim2
+1804  dsiAccess1d dim1
 1805  
 1805   (1, 3) (1, 4) (1, 5) (1, 6) (1, 7) (1, 8) (1, 9)
 1805  serial iterator over the domain
@@ -2424,13 +2424,13 @@
 1822  storage
 1823  
 1823   1   (0, -99)
-1823  dsiAccess1d dim1
+1823  dsiAccess1d dim0
 1824  
 1824   3   (2, 1)
 1824   5   (0, 3)
 1824   7   (0, 4)
 1824   9   (0, 5)
-1824  dsiAccess1d dim2
+1824  dsiAccess1d dim1
 1825  
 1825   (1, 3) (1, 5) (1, 7) (1, 9)
 1825  serial iterator over the domain
@@ -2468,12 +2468,12 @@
 1842  storage
 1843  
 1843   1   (0, -99)
-1843  dsiAccess1d dim1
+1843  dsiAccess1d dim0
 1844  
 1844   3   (2, 1)
 1844   6   (0, 2)
 1844   9   (0, 3)
-1844  dsiAccess1d dim2
+1844  dsiAccess1d dim1
 1845  
 1845   (1, 3) (1, 6) (1, 9)
 1845  serial iterator over the domain
@@ -2508,7 +2508,7 @@
 1862  storage
 1863  
 1863   1   (0, -99)
-1863  dsiAccess1d dim1
+1863  dsiAccess1d dim0
 1864  
 1864   3   (2, 3)
 1864   4   (2, 4)
@@ -2517,7 +2517,7 @@
 1864   7   (0, 7)
 1864   8   (0, 8)
 1864   9   (0, 9)
-1864  dsiAccess1d dim2
+1864  dsiAccess1d dim1
 1865  
 1865   (1, 9) (1, 8) (1, 7) (1, 6) (1, 5) (1, 4) (1, 3)
 1865  serial iterator over the domain
@@ -2564,13 +2564,13 @@
 1882  storage
 1883  
 1883   1   (0, -99)
-1883  dsiAccess1d dim1
+1883  dsiAccess1d dim0
 1884  
 1884   3   (2, 1)
 1884   5   (0, 3)
 1884   7   (0, 4)
 1884   9   (0, 5)
-1884  dsiAccess1d dim2
+1884  dsiAccess1d dim1
 1885  
 1885   (1, 9) (1, 7) (1, 5) (1, 3)
 1885  serial iterator over the domain
@@ -2608,12 +2608,12 @@
 1902  storage
 1903  
 1903   1   (0, -99)
-1903  dsiAccess1d dim1
+1903  dsiAccess1d dim0
 1904  
 1904   3   (2, 1)
 1904   6   (0, 2)
 1904   9   (0, 3)
-1904  dsiAccess1d dim2
+1904  dsiAccess1d dim1
 1905  
 1905   (1, 9) (1, 6) (1, 3)
 1905  serial iterator over the domain
@@ -2654,10 +2654,10 @@
 1923   7   (0, -93)
 1923   8   (0, -92)
 1923   9   (0, -91)
-1923  dsiAccess1d dim1
+1923  dsiAccess1d dim0
 1924  
 1924   1   (2, 1)
-1924  dsiAccess1d dim2
+1924  dsiAccess1d dim1
 1925  
 1925   (3, 1) (4, 1) (5, 1) (6, 1) (7, 1) (8, 1) (9, 1)
 1925  serial iterator over the domain
@@ -2710,10 +2710,10 @@
 1943   7   (0, -93)
 1943   8   (0, -92)
 1943   9   (0, -91)
-1943  dsiAccess1d dim1
+1943  dsiAccess1d dim0
 1944  
 1944   1   (2, 1)
-1944  dsiAccess1d dim2
+1944  dsiAccess1d dim1
 1945  
 1945   (3, 1) (4, 1) (5, 1) (6, 1) (7, 1) (8, 1) (9, 1)
 1945  serial iterator over the domain
@@ -2763,10 +2763,10 @@
 1963   5   (0, -55)
 1963   7   (0, -54)
 1963   9   (0, -52)
-1963  dsiAccess1d dim1
+1963  dsiAccess1d dim0
 1964  
 1964   1   (2, 1)
-1964  dsiAccess1d dim2
+1964  dsiAccess1d dim1
 1965  
 1965   (3, 1) (5, 1) (7, 1) (9, 1)
 1965  serial iterator over the domain
@@ -2806,10 +2806,10 @@
 1983   3   (0, -42)
 1983   6   (0, -41)
 1983   9   (0, -39)
-1983  dsiAccess1d dim1
+1983  dsiAccess1d dim0
 1984  
 1984   1   (2, 1)
-1984  dsiAccess1d dim2
+1984  dsiAccess1d dim1
 1985  
 1985   (3, 1) (6, 1) (9, 1)
 1985  serial iterator over the domain
@@ -2850,10 +2850,10 @@
 2003   7   (0, -93)
 2003   8   (0, -92)
 2003   9   (0, -91)
-2003  dsiAccess1d dim1
+2003  dsiAccess1d dim0
 2004  
 2004   1   (2, 1)
-2004  dsiAccess1d dim2
+2004  dsiAccess1d dim1
 2005  
 2005   (9, 1) (8, 1) (7, 1) (6, 1) (5, 1) (4, 1) (3, 1)
 2005  serial iterator over the domain
@@ -2903,10 +2903,10 @@
 2023   5   (0, -55)
 2023   7   (0, -54)
 2023   9   (0, -52)
-2023  dsiAccess1d dim1
+2023  dsiAccess1d dim0
 2024  
 2024   1   (2, 1)
-2024  dsiAccess1d dim2
+2024  dsiAccess1d dim1
 2025  
 2025   (9, 1) (7, 1) (5, 1) (3, 1)
 2025  serial iterator over the domain
@@ -2946,10 +2946,10 @@
 2043   3   (0, -42)
 2043   6   (0, -41)
 2043   9   (0, -39)
-2043  dsiAccess1d dim1
+2043  dsiAccess1d dim0
 2044  
 2044   1   (2, 1)
-2044  dsiAccess1d dim2
+2044  dsiAccess1d dim1
 2045  
 2045   (9, 1) (6, 1) (3, 1)
 2045  serial iterator over the domain
@@ -2984,7 +2984,7 @@
 2062  storage
 2063  
 2063   1   (0, -99)
-2063  dsiAccess1d dim1
+2063  dsiAccess1d dim0
 2064  
 2064   -1   (1, 4)
 2064   -2   (1, 3)
@@ -2997,7 +2997,7 @@
 2064   3   (2, 3)
 2064   4   (2, 4)
 2064   5   (0, 5)
-2064  dsiAccess1d dim2
+2064  dsiAccess1d dim1
 2065  
 2065   (1, -5) (1, -4) (1, -3) (1, -2) (1, -1) (1, 0) (1, 1) (1, 2) (1, 3) (1, 4) (1, 5)
 2065  serial iterator over the domain
@@ -3056,7 +3056,7 @@
 2082  storage
 2083  
 2083   1   (0, -99)
-2083  dsiAccess1d dim1
+2083  dsiAccess1d dim0
 2084  
 2084   -1   (1, 4)
 2084   -2   (1, 3)
@@ -3069,7 +3069,7 @@
 2084   3   (2, 3)
 2084   4   (2, 4)
 2084   5   (0, 5)
-2084  dsiAccess1d dim2
+2084  dsiAccess1d dim1
 2085  
 2085   (1, -5) (1, -4) (1, -3) (1, -2) (1, -1) (1, 0) (1, 1) (1, 2) (1, 3) (1, 4) (1, 5)
 2085  serial iterator over the domain
@@ -3128,7 +3128,7 @@
 2102  storage
 2103  
 2103   1   (0, -99)
-2103  dsiAccess1d dim1
+2103  dsiAccess1d dim0
 2104  
 2104   -1   (1, 2)
 2104   -3   (1, 1)
@@ -3136,7 +3136,7 @@
 2104   1   (2, 0)
 2104   3   (2, 1)
 2104   5   (0, 3)
-2104  dsiAccess1d dim2
+2104  dsiAccess1d dim1
 2105  
 2105   (1, -5) (1, -3) (1, -1) (1, 1) (1, 3) (1, 5)
 2105  serial iterator over the domain
@@ -3180,13 +3180,13 @@
 2122  storage
 2123  
 2123   1   (0, -99)
-2123  dsiAccess1d dim1
+2123  dsiAccess1d dim0
 2124  
 2124   -2   (1, 1)
 2124   -5   (1, 0)
 2124   1   (2, 0)
 2124   4   (2, 1)
-2124  dsiAccess1d dim2
+2124  dsiAccess1d dim1
 2125  
 2125   (1, -5) (1, -2) (1, 1) (1, 4)
 2125  serial iterator over the domain
@@ -3224,7 +3224,7 @@
 2142  storage
 2143  
 2143   1   (0, -99)
-2143  dsiAccess1d dim1
+2143  dsiAccess1d dim0
 2144  
 2144   -1   (1, 4)
 2144   -2   (1, 3)
@@ -3237,7 +3237,7 @@
 2144   3   (2, 3)
 2144   4   (2, 4)
 2144   5   (0, 5)
-2144  dsiAccess1d dim2
+2144  dsiAccess1d dim1
 2145  
 2145   (1, 5) (1, 4) (1, 3) (1, 2) (1, 1) (1, 0) (1, -1) (1, -2) (1, -3) (1, -4) (1, -5)
 2145  serial iterator over the domain
@@ -3296,7 +3296,7 @@
 2162  storage
 2163  
 2163   1   (0, -99)
-2163  dsiAccess1d dim1
+2163  dsiAccess1d dim0
 2164  
 2164   -1   (1, 2)
 2164   -3   (1, 1)
@@ -3304,7 +3304,7 @@
 2164   1   (2, 0)
 2164   3   (2, 1)
 2164   5   (0, 3)
-2164  dsiAccess1d dim2
+2164  dsiAccess1d dim1
 2165  
 2165   (1, 5) (1, 3) (1, 1) (1, -1) (1, -3) (1, -5)
 2165  serial iterator over the domain
@@ -3348,13 +3348,13 @@
 2182  storage
 2183  
 2183   1   (0, -99)
-2183  dsiAccess1d dim1
+2183  dsiAccess1d dim0
 2184  
 2184   -1   (1, 1)
 2184   -4   (1, 0)
 2184   2   (2, 0)
 2184   5   (0, 2)
-2184  dsiAccess1d dim2
+2184  dsiAccess1d dim1
 2185  
 2185   (1, 5) (1, 2) (1, -1) (1, -4)
 2185  serial iterator over the domain
@@ -3402,10 +3402,10 @@
 2203   3   (0, -97)
 2203   4   (0, -96)
 2203   5   (0, -95)
-2203  dsiAccess1d dim1
+2203  dsiAccess1d dim0
 2204  
 2204   1   (2, 1)
-2204  dsiAccess1d dim2
+2204  dsiAccess1d dim1
 2205  
 2205   (-5, 1) (-4, 1) (-3, 1) (-2, 1) (-1, 1) (0, 1) (1, 1) (2, 1) (3, 1) (4, 1) (5, 1)
 2205  serial iterator over the domain
@@ -3474,10 +3474,10 @@
 2223   3   (0, -97)
 2223   4   (0, -96)
 2223   5   (0, -95)
-2223  dsiAccess1d dim1
+2223  dsiAccess1d dim0
 2224  
 2224   1   (2, 1)
-2224  dsiAccess1d dim2
+2224  dsiAccess1d dim1
 2225  
 2225   (-5, 1) (-4, 1) (-3, 1) (-2, 1) (-1, 1) (0, 1) (1, 1) (2, 1) (3, 1) (4, 1) (5, 1)
 2225  serial iterator over the domain
@@ -3541,10 +3541,10 @@
 2243   1   (0, -57)
 2243   3   (0, -56)
 2243   5   (0, -55)
-2243  dsiAccess1d dim1
+2243  dsiAccess1d dim0
 2244  
 2244   1   (2, 1)
-2244  dsiAccess1d dim2
+2244  dsiAccess1d dim1
 2245  
 2245   (-5, 1) (-3, 1) (-1, 1) (1, 1) (3, 1) (5, 1)
 2245  serial iterator over the domain
@@ -3591,10 +3591,10 @@
 2263   -5   (0, -45)
 2263   1   (0, -43)
 2263   4   (0, -42)
-2263  dsiAccess1d dim1
+2263  dsiAccess1d dim0
 2264  
 2264   1   (2, 1)
-2264  dsiAccess1d dim2
+2264  dsiAccess1d dim1
 2265  
 2265   (-5, 1) (-2, 1) (1, 1) (4, 1)
 2265  serial iterator over the domain
@@ -3642,10 +3642,10 @@
 2283   3   (0, -97)
 2283   4   (0, -96)
 2283   5   (0, -95)
-2283  dsiAccess1d dim1
+2283  dsiAccess1d dim0
 2284  
 2284   1   (2, 1)
-2284  dsiAccess1d dim2
+2284  dsiAccess1d dim1
 2285  
 2285   (5, 1) (4, 1) (3, 1) (2, 1) (1, 1) (0, 1) (-1, 1) (-2, 1) (-3, 1) (-4, 1) (-5, 1)
 2285  serial iterator over the domain
@@ -3709,10 +3709,10 @@
 2303   1   (0, -57)
 2303   3   (0, -56)
 2303   5   (0, -55)
-2303  dsiAccess1d dim1
+2303  dsiAccess1d dim0
 2304  
 2304   1   (2, 1)
-2304  dsiAccess1d dim2
+2304  dsiAccess1d dim1
 2305  
 2305   (5, 1) (3, 1) (1, 1) (-1, 1) (-3, 1) (-5, 1)
 2305  serial iterator over the domain
@@ -3759,10 +3759,10 @@
 2323   -4   (0, -45)
 2323   2   (0, -42)
 2323   5   (0, -41)
-2323  dsiAccess1d dim1
+2323  dsiAccess1d dim0
 2324  
 2324   1   (2, 1)
-2324  dsiAccess1d dim2
+2324  dsiAccess1d dim1
 2325  
 2325   (5, 1) (2, 1) (-1, 1) (-4, 1)
 2325  serial iterator over the domain
@@ -3800,7 +3800,7 @@
 2342  storage
 2343  
 2343   1   (0, -99)
-2343  dsiAccess1d dim1
+2343  dsiAccess1d dim0
 2344  
 2344   -1   (1, 4)
 2344   -2   (1, 3)
@@ -3812,7 +3812,7 @@
 2344   -8   (0, 2)
 2344   -9   (0, 1)
 2344   0   (2, 0)
-2344  dsiAccess1d dim2
+2344  dsiAccess1d dim1
 2345  
 2345   (1, -9) (1, -8) (1, -7) (1, -6) (1, -5) (1, -4) (1, -3) (1, -2) (1, -1) (1, 0)
 2345  serial iterator over the domain
@@ -3868,7 +3868,7 @@
 2362  storage
 2363  
 2363   1   (0, -99)
-2363  dsiAccess1d dim1
+2363  dsiAccess1d dim0
 2364  
 2364   -1   (1, 4)
 2364   -2   (1, 3)
@@ -3880,7 +3880,7 @@
 2364   -8   (0, 2)
 2364   -9   (0, 1)
 2364   0   (2, 0)
-2364  dsiAccess1d dim2
+2364  dsiAccess1d dim1
 2365  
 2365   (1, -9) (1, -8) (1, -7) (1, -6) (1, -5) (1, -4) (1, -3) (1, -2) (1, -1) (1, 0)
 2365  serial iterator over the domain
@@ -3936,14 +3936,14 @@
 2382  storage
 2383  
 2383   1   (0, -99)
-2383  dsiAccess1d dim1
+2383  dsiAccess1d dim0
 2384  
 2384   -1   (1, 2)
 2384   -3   (1, 1)
 2384   -5   (1, 0)
 2384   -7   (0, 1)
 2384   -9   (0, 0)
-2384  dsiAccess1d dim2
+2384  dsiAccess1d dim1
 2385  
 2385   (1, -9) (1, -7) (1, -5) (1, -3) (1, -1)
 2385  serial iterator over the domain
@@ -3984,13 +3984,13 @@
 2402  storage
 2403  
 2403   1   (0, -99)
-2403  dsiAccess1d dim1
+2403  dsiAccess1d dim0
 2404  
 2404   -3   (1, 0)
 2404   -6   (0, 1)
 2404   -9   (0, 0)
 2404   0   (2, 0)
-2404  dsiAccess1d dim2
+2404  dsiAccess1d dim1
 2405  
 2405   (1, -9) (1, -6) (1, -3) (1, 0)
 2405  serial iterator over the domain
@@ -4028,7 +4028,7 @@
 2422  storage
 2423  
 2423   1   (0, -99)
-2423  dsiAccess1d dim1
+2423  dsiAccess1d dim0
 2424  
 2424   -1   (1, 4)
 2424   -2   (1, 3)
@@ -4040,7 +4040,7 @@
 2424   -8   (0, 2)
 2424   -9   (0, 1)
 2424   0   (2, 0)
-2424  dsiAccess1d dim2
+2424  dsiAccess1d dim1
 2425  
 2425   (1, 0) (1, -1) (1, -2) (1, -3) (1, -4) (1, -5) (1, -6) (1, -7) (1, -8) (1, -9)
 2425  serial iterator over the domain
@@ -4096,14 +4096,14 @@
 2442  storage
 2443  
 2443   1   (0, -99)
-2443  dsiAccess1d dim1
+2443  dsiAccess1d dim0
 2444  
 2444   -2   (1, 1)
 2444   -4   (1, 0)
 2444   -6   (0, 2)
 2444   -8   (0, 1)
 2444   0   (2, 0)
-2444  dsiAccess1d dim2
+2444  dsiAccess1d dim1
 2445  
 2445   (1, 0) (1, -2) (1, -4) (1, -6) (1, -8)
 2445  serial iterator over the domain
@@ -4144,13 +4144,13 @@
 2462  storage
 2463  
 2463   1   (0, -99)
-2463  dsiAccess1d dim1
+2463  dsiAccess1d dim0
 2464  
 2464   -3   (1, 0)
 2464   -6   (0, 1)
 2464   -9   (0, 0)
 2464   0   (2, 0)
-2464  dsiAccess1d dim2
+2464  dsiAccess1d dim1
 2465  
 2465   (1, 0) (1, -3) (1, -6) (1, -9)
 2465  serial iterator over the domain
@@ -4197,10 +4197,10 @@
 2483   -8   (0, -108)
 2483   -9   (0, -109)
 2483   0   (0, -100)
-2483  dsiAccess1d dim1
+2483  dsiAccess1d dim0
 2484  
 2484   1   (2, 1)
-2484  dsiAccess1d dim2
+2484  dsiAccess1d dim1
 2485  
 2485   (-9, 1) (-8, 1) (-7, 1) (-6, 1) (-5, 1) (-4, 1) (-3, 1) (-2, 1) (-1, 1) (0, 1)
 2485  serial iterator over the domain
@@ -4265,10 +4265,10 @@
 2503   -8   (0, -108)
 2503   -9   (0, -109)
 2503   0   (0, -100)
-2503  dsiAccess1d dim1
+2503  dsiAccess1d dim0
 2504  
 2504   1   (2, 1)
-2504  dsiAccess1d dim2
+2504  dsiAccess1d dim1
 2505  
 2505   (-9, 1) (-8, 1) (-7, 1) (-6, 1) (-5, 1) (-4, 1) (-3, 1) (-2, 1) (-1, 1) (0, 1)
 2505  serial iterator over the domain
@@ -4328,10 +4328,10 @@
 2523   -5   (0, -60)
 2523   -7   (0, -62)
 2523   -9   (0, -63)
-2523  dsiAccess1d dim1
+2523  dsiAccess1d dim0
 2524  
 2524   1   (2, 1)
-2524  dsiAccess1d dim2
+2524  dsiAccess1d dim1
 2525  
 2525   (-9, 1) (-7, 1) (-5, 1) (-3, 1) (-1, 1)
 2525  serial iterator over the domain
@@ -4375,10 +4375,10 @@
 2543   -6   (0, -46)
 2543   -9   (0, -47)
 2543   0   (0, -44)
-2543  dsiAccess1d dim1
+2543  dsiAccess1d dim0
 2544  
 2544   1   (2, 1)
-2544  dsiAccess1d dim2
+2544  dsiAccess1d dim1
 2545  
 2545   (-9, 1) (-6, 1) (-3, 1) (0, 1)
 2545  serial iterator over the domain
@@ -4425,10 +4425,10 @@
 2563   -8   (0, -108)
 2563   -9   (0, -109)
 2563   0   (0, -100)
-2563  dsiAccess1d dim1
+2563  dsiAccess1d dim0
 2564  
 2564   1   (2, 1)
-2564  dsiAccess1d dim2
+2564  dsiAccess1d dim1
 2565  
 2565   (0, 1) (-1, 1) (-2, 1) (-3, 1) (-4, 1) (-5, 1) (-6, 1) (-7, 1) (-8, 1) (-9, 1)
 2565  serial iterator over the domain
@@ -4488,10 +4488,10 @@
 2583   -6   (0, -61)
 2583   -8   (0, -62)
 2583   0   (0, -58)
-2583  dsiAccess1d dim1
+2583  dsiAccess1d dim0
 2584  
 2584   1   (2, 1)
-2584  dsiAccess1d dim2
+2584  dsiAccess1d dim1
 2585  
 2585   (0, 1) (-2, 1) (-4, 1) (-6, 1) (-8, 1)
 2585  serial iterator over the domain
@@ -4535,10 +4535,10 @@
 2603   -6   (0, -46)
 2603   -9   (0, -47)
 2603   0   (0, -44)
-2603  dsiAccess1d dim1
+2603  dsiAccess1d dim0
 2604  
 2604   1   (2, 1)
-2604  dsiAccess1d dim2
+2604  dsiAccess1d dim1
 2605  
 2605   (0, 1) (-3, 1) (-6, 1) (-9, 1)
 2605  serial iterator over the domain
@@ -4582,9 +4582,9 @@
 2623   7   (0, -93)
 2623   8   (0, -92)
 2623   9   (0, -91)
-2623  dsiAccess1d dim1
+2623  dsiAccess1d dim0
 2624  
-2624  dsiAccess1d dim2
+2624  dsiAccess1d dim1
 2625  
 2625  
 2625  serial iterator over the domain
@@ -4609,7 +4609,7 @@
 2642   (0, 2)   {-89..-95, 15..17}
 2642  storage
 2643  
-2643  dsiAccess1d dim1
+2643  dsiAccess1d dim0
 2644  
 2644   42   (1, 17)
 2644   43   (1, 18)
@@ -4617,7 +4617,7 @@
 2644   45   (2, 15)
 2644   46   (2, 16)
 2644   47   (2, 17)
-2644  dsiAccess1d dim2
+2644  dsiAccess1d dim1
 2645  
 2645  
 2645  serial iterator over the domain
@@ -4642,9 +4642,9 @@
 2662   (0, 2)   {-89..-95, 17..14}
 2662  storage
 2663  
-2663  dsiAccess1d dim1
+2663  dsiAccess1d dim0
 2664  
-2664  dsiAccess1d dim2
+2664  dsiAccess1d dim1
 2665  
 2665  
 2665  serial iterator over the domain
@@ -4672,10 +4672,10 @@
 3042  storage
 3043  
 3043   5   (0, -95)
-3043  dsiAccess1d dim1
+3043  dsiAccess1d dim0
 3044  
 3044   7   (0, 7)
-3044  dsiAccess1d dim2
+3044  dsiAccess1d dim1
 3045  
 3045   (5, 7)
 3045  serial iterator over the domain
@@ -4704,10 +4704,10 @@
 3062  storage
 3063  
 3063   5   (0, -95)
-3063  dsiAccess1d dim1
+3063  dsiAccess1d dim0
 3064  
 3064   12   (1, 7)
-3064  dsiAccess1d dim2
+3064  dsiAccess1d dim1
 3065  
 3065   (5, 12)
 3065  serial iterator over the domain
@@ -4736,10 +4736,10 @@
 3082  storage
 3083  
 3083   5   (0, -95)
-3083  dsiAccess1d dim1
+3083  dsiAccess1d dim0
 3084  
 3084   18   (2, 8)
-3084  dsiAccess1d dim2
+3084  dsiAccess1d dim1
 3085  
 3085   (5, 18)
 3085  serial iterator over the domain
@@ -4768,14 +4768,14 @@
 3102  storage
 3103  
 3103   5   (0, -95)
-3103  dsiAccess1d dim1
+3103  dsiAccess1d dim0
 3104  
 3104   5   (0, 5)
 3104   6   (0, 6)
 3104   7   (0, 7)
 3104   8   (0, 8)
 3104   9   (0, 9)
-3104  dsiAccess1d dim2
+3104  dsiAccess1d dim1
 3105  
 3105   (5, 5) (5, 6) (5, 7) (5, 8) (5, 9)
 3105  serial iterator over the domain
@@ -4816,14 +4816,14 @@
 3122  storage
 3123  
 3123   5   (0, -95)
-3123  dsiAccess1d dim1
+3123  dsiAccess1d dim0
 3124  
 3124   10   (1, 5)
 3124   11   (1, 6)
 3124   12   (1, 7)
 3124   13   (1, 8)
 3124   14   (1, 9)
-3124  dsiAccess1d dim2
+3124  dsiAccess1d dim1
 3125  
 3125   (5, 10) (5, 11) (5, 12) (5, 13) (5, 14)
 3125  serial iterator over the domain
@@ -4864,14 +4864,14 @@
 3142  storage
 3143  
 3143   5   (0, -95)
-3143  dsiAccess1d dim1
+3143  dsiAccess1d dim0
 3144  
 3144   15   (2, 5)
 3144   16   (2, 6)
 3144   17   (2, 7)
 3144   18   (2, 8)
 3144   19   (2, 9)
-3144  dsiAccess1d dim2
+3144  dsiAccess1d dim1
 3145  
 3145   (5, 15) (5, 16) (5, 17) (5, 18) (5, 19)
 3145  serial iterator over the domain
@@ -4912,14 +4912,14 @@
 3162  storage
 3163  
 3163   5   (0, -95)
-3163  dsiAccess1d dim1
+3163  dsiAccess1d dim0
 3164  
 3164   3   (2, 3)
 3164   4   (2, 4)
 3164   5   (0, 5)
 3164   6   (0, 6)
 3164   7   (0, 7)
-3164  dsiAccess1d dim2
+3164  dsiAccess1d dim1
 3165  
 3165   (5, 3) (5, 4) (5, 5) (5, 6) (5, 7)
 3165  serial iterator over the domain
@@ -4960,7 +4960,7 @@
 3182  storage
 3183  
 3183   5   (0, -95)
-3183  dsiAccess1d dim1
+3183  dsiAccess1d dim0
 3184  
 3184   10   (1, 5)
 3184   11   (1, 6)
@@ -4972,7 +4972,7 @@
 3184   7   (0, 7)
 3184   8   (0, 8)
 3184   9   (0, 9)
-3184  dsiAccess1d dim2
+3184  dsiAccess1d dim1
 3185  
 3185   (5, 3) (5, 4) (5, 5) (5, 6) (5, 7) (5, 8) (5, 9) (5, 10) (5, 11) (5, 12)
 3185  serial iterator over the domain
@@ -5028,7 +5028,7 @@
 3202  storage
 3203  
 3203   5   (0, -95)
-3203  dsiAccess1d dim1
+3203  dsiAccess1d dim0
 3204  
 3204   10   (1, 5)
 3204   11   (1, 6)
@@ -5043,7 +5043,7 @@
 3204   7   (0, 7)
 3204   8   (0, 8)
 3204   9   (0, 9)
-3204  dsiAccess1d dim2
+3204  dsiAccess1d dim1
 3205  
 3205   (5, 3) (5, 4) (5, 5) (5, 6) (5, 7) (5, 8) (5, 9) (5, 10) (5, 11) (5, 12) (5, 13) (5, 14) (5, 15)
 3205  serial iterator over the domain
@@ -5108,7 +5108,7 @@
 3222  storage
 3223  
 3223   5   (0, -95)
-3223  dsiAccess1d dim1
+3223  dsiAccess1d dim0
 3224  
 3224   10   (1, 5)
 3224   11   (1, 6)
@@ -5124,7 +5124,7 @@
 3224   7   (0, 7)
 3224   8   (0, 8)
 3224   9   (0, 9)
-3224  dsiAccess1d dim2
+3224  dsiAccess1d dim1
 3225  
 3225   (5, 3) (5, 4) (5, 5) (5, 6) (5, 7) (5, 8) (5, 9) (5, 10) (5, 11) (5, 12) (5, 13) (5, 14) (5, 15) (5, 16)
 3225  serial iterator over the domain
@@ -5192,7 +5192,7 @@
 3242  storage
 3243  
 3243   5   (0, -95)
-3243  dsiAccess1d dim1
+3243  dsiAccess1d dim0
 3244  
 3244   10   (1, 5)
 3244   11   (1, 6)
@@ -5209,7 +5209,7 @@
 3244   7   (0, 7)
 3244   8   (0, 8)
 3244   9   (0, 9)
-3244  dsiAccess1d dim2
+3244  dsiAccess1d dim1
 3245  
 3245   (5, 3) (5, 4) (5, 5) (5, 6) (5, 7) (5, 8) (5, 9) (5, 10) (5, 11) (5, 12) (5, 13) (5, 14) (5, 15) (5, 16) (5, 17)
 3245  serial iterator over the domain
@@ -5280,7 +5280,7 @@
 3262  storage
 3263  
 3263   5   (0, -95)
-3263  dsiAccess1d dim1
+3263  dsiAccess1d dim0
 3264  
 3264   10   (1, 5)
 3264   11   (1, 6)
@@ -5298,7 +5298,7 @@
 3264   7   (0, 7)
 3264   8   (0, 8)
 3264   9   (0, 9)
-3264  dsiAccess1d dim2
+3264  dsiAccess1d dim1
 3265  
 3265   (5, 3) (5, 4) (5, 5) (5, 6) (5, 7) (5, 8) (5, 9) (5, 10) (5, 11) (5, 12) (5, 13) (5, 14) (5, 15) (5, 16) (5, 17) (5, 18)
 3265  serial iterator over the domain
@@ -5372,7 +5372,7 @@
 3282  storage
 3283  
 3283   5   (0, -95)
-3283  dsiAccess1d dim1
+3283  dsiAccess1d dim0
 3284  
 3284   10   (1, 5)
 3284   11   (1, 6)
@@ -5391,7 +5391,7 @@
 3284   7   (0, 7)
 3284   8   (0, 8)
 3284   9   (0, 9)
-3284  dsiAccess1d dim2
+3284  dsiAccess1d dim1
 3285  
 3285   (5, 3) (5, 4) (5, 5) (5, 6) (5, 7) (5, 8) (5, 9) (5, 10) (5, 11) (5, 12) (5, 13) (5, 14) (5, 15) (5, 16) (5, 17) (5, 18) (5, 19)
 3285  serial iterator over the domain
@@ -5468,7 +5468,7 @@
 3302  storage
 3303  
 3303   5   (0, -95)
-3303  dsiAccess1d dim1
+3303  dsiAccess1d dim0
 3304  
 3304   0   (2, 0)
 3304   1   (2, 1)
@@ -5487,7 +5487,7 @@
 3304   7   (0, 7)
 3304   8   (0, 8)
 3304   9   (0, 9)
-3304  dsiAccess1d dim2
+3304  dsiAccess1d dim1
 3305  
 3305   (5, 0) (5, 1) (5, 2) (5, 3) (5, 4) (5, 5) (5, 6) (5, 7) (5, 8) (5, 9) (5, 10) (5, 11) (5, 12) (5, 13) (5, 14) (5, 15) (5, 16)
 3305  serial iterator over the domain
@@ -5564,7 +5564,7 @@
 3322  storage
 3323  
 3323   5   (0, -95)
-3323  dsiAccess1d dim1
+3323  dsiAccess1d dim0
 3324  
 3324   1   (2, 1)
 3324   10   (1, 5)
@@ -5582,7 +5582,7 @@
 3324   7   (0, 7)
 3324   8   (0, 8)
 3324   9   (0, 9)
-3324  dsiAccess1d dim2
+3324  dsiAccess1d dim1
 3325  
 3325   (5, 1) (5, 2) (5, 3) (5, 4) (5, 5) (5, 6) (5, 7) (5, 8) (5, 9) (5, 10) (5, 11) (5, 12) (5, 13) (5, 14) (5, 15) (5, 16)
 3325  serial iterator over the domain
@@ -5656,7 +5656,7 @@
 3342  storage
 3343  
 3343   5   (0, -95)
-3343  dsiAccess1d dim1
+3343  dsiAccess1d dim0
 3344  
 3344   10   (1, 5)
 3344   11   (1, 6)
@@ -5673,7 +5673,7 @@
 3344   7   (0, 7)
 3344   8   (0, 8)
 3344   9   (0, 9)
-3344  dsiAccess1d dim2
+3344  dsiAccess1d dim1
 3345  
 3345   (5, 2) (5, 3) (5, 4) (5, 5) (5, 6) (5, 7) (5, 8) (5, 9) (5, 10) (5, 11) (5, 12) (5, 13) (5, 14) (5, 15) (5, 16)
 3345  serial iterator over the domain
@@ -5744,7 +5744,7 @@
 3362  storage
 3363  
 3363   5   (0, -95)
-3363  dsiAccess1d dim1
+3363  dsiAccess1d dim0
 3364  
 3364   10   (1, 5)
 3364   11   (1, 6)
@@ -5760,7 +5760,7 @@
 3364   7   (0, 7)
 3364   8   (0, 8)
 3364   9   (0, 9)
-3364  dsiAccess1d dim2
+3364  dsiAccess1d dim1
 3365  
 3365   (5, 3) (5, 4) (5, 5) (5, 6) (5, 7) (5, 8) (5, 9) (5, 10) (5, 11) (5, 12) (5, 13) (5, 14) (5, 15) (5, 16)
 3365  serial iterator over the domain
@@ -5828,7 +5828,7 @@
 3382  storage
 3383  
 3383   5   (0, -95)
-3383  dsiAccess1d dim1
+3383  dsiAccess1d dim0
 3384  
 3384   10   (1, 5)
 3384   11   (1, 6)
@@ -5843,7 +5843,7 @@
 3384   7   (0, 7)
 3384   8   (0, 8)
 3384   9   (0, 9)
-3384  dsiAccess1d dim2
+3384  dsiAccess1d dim1
 3385  
 3385   (5, 4) (5, 5) (5, 6) (5, 7) (5, 8) (5, 9) (5, 10) (5, 11) (5, 12) (5, 13) (5, 14) (5, 15) (5, 16)
 3385  serial iterator over the domain
@@ -5908,7 +5908,7 @@
 3402  storage
 3403  
 3403   5   (0, -95)
-3403  dsiAccess1d dim1
+3403  dsiAccess1d dim0
 3404  
 3404   0   (2, 0)
 3404   12   (1, 2)
@@ -5917,7 +5917,7 @@
 3404   3   (2, 1)
 3404   6   (0, 2)
 3404   9   (0, 3)
-3404  dsiAccess1d dim2
+3404  dsiAccess1d dim1
 3405  
 3405   (5, 0) (5, 3) (5, 6) (5, 9) (5, 12) (5, 15) (5, 18)
 3405  serial iterator over the domain
@@ -5964,7 +5964,7 @@
 3422  storage
 3423  
 3423   5   (0, -95)
-3423  dsiAccess1d dim1
+3423  dsiAccess1d dim0
 3424  
 3424   1   (2, 0)
 3424   10   (1, 2)
@@ -5973,7 +5973,7 @@
 3424   19   (2, 3)
 3424   4   (2, 1)
 3424   7   (0, 2)
-3424  dsiAccess1d dim2
+3424  dsiAccess1d dim1
 3425  
 3425   (5, 1) (5, 4) (5, 7) (5, 10) (5, 13) (5, 16) (5, 19)
 3425  serial iterator over the domain
@@ -6020,7 +6020,7 @@
 3442  storage
 3443  
 3443   5   (0, -95)
-3443  dsiAccess1d dim1
+3443  dsiAccess1d dim0
 3444  
 3444   11   (1, 2)
 3444   14   (1, 3)
@@ -6028,7 +6028,7 @@
 3444   2   (2, 0)
 3444   5   (0, 2)
 3444   8   (0, 3)
-3444  dsiAccess1d dim2
+3444  dsiAccess1d dim1
 3445  
 3445   (5, 2) (5, 5) (5, 8) (5, 11) (5, 14) (5, 17)
 3445  serial iterator over the domain
@@ -6072,13 +6072,13 @@
 3462  storage
 3463  
 3463   5   (0, -95)
-3463  dsiAccess1d dim1
+3463  dsiAccess1d dim0
 3464  
 3464   1   (2, 0)
 3464   11   (1, 1)
 3464   16   (2, 1)
 3464   6   (0, 1)
-3464  dsiAccess1d dim2
+3464  dsiAccess1d dim1
 3465  
 3465   (5, 1) (5, 6) (5, 11) (5, 16)
 3465  serial iterator over the domain
@@ -6116,12 +6116,12 @@
 3482  storage
 3483  
 3483   5   (0, -95)
-3483  dsiAccess1d dim1
+3483  dsiAccess1d dim0
 3484  
 3484   1   (2, 0)
 3484   15   (2, 1)
 3484   8   (0, 1)
-3484  dsiAccess1d dim2
+3484  dsiAccess1d dim1
 3485  
 3485   (5, 1) (5, 8) (5, 15)
 3485  serial iterator over the domain
@@ -6156,12 +6156,12 @@
 3502  storage
 3503  
 3503   5   (0, -95)
-3503  dsiAccess1d dim1
+3503  dsiAccess1d dim0
 3504  
 3504   1   (2, 0)
 3504   17   (2, 1)
 3504   9   (0, 1)
-3504  dsiAccess1d dim2
+3504  dsiAccess1d dim1
 3505  
 3505   (5, 1) (5, 9) (5, 17)
 3505  serial iterator over the domain
@@ -6196,12 +6196,12 @@
 3522  storage
 3523  
 3523   5   (0, -95)
-3523  dsiAccess1d dim1
+3523  dsiAccess1d dim0
 3524  
 3524   1   (2, 0)
 3524   10   (1, 1)
 3524   19   (2, 1)
-3524  dsiAccess1d dim2
+3524  dsiAccess1d dim1
 3525  
 3525   (5, 1) (5, 10) (5, 19)
 3525  serial iterator over the domain
@@ -6236,11 +6236,11 @@
 3542  storage
 3543  
 3543   5   (0, -95)
-3543  dsiAccess1d dim1
+3543  dsiAccess1d dim0
 3544  
 3544   1   (2, 0)
 3544   11   (1, 1)
-3544  dsiAccess1d dim2
+3544  dsiAccess1d dim1
 3545  
 3545   (5, 1) (5, 11)
 3545  serial iterator over the domain
@@ -6272,11 +6272,11 @@
 3562  storage
 3563  
 3563   5   (0, -95)
-3563  dsiAccess1d dim1
+3563  dsiAccess1d dim0
 3564  
 3564   1   (2, 0)
 3564   16   (2, 1)
-3564  dsiAccess1d dim2
+3564  dsiAccess1d dim1
 3565  
 3565   (5, 1) (5, 16)
 3565  serial iterator over the domain
@@ -6308,11 +6308,11 @@
 3582  storage
 3583  
 3583   5   (0, -95)
-3583  dsiAccess1d dim1
+3583  dsiAccess1d dim0
 3584  
 3584   1   (2, 0)
 3584   19   (2, 1)
-3584  dsiAccess1d dim2
+3584  dsiAccess1d dim1
 3585  
 3585   (5, 1) (5, 19)
 3585  serial iterator over the domain
@@ -6344,10 +6344,10 @@
 3602  storage
 3603  
 3603   5   (0, -95)
-3603  dsiAccess1d dim1
+3603  dsiAccess1d dim0
 3604  
 3604   1   (2, 0)
-3604  dsiAccess1d dim2
+3604  dsiAccess1d dim1
 3605  
 3605   (5, 1)
 3605  serial iterator over the domain
@@ -6376,10 +6376,10 @@
 3622  storage
 3623  
 3623   5   (0, -95)
-3623  dsiAccess1d dim1
+3623  dsiAccess1d dim0
 3624  
 3624   1   (2, 0)
-3624  dsiAccess1d dim2
+3624  dsiAccess1d dim1
 3625  
 3625   (5, 1)
 3625  serial iterator over the domain
@@ -6408,10 +6408,10 @@
 3642  storage
 3643  
 3643   1   (0, -99)
-3643  dsiAccess1d dim1
+3643  dsiAccess1d dim0
 3644  
 3644   7   (0, 7)
-3644  dsiAccess1d dim2
+3644  dsiAccess1d dim1
 3645  
 3645   (1, 7)
 3645  serial iterator over the domain
@@ -6440,10 +6440,10 @@
 3662  storage
 3663  
 3663   1   (0, -99)
-3663  dsiAccess1d dim1
+3663  dsiAccess1d dim0
 3664  
 3664   12   (1, 7)
-3664  dsiAccess1d dim2
+3664  dsiAccess1d dim1
 3665  
 3665   (1, 12)
 3665  serial iterator over the domain
@@ -6472,10 +6472,10 @@
 3682  storage
 3683  
 3683   1   (0, -99)
-3683  dsiAccess1d dim1
+3683  dsiAccess1d dim0
 3684  
 3684   18   (2, 8)
-3684  dsiAccess1d dim2
+3684  dsiAccess1d dim1
 3685  
 3685   (1, 18)
 3685  serial iterator over the domain
@@ -6510,14 +6510,14 @@
 3703   7   (0, -93)
 3703   8   (0, -92)
 3703   9   (0, -91)
-3703  dsiAccess1d dim1
+3703  dsiAccess1d dim0
 3704  
 3704   5   (0, 5)
 3704   6   (0, 6)
 3704   7   (0, 7)
 3704   8   (0, 8)
 3704   9   (0, 9)
-3704  dsiAccess1d dim2
+3704  dsiAccess1d dim1
 3705  
 3705   (5, 5) (5, 6) (5, 7) (5, 8) (5, 9) (6, 5) (6, 6) (6, 7) (6, 8) (6, 9) (7, 5) (7, 6) (7, 7) (7, 8) (7, 9) (8, 5) (8, 6) (8, 7) (8, 8) (8, 9) (9, 5) (9, 6) (9, 7) (9, 8) (9, 9) (10, 5) (10, 6) (10, 7) (10, 8) (10, 9) (11, 5) (11, 6) (11, 7) (11, 8) (11, 9)
 3705  serial iterator over the domain
@@ -6654,14 +6654,14 @@
 3723   7   (0, -93)
 3723   8   (0, -92)
 3723   9   (0, -91)
-3723  dsiAccess1d dim1
+3723  dsiAccess1d dim0
 3724  
 3724   10   (1, 5)
 3724   11   (1, 6)
 3724   12   (1, 7)
 3724   13   (1, 8)
 3724   14   (1, 9)
-3724  dsiAccess1d dim2
+3724  dsiAccess1d dim1
 3725  
 3725   (5, 10) (5, 11) (5, 12) (5, 13) (5, 14) (6, 10) (6, 11) (6, 12) (6, 13) (6, 14) (7, 10) (7, 11) (7, 12) (7, 13) (7, 14) (8, 10) (8, 11) (8, 12) (8, 13) (8, 14) (9, 10) (9, 11) (9, 12) (9, 13) (9, 14) (10, 10) (10, 11) (10, 12) (10, 13) (10, 14) (11, 10) (11, 11) (11, 12) (11, 13) (11, 14)
 3725  serial iterator over the domain
@@ -6798,13 +6798,13 @@
 3743   7   (0, -93)
 3743   8   (0, -92)
 3743   9   (0, -91)
-3743  dsiAccess1d dim1
+3743  dsiAccess1d dim0
 3744  
 3744   16   (2, 6)
 3744   17   (2, 7)
 3744   18   (2, 8)
 3744   19   (2, 9)
-3744  dsiAccess1d dim2
+3744  dsiAccess1d dim1
 3745  
 3745   (5, 16) (5, 17) (5, 18) (5, 19) (6, 16) (6, 17) (6, 18) (6, 19) (7, 16) (7, 17) (7, 18) (7, 19) (8, 16) (8, 17) (8, 18) (8, 19) (9, 16) (9, 17) (9, 18) (9, 19) (10, 16) (10, 17) (10, 18) (10, 19) (11, 16) (11, 17) (11, 18) (11, 19)
 3745  serial iterator over the domain
@@ -6920,10 +6920,10 @@
 3763   7   (0, -93)
 3763   8   (0, -92)
 3763   9   (0, -91)
-3763  dsiAccess1d dim1
+3763  dsiAccess1d dim0
 3764  
 3764   12   (1, 7)
-3764  dsiAccess1d dim2
+3764  dsiAccess1d dim1
 3765  
 3765   (5, 12) (6, 12) (7, 12) (8, 12) (9, 12) (10, 12) (11, 12)
 3765  serial iterator over the domain
@@ -6970,7 +6970,7 @@
 3782  storage
 3783  
 3783   1   (0, -99)
-3783  dsiAccess1d dim1
+3783  dsiAccess1d dim0
 3784  
 3784   3   (2, 3)
 3784   4   (2, 4)
@@ -6979,7 +6979,7 @@
 3784   7   (0, 7)
 3784   8   (0, 8)
 3784   9   (0, 9)
-3784  dsiAccess1d dim2
+3784  dsiAccess1d dim1
 3785  
 3785   (1, 3) (1, 4) (1, 5) (1, 6) (1, 7) (1, 8) (1, 9)
 3785  serial iterator over the domain
@@ -7026,7 +7026,7 @@
 3802  storage
 3803  
 3803   1   (0, -99)
-3803  dsiAccess1d dim1
+3803  dsiAccess1d dim0
 3804  
 3804   3   (2, 3)
 3804   4   (2, 4)
@@ -7035,7 +7035,7 @@
 3804   7   (0, 7)
 3804   8   (0, 8)
 3804   9   (0, 9)
-3804  dsiAccess1d dim2
+3804  dsiAccess1d dim1
 3805  
 3805   (1, 3) (1, 4) (1, 5) (1, 6) (1, 7) (1, 8) (1, 9)
 3805  serial iterator over the domain
@@ -7082,13 +7082,13 @@
 3822  storage
 3823  
 3823   1   (0, -99)
-3823  dsiAccess1d dim1
+3823  dsiAccess1d dim0
 3824  
 3824   3   (2, 1)
 3824   5   (0, 3)
 3824   7   (0, 4)
 3824   9   (0, 5)
-3824  dsiAccess1d dim2
+3824  dsiAccess1d dim1
 3825  
 3825   (1, 3) (1, 5) (1, 7) (1, 9)
 3825  serial iterator over the domain
@@ -7126,12 +7126,12 @@
 3842  storage
 3843  
 3843   1   (0, -99)
-3843  dsiAccess1d dim1
+3843  dsiAccess1d dim0
 3844  
 3844   3   (2, 1)
 3844   6   (0, 2)
 3844   9   (0, 3)
-3844  dsiAccess1d dim2
+3844  dsiAccess1d dim1
 3845  
 3845   (1, 3) (1, 6) (1, 9)
 3845  serial iterator over the domain
@@ -7166,7 +7166,7 @@
 3862  storage
 3863  
 3863   1   (0, -99)
-3863  dsiAccess1d dim1
+3863  dsiAccess1d dim0
 3864  
 3864   3   (2, 3)
 3864   4   (2, 4)
@@ -7175,7 +7175,7 @@
 3864   7   (0, 7)
 3864   8   (0, 8)
 3864   9   (0, 9)
-3864  dsiAccess1d dim2
+3864  dsiAccess1d dim1
 3865  
 3865   (1, 9) (1, 8) (1, 7) (1, 6) (1, 5) (1, 4) (1, 3)
 3865  serial iterator over the domain
@@ -7222,13 +7222,13 @@
 3882  storage
 3883  
 3883   1   (0, -99)
-3883  dsiAccess1d dim1
+3883  dsiAccess1d dim0
 3884  
 3884   3   (2, 1)
 3884   5   (0, 3)
 3884   7   (0, 4)
 3884   9   (0, 5)
-3884  dsiAccess1d dim2
+3884  dsiAccess1d dim1
 3885  
 3885   (1, 9) (1, 7) (1, 5) (1, 3)
 3885  serial iterator over the domain
@@ -7266,12 +7266,12 @@
 3902  storage
 3903  
 3903   1   (0, -99)
-3903  dsiAccess1d dim1
+3903  dsiAccess1d dim0
 3904  
 3904   3   (2, 1)
 3904   6   (0, 2)
 3904   9   (0, 3)
-3904  dsiAccess1d dim2
+3904  dsiAccess1d dim1
 3905  
 3905   (1, 9) (1, 6) (1, 3)
 3905  serial iterator over the domain
@@ -7312,10 +7312,10 @@
 3923   7   (0, -93)
 3923   8   (0, -92)
 3923   9   (0, -91)
-3923  dsiAccess1d dim1
+3923  dsiAccess1d dim0
 3924  
 3924   1   (2, 1)
-3924  dsiAccess1d dim2
+3924  dsiAccess1d dim1
 3925  
 3925   (3, 1) (4, 1) (5, 1) (6, 1) (7, 1) (8, 1) (9, 1)
 3925  serial iterator over the domain
@@ -7368,10 +7368,10 @@
 3943   7   (0, -93)
 3943   8   (0, -92)
 3943   9   (0, -91)
-3943  dsiAccess1d dim1
+3943  dsiAccess1d dim0
 3944  
 3944   1   (2, 1)
-3944  dsiAccess1d dim2
+3944  dsiAccess1d dim1
 3945  
 3945   (3, 1) (4, 1) (5, 1) (6, 1) (7, 1) (8, 1) (9, 1)
 3945  serial iterator over the domain
@@ -7421,10 +7421,10 @@
 3963   5   (0, -55)
 3963   7   (0, -54)
 3963   9   (0, -52)
-3963  dsiAccess1d dim1
+3963  dsiAccess1d dim0
 3964  
 3964   1   (2, 1)
-3964  dsiAccess1d dim2
+3964  dsiAccess1d dim1
 3965  
 3965   (3, 1) (5, 1) (7, 1) (9, 1)
 3965  serial iterator over the domain
@@ -7464,10 +7464,10 @@
 3983   3   (0, -42)
 3983   6   (0, -41)
 3983   9   (0, -39)
-3983  dsiAccess1d dim1
+3983  dsiAccess1d dim0
 3984  
 3984   1   (2, 1)
-3984  dsiAccess1d dim2
+3984  dsiAccess1d dim1
 3985  
 3985   (3, 1) (6, 1) (9, 1)
 3985  serial iterator over the domain
@@ -7508,10 +7508,10 @@
 4003   7   (0, -93)
 4003   8   (0, -92)
 4003   9   (0, -91)
-4003  dsiAccess1d dim1
+4003  dsiAccess1d dim0
 4004  
 4004   1   (2, 1)
-4004  dsiAccess1d dim2
+4004  dsiAccess1d dim1
 4005  
 4005   (9, 1) (8, 1) (7, 1) (6, 1) (5, 1) (4, 1) (3, 1)
 4005  serial iterator over the domain
@@ -7561,10 +7561,10 @@
 4023   5   (0, -55)
 4023   7   (0, -54)
 4023   9   (0, -52)
-4023  dsiAccess1d dim1
+4023  dsiAccess1d dim0
 4024  
 4024   1   (2, 1)
-4024  dsiAccess1d dim2
+4024  dsiAccess1d dim1
 4025  
 4025   (9, 1) (7, 1) (5, 1) (3, 1)
 4025  serial iterator over the domain
@@ -7604,10 +7604,10 @@
 4043   3   (0, -42)
 4043   6   (0, -41)
 4043   9   (0, -39)
-4043  dsiAccess1d dim1
+4043  dsiAccess1d dim0
 4044  
 4044   1   (2, 1)
-4044  dsiAccess1d dim2
+4044  dsiAccess1d dim1
 4045  
 4045   (9, 1) (6, 1) (3, 1)
 4045  serial iterator over the domain
@@ -7642,7 +7642,7 @@
 4062  storage
 4063  
 4063   1   (0, -99)
-4063  dsiAccess1d dim1
+4063  dsiAccess1d dim0
 4064  
 4064   -1   (1, 4)
 4064   -2   (1, 3)
@@ -7655,7 +7655,7 @@
 4064   3   (2, 3)
 4064   4   (2, 4)
 4064   5   (0, 5)
-4064  dsiAccess1d dim2
+4064  dsiAccess1d dim1
 4065  
 4065   (1, -5) (1, -4) (1, -3) (1, -2) (1, -1) (1, 0) (1, 1) (1, 2) (1, 3) (1, 4) (1, 5)
 4065  serial iterator over the domain
@@ -7714,7 +7714,7 @@
 4082  storage
 4083  
 4083   1   (0, -99)
-4083  dsiAccess1d dim1
+4083  dsiAccess1d dim0
 4084  
 4084   -1   (1, 4)
 4084   -2   (1, 3)
@@ -7727,7 +7727,7 @@
 4084   3   (2, 3)
 4084   4   (2, 4)
 4084   5   (0, 5)
-4084  dsiAccess1d dim2
+4084  dsiAccess1d dim1
 4085  
 4085   (1, -5) (1, -4) (1, -3) (1, -2) (1, -1) (1, 0) (1, 1) (1, 2) (1, 3) (1, 4) (1, 5)
 4085  serial iterator over the domain
@@ -7786,7 +7786,7 @@
 4102  storage
 4103  
 4103   1   (0, -99)
-4103  dsiAccess1d dim1
+4103  dsiAccess1d dim0
 4104  
 4104   -1   (1, 2)
 4104   -3   (1, 1)
@@ -7794,7 +7794,7 @@
 4104   1   (2, 0)
 4104   3   (2, 1)
 4104   5   (0, 3)
-4104  dsiAccess1d dim2
+4104  dsiAccess1d dim1
 4105  
 4105   (1, -5) (1, -3) (1, -1) (1, 1) (1, 3) (1, 5)
 4105  serial iterator over the domain
@@ -7838,13 +7838,13 @@
 4122  storage
 4123  
 4123   1   (0, -99)
-4123  dsiAccess1d dim1
+4123  dsiAccess1d dim0
 4124  
 4124   -2   (1, 1)
 4124   -5   (1, 0)
 4124   1   (2, 0)
 4124   4   (2, 1)
-4124  dsiAccess1d dim2
+4124  dsiAccess1d dim1
 4125  
 4125   (1, -5) (1, -2) (1, 1) (1, 4)
 4125  serial iterator over the domain
@@ -7882,7 +7882,7 @@
 4142  storage
 4143  
 4143   1   (0, -99)
-4143  dsiAccess1d dim1
+4143  dsiAccess1d dim0
 4144  
 4144   -1   (1, 4)
 4144   -2   (1, 3)
@@ -7895,7 +7895,7 @@
 4144   3   (2, 3)
 4144   4   (2, 4)
 4144   5   (0, 5)
-4144  dsiAccess1d dim2
+4144  dsiAccess1d dim1
 4145  
 4145   (1, 5) (1, 4) (1, 3) (1, 2) (1, 1) (1, 0) (1, -1) (1, -2) (1, -3) (1, -4) (1, -5)
 4145  serial iterator over the domain
@@ -7954,7 +7954,7 @@
 4162  storage
 4163  
 4163   1   (0, -99)
-4163  dsiAccess1d dim1
+4163  dsiAccess1d dim0
 4164  
 4164   -1   (1, 2)
 4164   -3   (1, 1)
@@ -7962,7 +7962,7 @@
 4164   1   (2, 0)
 4164   3   (2, 1)
 4164   5   (0, 3)
-4164  dsiAccess1d dim2
+4164  dsiAccess1d dim1
 4165  
 4165   (1, 5) (1, 3) (1, 1) (1, -1) (1, -3) (1, -5)
 4165  serial iterator over the domain
@@ -8006,13 +8006,13 @@
 4182  storage
 4183  
 4183   1   (0, -99)
-4183  dsiAccess1d dim1
+4183  dsiAccess1d dim0
 4184  
 4184   -1   (1, 1)
 4184   -4   (1, 0)
 4184   2   (2, 0)
 4184   5   (0, 2)
-4184  dsiAccess1d dim2
+4184  dsiAccess1d dim1
 4185  
 4185   (1, 5) (1, 2) (1, -1) (1, -4)
 4185  serial iterator over the domain
@@ -8060,10 +8060,10 @@
 4203   3   (0, -97)
 4203   4   (0, -96)
 4203   5   (0, -95)
-4203  dsiAccess1d dim1
+4203  dsiAccess1d dim0
 4204  
 4204   1   (2, 1)
-4204  dsiAccess1d dim2
+4204  dsiAccess1d dim1
 4205  
 4205   (-5, 1) (-4, 1) (-3, 1) (-2, 1) (-1, 1) (0, 1) (1, 1) (2, 1) (3, 1) (4, 1) (5, 1)
 4205  serial iterator over the domain
@@ -8132,10 +8132,10 @@
 4223   3   (0, -97)
 4223   4   (0, -96)
 4223   5   (0, -95)
-4223  dsiAccess1d dim1
+4223  dsiAccess1d dim0
 4224  
 4224   1   (2, 1)
-4224  dsiAccess1d dim2
+4224  dsiAccess1d dim1
 4225  
 4225   (-5, 1) (-4, 1) (-3, 1) (-2, 1) (-1, 1) (0, 1) (1, 1) (2, 1) (3, 1) (4, 1) (5, 1)
 4225  serial iterator over the domain
@@ -8199,10 +8199,10 @@
 4243   1   (0, -57)
 4243   3   (0, -56)
 4243   5   (0, -55)
-4243  dsiAccess1d dim1
+4243  dsiAccess1d dim0
 4244  
 4244   1   (2, 1)
-4244  dsiAccess1d dim2
+4244  dsiAccess1d dim1
 4245  
 4245   (-5, 1) (-3, 1) (-1, 1) (1, 1) (3, 1) (5, 1)
 4245  serial iterator over the domain
@@ -8249,10 +8249,10 @@
 4263   -5   (0, -45)
 4263   1   (0, -43)
 4263   4   (0, -42)
-4263  dsiAccess1d dim1
+4263  dsiAccess1d dim0
 4264  
 4264   1   (2, 1)
-4264  dsiAccess1d dim2
+4264  dsiAccess1d dim1
 4265  
 4265   (-5, 1) (-2, 1) (1, 1) (4, 1)
 4265  serial iterator over the domain
@@ -8300,10 +8300,10 @@
 4283   3   (0, -97)
 4283   4   (0, -96)
 4283   5   (0, -95)
-4283  dsiAccess1d dim1
+4283  dsiAccess1d dim0
 4284  
 4284   1   (2, 1)
-4284  dsiAccess1d dim2
+4284  dsiAccess1d dim1
 4285  
 4285   (5, 1) (4, 1) (3, 1) (2, 1) (1, 1) (0, 1) (-1, 1) (-2, 1) (-3, 1) (-4, 1) (-5, 1)
 4285  serial iterator over the domain
@@ -8367,10 +8367,10 @@
 4303   1   (0, -57)
 4303   3   (0, -56)
 4303   5   (0, -55)
-4303  dsiAccess1d dim1
+4303  dsiAccess1d dim0
 4304  
 4304   1   (2, 1)
-4304  dsiAccess1d dim2
+4304  dsiAccess1d dim1
 4305  
 4305   (5, 1) (3, 1) (1, 1) (-1, 1) (-3, 1) (-5, 1)
 4305  serial iterator over the domain
@@ -8417,10 +8417,10 @@
 4323   -4   (0, -45)
 4323   2   (0, -42)
 4323   5   (0, -41)
-4323  dsiAccess1d dim1
+4323  dsiAccess1d dim0
 4324  
 4324   1   (2, 1)
-4324  dsiAccess1d dim2
+4324  dsiAccess1d dim1
 4325  
 4325   (5, 1) (2, 1) (-1, 1) (-4, 1)
 4325  serial iterator over the domain
@@ -8458,7 +8458,7 @@
 4342  storage
 4343  
 4343   1   (0, -99)
-4343  dsiAccess1d dim1
+4343  dsiAccess1d dim0
 4344  
 4344   -1   (1, 4)
 4344   -2   (1, 3)
@@ -8470,7 +8470,7 @@
 4344   -8   (0, 2)
 4344   -9   (0, 1)
 4344   0   (2, 0)
-4344  dsiAccess1d dim2
+4344  dsiAccess1d dim1
 4345  
 4345   (1, -9) (1, -8) (1, -7) (1, -6) (1, -5) (1, -4) (1, -3) (1, -2) (1, -1) (1, 0)
 4345  serial iterator over the domain
@@ -8526,7 +8526,7 @@
 4362  storage
 4363  
 4363   1   (0, -99)
-4363  dsiAccess1d dim1
+4363  dsiAccess1d dim0
 4364  
 4364   -1   (1, 4)
 4364   -2   (1, 3)
@@ -8538,7 +8538,7 @@
 4364   -8   (0, 2)
 4364   -9   (0, 1)
 4364   0   (2, 0)
-4364  dsiAccess1d dim2
+4364  dsiAccess1d dim1
 4365  
 4365   (1, -9) (1, -8) (1, -7) (1, -6) (1, -5) (1, -4) (1, -3) (1, -2) (1, -1) (1, 0)
 4365  serial iterator over the domain
@@ -8594,14 +8594,14 @@
 4382  storage
 4383  
 4383   1   (0, -99)
-4383  dsiAccess1d dim1
+4383  dsiAccess1d dim0
 4384  
 4384   -1   (1, 2)
 4384   -3   (1, 1)
 4384   -5   (1, 0)
 4384   -7   (0, 1)
 4384   -9   (0, 0)
-4384  dsiAccess1d dim2
+4384  dsiAccess1d dim1
 4385  
 4385   (1, -9) (1, -7) (1, -5) (1, -3) (1, -1)
 4385  serial iterator over the domain
@@ -8642,13 +8642,13 @@
 4402  storage
 4403  
 4403   1   (0, -99)
-4403  dsiAccess1d dim1
+4403  dsiAccess1d dim0
 4404  
 4404   -3   (1, 0)
 4404   -6   (0, 1)
 4404   -9   (0, 0)
 4404   0   (2, 0)
-4404  dsiAccess1d dim2
+4404  dsiAccess1d dim1
 4405  
 4405   (1, -9) (1, -6) (1, -3) (1, 0)
 4405  serial iterator over the domain
@@ -8686,7 +8686,7 @@
 4422  storage
 4423  
 4423   1   (0, -99)
-4423  dsiAccess1d dim1
+4423  dsiAccess1d dim0
 4424  
 4424   -1   (1, 4)
 4424   -2   (1, 3)
@@ -8698,7 +8698,7 @@
 4424   -8   (0, 2)
 4424   -9   (0, 1)
 4424   0   (2, 0)
-4424  dsiAccess1d dim2
+4424  dsiAccess1d dim1
 4425  
 4425   (1, 0) (1, -1) (1, -2) (1, -3) (1, -4) (1, -5) (1, -6) (1, -7) (1, -8) (1, -9)
 4425  serial iterator over the domain
@@ -8754,14 +8754,14 @@
 4442  storage
 4443  
 4443   1   (0, -99)
-4443  dsiAccess1d dim1
+4443  dsiAccess1d dim0
 4444  
 4444   -2   (1, 1)
 4444   -4   (1, 0)
 4444   -6   (0, 2)
 4444   -8   (0, 1)
 4444   0   (2, 0)
-4444  dsiAccess1d dim2
+4444  dsiAccess1d dim1
 4445  
 4445   (1, 0) (1, -2) (1, -4) (1, -6) (1, -8)
 4445  serial iterator over the domain
@@ -8802,13 +8802,13 @@
 4462  storage
 4463  
 4463   1   (0, -99)
-4463  dsiAccess1d dim1
+4463  dsiAccess1d dim0
 4464  
 4464   -3   (1, 0)
 4464   -6   (0, 1)
 4464   -9   (0, 0)
 4464   0   (2, 0)
-4464  dsiAccess1d dim2
+4464  dsiAccess1d dim1
 4465  
 4465   (1, 0) (1, -3) (1, -6) (1, -9)
 4465  serial iterator over the domain
@@ -8855,10 +8855,10 @@
 4483   -8   (0, -108)
 4483   -9   (0, -109)
 4483   0   (0, -100)
-4483  dsiAccess1d dim1
+4483  dsiAccess1d dim0
 4484  
 4484   1   (2, 1)
-4484  dsiAccess1d dim2
+4484  dsiAccess1d dim1
 4485  
 4485   (-9, 1) (-8, 1) (-7, 1) (-6, 1) (-5, 1) (-4, 1) (-3, 1) (-2, 1) (-1, 1) (0, 1)
 4485  serial iterator over the domain
@@ -8923,10 +8923,10 @@
 4503   -8   (0, -108)
 4503   -9   (0, -109)
 4503   0   (0, -100)
-4503  dsiAccess1d dim1
+4503  dsiAccess1d dim0
 4504  
 4504   1   (2, 1)
-4504  dsiAccess1d dim2
+4504  dsiAccess1d dim1
 4505  
 4505   (-9, 1) (-8, 1) (-7, 1) (-6, 1) (-5, 1) (-4, 1) (-3, 1) (-2, 1) (-1, 1) (0, 1)
 4505  serial iterator over the domain
@@ -8986,10 +8986,10 @@
 4523   -5   (0, -60)
 4523   -7   (0, -62)
 4523   -9   (0, -63)
-4523  dsiAccess1d dim1
+4523  dsiAccess1d dim0
 4524  
 4524   1   (2, 1)
-4524  dsiAccess1d dim2
+4524  dsiAccess1d dim1
 4525  
 4525   (-9, 1) (-7, 1) (-5, 1) (-3, 1) (-1, 1)
 4525  serial iterator over the domain
@@ -9033,10 +9033,10 @@
 4543   -6   (0, -46)
 4543   -9   (0, -47)
 4543   0   (0, -44)
-4543  dsiAccess1d dim1
+4543  dsiAccess1d dim0
 4544  
 4544   1   (2, 1)
-4544  dsiAccess1d dim2
+4544  dsiAccess1d dim1
 4545  
 4545   (-9, 1) (-6, 1) (-3, 1) (0, 1)
 4545  serial iterator over the domain
@@ -9083,10 +9083,10 @@
 4563   -8   (0, -108)
 4563   -9   (0, -109)
 4563   0   (0, -100)
-4563  dsiAccess1d dim1
+4563  dsiAccess1d dim0
 4564  
 4564   1   (2, 1)
-4564  dsiAccess1d dim2
+4564  dsiAccess1d dim1
 4565  
 4565   (0, 1) (-1, 1) (-2, 1) (-3, 1) (-4, 1) (-5, 1) (-6, 1) (-7, 1) (-8, 1) (-9, 1)
 4565  serial iterator over the domain
@@ -9146,10 +9146,10 @@
 4583   -6   (0, -61)
 4583   -8   (0, -62)
 4583   0   (0, -58)
-4583  dsiAccess1d dim1
+4583  dsiAccess1d dim0
 4584  
 4584   1   (2, 1)
-4584  dsiAccess1d dim2
+4584  dsiAccess1d dim1
 4585  
 4585   (0, 1) (-2, 1) (-4, 1) (-6, 1) (-8, 1)
 4585  serial iterator over the domain
@@ -9193,10 +9193,10 @@
 4603   -6   (0, -46)
 4603   -9   (0, -47)
 4603   0   (0, -44)
-4603  dsiAccess1d dim1
+4603  dsiAccess1d dim0
 4604  
 4604   1   (2, 1)
-4604  dsiAccess1d dim2
+4604  dsiAccess1d dim1
 4605  
 4605   (0, 1) (-3, 1) (-6, 1) (-9, 1)
 4605  serial iterator over the domain
@@ -9240,9 +9240,9 @@
 4623   7   (0, -93)
 4623   8   (0, -92)
 4623   9   (0, -91)
-4623  dsiAccess1d dim1
+4623  dsiAccess1d dim0
 4624  
-4624  dsiAccess1d dim2
+4624  dsiAccess1d dim1
 4625  
 4625  
 4625  serial iterator over the domain
@@ -9267,7 +9267,7 @@
 4642   (0, 2)   {-89..-95, 15..17}
 4642  storage
 4643  
-4643  dsiAccess1d dim1
+4643  dsiAccess1d dim0
 4644  
 4644   42   (1, 17)
 4644   43   (1, 18)
@@ -9275,7 +9275,7 @@
 4644   45   (2, 15)
 4644   46   (2, 16)
 4644   47   (2, 17)
-4644  dsiAccess1d dim2
+4644  dsiAccess1d dim1
 4645  
 4645  
 4645  serial iterator over the domain
@@ -9300,9 +9300,9 @@
 4662   (0, 2)   {-89..-95, 17..14}
 4662  storage
 4663  
-4663  dsiAccess1d dim1
+4663  dsiAccess1d dim0
 4664  
-4664  dsiAccess1d dim2
+4664  dsiAccess1d dim1
 4665  
 4665  
 4665  serial iterator over the domain
@@ -9330,10 +9330,10 @@
 5042  storage
 5043  
 5043   5   (0, 10)
-5043  dsiAccess1d dim1
+5043  dsiAccess1d dim0
 5044  
 5044   7   (0, 7)
-5044  dsiAccess1d dim2
+5044  dsiAccess1d dim1
 5045  
 5045   (5, 7)
 5045  serial iterator over the domain
@@ -9362,10 +9362,10 @@
 5062  storage
 5063  
 5063   5   (0, 10)
-5063  dsiAccess1d dim1
+5063  dsiAccess1d dim0
 5064  
 5064   12   (1, 7)
-5064  dsiAccess1d dim2
+5064  dsiAccess1d dim1
 5065  
 5065   (5, 12)
 5065  serial iterator over the domain
@@ -9394,10 +9394,10 @@
 5082  storage
 5083  
 5083   5   (0, 10)
-5083  dsiAccess1d dim1
+5083  dsiAccess1d dim0
 5084  
 5084   18   (2, 8)
-5084  dsiAccess1d dim2
+5084  dsiAccess1d dim1
 5085  
 5085   (5, 18)
 5085  serial iterator over the domain
@@ -9426,14 +9426,14 @@
 5102  storage
 5103  
 5103   5   (0, 10)
-5103  dsiAccess1d dim1
+5103  dsiAccess1d dim0
 5104  
 5104   5   (0, 5)
 5104   6   (0, 6)
 5104   7   (0, 7)
 5104   8   (0, 8)
 5104   9   (0, 9)
-5104  dsiAccess1d dim2
+5104  dsiAccess1d dim1
 5105  
 5105   (5, 5) (5, 6) (5, 7) (5, 8) (5, 9)
 5105  serial iterator over the domain
@@ -9474,14 +9474,14 @@
 5122  storage
 5123  
 5123   5   (0, 10)
-5123  dsiAccess1d dim1
+5123  dsiAccess1d dim0
 5124  
 5124   10   (1, 5)
 5124   11   (1, 6)
 5124   12   (1, 7)
 5124   13   (1, 8)
 5124   14   (1, 9)
-5124  dsiAccess1d dim2
+5124  dsiAccess1d dim1
 5125  
 5125   (5, 10) (5, 11) (5, 12) (5, 13) (5, 14)
 5125  serial iterator over the domain
@@ -9522,14 +9522,14 @@
 5142  storage
 5143  
 5143   5   (0, 10)
-5143  dsiAccess1d dim1
+5143  dsiAccess1d dim0
 5144  
 5144   15   (2, 5)
 5144   16   (2, 6)
 5144   17   (2, 7)
 5144   18   (2, 8)
 5144   19   (2, 9)
-5144  dsiAccess1d dim2
+5144  dsiAccess1d dim1
 5145  
 5145   (5, 15) (5, 16) (5, 17) (5, 18) (5, 19)
 5145  serial iterator over the domain
@@ -9570,14 +9570,14 @@
 5162  storage
 5163  
 5163   5   (0, 10)
-5163  dsiAccess1d dim1
+5163  dsiAccess1d dim0
 5164  
 5164   3   (2, 3)
 5164   4   (2, 4)
 5164   5   (0, 5)
 5164   6   (0, 6)
 5164   7   (0, 7)
-5164  dsiAccess1d dim2
+5164  dsiAccess1d dim1
 5165  
 5165   (5, 3) (5, 4) (5, 5) (5, 6) (5, 7)
 5165  serial iterator over the domain
@@ -9618,7 +9618,7 @@
 5182  storage
 5183  
 5183   5   (0, 10)
-5183  dsiAccess1d dim1
+5183  dsiAccess1d dim0
 5184  
 5184   10   (1, 5)
 5184   11   (1, 6)
@@ -9630,7 +9630,7 @@
 5184   7   (0, 7)
 5184   8   (0, 8)
 5184   9   (0, 9)
-5184  dsiAccess1d dim2
+5184  dsiAccess1d dim1
 5185  
 5185   (5, 3) (5, 4) (5, 5) (5, 6) (5, 7) (5, 8) (5, 9) (5, 10) (5, 11) (5, 12)
 5185  serial iterator over the domain
@@ -9686,7 +9686,7 @@
 5202  storage
 5203  
 5203   5   (0, 10)
-5203  dsiAccess1d dim1
+5203  dsiAccess1d dim0
 5204  
 5204   10   (1, 5)
 5204   11   (1, 6)
@@ -9701,7 +9701,7 @@
 5204   7   (0, 7)
 5204   8   (0, 8)
 5204   9   (0, 9)
-5204  dsiAccess1d dim2
+5204  dsiAccess1d dim1
 5205  
 5205   (5, 3) (5, 4) (5, 5) (5, 6) (5, 7) (5, 8) (5, 9) (5, 10) (5, 11) (5, 12) (5, 13) (5, 14) (5, 15)
 5205  serial iterator over the domain
@@ -9766,7 +9766,7 @@
 5222  storage
 5223  
 5223   5   (0, 10)
-5223  dsiAccess1d dim1
+5223  dsiAccess1d dim0
 5224  
 5224   10   (1, 5)
 5224   11   (1, 6)
@@ -9782,7 +9782,7 @@
 5224   7   (0, 7)
 5224   8   (0, 8)
 5224   9   (0, 9)
-5224  dsiAccess1d dim2
+5224  dsiAccess1d dim1
 5225  
 5225   (5, 3) (5, 4) (5, 5) (5, 6) (5, 7) (5, 8) (5, 9) (5, 10) (5, 11) (5, 12) (5, 13) (5, 14) (5, 15) (5, 16)
 5225  serial iterator over the domain
@@ -9850,7 +9850,7 @@
 5242  storage
 5243  
 5243   5   (0, 10)
-5243  dsiAccess1d dim1
+5243  dsiAccess1d dim0
 5244  
 5244   10   (1, 5)
 5244   11   (1, 6)
@@ -9867,7 +9867,7 @@
 5244   7   (0, 7)
 5244   8   (0, 8)
 5244   9   (0, 9)
-5244  dsiAccess1d dim2
+5244  dsiAccess1d dim1
 5245  
 5245   (5, 3) (5, 4) (5, 5) (5, 6) (5, 7) (5, 8) (5, 9) (5, 10) (5, 11) (5, 12) (5, 13) (5, 14) (5, 15) (5, 16) (5, 17)
 5245  serial iterator over the domain
@@ -9938,7 +9938,7 @@
 5262  storage
 5263  
 5263   5   (0, 10)
-5263  dsiAccess1d dim1
+5263  dsiAccess1d dim0
 5264  
 5264   10   (1, 5)
 5264   11   (1, 6)
@@ -9956,7 +9956,7 @@
 5264   7   (0, 7)
 5264   8   (0, 8)
 5264   9   (0, 9)
-5264  dsiAccess1d dim2
+5264  dsiAccess1d dim1
 5265  
 5265   (5, 3) (5, 4) (5, 5) (5, 6) (5, 7) (5, 8) (5, 9) (5, 10) (5, 11) (5, 12) (5, 13) (5, 14) (5, 15) (5, 16) (5, 17) (5, 18)
 5265  serial iterator over the domain
@@ -10030,7 +10030,7 @@
 5282  storage
 5283  
 5283   5   (0, 10)
-5283  dsiAccess1d dim1
+5283  dsiAccess1d dim0
 5284  
 5284   10   (1, 5)
 5284   11   (1, 6)
@@ -10049,7 +10049,7 @@
 5284   7   (0, 7)
 5284   8   (0, 8)
 5284   9   (0, 9)
-5284  dsiAccess1d dim2
+5284  dsiAccess1d dim1
 5285  
 5285   (5, 3) (5, 4) (5, 5) (5, 6) (5, 7) (5, 8) (5, 9) (5, 10) (5, 11) (5, 12) (5, 13) (5, 14) (5, 15) (5, 16) (5, 17) (5, 18) (5, 19)
 5285  serial iterator over the domain
@@ -10126,7 +10126,7 @@
 5302  storage
 5303  
 5303   5   (0, 10)
-5303  dsiAccess1d dim1
+5303  dsiAccess1d dim0
 5304  
 5304   0   (2, 0)
 5304   1   (2, 1)
@@ -10145,7 +10145,7 @@
 5304   7   (0, 7)
 5304   8   (0, 8)
 5304   9   (0, 9)
-5304  dsiAccess1d dim2
+5304  dsiAccess1d dim1
 5305  
 5305   (5, 0) (5, 1) (5, 2) (5, 3) (5, 4) (5, 5) (5, 6) (5, 7) (5, 8) (5, 9) (5, 10) (5, 11) (5, 12) (5, 13) (5, 14) (5, 15) (5, 16)
 5305  serial iterator over the domain
@@ -10222,7 +10222,7 @@
 5322  storage
 5323  
 5323   5   (0, 10)
-5323  dsiAccess1d dim1
+5323  dsiAccess1d dim0
 5324  
 5324   1   (2, 1)
 5324   10   (1, 5)
@@ -10240,7 +10240,7 @@
 5324   7   (0, 7)
 5324   8   (0, 8)
 5324   9   (0, 9)
-5324  dsiAccess1d dim2
+5324  dsiAccess1d dim1
 5325  
 5325   (5, 1) (5, 2) (5, 3) (5, 4) (5, 5) (5, 6) (5, 7) (5, 8) (5, 9) (5, 10) (5, 11) (5, 12) (5, 13) (5, 14) (5, 15) (5, 16)
 5325  serial iterator over the domain
@@ -10314,7 +10314,7 @@
 5342  storage
 5343  
 5343   5   (0, 10)
-5343  dsiAccess1d dim1
+5343  dsiAccess1d dim0
 5344  
 5344   10   (1, 5)
 5344   11   (1, 6)
@@ -10331,7 +10331,7 @@
 5344   7   (0, 7)
 5344   8   (0, 8)
 5344   9   (0, 9)
-5344  dsiAccess1d dim2
+5344  dsiAccess1d dim1
 5345  
 5345   (5, 2) (5, 3) (5, 4) (5, 5) (5, 6) (5, 7) (5, 8) (5, 9) (5, 10) (5, 11) (5, 12) (5, 13) (5, 14) (5, 15) (5, 16)
 5345  serial iterator over the domain
@@ -10402,7 +10402,7 @@
 5362  storage
 5363  
 5363   5   (0, 10)
-5363  dsiAccess1d dim1
+5363  dsiAccess1d dim0
 5364  
 5364   10   (1, 5)
 5364   11   (1, 6)
@@ -10418,7 +10418,7 @@
 5364   7   (0, 7)
 5364   8   (0, 8)
 5364   9   (0, 9)
-5364  dsiAccess1d dim2
+5364  dsiAccess1d dim1
 5365  
 5365   (5, 3) (5, 4) (5, 5) (5, 6) (5, 7) (5, 8) (5, 9) (5, 10) (5, 11) (5, 12) (5, 13) (5, 14) (5, 15) (5, 16)
 5365  serial iterator over the domain
@@ -10486,7 +10486,7 @@
 5382  storage
 5383  
 5383   5   (0, 10)
-5383  dsiAccess1d dim1
+5383  dsiAccess1d dim0
 5384  
 5384   10   (1, 5)
 5384   11   (1, 6)
@@ -10501,7 +10501,7 @@
 5384   7   (0, 7)
 5384   8   (0, 8)
 5384   9   (0, 9)
-5384  dsiAccess1d dim2
+5384  dsiAccess1d dim1
 5385  
 5385   (5, 4) (5, 5) (5, 6) (5, 7) (5, 8) (5, 9) (5, 10) (5, 11) (5, 12) (5, 13) (5, 14) (5, 15) (5, 16)
 5385  serial iterator over the domain
@@ -10566,7 +10566,7 @@
 5402  storage
 5403  
 5403   5   (0, 10)
-5403  dsiAccess1d dim1
+5403  dsiAccess1d dim0
 5404  
 5404   0   (2, 0)
 5404   12   (1, 2)
@@ -10575,7 +10575,7 @@
 5404   3   (2, 1)
 5404   6   (0, 2)
 5404   9   (0, 3)
-5404  dsiAccess1d dim2
+5404  dsiAccess1d dim1
 5405  
 5405   (5, 0) (5, 3) (5, 6) (5, 9) (5, 12) (5, 15) (5, 18)
 5405  serial iterator over the domain
@@ -10622,7 +10622,7 @@
 5422  storage
 5423  
 5423   5   (0, 10)
-5423  dsiAccess1d dim1
+5423  dsiAccess1d dim0
 5424  
 5424   1   (2, 0)
 5424   10   (1, 2)
@@ -10631,7 +10631,7 @@
 5424   19   (2, 3)
 5424   4   (2, 1)
 5424   7   (0, 2)
-5424  dsiAccess1d dim2
+5424  dsiAccess1d dim1
 5425  
 5425   (5, 1) (5, 4) (5, 7) (5, 10) (5, 13) (5, 16) (5, 19)
 5425  serial iterator over the domain
@@ -10678,7 +10678,7 @@
 5442  storage
 5443  
 5443   5   (0, 10)
-5443  dsiAccess1d dim1
+5443  dsiAccess1d dim0
 5444  
 5444   11   (1, 2)
 5444   14   (1, 3)
@@ -10686,7 +10686,7 @@
 5444   2   (2, 0)
 5444   5   (0, 2)
 5444   8   (0, 3)
-5444  dsiAccess1d dim2
+5444  dsiAccess1d dim1
 5445  
 5445   (5, 2) (5, 5) (5, 8) (5, 11) (5, 14) (5, 17)
 5445  serial iterator over the domain
@@ -10730,13 +10730,13 @@
 5462  storage
 5463  
 5463   5   (0, 10)
-5463  dsiAccess1d dim1
+5463  dsiAccess1d dim0
 5464  
 5464   1   (2, 0)
 5464   11   (1, 1)
 5464   16   (2, 1)
 5464   6   (0, 1)
-5464  dsiAccess1d dim2
+5464  dsiAccess1d dim1
 5465  
 5465   (5, 1) (5, 6) (5, 11) (5, 16)
 5465  serial iterator over the domain
@@ -10774,12 +10774,12 @@
 5482  storage
 5483  
 5483   5   (0, 10)
-5483  dsiAccess1d dim1
+5483  dsiAccess1d dim0
 5484  
 5484   1   (2, 0)
 5484   15   (2, 1)
 5484   8   (0, 1)
-5484  dsiAccess1d dim2
+5484  dsiAccess1d dim1
 5485  
 5485   (5, 1) (5, 8) (5, 15)
 5485  serial iterator over the domain
@@ -10814,12 +10814,12 @@
 5502  storage
 5503  
 5503   5   (0, 10)
-5503  dsiAccess1d dim1
+5503  dsiAccess1d dim0
 5504  
 5504   1   (2, 0)
 5504   17   (2, 1)
 5504   9   (0, 1)
-5504  dsiAccess1d dim2
+5504  dsiAccess1d dim1
 5505  
 5505   (5, 1) (5, 9) (5, 17)
 5505  serial iterator over the domain
@@ -10854,12 +10854,12 @@
 5522  storage
 5523  
 5523   5   (0, 10)
-5523  dsiAccess1d dim1
+5523  dsiAccess1d dim0
 5524  
 5524   1   (2, 0)
 5524   10   (1, 1)
 5524   19   (2, 1)
-5524  dsiAccess1d dim2
+5524  dsiAccess1d dim1
 5525  
 5525   (5, 1) (5, 10) (5, 19)
 5525  serial iterator over the domain
@@ -10894,11 +10894,11 @@
 5542  storage
 5543  
 5543   5   (0, 10)
-5543  dsiAccess1d dim1
+5543  dsiAccess1d dim0
 5544  
 5544   1   (2, 0)
 5544   11   (1, 1)
-5544  dsiAccess1d dim2
+5544  dsiAccess1d dim1
 5545  
 5545   (5, 1) (5, 11)
 5545  serial iterator over the domain
@@ -10930,11 +10930,11 @@
 5562  storage
 5563  
 5563   5   (0, 10)
-5563  dsiAccess1d dim1
+5563  dsiAccess1d dim0
 5564  
 5564   1   (2, 0)
 5564   16   (2, 1)
-5564  dsiAccess1d dim2
+5564  dsiAccess1d dim1
 5565  
 5565   (5, 1) (5, 16)
 5565  serial iterator over the domain
@@ -10966,11 +10966,11 @@
 5582  storage
 5583  
 5583   5   (0, 10)
-5583  dsiAccess1d dim1
+5583  dsiAccess1d dim0
 5584  
 5584   1   (2, 0)
 5584   19   (2, 1)
-5584  dsiAccess1d dim2
+5584  dsiAccess1d dim1
 5585  
 5585   (5, 1) (5, 19)
 5585  serial iterator over the domain
@@ -11002,10 +11002,10 @@
 5602  storage
 5603  
 5603   5   (0, 10)
-5603  dsiAccess1d dim1
+5603  dsiAccess1d dim0
 5604  
 5604   1   (2, 0)
-5604  dsiAccess1d dim2
+5604  dsiAccess1d dim1
 5605  
 5605   (5, 1)
 5605  serial iterator over the domain
@@ -11034,10 +11034,10 @@
 5622  storage
 5623  
 5623   5   (0, 10)
-5623  dsiAccess1d dim1
+5623  dsiAccess1d dim0
 5624  
 5624   1   (2, 0)
-5624  dsiAccess1d dim2
+5624  dsiAccess1d dim1
 5625  
 5625   (5, 1)
 5625  serial iterator over the domain
@@ -11066,10 +11066,10 @@
 5642  storage
 5643  
 5643   1   (0, 6)
-5643  dsiAccess1d dim1
+5643  dsiAccess1d dim0
 5644  
 5644   7   (0, 7)
-5644  dsiAccess1d dim2
+5644  dsiAccess1d dim1
 5645  
 5645   (1, 7)
 5645  serial iterator over the domain
@@ -11098,10 +11098,10 @@
 5662  storage
 5663  
 5663   1   (0, 6)
-5663  dsiAccess1d dim1
+5663  dsiAccess1d dim0
 5664  
 5664   12   (1, 7)
-5664  dsiAccess1d dim2
+5664  dsiAccess1d dim1
 5665  
 5665   (1, 12)
 5665  serial iterator over the domain
@@ -11130,10 +11130,10 @@
 5682  storage
 5683  
 5683   1   (0, 6)
-5683  dsiAccess1d dim1
+5683  dsiAccess1d dim0
 5684  
 5684   18   (2, 8)
-5684  dsiAccess1d dim2
+5684  dsiAccess1d dim1
 5685  
 5685   (1, 18)
 5685  serial iterator over the domain
@@ -11168,14 +11168,14 @@
 5703   7   (0, 12)
 5703   8   (0, 13)
 5703   9   (0, 14)
-5703  dsiAccess1d dim1
+5703  dsiAccess1d dim0
 5704  
 5704   5   (0, 5)
 5704   6   (0, 6)
 5704   7   (0, 7)
 5704   8   (0, 8)
 5704   9   (0, 9)
-5704  dsiAccess1d dim2
+5704  dsiAccess1d dim1
 5705  
 5705   (5, 5) (5, 6) (5, 7) (5, 8) (5, 9) (6, 5) (6, 6) (6, 7) (6, 8) (6, 9) (7, 5) (7, 6) (7, 7) (7, 8) (7, 9) (8, 5) (8, 6) (8, 7) (8, 8) (8, 9) (9, 5) (9, 6) (9, 7) (9, 8) (9, 9) (10, 5) (10, 6) (10, 7) (10, 8) (10, 9) (11, 5) (11, 6) (11, 7) (11, 8) (11, 9)
 5705  serial iterator over the domain
@@ -11312,14 +11312,14 @@
 5723   7   (0, 12)
 5723   8   (0, 13)
 5723   9   (0, 14)
-5723  dsiAccess1d dim1
+5723  dsiAccess1d dim0
 5724  
 5724   10   (1, 5)
 5724   11   (1, 6)
 5724   12   (1, 7)
 5724   13   (1, 8)
 5724   14   (1, 9)
-5724  dsiAccess1d dim2
+5724  dsiAccess1d dim1
 5725  
 5725   (5, 10) (5, 11) (5, 12) (5, 13) (5, 14) (6, 10) (6, 11) (6, 12) (6, 13) (6, 14) (7, 10) (7, 11) (7, 12) (7, 13) (7, 14) (8, 10) (8, 11) (8, 12) (8, 13) (8, 14) (9, 10) (9, 11) (9, 12) (9, 13) (9, 14) (10, 10) (10, 11) (10, 12) (10, 13) (10, 14) (11, 10) (11, 11) (11, 12) (11, 13) (11, 14)
 5725  serial iterator over the domain
@@ -11456,13 +11456,13 @@
 5743   7   (0, 12)
 5743   8   (0, 13)
 5743   9   (0, 14)
-5743  dsiAccess1d dim1
+5743  dsiAccess1d dim0
 5744  
 5744   16   (2, 6)
 5744   17   (2, 7)
 5744   18   (2, 8)
 5744   19   (2, 9)
-5744  dsiAccess1d dim2
+5744  dsiAccess1d dim1
 5745  
 5745   (5, 16) (5, 17) (5, 18) (5, 19) (6, 16) (6, 17) (6, 18) (6, 19) (7, 16) (7, 17) (7, 18) (7, 19) (8, 16) (8, 17) (8, 18) (8, 19) (9, 16) (9, 17) (9, 18) (9, 19) (10, 16) (10, 17) (10, 18) (10, 19) (11, 16) (11, 17) (11, 18) (11, 19)
 5745  serial iterator over the domain
@@ -11578,10 +11578,10 @@
 5763   7   (0, 12)
 5763   8   (0, 13)
 5763   9   (0, 14)
-5763  dsiAccess1d dim1
+5763  dsiAccess1d dim0
 5764  
 5764   12   (1, 7)
-5764  dsiAccess1d dim2
+5764  dsiAccess1d dim1
 5765  
 5765   (5, 12) (6, 12) (7, 12) (8, 12) (9, 12) (10, 12) (11, 12)
 5765  serial iterator over the domain
@@ -11628,7 +11628,7 @@
 5782  storage
 5783  
 5783   1   (0, 6)
-5783  dsiAccess1d dim1
+5783  dsiAccess1d dim0
 5784  
 5784   3   (2, 3)
 5784   4   (2, 4)
@@ -11637,7 +11637,7 @@
 5784   7   (0, 7)
 5784   8   (0, 8)
 5784   9   (0, 9)
-5784  dsiAccess1d dim2
+5784  dsiAccess1d dim1
 5785  
 5785   (1, 3) (1, 4) (1, 5) (1, 6) (1, 7) (1, 8) (1, 9)
 5785  serial iterator over the domain
@@ -11684,7 +11684,7 @@
 5802  storage
 5803  
 5803   1   (0, 6)
-5803  dsiAccess1d dim1
+5803  dsiAccess1d dim0
 5804  
 5804   3   (2, 3)
 5804   4   (2, 4)
@@ -11693,7 +11693,7 @@
 5804   7   (0, 7)
 5804   8   (0, 8)
 5804   9   (0, 9)
-5804  dsiAccess1d dim2
+5804  dsiAccess1d dim1
 5805  
 5805   (1, 3) (1, 4) (1, 5) (1, 6) (1, 7) (1, 8) (1, 9)
 5805  serial iterator over the domain
@@ -11740,13 +11740,13 @@
 5822  storage
 5823  
 5823   1   (0, 6)
-5823  dsiAccess1d dim1
+5823  dsiAccess1d dim0
 5824  
 5824   3   (2, 1)
 5824   5   (0, 3)
 5824   7   (0, 4)
 5824   9   (0, 5)
-5824  dsiAccess1d dim2
+5824  dsiAccess1d dim1
 5825  
 5825   (1, 3) (1, 5) (1, 7) (1, 9)
 5825  serial iterator over the domain
@@ -11784,12 +11784,12 @@
 5842  storage
 5843  
 5843   1   (0, 6)
-5843  dsiAccess1d dim1
+5843  dsiAccess1d dim0
 5844  
 5844   3   (2, 1)
 5844   6   (0, 2)
 5844   9   (0, 3)
-5844  dsiAccess1d dim2
+5844  dsiAccess1d dim1
 5845  
 5845   (1, 3) (1, 6) (1, 9)
 5845  serial iterator over the domain
@@ -11824,7 +11824,7 @@
 5862  storage
 5863  
 5863   1   (0, 6)
-5863  dsiAccess1d dim1
+5863  dsiAccess1d dim0
 5864  
 5864   3   (2, 3)
 5864   4   (2, 4)
@@ -11833,7 +11833,7 @@
 5864   7   (0, 7)
 5864   8   (0, 8)
 5864   9   (0, 9)
-5864  dsiAccess1d dim2
+5864  dsiAccess1d dim1
 5865  
 5865   (1, 9) (1, 8) (1, 7) (1, 6) (1, 5) (1, 4) (1, 3)
 5865  serial iterator over the domain
@@ -11880,13 +11880,13 @@
 5882  storage
 5883  
 5883   1   (0, 6)
-5883  dsiAccess1d dim1
+5883  dsiAccess1d dim0
 5884  
 5884   3   (2, 1)
 5884   5   (0, 3)
 5884   7   (0, 4)
 5884   9   (0, 5)
-5884  dsiAccess1d dim2
+5884  dsiAccess1d dim1
 5885  
 5885   (1, 9) (1, 7) (1, 5) (1, 3)
 5885  serial iterator over the domain
@@ -11924,12 +11924,12 @@
 5902  storage
 5903  
 5903   1   (0, 6)
-5903  dsiAccess1d dim1
+5903  dsiAccess1d dim0
 5904  
 5904   3   (2, 1)
 5904   6   (0, 2)
 5904   9   (0, 3)
-5904  dsiAccess1d dim2
+5904  dsiAccess1d dim1
 5905  
 5905   (1, 9) (1, 6) (1, 3)
 5905  serial iterator over the domain
@@ -11970,10 +11970,10 @@
 5923   7   (0, 12)
 5923   8   (0, 13)
 5923   9   (0, 14)
-5923  dsiAccess1d dim1
+5923  dsiAccess1d dim0
 5924  
 5924   1   (2, 1)
-5924  dsiAccess1d dim2
+5924  dsiAccess1d dim1
 5925  
 5925   (3, 1) (4, 1) (5, 1) (6, 1) (7, 1) (8, 1) (9, 1)
 5925  serial iterator over the domain
@@ -12026,10 +12026,10 @@
 5943   7   (0, 12)
 5943   8   (0, 13)
 5943   9   (0, 14)
-5943  dsiAccess1d dim1
+5943  dsiAccess1d dim0
 5944  
 5944   1   (2, 1)
-5944  dsiAccess1d dim2
+5944  dsiAccess1d dim1
 5945  
 5945   (3, 1) (4, 1) (5, 1) (6, 1) (7, 1) (8, 1) (9, 1)
 5945  serial iterator over the domain
@@ -12079,10 +12079,10 @@
 5963   5   (0, 5)
 5963   7   (0, 6)
 5963   9   (0, 8)
-5963  dsiAccess1d dim1
+5963  dsiAccess1d dim0
 5964  
 5964   1   (2, 1)
-5964  dsiAccess1d dim2
+5964  dsiAccess1d dim1
 5965  
 5965   (3, 1) (5, 1) (7, 1) (9, 1)
 5965  serial iterator over the domain
@@ -12122,10 +12122,10 @@
 5983   3   (0, 3)
 5983   6   (0, 4)
 5983   9   (0, 6)
-5983  dsiAccess1d dim1
+5983  dsiAccess1d dim0
 5984  
 5984   1   (2, 1)
-5984  dsiAccess1d dim2
+5984  dsiAccess1d dim1
 5985  
 5985   (3, 1) (6, 1) (9, 1)
 5985  serial iterator over the domain
@@ -12166,10 +12166,10 @@
 6003   7   (0, 12)
 6003   8   (0, 13)
 6003   9   (0, 14)
-6003  dsiAccess1d dim1
+6003  dsiAccess1d dim0
 6004  
 6004   1   (2, 1)
-6004  dsiAccess1d dim2
+6004  dsiAccess1d dim1
 6005  
 6005   (9, 1) (8, 1) (7, 1) (6, 1) (5, 1) (4, 1) (3, 1)
 6005  serial iterator over the domain
@@ -12219,10 +12219,10 @@
 6023   5   (0, 5)
 6023   7   (0, 6)
 6023   9   (0, 8)
-6023  dsiAccess1d dim1
+6023  dsiAccess1d dim0
 6024  
 6024   1   (2, 1)
-6024  dsiAccess1d dim2
+6024  dsiAccess1d dim1
 6025  
 6025   (9, 1) (7, 1) (5, 1) (3, 1)
 6025  serial iterator over the domain
@@ -12262,10 +12262,10 @@
 6043   3   (0, 3)
 6043   6   (0, 4)
 6043   9   (0, 6)
-6043  dsiAccess1d dim1
+6043  dsiAccess1d dim0
 6044  
 6044   1   (2, 1)
-6044  dsiAccess1d dim2
+6044  dsiAccess1d dim1
 6045  
 6045   (9, 1) (6, 1) (3, 1)
 6045  serial iterator over the domain
@@ -12362,9 +12362,9 @@
 6623   7   (0, 12)
 6623   8   (0, 13)
 6623   9   (0, 14)
-6623  dsiAccess1d dim1
+6623  dsiAccess1d dim0
 6624  
-6624  dsiAccess1d dim2
+6624  dsiAccess1d dim1
 6625  
 6625  
 6625  serial iterator over the domain
@@ -12389,7 +12389,7 @@
 6642   (0, 2)   {16..10, 15..17}
 6642  storage
 6643  
-6643  dsiAccess1d dim1
+6643  dsiAccess1d dim0
 6644  
 6644   42   (1, 17)
 6644   43   (1, 18)
@@ -12397,7 +12397,7 @@
 6644   45   (2, 15)
 6644   46   (2, 16)
 6644   47   (2, 17)
-6644  dsiAccess1d dim2
+6644  dsiAccess1d dim1
 6645  
 6645  
 6645  serial iterator over the domain
@@ -12422,9 +12422,9 @@
 6662   (0, 2)   {16..10, 17..14}
 6662  storage
 6663  
-6663  dsiAccess1d dim1
+6663  dsiAccess1d dim0
 6664  
-6664  dsiAccess1d dim2
+6664  dsiAccess1d dim1
 6665  
 6665  
 6665  serial iterator over the domain
@@ -12452,10 +12452,10 @@
 7042  storage
 7043  
 7043   5   (0, 10)
-7043  dsiAccess1d dim1
+7043  dsiAccess1d dim0
 7044  
 7044   7   (0, 7)
-7044  dsiAccess1d dim2
+7044  dsiAccess1d dim1
 7045  
 7045   (5, 7)
 7045  serial iterator over the domain
@@ -12484,10 +12484,10 @@
 7062  storage
 7063  
 7063   5   (0, 10)
-7063  dsiAccess1d dim1
+7063  dsiAccess1d dim0
 7064  
 7064   12   (1, 7)
-7064  dsiAccess1d dim2
+7064  dsiAccess1d dim1
 7065  
 7065   (5, 12)
 7065  serial iterator over the domain
@@ -12516,10 +12516,10 @@
 7082  storage
 7083  
 7083   5   (0, 10)
-7083  dsiAccess1d dim1
+7083  dsiAccess1d dim0
 7084  
 7084   18   (2, 8)
-7084  dsiAccess1d dim2
+7084  dsiAccess1d dim1
 7085  
 7085   (5, 18)
 7085  serial iterator over the domain
@@ -12548,14 +12548,14 @@
 7102  storage
 7103  
 7103   5   (0, 10)
-7103  dsiAccess1d dim1
+7103  dsiAccess1d dim0
 7104  
 7104   5   (0, 5)
 7104   6   (0, 6)
 7104   7   (0, 7)
 7104   8   (0, 8)
 7104   9   (0, 9)
-7104  dsiAccess1d dim2
+7104  dsiAccess1d dim1
 7105  
 7105   (5, 5) (5, 6) (5, 7) (5, 8) (5, 9)
 7105  serial iterator over the domain
@@ -12596,14 +12596,14 @@
 7122  storage
 7123  
 7123   5   (0, 10)
-7123  dsiAccess1d dim1
+7123  dsiAccess1d dim0
 7124  
 7124   10   (1, 5)
 7124   11   (1, 6)
 7124   12   (1, 7)
 7124   13   (1, 8)
 7124   14   (1, 9)
-7124  dsiAccess1d dim2
+7124  dsiAccess1d dim1
 7125  
 7125   (5, 10) (5, 11) (5, 12) (5, 13) (5, 14)
 7125  serial iterator over the domain
@@ -12644,14 +12644,14 @@
 7142  storage
 7143  
 7143   5   (0, 10)
-7143  dsiAccess1d dim1
+7143  dsiAccess1d dim0
 7144  
 7144   15   (2, 5)
 7144   16   (2, 6)
 7144   17   (2, 7)
 7144   18   (2, 8)
 7144   19   (2, 9)
-7144  dsiAccess1d dim2
+7144  dsiAccess1d dim1
 7145  
 7145   (5, 15) (5, 16) (5, 17) (5, 18) (5, 19)
 7145  serial iterator over the domain
@@ -12692,14 +12692,14 @@
 7162  storage
 7163  
 7163   5   (0, 10)
-7163  dsiAccess1d dim1
+7163  dsiAccess1d dim0
 7164  
 7164   3   (2, 3)
 7164   4   (2, 4)
 7164   5   (0, 5)
 7164   6   (0, 6)
 7164   7   (0, 7)
-7164  dsiAccess1d dim2
+7164  dsiAccess1d dim1
 7165  
 7165   (5, 3) (5, 4) (5, 5) (5, 6) (5, 7)
 7165  serial iterator over the domain
@@ -12740,7 +12740,7 @@
 7182  storage
 7183  
 7183   5   (0, 10)
-7183  dsiAccess1d dim1
+7183  dsiAccess1d dim0
 7184  
 7184   10   (1, 5)
 7184   11   (1, 6)
@@ -12752,7 +12752,7 @@
 7184   7   (0, 7)
 7184   8   (0, 8)
 7184   9   (0, 9)
-7184  dsiAccess1d dim2
+7184  dsiAccess1d dim1
 7185  
 7185   (5, 3) (5, 4) (5, 5) (5, 6) (5, 7) (5, 8) (5, 9) (5, 10) (5, 11) (5, 12)
 7185  serial iterator over the domain
@@ -12808,7 +12808,7 @@
 7202  storage
 7203  
 7203   5   (0, 10)
-7203  dsiAccess1d dim1
+7203  dsiAccess1d dim0
 7204  
 7204   10   (1, 5)
 7204   11   (1, 6)
@@ -12823,7 +12823,7 @@
 7204   7   (0, 7)
 7204   8   (0, 8)
 7204   9   (0, 9)
-7204  dsiAccess1d dim2
+7204  dsiAccess1d dim1
 7205  
 7205   (5, 3) (5, 4) (5, 5) (5, 6) (5, 7) (5, 8) (5, 9) (5, 10) (5, 11) (5, 12) (5, 13) (5, 14) (5, 15)
 7205  serial iterator over the domain
@@ -12888,7 +12888,7 @@
 7222  storage
 7223  
 7223   5   (0, 10)
-7223  dsiAccess1d dim1
+7223  dsiAccess1d dim0
 7224  
 7224   10   (1, 5)
 7224   11   (1, 6)
@@ -12904,7 +12904,7 @@
 7224   7   (0, 7)
 7224   8   (0, 8)
 7224   9   (0, 9)
-7224  dsiAccess1d dim2
+7224  dsiAccess1d dim1
 7225  
 7225   (5, 3) (5, 4) (5, 5) (5, 6) (5, 7) (5, 8) (5, 9) (5, 10) (5, 11) (5, 12) (5, 13) (5, 14) (5, 15) (5, 16)
 7225  serial iterator over the domain
@@ -12972,7 +12972,7 @@
 7242  storage
 7243  
 7243   5   (0, 10)
-7243  dsiAccess1d dim1
+7243  dsiAccess1d dim0
 7244  
 7244   10   (1, 5)
 7244   11   (1, 6)
@@ -12989,7 +12989,7 @@
 7244   7   (0, 7)
 7244   8   (0, 8)
 7244   9   (0, 9)
-7244  dsiAccess1d dim2
+7244  dsiAccess1d dim1
 7245  
 7245   (5, 3) (5, 4) (5, 5) (5, 6) (5, 7) (5, 8) (5, 9) (5, 10) (5, 11) (5, 12) (5, 13) (5, 14) (5, 15) (5, 16) (5, 17)
 7245  serial iterator over the domain
@@ -13060,7 +13060,7 @@
 7262  storage
 7263  
 7263   5   (0, 10)
-7263  dsiAccess1d dim1
+7263  dsiAccess1d dim0
 7264  
 7264   10   (1, 5)
 7264   11   (1, 6)
@@ -13078,7 +13078,7 @@
 7264   7   (0, 7)
 7264   8   (0, 8)
 7264   9   (0, 9)
-7264  dsiAccess1d dim2
+7264  dsiAccess1d dim1
 7265  
 7265   (5, 3) (5, 4) (5, 5) (5, 6) (5, 7) (5, 8) (5, 9) (5, 10) (5, 11) (5, 12) (5, 13) (5, 14) (5, 15) (5, 16) (5, 17) (5, 18)
 7265  serial iterator over the domain
@@ -13152,7 +13152,7 @@
 7282  storage
 7283  
 7283   5   (0, 10)
-7283  dsiAccess1d dim1
+7283  dsiAccess1d dim0
 7284  
 7284   10   (1, 5)
 7284   11   (1, 6)
@@ -13171,7 +13171,7 @@
 7284   7   (0, 7)
 7284   8   (0, 8)
 7284   9   (0, 9)
-7284  dsiAccess1d dim2
+7284  dsiAccess1d dim1
 7285  
 7285   (5, 3) (5, 4) (5, 5) (5, 6) (5, 7) (5, 8) (5, 9) (5, 10) (5, 11) (5, 12) (5, 13) (5, 14) (5, 15) (5, 16) (5, 17) (5, 18) (5, 19)
 7285  serial iterator over the domain
@@ -13248,7 +13248,7 @@
 7302  storage
 7303  
 7303   5   (0, 10)
-7303  dsiAccess1d dim1
+7303  dsiAccess1d dim0
 7304  
 7304   0   (2, 0)
 7304   1   (2, 1)
@@ -13267,7 +13267,7 @@
 7304   7   (0, 7)
 7304   8   (0, 8)
 7304   9   (0, 9)
-7304  dsiAccess1d dim2
+7304  dsiAccess1d dim1
 7305  
 7305   (5, 0) (5, 1) (5, 2) (5, 3) (5, 4) (5, 5) (5, 6) (5, 7) (5, 8) (5, 9) (5, 10) (5, 11) (5, 12) (5, 13) (5, 14) (5, 15) (5, 16)
 7305  serial iterator over the domain
@@ -13344,7 +13344,7 @@
 7322  storage
 7323  
 7323   5   (0, 10)
-7323  dsiAccess1d dim1
+7323  dsiAccess1d dim0
 7324  
 7324   1   (2, 1)
 7324   10   (1, 5)
@@ -13362,7 +13362,7 @@
 7324   7   (0, 7)
 7324   8   (0, 8)
 7324   9   (0, 9)
-7324  dsiAccess1d dim2
+7324  dsiAccess1d dim1
 7325  
 7325   (5, 1) (5, 2) (5, 3) (5, 4) (5, 5) (5, 6) (5, 7) (5, 8) (5, 9) (5, 10) (5, 11) (5, 12) (5, 13) (5, 14) (5, 15) (5, 16)
 7325  serial iterator over the domain
@@ -13436,7 +13436,7 @@
 7342  storage
 7343  
 7343   5   (0, 10)
-7343  dsiAccess1d dim1
+7343  dsiAccess1d dim0
 7344  
 7344   10   (1, 5)
 7344   11   (1, 6)
@@ -13453,7 +13453,7 @@
 7344   7   (0, 7)
 7344   8   (0, 8)
 7344   9   (0, 9)
-7344  dsiAccess1d dim2
+7344  dsiAccess1d dim1
 7345  
 7345   (5, 2) (5, 3) (5, 4) (5, 5) (5, 6) (5, 7) (5, 8) (5, 9) (5, 10) (5, 11) (5, 12) (5, 13) (5, 14) (5, 15) (5, 16)
 7345  serial iterator over the domain
@@ -13524,7 +13524,7 @@
 7362  storage
 7363  
 7363   5   (0, 10)
-7363  dsiAccess1d dim1
+7363  dsiAccess1d dim0
 7364  
 7364   10   (1, 5)
 7364   11   (1, 6)
@@ -13540,7 +13540,7 @@
 7364   7   (0, 7)
 7364   8   (0, 8)
 7364   9   (0, 9)
-7364  dsiAccess1d dim2
+7364  dsiAccess1d dim1
 7365  
 7365   (5, 3) (5, 4) (5, 5) (5, 6) (5, 7) (5, 8) (5, 9) (5, 10) (5, 11) (5, 12) (5, 13) (5, 14) (5, 15) (5, 16)
 7365  serial iterator over the domain
@@ -13608,7 +13608,7 @@
 7382  storage
 7383  
 7383   5   (0, 10)
-7383  dsiAccess1d dim1
+7383  dsiAccess1d dim0
 7384  
 7384   10   (1, 5)
 7384   11   (1, 6)
@@ -13623,7 +13623,7 @@
 7384   7   (0, 7)
 7384   8   (0, 8)
 7384   9   (0, 9)
-7384  dsiAccess1d dim2
+7384  dsiAccess1d dim1
 7385  
 7385   (5, 4) (5, 5) (5, 6) (5, 7) (5, 8) (5, 9) (5, 10) (5, 11) (5, 12) (5, 13) (5, 14) (5, 15) (5, 16)
 7385  serial iterator over the domain
@@ -13688,7 +13688,7 @@
 7402  storage
 7403  
 7403   5   (0, 10)
-7403  dsiAccess1d dim1
+7403  dsiAccess1d dim0
 7404  
 7404   0   (2, 0)
 7404   12   (1, 2)
@@ -13697,7 +13697,7 @@
 7404   3   (2, 1)
 7404   6   (0, 2)
 7404   9   (0, 3)
-7404  dsiAccess1d dim2
+7404  dsiAccess1d dim1
 7405  
 7405   (5, 0) (5, 3) (5, 6) (5, 9) (5, 12) (5, 15) (5, 18)
 7405  serial iterator over the domain
@@ -13744,7 +13744,7 @@
 7422  storage
 7423  
 7423   5   (0, 10)
-7423  dsiAccess1d dim1
+7423  dsiAccess1d dim0
 7424  
 7424   1   (2, 0)
 7424   10   (1, 2)
@@ -13753,7 +13753,7 @@
 7424   19   (2, 3)
 7424   4   (2, 1)
 7424   7   (0, 2)
-7424  dsiAccess1d dim2
+7424  dsiAccess1d dim1
 7425  
 7425   (5, 1) (5, 4) (5, 7) (5, 10) (5, 13) (5, 16) (5, 19)
 7425  serial iterator over the domain
@@ -13800,7 +13800,7 @@
 7442  storage
 7443  
 7443   5   (0, 10)
-7443  dsiAccess1d dim1
+7443  dsiAccess1d dim0
 7444  
 7444   11   (1, 2)
 7444   14   (1, 3)
@@ -13808,7 +13808,7 @@
 7444   2   (2, 0)
 7444   5   (0, 2)
 7444   8   (0, 3)
-7444  dsiAccess1d dim2
+7444  dsiAccess1d dim1
 7445  
 7445   (5, 2) (5, 5) (5, 8) (5, 11) (5, 14) (5, 17)
 7445  serial iterator over the domain
@@ -13852,13 +13852,13 @@
 7462  storage
 7463  
 7463   5   (0, 10)
-7463  dsiAccess1d dim1
+7463  dsiAccess1d dim0
 7464  
 7464   1   (2, 0)
 7464   11   (1, 1)
 7464   16   (2, 1)
 7464   6   (0, 1)
-7464  dsiAccess1d dim2
+7464  dsiAccess1d dim1
 7465  
 7465   (5, 1) (5, 6) (5, 11) (5, 16)
 7465  serial iterator over the domain
@@ -13896,12 +13896,12 @@
 7482  storage
 7483  
 7483   5   (0, 10)
-7483  dsiAccess1d dim1
+7483  dsiAccess1d dim0
 7484  
 7484   1   (2, 0)
 7484   15   (2, 1)
 7484   8   (0, 1)
-7484  dsiAccess1d dim2
+7484  dsiAccess1d dim1
 7485  
 7485   (5, 1) (5, 8) (5, 15)
 7485  serial iterator over the domain
@@ -13936,12 +13936,12 @@
 7502  storage
 7503  
 7503   5   (0, 10)
-7503  dsiAccess1d dim1
+7503  dsiAccess1d dim0
 7504  
 7504   1   (2, 0)
 7504   17   (2, 1)
 7504   9   (0, 1)
-7504  dsiAccess1d dim2
+7504  dsiAccess1d dim1
 7505  
 7505   (5, 1) (5, 9) (5, 17)
 7505  serial iterator over the domain
@@ -13976,12 +13976,12 @@
 7522  storage
 7523  
 7523   5   (0, 10)
-7523  dsiAccess1d dim1
+7523  dsiAccess1d dim0
 7524  
 7524   1   (2, 0)
 7524   10   (1, 1)
 7524   19   (2, 1)
-7524  dsiAccess1d dim2
+7524  dsiAccess1d dim1
 7525  
 7525   (5, 1) (5, 10) (5, 19)
 7525  serial iterator over the domain
@@ -14016,11 +14016,11 @@
 7542  storage
 7543  
 7543   5   (0, 10)
-7543  dsiAccess1d dim1
+7543  dsiAccess1d dim0
 7544  
 7544   1   (2, 0)
 7544   11   (1, 1)
-7544  dsiAccess1d dim2
+7544  dsiAccess1d dim1
 7545  
 7545   (5, 1) (5, 11)
 7545  serial iterator over the domain
@@ -14052,11 +14052,11 @@
 7562  storage
 7563  
 7563   5   (0, 10)
-7563  dsiAccess1d dim1
+7563  dsiAccess1d dim0
 7564  
 7564   1   (2, 0)
 7564   16   (2, 1)
-7564  dsiAccess1d dim2
+7564  dsiAccess1d dim1
 7565  
 7565   (5, 1) (5, 16)
 7565  serial iterator over the domain
@@ -14088,11 +14088,11 @@
 7582  storage
 7583  
 7583   5   (0, 10)
-7583  dsiAccess1d dim1
+7583  dsiAccess1d dim0
 7584  
 7584   1   (2, 0)
 7584   19   (2, 1)
-7584  dsiAccess1d dim2
+7584  dsiAccess1d dim1
 7585  
 7585   (5, 1) (5, 19)
 7585  serial iterator over the domain
@@ -14124,10 +14124,10 @@
 7602  storage
 7603  
 7603   5   (0, 10)
-7603  dsiAccess1d dim1
+7603  dsiAccess1d dim0
 7604  
 7604   1   (2, 0)
-7604  dsiAccess1d dim2
+7604  dsiAccess1d dim1
 7605  
 7605   (5, 1)
 7605  serial iterator over the domain
@@ -14156,10 +14156,10 @@
 7622  storage
 7623  
 7623   5   (0, 10)
-7623  dsiAccess1d dim1
+7623  dsiAccess1d dim0
 7624  
 7624   1   (2, 0)
-7624  dsiAccess1d dim2
+7624  dsiAccess1d dim1
 7625  
 7625   (5, 1)
 7625  serial iterator over the domain
@@ -14188,10 +14188,10 @@
 7642  storage
 7643  
 7643   1   (0, 6)
-7643  dsiAccess1d dim1
+7643  dsiAccess1d dim0
 7644  
 7644   7   (0, 7)
-7644  dsiAccess1d dim2
+7644  dsiAccess1d dim1
 7645  
 7645   (1, 7)
 7645  serial iterator over the domain
@@ -14220,10 +14220,10 @@
 7662  storage
 7663  
 7663   1   (0, 6)
-7663  dsiAccess1d dim1
+7663  dsiAccess1d dim0
 7664  
 7664   12   (1, 7)
-7664  dsiAccess1d dim2
+7664  dsiAccess1d dim1
 7665  
 7665   (1, 12)
 7665  serial iterator over the domain
@@ -14252,10 +14252,10 @@
 7682  storage
 7683  
 7683   1   (0, 6)
-7683  dsiAccess1d dim1
+7683  dsiAccess1d dim0
 7684  
 7684   18   (2, 8)
-7684  dsiAccess1d dim2
+7684  dsiAccess1d dim1
 7685  
 7685   (1, 18)
 7685  serial iterator over the domain
@@ -14290,14 +14290,14 @@
 7703   7   (0, 12)
 7703   8   (0, 13)
 7703   9   (0, 14)
-7703  dsiAccess1d dim1
+7703  dsiAccess1d dim0
 7704  
 7704   5   (0, 5)
 7704   6   (0, 6)
 7704   7   (0, 7)
 7704   8   (0, 8)
 7704   9   (0, 9)
-7704  dsiAccess1d dim2
+7704  dsiAccess1d dim1
 7705  
 7705   (5, 5) (5, 6) (5, 7) (5, 8) (5, 9) (6, 5) (6, 6) (6, 7) (6, 8) (6, 9) (7, 5) (7, 6) (7, 7) (7, 8) (7, 9) (8, 5) (8, 6) (8, 7) (8, 8) (8, 9) (9, 5) (9, 6) (9, 7) (9, 8) (9, 9) (10, 5) (10, 6) (10, 7) (10, 8) (10, 9) (11, 5) (11, 6) (11, 7) (11, 8) (11, 9)
 7705  serial iterator over the domain
@@ -14434,14 +14434,14 @@
 7723   7   (0, 12)
 7723   8   (0, 13)
 7723   9   (0, 14)
-7723  dsiAccess1d dim1
+7723  dsiAccess1d dim0
 7724  
 7724   10   (1, 5)
 7724   11   (1, 6)
 7724   12   (1, 7)
 7724   13   (1, 8)
 7724   14   (1, 9)
-7724  dsiAccess1d dim2
+7724  dsiAccess1d dim1
 7725  
 7725   (5, 10) (5, 11) (5, 12) (5, 13) (5, 14) (6, 10) (6, 11) (6, 12) (6, 13) (6, 14) (7, 10) (7, 11) (7, 12) (7, 13) (7, 14) (8, 10) (8, 11) (8, 12) (8, 13) (8, 14) (9, 10) (9, 11) (9, 12) (9, 13) (9, 14) (10, 10) (10, 11) (10, 12) (10, 13) (10, 14) (11, 10) (11, 11) (11, 12) (11, 13) (11, 14)
 7725  serial iterator over the domain
@@ -14578,13 +14578,13 @@
 7743   7   (0, 12)
 7743   8   (0, 13)
 7743   9   (0, 14)
-7743  dsiAccess1d dim1
+7743  dsiAccess1d dim0
 7744  
 7744   16   (2, 6)
 7744   17   (2, 7)
 7744   18   (2, 8)
 7744   19   (2, 9)
-7744  dsiAccess1d dim2
+7744  dsiAccess1d dim1
 7745  
 7745   (5, 16) (5, 17) (5, 18) (5, 19) (6, 16) (6, 17) (6, 18) (6, 19) (7, 16) (7, 17) (7, 18) (7, 19) (8, 16) (8, 17) (8, 18) (8, 19) (9, 16) (9, 17) (9, 18) (9, 19) (10, 16) (10, 17) (10, 18) (10, 19) (11, 16) (11, 17) (11, 18) (11, 19)
 7745  serial iterator over the domain
@@ -14700,10 +14700,10 @@
 7763   7   (0, 12)
 7763   8   (0, 13)
 7763   9   (0, 14)
-7763  dsiAccess1d dim1
+7763  dsiAccess1d dim0
 7764  
 7764   12   (1, 7)
-7764  dsiAccess1d dim2
+7764  dsiAccess1d dim1
 7765  
 7765   (5, 12) (6, 12) (7, 12) (8, 12) (9, 12) (10, 12) (11, 12)
 7765  serial iterator over the domain
@@ -14750,7 +14750,7 @@
 7782  storage
 7783  
 7783   1   (0, 6)
-7783  dsiAccess1d dim1
+7783  dsiAccess1d dim0
 7784  
 7784   3   (2, 3)
 7784   4   (2, 4)
@@ -14759,7 +14759,7 @@
 7784   7   (0, 7)
 7784   8   (0, 8)
 7784   9   (0, 9)
-7784  dsiAccess1d dim2
+7784  dsiAccess1d dim1
 7785  
 7785   (1, 3) (1, 4) (1, 5) (1, 6) (1, 7) (1, 8) (1, 9)
 7785  serial iterator over the domain
@@ -14806,7 +14806,7 @@
 7802  storage
 7803  
 7803   1   (0, 6)
-7803  dsiAccess1d dim1
+7803  dsiAccess1d dim0
 7804  
 7804   3   (2, 3)
 7804   4   (2, 4)
@@ -14815,7 +14815,7 @@
 7804   7   (0, 7)
 7804   8   (0, 8)
 7804   9   (0, 9)
-7804  dsiAccess1d dim2
+7804  dsiAccess1d dim1
 7805  
 7805   (1, 3) (1, 4) (1, 5) (1, 6) (1, 7) (1, 8) (1, 9)
 7805  serial iterator over the domain
@@ -14862,13 +14862,13 @@
 7822  storage
 7823  
 7823   1   (0, 6)
-7823  dsiAccess1d dim1
+7823  dsiAccess1d dim0
 7824  
 7824   3   (2, 1)
 7824   5   (0, 3)
 7824   7   (0, 4)
 7824   9   (0, 5)
-7824  dsiAccess1d dim2
+7824  dsiAccess1d dim1
 7825  
 7825   (1, 3) (1, 5) (1, 7) (1, 9)
 7825  serial iterator over the domain
@@ -14906,12 +14906,12 @@
 7842  storage
 7843  
 7843   1   (0, 6)
-7843  dsiAccess1d dim1
+7843  dsiAccess1d dim0
 7844  
 7844   3   (2, 1)
 7844   6   (0, 2)
 7844   9   (0, 3)
-7844  dsiAccess1d dim2
+7844  dsiAccess1d dim1
 7845  
 7845   (1, 3) (1, 6) (1, 9)
 7845  serial iterator over the domain
@@ -14946,7 +14946,7 @@
 7862  storage
 7863  
 7863   1   (0, 6)
-7863  dsiAccess1d dim1
+7863  dsiAccess1d dim0
 7864  
 7864   3   (2, 3)
 7864   4   (2, 4)
@@ -14955,7 +14955,7 @@
 7864   7   (0, 7)
 7864   8   (0, 8)
 7864   9   (0, 9)
-7864  dsiAccess1d dim2
+7864  dsiAccess1d dim1
 7865  
 7865   (1, 9) (1, 8) (1, 7) (1, 6) (1, 5) (1, 4) (1, 3)
 7865  serial iterator over the domain
@@ -15002,13 +15002,13 @@
 7882  storage
 7883  
 7883   1   (0, 6)
-7883  dsiAccess1d dim1
+7883  dsiAccess1d dim0
 7884  
 7884   3   (2, 1)
 7884   5   (0, 3)
 7884   7   (0, 4)
 7884   9   (0, 5)
-7884  dsiAccess1d dim2
+7884  dsiAccess1d dim1
 7885  
 7885   (1, 9) (1, 7) (1, 5) (1, 3)
 7885  serial iterator over the domain
@@ -15046,12 +15046,12 @@
 7902  storage
 7903  
 7903   1   (0, 6)
-7903  dsiAccess1d dim1
+7903  dsiAccess1d dim0
 7904  
 7904   3   (2, 1)
 7904   6   (0, 2)
 7904   9   (0, 3)
-7904  dsiAccess1d dim2
+7904  dsiAccess1d dim1
 7905  
 7905   (1, 9) (1, 6) (1, 3)
 7905  serial iterator over the domain
@@ -15092,10 +15092,10 @@
 7923   7   (0, 12)
 7923   8   (0, 13)
 7923   9   (0, 14)
-7923  dsiAccess1d dim1
+7923  dsiAccess1d dim0
 7924  
 7924   1   (2, 1)
-7924  dsiAccess1d dim2
+7924  dsiAccess1d dim1
 7925  
 7925   (3, 1) (4, 1) (5, 1) (6, 1) (7, 1) (8, 1) (9, 1)
 7925  serial iterator over the domain
@@ -15148,10 +15148,10 @@
 7943   7   (0, 12)
 7943   8   (0, 13)
 7943   9   (0, 14)
-7943  dsiAccess1d dim1
+7943  dsiAccess1d dim0
 7944  
 7944   1   (2, 1)
-7944  dsiAccess1d dim2
+7944  dsiAccess1d dim1
 7945  
 7945   (3, 1) (4, 1) (5, 1) (6, 1) (7, 1) (8, 1) (9, 1)
 7945  serial iterator over the domain
@@ -15201,10 +15201,10 @@
 7963   5   (0, 5)
 7963   7   (0, 6)
 7963   9   (0, 8)
-7963  dsiAccess1d dim1
+7963  dsiAccess1d dim0
 7964  
 7964   1   (2, 1)
-7964  dsiAccess1d dim2
+7964  dsiAccess1d dim1
 7965  
 7965   (3, 1) (5, 1) (7, 1) (9, 1)
 7965  serial iterator over the domain
@@ -15244,10 +15244,10 @@
 7983   3   (0, 3)
 7983   6   (0, 4)
 7983   9   (0, 6)
-7983  dsiAccess1d dim1
+7983  dsiAccess1d dim0
 7984  
 7984   1   (2, 1)
-7984  dsiAccess1d dim2
+7984  dsiAccess1d dim1
 7985  
 7985   (3, 1) (6, 1) (9, 1)
 7985  serial iterator over the domain
@@ -15288,10 +15288,10 @@
 8003   7   (0, 12)
 8003   8   (0, 13)
 8003   9   (0, 14)
-8003  dsiAccess1d dim1
+8003  dsiAccess1d dim0
 8004  
 8004   1   (2, 1)
-8004  dsiAccess1d dim2
+8004  dsiAccess1d dim1
 8005  
 8005   (9, 1) (8, 1) (7, 1) (6, 1) (5, 1) (4, 1) (3, 1)
 8005  serial iterator over the domain
@@ -15341,10 +15341,10 @@
 8023   5   (0, 5)
 8023   7   (0, 6)
 8023   9   (0, 8)
-8023  dsiAccess1d dim1
+8023  dsiAccess1d dim0
 8024  
 8024   1   (2, 1)
-8024  dsiAccess1d dim2
+8024  dsiAccess1d dim1
 8025  
 8025   (9, 1) (7, 1) (5, 1) (3, 1)
 8025  serial iterator over the domain
@@ -15384,10 +15384,10 @@
 8043   3   (0, 3)
 8043   6   (0, 4)
 8043   9   (0, 6)
-8043  dsiAccess1d dim1
+8043  dsiAccess1d dim0
 8044  
 8044   1   (2, 1)
-8044  dsiAccess1d dim2
+8044  dsiAccess1d dim1
 8045  
 8045   (9, 1) (6, 1) (3, 1)
 8045  serial iterator over the domain
@@ -15484,9 +15484,9 @@
 8623   7   (0, 12)
 8623   8   (0, 13)
 8623   9   (0, 14)
-8623  dsiAccess1d dim1
+8623  dsiAccess1d dim0
 8624  
-8624  dsiAccess1d dim2
+8624  dsiAccess1d dim1
 8625  
 8625  
 8625  serial iterator over the domain
@@ -15511,7 +15511,7 @@
 8642   (0, 2)   {16..10, 15..17}
 8642  storage
 8643  
-8643  dsiAccess1d dim1
+8643  dsiAccess1d dim0
 8644  
 8644   42   (1, 17)
 8644   43   (1, 18)
@@ -15519,7 +15519,7 @@
 8644   45   (2, 15)
 8644   46   (2, 16)
 8644   47   (2, 17)
-8644  dsiAccess1d dim2
+8644  dsiAccess1d dim1
 8645  
 8645  
 8645  serial iterator over the domain
@@ -15544,9 +15544,9 @@
 8662   (0, 2)   {16..10, 17..14}
 8662  storage
 8663  
-8663  dsiAccess1d dim1
+8663  dsiAccess1d dim0
 8664  
-8664  dsiAccess1d dim2
+8664  dsiAccess1d dim1
 8665  
 8665  
 8665  serial iterator over the domain

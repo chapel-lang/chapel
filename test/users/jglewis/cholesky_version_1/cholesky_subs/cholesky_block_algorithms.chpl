@@ -48,9 +48,9 @@ module cholesky_block_algorithms {
     where ( A.domain.rank == 2 ) 
 
   {
-    assert ( A.domain.dim (1) == A.domain.dim (2) && block_size > 0 );
+    assert ( A.domain.dim (0) == A.domain.dim (1) && block_size > 0 );
 
-    const col_indices = A.domain.dim (1);  // indices of either row or column
+    const col_indices = A.domain.dim (0);  // indices of either row or column
     var   pos_def : bool;
 
     writeln ( "Block Size: ", block_size );
@@ -113,7 +113,7 @@ module cholesky_block_algorithms {
     // L and A are submatrices of a common larger matrix.
     // ------------------------------------------------------
 
-    const active_cols = L_diag.domain.dim(1);
+    const active_cols = L_diag.domain.dim(0);
 
     for (i,j) in L_offdiag.domain do {
       L_offdiag (i,j) -= 
@@ -133,7 +133,7 @@ module cholesky_block_algorithms {
 
     {
       for ( A_top_and_bottom_rows, A_top_rows, A_bottom_rows ) in 
-	iterated_block_column_partition (L.domain.dim (1), block_size) do {
+	iterated_block_column_partition (L.domain.dim (0), block_size) do {
 
 	// should be forall once iterator is made parallel
 
@@ -162,11 +162,11 @@ module cholesky_block_algorithms {
     // are submatrices of a single larger matrix.
     // -----------------------------------------------------------
 
-    assert ( A.domain.dim (1) == A.domain.dim (2) &&
-	     A.domain.dim (1) == L.domain.dim (1) );
+    assert ( A.domain.dim (0) == A.domain.dim (1) &&
+	     A.domain.dim (0) == L.domain.dim (0) );
 
-    const A_diag_rows   = A.domain.dim (1),
-          L_active_cols = L.domain.dim (2);
+    const A_diag_rows   = A.domain.dim (0),
+          L_active_cols = L.domain.dim (1);
 
     forall i in A_diag_rows do 
       forall j in A_diag_rows (..i) do
@@ -188,7 +188,7 @@ module cholesky_block_algorithms {
     // where L and A are submatrices of a common larger matrix.
     // -------------------------------------------------------------
 
-    const L_active_cols  = L.domain.dim (2);
+    const L_active_cols  = L.domain.dim (1);
 
     forall (i,j) in A.domain do 
 	A (i,j) -= + reduce [k in L_active_cols] L (i,k) * L (j,k);
@@ -271,9 +271,9 @@ module cholesky_block_algorithms {
 
     where ( A.domain.rank == 2 ) 
     {
-    assert ( A.domain.dim (1) == A.domain.dim (2) );
+    assert ( A.domain.dim (0) == A.domain.dim (1) );
 
-    const col_indices = A.domain.dim (1);  // indices of either row or column
+    const col_indices = A.domain.dim (0);  // indices of either row or column
 
     // compute L from A
 
@@ -314,9 +314,9 @@ module cholesky_block_algorithms {
 
     where ( A.domain.rank == 2 ) {
 
-    assert ( A.domain.dim (1) == A.domain.dim (2) );
+    assert ( A.domain.dim (0) == A.domain.dim (1) );
 
-    const row_indices = A.domain.dim (1);  // indices of either row or column
+    const row_indices = A.domain.dim (0);  // indices of either row or column
 
     // compute L from A
 

@@ -13,8 +13,8 @@ class D : C {
 
     this.complete();
 
-    for i in 1..rank do
-      ranges(i) = 1..i;
+    for i in 0..<rank do
+      ranges(i) = 1..i+1;
   }
 
   override proc bbox(x: int) {
@@ -24,7 +24,7 @@ class D : C {
 
 var d: C = new D(4);
 
+writeln(d.bbox(0));
 writeln(d.bbox(1));
 writeln(d.bbox(2));
 writeln(d.bbox(3));
-writeln(d.bbox(4));

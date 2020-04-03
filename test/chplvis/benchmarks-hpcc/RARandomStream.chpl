@@ -37,7 +37,7 @@ module RARandomStream {
   iter RAStream(param tag: iterKind, followThis) where tag == iterKind.follower {
     if followThis.size != 1 then
       halt("RAStream cannot use multi-dimensional iterator");
-    var val = getNthRandom(followThis(1).low);
+    var val = getNthRandom(followThis(0).low);
     for zip((...followThis)) {
       getNextRandom(val);
       yield val;
@@ -104,7 +104,7 @@ module RARandomStream {
   proc computeM2Vals() {
     var m2tmp: randWidth*randType;
     var nextVal = 0x1: randType;
-    for i in 1..randWidth {
+    for i in 0..#randWidth {
       m2tmp(i) = nextVal;
       getNextRandom(nextVal);
       getNextRandom(nextVal);

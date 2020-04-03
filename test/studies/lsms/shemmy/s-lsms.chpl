@@ -45,8 +45,8 @@ proc main() {
 		for ac in GridDom do if a != ac {
 			//compute dist between 2 points
 			var diff: 3*int;
-			for param d in 1..3 do diff[d] = circularDistance(a[d], ac[d], spanT[d]);
-			var dist = atomSpacing * sqrt(diff[1]**2 + diff[2]**2 + diff[3]**2);
+			for param d in 0..2 do diff[d] = circularDistance(a[d], ac[d], spanT[d]);
+			var dist = atomSpacing * sqrt(diff[0]**2 + diff[1]**2 + diff[2]**2);
 			if dist <= lizRadius {
 				liz += ac;
 			}
@@ -57,7 +57,7 @@ proc main() {
 	//initialize atoms
 	var atoms: [GridDom] AtomMatrix;
 	for (i, atom) in zip(GridDom, atoms) {
-		for param e in 1..nExtent do atom[e] = GridDom.indexOrder(i);
+		for param e in 0..nExtent-1 do atom[e] = GridDom.indexOrder(i);
 	}
 
 	t.start();
@@ -75,7 +75,7 @@ proc main() {
 			}
 		}
 		for a in GridDom {
-			for param e in 1..nExtent {
+			for param e in 0..nExtent-1 {
 				atoms[a][e] += totals[a][e] / reductionFactor;
 			}
 		}
@@ -115,7 +115,7 @@ proc checkExpected(itr: int, atoms: [GridDom] AtomMatrix) {
 	for i in ExpectedDom {
 		var tolerance = max(expectedValues[i] * 1e-9, 0.1);
 		var pass = true;
-		for param e in 1..nExtent {
+		for param e in 0..nExtent-1 {
 			if abs(atoms[i][e] - expectedValues[i]) > tolerance then pass = false;
 		}
                 if debug { writef("itr %4n @ %t: %12.9r ~=~ %12.9r\n",

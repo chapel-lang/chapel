@@ -1,7 +1,7 @@
 proc foo(d : domain(2)) {
   var a : [d] int;
   for ij in d do
-    a(ij) = ij(1) + ij(2);
+    a(ij) = ij(0) + ij(1);
   writeln(a);
 }
 

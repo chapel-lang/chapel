@@ -88,7 +88,7 @@ module elemental_cholesky_unsymmetric_index_ranges {
     const A_grid_domain = A_locale_grid.domain,
           n_processors  = A_grid_domain.size;
 
-    assert ( A_grid_domain.low(1) == 0 && A_grid_domain.low(2) == 0 );
+    assert ( A_grid_domain.low == (0,0) );
 
     assert ( A (A.domain.low).locale.id == 0 );
 	     
@@ -99,7 +99,7 @@ module elemental_cholesky_unsymmetric_index_ranges {
     // SPMD -- launch a separate task on each processor
     // ------------------------------------------------
 
-    const diag_offset = A.domain.low(1) - A.domain.low(2);
+    const diag_offset = A.domain.low(0) - A.domain.low(1);
 
     coforall processor in A_grid_domain do {
 

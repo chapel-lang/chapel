@@ -46,9 +46,9 @@ proc main() {
         break;
     }
 
-    for param i in 1..bitsPerElt {
+    for param i in 0..bitsPerElt-1 {
       if (Tr(i) + Ti(i) <= limit) then       // if 'C' is within the limit,
-        pix |= 0x1 << (8-i);                //   turn the low pixel on
+        pix |= 0x1 << (7-i);                //   turn the low pixel on
     }
   }
 
@@ -64,12 +64,13 @@ proc main() {
 }
 
 inline proc +(cr, ci) {
-  return (cr(1)+ci, cr(2)+ci, cr(3)+ci, cr(4)+ci, 
-          cr(5)+ci, cr(6)+ci, cr(7)+ci, cr(8)+ci);
+  compilerWarning((cr.type:string) + "," + (ci.type:string));
+  return (cr(0)+ci, cr(1)+ci, cr(2)+ci, cr(3)+ci, 
+          cr(4)+ci, cr(5)+ci, cr(6)+ci, cr(7)+ci);
 }
 
 inline proc >(x, y) {
-  for param i in 1..bitsPerElt do
+  for param i in 0..bitsPerElt-1 do
     if x(i) <= y then
       return false;
   return true;

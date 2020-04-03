@@ -33,10 +33,10 @@ proc main() {
     writeln("---------");
     writeln("Spec: " + spec);
     const specFields = getSpecFields(spec);
-    writeln("Package: " + specFields[1]);
-    writeln("Version: " + specFields[2]);
-    writeln("Compiler: " + specFields[3]);
-    writeln("Variants: " + specFields[4]);
+    writeln("Package: " + specFields[0]);
+    writeln("Version: " + specFields[1]);
+    writeln("Compiler: " + specFields[2]);
+    writeln("Variants: " + specFields[3]);
     writeln("----------\n");
   }
 }

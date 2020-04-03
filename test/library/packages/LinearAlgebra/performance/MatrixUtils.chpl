@@ -22,8 +22,8 @@ proc populate(ref A, ref ADom, nnz: int, seed: int) where isCSArr(A) {
     // Ensure no duplicates
     var newIdx = idx;
     while indices.find(newIdx)(1) {
-      newIdx = (randomIndices.getNext(ADom.dim(1).low, ADom.dim(1).high),
-                randomIndices.getNext(ADom.dim(2).low, ADom.dim(2).high));
+      newIdx = (randomIndices.getNext(ADom.dim(0).low, ADom.dim(0).high),
+                randomIndices.getNext(ADom.dim(1).low, ADom.dim(1).high));
     }
     idx = newIdx;
   }

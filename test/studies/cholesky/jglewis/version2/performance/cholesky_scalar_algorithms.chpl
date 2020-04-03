@@ -64,9 +64,9 @@ module cholesky_scalar_algorithms {
     // equations.
     // -----------------------------------------------------------------------
 
-    // assert ( A.domain.dim (1) == A.domain.dim (2) );
+    // assert ( A.domain.dim (0) == A.domain.dim (1) );
 
-    const A_rc_indices = A.domain.dim (1);  // indices of either row or column
+    const A_rc_indices = A.domain.dim (0);  // indices of either row or column
 
     // compute L from A
 
@@ -116,9 +116,9 @@ module cholesky_scalar_algorithms {
     // the "--fast" compiler switch, this change results in two orders of
     // magnitude speed up (n ~ 500) in 2010
 
-    // assert ( A.domain.dim (1) == A.domain.dim (2) );
+    // assert ( A.domain.dim (0) == A.domain.dim (1) );
 
-    const A_rc_indices = A.domain.dim (1);  // indices of either row or column
+    const A_rc_indices = A.domain.dim (0);  // indices of either row or column
 
     // compute L from A
 
@@ -166,9 +166,9 @@ module cholesky_scalar_algorithms {
     // equations.
     // -----------------------------------------------------------------------
 
-    // assert ( A.domain.dim (1) == A.domain.dim (2) );
+    // assert ( A.domain.dim (0) == A.domain.dim (1) );
 
-    const A_rc_indices = A.domain.dim (1),  // indices of either row or column
+    const A_rc_indices = A.domain.dim (0),  // indices of either row or column
           high        = A_rc_indices.high;
     
 
@@ -216,9 +216,9 @@ module cholesky_scalar_algorithms {
     // equations.
     // -----------------------------------------------------------------------
 
-    // assert ( A.domain.dim (1) == A.domain.dim (2) );
+    // assert ( A.domain.dim (0) == A.domain.dim (1) );
 
-    const A_rc_indices = A.domain.dim (1);  // indices of either row or column
+    const A_rc_indices = A.domain.dim (0);  // indices of either row or column
 
     // compute L from A
 
@@ -268,9 +268,9 @@ module cholesky_scalar_algorithms {
     // equations.
     // -----------------------------------------------------------------------
 
-    // assert ( A.domain.dim (1) == A.domain.dim (2) );
+    // assert ( A.domain.dim (0) == A.domain.dim (1) );
 
-    const A_rc_indices = A.domain.dim (1);  // row and column indices of A
+    const A_rc_indices = A.domain.dim (0);  // row and column indices of A
 
     // compute L from A
 
@@ -324,9 +324,9 @@ module cholesky_scalar_algorithms {
     // equations.
     // -----------------------------------------------------------------------
 
-    // assert ( A.domain.dim (1) == A.domain.dim (2) );
+    // assert ( A.domain.dim (0) == A.domain.dim (1) );
 
-    const A_rc_indices = A.domain.dim (1);  // row and column indices of A
+    const A_rc_indices = A.domain.dim (0);  // row and column indices of A
 
     // compute L from A
 
@@ -388,9 +388,9 @@ module cholesky_scalar_algorithms {
     // equations.
     // -----------------------------------------------------------------------
 
-    // assert ( A.domain.dim (1) == A.domain.dim (2) );
+    // assert ( A.domain.dim (0) == A.domain.dim (1) );
 
-    const A_rc_indices = A.domain.dim (1);  // row and column indices of A
+    const A_rc_indices = A.domain.dim (0);  // row and column indices of A
 
     // compute L from A
 

@@ -71,9 +71,9 @@ const rcpSamples = 1.0 / samples,         // the reciprocal of the # of samples
 //
 // Set params that symbolically represent dimensions using 1-based indexing
 //
-param X = 1,
-      Y = 2,
-      Z = 3,
+param X = 0,
+      Y = 1,
+      Z = 2,
       numdims = 3;
 
 //
@@ -253,7 +253,7 @@ proc getPrimaryRay(xy, sample, camera, rands) {
   const i = crossProduct((0.0, 1.0, 0.0), k),
         j = crossProduct(k, i);
 
-  const m: [1..numdims] vec3 = [i, j, k];
+  const m: [0..#numdims] vec3 = [i, j, k];
 
   var pRay = new ray();
   (pRay.dir(X), pRay.dir(Y)) = getSamplePos(xy, sample, rands);
@@ -460,10 +460,10 @@ proc printUsage() {
 proc computeDims(sizeString) {
   const sizeTup = sizeString.partition("x"); // make into 3-tuple ("W","x","H")
 
-  if (sizeTup.size != 3 || sizeTup[2] != "x") then
+  if (sizeTup.size != 3 || sizeTup[1] != "x") then
     halt("--s option requires argument to be in WxH format");
 
-  return (sizeTup[1]:int, sizeTup[3]:int);
+  return (sizeTup[0]:int, sizeTup[2]:int);
 }
 
 //

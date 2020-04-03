@@ -19,7 +19,7 @@ proc main() {
         
         F.summarize();
 
-        if i < fcn.domain.dim(1).high then
+        if i < fcn.domain.dim(0).high then
             writeln("\n======================================================================\n");
         delete F;
     }

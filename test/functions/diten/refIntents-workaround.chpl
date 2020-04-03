@@ -17,7 +17,7 @@ proc main {
   { writeln("Tuple components");
     var t = (1,2,3);
     writeln(t);
-    swap(t(1), t(3));
+    swap(t(0), t(2));
     writeln(t);
   }
   { writeln("Array elements");

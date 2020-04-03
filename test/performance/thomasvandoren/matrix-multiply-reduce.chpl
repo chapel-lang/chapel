@@ -25,6 +25,6 @@ proc dotProduct(ref C: [?DC] int, ref A: [?DA] int, ref B: [?DB] int)
   // This is a variation of foralls, which pushes the loop inside a +
   // reduction, then assigns the result of the reduction to C[row, col].
   forall (row, col) in DC do
-    C[row, col] = + reduce ([i in DA.dim(2)] A[row, i] * B[i, col]);
+    C[row, col] = + reduce ([i in DA.dim(1)] A[row, i] * B[i, col]);
 }
 

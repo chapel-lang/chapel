@@ -25,7 +25,7 @@ class C {
   }
 
   iter these(param tag: iterKind, followThis) where tag == iterKind.follower {
-    for i in followThis(1) do
+    for i in followThis(0) do
       yield i+x;
   }
 }

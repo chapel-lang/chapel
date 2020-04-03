@@ -9,9 +9,9 @@ config const N = 10;
 const Space = {10..#N, 20..#N, 30..#N};
 const Dom = Space dmapped Block(Space);
 
-const pDom1 = Dom._value.dsiPartialDomain(1);
-const pDom2 = Dom._value.dsiPartialDomain(2);
-const pDom3 = Dom._value.dsiPartialDomain(3);
+const pDom1 = Dom._value.dsiPartialDomain(0);
+const pDom2 = Dom._value.dsiPartialDomain(1);
+const pDom3 = Dom._value.dsiPartialDomain(2);
 
 writeln(pDom1);
 writeln(pDom2);

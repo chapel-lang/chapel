@@ -1,12 +1,12 @@
 proc output_help(param i : int, x) {
-  if i > 1 then
+  if i > 0 then
     output_help(i-1, x);
   output(x(i));
 }
 
 proc output(x, xs ...?n) {
   output(x);
-  output_help(n, xs);
+  output_help(n-1, xs);
 }
 
 proc output(x : int) {

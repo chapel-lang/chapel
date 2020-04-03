@@ -411,11 +411,11 @@ class PermutationMap {
   }
 
   inline proc map( idx : rank*idxType ) : rank*idxType {
-    return (rowMap[idx[1]], columnMap[idx[2]]);
+    return (rowMap[idx[0]], columnMap[idx[1]]);
   }
 
   inline proc inverseMap( idx : rank*idxType ) : rank*idxType {
-    return ( linearSearch(rowMap, idx[1]), linearSearch(rowMap, idx[1]) );
+    return ( linearSearch(rowMap, idx[0]), linearSearch(rowMap, idx[0]) );
   }
 
   inline proc this( idx : rank*idxType ) : rank*idxType {
@@ -527,8 +527,8 @@ class TopoSortResult {
 proc createRandomPermutationMap( D : domain, seed : int ) : shared PermutationMap(D.idxType)
 where D.rank == 2
 {
-  var rowMap : [D.dim(1)] D.idxType = D.dim(1);
-  var columnMap : [D.dim(2)] D.idxType = D.dim(2);
+  var rowMap : [D.dim(0)] D.idxType = D.dim(0);
+  var columnMap : [D.dim(1)] D.idxType = D.dim(1);
   //use seed to create two new seeds, one for each shuffle
   var randStreamSeeded = new owned RandomStream(int, seed);
   const seed1 = randStreamSeeded.getNext() | 1;
@@ -545,11 +545,11 @@ proc createSparseUpperTriangluarIndexList(
   fillModeDensity : real
 ) {
   // Must be square matrix, uniformly dimensioned dense domain
-  if D.dim(1).size != D.dim(2).size then halt("Domain provided to createSparseUpperTriangluarDomain is not square.");
-  if (D.dim(1).low != D.dim(2).low) || (D.dim(1).high != D.dim(2).high) then halt("Domain provided to createSparseUpperTriangluarDomain does not have equivalent ranges.");
-  const N = D.dim(1).size;
-  const low = D.dim(1).low;
-  const high = D.dim(1).high;
+  if D.dim(0).size != D.dim(1).size then halt("Domain provided to createSparseUpperTriangluarDomain is not square.");
+  if (D.dim(0).low != D.dim(1).low) || (D.dim(0).high != D.dim(1).high) then halt("Domain provided to createSparseUpperTriangluarDomain does not have equivalent ranges.");
+  const N = D.dim(0).size;
+  const low = D.dim(0).low;
+  const high = D.dim(0).high;
   const minDensity : real = 1.0/N;
   const maxDensity : real = (N+1.0)/(2.0*N);
 
@@ -665,7 +665,7 @@ proc createSparseUpperTriangluarIndexList(
   }
 
   // Diagonal indices
-  forall i in D.dim(1) {
+  forall i in D.dim(0) {
     sparseD[i] = (i,i);
   }
 
@@ -705,8 +705,8 @@ where D.rank == 2
   const blankList = [i in 1..#padding+if separateElements then 1 else 0 ] " ";
   const blankString = "".join( blankList );
 
-  for i in D.dim(1){
-    for j in D.dim(2){
+  for i in D.dim(0){
+    for j in D.dim(1){
       if printIRV || D.contains((i,j))
         then writef( formatString, M[i,j] : string );
         else write( blankString );
@@ -721,8 +721,8 @@ where D.rank == 2
   var result = new shared TopoSortResult(D.idxType);
   result.timers["whole"].start();
 
-  const rows = D.dim(1);
-  const columns = D.dim(2);
+  const rows = D.dim(0);
+  const columns = D.dim(1);
   const numDiagonals = min( rows.size, columns.size );
 
   var rowMap : [rows] D.idxType = [i in rows] -1;
@@ -738,7 +738,7 @@ where D.rank == 2
     if enableRuntimeDebugging && debugTopo then writeln( "initializing row ", row );
     if useDimIterCol {
      if warnDimIterMethod then compilerWarning("toposortSerial.init iterating over columns in init with dimIter");
-      for col in D.dimIter(2,row) {
+      for col in D.dimIter(1,row) {
         rowCount[row] += 1;
         rowSum[row] += col;
       }
@@ -798,7 +798,7 @@ where D.rank == 2
     // remove swapColumn from rowSum and reduce rowCount
     if useDimIterRow {
       if warnDimIterMethod then compilerWarning("toposortSerial.toposort iterating over rows in kernel with dimIter");
-      for row in D.dimIter(1,swapColumn) {
+      for row in D.dimIter(0,swapColumn) {
         rowCount[row] -= 1;
         rowSum[row] -= swapColumn;
         if rowCount[row] == 1 {
@@ -836,8 +836,8 @@ where D.rank == 2
   var result = new shared TopoSortResult(D.idxType);
   result.timers["whole"].start();
 
-  const rows = D.dim(1);
-  const columns = D.dim(2);
+  const rows = D.dim(0);
+  const columns = D.dim(1);
   const numDiagonals = min( rows.size, columns.size );
 
   var rowMap : [rows] D.idxType = [i in rows] -1;
@@ -857,7 +857,7 @@ where D.rank == 2
     if enableRuntimeDebugging && debugTopo then writeln( "initializing row ", row );
     if useDimIterCol {
      if warnDimIterMethod then compilerWarning("toposortParallel.init iterating over columns in init with dimIter");
-      for col in D.dimIter(2,row) {
+      for col in D.dimIter(1,row) {
         count += 1;
         sum += col;
       }
@@ -928,7 +928,7 @@ where D.rank == 2
     // remove swapColumn from rowSum and reduce rowCount
     if useDimIterRow {
       if warnDimIterMethod then compilerWarning("toposortParallel.toposort iterating over rows in kernel with dimIter");
-      for row in D.dimIter(1,swapColumn) {
+      for row in D.dimIter(0,swapColumn) {
         var previousRowCount = rowCount[row].fetchSub( 1 );
         rowSum[row].sub( swapColumn );
         // if previousRowCount = 2 (ie rowCount[row] == 1)
@@ -978,8 +978,8 @@ where D.rank == 2
   var result = new shared TopoSortResult(D.idxType);
   result.timers["whole"].start();
 
-  const rows = D.dim(1);
-  const columns = D.dim(2);
+  const rows = D.dim(0);
+  const columns = D.dim(1);
   const numDiagonals = min( rows.size, columns.size );
   const minCol = columns.low;
 
@@ -1000,7 +1000,7 @@ where D.rank == 2
     if enableRuntimeDebugging && debugTopo then writeln( "initializing row ", row );
     if useDimIterColDistributed {
      if warnDimIterMethod then compilerWarning("toposortDistributed.init iterating over columns in init with dimIter");
-      for col in D.dimIter(2,row) {
+      for col in D.dimIter(1,row) {
         count += 1;
         sum += col;
       }
@@ -1073,7 +1073,7 @@ where D.rank == 2
     // NOTE: dimIter is not supported on any dimension on SparseBlockDom
     if useDimIterRowDistributed {
       if warnDimIterMethod then compilerWarning("toposortDistributed.toposort iterating over rows in kernel with dimIter");
-      for row in D.dimIter(1,swapColumn) {
+      for row in D.dimIter(0,swapColumn) {
         var previousRowCount = rowCount[row].fetchSub( 1 );
         rowSum[row].sub( swapColumn );
         // if previousRowCount = 2 (ie rowCount[row] == 1)
@@ -1183,7 +1183,7 @@ proc main(){
     }
     when ToposortImplementation.Distributed {
        if !silentMode then writeln("Converting to Sparse Block domain");
-      var distributedD : D.type dmapped Block(D, targetLocales=reshape(Locales, {Locales.domain.dim(1),1..#1}) ) = D;
+      var distributedD : D.type dmapped Block(D, targetLocales=reshape(Locales, {Locales.domain.dim(0),1..#1}) ) = D;
 
       var distributedPermutedSparseD : sparse subdomain(distributedD);
       distributedPermutedSparseD.bulkAdd( permutedSparseUpperTriangularIndexList );

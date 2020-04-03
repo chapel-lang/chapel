@@ -6,7 +6,7 @@ proc testArray(type t) {
   D += 1;
 
   var A: [D] t;
-  A[1] = if isTuple(t) then (new t[1](1), new t[2](2))
+  A[1] = if isTuple(t) then (new t[0](1), new t[1](2))
           else new t(1);
 
 

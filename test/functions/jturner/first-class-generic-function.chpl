@@ -446,8 +446,8 @@ module cholesky_scalar_algorithms {
 	     );
     
     const mat_dom  = A.domain,
-          mat_rows = A.domain.dim(1),
-           n        = A.domain.dim(1).size;
+          mat_rows = A.domain.dim(0),
+           n        = A.domain.dim(0).size;
     
     const unit_roundoff = 2.0 ** (-53), // IEEE 64 bit floating point
           gamma_n1      = (n * unit_roundoff) / (1.0 - n * unit_roundoff);
@@ -462,7 +462,7 @@ module cholesky_scalar_algorithms {
     
     forall (i,j) in mat_dom do {
       resid  = abs (A (i,j) - 
-		    + reduce ( [k in mat_dom.dim(1) (..min (i,j))]
+		    + reduce ( [k in mat_dom.dim(0) (..min (i,j))]
 			       L (i,k) * L (j,k) ) ) ;
       max_ratio = max ( max_ratio,
 			resid * (1 - gamma_n1) /

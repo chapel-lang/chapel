@@ -166,7 +166,7 @@ proc matrixMult(
 {
     C = 0;
 
-    forall (i,j,k) in {C.domain.dim(1), C.domain.dim(2), 1..p} {
+    forall (i,j,k) in {C.domain.dim(0), C.domain.dim(1), 1..p} {
         C[i,j] += A[i,k] * B[k,j];
     }
 }
@@ -198,7 +198,7 @@ proc selfMult(n : int, A : [1..n,1..n] real, C : [1..n,1..n] real) {
 proc permuteMatrix(matrix : [?dmn], in vector) {
     //var pdmn : sparse subdomain(dmn);
     var pdmn =
-        {1..vector.domain.dim(1).size, 1..vector.domain.dim(1).size};
+        {1..vector.domain.dim(0).size, 1..vector.domain.dim(0).size};
     var p : [pdmn] int;
     //p.IRV = 0;
 
@@ -212,9 +212,9 @@ proc permuteMatrix(matrix : [?dmn], in vector) {
     var permuted = matrix;
 
     matrixMult(
+        dmn.dim(0).size,
+        dmn.dim(0).size,
         dmn.dim(1).size,
-        dmn.dim(1).size,
-        dmn.dim(2).size,
         p, matrix, permuted);
 
     matrix = permuted;
@@ -226,8 +226,8 @@ proc permuteBack(matrix : [?dmn], in vector) {
     // not to mention all the data being shuffled around, but this function
     // is in the test system so it's excusable.
 
-    const low  = vector.domain.dim(1).low;
-    const high = vector.domain.dim(1).high;
+    const low  = vector.domain.dim(0).low;
+    const high = vector.domain.dim(0).high;
 
     for i in vector.domain {
         for j in low..high-1 {
@@ -291,7 +291,7 @@ proc test_panelSolve(rprt = true) : bool {
     param offset = 3;
     param blkSize = 3;
     var pnl = new Panel2D(
-        A, offset, offset, (A.domain.dim(1).size)-offset+1, blkSize);
+        A, offset, offset, (A.domain.dim(0).size)-offset+1, blkSize);
     panelSolve(pnl, piv[offset..]);
 
     // to test multiply the L and U parts of the top portion of the panel

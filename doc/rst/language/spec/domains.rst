@@ -255,8 +255,8 @@ for type:
 
       var D : domain(2) = {1..2, 1..7};
       var A : [D] int;
-      for i in D.dim(1) do
-        for j in D.dim(2) do
+      for i in D.dim(0) do
+        for j in D.dim(1) do
           A[i,j] = 7 * i**2 + j;
       writeln(A);
 
@@ -1010,21 +1010,22 @@ domains only.
 
    proc domain.dim(d: int): range
 
-Returns the range of indices described by dimension ``d`` of the domain.
+Returns the range of indices described by dimension ``d`` of the domain,
+where ``d`` is a value from ``0`` to ``rank-1``.
 
    *Example*.
 
-   In the code 
+   The code:
 
    .. code-block:: chapel
 
-      for i in D.dim(1) do
-        for j in D.dim(2) do
+      for i in D.dim(0) do
+        for j in D.dim(1) do
           writeln(A(i,j));
 
-   domain ``D`` is iterated over by two nested loops. The first
-   dimension of ``D`` is iterated over in the outer loop. The second
-   dimension is iterated over in the inner loop.
+   iterates over the indices of a dense 2D domain ``D`` using two
+   nested loops, one per dimension.
+
 
 
 

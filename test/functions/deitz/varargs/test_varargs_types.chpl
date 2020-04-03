@@ -1,6 +1,6 @@
 proc writeDefaultValues(args:?t ...?n) {
   writeln(args.type:string);
-  for param i in 1..n {
+  for param i in 0..n-1 {
     var x: args(i).type;
     writeln(x);
   }

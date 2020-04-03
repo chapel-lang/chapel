@@ -42,8 +42,8 @@ proc main() {
   // _indexOfInterest: _ref(2*int)
   for itVar in tupleVar(21) {
     itVar = (13001, 13002);
-    itVar(1) = 13003;
-    itVar(2) = 13004;
+    itVar(0) = 13003;
+    itVar(1) = 13004;
   }
 
   // _indexOfInterest: 2*int
@@ -78,7 +78,7 @@ proc main() {
   // _indexOfInterest: (_ref(int),int)
   for isZip in zip (singleVar(13), singleVal(14)) {
     //illegal: isZip = (17001, 17002);   // error
-    isZip(1) = 17003;                    // would be nice to allow this
+    isZip(0) = 17003;                    // would be nice to allow this
     //illegal: isZip(2) = 17004;         // TODO: must be an error
   }
 

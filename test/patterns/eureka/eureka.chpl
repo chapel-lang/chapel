@@ -37,7 +37,7 @@ T.start();
 coforall loc in Locales {
   on loc {
     // Split the on-locale work coarsely enough that every task/CPU has some.
-    const rangeOnLoc = chunk(vals.domain.dim(1), numLocales, here.id);
+    const rangeOnLoc = chunk(vals.domain.dim(0), numLocales, here.id);
     const numChunks = min(rangeOnLoc.size,
                           if dataParTasksPerLocale == 0
                           then here.maxTaskPar

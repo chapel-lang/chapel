@@ -56,14 +56,14 @@ proc blockCompute(taskId, taskCount, Image: [?D] int) {
   //
   // Get the range of rows assigned to this task.
   //
-  var myRowRange = blockbound(taskId,   taskCount, D.dim(1))..
-                  (blockbound(taskId+1, taskCount, D.dim(1)) - 1);
+  var myRowRange = blockbound(taskId,   taskCount, D.dim(0))..
+                  (blockbound(taskId+1, taskCount, D.dim(0)) - 1);
 
   //
   // Iterate over my subset of rows and all columns.
   //
   for i in myRowRange do
-    for j in D.dim(2) do
+    for j in D.dim(1) do
       Image[i, j] = compute(i, j);
 }
 
@@ -79,7 +79,7 @@ proc blockbound(id, count, r) {
 
   //
   // Special case: Task IDs are numbered from 0 to taskCount-1, 
-  // so if 'taskCount' is passed in, return one more than the high index in dim(1).
+  // so if 'taskCount' is passed in, return one more than the high index in dim(0).
   // This ensures that we visit every index, even if xspan is not
   // evenly divisible by count.
   //

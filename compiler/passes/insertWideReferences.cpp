@@ -351,7 +351,7 @@ static Symbol* getTupleField(CallExpr* call) {
 
   // Probably a star tuple
   if (field == NULL) {
-    field = call->get(1)->getValType()->getField("x1");
+    field = call->get(1)->getValType()->getField("x0");
   }
 
   return field;
@@ -1424,7 +1424,7 @@ static void insertStringLiteralTemps()
               }
               if (call->isPrimitive(PRIM_SET_SVEC_MEMBER)) {
                 Type* valueType = call->get(1)->getValType();
-                Type* componentType = valueType->getField("x1")->type;
+                Type* componentType = valueType->getField("x0")->type;
                 if (componentType->symbol->hasFlag(FLAG_WIDE_CLASS)) {
                   VarSymbol* tmp = newTemp(componentType);
                   call->getStmtExpr()->insertBefore(new DefExpr(tmp));
@@ -1563,7 +1563,7 @@ static void insertWideClassTempsForNil()
         }
       } else if (call->isPrimitive(PRIM_SET_SVEC_MEMBER)) {
         Type* valueType = call->get(1)->getValType();
-        Type* componentType = valueType->getField("x1")->type;
+        Type* componentType = valueType->getField("x0")->type;
         if (isFullyWide(componentType)) {
           VarSymbol* tmp = newTemp(componentType);
           call->insertBefore(new DefExpr(tmp));

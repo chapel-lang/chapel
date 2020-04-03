@@ -7,24 +7,24 @@ proc myfunction() {
   on Locales[numLocales-1] {
     var localTup: (R,R);
     
-    localTup(1).setup(x = 50);
+    localTup(0).setup(x = 50);
+    localTup(0).verify();
+    localTup(1).setup(x = 60);
     localTup(1).verify();
-    localTup(2).setup(x = 60);
-    localTup(2).verify();
 
     tup = localTup;
 
     /*
+    tup(0).verify();
+    assert(tup(0).x == 50);
     tup(1).verify();
-    assert(tup(1).x == 50);
-    tup(2).verify();
-    assert(tup(2).x == 60);*/
+    assert(tup(1).x == 60);*/
   }
 
+  tup(0).verify();
+  assert(tup(0).x == 50);
   tup(1).verify();
-  assert(tup(1).x == 50);
-  tup(2).verify();
-  assert(tup(2).x == 60);
+  assert(tup(1).x == 60);
 }
 
 myfunction();

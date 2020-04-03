@@ -35,14 +35,14 @@ proc test(d) {
 
   proc t1(param k) {
     hd("dsiAccess1d dim", k);
-    const subdom = if k==1 then d._value.dom1 else d._value.dom2;
+    const subdom = if k==0 then d._value.dom1 else d._value.dom2;
     for i in d.dim(k) do
       msg(" ", i, "   ", subdom.dsiAccess1d(i));
     tl();
   }
 
+  t1(0);
   t1(1);
-  t1(2);
 
   hd("serial iterator over the domain");
   msgserial(d);
@@ -58,7 +58,7 @@ proc test(d) {
 
   hd("initializing the array with explicit indexing");
   for ix in d do
-    a[ix] = ( ix(1)*1000 + ix(2) ): a.eltType;
+    a[ix] = ( ix(0)*1000 + ix(1) ): a.eltType;
   tl();
 
   hd("serial iterator over the array");

@@ -10,7 +10,7 @@ proc main() {
   on Locales.tail() {
     startCommDiagnostics();
     const dims = changingDom.dims();
-    if dims(1).high > 1000 then halt("foo");
+    if dims(0).high > 1000 then halt("foo");
     changingDom = {1..10};
     var A : [changingDom] int;
     assert(A.size == 10);
@@ -27,7 +27,7 @@ proc main() {
   on Locales.tail() {
     startCommDiagnostics();
     const dims = Offsets.dims();
-    if dims(1).high > 1000 then halt("foo");
+    if dims(0).high > 1000 then halt("foo");
     var A : [Offsets] int;
     stopCommDiagnostics();
     A; // keep A alive until here to not count deinit in counts

@@ -208,8 +208,8 @@ module Curl {
                 This function will call ``setopt`` on each pair in turn.
    */
   proc setopt(ch:channel, args ...?k) throws {
-    for param i in 1..k {
-      setopt(ch, args(i)(1), args(i)(2));
+    for param i in 0..k-1 {
+      setopt(ch, args(i)(0), args(i)(1));
     }
   }
 

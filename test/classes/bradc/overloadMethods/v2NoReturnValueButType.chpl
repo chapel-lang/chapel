@@ -10,11 +10,11 @@ class D : C {
 
   proc postinit() {
     for i in 1..rank do
-      ranges(i) = 1..i;
+      ranges(i-1) = 1..i;
   }
 
   override proc bbox(x: int) {
-    return ranges(x);
+    return ranges(x-1);
   }
 }
 

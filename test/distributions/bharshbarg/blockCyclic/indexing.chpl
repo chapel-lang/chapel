@@ -42,7 +42,7 @@ proc main() {
   if n < 1 then halt("config 'n' must be >= 1.");
 
   var dims : rank*range;
-  for param i in 1..rank {
+  for param i in 0..rank-1 {
     dims(i) = 1..n;
   }
 

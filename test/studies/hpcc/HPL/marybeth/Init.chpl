@@ -181,7 +181,7 @@ proc init(A:[?D]) {
 //  fillRandom, Asquare is initialized first, followed by b.
 //  This is to match the previous version of benchmark where
 //  A and b were stored separately. 
-  var n = D.dim(1).size;
+  var n = D.dim(0).size;
   ref Asquare = A(..,1..n);
   ref b = A(..,n+1);
   var rstream = new owned RandomStream(real, seed=1234567891);

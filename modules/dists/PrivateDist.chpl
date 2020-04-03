@@ -95,13 +95,13 @@ class PrivateDom: BaseRectangularDom {
   iter these(param tag: iterKind) where tag == iterKind.leader {
     coforall loc in Locales do on loc {
       var t: 1*range(idxType);
-      t(1) = here.id..here.id;
+      t(0) = here.id..here.id;
       yield t;
     }
   }
 
   iter these(param tag: iterKind, followThis) where tag == iterKind.follower {
-    for i in followThis(1) do
+    for i in followThis(0) do
       yield i;
   }
 
@@ -178,10 +178,10 @@ proc PrivateArr.dsiAccess(i: idxType) ref {
 }
 
 proc PrivateArr.dsiAccess(i: 1*idxType) ref
-  return dsiAccess(i(1));
+  return dsiAccess(i(0));
 
 proc PrivateArr.dsiBoundsCheck(i: 1*idxType) {
-  var idx = i(1);
+  var idx = i(0);
   return 0 <= idx && idx < numLocales;
 }
 
@@ -193,13 +193,13 @@ iter PrivateArr.these() ref {
 iter PrivateArr.these(param tag: iterKind) where tag == iterKind.leader {
   coforall loc in Locales do on loc {
     var t: 1*range(idxType);
-    t(1) = here.id..here.id;
+    t(0) = here.id..here.id;
     yield t;
   }
 }
 
 iter PrivateArr.these(param tag: iterKind, followThis) ref where tag == iterKind.follower {
-  for i in followThis(1) do
+  for i in followThis(0) do
     yield dsiAccess(i);
 }
 

@@ -228,7 +228,7 @@ class RecordReader {
     // This will only loop through  at most one time before returning
     // FEATURE REQUEST: Make this so we don't need a for loop here
     for m in myReader.matches(matchRegexp, num_fields, 1) {
-      if (((m(1).offset) >= offst+len) && len != -1) { // rec.start >= start + len
+      if (((m(0).offset) >= offst+len) && len != -1) { // rec.start >= start + len
         // Then break and dont return any record
         return (rec, false);
       }
@@ -236,7 +236,7 @@ class RecordReader {
         var tmp = getField(rec, n);
         var s: string;
         ref dst = getFieldRef(rec, n);
-        myReader.extractMatch(m(n + 1), s);
+        myReader.extractMatch(m(n), s);
         if s == "" then
           dst = tmp;
         else if tmp.type == string then
