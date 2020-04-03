@@ -260,21 +260,21 @@ nested modules.
 Access of Module Contents
 -------------------------
 
-A module’s contents can be accessed by code outside of that module
-depending on the visibility of the module
-itself (:ref:`Visibility_Of_A_Module`) and the visibility of
-each individual symbol (:ref:`Visibility_Of_Symbols`). This
-can be done via the use statement (:ref:`Using_Modules`) or
-qualified naming (:ref:`Explicit_Naming`).
+A module’s contents can be accessed by code outside of that module depending on
+the visibility of the module itself (:ref:`Visibility_Of_A_Module`) and the
+visibility of each individual symbol (:ref:`Visibility_Of_Symbols`). This can be
+done via the use statement (:ref:`Using_Modules`), the import
+statement (:ref:`Importing_Modules`) or qualified
+naming (:ref:`Explicit_Naming`).
 
 .. _Visibility_Of_A_Module:
 
 Visibility Of A Module
 ~~~~~~~~~~~~~~~~~~~~~~
 
-A top-level module is available for use (:ref:`Using_Modules`)
-anywhere. The visibility of a nested module is subject to the rules
-of :ref:`Visibility_Of_Symbols`, where the nested module is
+A top-level module is available for use (:ref:`Using_Modules`) or
+import (:ref:`Importing_Modules`) anywhere. The visibility of a nested module is
+subject to the rules of :ref:`Visibility_Of_Symbols`, where the nested module is
 considered a "module-scope symbol" of its outer module.
 
 .. _Visibility_Of_Symbols:
@@ -282,15 +282,14 @@ considered a "module-scope symbol" of its outer module.
 Visibility Of A Module’s Symbols
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-A symbol defined at module scope is *visible* from outside the module
-when the ``privacy-specifier`` of its definition is ``public`` or is
-omitted (i.e. by default). When a module-scope symbol is declared
-``private``, it is not visible outside of that module. A symbol’s
-visibility inside its module is controlled by normal lexical scoping and
-is not affected by its ``privacy-specifier``. When a module’s symbol is
-visible (:ref:`Visibility_Of_A_Module`), the visible symbols
-it contains are accessible via the use
-statement (:ref:`Using_Modules`) or qualified
+A symbol defined at module scope is *visible* from outside the module when the
+``privacy-specifier`` of its definition is ``public`` or is omitted (i.e. by
+default). When a module-scope symbol is declared ``private``, it is not visible
+outside of that module. A symbol’s visibility inside its module is controlled by
+normal lexical scoping and is not affected by its ``privacy-specifier``. When a
+module’s symbol is visible (:ref:`Visibility_Of_A_Module`), the visible symbols
+it contains are accessible via the use statement (:ref:`Using_Modules`), import
+statement (:ref:`Importing_Modules`), or qualified
 naming (:ref:`Explicit_Naming`).
 
 .. _Using_Modules:
@@ -298,25 +297,41 @@ naming (:ref:`Explicit_Naming`).
 Using Modules
 ~~~~~~~~~~~~~
 
-The ``use`` statement provides the primary means of accessing a module’s
-symbols from outside of the module. Use statements make both the
-module’s name and its public symbols available for reference within a
-given scope. For top-level modules, a use statement is required before
-referring to the module’s name or the symbols it contains within a given
-lexical scope.
+The ``use`` statement provides one of the two primary ways to access a module’s
+symbols from outside of the module, the other being the ``import`` statement.
+Use statements make both the module’s name and its public symbols available
+for reference within a given scope. For top-level modules, a ``use`` or
+``import`` statement is required before referring to the module’s name or the
+symbols it contains within a given lexical scope.
 
-Use statements can also restrict or rename the set of module symbols
-that are available within the scope. For further information about use
-statements, see :ref:`The_Use_Statement`.
+Use statements can also restrict or rename the set of module symbols that are
+available within the scope. For further information about ``use`` statements,
+see :ref:`The_Use_Statement`.
+
+.. _Importing_Modules:
+
+Importing Modules
+~~~~~~~~~~~~~~~~~
+
+The ``import`` statement provides one of the two primary ways to access a
+module's symbols from outside of the module, the other being the ``use``
+statement.  Import statements make either the module's name or certain symbols
+within it available for reference within a given scope.  For top-level modules,
+an ``import`` or ``use`` statement is required before referring to the module's
+name or the symbols it contains within a given lexical scope.
+
+Import statements can also rename the set of symbols that it makes available
+within the scope.  For further information about ``import`` statements, see
+:ref:`The_Import_Statement`.
 
 .. _Explicit_Naming:
 
 Qualified Naming of Module Symbols
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-When a module’s symbol is visible—via a use statement, or lexically for
-nested modules—its public symbols can be referred to via qualified
-naming with the following syntax: 
+When a module’s symbol is visible—via a use or import statement, or lexically
+for nested modules—its public symbols can be referred to via qualified naming
+with the following syntax:
 
 .. code-block:: syntax
 
@@ -583,15 +598,14 @@ Module Initialization Order
 
 Module initialization is performed using the following algorithm.
 
-Starting from the module that defines the main function, the modules
-named in its use statements are visited depth-first and initialized in
-post-order. If a use statement names a module that has already been
-visited, it is not visited a second time. Thus, infinite recursion is
-avoided.
+Starting from the module that defines the main function, the modules named in
+its use and import statements are visited depth-first and initialized in
+post-order. If a use or import statement names a module that has already been
+visited, it is not visited a second time. Thus, infinite recursion is avoided.
 
-Modules used by a given module are visited in the order in which they
-appear in the program text. For nested modules, the parent module and
-its uses are initialized before the nested module and its uses.
+Modules used or imported by a given module are visited in the order in which
+they appear in the program text. For nested modules, the parent module and its
+uses are initialized before the nested module and its uses or imports.
 
    *Example (init-order.chpl)*.
 
