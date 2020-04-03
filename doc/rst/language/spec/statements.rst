@@ -810,12 +810,12 @@ the following:
  * ``this`` to indicate the requested module is a submodule of the
    current module
 
-The names that are imported by a use statement are inserted in to a new scope
-that immediately encloses the scope within which the statement appears. This
-implies that the position of the use statement within a scope has no effect on
-its behavior. If a scope includes multiple use statements or a combination of
-use and import statements, then the imported names are inserted in to a common
-enclosing scope.
+The names that are made visible by a ``use`` statement are inserted in to a new
+scope that immediately encloses the scope within which the statement
+appears. This implies that the position of the ``use`` statement within a scope
+has no effect on its behavior. If a scope includes multiple ``use`` statements
+or a combination of ``use`` and ``import`` statements, then the newly-visible
+names are inserted in to a common enclosing scope.
 
 An error is signaled if multiple enumeration constants or public
 module-level symbols would be inserted into this enclosing scope with
@@ -1054,12 +1054,12 @@ statement must begin with one of the following:
 A submodule may not be imported without either the full path to it, or a
 ``super`` or ``this`` prefix at the beginning of the path.
 
-The names that are imported by an import statement are inserted in to a new
-scope that immediately encloses the scope within which the statement appears.
-This implies that the position of the import statement within a scope has no
-effect on its behavior.  If a scope includes multiple import statements, or a
-combination of import and use statements, then the imported names are inserted
-into a common enclosing scope.
+The names that are made visible by an ``import`` statement are inserted in to a
+new scope that immediately encloses the scope within which the statement
+appears.  This implies that the position of the ``import`` statement within a
+scope has no effect on its behavior.  If a scope includes multiple ``import``
+statements, or a combination of ``import`` and ``use`` statements, then the
+newly-visible names are inserted into a common enclosing scope.
 
 An error is signalled if multiple public module-level symbols would be inserted
 into this enclosing scope with the same name, and that name is referenced by
@@ -1073,12 +1073,12 @@ imports or uses of that module from other contexts.
 Import statements may be explicitly declared ``public`` or ``private``.  By
 default, imports are ``private``.  Making an import ``public`` causes its
 symbols to be visible as though they were defined in the scope with the import,
-a strategy which will be referred to as re-exporting.  However, symbols with the
-same name in the scope with the import will still take precedence.  If module A
-imports module B, and module B contains a public import of module C, then C will
-be visible to A as though it was a submodule of B.  This means that A could
-contain references like ``B.C.cSymbol`` if cSymbol was a symbol defined in C,
-regardless of if C was actually a submodule of B.  Similarly, if module B
+a strategy which will be referred to as `re-exporting`.  However, symbols with
+the same name in the scope with the import will still take precedence.  If
+module A imports module B, and module B contains a public import of module C,
+then C will be visible to A as though it was a submodule of B.  This means that
+A could contain references like ``B.C.cSymbol`` if cSymbol was a symbol defined
+in C, regardless of if C was actually a submodule of B.  Similarly, if module B
 contains a public import of some public symbols defined in module C, then those
 symbols will be visible to A as though they were defined in module B, unless
 they are shadowed by symbols of the same name in B.  This means that A could
