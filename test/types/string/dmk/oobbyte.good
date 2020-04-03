@@ -1,1 +1,1 @@
-oobbyte.chpl:1: error: index out of bounds of string: 1
+oobbyte.chpl:1: error: index 0 out of bounds for string with 0 bytes

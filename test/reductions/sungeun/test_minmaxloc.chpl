@@ -25,9 +25,9 @@ class lastmaxloc: ReduceScanOp {
 
   proc accumulateOntoState(ref state, otherVal) {
     if state.uninitialized                  ||
-       ( otherVal(1) > state.value(1) )     ||
-       ( (otherVal(1) == state.value(1)) &&
-         (otherVal(2) > state.value(2))   )
+       ( otherVal(0) > state.value(0) )     ||
+       ( (otherVal(0) == state.value(0)) &&
+         (otherVal(1) > state.value(1))   )
     then
       state.value = otherVal;
 
@@ -56,9 +56,9 @@ class lastminloc: ReduceScanOp {
 
   proc accumulateOntoState(ref state, otherVal) {
     if state.uninitialized                  ||
-       ( otherVal(1) < state.value(1) )     ||
-       ( (otherVal(1) == state.value(1)) &&
-         (otherVal(2) > state.value(2))   )
+       ( otherVal(0) < state.value(0) )     ||
+       ( (otherVal(0) == state.value(0)) &&
+         (otherVal(1) > state.value(1))   )
     then
       state.value = otherVal;
 

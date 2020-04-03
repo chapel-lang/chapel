@@ -157,7 +157,7 @@ proc resetDmhelp(dmhelp: []) {
     compilerError("resetDmhelp is implemented only for 2-d arrays");
 
   for (ix, elm) in zip(dmhelp.domain, dmhelp) do
-    elm = ix(1)*100 + ix(2);
+    elm = ix(0)*100 + ix(1);
 }
 
 var privTestWarningShown:bool = false;

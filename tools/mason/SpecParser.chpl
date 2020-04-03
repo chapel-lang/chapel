@@ -53,12 +53,12 @@ proc getSpecFields(spec: string) {
   try! {
     var tokenList = readSpec(spec);
     const specInfo = parseSpec(tokenList);
-    var compiler = specInfo[3];
+    var compiler = specInfo[2];
     if compiler.size < 1 {
       compiler = inferCompiler();
     }
-    specFields = (specInfo[1], specInfo[2], compiler,
-                  specInfo[4]);
+    specFields = (specInfo[0], specInfo[1], compiler,
+                  specInfo[3]);
   }
   catch e: MasonError {
     stderr.writeln(e.message());

@@ -76,7 +76,7 @@ module CSV {
     /* Read a CSV file with fields of the types given by
        the arguments to the function
      */
-    iter read(type t...) throws where t.size > 1 || !isSpecialCaseType(t(1)) {
+    iter read(type t...) throws where t.size > 1 || !isSpecialCaseType(t(0)) {
       if ch.writing then compilerError("reading from a writing channel");
 
       var r: t;
@@ -86,8 +86,8 @@ module CSV {
         if line.size == 0 then
           continue;
         const vals = line.split(sep);
-        for param i in 1..t.size {
-          r(i) = vals[i]: t(i);
+        for param i in 0..t.size-1 {
+          r(i) = vals[i+1]: t(i);
         }
         if skipHeader {
           skipHeader = false;
@@ -157,9 +157,9 @@ module CSV {
     proc write(tup: ?t) throws where isTuple(t) {
       if !ch.writing then compilerError("writing to a reading channel");
 
-      for param i in 1..tup.size {
+      for param i in 0..tup.size-1 {
         ch.write(tup(i));
-        if i < tup.size then
+        if i < tup.size-1 then
           ch.write(sep);
       }
       ch.writeln();

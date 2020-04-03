@@ -23,8 +23,8 @@ proc BlockArr.copyBtoC(B)
     var count: [1..#(stridelevels+1)] int(32);
     var lid=loc.id; 
 
-    var numLocales: int(32)=privdom.dist.targetLocDom.dim(1).size:int(32);
-    var n:int(32)=privdom.dist.boundingBox.dim(1).size:int(32);
+    var numLocales: int(32)=privdom.dist.targetLocDom.dim(0).size:int(32);
+    var n:int(32)=privdom.dist.boundingBox.dim(0).size:int(32);
     var src = privarr.locArr[lid].myElems._value.data;
 
     dststrides[1]=1;
@@ -97,8 +97,8 @@ proc  BlockArr.copyCtoB(B)
     var srcstrides: [1..#stridelevels] int(32);
     var count: [1..#(stridelevels+1)] int(32); 
     var lid=loc.id;
-    var numLocales: int=privdom.dist.targetLocDom.dim(1).size;
-    var n:int(32)=privdom.dist.boundingBox.dim(1).size:int(32);
+    var numLocales: int=privdom.dist.targetLocDom.dim(0).size;
+    var n:int(32)=privdom.dist.boundingBox.dim(0).size:int(32);
 
     var dststr=dststrides._value.data;
     var srcstr=srcstrides._value.data;

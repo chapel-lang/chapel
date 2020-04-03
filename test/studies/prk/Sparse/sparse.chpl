@@ -80,8 +80,8 @@ for niter in 0..iterations {
   if niter == 1 then t.start();
   [i in vectorDom] vector[i] += i+1;
 
-  forall i in matrix.domain.dim(1) do
-    for j in matrix.domain.dimIter(2,i) do
+  forall i in matrix.domain.dim(0) do
+    for j in matrix.domain.dimIter(1,i) do
     result[i] += matrix[i,j] * vector[j];
 }
 t.stop();

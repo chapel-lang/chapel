@@ -21,9 +21,9 @@ iter ranges() {
 }
 
 iter variations(in template, param rank = template.size) {
-  if isRange(template(rank)) {
+  if isRange(template(rank-1)) {
     for r in ranges() {
-      template(rank) = r;
+      template(rank-1) = r;
       if rank == 1 then yield template;
       else {
         for v in variations(template, rank-1) do yield v;
@@ -43,7 +43,7 @@ for param rank in 2..maxDims {
   var dom : domain(rank, stridable=true);
   {
     var r : rank*range(stridable=true);
-    for i in 1..rank do r(i) = 1..10;
+    for i in 0..#rank do r(i) = 1..10;
     var temp : domain(rank, stridable=true) = r;
     dom = temp;
   }
@@ -53,7 +53,7 @@ for param rank in 2..maxDims {
   var smaller : domain(rank-1, stridable=true);
   {
     var r : (rank-1)*range(stridable=true);
-    for i in 1..rank-1 do r(i) = 1..10;
+    for i in 0..#(rank-1) do r(i) = 1..10;
     var temp : domain(rank-1, stridable = true) = r;
     smaller = temp;
   }

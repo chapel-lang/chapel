@@ -61,8 +61,8 @@ proc makeHerm(A : [?Adom]) {
 // Make band-diagonal matrix
 proc makeBand(A:[?Adom] ?t, kl, ku)
   where Adom.rank == 2 {
-  for i in Adom.dim(1) {
-    for j in Adom.dim(2) {
+  for i in Adom.dim(0) {
+    for j in Adom.dim(1) {
       if (j < i - kl) || (j > i + ku) {
         A[i,j] = (0):t;
       }
@@ -118,8 +118,8 @@ proc makeUnit(A : [?Adom], val:real = 1.0) {
 // Band Array -- experimental
 proc bandArray(A: [?Dom] ?eltType, ku, kl, order=Order.Row) where A.rank == 2 {
 
-  const m = Dom.dim(1).size,
-        n = Dom.dim(2).size;
+  const m = Dom.dim(0).size,
+        n = Dom.dim(1).size;
 
   const bandDim = if order==Order.Row then m else n;
 
@@ -158,10 +158,10 @@ proc bandArrayTriangular(A: [?Dom] ?eltType, k, uplo=Uplo.Upper, order=Order.Row
   where A.rank == 2 {
 
   // Must be square matrix
-  assert(Dom.dim(1).size == Dom.dim(2).size);
+  assert(Dom.dim(0).size == Dom.dim(1).size);
 
   // Matrix order
-  const n = Dom.dim(1).size;
+  const n = Dom.dim(0).size;
 
   // double check this...
   var a: [{0..#(k+1), 0..#n}] eltType;
@@ -217,8 +217,8 @@ proc packedArray(A: [?Dom] ?elType) where A.rank == 2 {
 /* Naive transpose */
 proc transpose(A: [?D] ?t) where A.rank == 2 {
 
-  const m = D.dim(1).size,
-        n = D.dim(2).size;
+  const m = D.dim(0).size,
+        n = D.dim(1).size;
 
   var B: [{0..#n, 0..#m}] t;
   for (i, j) in D {

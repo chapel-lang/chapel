@@ -8,7 +8,7 @@ class BlockCyclicDist {
 
   proc idxToLocaleInd(ind: idxType...nDims) {
     var locInd: nDims*idxType;
-    for i in 1..nDims {
+    for i in 0..#nDims {
       locInd(i) = (startLoc(i) + (ind(i)-1)/blockSize(i)) % localeDomain.dim(i).size;
     }
     return locInd;
@@ -19,14 +19,14 @@ class BlockCyclicDist {
   }
   proc getBlock(ind: idxType...nDims) {
     var locInd: nDims*idxType;
-    for i in 1..nDims {
+    for i in 0..#nDims {
       locInd(i) = (ind(i) - 1) / (localeDomain.dim(i).size*blockSize(i));
     }
     return locInd;
   }
   proc getBlockPosition(ind: idxType...nDims) {
     var locInd: nDims*idxType;
-    for i in 1..nDims {
+    for i in 0..#nDims {
       locInd(i) = ((ind(i)-1) % blockSize(i)) + 1;
     }
     return locInd;
@@ -35,7 +35,7 @@ class BlockCyclicDist {
     var blk = getBlock((...ind));
     var blkPos = getBlockPosition((...ind));
     var position: nDims*idxType;
-    for i in 1..nDims {
+    for i in 0..#nDims {
       position(i) = blk(i)*blockSize(i) + blkPos(i);
     }
     return position;
@@ -55,7 +55,7 @@ class BlockCyclicDom {
   var locDoms: [dist.localeDomain] unmanaged LocBlockCyclicDom(nDims, idxType)?;
   proc postinit() {
     var blksInDim: nDims*idxType;
-    for i in 1..nDims {
+    for i in 0..#nDims {
       blksInDim(i) = ceil(whole.dim(i).size:real(64) /
                           dist.blockSize(i)):idxType;
     }
@@ -63,7 +63,7 @@ class BlockCyclicDom {
     for pos in dist.localeDomain {
       var locSize: nDims*idxType;
       
-      for dim in 1..nDims {
+      for dim in 0..#nDims {
         var remainder: idxType;
         locSize(dim) = dist.blockSize(dim) * (blksInDim(dim) / dist.localeDomain.dim(dim).size);
         remainder = whole.dim(dim).size - (locSize(dim) * dist.localeDomain.dim(dim).size);
@@ -75,7 +75,7 @@ class BlockCyclicDom {
       }
       on dist.locales(pos) {
         var locRanges: nDims*range(idxType, BoundedRangeType.bounded);
-        for i in 1..nDims {
+        for i in 0..#nDims {
           locRanges(i) = 1..locSize(i);
         }
         locDoms(pos) = new unmanaged LocBlockCyclicDom(nDims, idxType, _to_unmanaged(this), locRanges);

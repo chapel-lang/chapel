@@ -115,9 +115,9 @@ private proc searchSpkgs(args: [?d] string) {
   else {
     var command = "spack list";
     var pkgName: string;
-    if args[3].find('-') > 0 {
+    if args[3].find('-') != -1 {
       for arg in args[3..] {
-        if arg.find('h') {
+        if arg.find('h') != -1 {
           masonExternalSearchHelp();
           exit(0);
         }
@@ -148,7 +148,7 @@ private proc findSpkg(args: [?d] string) {
     listInstalled();
     exit(0);
   }
-  if args[3].find('-') {
+  if args[3].find('-') != -1 {
     for arg in args[3..] {
       if arg == "-h" || arg == "--help" {  
         masonExternalFindHelp();
@@ -195,7 +195,7 @@ proc spkgInstalled(spec: string) {
   var found = false;
   var dependencies: [1..0] string; // a list of pkg dependencies
   for item in pkgInfo.split() {  
-    if item.rfind(spec) != 0 {
+    if item.rfind(spec) != -1 {
       return true;
     }
   }
@@ -255,9 +255,9 @@ proc getExternalPackages(exDeps: unmanaged Toml) {
               tempSpec = "@".join(name, spec.s);
             }
             const specFields = getSpecFields(tempSpec);
-            var version = specFields[2];
-            var compiler = specFields[3];
-            //var variants = specFields[4];
+            var version = specFields[1];
+            var compiler = specFields[2];
+            //var variants = specFields[3];
 
             // TODO: allow dependency search to include variants
             var fullSpec = "%".join("@".join(name, version), compiler);
@@ -292,9 +292,9 @@ proc getSpkgInfo(spec: string, ref dependencies: list(string)): unmanaged Toml t
 
   try {
     const specFields = getSpecFields(spec);
-    var pkgName = specFields[1];
-    var version = specFields[2];
-    var compiler = specFields[3];
+    var pkgName = specFields[0];
+    var version = specFields[1];
+    var compiler = specFields[2];
 
     if spkgInstalled(spec) {      
       const spkgPath = getSpkgPath(spec);
@@ -362,7 +362,7 @@ proc getSpkgDependencies(spec: string) throws {
   var dependencies: list(string);
   for item in pkgInfo.split() {
 
-    if item.rfind(spec) != 0 {
+    if item.rfind(spec) != -1 {
       found = true;
     }
     else if found == true {

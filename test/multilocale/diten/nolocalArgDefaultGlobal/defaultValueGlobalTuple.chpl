@@ -1,8 +1,8 @@
 var t = (1, 2);
-proc foo(a=t(1)) {
+proc foo(a=t(0)) {
   return a;
 }
 
 writeln(foo());
-t(1) = 2;
+t(0) = 2;
 writeln(foo());

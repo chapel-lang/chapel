@@ -41,7 +41,7 @@ class Dimensional {
   // using the dimensionDistributer for each dimension
   proc indexToLocIndex(ind: idxType ...nDims) {
     var localeArrayInd: nDims*int;
-    for i in 1..#nDims {
+    for i in 0..#nDims {
        localeArrayInd(i) = dimensionDistributors(i).indToDimInd(ind(i), localeDomain);
     }
     return localeArrayInd;
@@ -61,7 +61,7 @@ class Dimensional {
   // min(idxType)..max(idxType)
   proc getLocRanges(loc: nDims*int) {
     var ranges: nDims*range(stridable=true);
-    for param dim in 1..nDims {
+    for param dim in 0..nDims-1 {
       ranges(dim) = dimensionDistributors(dim).localPart(localeDomain, loc, idxType);
     }
     return ranges;
@@ -185,7 +185,7 @@ proc main {
   var locales: [localeDom] locale =
     for (i,j) in localeDom do Locales((i*nLocCols + j)%numLocales);
 
-  var dims: nDims*unmanaged DimensionDistributor = (new unmanaged Cyclic(1), new unmanaged Cyclic(2));
+  var dims: nDims*unmanaged DimensionDistributor = (new unmanaged Cyclic(0), new unmanaged Cyclic(1));
   var dist = new unmanaged Dimensional(2, int, dims, localeDom, locales);
   var dom = dist.newDomain({0..3,0..5});
 
@@ -211,6 +211,6 @@ proc main {
   delete arr;
   delete dom;
   delete dist;
+  delete dims(0);
   delete dims(1);
-  delete dims(2);
 }

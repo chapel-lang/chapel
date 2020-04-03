@@ -96,7 +96,7 @@ proc acceptsIn6(in t: (int, owned C?)) {
 proc test6() {
   var t = (128, new owned C?(256));
   acceptsIn6(t);
-  assert(t[2] == nil);
+  assert(t[1] == nil);
 }
 test6();
 

@@ -58,12 +58,12 @@ const MASK = 123459876;
 // Dot product between two vectors
 inline proc dot(a,b : v3) {
   var c = a * b;
-  return c(1) + c(2) + c(3);
+  return c(0) + c(1) + c(2);
 }
 
 inline proc dot(a,b : v3int) {
   var c = a*b;
-  return c(1) + c(2) + c(3);
+  return c(0) + c(1) + c(2);
 }
 
 record atom {
@@ -129,17 +129,17 @@ var dataReader : channel(false, iokind.dynamic,false);
 // no data file, use input file to generate uniform lattice
 if generating {
 
-  numAtoms = (4 * problemSize(1) * problemSize(2) * problemSize(3)) : int;
+  numAtoms = (4 * problemSize(0) * problemSize(1) * problemSize(2)) : int;
 
   // let the density inform box size
   const lattice : real = (4.0 / density) ** (1.0 / 3.0);
   box = problemSize * (lattice,lattice,lattice);
-  volume = box(1) * box(2) * box(3);
+  volume = box(0) * box(1) * box(2);
 
   boxhi = box;
 
   // compute the number of bins we need in each direction
-  for i in 1..3 do
+  for i in 0..2 do
     numBins(i) = (5.0/6.0 * problemSize(i)) : int;
 } else {
   dataFile = open(data_file, iomode.r);
@@ -154,10 +154,10 @@ if generating {
   assert(types == 1, "You can only have one type of atom.");
 
   // sim dimensions
-  for i in 1..3 do
+  for i in 0..2 do
     (boxlo(i), boxhi(i)) = dataReader.readln(real,real);
   box = boxhi - boxlo;
-  volume = box(1) * box(2) * box(3);
+  volume = box(0) * box(1) * box(2);
 
   const masses = dataReader.readln(string);
   assert(masses == "Masses");
@@ -167,7 +167,7 @@ if generating {
   // density overridden if data file provided
   density = numAtoms / (volume);
   const nbs : real = (density * 16) ** (1.0/3.0 : real);
-  for i in 1..3 do
+  for i in 0..2 do
     numBins(i) = (box(i) / nbs) : int;
 }
 
@@ -186,19 +186,19 @@ const bininv = (1.0,1.0,1.0) / binsize;
 
 // number of bins we need for neighboring
 var numNeed : v3int;
-for i in 1..3 {
+for i in 0..2 {
   numNeed(i) = (cutneigh * bininv(i)) : int;
   if numNeed(i) * binsize(i) < factor * cutneigh then numNeed(i) += 1;
 }
 
 // stencil that defines our bin neighbor offsets
 // for example, (0,1,0) will represent the bin above us
-const stencil = {-numNeed(1) .. numNeed(1),
-                  -numNeed(2) .. numNeed(2),
-                  -numNeed(3) .. numNeed(3)};
+const stencil = {-numNeed(0) .. numNeed(0),
+                  -numNeed(1) .. numNeed(1),
+                  -numNeed(2) .. numNeed(2)};
 
 // Defines the problem space
-const binSpace = {1..numBins(1), 1..numBins(2), 1..numBins(3)};
+const binSpace = {1..numBins(0), 1..numBins(1), 1..numBins(2)};
 const ghostSpace = binSpace.expand(numNeed);
 
 // Will define the bounds of our arrays and distribute across locales
@@ -263,7 +263,7 @@ if generating {
   var tempPos : [1..numAtoms] v3;
   for x in tempPos {
     var a, b : int;
-    dataReader.readln(a ,b, x(1),x(2),x(3));
+    dataReader.readln(a ,b, x(0),x(1),x(2));
   }
 
   dataReader.readln(string); // skip 'Velocities' line
@@ -272,7 +272,7 @@ if generating {
   for x in tempPos {
     var v : v3;
     var a : int;
-    dataReader.readln(a, v(1),v(2),v(3));
+    dataReader.readln(a, v(0),v(1),v(2));
     var ta = new atom(v);
     addatom(ta, x, coord2bin(x));
   }
@@ -389,11 +389,11 @@ proc printSim() {
   writeln("\t# atoms: ", numAtoms);
   write("\t# System size: ");
   writef("%.2dr %.2dr %.2dr (unit cells: %i %i %i)\n",
-      box(1), box(2), box(3), problemSize(1), problemSize(2), problemSize(3));
+      box(0), box(1), box(2), problemSize(0), problemSize(1), problemSize(2));
   writef("\t# density: %.6dr\n", density);
   writef("\t# Force cutoff: %.6dr\n", force_cut);
   writef("\t# neigh cutoff: %.6dr\n", cutneigh);
-  writeln("\t# Neighbor bins: ", numBins(1), " ", numBins(2), " ", numBins(3));
+  writeln("\t# Neighbor bins: ", numBins(0), " ", numBins(1), " ", numBins(2));
   writeln("\t# neighbor frequency ", neigh_every);
   writef("\t# timestep size: %.6dr\n", dt );
   writeln("\t# thermo frequency: ", thermoEvery);
@@ -404,12 +404,12 @@ proc create_atoms() {
 
   var lo, hi : v3int;
 
-  for i in 1..3 {
+  for i in 0..2 {
     lo(i) = (boxlo(i) / (.5 * lattice)) : int;
     hi(i) = (boxhi(i) / (.5 * lattice)) : int;
   }
 
-  for i in 1..3 {
+  for i in 0..2 {
     lo(i) = max(lo(i), 0);
     hi(i) = min(hi(i), 2 * problemSize(i) - 1) : int;
   }
@@ -421,28 +421,28 @@ proc create_atoms() {
   var subboxdim = 8;
   var flag = false;
 
-  while o(3) * subboxdim <= hi(3) {
+  while o(2) * subboxdim <= hi(2) {
     curCoord = (o * (subboxdim,subboxdim,subboxdim) + s);
 
     if flag then continue;
 
     var withinBounds = true;
-    for i in 1..3 {
+    for i in 0..2 {
       withinBounds = withinBounds && curCoord(i) >= lo(i) && curCoord(i) <= hi(i);
     }
 
-    if ((curCoord(1) + curCoord(2) + curCoord(3)) % 2 == 0) && withinBounds {
-      for i in 1..3 do
+    if ((curCoord(0) + curCoord(1) + curCoord(2)) % 2 == 0) && withinBounds {
+      for i in 0..2 do
         temp(i) = .5 * lattice * curCoord(i);
 
       withinBounds = true;
-      for i in 1..3 {
+      for i in 0..2 {
         withinBounds = withinBounds && temp(i) >= boxlo(i) && temp(i) < boxhi(i);
       }
 
       if withinBounds {
-        n = (curCoord(3) * (2 * problemSize(2)) * (2*problemSize(1)) + curCoord(2) * (2 * problemSize(1)) + curCoord(1) + 1) : int;
-        for i in 1..3 {
+        n = (curCoord(2) * (2 * problemSize(1)) * (2*problemSize(0)) + curCoord(1) * (2 * problemSize(0)) + curCoord(0) + 1) : int;
+        for i in 0..2 {
           for m in 1..5 { pmrand(n); }
           v(i) = pmrand(n);
         }
@@ -451,7 +451,12 @@ proc create_atoms() {
       }
     }
 
-    s(1) += 1;
+    s(0) += 1;
+
+    if s(0) == subboxdim {
+      s(0) = 0;
+      s(1) += 1;
+    }
 
     if s(1) == subboxdim {
       s(1) = 0;
@@ -460,22 +465,17 @@ proc create_atoms() {
 
     if s(2) == subboxdim {
       s(2) = 0;
-      s(3) += 1;
+      o(0) += 1;
     }
 
-    if s(3) == subboxdim {
-      s(3) = 0;
+    if o(0) * subboxdim > hi(0) {
+      o(0) = 0;
       o(1) += 1;
     }
 
     if o(1) * subboxdim > hi(1) {
       o(1) = 0;
       o(2) += 1;
-    }
-
-    if o(2) * subboxdim > hi(2) {
-      o(2) = 0;
-      o(3) += 1;
     }
   }
   if useStencilDist then Count.updateFluff();

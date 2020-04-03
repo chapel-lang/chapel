@@ -205,7 +205,7 @@ D1={1..n,2..n by 2,5..n-1};
 D2={1..n,2..2*n by 4,4..n-2};
 
 elem=1;
-for h in 1..Dom1.rank
+for h in 0..#Dom1.rank
 {
   if D2.dim(h).size != D1.dim(h).size
   {
@@ -229,7 +229,7 @@ D1={1..n-1 by 3,2..n/2 by 2,5..n-1};
 D2={1..2*(n-1) by 6,2..n by 4,4..n-2};
 
 elem=1;
-for h in 1..Dom1.rank
+for h in 0..#Dom1.rank
 {
   if D2.dim(h).size != D1.dim(h).size
   {
@@ -253,7 +253,7 @@ D1={2..n by 4,2..n/2 by 2,1..n/2 by 5};
 D2={2..n/2 by 2,2..n by 4,n/4+1..3*n/4 by 5};
 
 elem=1;
-for h in 1..Dom1.rank
+for h in 0..#Dom1.rank
 {
   if D2.dim(h).size != D1.dim(h).size
   {
@@ -278,7 +278,7 @@ D1={1..n/2 by 3,n/2+1..3*n/4 by 2,1..n/2 by 5};
 D2={n+1..2*n by 6,n/4+1..3*n/4 by 4,n/4+1..3*n/4 by 5};
 
 elem=1;
-for h in 1..Dom1.rank
+for h in 0..#Dom1.rank
 {
   if D2.dim(h).size != D1.dim(h).size
   {
@@ -302,7 +302,7 @@ D1={n/2+1..n by 2,1..n by 4,n/4+1..n/2 by 2};
 D2={n/2+1..3*n/2 by 4,n/2+1..n by 2,n/4+1..3*n/4 by 4};
 
 elem=1;
-for h in 1..Dom1.rank
+for h in 0..#Dom1.rank
 {
   if D2.dim(h).size != D1.dim(h).size
   {
@@ -327,7 +327,7 @@ D1={n/4+1..3*n/4 by 2,n/2+1..n by 2,n/4+1..n/2 by 3};
 D2={n+1..2*n by 4,3*n/2+1..2*n by 2,n/4+1..3*n/4 by 6};
 
 elem=1;
-for h in 1..Dom1.rank
+for h in 0..#Dom1.rank
 {
   if D2.dim(h).size != D1.dim(h).size
   {
@@ -351,7 +351,7 @@ D1={n/4+1..3*n/4 by 2,n/2+1..3*n/4 by 1,n/4+1..n/2 by 2};
 D2={n+1..5*n/4 by 1,3*n/2+1..2*n by 2,n/4+1..3*n/4 by 4};
 
 elem=1;
-for h in 1..Dom1.rank
+for h in 0..#Dom1.rank
 {
   if D2.dim(h).size != D1.dim(h).size
   {

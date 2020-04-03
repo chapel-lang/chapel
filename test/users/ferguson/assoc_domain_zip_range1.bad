@@ -1,1 +1,1 @@
-assoc_domain_zip_range1.chpl:14: error: tuple size must match the number of grouped variables
+assoc_domain_zip_range1.chpl:14: error: tuple size (1) must match the number of grouped variables (2)

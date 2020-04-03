@@ -6,7 +6,7 @@ const n = 4;
 const D = {1..n,1..n};
 var A: [D] int;
 
-[ij in D] A(ij) = ij(2);
+[ij in D] A(ij) = ij(1);
 
 for block in blockByCol(2,4) {
   writeln("This block:");

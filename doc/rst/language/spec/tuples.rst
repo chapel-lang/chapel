@@ -134,11 +134,11 @@ An underscore can be used to omit components when splitting a tuple (see
           x3: 3*int = (4, 5, 6);
 
    defines three tuple variables. Variable ``x1`` is a 2-tuple with
-   component types ``string`` and ``real``. It is initialized such that
-   the first component is ``"hello"`` and the second component is
-   ``3.14``. Variables ``x2`` and ``x3`` are homogeneous 3-tuples with
-   component type ``int``. Their initialization expressions specify
-   3-tuples of integers. 
+   component types ``string`` and ``real``. It is initialized such
+   that the two components are ``"hello"`` and ``3.14``, respectively.
+   Variables ``x2`` and ``x3`` are homogeneous 3-tuples with component
+   type ``int``. Their initialization expressions specify 3-tuples of
+   integers.
 
    .. BLOCK-test-chapelpost
 
@@ -190,8 +190,8 @@ Tuple Indexing
 
 A tuple component may be accessed by an integral parameter (a
 compile-time constant) as if the tuple were an array. Indexing is
-1-based, so the first component in the tuple is accessed by the index
-``1``, and so forth.
+0-based, so the first component in the tuple is accessed by the index
+``0``, and so forth.
 
    *Example (access.chpl)*.
 
@@ -200,7 +200,7 @@ compile-time constant) as if the tuple were an array. Indexing is
    .. code-block:: chapel
 
       var myTuple = (1, 2.0, "three");
-      for param i in 1..3 do
+      for param i in 0..2 do
         writeln(myTuple(i));
 
    uses a param loop to output the components of a tuple.
@@ -222,7 +222,7 @@ necessarily compile-time constants.
    .. code-block:: chapel
 
       var myHTuple = (1, 2, 3);
-      for i in 1..3 do
+      for i in 0..2 do
         writeln(myHTuple(i));
 
    uses a serial loop to output the components of a homogeneous tuple.
@@ -265,7 +265,7 @@ to:
 
 .. code-block:: chapel
 
-   [for|forall|coforall] i in 1..n do
+   [for|forall|coforall] i in 0..n-1 do
      ...t(i)...
 
 The iterator variable for a tuple iteration is a either a const value
@@ -289,17 +289,17 @@ equivalent to:
 
 .. code-block:: chapel
 
+  { // iteration 0
+    const ref e = t(0);
+    ...e...
+  }
   { // iteration 1
     const ref e = t(1);
     ...e...
   }
-  { // iteration 2
-    const ref e = t(2);
-    ...e...
-  }
   ...
-  { // iteration n
-    const ref e = t(n);
+  { // iteration n-1
+    const ref e = t(n-1);
     ...e...
   }
 
@@ -314,7 +314,7 @@ Tuple Assignment
 In tuple assignment, the components of the tuple on the left-hand side
 of the assignment operator are each assigned the components of the tuple
 on the right-hand side of the assignment. These assignments occur in
-component order (component one followed by component two, etc.).
+component order (component zero followed by component one, etc.).
 
 .. _Tuple_Destructuring:
 
@@ -420,7 +420,7 @@ evaluated, but the omitted values will not be assigned to anything.
 
    defines a function that returns a 2-tuple, declares an integer
    variable ``x``, calls the function, assigns the first component in
-   the returned tuple to ``x``, and ignores the second component in the
+   the returned tuple to ``x``, and ignores the other component in the
    returned tuple. The value of ``x`` becomes ``1``.
    
 
@@ -512,7 +512,7 @@ defined for the omitted components.
 
    defines a function that returns a 2-tuple, calls the function,
    declares and initializes variable ``x`` to the first component in the
-   returned tuple, and ignores the second component in the returned
+   returned tuple, and ignores the other component in the returned
    tuple. The value of ``x`` is initialized to ``1``.
    
 
@@ -628,8 +628,8 @@ them.
 
    .. code-block:: chapel
 
-      proc g(t) where isTuple(t) && t.size == 2 && isTuple(t(2)) && t(2).size == 2 {
-        writeln((t(1), t(2)(1), t(2)(2)));
+      proc g(t) where isTuple(t) && t.size == 2 && isTuple(t(1)) && t(1).size == 2 {
+        writeln((t(0), t(1)(0), t(1)(1)));
       }
 
    except without the definition of the argument name ``t``.
@@ -720,14 +720,13 @@ where a comma-separated list of components is valid.
    *Example (expansion-2.chpl)*.
 
    The following code defines two functions, a function ``first`` that
-   returns the first component of a tuple and a function ``rest`` that
-   returns a tuple containing all of the components of a tuple except
-   for the first: 
+   returns the initial component of a tuple and a function ``rest`` that
+   returns a tuple containing all of the remaining components:
 
    .. code-block:: chapel
 
       proc first(t) where isTuple(t) {
-        return t(1);
+        return t(0);
       }
       proc rest(t) where isTuple(t) {
         proc helper(first, rest...)
@@ -1146,7 +1145,7 @@ in the two operand tuples. Otherwise, a compile-time error will result.
       var x = (1, 1, 0) > (1, 0, 1);
 
    creates a variable initialized to ``true``. After comparing the first
-   components and determining they are equal, the second components are
+   components and determining they are equal, the next components are
    compared to determine that the first tuple is greater than the second
    tuple. 
 

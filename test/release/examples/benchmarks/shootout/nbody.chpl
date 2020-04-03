@@ -133,6 +133,7 @@ proc energy() {
 //
 // compute the sum of squares of a 3-tuple's elements
 //
-inline proc sumOfSquares(x) {
-  return x(1)**2 + x(2)**2 + x(3)**2;
+inline proc sumOfSquares(t) {
+  const (t0,t1,t2) = t;
+  return t0**2 + t1**2 + t2**2;
 }

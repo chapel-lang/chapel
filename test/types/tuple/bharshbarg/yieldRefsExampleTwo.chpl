@@ -3,7 +3,7 @@ record R {
 }
 
 proc test(in args : 3*R) {
-  var i = 1;
+  var i = 0;
   for a in args {
     writeln("before: ", a);
     writeln("mutating...");
