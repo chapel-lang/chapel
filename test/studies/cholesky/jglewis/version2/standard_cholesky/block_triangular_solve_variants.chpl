@@ -18,8 +18,8 @@ module block_triangular_solve_variants {
     // overwrites the values of A.
     // ------------------------------------------------------
 
-    const L11_cols = L11.domain.dim(2),
-          L21_rows = L21.domain.dim(1);
+    const L11_cols = L11.domain.dim(1),
+          L21_rows = L21.domain.dim(0);
 
     // next loop nest is embarassingly parallel over rows of the off-diagonal
     // block and not parallel within each row, due to the triangular solve.
@@ -52,8 +52,8 @@ module block_triangular_solve_variants {
     // overwrites the values of A.
     // ------------------------------------------------------
 
-    const L11_cols = L11.domain.dim(1),
-          L21_rows = L21.domain.dim(1);
+    const L11_cols = L11.domain.dim(0),
+          L21_rows = L21.domain.dim(0);
 
     // next loop is embarassingly parallel when we get a parallel iterator
 
@@ -95,8 +95,8 @@ module block_triangular_solve_variants {
     // overwrites the values of A.
     // ----------------------------------------------------------
 
-    const A11_rc_indices = A.domain.dim (1),
-          A00_rc_indices = A.domain.dim(2);
+    const A11_rc_indices = A.domain.dim (0),
+          A00_rc_indices = A.domain.dim(1);
 
     // The block solve proceeds blockwise over the block triangular
     // coefficent matrix.  We use a right-looking (outer-product) form of 
@@ -142,8 +142,8 @@ module block_triangular_solve_variants {
     // overwrites the values of A.
     // ----------------------------------------------------------
 
-    const A11_rc_indices = A.domain.dim (1),
-          A00_rc_indices   = A.domain.dim(2);
+    const A11_rc_indices = A.domain.dim (0),
+          A00_rc_indices   = A.domain.dim(1);
 
     // The block solve proceeds blockwise over the block triangular
     // coefficent matrix.  We use a right-looking (outer-product) form of 

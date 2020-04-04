@@ -56,9 +56,9 @@ const jupiter = new body(pos = (4.84143144246472090e+00,
 
 inline proc sumOfSquares(x:_tuple) where isHomogeneousTuple(x) {
   if x.size == 1 then
-    return x(1)**2;
+    return x(0)**2;
   else
-    return (x(1)**2 + sumOfSquares(chpl__tupleRest(x)));
+    return (x(0)**2 + sumOfSquares(chpl__tupleRest(x)));
 }
 
 record NBodySystem {
@@ -69,13 +69,13 @@ record NBodySystem {
     var p: 3*real;
     for b in bodies do
       p += b.v * b.mass;  // TODO: reduce?
-    bodies[1].offsetMomentum(p);
+    bodies[0].offsetMomentum(p);
   }
 
   proc advance(dt) {
     // TODO: Can we use a triangular iterator without hurting performance
-    for i in 1..numbodies {
-      for j in i+1..numbodies {
+    for i in 0..<numbodies {
+      for j in i+1..<numbodies {
         ref b1 = bodies[i],
                b2 = bodies[j];
 
@@ -98,12 +98,12 @@ record NBodySystem {
 
     // TODO: want to use triangular iterator here too, except that we need
     // code in between the two loops
-    for i in 1..numbodies {
+    for i in 0..<numbodies {
       ref b1 = bodies[i];
 
       e += 0.5 * b1.mass * sumOfSquares(b1.v);
 
-      for j in i+1..numbodies {
+      for j in i+1..<numbodies {
         ref b2 = bodies[j];
 
         e -= (b1.mass * b2.mass) / sqrt(sumOfSquares(b1.pos - b2.pos));

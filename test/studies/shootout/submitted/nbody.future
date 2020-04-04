@@ -1,0 +1,4 @@
+Futurized shootout: relies on 1-based array literals and tuple indexing
+
+This needs to be updated to reflect 0-based indexing on the CLBG
+website.

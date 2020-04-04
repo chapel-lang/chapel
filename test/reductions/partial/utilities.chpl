@@ -34,7 +34,7 @@ proc partRedCheckAndCreateResultDimensions(dist, resDimSpec, srcArr, srcDims)
 
     partRedHelpCheckNumDimensions(resDims, srcDims);
 
-    for param dim in 1..resDims.size {
+    for param dim in 0..resDims.size-1 {
       ref specD = resDimSpec(dim);
       if isIntegral(specD) {
         resDims(dim) = (specD..specD) : srcDims(1).type;
@@ -72,10 +72,10 @@ proc partRedCheckAndCreateResultDimensions(dist, resDimSpec, srcArr, srcDims)
 
 proc fullIdxToReducedIdx(const resDims, const srcDims, const srcIdx)
 {
-  var resIdx: resDims.size * resDims(1).idxType;
+  var resIdx: resDims.size * resDims(0).idxType;
   //compilerWarning(resIdx.type:string);
 
-  for param dim in 1..resDims.size do
+  for param dim in 0..resDims.size-1 do
     if isReducedDim(resDims, srcDims, dim) then
       resIdx(dim) = resDims(dim).alignedLow;
     else
@@ -98,7 +98,7 @@ proc partRedHelpCheckNumDimensions(resDims, srcDims) {
 }
 
 proc partRedHelpCheckDimensions(resDims, srcDims) throws {
-  for param dim in 1..resDims.size {
+  for param dim in 0..resDims.size-1 {
     if resDims(dim).size == 1 ||   // reduced dimension
        resDims(dim) == srcDims(dim)  // preserved dimension
     then ; // OK
@@ -133,7 +133,7 @@ class PartRedOp: ReduceScanOp {
     compilerAssert(state.type == nothing);
     compilerAssert(isTuple(x) && x.size == 2);
     // Accumulate onto the built-in AS instead.
-    perElemOp.accumulateOntoState(value[x(1)], x(2));
+    perElemOp.accumulateOntoState(value[x(0)], x(1));
   }
   proc combine(x) {
     forall (parent, child) in zip(value, x.value) {

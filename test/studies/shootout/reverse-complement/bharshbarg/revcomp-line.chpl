@@ -152,7 +152,7 @@ proc process(ref data, in start, in end) {
 proc initTable(pairs) {
   var table: [1..128] uint(8);
 
-  for i in 1..pairs.numBytes by 2 {
+  for i in 0..#pairs.numBytes by 2 {
     table[pairs.byte(i)] = pairs.byte(i+1);
     if pairs.byte(i) != "\n".toByte() then
       table[pairs[i:byteIndex].toLower().toByte()] = pairs.byte(i+1);

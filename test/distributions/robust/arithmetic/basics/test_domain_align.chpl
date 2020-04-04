@@ -49,6 +49,6 @@ proc test(ref D) {
 
 proc rangeTuple(param rank : int, rng) {
   var ret : rank*rng.type;
-  for param i in 1..rank do ret(i) = rng;
+  for param i in 0..rank-1 do ret(i) = rng;
   return ret;
 }

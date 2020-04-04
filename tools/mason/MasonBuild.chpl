@@ -108,8 +108,8 @@ proc masonBuild(args) throws {
     var argsList = new list(string);
     for x in args do argsList.append(x);
     const configNames = UpdateLock(argsList);
-    const tomlName = configNames[1];
-    const lockName = configNames[2];
+    const tomlName = configNames[0];
+    const lockName = configNames[1];
     buildProgram(release, show, force, compopts, tomlName, lockName);
   }
 }

@@ -346,8 +346,8 @@ static Formals insertFormalsForVarArg(ArgSymbol* varArg, int n) {
     // Please update FnSymbol::substitutionsToString if this changes
     newFormal->addFlag(FLAG_EXPANDED_VARARGS);
     newFormal->variableExpr = NULL;
-    newFormal->name         = astr("_e", istr(i + 1), "_", varArg->name);
-    newFormal->cname        = astr("_e", istr(i + 1), "_", varArg->cname);
+    newFormal->name         = astr("_e", istr(i), "_", varArg->name);
+    newFormal->cname        = astr("_e", istr(i), "_", varArg->cname);
 
     varArg->defPoint->insertBefore(newArgDef);
 
@@ -517,7 +517,7 @@ static bool needVarArgTupleAsWhole(BlockStmt* block,
 
       if (CallExpr* parent = toCallExpr(se->parentExpr)) {
         if (parent->isPrimitive(PRIM_TUPLE_EXPAND) == false &&
-            varargAccessIndex(se, parent, numArgs) == 0     &&
+            varargAccessIndex(se, parent, numArgs) == -1     &&
             isVarargSizeExpr (se, parent)          == false) {
           retval =  true;
         }
@@ -561,7 +561,7 @@ static CallExpr* expandVarArgString(FnSymbol*      fn,
 
   // Create a local for every blank string
   for (int i = 0; i < n; i++) {
-    const char* localName = astr("_e", istr(i + 1 + n), "_", formal->name);
+    const char* localName = astr("_e", istr(i + n), "_", formal->name);
     VarSymbol*  local     = newTemp(localName, formal->type);
     DefExpr*    localDefn = new DefExpr(local);
     CallExpr*   move      = new CallExpr(PRIM_MOVE, local, varargs[i]);
@@ -628,7 +628,7 @@ static void insertEpilogueTemps(FnSymbol*  fn,
     if (i > 0) {
       VarSymbol* tmp    = newTemp("_varargs_tmp_");
 
-      CallExpr*  elem   = new CallExpr(var, new_IntSymbol(i));
+      CallExpr*  elem   = new CallExpr(var, new_IntSymbol(i-1));
       CallExpr*  move   = new CallExpr(PRIM_MOVE, tmp,            elem);
 
       CallExpr*  assign = new CallExpr("=",       actual->copy(), tmp);
@@ -681,20 +681,23 @@ static void substituteVarargTupleRefs(BlockStmt*     block,
 
           parent->remove();
 
-        } else if (int idxNum = varargAccessIndex(se, parent, numArgs)) {
-          INT_ASSERT(1 <= idxNum && idxNum <= numArgs);
-
-          ArgSymbol* replFormal = varargs[idxNum - 1];
-
-          replaceVarargAccess(parent, se, replFormal, tempReps);
-
-        } else if (isVarargSizeExpr(se, parent) == true) {
-          parent->replace(new SymExpr(new_IntSymbol(numArgs)));
-
         } else {
-          INT_ASSERT(false);
-        }
+          int idxNum = varargAccessIndex(se, parent, numArgs);
+          if (idxNum != -1) {
+            INT_ASSERT(0 <= idxNum && idxNum < numArgs);
 
+            ArgSymbol* replFormal = varargs[idxNum];
+
+            replaceVarargAccess(parent, se, replFormal, tempReps);
+
+          } else if (isVarargSizeExpr(se, parent) == true) {
+            parent->replace(new SymExpr(new_IntSymbol(numArgs)));
+
+          } else {
+            INT_ASSERT(false);
+          }
+
+        }
       } else {
         INT_ASSERT(false);
       }
@@ -769,13 +772,13 @@ static int varargAccessIndex(SymExpr* se, CallExpr* parent, int numArgs) {
         idxVar->immediate->const_kind == NUM_KIND_INT) {
       int idxNum = idxVar->immediate->int_value();
 
-      if (1 <= idxNum && idxNum <= numArgs) {
+      if (0 <= idxNum && idxNum < numArgs) {
         return idxNum;
       }
     }
   }
 
-  return 0;
+  return -1;
 }
 
 

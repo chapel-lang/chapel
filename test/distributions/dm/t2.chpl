@@ -30,7 +30,7 @@ proc test(d) {
   }
 
   hd("dsiAccess1d");
-  for i in d.dim(2) do
+  for i in d.dim(1) do
     msg(i, " at ", vd.dsiAccess1d(i));
   tl();
 

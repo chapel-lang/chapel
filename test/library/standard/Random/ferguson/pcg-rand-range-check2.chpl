@@ -19,14 +19,14 @@ rng0.srandom(seed:uint(64), inc0);
 var rngs:width*pcg_setseq_64_xsh_rr_32_rng;
 var incs:width*uint(64);
 
-for j in 1..width {
-  incs(j) = pcg_getvalid_inc((101+4*(j-1)):uint(64));
+for j in 0..#width {
+  incs(j) = pcg_getvalid_inc((101+4*j):uint(64));
   rngs(j).srandom(seed:uint(64), incs(j));
 }
 
 for i in 0..#n {
   writef("% 12u ", rng0.random(inc0));
-  for j in 1..width {
+  for j in 0..#width {
     var r = rngs(j).random(incs(j));
     writef("% 12u ", r);
   }

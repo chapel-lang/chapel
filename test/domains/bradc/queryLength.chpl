@@ -7,6 +7,6 @@ var A: [D] complex;
 foo(A);
 
 proc foo(X: [?D] complex) {
-  var len = D.dim(1).size;
+  var len = D.dim(0).size;
   writeln("length of X is: ", len);
 }

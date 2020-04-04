@@ -12,7 +12,7 @@ record arr33 {
   }
 
   proc this(xy:2*int) ref {
-    return data(xy(1), xy(2));
+    return data(xy(0), xy(1));
   }
 }
 

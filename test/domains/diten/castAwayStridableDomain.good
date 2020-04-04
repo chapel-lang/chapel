@@ -4,4 +4,4 @@ after cast/assign unstridableDom={1..20}
 after cast/assign stridableDom={1..20 by 2}
 after safeCast/assign unstridableDom={1..20}
 after safeCast/assign stridableDomUnit={1..20}
-castAwayStridableDomain.chpl:19: error: halt reached - non-stridable domain assigned non-unit stride in dimension 1
+castAwayStridableDomain.chpl:19: error: halt reached - non-stridable domain assigned non-unit stride in dimension 0

@@ -651,11 +651,11 @@ module UnitTest {
         if seq_type_name == "Array" {
           tmpString += "'[";
           for i in seq1.indices {
-            if i != seq1.size then tmpString+= seq1[i]:string+", ";
+            if i != seq1.size-1 then tmpString+= seq1[i]:string+", ";
             else tmpString += seq1[i]:string+"]'"+symbol+ "'[";
           }
           for i in seq2.indices {
-            if i != seq2.size then tmpString+= seq2[i]:string+", ";
+            if i != seq2.size-1 then tmpString+= seq2[i]:string+", ";
             else tmpString += seq2[i]:string+"]'";
           }
         }
@@ -855,11 +855,11 @@ module UnitTest {
         if seq_type_name == "Array" {
           tmpString += "'[";
           for i in seq1.indices {
-            if i != seq1.size then tmpString+= seq1[i]:string+", ";
+            if i != seq1.size-1 then tmpString+= seq1[i]:string+", ";
             else tmpString += seq1[i]:string+"]'"+symbol+ "'[";
           }
           for i in seq2.indices {
-            if i != seq2.size then tmpString+= seq2[i]:string+", ";
+            if i != seq2.size-1 then tmpString+= seq2[i]:string+", ";
             else tmpString += seq2[i]:string+"]'";
           }
         }

@@ -317,7 +317,7 @@ proc Replicated.dsiIndexToLocale(indexx): locale {
 
 // Call 'setIndices' in order to leverage DefaultRectangular's handling of
 // assignments from unstrided domains to strided domains.
-proc ReplicatedDom.dsiSetIndices(x) where isTuple(x) && isRange(x(1)) {
+proc ReplicatedDom.dsiSetIndices(x) where isTuple(x) && isRange(x(0)) {
   if traceReplicatedDist then
     writeln("ReplicatedDom.dsiSetIndices on ", x.type:string, ": ", x);
   dsiSetIndices({(...x)});

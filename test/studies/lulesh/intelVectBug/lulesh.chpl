@@ -1681,7 +1681,7 @@ proc deprint(title:string, x:[?D] real, y:[D] real, z:[D] real) {
   writeln(title);
   for i in D do
     writef("%3i: %3.4er %3.4er %3.4er\n", 
-           if use3DRepresentation then idx3DTo1D(i, D.dim(1).size) else i, 
+           if use3DRepresentation then idx3DTo1D(i, D.dim(0).size) else i, 
            x[i], y[i], z[i]);
 }
 
@@ -1690,6 +1690,6 @@ proc deprintatomic(title:string, x:[?D] atomic real, y:[] atomic real, z:[] atom
   writeln(title);
   for i in D do
     writef("%3i: %3.4er %3.4er %3.4er\n", 
-           if use3DRepresentation then idx3DTo1D(i, D.dim(1).size) else i, 
+           if use3DRepresentation then idx3DTo1D(i, D.dim(0).size) else i, 
            x[i].read(), y[i].read(), z[i].read());
 }

@@ -71,7 +71,7 @@ const invBoxSize = 1.0/boxSize;
 
 sanityCheck(latticeConstant);
 
-const boxDom   = {1..numBoxes(1), 1..numBoxes(2), 1..numBoxes(3)};
+const boxDom   = {1..numBoxes(0), 1..numBoxes(1), 1..numBoxes(2)};
 const boxSpace = boxDom dmapped AccumStencil(boxDom, targetLocales=ReshapedLocales,
                                              fluff=(1,1,1), periodic=true);
 
@@ -160,12 +160,12 @@ proc createFccLattice(lat : real) {
                                 (T, Q, T),
                                 (T, T, Q)];
   var end : vec3int;
-  for i in 1..3 do end(i) = Math.ceil(globalExtent(i) / lat):int;
+  for i in 0..2 do end(i) = Math.ceil(globalExtent(i) / lat):int;
 
-  const latticeDom = {0..#end(1), 0..#end(2), 0..#end(3)};
+  const latticeDom = {0..#end(0), 0..#end(1), 0..#end(2)};
 
   inline proc inGlobalExtent(r : vec3) {
-    for param i in 1..3 {
+    for param i in 0..2 {
       if r(i) < 0.0 || r(i) > globalExtent(i) then return false;
     }
     return true;
@@ -175,7 +175,7 @@ proc createFccLattice(lat : real) {
     for j in basis.domain {
       const r = ((i:vec3) + basis[j]) * lat;
 
-      const gid = j + nb * (i(3) + nz * (i(2) + ny * i(1)));
+      const gid = j + nb * (i(2) + nz * (i(1) + ny * i(0)));
       const species = 0;
 
       if inGlobalExtent(r) == false then continue;
@@ -260,7 +260,7 @@ proc kineticEnergy() {
 proc randomDisplacements() {
   forall a in allAtoms() {
     var seed = mkSeed(a.gid, 457);
-    for i in 1..3 do
+    for i in 0..2 do
       a.r(i) += (2.0 * lcg61(seed) - 1.0) * Configs.delta;
   }
 }

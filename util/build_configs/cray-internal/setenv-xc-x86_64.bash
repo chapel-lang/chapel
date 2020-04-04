@@ -337,10 +337,7 @@ else
     # Please keep the gen versions in compiler_versions.bash the same as these!
     gen_version_gcc=7.3.0
     gen_version_intel=16.0.3.210
-    gen_version_cce=8.7.8
-    if [ "$CHPL_LOCALE_MODEL" == knl ]; then
-        gen_version_cce=8.7.8
-    fi
+    gen_version_cce=9.0.0-classic
 
     target_cpu_module=craype-sandybridge
 
@@ -384,10 +381,6 @@ else
         # load target PrgEnv with compiler version
         load_module $target_prgenv
         load_module_version $target_compiler $target_version
-
-        # pin to mpich/libsci versions compatible with the gen compiler
-        load_module_version cray-mpich 7.7.7
-        load_module_version cray-libsci 18.07.1
     }
 
     function load_target_cpu() {

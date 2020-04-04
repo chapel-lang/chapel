@@ -54,20 +54,20 @@ proc assign(left, right, param rank:int) {
     param numFull      = dom.rank - numCollapsed;
 
     if numCollapsed == 0 {
-      var ret : numFull * dom.dim(1).type;
+      var ret : numFull * dom.dim(0).type;
       return ret;
     } else {
-      var collapsed : numCollapsed * dom.dim(1).idxType;
-      var full      : numFull * dom.dim(1).type;
+      var collapsed : numCollapsed * dom.dim(0).idxType;
+      var full      : numFull * dom.dim(0).type;
       var ret = ((...collapsed), (...full));
       return ret;
     }
   }
 
   proc fillSlice(ref slice, A, B) {
-    for param i in 1..A.rank {
-      slice(i) = if isRange(slice(i)) then A.dim(1)[B.dim(1)]
-                 else A.dim(1).first;
+    for param i in 0..A.rank-1 {
+      slice(i) = if isRange(slice(i)) then A.dim(0)[B.dim(0)]
+                 else A.dim(0).first;
     }
   }
 

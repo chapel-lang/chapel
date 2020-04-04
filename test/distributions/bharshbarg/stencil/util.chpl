@@ -7,12 +7,12 @@ proc verifyStencil(A : [?dom], debug = false) {
   var Neighs : domain(rank);
   {
     var n : rank*range;
-    for i in 1..rank do n(i) = -1..1;
+    for i in 0..#rank do n(i) = -1..1;
     Neighs = {(...n)};
   }
 
   var abstr : rank*int;
-  for i in 1..rank do
+  for i in 0..rank-1 do
     abstr(i) = abs(dom.dim(i).stride);
   const max = dom.expand(halo*abstr);
 
@@ -31,9 +31,9 @@ proc verifyStencil(A : [?dom], debug = false) {
     const skip = || reduce for (h,n) in zip(halo, neigh) do (h == 0 && n != 0);
     if skip then continue;
 
-    var ghost : rank*dom.dim(1).type;
-    var actual : rank*dom.dim(1).type;
-    for i in 1..rank {
+    var ghost : rank*dom.dim(0).type;
+    var actual : rank*dom.dim(0).type;
+    for i in 0..#rank {
       const h = halo(i);
       const str = dom.dim(i).stride;
       if neigh(i) < 0 {

@@ -41,39 +41,39 @@ module MatrixMarket {
   }
 
   proc initMMInfo(ref headerfields:[] string) {
-    assert(headerfields(1) == "%%MatrixMarket", "Improperly formatted MatrixMarket file");
-    assert(headerfields(2) == "matrix", "Improperly formatted MatrixMarket file");
+    assert(headerfields(0) == "%%MatrixMarket", "Improperly formatted MatrixMarket file");
+    assert(headerfields(1) == "matrix", "Improperly formatted MatrixMarket file");
 
     var toret:MMInfo;
 
-    if headerfields(3) == "coordinate" {
+    if headerfields(2) == "coordinate" {
       toret.mm_coordfmt = MMCoordFormat.Coordinate;
     }
-    else if headerfields(3) == "array" {
+    else if headerfields(2) == "array" {
       toret.mm_coordfmt = MMCoordFormat.Array;
     }
     else {
       assert(false, "Improperly formatted MatrixMarket file");
     }
 
-    if headerfields(4) == "real" {
+    if headerfields(3) == "real" {
       toret.mm_types = MMTypes.Real;
     }
-    else if headerfields(4) == "complex" {
+    else if headerfields(3) == "complex" {
       toret.mm_types = MMTypes.Complex;
     }
-    else if headerfields(4) == "pattern" {
+    else if headerfields(3) == "pattern" {
       toret.mm_types = MMTypes.Pattern;
     }
     else {
       assert(false, "Improperly formatted MatrixMarket file");
     }
 
-    headerfields(5) = headerfields(5).strip("\n");
-    if headerfields(5) == "general" {
+    headerfields(4) = headerfields(4).strip("\n");
+    if headerfields(4) == "general" {
       toret.mm_fmt = MMFormat.General;
     }
-    else if headerfields(5) == "symmetric" {
+    else if headerfields(4) == "symmetric" {
       toret.mm_fmt = MMFormat.Symmetric;
     }
     else {
@@ -175,8 +175,8 @@ proc mmwrite(const fname:string, mat:[?Dmat] ?T) where mat.domain.rank == 2 {
    var (nrows, poslast) = (-1,-1);
    var n_cols = -1;
 
-   const DmatHighRow = high(Dmat)(1);
-   const DmatHighCol = high(Dmat)(2);
+   const DmatHighRow = high(Dmat)(0);
+   const DmatHighCol = high(Dmat)(1);
 
    for r in 1..DmatHighRow {
      const dom = 1..DmatHighCol;
@@ -221,7 +221,7 @@ class MMReader {
        fin.readline(percentfound);
 
        // didn't find a percentage, rewind channel by length of read string...
-       if !percentfound.find("%") {
+       if percentfound.find("%") == -1 {
          fin.close();
          fin = fd.reader(start=offset, hints=IOHINT_SEQUENTIAL|IOHINT_CACHED);
          pctflag = true;
@@ -293,8 +293,8 @@ class MMReader {
       if T == complex {
         tfmt = "%r %r";
         // double-loop to ensure correct ordering
-        for col in toret.domain.dim(2) {
-          for row in toret.domain.dim(1) {
+        for col in toret.domain.dim(1) {
+          for row in toret.domain.dim(0) {
             var wr:real;
             var wi:real;
             fin.readf(tfmt, wr, wi);
@@ -314,8 +314,8 @@ class MMReader {
         }
 
         // double-loop to ensure correct ordering
-        for col in toret.domain.dim(2) {
-          for row in toret.domain.dim(1) {
+        for col in toret.domain.dim(1) {
+          for row in toret.domain.dim(0) {
             var w:T;
             fin.readf(tfmt, w);
             if isSparse then

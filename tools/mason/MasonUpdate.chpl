@@ -209,7 +209,7 @@ proc parseChplVersion(brick: borrowed Toml?): (VersionInfo, VersionInfo) {
     // Expecting 1 or 2 version strings
     if versions.size > 2 || versions.size < 1 {
       throw new owned MasonError("Expecting 1 or 2 versions in chplVersion range." + formatMessage);
-    } else if versions.size == 2 && (versions[1] == "" || versions[2] == "") {
+    } else if versions.size == 2 && (versions[0] == "" || versions[1] == "") {
       throw new owned MasonError("Unbounded chplVersion ranges are not allowed." + formatMessage);
     }
 
@@ -223,19 +223,19 @@ proc parseChplVersion(brick: borrowed Toml?): (VersionInfo, VersionInfo) {
         throw new owned MasonError("Invalid Chapel version format: " + ver + formatMessage);
       }
       const nums = for s in semver.split(".") do s:int;
-      ret.major = nums[1];
-      ret.minor = nums[2];
-      if nums.size == 3 then ret.bug = nums[3];
+      ret.major = nums[0];
+      ret.minor = nums[1];
+      if nums.size == 3 then ret.bug = nums[2];
 
       return ret;
     }
 
-    low = parseString(versions[1]);
+    low = parseString(versions[0]);
 
     if (versions.size == 1) {
       hi = new VersionInfo(max(int), max(int), max(int));
     } else {
-      hi = parseString(versions[2]);
+      hi = parseString(versions[1]);
     }
 
     if (low <= hi) == false then
@@ -252,7 +252,7 @@ proc parseChplVersion(brick: borrowed Toml?): (VersionInfo, VersionInfo) {
 
 proc verifyChapelVersion(brick:borrowed Toml) {
   const tupInfo = getChapelVersionInfo();
-  const current = new VersionInfo(tupInfo(1), tupInfo(2), tupInfo(3));
+  const current = new VersionInfo(tupInfo(0), tupInfo(1), tupInfo(2));
   var low, hi : VersionInfo;
 
   var ret = false;
@@ -274,9 +274,9 @@ proc prettyVersionRange(low, hi) {
 
 proc chplVersionError(brick:borrowed Toml) {
   const info = verifyChapelVersion(brick);
-  if info(1) == false {
-    const low  = info(2);
-    const hi   = info(3);
+  if info(0) == false {
+    const low  = info(1);
+    const hi   = info(2);
     const name = brick["name"]!.s + "-" + brick["version"]!.s;
     const msg  = name + " :  expecting " + prettyVersionRange(low, hi);
     failedChapelVersion.append(msg);
@@ -416,25 +416,25 @@ private proc IVRS(A: borrowed Toml, B: borrowed Toml) {
 
   var vers1 = version1.split('.');
   var vers2 = version2.split('.');
-  var v1 = vers1(1): int;
-  var v2 = vers2(1): int;
-  if vers1(1) != vers2(1) {
+  var v1 = vers1(0): int;
+  var v2 = vers2(0): int;
+  if vers1(0) != vers2(0) {
     stderr.writeln("Dependency resolution error: package '", name, "' used by multiple packages expecting different major versions:");
     stderr.writeln("  v", version1);
     stderr.writeln("  v", version2);
     exit(1);
   }
-  else if vers1(2) != vers2(2) {
-    v1 = vers1(2): int;
-    v2 = vers2(2): int;
+  else if vers1(1) != vers2(1) {
+    v1 = vers1(1): int;
+    v2 = vers2(1): int;
     if v1 > v2 {
       return A;
     }
     else return B;
   }
   else {
-    v1 = vers1(3): int;
-    v2 = vers2(3): int;
+    v1 = vers1(2): int;
+    v2 = vers2(2): int;
     if v1 > v2 {
       return A;
     }
@@ -449,8 +449,8 @@ private proc IVRS(A: borrowed Toml, B: borrowed Toml) {
 private proc getManifests(deps: list((string, unmanaged Toml?))) {
   var manifests: list(unmanaged Toml);
   for dep in deps {
-    var name = dep(1);
-    var version: string = dep(2)!.s;
+    var name = dep(0);
+    var version: string = dep(1)!.s;
     var toAdd = retrieveDep(name, version);
     manifests.append(toAdd);
   }

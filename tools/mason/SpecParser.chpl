@@ -53,12 +53,12 @@ proc getSpecFields(spec: string) {
   try! {
     var tokenList = readSpec(spec);
     const specInfo = parseSpec(tokenList);
-    var compiler = specInfo[3];
+    var compiler = specInfo[2];
     if compiler.size < 1 {
       compiler = inferCompiler();
     }
-    specFields = (specInfo[1], specInfo[2], compiler,
-                  specInfo[4]);
+    specFields = (specInfo[0], specInfo[1], compiler,
+                  specInfo[3]);
   }
   catch e: MasonError {
     stderr.writeln(e.message());
@@ -78,18 +78,16 @@ private proc inferCompiler() throws {
 
 proc readSpec(spec: string) {
   const pkg = "([A-Za-z0-9\\-]+)",
-        vers = "(\\@[0-9]+.[0-9]+.[0-9]+[a-zA-Z]*)",
+        vers = "(\\@.[^%]+)",
         compiler = "(\\%[A-Za-z0-9\\-\\_]+[\\-a-zA-Z]*)",
         variantInclude = "(\\+[A-Za-z0-9\\-\\_]+)",
         variantExclude = "(\\~[A-Za-z0-9\\-\\_]+)",
         dependency = "(\\^[a-zA-Z]*?[0-9]*?)",
         arch = "([A-Za-z0-9\\-\\_]+\\=[A-Za-z0-9\\-\\_]+)",
         emptyArch = "([A-Za-z0-9\\-\\_]+\\=)",
-        versRange = "(\\@[0-9]+.[0-9]+.[0-9]+[a-zA-Z]*\\:[0-9]+.[0-9]+.[0-9]+[a-zA-Z]*)",
-        minVers = "(\\@[0-9]+.[0-9]+.[0-9]+[a-zA-Z]*\\:)",
-        maxVers = "(\\@\\:[0-9]+.[0-9]+.[0-9]+[a-zA-Z]*)";
-    
-  
+        versRange = "(\\@.+\\:{1}\\.[^%]+)",
+        minVers = "(\\@.+\\:)",
+        maxVers = "(\\@\\:.[^%]+)";
 
   var tokenList: list(string);
   const pattern = compile("|".join(versRange,
@@ -121,11 +119,11 @@ proc readSpec(spec: string) {
 
 proc parseSpec(ref tokenList: list(string)) throws {
 
-  const rVers = compile("(\\@[0-9]+.[0-9]+.[0-9]+[a-zA-Z]*)");
+  const rVers = compile("(\\@.+)");
   const rCompiler = compile("(\\%[A-Za-z0-9\\-\\_]+[\\-a-zA-Z]*)");
-  const rMinVers = compile("(\\@[0-9]+.[0-9]+.[0-9]+[a-zA-Z]*\\:)");
-  const rMaxVers = compile("(\\@\\:[0-9]+.[0-9]+.[0-9]+[a-zA-Z]*)");
-  const rVersRange = compile("(\\@[0-9]+.[0-9]+.[0-9]+[a-zA-Z]*\\:{1}\\[0-9]+.[0-9]+.[0-9]+[a-zA-Z]*)");
+  const rMinVers = compile("(\\@.+\\:)");
+  const rMaxVers = compile("(\\@\\:.[^%]+)");
+  const rVersRange = compile("(\\@.+\\:{1}\\.[^%]+)");
 
   // required fields
   //   - package name
@@ -154,7 +152,7 @@ proc parseSpec(ref tokenList: list(string)) throws {
       || rVersRange.match(toke).matched == true
       || rMinVers.match(toke).matched == true
       || rMaxVers.match(toke).matched == true {
-                                               
+
       if pkgVersion.size < 1 {
         pkgVersion = toke.strip("@");
       }

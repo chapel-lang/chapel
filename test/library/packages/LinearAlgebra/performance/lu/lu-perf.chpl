@@ -36,7 +36,7 @@ proc main() {
   setDiag(A, -2, -0.5);
 
   var LU: [A.domain] eltType;
-  var ipiv: [A.domain.dim(1)] eltType;
+  var ipiv: [A.domain.dim(0)] eltType;
 
   for 1..iters {
     t.start();

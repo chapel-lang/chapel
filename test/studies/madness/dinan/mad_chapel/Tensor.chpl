@@ -29,9 +29,9 @@ proc transposeCopy(A: [] real, B: [] real) where A.rank == 2 && B.rank == 2 {
 
 // Vector-Matrix transformation
 proc *(V: [] real, M: [] real) where V.rank == 1 && M.rank == 2 {
-    var R: [M.domain.dim(2)] real = 0.0;
+    var R: [M.domain.dim(1)] real = 0.0;
 
-    if V.domain.dim(1) != M.domain.dim(1) then
+    if V.domain.dim(0) != M.domain.dim(0) then
         halt("*: Vector and matrix dims must match");
 
     for (i, j) in M.domain do
@@ -42,9 +42,9 @@ proc *(V: [] real, M: [] real) where V.rank == 1 && M.rank == 2 {
 
 // Matrix-Vector multiplication 
 proc *(M: [] real, V: [] real) where V.rank == 1 && M.rank == 2 {
-    var R: [M.domain.dim(1)] real = 0.0;
+    var R: [M.domain.dim(0)] real = 0.0;
 
-    if V.domain.dim(1) != M.domain.dim(2) then
+    if V.domain.dim(0) != M.domain.dim(1) then
         halt("*: Vector and matrix dims must match");
 
     for (i, j) in M.domain do

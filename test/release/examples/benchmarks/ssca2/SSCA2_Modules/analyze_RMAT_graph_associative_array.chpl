@@ -32,8 +32,8 @@ module analyze_RMAT_graph_associative_array {
     //
     type nleType = (int(64), int(64));
     // Extract each component from a neighbor.
-    proc nleNID(nlElm: nleType)    return nlElm(1);
-    proc nleWeight(nlElm: nleType) return nlElm(2);
+    proc nleNID(nlElm: nleType)    return nlElm(0);
+    proc nleWeight(nlElm: nleType) return nlElm(1);
     // Mark a use of a neighbor as a pair.
     proc nleAsPair(nlElm: nleType) return nlElm;
     // Produce a neighbor from components.

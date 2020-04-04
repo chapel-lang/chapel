@@ -161,7 +161,7 @@ proc file.absPath(): string throws {
    :type name: `string`
 */
 proc basename(name: string): string {
-   return splitPath(name)[2];
+   return splitPath(name)[1];
 }
 
 /* Determines and returns the longest common path prefix of
@@ -176,7 +176,7 @@ proc basename(name: string): string {
 proc commonPath(paths: string ...?n): string {
   var result: string = "";    // result string
   var inputLength = n;   // size of input array
-  var firstPath = paths(1);
+  var firstPath = paths(0);
   var flag: int = 0;
 
   // if input is empty, return empty string.
@@ -196,7 +196,7 @@ proc commonPath(paths: string ...?n): string {
   var pos = prefixList.size;   // rightmost index of common prefix
   var minPathLength = prefixList.size;
 
-  for i in 2..n do {
+  for i in 1..n-1 do {
 
     var tempList = new list(string);
     for x in paths(i).split(pathSep, -1, false) do
@@ -263,7 +263,7 @@ proc commonPath(paths: []): string {
 
   // finding delimiter to split the paths.
 
-  if firstPath.find("\\") == 0 then {
+  if firstPath.find("\\") == -1 then {
     delimiter = "/";
   } else {
     delimiter = "\\";
@@ -325,7 +325,7 @@ proc commonPath(paths: []): string {
    :type name: `string`
 */
 proc dirname(name: string): string {
-  return splitPath(name)[1];
+  return splitPath(name)[0];
 }
 
 /* Expands any environment variables in the path of the form ``$<name>`` or
@@ -344,11 +344,11 @@ proc dirname(name: string): string {
    var path_p: string = path;
    var varChars: string = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890_";
    var res: string = "";
-   var ind: int = 1;
+   var ind: int = 0;
    var pathlen: int = path_p.size;
-   while (ind <= pathlen) {
+   while (ind < pathlen) {
      var c: string = path_p(ind);
-     if (c == "$" && ind + 1 <= pathlen) {
+     if (c == "$" && ind + 1 < pathlen) {
        if (path_p(ind+1) == "$") {
          res = res + c;
          ind += 1;
@@ -356,9 +356,9 @@ proc dirname(name: string): string {
          path_p = path_p((ind+2)..);
          pathlen = path_p.numBytes;
          ind = path_p.find("}"):int;
-         if (ind == 0) {
+         if (ind == -1) {
            res += "${" +path_p;
-           ind = pathlen;
+           ind = pathlen-1;
          } else {
            var env_var: string = path_p(..(ind-1));
            var value: string;
@@ -378,7 +378,7 @@ proc dirname(name: string): string {
        } else {
          var env_var: string = "";
          ind += 1;
-         while (ind <= path_p.size && varChars.find(path_p(ind)) != 0) {
+         while (ind < path_p.size && varChars.find(path_p(ind)) != -1) {
            env_var += path_p(ind);
            ind += 1;
          }
@@ -395,7 +395,7 @@ proc dirname(name: string): string {
            }
          }
          res += value;
-         if (ind <= path_p.numBytes) {
+         if (ind < path_p.numBytes) {
            ind -= 1;
          }
        }
@@ -448,7 +448,7 @@ proc isAbsPath(name: string): bool {
   if name.isEmpty() {
     return false;
   }
-  var str: string = name[1];
+  var str: string = name[0];
   if (str == '/') {
     return true;
   } else {
@@ -662,7 +662,7 @@ proc commonPrefixLength(const a1: [] string, const a2: [] string): int {
   }
   var result = 0;
 
-  for i in 1..a.size do
+  for i in 0..<a.size do
     if a[i] != b[i] then
       return result;
     else
@@ -710,7 +710,7 @@ proc relPath(name: string, start:string=curDir): string throws {
 
   // Append the portion of name following the common prefix.
   if !nameComps.isEmpty() then
-    for x in nameComps[(prefixLen + 1)..nameComps.size] do
+    for x in nameComps[prefixLen..<nameComps.size] do
       outComps.append(x);
 
   if outComps.isEmpty() then
@@ -767,8 +767,8 @@ proc file.relPath(start:string=curDir): string throws {
    .. code-block:: Chapel
 
       var res = splitPath("foo/bar");
-      var dirnameVar = res(1);
-      var basenameVar = res(2);
+      var dirnameVar = res(0);
+      var basenameVar = res(1);
       writeln(dirnameVar + "/" + basenameVar); // Prints "foo/bar"
       writeln(joinPath(dirnameVar, basenameVar)); // Prints "foo/bar"
 
@@ -777,17 +777,17 @@ proc file.relPath(start:string=curDir): string throws {
 */
  proc splitPath(name: string): (string, string) {
    var rLoc, lLoc, prev: byteIndex = name.rfind(pathSep);
-   if (prev != 0) {
+   if (prev != -1) {
      do {
        prev = lLoc;
-       lLoc = name.rfind(pathSep, 1:byteIndex..prev-1);
-     } while (lLoc + 1 == prev && lLoc > 1);
+       lLoc = name.rfind(pathSep, 0:byteIndex..prev-1);
+     } while (lLoc + 1 == prev && lLoc > 0);
 
-     if (prev == 1) {
+     if (prev == 0) {
        // This happens when the only instance of pathSep in the string is
        // the first character
        return (name[prev..rLoc], name[rLoc+1..]);
-     } else if (lLoc == 1 && prev == 2) {
+     } else if (lLoc == 0 && prev == 1) {
        // This happens when there is a line of pathSep instances at the
        // start of the string
        return (name[..rLoc], name[rLoc+1..]);
