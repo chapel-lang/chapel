@@ -1014,7 +1014,7 @@ module Random {
                                    if ``replace=false`` and ``size > rng.size || size.size > rng.size``.
                                    if ``isBoundedRange(rng) == false``
      */
-      proc choice(rng: range(stridable=true), size:?sizeType=none, replace=true, prob:?probType=none)
+      proc choice(rng: range(stridable=?), size:?sizeType=none, replace=true, prob:?probType=none)
         throws
       {
         if !isBoundedRange(rng) {
