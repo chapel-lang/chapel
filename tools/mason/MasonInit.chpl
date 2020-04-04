@@ -307,7 +307,7 @@ proc validatePackageNameChecks(path: string, name: string) {
     else {
       if isDir(path + '/src') {
         const files = listdir(path + '/src');
-        const file = files[1];
+        const file = files[0];
         const fileName = file.split(".");
         const nameModule = fileName[0];
         if validateNameInit(nameModule) then actualName = nameModule;
