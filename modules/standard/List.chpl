@@ -1454,7 +1454,7 @@ module List {
       :rtype: `range`
     */
     proc indices {
-      return 1..this.size;
+      return 0..<this.size;
     }
 
     /*
