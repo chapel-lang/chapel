@@ -69,7 +69,7 @@ const rcpSamples = 1.0 / samples,         // the reciprocal of the # of samples
       halfFieldOfView = fieldOfView / 2;  // compute half the field-of-view
 
 //
-// Set params that symbolically represent dimensions using 1-based indexing
+// Set params that symbolically represent dimensions using 0-based indexing
 //
 param X = 0,
       Y = 1,

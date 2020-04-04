@@ -37,7 +37,7 @@ assignment, and unary, binary, and relational operators.
 .. function:: proc tuple.indices
 
    Returns the range of indices that are legal for indexing into the
-   tuple: ``1..this.size``.
+   tuple: ``0..<this.size``.
 
 
 */
@@ -296,14 +296,6 @@ module ChapelTuple {
       yield this(i);
     }
   }
-
-  /* TODO: Want this for heterogeneous tuples, but we can't write it today:
-
-  iter _tuple.indices param {
-    for param i in 1..this.size do
-      yield i;
-  }
-  */
 
   proc _tuple.indices {
     return 0..<this.size;
