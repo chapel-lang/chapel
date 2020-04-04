@@ -13,11 +13,11 @@ for i in 1..testIters do
 
 var oldSize = lst.size;
 
-// Insert at zero should fail.
+// Insert at -1 should fail.
 assert(!lst.insert(-1, testElem));
 assert(lst.size == oldSize);
 
-// Insert at size +1 should always work.
+// Insert at size should always work.
 assert(lst.insert(lst.size, testElem));
 
 lst.clear();

@@ -131,7 +131,7 @@ module List {
     such protections are desirable, parallel safety can be enabled by setting
     `parSafe = true` in any list constructor.
 
-    Unlike an array, the set of indices of a list is always `0..size-1`.
+    Unlike an array, the set of indices of a list is always `0..<size`.
   */
   record list {
 
@@ -1198,11 +1198,10 @@ module List {
 
         const stop = if end < 0 then _size-1 else end;
 
-        for i in start..stop do {
+        for i in start..stop do
           if x == _getRef(i) {
             result = i;
             break;
-          }
           }
 
         _leave();
