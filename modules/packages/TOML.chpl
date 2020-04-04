@@ -361,21 +361,21 @@ module TomlParser {
         // Date
         else if ld.match(val) {
           var raw = getToken(source).split("-");
-          var d = new date(raw[1]: int,
-                           raw[2]: int,
-                           raw[3]: int);
+          var d = new date(raw[0]: int,
+                           raw[1]: int,
+                           raw[2]: int);
           return new unmanaged Toml(d);
         }
         // Time
         else if ti.match(val) {
           var raw = getToken(source).split(":");
-          var sec = '%.6dr'.format(raw[3]: real).split('.');
+          var sec = '%.6dr'.format(raw[2]: real).split('.');
           var t: time;
 
-          t = new time(raw[1]: int,
-                       raw[2]: int,
-                       sec[1]: int,
-                       sec[2]: int);
+          t = new time(raw[0]: int,
+                       raw[1]: int,
+                       sec[0]: int,
+                       sec[1]: int);
 
           return new unmanaged Toml(t);
         }

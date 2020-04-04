@@ -315,7 +315,7 @@ proc getSpkgInfo(spec: string, ref dependencies: list(string)): unmanaged Toml t
       while dependencies.size > 0 {
         var dep = dependencies[1];
         var depSpec = dep.split("@", 1);
-        var name = depSpec[1];
+        var name = depSpec[0];
 
         // put dep into current packages dep list
         depList.append(new unmanaged Toml(name));

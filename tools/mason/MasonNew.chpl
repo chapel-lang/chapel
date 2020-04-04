@@ -65,7 +65,7 @@ proc masonNew(args) throws {
           otherwise {
             if arg.startsWith('--name=') {
               var res = arg.split("=");
-              packageName = res[2];
+              packageName = res[1];
             }
             else {
               if args[countArgs - 2] != '--name' then

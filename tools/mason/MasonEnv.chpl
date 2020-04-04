@@ -87,11 +87,11 @@ proc MASON_REGISTRY {
 
         if regArr.size == 1 {
           // get the name from the last part of the location
-          var name: string = getRegNameFromLoc(regArr[1]);
-          regTup = (name, regArr[1]);
+          var name: string = getRegNameFromLoc(regArr[0]);
+          regTup = (name, regArr[0]);
         } else {
           // found a 'name|location' pair
-          regTup = (regArr[1], regArr[2]);
+          regTup = (regArr[0], regArr[1]);
         }
         registries.append(regTup);
       }
