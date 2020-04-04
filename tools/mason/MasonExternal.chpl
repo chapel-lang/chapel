@@ -237,8 +237,8 @@ private proc editCompilers() {
 
 
 /* Given a toml of external dependencies returns
-   the dependencies in a toml */
-proc getExternalPackages(exDeps: unmanaged Toml) {
+   the dependencies in a toml in lock file format */
+proc getExternalPackages(exDeps: unmanaged Toml) /* [domain(string)] unmanaged Toml? */ {
 
   var exDom: domain(string);
   var exDepTree: [exDom] unmanaged Toml?;
@@ -250,21 +250,16 @@ proc getExternalPackages(exDeps: unmanaged Toml) {
           when fieldtag.fieldToml do continue;
           otherwise {
             // Take key from toml file if not present in spec
-            var tempSpec = spec.s;
+            var fullSpec = spec.s;
+            // TODO: Should it be an error if TOML value includes name?
             if !spec.s.startsWith(name) {
-              tempSpec = "@".join(name, spec.s);
+              fullSpec = "@".join(name, spec.s);
             }
-            const specFields = getSpecFields(tempSpec);
-            var version = specFields[1];
-            var compiler = specFields[2];
-            //var variants = specFields[3];
 
-            // TODO: Add spaces between spec to allow version ranges
-            // TODO: allow dependency search to include variants
-            var fullSpec = "%".join("@".join(name, version), compiler);
+            const resolvedSpec = resolveSpec(fullSpec);
 
-            var dependencies = getSpkgDependencies(fullSpec);
-            const pkgInfo = getSpkgInfo(fullSpec, dependencies);
+            var dependencies = getSpkgDependencies(resolvedSpec);
+            const pkgInfo = getSpkgInfo(resolvedSpec, dependencies);
 
             if !exDom.contains(name) then
               exDom += name;
@@ -285,7 +280,6 @@ proc getExternalPackages(exDeps: unmanaged Toml) {
 /* Retrieves build information for MasonUpdate */
 proc getSpkgInfo(spec: string, ref dependencies: list(string)): unmanaged Toml throws {
 
-  // put above try b/c compiler complains about return value
   var depList: list(unmanaged Toml);
   var spkgDom: domain(string);
   var spkgToml: [spkgDom] unmanaged Toml?;
@@ -297,8 +291,11 @@ proc getSpkgInfo(spec: string, ref dependencies: list(string)): unmanaged Toml t
     var version = specFields[1];
     var compiler = specFields[2];
 
-    if spkgInstalled(spec) {
-      const spkgPath = getSpkgPath(spec);
+    // Remove variants from spec
+    var simpleSpec = pkgName + '@' + version + '%' + compiler;
+
+    if spkgInstalled(simpleSpec) {
+      const spkgPath = getSpkgPath(simpleSpec);
       const libs = joinPath(spkgPath, "lib");
       const includePath = joinPath(spkgPath, "include");
       const other = joinPath(spkgPath, "other");
@@ -346,7 +343,7 @@ proc getSpkgInfo(spec: string, ref dependencies: list(string)): unmanaged Toml t
 }
 
 /* Returns spack package path for build information */
-proc getSpkgPath(spec: string) throws {
+proc getSpkgPath(spec: string): string throws {
   const command = "spack location -i " + spec;
   const pkgPath = getSpackResult(command, quiet=true);
   if pkgPath == "" {
@@ -355,16 +352,16 @@ proc getSpkgPath(spec: string) throws {
   return pkgPath.strip();
 }
 
-// TODO: allow for versions to be of the form 6.0 (without bug fix)
-proc getSpkgDependencies(spec: string) throws {
+/* Find dependencies of package that are installed on machine */
+proc getSpkgDependencies(spec: string): list(string) throws {
+  const name = specName(spec);
   const command = "spack find -df --show-full-compiler " + spec;
   const pkgInfo = getSpackResult(command, quiet=true);
   var found = false;
   var dependencies: list(string);
   for item in pkgInfo.split() {
 
-    // TODO: This does not work if spec contains a version range
-    if item.rfind(spec) != -1 {
+    if item.rfind(name) != -1 {
       found = true;
     }
     else if found {
@@ -376,6 +373,32 @@ proc getSpkgDependencies(spec: string) throws {
     throw new owned MasonError("Mason could not find dependency: " + spec);
   }
   return dependencies;
+}
+
+
+/* Get package name from spec */
+private proc specName(spec: string): string throws {
+  const fields = spec.split('%');
+  const subfields = fields[0].split('@');
+  const name = subfields[0];
+  return name;
+}
+
+
+/* Resolve spec, pinning to the installed version and eliminating ranges */
+private proc resolveSpec(spec: string): string throws {
+  const command = "spack spec %s".format(spec);
+  const output = getSpackResult(command, quiet=true);
+  var lines = output.split('\n');
+
+  // Package on 7th line
+  var ret = lines[6].strip();
+
+  if ret == '' {
+    throw new owned MasonError("Package not found: " + spec);
+  }
+
+  return ret;
 }
 
 
