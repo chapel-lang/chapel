@@ -119,8 +119,11 @@ proc modifyToml(add: bool, spec: string, external: bool, system: bool,
       const split = spec.split('@');
       const dependency = split[0];
       const version = split[1];
-      checkDepName(dependency);
-      checkVersion(version);
+      // Name and version checks are only valid for mason packages
+      if !external && !system {
+        checkDepName(dependency);
+        checkVersion(version);
+      }
 
       if system && add {
         writeln(" ".join("Adding system dependency", dependency, "version", version));
