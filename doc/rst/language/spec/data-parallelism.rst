@@ -254,7 +254,7 @@ iterations for which the condition does not hold are not reflected in
 the result of the forall expression.
 
 When a forall expression with a filtering predicate is captured into a
-variable, the resulting array has a 1-based one-dimensional domain.
+variable, the resulting array has a 0-based one-dimensional domain.
 
    *Example (forallFilter.chpl)*.
 
@@ -278,12 +278,14 @@ variable, the resulting array has a 1-based one-dimensional domain.
 
       ;
       writeln(result);
+      writeln(result.domain);
 
    
 
    .. BLOCK-test-chapeloutput
 
       1 3 5 7 9
+      {0..4}
 
 .. _Forall_Intents:
 
@@ -468,7 +470,7 @@ input expression resulting array’s domain
 array            that array’s domain
 domain           that domain
 range            one-dimensional domain built from that range
-iterator         1-based one-dimensional domain
+iterator         0-based one-dimensional domain
 ================ ============================================
 
 ..
