@@ -98,8 +98,8 @@ proc MASON_REGISTRY {
     }
 
     // Make sure all of the registry names are unique
-    for i in 1..registries.size {
-      for j in i+1..registries.size {
+    for i in registries.indices {
+      for j in i+1..<registries.size {
         if registries(i)(0) == registries(j)(0) {
           stderr.writeln("registry names specified in MASON_REGISTRY must be unique:");
           stderr.writeln(registries(i)(0), " - ", registries(i)(1));
