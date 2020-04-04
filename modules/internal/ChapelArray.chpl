@@ -438,6 +438,7 @@ module ChapelArray {
   // the low bound to use for array literals
   pragma "no doc"
   config param arrayLiteralLowBound = defaultLowBound;
+  pragma "no doc"
   config param capturedIteratorLowBound = defaultLowBound;
 
   pragma "ignore transfer errors"
