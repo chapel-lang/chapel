@@ -1,0 +1,3 @@
+             # performance.good
+--sorts='q'  # performance-quicksort-only.good
+--sorts='is' # performance-insert-select.good
