@@ -373,8 +373,8 @@ module List {
     }
 
     //
-    // Performs conversion from one-based to zero-based indexing, all one-based
-    // accesses of list elements should go through this function.
+    // A helper function for getting a reference to a list element.
+    // May be less important now that lists use 0-based indexing(?).
     //
     pragma "no doc"
     inline proc const ref _getRef(idx: int) ref {
@@ -382,7 +382,6 @@ module List {
       const arrayIdx = _getArrayIdx(idx);
       const itemIdx = _getItemIdx(idx);
       const array = _arrays[arrayIdx];
-      //      writeln("got ", (arrayIdx, itemIdx));
       _sanity(array != nil);
       ref result = array[itemIdx];
       return result;
@@ -1080,8 +1079,7 @@ module List {
     }
 
     //
-    // Manually call destructors on each currently allocated element. Use
-    // one-based indexing here since we're going through _getRef(). For
+    // Manually call destructors on each currently allocated element. For
     // logical consistency, set size to zero once all destructors have been
     // fired.
     //
@@ -1153,7 +1151,7 @@ module List {
     }
 
     /*
-      Return a one-based index into this list of the first item whose value
+      Return a zero-based index into this list of the first item whose value
       is equal to `x`. If no such element can be found this method returns
       the value `-1`.
 
@@ -1448,9 +1446,9 @@ module List {
     }
 
     /*
-      Returns the list's legal indices as the range ``1..this.size``.
+      Returns the list's legal indices as the range ``0..<this.size``.
 
-      :return: ``1..this.size``
+      :return: ``0..<this.size``
       :rtype: `range`
     */
     proc indices {
