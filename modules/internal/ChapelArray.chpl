@@ -4256,10 +4256,13 @@ module ChapelArray {
     if shapeful && i < r.size then
       r = r #i;
 
-    if !shapeful then
+    if !shapeful then {
       // return 1..0 (the empty range value) if the size is 0; 0.. #i otherwise
       // (unless capturedIteratorLowBound is overridden)
       r = if i == 0 then 1..0 else capturedIteratorLowBound .. #i;
+      if chpl_warnUnstable then
+        compilerWarning("capturing expressions like this into inferred-type variables used to result in a 1D 1-based array, but now results in a 1D 0-based array.  In the future, it _may_ result in capturing the iterator expression itself.  Use an explicit type if this concerns you.");
+    }
 
     pragma "insert auto destroy"
     var D = { r };
