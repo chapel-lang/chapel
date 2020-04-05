@@ -567,7 +567,7 @@ module ChapelRange {
     if ! isBoundedRange(this) then
       compilerError("'size' is not defined on unbounded ranges");
 
-    // assumes alignedHigh/alignLow always work, even for an empty range
+    // assumes alignedHigh/alignedLow always work, even for an empty range
     const ah = this.alignedHighAsInt,
           al = this.alignedLowAsInt;
     if al > ah then return 0: intIdxType;
