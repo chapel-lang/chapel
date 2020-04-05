@@ -52,7 +52,7 @@ int mysystem(const char* command,
     USR_FATAL("system() fork failed: %s", strerror(errno));
 
   } else if (status != 0 && ignoreStatus == false) {
-    USR_FATAL(description);
+    USR_FATAL("%s", description);
   }
 
   return status;

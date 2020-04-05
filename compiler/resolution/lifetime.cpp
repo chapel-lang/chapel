@@ -2507,16 +2507,12 @@ static void emitError(Expr* inExpr,
                       Lifetime relevantLifetime,
                       LifetimeState* lifetimes) {
 
-  char buf[256];
-
   BaseAST* place = findUserPlace(inExpr);
 
   if (relevantSymbol && !relevantSymbol->hasFlag(FLAG_TEMP)) {
-    snprintf(buf, sizeof(buf), "%s %s %s", msg1, relevantSymbol->name, msg2);
-    USR_FATAL_CONT(place, buf);
+    USR_FATAL_CONT(place, "%s %s %s", msg1, relevantSymbol->name, msg2);
   } else {
-    snprintf(buf, sizeof(buf), "%s %s", msg1, msg2);
-    USR_FATAL_CONT(place, buf);
+    USR_FATAL_CONT(place, "%s %s", msg1, msg2);
   }
 
   Symbol* fromSym = relevantLifetime.fromSymbolScope;

@@ -91,9 +91,9 @@ const char* cleanFilename(const char*    name);
 
 void        setupError(const char* subdir, const char* filename, int lineno, int tag);
 
-void        handleError(const char* fmt, ...);
-void        handleError(const BaseAST* ast, const char* fmt, ...);
-void        handleError(astlocT astloc, const char* fmt, ...);
+void        handleError(const char* fmt, ...) __attribute__ ((format (printf, 1, 2)));
+void        handleError(const BaseAST* ast, const char* fmt, ...)__attribute__ ((format (printf, 2, 3)));
+void        handleError(astlocT astloc, const char* fmt, ...)__attribute__ ((format (printf, 2, 3)));
 
 void        exitIfFatalErrorsEncountered();
 
