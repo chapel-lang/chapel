@@ -1,0 +1,3 @@
+# unrolling heterogeneous tuples caused by varargs doesn't work with
+# --baseline yet; see issue #
+COMPOPTS <= --baseline
