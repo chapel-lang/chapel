@@ -289,7 +289,7 @@ module Random {
     if isNothingType(sizeType) {
       // Return 1 sample
       var randVal = stream.getNext(resultType=int, 0, X.size-1);
-      var randIdx = X.dim(1).orderToIndex(randVal);
+      var randIdx = X.dim(0).orderToIndex(randVal);
       return randIdx;
     } else {
       // Return numElements samples
@@ -308,7 +308,7 @@ module Random {
       if replace {
         for sample in samples {
           var randVal = stream.getNext(resultType=int, 0, X.size-1);
-          var randIdx = X.dim(1).orderToIndex(randVal);
+          var randIdx = X.dim(0).orderToIndex(randVal);
           sample = randIdx;
         }
       } else {
