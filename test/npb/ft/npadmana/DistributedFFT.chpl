@@ -434,7 +434,7 @@ prototype module DistributedFFT {
 
     // See if we already have wisdom for this plan. If we do, we avoid an
     // allocation.
-    var arr: c_ptr(arrType) = c_nil;
+    var arr: c_ptr(arrType);
     var plan = new FFTWplan(ftType, rank, nnp, howmany, arr,
                             nnp, stride, idist,
                             arr, nnp, stride, idist,
