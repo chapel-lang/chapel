@@ -16,50 +16,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Suppress warning about variables used before defined
-CRAYPE_GEN_CFLAGS = -hnomessage=7212
 
-# Suppress warnings about unsigned ints being compared to 0
-CRAYPE_GEN_CFLAGS += -hnomessage=186
-
-# Suppress warnings about needing the optimizer to handle
-# certain cases of __asm__
-CRAYPE_GEN_CFLAGS += -hnomessage=3140
-
-# Suppress warnings about floating-point values that cannot be represented
-# exactly, or are out of range (e.g. infinity).
-CRAYPE_GEN_CFLAGS += -hnomessage=1046 -hnomessage=7227
-
-# Suppress warnings about incompatible casts that are acceptable in other
-# settings.  Temporary fix for a ZMQ issue
-# https://github.com/chapel-lang/chapel/issues/9961
-CRAYPE_GEN_CFLAGS += -hnomessage=167
-
-# Could set CRAYPE_COMP_CXXFLAGS, CRAYPE_GEN_CFLAGS
-
-FAST_FLOAT_GEN_CFLAGS = -hfp2
-IEEE_FLOAT_GEN_CFLAGS = -hfp0
-
-CXX11_STD := -h std=c++11
-
-# If this is not a --fast compilation or OPTIMIZE=1 is not set, disable
-# optimizations for cce. This is done by default for other compilers and it
-# tends to improve the compiler performance.
-#
-# Another option for cce is the -hdevelop feature, which attempts to improve
-# compilation time by throttling certain things in the compiler that are known
-# to add time. For Chapel codes, -O0 tends to give the fastest compile times,
-# which is why it is used here. -hdevelop is something to look at in the future
-# if execution time becomes too slow with -O0.
-NO_OPT_CFLAGS += -O0
-
-ifdef CHPL_COMM_DEBUG
-CHPL_GASNET_MORE_CFLAGS += -O0 -UNDEBUG
+ifneq (,$(findstring CC=Classic,$(CRAY_PE_CCE_VARIANT)))
+$(error CCE classic (cce < 9.x.x / 9.x.x-classic) is no longer supported. \
+  Please notify the Chapel team if this configuration is important to you.)
 endif
 
+include $(CHPL_MAKE_HOME)/make/compiler/Makefile.clang
 include $(CHPL_MAKE_HOME)/make/compiler/Makefile.cray-prgenv
-
-# Certain versions of CCE have had difficulty with high levels of
-# interprocedural analysis.  We conservatively back off slightly in
-# case someone happens to be using one of those versions.
-OPT_CFLAGS += -hipa2
