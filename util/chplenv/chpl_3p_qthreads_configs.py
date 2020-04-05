@@ -19,8 +19,4 @@ def get_link_args():
                                                 ucp=get_uniq_cfg_path(),
                                                 libs=['libqthread.la',
                                                       '-lchpl'])
-    compiler_val = chpl_compiler.get('target')
-    if compiler_val == 'cray-prgenv-cray':
-        link_args.append('-lrt')
-
     return link_args
