@@ -30,7 +30,7 @@ proc main(args:[] string)
 
   // Create an array of hashes and file ids
   // a file id is just the index into the paths array.
-  var hashAndFileId:[1..paths.size] (Hash, int);
+  var hashAndFileId:[0..#paths.size] (Hash, int);
 
   // Compute the SHA1 sums using the extern calls
   var pathsArray = paths.toArray();

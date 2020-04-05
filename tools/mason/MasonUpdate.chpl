@@ -347,7 +347,7 @@ private proc createDepTree(root: unmanaged Toml) {
 private proc createDepTrees(depTree: unmanaged Toml, ref deps: list(unmanaged Toml), name: string) : unmanaged Toml {
   var depList: list(unmanaged Toml?);
   while deps.size > 0 {
-    var dep = deps[1];
+    var dep = deps[0];
 
     var brick       = dep["brick"]!;
     var package     = brick["name"]!.s;
@@ -379,7 +379,7 @@ private proc createDepTrees(depTree: unmanaged Toml, ref deps: list(unmanaged To
       var dependency = createDepTrees(depTree, manifests, package);
     }
     delete dep;
-    deps.pop(1);
+    deps.pop(0);
   }
   // Use toArray here to avoid making Toml aware of `list`, for now.
   if depList.size > 0 then

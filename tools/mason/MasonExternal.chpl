@@ -310,7 +310,7 @@ proc getSpkgInfo(spec: string, ref dependencies: list(string)): unmanaged Toml t
       spkgInfo.set("include", includePath);
 
       while dependencies.size > 0 {
-        var dep = dependencies[1];
+        var dep = dependencies[0];
         var depSpec = dep.split("@", 1);
         var name = depSpec[0];
 
@@ -325,7 +325,7 @@ proc getSpkgInfo(spec: string, ref dependencies: list(string)): unmanaged Toml t
         spkgInfo.set(name, getSpkgInfo(dep, depsOfDep));
 
         // remove dep for recursion
-        dependencies.pop(1);
+        dependencies.pop(0);
       }
       if depList.size > 0 {
         // Temporarily use toArray here to avoid supporting list.

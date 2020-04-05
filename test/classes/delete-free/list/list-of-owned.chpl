@@ -12,7 +12,7 @@ var l2 = new list(owned C);
 l2.append(new owned C(3));
 l2.append(new C(4));
 
-l1.insert(2, new C(5));
+l1.insert(1, new C(5));
 var c = l1.pop();
 
 writeln(c);

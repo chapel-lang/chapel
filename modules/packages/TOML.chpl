@@ -1134,7 +1134,7 @@ module TomlReader {
     if !source.nextLine() {
       throw new owned TomlError("Reached end of file unexpectedly");
     }
-    return source.currentLine![1];
+    return source.currentLine![0];
   }
 
   /* Returns a boolean or whether or not another line can be read
@@ -1192,7 +1192,7 @@ module TomlReader {
         splitLine(line);
       }
       if !this.isEmpty() {
-        currentLine = tokenlist[1];
+        currentLine = tokenlist[0];
       }
     }
 
@@ -1253,8 +1253,8 @@ module TomlReader {
         }
         else {
           var ptrhold = currentLine;
-          tokenlist.pop(1);
-          currentLine = tokenlist[1];
+          tokenlist.pop(0);
+          currentLine = tokenlist[0];
           delete ptrhold;
           return true;
         }
@@ -1303,16 +1303,16 @@ module TomlReader {
     }
 
     proc skip() {
-      A.pop(1);
+      A.pop(0);
     }
 
     proc next() {
-      var toke = A.pop(1);
+      var toke = A.pop(0);
       return toke;
     }
 
     proc addToke(toke: string) {
-      A.insert(1, toke);
+      A.insert(0, toke);
     }
 
     proc isEmpty(): bool {
