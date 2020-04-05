@@ -250,6 +250,9 @@ module Random {
       if prob.rank != 1 {
         compilerError('choice() prob array must be 1 dimensional');
       }
+      if prob.size != X.size {
+        throw new owned IllegalArgumentError('choice() domain.size must be equal to prob.size');
+      }
     }
 
     if !isNothingType(sizeType) {
@@ -329,7 +332,11 @@ module Random {
   {
     import Search;
     import Sort;
-
+    
+    if prob.size != X.size {
+      throw new owned IllegalArgumentError('choice() domain.size must be equal to prob.size');
+    }
+    
     if prob.size == 0 then
       throw new owned IllegalArgumentError('choice() array cannot be empty');
 
@@ -1008,8 +1015,6 @@ module Random {
               domain.
 
      :throws IllegalArgumentError: if ``rng.size == 0``,
-                                   if ``rng`` contains a negative value,
-                                   if ``rng`` has no non-zero values,
                                    if ``size < 1 || size.size < 1``,
                                    if ``replace=false`` and ``size > rng.size || size.size > rng.size``.
                                    if ``isBoundedRange(rng) == false``
@@ -1017,11 +1022,10 @@ module Random {
       proc choice(rng: range(stridable=?), size:?sizeType=none, replace=true, prob:?probType=none)
         throws
       {
-        if !isBoundedRange(rng) {
+        if !isBoundedRange(rng) then
           throw new owned IllegalArgumentError('input range must be bounded');
-        }
 
-        var Dom: domain(1,stridable=true) = {rng};
+        var Dom: domain(1,stridable=true) = if isBoundedRange(rng) then {rng} else {1..1};
         return _choice(this, Dom, size=size, replace=replace, prob=prob);
       }
 
