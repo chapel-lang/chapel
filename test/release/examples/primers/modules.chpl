@@ -176,7 +176,7 @@ module MainModule {
 
     /* ``import`` statements also only affect their containing scope, so
        similarly the following line would generate an error if uncommented, due
-       to being outside a scope with an import of ``modToUse``.
+       to being outside a scope with an ``import`` of ``modToUse``.
     */
     // var twiceFoo = 2 * modToUse.foo;
 
@@ -319,8 +319,8 @@ module MainModule {
       } // Will output modToUse.foo (which is '12')
     }
 
-    /* The only way to import multiple modules in a single statement is to name
-       a shared parent module.  We will talk about this more in
+    /* The only way to ``import`` multiple modules in a single statement is to
+       name a shared parent module.  We will talk about this more in
        :ref:`Primer_Nested_Modules`.
     */
 
@@ -404,6 +404,10 @@ module MainModule {
       // Should output 3 - 2, or '1'
     }
 
+    /* Due to the definition of ``import`` statements, only the module name or
+       specific symbols within the module are brought in.
+    */
+
     /* Limiting a Use
        --------------
        To get around such conflicts, there are multiple strategies.  If only a
@@ -442,8 +446,8 @@ module MainModule {
     }
 
 
-    /* Using an ``except`` list will cause every symbol other than the ones
-       listed to be available.
+    /* Using an ``except`` list on a ``use`` statement will cause every symbol
+       other than the ones listed to be available.
     */
     {
       use Conflict;
@@ -453,6 +457,9 @@ module MainModule {
       writeln(bar); // Outputs Conflict.bar ('5')
       writeln(other); // Outputs Conflict.other ('5.0 + 3.0i')
     }
+
+    /* ``import`` statements do not have an equivalent to ``except`` lists.
+     */
 
 
     /* If both symbols which conflict are desired, or if the ``use`` causes
@@ -500,7 +507,7 @@ module MainModule {
       // writeln(bar);        // this won't resolve since bar isn't available
     }
 
-    /* Again, these are similar to an ``import`` of just the module itself
+    /* Again, these are similar to an ``import`` of just the module itself.
      */
     {
       import modToUse;
@@ -555,9 +562,10 @@ module MainModule {
     writeln();
     /* All of the above rules for using modules also apply to using enums.
 
-       Import statements, on the other hand, do not apply to enums any more than
-       they do to other symbols - an enum can be listed for unqualified access,
-       but doing so will not enable unqualified access to the enum's constants.
+       ``import`` statements, on the other hand, do not apply to enums any more
+       than they do to other symbols - an enum can be listed for unqualified
+       access, but doing so will not enable unqualified access to the enum's
+       constants.
     */
 
     /* .. _Primer_Nested_Modules:
@@ -647,7 +655,8 @@ module OuterNested2 {
     var x: int = 11;
   }
 
-  /* Parent modules can ``use`` their child modules using the full path to them
+  /* Parent modules can ``use`` their child modules by specifying the full path
+     to them.
    */
   {
     writeln("Executing OuterNested2's module-level code");
@@ -657,7 +666,7 @@ module OuterNested2 {
   }
 
   /* But they can also ``use`` the child modules with just the name itself,
-     since it is in scope
+     since it is in scope.
   */
   {
     use Inner1;
@@ -665,8 +674,8 @@ module OuterNested2 {
     writeln(x);
   }
 
-  /* In contrast, ``import`` statements cannot ``import`` it with just the name
-     itself.
+  /* In contrast, ``import`` statements cannot ``import`` submodules with just
+     the name itself.
   */
   {
     import OuterNested2.Inner1;
@@ -795,8 +804,9 @@ module UsesTheImporter {
   // Possible due to re-export of ModuleThatIsUsed
   ModuleThatIsUsed.publiclyAvailableProc();
 
+  // These lines are to ensure everything gets tested regularly
   {
-    use UsesTheImporter2;
+    use NoMiddleMan;
   }
 }
 
@@ -807,6 +817,11 @@ module NoMiddleMan {
   use ModuleThatIsUsed;
 
   publiclyAvailableProc();
+
+  // These lines are to ensure everything gets tested regularly
+  {
+    use UsesTheImporter2;
+  }
 }
 
 /* The same is true of module-level symbols brought in by ``public import``
@@ -822,5 +837,6 @@ module UsesTheImporter2 {
   use ImporterModule2;
 
   writeln("Start of reverse file-order output");
+  // Possible due to re-export of ModuleThatIsUsed.publiclyAvailableProc
   publiclyAvailableProc();
 }
