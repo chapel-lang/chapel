@@ -2283,8 +2283,19 @@ GenRet FnSymbol::codegenPXDType() {
   return ret;
 }
 
+/*
 void pythonRetByteBuffer(FnSymbol* fn, std::string& funcCall,
-                         std::string& returnStmt) {
+                         std::string& returnStmt);
+
+void pythonRetExternalArray(FnSymbol* fn, std::string& funcCall,
+                            std::string& returnStmt);
+
+void pythonRetOpaqueArray(FnSymbol* fn, std::string& funcCall,
+                          std::string& returnStmt);
+*/
+
+static void pythonRetByteBuffer(FnSymbol* fn, std::string& funcCall,
+                                std::string& returnStmt) {
 
   // The raw result of the routine call, a "chpl_byte_buffer".
   funcCall += "cdef chpl_byte_buffer rv = ";
@@ -2317,8 +2328,8 @@ void pythonRetByteBuffer(FnSymbol* fn, std::string& funcCall,
   }
 }
 
-void pythonRetExternalArray(FnSymbol* fn, std::string& funcCall,
-                            std::string& returnStmt) {
+static void pythonRetExternalArray(FnSymbol* fn, std::string& funcCall,
+                                   std::string& returnStmt) {
   INT_ASSERT(fn->retType == dtExternalArray);
 
   Symbol* eltTypeSym = exportedArrayElementType[fn];
@@ -2406,8 +2417,8 @@ void pythonRetExternalArray(FnSymbol* fn, std::string& funcCall,
   returnStmt += res;
 }
 
-void pythonRetOpaqueArray(FnSymbol* fn, std::string& funcCall,
-                          std::string& returnStmt) {
+static void pythonRetOpaqueArray(FnSymbol* fn, std::string& funcCall,
+                                 std::string& returnStmt) {
   funcCall += "ret = ChplOpaqueArray()\n\t";
   funcCall += "ret.setVal(";
 }
