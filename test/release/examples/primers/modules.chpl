@@ -320,8 +320,8 @@ module MainModule {
     }
 
     /* The only way to import multiple modules in a single statement is to name
-       a shared parent module (TODO - nested modules aren't mentioned until
-       later)
+       a shared parent module.  We will talk about this more in
+       :ref:`Nested_Modules`.
     */
 
 
@@ -553,10 +553,15 @@ module MainModule {
     }
 
     writeln();
-    /* All of the above rules for using modules also apply to using
-       enums */
+    /* All of the above rules for using modules also apply to using enums.
+       Import statements, on the other hand, do not apply to enums any more than
+       they do to other symbols - an enum can be listed for unqualified access,
+       but doing so will not enable unqualified access to the enum's constants.
+    */
 
-    /* Nested Modules
+    /* .. _Nested_Modules:
+
+       Nested Modules
        --------------
        A ``use`` of a nested module (see the module ``OuterNested`` and its
        submodules for an example of a nested module) is similar to that of a
@@ -568,6 +573,26 @@ module MainModule {
       use OuterNested.Inner1;
 
       writeln(foobar); // Will output Inner1.foobar, or '14'
+    }
+
+    /* Similarly, in order to ``import`` a nested module, you must provide the
+       explicit path to that module.
+    */
+    {
+      import OuterNested.Inner1;
+
+      writeln(Inner1.foobar); // Will output 14
+    }
+
+    /* While ``import`` statements cannot list multiple modules in the same way
+       that ``use`` statements do, when a common parent is provided multiple
+       submodules can be listed.
+    */
+    {
+      import OuterNested.{Inner1, Inner2};
+
+      writeln(Inner1.foobar); // Will output 14
+      writeln(Inner2.canSeeHidden); // Will output true
     }
 
   } // end of main() function
@@ -598,6 +623,7 @@ module OuterNested {
    */
   module Inner1 {
     use OuterNested;
+
     var foobar = foo + bar;
   }
 
@@ -607,13 +633,15 @@ module OuterNested {
      will not be visible within scopes defined outside of ``Inner2``.
   */
   module Inner2 {
+    use OuterNested;
+
     private var innerOnly = -17;
     var canSeeHidden = !hiddenFoo;
   }
 } // end of OuterNested module
 
-/* Public vs. Private Uses
-   -----------------------
+/* Public vs. Private Uses and Imports
+   -----------------------------------
 
    Use statements can be labeled as being either ``public`` or ``private``.
    By default ``use`` statements are ``private``.  This means that if one
@@ -621,7 +649,6 @@ module OuterNested {
    not by other modules that it happens to use.  For example, consider the
    following library module:
 */
-
 
 module ModuleThatIsUsed {
   proc publiclyAvailableProc() {
