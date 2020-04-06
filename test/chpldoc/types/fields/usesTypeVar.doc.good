@@ -10,6 +10,13 @@ usesTypeVar.doc
 
    use usesTypeVar.doc;
 
+
+or
+
+.. code-block:: chapel
+
+   import usesTypeVar.doc;
+
 .. class:: Bar
 
    This class uses the type field as the type of another field 

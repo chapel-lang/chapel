@@ -10,6 +10,13 @@ fields.doc
 
    use fields.doc;
 
+
+or
+
+.. code-block:: chapel
+
+   import fields.doc;
+
 .. class:: fullOfFields
 
    .. attribute:: type eltType

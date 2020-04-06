@@ -10,6 +10,13 @@ tuples.doc
 
    use tuples.doc;
 
+
+or
+
+.. code-block:: chapel
+
+   import tuples.doc;
+
 .. class:: fullOfTuples
 
    .. attribute:: var smallTuple: (bool, bool)

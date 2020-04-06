@@ -3,4 +3,8 @@ interruptingSingleComment.doc
 Usage:
    use interruptingSingleComment.doc;
 
+or
+
+   import interruptingSingleComment.doc;
+
    proc foo()

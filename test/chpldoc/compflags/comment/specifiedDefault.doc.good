@@ -10,6 +10,13 @@ specifiedDefault.doc
 
    use specifiedDefault.doc;
 
+
+or
+
+.. code-block:: chapel
+
+   import specifiedDefault.doc;
+
 .. function:: proc found()
 
    This comment should be seen 

@@ -10,6 +10,13 @@ inheritance.doc
 
    use inheritance.doc;
 
+
+or
+
+.. code-block:: chapel
+
+   import inheritance.doc;
+
 .. class:: Grandparent
 
    The eldest 

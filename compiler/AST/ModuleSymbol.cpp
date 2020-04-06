@@ -383,6 +383,26 @@ void ModuleSymbol::printDocs(std::ostream* file,
 
   *file << name << ";" << std::endl << std::endl;
 
+  if (!fDocsTextOnly) {
+    *file << std::endl;
+  }
+
+  *file  << "or" << std::endl << std::endl;
+   
+  if (fDocsTextOnly == false) {
+    *file << ".. code-block:: chapel" << std::endl << std::endl;
+  }
+
+  this->printTabs(file, tabs + 1);
+
+  *file << "import ";
+
+  if (parentName != "") {
+    *file << parentName << ".";
+  }
+
+  *file << name << ";" << std::endl << std::endl;
+
   // If we had submodules, be sure to link to them
   if (hasTopLevelModule() == true) {
     this->printTableOfContents(file);

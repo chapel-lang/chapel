@@ -10,6 +10,13 @@ extern-block.doc
 
    use extern-block.doc;
 
+
+or
+
+.. code-block:: chapel
+
+   import extern-block.doc;
+
 .. function:: proc myfunction()
 
    myfunction docs  

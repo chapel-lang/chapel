@@ -10,6 +10,13 @@ defaultModule.doc
 
    use defaultModule.doc;
 
+
+or
+
+.. code-block:: chapel
+
+   import defaultModule.doc;
+
 .. function:: proc foo()
 
    This proc doesn't matter very much 

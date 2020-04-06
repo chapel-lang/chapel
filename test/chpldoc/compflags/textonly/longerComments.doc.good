@@ -4,6 +4,10 @@ longerComments.doc
 Usage:
    use longerComments.doc;
 
+or
+
+   import longerComments.doc;
+
 Submodules for this module are located in the longerComments.doc/ directory
 
    proc method1()
@@ -28,6 +32,10 @@ Other
 
 Usage:
    use longerComments.doc.Other;
+
+or
+
+   import longerComments.doc.Other;
 
    proc inside
       This is a comment for a method inside of

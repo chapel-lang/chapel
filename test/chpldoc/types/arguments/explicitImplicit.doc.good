@@ -10,6 +10,13 @@ explicitImplicit.doc
 
    use explicitImplicit.doc;
 
+
+or
+
+.. code-block:: chapel
+
+   import explicitImplicit.doc;
+
 .. function:: proc foo(bar: int)
 
    This proc has an explicit type argument of type int 
