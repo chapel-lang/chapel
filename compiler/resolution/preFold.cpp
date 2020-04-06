@@ -648,7 +648,7 @@ static Expr* preFoldPrimOp(CallExpr* call) {
     if (name == NULL) {
       USR_FATAL(call,
                 "'%d' is not a valid field number for %s",
-                fieldNum,
+                fieldNum-1,
                 toString(classType));
     }
 
@@ -720,7 +720,7 @@ static Expr* preFoldPrimOp(CallExpr* call) {
       // specified.  This is the user's error.
       USR_FATAL(call,
                 "'%d' is not a valid field number for %s",
-                fieldNum,
+                fieldNum-1,
                 toString(classType));
     }
 

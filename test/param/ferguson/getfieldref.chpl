@@ -14,10 +14,10 @@ proc getFieldRef(x:?t, param i:int) ref {
   return __primitive("field by num", x, i);
 }
 
-getFieldRef(r, 1) = 10;
+getFieldRef(r, 0) = 10;
 writeln(r.x);
 
-var i = getFieldRef(r, 1);
+var i = getFieldRef(r, 0);
 writeln(i);
 
 
