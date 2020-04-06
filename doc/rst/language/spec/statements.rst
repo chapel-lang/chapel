@@ -827,7 +827,7 @@ keyword.  This new name will be usable from the scope of the use in place of the
 old name.  This new name does not affect uses or imports of that module from
 other contexts.
 
-Use statements may be explicitly delared ``public`` or ``private``.
+Use statements may be explicitly declared ``public`` or ``private``.
 By default, uses are ``private``.  Making a use ``public`` causes its
 symbols to be transitively visible: if module A uses module B, and
 module B contains a public use of a module or enumerated type C, then
@@ -1061,7 +1061,7 @@ scope has no effect on its behavior.  If a scope includes multiple ``import``
 statements, or a combination of ``import`` and ``use`` statements, then the
 newly-visible names are inserted into a common enclosing scope.
 
-An error is signalled if multiple public module-level symbols would be inserted
+An error is signaled if multiple public module-level symbols would be inserted
 into this enclosing scope with the same name, and that name is referenced by
 other statements in the same scope as the import.
 
