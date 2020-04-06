@@ -258,7 +258,7 @@ endif
 
 " Chapel extentions
 syn keyword chplStatement	break return continue compilerWarning delete
-syn keyword chplStatement	new delete this these use except only require
+syn keyword chplStatement	new delete this these use except only require import
 syn keyword chplStatement	noinit init
 syn keyword chplStatement	as module yield compilerError zip
 syn keyword chplIntent		param type in out inout ref
