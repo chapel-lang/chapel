@@ -982,8 +982,9 @@ module Random {
               domain.
 
      :throws IllegalArgumentError: if ``arr.size == 0``,
-                                   if ``arr`` contains a negative value,
-                                   if ``arr`` has no non-zero values,
+                                   if ``arr.size != prob.size``,
+                                   if ``prob`` contains a negative value,
+                                   if ``prob`` has no non-zero values,
                                    if ``size < 1 || size.size < 1``,
                                    if ``replace=false`` and ``size > arr.size || size.size > arr.size``
      */
@@ -1015,6 +1016,9 @@ module Random {
               domain.
 
      :throws IllegalArgumentError: if ``rng.size == 0``,
+                                   if ``rng.size != prob.size``,
+                                   if ``prob`` contains a negative value,
+                                   if ``prob`` has no non-zero values,
                                    if ``size < 1 || size.size < 1``,
                                    if ``replace=false`` and ``size > rng.size || size.size > rng.size``.
                                    if ``isBoundedRange(rng) == false``
