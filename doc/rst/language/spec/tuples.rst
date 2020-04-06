@@ -759,12 +759,12 @@ capture elements.
 
 Tuple expressions or tuple arguments with default argument intent are two
 examples of referential tuples. They store elements by reference where it
-makes sense to do so. Referential tuples may be viewed as analagous to a
+makes sense to do so. Referential tuples may be viewed as analogous to a
 group of function arguments that each have default argument intent.
 
 Tuple variables or tuple arguments with ``in`` intent are two examples of
 value tuples. They store all elements by value and may store elements copy
-initialized from another tuple. Value tuples may be viewed as analagous to
+initialized from another tuple. Value tuples may be viewed as analogous to
 a group of function arguments that each have the ``in`` intent.
 
 In short, some or all of the elements of a referential tuple may be

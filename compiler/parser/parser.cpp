@@ -807,7 +807,7 @@ ModuleSymbol* parseIncludedSubmodule(const char* name) {
   // save parser global variables to restore after parsing the submodule
   BlockStmt*  s_yyblock = yyblock;
   const char* s_yyfilename = yyfilename;
-  int         s_yystarlineno = yystartlineno;
+  int         s_yystartlineno = yystartlineno;
   ModTag      s_currentModuleType = currentModuleType;
   const char* s_currentModuleName = currentModuleName;
   int         s_chplLineno = chplLineno;
@@ -836,7 +836,7 @@ ModuleSymbol* parseIncludedSubmodule(const char* name) {
   // restore parser global variables
   yyblock = s_yyblock;
   yyfilename = s_yyfilename;
-  yystartlineno = s_yystarlineno;
+  yystartlineno = s_yystartlineno;
   currentModuleType = s_currentModuleType;
   currentModuleName = s_currentModuleName;
   chplLineno = s_chplLineno;
