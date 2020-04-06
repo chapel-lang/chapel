@@ -151,13 +151,15 @@ module MainModule {
 
 
     /* An ``import`` statement, in contrast to a ``use`` statement, either
-       enables qualified access to the visible symbols of a module or enables
-       unqualified access to a specified subset of those symbols.
+       enables qualified access to the visible symbols of a module (e.g. with
+       the module's name as a prefix) or enables unqualified access to a
+       specified subset of those symbols (e.g. without the module's name as a
+       prefix).
 
-       This demonstrates an ``import`` that enables qualified access.  In this
-       example, ``bazBarFoo`` should store the result of calling
-       ``modToUse.baz`` on ``modToUse.bar`` and ``modToUse.foo``, which is in
-       this case ``28``.
+       This demonstrates an ``import`` that enables access with the module
+       prefix.  In this example, ``bazBarFoo`` should store the result of
+       calling ``modToUse.baz`` on ``modToUse.bar`` and ``modToUse.foo``, which
+       is in this case ``28``.
     */
     {
       import modToUse;
@@ -165,8 +167,8 @@ module MainModule {
       var bazBarFoo = modToUse.baz(modToUse.bar, modToUse.foo);
       writeln(bazBarFoo);
     }
-    /* This case demonstrates an ``import`` that enables unqualified access to
-       a single symbol within ``modToUse``.
+    /* This case demonstrates an ``import`` that enables access without the
+       module prefix to a single symbol within ``modToUse``.
     */
     {
       import modToUse.bar;
@@ -176,7 +178,7 @@ module MainModule {
 
     /* ``import`` statements also only affect their containing scope, so
        similarly the following line would generate an error if uncommented, due
-       to being outside a scope with an ``import`` of ``modToUse``.
+       to being outside a scope with an ``import`` or ``use`` of ``modToUse``.
     */
     // var twiceFoo = 2 * modToUse.foo;
 
@@ -206,9 +208,8 @@ module MainModule {
        which would directly refer to its symbols, these references are still
        valid.
 
-       Thus, the following declaration of ``bazBarFoo`` will store the result of
-       calling ``modToUse.baz`` on ``modToUse.bar`` and ``modToUse.foo``, which
-       is again ``28``.
+       Thus, the output of this block is the same as that of its ``use``
+       statement counterpart.
     */
     {
       var bazBarFoo = modToUse.baz(modToUse.bar, modToUse.foo);
@@ -404,8 +405,9 @@ module MainModule {
       // Should output 3 - 2, or '1'
     }
 
-    /* Due to the definition of ``import`` statements, only the module name or
-       specific symbols within the module are brought in.
+    /* Remember: this is in contrast to ``import`` statements, where only the
+       module name or specific symbols within the module are brought in, rather
+       than both.
     */
 
     /* Limiting a Use
@@ -563,9 +565,9 @@ module MainModule {
     /* All of the above rules for using modules also apply to using enums.
 
        ``import`` statements, on the other hand, do not apply to enums any more
-       than they do to other symbols - an enum can be listed for unqualified
-       access, but doing so will not enable unqualified access to the enum's
-       constants.
+       than they do to other non-module symbols - an enum can be listed for
+       unqualified access, but doing so will not enable unqualified access to
+       the enum's constants.
     */
 
     /* .. _Primer_Nested_Modules:
@@ -838,5 +840,5 @@ module UsesTheImporter2 {
 
   writeln("Start of reverse file-order output");
   // Possible due to re-export of ModuleThatIsUsed.publiclyAvailableProc
-  publiclyAvailableProc();
+  ImporterModule2.publiclyAvailableProc();
 }
