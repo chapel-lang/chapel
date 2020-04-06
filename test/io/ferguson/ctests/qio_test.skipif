@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
-"""For valgrind, see qio_test.valgrind.test.c. Skip test when atomics are
-implemented with locks and tasking layer is not fifo.
+"""Skip test when atomics are implemented with locks and tasking layer is not
+fifo.
 
 This test requires locks, but the appropriate header files are not available in
 non-fifo tasking layers due to how compile line is constructed. Skip the test
@@ -10,6 +10,4 @@ for now.
 
 import os
 
-print(os.getenv('CHPL_TEST_VGRND_EXE') == 'on' or
-      (os.getenv('CHPL_ATOMICS') == 'locks' and
-       os.getenv('CHPL_TASKS') != 'fifo'))
+print(os.getenv('CHPL_ATOMICS') == 'locks' and os.getenv('CHPL_TASKS') != 'fifo')
