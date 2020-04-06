@@ -10,3 +10,10 @@ privateTypeAlias
 
    use privateTypeAlias;
 
+
+or
+
+.. code-block:: chapel
+
+   import privateTypeAlias;
+

@@ -383,7 +383,11 @@ void ModuleSymbol::printDocs(std::ostream* file,
 
   *file << name << ";" << std::endl << std::endl;
 
-  *file << std::endl << "or" << std::endl << std::endl;
+  if (!fDocsTextOnly) {
+    *file << std::endl;
+  }
+
+  *file  << "or" << std::endl << std::endl;
    
   if (fDocsTextOnly == false) {
     *file << ".. code-block:: chapel" << std::endl << std::endl;
@@ -397,9 +401,7 @@ void ModuleSymbol::printDocs(std::ostream* file,
     *file << parentName << ".";
   }
 
-  *file << name << ".[symbol];" << std::endl << std::endl;
-
-  *file << "(where [symbol] is the symbol that needs to be imported.)" << std::endl << std::endl;
+  *file << name << ";" << std::endl << std::endl;
 
   // If we had submodules, be sure to link to them
   if (hasTopLevelModule() == true) {

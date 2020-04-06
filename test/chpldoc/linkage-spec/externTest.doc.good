@@ -11,6 +11,13 @@ externTest.doc
 
    use externTest.doc;
 
+
+or
+
+.. code-block:: chapel
+
+   import externTest.doc;
+
 **Submodules**
 
 .. toctree::
@@ -96,6 +103,13 @@ Other
 .. code-block:: chapel
 
    use externTest.doc.Other;
+
+
+or
+
+.. code-block:: chapel
+
+   import externTest.doc.Other;
 
 .. function:: proc inside
 

@@ -11,6 +11,13 @@ longerComments.doc
 
    use longerComments.doc;
 
+
+or
+
+.. code-block:: chapel
+
+   import longerComments.doc;
+
 **Submodules**
 
 .. toctree::
@@ -52,6 +59,13 @@ Other
 .. code-block:: chapel
 
    use longerComments.doc.Other;
+
+
+or
+
+.. code-block:: chapel
+
+   import longerComments.doc.Other;
 
 .. function:: proc inside
 

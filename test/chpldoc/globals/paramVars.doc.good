@@ -11,6 +11,13 @@ hasGlobalParams
 
    use hasGlobalParams;
 
+
+or
+
+.. code-block:: chapel
+
+   import hasGlobalParams;
+
 This module has some global scoped params. 
 
 .. data:: param first = 16

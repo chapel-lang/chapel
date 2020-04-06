@@ -11,6 +11,13 @@ variableArguments.doc
 
    use variableArguments.doc;
 
+
+or
+
+.. code-block:: chapel
+
+   import variableArguments.doc;
+
 **Submodules**
 
 .. toctree::
@@ -49,6 +56,13 @@ Other
 .. code-block:: chapel
 
    use variableArguments.doc.Other;
+
+
+or
+
+.. code-block:: chapel
+
+   import variableArguments.doc.Other;
 
 .. function:: proc variable(x ...)
 

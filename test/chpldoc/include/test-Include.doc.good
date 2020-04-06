@@ -10,6 +10,13 @@ Include
 
    use Include;
 
+
+or
+
+.. code-block:: chapel
+
+   import Include;
+
 **Submodules**
 
 .. toctree::
@@ -34,6 +41,13 @@ SubModule
 .. code-block:: chapel
 
    use Include.SubModule;
+
+
+or
+
+.. code-block:: chapel
+
+   import Include.SubModule;
 
 SubModule docs string 
 

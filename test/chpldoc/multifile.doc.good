@@ -11,6 +11,13 @@ first
 
    use first;
 
+
+or
+
+.. code-block:: chapel
+
+   import first;
+
 This module uses another module in a separate file 
 
 .. function:: proc main()
@@ -28,6 +35,13 @@ second
 .. code-block:: chapel
 
    use second;
+
+
+or
+
+.. code-block:: chapel
+
+   import second;
 
 .. function:: proc method()
 

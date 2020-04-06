@@ -10,6 +10,13 @@ methods.doc
 
    use methods.doc;
 
+
+or
+
+.. code-block:: chapel
+
+   import methods.doc;
+
 .. class:: fullOfMethods
 
    .. method:: proc commented()

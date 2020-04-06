@@ -10,6 +10,13 @@ methodOutsideClassDef.doc
 
    use methodOutsideClassDef.doc;
 
+
+or
+
+.. code-block:: chapel
+
+   import methodOutsideClassDef.doc;
+
 .. class:: Foo
 
    This class will declare a method inside itself, but will have a
