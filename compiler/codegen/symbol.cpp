@@ -1095,7 +1095,7 @@ std::string ArgSymbol::getPythonType(PythonFileType pxd) {
   }
 }
 
-std::string ArgSymbol::getPythonDefaultValue() {
+static std::string ArgSymbol::getPythonDefaultValue() {
   std::string defaultVal = exportedDefaultValues[this];
   if (defaultVal != "") {
     return "= " + defaultVal;
@@ -1104,7 +1104,7 @@ std::string ArgSymbol::getPythonDefaultValue() {
   }
 }
 
-std::string pythonArgToStringC(ArgSymbol* as) {
+static std::string pythonArgToStringC(ArgSymbol* as) {
   std::string strname = as->cname;
   std::string res = "\tcdef const char* chpl_" + strname + " = " + strname;
   res += "\n";
@@ -1118,7 +1118,7 @@ std::string pythonArgToStringC(ArgSymbol* as) {
 // do emit checks (for now) to restrict the Python argument type to 'bytes'
 // or 'str', accordingly.
 //
-std::string pythonArgToByteBuffer(ArgSymbol* as) {
+static std::string pythonArgToByteBuffer(ArgSymbol* as) {
   std::string strname = as->cname;
 
   Type* origt = getUnwrappedArg(as)->type->getValType();
@@ -1172,7 +1172,7 @@ std::string pythonArgToByteBuffer(ArgSymbol* as) {
   return res;
 }
 
-std::string pythonArgToExternalArray(ArgSymbol* as) {
+static std::string pythonArgToExternalArray(ArgSymbol* as) {
   std::string strname = as->cname;
 
   if (Symbol* eltType = exportedArrayElementType[as]) {
@@ -1207,7 +1207,7 @@ std::string pythonArgToExternalArray(ArgSymbol* as) {
 // Handle opaque arrays. Opaque arrays have a Python representation that
 // stores the C contents in a field named 'val'.
 //
-std::string pythonArgToOpaqueArray(ArgSymbol* as) {
+static std::string pythonArgToOpaqueArray(ArgSymbol* as) {
   std::string strname = as->cname;
   std::string res = "\tchpl_" + strname + " = &" + strname + ".val\n";
   return res;
@@ -1218,7 +1218,7 @@ std::string pythonArgToOpaqueArray(ArgSymbol* as) {
 // Chapel code. In both cases we already know the size of underlying
 // elements.
 //
-std::string pythonArgToChapelArrayOrPtr(ArgSymbol* as) {
+static std::string pythonArgToChapelArrayOrPtr(ArgSymbol* as) {
   Type* t = getArgSymbolCodegenType(as);
   std::string strname = as->cname;
 
