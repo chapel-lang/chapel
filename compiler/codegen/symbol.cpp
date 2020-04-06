@@ -1095,7 +1095,7 @@ std::string ArgSymbol::getPythonType(PythonFileType pxd) {
   }
 }
 
-static std::string ArgSymbol::getPythonDefaultValue() {
+std::string ArgSymbol::getPythonDefaultValue() {
   std::string defaultVal = exportedDefaultValues[this];
   if (defaultVal != "") {
     return "= " + defaultVal;
