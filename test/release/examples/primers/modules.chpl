@@ -554,6 +554,7 @@ module MainModule {
 
     writeln();
     /* All of the above rules for using modules also apply to using enums.
+
        Import statements, on the other hand, do not apply to enums any more than
        they do to other symbols - an enum can be listed for unqualified access,
        but doing so will not enable unqualified access to the enum's constants.
@@ -595,6 +596,7 @@ module MainModule {
       writeln(Inner2.canSeeHidden); // Will output true
     }
 
+    use OuterNested2;
   } // end of main() function
 } // end of MainModule module
 
@@ -640,6 +642,67 @@ module OuterNested {
   }
 } // end of OuterNested module
 
+module OuterNested2 {
+  module Inner1 {
+    var x: int = 11;
+  }
+
+  /* Parent modules can ``use`` their child modules using the full path to them
+   */
+  {
+    writeln("Executing OuterNested2's module-level code");
+    use OuterNested2.Inner1;
+
+    writeln(x);
+  }
+
+  /* But they can also ``use`` the child modules with just the name itself,
+     since it is in scope
+  */
+  {
+    use Inner1;
+
+    writeln(x);
+  }
+
+  /* In contrast, ``import`` statements cannot ``import`` it with just the name
+     itself.
+  */
+  {
+    import OuterNested2.Inner1;
+    //import Inner1; // Will not work
+
+    writeln(Inner1.x);
+  }
+
+  /* However, both ``use`` and ``import`` statements can utilize ``this`` as a
+     prefix, to avoid having to provide the full path.
+  */
+  {
+    import this.Inner1;
+
+    writeln(Inner1.x);
+  }
+
+  module Inner2 {
+    /* Child modules can also utilize ``super`` as a prefix, allowing access to
+       other symbols defined on their parent module.
+    */
+    import super.Inner1;
+
+    writeln(Inner1.x);
+  }
+
+  // These lines are to ensure everything gets tested regularly
+  writeln("End of OuterNested2's module-level code");
+  {
+    use UsesTheUser;
+  }
+  writeln("End of reverse file-order output");
+  writeln();
+} // end of OuterNested2 module
+
+
 /* Public vs. Private Uses and Imports
    -----------------------------------
 
@@ -672,6 +735,14 @@ module UsesTheUser {
     use UserModule;
     // publiclyAvailableProc(); // Won't compile, since ``UserModule``'s ``use`` is ``private``
   }
+
+  // These lines are to ensure everything gets tested regularly
+  writeln("Start of UsesTheUser's module-level code");
+  func1();
+  {
+    use UsesTheUser2;
+  }
+  writeln("End of UsesTheUser's module-level code");
 }
 
 /* By contrast, a ``public use`` will permit symbols used by one module to
@@ -683,12 +754,73 @@ module UserModule2 {
 }
 
 
-/* Since its use is ``public``, A scope with a ``use`` of ``UserModule2`` will 
+/* Since its use is ``public``, a scope with a ``use`` of ``UserModule2`` will
    also be able to see the symbols defined by ``ModuleThatIsUsed``.
 */
 module UsesTheUser2 {
   proc func2() {
     use UserModule2;
-    publiclyAvailableProc(); // available due to ``use`` of ModuleThatIsUsed
+    publiclyAvailableProc(); // available due to ``use`` of ``ModuleThatIsUsed``
   }
+
+  // These lines are to ensure everything gets tested regularly
+  writeln("Start of UsesTheUser2's module-level code");
+  func2();
+  {
+    use UsesTheImporter;
+  }
+  writeln("End of UsesTheUser2's module-level code");
+}
+
+/* Import statements can also be labeled as being either ``public`` or
+   ``private``.  By default ``import`` statements are also ``private``.
+   However, ``public import`` statements have a different meaning than ``public
+   use`` statements do - ``public import`` statements `re-export` the symbols in
+   the imported module.
+
+   This means that the imported symbols will be treated as though they are
+   defined in the scope with the ``import`` for the purposes of accesses from
+   outside that module.  For example:
+*/
+module ImporterModule {
+  public import ModuleThatIsUsed;
+}
+
+/* Here, it will appear as though the module ``ModuleThatIsUsed`` is a submodule
+   of ``ImporterModule``, so other scopes can access it in that manner.
+*/
+module UsesTheImporter {
+  use ImporterModule;
+
+  // Possible due to re-export of ModuleThatIsUsed
+  ModuleThatIsUsed.publiclyAvailableProc();
+
+  {
+    use UsesTheImporter2;
+  }
+}
+
+/* This doesn't prevent ``ModuleThatIsUsed`` from being available through its
+   original means.
+*/
+module NoMiddleMan {
+  use ModuleThatIsUsed;
+
+  publiclyAvailableProc();
+}
+
+/* The same is true of module-level symbols brought in by ``public import``
+   statements.  In this example, the ``public import`` of the function defined
+   in ``ModuleThatIsUsed`` makes it appear as though ImporterModule2 defined
+   the function.
+*/
+module ImporterModule2 {
+  public import ModuleThatIsUsed.publiclyAvailableProc;
+}
+
+module UsesTheImporter2 {
+  use ImporterModule2;
+
+  writeln("Start of reverse file-order output");
+  publiclyAvailableProc();
 }
