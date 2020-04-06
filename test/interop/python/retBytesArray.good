@@ -1,0 +1,3 @@
+<class 'numpy.ndarray'>
+<class 'bytes'>
+[b'f\x00oo' b'bar' b'baz']

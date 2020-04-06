@@ -1,4 +1,4 @@
-import exportStringArray as test
+import retStringArray as test
 
 test.chpl_setup()
 
@@ -8,8 +8,9 @@ b = test.makeStringArray()
 for (x, y) in zip(a, b):
   assert(x == y)
 
-print(type(b))
-print(b)
+test.display(str(type(b)))
+test.display(str(type(b[0])))
+test.display(str(b))
 
 test.chpl_cleanup()
 
