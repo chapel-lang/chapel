@@ -415,6 +415,142 @@ it is *copy initialized* or *move initialized* as described in
 :ref:`Copy_and_Move_Initialization`. When a record is *copy initialized*,
 its ``init=`` initializer will be used to create the new record.
 
+Copy initialization is implemented by a method named ``init=``, known as the
+*copy initializer*. A copy initializer may only accept one argument, which
+represents the value from which the record will be initialized. These methods
+share the same rules as a normal initializer (:ref:`Class_Initializers`), along
+with some additional restrictions.
+
+The compiler-generated copy initializer for a non-generic record accepts an
+argument of the same type and simply initializes each field from the argument's
+corresponding field:
+
+.. code-block:: chapel
+
+  record R {
+    var x, y, z: int;
+  }
+
+  // identical to compiler-generated implementation
+  // proc R.init=(other: R) {
+  //   this.x = other.x;
+  //   this.y = other.y;
+  //   this.z = other.z;
+  // }
+
+In order to override the compiler-generated implementation, the user must
+implement an ``init=`` method with the same signature.
+
+.. code-block:: chapel
+
+  proc R.init=(other: R) {
+    this.x = other.x;
+    this.y = other.y;
+    this.z = other.z;
+    writeln("copied R!");
+  }
+
+.. note::
+
+  If a user implements their own ``init=`` method, they must also implement an
+  assignment operator for the same record type. Implementing one without the
+  other will cause the compiler to issue an error. *Rationale*: this
+  requirement exists to mitigate hard-to-debug problems by requiring that type
+  authors take responsibility for both ``init=`` and ``=`` implementations, or
+  neither implementation.
+
+A user may indicate that a type is not copyable by adding a where-clause to
+the ``init=`` implementation that evaluates to ``false``:
+
+.. code-block:: chapel
+
+  proc R.init=(other: R) where false {
+  }
+
+The compiler-generated copy initializer for a generic type uses the expression
+``this.type`` as the argument's type to ensure that the types of the original
+record and its copy are the same:
+
+.. code-block:: chapel
+
+  record G {
+    type T;
+    var x : T;
+  }
+
+  // compiler-generated init= for 'G'
+  // proc G.init=(other: this.type) {
+  //   this.T = other.T;
+  //   this.x = other.x;
+  // }
+
+Note that the generic fields must still be manually initialized, despite
+the type already being known. Future work may allow these fields to be inferred.
+
+.. _Advanced_Copy_Initialization:
+
+Advanced Copy Initialization
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+A copy initializer can also be used to specify how a record should be
+initialized from a value of an arbitrary type. This kind of copy initializer is
+invoked when a variable declaration's initialization expression is not of the
+same type as the record being initialized. For example:
+
+.. code-block:: chapel
+
+  record MyString {
+    var s : string;
+  }
+
+  // normal copy initializer
+  proc MyString.init=(other: MyString) {
+    this.s = other.s;
+    writeln("normal init=");
+  }
+
+  // initialize from a string
+  proc MyString.init=(other: string) {
+    this.s = other;
+    writeln("string init=");
+  }
+
+  var A = new MyString("hello");
+  var B = A; // "normal init="
+  var C : MyString = "goodbye"; // "string init="
+
+Generic types can rely on the ``this.type`` expression to implement these kinds
+of copy initializers with the desired type constraints. The ``this.type``
+expression will evaluate to the type provided by the user at the variable
+declaration:
+
+.. code-block:: chapel
+
+  record Wrapper {
+    type T;
+    var x : T;
+  }
+
+  // normal copy initializer
+  proc Wrapper.init=(other: this.type) { ... }
+
+  // An incorrect attempt: ignores the user-specified type, and uses the
+  // value's type (which might not be the same!)
+  // i.e. 'var w : Wrapper(int) = "hi"', tries to create a 'Wrapper(string)'
+  // proc Wrapper.init=(other: ?T) {
+  //   this.T = T;
+  //   this.x = other;
+  // }
+
+  // initialize a Wrapper from the desired wrapped type 'T'
+  proc Wrapper.init=(other: this.type.T) {
+    this.T = other.type;
+    this.x = other;
+  }
+
+  var A : Wrapper(int) = 4;
+  var B : Wrapper(string) = "hello";
+
 .. _Record_Assignment:
 
 Record Assignment
