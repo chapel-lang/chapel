@@ -544,7 +544,7 @@ module Map {
     }
 
     /*
-      Returns a new 1-based array containing a copy of key-value pairs as
+      Returns a new 0-based array containing a copy of key-value pairs as
       tuples.
 
       :return: A new DefaultRectangular array.
@@ -552,7 +552,7 @@ module Map {
     */
     proc toArray(): [] (keyType, valType) {
       _enter();
-      var A: [1..myKeys.size] (keyType, valType);
+      var A: [0..#myKeys.size] (keyType, valType);
       for (a, key) in zip(A, myKeys) {
         a = (key, vals[key]);
       }
@@ -561,7 +561,7 @@ module Map {
     }
 
     /*
-      Returns a new 1-based array containing a copy of keys. Array is not
+      Returns a new 0-based array containing a copy of keys. Array is not
       guaranteed to be in any particular order.
 
       :return: A new DefaultRectangular array.
@@ -569,7 +569,7 @@ module Map {
     */
     proc keysToArray(): [] keyType {
       _enter();
-      var A: [1..myKeys.size] keyType;
+      var A: [0..#myKeys.size] keyType;
       for (a, k) in zip(A, myKeys) {
         a = k;
       }
@@ -578,7 +578,7 @@ module Map {
     }
 
     /*
-      Returns a new 1-based array containing a copy of values. Array is not
+      Returns a new 0-based array containing a copy of values. Array is not
       guaranteed to be in any particular order.
 
       :return: A new DefaultRectangular array.
@@ -586,7 +586,7 @@ module Map {
     */
     proc valuesToArray(): [] valType {
       _enter();
-      var A: [1..vals.size] valType;
+      var A: [0..#vals.size] valType;
       for (a, v) in zip(A, vals) {
         a = v;
       }
