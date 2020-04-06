@@ -57,9 +57,9 @@ record Population {
   // construct the population in terms of an array of colors passed in
   //
   proc init(colors: [] Color) {
-    chamSpace = colors.domain;
-    chameneos = forall i in 1..colors.size do
-                  new owned Chameneos?(i, colors[i]);
+    chamSpace = {1..colors.size};
+    chameneos = forall i in chamSpace do
+                  new owned Chameneos?(i, colors[i-1]);
   }
 
   //

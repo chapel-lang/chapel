@@ -49,6 +49,6 @@ proc main() {
 
     lines.append(r);
 
-    const elem = lines.pop(1);
+    const elem = lines.pop(0);
   }
 }

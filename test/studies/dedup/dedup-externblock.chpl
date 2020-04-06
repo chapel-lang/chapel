@@ -34,12 +34,13 @@ proc main(args:[] string)
         paths.append(path);
   }
 
-  // Create an array of hashes and file ids
-  // a file id is just the index into the paths array.
-  var hashAndFileId:[1..paths.size] (Hash, int);
-
   // Compute the SHA1 sums using the extern calls
   var pathsArray = paths.toArray();
+
+  // Create an array of hashes and file ids
+  // a file id is just the index into the paths array.
+  var hashAndFileId:[pathsArray.domain] (Hash, int);
+
   forall (id,path) in zip(pathsArray.domain, pathsArray) {
     var mdArray:[0..19] uint(8);
     var data:string;

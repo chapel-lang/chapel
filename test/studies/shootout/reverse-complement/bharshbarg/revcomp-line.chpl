@@ -116,16 +116,16 @@ proc main(args: [] string) {
   input.readUntil("\n".toByte(), data);
 
   sync {     // wait for all process() tasks to complete before continuing
-    var lineStart = data.size + 1;
+    var lineStart = data.size;
     var sectionStart = lineStart;
     while input.readUntil("\n".toByte(), data) > 0 {
       if data[lineStart] == ">".toByte() {
         begin with (ref data) process(data, sectionStart, lineStart-2);
-        sectionStart = data.size+1;
+        sectionStart = data.size;
       }
-      lineStart = data.size + 1;
+      lineStart = data.size;
     }
-    process(data, sectionStart, data.size-1);
+    process(data, sectionStart, data.size-2);
   }
 
   const stdoutBin = openfd(1).writer(iokind.native, locking=false, 

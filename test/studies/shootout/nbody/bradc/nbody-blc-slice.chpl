@@ -68,7 +68,7 @@ record NBodySystem {
     var p: 3*real;
     for b in bodies do
       p += b.v * b.mass;
-    bodies[1].offsetMomentum(p);
+    bodies[0].offsetMomentum(p);
   }
 
   proc advance(dt) {

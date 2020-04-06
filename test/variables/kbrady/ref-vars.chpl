@@ -11,7 +11,7 @@ writeln(x, ' ', y, '\n');
 // Array element modification ////////////
 var A = [1, 2, 3, 4, 5];
 writeln("A  : ", A);
-for i in 1..5 {
+for i in A.domain {
   ref element = A[i];
   element += 1;
 }
@@ -21,8 +21,8 @@ writeln("A' : ", A, '\n');
 // Array of Array element modification ///
 var B = [[1, 2], [3, 4]];
 writeln("B  : ", B);
-for i in 1..2 {
-  for j in 1..2 {
+for i in B.domain {
+  for j in B[1].domain {
     ref element = B[i][j];
     element += 1;
   }

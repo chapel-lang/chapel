@@ -366,7 +366,7 @@ proc getChapelVersionInfo(): VersionInfo {
       }
 
       const split = semver.split(".");
-      chplVersionInfo = new VersionInfo(split[1]:int, split[2]:int, split[3]:int);
+      chplVersionInfo = new VersionInfo(split[0]:int, split[1]:int, split[2]:int);
     } catch e : Error {
       stderr.writeln("Error while getting Chapel version:");
       stderr.writeln(e.message());

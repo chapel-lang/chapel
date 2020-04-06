@@ -59,7 +59,7 @@ proc masonSearch(ref args: list(string)) {
   consumeArgs(args);
 
   // If no query is provided, list all packages in registry
-  const query = if args.size > 0 then args[args.size].toLower()
+  const query = if args.size > 0 then args[args.size-1].toLower()
                 else ".*";
   const pattern = compile(query, ignoreCase=true);
 
@@ -98,8 +98,8 @@ proc masonSearch(ref args: list(string)) {
   // Handle --show flag
   if show {
     if results.size == 1 {
-      writeln('Displaying the latest version: ' + packages[1] + '@' + versions[1]);
-      const brickPath = '/'.join(registries[1], 'Bricks', packages[1], versions[1]) + '.toml';
+      writeln('Displaying the latest version: ' + packages[0] + '@' + versions[0]);
+      const brickPath = '/'.join(registries[0], 'Bricks', packages[0], versions[0]) + '.toml';
       showToml(brickPath);
       exit(0);
     } else if results.size == 0 {
@@ -161,15 +161,15 @@ proc findLatest(packageDir: string): VersionInfo {
 }
 
 proc consumeArgs(ref args : list(string)) {
-  args.pop(1);
-  const sub = args[1];
+  args.pop(0);
+  const sub = args[0];
   assert(sub == "search");
-  args.pop(1);
+  args.pop(0);
 
   const options = {"--no-update", "--debug", "--show"};
 
-  while args.size > 0 && options.contains(args[1]) {
-    args.pop(1);
+  while args.size > 0 && options.contains(args[0]) {
+    args.pop(0);
   }
 }
 

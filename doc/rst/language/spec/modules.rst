@@ -320,7 +320,7 @@ within it available for reference within a given scope.  For top-level modules,
 an ``import`` or ``use`` statement is required before referring to the module's
 name or the symbols it contains within a given lexical scope.
 
-Import statements can also rename the set of symbols that it makes available
+Import statements can also rename the set of symbols that they make available
 within the scope.  For further information about ``import`` statements, see
 :ref:`The_Import_Statement`.
 

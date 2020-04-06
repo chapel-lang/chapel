@@ -421,7 +421,7 @@ argument is initialized to its default value if one is supplied, or to
 its type’s default value otherwise. The formal argument can be modified
 within the function.
 
-The assigment implementing the ``out`` intent is a candidate for
+The assignment implementing the ``out`` intent is a candidate for
 :ref:`Split_Initialization`. As a result, an actual argument might be
 initialized by a call passing the actual by ``out`` intent.
 

@@ -1609,7 +1609,7 @@ the for expression. The iterations for which the condition does not hold
 are not reflected in the result of the for expression.
 
 When a for expression with a filtering predicate is captured into a
-variable, the resulting array has a 1-based one-dimensional domain.
+variable, the resulting array has a 0-based one-dimensional domain.
 
    *Example (yieldPredicates.chpl)*.
 
@@ -1624,12 +1624,14 @@ variable, the resulting array has a 1-based one-dimensional domain.
    .. BLOCK-test-chapelpost
 
       writeln(A);
+      writeln(A.domain);
 
    
 
    .. BLOCK-test-chapeloutput
 
       1 2 4 5 7 8 10
+      {0..6}
 
    declares an array A that is initialized to the integers between 1 and
    10 that are not divisible by 3.

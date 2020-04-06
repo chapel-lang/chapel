@@ -14,10 +14,10 @@ proc run() {
   var (a, b) = mkarray();
   a.verify();
   b.verify();
-  assert(a[1].x == 1);
-  assert(a[2].x == 2);
-  assert(b[1].x == 3);
-  assert(b[2].x == 4);
+  assert(a[0].x == 1);
+  assert(a[1].x == 2);
+  assert(b[0].x == 3);
+  assert(b[1].x == 4);
 }
 
 run();

@@ -525,7 +525,7 @@ proc runAndLog(executable, fileName, ref result, reqNumLocales: int = numLocales
     }
     else if line.startsWith("Flavour") {
       var temp = line.strip().split(":");
-      flavour = temp[2].strip();
+      flavour = temp[1].strip();
       testExecMsg = "";
     }
     else if sep1Found then testExecMsg += line;
@@ -607,7 +607,7 @@ proc addTestResult(ref result, ref localesCountMap, ref testNames,
     when "IncorrectNumLocales" {
       if comm != "none" {
         var strSplit = errMsg.split("=");
-        var reqLocalesStr = strSplit[2].strip().split(",");
+        var reqLocalesStr = strSplit[1].strip().split(",");
         for a in reqLocalesStr do
           if localesCountMap.contains(a: int) then
             localesCountMap[a: int] += 1;

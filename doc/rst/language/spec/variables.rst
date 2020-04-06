@@ -667,7 +667,7 @@ The compiler adds temporary local variables to contain the result of
 nested call expressions. ``g()`` in the statement ``f(g());`` is an
 example of a nested call expression. If the containing statement is an
 initialization expression for some variable, such as ``var x = f(g());``,
-then the tempory local variables for that statement are deinitialized at
+then the temporary local variables for that statement are deinitialized at
 the end of the containing block. Otherwise, the temporary local variables
 are deinitialized at the end of the containing statement.
 
@@ -975,7 +975,7 @@ Copy elision does not apply:
  * when the copy statement is in one branch of a conditional but not in
    the other, or when the other branch does not always ``return`` or
    ``throw``.
- * when the copy statament is in a ``try`` or ``try!`` block which has
+ * when the copy statement is in a ``try`` or ``try!`` block which has
    ``catch`` clauses that mention the variable or which has ``catch``
    clauses that do not always ``throw`` or ``return``.
 

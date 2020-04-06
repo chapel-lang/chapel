@@ -41,7 +41,7 @@ proc masonExample(args) {
   var force = false;
   var noUpdate = false;
   var update = false;
-  var examples: list(string); 
+  var examples: list(string);
   for arg in args {
     if arg == '--show' {
       show = true;
