@@ -416,14 +416,14 @@ it is *copy initialized* or *move initialized* as described in
 its ``init=`` initializer will be used to create the new record.
 
 Copy initialization is implemented by a method named ``init=``, known as the
-*copy initializer*. These methods share the same rules as a normal initializer
-(:ref:`Class_Initializers`), along with some additional restrictions. A copy
-initializer may only accept one argument, which represents the value from which
-the record will be initialized.
+*copy initializer*. A copy initializer may only accept one argument, which
+represents the value from which the record will be initialized. These methods
+share the same rules as a normal initializer (:ref:`Class_Initializers`), along
+with some additional restrictions.
 
-The compiler-generated copy initializer for a non-generic record is simple. It
-accepts an argument of the same type and initializes each field from the
-argument's corresponding field:
+The compiler-generated copy initializer for a non-generic record accepts an
+argument of the same type and simply initializes each field from the argument's
+corresponding field:
 
 .. code-block:: chapel
 
@@ -453,10 +453,11 @@ implement an ``init=`` method with the same signature.
 .. note::
 
   If a user implements their own ``init=`` method, they must also implement an
-  assignment operator for the same record type. *Rationale*: this requirement
-  exists to mitigate hard-to-debug problems by requiring that type authors take
-  responsibility for both ``init=`` and ``=`` implementations, or neither
-  implementation.
+  assignment operator for the same record type. Implementing one without the
+  other will cause the compiler to issue an error. *Rationale*: this
+  requirement exists to mitigate hard-to-debug problems by requiring that type
+  authors take responsibility for both ``init=`` and ``=`` implementations, or
+  neither implementation.
 
 A user may indicate that a type is not copyable by adding a where-clause to
 the ``init=`` implementation that evaluates to ``false``:
@@ -466,10 +467,9 @@ the ``init=`` implementation that evaluates to ``false``:
   proc R.init=(other: R) where false {
   }
 
-The copy initializer for a generic record is slightly more complicated. The
-compiler-generated copy initializer for a generic type uses the expression
-``this.type`` to ensure that the types of the original record and its copy
-are the same:
+The compiler-generated copy initializer for a generic type uses the expression
+``this.type`` as the argument's type to ensure that the types of the original
+record and its copy are the same:
 
 .. code-block:: chapel
 
