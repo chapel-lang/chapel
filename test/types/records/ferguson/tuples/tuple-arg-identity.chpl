@@ -3,16 +3,16 @@ use myrecord;
 var global1, global2: R;
 
 proc fooIn(in rec: (R,R)) {
-  rec(1).verify();
+  rec(0).verify();
   global1.increment();
   global1.verify();
+  rec(0).verify();
+  assert(rec(0).x == 120);
   rec(1).verify();
-  assert(rec(1).x == 120);
-  rec(2).verify();
   global2.increment();
   global2.verify();
-  rec(2).verify();
-  assert(rec(2).x == 140);
+  rec(1).verify();
+  assert(rec(1).x == 140);
 }
 
 proc testIn() {
@@ -37,16 +37,16 @@ testIn();
 
 
 proc fooConstIn(const in rec: (R,R)) {
-  rec(1).verify();
+  rec(0).verify();
   global1.increment();
   global1.verify();
+  rec(0).verify();
+  assert(rec(0).x == 220);
   rec(1).verify();
-  assert(rec(1).x == 220);
-  rec(2).verify();
   global2.increment();
   global2.verify();
-  rec(2).verify();
-  assert(rec(2).x == 240);
+  rec(1).verify();
+  assert(rec(1).x == 240);
 }
 
 proc testConstIn() {
@@ -70,16 +70,16 @@ proc testConstIn() {
 testConstIn();
 
 proc fooConst(const rec: (R,R)) {
-  rec(1).verify();
+  rec(0).verify();
   global1.increment();
   global1.verify();
+  rec(0).verify();
+  assert(rec(0).x == 321);
   rec(1).verify();
-  assert(rec(1).x == 321);
-  rec(2).verify();
   global2.increment();
   global2.verify();
-  rec(2).verify();
-  assert(rec(2).x == 341);
+  rec(1).verify();
+  assert(rec(1).x == 341);
 }
 
 proc testConst() {
@@ -103,16 +103,16 @@ proc testConst() {
 testConst();
 
 proc fooBlank(rec: (R,R)) {
-  rec(1).verify();
+  rec(0).verify();
   global1.increment();
   global1.verify();
+  rec(0).verify();
+  assert(rec(0).x == 421);
   rec(1).verify();
-  assert(rec(1).x == 421);
-  rec(2).verify();
   global2.increment();
   global2.verify();
-  rec(2).verify();
-  assert(rec(2).x == 441);
+  rec(1).verify();
+  assert(rec(1).x == 441);
 }
 
 proc testBlank() {

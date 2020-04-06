@@ -4,16 +4,16 @@ proc myfunction() {
 
   var t: (R,R);
 
-  t(1).setup(x = 20);
+  t(0).setup(x = 20);
+  t(0).verify();
+  assert(t(0).x == 20);
+
+  t(1).setup(x = 40);
   t(1).verify();
-  assert(t(1).x == 20);
+  assert(t(1).x == 40);
 
-  t(2).setup(x = 40);
-  t(2).verify();
-  assert(t(2).x == 40);
-
-  var r1:R = t(1);
-  var r2:R = t(2);
+  var r1:R = t(0);
+  var r2:R = t(1);
 
   r1.verify();
   assert(r1.x == 20);

@@ -581,12 +581,12 @@ proc Stencil.targetLocsIdx(ind: idxType) where rank == 1 {
 
 proc Stencil.targetLocsIdx(ind: rank*idxType) {
   var result: rank*int;
-  for param i in 1..rank do
+  for param i in 0..rank-1 do
     result(i) = max(0, min((targetLocDom.dim(i).size-1):int,
                            (((ind(i) - boundingBox.dim(i).low) *
                              targetLocDom.dim(i).size:idxType) /
                             boundingBox.dim(i).size):int));
-  return if rank == 1 then result(1) else result;
+  return if rank == 1 then result(0) else result;
 }
 
 // TODO: This will not trigger the bounded-coforall optimization
@@ -594,8 +594,8 @@ iter Stencil.activeTargetLocales(const space : domain = boundingBox) {
   const locSpace = {(...space.dims())}; // make a local domain in case 'space' is distributed
   const low = chpl__tuplify(targetLocsIdx(locSpace.first));
   const high = chpl__tuplify(targetLocsIdx(locSpace.last));
-  var dims : rank*range(low(1).type);
-  for param i in 1..rank {
+  var dims : rank*range(low(0).type);
+  for param i in 0..rank-1 {
     dims(i) = low(i)..high(i);
   }
 
@@ -621,9 +621,9 @@ iter Stencil.activeTargetLocales(const space : domain = boundingBox) {
 
 proc chpl__computeBlock(locid, targetLocBox, boundingBox) {
   param rank = targetLocBox.rank;
-  type idxType = chpl__tuplify(boundingBox)(1).idxType;
+  type idxType = chpl__tuplify(boundingBox)(0).idxType;
   var inds: rank*range(idxType);
-  for param i in 1..rank {
+  for param i in 0..rank-1 {
     const lo = boundingBox.dim(i).low;
     const hi = boundingBox.dim(i).high;
     const numelems = hi - lo + 1;
@@ -676,7 +676,7 @@ proc StencilDom.getLocDom(localeIdx) return locDoms(localeIdx);
 //
 proc _matchArgsShape(type rangeType, type scalarType, args) type {
   proc helper(param i: int) type {
-    if i == args.size {
+    if i == args.size-1 {
       if isCollapsedDimension(args(i)) then
         return (scalarType,);
       else
@@ -688,7 +688,7 @@ proc _matchArgsShape(type rangeType, type scalarType, args) type {
         return (rangeType, (... helper(i+1)));
     }
   }
-  return helper(1);
+  return helper(0);
 }
 
 
@@ -725,7 +725,7 @@ iter StencilDom.these(param tag: iterKind) where tag == iterKind.leader {
     type strType = chpl__signedType(idxType);
     const tmpStencil = locDom.myBlock.chpl__unTranslate(wholeLow);
     var locOffset: rank*idxType;
-    for param i in 1..tmpStencil.rank do
+    for param i in 0..tmpStencil.rank-1 do
       locOffset(i) = tmpStencil.dim(i).first/tmpStencil.dim(i).stride:strType;
     // Forward to defaultRectangular
     for followThis in tmpStencil.these(iterKind.leader, maxTasks,
@@ -747,8 +747,8 @@ iter StencilDom.these(param tag: iterKind) where tag == iterKind.leader {
 // stencil communication will be done on a per-locale basis.
 //
 iter StencilDom.these(param tag: iterKind, followThis) where tag == iterKind.follower {
-  proc anyStridable(rangeTuple, param i: int = 1) param
-      return if i == rangeTuple.size then rangeTuple(i).stridable
+  proc anyStridable(rangeTuple, param i: int = 0) param
+      return if i == rangeTuple.size-1 then rangeTuple(i).stridable
              else rangeTuple(i).stridable || anyStridable(rangeTuple, i+1);
 
   if chpl__testParFlag then
@@ -756,7 +756,7 @@ iter StencilDom.these(param tag: iterKind, followThis) where tag == iterKind.fol
 
   var t: rank*range(idxType, stridable=stridable||anyStridable(followThis));
   type strType = chpl__signedType(idxType);
-  for param i in 1..rank {
+  for param i in 0..rank-1 {
     var stride = whole.dim(i).stride: strType;
     // not checking here whether the new low and high fit into idxType
     var low = (stride * followThis(i).low:strType):idxType;
@@ -827,7 +827,7 @@ proc StencilDom.dsiSetIndices(x: domain) {
   whole = x;
   if whole.size > 0 {
     var absFluff : fluff.type;
-    for param i in 1..rank {
+    for param i in 0..rank-1 {
       absFluff(i) = abs(fluff(i) * x.dim(i).stride);
     }
     wholeFluff = whole.expand(absFluff);
@@ -842,7 +842,7 @@ proc StencilDom.dsiSetIndices(x: domain) {
 proc StencilDom.dsiSetIndices(x) {
   if x.size != rank then
     compilerError("rank mismatch in domain assignment");
-  if x(1).idxType != idxType then
+  if x(0).idxType != idxType then
     compilerError("index type mismatch in domain assignment");
   //
   // TODO: This seems weird:
@@ -850,7 +850,7 @@ proc StencilDom.dsiSetIndices(x) {
   whole.setIndices(x);
   if whole.size > 0 {
     var absFluff : fluff.type;
-    for param i in 1..rank {
+    for param i in 0..rank-1 {
       absFluff(i) = abs(fluff(i) * whole.dim(i).stride);
     }
     wholeFluff = whole.expand(absFluff);
@@ -878,7 +878,7 @@ proc StencilDom.dsiLocalSlice(param stridable: bool, ranges) {
 // Create a domain that points to the nearest neighboring locales
 private proc nearestDom(param rank) {
   var nearest : rank*range;
-  for param i in 1..rank do nearest(i) = -1..1;
+  for param i in 0..rank-1 do nearest(i) = -1..1;
   const ND : domain(rank) = nearest;
   return ND;
 }
@@ -889,8 +889,8 @@ proc StencilDom.setup() {
       const myLocDom = locDoms(localeIdx);
       const ND = nearestDom(rank);
 
-      var abstr : rank*whole.dim(1).stride.type;
-      for param i in 1..rank {
+      var abstr : rank*whole.dim(0).stride.type;
+      for param i in 0..rank-1 {
         abstr(i) = abs(whole.dim(i).stride);
       }
 
@@ -925,8 +925,8 @@ proc StencilDom.setup() {
           var skipNeigh = || reduce for (f,t) in zip(fluff, to) do (f == 0 && t != 0);
 
           if !isZeroTuple(to) && !skipNeigh {
-            var dr : rank*whole.dim(1).type;
-            for i in 1..rank {
+            var dr : rank*whole.dim(0).type;
+            for i in 0..rank-1 {
               const fa = fluff(i) * abstr(i);
               const cur = blockDims(i);
 
@@ -953,7 +953,7 @@ proc StencilDom.setup() {
             } else if periodic {
               // sending to a non-adjacent locale
               var offset : rank*idxType;
-              for i in 1..rank {
+              for i in 0..rank-1 {
                 const wd = whole.dim(i);
                 const rd = recvD.dim(i);
                 const mult = if rd.low > wd.high then -1
@@ -1218,8 +1218,8 @@ proc StencilArr.dsiDynamicFastFollowCheck(lead: domain) {
 }
 
 iter StencilArr.these(param tag: iterKind, followThis, param fast: bool = false) ref where tag == iterKind.follower {
-  proc anyStridable(rangeTuple, param i: int = 1) param
-      return if i == rangeTuple.size then rangeTuple(i).stridable
+  proc anyStridable(rangeTuple, param i: int = 0) param
+      return if i == rangeTuple.size-1 then rangeTuple(i).stridable
              else rangeTuple(i).stridable || anyStridable(rangeTuple, i+1);
 
   if chpl__testParFlag {
@@ -1235,7 +1235,7 @@ iter StencilArr.these(param tag: iterKind, followThis, param fast: bool = false)
   var myFollowThis: rank*range(idxType=idxType, stridable=stridable || anyStridable(followThis));
   var lowIdx: rank*idxType;
 
-  for param i in 1..rank {
+  for param i in 0..rank-1 {
     var stride = dom.whole.dim(i).stride;
     // NOTE: Not bothering to check to see if these can fit into idxType
     var low = followThis(i).low * abs(stride):idxType;
@@ -1285,18 +1285,18 @@ proc StencilArr.dsiSerialWrite(f) {
   var binary = f.binary();
   if dom.dsiNumIndices == 0 then return;
   var i : rank*idxType;
-  for dim in 1..rank do
+  for dim in 0..rank-1 do
     i(dim) = dom.dsiDim(dim).low;
   label next while true {
     f <~> do_dsiAccess(true, i);
-    if i(rank) <= (dom.dsiDim(rank).high - dom.dsiDim(rank).stride:strType) {
+    if i(rank-1) <= (dom.dsiDim(rank-1).high - dom.dsiDim(rank-1).stride:strType) {
       if ! binary then f <~> " ";
-      i(rank) += dom.dsiDim(rank).stride:strType;
+      i(rank-1) += dom.dsiDim(rank-1).stride:strType;
     } else {
-      for dim in 1..rank-1 by -1 {
+      for dim in 0..rank-2 by -1 {
         if i(dim) <= (dom.dsiDim(dim).high - dom.dsiDim(dim).stride:strType) {
           i(dim) += dom.dsiDim(dim).stride:strType;
-          for dim2 in dim+1..rank {
+          for dim2 in dim+1..rank-1 {
             f <~> "\n";
             i(dim2) = dom.dsiDim(dim2).low;
           }
@@ -1311,7 +1311,7 @@ proc StencilArr.dsiSerialWrite(f) {
 pragma "no copy return"
 proc StencilArr.dsiLocalSlice(ranges) {
   var low: rank*idxType;
-  for param i in 1..rank {
+  for param i in 0..rank-1 {
     low(i) = ranges(i).low;
   }
   return locArr(dom.dist.targetLocsIdx(low)).myElems((...ranges));
@@ -1319,9 +1319,9 @@ proc StencilArr.dsiLocalSlice(ranges) {
 
 proc _extendTuple(type t, idx: _tuple, args) {
   var tup: args.size*t;
-  var j: int = 1;
+  var j: int = 0;
 
-  for param i in 1..args.size {
+  for param i in 0..args.size-1 {
     if isCollapsedDimension(args(i)) then
       tup(i) = args(i);
     else {
@@ -1335,9 +1335,9 @@ proc _extendTuple(type t, idx: _tuple, args) {
 proc _extendTuple(type t, idx, args) {
   var tup: args.size*t;
   var idxTup = (idx,);
-  var j: int = 1;
+  var j: int = 0;
 
-  for param i in 1..args.size {
+  for param i in 0..args.size-1 {
     if isCollapsedDimension(args(i)) then
       tup(i) = args(i);
     else {
@@ -1350,7 +1350,7 @@ proc _extendTuple(type t, idx, args) {
 
 private inline proc isZeroTuple(t) {
   if isTuple(t) {
-    for param i in 1..t.size do
+    for param i in 0..t.size-1 do
       if t(i) != 0 then return false;
   } else if isIntegral(t) {
     return t == 0;
@@ -1378,7 +1378,7 @@ iter StencilArr.dsiBoundaries() {
 
       if (!dom.dist.targetLocDom.contains(target)) {
         var translated : target.type;
-        for param r in 1..LSA.rank {
+        for param r in 0..LSA.rank-1 {
           if target(r) < low(r) {
             translated(r) = target(r);
           } else if target(r) > high(r) {
@@ -1428,7 +1428,7 @@ iter StencilArr.dsiBoundaries(param tag : iterKind) where tag == iterKind.standa
         // If the target locale is outside the grid, it's a boundary chunk
         if (!dom.dist.targetLocDom.contains(target)) {
           var translated : target.type;
-          for param r in 1..LSA.rank {
+          for param r in 0..LSA.rank-1 {
             if target(r) < low(r) {
               translated(r) = target(r);
             } else if target(r) > high(r) {
@@ -1549,7 +1549,7 @@ proc StencilArr._packedUpdate() {
                                                 myLocDom.NeighDom) {
         // If S.size == 0, no communication is required
         if S.size != 0 {
-          const chunkSize  = max(1, S.dim(rank).size); // avoid divide by zero
+          const chunkSize  = max(1, S.dim(rank-1).size); // avoid divide by zero
           const numChunks = S.size / chunkSize;
           if numChunks >= stencilDistPackedUpdateMinChunks {
             const recvBufIdx = translateIdx(sendBufIdx);
@@ -1574,7 +1574,7 @@ proc StencilArr._packedUpdate() {
       forall (D, S, srcIdx, recvBufIdx) in zip(myLocDom.recvDest, myLocDom.recvSrc,
                                                myLocDom.Neighs,
                                                myLocDom.NeighDom) {
-        const chunkSize  = max(1, S.dim(rank).size); // avoid divide by zero
+        const chunkSize  = max(1, S.dim(rank-1).size); // avoid divide by zero
         const numChunks = S.size / chunkSize;
 
         // If we did a naive update in the previous loop, this iteration does
@@ -1668,15 +1668,15 @@ proc Stencil.init(other: Stencil, privateData,
   this.rank = rank;
   this.idxType = idxType;
   this.ignoreFluff = ignoreFluff;
-  boundingBox = {(...privateData(1))};
-  fluff = privateData(6);
-  periodic = privateData(7);
-  targetLocDom = {(...privateData(2))};
+  boundingBox = {(...privateData(0))};
+  fluff = privateData(5);
+  periodic = privateData(6);
+  targetLocDom = {(...privateData(1))};
   targetLocales = other.targetLocales;
   locDist = other.locDist;
-  dataParTasksPerLocale = privateData(3);
-  dataParIgnoreRunningTasks = privateData(4);
-  dataParMinGranularity = privateData(5);
+  dataParTasksPerLocale = privateData(2);
+  dataParIgnoreRunningTasks = privateData(3);
+  dataParMinGranularity = privateData(4);
 }
 
 override proc Stencil.dsiSupportsPrivatization() param return true;
@@ -1708,18 +1708,18 @@ override proc StencilDom.dsiSupportsPrivatization() param return true;
 proc StencilDom.dsiGetPrivatizeData() return (dist.pid, whole.dims());
 
 proc StencilDom.dsiPrivatize(privatizeData) {
-  var privdist = chpl_getPrivatizedCopy(dist.type, privatizeData(1));
+  var privdist = chpl_getPrivatizedCopy(dist.type, privatizeData(0));
 
   var locDomsTemp: [privdist.targetLocDom]
                       unmanaged LocStencilDom(rank, idxType, stridable)
     = locDoms;
 
   var c = new unmanaged StencilDom(rank, idxType, stridable, ignoreFluff,
-            privdist, locDomsTemp, {(...privatizeData(2))}, fluff, periodic);
+            privdist, locDomsTemp, {(...privatizeData(1))}, fluff, periodic);
 
   if c.whole.size > 0 {
     var absFluff : fluff.type;
-    for param i in 1..rank {
+    for param i in 0..rank-1 {
       absFluff(i) = abs(fluff(i) * c.whole.dim(i).stride);
     }
     c.wholeFluff = c.whole.expand(absFluff);
@@ -1735,7 +1735,7 @@ proc StencilDom.dsiReprivatize(other, reprivatizeData) {
   whole = {(...reprivatizeData)};
   if whole.size > 0 {
     var absFluff : fluff.type;
-    for param i in 1..rank {
+    for param i in 0..rank-1 {
       absFluff(i) = abs(fluff(i) * whole.dim(i).stride);
     }
     wholeFluff = whole.expand(absFluff);
@@ -1849,12 +1849,13 @@ proc StencilDom.numRemoteElems(viewDom, rlo, rid) {
   // NOTE: Not bothering to check to see if rid+1, length, or rlo-1 used
   //  below can fit into idxType
   var blo, bhi:dist.idxType;
-  if rid==(dist.targetLocDom.dim(rank).size - 1) then
-    bhi=viewDom.dim(rank).high;
+  if rid==(dist.targetLocDom.dim(rank-1).size - 1) then
+    bhi=viewDom.dim(rank-1).high;
   else {
-      bhi = dist.boundingBox.dim(rank).low +
-        intCeilXDivByY((dist.boundingBox.dim(rank).high - dist.boundingBox.dim(rank).low +1)*(rid+1):idxType,
-                       dist.targetLocDom.dim(rank).size:idxType) - 1:idxType;
+      bhi = dist.boundingBox.dim(rank-1).low +
+        intCeilXDivByY((dist.boundingBox.dim(rank-1).high - dist.boundingBox.dim(rank-1).low +1)*(rid+1):idxType,
+                       dist.targetLocDom.dim(rank-1).size:idxType) - 1:idxType;
+
   }
 
   return (bhi - (rlo - 1):idxType);

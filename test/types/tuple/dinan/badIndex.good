@@ -1,2 +1,2 @@
-badIndex.chpl:6: error: tuple index 0 is out of bounds
-badIndex.chpl:6: note: tuple elements start at index 1
+badIndex.chpl:8: error: tuple index -2 is out of bounds
+badIndex.chpl:8: note: tuple elements start at index 0

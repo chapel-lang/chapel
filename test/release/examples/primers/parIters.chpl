@@ -279,7 +279,8 @@ count: follower
 //
 iter count(param tag: iterKind, n: int, low: int=1, followThis)
        where tag == iterKind.follower && followThis.size == 1 {
-  const lowBasedIters = followThis(1).translate(low);
+  const (followInds,) = followThis;
+  const lowBasedIters = followInds.translate(low);
 
   if (verbose) then
     writeln("Follower received ", followThis, " as work chunk; shifting to ",

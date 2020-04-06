@@ -20,8 +20,8 @@ module transposed_block_triangular_solve {
     // overwrites the values of A.
     // ------------------------------------------------------
 
-    const diag_block_cols    = L_diag.domain.dim(2),
-          offdiag_block_rows = L_offdiag.domain.dim(1);
+    const diag_block_cols    = L_diag.domain.dim(1),
+          offdiag_block_rows = L_offdiag.domain.dim(0);
 
     //    const x : int;
     //    const my_locale = diag_block_cols.locale;

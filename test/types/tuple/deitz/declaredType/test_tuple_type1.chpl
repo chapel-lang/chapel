@@ -1,6 +1,6 @@
 var t : (int, string);
 
-t(1) = 12;
-t(2) = "hello world";
+t(0) = 12;
+t(1) = "hello world";
 
 writeln(t);

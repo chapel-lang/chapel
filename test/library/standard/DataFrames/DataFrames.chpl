@@ -146,14 +146,13 @@ module DataFrames {
     proc uni(lhs: borrowed TypedSeries(?lhsType), rhs: borrowed TypedSeries(?rhsType),
              unifier: borrowed SeriesUnifier(lhsType)): owned Series
              where lhsType == rhsType {
-      var uni_ords = 1..(lhs.ords.size + rhs.ords.size);
+      var uni_ords = 0..#(lhs.ords.size + rhs.ords.size);
       var uni_rev_idx: [uni_ords] idxType;
       var uni_data: [uni_ords] lhsType;
       var uni_valid_bits: [uni_ords] bool;
 
       var curr_ord = 0;
       for (lhs_v, (lhs_i, lhs_d)) in lhs._items(idxType) {
-        curr_ord += 1;
         uni_rev_idx[curr_ord] = lhs_i;
 
         if rhs.idx!.contains(lhs_i) {
@@ -163,20 +162,21 @@ module DataFrames {
           uni_data[curr_ord] = unifier.f_lhs(lhs_d);
           uni_valid_bits[curr_ord] = lhs_v;
         }
+        curr_ord += 1;
       }
 
       for (rhs_v, (rhs_i, rhs_d)) in rhs._items(idxType) {
         if !lhs.idx!.contains(rhs_i) {
-          curr_ord += 1;
           uni_rev_idx[curr_ord] = rhs_i;
           uni_data[curr_ord] = unifier.f_rhs(rhs_d);
           uni_valid_bits[curr_ord] = rhs_v;
+          curr_ord += 1;
         }
       }
 
-      return new owned TypedSeries(uni_data[1..curr_ord],
-                             new shared TypedIndex(uni_rev_idx[1..curr_ord]),
-                             uni_valid_bits[1..curr_ord]);
+      return new owned TypedSeries(uni_data[0..#curr_ord],
+                             new shared TypedIndex(uni_rev_idx[0..#curr_ord]),
+                             uni_valid_bits[0..#curr_ord]);
     }
 
     override
@@ -201,16 +201,16 @@ module DataFrames {
       var curr_ord = 0;
       for (i, b) in filterSeries.items(idxType) {
         if b && this.contains(i) {
-          curr_ord += 1;
           filter_rev_idx[curr_ord] = i;
           filter_data[curr_ord] = s[i];
           filter_valid_bits[curr_ord] = s.valid(i);
+          curr_ord += 1;
         }
       }
 
-      return new owned TypedSeries(filter_data[1..curr_ord],
-                             new shared TypedIndex(filter_rev_idx[1..curr_ord]),
-                             filter_valid_bits[1..curr_ord]);
+      return new owned TypedSeries(filter_data[0..#curr_ord],
+                             new shared TypedIndex(filter_rev_idx[0..#curr_ord]),
+                             filter_valid_bits[0..#curr_ord]);
     }
 
     override
@@ -427,7 +427,7 @@ module DataFrames {
       super.init();
       eltType = T;
 
-      this.ords = 1..data.size;
+      this.ords = 0..#data.size;
       this.data = data;
       this.valid_bits = true;
     }
@@ -436,7 +436,7 @@ module DataFrames {
       super.init();
       eltType = T;
 
-      this.ords = 1..data.size;
+      this.ords = 0..#data.size;
       this.data = data;
       this.valid_bits = valid_bits;
     }
@@ -446,7 +446,7 @@ module DataFrames {
       eltType = T;
 
       this.idx = idx;
-      this.ords = 1..data.size;
+      this.ords = 0..#data.size;
       this.data = data;
       this.valid_bits = true;
     }
@@ -456,7 +456,7 @@ module DataFrames {
       eltType = T;
 
       this.idx = idx;
-      this.ords = 1..data.size;
+      this.ords = 0..#data.size;
       this.data = data;
       this.valid_bits = valid_bits;
     }
@@ -547,7 +547,7 @@ module DataFrames {
       // TODO: needs Series with Index(int) to remove items not in range
       var filter_data: [ords] eltType;
       for (i, b) in castFilter!.items() {
-        if b && i <= data.size then
+        if b && i < data.size then
           filter_data[i] = this.at(i);
       }
       return new owned TypedSeries(filter_data, this.valid_bits);
@@ -582,14 +582,14 @@ module DataFrames {
         return lhs.idx!.uni(lhs, this, unifier):owned Series;
 
       var uni_ords = if lhs.ords.size > this.ords.size
-                     then 1..lhs.ords.size
-                     else 1..this.ords.size;
+                     then 0..#lhs.ords.size
+                     else 0..#this.ords.size;
       var uni_data: [uni_ords] eltType;
       var uni_valid_bits: [uni_ords] bool;
 
       for i in uni_ords {
-        var inLhs = i <= lhs.ords.size;
-        var inThis = i <= this.ords.size;
+        var inLhs = i < lhs.ords.size;
+        var inThis = i < this.ords.size;
         if inLhs && inThis {
           uni_data[i] = unifier.f(lhs.at(i), this.at(i));
           uni_valid_bits[i] = lhs.valid_at(i) && this.valid_at(i);
@@ -850,7 +850,7 @@ module DataFrames {
           f <~> lab + "   ";
         }
 
-        for i in 1..n {
+        for i in 0..#n {
           f <~> "\n";
           var iStr = createStringWithNewBuffer(i: string);
           f <~> iStr;

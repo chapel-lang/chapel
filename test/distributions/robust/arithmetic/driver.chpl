@@ -84,7 +84,7 @@ const (Dist1D, Dist2D, Dist3D, Dist4D, Dist2D32) = setupDistributions(distType);
 proc fill(param rank, x) {
   if rank == 1 {
     var y: 1*x.type;
-    y(1) = x;
+    y(0) = x;
     return y;
   } else if rank == 2 {
     return (x, x);

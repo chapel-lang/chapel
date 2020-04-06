@@ -292,7 +292,7 @@ helptup1 maxlocreduce1(ar2e* Ab, dom2d col, helpfun1type f) {
 void panelSolve(ar2e* Ab, dom2d panel, ar1i* piv) {
   if (verb) printf("panelSolve\n");
 
-  // for k in panel.dim(2)
+  // for k in panel.dim(1)
   for_dom_d2(k, panel) {
     if (verb) printf("== %d\n", k);
     dom2d col = slice2d(panel, k, sliceMax, k, k);
@@ -333,7 +333,7 @@ void panelSolve(ar2e* Ab, dom2d panel, ar1i* piv) {
 void updateBlockRow(ar2e* Ab, dom2d tl, dom2d tr) {
   if (verb) printf("updateBlockRow\n");
 
-  // for row in tr.dim(1)
+  // for row in tr.dim(0)
   for_dom_d1(row, tr) {
 
     dom2d activeRow = slice2d(tr, row, row, sliceMin, sliceMax);

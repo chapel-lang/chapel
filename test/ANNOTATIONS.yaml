@@ -580,7 +580,7 @@ chameneos-redux:
   10/31/18:
     - Enable parallelism for shape-ful expressions over ranges (#11501)
   03/20/20:
-    - Fix up chameneous benchmarks (#15250)
+    - Fix up chameneos benchmarks (#15250)
 
 CoMD:
   07/26/17:

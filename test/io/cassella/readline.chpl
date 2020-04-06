@@ -8,7 +8,7 @@ use IO;
 // I can't figure out how to get from uint(8) to a string.
 // So do the comparison the other way around.
 proc check_expected(data, expected:string, len) {
-  for i in 1..min(len, expected.numBytes) {
+  for i in 0..#min(len, expected.numBytes) {
     var n = data[i];
     var c = expected[i:byteIndex];
     if n != c.toByte() {
@@ -25,7 +25,7 @@ proc check_expected(data, expected:string, len) {
 }
 
 /*
- * Read amount bytes from input into an array[1..10], and check that
+ * Read amount bytes from input into an array[0..9], and check that
  * the result is expected.  If amount is -1, allow readline() to use
  * its default values for start and amount, but the result should
  * still match expected.
@@ -42,9 +42,9 @@ proc test_readline(amount: int, input: string, expected: string) {
   var numRead: int;
 
 
-  var data: [1..10] uint(8);
+  var data: [0..9] uint(8);
   if amount >= 0 {
-    ret = r.readline(data, numRead, start=1, amount=amount);
+    ret = r.readline(data, numRead, start=0, amount=amount);
   } else {
     ret = r.readline(data, numRead);
   }

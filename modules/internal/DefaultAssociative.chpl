@@ -43,6 +43,7 @@ module DefaultAssociative {
     var idx: idxType;
   }
 
+  // TODO: Would we save compilation time by making this an array?
   proc chpl__primes return
   (23, 53, 89, 191, 383, 761, 1531, 3067, 6143, 12281, 24571, 49139, 98299,
    196597, 393209, 786431, 1572853, 3145721, 6291449, 12582893, 25165813,
@@ -67,7 +68,7 @@ module DefaultAssociative {
     // by design a distributed data structure
     var numEntries: chpl__processorAtomicType(int);
     var tableLock: if parSafe then chpl_LocalSpinlock else nothing;
-    var tableSizeNum = 1;
+    var tableSizeNum = 0;
     var tableSize : int;
     var tableDom = {0..tableSize-1};
     var table: [tableDom] chpl_TableEntry(idxType);
@@ -193,9 +194,9 @@ module DefaultAssociative {
         yield i;
       on this {
         postponeResize = false;
-        if (numEntries.read()*8 < tableSize && tableSizeNum > 1) {
+        if (numEntries.read()*8 < tableSize && tableSizeNum > 0) {
           lockTable();
-          if (numEntries.read()*8 < tableSize && tableSizeNum > 1) {
+          if (numEntries.read()*8 < tableSize && tableSizeNum > 0) {
             _resize(grow=false);
           }
           unlockTable();
@@ -333,7 +334,7 @@ module DefaultAssociative {
     }
   
     proc dsiMember(idx: idxType): bool {
-      return _findFilledSlot(idx)(1);
+      return _findFilledSlot(idx)(0);
     }
   
     override proc dsiAdd(idx) {
@@ -350,7 +351,7 @@ module DefaultAssociative {
       // I checked the C code and couldn't see any call to _addWrapper.
       // I tried to replicate the issue with generic classes but it always
       // worked smoothly.
-      const numInds = _addWrapper(idx)[2];
+      const numInds = _addWrapper(idx)[1];
       return numInds;
     }
 
@@ -418,7 +419,7 @@ module DefaultAssociative {
         } else {
           retval = 0;
         }
-        if (numEntries.read()*8 < tableSize && tableSizeNum > 1) {
+        if (numEntries.read()*8 < tableSize && tableSizeNum > 0) {
           _resize(grow=false);
         }
         unlockTable();
@@ -431,7 +432,7 @@ module DefaultAssociative {
       var threshold = (numKeys + 1) * 2;
       var prime = 0;
       var primeLoc = 0;
-      for i in 1..chpl__primes.size {
+      for i in 0..#chpl__primes.size {
           if chpl__primes(i) > threshold {
             prime = chpl__primes(i);
             primeLoc = i;

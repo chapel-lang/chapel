@@ -15,7 +15,7 @@ iter myParallelIter(param x, type y, z, param tag, followThis)
   where tag==iterKind.follower
 {
 
-  for i in followThis[1] do yield i * z;
+  for i in followThis[0] do yield i * z;
 }
 
 iter myParallelIter(param x, type y, z, param tag) 

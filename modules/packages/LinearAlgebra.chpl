@@ -265,7 +265,7 @@ proc Vector(x: ?t, Scalars...?n)  where isNumericType(t) {
 */
 proc Vector(x: ?t, Scalars...?n, type eltType) where isNumericType(t) {
 
-  if !isNumeric(Scalars(1)) then
+  if !isNumeric(Scalars(0)) then
       compilerError("Vector() expected numeric arguments");
 
   // First element is x, and remaining elements are Scalars
@@ -274,7 +274,7 @@ proc Vector(x: ?t, Scalars...?n, type eltType) where isNumericType(t) {
   V[1] = x: eltType;
 
   forall i in 2..n+1 {
-    V[i] = Scalars[i-1]: eltType;
+    V[i] = Scalars[i-2]: eltType;
   }
 
   return V;
@@ -382,16 +382,16 @@ proc Matrix(const Arrays: ?t  ...?n) where isArrayType(t) && t.rank == 1 {
 */
 proc Matrix(const Arrays: ?t ...?n, type eltType) where isArrayType(t) && t.rank == 1 {
 
-  if Arrays(1).domain.rank != 1 then compilerError("Matrix() expected 1D arrays");
+  if Arrays(0).domain.rank != 1 then compilerError("Matrix() expected 1D arrays");
 
-  const dim2 = 1..Arrays(1).domain.dim(1).size,
+  const dim2 = 1..Arrays(0).domain.dim(0).size,
         dim1 = 1..n;
 
   var M: [{dim1, dim2}] eltType;
 
   forall i in dim1 do {
-    if Arrays(i).size != Arrays(1).size then halt("Matrix() expected arrays of equal length");
-    M[i, ..] = Arrays(i)[..]: eltType;
+    if Arrays(i-1).size != Arrays(0).size then halt("Matrix() expected arrays of equal length");
+    M[i, ..] = Arrays(i-1)[..]: eltType;
   }
 
   return M;
@@ -401,7 +401,7 @@ proc Matrix(const Arrays: ?t ...?n, type eltType) where isArrayType(t) && t.rank
 /* Helper function for setting diagonal to 1. ``idx`` is the minimum */
 private proc _eyeDiagonal(ref A: [?Dom] ?eltType) {
   const (m, n) = A.shape;
-  const idx = if m <= n then 1 else 2;
+  const idx = if m <= n then 0 else 1;
   for i in Dom.dim(idx) do A[i, i] = 1: eltType;
 }
 
@@ -447,11 +447,11 @@ proc setDiag (ref X: [?D] ?eltType, in k: int = 0, val: eltType = 0)
   var start, end = 0;
   if (k >= 0) { // upper or main diagonal
     start = 1;
-    end = D.shape(1) - k;
+    end = D.shape(0) - k;
   }
   else { // lower diagonal
     start = 1 - k;
-    end = D.shape(1);
+    end = D.shape(0);
   }
   forall row in {start..end} {
     X(row, row+k) = val;
@@ -465,7 +465,7 @@ inline proc transpose(D: domain(1)) {
 
 pragma "no doc"
 inline proc transpose(D: domain(2)) {
-  return {D.dim(2), D.dim(1)};
+  return {D.dim(1), D.dim(0)};
 }
 
 
@@ -490,12 +490,12 @@ proc _array.T where this.domain.rank == 1 { return transpose(this); }
 
 */
 proc transpose(A: [?Dom] ?eltType) where isDenseMatrix(A) {
-  if Dom.shape(1) == 1 then
+  if Dom.shape(0) == 1 then
     return reshape(A, transpose(Dom));
-  else if Dom.shape(2) == 1 then
+  else if Dom.shape(0) == 1 then
     return reshape(A, transpose(Dom));
   else {
-    const rDom = {Dom.dim(2), Dom.dim(1)};
+    const rDom = {Dom.dim(1), Dom.dim(0)};
     var C: [rDom] eltType;
 
     [(i, j) in Dom] C[j, i] = A[i, j];
@@ -622,10 +622,10 @@ private proc _matvecMult(A: [?Adom] ?eltType, X: [?Xdom] eltType, trans=false)
   if Adom.rank != 2 || Xdom.rank != 1 then
     compilerError("Ranks are not 2 and 1");
   if !trans {
-    if Adom.shape(2) != Xdom.shape(1) then
+    if Adom.shape(1) != Xdom.shape(0) then
       halt("Mismatched shape in matrix-vector multiplication");
   } else {
-    if Adom.shape(1) != Xdom.shape(1) then
+    if Adom.shape(0) != Xdom.shape(0) then
       halt("Mismatched shape in matrix-vector multiplication");
   }
 
@@ -633,8 +633,8 @@ private proc _matvecMult(A: [?Adom] ?eltType, X: [?Xdom] eltType, trans=false)
   var op = if trans then BLAS.Op.T
            else BLAS.Op.N;
 
-  var Ydom = if trans then {Adom.dim(2)}
-             else {Adom.dim(1)};
+  var Ydom = if trans then {Adom.dim(1)}
+             else {Adom.dim(0)};
 
   var Y: [Ydom] eltType;
   BLAS.gemv(A, X, Y, 1:eltType, 0:eltType, opA=op);
@@ -649,10 +649,10 @@ private proc _matmatMult(A: [?Adom] ?eltType, B: [?Bdom] eltType)
 {
   if Adom.rank != 2 || Bdom.rank != 2 then
     compilerError("Ranks are not 2");
-  if Adom.shape(2) != Bdom.shape(1) then
+  if Adom.shape(1) != Bdom.shape(0) then
     halt("Mismatched shape in matrix-matrix multiplication");
 
-  var C: [Adom.dim(1), Bdom.dim(2)] eltType;
+  var C: [Adom.dim(0), Bdom.dim(1)] eltType;
   BLAS.gemm(A, B, C, 1:eltType, 0:eltType);
   return C;
 }
@@ -720,7 +720,7 @@ proc outer(A: [?Adom] ?eltType, B: [?Bdom] eltType) {
   if Adom.rank != 1 || Bdom.rank != 1 then
     compilerError("Ranks are not 1");
 
-  var C: [{Adom.dim(1), Bdom.dim(1)}] eltType;
+  var C: [{Adom.dim(0), Bdom.dim(0)}] eltType;
   forall (i,j) in C.domain do
     C[i, j] = A[i]*B[j];
   return C;
@@ -735,19 +735,19 @@ proc _matvecMult(A: [?Adom] ?eltType, X: [?Xdom] eltType, trans=false)
   if Adom.rank != 2 || Xdom.rank != 1 then
     compilerError("Ranks are not 2 and 1");
 
-  var Ydom = if trans then {Adom.dim(2)}
-             else {Adom.dim(1)};
+  var Ydom = if trans then {Adom.dim(1)}
+             else {Adom.dim(0)};
 
   var Y: [Ydom] eltType;
 
   // naive algorithm
   if !trans {
-    if Adom.shape(2) != Xdom.shape(1) then
+    if Adom.shape(1) != Xdom.shape(0) then
       halt("Mismatched shape in matrix-vector multiplication");
     forall i in Ydom do
       Y[i] = + reduce (A[i,..]*X[..]);
   } else {
-    if Adom.shape(1) != Xdom.shape(1) then
+    if Adom.shape(0) != Xdom.shape(0) then
       halt("Mismatched shape in matrix-vector multiplication");
     forall i in Ydom do
       Y[i] = + reduce (A[.., i]*X[..]);
@@ -765,7 +765,7 @@ proc _matmatMult(A: [?Adom] ?eltType, B: [?Bdom] eltType)
   if Adom.rank != 2 || Bdom.rank != 2 then
     compilerError("Ranks are not 2 and 2");
 
-  var C: [Adom.dim(1), Bdom.dim(2)] eltType;
+  var C: [Adom.dim(0), Bdom.dim(1)] eltType;
 
   // naive algorithm
   forall (i,j) in C.domain do
@@ -791,7 +791,7 @@ proc inv (ref A: [?Adom] ?eltType, overwrite=false) where usingLAPACK {
   if !isSquare(A) then
     halt("Matrix inverse only supports square matrices");
 
-  const n = Adom.shape(1);
+  const n = Adom.shape(0);
   var ipiv : [1..n] c_int;
 
   if (!overwrite) {
@@ -894,7 +894,7 @@ proc diag(A: [?Adom] ?eltType, k=0) {
 
 private proc _diag_vec(A:[?Adom] ?eltType) {
   const (m, n) = Adom.shape;
-  const d = if m < n then 1 else 2;
+  const d = if m < n then 0 else 1;
   const dim = Adom.dim(d);
 
   var diagonal = Vector(dim, eltType);
@@ -907,7 +907,7 @@ private proc _diag_vec(A:[?Adom] ?eltType) {
 
 private proc _diag_vec(A:[?Adom] ?eltType, k) {
   const (m, n) = Adom.shape;
-  const d = if m < n then 1 else 2;
+  const d = if m < n then 0 else 1;
   const dim = Adom.dim(d);
 
   if k > 0 {
@@ -940,9 +940,9 @@ private proc _diag_vec(A:[?Adom] ?eltType, k) {
 }
 
 private proc _diag_mat(A:[?Adom] ?eltType){
-  var diagonal = Matrix(Adom.dim(1), eltType);
+  var diagonal = Matrix(Adom.dim(0), eltType);
 
-  forall i in Adom.dim(1) do
+  forall i in Adom.dim(0) do
     diagonal[i, i] = A[i];
 
   return diagonal;
@@ -1136,7 +1136,7 @@ proc trace(A: [?D] ?eltType) {
   if D.rank != 2 then compilerError("Ranks not 2");
 
   const (m, n) = A.shape;
-  const d = if m < n then 1 else 2;
+  const d = if m < n then 0 else 1;
 
   var trace = 0: eltType;
   forall i in D.dim(d) with (+ reduce trace) {
@@ -1146,7 +1146,7 @@ proc trace(A: [?D] ?eltType) {
 }
 
 private proc _lu (in A: [?Adom] ?eltType) {
-  const n = Adom.shape(1);
+  const n = Adom.shape(0);
   const LUDom = {1..n, 1..n};
 
   // TODO: Reduce memory usage
@@ -1209,7 +1209,7 @@ proc lu (A: [?Adom] ?eltType) {
   if Adom.rank != 2 then
     halt("Wrong rank for LU factorization");
 
-  if Adom.shape(1) != Adom.shape(2) then
+  if Adom.shape(0) != Adom.shape(1) then
     halt("LU factorization only supports square matrices");
 
   var (LU, ipiv, numSwap) = _lu(A);
@@ -1219,7 +1219,7 @@ proc lu (A: [?Adom] ?eltType) {
 /* Return a new array as the permuted form of `A` according to 
     permutation array `ipiv`.*/
 private proc permute (ipiv: [] int, A: [?Adom] ?eltType, transpose=false) {
-  const n = Adom.shape(1);
+  const n = Adom.shape(0);
   
   var B: [Adom] eltType;
   
@@ -1264,7 +1264,7 @@ proc det (A: [?Adom] ?eltType) {
   if Adom.rank != 2 then
     halt("Wrong rank for computing determinant");
 
-  if Adom.shape(1) != Adom.shape(2) then
+  if Adom.shape(0) != Adom.shape(1) then
     halt("Determinant can only be computed from square matrices");
 
   var (LU,ipiv,numSwap) = _lu(A);
@@ -1273,7 +1273,7 @@ proc det (A: [?Adom] ?eltType) {
   // L[i,i] always = 1, so we only need to take the 
   // diagonal product of U
 
-  return (* reduce [i in Adom.dim(1)] LU[i,i]) * pdet;
+  return (* reduce [i in Adom.dim(0)] LU[i,i]) * pdet;
 }
 
 /* Return the solution ``x`` to the linear system `` L * x = b `` 
@@ -1283,7 +1283,7 @@ proc det (A: [?Adom] ?eltType) {
 */
 proc solve_tril (const ref L: [?Ldom] ?eltType, const ref b: [?bdom] eltType, 
                   unit_diag = true) {
-  const n = Ldom.shape(1);
+  const n = Ldom.shape(0);
   var y = b;
   
   for i in 1..n {
@@ -1304,7 +1304,7 @@ proc solve_tril (const ref L: [?Ldom] ?eltType, const ref b: [?bdom] eltType,
     where ``U`` is an upper triangular matrix.
 */
 proc solve_triu (const ref U: [?Udom] ?eltType, const ref b: [?bdom] eltType) {
-  const n = Udom.shape(1);
+  const n = Udom.shape(0);
   var y = b;
   
   for i in 1..n by -1 {
@@ -1443,7 +1443,7 @@ proc eig(A: [] ?t, param left = false, param right = false)
     return cplx;
   }
 
-  const n = A.domain.dim(1).size;
+  const n = A.domain.dim(0).size;
   if !isSquare(A) then
     halt("Matrix passed to eigvals must be square");
   var copy = A;
@@ -1614,7 +1614,7 @@ proc jacobi(A: [?Adom] ?eltType, ref X: [?Xdom] eltType,
     halt("Wrong shape of input matrix or vector");
   if !isSquare(A) then
     halt("Matrix A is not a square");
-  if Adom.shape(1) != Xdom.shape(1) then
+  if Adom.shape(0) != Xdom.shape(0) then
     halt("Mismatch shape between matrix side length and vector length");
 
   var itern = 0, err: eltType = 1;
@@ -1623,9 +1623,9 @@ proc jacobi(A: [?Adom] ?eltType, ref X: [?Xdom] eltType,
 
   while (itern < maxiter) {
     itern = itern + 1;
-    forall i in Adom.dim(1) {
+    forall i in Adom.dim(0) {
       var sigma = 0.0;
-      for j in Adom.dim(2) {
+      for j in Adom.dim(1) {
         if i!=j then sigma += A(i,j) * X(j);
       }
       t(i) = (b(i) - sigma) / A(i,i);
@@ -1998,28 +1998,28 @@ module Sparse {
     if Adom.rank != 2 || Xdom.rank != 1 then
       compilerError("Ranks are not 2 and 1");
 
-    const Ydom = if trans then {Adom.dim(2)}
-                    else {Adom.dim(1)};
+    const Ydom = if trans then {Adom.dim(1)}
+                    else {Adom.dim(0)};
     var Y: [Ydom] eltType;
 
     if !trans {
-      if Adom.shape(2) != Xdom.shape(1) then
+      if Adom.shape(1) != Xdom.shape(0) then
         halt("Mismatched shape in matrix-vector multiplication");
         // TODO: Loop over non-zero rows only
-        forall i in Adom.dim(1) {
-          for j in Adom.dimIter(2, i) {
+        forall i in Adom.dim(0) {
+          for j in Adom.dimIter(1, i) {
             Y[i] += A[i, j] * X[j];
           }
         }
     } else {
-      if Adom.shape(1) != Xdom.shape(1) then
+      if Adom.shape(0) != Xdom.shape(0) then
         halt("Mismatched shape in matrix-vector multiplication");
 
       // Ensure same domain indices
-      ref X2 = X.reindex(Adom.dim(1));
+      ref X2 = X.reindex(Adom.dim(0));
 
-      forall i in Adom.dim(1) with (+ reduce Y) {
-        for j in Adom.dimIter(2, i) {
+      forall i in Adom.dim(0) with (+ reduce Y) {
+        for j in Adom.dimIter(1, i) {
           Y[j] += A[i, j] * X2[i];
         }
       }
@@ -2219,8 +2219,8 @@ module Sparse {
     var Dom = transpose(Adom);
     var B: [Dom] eltType;
 
-    forall i in Adom.dim(1) {
-      for j in Adom.dimIter(2, i) {
+    forall i in Adom.dim(0) {
+      for j in Adom.dimIter(1, i) {
         B[j, i] = A[i, j];
       }
     }
@@ -2374,7 +2374,7 @@ module Sparse {
   proc eye(Dom: domain, type eltType=real) where isCSDom(Dom) {
     const (m,n) = Dom.shape;
     var D = CSRDomain(Dom.parentDom);
-    const idx = if m <= n then 1 else 2;
+    const idx = if m <= n then 0 else 1;
     for i in Dom.parentDom.dim(idx) {
       D += (i,i);
     }
@@ -2390,9 +2390,9 @@ module Sparse {
               b: [Xdom] eltType, tol = 0.0001, maxiter = 1000) where isCSArr(A) {
     if Adom.rank != 2 || X.rank != 1 || b.rank != 1 then
       halt("Wrong shape of input matrix or vector");
-    if Adom.shape(1) != Adom.shape(2) then
+    if Adom.shape(0) != Adom.shape(1) then
       halt("Matrix A is not a square");
-    if Adom.shape(1) != Xdom.shape(1) then
+    if Adom.shape(0) != Xdom.shape(0) then
       halt("Mismatch shape between matrix side length and vector length");
   
     var itern = 0, err: eltType = 1;
@@ -2401,9 +2401,9 @@ module Sparse {
   
     while (itern < maxiter) {
       itern = itern + 1;
-      forall i in Adom.dim(1) {
+      forall i in Adom.dim(0) {
         var sigma = 0.0;
-        for j in Adom.dimIter(2,i) {
+        for j in Adom.dimIter(1,i) {
           if i!=j then sigma += A(i,j) * X(j);
         }
         t(i) = (b(i) - sigma) / A(i,i);
@@ -2423,17 +2423,17 @@ module Sparse {
       if D.rank != 2 then
         halt("Wrong rank for setDiag");
 
-      if D.shape(1) != D.shape(2) then
+      if D.shape(0) != D.shape(1) then
         halt("setDiag only supports square matrices");
 
       var start, end = 0;
       if (k >= 0) { // upper or main diagonal
         start = 1;
-        end = D.shape(1) - k;
+        end = D.shape(0) - k;
       }
       else { // lower diagonal
         start = 1 - k;
-        end = D.shape(1);
+        end = D.shape(0);
       }
       var indices : [start..end] (D.idxType, D.idxType);
       forall ind in {start..end} {

@@ -1,1 +1,1 @@
-test_array_rankchange_error.chpl:2: error: halt reached - array slice out of bounds in dimension 2: 1..6
+test_array_rankchange_error.chpl:2: error: halt reached - array slice out of bounds in dimension 1: 1..6

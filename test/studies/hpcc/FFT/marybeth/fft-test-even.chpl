@@ -109,7 +109,7 @@ proc dfft(A: [?AD] complex, W) {
   var lasti:int;
   var m, m2: int;
 
-  const n = AD.dim(1).size;
+  const n = AD.dim(0).size;
 
   for i in 2..logN by 2 {
     m = l << 2;

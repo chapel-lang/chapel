@@ -3,7 +3,7 @@ proc tupleToArray(t:int...?k) : [1..k] int
         var retr : [1..k] int;
         for i in 1..k
         {
-            retr(i) = t(i);
+            retr(i) = t(i-1);
         }
 
         return retr;

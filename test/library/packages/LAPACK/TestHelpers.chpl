@@ -103,7 +103,7 @@ module TestHelpers {
       assert( dimensions.size <= 2 );
       
       if dimensions.size == 1 {
-        var arrayRange: range = dimensions[1];
+        var arrayRange: range = dimensions[0];
         var shift = arrayRange.low - 1;
         //writeln( "(i, j, idx )" );
         for (i,j) in matrix_domain {
@@ -115,14 +115,14 @@ module TestHelpers {
 
         }
       } else {
-        var array_leading = if arrayIsRowMajor then 1 else 2;
-        var array_following = 3-array_leading;
-        var trans = ( d.dim(array_leading).low - this.matrix_domain.dim(1).low,
-                      d.dim(array_following).low - this.matrix_domain.dim(2).low );
+        var array_leading = if arrayIsRowMajor then 0 else 1;
+        var array_following = 1-array_leading;
+        var trans = ( d.dim(array_leading).low - this.matrix_domain.dim(0).low,
+                      d.dim(array_following).low - this.matrix_domain.dim(1).low );
                       
         for (i,j) in this.matrix_domain {
-          this[i,j] = if arrayIsRowMajor then array[i+trans[1],j+trans[2]] 
-                                         else array[j+trans[1],i+trans[2]] ;
+          this[i,j] = if arrayIsRowMajor then array[i+trans[0],j+trans[1]] 
+                                         else array[j+trans[0],i+trans[1]] ;
         }
       }
     }
@@ -139,21 +139,19 @@ module TestHelpers {
     }
     
     proc this( idx: 2*int ) ref : data_type {
-      return this( idx[1], idx[2] );
+      return this( idx[0], idx[1] );
     }
     
     proc rowRange : range {
-      return matrix_domain.dim(1);
+      return matrix_domain.dim(0);
     }
     
     proc columnRange : range {
-      return matrix_domain.dim(2);
+      return matrix_domain.dim(1);
     }
     
     proc toString(): string {
       var retstring: string = "";
-      var leading = if row_major then 1 else 2;
-      var following = 3 - leading;
       for i in this.rowRange{
         retstring += if i == 1 then ( "[ " )
                                else ( "  " );
@@ -177,7 +175,7 @@ module TestHelpers {
     }
     
     proc leadingDimension: int {
-      return this.data_domain.dim(2).size;
+      return this.data_domain.dim(1).size;
     }
     
     proc order: int {

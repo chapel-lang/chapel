@@ -19,13 +19,13 @@ proc main  {
 
   Ttimer.start();
   for i in 1..iters {
-    for j in 1..n {
+    for j in 0..#n {
       TTT(j) += i - 1.0;
     }
   }
   Ttimer.stop();
 
-  writeln((AAA(1), AAA(n)), (TTT(1), TTT(n)));
+  writeln((AAA(1), AAA(n)), (TTT(0), TTT(n-1)));
 
   if printTimes {
     writeln("Array time: ", Atimer.elapsed());

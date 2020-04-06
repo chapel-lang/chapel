@@ -671,7 +671,7 @@ static bool isVoidOrVoidTupleType(Type* type) {
     }
   }
   if (type->symbol->hasFlag(FLAG_STAR_TUPLE)) {
-    Symbol* field = type->getField("x1", false);
+    Symbol* field = type->getField("x0", false);
     if (field == NULL || field->type == dtNothing) {
       return true;
     }

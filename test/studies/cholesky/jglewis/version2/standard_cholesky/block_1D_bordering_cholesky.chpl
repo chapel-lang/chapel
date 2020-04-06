@@ -78,9 +78,9 @@ module block_1D_bordering_cholesky {
     // equations.
     // -----------------------------------------------------------------------
 
-    assert ( A.domain.dim (1) == A.domain.dim (2) );
+    assert ( A.domain.dim (0) == A.domain.dim (1) );
 
-    const A_rc_indices = A.domain.dim (1);  // row and column indices of A
+    const A_rc_indices = A.domain.dim (0);  // row and column indices of A
     var   pos_def : bool;
 
     // compute L from A

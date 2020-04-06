@@ -271,7 +271,7 @@ class MDNode
     var max_dim_length = 0;
     bisect_dim = 0;
     
-    for d in 1..rank
+    for d in 0..rank-1
     {
 
       //--------------------------------------------------------------------
@@ -286,7 +286,7 @@ class MDNode
 
         if dim_length > max_dim_length {
           max_dim_length = dim_length;
-          bisect_dim = d;
+          bisect_dim = d+1;
         }
 
       }
@@ -308,13 +308,13 @@ class MDNode
     if bisect_dim > 0
     {    
       
-      var low_offset  = D.low(bisect_dim) - Domain.low(bisect_dim);
-      var high_offset = Domain.high(bisect_dim) - D.high(bisect_dim);
+      var low_offset  = D.low(bisect_dim-1) - Domain.low(bisect_dim-1);
+      var high_offset = Domain.high(bisect_dim-1) - D.high(bisect_dim-1);
       
       if low_offset > high_offset then
-        right_low = D.low(bisect_dim);
+        right_low = D.low(bisect_dim-1);
       else
-        right_low = D.high(bisect_dim) + Domain.stride(bisect_dim);
+        right_low = D.high(bisect_dim-1) + Domain.stride(bisect_dim-1);
     }
     
   }
@@ -364,7 +364,7 @@ class MDNode
       
       //---- Left child ----
       
-      if D.low(bisect_dim) <= right_low - Domain.stride(bisect_dim)
+      if D.low(bisect_dim-1) <= right_low - Domain.stride(bisect_dim-1)
       {
         if left==nil then createLeft( filled=false );
         left!.add( D );
@@ -373,7 +373,7 @@ class MDNode
       
       //---- Right child ----
       
-      if D.high(bisect_dim) >= right_low
+      if D.high(bisect_dim-1) >= right_low
       {
         if right==nil then createRight( filled=false );
         right!.add( D );
@@ -439,7 +439,7 @@ class MDNode
       
       //---- Left child ----
       
-      if D.low(bisect_dim) <= right_low - Domain.stride(bisect_dim)  &&  left!=nil
+      if D.low(bisect_dim-1) <= right_low - Domain.stride(bisect_dim-1)  &&  left!=nil
       {
         left!.subtract( D );
         if left!.bisect_dim == -1 then { delete left;  left=nil; }
@@ -448,7 +448,7 @@ class MDNode
 
       //---- Right child ----
 
-      if D.high(bisect_dim) >= right_low  &&  right!=nil
+      if D.high(bisect_dim-1) >= right_low  &&  right!=nil
       {
         right!.subtract( D );
         if right!.bisect_dim == -1 then { delete right;  right=nil; }
@@ -558,14 +558,14 @@ class MDNode
   proc intersectsLeft( D: domain(rank, stridable=stridable) )
   {
     assert( bisect_dim>0, "Error: Called MDNode.intersectsLeft with bisect_dim<=0");
-    return D.low(bisect_dim) <= right_low - Domain.stride(bisect_dim);
+    return D.low(bisect_dim-1) <= right_low - Domain.stride(bisect_dim-1);
   }
   
   
   proc intersectsRight( D: domain(rank, stridable=stridable) )
   {
     assert( bisect_dim>0, "Error: Called MDNode.intersectsRight with bisect_dim<=0");
-    return D.high(bisect_dim) >= right_low;
+    return D.high(bisect_dim-1) >= right_low;
   }
 
 
@@ -575,10 +575,10 @@ class MDNode
     
     var subranges: rank*range(stridable=stridable);
     
-    for d in 1..rank            do subranges(d) = Domain.dim(d);
-    for d in bisect_dim+1..rank do subranges(d) = Domain.dim(d);    
+    for d in 0..rank-1          do subranges(d) = Domain.dim(d);
+    for d in bisect_dim..rank-1 do subranges(d) = Domain.dim(d);    
     
-    subranges(bisect_dim) = Domain.low(bisect_dim) .. right_low-Domain.stride(bisect_dim) by Domain.stride(bisect_dim);
+    subranges(bisect_dim-1) = Domain.low(bisect_dim-1) .. right_low-Domain.stride(bisect_dim-1) by Domain.stride(bisect_dim-1);
     
     var child_domain: domain(rank, stridable=stridable) = subranges;
     
@@ -594,10 +594,10 @@ class MDNode
     
     var subranges: rank*range(stridable=stridable);
     
-    for d in 1..rank            do subranges(d) = Domain.dim(d);
-    for d in bisect_dim+1..rank do subranges(d) = Domain.dim(d);
+    for d in 0..rank-1          do subranges(d) = Domain.dim(d);
+    for d in bisect_dim..rank-1 do subranges(d) = Domain.dim(d);
     
-    subranges(bisect_dim) = right_low .. Domain.high(bisect_dim) by Domain.stride(bisect_dim);
+    subranges(bisect_dim-1) = right_low .. Domain.high(bisect_dim-1) by Domain.stride(bisect_dim-1);
     
     var child_domain: domain(rank, stridable=stridable) = subranges;
     
@@ -645,7 +645,7 @@ proc MDNode.extendToContain( D: domain(rank,stridable=stridable) ) : unmanaged M
   var min_dim_length = Domain.size+1;
   var ext_d          = 0;
     
-  for d in 1..rank {
+  for d in 0..rank-1 {
     
     if D.high(d) > Domain.high(d) || D.low(d) < Domain.low(d) {
       dim_length = Domain.dim(d).size;
@@ -681,8 +681,8 @@ proc MDNode.extendToContain( D: domain(rank,stridable=stridable) ) : unmanaged M
     var subranges: rank*range(stridable=stridable);
     var D_temp:    domain(rank,stridable=stridable);
     
-    for d in 1..ext_d-1    do subranges(d) = Domain.dim(d);  
-    for d in ext_d+1..rank do subranges(d) = Domain.dim(d);
+    for d in 0..ext_d-1    do subranges(d) = Domain.dim(d);  
+    for d in ext_d+1..rank-1 do subranges(d) = Domain.dim(d);
     
     
     //===> Create parent and sibling node ===>   
