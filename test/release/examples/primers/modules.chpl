@@ -321,7 +321,7 @@ module MainModule {
 
     /* The only way to import multiple modules in a single statement is to name
        a shared parent module.  We will talk about this more in
-       :ref:`Nested_Modules`.
+       :ref:`Primer_Nested_Modules`.
     */
 
 
@@ -560,7 +560,7 @@ module MainModule {
        but doing so will not enable unqualified access to the enum's constants.
     */
 
-    /* .. _Nested_Modules:
+    /* .. _Primer_Nested_Modules:
 
        Nested Modules
        --------------
