@@ -148,7 +148,7 @@ chplvis: compiler third-party-fltk FORCE
 	cd tools/chplvis && $(MAKE)
 	cd tools/chplvis && $(MAKE) install
 
-mason: chpldoc FORCE
+mason: chpldoc notcompiler FORCE
 	cd tools/mason && $(MAKE) && $(MAKE) install
 
 c2chapel: FORCE
