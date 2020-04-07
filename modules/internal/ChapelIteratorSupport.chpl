@@ -36,7 +36,7 @@
   be moved to a standard module and will likely require a ``use`` statement to
   make it available.
  */
-pragma "error mode fatal" // avoid compiler errors here
+pragma "error mode fatal"
 pragma "unsafe"
 module ChapelIteratorSupport {
   private use ChapelStandard;
@@ -640,6 +640,33 @@ module ChapelIteratorSupport {
     return iterables.size == 1 && isRefIter(_getIterator(iterables(0)));
   }
 
+
+  // DEV NOTES:
+  //
+  // 3 versions of the iterators exist for each iterKind: a ref and a val
+  // iterator that take a single iterable and a version that takes a tuple of
+  // iterables. The refness of a tuple of iterables is handled automatically by
+  // tuple semantics, and it's only for the single iterable that we need an
+  // explicit ref and non-ref version. It would be ideal if there was an easier
+  // way to provide a wrapper iterator. Something to keep in mind of L/F 2.0?
+  //
+  // Note that no type checking is done on the argument since if a non-iterable
+  // is called it will result in the same error message to the user anyways
+  // since these are just wrapper iterators.
+  //
+  // Also note that we can currently rely on all parallel iterators having a
+  // serial version as well since we always resolve the serial iterator.
+  //
+  // It would be nice to warn the user that the "zip" keyword isn't needed.
+  // That's easy to do for the parallel case since the leader/follower would do
+  // the warning, but there's no way without compiler involvement to do that
+  // for the serial case that I can think of. Perhaps a new flag on the iter
+  // such as "non-zipperable iterator"?
+
+  //
+  // serial versions.
+  //
+
   /*
      Vectorize only "wrapper" iterator:
 
@@ -695,32 +722,6 @@ module ChapelIteratorSupport {
      iterators being zipped must be wrapped by a ``vectorizeOnly`` iterator.
      Future releases may explicitly prevent the use ``zip`` with this iterator.
   */
-
-  // DEV NOTES:
-  //
-  // 3 versions of the iterators exist for each iterKind: a ref and a val
-  // iterator that take a single iterable and a version that takes a tuple of
-  // iterables. The refness of a tuple of iterables is handled automatically by
-  // tuple semantics, and it's only for the single iterable that we need an
-  // explicit ref and non-ref version. It would be ideal if there was an easier
-  // way to provide a wrapper iterator. Something to keep in mind of L/F 2.0?
-  //
-  // Note that no type checking is done on the argument since if a non-iterable
-  // is called it will result in the same error message to the user anyways
-  // since these are just wrapper iterators.
-  //
-  // Also note that we can currently rely on all parallel iterators having a
-  // serial version as well since we always resolve the serial iterator.
-  //
-  // It would be nice to warn the user that the "zip" keyword isn't needed.
-  // That's easy to do for the parallel case since the leader/follower would do
-  // the warning, but there's no way without compiler involvement to do that
-  // for the serial case that I can think of. Perhaps a new flag on the iter
-  // such as "non-zipperable iterator"?
-
-  //
-  // serial versions.
-  //
   pragma "vectorize yielding loops"
   iter vectorizeOnly(iterables...) where singleValIter(iterables) {
     for i in iterables(0) do yield i;
