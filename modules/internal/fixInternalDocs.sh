@@ -230,7 +230,7 @@ file="./Bytes.rst"
 fixTitle "Bytes" $file
 removeUsage $file
 
-## End of String ##
+## End of Bytes ##
 
 ## UtilMisc_forDocs ##
 
