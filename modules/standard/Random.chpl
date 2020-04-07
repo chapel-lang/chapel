@@ -488,13 +488,13 @@ module Random {
 
     /*
       Advances/rewinds the stream to the `n`-th value in the sequence.
-      The first value is with n=1.  n must be > 0, otherwise an
+      The first value corresponds to n=0.  n must be >= 0, otherwise an
       IllegalArgumentError is thrown.
 
-      :arg n: The position in the stream to skip to.  Must be > 0.
+      :arg n: The position in the stream to skip to.  Must be >= 0.
       :type n: `integral`
 
-      :throws IllegalArgumentError: When called with non-positive `n` value.
+      :throws IllegalArgumentError: When called with negative `n` value.
      */
     proc skipToNth(n: integral) throws {
       compilerError("RandomStreamInterface.skipToNth called");
@@ -502,15 +502,15 @@ module Random {
 
     /*
       Advance/rewind the stream to the `n`-th value and return it
-      (advancing the stream by one).  n must be > 0, otherwise an
+      (advancing the stream by one).  n must be >= 0, otherwise an
       IllegalArgumentError is thrown.  This is equivalent to
       :proc:`skipToNth()` followed by :proc:`getNext()`.
 
-      :arg n: The position in the stream to skip to.  Must be > 0.
+      :arg n: The position in the stream to skip to.  Must be >= 0.
       :type n: `integral`
 
       :returns: The `n`-th value in the random stream as type :type:`eltType`.
-      :throws IllegalArgumentError: When called with non-positive `n` value.
+      :throws IllegalArgumentError: When called with negative `n` value.
      */
     proc getNth(n: integral): eltType throws {
       compilerError("RandomStreamInterface.getNth called");
@@ -837,8 +837,8 @@ module Random {
 
       pragma "no doc"
       proc PCGRandomStreamPrivate_skipToNth_noLock(in n: integral) {
-        PCGRandomStreamPrivate_count = n;
-        PCGRandomStreamPrivate_rngs = randlc_skipto(eltType, seed, n);
+        PCGRandomStreamPrivate_count = n+1;
+        PCGRandomStreamPrivate_rngs = randlc_skipto(eltType, seed, n+1);
       }
 
       /*
@@ -903,17 +903,17 @@ module Random {
 
       /*
         Advances/rewinds the stream to the `n`-th value in the sequence.
-        The first value is with n=1.  n must be > 0, otherwise an
+        The first value corresponds to n=0.  n must be >= 0, otherwise an
         IllegalArgumentError is thrown.
 
-        :arg n: The position in the stream to skip to.  Must be > 0.
+        :arg n: The position in the stream to skip to.  Must be >= 0.
         :type n: `integral`
 
-        :throws IllegalArgumentError: When called with non-positive `n` value.
+        :throws IllegalArgumentError: When called with negative `n` value.
        */
       proc skipToNth(n: integral) throws {
-        if n <= 0 then
-          throw new owned IllegalArgumentError("PCGRandomStream.skipToNth(n) called with non-positive 'n' value " + n:string);
+        if n < 0 then
+          throw new owned IllegalArgumentError("PCGRandomStream.skipToNth(n) called with negative 'n' value " + n:string);
         _lock();
         PCGRandomStreamPrivate_skipToNth_noLock(n);
         _unlock();
@@ -921,19 +921,19 @@ module Random {
 
       /*
         Advance/rewind the stream to the `n`-th value and return it
-        (advancing the stream by one).  n must be > 0, otherwise an
+        (advancing the stream by one).  n must be >= 0, otherwise an
         IllegalArgumentError is thrown.  This is equivalent to
         :proc:`skipToNth()` followed by :proc:`getNext()`.
 
-        :arg n: The position in the stream to skip to.  Must be > 0.
+        :arg n: The position in the stream to skip to.  Must be >= 0.
         :type n: `integral`
 
         :returns: The `n`-th value in the random stream as type :type:`eltType`.
-        :throws IllegalArgumentError: When called with non-positive `n` value.
+        :throws IllegalArgumentError: When called with negative `n` value.
        */
       proc getNth(n: integral): eltType throws {
-        if (n <= 0) then
-          throw new owned IllegalArgumentError("PCGRandomStream.getNth(n) called with non-positive 'n' value " + n:string);
+        if (n < 0) then
+          throw new owned IllegalArgumentError("PCGRandomStream.getNth(n) called with negative 'n' value " + n:string);
         _lock();
         PCGRandomStreamPrivate_skipToNth_noLock(n);
         const result = PCGRandomStreamPrivate_getNext_noLock(eltType);
@@ -1084,7 +1084,7 @@ module Random {
         _lock();
         const start = PCGRandomStreamPrivate_count;
         PCGRandomStreamPrivate_count += D.size.safeCast(int(64));
-        PCGRandomStreamPrivate_skipToNth_noLock(PCGRandomStreamPrivate_count);
+        PCGRandomStreamPrivate_skipToNth_noLock(PCGRandomStreamPrivate_count-1);
         _unlock();
         return PCGRandomPrivate_iterate(resultType, D, seed, start);
       }
@@ -2382,6 +2382,7 @@ module Random {
 
       pragma "no doc"
       proc NPBRandomStreamPrivate_skipToNth_noLock(in n: integral) {
+        n += 1;
         if eltType == complex then n = n*2 - 1;
         NPBRandomStreamPrivate_count = n;
         NPBRandomStreamPrivate_cursor = randlc_skipto(seed, n);
@@ -2404,17 +2405,17 @@ module Random {
 
       /*
         Advances/rewinds the stream to the `n`-th value in the sequence.
-        The first value is with n=1.  n must be > 0, otherwise an
+        The first value corresponds to n=0.  n must be >= 0, otherwise an
         IllegalArgumentError is thrown.
 
-        :arg n: The position in the stream to skip to.  Must be > 0.
+        :arg n: The position in the stream to skip to.  Must be >= 0.
         :type n: `integral`
 
-        :throws IllegalArgumentError: When called with non-positive `n` value.
+        :throws IllegalArgumentError: When called with negative `n` value.
        */
       proc skipToNth(n: integral) throws {
-        if n <= 0 then
-          throw new owned IllegalArgumentError("NPBRandomStream.skipToNth(n) called with non-positive 'n' value " + n:string);
+        if n < 0 then
+          throw new owned IllegalArgumentError("NPBRandomStream.skipToNth(n) called with negative 'n' value " + n:string);
         _lock();
         NPBRandomStreamPrivate_skipToNth_noLock(n);
         _unlock();
@@ -2422,19 +2423,19 @@ module Random {
 
       /*
         Advance/rewind the stream to the `n`-th value and return it
-        (advancing the stream by one).  n must be > 0, otherwise an
+        (advancing the stream by one).  n must be >= 0, otherwise an
         IllegalArgumentError is thrown.  This is equivalent to
         :proc:`skipToNth()` followed by :proc:`getNext()`.
 
-        :arg n: The position in the stream to skip to.  Must be > 0.
+        :arg n: The position in the stream to skip to.  Must be >= 0.
         :type n: `integral`
 
         :returns: The `n`-th value in the random stream as type :type:`eltType`.
-        :throws IllegalArgumentError: When called with non-positive `n` value.
+        :throws IllegalArgumentError: When called with negative `n` value.
        */
       proc getNth(n: integral): eltType throws {
-        if (n <= 0) then
-          throw new owned IllegalArgumentError("NPBRandomStream.getNth(n) called with non-positive 'n' value " + n:string);
+        if (n < 0) then
+          throw new owned IllegalArgumentError("NPBRandomStream.getNth(n) called with negative 'n' value " + n:string);
         _lock(); 
         NPBRandomStreamPrivate_skipToNth_noLock(n);
         const result = NPBRandomStreamPrivate_getNext_noLock();
@@ -2490,7 +2491,7 @@ module Random {
         _lock();
         const start = NPBRandomStreamPrivate_count;
         NPBRandomStreamPrivate_count += D.size.safeCast(int(64));
-        NPBRandomStreamPrivate_skipToNth_noLock(NPBRandomStreamPrivate_count);
+        NPBRandomStreamPrivate_skipToNth_noLock(NPBRandomStreamPrivate_count-1);
         _unlock();
         return NPBRandomPrivate_iterate(resultType, D, seed, start);
       }

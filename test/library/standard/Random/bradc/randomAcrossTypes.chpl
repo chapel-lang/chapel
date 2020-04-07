@@ -52,11 +52,11 @@ writeln(C);
 // Check getNth() method
 //
 for i in 1..8 {
-  A[i] = rs4.getNth(i);
-  B[i] = rs5.getNth(i);
+  A[i] = rs4.getNth(i-1);
+  B[i] = rs5.getNth(i-1);
 }
 for i in 1..4 {
-  C[i] = rs6.getNth(i);
+  C[i] = rs6.getNth(i-1);
 }
 writeln(A);
 writeln(B);
@@ -66,13 +66,13 @@ writeln(C);
 // Check skipToNth()/getNext() methods
 //
 for i in 1..8 {
-  rs4.skipToNth(i);
+  rs4.skipToNth(i-1);
   A[i] = rs4.getNext();
-  rs5.skipToNth(i);
+  rs5.skipToNth(i-1);
   B[i] = rs5.getNext();
 }
 for i in 1..4 {
-  rs6.skipToNth(i);
+  rs6.skipToNth(i-1);
   C[i] = rs6.getNext();
 }
 writeln(A);
