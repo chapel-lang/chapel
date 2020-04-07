@@ -543,7 +543,7 @@ def translateOutput(output):
     xlates = (('slurmstepd: Munge decode failed: Expired credential',
                'Jira 18 -- Expired slurm credential for'),
               ('output file from job .* does not exist',
-               'Jira 17 -- Missing output file for'),
+               'private issue #906 -- Missing output file for'),
               ('aprun: Unexpected close of the apsys control connection',
                'Jira 193 -- Unexpected close of apsys for'),
               ('qsub: cannot connect to server sdb',
