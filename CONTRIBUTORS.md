@@ -7,7 +7,7 @@ Chapel release:
 Contributors to the Chapel 1.21 and 1.22 releases
 -------------------------------------------------
 * Ben Albrecht, [HPE]
-* Sourish Ash, invidividual contributor
+* Souris Ash, invidividual contributor
 * Akshansh Bhanjana, individual contributor
 * Ankush Bhardwaj, individual contributor
 * Paul Cassella, [HPE]
