@@ -356,7 +356,7 @@ concrete or semi-concrete
    outputs a quote from the given statesman. Note that enumerated
    constants must be prefixed by the enumerated type name and a dot
    unless a use statement is employed
-   (see :ref:`The_Use_Statement`).
+   (see :ref:`The_Use_Statement` and :ref:`Using_Modules`).
 
 It is possible to iterate over an enumerated type. The loop body will be
 invoked on each named constant in the enum. The following method is also
