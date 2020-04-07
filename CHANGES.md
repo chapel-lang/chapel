@@ -4,37 +4,37 @@ Release Changes List
 version 1.22.0
 ==============
 
-Twenty-fifth public release of Chapel, April 16, 2020
+Twenty-fifth public release of Chapel, April 16, 2020  
 Second release candidate for Chapel 2.0 (RC2)
 
 Highlights (see subsequent sections for further details)
 --------------------------------------------------------
-* converted major instances of implicit indices to be 0- rather than 1-based
+* converted major instances of implicit indexing to be 0- rather than 1-based:
   - tuples
   - varargs arguments
   - strings
   - `bytes`
   - array literals
-  - captured iterators
-  - field numbering
+  - type-inferred captures of iterator expressions
   - random number streams
+  - field numbering
   - related library routines
 
 Semantic Changes / Changes to Chapel Language
 ---------------------------------------------
-* changed tuples to use 0-based indexing rather than 1-based
+* changed tuples to use 0-based indexing rather than 1-based  
   (e.g., `(1.2, 3.4)[1]` now returns `3.4` where it used to return `1.2`
-* similarly, varargs arguments now use 0-based indexing
+* similarly, varargs arguments now use 0-based indexing  
   (e.g., in `foo(1,2); proc foo(xs...) {}`, `xs(1)` is `2` where it was `1`)
-* dimensional queries on multidimensional domains and arrays are now 0-based
-  (e.g., in `var A: [1..5, 0..2] int;`, `A.dim(1)` is `0..2` where it was `1..5`)
-* changed the `string` and `bytes` types to be 0-based by default
+* dimensional queries on multidimensional domains and arrays are now 0-based  
+  (e.g., in `var A: [1..5, 0..2] int;`, `A.dim(1)` is now `0..2`, not `1..5`)
+* changed the `string` and `bytes` types to be 0-based by default  
   (e.g., `Chapel[1]` now returns `h` where it used to return `C`)
-* changed `find()` and `rfind()` on `string`/`bytes` to return -1 on failure
+* changed `find()` and `rfind()` on `string`/`bytes` to return -1 on failure  
   (e.g., see https://chapel-lang.org/docs/1.22/builtins/String.html#String.string.find)
-* changed array literals to have 0-based domains by default
+* changed array literals to have 0-based domains by default  
   (e.g., `[1.2, 3.4]` now has type `[0..1] real` rather than `[1..2] real`)
-* changed inferred-type captures of iterator expressions to use 0-based arrays
+* changed inferred-type captures of iterator expressions to use 0-based arrays  
   (e.g., in `var A = myIter();` A's domain is now `[0..]` rather than `[1..]`)
 
 Standard Library Modules
@@ -551,7 +551,7 @@ Developer-oriented changes: Testing System
 version 1.20.0
 ==============
 
-Twenty-third public release of Chapel, September 19, 2019
+Twenty-third public release of Chapel, September 19, 2019  
 First release candidate for Chapel 2.0 (RC1)
 
 Highlights (see subsequent sections for further details)
