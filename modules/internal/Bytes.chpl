@@ -821,8 +821,6 @@ module Bytes {
       :returns: a copy of the :record:`bytes` where `replacement` replaces
                 `needle` up to `count` times
      */
-    // TODO: not ideal - count and single allocation probably faster
-    //                 - can special case on replacement|needle.size (0, 1)
     inline proc replace(needle: bytes, replacement: bytes, count: int = -1) : bytes {
       return doReplace(this, needle, replacement, count);
     }
@@ -1458,6 +1456,7 @@ module Bytes {
     return !doEq(a,b);
   }
 
+  pragma "no doc"
   proc comparisonDeprWarn() {
     compilerWarning("Comparison between bytes and string is deprecated. " +
                     "Cast the string to bytes first");
