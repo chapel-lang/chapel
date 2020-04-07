@@ -165,7 +165,7 @@ class RecordReader {
     // data is very nice... (but hey, the programmer wasn't willing to give us a
     // regex..)
     var accum: string = "\\s*";
-    for param n in 1..num_fields {
+    for param n in 0..<num_fields {
       accum = accum + getFieldName(t, n) + "\\s*(.*?)" + "\\s*";
     }
     return accum;
@@ -232,11 +232,11 @@ class RecordReader {
         // Then break and dont return any record
         return (rec, false);
       }
-      for param n in 1..num_fields {
+      for param n in 0..<num_fields {
         var tmp = getField(rec, n);
         var s: string;
         ref dst = getFieldRef(rec, n);
-        myReader.extractMatch(m(n), s);
+        myReader.extractMatch(m(n+1), s);
         if s == "" then
           dst = tmp;
         else if tmp.type == string then

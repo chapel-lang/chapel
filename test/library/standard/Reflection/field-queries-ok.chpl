@@ -5,10 +5,10 @@ use Reflection;
 proc test(type tp) {
   compilerWarning("===== ", tp:string);
   compilerWarning("  numFields       ", numFields(tp)            :string);
-  compilerWarning("  getFieldName    ", getFieldName(tp, 6)             );
+  compilerWarning("  getFieldName    ", getFieldName(tp, 5)             );
   compilerWarning("  hasField        ", hasField(tp, "f6")       :string);
   compilerWarning("  getFieldIndex   ", getFieldIndex(tp, "f6")  :string);
-  compilerWarning("  isFieldBound 6  ", isFieldBound(tp, 6)      :string);
+  compilerWarning("  isFieldBound 5  ", isFieldBound(tp, 5)      :string);
   compilerWarning("  isFieldBound f6 ", isFieldBound(tp, "f6")   :string);
 }
 

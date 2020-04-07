@@ -966,10 +966,10 @@ module ZMQ {
       on classRef.home {
         var copy = data;
         param N = numFields(T);
-        for param i in 1..(N-1) do
+        for param i in 0..<(N-1) do
           try send(getField(copy,i), ZMQ_SNDMORE | flags);
 
-        try send(getField(copy,N), flags);
+        try send(getField(copy,N-1), flags);
       }
     }
 
@@ -1064,7 +1064,7 @@ module ZMQ {
       var ret: T;
       on classRef.home {
         var data: T;
-        for param i in 1..numFields(T) do
+        for param i in 0..<numFields(T) do
           getFieldRef(data,i) = try recv(getField(data,i).type);
         ret = data;
       }

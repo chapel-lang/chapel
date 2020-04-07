@@ -51,51 +51,51 @@ proc numFields(type t) param : int
   return __primitive("num fields", checkQueryT(t));
 
 /* Get the name of the ith field in a class or record.
-   Causes a compilation error if `i` is not in 1..numFields(t).
+   Causes a compilation error if `i` is not in 0..<numFields(t).
 
    :arg t: a class or record type
    :arg i: which field to get the name of
    :returns: the name of the field, as a param string
  */
 proc getFieldName(type t, param i:int) param : string
-  return __primitive("field num to name", checkQueryT(t), i);
+  return __primitive("field num to name", checkQueryT(t), i+1);
 
 // Note, since this version has a where clause, it is preferred
 // over the const ref one.
 /* Get the ith field in a class or record. When the ith field is
    a `param` this overload will be chosen to return a `param`.
-   Causes a compilation error if `i` is not in 1..numFields(t).
+   Causes a compilation error if `i` is not in 0..<numFields(t).
 
    :arg x: a class or record
    :arg i: which field to get
    :returns: the `param` that field represents
 */
 proc getField(const ref x:?t, param i: int) param
-  where i > 0 && i <= numFields(t) &&
-        isParam(__primitive("field by num", x, i)) {
+  where i >= 0 && i < numFields(t) &&
+        isParam(__primitive("field by num", x, i+1)) {
 
-  return __primitive("field by num", x, i);
+  return __primitive("field by num", x, i+1);
 }
 
 // Note, since this version has a where clause, it is preferred
 // over the const ref one.
 /* Get the ith field in a class or record. When the ith field is
    a `type` variable this overload will be chosen to return a type.
-   Causes a compilation error if `i` is not in 1..numFields(t).
+   Causes a compilation error if `i` is not in 0..<numFields(t).
 
    :arg x: a class or record
    :arg i: which field to get
    :returns: the type that field represents
 */
 proc getField(const ref x:?t, param i: int) type
-  where i > 0 && i <= numFields(t) &&
-        isType(__primitive("field by num", x, i)) {
+  where i >= 0 && i < numFields(t) &&
+        isType(__primitive("field by num", x, i+1)) {
 
-  return __primitive("field by num", x, i);
+  return __primitive("field by num", x, i+1);
 }
 
 /* Get the ith field in a class or record.
-   Causes a compilation error if `i` is not in 1..numFields(t).
+   Causes a compilation error if `i` is not in 0..<numFields(t).
 
    :arg x: a class or record
    :arg i: which field to get
@@ -104,7 +104,7 @@ proc getField(const ref x:?t, param i: int) type
 pragma "unsafe"
 inline
 proc getField(const ref x:?t, param i:int) const ref
-  return __primitive("field by num", x, i);
+  return __primitive("field by num", x, i+1);
 
 /* Get a field in a class or record by name. When the named
    field is a `param` this overload will be chosen to return a
@@ -116,7 +116,7 @@ proc getField(const ref x:?t, param i:int) const ref
    :returns: the `param` that field represents
  */
 proc getField(const ref x:?t, param s: string) param
-  where getFieldIndex(t, s) != 0 && isParam(getField(x, getFieldIndex(t, s))) {
+  where getFieldIndex(t, s) != -1 && isParam(getField(x, getFieldIndex(t, s))) {
 
   return getField(x, getFieldIndex(t, s));
 }
@@ -131,7 +131,7 @@ proc getField(const ref x:?t, param s: string) param
    :returns: the type that field represents
  */
 proc getField(const ref x:?t, param s: string) type
-  where getFieldIndex(t, s) != 0 && isType(getField(x, getFieldIndex(t, s))) {
+  where getFieldIndex(t, s) != -1 && isType(getField(x, getFieldIndex(t, s))) {
 
   return getField(x, getFieldIndex(t, s));
 }
@@ -192,7 +192,7 @@ proc getImplementationField(const ref x:?t, param i:int) const ref {
 }
 
 /* Get a mutable ref to the ith field in a class or record.
-   Causes a compilation error if `i` is not in 1..numFields(t)
+   Causes a compilation error if `i` is not in 0..<numFields(t)
    or if the argument is not mutable.
 
    :arg x: a class or record
@@ -202,7 +202,7 @@ proc getImplementationField(const ref x:?t, param i:int) const ref {
 pragma "unsafe"
 inline
 proc getFieldRef(ref x:?t, param i:int) ref
-  return __primitive("field by num", x, i);
+  return __primitive("field by num", x, i+1);
 
 /* Get a mutable ref to a field in a class or record by name.
    Will generate a compilation error if a field with that name
@@ -220,15 +220,15 @@ proc getFieldRef(ref x:?t, param s:string) ref {
   return __primitive("field by num", x, i);
 }
 
-/* Get a field index in a class or record, or 0 if
+/* Get a field index in a class or record, or -1 if
    the field is not found.
 
    :arg t: a class or record type
    :arg s: the name of a field
-   :returns: an index `i` usable in getField, or 0 if the field was not found.
+   :returns: an index `i` usable in getField, or -1 if the field was not found.
  */
 proc getFieldIndex(type t, param s:string) param : int
-  return __primitive("field name to num", checkQueryT(t), s);
+  return __primitive("field name to num", checkQueryT(t), s)-1;
 
 /* Returns `true` if a class or record has a field named `s`,
    or `false` otherwise.
@@ -239,7 +239,7 @@ proc getFieldIndex(type t, param s:string) param : int
  */
 
 proc hasField(type t, param s:string) param : bool
-  return getFieldIndex(t, s) > 0;
+  return getFieldIndex(t, s) >= 0;
 
 /* Returns `true` if the given class or record's ith field
    has been instantiated.
