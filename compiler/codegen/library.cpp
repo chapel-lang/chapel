@@ -404,6 +404,7 @@ static void makeFortranModule(std::vector<FnSymbol*> functions);
 static void makePXDFile(std::vector<FnSymbol*> functions);
 static void makePYXFile(std::vector<FnSymbol*> functions);
 static void makePYFile();
+static void makePYInitFile();
 
 void codegen_library_python(std::vector<FnSymbol*> functions) {
   if (fLibraryCompile && fLibraryPython) {
@@ -415,6 +416,7 @@ void codegen_library_python(std::vector<FnSymbol*> functions) {
     makePXDFile(functions);
     makePYXFile(functions);
     makePYFile();
+    makePYInitFile();
   }
 }
 
@@ -607,6 +609,8 @@ static void makePYXSetupFunctions(std::vector<FnSymbol*> moduleInits) {
   // Shut down the runtime and libraries.  chpl_cleanup should get called when
   // the exported Chapel code is no longer needed
   fprintf(outfile, "def chpl_cleanup():\n");
+  // TODO: Remove this when we're sure everything works...
+  fprintf(outfile, "\tprint(\'Debug call to chpl_cleanup\')\n");
   fprintf(outfile, "\tchpl_library_finalize()\n\n");
 }
 
@@ -714,6 +718,41 @@ static void makePYFile() {
   }
   // Don't "beautify", it will remove the tabs
   closeLibraryHelperFile(&py, false);
+}
+
+static void makePYInitFile() {
+  const char* initFilename = "__init__";
+  fileinfo py = { NULL, NULL, NULL };
+
+  openLibraryHelperFile(&py, initFilename, "py");
+
+  if (py.fptr != NULL) {
+    FILE* save_cfile = gGenInfo->cfile;
+    gGenInfo->cfile = py.fptr;
+
+    //
+    // Print the following form to the __init__.py file>
+    //
+    //    | from <libraryDir>.<moduleName> import *
+    //    | import atexit
+    //    |
+    //    | atexit.register(<moduleName>.chpl_cleanup)
+    //    |
+    //
+    fprintf(py.fptr, "from %s.%s import *\n", libDir, pythonModulename);
+    fprintf(py.fptr, "import atexit\n");
+    fprintf(py.fptr, "\n");
+    fprintf(py.fptr, "atexit.register(%s.chpl_cleanup)\n",
+            pythonModulename);
+
+    // Restore the previous file used for codegen.
+    gGenInfo->cfile = save_cfile;
+  }
+
+  // Don't "beautify", it will remove the tabs.
+  closeLibraryHelperFile(&py, false);
+
+  return;
 }
 
 // Once all the python files have been generated and the .a/.so has been made,
