@@ -59,9 +59,12 @@ Documentation
 * added `import` statements to the modules primer and language specification  
   (see https://chapel-lang.org/docs/1.22/primers/modules.html  
    and https://chapel-lang.org/docs/1.22/language/spec/modules.html#importing-modules)
-* added module renaming via `use` to the modulers primer and language spec  
-  (e.g., `use MyLongModuleName as M` is now supported)
-* added `import` pattern to each documented module's 'usage' section:  
+* documented module renaming via `use` in the modules primer and language spec  
+  (see https://chapel-lang.org/docs/1.22/primers/modules.html  
+   and https://chapel-lang.org/docs/1.22/language/spec/modules.html#using-modules)
+* moved the description of `use` statements to the 'Modules' spec chapter  
+  (see https://chapel-lang.org/docs/1.22/language/spec/modules.html#using-modules)
+* added `import` pattern to each documented module's 'usage' section  
   (e.g., see https://chapel-lang.org/docs/1.22/modules/standard/DateTime.html)
 
 Syntax Highlighting
@@ -75,6 +78,7 @@ Error Messages / Semantic Checks
 Bug Fixes
 ---------
 * fixed a bug in the mason spack spec parser and simplified its implementation
+* fixed a bug in `mason add --external` where some versions were not allowed
 * updated some stale code in the 'HDF5' module
 
 version 1.21.0
