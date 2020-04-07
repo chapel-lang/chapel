@@ -23,13 +23,13 @@ Highlights (see subsequent sections for further details)
 Semantic Changes / Changes to Chapel Language
 ---------------------------------------------
 * changed tuples to use 0-based indexing rather than 1-based  
-  (e.g., `(1.2, 3.4)[1]` now returns `3.4` where it used to return `1.2`
-* similarly, varargs arguments now use 0-based indexing  
+  (e.g., `(1.2, 3.4)[1]` now returns `3.4` where it used to return `1.2`)
+* similarly, varargs arguments now use 0-based indexing rather than 1-based  
   (e.g., in `foo(1,2); proc foo(xs...) {}`, `xs(1)` is `2` where it was `1`)
 * dimensional queries on multidimensional domains and arrays are now 0-based  
   (e.g., in `var A: [1..5, 0..2] int;`, `A.dim(1)` is now `0..2`, not `1..5`)
 * changed the `string` and `bytes` types to be 0-based by default  
-  (e.g., `Chapel[1]` now returns `h` where it used to return `C`)
+  (e.g., `"Chapel"[1]` now returns `"h"` where it used to return `"C"`)
 * changed `find()` and `rfind()` on `string`/`bytes` to return -1 on failure  
   (e.g., see https://chapel-lang.org/docs/1.22/builtins/String.html#String.string.find)
 * changed array literals to have 0-based domains by default  
