@@ -47,7 +47,7 @@ for i in 0..#n {
 
 writeln("Numbers with skipToNth each time");
 for i in 0..#n {
-  rs.skipToNth(1 + i);
+  rs.skipToNth(i);
   var num = rs.getNext(0, max);
   writeln(num);
   assert(num <= max);
@@ -73,20 +73,20 @@ got2[n+2] = rs2.getNext();
 
 writeln("Numbers with skipToNth each time - 64");
 for i in 0..#n {
-  rs2.skipToNth(1 + i);
+  rs2.skipToNth(i);
   var num = rs2.getNext(0, max2);
   writeln(num);
   assert(num <= max2);
   assert(got2[i] == num);
 }
-rs2.skipToNth(n + 1);
+rs2.skipToNth(n);
 var num = rs2.getNext();
 assert(got2[n] == num);
 
-rs2.skipToNth(n + 2);
+rs2.skipToNth(n + 1);
 num = rs2.getNext(0, 2**32);
 assert(got2[n+1] == num);
 
-rs2.skipToNth(n + 3);
+rs2.skipToNth(n + 2);
 num = rs2.getNext();
 assert(got2[n+2] == num);
