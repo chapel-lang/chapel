@@ -39,15 +39,15 @@ Semantic Changes / Changes to Chapel Language
 
 Standard Library Modules
 ------------------------
-* changed the 'List' module to use 0-based indexing of the `list` type
+* changed the 'List' module to use 0-based indexing of the `list` type  
   (see https://chapel-lang.org/docs/1.22/modules/standard/List.html#List.list)
-* 'Map' module methods that return arrays now return 0-based arrays
+* 'Map' module methods that return arrays now return 0-based arrays  
   (e.g., see https://chapel-lang.org/docs/1.22/modules/standard/Map.html#Map.map.toArray)
-* streams in 'Random' module now count from 0 rather than 1
+* streams in 'Random' module now count from 0 rather than 1  
   (e.g., see https://chapel-lang.org/docs/1.22/modules/standard/Random.html#Random.RandomStreamInterface.skipToNth)
-* field-based queries in 'Reflection' now count fields from 0 rather than 1
+* field-based queries in 'Reflection' now count fields from 0 rather than 1  
   (e.g., see https://chapel-lang.org/docs/1.22/modules/standard/Reflection.html#Reflection.getField)
-* `getFieldIndex()` in 'Reflection' now returns -1 when a field is not found
+* `getFieldIndex()` in 'Reflection' now returns -1 when a field is not found  
   (see https://chapel-lang.org/docs/1.22/modules/standard/Reflection.html#Reflection.getFieldIndex)
 
 Memory Improvements
@@ -56,12 +56,12 @@ Memory Improvements
 
 Documentation
 -------------
-* added `import` statements to the modules primer and language specification
-  (see https://chapel-lang.org/docs/1.22/primers/modules.html
+* added `import` statements to the modules primer and language specification  
+  (see https://chapel-lang.org/docs/1.22/primers/modules.html  
    and https://chapel-lang.org/docs/1.22/language/spec/modules.html#importing-modules)
-* added module renaming via `use` to the modulers primer and language spec
+* added module renaming via `use` to the modulers primer and language spec  
   (e.g., `use MyLongModuleName as M` is now supported)
-* added `import` pattern to each documented module's 'usage' section:
+* added `import` pattern to each documented module's 'usage' section:  
   (e.g., see https://chapel-lang.org/docs/1.22/modules/standard/DateTime.html)
 
 Syntax Highlighting
