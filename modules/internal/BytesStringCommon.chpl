@@ -319,6 +319,8 @@ module BytesStringCommon {
     else compilerError("This function should only be used by bytes or string");
   }
 
+  // TODO: not ideal - count and single allocation probably faster
+  //                 - can special case on replacement|needle.size (0, 1)
   proc doReplace(const ref x: ?t, needle: t, replacement: t,
                   count: int = -1): t {
     assertArgType(t, "doReplace");
