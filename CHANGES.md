@@ -12,8 +12,7 @@ Highlights (see subsequent sections for further details)
 * converted major instances of implicit indexing to be 0- rather than 1-based:
   - tuples
   - varargs arguments
-  - strings
-  - `bytes`
+  - `string` and `bytes`
   - array literals
   - type-inferred captures of iterator expressions
   - random number streams
