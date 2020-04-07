@@ -84,9 +84,9 @@ proc initVectors(B, C) {
     on B.dom.dist.targetLocs(loc) {
       var randlist = new owned NPBRandomStream(eltType=real, seed=seed);
       // TODO: Need to clean this up to use more normal method names
-      randlist.skipToNth(B.locArr(loc)!.locDom.low);
+      randlist.skipToNth(B.locArr(loc)!.locDom.low-1);
       randlist.fillRandom(B.locArr(loc)!.myElems);
-      randlist.skipToNth(B.size + C.locArr(loc)!.locDom.low);
+      randlist.skipToNth(B.size + C.locArr(loc)!.locDom.low-1);
       randlist.fillRandom(C.locArr(loc)!.myElems);
     }
   }
