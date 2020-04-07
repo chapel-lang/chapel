@@ -1,6 +1,82 @@
 Release Changes List
 ====================
 
+version 1.22.0
+==============
+
+Twenty-fifth public release of Chapel, April 16, 2020
+Second release candidate for Chapel 2.0 (RC2)
+
+Highlights (see subsequent sections for further details)
+--------------------------------------------------------
+* converted major instances of implicit indices to be 0- rather than 1-based
+  - tuples
+  - varargs arguments
+  - strings
+  - `bytes`
+  - array literals
+  - captured iterators
+  - field numbering
+  - random number streams
+  - related library routines
+
+Semantic Changes / Changes to Chapel Language
+---------------------------------------------
+* changed tuples to use 0-based indexing rather than 1-based
+  (e.g., `(1.2, 3.4)[1]` now returns `3.4` where it used to return `1.2`
+* similarly, varargs arguments now use 0-based indexing
+  (e.g., in `foo(1,2); proc foo(xs...) {}`, `xs(1)` is `2` where it was `1`)
+* dimensional queries on multidimensional domains and arrays are now 0-based
+  (e.g., in `var A: [1..5, 0..2] int;`, `A.dim(1)` is `0..2` where it was `1..5`)
+* changed the `string` and `bytes` types to be 0-based by default
+  (e.g., `Chapel[1]` now returns `h` where it used to return `C`)
+* changed `find()` and `rfind()` on `string`/`bytes` to return -1 on failure
+  (e.g., see https://chapel-lang.org/docs/1.22/builtins/String.html#String.string.find)
+* changed array literals to have 0-based domains by default
+  (e.g., `[1.2, 3.4]` now has type `[0..1] real` rather than `[1..2] real`)
+* changed inferred-type captures of iterator expressions to use 0-based arrays
+  (e.g., in `var A = myIter();` A's domain is now `[0..]` rather than `[1..]`)
+
+Standard Library Modules
+------------------------
+* changed the 'List' module to use 0-based indexing of the `list` type
+  (see https://chapel-lang.org/docs/1.22/modules/standard/List.html#List.list)
+* 'Map' module methods that return arrays now return 0-based arrays
+  (e.g., see https://chapel-lang.org/docs/1.22/modules/standard/Map.html#Map.map.toArray)
+* streams in 'Random' module now count from 0 rather than 1
+  (e.g., see https://chapel-lang.org/docs/1.22/modules/standard/Random.html#Random.RandomStreamInterface.skipToNth)
+* field-based queries in 'Reflection' now count fields from 0 rather than 1
+  (e.g., see https://chapel-lang.org/docs/1.22/modules/standard/Reflection.html#Reflection.getField)
+* `getFieldIndex()` in 'Reflection' now returns -1 when a field is not found
+  (see https://chapel-lang.org/docs/1.22/modules/standard/Reflection.html#Reflection.getFieldIndex)
+
+Memory Improvements
+-------------------
+* closed a few leaks in strings and bytes for multilocale runs
+
+Documentation
+-------------
+* added `import` statements to the modules primer and language specification
+  (see https://chapel-lang.org/docs/1.22/primers/modules.html
+   and https://chapel-lang.org/docs/1.22/language/spec/modules.html#importing-modules)
+* added module renaming via `use` to the modulers primer and language spec
+  (e.g., `use MyLongModuleName as M` is now supported)
+* added `import` pattern to each documented module's 'usage' section:
+  (e.g., see https://chapel-lang.org/docs/1.22/modules/standard/DateTime.html)
+
+Syntax Highlighting
+-------------------
+* added the `import` keyword to various syntax highlighters
+
+Error Messages / Semantic Checks
+--------------------------------
+* improved several error messages related to out-of-bounds indexing
+
+Bug Fixes
+---------
+* fixed a bug in the mason spack spec parser and simplified its implementation
+* updated some stale code in the 'HDF5' module
+
 version 1.21.0
 ==============
 
