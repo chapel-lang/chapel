@@ -26,6 +26,7 @@
 #include "stmt.h"
 #include "symbol.h"
 #include "IfExpr.h"
+#include "LoopExpr.h"
 
 AstToText::AstToText()
 {
@@ -713,6 +714,9 @@ void AstToText::appendExpr(Expr* expr, bool printingType)
     appendExpr(sel, printingType);
 
   else if (IfExpr*         sel = toIfExpr(expr))
+    appendExpr(sel, printingType);
+
+  else if (LoopExpr*         sel = toLoopExpr(expr))
     appendExpr(sel, printingType);
 
   else
@@ -1456,6 +1460,55 @@ void AstToText::appendExpr(IfExpr* expr, bool printingType)
   {
     Expr* exp = elseBlockStmt->body.get(1);
     appendExpr(exp, printingType);
+  }
+}
+
+void AstToText::appendExpr(LoopExpr* expr, bool printingType)
+{
+  if (expr->forall)
+  {
+    if (expr->maybeArrayType)
+    {
+      mText += '[';
+      if(expr->indices)
+      {
+        appendExpr(expr->indices, printingType);
+        mText += " in ";
+      }
+      
+      if(expr->iteratorExpr)
+      {
+        appendExpr(expr->iteratorExpr, printingType);
+        mText += ']';
+
+        if (BlockStmt* bs = toBlockStmt(expr->loopBody))
+        {
+          mText += ' ';
+          appendExpr(bs->body.get(1), printingType);
+        }
+
+        else
+        {
+          mText += "AppendExpr.Loop01";
+        }
+      
+      }
+      
+      else
+      {
+        mText += "AppendExpr.Loop02";
+      }
+    }
+
+    else
+    {
+      mText += "AppendExpr.Loop03";
+    }
+  }
+
+  else
+  {
+    mText += "AppendExpr.Loop04";
   }
 }
 

@@ -63,6 +63,7 @@ class SymExpr;
 class UnresolvedSymExpr;
 class VarSymbol;
 class IfExpr;
+class LoopExpr;
 
 #include <string>
 
@@ -156,6 +157,9 @@ private:
   void                   appendExpr(const char*        name);
 
   void                   appendExpr(IfExpr*            expr,
+                                    bool               printingType);
+
+  void                   appendExpr(LoopExpr*            expr,
                                     bool               printingType);
 
   void                   appendSpecialExpr(const char* name,
