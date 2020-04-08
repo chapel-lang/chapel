@@ -36,7 +36,7 @@ void
 get_version(char *v) {
   v += sprintf(v, "%d.%s.%s", MAJOR_VERSION, MINOR_VERSION, UPDATE_VERSION);
   if (strcmp(BUILD_VERSION, "0") != 0 || developer)
-    sprintf(v, ".%s", BUILD_VERSION);
+    sprintf(v, " pre-release (%s)", BUILD_VERSION);
 }
 
 void
