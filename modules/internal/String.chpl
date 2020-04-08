@@ -1476,7 +1476,6 @@ module String {
       :returns: a new string that is a substring within ``0..<string.size``. If
                 the length of `r` is zero, an empty string is returned.
      */
-    // TODO: I wasn't very good about caching variables locally in this one.
     inline proc this(r: range(?)) : string {
       return getSlice(this, r);
     }
