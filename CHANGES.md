@@ -1,6 +1,85 @@
 Release Changes List
 ====================
 
+version 1.22.0
+==============
+
+Twenty-fifth public release of Chapel, April 16, 2020  
+Second release candidate for Chapel 2.0 (RC2)
+
+Highlights (see subsequent sections for further details)
+--------------------------------------------------------
+* converted major instances of implicit indexing to be 0- rather than 1-based:
+  - tuples
+  - varargs arguments
+  - `string` and `bytes`
+  - array literals
+  - type-inferred captures of iterator expressions
+  - random number streams
+  - field numbering
+  - related library routines
+
+Semantic Changes / Changes to Chapel Language
+---------------------------------------------
+* changed tuples to use 0-based indexing rather than 1-based  
+  (e.g., `(1.2, 3.4)[1]` now returns `3.4` where it used to return `1.2`)
+* similarly, varargs arguments now use 0-based indexing rather than 1-based  
+  (e.g., in `foo(1,2); proc foo(xs...) {}`, `xs(1)` is `2` where it was `1`)
+* dimensional queries on multidimensional domains and arrays are now 0-based  
+  (e.g., in `var A: [1..5, 0..2] int;`, `A.dim(1)` is now `0..2`, not `1..5`)
+* changed the `string` and `bytes` types to be 0-based by default  
+  (e.g., `"Chapel"[1]` now returns `"h"` where it used to return `"C"`)
+* changed `find()` and `rfind()` on `string`/`bytes` to return -1 on failure  
+  (e.g., see https://chapel-lang.org/docs/1.22/builtins/String.html#String.string.find)
+* changed array literals to have 0-based domains by default  
+  (e.g., `[1.2, 3.4]` now has type `[0..1] real` rather than `[1..2] real`)
+* changed inferred-type captures of iterator expressions to use 0-based arrays  
+  (e.g., in `var A = myIter();` A's domain is now `[0..]` rather than `[1..]`)
+
+Standard Library Modules
+------------------------
+* changed the 'List' module to use 0-based indexing of the `list` type  
+  (see https://chapel-lang.org/docs/1.22/modules/standard/List.html#List.list)
+* 'Map' module methods that return arrays now return 0-based arrays  
+  (e.g., see https://chapel-lang.org/docs/1.22/modules/standard/Map.html#Map.map.toArray)
+* streams in 'Random' module now count from 0 rather than 1  
+  (e.g., see https://chapel-lang.org/docs/1.22/modules/standard/Random.html#Random.RandomStreamInterface.skipToNth)
+* field-based queries in 'Reflection' now count fields from 0 rather than 1  
+  (e.g., see https://chapel-lang.org/docs/1.22/modules/standard/Reflection.html#Reflection.getField)
+* `getFieldIndex()` in 'Reflection' now returns -1 when a field is not found  
+  (see https://chapel-lang.org/docs/1.22/modules/standard/Reflection.html#Reflection.getFieldIndex)
+
+Memory Improvements
+-------------------
+* closed leaks in strings and bytes for certain multi-locale executions
+
+Documentation
+-------------
+* added `import` statements to the modules primer and language specification  
+  (see https://chapel-lang.org/docs/1.22/primers/modules.html  
+   and https://chapel-lang.org/docs/1.22/language/spec/modules.html#importing-modules)
+* documented module renaming via `use` in the modules primer and language spec  
+  (see https://chapel-lang.org/docs/1.22/primers/modules.html  
+   and https://chapel-lang.org/docs/1.22/language/spec/modules.html#using-modules)
+* moved the description of `use` statements to the 'Modules' spec chapter  
+  (see https://chapel-lang.org/docs/1.22/language/spec/modules.html#using-modules)
+* added `import` pattern to each documented module's 'usage' section  
+  (e.g., see https://chapel-lang.org/docs/1.22/modules/standard/DateTime.html)
+
+Syntax Highlighting
+-------------------
+* added the `import` keyword to various syntax highlighters
+
+Error Messages / Semantic Checks
+--------------------------------
+* improved several error messages related to out-of-bounds indexing
+
+Bug Fixes
+---------
+* fixed a bug in the mason spack spec parser and simplified its implementation
+* fixed a bug in `mason add --external` where some versions were not allowed
+* updated some stale code in the 'HDF5' module
+
 version 1.21.0
 ==============
 
@@ -48,34 +127,34 @@ Syntactic / Naming Changes
 
 Semantic Changes / Changes to Chapel Language
 ---------------------------------------------
-* made `use` private by default
+* made `use` private by default  
   (see https://chapel-lang.org/docs/1.21/language/spec/statements.html#the-use-statement)
-* sub-modules no longer have lexical visibility into their parent modules
+* sub-modules no longer have lexical visibility into their parent modules    
   (see https://chapel-lang.org/docs/1.21/language/spec/modules.html#nested-modules)
 * the `locale` type now has value semantics and a default value of `Locales[0]`
 * strings are now validated to ensure they are UTF8
-* `bytes.this` and `bytes.these` now return/yield `uint(8)` instead of `bytes`
+* `bytes.this` and `bytes.these` now return/yield `uint(8)` instead of `bytes`  
   (see https://chapel-lang.org/docs/1.21/builtins/Bytes.html)
 * stopped generating `init=` functions for records with a user-defined `init=`
-* an `init=` containing compilerError() now indicates the type is not copyable
+* an `init=` containing compilerError() now indicates the type is not copyable  
   (see https://chapel-lang.org/docs/1.21/technotes/initequals.html#disabling-copyability)
-* added support for split initialization of variables, refs, types, and params
-  (see https://chapel-lang.org/docs/1.21/language/spec/variables.html#split-initialization and
-   https://chapel-lang.org/docs/1.21/language/evolution.html#split-initialization)
-* added support for copy elision transformations
-  (see https://chapel-lang.org/docs/1.21/language/evolution.html#copy-elision and
-   https://chapel-lang.org/docs/1.21/language/spec/variables.html#copy-elision)
-* improved `out` intents to support split initialization and to reduce copies
+* added support for split initialization of variables, refs, types, and params  
+  (see https://chapel-lang.org/docs/1.21/language/spec/variables.html#split-initialization  
+   and https://chapel-lang.org/docs/1.21/language/evolution.html#split-initialization)
+* added support for copy elision transformations  
+  (see https://chapel-lang.org/docs/1.21/language/evolution.html#copy-elision  
+   and https://chapel-lang.org/docs/1.21/language/spec/variables.html#copy-elision)
+* improved `out` intents to support split initialization and to reduce copies  
   (see https://chapel-lang.org/docs/1.21/language/spec/procedures.html#the-out-intent)
-* `record` temporaries may now be deinitialized at the end of a statement
-  (see https://chapel-lang.org/docs/1.21/language/evolution.html#deinitialization-point-of-nested-call-expressions and
-   https://chapel-lang.org/docs/1.21/language/spec/variables.html#deinit-points)
-* compile-time (`type`, `param`) methods now require `override` when overridden
+* `record` temporaries may now be deinitialized at the end of a statement  
+  (see https://chapel-lang.org/docs/1.21/language/evolution.html#deinitialization-point-of-nested-call-expressions  
+   and https://chapel-lang.org/docs/1.21/language/spec/variables.html#deinit-points)
+* compile-time (`type`, `param`) methods now require `override` when overridden  
   (see https://chapel-lang.org/docs/1.21/language/spec/classes.html#overriding-base-class-methods)
-* made `enum` casts that may fail throw an error rather than halt
+* made `enum` casts that may fail throw an error rather than halt  
   (see https://chapel-lang.org/docs/1.21/language/spec/conversions.html#explicit-enumeration-conversions)
 * prototype modules are no longer treated specially with respect to nilability
-* added an execution-time check to guard against resizing arrays of non-nilable
+* added an execution-time check to guard against resizing arrays of non-nilable  
   (see https://chapel-lang.org/docs/1.21/language/spec/classes.html#class-values)
 * assignment overloads for classes are no longer permitted
 
@@ -83,42 +162,42 @@ New Features
 ------------
 * added support for `import` statements as a more precise way of using modules
 * added support for renaming a module in its `use` statement
-* added explicit relative `import` and `use` chains via `this` and `super`
+* added explicit relative `import` and `use` chains via `this` and `super`  
   (see https://chapel-lang.org/docs/1.21/language/spec/statements.html#the-use-statement)
-* implemented prototypical support for storing submodules in different files
+* implemented prototypical support for storing submodules in different files  
   (see https://chapel-lang.org/docs/1.21/technotes/module_include.html)
-* added atomic `compareExchange()` that matches the semantics of C++
+* added atomic `compareExchange()` that matches the semantics of C++  
   (see https://chapel-lang.org/docs/1.21/builtins/Atomics.html#Atomics.compareExchange)
-* added support for changing the memory management policy of a class object
-  (see https://chapel-lang.org/docs/1.21/builtins/OwnedObject.html#OwnedObject.owned.create and
-   https://chapel-lang.org/docs/1.21/builtins/SharedObject.html#SharedObject.shared.create)
-* added support for looping directly over heterogeneous tuples
+* added support for changing the memory management policy of a class object  
+  (see https://chapel-lang.org/docs/1.21/builtins/OwnedObject.html#OwnedObject.owned.create  
+   and https://chapel-lang.org/docs/1.21/builtins/SharedObject.html#SharedObject.shared.create)
+* added support for looping directly over heterogeneous tuples  
   (see https://chapel-lang.org/docs/1.21/language/spec/tuples.html#iteration-over-tuples)
-* added a `.indices` query for tuples, strings, bytes, arrays, and lists
-  (see https://chapel-lang.org/docs/1.21/builtins/ChapelTuple.html#ChapelTuple.tuple.indices,
-   https://chapel-lang.org/docs/1.21/builtins/Bytes.html#Bytes.bytes.indices,
-   https://chapel-lang.org/docs/1.21/builtins/String.html#String.string.indices,
-   https://chapel-lang.org/docs/1.21/builtins/ChapelArray.html#ChapelArray.indices, and
-   https://chapel-lang.org/docs/1.21/modules/standard/List.html#List.list.indices)
-* added support for `.first` and `.last` queries on an `enum` type
+* added a `.indices` query for tuples, strings, bytes, arrays, and lists  
+  (see https://chapel-lang.org/docs/1.21/builtins/ChapelTuple.html#ChapelTuple.tuple.indices,  
+   https://chapel-lang.org/docs/1.21/builtins/Bytes.html#Bytes.bytes.indices,  
+   https://chapel-lang.org/docs/1.21/builtins/String.html#String.string.indices,  
+   https://chapel-lang.org/docs/1.21/builtins/ChapelArray.html#ChapelArray.indices,  
+   and https://chapel-lang.org/docs/1.21/modules/standard/List.html#List.list.indices)
+* added support for `.first` and `.last` queries on an `enum` type  
   (see https://chapel-lang.org/docs/1.21/language/spec/types.html#enum.first)
-* added support for (upper) open-interval ranges
-  (e.g., `lo..<hi` represents 'lo, lo+1, lo+2, ..., hi-2, hi-1')
+* added support for (upper) open-interval ranges  
+  (e.g., `lo..<hi` represents 'lo, lo+1, lo+2, ..., hi-2, hi-1')  
   (see https://chapel-lang.org/docs/1.21/language/spec/ranges.html#range-literals)
-* records now support lexicographical comparison with `<`, `<=`, `>`, `>=`
+* records now support lexicographical comparison with `<`, `<=`, `>`, `>=`  
   (see https://chapel-lang.org/docs/1.21/language/spec/records.html#default-comparison-operators)
-* added a `.hostname` method to locales
+* added a `.hostname` method to locales  
   (see https://chapel-lang.org/docs/1.21/builtins/ChapelLocale.html#ChapelLocale.locale.hostname)
-* added `string.encode()` to convert strings with escaped data to `bytes`
+* added `string.encode()` to convert strings with escaped data to `bytes`  
   (see https://chapel-lang.org/docs/1.21/builtins/String.html#String.string.encode)
-* added support for `enum` serving as an "any enumerated type" type constraint
+* added support for `enum` serving as an "any enumerated type" type constraint  
   (e.g., `proc foo(e: enum) ...` can take any enum as an argument)
 
 Feature Improvements
 --------------------
 * improvements to the `bytes` type:
   - `bytes` now supports `param` values
-  - `bytes` now supports `toByte()`
+  - `bytes` now supports `toByte()`  
     (https://chapel-lang.org/docs/1.21/builtins/Bytes.html#Bytes.bytes.toByte)
   - `bytes` now supports comparison operations
   - added `bytes.format()`, similar to `string.format()`
@@ -131,7 +210,7 @@ Feature Improvements
 * made postfix-`!` no longer required to access `param` and `type` fields
 * improved resolution of methods and fields, particularly for private types
 * non-nilable classes are now considered subtypes of their nilable counterparts
-* improved the implementation of left shift (`<<`) on integers
+* improved the implementation of left shift (`<<`) on integers  
   (see https://chapel-lang.org/docs/1.21/language/spec/expressions.html#shift-operators)
 * made `extern` blocks automatically generate an implicit `use SysCTypes`
 
@@ -142,9 +221,9 @@ Deprecated / Unstable / Removed Language Features
 * deprecated `new owned/shared(c)` in favor of `owned/shared.create(c)`
 * deprecated postfix-`!` on class types in favor of using casts
 * deprecated `string` vs. `bytes` comparisons
-* deprecated `decodePolicy.ignore` in favor of new `decodePolicy.drop`
+* deprecated `decodePolicy.ignore` in favor of new `decodePolicy.drop`  
   (see https://chapel-lang.org/docs/1.21/builtins/Bytes.html#Bytes.bytes.decode)
-* deprecated support for spaces in query expressions
+* deprecated support for spaces in query expressions  
   (e.g. `proc foo(arg: ? t)` or `proc foo(args... ? n)`)
 * deprecated C++-style deinitializer names e.g. `proc ~C()`
 * deprecated the use of `enumerated` as a way of saying "any `enum`"
@@ -166,7 +245,7 @@ Deprecated / Unstable / Removed Language Features
 
 Deprecated / Removed Library Features
 -------------------------------------
-* deprecated `makeRandomStream()` in favor of `createRandomStream()`
+* deprecated `makeRandomStream()` in favor of `createRandomStream()`  
   (see https://chapel-lang.org/docs/1.21/modules/standard/Random.html#Random.createRandomStream)
 * deprecated `regexp` in favor of `regexp(string)`
 * deprecated methods on `channel` used to get, set, or clear error codes
@@ -177,48 +256,48 @@ Deprecated / Removed Library Features
 Standard Library Modules
 ------------------------
 * adjusted I/O routines to support non-UTF8 paths/filenames via escaped strings
-* stopped including most 'IO' symbols by default
-  (see https://chapel-lang.org/docs/1.21/builtins/ChapelIO.html and
-  https://chapel-lang.org/docs/1.21/modules/standard/IO.html)
-* enabled special methods for I/O such as `readThis` or `writeThis` to `throw`
-  (see https://chapel-lang.org/docs/1.21/builtins/ChapelIO.html#readthis-writethis-readwritethis and
-   https://chapel-lang.org/docs/1.21/primers/specialMethods.html#io-methods)
-* adjusted several `channel` methods in the 'IO' module to `throw`
+* stopped including most 'IO' symbols by default  
+  (see https://chapel-lang.org/docs/1.21/builtins/ChapelIO.html  
+   and https://chapel-lang.org/docs/1.21/modules/standard/IO.html)
+* enabled special methods for I/O such as `readThis` or `writeThis` to `throw`  
+  (see https://chapel-lang.org/docs/1.21/builtins/ChapelIO.html#readthis-writethis-readwritethis  
+   and https://chapel-lang.org/docs/1.21/primers/specialMethods.html#io-methods)
+* adjusted several `channel` methods in the 'IO' module to `throw`  
   (see https://chapel-lang.org/docs/1.21/modules/standard/IO.html)
-* added `channel.readbytes` and updated `channel.readline` to support `bytes`
-  (see https://chapel-lang.org/docs/1.21/modules/standard/IO.html#IO.channel.readbytes and
-   https://chapel-lang.org/docs/1.21/modules/standard/IO.html#IO.channel.readline)
-* the regular expression type `regexp` is now generic and supports `bytes`
+* added `channel.readbytes` and updated `channel.readline` to support `bytes`  
+  (see https://chapel-lang.org/docs/1.21/modules/standard/IO.html#IO.channel.readbytes  
+   and https://chapel-lang.org/docs/1.21/modules/standard/IO.html#IO.channel.readline)
+* the regular expression type `regexp` is now generic and supports `bytes`  
   (see https://chapel-lang.org/docs/1.21/modules/standard/Regexp.html#Regexp.regexp)
-* updated `map` to work with nilable `owned` and non-nilable `shared` classes
+* updated `map` to work with nilable `owned` and non-nilable `shared` classes  
   (see https://chapel-lang.org/docs/1.21/modules/standard/Map.html#Map.map.getBorrowed)
-* added a `map.keys()` iterator
+* added a `map.keys()` iterator  
   (see https://chapel-lang.org/docs/1.21/modules/standard/Map.html#Map.map.keys)
-* moved the `parSafe` field in `map` to be after `keyType` and `valType`
+* moved the `parSafe` field in `map` to be after `keyType` and `valType`  
   (see https://chapel-lang.org/docs/1.21/modules/standard/Map.html#Map.map)
-* added an initializer to the `Error` base class that accepts a string message
+* added an initializer to the `Error` base class that accepts a string message  
   (https://chapel-lang.org/docs/1.21/builtins/ChapelError.html#ChapelError.Error)
-* added `math.isclose()` for approximate equality checking
+* added `math.isclose()` for approximate equality checking  
   (https://chapel-lang.org/docs/1.21/modules/standard/Math.html#Math.isclose)
-* updated `canResolve()` to return `false` when encountering a `compilerError`
+* updated `canResolve()` to return `false` when encountering a `compilerError`  
   (see https://chapel-lang.org/docs/1.21/modules/standard/Reflection.html#Reflection.canResolve)
-* added `isCopyable()`, `isAssignable()`, `isDefaultInitializable()` to 'Types'
+* added `isCopyable()`, `isAssignable()`, `isDefaultInitializable()` to 'Types'  
   (see https://chapel-lang.org/docs/1.21/modules/standard/Types.html#Types.isCopyable)
-* added `c_aligned_alloc()` to the 'CPtr' module
+* added `c_aligned_alloc()` to the 'CPtr' module  
   (see https://chapel-lang.org/docs/1.21/builtins/CPtr.html#CPtr.c_aligned_alloc)
-* `defaultRNG` can now be used to select the default random number generator
+* `defaultRNG` can now be used to select the default random number generator  
   (see https://chapel-lang.org/docs/1.21/modules/standard/Random.html#Random.defaultRNG)
 * stopped including the 'CommDiagnostics' module by default
 
 Package Modules
 ---------------
-* added a routine to write a single HDF5 file in parallel with multiple locales
+* added a routine to write a single HDF5 file in parallel with multiple locales  
   (see https://chapel-lang.org/docs/1.21/modules/packages/HDF5/IOusingMPI.html#IOusingMPI.hdf5WriteDistributedArray)
-* moved `hdf5ReadDistributedArray() into a sub-module named 'HDF5.IOusingMPI'
+* moved `hdf5ReadDistributedArray() into a sub-module named 'HDF5.IOusingMPI'  
   (see https://chapel-lang.org/docs/1.21/modules/packages/HDF5/IOusingMPI.html#IOusingMPI.hdf5ReadDistributedArray)
-* added additional HDF5 symbols to the 'C_HDF5' module
+* added additional HDF5 symbols to the 'C_HDF5' module  
   (see https://chapel-lang.org/docs/1.21/modules/packages/HDF5/C_HDF5.html)
-* extended `LinearAlgebra.eig()` to support `complex` types
+* extended `LinearAlgebra.eig()` to support `complex` types  
   (see https://chapel-lang.org/docs/1.21/modules/packages/LinearAlgebra.html#LinearAlgebra.eig)
 * added support for `bytes` messages to the 'ZMQ' module
 * improved comparison sort to better handle arrays containing `owned` classes
@@ -234,15 +313,15 @@ Standard Domain Maps (Layouts and Distributions)
 
 New Tools / Tool Changes
 ------------------------
-* added `mason init` subcommand for creating a package in an existing directory
+* added `mason init` subcommand for creating a package in an existing directory  
   (see https://chapel-lang.org/docs/1.21/tools/mason/mason.html#starting-a-new-package)
-* added `mason new --name` flag to differentiate package name from directory
+* added `mason new --name` flag to differentiate package name from directory  
   (see https://chapel-lang.org/docs/1.21/tools/mason/mason.html#starting-a-new-package)
-* added a feature to run a subset of tests in a mason package with `mason test`
+* added a feature to run a subset of tests in a mason package with `mason test`  
   (see https://chapel-lang.org/docs/1.21/tools/mason/mason.html#testing-your-package)
 * improved the output for `mason update` with multiple registries
 * improved the error message when `mason run` is used without building first
-* added a `--project-version` flag to `chpldoc`
+* added a `--project-version` flag to `chpldoc`  
   (see https://chapel-lang.org/docs/1.21/tools/chpldoc/man.html)
 * fixed copyright formatting bugs in `chpldoc` when run without an author
 * fixed a bug in `chpldoc` with intervening single line comments
@@ -257,7 +336,7 @@ Interoperability Improvements
 Performance Optimizations / Improvements
 ----------------------------------------
 * improved the performance and scalability of distributed array/domain creation
-* improved the unordered compiler optimization to optimize more cases
+* improved the unordered compiler optimization to optimize more cases  
   (see `--optimize-forall-unordered-ops` in `man chpl`)
 * extended `unorderedCopy()` to all trivially copyable types
 * increased cases where zippered distributed array iteration can be optimized
@@ -290,18 +369,18 @@ Memory Improvements
 
 Documentation
 -------------
-* converted the language specification from PDF (LaTeX) to HTML (rst)
+* converted the language specification from PDF (LaTeX) to HTML (rst)  
   (see https://chapel-lang.org/docs/1.21/language/spec/index.html)
 * generally updated documentation with respect to the changes in this release
-* improved the documentation for `owned` and `shared` classes
-  (see https://chapel-lang.org/docs/1.21/builtins/OwnedObject.html and
-   https://chapel-lang.org/docs/1.21/builtins/SharedObject.html)
-* improved the description of tuple semantics in the language specification
+* improved the documentation for `owned` and `shared` classes  
+  (see https://chapel-lang.org/docs/1.21/builtins/OwnedObject.html  
+   and https://chapel-lang.org/docs/1.21/builtins/SharedObject.html)
+* improved the description of tuple semantics in the language specification  
   (see https://chapel-lang.org/docs/1.21/language/spec/tuples.html#value-tuples-and-referential-tuples)
 * increased usage of the `:throws:` tag in library documentation
-* added details about special I/O methods to the forwarding technote
+* added details about special I/O methods to the forwarding technote  
   (see https://chapel-lang.org/docs/1.21/technotes/forwarding.html#resolving-forwarded-methods)
-* improved the documentation of the `UnitTest` module
+* improved the documentation of the `UnitTest` module  
   (see https://chapel-lang.org/docs/1.21/modules/packages/UnitTest.html)
 
 Example Codes
@@ -362,7 +441,7 @@ Error Messages / Semantic Checks
 * improved error messages for unresolved calls due to missing parentheses
 * added errors for certain confusing generic initialization patterns
 * improved the error message for secondary methods that are missing their types
-* improved error messages for bad var args input to `LinearAlgebra.Matrix()`
+* improved error messages for bad var args input to `LinearAlgebra.Matrix()`  
   (see https://chapel-lang.org/docs/1.21/modules/packages/LinearAlgebra.html#LinearAlgebra.Matrix)
 * improved error messages for unsupported element types in 'Set' and 'List'
 * added safety checks for shift operations on integers by default
@@ -475,7 +554,7 @@ Developer-oriented changes: Testing System
 version 1.20.0
 ==============
 
-Twenty-third public release of Chapel, September 19, 2019
+Twenty-third public release of Chapel, September 19, 2019  
 First release candidate for Chapel 2.0 (RC1)
 
 Highlights (see subsequent sections for further details)
@@ -513,82 +592,82 @@ Highlights (see subsequent sections for further details)
 Syntactic/Naming Changes
 ------------------------
 * added new reserved keywords: `bytes`, `none`, `nothing`, `void`
-* changed atomic memory orders to a new `memoryOrder` enum
+* changed atomic memory orders to a new `memoryOrder` enum  
   (see https://chapel-lang.org/docs/1.20/builtins/Atomics.html#atomics)
 
 Semantic Changes / Changes to Chapel Language
 ---------------------------------------------
-* top-level modules must now be `use`d in order to be referenced
+* top-level modules must now be `use`d in order to be referenced  
   (see the `Using Modules` and `The Use Statement` sections of the Chapel spec)
-* class types must now opt into being able to store `nil` using `?`
-  (e.g., `var myC: C = ...` cannot store `nil` but `var myC: C? = ...` can;
+* class types must now opt into being able to store `nil` using `?`  
+  (e.g., `var myC: C = ...` cannot store `nil` but `var myC: C? = ...` can;  
    see https://chapel-lang.org/docs/1.20/language/evolution.html#nilability-changes)
-* for a class `C`, `new C(...)` is now equivalent to `new owned C(...)`
+* for a class `C`, `new C(...)` is now equivalent to `new owned C(...)`  
   (see https://chapel-lang.org/docs/1.20/language/evolution.html#new-c-is-owned)
-* for a class `C`, un-decorated `C` now means non-nil and generic management
+* for a class `C`, un-decorated `C` now means non-nil and generic management  
   (see https://chapel-lang.org/docs/1.20/language/evolution.html#undecorated-classes-have-generic-management)
-* passing owned/shared objects to untyped formals no longer changes their types
+* passing owned/shared objects to untyped formals no longer changes their types  
   (see https://chapel-lang.org/docs/1.20/language/evolution.html#new-default-intent-for-owned-and-shared)
-* arguments declared with owned/shared types now default to `const ref` intent
+* arguments declared with owned/shared types now default to `const ref` intent  
   (see https://chapel-lang.org/docs/1.20/language/evolution.html#new-default-intent-for-owned-and-shared)
-* string indexing, iteration, and lengths now use codepoint units by default
+* string indexing, iteration, and lengths now use codepoint units by default  
   (see https://chapel-lang.org/docs/1.20/builtins/String.html#String.string.length)
 * `string.find` now returns `byteIndex` values
-* `void` is no longer allowed as the type of a variable (use `nothing` instead)
+* `void` is no longer allowed as the type of a variable (use `nothing` instead)  
   (see 'The Void Type' section in the 'Types' chapter of the spec)
-* made `#0` preserve the given indices of a range or domain
+* made `#0` preserve the given indices of a range or domain  
   (e.g., `5..#0` now returns `5..4` rather than `1..0`)
-* disabled support for assigning from ranges to multidimensional arrays
+* disabled support for assigning from ranges to multidimensional arrays  
   (see 'Array Assignment' in the `Arrays` chapter of the language spec)
-* made slice expressions be governed by their slicing domain
+* made slice expressions be governed by their slicing domain  
   (e.g., in `ref B = A[D];` the domain of `B` is `D` rather than a copy of it)
 * made `proc foo(x: bool(?))` generic across all bool sizes including `bool`
-* `require` statements are now processed relative to the source file directory
+* `require` statements are now processed relative to the source file directory  
   (see https://chapel-lang.org/docs/technotes/extern.html#expressing-dependencies)
-* class downcasts now throw `ClassCastError` for incompatible runtime types
-  (see 'Explicit Class Conversions' in the spec
+* class downcasts now throw `ClassCastError` for incompatible runtime types  
+  (see 'Explicit Class Conversions' in the spec  
    and https://chapel-lang.org/docs/1.20/language/evolution.html#readme-evolution-nilability-and-casts)
-* casts from a C pointer type to a class type now require a nilable class
+* casts from a C pointer type to a class type now require a nilable class  
   (see https://chapel-lang.org/docs/1.20/language/evolution.html#readme-evolution-nilability-and-casts)
-* `isSubtype()` and comparison operators on types no longer consider coercions
+* `isSubtype()` and comparison operators on types no longer consider coercions  
   (see https://chapel-lang.org/docs/1.20/builtins/UtilMisc_forDocs.html#UtilMisc_forDocs.isSubtype)
 
 New Features
 ------------
-* added support for `private` and `public` `use` statements
+* added support for `private` and `public` `use` statements  
   (see 'The Use Statement' in the 'Statements' chapter of the language spec)
-* added a built-in `bytes` type
+* added a built-in `bytes` type  
   (see https://chapel-lang.org/docs/1.20/builtins/Bytes.html)
-* added bytes literals `b""`, `b''`, `b""" """`, and `b''' '''`
+* added bytes literals `b""`, `b''`, `b""" """`, and `b''' '''`  
   (see https://chapel-lang.org/docs/1.20/builtins/Bytes.html)
-* added new postfix `?` and `!` operators to support nilable class features
+* added new postfix `?` and `!` operators to support nilable class features  
   (see https://chapel-lang.org/docs/1.20/language/evolution.html#nilability-changes)
-* added support for partial instantiation of generic types
+* added support for partial instantiation of generic types  
   (see https://chapel-lang.org/docs/1.20/technotes/partialInstantiations.html)
-* generic types can now be passed as `type` arguments and returned
+* generic types can now be passed as `type` arguments and returned  
   (see https://chapel-lang.org/docs/1.20/technotes/partialInstantiations.html#passing-and-returning-generic-types)
 * added factory functions for creating strings using existing buffers
 * added support for slicing dense arrays using sparse domains
-* added a `nothing` type with the singleton value `none`
+* added a `nothing` type with the singleton value `none`  
   (see 'The Nothing Type' section in the 'Types' chapter of the spec)
-* `class`, `record`, and `enum` are now available as generic types
+* `class`, `record`, and `enum` are now available as generic types  
   (see 'Built-in Generic Types' in the spec)
-* added a `byteIndex` type for string indexing
+* added a `byteIndex` type for string indexing  
   (see https://chapel-lang.org/docs/1.20/builtins/String.html#String.byteIndex)
-* added 'string.toByte()' and 'string.toCodepoint()'
+* added 'string.toByte()' and 'string.toCodepoint()'  
   (see https://chapel-lang.org/docs/1.20/builtins/String.html#String.string.toByte)
-* added an atomic fence
+* added an atomic fence  
   (see https://chapel-lang.org/docs/1.20/builtins/Atomics.html#Atomics.atomicFence)
 
 Feature Improvements
 --------------------
 * `isClass()` now returns `true` for `owned C` and `shared C`
-* `min` and `max` on real values now propagate `NaN` values
+* `min` and `max` on real values now propagate `NaN` values  
   (see https://chapel-lang.org/docs/builtins/UtilMisc_forDocs.html#UtilMisc_forDocs.min)
-* casts on class types can now compute new types with specific management
+* casts on class types can now compute new types with specific management  
   (see 'Explicit Class Conversions' in the spec)
 * added support for `yield`ing within `on`-clauses for inlined serial iterators
-* task/forall intents in methods on records now operate on fields of `this`
+* task/forall intents in methods on records now operate on fields of `this`  
   (see 'Task Intents' and 'Forall Intents' in the spec)
 * improved complex division to avoid underflow and overflow
 * made string slicing more consistent with array slicing w.r.t. OOB errors
@@ -602,23 +681,23 @@ Feature Improvements
 
 Deprecated / Removed Language Features
 --------------------------------------
-* deprecated "array-as-vector" methods in favor of the new `list` type
+* deprecated "array-as-vector" methods in favor of the new `list` type  
   (e.g., given `var A: [1..10] real;`, `A.push_back()` is no longer supported)
 * deprecated "associative array-as-map" methods in favor of the new `map` type
-* deprecated support for applying `+` to string/value pairs
+* deprecated support for applying `+` to string/value pairs  
   (e.g., `"hello " + 1` is no longer supported by default)
 * deprecated inequality comparisons on `imag`
-* deprecated support for `init`-based copy-initializers; use `init=` instead
+* deprecated support for `init`-based copy-initializers; use `init=` instead  
   (see https://chapel-lang.org/docs/1.20/technotes/initequals.html)
 * deprecated support for opaque domains and arrays
-* deprecated atomic `compareExchange` in favor of `compareAndSwap`
+* deprecated atomic `compareExchange` in favor of `compareAndSwap`  
   (see https://chapel-lang.org/docs/1.20/builtins/Atomics.html#Atomics.compareAndSwap)
-* made atomic `peek`/`poke` no longer available by default
+* made atomic `peek`/`poke` no longer available by default  
   (see https://chapel-lang.org/docs/1.20/modules/packages/PeekPoke.html)
 * deprecated `string.ascii` and `asciiToString`
 * deprecated string initializers in favor of new clearer factory functions
 * replaced the undocumented `_void` value with `none`
-* removed previously deprecated string features
+* removed previously deprecated string features  
   (e.g., `string.ulength`, `string.uchars`, `string.codePointIndex`, ...)
 * removed support for explicit task/forall intents on `this`
 
@@ -626,129 +705,129 @@ Deprecated / Removed Library Features
 -------------------------------------
 * repurposed previously deprecated `List` module for the new `list` type
 * deprecated algorithm-specific sorts like `bubbleSort()` from `Sort` module
-* deprecated `ZMQ.Socket.setsockopt()` in favor of specific setters and getters
-  (e.g., deprecated constant `LINGER` in favor of `Socket.[set|get]Linger()`;
+* deprecated `ZMQ.Socket.setsockopt()` in favor of specific setters and getters  
+  (e.g., deprecated constant `LINGER` in favor of `Socket.[set|get]Linger()`;  
    see https://chapel-lang.org/docs/1.20/modules/packages/ZMQ.html#ZMQ.Socket.setsockopt)
 * retired deprecated usage of `LinearAlgebra.eigvals()`
 * removed previously deprecated functions with `out error` arguments from `IO`
 
 Standard Library Modules
 ------------------------
-* added new `list`, `set`, and `map` collection types
-  (see https://chapel-lang.org/docs/modules/standard/List.html,
-   https://chapel-lang.org/docs/1.20/modules/standard/Set.html,
+* added new `list`, `set`, and `map` collection types  
+  (see https://chapel-lang.org/docs/modules/standard/List.html,  
+   https://chapel-lang.org/docs/1.20/modules/standard/Set.html,  
    and https://chapel-lang.org/docs/1.20/modules/standard/Map.html)
-* added `Reflection` functions to get module/routine/file name and line number
+* added `Reflection` functions to get module/routine/file name and line number  
   (see https://chapel-lang.org/docs/1.20/modules/standard/Reflection.html#Reflection.getLineNumber)
-* added a `seek()` method on channels to the `IO` module
+* added a `seek()` method on channels to the `IO` module  
   (see https://chapel-lang.org/docs/1.20/modules/standard/IO.html#IO.channel.seek)
-* `channel.mark` now returns the marked offset and throws if there is an error
+* `channel.mark` now returns the marked offset and throws if there is an error  
   (see https://chapel-lang.org/docs/1.20/modules/standard/IO.html#IO.channel.mark)
-* added `signbit` to the `Math` module
+* added `signbit` to the `Math` module  
   (see https://chapel-lang.org/docs/1.20/modules/standard/Math.html#Math.signbit)
-* added `isNilableClass()` and `isNonNilableClass()` to the `Types` module
+* added `isNilableClass()` and `isNonNilableClass()` to the `Types` module  
   (see https://chapel-lang.org/docs/1.20/modules/standard/Types.html#Types.isNilableClass)
-* added `isGeneric()` to the `Types` module
+* added `isGeneric()` to the `Types` module  
   (see https://chapel-lang.org/docs/1.20/modules/standard/Types.html#Types.isGeneric)
-* added `isCoercible()` to the `Types` module
+* added `isCoercible()` to the `Types` module  
   (see https://chapel-lang.org/docs/1.20/builtins/UtilMisc_forDocs.html#UtilMisc_forDocs.isCoercible)
-* made the `CommDiagnostics` module count atomic memory operations
+* made the `CommDiagnostics` module count atomic memory operations  
   (see https://chapel-lang.org/docs/1.20/modules/standard/CommDiagnostics.html)
 * added file:line for executeOn in verbose comm diagnostics, matching other ops
 * reduced the degree to which standard modules leak symbols into user code
 
 Package Modules
 ---------------
-* added new `UnitTest` module for writing unit tests in Chapel
+* added new `UnitTest` module for writing unit tests in Chapel  
   (see https://chapel-lang.org/docs/1.20/modules/packages/UnitTest.html)
-* Added a new `URL` package module
+* Added a new `URL` package module  
   (see https://chapel-lang.org/docs/1.20/modules/packages/URL.html)
-* added `AtomicObjects` to support atomic operations on unmanaged classes
+* added `AtomicObjects` to support atomic operations on unmanaged classes  
   (see https://chapel-lang.org/docs/1.20/modules/packages/AtomicObjects.html)
-* added `LockFreeQueue` and `LockFreeStack` data structures
-  (see https://chapel-lang.org/docs/1.20/modules/packages/LockFreeQueue.html
+* added `LockFreeQueue` and `LockFreeStack` data structures  
+  (see https://chapel-lang.org/docs/1.20/modules/packages/LockFreeQueue.html  
    and https://chapel-lang.org/docs/1.20/modules/packages/LockFreeStack.html)
-* added an `EpochManager` package to support epoch-based memory reclamation
+* added an `EpochManager` package to support epoch-based memory reclamation  
   (see https://chapel-lang.org/docs/1.20/modules/packages/EpochManager.html)
-* `sort` in the Sort module now uses radix sort for floating point types
+* `sort` in the Sort module now uses radix sort for floating point types  
   (see https://chapel-lang.org/docs/1.20/modules/packages/Sort.html#Sort.sort)
 * dropped the LLVM back-end requirement for uses of the `HDF5` module
 * enabled distributed element-wise operations in the `LinearAlgebra` module
 * improved distributed dot product in the `LinearAlgebra` module
-* added sparse support for `LinearAlgebra.{isDiag, isSymmetric, isHermitian}`
+* added sparse support for `LinearAlgebra.{isDiag, isSymmetric, isHermitian}`  
   (see https://chapel-lang.org/docs/1.20/modules/packages/LinearAlgebra/Sparse.html#Sparse.isDiag)
 * added several new operations to the `LinearAlgebra` module:
-  - setting the matrix diagonal
+  - setting the matrix diagonal  
     (see https://chapel-lang.org/docs/1.20/modules/packages/LinearAlgebra.html#LinearAlgebra.setDiag)
-  - LU factorization
+  - LU factorization  
     (see https://chapel-lang.org/docs/1.20/modules/packages/LinearAlgebra.html#LinearAlgebra.lu)
-  - computing determinants
+  - computing determinants  
     (see https://chapel-lang.org/docs/1.20/modules/packages/LinearAlgebra.html#LinearAlgebra.det)
-  - a linear system solver
+  - a linear system solver  
     (see https://chapel-lang.org/docs/1.20/modules/packages/LinearAlgebra.html#LinearAlgebra.solve)
-  - matrix inversion
+  - matrix inversion  
     (see https://chapel-lang.org/docs/1.20/modules/packages/LinearAlgebra.html#LinearAlgebra.inv)
-  - the Jacobi method
+  - the Jacobi method  
     (see https://chapel-lang.org/docs/1.20/modules/packages/LinearAlgebra.html#LinearAlgebra.jacobi)
 * added date and time support to the `TOML` module
-* added per-task fences for unordered operations
-  (see https://chapel-lang.org/docs/1.20/modules/packages/UnorderedCopy.html#UnorderedCopy.unorderedCopyTaskFence
+* added per-task fences for unordered operations  
+  (see https://chapel-lang.org/docs/1.20/modules/packages/UnorderedCopy.html#UnorderedCopy.unorderedCopyTaskFence  
    and https://chapel-lang.org/docs/1.20/modules/packages/UnorderedAtomics.html#UnorderedAtomics.unorderedAtomicTaskFence)
 * added support for `param`/`const` source arguments to `unorderedCopy()`
-* extended `unorderedCopy()` to support `bool` values
+* extended `unorderedCopy()` to support `bool` values  
   (see https://chapel-lang.org/docs/1.20/modules/packages/UnorderedCopy.html#UnorderedCopy.unorderedCopy)
-* added support for several setter and getter routines on ZMQ sockets
-  (e.g., added `Socket.getLastEndpoint()`, `Socket.getLinger()`, etc.;
+* added support for several setter and getter routines on ZMQ sockets  
+  (e.g., added `Socket.getLastEndpoint()`, `Socket.getLinger()`, etc.;  
    see https://chapel-lang.org/docs/1.20/modules/packages/ZMQ.html#ZMQ.Socket.getLastEndpoint)
-* added new `Error` subclass `ZMQError` for `ZMQ`-specific errors
+* added new `Error` subclass `ZMQError` for `ZMQ`-specific errors  
   (see https://chapel-lang.org/docs/1.20/modules/packages/ZMQ.html#ZMQ.ZMQError)
-* added support for the `PAIR` socket type to the `ZMQ` module
+* added support for the `PAIR` socket type to the `ZMQ` module  
   (see https://chapel-lang.org/docs/1.20/modules/packages/ZMQ.html#ZMQ.PAIR)
-* renamed 'Buffers.bytes' to 'Buffers.byteBuffer'
+* renamed 'Buffers.bytes' to 'Buffers.byteBuffer'  
   (see https://chapel-lang.org/docs/1.20/modules/packages/Buffers.html)
-* Significantly improved the performance and testing of the `Curl` module
+* Significantly improved the performance and testing of the `Curl` module  
   (see https://chapel-lang.org/docs/1.20/modules/packages/Curl.html)
-* Fixed the `HDFS` module and added regular testing for it
+* Fixed the `HDFS` module and added regular testing for it  
   (see https://chapel-lang.org/docs/1.20/modules/packages/HDFS.html)
 * reduced the degree to which package modules leak symbols into user code
 
 Standard Domain Maps (Layouts and Distributions)
 ------------------------------------------------
-* added support for adding local indices to distributed sparse domains
+* added support for adding local indices to distributed sparse domains  
   (see https://chapel-lang.org/docs/1.20/builtins/ChapelArray.html#ChapelArray.bulkAdd)
-* added support for bulk addition of indices to distributed sparse domains
+* added support for bulk addition of indices to distributed sparse domains  
   (see https://chapel-lang.org/docs/1.20/builtins/ChapelArray.html#ChapelArray.makeIndexBuffer)
 * optimized the implementation of ownership queries for `Cyclic` domains/arrays
 * optimized communication out of `forall` loops over `Cyclic` domains/arrays
 
 New Tools / Tool Changes
 ------------------------
-* added `UnitTest` support to `mason test`
+* added `UnitTest` support to `mason test`  
   (see https://chapel-lang.org/docs/1.20/tools/mason/mason.html#testing-your-package)
-* added `mason publish` subcommand to make publishing packages easier
+* added `mason publish` subcommand to make publishing packages easier  
   (see https://chapel-lang.org/docs/1.20/tools/mason/mason.html#submit-a-package)
-* added `mason search --show` flag to display manifest file of package
+* added `mason search --show` flag to display manifest file of package  
   (see https://chapel-lang.org/docs/1.20/tools/mason/mason.html#submit-a-package)
-* added `MASON_OFFLINE` to improve offline experience for mason users
+* added `MASON_OFFLINE` to improve offline experience for mason users  
   (see https://chapel-lang.org/docs/1.20/tools/mason/mason.html#environment-variables)
 * pinned the version of `Pygments` relied upon by `chpldoc`
 
 Interoperability Improvements
 -----------------------------
-* added support for multi-locale Chapel libraries
+* added support for multi-locale Chapel libraries  
   (see https://chapel-lang.org/docs/1.20/technotes/libraries.html#using-your-library-in-multilocale-settings)
 * the LLVM back-end now supports `--library-python` and `--library-makefile`
 * added support for exporting routines that accept/return strings
 * added support for overriding environment variables to `--library-makefile`
 * `.c` files on the `chpl` command line can now `#include "chplrt.h"`
-* `extern` blocks now support unary `+` in `#define` directives
+* `extern` blocks now support unary `+` in `#define` directives  
   (e.g. `#define X (+1)`)
 * added support for passing the `string` type to extern procedures
 
 Performance Optimizations/Improvements
 --------------------------------------
 * enabled optimized bulk transfers for `Block`-distributed arrays by default
-* improved the unordered compiler optimization and enabled it by default
+* improved the unordered compiler optimization and enabled it by default  
   (see `--optimize-forall-unordered-ops` in `man chpl`)
 * enabled a parallel implementation of scans for 1D local and `Block` arrays
 * improved task affinity for parallel loops
@@ -758,7 +837,7 @@ Performance Optimizations/Improvements
 * reduced contention from polling threads for CHPL_COMM=gasnet
 * improved the implementation for `log2` and `logBasePow` for integral types
 * optimized iteration over `Stencil`-distributed arrays
-* created a prototype optimization for slicing arrays by domains
+* created a prototype optimization for slicing arrays by domains  
   (compile with `-schpl_serializeSlices` to enable)
 
 Cray-specific Performance Optimizations/Improvements
@@ -773,35 +852,35 @@ Memory Improvements
 
 Documentation
 -------------
-* added a new chapter to the language specification on error-handling
+* added a new chapter to the language specification on error-handling  
   (see the 'Error Handling' chapter in the language specification)
-* added a new technical note describing partial instantiations
+* added a new technical note describing partial instantiations  
   (see https://chapel-lang.org/docs/1.20/technotes/partialInstantiations.html)
-* updated `mason` documentation to reflect new mason features
+* updated `mason` documentation to reflect new mason features  
   (see https://chapel-lang.org/docs/1.20/tools/mason/mason.html)
-* documented that a user's environment must support Unicode with UTF8 encoding
+* documented that a user's environment must support Unicode with UTF8 encoding  
   (see https://chapel-lang.org/docs/1.20/usingchapel/chplenv.html#character-set)
 * added `bytes` to the language specification as a primitive type
-* clarified that modules that are not referred to are not initialized
+* clarified that modules that are not referred to are not initialized  
   (see 'Module Initialization' in the spec)
 * updated the language specification with respect to other language changes
-* updated `chpldoc` documentation to use `--output-dir` instead of `--docs-dir`
+* updated `chpldoc` documentation to use `--output-dir` instead of `--docs-dir`  
   (see https://chapel-lang.org/docs/1.20/tools/chpldoc/chpldoc.html#documenting-modules)
-* updated reductions technote to use memory management annotations
+* updated reductions technote to use memory management annotations  
   (see https://chapel-lang.org/docs/1.20/technotes/reduceIntents.html)
 * improved the `--help` description of the `--fast` flag
-* added a warning to 'channel.readf' documentation
+* added a warning to 'channel.readf' documentation  
   (see https://chapel-lang.org/docs/1.20/modules/standard/IO/FormattedIO.html#FormattedIO.channel.readf)
 * removed a reference to old assignment behavior from interoperability technote
 * fixed several broken links in the online documentation
 
 Example Codes
 -------------
-* added a primer for the new `list` type
+* added a primer for the new `list` type  
   (see https://chapel-lang.org/docs/1.20/primers/listOps.html)
-* replaced the `voidVariables` primer with a `nothingVariables` primer
+* replaced the `voidVariables` primer with a `nothingVariables` primer  
   (see https://chapel-lang.org/docs/1.20/primers/nothingVariables.html)
-* improved the `specialMethods` primer to remove the files it creates
+* improved the `specialMethods` primer to remove the files it creates  
   (see https://chapel-lang.org/docs/1.20/primers/specialMethods.html)
 * disabled some numerically unstable kernels in LCALS
 
@@ -810,13 +889,13 @@ Portability
 * fixed cross-compilation support for GMP builds
 * fixed support for `--llvm` with GASNet on Crays
 * resolved several warnings when building with GCC 9
-* added new environment variables `CHPL_RT_MASTERIP` and `CHPL_RT_WORKERIP`
+* added new environment variables `CHPL_RT_MASTERIP` and `CHPL_RT_WORKERIP`  
   (see https://chapel-lang.org/docs/1.20/usingchapel/launcher.html#chpl-rt-masterip)
 * fixed a code portability issue in the `pbs-aprun` launcher
 
 Cray-specific Changes and Bug Fixes
 -----------------------------------
-* added initial support for a pre-built Chapel module on Cray Shasta systems
+* added initial support for a pre-built Chapel module on Cray Shasta systems  
   (see https://chapel-lang.org/docs/1.20/platforms/cray.html#getting-started-with-chapel-on-cray-shasta-systems)
 * updated modulefile to work if there is an incompatible cray-mpich pre-loaded
 * Fixed a problem with --llvm compilation when using dynamic linking on a Cray
@@ -824,7 +903,7 @@ Cray-specific Changes and Bug Fixes
 
 Compiler Improvements
 ---------------------
-* added support for overload-set checking
+* added support for overload-set checking  
   (see https://chapel-lang.org/docs/1.20/technotes/overloadSets.html)
 * stopped the compiler from parsing the same file multiple times
 * improved the accuracy of detecting infinitely recursive instantiations
@@ -845,8 +924,8 @@ Error Messages / Semantic Checks
 * added an error message for ranges over an enum type with a single value
 * made defining a method named 'borrow' a compiler error
 * added an error for domain expressions that are types rather than values
-* added non-`[const] in` intents error messages in certain interop situations
-  (see https://chapel-lang.org/docs/1.20/technotes/libraries.html#intents
+* added non-`[const] in` intents error messages in certain interop situations  
+  (see https://chapel-lang.org/docs/1.20/technotes/libraries.html#intents  
    and https://chapel-lang.org/docs/1.20/technotes/libraries.html#intents-in-python-interoperability)
 * improved error message wording for type mismatches in assignment
 * made a user-facing "the type of the actual argument is generic" error
@@ -921,16 +1000,16 @@ Runtime Library Changes
 
 Launchers
 ---------
-* made verbose output from launchers include environment variables they set
+* made verbose output from launchers include environment variables they set  
   (see https://chapel-lang.org/docs/1.20/usingchapel/launcher.html#chapel-launchers)
-* added CHPL_COMM_USE_GDB support to many more launchers
+* added CHPL_COMM_USE_GDB support to many more launchers  
   (see https://chapel-lang.org/docs/1.20/usingchapel/debugging.html#running-in-gdb)
 * improved CPU binding for gasnetrun* launchers
 * added a slurm-gasnetrun_mpi launcher
 
 Testing System
 --------------
-* added support for running multilocale C tests via `start_test`
+* added support for running multilocale C tests via `start_test`  
   (see https://github.com/chapel-lang/chapel/blob/master/doc/rst/developer/bestPractices/TestSystem.rst#comparing-to-a-c-version)
 
 Developer-oriented changes: Module changes
@@ -957,7 +1036,7 @@ Developer-oriented changes: Makefile improvements
 
 Developer-oriented changes: Compiler Flags
 ------------------------------------------
-* added flags to prepend directories to the internal / standard module paths
+* added flags to prepend directories to the internal / standard module paths  
   (see `--prepend-internal-module-dir` and `--prepend-standard-module-dir`)
 * added `--library-ml-debug` to debug multilocale library communication
 
@@ -974,7 +1053,7 @@ Developer-oriented changes: Compiler improvements/changes
 * `--print-commands` more reliably prints the commands spawned
 * added 'dtBytes' to represent the new `bytes` type
 * improved an internal error message about actual / formal mismatches
-* added new primitives in support of `UnitTest module
+* added new primitives in support of `UnitTest module  
   (see `PRIM_GATHER_TESTS`, `PRIM_GET_TEST_BY_NAME`, `PRIM_GET_TEST_BY_INDEX`)
 * removed vestiges of `--heterogeneous` support
 * refactored compiler to re-use stripdirectories() function
@@ -985,7 +1064,7 @@ Developer-oriented changes: Compiler improvements/changes
 
 Developer-oriented changes: Runtime improvements
 ------------------------------------------------
-* added CHPL_RT_OVERSUBSCRIBED to generally indicate oversubscribed execution
+* added CHPL_RT_OVERSUBSCRIBED to generally indicate oversubscribed execution  
   (see https://chapel-lang.org/docs/1.20/usingchapel/tasks.html#overloading-system-nodes)
 * fixed the qthreads build when CHPL_HOME doesn't match CHPL_MAKE_HOME
 * reading I/O channels now default to using `pread` instead of `mmap`
