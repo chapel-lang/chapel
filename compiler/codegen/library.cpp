@@ -271,7 +271,13 @@ const char* getLibraryExtension() {
 
 void ensureLibDirExists() {
   if (libDir[0] == '\0') {
-    const char* dir = "lib";
+
+    //
+    // When compiling Python, the default name of the directory where
+    // generated library files are stored is as same as the Python
+    // module name.
+    //
+    const char* dir = fLibraryPython ? pythonModulename : "lib";
     INT_ASSERT(strlen(dir) < sizeof(libDir));
     strcpy(libDir, dir);
   }
