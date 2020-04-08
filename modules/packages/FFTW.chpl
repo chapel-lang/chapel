@@ -18,6 +18,25 @@
  * limitations under the License.
  */
 
+// Possible TODOs:
+//
+// - How do we feel about FFTW_ALLCAPS names given that the routines
+//   themselves don't have fftw_ prefixes, that they're defined as
+//   c_int's, and that they're all-caps?  What if we were to replace
+//   these with bool/enum arguments representing the separate planning
+//   aspects that are overloaded into 'flags'?  This would also allow
+//   us to move away from c_ints (which could be done in other ways
+//   as well, such as safe-casting and providing our own versions of
+//   the C variables).
+//
+// - It seems that rather than passing in a domain and an array for
+//   the in-place cases, we could probably pass in an array slice
+//   where the array's allocating domain reflected the padding and
+//   the slicing domain reflected the area over which the FFT should
+//   be performed.  Would this be cleaner?  Would the overhead be
+//   significant?
+//
+
 /*
   FFT computations via key routines from FFTW (version 3)
 
@@ -95,25 +114,6 @@
   the interface for the in-place routines to use array slicing rather
   than separate arguments for the array and domain.
 */
-
-// Possible TODOs:
-//
-// - How do we feel about FFTW_ALLCAPS names given that the routines
-//   themselves don't have fftw_ prefixes, that they're defined as
-//   c_int's, and that they're all-caps?  What if we were to replace
-//   these with bool/enum arguments representing the separate planning
-//   aspects that are overloaded into 'flags'?  This would also allow
-//   us to move away from c_ints (which could be done in other ways
-//   as well, such as safe-casting and providing our own versions of
-//   the C variables).
-//
-// - It seems that rather than passing in a domain and an array for
-//   the in-place cases, we could probably pass in an array slice
-//   where the array's allocating domain reflected the padding and
-//   the slicing domain reflected the area over which the FFT should
-//   be performed.  Would this be cleaner?  Would the overhead be
-//   significant?
-//
 
 module FFTW {
 
@@ -475,12 +475,12 @@ module FFTW {
      overwritten during planning. */
   extern const FFTW_ESTIMATE : FFTW_Flag;
 
+  // TODO: If/when we support defaults, might say something like: This
+  // is the default planning option.
   /* Specify that FFTW should try and find an optimized plan by
      computing several FFTs and measuring their execution time.
      This can consume some time.
   */
-  // TODO: If/when we support defaults, might say something like: This
-  // is the default planning option.
   extern const FFTW_MEASURE : FFTW_Flag;
 
   /* Specify that FFTW should expend a greater effort finding an
@@ -505,26 +505,28 @@ module FFTW {
 
   // Algorithm-restriction flags
 
+  // TODO: When we're ready to mention defaults, add: "This is the default for
+  // :proc:`plan_dft_c2r`. // NOTE: ...and hc2r once supported...
   /* Specify that an out-of-place transform is permitted to overwrite
      its input array with arbitrary data.  This permits more efficient
      algorithms to be used in some cases. */
-  // TODO: When we're ready to mention defaults, add: "This is the default for
-  // :proc:`plan_dft_c2r`. // NOTE: ...and hc2r once supported...
   extern const FFTW_DESTROY_INPUT : FFTW_Flag;
 
-  /* Specify that an out-of-place transform cannot change its input
-     array. */
   // TODO: When we're ready to mention defaults, add: This is the
   // default for :proc:`plan_dft` and :proc:`plan_dft_r2c`. */
+  /* Specify that an out-of-place transform cannot change its input
+     array. */
   extern const FFTW_PRESERVE_INPUT : FFTW_Flag;
 
+  // NOTE: This flag will become necessary if/when the new-array execute
+  // interface is supported
   /* Specify that the algorithm may not impose any unusual alignment
      requirements on the input/output arrays.  This flag should not be
      necessary for current Chapel use since the planner will
      automatically detect such cases.  For more details on this flag
      and the previous two, refer to `Section 4.3.2
      <http://www.fftw.org/doc/Planner-Flags.html>`_ of the FFTW manual.
-  */  // NOTE: But it will be if/when the new-array execute interface is supported
+  */
   extern const FFTW_UNALIGNED : FFTW_Flag;
 
   // More FFTW type flags.
