@@ -727,10 +727,17 @@ static void makePYFile() {
 }
 
 static void makePYInitFile() {
-  const char* initFilename = "__init__";
   fileinfo py = { NULL, NULL, NULL };
 
-  openLibraryHelperFile(&py, initFilename, "py");
+  char* path = dirHasFile(libDir, "__init__.py");
+  if (path != NULL) {
+    free(path);
+    USR_WARN("Cannot generate %s/__init__.py because it would overwrite "
+             "existing file", libDir);
+    return;
+  }
+ 
+  openLibraryHelperFile(&py, "__init__", "py");
 
   if (py.fptr != NULL) {
     FILE* save_cfile = gGenInfo->cfile;
