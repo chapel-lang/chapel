@@ -943,9 +943,9 @@ record regexp {
      :arg global: if true, replace multiple matches
      :returns: a tuple containing (new text, number of substitutions made)
    */
-  // TODO -- move subn after sub for documentation clarity
   proc subn(repl: exprType, text: exprType, global = true ):(exprType, int)
   {
+    // TODO -- move subn after sub for documentation clarity
     var pos:byteIndex;
     var endpos:byteIndex;
 

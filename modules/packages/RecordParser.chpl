@@ -107,10 +107,10 @@ use IO, Regexp, Reflection;
 
 /* A class providing the ability to read records matching a regular expression.
  */
-//   Future work is to make this be able to take in a class type as opposed to a
-//   record type.  Right now we cant take in a class type due to the future filed
-//   in test/types/typedefs/tzakian/classConstructorsFromTypes.chpl
 class RecordReader {
+  //   Future work is to make this be able to take in a class type as opposed to
+  //   a record type.  Right now we cant take in a class type due to the future
+  //   filed in test/types/typedefs/tzakian/classConstructorsFromTypes.chpl
   /* The record type to populate */
   type t;
   /* The channel to read from */

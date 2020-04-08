@@ -1448,11 +1448,11 @@ module ChapelArray {
     }
 
     /* Remove all indices from this domain, leaving it empty */
-
-    // For rectangular domains, create an empty domain and assign it to this
-    // one to make sure that we leverage all of the array's normal resizing
-    // machinery.
     proc clear() where isRectangularDom(this) {
+      // For rectangular domains, create an empty domain and assign it to this
+      // one to make sure that we leverage all of the array's normal resizing
+      // machinery.
+
       var emptyDom: this.type;
       this = emptyDom;
     }
@@ -2979,13 +2979,13 @@ module ChapelArray {
     /*
        Return an array of locales over which this array has been distributed.
     */
-    //
-    // TODO: Is it really appropriate that the array should provide
-    // this dsi routine rather than having this call forward to the
-    // domain[.dist] here?  Do any of the array implementations do
-    // anything other than that with it?
-    //
     proc targetLocales() {
+      //
+      // TODO: Is it really appropriate that the array should provide
+      // this dsi routine rather than having this call forward to the
+      // domain[.dist] here?  Do any of the array implementations do
+      // anything other than that with it?
+      //
       return _value.dsiTargetLocales();
     }
 
