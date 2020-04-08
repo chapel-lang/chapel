@@ -145,7 +145,8 @@ private proc runTests(show: bool, run: bool, parallel: bool, ref cmdLineCompopts
     makeTargetFiles("debug", projectHome);
     var numTests: int;
     var testNames: list(string);
-    var testCompilationStatus: list(int);
+    // names of tests that compiled
+    var testsCompiled: list(string);
     // get the test names from lockfile or from test directory
     if (files.size == 0 && dirs.size == 0) {
       testNames = getTests(lockFile.borrow(), projectHome);
@@ -193,7 +194,6 @@ private proc runTests(show: bool, run: bool, parallel: bool, ref cmdLineCompopts
         const moveTo = "-o " + outputLoc;
         const compCommand = " ".join("chpl",testPath, projectPath, moveTo, allCompOpts);
         const compilation = runWithStatus(compCommand);
-        testCompilationStatus.append(compilation);
         
         if compilation != 0 {
           stderr.writeln("compilation failed for " + test);
@@ -201,6 +201,7 @@ private proc runTests(show: bool, run: bool, parallel: bool, ref cmdLineCompopts
           result.addError(testName, test,  errMsg);
         }
         else {
+          testsCompiled.append(test);
           if show || !run then writeln("Compiled '", test, "' successfully");
           if parallel {
             runTestBinary(projectHome, outputLoc, testName, result, show);
@@ -208,13 +209,7 @@ private proc runTests(show: bool, run: bool, parallel: bool, ref cmdLineCompopts
         }
       }
       if run && !parallel {
-        var testToRun: list(string);
-        for (testName, compilation) in zip(testNames, testCompilationStatus) {
-          if (compilation == 0) {
-            testToRun.append(testName);
-          }
-        }
-        runTestBinaries(projectHome, testToRun, numTests, result, show);
+        runTestBinaries(projectHome, testsCompiled, testsCompiled.size, result, show);
       }
       timeElapsed.stop();
       if run {
