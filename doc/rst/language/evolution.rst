@@ -27,10 +27,10 @@ used 1-based indexing for such cases, where it now uses 0-based
 indexing.
 
 The major types that are affected by this change are tuples, strings,
-and ``bytes``.  In addition, arrays that don't have a well-defined
-index set also start at 0.  Such cases include array literals or
-inferred-type arrays formed by capturing a general iterator
-expression.
+``bytes``, and lists.  In addition, arrays that don't have a
+well-defined index set also start at 0.  Such cases include array
+literals or inferred-type arrays formed by capturing a general
+iterator expression.
 
 This change also has a ripple-down effect to features and routines
 related to these types.  For example, varargs arguments are equivalent
@@ -171,7 +171,8 @@ experiences:
         writeln("t(", i, ") = ", t(i));
 
   If you have a pattern that you're trying to write in an
-  index-neutral style, but can't, don't hesitate to ask for tips.
+  index-neutral style, but can't, don't hesitate to `ask for tips
+  <https://chapel-lang.org/users.html>`_.
         
 
 * Some common pitfalls to check for in your code include:
@@ -210,14 +211,28 @@ experiences:
     will likely need updates.  For example ``mylist.pop(1);`` will
     need to become ``mylist.pop(0);``
 
+  - Some other common string patterns to look for in your code that
+    `may` indicate something requiring an update include:
+
+    - ``1..``
+    - ``[1]``
+    - ``(1)``
+    - ``[2]``
+    - ``(2)``
+
+  - Think about whether there are other places in your code that
+    compute index values numerically yet which don't have obvious
+    syntactic cues.
+
+
 Need Help?
 **********
 
 If you are able to share your code with us and would like help
-updating it to Chapel 1.22, please don't hesitate to ask for help.
-Given our experience in updating the Chapel code base itself, we have
-found it fairly easy to update most codes, even if we're unfamiliar
-with them.
+updating it to Chapel 1.22, please don't hesitate to `ask for help
+<https://chapel-lang.org/users.html>`_.  Given our experience in
+updating the Chapel code base itself, we have found it fairly easy to
+update most codes, even when we're unfamiliar with them.
 
 
 version 1.21, April 2020
