@@ -139,10 +139,10 @@ Semantic Changes / Changes to Chapel Language
 * an `init=` containing compilerError() now indicates the type is not copyable  
   (see https://chapel-lang.org/docs/1.21/technotes/initequals.html#disabling-copyability)
 * added support for split initialization of variables, refs, types, and params  
-  (see https://chapel-lang.org/docs/1.21/language/spec/variables.html#split-initialization and
+  (see https://chapel-lang.org/docs/1.21/language/spec/variables.html#split-initialization and  
    https://chapel-lang.org/docs/1.21/language/evolution.html#split-initialization)
 * added support for copy elision transformations  
-  (see https://chapel-lang.org/docs/1.21/language/evolution.html#copy-elision and
+  (see https://chapel-lang.org/docs/1.21/language/evolution.html#copy-elision and  
    https://chapel-lang.org/docs/1.21/language/spec/variables.html#copy-elision)
 * improved `out` intents to support split initialization and to reduce copies  
   (see https://chapel-lang.org/docs/1.21/language/spec/procedures.html#the-out-intent)
@@ -169,7 +169,7 @@ New Features
 * added atomic `compareExchange()` that matches the semantics of C++  
   (see https://chapel-lang.org/docs/1.21/builtins/Atomics.html#Atomics.compareExchange)
 * added support for changing the memory management policy of a class object  
-  (see https://chapel-lang.org/docs/1.21/builtins/OwnedObject.html#OwnedObject.owned.create and
+  (see https://chapel-lang.org/docs/1.21/builtins/OwnedObject.html#OwnedObject.owned.create and  
    https://chapel-lang.org/docs/1.21/builtins/SharedObject.html#SharedObject.shared.create)
 * added support for looping directly over heterogeneous tuples  
   (see https://chapel-lang.org/docs/1.21/language/spec/tuples.html#iteration-over-tuples)
@@ -177,7 +177,7 @@ New Features
   (see https://chapel-lang.org/docs/1.21/builtins/ChapelTuple.html#ChapelTuple.tuple.indices,
    https://chapel-lang.org/docs/1.21/builtins/Bytes.html#Bytes.bytes.indices,
    https://chapel-lang.org/docs/1.21/builtins/String.html#String.string.indices,
-   https://chapel-lang.org/docs/1.21/builtins/ChapelArray.html#ChapelArray.indices, and
+   https://chapel-lang.org/docs/1.21/builtins/ChapelArray.html#ChapelArray.indices, and  
    https://chapel-lang.org/docs/1.21/modules/standard/List.html#List.list.indices)
 * added support for `.first` and `.last` queries on an `enum` type  
   (see https://chapel-lang.org/docs/1.21/language/spec/types.html#enum.first)
@@ -257,15 +257,15 @@ Standard Library Modules
 ------------------------
 * adjusted I/O routines to support non-UTF8 paths/filenames via escaped strings
 * stopped including most 'IO' symbols by default  
-  (see https://chapel-lang.org/docs/1.21/builtins/ChapelIO.html and
+  (see https://chapel-lang.org/docs/1.21/builtins/ChapelIO.html and  
   https://chapel-lang.org/docs/1.21/modules/standard/IO.html)
 * enabled special methods for I/O such as `readThis` or `writeThis` to `throw`  
-  (see https://chapel-lang.org/docs/1.21/builtins/ChapelIO.html#readthis-writethis-readwritethis and
+  (see https://chapel-lang.org/docs/1.21/builtins/ChapelIO.html#readthis-writethis-readwritethis and  
    https://chapel-lang.org/docs/1.21/primers/specialMethods.html#io-methods)
 * adjusted several `channel` methods in the 'IO' module to `throw`  
   (see https://chapel-lang.org/docs/1.21/modules/standard/IO.html)
 * added `channel.readbytes` and updated `channel.readline` to support `bytes`  
-  (see https://chapel-lang.org/docs/1.21/modules/standard/IO.html#IO.channel.readbytes and
+  (see https://chapel-lang.org/docs/1.21/modules/standard/IO.html#IO.channel.readbytes and  
    https://chapel-lang.org/docs/1.21/modules/standard/IO.html#IO.channel.readline)
 * the regular expression type `regexp` is now generic and supports `bytes`  
   (see https://chapel-lang.org/docs/1.21/modules/standard/Regexp.html#Regexp.regexp)
