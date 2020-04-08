@@ -9,3 +9,5 @@ shallnotpass returned exitCode = 255
 Ran 7 tests in n seconds
 
 FAILED (passed = 6 failures = 1 )
+PATH/shallskip.chpl:1: syntax error: near 'test'
+compilation failed for shallskip.chpl
