@@ -44,7 +44,7 @@ a legal string index.
 The following sections summarize the rationale for this change and
 then provide some tips for updating existing Chapel code.
 
-Rationale for 0- vs. 1-based Isandexing
+Rationale for 0- vs. 1-based Indexing
 *************************************
 
 In the original design of Chapel, we hoped to make the language as
