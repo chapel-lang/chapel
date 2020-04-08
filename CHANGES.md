@@ -51,7 +51,7 @@ Standard Library Modules
 
 Memory Improvements
 -------------------
-* closed a few leaks in strings and bytes for multilocale runs
+* closed leaks in strings and bytes for certain multi-locale executions
 
 Documentation
 -------------
@@ -127,34 +127,34 @@ Syntactic / Naming Changes
 
 Semantic Changes / Changes to Chapel Language
 ---------------------------------------------
-* made `use` private by default
+* made `use` private by default  
   (see https://chapel-lang.org/docs/1.21/language/spec/statements.html#the-use-statement)
-* sub-modules no longer have lexical visibility into their parent modules
+* sub-modules no longer have lexical visibility into their parent modules    
   (see https://chapel-lang.org/docs/1.21/language/spec/modules.html#nested-modules)
 * the `locale` type now has value semantics and a default value of `Locales[0]`
 * strings are now validated to ensure they are UTF8
-* `bytes.this` and `bytes.these` now return/yield `uint(8)` instead of `bytes`
+* `bytes.this` and `bytes.these` now return/yield `uint(8)` instead of `bytes`  
   (see https://chapel-lang.org/docs/1.21/builtins/Bytes.html)
 * stopped generating `init=` functions for records with a user-defined `init=`
-* an `init=` containing compilerError() now indicates the type is not copyable
+* an `init=` containing compilerError() now indicates the type is not copyable  
   (see https://chapel-lang.org/docs/1.21/technotes/initequals.html#disabling-copyability)
-* added support for split initialization of variables, refs, types, and params
+* added support for split initialization of variables, refs, types, and params  
   (see https://chapel-lang.org/docs/1.21/language/spec/variables.html#split-initialization and
    https://chapel-lang.org/docs/1.21/language/evolution.html#split-initialization)
-* added support for copy elision transformations
+* added support for copy elision transformations  
   (see https://chapel-lang.org/docs/1.21/language/evolution.html#copy-elision and
    https://chapel-lang.org/docs/1.21/language/spec/variables.html#copy-elision)
-* improved `out` intents to support split initialization and to reduce copies
+* improved `out` intents to support split initialization and to reduce copies  
   (see https://chapel-lang.org/docs/1.21/language/spec/procedures.html#the-out-intent)
-* `record` temporaries may now be deinitialized at the end of a statement
-  (see https://chapel-lang.org/docs/1.21/language/evolution.html#deinitialization-point-of-nested-call-expressions and
+* `record` temporaries may now be deinitialized at the end of a statement  
+  (see https://chapel-lang.org/docs/1.21/language/evolution.html#deinitialization-point-of-nested-call-expressions and  
    https://chapel-lang.org/docs/1.21/language/spec/variables.html#deinit-points)
-* compile-time (`type`, `param`) methods now require `override` when overridden
+* compile-time (`type`, `param`) methods now require `override` when overridden  
   (see https://chapel-lang.org/docs/1.21/language/spec/classes.html#overriding-base-class-methods)
-* made `enum` casts that may fail throw an error rather than halt
+* made `enum` casts that may fail throw an error rather than halt  
   (see https://chapel-lang.org/docs/1.21/language/spec/conversions.html#explicit-enumeration-conversions)
 * prototype modules are no longer treated specially with respect to nilability
-* added an execution-time check to guard against resizing arrays of non-nilable
+* added an execution-time check to guard against resizing arrays of non-nilable  
   (see https://chapel-lang.org/docs/1.21/language/spec/classes.html#class-values)
 * assignment overloads for classes are no longer permitted
 
@@ -162,42 +162,42 @@ New Features
 ------------
 * added support for `import` statements as a more precise way of using modules
 * added support for renaming a module in its `use` statement
-* added explicit relative `import` and `use` chains via `this` and `super`
+* added explicit relative `import` and `use` chains via `this` and `super`  
   (see https://chapel-lang.org/docs/1.21/language/spec/statements.html#the-use-statement)
-* implemented prototypical support for storing submodules in different files
+* implemented prototypical support for storing submodules in different files  
   (see https://chapel-lang.org/docs/1.21/technotes/module_include.html)
-* added atomic `compareExchange()` that matches the semantics of C++
+* added atomic `compareExchange()` that matches the semantics of C++  
   (see https://chapel-lang.org/docs/1.21/builtins/Atomics.html#Atomics.compareExchange)
-* added support for changing the memory management policy of a class object
+* added support for changing the memory management policy of a class object  
   (see https://chapel-lang.org/docs/1.21/builtins/OwnedObject.html#OwnedObject.owned.create and
    https://chapel-lang.org/docs/1.21/builtins/SharedObject.html#SharedObject.shared.create)
-* added support for looping directly over heterogeneous tuples
+* added support for looping directly over heterogeneous tuples  
   (see https://chapel-lang.org/docs/1.21/language/spec/tuples.html#iteration-over-tuples)
-* added a `.indices` query for tuples, strings, bytes, arrays, and lists
+* added a `.indices` query for tuples, strings, bytes, arrays, and lists  
   (see https://chapel-lang.org/docs/1.21/builtins/ChapelTuple.html#ChapelTuple.tuple.indices,
    https://chapel-lang.org/docs/1.21/builtins/Bytes.html#Bytes.bytes.indices,
    https://chapel-lang.org/docs/1.21/builtins/String.html#String.string.indices,
    https://chapel-lang.org/docs/1.21/builtins/ChapelArray.html#ChapelArray.indices, and
    https://chapel-lang.org/docs/1.21/modules/standard/List.html#List.list.indices)
-* added support for `.first` and `.last` queries on an `enum` type
+* added support for `.first` and `.last` queries on an `enum` type  
   (see https://chapel-lang.org/docs/1.21/language/spec/types.html#enum.first)
-* added support for (upper) open-interval ranges
-  (e.g., `lo..<hi` represents 'lo, lo+1, lo+2, ..., hi-2, hi-1')
+* added support for (upper) open-interval ranges  
+  (e.g., `lo..<hi` represents 'lo, lo+1, lo+2, ..., hi-2, hi-1')  
   (see https://chapel-lang.org/docs/1.21/language/spec/ranges.html#range-literals)
-* records now support lexicographical comparison with `<`, `<=`, `>`, `>=`
+* records now support lexicographical comparison with `<`, `<=`, `>`, `>=`  
   (see https://chapel-lang.org/docs/1.21/language/spec/records.html#default-comparison-operators)
-* added a `.hostname` method to locales
+* added a `.hostname` method to locales  
   (see https://chapel-lang.org/docs/1.21/builtins/ChapelLocale.html#ChapelLocale.locale.hostname)
-* added `string.encode()` to convert strings with escaped data to `bytes`
+* added `string.encode()` to convert strings with escaped data to `bytes`  
   (see https://chapel-lang.org/docs/1.21/builtins/String.html#String.string.encode)
-* added support for `enum` serving as an "any enumerated type" type constraint
+* added support for `enum` serving as an "any enumerated type" type constraint  
   (e.g., `proc foo(e: enum) ...` can take any enum as an argument)
 
 Feature Improvements
 --------------------
 * improvements to the `bytes` type:
   - `bytes` now supports `param` values
-  - `bytes` now supports `toByte()`
+  - `bytes` now supports `toByte()`  
     (https://chapel-lang.org/docs/1.21/builtins/Bytes.html#Bytes.bytes.toByte)
   - `bytes` now supports comparison operations
   - added `bytes.format()`, similar to `string.format()`
@@ -210,7 +210,7 @@ Feature Improvements
 * made postfix-`!` no longer required to access `param` and `type` fields
 * improved resolution of methods and fields, particularly for private types
 * non-nilable classes are now considered subtypes of their nilable counterparts
-* improved the implementation of left shift (`<<`) on integers
+* improved the implementation of left shift (`<<`) on integers  
   (see https://chapel-lang.org/docs/1.21/language/spec/expressions.html#shift-operators)
 * made `extern` blocks automatically generate an implicit `use SysCTypes`
 
@@ -221,9 +221,9 @@ Deprecated / Unstable / Removed Language Features
 * deprecated `new owned/shared(c)` in favor of `owned/shared.create(c)`
 * deprecated postfix-`!` on class types in favor of using casts
 * deprecated `string` vs. `bytes` comparisons
-* deprecated `decodePolicy.ignore` in favor of new `decodePolicy.drop`
+* deprecated `decodePolicy.ignore` in favor of new `decodePolicy.drop`  
   (see https://chapel-lang.org/docs/1.21/builtins/Bytes.html#Bytes.bytes.decode)
-* deprecated support for spaces in query expressions
+* deprecated support for spaces in query expressions  
   (e.g. `proc foo(arg: ? t)` or `proc foo(args... ? n)`)
 * deprecated C++-style deinitializer names e.g. `proc ~C()`
 * deprecated the use of `enumerated` as a way of saying "any `enum`"
@@ -245,7 +245,7 @@ Deprecated / Unstable / Removed Language Features
 
 Deprecated / Removed Library Features
 -------------------------------------
-* deprecated `makeRandomStream()` in favor of `createRandomStream()`
+* deprecated `makeRandomStream()` in favor of `createRandomStream()`  
   (see https://chapel-lang.org/docs/1.21/modules/standard/Random.html#Random.createRandomStream)
 * deprecated `regexp` in favor of `regexp(string)`
 * deprecated methods on `channel` used to get, set, or clear error codes
@@ -256,48 +256,48 @@ Deprecated / Removed Library Features
 Standard Library Modules
 ------------------------
 * adjusted I/O routines to support non-UTF8 paths/filenames via escaped strings
-* stopped including most 'IO' symbols by default
+* stopped including most 'IO' symbols by default  
   (see https://chapel-lang.org/docs/1.21/builtins/ChapelIO.html and
   https://chapel-lang.org/docs/1.21/modules/standard/IO.html)
-* enabled special methods for I/O such as `readThis` or `writeThis` to `throw`
+* enabled special methods for I/O such as `readThis` or `writeThis` to `throw`  
   (see https://chapel-lang.org/docs/1.21/builtins/ChapelIO.html#readthis-writethis-readwritethis and
    https://chapel-lang.org/docs/1.21/primers/specialMethods.html#io-methods)
-* adjusted several `channel` methods in the 'IO' module to `throw`
+* adjusted several `channel` methods in the 'IO' module to `throw`  
   (see https://chapel-lang.org/docs/1.21/modules/standard/IO.html)
-* added `channel.readbytes` and updated `channel.readline` to support `bytes`
+* added `channel.readbytes` and updated `channel.readline` to support `bytes`  
   (see https://chapel-lang.org/docs/1.21/modules/standard/IO.html#IO.channel.readbytes and
    https://chapel-lang.org/docs/1.21/modules/standard/IO.html#IO.channel.readline)
-* the regular expression type `regexp` is now generic and supports `bytes`
+* the regular expression type `regexp` is now generic and supports `bytes`  
   (see https://chapel-lang.org/docs/1.21/modules/standard/Regexp.html#Regexp.regexp)
-* updated `map` to work with nilable `owned` and non-nilable `shared` classes
+* updated `map` to work with nilable `owned` and non-nilable `shared` classes  
   (see https://chapel-lang.org/docs/1.21/modules/standard/Map.html#Map.map.getBorrowed)
-* added a `map.keys()` iterator
+* added a `map.keys()` iterator  
   (see https://chapel-lang.org/docs/1.21/modules/standard/Map.html#Map.map.keys)
-* moved the `parSafe` field in `map` to be after `keyType` and `valType`
+* moved the `parSafe` field in `map` to be after `keyType` and `valType`  
   (see https://chapel-lang.org/docs/1.21/modules/standard/Map.html#Map.map)
-* added an initializer to the `Error` base class that accepts a string message
+* added an initializer to the `Error` base class that accepts a string message  
   (https://chapel-lang.org/docs/1.21/builtins/ChapelError.html#ChapelError.Error)
-* added `math.isclose()` for approximate equality checking
+* added `math.isclose()` for approximate equality checking  
   (https://chapel-lang.org/docs/1.21/modules/standard/Math.html#Math.isclose)
-* updated `canResolve()` to return `false` when encountering a `compilerError`
+* updated `canResolve()` to return `false` when encountering a `compilerError`  
   (see https://chapel-lang.org/docs/1.21/modules/standard/Reflection.html#Reflection.canResolve)
-* added `isCopyable()`, `isAssignable()`, `isDefaultInitializable()` to 'Types'
+* added `isCopyable()`, `isAssignable()`, `isDefaultInitializable()` to 'Types'  
   (see https://chapel-lang.org/docs/1.21/modules/standard/Types.html#Types.isCopyable)
-* added `c_aligned_alloc()` to the 'CPtr' module
+* added `c_aligned_alloc()` to the 'CPtr' module  
   (see https://chapel-lang.org/docs/1.21/builtins/CPtr.html#CPtr.c_aligned_alloc)
-* `defaultRNG` can now be used to select the default random number generator
+* `defaultRNG` can now be used to select the default random number generator  
   (see https://chapel-lang.org/docs/1.21/modules/standard/Random.html#Random.defaultRNG)
 * stopped including the 'CommDiagnostics' module by default
 
 Package Modules
 ---------------
-* added a routine to write a single HDF5 file in parallel with multiple locales
+* added a routine to write a single HDF5 file in parallel with multiple locales  
   (see https://chapel-lang.org/docs/1.21/modules/packages/HDF5/IOusingMPI.html#IOusingMPI.hdf5WriteDistributedArray)
-* moved `hdf5ReadDistributedArray() into a sub-module named 'HDF5.IOusingMPI'
+* moved `hdf5ReadDistributedArray() into a sub-module named 'HDF5.IOusingMPI'  
   (see https://chapel-lang.org/docs/1.21/modules/packages/HDF5/IOusingMPI.html#IOusingMPI.hdf5ReadDistributedArray)
-* added additional HDF5 symbols to the 'C_HDF5' module
+* added additional HDF5 symbols to the 'C_HDF5' module  
   (see https://chapel-lang.org/docs/1.21/modules/packages/HDF5/C_HDF5.html)
-* extended `LinearAlgebra.eig()` to support `complex` types
+* extended `LinearAlgebra.eig()` to support `complex` types  
   (see https://chapel-lang.org/docs/1.21/modules/packages/LinearAlgebra.html#LinearAlgebra.eig)
 * added support for `bytes` messages to the 'ZMQ' module
 * improved comparison sort to better handle arrays containing `owned` classes
@@ -313,15 +313,15 @@ Standard Domain Maps (Layouts and Distributions)
 
 New Tools / Tool Changes
 ------------------------
-* added `mason init` subcommand for creating a package in an existing directory
+* added `mason init` subcommand for creating a package in an existing directory  
   (see https://chapel-lang.org/docs/1.21/tools/mason/mason.html#starting-a-new-package)
-* added `mason new --name` flag to differentiate package name from directory
+* added `mason new --name` flag to differentiate package name from directory  
   (see https://chapel-lang.org/docs/1.21/tools/mason/mason.html#starting-a-new-package)
-* added a feature to run a subset of tests in a mason package with `mason test`
+* added a feature to run a subset of tests in a mason package with `mason test`  
   (see https://chapel-lang.org/docs/1.21/tools/mason/mason.html#testing-your-package)
 * improved the output for `mason update` with multiple registries
 * improved the error message when `mason run` is used without building first
-* added a `--project-version` flag to `chpldoc`
+* added a `--project-version` flag to `chpldoc`  
   (see https://chapel-lang.org/docs/1.21/tools/chpldoc/man.html)
 * fixed copyright formatting bugs in `chpldoc` when run without an author
 * fixed a bug in `chpldoc` with intervening single line comments
@@ -336,7 +336,7 @@ Interoperability Improvements
 Performance Optimizations / Improvements
 ----------------------------------------
 * improved the performance and scalability of distributed array/domain creation
-* improved the unordered compiler optimization to optimize more cases
+* improved the unordered compiler optimization to optimize more cases  
   (see `--optimize-forall-unordered-ops` in `man chpl`)
 * extended `unorderedCopy()` to all trivially copyable types
 * increased cases where zippered distributed array iteration can be optimized
@@ -369,18 +369,18 @@ Memory Improvements
 
 Documentation
 -------------
-* converted the language specification from PDF (LaTeX) to HTML (rst)
+* converted the language specification from PDF (LaTeX) to HTML (rst)  
   (see https://chapel-lang.org/docs/1.21/language/spec/index.html)
 * generally updated documentation with respect to the changes in this release
-* improved the documentation for `owned` and `shared` classes
-  (see https://chapel-lang.org/docs/1.21/builtins/OwnedObject.html and
+* improved the documentation for `owned` and `shared` classes  
+  (see https://chapel-lang.org/docs/1.21/builtins/OwnedObject.html and  
    https://chapel-lang.org/docs/1.21/builtins/SharedObject.html)
-* improved the description of tuple semantics in the language specification
+* improved the description of tuple semantics in the language specification  
   (see https://chapel-lang.org/docs/1.21/language/spec/tuples.html#value-tuples-and-referential-tuples)
 * increased usage of the `:throws:` tag in library documentation
-* added details about special I/O methods to the forwarding technote
+* added details about special I/O methods to the forwarding technote  
   (see https://chapel-lang.org/docs/1.21/technotes/forwarding.html#resolving-forwarded-methods)
-* improved the documentation of the `UnitTest` module
+* improved the documentation of the `UnitTest` module  
   (see https://chapel-lang.org/docs/1.21/modules/packages/UnitTest.html)
 
 Example Codes
@@ -441,7 +441,7 @@ Error Messages / Semantic Checks
 * improved error messages for unresolved calls due to missing parentheses
 * added errors for certain confusing generic initialization patterns
 * improved the error message for secondary methods that are missing their types
-* improved error messages for bad var args input to `LinearAlgebra.Matrix()`
+* improved error messages for bad var args input to `LinearAlgebra.Matrix()`  
   (see https://chapel-lang.org/docs/1.21/modules/packages/LinearAlgebra.html#LinearAlgebra.Matrix)
 * improved error messages for unsupported element types in 'Set' and 'List'
 * added safety checks for shift operations on integers by default
