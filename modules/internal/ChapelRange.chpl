@@ -523,10 +523,10 @@ module ChapelRange {
       return _low + chpl__diffMod(_alignment, _low, stride);
   }
 
+  // TODO: Add back example?
   /* Returns the range's aligned high bound. If the aligned high bound is
      undefined, the behavior is undefined.
    */
-  // TODO: Add back example?
   inline proc range.alignedHigh : idxType {
     return chpl_intToIdx(this.alignedHighAsInt);
   }
@@ -567,7 +567,7 @@ module ChapelRange {
     if ! isBoundedRange(this) then
       compilerError("'size' is not defined on unbounded ranges");
 
-    // assumes alignedHigh/alignLow always work, even for an empty range
+    // assumes alignedHigh/alignedLow always work, even for an empty range
     const ah = this.alignedHighAsInt,
           al = this.alignedLowAsInt;
     if al > ah then return 0: intIdxType;

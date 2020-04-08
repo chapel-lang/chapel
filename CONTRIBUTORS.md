@@ -4,9 +4,10 @@ Chapel Contributors
 The following people have contributed to the implementation of the
 Chapel release:
 
-Contributors to the current release
------------------------------------
+Contributors to the Chapel 1.21 and 1.22 releases
+-------------------------------------------------
 * Ben Albrecht, [HPE]
+* Souris Ash, invidividual contributor
 * Akshansh Bhanjana, individual contributor
 * Ankush Bhardwaj, individual contributor
 * Paul Cassella, [HPE]

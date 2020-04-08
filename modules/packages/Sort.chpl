@@ -451,8 +451,8 @@ the sorting algorithm.
   data is sorted.
 
  */
-// TODO: This should have a flag `stable` to request a stable sort
 proc sort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator) {
+  // TODO: This should have a flag `stable` to request a stable sort
   chpl_check_comparator(comparator, eltType);
 
   if Dom.low >= Dom.high then

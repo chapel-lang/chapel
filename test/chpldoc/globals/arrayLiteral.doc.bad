@@ -10,6 +10,13 @@ arrayLiteral.doc
 
    use arrayLiteral.doc;
 
+
+or
+
+.. code-block:: chapel
+
+   import arrayLiteral.doc;
+
 .. data:: var i
 
 .. data:: var x = AppendExpr.01

@@ -10,6 +10,13 @@ oneWord.doc
 
    use oneWord.doc;
 
+
+or
+
+.. code-block:: chapel
+
+   import oneWord.doc;
+
 .. function:: proc dummy()
 
    Should be located in myDocs/_sources/modules/unspecified.txt 

@@ -13,7 +13,7 @@ proc main {
   var t = new Timer();
   var preprocess = new owned AddNPreprocessor(1);
 
-  for param i in 1..inputTypes.size {
+  for param i in 0..<inputTypes.size {
     type inType = inputTypes(i);
     param typeName = inType:string;
     t.start();

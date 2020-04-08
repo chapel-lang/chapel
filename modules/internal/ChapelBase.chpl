@@ -31,6 +31,9 @@ module ChapelBase {
   extern proc chpl_config_has_value(name:c_string, module_name:c_string): bool;
   extern proc chpl_config_get_value(name:c_string, module_name:c_string): c_string;
 
+  // the default low bound to use for arrays, tuples, etc.
+  config param defaultLowBound = 0;
+
   // Is the cache for remote data enabled at compile time?
   config param CHPL_CACHE_REMOTE: bool = false;
 

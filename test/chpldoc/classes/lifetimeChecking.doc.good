@@ -10,6 +10,13 @@ lifetimeChecking.doc
 
    use lifetimeChecking.doc;
 
+
+or
+
+.. code-block:: chapel
+
+   import lifetimeChecking.doc;
+
 .. class:: Foo
 
    Used to demonstrate the behavior of lifetime checking and documentation 

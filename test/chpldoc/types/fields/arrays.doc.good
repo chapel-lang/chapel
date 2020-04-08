@@ -10,6 +10,13 @@ arrays.doc
 
    use arrays.doc;
 
+
+or
+
+.. code-block:: chapel
+
+   import arrays.doc;
+
 .. class:: fullOfArrays
 
    .. attribute:: var smallArray: [1..4] bool

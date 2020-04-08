@@ -92,7 +92,7 @@ var lst3 = lst2;
 var count = 0;
 
 while count < 16 {
-  const elem = lst2.pop(1);
+  const elem = lst2.pop(0);
   lst3.append(elem);
   count += 1;
 }
@@ -192,7 +192,7 @@ writeln("List 1 after extends: ", lst1);
     currently running program to halt. Be careful!
 */
 
-for i in 1..(lst1.size / 2) {
+for i in 0..#(lst1.size / 2) {
   ref a = lst1[i];
   ref b = lst1[i + lst1.size / 2];
   const tmp = a;
@@ -214,12 +214,12 @@ writeln("List 1 after correction: ", lst1);
 
 for x in lst2 {
   const idx = lst1.indexOf(x);
-  assert(x == idx);
+  assert(x == idx+1);
 }
 
 for x in lst3 {
   const idx = lst1.indexOf(x);
-  assert(x == idx);
+  assert(x == idx+1);
 }
 
 /*
@@ -240,6 +240,6 @@ for x in lst3 {
     argument `idx` falls outside the bounds of the list.
 */
 
-lst1.insert(1, -100);
+lst1.insert(0, -100);
 
 writeln("List 1 after inserting -100: ", lst1);

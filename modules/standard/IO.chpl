@@ -1304,11 +1304,11 @@ proc iostyle.little(str_style:int(64)=stringStyleWithVariableLength()):iostyle  
   return ret;
 }
 
+// TODO -- add arguments to this function
 /* Get an I/O style indicating text I/O.
 
    :returns: the requested :record:`iostyle`
  */
-// TODO -- add arguments to this function
 proc iostyle.text(/* args coming later */):iostyle  {
   var ret = this;
   ret.binary = 0;
@@ -1326,6 +1326,16 @@ proc iostyle.text(/* args coming later */):iostyle  {
 pragma "no doc"
 extern type fdflag_t = c_int;
 
+//  note - QIO supports
+//  QIO_METHOD_READWRITE,
+//  QIO_METHOD_P_READWRITE,
+//  QIO_METHOD_MMAP,
+//  QIO_HINT_RANDOM,
+//  QIO_HINT_SEQUENTIAL,
+//  QIO_HINT_LATENCY,
+//  QIO_HINT_BANDWIDTH,
+//  QIO_HINT_CACHED,
+//  QIO_HINT_NOREUSE
 /*
 
 A value of the :type:`iohints` type defines a set of hints about the I/O that
@@ -1360,18 +1370,6 @@ the formal cannot be assigned within the function.
 The default value of the :type:`iohints` type is undefined.
 
 */
-
-//  note - QIO supports
-//  QIO_METHOD_READWRITE,
-//  QIO_METHOD_P_READWRITE,
-//  QIO_METHOD_MMAP,
-//  QIO_HINT_RANDOM,
-//  QIO_HINT_SEQUENTIAL,
-//  QIO_HINT_LATENCY,
-//  QIO_HINT_BANDWIDTH,
-//  QIO_HINT_CACHED,
-//  QIO_HINT_NOREUSE
-
 extern type iohints = c_int;
 
 /*
@@ -2435,13 +2433,13 @@ inline proc channel._commit() {
   qio_channel_commit_unlocked(_channel_internal);
 }
 
+// TODO -- come up with better names for these
 /*
 
    Return the current style used by a channel. This function should only be
    called on a locked channel.
 
  */
-// TODO -- come up with better names for these
 proc channel._style():iostyle {
   var ret:iostyle;
   on this.home {
@@ -2506,6 +2504,11 @@ proc channel.filePlugin() : borrowed QioPluginFile? {
 }
 
 
+// We can simply call channel.close() on these, since the underlying file will
+// be closed once we no longer have any references to it (which in this case,
+// since we only will have one reference, will be right after we close this
+// channel presumably).
+// TODO: include optional iostyle argument for consistency
 /*
 
 Open a file at a particular path and return a reading channel for it.
@@ -2533,11 +2536,6 @@ This function is equivalent to calling :proc:`open` and then
 
 :throws SystemError: Thrown if a reading channel could not be returned.
  */
-// We can simply call channel.close() on these, since the underlying file will
-// be closed once we no longer have any references to it (which in this case,
-// since we only will have one reference, will be right after we close this
-// channel presumably).
-// TODO: include optional iostyle argument for consistency
 proc openreader(path:string,
                 param kind=iokind.dynamic, param locking=true,
                 start:int(64) = 0, end:int(64) = max(int(64)),
@@ -3574,8 +3572,8 @@ private proc _args_to_proto(const args ...?k, preArg:string) {
   return err_args;
 }
 
-/* returns true if read successfully, false if we encountered EOF */
 // better documented in the style= version
+/* returns true if read successfully, false if we encountered EOF */
 inline proc channel.read(ref args ...?k):bool throws {
   if writing then compilerError("read on write-only channel");
   const origLocale = this.getLocaleOfIoRequest();
@@ -4303,6 +4301,7 @@ proc read(type t ...?numTypes) throws {
 }
 
 
+// TODO -- change to FileSystem.remove
 /* Delete a file. This function is likely to be replaced
    by :proc:`FileSystem.remove`.
 
@@ -4310,7 +4309,6 @@ proc read(type t ...?numTypes) throws {
 
    :throws SystemError: Thrown if the file is not successfully deleted.
  */
-// TODO -- change to FileSystem.remove
 proc unlink(path:string) throws {
   extern proc sys_unlink(path:c_string):err_t;
   var err = sys_unlink(path.localize().c_str());

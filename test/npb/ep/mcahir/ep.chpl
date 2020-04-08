@@ -87,7 +87,7 @@ proc gaussPairsBatch(k: int(64), numPairs: int) {
 
 	var rs = new NPBRandomStream(real, seed=seed, parSafe=false);
 	//Find starting seed for this batch
-	rs.skipToNth(k * 2*nk + 1);
+	rs.skipToNth(k * 2*nk);
 
 	// Compute uniform pseudorandom numbers.
 	for e in x do e = rs.getNext();

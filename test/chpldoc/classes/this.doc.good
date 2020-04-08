@@ -10,6 +10,13 @@ this.doc
 
    use this.doc;
 
+
+or
+
+.. code-block:: chapel
+
+   import this.doc;
+
 .. class:: ThisTestClass
 
    .. method:: proc this(yesChpldoc1)

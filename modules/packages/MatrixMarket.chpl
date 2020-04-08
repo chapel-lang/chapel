@@ -41,39 +41,39 @@ module MatrixMarket {
   }
 
   proc initMMInfo(ref headerfields:[] string) {
-    assert(headerfields(1) == "%%MatrixMarket", "Improperly formatted MatrixMarket file");
-    assert(headerfields(2) == "matrix", "Improperly formatted MatrixMarket file");
+    assert(headerfields(0) == "%%MatrixMarket", "Improperly formatted MatrixMarket file");
+    assert(headerfields(1) == "matrix", "Improperly formatted MatrixMarket file");
 
     var toret:MMInfo;
 
-    if headerfields(3) == "coordinate" {
+    if headerfields(2) == "coordinate" {
       toret.mm_coordfmt = MMCoordFormat.Coordinate;
     }
-    else if headerfields(3) == "array" {
+    else if headerfields(2) == "array" {
       toret.mm_coordfmt = MMCoordFormat.Array;
     }
     else {
       assert(false, "Improperly formatted MatrixMarket file");
     }
 
-    if headerfields(4) == "real" {
+    if headerfields(3) == "real" {
       toret.mm_types = MMTypes.Real;
     }
-    else if headerfields(4) == "complex" {
+    else if headerfields(3) == "complex" {
       toret.mm_types = MMTypes.Complex;
     }
-    else if headerfields(4) == "pattern" {
+    else if headerfields(3) == "pattern" {
       toret.mm_types = MMTypes.Pattern;
     }
     else {
       assert(false, "Improperly formatted MatrixMarket file");
     }
 
-    headerfields(5) = headerfields(5).strip("\n");
-    if headerfields(5) == "general" {
+    headerfields(4) = headerfields(4).strip("\n");
+    if headerfields(4) == "general" {
       toret.mm_fmt = MMFormat.General;
     }
-    else if headerfields(5) == "symmetric" {
+    else if headerfields(4) == "symmetric" {
       toret.mm_fmt = MMFormat.Symmetric;
     }
     else {

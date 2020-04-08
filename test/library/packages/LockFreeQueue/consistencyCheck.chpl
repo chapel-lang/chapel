@@ -17,7 +17,7 @@ forall i in 1..N {
 
 var total : int;
 forall i in 1..N with (+ reduce total) {
-    total += lfq.dequeue()[2];
+    total += lfq.dequeue()[1];
 }
 assert(total == expected, total, "!=", expected);
 timer.stop();
@@ -32,7 +32,7 @@ forall i in 1..N with (var tok = lfq.getToken()) {
 
 total = 0;
 forall i in 1..N with (var tok = lfq.getToken(), + reduce total) {
-    total += lfq.dequeue(tok)[2];
+    total += lfq.dequeue(tok)[1];
 }
 assert(total == expected, total, "!=", expected);
 lfq.tryReclaim();

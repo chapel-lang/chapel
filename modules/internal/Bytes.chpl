@@ -382,7 +382,7 @@ module Bytes {
     // This is assumed to be called from this.locale
     pragma "no doc"
     proc ref reinitString(buf: bufferType, s_len: int, size: int,
-                          needToCopy:bool = true) {
+                          needToCopy:bool = true, ownBuffer=false) {
       if this.isEmpty() && buf == nil then return;
 
       /*const buf = _buf:bufferType; // this is different than string*/
@@ -426,6 +426,8 @@ module Bytes {
           this.buff = buf;
         }
       }
+
+      if ownBuffer then this.isowned = true;
 
       this.len = s_len;
     }
@@ -819,8 +821,6 @@ module Bytes {
       :returns: a copy of the :record:`bytes` where `replacement` replaces
                 `needle` up to `count` times
      */
-    // TODO: not ideal - count and single allocation probably faster
-    //                 - can special case on replacement|needle.size (0, 1)
     inline proc replace(needle: bytes, replacement: bytes, count: int = -1) : bytes {
       return doReplace(this, needle, replacement, count);
     }
@@ -1456,6 +1456,7 @@ module Bytes {
     return !doEq(a,b);
   }
 
+  pragma "no doc"
   proc comparisonDeprWarn() {
     compilerWarning("Comparison between bytes and string is deprecated. " +
                     "Cast the string to bytes first");

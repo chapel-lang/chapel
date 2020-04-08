@@ -11,6 +11,13 @@ M
 
    use M;
 
+
+or
+
+.. code-block:: chapel
+
+   import M;
+
 This module has a comment 
 
 .. function:: proc commentless()
@@ -27,6 +34,13 @@ N
 .. code-block:: chapel
 
    use N;
+
+
+or
+
+.. code-block:: chapel
+
+   import N;
 
 So does this module 
 
@@ -45,6 +59,13 @@ O
 
    use O;
 
+
+or
+
+.. code-block:: chapel
+
+   import O;
+
 And this one 
 
 .. function:: proc hasBodyCommentless()
@@ -61,6 +82,13 @@ P
 .. code-block:: chapel
 
    use P;
+
+
+or
+
+.. code-block:: chapel
+
+   import P;
 
 What?  Even this one! 
 
@@ -80,6 +108,13 @@ Q
 
    use Q;
 
+
+or
+
+.. code-block:: chapel
+
+   import Q;
+
 .. function:: proc main()
 
    Sadly, this function's module does not 
@@ -95,6 +130,13 @@ R
 .. code-block:: chapel
 
    use R;
+
+
+or
+
+.. code-block:: chapel
+
+   import R;
 
 .. function:: proc furthermore()
 

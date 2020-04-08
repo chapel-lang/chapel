@@ -273,6 +273,7 @@ module BytesStringCommon {
     }
   }
 
+  // TODO: I wasn't very good about caching variables locally in this one.
   proc getSlice(const ref x: ?t, r: range(?)) {
     assertArgType(t, "getSlice");
 
@@ -319,6 +320,8 @@ module BytesStringCommon {
     else compilerError("This function should only be used by bytes or string");
   }
 
+  // TODO: not ideal - count and single allocation probably faster
+  //                 - can special case on replacement|needle.size (0, 1)
   proc doReplace(const ref x: ?t, needle: t, replacement: t,
                   count: int = -1): t {
     assertArgType(t, "doReplace");
@@ -561,7 +564,8 @@ module BytesStringCommon {
         var remote_buf:bufferType = nil;
         if len != 0 then
           remote_buf = bufferCopyRemote(rhs.locale_id, rhs.buff, len);
-        lhs.reinitString(remote_buf, len, len+1, needToCopy=false);
+        lhs.reinitString(remote_buf, len, len+1, needToCopy=false,
+                                                 ownBuffer=true);
       }
     }
 

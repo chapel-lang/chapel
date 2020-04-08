@@ -68,14 +68,15 @@ module CPtr {
 
   */
 
-  //   Similar to _ddata from ChapelBase, but differs
-  //   from _ddata because it can never be wide.
   pragma "data class"
   pragma "no object"
   pragma "no default functions"
   pragma "no wide class"
   pragma "c_ptr class"
   class c_ptr {
+    //   Similar to _ddata from ChapelBase, but differs
+    //   from _ddata because it can never be wide.
+
     /* The type that this pointer points to */
     type eltType;
     /* Retrieve the i'th element (zero based) from a pointer to an array.

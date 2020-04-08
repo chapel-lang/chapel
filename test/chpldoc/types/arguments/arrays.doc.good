@@ -10,6 +10,13 @@ arrays.doc
 
    use arrays.doc;
 
+
+or
+
+.. code-block:: chapel
+
+   import arrays.doc;
+
 .. function:: proc smallArray(val: [1..4] bool)
 
    This method takes an array of bools as an argument 

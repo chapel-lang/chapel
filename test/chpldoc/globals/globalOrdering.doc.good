@@ -10,6 +10,13 @@ globalOrdering.doc
 
    use globalOrdering.doc;
 
+
+or
+
+.. code-block:: chapel
+
+   import globalOrdering.doc;
+
 .. data:: config var goop: bool
 
    hello 

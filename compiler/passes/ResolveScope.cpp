@@ -545,7 +545,7 @@ static const char* getNameFrom(Expr* e) {
 
 // Finds the first name (other than this/super) in the Expr
 //   name is that name
-//   call is the call contaning the name on the left branch or NULL
+//   call is the call containing the name on the left branch or NULL
 //     (which is the call requiring further processing)
 //   scope is the scope indicated by any this. / super. or NULL
 void ResolveScope::firstImportedModuleName(Expr* expr,

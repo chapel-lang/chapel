@@ -117,10 +117,13 @@ proc modifyToml(add: bool, spec: string, external: bool, system: bool,
         throw new owned MasonError("Dependency formatted incorrectly.\nFormat: package@version");
       }
       const split = spec.split('@');
-      const dependency = split[1];
-      const version = split[2];
-      checkDepName(dependency);
-      checkVersion(version);
+      const dependency = split[0];
+      const version = split[1];
+      // Name and version checks are only valid for mason packages
+      if !external && !system {
+        checkDepName(dependency);
+        checkVersion(version);
+      }
 
       if system && add {
         writeln(" ".join("Adding system dependency", dependency, "version", version));
@@ -141,7 +144,7 @@ proc modifyToml(add: bool, spec: string, external: bool, system: bool,
       var depName: string;
       if spec.find('@') != -1 {
         const split = spec.split('@');
-        depName = split[1];
+        depName = split[0];
       }
       else depName = spec;
       const dependency = depName;

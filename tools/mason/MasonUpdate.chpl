@@ -209,7 +209,7 @@ proc parseChplVersion(brick: borrowed Toml?): (VersionInfo, VersionInfo) {
     // Expecting 1 or 2 version strings
     if versions.size > 2 || versions.size < 1 {
       throw new owned MasonError("Expecting 1 or 2 versions in chplVersion range." + formatMessage);
-    } else if versions.size == 2 && (versions[1] == "" || versions[2] == "") {
+    } else if versions.size == 2 && (versions[0] == "" || versions[1] == "") {
       throw new owned MasonError("Unbounded chplVersion ranges are not allowed." + formatMessage);
     }
 
@@ -223,19 +223,19 @@ proc parseChplVersion(brick: borrowed Toml?): (VersionInfo, VersionInfo) {
         throw new owned MasonError("Invalid Chapel version format: " + ver + formatMessage);
       }
       const nums = for s in semver.split(".") do s:int;
-      ret.major = nums[1];
-      ret.minor = nums[2];
-      if nums.size == 3 then ret.bug = nums[3];
+      ret.major = nums[0];
+      ret.minor = nums[1];
+      if nums.size == 3 then ret.bug = nums[2];
 
       return ret;
     }
 
-    low = parseString(versions[1]);
+    low = parseString(versions[0]);
 
     if (versions.size == 1) {
       hi = new VersionInfo(max(int), max(int), max(int));
     } else {
-      hi = parseString(versions[2]);
+      hi = parseString(versions[1]);
     }
 
     if (low <= hi) == false then
@@ -347,7 +347,7 @@ private proc createDepTree(root: unmanaged Toml) {
 private proc createDepTrees(depTree: unmanaged Toml, ref deps: list(unmanaged Toml), name: string) : unmanaged Toml {
   var depList: list(unmanaged Toml?);
   while deps.size > 0 {
-    var dep = deps[1];
+    var dep = deps[0];
 
     var brick       = dep["brick"]!;
     var package     = brick["name"]!.s;
@@ -379,7 +379,7 @@ private proc createDepTrees(depTree: unmanaged Toml, ref deps: list(unmanaged To
       var dependency = createDepTrees(depTree, manifests, package);
     }
     delete dep;
-    deps.pop(1);
+    deps.pop(0);
   }
   // Use toArray here to avoid making Toml aware of `list`, for now.
   if depList.size > 0 then

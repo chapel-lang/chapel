@@ -87,19 +87,19 @@ proc MASON_REGISTRY {
 
         if regArr.size == 1 {
           // get the name from the last part of the location
-          var name: string = getRegNameFromLoc(regArr[1]);
-          regTup = (name, regArr[1]);
+          var name: string = getRegNameFromLoc(regArr[0]);
+          regTup = (name, regArr[0]);
         } else {
           // found a 'name|location' pair
-          regTup = (regArr[1], regArr[2]);
+          regTup = (regArr[0], regArr[1]);
         }
         registries.append(regTup);
       }
     }
 
     // Make sure all of the registry names are unique
-    for i in 1..registries.size {
-      for j in i+1..registries.size {
+    for i in registries.indices {
+      for j in i+1..<registries.size {
         if registries(i)(0) == registries(j)(0) {
           stderr.writeln("registry names specified in MASON_REGISTRY must be unique:");
           stderr.writeln(registries(i)(0), " - ", registries(i)(1));

@@ -435,6 +435,12 @@ module ChapelArray {
   pragma "no doc"
   config param CHPL_WARN_DOMAIN_LITERAL = "unset";
 
+  // the low bound to use for array literals
+  pragma "no doc"
+  config param arrayLiteralLowBound = defaultLowBound;
+  pragma "no doc"
+  config param capturedIteratorLowBound = defaultLowBound;
+
   pragma "ignore transfer errors"
   proc chpl__buildArrayExpr( elems ...?k ) {
 
@@ -447,18 +453,18 @@ module ChapelArray {
     // elements of string literals are assumed to be of type string
     type elemType = _getLiteralType(elems(0).type);
     pragma "unsafe" // 'elemType' can be non-nilable
-    var A : [1..k] elemType;  //This is unfortunate, can't use t here...
+    var A : [arrayLiteralLowBound..#k] elemType;  //This is unfortunate, can't use t here...
 
     for param i in 0..k-1 {
       type currType = _getLiteralType(elems(i).type);
 
       if currType != elemType {
-        compilerError( "Array literal element " + (i+1):string +
+        compilerError( "Array literal element " + i:string +
                        " expected to be of type " + elemType:string +
                        " but is of type " + currType:string );
       }
 
-      A(i+1) = elems(i);
+      A(i+arrayLiteralLowBound) = elems(i);
     }
 
     return A;
@@ -484,13 +490,13 @@ module ChapelArray {
       type elemValType = _getLiteralType(elemVal.type);
 
       if elemKeyType != keyType {
-        compilerError("Associative array key element " + ((i+3)/2):string +
+        compilerError("Associative array key element " + (i/2):string +
                        " expected to be of type " + keyType:string +
                        " but is of type " + elemKeyType:string);
       }
 
       if elemValType != valType {
-        compilerError("Associative array value element " + ((i+2)/2):string
+        compilerError("Associative array value element " + (i/2):string
                       + " expected to be of type " + valType:string
                       + " but is of type " + elemValType:string);
       }
@@ -590,7 +596,7 @@ module ChapelArray {
     type keyType = _getLiteralType(keys(0).type);
     for param i in 1..count-1 do
       if keyType != _getLiteralType(keys(i).type) {
-        compilerError("Associative domain element " + (i+1):string +
+        compilerError("Associative domain element " + i:string +
                       " expected to be of type " + keyType:string +
                       " but is of type " +
                       _getLiteralType(keys(i).type):string);
@@ -1442,11 +1448,11 @@ module ChapelArray {
     }
 
     /* Remove all indices from this domain, leaving it empty */
-
-    // For rectangular domains, create an empty domain and assign it to this
-    // one to make sure that we leverage all of the array's normal resizing
-    // machinery.
     proc clear() where isRectangularDom(this) {
+      // For rectangular domains, create an empty domain and assign it to this
+      // one to make sure that we leverage all of the array's normal resizing
+      // machinery.
+
       var emptyDom: this.type;
       this = emptyDom;
     }
@@ -2973,13 +2979,13 @@ module ChapelArray {
     /*
        Return an array of locales over which this array has been distributed.
     */
-    //
-    // TODO: Is it really appropriate that the array should provide
-    // this dsi routine rather than having this call forward to the
-    // domain[.dist] here?  Do any of the array implementations do
-    // anything other than that with it?
-    //
     proc targetLocales() {
+      //
+      // TODO: Is it really appropriate that the array should provide
+      // this dsi routine rather than having this call forward to the
+      // domain[.dist] here?  Do any of the array implementations do
+      // anything other than that with it?
+      //
       return _value.dsiTargetLocales();
     }
 
@@ -4251,7 +4257,9 @@ module ChapelArray {
       r = r #i;
 
     if !shapeful then
-      r = 1 .. #i;
+      // return 1..0 (the empty range value) if the size is 0; 0.. #i otherwise
+      // (unless capturedIteratorLowBound is overridden)
+      r = if i == 0 then 1..0 else capturedIteratorLowBound .. #i;
 
     pragma "insert auto destroy"
     var D = { r };

@@ -120,9 +120,9 @@ proc main(args: [] string) {
   sync {     // wait for all process() tasks to complete before continuing
     while true {
       input.readUntil("\n".toByte(), data);
-      const start = data.size + 1;
+      const start = data.size;
       input.readUntil(">".toByte(), data);
-      const last = data.size;
+      const last = data.size-1;
 
       if data[last] == ">".toByte() {
         // '-2' to skip over '\n>'

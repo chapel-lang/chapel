@@ -105,7 +105,7 @@ function removeUsage() {
     exit 1;
   fi
 
-  sed -e '/\*\*Usage\*\*/ { N; N; N; N; N; N; d; }' $1 > $1.tmp
+  sed -e '/\*\*Usage\*\*/ { N; N; N; N; N; N; N; N; N; N; N; N; d; }' $1 > $1.tmp
   mv $1.tmp $1
 }
 
@@ -223,6 +223,14 @@ fixTitle "Strings" $file
 removeUsage $file
 
 ## End of String ##
+
+## Bytes ##
+
+file="./Bytes.rst"
+fixTitle "Bytes" $file
+removeUsage $file
+
+## End of Bytes ##
 
 ## UtilMisc_forDocs ##
 

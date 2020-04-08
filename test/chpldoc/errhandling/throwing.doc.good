@@ -11,6 +11,13 @@ throwing.doc
 
    use throwing.doc;
 
+
+or
+
+.. code-block:: chapel
+
+   import throwing.doc;
+
 **Submodules**
 
 .. toctree::
@@ -60,6 +67,13 @@ Inner
 .. code-block:: chapel
 
    use throwing.doc.Inner;
+
+
+or
+
+.. code-block:: chapel
+
+   import throwing.doc.Inner;
 
 .. function:: proc emptyNoDocNoArg() throws
 

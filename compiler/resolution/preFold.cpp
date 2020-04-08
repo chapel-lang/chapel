@@ -483,7 +483,7 @@ static Expr* preFoldPrimOp(CallExpr* call) {
 
     int64_t n = testCaptureVector.size();
     if (index <= 0 || index > n) {
-      USR_FATAL(call, "index '%i' out of bounds, expected to be between '1' and '%i'",
+      USR_FATAL(call, "index '%" PRId64 "' out of bounds, expected to be between '1' and '%" PRId64 "'",
                 index, n);
     }
 
@@ -648,7 +648,7 @@ static Expr* preFoldPrimOp(CallExpr* call) {
     if (name == NULL) {
       USR_FATAL(call,
                 "'%d' is not a valid field number for %s",
-                fieldNum,
+                fieldNum-1,
                 toString(classType));
     }
 
@@ -720,7 +720,7 @@ static Expr* preFoldPrimOp(CallExpr* call) {
       // specified.  This is the user's error.
       USR_FATAL(call,
                 "'%d' is not a valid field number for %s",
-                fieldNum,
+                fieldNum-1,
                 toString(classType));
     }
 
@@ -1905,7 +1905,7 @@ static Expr* preFoldNamed(CallExpr* call) {
       }
 
       if (index < 0 || index > at->fields.length-2) {
-        USR_FATAL(call, "type index expression '%i' out of bounds (0..%d)", index, at->fields.length-2);
+        USR_FATAL(call, "type index expression '%" PRId64 "' out of bounds (0..%d)", index, at->fields.length-2);
       }
 
       sprintf(field, "x%" PRId64, index);

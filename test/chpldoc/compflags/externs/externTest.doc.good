@@ -10,6 +10,13 @@ externTest.doc
 
    use externTest.doc;
 
+
+or
+
+.. code-block:: chapel
+
+   import externTest.doc;
+
 .. default-domain:: chpl
 
 ..module:: Other
@@ -21,3 +28,10 @@ Other
 .. code-block:: chapel
 
    use externTest.doc.Other;
+
+
+or
+
+.. code-block:: chapel
+
+   import externTest.doc.Other;

@@ -85,11 +85,11 @@ module UnorderedCopy {
   /*
      Unordered copy. Only supported for identical trivially copyable types.
    */
-  // Version to provide a clean signature for docs and to provide a clean error
-  // message instead of just "unresolved call". Last resort to avoid thwarting
-  // promotion for POD arrays.
   pragma "last resort"
   inline proc unorderedCopy(ref dst, src): void {
+    // Version to provide a clean signature for docs and to provide a clean error
+    // message instead of just "unresolved call". Last resort to avoid thwarting
+    // promotion for POD arrays.
     compilerError("unorderedCopy is only supported between identical trivially copyable types");
   }
 

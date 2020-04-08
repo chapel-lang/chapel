@@ -62,7 +62,7 @@ proc masonInit(args) throws {
         otherwise {
           if arg.startsWith('--name=') {
             var res = arg.split("=");
-            packageName = res[2];
+            packageName = res[1];
           }
           else {
             if args[countArgs - 2] != "--name" then dirName = arg;
@@ -128,7 +128,7 @@ proc validateInit(path: string, name: string, isNameDiff: bool, show: bool) thro
 
   var files = [ "/Mason.toml", "/src" , "/test" , "/example", "/.git", "/.gitignore", "/src/" + moduleName ];
   var toBeCreated : list(string);
-  for idx in 1..files.size do {
+  for idx in 0..<files.size do {
     const metafile = files(idx);
     const dir = metafile;
     if dir == "/Mason.toml" || dir == "/.gitignore" {
@@ -161,7 +161,7 @@ proc validateInit(path: string, name: string, isNameDiff: bool, show: bool) thro
     else if metafile == "/src/" + moduleName {
       var moduleFileName = moduleName.split(".");
       if !isFile(path + "/src/" + moduleName) then
-      makeModule(path, moduleFileName[1]);
+      makeModule(path, moduleFileName[0]);
     }
     else if metafile == "/.gitignore" {
       addGitIgnore(path);
@@ -307,9 +307,9 @@ proc validatePackageNameChecks(path: string, name: string) {
     else {
       if isDir(path + '/src') {
         const files = listdir(path + '/src');
-        const file = files[1];
+        const file = files[0];
         const fileName = file.split(".");
-        const nameModule = fileName[1];
+        const nameModule = fileName[0];
         if validateNameInit(nameModule) then actualName = nameModule;
       }
       else {
