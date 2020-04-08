@@ -273,6 +273,7 @@ module BytesStringCommon {
     }
   }
 
+  // TODO: I wasn't very good about caching variables locally in this one.
   proc getSlice(const ref x: ?t, r: range(?)) {
     assertArgType(t, "getSlice");
 
