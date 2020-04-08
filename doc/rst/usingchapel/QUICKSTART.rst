@@ -117,8 +117,8 @@ you will need to rebuild Chapel from source in a different configuration.
 
    Note that these environment settings will be lost outside of this terminal session.
    You can choose to source ``setchplenv.bash`` whenever you want to use relevant commands.
-   If you want to automate this setup, refer to :ref:`chplenv.rst <readme-chplenv.recommended_settings>`
-   for essential variables that should be exported in your dotfiles.
+   If you want these environment settings to persist for future terminal sessions,
+   copy the commands from the Recommended Settings in :ref:`chplenv.rst <readme-chplenv.recommended_settings>` into your ``~/.bashrc`` file.
    Also, you might use a :ref:`chplconfig <readme-chplenv.chplconfig>` file.
 
    See :ref:`chplenv.rst <readme-chplenv>` for a complete description of
