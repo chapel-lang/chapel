@@ -206,11 +206,12 @@ module DistributedDeque {
   pragma "always RVF"
   record DistDeque {
     type eltType;
+
+    // This is unused, and merely for documentation purposes. See '_value'.
     /*
       The implementation of the Deque is forwarded. See :class:`DistributedDequeImpl` for
       documentation.
     */
-    // This is unused, and merely for documentation purposes. See '_value'.
     var _impl : unmanaged DistributedDequeImpl(eltType)?;
 
     // Privatization id

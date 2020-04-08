@@ -225,11 +225,11 @@ module DistributedBag {
   record DistBag {
     type eltType;
 
+    // This is unused, and merely for documentation purposes. See '_value'.
     /*
       The implementation of the Bag is forwarded. See :class:`DistributedBagImpl` for
       documentation.
     */
-    // This is unused, and merely for documentation purposes. See '_value'.
     var _impl : unmanaged DistributedBagImpl(eltType)?;
 
     // Privatized id...
