@@ -197,6 +197,8 @@ private proc runTests(show: bool, run: bool, parallel: bool, ref cmdLineCompopts
         
         if compilation != 0 {
           stderr.writeln("compilation failed for " + test);
+          const errMsg = testName: string +" failed to compile";
+          result.addError(testName, test,  errMsg);
         }
         else {
           if show || !run then writeln("Compiled '", test, "' successfully");
