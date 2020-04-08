@@ -144,6 +144,7 @@ where tag == iterKind.follower
 }
 
 //************************* Dynamic domain iterator
+//This is the serial version of this iterator
 /*
 
   :arg c: The domain to iterate over. The rank of the domain must be greater
@@ -173,7 +174,6 @@ where tag == iterKind.follower
   This iterator can be called in serial and zippered contexts.
 */
 
-//This is the serial version of this iterator
 iter dynamic(c:domain, chunkSize:int=1, numTasks:int=0, parDim:int=0)
 {
   if debugDynamicIters then
@@ -310,7 +310,7 @@ where tag == iterKind.follower
 }
 
 //************************* Guided domain iterator
-
+// Here is the serial version of this iterator.
 /*
 
   :arg c: The domain to iterate over. The rank of the domain must be greater
@@ -340,7 +340,6 @@ where tag == iterKind.follower
   This iterator can be called in serial and zippered contexts.
 
 */
-// Here is the serial version of this iterator.
 iter guided(c:domain, numTasks:int=0, parDim:int=0)
 {
   if debugDynamicIters then
@@ -601,6 +600,7 @@ where tag == iterKind.follower
 }
 
 //************************* Adaptive work-stealing domain iterator
+// Here is the serial version of this iterator.
 /*
 
   :arg c: The domain to iterate over. Must have a length greater than zero.
@@ -631,7 +631,6 @@ where tag == iterKind.follower
 
   This iterator can be called in serial and zippered contexts.
 */
-// Here is the serial version of this iterator.
 iter adaptive(c:domain, numTasks:int=0, parDim:int=0)
 {
   if debugDynamicIters then
