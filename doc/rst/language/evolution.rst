@@ -21,10 +21,10 @@ version 1.22, April 2020
 0- vs. 1-based Indexing
 ***********************
 
-Version 1.22 makes a major change to Chapel with respect to indexing
-for cases that involve implicit indices.  Historically, Chapel has
-used 1-based indexing for such cases, where it now uses 0-based
-indexing.
+Version 1.22 makes a major breaking change to Chapel with respect to
+indexing for cases that involve implicit indices.  Historically,
+Chapel has used 1-based indexing for such cases, where it now uses
+0-based indexing.
 
 The major types that are affected by this change are tuples, strings,
 ``bytes``, and lists.  In addition, arrays that don't have a
@@ -35,9 +35,9 @@ iterator expression.
 This change also has a ripple-down effect to features and routines
 related to these types.  For example, varargs arguments are equivalent
 to tuples in Chapel, so inherit their 0-based indexing.  Similarly,
-queries on rectangular domains and arrays are based on tuple
-semantics, so their dimensions are now numbered from 0 as well.
-Certain library routines such as `find()` on strings used to return 0
+queries on rectangular domains and arrays are based on tuples,
+so their dimensions are now numbered from 0 as well.
+Certain library routines such as ``find()`` on strings used to return 0
 when no match was found, but now return -1 in order to avoid returning
 a legal string index.
 
@@ -52,10 +52,11 @@ neutral to 1- vs. 0-based indexing as possible, to avoid running afoul
 of the strong emotions that such choices evoke in users when it
 doesn't match their preference.  As a result, Chapel's primary types
 for parallel computation on regular collections of data—namely, its
-ranges, rectangular domains, and arrays with declared domains—require
-users to specify both low and high bounds.  Happily, these core
-features are not affected by this change in Chapel 1.22 and codes
-relying solely on such features will not require updates.
+ranges and rectangular domains, as well as rectangular arrays defined
+by ranges or domains—require users to specify both low and high
+bounds.  Happily, these core features are not affected by this change
+in Chapel 1.22, so codes relying solely on such features will not
+require updates.
 
 However, for other types such as tuples and strings, we were forced to
 make a decision.  At the time of Chapel's inception, the main
@@ -63,14 +64,14 @@ languages from which we were trying to attract users were C/C++, Java,
 Fortran, and Matlab.  Since half of these languages used 0-based
 indexing and the other half used 1-based, there didn't seem to be an
 obvious best answer.  In the end, we decided to go with 1-based
-indexing based on the argument that we were striving to create a
-productive language, and that counting from 1 is arguably most natural
-for most people.
+indexing on the argument that we were striving to create a productive
+language, and that counting from 1 is arguably most natural for most
+people.
 
 Over time, however, the vast majority of newer languages that we look
 to for users or inspiration—most notably Python, Swift, and Rust—have
-been almost exclusively 0-based.  Meanwhile, the number of notable
-1-based languages has been nearly stagnant.
+been almost exclusively 0-based.  Meanwhile, very few notable new
+languages have used 1-based indexing.
 
 Furthermore, when polled, the vast majority of active Chapel users
 expressed a strong preference for 0-based programming, given the
@@ -79,7 +80,7 @@ Fortran community).  We also realized (a) that Chapel's design should
 be more concerned with lowering barriers for existing programmers than
 for non-programmers; and (b) that even though we had arguably biased
 the original design in favor of Fortran programmers, most of Chapel's
-early adopters have been from the C/C++ and Python communities.
+early adopters have come from C/C++ and Python backgrounds.
 
 Based on this, we undertook an experiment to see what it would take to
 convert from 1-based to 0-based programming.  Reviewing Chapel's
@@ -89,7 +90,7 @@ HPO.  While the overall effort of making the change was not
 insignificant, it also wasn't particularly difficult for the most
 part.  Overall, our finding was that in cases where the changes
 weren't simply neutral in their impact on style, it almost always
-resulted in benefits in terms of code clarity, because there tended to
+benefitted the code in terms of clarity, because there tended to
 be fewer adjustments of +/- 1 in the code.
 
 For these reasons, we decided to bite the bullet and make the switch
@@ -102,11 +103,11 @@ Index-neutral Features
 
 This experience also led to a number of new programming features in
 Chapel 1.21 designed to help write code in more of an index-neutral
-style.  Chief among these are new `.indices` queries on most of the
+style.  Chief among these are new ``.indices`` queries on most of the
 relevent types as well as support for loops over heterogeneous tuples.
 We also introduced features that we found to be useful in updating
-code, such as support for open-interval ranges and `.first` and
-`.last` queries on enumerated types.  To this end, even though Chapel
+code, such as support for open-interval ranges and ``.first`` and
+``.last`` queries on enumerated types.  To this end, even though Chapel
 still has cases that require making this 0- vs. 1-based indexing
 decision, we encourage code to be written in an index-neutral style
 whenever possible, and believe that most common code patterns can be.
@@ -124,7 +125,7 @@ experiences:
   upgrade.
 
 * Next, when transitioning code to Chapel 1.22, make sure to compile
-  it with neither `--fast` nor `--no-checks` enabled so that bounds
+  it with neither ``--fast`` nor ``--no-checks`` enabled so that bounds
   checks are turned on in the generated code.  In cases where a
   program is accessing all of the elements of a collection (as is
   common for tuples) this will help identify data structures that
