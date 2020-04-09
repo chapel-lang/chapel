@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -119,9 +120,9 @@ proc BlockCyclicDim.dsiGetPrivatizeData1d() {
 }
 
 proc type BlockCyclicDim.dsiPrivatize1d(privatizeData) {
-  return new BlockCyclicDim(lowIdx = privatizeData(1),
-                            blockSize = privatizeData(2),
-                            numLocales = privatizeData(3));
+  return new BlockCyclicDim(lowIdx = privatizeData(0),
+                            blockSize = privatizeData(1),
+                            numLocales = privatizeData(2));
 }
 
 proc BlockCyclicDim.dsiUsesLocalLocID1d() param return false;
@@ -136,10 +137,10 @@ proc type BlockCyclic1dom.dsiPrivatize1d(privDist, privatizeData) {
                   idxType   = this.idxType,
                   stoIndexT = this.stoIndexT,
                   stridable = this.stridable,
-                  wholeR          = privatizeData(1),
-                  wholeRstrideAbs = privatizeData(2),
-                  storagePerCycle = privatizeData(3),
-                  adjLowIdx       = privatizeData(4),
+                  wholeR          = privatizeData(0),
+                  wholeRstrideAbs = privatizeData(1),
+                  storagePerCycle = privatizeData(2),
+                  adjLowIdx       = privatizeData(3),
                   // could include these in privatizeData
                   blockSizePos  = privDist.blockSizePos,
                   numLocalesPos = privDist.numLocalesPos,
@@ -151,9 +152,9 @@ proc BlockCyclic1dom.dsiGetReprivatizeData1d() {
 }
 
 proc BlockCyclic1dom.dsiReprivatize1d(reprivatizeData) {
-  this.wholeR          = reprivatizeData(1);
-  this.wholeRstrideAbs = reprivatizeData(2);
-  this.storagePerCycle = reprivatizeData(3);
+  this.wholeR          = reprivatizeData(0);
+  this.wholeRstrideAbs = reprivatizeData(1);
+  this.storagePerCycle = reprivatizeData(2);
 }
 
 proc BlockCyclic1dom.dsiUsesLocalLocID1d() param return false;

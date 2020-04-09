@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -561,7 +562,7 @@ inline proc _cond_test(m: reMatch) return m.matched;
     :returns: the portion of ``this`` referred to by the match
  */
 proc string.this(m:reMatch) {
-  if m.matched then return this[m.offset+1..#m.size];
+  if m.matched then return this[m.offset..#m.size];
   else return "";
 }
 
@@ -574,7 +575,7 @@ proc string.this(m:reMatch) {
     :returns: the portion of ``this`` referred to by the match
  */
 proc bytes.this(m:reMatch) {
-  if m.matched then return this[(m.offset+1):int..#m.size];
+  if m.matched then return this[m.offset:int..#m.size];
   else return b"";
 }
 
@@ -643,8 +644,8 @@ record regexp {
   proc _handle_captures(text: exprType, matches:_ddata(qio_regexp_string_piece_t),
                         nmatches:int, ref captures) {
     assert(nmatches >= captures.size);
-    for param i in 1..captures.size {
-      var m = _to_reMatch(matches[i]);
+    for param i in 0..captures.size-1 {
+      var m = _to_reMatch(matches[i+1]);
       if captures[i].type == reMatch {
         captures[i] = m;
       } else {
@@ -864,10 +865,7 @@ record regexp {
 
       if pos < splitstart {
         // Yield splitted value
-        if exprType == string then
-          yield text[pos+1..splitstart];
-        else 
-          yield text[(pos+1):int..splitstart:int];
+        yield text[pos..splitstart-1];
       } else {
         yield "":exprType;
       }
@@ -926,7 +924,7 @@ record regexp {
       param nret = captures+1;
       var ret:nret*reMatch;
       for i in 0..captures {
-        ret[i+1] = new reMatch(got, matches[i].offset:byteIndex, matches[i].len);
+        ret[i] = new reMatch(got, matches[i].offset:byteIndex, matches[i].len);
       }
       yield ret;
       cur = matches[0].offset + matches[0].len;
@@ -945,9 +943,9 @@ record regexp {
      :arg global: if true, replace multiple matches
      :returns: a tuple containing (new text, number of substitutions made)
    */
-  // TODO -- move subn after sub for documentation clarity
   proc subn(repl: exprType, text: exprType, global = true ):(exprType, int)
   {
+    // TODO -- move subn after sub for documentation clarity
     var pos:byteIndex;
     var endpos:byteIndex;
 
@@ -1018,20 +1016,17 @@ record regexp {
     var litOne = new ioLiteral("new regexp(\"");
     var litTwo = new ioLiteral("\")");
 
-    try {
-      if (f.read(litOne, pattern, litTwo)) {
-        on this.home {
-          var localPattern = pattern.localize();
-          var opts:qio_regexp_options_t;
-          qio_regexp_init_default_options(opts);
-          qio_regexp_create_compile(localPattern.c_str(), localPattern.numBytes, opts, this._regexp);
-        }
+    if (f.read(litOne, pattern, litTwo)) then
+      on this.home {
+        var localPattern = pattern.localize();
+        var opts: qio_regexp_options_t;
+
+        qio_regexp_init_default_options(opts);
+        qio_regexp_create_compile(localPattern.c_str(),
+                                  localPattern.numBytes,
+                                  opts,
+                                  this._regexp);
       }
-    } catch e: SystemError {
-      f.setError(e.err);
-    } catch {
-      f.setError(EINVAL:syserr);
-    }
   }
 }
 

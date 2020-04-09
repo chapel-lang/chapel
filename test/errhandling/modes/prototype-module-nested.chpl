@@ -10,7 +10,7 @@ prototype module outermod {
   }
 
   module innermod {
-    use ExampleErrors;
+    use ExampleErrors, outermod;
 
     proc propError() {
       throwAnError();

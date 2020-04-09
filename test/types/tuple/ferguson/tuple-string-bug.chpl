@@ -14,8 +14,8 @@ proc test1() {
 
 proc test2() {
   var tup = f(msg);
+  writeln(tup(0));
   writeln(tup(1));
-  writeln(tup(2));
 }
 
 proc test3() {

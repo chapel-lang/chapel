@@ -4,7 +4,11 @@
 use Time;
 
 config const numTasks = here.maxTaskPar;
-config const numIters = if numLocales == 1 then 50_000 else 10_000;
+const locAtomicDflt = 50_000;
+const netAtomicDflt = 10_000;
+const procAtomicDflt = 1_000;
+const remAtomicDflt = if CHPL_NETWORK_ATOMICS != "none" then netAtomicDflt else procAtomicDflt;
+config const numIters = if numLocales == 1 then locAtomicDflt else remAtomicDflt;
 config const numItersPerTask = numIters / numLocales / numTasks;
 const numItersActual = numItersPerTask * numLocales * numTasks;
 

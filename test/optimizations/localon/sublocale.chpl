@@ -4,7 +4,7 @@ class Foo {
 
 proc main() {
   var f    = new borrowed Foo();
-  var LM   = here:LocaleModel;
+  var LM   = here._instance:LocaleModel;
   var wide = false;
 
   // If the variable `f` is represented as a wide pointer within the local-on,

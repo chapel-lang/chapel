@@ -39,7 +39,7 @@ proc main() {
         writeln("\nEvaluating F*F on [0, 1]:");
         H2.evalNPT(npt);
 
-        if i < fcn.domain.dim(1).high then
+        if i < fcn.domain.dim(0).high then
             writeln("\n======================================================================\n");
 
         delete F1;

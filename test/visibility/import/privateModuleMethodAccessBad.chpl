@@ -1,6 +1,5 @@
 module A {
   private use Inner;
-
   class Foo {
     var x: int;
     param p = 4;
@@ -8,6 +7,7 @@ module A {
     const c: bool;
   }
   private module Inner {
+    import A.Foo;
     proc Foo.hidden() {
       writeln("Uh oh, found the hidden module!");
     }

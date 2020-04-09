@@ -10,6 +10,13 @@ docConstants.doc
 
    use docConstants.doc;
 
+
+or
+
+.. code-block:: chapel
+
+   import docConstants.doc;
+
 .. enum:: enum Color { Red, Yellow }
 
    enum documentation 

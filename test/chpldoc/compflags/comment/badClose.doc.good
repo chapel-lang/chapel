@@ -11,5 +11,12 @@ badClose.doc
 
    use badClose.doc;
 
+
+or
+
+.. code-block:: chapel
+
+   import badClose.doc;
+
 .. function:: proc bad()
 

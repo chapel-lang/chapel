@@ -89,7 +89,7 @@ class Domain {
 }
 
 const locDom  : domain(3) = {0..xproc-1, 0..yproc-1, 0..zproc-1};
-var locGrid   : [locDom] locale?;
+var locGrid   : [locDom] locale;
 var Grid      : [locDom] unmanaged Domain?;
 
 record Validate {

@@ -17,7 +17,7 @@ proc test(message, sel, dd1, dd2) {
   hd(dd1.toString(), " + ", dd2.toString(), "  sel=", sel); tl();
 
   if selector == 0 || selector == sel {
-      const dm = new dmap(new DimensionalDist2D(mylocs!, dd1, dd2, "dm"));
+      const dm = new dmap(new DimensionalDist2D(mylocs, dd1, dd2, "dm"));
 
       const Dbase = {1..3, 1..5};
       const Ddm = Dbase dmapped dm;

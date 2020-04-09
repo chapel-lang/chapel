@@ -4,6 +4,10 @@ chpldoc.doc
 Usage:
    use chpldoc.doc;
 
+or
+
+   import chpldoc.doc;
+
 Submodules for this module are located in the chpldoc.doc/ directory
 
    proc commented(val: int): string
@@ -20,6 +24,10 @@ Defined
 
 Usage:
    use chpldoc.doc.Defined;
+
+or
+
+   import chpldoc.doc.Defined;
 
    
    If the source code defines a module, it can also have a comment associated

@@ -154,11 +154,11 @@ iter postorder(tree: borrowed Tree?): borrowed Tree {
          / \
         d   e
 */
-var tree = new owned Tree( "a",
-  new owned Tree("b"),
-  new owned Tree("c",
-    new owned Tree("d"),
-    new owned Tree("e")));
+var tree = new Tree( "a",
+  new Tree("b"),
+  new Tree("c",
+    new Tree("d"),
+    new Tree("e")));
 
 //
 // This method uses the postorder iterator to print out each node.

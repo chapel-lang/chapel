@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -79,6 +80,23 @@ const char* VisibilityStmt::getRename() const {
   return modRename;
 }
 
+bool VisibilityStmt::isARenamedSym(const char* name) const {
+  return renamed.count(name) == 1;
+}
+
+const char* VisibilityStmt::getRenamedSym(const char* name) const {
+  std::map<const char*, const char*>::const_iterator it;
+  const char*                                        retval = NULL;
+
+  it = renamed.find(name);
+
+  if (it != renamed.end()) {
+    retval = it->second;
+  }
+
+  return retval;
+}
+
 //
 // Returns the module symbol if the name provided matches the module imported or
 // used
@@ -124,6 +142,86 @@ void VisibilityStmt::updateEnclosingBlock(ResolveScope* scope, Symbol* sym) {
   scope->asBlockStmt()->useListAdd(this);
 
   scope->extend(this);
+}
+
+/************************************* | **************************************
+*                                                                             *
+* Verifies that all the symbols to be renamed in an import or use statement   *
+* refer to symbols that are visible from that module.                         *
+*                                                                             *
+************************************** | *************************************/
+void VisibilityStmt::validateRenamed() {
+  std::map<const char*, const char*>::iterator it;
+
+  BaseAST*            scopeToUse = getSearchScope();
+  const ResolveScope* scope      = ResolveScope::getScopeFor(scopeToUse);
+
+  for (it = renamed.begin(); it != renamed.end(); ++it) {
+    std::vector<Symbol*> symbols;
+
+    scope->getFields(it->second, symbols);
+
+    if (symbols.size() == 0) {
+      SymExpr* se = toSymExpr(src);
+
+      USR_FATAL_CONT(this,
+                     "Bad identifier in rename, no known '%s' in '%s'",
+                     it->second,
+                     se->symbol()->name);
+
+    } else if (symbols.size() == 1) {
+      Symbol* sym = symbols[0];
+
+      if (sym->hasFlag(FLAG_PRIVATE)) {
+        USR_FATAL_CONT(this,
+                       "Bad identifier in rename, '%s' is private",
+                       it->second);
+      }
+
+    } else {
+      INT_ASSERT(false);
+    }
+  }
+}
+
+/************************************* | **************************************
+*                                                                             *
+* Verifies that all the symbols to be renamed in an import or use statement   *
+* are not repeats                                                             *
+*                                                                             *
+************************************** | *************************************/
+void VisibilityStmt::noRepeatsInRenamed() const {
+  std::map<const char*, const char*>::const_iterator it2;
+
+  for (it2 = renamed.begin(); it2 != renamed.end(); ++it2) {
+    std::map<const char*, const char*>::const_iterator next = it2;
+
+    for (++next; next != renamed.end(); ++next) {
+      if (strcmp(it2->second, next->second) == 0) {
+        // Renamed this variable twice.  Probably a mistake on the user's part,
+        // but not a catastrophic one
+        USR_WARN(this, "identifier '%s' is repeated", it2->second);
+      }
+
+      if (strcmp(it2->second, next->first) == 0) {
+        // This name is the old_name in one rename and the new_name in another
+        // Did the user actually want to cut out the middle man?
+        USR_WARN(this, "identifier '%s' is repeated", it2->second);
+        USR_PRINT("Did you mean to rename '%s' to '%s'?",
+                  next->second,
+                  it2->first);
+      }
+
+      if (strcmp(it2->first, next->second) == 0) {
+        // This name is the old_name in one rename and the new_name in another
+        // Did the user actually want to cut out the middle man?
+        USR_WARN(this, "identifier '%s' is repeated", it2->first);
+        USR_PRINT("Did you mean to rename '%s' to '%s'?",
+                  it2->second,
+                  next->first);
+      }
+    }
+  }
 }
 
 /************************************* | **************************************

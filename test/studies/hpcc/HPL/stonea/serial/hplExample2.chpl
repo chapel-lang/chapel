@@ -11,9 +11,9 @@ proc dgemm(
     C : [?CD] t)
 {
     // Calculate (i,j) using a dot product of a row of A and a column of B.
-    for i in AD.dim(1) {
-        for j in CD.dim(2) {
-            for k in AD.dim(2) {
+    for i in AD.dim(0) {
+        for j in CD.dim(1) {
+            for k in AD.dim(1) {
                 C[i,j] -= A[i, k] * B[k, j];
             }
         }
@@ -28,12 +28,12 @@ proc panelSolve(
     panel : domain(2),
     piv : [] int)
 {
-    var pnlRows = panel.dim(1);
-    var pnlCols = panel.dim(2);
+    var pnlRows = panel.dim(0);
+    var pnlCols = panel.dim(1);
 
     // Ideally some type of assertion to ensure panel is embedded in A's
     // domain
-    assert(piv.domain.dim(1) == A.domain.dim(1));
+    assert(piv.domain.dim(0) == A.domain.dim(0));
 
     // iterate through the columns
     for k in pnlCols {
@@ -42,7 +42,7 @@ proc panelSolve(
         // The pivot is the element with the largest absolute value.
         var (_, loc) =
             maxloc reduce zip(abs(A(col)), col);
-        var pivotRow = loc(1);
+        var pivotRow = loc(0);
         var pivot = A[pivotRow, k];
 
         // Swap the current row with the pivot row
@@ -74,10 +74,10 @@ proc panelSolve(
 // right of the block.
 proc updateBlockRow(A : [] ?t, tl : domain(2), tr : domain(2))
 {
-    var tlRows = tl.dim(1);
-    var tlCols = tl.dim(2);
-    var trRows = tr.dim(1);
-    var trCols = tr.dim(2);
+    var tlRows = tl.dim(0);
+    var tlCols = tl.dim(1);
+    var trRows = tr.dim(0);
+    var trCols = tr.dim(1);
 
     assert(tlCols == trRows);
 
@@ -93,8 +93,8 @@ proc updateBlockRow(A : [] ?t, tl : domain(2), tr : domain(2))
 // blocked LU factorization with pivoting for matrix augmented with vector of
 // RHS values.
 proc LUFactorize(n : int, A : [1..n, 1..n+1] real, piv : [1..n] int) {
-    const ARows = A.domain.dim(1);
-    const ACols = A.domain.dim(2);
+    const ARows = A.domain.dim(0);
+    const ACols = A.domain.dim(1);
 
     param blkSize = 3;
     piv = 1..n;
@@ -173,7 +173,7 @@ proc matrixMult(
 {
     C = 0;
 
-    for (i,j,k) in {C.domain.dim(1), C.domain.dim(2), 1..p} {
+    for (i,j,k) in {C.domain.dim(0), C.domain.dim(1), 1..p} {
         C[i,j] += A[i,k] * B[k,j];
     }
 }
@@ -181,18 +181,18 @@ proc matrixMult(
 // given a matrix in A in form: [L, U] multiply the L and U parts into
 // a resulting matrix C.
 proc selfMult(n : int, A : [?D] real, C : [D] real) {
-    assert(D.dim(1) == D.dim(2));
+    assert(D.dim(0) == D.dim(1));
     C = 0;
 
     forall (i,j) in D {
         if(i <= j) {
-          for k in D.dim(1).low..i-1 {
+          for k in D.dim(0).low..i-1 {
                 C[i,j] += A[i,k] * A[k,j];
             }
             C[i,j] += A[i,j];
         }
         else if(j <= i){
-          for k in D.dim(1).low..j {
+          for k in D.dim(0).low..j {
                 C[i,j] += A[i,k] * A[k,j];
             }
         }
@@ -206,7 +206,7 @@ proc selfMult(n : int, A : [?D] real, C : [D] real) {
 proc permuteMatrix(matrix : [?dmn], in vector) {
     //var pdmn : sparse subdomain(dmn);
     var pdmn =
-        {1..vector.domain.dim(1).size, 1..vector.domain.dim(1).size};
+        {1..vector.domain.dim(0).size, 1..vector.domain.dim(0).size};
     var p : [pdmn] int;
     //p.IRV = 0;
 
@@ -220,9 +220,9 @@ proc permuteMatrix(matrix : [?dmn], in vector) {
     var permuted = matrix;
 
     matrixMult(
+        dmn.dim(0).size,
+        dmn.dim(0).size,
         dmn.dim(1).size,
-        dmn.dim(1).size,
-        dmn.dim(2).size,
         p, matrix, permuted);
 
     matrix = permuted;
@@ -234,8 +234,8 @@ proc permuteBack(matrix : [?dmn], in piv) {
     // not to mention all the data being shuffled around, but this function
     // is in the test system so it's excusable.
 
-    const low  = piv.domain.dim(1).low;
-    const high = piv.domain.dim(1).high;
+    const low  = piv.domain.dim(0).low;
+    const high = piv.domain.dim(0).high;
 
     for i in piv.domain {
         for j in low..high-1 {
@@ -248,8 +248,8 @@ proc permuteBack(matrix : [?dmn], in piv) {
 }
 
 proc permuteBackVec(vector : [?dmn], in piv) {
-    const low  = piv.domain.dim(1).low;
-    const high = piv.domain.dim(1).high;
+    const low  = piv.domain.dim(0).low;
+    const high = piv.domain.dim(0).high;
 
     for i in piv.domain {
         for j in low..high-1 {

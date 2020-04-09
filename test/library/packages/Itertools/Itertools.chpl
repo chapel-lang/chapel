@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -104,7 +105,7 @@ module Itertools {
   pragma "no doc"
   iter repeat (param tag: iterKind, arg, times = 0, followThis)
       where tag == iterKind.follower && followThis.size == 1 {
-    const workingIters = followThis(1);
+    const workingIters = followThis(0);
 
     for workingIters do yield arg;
   }
@@ -181,11 +182,11 @@ module Itertools {
   iter cycle(param tag: iterKind, arg, times = 0, followThis)
       where tag == iterKind.follower && followThis.size == 1 {
 
-    const workingIters = followThis(1);
+    const workingIters = followThis(0);
 
-    if isString(arg) || isArray(arg) || isTuple(arg) then
+    if isString(arg) || isBytes(arg) || isArray(arg) || isTuple(arg) then
       for idx in workingIters do
-        yield arg[(idx % arg.size) + 1];
+        yield arg[idx % arg.size];
     else {
       var tempObject: [1..#arg.size] arg.low.type;
 

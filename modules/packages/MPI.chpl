@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -565,6 +566,8 @@ module MPI {
 
    */
    module C_MPI {
+     use SysCTypes;
+     use MPI;
 
   // Special case MPI_Init -- we will send these null pointers
   // and let the compiler do all the munging
@@ -725,6 +728,7 @@ module MPI {
 
 
   module C_Env {
+    use SysCTypes;
     // Helper routines to access the environment
     extern proc getenv(name : c_string) : c_string;
     extern proc setenv(name : c_string, envval : c_string, overwrite : c_int) : c_int;

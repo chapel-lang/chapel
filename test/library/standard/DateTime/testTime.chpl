@@ -29,7 +29,7 @@ proc test_comparing() {
   //self.assertEqual(cmp(t1, t2), 0);
   //self.assertEqual(cmp(t2, t1), 0);
 
-  for i in 1..args.size {
+  for i in 0..#args.size {
     var newargs = args;
     newargs[i] = args[i] + 1;
     t2 = new time((...newargs));   // this is larger than t1
@@ -99,7 +99,7 @@ proc test_replace() {
   var base = new time((...args));
   assert(base == base.replace(tzinfo=base.tzinfo));
 
-  var i = 1;
+  var i = 0;
   for (name, newval) in (("hour", 5),
                          ("minute", 6),
                          ("second", 7),

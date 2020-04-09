@@ -2,7 +2,7 @@ config const beNoisy = false;
 {
   writeln("Locales array iteration");
   for loc in Locales {
-    const A = (loc:LocaleModel).getChildArray();
+    const A = (loc._value:LocaleModel).getChildArray();
     forall a in A do
       if beNoisy then writeln((a, chpl_getSubloc()));
   }

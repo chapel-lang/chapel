@@ -1,2 +1,1 @@
 line-numbers-after-newline-in-string.chpl:3: error: variable 'x' is not initialized and has no type
-line-numbers-after-newline-in-string.chpl:3: error: split initialization is not supported for globals

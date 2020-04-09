@@ -13,11 +13,11 @@ writeln(B);
 
 proc initMatrix(A:[?D]) {
   if (D.rank == 2) {
-    if ((D.dim(1).low == D.dim(2).low) & (D.dim(1).high == D.dim(2).high)) {
+    if ((D.dim(0).low == D.dim(1).low) & (D.dim(0).high == D.dim(1).high)) {
       A = 1.0;
     }
     else {
-      var minRange = if (D.dim(1).size < D.dim(2).size) then D.dim(1) else D.dim(2); 
+      var minRange = if (D.dim(0).size < D.dim(1).size) then D.dim(0) else D.dim(1); 
       for i in minRange {
         A(i,i) = 1.0;
       }

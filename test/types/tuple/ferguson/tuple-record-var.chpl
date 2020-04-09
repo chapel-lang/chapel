@@ -7,7 +7,7 @@ var g:R;
 proc t1( tup )
 {
   g.x = 2;
-  writeln(tup(2).x);
+  writeln(tup(1).x);
 }
 
 proc t2( tup )

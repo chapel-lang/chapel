@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -29,6 +30,9 @@ module ChapelBase {
   // These two are called by compiler-generated code.
   extern proc chpl_config_has_value(name:c_string, module_name:c_string): bool;
   extern proc chpl_config_get_value(name:c_string, module_name:c_string): c_string;
+
+  // the default low bound to use for arrays, tuples, etc.
+  config param defaultLowBound = 0;
 
   // Is the cache for remote data enabled at compile time?
   config param CHPL_CACHE_REMOTE: bool = false;
@@ -1061,7 +1065,7 @@ module ChapelBase {
   }
 
 
-  inline proc _ddata_reallocate(ref ddata,
+  inline proc _ddata_reallocate(oldDdata,
                                 type eltType,
                                 oldSize: integral,
                                 newSize: integral,
@@ -1074,12 +1078,20 @@ module ChapelBase {
                                        subloc: chpl_sublocID_t,
                                        ref callPostAlloc: bool): c_void_ptr;
     var callPostAlloc: bool;
-    const oldDdata = ddata;
-    ddata = chpl_mem_array_realloc(ddata: c_void_ptr, oldSize.safeCast(size_t),
+
+    // destroy any elements that are going away
+    param needsDestroy = __primitive("needs auto destroy",
+                                     __primitive("deref", oldDdata[0]));
+    if needsDestroy && (oldSize > newSize) {
+      forall i in newSize..oldSize-1 do
+        chpl__autoDestroy(oldDdata[i]);
+    }
+
+    const newDdata = chpl_mem_array_realloc(oldDdata: c_void_ptr, oldSize.safeCast(size_t),
                                    newSize.safeCast(size_t),
-                                   _ddata_sizeof_element(ddata),
-                                   subloc, callPostAlloc): ddata.type;
-    init_elts(ddata, newSize, eltType, lo=oldSize);
+                                   _ddata_sizeof_element(oldDdata),
+                                   subloc, callPostAlloc): oldDdata.type;
+    init_elts(newDdata, newSize, eltType, lo=oldSize);
     if (callPostAlloc) {
       pragma "fn synchronization free"
       pragma "insert line file info"
@@ -1089,9 +1101,10 @@ module ChapelBase {
                                              newNmemb: size_t,
                                              eltSize: size_t);
       chpl_mem_array_postRealloc(oldDdata:c_void_ptr, oldSize.safeCast(size_t),
-                                 ddata:c_void_ptr, newSize.safeCast(size_t),
-                                 _ddata_sizeof_element(ddata));
+                                 newDdata:c_void_ptr, newSize.safeCast(size_t),
+                                 _ddata_sizeof_element(oldDdata));
     }
+    return newDdata;
   }
 
 
@@ -1412,14 +1425,21 @@ module ChapelBase {
   inline proc _cast(type t:chpl_anyreal, x:chpl_anyreal)
     return __primitive("cast", t, x);
 
-  inline proc _cast(type t:chpl_anybool, x:enum)
-    return x: int: bool;
+  inline proc _cast(type t:chpl_anybool, x:enum) throws {
+    if chpl_warnUnstable {
+      compilerWarning("enum-to-bool casts are likely to be deprecated in the future");
+    }    return x: int: bool;
+  }
   // _cast(type t:integral, x:enum)
   // is generated for each enum in buildDefaultFunctions
   inline proc _cast(type t:enum, x:enum) where x.type == t
     return x;
-  inline proc _cast(type t:chpl_anyreal, x:enum)
+  inline proc _cast(type t:chpl_anyreal, x:enum) throws {
+    if chpl_warnUnstable {
+      compilerWarning("enum-to-float casts are likely to be deprecated in the future");
+    }
     return x: int: real;
+  }
 
   inline proc _cast(type t:unmanaged class, x:_nilType)
   {
@@ -1564,7 +1584,7 @@ module ChapelBase {
   inline proc _cast(type t:chpl_anycomplex, x: chpl_anycomplex)
     return (x.re, x.im):t;
 
-  inline proc _cast(type t:chpl_anycomplex, x: enum)
+  inline proc _cast(type t:chpl_anycomplex, x: enum) throws
     return (x:real, 0):t;
 
   //
@@ -1585,7 +1605,7 @@ module ChapelBase {
   inline proc _cast(type t:chpl_anyimag, x: chpl_anycomplex)
     return __primitive("cast", t, x.im);
 
-  inline proc _cast(type t:chpl_anyimag, x: enum)
+  inline proc _cast(type t:chpl_anyimag, x: enum) throws
     return x:real:imag;
 
   //
@@ -1811,7 +1831,7 @@ module ChapelBase {
   // delete two or more things
   inline proc chpl__delete(arg, args...) {
     chpl__delete(arg);
-    for param i in 1..args.size do
+    for param i in 0..args.size-1 do
       chpl__delete(args(i));
   }
 

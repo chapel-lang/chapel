@@ -383,8 +383,10 @@ proc test20() {
   var done$: sync int;
 
   begin {
-    var x = new R(1);
-    var y = x;
+    {
+      var x = new R(1);
+      var y = x;
+    }
     done$ = 1;
   }
 

@@ -71,7 +71,7 @@ proc testReduceExpr2() {
 testReduceExpr2();
 
 iter iterateAllOf(tuple...?k) ref {
-  for param i in 1..k {
+  for param i in 0..k-1 {
     for j in tuple(i) {
       yield j;
     }

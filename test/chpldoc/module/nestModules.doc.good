@@ -11,6 +11,13 @@ outer
 
    use outer;
 
+
+or
+
+.. code-block:: chapel
+
+   import outer;
+
 **Submodules**
 
 .. toctree::
@@ -34,6 +41,13 @@ inner
 
    use outer.inner;
 
+
+or
+
+.. code-block:: chapel
+
+   import outer.inner;
+
 **Submodules**
 
 .. toctree::
@@ -56,6 +70,13 @@ innermost
 .. code-block:: chapel
 
    use outer.inner.innermost;
+
+
+or
+
+.. code-block:: chapel
+
+   import outer.inner.innermost;
 
 This is the innermost module's comment 
 

@@ -157,9 +157,9 @@ proc do_array(A:[]) {
 
 proc do_tuple(t: _tuple) {
   if printProgress then writeln("Creating A");
-  var A = t(1);
+  var A = t(0);
   if printProgress then writeln("Creating D");
-  var D = t(2);
+  var D = t(1);
 }
 
 proc if_fn(A:[], D) {

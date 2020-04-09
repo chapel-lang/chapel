@@ -20,10 +20,10 @@ var SparseMat: [SparseDom] int;
 
 writeln(ParentDom.alignedLow);
 
-const rowToAdd = ParentDom.dim(1).alignedLow + ParentDom.stride[1]*2;
-const colToAdd = ParentDom.dim(2).alignedLow + ParentDom.stride[2]*3;
-var row = [i in ParentDom.dim(2)] (rowToAdd, i);
-var col = [i in ParentDom.dim(1)] (i, colToAdd);
+const rowToAdd = ParentDom.dim(0).alignedLow + ParentDom.stride[0]*2;
+const colToAdd = ParentDom.dim(1).alignedLow + ParentDom.stride[1]*3;
+var row = [i in ParentDom.dim(1)] (rowToAdd, i);
+var col = [i in ParentDom.dim(0)] (i, colToAdd);
 
 //add one full row and column
 SparseDom += row;
@@ -31,8 +31,8 @@ SparseDom += col;
 
 SparseMat = 5;
 
-for i in ParentDom.dim(1) {
-  for j in ParentDom.dim(2) {
+for i in ParentDom.dim(0) {
+  for j in ParentDom.dim(1) {
     write(SparseMat[i, j], " ");
   }
   writeln();
@@ -46,14 +46,14 @@ writeln("alignment:\t",SparseDom.alignment);
 
 // first and last indices depend on the layout type
 if layoutType == layoutTypes.csc {
-  const expectedFirst = (rowToAdd, ParentDom.dim(2).low);
-  const expectedLast = (rowToAdd, ParentDom.dim(2).high);
+  const expectedFirst = (rowToAdd, ParentDom.dim(1).low);
+  const expectedLast = (rowToAdd, ParentDom.dim(1).high);
   writeln("first:\t\t", SparseDom.first == expectedFirst);
   writeln("last:\t\t", SparseDom.last == expectedLast);
 }
 else {
-  const expectedFirst = (ParentDom.dim(1).low, colToAdd);
-  const expectedLast = (ParentDom.dim(1).high, colToAdd);
+  const expectedFirst = (ParentDom.dim(0).low, colToAdd);
+  const expectedLast = (ParentDom.dim(0).high, colToAdd);
   writeln("first:\t\t", SparseDom.first == expectedFirst);
   writeln("last:\t\t", SparseDom.last == expectedLast);
 }

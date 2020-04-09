@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -122,7 +123,10 @@ module TomlParser {
 
   private use Regexp;
   use DateTime;
-
+  use Map, List;
+  import IO.channel;
+  import TOML.TomlReader.Source;
+  import TOML.TomlError;
 
   /* Prints a line by line output of parsing process */
   config const debugTomlParser = false;
@@ -357,21 +361,21 @@ module TomlParser {
         // Date
         else if ld.match(val) {
           var raw = getToken(source).split("-");
-          var d = new date(raw[1]: int,
-                           raw[2]: int,
-                           raw[3]: int);
+          var d = new date(raw[0]: int,
+                           raw[1]: int,
+                           raw[2]: int);
           return new unmanaged Toml(d);
         }
         // Time
         else if ti.match(val) {
           var raw = getToken(source).split(":");
-          var sec = '%.6dr'.format(raw[3]: real).split('.');
+          var sec = '%.6dr'.format(raw[2]: real).split('.');
           var t: time;
 
-          t = new time(raw[1]: int,
-                       raw[2]: int,
-                       sec[1]: int,
-                       sec[2]: int);
+          t = new time(raw[0]: int,
+                       raw[1]: int,
+                       sec[0]: int,
+                       sec[1]: int);
 
           return new unmanaged Toml(t);
         }
@@ -1118,6 +1122,8 @@ pragma "no doc"
  Reader module for use in the Parser Class.
  */
 module TomlReader {
+ use List;
+ import TOML.TomlError;
 
  private use Regexp;
 
@@ -1128,7 +1134,7 @@ module TomlReader {
     if !source.nextLine() {
       throw new owned TomlError("Reached end of file unexpectedly");
     }
-    return source.currentLine![1];
+    return source.currentLine![0];
   }
 
   /* Returns a boolean or whether or not another line can be read
@@ -1186,7 +1192,7 @@ module TomlReader {
         splitLine(line);
       }
       if !this.isEmpty() {
-        currentLine = tokenlist[1];
+        currentLine = tokenlist[0];
       }
     }
 
@@ -1247,8 +1253,8 @@ module TomlReader {
         }
         else {
           var ptrhold = currentLine;
-          tokenlist.pop(1);
-          currentLine = tokenlist[1];
+          tokenlist.pop(0);
+          currentLine = tokenlist[0];
           delete ptrhold;
           return true;
         }
@@ -1297,16 +1303,16 @@ module TomlReader {
     }
 
     proc skip() {
-      A.pop(1);
+      A.pop(0);
     }
 
     proc next() {
-      var toke = A.pop(1);
+      var toke = A.pop(0);
       return toke;
     }
 
     proc addToke(toke: string) {
-      A.insert(1, toke);
+      A.insert(0, toke);
     }
 
     proc isEmpty(): bool {

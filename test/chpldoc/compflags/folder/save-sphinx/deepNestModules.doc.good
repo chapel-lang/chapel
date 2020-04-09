@@ -10,6 +10,13 @@ Foo
 
    use Foo;
 
+
+or
+
+.. code-block:: chapel
+
+   import Foo;
+
 **Submodules**
 
 .. toctree::
@@ -31,6 +38,13 @@ Bar
 .. code-block:: chapel
 
    use Foo.Bar;
+
+
+or
+
+.. code-block:: chapel
+
+   import Foo.Bar;
 
 .. function:: proc baz()
 

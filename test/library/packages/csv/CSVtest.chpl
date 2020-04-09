@@ -56,14 +56,14 @@ module CSVtest {
       var w = new CSVIO(myWriter);
 
       var myData = r.read((...(4*real)), string);
-      var A: [1..myData.size, 1..myData[1].size-1] real;
-      var labels: [1..myData.size] string;
+      var A: [0..<myData.size, 0..<myData[1].size-1] real;
+      var labels: [0..<myData.size] string;
 
-      for i in 1..myData.size {
-        for param j in 1..myData[1].size-1 {
+      for i in 0..<myData.size {
+        for param j in 0..<myData[1].size-1 {
           A[i,j] = myData[i][j];
         }
-        labels[i] = myData[i][myData[1].size];
+        labels[i] = myData[i][myData[1].size-1];
       }
 
       writeln(A);

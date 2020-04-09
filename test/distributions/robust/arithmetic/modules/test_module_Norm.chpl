@@ -111,10 +111,10 @@ foo(TD2D32, R2D32.reindex(TD2D32), 3);
 
 
 writeln("Vector norm rank changed arrays (baseline)");
-ref rcT1D = R2D(Dom2D.dim(1), n2-o5);
-ref rcT2D = R3D(Dom3D.dim(1), Dom3D.dim(2), n3/2);
-const rcDom1D: domain(1) dmapped Dist1D = Dom2D.dim(1);
-const rcDom2D: domain(2) dmapped Dist2D = {Dom3D.dim(1), Dom3D.dim(2)};
+ref rcT1D = R2D(Dom2D.dim(0), n2-o5);
+ref rcT2D = R3D(Dom3D.dim(0), Dom3D.dim(1), n3/2);
+const rcDom1D: domain(1) dmapped Dist1D = Dom2D.dim(0);
+const rcDom2D: domain(2) dmapped Dist2D = {Dom3D.dim(0), Dom3D.dim(1)};
 var rcR1D: [rcDom1D] real;
 var rcR2D: [rcDom2D] real;
 rng.fillRandom(rcR1D);

@@ -11,6 +11,7 @@ module a {
     }
 
     proc main() {
+      import a.runa;
       runa();
       runab();
     }  

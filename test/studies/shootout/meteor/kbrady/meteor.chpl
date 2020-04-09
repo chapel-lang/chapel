@@ -86,12 +86,12 @@ module meteor {
 
   /* Returns the direction rotated 60 degrees clockwise */
   proc rotate(dir: direction) : direction {
-    return ((dir:int + 2) % direction.size): direction;
+    return try! ((dir:int + 2) % direction.size): direction;
   }
 
   /* Returns the direction flipped on the horizontal axis */
   proc flip(dir: direction) : direction {
-    return ((direction.size - dir:int) % direction.size): direction;
+    return try! ((direction.size - dir:int) % direction.size): direction;
   }
 
   /* Returns the new cell index from the specified cell in the

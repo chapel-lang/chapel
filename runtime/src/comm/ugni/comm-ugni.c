@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -51,6 +52,7 @@
 #include "chplcgfns.h"
 #include "chpl-gen-includes.h"
 #include "chplrt.h"
+#include "chpl-cache.h"
 #include "chpl-comm.h"
 #include "chpl-comm-diags.h"
 #include "chpl-comm-callbacks.h"
@@ -523,6 +525,10 @@ static void*  registered_heap_start;
 static int hugepage_info_set;
 static pthread_once_t hugepage_once_flag = PTHREAD_ONCE_INIT;
 static size_t hugepage_size;
+
+
+// Yield during comm
+static chpl_bool yield_during_comm;
 
 //
 // Memory region support.
@@ -1949,6 +1955,12 @@ void chpl_comm_init(int *argc_p, char ***argv_p)
 #define _PSV_INIT(psv) atomic_init_uint_least64_t(&_PSV_VAR(psv), 0);
   PERFSTATS_DO_ALL(_PSV_INIT);
 #undef _PSTAT_INIT
+
+  // Yield during comm by default to allow comm/compute overlap, but
+  // disable if the user requested or if `--cache-remote` is enabled
+  // (it currently breaks when tasks switch during a GET/PUT.)
+  yield_during_comm = chpl_env_rt_get_bool("COMM_UGNI_YIELD_DURING_COMM",
+                                           true) && !chpl_cache_enabled();
 
   //
   // We can easily reach 16k memory regions on Aries.  We can reach a
@@ -5310,6 +5322,7 @@ void do_remote_put(void* src_addr, c_nodeid_t locale, void* tgt_addr,
   //
   // Fill in the POST descriptor.
   //
+  post_desc                 = (gni_post_descriptor_t) { 0 };
   post_desc.type            = GNI_POST_FMA_PUT;
   post_desc.cq_mode         = GNI_CQMODE_GLOBAL_EVENT;
   post_desc.dlvr_mode       = GNI_DLVMODE_PERFORMANCE;
@@ -5402,7 +5415,7 @@ void do_remote_put_V(int v_len, void** src_addr_v, c_nodeid_t* locale_v,
   //
   int vi, ci = -1;
   mem_region_t* remote_mr;
-  gni_post_descriptor_t pd;
+  gni_post_descriptor_t pd = { 0 };
   gni_ct_put_post_descriptor_t pdc[MAX_CHAINED_PUT_LEN - 1];
 
   for (vi = 0, ci = -1; vi < v_len; vi++) {
@@ -5440,6 +5453,7 @@ void do_remote_put_V(int v_len, void** src_addr_v, c_nodeid_t* locale_v,
       else
         pdc[ci - 1].next_descr = &pdc[ci];
 
+      pdc[ci]                 = (gni_ct_put_post_descriptor_t) { 0 };
       pdc[ci].next_descr      = NULL;
       pdc[ci].local_addr      = (uint64_t) (intptr_t) src_addr_v[vi];
       pdc[ci].remote_addr     = (uint64_t) (intptr_t) tgt_addr_v[vi];
@@ -5514,7 +5528,7 @@ void do_remote_get_V(int v_len, void** tgt_addr_v, c_nodeid_t* locale_v,
   int vi, ci = -1;
   mem_region_t* local_mr;
   mem_region_t* remote_mr;
-  gni_post_descriptor_t pd;
+  gni_post_descriptor_t pd = { 0 };
   gni_ct_get_post_descriptor_t pdc[MAX_CHAINED_GET_LEN - 1];
 
   for (vi = 0, ci = -1; vi < v_len; vi++) {
@@ -5555,6 +5569,7 @@ void do_remote_get_V(int v_len, void** tgt_addr_v, c_nodeid_t* locale_v,
       else
         pdc[ci - 1].next_descr = &pdc[ci];
 
+      pdc[ci]                 = (gni_ct_get_post_descriptor_t) { 0 };
       pdc[ci].next_descr      = NULL;
       pdc[ci].local_addr      = (uint64_t) (intptr_t) tgt_addr_v[vi];
       pdc[ci].remote_addr     = (uint64_t) (intptr_t) src_addr_v[vi];
@@ -5624,6 +5639,7 @@ void do_nic_amo_nf_V(int v_len, uint64_t* opnd1_v, c_nodeid_t* locale_v,
   //
   // Build up the base post descriptor
   //
+  post_desc                 = (gni_post_descriptor_t) { 0 };
   post_desc.next_descr      = NULL;
   post_desc.type            = GNI_POST_AMO;
   post_desc.cq_mode         = GNI_CQMODE_GLOBAL_EVENT;
@@ -6125,6 +6141,7 @@ void do_nic_get(void* tgt_addr, c_nodeid_t locale, mem_region_t* remote_mr,
   //
   // Fill in the POST descriptor.
   //
+  post_desc                 = (gni_post_descriptor_t) { 0 };
   post_desc.type            = GNI_POST_FMA_GET;
   post_desc.cq_mode         = GNI_CQMODE_GLOBAL_EVENT;
   post_desc.dlvr_mode       = GNI_DLVMODE_PERFORMANCE;
@@ -7000,6 +7017,7 @@ void do_nic_amo_nf(void* opnd1, c_nodeid_t locale,
   //
   // Fill in the POST descriptor.
   //
+  post_desc                 = (gni_post_descriptor_t) { 0 };
   post_desc.type            = GNI_POST_AMO;
   post_desc.cq_mode         = GNI_CQMODE_GLOBAL_EVENT;
   post_desc.dlvr_mode       = GNI_DLVMODE_PERFORMANCE;
@@ -7055,6 +7073,7 @@ void do_nic_amo(void* opnd1, void* opnd2, c_nodeid_t locale,
   //
   // Fill in the POST descriptor.
   //
+  post_desc                    = (gni_post_descriptor_t) { 0 };
   post_desc.type               = GNI_POST_AMO;
   post_desc.cq_mode            = GNI_CQMODE_GLOBAL_EVENT;
   post_desc.dlvr_mode          = GNI_DLVMODE_PERFORMANCE;
@@ -7470,6 +7489,7 @@ void do_fork_post(c_nodeid_t locale,
     *p_rf_req->rf_done = 0;
     chpl_atomic_thread_fence(memory_order_release);
 
+    stack_post_desc = (gni_post_descriptor_t) { 0 };
     post_desc_p = &stack_post_desc;
   } else {
     p_rf_req->rf_done = NULL;
@@ -7812,6 +7832,21 @@ chpl_bool reacquire_comm_dom(int want_cdi)
   return true;
 }
 
+static
+inline
+chpl_bool should_yield_during_comm(chpl_bool do_yield) {
+  do_yield = do_yield && yield_during_comm;
+  // Avoid yielding for tasks with limited comm. Avoids artificially increasing
+  // the lifetime of short-lived tasks.
+  if (do_yield) {
+    chpl_comm_taskPrvData_t* prvData = get_comm_taskPrvdata();
+    if (prvData != NULL && prvData->num_comm < 100) {
+      prvData->num_comm++;
+      do_yield = false;
+    }
+  }
+  return do_yield;
+}
 
 static
 inline
@@ -7840,15 +7875,7 @@ void post_fma_and_wait(c_nodeid_t locale, gni_post_descriptor_t* post_desc,
   atomic_bool post_done;
   uint64_t iters = 0;
 
-  // Avoid yielding for tasks with limited comm. Avoids artificially increasing
-  // the lifetime of short-lived tasks.
-  if (do_yield) {
-    chpl_comm_taskPrvData_t* prvData = get_comm_taskPrvdata();
-    if (prvData != NULL && prvData->num_fma < 100) {
-      prvData->num_fma++;
-      do_yield = false;
-    }
-  }
+  do_yield = should_yield_during_comm(do_yield);
 
   atomic_init_bool(&post_done, false);
   post_desc->post_id = (uint64_t) (intptr_t) &post_done;
@@ -7928,6 +7955,8 @@ void post_fma_ct_and_wait(c_nodeid_t* locale_v,
   int cdi;
   atomic_bool post_done;
 
+  chpl_bool do_yield = should_yield_during_comm(true);
+
   atomic_init_bool(&post_done, false);
   post_desc->post_id = (uint64_t) (intptr_t) &post_done;
 
@@ -7939,7 +7968,9 @@ void post_fma_ct_and_wait(c_nodeid_t* locale_v,
   // we can find something else to do in the meantime.
   //
   do {
-    local_yield();
+    if (do_yield) {
+      local_yield();
+    }
     consume_all_outstanding_cq_events(cdi);
   } while (!atomic_load_explicit_bool(&post_done, memory_order_acquire));
 }
@@ -7974,6 +8005,8 @@ void post_rdma_and_wait(c_nodeid_t locale, gni_post_descriptor_t* post_desc,
 {
   int cdi;
   atomic_bool post_done;
+
+  do_yield = should_yield_during_comm(do_yield);
 
   atomic_init_bool(&post_done, false);
   post_desc->post_id = (uint64_t) (intptr_t) &post_done;

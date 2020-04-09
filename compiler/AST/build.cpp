@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -568,6 +569,57 @@ BlockStmt* buildImportStmt(Expr* mod, const char* rename, bool privateImport) {
 }
 
 //
+// Build an 'import' statement
+//
+BlockStmt* buildImportStmt(Expr* mod, std::vector<PotentialRename*>* names,
+                           bool privateImport) {
+  std::vector<const char*> namesList;
+  std::map<const char*, const char*> renameMap;
+
+  // Iterate through the list of names for unqualified access
+  for_vector(PotentialRename, listElem, *names) {
+    switch (listElem->tag) {
+      case PotentialRename::SINGLE:
+        if (UnresolvedSymExpr* name = toUnresolvedSymExpr(listElem->elem)) {
+          namesList.push_back(name->unresolved);
+        } else {
+          USR_FATAL(listElem->elem, "incorrect expression in 'import' for "
+                    "unqualified access, identifier expected");
+        }
+        break;
+      case PotentialRename::DOUBLE:
+        std::pair<Expr*, Expr*>* elem = listElem->renamed;
+        UnresolvedSymExpr* old_name = toUnresolvedSymExpr(elem->first);
+        UnresolvedSymExpr* new_name = toUnresolvedSymExpr(elem->second);
+
+        if (old_name != NULL && new_name != NULL) {
+          // Verify that the new name isn't already in the renameMap
+          if (renameMap.count(new_name->unresolved) == 0) {
+            renameMap[new_name->unresolved] = old_name->unresolved;
+          } else {
+            USR_FATAL_CONT(elem->first, "already renamed '%s' to '%s', renaming"
+                           "'%s' would conflict",
+                           renameMap[new_name->unresolved],
+                           new_name->unresolved, old_name->unresolved);
+          }
+        } else {
+          USR_FATAL(elem->first, "incorrect expression in 'import' list rename,"
+                    " identifier expected");
+        }
+        break;
+    }
+  }
+
+  ImportStmt* newImport = new ImportStmt(mod, privateImport, &namesList,
+                                         &renameMap);
+  addModuleToSearchList(newImport, mod);
+
+  delete names;
+
+  return buildChapelStmt(newImport);
+}
+
+//
 // Build a 'require' statement
 //
 BlockStmt* buildRequireStmt(CallExpr* args) {
@@ -616,9 +668,11 @@ DefExpr* buildQueriedExpr(const char *expr) {
   return new DefExpr(new VarSymbol(&(expr[1])));
 }
 
+/* This routine seems to handle the case when the RHS of a tuple
+   declaration is a tuple expression like `(8, 4, 3)` */
 static void
 buildTupleVarDeclHelp(Expr* base, BlockStmt* decls, Expr* insertPoint) {
-  int count = 1;
+  int count = 0;
   for_alist(expr, decls->body) {
     if (DefExpr* def = toDefExpr(expr)) {
       if (strcmp(def->sym->name, "chpl__tuple_blank")) {
@@ -642,7 +696,7 @@ buildTupleVarDeclHelp(Expr* base, BlockStmt* decls, Expr* insertPoint) {
 BlockStmt*
 buildTupleVarDeclStmt(BlockStmt* tupleBlock, Expr* type, Expr* init) {
   VarSymbol* tmp = newTemp();
-  int count = 1;
+  int count = 0;
   for_alist(expr, tupleBlock->body) {
     if (DefExpr* def = toDefExpr(expr)) {
       if (strcmp(def->sym->name, "chpl__tuple_blank")) {
@@ -660,7 +714,7 @@ buildTupleVarDeclStmt(BlockStmt* tupleBlock, Expr* type, Expr* init) {
   // same as the number of variables.  These checks will get inserted in
   // buildVarDecls after it asserts that only DefExprs are in this block.
   //
-  tupleBlock->blockInfoSet(new CallExpr("_check_tuple_var_decl", tmp, new_IntSymbol(count-1)));
+  tupleBlock->blockInfoSet(new CallExpr("_check_tuple_var_decl", tmp, new_IntSymbol(count)));
   tupleBlock->insertAtHead(new DefExpr(tmp, init, type));
   return tupleBlock;
 }
@@ -754,7 +808,43 @@ ModuleSymbol* buildModule(const char* name,
   return mod;
 }
 
+BlockStmt* buildIncludeModule(const char* name,
+                              bool priv,
+                              bool prototype,
+                              const char* docs) {
+  astlocT loc(chplLineno, yyfilename);
+  ModuleSymbol* mod = parseIncludedSubmodule(name);
+  INT_ASSERT(mod != NULL);
 
+  // check visibility specifiers
+  //
+  //  include public/default   +  declaration public/default -> OK, public
+  //  include public/default   +  declaration private        -> error
+  //  include private          +  declaration public/default -> OK, private
+  //  include private          +  declaration private        -> OK, private
+  //
+  if (priv && !mod->hasFlag(FLAG_PRIVATE)) {
+    // make the module private (override public)
+    mod->addFlag(FLAG_PRIVATE);
+  } else if (mod->hasFlag(FLAG_PRIVATE) && !priv) {
+    USR_FATAL_CONT(loc,
+          "cannot make a private module public through an include statement");
+    USR_PRINT(mod, "module declared private here");
+  }
+
+  if (prototype) {
+    USR_FATAL_CONT(loc, "cannot apply prototype to module in include statement");
+    USR_PRINT(mod, "put prototype keyword at module declaration here");
+  }
+
+  // docs comment is ignored (the one in the module declaration is used)
+
+  if (fWarnUnstable) {
+    USR_WARN(loc, "module include statements are not yet stable and may change");
+  }
+
+  return buildChapelStmt(new DefExpr(mod));
+}
 
 CallExpr* buildPrimitiveExpr(CallExpr* exprs) {
   INT_ASSERT(exprs->isPrimitive(PRIM_ACTUALS_LIST));
@@ -836,7 +926,7 @@ static Expr* destructureIndicesAfter(Expr* insertAfter,
                                      bool coforall) {
   if (CallExpr* call = toCallExpr(indices)) {
     if (call->isNamed("_build_tuple")) {
-      int i = 1;
+      int i = 0;
 
       // Add checks that the index has tuple type of the right shape.
       CallExpr* checkCall = new CallExpr("_check_tuple_var_decl",
@@ -1659,14 +1749,14 @@ buildTupleArgDefExpr(IntentTag tag, BlockStmt* tuple, Expr* type, Expr* init) {
 
 
 //
-// Destructure tuple function arguments.  Add to the function's where
-// clause to match the shape of the tuple being destructured.
+// Destructure tuple function arguments of the form `proc foo((x,y,z), i)`.
+// Add to the function's where clause to match the shape of the tuple
+// being destructured.
 //
 static void
 destructureTupleGroupedArgs(FnSymbol* fn, BlockStmt* tuple, Expr* base) {
   int i = 0;
   for_alist(expr, tuple->body) {
-    i++;
     if (DefExpr* def = toDefExpr(expr)) {
       def->init = new CallExpr(base->copy(), new_IntSymbol(i));
       if (!strcmp(def->sym->name, "chpl__tuple_blank")) {
@@ -1677,6 +1767,7 @@ destructureTupleGroupedArgs(FnSymbol* fn, BlockStmt* tuple, Expr* base) {
     } else if (BlockStmt* inner = toBlockStmt(expr)) {
       destructureTupleGroupedArgs(fn, inner, new CallExpr(base->copy(), new_IntSymbol(i)));
     }
+    i++;
   }
 
   Expr* where =
@@ -2369,6 +2460,45 @@ BlockStmt* handleConfigTypes(BlockStmt* blk) {
   }
   return blk;
 }
+
+static VarSymbol* one = NULL;
+
+static SymExpr* buildOneExpr() {
+  if (one == NULL) {
+    one = new_IntSymbol(1);
+  }
+  return new SymExpr(one);
+}
+
+CallExpr* buildBoundedRange(Expr* low, Expr* high,
+                            bool openlow, bool openhigh) {
+  if (openlow) {
+    low = new CallExpr("+", low, buildOneExpr());
+  }
+  if (openhigh) {
+    high = new CallExpr("-", high, buildOneExpr());
+  }
+  return new CallExpr("chpl_build_bounded_range",low, high);
+}
+
+CallExpr* buildLowBoundedRange(Expr* low, bool open) {
+  if (open) {
+    low = new CallExpr("+", low, buildOneExpr());
+  }
+  return new CallExpr("chpl_build_low_bounded_range", low);
+}
+
+CallExpr* buildHighBoundedRange(Expr* high, bool open) {
+  if (open) {
+    high = new CallExpr("-", high, buildOneExpr());
+  }
+  return new CallExpr("chpl_build_high_bounded_range", high);
+}
+
+CallExpr* buildUnboundedRange() {
+  return new CallExpr("chpl_build_unbounded_range");
+}
+
 
 // Attempt to find a stmt with a specific PrimitiveTag in a blockStmt
 //

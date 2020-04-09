@@ -10,6 +10,13 @@ paramFields.doc
 
    use paramFields.doc;
 
+
+or
+
+.. code-block:: chapel
+
+   import paramFields.doc;
+
 .. class:: hasParams
 
    .. attribute:: param typeless

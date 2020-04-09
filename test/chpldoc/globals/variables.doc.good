@@ -11,6 +11,13 @@ hasGlobalVariables
 
    use hasGlobalVariables;
 
+
+or
+
+.. code-block:: chapel
+
+   import hasGlobalVariables;
+
 This module has some global scoped variables. 
 
 .. data:: var first: int

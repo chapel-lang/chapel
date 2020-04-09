@@ -7,9 +7,9 @@ proc foo(i : int) {
 }
 
 proc foo(ys ...2) {
-  foo(ys(1));
+  foo(ys(0));
   write(", ");
-  foo(ys(2));
+  foo(ys(1));
   writeln();
 }
 

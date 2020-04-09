@@ -170,7 +170,7 @@ proc main(){
   var computationDomain: domain(2) = totalSpaceRange.expand(-1);
 
   // Storage array.
-  var space: [0..1, totalSpaceRange.dim(1), totalSpaceRange.dim(2) ] Cell;
+  var space: [0..1, totalSpaceRange.dim(0), totalSpaceRange.dim(1) ] Cell;
   var timer: Timer;
 
   // initialize space with values

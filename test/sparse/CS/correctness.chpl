@@ -116,17 +116,17 @@ proc main() {
   assert(cscuDom.size == 0);
 
   // dsiBulkAdd when nnz = 0
-  csrsDom += indices[..5];
-  cscsDom += indices[..5];
-  csruDom += indices[..5];
-  cscuDom += indices[..5];
+  csrsDom += indices[..4];
+  cscsDom += indices[..4];
+  csruDom += indices[..4];
+  cscuDom += indices[..4];
 
 
   // dsiRemove
-  cscsDom -= indices[5];
-  csrsDom -= indices[5];
-  cscuDom -= indices[5];
-  csruDom -= indices[5];
+  cscsDom -= indices[4];
+  csrsDom -= indices[4];
+  cscuDom -= indices[4];
+  csruDom -= indices[4];
 
   assert(csrsDom.size == 4);
   assert(cscsDom.size == 4);
@@ -134,10 +134,10 @@ proc main() {
   assert(cscuDom.size == 4);
 
   // dsiRemove, "promoted"
-  csrsDom -= indices[1..4];
-  cscsDom -= indices[1..4];
-  csruDom -= indices[1..4];
-  cscuDom -= indices[1..4];
+  csrsDom -= indices[0..3];
+  cscsDom -= indices[0..3];
+  csruDom -= indices[0..3];
+  cscuDom -= indices[0..3];
 
   assert(csrsDom.size == 0);
   assert(cscsDom.size == 0);
@@ -145,16 +145,16 @@ proc main() {
   assert(cscuDom.size == 0);
 
   // dsiAdd
-  csrsDom += indices[5];
-  cscsDom += indices[5];
-  csruDom += indices[5];
-  cscuDom += indices[5];
-
-  // dsiAdd duplicates
   csrsDom += indices[4];
   cscsDom += indices[4];
   csruDom += indices[4];
   cscuDom += indices[4];
+
+  // dsiAdd duplicates
+  csrsDom += indices[3];
+  cscsDom += indices[3];
+  csruDom += indices[3];
+  cscuDom += indices[3];
 
   // Shuffle indices to test dsiBulkAdd with unsorted data
   shuffle(indices, 231564879);
@@ -282,19 +282,19 @@ proc main() {
 
   // dimIter (pretty trivial tests)
   // csrsDom[5, ..]
-  for i in csrsDom.dimIter(2, 5) {
+  for i in csrsDom.dimIter(1, 5) {
     assert(i == 6);
   }
   // csrsDom[.., 1]
-  for i in cscsDom.dimIter(1, 1) {
+  for i in cscsDom.dimIter(0, 1) {
     assert(i == 1);
   }
   // csruDom[5, ..]
-  for i in csruDom.dimIter(2, 5) {
+  for i in csruDom.dimIter(1, 5) {
     assert(i == 6);
   }
   // csruDom[.., 1]
-  for i in cscuDom.dimIter(1, 1) {
+  for i in cscuDom.dimIter(0, 1) {
     assert(i == 1);
   }
 
@@ -373,8 +373,8 @@ proc writeDSI(D) {
 }
 
 proc writeDense(A: [?D]) {
-  for i in D.dim(1) {
-    for j in D.dim(2) {
+  for i in D.dim(0) {
+    for j in D.dim(1) {
       writef('%2n ', A[i, j]);
     }
     writeln();
@@ -386,7 +386,7 @@ proc writeInternals(A) {
   if row then writeln('Row Start Index:');
   else writeln('Column Start Index:');
 
-  var dimension = if row then 1 else 2;
+  var dimension = if row then 0 else 1;
 
   for i in A.domain.dim(dimension) {
     write(A.domain._value.startIdx(i), ' ');

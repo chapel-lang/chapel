@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -16,6 +17,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+// Possible TODOs:
+//
+// - How do we feel about FFTW_ALLCAPS names given that the routines
+//   themselves don't have fftw_ prefixes, that they're defined as
+//   c_int's, and that they're all-caps?  What if we were to replace
+//   these with bool/enum arguments representing the separate planning
+//   aspects that are overloaded into 'flags'?  This would also allow
+//   us to move away from c_ints (which could be done in other ways
+//   as well, such as safe-casting and providing our own versions of
+//   the C variables).
+//
+// - It seems that rather than passing in a domain and an array for
+//   the in-place cases, we could probably pass in an array slice
+//   where the array's allocating domain reflected the padding and
+//   the slicing domain reflected the area over which the FFT should
+//   be performed.  Would this be cleaner?  Would the overhead be
+//   significant?
+//
 
 /*
   FFT computations via key routines from FFTW (version 3)
@@ -94,25 +114,6 @@
   the interface for the in-place routines to use array slicing rather
   than separate arguments for the array and domain.
 */
-
-// Possible TODOs:
-//
-// - How do we feel about FFTW_ALLCAPS names given that the routines
-//   themselves don't have fftw_ prefixes, that they're defined as
-//   c_int's, and that they're all-caps?  What if we were to replace
-//   these with bool/enum arguments representing the separate planning
-//   aspects that are overloaded into 'flags'?  This would also allow
-//   us to move away from c_ints (which could be done in other ways
-//   as well, such as safe-casting and providing our own versions of
-//   the C variables).
-//
-// - It seems that rather than passing in a domain and an array for
-//   the in-place cases, we could probably pass in an array slice
-//   where the array's allocating domain reflected the padding and
-//   the slicing domain reflected the area over which the FFT should
-//   be performed.  Would this be cleaner?  Would the overhead be
-//   significant?
-//
 
 module FFTW {
 
@@ -212,7 +213,7 @@ module FFTW {
     if !noFFTWsizeChecks {
       var error = false;
 
-      for i in 1..input.rank do
+      for i in 0..<input.rank do
         error |= checkDimMismatch(Din, Dout, i, "plan_dft()");
 
       if error then
@@ -251,8 +252,8 @@ module FFTW {
     param rank = input.rank;
 
     var dims: c_array(c_int,rank);
-    for param i in 1..rank do
-      dims(i-1) = input.domain.dim(i).size.safeCast(c_int);
+    for param i in 0..<rank do
+      dims(i) = input.domain.dim(i).size.safeCast(c_int);
 
     return C_FFTW.fftw_plan_dft(rank.safeCast(c_int), dims, c_ptrTo(input), 
                                      c_ptrTo(output), sign, flags);
@@ -285,7 +286,7 @@ module FFTW {
     if !noFFTWsizeChecks {
       var error = false;
 
-      for i in 1..rank-1 do
+      for i in 0..<(rank-1) do
         error |= checkDimMismatch(Din, Dout, i, "plan_dft_r2c()");
 
       error |= checkRealCplxDimMismatch(Din, Dout, "plan_dft_r2c()", "output ");
@@ -295,8 +296,8 @@ module FFTW {
     }
 
     var dims: c_array(c_int,rank);
-    for param i in 1..rank do
-      dims(i-1) = input.domain.dim(i).size: c_int;
+    for param i in 0..<rank do
+      dims(i) = input.domain.dim(i).size: c_int;
 
     return C_FFTW.fftw_plan_dft_r2c(rank, dims,
                                     c_ptrTo(input),
@@ -327,8 +328,8 @@ module FFTW {
         
     param rank = realDom.rank: c_int;
     var dims: c_array(c_int, rank);
-    for param i in 1..rank do
-      dims(i-1) = realDom.dim(i).size: c_int;
+    for param i in 0..<rank do
+      dims(i) = realDom.dim(i).size: c_int;
 
     return C_FFTW.fftw_plan_dft_r2c(rank, dims,
                                     c_ptrTo(arr) : c_ptr(real),
@@ -365,7 +366,7 @@ module FFTW {
     if !noFFTWsizeChecks {
       var error = false;
 
-      for i in 1..rank-1 do
+      for i in 0..<(rank-1) do
         error |= checkDimMismatch(Din, Dout, i, "plan_dft_c2r()");
 
       error |= checkRealCplxDimMismatch(Dout, Din, "plan_dft_c2r()", "input ");
@@ -375,8 +376,8 @@ module FFTW {
     }
 
     var dims: c_array(c_int,rank);
-    for param i in 1..rank do
-      dims(i-1) = output.domain.dim(i).size: c_int;
+    for param i in 0..<rank do
+      dims(i) = output.domain.dim(i).size: c_int;
 
     return C_FFTW.fftw_plan_dft_c2r(rank, dims, c_ptrTo(input), c_ptrTo(output), flags);
   }
@@ -404,8 +405,8 @@ module FFTW {
 
     param rank = realDom.rank: c_int;
     var dims: c_array(c_int,rank);
-    for param i in 1..rank do
-      dims(i-1) = realDom.dim(i).size: c_int;
+    for param i in 0..<rank do
+      dims(i) = realDom.dim(i).size: c_int;
 
     return C_FFTW.fftw_plan_dft_c2r(rank, dims,
                                     c_ptrTo(arr) : c_ptr(complex),
@@ -474,12 +475,12 @@ module FFTW {
      overwritten during planning. */
   extern const FFTW_ESTIMATE : FFTW_Flag;
 
+  // TODO: If/when we support defaults, might say something like: This
+  // is the default planning option.
   /* Specify that FFTW should try and find an optimized plan by
      computing several FFTs and measuring their execution time.
      This can consume some time.
   */
-  // TODO: If/when we support defaults, might say something like: This
-  // is the default planning option.
   extern const FFTW_MEASURE : FFTW_Flag;
 
   /* Specify that FFTW should expend a greater effort finding an
@@ -504,26 +505,28 @@ module FFTW {
 
   // Algorithm-restriction flags
 
+  // TODO: When we're ready to mention defaults, add: "This is the default for
+  // :proc:`plan_dft_c2r`. // NOTE: ...and hc2r once supported...
   /* Specify that an out-of-place transform is permitted to overwrite
      its input array with arbitrary data.  This permits more efficient
      algorithms to be used in some cases. */
-  // TODO: When we're ready to mention defaults, add: "This is the default for
-  // :proc:`plan_dft_c2r`. // NOTE: ...and hc2r once supported...
   extern const FFTW_DESTROY_INPUT : FFTW_Flag;
 
-  /* Specify that an out-of-place transform cannot change its input
-     array. */
   // TODO: When we're ready to mention defaults, add: This is the
   // default for :proc:`plan_dft` and :proc:`plan_dft_r2c`. */
+  /* Specify that an out-of-place transform cannot change its input
+     array. */
   extern const FFTW_PRESERVE_INPUT : FFTW_Flag;
 
+  // NOTE: This flag will become necessary if/when the new-array execute
+  // interface is supported
   /* Specify that the algorithm may not impose any unusual alignment
      requirements on the input/output arrays.  This flag should not be
      necessary for current Chapel use since the planner will
      automatically detect such cases.  For more details on this flag
      and the previous two, refer to `Section 4.3.2
      <http://www.fftw.org/doc/Planner-Flags.html>`_ of the FFTW manual.
-  */  // NOTE: But it will be if/when the new-array execute interface is supported
+  */
   extern const FFTW_UNALIGNED : FFTW_Flag;
 
   // More FFTW type flags.
@@ -579,7 +582,7 @@ module FFTW {
   private proc checkInPlaceDimMismatch(logDom, physDom, fnname, realElems) {
     var error = false;
 
-    for i in 1..logDom.rank-1 do
+    for i in 0..<(logDom.rank-1) do
       error |= checkDimMismatch(logDom, physDom, i, fnname, inplace=true);
 
     if realElems {
@@ -598,7 +601,7 @@ module FFTW {
   // domain.
   //
   private proc checkRealCplxDimMismatch(realDom, complexDom, fnname, cplxarrdesc="") {
-    const dim = realDom.rank;
+    const dim = realDom.rank-1;
     const realDim = realDom.dim(dim).size/2+1;
     const complexDim = complexDom.dim(dim).size;
 
@@ -618,7 +621,7 @@ module FFTW {
   // second describes the domain describing the padded array allocation.
   //
   private proc checkRealInPlaceDimMismatch(logDom, physDom, fnname) {
-    const dim = logDom.rank;
+    const dim = logDom.rank-1;
     const arrDim = physDom.dim(dim).size;
     const domDim = 2*(logDom.dim(dim).size/2+1);
     if (arrDim == domDim) then
@@ -695,6 +698,7 @@ module FFTW {
   module C_FFTW {
     public use SysCTypes;
     extern proc fftw_execute(p : fftw_plan) : void;
+    import FFTW.fftw_plan;
 
     extern proc fftw_plan_dft(rank : c_int, n : c_ptr(c_int), in_arg : c_ptr(fftw_complex), out_arg : c_ptr(fftw_complex), sign : c_int, flags : c_uint) : fftw_plan;
 

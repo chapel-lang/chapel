@@ -3,6 +3,10 @@ hello.doc
 Usage:
    use hello.doc;
 
+or
+
+   import hello.doc;
+
    proc hello()
       This method prints out a greeting.
 

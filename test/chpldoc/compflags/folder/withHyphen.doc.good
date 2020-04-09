@@ -10,6 +10,13 @@ withHyphen.doc
 
    use withHyphen.doc;
 
+
+or
+
+.. code-block:: chapel
+
+   import withHyphen.doc;
+
 .. function:: proc example()
 
    This should end up in my-docs/_sources/modules/withHyphen.txt 

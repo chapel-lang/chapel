@@ -11,7 +11,7 @@ for (ch, idx, nbytes) in s._cpIndexLen() do
 write("\n");
 
 writeln("_cpIndexLen starting inside a multibyte char:");
-for (ch, idx, nbytes) in s._cpIndexLen(5:byteIndex) do
+for (ch, idx, nbytes) in s._cpIndexLen(4:byteIndex) do
   writeln(ch, ", ", idx, ", ", nbytes);
 write("\n");
 
@@ -21,5 +21,5 @@ for (idx, nbytes) in s._indexLen() do
 write("\n");
 
 writeln("_indexLen starting inside a multibyte char:");
-for (idx, nbytes) in s._indexLen(5:byteIndex) do
+for (idx, nbytes) in s._indexLen(4:byteIndex) do
   writeln(idx, ", ", nbytes);

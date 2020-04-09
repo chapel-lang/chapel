@@ -1,3 +1,5 @@
 F1
 F1
-readSemiAbstractEnumAsValue.chpl:6: error: halt reached - illegal cast: G.F1 has no integer value
+uncaught IllegalArgumentError: bad cast: enum 'G.F1' has no integer value
+  readSemiAbstractEnumAsValue.chpl:6: thrown here
+  readSemiAbstractEnumAsValue.chpl:6: uncaught here

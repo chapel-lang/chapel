@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -753,7 +754,7 @@ proc max(type t) where isComplexType(t) {
 pragma "no doc"
 iter chpl_enumerate(type t: enum) {
   const enumTuple = chpl_enum_enumerate(t);
-  for i in 1..enumTuple.size do
+  for i in 0..enumTuple.size-1 do
     yield enumTuple(i);
 }
 pragma "no doc"

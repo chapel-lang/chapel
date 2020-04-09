@@ -1,9 +1,0 @@
-bug: no default locale value
-
-This test shows that we've never established a default
-locale value.  I propose that it should be Locales(0)
-since this locale will always be guaranteed to exist.
-
-The current behavior is a compilation error related to a borrowed class
-type but that might not be appropriate since locales are meant to have a
-value type semantics from the user's perspective.

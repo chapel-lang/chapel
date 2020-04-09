@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -2995,12 +2996,6 @@ static bool typeHasInfiniteBorrowLifetime(Type* type) {
       type == dtCVoidPtr ||
       type == dtCFnPtr)
     return true;
-
-  // Locale type has infinite lifetime
-  // (since locales exist for the entire program run)
-  if (Type* ct = canonicalDecoratedClassType(type))
-    if (isSubClass(ct, dtLocale))
-      return true;
 
   if (DecoratedClassType* dt = toDecoratedClassType(type))
     if (dt->isUnmanaged())

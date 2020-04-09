@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -327,7 +328,7 @@ static QualifiedType
 returnInfoGetTupleMember(CallExpr* call) {
   AggregateType* ct = toAggregateType(call->get(1)->getValType());
   INT_ASSERT(ct && ct->symbol->hasFlag(FLAG_STAR_TUPLE));
-  return ct->getField("x1")->qualType();
+  return ct->getField("x0")->qualType();
 }
 
 static QualifiedType
@@ -713,7 +714,7 @@ initPrimitive() {
 
   // dst, src. PRIM_ASSIGN with reference dst sets *dst
   prim_def(PRIM_ASSIGN, "=", returnInfoVoid, true);
-  // like PRIM_ASSIGN but indicates an elidided copy
+  // like PRIM_ASSIGN but indicates an elided copy
   // which means that the RHS cannot be used again after this call.
   prim_def(PRIM_ASSIGN_ELIDED_COPY, "elided-copy=", returnInfoVoid, true);
   // like PRIM_ASSIGN but the operation can be put off until end of

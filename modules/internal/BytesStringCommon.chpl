@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -128,7 +129,7 @@ module BytesStringCommon {
         else {
           // if nbytes is 1, then we must have read a single byte and found
           // that it was invalid, if nbytes is >1 then we must have read
-          // multible bytes where the last one broke the sequence. But it can
+          // multiple bytes where the last one broke the sequence. But it can
           // be a valid byte itself. So we rewind by 1 in that case
           // we use nInvalidBytes to store how many bytes we are ignoring or
           // replacing
@@ -272,6 +273,7 @@ module BytesStringCommon {
     }
   }
 
+  // TODO: I wasn't very good about caching variables locally in this one.
   proc getSlice(const ref x: ?t, r: range(?)) {
     assertArgType(t, "getSlice");
 
@@ -288,7 +290,7 @@ module BytesStringCommon {
       // from low to high then do a strided operation to put the data in the
       // buffer in the correct order.
       const copyLen = r2.high-r2.low+1;
-      var (copyBuf, copySize) = bufferCopy(buf=x.buff, off=r2.low-1,
+      var (copyBuf, copySize) = bufferCopy(buf=x.buff, off=r2.low,
                                           len=copyLen, loc=x.locale_id);
       if r2.stride == 1 {
         // TODO Engin: I'd like to call init or something that constructs a
@@ -318,6 +320,8 @@ module BytesStringCommon {
     else compilerError("This function should only be used by bytes or string");
   }
 
+  // TODO: not ideal - count and single allocation probably faster
+  //                 - can special case on replacement|needle.size (0, 1)
   proc doReplace(const ref x: ?t, needle: t, replacement: t,
                   count: int = -1): t {
     assertArgType(t, "doReplace");
@@ -325,13 +329,13 @@ module BytesStringCommon {
     type _idxt = getIndexType(t);
     var result: t = x;
     var found: int = 0;
-    var startIdx: _idxt = 1;
+    var startIdx: _idxt = 0;
     const localNeedle: t = needle.localize();
     const localReplacement: t = replacement.localize();
 
     while (count < 0) || (found < count) {
       const idx = result.find(localNeedle, startIdx..);
-      if !idx then break;
+      if idx == -1 then break;
 
       found += 1;
       result = result[..idx-1] + localReplacement +
@@ -357,11 +361,11 @@ module BytesStringCommon {
       var splitAll: bool = maxsplit <= 0;
       var splitCount: int = 0;
 
-      var start: _idxt = 1;
+      var start: _idxt = 0;
       var done: bool = false;
       while !done  {
         var chunk: t;
-        var end: _idxt;
+        var end: _idxt = -1;
 
         if (maxsplit == 0) {
           chunk = localThis;
@@ -370,7 +374,7 @@ module BytesStringCommon {
           if (splitAll || splitCount < maxsplit) then
             end = localThis.find(localSep, start..);
 
-          if(end == 0) {
+          if(end == -1) {
             // Separator not found
             chunk = localThis[start..];
             done = true;
@@ -398,7 +402,7 @@ module BytesStringCommon {
   inline proc startsEndsWith(const ref x: ?t, needles,
                              param fromLeft: bool) : bool 
                              where isHomogeneousTuple(needles) &&
-                                   needles[1].type==t {
+                                   needles[0].type==t {
     assertArgType(t, "startsEndsWith");
 
     var ret: bool = false;
@@ -458,7 +462,7 @@ module BytesStringCommon {
       if (isArray(S)) {
         ret = S[S.domain.first];
       } else {
-        ret = S[1];
+        ret = S[0];
       }
       return ret;
     } else {
@@ -508,7 +512,7 @@ module BytesStringCommon {
     assertArgType(t, "doPartition");
 
     const idx = x.find(sep);
-    if idx != 0 {
+    if idx != -1 {
       return (x[..idx-1], sep, x[idx+sep.numBytes..]);
     } else {
       return (x, "":t, "":t);
@@ -560,7 +564,8 @@ module BytesStringCommon {
         var remote_buf:bufferType = nil;
         if len != 0 then
           remote_buf = bufferCopyRemote(rhs.locale_id, rhs.buff, len);
-        lhs.reinitString(remote_buf, len, len+1, needToCopy=false);
+        lhs.reinitString(remote_buf, len, len+1, needToCopy=false,
+                                                 ownBuffer=true);
       }
     }
 

@@ -100,7 +100,7 @@ class PopFromFront: Test {
   // Use a smaller value for N because PopFront is O(n**2).
   override proc setup() { _lst = createList(n1); }
   override proc test() {
-    while !_lst.isEmpty() do _lst.pop(1);
+    while !_lst.isEmpty() do _lst.pop(0);
   }
 }
 
@@ -134,7 +134,6 @@ class RandomAccess1: Test {
     // Set up a trace of random indices.
     fillRandom(_rnd, seed);
     _rnd = mod(_rnd, n0);
-    _rnd += 1;
   }
   override proc test() {
     for r in _rnd do _lst[r] &= 0xFF:byte;

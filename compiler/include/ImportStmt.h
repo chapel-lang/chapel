@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -22,6 +23,7 @@
 
 #include "stmt.h"
 
+#include <map>
 #include <vector>
 
 class ResolveScope;
@@ -30,6 +32,9 @@ class ImportStmt: public VisibilityStmt {
  public:
   ImportStmt(BaseAST* source, bool isPrivate);
   ImportStmt(BaseAST* source, const char* rename, bool isPrivate);
+  ImportStmt(BaseAST* source, bool isPrivate,
+             std::vector<const char*>* namesList,
+             std::map<const char*, const char*>* renamesList);
 
   DECLARE_COPY(ImportStmt);
 
@@ -45,17 +50,25 @@ class ImportStmt: public VisibilityStmt {
 
   void scopeResolve(ResolveScope* scope);
 
-  BaseAST* getSearchScope() const;
+  virtual BaseAST* getSearchScope() const;
 
   bool skipSymbolSearch(const char* name);
 
   bool providesQualifiedAccess() const;
+  bool providesUnqualifiedAccess() const;
+
+  ImportStmt* applyOuterUse(const UseStmt* outer);
+  ImportStmt* applyOuterImport(const ImportStmt* outer);
 
   bool providesNewSymbols(const UseStmt* other) const;
   bool providesNewSymbols(const ImportStmt* other) const;
 
  private:
   bool checkValid(Expr* expr) const;
+
+  void validateList();
+  void validateUnqualified();
+  void noRepeats() const;
 
  public:
   std::vector<const char*> unqualified;
