@@ -18,7 +18,7 @@ var iters = 0;
 do {
 
   proc +(x : 2*int, y : 2*int)          // override module functions
-    return (x(1) + y(1), x(2) + y(2));
+    return (x(0) + y(0), x(1) + y(1));
 
   [i in D] Temp(i) = (+ reduce A(i + stencil)) / 4.0;
   iters += 1;

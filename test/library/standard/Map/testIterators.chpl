@@ -47,7 +47,7 @@ writeln(A.sorted());
 
 var B: [1..fac.size] (int, FacInt);
 for item in fac.items() {
-  B[item(1)] = item;
+  B[item(0)] = item;
 }
 writeln(B.sorted());
 

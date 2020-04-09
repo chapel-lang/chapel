@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -149,23 +150,6 @@ bool UseStmt::hasExceptList() const {
   return isPlainUse() == false && except == true;
 }
 
-bool UseStmt::isARenamedSym(const char* name) const {
-  return renamed.count(name) == 1;
-}
-
-const char* UseStmt::getRenamedSym(const char* name) const {
-  std::map<const char*, const char*>::const_iterator it;
-  const char*                                        retval = NULL;
-
-  it = renamed.find(name);
-
-  if (it != renamed.end()) {
-    retval = it->second;
-  }
-
-  return retval;
-}
-
 /************************************* | **************************************
 *                                                                             *
 *                                                                             *
@@ -179,7 +163,7 @@ void UseStmt::scopeResolve(ResolveScope* scope) {
     if (SymExpr* se = toSymExpr(src)) {
       INT_ASSERT(se->symbol() == rootModule);
 
-    } else if (Symbol* sym = scope->lookup(src, /*isUse=*/ true)) {
+    } else if (Symbol* sym = scope->lookupForImport(src, /* isUse */ true)) {
       SET_LINENO(this);
 
       if (ModuleSymbol* modSym = toModuleSymbol(sym)) {
@@ -313,7 +297,6 @@ void UseStmt::validateList() {
 
 void UseStmt::noRepeats() const {
   std::vector<const char*>::const_iterator           it1;
-  std::map<const char*, const char*>::const_iterator it2;
 
   for (it1 = named.begin(); it1 != named.end(); ++it1) {
     std::vector<const char*>::const_iterator           next = it1;
@@ -340,36 +323,7 @@ void UseStmt::noRepeats() const {
       }
     }
   }
-
-  for (it2 = renamed.begin(); it2 != renamed.end(); ++it2) {
-    std::map<const char*, const char*>::const_iterator next = it2;
-
-    for (++next; next != renamed.end(); ++next) {
-      if (strcmp(it2->second, next->second) == 0) {
-        // Renamed this variable twice.  Probably a mistake on the user's part,
-        // but not a catastrophic one
-        USR_WARN(this, "identifier '%s' is repeated", it2->second);
-      }
-
-      if (strcmp(it2->second, next->first) == 0) {
-        // This name is the old_name in one rename and the new_name in another
-        // Did the user actually want to cut out the middle man?
-        USR_WARN(this, "identifier '%s' is repeated", it2->second);
-        USR_PRINT("Did you mean to rename '%s' to '%s'?",
-                  next->second,
-                  it2->first);
-      }
-
-      if (strcmp(it2->first, next->second) == 0) {
-        // This name is the old_name in one rename and the new_name in another
-        // Did the user actually want to cut out the middle man?
-        USR_WARN(this, "identifier '%s' is repeated", it2->first);
-        USR_PRINT("Did you mean to rename '%s' to '%s'?",
-                  it2->second,
-                  next->first);
-      }
-    }
-  }
+  noRepeatsInRenamed();
 }
 
 void UseStmt::validateNamed() {
@@ -402,40 +356,6 @@ void UseStmt::validateNamed() {
           }
         }
       }
-    }
-  }
-}
-
-void UseStmt::validateRenamed() {
-  std::map<const char*, const char*>::iterator it;
-
-  BaseAST*            scopeToUse = getSearchScope();
-  const ResolveScope* scope      = ResolveScope::getScopeFor(scopeToUse);
-
-  for (it = renamed.begin(); it != renamed.end(); ++it) {
-    std::vector<Symbol*> symbols;
-
-    scope->getFields(it->second, symbols);
-
-    if (symbols.size() == 0) {
-      SymExpr* se = toSymExpr(src);
-
-      USR_FATAL_CONT(this,
-                     "Bad identifier in rename, no known '%s' in '%s'",
-                     it->second,
-                     se->symbol()->name);
-
-    } else if (symbols.size() == 1) {
-      Symbol* sym = symbols[0];
-
-      if (sym->hasFlag(FLAG_PRIVATE)) {
-        USR_FATAL_CONT(this,
-                       "Bad identifier in rename, '%s' is private",
-                       it->second);
-      }
-
-    } else {
-      INT_ASSERT(false);
     }
   }
 }
@@ -745,6 +665,135 @@ UseStmt* UseStmt::applyOuterUse(const UseStmt* outer) {
   }
 }
 
+ImportStmt* UseStmt::applyOuterImport(const ImportStmt* outer) {
+  if (outer->providesQualifiedAccess()) {
+    // This assert is here in case we change it so imports can provide both
+    // unqualified and qualified access in the same statement.
+    INT_ASSERT(!outer->providesUnqualifiedAccess());
+    // The outer import provides qualified access only.  Therefore, just return
+    // a new import of our used module
+    SET_LINENO(this);
+    return new ImportStmt(src, isPrivate);
+
+  } else {
+    if (isPlainUse() == false) {
+      if (except) {
+        // The more complicated arises if we have an 'except' list.
+        // If any symbols remain, we should turn into an import statement for
+        // unqualified access only
+        std::vector<const char*> newUnqualifiedList;
+        for_vector(const char, includeMe, outer->unqualified) {
+          if (std::find(named.begin(), named.end(), includeMe) == named.end()) {
+            // We didn't find this symbol in our 'except' list, so add it
+            newUnqualifiedList.push_back(includeMe);
+          }
+        }
+
+        std::map<const char*, const char*> newRenamed;
+        for (std::map<const char*, const char*>::const_iterator it =
+               outer->renamed.begin(); it != outer->renamed.end(); ++it) {
+          if (std::find(named.begin(), named.end(), it->second) ==
+              named.end()) {
+            // We didn't find the old name of the renamed symbol in our
+            // 'except' list, so add it.
+            newRenamed[it->first] = it->second;
+          }
+        }
+
+        if (newUnqualifiedList.size() > 0 || newRenamed.size() > 0) {
+          // At least some of the identifiers in the unqualified list weren't in
+          // the inner 'except' list.  Make an ImportStmt to include those from
+          // the original unqualified list which weren't in the inner 'except'
+          // list (could be all of the outer unqualified list)
+          SET_LINENO(this);
+
+          return new ImportStmt(src, isPrivate, &newUnqualifiedList,
+                                &newRenamed);
+        } else {
+          // all the unqualified identifiers were in the 'except'
+          // list so this module use will give us nothing.
+          return NULL;
+        }
+
+      } else {
+        // We had an 'only' list, so we need to narrow that list down to just
+        // the names that are in both lists.
+        SET_LINENO(this);
+
+        std::vector<const char*> newUnqualifiedList;
+        std::map<const char*, const char*> newRenamed;
+
+        for_vector(const char, includeMe, outer->unqualified){
+          if (std::find(named.begin(), named.end(), includeMe) != named.end()) {
+            // We found this symbol in both our 'only' list and the unqualified
+            // list, so add it to the union of them.
+            newUnqualifiedList.push_back(includeMe);
+
+          } else {
+            std::map<const char*, const char*>::iterator it = renamed.find(includeMe);
+
+            if (it != renamed.end()) {
+              // We found this symbol in the renamed list and the outer
+              // unqualified list so add it to the new renamed list.
+              newRenamed[it->first] = it->second;
+            }
+          }
+        }
+
+        for (std::map<const char*, const char*>::const_iterator it = outer->renamed.begin();
+             it != outer->renamed.end();
+             ++it) {
+          if (std::find(named.begin(), named.end(), it->second) != named.end()) {
+            // The old name was in our 'only' list.  We need to rename it.
+            newRenamed[it->first] = it->second;
+          } else {
+
+            std::map<const char*, const char*>::const_iterator innerIt = renamed.find(it->second);
+
+            if (innerIt != renamed.end()) {
+              // We found this symbol in the renamed list and the outer renamed
+              // list so add the outer import's new name as the key, and our old
+              // name as the old name to use.
+              newRenamed[it->first] = innerIt->second;
+            }
+          }
+        }
+
+        if (newUnqualifiedList.size() > 0 || newRenamed.size() > 0) {
+          // There were symbols that were in both our 'only' list and the outer
+          // unqualified list, so this module use is still interesting.
+          SET_LINENO(this);
+          return new ImportStmt(src, isPrivate, &newUnqualifiedList,
+                                &newRenamed);
+
+        } else {
+          // all of the unqualified and renamed identifiers in the outer import
+          // were missing from the inner use's 'only' list, so this module use
+          // will give us nothing.
+          return NULL;
+        }
+      }
+
+    } else {
+      // The inner use did not specify an 'except' or 'only' list,
+      // so propagate the unqualified list and/or renamed list to it.
+      SET_LINENO(this);
+
+      ImportStmt* newImport = new ImportStmt(src, isPrivate);
+      for_vector(const char, toInclude, outer->unqualified) {
+        newImport->unqualified.push_back(toInclude);
+      }
+
+      for (std::map<const char*, const char*>::const_iterator it =
+             outer->renamed.begin(); it != outer->renamed.end(); ++it) {
+        newImport->renamed[it->first] = it->second;
+      }
+
+      return newImport;
+    }
+  }
+}
+
 /************************************* | **************************************
 *                                                                             *
 * Returns true if the current use statement has the possibility of allowing   *
@@ -880,7 +929,7 @@ bool UseStmt::providesNewSymbols(const ImportStmt* other) const {
     // probably fine. (and if they did, there's no harm in including it again)
     return true;
   } else {
-    if (other->unqualified.size() == 0) {
+    if (other->unqualified.size() == 0 && other->renamed.size() == 0) {
       // Other is an import of just a module.  As long as we provided something
       // for unqualified access, we provide new symbols
       if (renamed.size() > 0) {

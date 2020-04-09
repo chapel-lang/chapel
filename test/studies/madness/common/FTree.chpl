@@ -134,7 +134,7 @@ class FTree {
      */ 
     iter lvl_iter(lvl: int) {
         for i in indices do
-            if i(1) == lvl && indices.contains(i) then yield nodes[i].data;
+            if i(0) == lvl && indices.contains(i) then yield nodes[i].data;
     }
 
     iter index_iter() {

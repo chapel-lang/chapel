@@ -15,6 +15,6 @@ writeln(c1);
 var arr2 = [2, 4, 6];
 var c2 = new owned C(arr2.domain);
 writeln(c2);
-c2.D = {1..4};
-c2.A[4] = 8;
+c2.D = {0..3};
+c2.A[3] = 8;
 writeln(c2);

@@ -13,7 +13,7 @@
 */
 
 proc myread(inout args ...?k) {
-  for param i in 1..k {
+  for param i in 0..k-1 {
     writeln(args(i));
   }
 }

@@ -345,6 +345,10 @@ class type.
 
 The default value of a concrete nilable class type is ``nil``. Generic
 class types and non-nilable class types do not have a default value.
+For this reason, rectangular arrays of non-nilable classes cannot be
+resized, since the new array values don't have a logical default
+value.  For similar reasons, associative and sparse arrays of
+non-nilable classes are not currently supported.
 
    *Example (declaration.chpl)*.
 
@@ -622,16 +626,27 @@ Overriding Base Class Methods
 
 If a method in a derived class is declared with a signature identical to
 that of a method in a base class, then it is said to override the base
-class’s method. Such methods are considered for dynamic dispatch. In
-particular, dynamic dispatch will be used when the method receiver has a
-static type of the base class but refers to an instance of a derived
-class type.
+class’s method. Such methods may be considered for dynamic dispatch if
+certain criteria are met. In particular, dynamic dispatch will be used
+when the method receiver has a static type of the base class but refers
+to an instance of a derived class type. Additionally, a method eligible
+for dynamic dispatch must not be a class method (see :ref:`Class_Methods`),
+must not return ``type``, and must not return ``param``.
+
+   *Rationale*.
+
+   Class methods, methods that return ``type``, and methods that return
+   ``param`` are not considered as candidates for dynamic dispatch because
+   they are resolved at compile-time based on the static type of the
+   method receiver.
 
 In order to have identical signatures, two methods must have the same
-the names, intents, types, and order of formal arguments. The return
-type of the overriding method must either be the same as the return type
-of the base class’s method or be a subclass of the base class method’s
-return type.
+names, and their formal arguments must have the same names, intents, types,
+and order.
+
+The return type of the overriding method must either be the same as the
+return type of the base class’s method or be a subclass of the base class
+method’s return type.
 
 Methods that override a base class method must be marked with the
 ``override`` keyword in the ``procedure-kind``. Additionally, methods
@@ -2094,14 +2109,14 @@ Class Deinitializer
 
 A class author may create a deinitializer to specify additional actions
 to be performed when a class instance is deleted. A class deinitializer
-is a method named ``deinit()``. It must take no arguments (aside from
-the implicit ``this`` argument). If defined, the deinitializer is called
-each time a ``delete`` statement is invoked with a valid instance of
-that class type. The deinitializer is not called if the argument of
-``delete`` evaluates to ``nil``. Note that when an ``owned`` or
-``shared`` variable goes out of scope, it may call ``delete`` on a class
-instance which in turn will run the deinitializer and then reclaim the
-memory.
+is a method named ``deinit()``. It must take no arguments (aside from the
+implicit ``this`` argument). If defined, the deinitializer is called each
+time a ``delete`` statement is invoked with a valid instance of that
+class type. The deinitializer is not called if the argument of ``delete``
+evaluates to ``nil``. Note that when an ``owned`` or ``shared`` reaches
+its deinit point (see :ref:`Deinit_Points`), it may call ``delete`` on a
+class instance which in turn will run the deinitializer and then reclaim
+the memory.
 
    *Example (classDeinitializer.chpl)*.
 

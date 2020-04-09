@@ -10,5 +10,12 @@ returnTypeExpression.doc
 
    use returnTypeExpression.doc;
 
+
+or
+
+.. code-block:: chapel
+
+   import returnTypeExpression.doc;
+
 .. function:: proc foo(a: complex(?w), b: real(w/2)): real(w/2)
 

@@ -1,0 +1,13 @@
+
+[brick]
+name = "CToml"
+version = "0.1.0"
+chplVersion = "1.18.0"
+compopts = "-ltoml --ccflags -w"
+
+[dependencies]
+
+[external]
+libtomlc99 = "0.2019.06.24"
+
+

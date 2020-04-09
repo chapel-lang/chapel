@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -466,7 +467,7 @@ module ChapelIO {
           var hasReadFieldName = false;
 
           for param i in 1..numFields {
-            if !isIoField(x, i) || hasReadFieldName || readField[i] then
+            if !isIoField(x, i) || hasReadFieldName || readField[i-1] then
               continue;
 
             var fieldName = ioFieldNameLiteral(reader, t, i);
@@ -489,7 +490,7 @@ module ChapelIO {
             try reader.readwrite(equalSign);
 
             try reader.readwrite(__primitive("field by num", x, i));
-            readField[i] = true;
+            readField[i-1] = true;
             numRead += 1;
           }
 
@@ -695,8 +696,9 @@ module ChapelIO {
   }
 
   pragma "no doc"
-  override proc locale.writeThis(f) throws {
-    f <~> name;
+  proc locale.writeThis(f) throws {
+    // FIXME this doesn't resolve without `this`
+    f <~> this._instance;
   }
 
   pragma "no doc"
@@ -748,8 +750,8 @@ module ChapelIO {
       f <~> start;
     }
     if size != 0 {
-      f <~> this(1);
-      for param i in 2..size {
+      f <~> this(0);
+      for param i in 1..size-1 {
         if !binary {
           f <~> comma;
         }

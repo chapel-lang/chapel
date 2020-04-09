@@ -53,10 +53,10 @@ proc printResults() {
 */
 inline proc checkDims(DC, DA, DB) {
   if boundsChecking {
-    assert(DA.dim(2) == DB.dim(1),
+    assert(DA.dim(1) == DB.dim(0),
            "Inner dimensions of A and B do not match.");
-    assert(DC.dim(1) == DA.dim(1) &&
-           DC.dim(2) == DB.dim(2),
+    assert(DC.dim(0) == DA.dim(0) &&
+           DC.dim(1) == DB.dim(1),
            "Outer dimentions of C, A, and B do not match.");
   }
 }

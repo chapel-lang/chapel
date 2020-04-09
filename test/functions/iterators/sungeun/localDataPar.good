@@ -1,20 +1,20 @@
 ### numTasksPerLoc = 3
 ### ignoreRunning = true
 ### minIndicesPerTask = 1
-### numChunks = 3 (parDim = 1)
+### numChunks = 3 (parDim = 0)
 ### nranges = (9..17, 10..18, 11..19, 12..20)
 ### numTasksPerLoc = 19
 ### ignoreRunning = true
 ### minIndicesPerTask = 19
-### numChunks = 9 (parDim = 1)
+### numChunks = 9 (parDim = 0)
 ### nranges = (9..17, 10..18, 11..19, 12..20)
 ### numTasksPerLoc = 3
 ### ignoreRunning = true
 ### minIndicesPerTask = 1
-### numChunks = 3 (parDim = 1)
+### numChunks = 3 (parDim = 0)
 ### nranges = (9..17, 10..18, 11..19, 12..20)
 ### numTasksPerLoc = 19
 ### ignoreRunning = true
 ### minIndicesPerTask = 19
-### numChunks = 9 (parDim = 1)
+### numChunks = 9 (parDim = 0)
 ### nranges = (9..17, 10..18, 11..19, 12..20)

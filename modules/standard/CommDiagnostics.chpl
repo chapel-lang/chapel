@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -237,7 +238,7 @@ module CommDiagnostics
 
       var first = true;
       c <~> "(";
-      for param i in 1..numFields(chpl_commDiagnostics) {
+      for param i in 0..<numFields(chpl_commDiagnostics) {
         param name = getFieldName(this.type, i);
         const val = getField(this, i);
         if val != 0 {

@@ -1,0 +1,2 @@
+nbody.chpl:137: error: tuple index 3 is out of bounds
+nbody.chpl:137: note: this tuple contains elements 0..2 (inclusive)

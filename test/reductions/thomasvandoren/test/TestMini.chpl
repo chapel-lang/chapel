@@ -13,7 +13,7 @@ var intResult = mini reduce zip(intArray, 1..),
   realResult = mini reduce zip(realArray, 1..);
 writeln("mini int result: ", intResult);
 // use round() to avoid floating-point-precision issues
-writeln("mini real result: ", (round(realResult(1)*1e8), realResult(2)));
+writeln("mini real result: ", (round(realResult(0)*1e8), realResult(1)));
 
 // Verify calling mini on emptyArray returns (max(eltType), 0).
 writeln("mini int empty result: ",

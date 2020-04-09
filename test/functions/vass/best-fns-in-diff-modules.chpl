@@ -4,18 +4,21 @@ module OuterModule {
   var global = 5;
 
   module M {
+    import OuterModule.global;
     proc access() ref {
       writeln("REF");
       return global;
     }
   }
   module P {
+    import OuterModule.global;
     proc access() const ref {
       writeln("CONST REF");
       return global;
     }
   }
   module Q {
+    import OuterModule.global;
     proc access() {
       writeln("VALUE");
       return global;

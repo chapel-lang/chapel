@@ -5,5 +5,5 @@ record R {
 }
 
 var r:R;
-var i = getField(r, 2);
+var i = getField(r, 1);
 

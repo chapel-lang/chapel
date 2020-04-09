@@ -90,18 +90,18 @@ module LCALSChecksums {
           const lenStr = (length:string).toLower();
           if run_loop[loopKernel] && stat.loop_is_run && stat.loop_run_count[length] > 0 {
             if run_loop_length[length] {
-              const absdiff = abs(Checksums[loopKernel](1+length:int) - stat.loop_chksum[length]);
-              const reldiff = abs(absdiff/Checksums[loopKernel](1+length:int));
+              const absdiff = abs(Checksums[loopKernel](length:int) - stat.loop_chksum[length]);
+              const reldiff = abs(absdiff/Checksums[loopKernel](length:int));
               if reldiff > checksumTolerance {
                 writeln("FAIL: ", (varStr, kerStr, lenStr),
                         " (expected, computed) = ",
-                        (Checksums[loopKernel](1+length:int),
+                        (Checksums[loopKernel](length:int),
                          stat.loop_chksum[length]),
                         " absolute difference: ", absdiff, " relative difference: ", reldiff);
               } else if noisyChecksumChecks {
                 writeln("PASS: ", (varStr, kerStr, lenStr),
                         " (expected, computed) = ",
-                        (Checksums[loopKernel](1+length:int),
+                        (Checksums[loopKernel](length:int),
                          stat.loop_chksum[length]), " absolute difference: ", absdiff, " relative difference: ", reldiff);
               }
             }

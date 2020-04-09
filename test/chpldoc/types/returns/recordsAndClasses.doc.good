@@ -10,6 +10,13 @@ recordsAndClasses.doc
 
    use recordsAndClasses.doc;
 
+
+or
+
+.. code-block:: chapel
+
+   import recordsAndClasses.doc;
+
 .. record:: thingy
 
 .. function:: proc takesAThingy(): thingy

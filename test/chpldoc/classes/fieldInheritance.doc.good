@@ -10,6 +10,13 @@ fieldInheritance.doc
 
    use fieldInheritance.doc;
 
+
+or
+
+.. code-block:: chapel
+
+   import fieldInheritance.doc;
+
 .. class:: Elder
 
    This class has two fields 

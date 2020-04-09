@@ -28,9 +28,9 @@ proc dgemm(
     C : [?CD] t)
 {
     // Calculate (i,j) using a dot product of a row of A and a column of B.
-    for (ai,ci) in zip(AD.dim(1),CD.dim(1)) {
-        for (bj,cj) in zip(BD.dim(2),CD.dim(2)) {
-            for (ak,bk) in zip(AD.dim(2),BD.dim(1)) {
+    for (ai,ci) in zip(AD.dim(0),CD.dim(0)) {
+        for (bj,cj) in zip(BD.dim(1),CD.dim(1)) {
+            for (ak,bk) in zip(AD.dim(1),BD.dim(0)) {
                 C[ci,cj] -= A[ai, ak] * B[bk, bj];
             }
         }
@@ -67,8 +67,8 @@ proc luLikeMultiply(
     // up to be divisible with blkSize.  VD is similiar except it expands along
     // the vertical axis.
     const AD = A.domain;
-    const HD = {A.domain.dim(1), 1..blksHoriz*blkSize};
-    const VD = {1..blksVert*blkSize, A.domain.dim(2)};
+    const HD = {A.domain.dim(0), 1..blksHoriz*blkSize};
+    const VD = {1..blksVert*blkSize, A.domain.dim(1)};
 
     // Define the operand and solution points (see diagram above)
     const ptOp  = (blk-1)*blkSize+1;
@@ -83,14 +83,14 @@ proc luLikeMultiply(
     const bBlkD = AD[ptOp..#blkSize, ptSol..];
 
     // stamp A across into ACopies. col is an index
-    forall col in AD.dim(2)(ptSol..) by blkSize {
+    forall col in AD.dim(1)(ptSol..) by blkSize {
         const cBlkD = HD[ptSol.., col..#blkSize];
 
         ACopies[cBlkD] = A[aBlkD];
     }
 
     // stamp B down into BCopies,
-    forall row in AD.dim(1)(ptSol..) by blkSize {
+    forall row in AD.dim(0)(ptSol..) by blkSize {
         const cBlkD = VD[row..#blkSize, ptSol..];
 
         BCopies[cBlkD] = A[bBlkD];
@@ -121,12 +121,12 @@ proc panelSolve(
     panel : domain(2),
     piv : [] int)
 {
-    var pnlRows = panel.dim(1);
-    var pnlCols = panel.dim(2);
+    var pnlRows = panel.dim(0);
+    var pnlCols = panel.dim(1);
 
     // Ideally some type of assertion to ensure panel is embedded in A's
     // domain
-    assert(piv.domain.dim(1) == A.domain.dim(1));
+    assert(piv.domain.dim(0) == A.domain.dim(0));
 
     // iterate through the columns
     for k in pnlCols {
@@ -167,10 +167,10 @@ proc panelSolve(
 // right of the block.
 proc updateBlockRow(A : [] ?t, tl : domain(2), tr : domain(2))
 {
-    var tlRows = tl.dim(1);
-    var tlCols = tl.dim(2);
-    var trRows = tr.dim(1);
-    var trCols = tr.dim(2);
+    var tlRows = tl.dim(0);
+    var tlCols = tl.dim(1);
+    var trRows = tr.dim(0);
+    var trCols = tr.dim(1);
 
     assert(tlCols == trRows);
 

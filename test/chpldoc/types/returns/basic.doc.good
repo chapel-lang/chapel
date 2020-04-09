@@ -11,6 +11,13 @@ basic.doc
 
    use basic.doc;
 
+
+or
+
+.. code-block:: chapel
+
+   import basic.doc;
+
 **Submodules**
 
 .. toctree::
@@ -72,6 +79,13 @@ Other
 .. code-block:: chapel
 
    use basic.doc.Other;
+
+
+or
+
+.. code-block:: chapel
+
+   import basic.doc.Other;
 
 .. function:: proc inside(): int
 

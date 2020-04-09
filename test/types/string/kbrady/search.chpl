@@ -25,56 +25,56 @@ writeln("d: ", d, "\n");
 writeln('x.___("Hello")');
 test(x, "Hello");
 
-writeln('x.___("Hello", 2..)');
-test(x, "Hello", 2..);
+writeln('x.___("Hello", 1..)');
+test(x, "Hello", 1..);
 
 writeln('x.___("hello")');
 test(x, "hello");
 
-writeln('x.___("hello", 14..)');
-test(x, "hello", 14..);
+writeln('x.___("hello", 13..)');
+test(x, "hello", 13..);
 
 writeln('y.___("Allô")');
 test(y, "Allô");
 
-writeln('y.___("Allô", 2..)');
-test(y, "Allô", 2..);
+writeln('y.___("Allô", 1..)');
+test(y, "Allô", 1..);
 
 writeln('y.___("allô")');
 test(y, "allô");
 
-writeln('y.___("allô", 14..)');
-test(y, "allô", 12..);
+writeln('y.___("allô", 11..)');
+test(y, "allô", 11..);
 
 writeln('c.___("c")');
 test(c, "c");
 
-writeln('c.___("c", ..9)');
-test(c, "c", ..9);
+writeln('c.___("c", ..8)');
+test(c, "c", ..8);
 
 writeln('c.___("C")');
 test(c, "C");
 
-writeln('c.___("C", 5..9)');
-test(c, "C", 5..9);
+writeln('c.___("C", 4..8)');
+test(c, "C", 4..8);
 
 writeln('d.___("ç")');
 test(d, "ç");
 
-writeln('d.___("ç", ..18)');
-test(d, "ç", ..18);
+writeln('d.___("ç", ..17)');
+test(d, "ç", ..17);
 
 writeln('d.___("Ç")');
 test(d, "Ç");
 
-writeln('d.___("Ç", 9..18)');
-test(d, "Ç", 9..18);
+writeln('d.___("Ç", 8..17)');
+test(d, "Ç", 8..17);
 
 writeln('x.___("")');
 test(x, empty);
 
-writeln('x.___("", 9..15)');
-test(x, empty, 9..15);
+writeln('x.___("", 8..14)');
+test(x, empty, 8..14);
 
 writeln('"".___(x)');
 test(empty, x);
@@ -82,8 +82,8 @@ test(empty, x);
 writeln('y.___("")');
 test(y, empty);
 
-writeln('y.___("", 9..15)');
-test(y, empty, 9..15);
+writeln('y.___("", 8..14)');
+test(y, empty, 8..14);
 
 writeln('"".___(y)');
 test(empty, y);

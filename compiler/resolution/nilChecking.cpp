@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -382,7 +383,7 @@ static void checkForNilDereferencesInCall(
 
   // For records and non-nilable class types, check that any argument
   // to a user function is not dead.
-  // Also check for transfering ownership out of an unknown reference
+  // Also check for transferring ownership out of an unknown reference
   // to a non-nilable owned.
   FnSymbol* inFn = call->getFunction();
   if (FnSymbol* calledFn = call->resolvedOrVirtualFunction()) {
@@ -433,7 +434,7 @@ static void checkForNilDereferencesInCall(
             }
           }
 
-          // check for transfering ownership out of unk ref to non-nilable
+          // check for transferring ownership out of unk ref to non-nilable
           if (formal->hasFlag(FLAG_LEAVES_ARG_NIL)) {
             Symbol* actualSym = argSym;
             if (referent != NULL)

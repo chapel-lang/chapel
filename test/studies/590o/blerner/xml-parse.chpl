@@ -1,6 +1,6 @@
 config const sourceText = "<a><ii>end</ii><none /></a>";
-const AllIndices: domain(1) = {1..(sourceText.size)};
-const AllPairs: domain(2) = {1..(sourceText.size), 1..(sourceText.size)};
+const AllIndices: domain(1) = {0..<sourceText.size};
+const AllPairs: domain(2) = {0..<sourceText.size, 0..<sourceText.size};
 var StartIndices: sparse subdomain(AllIndices);
 var EndIndices: sparse subdomain(AllIndices);
 var lock: sync int = 0;
@@ -36,13 +36,13 @@ proc main {
     if sourceText[z] == '<' then {
       lock;
       StartIndices += z;
-      if z > 1 && sourceText[z-1] != ">" then EndIndices += z-1;
+      if z > 0 && sourceText[z-1] != ">" then EndIndices += z-1;
       lock = 0;
     }
     else if sourceText[z] == '>' then {
       lock;
       EndIndices += z;
-      if z < (sourceText.size) && sourceText[z+1] != "<" then StartIndices += z+1;
+      if z < (sourceText.size-1) && sourceText[z+1] != "<" then StartIndices += z+1;
       lock = 0;
     }
   }
@@ -75,7 +75,7 @@ proc hasIndex(start, stop, indices) {
 }
 
 proc hasSpace(str) {
-  for i in 1..(str.size) do
+  for i in 0..<str.size do
      if str[i] == " " then return true;
   return false;
 }

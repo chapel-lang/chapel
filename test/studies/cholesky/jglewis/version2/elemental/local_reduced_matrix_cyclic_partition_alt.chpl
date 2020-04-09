@@ -23,8 +23,7 @@ module local_reduced_matrix_cyclic_partition_alt {
     // in which the block size were obtained from a blocking distribution.
     // -------------------------------------------------------------------
     
-    const my_processor_row = processor (1);
-    const my_processor_col = processor (2);
+    const (my_processor_row, my_processor_col) = processor;
 
     // this processor owns data with indices in the tensor product
     // [ my_rows, my_cols ];

@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -300,7 +301,7 @@ module ChapelReduce {
     proc clone() return new unmanaged BitwiseXorReduceScanOp(eltType=eltType);
   }
 
-  proc _maxloc_id(type eltType) return (min(eltType(1)), max(eltType(2)));
+  proc _maxloc_id(type eltType) return (min(eltType(0)), max(eltType(1)));
   proc _minloc_id(type eltType) return max(eltType); // max() on both components
 
   class maxloc: ReduceScanOp {
@@ -310,9 +311,9 @@ module ChapelReduce {
     proc identity return _maxloc_id(eltType);
     proc accumulate(x) { accumulateOntoState(value, x); }
     proc accumulateOntoState(ref state, x) {
-      if x(1) > state(1) ||
-        ((x(1) == state(1)) && (x(2) < state(2))) ||
-        (gotNaN(x(1)) && ( (! gotNaN(state(1))) || (x(2) < state(2)) ))
+      if x(0) > state(0) ||
+        ((x(0) == state(0)) && (x(1) < state(1))) ||
+        (gotNaN(x(0)) && ( (! gotNaN(state(0))) || (x(1) < state(1)) ))
       then
         state = x;
     }
@@ -328,9 +329,9 @@ module ChapelReduce {
     proc identity return _minloc_id(eltType);
     proc accumulate(x) { accumulateOntoState(value, x); }
     proc accumulateOntoState(ref state, x) {
-      if x(1) < state(1) ||
-        ((x(1) == state(1)) && (x(2) < state(2))) ||
-        (gotNaN(x(1)) && ( (! gotNaN(state(1))) || (x(2) < state(2)) ))
+      if x(0) < state(0) ||
+        ((x(0) == state(0)) && (x(1) < state(1))) ||
+        (gotNaN(x(0)) && ( (! gotNaN(state(0))) || (x(1) < state(1)) ))
       then
         state = x;
     }

@@ -44,7 +44,7 @@ proc main(){
   var computationDomain: domain(2) = totalSpaceRange.expand(-1);
 
   // Storage array.
-  var space: [0..1, totalSpaceRange.dim(1), totalSpaceRange.dim(2) ] Cell;
+  var space: [0..1, totalSpaceRange.dim(0), totalSpaceRange.dim(1) ] Cell;
   var timer: Timer;
   // initialize space with values
   var generator = new RandomStream( real, globalSeed, parSafe = false );
@@ -64,8 +64,8 @@ proc main(){
 
   // 3 - jacobi 1D timed within an openmp loop
   timer.start();
-  const rows = computationDomain.dim(1);
-  const cols = computationDomain.dim(2);
+  const rows = computationDomain.dim(0);
+  const cols = computationDomain.dim(1);
   for t in computationTimeRange {
       //forall (x,y) in dynamic(computationDomain,chunkSize=1) do
       //forall (x,y) in computationDomain do

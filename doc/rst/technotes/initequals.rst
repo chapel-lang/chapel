@@ -272,3 +272,40 @@ type:
 
 If the value is not a subtype of the generic expression, then there will be a
 compile-time error. This may change in future releases.
+
+
+Disabling Copyability
+---------------------
+If a user wishes to indicate that their record cannot be copied, they can do
+so by implementing an ``init=`` method with a ``false`` where-clause:
+
+.. code-block:: chapel
+
+  proc R.init=(other: R) where false {
+   // method body may be empty in this case
+  }
+
+A call to the ``compilerError`` utility function can be used for the same
+purpose:
+
+.. code-block:: chapel
+
+  proc R.init=(other: R) {
+    compilerError("Cannot copy R");
+  }
+
+Relation to Assignment Operator
+-------------------------------
+
+In the 1.20 release users could choose to implement either the ``init=`` method
+or ``=`` operator for a given type, or implement both, or rely entirely on the
+compiler-generated implementation. This could lead to hard-to-debug problems
+when both functions appeared to be user-defined, but a user mistake in the
+function signature caused it to be ignored and the compiler-generated version
+to be used instead.
+
+In the 1.21 release users are now required to implement both the ``init=``
+method and ``=`` operator for a given type, or rely entirely on the
+compiler-generated implementations. If only one implementation is found, the
+compiler will issue an error and any potentially-incorrect function signatures
+will hopefully be exposed.

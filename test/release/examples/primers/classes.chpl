@@ -23,11 +23,13 @@ class C {
 // initializer has an argument for each field in the class. Once a class
 // has been initialized, its methods can be called.
 //
-// Class types include a strategy for freeing them. We'll discuss this
-// more below.
+// Classes have various memory management strategies that determine how
+// they are freed.  We'll discuss these more below, but for now, know
+// that ``new C(...)`` is equivalent to writing out ``new owned C(...)``
+// where ``owned`` is one of these memory management strategies.
 //
 // A class variable can refer to an *instance* of a class.
-var foo = new owned C(1, 3);
+var foo = new C(1, 3);
 foo.printFields();
 
 //
@@ -84,7 +86,7 @@ class D: C {
 //
 // Note that since ``foo`` is an ``owned C``, assigning to it
 // will delete the previous instance "owned" by that variable.
-foo = new owned D(3, 4);
+foo = new D(3, 4);
 foo.printFields();
 
 
@@ -97,12 +99,14 @@ delete unm;
 
 var own: owned C = new owned C(1, 10);
 // The instance referred to by ``own`` is deleted when it is no longer in scope.
-// Only one ``owned C`` can refer to a given instance at a time but the
+// Only one ``owned C`` can refer to a given instance at a time, but the
 // ownership can be transferred to another variable.
+
 var own2 = new C(1, 10);
 assert(own.type == own2.type);
-// The example above shows that the default behavior makes ``new C`` equivalent
-// to ``new owned C``.
+// The example above shows that ``new C(...)`` can be used as a
+// shorthand for ``new owned C(...)`` because ``owned`` is the default
+// memory management strategy for classes.
 
 var share: shared C = new shared C(1, 10);
 // The instance referred to by ``share`` is reference counted -- that is,
@@ -155,7 +159,7 @@ x = b2; // converting from borrowed C to borrowed C?
 // is not ``nil`` and return it as a non-nilable type. This operator
 // will halt if the value is actually ``nil``.
 //
-// Note that when applied to an ``owned`` or ``shared` variable, ``!`` will
+// Note that when applied to an ``owned`` or ``shared`` variable, ``!`` will
 // result in a borrow from that variable.
 x!.printFields();
 

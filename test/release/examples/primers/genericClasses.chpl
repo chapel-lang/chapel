@@ -32,16 +32,16 @@ record UntypedField {
 // instantiated using the types of the arguments representing the
 // generic fields in the default constructor.
 //
-var taf  = new owned TypeAliasField(real, 1.0, 2.0);
-var taf2 = new owned TypeAliasField(int, 3, 4);
+var taf  = new TypeAliasField(real, 1.0, 2.0);
+var taf2 = new TypeAliasField(int, 3, 4);
 writeln("taf = ", taf, ", taf2 = ", taf2);
 
-var pf  = new owned ParamField(3);
-var pf2 = new owned ParamField(2);
+var pf  = new ParamField(3);
+var pf2 = new ParamField(2);
 writeln("pf = ", pf, ", pf2 = ", pf2);
 
 var uf  = new UntypedField(3.14 + 2.72i);
-var uf2 = new UntypedField(new owned ParamField(2));
+var uf2 = new UntypedField(new ParamField(2));
 writeln("uf = ", uf, ", uf2 = ", uf2);
 
 //

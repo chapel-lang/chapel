@@ -77,7 +77,7 @@ proc writeFreqs(data, param nclSize) {
 
 proc writeCount(data, param str) {
   const freqs = calculate(data, str.numBytes),
-        d = hash(str.toBytes(), 1, str.numBytes);
+        d = hash(str.toBytes(), 0, str.numBytes);
 
   writeln(freqs[d], "\t", decode(d, str.numBytes));
 }
@@ -146,8 +146,8 @@ inline proc hash(str, beg, param size) {
 
 
 proc string.toBytes() {
-  var byteArr: [1..this.numBytes] uint(8);
-  for (b, i) in zip(byteArr, 1..) do
+  var byteArr: [0..#this.numBytes] uint(8);
+  for (b, i) in zip(byteArr, 0..) do
     b = this.byte(i);
   return byteArr;
 }

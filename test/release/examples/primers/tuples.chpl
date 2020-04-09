@@ -12,7 +12,7 @@
 // Tuples are a language-supported type. Tuples automatically get
 // assignment and comparison operators.
 //
-// Tuple indices always start at 1.
+// Tuple indices always start at 0.
 
 // Getting Started with Tuples
 // ***************************
@@ -23,17 +23,17 @@
 var myTuple = (1, "two");
 
 // Now ``myTuple`` stores a tuple with two elements:
-//   ``myTuple(1) == 1`` and
-//   ``myTuple(2) == 2``
-assert(myTuple(1) == 1);
-assert(myTuple(2) == "two");
+//   ``myTuple(0) == 1`` and
+//   ``myTuple(1) == 2``
+assert(myTuple(0) == 1);
+assert(myTuple(1) == "two");
 
 // As we saw above, to access an individual tuple element,
 // use ``someTuple(i)`` or ``someTuple[i]``. The first tuple
-// component is at index ``1``.
+// component is at index ``0``.
 
 // We can assign to a component in our tuple variable
-myTuple(2) = "four";
+myTuple(1) = "four";
 
 // We can print out the tuple. The output format mirrors
 // the Chapel syntax.
@@ -64,25 +64,34 @@ writeln(threeReals); // output: (0.0, 0.0, 0.0)
 threeReals += 1.0;
 writeln(threeReals); // output: (1.0, 1.0, 1.0)
 
-// Tuples with only one component type are also called
-// homogeneous tuples.
+// Tuples with only one component type are also called homogeneous
+// tuples whereas tuples with mixed types are called heterogeneous
+// tuples.
 
 // Tuple Iteration
 // ***************
 
-// Tuples with only one component type can be iterated over using a for loop:
+// Tuples can be iterated over using for loops:
+
 var sum = 0.0;
 for r in threeReals {
   sum += r;
 }
 writeln(sum);
 
-// To iterate over a tuple with multiple component types, use a
-// ``for param`` loop.
-// This kind of loop is always unrolled by the compiler so the loop body can
-// use different types in different iterations.
-for param i in 1..myTuple.size {
-  writeln("myTuple(", i, ") = ", myTuple(i));
+// In addition, homogeneous tuples can be iterated over using forall
+// and coforall loops.
+
+// Heterogeneous tuples can also be traversed using for and coforall
+// loops.  Such loops are always unrolled by the compiler so that each
+// iteration has its own index variable of the appropriate type.  For
+// example, in the following loop, the index ``t`` of the first
+// iteration would be of type ``int`` while the index ``t`` of the
+// second iteration would be of type ``string`` since ``myTuple`` has
+// type ``(int, string)``:
+
+for t in myTuple {
+  writeln(t);
 }
 
 // Tuple Unpacking
@@ -122,7 +131,7 @@ proc add(x, y, z) {
 }
 
 // If we want to pass threeReals to it, we could write
-add(threeReals(1), threeReals(2), threeReals(3));
+add(threeReals(0), threeReals(1), threeReals(2));
 // but the tuple can be unpacked at the call site like this:
 var total = add( (...threeReals) );
 writeln(total);

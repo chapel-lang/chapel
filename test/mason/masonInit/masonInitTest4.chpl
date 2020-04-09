@@ -7,8 +7,8 @@ proc main(){
   const newArgs = ['mason','new','testSrc'];
   masonNew(newArgs);
   
-  const initArgs = ['init','testSrc'];
+  const initArgs = ['mason','init','testSrc'];
   masonInit(initArgs);
-  
-  runCommand('rm -rf testSrc');
+
+  rmTree('testSrc');  
 }

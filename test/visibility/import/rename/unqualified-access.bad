@@ -1,1 +1,0 @@
-unqualified-access.chpl:5: error: renaming imported symbols that aren't modules is not currently supported

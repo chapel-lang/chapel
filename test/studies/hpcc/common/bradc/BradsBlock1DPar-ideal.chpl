@@ -144,7 +144,7 @@ class Block1DDist {
     // locale owns and the domain's index set
 
     // TODO: Should this be able to be written as myChunk[inds] ???
-    return locDist(locid).myChunk(inds.dim(1));
+    return locDist(locid).myChunk(inds.dim(0));
   }
   
   //

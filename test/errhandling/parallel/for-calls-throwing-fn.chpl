@@ -1,9 +1,9 @@
 prototype module OuterModule {
   // Test calling a throwing function from a non-throwing function via a for loop
   use ExampleErrors;
-  config const n = 1000;
 
   module M {
+    config const n = 1000;
     proc throwingFn() throws { }
 
     proc test() {

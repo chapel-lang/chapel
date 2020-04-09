@@ -407,8 +407,7 @@ all:
     - text: Optimize unorderedCopy for types larger than 8 bytes (#14255)
       config: 16 node XC
   12/04/19:
-    - text: Warm up the runtime before entering user code (#14567)
-      config: 16 node XC, 16-node-cs
+    - Warm up the runtime before entering user code (#14567)
   01/17/20:
     - Adjust point of deinitialization based on expiring value analysis (#14691)
   02/07/20:
@@ -424,6 +423,9 @@ all:
     - Add a spinlock to the atomic runtime interface. (#15015)
   03/05/20:
     - Allow bulk transfer of some wide pointer arrays (#15049)
+  03/20/20:
+    - text: Make --cache-remote readahead less aggressive (#15267)
+      config: chapcs.comm-counts
 
 
 AllCompTime: &timecomp-base
@@ -577,6 +579,8 @@ chameneos-redux:
     - Chameneos initializer updates (#7328)
   10/31/18:
     - Enable parallelism for shape-ful expressions over ranges (#11501)
+  03/20/20:
+    - Fix up chameneos benchmarks (#15250)
 
 CoMD:
   07/26/17:
@@ -637,6 +641,15 @@ cs-resize:
 distCreate-arrays-deinit.cc-perf: &distCreate-base
   02/12/20:
     - Use --no-early-deinit in array creation/destruction benchmark (#14876)
+  03/13/20:
+    - Reallocate 1D arrays in place, when possible (#15177)
+  03/18/20:
+    -  Record-wrap `locale` (#15149)
+  03/22/20:
+    - Rewrite ddata_allocate() to avoid inadvertent widening of init_elts() (#15275)
+  03/26/20:
+    - Make locale-related comm improvements (#15288)
+
 distCreate-arrays-init.cc-perf:
   <<: *distCreate-base
 distCreate-domains-deinit.cc-perf:
@@ -760,6 +773,8 @@ fastaredux:
     - Disable enum->int casts for enums without values (#10114)
   07/14/18:
     - Optimize enum->int casts for concrete types (#10308)
+  01/29/20:
+    - Propagate user thrown errors out of IO routines (#14739)
 
 fft:
   05/15/19:
@@ -798,6 +813,11 @@ hpl_performance:
     - text: Improvements to inferConstRefs (#4904)
       config: 16 node XC
 
+ig-variants.ml-perf:
+  01/30/20:
+    - Address deinit point and param loops and conditionals (#14825)
+  03/23/20:
+    - Fix forall-unordered-opt for ig-variants (#15286)
 init:
   05/03/16:
     - Fix ref-return intent bugs (#3795)
@@ -1211,6 +1231,18 @@ memleaksfull:
     - Use escaped strings in paths (#14907)
   02/26/20:
     - Closes memory leaks introduced by 14907 (#14959)
+  02/28/20:
+    - mason init (#14820)
+  02/29/20:
+    - Improve out intent (#14917)
+  03/01/20:
+    - Fix remote I/O error and a memory leak (#15025)
+  03/07/20:
+    - Close some memory leaks in mason init (#15099)
+  03/21/20:
+    - mason new --moduleName (#14997)
+  03/27/20:
+    - Close mason init memory leaks (#15325)
 
 meteor:
   12/18/13:
@@ -1233,6 +1265,9 @@ mg: &mg-base
     -  Move strided bulk transfer into common code (#11197)
   09/21/18:
     -  Restore comm=none performance lost in PR 11197 (#11206)
+  03/13/20:
+    -  Reallocate 1D arrays in place, when possible (#15177)
+
 mg-b:
   <<: *mg-base
 
@@ -1267,6 +1302,8 @@ miniMD:
     - Update miniMD problem size (#9296)
   04/18/19:
     - Enable bulk-transfer for BlockDist by default (#12797)
+  03/13/20:
+    -  Reallocate 1D arrays in place, when possible (#15177)
 
 miniMD.ml-time:
   09/14/17:
@@ -1483,7 +1520,7 @@ revcomp: &revcomp-base
   09/10/19:
     - Restore reverse-complement performance with qio hint (#14045)
   02/04/20:
-    - Improve const/ref this decorators for list methods (#14809)
+    - Improve const/ref this decorators (and update revcomp) (#14809)
 revcomp-submitted:
   <<: *revcomp-base
 

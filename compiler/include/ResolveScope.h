@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -25,6 +26,7 @@
 #include <string>
 #include <vector>
 
+class astlocT;
 class BaseAST;
 class BlockStmt;
 class CallExpr;
@@ -73,7 +75,7 @@ public:
 
   bool                  extend(VisibilityStmt* stmt);
 
-  Symbol*               lookupForImport(Expr* expr) const;
+  Symbol*               lookupForImport(Expr* expr, bool isUse) const;
 
   Symbol*               lookup(Expr*       expr, bool isUse=false)       const;
 
@@ -81,6 +83,22 @@ public:
                                           bool isUse=false)              const;
 
   Symbol*               lookupPublicImports(const char* name)            const;
+
+  Symbol*               lookupPublicUnqualAccessSyms(const char* name,
+                                                     BaseAST *context)   const;
+
+  Symbol*               lookupPublicUnqualAccessSyms(const char* name,
+                          BaseAST *context,
+                          std::map<Symbol *, astlocT *>& renameLocs)      const;
+
+  Symbol*               lookupPublicUnqualAccessSyms(const char* name,
+                          ModuleSymbol*& modArg,
+                          BaseAST *context)                              const;
+
+  Symbol*               lookupPublicUnqualAccessSyms(const char* name,
+                          ModuleSymbol*& modArg,
+                          BaseAST *context,
+                          std::map<Symbol *, astlocT *>& renameLocs)      const;
 
   // Support for UseStmt with only/except
   // Has the potential to return multiple fields
@@ -137,11 +155,15 @@ private:
                                       UseImportList& current,
                                       UseImportMap&  visited) const;
 
-   bool                 skipUse(UseImportMap&  visited,
-                                const UseStmt* current)                  const;
+  bool                 skipUse(UseImportMap&  visited,
+                               const UseStmt* current)                  const;
 
-   Symbol* followImportUseChains(UnresolvedSymExpr* expr) const;
-   Symbol* lookupNameLocallyForImport(const char* name) const;
+  Symbol* followImportUseChains(const char* name) const;
+  Symbol* lookupNameLocallyForImport(const char* name) const;
+  void firstImportedModuleName(Expr* expr,
+                               const char*& name,
+                               CallExpr*& call,
+                               const ResolveScope*& scope) const;
 
   BaseAST*              mAstRef;
   const ResolveScope*   mParent;

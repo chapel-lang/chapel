@@ -10,6 +10,13 @@ enums.doc
 
    use enums.doc;
 
+
+or
+
+.. code-block:: chapel
+
+   import enums.doc;
+
 .. enum:: enum Color { Red, Yellow, Blue }
 
    This is a color enum. 

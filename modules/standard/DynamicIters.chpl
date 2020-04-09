@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -134,7 +135,7 @@ iter dynamic(param tag:iterKind, c:range(?), chunkSize:int=1, numTasks:int, foll
 where tag == iterKind.follower
 {
   type rType=c.type;
-  const current:rType=unDensify(followThis(1),c);
+  const current:rType=unDensify(followThis(0),c);
   if debugDynamicIters then
     writeln("Follower received range ", followThis, " ; shifting to ", current);
   for i in current do {
@@ -143,6 +144,7 @@ where tag == iterKind.follower
 }
 
 //************************* Dynamic domain iterator
+//This is the serial version of this iterator
 /*
 
   :arg c: The domain to iterate over. The rank of the domain must be greater
@@ -158,8 +160,8 @@ where tag == iterKind.follower
                  ``dataParTasksPerLocale``.
   :type numTasks: `int`
 
-  :arg parDim: The index of the dimension to parallelize across. Must be > 0.
-                Must be <= the rank of the domain ``c``. Defaults to 1.
+  :arg parDim: The index of the dimension to parallelize across. Must be >= 0.
+                Must be < the rank of the domain ``c``. Defaults to 0.
   :type parDim: `int`
 
   :yields: Indices of the domain ``c``
@@ -172,8 +174,7 @@ where tag == iterKind.follower
   This iterator can be called in serial and zippered contexts.
 */
 
-//This is the serial version of this iterator
-iter dynamic(c:domain, chunkSize:int=1, numTasks:int=0, parDim:int=1)
+iter dynamic(c:domain, chunkSize:int=1, numTasks:int=0, parDim:int=0)
 {
   if debugDynamicIters then
     writeln("Serial Dynamic Domain Iterator, working with domain: ", c);
@@ -183,7 +184,7 @@ iter dynamic(c:domain, chunkSize:int=1, numTasks:int=0, parDim:int=1)
 
 //Leader
 pragma "no doc"
-iter dynamic(param tag:iterKind, c:domain, chunkSize:int=1, numTasks:int=0, parDim : int = 1)
+iter dynamic(param tag:iterKind, c:domain, chunkSize:int=1, numTasks:int=0, parDim : int = 0)
   where tag == iterKind.leader
   {
     //caller's responsibility to use a valid chunk size
@@ -193,15 +194,15 @@ iter dynamic(param tag:iterKind, c:domain, chunkSize:int=1, numTasks:int=0, parD
     assert(c.rank > 0, "Must use a valid domain");
 
     //caller's responsibility to use a valid parDim
-    assert(parDim <= c.rank, "parDim must be a dimension of the domain");
-    assert(parDim > 0, "parDim must be a positive integer");
+    assert(parDim < c.rank, "parDim must be a dimension of the domain");
+    assert(parDim >= 0, "parDim must be a non-negative integer");
 
     var parDimDim = c.dim(parDim);
     var parDimOffset = c.dim(parDim).low;
 
     for i in dynamic(tag=iterKind.leader, parDimDim, chunkSize, numTasks) {
       //Set the new range based on the tuple the dynamic 1d iterator yields
-      var newRange = i(1);
+      var newRange = i(0);
 
       type dType = c.type;
       //does the same thing as densify, but densify makes a stridable domain,
@@ -300,7 +301,7 @@ where tag == iterKind.follower
 
 {
   type rType=c.type;
-  const current:rType=unDensify(followThis(1),c);
+  const current:rType=unDensify(followThis(0),c);
   if debugDynamicIters then
     writeln("Follower received range ", followThis, " ; shifting to ", current);
   for i in current do {
@@ -309,7 +310,7 @@ where tag == iterKind.follower
 }
 
 //************************* Guided domain iterator
-
+// Here is the serial version of this iterator.
 /*
 
   :arg c: The domain to iterate over. The rank of the domain must be greater
@@ -321,8 +322,8 @@ where tag == iterKind.follower
                  ``dataParTasksPerLocale``.
   :type numTasks: `int`
 
-  :arg parDim: The index of the dimension to parallelize across. Must be > 0.
-               Must be <= the rank of the domain ``c``. Defaults to 1.
+  :arg parDim: The index of the dimension to parallelize across. Must be >= 0.
+               Must be < the rank of the domain ``c``. Defaults to 0.
   :type parDim: `int`
 
   :yields: Indices in the domain ``c``.
@@ -339,8 +340,7 @@ where tag == iterKind.follower
   This iterator can be called in serial and zippered contexts.
 
 */
-// Here is the serial version of this iterator.
-iter guided(c:domain, numTasks:int=0, parDim:int=1)
+iter guided(c:domain, numTasks:int=0, parDim:int=0)
 {
   if debugDynamicIters then
     writeln("Serial guided domain iterator, working with domain ", c);
@@ -350,21 +350,21 @@ iter guided(c:domain, numTasks:int=0, parDim:int=1)
 
 // Leader.
 pragma "no doc"
-iter guided(param tag:iterKind, c:domain, numTasks:int=0, parDim:int=1)
+iter guided(param tag:iterKind, c:domain, numTasks:int=0, parDim:int=0)
 where tag == iterKind.leader
 {
   // Caller's responsibility to use a valid domain.
   assert(c.rank > 0, "Must use a valid domain");
 
   // Caller's responsibility to use a valid parDim.
-  assert(parDim <= c.rank, "parDim must be a dimension of the domain");
-  assert(parDim > 0, "parDim must be a positive integer");
+  assert(parDim < c.rank, "parDim must be a dimension of the domain");
+  assert(parDim >= 0, "parDim must be a non-negative integer");
 
   var parDimDim = c.dim(parDim);
 
   for i in guided(tag=iterKind.leader, parDimDim, numTasks) {
     // Set the new range based on the tuple the guided 1-D iterator yields.
-    var newRange = i(1);
+    var newRange = i(0);
 
     type dType = c.type;
     // Does the same thing as densify, but densify makes a stridable domain,
@@ -591,7 +591,7 @@ iter adaptive(param tag:iterKind, c:range(?), numTasks:int, followThis)
 where tag == iterKind.follower
 {
   type rType=c.type;
-  var current:rType=unDensify(followThis(1),c);
+  var current:rType=unDensify(followThis(0),c);
   if debugDynamicIters then
     writeln("Follower received range ", followThis, " ; shifting to ", current);
   for i in current do {
@@ -600,6 +600,7 @@ where tag == iterKind.follower
 }
 
 //************************* Adaptive work-stealing domain iterator
+// Here is the serial version of this iterator.
 /*
 
   :arg c: The domain to iterate over. Must have a length greater than zero.
@@ -610,8 +611,8 @@ where tag == iterKind.follower
                  ``dataParTasksPerLocale``.
   :type numTasks: `int`
 
-  :arg parDim: The index of the dimension to parallelize across. Must be > 0.
-               Must be <= the rank of the domain ``c``. Defaults to 1.
+  :arg parDim: The index of the dimension to parallelize across. Must be >= 0.
+               Must be < the rank of the domain ``c``. Defaults to 0.
   :type parDim: `int`
 
   :yields: Indices in the domain ``c``.
@@ -630,8 +631,7 @@ where tag == iterKind.follower
 
   This iterator can be called in serial and zippered contexts.
 */
-// Here is the serial version of this iterator.
-iter adaptive(c:domain, numTasks:int=0, parDim:int=1)
+iter adaptive(c:domain, numTasks:int=0, parDim:int=0)
 {
   if debugDynamicIters then
     writeln("Serial adaptive domain iterator, working with domain ", c);
@@ -641,21 +641,21 @@ iter adaptive(c:domain, numTasks:int=0, parDim:int=1)
 
 // Leader.
 pragma "no doc"
-iter adaptive(param tag:iterKind, c:domain, numTasks:int=0, parDim:int=1)
+iter adaptive(param tag:iterKind, c:domain, numTasks:int=0, parDim:int=0)
 where tag == iterKind.leader
 {
   // Caller's responsibility to use a valid domain.
   assert(c.rank > 0, "Must use a valid domain");
 
   // Caller's responsibility to use a valid parDim.
-  assert(parDim <= c.rank, "parDim must be a dimension of the domain");
-  assert(parDim > 0, "parDim must be a positive integer");
+  assert(parDim < c.rank, "parDim must be a dimension of the domain");
+  assert(parDim >= 0, "parDim must be a non-negative integer");
 
   var parDimDim = c.dim(parDim);
 
   for i in adaptive(tag=iterKind.leader, parDimDim, numTasks) {
     // Set the new range based on the tuple the guided 1-D iterator yields.
-    var newRange = i(1);
+    var newRange = i(0);
 
     type dType = c.type;
     // Does the same thing as densify, but densify makes a stridable domain,

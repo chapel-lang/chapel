@@ -9,9 +9,11 @@ import sys, re
 msgs = (
 """srun: error: .+: task [0-9]+: Exited with exit code [0-9]+
 """,
-"""srun: error: .+: task [0-9]+: Terminated
+"""srun: error: .+: task [0-9]+: (Killed|Terminated)
 """,
-"""srun: Terminating job step [0-9.]+
+"""srun: (Force Terminated|Terminating) job step [0-9.]+
+""",
+"""srun: Job step aborted: Waiting up to [0-9]+ seconds for job step .*
 """,
 """slurmstepd: error: \*\*\* STEP [0-9.]+ ON .+ CANCELLED AT [-0-9T.:]+ \*\*\*
 """,

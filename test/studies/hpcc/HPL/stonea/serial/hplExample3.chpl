@@ -23,9 +23,9 @@ proc dgemm(
     C : [?CD] t)
 {
     // Calculate (i,j) using a dot product of a row of A and a column of B.
-    for (ai,ci) in zip(AD.dim(1),CD.dim(1)) {
-        for (bj,cj) in zip(BD.dim(2),CD.dim(2)) {
-            for (ak,bk) in zip(AD.dim(2),BD.dim(1)) {
+    for (ai,ci) in zip(AD.dim(0),CD.dim(0)) {
+        for (bj,cj) in zip(BD.dim(1),CD.dim(1)) {
+            for (ak,bk) in zip(AD.dim(1),BD.dim(0)) {
                 C[ci,cj] -= A[ai, ak] * B[bk, bj];
             }
         }
@@ -71,32 +71,32 @@ proc luLikeMultiply(
 
     // stamp A across into ACopies,
     forall blkCol in blk+1..blksHoriz {
-        const cBlkD = {(ADmn.dim(1))(ptSol..),
-                       (ABlkDmn.dim(2))((blkCol-1)*blkSize+1..#blkSize)};
-        const aBlkD = {ptSol..#cBlkD.dim(1).size,
-                       ptOp..#cBlkD.dim(2).size};
+        const cBlkD = {(ADmn.dim(0))(ptSol..),
+                       (ABlkDmn.dim(1))((blkCol-1)*blkSize+1..#blkSize)};
+        const aBlkD = {ptSol..#cBlkD.dim(0).size,
+                       ptOp..#cBlkD.dim(1).size};
 
         ACopies[cBlkD] = A[aBlkD];
     }
 
     // stamp B down into BCopies,
     forall blkRow in blk+1..blksVert {
-        const cBlkD = {(ABlkDmn.dim(1))((blkRow-1)*blkSize+1..#blkSize),
-                       (ADmn.dim(2))(ptSol..)};
-        const bBlkD = {ptOp..#cBlkD.dim(1).size,
-                       ptSol..#cBlkD.dim(2).size};
+        const cBlkD = {(ABlkDmn.dim(0))((blkRow-1)*blkSize+1..#blkSize),
+                       (ADmn.dim(1))(ptSol..)};
+        const bBlkD = {ptOp..#cBlkD.dim(0).size,
+                       ptSol..#cBlkD.dim(1).size};
 
         BCopies[cBlkD] = A[bBlkD];
     }
 
     // do local matrix-multiply on a block-by-block basis
     forall (blkRow,blkCol) in {blk+1..blksVert, blk+1..blksHoriz} {
-        const aBlkD = {(ADmn.dim(1))((blkRow-1)*blkSize+1..#blkSize),
-                       (ABlkDmn.dim(2))((blkCol-1)*blkSize+1..#blkSize)};
-        const bBlkD = {(ABlkDmn.dim(1))((blkRow-1)*blkSize+1..#blkSize),
-                       (ADmn.dim(2))((blkCol-1)*blkSize+1..#blkSize)};
-        const cBlkD = ADmn[(blkRow-1)*blkSize+1..#aBlkD.dim(1).size,
-                           (blkCol-1)*blkSize+1..#bBlkD.dim(2).size];
+        const aBlkD = {(ADmn.dim(0))((blkRow-1)*blkSize+1..#blkSize),
+                       (ABlkDmn.dim(1))((blkCol-1)*blkSize+1..#blkSize)};
+        const bBlkD = {(ABlkDmn.dim(0))((blkRow-1)*blkSize+1..#blkSize),
+                       (ADmn.dim(1))((blkCol-1)*blkSize+1..#blkSize)};
+        const cBlkD = ADmn[(blkRow-1)*blkSize+1..#aBlkD.dim(0).size,
+                           (blkCol-1)*blkSize+1..#bBlkD.dim(1).size];
 
         local {
             dgemm(
@@ -116,12 +116,12 @@ proc panelSolve(
     panel : domain(2),
     piv : [] int)
 {
-    var pnlRows = panel.dim(1);
-    var pnlCols = panel.dim(2);
+    var pnlRows = panel.dim(0);
+    var pnlCols = panel.dim(1);
 
     // Ideally some type of assertion to ensure panel is embedded in A's
     // domain
-    assert(piv.domain.dim(1) == A.domain.dim(1));
+    assert(piv.domain.dim(0) == A.domain.dim(0));
 
     // iterate through the columns
     for k in pnlCols {
@@ -162,10 +162,10 @@ proc panelSolve(
 // right of the block.
 proc updateBlockRow(A : [] ?t, tl : domain(2), tr : domain(2))
 {
-    var tlRows = tl.dim(1);
-    var tlCols = tl.dim(2);
-    var trRows = tr.dim(1);
-    var trCols = tr.dim(2);
+    var tlRows = tl.dim(0);
+    var tlCols = tl.dim(1);
+    var trRows = tr.dim(0);
+    var trCols = tr.dim(1);
 
     assert(tlCols == trRows);
 
@@ -181,8 +181,8 @@ proc updateBlockRow(A : [] ?t, tl : domain(2), tr : domain(2))
 // blocked LU factorization with pivoting for matrix augmented with vector of
 // RHS values.
 proc LUFactorize(n : int, A : [1..n, 1..n+1] real, piv : [1..n] int) {
-    const ARows = A.domain.dim(1);
-    const ACols = A.domain.dim(2);
+    const ARows = A.domain.dim(0);
+    const ACols = A.domain.dim(1);
 
     piv = 1..n;
 

@@ -55,11 +55,11 @@ if usage then printUsage();
 
 const ssize = size.partition("x");    // split size string into 3-tuple (W,x,H)
 
-if (ssize.size != 3 || ssize[2] != "x") then
+if (ssize.size != 3 || ssize[1] != "x") then
   halt("--s option requires argument to be in WxH format");
 
-const xres = ssize[1]:int,                // x- and y-resolutions of the image
-      yres = ssize[3]:int;
+const xres = ssize[0]:int,                // x- and y-resolutions of the image
+      yres = ssize[2]:int;
 
 const rcpSamples = 1.0 / samples,         // the reciprocal of the # of samples
       halfFieldOfView = fieldOfView / 2;  // compute half the field-of-view
@@ -67,9 +67,9 @@ const rcpSamples = 1.0 / samples,         // the reciprocal of the # of samples
 //
 // set params representing dimensions symbolically
 //
-param X = 1,          // names for accessing vec3 elements
-      Y = 2,
-      Z = 3,
+param X = 0,          // names for accessing vec3 elements
+      Y = 1,
+      Z = 2,
       numdims = 3;
 
 //
@@ -206,7 +206,7 @@ proc getPrimaryRay(xy, sample) {
   const i = crossProduct((0.0, 1.0, 0.0), k),
         j = crossProduct(k, i);
 
-  const m: [1..numdims] vec3 = [i, j, k];
+  const m: [0..#numdims] vec3 = [i, j, k];
 
   var pRay = new ray();
   (pRay.dir(X), pRay.dir(Y)) = getSamplePos(xy, sample);
@@ -440,14 +440,14 @@ proc loadScene() {
   for (rawLine, lineno) in zip(infile.lines(), 1..) {
     // drop any comments (text following '#')
     const linePlusComment = rawLine.split('#', maxsplit=1, ignoreEmpty=false),
-          line = linePlusComment[1];
+          line = linePlusComment[0];
 
     // split the line into its whitespace-separated strings
     const columns = line.split();
     if columns.size == 0 then continue;
 
     // grab the input type
-    const inType = columns[1];
+    const inType = columns[0];
 
     // handle error conditions
     if !expectedArgs.domain.contains(inType) then
@@ -458,7 +458,7 @@ proc loadScene() {
       inputError("too many arguments for input of type '" + inType + "'");
 
     // grab the position columns
-    const pos = (columns[2]:real, columns[3]:real, columns[4]:real);
+    const pos = (columns[1]:real, columns[2]:real, columns[3]:real);
 
     // if this is a light, store it as such
     if inType == 'l' {
@@ -467,8 +467,8 @@ proc loadScene() {
     }
 
     // grab the radius/field-of-view and color/target columns
-    const rad = columns[5]:real,
-          col = (columns[6]:real, columns[7]:real, columns[8]:real);
+    const rad = columns[4]:real,
+          col = (columns[5]:real, columns[6]:real, columns[7]:real);
 
     // if this is the camera, store it
     if inType == 'c' {
@@ -479,8 +479,8 @@ proc loadScene() {
     }
 
     // grab the shininess and reflectivity columns
-    const spow = columns[9]: real,
-          refl = columns[10]: real;
+    const spow = columns[8]: real,
+          refl = columns[9]: real;
 
     // this must be a sphere, so store it
     objects.append(new owned sphere(pos, rad, new material(col, spow, refl)));

@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -59,9 +60,9 @@ record TargetLocaleComparator {
   proc key(a: index(rank, idxType)) {
     if rank == 2 { // take special care for CSC/CSR
       if sparseLayoutType == unmanaged CS(compressRows=false) then
-        return (dist.targetLocsIdx(a), a[2], a[1]);
+        return (dist.targetLocsIdx(a), a[1], a[0]);
       else
-        return (dist.targetLocsIdx(a), a[1], a[2]);
+        return (dist.targetLocsIdx(a), a[0], a[1]);
     }
     else {
       return (dist.targetLocsIdx(a), a);
@@ -161,12 +162,12 @@ class SparseBlockDom: BaseSparseDomImpl {
   }
 
   override proc bulkAdd_help(inds: [?indsDom] index(rank,idxType),
-      dataSorted=false, isUnique=false, addOn=nil:locale?) {
+      dataSorted=false, isUnique=false, addOn=nilLocale) {
     use Sort;
     use Search;
 
     // call local bulk addition helper if necessary
-    if addOn != nil {
+    if addOn != nilLocale {
       var retval = 0;
       on addOn {
         if inds.locale == here {
@@ -285,7 +286,7 @@ class SparseBlockDom: BaseSparseDomImpl {
 
   iter these(param tag: iterKind, followThis) where tag == iterKind.follower {
     var (locFollowThis, localeIndex) = followThis;
-    for i in locFollowThis(1).these(tag, locFollowThis) do
+    for i in locFollowThis(0).these(tag, locFollowThis) do
       yield i;
   }
 
@@ -446,7 +447,7 @@ class SparseBlockArr: BaseSparseArr {
 
   iter these(param tag: iterKind, followThis) ref where tag == iterKind.follower {
     var (locFollowThis, localeIndex) = followThis;
-    for i in locFollowThis(1).these(tag, locFollowThis) {
+    for i in locFollowThis(0).these(tag, locFollowThis) {
       yield locArr[localeIndex]!.dsiAccess(i);
     }
   }
@@ -758,7 +759,7 @@ override proc SparseBlockDom.dsiSupportsPrivatization() param return true;
 proc SparseBlockDom.dsiGetPrivatizeData() return (dist.pid, whole.dims());
 
 proc SparseBlockDom.dsiPrivatize(privatizeData) {
-  var privdist = chpl_getPrivatizedCopy(dist.type, privatizeData(1));
+  var privdist = chpl_getPrivatizedCopy(dist.type, privatizeData(0));
   var c = new unmanaged SparseBlockDom(rank=rank, idxType=idxType,
                              sparseLayoutType=sparseLayoutType,
                              stridable=parentDom.stridable, dist=privdist,
@@ -769,7 +770,7 @@ proc SparseBlockDom.dsiPrivatize(privatizeData) {
     if c.locDoms(i).locale.id == here.id then
       c.myLocDom = c.locDoms(i);
   }
-  c.whole = {(...privatizeData(2))};
+  c.whole = {(...privatizeData(1))};
   return c;
 }
 
@@ -800,12 +801,12 @@ proc SparseBlockArr.dsiPrivatize(privatizeData) {
 
 proc SparseBlockDom.numRemoteElems(rlo,rid){
   var blo,bhi:dist.idxType;
-  if rid==(dist.targetLocDom.dim(rank).size - 1) then
-    bhi=whole.dim(rank).high;
+  if rid==(dist.targetLocDom.dim(rank-1).size - 1) then
+    bhi=whole.dim(rank-1).high;
   else
-      bhi=dist.boundingBox.dim(rank).low +
-        intCeilXDivByY((dist.boundingBox.dim(rank).high - dist.boundingBox.dim(rank).low +1)*(rid+1),
-                   dist.targetLocDom.dim(rank).size) - 1;
+      bhi=dist.boundingBox.dim(rank-1).low +
+        intCeilXDivByY((dist.boundingBox.dim(rank-1).high - dist.boundingBox.dim(rank-1).low +1)*(rid+1),
+                   dist.targetLocDom.dim(rank-1).size) - 1;
 
   return(bhi - rlo + 1);
 }

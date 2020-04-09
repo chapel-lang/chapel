@@ -3,6 +3,10 @@ empty.doc
 Usage:
    use empty.doc;
 
+or
+
+   import empty.doc;
+
    proc noComment()
    proc noBody()
    proc noBodyButArgs(num: int, bleah: bool)

@@ -27,26 +27,26 @@ proc f(lid, rid) {
     var tx = (x, x);
     if noisy {
       writeln(tx.locale.id);
+      writeln(tx(0).locale.id);
       writeln(tx(1).locale.id);
-      writeln(tx(2).locale.id);
     } else {
       assert(tx.locale.id==lid);
+      assert(tx(0).locale.id==lid);
       assert(tx(1).locale.id==lid);
-      assert(tx(2).locale.id==lid);
     }
     on Locales[rid] {
       if noisy {
         writeln(tx.locale.id);
+        writeln(tx(0).locale.id);
         writeln(tx(1).locale.id);
-        writeln(tx(2).locale.id);
       } else {
         assert(tx.locale.id==lid);
+        assert(tx(0).locale.id==lid);
         assert(tx(1).locale.id==lid);
-        assert(tx(2).locale.id==lid);
       }
       on tx do if noisy then writeln(here.id); else assert(here.id==lid);
+      on tx(0) do if noisy then writeln(here.id); else assert(here.id==lid);
       on tx(1) do if noisy then writeln(here.id); else assert(here.id==lid);
-      on tx(2) do if noisy then writeln(here.id); else assert(here.id==lid);
     }
 
     var rx: R;

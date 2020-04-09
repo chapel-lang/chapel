@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -2002,7 +2003,7 @@ QualifiedType AggregateType::getFieldType(Expr* e) {
 
   // Special case: star tuples can have run-time integer field access
   if (name == NULL && this->symbol->hasFlag(FLAG_STAR_TUPLE)) {
-    name = astr("x1"); // get the 1st field's type, since they're all the same
+    name = astr("x0"); // get the initial field's type; they're all the same
   }
 
   Symbol* fs = NULL;

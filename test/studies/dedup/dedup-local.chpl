@@ -22,7 +22,7 @@ proc main(args:[] string)
 
   // Create an array of hashes and file ids
   // a file id is just the index into the paths array.
-  var hashAndFileId:[1..paths.size] (Hash, int);
+  var hashAndFileId:[0..#paths.size] (Hash, int);
  
   // Compute the SHA1 sums using the external program
   var pathsArray = paths.toArray();
@@ -83,7 +83,7 @@ proc stringToHash(s:string): Hash {
   w.close();
   var r = f.reader();
   var hash:Hash;
-  r.readf("%xu%xu%xu", hash(1), hash(2), hash(3));
+  r.readf("%xu%xu%xu", hash(0), hash(1), hash(2));
   r.close();
   return hash;
 }

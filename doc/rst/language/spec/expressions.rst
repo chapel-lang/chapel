@@ -374,7 +374,9 @@ Precedence and Associativity
 | | ``-``            |                | | subtraction                        |
 |                    |                |                                      |
 +--------------------+----------------+--------------------------------------+
-| ``..``             | left           | range initialization                 |
+| | ``..``           | | left         | | range initialization               |
+| | ``..<``          | | left         | | open-interval range initialization |
+|                    |                |                                      |
 +--------------------+----------------+--------------------------------------+
 | | ``<=``           | left           | | less-than-or-equal-to comparison   |
 | | ``>=``           |                | | greater-than-or-equal-to comparison|
@@ -1072,6 +1074,8 @@ otherwise the new high-order bits are set to zero.
 
 The value of ``b`` must be non-negative.
 
+The value of ``b`` must be less than the number of bits in ``a``.
+
 .. _Logical_Operators:
 
 Logical Operators
@@ -1605,7 +1609,7 @@ the for expression. The iterations for which the condition does not hold
 are not reflected in the result of the for expression.
 
 When a for expression with a filtering predicate is captured into a
-variable, the resulting array has a 1-based one-dimensional domain.
+variable, the resulting array has a 0-based one-dimensional domain.
 
    *Example (yieldPredicates.chpl)*.
 
@@ -1620,12 +1624,14 @@ variable, the resulting array has a 1-based one-dimensional domain.
    .. BLOCK-test-chapelpost
 
       writeln(A);
+      writeln(A.domain);
 
    
 
    .. BLOCK-test-chapeloutput
 
       1 2 4 5 7 8 10
+      {0..6}
 
    declares an array A that is initialized to the integers between 1 and
    10 that are not divisible by 3.

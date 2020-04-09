@@ -200,8 +200,9 @@ proc schurComplement(Ab: [?AbD] elemType, AD: domain, BD: domain, Rest: domain) 
     // replication correct, so we'll want to assert that fact
     //
     //    local {
-      for a in Rest.dim(1)(row..#blkSize) do
-        for b in Rest.dim(2)(col..#blkSize) do
+      const (rows, cols) = Rest.dims();
+      for a in rows(row..#blkSize) do
+        for b in cols(col..#blkSize) do
           for w in 1..blkSize do
             Ab[a,b] -= replA[a,w] * replB[w,b];
       //    }
@@ -219,8 +220,10 @@ proc replicateD1(Ab, BD) {
   var replB: [replBD] elemType;
 
   coforall dest in targetLocales[.., 0] do
-    on dest do
-      replB = Ab[BD.dim(1), 1..n+1];
+    on dest {
+      const (rows, _) = BD.dims();
+      replB = Ab[rows, 1..n+1];
+    }
 
   return replB;
 }
@@ -236,8 +239,10 @@ proc replicateD2(Ab, AD) {
   var replA: [replAD] elemType;
 
   coforall dest in targetLocales[0, ..] do
-    on dest do
-      replA = Ab[1..n, AD.dim(2)];
+    on dest {
+      const (_, cols) = AD.dims();
+      replA = Ab[1..n, cols];
+    }
 
   return replA;
 }
@@ -251,7 +256,8 @@ proc panelSolve(Ab: [] elemType,
                panel: domain,
                piv: [] int) {
 
-  for k in panel.dim(2) {             // iterate through the columns
+  const (_, cols) = panel.dims();
+  for k in cols {                  // iterate through the columns
     const col = panel[k.., k..k];
     
     // If there are no rows below the current column return
@@ -293,9 +299,10 @@ proc updateBlockRow(Ab: [] elemType,
                    tl: domain,
                    tr: domain) {
 
-  for row in tr.dim(1) {
+  const (rows, _) = tr.dims();
+  for row in rows {
     const activeRow = tr[row..row, ..],
-          prevRows = tr.dim(1).low..row-1;
+          prevRows = rows.low..row-1;
 
     forall (i,j) in activeRow do
       for k in prevRows do
@@ -309,7 +316,7 @@ proc updateBlockRow(Ab: [] elemType,
 //
 proc backwardSub(n: int,
                  Ab: [] elemType) {
-  const bd = Ab.domain.dim(1);
+  const (bd, _) = Ab.domain.dims();
   var x: [bd] elemType;
 
   for i in bd by -1 do

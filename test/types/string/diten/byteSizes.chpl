@@ -1,8 +1,8 @@
 param param_word = "hello";
 var var_word = param_word;
 
-const pascii = param_word.byte(1);
-const vascii = var_word.byte(1);
+const pascii = param_word.byte(0);
+const vascii = var_word.byte(0);
 
 type ptype = pascii.type;
 type vtype = vascii.type;

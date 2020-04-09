@@ -27,7 +27,7 @@ var A = [ new MyRecord(1,3.0,"test one"),
           new MyRecord(9,1e6,"fox") ];
 
 // We'll read back into B and check that they match...
-var B: [1..3] MyRecord;
+var B: [0..#3] MyRecord;
 
 {
   // Create a writer that we'll use to write the data.
@@ -58,7 +58,7 @@ var B: [1..3] MyRecord;
   var reader = f.reader();
 
   var rec:MyRecord;
-  var i = 1;
+  var i = 0;
 
   // clear B (only for our testing)
   if debug then B = rec;
@@ -113,7 +113,7 @@ proc MyRecord.readWriteThis(f) throws {
   var reader = f.reader(style=new iostyle(string_format=iostringformat.basic:uint(8), string_start = 0x27, string_end = 0x27));
 
   var rec:MyRecord;
-  var i = 1;
+  var i = 0;
 
   // clear B (only for our testing)
   B = rec;

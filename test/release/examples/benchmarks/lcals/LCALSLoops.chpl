@@ -382,7 +382,7 @@ module LCALSLoops {
     var loop_data = getLoopData();
     var len: int = lstat.loop_length[ilen];
     var num_samples = lstat.samples_per_pass[ilen];
-    var ltimer = new owned LoopTimer();
+    var ltimer = new LoopTimer();
 
     loopInit(LoopKernelID.REF_LOOP, lstat);
 
@@ -404,7 +404,7 @@ module LCALSLoops {
 
     var len = lstat.loop_length[ilen];
     var num_samples = lstat.samples_per_pass[ilen];
-    var ltimer = new owned LoopTimer();
+    var ltimer = new LoopTimer();
 
     loopInit(LoopKernelID.REF_LOOP, lstat);
 

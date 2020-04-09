@@ -9,7 +9,7 @@ module Histogram {
     param dim : int;
     var nbins : dim*int;
     var Dhist : domain(dim);
-    var lo, hi,dx, invdx : [1..dim] real;
+    var lo, hi,dx, invdx : [0..#dim] real;
     var arr : [Dhist] atomic real;
 
     proc init(param dim : int, nbins : dim*int, limits : dim*(real,real)) {
@@ -17,9 +17,9 @@ module Histogram {
       this.complete();
       var dd : dim*range;
       this.nbins = nbins;
-      for param ii in 1..dim {
-        lo[ii] = limits(ii)(1);
-        hi[ii] = limits(ii)(2);
+      for param ii in 0..dim-1 {
+        lo[ii] = limits(ii)(0);
+        hi[ii] = limits(ii)(1);
         dx[ii] = (hi[ii]-lo[ii])/nbins(ii);
         dd(ii) = 0.. #nbins(ii);
       }
@@ -39,11 +39,11 @@ module Histogram {
     }
 
     proc add(x : dim*real, w : real) {
-      for param ii in 1..dim do
+      for param ii in 0..dim-1 do
         if ((x(ii) < lo[ii]) | (x(ii) >= hi[ii])) then return;
 
       var pos : dim*int;
-      for param ii in 1..dim do pos(ii) = ((x(ii)-lo(ii))*invdx[ii]) : int;
+      for param ii in 0..dim-1 do pos(ii) = ((x(ii)-lo(ii))*invdx[ii]) : int;
       if doHist then arr[pos].add(w);
     }
 
@@ -60,12 +60,12 @@ module Histogram {
   proc writeHist(ff : channel, hh : borrowed UniformBins, fmt : string = "%20.14er ")
     throws {
     // Dump out values
-    for xx in hh.bins(1) do ff.writef("%12.4dr",xx); 
+    for xx in hh.bins(0) do ff.writef("%12.4dr",xx); 
     ff.writeln();
-    for xx in hh.bins(2) do ff.writef("%12.4dr",xx); 
+    for xx in hh.bins(1) do ff.writef("%12.4dr",xx); 
     ff.writeln("\n##");
-    for ii in hh.Dhist.dim(1) {
-      for jj in hh.Dhist.dim(2) {
+    for ii in hh.Dhist.dim(0) {
+      for jj in hh.Dhist.dim(1) {
         ff.writef(fmt, hh[(ii,jj)]);
       }
       ff.writeln();

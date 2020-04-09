@@ -4,6 +4,10 @@ fullyCommented.doc
 Usage:
    use fullyCommented.doc;
 
+or
+
+   import fullyCommented.doc;
+
 Submodules for this module are located in the fullyCommented.doc/ directory
 
    proc method1()
@@ -22,6 +26,10 @@ Other
 
 Usage:
    use fullyCommented.doc.Other;
+
+or
+
+   import fullyCommented.doc.Other;
 
    proc inside
       Comment for method inside module 

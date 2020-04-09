@@ -17,7 +17,7 @@ proc editDist(str1:string, str2:string, len1:int, len2:int):int{
     	// If last characters of two strings are same, nothing
     	// much to do. Ignore last characters and get count for
     	// remaining strings.
-    	if (str1[len1] == str2[len2]){
+    	if (str1[len1-1] == str2[len2-1]){
         	return editDist(str1, str2, len1-1, len1-1);
  	}
     	// If last characters are not same, consider all three

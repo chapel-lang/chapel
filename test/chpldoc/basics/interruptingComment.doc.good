@@ -10,6 +10,13 @@ interruptingComment.doc
 
    use interruptingComment.doc;
 
+
+or
+
+.. code-block:: chapel
+
+   import interruptingComment.doc;
+
 .. record:: R
 
    .. method:: proc write()
