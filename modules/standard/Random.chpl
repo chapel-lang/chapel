@@ -975,7 +975,7 @@ module Random {
                 each element of ``arr``, otherwise elements will be chosen over
                 a uniform distribution. ``prob`` must have integral or real
                 element type, with no negative values and at least one non-zero
-                value. The domain must be equal to that of ``arr.domain``.
+                value. The size must be equal to that of ``arr.domain``.
 
      :return: An element chosen from ``arr`` if ``size == 1``, or an array of
               element chosen from ``arr`` if ``size > 1`` or ``size`` is a
@@ -1010,7 +1010,7 @@ module Random {
                 each element of ``rng``, otherwise elements will be chosen over
                 a uniform distribution. ``prob`` must have integral or real
                 element type, with no negative values and at least one non-zero
-                value. The domain must be equal to that of ``rng``.
+                value. The size must be equal to that of ``rng``.
 
      :return: An element chosen from ``rng`` if ``size == 1``, or an array of
               element chosen from ``rng`` if ``size > 1`` or ``size`` is a
@@ -1032,6 +1032,40 @@ module Random {
 
         var Dom: domain(1,stridable=true) = if isBoundedRange(rng) then {rng} else {1..1};
         return _choice(this, Dom, size=size, replace=replace, prob=prob);
+      }
+
+      /*
+     Returns a random sample from a given 1-D domain, ``dom``.
+
+     :arg dom: a 1-D dom with values that will be sampled from.
+     :arg size: An optional integral value specifying the number of elements to
+                choose, or a domain specifying the dimensions of the
+                sampled array to be filled, otherwise a single element will be
+                chosen.
+     :arg replace: an optional ``bool`` specifying whether or not to sample with
+                   replacement, i.e. elements will only be chosen up to one
+                   time when ``replace=false``.
+     :arg prob: an optional 1-D array that contains probabilities of choosing
+                each element of ``dom``, otherwise elements will be chosen over
+                a uniform distribution. ``prob`` must have integral or real
+                element type, with no negative values and at least one non-zero
+                value. The size must be equal to that of ``dom``.
+
+     :return: An element chosen from ``dom`` if ``size == 1``, or an array of
+              element chosen from ``dom`` if ``size > 1`` or ``size`` is a
+              domain.
+
+     :throws IllegalArgumentError: if ``dom.size == 0``,
+                                   if ``dom.size != prob.size``,
+                                   if ``prob`` contains a negative value,
+                                   if ``prob`` has no non-zero values,
+                                   if ``size < 1 || size.size < 1``,
+                                   if ``replace=false`` and ``size > dom.size || size.size > dom.size``.
+     */
+      proc choice(dom: domain, size:?sizeType=none, replace=true, prob:?probType=none)
+        throws
+      {
+        return _choice(this, dom, size=size, replace=replace, prob=prob);
       }
 
       /* Randomly shuffle a 1-D array. */
