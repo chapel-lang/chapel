@@ -209,7 +209,7 @@ private proc runTests(show: bool, run: bool, parallel: bool, ref cmdLineCompopts
         }
       }
       if run && !parallel {
-        runTestBinaries(projectHome, testsCompiled, testsCompiled.size, result, show);
+        runTestBinaries(projectHome, testsCompiled, result, show);
       }
       timeElapsed.stop();
       if run {
@@ -254,7 +254,7 @@ private proc runTestBinary(projectHome: string, outputLoc: string, testName: str
 
 
 private proc runTestBinaries(projectHome: string, testNames: list(string),
-                             numTests: int, ref result, show: bool) {
+                            ref result, show: bool) {
 
   const cwd = getEnv("PWD");
   for test in testNames {
