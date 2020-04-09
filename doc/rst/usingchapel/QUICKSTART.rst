@@ -115,7 +115,7 @@ you will need to rebuild Chapel from source in a different configuration.
       # run the sample program
       ./hello
 
-   Note that these environment settings will be lost outside of this terminal session.
+   Note that the environment settings from ``util/setchplenv.bash`` will not persist beyond this terminal session.
    You can choose to source ``setchplenv.bash`` whenever you want to use relevant commands.
    If you want these environment settings to persist for future terminal sessions,
    copy the commands from the Recommended Settings in :ref:`chplenv.rst <readme-chplenv.recommended_settings>` into your ``~/.bashrc`` file.
