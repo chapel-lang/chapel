@@ -331,13 +331,13 @@ module Bytes {
 
   record _bytes {
     pragma "no doc"
-    var len: int = 0; // length of string in bytes
+    var buffLen: int = 0; // length of string in bytes
     pragma "no doc"
-    var _size: int = 0; // size of the buffer we own
+    var buffSize: int = 0; // size of the buffer we own
     pragma "no doc"
     var buff: bufferType = nil;
     pragma "no doc"
-    var isowned: bool = true;
+    var isOwned: bool = true;
     pragma "no doc"
     // We use chpl_nodeID as a shortcut to get at here.id without actually constructing
     // a locale object. Used when determining if we should make a remote transfer.
@@ -350,7 +350,7 @@ module Bytes {
 
     pragma "no doc"
     proc ref deinit() {
-      if isowned && this.buff != nil {
+      if isOwned && this.buff != nil {
         on __primitive("chpl_on_locale_num",
                        chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
           chpl_here_free(this.buff);
@@ -381,41 +381,41 @@ module Bytes {
 
     // This is assumed to be called from this.locale
     pragma "no doc"
-    proc ref reinitString(buf: bufferType, s_len: int, size: int,
+    proc ref reinitString(buff: bufferType, s_len: int, size: int,
                           needToCopy:bool = true, ownBuffer=false) {
-      if this.isEmpty() && buf == nil then return;
+      if this.isEmpty() && buff == nil then return;
 
-      /*const buf = _buf:bufferType; // this is different than string*/
+      /*const buff = _buf:bufferType; // this is different than string*/
 
-      // If the this.buff is longer than buf, then reuse the buffer if we are
-      // allowed to (this.isowned == true)
+      // If the this.buff is longer than buff, then reuse the buffer if we are
+      // allowed to (this.isOwned == true)
       if s_len != 0 {
         if needToCopy {
-          if !this.isowned || s_len+1 > this._size {
+          if !this.isOwned || s_len+1 > this.buffSize {
             // If the new string is too big for our current buffer or we dont
             // own our current buffer then we need a new one.
-            if this.isowned && !this.isEmpty() then
+            if this.isOwned && !this.isEmpty() then
               bufferFree(this.buff);
             // TODO: should I just allocate 'size' bytes?
-            const (buf, allocSize) = bufferAlloc(s_len+1);
-            this.buff = buf;
-            this._size = allocSize;
+            const (buff, allocSize) = bufferAlloc(s_len+1);
+            this.buff = buff;
+            this.buffSize = allocSize;
             // We just allocated a buffer, make sure to free it later
-            this.isowned = true;
+            this.isOwned = true;
           }
-          bufferMemmoveLocal(this.buff, buf, s_len);
+          bufferMemmoveLocal(this.buff, buff, s_len);
           this.buff[s_len] = 0;
         } else {
-          if this.isowned && !this.isEmpty() then
+          if this.isOwned && !this.isEmpty() then
             bufferFree(this.buff);
-          this.buff = buf;
-          this._size = size;
+          this.buff = buff;
+          this.buffSize = size;
         }
       } else {
         // If s_len is 0, 'buf' may still have been allocated. Regardless, we
-        // need to free the old buffer if 'this' is isowned.
-        if this.isowned && !this.isEmpty() then bufferFree(this.buff);
-        this._size = 0;
+        // need to free the old buffer if 'this' is isOwned.
+        if this.isOwned && !this.isEmpty() then bufferFree(this.buff);
+        this.buffSize = 0;
 
         // If we need to copy, we can just set 'buff' to nil. Otherwise the
         // implication is that the string takes ownership of the given buffer,
@@ -423,26 +423,26 @@ module Bytes {
         if needToCopy {
           this.buff = nil;
         } else {
-          this.buff = buf;
+          this.buff = buff;
         }
       }
 
-      if ownBuffer then this.isowned = true;
+      if ownBuffer then this.isOwned = true;
 
-      this.len = s_len;
+      this.buffLen = s_len;
     }
 
     /* Deprecated - please use :proc:`bytes.size`. */
     inline proc length {
       compilerWarning("'bytes.length' is deprecated - " +
                       "please use 'bytes.size' instead");
-      return len;
+      return buffLen;
     }
 
     /*
       :returns: The number of bytes in the :record:`bytes`.
       */
-    inline proc size return len;
+    inline proc size return buffLen;
 
     /*
       :returns: The indices that can be used to index into the bytes
@@ -453,7 +453,7 @@ module Bytes {
     /*
       :returns: The number of bytes in the :record:`bytes`.
       */
-    inline proc numBytes return len;
+    inline proc numBytes return buffLen;
 
     pragma "no doc"
     inline proc param length param {
@@ -510,8 +510,8 @@ module Bytes {
       :returns: A 1-length :record:`bytes` 
      */
     proc item(i: int): bytes {
-      if boundsChecking && (i < 0 || i >= this.len)
-        then halt("index ", i, " out of bounds for bytes with length ", this.len);
+      if boundsChecking && (i < 0 || i >= this.buffLen)
+        then halt("index ", i, " out of bounds for bytes with length ", this.buffLen);
       var (buf, size) = bufferCopy(buf=this.buff, off=i, len=1,
                                    loc=this.locale_id);
       return createBytesWithOwnedBuffer(buf, length=1, size=size);
@@ -548,7 +548,7 @@ module Bytes {
       :returns: The value of a single-byte :record:`bytes` as an integer.
     */
     proc toByte(): uint(8) {
-      if this.len != 1 {
+      if this.buffLen != 1 {
         halt("bytes.toByte() only accepts single-byte bytes");
       }
       return bufferGetByte(buf=this.buff, off=0, loc=this.locale_id);
@@ -570,8 +570,8 @@ module Bytes {
       :returns: The value of the `i` th byte as an integer.
     */
     proc byte(i: int): byteType {
-      if boundsChecking && (i < 0 || i >= this.len)
-        then halt("index ", i, " out of bounds for bytes with length ", this.len);
+      if boundsChecking && (i < 0 || i >= this.buffLen)
+        then halt("index ", i, " out of bounds for bytes with length ", this.buffLen);
       return bufferGetByte(buf=this.buff, off=i, loc=this.locale_id);
     }
 
@@ -636,14 +636,14 @@ module Bytes {
       if boundsChecking {
         if r.hasLowBound() && (!r.hasHighBound() || r.size > 0) {
           if r.low:int < 0 then
-            halt("range ", r, " out of bounds for bytes with length ", this.len);
+            halt("range ", r, " out of bounds for bytes with length ", this.buffLen);
         }
         if r.hasHighBound() && (!r.hasLowBound() || r.size > 0) {
-          if (r.high:int < -1) || (r.high:int >= this.len) then
-            halt("range ", r, " out of bounds for bytes with length ", this.len);
+          if (r.high:int < -1) || (r.high:int >= this.buffLen) then
+            halt("range ", r, " out of bounds for bytes with length ", this.buffLen);
         }
       }
-      const r1 = r[0:r.idxType..(this.len-1):r.idxType];
+      const r1 = r[0:r.idxType..(this.buffLen-1):r.idxType];
       if r1.stridable {
         const ret = r1.low:int..r1.high:int by r1.stride;
         return ret;
@@ -660,7 +660,7 @@ module Bytes {
                 * `false` -- otherwise
      */
     inline proc isEmpty() : bool {
-      return this.len == 0;
+      return this.buffLen == 0;
     }
 
     /*
@@ -744,14 +744,14 @@ module Bytes {
     pragma "no doc"
     inline proc _search_helper(needle: bytes, region: range(?),
                                param count: bool, param fromLeft: bool = true) {
-      // needle.len is <= than this.len, so go to the home locale
+      // needle.buffLen is <= than this.buffLen, so go to the home locale
       var ret: int = -1;
       on __primitive("chpl_on_locale_num",
                      chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
         // any value >= 0 means we have a solution
         // used because we cant break out of an on-clause early
         var localRet: int = -2;
-        const nLen = needle.len;
+        const nLen = needle.buffLen;
         const view = this._getView(region);
         const thisLen = view.size;
 
@@ -779,7 +779,7 @@ module Bytes {
         if localRet == -2 {
           localRet = -1;
           const localNeedle = needle.localize();
-          const needleLen = localNeedle.len;
+          const needleLen = localNeedle.buffLen;
 
           // i *is not* an index into anything, it is the order of the element
           // of view we are searching from.
@@ -861,7 +861,7 @@ module Bytes {
         const noSplits : bool = maxsplit == 0;
         const limitSplits : bool = maxsplit > 0;
         var splitCount: int = 0;
-        const iEnd: idxType = localThis.len - 2;
+        const iEnd: idxType = localThis.buffLen - 2;
 
         var inChunk : bool = false;
         var chunkStart : idxType;
@@ -1013,7 +1013,7 @@ module Bytes {
       const localChars: bytes = chars.localize();
 
       var start: idxType = 0;
-      var end: idxType = localThis.len-1;
+      var end: idxType = localThis.buffLen-1;
 
       if leading {
         label outer for (i, thisChar) in zip(this.indices, localThis.bytes()) {
@@ -1081,7 +1081,7 @@ module Bytes {
     proc decode(policy=decodePolicy.strict): string throws {
       // NOTE: In the future this method could support more encodings.
       var localThis: bytes = this.localize();
-      return decodeByteBuffer(localThis.buff, localThis.len, policy);
+      return decodeByteBuffer(localThis.buff, localThis.buffLen, policy);
     }
 
     // to capture the deprecated formal name "errors"
@@ -1107,7 +1107,7 @@ module Bytes {
       // have to repeat this as above to avoid recursion. That's the cleanest
       // way I could think of.
       var localThis: bytes = this.localize();
-      return decodeByteBuffer(localThis.buff, localThis.len, errors);
+      return decodeByteBuffer(localThis.buff, localThis.buffLen, errors);
     }
 
     pragma "no doc"
@@ -1119,7 +1119,7 @@ module Bytes {
       // have to repeat this as above to avoid recursion. That's the cleanest
       // way I could think of.
       var localThis: bytes = this.localize();
-      return decodeByteBuffer(localThis.buff, localThis.len, policy);
+      return decodeByteBuffer(localThis.buff, localThis.buffLen, policy);
     }
 
     /*

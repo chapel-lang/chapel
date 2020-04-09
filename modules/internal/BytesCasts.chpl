@@ -77,8 +77,8 @@ module BytesCasts {
 
     var ret: bytes;
     ret.buff = csc:c_ptr(uint(8));
-    ret.len = strlen(csc).safeCast(int);
-    ret._size = ret.len+1;
+    ret.buffLen = strlen(csc).safeCast(int);
+    ret.buffSize = ret.buffLen+1;
 
     return ret;
   }
@@ -179,8 +179,8 @@ module BytesCasts {
 
     var ret: bytes;
     ret.buff = csc:c_ptr(uint(8));
-    ret.len = strlen(csc).safeCast(int);
-    ret._size = ret.len+1;
+    ret.buffLen = strlen(csc).safeCast(int);
+    ret.buffSize = ret.buffLen+1;
 
     return ret;
   }
