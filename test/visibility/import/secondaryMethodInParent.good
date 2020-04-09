@@ -1,3 +1,0 @@
-secondaryMethodInParent.chpl:14: In function 'main':
-secondaryMethodInParent.chpl:17: error: unresolved call 'owned C.foo()'
-secondaryMethodInParent.chpl:17: note: because no functions named foo found in scope

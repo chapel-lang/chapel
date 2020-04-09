@@ -1,3 +1,0 @@
-#!/bin/sh
-grep -o "&lt;/html&gt;" $2 > $2.prediff.tmp
-mv $2.prediff.tmp $2

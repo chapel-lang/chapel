@@ -1,3 +1,0 @@
-./MapTest.chpl:3: In function 'testMap':
-./MapTest.chpl:5: error: maps of non-nilable owned values are not allowed
-testOwned.chpl:9: Function 'testMap' instantiated as: testMap(type t = owned T)

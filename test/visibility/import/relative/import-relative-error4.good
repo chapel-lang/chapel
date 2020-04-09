@@ -1,1 +1,0 @@
-import-relative-error4.chpl:5: error: Cannot find symbol 'super' in module 'K'

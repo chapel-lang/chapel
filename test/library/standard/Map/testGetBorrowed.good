@@ -1,3 +1,0 @@
-borrowed C
-{i = 1}
-{two: {i = 2}, one: {i = -1}}

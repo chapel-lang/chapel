@@ -1,2 +1,0 @@
-testBanNonNilableClass.chpl:15: In function 'main':
-testBanNonNilableClass.chpl:16: error: maps of non-nilable owned values are not allowed

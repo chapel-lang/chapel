@@ -1,4 +1,0 @@
-default
-Time taken to sort 64 bytes (8 int(64)s)
-insertionSort (seconds): x.xxx
-selectionSort (seconds): x.xxx

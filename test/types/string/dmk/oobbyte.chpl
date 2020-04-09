@@ -1,1 +1,0 @@
-writeln("".byte(0));

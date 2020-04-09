@@ -1,3 +1,0 @@
-allButOne-function-error1.chpl:26: In function 'main':
-allButOne-function-error1.chpl:27: error: unresolved call 'other(1)'
-allButOne-function-error1.chpl:27: note: because no functions named other found in scope
