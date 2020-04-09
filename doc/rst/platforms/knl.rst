@@ -25,10 +25,6 @@ you'll want to have a KNL targeting module loaded. For example::
     
   module load craype-mic-knl
 
-You'll also want to ensure you have a new enough target compiler loaded
-that is KNL/AVX-512 ready. We recommend using at least gcc 5.3, cce 8.5,
-or intel 16.
-
 We provide a KNL locale model for making use of the MCDRAM (High
 Bandwidth Memory/HBM).  Please see :ref:`readme-KNLlm` for details.
 

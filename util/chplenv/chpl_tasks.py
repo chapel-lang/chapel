@@ -14,19 +14,9 @@ def get():
         platform_val = chpl_platform.get('target')
         compiler_val = chpl_compiler.get('target')
 
-        # CCE >= 8.4 is required to build qthreads (for gnu style inline asm.)
-        # We build the module with a new enough version so we know the we can
-        # use the qthreads it provides even if the user has an older CCE loaded
-        using_qthreads_incompatible_cce = False
-        if compiler_val == 'cray-prgenv-cray':
-            if (get_compiler_version(compiler_val) < CompVersion('8.4') and
-                    not using_chapel_module()):
-                using_qthreads_incompatible_cce = True
-
         if (platform_val.startswith('cygwin') or
                 platform_val.startswith('netbsd') or
-                platform_val.startswith('freebsd') or
-                using_qthreads_incompatible_cce):
+                platform_val.startswith('freebsd')):
             tasks_val = 'fifo'
         else:
             tasks_val = 'qthreads'
