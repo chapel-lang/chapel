@@ -16,7 +16,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# PrgEnv settings for Cray X series (XC, XE, XK)
+# PrgEnv settings for Cray XC machines
 
 # This file is not used for Cray CS machines
 
