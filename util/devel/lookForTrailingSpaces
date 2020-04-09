@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+
+#
+# either CHPL_HOME must be set or this must be run from the root chapel
+# directory
+#
+
+cd $CHPL_HOME >& /dev/null
+
+# Look for trailing spaces in files in compiler/runtime/modules.
+# Exclude the generated files bison-chapel.cpp and flex-chapel.cpp.
+git grep ' $' -- compiler ':!*bison-chapel.cpp' ':!bison-chapel.h' \
+                          ':!*flex-chapel.cpp' ':!flex-chapel.h'
+git grep ' $' -- runtime
+git grep ' $' -- modules
+git grep ' $' -- tools

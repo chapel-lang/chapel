@@ -1,0 +1,185 @@
+exportTest.doc.chpl:76: warning: This file-scope code is outside of any explicit module declarations (e.g., module Other), so an implicit module named 'exportTest.doc' is being introduced to contain the file's contents.
+.. default-domain:: chpl
+
+.. module:: exportTest.doc
+
+exportTest.doc
+==============
+**Usage**
+
+.. code-block:: chapel
+
+   use exportTest.doc;
+
+
+or
+
+.. code-block:: chapel
+
+   import exportTest.doc;
+
+**Submodules**
+
+.. toctree::
+   :maxdepth: 1
+   :glob:
+
+   exportTest.doc/*
+
+.. function:: export proc method1()
+
+   Comment for method1 
+
+.. function:: export proc method1Commentless()
+
+.. function:: export proc body2()
+
+   Comment for method with a body 
+
+.. function:: export proc bodyCommentless2()
+
+.. function:: export proc hasArg2(val: int)
+
+   Comment for method with an argument 
+
+.. function:: export proc hasArgCommentless2(val: int)
+
+.. function:: export proc argAndBody2(val: int)
+
+   Comment for method with argument and body 
+
+.. function:: export proc argAndBodyCommentless2(val: int)
+
+.. function:: export proc longComment()
+
+   This is a rather long comment
+   It spans for multiple lines
+   Trying to test most output 
+
+.. function:: export proc hasReturnType2(): int
+
+   This method has a return type 
+
+.. function:: export proc hasReturnTypeCommentless2(): int
+
+.. function:: export proc hasReturnTypeAndArg2(val: int): int
+
+   This method has a return type and an argument 
+
+.. function:: export proc hasReturnTypeAndArgCommentless2(val: int): int
+
+.. function:: export proc returnTypeAndBody2(): int
+
+   This method has both a return type and a body 
+
+.. function:: export proc returnTypeAndBodyCommentless2(): int
+
+.. function:: export proc allThree2(val: int): int
+
+   This method has a return type, an argument, and a function body 
+
+.. function:: export proc allThreeCommentless2(val: int): int
+
+.. function:: export proc withExternCNameComment()
+
+   Commenting withExternCNameComment 
+
+.. function:: export proc withExternCName()
+
+.. function:: proc getName() param
+
+   test param method for withParamExternCName 
+
+.. function:: export proc withParamExternCName()
+
+.. record:: exportRecordNoComment
+
+.. record:: exportRecordComment
+
+   Commenting exportRecordComment 
+
+
+   .. attribute:: var field: int
+
+      Commenting a field 
+
+.. record:: exportRecordRenamedNoComment
+
+.. record:: exportRecordRenamedComment
+
+   Commenting exportRecordRenamedComment 
+
+
+   .. attribute:: var field: int
+
+      Commenting a field 
+
+.. function:: proc end()
+
+.. default-domain:: chpl
+
+.. module:: Other
+
+Other
+=====
+**Usage**
+
+.. code-block:: chapel
+
+   use exportTest.doc.Other;
+
+
+or
+
+.. code-block:: chapel
+
+   import exportTest.doc.Other;
+
+.. function:: export proc inside()
+
+   Comment for method inside module 
+
+.. function:: export proc insideCommentless()
+
+.. function:: export proc body()
+
+   Comment for method with a body inside module 
+
+.. function:: export proc bodyCommentless()
+
+.. function:: export proc hasArg(val: int)
+
+   Comment for method with an argument inside module 
+
+.. function:: export proc hasArgCommentless(val: int)
+
+.. function:: export proc argAndBody(val: int)
+
+   Comment for method with argument and body inside module 
+
+.. function:: export proc argAndBodyCommentless(val: int)
+
+.. function:: export proc hasReturnType(): int
+
+   This method has a return type 
+
+.. function:: export proc hasReturnTypeCommentless(): int
+
+.. function:: export proc hasReturnTypeAndArg(val: int): int
+
+   This method has a return type and an argument 
+
+.. function:: export proc hasReturnTypeAndArgCommentless(val: int): int
+
+.. function:: export proc returnTypeAndBody(): int
+
+   This method has both a return type and a body 
+
+.. function:: export proc returnTypeAndBodyCommentless(): int
+
+.. function:: export proc allThree(val: int): int
+
+   This method has a return type, an argument, and a function body 
+
+.. function:: export proc allThreeCommentless(val: int): int
+

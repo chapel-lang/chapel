@@ -1,0 +1,1 @@
+bitNegateBool.chpl:4: error: ~ is not supported on operands of boolean type

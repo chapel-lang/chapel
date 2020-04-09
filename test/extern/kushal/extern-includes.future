@@ -1,0 +1,28 @@
+bug: Unable to include external non-standard header files with incremental compilation enabled.
+
+This bug limits the type of external header files that can be included.
+If the header contains things like function definitions, variable declarations
+etc , which should not be a part of the header file (ideally speaking)
+and should instead have their own seperate C files, then the header file cannot
+be included. This causes duplicate symbols to be included while using incremental
+compilation flag.
+
+The issue lies in the fact that chpl__header.h directly tries to include the external
+header files, but since they are not standard , so they cannot be #included in multiple
+places and then later on linked.
+
+Possible solution to this issue might be
+a) Just like _main.c have a seperate .c file for only user-modules , this new .c file would have a separate .h file
+(for user-modules only), which would also contain the extern #includes within it.
+b) Based on where the extern definition is, put the #include in the appropriate .c file.
+
+Here is a list of the tests in which showcase this problem (after enabling incremental compilation)
+compflags/bradc/mungeUserIdents/testmunge-extern
+compflags/lydia/library/use_testing
+extern/bradc/extern-in-generic2
+runtime/gbt/tasks/callbacks/tcb-unin
+runtime/gbt/tasks/callbacks/tcb
+studies/glob/test_glob
+users/ferguson/extern_string_test2
+users/ferguson/extern_string_test
+users/npadmana/bugs/extern_c_ptr_c_int/extern-c-ptr-c-int

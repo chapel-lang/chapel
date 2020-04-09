@@ -1,0 +1,9 @@
+#!/usr/bin/env python
+
+import os, stat
+
+os.chmod("foo.txt", stat.S_IRUSR);
+# It is unlikely that the process running this test will have a umask of merely
+# u+r (user read only).  Hence, to demonstrate that copyFile does not copy
+# permissions, it should be sufficient to set the source file's permissions to
+# this value.  If it isn't, sorry.

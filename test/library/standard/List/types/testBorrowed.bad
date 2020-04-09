@@ -1,0 +1,3 @@
+$CHPL_HOME/modules/standard/List.chpl:167: In initializer:
+$CHPL_HOME/modules/standard/List.chpl:168: error: list element type cannot currently be borrowed
+./ListTest.chpl:5: Initializer instantiated as: init(type eltType = borrowed T, param parSafe = 0)

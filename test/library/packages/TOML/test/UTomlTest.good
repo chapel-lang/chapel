@@ -1,0 +1,65 @@
+Before Mutation: 
+[A]
+
+[A.B]
+name = "sam"
+number = 7
+job = "programmer"
+
+[A.C]
+name = "Ben"
+job = "programmer"
+
+
+After Mutation: 
+[A]
+
+[A.B]
+name = "sam"
+number = 7
+job = "programmer"
+
+[A.B.C]
+new-key-added = true
+
+[A.C]
+name = "Ben"
+job = "programmer"
+
+
+A.B.number = 7
+
+KV pairs in table A.C
+name = "Ben"
+job = "programmer"
+
+
+
+[B]
+name = "sam"
+number = 7
+job = "programmer"
+
+[B.C]
+new-key-added = true
+
+[C]
+name = "Ben"
+job = "programmer"
+
+
+Should be the same as
+
+[B]
+name = "sam"
+number = 7
+job = "programmer"
+
+[B.C]
+new-key-added = true
+
+[C]
+name = "Ben"
+job = "programmer"
+
+

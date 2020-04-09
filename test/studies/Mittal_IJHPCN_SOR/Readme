@@ -1,0 +1,13 @@
+* The files in the folder present the source code of red-black SOR (successive over-relaxation) method 
+in Chapel language. Both serial and parallel versions of code are presented.
+
+* These files were used in the following paper.
+
+Sparsh Mittal, "A Study of Successive Over-relaxation Method Parallelization Over Modern HPC Languages", 
+International Journal of High Performance Computing and Networking, vol. 7, number  4, pp. 292-298, 2014.
+
+If you use any of these files in your work, please cite this paper.
+
+* Use of these files does not imply support.
+
+* Author: Sparsh Mittal sparsh0mittal@gmail.com

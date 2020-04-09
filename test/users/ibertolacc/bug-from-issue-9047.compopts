@@ -1,0 +1,2 @@
+# don't run the backend C compiler since it might fail
+--stop-after-pass=codegen

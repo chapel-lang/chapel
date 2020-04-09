@@ -1,0 +1,2 @@
+standaloneParallelInSerialIterator.chpl:28: In iterator 'mySerialIter':
+standaloneParallelInSerialIterator.chpl:29: error: invalid use of parallel construct in serial iterator

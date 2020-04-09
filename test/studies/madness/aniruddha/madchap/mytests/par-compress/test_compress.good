@@ -1,0 +1,103 @@
+warning: Ambiguous module source file -- using ./MRA.chpl over ../../MRA.chpl
+Mad Chapel -- Concurrent Compression Test
+
+** Testing function 1
+F1.norm2() = 1.0
+Compressing F1 ...
+
+-----------------------------------------------------
+k=5 thresh=1e-05 compressed=true
+sum coefficients:
+   level  0   #boxes=   1  norm=6.16e-01
+difference coefficients:
+   level  0   #boxes=   1  norm=7.66e-01
+   level  1   #boxes=   2  norm=1.51e-01
+   level  2   #boxes=   4  norm=1.03e-01
+   level  3   #boxes=   4  norm=2.09e-02
+   level  4   #boxes=   8  norm=1.50e-03
+   level  5   #boxes=   8  norm=5.36e-05
+   level  6   #boxes=   4  norm=1.41e-06
+-----------------------------------------------------
+
+
+======================================================================
+
+** Testing function 2
+F2.norm2() = 1.73205
+Compressing F2 ...
+
+-----------------------------------------------------
+k=5 thresh=1e-05 compressed=true
+sum coefficients:
+   level  0   #boxes=   1  norm=1.13e+00
+difference coefficients:
+   level  0   #boxes=   1  norm=1.06e+00
+   level  1   #boxes=   2  norm=7.55e-01
+   level  2   #boxes=   4  norm=2.14e-01
+   level  3   #boxes=   8  norm=4.68e-02
+   level  4   #boxes=  16  norm=2.60e-03
+   level  5   #boxes=  28  norm=8.25e-05
+   level  6   #boxes=  24  norm=2.63e-06
+-----------------------------------------------------
+
+
+======================================================================
+
+** Testing function 3
+F3.norm2() = 6.55811
+Compressing F3 ...
+
+-----------------------------------------------------
+k=5 thresh=1e-05 compressed=true
+sum coefficients:
+   level  0   #boxes=   1  norm=2.66e-01
+difference coefficients:
+   level  0   #boxes=   1  norm=6.85e-01
+   level  1   #boxes=   2  norm=7.73e-01
+   level  2   #boxes=   4  norm=1.28e+00
+   level  3   #boxes=   8  norm=1.99e+00
+   level  4   #boxes=  16  norm=2.68e+00
+   level  5   #boxes=  32  norm=9.94e-01
+   level  6   #boxes=  64  norm=1.18e+00
+   level  7   #boxes= 128  norm=1.18e+00
+   level  8   #boxes= 256  norm=1.18e+00
+   level  9   #boxes=  12  norm=1.18e+00
+   level 10   #boxes=   8  norm=1.18e+00
+   level 11   #boxes=   8  norm=1.18e+00
+   level 12   #boxes=   8  norm=1.18e+00
+   level 13   #boxes=   8  norm=1.17e+00
+   level 14   #boxes=   8  norm=1.17e+00
+   level 15   #boxes=   8  norm=1.17e+00
+   level 16   #boxes=   8  norm=1.17e+00
+   level 17   #boxes=   8  norm=1.17e+00
+   level 18   #boxes=   8  norm=1.16e+00
+   level 19   #boxes=   8  norm=1.15e+00
+   level 20   #boxes=   8  norm=1.14e+00
+   level 21   #boxes=   8  norm=1.13e+00
+   level 22   #boxes=   8  norm=1.11e+00
+   level 23   #boxes=   8  norm=1.08e+00
+   level 24   #boxes=   8  norm=1.04e+00
+   level 25   #boxes=   8  norm=9.80e-01
+   level 26   #boxes=   8  norm=8.97e-01
+   level 27   #boxes=   8  norm=7.77e-01
+   level 28   #boxes=   8  norm=6.03e-01
+   level 29   #boxes=   8  norm=3.42e-01
+-----------------------------------------------------
+
+
+======================================================================
+
+** Testing function 4
+F4.norm2() = 1.0
+Compressing F4 ...
+
+-----------------------------------------------------
+k=5 thresh=1e-05 compressed=true
+sum coefficients:
+   level  0   #boxes=   1  norm=1.00e+00
+difference coefficients:
+   level  0   #boxes=   1  norm=0.00e+00
+   level  1   #boxes=   2  norm=0.00e+00
+   level  2   #boxes=   4  norm=0.00e+00
+-----------------------------------------------------
+

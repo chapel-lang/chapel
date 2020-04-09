@@ -1,0 +1,11 @@
+error message: iterator/promotion reported where none exists
+
+This test is currently generating the error message:
+
+thisWrongSize.chpl:12: In function 'this':
+thisWrongSize.chpl:17: error: illegal access of iterator or promoted expression
+
+Yet, there isn't any iterator or promoted expression here that I can
+see.  The problem is that the data() array is decalred over a 32-bit
+domain, but is being accessed using a 64-bit int.  The error message
+in the .good file (or something equivalent or better) seems more appropriate.

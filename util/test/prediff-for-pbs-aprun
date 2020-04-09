@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+
+outfile=$2
+grep -v 'stty -onlcr; aprun -q -cc' $outfile > $outfile.tmp
+mv $outfile.tmp $outfile

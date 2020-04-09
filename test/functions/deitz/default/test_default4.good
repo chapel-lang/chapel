@@ -1,0 +1,9 @@
+foo of 4, 5.0, six
+foo of 4, 5.0, three
+foo of 4, 2.0, three
+foo of 4.0, five, 6
+foo of 4.0, five, 3
+foo of 4.0, two, 3
+foo of four, 5, 6.0
+foo of four, 5, 3.0
+foo of four, 2, 3.0

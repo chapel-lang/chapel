@@ -1,0 +1,12 @@
+testing local sorting
+TwoArrayRadixSort.twoArrayRadixSort
+Result is sorted? true
+standard sort
+Result is sorted? true
+
+testing distributed sorting
+TwoArrayRadixSort.twoArrayRadixSort
+Result is sorted? true
+standard sort
+Result is sorted? true
+

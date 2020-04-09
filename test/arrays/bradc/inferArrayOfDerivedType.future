@@ -1,0 +1,21 @@
+feature request: array literals should be able to be of compatible derived types
+
+This test shows that an array literal whose elements are of distinct
+but compatible derived types are not currently supported.  I believe
+they should be (this case was submitted by Uwe Zimmer).  Specifically,
+I think we should treat such cases similarly to how we treat type
+unification in determining a function's return type in the presence of
+multiple return statements.
+
+That said, oops, it looks like we don't actually (automatically) infer
+the type when a function returns two derived types either.  See
+test/functions/bradc/inferReturnForDerivedTypes.chpl.
+
+(If we had, I was going to suggest that a quick-and-dirty
+implementation approach for implementing array literals might be to
+convert them into functions that return values based on an input
+integer 'i' and replace the array literal expressions with calls
+to the function.  :)
+
+This test also shows a workaround which is to downcast the derived
+types to the base type.

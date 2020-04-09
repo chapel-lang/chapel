@@ -1,0 +1,9 @@
+bad-return-borrow-owned.chpl:23: In function 'badReturnReturnBorrowRinit':
+bad-return-borrow-owned.chpl:26: error: Scoped variable cannot be returned
+bad-return-borrow-owned.chpl:24: note: consider scope of rr
+bad-return-borrow-owned.chpl:48: In function 'badReturnReturnBorrow':
+bad-return-borrow-owned.chpl:51: error: Scoped variable cannot be returned
+bad-return-borrow-owned.chpl:49: note: consider scope of rr
+bad-return-borrow-owned.chpl:62: In function 'badReturnInnerBorrow':
+bad-return-borrow-owned.chpl:67: error: Scoped variable cannot be returned
+bad-return-borrow-owned.chpl:63: note: consider scope of rr

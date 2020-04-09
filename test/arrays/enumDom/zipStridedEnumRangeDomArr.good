@@ -1,0 +1,169 @@
+A[red] = 1.0
+A[yellow] = 3.0
+A[blue] = 5.0
+A[violet] = 7.0
+---
+A[red] = 10.0
+A[yellow] = 11.0
+A[blue] = 12.0
+A[violet] = 13.0
+---
+A[red] = 5.0
+A[yellow] = 6.0
+A[blue] = 7.0
+A[violet] = 8.0
+---
+A[red] = -1.0
+A[yellow] = -3.0
+A[blue] = -5.0
+A[violet] = -7.0
+---
+A[red] = 1.0
+A[yellow] = 3.0
+A[blue] = 5.0
+A[violet] = 7.0
+---
+A[red] = 10.0
+A[yellow] = 11.0
+A[blue] = 12.0
+A[violet] = 13.0
+---
+A[red] = 5.0
+A[yellow] = 6.0
+A[blue] = 7.0
+A[violet] = 8.0
+---
+red
+yellow
+blue
+violet
+---
+A[red] = 1.0
+A[yellow] = 3.0
+A[blue] = 5.0
+A[violet] = 7.0
+---
+A[red] = -1.0
+A[yellow] = -3.0
+A[blue] = -5.0
+A[violet] = -7.0
+---
+A[red] = 1.0
+A[yellow] = 3.0
+A[blue] = 5.0
+A[violet] = 7.0
+---
+A[red] = -1.0
+A[yellow] = -3.0
+A[blue] = -5.0
+A[violet] = -7.0
+---
+A[red] = 1.0
+A[yellow] = 3.0
+A[blue] = 5.0
+A[violet] = 7.0
+---
+A[red] = -1.0
+A[yellow] = -3.0
+A[blue] = -5.0
+A[violet] = -7.0
+---
+-1.0
+-3.0
+-5.0
+-7.0
+---
+
+A[yellow] = 3.0
+A[blue] = 5.0
+---
+A[yellow] = 10.0
+A[blue] = 11.0
+---
+A[yellow] = 5.0
+A[blue] = 6.0
+---
+A[yellow] = -3.0
+A[blue] = -5.0
+---
+A[yellow] = 3.0
+A[blue] = 5.0
+---
+A[yellow] = 10.0
+A[blue] = 11.0
+---
+A[yellow] = 5.0
+A[blue] = 6.0
+---
+yellow
+blue
+---
+A[yellow] = 3.0
+A[blue] = 5.0
+---
+A[yellow] = -3.0
+A[blue] = -5.0
+---
+A[yellow] = 3.0
+A[blue] = 5.0
+---
+A[yellow] = -3.0
+A[blue] = -5.0
+---
+A[yellow] = 3.0
+A[blue] = 5.0
+---
+A[yellow] = -3.0
+A[blue] = -5.0
+---
+-3.0
+-5.0
+---
+
+A[green] = 4.0
+---
+A[green] = 10.0
+---
+A[green] = 5.0
+---
+A[green] = -4.0
+---
+A[green] = 4.0
+---
+A[green] = 10.0
+---
+A[green] = 5.0
+---
+green
+---
+A[green] = 4.0
+---
+A[green] = -4.0
+---
+A[green] = 4.0
+---
+A[green] = -4.0
+---
+A[green] = 4.0
+---
+A[green] = -4.0
+---
+-4.0
+---
+
+---
+---
+---
+---
+---
+---
+---
+---
+---
+---
+---
+---
+---
+---
+---
+

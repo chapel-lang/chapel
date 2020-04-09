@@ -1,0 +1,1 @@
+use-hyphenated.chpl:1: error: modules names in Chapel source code must be legal identifiers

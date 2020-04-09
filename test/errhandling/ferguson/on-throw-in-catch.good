@@ -1,0 +1,7 @@
+before test
+1
+2
+3
+4
+inner catch caught error
+caught error

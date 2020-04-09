@@ -1,0 +1,3 @@
+implicit-relaxed-try-nothrows.chpl:5: In function 'propError':
+implicit-relaxed-try-nothrows.chpl:6: error: call to throwing function throwAnError without throws, try, or try! (relaxed mode)
+../ExampleErrors.chpl:1: note: throwing function throwAnError defined here

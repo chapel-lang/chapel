@@ -1,0 +1,6 @@
+# throwing from non-inlined iterators not yet supported
+#
+# baseline makes the iterators not inlined; this code
+# pattern isn't supported yet.
+
+COMPOPTS <= --baseline

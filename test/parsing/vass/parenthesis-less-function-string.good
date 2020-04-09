@@ -1,0 +1,2 @@
+parenthesis-less-function-string.chpl:2: error: unresolved call 'real.x'
+parenthesis-less-function-string.chpl:1: note: candidates are: int.x

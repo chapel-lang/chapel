@@ -1,0 +1,2 @@
+newValueNotType.chpl:7: error: type in 'new' expression is missing its argument list
+newValueNotType.chpl:10: error: type in 'new' expression is missing its argument list

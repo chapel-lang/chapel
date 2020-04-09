@@ -1,0 +1,21 @@
+bug: out-of-order resolution
+
+This test shows a similar issue to
+
+  test/modules/deitz/test_module_mutual_use.chpl
+
+There is a problem in function resolution determining the types because the
+variables rely on one another for their initialization (and type inference).
+There is also a problem at runtime.  Which initialization is done well.  I
+think that is well defined, but subtle.
+
+was:
+
+bug: array sized by external module config
+
+For some reason, it seems that if an array size is
+set using a config variable from a separate module,
+we get a problem in function resolution.  Not sure
+if this is a resolution problem or a function
+resolution problem.
+

@@ -1,0 +1,6 @@
+#!/usr/bin/env perl
+
+system("hadoop dfs -rm /tmp/preadv_test1.txt");
+system("hadoop dfs -rm /tmp/beer_test.txt");
+
+

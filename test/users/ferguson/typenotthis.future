@@ -1,0 +1,24 @@
+error message: Confusing error message.
+
+typenotthis.chpl:8: In function 'do_something':
+typenotthis.chpl:10: error: unresolved call 'type R.do_something_helper()'
+typenotthis.chpl:4: note: candidates are: R.do_something_helper()
+
+This error message confused me .. for an hour or two.
+Not sure exactly how the error message should be improved,
+but as far as I know I can't currently write the
+equivalent of a 'static' method in C++ or Java -
+so R.method() is always an error, is it not?
+
+If R.method() isn't always an error, perhaps the error
+message could indicate more strongly that the 'type' part
+that the issue is that I'm trying to call an instance
+method on a type and not an instance? Something like:
+
+typenotthis.chpl:8: In function 'do_something':
+typenotthis.chpl:10: error: unresolved call 'type R.do_something_helper()'
+typenotthis.chpl:10: note: method called on type not instance
+typenotthis.chpl:4: note: candidates are: R.do_something_helper()
+typenotthis.chpl:4: note: candidates require instance not type
+
+

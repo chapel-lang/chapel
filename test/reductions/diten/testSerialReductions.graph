@@ -1,0 +1,5 @@
+perfkeys: real, real, real
+graphkeys: serial forall, for, serial slice
+files: testSerialReductions.1.dat, testSerialReductions.2.dat, testSerialReductions.3.dat
+graphtitle: Serial Reduction Styles
+ylabel: Time (seconds)

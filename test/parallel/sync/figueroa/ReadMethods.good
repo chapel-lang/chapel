@@ -1,0 +1,84 @@
+1: going to sleep ... 
+2: initial value is false of type bool
+1: woke up. writing true
+2: value is now true and it is empty
+2: value has changed to false and it is full
+2: after sleeping, value is still false
+2: value has been reset to true
+1: going to sleep ... 
+2: initial value is 0 of type int(8)
+1: woke up. writing 1
+2: value is now 1 and it is empty
+2: value has changed to 5 and it is full
+2: after sleeping, value is still 5
+2: value has been reset to 1
+1: going to sleep ... 
+2: initial value is 0 of type int(16)
+1: woke up. writing 2
+2: value is now 2 and it is empty
+2: value has changed to 6 and it is full
+2: after sleeping, value is still 6
+2: value has been reset to 2
+1: going to sleep ... 
+2: initial value is 0 of type int(32)
+1: woke up. writing 3
+2: value is now 3 and it is empty
+2: value has changed to 7 and it is full
+2: after sleeping, value is still 7
+2: value has been reset to 3
+1: going to sleep ... 
+2: initial value is 0 of type int(64)
+1: woke up. writing 4
+2: value is now 4 and it is empty
+2: value has changed to 8 and it is full
+2: after sleeping, value is still 8
+2: value has been reset to 4
+1: going to sleep ... 
+2: initial value is 0 of type int
+1: woke up. writing 5
+2: value is now 5 and it is empty
+2: value has changed to 9 and it is full
+2: after sleeping, value is still 9
+2: value has been reset to 5
+1: going to sleep ... 
+2: initial value is 0 of type uint
+1: woke up. writing 6
+2: value is now 6 and it is empty
+2: value has changed to 10 and it is full
+2: after sleeping, value is still 10
+2: value has been reset to 6
+1: going to sleep ... 
+2: initial value is 0.0 of type real
+1: woke up. writing 7.0
+2: value is now 7.0 and it is empty
+2: value has changed to 11.0 and it is full
+2: after sleeping, value is still 11.0
+2: value has been reset to 7.0
+1: going to sleep ... 
+2: initial value is 0.0 of type real(32)
+1: woke up. writing 8.0
+2: value is now 8.0 and it is empty
+2: value has changed to 12.0 and it is full
+2: after sleeping, value is still 12.0
+2: value has been reset to 8.0
+1: going to sleep ... 
+2: initial value is 0.0 of type real(64)
+1: woke up. writing 9.0
+2: value is now 9.0 and it is empty
+2: value has changed to 13.0 and it is full
+2: after sleeping, value is still 13.0
+2: value has been reset to 9.0
+1: going to sleep ... 
+2: initial value is 0.0i of type imag
+1: woke up. writing 12.0i
+2: value is now 12.0i and it is empty
+2: value has changed to 16.0i and it is full
+2: after sleeping, value is still 16.0i
+2: value has been reset to 12.0i
+1: going to sleep ... 
+2: initial value is  of type string
+1: woke up. writing Hello,
+2: value is now Hello, and it is empty
+2: value has changed to world! and it is full
+2: after sleeping, value is still world!
+2: value has been reset to Hello,

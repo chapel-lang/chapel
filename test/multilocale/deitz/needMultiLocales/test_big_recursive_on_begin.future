@@ -1,0 +1,6 @@
+unimplemented feature: task pool with repooling on waits
+
+out of threads on multiple locales
+
+this simple test shows that we run out of threads due to the recursion
+see test/parallel/begin/deitz/test_big_recursive_begin.chpl

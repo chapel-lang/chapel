@@ -1,0 +1,4 @@
+cat: make: Is a directory
+cat: make/recursive: Is a directory
+cat: make/recursive/new: Is a directory
+cat: make/recursive/new/directory: Is a directory

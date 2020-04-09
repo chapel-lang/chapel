@@ -1,0 +1,5 @@
+true
+borrowed Foo(int(64))?
+borrowed Foo(bool)?
+borrowed Foo(int(64))
+{v = 10}

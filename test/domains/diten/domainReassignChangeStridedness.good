@@ -1,0 +1,1 @@
+domainReassignChangeStridedness.chpl:8: error: cannot assign from a stridable domain to an unstridable domain without an explicit cast

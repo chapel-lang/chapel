@@ -1,0 +1,9 @@
+feature request: external enums
+
+#10323
+
+This general concept seems to make sense.  Need to add support to the
+parser at the very least.  As our enum semantics and implementation
+continues to diverge from C's, this is likely to require extra effort
+to make work within Chapel.
+

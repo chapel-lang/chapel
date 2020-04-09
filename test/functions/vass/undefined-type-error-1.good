@@ -1,0 +1,2 @@
+undefined-type-error-1.chpl:6: In function 'funD':
+undefined-type-error-1.chpl:6: error: the argument type specifier 'dummy' does not produce a type

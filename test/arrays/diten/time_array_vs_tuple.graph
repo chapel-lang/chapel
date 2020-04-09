@@ -1,0 +1,5 @@
+perfkeys: Array time:, Tuple time:
+files: time_array_vs_tuple.dat, time_array_vs_tuple.dat
+ylabel: Time (seconds)
+graphname: time_array_vs_tuple
+graphtitle: array vs tuple serial accesses

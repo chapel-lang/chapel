@@ -1,0 +1,3 @@
+wrong-escapes-2.chpl:3: syntax error: near 'DONE'
+wrong-escapes-2.chpl:3: end-of-line in a string literal without a preceding backslash
+wrong-escapes-2.chpl:3: EOF in string

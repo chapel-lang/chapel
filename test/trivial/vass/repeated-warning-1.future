@@ -1,0 +1,61 @@
+bug: compiler suppresses compilerWarning unreasonably
+
+In this code we expect two warnings, with the same message
+but attributed to the calls y1() and y2(), respectively.
+At present we only get the first one.
+
+Why: the compiler caches the warning the first time it is generated
+(for y1()). The second time it comes about (for y2()), it looks it up
+and finds that it is a repeat of the first one and so suppresses it.
+(At least that's how it feels.) However, the compiler does not notice
+that the second time it is attributed to a different location in the
+code and so, arguably, is not identical to the first one and so should
+not be suppressed.
+
+Why: most likely when Steve implemented caching (e.g. innerCompilerWarningMap,
+outerCompilerWarningMap, reissueCompilerWarning()), compilerWarning
+did not have the errorDepth argument, so it was implicitly always 1.
+When David added the errorDepth argument, the caching machinery
+did not get updated.
+
+Note: if we change x2(1) to x2(2) (so that the text of the warning is
+different the second time) or if we change 'depth' to 1 in z(),
+then two warnings will be generated as expected.
+
+-----------
+
+There is ANOTHER issue where compilerWarning's errorDepth argument
+does not affect the frame whose line number is printed in the warning
+message. I could not generate a clean reproduction of that warning,
+so here is a description of how. If you are fixing the above, please
+try this out and see if you can figure it out as well.
+
+To reproduce:
+
+- add 'compilerWarning("my warning", 1)' at the beginning of this
+  function in ChapelRange.chpl:
+
+    def #(r:range(?), i:integral)
+      where r.boundedType == BoundedRangeType.boundedLow ...
+
+- compile the following test program, say 'test.chpl':
+
+    use Random;
+    var n:int(64) = 6;
+    var d = [1..n];
+    var a: [d] real;
+    proc level2() { fillRandom(a); }
+    proc level1() { level2(); }
+    level1();
+
+Presently I am getting "my warning" warnings for:
+  test.chpl:1    // compiler-generated initialization?
+                 // I get 3 of them, whereas I'd expect all but 1
+		 // to be suppressed according to the above
+  Random.chpl:122   // in fillRandom()
+  DSIUtil.chpl:173  // in computeZeroBasedDomain()
+
+By increasing the errorDepth argument for "my warning", I should be
+able to have the 2nd and 3rd of the above point to my level1()
+or level2(). However, that does not happen (I tried up to 20).
+*That* is a bug.

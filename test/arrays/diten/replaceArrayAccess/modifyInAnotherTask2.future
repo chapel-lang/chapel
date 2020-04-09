@@ -1,0 +1,4 @@
+bug: modifying array in a different task causes incorrect answer
+
+When using --replace-array-accesses-with-ref-temps, modifying an array in a
+different task can cause incorrect answers.

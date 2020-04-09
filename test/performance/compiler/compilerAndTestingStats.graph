@@ -1,0 +1,23 @@
+perfkeys: numSuccessfulCompiles
+graphkeys: Num of Successful Compiles
+graphtitle: Number of Successful Compiles
+graphName: numberOfSuccessfulCompiles
+
+
+perfkeys: numPasses
+graphkeys: Num Passes
+graphtitle: Number of Passes
+graphName: numberOfPasses
+
+
+perfkeys: totalTimeCompiling, elapsedTestTime
+graphkeys: Time Compiling, Time Testing
+graphtitle: Time Spent Compiling vs Testing
+ylabel: Time (hours)
+graphName: timeCompilingVsTesting
+
+
+perfkeys: percentTimeCompiling
+graphkeys: Percent of Time Compiling
+graphtitle: Percent of Testing Spent Compiling
+graphName: percentTimeCompiling

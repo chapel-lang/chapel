@@ -1,0 +1,4 @@
+unimplemented feature: Cannot pass instances of a reduction class to a reduction
+
+This limit the reduction class's ability to initialize any state
+internal to the subclass.

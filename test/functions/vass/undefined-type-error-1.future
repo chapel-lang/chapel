@@ -1,0 +1,12 @@
+error message: when resolving a call with an unresolvable argument type
+
+Currently I am getting:
+
+  undefined-type-error-1.chpl:5: error: unresolved call 'DD.funD(int, 0)'
+  undefined-type-error-1.chpl:6: note: candidates are: DD.funD(arg: dummy, extras)
+
+While this gets me to the cause pretty easily in this case,
+this diagnosis can be misleading in a complex setting.
+
+The real issue is that 'dummy' does not specify a type here,
+which should be what the error message says.

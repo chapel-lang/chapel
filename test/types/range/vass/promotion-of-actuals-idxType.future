@@ -1,0 +1,9 @@
+feature request: allow a range to be implicitly coerced to a range with a bigger idxType when it is passed as an arguments to a function
+
+... that is, when the actual's idxType is implicitly coercible to the
+formal's idxType.
+
+Currently this coersion is supported when assigning to a variable.
+Would be nice to allow this when passing ranges as arguments.
+
+See also promotion-of-actuals-unstrided-to-strided.*

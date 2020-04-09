@@ -1,0 +1,1 @@
+struct_with_fn_ptr.h struct_with_fn_ptr.c --ccflags -Wincompatible-pointer-types

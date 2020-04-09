@@ -1,0 +1,4 @@
+semantic: do initializers affect class type construction?
+
+This test creates initializers and expects these initializers
+to affect type construction for a class type.

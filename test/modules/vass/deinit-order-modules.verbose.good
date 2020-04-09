@@ -1,0 +1,36 @@
+UM4explicitDeinit.init
+uv4ae.init UC
+UM2.init
+uv2a.init
+UM4implicitDeinit init
+uv4bi.init
+UM4noDeinit.init
+UM3.init
+uv3a.init
+UM1.init {
+uv1a.init
+uv1b.init
+UM1.init  }
+UM1.main ---
+Deinitializing Modules:
+  UM1
+uv1b.deinit
+uv1a.deinit
+  UM3
+uv3a.deinit
+  UM4implicitDeinit
+uv4bi.deinit
+  UM2
+uv2a.deinit
+  UM4explicitDeinit
+UM4explicitDeinit.deinit user
+uv4ae.deinit UC
+  MemTracking
+  LocaleTree
+  LocalesArray
+  LocaleModel
+  DefaultRectangular
+  ChapelArray
+  Sort
+  IO
+  ChapelLocale

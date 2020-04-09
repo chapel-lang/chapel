@@ -1,0 +1,4 @@
+Whole domain assignment (int(64)) : SUCCESS
+Whole domain assignment (uint(64)) : SUCCESS
+Whole domain assignment (real(32)) : SUCCESS
+Whole domain assignment (string) : SUCCESS

@@ -1,0 +1,3 @@
+#!/bin/bash
+echo Compiling checkIfEmpty.chpl
+$3 --llvm --library --static checkIfEmpty.chpl

@@ -1,0 +1,12 @@
+bug: sync arguments read, not copied during Phase 1
+
+Today, if you pass in a sync to an initializer in order to use it as one of the
+fields of the type, we insert a readFE of the argument provided.  However, it
+seems more likely that the desire was to utilize the sync itself as the field
+no matter its state, rather than assume the sync was full.
+
+This particular case seems less likely, but it closely mimics the behavior of
+default initializers when no value is provided for the sync field.  Is this
+something we would like to solve in both cases?
+
+When this future is resolved, you can remove the .timeout file

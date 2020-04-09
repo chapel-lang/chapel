@@ -1,0 +1,2 @@
+-sprintCorrect=true -sprintPerf=false -M helpers
+-sprintCorrect=true -sprintPerf=false -M helpers -suseStencilDist=true -sdefaultDoRADOpt=false

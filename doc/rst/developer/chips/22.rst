@@ -1,0 +1,731 @@
+Chapel GPU Language Support
+===========================
+
+Status
+------
+  Draft
+
+Authors
+-------
+|  Khaled Hamidouche, AMD
+|  Mike Chu, AMD
+|  Ashwin Aji, AMD
+|  Michael Ferguson, Cray
+|
+
+-------------------------------
+
+Abstract
+--------
+
+This document is a continuation of the previous CHIP (17) for GPU support in
+Chapel. The objective of this document is twofold: 
+
+	1. Propose alternatives and language extensions to Chapel in order to provide efficient support for GPUs 
+	2. Discuss data movement and distribution map extensions for GPUs.
+
+-------------------------------
+
+Part I: Alternatives for GPU computing support:
+-----------------------------------------------
+
+In this section, we will describe the mechanisms to allow users to
+write efficient GPU code in Chapel. First, we will describe alternatives
+to support interoperability with existing GPU-centric languages like
+(OpenCL and CUDA). Second, we will describe the envisioned language
+extensions to support automatic GPU code generation. In other words,
+automatically transforming parallel loops to GPU kernels. Finally, we
+will discuss the extensions to provide a way to write GPU code directly
+from Chapel programs.
+
+1) Interoperability with existing OpenCL/CUDA codes
+```````````````````````````````````````````````````
+
+As a first step, we are aiming to provide ways to call an existing
+GPU optimized library from Chapel code. Traditionally, GPU codes are
+written in two parts: 1) GPU code (kernel) which performs the
+parallel computation, written with OpenCL, CUDA, or other languages
+and 2) CPU code that manages the launch of the kernel and the data
+movement between the CPU and GPU memories.
+
+In order to provide a way to call a GPU kernel (either within a
+precompiled library or within OpenCL, CUDA, etc. code written by the
+developer), we envision two solutions:
+
+**a. Rely on extern C function calls.**
+
+Chapel currently supports calling a C function directly from the
+program. We rely on this feature to allow the user to call the C
+function which launches the kernel. ::
+
+	__kernel__ hello (_global_ void* A){….}  // GPU Kernel in .cl file or in a
+					 	 // global string declaration on  
+					 	 // the .c file
+	void cpu_func1 (int* A){  // Run on CPU 
+		// create the management and copy the data to GPU
+		Err=clEnqueueNDRangeKernel(hello); 
+	}
+
+In the Chapel code, we can invoke cpu_func1 as an **extern** proc ::
+
+	proc run (){
+
+		extern proc cpu_func1(int* A) : void;
+
+		cpu_func1(A); // will call the hello kernel which will be executed on GPU
+	}
+
+This method for Chapel and GPU interoperability has been tested and
+currently works, however, the developer would need to not only
+manage their own Chapel code, but also the GPU kernel code as well
+as the C code for launching.
+
+**b. Introduce a chpl_launch function.**
+
+In order to avoid the need to create the CPU launching code to manage and
+launch the kernel, we propose to extend the language with a new
+function that automatically prepares and launches a kernel available
+in a .cl/.c file ::
+
+	chpl_launch(String func_name, String file_name, ArgList arg);
+
+By default, chpl_launch is a blocking call.
+
+As the GPU kernel is out of the scope of the compiler, users are
+required to provide intents (in/out) for each argument. This requirement
+is to provide a way for the compiler to generate data movement
+between CPU and GPU in the case of discrete GPUs (dGPUs). Note that this is not
+required for APUs (processors with integrated GPUs which share memory
+with the CPU).
+
+The chpl_launch() function can be used anywhere in Chapel programs
+including, but not limited to, a begin, forall, coforall and on
+statements. In the context of a fire and forget statement, the
+compiler generates a task that calls chpl_launch. While each
+task is asynchronous from the caller, each task will block
+until chpl_launch returns (the kernel finishes).
+
+Building synchronization between kernels can be expressed using the
+traditional task-based synchronization in Chapel. Following the
+traditional Chapel ways to synchronize between tasks using the
+sync or future concepts, users can create a dependency between the
+tasks that calls chpl_launch.
+
+Furthermore, in order to optimize the execution on GPU, users can
+provide the "GPU execution parameters" (workgroup size and grid
+size) to the chpl_launch function using the **with** clause. The
+following sections will provide more information on how to pass such
+information. ::
+
+	on (Locale[0]).GPU do{
+
+		chpl_launch(“f1”, file1, arg) with(wg=1024, grid=(256,256));
+
+	}
+
+Further as OpenCL accepts on-the-fly compilation and takes the kernel as
+a string, chpl_launch can be overloaded with this signature as well. ::
+
+	chpl_launch(string\* kernel, Arglist \* arg);
+
+Example: ::
+
+	var kernel = string(“_kernel_ helloworld(){ “\\
+
+			    “int id=get_local_id(0); ”\\
+
+			    “printf(“Hello from thread %d\n”,id);\\
+
+			    “}”);
+
+	chpl_launch(kernel);
+
+2) Automatic code offload to GPU
+````````````````````````````````
+
+Here we target data parallel and iterative statements in Chapel. If
+the Chapel developer specifies a GPU sublocale, the compiler will
+check if a loop statement can map to a GPU, and if so, it will
+automatically replace the loop with a kernel.
+
+**a. Parallel loop: (forall)**
+
+By definition, a forall loop is parallel, and is a good match for
+GPU acceleration. However, in distributed execution, the compiler might
+generate communication from the loop. This change requires a runtime
+to support communication within the GPU. Unfortunately the current
+runtime does not provide such support.
+
+**b. Local loop using the "local" keyword**
+
+To avoid the generation of communication calls inside the kernel,
+users can rely on the local keyword to mark a loop as local for GPU.
+Hence it makes it the perfect target for distributed execution while
+taking advantage of GPU offload. ::
+
+	on here.GPU do {
+
+		local forall i in 5..100 do{
+
+		}
+
+	}
+
+The example below will be executed in distributed systems and on
+each locale the for loop is offloaded to the sublocale ::
+
+	coforall loc in locales do{
+
+		on (here).GPU do {
+
+			local for a in vectorizedOnly(A) do {
+
+			}
+
+		}
+
+	}
+
+**c. Potential Optimizations for the generated code**
+
+	**Automatic exploitation of internal memory.**
+
+	Following the same methodology of common offload-based languages
+	like OpenMP and OpenACC, the compiler will automatically allocate
+	all declared variables inside the loop scope in the closest memory
+	(registers). ::
+
+		on(Locale[0]).GPU do
+
+			for a in A do{
+
+				var a: int[10]; // during the kernel code generation, this
+						// variable will be allocated in registers
+						// (when it fits, fallback to global memory)
+
+				...
+			}
+
+		}
+
+**d. How to pass the Execution parameters (workgroup and grid size)**
+
+In order to optimize the execution on the GPU, users need to specify
+"Execution parameters" during the launch of the kernel. Note that the
+execution parameters (workgroup and grid sizes) are specified per
+kernel.
+
+	**i. Store the execution parameters as configContext per Locale or task**
+
+	At first impression, one can imagine the execution parameters as
+	configuration parameters to configure how the hardware reacts to the
+	kernel. Hence we can imagine extending the locale concept with
+	configuration parameters that users can set before the kernel
+	invocation. ::
+
+		on Locale[0].GPU do {
+
+			here.set_config(workgroup(128), grid(1024));
+
+			chpl_launch(...);
+
+		}
+
+	However, as multiple tasks can share the same GPU (locale) and each
+	task can specify different parameters, setting the configuration per
+	locale is not suitable. Alternatively, one can imagine the
+	configuration to be per task ::
+
+		on locale.GPU do {
+
+			this.set_config(workgroup(128), grid(1024));
+
+			chpl_launch(...);
+
+		}
+
+	While this is an attractive solution as it does not require language
+	changes, and satisfies the execution parameter requirement of timing
+	(set just before the kernel launch) and scope (affects all the
+	kernels called by the task until the next set_config call).
+
+	However, this solution might introduce confusion with regards to the
+	scope and the default parameter when a task launches a new task ::
+
+		this.set_config()
+
+		begin {
+
+			chpl_launch() // will this use the default parameters or the father
+				      // parameters ?
+
+		}
+
+	**ii. Rely on intent concept (with clause).**
+
+	To satisfy the requirements of the execution parameters, the
+	solution needs to provide the correct timing (just before the call)
+	and scope (affects only this call).
+
+	These two requirement results in a solution that associate the
+	timing of the set to the call itself.
+
+	To do so, we propose to rely on the **with clause** as a way to
+	provide the workgroup and the grid size for the kernel. In other
+	words the Intent concept needs to be extended to support a new class
+	defined as **Execution Parameters** that includes workgroup and grid
+	concepts. These concepts can be of type **tuples** to represent
+	up-to three dimensions ::
+
+		var wg = 64;
+
+		on(Locale[0]).GPU do {
+
+			for a in A do with (const wg){
+
+				...
+
+			}
+
+		}
+
+	In order to avoid conflict with names of user declared variables, Chapel
+	will introduce workgroup and grid as new keywords with the semantics to
+	be used only inside the intent (with clause). They should be part of the
+	loop statement or even a block-statement.
+
+	In this case, users should not declare the workgroup as a var in the 
+	code. ::
+
+		on(Locale[0]).GPU do {
+
+			for a in A do with (const workgroup(1)=64) {
+
+				...
+
+			}
+
+		}
+
+	Here in workgroup(n), the n is to define the number of dimensions. User
+	can write ::
+
+		with ( const grid(2)= (1024,1024));
+
+	**ii. Use convention of optional argument to parallel iterators.**
+
+        Since 'forall' loops are normally implemented by parallel
+        iterators, the parallel iterators can include explicit arguments
+        to set the workgroup size. The grid size should be naturally
+        determined by the 'forall' implementation when going over a
+        bounded array / domain / range.
+
+        E.g. ::
+
+           forall i in 1..n { ... }
+
+        should automatically know that the iteration space is 1..n.
+
+        If a user wanted to specify the workgroup size of that loop,
+        they might write ::
+
+           forall i in (1..n).these(workgroup=8) { ... }
+
+        and he parallel iterator implementing foralls over ranges would
+        pass that workgroup size information to the compiler. This
+        implementation would, in practice, attach it to the
+        "vectorizeable C loop" that the forall loops ultimately turn in
+        to. But, it can do that in a implementation-specific way, rather
+        than in a way that requires bigger language changes, since the
+        feature will be available by using these iterators, simply by
+        adding an additional argument to the iterator invocation.
+
+        Also, this strategy makes sense under the assumption that
+        adjusting the workgroup size at all for a particular loop is a
+        relatively advanced / rare feature. Under that assumption, it
+        might not make sense to make language changes to support the
+        idea.
+
+
+**e. Can the new Intents (workgroup and grid) be used outside the kernel (for
+CPU)?**
+	
+Workgroup size can describe an SIMD width size for CPU execution.
+Hence users can exploit this new intent to write SIMD codes. However
+grid intent can be ignored for CPU execution ::
+
+	forall (a,b) in zippered(A,B) with (workgroup(1) = 128) do {
+
+		if (this->iteration == workgroup)
+			Add(workgroup, A, B); // Add is an extern C/assembler
+					      // function to do SIMD operation
+					      // where workgroup is the SIMD width
+					      // size (this is perfect for KNL)
+
+	}
+
+**f. Which queue to use to run the kernel**
+
+As streaming processors, GPUs provide a concept of queues to queue
+different tasks (kernels and data movement operations) to be
+executed by the GPU. Obviously, the concept of queue is sequential
+(execute one task after the other). This restriction limits the
+performance of GPU. So in order to maximize their throughput, GPU
+offer the concept of multiple queues that can run in parallel
+(different task from different queue can be executed in parallel). To
+maximize the application performance users are recommended to exploit
+this multi-queue concepts. Hence the Chapel runtime needs to take
+advantage of multi-queue scenarios. One possible solution to this is
+to extend the intent clause proposal to allow specification of queues.
+
+**Compiler/runtime selection of queues:** Following the same strategy
+as OpenMP and OpenACC, the selection of the queue is done
+automatically by the compiler/runtime. It is the responsibility of
+the compiler and runtime to use different queues if two GPU offloaded
+tasks are done in parallel. For instance, for asynchronous and
+independent task, where each task launches a kernel, the
+compiler/runtime will/should automatically use different queues in
+round robin fashion
+
+**g. Offload Reduce operations:**
+
+As reduce is a compute intensive operation, it is a good match for
+GPU acceleration. The Chapel compiler can decide to offload a reduce operation to
+GPUs if the operation fits a GPU computation. Similar to loops,
+users can provide the workgroup and grid as intents to the reduction.
+
+Summary 
+```````
+
+Following the OpenMP and OpenACC view, the only
+information users might need to tune their applications are the
+execution parameters (workgroup and grid sizes). These information can be
+passed using the with clause (We define these information as
+“Execution Parameter class” which can be seen as **Intent** to the
+offloaded code). Hence, for auto generated kernel codes, the only
+extension to the language is introducing and defining the semantics
+of the **Execution Parameters** (workgroup, grid size).
+
+3. Advanced GPU programming with Chapel
+```````````````````````````````````````
+
+To provide advanced support for GPUs and give the users the
+possibility to write efficient code for GPUs the same way they use
+to write in OpenCL/CUDA directly in Chapel, we need to extend the
+language to provide GPU-Centric construct and concepts. The
+advantage of giving such support is to remove the need from users to
+write hybrid codes (Chapel + OpenCL).
+
+**a. What are the main cPU-Centric concepts required from Chapel?**
+
+In addition to the workgroup, grid and the queue concepts that can
+be passed as intent to a task (GPU task), users will need mainly 3
+concepts:
+
+	**i.  Query Execution Context**
+
+	The users usually need to use the GPU thread ID during the
+	conception of their algorithm. Hence we need to provide support for
+
+	1. get_local_id(dim): This function returns the thread ID in the
+	current workgroup. As a fallback to CPU support this function can
+	be implemented to return the locale_id. The dim parameter can be
+	ignored.
+
+	2. get_global_id(dim): This function returns the global id of a
+	thread in the kernel on dimension dim. On the CPU side, this function
+	can be implemented to return the locale ID (dim value can be
+	ignored). global_ID and local_ID will have the same
+	implementation on CPU side.
+
+	3. There is another ID to identify a thread in a kernel like the
+	workgroup_id (returns which group the calling thread belongs).
+	However using the global, local IDs, workgroup and grid sizes,
+	users can infer the workgroup IDs. Hence to keep the extensions
+	simple, we introduce only the minimal set required.
+
+        Current thinking is that these would be available as part of two
+        tuples that are globally available but have special meaning
+        (similarly to the `here` variable): loopIndices and
+        loopIterationSpace (and these are not the final names).
+
+        loopIndices indicates the address of the current iteration, while
+        loopIterationSpace indicates how the iteration space is divided
+        up.
+
+
+        For example, let's think about this example again: ::
+
+           forall i in 1..n { ... }
+
+        Inside the range iterator, it will have something like this: ::
+
+          iter range.these(workgroup=defaultWorkgroupSize, ...) {
+             coforall t in 1..numCores {
+                var start = computeStart(t, n);
+                var end = computeEnd(t, n);
+
+                for j in vectorizeOnly(start..end, workgroup=workgroup) {
+                    yield j;
+                }
+              }
+          }
+
+        So, within the forall loop, we would have:
+        * loopIterationSpace   = (1..n, computeStart(t, n)..computeEnd(t, n), workgroupsize)
+        * loopIndices = (i,       t,  current vector/SIMT lane)
+
+
+        All of these are concrete numbers in practice. More concretely, for n=1000, iteration 2 of the loop running on 10 cores and a workgroup size of 8, it would be:
+        * loopIterationSpace   = (1..1000, 100..199, 8)
+        * loopIndices = (2,            1,            2)
+
+
+        Open questions to do with this idea: 1) How are multidimensional
+        indices handled? 2) Do loopIndices and loopIterationSpace always
+        have rank 3? Does it depend on the locale model? Or does it
+        depend on the loop / iterator?
+
+	**ii. Special Memory Management**
+
+	GPUs offer a fast access memory to perform synchronizations and
+	share data between GPU threads in the same workgroup. Users will
+	need to use a keyword to allocate such memory. If this keyword is
+	used outside a kernel, the compiler will just fallback to allocate
+	in DRAM.
+
+	One alternative proposal is to rely on the proposed KNL model and
+	overload the “on” statement to specify the location of an
+	allocation. ::
+
+		on here.LocalMemory var a[10]: int;
+
+	However this proposal does not match well with GPU models as
+	allocation of LDS on GPU can only be performed inside the kernel.
+        This syntax is reasonable even though it would be a runtime or
+        compiletime error to use the feature outside of a GPU kernel.
+
+	A more language-change-intensive alternative is to 
+        introduce a new keyword like
+	“\ **scratch”** that can be called inside and outside a
+ 	kernel. If called inside a kernel, the GPU compiler will perform the
+	allocation on LDS. If outside the kernel, the compiler will simply
+	allocate the data on DRAM (simple allocation). ::
+
+		scratch buf : int[64];  // if called inside Kernel, compiler 
+					// will automatically allocate a space 
+					// of 64*sizeof(int) in the LDS. If 
+					// not in kernel allocates in basic DRAM
+
+	**ii. Barrier and synchronization**
+
+	GPUs provide a way to synchronize between threads of the same
+	workgroup. The only way to synchronize threads of different
+	workgroups is by ending the kernel. For optimized GPU kernels, users
+	usually have to synchronize between threads of a single workgroup.
+	In order to provide an abstraction for users to perform such
+	synchronization, we envision extending the Barrier() function in
+	Chapel. In other words, if Barrier() is called inside a kernel its
+	semantic is to synchronize threads of a workgroup. If called outside
+	the kernel, it preserves its current semantics
+
+	Note that OpenCL has some constraint on how the barriers works in
+	if/else statements. So the compiler needs to analyze this and
+	creates a correct version ::
+
+		if (gid<63) {
+			...
+			Barrier();
+		} else {
+			Barrier()
+			...
+		}
+
+	While the above code is correct for Chapel semantics and runs
+	correctly on CPU, it might lead to a deadlock in GPU. Hence compiler
+	needs to generate a different version like ::
+
+		if (gid<63) {
+			...
+		}
+
+		Barrier();
+
+		if(gid>=63) {
+
+		}
+
+**b. Summary:** 
+
+In the above subsections, we discussed the new
+extensions required to support advanced GPU programming within
+Chapel. For each extension, we discussed its semantics inside a
+kernel and outside a kernel. The objective of such discussion is to
+demonstrate that these extensions can be generic and not make them
+exclusive and available only for GPU kernels. This generality makes
+these extensions portable (the same code can run on CPU and GPU). ::
+
+	proc Func(int\* A){
+
+		var idx= get_local_id();
+
+		...
+
+	}
+
+	on (Locale[0]).GPU do{
+
+		Func(A); // execute on GPU with default intent WORK_GROUP_SIZE =
+			 // default value = 64. Func will be called once from the CPU as a
+			 // kernel. Inside the GPU (the code generated from the Func) will be
+			 // executed in parallel by GPU threads. If Func is a sequential
+			 // function, then all the threads will execute the same code on the
+			 // same data. But this is a user issue and same behavior can happened
+			 // on any language
+
+		Func(A) with (workgroup =128); // execute on GPU with the
+					       // provided intent. Same here
+
+	}
+
+	on (Locale[0]) do{
+
+		Func(A); // execute on CPU with default intents. Here also Func will
+			 // be called once and if inside the Function there is a fork then we
+			 // will create the tasks inside the function.
+	}
+
+**Discussion**: 
+
+The generality and fallback support does require the
+compiler to generate a GPU and CPU version for each function when
+compiled with GPU support (TARGET=GPU). The selection of which version
+to execute is done depending on the locale invocation.
+
+Further, this allows us to support dynamic parallelization (GPU kernel
+can start another kernel).
+
+**Note**: 
+
+As these extensions (ID queries, synchronization and memory
+management) have valid semantics on both CPU and GPU, users are allowed to
+use these calls anywhere in Chapel code, including inside a loop
+that a compiler will automatically transform to a kernel.
+
+For instance, while it is not common, but it is allowed to write: ::
+
+	on(Locale[0]).GPU do {
+
+		for a in A do with (const wg){
+
+			int idx=get_local_id(0);
+
+			...
+
+		}
+
+	}
+
+**Note: Error detection:**
+
+Assume the user writes an I/O call inside a block statement that
+the compiler tries to generate both CPU and GPU version. As I/O
+functions are not supported from GPU, compiler can choose two
+options
+
+1. **Warning and CPU fallback:** The compiler pass can decide to report
+a warning and generate only a CPU version. In this case during the
+execution, while the user requested the function to be executed on
+sublocale, the runtime will try to run it on the local (as no GPU
+function was generated). Note that this might lead to a runtime
+issues as data might not be available on the locale (they are on
+sublocale) for dGPU system. For APU this is not an issue. Note that
+currently we are following this option in our prototype.
+
+2. **Compile time abort:** Alternatively, the Chapel compiler pass can
+decide to generate the I/O call inside the kernel and then the
+OpenCL/CUDA compiler will abort as they cannot handle the operation.
+
+General Conclusions:
+````````````````````
+
+The proposed extensions to support GPUs within Chapel are three folds:
+
+-  **Execution extensions**: This include the workgroup and grid . These
+   parameters are used inside intent using the **with** clause. Chapel
+   needs to be extend to recognize these parameters (they can have
+   similar semantic as Intent)
+
+-  **Programming extensions**: This include, getting IDs, scratch memory
+   allocation and synchronization. Chapel needs to be extended to
+   recognize these calls. It also needed to have default implementation
+   for CPU execution for these functions.
+
+-  **Invocation and launching extension**: to provide an easy and
+   smooth interoperability with OpenCL specific codes for GPU, we
+   propose to introduce a chpl_launch function to call and manage a
+   kernel execution.
+
+**Part 2: Data distribution.**
+------------------------------
+
+In order to provide support for distributed GPU systems, we need to
+provide mechanisms to express where the data will be allocated, as dGPUs
+will have their own memory (we can consider a dGPU as its separate
+sublocale from the memory perspective). In other words this is similar
+to the KNL Locale model available with Chapel.
+
+In this section, we will discuss how users can describe a direct mapping
+of data to GPU memories. Please note that we omit the required designs
+for the runtime to allow the data movement in this discussion.
+
+In Chapel, the data mapping on locales is represented using the Domain
+map concept. This concept defines how the data (domain/array) is mapped
+to the locales. In other words, it describes how the data is distributed
+and partitioned between locales (and sublocales).
+
+Chapel provides default distribution maps like BlockDist, CyclDist, etc. to
+describe where the data (in which locale) a portion of the data should
+reside, the distribution blocks take a list of the target locales as
+an argument to their constructors. We rely on this mechanism to provide
+support for mapping to sublocales, In other words, users have only to
+provide the sublocales as part of the target locales. From the
+distribution perspective, a sublocale is equivalent to a locale. ::
+
+	proc Block (
+		boundingBox: domain,
+		targetlocale[] locale = locales, // users use (this vector will
+ 						 // include the sublocales)
+		dataParTasksPerLocale = // value of dataParTasksPerLocale config const,
+		dataParIgnoreRunningTasks = // value of dataParIgnoreRunningTasks config const,
+		dataParMinGranularity = // value of dataParMinGranularity config const,
+
+		param rank = boundingBox.rank,
+
+		type idxType = boundingBox.idxType,
+
+		type sparseLayoutType = DefaultDist
+	)
+
+**Example:**
+
+Distribute the data among the 2\ :sup:`nd` sublocale on each locale (
+data will be allocated on GPU buffers)
+
+MySublocale is my targetLocales to pass to the distribution ({node,
+sublocale})
+
+{(0,1), (1,1), (2,1), …(n,1)} ::
+
+	const MySublocales = [loc in Locales] loc.gpu;
+
+	const Space={1..n}
+
+	SublocaleBlockSpace = Space dmapped Block(boundingBox=Space,
+						  targetLocales=MySublocales);
+
+	var A : [SublocaleBlockSpace] int; 
+	// A will be distributed on evenly between the different nodes and the 
+	// data will be allocated/mapped to the GPU memory. In other words, on 
+	// each sublocale1 (GPU) of each node, a block of (n/numLocales) is 
+	// allocated on each GPU memory. *

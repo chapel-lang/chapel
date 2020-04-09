@@ -1,0 +1,26 @@
+
+FLAGS:
+======
+  -h, --help             : print this message
+  -nl <n>                : run program using n locales
+                           (equivalent to setting the numLocales config const)
+  -v, --verbose          : run program in verbose mode
+  --gdb                  : run program in gdb
+  --lldb                 : run program in lldb
+
+CONFIG VAR FLAGS:
+=================
+  -s, --<cfgVar>=<val>   : set the value of a config var
+  -f<filename>           : read in a file of config var assignments
+
+MEMORY FLAGS:
+=============
+  --memmax=<n>           : simulate 'n' bytes of memory available
+  --memstat              : print memory statistics
+  --memtrack             : track dynamic memory usage using a table
+  --memtrace=<filename>  : write memory trace to filename
+  --memthreshold=<n>     : filter memtrace for sizes >= 'n' bytes
+
+bradModule flags
+================
+  --n=<val> : set the problem size (default = 10)

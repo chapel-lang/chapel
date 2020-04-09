@@ -1,0 +1,2 @@
+fast-param-var.chpl:5: warning: compiling without --fast
+fast-param-var.chpl:8: error: done

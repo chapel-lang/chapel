@@ -1,0 +1,2 @@
+-M .. -spixelType=int(8)  # c-ray.toosmall.good
+-M .. -spixelType=real    # c-ray.noreal.good

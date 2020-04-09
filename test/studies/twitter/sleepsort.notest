@@ -1,0 +1,2 @@
+It's legal for `sleep()` to oversleep, so this isn't really a valid/stable
+test, especially for configurations that run over oversubscribed.

@@ -1,0 +1,3 @@
+# For some reason compopts: 1 passes with CHPL_MEM=jemalloc, CHPL_COMM=none.
+# Only run under valgrind so we can get a reliable failure mode.
+CHPL_TEST_VGRND_EXE != on

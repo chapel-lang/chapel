@@ -1,0 +1,12 @@
+error message: when I forgot () to call a function
+
+badcallerror.chpl:3: error: Cannot assign to int(64) from chpl__fcf_type_void_int64_t
+
+does not convey to me that the problem is that I actually forgot
+to call the function.
+
+It would probably help to improve the "chpl__fcf_type_void_int64_t"
+to be something more evocative of a function type
+(ie fcf probably stands for "First Class Function", but that
+ is solidly esoteric)
+

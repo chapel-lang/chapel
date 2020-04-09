@@ -1,0 +1,30 @@
+.TH qt_team_parent_id 3 "NOVEMBER 2012" libqthread "libqthread"
+.SH NAME
+.B qt_team_parent_id
+\- returns the current team's parent's unique ID number
+.SH SYNOPSIS
+.B #include <qthread.h>
+
+.I unsigned int
+.br
+.B qt_team_id 
+(void);
+.SH DESCRIPTION
+This function returns the unique identifier associated with the parent team of
+the team to which the currently executing qthread belongs. Generally they are
+monotonically increasing values, but the value can wrap around after
+.BR UINT_MAX -1
+teams. Only subteams have parent teams (or parent subteams). If this function
+is called from a team without a parent, it will return
+.B QTHREAD_NON_TEAM_ID.
+.SH RETURN VALUE
+On success, the thread's parent team's identifying number is returned. If called from outside
+the Qthreads library or from a parentless team,
+.B QTHREAD_NON_TEAM_ID
+is returned. The special value
+.B QTHREAD_NULL_TEAM_ID
+will never be returned.
+.SH SEE ALSO
+.BR qt_team_id (3),
+.BR qthread_id (3),
+.BR qthread_shep (3)

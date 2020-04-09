@@ -1,0 +1,2 @@
+test_param_function_with_for_loop.chpl:2: In function 'foo':
+test_param_function_with_for_loop.chpl:3: error: param function cannot contain a non-param for loop

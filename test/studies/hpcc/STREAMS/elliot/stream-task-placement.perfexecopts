@@ -1,0 +1,3 @@
+--taskDisplacement=TaskDisplacement.None  # stream-task-place-none
+--taskDisplacement=TaskDisplacement.Half  # stream-task-place-half
+--taskDisplacement=TaskDisplacement.Rand  # stream-task-place-rand

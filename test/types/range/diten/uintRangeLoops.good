@@ -1,0 +1,13 @@
+r is: 1..5 by -1
+for loop over r
+5
+4
+3
+2
+1
+forall loop over r
+5
+4
+3
+2
+1

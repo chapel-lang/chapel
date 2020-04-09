@@ -1,0 +1,2 @@
+hasLoopBadCoforall.chpl:4: In initializer:
+hasLoopBadCoforall.chpl:10: error: can't initialize field "x" inside a coforall during phase 1 of initialization

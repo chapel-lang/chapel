@@ -1,0 +1,18 @@
+Capturing the result of itr(5)
+5
+4
+3
+2
+1
+Using the result of itr(5) in an empty loop
+5
+4
+3
+2
+1
+Not capturing the result of itr(5)
+5
+4
+3
+2
+1

@@ -1,0 +1,35 @@
+test_control_flow.chpl:5: error: return is not allowed in begin statement
+test_control_flow.chpl:6: error: break is not allowed in begin statement
+test_control_flow.chpl:7: error: continue is not allowed in begin statement
+test_control_flow.chpl:10: error: return is not allowed in cobegin statement
+test_control_flow.chpl:11: error: break is not allowed in cobegin statement
+test_control_flow.chpl:12: error: continue is not allowed in cobegin statement
+test_control_flow.chpl:15: error: return is not allowed in on statement
+test_control_flow.chpl:16: note: the following error is a current limitation
+test_control_flow.chpl:16: error: break is not allowed in on statement
+test_control_flow.chpl:17: note: the following error is a current limitation
+test_control_flow.chpl:17: error: continue is not allowed in on statement
+test_control_flow.chpl:21: error: return is not allowed in coforall statement
+test_control_flow.chpl:22: error: break is not allowed in coforall statement
+test_control_flow.chpl:23: error: continue is not allowed in coforall statement
+test_control_flow.chpl:26: error: return is not allowed in forall statement
+test_control_flow.chpl:27: error: break is not allowed in forall statement
+test_control_flow.chpl:37: error: yield is not allowed in begin statement
+test_control_flow.chpl:38: error: return is not allowed in begin statement
+test_control_flow.chpl:39: error: break is not allowed in begin statement
+test_control_flow.chpl:40: error: continue is not allowed in begin statement
+test_control_flow.chpl:44: error: return is not allowed in cobegin statement
+test_control_flow.chpl:45: error: break is not allowed in cobegin statement
+test_control_flow.chpl:46: error: continue is not allowed in cobegin statement
+test_control_flow.chpl:50: error: return is not allowed in on statement
+test_control_flow.chpl:51: note: the following error is a current limitation
+test_control_flow.chpl:51: error: break is not allowed in on statement
+test_control_flow.chpl:52: note: the following error is a current limitation
+test_control_flow.chpl:52: error: continue is not allowed in on statement
+test_control_flow.chpl:57: error: return is not allowed in coforall statement
+test_control_flow.chpl:58: error: break is not allowed in coforall statement
+test_control_flow.chpl:59: error: continue is not allowed in coforall statement
+test_control_flow.chpl:63: error: return is not allowed in forall statement
+test_control_flow.chpl:64: error: break is not allowed in forall statement
+test_control_flow.chpl:75: error: continue to a named loop outside of a forall is not allowed from inside the forall
+test_control_flow.chpl:81: error: continue to a named loop outside of a forall is not allowed from inside the forall

@@ -1,0 +1,3 @@
+-smethodStealing=Method.Whole #checkAdaptiveWSIter_v0.good
+-smethodStealing=Method.RoundRobin #checkAdaptiveWSIter_v1.good
+-smethodStealing=Method.WholeTail #checkAdaptiveWSIter_v2.good

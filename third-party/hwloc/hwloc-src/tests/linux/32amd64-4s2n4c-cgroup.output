@@ -1,0 +1,73 @@
+Machine (P#0 total=100661164KB DMIProductName=H8QG6 DMIProductVersion=1234567890 DMIBoardVendor=Supermicro DMIBoardName=H8QG6 DMIBoardVersion=1234567890 DMIBoardAssetTag=1234567890 DMIChassisVendor=Supermicro DMIChassisType=17 DMIChassisVersion=1234567890 DMIChassisAssetTag=1234567890 DMIBIOSVendor="American Megatrends Inc." DMIBIOSVersion="080016 " DMIBIOSDate=07/26/2011 DMISysVendor=Supermicro Backend=Linux LinuxCgroup=/uid_2008/job_15389/step_0)
+  Group1 L#0 (total=67106732KB)
+    Package L#0 (P#0 total=33552300KB CPUModel="AMD Opteron(tm) Processor 6134")
+      NUMANode L#0 (P#0 local=16775084KB total=16775084KB)
+        L3Cache L#0 (size=5118KB linesize=64 ways=48)
+          Group2 L#0
+            L2Cache L#0 (size=512KB linesize=64 ways=16)
+              L1dCache L#0 (size=64KB linesize=64 ways=2)
+                L1iCache L#0 (size=64KB linesize=64 ways=2)
+                  Core L#0 (P#0)
+                    PU L#0 (P#0)
+            L2Cache L#1 (size=512KB linesize=64 ways=16)
+              L1dCache L#1 (size=64KB linesize=64 ways=2)
+                L1iCache L#1 (size=64KB linesize=64 ways=2)
+                  Core L#1 (P#1)
+                    PU L#1 (P#1)
+          Group2 L#1
+            L2Cache L#2 (size=512KB linesize=64 ways=16)
+              L1dCache L#2 (size=64KB linesize=64 ways=2)
+                L1iCache L#2 (size=64KB linesize=64 ways=2)
+                  Core L#2 (P#2)
+                    PU L#2 (P#2)
+            L2Cache L#3 (size=512KB linesize=64 ways=16)
+              L1dCache L#3 (size=64KB linesize=64 ways=2)
+                L1iCache L#3 (size=64KB linesize=64 ways=2)
+                  Core L#3 (P#3)
+                    PU L#3 (P#3)
+      NUMANode L#1 (P#1 local=16777216KB total=16777216KB)
+        L3Cache L#1 (size=5118KB linesize=64 ways=48)
+          L2Cache L#4 (size=512KB linesize=64 ways=16)
+            L1dCache L#4 (size=64KB linesize=64 ways=2)
+              L1iCache L#4 (size=64KB linesize=64 ways=2)
+                Core L#4 (P#0)
+                  PU L#4 (P#4)
+          L2Cache L#5 (size=512KB linesize=64 ways=16)
+            L1dCache L#5 (size=64KB linesize=64 ways=2)
+              L1iCache L#5 (size=64KB linesize=64 ways=2)
+                Core L#5 (P#1)
+                  PU L#5 (P#5)
+    Package L#1 (P#1 total=33554432KB CPUModel="AMD Opteron(tm) Processor 6134")
+      NUMANode L#2 (P#2 local=16777216KB total=16777216KB)
+      NUMANode L#3 (P#3 local=16777216KB total=16777216KB)
+  Group1 L#1 (total=33554432KB)
+    Package L#2 (P#2 total=33554432KB CPUModel="AMD Opteron(tm) Processor 6134")
+      NUMANode L#4 (P#4 local=16777216KB total=16777216KB)
+      NUMANode L#5 (P#5 local=16777216KB total=16777216KB)
+    Package L#3 (P#3 CPUModel="AMD Opteron(tm) Processor 6134")
+      NUMANode L#6 (P#6)
+      NUMANode L#7 (P#7)
+depth 0:	1 Machine (type #1)
+ depth 1:	2 Group1 (type #7)
+  depth 2:	4 Package (type #3)
+   depth 3:	8 NUMANode (type #2)
+    depth 4:	2 L3Cache (type #4)
+     depth 5:	2 Group2 (type #7)
+      depth 6:	6 L2Cache (type #4)
+       depth 7:	6 L1dCache (type #4)
+        depth 8:	6 L1iCache (type #4)
+         depth 9:	6 Core (type #5)
+          depth 10:	6 PU (type #6)
+relative latency matrix between NUMANodes (depth 3) by logical indexes:
+  index     0     1     2     3     4     5     6     7
+      0 1.000 2.000 4.000 4.000 8.000 8.000 8.000 8.000
+      1 2.000 1.000 4.000 4.000 8.000 8.000 8.000 8.000
+      2 4.000 4.000 1.000 2.000 8.000 8.000 8.000 8.000
+      3 4.000 4.000 2.000 1.000 8.000 8.000 8.000 8.000
+      4 8.000 8.000 8.000 8.000 1.000 2.000 4.000 4.000
+      5 8.000 8.000 8.000 8.000 2.000 1.000 4.000 4.000
+      6 8.000 8.000 8.000 8.000 4.000 4.000 1.000 2.000
+      7 8.000 8.000 8.000 8.000 4.000 4.000 2.000 1.000
+26 processors not represented in topology: 0xffffffc0
+26 processors online but not allowed: 0xffffffc0
+Topology not from this system

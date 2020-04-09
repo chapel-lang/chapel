@@ -1,0 +1,3 @@
+Dependency resolution error: unable to find version of 'innerBadDep' compatible with your version of Chapel (CHPL_CUR_FULL):
+  v0.2.0 expecting 1.1.0
+  v0.1.0 expecting 1.0.0

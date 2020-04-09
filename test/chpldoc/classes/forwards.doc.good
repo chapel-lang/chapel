@@ -1,0 +1,38 @@
+.. default-domain:: chpl
+
+.. module:: forwards.doc
+
+forwards.doc
+============
+**Usage**
+
+.. code-block:: chapel
+
+   use forwards.doc;
+
+
+or
+
+.. code-block:: chapel
+
+   import forwards.doc;
+
+.. class:: A
+
+   This class should get the forwarded methods from B 
+
+
+   .. attribute:: var f: B
+
+   .. method:: proc someProc()
+
+   .. method:: proc anotherProc()
+
+.. class:: B
+
+   .. attribute:: var b: int
+
+   .. method:: proc someProc()
+
+   .. method:: proc anotherProc()
+

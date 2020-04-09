@@ -1,0 +1,4 @@
+borrowed MyClass
+{x = 1, y = 2}
+borrowed MyClass
+{x = 3, y = 4}

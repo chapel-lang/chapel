@@ -1,0 +1,6 @@
+running on locales {0..3}
+on LOCALE0  5 -> 33
+on LOCALE1  5 -> 33
+on LOCALE2  5 -> 33
+on LOCALE3  5 -> 33
+done

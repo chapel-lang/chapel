@@ -1,0 +1,6 @@
+atomic uint(32):
+atomic uint(64):
+atomic int(32):
+atomic int(64):
+atomic real(64):
+reject: assert failed

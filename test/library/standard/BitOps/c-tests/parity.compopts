@@ -1,0 +1,2 @@
+$CHPL_HOME/runtime/src/chpl-bitops.c
+$CHPL_HOME/runtime/src/chpl-bitops.c -DCHPL_BITOPS_C

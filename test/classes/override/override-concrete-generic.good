@@ -1,0 +1,2 @@
+override-concrete-generic.chpl:9: error: Child.f overrides parent class method Parent.f but missing override keyword
+override-concrete-generic.chpl:9: error: Child.f override keyword required for method matching signature of superclass method

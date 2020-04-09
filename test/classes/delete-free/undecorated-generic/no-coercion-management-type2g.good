@@ -1,0 +1,4 @@
+no-coercion-management-type2g.chpl:8: error: unresolved call 'f(type unmanaged Child(int(64)))'
+no-coercion-management-type2g.chpl:4: note: this candidate did not match: f(type t: borrowed Child)
+no-coercion-management-type2g.chpl:8: note: because call actual argument #1 with type unmanaged Child(int(64))
+no-coercion-management-type2g.chpl:4: note: is passed to formal 't: borrowed Child'

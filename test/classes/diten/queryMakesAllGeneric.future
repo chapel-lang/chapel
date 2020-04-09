@@ -1,0 +1,7 @@
+semantic: Query on one field makes all params/types generic
+
+In the function foo, the formal r has field b queried in its type. This
+makes all of the param and type fields generic, even though they were
+assigned specific values. Should it only make the "b" field generic?
+
+The .good suggests only making the queried field generic.

@@ -1,0 +1,11 @@
+error message: const indices
+
+iterating over a for expression should yield const indices.  similar to
+removing var from an iterator function.  These cases are not checked as const.
+
+Was:
+
+bug: for/forall expr iterator loses reference
+
+If this shouldn't happen, how can we keep the reference?  If this should, there
+should be an error?

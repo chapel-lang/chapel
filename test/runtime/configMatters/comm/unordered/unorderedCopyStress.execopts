@@ -1,0 +1,23 @@
+#!/usr/bin/env python
+
+import os
+
+comm = os.getenv('CHPL_COMM')
+comm_sub = os.getenv('CHPL_COMM_SUBSTRATE')
+ugni = comm == 'ugni'
+gn_aries = comm == 'gasnet' and comm_sub == 'aries'
+
+size = 1000
+fenceSize = 1000
+if gn_aries:
+    size = 100000
+    fenceSize = 1000
+elif ugni:
+    size = 1000000
+    fenceSize = 1000
+
+print('--printStats=false --concurrentFencing=false --sizePerLocale={0} --oversubscription=1'.format(size))
+print('--printStats=false --concurrentFencing=false --sizePerLocale={0} --oversubscription=2'.format(size//2))
+print('--printStats=false --concurrentFencing=true  --sizePerLocale={0} --oversubscription=1'.format(fenceSize))
+print('--printStats=false --concurrentFencing=true  --sizePerLocale={0} --oversubscription=2'.format(fenceSize//2))
+print('--printStats=false --concurrentFencing=true  --sizePerLocale={0} --oversubscription=10'.format(fenceSize//10))

@@ -1,0 +1,13 @@
+test_explain2.chpl:11: note: call: foo(12)
+test_explain2.chpl:1: note: visible functions are: foo(i: int)
+test_explain2.chpl:5: note:                        foo(param i: int)
+test_explain2.chpl:1: note: candidates are: foo(i: int)
+test_explain2.chpl:5: note:                 foo(param i: int(64))
+test_explain2.chpl:5: note: best candidate is: foo(param i: int(64))
+test_explain2.chpl:12: note: call: foo(int(64))
+test_explain2.chpl:1: note: visible functions are: foo(i: int)
+test_explain2.chpl:5: note:                        foo(param i: int)
+test_explain2.chpl:1: note: candidates are: foo(i: int)
+test_explain2.chpl:1: note: best candidate is: foo(i: int)
+In param version: 12
+In int version: 13

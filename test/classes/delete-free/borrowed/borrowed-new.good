@@ -1,0 +1,8 @@
+testa
+{x = 1}
+1
+in MyClass.deinit
+testb
+{x = 1}
+1
+in MyClass.deinit

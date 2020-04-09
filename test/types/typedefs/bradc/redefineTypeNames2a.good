@@ -1,0 +1,2 @@
+redefineTypeNames2a.chpl:4: error: attempt to redefine reserved type 'int'
+redefineTypeNames2a.chpl:5: error: attempt to redefine reserved type 'real'

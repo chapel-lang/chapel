@@ -1,0 +1,1 @@
+paramFieldNonParamInit.chpl:6: error: default value for param is not a param

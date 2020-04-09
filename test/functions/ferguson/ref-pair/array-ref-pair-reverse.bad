@@ -1,0 +1,11 @@
+setit
+ARG REF
+GLOBAL REF
+0
+readit
+ARG REF
+GLOBAL CONST REF
+1
+setit
+GLOBAL REF
+0

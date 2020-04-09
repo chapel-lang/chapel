@@ -1,0 +1,6 @@
+perfkeys: Timer Wall Time:
+graphkeys: histo serial
+files: histoSerial.dat
+graphtitle: Parboil Histo Serial Execution Time
+ylabel: Time (seconds)
+graphname: histo

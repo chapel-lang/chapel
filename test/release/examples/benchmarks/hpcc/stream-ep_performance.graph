@@ -1,0 +1,5 @@
+perfkeys: max =, avg =, min =
+files: hpcc-stream-ep.dat, hpcc-stream-ep.dat, hpcc-stream-ep.dat
+graphtitle: HPCC STREAM-EP Performance (GB/s)
+ylabel: Performance (GB/s)
+graphname: hpcc-stream-ep-perf

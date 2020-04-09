@@ -1,0 +1,2 @@
+assign-nonnil-borrowed-from-oknil-borrowed.chpl:8: error: Cannot assign to borrowed MyClass from borrowed MyClass?
+assign-nonnil-borrowed-from-oknil-borrowed.chpl:10: error: done

@@ -1,0 +1,2 @@
+./ArrayTest.chpl:1: In function 'testArray':
+./ArrayTest.chpl:9: error: Scoped variable would outlive the value it is set to

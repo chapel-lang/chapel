@@ -1,0 +1,9 @@
+#!/usr/bin/env python
+# This test does not work with munging turned off.
+# It is confused by int32_t even though that symbol is in the reservedSymbolNames file.
+import os
+
+cmui = os.getenv('CHPL_MUNGE_USER_IDENTS')
+print(cmui == '0' or cmui == 'off' or cmui == 'no' or
+      '--no-munge-user-idents' in os.getenv('COMPOPTS'))
+                                          

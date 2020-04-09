@@ -1,0 +1,2 @@
+atomicSingleStmt.chpl:3: warning: atomic statement is ignored (not implemented)
+x is: 2

@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+#
+# Skip the test if subdir-link is not a link. This can happen if core.symlinks
+# is set to 'false' in the git configuration.
+
+if [ ! -L subdir-link ] ; then
+    echo "True"
+else
+    echo "False"
+fi

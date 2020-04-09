@@ -1,0 +1,12 @@
+main
+
+Usage:
+   use main;
+
+or
+
+   import main;
+
+   This is the only valid doc string in this modules. 
+   proc foo()
+   iter bar()

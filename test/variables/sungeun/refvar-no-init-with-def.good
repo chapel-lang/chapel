@@ -1,0 +1,1 @@
+refvar-no-init-with-def.chpl:2: error: Cannot set a reference to a param variable.

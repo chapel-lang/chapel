@@ -1,0 +1,13 @@
+#!/bin/sh
+
+testname=$1
+outfile=$2
+
+grep "lineno-memLeaks.chpl:2" $outfile > /dev/null
+if [ $? -eq 0 ]
+then
+  echo CORRECT LINENO IN MEMLEAKS > $outfile.2
+else
+  echo WRONG LINENO IN MEMLEAKS > $outfile.2
+fi
+mv $outfile.2 $outfile  

@@ -1,0 +1,44 @@
+***Note that for several of these tests, the goal is both to check (a)
+are they working correctly and (b) do they leak memory related to the
+domains and arrays?
+
+bug794133.chpl : the original bug as filed; the one change I made was to
+                 uncomment the call to sizeof() which we had leaked into
+                 user space unintentionally and have since unleaked.
+
+simple.chpl : this is my simplified version of the same issue; the problem
+              is that we reference count the domain of an array element
+              once per element; so when the number of array elements is
+              zero (due to an uninitialized domain, as in this case), we
+              never bump its reference count and reclaim the domain when
+              it leaves scope.  In this case, it's a little confusing that
+              it would ever leave scope since it's module scope; however,
+              the issue is that in the C code, it's local to the module
+              initialization function.  This suggests that perhaps we
+              should destroy variables local to a module initialization
+              function only when the program is torn down, but other
+              cases demonstrated that the same issue can occur at deeper
+              levels in the lexical scope -- so that solution is not
+              satisfactory.
+
+simple-workaround.chpl : this is one way to work around the issue; by
+              naming the anonymous domain, we bump its reference count
+              so that it isn't deallocated.
+
+simple-workaround2.chpl : this is a second way to work around the issue;
+              by making the outer domain small but non-empty.
+
+simple-breaks.chpl : this was a variation on simple-workaround2.chpl
+              that didn't work
+
+simple-deeperscope.chpl : a similar issue, but trying it at a deeper
+              scope to show that it's not specific to global variables
+
+simple-noresize.chpl : if we never resize does that work OK?
+
+simple-reresize.chpl : does resizing twice work OK?
+
+simple-3deep.chpl : tries an array-of-arrays-of-arrays case
+
+simple-record.chpl : tries a case where the anonymous domain is within a
+              record

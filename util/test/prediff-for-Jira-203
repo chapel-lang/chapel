@@ -1,0 +1,20 @@
+#!/bin/bash
+
+# This script is for the use with 'start_test' as the system-wide prediff, to
+# suppress sporadic false test errors observed on both kaibab and kay-elogin,
+# caused by "Transient MPP reservation error on create" appearing in the test
+# output.
+
+# This is thought to be a system issue, caused by a miscommunication between
+# ALPS and PBS. Not a Chapel issue.
+
+# See Jira #203 (https://chapel.atlassian.net/browse/CHAPEL-203) for more info.
+
+# To use this prediff file with start_test (assuming bash):
+#
+# export CHPL_SYSTEM_PREEXEC=$CHPL_HOME/util/test/prediff-for-Jira-203
+# start_test ...
+
+outfile=$2
+sed < $outfile > $outfile.tmp -e '/Transient MPP reservation error/d'
+mv -f $outfile.tmp $outfile

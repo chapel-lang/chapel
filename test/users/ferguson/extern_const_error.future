@@ -1,0 +1,11 @@
+error message: compiler core dump
+
+This test should say
+  const MY_NUMBER = NUMBER
+
+but if it says
+
+  extern const MY_NUMBER = NUMBER
+
+then the compiler core dumps.
+

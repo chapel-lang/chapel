@@ -1,0 +1,3 @@
+3types-1-wrapped-plus.chpl:44: In function 'main':
+3types-1-wrapped-plus.chpl:49: warning: Rstate(int(64))
+result = 4950

@@ -1,0 +1,15 @@
+----- phase one -----
+Parent.inheritedMethod()
+thing.type = borrowed Parent
+Parent.inheritedMethod()
+
+a.type = borrowed Parent
+b.type = borrowed Parent
+Parent.inheritedMethod()
+Parent.inheritedMethod()
+
+----- phase two -----
+thing.type = borrowed Child
+Child.inheritedMethod()
+
+c = {x = 7, y = 25.0}

@@ -1,0 +1,2 @@
+Optimized on clause (wrapon_fn) in module test_OptimizedOn_Block3 (test_OptimizedOn_Block3.chpl:9)
+(1, 1) (1, 1) (1, 1) (1, 1) (5, 5) (1, 1) (1, 1) (1, 1) (1, 1) (1, 1)

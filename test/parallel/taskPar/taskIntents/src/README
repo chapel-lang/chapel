@@ -1,0 +1,3 @@
+This directory contains the sources, from which the files in ..
+were created. Run 'make clobber all' to (re-)create those files.
+See Makefile for more options.

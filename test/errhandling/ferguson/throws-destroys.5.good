@@ -1,0 +1,5 @@
+in loopThrow, r=(x = 3)
+destroying R(x=3)
+uncaught Error: 
+  throws-destroys.chpl:49: thrown here
+  throws-destroys.chpl:17: uncaught here

@@ -1,0 +1,2 @@
+use-before-square.chpl:13: In initializer:
+use-before-square.chpl:14: error: field "b" used before it is initialized

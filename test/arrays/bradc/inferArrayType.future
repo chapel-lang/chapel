@@ -1,0 +1,5 @@
+bug: array shape not preserved in promotion
+
+This is a test that checks whether array types are
+inferred by printing out both the inferred array
+value and its domain.

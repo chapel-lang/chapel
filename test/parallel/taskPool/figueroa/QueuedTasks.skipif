@@ -1,0 +1,3 @@
+CHPL_COMM != none
+CHPL_TASKS != fifo
+COMPOPTS <= --no-local

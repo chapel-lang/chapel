@@ -1,0 +1,4 @@
+#! /usr/bin/env bash
+
+# Sort output; multilocale stdout/stderr isn't deterministic.
+sort < $2 > $2.prediff.tmp && mv $2.prediff.tmp $2

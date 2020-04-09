@@ -1,0 +1,3 @@
+chpl accessed [1000 1000] elements 100 times in 
+chpl accessed [1000][1000] elements 100 times in 
+C    accessed [1000][1000] elements 100 times in

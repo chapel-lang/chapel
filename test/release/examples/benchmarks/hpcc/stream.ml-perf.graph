@@ -1,0 +1,5 @@
+perfkeys: Performance (GB/s) =
+files: stream.glob.dat
+graphkeys: global stream GB/s
+graphtitle: HPCC: Global STREAM Perf (GB/s) - n=5,723,827,200
+ylabel: Performance (GB/s)

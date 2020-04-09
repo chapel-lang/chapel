@@ -1,0 +1,12 @@
+This directory contains the meta-data files required for running GASNet unit tests
+within the automated testing harness provided with the Berkeley UPC runtime.
+For information on downloading and using Berkeley UPC, see: https://upc.lbl.gov
+
+None of the files in this directory or its children are intended for stand-alone testing.
+
+gasnet-tests: harness driver for the GASNet unit tests, and some misc checking targets
+
+amudp/ammpi: harness drivers for the AMUDP/AMMPI unit tests. These assume the corresponding
+GASNet conduit has been configured in.
+
+external-*: harness drivers for "smoke testing" with various GASNet clients

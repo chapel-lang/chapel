@@ -1,0 +1,5 @@
+perfkeys: Unmanaged-Time:, Shared-Time:, Owned-Time:
+files: allocation.dat, allocation.dat, allocation.dat
+graphkeys: Unmanaged, Shared, Owned
+ylabel: Time (seconds)
+graphtitle: Serial 'object' Allocation

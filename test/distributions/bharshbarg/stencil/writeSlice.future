@@ -1,0 +1,5 @@
+bug: printing slice of StencilDist prints cached values
+
+This is likely due to the implementation in
+chpl_serialReadWriteRectangularHelper which calls 'dsiAccess' in a read-only
+fashion.

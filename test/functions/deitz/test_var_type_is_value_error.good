@@ -1,0 +1,2 @@
+test_var_type_is_value_error.chpl:3: In function 'f':
+test_var_type_is_value_error.chpl:4: error: invalid type specification

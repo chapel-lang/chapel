@@ -1,0 +1,471 @@
+Chapel Incremental Compilation
+==============================
+
+Status
+ Draft
+
+Author
+ Kushal Singh
+
+Abstract
+--------
+
+Currently, re-compiling a Chapel program would mean re-compiling parts which
+haven’t changed, including the functions that haven’t been altered since the
+last compilation. The main focus of the project is to utilise the existing
+information that the compiler already has, in order to speed up the
+re-compilation. Initially, the project started off with trying to restructure
+the way elements with same name were distinguished using integers.
+Disambiguation with integer makes it difficult to read and understand the code
+sometimes. Also, integers do not capture the difference between multiple
+versions well enough (which is something that would be required at later stages
+of the project). Out of all the passes 'makeBinary' accounts for around half of
+the time, so we needed some restructuring to allow us to save time.  Moreover,
+we wanted to move from a large .o file to smaller .o files being generated.
+Since, this would essentially allow us to recompile only the selected smaller
+.o files based on the need. Later on, we built a code-cache to be able to
+utilise the results of our past compilation and to be able to successfully
+avoid reinstantiation and recompilation of functions. Building a code-cache
+would allow us to store the results of previous compilations and would allow us
+to re-link the functions and symbols during the building of the executable. We
+started off with a simple approach built upon comparing differences between a
+cache and a temporary directory during consecutive runs.  This essentially laid
+a foundation for our next steps (which have been described later on). Since
+'functionResolution' comes right after 'makeBinary' in terms of time needed. So
+for a better and more sophisticated analysis, we aim to modify our code
+generation and function resolution mechanisms and link them with our cache to
+obtain the speedup that we expect.
+
+Description
+-----------
+
+The main idea behind the project is to speed up recompilation. 'MakeBinary' pass
+accounts for roughly half of the compile time. In the current structure, one
+big .o file gets generated which holds everything in it. This essentially means
+that without modifying the structure of existing generated C code, any analysis
+done on “which functions gets re-used” would be useless. Moreover, trying to
+recompile even a few functions would mean recompiling everything.  Since this
+pass dominates so much of compile time it’s worthwhile to look into it.
+
+The initial approach was to first start off with splitting the header file into
+smaller pieces, so that each module can compile independently, as opposed to
+having everything getting compiled together all at once. Later on, all these
+independent pieces would be linked together. This would give us more freedom to
+only recompile a few independent pieces separately (instead of having to
+recompile everything) based on which functions we decide to reuse.
+
+We wanted to create a single header file per standard/internal module instead
+of putting all the declarations in ``chpl__header.h``. The idea was to have the
+generated .c file #include the module header for all the modules it needs, as
+known via module use list (utilising include-guards) after taking special care
+for user modules. However, this approach did have some issues. For instance ,
+if the modification occurred to the declaration of the function, then the
+header would always have to be updated. This would mean that files which relied
+on it would have to be recompiled too. Which essentially meant regenerating the
+.o  even if we did not re-write the .c files. Another issue with this approach
+was finding whether a function has changed. This was a problem for both
+'functionResolution' and 'makeBinary' step. Also, finding the .h’s into which the
+functions needed to be put was another issue. 
+
+So based on these issues and on further discussion, a step by step approach was
+discussed which has been described here (which we tried to follow) :
+
+
+1) Our header file (``chpl__header.h``) contained all the function declarations,
+definitions etc within one single file, which was then #included in our
+``_main.c`` file. However this header file was not essentially an ideal header
+file. So we decided to split the definitions and declarations into two
+separate files ``chpl__header.h`` (containing the declarations) and ``chpl__defn.c``
+(containing the definitions).  The header file (``chpl__header.h``) had static
+symbols which made it difficult to link it in multiple places. So a part of
+the work was to make sure that ``static`` keyword is removed to allow linking in
+from multiple places. We achieved the splitting of header file completely,
+however removing ``static`` keyword caused a performance drop in some of our
+benchmark programs. Hence we support it only with the use of ``--incremental``
+flag. This choice of splitting the header file also follows our initial
+design idea of trying to have things compile independently, rather than
+compiling everything at once. This step essentially allows us to use the
+header ft.
+
+2) Once we had the header file we wanted to #include it in multiple different
+locations, this means adding a #include in the user code to ``chpl__header.h`` .
+Instead of including the header file in the ``_main.c``  file (which caused one
+big .o file to get generated), we wanted separate .o files to be generated,
+which can then be later linked together. After the modification to the header
+file and including them at the appropriate places, the next part was
+modifying the ``Makefile`` to allow the generation of .o’s for each of the user
+module files independently.  After modifying the ``Makefile``, we were
+successfully able to generate all the .o’s separately and later link them
+together into the final binary. Achieving this meant that once we can
+identify the specific .o files which need recompilation, we can only
+recompile those select few .o’s separately and then later relink them to the
+remaining unmodified .o files. Note that this generation of multiple .o files
+is done only with the ``--incremental`` flag.  Since currently in the normal
+compilation mode, we add the ``static`` keyword (due to benchmark performance
+issue), which does not allow #including of header file at multiple places.
+
+3) The next step once we have the different .o files is to save the .c/.o
+files that haven't changed between two different compilation runs. We would
+also want to store the different environment variables and flags which were
+used. The way to achieve this is to create a new directory like ``--savec`` does.
+The idea is to have two separate directories, one which is the cache (fixed
+directory) and the other which holds the generated files after every
+compilation (temporary directory). For the first run we would simply copy the
+contents into the cache (from the temporary directory to the fixed
+directory). For the second run (and so on) , we would do a quick diff between
+the newly populated temporary directory and the contents of the cache. This
+would allow us to analyse the different regions between the two directories
+which have/haven’t changed.  Although, the standard libraries are always
+compiled with the program (instead of being in a precompiled state), but we
+do not expect to have any difference in that portion of the code when we try
+to analyse the difference between the two directories. If there are any
+differences however, then minimising them would take a higher priority.
+
+We expect the differences to only lie in the user part of the code when we
+compare the contents of the two directories. Once we are sure that the
+differences lie only in the user code, then we can move towards analysing how
+the program behaves with small modifications to the user code. In order to
+store the environment variables and flags, we already have
+``chpl_compilation_config.c`` file (which gets generated during compilation)
+which stores all this info. The main goal of this step is to build our
+understanding which will allow us to move to more sophisticated analysis
+techniques. This step couldn’t reach completion mainly due to issues arising
+while trying to minimise the difference in cache contents across two
+consecutive runs (explained in the “Issues” section)
+
+4) Once we have the cache mechanism set up, we can then start detecting the
+modification to the files in our compiler. We want to do some verification
+here too as a precautionary step to ensure that all the files we expect to be
+same are generated the same. Broadly speaking these are the types of changes
+that we would like to detect :
+
+1. Detecting the changes to the compiler flags and environment variables.
+2. Detecting code changes due to :
+
+* Changes in the body of a function and/or declaration (this covers the
+  changes in arguments, return types etc of a function). This can be
+  detected once we have the AST representation, which would allow us to
+  compare it with an older version of the AST and detect the
+  differences.
+* Changes in the function calls (for instance : parameters getting
+  changed). This would involve identifying where the functions were
+  called from (which can utilise some of the existing machinery like
+  ``compute_call_sites()`` here). This step however would be harder as the
+  information required for this step is not populated until function
+  resolution has been finished, whereas we would like to utilise this
+  information during that pass.
+* New candidates to resolve against for a function call (it may be
+  possible that the user has tried to add a function definition with
+  similar name but different parameters, in which case we would again
+  have new candidates when we work towards resolving the function calls) 
+
+This would require marking the nodes in our AST representation which
+haven't changed, so that passes after this detection has occurred
+can benefit from it. However, there were a few simplifying
+assumptions with this model (which may require more detailed
+analysis later on).
+
+* Current assumption was that if there is a change in the standard
+  and internal library, or change in the command line arguments or
+  environment labels then the cache would not be re-useable again.
+  This however is not true in general, but would require a finer and
+  more detailed analysis.
+
+* The idea was to start with a single module program and move on
+  from there, to get a better understanding.
+
+* Our main goal is to preserve the correctness behavior of the code
+  (since this is mainly a performance feature). Therefore, we would
+  like to move with a conservative approach and avoid giving false
+  positives.
+
+Once we have our cache mechanism fully set up, and we can
+successfully move the changed stable files into our cache. The next
+step would be to try and find out the ways to minimise the frequency
+of differences occurring in our libraries (.c files). Since, it may
+so happen that our changes would require modification or
+recompilation of the .o’s of the libraries (due to which we may not
+save any time). Essentially what this means is that whenever a user
+tries to make changes in the user code, the changes fall into one of
+these 4 categories :
+
+1) Cause a new instantiation of generic library function/type.
+2) Cause a previously deadCode eliminated function to be used.
+3) Reuse a library definition that was already in use before the code modification.
+4) Only impact the application level code.
+
+The first two changes would cause full recompilation and would
+essentially mean that we do not save any time during our 'makeBinary'
+phase. If we can minimise them, it would be more likely that the
+user would save time. So our main focus would be to try and work towards minimising case ``1`` . 
+
+A potential way to fix case ``2`` would be to turn off dead-code
+elimination during ``--incremental``, since dead code elimination would
+essentially mean removal of dead functions and instructions. So, if
+we don't avoid having unused functions, then we can easily avoid
+recompilation. Also, it is quite common for a user to access library
+functions that they haven't used previously than having new generic
+instances of functions that they are already using. So essentially
+we would want to have dead-code elimination turned off during
+``--incremental`` compilation. However, we would have to fine tune the
+way dead-code elimination works with ``--incremental``. Dead code
+elimination removes both the dead instructions in a function and
+dead functions. We would want to turn off the dead function
+elimination, but not the removal of dead code within function while
+using ``--incremental``.
+
+However the reason we decided not to stick with our approach of
+disabling dead code elimination was mainly due to the way error
+handling is currently done in our code. Since the way we have our
+function resolution and other checks set up is by doing further
+error handling (complete checks) only on functions which actually
+get called. So, the user may try to include a new function , but it
+may so happen that during our previous analysis we skipped more
+thorough checks. So, when the user uses the function he may
+encounter an error (which essentially he shouldn't). Based on this
+issue we did try to find another approach, involving minimising the
+diff's and having a look at the difference and modifications that
+take place to a generic instance with change in parameters. However,
+we weren’t able to dig deeper into this issue due to our problems
+while trying to minimise the diff’s due to virtual method table
+related issues (mentioned later on).
+
+Another reason why we decided not to move with our approach based on
+disabling dead code elimination was to avoid having a large
+departure from how the same file would appear on master. Which would
+cause confusion for the users and the developers. Moreover, this
+would require major changes in terms of how functions are resolved
+and which paths are taken care of. This would mean checking each and
+every path in the code , even though the path may not get used at
+all.
+
+Once this case is taken care of, we can integrate and move towards
+function resolution and try to integrate and link to our cache at
+the appropriate places so as to obtain a speedup.
+
+Testing Approach
+----------------
+
+We can build up test cases based on which we can verify the correctness,
+mainly due to the changes not being interactive. The different flag changes
+can be handled by the test case system. Basic implementation can work without
+recombining flags. However a more refined and sophisticated approach would
+have to take into account the different flags that come into play and how
+they affect each other. Now this feature is purely performance based and we
+would not like to yield false positives and give incorrect results in cases
+when we shouldn't. Hence we need to also have a testing mechanism later on
+that would indicate whether the feature is working as expected. Since the
+working of our feature revolves around a cache and based on which part of the
+caches are touched, we can have a separate style for testing such a feature.
+
+The planned way to check if a file ``foo.chpl`` works as planned would be to have
+copies of ``foo.chpl`` all slightly modified. A file named ``foo.orig.chpl`` would be
+the initial never-before-compiled version. We’d copy it on top of ``foo.chpl``.
+After compiling it once with ``foo.orig.chpl`` (layered over it), we would then
+try recompiling it. In the process we can check which of the files were
+touched (in cache), and verify that the executable behaved correctly for the
+changes. The same process can be repeated for different versions of like
+``foo.step2.chpl, .. foo.stepN.chpl``.
+
+This way we can have expected output for each of the modifications, and save
+changes for reproducibility. The following part shows small program
+snippets (containing slightly modified versions of the same code)
+
+.. code-block:: chapel
+
+   // Foo.step1.chpl : The value is known at compile time 
+   proc foo(param a:int) {
+     return a+3;
+   }
+
+   // Foo.step2.chpl  : Removing the param keyword from 'a'
+   proc foo(a:int) {
+     return a+3;
+   }
+
+   //Foo.step3.chpl : The return types are specified explicitly 
+   proc foo(a:int) : int {
+     return a+3;
+   }
+
+   //Foo.step4.chpl : The type of parameter is queried (making the function generic)
+   proc foo(a:?t) {
+     return a+3;
+   }
+
+   //Foo.step5.chpl : The return type is a queried type
+   proc foo(a?t) : t {
+     return a+3;
+   }
+
+   //Foo.step6.chpl : The function is non-generic by itself, but has other functions as a part of return value which are generic
+   proc foo(a:int) {
+     return a+addOne(int)+addTwo(int);
+   }
+
+   //Foo.step7.chpl : The function has simple functions as a part of return value
+   proc foo(a:int) {
+     return a+addOne()+addTwo();
+   }
+
+   //Foo.step8.chpl : A class is added around the function
+   class MyClass{
+     proc foo(a:int) {
+       return a+3;
+     }
+   }
+
+   //Foo.step9.chpl : The function is added to a module
+   module OurModule{
+     proc foo(a:int) {
+       return a+3;
+     }
+   }
+
+   //Foo.step10.chpl : The parameter passed is generic which in turn makes the function generic
+   .
+   .
+   .
+   .
+
+
+   // Main function call
+   foo(42); //May be known at compile time
+
+Issues
+------
+
+* The current way of splitting the header files has slight issues. For
+  instance, the way the header file is generated with ``--incremental`` and with
+  ``--no-incremental`` is different. With ``--incremental`` flag, the header file is an
+  ideal header file and can be included in any of the user modules. This allows
+  separate compilation for each of the file (generation of separate .o's which
+  can be linked later on). But due to performance degradation after removing
+  ``static`` keyword, the ``static`` keyword was added again to the normal compilation
+  (without ``--incremental``) which essentially meant that these files are not
+  ideal header files (since they cannot be included in multiple places due to
+  conflicts arising from the use of ``static`` keyword). Apart from this, the
+  header file for ``--incremental`` does not allow the use of external header files
+  which are not ideal headers themselves during C interoperation. Solving this
+  problem may need a different approach to either the way the header file is
+  split or the way external header files are included. The external header
+  files however are not directly used in the chapel program but they get used
+  during the C interoperation.
+
+* Currently ``--incremental`` does not support LLVM code generation yet.
+
+* An issue with the cache based approach suggested earlier, where we try to
+  minimise the diff between contents of our directories (cache and temporary
+  directory) lies in the way the code is generated. Our code contains a virtual
+  method table (in ``chpl__defn.c``) which contains entries based on the
+  inheritance hierarchy.  For reasonably small programs, the main area where
+  the programs differ is at the virtual method table. The reason behind this is
+  the reordering of different groups of functions in the vmtable which creates
+  a difference in the generated files between any two successive runs. An ideal
+  way to go about this issue would be to try and sort the entries , however the
+  entries in virtual method table do require an ordering (same functions should
+  be at same locations for different modules). So the way we tried to solve
+  this was to build up a custom sorting routine which takes into account the
+  position of the previously encountered symbols with a similar name, but this
+  again had some issues since the order in which we obtain the modules in
+  'codegen' (after sorting) is different from the order in which we get it in
+  'functionResolution'. Also, since namespace mangling is done later during
+  'codegen', we do encounter ``FnSymbols`` with same names (which makes it harder to
+  sort the entries simply based on names for them). This essentially then
+  requires us to first order the entries based on the modules.
+
+  Once this issue is taken care of , there are some other problems for larger
+  programs. For instance for larger programs apart from having differently
+  generated vmtables (as described earlier) have independent code blocks which
+  switch their order (in the generated code). For a few cases, the order in
+  which different independent structs etc appear also changes. The next step
+  would be to get a deeper understanding of the issue. After we have a good
+  idea where the problem lies, we can then move towards minimising the diff’s
+  occurring due to library .c files.
+
+Future Work
+-----------
+
+The idea of this project is to speed up re-compilation. After 'makeBinary'
+pass, function resolution pass takes the second largest portion of the
+compilation time. So, the next logical place to focus our attention would be
+'functionResolution' pass. We can start with building up a hashing mechanism
+for our AST. We can identify the places where our current AST differs based
+on hash values of the function nodes. Later on, we can start dealing with
+function resolution. For modified generic functions we need to identify the
+locations at which the function had been instantiated and all those
+instantiations would need re-instantiation again. For a non-generic function
+such a case would not arise, and we can work at the same resolution level.
+There are certain cases like changing return type, body and arguments of a
+function which would require us to identify all the locations where it is
+being called. The re-computation of the hash value and checking can be done
+to around the resolve pass. However, it would add in a bit of extra
+re-computation.
+
+We need to store a modified version of the AST in our code-cache. Since we
+would not need the entire information present in the AST, but only a subset
+of it. During our function resolution we need to analyse the presence
+instance of our generic function to avoid re-instantiation of a function that
+is already present in the cache. For non-generic functions we would have to
+detect the presence of an already compiled version in the cache. We would
+have to modify our function resolution and code generation to take into
+account the presence of instances in the cache and avoid re-compilation of
+already present functions. 
+
+We ideally need to think of different strategies for passes prior to our
+'makeBinary' pass in order to optimise our performance as much as we can. There
+are multiple passes which directly impact the output of the code, independent
+of changes which occur to it within the compiler. This essentially means that
+most of the passes of our compiler will operate the same over the same AST.
+So, if the previous pass has given it the same AST, the output from the
+current pass will be the same. In contrast, there passes which are are
+affected by compiler flags, meaning that even if the AST given them by the
+previous pass is unchanged from the last run, the output they generate could
+be different. There are at-least 7 passes which are affected by compiler
+flags and need to be taken into account, 'resolve', 'inlineFunctions',
+'loopInvariantCodeMotion', 'copyPropagation', 'deadCodeElimination', 'scalarReplace'
+and 'codegen' etc, which we would have to maintain state for. We can have
+waypoints, e.g resolve’s check would handle the passes after resolve but
+before 'deadCodeElimination', and 'deadCodeElimination' would handle everything
+from there to 'codegen'. For correctness we need to respond to the changes that
+occur in these passes, and the way points would be to avoid the cost of
+having to store information on a function for each individual pass.
+
+We also want to take into account the interplay of different flags. Adding
+flags during compiling the code has it’s limitations and drawbacks. Our
+initial design meant that a different flag would make the cache unusable (for
+simplicity reasons). However we can build a more refined approach which would
+have to take into account the different flags that come into play and how
+they affect each other. The flags that are in play affect how the particular
+function goes through the compiler (``--no-checks``, ``--no-inline`` etc). A
+difference in flags would mean the level of analysis while resolving a
+function could differ, or the generated code could differ (for instance the
+body of a function could differ after certain optimisation). A way to take
+this interplay of flags into account can be to have multiple versions of a
+function saved. However a drawback is that based on the different combination
+of flags this would lead to an exponential blowup. The other way to test
+would be to save the flag with which the function was compiled and then pay
+an algorithmic cost to determine how the function would respond to particular
+changes. This approach would be better since the total number of flags are
+finite.
+
+Since most of the changes that we make require us to identify the locations
+where a given function has been instantiated/called. We can utilise the
+underlying structure of our ``FnSymbol`` Class, which is used to represent all
+the methods and functions in a program. The class has different fields which
+get populated during the function resolution, some of which include
+``instantiatedFrom`` ( set for functions that have been instantiated from a
+generic function), ``instantiationPoint`` (points to point in code which we are
+using as instantiation point for function resolution), and ``calledBy`` vector
+(which points to all of the caller expressions, that call the function). The
+``calledBy`` vector is computed by ``compute_call_sites`` (which essentially builds a
+call graph for the entire program represented by the AST). The
+``compute_call_sites`` function can be modified or utilised to find out the
+positions where the changes can be made. Other useful functions that can be
+utilised to avoid re-computation would include ``collectFnCalls`` which
+essentially collects all the ``CallExprs`` that are not primitive. Also, we need
+to identify if our function is generic or not and modify the action taken
+based on it, we can utilise ``getVisibleFunctions`` to help us identify this. So,
+a major part of the project would be to utilise this and other underlying
+information that is already present, and modify the logic to accommodate and
+take into account the parts where utilising a code cache can be helpful.

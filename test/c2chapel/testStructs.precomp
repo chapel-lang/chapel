@@ -1,0 +1,3 @@
+#!/usr/bin/env bash
+
+c2chapel testStructs.h > structGen.chpl

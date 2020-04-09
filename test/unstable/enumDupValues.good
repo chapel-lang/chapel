@@ -1,0 +1,9 @@
+enumDupValues.chpl:1: warning: it has been suggested that support for enums with duplicate integer values should be deprecated, so this enum could be considered unstable; if you value such enums, please let the Chapel team know.
+enumDupValues.chpl:2: warning: it has been suggested that support for enums with duplicate integer values should be deprecated, so this enum could be considered unstable; if you value such enums, please let the Chapel team know.
+3
+4
+3
+3
+4
+5
+5

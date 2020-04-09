@@ -1,0 +1,5 @@
+perfkeys: total: , position: , velocity: , redistribute: , force: 
+repeat-files: CoMD-elegant-aos.dat
+graphkeys: total, position, velocity, redistribute, force
+graphtitle: Elegant AoS CoMD Time (sec)
+ylabel: Time (seconds)

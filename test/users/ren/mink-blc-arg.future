@@ -1,0 +1,11 @@
+feature request: arguments to user-defined reductions
+
+In our early plans for user-defined reductions, we'd talked about
+supporting the ability to pass arguments to the implementing class'
+initializer.  This test captures that concept.  I think the concept is
+important -- the syntax proposed here seems intuitive but is not
+crucial.  Note that there's a bit of a similarity here with our desire
+to turn reductions into more of a value type and/or removing the
+explicit call to new and making it look like a class initializer call
+to the user.
+

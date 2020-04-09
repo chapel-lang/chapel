@@ -1,0 +1,1 @@
+-M ../../lib/misc -M ../../lib/grid --set dimension=2 GridVariable_DiffusionBE.chpl GridSolution_DiffusionBE.chpl GridBC_DiffusionBE.chpl

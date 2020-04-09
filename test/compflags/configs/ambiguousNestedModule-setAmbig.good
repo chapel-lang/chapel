@@ -1,0 +1,12 @@
+ambiguousNestedModule.chpl:8: error: ambiguous config name (p)
+ambiguousNestedModule.chpl:3: note: also defined here
+ambiguousNestedModule.chpl:3: note: (disambiguate using -s<modulename>.p...)
+ambiguousNestedModule.chpl:9: error: ambiguous config name (c)
+ambiguousNestedModule.chpl:4: note: also defined here
+ambiguousNestedModule.chpl:4: note: (disambiguate using -s<modulename>.c...)
+ambiguousNestedModule.chpl:10: error: ambiguous config name (v)
+ambiguousNestedModule.chpl:5: note: also defined here
+ambiguousNestedModule.chpl:5: note: (disambiguate using -s<modulename>.v...)
+ambiguousNestedModule.chpl:11: error: ambiguous config name (t)
+ambiguousNestedModule.chpl:6: note: also defined here
+ambiguousNestedModule.chpl:6: note: (disambiguate using -s<modulename>.t...)

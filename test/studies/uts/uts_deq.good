@@ -1,0 +1,12 @@
+UTS v2.1 - Unbalanced Tree Search (Parallel Chapel (DeQueue))
+Tree type: Geometric
+Tree shape parameters:
+  root branching factor b_0 = 4, root seed = 19
+  Geo. params: Max_Depth = 5, shape function = GeoFixed
+Random number generator: BRG SHA-1
+Parallel execution parameters:
+  MAX_THREADS = 4, chunkSize = 10
+
+Performing parallel tree search...
+
+Tree size = 3987, depth = 5

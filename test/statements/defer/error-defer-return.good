@@ -1,0 +1,2 @@
+error-defer-return.chpl:1: In function 'foo':
+error-defer-return.chpl:7: error: return cannot be used within a defer statement

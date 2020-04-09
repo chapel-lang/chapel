@@ -1,0 +1,198 @@
+=== concat with empty
+s
+s
+s
+s
+=== concat with int(8)
+s17
+17s
+s17
+17s
+=== concat with int(16)
+s17
+17s
+s17
+17s
+=== concat with int(32)
+s17
+17s
+s17
+17s
+=== concat with int(64)
+s17
+17s
+s17
+17s
+=== concat with uint(8)
+s23
+23s
+s23
+23s
+=== concat with uint(16)
+s23
+23s
+s23
+23s
+=== concat with uint(32)
+s23
+23s
+s23
+23s
+=== concat with uint(64)
+s23
+23s
+s23
+23s
+=== concat with real(32)
+s3.14
+3.14s
+s3.14
+3.14s
+=== concat with real(64)
+s3.14
+3.14s
+s3.14
+3.14s
+=== concat with imag(32)
+s3.14i
+3.14is
+s3.14i
+3.14is
+=== concat with imag(64)
+s3.14i
+3.14is
+s3.14i
+3.14is
+=== concat with complex(64)
+s3.0 + 0.14i
+3.0 + 0.14is
+s3.0 + 0.14i
+3.0 + 0.14is
+=== concat with complex(128)
+s3.0 + 0.14i
+3.0 + 0.14is
+s3.0 + 0.14i
+3.0 + 0.14is
+=== concat with enum E
+sthree
+threes
+sthree
+threes
+=== concat with bool
+strue
+trues
+strue
+trues
+=== concat with empty
+s
+s
+s
+s
+=== concat with int(8)
+s17
+17s
+s17
+17s
+=== concat with int(16)
+s17
+17s
+s17
+17s
+=== concat with int(32)
+s17
+17s
+s17
+17s
+=== concat with int(64)
+s17
+17s
+s17
+17s
+=== concat with uint(8)
+s23
+23s
+s23
+23s
+=== concat with uint(16)
+s23
+23s
+s23
+23s
+=== concat with uint(32)
+s23
+23s
+s23
+23s
+=== concat with uint(64)
+s23
+23s
+s23
+23s
+=== concat with real(32)
+s3.14
+3.14s
+s3.14
+3.14s
+=== concat with real(64)
+s3.14
+3.14s
+s3.14
+3.14s
+=== concat with imag(32)
+s3.14i
+3.14is
+s3.14i
+3.14is
+=== concat with imag(64)
+s3.14i
+3.14is
+s3.14i
+3.14is
+=== concat with complex(64)
+s3.0 + 0.14i
+3.0 + 0.14is
+s3.0 + 0.14i
+3.0 + 0.14is
+=== concat with complex(128)
+s3.0 + 0.14i
+3.0 + 0.14is
+s3.0 + 0.14i
+3.0 + 0.14is
+=== concat with enum E
+sthree
+threes
+sthree
+threes
+=== concat with bool
+strue
+trues
+strue
+trues
+=== concat: string + string
+s0
+=== concat: string + string
+s0
+=== concat: remote + remote
+s0
+=== concat: remote + remote
+s0
+=== concat: remote + local
+sr
+=== concat: remote + local
+sr
+=== concat: string + c_string
+s0
+=== concat: string + c_string
+s0
+=== concat: c_string + string
+s0
+=== concat: c_string + string
+s0
+=== concat: remote string + c_string
+sr
+=== concat: remote string + c_string
+sr
+=== concat: c_string + remote string
+s0
+=== concat: c_string + remote string
+s0

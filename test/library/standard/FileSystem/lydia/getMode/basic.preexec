@@ -1,0 +1,6 @@
+#!/usr/bin/env python
+
+import os, stat
+
+# Make blah have the right permissions.
+os.chmod('blah', stat.S_IRWXU);

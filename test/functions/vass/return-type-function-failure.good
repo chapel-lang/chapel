@@ -1,0 +1,2 @@
+return-type-function-failure.chpl:4: In function 'valfun':
+return-type-function-failure.chpl:5: error: invalid type specification

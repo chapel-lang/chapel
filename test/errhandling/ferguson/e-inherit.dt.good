@@ -1,0 +1,6 @@
+C.foo()
+D.foo()
+d.foo threw
+D.foo()
+dc.foo threw
+Fini

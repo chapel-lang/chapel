@@ -1,0 +1,11 @@
+perfkeys: Execution time =
+files: ra.on-n33.dat
+graphkeys: ra-on runtime
+graphtitle: HPCC: RA-on Time (sec) - n=2^33
+ylabel: Time (seconds)
+
+perfkeys: Execution time =
+files: ra.rmo-n33.dat
+graphkeys: ra-rmo runtime
+graphtitle: HPCC: RA-rmo Time (sec) - n=2^33
+ylabel: Time (seconds)

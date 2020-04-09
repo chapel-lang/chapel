@@ -1,0 +1,3 @@
+--cthrow=false --dthrow=false # e-inherit.ok.good
+--cthrow=true  --dthrow=false # e-inherit.ct.good
+--cthrow=false --dthrow=true  # e-inherit.dt.good

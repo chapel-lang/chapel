@@ -1,0 +1,137 @@
+externTest.doc.chpl:24: warning: This file-scope code is outside of any explicit module declarations (e.g., module Other), so an implicit module named 'externTest.doc' is being introduced to contain the file's contents.
+.. default-domain:: chpl
+
+.. module:: externTest.doc
+
+externTest.doc
+==============
+**Usage**
+
+.. code-block:: chapel
+
+   use externTest.doc;
+
+
+or
+
+.. code-block:: chapel
+
+   import externTest.doc;
+
+**Submodules**
+
+.. toctree::
+   :maxdepth: 1
+   :glob:
+
+   externTest.doc/*
+
+.. function:: proc method1()
+
+   Comment for method1 
+
+.. function:: proc commentless()
+
+.. function:: proc hasArg(val: int)
+
+   Comment for method with an argument 
+
+.. function:: proc hasArgCommentless(val: int)
+
+.. function:: proc longComment()
+
+   This comment is rather long
+   And spans for
+   Multiple lines 
+
+.. function:: proc hasReturnType(): int
+
+   This method has a return type 
+
+.. function:: proc hasReturnTypeCommentless(): int
+
+.. function:: proc hasReturnTypeAndArg(val: int): int
+
+   This method has a return type and an argument 
+
+.. function:: proc hasReturnTypeAndArgCommentless(val: int): int
+
+.. function:: proc withExternCNameComment()
+
+   Commenting withExternCNameComment 
+
+.. function:: proc withExternCName()
+
+.. function:: proc getName() param
+
+   test param method for withParamExternCName 
+
+.. function:: proc withParamExternCName()
+
+.. record:: externRecordNoComment
+
+.. record:: externRecordComment
+
+   Commenting externRecordComment 
+
+
+   .. attribute:: var field: int
+
+      Commenting a field 
+
+.. record:: externRecordRenamedNoComment
+
+.. record:: externRecordRenamedComment
+
+   Commenting externRecordRenamedComment 
+
+
+   .. attribute:: var field: int
+
+      Commenting a field 
+
+.. function:: proc end()
+
+.. default-domain:: chpl
+
+.. module:: Other
+
+Other
+=====
+**Usage**
+
+.. code-block:: chapel
+
+   use externTest.doc.Other;
+
+
+or
+
+.. code-block:: chapel
+
+   import externTest.doc.Other;
+
+.. function:: proc inside
+
+   Comment for method inside module 
+
+.. function:: proc commentless
+
+.. function:: proc hasArg(val: int)
+
+   Comment for method with an argument inside module 
+
+.. function:: proc hasArgCommentless(val: int)
+
+.. function:: proc hasReturnType(): int
+
+   This method has a return type 
+
+.. function:: proc hasReturnTypeCommentless(): int
+
+.. function:: proc hasReturnTypeAndArg(val: int): int
+
+   This method has a return type and an argument 
+
+.. function:: proc hasReturnTypeAndArgCommentless(val: int): int
+

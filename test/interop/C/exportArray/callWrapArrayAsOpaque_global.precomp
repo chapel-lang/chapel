@@ -1,0 +1,3 @@
+#!/bin/bash
+echo Compiling wrapArrayAsOpaque_global.chpl
+$3 --library --static wrapArrayAsOpaque_global.chpl

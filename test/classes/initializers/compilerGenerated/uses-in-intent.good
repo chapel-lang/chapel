@@ -1,0 +1,15 @@
+
+Simple zero actuals
+R.init
+s = {r = (x = 0)}
+R.deinit: 0
+
+Simple var actual
+R.init
+s = {r = (x = 0)}
+R.deinit: 0
+
+Simple new actual
+R.init
+s = {r = (x = 0)}
+R.deinit: 0

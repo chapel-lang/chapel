@@ -1,0 +1,3 @@
+# 04/30/15: ptrans takes ~400 seconds for --no-local performance
+# testing and occasionally times out for pgi (normally ~220 seconds)
+600

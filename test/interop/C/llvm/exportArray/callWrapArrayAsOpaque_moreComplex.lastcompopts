@@ -1,0 +1,1 @@
+-Llib/ -lwrapArrayAsOpaque_moreComplex `$CHPL_HOME/util/config/compileline --libraries` -lwrapArrayAsOpaque_moreComplex

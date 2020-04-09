@@ -1,0 +1,2 @@
+errorNewExpr.chpl:18: In function 'main':
+errorNewExpr.chpl:22: error: A type alias of 'Typeless' may not be used in a new-expression because it contains a typeless field ('x')

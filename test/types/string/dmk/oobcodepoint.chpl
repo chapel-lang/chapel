@@ -1,0 +1,1 @@
+writeln("".codepoint(1));

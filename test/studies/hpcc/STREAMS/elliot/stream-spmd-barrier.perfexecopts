@@ -1,0 +1,2 @@
+--barrierType=BarrierType.Atomic # stream-spmd-atomic-barrier
+--barrierType=BarrierType.Sync   # stream-spmd-sync-barrier

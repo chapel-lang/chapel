@@ -1,0 +1,3 @@
+bug: program crashes when a variable of a tuple type is declared and one component of the tuple is an array
+
+Issue #7716

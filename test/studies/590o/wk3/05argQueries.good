@@ -1,0 +1,39 @@
+sumOfSquares(1, 2) = 5
+sumOfSquares(1.1, 2.2) = 5.0
+
+the value 4097...
+  ...shifted 1 times: 2048
+  ...shifted 2 times: 1024
+  ...shifted 3 times: 512
+  ...shifted 4 times: 256
+  ...shifted 5 times: 128
+  ...shifted 6 times: 64
+  ...shifted 7 times: 32
+  ...shifted 8 times: 16
+  ...shifted 9 times: 8
+  ...shifted 10 times: 4
+  ...shifted 11 times: 2
+  ...shifted 12 times: 1
+  ...shifted 13 times: 0
+  ...shifted 14 times: 0
+  ...shifted 15 times: 0
+
+the value -128...
+  ...shifted 1 times: -64
+  ...shifted 2 times: -32
+  ...shifted 3 times: -16
+  ...shifted 4 times: -8
+  ...shifted 5 times: -4
+  ...shifted 6 times: -2
+  ...shifted 7 times: -1
+
+i is: 1, A(i) is: 1.0
+i is: 2, A(i) is: 2.0
+i is: 3, A(i) is: 3.0
+i is: 4, A(i) is: 4.0
+i is: 5, A(i) is: 5.0
+i is: 6, A(i) is: 6.0
+i is: 7, A(i) is: 7.0
+i is: 8, A(i) is: 8.0
+i is: 9, A(i) is: 9.0
+i is: 10, A(i) is: 10.0

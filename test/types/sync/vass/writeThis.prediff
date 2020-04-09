@@ -1,0 +1,5 @@
+#!/bin/bash
+
+output=$2
+cat $output | sed 's@:[0-9]*:@::@' > $output.tmp
+mv $output.tmp $output

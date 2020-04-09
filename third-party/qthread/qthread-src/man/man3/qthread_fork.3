@@ -1,0 +1,140 @@
+.TH qthread_fork 3 "APRIL 2011" libqthread "libqthread"
+.SH NAME
+.BR qthread_fork ,
+.BR qthread_fork_precond ,
+.BR qthread_fork_syncvar ,
+.BR qthread_fork_to ,
+.BR qthread_fork_to_precond ,
+.B qthread_fork_syncvar_to
+\- spawn a qthread
+.SH SYNOPSIS
+.B #include <qthread.h>
+
+.I int
+.br
+.B qthread_fork
+.RI "(qthread_f " f ", const void *" arg ", aligned_t *" ret );
+.PP
+.I int
+.br
+.B qthread_fork_precond
+.RI "(qthread_f " f ", const void *" arg ", 
+.ti +22
+.RI "aligned_t *" ret ", int " npreconds ", ...);
+.PP
+.I int
+.br
+.B qthread_fork_syncvar
+.RI "(qthread_f " f ", const void *" arg ",
+.ti +22
+.RI "syncvar_t *" ret );
+.PP
+.I int
+.br
+.B qthread_fork_to
+.RI "(qthread_f " f ", const void *" arg ", aligned_t *" ret ,
+.ti +17
+.RI "qthread_shepherd_id_t " shepherd );
+.PP
+.I int
+.br
+.B qthread_fork_precond_to
+.RI "(qthread_f " f ", const void *" arg ,
+.ti +25
+.RI "aligned_t *" ret ", 
+.ti +25
+.RI "qthread_shepherd_id_t " shepherd ,
+.ti +25
+.RI "int " npreconds ", ...);
+.PP
+.I int
+.br
+.B qthread_fork_syncvar_to
+.RI "(qthread_f " f ", const void *" arg ,
+.ti +25
+.RI "syncvar_t *" ret ,
+.ti +25
+.RI "qthread_shepherd_id_t " shepherd );
+.SH DESCRIPTION
+These are the functions for generating new qthreads.
+.PP
+The first argument to these functions,
+.IR f ,
+is a function that will be run to completion by the created qthread. The second
+argument to these functions,
+.IR arg ,
+is an argument that will be passed to the specified function. Finally,
+.I ret
+is a pointer to the location that the return value of
+.I f
+will be placed into.
+.PP
+The qthread_f function must have a prototype like this:
+.RS
+.PP
+aligned_t function(void *arg);
+.RE
+.PP
+The
+.BR qthread_fork_to (),
+.BR qthread_fork_precond_to (),
+and
+.BR qthread_fork_syncvar_to ()
+functions spawn the qthread to a specific shepherd.
+.PP
+The
+.BR qthread_fork_precond ()
+and
+.BR qthread_fork_precond_to ()
+functions accept a list of precondition variables. The qthread will be created only when all precondition variables are full. The
+.IR npreconds
+argument specifies how many variables are given in the varargs list.
+.PP
+When a qthread is spawned, it is immediately scheduled to be run, and may be
+executed by its shepherd at any time.
+.PP
+The return value of the function
+.I f
+will be placed into the memory pointed to by
+.IR ret ,
+in accordance with the full-empty bits. When
+.BR qthread_fork ()
+or
+.BR qthread_fork_to ()
+is called,
+.I ret
+will be emptied (as if it had been passed to
+.BR qthread_empty ()
+or
+.BR qthread_syncvar_empty ()).
+When the function
+.I f
+returns, the returned value will be stored into
+.I ret
+and
+.I ret
+will be filled. The way to block until a function has finished is to use
+.BR qthread_readFF ()
+or
+.BR qthread_syncvar_readFF ()
+on the
+.I ret pointer.
+.SH ENVIRONMENT
+The operation of these functions is modified by the following environment
+variables:
+.TP 4
+.B QTHREAD_STACK_SIZE
+This variable specifies, in bytes, the size of the stacks that will be created for each
+thread. Changes to this value during the course of the program run are ignored;
+the value is only evaluated when
+.BR qthread_initialize ()
+is run.
+.SH RETURN VALUE
+On success, the thread is spawned and 0 is returned. On error, a non-zero
+error code is returned.
+.SH ERRORS
+.TP 12
+.B ENOMEM
+Not enough memory could be allocated.
+.SH SEE ALSO
+.BR qthread_migrate_to (3)

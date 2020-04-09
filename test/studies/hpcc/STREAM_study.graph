@@ -1,0 +1,6 @@
+perfkeys: min =, avg =, min =, avg =, min =, avg =
+graphkeys: Global-STREAM-(min), Global-STREAM-(avg), with--local-(min), with--local-(avg), Global-STREAM-promote-(min), Global-STREAM-promote-(avg)
+files: ./STREAMS/bradc/stream-block1d.dat, ./STREAMS/bradc/stream-block1d.dat, ./STREAMS/bradc/stream-block1d-local.dat, ./STREAMS/bradc/stream-block1d-local.dat, ./STREAMS/bradc/stream-block1d-promote.dat, ./STREAMS/bradc/stream-block1d-promote.dat
+ylabel: Time (seconds)
+graphname: STREAM-global-time
+graphtitle: Global STREAM

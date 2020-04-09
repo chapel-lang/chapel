@@ -1,0 +1,1 @@
+error-destructor-return-type.chpl:4: error: destructors may not declare a return type

@@ -1,0 +1,5 @@
+# --no-inline causes a problem described in the future
+# test/extern/diten/externLong.future
+# When that future is fixed, this SKIPIF can be removed.
+COMPOPTS <= --baseline
+COMPOPTS <= --no-inline

@@ -1,0 +1,1 @@
+ref-to-literal.chpl:1: error: Cannot set a reference to a param variable.

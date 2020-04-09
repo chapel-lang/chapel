@@ -1,0 +1,12 @@
+Checking a non-strided range
+Adaptive Iterator with Stealing method WholeTail: Correct
+Checking a non-strided domain
+Adaptive Iterator with Stealing method WholeTail: Correct
+Checking a strided range
+Adaptive Iterator with Stealing method WholeTail: Correct
+Checking a strided domain
+Adaptive Iterator with Stealing method WholeTail: Correct
+Checking a zippered iteration (range)
+Adaptive Iterator with Stealing method WholeTail: Correct
+Checking a zippered iteration (domain)
+Adaptive Iterator with Stealing method WholeTail: Correct

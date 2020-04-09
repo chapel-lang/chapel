@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+
+goodfiles="../../../release/examples/benchmarks/ssca2/SSCA2_main.*.good"
+cp $goodfiles .
+

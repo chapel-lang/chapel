@@ -1,0 +1,1 @@
+promoted_expr_error.chpl:6: error: iterator or promoted expression iterator used in if or while condition

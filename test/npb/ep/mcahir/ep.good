@@ -1,0 +1,30 @@
+ NAS Parallel Benchmarks 2.4 -- EP Benchmark
+ Number of random numbers generated:         33554432
+ Number of locales:                                 1
+ Number of tasks per locale:                        4
+
+EP Benchmark Results:
+N = 2^24
+No. Gaussian Pairs = 1.31764e+07
+Sums =       -3.247834652035e+03,       -6.958407078383e+03
+Counts:
+  1       6140517
+  2       5865300
+  3       1100361
+  4         68546
+  5          1648
+  6            17
+  7             0
+  8             0
+  9             0
+ 10             0
+
+ EP Benchmark Completed.
+ Class           =                        S
+ Size            =                 33554432
+ Iterations      =                        0
+ Total tasks     =                        4
+    # Locales    =                        1
+    Tasks/Locale =                        4
+ Operation type  = Random numbers generated
+ Verification    =               SUCCESSFUL

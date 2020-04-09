@@ -1,0 +1,5 @@
+Optimized single yield/loop iterator (i0) in module iters (./iters.chpl:11)
+Optimized single yield/loop iterator (i1) in module iters (./iters.chpl:16)
+Optimized single yield/loop iterator (i2) in module iters (./iters.chpl:23)
+Optimized single yield/loop iterator (i3) in module iters (./iters.chpl:31)
+Optimized single yield/loop iterator (i4) in module iters (./iters.chpl:40)

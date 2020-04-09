@@ -1,0 +1,4 @@
+# The most interesting error message occurs with CHPL_TASKS=fifo.
+# Please run with valgrind, and with qthreads when this error is resolved
+CHPL_TASKS != fifo
+CHPL_TEST_VGRND_EXE == on

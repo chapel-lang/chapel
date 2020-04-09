@@ -1,0 +1,12 @@
+bug: icc vectorization issue
+
+When the loops at line 1077 have 'param' attached to them (and are
+therefore fully unrolled), and --vectorize is on, the correct result
+is not computed.  It's currently unclear to us whether this is a bug
+in Chapel's generated code (e.g., improper usage of ivdep for icc) or
+whether it indicates a bug in icc, though we're currently
+hypothesizing the latter.  Removing the params makes the issue go
+away, and arguably we don't want the params anyway, so for the release
+version of the code, we've removed these.  This is a snapshot of the
+previous released version of the code so that we can investigate this
+issue further or detect if it goes away with future versions of icc.

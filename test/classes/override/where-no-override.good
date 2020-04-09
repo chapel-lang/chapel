@@ -1,0 +1,1 @@
+where-no-override.chpl:8: error: Child.f override keyword required for method matching signature of superclass method

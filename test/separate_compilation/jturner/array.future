@@ -1,0 +1,12 @@
+unimplemented feature: Separate compilation does not work for functions with array arguments.
+
+Array types can't be fully-specified by the user, which makes separately compiling a function that takes them as formal arguments impossible.
+
+Separate compilation of functions with array-type arguments has not been implemented.
+The compiler does unnatural things to get array types to compile these days.
+It needs a genuine array type, so it doesn't have to put weird stand-ins in the
+tree.  The stand-in now is chpl__buildArrayRuntimeType, which is converted into
+a simple (generic) _array type in normalize.cpp (fixup_array_formals()), and
+then a "where" clause is added to encapsulate the array element type.
+
+This is inconsistent and fragile.  The current case in point.

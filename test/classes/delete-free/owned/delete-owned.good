@@ -1,0 +1,1 @@
+delete-owned.chpl:6: error: 'delete' is not allowed on an owned class type

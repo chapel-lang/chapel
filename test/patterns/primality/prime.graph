@@ -1,0 +1,6 @@
+perfkeys: Total Time elapsed
+file: prime.dat
+graphkeys: Chapel version
+ylabel: Time (seconds)
+graphtitle: Performance of primality test
+

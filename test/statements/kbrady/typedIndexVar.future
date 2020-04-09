@@ -1,0 +1,10 @@
+feature request: Allow the index variable to have a specified type
+
+Currently if you want the index variable to be a different size you need to cast an
+element of the range to be of that type, e.g:
+	for i in 1..10:int(8) do
+		foo(i);
+This is slightly unintuitive, allowing the user to specify the type via
+	for i:int(8) in 1..10 do
+		foo(i);
+demonstrates a clearer intent as to what the user is trying to achieve.

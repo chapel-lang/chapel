@@ -1,0 +1,2 @@
+str[11..12] = lm
+substringBadRange.chpl:4: error: halt reached - range 11..15 out of bounds for string with length 13

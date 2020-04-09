@@ -1,0 +1,20 @@
+====================================
+Chapel HPC Challenge Codes: Variants
+====================================
+
+This directory contains variants of the Chapel HPC Challenge
+benchmarks from the parent directory of this file.  These variants are
+typically ones that are more elegant, but don't yet perform as well as
+the main files (which are intended to serve as our entries in the
+annual HPCC competition).
+
+The main files for these benchmarks are as follows:
+
+     stream-promoted.chpl      : global STREAM Triad using promotion
+     ra-unordered-atomics.chpl : a version of RA using unordered atomic vars
+     ra-cleanloop.chpl         : global RA with a cleaner update loop
+
+The helper modules are the ones from the parent directory requiring a
+-M .. on the compiler line (or an explicit naming of the module file).
+
+Most other details are similar to the parent directory.

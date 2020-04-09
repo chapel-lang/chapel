@@ -1,0 +1,7 @@
+
+[brick]
+name = "badRangeOrder"
+version = "0.1.0"
+chplVersion = "1.10..1.1"
+
+[dependencies]

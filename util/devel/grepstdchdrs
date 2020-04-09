@@ -1,0 +1,21 @@
+#!/bin/sh
+
+cur_dir=`pwd`
+
+if [ -d compiler -a -d runtime ]; then
+  project_dir=.
+elif [ `basename $cur_dir` = compiler -a -d AST -a -d passes ]; then
+  project_dir=..
+else
+  project_dir=${CHPL_HOME:-.}
+  if [ ! -d $project_dir/compiler -o ! -d $project_dir/runtime ]; then
+    echo "Can't find the Chapel project!  Make sure CHPL_HOME is set correctly."
+    exit 1
+  fi
+fi
+
+# This should also grep for math.h after we move to C++11
+
+filter=${1:+cat}
+cd $project_dir && \
+find compiler \( \( -name '*.cpp' -o -name '*.h' \) -a ! -name 'bison-chapel.cpp' -a ! -name 'flex-chapel.cpp' -a ! -name 'flex-chapel.h' \) -exec egrep ${1:--s} '^[       ]*#[    ]*include[      ][      ]*<[    ]*(assert|ctype|errno|float|iso646|limits|locale|setjmp|signal|stdarg|stddef|stdio|stdlib|string|time|wchar|wctype)[.]h[   ]*>' {} \; -print | `echo "${filter:-grep -v include[^/]}"`a

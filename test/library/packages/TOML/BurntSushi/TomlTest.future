@@ -1,0 +1,9 @@
+feature request: Improve TOML library
+Issue #7104
+
+Test taken from BurntSushi test suite:
+
+    https://github.com/BurntSushi/toml-test
+
+Passing tests are listed in Passing.execopts. It is desired to eventually
+move all execopts over to Passing.execopts and retire (remove) TestToml.chpl

@@ -1,0 +1,2 @@
+return;
+writeln("hello, world");

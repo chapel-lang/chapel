@@ -1,0 +1,63 @@
+============================================
+Chapel Runtime Directory Structure and Files
+============================================
+
+This directory contains the source code for Chapel's runtime library
+routines.  Note that make-ing this directory will only build it for
+the current (or inferred) values of $CHPL_COMM and $CHPL_TASKS.
+Multiple versions of the runtime can coexist simultaneously, but each
+must be explicitly built.
+
+The directory structure of the runtime/ directory is as follows:
+
+./
+  Makefile          : Makefile for the runtime
+  README            : this file
+  etc/              : Makefiles for compiler-generated code
+  include/          : header files for the runtime
+    comm/           : header files for the runtime's communication layers
+    tasks/          : header files for the runtime's tasking layers
+    threads/        : header files for the runtime's threading layers
+  make/             : Makefiles for the runtime sources
+  src/              : source code for the runtime
+    comm/           : source code for the runtime's communication layers
+    launch/         : source code for Chapel program launchers
+    mem/            : source code for memory allocators
+    tasks/          : source code for the runtime's tasking layers
+    threads/        : source code for the runtime's threading layers
+    timers/         : source code for timers
+
+
+
+====================================
+File and function naming conventions
+====================================
+
+The files in this directory should roughly follow the naming
+conventions outlined below.  The function naming convention mostly
+applies to functions for a particular interface, e.g., communication
+layer.
+
+- The filename word separator character is '-'.  The function name
+  word separator is '_'.
+
+- All file names at the top-level of the include and src directories
+  are prefixed with 'chpl-'.  All interface function names are
+  prefixed with 'chpl_'
+
+- The second word in a top-level file name or interface function name
+  describes a particular functionality, e.g., chpl-comm/chpl_comm or
+  chpl-mem/chpl_mem.  This should match that of the Chapel environment
+  variable in the case of files that implement functionality based on
+  an environment variable, e.g., CHPL_TASKS should be implemented in
+  filenames that start with chpl-tasks.
+
+- All filenames in an implementation for a particular functionality
+  should be prefixed with the name of the functionality and the
+  name of the particular instance, e.g., comm-gasnet.c.
+
+- Any additional source or header files related to the functionality
+  described in the second word should have the same prefix, e.g.,
+  chpl-comm-task-decls.h or comm-gasnet-locales.c
+
+

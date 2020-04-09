@@ -1,0 +1,11 @@
+===========================
+libunwind README for Chapel
+===========================
+
+This copy of libunwind is being released with Chapel for
+convenience and was obtained from:
+
+  http://download.savannah.gnu.org/releases/libunwind
+
+Any Chapel issues that seem to be related to libunwind should be
+directed to the Chapel team at https://chapel-lang.org/bugs.html.

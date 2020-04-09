@@ -1,0 +1,3 @@
+strict-nested-try.chpl:7: In function 'propError':
+strict-nested-try.chpl:8: error: call to throwing function throwAnError without try or try! (strict mode)
+../ExampleErrors.chpl:1: note: throwing function throwAnError defined here

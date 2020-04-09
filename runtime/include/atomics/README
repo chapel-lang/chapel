@@ -1,0 +1,168 @@
+The Chapel runtime atomics interface is modelled after the
+C11 standard. See: http://en.cppreference.com/w/c/atomic
+
+Currently we have a cstdlib, an intrinsics, and a locks
+implementation. The cstdlib implementation is basically a wrapper for
+C11 atomics. The intrinsics implementation uses compiler atomic
+intrinsics to implement atomics and the locks version uses Chapel
+locks. The cstdlib implementation is expected to have the best
+performance in the long run, depending on the compiler's native
+handling of C11 atomics, and the intrinsic version has better
+performance than locks, but neither the standard atomics nor the
+intrinsics are available on all systems.  (For gcc up to at least
+6.2.0, though, there is a performance bug that inhibits more
+optimization than necessary with standard atomics.)
+
+We require the C11 standard atomic functions for the types:
+   atomic_uint_least8_t
+   atomic_uint_least16_t
+   atomic_uint_least32_t
+   atomic_uint_least64_t
+   atomic_uintptr_t
+   atomic_int_least8_t
+   atomic_int_least16_t
+   atomic_int_least32_t
+   atomic_int_least64_t
+   atomic_bool
+and we require that the namespace has room for us to provide
+type-specific routines that have the type appended to the names of the
+equivalent generic functions, so that (for example),
+atomic_fetch_add((uint_least64_t*) ptr, 100 ) will be written
+atomic_fetch_add_uint_least64_t( (uint_least64_t*) ptr, 100 )
+
+In addition, we assume that there is a function e.g.
+void atomic_destroy_uint_least64_t(volatile A* obj, C value);
+so that we have an opportunity to free memory occupied by a lock.
+
+
+Here is what we expect from the C11 standard: 
+
+
+/////////////////
+Memory Orderings: 
+/////////////////
+   
+   typedef enum {
+     memory_order_relaxed,
+     memory_order_consume,
+     memory_order_acquire,
+     memory_order_release,
+     memory_order_acq_rel,
+     memory_order_seq_cst
+   } memory_order;
+
+   // release, acq_rel, seq_cst store performs a release on affected memory.
+   // acquire, acq_rel, seq_cst load operation performs acquire on affected memory.
+   // consume a load operation performs a consume on affected memory
+   // seq_cst is 'sequentially consistent'
+   // At present our implementations are really the same regardless of the memory order
+
+
+//////////////
+Memory Fences: 
+//////////////
+ 
+   // generic memory order-dependent fence synchronization primitive 
+   void atomic_thread_fence(memory_order order);
+   
+   // fence between a thread and a signal handler executed in the same thread 
+   void atomic_signal_fence(memory_order order);
+
+
+////////////////////
+For Atomic Integers:
+////////////////////
+
+   // the standard specifies many types, but Chapel uses only:
+   atomic_uint_least8_t
+   atomic_uint_least16_t
+   atomic_uint_least32_t
+   atomic_uint_least64_t
+   atomic_uintptr_t
+   atomic_int_least8_t
+   atomic_int_least16_t
+   atomic_int_least32_t
+   atomic_int_least64_t
+   atomic_bool
+
+   // All the following functions are generic - the Chapel runtime will assume
+   // that we have implementations with e.g. _uint_least64_t appended to the function
+   // name. The non _explicit versions use memory_order_seq_cst.
+   
+   // is it implemented lock-free?
+   bool atomic_is_lock_free(const volatile A* object);
+       
+   // non-atomically initialize an atomic variable (the name is a little confusing.) 
+   void atomic_init(volatile A* obj, C value);
+  
+   // gives us a chance to free any mechanisms used to guarantee atomicity (E.G locks)
+   // Note that this function is not part of the C11 standard 
+   void atomic_destroy(volatile A* object);
+   
+   // stores a value in an atomic object 
+   C atomic_store(volatile A* object, C desired);
+   C atomic_store_explicit(volatile A* object, C desired, memory_order order);
+   
+   // reads a value from an atomic object 
+   C atomic_load(volatile A* object);
+   C atomic_load_explicit(volatile A* object, memory_order order);
+   
+   // swaps a value with the value of an atomic object 
+   C atomic_exchange(volatile A* object, C desired);
+   C atomic_exchange_explicit(volatile A* object, C desired, memory_order order);
+   
+   // strong compare-and-swap.
+   bool atomic_compare_exchange_strong(volatile A* object, C* expected, C desired);
+   bool atomic_compare_exchange_strong_explicit(volatile A* object, C* expected, C desired, memory_order success, memory_order failure);
+
+   // weak compare-and-swap can fail for no real reason.
+   bool atomic_compare_exchange_weak(volatile A* object, C* expected, C desired);
+   bool atomic_compare_exchange_weak_explicit(volatile A* object, C* expected, C desired, memory_order success, memory_order failure);
+
+   // atomic fetch and op, for op in add, sub, or, and:
+   // (atomic xor only supported on some platforms)
+   // for non-bool integers
+   C atomic_fetch_op(volatile A *object, M operand);
+   C atomic_fetch_op_explicit(volatile A *object, M operand, memory_order order);
+
+
+/////////////////
+For Atomic Reals:
+/////////////////
+
+   // Chapel also has atomic support for reals (_real32 and _real64).
+   // The main difference is that the fetch_op operations are not part
+   // of the C standard, and those that do not make sense for reals
+   // are not part of the interface.
+
+   // non-atomically initialize an atomic variable (the name is a little confusing.)
+   void atomic_init(volatile A* object, C value);
+ 
+   // gives us a chance to free any mechanisms used to guarantee atomicity (E.G locks)
+   // Note that this function is not part of the C11 standard 
+   void atomic_destroy(volatile A* object);
+
+   // stores a value in an atomic object
+   C atomic_store(volatile A* object, C desired);
+   C atomic_store_explicit(volatile A* object, C desired, memory_order order);
+
+   // reads a value from an atomic object
+   C atomic_load(volatile A* object);
+   C atomic_load_explicit(volatile A* object, memory_order order);
+
+   // swaps a value with the value of an atomic object
+   C atomic_exchange(volatile A* object, C desired);
+   C atomic_exchange_explicit(volatile A* object, C desired, memory_order order);
+
+   // strong compare-and-swap.
+   bool atomic_compare_exchange_strong(volatile A* object, C* expected, C desired);
+   bool atomic_compare_exchange_strong_explicit(volatile A* object, C* expected, C desired, memory_order success, memory_order failure);
+
+   // weak compare-and-swap can fail for no real reason.
+   bool atomic_compare_exchange_weak(volatile A* object, C* expected, C desired);
+   bool atomic_compare_exchange_weak_explicit(volatile A* object, C* expected, C desired, memory_order success, memory_order failure);
+
+   // atomic fetch and op, for op in add and sub
+   C atomic_fetch_op(volatile A *object, M operand);
+   C atomic_fetch_op_explicit(volatile A *object, M operand, memory_order order);
+

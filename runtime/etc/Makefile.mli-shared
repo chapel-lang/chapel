@@ -1,0 +1,89 @@
+# Copyright 2020 Hewlett Packard Enterprise Development LP
+# Copyright 2004-2019 Cray Inc.
+# Other additional copyright holders may be indicated within.
+#
+# The entirety of this work is licensed under the Apache License,
+# Version 2.0 (the "License"); you may not use this file except
+# in compliance with the License.
+#
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+#
+# Makefile.mli-shared
+#
+
+include $(CHPL_MAKE_HOME)/runtime/etc/Makefile.mli-common
+
+.PHONY: all
+all: checkRtLibDir buildServer buildClientAsHost runTagsCommand FORCE
+
+.PHONY: buildClientAsHost
+buildClientAsHost:
+	$(MAKE) -f $(CHPL_MAKE_HOME)/runtime/etc/Makefile.mli-shared \
+	$(TO_PROPAGATE) \
+	buildClient
+
+.PHONY: buildClient
+buildClient: $(TMPBINNAME)
+
+#
+# Invoke the launcher script, but don't actually link up the launcher binary.
+# Do this by setting CHPL_MAKE_IS_MLI=1 when invoking the sub-make. We also
+# need to pass on the $(GEN_CFLAGS) variable, because we're building a shared
+# object and $(GEN_CFLAGS) contains the -fPIC flag.
+#
+$(TMPBINNAME): $(CHPL_CL_OBJS) FORCE
+	$(MAKE) -f $(CHPL_MAKE_HOME)/runtime/etc/Makefile.launcher all \
+		CHPL_MAKE_HOME=$(CHPL_MAKE_HOME) \
+		TMPBINNAME=$(TMPSERVERNAME) \
+		BINNAME=$(SERVERNAME) \
+		TMPDIRNAME=$(TMPDIRNAME) \
+		CHPL_MAKE_RUNTIME_LIB=$(CHPL_MAKE_RUNTIME_LIB) \
+		CHPL_MAKE_RUNTIME_INCL=$(CHPL_MAKE_RUNTIME_INCL) \
+		CHPL_MAKE_THIRD_PARTY=$(CHPL_MAKE_THIRD_PARTY) \
+		GEN_CFLAGS="$(GEN_CFLAGS)" \
+		CHPL_MAKE_IS_MLI=1
+# Compile the client bundle. Note the use of $(SHARED_LIB_CFLAGS) here.
+	$(CC) $(CHPL_MAKE_BASE_CFLAGS) $(GEN_CFLAGS) $(COMP_GEN_CFLAGS) \
+		$(SHARED_LIB_CFLAGS) \
+		-c -o $(TMPBINNAME).o \
+		$(CHPLSRC) \
+		$(COMP_GEN_MLI_EXTRA_INCLUDES) \
+		$(CHPL_RT_INC_DIR) \
+		$(CHPL_MLI_INCS)
+# Invoke the linker to produce a shared library.
+	$(LD) $(CHPL_MAKE_BASE_LFLAGS) \
+	        $(COMP_GEN_USER_LDFLAGS) $(GEN_LFLAGS) $(COMP_GEN_LFLAGS) \
+		$(LIB_DYNAMIC_FLAG) \
+		-o $(TMPBINNAME) \
+		$(TMPBINNAME).o $(TMPSERVERNAME)_launcher.o \
+		$(CHPLUSEROBJ) $(CHPL_CL_OBJS) \
+		-L$(CHPL_LN_LIB_DIR) \
+		-lm -lchpllaunch \
+		$(LAUNCH_LIBS) \
+		$(CHPL_ZMQ_LIB_SEARCH_PATH) \
+		-lzmq
+# Last minute munging in case of output file name collisions.
+ifneq ($(TMPBINNAME),$(BINNAME))
+	cp $(TMPBINNAME) $(BINNAME)
+	rm $(TMPBINNAME)
+endif
+#
+# On Darwin, we need to adjust the "install_name" of the final shared library
+# file so that it points to $(BINNAME) and not $(TMPBINNAME). If we don't,
+# `dyld` will emit an error of the form "library not loaded because image
+# was not found".
+#
+ifeq ($(CHPL_MAKE_PLATFORM),darwin)
+	install_name_tool $(BINNAME) -id "$(BINNAME)"
+endif
+
+FORCE:

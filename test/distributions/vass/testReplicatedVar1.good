@@ -1,0 +1,58 @@
+
+simple case
+
+initially
+LOCALE0:
+0.0
+LOCALE1:
+0.0
+LOCALE2:
+0.0
+LOCALE3:
+0.0
+
+after rcReplicate
+LOCALE0:
+5.0
+LOCALE1:
+5.0
+LOCALE2:
+5.0
+LOCALE3:
+5.0
+
+after 'on'
+LOCALE0:
+5.0
+LOCALE1:
+5.0
+LOCALE2:
+33.0
+LOCALE3:
+5.0
+
+collected:
+5.0 5.0 33.0 5.0
+
+advanced case: LOCALE1 LOCALE3
+
+initially
+LOCALE1:
+0.0
+LOCALE3:
+0.0
+
+after rcReplicate
+LOCALE1:
+5.0
+LOCALE3:
+5.0
+
+after 'on'
+LOCALE1:
+5.0
+LOCALE3:
+33.0
+
+collected:
+5.0 33.0

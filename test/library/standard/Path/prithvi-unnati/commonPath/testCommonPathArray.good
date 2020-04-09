@@ -1,0 +1,9 @@
+
+/home/user/Documents/foo/bar
+/home/user/Documents/foo
+
+/home/user
+../Documents/foo
+/home/user/Documents
+/home/user/Documents
+/home/user/Desktop/bar /home/user/Documents/foo.chpl /home/user/Documents/foo.good /home/user/Documents/foo.txt /home/user/Documents/bar.txt

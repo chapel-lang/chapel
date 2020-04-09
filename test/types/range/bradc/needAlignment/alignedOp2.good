@@ -1,0 +1,7 @@
+r1 is: 1..10 by 3
+r2 is: 1..10 by 3 align 2
+r3 is: 1..10 by 3 align 0
+r4 is: 1..10 by -3
+r5 is: 1..10 by -3 align 2
+r6 is: 1..10 by -3 align 0
+r7 is: 1..10 by -2 align 1

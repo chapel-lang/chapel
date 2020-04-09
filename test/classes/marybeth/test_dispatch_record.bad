@@ -1,0 +1,2 @@
+test_dispatch_record.chpl:9: error: inheritance is not currently supported for records
+test_dispatch_record.chpl:9: note: thoughts on what record inheritance should entail can be added to https://github.com/chapel-lang/chapel/issues/6851

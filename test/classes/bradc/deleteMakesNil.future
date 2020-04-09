@@ -1,0 +1,12 @@
+feature request: delete makes class references nil
+
+It seems as though we have enough control over things in Chapel that
+we could nil-ify a class reference once it has been deleted, and that
+this would be a huge productivity benefit.  Currently, it appears that
+the deleted class can still be referenced, though fortunately, it
+causes the expected valgrind error.
+
+(Obviously other references to this class instance could exist,                 
+which would not be set to nil -- unless we wanted to support such
+a thing as part of a more heavyweight debugging scheme.  But I'm
+not as concerned about that case here).

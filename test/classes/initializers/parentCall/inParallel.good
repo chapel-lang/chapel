@@ -1,0 +1,2 @@
+inParallel.chpl:4: In initializer:
+inParallel.chpl:6: error: use of super.init() call in a parallel statement

@@ -1,0 +1,5 @@
+owned-record-errors.chpl:10: In function 'test':
+owned-record-errors.chpl:11: error: Cannot use new unmanaged with record R
+owned-record-errors.chpl:12: error: Cannot use new unmanaged with record RGeneric
+owned-record-errors.chpl:13: error: Cannot use new owned with record R
+owned-record-errors.chpl:14: error: Cannot use new owned with record RGeneric

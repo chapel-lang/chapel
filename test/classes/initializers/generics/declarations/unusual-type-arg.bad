@@ -1,0 +1,4 @@
+false
+borrowed Foo(uint(64))?
+borrowed Foo(string)?
+borrowed Foo(int(64))?

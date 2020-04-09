@@ -1,0 +1,2 @@
+inLoopTopLevel.chpl:4: In initializer:
+inLoopTopLevel.chpl:14: error: use of super.init() call in loop body

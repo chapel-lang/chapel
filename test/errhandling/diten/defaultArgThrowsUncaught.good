@@ -1,0 +1,2 @@
+defaultArgThrowsUncaught.chpl:4: error: call to throwing function thrower without throws, try, or try! (relaxed mode)
+defaultArgThrowsUncaught.chpl:8: note: throwing function thrower defined here

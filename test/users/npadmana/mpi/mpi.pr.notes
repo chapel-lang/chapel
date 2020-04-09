@@ -1,0 +1,33 @@
+Known issues/TODOs
+=====================
+
+* Documentation is still WIP. Parts of the documentation (that at the top) appear 
+  to render properly, but the sectioning of the various MPI routines seems to fail.
+
+* The higher level module functions assume that you are running Chapel in single-locale
+  mode. If we were running this in multi-locale mode, then we need to revisit some 
+  of the assumptions here. For instance, MPI_Init must be called on all locales.
+
+* The code has the ability to auto-initialize, but requires the user to 
+  explicitly call MPI_Finalize. This probably can be worked around by creating
+  a module level record, that on destruction, calls MPI_Finalize.
+
+* The module has two module-level variables : worldRank and worldSize. The latter
+  is fine, but the former will be an issue when we mix Chapel and MPI communication,
+  or run Chapel in multi-locale mode.
+
+* The current version of the API is just a direct translation of the C-API. Calling 
+  functions therefore requires passing eg. MPI type information that, at least for 
+  a number of cases, is known to the compiler. Future work could add in more 
+  Chapel-esque calls, but the exact scope of this (which functions to wrap, what to 
+  support etc) is probably worth determining depending on the usage of this module.
+  
+ Fixes 
+ =====
+
+ 2016-04-30 :
+ * Removed extraneous files and commits
+ * Added in a license
+ * README now describes how the module was created.
+ * Change "C style pointer" to "c_ptr" in documentation, more precise
+

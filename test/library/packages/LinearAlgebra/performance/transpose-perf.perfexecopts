@@ -1,0 +1,3 @@
+--m=10      --iters=1000 --reference=true  #m10
+--m=1000    --iters=10   --reference=true  #m1000
+--m=10000   --iters=1    --reference=false #m10000

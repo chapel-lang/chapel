@@ -1,0 +1,11 @@
+-sversion=1
+-sversion=2 # planDFTmismatch-r2c-out.good
+-sversion=3 # planDFTmismatch-r2c-in-complex.good
+-sversion=4 # planDFTmismatch-r2c-in-real.good
+-sversion=5 # planDFTmismatch-c2r-out.good
+-sversion=6 # planDFTmismatch-c2r-out-complex.good
+-sversion=7 # planDFTmismatch-c2r-out-real.good
+-sversion=8 # planDFTmismatch-r2c-int.good
+-sversion=9 # planDFTmismatch-r2c-real32.good
+-sversion=10 # planDFTmismatch-c2r-int.good
+-sversion=11 # planDFTmismatch-c2r-real32.good

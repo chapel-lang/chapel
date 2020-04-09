@@ -1,0 +1,30 @@
+
+- main program:0 is suspended
+- reports.chpl:3 is active
+- reports.chpl:7 is active
+- reports.chpl:7 is active
+- reports.chpl:7 is active
+- reports.chpl:7 is active
+- reports.chpl:7 is active
+- reports.chpl:7 is active
+- reports.chpl:7 is active
+- reports.chpl:7 is active
+- reports.chpl:7 is active
+- reports.chpl:7 is active
+--------------------------------
+Known tasks:
+Pending tasks:
+Program is deadlocked!
+Task report
+Waiting at: reports.chpl:4
+Waiting at: reports.chpl:8
+Waiting at: reports.chpl:8
+Waiting at: reports.chpl:8
+Waiting at: reports.chpl:8
+Waiting at: reports.chpl:8
+Waiting at: reports.chpl:8
+Waiting at: reports.chpl:8
+Waiting at: reports.chpl:8
+Waiting at: reports.chpl:8
+Waiting at: reports.chpl:8
+Waiting for more work

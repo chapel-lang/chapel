@@ -1,0 +1,144 @@
+.. default-domain:: chpl
+
+.. module:: M
+   :synopsis: This module has a comment 
+
+M
+=
+**Usage**
+
+.. code-block:: chapel
+
+   use M;
+
+
+or
+
+.. code-block:: chapel
+
+   import M;
+
+This module has a comment 
+
+.. function:: proc commentless()
+
+.. default-domain:: chpl
+
+.. module:: N
+   :synopsis: So does this module 
+
+N
+=
+**Usage**
+
+.. code-block:: chapel
+
+   use N;
+
+
+or
+
+.. code-block:: chapel
+
+   import N;
+
+So does this module 
+
+.. function:: proc hasArgCommentless(val: int)
+
+.. default-domain:: chpl
+
+.. module:: O
+   :synopsis: And this one 
+
+O
+=
+**Usage**
+
+.. code-block:: chapel
+
+   use O;
+
+
+or
+
+.. code-block:: chapel
+
+   import O;
+
+And this one 
+
+.. function:: proc hasBodyCommentless()
+
+.. default-domain:: chpl
+
+.. module:: P
+   :synopsis: What?  Even this one! 
+
+P
+=
+**Usage**
+
+.. code-block:: chapel
+
+   use P;
+
+
+or
+
+.. code-block:: chapel
+
+   import P;
+
+What?  Even this one! 
+
+.. function:: proc hasBodyAndArgCommentless(val: int)
+
+.. function:: proc useless()
+
+.. default-domain:: chpl
+
+.. module:: Q
+
+Q
+=
+**Usage**
+
+.. code-block:: chapel
+
+   use Q;
+
+
+or
+
+.. code-block:: chapel
+
+   import Q;
+
+.. function:: proc main()
+
+   Sadly, this function's module does not 
+
+.. default-domain:: chpl
+
+.. module:: R
+
+R
+=
+**Usage**
+
+.. code-block:: chapel
+
+   use R;
+
+
+or
+
+.. code-block:: chapel
+
+   import R;
+
+.. function:: proc furthermore()
+
+   Nor this function's module 
+

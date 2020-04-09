@@ -1,0 +1,4 @@
+bug: array alias causes negative reference count
+
+This test also demonstrates an issue with the interaction between
+--replace-array-accesses-with-ref-temps and cullOverReferences.

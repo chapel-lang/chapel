@@ -1,0 +1,25 @@
+include $(THIRD_PARTY_DIR)/llvm/Makefile.share-system
+
+ifndef LLVM_LLVM_LIBS
+  export LLVM_LLVM_LIBS=$(shell test -x $(LLVM_CONFIG) && $(LLVM_CONFIG) --ldflags --system-libs --libs bitreader bitwriter ipo instrumentation option objcarcopts profiledata all-targets coverage coroutines lto)
+endif
+
+ifeq ($(LLVM_MAJOR_VERSION_9PLUS),9)
+  # -lclangASTMatchers needed for LLVM 9 but not earlier
+  LLVM_CLANG_LIBS=-lclangFrontend -lclangSerialization -lclangDriver -lclangCodeGen -lclangParse -lclangSema -lclangAnalysis -lclangEdit -lclangASTMatchers -lclangAST -lclangLex -lclangBasic
+else
+  LLVM_CLANG_LIBS=-lclangFrontend -lclangSerialization -lclangDriver -lclangCodeGen -lclangParse -lclangSema -lclangAnalysis -lclangEdit -lclangAST -lclangLex -lclangBasic
+endif
+
+
+# Ubuntu 16.04 needed -fno-rtti for LLVM 3.7
+# tested on that system after installing
+#   llvm-3.7-dev llvm-3.7 clang-3.7 libclang-3.7-dev libedit-dev
+LLVM_MY_CXXFLAGS=-fno-rtti
+
+LLVM_CXXFLAGS=$(LLVM_CONFIG_CXXFLAGS) $(LLVM_MY_CXXFLAGS) -DHAVE_LLVM
+LLVM_CFLAGS=$(LLVM_CONFIG_CFLAGS) -DHAVE_LLVM
+
+LLVM_INCLUDES=-I$(LLVM_CONFIG_INCLUDE_DIR)
+LLVM_LIBS=-L$(LLVM_CONFIG_LIB_DIR) $(LLVM_CLANG_LIBS) $(LLVM_LLVM_LIBS)
+

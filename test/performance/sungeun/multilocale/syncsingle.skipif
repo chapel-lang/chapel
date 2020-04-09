@@ -1,0 +1,2 @@
+# prediff uses execute_on_fast numbers
+COMPOPTS <= --baseline

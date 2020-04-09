@@ -1,0 +1,6 @@
+perfkeys: real, real
+graphkeys: coforall + begin, coforall + begin early exit
+files: coforall-begin-orderly-exit.dat, coforall-begin.dat
+graphtitle: Coforall+Begin Timings
+ylabel: Time (seconds)
+graphname: task-parallel-compare-coforall-begin

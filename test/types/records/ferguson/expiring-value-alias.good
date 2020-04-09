@@ -1,0 +1,29 @@
+test0
+r.x is 100
+r.x is 101
+r.x is 102
+test1
+3
+r.x=3
+r2.x=5
+r3.x=5
+r4.x=3
+r5.x=3
+test2
+3
+test3
+3
+test4
+3
+test5
+3
+test5ref
+3
+test5in
+3
+test6
+3
+test6ref
+3
+test6in
+3

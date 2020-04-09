@@ -1,0 +1,3 @@
+formalArrArgErrorLoc.chpl:1: error: halt reached - Domain mismatch passing array argument:
+  Formal domain is: {1..3}
+  Actual domain is: {1..10}

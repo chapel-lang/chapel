@@ -1,0 +1,84 @@
+#!/usr/bin/env perl
+
+#
+# @ARGV[0] = <timeout value>
+# @ARGV[1..@#ARGV] = command line to run
+#
+
+$| = 1;					# will flush buffers after write
+
+die "usage: timedexec timeout \"commandline\"\n" unless $#ARGV >= 1;
+
+eval {
+    local $SIG{ALRM} = sub { die "alarm\n" };
+    local $SIG{INT} = sub { die "abort\n" };
+    alarm @ARGV[0];
+    if (!defined($child_pid = fork())) {
+        print "timedexec cannot fork child\n";
+        exit(1);
+    } elsif ($child_pid == 0) {
+        setpgrp(0,0);
+        exec @ARGV[1..$#ARGV];
+        die "timedexec failed to execute target program: $1\n";
+    } else {
+        waitpid($child_pid, 0);
+        if ($? == -1) {
+            print "timedexec: waitpid() failed: $!\n";
+            exit(1);
+        } elsif ($? & 127) {
+            printf "timedexec: target program died with signal %d, %s coredump\n",
+                   ($? & 127), ($? & 128) ? 'with' : 'without';
+            exit(1);
+        } else {
+            $cmdStatus = $? >> 8;
+        }
+
+    }
+    alarm 0;
+};
+
+# At this point:
+#  $@ == 0 -- the test process ran to completion; its exit code is $cmdStatus.
+#  $@ == 1 -- the test process could not start, or died with a signal, or
+#             waitpid failed.
+#  $@ == "alarm\n" -- the alarm clock timed out.
+#  $@ == "abort\n" -- there was a keyboard interrupt (ctrl-C).
+#  $@ == "timedexec failed ..." -- fork returned 0.
+if ($@) {
+    die if $@ == 1; # assume no child process is running.
+
+    # Otherwise, try to halt the running process
+    if ($@ eq "alarm\n") {
+        $myPS = "ps";
+        if ("$^O" eq "cygwin") { $myPS = "procps"; }
+        system("$myPS aux | sort -r -k 3 | head");  # any interference?
+        print "timedexec Alarm Clock\n";
+    }
+    if ($@ eq "abort\n") {
+        print "timedexec interrupted\n";
+    }
+    eval {
+        local $SIG{ALRM} = sub { die "alarm\n" };
+        alarm @ARGV[0];
+        # allow proper cleanup if possible
+        print "timedexec sending SIGTERM\n";
+        kill SIGTERM, -$child_pid;
+        # also call cygwin's kill since perl's doesn't always work
+        if ("$^O" eq "cygwin") { system("/bin/kill -s SIGTERM -f $child_pid"); }
+        waitpid($child_pid, 0);
+        alarm 0;
+    };
+    if ($@) {
+        die unless $@ eq "alarm\n";
+        # hit it with the big hammer
+        print "timedexec sending SIGKILL\n";
+        kill SIGKILL, -$child_pid;
+        # also call cygwin's kill since perl's doesn't always work
+        if ("$^O" eq "cygwin") { system("/bin/kill -s SIGKILL -f $child_pid"); }
+    }
+    # Because they share the same return code, Ctrl-C will look like a timeout.
+    # This is OK, because the test timed out due to operator impatience.
+    exit(222);
+} else {
+    exit($cmdStatus);
+}

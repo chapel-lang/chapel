@@ -1,0 +1,12 @@
+C:
+In C.foo()
+In C.bar()
+D:
+In D.foo()
+In C.bar()
+E:
+In E.foo()
+In C.bar()
+In E.foo()
+In C.bar()
+In E.baz()

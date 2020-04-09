@@ -1,0 +1,2 @@
+COMPOPTS <= --incremental
+CHPL_TARGET_COMPILER != gnu

@@ -1,0 +1,2 @@
+COMPOPTS <= --baseline
+CHPL_MEM_LEAK_TESTING == true

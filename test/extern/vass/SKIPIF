@@ -1,0 +1,8 @@
+# Multilocale testing does not add any value for these tests.
+CHPL_COMM != none
+
+# We used to SKIPIF these tests also when if --no-munge-user-idents.
+# At the moment, they happen to pass except for one. So the
+# munge-related skipif condition is just on that test for now.
+# If other tests stop working under --no-munge-user-idents
+# in the future, it may be OK to skipif them again.

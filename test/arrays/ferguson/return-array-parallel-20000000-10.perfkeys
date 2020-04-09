@@ -1,0 +1,5 @@
+verify:SUCCESS
+parallel 20000000 untyped return
+parallel 20000000 typed return
+parallel 20000000 untyped arg
+parallel 20000000 typed arg

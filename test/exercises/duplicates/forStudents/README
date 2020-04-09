@@ -1,0 +1,183 @@
+Data Processing Hands-On Exercise: Finding Duplicate Files
+==========================================================
+
+This directory contains the framework for writing a Chapel program to find
+duplicate files.
+
+What is in this directory?
+**************************
+
+FileHashing.chpl:
+  This module defines:
+  * a type SHA256Hash supporting the usual comparison and assignment operators
+    as well as writeln
+  * a function computeFileHash that returns a hash for a file
+  * a function relativeRealPath used to normalize paths
+
+duplicates.chpl:
+  This is the code you'll edit for this exercise.
+
+example-files/
+  This directory stores some example files for testing your program.
+
+expected-output:
+  This file contains the expected output for your program when run on the
+  example-files directory.
+
+Hands-On Tasks
+**************
+
+Step 0: Getting Started
+-----------------------
+
+To get started with this project, compile 'duplicates.chpl':
+
+  chpl duplicates.chpl
+
+Then, try running it with the example-files directory:
+
+  ./duplicates example-files
+
+It should (incorrectly) report that all the files are duplicates.
+
+Feel free to look over the provided source code in duplicates.chpl
+and in the provided modules FileHashing.chpl and
+SHA256Implementation.chpl.
+
+Step 1: Compute Hashes to Detect Duplicates
+-------------------------------------------
+
+Your next task is to get it reporting only actual duplicates. To do so,
+you'll need to adjust the program to compute the hashes of the files.
+Edit `computeHashes` near the top of the program. This function should
+compute the hash for each path and store it in the hashAndPath array.
+You'll want to call the provided function `computeFileHash` from the
+FileHashing module to compute the file hashes.
+
+The Tuples and Arrays primers might be useful resources for this step:
+
+  https://chapel-lang.org/docs/master/primers/tuples.html
+  https://chapel-lang.org/docs/primers/arrays.html
+
+Run your program on the example-files directory and compare the output
+with the contents of the file expected-output. Additionally, your
+system might support one (or both) of these commands:
+
+ sha256sum <file-to-hash>
+ openssl sha256 <file-to-hash>
+
+If so, you can check that your program is computing the correct SHA256
+hashes for a particular file by comparing hashes with the results from the
+above commands.
+
+Step 2: Compute Hashes in Parallel
+----------------------------------
+
+Adjust your implementation of `computeHashes` to compute file hashes
+in parallel. Does it still give correct output?
+
+To understand how this affects the performance of this program, add a timer to
+this function, using the Time module.
+
+  https://chapel-lang.org/docs/modules/standard/Time.html
+
+Then, test the performance of your parallel version by running it to
+find duplicate .chpl files in Chapel's test suite.
+
+  ./duplicates --filter=".chpl" <path-to-chapel-tests>
+
+Is it faster to compute the SHA256 sums in multiple tasks?
+Make sure to compile with --fast when doing performance comparisons!
+
+Step 3: Add Error Handling
+--------------------------
+
+We'd like our duplicate file detector to fail gracefully if it finds a
+file it cannot open. For example, if it runs accross a file it can't read,
+it will print an error like this:
+
+uncaught TaskErrors: 1 errors: PermissionError: Permission denied (in open with path "<some path>")
+  duplicates.chpl:30: thrown here
+  duplicates.chpl:30: uncaught here
+
+Instead of halting when such errors are encountered, make it instead
+log the errors. For the purposes of this exercise, let's assume that
+writing a message to stdout using `writeln` is sufficient.
+
+The first step is create a test directory in which you can see
+the above error. You can use the following commands to do so:
+
+  echo No Reading > example-files/noread
+  chmod a-r example-files/noread
+  # you can remove this file if you need to, with
+  #   rm example-files/noread
+
+Run your program on the example-files directory after adding this
+file. Your program should halt before printing any duplicates.
+
+Use error handling constructs to:
+ * output a message (we are imagining to a log file but for this exercise
+   just use writeln)
+ * continue processing the other files
+
+To learn more about error handling in Chapel, see the Error Handling
+primer:
+
+ https://chapel-lang.org/docs/primers/errorHandling.html
+
+
+Bonus Task B1: Create a Program Generating Each Byte
+----------------------------------------------------
+
+We used the file example-files/all-bytes1 in testing our file
+duplication detector. This file contains each byte once, and in order.
+To inspect this file, use xxd:
+
+  xxd example-files/all-bytes1
+
+This task is to create a Chapel program that can produce this file.
+You'll want to look at the I/O primer and module documentation:
+
+  https://chapel-lang.org/docs/primers/fileIO.html
+  https://chapel-lang.org/docs/modules/standard/IO.html
+
+Here are some hints of specific features you might use:
+ * `open`
+ * `file.writer` with `kind=iokind.native`
+ * the `%|1u` format string
+
+Bonus Task B2: Use Records Instead of Tuples
+--------------------------------------------
+
+The program we have been working with so far used an array of tuples.
+But such programs might be harder to maintain since one might forget
+which tuple component is the hash and which is the file path.
+
+So, in this task, you'll modify your program to use an array of records
+instead of an array of tuples.
+
+The records primer is a good starting point for learning more about records:
+
+  https://chapel-lang.org/docs/master/primers/records.html
+
+Note that you'll need to change the sort call. Records don't currently
+get comparison operators by default. While that might change in the
+future, this is a good opportunity to learn about how to sort with a
+custom comparator. See
+
+ https://chapel-lang.org/docs/modules/packages/Sort.html
+
+Bonus Task B3: Sort Output by File Size
+---------------------------------------
+
+Our file duplication program is now in production and we're getting user
+feedback! Our users are clamoring for the ability to sort the output by
+file size, because they'd like to investigate the large duplicates first.
+
+The task here is to modify your program to do so. Additionally you
+can make it print out the size of the file hashed.
+
+To find the library function to get the size of a file from a path,
+head over to the FileSystem documentation here:
+
+ https://chapel-lang.org/docs/modules/standard/FileSystem.html

@@ -1,0 +1,3 @@
+test_var_function_returns_local_via_var_function.chpl:1: In function 'foo':
+test_var_function_returns_local_via_var_function.chpl:3: error: Reference to scoped variable cannot be returned
+test_var_function_returns_local_via_var_function.chpl:2: note: consider scope of x

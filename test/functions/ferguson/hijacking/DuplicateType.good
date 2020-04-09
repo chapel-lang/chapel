@@ -1,0 +1,4 @@
+In LibraryX1.setup
+In LibraryX1.run global is {x = 10}
+In LibraryY1.setup
+In LibraryY1.run global is {x = 1, y = 2}

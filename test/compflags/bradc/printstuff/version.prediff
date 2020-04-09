@@ -1,0 +1,4 @@
+#!/bin/sh
+./versionhelp.sh $1 $2 $3 > version.good
+./copyrighthelp.sh $1 $2 $3 >> version.good
+

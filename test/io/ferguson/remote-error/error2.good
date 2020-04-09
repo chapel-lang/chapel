@@ -1,0 +1,8 @@
+loc 0 error Invalid argument: Could not find the end of a conversion specifier
+loc 1 error Invalid argument: Could not find the end of a conversion specifier
+loc 2 error Invalid argument: Could not find the end of a conversion specifier
+loc 3 error Invalid argument: Could not find the end of a conversion specifier
+on loc 0, loc 0 error Invalid argument: Could not find the end of a conversion specifier
+on loc 0, loc 1 error Invalid argument: Could not find the end of a conversion specifier
+on loc 0, loc 2 error Invalid argument: Could not find the end of a conversion specifier
+on loc 0, loc 3 error Invalid argument: Could not find the end of a conversion specifier

@@ -1,0 +1,3 @@
+same_name_in_mod2.chpl:9: In function 'main':
+same_name_in_mod2.chpl:10: error: unresolved call 'int(64).x'
+same_name_in_mod2.chpl:10: note: because no functions named x found in scope

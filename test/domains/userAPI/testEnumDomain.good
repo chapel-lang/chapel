@@ -1,0 +1,122 @@
+2D enum domain
+------------
+{orange..green, yellow..blue}
+rank             = 2
+idxType          = color
+stridable        = false
+size             = 9
+isEmpty()        = false
+low              = (orange, yellow)
+high             = (green, blue)
+stride           = (1, 1)
+alignment        = (orange, yellow)
+first            = (orange, yellow)
+last             = (green, blue)
+alignedLow       = (orange, yellow)
+alignedHigh      = (green, blue)
+dims()           = (orange..green, yellow..blue)
+dim(0)           = orange..green
+dim(1)           = yellow..blue
+contains((yellow, green))   = true
+contains((red, green))   = false
+contains((yellow, violet))   = false
+indexOrder((yellow, green)) = 4
+shape            = (3, 3)
+position((yellow, green)) = (1, 1)
+expand(1)        = {red..blue, orange..indigo}
+expand(1,0)      = {red..blue, yellow..blue}
+expand((0,2))    = {orange..green, red..violet}
+exterior(1)      = {blue..blue, indigo..indigo}
+exterior(1,0)    = {blue..blue, yellow..blue}
+exterior((0,2))  = {orange..green, indigo..violet}
+interior(1)      = {green..green, blue..blue}
+interior(1,0)    = {green..green, yellow..blue}
+interior((0,2)   = {orange..green, green..blue}
+translate(1)     = {yellow..blue, green..indigo}
+translate(1,0)   = {yellow..blue, yellow..blue}
+translate((0,2)) = {orange..green, blue..violet}
+serial iteration = 
+(orange, yellow) (orange, green) (orange, blue) (yellow, yellow) (yellow, green) (yellow, blue) (green, yellow) (green, green) (green, blue) 
+D[{red..violet, green..violet}] = {orange..green, green..blue}
+D[{red..violet, green..violet} (as ranges)] = {orange..green, green..blue}
+D.localSlice({red..violet, green..violet}) = {orange..green, green..blue}
+D.targetLocales() = LOCALE0
+D.hasSingleLocalSubdomain() = true
+D.localSubdomain() = {orange..green, yellow..blue}
+D#(2,2) = {orange..yellow, yellow..green}
+D == intDom = false
+D(intDom) == intDom(D) = true
+D != intDom = true
+D(intDom) != intDom(D) = false
+Copying...
+{orange..green, yellow..blue}
+Clearing...
+{orange..red, orange..red}
+size             = 0
+isEmpty()        = true
+low              = (orange, orange)
+high             = (red, red)
+stride           = (1, 1)
+alignment        = (orange, orange)
+
+strided 2D enum domain
+------------
+{orange..green by 2, yellow..blue by 2}
+rank             = 2
+idxType          = color
+stridable        = true
+size             = 4
+isEmpty()        = false
+low              = (orange, yellow)
+high             = (green, blue)
+stride           = (2, 2)
+alignment        = (orange, yellow)
+first            = (orange, yellow)
+last             = (green, blue)
+alignedLow       = (orange, yellow)
+alignedHigh      = (green, blue)
+dims()           = (orange..green by 2, yellow..blue by 2)
+dim(0)           = orange..green by 2
+dim(1)           = yellow..blue by 2
+contains((green, yellow))   = true
+contains((orange, green))   = false
+contains((orange, violet))   = false
+indexOrder((green, yellow)) = 2
+shape            = (2, 2)
+position((green, yellow)) = (1, 0)
+expand(1)        = {red..blue by 2 align orange, orange..indigo by 2 align red}
+expand(1,0)      = {red..blue by 2 align orange, yellow..blue by 2}
+expand((0,2))    = {orange..green by 2, red..violet by 2}
+exterior(1)      = {blue..blue by 2 align orange, indigo..indigo by 2 align red}
+exterior(1,0)    = {blue..blue by 2 align orange, yellow..blue by 2}
+exterior((0,2))  = {orange..green by 2, indigo..violet by 2 align red}
+interior(1)      = {green..green by 2, blue..blue by 2}
+interior(1,0)    = {green..green by 2, yellow..blue by 2}
+interior((0,2)   = {orange..green by 2, green..blue by 2 align red}
+translate(1)     = {yellow..blue by 2, green..indigo by 2}
+translate(1,0)   = {yellow..blue by 2, yellow..blue by 2}
+translate((0,2)) = {orange..green by 2, blue..violet by 2}
+serial iteration = 
+(orange, yellow) (orange, blue) (green, yellow) (green, blue) 
+D[{red..violet, green..violet}] = {orange..green by 2, green..blue by 2 align red}
+D[{red..violet, green..violet} (as ranges)] = {orange..green by 2, green..blue by 2 align red}
+D.localSlice({red..violet, green..violet}) = {orange..green by 2, green..blue by 2 align red}
+D.targetLocales() = LOCALE0
+D.hasSingleLocalSubdomain() = true
+D.localSubdomain() = {orange..green by 2, yellow..blue by 2}
+D#(2,2) = {orange..green by 2, yellow..blue by 2}
+D == intDom = false
+D(intDom) == intDom(D) = true
+D != intDom = true
+D(intDom) != intDom(D) = false
+Copying...
+{orange..green by 2, yellow..blue by 2}
+Clearing...
+{orange..red, orange..red}
+size             = 0
+isEmpty()        = true
+low              = (orange, orange)
+high             = (red, red)
+stride           = (1, 1)
+alignment        = (red, red)
+

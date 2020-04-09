@@ -1,0 +1,4 @@
+self-defs.chpl:2: error: 'a' is used to define itself
+self-defs.chpl:5: error: 'a' is used to define itself
+self-defs.chpl:10: error: 'a' is used to define itself
+self-defs.chpl:12: error: 'b' is used to define itself

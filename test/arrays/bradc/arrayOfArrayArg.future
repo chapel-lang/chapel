@@ -1,0 +1,6 @@
+bug: declared array of array formal argument types do not work
+
+Neither "[1..3] [] real" nor "[] [] real" for declaring array-of-array
+formal argument types work today.  Making the argument type inferred
+does work so can serve as a workaround, but isn't ideal for users
+who prefer to declare their types.

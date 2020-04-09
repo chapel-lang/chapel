@@ -1,0 +1,1 @@
+test_domain_mixed_dim_types.chpl:1: error: idxType varies among domain's dimensions

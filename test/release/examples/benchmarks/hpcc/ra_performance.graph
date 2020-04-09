@@ -1,0 +1,6 @@
+perfkeys: Performance (GUPS) =, Performance (GUPS) =
+graphkeys: RA, RA w/atomics
+files: hpcc-ra.dat, hpcc-ra-atomics.dat
+graphtitle: HPCC RA Performance (GUPS)
+ylabel: Performance (GUPS)
+graphname: hpcc-ra-gups

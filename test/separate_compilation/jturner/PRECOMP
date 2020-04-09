@@ -1,0 +1,5 @@
+#!/bin/bash -norc
+export dep=`echo $1 | sed -e 's/use_//'`
+rm lib$dep.so{,.o} 2>&1 > /dev/null
+echo Compiling $dep.chpl
+$3 --library $dep.chpl -o lib$dep.so

@@ -1,0 +1,4 @@
+feature request: predefined types not to be keywords
+
+The Chapel group has decided that predefined types should not be keywords
+in the language. Right now 'domain' and 'index' are - this needs to be fixed.

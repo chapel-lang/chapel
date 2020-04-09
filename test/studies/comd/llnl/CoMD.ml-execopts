@@ -1,0 +1,1 @@
+--nx 100 --ny 100 --nz 100 --xproc 2 --yproc 2 --zproc 2 --doeam=0

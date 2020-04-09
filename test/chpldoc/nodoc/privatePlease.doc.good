@@ -1,0 +1,24 @@
+.. default-domain:: chpl
+
+.. module:: Bar
+
+Bar
+===
+**Usage**
+
+.. code-block:: chapel
+
+   use Bar;
+
+
+or
+
+.. code-block:: chapel
+
+   import Bar;
+
+.. data:: config var blah3: int
+
+.. function:: proc c()
+
+cat: docs/source/modules/toBeIgnored.rst: No such file or directory

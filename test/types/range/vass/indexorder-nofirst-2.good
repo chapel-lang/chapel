@@ -1,0 +1,1 @@
+indexorder-nofirst-2.chpl:2: error: halt reached - invoking indexOrder on a range (..10) that does not have the first index

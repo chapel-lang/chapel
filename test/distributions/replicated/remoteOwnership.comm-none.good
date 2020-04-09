@@ -1,0 +1,13 @@
+Testing domain D: {1..11, 1..11}
+From locale 0
+  locale 0 owns: {1..11, 1..11}
+  locale 0 owns: {1..11, 1..11}
+(<no communication>)
+
+
+Testing array A (declared over D):
+From locale 0
+  locale 0 owns: {1..11, 1..11}
+  locale 0 owns: {1..11, 1..11}
+(<no communication>)
+

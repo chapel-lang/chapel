@@ -1,0 +1,7 @@
+ra.chpl:187: warning: atomic statement is ignored (not implemented)
+Problem size = 1024 (2**10)
+Bytes per array = 8192
+Total memory required (GB) = 7.62939e-06
+Number of updates = 4096
+
+Validation: SUCCESS

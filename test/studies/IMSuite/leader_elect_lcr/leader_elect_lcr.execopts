@@ -1,0 +1,3 @@
+--inputFile=input/inputleader_elect_lcr_8.txt --verify=true --outputFile=outputleader_elect_lcr_8.txt # outputleader_elect_lcr_8.good
+--inputFile=input/inputleader_elect_lcr_16.txt --verify=true --outputFile=outputleader_elect_lcr_16.txt # outputleader_elect_lcr_16.good
+--inputFile=input/inputleader_elect_lcr_32.txt --verify=true --outputFile=outputleader_elect_lcr_32.txt # outputleader_elect_lcr_32.good

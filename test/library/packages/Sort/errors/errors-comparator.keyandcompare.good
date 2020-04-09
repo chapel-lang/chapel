@@ -1,0 +1,2 @@
+errors-comparator.chpl:9: In function 'main':
+errors-comparator.chpl:17: error: keyAndCompare contains both a key method and a compare method

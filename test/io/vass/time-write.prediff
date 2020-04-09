@@ -1,0 +1,3 @@
+#!/bin/sh
+
+sed '/^$/d' $2 > $2.tmp && mv $2.tmp $2

@@ -1,0 +1,3 @@
+uncaught SystemError: Invalid argument (EINVAL with path "this/is/my/path")
+  ioerror.chpl:8: thrown here
+  ioerror.chpl:8: uncaught here

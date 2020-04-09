@@ -1,0 +1,3 @@
+{1..6, 1..6} {1..6, 7..11} {7..11, 1..6} {7..11, 7..11}
+{1..6, 1..6} {1..6, 7..11} {7..11, 1..6} {7..11, 7..11}
+(<no communication>) (<no communication>) (<no communication>) (<no communication>)

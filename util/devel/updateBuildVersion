@@ -1,0 +1,43 @@
+#!/usr/bin/env perl
+
+#
+# For this first stage of converting to subversion, I've set it
+# artificially since all of the automated CVS updates to CVSLOG 
+# and BUILD_VERSION were counted as revisions, doubling the count
+# compared to how we normally count BUILD_VERSIONS
+#
+
+$build_version_file = $ARGV[0];
+$chplhome = $ARGV[1];
+
+if ($build_version_file eq "") {
+    print "usage: updateBuildVersion <filename for build version>\n";
+    exit(1);
+}
+
+if (-r "$build_version_file") {
+    $last_build_version = `sed -e 's/"//g' $build_version_file`; # remove quotes
+    chomp($last_build_version);
+} else {
+    $last_build_version = "!!!";
+}
+
+if (-e "$chplhome/.git") {
+
+    $git_rev = `cd $chplhome && git rev-parse --short HEAD`;
+    chomp($git_rev);
+
+    $build_version = "$git_rev";
+} else {
+    $build_version = "-999";
+}
+
+if ($build_version eq $last_build_version || 
+    ($build_version eq "-999" && $last_build_version ne "!!!")) {
+#    print "Build version is up-to-date\n";
+} else {
+#    print "Updating build version ($build_version != $last_build_version)\n";
+    open BUILD_VERSION, ">$build_version_file" or die "can't open $build_version_file for writing $!";
+    print BUILD_VERSION "\"$build_version\"\n";
+    close BUILD_VERSION;
+}

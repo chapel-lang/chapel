@@ -1,0 +1,9 @@
+m = 10
+
+test: ~m
+expected answer = -11
+actual answer = -11
+
+test: ~answer
+expected answer = 10
+actual answer = 10

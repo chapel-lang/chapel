@@ -1,0 +1,27 @@
+.. default-domain:: chpl
+
+.. module:: ordering.doc
+
+ordering.doc
+============
+**Usage**
+
+.. code-block:: chapel
+
+   use ordering.doc;
+
+
+or
+
+.. code-block:: chapel
+
+   import ordering.doc;
+
+.. function:: proc second()
+
+   This is a proc... 
+
+.. data:: config var first: string
+
+   This config var should be awesome. 
+

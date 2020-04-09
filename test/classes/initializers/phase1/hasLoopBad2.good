@@ -1,0 +1,2 @@
+hasLoopBad2.chpl:7: In initializer:
+hasLoopBad2.chpl:9: error: can't initialize field "highestNum" inside a loop during phase 1 of initialization

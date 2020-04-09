@@ -1,0 +1,49 @@
+.. default-domain:: chpl
+
+.. module:: first
+   :synopsis: This module uses another module in a separate file 
+
+first
+=====
+**Usage**
+
+.. code-block:: chapel
+
+   use first;
+
+
+or
+
+.. code-block:: chapel
+
+   import first;
+
+This module uses another module in a separate file 
+
+.. function:: proc main()
+
+   This function calls the other module's function 
+
+.. default-domain:: chpl
+
+.. module:: second
+
+second
+======
+**Usage**
+
+.. code-block:: chapel
+
+   use second;
+
+
+or
+
+.. code-block:: chapel
+
+   import second;
+
+.. function:: proc method()
+
+   This method is called by a method in another file 
+

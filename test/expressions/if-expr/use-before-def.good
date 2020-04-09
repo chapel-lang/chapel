@@ -1,0 +1,7 @@
+use-before-def.chpl:4: In function 'main':
+use-before-def.chpl:5: error: 'a' used before defined
+use-before-def.chpl:5: note: defined here
+use-before-def.chpl:6: error: 'b' used before defined
+use-before-def.chpl:6: note: defined here
+use-before-def.chpl:7: error: 'z' used before defined
+use-before-def.chpl:9: note: defined here

@@ -1,0 +1,107 @@
+throwing.doc.chpl:1: warning: This file-scope code is outside of any explicit module declarations (e.g., module Inner), so an implicit module named 'throwing.doc' is being introduced to contain the file's contents.
+.. default-domain:: chpl
+
+.. module:: throwing.doc
+
+throwing.doc
+============
+**Usage**
+
+.. code-block:: chapel
+
+   use throwing.doc;
+
+
+or
+
+.. code-block:: chapel
+
+   import throwing.doc;
+
+**Submodules**
+
+.. toctree::
+   :maxdepth: 1
+   :glob:
+
+   throwing.doc/*
+
+.. function:: proc emptyNoDocNoArg() throws
+
+.. function:: proc emptyNoDocArg(x: int) throws
+
+.. function:: proc noDocNoArg() throws
+
+.. function:: proc noDocArg(b: bool) throws
+
+.. function:: proc noDocReturn(): int throws
+
+.. function:: proc emptyNoArg() throws
+
+   This function has no body or argument, and throws 
+
+.. function:: proc emptyWithArg(x: int) throws
+
+   This function has no body, has an argument, and throws 
+
+.. function:: proc noArg() throws
+
+   This function has a body, no argument, and throws 
+
+.. function:: proc hasArg(b: bool) throws
+
+   This function has a body, an argument, and throws 
+
+.. function:: proc hasDocReturn(): string throws
+
+   This function declares a return and throws 
+
+.. default-domain:: chpl
+
+.. module:: Inner
+
+Inner
+=====
+**Usage**
+
+.. code-block:: chapel
+
+   use throwing.doc.Inner;
+
+
+or
+
+.. code-block:: chapel
+
+   import throwing.doc.Inner;
+
+.. function:: proc emptyNoDocNoArg() throws
+
+.. function:: proc emptyNoDocArg(x: int) throws
+
+.. function:: proc noDocNoArg() throws
+
+.. function:: proc noDocArg(b: bool) throws
+
+.. function:: proc noDocReturn(): int throws
+
+.. function:: proc emptyNoArg() throws
+
+   This function has no body or argument, and throws 
+
+.. function:: proc emptyWithArg(x: int) throws
+
+   This function has no body, has an argument, and throws 
+
+.. function:: proc noArg() throws
+
+   This function has a body, no argument, and throws 
+
+.. function:: proc hasArg(b: bool) throws
+
+   This function has a body, an argument, and throws 
+
+.. function:: proc hasDocReturn(): string throws
+
+   This function declares a return and throws 
+

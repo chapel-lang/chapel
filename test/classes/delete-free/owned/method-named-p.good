@@ -1,0 +1,8 @@
+owned D
+In D.p(1)
+shared D
+In D.p(2)
+owned D
+In D.t(3)
+shared D
+In D.t(4)

@@ -1,0 +1,43 @@
+This is a string with multiple lines.
+  It uses a triple quotation mark to open and close the string.
+  Newline escapes are not interpreted: \n <--no newline
+  Tab escapes are not interpreted: \t <--no tab
+  Literal tabs are fine:	<--tab
+  Backslashes don't do anything\ even at the end of lines \
+  You can have two quotation marks next to eachother, but not three.  ""
+  You can have as many single quotes as you like: ''''''''''''''''''
+
+This is a string with multiple lines.
+  It uses a triple single-quote to open and close the string.
+  Newline escapes are not interpreted: \n <--no newline
+  Tab escapes are not interpreted: \t <--no tab
+  Literal tabs are fine:	<--tab
+  Backslashes don't do anything\ even at the end of lines \
+  You can have two single-quotes next to eachother, but not three.  ''
+  You can have as many double-quotes as you like: """"""""""""""""""
+
+
+# multiline strings are useful for
+# inserting code blocks as strings
+
+SELECT
+  a_column
+, another_column
+FROM
+  {%s}
+WHERE
+  {%s} = {%s};
+
+string.format() works on multiline strings
+
+# multiline strings are useful for
+# inserting code blocks as strings
+
+SELECT
+  a_column
+, another_column
+FROM
+  {dinner}
+WHERE
+  {table} = {mahogany};
+

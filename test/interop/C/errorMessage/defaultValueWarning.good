@@ -1,0 +1,1 @@
+defaultValueWarning.chpl:2: warning: Default values aren't applicable in C, argument 'x' for exported function 'foo' must always be provided

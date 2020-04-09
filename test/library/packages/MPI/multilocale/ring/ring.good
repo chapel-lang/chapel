@@ -1,0 +1,18 @@
+Rank 0 done sending...
+Rank 0 received 3 from the left.
+Rank 0 receiving from 3 
+Rank 0 sending to 1 
+Rank 1 done sending...
+Rank 1 received 0 from the left.
+Rank 1 receiving from 0 
+Rank 1 sending to 2 
+Rank 2 done sending...
+Rank 2 received 1 from the left.
+Rank 2 receiving from 1 
+Rank 2 sending to 3 
+Rank 3 done sending...
+Rank 3 received 2 from the left.
+Rank 3 receiving from 2 
+Rank 3 sending to 0 
+The main program ends here...
+This is the main program

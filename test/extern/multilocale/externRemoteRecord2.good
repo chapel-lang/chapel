@@ -1,0 +1,2 @@
+foo got: 42
+externRemoteRecord2.chpl:14: error: references to remote data cannot be passed to external routines like 'bar'

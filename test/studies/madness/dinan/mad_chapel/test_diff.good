@@ -1,0 +1,139 @@
+Mad Chapel -- Differentiation Test
+
+** Testing function 1
+F1.norm2() = 1.0
+Compressing F1 ...
+Reconstructing F1 ...
+F1.norm2() = 1.0
+Evaluating F1 on [0, 1]:
+ -- 0.00:  F_numeric()= 0.00000000  f_analytic()= 0.00000000 err= 0.00000000
+ -- 0.10:  F_numeric()= 0.00000000  f_analytic()= 0.00000000 err= 0.00000000
+ -- 0.20:  F_numeric()= 0.00000000  f_analytic()= 0.00000000 err= 0.00000000
+ -- 0.30:  F_numeric()= 0.00000000  f_analytic()= 0.00000000 err= 0.00000000
+ -- 0.40:  F_numeric()= 0.02845992  f_analytic()= 0.02846034 err=-0.00000042
+ -- 0.50:  F_numeric()= 4.22388915  f_analytic()= 4.22388934 err=-0.00000020
+ -- 0.60:  F_numeric()= 0.02845992  f_analytic()= 0.02846034 err=-0.00000042
+ -- 0.70:  F_numeric()= 0.00000000  f_analytic()= 0.00000000 err= 0.00000000
+ -- 0.80:  F_numeric()= 0.00000000  f_analytic()= 0.00000000 err= 0.00000000
+ -- 0.90:  F_numeric()= 0.00000000  f_analytic()= 0.00000000 err= 0.00000000
+ -- 1.00:  F_numeric()= 0.00000000  f_analytic()= 0.00000000 err= 0.00000000
+
+Differentiating F1 ...
+
+Evaluating dF1 on [0, 1]:
+ -- 0.00:  F_numeric()= 0.00000000  f_analytic()= 0.00000000 err= 0.00000000
+ -- 0.10:  F_numeric()= 0.00000000  f_analytic()= 0.00000000 err= 0.00000000
+ -- 0.20:  F_numeric()= 0.00000000  f_analytic()= 0.00000000 err= 0.00000000
+ -- 0.30:  F_numeric()= 0.00000064  f_analytic()= 0.00000174 err=-0.00000110
+ -- 0.40:  F_numeric()= 2.84605633  f_analytic()= 2.84603425 err= 0.00002208  > thresh
+ -- 0.50:  F_numeric()= 0.00046752  f_analytic()= 0.00000000 err= 0.00046752  > thresh
+ -- 0.60:  F_numeric()=-2.84605633  f_analytic()=-2.84603425 err=-0.00002208  > thresh
+ -- 0.70:  F_numeric()=-0.00000064  f_analytic()=-0.00000174 err= 0.00000110
+ -- 0.80:  F_numeric()= 0.00000000  f_analytic()= 0.00000000 err= 0.00000000
+ -- 0.90:  F_numeric()= 0.00000000  f_analytic()= 0.00000000 err= 0.00000000
+ -- 1.00:  F_numeric()= 0.00000000  f_analytic()= 0.00000000 err= 0.00000000
+
+======================================================================
+
+** Testing function 2
+F2.norm2() = 1.73205
+Compressing F2 ...
+Reconstructing F2 ...
+F2.norm2() = 1.73205
+Evaluating F2 on [0, 1]:
+ -- 0.00:  F_numeric()= 0.00000003  f_analytic()= 0.00000000 err= 0.00000002
+ -- 0.10:  F_numeric()= 0.02846071  f_analytic()= 0.02846034 err= 0.00000037
+ -- 0.20:  F_numeric()= 4.22388933  f_analytic()= 4.22388934 err=-0.00000001
+ -- 0.30:  F_numeric()= 0.02846057  f_analytic()= 0.02846035 err= 0.00000022
+ -- 0.40:  F_numeric()= 0.02845993  f_analytic()= 0.02846035 err=-0.00000042
+ -- 0.50:  F_numeric()= 4.22388915  f_analytic()= 4.22388934 err=-0.00000020
+ -- 0.60:  F_numeric()= 0.02845993  f_analytic()= 0.02846035 err=-0.00000042
+ -- 0.70:  F_numeric()= 0.02846057  f_analytic()= 0.02846035 err= 0.00000022
+ -- 0.80:  F_numeric()= 4.22388933  f_analytic()= 4.22388934 err=-0.00000001
+ -- 0.90:  F_numeric()= 0.02846071  f_analytic()= 0.02846034 err= 0.00000037
+ -- 1.00:  F_numeric()= 0.00000003  f_analytic()= 0.00000000 err= 0.00000002
+
+Differentiating F2 ...
+
+Evaluating dF2 on [0, 1]:
+ -- 0.00:  F_numeric()= 0.00010988  f_analytic()= 0.00000174 err= 0.00010814  > thresh
+ -- 0.10:  F_numeric()= 2.84579819  f_analytic()= 2.84603425 err=-0.00023606  > thresh
+ -- 0.20:  F_numeric()= 0.00008198  f_analytic()= 0.00000000 err= 0.00008198  > thresh
+ -- 0.30:  F_numeric()=-2.84620888  f_analytic()=-2.84603251 err=-0.00017637  > thresh
+ -- 0.40:  F_numeric()= 2.84605452  f_analytic()= 2.84603251 err= 0.00002201  > thresh
+ -- 0.50:  F_numeric()= 0.00046752  f_analytic()= 0.00000000 err= 0.00046752  > thresh
+ -- 0.60:  F_numeric()=-2.84605452  f_analytic()=-2.84603251 err=-0.00002201  > thresh
+ -- 0.70:  F_numeric()= 2.84620888  f_analytic()= 2.84603251 err= 0.00017637  > thresh
+ -- 0.80:  F_numeric()=-0.00008198  f_analytic()= 0.00000000 err=-0.00008198  > thresh
+ -- 0.90:  F_numeric()=-2.84579819  f_analytic()=-2.84603425 err= 0.00023606  > thresh
+ -- 1.00:  F_numeric()=-0.00010988  f_analytic()=-0.00000174 err=-0.00010814  > thresh
+
+======================================================================
+
+** Testing function 3
+F3.norm2() = 6.55811
+Compressing F3 ...
+Reconstructing F3 ...
+F3.norm2() = 6.55811
+Evaluating F3 on [0, 1]:
+ -- 0.00:  F_numeric()= 1.41421260  f_analytic()= 1.41421356 err=-0.00000096
+ -- 0.10:  F_numeric()= 1.58113892  f_analytic()= 1.58113883 err= 0.00000009
+ -- 0.20:  F_numeric()= 1.82574182  f_analytic()= 1.82574186 err=-0.00000004
+ -- 0.30:  F_numeric()= 2.23606780  f_analytic()= 2.23606798 err=-0.00000018
+ -- 0.40:  F_numeric()= 3.16227798  f_analytic()= 3.16227766 err= 0.00000032
+ -- 0.50:  F_numeric()= 191059.03957307  f_analytic()= 0.00000000 err= 191059.03957307  > thresh
+ -- 0.60:  F_numeric()= 3.16227798  f_analytic()= 3.16227766 err= 0.00000032
+ -- 0.70:  F_numeric()= 2.23606780  f_analytic()= 2.23606798 err=-0.00000018
+ -- 0.80:  F_numeric()= 1.82574182  f_analytic()= 1.82574186 err=-0.00000004
+ -- 0.90:  F_numeric()= 1.58113892  f_analytic()= 1.58113883 err= 0.00000009
+ -- 1.00:  F_numeric()= 1.41421260  f_analytic()= 1.41421356 err=-0.00000096
+
+Differentiating F3 ...
+
+Evaluating dF3 on [0, 1]:
+ -- 0.00:  F_numeric()= 9052.38377270  f_analytic()= 1.41421356 err= 9050.96955914  > thresh
+ -- 0.10:  F_numeric()= 1.97570432  f_analytic()= 1.97642354 err=-0.00071922  > thresh
+ -- 0.20:  F_numeric()= 3.04065154  f_analytic()= 3.04290310 err=-0.00225156  > thresh
+ -- 0.30:  F_numeric()= 5.59286623  f_analytic()= 5.59016994 err= 0.00269628  > thresh
+ -- 0.40:  F_numeric()= 15.81301766  f_analytic()= 15.81138830 err= 0.00162936  > thresh
+ -- 0.50:  F_numeric()=-1033981881073270.00000000  f_analytic()= 0.00000000 err=-1033981881073270.00000000  > thresh
+ -- 0.60:  F_numeric()=-15.81301766  f_analytic()=-15.81138830 err=-0.00162936  > thresh
+ -- 0.70:  F_numeric()=-5.59286623  f_analytic()=-5.59016994 err=-0.00269628  > thresh
+ -- 0.80:  F_numeric()=-3.04065154  f_analytic()=-3.04290310 err= 0.00225156  > thresh
+ -- 0.90:  F_numeric()=-1.97570432  f_analytic()=-1.97642354 err= 0.00071922  > thresh
+ -- 1.00:  F_numeric()=-9052.38377270  f_analytic()=-1.41421356 err=-9050.96955914  > thresh
+
+======================================================================
+
+** Testing function 4
+F4.norm2() = 1.0
+Compressing F4 ...
+Reconstructing F4 ...
+F4.norm2() = 1.0
+Evaluating F4 on [0, 1]:
+ -- 0.00:  F_numeric()= 1.00000000  f_analytic()= 1.00000000 err= 0.00000000
+ -- 0.10:  F_numeric()= 1.00000000  f_analytic()= 1.00000000 err= 0.00000000
+ -- 0.20:  F_numeric()= 1.00000000  f_analytic()= 1.00000000 err= 0.00000000
+ -- 0.30:  F_numeric()= 1.00000000  f_analytic()= 1.00000000 err= 0.00000000
+ -- 0.40:  F_numeric()= 1.00000000  f_analytic()= 1.00000000 err= 0.00000000
+ -- 0.50:  F_numeric()= 1.00000000  f_analytic()= 1.00000000 err= 0.00000000
+ -- 0.60:  F_numeric()= 1.00000000  f_analytic()= 1.00000000 err= 0.00000000
+ -- 0.70:  F_numeric()= 1.00000000  f_analytic()= 1.00000000 err= 0.00000000
+ -- 0.80:  F_numeric()= 1.00000000  f_analytic()= 1.00000000 err= 0.00000000
+ -- 0.90:  F_numeric()= 1.00000000  f_analytic()= 1.00000000 err= 0.00000000
+ -- 1.00:  F_numeric()= 1.00000000  f_analytic()= 1.00000000 err= 0.00000000
+
+Differentiating F4 ...
+
+Evaluating dF4 on [0, 1]:
+ -- 0.00:  F_numeric()= 100.00000000  f_analytic()= 0.00000000 err= 100.00000000  > thresh
+ -- 0.10:  F_numeric()=-7.00800000  f_analytic()= 0.00000000 err=-7.00800000  > thresh
+ -- 0.20:  F_numeric()= 0.00000000  f_analytic()= 0.00000000 err= 0.00000000
+ -- 0.30:  F_numeric()= 0.00000000  f_analytic()= 0.00000000 err= 0.00000000
+ -- 0.40:  F_numeric()= 0.00000000  f_analytic()= 0.00000000 err= 0.00000000
+ -- 0.50:  F_numeric()= 0.00000000  f_analytic()= 0.00000000 err= 0.00000000
+ -- 0.60:  F_numeric()= 0.00000000  f_analytic()= 0.00000000 err= 0.00000000
+ -- 0.70:  F_numeric()= 0.00000000  f_analytic()= 0.00000000 err= 0.00000000
+ -- 0.80:  F_numeric()= 0.00000000  f_analytic()= 0.00000000 err= 0.00000000
+ -- 0.90:  F_numeric()= 7.00800000  f_analytic()= 0.00000000 err= 7.00800000  > thresh
+ -- 1.00:  F_numeric()=-100.00000000  f_analytic()= 0.00000000 err=-100.00000000  > thresh

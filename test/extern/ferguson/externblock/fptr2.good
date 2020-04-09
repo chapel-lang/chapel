@@ -1,0 +1,6 @@
+in runit, calling f(1.0)
+in f(1.0)
+in runit, result is 2.100000
+in runit, calling f(1.0)
+in f(1.0)
+in runit, result is 2.100000

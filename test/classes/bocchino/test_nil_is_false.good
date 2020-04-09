@@ -1,0 +1,1 @@
+test_nil_is_false.chpl:1: error: illegal cast from nil to bool

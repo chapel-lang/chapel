@@ -1,0 +1,13 @@
+writeX: 
+CONST REF
+1
+CONST REF
+CONST REF
+2
+CONST REF
+2
+setX: 
+REF
+REF
+REF
+REF

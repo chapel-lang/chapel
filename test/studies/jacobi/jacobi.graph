@@ -1,0 +1,7 @@
+perfkeys: Maximum Size (KB):
+ylabel: size (KB)
+graphtitle: Jacobi AST size
+
+perfkeys: Statements emitted:
+ylabel: statements
+graphtitle: Jacobi Emitted Code Size

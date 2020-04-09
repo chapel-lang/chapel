@@ -1,0 +1,14 @@
+#!/bin/bash
+
+set -e
+
+REGISTRY=https://github.com/chapel-lang/mason-registry
+MASON_HOME=$PWD/mason_home
+
+# Make fake MASON_HOME
+mkdir -p $MASON_HOME
+
+# Clone registry
+if [ ! -d $MASON_HOME/registry ] ; then
+    git clone -q $REGISTRY $MASON_HOME/registry
+fi

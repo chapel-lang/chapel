@@ -1,0 +1,22 @@
+unimplemented feature: arrays of sparse domains
+
+sjd: dense works
+
+Arrays of subdomains (sparse or dense) don't seem to be working.
+
+
+John's notes:
+
+domain Nbr_List in breadth_first_search.chpl can be logically be either a sparse
+subdomain or an associative domain.  The associative domain version executes,
+producing the "bfs.out.good" file.  The sparse subdomain version segfaults in
+the initialization phase of this procedure, before the diagnostic print
+statement at the beginning of the main loop.
+
+The two declarations are either
+
+     type Nbr_List = sparse subdomain ( Node_Set );  // fails
+
+or 
+
+     type Nbr_List = domain (int); // succeeds

@@ -1,0 +1,4 @@
+myC is: {x = 2}
+myC is: {x = 3}
+myC is: {x = -1}
+setterForField.chpl:9: error: halt reached - x accessed when negative

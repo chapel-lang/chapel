@@ -1,0 +1,12 @@
+unimplemented feature: Implicit casting of record parameters is not implemented.
+
+According to the spec, an argument of compatible type (i.e. that can be assigned
+to the target type) passed to a function expecting a record type should be
+implictly cast to the target type, and the assignment performed to initialize
+the formal argument.
+
+This behavior is not currently implementation.
+
+Workaround: Use an explicit cast on the actual parameter.
+Priority: 2
+Severity: 3

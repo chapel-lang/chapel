@@ -1,0 +1,8 @@
+test_explain_instantiation.chpl:6: note: instantiated foo(t = int(64), p = 1)
+test_explain_instantiation.chpl:7: note: instantiated foo(t = real(64), p = 2)
+test_explain_instantiation.chpl:8: note: instantiated foo(t = int(64), p = 2)
+test_explain_instantiation.chpl:9: note: instantiated foo(t = 2*int(64), p = 3)
+01
+0.02
+02
+(0, 0)3

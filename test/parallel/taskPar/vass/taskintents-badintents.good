@@ -1,0 +1,16 @@
+taskintents-badintents.chpl:4: error: 'inout' intent is not supported in a 'with' clause
+taskintents-badintents.chpl:4: error: 'out' intent is not supported in a 'with' clause
+taskintents-badintents.chpl:4: error: 'param' intent is not supported in a 'with' clause
+taskintents-badintents.chpl:4: error: 'type' intent is not supported in a 'with' clause
+taskintents-badintents.chpl:6: error: 'inout' intent is not supported in a 'with' clause
+taskintents-badintents.chpl:6: error: 'out' intent is not supported in a 'with' clause
+taskintents-badintents.chpl:6: error: 'param' intent is not supported in a 'with' clause
+taskintents-badintents.chpl:6: error: 'type' intent is not supported in a 'with' clause
+taskintents-badintents.chpl:8: error: 'inout' intent is not supported in a 'with' clause
+taskintents-badintents.chpl:8: error: 'out' intent is not supported in a 'with' clause
+taskintents-badintents.chpl:8: error: 'param' intent is not supported in a 'with' clause
+taskintents-badintents.chpl:8: error: 'type' intent is not supported in a 'with' clause
+taskintents-badintents.chpl:10: error: 'inout' intent is not supported in a 'with' clause
+taskintents-badintents.chpl:10: error: 'out' intent is not supported in a 'with' clause
+taskintents-badintents.chpl:10: error: 'param' intent is not supported in a 'with' clause
+taskintents-badintents.chpl:10: error: 'type' intent is not supported in a 'with' clause

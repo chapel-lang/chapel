@@ -1,0 +1,1 @@
+intents.chpl:46: error: non-lvalue actual is passed to 'ref' formal 's' of fr()

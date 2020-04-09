@@ -1,0 +1,1 @@
+<command-line arg>:1: error: Module 'module1' has no configuration variable named 'z'

@@ -1,0 +1,3 @@
+#!/usr/bin/env bash
+
+cc -std=c99 -o version-c version.c -lzmq && ./version-c > version.good 

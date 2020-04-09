@@ -1,0 +1,12 @@
+argTypes = 1*int(64)
+retType  = int(64)
+55
+
+argTypes = (int(64),real(64))
+retType  = R
+(a = 42, b = 13.0)
+
+argTypes = (string,int(64))
+retType  = string
+thirteen = 13
+

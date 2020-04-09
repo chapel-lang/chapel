@@ -1,0 +1,47 @@
+#!/usr/bin/env bash
+#
+# In practice, CHPL_RT_CALL_STACK_SIZE is really an approximate call
+# stack size.  Some tasking layers use a higher value and some
+# lower.  We adjust for that here.
+#
+icss=$( sed -n 's/^CHPL_RT_CALL_STACK_SIZE=\([0-9]*\).*$/\1/p' $1.execenv )
+
+logfile=$2
+case $( $CHPL_HOME/util/chplenv/chpl_tasks.py ) in
+fifo)
+  # fifo rounds the call stack size to the next system page boundary
+  pagesize=$( getconf PAGESIZE )
+  ocss=$(( ($icss + $pagesize - 1) & ~($pagesize - 1) ));;
+qthreads)
+  # qthreads uses 1 system page from the stack for runtime data
+  # structures and an additional 2 pages for guard pages if they are
+  # enabled. qthreads also rounds the call stack size to the next system page
+  # Note: There are a multitude of ways that guard pages can be enabled or
+  #       disabled. They can be disabled at qthreads build time, by compopts,
+  #       and by both qthread and chapel level env vars. Instead of checking
+  #       all of them and making sure we check precedence levels we just print
+  #       QT_INFO and look for "QTHREADS: Guard Pages Enabled" That text only
+  #       appears if qthreads was built with guard pages, and they are on at
+  #       execution time, no matter how they were set.
+  guardPages=`grep "QTHREADS: Guard Pages Enabled" $logfile`
+  pagesize=$( getconf PAGESIZE )
+  if [ -n "$guardPages" ] ; then
+    ocss=$(( (($icss - 3*$pagesize) + $pagesize - 1) & ~($pagesize - 1) ))
+  else
+    ocss=$(( (($icss - 1*$pagesize) + $pagesize - 1) & ~($pagesize - 1) ))
+  fi;;
+*)
+  ocss=$icss;;
+esac
+
+if [[ $( $CHPL_HOME/util/chplenv/chpl_comm.py ) == none ]] ; then
+  good_in=$1.comm-none.good.in
+else
+  good_in=$1.good.in
+fi
+
+# remove the QT_INFO output
+grep -v "QTHREADS:" $logfile > $logfile.tmp
+mv $logfile.tmp $logfile
+
+sed "s/$icss/$ocss/" < $good_in > $1.good

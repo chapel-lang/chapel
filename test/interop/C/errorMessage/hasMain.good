@@ -1,0 +1,1 @@
+hasMain.chpl:2: warning: 'main()' has no special meaning when compiling in --library mode

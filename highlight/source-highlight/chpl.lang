@@ -1,0 +1,73 @@
+# Highlight Language Definition File for GNU source-highlight
+
+# definitions for Chapel
+preproc = "use"
+
+# \< \> means all one token.
+# These need to be ordered with the longest patterns first
+# decimal floating point number
+number = '\<(([[:digit:]]([[:digit:]]|_)*)?\.[[:digit:]]([[:digit:]]|_)*([Ee][+-]?[[:digit:]]([[:digit:]]|_)*)?)\>'
+number = '\<(([[:digit:]]([[:digit:]]|_)*)\.([Ee][+-]?[[:digit:]]([[:digit:]]|_)*))\>'
+number = '\<(([[:digit:]]([[:digit:]]|_)*)([Ee][+-]?[[:digit:]]([[:digit:]]|_)*))\>'
+
+# hexadecimal floating point number
+number = '\<0(x|X)(([[:xdigit:]]([[:xdigit:]]|_)*)?\.[[:xdigit:]]([[:xdigit:]]|_)*([Pp][+-]?[[:digit:]]([[:digit:]]|_)*)?)\>'
+number = '\<0(x|X)(([[:xdigit:]]([[:xdigit:]]|_)*)\.([Pp][+-]?[[:digit:]]([[:digit:]]|_)*))\>'
+number = '\<0(x|X)(([[:xdigit:]]([[:xdigit:]]|_)*)([Pp][+-]?[[:digit:]]([[:digit:]]|_)*))\>'
+
+# binary, octal, decimal, hexadecimal integer
+number = '\<(0[bB][0-1]([0-1]|_)*)\>'
+number = '\<(0[oO][0-7]([0-7]|_)*)\>'
+number = '\<(0[xX][[:xdigit:]]([[:xdigit:]]|_)*)\>'
+number = '\<([[:digit:]]([[:digit:]]|_)*)\>'
+
+string delim "\"" "\"" escape "\\"
+
+# double-quotes mean that parens are interpreted literally
+keyword = "align|as|atomic|begin|borrowed|break|by|catch|class|cobegin|coforall|config|const|continue||deinit|delete|dmapped|do|domain|else|enum|except|export|extern|false|for|forall|if|import|in|index|init|init=|inline|inout|iter|label|lambda|let|lifetime|local|locale|module|new|nil|noinit|none|on|only|otherwise|out|override|owned|param|private|proc|prototype|public|record|reduce|ref|require|return|scan|select|serial|single|shared|sparse|subdomain|sync|then|these|this|throw|throws|true|try|type|union|unmanaged|use|var|when|where|while|with|yield|zip"
+
+
+# double-quotes mean that parens are interpreted literally
+type = "bool|bytes|complex|imag|int|nothing|opaque|range|real|string|uint|void"
+
+
+#include "c_comment.lang"
+
+symbol = "~","!","%","^","*","(",")","-","+","=","[",
+        "]","\\",":",";",",",".","/","?","&","<",">","\|","#"
+
+cbracket = "{|}"
+
+#vardef TOK = '([[:alpha:]]|_)([[:word:]]|\$)*'
+# what is TOK in `` context?
+#vardef TOK = `(?:[[:alpha:]]|_)(?:[[:word:]]|\$)*`
+
+# (?= is a lookahead assertion
+#vardef FUNCTION = $TOK + '(?=[[:blank:]]*\()'
+#function = $FUNCTION
+
+#vardef TYPE_EQ_TYPE = `\<(type)(\s+)(` + $TOK + `)(\s*=\s*)(` + $TYPES + `)\>`
+#(keyword,normal,usertype,normal,type) = $TYPE_EQ_TYPE
+#vardef TYPE_EQ_USERTYPE = `\<(type)(\s+)(` + $TOK + `)(\s*=\s*)(` + $TOK + `)\>`
+#(keyword,normal,usertype,normal,usertype) = $TYPE_EQ_USERTYPE
+#vardef RECCLASS_DECL = `\<(record|class)(\s+)(` + $TOK + `)\>`
+#(keyword,normal,usertype) = $RECCLASS_DECL
+#vardef TYPE_USE = `\<(:)(\s*)(` + $TOK + `)\>`
+#(symbol,normal,usertype) = $TYPE_USE
+#
+#
+#(keyword,normal,usertype) = `\<(record|class)(\s+)(` + $TOK + `)\>`
+#(keyword,normal,usertype,normal,type) = `\<(type)(\s+)(` + $TOK + `)(\s*=\s*)(` + $TYPES + `)\>`
+#(keyword,normal,usertype,normal,usertype) = `\<(type)(\s+)(` + $TOK + `)(\s*=\s*)(` + $TOK + `)\>`
+#(keyword,normal,usertype) = `\<(record|class)(\s+)(` + $TOK + `)\>`
+#
+# (?<= is a lookbehind assertion
+#usertype = '(?<=:\s*)([[:alpha:]]|_)([[:word:]]|\$)*'
+usertype = '(?<=\s)xxx'
+
+#(symbol,normal,usertype) = `(:)(\s*)((?:[[:alpha:]]|_)(?:[[:word:]]|\$)*)`
+#
+#vardef X = `(:)(\s*)((?:[[:alpha:]]|_)(` + $TOK + `)`
+#(symbol,normal,usertype) = $X
+##`(:)(\s*)((?:[[:alpha:]]|_)(` + $TOK + `)`
+

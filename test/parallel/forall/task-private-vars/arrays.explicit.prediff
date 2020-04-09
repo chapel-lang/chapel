@@ -1,0 +1,5 @@
+#!/bin/bash
+
+# sort the output
+sort $2 > $2.tmp
+mv $2.tmp $2

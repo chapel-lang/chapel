@@ -1,0 +1,6 @@
+log2(ns) = 5
+log2(nu) = 6
+
+log2(ns) = 0
+log2(nu) = 0
+

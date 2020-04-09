@@ -1,0 +1,1 @@
+reduceVsMathPrec2.chpl:12: error: Cannot assign to int(64) from iterator

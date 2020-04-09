@@ -1,0 +1,6 @@
+--timing --dataParTasksPerLocale=1 --size=8 --iters=1000000   # return-array-serial-8-1000000.perfkeys
+--timing --dataParTasksPerLocale=1 --size=20000000 --iters=10 # return-array-serial-20000000-10.perfkeys
+--timing --dataParTasksPerLocale=1 --size=40000000 --iters=10 # return-array-serial-40000000-10.perfkeys
+--timing --size=8 --iters=1000000   # return-array-parallel-8-1000000.perfkeys
+--timing --size=20000000 --iters=10 # return-array-parallel-20000000-10.perfkeys
+--timing --size=40000000 --iters=10 # return-array-parallel-40000000-10.perfkeys

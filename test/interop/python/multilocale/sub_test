@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+
+# Otherwise we won't run these tests where we need to
+unset CHPL_TEST_MULTILOCALE_ONLY
+
+export CHPL_TEST_NO_USE_O=true
+$CHPL_HOME/util/test/sub_test $1

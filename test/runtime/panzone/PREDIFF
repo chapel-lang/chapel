@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+
+# ignore the line number for the actual halt call (since it's internal and the
+# line number will change frequently)
+outfile=$2
+sed "s:\(halt() at \$CHPL_HOME/modules/.*.chpl\:\)[0-9]*:\1nnnn:g" $outfile > $outfile.tmp
+mv $outfile.tmp $outfile

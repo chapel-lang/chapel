@@ -1,0 +1,6 @@
+performance: communication to access privatized field
+
+This test demonstrates that there is performance cost for accessing a
+privatized class array field in spite of the fact that it is local
+because to access any class field we go through the originating
+locale.

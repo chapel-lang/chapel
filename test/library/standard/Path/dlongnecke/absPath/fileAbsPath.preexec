@@ -1,0 +1,58 @@
+#!/usr/bin/env python
+
+# Produces the "fileAbsPath.good" file containing expected output for the
+# Chapel file.absPath function.
+
+# Coming up with tests for this version of the implementation is...less
+# straightforward than with the other tests that need to mirror
+# Python functionality.
+
+
+from __future__ import print_function
+import sys
+import os.path
+
+
+fileDoesNotExist = 'ThisFileDoesNotExist.txt'
+filePathRelative = 'test.txt'
+filePathAbsolute = os.path.abspath(filePathRelative)
+
+
+# Provides functionality equivalent to our Chapel implementation.
+def absolutize_file(somefile):
+    return os.path.abspath(somefile.name)
+
+# Perform tests using a given input path.
+def do_tests(somepath):
+    f = None
+    try:
+        f = open(somepath, 'r')
+    except Exception as e:
+        print('Failed to open file!')
+        return
+
+    # Print path used to open file.
+    print(somepath)
+
+    # NOTE: The semantics of this are different between Python/Chapel.
+    # In Python, this prints the path used to OPEN the file.
+    # In Chapel, this (appears) to print the canonical path to the file.
+    # -
+    # print file.name
+
+    # Print the abspath of the path used to open.
+    print(os.path.abspath(somepath))
+
+    # Get expected output for our test file.
+    print(absolutize_file(f))
+    f.close()
+
+
+# Redirect STDOUT to the "fileAbsPath.good" file.
+stdout = sys.stdout
+sys.stdout = open('fileAbsPath.good', 'w')
+
+
+do_tests(fileDoesNotExist)
+do_tests(filePathRelative)
+do_tests(filePathAbsolute)

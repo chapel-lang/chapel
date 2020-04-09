@@ -1,0 +1,1 @@
+isTrueOnIntNoFn.chpl:5: error: short-circuiting logical operators not supported on integers

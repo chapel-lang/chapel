@@ -1,0 +1,5 @@
+perfkeys: Time:, Time:, Time:
+files: bale-ig.dat, bale-ig-unordered.dat, bale-ig-opt.dat
+graphkeys: runtime (ordered), runtime (unordered), runtime (forall opt)
+graphtitle: Bale: Indexgather Time (sec)
+ylabel: Time (seconds)

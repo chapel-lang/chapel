@@ -1,0 +1,6 @@
+perfkeys: If/else branching took, Select branching took
+files: ifVersusSelect.balanced.dat, ifVersusSelect.balanced.dat
+graphkeys: if/else, select
+graphtitle: Conditional Statement Compare (Balanced)
+ylabel: Time (seconds)
+graphname: condCompareBalanced

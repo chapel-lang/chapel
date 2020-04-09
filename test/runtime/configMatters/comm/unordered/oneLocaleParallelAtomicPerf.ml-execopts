@@ -1,0 +1,11 @@
+#!/usr/bin/env python
+
+import os
+
+comm = os.getenv('CHPL_COMM')
+
+iters = 20000
+if comm == 'ugni':
+    iters = 200000000
+
+print('--printStats --iters={0} # one-locale-parallel-amo-perf'.format(iters))

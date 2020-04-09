@@ -1,0 +1,6 @@
+For Problem Class A:
+  n = 14000
+  nonzer = 11
+  shift = 20
+  niter = 15
+  zetaVerifyValue = 17.1302

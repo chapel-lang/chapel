@@ -1,0 +1,15 @@
+bug: the compiler requires the type of an actual to match the type of its formal when it has the 'out' intent
+
+This follows up on a discussion I had with Brad and Tom, whose outcome
+is documented in "the out intent" section of the spec as of r23271.
+
+Currently the compiler implements 'out' argument passing
+by reference, so the exact type match is required. However, it is
+semantically possible to relax that requirement to allow
+implicit conversion, or better yet, assignment from the formal
+to the actual upon the function's return. Tom was excited
+about this generalization, while Brad was OK with either choice.
+
+One implementation - or performance - challenge for the more general case
+seems to be a need in a temporary to store the final value of the formal
+before assigning it to the actual, if their types differ.

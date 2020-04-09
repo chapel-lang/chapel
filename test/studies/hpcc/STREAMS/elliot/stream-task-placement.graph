@@ -1,0 +1,5 @@
+perfkeys: Performance (GB/s) =, Performance (GB/s) =, Performance (GB/s) =
+graphkeys: none, half, random
+files: stream-task-place-none.dat, stream-task-place-half.dat, stream-task-place-rand.dat
+ylabel: Performance (GB/s)
+graphtitle: Task Placement STREAM Performance (GB/s)

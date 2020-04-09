@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+#
+# Remove occasional mysterious warning from moab flavor of pbs.
+
+#
+# This is a really silly test which seems to be designed to dodge
+# around the fact that mandelbrot's output is binary and therefore
+# cannot easily be grepped.  It'd be more robust to see whether
+# outfile is binary or not but I'm leaving that for future generations
+# for today and am just broadening it to cover all mandelbrot*
+# variants...
+#
+if [[ "${1}" != mandelbrot* ]] ; then
+    outfile=$2
+    cat $outfile | grep -v -E '.*/cray-ccm-epilogue: line .*: echo: write error: Broken pipe' > $outfile.tmp
+    mv $outfile.tmp $outfile
+fi

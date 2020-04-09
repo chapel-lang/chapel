@@ -1,0 +1,5 @@
+perfkeys: Time:, Time:, Time:  
+files: exchange-elegant.dat, exchange-destLocal.dat, exchange-bothLocal.dat
+graphkeys: elegant Time, destLocal Time, bothLocal Time
+ylabel: Time (seconds)
+graphtitle: BlockDist Transfer (n=1e6)

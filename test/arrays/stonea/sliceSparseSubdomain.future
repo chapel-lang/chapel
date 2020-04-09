@@ -1,0 +1,1 @@
+bug: Slicing array with a sparse subdomain causes an internal failure.

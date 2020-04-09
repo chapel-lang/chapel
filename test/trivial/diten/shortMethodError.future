@@ -1,0 +1,5 @@
+error message: Error message from resolution includes token after function name 
+for parenthesis-less function with no braces around body
+
+The method C.shortMethod gets called C.shortMethodreturn in the unresolved call
+error message.

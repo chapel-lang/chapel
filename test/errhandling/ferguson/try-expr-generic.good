@@ -1,0 +1,3 @@
+uncaught StringError: Test
+  try-expr-generic.chpl:9: thrown here
+  try-expr-generic.chpl:14: uncaught here

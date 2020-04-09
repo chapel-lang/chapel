@@ -1,0 +1,5 @@
+transferInBegin.chpl:5: error: Cannot transfer ownership from a non-nilable outer variable
+transferInBegin.chpl:11: error: Illegal use of dead value
+transferInBegin.chpl:7: note: 'myC' is dead due to ownership transfer here
+transferInBegin.chpl:11: error: mention of non-nilable variable after ownership is transferred out of it
+transferInBegin.chpl:5: note: ownership transfer occurred here

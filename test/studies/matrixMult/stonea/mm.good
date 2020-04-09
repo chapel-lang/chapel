@@ -1,0 +1,6 @@
+mult ijk: PASSED
+mult ijk (with dot prod): PASSED
+mult kij (with saxpy): PASSED
+mult tensored: PASSED
+mult tensored (no indices): PASSED
+mult tensored (no indices, no reindexing): PASSED

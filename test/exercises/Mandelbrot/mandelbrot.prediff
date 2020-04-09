@@ -1,0 +1,2 @@
+#!/bin/sh
+cat mandelbrot.ppm >> mandelbrot.exec.out.tmp

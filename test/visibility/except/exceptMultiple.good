@@ -1,0 +1,4 @@
+exceptMultiple.chpl:18: In function 'main':
+exceptMultiple.chpl:19: error: 'a' undeclared (first use this function)
+exceptMultiple.chpl:20: error: 'b' undeclared (first use this function)
+exceptMultiple.chpl:21: error: 'f' undeclared (first use this function)

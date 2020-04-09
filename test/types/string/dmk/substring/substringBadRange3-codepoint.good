@@ -1,0 +1,2 @@
+str1[3:byteIndex..2:byteIndex] = 
+str2[3:codepointIndex..2:codepointIndex] = 

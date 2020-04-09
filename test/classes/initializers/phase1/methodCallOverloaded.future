@@ -1,0 +1,6 @@
+bug: method calls in Phase 1 of initialization not detected if method has overloads
+
+As I suspected, our strategy of detecting method calls in Phase 1 of
+initialization gets fooled when there are multiple versions of a method.  This
+is because scope resolve doesn't arbitrarily keep one of the functions it finds,
+it just punts if there are multiple.

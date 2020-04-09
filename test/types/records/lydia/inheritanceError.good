@@ -1,0 +1,2 @@
+inheritanceError.chpl:5: error: inheritance is not currently supported for records
+inheritanceError.chpl:5: note: thoughts on what record inheritance should entail can be added to https://github.com/chapel-lang/chapel/issues/6851

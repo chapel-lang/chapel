@@ -1,0 +1,3 @@
+# This test used to crash the compiler.
+# No need to actually run it under multiple locales.
+CHPL_COMM != none

@@ -1,0 +1,15 @@
+r is: 1..10
+split into: 1..5 and 6..10
+------
+r is: 1..9
+split into: 1..4 and 5..9
+------
+r is: 1..10 by 2
+split into: 1..4 by 2 and 5..10 by 2
+------
+r is: 1..12 by 2
+split into: 1..6 by 2 and 7..12 by 2
+------
+r is: 1..10 by -2
+split into: 7..10 by -2 and 1..6 by -2
+------

@@ -1,0 +1,20 @@
+#!/bin/bash
+
+outfile=$2
+
+case $outfile in
+  (spsZipper.*)
+     # sort the last output section
+     grep -v '^(' $outfile > $outfile.tmp
+     grep    '^(' $outfile | sort >> $outfile.tmp
+     mv $outfile.tmp $outfile
+     ;;
+  (spsZipper2.*)
+     # remove the possible duplicates of the "can't be zippered" message
+     sort $outfile | uniq > $outfile.tmp
+     mv $outfile.tmp $outfile
+     ;;
+  (*)
+     # nothing so far
+     true ;;
+esac

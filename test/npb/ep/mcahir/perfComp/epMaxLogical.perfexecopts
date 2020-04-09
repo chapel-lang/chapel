@@ -1,0 +1,6 @@
+--probClass=S # ep.S.maxLogical
+--probClass=W # ep.W.maxLogical
+--probClass=A # ep.A.maxLogical
+--probClass=B # ep.B.maxLogical
+#--probClass=C # ep.C.maxLogical
+#--probClass=D # ep.D.maxLogical

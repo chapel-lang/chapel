@@ -1,0 +1,2 @@
+need-missing-return-error-1.chpl:5: In function 'funfun':
+need-missing-return-error-1.chpl:5: error: control reaches end of function that returns a value

@@ -1,0 +1,23 @@
+var a = " true ";
+var a1 = a:bool;
+writeln(a1);
+var a2 = a:bool(8);
+writeln(a2);
+var a3 = a:bool(16);
+writeln(a3);
+var a4 = a:bool(32);
+writeln(a4);
+var a5 = a:bool(64);
+writeln(a5);
+
+var x = c" true ";
+var x1 = x:bool;
+writeln(x1);
+var x2 = x:bool(8);
+writeln(x2);
+var x3 = x:bool(16);
+writeln(x3);
+var x4 = x:bool(32);
+writeln(x4);
+var x5 = x:bool(64);
+writeln(x5);

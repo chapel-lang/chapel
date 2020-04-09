@@ -1,0 +1,1 @@
+defaultValArg.chpl:1: error: cannot define a default value for a sync/single argument

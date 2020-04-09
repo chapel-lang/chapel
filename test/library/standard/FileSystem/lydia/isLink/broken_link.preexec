@@ -1,0 +1,10 @@
+#!/bin/bash
+
+mkdir -p broken_dir
+touch broken_file
+if [ ! -e broken_dir_link ]; then
+   ln -s broken_dir broken_dir_link
+   ln -s broken_file broken_file_link
+fi
+rmdir broken_dir
+rm broken_file

@@ -1,0 +1,5 @@
+Number of locales   = 1
+Number of points    = 100000
+Random number seed  = 314159265
+Number of tasks     = 2 (per locale)
+Approximation of PI = 3.1432400

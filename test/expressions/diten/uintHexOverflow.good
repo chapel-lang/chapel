@@ -1,0 +1,1 @@
+uintHexOverflow.chpl:1: error: Integer literal overflow: '0x10000000000000000' is too big for type uint64

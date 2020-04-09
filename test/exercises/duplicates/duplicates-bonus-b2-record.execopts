@@ -1,0 +1,5 @@
+dups1                        # duplicates.dups1.good
+dups2                        # duplicates.dups2.good
+dups2/a1 dups2/a1 dups2/a2   # duplicates.dups2a.good
+dups3                        # duplicates.dups3.good
+example-files                # duplicates.ex.good

@@ -1,0 +1,2 @@
+# Skip this test of optimization under --baseline
+COMPOPTS  <= --baseline

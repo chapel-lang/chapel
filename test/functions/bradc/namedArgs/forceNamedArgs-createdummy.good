@@ -1,0 +1,1 @@
+forceNamedArgs-createdummy.chpl:14: error: can't create an object of type 'dummyarg' -- use named argument passing to call this routine

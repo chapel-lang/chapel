@@ -1,0 +1,10 @@
+-------------------------------------------------------------
+This system uses 8 bytes per DOUBLE PRECISION word.
+-------------------------------------------------------------
+Array size (B) = 1048576 Offset = 0
+Total memory required (GB) = 0.00292969
+-------------------------------------------------------------
+Results Comparison: 
+        Expected  : 1.51165e+173.02331e+164.03108e+16
+        Observed  : 1.51165e+173.02331e+164.03108e+16
+Solution Validates

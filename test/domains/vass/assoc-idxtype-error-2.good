@@ -1,0 +1,1 @@
+assoc-idxtype-error-2.chpl:2: error: Default Associative domains with idxType=[domain(1,int(64),false)] range(int(64),bounded,false) are not allowed

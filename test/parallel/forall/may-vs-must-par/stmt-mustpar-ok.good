@@ -1,0 +1,61 @@
+
+SA standalone
+iter1SA standalone
+forall IND in iter1SA
+forall IND in iter1SA
+followers: 0 0
+
+LF leader+follower
+iter1LF leader
+forall IND in iter1LF
+forall IND in iter1LF
+followers: 2 0
+
+par standalone
+iter1par standalone
+forall IND in iter1par
+forall IND in iter1par
+followers: 0 0
+
+LF leader+followers
+iter1LF leader
+forall IND in zip(iter1LF(), iter2LF())
+forall IND in zip(iter1LF(), iter2LF())
+followers: 2 2
+
+par leader+followers
+iter1par leader
+forall IND in zip(iter1par(), iter2par())
+forall IND in zip(iter1par(), iter2par())
+followers: 2 2
+
+SA standalone
+class1SA standalone
+forall IND in inst1SA
+forall IND in inst1SA
+followers: 0 0
+
+LF leader+follower
+class1LF leader
+forall IND in inst1LF
+forall IND in inst1LF
+followers: 2 0
+
+par standalone
+class1par standalone
+forall IND in inst1par
+forall IND in inst1par
+followers: 0 0
+
+LF leader+followers
+class1LF leader
+forall IND in zip(inst1LF, inst2LF)
+forall IND in zip(inst1LF, inst2LF)
+followers: 2 2
+
+par leader+followers
+class1par leader
+forall IND in zip(inst1par, inst2par)
+forall IND in zip(inst1par, inst2par)
+followers: 2 2
+

@@ -1,0 +1,2 @@
+coforall-throws-strict-error.chpl:4: In function 'test':
+coforall-throws-strict-error.chpl:6: error: cannot throw in a non-throwing function

@@ -1,0 +1,7 @@
+feature request: param loop over tuple of types
+
+Issue #9634
+
+It would be convenient to be able to iterate over a tuple of types by unrolling
+the loop.  This could be translated by the compiler to a regular param loop in
+a pretty straightforward way.

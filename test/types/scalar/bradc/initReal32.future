@@ -1,0 +1,70 @@
+semantic: implicit real parameter coercion
+
+Notes from 04/30/08 meeting
+---------------------------
+* we don't fold floating point numbers, so there's a barrier there (as
+  mentioned below), but so be it
+
+* to be orthogonal to integers, do we need to make sure that the
+  64-bit float fits into the 32-bit float without loss of precision
+  (or something like that?)  Seems to be impossible to do this (and
+  we don't do it for normal decimal literals either).
+
+* some semantic question over whether we go to 64-bit real first and
+  then to 32-bit real or straight to 32-bit real.  Does that cause any
+  issues?
+
+* some desire for width-neutral floating point representations.  This
+  could be done manually by storing the value as a string:
+
+  // this version would cause string-to-value conversions to happen at
+  // runtime
+  const pi = "3.14159265";
+  const pi32 = s:real(32);
+  const pi64 = s:real(64);
+  const pi128 = s:real(128);
+
+  // this version could cause string-to-RealLiteral conversions to
+  // happen at compile time and generate code like float pi32 = 3.14159265.
+  // It probably doesn't today.
+  param pi = "3.14159265";
+  const pi32 = s:real(32);
+  const pi64 = s:real(64);
+  const pi128 = s:real(128);
+
+* arguments in favor of a need for floating point suffixes, though these
+  could perhaps be expressed using cast syntax.  This may become
+  particularly important with real(80) or real(128) types.
+
+* Some desire to do this if range of the literal is legal for real(32)
+  -- using a cast for all literals in 32-bit math is hard on the user.
+  How hard is this to do at compile time?  Does it make assumptions
+  about the target architecture?  Is our job easier if we only made
+  overflow illegal, not underflow?  Can the legality check be done at
+  compile-time, the value thrown away and then the cast done at runtime?
+  Does this result in a double-rounding issue?
+
+* John Lewis, Robert Henry, William Kahan would be good people to talk
+  to about this.
+
+
+sjd: If we allow parameter real(64) to be implicitly coerced to real(32),
+since we don't allow folding over any operators, this wouldn't apply
+to any kind of expression.  So
+
+  var r: real(32) = +2.4;
+
+would still not work.  I'm not opposed to this tact though.  What does
+C# do?  Do they have real(16) if real(32) is their default?
+
+-----------
+
+Unlike integers, floating point literals are not implicitly coerced
+down to smaller floating point sizes, implying that the initialization
+of a real(32) requires a cast.  I believe that it would be appropriate
+to the spirit of Chapel to permit this.  If not, I think we need to
+reconsider whether our default floating point width should be 32 bits
+to support this case.
+
+
+var x: int(8) = 12;

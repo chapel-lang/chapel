@@ -1,0 +1,10 @@
+var x : real = 3.14;
+writeln(x);
+x = 1.0;
+writeln(x);
+x = 1.23E+10;
+writeln(x);
+x = 1.23e-10;
+writeln(x);
+x = .23E+10;
+writeln(x);

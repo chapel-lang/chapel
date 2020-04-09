@@ -1,0 +1,4 @@
+testing sorts of 2*uint(64)
+testing sorts of 2*uint(32)
+testing sorts of 2*uint(16)
+testing sorts of 2*uint(8)

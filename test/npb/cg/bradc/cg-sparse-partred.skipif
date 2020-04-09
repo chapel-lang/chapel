@@ -1,0 +1,5 @@
+# This test currently takes much longer under cygwin and valgrind,
+# so do not test it there.
+# TODO: bring performance on par with linux.
+CHPL_TARGET_PLATFORM <= cygwin
+CHPL_TEST_VGRND_EXE == on

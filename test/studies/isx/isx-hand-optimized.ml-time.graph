@@ -1,0 +1,5 @@
+perfkeys: total =, input =, bucket count =, bucket offset =, bucketize =, exchange =, exchange only =, exchange barrier =, count keys =
+repeat-files: isx-hand-optimized.dat
+graphkeys: total time, input time, bucket count time, bucket offset time, bucketize time, exchange time, exchange only time, exchange barrier time, count keys time
+ylabel: Time (seconds)
+graphtitle: ISx (Hand Optimized)

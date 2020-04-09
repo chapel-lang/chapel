@@ -1,0 +1,28 @@
+semantic: module initialization for implicit main module
+
+This case threw me for a loop for awhile until I realized what was
+happening.  bar.chpl and baz.chpl 'use' module 'foo' which is defined
+in 'foo.chpl'.  'foo.chpl' can be named on the command-line or
+'require'd, but the behavior is the same: since it is the only module
+to contain a procedure named 'main()', it is considered the main
+module and all dependent module 'use's start from it.  However, it
+does not 'use' 'bar' or 'baz', so the init() functions (read:
+top-level code) of these modules never execute in spite of the fact
+that they are named on the command-line.  This seems confusing.
+
+Meanwhile, if bam.chpl is compiled without naming foo.chpl on the
+command line or requiring it, the init functions of both modules
+execute, yet bam is treated as the main module and foo's main is not
+executed.  This seems inconsistent (though this last case is one that
+we've explicitly discussed supporting, where the main() procedure in
+the "library" module foo is considered a way of unit testing that
+library.  But really, perhaps we should add a well-defined procedure
+test() for such cases?
+
+I think that the execution of all three is arguably correct, but that
+the compiler should print warnings when things might be surprising --
+e.g., a module named on the command-line is seemingly ignored and
+maybe _possibly_ when a module with a main() procedure that's not
+listed on the command line doesn't serve as the main module.  I put a
+proposed warning into the .good files for the first two cases, though
+I'm open to other approaches as well.

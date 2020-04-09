@@ -1,0 +1,2 @@
+notAnErrorSubtype-thrown-record.chpl:5: In function 'main':
+notAnErrorSubtype-thrown-record.chpl:7: error: Cannot throw an instance of type 'Foo', not a subtype of Error

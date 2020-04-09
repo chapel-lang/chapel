@@ -1,0 +1,9 @@
+feature request: sync statements in phase 1
+
+Philosophically, it should not be a big deal for phase 1 initializers to
+include a sync statement. However, because of error-handling changes to
+do with sync statements, the matching for phase 1 initializers can no
+longer allow this pattern without also allowing try/catch. This issue
+should be revisited after error handling and initializers have both
+stabilized more.
+

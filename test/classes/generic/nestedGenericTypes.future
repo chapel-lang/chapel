@@ -1,0 +1,6 @@
+unimplemented feature: nested generic types
+#10172
+
+Once this is resolved, expand/uncomment code in these tests:
+  test/functions/lydia/declaredGenericReturnType.chpl
+  test/users/thom/returnGeneric.chpl

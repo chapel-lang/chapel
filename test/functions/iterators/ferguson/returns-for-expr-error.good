@@ -1,0 +1,1 @@
+returns-for-expr-error.chpl:2: error: functions cannot return nested iterators or loop expressions

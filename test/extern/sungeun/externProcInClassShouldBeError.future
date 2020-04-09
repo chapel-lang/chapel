@@ -1,0 +1,11 @@
+error message: Invalid extern declaration in class results in confusing C compile-time error.
+
+This fails because we add the 'this' argument to the call.  It would
+be nice to maybe warn that an extern function was declared inside of a
+class definition.
+
+This test essentially parallel/taskPar/sungeun/private.chpl except
+that the extern declaration is accidentally placed at the class-level
+in localePrivateData.  I made a few attempts to make this example
+simpler, but the simpler examples don't seem to work.
+

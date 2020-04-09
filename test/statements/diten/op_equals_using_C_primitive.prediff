@@ -1,0 +1,3 @@
+#! /bin/sh
+grep -c '[\*|\+]=' gen_output/$1.c >> $2
+rm -r gen_output

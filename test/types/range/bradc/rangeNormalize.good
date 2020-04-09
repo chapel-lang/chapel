@@ -1,0 +1,4 @@
+Before normalization: 1..10 by 2
+Afrer  normalization: 1..9 by 2
+Before normalization: 1..10 by -2
+After  normalization: 2..10 by 2

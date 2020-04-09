@@ -1,0 +1,1 @@
+bitshiftLargerThanNumBits.chpl:11: error: halt reached - Cannot bitshift 128 by 64 because 64 is >= the bitwidth of uint(64)

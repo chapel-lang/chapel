@@ -1,0 +1,3 @@
+chplspell-venv: $(CHPL_VENV_CHPLSPELL_REQS)
+$(CHPL_VENV_CHPLSPELL_REQS): $(CHPL_VENV_CHPLSPELL_REQUIREMENTS_FILE)
+	cd chpl-venv && $(MAKE) chplspell-venv

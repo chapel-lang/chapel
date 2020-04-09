@@ -1,0 +1,9 @@
+semantic: memory testing
+
+What exactly is this testing?
+
+Was:
+
+bug: no way to distinguish calls to chpl_mem_realloc due to explicit user code
+from those not due to explicit user code.  chpl_mem_realloc is only ever called
+from chplcomm.c, so this test may require some modification.

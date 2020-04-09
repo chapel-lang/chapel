@@ -1,0 +1,3 @@
+uncaught IllegalArgumentError: bad cast from string '_1234' to int(64)
+  stringToIntError1.chpl:1: thrown here
+  stringToIntError1.chpl:1: uncaught here

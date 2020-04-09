@@ -1,0 +1,2 @@
+notAnErrorSubtype-thrown-int.chpl:1: In function 'main':
+notAnErrorSubtype-thrown-int.chpl:3: error: Cannot throw an instance of type 'int(64)', not a subtype of Error

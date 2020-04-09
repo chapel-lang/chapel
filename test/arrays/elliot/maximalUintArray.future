@@ -1,0 +1,16 @@
+bug: Maximal uint arrays are not initialized
+
+Arrays like `[0:uint(8)..255:uint(8)] int` are not initialized because of
+overflow. Currently range.size is passed in as the size of the array to be
+initialized, but range.size overflows for maximal uint arrays so it uses a
+size of 0.
+
+I think the correct behavior is to either properly initialize maximal arrays or
+to report an error about not supporting maximal arrays, similar to what we do
+for iterating over ranges that will overflow.
+
+When this bug is resolved, the test should be updated with a description and be
+made more like the nearMaxmialUintArray test.
+
+See issue #7531 for more info:
+  https://github.com/chapel-lang/chapel/issues/7531

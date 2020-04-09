@@ -1,0 +1,79 @@
+.. default-domain:: chpl
+
+.. module:: fields.doc
+
+fields.doc
+==========
+**Usage**
+
+.. code-block:: chapel
+
+   use fields.doc;
+
+
+or
+
+.. code-block:: chapel
+
+   import fields.doc;
+
+.. class:: fullOfFields
+
+   .. attribute:: type eltType
+
+      This is a generic type. 
+
+   .. attribute:: var thing1
+
+   .. attribute:: param thing2
+
+   .. attribute:: var typedField: int
+
+   .. attribute:: var alsoTyped: string
+
+   .. attribute:: var commented
+
+      This field has a doc attached, does that work? 
+
+   .. attribute:: var typeComment: int
+
+      This field has a doc and an explicit type 
+
+   .. attribute:: const initialized = "bleah"
+
+   .. attribute:: var initializedType: int = 3
+
+   .. attribute:: type yards = uint(16)
+
+      This is a type alias. 
+
+.. record:: fullOfFieldsToo
+
+   .. attribute:: type eltType
+
+      This is a generic type. 
+
+   .. attribute:: var thing1
+
+   .. attribute:: param thing2
+
+   .. attribute:: var typedField: int
+
+   .. attribute:: var alsoTyped: string
+
+   .. attribute:: var commented
+
+      This field has a doc attached, does that work? 
+
+   .. attribute:: var typeComment: int
+
+      This field has a doc and an explicit type 
+
+   .. attribute:: const myConst = 10
+
+      This is a const. 
+
+   .. attribute:: type yards = int
+
+      This is a type alias. 
+

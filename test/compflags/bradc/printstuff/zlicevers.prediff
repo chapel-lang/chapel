@@ -1,0 +1,3 @@
+#!/bin/sh
+./versionhelp.sh $1 $2 $3 > zlicevers.good
+./licensehelp.sh $1 $2 $3 >> zlicevers.good

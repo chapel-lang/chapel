@@ -1,0 +1,12 @@
+feature request: 'use' enums at class scope
+
+The spec says that it is legal to declare an enum within the top level scope of
+a class (as well as classes, records, and unions).  However, trying to use one
+of the constants declared in that enum as the initial value of field runs into
+issues.
+
+This future covers trying to 'use' the internal enum, so that the field can
+access its constant without resorting to explicit naming.  The spec does not
+currently permit this, but it seems reasonable to desire it.  Otherwise, you'd
+end up writing a 'use' statement in every method if you wanted to do something
+with the enum type.

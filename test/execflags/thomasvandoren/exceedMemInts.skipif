@@ -1,0 +1,6 @@
+#!/usr/bin/env python
+
+"""Only run this test on 32-bit platforms."""
+
+import os
+print(not os.environ.get('CHPL_TARGET_PLATFORM').endswith('32'))

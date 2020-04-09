@@ -1,0 +1,4 @@
+# This test runs gcc
+CHPL_TARGET_COMPILER != gnu
+# This test unlinks an executable (see unlink-exe-cygwin.sh)
+CHPL_TARGET_PLATFORM == cygwin32

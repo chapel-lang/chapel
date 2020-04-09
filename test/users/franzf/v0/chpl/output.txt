@@ -1,0 +1,18 @@
+$ make
+chpl --chplhome ~/chapel -O --no-bounds-checks -o fft omega.chpl fft_2.chpl fft_
+4.chpl fft_8.chpl fft_16.chpl fft_32.chpl fft_64.chpl fft_128.chpl fft_256.chpl
+fft_512.chpl fft_1024.chpl fft_2048.chpl  fft.chpl main.chpl
+./fft --NUMRUNS=1000
+Spiral 5.0 Chapel FFT example
+
+fft_2: 0.0us = inf Mflop/s
+fft_4: 1.0us = 40.0 Mflop/s
+fft_8: 3.0us = 40.0 Mflop/s
+fft_16: 9.0us = 35.5556 Mflop/s
+fft_32: 26.0us = 30.7692 Mflop/s
+fft_64: 50.0us = 38.4 Mflop/s
+fft_128: 126.0us = 35.5556 Mflop/s
+fft_256: 277.0us = 36.9675 Mflop/s
+fft_512: 653.0us = 35.2833 Mflop/s
+fft_1024: 1644.0us = 31.1436 Mflop/s
+fft_2048: 3625.0us = 31.0731 Mflop/s

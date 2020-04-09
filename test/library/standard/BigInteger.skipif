@@ -1,0 +1,2 @@
+# Tests in this directory assume we can use GMP
+CHPL_GMP == none

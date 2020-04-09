@@ -1,0 +1,4 @@
+semantic: Nested serial statements do not change the serial state once it is serial.
+
+Though not in the spec, Brad said that the serial state should be
+reversable once set.

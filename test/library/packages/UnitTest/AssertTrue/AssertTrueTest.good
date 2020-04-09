@@ -1,0 +1,6 @@
+Error Caught in x == false
+AssertionError: assertTrue failed. Given expression is False
+================================================================================
+Error Caught in expresion '1==2'
+AssertionError: assertTrue failed. Given expression is False
+================================================================================

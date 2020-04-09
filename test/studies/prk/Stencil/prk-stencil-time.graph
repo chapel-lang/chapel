@@ -1,0 +1,5 @@
+perfkeys: Avg time (s):, Avg time (s):, Avg time (s):, Avg time (s):
+files: stencil-defaultdist.dat, stencil-blockdist.dat, stencil-stencildist.dat, stencil-serial.dat
+graphkeys: DefaultDist, BlockDist, StencilDist, Serial
+graphtitle: PRK stencil time
+ylabel: Time (seconds)

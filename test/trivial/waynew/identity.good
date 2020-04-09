@@ -1,0 +1,80 @@
+        int(i8)
+product = 1
+logical and = true
+logical or = false
+logical xor = false
+bit-wise and = -1
+bit-wise or = 0
+bit-wise xor = 0
+        int(16)
+product = 1
+logical and = true
+logical or = false
+logical xor = false
+bit-wise and = -1
+bit-wise or = 0
+bit-wise xor = 0
+        int(32)
+product = 1
+logical and = true
+logical or = false
+logical xor = false
+bit-wise and = -1
+bit-wise or = 0
+bit-wise xor = 0
+        int(64)
+product = 1
+logical and = true
+logical or = false
+logical xor = false
+bit-wise and = -1
+bit-wise or = 0
+bit-wise xor = 0
+        uint(i8)
+product = 1
+logical and = true
+logical or = false
+logical xor = false
+bit-wise and = 255
+bit-wise or = 0
+bit-wise xor = 0
+        uint(16)
+product = 1
+logical and = true
+logical or = false
+logical xor = false
+bit-wise and = 65535
+bit-wise or = 0
+bit-wise xor = 0
+        uint(32)
+product = 1
+logical and = true
+logical or = false
+logical xor = false
+bit-wise and = 4294967295
+bit-wise or = 0
+bit-wise xor = 0
+        uint(64)
+product = 1
+logical and = true
+logical or = false
+logical xor = false
+bit-wise and = -1
+bit-wise or = 0
+bit-wise xor = 0
+        real(32)
+product = 1.0
+logical and = true
+logical or = false
+logical xor = false
+bit-wise and = 4.29497e+09
+bit-wise or = 0.0
+bit-wise xor = 0.0
+        real(64)
+product = 1.0
+logical and = true
+logical or = false
+logical xor = false
+bit-wise and = 1.84467e+19
+bit-wise or = 0.0
+bit-wise xor = 0.0

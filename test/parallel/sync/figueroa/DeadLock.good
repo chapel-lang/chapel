@@ -1,0 +1,5 @@
+1: writing 5
+2: initial value is 1
+Program is deadlocked!
+Waiting at: DeadLock.chpl:11
+Waiting at: DeadLock.chpl:15

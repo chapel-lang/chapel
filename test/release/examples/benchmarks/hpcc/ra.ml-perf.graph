@@ -1,0 +1,11 @@
+perfkeys: Performance (GUPS) =
+files: ra.on-n33.dat
+graphkeys: ra-on GUPS
+graphtitle: HPCC: RA-on Perf (GUPS) - n=2^33
+ylabel: Performance (GUPS)
+
+perfkeys: Performance (GUPS) =
+files: ra.rmo-n33.dat
+graphkeys: ra-rmo GUPS
+graphtitle: HPCC: RA-rmo Perf (GUPS) - n=2^33
+ylabel: Performance (GUPS)

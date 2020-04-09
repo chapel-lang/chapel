@@ -1,0 +1,30 @@
+.. default-domain:: chpl
+
+.. module:: mathjax.doc
+
+mathjax.doc
+===========
+**Usage**
+
+.. code-block:: chapel
+
+   use mathjax.doc;
+
+
+or
+
+.. code-block:: chapel
+
+   import mathjax.doc;
+
+.. function:: proc pythagoras(a, b)
+
+   
+   
+   This function computes the following:
+   
+   .. math::
+   
+       a^2 + b^2
+   
+

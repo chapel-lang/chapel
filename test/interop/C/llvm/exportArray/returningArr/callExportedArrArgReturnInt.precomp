@@ -1,0 +1,3 @@
+#!/bin/bash
+echo Compiling exportArrArgReturnInt.chpl
+$3 --llvm --library --static exportArrArgReturnInt.chpl

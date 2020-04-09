@@ -1,0 +1,4 @@
+f: x=3  assigning 4
+g: x=4  assigning 5
+f: x=5  assigning 4
+g: x=4  assigning 5

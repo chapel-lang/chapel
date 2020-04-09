@@ -1,0 +1,5 @@
+#!/bin/bash --norc
+
+output=$2
+
+sed 's@Max Betweenness Centrality: .*@Max Betweenness Centrality: XXX@;s@All betweenness centrality scores should be <= .*@All betweenness centrality scores should be <= YYY@' $output > $output.tmp && mv $output.tmp $output

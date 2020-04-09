@@ -1,0 +1,12 @@
+Testing {1..10}[.. by 2 align 0]
+	serial iter: SUCCESS
+	leader/follower: SUCCESS
+Testing {1..10}[.. by 2 align 1]
+	serial iter: SUCCESS
+	leader/follower: SUCCESS
+Testing {1..10, 1..10}[.. by 2 align 0]
+	serial iter: SUCCESS
+	leader/follower: SUCCESS
+Testing {1..10, 1..10}[.. by 2 align 1]
+	serial iter: SUCCESS
+	leader/follower: SUCCESS

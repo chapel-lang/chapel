@@ -1,0 +1,2 @@
+literal-octal.chpl:1: octal escape not supported in string literal: near '"'
+literal-octal.chpl:1: octal escape not supported in string literal: near '"'

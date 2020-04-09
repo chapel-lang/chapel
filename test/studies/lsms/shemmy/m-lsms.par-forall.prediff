@@ -1,0 +1,5 @@
+#!/bin/bash
+
+sed 's@([0-9]\+)@(NNN)@' < $2 > $2.tmp
+cp $2.tmp $2
+echo original output is preserved in $2.tmp

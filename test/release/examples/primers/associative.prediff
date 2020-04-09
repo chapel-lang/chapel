@@ -1,0 +1,3 @@
+#!/bin/sh
+
+$CHPL_HOME/util/test/sort-words-within-literals $*

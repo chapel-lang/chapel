@@ -1,0 +1,27 @@
+#!/usr/bin/env bash
+
+
+if [ $# -lt 1 ] ; then
+    blah=`basename $0`
+    echo "usage: $blah filename [compiler|program|timeout]"
+    exit -1
+fi
+
+if [ $# -ge 2 ] ; then
+    type=$2
+else
+    type='all'
+fi
+
+if [ $type = "compiler" ] ; then
+    errstring='^\[Error matching compiler'
+elif [ $type = "program" ] ; then
+    errstring='^\[Error matching program'
+elif [ $type = "timeout" ] ; then
+    errstring='^\[Error: Timed out'
+else
+    errstring='^\[Error matching \|^\[Error: Timed out '
+fi
+
+# sort+uniq gets rid of tests for which multiple compopts/execopts were used
+grep "$errstring" $1 | awk '{ print $6 }' | sort | uniq | sed s/]*$/.chpl/g

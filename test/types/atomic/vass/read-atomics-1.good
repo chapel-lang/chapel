@@ -1,0 +1,1 @@
+read-atomics-1.chpl:3: error: direct access to an atomic variable, 'a', is prohibited, use read() instead

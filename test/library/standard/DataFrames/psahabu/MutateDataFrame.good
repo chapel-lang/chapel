@@ -1,0 +1,27 @@
+0    a
+1    None
+2    c
+3    None
+4    e
+dtype: string
+
+0    1
+1    None
+2    3
+3    None
+4    5
+dtype: int(64)
+
+0    10.0
+1    20.0
+2    30.0
+3    40.0
+4    50.0
+dtype: real(64)
+
+         columnThree   columnOne   columnTwo   
+rowOne          10.0           a           1   
+rowTwo          20.0        None        None   
+rowThree        30.0           c           3   
+rowFour         40.0        None        None   
+rowFive         50.0           e           5   

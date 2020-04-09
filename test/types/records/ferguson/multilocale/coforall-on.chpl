@@ -1,0 +1,27 @@
+use myrecord;
+
+config const verbose = false;
+
+iter myiter() : R {
+  for i in 1..4 {
+    var ret: R;
+    ret.setup(x = i);
+    ret.verify();
+    yield ret;
+  }
+}
+
+
+proc run() {
+  var tot:atomic int;
+  coforall r in myiter() {
+    on Locales[numLocales-1] {
+      tot.add(r.x);
+      if verbose then writeln(r);
+    }
+  }
+  writeln(tot.read());
+}
+
+run();
+verify();

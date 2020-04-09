@@ -1,0 +1,45 @@
+Detail of versions contained in this directory
+
+ferguson/mandelbrot2-opt:
+  Uses complex numbers for computation, determines all the bits within each
+  iteration as opposed to determining them individually, writes to a file
+  mandelbrot.pbm and so cannot be submitted to the Shootout contest.
+
+ferguson/mandelbrot-stdout:
+  Does the same thing as mandelbrot2-opt except writes to stdout instead of a
+  file.
+
+ferguson/mandelbrot-stdout-putchar:
+  Uses the C function putchar to write to stdout instead of Chapel functions.
+
+ferguson/mandelbrot-opt2:
+  Does the same thing as mandelbrot2-opt, except writes to the file as bits are
+  determined rather than all at once.  Also cannot be submitted to the
+  Shootout contest.
+
+
+jacobnelson/mandelbrot-complex:
+  Serial, uses complex numbers for computation, writes using the C function
+  putchar
+
+jacobnelson/mandelbrot-dist:
+  Also uses complex numbers, and the C function putchar.  Difference is the use
+  of parallelization, as well as storing the data using distributions and 
+  booleans, which are then translated to uint(8)s.
+
+jacobnelson/mandelbrot-fancy:
+  Uses a distribution to improve load balance, as well as computing with reals
+  instead of complex numbers.  However, the distribution causes it to run out
+  of memory when running the full problem size on machines with a small number
+  of cores so it is not run as a performance test.
+
+
+lydia/mandelbrot-no-dist:
+  The same as mandelbrot-fancy, minus the distribution so that the program does
+  not run out of memory.
+
+lydia/mandelbrot-unzipped:
+  Uses the same style of Chapel I/O as ferguson/mandelbrot-stdout and removes
+  the zippering, replacing the bundled array access with an on-demand access and
+  iterating over the 2D indices separately rather than as one.  Currently the
+  fastest version.

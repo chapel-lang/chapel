@@ -1,0 +1,23 @@
+.. default-domain:: chpl
+
+.. module:: defaultModule.doc
+
+defaultModule.doc
+=================
+**Usage**
+
+.. code-block:: chapel
+
+   use defaultModule.doc;
+
+
+or
+
+.. code-block:: chapel
+
+   import defaultModule.doc;
+
+.. function:: proc foo()
+
+   This proc doesn't matter very much 
+

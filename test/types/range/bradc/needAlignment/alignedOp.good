@@ -1,0 +1,24 @@
+1..10 by 2 align 0 yields:
+2
+4
+6
+8
+10
+1..10 by 2 align 1 yields:
+1
+3
+5
+7
+9
+1..10 by 2 align 2 yields:
+2
+4
+6
+8
+10
+1..10 by 2 align -1 yields:
+1
+3
+5
+7
+9

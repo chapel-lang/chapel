@@ -1,0 +1,1 @@
+$CHPL_HOME/modules/standard/IO.chpl:: error: Cannot write a c_string, cast to a string first.

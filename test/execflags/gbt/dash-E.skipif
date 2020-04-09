@@ -1,0 +1,9 @@
+# The -E option we're testing here is the one for the user executable.
+# Launchers use this to forward the environment to user executables when
+# the underlying system launcher doesn't do that itself.  (An example is
+# the GASNet amudprun launcher when used with the ssh spawner.)  The
+# launcher itself does not support -E.  It's therefore sufficient, in
+# fact necessary, to only test this when no launcher is in use.  Test(s)
+# to check that specific launchers properly forward the environment are
+# separate.
+CHPL_COMM != none

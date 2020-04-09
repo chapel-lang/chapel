@@ -1,0 +1,4 @@
+# This verifies that we can override environment variables in compilation and
+# still build.  To do that, we toy with CHPL_HWLOC, so ensure it is in an
+# expected state.
+CHPL_HWLOC != hwloc

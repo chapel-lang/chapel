@@ -1,0 +1,32 @@
+----
+==M
+ This module has a comment 
+====proc commentless()
+
+----
+==N
+ So does this module 
+====proc hasArgCommentless(val: int(64))
+
+----
+==O
+ And this one 
+====proc hasBodyCommentless()
+
+----
+==P
+ What?  Even this one! 
+====proc hasBodyAndArgCommentless(val: int(64))
+
+====proc useless()
+
+----
+==Q
+====proc main()
+ Sadly, this method's module does not 
+
+----
+==R
+====proc furthermore()
+ Nor this method's module 
+

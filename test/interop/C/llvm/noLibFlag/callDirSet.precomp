@@ -1,0 +1,3 @@
+#!/bin/bash
+echo Compiling setDir.chpl
+$3 --llvm --library-dir mydir --static setDir.chpl

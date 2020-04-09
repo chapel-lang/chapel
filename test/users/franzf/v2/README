@@ -1,0 +1,65 @@
+
+Here's the newest version of the code from Franz.  He states that
+he's removed all of the apples-to-oranges comparison factors, and
+is seeing a large performance difference between Chapel and C99
+for gcc.  However, when I run, I'm seeing gcc beating icc for
+Chapel-generated code, icc beating gcc for SPIRAL-generated code,
+and Chapel + gcc turning in the highest performance overall.
+The *.pdf files in this directory show our respective performance
+results.  Up is better in both graphs.
+
+From Franz' mail:
+
+-----------------------------------------------------------------------
+
+- I rebuilt the C99 and Chapel library and added independent (= FFTW)
+correctness check for C99
+- The C99 and Chapel code now is really identical
+- I run the C99 code with both GCC and Intel C, all on Linux
+- I built Windows project files and Linux gcc and icc makefiles
+- I only use an (reasonably good) baseline FFT algorithm, not the best (=
+most complicated) we have
+
+The result on x64 Linux on an 3 GHz Intel Core2 Extreme (single core)
+- GCC, same flags: Chapel code at 300 Mflop/s, C99 at 3 Gflop/s -- ca.
+factor 10x slower in apples-to-apples comparison 
+- C99 GCC vs. ICC: 3 Gflop/s vs. 5--7 Gflop/s
+- Best ICC with intrinsics and all algorithms turned on (not in the graph,
+just fyi): 9 Gflop/s -- another factor of 3 headroom with advanced tricks
+not expressible in C99 and nasty algorithms
+
+-----------------------------------------------------------------------
+
+From my response:
+
+Here is my attempt to brainstorm what some of the possible factors might be
+that could explain the differences we're seeing (though I could be missing
+the real issue, for sure):
+
+1) you're generating code optimized for one architecture and I'm running
+   it on another
+
+2) I had to turn off the -msse3 flag in all Makefiles because it resulted
+   in an illegal instruction error for my machine -- what does this do
+   on your machine?
+
+3) You are running an older version of Chapel than I am -- but I'm not
+   sure which version you're running anymore.  Can you remind me?
+   (chpl --version)
+
+4) What version of gcc are you running?  I seem to be on 4.1.1  For icc,
+   I'm on 10.0.026
+
+5) Note that the Makefile you sent me uses -O3 for the C99 and -O2 for
+   Chapel (via the --ccflags option; it also throws -O3 due to the -O
+   option, but they're ordered -O3 ... -O2, so I'm guessing -O2 would
+   win?)
+
+6) We're still using different timing mechanisms between C99 and Chapel --
+   is there any reason that they would turn out more similar numbers on my
+   machine than yours?  I've been meaning to implement a clock() based
+   timer for Chapel to try and remove this difference, but haven't gotten
+   around to it yet.  If this seemed at all possible, I could bump its
+   priority up.
+
+7) Other?

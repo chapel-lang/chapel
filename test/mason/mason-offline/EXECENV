@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+	
+	bin_subdir=`$CHPL_HOME/util/chplenv/chpl_bin_subdir.py`
+	echo "PATH=\$CHPL_HOME/bin/$bin_subdir:\$PATH"
+	echo "MASON_OFFLINE=true"

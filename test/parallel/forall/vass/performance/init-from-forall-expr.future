@@ -1,0 +1,2 @@
+unimplmented feature: not using a parallel iterator when initializing a variable from forall expression
+#11622

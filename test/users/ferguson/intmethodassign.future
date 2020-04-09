@@ -1,0 +1,9 @@
+semantic: methods on int by reference?
+
+intmethodassign.chpl:1: In function 'mysquare':
+intmethodassign.chpl:2: error: illegal lvalue in assignment
+
+Methods on integers or other primitive types
+should act just like methods on records - that is,
+this is a reference.
+

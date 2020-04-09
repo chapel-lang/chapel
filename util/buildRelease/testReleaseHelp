@@ -1,0 +1,134 @@
+#!/bin/csh
+
+#
+# unsetenv normal Chapel environment variables
+#
+unsetenv CHPL_HOME
+unsetenv CHPL_NIGHTLY_LOGDIR
+unsetenv CHPL_DEVELOPER
+unsetenv CHPL_HOST_PLATFORM
+unsetenv CHPL_TARGET_PLATFORM
+unsetenv CHPLDEVTMP
+
+set mymake = $argv[1]
+
+# Number of logical processes on current system. Will be used as number of jobs
+# when calling make with parallel execution.
+set num_procs = `${0:h}/chpl-make-cpu_count`
+
+#
+# execute actions specified in README
+#
+if ( $#argv == 0 ) then
+    echo "usage: $argv[0] <make utility>"
+    exit(1);
+endif
+source util/quickstart/setchplenv.csh
+set tmpstatus = $status
+if ($tmpstatus != 0) then
+    echo "ERROR: source of setchplenv.csh failed"
+    exit($tmpstatus)
+endif
+$mymake -j$num_procs
+set tmpstatus = $status
+if ($tmpstatus != 0) then
+    echo "ERROR: make failed"
+    exit($tmpstatus)
+endif
+rehash   # required for csh only; if we convert this to bash, drop this
+set tmpstatus = $status
+if ($tmpstatus != 0) then
+    echo "ERROR: make failed"
+    exit($tmpstatus)
+endif
+$mymake check
+set tmpstatus = $status
+if ($tmpstatus != 0) then
+    echo "ERROR: make check failed"
+    exit($tmpstatus)
+endif
+chpl -o hello examples/hello.chpl
+set tmpstatus = $status
+if ($tmpstatus != 0) then
+    echo "ERROR: compilation of hello.chpl failed"
+    exit($tmpstatus)
+endif
+./hello
+set tmpstatus = $status
+if ($tmpstatus != 0) then
+    echo "ERROR: execution of hello failed"
+    exit($tmpstatus)
+endif
+
+# Build chpldoc and run chpldoc-check.
+$mymake -j$num_procs chpldoc
+set tmpstatus = $status
+if ($tmpstatus != 0) then
+    echo "ERROR: make chpldoc failed"
+    exit($tmpstatus)
+endif
+rehash   # required for csh only; if we convert this to bash, drop this
+
+$mymake check-chpldoc
+set tmpstatus = $status
+if ($tmpstatus != 0) then
+    echo "ERROR: make check-chpldoc failed"
+    exit($tmpstatus)
+endif
+
+
+# Calculate expected version string from version_num.h.
+set major=`cat compiler/main/version_num.h | grep MAJOR_VERSION | cut -f3 -d' ' | sed 's/\"//g'`
+set minor=`cat compiler/main/version_num.h | grep MINOR_VERSION | cut -f3 -d' ' | sed 's/\"//g'`
+set patch=`cat compiler/main/version_num.h | grep UPDATE_VERSION | cut -f3 -d' ' | sed 's/\"//g'`
+set expected_version_string="$major.$minor.$patch"
+
+# Test chpl --version for expected string version.
+set version_string = `chpl --version | grep 'version' | cut -d' ' -f 3`
+set versionstatus = $status
+if ($versionstatus != 0) then
+    echo "ERROR: execution of chpl --version failed"
+    exit($versionstatus)
+endif
+if ($version_string != "$expected_version_string") then
+    echo "ERROR: unexpected version string, received '$version_string' expected '$expected_version_string'"
+    exit(1)
+endif
+
+#
+# run make in examples directory
+#
+cd examples
+$mymake -j$num_procs
+set tmpstatus = $status
+if ($tmpstatus != 0) then
+    echo "ERROR: compiling examples with 'make' failed"
+    exit($tmpstatus)
+endif
+cd ..
+
+
+#
+# run test system on examples directory
+#
+cd examples
+set tmpstatus = $status
+if ($tmpstatus != 0) then
+    echo "ERROR: cd into examples failed"
+    exit($tmpstatus)
+endif
+
+set start_test_flags = ''
+if ($?CHPL_TEST_RELEASE_NORECURSE) then
+    set start_test_flags = ${start_test_flags}' --norecurse'
+endif
+
+./start_test ${start_test_flags} -logfile Logs/testReleaseHelp.log
+
+set tmpstatus = $status
+if ($tmpstatus != 0) then
+    echo "ERROR: testing of examples failed"
+    exit($tmpstatus)
+endif
+
+exit(0)

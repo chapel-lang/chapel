@@ -1,0 +1,8 @@
+feature request: calling parent methods on inherited records, generic child
+
+Once this .future is retired, --verify can/should be removed from .compopts.
+
+Note: this test assumes that we want to have record inheritance.
+See also:
+
+  test/classes/hilde/recordInheritance.chpl

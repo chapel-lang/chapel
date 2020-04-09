@@ -1,0 +1,4 @@
+#!/bin/bash
+
+mkdir -p my_dir
+touch my_file

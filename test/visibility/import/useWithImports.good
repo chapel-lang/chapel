@@ -1,0 +1,2 @@
+useWithImports.chpl:21: In function 'main':
+useWithImports.chpl:24: error: 'A' undeclared (first use this function)

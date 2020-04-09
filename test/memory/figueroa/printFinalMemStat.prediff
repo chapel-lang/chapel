@@ -1,0 +1,2 @@
+#! /bin/sh
+sed -e 's/0x[0-9a-f]*/0x00000000/' -e 's/Address: */Address:    /' $2 >$1.prediff.tmp && mv $1.prediff.tmp $2

@@ -1,0 +1,3 @@
+methodAndFuncShareName.chpl:14: In function 'main':
+methodAndFuncShareName.chpl:17: error: unresolved call 'sameName()'
+methodAndFuncShareName.chpl:17: note: because no functions named sameName found in scope

@@ -1,0 +1,9 @@
+checking array return performance
+array size: 8
+iterations: 10000
+
+SUCCESS
+sum1: 36.0
+sum2: 36.0
+sum3: 36.0
+sum4: 36.0

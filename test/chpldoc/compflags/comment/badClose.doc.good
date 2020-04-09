@@ -1,0 +1,22 @@
+Warning:1: chpldoc comment not closed, ignoring comment: This comment is not closed properly
+.. default-domain:: chpl
+
+.. module:: badClose.doc
+
+badClose.doc
+============
+**Usage**
+
+.. code-block:: chapel
+
+   use badClose.doc;
+
+
+or
+
+.. code-block:: chapel
+
+   import badClose.doc;
+
+.. function:: proc bad()
+

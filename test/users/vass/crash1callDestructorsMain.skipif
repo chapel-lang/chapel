@@ -1,0 +1,9 @@
+# This test fails differently under --no-local/gasnet/etc.
+# Once this test starts succeeding for --local, remove this .skipif
+# and re-test.
+CHPL_COMM!=none
+COMPOPTS <= --no-local
+# It also fails differently under numa
+CHPL_LOCALE_MODEL!=flat
+# and produces a bunch of error messages under valgrind
+CHPL_TEST_VGRND_EXE == on

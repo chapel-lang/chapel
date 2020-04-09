@@ -1,0 +1,1 @@
+error_default_field_init.chpl:7: error: Cannot assign to int(64) from real(64)

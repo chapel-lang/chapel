@@ -1,0 +1,2 @@
+user_def_unique_initializer_const_multipleassign2.chpl:6: In initializer:
+user_def_unique_initializer_const_multipleassign2.chpl:8: error: multiple initializations of field "x"

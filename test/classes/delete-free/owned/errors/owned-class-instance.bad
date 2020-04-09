@@ -1,0 +1,3 @@
+owned-class-instance.chpl:5: error: invalid type specifier '_owned(owned C)'
+owned-class-instance.chpl:5: note: type specifier did not match: _owned(type chpl_t)
+owned-class-instance.chpl:5: note: cannot instantiate type field 'chpl_t' with non-type

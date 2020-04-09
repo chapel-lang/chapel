@@ -1,0 +1,137 @@
+Initially, A is: 0.0 0.0 0.0 0.0 0.0
+Initially, A2 is: -1.1 -2.2 -3.3 -4.4 -5.5
+After assigning two elements, A is: 1.1 2.2 0.0 0.0 0.0
+After assigning its interior values, A is: 1.1 3.3 3.3 3.3 0.0
+
+A(2..4) is: 3.3 3.3 3.3
+
+Initially, B is:
+1.1 1.2 1.3 1.4 1.5
+2.1 2.2 2.3 2.4 2.5
+3.1 3.2 3.3 3.4 3.5
+4.1 4.2 4.3 4.4 4.5
+5.1 5.2 5.3 5.4 5.5
+
+After incrementing B's elements, B is:
+2.1 2.2 2.3 2.4 2.5
+3.1 3.2 3.3 3.4 3.5
+4.1 4.2 4.3 4.4 4.5
+5.1 5.2 5.3 5.4 5.5
+6.1 6.2 6.3 6.4 6.5
+
+After decrementing B's elements, B is:
+1.1 1.2 1.3 1.4 1.5
+2.1 2.2 2.3 2.4 2.5
+3.1 3.2 3.3 3.4 3.5
+4.1 4.2 4.3 4.4 4.5
+5.1 5.2 5.3 5.4 5.5
+
+within printArr, D is: {1..5, 1..5}
+
+after negating X within printArr, X is:
+-1.1 -1.2 -1.3 -1.4 -1.5
+-2.1 -2.2 -2.3 -2.4 -2.5
+-3.1 -3.2 -3.3 -3.4 -3.5
+-4.1 -4.2 -4.3 -4.4 -4.5
+-5.1 -5.2 -5.3 -5.4 -5.5
+
+After calling printArr, B is:
+-1.1 -1.2 -1.3 -1.4 -1.5
+-2.1 -2.2 -2.3 -2.4 -2.5
+-3.1 -3.2 -3.3 -3.4 -3.5
+-4.1 -4.2 -4.3 -4.4 -4.5
+-5.1 -5.2 -5.3 -5.4 -5.5
+
+After initializing C, its value is:
+false true false false true
+true false false true false
+false false true false false
+false true false false true
+true false false true false
+
+After initializing D, its value is:
+true false false false false
+false true false false false
+false false true false false
+false false false true false
+false false false false true
+
+After assigning C to E, E's value is:
+false true false false true
+true false false true false
+false false true false false
+false true false false true
+true false false true false
+
+After being reset, B is:
+0.0 0.0 0.0 0.0 0.0
+0.0 0.0 0.0 0.0 0.0
+0.0 0.0 0.0 0.0 0.0
+0.0 0.0 0.0 0.0 0.0
+0.0 0.0 0.0 0.0 0.0
+
+B has been re-initialized to:
+1.1 1.2 1.3 1.4 1.5
+2.1 2.2 2.3 2.4 2.5
+3.1 3.2 3.3 3.4 3.5
+4.1 4.2 4.3 4.4 4.5
+5.1 5.2 5.3 5.4 5.5
+
+After assigning a slice of B to F, F's value is:
+0.0 0.0 0.0 0.0 0.0
+0.0 1.3 1.4 1.5 0.0
+0.0 2.3 2.4 2.5 0.0
+0.0 3.3 3.4 3.5 0.0
+0.0 0.0 0.0 0.0 0.0
+
+After assigning a slice of B to G, G's value is:
+0.0 0.0 0.0 0.0 0.0
+1.1 1.2 1.3 1.4 1.5
+2.1 2.2 2.3 2.4 2.5
+3.1 3.2 3.3 3.4 3.5
+4.1 4.2 4.3 4.4 4.5
+
+After being assigned a slice of B, A is:
+2.1 2.2 2.3 2.4 2.5
+
+ProbSpace[1..n-2, 3..] is: {1..3, 3..5}
+
+B[ProbSpaceSlice] is:
+1.3 1.4 1.5
+2.3 2.4 2.5
+3.3 3.4 3.5
+4.3 4.4 4.5
+5.3 5.4 5.5
+
+After assigning F a shifted slice of B, it is:
+0.0 0.0 0.0 0.0 0.0
+0.0 3.3 3.4 3.5 0.0
+0.0 4.3 4.4 4.5 0.0
+0.0 5.3 5.4 5.5 0.0
+0.0 0.0 0.0 0.0 0.0
+
+After negating B, it is:
+-1.1 -1.2 -1.3 -1.4 -1.5
+-2.1 -2.2 -2.3 -2.4 -2.5
+-3.1 -3.2 -3.3 -3.4 -3.5
+-4.1 -4.2 -4.3 -4.4 -4.5
+-5.1 -5.2 -5.3 -5.4 -5.5
+
+Initially, VarArr = 1.0 2.0 3.0 4.0 5.0
+
+After doubling VarDom, VarArr = 1.0 2.0 3.0 4.0 5.0 0.0 0.0 0.0 0.0 0.0
+
+After lowering VarDom's lower bound, VarArr = 0.0 0.0 0.0 0.0 0.0 1.0 2.0 3.0 4.0 5.0 0.0 0.0 0.0 0.0 0.0
+
+After shrinking VarDom, VarArr = 2.0 3.0 4.0
+
+VarArr should now be empty: 
+
+VarArr should now be reset: 0.0 0.0 0.0 0.0 0.0
+
+Y is:
+11.1 11.2 11.3 12.1 12.2 12.3 13.1 13.2 13.3 14.1 14.2 14.3 15.1 15.2 15.3
+21.1 21.2 21.3 22.1 22.2 22.3 23.1 23.2 23.3 24.1 24.2 24.3 25.1 25.2 25.3
+31.1 31.2 31.3 32.1 32.2 32.3 33.1 33.2 33.3 34.1 34.2 34.3 35.1 35.2 35.3
+41.1 41.2 41.3 42.1 42.2 42.3 43.1 43.2 43.3 44.1 44.2 44.3 45.1 45.2 45.3
+51.1 51.2 51.3 52.1 52.2 52.3 53.1 53.2 53.3 54.1 54.2 54.3 55.1 55.2 55.3

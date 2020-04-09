@@ -1,0 +1,9 @@
+2    dimension
+
+-1.0 -1.0    x_low
+ 1.0  1.0    x_high
+ 40   40     Number of cells at coarsest level
+  2    2     Width of ghost cell layers
+  2    2     Refinement ratio
+  3          Maximum number of levels
+  0.75        Target efficiency for regridding

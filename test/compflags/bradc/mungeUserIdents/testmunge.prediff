@@ -1,0 +1,32 @@
+#!/usr/bin/env python
+
+import sys, os, shutil
+
+expectedGenCodeFile = sys.argv[1]+'.expectedGenCode'
+genCodeDir = 'genCode'
+actualGenCodeFile = os.path.join(genCodeDir, sys.argv[1]+'.c')
+testOutputFile = sys.argv[2]
+
+searchString = "thisNameProbablyWontConflictWithOthers_chpl"
+
+wantmatch = (testOutputFile.find("1") != -1)
+
+count = 0
+
+for line in open(actualGenCodeFile):
+    if searchString in line:
+        count += 1
+
+with open (testOutputFile, 'a') as f:
+    if (count > 0):
+        if wantmatch:
+            f.write('SUCCESS: Matched as expected\n')
+        else:
+            f.write('ERROR: Incorrectly found matches against "{0}"\n'.format(searchstring))
+    else:
+        if wantmatch:
+            f.write('ERROR: Didn\'t find matches against "{0}"\n'.format(searchString))
+        else:
+            f.write('SUCCESS: Matched as expected\n')
+
+shutil.rmtree(genCodeDir)

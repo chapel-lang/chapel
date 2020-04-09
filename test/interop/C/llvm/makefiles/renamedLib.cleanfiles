@@ -1,0 +1,4 @@
+lib/headerName.h
+lib/myLib.a
+renamedTest
+lib/Makefile.myLib

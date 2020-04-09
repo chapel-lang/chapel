@@ -1,0 +1,2 @@
+# We'd need a different .good file for multiple locales
+CHPL_COMM != none

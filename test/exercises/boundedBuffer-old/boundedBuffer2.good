@@ -1,0 +1,84 @@
+consumer #: Consumed: 1
+consumer #: Consumed: 10
+consumer #: Consumed: 2
+consumer #: Consumed: 3
+consumer #: Consumed: 4
+consumer #: Consumed: 5
+consumer #: Consumed: 6
+consumer #: Consumed: 7
+consumer #: Consumed: 8
+consumer #: Consumed: 9
+middleStep 1 consumed 1
+middleStep 1 consumed 10
+middleStep 1 consumed 2
+middleStep 1 consumed 3
+middleStep 1 consumed 4
+middleStep 1 consumed 5
+middleStep 1 consumed 6
+middleStep 1 consumed 7
+middleStep 1 consumed 8
+middleStep 1 consumed 9
+middleStep 1 producing -1
+middleStep 1 producing 1
+middleStep 1 producing 10
+middleStep 1 producing 2
+middleStep 1 producing 3
+middleStep 1 producing 4
+middleStep 1 producing 5
+middleStep 1 producing 6
+middleStep 1 producing 7
+middleStep 1 producing 8
+middleStep 1 producing 9
+middleStep 2 consumed 1
+middleStep 2 consumed 10
+middleStep 2 consumed 2
+middleStep 2 consumed 3
+middleStep 2 consumed 4
+middleStep 2 consumed 5
+middleStep 2 consumed 6
+middleStep 2 consumed 7
+middleStep 2 consumed 8
+middleStep 2 consumed 9
+middleStep 2 producing -1
+middleStep 2 producing 1
+middleStep 2 producing 10
+middleStep 2 producing 2
+middleStep 2 producing 3
+middleStep 2 producing 4
+middleStep 2 producing 5
+middleStep 2 producing 6
+middleStep 2 producing 7
+middleStep 2 producing 8
+middleStep 2 producing 9
+middleStep 3 consumed 1
+middleStep 3 consumed 10
+middleStep 3 consumed 2
+middleStep 3 consumed 3
+middleStep 3 consumed 4
+middleStep 3 consumed 5
+middleStep 3 consumed 6
+middleStep 3 consumed 7
+middleStep 3 consumed 8
+middleStep 3 consumed 9
+middleStep 3 producing -1
+middleStep 3 producing 1
+middleStep 3 producing 10
+middleStep 3 producing 2
+middleStep 3 producing 3
+middleStep 3 producing 4
+middleStep 3 producing 5
+middleStep 3 producing 6
+middleStep 3 producing 7
+middleStep 3 producing 8
+middleStep 3 producing 9
+producer producing -1
+producer producing 1
+producer producing 10
+producer producing 2
+producer producing 3
+producer producing 4
+producer producing 5
+producer producing 6
+producer producing 7
+producer producing 8
+producer producing 9

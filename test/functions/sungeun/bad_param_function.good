@@ -1,0 +1,2 @@
+bad_param_function.chpl:2: warning: function with side-effects called within a param function()
+bye

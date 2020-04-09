@@ -1,0 +1,22 @@
+#!/usr/bin/env perl
+
+if (@ARGV) {
+    $numdays = shift @ARGV;
+    if (@ARGV) {
+        $totnumdays = shift @ARGV;
+    } else {
+        $totnumdays = $numdays;
+    }
+} else {
+    print "countrange <numdaysago> [<numdays>]\n";
+    exit 1;
+}
+
+$i = $numdays;
+for ($i = $numdays; $i >= ($numdays - $totnumdays); $i--) {
+    $date = `date --date="$i days ago" +%D`; chomp($date);
+#    print "$date\n";
+    print "Running tokctnightly -debug $date\n";
+    system("tokctnightly -debug $date");
+}
+

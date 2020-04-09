@@ -1,0 +1,3 @@
+# re2 requires C++11 atomic support, which pgi doesn't have
+CHPL_TARGET_COMPILER==cray-prgenv-pgi
+CHPL_TARGET_COMPILER==pgi

@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+
+make CHPL=$3
+
+./testCallChapel >> $2
+
+make clean

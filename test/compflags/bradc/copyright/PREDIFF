@@ -1,0 +1,5 @@
+#!/bin/csh -f
+set testname = $1
+set outfile = $2
+
+cat ../../../../COPYRIGHT > $1.good

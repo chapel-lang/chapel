@@ -1,0 +1,4 @@
+bug: some errors involving assignments to const records or to records with const fields are not currently reported
+
+In todo-multiple-asgn-errors.chpl, "// error" shows which errors are reported,
+whereas "// also error" shows the ones that should be, but are not.

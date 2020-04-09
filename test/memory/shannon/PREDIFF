@@ -1,0 +1,8 @@
+#!/bin/csh -f
+set testname = $1
+set outfile  = $2
+
+set tmpfile = $outfile.prediff.tmp
+mv $outfile $tmpfile
+sed -e s/0x\[0-9a-f\]\*/0xnnnnnnnn/g -e 's/Address: */Address:    /' $tmpfile > $outfile
+rm $tmpfile

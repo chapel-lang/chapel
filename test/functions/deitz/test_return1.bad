@@ -1,0 +1,2 @@
+test_return1.chpl:1: In function 'foo':
+test_return1.chpl:1: error: control reaches end of function that returns a value

@@ -1,0 +1,2 @@
+outerOnlyNoNewName.chpl:19: In function 'main':
+outerOnlyNoNewName.chpl:20: error: 'boop' undeclared (first use this function)

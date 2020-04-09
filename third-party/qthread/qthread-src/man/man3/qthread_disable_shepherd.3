@@ -1,0 +1,38 @@
+.TH qthread_disable_shepherd 3 "NOVEMBER 2009" libqthread "libqthread"
+.SH NAME
+.BR qthread_disable_shepherd ,
+.B qthread_enable_shepherd
+\- enable or disable a shepherd for thread scheduling
+.SH SYNOPSIS
+.B #include <qthread.h>
+
+.I int
+.br
+.B qthread_disable_shepherd
+.RI "(qthread_shepherd_id_t " shep );
+.PP
+.I void
+.br
+.B qthread_enable_shepherd
+.RI "(qthread_shepherd_id_t " shep );
+.SH DESCRIPTION
+These functions allow shepherds to be either enabled or disabled. All shepherds start in the enabled state.
+.PP
+Disabled shepherds cannot execute threads, and thus threads are actively
+migrated away from disabled shepherds. The migration is based on both distance
+and an estimate to "busyness" (based on the shepherd's active queue length).
+Disabling a shepherd affects thread-placement decisions immediately, but the
+disabled shepherd may continue executing its current thread until it either
+blocks, yields, or exits. Once that thread stops executing, the disabled
+shepherd monitors its queue and rather than execute runnable threads, migrates
+runnable threads to nearby shepherds.
+.PP
+When a shepherd is re-enabled, it becomes available to run threads.
+.SH RETURN VALUE
+On success, the specified shepherd is marked as disabled and the value
+.B QTHREAD_SUCCESS
+is returned. On failure, an error code is returned.
+.SH ERRORS
+.TP 12
+.B QTHREAD_NOT_ALLOWED
+The first shepherd, shepherd 0, cannot be disabled.

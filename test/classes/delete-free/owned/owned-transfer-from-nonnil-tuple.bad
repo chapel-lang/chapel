@@ -1,0 +1,1 @@
+$CHPL_HOME/modules/internal/ChapelBase.chpl:1647: error: Cannot transfer ownership from this non-nilable reference variable

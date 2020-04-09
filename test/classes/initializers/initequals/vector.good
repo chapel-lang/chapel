@@ -1,0 +1,11 @@
+----- Classic Initialization -----
+regular init from type
+classic copy init
+regular init from array
+
+
+
+
+----- Initialize Typed Generic from Expr -----
+typed init= from array
+(D = {0..2}, A = 1 2 3)

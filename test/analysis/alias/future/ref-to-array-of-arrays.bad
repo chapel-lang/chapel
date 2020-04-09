@@ -1,0 +1,3 @@
+noAliasSets: no-aliases for function main:
+noAliasSets: no-aliases for function kernel:
+LICM: may-alias report for a loop in function kernel:

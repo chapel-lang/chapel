@@ -1,0 +1,12 @@
+try-expr-errors.chpl:17: In function 'tryReturn':
+try-expr-errors.chpl:18: error: call to throwing function throwit is in a try but not handled
+try-expr-errors.chpl:7: note: throwing function throwit defined here
+try-expr-errors.chpl:21: In function 'main':
+try-expr-errors.chpl:24: error: call to throwing function throwit is in a try but not handled
+try-expr-errors.chpl:7: note: throwing function throwit defined here
+try-expr-errors.chpl:25: error: call to throwing function throwit is in a try but not handled
+try-expr-errors.chpl:7: note: throwing function throwit defined here
+try-expr-errors.chpl:27: error: call to throwing function throwit without try or try! (strict mode)
+try-expr-errors.chpl:7: note: throwing function throwit defined here
+try-expr-errors.chpl:31: error: call to throwing function throwit without try or try! (strict mode)
+try-expr-errors.chpl:7: note: throwing function throwit defined here

@@ -1,0 +1,47 @@
+#!/usr/bin/env perl
+
+# Collect -O* arguments on each line,
+# and uniquify the output
+
+$testname = $ARGV[0];
+$execout = $ARGV[1];
+
+open TMPFILE, "$execout" or die "can't open $execout $!";
+@lines = <TMPFILE>;
+close (TMPFILE);
+
+@out_lines = ( );
+
+for my $line (@lines) {
+  chomp $line;
+  # find -O1 etc
+  my @opts = ($line =~ / -O[0-9a-zA-Z]/g);
+  my $opt = join('', @opts);
+  # trim leading and trailing spaces
+  $opt =~ s/^\s+|\s+$//g;
+  # accept only the 1st non-empty such line
+  # that way, this test ignores opts to linker
+  if ($opt ne '') {
+    push(@out_lines, $opt);
+    last;
+  }
+}
+
+open OUTFILE, ">$execout" or die "can't open $execout for writing $!";
+
+foreach my $line (@out_lines) {
+  # Remove redundant words
+  my @words = split(/ +|[{}]/, $line);
+
+  @uniq_words = ( );
+  $last_word = "";
+  for my $w (@words) {
+    if ($w ne $last_word) {
+      push(@uniq_words, $w);
+    }
+    $last_word = $w;
+  }
+  print OUTFILE join(' ', @uniq_words) . "\n";
+}
+
+close(OUTFILE);

@@ -1,0 +1,42 @@
+#!/usr/bin/env python
+
+# Figure out which of TESTNAME.*.good is applicable; copy it to TESTNAME.good.
+#
+# Do nothing if:
+#  * there is no TESTNAME.default.good
+#  * there is TESTNAME.prediff
+
+import sys, os, shutil, string;
+
+testname=sys.argv[1]
+compopts=sys.argv[4]
+
+
+if (not os.path.isfile(testname+'.default.good')):
+    # leave it alone
+    sys.stdout.write('exiting')
+    sys.exit(0)
+
+chpl_comm = os.getenv('CHPL_COMM')
+if chpl_comm=='none' or chpl_comm==None:
+    dist = 'default'
+else:
+    # get the distribution from the -sdistType=... option, if present
+    dist = 'block'
+    searchstring='distType=DistType.'
+    s = compopts.rfind(searchstring)
+
+    if s != -1:
+        opt = compopts[s+len(searchstring):len(compopts)]
+        dist = opt.split()[0]
+
+# If there is a networkAtomics-specific .good, prefer that.
+targetfn=testname+'.good'
+goodfn=testname+'.'+dist+'.good'
+if not os.path.isfile(goodfn):
+    goodfn=testname+'.default.na-'+chpl_network_atomics+'.good'
+    if not os.path.isfile(goodfn):
+        goodfn=testname+'.default.good'
+
+#sys.stdout.write('rename %s\n'%(goodfn))
+shutil.copy(goodfn, targetfn)

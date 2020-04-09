@@ -1,0 +1,1 @@
+-Llib/ -larrayArg_queriedDomain `$CHPL_HOME/util/config/compileline --libraries` -larrayArg_queriedDomain

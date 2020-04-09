@@ -1,0 +1,17 @@
+CC = icc
+#CFLAGS = -Wall -O3 -fomit-frame-pointer -msse3 -std=c99 -I. -lm
+CFLAGS = -Wall -O3 -fomit-frame-pointer -std=c99 -I. -lm
+GENDIR = generated/
+
+FFTLIB = $(GENDIR)fft_2.c $(GENDIR)fft_4.c $(GENDIR)fft_8.c $(GENDIR)fft_16.c $(GENDIR)fft_32.c $(GENDIR)fft_64.c $(GENDIR)fft_128.c $(GENDIR)fft_256.c $(GENDIR)fft_512.c $(GENDIR)fft_1024.c $(GENDIR)fft_2048.c 
+
+.PHONY: run
+run: fft
+	./fft
+	
+fft: main.c verify.c libfft.c $(FFTLIB)
+	$(CC) $(CFLAGS) -o fft main.c verify.c libfft.c $(FFTLIB)
+
+clean:
+	rm -f fft
+

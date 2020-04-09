@@ -1,0 +1,3 @@
+dependent.chpl:19: In function 'main':
+dependent.chpl:24: error: Unable to resolve partial instantiation 'Child(p=1024)'
+dependent.chpl:24: note: Instantiation of field 'p' depends on uninstantiated fields: 'type T'

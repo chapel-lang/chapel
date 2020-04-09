@@ -1,0 +1,17 @@
+====================================
+Chapel Examples: Standard Benchmarks
+====================================
+
+The subdirectories in this directory contain standard benchmarks
+written in Chapel.  In many cases these are works-in-progress, not yet
+delivering the performance we expect Chapel to ultimately deliver.
+
+     hpcc/       : implementations of the HPC Challenge benchmarks
+     isx/        : an implementation of ISx benchmark
+     lcals/      : an implementation of the LLNL LCALS benchmark
+     lulesh/     : an implementation of the DARPA/LLNL LULESH benchmark
+     miniMD/     : an implementation of the Sandia MiniMD mini-application
+     shootout/   : implementations of the Computer Language Benchmarks Game
+     ssca2/      : an implementation of the SSCA #2 benchmark (version 2.2)
+
+See the READMEs in the respective subdirectories for more details.

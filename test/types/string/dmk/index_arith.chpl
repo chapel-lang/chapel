@@ -1,0 +1,20 @@
+var bi0 = 0:byteIndex;
+var bi1 = 1:byteIndex;
+var bi2 = 2:byteIndex;
+var ba1 = bi1 + 1;
+var ba2 = 2 + bi1;
+var bis = bi1 - 1;
+var bbs = bi2 - bi1;
+var beq = (bi1 == bi2);
+var bne = (bi1 != bi2);
+var bn0 = !bi0;
+var bn1 = !bi1;
+
+writeln("ba1 ", ba1);
+writeln("ba2 ", ba2);
+writeln("bis ", bis);
+writeln("bbs ", bbs);
+writeln("beq ", beq);
+writeln("bne ", bne);
+writeln("bn0 ", bn0);
+writeln("bn1 ", bn1);

@@ -1,0 +1,56 @@
+Testing int(64)...
+(Represented in domain using int(64))
+a is: 1.1 2.2 3.3 4.4 5.5
+b is: 1.1 3.3 5.5
+c is: 5.5 4.4 3.3 2.2 1.1
+d is: 5.5 3.3 1.1
+
+Testing uint(64)...
+(Represented in domain using uint(64))
+a is: 1.1 2.2 3.3 4.4 5.5
+b is: 1.1 3.3 5.5
+c is: 5.5 4.4 3.3 2.2 1.1
+d is: 5.5 3.3 1.1
+
+Testing int(32)...
+(Represented in domain using int(32))
+a is: 1.1 2.2 3.3 4.4 5.5
+b is: 1.1 3.3 5.5
+c is: 5.5 4.4 3.3 2.2 1.1
+d is: 5.5 3.3 1.1
+
+Testing uint(32)...
+(Represented in domain using uint(32))
+a is: 1.1 2.2 3.3 4.4 5.5
+b is: 1.1 3.3 5.5
+c is: 5.5 4.4 3.3 2.2 1.1
+d is: 5.5 3.3 1.1
+
+Testing int(16)...
+(Represented in domain using int(16))
+a is: 1.1 2.2 3.3 4.4 5.5
+b is: 1.1 3.3 5.5
+c is: 5.5 4.4 3.3 2.2 1.1
+d is: 5.5 3.3 1.1
+
+Testing uint(16)...
+(Represented in domain using uint(16))
+a is: 1.1 2.2 3.3 4.4 5.5
+b is: 1.1 3.3 5.5
+c is: 5.5 4.4 3.3 2.2 1.1
+d is: 5.5 3.3 1.1
+
+Testing int(8)...
+(Represented in domain using int(8))
+a is: 1.1 2.2 3.3 4.4 5.5
+b is: 1.1 3.3 5.5
+c is: 5.5 4.4 3.3 2.2 1.1
+d is: 5.5 3.3 1.1
+
+Testing uint(8)...
+(Represented in domain using uint(8))
+a is: 1.1 2.2 3.3 4.4 5.5
+b is: 1.1 3.3 5.5
+c is: 5.5 4.4 3.3 2.2 1.1
+d is: 5.5 3.3 1.1
+

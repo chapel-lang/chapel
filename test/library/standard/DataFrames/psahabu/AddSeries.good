@@ -1,0 +1,59 @@
+addends:
+A    1
+B    2
+C    3
+D    4
+E    5
+dtype: int(64)
+A    10
+B    20
+C    30
+D    40
+E    50
+dtype: int(64)
+
+sum:
+A    11
+B    22
+C    33
+D    44
+E    55
+dtype: int(64)
+
+addends:
+A    0
+B    1
+C    2
+dtype: int(64)
+B    10
+C    20
+D    0
+E    0
+dtype: int(64)
+
+sum:
+A    0
+B    11
+C    22
+D    0
+E    0
+dtype: int(64)
+
+addends:
+0    hello 
+1    my 
+2    name
+3    is
+4    brad
+dtype: string
+0    world
+1    real
+dtype: string
+
+sum:
+0    hello world
+1    my real
+2    name
+3    is
+4    brad
+dtype: string

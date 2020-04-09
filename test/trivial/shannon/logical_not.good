@@ -1,0 +1,10 @@
+o = 0
+p = 1
+
+test: !o
+expected answer = 1
+actual answer = 1
+
+test: !p
+expected answer = 0
+actual answer = 0

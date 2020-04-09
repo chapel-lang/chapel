@@ -1,0 +1,2 @@
+owned C {}
+C.deinit

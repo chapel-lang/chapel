@@ -1,0 +1,2 @@
+throw-unmanaged.chpl:1: In function 'foo':
+throw-unmanaged.chpl:3: error: Cannot throw an instance of type 'unmanaged IllegalArgumentError' - please throw owned

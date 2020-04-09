@@ -1,0 +1,5 @@
+perfkeys: real, real, real, real, real, real, real, real, real, real
+files: mandelbrot-complex.dat, mandelbrot-dist.dat, mandelbrot2-opt.dat, mandelbrot-opt2.dat, mandelbrot-no-dist.dat, mandelbrot-stdout.dat, mandelbrot-stdout-putchar.dat, mandelbrot-unzipped.dat, mandelbrot-blc.dat, mandelbrot-tricks.dat
+graphkeys: mandelbrot-complex, mandelbrot-dist, mandelbrot-write-after-computation, mandelbrot-write-during-computation, mandelbrot-no-dist, mandelbrot-ferguson-stdout, mandelbrot-ferguson-putchar, mandelbrot-unzipped, mandelbrot-blc, mandelbrot-tricks
+ylabel: Time (seconds)
+graphtitle: Mandelbrot all

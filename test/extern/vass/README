@@ -1,0 +1,12 @@
+These tests used to lead to invalid generated code w.r.t. references
+to c_sublocid_any. Now, thanks to munging, they work correctly.
+As of this writing, we still do not munge the generated C code for
+internal modules. So we may have c_sublocid_any-related issues there.
+
+Why it is c_sublocid_any that is in the spotlight?
+
+Because it used to be a #define constant in a runtime header.
+So even if the generated C code declares a local variable of that
+name, expecting everything to work correctly, it could not be
+compiled because of the #define.
+As of this writing, c_sublocid_any is no longer a #define constant.

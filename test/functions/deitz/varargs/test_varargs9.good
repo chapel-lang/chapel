@@ -1,0 +1,7 @@
+output int 1
+output real 2.0
+output string three
+output real 2.0
+output string three
+output string four
+output int 5

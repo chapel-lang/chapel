@@ -1,0 +1,1 @@
+destructor2.chpl:7: error: 'delete' is not allowed on records

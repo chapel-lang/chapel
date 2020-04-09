@@ -1,0 +1,6 @@
+SiblingModule.foo()
+ChildModule.foo()
+ChildModule.foo()
+spun off a task!
+Done: 1000
+Back together

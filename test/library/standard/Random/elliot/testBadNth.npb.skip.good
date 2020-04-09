@@ -1,0 +1,3 @@
+uncaught IllegalArgumentError: NPBRandomStream.skipToNth(n) called with negative 'n' value -1
+  testBadNth.chpl:13: thrown here
+  testBadNth.chpl:13: uncaught here

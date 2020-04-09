@@ -1,0 +1,1 @@
+assign-oknil-unmanaged-from-nonnil-borrowed.chpl:8: error: Cannot assign to unmanaged MyClass? from borrowed MyClass

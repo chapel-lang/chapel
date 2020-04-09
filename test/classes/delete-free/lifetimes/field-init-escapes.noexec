@@ -1,0 +1,2 @@
+This should result in a compile error and will result in valgrind
+problems, so should not be run.

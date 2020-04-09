@@ -1,0 +1,8 @@
+bad-save-borrow-outer-array.chpl:7: In function 'error1':
+bad-save-borrow-outer-array.chpl:10: error: Scoped variable would outlive the value it is set to
+bad-save-borrow-outer-array.chpl:15: In function 'error2':
+bad-save-borrow-outer-array.chpl:19: error: Scoped variable would outlive the value it is set to
+bad-save-borrow-outer-array.chpl:18: note: consider scope of myowned
+bad-save-borrow-outer-array.chpl:24: In function 'error3':
+bad-save-borrow-outer-array.chpl:28: error: Scoped variable would outlive the value it is set to
+bad-save-borrow-outer-array.chpl:27: note: consider scope of myowned

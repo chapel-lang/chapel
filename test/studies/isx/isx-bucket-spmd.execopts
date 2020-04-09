@@ -1,0 +1,3 @@
+--testrun=true --mode=strong  --printTimings=false --perBucketMultiply=1 # isx-test-strong.good
+--testrun=true --mode=weak    --printTimings=false --perBucketMultiply=1 # isx-test-weak.good
+--testrun=true --mode=weakISO --printTimings=false --perBucketMultiply=1 # isx-test-weakISO.good

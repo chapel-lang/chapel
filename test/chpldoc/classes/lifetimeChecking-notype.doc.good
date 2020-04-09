@@ -1,0 +1,96 @@
+.. default-domain:: chpl
+
+.. module:: lifetimeChecking-notype.doc
+
+lifetimeChecking-notype.doc
+===========================
+**Usage**
+
+.. code-block:: chapel
+
+   use lifetimeChecking-notype.doc;
+
+
+or
+
+.. code-block:: chapel
+
+   import lifetimeChecking-notype.doc;
+
+.. class:: Foo
+
+   Used to demonstrate the behavior of lifetime checking and documentation 
+
+
+   .. attribute:: var a: unmanaged
+
+   .. attribute:: var b: shared
+
+   .. attribute:: var c: owned
+
+   .. attribute:: var d: borrowed
+
+   .. attribute:: var w: unmanaged
+
+      Validates when there is documentation 
+
+   .. attribute:: var x: shared
+
+      Validates when there is documentation 
+
+   .. attribute:: var y: owned
+
+      Validates when there is documentation 
+
+   .. attribute:: var z: borrowed
+
+      Validates when there is documentation 
+
+   .. method:: proc takesOwned(x: owned)
+
+   .. method:: proc takesShared(x: shared)
+
+   .. method:: proc takesUnmanaged(x: unmanaged)
+
+   .. method:: proc takesBorrowed(x: borrowed)
+
+   .. method:: proc takesOwnedDoc(x: owned)
+
+      Validates when there is documentation 
+
+   .. method:: proc takesSharedDoc(x: shared)
+
+      Validates when there is documentation 
+
+   .. method:: proc takesUnmanagedDoc(x: unmanaged)
+
+      Validates when there is documentation 
+
+   .. method:: proc takesBorrowedDoc(x: borrowed)
+
+      Validates when there is documentation 
+
+.. function:: proc takesOwned(x: owned)
+
+.. function:: proc takesShared(x: shared)
+
+.. function:: proc takesUnmanaged(x: unmanaged)
+
+.. function:: proc takesBorrowed(x: borrowed)
+
+.. function:: proc takesOwnedDoc(x: owned)
+
+   Validates when there is documentation 
+
+.. function:: proc takesSharedDoc(x: shared)
+
+   Validates when there is documentation 
+
+.. function:: proc takesUnmanagedDoc(x: unmanaged)
+
+   Validates when there is documentation 
+
+.. function:: proc takesBorrowedDoc(x: borrowed)
+
+   Validates when there is documentation 
+

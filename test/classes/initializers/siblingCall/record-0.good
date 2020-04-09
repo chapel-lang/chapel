@@ -1,0 +1,8 @@
+init()     Phase 0
+
+init(_z)   Phase 1
+init(_z)   Phase 2
+
+init()     Phase 2
+
+r1: (x = 0, y = 1, z = 5)

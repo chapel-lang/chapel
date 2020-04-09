@@ -1,0 +1,92 @@
+#!/usr/bin/env perl
+
+use Cwd 'abs_path';
+
+# If CHPL_TEST_UTIL_DIR is set, use that as the directory from which
+# to run printchplenv.  If it's not set, use $CHPL_HOME/util.
+my $utildir = defined($ENV{"CHPL_TEST_UTIL_DIR"}) ? $ENV{"CHPL_TEST_UTIL_DIR"} : "$ENV{'CHPL_HOME'}/util";
+
+#
+# Set standard CHPL_* environment variables, if they are not already set.
+#
+my $env = `$utildir/printchplenv --all --internal --simple --no-tidy`;
+my @lines = split(/\n/, $env);
+for my $line (@lines) {
+  $line =~ s/export\s+//;
+  my ($key,$value) = split(/=/, $line, 2);
+  next if $key eq "CHPL_HOME";
+  $ENV{$key} = $value;
+}
+
+$envfile = $ARGV[0];
+
+#
+# If the envfile is executable, just execute it
+#
+if (-x "$envfile") {
+  $envfile = abs_path($envfile);
+  $execskiptest = `$envfile`;
+  print "$execskiptest";
+# exit with the return code that the envfile gave us
+  exit($?>>8);
+}
+
+#
+# otherwise, process using special skipif language
+#
+open ENVFILE, "$envfile" or die "can't open $envfile $!";
+my @envlist = <ENVFILE>;
+close (ENVFILE);
+
+$skiptest = 0;
+
+foreach my $envsetting (@envlist) {
+    chomp($envsetting);
+    
+    if ($envsetting =~ m/^\s*$/) {
+        # blank
+    } elsif ($envsetting =~ m/\#(.*)/) {
+        # comment
+    } elsif ($envsetting =~ m/(\w*)\s*(.)=\s*(\S*)/) {
+#        print "checking whether $1 $2 $3\n";
+        if ($2 eq "=") {
+            if ($ENV{$1} eq $3) {
+#                print "yep\n";
+                $skiptest = 1;
+            } else {
+#                print "nope\n";
+            }
+        } elsif ($2 eq "!") {
+            if ($ENV{$1} eq $3) {
+#                print "nope\n";
+            } else {
+#                print "yep\n";
+                $skiptest = 1;
+            }
+        } elsif ($2 eq "<") {
+            if ($ENV{$1} =~ m/$3/) {
+#                print "yep\n";
+                $skiptest = 1;
+            } else {
+#                print "nope\n";
+            }
+        } elsif ($2 eq ">") {
+            if ($ENV{$1} =~ m/$3/) {
+#                print "nope\n";
+            } else {
+#                print "yep\n";
+                $skiptest = 1;
+            }
+        } else {
+#            print "ERROR: badly formatted line: $envsetting\n";
+            exit(1);
+        }
+    } else {
+#        print "ERROR: badly formatted line: $envsetting\n";
+        exit(1);
+    }
+}
+
+print "$skiptest\n";
+
+exit(0);

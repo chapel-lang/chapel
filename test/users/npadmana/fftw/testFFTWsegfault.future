@@ -1,0 +1,4 @@
+bug: This version of FFTW wrappers segfaults
+
+valgrind turns up issues, but I haven't had a chance to explore yet.
+

@@ -1,0 +1,11 @@
+semantic: Param functions can call functions with side effects, but they are ignored.
+
+This code currently ignores the fact that a writeln() call is made
+within a param function and basically drops the writeln() calls on the
+floor.
+
+I think at least two of us would like to see pure functions (in the
+'side effect free' sense) permitted within type/param functions, and
+to have others (such as writeln()) generate a compile-time error or
+warning.
+

@@ -1,0 +1,59 @@
+type-tests.isSubtype-records.chpl:3: warning: isSubtype - records
+type-tests.isSubtype-records.chpl:4: warning: R1, R1  true
+type-tests.isSubtype-records.chpl:5: warning: R1, R2  false
+type-tests.isSubtype-records.chpl:6: warning: R1, R3  false
+type-tests.isSubtype-records.chpl:7: warning: R1, R4  false
+type-tests.isSubtype-records.chpl:8: warning: R2, R1  true
+type-tests.isSubtype-records.chpl:9: warning: R2, R2  true
+type-tests.isSubtype-records.chpl:10: warning: R2, R3  false
+type-tests.isSubtype-records.chpl:11: warning: R2, R4  false
+type-tests.isSubtype-records.chpl:12: warning: R3, R1  true
+type-tests.isSubtype-records.chpl:13: warning: R3, R2  false
+type-tests.isSubtype-records.chpl:14: warning: R3, R3  true
+type-tests.isSubtype-records.chpl:15: warning: R3, R4  false
+type-tests.isSubtype-records.chpl:16: warning: R4, R1  true
+type-tests.isSubtype-records.chpl:17: warning: R4, R2  true
+type-tests.isSubtype-records.chpl:18: warning: R4, R3  false
+type-tests.isSubtype-records.chpl:19: warning: R4, R4  true
+type-tests.isSubtype-records.chpl:21: warning: isProperSubtype - records
+type-tests.isSubtype-records.chpl:22: warning: R1, R1  false
+type-tests.isSubtype-records.chpl:23: warning: R1, R2  false
+Note: This source location is a guess.
+type-tests.isSubtype-records.chpl:23: warning: R1, R2  false
+type-tests.isSubtype-records.chpl:24: warning: R1, R3  false
+Note: This source location is a guess.
+type-tests.isSubtype-records.chpl:24: warning: R1, R3  false
+type-tests.isSubtype-records.chpl:25: warning: R1, R4  false
+Note: This source location is a guess.
+type-tests.isSubtype-records.chpl:25: warning: R1, R4  false
+type-tests.isSubtype-records.chpl:26: warning: R2, R1  true
+Note: This source location is a guess.
+type-tests.isSubtype-records.chpl:26: warning: R2, R1  true
+type-tests.isSubtype-records.chpl:27: warning: R2, R2  false
+type-tests.isSubtype-records.chpl:28: warning: R2, R3  false
+Note: This source location is a guess.
+type-tests.isSubtype-records.chpl:28: warning: R2, R3  false
+type-tests.isSubtype-records.chpl:29: warning: R2, R4  false
+Note: This source location is a guess.
+type-tests.isSubtype-records.chpl:29: warning: R2, R4  false
+type-tests.isSubtype-records.chpl:30: warning: R3, R1  true
+Note: This source location is a guess.
+type-tests.isSubtype-records.chpl:30: warning: R3, R1  true
+type-tests.isSubtype-records.chpl:31: warning: R3, R2  false
+Note: This source location is a guess.
+type-tests.isSubtype-records.chpl:31: warning: R3, R2  false
+type-tests.isSubtype-records.chpl:32: warning: R3, R3  false
+type-tests.isSubtype-records.chpl:33: warning: R3, R4  false
+Note: This source location is a guess.
+type-tests.isSubtype-records.chpl:33: warning: R3, R4  false
+type-tests.isSubtype-records.chpl:34: warning: R4, R1  true
+Note: This source location is a guess.
+type-tests.isSubtype-records.chpl:34: warning: R4, R1  true
+type-tests.isSubtype-records.chpl:35: warning: R4, R2  true
+Note: This source location is a guess.
+type-tests.isSubtype-records.chpl:35: warning: R4, R2  true
+type-tests.isSubtype-records.chpl:36: warning: R4, R3  false
+Note: This source location is a guess.
+type-tests.isSubtype-records.chpl:36: warning: R4, R3  false
+type-tests.isSubtype-records.chpl:37: warning: R4, R4  false
+type-tests.isSubtype-records.chpl:38: error: done

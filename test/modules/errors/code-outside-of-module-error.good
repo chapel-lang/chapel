@@ -1,0 +1,2 @@
+code-outside-of-module-error.chpl:2: warning: This file-scope code is outside of any explicit module declarations (e.g., module M), so an implicit module named 'code-outside-of-module-error' is being introduced to contain the file's contents.
+X

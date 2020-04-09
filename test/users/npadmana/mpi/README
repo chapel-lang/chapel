@@ -1,0 +1,99 @@
+Setting the environment variables below switch to using
+mpicc and mpicxx instead of gcc/g++
+
+CHPL_TARGET_COMPILER=mpi-gnu
+CHPL_TARGET_CPU=none 
+
+The latter is to squash a number of warnings when building Chapel.
+
+Run on at least 4 ranks with something like :
+  mpirun -np 4 ./test_mpi.x
+
+Notes on constructing the MPI module
+====================================
+
+1. Get the MPI 1.1 standard from here :
+   http://www.mpi-forum.org/docs/mpi-1.1/mpi-11-html/mpi-report.html
+
+   In particular, we consider the following pages from the Language Bindings Section
+   * Defined Constants for C and Fortran
+   * C bindings for Point-to-Point Communication
+   * C Bindings for Collective Communication
+   * C Bindings for Groups, Contexts, and Communicators
+   * C Bindings for Process Topologies
+   * C bindings for Environmental Inquiry
+
+2. Build, by hand, the Chapel extern interfaces for the constants and types. We started 
+   with the obvious ones, and made everything else blank, and then added more explicit 
+   cases as needed.
+
+3. Construct dummy header files by extracting function prototypes from the standard.
+   Remove all functions that involve passing handlers, since function pointer support 
+   is not yet in Chapel.
+
+4. Build a simple header that "typedef"'s the MPI types. This is needed by c2chapel.py to 
+   actually parse this file. These can all be aliases to ints, since the actual type is never
+   needed.
+
+5. Run c2chapel on the header types .
+
+6. This produces a first pass at the Chapel module. As I tested some of the routines, there were 
+   a few cases where I changed, by hand. Since these are not in the history here, I note the ones I spotted 
+     -- index seemed to cause a conflict as a variable name, make these iindex.
+     -- all MPI routines with a parameter that started with array_of_ (array_of_indices, array_of_requests, etc), 
+        had their Chapel versions explicitly use arrays.
+
+7. Added in some top-level modules, including a autoinitialization step.
+
+
+Motivating an MPI module
+========================
+
+In no particular order, here are some reasons why this might be worth considering (apologies for the length) --
+
+Interfacing with parallel libraries that are built against MPI -- I suspect
+(with no real proof!) that some number of users are writing codes where the
+complicated and optimized parts are in packaged libraries, that more likely
+than not, assume MPI for the distributed parts. I'm thinking of FFTW, PETSc,
+Scalapack, and the like In all those cases, a Chapel user would have to call
+some basic MPI initialization routines. Furthermore, the workflows in all these
+cases are written assuming SPMD and MPI -- it's just a much lower potential
+barrier to calling known MPI routines than figuring out the best way to do it
+in Chapel.
+
+Trivial parallel programs -- some number of problems are really embarrassingly
+parallel with minimal communication. The last time I tried these (which I'll
+admit was a few versions back) in Chapel, there was a performance penalty for
+doing this in Chapel (i.e. single locale codes ran slower multi-locale, even
+with minimal/no communication). An MPI module can get someone up and running
+quickly, using idioms they're already quite familiar with --- and not pay a
+performance penalty (which you really don't want to pay on simple programs!).
+
+Familiarity -- I'd argue that more people are familiar with basic MPI
+communication idioms. I, for one, would not want to write an AlltoAll using
+GET/PUT (I could do it, but I suspect I'd do it in a stupid way that would just
+be slower than the MPI version).
+
+As to why MPI and not OpenSHMEM or something else -- simply that I think MPI is
+just more broadly used/ taught/ supported etc. Again, reduces the barrier to
+adopting Chapel. (Personal observation --- I've never used OpenSHMEM. While I'm
+sure I could figure it out, I suspect expediency would win and I would just
+wrap the three MPI commands I needed, instead of trying to figure it out.
+Which, in effect, is how this started for me.)
+
+An extension of this idea would be to develop an MPI+Gasnet story, since that
+would let users more gradually switch communication patterns when opportunities
+arise. This is certainly possible on Gasnet-over-MPI, but it'd be great to see
+how it plays when Gasnet is using a different backend.
+
+A fair question is whether or not this should be part of the Chapel
+distribution. I can't answer that question -- but I do see arguments both ways.
+I think, given the absence, of a curated external module library, it might make
+sense to be part of Chapel. Plus, it's actually low-level and generic enough
+that it again feels like it should be in Chapel.
+
+I guess, as my final argument, I'll add that I think MPI isn't going to
+disappear, or even wane in popularity, anytime soon -- it's just a little too
+entrenched. It's probably good strategy for Chapel to play nice with it. :-)
+
+

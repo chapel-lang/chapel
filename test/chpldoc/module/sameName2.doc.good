@@ -1,0 +1,25 @@
+.. default-domain:: chpl
+
+.. module:: sameName2
+   :synopsis: This module with the same name actually contains all 
+
+sameName2
+=========
+**Usage**
+
+.. code-block:: chapel
+
+   use sameName2;
+
+
+or
+
+.. code-block:: chapel
+
+   import sameName2;
+
+This module with the same name actually contains all 
+the code in the file 
+
+.. function:: proc inner()
+

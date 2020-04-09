@@ -1,0 +1,27 @@
+#!/usr/bin/env python
+
+import os, sys
+
+file_usr = os.stat("getting.chpl").st_uid
+file_group = os.stat("getting.chpl").st_gid
+
+output_usr=""
+output_group=""
+
+with open(sys.argv[2], 'r') as fp:
+    # get the output from the Chapel program as integers (to be comparable)
+    output_usr = int(fp.readline())
+    output_group = int(fp.readline())
+
+with open(sys.argv[2], 'w') as fp:
+    if output_usr == file_usr :
+        fp.write("user id matched\n")
+    else :
+        fp.write("expected " + str(file_usr) + " was " + str(output_usr) + "\n")
+
+    # Want to override previous contents of .out.tmp file, since the id will
+    # differ depending on who runs it and where.
+    if output_group == file_group :
+        fp.write("group id matched\n")
+    else :
+        fp.write("expected " + str(file_group) + " was " + str(output_group) + "\n")

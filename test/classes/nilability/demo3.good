@@ -1,0 +1,5 @@
+demo3.chpl:13: error: unresolved call 'getTheValue(borrowed C?)'
+demo3.chpl:4: note: this candidate did not match: getTheValue(x: borrowed C)
+demo3.chpl:13: note: because call actual argument #1 with type borrowed C?
+demo3.chpl:4: note: is passed to formal 'x: borrowed C'
+demo3.chpl:13: note: try to apply the postfix ! operator to call actual argument #1

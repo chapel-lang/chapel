@@ -1,0 +1,3 @@
+uncaught IllegalArgumentError: bad cast from string 'true' to real(64)
+  <command line setting of 'x'>:0: thrown here
+  <command line setting of 'x'>:0: uncaught here

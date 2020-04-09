@@ -1,0 +1,1 @@
+paramFnWithSideEffects.chpl:6: error: all statements in param function must be parameters

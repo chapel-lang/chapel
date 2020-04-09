@@ -1,0 +1,13 @@
+test_explain1.chpl:9: note: call: foo(12)
+test_explain1.chpl:1: note: visible functions are: foo(i: int)
+test_explain1.chpl:5: note:                        foo(r: real)
+test_explain1.chpl:1: note: candidates are: foo(i: int)
+test_explain1.chpl:5: note:                 foo(r: real)
+test_explain1.chpl:1: note: best candidate is: foo(i: int)
+test_explain1.chpl:10: note: call: foo(12.0)
+test_explain1.chpl:1: note: visible functions are: foo(i: int)
+test_explain1.chpl:5: note:                        foo(r: real)
+test_explain1.chpl:5: note: candidates are: foo(r: real)
+test_explain1.chpl:5: note: best candidate is: foo(r: real)
+12
+12.0

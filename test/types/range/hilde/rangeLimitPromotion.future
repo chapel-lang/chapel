@@ -1,0 +1,6 @@
+semantic: Should allow mixed range limits including uint(64).
+
+In range limits, only the combination of uint(64) with a signed integer is currently disallowed.  For consistency, it should be added.
+
+Or, the integer promotion story should be generalized so that this case can be explained by analogy to other operators.
+

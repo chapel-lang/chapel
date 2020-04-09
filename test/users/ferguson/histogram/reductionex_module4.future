@@ -1,0 +1,10 @@
+feature request: using modules with different parameters
+
+When the other module examples worked, it made me think that there
+is late binding of free variables at 'use' time. However, when I
+try to give a module two different parameters, it does not work.
+
+reductionex_module4.chpl:12: In function 'accumulate':
+reductionex_module4.chpl:13: error: 'per' undeclared (first use this function)
+reductionex_module4.chpl:15: In function 'combine':
+reductionex_module4.chpl:16: error: 'NBUCKETS' undeclared (first use this function)

@@ -1,0 +1,12 @@
+# some documentation
+i=9
+f=9.9 # Some more documentation
+# b = true # commented out
+b=false
+ # s = 'chicken'
+c=9.9+99.9i	s="puddin' and pie"
+## Multiple hashes
+ ##
+#
+
+

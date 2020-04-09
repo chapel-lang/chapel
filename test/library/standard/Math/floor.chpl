@@ -1,0 +1,19 @@
+var a: real = -29.39;
+var b: real = -31.87;
+var c: real = 0;
+var d: real = 0.1111;
+var e: real = 1.1111;
+var f: real = 99.99;
+
+writeln("a = ", a);
+writeln("floor(a) = ", floor(a));
+writeln("b = ", b);
+writeln("floor(b) = ", floor(b));
+writeln("c = ", c);
+writeln("floor(c) = ", floor(c));
+writeln("d = ", d);
+writeln("floor(d) = ", floor(d));
+writeln("e = ", e);
+writeln("floor(e) = ", floor(e));
+writeln("f = ", f);
+writeln("floor(f) = ", floor(f));

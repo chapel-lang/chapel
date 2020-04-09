@@ -1,0 +1,8 @@
+feature request: Silent uint rollover (param and runtime).
+area: safety, productivity
+severity: 1 -- Program continues running, possibly incorrect result.
+priority: med
+
+By default, the compiler ought to alert the user when the representation of a
+quantity rolls over.  Some routines assume monotonicity -- which can be violated
+close to the representational limits and lead to incorrect results.

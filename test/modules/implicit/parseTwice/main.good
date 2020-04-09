@@ -1,0 +1,2 @@
+main.chpl:1: In function 'main':
+main.chpl:2: error: Cannot find module or enum 'SomeLibrary'

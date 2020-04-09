@@ -1,0 +1,2 @@
+COMPOPTS <= --baseline
+# This test doesn't work in --baseline configuration

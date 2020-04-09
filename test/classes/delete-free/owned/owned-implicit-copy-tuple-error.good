@@ -1,0 +1,2 @@
+owned-implicit-copy-tuple-error.chpl:14: error: argument 1 for tuple construction is const but tuple construction takes ownership
+owned-implicit-copy-tuple-error.chpl:14: error: argument 2 for tuple construction is const but tuple construction takes ownership

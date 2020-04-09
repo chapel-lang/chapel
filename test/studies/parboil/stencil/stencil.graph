@@ -1,0 +1,6 @@
+perfkeys: Total: 
+graphkeys: stencil 3D
+files: stencil3D.dat
+graphtitle: Parboil Stencil 3D Execution Time
+ylabel: Time (seconds)
+graphname: stencil3D

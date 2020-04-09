@@ -1,0 +1,3 @@
+test_default3-error.chpl:17: error: ambiguous call 'foo()'
+test_default3-error.chpl:1: note: candidates are: foo(i: int = 1, j: real = 2.0, k: string = "three")
+test_default3-error.chpl:5: note:                 foo(i: real = 1.0, j: string = "two", k: int = 3)

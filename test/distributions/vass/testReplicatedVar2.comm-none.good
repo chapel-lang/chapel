@@ -1,0 +1,16 @@
+starting rcExample
+
+after initialization, myRepVar copies are:
+LOCALE0:
+5.0
+
+on LOCALE0, myRepVar is:
+  before assignment: 5.0
+  after assignment:  33.0
+
+after update, myRepVar copies are:
+LOCALE0:
+33.0
+
+collected copies of myRepVar are:
+33.0

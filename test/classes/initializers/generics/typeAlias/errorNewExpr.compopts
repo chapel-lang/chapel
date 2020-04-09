@@ -1,0 +1,2 @@
+-scase=0 # errorNewExpr.typeless.good
+-scase=1 # errorNewExpr.baduser.good

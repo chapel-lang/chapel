@@ -1,0 +1,16 @@
+bug: cannot invoke a method that is inherited from the parent record
+
+Note: this test assumes that we want to have record inheritance.
+See also:
+
+  test/classes/hilde/recordInheritance.chpl
+
+Currently this test fails with an internal error upon --verify,
+or fails during C compilation without --verify.
+When this .future is retired, --verify can/should be removed from .compopts.
+
+Earlier notes:
+
+a.test() works fine, but b.test() causes compiler error (which it shouldn't):
+
+method-of-parent-record-1.chpl:10: error: actual formal type mismatch

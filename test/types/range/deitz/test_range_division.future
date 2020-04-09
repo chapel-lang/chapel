@@ -1,0 +1,5 @@
+semantic: should ranges be snapped?
+
+Should (1..10 by 2) / 2 contain 0 1 2 3 4 or 0 1 2 3 4 5?
+
+Since we snap to 1..9 by 2 we give the former, but why not the latter?

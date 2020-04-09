@@ -1,0 +1,23 @@
+.TH qthread_shep 3 "APRIL 2011" libqthread "libqthread"
+.SH NAME
+.B qthread_shep
+\- returns the qthread's shepherd ID
+.SH SYNOPSIS
+.B #include <qthread.h>
+
+.I qthread_shepherd_id_t
+.br
+.B qthread_shep
+(void);
+.SH DESCRIPTION
+This function returns the shepherd identifier of the current thread.
+.SH RETURN VALUE
+This function either returns the ID number of the shepherd of the calling
+function, or returns
+.BR NO_SHEPHERD .
+.SH SEE ALSO
+.BR pthread_getspecific (3),
+.BR qthread_retloc (3),
+.BR qthread_stackleft (3),
+.BR qthread_worker (3),
+.BR qthread_id (3)

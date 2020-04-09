@@ -1,0 +1,25 @@
+### ignoreRunning = false
+### ignoreRunning = true
+### ignoreRunning = true
+### ignoreRunning = true
+### ignoreRunning = true
+### minIndicesPerTask = 1
+### minIndicesPerTask = 1
+### minIndicesPerTask = 1
+### minIndicesPerTask = 19
+### minIndicesPerTask = 19
+### nranges = (1..0)
+### nranges = (9..17, 10..18, 11..19, 12..20)
+### nranges = (9..17, 10..18, 11..19, 12..20)
+### nranges = (9..17, 10..18, 11..19, 12..20)
+### nranges = (9..17, 10..18, 11..19, 12..20)
+### numChunks = 0 (parDim = -1)
+### numChunks = 3 (parDim = 0)
+### numChunks = 3 (parDim = 0)
+### numChunks = 9 (parDim = 0)
+### numChunks = 9 (parDim = 0)
+### numTasksPerLoc = 19
+### numTasksPerLoc = 19
+### numTasksPerLoc = 19
+### numTasksPerLoc = 3
+### numTasksPerLoc = 3

@@ -1,0 +1,27 @@
+bool : true
+int(16) : true
+int(64) : true
+complex(128) : true
+string : false
+int(32) : true
+MyClass : true
+borrowed MyClass : true
+unmanaged MyClass : true
+owned MyClass : false
+shared MyClass : false
+AtomicT(int(64)) : false
+sync int(64) : false
+single int(64) : false
+NotPod1 : false
+NotPod2 : false
+NotPod3 : false
+NotPod4 : false
+NotPod5 : false
+NotPod6 : false
+NotPod7 : false
+NotPod8 : false
+Pod1 : true
+Pod2 : true
+Pod3 : true
+ExternStruct : true
+ExternOpaque : true

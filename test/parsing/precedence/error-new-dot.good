@@ -1,0 +1,2 @@
+error-new-dot.chpl:17: error: Please use parentheses to disambiguate dot expression after new
+error-new-dot.chpl:19: error: Please use parentheses to disambiguate dot expression after new

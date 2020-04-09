@@ -1,0 +1,2 @@
+# Skip for NUMA since the error message is slightly different
+CHPL_LOCALE_MODEL == numa

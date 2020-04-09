@@ -1,0 +1,45 @@
+.. default-domain:: chpl
+
+.. module:: paramFields.doc
+
+paramFields.doc
+===============
+**Usage**
+
+.. code-block:: chapel
+
+   use paramFields.doc;
+
+
+or
+
+.. code-block:: chapel
+
+   import paramFields.doc;
+
+.. class:: hasParams
+
+   .. attribute:: param typeless
+
+   .. attribute:: param docTyped: int
+
+      Typed param with a comment 
+
+   .. attribute:: param hasType: int
+
+   .. attribute:: param hasDefaultValue = 14
+
+   .. attribute:: param doctypedDefaultVal: string = "blah blah blah"
+
+      Param with default value, declared type, and comment 
+
+   .. attribute:: param docTypeless
+
+      Typeless param with a comment 
+
+   .. attribute:: param docDefaultValue = false
+
+      Param with default value but no type, and comment 
+
+   .. attribute:: param typedDefaultVal: string = "blah blah blah"
+

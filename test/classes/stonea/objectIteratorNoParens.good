@@ -1,0 +1,1 @@
+objectIteratorNoParens.chpl:13: error: method 'these' must have parentheses

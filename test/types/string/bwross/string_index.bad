@@ -1,0 +1,1 @@
+string_index.chpl:20: error: string slicing doesn't support stridable codepoint ranges

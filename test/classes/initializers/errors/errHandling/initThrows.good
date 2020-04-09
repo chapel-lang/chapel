@@ -1,0 +1,1 @@
+initThrows.chpl:6: error: initializers are not yet allowed to throw errors

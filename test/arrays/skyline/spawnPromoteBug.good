@@ -1,0 +1,1 @@
+spawnPromoteBug.chpl:10: error: creating an array of arrays using a for- or forall-expression is not supported, except when using a for-expression over a range

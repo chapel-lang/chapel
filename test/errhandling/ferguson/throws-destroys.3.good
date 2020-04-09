@@ -1,0 +1,2 @@
+in conditionalThrow, r=(x = 2)
+destroying R(x=2)

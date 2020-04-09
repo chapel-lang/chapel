@@ -1,0 +1,39 @@
+
+FLAGS:
+======
+  -h, --help            : print this message
+  -a, --about           : print compilation information
+  -nl <n>               : run program using n locales
+                          (equivalent to setting the numLocales config const)
+  -q, --quiet           : run program in quiet mode
+  -v, --verbose         : run program in verbose mode
+  -b, --blockreport     : report location of blocked threads on SIGINT
+  -t, --taskreport      : report list of pending and executing tasks on SIGINT
+  --gdb                 : run program in gdb
+  -E<envVar>=<val>      : set the value of an environment variable
+
+CONFIG VAR FLAGS:
+=================
+  -s, --<cfgVar>=<val>  : set the value of a config var
+  -f<filename>          : read in a file of config var assignments
+
+CONFIG VARS:
+============
+Built-in config vars:
+       printModuleInitOrder: bool
+      dataParTasksPerLocale: int(64)
+  dataParIgnoreRunningTasks: bool
+      dataParMinGranularity: int(64)
+                   memTrack: bool
+                   memStats: bool
+                   memLeaks: bool
+              memLeaksTable: bool
+                     memMax: uint(64)
+               memThreshold: uint(64)
+                     memLog: c_string
+                memLeaksLog: c_string
+                 numLocales: int(64)
+
+feature_help_defaultval config vars:
+                          a: int(64)          default: 10
+                          b: int(64)          default: 20

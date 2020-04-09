@@ -1,0 +1,52 @@
+.TH qthread_cas 3 "NOVEMBER 2009" libqthread "libqthread"
+.SH NAME
+.BR qthread_cas ,
+.B qthread_cas_ptr
+\- atomically compare-and-swap a value
+.SH SYNOPSIS
+.B #include <qthread.h>
+
+.I aligned_t
+.br
+.B qthread_cas
+.RI "(volatile aligned_t *" addr ", aligned_t " oldval ,
+.ti +13
+.RI "aligned_t " newval );
+.PP
+.I void *
+.br
+.B qthread_cas_ptr
+.RI "(void * volatile * " addr ", void * " oldval ,
+.ti +17
+.RI "void * " newval );
+.SH DESCRIPTION
+This function atomically compares the contents of the memory at
+.I addr
+with the value
+.I oldval
+and if they are the same, writes
+.I newval
+into that memory. If they are not the same, no change is made. In either case,
+the contents of
+.I addr
+are returned. In short, this is an atomic version of:
+.RS
+.PP
+.RI "retval = *" addr ;
+.br
+.RI "if (*" addr " == " oldval ") {"
+.RS
+.RI * addr " = " newval ;
+.RE
+}
+.br
+.RI "return retval;"
+.RE
+.PP
+This function uses architecture-specific assembly to achieve this, or compiler built-in functions, if they exist.
+.SH RETURN VALUE
+These functions will return the value of
+.RI * addr
+before any assignment is (potentially) performed.
+.SH SEE ALSO
+.BR qthread_incr (3)

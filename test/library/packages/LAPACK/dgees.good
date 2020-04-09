@@ -1,0 +1,10 @@
+LAPACK_dgees_no_sort passed
+LAPACK_dgees_sort passed
+LAPACKE_dgees_row_major_no_sort passed
+LAPACKE_dgees_col_major_no_sort passed
+LAPACKE_dgees_row_major_sort passed
+LAPACKE_dgees_col_major_sort passed
+gees_row_major_no_sort passed
+gees_col_major_no_sort passed
+gees_row_major_sort passed
+gees_col_major_sort passed

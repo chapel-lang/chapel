@@ -1,0 +1,5 @@
+# Skip this test on Cygwin since Cygwin adds additional
+# environment variables SYSTEMROOT and WINDIR
+CHPL_TARGET_PLATFORM <= cygwin
+# This test runs gcc
+CHPL_TARGET_COMPILER != gnu

@@ -1,0 +1,19 @@
+(red = 179, green = 139, blue = 109)
+(red = 0, green = 0, blue = 0)
+145.338
+Point default-init
+3.0
+Point copy-init
+(x = 5.0, y = 2.0, z = 2.0)
+(x = 1.0, y = 2.0, z = 2.0)
+Point assignment
+Point copy-init
+Point deinit
+1.0
+1.0
+1.0
+2.0
+2.0
+Point deinit
+Point deinit
+Point deinit

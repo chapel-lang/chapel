@@ -1,0 +1,74 @@
+#!/usr/bin/env perl
+
+use File::Basename;
+
+$found_test = 0;
+$command = "chpl --fast ";
+while (@ARGV) {
+    $arg = shift @ARGV;
+    if ($arg =~ m/.chpl$/) {
+        $found_test = 1;
+
+        ($filename, $path) = fileparse($arg);
+
+        $compopts_file = "$path"."PERFCOMPOPTS";
+
+        if (-e $compopts_file) {
+            $compopts = `cat $compopts_file`;
+            chomp $compopts;
+        }
+
+        $filebase = $filename;
+        $filebase =~ s/.chpl$//;
+
+        $compopts_file = "$path"."$filebase".".perfcompopts";
+        
+        if (-e $compopts_file) {
+            if ($compopts) {
+                $compopts .= " ";
+            }
+            $compopts .= `cat $compopts_file`;
+            chomp $compopts;
+        }
+
+        @compopts = split / /, $compopts;
+
+        $foundheader = 0;
+
+        foreach $compopt (@compopts) {
+            if ($compopt =~ m/\-M(.*)/) {
+                # preserve -M flags with or without spaces
+                if ($compopt eq "-M") {
+                } else {
+                    $compopt = "-M$path$1";
+                }
+            } elsif ($compopt =~ m/-I(.*)/) {
+                # preserve -I flags with or without spaces
+                if ($compopt eq "-I") {
+                } else {
+                    $compopt = "-I$path$1";
+                }
+            } elsif ($compopt =~ m/\.h$/) {
+                # don't add relative paths to .h files -- -I should suffice
+                $foundheader = 1;
+            } elsif ($compopt =~ m/^\-/) {
+                # don't add relative paths to flags
+            } else {
+                # add the relative path in the default case
+                $compopt = "$path$compopt";
+            }
+            $command .= "$compopt ";
+        }
+        if ($foundheader) {
+            $command .= "-I$path ";
+        }
+        $command .= "$path$filename ";
+    } else {
+        $command .= "$arg ";
+    }
+}
+
+die "no test specified" unless $found_test == 1;
+
+print "$command\n";
+exec $command;

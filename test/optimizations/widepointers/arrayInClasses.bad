@@ -1,0 +1,7 @@
+----- simple class -----
+class is wide: false
+array is wide: false
+----- array of classes -----
+class is wide: true
+array is wide: true
+1 1 1 1 1 1 1 1 1 1

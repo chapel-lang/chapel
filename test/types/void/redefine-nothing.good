@@ -1,0 +1,1 @@
+redefine-nothing.chpl:2: error: attempt to redefine reserved type 'nothing'

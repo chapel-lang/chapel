@@ -1,0 +1,5 @@
+this-in-method.chpl:11: error: const actual is passed to 'ref' formal 'this' of mod()
+this-in-method.chpl:1: note: to formal of type R
+this-in-method.chpl:2: note: to ref formal here
+this-in-method.chpl:1: note: to ref formal here
+this-in-method.chpl:2: note: passed as ref here

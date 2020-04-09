@@ -1,0 +1,9 @@
+#!/bin/bash
+
+outfile=$2
+
+#
+# Ignore whole-domain and whole-array assigment has been serialized errors
+#
+grep -v 'In function' $outfile | grep -v 'has been serialized' > $outfile.tmp
+mv $outfile.tmp $outfile

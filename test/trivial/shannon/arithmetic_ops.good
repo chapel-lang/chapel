@@ -1,0 +1,19 @@
+m = 5
+n = 2
+o = 30
+
+test: m * n
+expected answer = 10
+actual answer = 10
+
+test: o / m
+expected answer = 6
+actual answer = 6
+
+test: m + n
+expected answer = 7
+actual answer = 7
+
+test: m - n
+expected answer = 3
+actual answer = 3

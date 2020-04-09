@@ -1,0 +1,6 @@
+We don't have access to easy_install on most of our testing platforms,
+so I'm turning this off by default since we rely on those python scripts
+to run these tests.  Ultimately, we should incorporate these scripts
+into the release to avoid this install step at which point these tests
+could be re-enabled.
+

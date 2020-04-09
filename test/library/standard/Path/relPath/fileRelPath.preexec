@@ -1,0 +1,126 @@
+#!/usr/bin/env python
+
+
+# Produce the output file our test will compare itself against.
+
+
+from __future__ import print_function
+import sys
+import os.path
+
+
+fileDoesNotExist = 'ThisFileDoesNotExist.txt'
+filePathRelative = 'test.txt'
+filePathAbsolute = os.path.abspath(filePathRelative)
+
+
+# Mimic the appropriate behaviors of a Chapel file in Python.
+class ChplFileWrapper(object):
+    def __init__(self, filepath, openmode):
+        self._path = os.path.abspath(filepath)
+        try:
+            self._file = open(self._path, openmode)
+        except Exception as e:
+            self._path = None
+            self._file = None
+            raise e
+
+    def close(self):
+        self._file.close()
+        self._path = None
+        self._file = None
+
+    # Return the "shortest" path to the file. In Python, the file object's
+    # "name" attribute is the path the user passed in when opening that
+    # particular file. However in Chapel, the file.path() method returns
+    # the _shortest_ path to the file from the current directory. Because
+    # of this, (and the fact that Python file objects don't have a relpath
+    # class method) we mimic the Chapel object's behavior, here.
+    def path(self):
+        rel = os.path.relpath(self._path, os.getcwd())
+        return os.path.normpath(rel)
+
+    # Provide functionality equivalent to our Chapel implementation.
+    def relpath(self, start=""):
+        return os.path.relpath(self.path(), start)
+
+
+# Perform a single test, validating the input.
+def test(chplfile, start=""):
+    print('filepath=', chplfile.path(), 'start=', start)
+    print(chplfile.relpath(start))
+
+
+# Perform tests using a given input path.
+def do_tests(somepath):
+    f = None
+    try:
+        f = ChplFileWrapper(somepath, 'r')
+    except Exception as e:
+        print('Failed to open file!')
+        return
+
+    # Print path used to open file.
+    print(somepath)
+
+    # Print the abspath of the path used to open.
+    print(os.path.abspath(somepath))
+
+    # Print the path contained in this file.
+    print(f.path())
+
+    # No start.
+    test(f)
+
+    # Fixed relative start value.
+    test(f, 'foo/bar/baz')
+
+    # Fixed absolute start value.
+    test(f, '/foo/bar/baz')
+
+    # Start is path separator.
+    test(f, '/')
+
+    # Start is double path separator.
+    test(f, '//')
+
+    # Start is a triple path separator.
+    test(f, '///')
+
+    # Start is current dir.
+    test(f, '.')
+
+    # Start is parent dir.
+    test(f, '..')
+
+    # Start is chain of parent dirs.
+    test(f, '../..')
+
+    # Go up a directory.
+    old = os.getcwd()
+    os.chdir('..')
+
+    # Start is old working directory.
+    test(f, old)
+
+    # Start is current working directory.
+    test(f, os.path.join(old, '..'))
+
+    # Restore old path.
+    os.chdir(old)
+
+    f.close()
+
+
+# Redirect STDOUT to the output file.
+stdout = sys.stdout
+sys.stdout = open('fileRelPath.good', 'w')
+
+
+do_tests(fileDoesNotExist)
+do_tests(filePathRelative)
+do_tests(filePathAbsolute)
+
+
+# Restore the old value of STDOUT.
+sys.stdout = stdout

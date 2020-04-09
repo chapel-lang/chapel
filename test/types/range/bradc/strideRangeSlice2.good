@@ -1,0 +1,6 @@
+rOdd is: 1..10 by 2
+rOddSlice = 3..8 by 2
+rOddSlice = 1..0 by 2
+rOddSlice = 3..8 by 2
+rOddSlice = 2..8 by 2 align 1
+rOddSlice = 1..10 by 2

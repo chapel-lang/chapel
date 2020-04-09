@@ -1,0 +1,2 @@
+errors-comparator.chpl:9: In function 'main':
+errors-comparator.chpl:17: error: The comparator keyPartArgs requires a 'key(a)', 'compare(a, b)', or 'keyPart(a, i)' method  for element type int(64)

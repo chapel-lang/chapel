@@ -1,0 +1,2 @@
+inOnCobegin.chpl:4: In initializer:
+inOnCobegin.chpl:8: error: use of this.complete() call in a parallel statement

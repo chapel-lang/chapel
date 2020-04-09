@@ -1,0 +1,3 @@
+# To work as expected, this test requires a tasking layer in which sync
+# var blocks result in task switching.  fifo cannot do this.
+CHPL_TASKS == fifo

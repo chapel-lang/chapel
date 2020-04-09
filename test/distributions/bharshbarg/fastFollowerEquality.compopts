@@ -1,0 +1,1 @@
+-sCyclicDist.testFastFollowerOptimization -sBlockDist.testFastFollowerOptimization -sdataParTasksPerLocale=2

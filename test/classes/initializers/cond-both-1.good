@@ -1,0 +1,9 @@
+Init(int) Enter
+Init(int) Done
+
+Init(int) Enter
+  Init()
+Init(int) Done
+
+r1: (x = 10, y = 20)
+r2: (x = 20, y = 30)

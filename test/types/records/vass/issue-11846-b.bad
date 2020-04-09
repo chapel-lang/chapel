@@ -1,0 +1,2 @@
+issue-11846-b.chpl:11: In function 'main':
+issue-11846-b.chpl:12: error: cannot assign expression of type _uninstantiated to field 'data1' of type 2*3*int(64)

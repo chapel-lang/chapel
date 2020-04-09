@@ -1,0 +1,124 @@
+// Block LU without pivoting.
+// Magic square of dimension 10, permuted according to
+// Matlab's p matrix for LU (so it doesn't need pivoting),
+// is used as test matrix A.
+
+param n = 10;
+param blk = 5;
+
+const A1D = [1..n];
+const A2D = [A1D,A1D]; 
+var A: [A2D] real;
+
+var Block, Unfact: domain(1);
+
+initA(A,'Adata.dat');
+
+writeln("Unfactored Matrix:");
+writeln(A);
+
+for (Block,Unfact) in blockedA(A1D,blk) {
+  
+  A11 -> A(Block,Block);
+
+// LU factorization of A11.
+  for k in Block {
+    if (A11(k,k) != 0.0) {
+      forall i in Block(k+1..) {
+        A11(i,k) = A11(i,k)/A11(k,k);
+      }
+      forall (i,j) in [Block(k+1..),Block(k+1..)] {
+        A11(i,j) -= A11(i,k)*A11(k,j);
+      }
+    }
+    else halt("zero pivot encountered");
+  }
+
+  if (Unfact != [0]) {
+    A21 -> A(Unfact,Block);
+    A12 -> A(Block,Unfact);
+    A22 -> A(Unfact,Unfact);
+
+// Update of A21.  
+    for k in Block {
+      forall i in Unfact {
+        A21(i,k) = A21(i,k)/A11(k,k);
+      }
+      forall (i,j) in [Unfact, Block(k+1..)] {
+        A21(i,j) -= A21(i,k)*A11(k,j);
+      }
+    }
+// Update of A12.
+    forall j in Unfact {
+      for k in Block {
+        forall i in Block(k+1..) {
+          A12(i,j) -= A11(i,k)*A21(k,j);
+        }
+      }
+    }
+// Update of A22 -= A12*A21.
+    forall (i,j) in [Unfact, Unfact] {
+      for k in Block {
+        A22(i,j) -= A12(i,k)*A21(k,j);
+      }
+    }
+  }
+}
+writeln();
+writeln("Factored Matrix:");
+writeln(A);
+
+iterator blockedA(D,blksize) {
+  var n = D.size;
+  var lo,hi: int;
+
+  for i in D by blksize {
+    lo = i;
+    hi = if ((i + blksize-1) < n) then i + blksize-1 else n;
+    if ((hi + 1) < n) then
+      yield (D(i..hi), D(hi+1..n));
+    else 
+      yield (D(i..hi), [0]);
+  }   
+}
+  
+def initA(A,filename:string){
+
+// Create full permutation matrix to permute A.
+// Very expensive, but easy way to permute the matrix
+// so that pivoting isn't needed.
+
+var Adat = file(filename,path='./',mode='r');
+var P, temp: [A.domain] real;
+
+Adat.open;
+for ij in A.domain {
+  Adat.read(A(ij));
+}
+Adat.close;
+
+P = 0.0;
+P(1,2) = 1.0;
+P(2,3) = 1.0;
+P(3,7) = 1.0;
+P(4,8) = 1.0;
+P(5,9) = 1.0;
+P(6,5) = 1.0;
+P(7,1) = 1.0;
+P(8,4) = 1.0;
+P(9,10) = 1.0;
+P(10,6) = 1.0;
+
+temp = 0.0;
+const i = 1..10;
+for i in [1..10] {
+  for j in [1..10] {
+    for k in [1..10] {
+      temp(i,j) = temp(i,j) + P(i,k)*A(k,j);
+    }
+  }
+}
+A = temp;
+}
+
+

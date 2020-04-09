@@ -1,0 +1,9 @@
+This is a text file for testing the grep pattern. 
+
+This grep uses some of chapel's parallel features to quickly search 
+though any file in the current working directory of the user when
+there is no other file specified. 
+
+To use grep simply call the executable as follows
+./grep <string to search for> (optionally place a single file here)
+

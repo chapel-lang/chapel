@@ -1,0 +1,2 @@
+bug: compiler crashes upon a borrowed->unmanaged coercion upon return
+#11456

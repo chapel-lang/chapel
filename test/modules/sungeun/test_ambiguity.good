@@ -1,0 +1,4 @@
+test_ambiguity.chpl:22: In function 'main':
+test_ambiguity.chpl:27: error: ambiguous call 'printY()'
+test_ambiguity.chpl:34: note: candidates are: printY()
+test_ambiguity.chpl:7: note:                 printY()

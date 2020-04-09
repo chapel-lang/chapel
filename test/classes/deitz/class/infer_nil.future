@@ -1,0 +1,42 @@
+bug: the type inferred for a variable initialized to 'nil' is not 'object'
+
+It has been the intention, ever since the test was first added in r15073,
+that in the following code:
+
+   ...
+   var x = nil;
+   ...
+
+the type of 'x' should be inferred to be 'object'. At the moment, however,
+(following r23255) the compiler infers it to be of type dtNil.  Type inference
+for the type of a variable should be modified, so an initializer of type nil
+implies that the variable is of type object.
+
+Tom narrowed the above behavior to this piece of functionResolution.cpp:
+
+    if (lhs->type == dtUnknown || lhs->type == dtNil)
+      lhs->type = rhsType;
+
+RATIONALE for the desired behavior:
+
+* From a puristic point, the type of 'x' above should be 'nil'.
+However, a variable of the nil type is not very useful, as one cannot
+assign anything interesting to it.
+
+* Assigning 'x' the type 'object' preserves the following upsides of
+choosing 'nil':
+ - it is a local type inference, independent of the surrounding code,
+ - it is fairly general.
+
+* Assigning 'x' the type 'object' is an exception to how type inference
+works, however it is one that is easy to present, e.g. in the spec.
+
+* While having x.type=object is expected to be more useful than x.type=nil,
+we are still unsure it is sufficient.
+ - Upside: any class type can be assigned into 'x'.
+ - Downside: few methods can be invoked on 'x'.
+   If 'x' is cast to a more specific type, methods on that type
+   can then be invoked, of course.
+
+This issue was discussed in the thread "Verify failue -- assign-to-ref"
+on the internal mailing list.

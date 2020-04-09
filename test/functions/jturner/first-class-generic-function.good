@@ -1,0 +1,4 @@
+first-class-generic-function.chpl:329: In function 'main':
+first-class-generic-function.chpl:389: error: 'scalar_outer_product_cholesky' cannot be captured as a value because it is a generic function
+first-class-generic-function.chpl:329: In function 'main':
+first-class-generic-function.chpl:416: error: illegal access of first class function

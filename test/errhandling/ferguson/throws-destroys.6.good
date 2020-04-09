@@ -1,0 +1,5 @@
+in inThrow, r=(x = 4)
+destroying R(x=4)
+uncaught Error: 
+  throws-destroys.chpl:55: thrown here
+  throws-destroys.chpl:19: uncaught here

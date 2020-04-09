@@ -1,0 +1,2 @@
+-st=string  #testformat-error.string.good
+-st=bytes  #testformat-error.bytes.good

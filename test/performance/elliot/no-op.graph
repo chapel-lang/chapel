@@ -1,0 +1,4 @@
+perfkeys: real
+graphkeys: startup time
+graphtitle: no-op (non-user code startup time)
+ylabel: Time (seconds)

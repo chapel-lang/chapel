@@ -1,0 +1,8 @@
+consumeInt
+5 is less than 10
+consumeTwoInt (error first)
+5 is less than 10
+consumeTwoInt (error second)
+5 is less than 10
+consumeIntOrThrow
+5 is less than 10

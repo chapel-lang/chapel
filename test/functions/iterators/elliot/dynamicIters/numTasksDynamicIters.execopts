@@ -1,0 +1,4 @@
+--numTasks=2
+--numTasks=1
+--numTasks=0
+--numTasks=-1 --dataParTasksPerLocale=1 # numTasksDynamicIters.neg.good

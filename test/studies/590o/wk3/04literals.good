@@ -1,0 +1,30 @@
+for i1...
+  value is: 1
+  #bits is: 8
+  maxvl is: 127
+
+for i2...
+  value is: 2
+  #bits is: 16
+  maxvl is: 32767
+
+for i3...
+  value is: 3
+  #bits is: 64
+  maxvl is: 9223372036854775807
+
+for i4...
+  value is: 3000000000
+  #bits is: 64
+  maxvl is: 9223372036854775807
+
+for i5...
+  value is: 10000000000000000000
+  #bits is: 64
+  maxvl is: 18446744073709551615
+
+for i6...
+  value is: 4294967295
+  #bits is: 32
+  maxvl is: 4294967295
+

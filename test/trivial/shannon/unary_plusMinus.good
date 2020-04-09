@@ -1,0 +1,18 @@
+m = 3
+n = -7
+
+test: +m
+expected answer = 3
+actual answer = 3
+
+test: +n
+expected answer = -7
+actual answer = -7
+test: -m
+expected answer = -3
+actual answer = -3
+
+test: -n
+expected answer = 7
+actual answer = 7
+

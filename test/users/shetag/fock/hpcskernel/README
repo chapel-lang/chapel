@@ -1,0 +1,11 @@
+F77 code, self-contained.
+
+compile with "f77 fock.f"
+run with "./a.out"
+
+buildjk() is the routine with the parallelizable
+nest of four loops.  buildjk_atom4 is the
+routine that contains the 1-sided data access
+and the crude computational kernel
+
+

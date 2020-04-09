@@ -1,0 +1,311 @@
+===============================
+Chapel implementation of LULESH
+===============================
+
+This directory contains a Chapel port of the DARPA/Livermore
+Unstructured Lagrangian Explicit Shock Hydrodynamics (LULESH)
+benchmark (see https://computation.llnl.gov/casc/ShockHydro/
+for details).
+
+
+------
+Status
+------
+
+The Chapel version of LULESH is a work-in-progress.  To the best of
+our knowledge, the current form is a complete and faithful
+implementation of LULESH.  It also contains flexibility and
+generalizations that go beyond LULESH's requirements to demonstrate
+Chapel capabilities and/or better reflect what might be done in
+production codes that LULESH represents.  All that said, several
+improvements remain to improve performance and elegance.  See the list
+below and TODO comments in the source code for some known areas for
+improvement.
+
+
+-----
+Files
+-----
+
+This directory's contents are as follows:
+
+./
+  lulesh.chpl       : the main Chapel source code
+  luleshInit.chpl   : initializes LULESH by reading or computing the input
+
+  Makefile          : builds an optimized lulesh in one of its configurations
+
+  lmeshes/          : input meshes
+
+  coords.out        : the coordinates computed by the program are written
+                      to this file, suitable for plotting
+
+  README            : this file
+
+  test3DLulesh.chpl : a helper file for automated testing of a 3D run of
+                      LULESH
+
+  Other files with the same base filename as the `.chpl` files above, but
+  different filename extensions, are for use by the automated test system.
+  For example, file lulesh.execopts supports automated testing of
+  lulesh.chpl.  Files with all-uppercase filenames like PRECOMP
+  (but not "README") are similar, except they are applied to all chpl
+  tests in the directory. $CHPL_HOME/examples/README.testing contains
+  more information.
+
+
+-----------------------------------
+Compilation Options (config params)
+-----------------------------------
+
+The following are boolean config[uration] param[eter]s for LULESH
+that can be set on the chpl compiler command line using the flag:
+
+    chpl -s<paramName>=[true|false] ...
+
+* useBlockDist : says whether or not to block-distribute the arrays.
+                 The default is based on the value of CHPL_COMM, as an
+                 indication of whether this is a single- or multi-
+                 locale execution.
+
+* use3DRepresentation : indicates whether the element node arrays
+                        should be stored using a 3D representation
+                        (limiting the execution to cube inputs) or the
+                        more general 1D representation (supporting
+                        arbitrary data sets).
+
+* useSparseMaterials : indicates whether sparse domains/arrays should
+                       be used to represent the materials.  Sparse
+                       domains are more realistic in that they permit
+                       an arbitrary subset of the problem space to
+                       store a material, but they currently impose a
+                       performance penalty due to lack of supporting
+                       optimizations.  Dense domains are sufficient
+                       for LULESH since there's an assumption in the
+                       mini-app that the material spans all cells.
+
+* printWarnings : prints performance-oriented warnings to prevent
+                  surprises.
+
+
+-------
+Running
+-------
+
+In running the Chapel version of LULESH, the user must either specify
+an input file via the --filename flag or a number of elements to use
+per edge in a cubic data set using the --elemsPerEdge argument.  For
+example, to run using a cubic 2x2x2 input set, you could either use
+'--filename lmeshes/sedov2cube.lmesh' or '--elemsPerEdge 2'.  The
+filename option has the advantage of supporting non-cubic input sets.
+
+
+-----------------
+Execution Options
+-----------------
+
+The following are config[uration] const[ant]s that can be used to
+modify the execution at program launch time.  These can be set on
+the execution-time command line using the following flag styles:
+
+    ./lulesh --<constName>=<value>
+    ./lulesh --<constName> <value>
+    ./lulesh -s<constName>=<value>
+    ./lulesh -s<constName> <value>
+
+* showProgress: bool -- shows simulation time and dt values for each cycle.
+
+* doTiming: bool -- shows the overall elapsed wallclock time and time/cycle
+                    once execution has completed; if used with showProgress,
+                    also displays the elapsed time per cycle.
+
+* printCoords: bool -- print the final computed coordinates to coords.out
+
+* initialEnergy: real -- the initial amount of energy deposited in the
+                         starting corner of the mesh
+
+* stoptime: real -- the end time for the simulation
+
+* maxcycles: int -- the maximum number of cycles to simulate if the
+                    simulation time is not reached first
+
+* filename: string -- the input dataset filename, if one is to be used
+
+* elemsPerEdge: int -- the number of elements per cube edge to use if the
+                       input dataset is to be computed
+
+* initialWidth: int -- the initial width of the cube if the input dataset is
+                       to be computed
+
+* dtfixed: real -- the fixed time increment (only seems to have an
+                   effect based on its sign?!?)
+
+* debug: bool -- prints out debugging information
+
+* debugInit: bool -- prints out debugging information related to initialization
+
+
+---------
+Callgraph
+---------
+
+module-level initialization
+main
+ -> initLulesh
+    -> initCoordinates
+    -> initElemToNodeMapping
+    -> initGreekVars
+    -> initXSyms
+    -> initYSyms
+    -> initZSyms
+    -> initMasses
+       -> localizeNeighborNodes
+    -> initBoundaryConditions
+       -> initFreeSurface
+ main loop {
+   -> TimeIncrement
+   -> LagrangeLeapFrog
+      -> LagrangeNodal
+         -> CalcForceForNodes
+            -> CalcVolumeForceForElems
+               -> InitStressTermsForElems
+               -> IntegrateStressForElems
+                  -> localizeNeighborNodes
+                  -> CalcElemShapeFunctionDerivatives
+                  -> CalcElemNodeNormals
+                     -> ElemFaceNormal (nested)
+                  -> SumElemStressesToNodeForces
+               -> CalcHourglassControlForElems
+                  -> localizeNeighborNodes
+                  -> CalcElemVolumeDerivative
+                  -> CalcFBHourglassForceForElems
+                     -> localizeNeighborNodes
+                     -> CalcElemFBHourglassForce
+         -> CalcAccelerationForNodes
+         -> ApplyAccelerationBoundaryConditionsForNodes
+         -> CalcVelocityForNodes
+         -> CalcPositionForNodes
+      -> LagrangeElements
+         -> CalcLagrangeElements
+            -> CalcKinematicsForElems
+               -> localizeNeighborNodes
+               -> CalcElemVolume
+                  -> TripleProduct
+               -> CalcElemCharacteristicLength
+               -> CalcElemShapeFunctionDerivatives
+               -> CalcElemVelocityGradient
+         -> CalcQForElems
+            -> CalcMonotonicQGradientsForElems
+               -> localizeNeighborNodes
+            -> CalcMonotonicQForElems
+         -> ApplyMaterialPropertiesForElems
+            -> EvalEOSForElems
+         -> UpdateVolumesForElems
+      -> CalcTimeConstraintsForElems
+         -> CalcCourantConstraintForElems
+            -> computeDTF
+         -> CalcHydroConstraintForElems
+   -> deprint (if debug)
+ }
+
+-----
+TODOs
+-----
+
+CORRECTNESS TODOs:
+------------------
+
+* dtfixed only seems to have an impact based on whether it's positive
+  or negative; does this match the reference version?
+
+PERFORMANCE TODOs:
+------------------
+
+* Today, the sparse subdomain MatElems is not distributed across
+  multiple locales, resulting in too much memory on, and communication
+  to, locale #0.  Making this distributed aligned with Elems would
+  also permit enabling several commented-out local clauses.
+
+* localizeNeighborNodes seems a little weird/inefficient.  Review its
+  role and look for ways to improve.
+
+
+INPUT FILE TODOs:
+-----------------
+
+* Put initial energy into input file format
+
+* Ultimately, it would be cool to support comments in the input file
+  for clarity.  These could either be required or optional.
+
+* Seems like there should be a nicer way to read elemToNode in one
+  fell swoop (or at least not a scalar at a time).  Ideally in an
+  initializer so it could be const.  We could use a manual iterator,
+  but it seems like it would be nice for this to "just work" in some
+  way.
+
+* At the very least, it seems like the current nested loop should be
+  able to be replaced with a singleton loop and a read of a tuple.
+
+
+STYLE TODOs:
+------------
+
+* There are a number of magic number 8's in the code, many (all?) of
+  which should probably be replaced by nodesPerElem.  There were
+  also some magic number 4's that should be similarly replaced.
+
+* Along those lines, we may want to insert a typedef for 8*real or
+  nodesPerElem*real which is a commonly-appearing type.  This would
+  also help transition it from tuple back to array in the future.
+  And such changes can also help when we support array-of-struct
+  vs. struct-of-array decisions.
+
+* It'd be nice to replace some of the groups of three arrays
+  representing x, y, and z values with an array of tuples or records
+  or small arrays.  The array of tuples approach seems most
+  appropriate and could result in a rank-independent version of LULESH
+  if that was of interest.  This seems like it could also potentially
+  improve performance depending on how much the coordinates are used
+  in an interleaved manner.
+
+* Conversely, the arrays of tuples used to store elemToNode and 8*real
+  variables seem like they would be more natural as arrays of arrays.
+  We started using tuples for the performance benefit, but ultimately,
+  there shouldn't be a performance hit for using arrays of arrays --
+  we should make them perform the same and switch these back.
+
+* Review uses of 'var' -- replace with 'const' when possible.
+
+* (Maybe) typedef index(Elems)/index(Nodes) to be something like
+  Elem/Node or something clear?
+
+* Should the long list of constants labeled "Constants" be made into
+  params or at least config consts?  (maybe some subset falls into
+  each of those three categories?)
+
+* In ApplyAccelerationBoundaryConditionsForNodes(), shouldn't we be
+  able to write xdd[XSym] = 0.0 rather than using an explicit loop?
+
+* elemToNodesTuple() is this too simple to bother writing as an
+  iterator?
+
+
+ACCURACY TO SPIRIT OF BENCHMARK TODOs:
+--------------------------------------
+
+* Review loops over Elems to see whether some of them should be loops
+  over MatElems -- seems like the ones in EvalEOSforElems() probably
+  should be for example
+
+* courant_elem is currently unused -- is that a problem?
+
+* ditto for dthydro_elem
+
+* ditto for sentinel values of 1.0e+20 in original code -- did our
+  rewrite using a reduction mean these could go away?
+
+* the loop at the bottom of ApplyMaterialPropertiesForElems() doesn't
+  seem to do anything?
+
+* See question in CalcSoundSpeedForElems()

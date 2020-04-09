@@ -1,0 +1,2 @@
+setParentField.chpl:8: In initializer:
+setParentField.chpl:9: error: can't set value of field "f1" from parent type before calling this.init() or super.init()

@@ -1,0 +1,4 @@
+perfkeys: assign serial:, assign serial zipper:, assign nested forall:, assign for-forall:, assign forall-for:, assign forall zipper:, assign whole array:
+files: assign.256.dat, assign.256.dat, assign.256.dat, assign.256.dat, assign.256.dat, assign.256.dat, assign.256.dat
+graphtitle: 2D Array Assignment (256x256)
+ylabel: Time (seconds)

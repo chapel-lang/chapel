@@ -1,0 +1,2 @@
+renameExceptAll2.chpl:8: In function 'main':
+renameExceptAll2.chpl:9: error: 'x' undeclared (first use this function)

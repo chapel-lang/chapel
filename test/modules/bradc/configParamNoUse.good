@@ -1,0 +1,2 @@
+configParamNoUse.chpl:12: In function 'main':
+configParamNoUse.chpl:13: error: 'M1' undeclared (first use this function)

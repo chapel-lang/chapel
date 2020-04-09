@@ -1,0 +1,8 @@
+-sop=opGet          -srunSecs=5.0 many-to-one-helper.h # many-to-one-gets
+-sop=opUnorderedGet -srunSecs=5.0 many-to-one-helper.h # many-to-one-unordered-gets
+-sop=opPut          -srunSecs=5.0 many-to-one-helper.h # many-to-one-puts
+-sop=opFetchAMO     -srunSecs=5.0 many-to-one-helper.h # many-to-one-fetchAmos
+-sop=opAMO          -srunSecs=5.0 many-to-one-helper.h # many-to-one-amos
+-sop=opUnorderedAMO -srunSecs=5.0 many-to-one-helper.h # many-to-one-unordered-amos
+-sop=opFastOn       -srunSecs=5.0 many-to-one-helper.h # many-to-one-fastOns
+-sop=opOn           -srunSecs=5.0 many-to-one-helper.h # many-to-one-ons

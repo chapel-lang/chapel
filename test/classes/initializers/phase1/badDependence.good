@@ -1,0 +1,3 @@
+badDependence.chpl:7: In initializer:
+badDependence.chpl:8: error: field "f5" used before it is initialized
+badDependence.chpl:9: error: field "f4" used before it is initialized

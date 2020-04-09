@@ -1,0 +1,6 @@
+semantic: how to request returning a slice by ref or by value?
+
+Since arrays normally return by value, one would expect a slice
+to return by value as well. However that is not what the implementation
+currently does. Perhaps there should be some way to request returning an
+array slice by reference.

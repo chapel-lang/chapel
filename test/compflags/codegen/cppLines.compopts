@@ -1,0 +1,7 @@
+--cpp-lines
+--devel --cpp-lines
+--cpp-lines --savec output
+--devel --cpp-lines --savec output
+-g
+# this isn't intended to work... developers debug c lines by default
+#-g --devel

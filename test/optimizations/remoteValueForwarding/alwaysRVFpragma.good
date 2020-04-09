@@ -1,0 +1,23 @@
+Initially
+---------
+(x = 42, loc = 0)
+(x = 23, loc = 0)
+
+From locale 1
+------
+(x = 42, loc = 0)
+1
+1
+(x = 23, loc = 0)
+0
+0
+
+Writing
+-------
+(x = 43, loc = 1)
+(x = 24, loc = 1)
+
+Back home
+---------
+(x = 42, loc = 0)
+(x = 24, loc = 1)

@@ -1,0 +1,4 @@
+int or real = 1
+int or real = 2.0
+complex or bool = 3.0 + 2.0i
+complex or bool = false

@@ -1,0 +1,23 @@
+.. default-domain:: chpl
+
+.. module:: iterators.doc
+
+iterators.doc
+=============
+**Usage**
+
+.. code-block:: chapel
+
+   use iterators.doc;
+
+
+or
+
+.. code-block:: chapel
+
+   import iterators.doc;
+
+.. iterfunction:: iter body()
+
+   This iterator should output its comment 
+

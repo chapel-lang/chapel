@@ -1,0 +1,2 @@
+Compile-time nil checking doesn't work in parallel loop bodies
+#11292

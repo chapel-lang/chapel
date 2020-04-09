@@ -1,0 +1,35 @@
+First group contains control characters (bell) and newlines and so is uneven
+hello                                                                          |
+찠찠o                                                                          |
+bel=                                                                           |
+\
+                                                                              |
+snomwan ☃ snowflake ❄ gclef 𝄞  end                                            |
+                                                                          hello|
+                                                                          찠찠o|
+                                                                           bel=|
+                                                                              \
+|
+                                            snomwan ☃ snowflake ❄ gclef 𝄞  end|
+Second group should be nicely aligned with Chapel-style escapes
+"hello"                                                                        |
+"찠찠o"                                                                        |
+"bel=\x07"                                                                     |
+"\\\n"                                                                         |
+"snomwan ☃ snowflake ❄ gclef 𝄞  end"                                          |
+                                                                        "hello"|
+                                                                        "찠찠o"|
+                                                                     "bel=\x07"|
+                                                                         "\\\n"|
+                                          "snomwan ☃ snowflake ❄ gclef 𝄞  end"|
+Third group should be nicely aligned with JSON-style escapes
+"hello"                                                                        |
+"찠찠o"                                                                        |
+"bel=\u0007"                                                                   |
+"\\\n"                                                                         |
+"snomwan ☃ snowflake ❄ gclef 𝄞  end"                                          |
+                                                                        "hello"|
+                                                                        "찠찠o"|
+                                                                   "bel=\u0007"|
+                                                                         "\\\n"|
+                                          "snomwan ☃ snowflake ❄ gclef 𝄞  end"|

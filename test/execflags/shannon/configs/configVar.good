@@ -1,0 +1,2 @@
+x is initialized at compile time to 1234
+x at runtime is 4444

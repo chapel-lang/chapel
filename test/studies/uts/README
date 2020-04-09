@@ -1,0 +1,97 @@
+================================================================================
+            Unbalanced Tree Search (UTS) Benchmark in Chapel
+                                
+                               July, 2007
+
+            James Dinan, Bradford Chamberlain, Steve Deitz,
+                 Mary Beth Hribar, and Aniruddha Shet
+================================================================================
+
+
+The Unbalanced Tree Search (UTS) benchmark measures the time required to visit
+all nodes in highly irregular and dynamically evolving state tree.  Nodes in
+the tree are generated using a securely random, splittable technique derived
+from SHA-1 hashes (Secure Hash Algorithm 1 introduced by D. Eastlake 3rd and R.
+Jones).  Several tree shapes are provided; see the references for more
+information on tree shapes and parameters.
+
+The current Chapel implementation is a reference implementation that was used
+to explore language features and has not been tuned for performance.  This
+version of the benchmark is not suitable for performance comparisons.
+
+Two implementations of UTS on Chapel are included: recursive and chunked
+versions.  In the recursive version, when expanding a node, a thread is spawned
+for each child.  In the chunked version, each child is placed into a local
+double-ended queue (DEQ).  When the DEQ gets larger than twice the chunk size,
+a chunk is broken off to be processed in a new thread.
+
+
+Building and Running UTS:
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+Building: See the included makefile.
+
+Running UTS: The tree parameters are input to UTS as command line parameters.
+A set of sample trees is provided in the sample_trees.txt file.  The final
+result of the benchmark is a count of the total number of nodes in the tree as
+well as the execution time of the search.
+
+
+References:
+~~~~~~~~~~
+
+UTS Benchmark Website: http://barista.cse.ohio-state.edu/wiki/index.php/UTS
+
+"Scalable Dynamic Load Balancing Using UPC."  Stephen Olivier, Jan Prins.  Proc.
+of 37th International Conference on Parallel Processing (ICPP-08). Portland,
+OR, September 2008. 
+
+"A Message Passing Benchmark for Unbalanced Applications." James Dinan, Stephen
+Olivier, Gerald Sabin, Jan Prins, P. Sadayappan, Chau-Wen Tseng J. Simulation
+Modelling Practice and Theory (SIMPAT). Volume 16, Issue 9, Pages 1177-1189.
+October, 2008.
+
+"Dynamic Load Balancing of Unbalanced Computations Using Message Passing."
+James Dinan, Stephen Olivier, Jan Prins, Gerald Sabin, P Sadayappan and
+Chau-Wen Tseng.  Proc. of 6th Intl. Workshop on Performance Modeling,
+Evaluation, and Optimization of Parallel and Distributed Systems (PMEO-PDS
+2007). Long Beach, CA, March 26-30, 2007.
+
+"UTS: An Unbalanced Tree Search Benchmark." Stephen Olivier, Jun Huan, Jinze
+Liu, Jan Prins, James Dinan, P Sadayappan and Chau-Wen Tseng.  Proc. 19th Intl.
+Workshop on Languages and Compilers for Parallel Computing (LCPC). 2006.
+
+"UPC Implementation of an Unbalanced Tree Search Benchmark." Jan Prins, Jun
+Huan, Bill Pugh, Chau-Wen Tseng, P. Sadayappan.  UNC Dept. of Computer Science
+Technical Report 03-034, Oct 2003.
+
+“US secure hash algorithm 1 (SHA-1).” D. Eastlake 3rd and P. Jones. Internet
+Engineering Task Force, RFC 3174, Sept 2001. [Online]. http://www.ietf.org/rfc/rfc3174.txt
+
+"SHA1, SHA2, HMAC and Key Derivation in C."  Brian R. Gladman.  Worchester, UK,
+Jan 2007. http://gladman.plushost.co.uk/oldsite/cryptography_technology/sha/index.php
+
+
+Files:
+~~~~~
+
+README           - This file
+Makefile         - Makefile for building UTS (parallel and sequential)
+sample_trees.txt - Sample input trees (command line flags) for UTS
+
+brg_endian.h     - Brian R. Gladman's open source SHA-1 implementation
+brg_sha1.c         (see "References" for source link)
+brg_sha1.h
+brg_types.h
+
+sha1_rng.chpl    - SHA-1 harness for UTS
+dequeue.chpl     - Double-ended queue implementation
+
+uts_rec.chpl     - Recursive implementation of UTS
+uts_deq.chpl     - Chunked implementation of UTS
+
+uts_rec_seq.chpl - Testing harness
+uts_deq_seq.chpl
+*.compopts
+*.execopts
+*.good

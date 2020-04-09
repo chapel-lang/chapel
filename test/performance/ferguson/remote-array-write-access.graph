@@ -1,0 +1,5 @@
+perfkeys: PUTs:, PUTs:
+files: remote-array-write-access-c.dat, remote-array-write-access-c-cache.dat
+graphkeys: c PUTs, c-cache PUTs
+ylabel: Count
+graphtitle: remote-array-write-access

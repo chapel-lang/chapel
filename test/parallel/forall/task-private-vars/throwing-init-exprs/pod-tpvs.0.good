@@ -1,0 +1,15 @@
+nt 0
+asdf(1), returning
+asdf(10), returning
+starting task
+starting task
+finished task
+finished task
+asdf(2), returning
+asdf(20), returning
+asdf(2000), returning
+2202000
+asdf(3), returning
+asdf(30), returning
+asdf(3000), returning
+3303000

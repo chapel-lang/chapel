@@ -1,0 +1,28 @@
+bug: queries of array views yield default rectangular type
+
+Due to the way we implement '?t' queries on arrays, Chapel thinks that
+the actual type of an array slice argument is default rectangular
+rather than an array slice view.  I believe this is because we insert
+a copy before querying the type of the formal in some normalization
+step and because copies of array views return a deep-copy of the
+original array (hence, a default rectangular in this case).  It then
+asserts that the second argument is a default rectangular as well, but
+since it's not, things fail.
+
+refIntents-workaround.chpl shows that if we query both arguments and
+assert that they're equal, things pass, though this is a bit funny.
+We've essentially queried the types of both array views, they've each
+told us that they're default rectangular, and so their white lies have
+matched.
+
+Note that this bug is more related to type queries than to ref
+intents, in spite of the fact that this is the one test it comes up
+in.  Also notice that it isn't a problem for the real swap operator
+(which this test models) because that uses a more generic signature,
+like:
+
+       proc swap(x: [], y: []) ...
+
+When this future passes again, we could either retire
+refIntents-workaround or keep it around as a second interesting
+example.

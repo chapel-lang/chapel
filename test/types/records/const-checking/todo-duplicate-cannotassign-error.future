@@ -1,0 +1,9 @@
+error message: When assigning to a record with multiple 'const' fields, it should be a single error, not one error per field.
+
+The way the error is phrased right now, additional errors after the
+first one are an unwelcome repetition.
+
+Even if the error message printed the name of the const field
+that causes trouble, I probably would not welcome multiple
+error messages per assignment - instead would prefer to
+fold the printing of all fields into a single message.

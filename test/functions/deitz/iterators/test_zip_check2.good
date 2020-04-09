@@ -1,0 +1,6 @@
+(1, 1)
+(2, 2)
+(3, 3)
+(4, 4)
+(5, 5)
+test_zip_check2.chpl:1: error: zippered iterations have non-equal lengths

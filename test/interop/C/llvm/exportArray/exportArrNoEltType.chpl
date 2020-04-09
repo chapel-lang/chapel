@@ -1,0 +1,1 @@
+export proc anyElt(x: []) { }

@@ -1,0 +1,163 @@
+.. default-domain:: chpl
+
+.. module:: lifetimeChecking-generic.doc
+
+lifetimeChecking-generic.doc
+============================
+**Usage**
+
+.. code-block:: chapel
+
+   use lifetimeChecking-generic.doc;
+
+
+or
+
+.. code-block:: chapel
+
+   import lifetimeChecking-generic.doc;
+
+.. class:: MyGeneric
+
+   Generic type for use with all the lifetime checking styles 
+
+
+   .. attribute:: type t
+
+.. class:: Foo
+
+   Used to demonstrate the behavior of lifetime checking and documentation 
+
+
+   .. attribute:: var a: unmanaged MyGeneric(int)
+
+   .. attribute:: var b: shared MyGeneric(int)
+
+   .. attribute:: var c: owned MyGeneric(int)
+
+   .. attribute:: var d: borrowed MyGeneric(int)
+
+   .. attribute:: var w: borrowed MyGeneric(int)
+
+      Validates when there is documentation 
+
+   .. attribute:: var x: unmanaged MyGeneric(int)
+
+      Validates when there is documentation 
+
+   .. attribute:: var y: shared MyGeneric(int)
+
+      Validates when there is documentation 
+
+   .. attribute:: var z: owned MyGeneric(int)
+
+      Validates when there is documentation 
+
+   .. method:: proc takesOwned(x: owned MyGeneric(int))
+
+   .. method:: proc takesShared(x: shared MyGeneric(int))
+
+   .. method:: proc takesUnmanaged(x: unmanaged MyGeneric(int))
+
+   .. method:: proc takesBorrowed(x: borrowed MyGeneric(int))
+
+   .. method:: proc returnsOwned(): owned MyGeneric(int)
+
+   .. method:: proc returnsShared(): shared MyGeneric(int)
+
+   .. method:: proc returnsUnmanaged(): unmanaged MyGeneric(int)
+
+   .. method:: proc returnsBorrowed(): borrowed MyGeneric(int)
+
+   .. method:: proc mixNMatch(x: shared MyGeneric(int)): unmanaged MyGeneric(int)
+
+   .. method:: proc takesOwnedDoc(x: owned MyGeneric(int))
+
+      Validates when there is documentation 
+
+   .. method:: proc takesSharedDoc(x: shared MyGeneric(int))
+
+      Validates when there is documentation 
+
+   .. method:: proc takesUnmanagedDoc(x: unmanaged MyGeneric(int))
+
+      Validates when there is documentation 
+
+   .. method:: proc takesBorrowedDoc(x: borrowed MyGeneric(int))
+
+      Validates when there is documentation 
+
+   .. method:: proc returnsOwnedDoc(): owned MyGeneric(int)
+
+      Validates when there is documentation 
+
+   .. method:: proc returnsSharedDoc(): shared MyGeneric(int)
+
+      Validates when there is documentation 
+
+   .. method:: proc returnsUnmanagedDoc(): unmanaged MyGeneric(int)
+
+      Validates when there is documentation 
+
+   .. method:: proc returnsBorrowedDoc(): borrowed MyGeneric(int)
+
+      Validates when there is documentation 
+
+   .. method:: proc mixNMatchDoc(x: shared MyGeneric(int)): unmanaged MyGeneric(int)
+
+      Validates when there is documentation 
+
+.. function:: proc takesOwned(x: owned MyGeneric(int))
+
+.. function:: proc takesShared(x: shared MyGeneric(int))
+
+.. function:: proc takesUnmanaged(x: unmanaged MyGeneric(int))
+
+.. function:: proc takesBorrowed(x: borrowed MyGeneric(int))
+
+.. function:: proc returnsOwned(): owned MyGeneric(int)
+
+.. function:: proc returnsShared(): shared MyGeneric(int)
+
+.. function:: proc returnsUnmanaged(): unmanaged MyGeneric(int)
+
+.. function:: proc returnsBorrowed(): borrowed MyGeneric(int)
+
+.. function:: proc mixNMatch(x: shared MyGeneric(int)): unmanaged MyGeneric(int)
+
+.. function:: proc takesOwnedDoc(x: owned MyGeneric(int))
+
+   Validates when there is documentation 
+
+.. function:: proc takesSharedDoc(x: shared MyGeneric(int))
+
+   Validates when there is documentation 
+
+.. function:: proc takesUnmanagedDoc(x: unmanaged MyGeneric(int))
+
+   Validates when there is documentation 
+
+.. function:: proc takesBorrowedDoc(x: borrowed MyGeneric(int))
+
+   Validates when there is documentation 
+
+.. function:: proc returnsOwnedDoc(): owned MyGeneric(int)
+
+   Validates when there is documentation 
+
+.. function:: proc returnsSharedDoc(): shared MyGeneric(int)
+
+   Validates when there is documentation 
+
+.. function:: proc returnsUnmanagedDoc(): unmanaged MyGeneric(int)
+
+   Validates when there is documentation 
+
+.. function:: proc returnsBorrowedDoc(): borrowed MyGeneric(int)
+
+   Validates when there is documentation 
+
+.. function:: proc mixNMatchDoc(x: shared MyGeneric(int)): unmanaged MyGeneric(int)
+
+   Validates when there is documentation 
+

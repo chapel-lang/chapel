@@ -1,0 +1,5 @@
+perfkeys: Total Time:, Total Time:
+graphkeys: dense (no-local), release version
+files: lulesh-dense.dat, lulesh.block-dense.dat
+graphtitle: LULESH (bradc study version)
+ylabel: Time (seconds)

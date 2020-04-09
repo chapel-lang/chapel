@@ -1,0 +1,10 @@
+feature request: unbounded formal array reindexing
+
+allow reindexing a formal array argument upon call to a
+procedure.  This simplifies coding matrix computations for situations where the
+index ranges for the formal argument differ across dimensions, but where notions
+like "diagonal" apply in the operation being performed on the array.
+
+Reindexing allows a programmer to make the assumption that index ranges on a
+square matrix are identical even when they are not in the formal argument.  That
+assumption is fundamental to many existing Fortran and C codes.  

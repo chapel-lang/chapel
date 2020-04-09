@@ -1,0 +1,2 @@
+illegal-throw.chpl:1: In function 'illegalThrow':
+illegal-throw.chpl:2: error: cannot throw in a non-throwing function

@@ -1,0 +1,2 @@
+in test, x is 1
+in defer after inner(), x is 2

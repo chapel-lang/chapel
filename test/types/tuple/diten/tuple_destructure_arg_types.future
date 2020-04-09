@@ -1,0 +1,3 @@
+semantic: specifying component types of tuple arguments
+
+Should giving tuple destructured arguments explicit types be allowed?

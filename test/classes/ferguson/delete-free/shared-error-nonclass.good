@@ -1,0 +1,2 @@
+shared-error-nonclass.chpl:7: In function 'run':
+shared-error-nonclass.chpl:8: error: Cannot use new shared with record R

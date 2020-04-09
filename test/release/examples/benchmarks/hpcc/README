@@ -1,0 +1,78 @@
+==========================
+Chapel HPC Challenge Codes
+==========================
+
+This directory contains Chapel versions of the HPC Challenge
+benchmarks (http://icl.cs.utk.edu/hpcc/) and a Makefile to help build
+them.
+
+These benchmarks are very much a work-in-progress and are provided to
+give an indication of where we're going in Chapel.  Current status is
+approximately as follows:
+
+* The STREAM and RA benchmarks are scalable but have outstanding
+  performance and elegance improvements that we plan to address.
+
+* The FFT, PTRANS, and HPL benchmarks run on distributed memory, but
+  need additional work (both in the source code and the Chapel
+  implementation) to scale and perform well.
+
+Our intention is to continue improving the implementation of all of
+these benchmarks over time.  Please refer to the Chapel website
+(https://chapel-lang.org) for an archive of past reports that evaluate
+these benchmarks.
+
+The main files for these benchmarks are as follows:
+
+     stream.chpl            : the global STREAM Triad benchmark
+     stream-ep.chpl         : the EP STREAM Triad benchmark
+     ra.chpl                : the global Random Access (RA) benchmark
+     ra-atomics.chpl        : a lossless version of RA using atomic vars
+     fft.chpl               : the global 1D FFT benchmark
+     ptrans.chpl            : the global PTRANS benchmark
+     hpl.chpl               : the High Performance Linpack benchmark
+
+Other files with the same base filenames as the Chapel test programs but
+different filename extensions, are for use by the automated test system.
+For example, file ra.execopts supports automated testing of ra.chpl.
+Files with all-uppercase filenames like NUMLOCALES (but not "README")
+are similar, except they are applied to all chpl tests in the
+directory. $CHPL_HOME/examples/README.testing contains more information.
+
+A subdirectory contains variants -- particularly more elegant
+implementations that do not yet perform as well as the ones in this
+directory.
+
+There are also helper modules for these benchmarks:
+
+     HPCCProblemSize.chpl   : a common module for computing problem sizes
+     RARandomStream.chpl    : the random stream generator for ra.chpl
+
+These benchmarks can be compiled using the following commands:
+
+     chpl --fast -o stream stream.chpl
+     chpl --fast -o stream-ep stream-ep.chpl
+     chpl --fast -o ra ra.chpl
+     chpl --fast -o ra-atomics ra-atomics.chpl
+     chpl --fast -o fft fft.chpl
+     chpl --fast -o ptrans ptrans.chpl
+     chpl --fast -o hpl hpl.chpl
+
+The presence of the --fast flag turns on optimizations, turns off
+runtime correctness checks, and permits IEEE math to be relaxed for
+some back-end C compilers.
+
+Or using the provided Makefile you can make the tests individually
+using:
+
+    gmake stream
+    gmake stream-ep
+    gmake ra
+    gmake ra-atomics
+    gmake fft
+    gmake ptrans
+    gmake hpl
+
+Or to make them all, use:
+
+    gmake all

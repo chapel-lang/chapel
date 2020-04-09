@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+
+cat $2 | sed -e 's/halt reached.*$/halt/' | sed -e 's/note:.*$//' > $2.tmp
+mv $2.tmp $2
+

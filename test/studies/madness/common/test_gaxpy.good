@@ -1,0 +1,101 @@
+Mad Chapel -- Gaxpy Test
+
+** Testing function 1
+
+Adding F1 ...
+
+Evaluating F+G on [0, 1]:
+ -- 0.00:  F_numeric()= 0.00000000  f_analytic()= 0.00000000
+ -- 0.10:  F_numeric()= 0.00000000  f_analytic()= 0.00000000
+ -- 0.20:  F_numeric()= 0.00000000  f_analytic()= 0.00000000
+ -- 0.30:  F_numeric()= 0.00000002  f_analytic()= 0.00000000
+ -- 0.40:  F_numeric()= 0.05691985  f_analytic()= 0.02846034 err > thresh
+ -- 0.50:  F_numeric()= 8.44777829  f_analytic()= 4.22388934 err > thresh
+ -- 0.60:  F_numeric()= 0.05691985  f_analytic()= 0.02846034 err > thresh
+ -- 0.70:  F_numeric()= 0.00000002  f_analytic()= 0.00000000
+ -- 0.80:  F_numeric()= 0.00000000  f_analytic()= 0.00000000
+ -- 0.90:  F_numeric()= 0.00000000  f_analytic()= 0.00000000
+ -- 1.00:  F_numeric()= 0.00000000  f_analytic()= 0.00000000
+
+Subtracting F1 ...
+
+Evaluating F-G on [0, 1]:
+ -- 0.00:  F_numeric()= 0.00000000  f_analytic()= 0.00000000
+ -- 0.10:  F_numeric()= 0.00000000  f_analytic()= 0.00000000
+ -- 0.20:  F_numeric()= 0.00000000  f_analytic()= 0.00000000
+ -- 0.30:  F_numeric()= 0.00000000  f_analytic()= 0.00000000
+ -- 0.40:  F_numeric()= 0.00000000  f_analytic()= 0.02846034 err > thresh
+ -- 0.50:  F_numeric()= 0.00000000  f_analytic()= 4.22388934 err > thresh
+ -- 0.60:  F_numeric()= 0.00000000  f_analytic()= 0.02846034 err > thresh
+ -- 0.70:  F_numeric()= 0.00000000  f_analytic()= 0.00000000
+ -- 0.80:  F_numeric()= 0.00000000  f_analytic()= 0.00000000
+ -- 0.90:  F_numeric()= 0.00000000  f_analytic()= 0.00000000
+ -- 1.00:  F_numeric()= 0.00000000  f_analytic()= 0.00000000
+
+======================================================================
+
+** Testing function 2
+
+Adding F2 ...
+
+Evaluating F+G on [0, 1]:
+ -- 0.00:  F_numeric()= 0.00000006  f_analytic()= 0.00000000
+ -- 0.10:  F_numeric()= 0.05692143  f_analytic()= 0.02846034 err > thresh
+ -- 0.20:  F_numeric()= 8.44777866  f_analytic()= 4.22388934 err > thresh
+ -- 0.30:  F_numeric()= 0.05692114  f_analytic()= 0.02846035 err > thresh
+ -- 0.40:  F_numeric()= 0.05691987  f_analytic()= 0.02846035 err > thresh
+ -- 0.50:  F_numeric()= 8.44777829  f_analytic()= 4.22388934 err > thresh
+ -- 0.60:  F_numeric()= 0.05691987  f_analytic()= 0.02846035 err > thresh
+ -- 0.70:  F_numeric()= 0.05692114  f_analytic()= 0.02846035 err > thresh
+ -- 0.80:  F_numeric()= 8.44777866  f_analytic()= 4.22388934 err > thresh
+ -- 0.90:  F_numeric()= 0.05692143  f_analytic()= 0.02846034 err > thresh
+ -- 1.00:  F_numeric()= 0.00000006  f_analytic()= 0.00000000
+
+Subtracting F2 ...
+
+Evaluating F-G on [0, 1]:
+ -- 0.00:  F_numeric()= 0.00000000  f_analytic()= 0.00000000
+ -- 0.10:  F_numeric()= 0.00000000  f_analytic()= 0.02846034 err > thresh
+ -- 0.20:  F_numeric()= 0.00000000  f_analytic()= 4.22388934 err > thresh
+ -- 0.30:  F_numeric()= 0.00000000  f_analytic()= 0.02846035 err > thresh
+ -- 0.40:  F_numeric()= 0.00000000  f_analytic()= 0.02846035 err > thresh
+ -- 0.50:  F_numeric()= 0.00000000  f_analytic()= 4.22388934 err > thresh
+ -- 0.60:  F_numeric()= 0.00000000  f_analytic()= 0.02846035 err > thresh
+ -- 0.70:  F_numeric()= 0.00000000  f_analytic()= 0.02846035 err > thresh
+ -- 0.80:  F_numeric()= 0.00000000  f_analytic()= 4.22388934 err > thresh
+ -- 0.90:  F_numeric()= 0.00000000  f_analytic()= 0.02846034 err > thresh
+ -- 1.00:  F_numeric()= 0.00000000  f_analytic()= 0.00000000
+
+======================================================================
+
+** Testing function 3
+
+Adding F3 ...
+
+Evaluating F+G on [0, 1]:
+ -- 0.00:  F_numeric()= 2.82842520  f_analytic()= 1.41421356 err > thresh
+ -- 0.10:  F_numeric()= 3.16227784  f_analytic()= 1.58113883 err > thresh
+ -- 0.20:  F_numeric()= 3.65148364  f_analytic()= 1.82574186 err > thresh
+ -- 0.30:  F_numeric()= 4.47213560  f_analytic()= 2.23606798 err > thresh
+ -- 0.40:  F_numeric()= 6.32455595  f_analytic()= 3.16227766 err > thresh
+ -- 0.50:  F_numeric()= 382118.07914615  f_analytic()= 0.00000000 err > thresh
+ -- 0.60:  F_numeric()= 6.32455595  f_analytic()= 3.16227766 err > thresh
+ -- 0.70:  F_numeric()= 4.47213560  f_analytic()= 2.23606798 err > thresh
+ -- 0.80:  F_numeric()= 3.65148364  f_analytic()= 1.82574186 err > thresh
+ -- 0.90:  F_numeric()= 3.16227784  f_analytic()= 1.58113883 err > thresh
+ -- 1.00:  F_numeric()= 2.82842520  f_analytic()= 1.41421356 err > thresh
+
+Subtracting F3 ...
+
+Evaluating F-G on [0, 1]:
+ -- 0.00:  F_numeric()= 0.00000000  f_analytic()= 1.41421356 err > thresh
+ -- 0.10:  F_numeric()= 0.00000000  f_analytic()= 1.58113883 err > thresh
+ -- 0.20:  F_numeric()= 0.00000000  f_analytic()= 1.82574186 err > thresh
+ -- 0.30:  F_numeric()= 0.00000000  f_analytic()= 2.23606798 err > thresh
+ -- 0.40:  F_numeric()= 0.00000000  f_analytic()= 3.16227766 err > thresh
+ -- 0.50:  F_numeric()= 0.00000000  f_analytic()= 0.00000000
+ -- 0.60:  F_numeric()= 0.00000000  f_analytic()= 3.16227766 err > thresh
+ -- 0.70:  F_numeric()= 0.00000000  f_analytic()= 2.23606798 err > thresh
+ -- 0.80:  F_numeric()= 0.00000000  f_analytic()= 1.82574186 err > thresh
+ -- 0.90:  F_numeric()= 0.00000000  f_analytic()= 1.58113883 err > thresh
+ -- 1.00:  F_numeric()= 0.00000000  f_analytic()= 1.41421356 err > thresh

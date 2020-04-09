@@ -1,0 +1,2 @@
+test_override5_error.chpl:2: error: conflicting return type specified for 'C.foo(n: int): int(64)'
+test_override5_error.chpl:9: error:   overridden by 'D.foo(n: int): 2*int(64)'

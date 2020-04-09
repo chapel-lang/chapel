@@ -1,0 +1,4 @@
+Past First Check
+uncaught IOError: Input/output error (assert failed - Not at EOF with path "asserteof.test.nums" offset 3)
+  asserteof.chpl:30: thrown here
+  asserteof.chpl:30: uncaught here

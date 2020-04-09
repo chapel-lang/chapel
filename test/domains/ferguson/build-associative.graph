@@ -1,0 +1,4 @@
+perfkeys: 1:, 2:, 3:, 4:, 5:, 6:
+graphkeys: adding 10000 to 1 domain, adding 10000 to 7 domains, adding 10000 to 123 domains, adding 1000000 to 1 domain, adding 1000000 to 7 domains, adding 1000000 to 123 domains
+graphtitle: Building up associative domains
+ylabel: Time (seconds)

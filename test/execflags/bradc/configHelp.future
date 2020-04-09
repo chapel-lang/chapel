@@ -1,0 +1,10 @@
+feature request: user --help overrides built-in
+
+It seems to me that if a user defines a --help config, it should
+override the built-in --help that we supply.  This test captures
+that idea.
+
+Optionally, the implementer should do this for any other (double-dash)
+built-in flags that a user might want to override (and single-dash
+if/when we support a means of specifying single-dash aliases for
+double-dash arguments).

@@ -1,0 +1,9 @@
+feature request: writeThis() functions support implicit class-to-string conversions
+
+Thom suggests that in Java, a class with a toString() method can
+automatically be converted to a string when necessary and suggests
+that supporting the same thing in Chapel would be useful.  I agree
+that this seems attractive (as long as we are supporting implicit
+conversions to strings; if we switched to explicit conversions to
+strings then I'd be inclined to have a string cast on a class invoke
+the toString() method.

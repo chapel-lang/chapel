@@ -1,0 +1,95 @@
+sparselyCommented.doc.chpl:36: warning: This file-scope code is outside of any explicit module declarations (e.g., module Other), so an implicit module named 'sparselyCommented.doc' is being introduced to contain the file's contents.
+.. default-domain:: chpl
+
+.. module:: sparselyCommented.doc
+
+sparselyCommented.doc
+=====================
+**Usage**
+
+.. code-block:: chapel
+
+   use sparselyCommented.doc;
+
+
+or
+
+.. code-block:: chapel
+
+   import sparselyCommented.doc;
+
+**Submodules**
+
+.. toctree::
+   :maxdepth: 1
+   :glob:
+
+   sparselyCommented.doc/*
+
+.. function:: proc method1()
+
+   Comment for method1 
+
+.. function:: proc method1Commentless()
+
+.. function:: proc body()
+
+   Comment for a function with a body 
+
+.. function:: proc bodyCommentless()
+
+.. function:: proc hasArg(val: int)
+
+   Comment for a function with an argument 
+
+.. function:: proc hasArgCommentless(val: int)
+
+.. function:: proc argAndBody(val: int)
+
+   Comment for a function with argument and body 
+
+.. function:: proc argAndBodyCommentless(val: int)
+
+.. default-domain:: chpl
+
+.. module:: Other
+
+Other
+=====
+**Usage**
+
+.. code-block:: chapel
+
+   use sparselyCommented.doc.Other;
+
+
+or
+
+.. code-block:: chapel
+
+   import sparselyCommented.doc.Other;
+
+.. function:: proc inside()
+
+   Comment for a function inside module 
+
+.. function:: proc insideCommentless()
+
+.. function:: proc body()
+
+   Comment for a function with a body inside module 
+
+.. function:: proc bodyCommentless()
+
+.. function:: proc hasArg(val: int)
+
+   Comment for a function with an argument inside module 
+
+.. function:: proc hasArgCommentless(val: int)
+
+.. function:: proc argAndBody(val: int)
+
+   Comment for a function with argument and body inside module 
+
+.. function:: proc argAndBodyCommentless(val: int)
+

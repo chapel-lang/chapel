@@ -1,0 +1,2 @@
+$CHPL_HOME/modules/internal/ChapelBase.chpl:: error: 0 cannot be raised to a negative power
+Note: This source location is a guess.

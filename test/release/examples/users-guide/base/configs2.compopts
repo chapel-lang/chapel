@@ -1,0 +1,10 @@
+-sverbose=true          # configs2-verbose.good
+-sverbose               # configs2-verbose.good
+-sbitMask=0b00001111    # configs2-bitmask.good
+-ssize=16               # configs2-size16.good
+-sage='uint(16)'        # configs2-bigage.good
+-sage='real(32)'        # configs2-floatage.good
+-sbitMask='1 << 10' -ssize='numBits(bitMask.type)/2' -sage='if verbose then uint(32) else uint(16)'    # configs2-lots.good
+-sage='int(size)'       # configs2-useparam.good
+-sepsilon=1.0/n         # configs2-epsilon.good
+-s verbose              # configs2-verbose.good

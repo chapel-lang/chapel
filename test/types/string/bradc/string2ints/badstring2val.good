@@ -1,0 +1,3 @@
+uncaught IllegalArgumentError: bad cast from string '1e' to int(64)
+  badstring2val.chpl:3: thrown here
+  badstring2val.chpl:3: uncaught here

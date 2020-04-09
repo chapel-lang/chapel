@@ -1,0 +1,5 @@
+                         # warnings.good
+--no-warnings            # warnings-no.good
+--no-warnings --warnings # warnings.good
+--warnings               # warnings.good
+--warnings --no-warnings # warnings-no.good

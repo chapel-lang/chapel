@@ -1,0 +1,5 @@
+perfkeys: GETs:, PUTs:, GETs:, PUTs:
+files: remote-class-write-c.dat, remote-class-write-c.dat, remote-class-write-c-cache.dat, remote-class-write-c-cache.dat
+graphkeys: c GETs, c PUTs, c-cache GETs, c-cache PUTs
+ylabel: Count
+graphtitle: remote-class-write

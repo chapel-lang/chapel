@@ -1,0 +1,20 @@
+memStats: Allocated Now:              0
+memStats: Allocation High Water Mark: 0
+memStats: Sum of Allocations:         0
+memStats: Sum of Frees:               0
+memStats: Allocated Now:              64
+memStats: Allocation High Water Mark: 64
+memStats: Sum of Allocations:         64
+memStats: Sum of Frees:                0
+memStats: Allocated Now:              128
+memStats: Allocation High Water Mark: 128
+memStats: Sum of Allocations:         128
+memStats: Sum of Frees:                 0
+memStats: Allocated Now:              192
+memStats: Allocation High Water Mark: 192
+memStats: Sum of Allocations:         192
+memStats: Sum of Frees:                 0
+memStats: Allocated Now:              256
+memStats: Allocation High Water Mark: 256
+memStats: Sum of Allocations:         256
+memStats: Sum of Frees:                 0

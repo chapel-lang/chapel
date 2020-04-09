@@ -1,0 +1,2 @@
+ref-member.chpl:2: error: References cannot be members of classes or records yet.
+ref-member.chpl:6: error: References cannot be members of classes or records yet.

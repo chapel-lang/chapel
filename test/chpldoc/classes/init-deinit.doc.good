@@ -1,0 +1,71 @@
+.. default-domain:: chpl
+
+.. module:: init-deinit.doc
+
+init-deinit.doc
+===============
+**Usage**
+
+.. code-block:: chapel
+
+   use init-deinit.doc;
+
+
+or
+
+.. code-block:: chapel
+
+   import init-deinit.doc;
+
+.. class:: ThisTestClass
+
+   .. method:: proc init(yesChpldoc1)
+
+      initializer as a primary method 
+
+   .. method:: proc init(noChpldoc1)
+
+   .. method:: proc deinit()
+
+      deinitializer as a primary method 
+
+   .. method:: proc deinit()
+
+.. method:: proc ThisTestClass.init(yesChpldoc2)
+
+   initializer as a secondary method 
+
+.. method:: proc ThisTestClass.init(noChpldoc2)
+
+.. method:: proc ThisTestClass.deinit()
+
+   deinitializer as a secondary method 
+
+.. method:: proc ThisTestClass.deinit()
+
+.. record:: ThisTestRecord
+
+   .. method:: proc init(yesChpldoc1)
+
+      initializer as a primary method 
+
+   .. method:: proc init(noChpldoc1)
+
+   .. method:: proc deinit()
+
+      deinitializer as a primary method 
+
+   .. method:: proc deinit()
+
+.. method:: proc ThisTestRecord.init(yesChpldoc2)
+
+   initializer as a secondary method 
+
+.. method:: proc ThisTestRecord.init(noChpldoc2)
+
+.. method:: proc ThisTestRecord.deinit()
+
+   deinitializer as a secondary method 
+
+.. method:: proc ThisTestRecord.deinit()
+

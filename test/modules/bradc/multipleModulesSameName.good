@@ -1,0 +1,2 @@
+multipleModulesSameName.chpl:1: error: 'foo' has multiple definitions, redefined at:
+  multipleModulesSameName.chpl:10

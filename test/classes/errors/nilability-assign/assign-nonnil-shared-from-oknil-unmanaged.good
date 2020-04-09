@@ -1,0 +1,1 @@
+assign-nonnil-shared-from-oknil-unmanaged.chpl:8: error: Cannot assign to shared MyClass from unmanaged MyClass?

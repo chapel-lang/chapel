@@ -1,0 +1,91 @@
+Reading graph from graph.dat
+New source node A
+New dest node B
+Added edge A -> B
+New dest node D
+Added edge B -> D
+New source node C
+New dest node E
+Added edge C -> E
+Added edge D -> E
+Added edge C -> D
+Added edge C -> C
+New dest node F
+Added edge C -> F
+Added edge F -> C
+A B C D E F
+{A} {B} {C} {D} {E} {F}
+Y = {A}--->{B} {B}--->{D} {C}--->{C} {C}--->{D} {C}--->{E} {C}--->{F} {D}--->{E} {F}--->{C}
+Graph constructor
+preprocess done!
+A :in[] :out[{A}--->{B}]
+B :in[{A}--->{B}] :out[{B}--->{D}]
+C :in[{C}--->{C} {F}--->{C}] :out[{C}--->{C} {C}--->{D} {C}--->{E} {C}--->{F}]
+D :in[{B}--->{D} {C}--->{D}] :out[{D}--->{E}]
+E :in[{C}--->{E} {D}--->{E}] :out[]
+F :in[{C}--->{F}] :out[{F}--->{C}]
+preprocess done!
+A :in[] :out[{A}--->{B} {A}--->{B}]
+B :in[{A}--->{B} {A}--->{B}] :out[{B}--->{D} {B}--->{D}]
+C :in[{C}--->{C} {F}--->{C} {C}--->{C} {F}--->{C}] :out[{C}--->{C} {C}--->{D} {C}--->{E} {C}--->{F} {C}--->{C} {C}--->{D} {C}--->{E} {C}--->{F}]
+D :in[{B}--->{D} {C}--->{D} {B}--->{D} {C}--->{D}] :out[{D}--->{E} {D}--->{E}]
+E :in[{C}--->{E} {D}--->{E} {C}--->{E} {D}--->{E}] :out[]
+F :in[{C}--->{F} {C}--->{F}] :out[{F}--->{C} {F}--->{C}]
+Graph is:
+{A}
+{B}
+{C}
+{D}
+{E}
+{F}
+{A}--->{B}
+{B}--->{D}
+{C}--->{C}
+{C}--->{D}
+{C}--->{E}
+{C}--->{F}
+{D}--->{E}
+{F}--->{C}
+Running DFS
+Starting at {A}
+	{A}--->{B}
+	Visiting {B}
+	{B}--->{D}
+	Visiting {D}
+	{D}--->{E}
+	Visiting {E}
+Starting at {C}
+	{C}--->{C}
+Found back edge {C}<---{C}
+	{C}--->{D}
+Found cross edge {C}+++>{D}
+	{C}--->{E}
+Found cross edge {C}+++>{E}
+	{C}--->{F}
+	Visiting {F}
+	{F}--->{C}
+Found back edge {F}<---{C}
+	{F}<---{C}
+Found back edge {F}<---{C}
+{A} points to 2 2
+{B} points to 4 4
+{C} points to 3 4 5 6 3 4 5 6
+{D} points to 5 5
+{E} points to 
+{F} points to 3 3
+*******************
+* feasible_tree() *
+*******************
+**************
+* init_rank  *
+**************
+Init rank for {A} to 1
+	B of rank 2
+	 propagate_rank(B)
+	D of rank 3
+	 propagate_rank(D)
+	C of rank 2
+	 propagate_rank(C)
+	F of rank 1
+	 propagate_rank(F)
+graph.chpl:271: error: halt reached - Edge from {C} to {F} but ranks are 2 -> 1

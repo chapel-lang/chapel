@@ -1,0 +1,10 @@
+This syntax file is for GNU source-highlight (version 3.1.4)
+
+See http://www.gnu.org/software/src-highlite/source-highlight.html
+
+For example, run from this directory:
+ source-highlight --out-format=esc -o STDOUT --lang-def=chpl.lang -i your_file.chpl
+
+
+For more options, try:
+ source-highlight --help

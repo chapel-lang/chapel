@@ -1,0 +1,9 @@
+perfkeys: assign serial:, assign nested forall:, assign forall-for:, assign forall zipper:, assign whole array:
+files: assign.1024.dat, assign.1024.dat, assign.1024.dat, assign.1024.dat, assign.1024.dat
+graphtitle: 2D Array Assignment (1024x1024, faster idioms)
+ylabel: Time (seconds)
+
+perfkeys: assign serial zipper:, assign for-forall:
+files: assign.1024.dat, assign.1024.dat
+graphtitle: 2D Array Assignment (1024x1024, slower idioms)
+ylabel: Time (seconds)

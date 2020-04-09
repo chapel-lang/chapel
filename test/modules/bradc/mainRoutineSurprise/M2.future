@@ -1,0 +1,30 @@
+bug: (or feature request) main() gets ignored if not in primary .chpl file?
+At present, this test runs the init code in both modules, but then,
+rather than calling the only procedure in the program called main()
+either exits without calling any main() or, possibly, creates an
+implicit main() for M2 (since it doesn't have one) and calls that
+instead of the user-supplied main().
+
+I'm pretty sure that this used to work at some time in the not so
+distance past.  I have a vague recollection of Tom potentially
+changing something like this related to the --main-module flag with my
+approval at that time; but if that memory is correct, either I didn't
+anticipate this case or didn't understand the full impacts of what we
+were deciding.  Alternatively, it could be that the recent changes to
+main taking arguments caused this.
+
+In any case, today it seems like the clearly wrong decision: it seems
+very confusing that if a user's code only contains a single function
+named main() that it would not be called.  It confused me for some
+time today.
+
+When would I ever want to do this?  One case is where you want to
+completely reuse an existing program code, but to provide some
+additional initialization code that runs independently of it.  We do
+this a lot in the testing system ("test that program over there in
+this different way"), but perhaps have done this only in cases where
+there aren't main()s, only top-level module initialization code?  (I
+wouldn't be surprised).  I ran into this with LULESH which does define
+a main(), so I had to have my "M2 module" (test3DLulesh.chpl) call
+lulesh.main() explicitly which seemed awkward surprising.  I would've
+preferred to just remove that line and have it work.

@@ -1,0 +1,13 @@
+perfkeys: real, real, real
+graphkeys: for-begin-early-exit, coforall-early-exit, coforall-begin-early-exit
+files: for-begin.dat, coforall.dat, coforall-begin.dat
+graphtitle: Early Exit Task Parallel Timings
+ylabel: Time (seconds)
+graphname: task-parallel-compare-early-exit
+
+perfkeys: real, real, real
+graphkeys: for-begin, coforall, coforall-begin
+files: for-begin-orderly-exit.dat, coforall-orderly-exit.dat, coforall-begin-orderly-exit.dat
+graphtitle: Task Parallel Timings
+ylabel: Time (seconds)
+graphname: task-parallel-compare

@@ -1,0 +1,101 @@
+.TH qthread_init 3 "NOVEMBER 2006" libqthread "libqthread"
+.SH NAME
+.BR qthread_init ,
+.B qthread_initialize
+\- initialize the qthread library
+.SH SYNOPSIS
+.B #include <qthread.h>
+
+.I int
+.br
+.B qthread_init
+.RI "(qthread_shepherd_id_t " nshepherds );
+.PP
+.I int
+.br
+.B qthread_initialize
+();
+.SH DESCRIPTION
+Use these functions to initialize the qthreads environment before using any
+other qthread functions. The
+.BR qthread_init ()
+function is deprecated in favor of
+.BR qthread_initialize ()
+which will attempt to auto-detect the correct number of shepherds for the
+system. The number of shepherds can be forcibly specified with the
+environment variable QTHREAD_NUM_SHEPHERDS.
+The
+.BR qthread_init ()
+function is a wrapper around
+.BR qthread_initialize ()
+that simply exports the QTHREAD_NUM_SHEPHERDS environment variable. If
+QTHREAD_NUM_SHEPHERDS is 0 or unset, the library will attempt to guess the
+correct number of shepherds, defaulting to a single shepherd if no information
+about the system could be found. Shepherds will attempt to pin themselves to
+processors using whatever CPU affinity libraries are available.
+.SH ENVIRONMENT
+The operation of
+.BR qthread_init ()
+is modified by several environment variables. All environment variables may begin with either QTHREAD_ or QT_; they are treated the same by Qthreads. The following environment variables may be considered (not all apply to all environments):
+.TP 4
+QTHREAD_INFO
+This variable controls what kind of status information is printed during initialization. If this variable is set to "1", Qthreads will print the number of shepherds, the number of workers per shepherd, and the stack size of each qthread to stdout. If this variable is set to "2", Qthreads will additionally print the name and value of every environment variable that it checks.
+.TP
+QTHREAD_AFFINITY
+If this variable is set to "no", then the shepherds will not pin themselves to
+specific locations.
+.TP
+QTHREAD_DEBUG_LEVEL
+This variable is used to control the verbosity of debug messages that get
+printed at runtime. Higher numbers increase the verbosity; a value of 0 is the
+same as being unset, which prevents debug messages from being printed. This is
+only applicable if debugging has been enabled when the library was built.
+.TP
+QTHREAD_STACK_SIZE
+This variable specifies, in bytes, the size of the stacks that will be created for each
+thread. Changes to this value during the course of the program run are ignored;
+the value is only considered when
+.BR qthread_init ()
+is run.
+.TP
+QTHREAD_NUM_SHEPHERDS
+This variable specifies how many shepherds to create.
+.TP
+QTHREAD_NUM_WORKERS_PER_SHEPHERD
+This variable specifies how many worker threads to assign to each shepherd. This setting is ignored by some schedulers that only allow one worker per shepherd.
+.TP
+QTHREAD_HWPAR
+This variable specifies how much hardware parallelism to use. It allows the number of shepherds and worker threads per shepherd to be chosen according to the machine topology while only specifying how many may be running. If this number does not divide evenly among the appropriate number of shepherds, extra workers will be created but will begin in a disabled state.
+.TP
+QTHREAD_ARGCOPY_SIZE
+This variable controls the amount of memory preallocated for storing argument data per task. Not all tasks have memory preallocated for argument data, but when they do, the amount is controlled by this environment variable.
+.TP
+QTHREAD_TASKLOCAL_SIZE
+This variable is similar to the previous variable, but instead of argument data, it controls the size of the preallocated per-task scratchpad.
+.TP
+QTHREAD_STEAL_CHUNK
+This variable applies to certain work-stealing schedulers (such as the default Sherwood scheduler) and controls the number of tasks stolen during load-balancing operations. By default, or when this variable is set to zero, half of the victim's work is stolen. Otherwise, thief workers will attempt to steal at most this many tasks.
+.TP
+QTHREAD_MAX_IO_WORKERS
+This variable controls the maximum number of threads that can be spawned to service the I/O subsystem's queue. In effect, it limits the amount of OS overhead that the I/O subsystem can consume.
+.TP
+QTHREAD_IO_TIMEOUT
+This variable controls how long each I/O subsystem thread will wait for additional work before exiting.
+.TP
+QTHREAD_SHEPHERD_BOUNDARY
+This variable is used to control shepherd affinity. Essentially, it sets the
+physical boundary that the shepherd will represent. Currently only used when
+using the hwloc library. Valid values are: node, cache, socket, core, pu,
+L1cache, L2cache, L3cache, and L4cache.
+.TP
+QTHREAD_WORKER_UNIT
+This variable is used to control worker thread affinity; essentially it controls worker spacing. For example, one could force a single shepherd to cover a whole node with the QTHREAD_SHEPHERD_BOUNDARY, and then use this variable to put one worker on each socket. The valid values are the same as for QTHREAD_SHEPHERD_BOUNDARY, but this one MUST be lower in the topology hierarchy than the shepherd boundary. The default is "pu".
+.SH RETURN VALUE
+On success, the system is ready to fork threads and 0 is returned. On error, an
+non-zero error code is returned.
+.SH ERRORS
+.TP 12
+.B ENOMEM
+Not enough memory could be allocated.
+.SH SEE ALSO
+.BR qthread_finalize (3)

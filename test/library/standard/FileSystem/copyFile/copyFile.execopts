@@ -1,0 +1,12 @@
+# Short file with newlines
+copies
+# Large (>4k) file with newlines
+LICENSE
+# Short file with no ending newline
+finish
+# Short binary file.  Contains a 0-byte in the middle
+gz
+# One long line (>4k), no newline
+longline
+# Empty file
+empty

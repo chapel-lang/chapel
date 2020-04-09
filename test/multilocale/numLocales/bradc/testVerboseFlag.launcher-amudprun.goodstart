@@ -1,0 +1,1 @@
+EVARS=vals amudprun  -np 1 ./testVerboseFlag_real --verbose -nl 1 EXECOPTS

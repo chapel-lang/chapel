@@ -1,0 +1,3 @@
+test_array_arg9_auto.chpl:14: syntax error: near '=>'
+test_array_arg9_auto.chpl:16: syntax error: near '=>'
+test_array_arg9_auto.chpl:18: syntax error: near '=>'

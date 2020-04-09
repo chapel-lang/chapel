@@ -1,0 +1,11 @@
+CHPL_RT_NUM_THREADS_PER_LOCALE=100
+
+#
+# This test creates 10,000 tasks and immediately puts them to sleep.
+# With qthreads and the current default stack size of 8MB that means
+# you could have ~78 GB allocated for the tasks' stacks, which is
+# way too much. Dialing back the stack size for this test since all
+# of the tasks are small. Note that this is not an issue for fifo
+# since not every task has it's own stack.
+#
+CHPL_RT_CALL_STACK_SIZE=128k

@@ -1,0 +1,1 @@
+offsetNotRecord-class.chpl:6: error: Cannot call c_offsetof on type that is not a record

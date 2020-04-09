@@ -1,0 +1,3 @@
+# These tests are copies of other tests
+# we only want them for performance comparisons
+CHPL_TEST_PERF != on

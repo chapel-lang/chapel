@@ -1,0 +1,15 @@
+feature request: fastCompilation param and --no-fast compiler option
+
+When developing code, I'd like to include checks that are disabled
+when compiling with --fast and enabled otherwise.
+Right now I am keying off of boundsChecking, but that's not exactly the same.
+So I suggest to provide a param, say "fastCompilation", that the compiler
+will set to true upon --fast and to false otherwise.
+
+While we are at it, would be nice to provide --no-fast, for symmetry.
+Allthough we need to discuss what that would mean.
+The simplest is "don't do any of those things you'd do upon --fast".
+But currently in the compiler options are positional,
+e.g. -g --no-line-numbers and --no-line-numbers -g have different meaning,
+so --fast .... --no-fast may not be the same as --no-fast ....
+I'll leave this as a T.B.D. for now.

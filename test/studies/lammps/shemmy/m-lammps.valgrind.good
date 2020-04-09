@@ -1,0 +1,3 @@
+-- LAMMPS - (Parallel,Chapel) -- 
+i=1 positions[111]=(11.7577, 4.19786, 0.83718)
+i=20 positions[111]=(11.7672, 4.17644, 0.781744)

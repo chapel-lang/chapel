@@ -1,0 +1,61 @@
+
+iter1SA()
+iter1SA serial
+mul=0
+mul=0
+followers: 0 0
+
+iter1LF()
+iter1LF leader
+mul=0
+mul=0
+followers: 2 0
+
+iter1par()
+iter1par leader
+mul=0
+mul=0
+followers: 2 0
+
+zip(iter1LF(),iter2LF())
+iter1LF leader
+tup=0
+tup=0
+followers: 2 2
+
+zip(iter1par(),iter2par())
+iter1par leader
+tup=0
+tup=0
+followers: 2 2
+
+inst1SA
+class1SA serial
+mul=0
+mul=0
+followers: 0 0
+
+inst1LF
+class1LF leader
+mul=0
+mul=0
+followers: 2 0
+
+inst1par
+class1par leader
+mul=0
+mul=0
+followers: 2 0
+
+zip(inst1LF,inst2LF)
+class1LF leader
+tup=0
+tup=0
+followers: 2 2
+
+zip(inst1par,inst2par)
+class1par leader
+tup=0
+tup=0
+followers: 2 2
+

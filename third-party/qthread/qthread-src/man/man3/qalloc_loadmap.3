@@ -1,0 +1,120 @@
+.TH qalloc_makestatmap 3 "NOVEMBER 2006" libqthread "libqthread"
+.SH NAME
+.BR qalloc_makestatmap ,
+.BR qalloc_makedynmap ,
+.B qalloc_loadmap
+\- creates or loads a map file
+.SH SYNOPSIS
+.B #include <qthread/qalloc.h>
+
+.I void *
+.br
+.B qalloc_makestatmap
+.RI "(const off_t " filesize ", void *" addr ,
+.ti +20
+.RI "const char *" filename ", size_t " itemsize ,
+.ti +20
+.RI "const size_t " streams );
+.PP
+.I void *
+.br
+.B qalloc_makedynmap
+.RI "(const off_t " filesize ", void *" addr ,
+.ti +19
+.RI "const char *" filename ", const size_t " streams );
+.PP
+.I void *
+.br
+.B qalloc_loadmap
+.RI "(const char *" filename );
+.SH DESCRIPTION
+These functions are for creating and/or loading memory maps. The concept is
+simple: create a giant
+.BR mmap ()'d
+file on disk, and allocate space out of it much like a
+.BR malloc ().
+Of course, for speed and simplicity reasons, it doesn't work
+.I exactly
+like a
+.BR malloc ().
+.PP
+The
+.BR qalloc_makestatmap ()
+and
+.BR qalloc_makedynmap ()
+functions both will either create a file with the specified
+.IR filename ,
+or, if such a file already exists, will load it. The
+.BR qalloc_loadmap ()
+function expects an existing file named
+.IR filename ,
+will read the necessary information out of it, and attempt to load it.
+.PP
+The files created by
+.BR qalloc_makestatmap ()
+and
+.BR qalloc_makedynmap ()
+will be
+.I filesize
+bytes long, prepared to serve
+.I streams
+concurrent requests, and will be loaded at the address
+.IR addr .
+.I addr
+may be NULL to indicate no preference. The
+.BR qalloc_makestatmap ()
+function also takes an
+.I itemsize
+argument, which specifies the size of allocations that need to be made from the
+file.
+.SH CONCEPT
+There are two kinds of on-disk maps: dynamic maps and static maps. Static maps
+have very lwo overhead, but have the restriction that all allocations in them
+have the same size (also, they're slower to create, initially). Dynamic maps
+allow you to decide how much memory to use for each allocation at runtime, but
+have more overhead both in terms of space and time (also, they're very fast to
+create, initially).
+.PP
+The
+.BR mmap ()'d
+files contain mutexes to protect the allocation and deallocation operations, so
+the files can actually be shared by multiple threads or multiple processes.
+Each thread is mapped to a given "stream" (or set of mutexes) by its thread
+id, obtained from
+.BR pthread_self ().
+.PP
+Because
+.BR mmap ()
+does not, and cannot, guarantee that the address specified is the one that will
+be used, this may present a problem. Pointers stored in this memory will be
+inaccurate if the file is loaded at a different location than it was saved
+with. Conveniently, each file stores the address it was first created for
+inside it, so that if the
+.BR mmap ()
+loads the file at a different address, it is detected by the library. The
+question remains, however, how to address the problem once it has been
+detected. There are two ways of addressing this problem.
+.PP
+From the known-original location stored in the file, and the known-current
+location, a "correction factor" or "offset" can be calculated. Addresses can be
+modified when reading and writing from the file, such that they are made always
+correct. This, however, involves a lot of overhead, particularly since the
+common-case is expected to be that the file is always
+.BR mmap ()'d
+into the exact same location.
+.PP
+The second option, which is what is currently done, is to simply assert that
+the file MUST be loaded at the same location, and to throw an error if it is
+not. The only reason that
+.BR mmap ()
+would refuse to load the file into the specified location would be if there is
+some conflict and something else is already occupying that memory. This is
+considered to be the programmer's responsibility to ensure that this does not
+happen. Additionally, if the system can use a 64-bit address space, there
+should be more than sufficient space in that address space to find a location
+that never conflicts.
+.SH SEE ALSO
+.BR qalloc_checkpoint (3),
+.BR qalloc_cleanup (3),
+.BR qalloc_free (3),
+.BR qalloc_malloc (3)

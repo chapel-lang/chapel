@@ -1,0 +1,1 @@
+check-gmp-none-compiler-error.chpl:2: error: Cannot use GMP with CHPL_GMP=none

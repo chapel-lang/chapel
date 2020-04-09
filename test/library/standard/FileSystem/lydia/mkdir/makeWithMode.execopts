@@ -1,0 +1,4 @@
+--permissions 384 # makeWithMode.rwu.good
+--permissions 256 # makeWithMode.ru.good
+--permissions 128 # makeWithMode.wu.good
+--permissions 448 # makeWithMode.rwxu.good

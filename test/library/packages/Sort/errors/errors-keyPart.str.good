@@ -1,0 +1,2 @@
+errors-keyPart.chpl:9: In function 'main':
+errors-keyPart.chpl:17: error: The keyPart method in str must return a tuple when used with int(64) elements

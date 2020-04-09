@@ -1,0 +1,37 @@
+#!/usr/bin/env perl
+# PRK stencil uses more memory than some testing machines have available.
+
+# We want to keep the problem size constant across single and multi-locale
+# runs, meaning there are strict memory restrictions for running single locale.
+
+$memRequiredInGB = 8;
+$memInGB = $memRequiredInGB;
+
+if ($ENV{CHPL_TEST_PERF} eq "on") {
+    $memfile = "/proc/meminfo";
+    if (-r $memfile) {
+      open MEMFILE, "$memfile" or die "can't open $memfile $!";
+      my @memLines = <MEMFILE>;
+      close (MEMFILE);
+
+      foreach my $line (@memLines) {
+        if ($line =~ m/MemTotal: (\s*)(\S*)/) {
+          $memInKB = "$2";
+          $memInGB = $memInKB / (1024 * 1024);
+        }
+      }
+    } else {
+        $platform = `$ENV{CHPL_HOME}/util/chplenv/chpl_platform.py --target`; chomp($platform);
+        if ($platform eq "darwin") {
+            $memInBytes = `sysctl -n hw.memsize`; chomp($memInBytes);
+            $memInGB = $memInBytes / (1024 * 1024 * 1024);
+        }
+    }
+}
+
+if ($memInGB < $memRequiredInGB) {
+    print("True\n");
+} else {
+    print("False\n");
+}
+

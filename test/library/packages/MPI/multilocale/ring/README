@@ -1,0 +1,9 @@
+Implement a simple ring, but with the send/receive running in separate tasks.
+Demonstrates that non-blocking calls can be made in multiple tasks.
+
+This exercises the wrapped Send/Recv functionality and tests that we don't run
+into deadlocks running with CHPL_TASKS=qthreads.
+
+Note that this requires
+ MPICH_MAX_THREAD_SAFETY=multiple
+

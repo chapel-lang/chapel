@@ -1,0 +1,5 @@
+perfkeys: Performance (GUPS) =
+files: ra.atomic-n33.dat
+graphkeys: ra-atomics GUPS
+graphtitle: HPCC: RA-atomics Perf (GUPS) - n=2^33
+ylabel: Performance (GUPS)

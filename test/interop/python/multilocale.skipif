@@ -1,0 +1,22 @@
+#!/usr/bin/env python
+
+"""
+ Multilocale interoperability requires ZMQ
+ Installation of the ZMQ library is detected with the find_library function,
+ which looks for the appropriate dynamic library (e.g. libzmq.so).
+ Note that if the dynamic library is found, this test assumes that the
+ header and static library are available.
+"""
+
+from __future__ import print_function
+from ctypes.util import find_library
+import os
+
+# Is ZMQ available?
+zmq_found = find_library('zmq') is not None
+
+# OK contains the conditions that must be met to run the test
+OK = zmq_found
+
+# Skip if not OK
+print(not OK)

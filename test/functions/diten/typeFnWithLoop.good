@@ -1,0 +1,1 @@
+typeFnWithLoop.chpl:9: error: type function may only contain parameter statements

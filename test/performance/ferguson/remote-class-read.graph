@@ -1,0 +1,5 @@
+perfkeys: GETs:, GETs:
+files: remote-class-read-c.dat, remote-class-read-c-cache.dat
+graphkeys: c GETs, c-cache GETs
+ylabel: Count
+graphtitle: remote-class-read

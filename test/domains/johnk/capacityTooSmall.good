@@ -1,0 +1,1 @@
+capacityTooSmall.chpl:6: warning: Requested capacity (1) is less than current size (2)

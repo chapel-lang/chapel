@@ -1,0 +1,5 @@
+# Somehow LocaleModel's deinit is not executed under numa.
+CHPL_LOCALE_MODEL == numa
+# And in any case no point running this in too many configs.
+CHPL_COMM!=none
+COMPOPTS <= --no-local

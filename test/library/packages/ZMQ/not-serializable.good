@@ -1,0 +1,1 @@
+not-serializable.chpl:20: error: Type "borrowed Foo" is not serializable by ZMQ

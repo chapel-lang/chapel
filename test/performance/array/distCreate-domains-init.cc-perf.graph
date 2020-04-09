@@ -1,0 +1,5 @@
+perfkeys: domInit-GETS:, domInit-PUTS:, domInit-ONS:, domInit-GETS:, domInit-PUTS:, domInit-ONS:, domInit-GETS:, domInit-PUTS:, domInit-ONS:, domInit-GETS:, domInit-PUTS:, domInit-ONS:
+graphkeys: blockDomInit-GETS:, blockDomInit-PUTS:, blockDomInit-ONS:, cyclicDomInit-GETS:, cyclicDomInit-PUTS:, cyclicDomInit-ONS:, blockCycDomInit-GETS:, blockCycDomInit-PUTS:, blockCycDomInit-ONS:, stencilDomInit-GETS:, stencilDomInit-PUTS:, stencilDomInit-ONS:
+repeat-files: distCreate-cc-block.dat, distCreate-cc-cyclic.dat, distCreate-cc-blockCyc.dat, distCreate-cc-stencil.dat
+ylabel: Count
+graphtitle: Creating distributed domains

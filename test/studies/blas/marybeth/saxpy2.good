@@ -1,0 +1,3 @@
+saxpy2.chpl:1: In function 'saxpy':
+saxpy2.chpl:1: error: 'D' used before defined
+saxpy2.chpl:7: note: defined here

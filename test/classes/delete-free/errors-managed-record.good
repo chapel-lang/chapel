@@ -1,0 +1,4 @@
+errors-managed-record.chpl:4: error: unmanaged can only apply to class types (R is not a class type)
+errors-managed-record.chpl:5: error: borrowed can only apply to class types (R is not a class type)
+errors-managed-record.chpl:7: error: borrowed can only apply to class types (int(64) is not a class type)
+errors-managed-record.chpl:8: error: unmanaged can only apply to class types (int(64) is not a class type)

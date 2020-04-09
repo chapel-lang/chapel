@@ -1,0 +1,7 @@
+run:	 myList.size = 0
+run:	 calling doStuff
+doStuff: myList.size = 0
+doStuff: added '2' to myList
+doStuff: myList.size = 1
+run:	 myList.size = 1
+run:	 found '2' in myList.

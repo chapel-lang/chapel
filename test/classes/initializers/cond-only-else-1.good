@@ -1,0 +1,2 @@
+cond-only-else-1.chpl:16: In initializer:
+cond-only-else-1.chpl:19: error: Both arms of a conditional must use this.init() or this.complete() in phase 1

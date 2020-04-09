@@ -1,0 +1,22 @@
+# Fragmented STREAM (EP)
+perfkeys: Performance (GB/s) =, Performance (GB/s) =
+graphkeys: STREAM, STREAM-local
+files: ./STREAMS/bradc/stream-fragmented.dat, ./STREAMS/diten/stream-fragmented-local.dat
+ylabel: Performance (GB/s)
+graphname: STREAM-fragmented-performance
+graphtitle: EP STREAM (fragmented) (GB/s)
+
+# Global STREAM
+perfkeys: Performance (GB/s) =, Performance (GB/s) =, Performance (GB/s) =
+graphkeys: Global-STREAM, with--local, Global-STREAM-promote
+files: ./STREAMS/bradc/stream-block1d.dat, ./STREAMS/bradc/stream-block1d-local.dat, ./STREAMS/bradc/stream-block1d-promote.dat
+ylabel: Performance (GB/s)
+graphname: STREAM-global-performance
+graphtitle: Global STREAM (GB/s)
+
+perfkeys: Performance (GB/s) =
+graphkeys: Global-STREAM-promote
+files: ./STREAMS/bradc/stream-block1d-promote.dat
+ylabel: Performance (GB/s)
+graphname: STREAM-global-promote-performance
+graphtitle: Global STREAM using Promotion (GB/s)

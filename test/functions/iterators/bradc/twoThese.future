@@ -1,0 +1,7 @@
+error message: two these functions generates vague message
+
+If you accidentally define two these() methods on a class,
+the error message is somewhat vague.  Would be nice to
+tighten this up a bit -- make it more of a standard
+unresolved function type of message?
+

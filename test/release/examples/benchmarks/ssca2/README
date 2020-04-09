@@ -1,0 +1,70 @@
+========================
+Chapel SSCA #2 Benchmark
+========================
+
+This directory contains the Chapel version of the Scalable Synthetic
+Compact Applications #2 benchmark (version 2.2).  More information on
+the benchmark as well as the benchmark specification can be found at
+http://www.graphanalysis.org/benchmark/.
+
+
+FILES
+=====
+
+SSCA2_main.chpl      : The main module
+
+SSCA2_Modules/       : Directory of additional modules
+
+  SSCA2_compilation_config_params.chpl      : Config params
+  SSCA2_execution_config_consts.chpl        : Config consts
+  SSCA2_driver.chpl                         : Calls to kernels 2-4
+  SSCA2_kernels.chpl                        : Graph-type independent kernels 2-4
+
+  SSCA2_RMAT_graph_generator.chpl           : Kernel 1 for RMAT graph
+  analyze_RMAT_graph_associative_array.chpl : RMAT graph infrastructure
+
+  array_rep_torus_graph_generator.chpl      : Kernel 1 for torus graphs (1D-4D)
+  torus_graph_generator_utilities.chpl      : Torus graph utilities
+  analyze_torus_graphs_array_rep.chpl       : Torus graph infrastructure (serial)
+  analyze_torus_graphs_stencil_rep_v1.chpl  : Torus graph infrastructures
+  analyze_torus_graphs_stencil_rep_v2.chpl
+  analyze_torus_graphs_stencil_rep_v3.chpl
+
+Other files with the same base filename as the Chapel test program but
+different filename extensions, are for use by the automated test system.
+For example, file SSCA2_main.execopts supports automated testing of
+SSCA2_main.chpl. $CHPL_HOME/examples/README.testing contains more information.
+
+
+BUILDING
+========
+
+The Makefile will build only the RMAT graph version.  To enable the
+various torus versions, set the config const
+BUILD_XX_TORUS_VERSION=true, where XX is 1D, 2D, 3D, or 4D .  See the
+TESTING section regarding testing the torus versions.
+
+
+RUNNING
+=======
+
+See SSCA2_execution_config_consts.chpl for documentation of the
+various runtime configs available to set problem size and other graph
+parameters.
+
+Currently when running on multiple locales, if your locale has a large
+number of cores, it is necessary to limit the number of tasks per
+locale to around 4 using the flag --dataParTasksPerLocale=4 (default
+is the number of cores on the locale).  This is a a way to throttle
+the nested parallelism inherent in the algorithm.  On some systems,
+running without throttling may lead to network deadlock.
+
+
+TESTING
+=======
+
+When testing using start_test, the RMAT graph and all 4 versions of
+the stencil representation (v1) are compiled and run with DEBUG
+output.  Each test is run separately to simplify validation and also
+to reduce compilation time.  See SSCA2_main.compopts for more info on
+the exact flags.

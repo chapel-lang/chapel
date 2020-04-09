@@ -1,0 +1,22 @@
+For 64-bit reals: 
+a = 10.0 an = 5
+yn(an, a) = 0.135403
+b = 31.0 bn = 4
+yn(bn, b) = -0.116803
+c = 0.0 cn = 7
+yn(cn, c) = -inf
+d = 0.05 dn = 2
+yn(dn, d) = -509.615
+e = 100.0 en = 9
+yn(en, e) = -0.04892
+For 32-bit reals: 
+a = 10.0 an = 5
+yn(an, a) = 0.135403
+b = 31.0 bn = 4
+yn(bn, b) = -0.116803
+c = 0.0 cn = 7
+yn(cn, c) = -inf
+d = 0.05 dn = 2
+yn(dn, d) = -509.615
+e = 100.0 en = 9
+yn(en, e) = -0.04892

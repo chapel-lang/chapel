@@ -1,0 +1,40 @@
+Default foo
+Initializing C
+{x = 0}
+Deinitializing C
+Supplied foo
+Initializing C
+{x = 0}
+Deinitializing C
+Default bar
+Initializing C
+{x = 0}
+Deinitializing C
+Supplied bar
+Initializing C
+{x = 0}
+Deinitializing C
+Default foo_borrows
+Initializing C
+{x = 0}
+Deinitializing C
+Supplied foo_borrows
+Initializing C
+{x = 0}
+Deinitializing C
+Default foo_in
+Initializing C
+{x = 0}
+Deinitializing C
+Supplied foo_in
+Initializing C
+{x = 0}
+Deinitializing C
+Default bar_in
+Initializing C
+{x = 0}
+Deinitializing C
+Supplied bar_in
+Initializing C
+{x = 0}
+Deinitializing C

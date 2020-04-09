@@ -1,0 +1,2 @@
+useModInjectNothing.chpl:7: In function 'main':
+useModInjectNothing.chpl:8: error: 'x' undeclared (first use this function)

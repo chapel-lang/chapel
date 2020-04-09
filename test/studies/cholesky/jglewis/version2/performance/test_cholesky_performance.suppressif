@@ -1,0 +1,4 @@
+# cygwin leaks condition variables (see JIRA issue 74)
+
+CHPL_TARGET_PLATFORM==cygwin32
+CHPL_TARGET_PLATFORM==cygwin64

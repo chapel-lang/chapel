@@ -1,0 +1,3 @@
+nestedForall2.chpl:3: In iterator 'iterate':
+nestedForall2.chpl:4: error: invalid use of parallel construct in serial iterator
+nestedForall2.chpl:6: error: invalid use of parallel construct in serial iterator

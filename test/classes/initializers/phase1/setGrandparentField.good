@@ -1,0 +1,2 @@
+setGrandparentField.chpl:22: In initializer:
+setGrandparentField.chpl:24: error: can't set value of inherited field "a" during phase 1 of initialization

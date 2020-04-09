@@ -1,0 +1,4 @@
+bug: c_string variables should not be copied to other locales
+
+See remote_assign_c_string.future for more info.
+

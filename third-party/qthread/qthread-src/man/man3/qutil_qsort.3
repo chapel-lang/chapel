@@ -1,0 +1,59 @@
+.TH qutil_qsort 3 "APRIL 2011" libqthread "libqthread"
+.SH NAME
+.BR qutil_qsort ,
+.B qutil_mergesort
+\- sorts an array of doubles in parallel
+.SH SYNOPSIS
+.B #include <qthread.h>
+.br
+.B #include <qthread/qutil.h>
+
+.I void
+.br
+.B qutil_qsort
+.RI "(double *" array ", size_t " length );
+.PP
+.I void
+.br
+.B qutil_mergesort
+.RI "(double *" array ", size_t " length );
+.SH DESCRIPTION
+These functions take as input an
+.I array
+of
+.I length
+numbers and sorts their values.
+.PP
+In
+.BR qutil_qsort (),
+large amounts of parallelism is achieved by using a strided lagging-loop
+structure for the partitioning phases of the sort, and a tree structure (with a
+minimum leaf-size) for the divide-and-conquer phases of the sort. The design is
+based, partly, upon work done by CRAY for their MTA-threaded quicksort. For
+sufficiently small arrays or sub-arrays, the libc
+.BR qsort ()
+function is used.
+.PP
+In
+.BR qutil_mergesort (),
+the parallelism is achieved solely from the obvious divide-and-conquer tree.
+The merge phases of the algorithm use an in-place merge rather than a lookaside
+merge. As a result, the merge phases are rather computationally intensive.
+(This sort exists primarily as a proof of concept rather than as a useful
+alternative.)
+.PP
+The result of the sort is an array in increasing order.
+.SH SEE ALSO
+.BR qutil_double_sum (3),
+.BR qutil_double_mult (3),
+.BR qutil_double_min (3),
+.BR qutil_double_max (3),
+.BR qutil_uint_sum (3),
+.BR qutil_uint_mult (3),
+.BR qutil_uint_min (3),
+.BR qutil_uint_max (3),
+.BR qutil_int_sum (3),
+.BR qutil_int_mult (3),
+.BR qutil_int_min (3),
+.BR qutil_int_max (3),
+.BR qsort (3)

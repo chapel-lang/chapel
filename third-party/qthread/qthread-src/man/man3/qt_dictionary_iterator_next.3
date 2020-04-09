@@ -1,0 +1,34 @@
+.TH qt_dictionary_iterator_next 3 "AUGUST 2012" libqthread "libqthread"
+.SH NAME
+.B qt_dictionary_iterator_next
+\- retrieve the current value and advance the iterator
+.SH SYNOPSIS
+.B #include <qthread/dictionary.h>
+
+.I list_entry *
+.br
+.B qt_dictionary_iterator_next
+.RI "(qt_dictionary_iterator *" iter );
+
+.SH DESCRIPTION
+This function advances the iterator and retrieves the next entry. The rules governing entry retrieval are the same as for
+.BR qt_dictionary_iterator_get ().
+.SH RETURN VALUES
+Returns the entry that the iterator points to after advancing.
+In racy concurrent situations, if the item indicated by the iterator was
+deleted from the dictionary, multiple results may happen. The next element in
+the dictionary may be returned, or NULL may be returned, OR an error may be
+returned. However, it may not crash.
+.SH SEE ALSO
+.BR qt_dictionary_create (3),
+.BR qt_dictionary_delete (3),
+.BR qt_dictionary_destroy (3),
+.BR qt_dictionary_end (3),
+.BR qt_dictionary_get (3),
+.BR qt_dictionary_iterator_copy (3),
+.BR qt_dictionary_iterator_create (3),
+.BR qt_dictionary_iterator_destroy (3),
+.BR qt_dictionary_iterator_equals (3),
+.BR qt_dictionary_iterator_get (3),
+.BR qt_dictionary_put (3),
+.BR qt_dictionary_put_if_absent (3)

@@ -1,0 +1,2 @@
+recordHasRecordField.chpl:8: warning: noinit is currently ignored
+(t = (namingIsHard = false))

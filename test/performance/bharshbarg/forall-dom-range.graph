@@ -1,0 +1,5 @@
+perfkeys: real, real, real, real
+files: dom-forall.dat, dom-forall-zip.dat, range-forall.dat, range-forall-zip.dat
+graphkeys: Domain, Zip-Domain, Range, Zip-Range
+graphtitle: 1D Domain vs. Range Parallel Iteration
+ylabel: Time (seconds)

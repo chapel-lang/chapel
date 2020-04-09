@@ -1,0 +1,9 @@
+hasGlobalTypes.doc
+
+Usage:
+   use hasGlobalTypes.doc;
+
+   This module has some global scoped types. 
+   type first
+   type second
+      This type has an associated comment and a value 

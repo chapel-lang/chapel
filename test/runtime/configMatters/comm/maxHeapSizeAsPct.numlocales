@@ -1,0 +1,6 @@
+#
+# We don't actually have to run multi-locale here, because we're only
+# checking the value resulting from specifying CHPL_RT_MAX_HEAP_SIZE
+# as a percentage, not the size of the heap as such.
+#
+1

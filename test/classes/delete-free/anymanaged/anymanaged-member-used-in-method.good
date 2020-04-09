@@ -1,0 +1,1 @@
+anymanaged-member-used-in-method.chpl:12: error: initialization requires an argument for thing2

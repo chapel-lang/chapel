@@ -1,0 +1,93 @@
+#!/bin/bash --norc
+
+#
+# Each entry in $logsources below specifies a location for log files to historify.
+# * It must be an absolute path or relative to $loghome.
+# * It must not contain spaces or special symbols.
+# * Subdirectories, when needed, must be listed separately.
+
+set -ue
+
+if [ -n "$*" ]; then
+  echo $0: ERROR: unexpected arguments: "$*" .
+  exit 1
+fi
+
+loghome=/data/sea/chapel
+loghistdir=/data/sea/chapel/NightlyHistory
+logsources="\
+Nightly \
+"
+
+# logs for "Cray hardware" configurations
+loghomeCrayHW=/cray/css/users/chapelu
+logsourcesCrayHW="\
+Nightly \
+NightlyWbOnCray \
+NightlyMemLeaks \
+NightlyPerformance/chap01 \
+NightlyPerformance/chap04 \
+NightlyPerformance/chap08 \
+NightlyPerformance/chap12 \
+NightlyPerformance/chapcs \
+NightlyPerformance/chapcs.comm-counts \
+NightlyPerformance/shootout \
+"
+
+verbose=false
+numerrors=
+
+function error() {
+  local logfile=$1; shift
+  echo "ERROR with $logfile: $*"
+  let ++numerrors
+}
+
+function msg() {
+  echo historify-logs `date` "  $*"
+}
+
+function do1() {
+  local logfile=$1
+  local date=`head -5 $logfile | grep 'Starting Chapel regression tests' | sed 's@.*Starting Chapel regression tests - \([1-9][0-9][0-9][0-9][0-9][0-9]\)\..*@\1@'`
+
+  # ensures everything is tidy so far
+  case "$date" in
+    (??????) true;; # good
+    (*) error $logfile "could not determine the date from top 5 lines (got $date)"; head -5 $logfile; return 0;;
+  esac
+
+  local histdir=$loghistdir/$date
+  local histname=`echo $logfile|sed s@/@-@g`
+  local histfile=$histdir/$histname
+  mkdir -p $histdir
+  $verbose && echo $histfile
+  # \cp -up does unneeded copies
+  rsync -t $logfile $histfile || { error $logfile "could not copy"; return 0; }
+}
+
+function doall() {
+  while read; do
+    do1 $REPLY
+  done
+}
+
+###########
+
+msg starting
+cd $loghome
+
+# day* eliminates debug-* and memory leaks summaries
+find $logsources -maxdepth 1 -name day\*.log | doall
+
+# we put these in the same directory as the above
+msg starting Cray HW logs
+cd $loghomeCrayHW
+find $logsourcesCrayHW -maxdepth 1 -name day\*.log | doall
+
+if [ -z "$numerrors" ]; then
+  msg succeeded
+else
+  msg encountered $numerrors errors
+  echo GOT ERRORS
+fi

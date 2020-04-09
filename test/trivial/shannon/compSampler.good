@@ -1,0 +1,1545 @@
+* and * permutations
+=========================
+30
+30
+30
+
+* and / permutations
+=========================
+1
+1
+0
+
+* and % permutations
+=========================
+1
+1
+6
+
+* and + permutations
+=========================
+11
+11
+16
+
+* and - permutations
+=========================
+1
+1
+-4
+
+* and < permutations
+=========================
+0
+0
+2
+
+* and <= permutations
+=========================
+0
+0
+2
+
+* and > permutations
+=========================
+1
+1
+0
+
+* and >= permutations
+=========================
+1
+1
+0
+
+* and == permutations
+=========================
+0
+0
+0
+
+* and != permutations
+=========================
+1
+1
+2
+
+* and & permutations
+=========================
+4
+4
+2
+
+* and ^ permutations
+=========================
+3
+3
+12
+
+* and | permutations
+=========================
+7
+7
+14
+
+* and && permutations
+=========================
+1
+1
+2
+
+* and || permutations
+=========================
+1
+1
+2
+
+/ and * permutations
+=========================
+0
+0
+0
+
+/ and / permutations
+=========================
+0
+0
+1
+
+/ and % permutations
+=========================
+0
+0
+0
+
+/ and + permutations
+=========================
+5
+5
+0
+
+/ and - permutations
+=========================
+-5
+-5
+-1
+
+/ and < permutations
+=========================
+1
+1
+2
+
+/ and <= permutations
+=========================
+1
+1
+2
+
+/ and > permutations
+=========================
+0
+0
+2
+
+/ and >= permutations
+=========================
+0
+0
+2
+
+/ and == permutations
+=========================
+0
+0
+2
+
+/ and != permutations
+=========================
+1
+1
+2
+
+/ and & permutations
+=========================
+0
+0
+2
+
+/ and ^ permutations
+=========================
+5
+5
+0
+
+/ and | permutations
+=========================
+5
+5
+0
+
+/ and && permutations
+=========================
+0
+0
+2
+
+/ and || permutations
+=========================
+1
+1
+2
+
+% and * permutations
+=========================
+10
+10
+2
+
+% and / permutations
+=========================
+0
+0
+0
+
+% and % permutations
+=========================
+2
+2
+2
+
+% and + permutations
+=========================
+7
+7
+2
+
+% and - permutations
+=========================
+-3
+-3
+0
+
+% and < permutations
+=========================
+1
+1
+0
+
+% and <= permutations
+=========================
+1
+1
+0
+
+% and > permutations
+=========================
+0
+0
+0
+
+% and >= permutations
+=========================
+0
+0
+0
+
+% and == permutations
+=========================
+0
+0
+0
+
+% and != permutations
+=========================
+1
+1
+0
+
+% and & permutations
+=========================
+0
+0
+0
+
+% and ^ permutations
+=========================
+7
+7
+2
+
+% and | permutations
+=========================
+7
+7
+2
+
+% and && permutations
+=========================
+1
+1
+0
+
+% and || permutations
+=========================
+1
+1
+0
+
++ and * permutations
+=========================
+17
+25
+17
+
++ and / permutations
+=========================
+2
+1
+2
+
++ and % permutations
+=========================
+5
+0
+5
+
++ and + permutations
+=========================
+10
+10
+10
+
++ and - permutations
+=========================
+0
+0
+0
+
++ and < permutations
+=========================
+0
+0
+3
+
++ and <= permutations
+=========================
+1
+1
+3
+
++ and > permutations
+=========================
+0
+0
+2
+
++ and >= permutations
+=========================
+1
+1
+2
+
++ and == permutations
+=========================
+1
+1
+2
+
++ and != permutations
+=========================
+0
+0
+3
+
++ and & permutations
+=========================
+3
+5
+3
+
++ and ^ permutations
+=========================
+8
+0
+8
+
++ and | permutations
+=========================
+9
+5
+9
+
++ and && permutations
+=========================
+1
+1
+3
+
++ and || permutations
+=========================
+1
+1
+3
+
+- and * permutations
+=========================
+-13
+-5
+-13
+
+- and / permutations
+=========================
+2
+0
+2
+
+- and % permutations
+=========================
+-1
+-1
+-1
+
+- and + permutations
+=========================
+4
+4
+-6
+
+- and - permutations
+=========================
+-6
+-6
+4
+
+- and < permutations
+=========================
+1
+1
+1
+
+- and <= permutations
+=========================
+1
+1
+1
+
+- and > permutations
+=========================
+0
+0
+2
+
+- and >= permutations
+=========================
+0
+0
+2
+
+- and == permutations
+=========================
+0
+0
+2
+
+- and != permutations
+=========================
+1
+1
+1
+
+- and & permutations
+=========================
+1
+5
+1
+
+- and ^ permutations
+=========================
+-4
+-6
+-4
+
+- and | permutations
+=========================
+-5
+-1
+-5
+
+- and && permutations
+=========================
+1
+1
+1
+
+- and || permutations
+=========================
+1
+1
+1
+
+< and * permutations
+=========================
+1
+5
+1
+
+< and / permutations
+=========================
+0
+0
+0
+
+< and % permutations
+=========================
+1
+1
+1
+
+< and + permutations
+=========================
+1
+6
+1
+
+< and - permutations
+=========================
+0
+-4
+0
+
+< and < permutations
+=========================
+1
+1
+0
+
+< and <= permutations
+=========================
+1
+1
+0
+
+< and > permutations
+=========================
+0
+0
+0
+
+< and >= permutations
+=========================
+0
+0
+0
+
+< and == permutations
+=========================
+0
+0
+0
+
+< and != permutations
+=========================
+1
+1
+0
+
+< and & permutations
+=========================
+0
+1
+0
+
+< and ^ permutations
+=========================
+1
+4
+1
+
+< and | permutations
+=========================
+1
+5
+1
+
+< and && permutations
+=========================
+1
+1
+0
+
+< and || permutations
+=========================
+1
+1
+0
+
+<= and * permutations
+=========================
+1
+5
+1
+
+<= and / permutations
+=========================
+0
+0
+0
+
+<= and % permutations
+=========================
+1
+1
+1
+
+<= and + permutations
+=========================
+1
+6
+1
+
+<= and - permutations
+=========================
+0
+-4
+0
+
+<= and < permutations
+=========================
+1
+1
+0
+
+<= and <= permutations
+=========================
+1
+1
+0
+
+<= and > permutations
+=========================
+0
+0
+0
+
+<= and >= permutations
+=========================
+0
+0
+0
+
+<= and == permutations
+=========================
+0
+0
+0
+
+<= and != permutations
+=========================
+1
+1
+0
+
+<= and & permutations
+=========================
+0
+1
+0
+
+<= and ^ permutations
+=========================
+1
+4
+1
+
+<= and | permutations
+=========================
+1
+5
+1
+
+<= and && permutations
+=========================
+1
+1
+0
+
+<= and || permutations
+=========================
+1
+1
+0
+
+> and * permutations
+=========================
+0
+0
+0
+
+> and / permutations
+=========================
+1
+0
+1
+
+> and % permutations
+=========================
+0
+0
+0
+
+> and + permutations
+=========================
+0
+5
+0
+
+> and - permutations
+=========================
+1
+-5
+1
+
+> and < permutations
+=========================
+1
+1
+1
+
+> and <= permutations
+=========================
+1
+1
+1
+
+> and > permutations
+=========================
+0
+0
+1
+
+> and >= permutations
+=========================
+0
+0
+1
+
+> and == permutations
+=========================
+0
+0
+1
+
+> and != permutations
+=========================
+1
+1
+1
+
+> and & permutations
+=========================
+1
+0
+1
+
+> and ^ permutations
+=========================
+0
+5
+0
+
+> and | permutations
+=========================
+0
+5
+0
+
+> and && permutations
+=========================
+0
+0
+1
+
+> and || permutations
+=========================
+1
+1
+1
+
+>= and * permutations
+=========================
+0
+0
+0
+
+>= and / permutations
+=========================
+1
+0
+1
+
+>= and % permutations
+=========================
+0
+0
+0
+
+>= and + permutations
+=========================
+0
+5
+0
+
+>= and - permutations
+=========================
+1
+-5
+1
+
+>= and < permutations
+=========================
+1
+1
+1
+
+>= and <= permutations
+=========================
+1
+1
+1
+
+>= and > permutations
+=========================
+0
+0
+1
+
+>= and >= permutations
+=========================
+0
+0
+1
+
+>= and == permutations
+=========================
+0
+0
+1
+
+>= and != permutations
+=========================
+1
+1
+1
+
+>= and & permutations
+=========================
+1
+0
+1
+
+>= and ^ permutations
+=========================
+0
+5
+0
+
+>= and | permutations
+=========================
+0
+5
+0
+
+>= and && permutations
+=========================
+0
+0
+1
+
+>= and || permutations
+=========================
+1
+1
+1
+
+== and * permutations
+=========================
+0
+0
+0
+
+== and / permutations
+=========================
+0
+0
+0
+
+== and % permutations
+=========================
+0
+0
+0
+
+== and + permutations
+=========================
+0
+5
+0
+
+== and - permutations
+=========================
+0
+-5
+0
+
+== and < permutations
+=========================
+0
+1
+0
+
+== and <= permutations
+=========================
+0
+1
+0
+
+== and > permutations
+=========================
+0
+0
+0
+
+== and >= permutations
+=========================
+0
+0
+0
+
+== and == permutations
+=========================
+0
+0
+0
+
+== and != permutations
+=========================
+1
+1
+0
+
+== and & permutations
+=========================
+0
+0
+0
+
+== and ^ permutations
+=========================
+0
+5
+0
+
+== and | permutations
+=========================
+0
+5
+0
+
+== and && permutations
+=========================
+0
+0
+0
+
+== and || permutations
+=========================
+1
+1
+0
+
+!= and * permutations
+=========================
+1
+5
+1
+
+!= and / permutations
+=========================
+1
+0
+1
+
+!= and % permutations
+=========================
+1
+1
+1
+
+!= and + permutations
+=========================
+1
+6
+1
+
+!= and - permutations
+=========================
+1
+-4
+1
+
+!= and < permutations
+=========================
+1
+1
+1
+
+!= and <= permutations
+=========================
+1
+1
+1
+
+!= and > permutations
+=========================
+1
+0
+1
+
+!= and >= permutations
+=========================
+1
+0
+1
+
+!= and == permutations
+=========================
+0
+0
+1
+
+!= and != permutations
+=========================
+1
+1
+1
+
+!= and & permutations
+=========================
+1
+1
+1
+
+!= and ^ permutations
+=========================
+1
+4
+1
+
+!= and | permutations
+=========================
+1
+5
+1
+
+!= and && permutations
+=========================
+1
+1
+1
+
+!= and || permutations
+=========================
+1
+1
+1
+
+& and * permutations
+=========================
+2
+10
+2
+
+& and / permutations
+=========================
+0
+0
+0
+
+& and % permutations
+=========================
+2
+2
+2
+
+& and + permutations
+=========================
+7
+7
+0
+
+& and - permutations
+=========================
+-3
+-3
+2
+
+& and < permutations
+=========================
+1
+1
+0
+
+& and <= permutations
+=========================
+1
+1
+0
+
+& and > permutations
+=========================
+0
+0
+0
+
+& and >= permutations
+=========================
+0
+0
+0
+
+& and == permutations
+=========================
+0
+0
+0
+
+& and != permutations
+=========================
+1
+1
+0
+
+& and & permutations
+=========================
+0
+0
+0
+
+& and ^ permutations
+=========================
+7
+7
+2
+
+& and | permutations
+=========================
+7
+7
+2
+
+& and && permutations
+=========================
+false
+false
+In rettru
+false
+
+& and || permutations
+=========================
+true
+true
+false
+
+^ and * permutations
+=========================
+13
+5
+13
+
+^ and / permutations
+=========================
+2
+0
+2
+
+^ and % permutations
+=========================
+1
+1
+1
+
+^ and + permutations
+=========================
+6
+6
+10
+
+^ and - permutations
+=========================
+-4
+-4
+-4
+
+^ and < permutations
+=========================
+1
+1
+3
+
+^ and <= permutations
+=========================
+1
+1
+3
+
+^ and > permutations
+=========================
+0
+0
+2
+
+^ and >= permutations
+=========================
+0
+0
+2
+
+^ and == permutations
+=========================
+0
+0
+2
+
+^ and != permutations
+=========================
+1
+1
+3
+
+^ and & permutations
+=========================
+3
+1
+3
+
+^ and ^ permutations
+=========================
+4
+4
+4
+
+^ and | permutations
+=========================
+5
+5
+5
+
+^ and && permutations
+=========================
+In rettru
+true
+In rettru
+true
+true
+
+^ and || permutations
+=========================
+In rettru
+true
+In rettru
+true
+false
+
+| and * permutations
+=========================
+15
+15
+15
+
+| and / permutations
+=========================
+2
+0
+2
+
+| and % permutations
+=========================
+3
+3
+3
+
+| and + permutations
+=========================
+8
+8
+10
+
+| and - permutations
+=========================
+-2
+-2
+-2
+
+| and < permutations
+=========================
+1
+1
+3
+
+| and <= permutations
+=========================
+1
+1
+3
+
+| and > permutations
+=========================
+0
+0
+2
+
+| and >= permutations
+=========================
+0
+0
+2
+
+| and == permutations
+=========================
+0
+0
+2
+
+| and != permutations
+=========================
+1
+1
+3
+
+| and & permutations
+=========================
+3
+1
+3
+
+| and ^ permutations
+=========================
+6
+6
+6
+
+| and | permutations
+=========================
+7
+7
+7
+
+| and && permutations
+=========================
+In retfls
+false
+In retfls
+false
+true
+
+| and || permutations
+=========================
+true
+true
+In rettru
+true
+
+&& and * permutations
+=========================
+1
+5
+1
+
+&& and / permutations
+=========================
+0
+0
+0
+
+&& and % permutations
+=========================
+1
+1
+1
+
+&& and + permutations
+=========================
+1
+6
+1
+
+&& and - permutations
+=========================
+1
+-4
+1
+
+&& and < permutations
+=========================
+1
+1
+1
+
+&& and <= permutations
+=========================
+1
+1
+1
+
+&& and > permutations
+=========================
+0
+0
+0
+
+&& and >= permutations
+=========================
+0
+0
+0
+
+&& and == permutations
+=========================
+0
+0
+0
+
+&& and != permutations
+=========================
+1
+1
+1
+
+&& and & permutations
+=========================
+false
+In rettru
+false
+false
+
+&& and ^ permutations
+=========================
+false
+true
+false
+
+&& and | permutations
+=========================
+false
+true
+false
+
+&& and && permutations
+=========================
+1
+1
+1
+
+&& and || permutations
+=========================
+1
+1
+1
+
+or and * permutations
+=========================
+1
+5
+1
+
+or and / permutations
+=========================
+1
+0
+1
+
+or and % permutations
+=========================
+1
+1
+1
+
+or and + permutations
+=========================
+1
+6
+1
+
+or and - permutations
+=========================
+1
+-4
+1
+
+or and < permutations
+=========================
+1
+1
+1
+
+or and <= permutations
+=========================
+1
+1
+1
+
+or and > permutations
+=========================
+1
+0
+1
+
+or and >= permutations
+=========================
+1
+0
+1
+
+or and == permutations
+=========================
+1
+0
+1
+
+or and != permutations
+=========================
+1
+1
+1
+
+or and & permutations
+=========================
+true
+false
+true
+
+or and ^ permutations
+=========================
+true
+false
+true
+
+or and | permutations
+=========================
+true
+true
+true
+
+or and && permutations
+=========================
+false
+false
+false
+
+or and || permutations
+=========================
+false
+false
+false
+

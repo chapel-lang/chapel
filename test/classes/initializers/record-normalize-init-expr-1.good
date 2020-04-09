@@ -1,0 +1,4 @@
+MyRec.init()
+SubRec.init(50, 60.0)
+SubRec.init(10, 20.0)
+r: (x = 10, y = 20.0, s0 = (a = 50, b = 60.0), s1 = (a = 10, b = 20.0))

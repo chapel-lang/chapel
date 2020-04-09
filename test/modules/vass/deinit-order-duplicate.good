@@ -1,0 +1,2 @@
+deinit-order-duplicate.chpl:3: error: an additional module deinit() function is not allowed
+deinit-order-duplicate.chpl:2: note: the first deinit() function is declared here

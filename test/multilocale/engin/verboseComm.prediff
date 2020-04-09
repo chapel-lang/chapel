@@ -1,0 +1,4 @@
+#! /usr/bin/env bash
+
+# Sort output; multilocale stdout/stderr isn't deterministic.
+cat $2 | sed 's/commid [0-9]*/commid #/' | sort > $2.prediff.tmp && mv $2.prediff.tmp $2

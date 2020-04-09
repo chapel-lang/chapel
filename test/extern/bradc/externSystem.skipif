@@ -1,0 +1,4 @@
+# This test fails for GASNet fast + fifo
+# Generally the Spawn module should be used instead
+# Some registered heaps configurations will fail
+CHPL_COMM!=none

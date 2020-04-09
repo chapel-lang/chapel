@@ -1,0 +1,17 @@
+Initialize 2-D SW matrix, set all locations to empty
+
+Set upper and left boundary rows to full
+
+Loop over ant-diagonals, starting upper left-hand (NE) corner
+
+   Loop over length of anti-diagonal
+
+      Read {N, E, NE} neighbors, only if full
+
+      Calculate Smith-Waterman maximum
+
+      Store S-W maximum, setting location to full
+
+   End loop
+
+End loop

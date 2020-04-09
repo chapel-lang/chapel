@@ -1,0 +1,7 @@
+# Floating point precision variations in some configs cause binary mismatch
+#
+# See JIRA 244 for more info: https://chapel.atlassian.net/browse/CHAPEL-244
+
+COMPOPTS <= --fast
+CHPL_TARGET_PLATFORM <= 32
+CHPL_TARGET_COMPILER <= pgi

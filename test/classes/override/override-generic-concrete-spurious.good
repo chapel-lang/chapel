@@ -1,0 +1,1 @@
+override-generic-concrete-spurious.chpl:13: error: D(int(64)).foo override keyword present but no superclass method matches signature to override

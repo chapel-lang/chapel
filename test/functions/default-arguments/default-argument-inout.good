@@ -1,0 +1,1 @@
+default-argument-ref.chpl:1: inout argument 'x' may not have a default value

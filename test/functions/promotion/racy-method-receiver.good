@@ -1,0 +1,2 @@
+racy-method-receiver.chpl:28: error: Racy promotion of scalar method receiver
+racy-method-receiver.chpl:58: error: Racy promotion of scalar method receiver

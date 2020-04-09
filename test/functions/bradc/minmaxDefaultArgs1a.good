@@ -1,0 +1,5 @@
+minmaxDefaultArgs1a.chpl:1: In function 'foo':
+minmaxDefaultArgs1a.chpl:2: error: 'min' used before defined
+minmaxDefaultArgs1a.chpl:2: note: defined here
+minmaxDefaultArgs1a.chpl:3: error: 'max' used before defined
+minmaxDefaultArgs1a.chpl:3: note: defined here

@@ -1,0 +1,15 @@
+feature request: combined div&mod operator
+
+Operator: /%
+Semantics: a /% b is the tuple (a/b, a%b).
+Defined for the types of a and b for which a/b and a%b are defined.
+
+Motivation 1: make Chapel cooler.
+
+Motivation 2: faster than doing the two operations independently,
+when both division and modulus are needed.
+
+("Faster" requires, of course, that the hardware supports it and
+the C compiler can take advantage of it on the given platform.
+Or, if div and mod are implemented as library calls, that there
+be a div&mod library call. But Motivation 1 still remains there. :)

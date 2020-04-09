@@ -1,0 +1,5 @@
+test_slice_stride3_auto.chpl:15: syntax error: near '=>'
+test_slice_stride3_auto.chpl:17: syntax error: near '=>'
+test_slice_stride3_auto.chpl:19: syntax error: near '=>'
+test_slice_stride3_auto.chpl:21: syntax error: near '=>'
+test_slice_stride3_auto.chpl:23: syntax error: near '=>'

@@ -1,0 +1,4 @@
+test_permuteMatrix: PASSED
+test_panelSolve: 1000 PASSED, 0 FAILED
+test_updateBlockRow: 100 PASSED, 0 FAILED
+test_LUFactorize: 1000 PASSED, 0 FAILED

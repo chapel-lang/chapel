@@ -1,0 +1,2 @@
+useNamingConflict.chpl:2: error: symbol foo is multiply defined
+useNamingConflict.chpl:6: note: also defined here

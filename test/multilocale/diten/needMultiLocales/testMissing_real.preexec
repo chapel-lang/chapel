@@ -1,0 +1,3 @@
+#!/bin/sh
+mv b.out $1
+

@@ -1,0 +1,3 @@
+uncaught StringError: Test
+  try-expr.chpl:9: thrown here
+  try-expr.chpl:33: uncaught here

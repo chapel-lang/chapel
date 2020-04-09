@@ -1,0 +1,1 @@
+test_function_noparens_error.chpl:5: error: illegal use of function that does not return a value: 'foo'

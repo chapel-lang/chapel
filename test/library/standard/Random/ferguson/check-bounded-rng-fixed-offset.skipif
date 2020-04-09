@@ -1,0 +1,2 @@
+# For valgrind, instead of this test
+CHPL_TEST_VGRND_EXE == on

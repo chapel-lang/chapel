@@ -1,0 +1,7 @@
+--static
+--dynamic --static
+--static --dynamic --static
+--dynamic
+--static --dynamic
+# dummy flag to test the default
+--fast

@@ -1,0 +1,6 @@
+Parallel array reduce (int(64)) : SUCCESS
+Parallel domain reduce (int(64)) : SUCCESS
+Parallel array reduce (uint(64)) : SUCCESS
+Parallel domain reduce (uint(64)) : SUCCESS
+Parallel array reduce (real(32)) : SUCCESS
+Parallel domain reduce (real(32)) : SUCCESS

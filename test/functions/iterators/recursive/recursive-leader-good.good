@@ -1,0 +1,17 @@
+asdf ldr/sa firstTime {
+asdf ldr/sa start
+asdf follower 666
+jjj follower 666
+  asdf 1w: (777, 223)
+asdf ldr/sa finish
+asdf ldr/sa start
+asdf follower 666
+jjj follower 666
+  asdf 1y: (777, 223)
+asdf follower 1000
+777
+asdf ldr/sa finish
+  asdf 1z: 661
+asdf follower 661
+777
+asdf ldr/sa firstTime }

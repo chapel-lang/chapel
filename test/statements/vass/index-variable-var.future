@@ -1,0 +1,39 @@
+Feature request: allow an index variable in a loop over a non-'ref' iterator to be mutable.
+
+For example, using a 'var' keyword in the loop header.
+Assuming myIter() is a non-var iterator:
+
+  for     myVar in myIter() do myVar += 1; // error: myVar is 'const'
+
+  for var myVar in myIter() do myVar += 1; // OK!
+
+Brad believes that traditionally the reason we have not permitted this
+(and I would note it in the future) is so that people don't
+incorrectly believe that they can modify a loop's index variable in
+order to skip iterations. For example, a C programmer may think that:
+
+  for i in 1..n do
+  i += 1;
+
+would result in only looping over every other iteration from 1..n. By
+making i const, we avoid this confusion. If i were assignable, the
+user would be more likely to be confused.
+So this can be considered a semantic future [whether loop index variables
+should be assignable by default?].
+
+If we allow the 'var' annotation, we may as well allow the 'const'
+annotation with the opposite effect: in a loop with a 'ref' (formerly 'var')
+iterator, disallow modification through the loop variable. E.g.:
+
+  var A: [1..2] int;
+  for const a in A do
+    a += 1; // illegal
+
+The following tests were assuming that the index variable is mutable,
+and at present contain a workaround, which is an explicit variable
+declaration assigned from an index variable first thing in the loop:
+
+  test/regexp/ferguson/rechan.chpl
+  test/release/examples/benchmarks/miniMD/explicit/helpers/forces.chpl
+  test/release/examples/benchmarks/miniMD/helpers/forces.chpl
+  test/studies/glob/Glob.chpl

@@ -1,0 +1,24 @@
+{
+   getpwuid-is-a-pain
+   Memcheck:Param
+   socketcall.send(msg)
+   fun:send
+   fun:__nscd_get_map_ref
+   fun:nscd_getpw_r
+   fun:__nscd_getpwuid_r
+   fun:getpwuid_r@@GLIBC_2.1.2
+   fun:getpwuid
+}
+
+{
+   getpwuid-is-a-pain2
+   Memcheck:Param
+   socketcall.sendto(msg)
+   fun:send
+   fun:get_mapping
+   fun:__nscd_get_map_ref
+   fun:nscd_getpw_r
+   fun:__nscd_getpwuid_r
+   fun:getpwuid_r@@GLIBC_2.2.5
+   fun:getpwuid
+}

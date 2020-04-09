@@ -1,0 +1,14 @@
+feature request: 'for' expression with a param index variable to create a tuple
+
+Also:
+
+* Allow tuples to be params, when each component is a param.
+
+* Allow a param 'for' expression to have a filtering predicate,
+just like a regular 'for' expression. The predicate must be
+a param. It filters out tuple components, just like in
+regular 'for' expressions.
+
+Motivation: really need this for rank-independent code,
+when mapping one expression to another expression for each dimension
+and the result type [of this mapping] is hard to write out in advance.

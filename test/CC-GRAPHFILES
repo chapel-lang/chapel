@@ -1,0 +1,32 @@
+# suite: Multilocale Comm Count Microbenchmarks
+performance/ferguson/remote-array-copy.graph
+performance/ferguson/remote-array-read-access.graph
+performance/ferguson/remote-array-read.graph
+performance/ferguson/remote-array-write-access.graph
+performance/ferguson/remote-array-write.graph
+performance/ferguson/remote-class-read.graph
+performance/ferguson/remote-class-write.graph
+performance/ferguson/remote-record-read-copy.graph
+performance/ferguson/remote-record-read.graph
+performance/ferguson/remote-record-write-copy.graph
+performance/ferguson/remote-record-write.graph
+performance/ferguson/remote-record-read-licm.graph
+performance/ferguson/remote-tuple-read-copy.graph
+performance/ferguson/remote-tuple-read.graph
+performance/ferguson/remote-tuple-read-small-copy.graph
+performance/ferguson/remote-tuple-read-small.graph
+performance/ferguson/remote-tuple-write-copy.graph
+performance/ferguson/remote-tuple-write.graph
+performance/ferguson/remote-tuple-write-small-copy.graph
+performance/ferguson/remote-tuple-write-small.graph
+performance/ferguson/remote-two-array-read.graph
+performance/ferguson/array-assign-get.graph
+# suite: BulkTransfer
+optimizations/bulkcomm/block/exchange.graph
+# suite: Domain/Array creation
+performance/array/distCreate-arrays-deinit.cc-perf.graph
+performance/array/distCreate-arrays-init.cc-perf.graph
+performance/array/distCreate-domains-deinit.cc-perf.graph
+performance/array/distCreate-domains-init.cc-perf.graph
+# suite: Sort
+library/packages/Sort/performance/dist-performance.cc.graph

@@ -1,0 +1,1 @@
+-Llib/ -lexportFuncWithArrayArg `$CHPL_HOME/util/config/compileline --libraries` -lexportFuncWithArrayArg

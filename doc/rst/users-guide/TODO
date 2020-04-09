@@ -1,0 +1,94 @@
+outline
+=======
+
+base
+----
+basicTypesValues
+...
+const/param
+type
+configs
+refs
+...
+casts       // is this the right place?
+coercions   // or merge this into casts and call it "type conversions"?
+...
+operators
+ranges **
+basicArrays **
+domains **
+compoundStatements
+...
+forloops
+zip
+...
+enums
+ - config enums -- can name or drop enum type name on executable command line
+procedures **
+records
+classes **
+...
+modules? // make sure to mention ambiguous config overrides
+...
+iterator functions
+these iterators
+...
+
+taskpar
+-------
+begin
+cobegin
+coforall
+task intents
+
+datapar
+-------
+forall loops
+forall intents
+forall expressions (or swap with the previous?)
+promotion
+
+
+TODOs
+=====
+
+Use before def
+--------------
+for: operators (+=)
+loop: simple arrays
+zip: tuples, array literals, unbounded ranges
+promotion: forall intents, forall expressions
+
+forward ref to unwritten section
+--------------------------------
+* param functions referred to in constParam.rst
+ 
+ASAP
+----
+* fix poorly formatted code in locale type vars section.
+* point spec to somewhere within the docs directory, version independent.
+
+Whenever
+--------
+* In casting section, maybe interpret 'var x: int(8) = 2;' vs 'var x =
+  2:int(8);' and show how the second avoids a redundant cast? 'var y:
+  int(8) = myInt: int(8);'
+
+Later
+-----
+* When on-clauses section is written, link into first locale section
+* Four major sections
+  - better landing page or way to link to them other than anchors?
+  - do something smarter/cooler with the sidebar
+
+Second pass
+-----------
+* Replace 'layer' with something else for runtime options?  Or embrace
+  layer?
+
+Future
+------
+* As numa locale model comes on line introduce hierarchical locales
+  into the locality section (currently, the localesInChapel.rst file
+  brushes them off).  And/or as we have better written material
+  describing hierarchical locales, point to that.

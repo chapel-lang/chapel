@@ -1,0 +1,1 @@
+multilineStringLineNumber.chpl:8: error: Cannot assign to int(64) from real(64)

@@ -1,0 +1,3 @@
+#!/bin/sh
+sort -n $1.exec.out.tmp > $1.prediff.tmp
+mv $1.prediff.tmp $1.exec.out.tmp

@@ -1,0 +1,24 @@
+# There's no point in testing this if we don't have LLVM...
+CHPL_LLVM == none
+
+# Not sure why, because interop/C/llvm/makefiles has it.
+CHPL_COMM != none
+
+#
+# If your shared library has a text relocation, it means that the library
+# isn't position independent code (PIC).
+#
+# An older dynamic linker might outright refuse to load a shared library with
+# text relocations present.
+#
+# On many modern systems, the dynamic linker is able to load a shared library
+# that isn't PIC, but it is forced to load a separate copy of the library's
+# text segment into the address space of each process that needs to use
+# the library.
+#
+# Thus, without PIC one of the main benefits of using a shared library (which
+# is that each process can share a _single_ copy of the library's text
+# segment) is lost.
+#
+CHPL_LIB_PIC != pic
+

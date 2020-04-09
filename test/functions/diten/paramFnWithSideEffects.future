@@ -1,0 +1,8 @@
+error message: side effect checking on parameter functions
+
+Was:
+
+bug: param function with non-parameter evaluated statements is allowed
+
+Calls to non-param functions within a param function are discarded without
+an error.

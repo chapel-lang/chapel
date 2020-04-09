@@ -1,0 +1,2 @@
+shortMethodError.chpl:10: error: unresolved call 'D.shortMethod'
+shortMethodError.chpl:2: note: candidates are: C.shortMethod

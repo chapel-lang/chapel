@@ -1,0 +1,4 @@
+in takeOwnership with arg={x = 1}
+in takeOwnershipAgain with arg={x = 1}
+Destroying C x=1
+in takeOwnership, now arg=nil

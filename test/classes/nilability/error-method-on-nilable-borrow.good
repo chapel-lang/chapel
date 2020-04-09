@@ -1,0 +1,7 @@
+error-method-on-nilable-borrow.chpl:13: warning: borrowed MyClass?
+error-method-on-nilable-borrow.chpl:5: In function 'test':
+error-method-on-nilable-borrow.chpl:10: error: unresolved call 'borrowed MyClass?.mymethod()'
+error-method-on-nilable-borrow.chpl:3: note: this candidate did not match: MyClass.mymethod()
+error-method-on-nilable-borrow.chpl:10: note: because method call receiver with type borrowed MyClass?
+error-method-on-nilable-borrow.chpl:3: note: is passed to formal 'this: borrowed MyClass'
+error-method-on-nilable-borrow.chpl:10: note: try to apply the postfix ! operator to method call receiver

@@ -1,0 +1,18 @@
+ NAS Parallel Benchmarks 2.4  -- FT Benchmark
+ Size       :          262144
+ Iterations :               6
+T = 1    Checksum = 554.609 484.536
+T = 2    Checksum = 554.639 486.53
+T = 3    Checksum = 554.615 488.391
+T = 4    Checksum = 554.542 490.127
+T = 5    Checksum = 554.426 491.748
+T = 6    Checksum = 554.268 493.26
+
+Result verification successful.
+
+ FT Benchmark Completed.
+ Class           =                        S
+ Size            =                   262144
+ Iterations      =                        6
+ Operation type  =           floating point
+ Verification    =               SUCCESSFUL

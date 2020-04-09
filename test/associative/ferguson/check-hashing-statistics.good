@@ -1,0 +1,36 @@
+Using SHA256, modulus
+                hash top 22 bits  avg=       0
+             hash bottom 22 bits  avg=       0
+                           Pairs  avg=     512
+                         Triples  avg=       8
+
+Using SHA256, shift top down
+                hash top 22 bits  avg=       0
+             hash bottom 22 bits  avg=       0
+                           Pairs  avg=     512
+                         Triples  avg=       8
+
+Using SHA256 seeds, defaultHash, defaultHashCombine, modulus
+                hash top 22 bits  avg=       0
+             hash bottom 22 bits  avg=       0
+                           Pairs  avg=     512
+                         Triples  avg=       8
+
+Using SHA256 seeds, defaultHash, defaultHashCombine, shift top down
+                hash top 22 bits  avg=       0
+             hash bottom 22 bits  avg=       0
+                           Pairs  avg=     512
+                         Triples  avg=       8
+
+Using PCG seeds, defaultHash, defaultHashCombine, modulus
+                hash top 22 bits  avg=       0
+             hash bottom 22 bits  avg=       0
+                           Pairs  avg=     512
+                         Triples  avg=       8
+
+Using PCG seeds, defaultHash, defaultHashCombine, shift top down
+                hash top 22 bits  avg=       0
+             hash bottom 22 bits  avg=       0
+                           Pairs  avg=     512
+                         Triples  avg=       8
+

@@ -1,0 +1,5 @@
+perfkeys: parallel=false-parSafe=false-time=, parallel=false-parSafe=true-time=, parallel=true-parSafe=true-time=
+graphkeys: serial (not parSafe), serial (parSafe), parallel (parSafe)
+files: rng-get-next-perf.dat, rng-get-next-perf.dat, rng-get-next-perf.dat
+ylabel: Time(seconds)
+graphtitle: RandomSteam getNext

@@ -1,0 +1,2 @@
+reuse-field-accessor.chpl:11: In initializer:
+reuse-field-accessor.chpl:13: error: cannot call field-accessor method "x" before this.complete()

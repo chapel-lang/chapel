@@ -1,0 +1,3 @@
+In foo, argument baz is 5.7
+In foo().socket(), local var socket is: 3.4
+Success!

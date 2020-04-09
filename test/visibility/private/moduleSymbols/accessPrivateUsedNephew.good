@@ -1,0 +1,2 @@
+accessPrivateUsedNephew.chpl:17: In function 'main':
+accessPrivateUsedNephew.chpl:18: error: Cannot access 'child', 'child' is private to 'parent'

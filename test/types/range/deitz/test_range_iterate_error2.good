@@ -1,0 +1,5 @@
+(0, 1)
+(0, 2)
+(0, 3)
+(0, 4)
+test_range_iterate_error2.chpl:1: error: zippered iterations have non-equal lengths

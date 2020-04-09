@@ -1,0 +1,2 @@
+-sdisableBlockDistBulkTransfer -suseBulkTransferDist
+-sdisableStencilDistBulkTransfer -suseBulkTransferDist -sdistType=DistType.stencil

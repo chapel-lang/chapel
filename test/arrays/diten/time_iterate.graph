@@ -1,0 +1,5 @@
+perfkeys: chpl wrote 100000000 elements 100 times in, C    wrote 100000000 elements 100 times in
+files: time_iterate.dat, time_iterate.dat
+ylabel: Time (seconds)
+graphname: time_iterate
+graphtitle: c vs chpl serial accesses

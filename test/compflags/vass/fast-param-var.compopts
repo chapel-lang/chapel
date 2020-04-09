@@ -1,0 +1,2 @@
+--fast # fast-param-var.fast.good
+--no-fast # fast-param-var.no-fast.good

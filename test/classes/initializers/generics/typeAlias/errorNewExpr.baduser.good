@@ -1,0 +1,6 @@
+errorNewExpr.chpl:18: In function 'main':
+errorNewExpr.chpl:28: error: Unable to resolve new-expression with type alias 'BadUserInit(int(64))'
+errorNewExpr.chpl:28: error: unresolved call 'BadUserInit.init(T=type int(64), 5)'
+errorNewExpr.chpl:12: note: this candidate did not match: BadUserInit.init(x: ?T)
+errorNewExpr.chpl:28: note: because call uses named argument T
+errorNewExpr.chpl:12: note: but function contains no formal named T

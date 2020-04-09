@@ -1,0 +1,2 @@
+# This test unlinks an executable (see unlink-exe-cygwin.sh)
+CHPL_TARGET_PLATFORM == cygwin32

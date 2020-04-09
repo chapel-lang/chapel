@@ -1,0 +1,7 @@
+error message: lifetime checking of loop expression giving borrows
+
+See also #10879 which considers whether or not this should be a valid
+program.
+
+This program shows a lifetime error in an internal module.  As long as
+this is an error, this pattern should have a better error message.

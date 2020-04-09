@@ -1,0 +1,6 @@
+unimplemented feature: allow private enum declarations
+
+Right now, public and private can't be applied to enum declarations.  We would
+like to be able to do that, and catch any outside use of publicly visible
+instances of the private enum type.  When we can apply private to enum
+declarations, please add additional tests to be certain we catch those cases.

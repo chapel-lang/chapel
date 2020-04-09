@@ -1,0 +1,28 @@
+This program is running on 1 locales
+It began running on locale #0
+
+hello locale 0
+
+MyLocaleArray[1] is really locale 0
+MyLocaleArray[2] is really locale 0
+MyLocaleArray[3] is really locale 0
+MyLocaleArray[4] is really locale 0
+MyLocaleArray[5] is really locale 0
+MyLocaleArray[6] is really locale 0
+MyLocaleArray[7] is really locale 0
+MyLocaleArray[8] is really locale 0
+MyLocaleArray[9] is really locale 0
+MyLocaleArray[10] is really locale 0
+
+
+From locale 0, x is: 2 and y is: 3
+From locale 0, x is: 2 and y is: 3
+
+x is stored on locale 0, while y lives on 0
+
+Using a data-driven on-clause, I'm now executing on locale 0
+
+at start of 'on', myData is on locale 0
+at end of 'on', myData is on locale 0
+after 'on', myData is on locale 0
+Using 'on myData', I'm now executing on locale 0

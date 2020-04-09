@@ -1,0 +1,13 @@
+#
+# The output of this test is different based on the number of
+# sublocales. We currently calculate our number of sublocales using
+# the number of Qthreads shepherds. Qthreads automatically picks
+# it's number of sublocales based on the number of sockets/other hw
+# information unless it is explicitly set so this forces two
+# sublocales even on machines that really only have one.
+#
+# When we change how we set the number of sublocals, this will have
+# to be changed as well.
+#
+
+QT_NUM_SHEPHERDS=2

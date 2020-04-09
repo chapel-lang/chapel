@@ -1,0 +1,4 @@
+bug: Cannot count off members in a maximal unsigned range.
+
+This is probably related to the fact that the count of elements in a maximal
+range exceeds the representational capacity of that range's index type.

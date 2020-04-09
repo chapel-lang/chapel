@@ -1,0 +1,4 @@
+--op=0    # bitshiftByNegative.0.good
+--op=1    # bitshiftByNegative.1.good
+--op=2    # bitshiftByNegative.2.good
+--op=3    # bitshiftByNegative.3.good

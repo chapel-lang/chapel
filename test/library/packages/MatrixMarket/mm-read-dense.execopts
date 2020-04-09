@@ -1,0 +1,4 @@
+--fname=dense-3x3.mtx # dense-3x3.good
+--fname=dense-4x3.mtx # dense-4x3.good
+--fname=sparse-4x3.mtx # sparse-4x3.good
+--fname=sparse-5x5.mtx # sparse-5x5.good

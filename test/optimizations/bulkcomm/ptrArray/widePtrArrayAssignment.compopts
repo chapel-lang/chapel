@@ -1,0 +1,4 @@
+-smode=0 -suseBulkPtrTransfer=true
+-smode=1 -suseBulkPtrTransfer=true
+-smode=2 -suseBulkPtrTransfer=true
+-smode=3 -suseBulkPtrTransfer=true

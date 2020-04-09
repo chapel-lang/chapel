@@ -1,0 +1,6 @@
+-s arrayAsVecGrowthFactor=1.5                                           # 1.5-small-grow
+-s arrayAsVecGrowthFactor=1.5 -s n=10000 -s iters=5                     # 1.5-big-grow
+-s arrayAsVecGrowthFactor=2.0                                           # 2.0-small-grow
+-s arrayAsVecGrowthFactor=2.0 -s n=10000 -s iters=5                     # 2.0-big-grow
+-s arrayAsVecGrowthFactor=1.5 -s test=bulkGrow                          # 2.0-small-bulkGrow
+-s arrayAsVecGrowthFactor=1.5 -s n=10000 -s iters=50 -s test=bulkGrow   # 2.0-big-bulkGrow

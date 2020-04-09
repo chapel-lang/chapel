@@ -1,0 +1,12 @@
+The original code Aniruddha and I worked on was called fock-1.chpl.
+I've since renamed that to fock-orig.chpl, but variations on that
+original code still exist with the fock-1 name.  To that end:
+
+fock-orig.chpl : the original code, renamed from fock-1.chpl May 12, 2007
+fock-1-begin.chpl : another of Aniruddha's original codes?
+fock-1-begin-blc.chpl : my variation on the above
+
+variations sent to us on May 23rd for use with MS3
+fock-0.chpl: a language-directed implementation
+fock-1.chpl: a producer-consumer implementation
+fock-2.chpl: a shared task-counter based implementation

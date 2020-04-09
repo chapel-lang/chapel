@@ -1,0 +1,9 @@
+command regex aid    's/(.*)/expr -- aid(%1)/'
+command regex view   's/(.*)/expr -- print_view(%1)/'
+command regex iview  's/(.*)/expr -- iprint_view(%1)/'
+command regex nview  's/(.*)/expr -- nprint_view(%1)/'
+command regex lview  's/(.*)/expr -- list_view(%1)/'
+command regex flags  's/(.*)/expr -- viewFlags(%1)/'
+command regex loc    's/(.*)/expr -- ::stringLoc(%1)/'
+
+breakpoint set -n gdbShouldBreakHere

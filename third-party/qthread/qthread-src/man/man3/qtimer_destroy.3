@@ -1,0 +1,22 @@
+.TH qtimer_destroy 3 "JUNE 2010" libqthread "libqthread"
+.SH NAME
+.B qtimer_destroy
+\- deallocate a qtimer
+.SH SYNOPSIS
+.B #include <qthread/qtimer.h>
+
+.I void
+.br
+.B qtimer_destroy
+.RI "(qtimer_t " timer );
+.SH DESCRIPTION
+This function deallocates the
+.I timer
+object; it must have been allocated with the
+.BR qtimer_create ()
+function.
+.SH SEE ALSO
+.BR qtimer_create (3),
+.BR qtimer_start (3),
+.BR qtimer_stop (3),
+.BR qtimer_secs (3)

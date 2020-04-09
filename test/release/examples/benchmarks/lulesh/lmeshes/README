@@ -1,0 +1,27 @@
+===================
+LULESH input meshes
+===================
+
+This directory contains input meshes for the Chapel version of LULESH,
+provided by Jeff Keasler at LLNL.
+
+Files:
+------
+* sedov<n>cube.lmesh : a structured n x n x n cube
+* sedov<n>oct.lmesh : an unstructured version of the same cube
+
+
+Format:
+-------
+#elements #nodes (ints)
+per-node x y z location coordinates (reals)
+per-element list of adjacent node indices (ints)
+per-element list of xi-, xi+, eta-, eta+, zeta-, zeta+ values (ints)
+#x-symmetric nodes (int)
+x-symmetric node index list (ints)
+#y-symmetric nodes (int)
+y-symmetric node index list (ints)
+#z-symmetric nodes (int)
+z-symmetric node index list (ints)
+#free surface nodes (int)
+free surface node index list (ints)

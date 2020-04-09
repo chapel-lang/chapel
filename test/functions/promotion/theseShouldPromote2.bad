@@ -1,0 +1,1 @@
+theseShouldPromote2.chpl:24: error: unresolved call 'foo(borrowed C)'

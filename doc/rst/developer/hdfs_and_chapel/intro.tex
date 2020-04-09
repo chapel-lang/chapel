@@ -1,0 +1,33 @@
+
+\section{Introduction}\label{s:intro}
+Chapel is an emerging parallel language being developed by Hewlett Packard
+Enterprise (formerly by Cray Inc.) with
+the goal of improving programmer productivity on large-scale systems as
+well as on the desktop. It has been developed with the goal being to a
+large extent the  standard HPCesque battery of programs which in the large
+majority of cases do not involve heavy string based processing, and up
+until recently this held true with the vast majority of HPC applications.
+
+However, with the event of big data, and especially looking at iterative
+programs we see that in many cases these programs can
+benefit from an in memory MapReduce as demonstrated in \cite{zaharia2010spark},
+in which the files data is read in and worked on the node that hosts that data 
+- retaining the data on that node until it is told that it is no longer needed - 
+and doing MapReduce operations using these nodes.
+
+We assert that Chapel could work quite well in this framework. In this
+document we explore how to go about adding MapReduce operations to Chapel as 
+well as how this might benefit the user not only in terms of speed, but also 
+in terms of user productivity.
+
+%We also explore another approach: a MapReduce-mapreduce type operation in which data
+%aggregation is done in the first MapReduce, at the end of which all the data that is
+%needed is mapped to different nodes locally in memory, at which point we can then run
+%a regular program in parallel over this data. This gives performance improvements not
+%only in iterative tasks, but also in tasks that require large amounts of contextual
+%information (since the reduce at the end of the first MapReduce can condense and
+%give us all the information that we need). Not only does this give us the opportunity to then
+%explore greater degrees of parallelism as well as faster communication between nodes,
+%but we can also utilize non-standard architectures (GPU, MIC) to our benefit. 
+%
+%\tz{think: supercomputer hooked up to a Hadoop cluster}

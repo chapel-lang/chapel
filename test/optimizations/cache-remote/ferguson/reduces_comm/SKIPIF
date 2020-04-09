@@ -1,0 +1,3 @@
+# currently --cache-remote only supported for gasnet,fifo
+CHPL_COMM!=gasnet
+CHPL_TASKS!=fifo

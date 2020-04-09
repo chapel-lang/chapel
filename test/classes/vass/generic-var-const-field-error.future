@@ -1,0 +1,5 @@
+feature request: a better error message (see .good)
+
+Currently the compiler does report an error (error: unresolved call 'C()')
+but it would be nice to explain to the user why it is unresolved.
+(This is minor.)

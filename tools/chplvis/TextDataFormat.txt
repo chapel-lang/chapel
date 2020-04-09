@@ -1,0 +1,92 @@
+This file documents the text data format of the VisualDebug.chpl output files.
+
+First line of every file is:
+
+  ChplVdebug: ver x.y nodes m nid n tid t seq s t1 t2 t3
+     x.y is the version number.   The current version in 1.2.
+     m is the total locale/node count. 
+     n is the current node id
+     t is the task id for this call to ChplVdebug.
+     s is a sequence number for this run which is the time
+        at the start of the call  (chpl_now_time()) (sec.usec format)
+        ALL files from a single run must have the same s number.
+     t1, t2 and t3 are times for reference, in order, (sec.usec format)
+       timeofday, user time from rusage, system time from rusage
+
+  In the following record definitions the following will stand
+  for a number in the line:
+     nid    - local node id (locale)
+     rid    - remote node id
+     tid    - task id
+     tv     - time of day value  (sec.usec format)
+     tu     - user time          (sec.usec format)
+     ts     - system time        (sec.usec format)
+     tnum   - tag number
+     commiD - unique ID per generated get/put, for mapping to generated code
+     lnum   - line number
+     fileno - index in the file name table
+     fid    - function id number
+
+Lines in the file:
+
+  Tablesize: size
+    On locale 0 only, size of the file name table
+
+  fname: fileno name
+    On locale 0 only, name of file in the file table at fileno
+
+  FIDNsize: size
+    On locale 0 only, size of the function name table.
+
+  FIDname: fid lnum fileno name
+    On locale 0 only, fid is function id, lnum and fileno
+    are location of function creation point?
+
+  CHPL_HOME: string
+  DIR: string
+    names of the directories needed to use the file names
+    without having chplvis needing to be run in the
+    source code diretory and with the same CHPL_HOME environment
+    variable.
+
+  tname: tnum tag_name
+    On locale 0 only, name of a new tag
+
+  End: tv tu ts nid tid
+    End collection of data, should be last line of file
+
+  VdbMark: tv nid tid
+    Mark a task as a VisualDebug task
+
+  Tag: tv tu ts nid tid tnum
+    Tag in the data
+
+  Pause:  tv tu ts nid tid tnum
+    Pause the collection of data, tag number is previous tag
+
+  task: tv nid tid parent_tid [OL] lnum fileno fid
+    [OL] - on of O or L, O for an "on task", L for a "local task"
+    Task creation, On tasks don't have valid lnum and fileno.
+    fid is the locale independent function identifier
+
+  Btask: tv nid tid
+    Task has begun execution
+
+  Etask: tv nid tid
+    Task has ended execution
+
+  nb_put: tv nid rid tid addr raddr elemsize length commID lnum fileno
+  nb_get: tv nid rid tid addr raddr elemsize length commID lnum fileno
+  put   : tv nid rid tid addr raddr elemsize length commID lnum fileno
+  get   : tv nid rid tid addr raddr elemsize length commID lnum fileno
+  st_put: tv nid rid tid addr raddr elemsize length commID lnum fileno
+  st_get: tv nid rid tid addr raddr elemsize length commID lnum fileno
+    communication.  Puts: data flow nid->rid, gets: data flow rid -> nid
+    nb is non-blocking, st is strided.
+
+  fork: tv nid rid subLoc fid argPtr argSize tid lnum fileno
+  fork_nb: tv nid rid subLoc fid argPtr argSize tid lnum fileno
+  f_fork:  tv nid rid subLoc fid argPtr argSize tid lnum fileno
+     fork a task on a remote locale.   nb is non-blocking, f_fork does
+     not start a remote task.  Data is sent from nid to rid.
+

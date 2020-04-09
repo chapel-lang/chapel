@@ -1,0 +1,10 @@
+README.codes
+============
+
+This is a brief description of the codes in this directory.
+
+ring.chpl : Communicate around a ring with blocking sends/receives.
+simple_mixed.chpl : Simple example of a mixed Chapel+MPI code.
+test_rank_locale_equal.chpl : Verify that CHPL_COMM_WORLD has the correct ordering.
+transpose.chpl : Do a distributed matrix transpose using AlltoAll and Chapel code.
+test_mpi.chpl : Exercise the C_API. There is a .good and a .prediff file for this.

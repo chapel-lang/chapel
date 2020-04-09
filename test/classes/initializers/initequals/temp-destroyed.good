@@ -1,0 +1,4 @@
+X.init: 5
+X.init=: 5
+destroy X: 5
+destroy X: 5

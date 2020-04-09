@@ -1,0 +1,2 @@
+# The deadcode removal optimization is not run when --baseline is specified.
+COMPOPTS <= --baseline

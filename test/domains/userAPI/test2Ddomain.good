@@ -1,0 +1,122 @@
+2D domain
+------------
+{1..5, 0..4}
+rank             = 2
+idxType          = int(64)
+stridable        = false
+size             = 25
+isEmpty()        = false
+low              = (1, 0)
+high             = (5, 4)
+stride           = (1, 1)
+alignment        = (1, 0)
+first            = (1, 0)
+last             = (5, 4)
+alignedLow       = (1, 0)
+alignedHigh      = (5, 4)
+dims()           = (1..5, 0..4)
+dim(0)           = 1..5
+dim(1)           = 0..4
+contains((3, 3))   = true
+contains((0, 3))   = false
+contains((3, 5))   = false
+indexOrder((3, 3)) = 13
+shape            = (5, 5)
+position((3, 3)) = (2, 3)
+expand(1)        = {0..6, -1..5}
+expand(1,0)      = {0..6, 0..4}
+expand((0,2))    = {1..5, -2..6}
+exterior(1)      = {6..6, 5..5}
+exterior(1,0)    = {6..6, 0..4}
+exterior((0,2))  = {1..5, 5..6}
+interior(1)      = {5..5, 4..4}
+interior(1,0)    = {5..5, 0..4}
+interior((0,2)   = {1..5, 3..4}
+translate(1)     = {2..6, 1..5}
+translate(1,0)   = {2..6, 0..4}
+translate((0,2)) = {1..5, 2..6}
+serial iteration = 
+(1, 0) (1, 1) (1, 2) (1, 3) (1, 4) (2, 0) (2, 1) (2, 2) (2, 3) (2, 4) (3, 0) (3, 1) (3, 2) (3, 3) (3, 4) (4, 0) (4, 1) (4, 2) (4, 3) (4, 4) (5, 0) (5, 1) (5, 2) (5, 3) (5, 4) 
+D[{0..6, 3..5}] = {1..5, 3..4}
+D[{0..6, 3..5} (as ranges)] = {1..5, 3..4}
+D.localSlice({0..6, 3..5}) = {1..5, 3..4}
+D.targetLocales() = LOCALE0
+D.hasSingleLocalSubdomain() = true
+D.localSubdomain() = {1..5, 0..4}
+D#(2,2) = {1..2, 0..1}
+D == intDom = false
+D(intDom) == intDom(D) = true
+D != intDom = true
+D(intDom) != intDom(D) = false
+Copying...
+{1..5, 0..4}
+Clearing...
+{1..0, 1..0}
+size             = 0
+isEmpty()        = true
+low              = (1, 1)
+high             = (0, 0)
+stride           = (1, 1)
+alignment        = (1, 1)
+
+strided 2D domain
+------------
+{1..5 by 2, 0..4 by 2 align 1}
+rank             = 2
+idxType          = int(64)
+stridable        = true
+size             = 6
+isEmpty()        = false
+low              = (1, 0)
+high             = (5, 4)
+stride           = (2, 2)
+alignment        = (1, 1)
+first            = (1, 1)
+last             = (5, 3)
+alignedLow       = (1, 1)
+alignedHigh      = (5, 3)
+dims()           = (1..5 by 2, 0..4 by 2 align 1)
+dim(0)           = 1..5 by 2
+dim(1)           = 0..4 by 2 align 1
+contains((3, 3))   = true
+contains((0, 3))   = false
+contains((3, 5))   = false
+indexOrder((3, 3)) = 3
+shape            = (3, 2)
+position((3, 3)) = (1, 1)
+expand(1)        = {0..6 by 2 align 1, -1..5 by 2}
+expand(1,0)      = {0..6 by 2 align 1, 0..4 by 2 align 1}
+expand((0,2))    = {1..5 by 2, -2..6 by 2 align 1}
+exterior(1)      = {6..6 by 2 align 1, 5..5 by 2}
+exterior(1,0)    = {6..6 by 2 align 1, 0..4 by 2 align 1}
+exterior((0,2))  = {1..5 by 2, 5..6 by 2}
+interior(1)      = {5..5 by 2, 4..4 by 2 align 1}
+interior(1,0)    = {5..5 by 2, 0..4 by 2 align 1}
+interior((0,2)   = {1..5 by 2, 3..4 by 2}
+translate(1)     = {2..6 by 2, 1..5 by 2 align 0}
+translate(1,0)   = {2..6 by 2, 0..4 by 2 align 1}
+translate((0,2)) = {1..5 by 2, 2..6 by 2 align 1}
+serial iteration = 
+(1, 1) (1, 3) (3, 1) (3, 3) (5, 1) (5, 3) 
+D[{0..6, 3..5}] = {1..5 by 2, 3..4 by 2}
+D[{0..6, 3..5} (as ranges)] = {1..5 by 2, 3..4 by 2}
+D.localSlice({0..6, 3..5}) = {1..5 by 2, 3..4 by 2}
+D.targetLocales() = LOCALE0
+D.hasSingleLocalSubdomain() = true
+D.localSubdomain() = {1..5 by 2, 0..4 by 2 align 1}
+D#(2,2) = {1..4 by 2, 0..3 by 2 align 1}
+D == intDom = false
+D(intDom) == intDom(D) = true
+D != intDom = true
+D(intDom) != intDom(D) = false
+Copying...
+{1..5 by 2, 0..4 by 2 align 1}
+Clearing...
+{1..0, 1..0}
+size             = 0
+isEmpty()        = true
+low              = (1, 1)
+high             = (0, 0)
+stride           = (1, 1)
+alignment        = (0, 0)
+

@@ -1,0 +1,80 @@
+
+== Near-term projects ==
+First categorized by difficulty and then by priority.
+
+=== Easy things ===
+- (done) Resolve zipper-vs-tensor ()[] mess. Deprecated tensor-promotion.
+- Clean up constructors/destructors so I can write reference-counted data types
+- Change anonymous domain syntax from [ ] to { } (I believe there's enough consensus to
+  just do it, but precedents are 'syntax' email 12/13/2010 and dev summit 2/22.)
+- Make anything responding to 'get the size' have a .length method;
+  in addition we can have numElements/numIndices for clarity. See 'syntax' email 12/13/2010.
+  Tuples right now have a .size - that should be a .length.
+- Copying arguments into begin (email "proposal: coping in begin" 5/25/2011)
+- Make reasonable syntax for overloading the = operator and/or copy constructors
+  and also for user-defined cast overloads.
+  (why do I need to return and set the value? Can't we just
+   set a value or just return?)
+- Strings stop leaking memory (if I could write reference-counted types
+  myself, I could tackle this)
+- Array literals in the language, and possibly cleaner ways of declaring
+  distributed arrays. See email 'syntax' 12/13/2010. This was also discussed
+  in dev summit 2/22/2011.
+- Other simple syntax changes (e.g. make methods not meant to be called
+  directly have names like __name__ to make that clear, make constructors
+  called __init__ and destructors called __destroy__).  See email 'syntax' 12/13/2010.
+- Consider changing 'sync' statement to something else; it's confusingly
+  linked with 'sync var' declarations. From email 'syntax' 12/13/2010 and 2/22 dev summit.
+- Differentiate better between domain(1) and domain(int); this confused some
+  people. At least modify examples to be clearer (e.g. domain(rank=1)
+  vs domain(int). Basically the current syntax is ambiguous in spirit -
+  is domain(int) an associative domain from int, or a 1-d integer domain?
+  What about domain(3*int) - should that be associative domain from
+  3-tuples of int, or 3-dimensional integer domain? I recommended 
+  using e.g. arith(int,int) for an arithmetic domain and assoc(int,int) for
+  an associative domain. All of these could be type functions wrapping
+  existing domain() declarations, for example; or the domain type could change.
+  It does make sense for domains to in some sense share a type.
+- Automatically unroll forall loops in order to emphasize to lower-level
+  code generation that parallelism is possible. See "2 easy optimizations" 7/28/2011.
+- Remove performance penalties from over-enthusiastic expression of parallelism
+  (ie, inner forall loops only parallelize if not busy enough/not already parallel)
+  See "2 easy optimizations" 7/28/2011
+- Allow Chapel programmers to override low-level code generation for a block of
+  iteration space - for example, they might know how to write the efficient
+  assembly for running 4 loop bodies at once, but that's awkward to use by
+  programming directly (instead of e.g. ints, all loops would operate on
+  blocks of 4 ints, and edge cases have to be handled manually). The goal here
+  would be to allow the (slower) general-purpose code be written in Chapel,
+  but to allow a faster version for some number of loop iterations be written
+  in assembly and be able to 'drop in' easily. See "SIMD vectorization" sent to
+  chapport 4/25/2011.
+
+=== Harder things ===
+- Ability to write a merge pass using iterators
+  (ie iterator variables/argumenst, iterator.next(), iterator.hasNext())
+- Documentation strategy & system
+- Style guide (absent guidance I made one up 'style' 5/12/2011),
+  and fix up standard library to adhere to it where possible
+  (Search.chpl and Sort.chpl were main offenders)
+- Add a more reasonable set of string functions, including getting a
+  character, enumerating the characters, regular expression support,
+  printf, etc. I may do this myself.
+
+=== Difficult things ===
+- Task signalling/notification when halt() is called
+  (email "responding to failures" 12/20/2010) and consider other
+  resilience strategies (such as "containment domains" from Sullivan, Erez et al UTexas)
+- Task teams, phasers, Eurekas, killing a team; Brad knows about this.
+  While building task teams, consider changing the names of existing task-parallel operations --
+  see email 'syntax' 12/13/2010.
+
+
+== Longer-term, Lower-Priority Projects ==
+- 'some types' and 'traits'; see "proposal: modern object-oriented chapel" 6/17/2011
+- Pattern-matching in a select statement (see 'syntax' 12/13/2010)
+- Object graph serialization, receive statement that works with serialization
+  (see 'syntax' 12/13/2010)
+- distributed garbage collection (I very well might tackle this)
+
+

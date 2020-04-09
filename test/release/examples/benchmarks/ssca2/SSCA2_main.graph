@@ -1,0 +1,13 @@
+perfkeys: Elapsed time for Kernel 2:, Elapsed time for Kernel 3:
+graphkeys: Kernel 2, Kernel 3
+files: SSCA2_main.dat, SSCA2_main.dat
+ylabel: Time (seconds)
+graphtitle: SSCA#2 Kernels 2 & 3 (SCALE=8)
+graphname: SSCA2-Performance-for-SCALE=8
+
+perfkeys: Elapsed time for Kernel 4:
+graphkeys: Kernel 4
+files: SSCA2_main.dat
+ylabel: Time (seconds)
+graphtitle: SSCA#2 Kernel 4 (SCALE=8)
+graphname: SSCA2-Performance-for-kernel-4-SCALE=8

@@ -1,0 +1,23 @@
+An empty associative domain: {}
+
+The initial size of the 'Names' domain is 0
+
+A populated associative domain of strings: {Alice, Bob, Clark, Dana, Ellen, Frank}
+
+Removed 'Bob' and 'Frank', added 'Robert': {Alice, Clark, Dana, Ellen, Robert}
+
+Our 'Scores' associative array: 0 0 0 0 0
+Our 'Scores' array, pretty-printed: [ Alice => 0, Clark => 0, Dana => 0, Ellen => 0, Robert => 0 ]
+
+Our 'Scores' array initialized with some values: [ Alice => 42, Clark => 100, Dana => 91, Ellen => 100, Robert => 33 ]
+
+The average score is 73
+
+Our updated 'Scores' array after adding some more names: [ Alice => 42, Clark => 100, Dana => 91, Ellen => 100, Gary => 10, John => 76, Robert => 33 ]
+
+Some primes in the Fibonacci sequence: {13, 2, 3, 5}
+Some primes not in the Fibonacci sequence: {11, 17, 7}
+
+Women = {Alice, Dana, Ellen}
+Men = {Clark, Gary, John, Mark, Robert}
+

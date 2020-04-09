@@ -1,0 +1,3 @@
+staticMethodErrorMessage.chpl:11: error: unresolved call 'type Foo.someMethod()'
+staticMethodErrorMessage.chpl:3: note: candidates are: type Foo.someMethod(x: int)
+staticMethodErrorMessage.chpl:7: note:                 type Foo.someMethod(x: string)

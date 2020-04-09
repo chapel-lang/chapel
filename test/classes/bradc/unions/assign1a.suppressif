@@ -1,0 +1,2 @@
+CHPL_TARGET_COMPILER==cray-prgenv-intel
+CHPL_TARGET_COMPILER==intel

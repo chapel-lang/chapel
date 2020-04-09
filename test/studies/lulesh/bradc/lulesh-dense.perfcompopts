@@ -1,0 +1,1 @@
+-suseBlockDist --no-local -M../../../release/examples/benchmarks/lulesh

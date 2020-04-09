@@ -1,0 +1,2 @@
+error: comment label should start with /*
+cat: docs/source/modules/incorrectLabel2.doc.rst: No such file or directory

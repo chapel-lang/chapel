@@ -1,0 +1,7 @@
+reserved-unmanaged.chpl:1: error: attempt to redefine reserved type 'unmanaged'
+reserved-unmanaged.chpl:3: error: attempt to redefine reserved type 'unmanaged'
+reserved-unmanaged.chpl:6: error: attempt to redefine reserved type 'unmanaged'
+reserved-unmanaged.chpl:7: error: attempt to redefine reserved type 'unmanaged'
+reserved-unmanaged.chpl:10: error: attempt to redefine reserved type 'unmanaged'
+reserved-unmanaged.chpl:12: error: attempt to redefine reserved type 'unmanaged'
+reserved-unmanaged.chpl:17: error: attempt to redefine reserved type 'unmanaged'

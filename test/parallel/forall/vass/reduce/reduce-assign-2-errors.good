@@ -1,0 +1,2 @@
+reduce-assign-2-errors.chpl:6: error: The reduce= operator must occur within a forall statement.
+reduce-assign-2-errors.chpl:10: error: The l.h.s. of a reduce= operator, 'b', must be passed by a reduce intent into the nearest enclosing forall loop

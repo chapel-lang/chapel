@@ -1,0 +1,580 @@
+
+GPU Programming Features
+========================
+
+CHAPEL GPU Programming Features
+-------------------------------
+
+
+Status
+------
+  Draft
+
+Authors
+-------
+|  Daniel Lowell, AMD
+|  Mike Chu, AMD
+|  Ashwin Aji, AMD
+|  Michael Ferguson, Cray
+|
+
+-------------------------------
+
+Terminology
+--------------
+
++---------------+--------------+-------------------------------+------------+
+| AMD           | Abbreviation | Definition                    | NVIDIA     |
+| OpenCL term   |              |                               | CUDA term  |
++===============+==============+===============================+============+
+| Workitem      | WI           | A single unit of execution    | thread     |
+|               |              | of a kernel program           |            | 
++---------------+--------------+-------------------------------+------------+
+| Wavefront     | WF           | A physical unit of execution  | warp       |
+|               |              | comprised of a group of WIs   |            | 
++---------------+--------------+-------------------------------+------------+
+| Workgroup     | WG           | A group of one or more WFs    | block      |
+|               |              | which share resources and     |            |
+|               |              | is programmer visible         |            | 
++---------------+--------------+-------------------------------+------------+
+| Local Data    | LDS          | Low latency memory that is    | shared     |
+| Store         |              | shared by WI's in a WG        | memory     | 
++---------------+--------------+-------------------------------+------------+
+| Compute Unit  | CU           | A hardware unit where WGs     | streaming  |
+|               |              | executed and contain shared   | multi-     | 
+|               |              | resources such as LDS         | processor  | 
++---------------+--------------+-------------------------------+------------+
+| global        |              | A scope describing all        | device     |
+|               |              | resources visible to all WIs  |            | 
+|               |              | in an executing kernel        |            | 
++---------------+--------------+-------------------------------+------------+
+| local         |              | A scope describing            | shared     |
+|               |              | resources visible to all WIs  |            | 
+|               |              | in a WG of an executing kernel|            | 
++---------------+--------------+-------------------------------+------------+
+| N-dimensional | NDRange      | Shape and total number of WIs | grid       |
+| Range         |              | in a kernel launch; also      |            | 
+|               |              | known as global WIs           |            | 
++---------------+--------------+-------------------------------+------------+
+
+-------------------------------
+
+Abstract
+--------
+
+This CHIP proposes extending Chapel by introducing GPU programming model features. This will give GPU programmers the ability to:
+
+    1. allocate and access GPU local scratch pad memory
+    2. allow access to GPU primitives such as get_local_id()
+    3. enforce proper execution by use of workgroup scope synchronization
+    4. specify the size of workgroups.
+    5. specify the number of workitems in a kernel launch
+    6. specify the dimensions of the global workitems and workgroups
+
+The goal is to provide Chapel programmers the tools to create diverse and more efficient programs on a GPU. This CHIP however does not cover data movement between a GPU locale and other locales and assumes all required data and logic is available to the GPU at runtime. 
+
+-------------------------------
+
+
+Rationale
+---------
+
+Under AMD's current prototype additions, Chapel provides access for loop offloading to GPUs. This current scheme divides up a for-loop and generates kernel code for running the body of the for-loop independently on each active workitem on the GPU. Because of this, architecturally efficient algorithms and more sophisticated parallel algorithms are out of reach in Chapel unless more GPU-specific language features are implemented. Some efficiencies can be added by a more intelligent code generation backend; however, Chapel programmers may want the freedom to explore designs and write efficient GPU algorithms. 
+
+I. Potential algorithms enabled by this CHIP's features:
+````````````````````````````````````````````````````````
+
+a.) Reduction type kernels explicitly requiring synchronization primitives and workitems working on workgroup local shared memory.
+
+Example: Prefix Scan in CUDA [2] ::
+
+	__global__ void scan(float *g_odata, float *g_idata, int n){
+		extern __shared__ float temp[]; // allocated on invocation
+		int thid = threadIdx.x;
+		int pout = 0, pin = 1;
+		// load input into shared memory.
+		// Exclusive scan: R-shift by one and set first element to 0
+		temp[thid] = (thid > 0) ? g_idata[thid-1] : 0;
+		__syncthreads();
+		for( int offset = 1; offset < n; offset <<= 1 ){
+			pout = 1 - pout; // swap double buffer indices
+			pin = 1 - pout;
+			if (thid >= offset){
+			 temp[pout*n+thid] += temp[pin*n+thid – offset];
+			} else {
+			 temp[pout*n+thid] = temp[pin*n+thid];
+			}
+			__syncthreads();
+		}
+		g_odata[thid] = temp[pout*n+thid]; // write output
+	}
+
+b.) More efficient algorithms (from HCC examples) which uses specified tiles (workgroup sizes), 2-D global workitem configuration, and local memory to more efficiently perform matrix-matrix multiplication.
+
+Example: Tiled GEMM in C++AMP [3] ::
+
+	template<typename _type, int tile_size>
+	void matmulamp(int M, int N, int W, _type *mA, _type *mB, _type *mC,
+	 accelerator_view acc_v) {
+		extent<2> e_c(M, W);
+		extent<2> compute_domain(e_c);
+		parallel_for_each(compute_domain.tile<tile_size,tile_size>(),
+		  [=] (tiled_index<tile_size,tile_size> tidx) restrict(amp) {
+        		index<2> localIdx = tidx.local;
+        		index<2> globalIdx = tidx.global;
+        		int i = globalIdx[0];
+        		int j = globalIdx[1];
+        		int loc_i = localIdx[0];
+        		int loc_j = localIdx[1];
+        		_type result = 0.0;
+        		for(int kblock = 0; kblock < W ; kblock += tile_size) {
+        		  tile_static _type localB[tile_size][tile_size];
+        		  tile_static _type localA[tile_size][tile_size];
+        		  localA[loc_i][loc_j] = mA[(i*N) + kblock+loc_j];
+        		  localB[loc_i][loc_j] = mB[((kblock+loc_i)*W) + j];
+        		  tidx.barrier.wait();
+        		  for(unsigned k = 0; k < tile_size; ++k){
+        			result += localA[loc_i][k] * localB[k][loc_j];
+        		  }
+        		  tidx.barrier.wait();
+        		}
+        		mC[(i*W)+j] = result ;
+		});
+		acc_v.wait();
+	}
+
+c.) Complex, novel algorithms moved to the GPU that require synchronization steps and local shared memory for reductions.
+
+
+Example: LU Factorization Pseudocode [4] ::
+
+    for level 1 to level m do
+	   /*column-level parallelism*/
+	   for all cols in current level in parallel do
+            compute current col of L matrix
+	   end for
+	   synchronize threads
+	   for all cols in current level in parallel do
+	       /*submatrix update parallelism*/
+	       for all subcols in current submatrix parallel do
+	          /*vector MAD operation parallelism*/
+		      update elements in one subcol
+	       end for
+	   end for
+	   synchronize threads
+    end for
+
+-------------------------------
+
+
+Description
+-----------
+
+This CHIP is based around the implementation of GPU programming features and hardware organization. These features would open up a larger number of available uses for offloading code sections to the GPU. 
+
+I. Important GPU Programming Language Features
+``````````````````````````````````````````````
+**1.) Programmer selected number of NDRange and workgroup size, and shape**
+
+Workgroups are logical units of execution consisting of a number of workitems which are scheduled, and run on individual compute units (CU). The ability to select the workgroup size of a kernel program gives a programmer a transparent way to organize their parallel algorithm and heavily influences performance of an application. Likewise, allowing a user to set the number of total workitems in a kernel launch will allow more flexibility in designing a parallel algorithm.  
+
+In addition to the size of the NDRange, a programmer may need to organize the shape of the global threads. For 1 dimensional, shape is merely the number of global workitems, while shapes of 2 dimension and 3 dimensions involve configuring workitem counts in each dimension to processes multi-dimensional data. Workgroup level 
+shaping by the programmer is often the best way to maximize the performance over multi-dimensional data.
+
+
+**2.) GPU local variable/array types and memory access**
+
+Workgroups are divided into sub-groups called wavefronts that run in lockstep fashion on vector processors elements inside a CU. With this the degree of parallelism in a CU, it is important for the processing units to have access to a low latency working memory space. GPU architectures provide close “scratch pad” memory, also known as local data store (LDS) memory. This provides a memory space for workitems in a single workgroup on to share data and to store working data in arrays. LDS memory access for Chapel programmers would touch at the core of the GPU programming model, because it would enable programmer defined algorithms where sharing data across workitems in a workgroup depends on faster memory accesses than is available in global (DRAM) memory.
+
+
+**3.) Exposing indexing and size primitives**
+
+In order for a Chapel programmer to use new features, such as the ability to choose a workgroup size and access to LDS memory, the language must also implement GPU primitives. These include a method to query a workitem’s local id’s within a workgroup and querying the number of workitems in a workgroup. Without these methods of querying workitem indices, making use of LDS becomes difficult and inflexible. Adding these primitives also will give the Chapel programmer further freedom to design GPU algorithms.
+
+
+**4.) Synchronization primitives**
+
+Many GPU algorithms require workitems within a workgroup to exchange data in some fashion. Because of potential workitem divergence, it might be the case where all workitems need to reach a synchronization point were all computations are complete before continuing. 
+
+A simple example of this is binary reduction across LDS memory. In this case, half the workitems of an iteration of reduction must wait for all workitems of the previous operations to complete. In this case an explicit barrier is required to ensure correct ordering of operations within a workgroup and memory visibility between workitems. 
+
+Further ordering type synchronizations might be implemented. These are memory fence type instructions which prevents the compiler from reordering operations such as LDS loads and stores.
+
+
+
+II. Compiler implementation overview and proposed language features
+```````````````````````````````````````````````````````````````````
+
+**1.) Allowing programmer-defined workgroup size and shape**
+
+This feature will allow programmers of Chapel to specify workgroups and NDRange sizes, but Chapel should provide an implicit default size. We also propose adding the ability to launch multiple dimension kernels. This means giving the programmer the ability to specify the number of dimensions of the workgroup and the NDRange. The backend infra-structure for this grid/workgroup specification is largely already in place in AMD’s code branch, therefore it should be straightforward to implement the language feature.
+
+Example of setting 1-D NDRange and workgroup size: ::
+
+	// global size 4096, workgroup size 64, of GPU sub-locale
+	// This is set just before entering the GPU code region
+	on (Locales[0]:LocaleModel).GPU(4096,64){
+		...
+	}
+
+This approach may be unwieldy, however, as 3-D kernels will contain 6 required variables. Instead a programmer can use an overloaded version of the GPU( ) method that accepts a single object, then NDRange and workgroup parameters can be set elsewhere.
+
+Example of overloaded GPU() method: ::
+
+	//create a kernel object to pass in
+	var kernel = new GPUKernel(); //constructor could have other versions
+	kernel.griddim(2); //set number of dimensions to 2
+	kernel.grid(4096, 4096);
+	kernel.group(16,16);
+	on (Locales[0]:LocaleModel).GPU(kernel) { //pass in the kernel object
+		...
+	}
+		
+Because the GPU locale may have multiple kernels running concurrently, it might be more transparent to have the kernel properties contextual only within *forall* loops. Take this example, where A, B, C, D, and E are matrices and x is a vector: ::
+
+    var kernel = new GPUKernel(); //constructor could have other versions
+    kernel.griddim(2); //set number of dimensions to 2
+    kernel.grid(4096, 4096);
+    kernel.group(16,16);
+    on (Locales[0]:LocaleModel).GPU(kernel) { 
+        
+        forall (i,j) in kernel.getgrid() do
+            A[i][j] = B[i][j]*C[i][j];
+        
+        forall i in kernel.getgrid(0) do
+            D[i] = x[i]*E[i];
+    }
+
+In this case it may not be optimal in terms of performance for both of these *forall* regions to have the same NDRange and workgroup shapes. Instead we can still use a *kernel* object, and iterate through the NDRange instead of the redundant range: ::
+
+    on (Locales[0]:LocaleModel).GPU { 
+
+        var kernel1 = new GPUKernel(); //first kernel
+        kernel1.grid(4096, 4096);
+        kernel1.group(16,16);
+        forall (i,j) in kernel1 do
+            A[i][j] = B[i][j]*C[i][j];
+
+        var kernel2 = new GPUKernel(); //second kernel
+        kernel2.grid(4096);
+        kernel2.group(16);
+        forall j in kernel2 do
+            D[j] = x[j]*E[j]; // just use direct indexing here
+    }
+
+**2.) Workgroup synchronization implementation**
+
+GPU programming languages provide barrier and memory fence primitives for workgroup scope synchronization. Barriers require that every workitem in a workgroup reach the same synchronization call before the program can continue, while fences ensure proper ordering of memory operations, either to global DRAM memory, or local workgroup shared memory.
+Barriers can also implicitly, or explicitly introduce memory fences. From the OpenCL specification for example[1].: ::
+
+    CLK_LOCAL_MEM_FENCE - The barrier function will either flush any variables
+    stored in local memory or queue a memory fence to ensure correct ordering 
+    of memory operations to local memory.
+    
+    CLK_GLOBAL_MEM_FENCE - The barrier function will queue a memory fence to 
+    ensure correct ordering of memory operations to global memory. This can be 
+    useful when work-items, for example, write to buffer or image objects and 
+    then want to read the updated data.
+    
+GPU workgroups barriers will be implemented in Chapel leveraging existing syntax. Code generation needs to take into account the context for the use of barrier methods, otherwise a barrier object should have scope only inside a GPU code region.
+
+Example of barrier object: ::
+
+	var b = new Barrier(); //capitalize on existing barrier syntax
+	b.barrier(); //invoking barrier within a GPU locale
+
+**3.) LDS declaration modifier**
+
+We propose the introduction of a memory type qualifier “scratch” to specify LDS memory over global memory. (note: for this report, “scratch” is a placeholder keyword and likely will be replaced with another identifier.)
+
+Example of LDS allocation: ::
+
+	var A: [1..256] int;  // normal global array
+	scratch var A: [1..256] int; // LDS array available only on device		
+
+Since LDS can only have scope within the GPU sub-locale, the Chapel compiler will catch all instances of improper use of the type qualifier and flag it as a compile time error. Improper uses should involve: use of this qualifier outside of the GPU sub-locale, and accesses of the LDS variable/array outside the sub-locale. Compiler modifications are required to generate LDS "scratch" datatype access into the generated GPU code.
+
+**4.) LDS memory size allocation**
+
+Source code must have a Chapel compile-time value to create LDS arrays during Chapel’s kernel code generation. If this is not available a compiler code generation mechanism must be used to allow runtime LDS array size determination, followed by on-the-fly kernel generation, or a compiler error with be given to the programmer. The shape of LDS can have multiple dimensions; therefore, this will be implemented into the code generation. 
+
+**5.) Exposing indexing and size primitives**
+
+It will be important to the programmer to have indexing and size primitives transparently accessible through an object interface method. This can be implemented by querying GPU sub-locale properties. 
+
+Examples of indexing and size primitives: ::
+
+	here.kernel.localID(0);  // codegen to OpenCL get_local_id(0);
+	here.kernel.groupsize(0) ; //codegen to OpenCL get_group_size(0);
+
+This implies an object hierarchy, “here” -- a locale object and “kernel” -- an executing program object, which may contain all runtime properties. An alternative, or perhaps complementary, approach is to introduce an independent GPUKernel object type that encapsulates the methods for indexing and contains information specifically attached to an executing code region; i.e., kernel code. 
+
+Example of independent object with primitives using locale GPU interface: ::
+
+	var kernel = new GPUKernel(); //default
+	on (Locales[0]:LocaleModel).GPU(kernel) {
+		// once inside the GPU code region
+		var lidx = kernel.localID(0);
+	}
+	
+Example, but this time using *forall* loop construct instead of GPU(): ::
+
+    var kernel = new GPUKernel(); //default
+    on (Locales[0]:LocaleModel).GPU {
+        // once inside the GPU code region
+        forall i in kernel {
+            var lidx = kernel.localID(0);
+            ...
+            //do gpu work here
+        }
+    }
+
+**6.) CPU fall back**
+
+It may be the case that there is no available GPU to execute GPU locale code. The compiler or runtime should have the capability to fall back to an available locale such as a CPU. Additional generated kernels, compiled for specific architectural targets may be needed for proper functionality and optimization depending on Locale discovery.
+
+
+-------------------------------
+
+
+III. Prototype Chapel code
+``````````````````````````
+1.) PREFIX SCAN Hillis & Steele: Kernel Function version 1 using GPU locale (see above for CUDA version)[2]::
+
+    proc prefixscan_gpu(){
+      var inputData: [1..256] int;
+      var outputData: [1..256] int;
+      // … fill inputData with relevant data
+      // set 1-D NDRange and WG size both to 256
+      on (Locales[0]:LocaleModel).GPU(256,256) do {
+        // allocate LDS memory   
+        scratch var localtemp: [1..256];    
+        // get the WI’s WG local index into register variable
+        var lidx:  int = here.kernel.localID(0);   
+        var pout: int = 0;
+        var pin: int = 0;
+        var b = new Barrier();//capitalize on existing barrier syntax
+            
+        // load input into shared memory.
+        // Exclusive scan: shift right by one and set first element to 0
+        localtemp[lidx] = (lidx > 0) ? inputData[lidx-1] : 0;
+        b.barrier(); //synchronization point
+        var offset: int = 0;
+        for index in 1..(n/2) {
+           pout = 1 - pout; // swap double buffer indices
+           pin = 1 - pout;
+           offset = 2*index;
+           if (lidx >= offset){
+               localtemp[pout*n+lidx]+=localtemp[pin*n+lidx–offset];
+           } else {
+               localtemp[pout*n+lidx]=localtemp[pin*n+lidx];
+           }
+           b.barrier();
+        }
+        outputData[lidx]=localtemp[pout*n+lidx]; // write output
+      }
+    }
+
+2.) PREFIX SCAN Hillis & Steele: Kernel Function version 2 using *forall* and kernel object [2]::
+
+    proc prefixscan_gpu(){
+      var inputData: [1..256] int;
+      var outputData: [1..256] int;
+      // … fill inputData with relevant data
+
+      var kernel = new GPUKernel();
+      kernel.grid(256);
+      kernel.group(256);
+      on (Locales[0]:LocaleModel).GPU do {
+        
+        forall i in kernel {
+            // allocate LDS memory   
+            scratch var localtemp: [1..256];    
+            // get the WI’s WG local index into register variable
+            var lidx:  int = kernel.localID(0);   
+            var pout: int = 0;
+            var pin: int = 0;
+            var b = new Barrier();//capitalize on existing barrier syntax  
+            // load input into shared memory.
+            // Exclusive scan: shift right by one and set first element to 0
+            localtemp[lidx] = (lidx > 0) ? inputData[i-1] : 0;
+            b.barrier(); //synchronization point
+            var offset: int = 0;
+            for index in 1..(n/2) {
+                pout = 1 - pout; // swap double buffer indices
+                pin = 1 - pout;
+                offset = 2*index;
+                if (lidx >= offset){
+                    localtemp[pout*n+lidx]+=localtemp[pin*n+lidx–offset];
+                } else {
+                    localtemp[pout*n+lidx]=localtemp[pin*n+lidx];
+                }
+                b.barrier();
+            }
+            outputData[i]=localtemp[pout*n+lidx]; // write output
+        }
+      }
+    }
+
+3.) Tiled GEMM version 1 using GPU locale and kernel object (see above for C++AMP version) [3] ::
+
+    proc matmul() {
+        var M: int = 4096;
+        var W: int = 4096;
+        var groupside: int =  16;
+        
+        // input matrices
+        var mA: [1..4096][1..4096] float;
+        var mB: [1..4096][1..4096] float;
+        
+        // < … fill matrices with relevant data >
+        // output matrix
+        var mC: [1..4096][1..4096] float;
+        var kernel = new GPUKernel(); // introduce kernel object
+        kernel.grid(4096,4096); // set NDRange shape
+        kernel.group(16,16);    // set 2-D workgroup shape
+        
+        var b = new Barrier();
+        //pass in the kernel object
+        on (Locales[0]:LocaleModel).GPU(kernel) do {
+            //internal kernel object representation
+            var gidx: int = here.kernel.globalID(0);  
+            var gidy: int = here.kernel.globalID(1);
+            var lidx: int = here.kernel.localID(0);
+            var lidy: int = here.kernel.localID(1);
+            var result: float = 0.0;
+            scratch var localA: [16][16] float;
+            scratch var localB: [16][16] float;
+            
+            for kblock in 1..W by groupside {
+                localA[lidx][lidy] = mA[(gidx*N) + kblock+lidy];
+                localB[lidx][lidy] = mB[((kblock+lidx)*W) + gidy];
+                b.barrier ();
+                for k in 1..groupside {
+                	result += localA[loc_i][k] * localB[k][loc_j];
+                }
+                b.barrier ();
+            }
+            mC[(gidx*W)+gidy] = result;
+        }//end do on Locale[0]          
+    }// end proc
+
+4.) Tiled GEMM version 2 using *forall* and kernel object [3] ::
+
+    proc matmul() {
+        var M: int = 4096;
+        var W: int = 4096;
+        var groupside: int =  16;
+        
+        // input matrices
+        var mA: [1..4096][1..4096] float;
+        var mB: [1..4096][1..4096] float;
+        
+        // < … fill matrices with relevant data >
+        // output matrix
+        var mC: [1..4096][1..4096] float;
+        var kernel = new GPUKernel();// introduce kernel object
+        kernel.grid(4096,4096); //set NDRange shape
+        kernel.group(16,16);    // set 2-D workgroup shape
+        
+        var b = new Barrier();
+        //pass in the kernel object
+        on (Locales[0]:LocaleModel).GPU do {
+            forall (i,j) in kernel {
+                //internal kernel object representation
+                var gidx: int = i; //same as: kernel.globalID(0);  
+                var gidy: int = j; //same as: kernel.globalID(1);
+                var lidx: int = kernel.localID(0);
+                var lidy: int = kernel.localID(1);
+                var result: float = 0.0;
+                scratch var localA: [16][16] float;
+                scratch var localB: [16][16] float;
+                
+                for kblock in 1..W by groupside {
+                    localA[lidx][lidy] = mA[(gidx*N) + kblock+lidy];
+                    localB[lidx][lidy] = mB[((kblock+lidx)*W) + gidy];
+                    b.barrier ();
+                    for k in 1..groupside {
+                    	result += localA[loc_i][k] * localB[k][loc_j];
+                    }
+                    b.barrier ();
+                }
+                mC[(gidx*W)+gidy] = result;
+            }
+        }//end do on Locale[0]          
+    }// end proc
+    
+
+-------------------------------
+
+
+
+
+
+IV. Limitations
+```````````````
+The scope of this CHIP is intended to cover only proposed features of a program executed on a GPU. Data movement may require an additional CHIP to describe a model where data moves between CPU to GPU, or between GPUs on the same node, or additionally between GPUs in different nodes. In this CHIP we describe only a programming environment where the data has already been safely moved, or there is a shared memory environment, such as with an APU.
+
+-------------------------------
+
+
+V. Open Questions
+`````````````````
+
+**1.) Support for atomics**
+
+Not strictly necessary, but this would fill out some more of the basic GPU language requirements.
+
+
+**2.) GPU Indexing Primitives**
+
+Do we need to use "kernel" in here.kernel.localID() and here.kernel.groupsize()? It may be sufficient if it is a property of the sub-locale to use here.localID() and here.groupsize(). However, these indices and sizes are not necessarily properties of the locale, but rather the program running on the locales. This might be another argument for fixing these properties within a GPU forall loop construct that is itself running inside a GPU locale.
+
+**3.) Workgroup Synchronization**
+
+It is unclear if it is necessary to introduce memory fences by themselves, or even expose them to the programmer.
+
+Also, Chapel has sync-vars to synchronize tasks with “begin”. Is there a way to make them more hierarchical? 
+
+Moreover, the other task parallel constructs (cobegin and coforall) have implicit synchronization points. So, adding a “barrier” function would create a new type of synchronization primitive. A better design choice for Chapel may be to just use the existing barrier objects which exist in the language.
+
+**4.) Programmer Defined Workgroup Sizes**
+
+Can we think of the grid to be a Chapel domain? Workitem grids could be “execution domain”, whereas arrays could be “data domains”.
+
+Does this break with Chapel design philosophy, or extend it?
+
+Also can we consider this information as Hints? We create one abstraction as GPU hints and we instantiate what we want. Like here.GPU_Hint.grid=4096 and here.GPU_Hint.WG=64? We place this hint inside a task scope or we pass it along with a reduce statement
+
+**5.) Distributed Examples**
+
+Daniel Lowell: Requires some distributed memory argument/examples here... Just notes so far. ::
+
+    “High-Performance Code Generation for Stencil Computation on GPU Architectures”, 
+    J.Holewinski, L.N. Pouchet, and P. Sadayappan (ICS ’12).
+    https://web.cse.ohio.edu/~pouchet/doc/ics-article.12.pdf
+
+    “Exploiting GPUs in Solving (Distributed) Constraint Optimization Problems with
+    Dynamic Programming”, F. Fioretto, T. Le, E. Pontelli, W. Yeoh, T.C. Son, 
+    Principles and Practice of Constraint Programming, Vol. 9255, pp. 121-139.
+    https://www.cs.nmsu.edu/~wyeoh/docs/publications/cp15-gpu.pdf
+
+ 
+I’m not too sure about this. It looks like we are proposing to make GPU task-based additions (workitems/workgroups/barrier). This would be memory-based additions, which may require a different CHIP...
+
+Although LDS is technically memory, it would only be used to make a task more efficient by using memory that is already there in GPU device memory.  Anyway, this is an open discussion…
+
+-------------------------------
+
+
+REFERENCES
+---------- 
+
+.. [1] The Khronos Group, "The OpenCL Specification," [Online]. Available: http://www.khronos.org/registry/cl/specs/opencl-1.2.pdf. 
+.. [2] Hillis & Steele, "GPUGems3, Prefix Scan," [Online]. Available: http://http.developer.nvidia.com/GPUGems3/gpugems3_ch39.html.
+.. [3] AMD, "Tiled and optimized Matrix-Matrix multiplication for C++AMP," [Online]. Available: https://github.com/HSAFoundation/CLOC/tree/master/examples/snack/matmul.   
+.. [4] K.He, S.Tan, H.Wang and G.Shi, "GPU-Accelerated Parallel Sparse LU Factorization Method for Fast Circuit Analysis," in IEEE Transactions on Very Large Scale Integration (VLSI) Systems, 2016.
+
+
+
+

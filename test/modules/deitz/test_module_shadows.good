@@ -1,0 +1,2 @@
+test_module_shadows.chpl:10: In function 'foo':
+test_module_shadows.chpl:11: error: modules (like 'M2' here) cannot be called like procedures

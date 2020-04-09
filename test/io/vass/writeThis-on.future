@@ -1,0 +1,30 @@
+bug: upon write(someObj), someObj.writeThis() is invoked on the channel's home locale, rather than on the current locale
+
+This is because channel.write executes 'on this.home_uid'
+before invoking writeThis() on its argument.
+
+The difference is observable, e.g., for a replicated array that
+maps a given index to different values on different locales.
+
+By contrast, e.g. for integers this is immaterial: an integer
+has the same value regardless of which locale it's viewed on.
+Likewise, it is immaterial for a non-replicated array,
+which has only one value for each index.
+
+This is inconvenient when printing out replicated arrays.
+To print out a replicand as viewed from the current locale,
+we have to take its snapshot (aka make a copy) into
+a default-mapped array, and then print that snapshot.
+It would be easier to print the current-locale view directly.
+
+Note on the code: it took some work to set things up to illustrate the
+issue using a replicated array. Specifically, an array mapped using
+the multi-dimensional ReplicatedDist used to print out all replicands,
+regardless of which locale its writeThis() is invoked on.
+So that does not illustrate the issue. Therefore I had to use
+a replicated dimension with DimensionalDist2D.
+By contrast, it was easy to illustrate using a customized writeThis method.
+
+A solution could be a channel parameter or a write() argument
+or an iostyle component. It would controls whether writeThis is invoked
+on the channel's home locale or on the current locale.

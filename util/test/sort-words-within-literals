@@ -1,0 +1,37 @@
+#!/usr/bin/env perl
+
+# finds lines containing {v1, v2, ...}
+#                        [v1, v2, ...]
+# and sorts them by the values.
+
+$testname = $ARGV[0];
+$goodfile = $ARGV[1];
+$comp = $ARGV[2];
+
+$tmp_file = "$testname.exec.out.tmp";
+
+open TMPFILE, "$tmp_file" or die "can't open $tmp_file $!";
+my @lines = <TMPFILE>;
+close (TMPFILE);
+foreach my $line (@lines) {
+    chomp($line);
+}
+
+open OUTFILE, ">$tmp_file" or die "can't open $tmp_file for writing $!";
+
+foreach (@lines) {
+  s/\{( *)([^\}]*)\}/"{" . $1 . fixInner($2) . "}"/ge;
+  s/\[( *)([^\]]*)\]/"[" . $1 . fixInner($2) . "]"/ge;
+  print OUTFILE $_ . "\n";
+}
+
+close(OUTFILE);
+
+sub fixInner {
+  my $arg = shift;
+  chomp($arg);
+  my @words = split(', *', $arg);
+  my @sorted_words = sort @words;
+  return join(', ', @sorted_words);
+}
+

@@ -1,0 +1,5 @@
+-stestParamCases=0
+-stestParamCases=1  # checkDivByZero-paramint.good
+-stestParamCases=2  # checkDivByZero-varparam.good
+-stestParamCases=3  # checkDivByZero-uvarparam.good
+-stestParamCases=4  # checkDivByZero-uparam.good

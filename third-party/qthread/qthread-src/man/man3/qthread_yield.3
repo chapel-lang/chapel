@@ -1,0 +1,21 @@
+.TH qthread_yield 3 "APRIL 2011" libqthread "libqthread"
+.SH NAME
+.B qthread_yield
+\- release the CPU, allow other qthreads to run
+.SH SYNOPSIS
+.B #include <qthread.h>
+
+.I void
+.br
+.B qthread_yield
+(void);
+.SH DESCRIPTION
+This function allows a qthread to explicitly interrupt computation and give
+other qthreads the chance to execute even though it has not blocked. This can
+be useful for things like busy-waits or cooperative multitasking. Without using
+this function, there is no guarantee that other qthreads will have a chance to
+execute until the currently running qthread performs a synchronization
+operation.
+If this function is called from a non-qthread or before the
+.BR qthread_initialize ()
+has been run, it does nothing.

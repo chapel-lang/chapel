@@ -1,0 +1,2 @@
+use_of_uninitialized_field.chpl:2: error: 'y' used before defined
+use_of_uninitialized_field.chpl:3: note: defined here

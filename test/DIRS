@@ -1,0 +1,18 @@
+test/           -- regression tests
+  Bin/          -- binaries used in running the test system
+  Logs/         -- default location for log files to be written out
+  Samples/      -- sample tests (not run by default, use -startdir to test)
+  -----------
+  classes/      -- tests using classes/OO
+  compflags/    -- tests that make sure compiler flags are working properly
+  dispatch/     -- tests of dispatching
+  execcflags/   -- tests of different executable flags
+  flowanalysis/ -- tests of the low-level flow analaysis stuff
+  functions/    -- tests of function calls
+  library       -- tests of standard and package modules
+  lowlevelcg/   -- tests of the low-level code generation
+  modules/      -- tests of using multiple modules
+  parsing/      -- tests of parsing
+  reviews/      -- code used in government reviews
+  trivial/      -- tests that we will one day be embarrassed by
+  types/        -- tests related to different Chapel types

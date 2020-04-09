@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+
+# Find the --f argument
+for arg in $*; do
+    if [[ $arg == "--f="* ]]; then
+        toml=${arg#--f=}
+    fi
+done
+
+base=${toml%.toml}
+json=${base}.json
+jsonout=${base}.json.out
+
+#echo "./compare.py ${json} ${jsonout}"
+./compare.py ${json} ${jsonout} >> $2

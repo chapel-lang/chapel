@@ -1,0 +1,6 @@
+perfkeys: real, real, real, real, real
+files: knucleotide.dat, knucleotide-associative.dat, knucleotide-chaining.dat, knucleotide-strings.dat, knucleotide-blc.dat
+graphkeys: release, coforall-arrays, chaining, coforall-strings, brad version
+graphtitle: K-nucleotide Shootout Benchmark
+ylabel: Time (seconds)
+graphname: knucleotide

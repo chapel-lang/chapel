@@ -1,0 +1,7 @@
+before coforall block
+contains MyError? true
+iterating MyError:
+1
+1
+iterating everything else:
+StringError: other error

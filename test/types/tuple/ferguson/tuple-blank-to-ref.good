@@ -1,0 +1,2 @@
+tuple-blank-to-ref.chpl:11: In function 'byblank':
+tuple-blank-to-ref.chpl:15: error: non-lvalue actual is passed to 'ref' formal 'arg' of byref()

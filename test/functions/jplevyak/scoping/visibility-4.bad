@@ -1,0 +1,2 @@
+visibility-4.chpl:4: error: inheritance is not currently supported for records
+visibility-4.chpl:4: note: thoughts on what record inheritance should entail can be added to https://github.com/chapel-lang/chapel/issues/6851

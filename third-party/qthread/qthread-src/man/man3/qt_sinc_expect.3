@@ -1,0 +1,28 @@
+.TH qt_sinc_expect 3 "AUGUST 2012" libqthread "libqthread"
+.SH NAME
+.B qt_sinc_expect
+\- increase the number of expected submissions
+.SH SYNOPSIS
+.B #include <qthread/sinc.h>
+
+.I void
+.br
+.B qt_sinc_expect
+.RI "(qt_sinc_t *" sinc,
+.br
+.ti +15
+.RI " size_t " count);
+.SH DESCRIPTION
+This function increases the number of expected submissions to the
+.I sinc
+qt_sinc_t object by
+.IR count .
+This operation can be performed at any time after the qt_sinc_t object has been initialized.
+.SH SEE ALSO
+.BR qt_sinc_create (3),
+.BR qt_sinc_destroy (3),
+.BR qt_sinc_fini (3),
+.BR qt_sinc_init (3),
+.BR qt_sinc_reset (3),
+.BR qt_sinc_submit (3),
+.BR qt_sinc_wait (3)

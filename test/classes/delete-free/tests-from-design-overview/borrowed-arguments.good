@@ -1,0 +1,2 @@
+borrowed-arguments.chpl:12: In function 'saveit':
+borrowed-arguments.chpl:14: error: 'delete' can only be applied to unmanaged classes

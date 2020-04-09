@@ -1,0 +1,2 @@
+# This doesn't play well with multi-locale modules quite yet.
+CHPL_COMM != none

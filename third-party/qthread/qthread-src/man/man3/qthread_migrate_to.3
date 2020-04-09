@@ -1,0 +1,31 @@
+.TH qthread_migrate_to 3 "APRIL 2011" libqthread "libqthread"
+.SH NAME
+.B qthread_migrate_to
+\- relocate a qthread to the target shepherd
+.SH SYNOPSIS
+.B #include <qthread.h>
+
+.I int
+.br
+.B qthread_migrate_to
+.RI "(qthread_shepherd_id_t " shepherd );
+.SH DESCRIPTION
+This is the function for moving a qthread to a different shepherd.
+.PP
+The first argument,
+.IR shepherd ,
+is the identifier of the shepherd to move to.
+.PP
+When the call returns, the qthread will be running on the specified shepherd.
+.SH RETURN VALUE
+On success, 0 is returned. On error, a non-zero error code is returned.
+.SH ERRORS
+.TP 12
+.B QTHREAD_BADARGS
+Either the
+.I me
+value was invalid or the
+.I shepherd
+was too large.
+.SH SEE ALSO
+.BR qthread_fork_to (3)

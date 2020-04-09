@@ -1,0 +1,2 @@
+phase2-only-param-default-value.chpl:7: In initializer:
+phase2-only-param-default-value.chpl:9: error: cannot update a param field, "p", in phase 2

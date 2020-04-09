@@ -1,0 +1,6 @@
+This directory contains a clone of
+
+  release/examples/benchmarks/lulesh/lulesh.chpl
+
+This directory's clone is specialized for valgrind testing.
+The one in release/examples is skipif'ed under valgrind.

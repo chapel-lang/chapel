@@ -1,0 +1,52 @@
+.. default-domain:: chpl
+
+.. module:: inheritance.doc
+
+inheritance.doc
+===============
+**Usage**
+
+.. code-block:: chapel
+
+   use inheritance.doc;
+
+
+or
+
+.. code-block:: chapel
+
+   import inheritance.doc;
+
+.. class:: Grandparent
+
+   The eldest 
+
+
+   .. method:: proc getOffMyLawn()
+
+      You durn kids! 
+
+   .. method:: proc backInMyDay()
+
+.. class:: Parent : Grandparent
+
+   Second generation 
+
+
+   .. method:: proc goToYourRoom()
+
+      Grounded! 
+
+   .. method:: proc curfew()
+
+.. class:: Child : Parent
+
+   Reaping the benefits of third generation status 
+
+
+   .. method:: proc whine()
+
+      But I was going to go pick up some power converters! 
+
+   .. method:: proc youNeverLetMeDoAnythingFun()
+

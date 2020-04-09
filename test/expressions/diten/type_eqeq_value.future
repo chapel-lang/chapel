@@ -1,0 +1,8 @@
+error message: prune candidate function list
+
+was:
+
+bug: comparing types to values with the equality operators is defined
+
+If this operation is defined, type == value should always be false and
+type != value should always be true. It should probably not be defined though.

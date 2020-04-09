@@ -1,0 +1,2 @@
+--no-lifetime-checking
+# this flag used due to issue #13062

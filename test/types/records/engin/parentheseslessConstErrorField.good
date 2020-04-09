@@ -1,0 +1,2 @@
+parentheseslessConstErrorField.chpl:7: error: type in 'new' expression is missing its argument list
+parentheseslessConstErrorField.chpl:14: error: type in 'new' expression is missing its argument list

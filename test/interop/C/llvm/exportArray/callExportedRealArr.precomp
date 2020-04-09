@@ -1,0 +1,3 @@
+#!/bin/bash
+echo Compiling exportFuncWithRealArr.chpl
+$3 --llvm --library --static exportFuncWithRealArr.chpl

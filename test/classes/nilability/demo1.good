@@ -1,0 +1,4 @@
+demo1.chpl:10: error: unresolved call 'getTheValue(nil)'
+demo1.chpl:4: note: this candidate did not match: getTheValue(x: borrowed C)
+demo1.chpl:10: note: because call actual argument #1 with type nil
+demo1.chpl:4: note: is passed to formal 'x: borrowed C'

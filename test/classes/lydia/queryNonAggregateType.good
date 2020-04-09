@@ -1,0 +1,1 @@
+queryNonAggregateType.chpl:2: error: Attempted to obtain field of a type that was not a record or class

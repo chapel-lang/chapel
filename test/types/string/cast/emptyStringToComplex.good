@@ -1,0 +1,3 @@
+uncaught IllegalArgumentError: bad cast from empty string to complex(128)
+  emptyStringToType.chpl:6: thrown here
+  emptyStringToType.chpl:6: uncaught here

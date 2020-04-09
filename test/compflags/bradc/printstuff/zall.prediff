@@ -1,0 +1,5 @@
+#!/bin/sh
+./versionhelp.sh $1 $2 $3 > zall.good
+./licensehelp.sh $1 $2 $3 >> zall.good
+echo >> zall.good
+./helphelp.sh $1 $2 $3 >> zall.good

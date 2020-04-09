@@ -1,0 +1,9 @@
+bug: the generated results should be the same when executed as:
+
+  ./a.out
+
+and as:
+
+  ./a.out --i=0xFF --z=2i+3
+
+No error message should be generated.

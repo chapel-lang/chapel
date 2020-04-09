@@ -1,0 +1,6 @@
+feature request: Compiling with --local should not require -nl in any case?
+
+This test posits that when we compile --local, we shouldn't need to
+specify a number of locales (via -nl or equivalent), even if we're
+using a launcher.  It seems that, currently, when a launcher is used,
+the number of locales must always be specified.

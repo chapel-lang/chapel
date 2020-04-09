@@ -1,0 +1,4 @@
+outer try
+inner try
+inner catch
+outer catch

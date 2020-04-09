@@ -1,0 +1,12 @@
+# BEGIN code common to spawners that may invoke gasnetrun_mpi.pl
+MPIRUN_CMD="${MPIRUN_CMD:-@MPIRUN_CMD@}"
+export MPIRUN_CMD
+PMIRUN_CMD="${PMIRUN_CMD:-@PMIRUN_CMD@}"
+export PMIRUN_CMD
+GASNET_PLATFORM="${GASNET_PLATFORM:-@GASNET_PLATFORM@}"
+export GASNET_PLATFORM
+GASNET_PSHM_ENABLED=@GASNET_PSHM_ENABLED@
+export GASNET_PSHM_ENABLED
+GASNET_ENVCMD="${GASNET_ENVCMD:-@ENVCMD@}"
+export GASNET_ENVCMD
+# END code common to spawners that may invoke gasnetrun_mpi.pl

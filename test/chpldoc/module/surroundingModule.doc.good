@@ -1,0 +1,59 @@
+surroundingModule.doc.chpl:2: warning: This file-scope code is outside of any explicit module declarations (e.g., module Middle), so an implicit module named 'surroundingModule.doc' is being introduced to contain the file's contents.
+.. default-domain:: chpl
+
+.. module:: surroundingModule.doc
+
+surroundingModule.doc
+=====================
+**Usage**
+
+.. code-block:: chapel
+
+   use surroundingModule.doc;
+
+
+or
+
+.. code-block:: chapel
+
+   import surroundingModule.doc;
+
+**Submodules**
+
+.. toctree::
+   :maxdepth: 1
+   :glob:
+
+   surroundingModule.doc/*
+
+.. function:: proc before()
+
+   This comment and its proc lies before the defined module 
+
+.. function:: proc after()
+
+   This comment and its proc lies after the defined module 
+
+.. default-domain:: chpl
+
+.. module:: Middle
+
+Middle
+======
+**Usage**
+
+.. code-block:: chapel
+
+   use surroundingModule.doc.Middle;
+
+
+or
+
+.. code-block:: chapel
+
+   import surroundingModule.doc.Middle;
+
+.. function:: proc inside()
+
+   This comment and its proc lies inside the defined module 
+

@@ -1,0 +1,1 @@
+returnsVoid.chpl:7: error: chpl__serialize cannot return void

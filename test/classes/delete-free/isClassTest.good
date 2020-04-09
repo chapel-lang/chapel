@@ -1,0 +1,28 @@
+undecorated C
+true
+true
+
+unmanaged C
+true
+true
+true
+true
+
+borrowed C
+true
+true
+true
+true
+
+owned C
+true
+true
+true
+true
+
+shared C
+true
+true
+true
+true
+

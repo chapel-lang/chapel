@@ -1,0 +1,2 @@
+nested-function-mods-field2.chpl:6: In initializer:
+nested-function-mods-field2.chpl:12: error: multiple initializations of field "field"

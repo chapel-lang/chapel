@@ -1,0 +1,1 @@
+offsetNotRecord-sync.chpl:1: error: Cannot call c_offsetof on type that is not a record

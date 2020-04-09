@@ -1,0 +1,2 @@
+bug: valgrind errors when throwing from if and array literal
+#10735

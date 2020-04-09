@@ -1,0 +1,133 @@
+README file for mpi-spawner
+===========================
+
+@ TOC: @
+@ Section: Overview @
+@ Section: Basic Usage @
+@ Section: Build-time Configuration @
+@ Section: Runtime Configuration @
+
+
+@ Section: Overview @
+
+This document describes mpi-spawner, a component of the GASNet runtime library
+which allows applications using many GASNet conduits to utilize an existing
+installation of MPI to perform job launch.  Because most systems where GASNet
+will be deployed are also used for MPI, this is often the simplest and most
+reliable way to launch GASNet applications.
+
+@ Section: Basic Usage @
+
++ Usage summary (option 1):
+  Many languages and libraries built over GASNet provide their own commands
+  for job launch.  These should be used instead of GASNet's whenever possible.
+  They typically wrap the mechanisms described below, while providing
+  additional options specific to the language or library.
+
+  The remaining options are documented here mainly for those who are
+  implementing such a wrapper.
+
++ Usage summary (option 2):
+  Conduits which support mpi-spawner each include a spawner utility named
+  for the conduit:
+    gasnetrun_[conduit] -n <n> [options] [--] prog [program args]
+    options:
+      -n <n>                 number of processes to run (required)
+      -N <N>                 number of nodes to run on (not supported by all MPIs)
+      -E <VAR1[,VAR2...]>    list of environment vars to propagate
+      -v                     be verbose about what is happening
+      -t                     test only, don't execute anything (implies -v)
+      -k                     keep any temporary files created (implies -v)
+      -spawner=(ssh|mpi|pmi) force use of a specific spawner (if available)
+
+  The mpi-spawner described in this README is used if selected by one of the
+  following three mechanisms, in order from greatest to least precedence:
+     + Passing -spawner=mpi to the gasnetrun_[conduit] utility
+     + Setting GASNET_[CONDUIT]_SPAWNER=mpi in the environment
+     + If mpi-spawner was established as the default at configure time (see
+       Build-time Configuration, below).
+
++ Usage summary (option 3):
+  When mpi-spawner is supported by a conduit, it is also possible to launch
+  applications directly using mpirun, or its equivalent on your system.
+  For example:
+    mpirun -np N prog [program args]
+  where N is the number of processes to run.
+
+@ Section: Build-time Configuration @
+
+Conduits other than mpi-conduit which support mpi-spawner each accept a
+configure option of the form
+    --with-[conduit]-spawner=VALUE
+where VALUE is one of "mpi", "ssh", or "pmi".  This sets the default
+spawner used by the corresponding gasnetrun_[conduit] utility, as described
+in the "Basic Usage" section above.  In all cases "mpi" is the default if
+MPI support is found at configure time.  However, one may explicitly pass
+'--with-[conduit]-spawner=mpi' to ensure configure will fail if the
+corresponding conduit is to be built but MPI support was not found.
+
+In order to use mpi-spawner, a working MPI must be installed and configured
+on your system.  See mpi-conduit/README for information on configuring GASNet
+for a particular MPI and in particular the setting of an MPIRUN_CMD (which is
+critical to correct operation of mpi-spawner).
+
+Note that you do not need to compile mpi-conduit if you never plan to use it.
+To do so while retaining support for mpi-based job launch, configure with
+    --disable-mpi --enable-mpi-compat
+The first option disables building of mpi-conduit while the second ensures
+that configure fails if it is unable to find a working MPI installation.
+
+If one is using mpi-conduit, or is expecting to run hybrid GASNet+MPI
+applications with any conduit, then MPIRUN_CMD should be set as one would
+normally use mpirun for MPI applications.  However, since mpi-spawner itself
+uses MPI only for initialization and finalization (and MPI is not used for
+GASNet communications other than in mpi-conduit) one can potentially reduce
+resource use by setting MPIRUN_CMD such that the MPI will use TCP/IP for its
+communication.  Below are recommendations for several MPIs.  When recommended
+to set an environment variable, the most reliable way is to prefix the mpirun
+command.  For instance
+   MPIRUN_CMD='env VARIABLE=value mpirun [rest of your template]'
+
+    - Open MPI
+      Pass "--mca btl tcp,self" to mpirun, OR
+      Set environment variable OMPI_MCA_BTL=tcp,self.
+    - MPICH or MPICH2
+      These normally default to TCP/IP, so no special action is required.
+    - MVAPICH family
+      These most often support only InfiniBand and therefore are not
+      recommended for use as a launcher for GASNet applications if one
+      is concerned with reducing resource usage.
+    - Intel MPI
+      Set environment variable I_MPI_DEVICE=sock.
+    - HP-MPI
+      Set environment variable MPI_IC_ORDER=tcp.
+    - LAM/MPI
+      Pass "-ssi rpi tcp" to mpirun, OR
+      Set environment variable LAM_MPI_SSI_rpi=tcp.
+
+Please also check the conduit-specific README for the conduit(s) you will
+use for any additional recommendations or restrictions.
+
+@ Section: Runtime Configuration @
+
+Recognized Environment Variables:
+
+* MPIRUN_CMD - a template for executing mpirun, or its equivalent.
+  A default value is established at configure time, but a value set at run
+  time will take precedence over that default.
+  See mpi-conduit's README for full documentation on this variable.
+
+* GASNET_MPI_THREAD - can be set to one of the values:
+    "SINGLE", "FUNNELED", "SERIALIZED" or "MULTIPLE"
+  to request the MPI library be initialized with a specific threading support
+  level.  The default value depends on the GASNET_{SEQ,PAR} mode and on the
+  conduit.
+  + SINGLE - Sufficient for mpi-spawner itself. This MPI thread mode is only
+    guaranteed to work correctly in a strictly single-threaded process (i.e.
+    no threads anywhere in the system).
+  + FUNNELED - Other threads exist in the process, but never call MPI or GASNet.
+  + SERIALIZED - GASNET_PAR or GASNET_PARSYNC mode, where multiple client
+    threads may call GASNet.  Also required if the conduit spawns internal AM
+    progress threads.
+  + MULTIPLE - Multi-threaded GASNet+MPI process that makes direct calls to MPI.
+  See MPI documentation for detailed explanation of the threading levels.

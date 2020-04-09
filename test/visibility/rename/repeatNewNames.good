@@ -1,0 +1,1 @@
+repeatNewNames.chpl:8: error: already renamed 'a' to 'bleep', renaming 'b' would conflict

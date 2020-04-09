@@ -1,0 +1,19 @@
+#!/bin/bash --norc
+
+output=${2:-}
+execopts=${5:-}
+
+function doit {
+  sort rmatalt.weights | { diff rmatalt.weights.good - && echo weights match; }
+  sort rmatalt.neis    | { diff rmatalt.neis.good - && echo neis match; }
+}
+
+if [ -z "$output" ]; then
+  # if invoked manually
+  doit
+else
+  case "$execopts" in
+    (*rmatEdgeGenFile=*)  doit >> $output ;;
+    (*)                   true ;; # do nothing
+  esac
+fi

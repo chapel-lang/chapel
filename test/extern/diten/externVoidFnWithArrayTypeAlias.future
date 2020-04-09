@@ -1,0 +1,15 @@
+bug: extern function with array argument that returns non-trivial void fails
+
+Issue #13046
+
+An extern function with an array argument gets called through a wrapper that
+turns the array argument into a simple pointer for the underlying function.
+The wrapper returns the result of the call to the extern function.  If the
+extern function is 'void' the wrapper shouldn't return it.
+
+If the extern function has an explicit 'void' type through a type alias or
+a type function, we aren't currently able to detect this when the wrapper is
+built, so the wrapper returns a call to a function that has no return value.
+
+If dead code elmination is enabled, the bad code gets removed, but it ideally
+shouldn't be created in the first place.

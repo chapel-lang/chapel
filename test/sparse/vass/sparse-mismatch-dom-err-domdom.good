@@ -1,0 +1,1 @@
+sparse-mismatch-dom-err-domdom.chpl:6: error: halt reached - Sparse domains can't be zippered with anything other than themselves and their arrays

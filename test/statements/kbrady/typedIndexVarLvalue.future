@@ -1,0 +1,15 @@
+semantic: How should lvalue indices in for loops be treated when given a type?
+
+Currently when iterating over an array the loop index is treated as reference
+into the array allowing for code such as
+	var A = [1, 2, 3, 4];
+	for i in A do
+		i += 1;
+to increment each element. When giving the index variable a type, such as
+	for i:int(8) in A do
+		i += 1;
+a number of problems arise. For example if you were to do i += 400, what is
+the result inside of the array A? So one option would be to treat any index
+var given a type as being const. Another would be that the index type is const,
+but only if it does not match the element type in the array. (In the above
+example i:int(64) would not be const while i:int(8) would be)

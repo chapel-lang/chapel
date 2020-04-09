@@ -1,0 +1,7 @@
+domain(2): 		{1..4, 1..4}
+twice: 			(-1, 3)
+exterior(twice): 	{0..0, 5..7}
+
+domain(3): 		{1..4, 1..4, 1..4}
+thrice: 		(-3, 0, 2)
+exterior(thrice): 	{-2..0, 1..4, 5..6}

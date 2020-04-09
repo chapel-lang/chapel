@@ -1,0 +1,16 @@
+====================================
+Chapel Examples: Idioms and Patterns
+====================================
+
+These examples implement some common parallel kernels, idioms, and
+patterns.
+
+     beer.chpl              : computes lyrics to "99 bottles of beer"
+     genericStack.chpl      : generic stack classes (list- and array-based)
+     jacobi.chpl            : Jacobi iteration
+     linkedList.chpl        : generic linked list example
+     norm.chpl              : sample module for computing array norms
+     prodCons.chpl          : producer-consumer example using circular buffer
+     quicksort.chpl         : parallel quick sort using cobegin and serial
+     tree.chpl              : constructs and walks a tree in parallel
+

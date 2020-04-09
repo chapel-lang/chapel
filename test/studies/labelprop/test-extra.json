@@ -1,0 +1,19 @@
+{"id":100, "user":{"id":1}, "entities":{"user_mentions":[{"id":2},{"id":3}]}}
+{"id":101, "user":{"id":2}, "entities":{"user_mentions":[{"id":1}]}}
+{"id":102, "user":{"id":2}, "entities":{"user_mentions":[{"id":3}]}}
+{"id":103, "user":{"id":3}, "entities":{"user_mentions":[{"id":1}]}}
+{"id":104, "user":{"id":3}, "entities":{"user_mentions":[{"id":2}]}}
+{"id":105, "user":{"id":4}, "entities":{"user_mentions":[{"id":2}]}}
+{"id":106, "user":{"id":2}, "entities":{"user_mentions":[{"id":4}]}}
+{"id":107, "user":{"id":4}, "entities":{"user_mentions":[{"id":1},{"id":3}]}}
+{"id":108, "user":{"id":5}, "entities":{"user_mentions":[{"id":6},{"id":7}]}}
+{"id":109, "user":{"id":6}, "entities":{"user_mentions":[{"id":5},{"id":7}]}}
+{"id":110, "user":{"id":7}, "entities":{"user_mentions":[{"id":5},{"id":6}]}}
+{"id":111, "user":{"id":8}, "entities":{"user_mentions":[{"id":1},{"id":6}]}}
+{"id":112, "user":{"id":6}, "entities":{"user_mentions":[{"id":1}]}}
+{"id":113, "user":{"id":1}, "entities":{"user_mentions":[{"id":8}]}}
+{"id":114, "user":{"id":9}, "entities":{"user_mentions":[{"id":9}]}}
+{"id":115, "user":{"id":10}, "entities":{"user_mentions":[]}}
+{"id":116, "user":{"id":11}, "entities":{"user_mentions":[{"id":12}]}}
+{"id":116, "user":{"id":12}, "entities":{"user_mentions":[{"id":11}]}}
+{ "coordinates": null, "created_at": "Fri Oct 16 16:00:00 +0000 2015", "favorited": false, "truncated": false, "id_str": "12", "entities": { "urls": [ { "expanded_url": null, "url": "https://chapel-lang.org", "indices": [ 69, 100 ] } ], "hashtags": [ ], "user_mentions": [ { "name": "Cray Inc.", "id_str": "11", "id": 11, "indices": [ 25, 30 ], "screen_name": "cray" } ] }, "in_reply_to_user_id_str": null, "text": "Let's mention   the user @cray -- here is an embedded url .......... https://chapel-lang.org", "contributors": null, "id": 12, "retweet_count": null, "in_reply_to_status_id_str": null, "geo": null, "retweeted": false, "in_reply_to_user_id": null, "user": { "profile_sidebar_border_color": "C0DEED", "name": "Cray Inc.", "profile_sidebar_fill_color": "DDEEF6", "profile_background_tile": false, "profile_image_url": "http://some-host.com/some-path.png", "location": "Seattle, WA", "created_at": "Fri Oct 10 23:10:00 +0000 2008", "id_str": "23502385", "follow_request_sent": false, "profile_link_color": "0084B4", "favourites_count": 1, "url": "http://cray.com", "contributors_enabled": false, "utc_offset": -25200, "id": 23548250, "profile_use_background_image": true, "listed_count": 23, "protected": false, "lang": "en", "profile_text_color": "333333", "followers_count": 1000, "time_zone": "Mountain Time (US & Canada)", "verified": false, "geo_enabled": true, "profile_background_color": "C0DEED", "notifications": false, "description": "Cray Inc", "friends_count": 71, "profile_background_image_url": "http://some-host.com/some-path.png", "statuses_count": 302, "screen_name": "gnip", "following": false, "show_all_inline_media": false }, "in_reply_to_screen_name": null, "source": "web", "place": null, "in_reply_to_status_id": null }

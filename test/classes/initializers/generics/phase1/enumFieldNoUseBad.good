@@ -1,0 +1,2 @@
+enumFieldNoUseBad.chpl:8: In initializer:
+enumFieldNoUseBad.chpl:9: error: 'blue' undeclared (first use this function)

@@ -1,0 +1,1 @@
+test_param_iterator_error.chpl:1: error: iterators may not yield or return parameters

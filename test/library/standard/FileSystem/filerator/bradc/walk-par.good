@@ -1,0 +1,8 @@
+.
+./subdir
+./subdir-link
+./subdir-link/subdir2
+./subdir-link/subdir3
+./subdir/subdir2
+./subdir/subdir3
+walk-par.chpl:12: warning: sorting has no effect for parallel invocations of walkdirs()

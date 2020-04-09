@@ -1,0 +1,4 @@
+# Limit stack size for systems that have limited memory. Limited to 256 so that
+# in the event all 10,000 stacks exists at the same time (highly, highly
+# unlikely) you won't run out of memory on systems with less than 4GB of ram.
+CHPL_RT_CALL_STACK_SIZE=256K

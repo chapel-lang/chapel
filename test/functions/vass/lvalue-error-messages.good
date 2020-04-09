@@ -1,0 +1,2 @@
+lvalue-error-messages.chpl:6: error: illegal lvalue in assignment +=
+lvalue-error-messages.chpl:7: error: illegal lvalue in <=>

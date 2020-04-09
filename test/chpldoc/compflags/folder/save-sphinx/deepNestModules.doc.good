@@ -1,0 +1,50 @@
+.. default-domain:: chpl
+
+.. module:: Foo
+
+Foo
+===
+**Usage**
+
+.. code-block:: chapel
+
+   use Foo;
+
+
+or
+
+.. code-block:: chapel
+
+   import Foo;
+
+**Submodules**
+
+.. toctree::
+   :maxdepth: 1
+   :glob:
+
+   Foo/*
+
+.. function:: proc gob()
+
+.. default-domain:: chpl
+
+.. module:: Bar
+
+Bar
+===
+**Usage**
+
+.. code-block:: chapel
+
+   use Foo.Bar;
+
+
+or
+
+.. code-block:: chapel
+
+   import Foo.Bar;
+
+.. function:: proc baz()
+

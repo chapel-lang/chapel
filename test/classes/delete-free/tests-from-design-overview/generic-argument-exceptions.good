@@ -1,0 +1,10 @@
+test1
+owned MyClass
+in MyClass.init
+owned MyClass
+in MyClass.deinit
+test2
+in MyClass.init
+Container(owned MyClass)
+owned MyClass
+in MyClass.deinit

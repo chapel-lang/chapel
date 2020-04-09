@@ -1,0 +1,2 @@
+#!/bin/bash
+mkdir remove_directory 2> remove_dir.exec.out.tmp

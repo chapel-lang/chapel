@@ -1,0 +1,32 @@
+create slice (module-scope):
+(execute_on = 2) (execute_on = 1) (<no communication>) (<no communication>)
+use slice via assignment (module-scope):
+(execute_on_nb = 3) (execute_on_fast = 1) (execute_on_fast = 1) (execute_on_fast = 1)
+use slice via random access (module-scope):
+(execute_on_nb = 3) (execute_on_fast = 1) (execute_on_fast = 1) (execute_on_fast = 1)
+use slice as standalone (module-scope):
+(execute_on_nb = 3) (execute_on_fast = 1) (execute_on_fast = 1) (execute_on_fast = 1)
+use slice as leader (module-scope):
+(execute_on_nb = 3) (execute_on_fast = 1) (execute_on_fast = 1) (execute_on_fast = 1)
+use slice as follower (module-scope):
+(execute_on_nb = 3) (execute_on_fast = 1) (execute_on_fast = 1) (execute_on_fast = 1)
+1-arg promotion (module-scope):
+(execute_on_nb = 3) (execute_on_fast = 1) (execute_on_fast = 1) (execute_on_fast = 1)
+2-arg promotion (module-scope):
+(execute_on_nb = 3) (execute_on_fast = 1) (execute_on_fast = 1) (execute_on_fast = 1)
+create slice (local-scope):
+(execute_on = 2) (execute_on = 1) (<no communication>) (<no communication>)
+use slice via assignment (local-scope):
+(execute_on_nb = 3) (execute_on_fast = 1) (execute_on_fast = 1) (execute_on_fast = 1)
+use slice via random access (local-scope):
+(execute_on_nb = 3) (execute_on_fast = 1) (execute_on_fast = 1) (execute_on_fast = 1)
+use slice as standalone (local-scope):
+(execute_on_nb = 3) (execute_on_fast = 1) (execute_on_fast = 1) (execute_on_fast = 1)
+use slice as leader (local-scope):
+(execute_on_nb = 3) (execute_on_fast = 1) (execute_on_fast = 1) (execute_on_fast = 1)
+use slice as follower (local-scope):
+(execute_on_nb = 3) (execute_on_fast = 1) (execute_on_fast = 1) (execute_on_fast = 1)
+1-arg promotion (local-scope):
+(execute_on_nb = 3) (execute_on_fast = 1) (execute_on_fast = 1) (execute_on_fast = 1)
+2-arg promotion (local-scope):
+(execute_on_nb = 3) (execute_on_fast = 1) (execute_on_fast = 1) (execute_on_fast = 1)

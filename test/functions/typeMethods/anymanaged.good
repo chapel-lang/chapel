@@ -1,0 +1,433 @@
+anymanaged.chpl:33: warning: ========= C =========
+anymanaged.chpl:35: warning: 
+anymanaged.chpl:37: warning:            C  .mp()  true
+anymanaged.chpl:38: warning:           (C?).mp()  true
+anymanaged.chpl:39: warning:     (owned C ).mp()  true
+anymanaged.chpl:40: warning:     (owned C?).mp()  true
+anymanaged.chpl:41: warning:    (shared C ).mp()  true
+anymanaged.chpl:42: warning:    (shared C?).mp()  true
+anymanaged.chpl:43: warning:  (borrowed C ).mp()  true
+anymanaged.chpl:44: warning:  (borrowed C?).mp()  true
+anymanaged.chpl:45: warning: (unmanaged C ).mp()  true
+anymanaged.chpl:46: warning: (unmanaged C?).mp()  true
+anymanaged.chpl:48: warning: 
+anymanaged.chpl:50: warning:            C  .mA()  true
+anymanaged.chpl:51: warning:           (C?).mA()  true
+anymanaged.chpl:52: warning:     (owned C ).mA()  true
+anymanaged.chpl:53: warning:     (owned C?).mA()  true
+anymanaged.chpl:54: warning:    (shared C ).mA()  true
+anymanaged.chpl:55: warning:    (shared C?).mA()  true
+anymanaged.chpl:56: warning:  (borrowed C ).mA()  true
+anymanaged.chpl:57: warning:  (borrowed C?).mA()  true
+anymanaged.chpl:58: warning: (unmanaged C ).mA()  true
+anymanaged.chpl:59: warning: (unmanaged C?).mA()  true
+anymanaged.chpl:61: warning: 
+anymanaged.chpl:63: warning:            C  .mB()  true
+anymanaged.chpl:64: warning:           (C?).mB()  true
+anymanaged.chpl:65: warning:     (owned C ).mB()  true
+anymanaged.chpl:66: warning:     (owned C?).mB()  true
+anymanaged.chpl:67: warning:    (shared C ).mB()  true
+anymanaged.chpl:68: warning:    (shared C?).mB()  true
+anymanaged.chpl:69: warning:  (borrowed C ).mB()  true
+anymanaged.chpl:70: warning:  (borrowed C?).mB()  true
+anymanaged.chpl:71: warning: (unmanaged C ).mB()  true
+anymanaged.chpl:72: warning: (unmanaged C?).mB()  true
+anymanaged.chpl:74: warning: 
+anymanaged.chpl:76: warning:            C  .mBn()  false
+anymanaged.chpl:77: warning:           (C?).mBn()  true
+anymanaged.chpl:78: warning:     (owned C ).mBn()  false
+anymanaged.chpl:79: warning:     (owned C?).mBn()  true
+anymanaged.chpl:80: warning:    (shared C ).mBn()  false
+anymanaged.chpl:81: warning:    (shared C?).mBn()  true
+anymanaged.chpl:82: warning:  (borrowed C ).mBn()  false
+anymanaged.chpl:83: warning:  (borrowed C?).mBn()  true
+anymanaged.chpl:84: warning: (unmanaged C ).mBn()  false
+anymanaged.chpl:85: warning: (unmanaged C?).mBn()  true
+anymanaged.chpl:87: warning: 
+anymanaged.chpl:89: warning:            C  .mo()  false
+anymanaged.chpl:90: warning:           (C?).mo()  false
+anymanaged.chpl:91: warning:     (owned C ).mo()  true
+anymanaged.chpl:92: warning:     (owned C?).mo()  false
+anymanaged.chpl:93: warning:    (shared C ).mo()  false
+anymanaged.chpl:94: warning:    (shared C?).mo()  false
+anymanaged.chpl:95: warning:  (borrowed C ).mo()  false
+anymanaged.chpl:96: warning:  (borrowed C?).mo()  false
+anymanaged.chpl:97: warning: (unmanaged C ).mo()  false
+anymanaged.chpl:98: warning: (unmanaged C?).mo()  false
+anymanaged.chpl:100: warning: 
+anymanaged.chpl:102: warning:            C  .mon()  false
+anymanaged.chpl:103: warning:           (C?).mon()  false
+anymanaged.chpl:104: warning:     (owned C ).mon()  false
+anymanaged.chpl:105: warning:     (owned C?).mon()  true
+anymanaged.chpl:106: warning:    (shared C ).mon()  false
+anymanaged.chpl:107: warning:    (shared C?).mon()  false
+anymanaged.chpl:108: warning:  (borrowed C ).mon()  false
+anymanaged.chpl:109: warning:  (borrowed C?).mon()  false
+anymanaged.chpl:110: warning: (unmanaged C ).mon()  false
+anymanaged.chpl:111: warning: (unmanaged C?).mon()  false
+anymanaged.chpl:113: warning: 
+anymanaged.chpl:115: warning:            C  .ms()  false
+anymanaged.chpl:116: warning:           (C?).ms()  false
+anymanaged.chpl:117: warning:     (owned C ).ms()  false
+anymanaged.chpl:118: warning:     (owned C?).ms()  false
+anymanaged.chpl:119: warning:    (shared C ).ms()  true
+anymanaged.chpl:120: warning:    (shared C?).ms()  false
+anymanaged.chpl:121: warning:  (borrowed C ).ms()  false
+anymanaged.chpl:122: warning:  (borrowed C?).ms()  false
+anymanaged.chpl:123: warning: (unmanaged C ).ms()  false
+anymanaged.chpl:124: warning: (unmanaged C?).ms()  false
+anymanaged.chpl:126: warning: 
+anymanaged.chpl:128: warning:            C  .msn()  false
+anymanaged.chpl:129: warning:           (C?).msn()  false
+anymanaged.chpl:130: warning:     (owned C ).msn()  false
+anymanaged.chpl:131: warning:     (owned C?).msn()  false
+anymanaged.chpl:132: warning:    (shared C ).msn()  false
+anymanaged.chpl:133: warning:    (shared C?).msn()  true
+anymanaged.chpl:134: warning:  (borrowed C ).msn()  false
+anymanaged.chpl:135: warning:  (borrowed C?).msn()  false
+anymanaged.chpl:136: warning: (unmanaged C ).msn()  false
+anymanaged.chpl:137: warning: (unmanaged C?).msn()  false
+anymanaged.chpl:139: warning: 
+anymanaged.chpl:141: warning:            C  .mb()  true
+anymanaged.chpl:142: warning:           (C?).mb()  false
+anymanaged.chpl:143: warning:     (owned C ).mb()  true
+anymanaged.chpl:144: warning:     (owned C?).mb()  false
+anymanaged.chpl:145: warning:    (shared C ).mb()  true
+anymanaged.chpl:146: warning:    (shared C?).mb()  false
+anymanaged.chpl:147: warning:  (borrowed C ).mb()  true
+anymanaged.chpl:148: warning:  (borrowed C?).mb()  false
+anymanaged.chpl:149: warning: (unmanaged C ).mb()  true
+anymanaged.chpl:150: warning: (unmanaged C?).mb()  false
+anymanaged.chpl:152: warning: 
+anymanaged.chpl:154: warning:            C  .mbn()  false
+anymanaged.chpl:155: warning:           (C?).mbn()  true
+anymanaged.chpl:156: warning:     (owned C ).mbn()  false
+anymanaged.chpl:157: warning:     (owned C?).mbn()  true
+anymanaged.chpl:158: warning:    (shared C ).mbn()  false
+anymanaged.chpl:159: warning:    (shared C?).mbn()  true
+anymanaged.chpl:160: warning:  (borrowed C ).mbn()  false
+anymanaged.chpl:161: warning:  (borrowed C?).mbn()  true
+anymanaged.chpl:162: warning: (unmanaged C ).mbn()  false
+anymanaged.chpl:163: warning: (unmanaged C?).mbn()  true
+anymanaged.chpl:165: warning: 
+anymanaged.chpl:167: warning:            C  .mu()  false
+anymanaged.chpl:168: warning:           (C?).mu()  false
+anymanaged.chpl:169: warning:     (owned C ).mu()  false
+anymanaged.chpl:170: warning:     (owned C?).mu()  false
+anymanaged.chpl:171: warning:    (shared C ).mu()  false
+anymanaged.chpl:172: warning:    (shared C?).mu()  false
+anymanaged.chpl:173: warning:  (borrowed C ).mu()  false
+anymanaged.chpl:174: warning:  (borrowed C?).mu()  false
+anymanaged.chpl:175: warning: (unmanaged C ).mu()  true
+anymanaged.chpl:176: warning: (unmanaged C?).mu()  false
+anymanaged.chpl:178: warning: 
+anymanaged.chpl:180: warning:            C  .mun()  false
+anymanaged.chpl:181: warning:           (C?).mun()  false
+anymanaged.chpl:182: warning:     (owned C ).mun()  false
+anymanaged.chpl:183: warning:     (owned C?).mun()  false
+anymanaged.chpl:184: warning:    (shared C ).mun()  false
+anymanaged.chpl:185: warning:    (shared C?).mun()  false
+anymanaged.chpl:186: warning:  (borrowed C ).mun()  false
+anymanaged.chpl:187: warning:  (borrowed C?).mun()  false
+anymanaged.chpl:188: warning: (unmanaged C ).mun()  false
+anymanaged.chpl:189: warning: (unmanaged C?).mun()  true
+anymanaged.chpl:191: warning: 
+anymanaged.chpl:193: warning: ========= D =========
+anymanaged.chpl:195: warning: 
+anymanaged.chpl:197: warning:            D  .mp()  true
+anymanaged.chpl:198: warning:           (D?).mp()  true
+anymanaged.chpl:199: warning:     (owned D ).mp()  true
+anymanaged.chpl:200: warning:     (owned D?).mp()  true
+anymanaged.chpl:201: warning:    (shared D ).mp()  true
+anymanaged.chpl:202: warning:    (shared D?).mp()  true
+anymanaged.chpl:203: warning:  (borrowed D ).mp()  true
+anymanaged.chpl:204: warning:  (borrowed D?).mp()  true
+anymanaged.chpl:205: warning: (unmanaged D ).mp()  true
+anymanaged.chpl:206: warning: (unmanaged D?).mp()  true
+anymanaged.chpl:208: warning: 
+anymanaged.chpl:210: warning:            D  .mA()  true
+anymanaged.chpl:211: warning:           (D?).mA()  true
+anymanaged.chpl:212: warning:     (owned D ).mA()  true
+anymanaged.chpl:213: warning:     (owned D?).mA()  true
+anymanaged.chpl:214: warning:    (shared D ).mA()  true
+anymanaged.chpl:215: warning:    (shared D?).mA()  true
+anymanaged.chpl:216: warning:  (borrowed D ).mA()  true
+anymanaged.chpl:217: warning:  (borrowed D?).mA()  true
+anymanaged.chpl:218: warning: (unmanaged D ).mA()  true
+anymanaged.chpl:219: warning: (unmanaged D?).mA()  true
+anymanaged.chpl:221: warning: 
+anymanaged.chpl:223: warning:            D  .mB()  true
+anymanaged.chpl:224: warning:           (D?).mB()  true
+anymanaged.chpl:225: warning:     (owned D ).mB()  true
+anymanaged.chpl:226: warning:     (owned D?).mB()  true
+anymanaged.chpl:227: warning:    (shared D ).mB()  true
+anymanaged.chpl:228: warning:    (shared D?).mB()  true
+anymanaged.chpl:229: warning:  (borrowed D ).mB()  true
+anymanaged.chpl:230: warning:  (borrowed D?).mB()  true
+anymanaged.chpl:231: warning: (unmanaged D ).mB()  true
+anymanaged.chpl:232: warning: (unmanaged D?).mB()  true
+anymanaged.chpl:234: warning: 
+anymanaged.chpl:236: warning:            D  .mBn()  false
+anymanaged.chpl:237: warning:           (D?).mBn()  true
+anymanaged.chpl:238: warning:     (owned D ).mBn()  false
+anymanaged.chpl:239: warning:     (owned D?).mBn()  true
+anymanaged.chpl:240: warning:    (shared D ).mBn()  false
+anymanaged.chpl:241: warning:    (shared D?).mBn()  true
+anymanaged.chpl:242: warning:  (borrowed D ).mBn()  false
+anymanaged.chpl:243: warning:  (borrowed D?).mBn()  true
+anymanaged.chpl:244: warning: (unmanaged D ).mBn()  false
+anymanaged.chpl:245: warning: (unmanaged D?).mBn()  true
+anymanaged.chpl:247: warning: 
+anymanaged.chpl:249: warning:            D  .mo()  false
+anymanaged.chpl:250: warning:           (D?).mo()  false
+anymanaged.chpl:251: warning:     (owned D ).mo()  true
+anymanaged.chpl:252: warning:     (owned D?).mo()  false
+anymanaged.chpl:253: warning:    (shared D ).mo()  false
+anymanaged.chpl:254: warning:    (shared D?).mo()  false
+anymanaged.chpl:255: warning:  (borrowed D ).mo()  false
+anymanaged.chpl:256: warning:  (borrowed D?).mo()  false
+anymanaged.chpl:257: warning: (unmanaged D ).mo()  false
+anymanaged.chpl:258: warning: (unmanaged D?).mo()  false
+anymanaged.chpl:260: warning: 
+anymanaged.chpl:262: warning:            D  .mon()  false
+anymanaged.chpl:263: warning:           (D?).mon()  false
+anymanaged.chpl:264: warning:     (owned D ).mon()  false
+anymanaged.chpl:265: warning:     (owned D?).mon()  true
+anymanaged.chpl:266: warning:    (shared D ).mon()  false
+anymanaged.chpl:267: warning:    (shared D?).mon()  false
+anymanaged.chpl:268: warning:  (borrowed D ).mon()  false
+anymanaged.chpl:269: warning:  (borrowed D?).mon()  false
+anymanaged.chpl:270: warning: (unmanaged D ).mon()  false
+anymanaged.chpl:271: warning: (unmanaged D?).mon()  false
+anymanaged.chpl:273: warning: 
+anymanaged.chpl:275: warning:            D  .ms()  false
+anymanaged.chpl:276: warning:           (D?).ms()  false
+anymanaged.chpl:277: warning:     (owned D ).ms()  false
+anymanaged.chpl:278: warning:     (owned D?).ms()  false
+anymanaged.chpl:279: warning:    (shared D ).ms()  true
+anymanaged.chpl:280: warning:    (shared D?).ms()  false
+anymanaged.chpl:281: warning:  (borrowed D ).ms()  false
+anymanaged.chpl:282: warning:  (borrowed D?).ms()  false
+anymanaged.chpl:283: warning: (unmanaged D ).ms()  false
+anymanaged.chpl:284: warning: (unmanaged D?).ms()  false
+anymanaged.chpl:286: warning: 
+anymanaged.chpl:288: warning:            D  .msn()  false
+anymanaged.chpl:289: warning:           (D?).msn()  false
+anymanaged.chpl:290: warning:     (owned D ).msn()  false
+anymanaged.chpl:291: warning:     (owned D?).msn()  false
+anymanaged.chpl:292: warning:    (shared D ).msn()  false
+anymanaged.chpl:293: warning:    (shared D?).msn()  true
+anymanaged.chpl:294: warning:  (borrowed D ).msn()  false
+anymanaged.chpl:295: warning:  (borrowed D?).msn()  false
+anymanaged.chpl:296: warning: (unmanaged D ).msn()  false
+anymanaged.chpl:297: warning: (unmanaged D?).msn()  false
+anymanaged.chpl:299: warning: 
+anymanaged.chpl:301: warning:            D  .mb()  true
+anymanaged.chpl:302: warning:           (D?).mb()  false
+anymanaged.chpl:303: warning:     (owned D ).mb()  true
+anymanaged.chpl:304: warning:     (owned D?).mb()  false
+anymanaged.chpl:305: warning:    (shared D ).mb()  true
+anymanaged.chpl:306: warning:    (shared D?).mb()  false
+anymanaged.chpl:307: warning:  (borrowed D ).mb()  true
+anymanaged.chpl:308: warning:  (borrowed D?).mb()  false
+anymanaged.chpl:309: warning: (unmanaged D ).mb()  true
+anymanaged.chpl:310: warning: (unmanaged D?).mb()  false
+anymanaged.chpl:312: warning: 
+anymanaged.chpl:314: warning:            D  .mbn()  false
+anymanaged.chpl:315: warning:           (D?).mbn()  true
+anymanaged.chpl:316: warning:     (owned D ).mbn()  false
+anymanaged.chpl:317: warning:     (owned D?).mbn()  true
+anymanaged.chpl:318: warning:    (shared D ).mbn()  false
+anymanaged.chpl:319: warning:    (shared D?).mbn()  true
+anymanaged.chpl:320: warning:  (borrowed D ).mbn()  false
+anymanaged.chpl:321: warning:  (borrowed D?).mbn()  true
+anymanaged.chpl:322: warning: (unmanaged D ).mbn()  false
+anymanaged.chpl:323: warning: (unmanaged D?).mbn()  true
+anymanaged.chpl:325: warning: 
+anymanaged.chpl:327: warning:            D  .mu()  false
+anymanaged.chpl:328: warning:           (D?).mu()  false
+anymanaged.chpl:329: warning:     (owned D ).mu()  false
+anymanaged.chpl:330: warning:     (owned D?).mu()  false
+anymanaged.chpl:331: warning:    (shared D ).mu()  false
+anymanaged.chpl:332: warning:    (shared D?).mu()  false
+anymanaged.chpl:333: warning:  (borrowed D ).mu()  false
+anymanaged.chpl:334: warning:  (borrowed D?).mu()  false
+anymanaged.chpl:335: warning: (unmanaged D ).mu()  true
+anymanaged.chpl:336: warning: (unmanaged D?).mu()  false
+anymanaged.chpl:338: warning: 
+anymanaged.chpl:340: warning:            D  .mun()  false
+anymanaged.chpl:341: warning:           (D?).mun()  false
+anymanaged.chpl:342: warning:     (owned D ).mun()  false
+anymanaged.chpl:343: warning:     (owned D?).mun()  false
+anymanaged.chpl:344: warning:    (shared D ).mun()  false
+anymanaged.chpl:345: warning:    (shared D?).mun()  false
+anymanaged.chpl:346: warning:  (borrowed D ).mun()  false
+anymanaged.chpl:347: warning:  (borrowed D?).mun()  false
+anymanaged.chpl:348: warning: (unmanaged D ).mun()  false
+anymanaged.chpl:349: warning: (unmanaged D?).mun()  true
+anymanaged.chpl:351: warning: 
+anymanaged.chpl:353: warning: ========= E =========
+anymanaged.chpl:355: warning: 
+anymanaged.chpl:357: warning:            E  .mp()  false
+anymanaged.chpl:358: warning:           (E?).mp()  false
+anymanaged.chpl:359: warning:     (owned E ).mp()  false
+anymanaged.chpl:360: warning:     (owned E?).mp()  false
+anymanaged.chpl:361: warning:    (shared E ).mp()  false
+anymanaged.chpl:362: warning:    (shared E?).mp()  false
+anymanaged.chpl:363: warning:  (borrowed E ).mp()  false
+anymanaged.chpl:364: warning:  (borrowed E?).mp()  false
+anymanaged.chpl:365: warning: (unmanaged E ).mp()  false
+anymanaged.chpl:366: warning: (unmanaged E?).mp()  false
+anymanaged.chpl:368: warning: 
+anymanaged.chpl:370: warning:            E  .mA()  false
+anymanaged.chpl:371: warning:           (E?).mA()  false
+anymanaged.chpl:372: warning:     (owned E ).mA()  false
+anymanaged.chpl:373: warning:     (owned E?).mA()  false
+anymanaged.chpl:374: warning:    (shared E ).mA()  false
+anymanaged.chpl:375: warning:    (shared E?).mA()  false
+anymanaged.chpl:376: warning:  (borrowed E ).mA()  false
+anymanaged.chpl:377: warning:  (borrowed E?).mA()  false
+anymanaged.chpl:378: warning: (unmanaged E ).mA()  false
+anymanaged.chpl:379: warning: (unmanaged E?).mA()  false
+anymanaged.chpl:381: warning: 
+anymanaged.chpl:383: warning:            E  .mB()  false
+anymanaged.chpl:384: warning:           (E?).mB()  false
+anymanaged.chpl:385: warning:     (owned E ).mB()  false
+anymanaged.chpl:386: warning:     (owned E?).mB()  false
+anymanaged.chpl:387: warning:    (shared E ).mB()  false
+anymanaged.chpl:388: warning:    (shared E?).mB()  false
+anymanaged.chpl:389: warning:  (borrowed E ).mB()  false
+anymanaged.chpl:390: warning:  (borrowed E?).mB()  false
+anymanaged.chpl:391: warning: (unmanaged E ).mB()  false
+anymanaged.chpl:392: warning: (unmanaged E?).mB()  false
+anymanaged.chpl:394: warning: 
+anymanaged.chpl:396: warning:            E  .mBn()  false
+anymanaged.chpl:397: warning:           (E?).mBn()  false
+anymanaged.chpl:398: warning:     (owned E ).mBn()  false
+anymanaged.chpl:399: warning:     (owned E?).mBn()  false
+anymanaged.chpl:400: warning:    (shared E ).mBn()  false
+anymanaged.chpl:401: warning:    (shared E?).mBn()  false
+anymanaged.chpl:402: warning:  (borrowed E ).mBn()  false
+anymanaged.chpl:403: warning:  (borrowed E?).mBn()  false
+anymanaged.chpl:404: warning: (unmanaged E ).mBn()  false
+anymanaged.chpl:405: warning: (unmanaged E?).mBn()  false
+anymanaged.chpl:407: warning: 
+anymanaged.chpl:409: warning:            E  .mo()  false
+anymanaged.chpl:410: warning:           (E?).mo()  false
+anymanaged.chpl:411: warning:     (owned E ).mo()  false
+anymanaged.chpl:412: warning:     (owned E?).mo()  false
+anymanaged.chpl:413: warning:    (shared E ).mo()  false
+anymanaged.chpl:414: warning:    (shared E?).mo()  false
+anymanaged.chpl:415: warning:  (borrowed E ).mo()  false
+anymanaged.chpl:416: warning:  (borrowed E?).mo()  false
+anymanaged.chpl:417: warning: (unmanaged E ).mo()  false
+anymanaged.chpl:418: warning: (unmanaged E?).mo()  false
+anymanaged.chpl:420: warning: 
+anymanaged.chpl:422: warning:            E  .mon()  false
+anymanaged.chpl:423: warning:           (E?).mon()  false
+anymanaged.chpl:424: warning:     (owned E ).mon()  false
+anymanaged.chpl:425: warning:     (owned E?).mon()  false
+anymanaged.chpl:426: warning:    (shared E ).mon()  false
+anymanaged.chpl:427: warning:    (shared E?).mon()  false
+anymanaged.chpl:428: warning:  (borrowed E ).mon()  false
+anymanaged.chpl:429: warning:  (borrowed E?).mon()  false
+anymanaged.chpl:430: warning: (unmanaged E ).mon()  false
+anymanaged.chpl:431: warning: (unmanaged E?).mon()  false
+anymanaged.chpl:433: warning: 
+anymanaged.chpl:435: warning:            E  .ms()  false
+anymanaged.chpl:436: warning:           (E?).ms()  false
+anymanaged.chpl:437: warning:     (owned E ).ms()  false
+anymanaged.chpl:438: warning:     (owned E?).ms()  false
+anymanaged.chpl:439: warning:    (shared E ).ms()  false
+anymanaged.chpl:440: warning:    (shared E?).ms()  false
+anymanaged.chpl:441: warning:  (borrowed E ).ms()  false
+anymanaged.chpl:442: warning:  (borrowed E?).ms()  false
+anymanaged.chpl:443: warning: (unmanaged E ).ms()  false
+anymanaged.chpl:444: warning: (unmanaged E?).ms()  false
+anymanaged.chpl:446: warning: 
+anymanaged.chpl:448: warning:            E  .msn()  false
+anymanaged.chpl:449: warning:           (E?).msn()  false
+anymanaged.chpl:450: warning:     (owned E ).msn()  false
+anymanaged.chpl:451: warning:     (owned E?).msn()  false
+anymanaged.chpl:452: warning:    (shared E ).msn()  false
+anymanaged.chpl:453: warning:    (shared E?).msn()  false
+anymanaged.chpl:454: warning:  (borrowed E ).msn()  false
+anymanaged.chpl:455: warning:  (borrowed E?).msn()  false
+anymanaged.chpl:456: warning: (unmanaged E ).msn()  false
+anymanaged.chpl:457: warning: (unmanaged E?).msn()  false
+anymanaged.chpl:459: warning: 
+anymanaged.chpl:461: warning:            E  .mb()  false
+anymanaged.chpl:462: warning:           (E?).mb()  false
+anymanaged.chpl:463: warning:     (owned E ).mb()  false
+anymanaged.chpl:464: warning:     (owned E?).mb()  false
+anymanaged.chpl:465: warning:    (shared E ).mb()  false
+anymanaged.chpl:466: warning:    (shared E?).mb()  false
+anymanaged.chpl:467: warning:  (borrowed E ).mb()  false
+anymanaged.chpl:468: warning:  (borrowed E?).mb()  false
+anymanaged.chpl:469: warning: (unmanaged E ).mb()  false
+anymanaged.chpl:470: warning: (unmanaged E?).mb()  false
+anymanaged.chpl:472: warning: 
+anymanaged.chpl:474: warning:            E  .mbn()  false
+anymanaged.chpl:475: warning:           (E?).mbn()  false
+anymanaged.chpl:476: warning:     (owned E ).mbn()  false
+anymanaged.chpl:477: warning:     (owned E?).mbn()  false
+anymanaged.chpl:478: warning:    (shared E ).mbn()  false
+anymanaged.chpl:479: warning:    (shared E?).mbn()  false
+anymanaged.chpl:480: warning:  (borrowed E ).mbn()  false
+anymanaged.chpl:481: warning:  (borrowed E?).mbn()  false
+anymanaged.chpl:482: warning: (unmanaged E ).mbn()  false
+anymanaged.chpl:483: warning: (unmanaged E?).mbn()  false
+anymanaged.chpl:485: warning: 
+anymanaged.chpl:487: warning:            E  .mu()  false
+anymanaged.chpl:488: warning:           (E?).mu()  false
+anymanaged.chpl:489: warning:     (owned E ).mu()  false
+anymanaged.chpl:490: warning:     (owned E?).mu()  false
+anymanaged.chpl:491: warning:    (shared E ).mu()  false
+anymanaged.chpl:492: warning:    (shared E?).mu()  false
+anymanaged.chpl:493: warning:  (borrowed E ).mu()  false
+anymanaged.chpl:494: warning:  (borrowed E?).mu()  false
+anymanaged.chpl:495: warning: (unmanaged E ).mu()  false
+anymanaged.chpl:496: warning: (unmanaged E?).mu()  false
+anymanaged.chpl:498: warning: 
+anymanaged.chpl:500: warning:            E  .mun()  false
+anymanaged.chpl:501: warning:           (E?).mun()  false
+anymanaged.chpl:502: warning:     (owned E ).mun()  false
+anymanaged.chpl:503: warning:     (owned E?).mun()  false
+anymanaged.chpl:504: warning:    (shared E ).mun()  false
+anymanaged.chpl:505: warning:    (shared E?).mun()  false
+anymanaged.chpl:506: warning:  (borrowed E ).mun()  false
+anymanaged.chpl:507: warning:  (borrowed E?).mun()  false
+anymanaged.chpl:508: warning: (unmanaged E ).mun()  false
+anymanaged.chpl:509: warning: (unmanaged E?).mun()  false
+anymanaged.chpl:511: warning: 
+anymanaged.chpl:513: warning: ========= R =========
+anymanaged.chpl:515: warning: 
+anymanaged.chpl:517: warning: R.mp()  false
+anymanaged.chpl:518: warning: R.mA()  false
+anymanaged.chpl:519: warning: R.mB()  false
+anymanaged.chpl:520: warning: R.mBn()  false
+anymanaged.chpl:521: warning: R.mo()  false
+anymanaged.chpl:522: warning: R.mon()  false
+anymanaged.chpl:523: warning: R.ms()  false
+anymanaged.chpl:524: warning: R.msn()  false
+anymanaged.chpl:525: warning: R.mb()  false
+anymanaged.chpl:526: warning: R.mbn()  false
+anymanaged.chpl:527: warning: R.mu()  false
+anymanaged.chpl:528: warning: R.mun()  false
+anymanaged.chpl:530: warning: 
+anymanaged.chpl:532: warning: ========= int(64) =========
+anymanaged.chpl:534: warning: 
+anymanaged.chpl:536: warning: int.mp()  false
+anymanaged.chpl:537: warning: int.mA()  false
+anymanaged.chpl:538: warning: int.mB()  false
+anymanaged.chpl:539: warning: int.mBn()  false
+anymanaged.chpl:540: warning: int.mo()  false
+anymanaged.chpl:541: warning: int.mon()  false
+anymanaged.chpl:542: warning: int.ms()  false
+anymanaged.chpl:543: warning: int.msn()  false
+anymanaged.chpl:544: warning: int.mb()  false
+anymanaged.chpl:545: warning: int.mbn()  false
+anymanaged.chpl:546: warning: int.mu()  false
+anymanaged.chpl:547: warning: int.mun()  false
+anymanaged.chpl:549: warning: 
+anymanaged.chpl:551: error: done

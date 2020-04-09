@@ -1,0 +1,1 @@
+badHighBoundedRange.chpl:3: error: Bound of '..high' must be an integer.

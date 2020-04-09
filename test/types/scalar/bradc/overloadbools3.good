@@ -1,0 +1,3 @@
+overloadbools3.chpl:13: error: ambiguous call 'foo(bool)'
+overloadbools3.chpl:1: note: candidates are: foo(x: bool(32))
+overloadbools3.chpl:5: note:                 foo(x: bool(64))

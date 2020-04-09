@@ -1,0 +1,7 @@
+reserved-uint.chpl:1: error: attempt to redefine reserved type 'uint'
+reserved-uint.chpl:3: error: attempt to redefine reserved type 'uint'
+reserved-uint.chpl:6: error: attempt to redefine reserved type 'uint'
+reserved-uint.chpl:7: error: attempt to redefine reserved type 'uint'
+reserved-uint.chpl:10: error: attempt to redefine reserved type 'uint'
+reserved-uint.chpl:12: error: attempt to redefine reserved type 'uint'
+reserved-uint.chpl:17: error: attempt to redefine reserved type 'uint'

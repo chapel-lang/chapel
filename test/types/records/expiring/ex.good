@@ -1,0 +1,16 @@
+ioExample1LM
+A: 1 2 3 4
+B: 1 2 3 4
+ownedExample1EOB
+{x = 1}
+
+sliceExample1EOB
+0 0 0 0 0 0 0 0 0 0
+
+sliceExample2EOB
+0 0 0 0 0 0 0 0 0 0
+
+innerFnExample1
+{x = 1}
+splitInitLM
+{x = 0}

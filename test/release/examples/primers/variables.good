@@ -1,0 +1,7 @@
+myVariable1 = 0
+myVariable2 = 1.618 (type = real(64))
+myType = uint(16)
+myVariable3 = 3 (type = uint(16))
+myConst = 1.27201, myParam = 3.14
+cfgVar = world, cfgConst = true, cfgParam = 1, cfgType = imag(64)
+a = 1.0, b = 0, c = 0, d = 1.0, e = 1.0, f = 0.0

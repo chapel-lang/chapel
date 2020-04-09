@@ -1,0 +1,23 @@
+var a = " 10 ";
+var a1 = a:uint;
+writeln(a1);
+var a2 = a:uint(8);
+writeln(a2);
+var a3 = a:uint(16);
+writeln(a3);
+var a4 = a:uint(32);
+writeln(a4);
+var a5 = a:uint(64);
+writeln(a5);
+
+var x = " 10 ":c_string;
+var x1 = x:uint;
+writeln(x1);
+var x2 = x:uint(8);
+writeln(x2);
+var x3 = x:uint(16);
+writeln(x3);
+var x4 = x:uint(32);
+writeln(x4);
+var x5 = x:uint(64);
+writeln(x5);

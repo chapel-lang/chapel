@@ -1,0 +1,1 @@
+tupleTypeBackwards.chpl:1: error: <type>*<param int> not supported.  If you're trying to specify a homogeneous tuple type, use <param int>*<type>.

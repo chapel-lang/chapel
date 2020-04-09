@@ -1,0 +1,10 @@
+# -sPODValAccess=false asks dsiAccess on array of int to return ref vs val
+
+# --no-codegen is so that this directory can work when pretending to
+# use ugni even if the runtime isn't compiled
+
+# --report-optimized-forall-unordered-ops reports when the opt fires
+
+# --no-checks because we probably don't care if checks interfere with the opt
+
+-sPODValAccess=false --no-codegen --optimize-forall-unordered-ops --report-optimized-forall-unordered-ops --no-checks

@@ -1,0 +1,5 @@
+#! /bin/sh
+
+if [ x$GSL_DIR != x ]; then
+  echo -I$GSL_DIR/include -L$GSL_DIR/lib
+fi

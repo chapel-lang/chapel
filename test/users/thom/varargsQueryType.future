@@ -1,0 +1,30 @@
+feature request: querying a (uniform) varargs type
+
+It seems reasonable to permit the type of a homogeneous
+varargs argument list to be queried as we do for other
+argument types.
+
+Note that varargs arguments with a specified element
+type don't seem to be described (well?) in the spec.
+At least I couldn't find it with a quick scan of
+examples and the varargs section.
+
+BLC: It seems that when using a query type on a varargs
+argument, the type that's produced is the tuple type
+of the whole list of arguments rather than the type
+of a single element.  This seems syntactically a little
+inconsistent w.r.t. the syntax for specifying a varargs
+function of a single type as shown in the varArgsInt.chpl
+test in this directory.  Perhaps we should use something
+like:
+
+        proc bar (x: ?t ...) 
+
+to mean "takes a variable number of arguments of a
+consistent type -- call it 't'" and
+
+        proc bar (x... : ?t)
+
+to mean "takes a variable number of arguments -- call
+the tuple of types represented by the collection of
+arguments 't'.

@@ -1,0 +1,18 @@
+atomic-error-msgs.chpl:2: error: fetchOr is only defined for integer atomic types
+atomic-error-msgs.chpl:3: error: or is only defined for integer atomic types
+atomic-error-msgs.chpl:4: error: fetchXor is only defined for integer atomic types
+atomic-error-msgs.chpl:5: error: xor is only defined for integer atomic types
+atomic-error-msgs.chpl:6: error: fetchAnd is only defined for integer atomic types
+atomic-error-msgs.chpl:7: error: and is only defined for integer atomic types
+atomic-error-msgs.chpl:9: error: Unsupported atomic type: string
+atomic-error-msgs.chpl:13: error: Cannot directly assign atomic variables
+atomic-error-msgs.chpl:14: error: Cannot directly add atomic variables
+atomic-error-msgs.chpl:15: error: Cannot directly add atomic variables
+atomic-error-msgs.chpl:16: error: Cannot directly subtract atomic variables
+atomic-error-msgs.chpl:17: error: Cannot directly subtract atomic variables
+atomic-error-msgs.chpl:18: error: Cannot directly multiply atomic variables
+atomic-error-msgs.chpl:19: error: Cannot directly multiply atomic variables
+atomic-error-msgs.chpl:20: error: Cannot directly divide atomic variables
+atomic-error-msgs.chpl:21: error: Cannot directly divide atomic variables
+atomic-error-msgs.chpl:22: error: Cannot directly divide atomic variables
+atomic-error-msgs.chpl:23: error: Cannot directly divide atomic variables

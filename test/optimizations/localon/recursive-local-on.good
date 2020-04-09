@@ -1,0 +1,2 @@
+{x = 5}
+{x = recursive-local-on.chpl:11: error: cannot access remote data in local block

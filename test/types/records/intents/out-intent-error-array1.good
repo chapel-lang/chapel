@@ -1,0 +1,2 @@
+out-intent-error-array1.chpl:10: In function 'outPartialArray1':
+out-intent-error-array1.chpl:10: error: 'out' array formals specifying a domain currently require an array element type

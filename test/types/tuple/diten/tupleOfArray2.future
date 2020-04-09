@@ -1,0 +1,14 @@
+bug: type composed of runtime type is not a runtime type
+
+was:
+
+bug: array types can only be declared in type contexts
+
+There is an ambiguity between arrays and forall expressions that is not yet
+gracefully handled.
+
+Was:
+
+This test gets an error about an iterator returning a type where a value is
+expected because of [1..3] int, but it seems like it should be an array type
+instead.

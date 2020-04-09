@@ -1,0 +1,17 @@
+unimplemented feature: for/forall-expression with arrays as elements
+#11039
+
+Once this feature is implemented, return to the following original .future:
+bug: an unexpected interpretation of the expression: [1,2,3,4][2]
+
+Kyle discovered that [1,2,3,4] is being parsed as a forall loop.
+
+Brad says:
+* The [1,2,3,4] should be interpreted as an array literal and indexing by [2]
+should yield '2', since our array literals use 1-based indexing by default.
+* I don't think that [1,2,3,4] should syntactically be a legal forall expr.
+I can't recall why these productions use 'expr_ls' rather than something
+that suggests a singleton expression.
+
+Vass says that even in the forall-loop interpretation the result of
+four-times-[2] should be an array of arrays, not a single array.

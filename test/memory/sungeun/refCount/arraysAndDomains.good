@@ -1,0 +1,18 @@
+Calling do_local_domain():
+	0 bytes leaked
+Calling do_local_array():
+	0 bytes leaked
+Calling do_array() with global:
+	0 bytes leaked
+Calling do_array() with local:
+	0 bytes leaked
+Calling sync begin do_array() with global:
+	0 bytes leaked
+Calling sync begin do_array() with local:
+	0 bytes leaked
+Calling do_tuple() with global:
+	0 bytes leaked
+Calling do_tuple() with local:
+	0 bytes leaked
+Calling if_fn with local:
+	0 bytes leaked

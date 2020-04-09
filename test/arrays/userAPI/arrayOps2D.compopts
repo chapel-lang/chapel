@@ -1,0 +1,5 @@
+               # arrayOps2D.good
+-stestError=10 # arrayOps2D-reverse.good
+-stestError=12 # arrayOps2D-IRV.good
+-stestError=13 # arrayOps2D-sorted.good
+

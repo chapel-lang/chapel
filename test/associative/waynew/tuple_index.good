@@ -1,0 +1,6 @@
+(0, 0) contains = true
+(0, -1) contains = true
+(1, 1) contains = false
+(2, 9) contains = false
+(-3, 4) contains = false
+(1, 0) contains = true

@@ -1,0 +1,6 @@
+repeated-warning-1.chpl:11: In function 'x1':
+repeated-warning-1.chpl:12: warning: param = 1  depth = 2
+repeated-warning-1.chpl:19: In function 'x2':
+repeated-warning-1.chpl:20: warning: param = 1  depth = 2
+z(1)
+z(1)

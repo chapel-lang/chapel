@@ -1,0 +1,1 @@
+test-PrivateIncludePublic.chpl:3: error: Cannot access 'SubModule', 'SubModule' is private to 'PrivateIncludePublic'

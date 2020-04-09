@@ -1,0 +1,2 @@
+error-return-expr-in-iter-2.chpl:1: In function 'p11d':
+error-return-expr-in-iter-2.chpl:4: error: returning a value in an iterator

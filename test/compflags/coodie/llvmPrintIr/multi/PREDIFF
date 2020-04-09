@@ -1,0 +1,4 @@
+#!/bin/bash
+
+LINE=`head -n 2 $2`
+echo $LINE > $2

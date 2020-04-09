@@ -1,0 +1,4 @@
+--dataParTasksPerLocale=-47  # invalid_config_vals.dpTPL.good
+--dataParMinGranularity=-909 # invalid_config_vals.dpMG.good
+--dataParMinGranularity=0    # invalid_config_vals.dpMG.good
+

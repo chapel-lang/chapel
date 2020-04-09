@@ -1,0 +1,2 @@
+a = 1e+08
+cosh(a) = inf

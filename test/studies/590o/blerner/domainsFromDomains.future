@@ -1,0 +1,6 @@
+feature request: building domains from other domains
+
+This feature requests the ability to build new domains from
+existing domains.  The original request had to do with sparse
+domains (see domainsFromDomains-workaround.chpl), but one
+could imagine wanting this for dense domains as well.

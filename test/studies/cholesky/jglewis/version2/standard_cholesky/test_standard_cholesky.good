@@ -1,0 +1,50 @@
+Cholesky Factorization Tests for Equal Unstrided Index Ranges
+   Matrix Dimension: 59
+   Block Size      : 13
+   Indexing Base   : -7
+
+
+
+
+scalar outer product cholesky factorization 
+factorization successful
+
+
+
+block 1D outer product cholesky factorization, block size: 13
+factorization successful
+
+
+
+block 2D outer product cholesky factorization, block size: 13
+factorization successful
+
+
+
+scalar inner product cholesky factorization 
+factorization successful
+
+
+
+block 1D inner product cholesky factorization, block size: 13
+factorization successful
+
+
+
+block 2D inner product cholesky factorization, block size: 13
+factorization successful
+
+
+
+scalar bordering cholesky factorization 
+factorization successful
+
+
+
+block 1D bordering cholesky factorization, block size: 13
+factorization successful
+
+
+
+block 2D bordering cholesky factorization, block size: 13
+factorization successful

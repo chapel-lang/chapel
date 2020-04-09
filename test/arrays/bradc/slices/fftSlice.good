@@ -1,0 +1,45 @@
+ADom is: {0..63}
+bankStart is: 0
+lo is: 0
+t1 is: 0..3
+t2 is: 0..7 by 2
+t3 is: 0..7 by 2
+B is: 0.0 + 0.0i 0.0 + 0.0i 0.0 + 0.0i 0.0 + 0.0i
+lo is: 1
+t1 is: 0..3
+t2 is: 0..7 by 2
+t3 is: 1..8 by 2
+B is: 0.0 + 0.0i 0.0 + 0.0i 0.0 + 0.0i 0.0 + 0.0i
+bankStart is: 16
+lo is: 16
+t1 is: 0..3
+t2 is: 0..7 by 2
+t3 is: 16..23 by 2
+B is: 0.0 + 0.0i 0.0 + 0.0i 0.0 + 0.0i 0.0 + 0.0i
+lo is: 17
+t1 is: 0..3
+t2 is: 0..7 by 2
+t3 is: 17..24 by 2
+B is: 0.0 + 0.0i 0.0 + 0.0i 0.0 + 0.0i 0.0 + 0.0i
+bankStart is: 32
+lo is: 32
+t1 is: 0..3
+t2 is: 0..7 by 2
+t3 is: 32..39 by 2
+B is: 0.0 + 0.0i 0.0 + 0.0i 0.0 + 0.0i 0.0 + 0.0i
+lo is: 33
+t1 is: 0..3
+t2 is: 0..7 by 2
+t3 is: 33..40 by 2
+B is: 0.0 + 0.0i 0.0 + 0.0i 0.0 + 0.0i 0.0 + 0.0i
+bankStart is: 48
+lo is: 48
+t1 is: 0..3
+t2 is: 0..7 by 2
+t3 is: 48..55 by 2
+B is: 0.0 + 0.0i 0.0 + 0.0i 0.0 + 0.0i 0.0 + 0.0i
+lo is: 49
+t1 is: 0..3
+t2 is: 0..7 by 2
+t3 is: 49..56 by 2
+B is: 0.0 + 0.0i 0.0 + 0.0i 0.0 + 0.0i 0.0 + 0.0i

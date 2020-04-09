@@ -1,0 +1,9 @@
+#! /usr/bin/env bash
+
+if $CHPL_HOME/util/printchplenv --make --all --internal \
+     | grep CHPL_MAKE_THIRD_PARTY_LINK_ARGS \
+     | grep -q -e '-lnuma' ; then
+  cp $1.have-locality.good $1.good
+else
+  cp $1.no-locality.good $1.good
+fi

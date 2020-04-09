@@ -1,0 +1,89 @@
+longerComments.doc.chpl:27: warning: This file-scope code is outside of any explicit module declarations (e.g., module Other), so an implicit module named 'longerComments.doc' is being introduced to contain the file's contents.
+.. default-domain:: chpl
+
+.. module:: longerComments.doc
+
+longerComments.doc
+==================
+**Usage**
+
+.. code-block:: chapel
+
+   use longerComments.doc;
+
+
+or
+
+.. code-block:: chapel
+
+   import longerComments.doc;
+
+**Submodules**
+
+.. toctree::
+   :maxdepth: 1
+   :glob:
+
+   longerComments.doc/*
+
+.. function:: proc method1()
+
+   This is a comment for method1, which lies
+   outside of a defined module 
+
+.. function:: proc body()
+
+   This is a comment for a function with a body 
+   which lies outside of a defined module 
+
+.. function:: proc hasArg(val: int)
+
+   This is a comment for a function with an 
+   argument which lies outside of a defined
+   module 
+
+.. function:: proc argAndBody(val: int)
+
+   This is a comment for a function with an
+   argument and body which lies outside of a
+   defined module 
+
+.. default-domain:: chpl
+
+.. module:: Other
+
+Other
+=====
+**Usage**
+
+.. code-block:: chapel
+
+   use longerComments.doc.Other;
+
+
+or
+
+.. code-block:: chapel
+
+   import longerComments.doc.Other;
+
+.. function:: proc inside
+
+   This is a comment for a function inside of
+   a module 
+
+.. function:: proc body()
+
+   This is a comment for a function with a body 
+   inside of a module 
+
+.. function:: proc hasArg(val: int)
+
+   This is a comment for a function with an 
+   argument inside of a module 
+
+.. function:: proc argAndBody(val: int)
+
+   This is a comment for a function with an 
+   argument and body inside of a module 
+

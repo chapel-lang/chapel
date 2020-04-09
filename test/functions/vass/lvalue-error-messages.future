@@ -1,0 +1,12 @@
+error message: include the compound assignment in the error message; do not mention "formals" of <=>
+
+When we use a non-lvalue with op= or <=>...
+
+For +=, currently we get the generic "illegal lvalue in assignment".
+Would be nice to make it more specific, e.g. "illegal lvalue in assignment +=".
+The same goes for the other compound assignments.
+
+For <=>, currently the error message sounds like it is a function with
+ref formals.  Instead, I'd prefer the error message to refer to it
+as the swap operator or (shown in .good) simply <=>, and complain
+about non-lvalue-ness, in accordance with the spec terminology.

@@ -1,0 +1,2 @@
+noOldNameAccess.chpl:8: In function 'main':
+noOldNameAccess.chpl:9: error: 'bar' undeclared (first use this function)

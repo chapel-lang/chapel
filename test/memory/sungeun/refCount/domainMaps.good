@@ -1,0 +1,80 @@
+Default Dist
+============
+Copy of domain map:
+	0 bytes leaked
+	0 private objects leaked
+Return domain map:
+	0 bytes leaked
+	0 private objects leaked
+Create domain:
+	0 bytes leaked
+	0 private objects leaked
+Create domain and array:
+	0 bytes leaked
+	0 private objects leaked
+total:
+	0 bytes leaked
+Block Dist
+==========
+Copy of domain map:
+	0 bytes leaked
+	0 private objects leaked
+Return domain map:
+	0 bytes leaked
+	0 private objects leaked
+Create domain:
+	0 bytes leaked
+	0 private objects leaked
+Create domain and array:
+	0 bytes leaked
+	0 private objects leaked
+total:
+	0 bytes leaked
+Cyclic Dist
+===========
+Copy of domain map:
+	0 bytes leaked
+	0 private objects leaked
+Return domain map:
+	0 bytes leaked
+	0 private objects leaked
+Create domain:
+	0 bytes leaked
+	0 private objects leaked
+Create domain and array:
+	0 bytes leaked
+	0 private objects leaked
+total:
+	0 bytes leaked
+Block-Cyclic Dist
+=================
+Copy of domain map:
+	0 bytes leaked
+	0 private objects leaked
+Return domain map:
+	0 bytes leaked
+	0 private objects leaked
+Create domain:
+	0 bytes leaked
+	0 private objects leaked
+Create domain and array:
+	0 bytes leaked
+	0 private objects leaked
+total:
+	0 bytes leaked
+Replicated Dist
+===============
+Copy of domain map:
+	0 bytes leaked
+	0 private objects leaked
+Return domain map:
+	0 bytes leaked
+	0 private objects leaked
+Create domain:
+	0 bytes leaked
+	0 private objects leaked
+Create domain and array:
+	0 bytes leaked
+	0 private objects leaked
+total:
+	0 bytes leaked

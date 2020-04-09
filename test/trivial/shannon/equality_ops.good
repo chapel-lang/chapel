@@ -1,0 +1,19 @@
+m = 5
+n = 2
+o = 5
+
+test: m == n
+expected answer = 0
+actual answer = 0
+
+test: m == o
+expected answer = 1
+actual answer = 1
+
+test: m != n
+expected answer = 1
+actual answer = 1
+
+test: m!= o
+expected answer = 0
+actual answer = 0

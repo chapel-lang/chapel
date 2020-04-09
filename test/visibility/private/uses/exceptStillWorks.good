@@ -1,0 +1,2 @@
+exceptStillWorks.chpl:11: In function 'main':
+exceptStillWorks.chpl:14: error: 'b' undeclared (first use this function)

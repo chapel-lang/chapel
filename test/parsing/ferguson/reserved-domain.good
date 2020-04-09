@@ -1,0 +1,7 @@
+reserved-domain.chpl:1: error: attempt to redefine reserved type 'domain'
+reserved-domain.chpl:3: error: attempt to redefine reserved type 'domain'
+reserved-domain.chpl:6: error: attempt to redefine reserved type 'domain'
+reserved-domain.chpl:7: error: attempt to redefine reserved type 'domain'
+reserved-domain.chpl:10: error: attempt to redefine reserved type 'domain'
+reserved-domain.chpl:12: error: attempt to redefine reserved type 'domain'
+reserved-domain.chpl:17: error: attempt to redefine reserved type 'domain'

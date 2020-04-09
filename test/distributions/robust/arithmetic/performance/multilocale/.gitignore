@@ -1,0 +1,10 @@
+alloc.good
+alloc_all.good
+assign.good
+assignAlias.good
+assignReindex.good
+assignSlice.good
+reduce.good
+reduceAlias.good
+reduceSlice.good
+sliceOps.good

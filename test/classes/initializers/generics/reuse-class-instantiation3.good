@@ -1,0 +1,7 @@
+init(param)
+	int(64) x=1
+init(?T)
+	int(32) x=3
+init(param, ?T)
+init(param)
+	int(64) x=4

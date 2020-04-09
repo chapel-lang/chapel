@@ -1,0 +1,1 @@
+--print-commands --fast --ccflags -O1 --ccflags -O0

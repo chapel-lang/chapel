@@ -1,0 +1,6 @@
+ref-type-error.chpl:10: error: Cannot set a reference to a type variable.
+ref-type-error.chpl:11: error: Cannot set a reference to a type variable.
+ref-type-error.chpl:12: error: Cannot set a reference to a type variable.
+ref-type-error.chpl:13: error: Cannot set a reference to a type variable.
+ref-type-error.chpl:14: error: Cannot set a reference to a param variable.
+ref-type-error.chpl:15: error: Cannot set a reference to a param variable.

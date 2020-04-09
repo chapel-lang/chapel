@@ -1,0 +1,6 @@
+a borrowed GenericCollection(owned MyClass) has field owned MyClass
+b borrowed GenericCollection(owned MyClass) has field owned MyClass
+(borrowed) c borrowed GenericCollection(MyClass) has field borrowed MyClass
+a borrowed GenericCollection(owned MyClass?)? has field owned MyClass?
+b borrowed GenericCollection(owned MyClass?)? has field owned MyClass?
+(borrowed) c borrowed GenericCollection(borrowed MyClass?)? has field borrowed MyClass?

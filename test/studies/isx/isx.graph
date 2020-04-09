@@ -1,0 +1,5 @@
+perfkeys: total =, total =, total =, total =, total =
+files: isx-bucket-spmd.dat, isx-no-return.dat, isx-per-task.dat, isx-hand-optimized.dat, isx-release.dat
+graphkeys: Bucket-based SPMD, Avoids array returns, Pure SPMD, Hand Optimized, Release
+ylabel: Time (seconds)
+graphtitle: ISx variations

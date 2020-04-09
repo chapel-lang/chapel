@@ -1,0 +1,11 @@
+perfkeys: init serial:, init forall-for:, init serial:, init nested forall:, init forall-for:
+graphkeys: serial 256x256, forall-for 256x256, serial 1024x1024, nested forall 1024x1024, forall-for 1024x1024
+files: init.256.dat, init.256.dat, init.1024.dat, init.1024.dat, init.1024.dat
+ylabel: Time (seconds)
+graphtitle: Array initialization (faster idioms)
+
+perfkeys: init nested forall:, init for-forall:, init for-forall:
+graphkeys: nested forall 256x256, for-forall 256x256, for-forall 1024x1024
+files: init.256.dat, init.256.dat, init.1024.dat
+ylabel: Time (seconds)
+graphtitle: Array initialization (slower idioms)

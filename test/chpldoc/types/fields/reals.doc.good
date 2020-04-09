@@ -1,0 +1,39 @@
+.. default-domain:: chpl
+
+.. module:: reals.doc
+
+reals.doc
+=========
+**Usage**
+
+.. code-block:: chapel
+
+   use reals.doc;
+
+
+or
+
+.. code-block:: chapel
+
+   import reals.doc;
+
+.. record:: Foo
+
+   .. attribute:: var aReal: real = 2.0
+
+   .. attribute:: const bar = 1.0
+
+   .. attribute:: param baz: real
+
+   .. attribute:: var aReal2: real = 2.0
+
+      This one has a comment 
+
+   .. attribute:: const bar2 = 1.0
+
+      So does this one 
+
+   .. attribute:: param baz2: real
+
+      And this one 
+

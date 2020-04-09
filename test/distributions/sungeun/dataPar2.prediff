@@ -1,0 +1,9 @@
+#!/bin/sh
+# Sort the output to handle the non-flat case where iterator debug output is
+# in a non-deterministic order. Don't sort for flat.
+
+if [ $CHPL_LOCALE_MODEL != "flat" ]
+then 
+  sort $2 > $2.prediff.tmp
+  mv $2.prediff.tmp $2
+fi

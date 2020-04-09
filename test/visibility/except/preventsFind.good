@@ -1,0 +1,2 @@
+preventsFind.chpl:12: In function 'main':
+preventsFind.chpl:13: error: 'b' undeclared (first use this function)

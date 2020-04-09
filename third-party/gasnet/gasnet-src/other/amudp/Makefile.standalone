@@ -1,0 +1,107 @@
+#   $Source: bitbucket.org:berkeleylab/gasnet.git/other/amudp/Makefile.standalone $
+# Description: Makefile for AMUDP
+# Copyright 2000, Dan Bonachea <bonachea@cs.berkeley.edu>
+srcdir = .
+include $(srcdir)/Makefile.common # leave this line alone
+
+# Uncomment one set of lines below to get debug or release configuration 
+ccflags = $(set_opt_ccflags)
+cxxflags = $(set_opt_cxxflags)
+
+#ccflags = $(set_debug_ccflags)
+#cxxflags = $(set_debug_cxxflags)
+
+# Set host system to the appropriate value to get the right prebaked Makefile
+HOSTSYSTEM=generic
+include Makefile.$(HOSTSYSTEM) 
+
+#-------------------------------------------------------------------------------------
+# You should never need to change things below this line
+
+set_debug_ccflags  = -DAMUDP_DEBUG=1 $(ccdebugflags)  $(MANUAL_CFLAGS) $(apputils_flags)
+set_debug_cxxflags = -DAMUDP_DEBUG=1 $(cxxdebugflags) $(MANUAL_CXXFLAGS)
+set_opt_ccflags    = -DAMUDP_NDEBUG=1 $(ccoptflags)   $(MANUAL_CFLAGS) $(apputils_flags)
+set_opt_cxxflags   = -DAMUDP_NDEBUG=1 $(cxxoptflags)  $(MANUAL_CXXFLAGS)
+
+VPATH = $(srcdir)
+includes = -I$(srcdir) -I$(altincdir)
+defines = -D_GNU_SOURCE=1
+libraries = $(platform_libraries)
+Ccompile = $(CC) -c $(ccflags) $(defines) $(platform_defines) $(MANUAL_DEFINES) $(includes)
+CXXcompile = $(CXX) -c $(cxxflags) $(defines) $(platform_defines) $(MANUAL_DEFINES) $(includes)
+link = $(CXX) $(cxxflags) $(platform_ldflags) $(MANUAL_LDFLAGS) $(platform_defines) $(includes) 
+linkend = $(libraries) $(MANUAL_LIBS)
+
+# all the test executables
+testprograms =                  \
+    testam                      \
+    testbounce                  \
+    testbulk                    \
+    testlatency                 \
+    testlatencyM                \
+    testping                    \
+    testreduce                  \
+    testgetput                  \
+    testreadwrite
+
+# all the library objects and headers
+objects=amudp_cdefs.o amudp_ep.o amudp_reqrep.o amudp_spmd.o amudp_spawn.o exc.o sig.o socklist.o sockutil.o
+headers=Makefile* amudp.h amudp_const.h amudp_internal.h amudp_spmd.h socket.h exc.h sig.h sockaddr.h socklist.h sockutil.h
+
+.PHONY: all banner tests clean veryclean dist
+
+all: banner libamudp.a amudprun
+
+banner:
+	@if test "$(HOSTSYSTEM)" = "generic" ; then                                                  \
+           OSTYPE="$${OSTYPE:-OSTYPE}" ; export OSTYPE ;                                             \
+           MACHTYPE="$${MACHTYPE:-MACHTYPE}" ; export MACHTYPE ;                                     \
+           echo "WARNING: Using Makefile.generic. " ;                                                \
+           echo " If this build fails, try selecting one of the platform-specific makefiles, eg: " ; \
+           echo " $(MAKE) HOSTSYSTEM=$$OSTYPE" ;                                                     \
+	 fi
+
+# ---------- AMUDP library -------------
+libamudp.a: $(objects)
+	$(ar) cru $@ $(objects)
+	$(ranlib) $@
+
+# ---------- build targets -------------
+# main target
+tests: banner apputils.o $(testprograms)
+
+# method to convert .cpp to .o (more reliable than ".cpp.o" method)
+test%.o : $(amxdir)/test%.c $(amxdir)/*.h $(headers)
+	$(Ccompile) -DAMUDP -I$(amxdir) $< -o $@
+
+tests-clean:
+	rm -f $(testprograms)
+	
+apputils.o : $(amxdir)/apputils.c $(headers)
+	$(Ccompile) -DAMUDP -I$(amxdir) $(amxdir)/apputils.c -o apputils.o
+
+amudprun: amudprun.o $(headers) libamudp.a 
+	$(link) -o $@ $< -L. -lamudp $(linkend)
+
+%.o : %.c $(headers) $(amxdir)/*.h
+	$(Ccompile) $< -o $@
+
+%.o : %.cpp $(headers) $(amxdir)/*.h
+	$(CXXcompile) $< -o $@
+
+amudp_cdefs.o: $(amxdir)/amx_internal.c
+
+# delete compiling byproducts
+clean:
+	rm -f *.o core gmon.out
+
+veryclean: clean 
+	rm -f $(testprograms) libamudp.a
+	@echo Done verycleaning.
+
+# ---------- test programs -------------
+test% : test%.o apputils.o libamudp.a
+	$(link) -o $@ $< apputils.o -L. -lamudp $(linkend)
+
+include $(srcdir)/Makefile.tests
+

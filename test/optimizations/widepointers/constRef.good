@@ -1,0 +1,5 @@
+Inside helper, c = {x = 42}
+is 'c' wide? true
+Inside helper, c = {x = 100}
+is 'c' wide? true
+is 'loc' wide? false

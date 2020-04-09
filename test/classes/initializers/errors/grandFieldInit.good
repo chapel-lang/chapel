@@ -1,0 +1,2 @@
+grandFieldInit.chpl:13: In initializer:
+grandFieldInit.chpl:14: error: can't set value of field "x" from parent type before calling this.init() or super.init()

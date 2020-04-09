@@ -1,0 +1,68 @@
+Helper modules
+--------------
+cg-makea.chpl -- common module for building A's sparse indices and values
+
+cg-makea-commented.chpl -- a commented version of the above
+
+
+CG codes
+--------
+cg-core.chpl -- just a sketch of the core algorithm; probably out-of-date
+
+cg.chpl -- ???
+
+cg-commented.chpl -- a commented version of the above
+
+cg-sparse.chpl -- the sparse implementation of the benchmark
+
+cg-dense.chpl -- executes CG using a dense array (and currently, an
+                 8x8 problem size)
+
+cg-ideal.chpl -- an ideal version to strive for making work
+
+
+
+MakeA tests
+-----------
+cg-makea1.chpl -- test for building sparse matrix A -- verifies indices
+                  and values being inserted
+
+cg-makea1-small.chpl -- small 8x8 version of the above
+
+cg-makea2.chpl -- similar, but verifies final matrix structure and values
+
+cg-makea2-small.chpl -- similar, but only makes an 8x8 sparse matrix
+
+cg-makea3.chpl -- similar, but runs index generator before makea
+                  iterator in order to make sure that it still gets
+                  the right result
+
+cg-makea1-small-sparse.chpl -- a sparse version that builds the
+                               domain first and then the array.
+                               Currently tested with an 8x8 array.
+
+cg-makea2-small-sparse.chpl -- same as the above, but builds both
+                         simultaneously;
+
+cg-makea1-sparse-sort.chpl -- a version of the above that sorts the
+                              indices before inserting them on the
+                              full problem size
+
+cg-makea1-small-sparse-countInds.chpl -- version of the above that
+                                         simply counts the indices
+
+cg-printa.chpl -- a version of the above that prints out the sparse
+                  domain and array
+
+
+Performance
+-----------
+see README.performance
+
+Misc tests
+----------
+cg-enumDomArr.chpl -- test for problem parameters using an enumerated
+                      domain
+
+cg-arithDomArr.chpl -- test for problem parameters using an arithmetic
+                       domain

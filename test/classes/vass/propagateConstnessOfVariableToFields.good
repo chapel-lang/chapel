@@ -1,0 +1,1 @@
+propagateConstnessOfVariableToFields.chpl:18: error: assigning to 'const'

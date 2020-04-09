@@ -1,0 +1,6 @@
+test_dot_locale_error2.chpl:1: warning: accessing the locale of a local expression
+test_dot_locale_error2.chpl:5: warning: accessing the locale of a local expression
+test_dot_locale_error2.chpl:9: warning: accessing the locale of a local expression
+On locale 0
+On locale 0
+0

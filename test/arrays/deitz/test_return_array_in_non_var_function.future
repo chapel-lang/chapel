@@ -1,0 +1,1 @@
+semantic: assignment to non-var function that returns array is allowed

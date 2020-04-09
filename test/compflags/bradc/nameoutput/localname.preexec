@@ -1,0 +1,5 @@
+#!/bin/sh
+mv b.out $1
+if [ -e b.out_real ] ; then
+  mv b.out_real $1_real
+fi

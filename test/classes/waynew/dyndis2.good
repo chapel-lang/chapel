@@ -1,0 +1,2 @@
+bclass false 99 : {data = 10, number = 0}
+aclass 0 99 : {data = 10, number = 0}

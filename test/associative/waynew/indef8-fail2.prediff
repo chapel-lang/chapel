@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+
+head -3 $2 > $2.new
+mv $2.new $2

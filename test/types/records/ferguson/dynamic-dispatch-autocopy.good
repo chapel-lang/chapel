@@ -1,0 +1,3 @@
+initCopy
+in Child.clone()
+(obj = {})

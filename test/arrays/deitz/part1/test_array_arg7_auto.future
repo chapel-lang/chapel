@@ -1,0 +1,12 @@
+feature request: auto-reindex when passing arrays to well-defined formals
+
+Up until the PR which this commit is part of, when passing an array to
+a formal arguments whose domain is defined, we would reindex the array
+when passing it in.  Current thinking is that the user should somehow
+request this reindexing in the code.  They could do it explicitly, as
+in the rewrites that I've done for the historical tests here; however,
+it would also be nice to simply have a way to say "yes, please reindex
+me as necessary" to get the historical behavior from the formal's type
+without having to type its domain explicitly.  I don't particularly like
+the proposed syntax that I'm using here, so consider it a placeholder
+designed to break this test until we come up with something good.

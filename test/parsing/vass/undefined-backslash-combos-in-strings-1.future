@@ -1,0 +1,14 @@
+error message: when a string literal contains a backslash+char combo not supported in C
+
+We need to decide whether \w in a string literal is allowed and simply
+stands for 'w' or we follow C and disallow it.
+(This should also be documented in the spec.)
+If the latter, the Chapel compiler should generate a clear message
+about the violation.
+
+As of this writing, Chapel is diverging from C in the handling of newlines
+in string literals (see the commit message around r19228).
+We probably want to be either as close to C as possible or something
+altogether different.
+
+What are string literals like in Fortran?

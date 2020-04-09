@@ -1,0 +1,8 @@
+memStats: node 0 Allocated Now:                       0
+memStats: node 0 Allocation High Water Mark: 3gb
+memStats: node 0 Sum of Allocations:         3gb
+memStats: node 0 Sum of Frees:               3gb
+memStats: node 1 Allocated Now:              0
+memStats: node 1 Allocation High Water Mark: 0
+memStats: node 1 Sum of Allocations:         0
+memStats: node 1 Sum of Frees:               0

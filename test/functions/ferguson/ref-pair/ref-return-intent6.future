@@ -1,0 +1,8 @@
+bug: use-after free
+
+This test is not activating the usual clone-move-autocopy-in
+transformation and is as a result triggering a use-after
+free bug in the compiler.
+
+When this is fixed, the associated .skipif should be removed
+to run this under general testing.

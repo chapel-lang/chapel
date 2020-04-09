@@ -1,0 +1,2 @@
+autoconvert-const-to-param.chpl:13: warning: here-2
+autoconvert-const-to-param.chpl:14: error: done

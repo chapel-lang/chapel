@@ -1,0 +1,12 @@
+The small C tests in this directory help us
+to understand if C-level
+ pwrite/pread or
+ pwritev/preadv
+are working and if the sys.c functions implementing
+these for portability are working.
+
+At least some of the 32-bit Linux regressions
+for regular expression tests are due to failures
+in preadv or pwritev on our system.
+
+

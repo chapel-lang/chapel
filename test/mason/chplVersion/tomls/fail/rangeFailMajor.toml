@@ -1,0 +1,7 @@
+
+[brick]
+name = "rangeFailMajor"
+version = "0.1.0"
+chplVersion = "99.0..99.0"
+
+[dependencies]

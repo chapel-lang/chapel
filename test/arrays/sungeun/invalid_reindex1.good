@@ -1,0 +1,1 @@
+invalid_reindex1.chpl:14: error: Rank mismatch passing array argument: expected 4 but got 3

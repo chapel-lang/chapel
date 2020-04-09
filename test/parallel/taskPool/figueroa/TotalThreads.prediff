@@ -1,0 +1,2 @@
+#! /bin/sh
+sed -e 's/[0-9][0-9]* \(.*\) idle/N \1 idle/' <$2 >$1.prediff.tmp && mv $1.prediff.tmp $2

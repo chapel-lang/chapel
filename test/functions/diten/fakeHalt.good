@@ -1,0 +1,2 @@
+fakeHalt.chpl:5: In function 'canFakeReturn':
+fakeHalt.chpl:5: error: control reaches end of function that returns a value

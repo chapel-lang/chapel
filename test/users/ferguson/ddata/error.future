@@ -1,0 +1,22 @@
+error message: invalid use of ddata
+
+Sung and I could not agree on where to put the error message
+for "cannot new _ddata" into the compiler. I put it in wrappers.cpp
+as below, which gives an error in a hack-y way.
+
+in compiler/resolution/wrappers.cpp, if
+  if (specializeDefaultConstructor) {
+    wrapper->removeFlag(FLAG_TEMP);
+    wrapper->_this = fn->_this->copy();
+    copy_map.put(fn->_this, wrapper->_this);
+    wrapper->insertAtTail(new DefExpr(wrapper->_this));
+    if (defaults->v[defaults->n-1]->hasFlag(FLAG_IS_MEME)) {
+      .... {
+      }
+      if( fn->_this->type->symbol->hasFlag(FLAG_DATA_CLASS) ) {
+        // If we call INT_FATAL here, we also stop on the type constructor
+        // but we wanted an error of some kind if new is used with a data
+        // class, since it will do the wrong thing.
+        wrapper->insertAtTail(new CallExpr("cannot_use_new_with_data_class"));
+      }
+

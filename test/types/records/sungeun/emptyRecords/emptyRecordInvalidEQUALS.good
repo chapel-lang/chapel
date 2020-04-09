@@ -1,0 +1,1 @@
+emptyRecordInvalidEQUALS.chpl:5: error: unresolved call '==(blah_t, 1)'

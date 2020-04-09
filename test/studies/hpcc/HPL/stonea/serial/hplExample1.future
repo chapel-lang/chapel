@@ -1,0 +1,5 @@
+unimplemented feature: array alias fields
+
+This test assumes that the array field is an alias to the array that is
+constructed with.  When we support array alias fields, this test can be
+updated.

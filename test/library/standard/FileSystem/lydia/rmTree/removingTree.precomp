@@ -1,0 +1,16 @@
+#!/bin/bash
+
+if [ ! -e copyToKeep/emptyDir ]; then
+    # Create an empty directory, since git doesn't save those
+    mkdir copyToKeep/emptyDir
+fi
+if [ ! -e copyToKeep/hasEmptyDir ]; then
+    # Create a directory that only has an empty dir inside it
+    # since git doesn't save those
+    mkdir copyToKeep/hasEmptyDir
+fi
+if [ ! -e copyToKeep/hasEmptyDir/SOALONE ]; then
+    # Create the empty dir inside an otherwise empty dir
+    # since git doesn't save empty dirs
+    mkdir copyToKeep/hasEmptyDir/SOALONE
+fi

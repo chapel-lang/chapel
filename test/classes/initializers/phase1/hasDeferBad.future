@@ -1,0 +1,4 @@
+feature request: error when field init, .init() calls in defer statements
+
+We should not allow field initialization or super.init()/this.init() calls in a
+defer statement.  Today, we don't have that analysis available.

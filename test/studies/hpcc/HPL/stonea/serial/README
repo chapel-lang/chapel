@@ -1,0 +1,27 @@
+This directory conatins various snapshots of the code I created while
+implementing Chapel's version of the HPL benchmark.  These snapshots are:
+
+    hplExample1:
+        Serial, blocked, pivoted version of LU decomposition. It factors an n
+        by n + 1 matrix).  This version uses the Panel2D structure (read the
+        comments in the source for more info).  Includes a number of unit
+        tests.
+
+    hplExample2:
+        No longer uses Panel2D structure.  Uses HPL style verification by
+        evaluating equations with norms in them.
+
+    hplExample3:
+        Uses a matrix-multiply in a mannar intended for distributed
+        parallelism. Specifically this matrix multiply comes from the luLike2
+        example in /studies/matrixMult/stonea/distributed, but it has been
+        modified to work with all sizes of matrix and block.
+
+        Stripped of most unit tests from previous versions (just to reduce file
+        size, get it down so it looks like the more manageble version we'll
+        submit for HPCC.  I'm now convinced these tests pass anyway.)
+
+    hplExample4:
+        Modified version of hplExample3 that cleverly uses domain slicing to
+        make for more succinct code.
+

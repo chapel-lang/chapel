@@ -1,0 +1,12 @@
+-sparSafe=true -smyType=real(32)
+-sparSafe=false -smyType=real(32)
+-sparSafe=true -smyType=int(8)
+-sparSafe=false -smyType=int(8)
+-sparSafe=true -smyType=uint(16)
+-sparSafe=false -smyType=uint(16)
+-sparSafe=true -smyType=string -sn='"hi "'
+-sparSafe=false -smyType=string -sn='"hi "'
+-sparSafe=true -smyType=complex(128)
+-sparSafe=false -smyType=complex(128)
+-sparSafe=true -smyType=imag(32) -sn=7.0i:imag(32)
+-sparSafe=false -smyType=imag(32) -sn=7.0i:imag(32)

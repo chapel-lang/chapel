@@ -1,0 +1,2 @@
+--tf openssl.toml --goodLock openssl.good # openssl
+--tf zlib.toml --goodLock zlib.good # zlib

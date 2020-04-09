@@ -1,0 +1,4 @@
+qtTaskSpawn.h -staskingMode=qtChplLikeT
+qtTaskSpawn.h -staskingMode=qtChplOptT
+qtTaskSpawn.h -staskingMode=qtSerialChplLikeT
+qtTaskSpawn.h -staskingMode=qtSerialChplOptT

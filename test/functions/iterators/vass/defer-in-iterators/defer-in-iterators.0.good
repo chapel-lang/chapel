@@ -1,0 +1,249 @@
+not breaking/returning
+
+test1nz start
+RRR.init { 300
+RRR.init { 33
+test1nz 33
+RRR.fini } 33
+RRR.init { 400
+RRR.init { 44
+test1nz 44
+RRR.fini } 44
+myIter1 exit
+RRR.fini } 400
+myIter1 defer 400
+RRR.fini } 300
+myIter1 defer 300
+test1nz finish
+
+test1zip start
+RRR.init { 300
+RRR.init { 33
+RRR.init { 300
+RRR.init { 33
+test1zip 33,33
+RRR.fini } 33
+RRR.fini } 33
+RRR.init { 400
+RRR.init { 44
+RRR.init { 400
+RRR.init { 44
+test1zip 44,44
+RRR.fini } 44
+RRR.fini } 44
+myIter1 exit
+RRR.fini } 400
+myIter1 defer 400
+RRR.fini } 300
+myIter1 defer 300
+myIter1 exit
+RRR.fini } 400
+myIter1 defer 400
+RRR.fini } 300
+myIter1 defer 300
+test1zip finish
+
+test2nz start
+RRR.init { 500
+RRR.init { 55
+test2nz 55
+RRR.fini } 55
+RRR.init { 300
+RRR.init { 33
+myIter2 33
+RRR.init { 600
+RRR.init { 1033
+test2nz 1033
+RRR.fini } 1033
+RRR.fini } 600
+myIter2 defer 600
+RRR.fini } 33
+RRR.init { 400
+RRR.init { 44
+myIter2 44
+RRR.init { 600
+RRR.init { 1044
+test2nz 1044
+RRR.fini } 1044
+RRR.fini } 600
+myIter2 defer 600
+RRR.fini } 44
+myIter1 exit
+RRR.fini } 400
+myIter1 defer 400
+RRR.fini } 300
+myIter1 defer 300
+RRR.init { 300
+RRR.init { 33
+RRR.init { 300
+RRR.init { 33
+myIter2 33,33
+RRR.init { 700
+RRR.init { 2033
+test2nz 2033
+RRR.fini } 2033
+RRR.fini } 700
+myIter2 defer 700
+RRR.fini } 33
+RRR.fini } 33
+RRR.init { 400
+RRR.init { 44
+RRR.init { 400
+RRR.init { 44
+myIter2 44,44
+RRR.init { 700
+RRR.init { 2044
+test2nz 2044
+RRR.fini } 2044
+RRR.fini } 700
+myIter2 defer 700
+RRR.fini } 44
+RRR.fini } 44
+myIter1 exit
+RRR.fini } 400
+myIter1 defer 400
+RRR.fini } 300
+myIter1 defer 300
+myIter1 exit
+RRR.fini } 400
+myIter1 defer 400
+RRR.fini } 300
+myIter1 defer 300
+myIter2 exit
+RRR.fini } 500
+myIter2 defer 500
+test2nz finish
+
+test2zip start
+RRR.init { 500
+RRR.init { 55
+RRR.init { 500
+RRR.init { 55
+test2zip 55,55
+RRR.fini } 55
+RRR.fini } 55
+RRR.init { 300
+RRR.init { 33
+myIter2 33
+RRR.init { 600
+RRR.init { 1033
+RRR.init { 300
+RRR.init { 33
+myIter2 33
+RRR.init { 600
+RRR.init { 1033
+test2zip 1033,1033
+RRR.fini } 1033
+RRR.fini } 1033
+RRR.fini } 600
+myIter2 defer 600
+RRR.fini } 33
+RRR.init { 400
+RRR.init { 44
+myIter2 44
+RRR.init { 600
+RRR.init { 1044
+RRR.fini } 600
+myIter2 defer 600
+RRR.fini } 33
+RRR.init { 400
+RRR.init { 44
+myIter2 44
+RRR.init { 600
+RRR.init { 1044
+test2zip 1044,1044
+RRR.fini } 1044
+RRR.fini } 1044
+RRR.fini } 600
+myIter2 defer 600
+RRR.fini } 44
+myIter1 exit
+RRR.fini } 400
+myIter1 defer 400
+RRR.fini } 300
+myIter1 defer 300
+RRR.init { 300
+RRR.init { 33
+RRR.init { 300
+RRR.init { 33
+myIter2 33,33
+RRR.init { 700
+RRR.init { 2033
+RRR.fini } 600
+myIter2 defer 600
+RRR.fini } 44
+myIter1 exit
+RRR.fini } 400
+myIter1 defer 400
+RRR.fini } 300
+myIter1 defer 300
+RRR.init { 300
+RRR.init { 33
+RRR.init { 300
+RRR.init { 33
+myIter2 33,33
+RRR.init { 700
+RRR.init { 2033
+test2zip 2033,2033
+RRR.fini } 2033
+RRR.fini } 2033
+RRR.fini } 700
+myIter2 defer 700
+RRR.fini } 33
+RRR.fini } 33
+RRR.init { 400
+RRR.init { 44
+RRR.init { 400
+RRR.init { 44
+myIter2 44,44
+RRR.init { 700
+RRR.init { 2044
+RRR.fini } 700
+myIter2 defer 700
+RRR.fini } 33
+RRR.fini } 33
+RRR.init { 400
+RRR.init { 44
+RRR.init { 400
+RRR.init { 44
+myIter2 44,44
+RRR.init { 700
+RRR.init { 2044
+test2zip 2044,2044
+RRR.fini } 2044
+RRR.fini } 2044
+RRR.fini } 700
+myIter2 defer 700
+RRR.fini } 44
+RRR.fini } 44
+myIter1 exit
+RRR.fini } 400
+myIter1 defer 400
+RRR.fini } 300
+myIter1 defer 300
+myIter1 exit
+RRR.fini } 400
+myIter1 defer 400
+RRR.fini } 300
+myIter1 defer 300
+myIter2 exit
+RRR.fini } 500
+myIter2 defer 500
+RRR.fini } 700
+myIter2 defer 700
+RRR.fini } 44
+RRR.fini } 44
+myIter1 exit
+RRR.fini } 400
+myIter1 defer 400
+RRR.fini } 300
+myIter1 defer 300
+myIter1 exit
+RRR.fini } 400
+myIter1 defer 400
+RRR.fini } 300
+myIter1 defer 300
+myIter2 exit
+RRR.fini } 500
+myIter2 defer 500
+test2zip finish

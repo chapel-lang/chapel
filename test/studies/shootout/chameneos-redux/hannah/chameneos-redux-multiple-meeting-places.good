@@ -1,0 +1,16 @@
+blue + blue -> blue
+blue + red -> yellow
+blue + yellow -> red
+red + blue -> yellow
+red + red -> red
+red + yellow -> blue
+yellow + blue -> red
+yellow + red -> blue
+yellow + yellow -> yellow
+
+total meetings PASS
+total meetings with self PASS
+
+total meetings PASS
+total meetings with self PASS
+

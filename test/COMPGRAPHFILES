@@ -1,0 +1,8 @@
+# suite: All Compilation Pass Timings
+performance/compiler/allTotalTime.graph
+performance/compiler/allPasses.graph
+# suite: Top 10 Compilation Pass Timings
+performance/compiler/topTotalTime.graph
+performance/compiler/topPasses.graph
+# suite: Compiler and Testing Statistics
+performance/compiler/compilerAndTestingStats.graph

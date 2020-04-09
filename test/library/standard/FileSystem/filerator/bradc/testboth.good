@@ -1,0 +1,10 @@
+dir subdir contains:
+  subdir/fileInSubdir
+  subdir/subdir2
+  subdir/subdir3
+dir subdir/subdir2 contains:
+  subdir/subdir2/A.txt
+  subdir/subdir2/B.txt
+dir subdir/subdir3 contains:
+  subdir/subdir3/C.txt
+  subdir/subdir3/D.txt

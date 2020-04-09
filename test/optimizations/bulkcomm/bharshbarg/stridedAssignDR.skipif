@@ -1,0 +1,7 @@
+# Avoid some configurations for which this test can take a very long time
+# Dialing down the problem size would mean the test would no longer be useful
+
+CHPL_COMM != none
+COMPOPTS <= --baseline
+COMPOPTS <= --no-local
+CHPL_TEST_VGRND_EXE == on

@@ -1,0 +1,5 @@
+perfkeys: Chapel method call took, Chapel extern C method call took, Chapel extern method call took
+graphkeys: proc in file, proc in outside C file, proc in outside Chapel file
+graphtitle: Extern Method Call Time Compare
+ylabel: Time (seconds)
+graphname: externCompare

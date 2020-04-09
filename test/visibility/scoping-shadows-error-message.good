@@ -1,0 +1,3 @@
+scoping-shadows-error-message.chpl:1: In function 'main':
+scoping-shadows-error-message.chpl:11: error: 'a' used before defined
+scoping-shadows-error-message.chpl:12: note: defined here

@@ -1,0 +1,1 @@
+-Llib/ -lreturnBadArray `$CHPL_HOME/util/config/compileline --libraries` -lreturnBadArray

@@ -1,0 +1,2 @@
+error: Only 1 locale may be used for CHPL_COMM layer 'none'
+To use multiple locales, see $CHPL_HOME/doc/rst/usingchapel/multilocale.rst

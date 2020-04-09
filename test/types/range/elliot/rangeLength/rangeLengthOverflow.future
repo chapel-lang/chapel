@@ -1,0 +1,21 @@
+feature request: Want warning/error when range.size will overflow
+
+The length of maximal uint ranges such as 0:uint(8)..255:uint(8) overflows.
+This is currently because the return type of length is the index type of the
+range. You might be able to return chpl__maxIntTypeSameSign(idxType) for the
+smaller uints, but for the uint(64) case, there's really nothing you can do
+about it though.
+
+This overflow is more annoying for int ranges where things like
+(0:int(8)..127..int(8)).size result in overflow. Currently this case isn't
+being tested in this .future because integer overflow is undefined.
+
+I'm not sure if there's actually anything we can do about this issue over
+having range.size returning uint(64)/int(64) instead of the index type but
+that only masks the problem for some ranges.
+
+I think I'd at least prefer some error checking that will report that overflow
+is going to occur so the user isn't completely surprised by this.
+
+See issue #7530 for more info:
+  https://github.com/chapel-lang/chapel/issues/7530

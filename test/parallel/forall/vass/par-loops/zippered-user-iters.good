@@ -1,0 +1,60 @@
+AAA
+onlyS serial
+haveLF serial
+(20, 12)
+(50, 15)
+(30, 13)
+BBB
+onlyS serial
+haveLF serial
+20,12
+50,15
+30,13
+CCC
+onlyS serial
+haveLF serial
+20@12
+DDD
+onlyS serial
+haveLF serial
+(20, 12)
+(50, 15)
+(30, 13)
+EEE
+(20, 12)
+FFF
+onlyS serial
+haveLF serial
+20 w 12
+50 w 15
+30 w 13
+AAA
+haveLF serial
+onlyS serial
+(12, 20)
+(15, 50)
+(13, 30)
+BBB
+haveLF serial
+onlyS serial
+12,20
+15,50
+13,30
+CCC
+haveLF serial
+onlyS serial
+12@20
+DDD
+haveLF serial
+onlyS serial
+(12, 20)
+(15, 50)
+(13, 30)
+EEE
+(12, 20)
+FFF
+haveLF serial
+onlyS serial
+12 w 20
+15 w 50
+13 w 30

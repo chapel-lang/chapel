@@ -1,0 +1,3 @@
+# This test creates a large number of tasks repeatedly
+CHPL_RT_CALL_STACK_SIZE=256K
+QT_GUARD_PAGES=false

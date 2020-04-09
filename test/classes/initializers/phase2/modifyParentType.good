@@ -1,0 +1,2 @@
+modifyParentType.chpl:11: In initializer:
+modifyParentType.chpl:14: error: cannot update a type field, "x", from parent type in child initializer

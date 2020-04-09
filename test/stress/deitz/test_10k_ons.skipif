@@ -1,0 +1,2 @@
+# This test assumes we're running on multiple locales
+CHPL_COMM == none

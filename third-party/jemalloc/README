@@ -1,0 +1,40 @@
+==========================
+jemalloc README for Chapel
+==========================
+
+This copy of jemalloc 4.5.0 is being released with Chapel for
+convenience and was obtained from:
+
+  https://github.com/jemalloc/jemalloc
+
+Any Chapel issues that seem to be related to jemalloc should be
+directed to the Chapel team at https://chapel-lang.org/bugs.html.
+
+
+Upgrading jemalloc versions
+===========================
+
+The directory $CHPL_HOME/third-party/jemalloc/jemalloc-src contains the
+un-tarballed jemalloc package contents. Version updates should be done as
+follows, assuming the CWD is $CHPL_HOME/third-party/jemalloc/:
+
+1. download and untar the latest jemalloc version: e.g. jemalloc-4.5.0
+2. `rm -rf jemalloc-src`
+3. `mv jemalloc-4.5.0 jemalloc-src`
+4. `git add --force jemalloc-src` (--force to ignore our .gitignore)
+5. update the version number mentioned above
+6. verify the references to jemalloc's man page in the runtime shim are
+   accurate and update the version number referenced.
+7. make sure these instructions are up to date :)
+8. test (std config, and at least one that requires a shared-heap)
+9. commit, PR, merge, etc
+
+Note that these instructions are for a simple API compatible updates. If the
+jemalloc API changes, or the references to the man page in the runtime shim are
+no longer accurate, more care should be taken to see what changes have been
+made and if we need to change anything on our end.
+
+In particular, if the base name of the jemalloc configuration environment
+variable changes from "MALLOC_CONF" to something else, please update the
+reference to that variable in runtime/src/comm/ugni/comm-ugni-launch.c to
+the new name.

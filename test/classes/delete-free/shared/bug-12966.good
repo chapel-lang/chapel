@@ -1,0 +1,4 @@
+{x = 1, next = nil}
+{x = 1, next = nil}
+{x = 2, next = {x = 1, next = nil}}
+{x = 2, next = {x = 1, next = nil}}

@@ -1,0 +1,5 @@
+postinit-of-const.chpl:9: error: const actual is passed to 'ref' formal 'this' of postinit()
+postinit-of-const.chpl:1: note: to formal of type R
+postinit-of-const.chpl:4: note: passed as ref here
+postinit-of-const.chpl:2: note: to ref formal here
+postinit-of-const.chpl:4: note: passed as ref here

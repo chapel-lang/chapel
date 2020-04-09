@@ -1,0 +1,1 @@
+More sync-related tests are in:  $CHPL_HOME/test/types/sync

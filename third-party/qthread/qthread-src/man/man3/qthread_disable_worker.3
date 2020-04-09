@@ -1,0 +1,35 @@
+.TH qthread_disable_worker 3 "AUGUST 2012" libqthread "libqthread"
+.SH NAME
+.BR qthread_disable_worker ,
+.B qthread_enable_worker
+\- enable or disable a worker for thread scheduling
+.SH SYNOPSIS
+.B #include <qthread.h>
+
+.I int
+.br
+.B qthread_disable_worker
+.RI "(qthread_worker_id_t " worker);
+.PP
+.I void
+.br
+.B qthread_enable_worker
+.RI "(qthread_worker_id_t " shep );
+.SH DESCRIPTION
+These functions allow worker threads to be enabled and disabled. Workers usually start in the enabled state (the exception is when the QT_HWPAR environment variable is used).
+.PP
+Disabled workers cannot execute threads, but the presumption is that there are
+other workers on each shepherd. The disabled worker may continue executing its
+current thread until it either blocks, yields, or exits. Once that thread stops
+executing, the disabled worker monitors its status and waits to be either
+destroyed or re-enabled.
+.PP
+When a worker is re-enabled, it begins scheduling threads again.
+.SH RETURN VALUE
+On success, the specified worker thread is marked as disabled and the value
+.B QTHREAD_SUCCESS
+is returned. On failure, an error code is returned.
+.SH ERRORS
+.TP 12
+.B QTHREAD_NOT_ALLOWED
+The first worker, worker 0, cannot be disabled.

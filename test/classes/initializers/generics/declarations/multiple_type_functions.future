@@ -1,0 +1,11 @@
+semantic: what happens when multiple initializers would match to same declaration?
+
+Should we:
+- Error when someone tries to declare an instance that would use one of them,
+  since we can't distinguish between wanting the generic var version or the type
+  argument version?
+- Resolve the conflict by choosing the one with more type arguments, and
+  document this decision?
+
+In this test case, should we perhaps consider resolving to the one with less
+arguments overall?

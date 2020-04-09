@@ -1,0 +1,5 @@
+verify:SUCCESS
+serial 20000000 untyped return
+serial 20000000 typed return
+serial 20000000 untyped arg
+serial 20000000 typed arg

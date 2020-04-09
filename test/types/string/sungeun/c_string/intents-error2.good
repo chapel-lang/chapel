@@ -1,0 +1,1 @@
+intents.chpl:40: error: non-lvalue actual is passed to 'out' formal 's' of fo()

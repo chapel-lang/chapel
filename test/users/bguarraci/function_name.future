@@ -1,0 +1,3 @@
+bug: variable name sum should not conflict with function name sum
+
+function_name.chpl:9: error: 'sum' used before defined (first used here)

@@ -1,0 +1,12 @@
+#!/bin/bash
+
+if [ ! -d $CHPL_HOME ]
+then
+  echo "CHPL_HOME must be set to run this script" 1>&2
+  exit -1
+fi
+
+# Make sure that chpl is on the path
+source $CHPL_HOME/util/setchplenv.bash > /dev/null 2>&1
+
+$CHPL_HOME/util/devel/gen-chpl-bash-completion.py

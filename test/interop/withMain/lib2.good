@@ -1,0 +1,1 @@
+lib2.chpl:5: warning: 'main()' has no special meaning when compiling in --library mode

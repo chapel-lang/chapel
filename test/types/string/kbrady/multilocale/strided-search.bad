@@ -1,0 +1,1 @@
+strided-search.chpl:6: error: string slicing doesn't support stridable codepoint ranges

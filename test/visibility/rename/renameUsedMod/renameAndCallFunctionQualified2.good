@@ -1,0 +1,2 @@
+renameAndCallFunctionQualified2.chpl:10: In function 'main':
+renameAndCallFunctionQualified2.chpl:13: error: 'Foo' undeclared (first use this function)

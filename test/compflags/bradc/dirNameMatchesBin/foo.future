@@ -1,0 +1,9 @@
+bug: confusion when -o name matches directory name
+
+The compiler isn't very helpful when the name given to the -o flag
+matches a pre-existing directory name.  In particular, it creates a
+binary in foo/ named foo.tmp which would be reasonably surprising to
+an end-user.  I'm proposing that we generate an error message similar
+to gcc, which reports:
+
+  ld: cannot open output file foo: Is a directory

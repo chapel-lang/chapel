@@ -1,0 +1,7 @@
+error-method-on-nilable-owned.chpl:14: warning: borrowed MyClass?
+error-method-on-nilable-owned.chpl:5: In function 'test':
+error-method-on-nilable-owned.chpl:11: error: unresolved call 'owned MyClass?.mymethod()'
+error-method-on-nilable-owned.chpl:3: note: this candidate did not match: MyClass.mymethod()
+error-method-on-nilable-owned.chpl:11: note: because method call receiver with type owned MyClass?
+error-method-on-nilable-owned.chpl:3: note: is passed to formal 'this: borrowed MyClass'
+error-method-on-nilable-owned.chpl:11: note: try to apply the postfix ! operator to method call receiver

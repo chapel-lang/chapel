@@ -1,0 +1,40 @@
+In recursive Makefile structure...
+
+1) Should leave targets where they are built rather than moving them.
+   If the sub-make moves it, the parent Makefile won't know that it has
+   been created.  If the parent Makefile moves it, then we have an
+   ordering problem because it needs to be copied down before other
+   subdirectories can refer to it.
+
+2) Should explicitly iterate over subdirectories and execute commands
+   in them rather than having missing targets cause building in a
+   subdirectory.  While the latter approach is attractive, it is
+   problemsome because we either have to give all the dependences of
+   the subdirectory's target in the parent Makefile (yuck!) or we
+   have to always do a make in the subdirectory to ensure that the
+   target is up-to-date (potentially each time that the subtarget
+   is needed).
+
+3) We've recently switched to using -MMD to compute dependences,
+   removing the need to precompute them a priori.  Now they are
+   computed during compilation.
+
+   There used to be a bunch of old notes on troubles with 'make
+   depend' here.  Refer to the git archives if you're interested
+   in them.
+
+4) Don't give a rule that tells how to make files that are included,
+   as it will be called way, way too often.
+
+
+
+In holistic Makefile structure...
+
+1) Paths need to be explicitly given for all targets and subdirectory
+   Makefiles.
+
+2) Doesn't seem to support compartmentalization of code.
+
+3) I decided not to pursue this option for these reasons.  It may have
+   been the wrong choice.
+

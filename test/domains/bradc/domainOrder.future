@@ -1,0 +1,51 @@
+semantic: domain ordering
+
+This future captures the semantic question of whether or not the
+stride values used to specify ranges in a rectangular domain should
+have a bearing on the domain's ordering of the indices or not.
+
+Argument in favor of respecting the stride values: It's more
+consistent with ranges and potentially less confusing to a user who
+expects to use strides for this purpose.
+
+Argument in favor of ignoring them: A domain is an index set and the
+ordering of the indices described by the set arguably could/should be
+distinct from the way in which the indices were originally specified
+in which case lexicographic ordering makes sense.  For a more obvious
+example than this one, given a sparse rectangular domain, we may add
+indices using any ordering or method, but the order in which they're
+printed out for the domain should respect the lexicographic ordering,
+not the manner in which they were specified.  "So why use negative
+strides at all?"  In some cases they are a more convenient way of
+specifying the alignment of a domain's index set as in the NAS MG
+benchmark where the indices for each power of two should be the "even"
+values for that level of the hierarchy:
+
+   const D: domain(3) = [1..n, 1..n, 1..n];
+   const HierD: [lvl in 0..#numLevels] domain(3, stridable=true)
+              = D by -2**lvl;
+
+   // should give HierD(0) = 1..n x 1..n x 1..n
+   //             HierD(1) = 2, 4, 6, .. x 2, 4, 6, ... x 2, 4, 6, ...
+   //             HierD(2) = 4, 8, ... x 4, 8, ... x 4, 8, ...
+
+is much easier than doing the stride + alignment terms separately; yet
+arguably, I want to use this negative stride only for the convenience
+of specifying the right indices, not for actually changing the
+direction in which domain indices are traversed (and in fact, that
+would be more confusing in this case, which might suggest that the
+first semantics should imply I should add an additional "by -1" to the
+end of HierD's specification in order to turn things back around
+again.
+
+The other reason that I'm inclined to take this path is that I think
+that reindexing using a negative stride could be somewhere between
+difficult and impossible to implement in distributed memory cases
+given the first semantics since it would require the distribution to
+effectively reverse the index set which isn't a particularly affine
+operation.
+
+In the .good file here, I'm taking the contrary position, merely to
+encourage discussion and keep this future from passing until we
+resolve it (which could imply taking the first interpretation and
+simply updating the .good).

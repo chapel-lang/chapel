@@ -1,0 +1,15 @@
+#
+# basic test
+#
+--noTiming --image=image.ppm
+--noTiming --image=image.ppm --scene=scene
+--noTiming --image=image.ppm --loopStyle=1
+--noTiming --image=image.ppm --loopStyle=2
+--noTiming --image=image.ppm --loopStyle=3
+--noTiming --image=image.ppm --samples=4 --seed=1 --size=400x300  # c-ray.4samples.good
+
+#
+# skipping this due to it taking too long under valgrind and baseline testing:
+#
+#--noTiming --image=image.ppm --scene=sphfract  # c-ray.sphfract.good
+

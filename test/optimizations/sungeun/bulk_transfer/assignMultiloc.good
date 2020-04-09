@@ -1,0 +1,42 @@
+proc =(a:[],b:[]): in chpl__bulkTransferArray
+proc =(a:[],b:[]): attempting doiBulkTransferFromKnown
+In DefaultRectangular._simpleTransfer(): Alo=(1, 1, 1), Blo=(1, 1, 1), len=315, elemSize=8
+proc =(a:[],b:[]): successfully completed bulk transfer
+proc =(a:[],b:[]): in chpl__bulkTransferArray
+proc =(a:[],b:[]): attempting doiBulkTransferFromKnown
+In DefaultRectangular._simpleTransfer(): Alo=(1, 1, 1), Blo=(124, 457, 790), len=315, elemSize=8
+proc =(a:[],b:[]): successfully completed bulk transfer
+proc =(a:[],b:[]): in chpl__bulkTransferArray
+proc =(a:[],b:[]): attempting doiBulkTransferFromKnown
+In DefaultRectangular._simpleTransfer(): Alo=(1, 1, 1), Blo=(-122, -455, -788), len=315, elemSize=8
+proc =(a:[],b:[]): successfully completed bulk transfer
+proc =(a:[],b:[]): in chpl__bulkTransferArray
+proc =(a:[],b:[]): attempting doiBulkTransferFromKnown
+proc =(a:[],b:[]): in chpl__bulkTransferArray
+proc =(a:[],b:[]): attempting doiBulkTransferToKnown
+proc =(a:[],b:[]): in chpl__bulkTransferArray
+proc =(a:[],b:[]): attempting doiBulkTransferFromKnown
+In DefaultRectangular._simpleTransfer(): Alo=(1, 1, 1), Blo=(1, 1, 1), len=140, elemSize=8
+proc =(a:[],b:[]): successfully completed bulk transfer
+proc =(a:[],b:[]): successfully completed bulk transfer
+proc =(a:[],b:[]): successfully completed bulk transfer
+proc =(a:[],b:[]): in chpl__bulkTransferArray
+proc =(a:[],b:[]): attempting doiBulkTransferFromKnown
+proc =(a:[],b:[]): in chpl__bulkTransferArray
+proc =(a:[],b:[]): attempting doiBulkTransferToKnown
+proc =(a:[],b:[]): in chpl__bulkTransferArray
+proc =(a:[],b:[]): attempting doiBulkTransferFromKnown
+In DefaultRectangular._simpleTransfer(): Alo=(1, 1, 1), Blo=(124, 457, 790), len=140, elemSize=8
+proc =(a:[],b:[]): successfully completed bulk transfer
+proc =(a:[],b:[]): successfully completed bulk transfer
+proc =(a:[],b:[]): successfully completed bulk transfer
+proc =(a:[],b:[]): in chpl__bulkTransferArray
+proc =(a:[],b:[]): attempting doiBulkTransferFromKnown
+proc =(a:[],b:[]): in chpl__bulkTransferArray
+proc =(a:[],b:[]): attempting doiBulkTransferToKnown
+proc =(a:[],b:[]): in chpl__bulkTransferArray
+proc =(a:[],b:[]): attempting doiBulkTransferFromKnown
+In DefaultRectangular._simpleTransfer(): Alo=(1, 1, 1), Blo=(-122, -455, -788), len=140, elemSize=8
+proc =(a:[],b:[]): successfully completed bulk transfer
+proc =(a:[],b:[]): successfully completed bulk transfer
+proc =(a:[],b:[]): successfully completed bulk transfer

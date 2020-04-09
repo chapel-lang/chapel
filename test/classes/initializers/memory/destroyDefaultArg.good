@@ -1,0 +1,16 @@
+----- Concrete Class -----
+R.init()
+R.deinit(): 0
+resource = 0
+----- Generic Class -----
+R.init()
+R.deinit(): 0
+resource = 0
+----- Concrete Record -----
+R.init()
+R.deinit(): 0
+resource = 0
+----- Generic Record -----
+R.init()
+R.deinit(): 0
+resource = 0

@@ -1,0 +1,6 @@
+a1 is (i = 1, f = 2.0, s = three)
+a2 is (i = 1, f = 2.0, s = three)
+a1 is (i = 1, f = 2.0, s = three)
+a2 is (i = 12, f = 13.0, s = fourteen)
+a1 is (i = 12, f = 13.0, s = fourteen)
+a2 is (i = 1, f = 2.0, s = three)

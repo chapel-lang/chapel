@@ -1,0 +1,92 @@
+
+casts to borrowed Child
+co:borrowed Child
+borrowed Child {p = 1, c = 2}
+coq:borrowed Child
+borrowed Child {p = 1, c = 2}
+cs:borrowed Child
+borrowed Child {p = 1, c = 2}
+csq:borrowed Child
+borrowed Child {p = 1, c = 2}
+po:borrowed Child
+ClassCastError: cannot cast class to type - runtime types not compatible
+poq:borrowed Child
+ClassCastError: cannot cast class to type - runtime types not compatible
+ps:borrowed Child
+ClassCastError: cannot cast class to type - runtime types not compatible
+psq:borrowed Child
+ClassCastError: cannot cast class to type - runtime types not compatible
+noq:borrowed Child
+NilClassError: cannot convert nil class to non nilable type
+nsq:borrowed Child
+NilClassError: cannot convert nil class to non nilable type
+
+casts to borrowed Child?
+co:borrowed Child?
+borrowed Child? {p = 1, c = 2}
+coq:borrowed Child?
+borrowed Child? {p = 1, c = 2}
+cs:borrowed Child?
+borrowed Child? {p = 1, c = 2}
+csq:borrowed Child?
+borrowed Child? {p = 1, c = 2}
+po:borrowed Child?
+borrowed Child? nil
+poq:borrowed Child?
+borrowed Child? nil
+ps:borrowed Child?
+borrowed Child? nil
+psq:borrowed Child?
+borrowed Child? nil
+noq:borrowed Child?
+borrowed Child? nil
+nsq:borrowed Child?
+borrowed Child? nil
+
+casts to owned Child
+co:owned Child
+owned Child {p = 1, c = 2}
+coq:owned Child
+owned Child {p = 1, c = 2}
+po:owned Child
+ClassCastError: cannot cast class to type - runtime types not compatible
+poq:owned Child
+ClassCastError: cannot cast class to type - runtime types not compatible
+noq:owned Child
+NilClassError: cannot convert nil class to non nilable type
+
+casts to owned Child?
+co:owned Child?
+owned Child? {p = 1, c = 2}
+coq:owned Child?
+owned Child? {p = 1, c = 2}
+po:owned Child?
+owned Child? nil
+poq:owned Child?
+owned Child? nil
+noq:owned Child?
+owned Child? nil
+
+casts to shared Child
+cs:shared Child
+shared Child {p = 1, c = 2}
+csq:shared Child
+shared Child {p = 1, c = 2}
+ps:shared Child
+ClassCastError: cannot cast class to type - runtime types not compatible
+psq:shared Child
+ClassCastError: cannot cast class to type - runtime types not compatible
+nsq:shared Child
+NilClassError: cannot convert nil class to non nilable type
+
+casts to shared Child?
+cs:shared Child?
+shared Child? {p = 1, c = 2}
+csq:shared Child?
+shared Child? {p = 1, c = 2}
+ps:shared Child?
+shared Child? nil
+psq:shared Child?
+shared Child? nil
+nsq:shared Child?
+shared Child? nil

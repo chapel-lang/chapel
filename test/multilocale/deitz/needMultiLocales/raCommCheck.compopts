@@ -1,0 +1,1 @@
+-M../../../release/examples/benchmarks/hpcc --no-warnings -suseLCG=false

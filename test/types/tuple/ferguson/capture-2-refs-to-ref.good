@@ -1,0 +1,2 @@
+capture-2-refs-to-ref.chpl:11: In function 'main':
+capture-2-refs-to-ref.chpl:13: error: non-lvalue actual is passed to 'ref' formal 'x' of test()

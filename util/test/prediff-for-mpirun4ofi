@@ -1,0 +1,65 @@
+#!/usr/bin/env python
+#
+# This script is a system-wide prediff for use with the OpenMPI mpirun
+# launcher.  Depending on how OpenMPI is configured, when mpirun sees
+# a program it launched exit with a non-zero status, it may print one
+# or more messages describing what happened.  While these are helpful
+# for a human observer, they're a problem for the testing system's
+# output comparisons.  This script removes them.
+#
+import sys, re
+
+# These match the message blocks we want to remove.
+msgs = (
+"""-------------------------------------------------------
+Primary job +terminated normally, but [0-9]+ process[^ ]* returned
+a non-zero exit code[.]+ Per user-direction, the job has been aborted[.]
+-------------------------------------------------------
+""",
+"""--------------------------------------------------------------------------
+mpirun detected that one or more processes exited with non-zero status, thus causing
+the job to be terminated[.] The first process to do so was:
+
+ *Process name: +\[\[[0-9]+,[0-9]+],[0-9]+]
+ *Exit code: +[0-9]+
+--------------------------------------------------------------------------
+""",
+"""-------------------------------------------------------
+While the primary job +terminated normally, [0-9]+ process[^ ]* returned
+a non-zero exit code[.]+ Further examination may be required[.]
+-------------------------------------------------------
+""",
+"""--------------------------------------------------------------------------
+mpirun has exited due to process rank [0-9]+ with PID [0-9]+ on
+node [^ ]+ exiting improperly[.] There are three reasons this could occur:
+
+1[.] this process did not call "init" before exiting, but others in
+the job did[.] This can cause a job to hang indefinitely while it waits
+for all processes to call "init"[.] By rule, if one process calls "init",
+then ALL processes must call "init" prior to termination[.]
+
+2[.] this process called "init", but exited without calling "finalize"[.]
+By rule, all processes that call "init" MUST call "finalize" prior to
+exiting or it will be considered an "abnormal termination"
+
+3[.] this process called "MPI_Abort" or "orte_abort" and the mca parameter
+orte_create_session_dirs is set to false[.] In this case, the run-time cannot
+detect that the abort call was an abnormal termination[.] Hence, the only
+error message you will receive is this one[.]
+
+This may have caused other processes in the application to be
+terminated by signals sent by mpirun [(]as reported here[)][.]
+
+You can avoid this message by specifying -quiet on the mpirun command line.
+
+--------------------------------------------------------------------------
+"""
+)
+
+outfname = sys.argv[2]
+with open(outfname, "r") as f:
+    outText = f.read()
+for m in msgs:
+    outText = re.sub(m, "", outText, flags = re.MULTILINE)
+with open(outfname, "w") as f:
+    f.write(outText)

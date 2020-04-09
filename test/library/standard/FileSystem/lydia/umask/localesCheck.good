@@ -1,0 +1,2 @@
+Locale 1's umask unaffected by Locale 0
+As expected, changing locale 1's mode didn't affect locale 0's mode

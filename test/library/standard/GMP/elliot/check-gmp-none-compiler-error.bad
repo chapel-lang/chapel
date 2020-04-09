@@ -1,0 +1,1 @@
+$CHPL_HOME/modules/standard/GMP.chpl:1226: error: Cannot use GMP with CHPL_GMP=none

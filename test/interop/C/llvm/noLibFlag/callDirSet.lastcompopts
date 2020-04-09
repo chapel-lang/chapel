@@ -1,0 +1,1 @@
+-Lmydir/ -lsetDir `$CHPL_HOME/util/config/compileline --libraries` -lsetDir

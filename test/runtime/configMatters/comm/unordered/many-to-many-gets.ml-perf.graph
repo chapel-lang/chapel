@@ -1,0 +1,17 @@
+perfkeys: GET    rate(mOps/sec):, GET    rate(mOps/sec):, GET    rate(mOps/sec):
+files: ordered-many-to-many.dat, ordered-oversub-many-to-many.dat, unordered-many-to-many.dat
+graphkeys: GET (ordered), GET (4x oversub), GET (unordered)
+graphtitle: Remote many-to-many int GET Performance
+ylabel: Performance (10**6 ops/sec)
+
+perfkeys: GET    rate(mOps/sec):, GET    rate(mOps/sec):
+files: ordered-many-to-many-2-tup.dat, unordered-many-to-many-2-tup.dat
+graphkeys: GET (ordered), GET (unordered)
+graphtitle: Remote many-to-many 2*int GET Performance
+ylabel: Performance (10**6 ops/sec)
+
+perfkeys: GET    rate(mOps/sec):, GET    rate(mOps/sec):
+files: ordered-many-to-many-16-tup.dat, unordered-many-to-many-16-tup.dat
+graphkeys: GET (ordered), GET (unordered)
+graphtitle: Remote many-to-many 16*int GET Performance
+ylabel: Performance (10**6 ops/sec)

@@ -1,0 +1,1 @@
+with-runtime-types.chpl:5: error: accessing the runtime-type field tField of a class type is currently unsupported

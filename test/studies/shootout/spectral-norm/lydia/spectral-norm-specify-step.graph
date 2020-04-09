@@ -1,0 +1,6 @@
+perfkeys: real, real, real, real, real, real, real, real, real, real, real, real
+graphkeys: --step=60, --step=100, --step=200, --step=250, --step=500, --step=700, --step=1000, --step=1500, --step=2000, --step=2500, --step=3000, --step=5500
+files: spectralnorm-60.dat, spectralnorm-100.dat, spectralnorm-200.dat, spectralnorm-250.dat, spectralnorm-500.dat, spectralnorm-700.dat, spectralnorm-1000.dat, spectralnorm-1500.dat, spectralnorm-2000.dat, spectralnorm-2500.dat, spectralnorm-3000.dat, spectralnorm-5500.dat
+graphtitle: Spectral Norm Step Size Times
+ylabel: Time (seconds)
+graphname: spectralsteps

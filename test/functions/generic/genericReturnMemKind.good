@@ -1,0 +1,8 @@
+genericReturnMemKind.chpl:21: warning: _owned(object)
+genericReturnMemKind.chpl:22: warning: _shared(object)
+genericReturnMemKind.chpl:23: warning: object
+genericReturnMemKind.chpl:24: warning: unmanaged object
+genericReturnMemKind.chpl:40: warning: [domain(1,int(64),false)] _owned(object)
+genericReturnMemKind.chpl:41: warning: [domain(1,int(64),false)] _shared(object)
+genericReturnMemKind.chpl:42: warning: [domain(1,int(64),false)] object
+genericReturnMemKind.chpl:43: warning: [domain(1,int(64),false)] unmanaged object

@@ -1,0 +1,1 @@
+feature request: when closing a file, close its channels first

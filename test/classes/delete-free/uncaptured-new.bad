@@ -1,0 +1,20 @@
+entering foo
+init(1)
+exiting foo
+returned from foo()
+
+entering bar
+init(2)
+deinit(2)
+exiting bar
+returned from bar()
+
+entering baz
+init(3)
+exiting baz
+returned from baz()
+
+entering qux
+init(4)
+exiting qux
+returned from qux()

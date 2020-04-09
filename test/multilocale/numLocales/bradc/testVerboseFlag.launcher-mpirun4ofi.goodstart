@@ -1,0 +1,8 @@
+#!/bin/sh
+if [[ $CHPL_RT_OVERSUBSCRIBED =~ [1tTyY] ]] ; then
+  moreArgs="-mca mpi_yield_when_idle 1"
+fi
+echo "EVARS=vals" \
+     "mpirun  -np 1 -map-by ppr:1:node -map-by node:oversubscribe" \
+     "-bind-to none${moreArgs:+ $moreArgs}" \
+     "./testVerboseFlag_real --verbose -nl 1${EXECOPTS:+ $EXECOPTS}"

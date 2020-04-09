@@ -1,0 +1,10 @@
+Rx == Rx: true
+Rx == Ry: false
+Rxy, Ryx: R(1,1) R(1,1)
+Rxy == R(1,1): true
+Ryx == R(1,1): true
+Rxy == Ryx: true
+foo: R(1,1)
+foo: r.type == R(1,1): true
+oof: R(1,1)
+oof: rr.type == R(1,1): true

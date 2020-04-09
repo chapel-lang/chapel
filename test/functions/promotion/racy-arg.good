@@ -1,0 +1,2 @@
+racy-arg.chpl:28: error: Racy promotion of scalar argument for the formal 'rcv'
+racy-arg.chpl:58: error: Racy promotion of scalar argument for the formal 'rcv'

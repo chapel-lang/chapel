@@ -1,0 +1,10 @@
+-st=int(8)
+-st=int(16)
+-st=int(32)
+-st=int(64)
+-st=int
+-st=uint(8)
+-st=uint(16)
+-st=uint(32)
+-st=uint(64)
+-st=uint

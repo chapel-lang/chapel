@@ -1,0 +1,70 @@
+### chunk = 0  chunk2 = 0  followMe = (0..4, 0..8, 0..8, 0..8)  followMe2 = (0..4, 0..8, 0..8, 0..8)
+### chunk = 0  chunk2 = 0  followMe = (0..4, 0..8, 0..8, 0..8)  followMe2 = (0..4, 0..8, 0..8, 0..8)
+### chunk = 0  chunk2 = 0  followMe = (0..4, 0..8, 0..8, 0..8)  followMe2 = (0..4, 0..8, 0..8, 0..8)
+### chunk = 0  chunk2 = 0  followMe = (0..4, 0..8, 0..8, 0..8)  followMe2 = (0..4, 0..8, 0..8, 0..8)
+### chunk = 0  chunk2 = 0  followMe = (0..4, 0..8, 0..8, 0..8)  followMe2 = (0..4, 0..8, 0..8, 0..8)
+### chunk = 0  chunk2 = 0  followMe = (0..4, 0..8, 0..8, 0..8)  followMe2 = (0..4, 0..8, 0..8, 0..8)
+### chunk = 0  chunk2 = 0  followMe = (0..4, 0..8, 0..8, 0..8)  followMe2 = (0..4, 0..8, 0..8, 0..8)
+### chunk = 1  chunk2 = 0  followMe = (5..8, 0..8, 0..8, 0..8)  followMe2 = (5..8, 0..8, 0..8, 0..8)
+### chunk = 1  chunk2 = 0  followMe = (5..8, 0..8, 0..8, 0..8)  followMe2 = (5..8, 0..8, 0..8, 0..8)
+### chunk = 1  chunk2 = 0  followMe = (5..8, 0..8, 0..8, 0..8)  followMe2 = (5..8, 0..8, 0..8, 0..8)
+### chunk = 1  chunk2 = 0  followMe = (5..8, 0..8, 0..8, 0..8)  followMe2 = (5..8, 0..8, 0..8, 0..8)
+### chunk = 1  chunk2 = 0  followMe = (5..8, 0..8, 0..8, 0..8)  followMe2 = (5..8, 0..8, 0..8, 0..8)
+### chunk = 1  chunk2 = 0  followMe = (5..8, 0..8, 0..8, 0..8)  followMe2 = (5..8, 0..8, 0..8, 0..8)
+### chunk = 1  chunk2 = 0  followMe = (5..8, 0..8, 0..8, 0..8)  followMe2 = (5..8, 0..8, 0..8, 0..8)
+### ignoreRunning = false
+### ignoreRunning = false
+### ignoreRunning = true
+### ignoreRunning = true
+### ignoreRunning = true
+### ignoreRunning = true
+### ignoreRunning = true
+### ignoreRunning = true
+### ignoreRunning = true
+### minIndicesPerTask = 1
+### minIndicesPerTask = 1
+### minIndicesPerTask = 1
+### minIndicesPerTask = 1
+### minIndicesPerTask = 1
+### minIndicesPerTask = 1
+### minIndicesPerTask = 1
+### minIndicesPerTask = 2
+### minIndicesPerTask = 2
+### nranges = (9..17, 10..18, 11..19, 12..20)
+### nranges = (9..17, 10..18, 11..19, 12..20)
+### nranges = (9..17, 10..18, 11..19, 12..20)
+### nranges = (9..17, 10..18, 11..19, 12..20)
+### nranges = (9..17, 10..18, 11..19, 12..20)
+### nranges = (9..17, 10..18, 11..19, 12..20)
+### nranges = (9..17, 10..18, 11..19, 12..20)
+### nranges = (9..17, 10..18, 11..19, 12..20)
+### nranges = (9..17, 10..18, 11..19, 12..20)
+### numChunks = 1 (parDim = 0)
+### numChunks = 1 (parDim = 0)
+### numChunks = 2 (parDim = 0)
+### numChunks = 2 (parDim = 0)
+### numChunks = 2 (parDim = 0)
+### numChunks = 2 (parDim = 0)
+### numChunks = 2 (parDim = 0)
+### numChunks = 2 (parDim = 0)
+### numChunks = 2 (parDim = 0)
+### numSublocs = 2
+### numSublocs = 2
+### numSublocs = 2
+### numSublocs = 2
+### numSublocs = 2
+### numSublocs = 2
+### numSublocs = 2
+### numSublocs = 2
+### numSublocs = 2
+### numTasksPerSubloc = 1
+### numTasksPerSubloc = 1
+### numTasksPerSubloc = 2
+### numTasksPerSubloc = 2
+### numTasksPerSubloc = 2
+### numTasksPerSubloc = 2
+### numTasksPerSubloc = 2
+### numTasksPerSubloc = 2
+### numTasksPerSubloc = 2
+=== In forwardDefaultArr ===
+=== leaving forwardDefaultArr ===

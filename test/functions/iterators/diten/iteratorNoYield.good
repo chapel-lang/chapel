@@ -1,0 +1,2 @@
+iteratorNoYield.chpl:9: error: The iterable-expression resolves to a non-iterator function 'itr' when looking for a parallel iterator
+iteratorNoYield.chpl:6: note: The function 'itr' is declared here

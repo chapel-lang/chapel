@@ -1,0 +1,4 @@
+-s op=0   # bitshiftByNegativeParam.0.good
+-s op=1   # bitshiftByNegativeParam.1.good
+-s op=2   # bitshiftByNegativeParam.2.good
+-s op=3   # bitshiftByNegativeParam.3.good

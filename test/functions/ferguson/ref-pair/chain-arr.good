@@ -1,0 +1,30 @@
+writeArray: 
+CONST REF
+0 0 0 0
+CONST REF
+CONST REF
+0 0 0 0
+getElement: 
+CONST REF
+0
+CONST REF
+CONST REF
+0
+getArray: 
+CONST REF
+0 0 0 0
+CONST REF
+CONST REF
+0 0 0 0
+setX: 
+REF
+REF
+REF
+setElement: 
+REF
+REF
+REF
+setArray: 
+REF
+REF
+REF

@@ -1,0 +1,4 @@
+#!/bin/sh
+./licensehelp.sh $1 $2 $3 > zhelplice.good
+echo >> zhelplice.good
+./helphelp.sh $1 $2 $3 >> zhelplice.good

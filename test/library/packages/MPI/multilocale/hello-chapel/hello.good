@@ -1,0 +1,4 @@
+Hello, Chapel! This is MPI rank=0 of size=4, on locale.id=0
+Hello, Chapel! This is MPI rank=1 of size=4, on locale.id=1
+Hello, Chapel! This is MPI rank=2 of size=4, on locale.id=2
+Hello, Chapel! This is MPI rank=3 of size=4, on locale.id=3

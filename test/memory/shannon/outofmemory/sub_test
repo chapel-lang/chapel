@@ -1,0 +1,7 @@
+#!/bin/bash
+
+# Set virtual memory limit
+ulimit -v 4000000
+export CHPL_RT_MAX_HEAP_SIZE=1G
+
+../../../../util/test/sub_test $1

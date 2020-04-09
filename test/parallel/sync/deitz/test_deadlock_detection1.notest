@@ -1,0 +1,4 @@
+Disabling this test...
+
+...because (a) it sometimes fails (e.g., Aug 2nd, quickstart), (b) we're
+looking at retiring the -b flag anyway (issue #10127).

@@ -1,0 +1,12 @@
+foo called (false) with 1
+foo called (false) with 1
+foo called (false) with 1
+foo called (false) with 2
+foo called (false) with 2
+foo called (false) with 2
+foo called (true) with 2
+foo called (true) with 1
+foo called (true) with 2
+foo called (true) with 1
+foo called (true) with 2
+foo called (true) with 1

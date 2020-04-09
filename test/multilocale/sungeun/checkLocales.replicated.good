@@ -1,0 +1,21 @@
+LOCALE0
+rootLocale is on LOCALE0
+Locales is on LOCALE0
+ LOCALE0
+ LOCALE1
+ LOCALE2
+
+LOCALE1
+rootLocale is on LOCALE1
+Locales is on LOCALE1
+ LOCALE0
+ LOCALE1
+ LOCALE2
+
+LOCALE2
+rootLocale is on LOCALE2
+Locales is on LOCALE2
+ LOCALE0
+ LOCALE1
+ LOCALE2
+

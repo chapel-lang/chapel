@@ -1,0 +1,67 @@
+-- Chapel language definition file for highlight http://www.andre-simon.de/
+-- This file is written in Lua
+--
+-- Author: Lydia Duncan
+-- Date  : April 28, 2016
+--
+-- The file is used to describe keywords and special symbols of programming languages.
+-- See README in the highlight directory for details.
+
+Description="Chapel"
+
+Keywords={
+  { Id=1,
+   List={"as", "align", "atomic",
+         "begin", "borrowed", "break", "by",
+         "catch", "class", "cobegin", "coforall",
+         "config", "const", "continue",
+         "delete", "dmapped", "do",
+         "else", "enum", "except", "export", "extern",
+         "false", "for", "forall",
+         "if", "import", "in", "index", "inline", "inout", "iter",
+         "label", "lambda", "let", "lifetime", "local",
+         "module",
+         "new", "nil", "noinit",
+         "on", "only", "otherwise", "out", "override", "owned",
+         "param", "private", "proc", "prototype", "public",
+         "record", "reduce", "ref", "require", "return",
+         "scan", "select", "serial", "shared",
+         "single", "sparse", "sync",
+         "then", "throw", "throws", "true", "try", "type",
+         "union", "unmanaged", "use",
+         "var", "when", "where", "while", "with", "yield", "zip"
+        }
+  },
+  { Id=2,
+    List= { "bool", "bytes", "complex", "domain", "imag", "int", "nothing", "opaque", "range", "real",
+            "string", "subdomain", "uint", "void"
+          }
+  },
+  { Id=3,
+    Regex=[[(\w+)\s*\(]]
+  }
+}
+
+Strings = {
+  Delimiter=[["|']]
+}
+
+Comments = {
+   { Block=true,
+     Nested=true,
+     Delimiter = { [[\/\*]], [[\*\/]] }
+   },
+   {
+     Block=false,
+     Delimiter = { [[//]] }
+   }
+}
+
+IgnoreCase=false
+
+-- matches binary, octal, decimal, hexadecimal integers and decimal and hexadecimal floating point
+Digits=[[ 0[bB][01\_]+|0[oO][0-7]+|\d+\.[eE][\-\+]?\d+|0[xX][0-9a-fA-F\_]+\.[pP][\-\+]?\d+|0[xX][0-9a-fA-F\_]*\.?[0-9a-fA-F\_]+(?:[pP][\-\+]?\d+)?|\d*\.?[\d\_]+(?:[eE][\-\+]?\d+)? ]]
+
+Operators=[[\(|\)|\[|\]|\{|\}|\,|\;|\.|\:|\/|\*|\%|\+|\-|=|\&|\?|<|>|\!|\~|\||\^|!|#]]
+
+EnableIndentation=true
