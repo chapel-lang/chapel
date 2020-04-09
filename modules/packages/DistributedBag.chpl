@@ -256,15 +256,14 @@ module DistributedBag {
       return chpl_getPrivatizedCopy(unmanaged DistributedBagImpl(eltType), _pid);
     }
   
-    // printing the contents of DistBag onto a channel
+    pragma "no doc"
+    /* Read/write the contents of DistBag from/to a channel */ 
     proc readWriteThis(ch: channel) throws {
       ch <~> "[";
-      var iterations=0;
       var size = this.getSize();
-      for i in this {
-        iterations+=1;
+      for (i,iteration) in zip(this, 0..<size) {
         ch <~> i;
-        if iterations < size then ch <~> ", ";
+        if iteration < size-1 then ch <~> ", ";
       }
       ch <~> "]";
     }
