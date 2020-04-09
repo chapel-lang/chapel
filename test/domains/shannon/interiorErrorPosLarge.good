@@ -1,2 +1,2 @@
 domain(2): 		{12..15, 12..15}
-interiorErrorPosLarge.chpl:3: error: halt reached - ***Error: Argument to 'interior' function out of range in dimension 1***
+interiorErrorPosLarge.chpl:3: error: halt reached - ***Error: Argument to 'interior' function out of range in dimension 0***

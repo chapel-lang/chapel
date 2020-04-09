@@ -1,6 +1,7 @@
 /*
  * Copyright 2017 Advanced Micro Devices, Inc.
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -38,7 +39,9 @@ module LocaleModelHelpSetup {
 
   config param debugLocaleModel = false;
 
-  var doneCreatingLocales: bool = false;
+  pragma "no doc"
+  pragma "locale private"
+  var rootLocaleInitialized: bool = false;
 
   extern var chpl_nodeID: chpl_nodeID_t;
 
@@ -69,7 +72,7 @@ module LocaleModelHelpSetup {
     var root_accum:chpl_root_locale_accum;
 
     forall locIdx in dst.chpl_initOnLocales() with (ref root_accum) {
-      const node = new unmanaged LocaleModel(dst);
+      const node = new locale(new unmanaged LocaleModel(new locale(dst)));
       dst.myLocales[locIdx] = node;
       root_accum.accum(node);
     }
@@ -82,7 +85,7 @@ module LocaleModelHelpSetup {
 
     forall locIdx in dst.chpl_initOnLocales() with (ref root_accum) {
       chpl_task_setSubloc(c_sublocid_any);
-      const node = new unmanaged LocaleModel(dst);
+      const node = new locale(new unmanaged LocaleModel(new locale (dst)));
       dst.myLocales[locIdx] = node;
       root_accum.accum(node);
     }
@@ -95,7 +98,7 @@ module LocaleModelHelpSetup {
 
     forall locIdx in dst.chpl_initOnLocales() with (ref root_accum) {
       chpl_task_setSubloc(c_sublocid_any);
-      const node = new unmanaged LocaleModel(dst);
+      const node = new locale(new unmanaged LocaleModel(new locale(dst)));
       dst.myLocales[locIdx] = node;
       root_accum.accum(node);
     }
@@ -152,16 +155,12 @@ module LocaleModelHelpSetup {
     dst.maxTaskPar = chpl_task_getMaxPar();
   }
 
-  proc helpSetupLocaleNUMA(dst:borrowed LocaleModel, out local_name:string, out numSublocales, type NumaDomain) {
+  proc helpSetupLocaleNUMA(dst:borrowed LocaleModel, out local_name:string, numSublocales, type NumaDomain) {
     helpSetupLocaleFlat(dst, local_name);
-
-    extern proc chpl_topo_getNumNumaDomains(): c_int;
-    numSublocales = chpl_topo_getNumNumaDomains();
 
     extern proc chpl_task_getMaxPar(): uint(32);
 
     if numSublocales >= 1 {
-      dst.childSpace = {0..#numSublocales};
       // These nPUs* values are estimates only; better values await
       // full hwloc support. In particular it assumes a homogeneous node
       const nPUsPhysAccPerSubloc = dst.nPUsPhysAcc/numSublocales;
@@ -173,7 +172,8 @@ module LocaleModelHelpSetup {
       for i in dst.childSpace {
         // allocate the structure on the proper sublocale
         chpl_task_setSubloc(i:chpl_sublocID_t);
-        dst.childLocales[i] = new unmanaged NumaDomain(i:chpl_sublocID_t, dst);
+        dst.childLocales[i] = new unmanaged NumaDomain(i:chpl_sublocID_t,
+                                                       new locale(dst));
         dst.childLocales[i].nPUsPhysAcc = nPUsPhysAccPerSubloc;
         dst.childLocales[i].nPUsPhysAll = nPUsPhysAllPerSubloc;
         dst.childLocales[i].nPUsLogAcc = nPUsLogAccPerSubloc;

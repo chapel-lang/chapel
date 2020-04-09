@@ -1,1 +1,0 @@
-needsFenceSerial.chpl:16: note: Optimized atomic call to be unordered

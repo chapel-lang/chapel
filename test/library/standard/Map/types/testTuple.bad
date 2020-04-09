@@ -1,0 +1,8 @@
+$CHPL_HOME/modules/standard/Map.chpl:100: In initializer:
+$CHPL_HOME/modules/standard/Map.chpl:75: error: Cannot default-initialize a tuple component of the type shared T
+note: non-nil class types do not support default initialization
+note: Consider using the type shared T? instead
+$CHPL_HOME/modules/standard/Map.chpl:75: error: Cannot default-initialize a tuple component of the type shared T
+note: non-nil class types do not support default initialization
+note: Consider using the type shared T? instead
+./MapTest.chpl:5: Initializer instantiated as: init(type keyType = int(64), type valType = 2*shared T, param parSafe = 0)

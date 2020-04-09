@@ -1,3 +1,3 @@
-Error: In plan_dft(), the input and output arrays don't have same size in dimension 1 (input = 50, output = 51)
-Error: In plan_dft(), the input and output arrays don't have same size in dimension 2 (input = 100, output = 101)
+Error: In plan_dft(), the input and output arrays don't have same size in dimension 0 (input = 50, output = 51)
+Error: In plan_dft(), the input and output arrays don't have same size in dimension 1 (input = 100, output = 101)
 planDFTmismatch.chpl:15: error: halt reached - Incorrect array sizes in plan_dft()

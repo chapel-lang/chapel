@@ -1,3 +1,0 @@
-# This test seems to pass with GASNet/no-local for some reason
-CHPL_COMM!=none
-COMPOPTS <= --no-local

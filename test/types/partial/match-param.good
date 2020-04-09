@@ -1,6 +1,0 @@
-generic
-R(int(64),100)
-
-hello-version
-R(string,"hello")
-

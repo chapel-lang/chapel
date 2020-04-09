@@ -1,2 +1,0 @@
---n=0 < fasta.small
---n=0 < /dev/null           # revcomp-empty.good

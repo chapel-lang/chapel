@@ -1,3 +1,0 @@
-proc main() {
-  break;
-}

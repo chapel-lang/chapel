@@ -1,4 +1,0 @@
--stestLow # rangecastbounds.low
--stestHigh # rangecastbounds.high
--stestUnbounded # rangecastbounds.unbounded
--stestBounded # rangecastbounds.bounded

@@ -1,3 +1,0 @@
-# Still doesn't work with munging turned off.
-CHPL_MUNGE_USER_IDENTS == 0
-COMPOPTS <= --no-munge-user-idents

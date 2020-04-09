@@ -1,1 +1,0 @@
-use_iterator.chpl:1: error: 'iter' is not legal with 'extern'

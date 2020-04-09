@@ -1,3 +1,0 @@
-
-write("yyyyy
-");

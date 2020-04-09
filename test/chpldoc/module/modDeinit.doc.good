@@ -10,5 +10,12 @@ Foo
 
    use Foo;
 
+
+or
+
+.. code-block:: chapel
+
+   import Foo;
+
 .. function:: proc deinit()
 

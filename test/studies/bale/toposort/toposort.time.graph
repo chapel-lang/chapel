@@ -1,5 +1,0 @@
-perfkeys: whole:
-files: toposort.dat
-graphkeys: Bale-Toposort
-graphtitle: Bale: Toposort Time (seconds)
-ylabel: Time (seconds)

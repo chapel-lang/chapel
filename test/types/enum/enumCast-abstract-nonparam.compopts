@@ -1,2 +1,0 @@
--senumToInt=true  # enumCast-abstract-nonparam.good
--senumToInt=false # enumCast-abstract-nonparam-toenum.good

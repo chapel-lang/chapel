@@ -1,2 +1,2 @@
 testBanNonNilableClass.chpl:15: In function 'main':
-testBanNonNilableClass.chpl:16: error: Cannot initialize map because element type owned SomeClass is a non-nilable class
+testBanNonNilableClass.chpl:16: error: maps of non-nilable owned values are not allowed

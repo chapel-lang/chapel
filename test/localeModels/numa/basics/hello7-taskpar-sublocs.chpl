@@ -32,7 +32,7 @@ coforall loc in Locales {
   // locale's memory).
   //
   on loc {
-    const numSublocales = (here:LocaleModel).numSublocales;
+    const numSublocales = here.getChildCount();
 
     //
     // Now create a number of tasks as specified by the tasksPerLocale
@@ -43,7 +43,7 @@ coforall loc in Locales {
     // 'on' clauses, all tasks will remain local to the current locale
     // by default.
     //
-    coforall subloc in (here:LocaleModel).getChildren() {
+    coforall subloc in (here._value:LocaleModel).getChildren() {
       on subloc {
         //
         // Start creating the message
@@ -55,7 +55,7 @@ coforall loc in Locales {
         // the message according to the task ID.
         //
         if (numSublocales > 1) then
-          message += (here:NumaDomain).sid:string + " of " + numSublocales:string + " named " + here.name + " on ";
+          message += (here._value:NumaDomain).sid:string + " of " + numSublocales:string + " named " + here.name + " on ";
 
         //
         // Specialize the message based on the locale we're running on:
@@ -65,8 +65,8 @@ coforall loc in Locales {
         // - '.name' queries its name (similar to UNIX `hostname`)
         // - 'numLocales' refers to the number of locales (as specified by -nl)
         //
-        message += "locale " + here.parent!.id:string + " of " + numLocales:string;
-        if (printLocaleName) then message += " named " + here.parent!.name;
+        message += "locale " + here.parent.id:string + " of " + numLocales:string;
+        if (printLocaleName) then message += " named " + here.parent.name;
 
         //
         // Terminate the message

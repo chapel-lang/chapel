@@ -1,2 +1,0 @@
-bad-for-expr.chpl:3: In function 'badForExpr':
-bad-for-expr.chpl:4: error: Scoped variable would outlive the value it is set to

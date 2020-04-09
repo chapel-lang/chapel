@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -128,10 +129,10 @@ record LinkedList {
   /*
     Append all of the supplied arguments to the list.
    */
-  //TODO: merge the append overloads
   proc append(e: eltType, es: eltType ...?k) {
+    //TODO: merge the append overloads
     append(e);
-    for param i in 1..k do
+    for param i in 0..k-1 do
       append(es(i));
   }
 
@@ -340,10 +341,10 @@ record LinkedList {
   :type x: `T`
   :rtype: LinkedList(T)
  */
-// TODO: could just be an initializer?
 proc makeList(x ...?k) {
-  var s: LinkedList(x(1).type);
-  for param i in 1..k do
+  // TODO: could just be an initializer?
+  var s: LinkedList(x(0).type);
+  for param i in 0..k-1 do
     s.append(x(i));
   return s;
 }

@@ -17,7 +17,7 @@ module RunBRawLoops {
         var stat = loop_stats[iloop].borrow();
         var len = stat.loop_length[ilength];
         var num_samples = stat.samples_per_pass[ilength];
-        var ltimer = new owned LoopTimer();
+        var ltimer = new LoopTimer();
 
         select iloop {
           when LoopKernelID.INIT3 {

@@ -108,7 +108,7 @@ AssertionError: assert failed - '1.5' != '1.55'
 ================================================================================
 Error Caught in Unequal String
 AssertionError: Strings differ: 'unequalstring' != 'unequalString'
-First differing element at index 8:
+First differing element at index 7:
 's'
 'S'
 
@@ -124,7 +124,7 @@ AssertionError: assert failed - '(1, 2, 3)' and '(1, 2)' are not of same type
 ================================================================================
 Error Caught in Unequal Tuples Type 2
 AssertionError: tuple(3*int(64))s differ: '(1, 2, 3)' != '(1, 2, 5)'
-First differing element at index 3:
+First differing element at index 2:
 '3'
 '5'
 

@@ -1,2 +1,0 @@
-iterator-.type.chpl:9: error: .type is not supported for this kind of expression
-iterator-.type.chpl:12: error: .type is not supported for this kind of expression

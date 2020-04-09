@@ -1,3 +1,0 @@
-uncaught SystemError: Bad file descriptor: not writeable (in file.writer with path "fwriteIntFailed.txt")
-  fwriteIntFailed.chpl:4: thrown here
-  fwriteIntFailed.chpl:4: uncaught here

@@ -1,4 +1,0 @@
-/* subPkg */
-module SubPkg {
-
-}

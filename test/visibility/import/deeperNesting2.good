@@ -1,3 +1,5 @@
-deeperNesting2.chpl:12: warning: currently unable to import nested modules without specifying the full path to the module
-deeperNesting2.chpl:2: note: skipping module defined here
-deeperNesting2.chpl:12: error: No better match found
+deeperNesting2.chpl:12: error: Cannot import module 'B'
+deeperNesting2.chpl:2: note: a module named 'B' is defined here
+deeperNesting2.chpl:12: note: full path or explicit relative import required
+deeperNesting2.chpl:12: note: please specify the full path to the module
+deeperNesting2.chpl:12: note: or use a relative import e.g. 'import this.M' or 'import super.M'

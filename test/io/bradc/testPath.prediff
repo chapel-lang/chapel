@@ -1,2 +1,0 @@
-#!/bin/sh
-cat subdir/out.dat > $2

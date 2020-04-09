@@ -1,1 +1,0 @@
-void baz(int x);

@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -139,7 +140,7 @@ void AutoDestroyScope::addInitialization(VarSymbol* var) {
   // Note: this will be called redundantly.
   for (AutoDestroyScope* scope = this; scope != NULL; scope = scope->mParent) {
     if (scope->mInitedVars.insert(var).second) {
-      // An insertion occured, meaning this was the first
+      // An insertion occurred, meaning this was the first
       // thing that looked like initialization for this variable.
 
       if (scope->mDeclaredVars.count(var) > 0) {
@@ -217,7 +218,7 @@ void AutoDestroyScope::forgetOuterVariableInitializations() {
 
   // iterate through DeinitedVars
   for_set (VarSymbol, var, mDeinitedVars) {
-    // clear it from any parent scopes, stoping at the declaration point
+    // clear it from any parent scopes, stopping at the declaration point
     for (AutoDestroyScope* s = this->mParent; s != NULL; s = s->mParent) {
       s->mDeinitedVars.erase(var);
 

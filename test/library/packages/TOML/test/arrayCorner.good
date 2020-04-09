@@ -1,7 +1,0 @@
-outside = [true]
-
-[intable]
-int = [6]
-outside = [false]
-
-

@@ -1,2 +1,0 @@
-# This test runs gcc
-CHPL_TARGET_COMPILER != gnu

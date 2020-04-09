@@ -1,2 +1,0 @@
-basic-error.chpl:12: In function 'main':
-basic-error.chpl:13: error: 'x' undeclared (first use this function)

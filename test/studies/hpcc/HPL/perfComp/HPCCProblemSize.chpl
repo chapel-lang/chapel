@@ -1,1 +1,0 @@
-../../../../release/examples/benchmarks/hpcc/HPCCProblemSize.chpl

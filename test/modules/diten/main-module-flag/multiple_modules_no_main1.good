@@ -1,2 +1,0 @@
-error: a program with multiple user modules requires a main function
-note: alternatively, specify a main module with --main-module

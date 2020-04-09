@@ -1,1 +1,0 @@
-slice-unrep-1.chpl:3: error: halt reached - could not represent range slice - it needs to be empty, but the slice type is not bounded

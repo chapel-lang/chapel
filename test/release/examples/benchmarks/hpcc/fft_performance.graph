@@ -1,6 +1,0 @@
-perfkeys: Performance (Gflop/s) =
-graphkeys: fft
-files: fft.dat
-graphtitle: HPCC FFT Performance (Gflop/s)
-ylabel: Performance (Gflop/s)
-graphname: hpcc-fft-gf

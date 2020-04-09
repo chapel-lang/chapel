@@ -1,2 +1,0 @@
-paramExample.chpl:1: warning: width of x + y is 64
-x + y is: 6.0

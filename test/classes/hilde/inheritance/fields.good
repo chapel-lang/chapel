@@ -1,9 +1,0 @@
-Base
-static Base
-dyanmic Base
-Derived foo
-static Derived
-dynamic Derived
-Base
-static Base
-dynamic Derived

@@ -1,3 +1,0 @@
-uncaught IllegalArgumentError: bad cast from string '1e' to uint(64)
-  badstring2uint64.chpl:3: thrown here
-  badstring2uint64.chpl:3: uncaught here

@@ -1,3 +1,0 @@
-# Cygwin and darwin do not support preadv directly
-CHPL_HOST_PLATFORM == darwin
-CHPL_HOST_PLATFORM <= cygwin

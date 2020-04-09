@@ -1,2 +1,0 @@
-bug: uncaptured new owned/shared/"" C() object is leaked
-#11101

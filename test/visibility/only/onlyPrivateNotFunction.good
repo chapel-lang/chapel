@@ -1,1 +1,0 @@
-onlyPrivateNotFunction.chpl:14: error: Bad identifier in 'only' clause, 'd' is private

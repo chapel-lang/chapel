@@ -1,2 +1,0 @@
--M ../common --no-checks
--M ../common --no-checks -sdistType=DistType.stencil

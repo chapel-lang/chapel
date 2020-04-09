@@ -1,2 +1,0 @@
-{x = 5}
-{x = local-block.chpl:12: error: cannot access remote data in local block

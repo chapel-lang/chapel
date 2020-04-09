@@ -1,1 +1,0 @@
-checkBadInput-dynamic.chpl:16: error: assert failed - DistributedIters: Dynamic iterator (serial): must use a valid domain or range

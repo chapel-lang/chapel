@@ -1,3 +1,0 @@
-bug: non-inlined iterator leaks memory if caller breaks out of loop
-
-see issue #6540

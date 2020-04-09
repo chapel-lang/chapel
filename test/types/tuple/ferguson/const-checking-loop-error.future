@@ -1,2 +1,0 @@
-bug: missing const checking for iterating over tuple
-#6142

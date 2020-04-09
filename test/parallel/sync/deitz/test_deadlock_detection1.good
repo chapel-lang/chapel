@@ -1,3 +1,0 @@
-Program is deadlocked!
-Waiting at: test_deadlock_detection1.chpl:9
-Waiting for more work

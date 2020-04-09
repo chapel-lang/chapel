@@ -1,4 +1,0 @@
-semantic: Should zip() be a stand-alone expression
-
-As shown in this test case, this would effectively enable nested
-zippered iteration.

@@ -1,3 +1,0 @@
-use modSameNameAsFileGood;
-
-writeln(locVar);

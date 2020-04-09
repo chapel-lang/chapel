@@ -1,2 +1,0 @@
-resolutionErrorMsg.chpl:5: error: unresolved call 'f(false)'
-resolutionErrorMsg.chpl:1: note: candidates are: f()

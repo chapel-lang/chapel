@@ -1,2 +1,0 @@
-#--no-checks -M ../common/ --instantiate-max 512
---no-checks -M ../common/ --instantiate-max 512 -sdistType=DistType.stencil

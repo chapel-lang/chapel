@@ -1,4 +1,0 @@
-#!/bin/bash
-if [ ! -d "already_present" ]; then
-   mkdir already_present
-fi

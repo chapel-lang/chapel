@@ -194,9 +194,9 @@ proc test_date_iso_long_years() {
   for i in 0..#400 {
     var d = new date(2000+i, 12, 31);
     var d1 = new date(1600+i, 12, 31);
-    assert(d.isocalendar()(2) == d1.isocalendar()(2) &&
-           d.isocalendar()(3) == d1.isocalendar()(3));
-    if d.isocalendar()(2) == 53 then
+    assert(d.isocalendar()(1) == d1.isocalendar()(1) &&
+           d.isocalendar()(2) == d1.isocalendar()(2));
+    if d.isocalendar()(1) == 53 then
       L.append(i);
   }
 
@@ -300,7 +300,7 @@ proc test_date_replace() {
   var base = new date((...args));
   assert(base == base.replace());
 
-  var i = 1;
+  var i = 0;
   var newargs = args;
   newargs(i) = 2;
   var expected = new date((...newargs));

@@ -1,5 +1,0 @@
-verify:SUCCESS
-serial 40000000 untyped return
-serial 40000000 typed return
-serial 40000000 untyped arg
-serial 40000000 typed arg

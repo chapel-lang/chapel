@@ -1,2 +1,0 @@
-# As of 03/28/15 this test times out reliably on valgrind due to change in inlining
-1500

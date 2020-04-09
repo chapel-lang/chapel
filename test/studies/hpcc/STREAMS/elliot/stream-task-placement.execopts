@@ -1,3 +1,0 @@
---m=8 --printArrays=true --printStats=false --useRandomSeed=false --taskDisplacement=TaskDisplacement.None
---m=8 --printArrays=true --printStats=false --useRandomSeed=false --taskDisplacement=TaskDisplacement.Half
---m=8 --printArrays=true --printStats=false --useRandomSeed=false --taskDisplacement=TaskDisplacement.Rand

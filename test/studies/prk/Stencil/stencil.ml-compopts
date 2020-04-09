@@ -1,2 +1,0 @@
---set useBlockDist=true   --set order=128000 # stencil-blockdist
---set useStencilDist=true --set order=128000 # stencil-stencildist

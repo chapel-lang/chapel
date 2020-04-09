@@ -1,3 +1,0 @@
-# takes a lot longer under cyclic and blockcyclic - skip to avoid timeouts
-COMPOPTS <= cyclic
-COMPOPTS <= blockcyclic

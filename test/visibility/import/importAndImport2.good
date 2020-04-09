@@ -1,2 +1,0 @@
-importAndImport2.chpl:19: In function 'main':
-importAndImport2.chpl:20: error: 'x' undeclared (first use this function)

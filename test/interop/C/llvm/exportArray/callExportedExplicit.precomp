@@ -1,3 +1,0 @@
-#!/bin/bash
-echo Compiling exportFuncWithExplicitVoidRet.chpl
-$3 --llvm --library --static exportFuncWithExplicitVoidRet.chpl

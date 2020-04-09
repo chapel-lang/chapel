@@ -1,3 +1,0 @@
-renameSameNameAsInOtherMod.chpl:11: In function 'main':
-renameSameNameAsInOtherMod.chpl:12: error: unresolved call 'int(64).x'
-renameSameNameAsInOtherMod.chpl:12: note: because no functions named x found in scope

@@ -1,3 +1,0 @@
-whereClauseNoFn.chpl:1: In function 'foo':
-whereClauseNoFn.chpl:1: error: unresolved call 'bar()'
-whereClauseNoFn.chpl:1: note: because no functions named bar found in scope

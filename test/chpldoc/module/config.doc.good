@@ -10,6 +10,13 @@ config.doc
 
    use config.doc;
 
+
+or
+
+.. code-block:: chapel
+
+   import config.doc;
+
 .. data:: config var normal = "hello"
 
    This is a normal config var 

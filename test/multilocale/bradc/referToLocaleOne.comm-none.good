@@ -1,3 +1,0 @@
-On initial locale: 0
-referToLocaleOne.chpl:2: error: halt reached - array index out of bounds
-note: index was 1 but array bounds are 0..0

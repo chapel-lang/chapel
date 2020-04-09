@@ -1,7 +1,0 @@
-#!/bin/bash
-
-if which lldb >/dev/null 2>/dev/null; then
-  echo False
-else
-  echo True
-fi

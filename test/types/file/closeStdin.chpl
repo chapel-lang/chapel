@@ -1,2 +1,0 @@
-use IO;
-stdin.close();

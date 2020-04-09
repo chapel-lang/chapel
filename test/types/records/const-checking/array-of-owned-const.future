@@ -1,2 +1,0 @@
-bug: missing const checking for init-copy from const array of owned class?
-#14923

@@ -1,2 +1,0 @@
-#define NUMBER 2
-

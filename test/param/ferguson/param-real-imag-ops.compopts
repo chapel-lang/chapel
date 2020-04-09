@@ -1,3 +1,0 @@
--st32=real(32) -st64=real(64)
--st32=imag(32) -st64=imag(64)
--st32=complex(64) -st64=complex(128)

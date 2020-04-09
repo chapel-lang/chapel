@@ -1,3 +1,0 @@
-uncaught IllegalArgumentError: bad cast from empty string to int(32)
-  emptyToInt.chpl:2: thrown here
-  emptyToInt.chpl:2: uncaught here

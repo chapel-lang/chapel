@@ -1,7 +1,0 @@
-
-[brick]
-name = "unboundedLower"
-version = "0.1.0"
-chplVersion = "..1.99"
-
-[dependencies]

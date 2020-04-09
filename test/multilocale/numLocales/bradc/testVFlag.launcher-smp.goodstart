@@ -1,1 +1,0 @@
-EVARS=vals ./testVFlag_real  -v -nl 1 EXECOPTS

@@ -1,3 +1,0 @@
-test.json --seed=10 --parallel=false
-test-extra.json --seed=10 --parallel=false
-test-extra.json.gz --seed=10 --parallel=false

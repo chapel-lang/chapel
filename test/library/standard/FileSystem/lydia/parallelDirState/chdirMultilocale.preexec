@@ -1,5 +1,0 @@
-#!/bin/bash
-
-if [ ! -d "foo" ]; then
-   mkdir foo
-fi

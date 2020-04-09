@@ -1,3 +1,0 @@
-#!/bin/bash
-echo Compiling returnArrayTakesArrayArg2.chpl
-$3 --library --static returnArrayTakesArrayArg2.chpl

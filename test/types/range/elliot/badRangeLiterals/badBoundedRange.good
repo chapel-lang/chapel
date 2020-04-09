@@ -1,1 +1,0 @@
-badBoundedRange.chpl:3: error: Bounds of 'low..high' must be integers of compatible types.

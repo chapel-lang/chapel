@@ -1,4 +1,4 @@
-proc inc(X: [1..5] int): [1..6] {
+proc inc(X: [0..4] int): [1..6] {
   return X + 1;
 }
 

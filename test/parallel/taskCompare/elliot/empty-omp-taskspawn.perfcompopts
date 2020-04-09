@@ -1,2 +1,0 @@
---ccflags -fopenmp --ldflags -fopenmp ompTaskSpawn.h -staskingMode=ompParallelForT       # empty-omp-parallel-for
---ccflags -fopenmp --ldflags -fopenmp ompTaskSpawn.h -staskingMode=ompSerialParallelForT # empty-omp-serial-parallel-for

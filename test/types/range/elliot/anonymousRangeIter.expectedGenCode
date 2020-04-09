@@ -37,4 +37,4 @@ _ic__F#_i_chpl = INT#(#);
 for (_ic__F#_i_chpl = INT#(#),_ic__F#_i_chpl# = INT#(#); (tmp_chpl# = (_ic__F#_i_chpl <= INT#(#)),tmp_chpl#); tmp_chpl# = _ic__F#_i_chpl,tmp_chpl# += INT#(#),_ic__F#_i_chpl = tmp_chpl#,tmp_chpl# = _ic__F#_i_chpl#,tmp_chpl# += INT#(-#),_ic__F#_i_chpl# = tmp_chpl#) {
 
 # var r = 1..10 by 2; for (i, j) in zip(1..10 by 2, r) do write(i, j); writeln();
-for (_ic__F#_i_chpl# = INT#(#),_ic__F#_i_chpl = tmp_chpl#; (tmp_chpl# = (_ic__F#_i_chpl# <= _ic__F#_high_chpl#),tmp_chpl#); tmp_chpl# = _ic__F#_i_chpl#,tmp_chpl# += INT#(#),_ic__F#_i_chpl# = tmp_chpl#,tmp_chpl# = _ic__F#_i_chpl,tmp_chpl# += ret_chpl,_ic__F#_i_chpl = tmp_chpl#) {
+for (_ic__F#_i_chpl# = INT#(#),_ic__F#_i_chpl = tmp_chpl#; (tmp_chpl# = (_ic__F#_i_chpl# <= _ic__F#_high_chpl#),tmp_chpl#); tmp_chpl# = _ic__F#_i_chpl#,tmp_chpl# += INT#(#),_ic__F#_i_chpl# = tmp_chpl#,tmp_chpl# = _ic__F#_this_chpl,tmp_chpl# = _ic__F#_i_chpl,tmp_chpl# += (&tmp_chpl#)->_stride,_ic__F#_i_chpl = tmp_chpl#) {

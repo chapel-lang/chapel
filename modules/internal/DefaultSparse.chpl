@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -125,7 +126,7 @@ module DefaultSparse {
       // sjd: unfortunate specialization for rank == 1
       //
       if rank == 1 && isTuple(ind) && ind.size == 1 then
-        return binarySearch(_indices, ind(1), lo=1, hi=_nnz);
+        return binarySearch(_indices, ind(0), lo=1, hi=_nnz);
       else
         return binarySearch(_indices, ind, lo=1, hi=_nnz);
     }
@@ -231,7 +232,7 @@ module DefaultSparse {
 
     proc dsiAdd(ind: rank*idxType) {
       if (rank == 1) {
-        return add_help(ind(1));
+        return add_help(ind(0));
       } else {
         return add_help(ind);
       }
@@ -239,17 +240,17 @@ module DefaultSparse {
 
     proc dsiRemove(ind: rank*idxType) {
       if (rank == 1) {
-        return rem_help(ind(1));
+        return rem_help(ind(0));
       } else {
         return rem_help(ind);
       }
     }
 
     override proc bulkAdd_help(inds: [?indsDom] index(rank, idxType),
-        dataSorted=false, isUnique=false, addOn=nil:locale?){
+        dataSorted=false, isUnique=false, addOn=nilLocale){
       import Sort;
 
-      if addOn != nil {
+      if addOn != nilLocale {
         if addOn != this.locale {
           halt("Bulk index addition is only possible on the locale where the\
               sparse domain is created");
@@ -350,7 +351,7 @@ module DefaultSparse {
         compilerError("dimIter() not supported on sparse domains for dimensions other than the last");
       }
       halt("dimIter() not yet implemented for sparse domains");
-      yield _indices(1);
+      yield _indices(0);
     }
 
     proc dsiAssignDomain(rhs: domain, lhsPrivate:bool) {
@@ -552,7 +553,7 @@ module DefaultSparse {
         var prevInd = _indices(1);
         f <~> " " <~> prevInd;
         for i in 2.._nnz {
-          if (prevInd(1) != _indices(i)(1)) {
+          if (prevInd(0) != _indices(i)(0)) {
             f <~> "\n";
           }
           prevInd = _indices(i);
@@ -578,7 +579,7 @@ module DefaultSparse {
         var prevInd = dom._indices(1);
         f <~> data(1);
         for i in 2..dom._nnz {
-          if (prevInd(1) != dom._indices(i)(1)) {
+          if (prevInd(0) != dom._indices(i)(0)) {
             f <~> "\n";
           } else {
             f <~> " ";

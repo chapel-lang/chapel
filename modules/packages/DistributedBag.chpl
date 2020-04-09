@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -224,11 +225,11 @@ module DistributedBag {
   record DistBag {
     type eltType;
 
+    // This is unused, and merely for documentation purposes. See '_value'.
     /*
       The implementation of the Bag is forwarded. See :class:`DistributedBagImpl` for
       documentation.
     */
-    // This is unused, and merely for documentation purposes. See '_value'.
     var _impl : unmanaged DistributedBagImpl(eltType)?;
 
     // Privatized id...
@@ -1169,7 +1170,7 @@ module DistributedBag {
 
                                 // Allocate storage...
                                 on stolenWork do stolenWork[loc.id] = (toSteal, c_malloc(eltType, toSteal));
-                                var destPtr = stolenWork[here.id][2];
+                                var destPtr = stolenWork[here.id][1];
                                 targetSegment.transferElements(destPtr, toSteal, stolenWork.locale.id);
                                 targetSegment.releaseStatus();
 

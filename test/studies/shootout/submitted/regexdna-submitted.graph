@@ -1,5 +1,0 @@
-perfkeys: real
-graphkeys: release
-files: regexdna-release.dat
-graphtitle: Submitted Regex-dna Shootout Benchmark
-ylabel: Time (seconds)

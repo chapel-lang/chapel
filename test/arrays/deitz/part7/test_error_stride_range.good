@@ -1,1 +1,0 @@
-test_error_stride_range.chpl:4: error: type mismatch in assignment of ranges with different stridable parameters

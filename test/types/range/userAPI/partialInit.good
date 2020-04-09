@@ -1,2 +1,0 @@
-range(int(64),bounded,true): 1..10
-range(uint(64),bounded,true): 1..10

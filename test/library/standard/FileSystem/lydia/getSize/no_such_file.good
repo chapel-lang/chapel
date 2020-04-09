@@ -1,3 +1,0 @@
-uncaught FileNotFoundError: No such file or directory (in getFileSize with path "no_such_file.txt")
-  no_such_file.chpl:3: thrown here
-  no_such_file.chpl:3: uncaught here

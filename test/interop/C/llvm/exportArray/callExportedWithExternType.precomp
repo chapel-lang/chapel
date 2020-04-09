@@ -1,3 +1,0 @@
-#!/bin/bash
-echo Compiling exportFuncWithExternType.chpl
-$3 --llvm --library --static exportFuncWithExternType.chpl

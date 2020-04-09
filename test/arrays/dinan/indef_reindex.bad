@@ -1,1 +1,0 @@
-indef_reindex.chpl:4: error: 'size' is not defined on unbounded ranges

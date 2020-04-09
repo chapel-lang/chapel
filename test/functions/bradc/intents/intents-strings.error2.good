@@ -1,3 +1,0 @@
-intents-strings.chpl:12: In function 'bar':
-intents-strings.chpl:15: error: illegal lvalue in assignment
-intents-strings.chpl:68: Function 'bar' instantiated as: bar(x: string)

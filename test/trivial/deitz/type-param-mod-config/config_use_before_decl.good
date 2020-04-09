@@ -1,2 +1,0 @@
-config_use_before_decl.chpl:1: error: 'x' used before defined
-config_use_before_decl.chpl:3: note: defined here

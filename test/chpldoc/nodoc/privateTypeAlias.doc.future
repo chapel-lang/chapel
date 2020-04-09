@@ -1,4 +1,0 @@
-feature request: private type aliases
-
-When private type aliases are allowed, this test should prove that chpldoc
-ignores them, as it ignores other private symbols.

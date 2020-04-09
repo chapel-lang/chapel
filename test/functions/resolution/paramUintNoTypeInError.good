@@ -1,2 +1,0 @@
-paramUintNoTypeInError.chpl:7: error: unresolved call 'takesInt(512:uint)'
-paramUintNoTypeInError.chpl:1: note: candidates are: takesInt(param x: int(8))

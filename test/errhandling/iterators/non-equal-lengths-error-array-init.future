@@ -1,2 +1,0 @@
-bug: upon a throw, get "error: zippered iterations have non-equal lengths"
-#11315

@@ -1,2 +1,0 @@
-# Tests in this directory assume LLVM/Clang support
-CHPL_LLVM == none

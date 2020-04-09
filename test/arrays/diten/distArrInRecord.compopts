@@ -1,5 +1,0 @@
-# -suseBulkTransferStride was resulting in a function resolution bug.
-# PR 4210 attempts to fix this bug.
-
--suseBulkTransferStride=false
--suseBulkTransferStride=true

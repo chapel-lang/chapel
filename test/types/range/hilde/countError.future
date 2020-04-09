@@ -1,3 +1,0 @@
-bug: Error not reported when negative count exceeds range size.
-
-See ../../scalar/hilde/absMinInt.chpl.

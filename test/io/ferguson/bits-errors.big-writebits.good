@@ -1,3 +1,0 @@
-uncaught IllegalArgumentError: illegal argument 'v, nbits': writebits nbits=9 > bits in v:uint(8)
-  bits-errors.chpl:35: thrown here
-  bits-errors.chpl:35: uncaught here

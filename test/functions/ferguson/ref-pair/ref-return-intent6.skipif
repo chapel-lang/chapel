@@ -1,3 +1,0 @@
-# Since this test is triggering a use-after-free,
-# run it only under valgrind
-CHPL_TEST_VGRND_EXE != on

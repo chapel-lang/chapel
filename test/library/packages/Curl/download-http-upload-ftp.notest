@@ -1,2 +1,0 @@
-Requires a local anon ftp server, would ideally verify file ended up
-there in e.g. /srv/ftp/upload/test.txt

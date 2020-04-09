@@ -1,6 +1,0 @@
-#!/usr/bin/env bash
-#
-# Run the compiler with CHPL_MODULE_HOME == CHPL_HOME and opposite hwloc value.
-
-export CHPL_MODULE_HOME=$CHPL_HOME
-./rerun_compiler_with_opposite_hwloc.bash $@

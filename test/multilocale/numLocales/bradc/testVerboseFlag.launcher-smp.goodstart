@@ -1,1 +1,0 @@
-EVARS=vals ./testVerboseFlag_real  --verbose -nl 1 EXECOPTS

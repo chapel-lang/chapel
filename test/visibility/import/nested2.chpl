@@ -6,7 +6,7 @@ module A {
       writeln("In B.foo()");
     }
   }
-  import B; // How to write this so that the below will work?
+  import this.B;
 
   proc main() {
     writeln(B.x);

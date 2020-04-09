@@ -1,3 +1,0 @@
-PPS:
-Filtering with a dense range instead of an Index needs a notion of "None".
-Should be included with #9037.

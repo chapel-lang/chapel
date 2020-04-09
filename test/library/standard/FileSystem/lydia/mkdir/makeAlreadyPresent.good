@@ -1,3 +1,0 @@
-uncaught FileExistsError: File exists (in mkdir with path "already_present")
-  makeAlreadyPresent.chpl:5: thrown here
-  makeAlreadyPresent.chpl:5: uncaught here

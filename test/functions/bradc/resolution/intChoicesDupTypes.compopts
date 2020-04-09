@@ -1,2 +1,0 @@
--M fnOrder1
--M fnOrder1 -stryErrors=true --ignore-errors-for-pass # intChoicesDupTypes-errors.good

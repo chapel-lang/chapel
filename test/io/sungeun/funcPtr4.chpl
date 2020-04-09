@@ -1,1 +1,0 @@
-writeln(getCommDiagnostics); // missing parens

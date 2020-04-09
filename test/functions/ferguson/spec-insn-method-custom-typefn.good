@@ -1,3 +1,0 @@
-in generic R.foo
-in specific R(string).foo
-in specific R(int).foo

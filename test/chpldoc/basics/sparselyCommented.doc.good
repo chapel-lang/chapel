@@ -11,6 +11,13 @@ sparselyCommented.doc
 
    use sparselyCommented.doc;
 
+
+or
+
+.. code-block:: chapel
+
+   import sparselyCommented.doc;
+
 **Submodules**
 
 .. toctree::
@@ -54,6 +61,13 @@ Other
 .. code-block:: chapel
 
    use sparselyCommented.doc.Other;
+
+
+or
+
+.. code-block:: chapel
+
+   import sparselyCommented.doc.Other;
 
 .. function:: proc inside()
 

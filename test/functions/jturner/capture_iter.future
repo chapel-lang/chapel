@@ -1,3 +1,0 @@
-feature request: Add support for capture iterators as first-class functions
-
-Iterators could potentially be captured as first-class functions.

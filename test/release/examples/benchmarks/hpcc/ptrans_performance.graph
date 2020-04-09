@@ -1,6 +1,0 @@
-perfkeys: Performance (GB/sec) =
-graphkeys: ptrans
-files: ptrans.5733.dat
-graphtitle: HPCC PTRANS Performance (GB/sec) (nrows=5733)
-ylabel: Performance (GB/sec)
-graphname: hpcc-ptrans-gb

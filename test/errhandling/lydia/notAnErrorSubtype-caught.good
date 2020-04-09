@@ -1,3 +1,0 @@
-uncaught NilThrownError: thrown error was nil
-  notAnErrorSubtype-caught.chpl:7: thrown here
-  notAnErrorSubtype-caught.chpl:5: uncaught here

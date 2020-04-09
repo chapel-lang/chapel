@@ -1,1 +1,0 @@
-writeln(string(1));

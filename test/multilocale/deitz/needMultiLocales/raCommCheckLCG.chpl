@@ -1,1 +1,0 @@
-raCommCheck.chpl

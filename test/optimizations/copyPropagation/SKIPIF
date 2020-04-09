@@ -1,2 +1,0 @@
-# Shows a problem with copy propagation, so skip for --baseline
-COMPOPTS <= --baseline

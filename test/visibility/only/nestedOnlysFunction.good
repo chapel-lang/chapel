@@ -1,3 +1,0 @@
-nestedOnlysFunction.chpl:21: In function 'main':
-nestedOnlysFunction.chpl:22: error: unresolved call 'bar()'
-nestedOnlysFunction.chpl:22: note: because no functions named bar found in scope

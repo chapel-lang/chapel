@@ -1,3 +1,0 @@
-uncaught Error: This is an error message.
-  throwNewWithMessage.chpl:3: thrown here
-  throwNewWithMessage.chpl:10: uncaught here

@@ -1,2 +1,0 @@
-bug: function-scoped enum can't be initialized with function param, int-casted
-#7681

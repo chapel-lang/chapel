@@ -27,8 +27,4 @@ GC 3.928
 CG 3.910
 CC 3.899
 
-1474	GGT
-459	GGTA
-49	GGTATT
-1	GGTATTTTAATT
-1	GGTATTTTAATTTATAGT
+knucleotide2.chpl:130: error: halt reached - index 3 out of bounds for string with 3 bytes

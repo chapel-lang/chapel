@@ -10,7 +10,7 @@ class Test {
   { }                                       // varargs not mentioned in body
   proc dependsOnX1(tests: object...)
     lifetime this < tests
-  { writeln(tests(1)); }                    // access a single vararg
+  { writeln(tests(0)); }                    // access a single vararg
   proc dependsOnY1(tests: object...)
     lifetime this < tests
   { var quests = tests; writeln(quests); }  // access all varargs collectively
@@ -21,7 +21,7 @@ class Test {
   { }
   proc dependsOnX2(tests: object...)
     lifetime tests > this, this < tests
-  { writeln(tests(1)); }
+  { writeln(tests(0)); }
   proc dependsOnY2(tests: object...)
     lifetime tests > this, this < tests
   { var quests = tests; writeln(quests); }
@@ -32,7 +32,7 @@ class Test {
   { }
   proc dependsOnX3(tests: object...)
     lifetime tests > global, tests > this, this < tests
-  { writeln(tests(1)); }
+  { writeln(tests(0)); }
   proc dependsOnY3(tests: object...)
     lifetime tests > global, tests > this, this < tests
   { var quests = tests; writeln(quests); }

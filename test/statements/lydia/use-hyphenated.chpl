@@ -1,3 +1,0 @@
-use hyphenated-module;
-
-foo();

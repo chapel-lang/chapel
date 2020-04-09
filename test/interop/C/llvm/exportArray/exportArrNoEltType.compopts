@@ -1,2 +1,0 @@
---llvm --library
---llvm # exportArrNoEltType.good

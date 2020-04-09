@@ -1,3 +1,0 @@
-use helpMod;
-
-foo();

@@ -1,4 +1,0 @@
-# This test leaks memory under --baseline but it's an improvement
-# that it doesn't leak under the standard configuration, so skipping
-# it for now.
-COMPOPTS <= --baseline

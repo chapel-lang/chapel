@@ -1,1 +1,0 @@
---library-fortran --ccflags=-Wno-incompatible-pointer-types

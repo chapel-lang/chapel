@@ -1,2 +1,0 @@
-initWithThrow.chpl:7: In initializer:
-initWithThrow.chpl:9: error: initializers are not yet allowed to throw errors

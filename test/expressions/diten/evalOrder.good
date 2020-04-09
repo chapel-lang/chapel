@@ -1,2 +1,0 @@
-left
-right

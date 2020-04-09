@@ -1,1 +1,0 @@
-listPopIndexHaltBadIndex.chpl:10: error: halt reached - Index for "list.pop" out of bounds: 9

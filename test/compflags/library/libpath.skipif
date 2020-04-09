@@ -1,4 +1,0 @@
-# the libpath/ tests use 'gcc' and 'ar' to build C libraries, so to be
-# safe-ish, let's skip them if 'gnu' is not selected as the target
-# compiler.
-CHPL_TARGET_COMPILER!=gnu

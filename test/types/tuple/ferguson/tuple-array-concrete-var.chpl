@@ -5,8 +5,8 @@ var tmp = (g,g);
 
 proc t1( tup: tmp.type )
 {
-  g[1] = 2;
-  writeln(tup(2)[1]);
+  g[0] = 2;
+  writeln(tup(1)[0]);
 }
 
 proc t2( tup: tmp.type )
@@ -51,7 +51,7 @@ proc run()
 
 proc reset()
 {
-  g[1] = 1;
+  g[0] = 1;
 }
 
 run();

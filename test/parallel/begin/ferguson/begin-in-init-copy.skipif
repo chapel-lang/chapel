@@ -1,3 +1,0 @@
-# Test was intermittently failing with PGI
-CHPL_TARGET_COMPILER==pgi
-CHPL_TARGET_COMPILER==cray-prgenv-pgi

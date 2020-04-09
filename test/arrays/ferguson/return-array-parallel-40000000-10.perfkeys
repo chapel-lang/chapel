@@ -1,5 +1,0 @@
-verify:SUCCESS
-parallel 40000000 untyped return
-parallel 40000000 typed return
-parallel 40000000 untyped arg
-parallel 40000000 typed arg

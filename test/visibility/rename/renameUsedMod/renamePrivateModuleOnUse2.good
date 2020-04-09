@@ -1,2 +1,0 @@
-renamePrivateModuleOnUse2.chpl:12: In function 'main':
-renamePrivateModuleOnUse2.chpl:15: error: 'Inner' undeclared (first use this function)

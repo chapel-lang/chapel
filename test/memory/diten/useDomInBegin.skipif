@@ -1,3 +1,0 @@
-# run only under valgrind
-# otherwise the outcome will probably fluctuate
-CHPL_TEST_VGRND_EXE != on

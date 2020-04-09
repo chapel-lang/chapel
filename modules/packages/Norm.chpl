@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -73,13 +74,13 @@ proc norm(x: [], p: normType) where x.rank == 1 {
 proc norm(x: [?D], p: normType) where x.rank == 2 {
   select (p) {
   when normType.norm1 do
-    return max reduce forall j in D.dim(2) do (+ reduce abs(x[D.dim(1), j..j]));
+    return max reduce forall j in D.dim(1) do (+ reduce abs(x[D.dim(0), j..j]));
   
   when normType.norm2 do
     halt("2-norm for 2D arrays are not yet implemented");
   
   when normType.normInf do
-    return max reduce forall i in D.dim(1) do (+ reduce abs(x[i..i, D.dim(2)]));
+    return max reduce forall i in D.dim(0) do (+ reduce abs(x[i..i, D.dim(1)]));
   
   when normType.normFrob do return sqrt(+ reduce (abs(x)*abs(x)));
   

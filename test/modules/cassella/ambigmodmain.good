@@ -1,3 +1,0 @@
-error: Ambiguous main() function (use --main-module to disambiguate):
-ambigmodmain.chpl:3: note: in module M
-ambigmodmain.chpl:9: note: in module M

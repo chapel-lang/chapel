@@ -1,2 +1,0 @@
-enumerate.chpl:12: error: modules (like 'enumerate' here) cannot be called like procedures
-enumerate.chpl:17: error: modules (like 'enumerate' here) cannot be called like procedures

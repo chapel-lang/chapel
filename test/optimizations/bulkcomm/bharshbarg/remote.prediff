@@ -1,5 +1,0 @@
-#!/bin/bash
-outfile=$2
-sort $outfile > $outfile.tmp
-sort remote.good.orig > remote.good
-mv $outfile.tmp $outfile

@@ -1,6 +1,0 @@
-perfkeys: real, real
-files: regexdna.dat, regexdna-release.dat
-graphkeys: regexdna-studies, regexdna-release
-graphtitle: Regex-dna Shootout Benchmark
-ylabel: Time (seconds)
-graphname: regexdna

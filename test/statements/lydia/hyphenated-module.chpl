@@ -1,3 +1,0 @@
-proc foo() {
-  writeln("nbd");
-}

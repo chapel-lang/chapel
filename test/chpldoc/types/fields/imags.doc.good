@@ -10,6 +10,13 @@ imags.doc
 
    use imags.doc;
 
+
+or
+
+.. code-block:: chapel
+
+   import imags.doc;
+
 .. record:: Foo
 
    .. attribute:: var anImag: imag = 2.0i

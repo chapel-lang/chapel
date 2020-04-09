@@ -1,1 +1,0 @@
-split-init-ref-const.chpl:4: error: Cannot set a non-const reference to a const variable.

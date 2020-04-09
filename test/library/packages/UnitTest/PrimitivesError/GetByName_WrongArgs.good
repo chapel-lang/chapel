@@ -1,1 +1,0 @@
-GetByName_WrongArgs.chpl:18: error: illegal type for expected test name. Expected a 'string' got 'int(64)'

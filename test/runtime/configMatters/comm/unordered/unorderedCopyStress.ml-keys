@@ -1,6 +1,0 @@
-PUT    time: 
-PUT    rate(mOps/sec): 
-GET    time: 
-GET    rate(mOps/sec): 
-GETPUT time: 
-GETPUT rate(mOps/sec): 

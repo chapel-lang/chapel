@@ -1,5 +1,0 @@
-#!/bin/bash
-if [ ! -d make ]; then
-   mkdir make
-fi
-

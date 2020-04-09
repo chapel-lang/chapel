@@ -1,3 +1,0 @@
-# Make the compiler inline myIter1/2 or not.
---inline-iterators-yield-limit=10
---inline-iterators-yield-limit=1

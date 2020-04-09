@@ -1,3 +1,0 @@
---llvm  --llvm-print-ir factorial --llvm-print-ir-stage none --gen-ids
---llvm  --llvm-print-ir factorial --llvm-print-ir-stage full --gen-ids
---llvm  --llvm-print-ir factorial --llvm-print-ir-stage full --gen-ids --fast

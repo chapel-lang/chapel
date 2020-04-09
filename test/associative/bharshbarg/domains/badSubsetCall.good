@@ -1,1 +1,0 @@
-badSubsetCall.chpl:4: error: rank mismatch in domain.isSubset()

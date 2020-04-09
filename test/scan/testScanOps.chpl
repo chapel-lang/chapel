@@ -1,5 +1,6 @@
 
 use BlockDist;
+use PrivateDist;
 use Random;
 
 config const n = 100;
@@ -20,6 +21,10 @@ proc testType(type T) {
 
   var BL : [S] T = DR;
   test(BL);
+
+  var PR : [PrivateSpace] T = DR[1..numLocales];
+  test(PR);
+
 }
 
 proc test(A : []) {
@@ -99,8 +104,8 @@ iter serialize(A : []) {
 proc check(A : [], E : []) {
   var equal = false;
   if isTuple(A.eltType) {
-    equal   = && reduce [(a, e) in zip(A, E)] almostEquals(a(1), e(1));
-    equal &&= && reduce [(a, e) in zip(A, E)] almostEquals(a(2), e(2));
+    equal   = && reduce [(a, e) in zip(A, E)] almostEquals(a(0), e(0));
+    equal &&= && reduce [(a, e) in zip(A, E)] almostEquals(a(1), e(1));
   } else {
     equal = && reduce almostEquals(A, E);
   }

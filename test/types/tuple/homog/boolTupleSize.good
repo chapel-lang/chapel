@@ -1,1 +1,0 @@
-boolTupleSize.chpl:4: error: Tuple types cannot be defined using boolean sizes

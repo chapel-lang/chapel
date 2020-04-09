@@ -1,3 +1,0 @@
---foo=0o200 # otherIntConfig.octal.good
---bar=0xCADE # otherIntConfig.hex.good
---baz=0b111 # otherIntConfig.binary.good

@@ -1,2 +1,0 @@
-renamePrivateUse.chpl:12: In function 'main':
-renamePrivateUse.chpl:15: error: 'x' undeclared (first use this function)

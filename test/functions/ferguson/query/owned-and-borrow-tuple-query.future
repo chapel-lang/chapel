@@ -1,2 +1,0 @@
-bug: formal argument with query syntax confused by owned to borrowed rule
-#11861

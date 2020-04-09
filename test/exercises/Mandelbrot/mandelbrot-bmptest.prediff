@@ -1,2 +1,0 @@
-#!/bin/sh
-cp mandelbrot.bmp mandelbrot-bmptest.exec.out.tmp

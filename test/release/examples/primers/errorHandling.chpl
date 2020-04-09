@@ -73,7 +73,7 @@ class EmptyFilenameError : Error {
 
 proc checkFilename(f_name: string) throws {
   if f_name.isEmpty() then
-    throw new owned EmptyFilenameError();
+    throw new EmptyFilenameError();
 }
 
 proc openFilename(f_name: string) throws {

@@ -11,6 +11,13 @@ main
 
    use main;
 
+
+or
+
+.. code-block:: chapel
+
+   import main;
+
 This is the only valid doc string in this module. 
 
 .. function:: proc foo()

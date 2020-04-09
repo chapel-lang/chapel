@@ -1,83 +1,83 @@
 noIndex:
-1    1
-2    2
-3    3
-4    4
-5    5
+0    1
+1    2
+2    3
+3    4
+4    5
 dtype: int(64)
 
 less than 3:
+0    true
 1    true
-2    true
+2    false
 3    false
 4    false
-5    false
 dtype: bool
 filtered(less than 3):
-1    1
-2    2
+0    1
+1    2
+2    0
 3    0
 4    0
-5    0
 dtype: int(64)
 
 greater than 3:
+0    false
 1    false
 2    false
-3    false
+3    true
 4    true
-5    true
 dtype: bool
 filtered(greater than 3):
+0    0
 1    0
 2    0
-3    0
-4    4
-5    5
+3    4
+4    5
 dtype: int(64)
 
 equal to 3:
+0    false
 1    false
-2    false
-3    true
+2    true
+3    false
 4    false
-5    false
 dtype: bool
 filtered(equal to 3):
+0    0
 1    0
-2    0
-3    3
+2    3
+3    0
 4    0
-5    0
 dtype: int(64)
 
 less than or equal to 3:
+0    true
 1    true
 2    true
-3    true
+3    false
 4    false
-5    false
 dtype: bool
 filtered(less than or equal to 3):
-1    1
-2    2
-3    3
+0    1
+1    2
+2    3
+3    0
 4    0
-5    0
 dtype: int(64)
 
 greater than or equal to 3:
+0    false
 1    false
-2    false
+2    true
 3    true
 4    true
-5    true
 dtype: bool
 filtered(greater than or equal to 3):
+0    0
 1    0
-2    0
-3    3
-4    4
-5    5
+2    3
+3    4
+4    5
 dtype: int(64)
 

@@ -1,3 +1,3 @@
 integralvariable2.chpl:1: error: variable 'r' is not initialized
 note: generic type integral does not support default initialization
-integralvariable2.chpl:1: error: split initialization is not supported for globals
+integralvariable2.chpl:2: note: 'r' use here prevents split-init from establishing the type

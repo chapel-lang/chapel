@@ -1,2 +1,0 @@
--suseOwned=true  # bad-managed-init.owned.good
--suseOwned=false # bad-managed-init.shared.good

@@ -1,3 +1,0 @@
-proc incomplete(): int;
-
-incomplete();

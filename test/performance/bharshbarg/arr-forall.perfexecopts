@@ -1,2 +1,0 @@
---memFraction=4 --printPerf --zipIter=false
---memFraction=4 --printPerf --zipIter=true # arr-forall-zip

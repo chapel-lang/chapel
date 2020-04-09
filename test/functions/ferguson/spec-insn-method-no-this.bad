@@ -1,3 +1,0 @@
-spec-insn-method-no-this.chpl:10: In function 'bar':
-spec-insn-method-no-this.chpl:11: error: 'x' used before defined
-spec-insn-method-no-this.chpl:16: note: defined here

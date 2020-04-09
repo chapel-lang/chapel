@@ -1,2 +1,2 @@
-$CHPL_HOME/modules/standard/Regexp.chpl:602: warning: string-by-default regexp is deprecated. Use regexp(string) or regexp(bytes) instead.
+$CHPL_HOME/modules/standard/Regexp.chpl:603: warning: string-by-default regexp is deprecated. Use regexp(string) or regexp(bytes) instead.
 regexp(string)

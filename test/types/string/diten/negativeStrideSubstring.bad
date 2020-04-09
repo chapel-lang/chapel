@@ -1,1 +1,0 @@
-negativeStrideSubstring.chpl:4: error: string slicing doesn't support stridable codepoint ranges

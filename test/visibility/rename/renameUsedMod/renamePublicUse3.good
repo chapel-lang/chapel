@@ -1,2 +1,0 @@
-renamePublicUse3.chpl:12: In function 'main':
-renamePublicUse3.chpl:15: error: 'Foo' undeclared (first use this function)

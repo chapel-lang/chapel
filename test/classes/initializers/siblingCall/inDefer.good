@@ -1,2 +1,0 @@
-inDefer.chpl:4: In initializer:
-inDefer.chpl:6: error: this.init() not allowed in defer statements

@@ -1,2 +1,0 @@
-modifyReturnedInt.chpl:16: error: illegal lvalue in assignment
-modifyReturnedInt.chpl:17: error: illegal lvalue in assignment

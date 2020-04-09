@@ -1,2 +1,0 @@
-sugarFcfTypes.chpl:13: error: unresolved call 'bar(func())'
-sugarFcfTypes.chpl:7: note: candidates are: bar(f: c_fn_ptr)

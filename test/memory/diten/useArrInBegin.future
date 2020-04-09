@@ -1,3 +1,0 @@
-semantic: uses array outside of scope with begin
-
-MPF 2016-10-28 - this test should probably result in a compilation error.

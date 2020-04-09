@@ -9,7 +9,7 @@ config const showlocales = false;
 var gridLocales: [gridDom] locale = setupGridLocales();
 
 proc setupGridLocales(ensureManyLocs = false) {
-  var gridLocales: [gridDom] locale?;
+  var gridLocales: [gridDom] locale;
   manylocs = (numLocales >= gridLocales.size);
 
   if manylocs {
@@ -31,7 +31,7 @@ proc setupGridLocales(ensureManyLocs = false) {
     gridLocales.size, ", got ", numLocales);
   writeln();
 
-  return gridLocales!;
+  return gridLocales;
 }
 
 const gridDist = gridDom dmapped Block(gridDom, gridLocales);

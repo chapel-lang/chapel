@@ -1,3 +1,0 @@
-#!/bin/bash
-echo Compiling returnArrayOfReals.chpl
-$3 --llvm --library --static returnArrayOfReals.chpl

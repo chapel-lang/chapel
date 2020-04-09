@@ -1,1 +1,0 @@
-writeln("AB".toByte());

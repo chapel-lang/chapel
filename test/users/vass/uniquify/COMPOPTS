@@ -1,3 +1,0 @@
-# We want these to work with and without munging.
-ux-externs.h    --munge-user-idents
-ux-externs.h --no-munge-user-idents

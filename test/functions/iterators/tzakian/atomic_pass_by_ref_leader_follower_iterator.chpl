@@ -18,8 +18,8 @@ iter test(param tag:iterKind, n:int = 10)
 iter test(param tag:iterKind, n:int = 10, followThis) 
   where tag == iterKind.follower {
     /*writeln("Actual addr of lock in follower: ", chpldev_refToString(followThis(2))); // DEBUG*/
-    followThis(2).add(1);
-    yield followThis(1);
+    followThis(1).add(1);
+    yield followThis(0);
     
   }
 

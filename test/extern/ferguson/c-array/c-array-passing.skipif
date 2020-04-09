@@ -1,2 +1,0 @@
-# --baseline generates c_array initCopy functions that aren't legal C
-COMPOPTS <= --baseline

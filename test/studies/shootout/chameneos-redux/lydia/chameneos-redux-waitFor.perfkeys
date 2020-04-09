@@ -1,4 +1,0 @@
-real
-reject: ^\d+ (?!zero).*$
-verify:15: one two( zero){6}
-verify:28: one two( zero){6}

@@ -1,2 +1,0 @@
-circular_init_broken.chpl:2: error: 'b' used before defined
-circular_init_broken.chpl:3: note: defined here

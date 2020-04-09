@@ -1,3 +1,0 @@
-bug: if-expr cannot return loop-exprs of compatible types
-
-#14504

@@ -1,0 +1,2 @@
+parentSymRequiresUse2.chpl:4: error: unresolved call 'foo()'
+parentSymRequiresUse2.chpl:4: note: because no functions named foo found in scope

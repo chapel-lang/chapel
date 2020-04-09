@@ -1,2 +1,0 @@
---library C.chpl # multipleModules.error.good
---library C.chpl -o myNameIsNotImportant

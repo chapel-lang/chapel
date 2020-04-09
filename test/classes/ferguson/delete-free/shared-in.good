@@ -1,4 +1,0 @@
-in shareOwnership with arg={x = 1}
-in shareOwnershipAgain with arg={x = 1}
-in shareOwnership, now arg={x = 1}
-Destroying C x=1

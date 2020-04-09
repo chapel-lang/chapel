@@ -1,2 +1,0 @@
-4-return-slice-ref.chpl:3: In function 'f':
-4-return-slice-ref.chpl:5: error: illegal expression to return by ref

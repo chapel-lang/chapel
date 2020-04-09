@@ -1,3 +1,0 @@
--sstencilDistAllowPackedUpdateFluff=false
--sstencilDistAllowPackedUpdateFluff=true
--sstencilDistAllowPackedUpdateFluff=true -sstencilDistPackedUpdateMinChunks=10

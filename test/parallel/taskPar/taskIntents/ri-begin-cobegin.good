@@ -1,3 +1,0 @@
-ri-begin-cobegin.chpl:5: error: reduce intents are not available for 'begin' and are not implemented for 'cobegin'
-ri-begin-cobegin.chpl:7: error: reduce intents are not available for 'begin' and are not implemented for 'cobegin'
-ri-begin-cobegin.chpl:17: error: reduce intents are not available for 'begin' and are not implemented for 'cobegin'

@@ -1,8 +1,0 @@
-*.swp
-*.x
-c/
-*.o
-*~
-*.prof
-test-DD.dat.brute
-test-DD.dat.tree

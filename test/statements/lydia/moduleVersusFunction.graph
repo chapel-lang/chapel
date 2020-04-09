@@ -1,5 +1,0 @@
-perfkeys: Module level access took, Method level access took
-graphkeys: module level, method level
-graphtitle: Module versus Method mod comparison
-ylabel: Time (seconds)
-graphname: moduleMethodCompare

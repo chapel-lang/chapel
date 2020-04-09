@@ -1,2 +1,0 @@
---bounds-checks # string_bounds_checking-on.good
---no-bounds-checks # string_bounds_checking-off.good

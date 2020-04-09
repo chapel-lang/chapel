@@ -1,3 +1,0 @@
-# Skip for Replicated, which makes
-# the output of the test non-deterministic.
-COMPOPTS <= distType=DistType.replicated

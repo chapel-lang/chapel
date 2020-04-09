@@ -1,3 +1,0 @@
-# We should remove this skipif when we make task counts sensitive to
-# sublocales
-CHPL_LOCALE_MODEL != flat

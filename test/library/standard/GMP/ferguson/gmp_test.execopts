@@ -1,2 +1,0 @@
---neg=true  # gmp_test.neg.good
---neg=false # gmp_test.pos.good

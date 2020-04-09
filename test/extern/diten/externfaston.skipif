@@ -1,2 +1,0 @@
-# This test needs at least two locales for the expected verboseComm
-CHPL_COMM == none

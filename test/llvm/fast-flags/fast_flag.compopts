@@ -1,1 +1,0 @@
---fast --no-ieee-float --llvm --llvm-print-ir f --llvm-print-ir-stage none

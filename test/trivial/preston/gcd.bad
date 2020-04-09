@@ -1,2 +1,0 @@
-gcd.chpl:3: In function 'mygcd':
-gcd.chpl:3: error: control reaches end of function that returns a value

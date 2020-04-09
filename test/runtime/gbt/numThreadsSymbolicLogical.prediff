@@ -1,4 +1,0 @@
-#! /bin/bash -norc
-numPUs=$( grep -c '^processor[[:space:]]\+: ' /proc/cpuinfo )
-
-echo $numPUs > $1.good

@@ -1,2 +1,0 @@
-accessMulti1.chpl:3: error: unresolved call 'b()'
-accessMulti1.chpl:3: note: because no functions named b found in scope

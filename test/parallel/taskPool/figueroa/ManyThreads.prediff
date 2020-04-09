@@ -1,3 +1,0 @@
-#! /bin/sh
-grep -v 'Reduced numThreadsPerLocale' < $2 |
-  sed -e 's/^[-.:/A-Za-z0-9]*: //' >$1.prediff.tmp && mv $1.prediff.tmp $2

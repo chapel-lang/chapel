@@ -1,3 +1,0 @@
-uncaught SystemError: Cannot allocate memory (ENOMEM)
-  ioerror.chpl:7: thrown here
-  ioerror.chpl:7: uncaught here

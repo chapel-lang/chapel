@@ -1,3 +1,0 @@
-#!/bin/sh
-./versionhelp.sh $1 $2 $3 > zcopyvers.good
-./copyrighthelp.sh $1 $2 $3 >> zcopyvers.good

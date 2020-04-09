@@ -1,5 +1,0 @@
-perfkeys: Sort-GETS:, Sort-PUTS:, Sort-ONS:
-graphkeys: GETS, PUTS, ONS
-repeat-files: distibuted-sort-cc.dat
-ylabel: Count
-graphtitle: Distributed Sort

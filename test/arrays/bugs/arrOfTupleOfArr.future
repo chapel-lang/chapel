@@ -1,5 +1,0 @@
-bug: arrays of tuples of arrays result in a nil dereference
-
-Not sure why this is, but BenA identified it in issue #7628 which
-I stumbled across this afternoon while looking for zipper-related
-issues.

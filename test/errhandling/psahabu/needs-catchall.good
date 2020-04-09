@@ -1,2 +1,0 @@
-needs-catchall.chpl:3: In function 'doesNotThrow':
-needs-catchall.chpl:4: error: try without a catchall in a non-throwing function

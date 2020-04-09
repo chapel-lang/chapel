@@ -11,7 +11,7 @@ module RunVectorizeOnlyRawLoops {
         var stat = loop_stats[iloop].borrow();
         var len = stat.loop_length[ilength];
         var num_samples = stat.samples_per_pass[ilength];
-        var ltimer = new owned LoopTimer();
+        var ltimer = new LoopTimer();
 
         select iloop {
           when LoopKernelID.PRESSURE_CALC {
@@ -381,7 +381,7 @@ module RunVectorizeOnlyRawLoops {
               for i in vectorizeOnly(0..#len_minus_coeff) {
                 var sum = 0.0;
                 for j in 0..#coefflen {
-                  sum += coeff[j+1]*input[i+j];
+                  sum += coeff[j]*input[i+j];
                 }
                 output[i] = sum;
               }

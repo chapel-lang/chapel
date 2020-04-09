@@ -1,2 +1,0 @@
-grandFieldUse.chpl:13: In initializer:
-grandFieldUse.chpl:14: error: cannot access parent field "x" before super.init() or this.init()

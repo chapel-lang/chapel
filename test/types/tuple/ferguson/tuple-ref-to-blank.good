@@ -1,3 +1,0 @@
-in run (1, hello)
-in byref (2, byref)
-in byblank (2, byblank)

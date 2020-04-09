@@ -62,8 +62,8 @@ class DimensionalDist : BaseDist {
   // implementation note: 'rank' is not a real param; it's just that having
   // 'proc rank param return targetLocales.rank' did not work
   param rank: int = targetLocales.rank;
-  proc numLocs1: locCntT  return targetIds.dim(1).size: locCntT;
-  proc numLocs2: locCntT  return targetIds.dim(2).size: locCntT;
+  proc numLocs1: locCntT  return targetIds.dim(0).size: locCntT;
+  proc numLocs2: locCntT  return targetIds.dim(1).size: locCntT;
 
   // parallelization knobs
   var dataParTasksPerLocale: int      = getDataParTasksPerLocale();
@@ -733,7 +733,7 @@ iter DimensionalDom.these(param tag: iterKind) where tag == iterKind.leader {
       return dist.targetIds.dim(dd);
   }
   const overTargetIds = if dom1.dsiIsReplicated() || dom2.dsiIsReplicated()
-    then {helpTargetIds(dom1,1), helpTargetIds(dom2,2)}
+    then {helpTargetIds(dom1,0), helpTargetIds(dom2,1)}
     else dist.targetIds; // this case is here for efficiency
 
   // todo: lls is needed only for debugging printing?

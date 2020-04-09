@@ -5,7 +5,7 @@ proc foo() {
 }
 proc bar(x) {
   writeln(x);
-  x(1)(2) = 1;
+  x(0)(2) = 1;
   writeln(x);
 }
 

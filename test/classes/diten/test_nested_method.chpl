@@ -7,6 +7,7 @@ module OuterModule {
   }
 
   module M {
+    import OuterModule.C;
     var y = 3;
 
     proc main() {

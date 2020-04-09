@@ -1,3 +1,0 @@
-c = {x = 5, y = nil}
-z = {x = nil}
-dmd = {locs = nil nil nil nil}

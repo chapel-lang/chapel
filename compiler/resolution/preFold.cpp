@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -381,7 +382,7 @@ static void setRecordDefaultValueFlags(AggregateType* at) {
   }
 }
 
-static bool isDefaultInitializeable(Type* t) {
+static bool isDefaultInitializable(Type* t) {
   bool val = true;
   if (isRecord(t)) {
     AggregateType* at = toAggregateType(t);
@@ -482,7 +483,7 @@ static Expr* preFoldPrimOp(CallExpr* call) {
 
     int64_t n = testCaptureVector.size();
     if (index <= 0 || index > n) {
-      USR_FATAL(call, "index '%i' out of bounds, expected to be between '1' and '%i'",
+      USR_FATAL(call, "index '%" PRId64 "' out of bounds, expected to be between '1' and '%" PRId64 "'",
                 index, n);
     }
 
@@ -647,7 +648,7 @@ static Expr* preFoldPrimOp(CallExpr* call) {
     if (name == NULL) {
       USR_FATAL(call,
                 "'%d' is not a valid field number for %s",
-                fieldNum,
+                fieldNum-1,
                 toString(classType));
     }
 
@@ -719,7 +720,7 @@ static Expr* preFoldPrimOp(CallExpr* call) {
       // specified.  This is the user's error.
       USR_FATAL(call,
                 "'%d' is not a valid field number for %s",
-                fieldNum,
+                fieldNum-1,
                 toString(classType));
     }
 
@@ -1063,7 +1064,7 @@ static Expr* preFoldPrimOp(CallExpr* call) {
   case PRIM_HAS_DEFAULT_VALUE: {
     Type* t = call->get(1)->typeInfo();
 
-    bool val = isDefaultInitializeable(t);
+    bool val = isDefaultInitializable(t);
 
     if (val)
       retval = new SymExpr(gTrue);
@@ -1578,7 +1579,7 @@ static Expr* preFoldPrimOp(CallExpr* call) {
     SymExpr* se = toSymExpr(call->get(1));
 
     if (se->symbol()->hasFlag(FLAG_EXPR_TEMP) &&
-        !(isClassLikeOrPtr(type) || isReferenceType(type))) {
+        !(type == dtLocale || isClassLikeOrPtr(type) || isReferenceType(type))) {
       USR_WARN(se, "accessing the locale of a local expression");
     }
 
@@ -1587,7 +1588,8 @@ static Expr* preFoldPrimOp(CallExpr* call) {
     // or distribution wrapper type, apply .locale to the _value
     // field of the wrapper
     //
-    if (isRecordWrappedType(type)) {
+    if (isRecordWrappedType(type) ||
+        type == dtLocale) {
       VarSymbol* tmp = newTemp("_locale_tmp_");
 
       call->getStmtExpr()->insertBefore(new DefExpr(tmp));
@@ -1902,8 +1904,8 @@ static Expr* preFoldNamed(CallExpr* call) {
         USR_FATAL(call, "illegal type index expression");
       }
 
-      if (index <= 0 || index > at->fields.length-1) {
-        USR_FATAL(call, "type index expression '%i' out of bounds", index);
+      if (index < 0 || index > at->fields.length-2) {
+        USR_FATAL(call, "type index expression '%" PRId64 "' out of bounds (0..%d)", index, at->fields.length-2);
       }
 
       sprintf(field, "x%" PRId64, index);
@@ -1999,6 +2001,14 @@ static Expr* preFoldNamed(CallExpr* call) {
           // Handle casting between numeric types
           if (imm != NULL && (fromEnum || fromIntEtc) && toIntEtc) {
             Immediate coerce = getDefaultImmediate(newType);
+
+            if (fWarnUnstable && fromEnum && !toIntUint) {
+              if (is_bool_type(newType)) {
+                USR_WARN(call, "enum-to-bool casts are likely to be deprecated in the future");
+              } else {
+                USR_WARN(call, "enum-to-float casts are likely to be deprecated in the future");
+              }
+            }
 
             coerce_immediate(imm, &coerce);
 
@@ -2175,16 +2185,15 @@ static Expr* resolveTupleIndexing(CallExpr* call, Symbol* baseVar) {
 
   if (get_int(call->get(3), &index)) {
     sprintf(field, "x%" PRId64, index);
-    if (index <= 0 || index >= baseType->fields.length) {
+    if (index < 0 || index >= baseType->fields.length-1) {
       USR_FATAL_CONT(call, "tuple index %ld is out of bounds", index);
-      if (index == 0) zero_error = true;
+      if (index < 0) zero_error = true;
       error = true;
     }
   } else if (get_uint(call->get(3), &uindex)) {
     sprintf(field, "x%" PRIu64, uindex);
-    if (uindex <= 0 || uindex >= (unsigned long)baseType->fields.length) {
+    if (uindex >= (unsigned long)baseType->fields.length-1) {
       USR_FATAL_CONT(call, "tuple index %lu is out of bounds", uindex);
-      if (uindex == 0) zero_error = true;
       error = true;
     }
   } else {
@@ -2193,10 +2202,10 @@ static Expr* resolveTupleIndexing(CallExpr* call, Symbol* baseVar) {
 
   if (error) {
     if (zero_error)
-      USR_PRINT(call, "tuple elements start at index 1");
+      USR_PRINT(call, "tuple elements start at index 0");
     else
       USR_PRINT(call, "this tuple contains elements %i..%i (inclusive)",
-                1, baseType->fields.length-1);
+                0, baseType->fields.length-2);
     USR_STOP();
   }
 

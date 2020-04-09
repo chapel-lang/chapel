@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -331,7 +332,7 @@ module Futures {
     f.classRef!.valid = true;
     begin {
       var result: retTypes;
-      for param i in 1..N do
+      for param i in 0..N-1 do
         result[i] = futures[i].get();
       f.set(result);
     }

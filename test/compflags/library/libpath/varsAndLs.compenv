@@ -1,2 +1,0 @@
-CHPL_LIB_PATH=foo:baz
-CHPL_INCLUDE_PATH=foo:baz

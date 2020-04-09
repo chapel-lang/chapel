@@ -1,1 +1,0 @@
-../Curl/check-http-setopt.chpl

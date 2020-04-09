@@ -1,1 +1,0 @@
-void test_no_codegen_arg(int32_t y) {

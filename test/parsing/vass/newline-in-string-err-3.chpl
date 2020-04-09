@@ -1,3 +1,0 @@
-
-write("zzzz
-zzzz2");

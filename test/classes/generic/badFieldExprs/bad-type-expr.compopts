@@ -1,2 +1,0 @@
--scase=0 # bad-type-expr.param.good
--scase=1 # bad-type-expr.value.good

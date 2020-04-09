@@ -1,2 +1,0 @@
---tf noDep.toml --goodLock noDep.good # noDep
---tf simple.toml --goodLock simple.good # simple

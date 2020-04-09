@@ -1,2 +1,0 @@
-Use an indefinite domain to store nonzeroes as we build it up rather
-than a full vector as in NPB version

@@ -1,7 +1,0 @@
-.
-./subdir
-./subdir/subdir2
-./subdir/subdir3
-./subdir-link
-./subdir-link/subdir2
-./subdir-link/subdir3

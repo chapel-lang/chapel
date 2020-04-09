@@ -1,1 +1,0 @@
-delete-shared.chpl:6: error: 'delete' is not allowed on a shared class type

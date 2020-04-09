@@ -1,4 +1,0 @@
-#!/bin/sh
-
-grep -H TITLE log/index.html >> $2
-

@@ -1,6 +1,0 @@
-f(b)
-in f(borrowed)
-f(u)
-in f(unmanaged)
-f(i)
-in f(generic)

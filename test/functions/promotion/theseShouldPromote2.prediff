@@ -1,4 +1,0 @@
-#!/bin/bash
-
-grep -v ': note: ' $2 > $2.tmp
-mv $2.tmp $2

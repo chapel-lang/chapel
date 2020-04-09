@@ -1,1 +1,0 @@
-dmapped-int-error.chpl:3: error: cannot apply 'dmapped' to the non-domain type int(64)

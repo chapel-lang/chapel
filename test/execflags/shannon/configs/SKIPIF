@@ -1,2 +1,0 @@
-# memory leak testing inserts new execopt that changes error message
-CHPL_MEM_LEAK_TESTING == true

@@ -1,3 +1,0 @@
-#!/bin/bash
-echo Compiling exportArrArgReturnInt.chpl
-$3 --library --static exportArrArgReturnInt.chpl

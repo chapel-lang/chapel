@@ -1,3 +1,0 @@
-# The expected optimization is not firing for Replicated.
-# Need to investigate whether that's correct. Skip it for now.
-COMPOPTS <= distType=DistType.replicated

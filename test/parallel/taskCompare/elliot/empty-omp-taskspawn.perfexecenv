@@ -1,2 +1,0 @@
-# need to let openmp do its own pinning without interference from qthreads
-QT_AFFINITY=no

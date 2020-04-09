@@ -87,8 +87,8 @@ var tInit, tPS1iter, tUBR1iter, tSC1call, tLF1iter, tBScall, tVer: VTimer;
   setupTargetLocalesArray(targetIds, targetLocales, Locales);
 
   // Here are the dimensions of our grid of locales.
-  const tl1 = targetIds.dim(1).size,
-        tl2 = targetIds.dim(2).size;
+  const tl1 = targetIds.dim(0).size,
+        tl2 = targetIds.dim(1).size;
 
   if onlyBsub && tl1 != tl2 then
     halt("backwardSub() is implemented only for a square locale grid");
@@ -328,8 +328,8 @@ proc schurComplement(blk, AD, BD, Rest) {
   // of the data it will need to perform a local matrix-multiply.
   //
 
-  const ref AbSlice1 = Ab[1..n, AD.dim(2)],
-            AbSlice2 = Ab[BD.dim(1), 1..n+1];
+  const ref AbSlice1 = Ab[1..n, AD.dim(1)],
+            AbSlice2 = Ab[BD.dim(0), 1..n+1];
   vmsgmore("  AbSlices");
 
 
@@ -349,8 +349,8 @@ proc schurComplement(blk, AD, BD, Rest) {
   forall (row,col) in Rest by (blkSize, blkSize) {
     // localize Rest explicitly as a workaround;
     // also hoist the innerRange computation
-    const outterRange = Rest.dim(1)(row..#blkSize),
-          innerRange  = Rest.dim(2)(col..#blkSize),
+    const outterRange = Rest.dim(0)(row..#blkSize),
+          innerRange  = Rest.dim(1)(col..#blkSize),
           blkRange = 1..blkSize;
 
    local {
@@ -395,10 +395,10 @@ proc DimensionalArr.dsiLocalSlice1((sliceDim1, sliceDim2)) {
         l2 = dist.di2.dsiIndexToLocale1d(toScalar(sliceDim2)),
         locAdesc = this.localAdescs[l1, l2],
         r1 = if dom.dom1.dsiStorageUsesUserIndices()
-             then if origScalar(1) then sliceDim1 else dom.whole.dim(1)(sliceDim1)
+             then if origScalar(1) then sliceDim1 else dom.whole.dim(0)(sliceDim1)
              else toOrig(1, locAdesc.locDom.doml1.dsiLocalSliceStorageIndices1d(dom.dom1, toRange(sliceDim1))),
         r2 = if dom.dom2.dsiStorageUsesUserIndices()
-             then if origScalar(2) then sliceDim2 else dom.whole.dim(2)(sliceDim2)
+             then if origScalar(2) then sliceDim2 else dom.whole.dim(1)(sliceDim2)
              else toOrig(2, locAdesc.locDom.doml2.dsiLocalSliceStorageIndices1d(dom.dom2, toRange(sliceDim2)));
 
   const reindexExpr =
@@ -422,11 +422,11 @@ proc panelSolve(
                panel: domain,
                piv: [] indexType) {
 
-  const blk = panel.dim(1).low;
+  const blk = panel.dim(0).low;
   const cornerLocale = targetLocaleCorner(blk);
   var kCount = maxKinPS;
 
-  for k in panel.dim(2) {             // iterate through the columns
+  for k in panel.dim(1) {             // iterate through the columns
 
     kCount -= 1;
     if kCount <= 0 {
@@ -472,7 +472,7 @@ proc panelSolve(
     // replicate
     on cornerLocale {
       local
-        for j in panel.dim(2)[k+1..] do
+        for j in panel.dim(1)[k+1..] do
           replK[0,j] = Ab[k,j];
       vmsgmore("  seeding replication");
       replicateK(blk);
@@ -498,7 +498,7 @@ proc panelSolve(
 proc updateBlockRow(
                    tl: domain,
                    tr: domain) {
-  const blk = tl.dim(1).low;
+  const blk = tl.dim(0).low;
   const cornerLocale = targetLocaleCorner(blk);
   // 'tl' is a Dimensional-mapped domain, so has stuff
   // on all locales, even where the index set is empty
@@ -513,10 +513,10 @@ proc updateBlockRow(
     replicateU(blk);
     vmsgmore("  replicating U");
   }
-  for row in tr.dim(1) {
+  for row in tr.dim(0) {
     tUBR1iter.start();
     const activeRow = tr[row..row, ..],
-          prevRows = tr.dim(1).low..row-1;
+          prevRows = tr.dim(0).low..row-1;
 
     forall (i,j) in activeRow do
       for k in prevRows {
@@ -545,7 +545,7 @@ proc backwardSubRef(n: indexType) {
   // make the rest of the code operate locally without changing it
   ref Ab = makeLocalCopyOfAb();
 
-  const bd = Ab.domain.dim(1);  // or simply 1..n
+  const bd = Ab.domain.dim(0);  // or simply 1..n
   var x: [bd] elemType;
 
   for i in bd by -1 do
@@ -559,7 +559,7 @@ proc backwardSubRef(n: indexType) {
 proc backwardSubAlt(n: indexType) {
   ref Ab = makeLocalCopyOfAb();
 
-  const bd = Ab.domain.dim(1);  // or simply 1..n
+  const bd = Ab.domain.dim(0);  // or simply 1..n
   var x: [bd] elemType;
 
   for i in bd by -1 do

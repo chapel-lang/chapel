@@ -10,6 +10,13 @@ typevar.doc
 
    use typevar.doc;
 
+
+or
+
+.. code-block:: chapel
+
+   import typevar.doc;
+
 .. class:: Foo
 
    This class has type fields 

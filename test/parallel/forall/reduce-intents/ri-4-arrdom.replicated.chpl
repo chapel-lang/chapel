@@ -1,1 +1,0 @@
-ri-4-arrdom.chpl

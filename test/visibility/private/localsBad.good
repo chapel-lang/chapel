@@ -1,3 +1,0 @@
-localsBad.chpl:1: In function 'foo':
-localsBad.chpl:2: warning: Private declarations within function bodies are meaningless
-11

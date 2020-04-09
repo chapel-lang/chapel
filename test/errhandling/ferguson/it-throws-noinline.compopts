@@ -1,3 +1,0 @@
---inline-iterators-yield-limit 1
-# This test is meant to work with a non-inlined iterator
-# It uses an iterator with 2 yields to do that

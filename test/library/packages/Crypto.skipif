@@ -1,2 +1,0 @@
-# skip non-linux64 platforms for now
-CHPL_TARGET_PLATFORM != linux64

@@ -1,2 +1,0 @@
-# This runs clean under --baseline --inline.
-COMPOPTS <= --baseline

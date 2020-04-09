@@ -1,4 +1,0 @@
-feature request: allow 'atomic' variables to be initialized
-
-This has been requested by Kristi M and in general makes a good sense,
-especially for arrays.

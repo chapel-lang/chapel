@@ -1,3 +1,0 @@
-#!/bin/bash
-echo Compiling myLib.chpl
-$3 --library --static myLib.chpl

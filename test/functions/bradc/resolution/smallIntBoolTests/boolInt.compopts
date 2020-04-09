@@ -1,2 +1,0 @@
--stestenum=false
--stestenum=true --ignore-errors-for-pass # boolInt-testenum.good

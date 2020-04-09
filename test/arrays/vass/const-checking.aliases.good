@@ -1,2 +1,0 @@
-const-checking.aliases.chpl:10: error: Cannot set a non-const reference to a const variable.
-const-checking.aliases.chpl:14: error: Cannot set a non-const reference to a const variable.

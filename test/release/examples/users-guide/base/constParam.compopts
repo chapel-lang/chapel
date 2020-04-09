@@ -1,2 +1,0 @@
--stestErrors=0  # constParam.good
--stestErrors=1  # constParam-error.good

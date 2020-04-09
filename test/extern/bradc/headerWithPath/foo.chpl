@@ -1,3 +1,0 @@
-extern proc hello();
-
-hello();

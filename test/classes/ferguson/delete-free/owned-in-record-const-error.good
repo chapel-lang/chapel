@@ -1,1 +1,0 @@
-owned-in-record-const-error.chpl:4: error: non-lvalue actual is passed to 'ref' formal 'other' of init=()

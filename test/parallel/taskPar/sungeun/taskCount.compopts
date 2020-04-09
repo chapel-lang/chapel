@@ -1,3 +1,0 @@
---main-module=endCountTest -suseAtomicTaskCnt=false -sprintGetPutCnt=true
---main-module=endCountTest -suseAtomicTaskCnt=true -sprintGetPutCnt=true
-

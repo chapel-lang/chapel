@@ -1,3 +1,0 @@
-bug: deadlock in writeThis methods that use on clauses
-
-Issue #7710

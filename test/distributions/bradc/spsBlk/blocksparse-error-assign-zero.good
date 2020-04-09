@@ -1,1 +1,0 @@
-blocksparse-error-assign-zero.chpl:13: error: halt reached - attempting to assign a 'zero' value in a sparse array: (7)

@@ -1,3 +1,0 @@
-a is: {x = 42, y = 4.2}, b is: {x = 42, y = 4.2}
-a is: {x = 24, y = 4.2}, b is: {x = 42, y = 2.4}
-a is: nil, b is: nil

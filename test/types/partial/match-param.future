@@ -1,3 +1,0 @@
-bug: type constraints cause failed resolution for '==' between params of different types
-
-#13512

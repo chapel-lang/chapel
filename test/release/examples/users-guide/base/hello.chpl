@@ -1,1 +1,0 @@
-writeln("Hello Chapel Users!");

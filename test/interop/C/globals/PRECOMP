@@ -1,3 +1,0 @@
-#!/bin/bash
-echo Compiling reliesOnGlobal.chpl
-$3 --library --static reliesOnGlobal.chpl

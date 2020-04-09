@@ -1,4 +1,0 @@
-foo() got: 42
-C callsite got 43
-foo() got: 33
-Chapel callsite got: 34

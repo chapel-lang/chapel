@@ -1,3 +1,0 @@
---doBreak=0 # do-while-defer.nobreak.good
---doBreak=1 # do-while-defer.break1.good
---doBreak=2 # do-while-defer.break2.good

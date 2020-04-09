@@ -1,1 +1,0 @@
-writeln("numLocales is ", numLocales);

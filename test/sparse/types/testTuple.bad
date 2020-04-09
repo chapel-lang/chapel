@@ -1,0 +1,8 @@
+./SparseTest.chpl:1: In function 'testSparse':
+./SparseTest.chpl:9: error: Cannot default-initialize a tuple component of the type shared T
+note: non-nil class types do not support default initialization
+note: Consider using the type shared T? instead
+./SparseTest.chpl:9: error: Cannot default-initialize a tuple component of the type shared T
+note: non-nil class types do not support default initialization
+note: Consider using the type shared T? instead
+testTuple.chpl:8: Function 'testSparse' instantiated as: testSparse(type t = 2*shared T)

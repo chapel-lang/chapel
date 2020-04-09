@@ -1,2 +1,0 @@
-bug: pragma "init copy fn" interferes with error handling
-#11301

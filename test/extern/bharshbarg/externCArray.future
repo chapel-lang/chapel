@@ -1,1 +1,0 @@
-bug: codegen failures under llvm when generating PRIM_ARRAY_GET for a C array

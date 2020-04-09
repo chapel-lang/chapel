@@ -1,3 +1,0 @@
-innerNonExtern hello
-innerNonExtern cobegin hello
-module cobegin NE hello

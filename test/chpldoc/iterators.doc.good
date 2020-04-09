@@ -10,6 +10,13 @@ iterators.doc
 
    use iterators.doc;
 
+
+or
+
+.. code-block:: chapel
+
+   import iterators.doc;
+
 .. iterfunction:: iter body()
 
    This iterator should output its comment 

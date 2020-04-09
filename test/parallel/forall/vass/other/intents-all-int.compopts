@@ -1,4 +1,0 @@
--s allowStandalone=true   -s leaderSimple=true
--s allowStandalone=true   -s leaderSimple=false
--s allowStandalone=false  -s leaderSimple=true
--s allowStandalone=false  -s leaderSimple=false

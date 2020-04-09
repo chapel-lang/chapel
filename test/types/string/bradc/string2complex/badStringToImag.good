@@ -1,3 +1,0 @@
-uncaught IllegalArgumentError: bad cast from string '1.2' to imag(64)
-  badStringToImag.chpl:3: thrown here
-  badStringToImag.chpl:3: uncaught here

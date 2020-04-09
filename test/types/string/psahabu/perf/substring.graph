@@ -1,5 +1,0 @@
-perfkeys: substring:, count:, replace:
-repeat-files: substring.dat
-graphkeys: substring, counting, replacing
-ylabel: Time (seconds)
-graphtitle: Search within a string

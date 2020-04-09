@@ -1,1 +1,0 @@
-bug: ref iterator over records calls assign op with uninitialized LHS 

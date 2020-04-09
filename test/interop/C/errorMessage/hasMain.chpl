@@ -1,5 +1,0 @@
-module Hello {
-  proc main() {
-
-  }
-}

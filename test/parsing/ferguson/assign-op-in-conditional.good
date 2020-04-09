@@ -1,1 +1,0 @@
-assign-op-in-conditional.chpl:4: error: Assignment operation += is illegal in a conditional

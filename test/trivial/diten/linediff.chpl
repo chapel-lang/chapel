@@ -12,7 +12,7 @@ proc main(){
   if s1 == s2 then
     return;
 
-  for i in 1..minlength {
+  for i in 0..#minlength {
     if s1[i] != s2[i] then
       temp_str = temp_str + '|';
     else

@@ -1,1 +1,0 @@
-bug: Changes to a string used in a begin are not visible.

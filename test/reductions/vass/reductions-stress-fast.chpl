@@ -1,1 +1,0 @@
-reductions-stress-mf.chpl

@@ -10,6 +10,13 @@ lifetimeChecking-notype.doc
 
    use lifetimeChecking-notype.doc;
 
+
+or
+
+.. code-block:: chapel
+
+   import lifetimeChecking-notype.doc;
+
 .. class:: Foo
 
    Used to demonstrate the behavior of lifetime checking and documentation 

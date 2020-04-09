@@ -1,3 +1,0 @@
-in MyClass.init
-{x = 0}
-in MyClass.deinit

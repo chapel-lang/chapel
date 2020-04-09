@@ -1,3 +1,0 @@
-# Skipping if CHPL_ATOMICS == locks because it is too hard
-# to link with the appropriate parts of the Chapel runtime.
-CHPL_ATOMICS==locks

@@ -1,1 +1,0 @@
-c_str_on_remote_string.chpl:7: error: halt reached - Cannot call .c_str() on a remote string

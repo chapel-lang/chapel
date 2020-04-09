@@ -1,4 +1,0 @@
-#!/bin/bash
-
-echo "creating complexCopy as source directory for moveDir" >> $2
-cp -r complexSrc/ complexCopy/

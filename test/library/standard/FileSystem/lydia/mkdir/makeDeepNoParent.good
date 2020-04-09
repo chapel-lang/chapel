@@ -1,3 +1,0 @@
-uncaught FileNotFoundError: No such file or directory (in mkdir with path "make/deep/no/parent")
-  makeDeepNoParent.chpl:5: thrown here
-  makeDeepNoParent.chpl:5: uncaught here

@@ -1,4 +1,0 @@
-trying noActualThrow
-success: did not throw
-trying writeln
-success: normal control flow

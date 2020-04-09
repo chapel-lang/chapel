@@ -1,1 +1,0 @@
-check-bounded-rng-fixed-offset.chpl

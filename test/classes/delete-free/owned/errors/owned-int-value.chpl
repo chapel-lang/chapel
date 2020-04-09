@@ -1,2 +1,0 @@
-writeln(owned 3);
-

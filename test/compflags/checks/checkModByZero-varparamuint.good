@@ -1,1 +1,0 @@
-checkModByZero.chpl:32: error: Attempt to compute a modulus by zero

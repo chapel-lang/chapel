@@ -1,4 +1,0 @@
-bug: Compiler seg faults during codegen when record compared to nil.
-
-The compiler seg faults during codegen when a record is compared to
-nil.

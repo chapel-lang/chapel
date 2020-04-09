@@ -1,1 +1,0 @@
-unstable-owned-shared-intent1.chpl:3: warning: default intent for owned C has changed from `in` to `const ref`

@@ -1,3 +1,0 @@
-# Only run this test with memory tracking
-# to avoid testing noise.
--M ../../tracking-record -M ../../tracking  --no-warnings

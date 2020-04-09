@@ -1,2 +1,0 @@
-tupleReal32.chpl:2: error: illegal lvalue in assignment
-tupleReal32.chpl:2: error: Cannot assign to real(32) from real(64)

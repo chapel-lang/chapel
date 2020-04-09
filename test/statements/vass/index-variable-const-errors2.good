@@ -1,3 +1,0 @@
-index-variable-const-errors2.chpl:14: In function 'main':
-index-variable-const-errors2.chpl:18: error: illegal lvalue in assignment
-index-variable-const-errors2.chpl:20: error: illegal lvalue in assignment

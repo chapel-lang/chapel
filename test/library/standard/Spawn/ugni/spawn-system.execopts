@@ -1,2 +1,0 @@
---pipeStdout=false  # spawn-system.vfork.good
---pipeStdout=true   # spawn-system.fork.good

@@ -1,2 +1,0 @@
-COMPOPTS <= --fast
-COMPOPTS <= --no-checks

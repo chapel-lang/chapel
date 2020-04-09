@@ -1,3 +1,0 @@
-uncaught FileNotFoundError: No such file or directory (in sameFile(../, foo/))
-  dir_nonexistent.chpl:3: thrown here
-  dir_nonexistent.chpl:3: uncaught here

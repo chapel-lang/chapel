@@ -1,1 +1,0 @@
-writeln("Rows \ Cols");

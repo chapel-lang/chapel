@@ -1,3 +1,0 @@
-The following test also exercises forall:
-
-  test/parallel/taskPar/vass/errorFieldMethodInWithClause.chpl

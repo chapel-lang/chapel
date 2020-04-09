@@ -1,2 +1,0 @@
-borrowed-if-expr.chpl:7: In function 'main':
-borrowed-if-expr.chpl:9: error: Scoped variable x would outlive the value it is set to

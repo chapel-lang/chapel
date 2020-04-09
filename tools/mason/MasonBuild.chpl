@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -42,20 +43,8 @@ proc masonBuild(args) throws {
 
   if args.size > 2 {
 
-    //
-    // This function is generic and may be instantiated with either a list
-    // or an array as the type for "args". In the case of list, the
-    // start index is 1, however in the case of an array, the `low` element
-    // is 0. The below code is a stopgap.
-    //
-    var start = 3;
-    var end = args.size; 
-    if isArray(args) && args.eltType == string {
-      start = args.domain.low + 2;
-      end = args.domain.high;
-    }
-
-    for i in start..end {
+    // strip off the first two indices
+    for i in args.indices#-(args.size-2) {
       var arg = args[i];
       if opt == true {
         compopts.append(arg);
@@ -107,8 +96,8 @@ proc masonBuild(args) throws {
     var argsList = new list(string);
     for x in args do argsList.append(x);
     const configNames = UpdateLock(argsList);
-    const tomlName = configNames[1];
-    const lockName = configNames[2];
+    const tomlName = configNames[0];
+    const lockName = configNames[1];
     buildProgram(release, show, force, compopts, tomlName, lockName);
   }
 }

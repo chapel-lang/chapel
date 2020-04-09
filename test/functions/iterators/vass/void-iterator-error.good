@@ -1,1 +1,0 @@
-void-iterator-error.chpl:2: error: an iterator may not have a void return type

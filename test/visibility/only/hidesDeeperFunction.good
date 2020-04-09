@@ -1,3 +1,0 @@
-hidesDeeperFunction.chpl:18: In function 'main':
-hidesDeeperFunction.chpl:19: error: unresolved call 'bar()'
-hidesDeeperFunction.chpl:19: note: because no functions named bar found in scope

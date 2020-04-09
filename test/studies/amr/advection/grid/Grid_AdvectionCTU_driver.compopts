@@ -1,1 +1,0 @@
--M ../../lib/misc -M ../../lib/grid --set dimension=2 GridVariable_AdvectionCTU.chpl GridSolution_AdvectionCTU.chpl GridBC_AdvectionCTU.chpl

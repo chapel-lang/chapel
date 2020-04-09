@@ -1,5 +1,0 @@
-bug: lists of tuples of non-nilable classes don't seem to work
-
-While simple tests of lists of non-nilable classes worked for me, a
-similarly simple list of tuples containing non-nilable classes did
-not.  This test shows an example of this.

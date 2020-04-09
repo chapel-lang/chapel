@@ -1,3 +1,0 @@
---n=1000000 --time --report --pat=Elegant # exchange-elegant
---n=1000000 --time --report --pat=DestLocal # exchange-destLocal
---n=1000000 --time --report --pat=BothLocal # exchange-bothLocal

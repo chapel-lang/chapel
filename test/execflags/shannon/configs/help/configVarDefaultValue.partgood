@@ -1,4 +1,0 @@
-configVarDefaultValue config vars:
- Thursday: string default: "Rain and snow."
- Possible: string default: "accumulation"
- ofOne: string default: "inch."

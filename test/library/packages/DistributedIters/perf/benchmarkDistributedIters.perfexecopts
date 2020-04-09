@@ -1,3 +1,0 @@
---test=uniform --mode=default --n=10000 # distributedDefault
---test=uniform --mode=dynamic --n=10000 # distributedDynamic
---test=uniform --mode=guided --n=10000 # distributedGuided

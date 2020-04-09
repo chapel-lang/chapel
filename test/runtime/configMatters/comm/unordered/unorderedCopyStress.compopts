@@ -1,5 +1,0 @@
---no-checks --no-optimize-forall-unordered-ops -scomponentType=int(8) -snumComponents=1
---no-checks --no-optimize-forall-unordered-ops -scomponentType=int(8) -snumComponents=7
---no-checks --no-optimize-forall-unordered-ops -scomponentType=int    -snumComponents=1
---no-checks --no-optimize-forall-unordered-ops -scomponentType=int    -snumComponents=1
---no-checks --no-optimize-forall-unordered-ops -scomponentType=int    -snumComponents=512

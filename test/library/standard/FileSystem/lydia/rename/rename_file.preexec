@@ -1,2 +1,0 @@
-#!/bin/bash
-mv rename_fileNew.txt rename_fileOld.txt 2> rename_file.exec.out.tmp

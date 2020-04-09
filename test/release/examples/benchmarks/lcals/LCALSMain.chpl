@@ -1145,6 +1145,6 @@ proc defineLoopSuiteRunInfo(run_variants, run_loop,
     }
   }
   defineReferenceLoopRunInfo();
-  s_loop_data = new owned LoopData(max(max_loop_length, suite_info.ref_loop_stat!.loop_length[LoopLength.LONG]));
+  s_loop_data = new LoopData(max(max_loop_length, suite_info.ref_loop_stat!.loop_length[LoopLength.LONG]));
 
 }

@@ -1,4 +1,0 @@
-#!/bin/bash
-if [ -d useAMode ]; then
-   rmdir useAMode
-fi

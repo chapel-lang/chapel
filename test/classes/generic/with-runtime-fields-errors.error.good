@@ -1,1 +1,0 @@
-with-runtime-fields-errors.chpl:7: error: accessing the runtime-type field tField of a nilable class. Consider applying postfix-! operator to the class before accessing this field.

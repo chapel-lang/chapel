@@ -1,2 +1,0 @@
-yield-shared.chpl:3: In iterator 'I':
-yield-shared.chpl:3: error: cannot yield 'shared C?' when the declared return type is 'shared C'

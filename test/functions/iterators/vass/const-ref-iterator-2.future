@@ -1,2 +1,0 @@
-bug: index variable of a loop with a 'const ref' iterator is not considered 'const'
-#6142

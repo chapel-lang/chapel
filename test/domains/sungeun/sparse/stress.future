@@ -1,3 +1,0 @@
-bug: Sparse domains are not thread-safe and therefore do not support parallel operations
-
-Issue #7730

@@ -1,2 +1,0 @@
--sfoo=false # missingDeserializer.false.good
--sfoo=true # missingDeserializer.true.good

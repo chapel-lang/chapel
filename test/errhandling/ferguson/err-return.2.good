@@ -1,3 +1,0 @@
-(y = (x = 1))
-deinit 1
-StringError: test error

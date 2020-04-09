@@ -1,1 +1,0 @@
-exceptWrongSymbol.chpl:8: error: Bad identifier in 'except' clause, no known 'q' defined in 'M1'

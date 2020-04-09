@@ -1,4 +1,0 @@
-#!/bin/bash
-  
-grep chpl_after_forall_fence output/needsFenceSerial.c | sed 's/ *//g' >> $1.1.comp.out.tmp
-

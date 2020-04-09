@@ -1,1 +1,0 @@
-error message: When assigning to an array of records with const field(s), the location of the error being reported should point to the assignment, rather the internal array implementation.

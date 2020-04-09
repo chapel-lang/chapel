@@ -1,5 +1,0 @@
-perfkeys: Time:
-files: foobar.dat
-graphkeys: Chapel version
-ylabel: Time (seconds)
-graphtitle: My Sample Performance Test (Bogus)
