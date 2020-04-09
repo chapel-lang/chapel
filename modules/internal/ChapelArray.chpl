@@ -1062,6 +1062,8 @@ module ChapelArray {
       if _to_unmanaged(value.type) != value.type then
         compilerError("Domain on borrow created");
 
+      // the below check is necessary for iterator records that have domain
+      // shapes would create another set of privatized instances otherwise
       if value.pid == nullPid then
         this._pid = if _isPrivatized(value)
                         then _newPrivatizedClass(value)
@@ -4107,7 +4109,6 @@ module ChapelArray {
     // initializer we call here do not create another set of privatized
     // instances
     var shape = new _domain(ir._shape_);
-    writeln("500");
 
     // Important: ir._shape_ points to a domain class for a domain
     // that is owned by the forall-expression or the leader in the
@@ -4125,7 +4126,6 @@ module ChapelArray {
     // If we use it in the domain case, we get one autoDestroy too many.
     pragma "insert auto destroy"
     var shape = {ir._shape_};
-    writeln("600");
 
     return chpl__initCopy_shapeHelp(shape, ir);
   }
@@ -4148,7 +4148,7 @@ module ChapelArray {
       for (r, src) in zip(result, ir) do
         r = src;
     } else {
-      for (r, src) in zip(result, ir) do
+      forall (r, src) in zip(result, ir) do
         r = src;
     }
     return result;
@@ -4161,8 +4161,6 @@ module ChapelArray {
 
   pragma "init copy fn"
   proc chpl__initCopy(ir: _iteratorRecord) {
-    writeln("300");
-
     // We'd like to know the yielded type of the record, but we can't
     // access the (runtime) component of that until we actually yield
     // something.
@@ -4278,8 +4276,6 @@ module ChapelArray {
     var D = { r };
 
     if data != nil {
-
-      writeln("20");
 
       // let the comm layer adjust array allocation
       if callPostAlloc then allocateData(false, size);
