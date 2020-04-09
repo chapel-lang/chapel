@@ -1255,7 +1255,6 @@ module String {
       :returns: The value of the `i` th byte as an integer.
     */
     proc byte(i: int): uint(8) {
-
       if boundsChecking && (i < 0 || i >= this.buffLen)
         then halt("index ", i, " out of bounds for string with ", this.numBytes, " bytes");
       return bufferGetByte(buf=this.buff, off=i, loc=this.locale_id);
@@ -1389,7 +1388,6 @@ module String {
             halt("range ", r, " out of bounds for string");
         }
         if r.hasHighBound() && (!r.hasLowBound() || r.size > 0) {
-
           // This seems suspicious... why would a range with a high bound
           // of -1 be in-bounds yet one whose high bound was -2 be out?
           // It seems as though any bound < 0 or >= len should be OOB.
@@ -1438,7 +1436,6 @@ module String {
       // Loop to find whether the low and high codepoint indices
       // appear within the string.  Note the byte indices of those
       // locations, if they exist.
-
       const cp_low = if r.hasLowBound() && r.low:int >= 0 then r.low:int else 0;
       const cp_high = if r.hasHighBound() then r.high:int else this.buffLen;
       var cp_count = 0;
