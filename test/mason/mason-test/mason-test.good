@@ -13,5 +13,4 @@ shallnotpass returned exitCode = 255
 Ran 8 tests in n seconds
 
 FAILED (passed = 6 failures = 1 errors = 1 )
-PATH/compileerror.chpl:1: syntax error: near 'test'
 compilation failed for compileerror.chpl
