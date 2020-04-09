@@ -58,9 +58,14 @@ module ByteBufferHelpers {
     __primitive("chpl_comm_get", dest, src_loc_id, src_addr, len.safeCast(size_t));
   }
 
-  inline proc bufferAlloc(requestedSize) {
+  private inline proc getGoodAllocSize(requestedSize: int) {
     const allocSize = max(chpl_here_good_alloc_size(requestedSize),
                           chpl_stringMinAllocSize);
+    return allocSize;
+  }
+
+  inline proc bufferAlloc(requestedSize) {
+    const allocSize = getGoodAllocSize(requestedSize);
     var buf = chpl_here_alloc(allocSize,
                               offset_STR_COPY_DATA): bufferType;
     return (buf, allocSize);
@@ -73,8 +78,7 @@ module ByteBufferHelpers {
   }
 
   proc bufferRealloc(buf, requestedSize) {
-    const allocSize = max(chpl_here_good_alloc_size(requestedSize+1),
-                          chpl_stringMinAllocSize);
+    const allocSize = getGoodAllocSize(requestedSize+1);
     var newBuff = chpl_here_realloc(buf, allocSize,
                                 offset_STR_COPY_DATA): bufferType;
     return (newBuff, allocSize);
@@ -89,7 +93,8 @@ module ByteBufferHelpers {
 
   proc bufferCopyRemote(src_loc_id: int(64), src_addr: bufferType,
                         len: int): bufferType {
-      const dest = chpl_here_alloc(len+1, offset_STR_COPY_REMOTE): bufferType;
+      const allocSize = getGoodAllocSize(len+1);
+      const dest = chpl_here_alloc(allocSize, offset_STR_COPY_REMOTE): bufferType;
       chpl_string_comm_get(dest, src_loc_id, src_addr, len);
       dest[len] = 0;
       return dest;
