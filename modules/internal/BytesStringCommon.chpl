@@ -249,8 +249,8 @@ module BytesStringCommon {
       }
       else {
         // if s is local create a copy of its buffer and own it
-        const (buf, allocSize) = bufferCopyLocal(other.buff, otherLen);
-        x.buff = buf;
+        const (buff, allocSize) = bufferCopyLocal(other.buff, otherLen);
+        x.buff = buff;
         x.buff[x.buffLen] = 0;
         x.buffSize = allocSize;
       }
@@ -300,11 +300,11 @@ module BytesStringCommon {
       }
       else {
         // the range is strided
-        var (newBuf, allocSize) = bufferAlloc(r2.size+1);
+        var (newBuff, allocSize) = bufferAlloc(r2.size+1);
         for (r2_i, i) in zip(r2, 0..) {
-          newBuf[i] = copyBuf[r2_i-r2.low];
+          newBuff[i] = copyBuf[r2_i-r2.low];
         }
-        ret.buff = newBuf;
+        ret.buff = newBuff;
         ret.buffSize = allocSize;
         bufferFree(copyBuf);
       }
@@ -475,9 +475,9 @@ module BytesStringCommon {
       var joined: t;
       joined.buffLen = joinedSize;
 
-      var (newBuf, allocSize) = bufferAlloc(joined.buffLen+1);
+      var (newBuff, allocSize) = bufferAlloc(joined.buffLen+1);
       joined.buffSize = allocSize;
-      joined.buff = newBuf;
+      joined.buff = newBuff;
 
       var first = true;
       var offset = 0;

@@ -412,7 +412,7 @@ module Bytes {
           this.buffSize = size;
         }
       } else {
-        // If s_len is 0, 'buf' may still have been allocated. Regardless, we
+        // If s_len is 0, 'buff' may still have been allocated. Regardless, we
         // need to free the old buffer if 'this' is isOwned.
         if this.isOwned && !this.isEmpty() then bufferFree(this.buff);
         this.buffSize = 0;
