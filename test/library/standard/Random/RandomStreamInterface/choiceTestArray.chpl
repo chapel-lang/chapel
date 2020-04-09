@@ -84,7 +84,7 @@ record R {
 }
 
 proc testArray(stream, arr: [] ?eltType, size:?sizeType=none, replace=true, prob:?probType=none, trials=10000) throws {
-  var counts = new map(int, int);
+  var counts = new map(eltType, int);
 
   // Collect statistics
   if isNothingType(probType) {

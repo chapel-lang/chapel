@@ -991,7 +991,8 @@ module Random {
       proc choice(arr: [?Dom], size:?sizeType=none, replace=true, prob:?probType=none)
         throws
       {
-        return _choice(this, Dom, size=size, replace=replace, prob=prob);
+        var idx = _choice(this, Dom, size=size, replace=replace, prob=prob);
+        return arr[idx];
       }
 
       /*
