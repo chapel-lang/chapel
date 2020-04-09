@@ -123,7 +123,7 @@ proc runWithStatus(command, show=true): int {
 
   try {
     var cmd = command.split();
-    var sub = spawn(cmd, stdout=PIPE);
+    var sub = spawn(cmd, stdout=PIPE, stderr=STDOUT);
 
     var line:string;
     if show {
