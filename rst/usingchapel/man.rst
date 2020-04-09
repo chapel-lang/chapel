@@ -1,1 +1,0 @@
-/home/lp2917/Documents/gsoc_20/chapel/man/chpl.rst
