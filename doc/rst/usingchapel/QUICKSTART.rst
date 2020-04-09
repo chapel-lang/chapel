@@ -119,7 +119,7 @@ you will need to rebuild Chapel from source in a different configuration.
    You can choose to source ``setchplenv.bash`` whenever you want to use relevant commands.
    If you want these environment settings to persist for future terminal sessions,
    copy the commands from the Recommended Settings in :ref:`chplenv.rst <readme-chplenv.recommended_settings>` into your ``~/.bashrc`` file.
-   Also, you might use a :ref:`chplconfig <readme-chplenv.chplconfig>` file.
+   You can also store Chapel configuration settings in a :ref:`chplconfig <readme-chplenv.chplconfig>` file instead of your ``~/.bashrc``.
 
    See :ref:`chplenv.rst <readme-chplenv>` for a complete description of
    Chapel's configuration variables, what they mean, and how they
