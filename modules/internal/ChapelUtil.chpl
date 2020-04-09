@@ -180,4 +180,10 @@ module ChapelUtil {
 
     chpl_moduleDeinitFuns = nil;
   }
+
+  // TODO: Fix 'new Private()' leak -- Discussed in #6726
+  use PrivateDist;
+  proc deinit() {
+    delete chpl_privateDist;
+  }
 }

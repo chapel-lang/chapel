@@ -230,5 +230,5 @@ proc PrivateArr.doiScan(op, dom) where (rank == 1) &&
 }
 
 // TODO: Fix 'new Private()' leak -- Discussed in #6726
-const PrivateSpace: domain(1) dmapped Private();
-
+const chpl_privateDist = new unmanaged Private();
+const PrivateSpace: domain(1) dmapped new dmap(chpl_privateDist);
