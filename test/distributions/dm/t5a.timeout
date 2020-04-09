@@ -1,4 +1,0 @@
-# This timeout is currently required because the cray compiler takes roughly 7
-# minutes to compile the generated code for this test. If compilation speed for
-# this test gets better, this timeout can be removed.
-500
