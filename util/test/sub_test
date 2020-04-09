@@ -557,7 +557,9 @@ def translateOutput(output):
               ('Fatal MPP reservation error on create',
                'Jira 329 -- Fatal MPP reservation error for'),
               ('Text file busy',
-               'private issue #474 -- Text file busy for'))
+               'private issue #474 -- Text file busy for'),
+              ('slurm_receive_msgs: Socket timed out on send/recv',
+               'private issue #579 -- Slurm socket timed out on send/recv'))
 
     known_error = ''
     was_timeout = False
