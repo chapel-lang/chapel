@@ -1,0 +1,9 @@
+#!/bin/bash
+
+sed '/from cleanupAtExit.c:[0-9]*[:]*$/d' $2 > $2.tmp
+sed '/^ *$/d' $2.tmp > $2
+rm $2.tmp
+
+# With the new import style, we no longer need to set the PYTHONPATH.
+unset PYTHONPATH
+python3 use_cleanupAtExit.py >> $2

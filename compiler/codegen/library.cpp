@@ -583,17 +583,21 @@ static void makePYXSetupFunctions(std::vector<FnSymbol*> moduleInits) {
   GenInfo* info = gGenInfo;
   FILE* outfile = info->cfile;
 
+  fprintf(outfile, "_chpl_cleanup_callback = None\n");
+  fprintf(outfile, "\n");
+
   // Initialize the runtime.  chpl_setup should get called prior to using
   // any of the exported functions
   if (fMultiLocaleInterop) {
     // Multilocale libraries need to take in the number of locales to use as
     // an argument
-
     // numLocales is a C default-sized int.
     std::string numLocalesType = getPythonTypeName(dtInt[INT_SIZE_32],
                                                    C_PYX);
-    fprintf(outfile, "def chpl_setup(%s numLocales):\n",
+    fprintf(outfile, "def chpl_setup(%s numLocales, callback=None):\n",
             numLocalesType.c_str());
+    fprintf(outfile, "\tglobal _chpl_cleanup_callback\n");
+    fprintf(outfile, "\t_chpl_cleanup_callback = callback\n");
     fprintf(outfile,
             "\tcdef char** args = ['%s', '-nl', str(numLocales).encode()]\n",
             libmodeHeadername);
@@ -601,7 +605,11 @@ static void makePYXSetupFunctions(std::vector<FnSymbol*> moduleInits) {
     fprintf(outfile, "\tchpl_library_init(3, args)\n");
 
   } else {
-    fprintf(outfile, "def chpl_setup():\n");
+
+    // Define `chpl_setup` for single locale Python modules.
+    fprintf(outfile, "def chpl_setup(callback=None):\n");
+    fprintf(outfile, "\tglobal _chpl_cleanup_callback\n");
+    fprintf(outfile, "\t_chpl_cleanup_callback = callback\n");
     fprintf(outfile, "\tcdef char** args = ['%s']\n", libmodeHeadername);
     fprintf(outfile, "\tchpl_library_init(1, args)\n");
   }
@@ -615,8 +623,9 @@ static void makePYXSetupFunctions(std::vector<FnSymbol*> moduleInits) {
   // Shut down the runtime and libraries.  chpl_cleanup should get called when
   // the exported Chapel code is no longer needed
   fprintf(outfile, "def chpl_cleanup():\n");
-  // TODO: Remove this when we're sure everything works...
-  fprintf(outfile, "\tprint(\'Debug call to chpl_cleanup\')\n");
+  fprintf(outfile, "\tglobal _chpl_cleanup_callback\n");
+  fprintf(outfile, "\tcallback = _chpl_cleanup_callback\n");
+  fprintf(outfile, "\tif not callback is None:\n\t\tcallback()\n");
   fprintf(outfile, "\tchpl_library_finalize()\n\n");
 }
 
