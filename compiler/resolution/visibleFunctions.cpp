@@ -324,13 +324,7 @@ static void getVisibleMethods(const char* name, CallExpr* call,
     }
 
     if (block != rootModule->block) {
-      BlockStmt* next  = getVisibilityScope(block);
-
-      ModuleSymbol* blockMod = block->getModule();
-      ModuleSymbol* nextMod = next->getModule();
-      if (blockMod != nextMod && nextMod != theProgram && nextMod != rootModule) {
-        next = standardModule->block;
-      }
+      BlockStmt* next  = getVisibilityScopeNoParentModule(block);
 
       // Recurse in the enclosing block
       getVisibleMethods(name, call, next, visited, visibleFns);
@@ -542,13 +536,7 @@ static void getVisibleFunctions(const char*           name,
     }
 
     if (block != rootModule->block) {
-      BlockStmt* next  = getVisibilityScope(block);
-
-      ModuleSymbol* blockMod = block->getModule();
-      ModuleSymbol* nextMod = next->getModule();
-      if (blockMod != nextMod && nextMod != theProgram && nextMod != rootModule) {
-        next = standardModule->block;
-      }
+      BlockStmt* next  = getVisibilityScopeNoParentModule(block);
 
       // Recurse in the enclosing block
       getVisibleFunctions(name, call, next, visited, visibleFns, inUseChain);
@@ -654,13 +642,7 @@ static void getVisibleFunctions(const char*           name,
     // Need to continue going up in case our parent scopes also had private
     // uses that were skipped.
     if (block != rootModule->block) {
-      BlockStmt* next  = getVisibilityScope(block);
-
-      ModuleSymbol* blockMod = block->getModule();
-      ModuleSymbol* nextMod = next->getModule();
-      if (blockMod != nextMod && nextMod != theProgram && nextMod != rootModule) {
-        next = standardModule->block;
-      }
+      BlockStmt* next  = getVisibilityScopeNoParentModule(block);
 
       // Recurse in the enclosing block
       getVisibleFunctions(name, call, next, visited, visibleFns, inUseChain);
@@ -762,6 +744,27 @@ BlockStmt* getVisibilityScope(Expr* expr) {
 
   return NULL;
 }
+
+
+/* This function returns the next BlockStmt enclosing `expr` that
+   should be searched for function definitions when getting visible
+   functions.  Unlike getVisibilityScope() above, it will skip over
+   inner module's parent (ancestor) modules since we don't consider
+   those symbols to be lexically visible as of PR #15312.
+ */
+BlockStmt* getVisibilityScopeNoParentModule(Expr* expr) {
+  BlockStmt* next = getVisibilityScope(expr);
+
+  ModuleSymbol* blockMod = block->getModule();
+  ModuleSymbol* nextMod = next->getModule();
+  if (blockMod != nextMod && nextMod != theProgram && nextMod != rootModule) {
+    next = standardModule->block;
+  }
+
+  return next;
+}
+
+
 
 
 /************************************* | **************************************
