@@ -81,6 +81,8 @@ static void getVisibleMethods(const char* name, CallExpr* call,
 
 static void  buildVisibleFunctionMap();
 
+static BlockStmt* getVisibilityScopeNoParentModule(Expr* expr);
+
 void findVisibleFunctions(CallInfo&       info,
                           Vec<FnSymbol*>& visibleFns) {
   CallExpr* call = info.call;
@@ -752,10 +754,10 @@ BlockStmt* getVisibilityScope(Expr* expr) {
    inner module's parent (ancestor) modules since we don't consider
    those symbols to be lexically visible as of PR #15312.
  */
-BlockStmt* getVisibilityScopeNoParentModule(Expr* expr) {
+static BlockStmt* getVisibilityScopeNoParentModule(Expr* expr) {
   BlockStmt* next = getVisibilityScope(expr);
 
-  ModuleSymbol* blockMod = block->getModule();
+  ModuleSymbol* blockMod = expr->getModule();
   ModuleSymbol* nextMod = next->getModule();
   if (blockMod != nextMod && nextMod != theProgram && nextMod != rootModule) {
     next = standardModule->block;
