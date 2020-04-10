@@ -85,15 +85,15 @@ proc main() {
 //
 proc initSun() {
   const p = + reduce (for b in bodies do (b.vel * b.mass));
-  bodies[1].vel = -p / solarMass;
+  bodies[0].vel = -p / solarMass;
 }
 
 //
 // advance the positions and velocities of all the bodies
 //
 proc advance(dt) {
-  for i in 1..numBodies {
-    for j in i+1..numBodies {
+  for i in 0..<numBodies {
+    for j in i+1..<numBodies {
       ref b1 = bodies[i],
           b2 = bodies[j];
 
@@ -115,12 +115,12 @@ proc advance(dt) {
 proc energy() {
   var e = 0.0;
 
-  for i in 1..numBodies {
+  for i in 0..<numBodies {
     const b1 = bodies[i];
 
     e += 0.5 * b1.mass * sumOfSquares(b1.vel);
 
-    for j in i+1..numBodies {
+    for j in i+1..<numBodies {
       const b2 = bodies[j];
 
       e -= (b1.mass * b2.mass) / sqrt(sumOfSquares(b1.pos - b2.pos));
@@ -133,6 +133,6 @@ proc energy() {
 //
 // compute the sum of squares of a 3-tuple's elements
 //
-inline proc sumOfSquares(x) {
-  return x(1)**2 + x(2)**2 + x(3)**2;
+inline proc sumOfSquares((x,y,z)) {
+  return x**2 + y**2 + z**2;
 }
