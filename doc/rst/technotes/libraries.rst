@@ -317,6 +317,8 @@ library and header, add ``--library-python`` to the compilation.
    :ref:`readme-chplenv.CHPL_COMPILER` for more information on the values of
    ``CHPL_TARGET_COMPILER``
 
+.. _Python_Output_Directory_Name:
+
 Python Output Directory Name
 ----------------------------
 
@@ -327,10 +329,10 @@ name, use the compilation flag ``--library-dir``.
 
 .. code-block:: bash
 
-  # Builds Python module as foo/foo.py
+  # Builds Python module as foo/foo.py from foo.chpl
   chpl --library --library-python foo.chpl
 
-  # Builds Python module as lib/foo.py
+  # Builds Python module as lib/foo.py from foo.chpl
   chpl --library --library-python --library-dir=lib foo.chpl
 
 Python Module Name
@@ -342,10 +344,10 @@ library name using the compilation flag ``--library-python-name``:
 
 .. code-block:: bash
 
-   # Builds Python module as foo/foo.py
+   # Builds Python module as foo/foo.py from foo.chpl
    chpl --library-python foo.chpl
 
-   # Builds Python module as bar/bar.py
+   # Builds Python module as bar/bar.py from foo.chpl
    chpl --library-python --library-python-name=bar foo.chpl
 
 Because the default output directory name mirrors the Python module name,
@@ -357,7 +359,7 @@ combination of ``--library-dir`` and ``--library-python-name``.
 
 .. code-block:: bash
 
-  # Builds Python module as foo/bar.py
+  # Builds Python module as foo/bar.py from baz.chpl
   chpl --library-python --library-python-name=bar --library-dir=foo baz.chpl
 
 PYTHONPATH
@@ -371,55 +373,9 @@ files are generated, e.g.:
 
    export PYTHONPATH=lib/:$PYTHONPATH
 
-See :ref:`Location of the Generated Library` for where your library files are
-generated, and how to change this location when compiling your Chapel library.
-
-Python Init File
-----------------
-
-A simple ``__init__.py`` file is generated in the output directory along with
-the Python module. It looks roughly like the following:
-
-.. code-block:: python
-
-  import atexit
-
-  from directoryName.moduleName import *
-
-  atexit.register(cleanupAtExit.chpl_cleanup)
-
-The new initializer file combined with the default directory name being the
-same as the Python module name make it easier than ever to use generated
-Python modules in your Python code. Along with importing the Python module in
-one step, the initializer file will also register ``chpl__cleanup`` to be
-called automatically at program exit.
-
-To take advantage of these new features, the directory containing the
-generated Python module needs to be visible to the script that imports it
-in some fashion, whether that be by making it a child module or by
-placing it on your ``PYTHONPATH`` environment variable.
-
-.. code-block:: bash
-
-  # Builds Python module as foo/foo.py
-  chpl --library-python foo.chpl
-
-  # Adds the current directory to your PYTHONPATH
-  export PYTHONPATH="$PWD"
-
-From within your Python script:
-
-.. code-block:: Python
-
-  import foo
-
-  # Setup and use foo as normal.
-  foo.chpl_setup()
-  foo.some_routine()
-
-Note that the Chapel compiler will not generate a ``__init__.py`` file if a
-file with the same name already exists in the output directory. It will
-emit a warning instead.
+See :ref:`Python_Output_Directory_Name` for where your library files are
+generated, and how to change this location when generating a Python module
+from your Chapel library.
 
 .. _Python Libraries:
 
@@ -429,17 +385,17 @@ Initializing and Using Your Library in Python
 Once your ``PYTHONPATH`` is set up and the Python module created, you can
 ``import`` the module like a normal Python module.
 
-Similarly to using your library with C, you will need to call a set up function
-to ensure the Chapel runtime and standard modules are initialized, as well as
-a clean up function.
+Similarly to using your library with C, you will need to call a set up
+function to ensure the Chapel runtime and standard modules are initialized,
+as well as a clean up function.
 
-Unlike the C case, the set up function is called ``chpl_setup()`` and will also
-handle initializing your module.   This function will still need to be called
-prior to any Chapel library function calls.
+Unlike the C case, the set up function is called ``chpl_setup()`` and will
+also handle initializing your module.   This function will still need to be
+called prior to any Chapel library function calls.
 
 Also unlike the C case, the clean up function is called ``chpl_cleanup()``.
-This function will still need to be called after all the Chapel library function
-calls are finished.
+This function will still need to be called after all the Chapel library
+function calls are finished.
 
 For example:
 
@@ -462,8 +418,65 @@ For example:
 .. note::
 
   If you are taking advantage of the generated ``__init__.py`` initializer
-  file to import your module, you do not need to call ``chpl__cleanup``
+  file to import your module, you do not need to call ``chpl_cleanup``
   yourself because it is already registered to be called at program exit.
+  The generated initializer is explained below.
+
+Python Init File
+----------------
+
+A simple ``__init__.py`` file is generated in the output directory along with
+the Python module. It looks roughly like the following:
+
+.. code-block:: python
+
+  import atexit
+
+  #
+  # Here directoryName is the name of the directory containing your Python
+  # module, and moduleName is the name of your Python module.
+  #
+  from directoryName.moduleName import *
+
+  atexit.register(cleanupAtExit.chpl_cleanup)
+
+The new initializer file combined with the default directory name being the
+same as the Python module name make it easier than ever to use generated
+Python modules in your Python code. Along with importing the Python module in
+one step, the initializer file will also register ``chpl_cleanup`` to be
+called automatically at program exit.
+
+To take advantage of these new features, the directory containing the
+generated Python module needs to be visible to the script that imports it
+in some fashion, whether that be by making it a child module or by
+placing it on your ``PYTHONPATH`` environment variable.
+
+.. code-block:: bash
+
+  # Builds Python module as foo/foo.py
+  chpl --library-python foo.chpl
+
+  # Adds the current directory to your PYTHONPATH
+  export PYTHONPATH="$PWD"
+
+From within your Python script:
+
+.. code-block:: Python
+
+  import foo
+
+  #
+  # Setup and use foo as normal. Note that we no longer have to call
+  # ``chpl_cleanup`` when we are finished.
+  #
+  foo.chpl_setup()
+  foo.baz(2)
+
+.. note::
+
+  The Chapel compiler will not generate an initializer file if a file with
+  the name ``__init__.py`` already exists in the output directory. The
+  compiler will emit a warning instead.
 
 Argument Default Values
 -----------------------
