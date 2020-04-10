@@ -328,7 +328,7 @@ module ChapelTuple {
   //
   pragma "tuple cast fn"
   pragma "unsafe"
-  inline proc _cast(type t:_tuple, x: _tuple) {
+  inline proc _cast(type t:_tuple, x: _tuple) throws {
     // body filled in during resolution
   }
 
