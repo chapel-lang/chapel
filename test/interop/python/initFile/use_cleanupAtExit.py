@@ -4,5 +4,9 @@ def exitMessage():
   test.display('Called cleanup routine!')
   return
 
-test.chpl_setup(callback=exitMessage)
+# Set hidded debug callback.
+test.chpl_set_cleanup_callback(exitMessage)
+
+test.chpl_setup()
+
 test.display('Hello, world!')

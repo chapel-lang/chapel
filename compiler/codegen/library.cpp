@@ -586,6 +586,12 @@ static void makePYXSetupFunctions(std::vector<FnSymbol*> moduleInits) {
   fprintf(outfile, "_chpl_cleanup_callback = None\n");
   fprintf(outfile, "\n");
 
+  // Use to set hidden debug callback.
+  fprintf(outfile, "def chpl_set_cleanup_callback(callback):\n");
+  fprintf(outfile, "\tglobal _chpl_cleanup_callback\n");
+  fprintf(outfile, "\t_chpl_cleanup_callback = callback\n");
+  fprintf(outfile, "\n");
+
   // Initialize the runtime.  chpl_setup should get called prior to using
   // any of the exported functions
   if (fMultiLocaleInterop) {
@@ -594,10 +600,8 @@ static void makePYXSetupFunctions(std::vector<FnSymbol*> moduleInits) {
     // numLocales is a C default-sized int.
     std::string numLocalesType = getPythonTypeName(dtInt[INT_SIZE_32],
                                                    C_PYX);
-    fprintf(outfile, "def chpl_setup(%s numLocales, callback=None):\n",
+    fprintf(outfile, "def chpl_setup(%s numLocales):\n",
             numLocalesType.c_str());
-    fprintf(outfile, "\tglobal _chpl_cleanup_callback\n");
-    fprintf(outfile, "\t_chpl_cleanup_callback = callback\n");
     fprintf(outfile,
             "\tcdef char** args = ['%s', '-nl', str(numLocales).encode()]\n",
             libmodeHeadername);
@@ -607,9 +611,7 @@ static void makePYXSetupFunctions(std::vector<FnSymbol*> moduleInits) {
   } else {
 
     // Define `chpl_setup` for single locale Python modules.
-    fprintf(outfile, "def chpl_setup(callback=None):\n");
-    fprintf(outfile, "\tglobal _chpl_cleanup_callback\n");
-    fprintf(outfile, "\t_chpl_cleanup_callback = callback\n");
+    fprintf(outfile, "def chpl_setup():\n");
     fprintf(outfile, "\tcdef char** args = ['%s']\n", libmodeHeadername);
     fprintf(outfile, "\tchpl_library_init(1, args)\n");
   }
