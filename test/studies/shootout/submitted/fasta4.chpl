@@ -53,12 +53,6 @@ const ALU: [0..286] nucleotide = [
 ];
 
 //
-// Index aliases for use with (nucleotide, probability) tuples
-//
-param nucl = 1,
-      prob = 2;
-
-//
 // Probability tables for sequences to be randomly generated
 //
 const IUB = [(a, 0.27), (c, 0.12), (g, 0.12), (t, 0.27),
@@ -108,11 +102,12 @@ proc randomMake(desc, nuclInfo, n) {
   stdout.writeln(desc);
 
   // compute the cumulative probabilities of the nucleotides
-  const numNucls = nuclInfo.size;
-  var cumulProb: [1..numNucls] randType,
+  const inds = nuclInfo.indices;
+  var cumulProb: [inds] randType,
       p = 0.0;
-  for i in 1..numNucls {
-    p += nuclInfo[i](prob);
+  for i in inds {
+    const (_,prob) = nuclInfo[i];
+    p += prob;
     cumulProb[i] = 1 + (p*IM):randType;
   }
 
@@ -142,12 +137,13 @@ proc randomMake(desc, nuclInfo, n) {
 
       for j in 0..#numBytes {
         const r = myRands[j];
-        var nid = 1;
-        for k in 1..numNucls do
-          if r >= cumulProb[k] then
+        var nid = 0;
+        for p in cumulProb do
+          if r >= p then
             nid += 1;
 
-        myBuff[off] = nuclInfo[nid](nucl): int(8);
+        const (nucl,_) = nuclInfo[nid];
+        myBuff[off] = nucl: int(8);
         off += 1;
         col += 1;
 
