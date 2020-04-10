@@ -197,7 +197,7 @@ private proc runTests(show: bool, run: bool, parallel: bool, ref cmdLineCompopts
         
         if compilation != 0 {
           stderr.writeln("compilation failed for " + test);
-          const errMsg = testName: string +" failed to compile";
+          const errMsg = test: string +" failed to compile";
           result.addError(testName, test,  errMsg);
         }
         else {
@@ -430,10 +430,12 @@ proc testFile(file, ref result, show: bool) throws {
   const moveTo = "-o " + executable;
   const allCompOpts = "--comm " + comm;
   const compCommand = " ".join("chpl",file, moveTo, allCompOpts);
-  const compilation = runWithStatus(compCommand);
+  const compilation = runWithStatus(compCommand, show);
 
   if compilation != 0 {
     stderr.writeln("compilation failed for " + fileName);
+    const errMsg = fileName: string +" failed to compile";
+    result.addError(executable, fileName,  errMsg);
   }
   else {
     if show then writeln("\nCompiled '", fileName, "' successfully");
