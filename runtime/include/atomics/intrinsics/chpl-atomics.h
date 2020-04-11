@@ -68,22 +68,13 @@ static inline memory_order _defaultOfMemoryOrder(void) {
   return memory_order_seq_cst;
 }
 
-// __sync_synchronize is missing for cce < 8.4
-#if RT_COMP_CC == RT_COMP_CRAY
-  #include <intrinsics.h>
-  #define full_memory_barrier __builtin_ia32_mfence
-#else
-  #define full_memory_barrier __sync_synchronize
-#endif
-
-
 static inline void chpl_atomic_thread_fence(memory_order order)
 {
-  full_memory_barrier();
+  __sync_synchronize();
 }
 static inline void chpl_atomic_signal_fence(memory_order order)
 {
-  full_memory_barrier();
+  __sync_synchronize();
 }
 
 

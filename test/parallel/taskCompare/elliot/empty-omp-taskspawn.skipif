@@ -1,5 +1,3 @@
-# cce doesn't support running omp constructs from a pthread
-CHPL_TARGET_COMPILER==cray-prgenv-cray
 # older versions of clang don't support openmp
 # newer versions of clang require libomp-dev which might not be installed
 # additionally, libomp might not be available for static linking
