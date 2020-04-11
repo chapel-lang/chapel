@@ -197,7 +197,7 @@ private proc runTests(show: bool, run: bool, parallel: bool, ref cmdLineCompopts
         
         if compilation != 0 {
           stderr.writeln("compilation failed for " + test);
-          const errMsg = test: string +" failed to compile";
+          const errMsg = test +" failed to compile";
           result.addError(testName, test,  errMsg);
         }
         else {
@@ -434,7 +434,7 @@ proc testFile(file, ref result, show: bool) throws {
 
   if compilation != 0 {
     stderr.writeln("compilation failed for " + fileName);
-    const errMsg = fileName: string +" failed to compile";
+    const errMsg = fileName +" failed to compile";
     result.addError(executable, fileName,  errMsg);
   }
   else {
