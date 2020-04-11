@@ -58,19 +58,31 @@ void codegen_library_header(std::vector<FnSymbol*> functions) {
     // follow convention of just not writing to the file if we can't open it
     if (libhdrfile.fptr != NULL) {
       FILE* save_cfile = gGenInfo->cfile;
+      FILE* out = NULL;
 
       gGenInfo->cfile = libhdrfile.fptr;
+      out = libhdrfile.fptr;
 
       //genComment("Generated header file for use with %s",
       //           executableFilename);
 
-      fprintf(libhdrfile.fptr, "#include \"stdchpl.h\"\n");
+      fprintf(out, "#include \"stdchpl.h\"\n");
 
       int filenum = 0;
       while (const char* inputFilename = nthFilename(filenum++)) {
         if (isCHeader(inputFilename)) {
-          fprintf(libhdrfile.fptr, "#include \"%s\"\n", inputFilename);
+          fprintf(out, "#include \"%s\"\n", inputFilename);
         }
+      }
+
+      if (fLibraryPython) {
+
+        //
+        // Work around compilation warnings from Cython including deprecated
+        // Numpy headers. We don't want this output clogging up a user's
+        // terminal.
+        //
+        fprintf(out, "#define NPY_NO_DEPRECATED_API NPY_1_7_VERSION\n");
       }
 
       if (fMultiLocaleInterop) {
@@ -80,7 +92,7 @@ void codegen_library_header(std::vector<FnSymbol*> functions) {
         // convenience, allow the user to still call `chpl_free`.
         fprintf(libhdrfile.fptr, "#define chpl_free(ptr) free(ptr)\n");
       }
-      // Maybe need something here to support LLVM extern blocks?
+      // TODO: Maybe need something here to support LLVM extern blocks?
 
       // Print out the module initialization function headers and the exported
       // functions
