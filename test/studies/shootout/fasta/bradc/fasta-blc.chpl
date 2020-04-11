@@ -148,7 +148,7 @@ proc randomMake(desc, nuclInfo: [?nuclInds], n) {
           off = 0;
 
       for r in myRands[..<nBytes] {
-        const nid = + reduce (r >= cumulProb);
+        const nid = + reduce for p in cumulProb do (r >= p);
         const (nucl,_) = nuclInfo[nid];
 
         myBuff[off] = nucl: int(8);
