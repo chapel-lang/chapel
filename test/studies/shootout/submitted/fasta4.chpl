@@ -98,14 +98,13 @@ proc repeatMake(desc, alu, n) {
 // Use 'nuclInfo's probability distribution to generate a random
 // sequence of length 'n'
 //
-proc randomMake(desc, nuclInfo, n) {
+proc randomMake(desc, nuclInfo: [?nuclInds], n) {
   stdout.writeln(desc);
 
   // compute the cumulative probabilities of the nucleotides
-  const inds = nuclInfo.indices;
-  var cumulProb: [inds] randType,
+  var cumulProb: [nuclInds] randType,
       p = 0.0;
-  for i in inds {
+  for i in nuclInds {
     const (_,prob) = nuclInfo[i];
     p += prob;
     cumulProb[i] = 1 + (p*IM):randType;
@@ -124,25 +123,21 @@ proc randomMake(desc, nuclInfo, n) {
 
     // iterate over 0..n-1 in a round-robin fashion across tasks
     for i in tid*chunkSize..n-1 by numTasks*chunkSize {
-      const numBytes = min(chunkSize, n-i);
+      const nBytes = min(chunkSize, n-i);
 
-      // Get 'numBytes' random numbers in a coordinated manner
+      // Get 'nBytes' random numbers in a coordinated manner
       randGo[tid].waitFor(i);
-      getRands(numBytes, myRands);
+      getRands(nBytes, myRands);
       randGo[nextTid].write(i+chunkSize);
 
-      // Compute 'numBytes' nucleotides and store in 'myBuff'
+      // Compute 'nBytes' nucleotides and store in 'myBuff'
       var col = 0,
           off = 0;
 
-      for j in 0..#numBytes {
-        const r = myRands[j];
-        var nid = 0;
-        for p in cumulProb do
-          if r >= p then
-            nid += 1;
-
+      for r in myRands[..<nBytes] {
+        const nid = + reduce (r >= cumulProb);
         const (nucl,_) = nuclInfo[nid];
+
         myBuff[off] = nucl: int(8);
         off += 1;
         col += 1;
@@ -168,6 +163,7 @@ proc randomMake(desc, nuclInfo, n) {
 
 //
 // Deterministic random number generator
+// (lastRand really wants to be a local static...)
 //
 var lastRand = seed;
 

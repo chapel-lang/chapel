@@ -1,15 +1,13 @@
 /* The Computer Language Benchmarks Game
    https://salsa.debian.org/benchmarksgame-team/benchmarksgame/
 
-   regex-dna program contributed by Ben Harshbarger
+   contributed by Ben Harshbarger
    derived from the GNU C++ RE2 version by Alexey Zolotov
-
-   converted from regex-dna program
 */
 
-proc main(args: [] string) {
-  use IO, Regexp;
+use IO, Regexp;
 
+proc main(args: [] string) {
   var variants = [
     "agggtaaa|tttaccct",
     "[cgt]gggtaaa|tttaccc[acg]",

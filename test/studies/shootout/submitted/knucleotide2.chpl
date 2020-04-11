@@ -5,7 +5,7 @@
    derived from the GNU C++ version by Branimir Maksimovic
 */
 
-use Sort, Map, IO;
+use IO, Map, Sort;
 
 config param tableSize = 2**16,
              columns = 61;
