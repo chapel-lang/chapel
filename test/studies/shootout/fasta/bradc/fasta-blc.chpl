@@ -117,10 +117,9 @@ proc randomMake(desc, nuclInfo: [?nuclInds], n) {
   // compute the cumulative probabilities of the nucleotides
   var cumulProb: [nuclInds] randType,
       p = 0.0;
-  for i in nuclInds {
-    const (_,prob) = nuclInfo[i];
+  for (cp, (_,prob)) in zip(cumulProb, nuclInfo) {
     p += prob;
-    cumulProb[i] = 1 + (p*IM):randType;
+    cp = 1 + (p*IM): randType;
   }
 
   // guard when tasks can access the random numbers or output stream
