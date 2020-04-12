@@ -217,6 +217,21 @@ record LinkedList {
     last = nil;
     size = 0;
   }
+  
+  /* insert after certain element in the linked list and return true if succesfully inserted else return false*/
+  proc insertAfter(e : eltType) {
+  
+     for item in this {
+       if (e == item) {
+         var temp: unmanaged listNode(eltType)?;
+         temp= new unmanaged listNode(eltType, e);
+         temp!.next=item!.next;
+         item!.next=temp;
+         return true;
+       }
+     }
+    return false;
+  }
 
   /*
     Destructor
