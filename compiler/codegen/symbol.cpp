@@ -2406,24 +2406,17 @@ GenRet FnSymbol::codegenPYXType() {
 
   ret.chplType = typeInfo();
 
-  // Function header.
+  // Function header
   std::string header = "def ";
   header += cname;
   header += "(";
 
-  // Translation of any arguments with Python-specific types.
+  // Translation of any arguments with Python-specific types
   std::string argTranslate = "";
-
-  // Call to the wrapped function.
+  // Call to the wrapped function
   std::string funcCall = "\t";
-
-  // Return statement, if applicable.
+  // Return statement, if applicable
   std::string returnStmt = "";
-
-  //
-  // Move the codes for each specific return type to separate functions to
-  // help digest them better.
-  //
   if (retType != dtVoid) {
     if (retType == exportTypeChplByteBuffer) {
       pythonRetByteBuffer(this, funcCall, returnStmt);
@@ -2436,29 +2429,23 @@ GenRet FnSymbol::codegenPYXType() {
     }
     returnStmt += "\treturn ret\n";
   }
-
   funcCall += "chpl_";
   funcCall += cname;
   funcCall += "(";
 
   if (numFormals() != 0) {
     int count = 0;
-
     for_formals(formal, this) {
-
-      // Do not print locale argument, end count, dummy class.
-      if (formal->hasFlag(FLAG_NO_CODEGEN)) { continue; }
-
+      if (formal->hasFlag(FLAG_NO_CODEGEN))
+        continue; // do not print locale argument, end count, dummy class
       if (count > 0) {
         header += ", ";
         funcCall += ", ";
       }
 
       std::string argType = formal->getPythonType(C_PYX);
-
       header += argType;
       header += formal->cname;
-
       if (fGenIDS) {
         header += " ";
         header += idCommentTemp(formal);
@@ -2467,36 +2454,26 @@ GenRet FnSymbol::codegenPYXType() {
       header += formal->getPythonDefaultValue();
 
       std::string curArgTranslate = formal->getPythonArgTranslation();
-
       if (curArgTranslate != "") {
         argTranslate += curArgTranslate;
-
-        // We need to clean up external arrays when we are done with them.
         if (argType == "" && formal->type->getValType() == dtExternalArray) {
+          // And we need to clean it up when we are done with it
           std::string oldRetStmt = returnStmt;
-
           returnStmt = "\tchpl_free_external_array(chpl_";
           returnStmt += formal->cname;
           returnStmt += ")\n" + oldRetStmt;
         }
-
         funcCall += "chpl_";
       }
-
       funcCall += formal->cname;
       count++;
     }
-  } 
 
-  // Just close parens for argument lists in .pyx files.
+  } // pyx files do not take void as an argument list, just close the parens
   header += "):\n";
-
-  if (retType == dtOpaqueArray) {
-    funcCall += "))\n";
-  } else {
-    funcCall += ")\n";
-  }
-
+  if (retType == dtOpaqueArray)
+    funcCall += ")";
+  funcCall += ")\n";
   ret.c = header + argTranslate + funcCall + returnStmt;
 
   return ret;

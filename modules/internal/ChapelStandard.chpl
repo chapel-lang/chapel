@@ -61,7 +61,6 @@ module ChapelStandard {
   use ChapelError;
   use ChapelTaskData;
   use ChapelSerializedBroadcast;
-  use ExternalArray;
   use ExportWrappers;
 
   // Standard modules.
