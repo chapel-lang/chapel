@@ -1856,7 +1856,7 @@ module SequentialInPlacePartitioning {
       while offsets[curbin] < endfast {
         // Now go through the records in buf
         // putting them in their right home.
-        for (idx, bin) in bucketizer.classify(buf, 1, max_buf,
+        for (idx, bin) in bucketizer.classify(buf, 0, max_buf-1,
                                               criterion, startbit) {
           // Swap buf[j] into its appropriate bin.
           // Leave buf[j] with the next unsorted item.
