@@ -2235,11 +2235,9 @@ GenRet FnSymbol::codegenPXDType() {
   ret.chplType = typeInfo();
 
   if (info->cfile) {
-
     // Cast to right function type.
     std::string str;
     std::string retString = getPythonTypeName(retType, C_PXD);
-
     str += retString.c_str();
     str += " ";
     str += cname;
@@ -2247,16 +2245,12 @@ GenRet FnSymbol::codegenPXDType() {
 
     if (numFormals() != 0) {
       int count = 0;
-
       for_formals(formal, this) {
+        if (formal->hasFlag(FLAG_NO_CODEGEN))
+          continue; // do not print locale argument, end count, dummy class
 
-        // Do not print locale argument, end count, dummy class.
-        if (formal->hasFlag(FLAG_NO_CODEGEN)) { continue; }
-
-        if (count > 0) {
+        if (count > 0)
           str += ", ";
-        }
-
         str += formal->getPythonType(C_PXD);
         str += formal->cname;
 
@@ -2267,17 +2261,12 @@ GenRet FnSymbol::codegenPXDType() {
 
         count++;
       }
-    }
-
-    //
-    // Just close parens for .pxd files since they do not take void as an
-    // argument list.
-    //
+    } // pxd files do not take void as an argument list, just close the parens
     str += ")"; 
     ret.c = str;
 
   } else {
-    // TODO: LLVM stuff?
+    // TODO: LLVM stuff
   }
 
   return ret;
