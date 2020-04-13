@@ -2237,6 +2237,7 @@ GenRet FnSymbol::codegenPXDType() {
   if (info->cfile) {
     // Cast to right function type.
     std::string str;
+
     std::string retString = getPythonTypeName(retType, C_PXD);
     str += retString.c_str();
     str += " ";
@@ -2248,21 +2249,18 @@ GenRet FnSymbol::codegenPXDType() {
       for_formals(formal, this) {
         if (formal->hasFlag(FLAG_NO_CODEGEN))
           continue; // do not print locale argument, end count, dummy class
-
         if (count > 0)
           str += ", ";
         str += formal->getPythonType(C_PXD);
         str += formal->cname;
-
         if (fGenIDS) {
           str += " ";
           str += idCommentTemp(formal);
         }
-
         count++;
       }
     } // pxd files do not take void as an argument list, just close the parens
-    str += ")"; 
+    str += ")";
     ret.c = str;
 
   } else {
@@ -2271,17 +2269,6 @@ GenRet FnSymbol::codegenPXDType() {
 
   return ret;
 }
-
-/*
-void pythonRetByteBuffer(FnSymbol* fn, std::string& funcCall,
-                         std::string& returnStmt);
-
-void pythonRetExternalArray(FnSymbol* fn, std::string& funcCall,
-                            std::string& returnStmt);
-
-void pythonRetOpaqueArray(FnSymbol* fn, std::string& funcCall,
-                          std::string& returnStmt);
-*/
 
 static void pythonRetByteBuffer(FnSymbol* fn, std::string& funcCall,
                                 std::string& returnStmt) {
