@@ -1199,7 +1199,6 @@ static std::string pythonArgToExternalArray(ArgSymbol* as) {
 
     return res;
   }
-
   return "";
 }
 
@@ -1286,7 +1285,6 @@ std::string ArgSymbol::getPythonArgTranslation() {
   } else if (t->symbol->hasEitherFlag(FLAG_C_PTR_CLASS, FLAG_REF)) {
     return pythonArgToChapelArrayOrPtr(this);
   }
-
   return "";
 }
 
