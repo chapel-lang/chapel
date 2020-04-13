@@ -141,6 +141,12 @@ SQUASH_WARN_GEN_CFLAGS += -Wno-incompatible-pointer-types
 SQUASH_WARN_GEN_CFLAGS += -Wno-tautological-compare
 
 #
+# Don't warn for unused command line arguments. TODO: Should we have the
+# --library-python code inject this flag instead of having it always on?
+#
+SQUASH_WARN_GEN_CFLAGS += -Wno-unused-command-line-argument
+
+#
 # compiler warnings settings
 #
 ifeq ($(WARNINGS), 1)

@@ -1,11 +1,9 @@
 #!/bin/bash
 
-# Remove clang unused argument warning
-sed '/^clang: warning: argument unused/d' $2 > $2.tmp
 # Remove warning about the object file being made for a different OSX version
-sed '/^ld: warning: object file/d' $2.tmp > $2
+sed '/^ld: warning: object file/d' $2 > $2.tmp
 # Remove warning about .a's being built for a different architecture
-sed '/ignoring file/d' $2 > $2.tmp
+sed '/ignoring file/d' $2.tmp > $2.tmp
 # avoid sporadic ld: warning errors (I'm sometimes seeing just that on a line,
 # or just multiple copies of it)
 sed '/^ld: warning/d' $2.tmp > $2
