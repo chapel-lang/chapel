@@ -1,14 +1,12 @@
 /* The Computer Language Benchmarks Game
    https://salsa.debian.org/benchmarksgame-team/benchmarksgame/
 
-   regex-dna program contributed by Ben Harshbarger
-   derived from the GNU C++ RE2 version by Alexey Zolotov
-
-   converted from regex-dna program
+   contributed by Engin Kayraklioglu
+   derived from the converted regex-dna Chapel version by Ben Harshbarger
+   which was derived from the GNU C++ RE2 version by Alexey Zolotov
 */
 
-use IO;
-use Regexp;
+use IO, Regexp;
 
 proc main(args: [] string) {
   var variants = [
@@ -24,8 +22,8 @@ proc main(args: [] string) {
   ];
 
   var subst = [
-    (b"tHa[Nt]", b"<4>"), (b"aND|caN|Ha[DS]|WaS", b"<3>"), (b"a[NSt]|BY", b"<2>"), 
-    (b"<[^>]*>", b"|"), (b"\\|[^|][^|]*\\|", b"-")
+    (b"tHa[Nt]", b"<4>"), (b"aND|caN|Ha[DS]|WaS", b"<3>"),
+    (b"a[NSt]|BY", b"<2>"), (b"<[^>]*>", b"|"), (b"\\|[^|][^|]*\\|", b"-")
   ];
 
   var data: bytes;
