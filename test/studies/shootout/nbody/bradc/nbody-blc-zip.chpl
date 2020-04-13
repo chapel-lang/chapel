@@ -103,8 +103,9 @@ record NBodySystem {
   }
 }
 
+config const n = 10000;
+
 proc main(args: [] string) {
-  const n = args[1]:int;
 
   var bodies: NBodySystem;
 

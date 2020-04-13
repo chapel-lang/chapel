@@ -1,11 +1,36 @@
+Start of reverse file-order output
+This function is accessible!
+This function is accessible!
+This function is accessible!
+Start of UsesTheUser2's module-level code
+This function is accessible!
+End of UsesTheUser2's module-level code
+Start of UsesTheUser's module-level code
+End of UsesTheUser's module-level code
+Executing OuterNested2's module-level code
+11
+11
+11
+11
+End of OuterNested2's module-level code
+End of reverse file-order output
+
 Access from outside a module
 28
 28
 2
+28
+28
+2
+2
 2
 4.0
+4.0
+2
 2
 12
+false
+false
 false
 12
 5.0 + 3.0i
@@ -17,8 +42,15 @@ Limiting a use
 2
 5.0 + 3.0i
 12
+2
+5.0 + 3.0i
+12
 5
 5.0 + 3.0i
+2
+5
+2
+5
 2
 5
 2
@@ -34,3 +66,6 @@ blue
 yellow
 
 14
+14
+14
+true

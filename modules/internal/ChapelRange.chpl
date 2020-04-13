@@ -523,10 +523,10 @@ module ChapelRange {
       return _low + chpl__diffMod(_alignment, _low, stride);
   }
 
+  // TODO: Add back example?
   /* Returns the range's aligned high bound. If the aligned high bound is
      undefined, the behavior is undefined.
    */
-  // TODO: Add back example?
   inline proc range.alignedHigh : idxType {
     return chpl_intToIdx(this.alignedHighAsInt);
   }

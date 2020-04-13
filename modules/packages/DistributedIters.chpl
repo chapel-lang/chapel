@@ -49,6 +49,7 @@ config param timeDistributedIters:bool = false;
 config const infoDistributedIters:bool = false;
 
 // Distributed Dynamic Iterator.
+// Serial version.
 /*
   :arg c: The range (or domain) to iterate over. The range (domain) size must
     be positive.
@@ -97,7 +98,6 @@ config const infoDistributedIters:bool = false;
 
   Available for serial and zippered contexts.
 */
-// Serial version.
 iter distributedDynamic(c,
                         chunkSize:int=1,
                         numTasks:int=0,
@@ -323,6 +323,7 @@ where tag == iterKind.follower
 }
 
 // Distributed Guided Iterator.
+// Serial version.
 /*
   :arg c: The range (or domain) to iterate over. The range (domain) size must
     be positive.
@@ -368,7 +369,6 @@ where tag == iterKind.follower
 
   Available for serial and zippered contexts.
 */
-// Serial version.
 iter distributedGuided(c,
                        numTasks:int=0,
                        parDim:int=0,

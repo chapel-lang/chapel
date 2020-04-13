@@ -10,6 +10,13 @@ rangesAndDomains.doc
 
    use rangesAndDomains.doc;
 
+
+or
+
+.. code-block:: chapel
+
+   import rangesAndDomains.doc;
+
 .. record:: R
 
    .. attribute:: var isRange: range

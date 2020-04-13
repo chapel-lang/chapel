@@ -238,7 +238,7 @@ module CommDiagnostics
 
       var first = true;
       c <~> "(";
-      for param i in 1..numFields(chpl_commDiagnostics) {
+      for param i in 0..<numFields(chpl_commDiagnostics) {
         param name = getFieldName(this.type, i);
         const val = getField(this, i);
         if val != 0 {

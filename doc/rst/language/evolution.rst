@@ -3,18 +3,241 @@
 Chapel Evolution
 ================
 
-Like any language, Chapel has changed over time. This page is designed to
-capture significant language changes that have the possibility of breaking
-existing user codes or code samples from old presentations or papers that
-predated the changes.
+Like any language, Chapel has changed over time. This page is designed
+to describe significant language changes that have a high likelihood
+of breaking existing user codes or code samples from presentations or
+papers that predated the changes.
 
 Note that the compiler flag ``--warn-unstable`` is available and can be
 useful when migrating programs to the current version of the language.
-The purpose of this flag is to identify  portions of a program that use a
-language feature that has changed meaning.
+The purpose of this flag is to identify portions of a program that use a
+language feature which has changed meaning.  It also flags features that
+are considered unstable and may change in the future.
 
-version 1.21, September 2019
-----------------------------
+
+version 1.22, April 2020
+------------------------
+
+0- vs. 1-based Indexing
+***********************
+
+Version 1.22 makes a major breaking change to Chapel with respect to
+indexing for cases that involve implicit indices.  Historically,
+Chapel has used 1-based indexing for such cases, where it now uses
+0-based indexing.
+
+The major types that are affected by this change are tuples, strings,
+``bytes``, and lists.  In addition, arrays that don't have a
+well-defined index set also start at 0.  Such cases include array
+literals or inferred-type arrays formed by capturing a general
+iterator expression.
+
+This change also has a ripple-down effect to features and routines
+related to these types.  For example, varargs arguments are equivalent
+to tuples in Chapel, so inherit their 0-based indexing.  Similarly,
+queries on rectangular domains and arrays are based on tuples,
+so their dimensions are now numbered from 0 as well.
+Certain library routines such as ``find()`` on strings used to return 0
+when no match was found, but now return -1 in order to avoid returning
+a legal string index.
+
+The following sections summarize the rationale for this change and
+then provide some tips for updating existing Chapel code.
+
+Rationale for 0- vs. 1-based Indexing
+*************************************
+
+In the original design of Chapel, we hoped to make the language as
+neutral to 1- vs. 0-based indexing as possible, to avoid running afoul
+of the strong emotions that such choices evoke in users when it
+doesn't match their preference.  As a result, Chapel's primary types
+for parallel computation on regular collections of data—namely, its
+ranges and rectangular domains, as well as rectangular arrays defined
+by ranges or domains—require users to specify both low and high
+bounds.  Happily, these core features are not affected by this change
+in Chapel 1.22, so codes relying solely on such features will not
+require updates.
+
+However, for other types such as tuples and strings, we were forced to
+make a decision.  At the time of Chapel's inception, the main
+languages from which we were trying to attract users were C/C++, Java,
+Fortran, and Matlab.  Since half of these languages used 0-based
+indexing and the other half used 1-based, there didn't seem to be an
+obvious best answer.  In the end, we decided to go with 1-based
+indexing on the argument that we were striving to create a productive
+language, and that counting from 1 is arguably most natural for most
+people.
+
+Over time, however, the vast majority of newer languages that we look
+to for users or inspiration—most notably Python, Swift, and Rust—have
+been almost exclusively 0-based.  Meanwhile, very few notable new
+languages have used 1-based indexing.
+
+Furthermore, when polled, the vast majority of active Chapel users
+expressed a strong preference for 0-based programming, given the
+choice (though there were also notable outliers, particularly from the
+Fortran community).  We also realized (a) that Chapel's design should
+be more concerned with lowering barriers for existing programmers than
+for non-programmers; and (b) that even though we had arguably biased
+the original design in favor of Fortran programmers, most of Chapel's
+early adopters have come from C/C++ and Python backgrounds.
+
+Based on this, we undertook an experiment to see what it would take to
+convert from 1-based to 0-based programming.  Reviewing Chapel's
+~10,000 tests and modules resulted in changes to ~1,000 of them.  We
+also updated some significant applications such as Arkouda and Cray
+HPO.  While the overall effort of making the change was not
+insignificant, it also wasn't particularly difficult for the most
+part.  Overall, our finding was that in cases where the changes
+weren't simply neutral in their impact on style, it almost always
+benefitted the code in terms of clarity, because there tended to
+be fewer adjustments of +/- 1 in the code.
+
+For these reasons, we decided to bite the bullet and make the switch
+now, while we felt we still could, rather than later when it would
+clearly be too late to do so and cause more of a revolt among our
+users.
+
+Index-neutral Features
+**********************
+
+This experience also led to a number of new programming features in
+Chapel 1.21 designed to help write code in more of an index-neutral
+style.  Chief among these are new ``.indices`` queries on most of the
+relevent types as well as support for loops over heterogeneous tuples.
+We also introduced features that we found to be useful in updating
+code, such as support for open-interval ranges and ``.first`` and
+``.last`` queries on enumerated types.  To this end, even though Chapel
+still has cases that require making this 0- vs. 1-based indexing
+decision, we encourage code to be written in an index-neutral style
+whenever possible, and believe that most common code patterns can be.
+
+Tips for Updating Existing Chapel code
+**************************************
+
+The following are some tips for updating codes based on our
+experiences:
+
+* First, updating code is easiest when it has some sort of testing
+  infrastructure that can be used to validate that its behavior is
+  unchanged.  If you don't already have such testing for your code, it
+  may be worthwhile to invest in creating some before attempting this
+  upgrade.
+
+* Next, when transitioning code to Chapel 1.22, make sure to compile
+  it with neither ``--fast`` nor ``--no-checks`` enabled so that bounds
+  checks are turned on in the generated code.  In cases where a
+  program is accessing all of the elements of a collection (as is
+  common for tuples) this will help identify data structures that
+  require updates.  When you do get an out-of-bounds error, don't
+  simply update the specific access, but use it as a cue to look
+  through the code for other references to that variable that will
+  also need updating.
+
+* When possible, try rewriting your updated code to use an
+  index-neutral style of programming.  For example, given code like
+  this:
+
+  .. code-block:: chapel
+
+      var t: 2*int = ...;
+
+      var x = t(1),
+          y = t(2);
+
+      for i in 1..2 do
+        writeln("t(", i, ") = ", t(i));
+
+  It would be reasonable to rewrite it like this:
+
+  .. code-block:: chapel
+
+      var t: 2*int = ...;
+
+      var x = t(0),
+          y = t(1);
+
+      for i in 0..1 do
+        writeln("t(", i, ") = ", t(i));
+
+  But arguably preferable to update it like this:
+
+  .. code-block:: chapel
+
+      var t: 2*int = ...;
+
+      var (x, y) = t;
+
+      for i in t.indices do
+        writeln("t(", i, ") = ", t(i));
+
+  If you have a pattern that you're trying to write in an
+  index-neutral style, but can't, don't hesitate to `ask for tips
+  <https://chapel-lang.org/users.html>`_.
+        
+
+* Some common pitfalls to check for in your code include:
+
+  - Search for queries on the dimensions of rectangular domains and
+    arrays.  For example, ``myDomain.dim(1)``, ``myDomain.low(1)``,
+    ``myDomain.high(1)``, or ``myDomain.stride(1)`` will need to be
+    updated to reflect that array dimensions now count from 0 rather
+    than 1.  These will result in out-of-bounds errors in cases where
+    you query all dimensions of an array, making them easy to find;
+    but it can be worthwhile to grep your code for such patterns to
+    make sure you don't miss any.
+
+  - Also search for instances of ``find()`` or ``rfind()`` that are
+    relying on comparisons to zero/nonzero values, and update them to
+    compare against -1.  For example, patterns like ``if
+    mystring.find('z')`` need to be updated to ``if mystring.find('z')
+    != -1``.
+
+  - Search for instances of ``split()``.  A common idiom is to write
+    ``var substrs = mystring.split(5);`` and then to index into the
+    result using ``substrs[1]``, ``substrs[2]``, etc.  Since this is
+    an instance of capturing an iterator expression, you'll either
+    need to subtract one from the indices, or else declare `substrs`
+    to have a specific type, like ``var substrs: [1..5] string =
+    mystring.split(5);``
+
+  - Search for varargs functions and make sure they are updated to use
+    0-based indexing or index-neutral features.
+
+  - Search for any calls to ``Reflection.getField*()`` and update
+    those the cases that use integer indices to reflect 0-based
+    numbering.
+
+  - Look for any calls on lists that use explicit offsets, as these
+    will likely need updates.  For example ``mylist.pop(1);`` will
+    need to become ``mylist.pop(0);``
+
+  - Some other common string patterns to look for in your code that
+    `may` indicate something requiring an update include:
+
+    - ``1..``
+    - ``[1]``
+    - ``(1)``
+    - ``[2]``
+    - ``(2)``
+
+  - Think about whether there are other places in your code that
+    compute index values numerically yet which don't have obvious
+    syntactic cues.
+
+
+Need Help?
+**********
+
+If you are able to share your code with us and would like help
+updating it to Chapel 1.22, please don't hesitate to `ask for help
+<https://chapel-lang.org/users.html>`_.  Given our experience in
+updating the Chapel code base itself, we have found it fairly easy to
+update most codes, even when we're unfamiliar with them.
+
+
+version 1.21, April 2020
+------------------------
 
 Version 1.21 made several improvements related to record initialization,
 assignment, and deinitialization.

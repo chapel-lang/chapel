@@ -12,7 +12,7 @@ Updating ChapelLexer
 If and when the lexer needs to be updated, follow these instructions to setup
 your local environment and test changes locally.
 
-* Fork and clone the [pygments-main project from bitbucket][1].
+* Fork and clone the [pygments-main project from github][1].
 * The `ChapelLexer` is in `pygments/lexers/chapel.py`.
 * See the [pygments developer docs][2] for specific information.
 * There is a test Chapel program that can be used to validate any changes. A
@@ -22,5 +22,5 @@ your local environment and test changes locally.
 pygmentize tests/examplefiles/99_bottles_of_beer.chpl
 ```
 
-[1]: https://bitbucket.org/birkenfeld/pygments-main
+[1]: https://github.com/pygments/pygments
 [2]: http://pygments.org/#contribute

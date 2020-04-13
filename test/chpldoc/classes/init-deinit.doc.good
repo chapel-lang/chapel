@@ -10,6 +10,13 @@ init-deinit.doc
 
    use init-deinit.doc;
 
+
+or
+
+.. code-block:: chapel
+
+   import init-deinit.doc;
+
 .. class:: ThisTestClass
 
    .. method:: proc init(yesChpldoc1)

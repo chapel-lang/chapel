@@ -1,3 +1,3 @@
 $CHPL_HOME/modules/standard/Reflection.chpl:: In function 'getFieldName':
-$CHPL_HOME/modules/standard/Reflection.chpl:: error: '2' is not a valid field number for R
-field-name-not-in-range.chpl:: Function 'getFieldName' instantiated as: getFieldName(type t = R, param i = 2)
+$CHPL_HOME/modules/standard/Reflection.chpl:: error: '1' is not a valid field number for R
+field-name-not-in-range.chpl:: Function 'getFieldName' instantiated as: getFieldName(type t = R, param i = 1)

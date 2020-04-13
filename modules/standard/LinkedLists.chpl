@@ -129,8 +129,8 @@ record LinkedList {
   /*
     Append all of the supplied arguments to the list.
    */
-  //TODO: merge the append overloads
   proc append(e: eltType, es: eltType ...?k) {
+    //TODO: merge the append overloads
     append(e);
     for param i in 0..k-1 do
       append(es(i));
@@ -341,8 +341,8 @@ record LinkedList {
   :type x: `T`
   :rtype: LinkedList(T)
  */
-// TODO: could just be an initializer?
 proc makeList(x ...?k) {
+  // TODO: could just be an initializer?
   var s: LinkedList(x(0).type);
   for param i in 0..k-1 do
     s.append(x(i));

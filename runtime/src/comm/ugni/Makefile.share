@@ -60,12 +60,6 @@ ifneq ($(UGNI_PERFSTATS),)
 comm_ugni_CFLAGS += -DPERFSTATS_COMM_UGNI
 endif
 
-# Building with IPA enabled results in execution time bugs. See JIRA issue 185
-# for more details: https://chapel.atlassian.net/browse/CHAPEL-185
-ifeq ($(CHPL_MAKE_TARGET_COMPILER),cray-prgenv-cray)
-comm_ugni_CFLAGS += -hipa0
-endif
-
 # Enable -c11 to get __thread support for pgi
 ifneq (, $(findstring pgi,$(CHPL_MAKE_TARGET_COMPILER)))
 comm_ugni_CFLAGS += -c11

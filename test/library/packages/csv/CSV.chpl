@@ -58,7 +58,7 @@ module CSV {
           continue;
         const vals = line.split(sep);
         for param i in 0..numFields(t)-1 {
-          getFieldRef(r, i+1) = vals[i]: getField(r, i+1).type;
+          getFieldRef(r, i) = vals[i]: getField(r, i).type;
         }
         if skipHeader {
           skipHeader = false;
@@ -143,9 +143,9 @@ module CSV {
       use Reflection;
       if !ch.writing then compilerError("writing to a reading channel");
 
-      for param i in 1..numFields(t) {
+      for param i in 0..<numFields(t) {
         ch.write(getField(r, i));
-        if i < numFields(t) then
+        if i != numFields(t)-1 then
           ch.write(sep);
       }
       ch.writeln();

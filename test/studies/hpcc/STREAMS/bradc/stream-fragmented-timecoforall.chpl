@@ -66,9 +66,9 @@ proc printConfiguration() {
 proc initVectors(B, C, ProblemSpace, print) {
   var randlist = new owned NPBRandomStream(eltType=real, seed=seed);
 
-  randlist.skipToNth(B.domain.low);
+  randlist.skipToNth(B.domain.low-1);
   randlist.fillRandom(B);
-  randlist.skipToNth(ProblemSpace.size + C.domain.low);
+  randlist.skipToNth(ProblemSpace.size + C.domain.low-1);
   randlist.fillRandom(C);
 
   if (printArrays && print) {

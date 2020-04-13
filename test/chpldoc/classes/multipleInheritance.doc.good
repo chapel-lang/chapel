@@ -10,6 +10,13 @@ multipleInheritance.doc
 
    use multipleInheritance.doc;
 
+
+or
+
+.. code-block:: chapel
+
+   import multipleInheritance.doc;
+
 .. class:: Mother
 
    .. method:: proc eyes()

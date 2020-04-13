@@ -1,0 +1,4 @@
+recursive-iterator-in-expr-context.chpl:1: In iterator 'try1':
+recursive-iterator-in-expr-context.chpl:3: error: invalid use of parallel construct in serial iterator
+recursive-iterator-in-expr-context.chpl:6: In iterator 'try2':
+recursive-iterator-in-expr-context.chpl:8: error: invalid use of parallel construct in serial iterator

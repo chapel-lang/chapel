@@ -1476,7 +1476,6 @@ module String {
       :returns: a new string that is a substring within ``0..<string.size``. If
                 the length of `r` is zero, an empty string is returned.
      */
-    // TODO: I wasn't very good about caching variables locally in this one.
     inline proc this(r: range(?)) : string {
       return getSlice(this, r);
     }
@@ -1632,8 +1631,8 @@ module String {
       :returns: the index of the first occurrence of `needle` within a
                 string, or -1 if the `needle` is not in the string.
      */
-    // TODO: better name than region?
     inline proc find(needle: string, region: range(?) = 0:byteIndex..) : byteIndex {
+      // TODO: better name than region?
       return _search_helper(needle, region, count=false): byteIndex;
     }
 
@@ -1644,7 +1643,7 @@ module String {
                    within ``0..<string.size``
 
       :returns: the index of the first occurrence from the right of `needle`
-                within a string, or 0 if the `needle` is not in the string.
+                within a string, or -1 if the `needle` is not in the string.
      */
     inline proc rfind(needle: string, region: range(?) = 0:byteIndex..) : byteIndex {
       return _search_helper(needle, region, count=false, fromLeft=false): byteIndex;
@@ -1671,8 +1670,6 @@ module String {
       :returns: a copy of the string where `replacement` replaces `needle` up
                 to `count` times
      */
-    // TODO: not ideal - count and single allocation probably faster
-    //                 - can special case on replacement|needle.size (0, 1)
     inline proc replace(needle: string, replacement: string, count: int = -1) : string {
       return doReplace(this, needle, replacement, count);
     }
@@ -1689,8 +1686,8 @@ module String {
                         * When `false` -- Empty strings will be yielded when
                                           `sep` occurs multiple times in a row.
      */
-    // TODO: specifying return type leads to un-inited string?
     iter split(sep: string, maxsplit: int = -1, ignoreEmpty: bool = false) /* : string */ {
+      // TODO: specifying return type leads to un-inited string?
       for s in doSplit(this, sep, maxsplit, ignoreEmpty) do yield s;
     }
 
@@ -1700,10 +1697,10 @@ module String {
       :arg maxsplit: The number of times to split the string, negative values
                      indicate no limit.
      */
-    // note: to improve performance, this code collapses several cases into a
-    //       single yield statement, which makes it confusing to read
-    // TODO: specifying return type leads to un-inited string?
     iter split(maxsplit: int = -1) /* : string */ {
+      // note: to improve performance, this code collapses several cases into a
+      //       single yield statement, which makes it confusing to read
+      // TODO: specifying return type leads to un-inited string?
       if !this.isEmpty() {
         const localThis: string = this.localize();
         var done : bool = false;
@@ -1780,7 +1777,6 @@ module String {
           var x = "|".join("a","10","d");
           writeln(x); // prints: "a|10|d"
      */
-
     inline proc join(const ref x: string ...) : string {
       return _join(x);
     }

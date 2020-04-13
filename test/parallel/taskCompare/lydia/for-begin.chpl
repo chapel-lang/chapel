@@ -19,10 +19,6 @@
 
 ***/
 
-// SLURM NOTE: An error of this kind may occur under certain circumstances
-// slurmstepd: Terminating job step 133149.0; task 0 exit code 0 exited without notification
-// We are, in fact, exiting with 0, as it notices.
-
 config const N = 1000, nthreads = 503, verbose = false;
 var D: domain(1) = {1..nthreads};
 var token: [D] sync int;

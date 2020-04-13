@@ -10,6 +10,13 @@ Foo
 
    use Foo;
 
+
+or
+
+.. code-block:: chapel
+
+   import Foo;
+
 .. data:: config var blah4: int
 
 .. function:: proc d()

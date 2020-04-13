@@ -16,7 +16,7 @@ config param algo = RNG.NPB;
 {
   var rs = createRandomStream(real, seed, algorithm=algo);
 
-  writeln(for i in 1..n do "%{#.#####}".format(rs.getNth(i)));
+  writeln(for i in 0..<n do "%{#.#####}".format(rs.getNth(i)));
   writeln(rs.getNext());
 }
 

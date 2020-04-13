@@ -59,21 +59,6 @@
 #define _DEFAULT_SOURCE
 #endif
 
-//
-// The following breaks #include of "glob.h" with the Cray CCE
-// compiler and also complicates things for the #inclusion of dirent.h
-// with most PrgEnv-* options on Crays, as seen in chpldirent.h.
-// Michael added this in order to permit the support of files larger than 4GB
-// on 32-bit platforms.
-// Note that it's necessary to set this flag for Ubuntu 14.04 32-bit to get a
-// working preadv/pwritev, so we set that in a Makefile. One possibility
-// would be to set it here for 32-bit platforms only (e.g. using
-// __SIZEOF_POINTER__ == 4 which would work in GCC).
-//
-//#ifndef _FILE_OFFSET_BITS
-//#define _FILE_OFFSET_BITS 64
-//#endif
-
 // Ask a C++ compiler if it would please include e.g. INT64_MAX
 #ifndef __STDC_CONSTANT_MACROS
 #define __STDC_CONSTANT_MACROS

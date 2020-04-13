@@ -152,7 +152,7 @@ proc createTable() {
   var table: [0..127] uint(8);
 
   table[eol] = eol;
-  for i in 0..#pairs.size by 2 {
+  for i in pairs.indices by 2 {
     const src = pairs.byte[i],
           dst = pairs.byte[i+1];
 
