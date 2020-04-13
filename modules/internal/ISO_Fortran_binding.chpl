@@ -194,9 +194,9 @@ module ISO_Fortran_binding {
     }
 
     var dims: rank*range;
-    for param i in 1..rank {
-      assert(FA.dim[i-1].lower_bound == 0);
-      dims[i] = 1..#FA.dim[i-1].extent;
+    for param i in 0..<rank {
+      assert(FA.dim[i].lower_bound == 0);
+      dims[i] = 1..#FA.dim[i].extent;
     }
     var D = {(...dims)};
     var A = D.buildArrayWith(eltType,
