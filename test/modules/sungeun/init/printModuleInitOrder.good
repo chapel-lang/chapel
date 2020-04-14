@@ -40,7 +40,6 @@ Initializing Modules:
      LocaleModelHelpMem
     LocalesArray
     ChapelIO
-     LastResortIO
     LocaleTree
     ChapelTaskTable
     MemTracking
