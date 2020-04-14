@@ -330,10 +330,10 @@ name, use the compilation flag ``--library-dir``.
 .. code-block:: bash
 
   # Builds Python module as foo/foo.py from foo.chpl
-  chpl --library --library-python foo.chpl
+  chpl --library-python foo.chpl
 
   # Builds Python module as lib/foo.py from foo.chpl
-  chpl --library --library-python --library-dir=lib foo.chpl
+  chpl --library-python --library-dir=lib foo.chpl
 
 Python Module Name
 ------------------
@@ -396,7 +396,7 @@ prior to any Chapel library function calls.
 Also unlike the C case, the clean up function is called ``chpl_cleanup()``.
 This function will still need to be called after all the Chapel library
 function calls are finished, unless you have imported the output directory
-as a package.
+as a package using the :ref:`Python_Init_File`.
 
 For example:
 
@@ -423,6 +423,8 @@ For example:
   ``chpl_cleanup()`` yourself because it is already registered to be called
   at program exit. The generated initializer is explained below.
 
+.. _Python_Init_File:
+
 Python Init File
 ----------------
 
@@ -441,15 +443,14 @@ the Python module. It looks roughly like the following:
 
   atexit.register(moduleName.chpl_cleanup)
 
-The initializer file makes working with generated Python code easier than
-ever by transforming the output directory into a Python package. The
-initializer file will also register ``chpl_cleanup()`` to be called
-automatically at program exit.
+The initializer file transforms the output directory into a Python package.
+It will also register ``chpl_cleanup()`` to be called automatically at
+program exit.
 
-To take advantage of these new features, the directory containing the
-generated Python module needs to be visible to the script that imports it
-in some fashion, whether that be by making it a child package or by
-placing the package directory on your ``PYTHONPATH`` environment variable.
+The directory containing generated Python code must be visible to any script
+that attempts to import it as a package. One option is to place the directory
+somewhere in an existing codebase and use an absolute import. Another option
+is to place the package directory on your ``PYTHONPATH`` environment variable.
 
 .. code-block:: bash
 
@@ -457,7 +458,7 @@ placing the package directory on your ``PYTHONPATH`` environment variable.
   chpl --library-python foo.chpl
 
   # Adds the current directory to your PYTHONPATH
-  export PYTHONPATH="$PWD"
+  export PYTHONPATH="$PWD:$PYTHONPATH"
 
 From within your Python script:
 
