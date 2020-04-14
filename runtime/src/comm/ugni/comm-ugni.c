@@ -967,7 +967,7 @@ typedef struct {
   chpl_fn_int_t fid;
 
   // TODO: is there a way to "compress" this?
-  chpl_task_ChapelData_t state;
+  chpl_task_infoChapel_t infoChapel;
 } fork_small_call_info_t;
 
 #define MAX_SMALL_CALL_PAYLOAD 1024
@@ -1761,8 +1761,8 @@ static void dbg_catf(FILE* out_f, const char* in_fname, const char* match)
 
 static inline
 chpl_comm_taskPrvData_t* get_comm_taskPrvdata(void) {
-  chpl_task_prvData_t* task_prvData = chpl_task_getPrvData();
-  if (task_prvData != NULL) return &task_prvData->comm_data;
+  chpl_task_infoRuntime_t* infoRuntime = chpl_task_getInfoRuntime();
+  if (infoRuntime != NULL) return &infoRuntime->comm_data;
   return NULL;
 }
 
@@ -4262,8 +4262,8 @@ void rf_handler(gni_cq_entry_t* ev)
       size_t bundle_size;
       chpl_fn_p fn;
 
-      // Copy task state (e.g. serial state) to space.
-      on_bundle->task_bundle.state = f_c->state;
+      // Copy Chapel-managed task info (e.g. serial state) to space.
+      on_bundle->task_bundle.infoChapel = f_c->infoChapel;
 
       // Copy the payload to space.
       // Note ptr+1 here is the same as (unsigned char*)ptr + sizeof(*ptr)
@@ -4313,8 +4313,8 @@ void rf_handler(gni_cq_entry_t* ev)
       // Create a task bundle to complete a large call
       fork_large_call_task_t bundle;
 
-      // Copy task state (e.g. serial state) to space.
-      bundle.task.state = f_c->state;
+      // Copy Chapel-managed task info (e.g. serial state) to space.
+      bundle.task.infoChapel = f_c->infoChapel;
 
       // copy the fork_large_call_info_t to it
       bundle.large = *f_lc;
@@ -7226,7 +7226,7 @@ void fork_call_common(c_nodeid_t locale, c_sublocid_t subloc,
                                 .blocking     = blocking,
                                 .payload_size = payload_size,
                                 .fid          = fid,
-                                .state        = arg->task_bundle.state };
+                                .infoChapel   = arg->task_bundle.infoChapel };
 
   fork_small_call_info_t *f_sc = &f.sc;
 

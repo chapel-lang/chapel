@@ -89,7 +89,7 @@ typedef struct {
   chpl_fn_int_t requested_fid;
   chpl_fn_p requested_fn;
   chpl_taskID_t id;
-  chpl_task_ChapelData_t state;
+  chpl_task_infoChapel_t infoChapel;
 } chpl_task_bundle_t;
 
 // Structure of task-local storage
@@ -98,7 +98,7 @@ typedef struct chpl_qthread_tls_s {
   // The below fields could move to chpl_task_bundleData_t
   // That would reduce the size of the task local storage,
   // but increase the size of executeOn bundles.
-  chpl_task_prvData_t prvdata;
+  chpl_task_infoRuntime_t infoRuntime;
 } chpl_qthread_tls_t;
 
 extern pthread_t chpl_qthread_process_pthread;
@@ -133,31 +133,31 @@ static inline chpl_qthread_tls_t* chpl_qthread_get_tasklocal(void)
     return tls;
 }
 
-#ifdef CHPL_TASK_GET_PRVDATA_IMPL_DECL
-#error "CHPL_TASK_GET_PRVDATA_IMPL_DECL is already defined!"
+#ifdef CHPL_TASK_GET_INFO_RUNTIME_IMPL_DECL
+#error "CHPL_TASK_GET_INFO_RUNTIME_IMPL_DECL is already defined!"
 #else
-#define CHPL_TASK_GET_PRVDATA_IMPL_DECL 1
+#define CHPL_TASK_GET_INFO_RUNTIME_IMPL_DECL 1
 #endif
-static inline chpl_task_prvData_t* chpl_task_getPrvData(void)
+static inline chpl_task_infoRuntime_t* chpl_task_getInfoRuntime(void)
 {
     chpl_qthread_tls_t * data = chpl_qthread_get_tasklocal();
     if (data) {
-        return &data->prvdata;
+        return &data->infoRuntime;
     }
     assert(data);
     return NULL;
 }
 
-#ifdef CHPL_TASK_GET_PRVBUNDLE_IMPL_DECL
-#error "CHPL_TASK_GET_PRVBUNDLE_IMPL_DECL is already defined!"
+#ifdef CHPL_TASK_GET_INFO_CHAPEL_IMPL_DECL
+#error "CHPL_TASK_GET_INFO_CHAPEL_IMPL_DECL is already defined!"
 #else
-#define CHPL_TASK_GET_PRVBUNDLE_IMPL_DECL 1
+#define CHPL_TASK_GET_INFO_CHAPEL_IMPL_DECL 1
 #endif
-static inline chpl_task_bundle_t* chpl_task_getPrvBundle(void)
+static inline chpl_task_infoChapel_t* chpl_task_getInfoChapel(void)
 {
     chpl_qthread_tls_t * data = chpl_qthread_get_tasklocal();
     if (data && data->bundle) {
-        return data->bundle;
+        return &data->bundle->infoChapel;
     }
     assert(data && data->bundle);
     return NULL;

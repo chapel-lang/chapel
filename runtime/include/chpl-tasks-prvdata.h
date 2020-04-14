@@ -24,17 +24,17 @@
 // This header file provides chpl_comm_taskPrvData_t
 #include "chpl-comm-task-decls.h"
 
-// Type for Chapel-managed task private data
-// to be copied to new tasks.
-// Includes 'serial_state'
+// The type for Chapel-managed per-task information, such as serial
+// state.
 typedef struct {
   unsigned char data[32];
-} chpl_task_ChapelData_t;
+} chpl_task_infoChapel_t;
 
-// The type for runtime-managed task private data
+// The type for runtime-managed per-task information, such as cached
+// comm values.
 typedef struct {
   chpl_comm_taskPrvData_t comm_data;
-} chpl_task_prvData_t;
+} chpl_task_infoRuntime_t;
 
 #endif
 

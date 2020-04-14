@@ -261,37 +261,26 @@ void chpl_task_yield(void);
 //
 void chpl_task_sleep(double);
 
-// The type for task private data, chpl_task_prvData_t,
+// The type for task private data, chpl_task_infoRuntime_t,
 // is defined in chpl-tasks-prvdata.h in order to support
 // proper initialization order with a task model .h
 
-// Get pointer to task private data.
-#ifndef CHPL_TASK_GET_PRVDATA_IMPL_DECL
-chpl_task_prvData_t* chpl_task_getPrvData(void);
+// Get pointer to runtime-managed per-task information.
+#ifndef CHPL_TASK_GET_INFO_RUNTIME_IMPL_DECL
+chpl_task_infoRuntime_t* chpl_task_getInfoRuntime(void);
 #endif
 
-#ifndef CHPL_TASK_GET_PRVBUNDLE_IMPL_DECL
-chpl_task_bundle_t* chpl_task_getPrvBundle(void);
+// Get pointer to Chapel-managed per-task information.
+#ifndef CHPL_TASK_GET_INFO_CHAPEL_IMPL_DECL
+chpl_task_infoChapel_t* chpl_task_getInfoChapel(void);
 #endif
 
 // Get the Chapel module-code managed task private data portion
 // of a task bundle.
 static inline
-chpl_task_ChapelData_t* chpl_task_getBundleChapelData(chpl_task_bundle_t* b)
+chpl_task_infoChapel_t* chpl_task_getInfoChapelInBundle(chpl_task_bundle_t* b)
 {
-  // this code assumes each chpl_task_bundle_t has a state field
-  // of type chpl_task_ChapelData_t.
-  return &b->state;
-}
-
-//
-// Get Chapel module-code managed task private data
-//
-static inline
-chpl_task_ChapelData_t* chpl_task_getChapelData(void)
-{
-  chpl_task_bundle_t* prv = chpl_task_getPrvBundle();
-  return chpl_task_getBundleChapelData(prv);
+  return &b->infoChapel;
 }
 
 

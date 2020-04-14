@@ -52,7 +52,7 @@
 typedef struct task_pool_struct* task_pool_p;
 
 typedef struct {
-  chpl_task_prvData_t prvdata;
+  chpl_task_infoRuntime_t infoRuntime;
 } chpl_task_prvDataImpl_t;
 
 typedef struct task_pool_struct {
@@ -830,12 +830,12 @@ uint32_t chpl_task_getMaxPar(void) {
   return max;
 }
 
-chpl_task_prvData_t* chpl_task_getPrvData(void) {
-  return & get_current_ptask()->chpl_data.prvdata;
+chpl_task_infoRuntime_t* chpl_task_getInfoRuntime(void) {
+  return & get_current_ptask()->chpl_data.infoRuntime;
 }
 
-chpl_task_bundle_t* chpl_task_getPrvBundle(void) {
-  return & get_current_ptask()->bundle;
+chpl_task_infoChapel_t* chpl_task_getInfoChapel(void) {
+  return & get_current_ptask()->bundle.infoChapel;
 }
 
 

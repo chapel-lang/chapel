@@ -178,7 +178,7 @@ typedef struct {
   uint16_t      payload_size;
 
   // TODO: is there a way to "compress" this?
-  chpl_task_ChapelData_t state;
+  chpl_task_infoChapel_t infoChapel;
 } small_fork_hdr_t;
 
 typedef struct {
@@ -278,7 +278,7 @@ size_t setup_small_fork_task(small_fork_task_t* dst, small_fork_hdr_t* f, size_t
   size_t payload_size = nbytes - sizeof(small_fork_hdr_t);
 
   // Copy task-local data to the new task
-  bundle.task_bundle.state = f->state;
+  bundle.task_bundle.infoChapel = f->infoChapel;
 
   dst->bundle = bundle;
 
@@ -297,7 +297,7 @@ size_t setup_large_fork_task(large_fork_task_t* dst, large_fork_t* f, size_t nby
   chpl_comm_on_bundle_t bundle = { .comm =  comm };
 
   // Copy task-local data to the new task
-  bundle.task_bundle.state = f->hdr.state;
+  bundle.task_bundle.infoChapel = f->hdr.infoChapel;
 
   dst->bundle = bundle;
   // Copy the large fork info into the task bundle
@@ -1423,7 +1423,7 @@ void  execute_on_common(c_nodeid_t node, c_sublocid_t subloc,
 
   int op;
 
-  chpl_task_ChapelData_t state = *chpl_task_getChapelData();
+  chpl_task_infoChapel_t infoChapel = *chpl_task_getInfoChapel();
 
   if (blocking)
     init_done_obj(&done, 1);
@@ -1459,7 +1459,7 @@ void  execute_on_common(c_nodeid_t node, c_sublocid_t subloc,
     small_fork_hdr_t hdr = { .caller = chpl_nodeID,
                              .subloc = subloc,
                              .ack = blocking ? &done : NULL,
-                             .state = state,
+                             .infoChapel = infoChapel,
                              .fid = fid,
                              .payload_size = payload_size };
 
@@ -1510,7 +1510,7 @@ void  execute_on_common(c_nodeid_t node, c_sublocid_t subloc,
   } else {
     // Neither small nor large
 
-    arg->task_bundle.state = state;
+    arg->task_bundle.infoChapel = infoChapel;
     arg->task_bundle.requestedSubloc = subloc;
     arg->task_bundle.requested_fid = fid;
     arg->comm.caller = chpl_nodeID;
