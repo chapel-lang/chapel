@@ -1160,7 +1160,10 @@ module ChapelArray {
         }
       }
       else {
-        // Do we need to worry about RVF'ed domain views?
+        // Engin 4/14/20: We don't have any arrayview domain instances that we
+        // RVF today. If/when we do have them, we need to clean them up here.
+        // See _do_destroy_arr for a similar cleanup we do today for arrayview
+        // arrays.
       }
     }
     pragma "no doc"
