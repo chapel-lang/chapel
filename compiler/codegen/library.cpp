@@ -597,6 +597,7 @@ static void makePYXSetupFunctions(std::vector<FnSymbol*> moduleInits) {
   if (fMultiLocaleInterop) {
     // Multilocale libraries need to take in the number of locales to use as
     // an argument
+
     // numLocales is a C default-sized int.
     std::string numLocalesType = getPythonTypeName(dtInt[INT_SIZE_32],
                                                    C_PYX);
@@ -609,7 +610,6 @@ static void makePYXSetupFunctions(std::vector<FnSymbol*> moduleInits) {
     fprintf(outfile, "\tchpl_library_init(3, args)\n");
 
   } else {
-
     // Define `chpl_setup` for single locale Python modules.
     fprintf(outfile, "def chpl_setup():\n");
     fprintf(outfile, "\tcdef char** args = ['%s']\n", libmodeHeadername);

@@ -385,17 +385,18 @@ Initializing and Using Your Library in Python
 Once your ``PYTHONPATH`` is set up and the Python module created, you can
 ``import`` the module like a normal Python module.
 
-Similarly to using your library with C, you will need to call a set up
-function to ensure the Chapel runtime and standard modules are initialized,
-as well as a clean up function.
+Similarly to using your library with C, you will need to call a set up function
+to ensure the Chapel runtime and standard modules are initialized, as well as
+a clean up function.
 
-Unlike the C case, the set up function is called ``chpl_setup()`` and will
-also handle initializing your module.   This function will still need to be
-called prior to any Chapel library function calls.
+Unlike the C case, the set up function is called ``chpl_setup()`` and will also
+handle initializing your module.   This function will still need to be called
+prior to any Chapel library function calls.
 
 Also unlike the C case, the clean up function is called ``chpl_cleanup()``.
 This function will still need to be called after all the Chapel library
-function calls are finished.
+function calls are finished, unless you have imported the output directory
+as a package.
 
 For example:
 
@@ -418,9 +419,9 @@ For example:
 .. note::
 
   If you are taking advantage of the generated ``__init__.py`` initializer
-  file to import your module, you do not need to call ``chpl_cleanup``
-  yourself because it is already registered to be called at program exit.
-  The generated initializer is explained below.
+  file to import the output directory as a package, you do not need to call
+  ``chpl_cleanup()`` yourself because it is already registered to be called
+  at program exit. The generated initializer is explained below.
 
 Python Init File
 ----------------
@@ -438,18 +439,17 @@ the Python module. It looks roughly like the following:
   #
   from directoryName.moduleName import *
 
-  atexit.register(cleanupAtExit.chpl_cleanup)
+  atexit.register(moduleName.chpl_cleanup)
 
-The new initializer file combined with the default directory name being the
-same as the Python module name make it easier than ever to use generated
-Python modules in your Python code. Along with importing the Python module in
-one step, the initializer file will also register ``chpl_cleanup`` to be
-called automatically at program exit.
+The initializer file makes working with generated Python code easier than
+ever by transforming the output directory into a Python package. The
+initializer file will also register ``chpl_cleanup()`` to be called
+automatically at program exit.
 
 To take advantage of these new features, the directory containing the
 generated Python module needs to be visible to the script that imports it
-in some fashion, whether that be by making it a child module or by
-placing it on your ``PYTHONPATH`` environment variable.
+in some fashion, whether that be by making it a child package or by
+placing the package directory on your ``PYTHONPATH`` environment variable.
 
 .. code-block:: bash
 
