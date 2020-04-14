@@ -467,7 +467,7 @@ From within your Python script:
 
   #
   # Setup and use foo as normal. Note that we no longer have to call
-  # ``chpl_cleanup`` when we are finished.
+  # ``chpl_cleanup()`` when we are finished.
   #
   foo.chpl_setup()
   foo.baz(2)
