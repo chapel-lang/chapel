@@ -1722,10 +1722,14 @@ static bool lookupThisScopeAndUses(const char*           name,
               BaseAST* scopeToUse = use->getSearchScope();
 
               Symbol* sym = inSymbolTable(nameToUse, scopeToUse);
-              if (!sym) {
+              if (!sym && use->canReexport) {
                 if (ResolveScope* rs = ResolveScope::getScopeFor(scopeToUse)) {
                   sym = rs->lookupPublicUnqualAccessSyms(nameToUse, context,
                                                          renameLocs);
+                  // propagate this information to the UseStmt
+                  if (!rs->canReexport) {
+                    use->canReexport = false;
+                  }
                 }
               }
               if (sym) {
