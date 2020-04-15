@@ -1,0 +1,3 @@
+renameTwice.chpl:5: warning: identifier 'foo' is repeated
+false
+false
