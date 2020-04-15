@@ -1224,7 +1224,8 @@ static std::string pythonArgToChapelArrayOrPtr(ArgSymbol* as) {
   // Lydia TODO 12/04/18: Might be good to use a template where we can
   // replace all instances of a placeholder with the argument name instead of
   // of writing all of the code out in this chunky, unclear fashion.  Might
-  // be worth considering doing for the else branch above this as well
+  // be worth considering doing for the other 'pythonArgTo...' functions
+  // as well.
   std::string res = "\tcdef ";
   std::string typeStr = "";
   std::string typeStrCDefs = "";
@@ -2317,23 +2318,17 @@ static void pythonRetExternalArray(FnSymbol* fn, std::string& funcCall,
   std::string typeStrCDefs = getPythonTypeName(eltType, C_PYX);
 
   //
-  // TODO: Refactor this code and the code in 'pythonRetByteBuffer' so that
-  // I can use both here.
+  // Create the numpy array to return. The form looks like:
   //
+  //  cdef numpy.ndarray [C element type, ndim=1] ret =
+  //    numpy.zeros(shape = ret_arr.num_elts, dtype = (numpy dtype))
+  //
+  std::string res;
+  res += "\tcdef numpy.ndarray [" + typeStrCDefs + ", ndim=1] ret";
+  res += " = numpy.zeros(shape = ret_arr.num_elts, dtype = " + typeStr;
+  res += ")\n";
+
   if (eltType == dtBytes || eltType == dtString) {
-
-    std::string res;
-
-    //
-    // Create the numpy array to return. The form looks like:
-    //
-    //  cdef numpy.ndarray [object, ndim=1] ret =
-    //    numpy.zeros(shape = ret_arr.num_elts, dtype = (numpy dtype))
-    //
-    // TODO: Add the 'object' type to the getPythonTypeName table.
-    //
-    res += "\tcdef numpy.ndarray [object, ndim=1] ret = ";
-    res += "numpy.zeros(shape = ret_arr.num_elts, dtype = object)\n";
 
     //
     // TODO: Add this to a function we can call with a flag for string or
@@ -2360,31 +2355,12 @@ static void pythonRetExternalArray(FnSymbol* fn, std::string& funcCall,
     }
 
     res += "\t\tret[i] = slot\n";
-    res += "\tchpl_free_external_array(ret_arr)\n";
-
-    returnStmt += res;
-
-    return;
+  } else {
+    // Populate it with the contents we return (which translated C types into
+    // Python types)
+    res += "\tfor i in range(ret_arr.num_elts):\n";
+    res += "\t\tret[i] = (<" + typeStrCDefs + "*>ret_arr.elts)[i]\n";
   }
-
-  //
-  // TODO: When we add the string/bytes to the numpy table, move this code
-  // above.
-  //
-  // Create the numpy array to return. The form looks like:
-  //
-  //  cdef numpy.ndarray [C element type, ndim=1] ret =
-  //    numpy.zeros(shape = ret_arr.num_elts, dtype = (numpy dtype))
-  //
-  std::string res;
-  res += "\tcdef numpy.ndarray [" + typeStrCDefs + ", ndim=1] ret";
-  res += " = numpy.zeros(shape = ret_arr.num_elts, dtype = " + typeStr;
-  res += ")\n";
-
-  // Populate it with the contents we return (which translated C types into
-  // Python types)
-  res += "\tfor i in range(ret_arr.num_elts):\n";
-  res += "\t\tret[i] = (<" + typeStrCDefs + "*>ret_arr.elts)[i]\n";
 
   // Free the returned array now that its contents have been stored elsewhere
   res += "\tchpl_free_external_array(ret_arr)\n";
