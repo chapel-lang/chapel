@@ -145,6 +145,8 @@ private proc runTests(show: bool, run: bool, parallel: bool, ref cmdLineCompopts
     makeTargetFiles("debug", projectHome);
     var numTests: int;
     var testNames: list(string);
+    // names of tests that compiled
+    var testsCompiled: list(string);
     // get the test names from lockfile or from test directory
     if (files.size == 0 && dirs.size == 0) {
       testNames = getTests(lockFile.borrow(), projectHome);
@@ -191,12 +193,15 @@ private proc runTests(show: bool, run: bool, parallel: bool, ref cmdLineCompopts
         const outputLoc = projectHome + "/target/test/" + stripExt(testTemp, ".chpl");
         const moveTo = "-o " + outputLoc;
         const compCommand = " ".join("chpl",testPath, projectPath, moveTo, allCompOpts);
-        const compilation = runWithStatus(compCommand);
+        const compilation = runWithStatus(compCommand, show);
         
         if compilation != 0 {
           stderr.writeln("compilation failed for " + test);
+          const errMsg = test +" failed to compile";
+          result.addError(testName, test,  errMsg);
         }
         else {
+          testsCompiled.append(test);
           if show || !run then writeln("Compiled '", test, "' successfully");
           if parallel {
             runTestBinary(projectHome, outputLoc, testName, result, show);
@@ -204,7 +209,7 @@ private proc runTests(show: bool, run: bool, parallel: bool, ref cmdLineCompopts
         }
       }
       if run && !parallel {
-        runTestBinaries(projectHome, testNames, numTests, result, show);
+        runTestBinaries(projectHome, testsCompiled, result, show);
       }
       timeElapsed.stop();
       if run {
@@ -249,7 +254,7 @@ private proc runTestBinary(projectHome: string, outputLoc: string, testName: str
 
 
 private proc runTestBinaries(projectHome: string, testNames: list(string),
-                             numTests: int, ref result, show: bool) {
+                            ref result, show: bool) {
 
   const cwd = getEnv("PWD");
   for test in testNames {
@@ -425,10 +430,12 @@ proc testFile(file, ref result, show: bool) throws {
   const moveTo = "-o " + executable;
   const allCompOpts = "--comm " + comm;
   const compCommand = " ".join("chpl",file, moveTo, allCompOpts);
-  const compilation = runWithStatus(compCommand);
+  const compilation = runWithStatus(compCommand, show);
 
   if compilation != 0 {
     stderr.writeln("compilation failed for " + fileName);
+    const errMsg = fileName +" failed to compile";
+    result.addError(executable, fileName,  errMsg);
   }
   else {
     if show then writeln("\nCompiled '", fileName, "' successfully");
