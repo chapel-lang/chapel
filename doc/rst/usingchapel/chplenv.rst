@@ -20,6 +20,8 @@ can be convenient.
 
 .. contents::
 
+.. _readme-chplenv.recommended_settings:
+
 Recommended Settings
 --------------------
 

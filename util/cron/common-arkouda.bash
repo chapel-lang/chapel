@@ -2,14 +2,13 @@
 #
 # Configure environment for arkouda testing
 
-CWD=$(cd $(dirname $0) ; pwd)
+CWD=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
 
 # Perf configuration
 source $CWD/common-perf.bash
-ARKOUDA_PERF_DIR=/cray/css/users/chapelu/NightlyPerformance/arkouda
+ARKOUDA_PERF_DIR=${ARKOUDA_PERF_DIR:-/cray/css/users/chapelu/NightlyPerformance/arkouda}
 export CHPL_TEST_PERF_DIR=$ARKOUDA_PERF_DIR/$CHPL_TEST_PERF_CONFIG_NAME
 export CHPL_TEST_NUM_TRIALS=3
-export CHPL_TEST_PERF_CONFIGS="release:v,master:v"
 export CHPL_TEST_PERF_START_DATE=04/01/20
 
 # Run arkouda correctness and performance testing
@@ -27,6 +26,7 @@ currentSha=`git rev-parse HEAD`
 # test against Chapel release
 function test_release() {
   export CHPL_TEST_PERF_DESCRIPTION=release
+  export CHPL_TEST_PERF_CONFIGS="release:v,master:v"
   git checkout 1.20.0
   git checkout $currentSha -- $CHPL_HOME/test/
   git checkout $currentSha -- $CHPL_HOME/util/cron/
@@ -36,6 +36,7 @@ function test_release() {
 # test against Chapel master
 function test_master() {
   export CHPL_TEST_PERF_DESCRIPTION=master
+  export CHPL_TEST_PERF_CONFIGS="release:v,master:v"
   git checkout $currentSha
   git clean -ffdx $CHPL_HOME
   $CWD/nightly -cron ${nightly_args}

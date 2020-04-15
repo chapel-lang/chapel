@@ -133,10 +133,6 @@ class Hashed : BaseDist {
   const targetLocDom: domain(1);
   const targetLocales: [targetLocDom] locale;
 
-
-  // privatized object id
-  var pid: int = -1;
-
   // LINKAGE:
 
   //
@@ -153,7 +149,7 @@ class Hashed : BaseDist {
             mapper:?t = new DefaultMapper(),
             targetLocales: [] locale = Locales) {
     this.idxType = idxType;
-    this.mapper = mapper;
+    this.mapper = _to_unmanaged(mapper);
     //
     // 0-base the local capture of the targetLocDom for simplicity
     // later on
@@ -182,6 +178,19 @@ class Hashed : BaseDist {
     this.targetLocales = other.targetLocales;
     // commented out b/c locDist is not currently used
     //locDist = other.locDist;
+  }
+
+
+  override proc dsiSupportsPrivatization() param return true;
+  proc dsiGetPrivatizeData() return this.mapper;
+
+  proc dsiPrivatize(privatizeData) {
+    return new unmanaged Hashed(idxType, privatizeData, _to_unmanaged(this));
+  }
+  proc dsiGetReprivatizeData() return 0;
+
+  proc dsiReprivatize(other, reprivatizeData) {
+    this.mapper = other.mapper;
   }
 
   proc dsiClone() {
@@ -309,8 +318,6 @@ class UserMapAssocDom: BaseAssociativeDom {
   //
   // a domain describing the complete domain
   //
-
-  var pid: int = -1;
 
   // GLOBAL DOMAIN INTERFACE:
 
@@ -520,10 +527,10 @@ class UserMapAssocDom: BaseAssociativeDom {
   }
 
   override proc dsiSupportsPrivatization() param return true;
-  proc dsiGetPrivatizeData() return 0;
+  proc dsiGetPrivatizeData() return dist.pid;
   proc dsiGetReprivatizeData() return 0;
   proc dsiPrivatize(privatizeData) {
-    var privateDist = new unmanaged Hashed(idxType, dist.mapper, dist);
+    var privateDist = chpl_getPrivatizedCopy(dist.type, privatizeData);
     var c = new unmanaged UserMapAssocDom(idxType=idxType, mapperType=mapperType, dist=privateDist);
     c.locDoms = locDoms;
     return c;
@@ -669,8 +676,6 @@ class UserMapAssocArr: AbsBaseArr {
   var locArrs: [dom.dist.targetLocDom] unmanaged LocUserMapAssocArr(idxType, mapperType, eltType)?;
   //var locAssocDoms: domain(BaseAssociativeDom);
   //var locArrsByAssoc: [locAssocDoms] LocUserMapAssocArr(idxType, mapperType, eltType);
-
-  var pid: int = -1; // privatized object id
 
   override proc dsiGetBaseDom() return dom;
 

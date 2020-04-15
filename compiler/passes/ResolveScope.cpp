@@ -950,10 +950,9 @@ Symbol* ResolveScope::lookupNameLocally(const char* name, bool isUse) const {
 }
 
 Symbol* ResolveScope::lookupPublicImports(const char* name) const {
-  UseImportList useImportList = mUseImportList;
   Symbol *retval = NULL;
 
-  for_vector_allowing_0s(VisibilityStmt, visStmt, useImportList) {
+  for_vector_allowing_0s(VisibilityStmt, visStmt, mUseImportList) {
     if (ImportStmt *is = toImportStmt(visStmt)) {
       if (!is->isPrivate) {
         if (Symbol *importSym = visStmt->checkIfModuleNameMatches(name)) {
@@ -971,7 +970,9 @@ Symbol* ResolveScope::lookupPublicImports(const char* name) const {
 
 // This version is used in resolving the calls in an import statement
 Symbol* ResolveScope::lookupPublicUnqualAccessSyms(const char* name,
-                                                   BaseAST *context) const {
+                                                   BaseAST *context) {
+  if (!this->canReexport) return NULL;
+
   std::map<Symbol *, astlocT *> renameLocs;
   ModuleSymbol *ms = NULL;
   Symbol *retval = lookupPublicUnqualAccessSyms(name, ms, context, renameLocs);
@@ -981,7 +982,9 @@ Symbol* ResolveScope::lookupPublicUnqualAccessSyms(const char* name,
 // This version is used in resolveModuleCall in scope resolution
 Symbol* ResolveScope::lookupPublicUnqualAccessSyms(const char* name,
                                                    ModuleSymbol*& modArg,
-                                                   BaseAST *context) const {
+                                                   BaseAST *context) {
+  if (!this->canReexport) return NULL;
+
   std::map<Symbol *, astlocT *> renameLocs;
   Symbol *retval = lookupPublicUnqualAccessSyms(name, modArg, context,
                                                 renameLocs);
@@ -991,7 +994,9 @@ Symbol* ResolveScope::lookupPublicUnqualAccessSyms(const char* name,
 
 // This version is used in regular unresolvedsymexpr scope resolution
 Symbol* ResolveScope::lookupPublicUnqualAccessSyms(const char* name,
-            BaseAST *context, std::map<Symbol*, astlocT*>& renameLocs) const {
+            BaseAST *context, std::map<Symbol*, astlocT*>& renameLocs) {
+  if (!this->canReexport) return NULL;
+
   ModuleSymbol *ms = NULL;
   Symbol *retval = lookupPublicUnqualAccessSyms(name, ms, context, renameLocs);
   return retval;
@@ -999,15 +1004,17 @@ Symbol* ResolveScope::lookupPublicUnqualAccessSyms(const char* name,
 
 Symbol* ResolveScope::lookupPublicUnqualAccessSyms(const char* name,
          ModuleSymbol*& modArg, BaseAST *context,
-         std::map<Symbol*, astlocT*>& renameLocs) const {
+         std::map<Symbol*, astlocT*>& renameLocs) {
+  if (!this->canReexport) return NULL;
 
-  UseImportList useImportList = mUseImportList;
   std::vector<Symbol *> symbols;
 
   bool traversedRenames = false;
-  for_vector_allowing_0s(VisibilityStmt, visStmt, useImportList) {
+  bool hasPublicImport = false;
+  for_vector_allowing_0s(VisibilityStmt, visStmt, mUseImportList) {
     if (ImportStmt *impStmt = toImportStmt(visStmt)) {
       if (!impStmt->isPrivate) {
+        hasPublicImport = true;
         if (!impStmt->skipSymbolSearch(name)) {
           const char *nameToUse = name;
           const bool isSymRenamed = impStmt->isARenamedSym(name);
@@ -1030,6 +1037,10 @@ Symbol* ResolveScope::lookupPublicUnqualAccessSyms(const char* name,
         }
       }
     }
+  }
+
+  if (!hasPublicImport) {
+    this->canReexport = false;
   }
 
   if (symbols.size() == 1) {
