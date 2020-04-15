@@ -119,7 +119,7 @@ module ExternalArray {
   proc convertToExternalArray(in arr: []): chpl_external_array
     where getExternalArrayType(arr) == chpl_external_array {
 
-    if !isExternArrEltType(arr.eltType) {
+    if (!isExternArrEltType(arr.eltType)) {
       use HaltWrappers;
       safeCastCheckHalt("Cannot build an external array that stores " +
                         arr.eltType: string);
@@ -127,41 +127,35 @@ module ExternalArray {
 
     // Probably not reachable any more, but may become reachable again
     // once support for interoperability with array types expands.
-    if !isIntegralType(arr.domain.idxType) then
+    if (!isIntegralType(arr.domain.idxType)) {
       compilerError("cannot return an array with indices that are not " +
                     "integrals");
+    }
 
-    if arr.domain.stridable then
+    if arr.domain.stridable {
       compilerError("cannot return a strided array");
-    
-    if arr.domain.rank != 1 then
+    }
+    if arr.domain.rank != 1 {
       compilerError("cannot return an array with rank != 1");
-  
-    // 
-    // Can we just normalize the domain instead? Or would that be too
-    // unexpected?
-    //
-    if arr.domain.low != 0 then
+    }
+    if arr.domain.low != 0 {
       halt("cannot return an array when the lower bounds is not 0");
+    }
 
     //
-    // TODO: If the array element type is string or bytes, then we need to
-    // silently convert it to an array of 'chpl_byte_buffer'. Then in
-    // compiler code, we should iterate through the elements and cast them
-    // to string/bytes as desired (in both cases creating a numpy array
-    // of Python objects).
+    // If the array element type is string or bytes, silently convert it to
+    // an array of 'chpl_byte_buffer'. Then in compiler code, we iterate
+    // through the elements and convert them to string or bytes as desired.
     //
     if arr.eltType == string || arr.eltType == bytes then
       return convertStringOrBytes(arr);
 
     var externalArr = chpl_make_external_array_ptr_free(c_ptrTo(arr[0]),
                                                         arr.size: uint);
-
     // Change the source array so that it does not clean up its memory, so we
     // can safely return a chpl_external_array wrapper using it.
     arr.externArr = true;
     arr._borrowed = true;
-
     return externalArr;
   }
 
