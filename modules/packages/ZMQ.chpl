@@ -913,7 +913,7 @@ module ZMQ {
         // Note: the string factory below can throw DecodeError
         var copy = if isString(T) then createStringWithNewBuffer(x=data)
                                   else createBytesWithNewBuffer(x=data);
-        copy.isowned = false;
+        copy.isOwned = false;
 
         // Create the ZeroMQ message from the data buffer
         var msg: zmq_msg_t;

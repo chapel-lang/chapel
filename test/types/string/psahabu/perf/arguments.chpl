@@ -26,7 +26,7 @@ proc testReturning():Timer {
   var keepAlive: int;
   for i in 1..n {
     var s = send(i);
-    keepAlive += s.len;
+    keepAlive += s.buffLen;
   }
   tReturning.stop();
   return tReturning;
@@ -37,7 +37,7 @@ proc testReturningItoa():Timer {
   var keepAlive: int;
   for i in 1..(n/10) {
     var s = send_itoa(i);
-    keepAlive += s.len;
+    keepAlive += s.buffLen;
   }
   tReturning.stop();
   return tReturning;
@@ -56,13 +56,13 @@ proc test() {
   }
 
   // acc set in testPassing
-  if acc == n * pass.len then
+  if acc == n * pass.buffLen then
     writeln("SUCCESS");
 }
 
 
 proc receive(test: string) {
-  return test.len;
+  return test.buffLen;
 }
 
 proc send(l: int): string {

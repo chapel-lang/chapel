@@ -1169,7 +1169,7 @@ module String {
     iter chpl_bytes(): byteType {
       var localThis: string = this.localize();
 
-      for i in 0..#localThis.len {
+      for i in 0..#localThis.buffLen {
         yield localThis.buff[i];
       }
     }
@@ -1312,8 +1312,8 @@ module String {
      */
     proc this(i: byteIndex) : string {
       var idx = i: int;
-      if boundsChecking && (idx < 0 || idx >= this.len)
-        then halt("index ", i, " out of bounds for string with ", this.len, " bytes");
+      if boundsChecking && (idx < 0 || idx >= this.buffLen)
+        then halt("index ", i, " out of bounds for string with ", this.buffLen, " bytes");
 
       var ret: string;
       var maxbytes = (this.buffLen - idx): ssize_t;
@@ -1321,7 +1321,7 @@ module String {
         maxbytes = 4;
       var (newBuff, allocSize) = bufferCopy(buf=this.buff, off=idx,
                                             len=maxbytes, loc=this.locale_id);
-      ret._size = allocSize;
+      ret.buffSize = allocSize;
       ret.buff = newBuff;
       ret.isOwned = true;
 
