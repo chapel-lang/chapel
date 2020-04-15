@@ -118,20 +118,17 @@ module ExternalArray {
 
   proc convertToExternalArray(in arr: []): chpl_external_array
     where getExternalArrayType(arr) == chpl_external_array {
-
     if (!isExternArrEltType(arr.eltType)) {
       use HaltWrappers;
       safeCastCheckHalt("Cannot build an external array that stores " +
                         arr.eltType: string);
     }
-
-    // Probably not reachable any more, but may become reachable again
-    // once support for interoperability with array types expands.
     if (!isIntegralType(arr.domain.idxType)) {
+      // Probably not reachable any more, but may become reachable again
+      // once support for interoperability with array types expands.
       compilerError("cannot return an array with indices that are not " +
                     "integrals");
     }
-
     if arr.domain.stridable {
       compilerError("cannot return a strided array");
     }
