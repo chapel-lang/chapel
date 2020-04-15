@@ -7,6 +7,6 @@ def exitMessage():
 # Set hidden debug callback.
 test.chpl_set_cleanup_callback(exitMessage)
 
-test.chpl_setup()
+test.chpl_setup(1)
 
 test.display('Hello, world!')
