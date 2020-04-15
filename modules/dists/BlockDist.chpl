@@ -576,11 +576,13 @@ override proc Block.dsiNewRectangularDom(param rank: int, type idxType,
 
 override proc Block.dsiNewSparseDom(param rank: int, type idxType,
                                     dom: domain) {
-  return new unmanaged SparseBlockDom(rank=rank, idxType=idxType,
+  var ret =  new unmanaged SparseBlockDom(rank=rank, idxType=idxType,
                             sparseLayoutType=sparseLayoutType,
                             stridable=dom.stridable,
                             dist=_to_unmanaged(this), whole=dom._value.whole,
                             parentDom=dom);
+  ret.setup();
+  return ret;
 }
 
 //
