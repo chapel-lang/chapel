@@ -28,9 +28,13 @@ if ! git clone --depth=1 ${ARKOUDA_URL} --branch=${ARKOUDA_BRANCH} ; then
 fi
 cd ${ARKOUDA_HOME}
 
-# Install dependencies
-if ! nice make -j $($CHPL_HOME/util/buildRelease/chpl-make-cpu_count) install-deps ; then
-  log_fatal_error "installing dependencies"
+# Install dependencies if needed
+if make check-deps ; then
+  export ARKOUDA_SKIP_CHECK_DEPS=true
+else
+  if ! nice make -j $($CHPL_HOME/util/buildRelease/chpl-make-cpu_count) install-deps ; then
+    log_fatal_error "installing dependencies"
+  fi
 fi
 
 # Compile Arkouda

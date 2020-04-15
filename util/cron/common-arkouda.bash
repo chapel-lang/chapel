@@ -16,6 +16,12 @@ export CHPL_NIGHTLY_TEST_DIRS=studies/arkouda/
 export CHPL_TEST_ARKOUDA=true
 export CHPL_TEST_ARKOUDA_PERF=true
 
+ARKOUDA_DEP_DIR=/cray/css/users/chapelu/arkouda-deps
+if [ -d "$ARKOUDA_DEP_DIR" ]; then
+  export ARKOUDA_ZMQ_PATH=${ARKOUDA_ZMQ_PATH:-$ARKOUDA_DEP_DIR/zeromq-install}
+  export ARKOUDA_HDF5_PATH=${ARKOUDA_HDF5_PATH:-$ARKOUDA_DEP_DIR/hdf5-install}
+fi
+
 # Use personal branch (just as we get perf testing up and running to make sure
 # things are working before upstream'ing.)
 export ARKOUDA_URL=https://github.com/ronawho/arkouda.git
