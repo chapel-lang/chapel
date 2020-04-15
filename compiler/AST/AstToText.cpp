@@ -1235,42 +1235,18 @@ void AstToText::appendExpr(CallExpr* expr, bool printingType)
         appendExpr(expr, fnName, printingType);
     }
 
-    else if (isSymExpr(expr->baseExpr) || isCallExpr(expr->baseExpr))
+    else if (isSymExpr(expr->baseExpr))
     {
-      if (isSymExpr(expr->baseExpr))
-      {
-        appendExpr(expr->baseExpr, printingType);
-      }
-
-      else
-      {
-        CallExpr* subCall = toCallExpr(expr->baseExpr);
-        appendExpr(subCall->get(1), printingType);
-        mText += '.';
-        appendExpr(subCall->get(2), printingType);
-      }
-      
-      if (expr->numActuals() == 0 && isSymExpr(expr->baseExpr))
+      if (expr->numActuals() == 0)
       {
         // NOAKES 2015/02/05  Debugging support.
         // Might become ASSERT in the future
         mText += "AppendExpr.Call06";
       }
 
-      else if (expr->numActuals() == 0 && isCallExpr(expr->baseExpr))
-      {
-        mText += "()";
-      }
-
-      else if (expr->numActuals() == 1)
-      {
-        mText += '(';
-        appendExpr(expr->get(1), printingType);
-        mText += ')';
-      }
-
       else
       {
+        appendExpr(expr->baseExpr, printingType);
         mText += '(';
 
         for (int i = 1; i <= expr->numActuals(); i++)
@@ -1283,6 +1259,25 @@ void AstToText::appendExpr(CallExpr* expr, bool printingType)
 
         mText += ')';
       }
+    }
+
+    else if (isCallExpr(expr->baseExpr))
+    {
+      CallExpr* subCall = toCallExpr(expr->baseExpr);
+      appendExpr(subCall->get(1), printingType);
+      mText += '.';
+      appendExpr(subCall->get(2), printingType);
+      mText += '(';
+
+      for (int i = 1; i <= expr->numActuals(); i++)
+      {
+        if (i > 1)
+          mText += ", ";
+
+        appendExpr(expr->get(i), printingType);
+      }
+
+      mText += ')';
     }
 
     else
@@ -1427,15 +1422,17 @@ void AstToText::appendExpr(IfExpr* expr, bool printingType)
     mText += " then ";
     if (BlockStmt* thenBlockStmt = toBlockStmt(expr->getThenStmt()))
     {
-      if (Expr* exp = toExpr(thenBlockStmt->body.get(1)))
+      if (thenBlockStmt->body.length == 1)
       {
+        Expr* exp = thenBlockStmt->body.get(1);
         appendExpr(exp, printingType);
 
         mText += " else ";
         if (BlockStmt* elseBlockStmt = toBlockStmt(expr->getElseStmt()))
         {
-          if (Expr* exp = toExpr(elseBlockStmt->body.get(1)))
+          if (elseBlockStmt->body.length == 1)
           {
+            Expr* exp = elseBlockStmt->body.get(1);
             appendExpr(exp, printingType);
           }
 
