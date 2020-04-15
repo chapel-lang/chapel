@@ -117,7 +117,7 @@ module ExternalArray {
   }
 
   proc convertToExternalArray(in arr: []): chpl_external_array
-    where getExternalArrayType(arr) == chpl_external_array {
+    where (getExternalArrayType(arr) == chpl_external_array) {
     if (!isExternArrEltType(arr.eltType)) {
       use HaltWrappers;
       safeCastCheckHalt("Cannot build an external array that stores " +
@@ -129,13 +129,13 @@ module ExternalArray {
       compilerError("cannot return an array with indices that are not " +
                     "integrals");
     }
-    if arr.domain.stridable {
+    if (arr.domain.stridable) {
       compilerError("cannot return a strided array");
     }
-    if arr.domain.rank != 1 {
+    if (arr.domain.rank != 1) {
       compilerError("cannot return an array with rank != 1");
     }
-    if arr.domain.low != 0 {
+    if (arr.domain.low != 0) {
       halt("cannot return an array when the lower bounds is not 0");
     }
 
