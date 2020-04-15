@@ -33,6 +33,12 @@
 // chpl_task_bundle_t.
 typedef chpl_task_bundle_t* chpl_task_bundle_p;
 
+//
+// Interface functions
+//
+
+#include "chpl-tasks-impl-fns.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
