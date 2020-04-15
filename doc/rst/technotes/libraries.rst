@@ -443,14 +443,15 @@ the Python module. It looks roughly like the following:
 
   atexit.register(moduleName.chpl_cleanup)
 
-The initializer file transforms the output directory into a Python package.
-It will also register ``chpl_cleanup()`` to be called automatically at
-program exit.
+The initializer file allows the output directory to be imported as a Python
+package. It will also register ``chpl_cleanup()`` to be called automatically
+at program exit.
 
-The directory containing generated Python code must be visible to any script
-that attempts to import it as a package. One option is to place the directory
-somewhere in an existing codebase and use an absolute import. Another option
-is to place the package directory on your ``PYTHONPATH`` environment variable.
+Like any other package, the generated Python package must be visible in order
+to import it, such as through importing it locally or by adding it to the
+``PYTHONPATH``. Refer to the Python 3 import
+`documentation <https://docs.python.org/3/reference/import.html#the-import-system>`_
+for more details.
 
 .. code-block:: bash
 
