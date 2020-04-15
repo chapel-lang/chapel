@@ -978,13 +978,7 @@ void AstToText::appendExpr(CallExpr* expr, bool printingType)
 
         }
 
-        // mText += std::to_string(expr->numActuals());
-        // mText += ' ';
-        // appendExpr(expr->get(1), printingType);
-        // mText += ' ';
-        // appendExpr(expr->get(2), printingType);
-        // mText += ' ';
-        // appendExpr(expr->get(3), printingType);
+        // TODO: make it for other domain calls
         else if (expr->numActuals() == 3)
         {
           if (isUnresolvedSymExpr(expr->get(1)) &&
@@ -1241,48 +1235,29 @@ void AstToText::appendExpr(CallExpr* expr, bool printingType)
         appendExpr(expr, fnName, printingType);
     }
 
-    else if (isSymExpr(expr->baseExpr))
+    else if (isSymExpr(expr->baseExpr) || isCallExpr(expr->baseExpr))
     {
-      if (expr->numActuals() == 0)
+      if (isSymExpr(expr->baseExpr))
+      {
+        appendExpr(expr->baseExpr, printingType);
+      }
+
+      else
+      {
+        CallExpr* subCall = toCallExpr(expr->baseExpr);
+        appendExpr(subCall->get(1), printingType);
+        mText += '.';
+        appendExpr(subCall->get(2), printingType);
+      }
+      
+      if (expr->numActuals() == 0 && isSymExpr(expr->baseExpr))
       {
         // NOAKES 2015/02/05  Debugging support.
         // Might become ASSERT in the future
         mText += "AppendExpr.Call06";
       }
 
-      else if (expr->numActuals() == 1)
-      {
-        appendExpr(expr->baseExpr, printingType);
-        mText += '(';
-        appendExpr(expr->get(1), printingType);
-        mText += ')';
-      }
-
-      else
-      {
-        appendExpr(expr->baseExpr, printingType);
-        mText += '(';
-
-        for (int i = 1; i <= expr->numActuals(); i++)
-        {
-          if (i > 1)
-            mText += ", ";
-
-          appendExpr(expr->get(i), printingType);
-        }
-
-        mText += ')';
-      }
-    }
-
-    else if (isCallExpr(expr->baseExpr))
-    {
-      CallExpr* subCall = toCallExpr(expr->baseExpr);
-      appendExpr(subCall->get(1), printingType);
-      mText += '.';
-      appendExpr(subCall->get(2), printingType);
-
-      if (expr->numActuals() == 0)
+      else if (expr->numActuals() == 0 && isCallExpr(expr->baseExpr))
       {
         mText += "()";
       }
@@ -1448,18 +1423,49 @@ void AstToText::appendExpr(IfExpr* expr, bool printingType)
   if (Expr* sel = toExpr(expr->getCondition()))
   {
     appendExpr(sel, printingType);
+
+    mText += " then ";
+    if (BlockStmt* thenBlockStmt = toBlockStmt(expr->getThenStmt()))
+    {
+      if (Expr* exp = toExpr(thenBlockStmt->body.get(1)))
+      {
+        appendExpr(exp, printingType);
+
+        mText += " else ";
+        if (BlockStmt* elseBlockStmt = toBlockStmt(expr->getElseStmt()))
+        {
+          if (Expr* exp = toExpr(elseBlockStmt->body.get(1)))
+          {
+            appendExpr(exp, printingType);
+          }
+
+          else
+          {
+            mText += "AppendExpr.If00";
+          }
+        }
+
+        else
+        {
+          mText += "AppendExpr.If01";
+        }
+      }
+
+      else
+      {
+        mText += "AppendExpr.If02";
+      }
+    }
+
+    else
+    {
+      mText += "AppendExpr.If03";
+    }
   }
-  mText += " then ";
-  if (BlockStmt* thenBlockStmt = toBlockStmt(expr->getThenStmt()))
+
+  else
   {
-    Expr* exp = thenBlockStmt->body.get(1);
-    appendExpr(exp, printingType);
-  }
-  mText += " else ";
-  if (BlockStmt* elseBlockStmt = toBlockStmt(expr->getElseStmt()))
-  {
-    Expr* exp = elseBlockStmt->body.get(1);
-    appendExpr(exp, printingType);
+    mText += "AppendExpr.If04";
   }
 }
 
