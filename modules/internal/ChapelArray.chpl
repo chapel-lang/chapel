@@ -1062,7 +1062,15 @@ module ChapelArray {
       if _to_unmanaged(value.type) != value.type then
         compilerError("Domain on borrow created");
 
-      this._pid = if _isPrivatized(value) then _newPrivatizedClass(value) else nullPid;
+      // the below check is necessary for iterator records that have domain
+      // shapes would create another set of privatized instances otherwise
+      if value.pid == nullPid then
+        this._pid = if _isPrivatized(value)
+                        then _newPrivatizedClass(value)
+                        else nullPid;
+      else
+        this._pid = value.pid;
+
       this._instance = value;
     }
 
@@ -4096,6 +4104,10 @@ module ChapelArray {
   proc chpl__initCopy(ir: _iteratorRecord)
     where chpl_iteratorHasDomainShape(ir)
   {
+
+    // ENGIN: here ir._shape_ could be a privatized domain. Make sure that the
+    // initializer we call here do not create another set of privatized
+    // instances
     var shape = new _domain(ir._shape_);
 
     // Important: ir._shape_ points to a domain class for a domain
@@ -4149,7 +4161,6 @@ module ChapelArray {
 
   pragma "init copy fn"
   proc chpl__initCopy(ir: _iteratorRecord) {
-
     // We'd like to know the yielded type of the record, but we can't
     // access the (runtime) component of that until we actually yield
     // something.
