@@ -169,7 +169,6 @@ module TomlParser {
         if !source.isEmpty() {
           while(readLine(source)) {
             var token = top(source);
-         
             if comment.match(token) {
               parseComment();
             }
@@ -617,7 +616,7 @@ used to recursively hold tables and respective values
     // Time
     proc init(ti: time) {
        this.ti = ti;
-       this.tag = fieldTime; 
+       this.tag = fieldTime;
     }
 
     // Datetime
@@ -1201,7 +1200,7 @@ module TomlReader {
     }
 
     proc splitLine(line) {
-      var idx = 0; 
+      var idx = 0;
       var linetokens: list(string);
       var nonEmptyChar: bool = false;
 
@@ -1230,7 +1229,6 @@ module TomlReader {
             writeln('Tokenized: ', '(', strippedToken, ')');
           }
           nonEmptyChar = true;
-          
           var isComment = strippedToken.match(compile(comments));
           if isComment.matched && idx <= 1 {
             linetokens.append(strippedToken);
