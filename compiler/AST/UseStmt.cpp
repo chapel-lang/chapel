@@ -49,7 +49,6 @@ UseStmt::UseStmt(BaseAST* source, const char* modRename,
   }
 
   gUseStmts.add(this);
-
 }
 
 UseStmt::UseStmt(BaseAST*                            source,
