@@ -25,7 +25,6 @@ public use MasonHelp;
 proc MASON_HOME : string {
   const envHome = getEnv("MASON_HOME");
   const default = getEnv('HOME') + "/.mason";
-
   const masonHome = if envHome != "" then envHome else default;
 
   return masonHome;
@@ -112,6 +111,14 @@ proc MASON_REGISTRY {
   return registries;
 }
 
+proc getSpackRoot() : string {
+  const envSpack = getEnv('SPACK_ROOT');
+  const default = getEnv('HOME') + "/.spack";
+  const spackRoot = if envSpack != "" then envSpack else default;
+
+  return spackRoot;
+}
+
 proc masonEnv(args) {
   if hasOptions(args, "-h", "--help") {
     masonEnvHelp();
@@ -161,6 +168,7 @@ proc masonEnv(args) {
   printVar("MASON_HOME", MASON_HOME);
   printVar("MASON_REGISTRY", MASON_REGISTRY);
   printVar('MASON_OFFLINE', offlineString);
+  printVar('SPACK_ROOT', getSpackRoot());
 
   if debug {
     printVar("MASON_CACHED_REGISTRY", MASON_CACHED_REGISTRY);
