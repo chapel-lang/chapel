@@ -27,8 +27,6 @@
 
 #include <stdint.h>
 
-#include "chpl-tasks-prvdata.h"
-
 #ifdef __cplusplus
 extern "C" {
 #endif

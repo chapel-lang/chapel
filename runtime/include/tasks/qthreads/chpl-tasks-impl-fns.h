@@ -33,7 +33,6 @@
 #define _chpl_tasks_impl_fns_h_
 
 #include "chpl-locale-model.h"
-#include "chpl-tasks-prvdata.h"
 #include "chpltypes.h"
 
 #include <assert.h>
@@ -53,18 +52,34 @@ extern
 #endif
 volatile int chpl_qthread_done_initializing;
 
-extern pthread_t chpl_qthread_process_pthread;
-extern pthread_t chpl_qthread_comm_pthread;
-
-extern chpl_qthread_tls_t chpl_qthread_process_tls;
-extern chpl_qthread_tls_t chpl_qthread_comm_task_tls;
+#define CHPL_TASK_STD_MODULES_INITIALIZED chpl_task_stdModulesInitialized
+void chpl_task_stdModulesInitialized(void);
 
 //
 // Task private data
 //
 
-#define CHPL_TASK_STD_MODULES_INITIALIZED chpl_task_stdModulesInitialized
-void chpl_task_stdModulesInitialized(void);
+//
+// Structure of task-local storage.
+//
+// Note: Granted this is a type and chpl-task-impl.h defines those, but
+// it's a type only used by the functions below and it requires another
+// type (chpl_task_infoRuntime_t) defined in chpl-tasks.h proper, before
+// we are included, so we define it here.
+//
+typedef struct chpl_qthread_tls_s {
+  struct chpl_task_bundle* bundle;
+  // The below fields could move to chpl_task_bundleData_t
+  // That would reduce the size of the task local storage,
+  // but increase the size of executeOn bundles.
+  chpl_task_infoRuntime_t infoRuntime;
+} chpl_qthread_tls_t;
+
+extern pthread_t chpl_qthread_process_pthread;
+extern pthread_t chpl_qthread_comm_pthread;
+
+extern chpl_qthread_tls_t chpl_qthread_process_tls;
+extern chpl_qthread_tls_t chpl_qthread_comm_task_tls;
 
 // Wrap qthread_get_tasklocal() and assert that it is always available.
 static inline chpl_qthread_tls_t* chpl_qthread_get_tasklocal(void)

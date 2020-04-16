@@ -28,7 +28,6 @@
 #include <pthread.h>
 #include <stdint.h>
 
-#include "chpl-tasks-prvdata.h"
 #include "chpl-threads.h"
 
 #ifdef __cplusplus
@@ -50,20 +49,6 @@ typedef uint64_t chpl_taskID_t;
 #ifndef CHPL_TASK_ID_STRING_MAX_LEN
 #define CHPL_TASK_ID_STRING_MAX_LEN 21
 #endif
-
-//
-// Task layer private area argument bundle header
-//
-typedef struct {
-  chpl_bool is_executeOn;
-  int lineno;
-  int filename;
-  c_sublocid_t requestedSubloc;  
-  chpl_fn_int_t requested_fid;
-  chpl_fn_p requested_fn;
-  chpl_taskID_t id;
-  chpl_task_infoChapel_t infoChapel;
-} chpl_task_bundle_t;
 
 
 //

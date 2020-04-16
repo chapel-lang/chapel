@@ -32,7 +32,6 @@
 #ifndef _chpl_tasks_impl_h_
 #define _chpl_tasks_impl_h_
 
-#include "chpl-tasks-prvdata.h"
 #include "chpltypes.h"
 
 #include "qthread.h"
@@ -66,33 +65,6 @@ typedef struct {
     aligned_t signal_full;
     aligned_t signal_empty;
 } chpl_sync_aux_t;
-
-//
-// Task private data
-//
-
-//
-// Task layer private area argument bundle header
-//
-typedef struct {
-  chpl_bool is_executeOn;
-  int lineno;
-  int filename;
-  c_sublocid_t requestedSubloc;
-  chpl_fn_int_t requested_fid;
-  chpl_fn_p requested_fn;
-  chpl_taskID_t id;
-  chpl_task_infoChapel_t infoChapel;
-} chpl_task_bundle_t;
-
-// Structure of task-local storage
-typedef struct chpl_qthread_tls_s {
-  chpl_task_bundle_t *bundle;
-  // The below fields could move to chpl_task_bundleData_t
-  // That would reduce the size of the task local storage,
-  // but increase the size of executeOn bundles.
-  chpl_task_infoRuntime_t infoRuntime;
-} chpl_qthread_tls_t;
 
 #ifdef __cplusplus
 } // end extern "C"

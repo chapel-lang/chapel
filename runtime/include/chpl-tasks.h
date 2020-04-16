@@ -26,11 +26,45 @@
 #include <stdint.h>
 #include "chplcgfns.h"
 #include "chpltypes.h"
+#include "chpl-comm-task-decls.h"
 #include "chpl-tasks-impl.h"
-#include "chpl-tasks-prvdata.h"
 
-// chpl-tasks-impl.h must define the task bundle header type,
-// chpl_task_bundle_t.
+//
+// This holds per-runtime-task information the tasking layer maintains
+// on behalf of other runtime layers.  Its components are intended to
+// be accessed only by the layers that define them.  Because this info
+// has to do with runtime tasks, which are intra-node entities, there
+// is not an expectation that it will be retained when the Chapel task
+// hosted by a runtime task moves to another node due to an on-stmt.
+//
+typedef struct {
+  chpl_comm_taskPrvData_t comm_data;
+} chpl_task_infoRuntime_t;
+
+//
+// This holds per-Chapel-task information the tasking layer maintains
+// on behalf of Chapel module code, such as the task's serial state.
+// Because this is Chapel-centric information, it must be carried
+// along as a Chapel task moves by means of on-stmts.
+//
+typedef struct {
+  unsigned char data[32];
+} chpl_task_infoChapel_t;
+
+//
+// Task argument bundle header.
+//
+typedef struct chpl_task_bundle {
+  chpl_bool is_executeOn;
+  int lineno;
+  int filename;
+  c_sublocid_t requestedSubloc;
+  chpl_fn_int_t requested_fid;
+  chpl_fn_p requested_fn;
+  chpl_taskID_t id;
+  chpl_task_infoChapel_t infoChapel;
+} chpl_task_bundle_t;
+
 typedef chpl_task_bundle_t* chpl_task_bundle_p;
 
 //
@@ -267,16 +301,16 @@ void chpl_task_yield(void);
 //
 void chpl_task_sleep(double);
 
-// The type for task private data, chpl_task_infoRuntime_t,
-// is defined in chpl-tasks-prvdata.h in order to support
-// proper initialization order with a task model .h
-
-// Get pointer to runtime-managed per-task information.
+//
+// Get the current task's runtime-related per-task information.
+//
 #ifndef CHPL_TASK_GET_INFO_RUNTIME_IMPL_DECL
 chpl_task_infoRuntime_t* chpl_task_getInfoRuntime(void);
 #endif
 
-// Get pointer to Chapel-managed per-task information.
+//
+// Get the current task's Chapel-related per-task information.
+//
 #ifndef CHPL_TASK_GET_INFO_CHAPEL_IMPL_DECL
 chpl_task_infoChapel_t* chpl_task_getInfoChapel(void);
 #endif
