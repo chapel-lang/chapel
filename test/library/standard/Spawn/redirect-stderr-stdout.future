@@ -1,0 +1,3 @@
+bug: spawn(..stderr=STDOUT) not working
+
+https://github.com/chapel-lang/chapel/issues/15497
