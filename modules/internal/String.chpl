@@ -1396,7 +1396,7 @@ module String {
           // I think that this exists in order to permit the doReplace()
           // call to work when `find()` returns 0, but this doesn't
           // seem principled.  See also the similar case in Bytes.chpl.
-          if (r.high:int < -1) || (r.high:int >= this.len) then
+          if (r.alignedHigh:int < -1) || (r.alignedHigh:int >= this.len) then
             halt("range ", r, " out of bounds for string with ", this.numBytes, " bytes");
         }
       }
@@ -1438,7 +1438,7 @@ module String {
       // locations, if they exist.
       const cp_low = if r.hasLowBound() && r.alignedLow:int >= 0
                        then r.alignedLow:int else 0;
-      const cp_high = if r.hasHighBound() then r.high:int else this.len;
+      const cp_high = if r.hasHighBound() then r.alignedHigh:int else this.len;
       var cp_count = 0;
       var byte_low = this.len;  // empty range if bounds outside string
       var byte_high = this.len - 1;
@@ -1458,7 +1458,7 @@ module String {
       }
       if boundsChecking {
         if r.hasHighBound() && (!r.hasLowBound() || r.size > 0) {
-          if (r.high:int < 0) || (r.high:int > cp_count) then
+          if (r.alignedHigh:int < 0) || (r.alignedHigh:int > cp_count) then
             halt("range ", r, " out of bounds for string with length ", this.size);
         }
       }
