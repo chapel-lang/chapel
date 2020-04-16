@@ -53,3 +53,7 @@ for i in 1..n do
 
 if verbose then
   writeln(A);
+
+for loc in Locales do on loc {
+  delete A;
+}
