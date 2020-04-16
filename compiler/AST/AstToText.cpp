@@ -904,18 +904,48 @@ void AstToText::appendExpr(CallExpr* expr, bool printingType)
 
       else if (strcmp(fnName, "chpl__buildDomainRuntimeType") == 0)
       {
-        if (expr->numActuals() == 2)
+        if (expr->numActuals() > 1)
         {
-          if (isUnresolvedSymExpr(expr->get(1)) &&
-              isUnresolvedSymExpr(expr->get(2)))
-          {
-            UnresolvedSymExpr* sym1 = toUnresolvedSymExpr(expr->get(1));
-            UnresolvedSymExpr* sym2 = toUnresolvedSymExpr(expr->get(2));
 
-            if (strcmp(sym1->unresolved, "defaultDist") == 0)
+          if (isUnresolvedSymExpr(expr->get(1)))
+          {
+            UnresolvedSymExpr* sym = toUnresolvedSymExpr(expr->get(1));
+
+            if (strcmp(sym->unresolved, "defaultDist") == 0)
             {
               mText += "domain(";
-              appendExpr(sym2, printingType);
+
+              for(int i=2; i<=expr->numActuals(); i++)
+              {
+                if (i != 2)
+                  mText += ", ";
+
+                if (UnresolvedSymExpr* symi = toUnresolvedSymExpr(expr->get(i)))
+                {
+                  appendExpr(symi, printingType);
+                }
+
+                else if (SymExpr* symi = toSymExpr(expr->get(i)))
+                {
+                  appendExpr(symi, printingType);
+                }
+
+                else if (CallExpr* symi = toCallExpr(expr->get(i)))
+                {
+                  appendExpr(symi, printingType);
+                }
+
+                else if (NamedExpr* symi = toNamedExpr(expr->get(i)))
+                {
+                  appendExpr(symi, printingType);
+                }
+
+                else
+                {
+                  mText += "AppendExpr.Call10";
+                }
+              }
+
               mText += ")";
             }
 
@@ -950,25 +980,6 @@ void AstToText::appendExpr(CallExpr* expr, bool printingType)
             }
           }
 
-          else if (isUnresolvedSymExpr(expr->get(1)) && isSymExpr(expr->get(2)))
-          {
-            UnresolvedSymExpr* sym1 = toUnresolvedSymExpr(expr->get(1));
-            SymExpr*   sym2 = toSymExpr(expr->get(2));
-            if (strcmp(sym1->unresolved, "defaultDist") == 0)
-            {
-              mText += "domain(";
-              appendExpr(sym2, printingType);
-              mText += ")";
-            }
-
-            else
-            {
-              // Lydia 2015/02/17 Debugging support.
-              // Might become ASSERT in the future
-              mText += "AppendExpr.Call10";
-            }
-          }
-
           else
           {
             // NOAKES 2015/02/05  Debugging support.
@@ -976,90 +987,6 @@ void AstToText::appendExpr(CallExpr* expr, bool printingType)
             mText += "AppendExpr.Call02";
           }
 
-        }
-
-        // TODO: make it for other domain calls
-        else if (expr->numActuals() == 3)
-        {
-          if (isUnresolvedSymExpr(expr->get(1)) &&
-              isUnresolvedSymExpr(expr->get(2)) &&
-              isNamedExpr(expr->get(3)))
-          {
-            UnresolvedSymExpr* sym1 = toUnresolvedSymExpr(expr->get(1));
-            UnresolvedSymExpr* sym2 = toUnresolvedSymExpr(expr->get(2));
-            NamedExpr* nem = toNamedExpr(expr->get(3));
-
-            if (strcmp(sym1->unresolved, "defaultDist") == 0)
-            {
-              mText += "domain(";
-              appendExpr(sym2, printingType);
-              mText += ", ";
-              appendExpr(nem, printingType);
-              mText += ")";
-            }
-
-            else
-            {
-              // NOAKES 2015/02/05  Debugging support.
-              // Might become ASSERT in the future
-              mText += "AppendExpr.Call00";
-            }
-          }
-
-          else if (isSymExpr(expr->get(1)) && isSymExpr(expr->get(2)) && isNamedExpr(expr->get(3)))
-          {
-            SymExpr*   sym1 = toSymExpr(expr->get(1));
-            SymExpr*   sym2 = toSymExpr(expr->get(2));
-            NamedExpr* nem = toNamedExpr(expr->get(3));
-
-            VarSymbol* arg1 = toVarSymbol(sym1->symbol());
-            ArgSymbol* arg2 = toArgSymbol(sym2->symbol());
-
-            if (arg1 != 0 && arg2 != 0 && strcmp(arg1->name, "defaultDist") == 0)
-            {
-              mText += "domain(";
-              appendExpr(sym2, printingType);
-              mText += ", ";
-              appendExpr(nem, printingType);
-              mText += ")";
-            }
-
-            else
-            {
-              // NOAKES 2015/02/05  Debugging support.
-              // Might become ASSERT in the future
-              mText += "AppendExpr.Call01";
-            }
-          }
-
-          else if (isUnresolvedSymExpr(expr->get(1)) && isSymExpr(expr->get(2)) && isNamedExpr(expr->get(3)))
-          {
-            UnresolvedSymExpr* sym1 = toUnresolvedSymExpr(expr->get(1));
-            SymExpr*   sym2 = toSymExpr(expr->get(2));
-            NamedExpr* nem = toNamedExpr(expr->get(3));
-            if (strcmp(sym1->unresolved, "defaultDist") == 0)
-            {
-              mText += "domain(";
-              appendExpr(sym2, printingType);
-              mText += ", ";
-              appendExpr(nem, printingType);
-              mText += ")";
-            }
-
-            else
-            {
-              // Lydia 2015/02/17 Debugging support.
-              // Might become ASSERT in the future
-              mText += "AppendExpr.Call10";
-            }
-          }
-
-          else
-          {
-            // NOAKES 2015/02/05  Debugging support.
-            // Might become ASSERT in the future
-            mText += "AppendExpr.Call02";
-          }
         }
 
         else
