@@ -108,9 +108,9 @@ explainInstantiation(FnSymbol* fn) {
   }
   sprintf(msg+len, ")");
   if (callStack.n) {
-    USR_PRINT(callStack.v[callStack.n-1], msg);
+    USR_PRINT(callStack.v[callStack.n-1], "%s", msg);
   } else {
-    USR_PRINT(fn, msg);
+    USR_PRINT(fn, "%s", msg);
   }
 }
 

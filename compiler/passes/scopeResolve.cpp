@@ -1445,7 +1445,7 @@ static void printConflictingSymbols(std::vector<Symbol*>& symbols, Symbol* sym,
                   another->name, nameUsed, renameLoc->filename,
                   renameLoc->lineno);
       } else {
-        USR_PRINT(another, "also defined here", another->name);
+        USR_PRINT(another, "also defined here");
       }
     }
   }

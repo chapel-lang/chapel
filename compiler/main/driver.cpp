@@ -1465,11 +1465,7 @@ static void checkMLDebugAndLibmode(void) {
 
   if (!strcmp(CHPL_COMM, "none")) {
     fMultiLocaleLibraryDebug = false;
-
-    const char* warning =
-        "Compiling a single locale library because CHPL_COMM is none.";
-
-    USR_WARN(warning);
+    USR_WARN("Compiling a single locale library because CHPL_COMM is none.");
   }
 
   return;

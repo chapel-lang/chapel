@@ -767,7 +767,7 @@ static void makeActualsVector(const CallInfo&          info,
       // Fail if no matching formal is found.
       if (!match) {
         INT_FATAL(call,
-                  "Compilation should have already ensured this action ",
+                  "Compilation should have already ensured this action "
                   "would be valid");
       }
     }
