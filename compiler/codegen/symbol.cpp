@@ -1104,145 +1104,187 @@ std::string ArgSymbol::getPythonDefaultValue() {
   }
 }
 
+static std::string pythonArgToStringC(ArgSymbol* as) {
+  std::string strname = as->cname;
+  std::string res = "\tcdef const char* chpl_" + strname + " = " + strname;
+  res += "\n";
+  return res;
+}
+
+//
+// Translate a Python argument with the 'bytes' type into a Chapel 'bytes',
+// or a Python argument with the 'str' type into a Chapel 'string'. Both
+// Python types are shuttled into Chapel via a 'chpl_byte_buffer', but we
+// do emit checks (for now) to restrict the Python argument type to 'bytes'
+// or 'str', accordingly.
+//
+static std::string pythonArgToByteBuffer(ArgSymbol* as) {
+  std::string strname = as->cname;
+
+  Type* origt = getUnwrappedArg(as)->type->getValType();
+  INT_ASSERT(origt == dtBytes || origt == dtString);
+
+  std::string chapelType = "Chapel bytes";
+  std::string pythonType = "bytes";
+
+  if (origt == dtString) {
+    chapelType = "Chapel string";
+    pythonType = "str";
+  }
+
+  std::string res;
+
+  //
+  // Generate a Python TypeError if the Python type does not match the
+  // Chapel type (string or bytes).
+  //
+  res += "\tif type(" + strname + ") != " + pythonType + ":\n";
+  res += "\t\traise TypeError(\"Expected \'" + pythonType;
+  res += "\' in conversion to \'" + chapelType;
+  res += "\', found \" + str(type(" + strname + ")))\n";
+
+  // Python strings need to encode themselves into a bytes first.
+  if (origt == dtString) {
+    res += "\t" + strname + " = " + strname + ".encode(\'utf-8\')\n";
+  }
+
+  // Get the size of the bytes buffer.
+  std::string argsize = "size_" + strname;
+  res += "\tcdef size_t " + argsize + " = len(" + strname + ")\n";
+
+  // Get a handle to the bytes buffer.
+  std::string argdata = "data_" + strname;
+  res += "\tcdef char* " + argdata + " = " + strname + "\n";
+
+  // Declare a struct by value on the stack.
+  std::string wrapval = "chpl_" + strname + "_val";
+
+  // Create a chpl_byte_buffer struct that represents a shallow copy.
+  res += "\tcdef chpl_byte_buffer " + wrapval + "\n";
+  res += "\t" + wrapval + ".isOwned = 0\n";
+  res += "\t" + wrapval + ".data = " + argdata + "\n";
+  res += "\t" + wrapval + ".size = " + argsize + "\n";
+
+  // The final result is a copy of the stack allocated struct.
+  res += "\tcdef chpl_byte_buffer chpl_" + strname;
+  res += " = " + wrapval + "\n";
+
+  return res;
+}
+
+static std::string pythonArgToExternalArray(ArgSymbol* as) {
+  std::string strname = as->cname;
+
+  if (Symbol* eltType = exportedArrayElementType[as]) {
+    // The element type will be recorded in the exportedArrayElementType map
+    // if this arg's type was originally a Chapel array instead of explicitly
+    // an external array.  If we have the element type, that means we need to
+    // do a translation in the python wrapper.
+    std::string typeStr = getPythonTypeName(eltType->type, PYTHON_PYX);
+    std::string typeStrCDefs = getPythonTypeName(eltType->type, C_PYX);
+
+    // Create the memory needed to store the contents of what was passed to us
+    // E.g. cdef chpl_external_array chpl_foo =
+    //          chpl_make_external_array(sizeof(element type), len(foo))
+    std::string res = "\tcdef chpl_external_array chpl_" + strname;
+    res += " = chpl_make_external_array(sizeof(" + typeStrCDefs + "), len(";
+    res += strname + "))\n";
+
+    // Copy the contents over.
+    // E.g. for i in range(len(foo)):
+    //         (<element type*>chpl_foo.elts)[i] = foo[i]
+    res += "\tfor i in range(len(" + strname + ")):\n";
+    res += "\t\t(<" + typeStrCDefs + "*>chpl_" + strname + ".elts)[i] = ";
+    res += strname + "[i]\n";
+
+    return res;
+  }
+  return "";
+}
+
+//
+// Handle opaque arrays. Opaque arrays have a Python representation that
+// stores the C contents in a field named 'val'.
+//
+static std::string pythonArgToOpaqueArray(ArgSymbol* as) {
+  std::string strname = as->cname;
+  std::string res = "\tchpl_" + strname + " = &" + strname + ".val\n";
+  return res;
+}
+
+//
+// Pass a pointer to a 'numpy.ndarray' buffer or a 'ctypes._Pointer' into
+// Chapel code. In both cases we already know the size of underlying
+// elements.
+//
+static std::string pythonArgToChapelArrayOrPtr(ArgSymbol* as) {
+  Type* t = getArgSymbolCodegenType(as);
+  std::string strname = as->cname;
+
+  // Lydia TODO 12/04/18: Might be good to use a template where we can
+  // replace all instances of a placeholder with the argument name instead of
+  // of writing all of the code out in this chunky, unclear fashion.  Might
+  // be worth considering doing for the other 'pythonArgTo...' functions
+  // as well.
+  std::string res = "\tcdef ";
+  std::string typeStr = "";
+  std::string typeStrCDefs = "";
+  if (t->symbol->hasFlag(FLAG_REF)) {
+    typeStr = getPythonTypeName(t->getValType(), PYTHON_PYX);
+    typeStrCDefs = getPythonTypeName(t->getValType(), C_PYX);
+  } else {
+    typeStr = getPythonTypeName(getDataClassType(t->symbol)->typeInfo(),
+                                PYTHON_PYX);
+    typeStrCDefs = getPythonTypeName(getDataClassType(t->symbol)->typeInfo(),
+                                     C_PYX);
+  }
+  res += typeStrCDefs + " * chpl_" + strname + "\n";
+  res += "\tcdef numpy.ndarray[" + typeStrCDefs;
+  res += ", ndim=1, mode = 'c'] chpl_tmp_" + strname + "\n"; // for numpy case
+  res += "\tcdef intptr_t chpl_tmp2_" + strname; // for ctypes.pointer case
+  // If sent a numpy array, pass in a pointer to the array
+  res += "\n\tif type(" + strname + ") == numpy.ndarray:\n";
+  res += "\t\tchpl_tmp_" + strname + " = numpy.ascontiguousarray(";
+  res += strname + ", dtype = " + typeStr + ")\n";
+  res += "\t\tchpl_" + strname + " = <" + typeStrCDefs + "*> chpl_tmp_";
+  res += strname + ".data\n";
+  // Otherwise, check if type is ctypes._Pointer.  Note that this means we
+  // cannot send in ctypes.byref, but I don't think Cython allows that right
+  // now anyways
+  // Note: this is a lot more work than we would like it to be, but we think
+  // it is the best possible at the moment.  Unless Cython decides to support
+  // ctypes directly, then these conversions will not be necessary
+  res += "\telif isinstance(" + strname + ", ctypes._Pointer):\n";
+  res += "\t\tpython_" + strname + " = ctypes.addressof(" + strname;
+  res += ".contents)\n";
+  res += "\t\tchpl_tmp2_" + strname + " = <intptr_t>python_" + strname;
+  res += "\n\t\tchpl_" + strname + " = <" + typeStrCDefs + "*> chpl_tmp2_";
+  res += strname + "\n";
+  // TODO: support ctypes arrays as well
+  // Otherwise, throw a type error because we've been passed something that
+  // won't work (and we can't assign a Python object into a C one without
+  // knowing what the type is)
+  res += "\telse:\n";
+  res += "\t\traise TypeError(\"" + strname + " is of unsupported type\")\n";
+  return res;
+}
+
 // Some Python type instances need to be translated into C level type instances.
 // Generate code to perform that translation when this is the case
 std::string ArgSymbol::getPythonArgTranslation() {
   Type* t = getArgSymbolCodegenType(this);
-  std::string strname = cname;
+  Type* valType = t->getValType();
 
   if (t == dtStringC) {
-    std::string res = "\tcdef const char* chpl_" + strname + " = " + strname;
-    res += "\n";
-    return res;
-  } else if (t->getValType() == exportTypeChplByteBuffer) {
-    Type* origt = getUnwrappedArg(this)->type->getValType();
-    INT_ASSERT(origt == dtBytes || origt == dtString);
-
-    std::string chapelType = "Chapel bytes";
-    std::string pythonType = "bytes";
-
-    if (origt == dtString) {
-      chapelType = "Chapel string";
-      pythonType = "str";
-    }
- 
-    std::string res;
-
-    //
-    // Generate a Python TypeError if the Python type does not match the
-    // Chapel type (string or bytes).
-    //
-    res += "\tif type(" + strname + ") != " + pythonType + ":\n";
-    res += "\t\traise TypeError(\"Expected \'" + pythonType;
-    res += "\' in conversion to \'" + chapelType;
-    res += "\', found \" + str(type(" + strname + ")))\n";
-
-    // Python strings need to encode themselves into a bytes first.
-    if (origt == dtString) {
-      res += "\t" + strname + " = " + strname + ".encode(\'utf-8\')\n";
-    }
-
-    // Get the size of the bytes buffer.
-    std::string argsize = "size_" + strname;
-    res += "\tcdef size_t " + argsize + " = len(" + strname + ")\n";
-
-    // Get a handle to the bytes buffer.
-    std::string argdata = "data_" + strname;
-    res += "\tcdef char* " + argdata + " = " + strname + "\n";
-
-    // Declare a struct by value on the stack.
-    std::string wrapval = "chpl_" + strname + "_val";
-
-    // Create a chpl_byte_buffer struct that represents a shallow copy.
-    res += "\tcdef chpl_byte_buffer " + wrapval + "\n";
-    res += "\t" + wrapval + ".isOwned = 0\n";
-    res += "\t" + wrapval + ".data = " + argdata + "\n";
-    res += "\t" + wrapval + ".size = " + argsize + "\n";
-
-    // The final result is a copy of the stack allocated struct.
-    res += "\tcdef chpl_byte_buffer chpl_" + strname;
-    res += " = " + wrapval + "\n";
-
-    return res;
-  } else if (t->getValType() == dtExternalArray) {
-    // Handle arrays
-    if (Symbol* eltType = exportedArrayElementType[this]) {
-      // The element type will be recorded in the exportedArrayElementType map
-      // if this arg's type was originally a Chapel array instead of explicitly
-      // an external array.  If we have the element type, that means we need to
-      // do a translation in the python wrapper.
-      std::string typeStr = getPythonTypeName(eltType->type, PYTHON_PYX);
-      std::string typeStrCDefs = getPythonTypeName(eltType->type, C_PYX);
-
-      // Create the memory needed to store the contents of what was passed to us
-      // E.g. cdef chpl_external_array chpl_foo =
-      //          chpl_make_external_array(sizeof(element type), len(foo))
-      std::string res = "\tcdef chpl_external_array chpl_" + strname;
-      res += " = chpl_make_external_array(sizeof(" + typeStrCDefs + "), len(";
-      res += strname + "))\n";
-
-      // Copy the contents over.
-      // E.g. for i in range(len(foo)):
-      //         (<element type*>chpl_foo.elts)[i] = foo[i]
-      res += "\tfor i in range(len(" + strname + ")):\n";
-      res += "\t\t(<" + typeStrCDefs + "*>chpl_" + strname + ".elts)[i] = ";
-      res += strname + "[i]\n";
-
-      return res;
-    }
-  } else if (t->symbol->hasFlag(FLAG_REF) &&
-             t->getValType() == dtOpaqueArray) {
-    // Opaque arrays have a Python representation that stores the C contents in
-    // a field named val
-    std::string res = "\tchpl_" + strname + " = &" + strname + ".val\n";
-    return res;
-
+    return pythonArgToStringC(this);
+  } else if (valType == exportTypeChplByteBuffer) {
+    return pythonArgToByteBuffer(this);
+  } else if (valType == dtExternalArray) {
+    return pythonArgToExternalArray(this);
+  } else if (t->symbol->hasFlag(FLAG_REF) && valType == dtOpaqueArray) {
+    return pythonArgToOpaqueArray(this);
   } else if (t->symbol->hasEitherFlag(FLAG_C_PTR_CLASS, FLAG_REF)) {
-    // Lydia TODO 12/04/18: Might be good to use a template where we can
-    // replace all instances of a placeholder with the argument name instead of
-    // of writing all of the code out in this chunky, unclear fashion.  Might
-    // be worth considering doing for the else branch above this as well
-    std::string res = "\tcdef ";
-    std::string typeStr = "";
-    std::string typeStrCDefs = "";
-    if (t->symbol->hasFlag(FLAG_REF)) {
-      typeStr = getPythonTypeName(t->getValType(), PYTHON_PYX);
-      typeStrCDefs = getPythonTypeName(t->getValType(), C_PYX);
-    } else {
-      typeStr = getPythonTypeName(getDataClassType(t->symbol)->typeInfo(),
-                                  PYTHON_PYX);
-      typeStrCDefs = getPythonTypeName(getDataClassType(t->symbol)->typeInfo(),
-                                       C_PYX);
-    }
-    res += typeStrCDefs + " * chpl_" + strname + "\n";
-    res += "\tcdef numpy.ndarray[" + typeStrCDefs;
-    res += ", ndim=1, mode = 'c'] chpl_tmp_" + strname + "\n"; // for numpy case
-    res += "\tcdef intptr_t chpl_tmp2_" + strname; // for ctypes.pointer case
-    // If sent a numpy array, pass in a pointer to the array
-    res += "\n\tif type(" + strname + ") == numpy.ndarray:\n";
-    res += "\t\tchpl_tmp_" + strname + " = numpy.ascontiguousarray(";
-    res += strname + ", dtype = " + typeStr + ")\n";
-    res += "\t\tchpl_" + strname + " = <" + typeStrCDefs + "*> chpl_tmp_";
-    res += strname + ".data\n";
-    // Otherwise, check if type is ctypes._Pointer.  Note that this means we
-    // cannot send in ctypes.byref, but I don't think Cython allows that right
-    // now anyways
-    // Note: this is a lot more work than we would like it to be, but we think
-    // it is the best possible at the moment.  Unless Cython decides to support
-    // ctypes directly, then these conversions will not be necessary
-    res += "\telif isinstance(" + strname + ", ctypes._Pointer):\n";
-    res += "\t\tpython_" + strname + " = ctypes.addressof(" + strname;
-    res += ".contents)\n";
-    res += "\t\tchpl_tmp2_" + strname + " = <intptr_t>python_" + strname;
-    res += "\n\t\tchpl_" + strname + " = <" + typeStrCDefs + "*> chpl_tmp2_";
-    res += strname + "\n";
-    // TODO: support ctypes arrays as well
-    // Otherwise, throw a type error because we've been passed something that
-    // won't work (and we can't assign a Python object into a C one without
-    // knowing what the type is)
-    res += "\telse:\n";
-    res += "\t\traise TypeError(\"" + strname + " is of unsupported type\")\n";
-    return res;
+    return pythonArgToChapelArrayOrPtr(this);
   }
   return "";
 }
@@ -2227,6 +2269,111 @@ GenRet FnSymbol::codegenPXDType() {
   return ret;
 }
 
+static void pythonRetByteBuffer(FnSymbol* fn, std::string& funcCall,
+                                std::string& returnStmt) {
+
+  // The raw result of the routine call, a "chpl_byte_buffer".
+  funcCall += "cdef chpl_byte_buffer rv = ";
+
+  // Unpack a handle to the buffer and the buffer size.
+  returnStmt += "\tcdef char* rdata = rv.data\n";
+  returnStmt += "\tcdef Py_ssize_t rsize = rv.size\n";
+
+  //
+  // Create a new Python bytes that is a copy of the Chapel bytes. Note
+  // that this call creates a copy of the string.
+  //
+  returnStmt += "\tret = PyBytes_FromStringAndSize(rdata, rsize)\n";
+
+  // This will free the "chpl_byte_buffer" buffer if required.
+  returnStmt += "\tchpl_byte_buffer_free(rv)\n";
+
+  Type* origt = getUnwrappedRetType(fn)->getValType();
+  INT_ASSERT(origt != NULL);
+
+  // The only two types that can be mapped to "chpl_byte_buffer".
+  INT_ASSERT(origt == dtBytes || origt == dtString);
+
+  //
+  // If the original Chapel routine's return type is a string, then
+  // decode the Python bytes into a Python UTF-8 string.
+  //
+  if (origt == dtString) {
+    returnStmt += "\tret = ret.decode(\'utf-8\')\n";  
+  }
+}
+
+static void pythonRetExternalArray(FnSymbol* fn, std::string& funcCall,
+                                   std::string& returnStmt) {
+  INT_ASSERT(fn->retType == dtExternalArray);
+
+  Symbol* eltTypeSym = exportedArrayElementType[fn];
+  if (eltTypeSym == NULL) { return; }
+
+  Type* eltType = eltTypeSym->type;
+
+  funcCall += "cdef chpl_external_array ret_arr = ";
+
+  std::string typeStr = getPythonTypeName(eltType, PYTHON_PYX);
+  std::string typeStrCDefs = getPythonTypeName(eltType, C_PYX);
+
+  //
+  // Create the numpy array to return. The form looks like:
+  //
+  //  cdef numpy.ndarray [C element type, ndim=1] ret =
+  //    numpy.zeros(shape = ret_arr.num_elts, dtype = (numpy dtype))
+  //
+  std::string res;
+  res += "\tcdef numpy.ndarray [" + typeStrCDefs + ", ndim=1] ret";
+  res += " = numpy.zeros(shape = ret_arr.num_elts, dtype = " + typeStr;
+  res += ")\n";
+
+  if (eltType == dtBytes || eltType == dtString) {
+
+    //
+    // TODO: Add this to a function we can call with a flag for string or
+    // bytes? Can we also do the same for the opaque array code?
+    //
+    //    cdef chpl_byte_buffer rv
+    //    for i in range(ret_arr.num_elts):
+    //      rv = (<chpl_byte_buffer*>ret_arr.elts)[i]
+    //      slot = PyBytes_FromStringAndSize(rv.data, rv.size)
+    //      chpl_byte_buffer_free(rv)
+    //      # Only execute this line if type is dtString:
+    //      slot = slot.decode('utf-8')
+    //      ret[i] = slot
+    //    chpl_free_external_array(ret_arr)
+    //
+    res += "\tcdef chpl_byte_buffer rv\n";
+    res += "\tfor i in range(ret_arr.num_elts):\n";
+    res += "\t\trv = (<chpl_byte_buffer*>ret_arr.elts)[i]\n";
+    res += "\t\tslot = PyBytes_FromStringAndSize(rv.data, rv.size)\n";
+    res += "\t\tchpl_byte_buffer_free(rv)\n";
+    
+    if (eltType == dtString) {
+      res += "\t\tslot = slot.decode(\'utf-8\')\n";
+    }
+
+    res += "\t\tret[i] = slot\n";
+  } else {
+    // Populate it with the contents we return (which translated C types into
+    // Python types)
+    res += "\tfor i in range(ret_arr.num_elts):\n";
+    res += "\t\tret[i] = (<" + typeStrCDefs + "*>ret_arr.elts)[i]\n";
+  }
+
+  // Free the returned array now that its contents have been stored elsewhere
+  res += "\tchpl_free_external_array(ret_arr)\n";
+  returnStmt += res;
+}
+
+static void pythonRetOpaqueArray(FnSymbol* fn, std::string& funcCall,
+                                 std::string& returnStmt) {
+  funcCall += "ret = ChplOpaqueArray()\n\t";
+  funcCall += "ret.setVal(";
+}
+
+                         
 // Supports the creation of a python module with --library-python
 GenRet FnSymbol::codegenPYXType() {
   GenRet ret;
@@ -2246,40 +2393,11 @@ GenRet FnSymbol::codegenPYXType() {
   std::string returnStmt = "";
   if (retType != dtVoid) {
     if (retType == exportTypeChplByteBuffer) {
-
-      // The raw result of the routine call, a "chpl_byte_buffer".
-      funcCall += "cdef chpl_byte_buffer rv = ";
-
-      // Unpack the required fields.
-      returnStmt += "\tcdef char* rdata = rv.data\n";
-      returnStmt += "\tcdef Py_ssize_t rsize = rv.size\n";
-
-      // Create a new Python bytes that is a copy of the Chapel bytes.
-      returnStmt += "\tret = PyBytes_FromStringAndSize(rdata, rsize)\n";
-
-      // This will free the "chpl_byte_buffer" buffer if required.
-      returnStmt += "\tchpl_byte_buffer_free(rv)\n";
-
-      Type* origt = getUnwrappedRetType(this)->getValType();
-      INT_ASSERT(origt != NULL);
-
-      // The only two types that can be mapped to "chpl_byte_buffer".
-      INT_ASSERT(origt == dtBytes || origt == dtString);
-
-      //
-      // If the original Chapel routine's return type is a string, then
-      // decode the Python bytes into a Python UTF-8 string.
-      //
-      if (origt == dtString) {
-        returnStmt += "\tret = ret.decode(\'utf-8\')\n";  
-      }
-    } else if (retType == dtExternalArray &&
-             exportedArrayElementType[this] != NULL) {
-      funcCall += "cdef chpl_external_array ret_arr = ";
-      returnStmt += getPythonArrayReturnStmts();
+      pythonRetByteBuffer(this, funcCall, returnStmt);
+    } else if (retType == dtExternalArray) {
+      pythonRetExternalArray(this, funcCall, returnStmt);  
     } else if (retType == dtOpaqueArray) {
-      funcCall += "ret = ChplOpaqueArray()\n\t";
-      funcCall += "ret.setVal(";
+      pythonRetOpaqueArray(this, funcCall, returnStmt);
     } else {
       funcCall += "ret = ";
     }
@@ -2333,27 +2451,6 @@ GenRet FnSymbol::codegenPYXType() {
   ret.c = header + argTranslate + funcCall + returnStmt;
 
   return ret;
-}
-
-std::string FnSymbol::getPythonArrayReturnStmts() {
-  INT_ASSERT(retType == dtExternalArray);
-  Symbol* eltType = exportedArrayElementType[this];
-  std::string typeStr = getPythonTypeName(eltType->type, PYTHON_PYX);
-  std::string typeStrCDefs = getPythonTypeName(eltType->type, C_PYX);
-  // Create the numpy array to return
-  // E.g. cdef numpy.ndarray [C element type, ndim=1] ret =
-  //          numpy.zeros(shape = ret_arr.num_elts, dtype = Python element type)
-  std::string res = "\tcdef numpy.ndarray [" + typeStrCDefs + ", ndim=1] ret";
-  res += " = numpy.zeros(shape = ret_arr.num_elts, dtype = " + typeStr + ")\n";
-
-  // Populate it with the contents we return (which translated C types into
-  // Python types)
-  res += "\tfor i in range(ret_arr.num_elts):\n";
-  res += "\t\tret[i] = (<" + typeStrCDefs + "*>ret_arr.elts)[i]\n";
-
-  // Free the returned array now that its contents have been stored elsewhere
-  res += "\tchpl_free_external_array(ret_arr)\n";
-  return res;
 }
 
 /******************************** | *********************************
