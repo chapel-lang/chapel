@@ -108,7 +108,7 @@ public:
 
   void                  describe()                                       const;
 
-  bool                  canReexport = true;
+  bool                  canReexport;
 
 private:
   typedef std::vector<VisibilityStmt*>   UseImportList;

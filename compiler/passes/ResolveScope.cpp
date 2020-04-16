@@ -138,6 +138,8 @@ ResolveScope::ResolveScope(ModuleSymbol*       modSymbol,
   // Use modSymbol->block for sScopeMap
   INT_ASSERT(getScopeFor(modSymbol->block) == NULL);
   sScopeMap[modSymbol->block] = this;
+
+  canReexport = true;
 }
 
 ResolveScope::ResolveScope(BaseAST*            ast,
@@ -147,6 +149,8 @@ ResolveScope::ResolveScope(BaseAST*            ast,
 
   INT_ASSERT(getScopeFor(ast) == NULL);
   sScopeMap[ast] = this;
+
+  canReexport = true;
 }
 
 /************************************* | **************************************

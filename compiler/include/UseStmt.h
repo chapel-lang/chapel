@@ -68,7 +68,7 @@ public:
 
   void            writeListPredicate(FILE* mFP)                          const;
 
-  bool            canReexport = true;
+  bool            canReexport;
 
 private:
   bool            isEnum(const Symbol* sym)                              const;

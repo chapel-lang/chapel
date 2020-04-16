@@ -36,6 +36,7 @@ UseStmt::UseStmt(BaseAST* source, const char* modRename,
   src    = NULL;
   this->modRename = astr(modRename);
   except = false;
+  canReexport = true;
 
   if (Symbol* b = toSymbol(source)) {
     src = new SymExpr(b);
@@ -48,6 +49,7 @@ UseStmt::UseStmt(BaseAST* source, const char* modRename,
   }
 
   gUseStmts.add(this);
+
 }
 
 UseStmt::UseStmt(BaseAST*                            source,
@@ -62,6 +64,7 @@ UseStmt::UseStmt(BaseAST*                            source,
   src    = NULL;
   this->modRename = astr(modRename);
   except = exclude;
+  canReexport = true;
 
   if (Symbol* b = toSymbol(source)) {
     src = new SymExpr(b);
