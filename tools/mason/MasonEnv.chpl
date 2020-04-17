@@ -111,14 +111,6 @@ proc MASON_REGISTRY {
   return registries;
 }
 
-proc getSpackRoot() : string {
-  const envSpack = getEnv('SPACK_ROOT');
-  const default = getEnv('HOME') + "/.spack";
-  const spackRoot = if envSpack != "" then envSpack else default;
-
-  return spackRoot;
-}
-
 proc masonEnv(args) {
   if hasOptions(args, "-h", "--help") {
     masonEnvHelp();
@@ -168,7 +160,7 @@ proc masonEnv(args) {
   printVar("MASON_HOME", MASON_HOME);
   printVar("MASON_REGISTRY", MASON_REGISTRY);
   printVar('MASON_OFFLINE', offlineString);
-  printVar('SPACK_ROOT', getSpackRoot());
+  printVar("SPACK_ROOT", SPACK_ROOT);
 
   if debug {
     printVar("MASON_CACHED_REGISTRY", MASON_CACHED_REGISTRY);
