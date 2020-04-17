@@ -961,9 +961,9 @@ module Random {
       }
 
       /*
-     Returns a random sample from a given 1-D array, ``arr``.
+     Returns a random sample from a given 1-D array, ``x``.
 
-     :arg arr: a 1-D array with values that will be sampled from.
+     :arg x: a 1-D array with values that will be sampled from.
      :arg size: An optional integral value specifying the number of elements to
                 choose, or a domain specifying the dimensions of the
                 sampled array to be filled, otherwise a single element will be
@@ -972,33 +972,33 @@ module Random {
                    replacement, i.e. elements will only be chosen up to one
                    time when ``replace=false``.
      :arg prob: an optional 1-D array that contains probabilities of choosing
-                each element of ``arr``, otherwise elements will be chosen over
+                each element of ``x``, otherwise elements will be chosen over
                 a uniform distribution. ``prob`` must have integral or real
                 element type, with no negative values and at least one non-zero
-                value. The size must be equal to that of ``arr.domain``.
+                value. The size must be equal to that of ``x.domain``.
 
-     :return: An element chosen from ``arr`` if ``size == 1``, or an array of
-              element chosen from ``arr`` if ``size > 1`` or ``size`` is a
+     :return: An element chosen from ``x`` if ``size == 1``, or an array of
+              element chosen from ``x`` if ``size > 1`` or ``size`` is a
               domain.
 
-     :throws IllegalArgumentError: if ``arr.size == 0``,
-                                   if ``arr.size != prob.size``,
+     :throws IllegalArgumentError: if ``x.size == 0``,
+                                   if ``x.size != prob.size``,
                                    if ``prob`` contains a negative value,
                                    if ``prob`` has no non-zero values,
                                    if ``size < 1 || size.size < 1``,
-                                   if ``replace=false`` and ``size > arr.size || size.size > arr.size``
+                                   if ``replace=false`` and ``size > x.size || size.size > x.size``
      */
-      proc choice(arr: [?Dom], size:?sizeType=none, replace=true, prob:?probType=none)
+      proc choice(x: [?dom], size:?sizeType=none, replace=true, prob:?probType=none)
         throws
       {
-        var idx = _choice(this, Dom, size=size, replace=replace, prob=prob);
-        return arr[idx];
+        var idx = _choice(this, dom, size=size, replace=replace, prob=prob);
+        return x[idx];
       }
 
       /*
-     Returns a random sample from a given 1-D range, ``rng``.
+     Returns a random sample from a given 1-D range, ``x``.
 
-     :arg rng: a 1-D range with values that will be sampled from.
+     :arg x: a 1-D range with values that will be sampled from.
      :arg size: An optional integral value specifying the number of elements to
                 choose, or a domain specifying the dimensions of the
                 sampled array to be filled, otherwise a single element will be
@@ -1007,37 +1007,39 @@ module Random {
                    replacement, i.e. elements will only be chosen up to one
                    time when ``replace=false``.
      :arg prob: an optional 1-D array that contains probabilities of choosing
-                each element of ``rng``, otherwise elements will be chosen over
+                each element of ``x``, otherwise elements will be chosen over
                 a uniform distribution. ``prob`` must have integral or real
                 element type, with no negative values and at least one non-zero
-                value. The size must be equal to that of ``rng``.
+                value. The size must be equal to that of ``x``.
 
-     :return: An element chosen from ``rng`` if ``size == 1``, or an array of
-              element chosen from ``rng`` if ``size > 1`` or ``size`` is a
+     :return: An element chosen from ``x`` if ``size == 1``, or an array of
+              element chosen from ``x`` if ``size > 1`` or ``size`` is a
               domain.
 
-     :throws IllegalArgumentError: if ``rng.size == 0``,
-                                   if ``rng.size != prob.size``,
+     :throws IllegalArgumentError: if ``x.size == 0``,
+                                   if ``x.size != prob.size``,
                                    if ``prob`` contains a negative value,
                                    if ``prob`` has no non-zero values,
                                    if ``size < 1 || size.size < 1``,
-                                   if ``replace=false`` and ``size > rng.size || size.size > rng.size``.
-                                   if ``isBoundedRange(rng) == false``
+                                   if ``replace=false`` and ``size > x.size || size.size > x.size``.
+                                   if ``isBoundedRange(x) == false``
      */
-      proc choice(rng: range(stridable=?), size:?sizeType=none, replace=true, prob:?probType=none)
+      proc choice(x: range(stridable=?), size:?sizeType=none, replace=true, prob:?probType=none)
         throws
-      {
-        if !isBoundedRange(rng) then
+      { 
+        var dom: domain(1,stridable=true);
+
+        if !isBoundedRange(x) then
           throw new owned IllegalArgumentError('input range must be bounded');
-
-        var Dom: domain(1,stridable=true) = if isBoundedRange(rng) then {rng} else {1..1};
-        return _choice(this, Dom, size=size, replace=replace, prob=prob);
+        else
+          dom = {x};
+        return _choice(this, dom, size=size, replace=replace, prob=prob);
       }
 
       /*
-     Returns a random sample from a given 1-D domain, ``dom``.
+     Returns a random sample from a given 1-D domain, ``x``.
 
-     :arg dom: a 1-D dom with values that will be sampled from.
+     :arg x: a 1-D dom with values that will be sampled from.
      :arg size: An optional integral value specifying the number of elements to
                 choose, or a domain specifying the dimensions of the
                 sampled array to be filled, otherwise a single element will be
@@ -1046,26 +1048,26 @@ module Random {
                    replacement, i.e. elements will only be chosen up to one
                    time when ``replace=false``.
      :arg prob: an optional 1-D array that contains probabilities of choosing
-                each element of ``dom``, otherwise elements will be chosen over
+                each element of ``x``, otherwise elements will be chosen over
                 a uniform distribution. ``prob`` must have integral or real
                 element type, with no negative values and at least one non-zero
-                value. The size must be equal to that of ``dom``.
+                value. The size must be equal to that of ``x``.
 
-     :return: An element chosen from ``dom`` if ``size == 1``, or an array of
-              element chosen from ``dom`` if ``size > 1`` or ``size`` is a
+     :return: An element chosen from ``x`` if ``size == 1``, or an array of
+              element chosen from ``x`` if ``size > 1`` or ``size`` is a
               domain.
 
-     :throws IllegalArgumentError: if ``dom.size == 0``,
-                                   if ``dom.size != prob.size``,
+     :throws IllegalArgumentError: if ``x.size == 0``,
+                                   if ``x.size != prob.size``,
                                    if ``prob`` contains a negative value,
                                    if ``prob`` has no non-zero values,
                                    if ``size < 1 || size.size < 1``,
-                                   if ``replace=false`` and ``size > dom.size || size.size > dom.size``.
+                                   if ``replace=false`` and ``size > x.size || size.size > x.size``.
      */
-      proc choice(dom: domain, size:?sizeType=none, replace=true, prob:?probType=none)
+      proc choice(x: domain, size:?sizeType=none, replace=true, prob:?probType=none)
         throws
       {
-        return _choice(this, dom, size=size, replace=replace, prob=prob);
+        return _choice(this, x, size=size, replace=replace, prob=prob);
       }
 
       /* Randomly shuffle a 1-D array. */
