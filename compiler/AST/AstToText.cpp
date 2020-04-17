@@ -957,18 +957,47 @@ void AstToText::appendExpr(CallExpr* expr, bool printingType)
             }
           }
 
-          else if (isSymExpr(expr->get(1)) && isSymExpr(expr->get(2)))
+          else if (isSymExpr(expr->get(1)))
           {
             SymExpr*   sym1 = toSymExpr(expr->get(1));
-            SymExpr*   sym2 = toSymExpr(expr->get(2));
 
             VarSymbol* arg1 = toVarSymbol(sym1->symbol());
-            ArgSymbol* arg2 = toArgSymbol(sym2->symbol());
 
-            if (arg1 != 0 && arg2 != 0 && strcmp(arg1->name, "defaultDist") == 0)
+            if (arg1 != 0 && strcmp(arg1->name, "defaultDist") == 0)
             {
               mText += "domain(";
-              appendExpr(sym2, printingType);
+              
+              for(int i=2; i<=expr->numActuals(); i++)
+              {
+                if (i != 2)
+                  mText += ", ";
+
+                if (UnresolvedSymExpr* symi = toUnresolvedSymExpr(expr->get(i)))
+                {
+                  appendExpr(symi, printingType);
+                }
+
+                else if (SymExpr* symi = toSymExpr(expr->get(i)))
+                {
+                  appendExpr(symi, printingType);
+                }
+
+                else if (CallExpr* symi = toCallExpr(expr->get(i)))
+                {
+                  appendExpr(symi, printingType);
+                }
+
+                else if (NamedExpr* symi = toNamedExpr(expr->get(i)))
+                {
+                  appendExpr(symi, printingType);
+                }
+
+                else
+                {
+                  mText += "AppendExpr.Call11";
+                }
+              }
+
               mText += ")";
             }
 
