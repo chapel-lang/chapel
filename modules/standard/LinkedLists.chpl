@@ -222,22 +222,34 @@ record LinkedList {
   /*
     Returns the data stored in the first element of the list
     
+    .. warning::
+      Calling this method on an empty list will cause the program to halt
+
+
     :return: the data stored at the front of the list
     :rtype: `ref eltType`
-    :throws SystemError: if the list is empty
    */
   proc ref front() ref: eltType {
+    if size == 0 {
+      boundsCheckHalt ("Called linkedlists.first on an empty list")
+    }
       return try! first!.data;
   }
 
   /*
     Returns the data stored in the last element of the list
 
+    .. warning::
+      Calling this method on an empty list will cause the program to halt
+
+
     :return: the data stored at the back of the list
     :rtype: `ref eltType`
-    :throws SystemError: if the list is empty
    */
   proc ref back() ref: eltType {
+        if size == 0 {
+      boundsCheckHalt ("Called linkedlists.last on an empty list")
+    }
     return try! last!.data;
   }
   
