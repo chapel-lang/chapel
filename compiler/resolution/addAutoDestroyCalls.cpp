@@ -462,8 +462,8 @@ static void checkSplitInitOrder(CondStmt* cond,
         elseMsg += "]";
       }
     }
-    USR_PRINT(cond->thenStmt, thenMsg.c_str());
-    USR_PRINT(cond->elseStmt, elseMsg.c_str());
+    USR_PRINT(cond->thenStmt, "%s", thenMsg.c_str());
+    USR_PRINT(cond->elseStmt, "%s", elseMsg.c_str());
   }
 }
 

@@ -205,6 +205,37 @@ static void usePostamble(UseStmt* use, int indent) {
   printf("\n");
 }
 
+static void importPostamble(ImportStmt* import, int indent) {
+  if (import->isARename()) {
+    printf("as %s ", import->getRename());
+  }
+
+  if (import->providesUnqualifiedAccess()) {
+    printf(". {");
+    bool first = true;
+
+    for_vector(const char, str, import->unqualified) {
+      if (first) {
+        first = false;
+      } else {
+        printf(", ");
+      }
+      printf("%s", str);
+    }
+
+    for (std::map<const char*, const char*>::iterator it =
+           import->renamed.begin(); it != import->renamed.end(); ++it) {
+      if (first) {
+        first = false;
+      } else {
+        printf(", ");
+      }
+      printf("%s as %s", it->second, it->first);
+    }
+    printf("}\n");
+  }
+}
+
 static bool
 list_line(Expr* expr, BaseAST* parentAst) {
   if (expr->isStmt())
@@ -218,7 +249,7 @@ list_line(Expr* expr, BaseAST* parentAst) {
       return false;
   }
   if (Expr* pExpr = toExpr(parentAst))
-    if (pExpr->isStmt() && !isUseStmt(pExpr))
+    if (pExpr->isStmt() && !isUseStmt(pExpr) && !isImportStmt(pExpr))
       return true;
   if (isSymbol(parentAst))
     return true;
@@ -331,6 +362,8 @@ list_ast(BaseAST* ast, BaseAST* parentAst = NULL, int indent = 0) {
       else         printf("} ");
     } else if (UseStmt* use = toUseStmt(expr)) {
       usePostamble(use, indent);
+    } else if (ImportStmt* import = toImportStmt(expr)) {
+      importPostamble(import, indent);
     } else if (CondStmt* cond = toCondStmt(parentAst)) {
       if (cond->condExpr == expr)
         printf("\n");

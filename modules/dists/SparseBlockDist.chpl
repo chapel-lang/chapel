@@ -91,13 +91,7 @@ class SparseBlockDom: BaseSparseDomImpl {
   var myLocDom: unmanaged LocSparseBlockDom(rank, idxType, stridable,
                                             sparseLayoutType)?;
 
-  // TODO: move towards init and away from postinit
-  // and remove nilable types
-
-  proc postinit() {
-    setup();
-    //    writeln("Exiting initialize");
-  }
+  // TODO: move towards init and away from nilable types
 
   proc setup() {
     //    writeln("In setup");

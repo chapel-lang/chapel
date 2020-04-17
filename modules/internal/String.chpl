@@ -1384,7 +1384,7 @@ module String {
     proc _getView(r:range(?)) where r.idxType == byteIndex {
       if boundsChecking {
         if r.hasLowBound() && (!r.hasHighBound() || r.size > 0) {
-          if r.low:int < 0 then
+          if r.alignedLow:int < 0 then
             halt("range ", r, " out of bounds for string");
         }
         if r.hasHighBound() && (!r.hasLowBound() || r.size > 0) {
@@ -1396,16 +1396,16 @@ module String {
           // I think that this exists in order to permit the doReplace()
           // call to work when `find()` returns 0, but this doesn't
           // seem principled.  See also the similar case in Bytes.chpl.
-          if (r.high:int < -1) || (r.high:int >= this.buffLen) then
+          if (r.alignedHigh:int < -1) || (r.alignedHigh:int >= this.buffLen) then
             halt("range ", r, " out of bounds for string with ", this.numBytes, " bytes");
         }
       }
       const r1 = r[0:r.idxType..(this.buffLen-1):r.idxType];
       if r1.stridable {
-        const ret = r1.low:int..r1.high:int by r1.stride;
+        const ret = r1.alignedLow:int..r1.alignedHigh:int by r1.stride;
         return ret;
       } else {
-        const ret = r1.low:int..r1.high:int;
+        const ret = r1.alignedLow:int..r1.alignedHigh:int;
         return ret;
       }
     }
@@ -1429,15 +1429,16 @@ module String {
       }
       if boundsChecking {
         if r.hasLowBound() && (!r.hasHighBound() || r.size > 0) {
-          if r.low:int < 0 then
+          if r.alignedLow:int < 0 then
             halt("range ", r, " out of bounds for string");
         }
       }
       // Loop to find whether the low and high codepoint indices
       // appear within the string.  Note the byte indices of those
       // locations, if they exist.
-      const cp_low = if r.hasLowBound() && r.low:int >= 0 then r.low:int else 0;
-      const cp_high = if r.hasHighBound() then r.high:int else this.buffLen;
+      const cp_low = if r.hasLowBound() && r.alignedLow:int >= 0
+                       then r.alignedLow:int else 0;
+      const cp_high = if r.hasHighBound() then r.alignedHigh:int else this.buffLen;
       var cp_count = 0;
       var byte_low = this.buffLen;  // empty range if bounds outside string
       var byte_high = this.buffLen - 1;
@@ -1457,7 +1458,7 @@ module String {
       }
       if boundsChecking {
         if r.hasHighBound() && (!r.hasLowBound() || r.size > 0) {
-          if (r.high:int < 0) || (r.high:int > cp_count) then
+          if (r.alignedHigh:int < 0) || (r.alignedHigh:int > cp_count) then
             halt("range ", r, " out of bounds for string with length ", this.size);
         }
       }

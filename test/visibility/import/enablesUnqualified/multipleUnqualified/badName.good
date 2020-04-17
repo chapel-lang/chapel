@@ -1,0 +1,1 @@
+badName.chpl:5: error: Bad identifier, no known 'baz' defined in 'Foo'

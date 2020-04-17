@@ -223,6 +223,9 @@
   "0fdc1a0c-1d84-11e6-a3a6-10ddb1d4c3d5": [
     "compiler/passes/scopeResolve.cpp"
   ],
+  "56f705f2-5f64-11ea-b972-843835579daa": [
+    "compiler/passes/splitInit.cpp"
+  ],
   "0b4871a8-5b7a-11e8-af7e-10ddb1d4c3d5": [
     "compiler/resolution/AutoDestroyScope.cpp"
   ],
@@ -285,6 +288,9 @@
   ],
   "390fbcc4-4e3c-11e6-907f-843835579daa": [
     "compiler/util/files.cpp"
+  ],
+  "61835ab6-5f64-11ea-b972-843835579daa": [
+    "compiler/util/misc.cpp"
   ],
   "9627af8c-e581-11e8-954d-10ddb1d4c3d5": [
     "compiler/util/stringutil.cpp"
@@ -669,11 +675,20 @@
   "af0a00d4-244e-11e9-b712-843835579daa": [
     "runtime/include/chpl-comm-diags.h"
   ],
+  "ca5cd802-68b8-11ea-b972-843835579daa": [
+    "runtime/include/chpl-comm.h"
+  ],
+  "ceec8a70-68b8-11ea-b972-843835579daa": [
+    "runtime/include/chpl-mem-array.h"
+  ],
   "1ae55fde-1fb5-11e6-a3a6-10ddb1d4c3d5": [
     "runtime/include/chpl-wide-ptr-fns.h"
   ],
   "61f7efb8-bd82-11e9-8464-10ddb1d4c3d5": [
     "runtime/include/comm/ofi/chpl-comm-task-decls.h"
+  ],
+  "d18d2f28-68b8-11ea-b972-843835579daa": [
+    "runtime/include/comm/ugni/chpl-comm-impl.h"
   ],
   "73aae312-d1c1-11e8-954d-10ddb1d4c3d5": [
     "runtime/include/comm/ugni/comm-ugni-heap-pages.h"
@@ -724,8 +739,17 @@
   "b5c2175e-244e-11e9-b712-843835579daa": [
     "runtime/src/launch/mpirun4ofi/launch-mpirun4ofi.c"
   ],
+  "f598bef8-5f64-11ea-b972-843835579daa": [
+    "runtime/src/launch/pals/launch-pals.c"
+  ],
+  "c10852de-5f64-11ea-b972-843835579daa": [
+    "runtime/src/launch/pals/pals-utils.c"
+  ],
   "af6e03d4-2403-11e6-a3a6-10ddb1d4c3d5": [
     "runtime/src/launch/pbs-aprun/launch-pbs-aprun.c"
+  ],
+  "d56c6ea6-68b8-11ea-b972-843835579daa": [
+    "runtime/src/launch/slurm-srun/launch-slurm-srun.c"
   ],
   "c756642a-c5e5-11e7-82fe-10ddb1d4c3d5": [
     "runtime/src/launch/smp/launch-smp.c"

@@ -674,37 +674,7 @@ static bool allOperandsAreLoopInvariant(Expr* expr, std::set<SymExpr*>& loopInva
   return false;
 }
 
-
-/*
- * The basic algorithm will be to find all of the constants, and then find things that
- * have no definitions in the loop. We also need to consider a symbols aliases when we're
- * talking about if it has any definitions. So if symbol and all its aliases have no definitions
- * then it is loop invariant. We need to think carefully about this because the alias will definitely
- * have one definition and that is where it is assigned to whatever it is aliasing. So if we have a = &b
- * Then a is an alias for b. The current alias analysis is extremely conservative. If there is only one def
- * of a variable check if it is composed of loop invariant operands and operations.
- */
-static void computeLoopInvariants(std::vector<SymExpr*>& loopInvariants,
-    std::set<Symbol*>& defsInLoop, Loop* loop, symToVecSymExprMap& localDefMap,
-    FnSymbol* fn) {
-
-  // collect all of the symExprs, defExprs, and callExprs in the loop
-  startTimer(collectSymExprAndDefTimer);
-  std::vector<SymExpr*> loopSymExprs;
-  std::vector<CallExpr*> callsInLoop;
-  for_vector(BasicBlock, block, *loop->getBlocks()) {
-    for_vector(Expr, expr, block->exprs) {
-      collectFnCalls(expr, callsInLoop);
-      collectSymExprs(expr, loopSymExprs);
-      if (DefExpr* defExpr = toDefExpr(expr)) {
-        if (toVarSymbol(defExpr->sym)) {
-          defsInLoop.insert(defExpr->sym);
-        }
-      }
-    }
-  }
-  stopTimer(collectSymExprAndDefTimer);
-
+static bool computeAliases(FnSymbol* fn, std::map<Symbol*, std::set<Symbol*> >& aliases) {
   //Since the current alias analysis is pretty conservative, you can run into
   //the case where you have so many aliases that you run of space in memory to
   //hold all of the aliases (since we keep track of all pairs) , which leads to
@@ -719,7 +689,6 @@ static void computeLoopInvariants(std::vector<SymExpr*>& loopInvariants,
   int numAliases = 0;
   //compute the map of aliases for each symbol
   startTimer(computeAliasTimer);
-  std::map<Symbol*, std::set<Symbol*> > aliases;
 
   //Compute the aliases for the function's parameters. Any args passed by ref
   //can potentially alias each other.
@@ -754,7 +723,7 @@ static void computeLoopInvariants(std::vector<SymExpr*>& loopInvariants,
        fclose(tooManyAliasesFile);
 #endif
       stopTimer(computeAliasTimer);
-      return;
+      return true;
     }
 
     for_vector(Expr, expr, block2->exprs) {
@@ -829,6 +798,39 @@ static void computeLoopInvariants(std::vector<SymExpr*>& loopInvariants,
       }
     }
   }
+  return false;
+}
+
+/*
+ * The basic algorithm will be to find all of the constants, and then find things that
+ * have no definitions in the loop. We also need to consider a symbols aliases when we're
+ * talking about if it has any definitions. So if symbol and all its aliases have no definitions
+ * then it is loop invariant. We need to think carefully about this because the alias will definitely
+ * have one definition and that is where it is assigned to whatever it is aliasing. So if we have a = &b
+ * Then a is an alias for b. The current alias analysis is extremely conservative. If there is only one def
+ * of a variable check if it is composed of loop invariant operands and operations.
+ */
+static void computeLoopInvariants(std::vector<SymExpr*>& loopInvariants,
+    std::set<Symbol*>& defsInLoop, Loop* loop, symToVecSymExprMap& localDefMap,
+    std::map<Symbol*, std::set<Symbol*> >& aliases) {
+
+  // collect all of the symExprs, defExprs, and callExprs in the loop
+  startTimer(collectSymExprAndDefTimer);
+  std::vector<SymExpr*> loopSymExprs;
+  std::vector<CallExpr*> callsInLoop;
+  for_vector(BasicBlock, block, *loop->getBlocks()) {
+    for_vector(Expr, expr, block->exprs) {
+      collectFnCalls(expr, callsInLoop);
+      collectSymExprs(expr, loopSymExprs);
+      if (DefExpr* defExpr = toDefExpr(expr)) {
+        if (toVarSymbol(defExpr->sym)) {
+          defsInLoop.insert(defExpr->sym);
+        }
+      }
+    }
+  }
+  stopTimer(collectSymExprAndDefTimer);
+
   //calculate the actual defs of a symbol including the defs of
   //its aliases. If there are no defs or we have a constant,
   //add it to the list of invariants
@@ -1219,7 +1221,12 @@ static long licmFn(FnSymbol* fn) {
     startTimer(computeLoopInvariantsTimer);
     std::vector<SymExpr*> loopInvariants;
     std::set<Symbol*> defsInLoop;
-    computeLoopInvariants(loopInvariants, defsInLoop, curLoop, localDefMap, fn);
+    std::map<Symbol*, std::set<Symbol*> > aliases;
+    bool tooManyAlises = computeAliases(fn, aliases);
+    if (tooManyAlises) {
+      return 0;
+    }
+    computeLoopInvariants(loopInvariants, defsInLoop, curLoop, localDefMap, aliases);
     stopTimer(computeLoopInvariantsTimer);
 
     //For each invariant, only move it if its def, dominates all uses and all exits

@@ -25,6 +25,7 @@ class WakeupSyncVarHack {
   var wakeup: sync WakeupType;
 }
 
+// keep them unmanaged as it makes it much easier with locale private
 pragma "locale private" var wakeup: unmanaged WakeupSyncVarHack?;
 pragma "locale private" var endCount: unmanaged MyEndCount?;
 
@@ -177,4 +178,9 @@ proc main {
     writeln("successfully");
   else
     writeln("unsuccessfully: a is ", aa);
+
+  for l in Locales do on l {
+    delete wakeup;
+    delete endCount;
+  }
 }

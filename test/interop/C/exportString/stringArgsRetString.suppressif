@@ -1,5 +1,0 @@
-#
-# The Cray CC is a bit more strict about pointer conversions and does not have
-# a flag equivalent to GCC's "-Wno-pointer-sign".
-#
-CHPL_TARGET_COMPILER==cray-prgenv-cray

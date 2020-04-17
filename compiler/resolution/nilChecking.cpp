@@ -257,7 +257,7 @@ static void issueNilError(const char* message, Expr* ref,
   if (printsSameLocationAsLastError(ref))
     return;
 
-  USR_FATAL_CONT(ref, message);
+  USR_FATAL_CONT(ref, "%s", message);
 
   Symbol* v  = var;
   if (referent != NULL) {

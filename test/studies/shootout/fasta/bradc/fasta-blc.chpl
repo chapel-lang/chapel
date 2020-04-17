@@ -7,8 +7,6 @@
      and Preston Sahabu.
 */
 
-use IO;
-
 config const n = 1000,            // the length of the generated strings
              lineLength = 60,     // the number of columns in the output
              blockSize = 1024,    // the parallelization granularity
@@ -68,12 +66,6 @@ const ALU: [0..286] nucleotide = [
 ];
 
 //
-// Index aliases for use with (nucleotide, probability) tuples
-//
-param nucl = 0,
-      prob = 1;
-
-//
 // Probability tables for sequences to be randomly generated
 //
 const IUB = [(a, 0.27), (c, 0.12), (g, 0.12), (t, 0.27),
@@ -87,14 +79,15 @@ const HomoSapiens = [(a, 0.3029549426680),
                      (t, 0.3015094502008)];
 
 proc main() {
-  repeatMake(">ONE Homo sapiens alu\n", ALU, 2*n);
-  randomMake(">TWO IUB ambiguity codes\n", IUB, 3*n);
-  randomMake(">THREE Homo sapiens frequency\n", HomoSapiens, 5*n);
+  repeatMake(">ONE Homo sapiens alu", ALU, 2*n);
+  randomMake(">TWO IUB ambiguity codes", IUB, 3*n);
+  randomMake(">THREE Homo sapiens frequency", HomoSapiens, 5*n);
 }
 
 //
 // Redefine stdout to use lock-free binary I/O and capture a newline
 //
+use IO;
 const stdout = openfd(1).writer(kind=iokind.native, locking=false);
 param newline = "\n".toByte();
 
@@ -102,7 +95,7 @@ param newline = "\n".toByte();
 // Repeat 'alu' to generate a sequence of length 'n'
 //
 proc repeatMake(desc, alu, n) {
-  stdout.write(desc);
+  stdout.writeln(desc);
 
   const r = alu.size,
         s = [i in 0..(r+lineLength)] alu[i % r]: int(8);
@@ -118,22 +111,19 @@ proc repeatMake(desc, alu, n) {
 // Use 'nuclInfo's probability distribution to generate a random
 // sequence of length 'n'
 //
-proc randomMake(desc, nuclInfo: [?nuclSpace], n) {
-  stdout.write(desc);
+proc randomMake(desc, nuclInfo: [?nuclInds], n) {
+  stdout.writeln(desc);
 
   // compute the cumulative probabilities of the nucleotides
-  var cumulProb: [nuclSpace] randType,
+  var cumulProb: [nuclInds] randType,
       p = 0.0;
-  for i in nuclSpace {
-    p += nuclInfo[i](prob);
-    cumulProb[i] = 1 + (p*IM):randType;
+  for (cp, (_,prob)) in zip(cumulProb, nuclInfo) {
+    p += prob;
+    cp = 1 + (p*IM): randType;
   }
 
   // guard when tasks can access the random numbers or output stream
   var randGo, outGo: [0..#numTasks] atomic int;
-
-  randGo.write(0);
-  outGo.write(0);
 
   // create tasks to pipeline the RNG, computation, and output
   coforall tid in 0..#numTasks {
@@ -156,14 +146,13 @@ proc randomMake(desc, nuclInfo: [?nuclSpace], n) {
       var col = 0,
           off = 0;
 
-      for j in 0..#nBytes {
-        const r = myRands[j];
+      for r in myRands[..<nBytes] {
         var nid = 0;
-        for k in nuclSpace do
-          if r >= cumulProb[k] then
-            nid += 1;
+        for p in cumulProb do
+          nid += (r >= p);
+        const (nucl,_) = nuclInfo[nid];
 
-        myBuff[off] = nuclInfo[nid](nucl):int(8);
+        myBuff[off] = nucl: int(8);
         off += 1;
         col += 1;
 

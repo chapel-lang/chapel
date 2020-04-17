@@ -11,6 +11,9 @@ source $CWD/functions.bash
 
 subtest_start
 
+DFLT_TIMEOUT=${CHPL_TEST_TIMEOUT:-300}
+export ARKOUDA_CLIENT_TIMEOUT=${ARKOUDA_CLIENT_TIMEOUT:-$DFLT_TIMEOUT}
+
 # Arkouda needs chpl in PATH
 bin_subdir=$($CHPL_HOME/util/chplenv/chpl_bin_subdir.py)
 export "PATH=$CHPL_HOME/bin/$bin_subdir:$PATH"
@@ -25,12 +28,20 @@ if ! git clone --depth=1 ${ARKOUDA_URL} --branch=${ARKOUDA_BRANCH} ; then
 fi
 cd ${ARKOUDA_HOME}
 
-# Install dependencies
-if ! nice make -j $($CHPL_HOME/util/buildRelease/chpl-make-cpu_count) install-deps ; then
-  log_fatal_error "installing dependencies"
+# Install dependencies if needed
+if make check-deps 2>/dev/null ; then
+  export ARKOUDA_SKIP_CHECK_DEPS=true
+else
+  if ! nice make -j $($CHPL_HOME/util/buildRelease/chpl-make-cpu_count) install-deps ; then
+    log_fatal_error "installing dependencies"
+  fi
 fi
 
 # Compile Arkouda
+if [ "${CHPL_TEST_ARKOUDA_PERF}" = "true" ] ; then
+  export ARKOUDA_PRINT_PASSES_FILE="$CHPL_TEST_PERF_DIR/$CHPL_TEST_PERF_DESCRIPTION/comp-time"
+  mkdir -p $(dirname $ARKOUDA_PRINT_PASSES_FILE)
+fi
 if ! make ; then
   log_fatal_error "compiling arkouda"
 fi
@@ -52,7 +63,11 @@ test_end "make check"
 
 # Run benchmarks
 if [ "${CHPL_TEST_ARKOUDA_PERF}" = "true" ] ; then
-  benchmark_opts="--gen-graphs --dat-dir $CHPL_TEST_PERF_DIR --description $CHPL_TEST_PERF_DESCRIPTION --graph-dir $CHPL_TEST_PERF_DIR/html"
+  benchmark_opts="--gen-graphs --dat-dir $CHPL_TEST_PERF_DIR --graph-dir $CHPL_TEST_PERF_DIR/html"
+
+  if [[ -n $CHPL_TEST_PERF_DESCRIPTION ]]; then
+    benchmark_opts="${benchmark_opts} --description $CHPL_TEST_PERF_DESCRIPTION"
+  fi
   if [[ -n $CHPL_TEST_PERF_CONFIG_NAME ]]; then
     benchmark_opts="${benchmark_opts} --platform $CHPL_TEST_PERF_CONFIG_NAME"
   fi

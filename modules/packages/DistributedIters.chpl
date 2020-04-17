@@ -198,16 +198,11 @@ where tag == iterKind.leader
       const denseRangeHigh:int = denseRange.high;
       const masterLocale = here.locale;
 
-      const potentialWorkerLocales =
+      const actualWorkerLocales =
         [L in workerLocales] if numLocales == 1
                                 || !coordinated
                                 || L != masterLocale
                              then L;
-      // It's not sensible to use a single locale besides masterLocale, so use
-      // potentialWorkerLocales only if it's larger than one locale.
-      const actualWorkerLocales = if potentialWorkerLocales.size > 1
-                                  then potentialWorkerLocales
-                                  else [masterLocale];
 
       if infoDistributedIters then
       {
@@ -461,18 +456,11 @@ where tag == iterKind.leader
       const denseRangeHigh:int = denseRange.high;
       const masterLocale = here.locale;
 
-      const potentialWorkerLocales =
+      const actualWorkerLocales =
         [L in workerLocales] if numLocales == 1
                                 || !coordinated
                                 || L != masterLocale
                              then L;
-      /*
-        It's not sensible to use a single locale besides masterLocale, so use
-        potentialWorkerLocales only if it's larger than one locale.
-      */
-      const actualWorkerLocales = if potentialWorkerLocales.size > 1
-                                  then potentialWorkerLocales
-                                  else [masterLocale];
       const numActualWorkerLocales = actualWorkerLocales.size;
 
       // The guided iterator stage (determines next subrange index and size).

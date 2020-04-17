@@ -262,8 +262,8 @@ static void makeDir(const char* dirpath) {
   static const int dirPerms = S_IRWXU | S_IRWXG | S_IRWXO;
   int result = mkdir(dirpath, dirPerms);
   if (result != 0 && errno != 0 && errno != EEXIST) {
-    USR_FATAL(astr("Failed to create directory: ", dirpath,
-                   " due to: ", strerror(errno)));
+    USR_FATAL("Failed to create directory: %s due to: %s",
+              dirpath, strerror(errno));
   }
 }
 
@@ -366,8 +366,7 @@ static char * checkProjectVersion(char * projectVersion) {
   if(check) {
     return projectVersion;
   } else {
-    USR_FATAL(astr("Invalid version format: ", projectVersion,
-                    " due to: ", error));
+    USR_FATAL("Invalid version format: %s due to: %s", projectVersion, error);
   }
   return NULL;
 }

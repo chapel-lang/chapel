@@ -1445,6 +1445,18 @@ static void checkIncrementalAndOptimized() {
               " using -O optimizations directly.");
 }
 
+static void checkUnsupportedConfigs(void) {
+  // Check for cce classic
+  if (!strcmp(CHPL_TARGET_COMPILER, "cray-prgenv-cray")) {
+    const char* cce_variant = getenv("CRAY_PE_CCE_VARIANT");
+    if (strstr(cce_variant, "CC=Classic")) {
+      USR_FATAL("CCE classic (cce < 9.x.x / 9.x.x-classic) is no longer supported."
+                 " Please notify the Chapel team if this configuration is"
+                 " important to you.");
+    }
+  }
+}
+
 static void checkMLDebugAndLibmode(void) {
 
   if (!fMultiLocaleLibraryDebug) { return; }
@@ -1453,11 +1465,7 @@ static void checkMLDebugAndLibmode(void) {
 
   if (!strcmp(CHPL_COMM, "none")) {
     fMultiLocaleLibraryDebug = false;
-
-    const char* warning =
-        "Compiling a single locale library because CHPL_COMM is none.";
-
-    USR_WARN(warning);
+    USR_WARN("Compiling a single locale library because CHPL_COMM is none.");
   }
 
   return;
@@ -1498,6 +1506,8 @@ static void postprocess_args() {
   checkTargetCpu();
 
   checkIncrementalAndOptimized();
+
+  checkUnsupportedConfigs();
 }
 
 int main(int argc, char* argv[]) {

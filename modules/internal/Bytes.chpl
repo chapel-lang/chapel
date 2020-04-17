@@ -635,20 +635,20 @@ module Bytes {
     proc _getView(r:range(?)) where r.idxType == int || r.idxType == byteIndex {
       if boundsChecking {
         if r.hasLowBound() && (!r.hasHighBound() || r.size > 0) {
-          if r.low:int < 0 then
+          if r.alignedLow:int < 0 then
             halt("range ", r, " out of bounds for bytes with length ", this.buffLen);
         }
         if r.hasHighBound() && (!r.hasLowBound() || r.size > 0) {
-          if (r.high:int < -1) || (r.high:int >= this.buffLen) then
+          if (r.alignedHigh:int < -1) || (r.alignedHigh:int >= this.buffLen) then
             halt("range ", r, " out of bounds for bytes with length ", this.buffLen);
         }
       }
       const r1 = r[0:r.idxType..(this.buffLen-1):r.idxType];
       if r1.stridable {
-        const ret = r1.low:int..r1.high:int by r1.stride;
+        const ret = r1.alignedLow:int..r1.alignedHigh:int by r1.stride;
         return ret;
       } else {
-        const ret = r1.low:int..r1.high:int;
+        const ret = r1.alignedLow:int..r1.alignedHigh:int;
         return ret;
       }
     }
