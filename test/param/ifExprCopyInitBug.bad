@@ -1,0 +1,9 @@
+ifExprCopyInitBug.chpl:3: In function 'test':
+ifExprCopyInitBug.chpl:5: error: non-lvalue actual is passed to a 'ref' formal of chpl__initCopy()
+ifExprCopyInitBug.chpl:15: Function 'test' instantiated as: test(type T = owned C)
+ifExprCopyInitBug.chpl:3: In function 'test':
+ifExprCopyInitBug.chpl:5: error: non-lvalue actual is passed to a 'ref' formal of chpl__initCopy()
+ifExprCopyInitBug.chpl:16: Function 'test' instantiated as: test(type T = owned C?)
+ifExprCopyInitBug.chpl:3: In function 'test':
+ifExprCopyInitBug.chpl:5: error: non-lvalue actual is passed to a 'ref' formal of chpl__initCopy()
+ifExprCopyInitBug.chpl:17: Function 'test' instantiated as: test(type T = borrowed C?)
