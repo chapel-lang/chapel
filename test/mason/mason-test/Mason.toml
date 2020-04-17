@@ -5,6 +5,7 @@ version = "0.1.0"
 chplVersion = "1.17.0"
 tests = ["sampletest.chpl",
          "sampletest2.chpl",
+         "x.chpl",
          "dependencytest.chpl",
          "nomodule.chpl",
          "testdir/subdirectorytest.chpl",
