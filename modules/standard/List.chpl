@@ -103,10 +103,6 @@ module List {
 
   /* Check that element type is supported by list */
   proc _checkType(type eltType) {
-    // Also unsupported but not checked: tuples of non-nilable class types
-    if isBorrowedClass(eltType) {
-      compilerError('list element type cannot currently be borrowed');
-    }
     if isGenericType(eltType) {
       compilerWarning("creating a list with element type " +
                       eltType:string);
