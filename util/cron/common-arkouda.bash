@@ -22,11 +22,6 @@ if [ -d "$ARKOUDA_DEP_DIR" ]; then
   export ARKOUDA_HDF5_PATH=${ARKOUDA_HDF5_PATH:-$ARKOUDA_DEP_DIR/hdf5-install}
 fi
 
-# Use personal branch (just as we get perf testing up and running to make sure
-# things are working before upstream'ing.)
-export ARKOUDA_URL=https://github.com/ronawho/arkouda.git
-export ARKOUDA_BRANCH=improve-benchmarking
-
 currentSha=`git rev-parse HEAD`
 
 # test against Chapel release
