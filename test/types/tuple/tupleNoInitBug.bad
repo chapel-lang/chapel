@@ -1,0 +1,4 @@
+tupleNoInitBug.chpl:3: In function 'test':
+tupleNoInitBug.chpl:5: error: Cannot default-initialize a tuple component of the type shared C
+note: non-nil class types do not support default initialization
+note: Consider using the type shared C? instead
