@@ -29,7 +29,7 @@ fi
 cd ${ARKOUDA_HOME}
 
 # Install dependencies if needed
-if make check-deps ; then
+if make check-deps 2>/dev/null ; then
   export ARKOUDA_SKIP_CHECK_DEPS=true
 else
   if ! nice make -j $($CHPL_HOME/util/buildRelease/chpl-make-cpu_count) install-deps ; then
