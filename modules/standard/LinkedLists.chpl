@@ -210,7 +210,7 @@ record LinkedList {
     :return: True if the item was found, otherwise returns false
     :rtyle: `bool`
    */
-  proc contains(e : eltType): bool {
+  proc contains(const e: eltType): bool {
     for item in this {
       if (e == item) {
         return true;
@@ -226,12 +226,8 @@ record LinkedList {
     :rtype: `ref eltType`
     :throws SystemError: if the list is empty
    */
-  proc ref front() ref: eltType throws {
-    import HaltWrappers;
-    if boundsChecking && size < 1 {
-      HaltWrappers.boundsCheckHalt("front() called on empty list");
-    }
-    return first!.data;
+  proc ref front() ref: eltType {
+      return try! first!.data;
   }
 
   /*
@@ -241,12 +237,8 @@ record LinkedList {
     :rtype: `ref eltType`
     :throws SystemError: if the list is empty
    */
-  proc ref back() ref: eltType throws {
-    import HaltWrappers;
-     if boundsChecking && size < 1 {
-      HaltWrappers.boundsCheckHalt("front() called on empty list");
-    }
-    return last!.data;
+  proc ref back() ref: eltType {
+    return try! last!.data;
   }
   
   /*
