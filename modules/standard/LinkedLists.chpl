@@ -59,10 +59,10 @@ record LinkedList {
   type eltType;
   pragma "no doc"
   pragma "owned"
-  var first: unmanaged listNode(eltType)?;
+  var _first: unmanaged listNode(eltType)?;
   pragma "no doc"
   pragma "owned"
-  var last: unmanaged listNode(eltType)?;
+  var _last: unmanaged listNode(eltType)?;
   /*
     The number of nodes in the list.
    */
@@ -71,8 +71,8 @@ record LinkedList {
   pragma "no doc"
   proc init(type eltType, first : unmanaged listNode(eltType)? = nil, last : unmanaged listNode(eltType)? = nil) {
     this.eltType = eltType;
-    this.first = first;
-    this.last = last;
+    this._first = first;
+    this._last = last;
   }
 
   pragma "no doc"
@@ -98,7 +98,7 @@ record LinkedList {
     :ytype: eltType
    */
   iter these() {
-    var tmp = first;
+    var tmp = _first;
     while tmp != nil {
       yield tmp!.data;
       tmp = tmp!.next;
@@ -109,12 +109,12 @@ record LinkedList {
     Append `e` to the list.
    */
   proc ref append(e : eltType) {
-    if last {
-      last!.next = new unmanaged listNode(eltType, e);
-      last = last!.next;
+    if _last {
+      _last!.next = new unmanaged listNode(eltType, e);
+      _last = _last!.next;
     } else {
-      first = new unmanaged listNode(eltType, e);
-      last = first;
+      _first = new unmanaged listNode(eltType, e);
+      _last = _first;
     }
     size += 1;
   }
@@ -139,9 +139,9 @@ record LinkedList {
     Prepend `e` to the list.
    */
   proc prepend(e : eltType) {
-    first = new unmanaged listNode(eltType, e, first);
-    if last == nil then
-      last = first;
+    _first = new unmanaged listNode(eltType, e, _first);
+    if _last == nil then
+      _last = _first;
     size += 1;
   }
 
@@ -166,8 +166,8 @@ record LinkedList {
     Does nothing if `x` is not present in the list.
    */
   proc ref remove(x: eltType) {
-    var tmp = first,
-        prev: first.type = nil;
+    var tmp = _first,
+        prev: _first.type = nil;
     while tmp != nil && tmp!.data != x {
       prev = tmp;
       tmp = tmp!.next;
@@ -175,10 +175,10 @@ record LinkedList {
     if tmp != nil {
       if prev != nil then
         prev!.next = tmp!.next;
-      if first == tmp then
-        first = tmp!.next;
-      if last == tmp then
-        last = prev;
+      if _first == tmp then
+        _first = tmp!.next;
+      if _last == tmp then
+        _last = prev;
       delete tmp;
       size -= 1;
     }
@@ -193,11 +193,11 @@ record LinkedList {
      if boundsChecking && size < 1 {
        HaltWrappers.boundsCheckHalt("pop_front on empty list");
      }
-     var oldfirst = first!;
-     var newfirst = first!.next;
+     var oldfirst = _first!;
+     var newfirst = _first!.next;
      var ret = oldfirst.data;
-     first = newfirst;
-     if last == oldfirst then last = newfirst;
+     _first = newfirst;
+     if _last == oldfirst then _last = newfirst;
      size -= 1;
      delete oldfirst;
      return ret;
@@ -230,10 +230,7 @@ record LinkedList {
     :rtype: `ref eltType`
    */
   proc ref front() ref: eltType {
-    if size == 0 {
-      boundsCheckHalt ("Called linkedlists.first on an empty list")
-    }
-      return try! first!.data;
+    return try! _first!.data;
   }
 
   /*
@@ -247,24 +244,21 @@ record LinkedList {
     :rtype: `ref eltType`
    */
   proc ref back() ref: eltType {
-        if size == 0 {
-      boundsCheckHalt ("Called linkedlists.last on an empty list")
-    }
-    return try! last!.data;
+    return try! _last!.data;
   }
   
   /*
     Delete every node in the list.
    */
   proc destroy() {
-    var current = first;
+    var current = _first;
     while (current != nil) {
       var next = current!.next;
       delete current;
       current = next;
     }
-    first = nil;
-    last = nil;
+    _first = nil;
+    _last = nil;
     size = 0;
   }
 
