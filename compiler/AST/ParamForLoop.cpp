@@ -61,7 +61,26 @@ BlockStmt* ParamForLoop::buildParamForLoop(VarSymbol* indexVar,
     stride = new SymExpr(new_IntSymbol(1));
   }
 
-  if (call && call->isNamed("chpl_build_bounded_range"))
+  if (call && call->isNamed("#"))
+  {
+    Expr* count = new CallExpr("chpl_compute_count_param_loop", call->get(2)->remove());
+    call        = toCallExpr(call->get(1));
+    if (call && call->isNamed("chpl_build_low_bounded_range"))
+    {
+      low  = call->get(1)->remove();
+      high = new CallExpr("chpl_high_bound_count_for_param_loop", low->copy(), count);
+    }
+    else if (call && call->isNamed("chpl_build_high_bounded_range"))
+    {
+      high = call->get(1)->remove();
+      low  = new CallExpr("chpl_low_bound_count_for_param_loop", high->copy(), count);
+    }
+    else
+    {
+      USR_FATAL(range, "iterators for param-for-loops must be bounded literal ranges");
+    }
+  }
+  else if (call && call->isNamed("chpl_build_bounded_range"))
   {
     low    = call->get(1)->remove();
     high   = call->get(1)->remove();

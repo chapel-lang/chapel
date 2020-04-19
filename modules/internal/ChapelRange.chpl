@@ -406,12 +406,60 @@ module ChapelRange {
 
   pragma "last resort"
   proc chpl_compute_low_param_loop_bound(param low, param high) param {
-    compilerError("Range bounds must be integers of compatible types");
+    compilerError("Range bounds must be integers of compatible types in param for loop");
   }
 
   pragma "last resort"
   proc chpl_compute_low_param_loop_bound(low, high) {
     compilerError("param for loop must be defined over a bounded param range");
+  }
+
+  proc chpl_compute_count_param_loop(param count: integral) param {
+    return count;
+  }
+
+  pragma "last resort"
+  proc chpl_compute_count_param_loop(param count) {
+    compilerError("ranges in param for loop can only have integral count");
+  }
+
+  pragma "last resort"
+  proc chpl_compute_count_param_loop(count) {
+    compilerError("ranges in param for loop must be integral literals");
+  }
+
+  proc chpl_low_bound_count_for_param_loop(param high: integral, param count: integral) param {
+    if count > 0 {
+      compilerError("for positive count, first index must be present");
+    }
+    else if count == 0 {
+      return high + 1;
+    }
+    else {
+      return high + count + 1;
+    }
+  }
+
+  pragma "last resort"
+  proc chpl_low_bound_count_for_param_loop(high, count) {
+    compilerError("Invalid use of count range in param for loop");
+  }
+
+  proc chpl_high_bound_count_for_param_loop(param low: integral, param count: integral) param {
+    if count < 0 {
+      compilerError("for negative count, last index must be present");
+    }
+    else if count == 0 {
+      return low - 1;
+    }
+    else {
+      return low + count - 1;
+    }
+  }
+
+  pragma "last resort"
+  proc chpl_high_bound_count_for_param_loop(low, count) {
+    compilerError("Invalid use of count range in param for loop");
   }
 
   //################################################################################
