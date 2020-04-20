@@ -41,6 +41,12 @@
 #define chpl_noreturn
 #endif
 
+#if defined(__GNUC__) || defined(__clang__)
+#define PRINTF_FORMAT_ATTR(s, v) __attribute__ ((format (printf, s, v)))
+#else
+#define PRINTF_FORMAT_ATTR(s, v)
+#endif
+
 #ifndef COMPILER_SUBDIR
 #define COMPILER_SUBDIR
 #endif
@@ -91,22 +97,9 @@ const char* cleanFilename(const char*    name);
 
 void        setupError(const char* subdir, const char* filename, int lineno, int tag);
 
-#ifdef __clang__
- __attribute__ ((__format__ (__printf__, 1, 2)))
-void        handleError(const char* fmt, ...);
-__attribute__ ((__format__ (__printf__, 2, 3)))
-void        handleError(const BaseAST* ast, const char* fmt, ...);
-__attribute__ ((__format__ (__printf__, 2, 3)))
-void        handleError(astlocT astloc, const char* fmt, ...);
-#elif __GNUC__
-void        handleError(const char* fmt, ...) __attribute__ ((format (printf, 1, 2)));
-void        handleError(const BaseAST* ast, const char* fmt, ...)__attribute__ ((format (printf, 2, 3)));
-void        handleError(astlocT astloc, const char* fmt, ...)__attribute__ ((format (printf, 2, 3)));
-#else
-void        handleError(const char* fmt, ...);
-void        handleError(const BaseAST* ast, const char* fmt, ...);
-void        handleError(astlocT astloc, const char* fmt, ...);
-#endif
+void        handleError(const char* fmt, ...) PRINTF_FORMAT_ATTR(1, 2);
+void        handleError(const BaseAST* ast, const char* fmt, ...) PRINTF_FORMAT_ATTR(2, 3);
+void        handleError(astlocT astloc, const char* fmt, ...) PRINTF_FORMAT_ATTR(2, 3);
 
 void        exitIfFatalErrorsEncountered();
 
