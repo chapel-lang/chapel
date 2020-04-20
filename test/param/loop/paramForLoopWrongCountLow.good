@@ -1,0 +1,1 @@
+paramForLoopWrongCountLow.chpl:1: error: for negative count, last index must be present

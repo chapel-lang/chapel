@@ -1,0 +1,1 @@
+paramForLoopWrongCountHigh.chpl:1: error: for positive count, first index must be present
