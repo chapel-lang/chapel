@@ -363,7 +363,7 @@ module Random {
       // Return 1 sample
       var randNum = stream.getNext(resultType=real);
       var (found, idx) = Search.binarySearch(cumulativeArr, randNum);
-      return (idx-1) * stride + low;
+      return X.dim(0).orderToIndex(idx-1);
     } else {
       // Return numElements samples
 
@@ -382,7 +382,7 @@ module Random {
         for sample in samples {
           var randNum = stream.getNext(resultType=real);
           var (found, idx) = Search.binarySearch(cumulativeArr, randNum);
-          sample = (idx-1) * stride + low;
+          sample = X.dim(0).orderToIndex(idx-1);
         }
       } else {
         var indicesChosen: domain(int);
@@ -403,7 +403,7 @@ module Random {
             var (found, indexChosen) = Search.binarySearch(cumulativeArr, randNum);
             if !indicesChosen.contains(indexChosen) {
               indicesChosen += indexChosen;
-              samples[i] = (indexChosen-1) * stride + low;
+              samples[i] = X.dim(0).orderToIndex(indexChosen-1);;
               i += 1;
             }
             P[indexChosen] = 0;
