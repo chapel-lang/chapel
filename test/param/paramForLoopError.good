@@ -1,1 +1,1 @@
-test/param/paramForLoopError.chpl:1: error: for positive count, first index must be present
+paramForLoopError.chpl:1: error: for positive count, first index must be present
