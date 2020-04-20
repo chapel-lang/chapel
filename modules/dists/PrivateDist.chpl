@@ -240,15 +240,15 @@ proc PrivateArr.doiScan(op, dom) where (rank == 1) &&
 // This way we cleanup the unmanaged, module-scope variable after module
 // deinitializer, which is called before deinitializing module-scope variables
 // which would cause use-after-free during the cleanup of PrivateSpace
-var cw = new CleanupWrapper();
+var chpl_privateCW = new chpl_privateDistCleanupWrapper();
 var chpl_privateDist = new unmanaged Private();
 const PrivateSpace: domain(1) dmapped new dmap(chpl_privateDist);
 
-record CleanupWrapper {
+record chpl_privateDistCleanupWrapper {
   var val = nil : unmanaged Private?;
   proc deinit() { delete val!; }
 }
 
 proc deinit() {
-  cw.val = chpl_privateDist;
+  chpl_privateCW.val = chpl_privateDist;
 }
