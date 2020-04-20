@@ -314,7 +314,7 @@ module Random {
           sample = randIdx;
         }
       } else {
-        if numElements < log(X.size) {
+        if numElements < log2(X.size) {
           var indices: set(int);
           var i: int = 1;
           while i <= numElements {
