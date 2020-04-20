@@ -66,6 +66,8 @@ module Random {
   public use PCGRandom;
   import HaltWrappers;
 
+  use Set;
+
 
 
   /* Select between different supported RNG algorithms.
@@ -312,10 +314,24 @@ module Random {
           sample = randIdx;
         }
       } else {
-        var indices: [X] int = X;
-        shuffle(indices);
-        for i in samples.domain {
-          samples[i] = (indices[(i-1)*stride+low]);
+        if numElements < log(X.size) {
+          var indices: set(int);
+          var i: int = 1;
+          while i <= numElements {
+            var randVal = stream.getNext(resultType=int, 0, X.size-1);
+            if !indices.contains(randVal) {
+              var randIdx = X.dim(0).orderToIndex(randVal);
+              samples[i] = randIdx;
+              indices.add(randVal);
+              i = i + 1;
+            }
+          }
+        } else {
+          var indices: [X] int = X;
+          shuffle(indices);
+          for i in samples.domain {
+            samples[i] = (indices[(i-1)*stride+low]);
+          }
         }
       }
       if isIntegralType(sizeType) {
