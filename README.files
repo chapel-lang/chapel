@@ -15,7 +15,6 @@ further information about the files and directories that they contain.
   GOALS.md             : the goals of this release
   LICENSE              : license information for the Chapel release as a whole
   LICENSE.chapel       : license statement for the Chapel implementation itself
-  PERFORMANCE.md       : notes about Chapel performance
   README.files         : this file
   Makefile             : top-level Makefile for building things
   bin/                 : location of the compiler (chpl) once it's been built

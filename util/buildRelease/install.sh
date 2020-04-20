@@ -252,7 +252,6 @@ myinstallfile COPYRIGHT               "$DEST_CHPL_HOME"
 myinstallfile GOALS.md                "$DEST_CHPL_HOME"
 myinstallfile LICENSE                 "$DEST_CHPL_HOME"
 myinstallfile LICENSE.chapel          "$DEST_CHPL_HOME"
-myinstallfile PERFORMANCE.md          "$DEST_CHPL_HOME"
 myinstallfile README.rst              "$DEST_CHPL_HOME"
 
 # copy modules
