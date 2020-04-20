@@ -767,14 +767,14 @@ proc main(){
   var gees_col_major_sort_result = gees_col_major_sort_test();
   
   
-  writeln( "LAPACK_dgees_no_sort ", if LAPACK_dgees_no_sort_result[1] then "passed" else "FAILED!" );
-  writeln( "LAPACK_dgees_sort ", if LAPACK_dgees_sort_result[1] then "passed" else "FAILED!" );    
-  writeln( "LAPACKE_dgees_row_major_no_sort ", if LAPACKE_dgees_row_major_no_sort_result[1] then "passed" else "FAILED!" );
-  writeln( "LAPACKE_dgees_col_major_no_sort ", if LAPACKE_dgees_col_major_no_sort_result[1] then "passed" else "FAILED!" );  
-  writeln( "LAPACKE_dgees_row_major_sort ", if LAPACKE_dgees_row_major_sort_result[1] then "passed" else "FAILED!" );
-  writeln( "LAPACKE_dgees_col_major_sort ", if LAPACKE_dgees_col_major_sort_result[1] then "passed" else "FAILED!" );  
-  writeln( "gees_row_major_no_sort ", if gees_row_major_no_sort_result[1] then "passed" else "FAILED!" );
-  writeln( "gees_col_major_no_sort ", if gees_col_major_no_sort_result[1] then "passed" else "FAILED!" );  
-  writeln( "gees_row_major_sort ", if gees_row_major_sort_result[1] then "passed" else "FAILED!" );
-  writeln( "gees_col_major_sort ", if gees_col_major_sort_result[1] then "passed" else "FAILED!" );  
+  writeln( "LAPACK_dgees_no_sort ", if LAPACK_dgees_no_sort_result[0] then "passed" else "FAILED!" );
+  writeln( "LAPACK_dgees_sort ", if LAPACK_dgees_sort_result[0] then "passed" else "FAILED!" );    
+  writeln( "LAPACKE_dgees_row_major_no_sort ", if LAPACKE_dgees_row_major_no_sort_result[0] then "passed" else "FAILED!" );
+  writeln( "LAPACKE_dgees_col_major_no_sort ", if LAPACKE_dgees_col_major_no_sort_result[0] then "passed" else "FAILED!" );  
+  writeln( "LAPACKE_dgees_row_major_sort ", if LAPACKE_dgees_row_major_sort_result[0] then "passed" else "FAILED!" );
+  writeln( "LAPACKE_dgees_col_major_sort ", if LAPACKE_dgees_col_major_sort_result[0] then "passed" else "FAILED!" );  
+  writeln( "gees_row_major_no_sort ", if gees_row_major_no_sort_result[0] then "passed" else "FAILED!" );
+  writeln( "gees_col_major_no_sort ", if gees_col_major_no_sort_result[0] then "passed" else "FAILED!" );  
+  writeln( "gees_row_major_sort ", if gees_row_major_sort_result[0] then "passed" else "FAILED!" );
+  writeln( "gees_col_major_sort ", if gees_col_major_sort_result[0] then "passed" else "FAILED!" );  
 }

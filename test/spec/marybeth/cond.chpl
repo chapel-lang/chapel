@@ -8,7 +8,7 @@ scale(x, y, alpha);
 writeln(x);
 
 proc scale(x, y, alpha: real) {
-  if (x.numElements != y.numElements) then
+  if (x.size != y.size) then
     writeln("Error:  Inputs are not the same length.");
   else {
     if (alpha == 0.0) {

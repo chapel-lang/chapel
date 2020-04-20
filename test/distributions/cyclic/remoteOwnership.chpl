@@ -9,7 +9,6 @@ var A: [D] real;
 
 testit(D, A);
 
-
 // test one with a shuffled locale map
 if (numLocales == 4) {
   var targetLocs: [1..2, 1..2] locale;

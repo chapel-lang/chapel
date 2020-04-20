@@ -7,3 +7,5 @@ motivated-by-expiring-values.chpl:50: note: consider scope of arg
 motivated-by-expiring-values.chpl:55: In function 'captureB':
 motivated-by-expiring-values.chpl:56: error: Setting borrowed formal lhs illegal without specifying formal lifetime constraint
 motivated-by-expiring-values.chpl:55: note: consider scope of rhs
+motivated-by-expiring-values.chpl:76: In function 'testAcapturesTemp':
+motivated-by-expiring-values.chpl:79: error: Scoped variable would outlive the value it is set to

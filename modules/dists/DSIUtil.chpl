@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -36,7 +37,7 @@ inline proc getDataParMinGranularity() {
 //
 proc createTuple(param rank, type t, val) {
   var tup: rank*t;
-  for param i in 1..rank do tup(i) = val;
+  for param i in 0..rank-1 do tup(i) = val;
   return tup;
 }
 
@@ -50,8 +51,8 @@ proc _computeChunkStuff(maxTasks, ignoreRunning, minSize, ranges,
   param rank=ranges.size;
   type EC = uint; // type for element counts
   var numElems = 1:EC;
-  for param i in 1..rank do {
-    numElems *= ranges(i).length:EC;
+  for param i in 0..rank-1 do {
+    numElems *= ranges(i).size:EC;
   }
 
   var numChunks = _computeNumChunks(maxTasks, ignoreRunning, minSize, numElems);
@@ -64,8 +65,8 @@ proc _computeChunkStuff(maxTasks, ignoreRunning, minSize, ranges,
   var maxDim = -1;
   var maxElems = min(EC);
   // break/continue don't work with param loops (known future)
-  for /* param */ i in 1..rank do {
-    const curElems = ranges(i).length:EC;
+  for /* param */ i in 0..rank-1 do {
+    const curElems = ranges(i).size:EC;
     if curElems >= numChunks:EC {
       parDim = i;
       break;
@@ -182,7 +183,7 @@ proc _computeBlock(numelems, numblocks, blocknum, wayhi,
 //
 proc _factor(param rank: int, value) {
   var factors: rank*int;
-  for param i in 1..rank do
+  for param i in 0..rank-1 do
     factors(i) = 1;
   if value >= 1 {
     var iv = value;
@@ -190,8 +191,8 @@ proc _factor(param rank: int, value) {
     while iv > 1 {
       for i in 2..iv {
         if iv % i == 0 {
-          var j = 1;
-          for i in 2..rank {
+          var j = 0;
+          for i in 1..rank-1 {
             if factors(i) < factors(j) then
               j = i;
           }
@@ -202,8 +203,8 @@ proc _factor(param rank: int, value) {
       }
     }
   }
-  for i in 1..rank do
-    for j in i+1..rank do
+  for i in 0..rank-1 do
+    for j in i+1..rank-1 do
       if factors(i) < factors(j) then
         factors(i) <=> factors(j);
   return factors;
@@ -220,15 +221,15 @@ proc computeZeroBasedDomain(dom: domain)
 proc computeZeroBasedRanges(ranges: _tuple) {
   proc helper(type idxType, first, rest...) {
     if rest.size > 1 then
-      return (0:idxType..#first.length:idxType, (...helper(idxType, (...rest))));
+      return (0:idxType..#first.size:idxType, (...helper(idxType, (...rest))));
     else
-      return (0:idxType..#first.length:idxType, 0:idxType..#rest(1).length:idxType);
+      return (0:idxType..#first.size:idxType, 0:idxType..#rest(0).size:idxType);
   }
-  type idxType = ranges(1).idxType;
+  type idxType = ranges(0).idxType;
   if ranges.size > 1 then
     return helper(idxType, (...ranges));
   else
-    return (0:idxType..#ranges(1).length:idxType,);
+    return (0:idxType..#ranges(0).size:idxType,);
 }
 
 //
@@ -266,16 +267,16 @@ proc densify(subs, wholes, userErrors = true)
 {
   type argtypes = (subs, wholes).type;
   _densiCheck(wholes.size == subs.size, argtypes);
-  _densiCheck(isRange(subs(1)), argtypes);
-  _densiCheck(isRange(wholes(1)), argtypes);
-  _densiEnsureBounded(subs(1));
-  _densiIdxCheck(subs(1).idxType, wholes(1).idxType, argtypes);
+  _densiCheck(isRange(subs(0)), argtypes);
+  _densiCheck(isRange(wholes(0)), argtypes);
+  _densiEnsureBounded(subs(0));
+  _densiIdxCheck(subs(0).idxType, wholes(0).idxType, argtypes);
 
   param rank = wholes.size;
-  type IT = wholes(1).idxType;
+  type IT = wholes(0).idxType;
   var result: rank * range(IT, BoundedRangeType.bounded, true);
 
-  for param d in 1..rank {
+  for param d in 0..rank-1 {
     _densiCheck(isRange(subs(d)), argtypes);
     _densiCheck(isRange(wholes(d)), argtypes);
     _densiIdxCheck(wholes(d).idxType, IT, argtypes);
@@ -297,16 +298,16 @@ proc densify(s: range(?,boundedType=?B), w: range(?IT,?,stridable=true), userErr
     else                               assert(cond, (...args));
   }
 
-  if s.length == 0 {
+  if s.size == 0 {
     return 1:IT .. 0:IT;
 
   } else {
-    ensure(w.length > 0, "densify(s=", s, ", w=", w, "): w is empty while s is not");
+    ensure(w.size > 0, "densify(s=", s, ", w=", w, "): w is empty while s is not");
 
     var low: IT = w.indexOrder(s.first);
     ensure(low >= 0, "densify(s=", s, ", w=", w, "): s.first is not in w");
 
-    if s.length == 1 {
+    if s.size == 1 {
       // The "several indices" case should produce the same answer. We still
       // include this special (albeit infrequent) case because it's so short.
       return low .. low;
@@ -387,15 +388,15 @@ proc unDensify(denses, wholes, userErrors = true)
 {
   type argtypes = (denses, wholes).type;
   _undensCheck(wholes.size == denses.size, argtypes);
-  _undensCheck(isRange(denses(1)), argtypes);
-  _undensCheck(isRange(wholes(1)), argtypes);
-  _undensEnsureBounded(denses(1));
+  _undensCheck(isRange(denses(0)), argtypes);
+  _undensCheck(isRange(wholes(0)), argtypes);
+  _undensEnsureBounded(denses(0));
 
   param rank = wholes.size;
-  type IT = wholes(1).idxType;
+  type IT = wholes(0).idxType;
   var result: rank * range(IT, BoundedRangeType.bounded, true);
 
-  for param d in 1..rank {
+  for param d in 0..rank-1 {
     _undensCheck(isRange(denses(d)), argtypes);
     _undensCheck(isRange(wholes(d)), argtypes);
     _undensCheck(chpl__legalIntCoerce(wholes(d).idxType, IT), argtypes);
@@ -413,17 +414,17 @@ proc unDensify(dense: range(?,boundedType=?B), whole: range(?IT,?,stridable=true
     compilerError("unDensify(): the 'whole' argument must have at least one bound");
 
   // ensure we can call dense.first below
-  if dense.length == 0 then
+  if dense.size == 0 then
     return 1:IT .. 0:IT;
 
   if ! whole.hasFirst() then
     halt("unDensify() is invoked with the 'whole' range that has no first index");
 
   var low :IT = whole.orderToIndex(dense.first);
-  // should we special-case dense.length==1?
-  // if dense.length == 1 then return low .. low;
+  // should we special-case dense.size==1?
+  // if dense.size == 1 then return low .. low;
   const stride = whole.stride * dense.stride;
-  var high :IT = chpl__addRangeStrides(low, stride, dense.length - 1);
+  var high :IT = chpl__addRangeStrides(low, stride, dense.size - 1);
   assert(high == whole.orderToIndex(dense.last));
   if stride < 0 then low <=> high;
 
@@ -454,9 +455,9 @@ proc _undensCheck(param cond, type argtypes, param errlevel = 2) {
 proc setupTargetLocalesArray(ref targetLocDom, targetLocArr, specifiedLocArr) {
   param rank = targetLocDom.rank;
   if rank != 1 && specifiedLocArr.rank == 1 {
-    const factors = _factor(rank, specifiedLocArr.numElements);
+    const factors = _factor(rank, specifiedLocArr.size);
     var ranges: rank*range;
-    for param i in 1..rank do
+    for param i in 0..rank-1 do
       ranges(i) = 0..#factors(i);
     targetLocDom = {(...ranges)};
     targetLocArr = reshape(specifiedLocArr, targetLocDom);
@@ -464,10 +465,38 @@ proc setupTargetLocalesArray(ref targetLocDom, targetLocArr, specifiedLocArr) {
     if specifiedLocArr.rank != rank then
       compilerError("specified target array of locales must equal 1 or distribution rank");
     var ranges: rank*range;
-    for param i in 1..rank do
-      ranges(i) = 0..#specifiedLocArr.domain.dim(i).length;
+    for param i in 0..rank-1 do
+      ranges(i) = 0..#specifiedLocArr.domain.dim(i).size;
     targetLocDom = {(...ranges)};
     targetLocArr = specifiedLocArr;
+  }
+}
+
+proc setupTargetLocRanges(param rank, specifiedLocArr) {
+  var ranges: rank*range;
+
+  if rank != 1 && specifiedLocArr.rank == 1 {
+    const factors = _factor(rank, specifiedLocArr.size);
+    for param i in 0..rank-1 do
+      ranges(i) = 0..#factors(i);
+
+  } else {
+    if specifiedLocArr.rank != rank then
+      compilerError("specified target array of locales must equal 1 or distribution rank");
+    for param i in 0..rank-1 do
+      ranges(i) = 0..#specifiedLocArr.domain.dim(i).size;
+  }
+
+  return ranges;
+}
+
+proc createWholeDomainForInds(param rank, type idxType, param stridable, inds) {
+  if isDomain(inds) {
+    return inds;
+  } else {
+    var result: domain(rank, idxType, stridable);
+    result.setIndices(inds);
+    return result;
   }
 }
 
@@ -486,7 +515,7 @@ proc bulkCommComputeActiveDims(LeftDims, RightDims) {
   // recursively invoke array assignment (and therefore bulk-transfer).
   var LeftActives, RightActives : minRank * int;
 
-  var li = 1, ri = 1;
+  var li = 0, ri = 0;
   proc advance() {
     // Advance to positions in each domain where the sizes are equal.
     while LeftDims(li).size == 1 && LeftDims(li).size != RightDims(ri).size do li += 1;
@@ -497,14 +526,14 @@ proc bulkCommComputeActiveDims(LeftDims, RightDims) {
 
   do {
     advance();
-    inferredRank += 1;
 
     LeftActives(inferredRank)  = li;
     RightActives(inferredRank) = ri;
 
+    inferredRank += 1;
     li += 1;
     ri += 1;
-  } while li <= LeftRank && ri <= RightRank;
+  } while li < LeftRank && ri < RightRank;
 
   return (LeftActives, RightActives, inferredRank);
 }
@@ -543,7 +572,7 @@ proc bulkCommTranslateDomain(srcSlice : domain, srcDom : domain, targetDom : dom
   var rngs : targetDom.rank*range(targetDom.idxType, stridable=needsStridable);
   rngs = targetDom.dims();
 
-  for i in 1..inferredRank {
+  for i in 0..inferredRank-1 {
     const SD    = SrcActives(i);
     const TD    = TargetActives(i);
     const dense = densify(srcSlice.dim(SD), srcDom.dim(SD));
@@ -583,7 +612,7 @@ proc bulkCommConvertCoordinate(ind, bView:domain, aView:domain)
   const AD = aView.dims();
   const BD = bView.dims();
   var result: rank * idxType;
-  for param i in 1..rank {
+  for param i in 0..rank-1 {
     const ar = AD(i), br = BD(i);
     if boundsChecking then assert(br.contains(b(i)));
     result(i) = ar.orderToIndex(br.indexOrder(b(i)));

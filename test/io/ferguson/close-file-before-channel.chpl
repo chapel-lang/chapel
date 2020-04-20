@@ -8,6 +8,7 @@ proc test() {
   var chan = file.writer();
   chan.write("hello");
   file.close();
+  chan; // keep it alive to here
 }
 
 test();

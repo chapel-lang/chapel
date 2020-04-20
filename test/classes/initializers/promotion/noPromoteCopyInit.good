@@ -1,4 +1,5 @@
-noPromoteCopyInit.chpl:13: warning: 'init' has been deprecated as the copy-initializer, use 'init=' instead.
 1 + r = 3 5 7 9 11 13 15 17 19 21
 Copying from R(2)
 2 * o = 8 16 24 32 40 48 56 64 72 80
+Copying from R(2)
+3 * b = 12 24 36 48 60 72 84 96 108 120

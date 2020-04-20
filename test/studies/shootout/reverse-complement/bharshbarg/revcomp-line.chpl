@@ -34,7 +34,7 @@ record buf {
     this.complete();
 
     chan = fi.reader(locking=false);
-    numLeft = fi.length();
+    numLeft = fi.size;
   }
 
   pragma "no copy return"
@@ -106,7 +106,7 @@ proc main(args: [] string) {
   // We don't expose similar routines for list at the moment...
   /*
   {
-    const r = 1..stdin.length();
+    const r = 1..stdin.size;
     data._value.dataAllocRange = r;
     data._value.dsiReallocate((r,));
     data._value.dsiPostReallocate();
@@ -116,16 +116,16 @@ proc main(args: [] string) {
   input.readUntil("\n".toByte(), data);
 
   sync {     // wait for all process() tasks to complete before continuing
-    var lineStart = data.size + 1;
+    var lineStart = data.size;
     var sectionStart = lineStart;
     while input.readUntil("\n".toByte(), data) > 0 {
       if data[lineStart] == ">".toByte() {
-        begin process(data, sectionStart, lineStart-2);
-        sectionStart = data.size+1;
+        begin with (ref data) process(data, sectionStart, lineStart-2);
+        sectionStart = data.size;
       }
-      lineStart = data.size + 1;
+      lineStart = data.size;
     }
-    process(data, sectionStart, data.size-1);
+    process(data, sectionStart, data.size-2);
   }
 
   const stdoutBin = openfd(1).writer(iokind.native, locking=false, 
@@ -137,7 +137,7 @@ proc main(args: [] string) {
   stdoutBin.write(data.toArray());
 }
 
-proc process(data, in start, in end) {
+proc process(ref data, in start, in end) {
   proc advance(ref cursor, dir) {
     do { cursor += dir; } while data[cursor] == "\n".toByte();
   }
@@ -152,7 +152,7 @@ proc process(data, in start, in end) {
 proc initTable(pairs) {
   var table: [1..128] uint(8);
 
-  for i in 1..pairs.numBytes by 2 {
+  for i in 0..#pairs.numBytes by 2 {
     table[pairs.byte(i)] = pairs.byte(i+1);
     if pairs.byte(i) != "\n".toByte() then
       table[pairs[i:byteIndex].toLower().toByte()] = pairs.byte(i+1);

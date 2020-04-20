@@ -50,9 +50,9 @@ module block_2D_outer_product_cholesky {
 
     where ( A.domain.rank == 2 ) {
 
-    assert ( A.domain.dim (1) == A.domain.dim (2) );
+    assert ( A.domain.dim (0) == A.domain.dim (1) );
 
-    const A_rc_indices = A.domain.dim (1);  // row and column indices of A
+    const A_rc_indices = A.domain.dim (0);  // row and column indices of A
     var   pos_def : bool;
 
     // compute L from A
@@ -65,7 +65,7 @@ module block_2D_outer_product_cholesky {
       pos_def = scalar_outer_product_cholesky
 	                            ( A (A11_rc_indices, A11_rc_indices) );
 
-      if pos_def && A22_rc_indices.length > 0 then {
+      if pos_def && A22_rc_indices.size > 0 then {
 
 	// compute the remainder of the active block column of L by a
 	// block triangular solve realizing the equation

@@ -1,2 +1,4 @@
-varOverBadGeneric.chpl:6: error: Cannot default-initialize a variable with generic type
-varOverBadGeneric.chpl:6: note: 'myC' has generic type 'C'
+varOverBadGeneric.chpl:7: error: unresolved call 'C.init()'
+varOverBadGeneric.chpl:1: note: this candidate did not match: C.init(type t, x: t)
+varOverBadGeneric.chpl:7: note: because call does not supply enough arguments
+varOverBadGeneric.chpl:2: note: it is missing a value for formal 't'

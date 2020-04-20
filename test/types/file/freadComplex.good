@@ -4,6 +4,6 @@
 4.4 + 4.4i
 5.5 + 5.5i
 6.6 - 6.6i
-uncaught BadFormatError: bad format: missing i when reading #.# + #.#i complex (in channel.read(ref a:complex(128)) with path "freadComplex.txt" offset 79)
+uncaught BadFormatError: bad format: missing i when reading #.# + #.#i complex (while reading complex(128) with path "freadComplex.txt" offset 79)
   freadComplex.chpl:9: thrown here
   freadComplex.chpl:9: uncaught here

@@ -20,7 +20,7 @@ class ZeroFluxDiffusionBC: LevelBC {
         var shift = -1*loc;
         
         forall cell in ghost_domain do
-          q(grid).value(cell) = q(grid).value(cell+shift);
+          q(grid)!.value(cell) = q(grid)!.value(cell+shift);
       }
     
     } // end for grid in level.grids

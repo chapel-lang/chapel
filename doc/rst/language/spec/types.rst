@@ -1,5 +1,7 @@
 .. _Chapter-Types:
 
+.. default-domain:: chpl
+
 Types
 =====
 
@@ -308,7 +310,7 @@ conversions are automatically supported for enumerated types which are
 concrete or semi-concrete
 (see :ref:`Explicit_Enumeration_Conversions`).
 
-   *Example (enum.chpl)*.
+   *Example (enum-statesmen.chpl)*.
 
    The code 
 
@@ -354,7 +356,7 @@ concrete or semi-concrete
    outputs a quote from the given statesman. Note that enumerated
    constants must be prefixed by the enumerated type name and a dot
    unless a use statement is employed
-   (see :ref:`The_Use_Statement`).
+   (see :ref:`The_Use_Statement` and :ref:`Using_Modules`).
 
 It is possible to iterate over an enumerated type. The loop body will be
 invoked on each named constant in the enum. The following method is also
@@ -362,11 +364,17 @@ available:
 
 
 
-.. code-block:: chapel
+.. function:: proc enum.size: param int
 
-   proc enum.size: param int
+     Returns the number of constants in the given enumerated type.
 
-The number of constants in the given enumerated type.
+.. function:: proc enum.first: enum
+
+     Returns the first constant in the enumerated type.
+
+.. function:: proc enum.last: enum
+
+     Returns the last constant in the enumerated type.
 
 .. _Structured_Types:
 

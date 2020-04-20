@@ -580,14 +580,14 @@ The ugni communication layer maintains information about every memory
 region it registers with the Gemini or Aries NIC.  Roughly speaking there
 are a few memory regions for each tasking layer thread, plus one for each
 array larger than 2 hugepages allocated and registered separately from the
-heap.  By default the comm layer can handle up to 4k (2**12) total memory
+heap.  By default the comm layer can handle up to 16k (2**14) total memory
 regions on Cray XC systems or 2k on XE systems, which is plenty under
 normal circumstances.  In the event a program needs more than this, a
 message like the following will be printed:
 
   .. code-block:: sh
 
-    warning: no more registered memory region table entries (max is 4096).
+    warning: no more registered memory region table entries (max is 16384).
              Change using CHPL_RT_COMM_UGNI_MAX_MEM_REGIONS.
 
 To provide for more registered regions, set the
@@ -596,7 +596,7 @@ indicating how many you want to allow.  For example:
 
   .. code-block:: sh
 
-    export CHPL_RT_COMM_UGNI_MAX_MEM_REGIONS=10000
+    export CHPL_RT_COMM_UGNI_MAX_MEM_REGIONS=30000
 
 Note that there are certain comm layer overheads that are proportional to
 the number of registered memory regions, so allowing a very high number of

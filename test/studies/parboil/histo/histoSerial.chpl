@@ -8,12 +8,12 @@ proc main(args: [] string) {
   var inputFilename: string;
   var outputFilename: string;
   var inputTime, outputTime, computeTime, totalTime: Timer;
-  if args.numElements == 4 {
+  if args.size == 4 {
     inputFilename = args[1];
     outputFilename = args[2];
     numIterations = args[3]:int;
   } else {
-    writeln("num args: ", args.numElements);
+    writeln("num args: ", args.size);
     writeln(args);
     halt("Expected 4 args: a.out infile, outfile, numIterations");
   }
@@ -142,8 +142,8 @@ proc createBMP(bitmap:[] RGB, height: uint(32), width: uint(32), filename: strin
   var paddedWidth = 4*(((width*24)+31)/32) - width*sizeof(RGB);
   var pad: [0..#paddedWidth] uint(8);
 
-  image.magic(1) = 'B'.toByte();
-  image.magic(2) = 'M'.toByte();
+  image.magic(0) = 'B'.toByte();
+  image.magic(1) = 'M'.toByte();
 
   image.fileHeader.filesz = 2 + sizeof(bmpFileHeader) + sizeof(bmpDibHeader) + height*width*sizeof(RGB);
   image.fileHeader.creator1 = 0;
@@ -165,8 +165,8 @@ proc createBMP(bitmap:[] RGB, height: uint(32), width: uint(32), filename: strin
   var f = open(filename, iomode.cw);
   var w = f.writer(kind=ionative);
 
+  w.write(image.magic(0));
   w.write(image.magic(1));
-  w.write(image.magic(2));
   w.write(image.fileHeader);
   w.write(image.dibHeader);
 

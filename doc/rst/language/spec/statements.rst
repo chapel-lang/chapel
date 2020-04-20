@@ -706,208 +706,29 @@ qualified name. When using a module, the statement also ensures that the
 module symbol itself is visible within the current scope (top-level
 modules are not otherwise visible without a ``use``).
 
-The syntax of the use statement is given by:
-
-
-
-.. code-block:: syntax
-
-   use-statement:
-     privacy-specifier[OPT] `use' module-or-enum-name-list ;
-
-   module-or-enum-name-list:
-     module-or-enum-name limitation-clause[OPT]
-     module-or-enum-name , module-or-enum-name-list
-
-   module-or-enum-name:
-     identifier
-     identifier . module-or-enum-name
-
-   limitation-clause:
-     `except' exclude-list
-     `only' rename-list[OPT]
-
-   exclude-list:
-     identifier-list
-     $ * $
-
-   rename-list:
-     rename-base
-     rename-base , rename-list
-
-   rename-base:
-     identifier `as' identifier
-     identifier
-
-For example, the program
-
-   *Example (use1.chpl)*.
-
-   
-
-   .. code-block:: chapel
-
-      module M1 {
-        proc foo() {
-          writeln("In M1's foo.");
-        }
-      }
-
-      module M2 {
-        use M1;
-        proc main() {
-          writeln("In M2's main.");
-          M1.foo();
-        }
-      }
-
-   prints out 
-
-   .. code-block:: printoutput
-
-      In M2's main.
-      In M1's foo.
-
-This program is equivalent to:
-
-   *Example (use2.chpl)*.
-
-   
-
-   .. code-block:: chapel
-
-      module M1 {
-        proc foo() {
-          writeln("In M1's foo.");
-        }
-      }
-
-      module M2 {
-        proc main() {
-          use M1;
-
-          writeln("In M2's main.");
-          foo();
-        }
-      }
-
-   which also prints out 
-
-   .. code-block:: printoutput
-
-      In M2's main.
-      In M1's foo.
-
-The names that are imported by a use statement are inserted in to a new
-scope that immediately encloses the scope within which the statement
-appears. This implies that the position of the use statement within a
-scope has no effect on its behavior. If a scope includes multiple use
-statements then the imported names are inserted in to a common enclosing
-scope.
-
-An error is signaled if multiple enumeration constants or public
-module-level symbols would be inserted into this enclosing scope with
-the same name, and that name is referenced by other statements in the
-same scope as the use.
-
-Use statements are transitive by default: if a module A uses a module B,
-and module B contains a use of a module or enumerated type C, then C’s
-public symbols may also be visible within A. The exception to this
-occurs when B has public symbols that shadow symbols with the same name
-in C, or when the use of C has been declared explicitly ``private``. If
-a use statement is declared to be ``private``, then the symbols it makes
-visible will only be visible to the scope containing the use.
-
-This notion of transitivity extends to the case in which a scope imports
-symbols from multiple modules or constants from multiple enumeration
-types. For example if a module A uses modules B1, B2, B3 and modules B1,
-B2, B3 use modules C1, C2, C3 respectively, then all of the public
-symbols in B1, B2, B3 have the potential to shadow the public symbols of
-C1, C2, and C3. However an error is signaled if C1, C2, C3 have public
-module level definitions of the same symbol.
-
-An optional ``limitation-clause`` may be provided to limit the symbols
-made available by a given use statement. If an ``except`` list is
-provided, then all the visible but unlisted symbols in the module or
-enumerated type will be made available without prefix. If an ``only``
-list is provided, then just the listed visible symbols in the module or
-enumerated type will be made available without prefix. All visible
-symbols not provided via these limited use statements are still
-accessible by prefixing the access with the name of the module or
-enumerated type. It is an error to provide a name in a
-``limitation-clause`` that does not exist or is not visible in the
-respective module or enumerated type.
-
-If a type is specified in the ``limitation-clause``, then the type’s
-fields and methods are treated similarly to the type name. These fields
-and methods cannot be specified in a ``limitation-clause`` on their own.
-
-If an ``only`` list is left empty or ``except`` is followed by :math:`*`
-then no symbols are made available to the scope without prefix. However,
-any methods or fields defined within a module used in this way will
-still be accessible on instances of the type. For example:
-
-   *Example (limited-access.chpl)*.
-
-   
-
-   .. code-block:: chapel
-
-      module M1 {
-        record A {
-          var x = 1;
-
-          proc foo() {
-            writeln("In A.foo()");
-          }
-        }
-      }
-
-      module M2 {
-        proc main() {
-          use M1 only;
-
-          var a = new M1.A(3); // Only accessible via the module prefix
-          writeln(a.x); // Accessible because we have a record instance
-          a.foo(); // Ditto
-        }
-      }
-
-   will print out 
-
-   .. code-block:: printoutput
-
-      3
-      In A.foo()
-
-Within an ``only`` list, a visible symbol from that module may
-optionally be given a new name using the ``as`` keyword. This new name
-will be usable from the scope of the use in place of the old name unless
-the old name is additionally specified in the ``only`` list. If a use
-which renames a symbol is present at module scope, uses of that module
-will also be able to reference that symbol using the new name instead of
-the old name. Renaming does not affect accesses to that symbol via the
-source module’s or enumerated type’s prefix, nor does it affect uses of
-that module or enumerated type from other contexts. It is an error to
-attempt to rename a symbol that does not exist or is not visible in the
-respective module or enumerated type, or to rename a symbol to a name
-that is already present in the same ``only`` list. It is, however,
-perfectly acceptable to rename a symbol to a name present in the
-respective module or enumerated type which was not specified via that
-``only`` list.
-
-If a use statement mentions multiple modules or enumerated types or a
-mix of these symbols, only the last module or enumerated type can have a
-``limitation-clause``. Limitation clauses are applied transitively as
-well - in the first example, if module A’s use of module B contains an
-``except`` or ``only`` list, that list will also limit which of C’s
-symbols are visible to A.
-
-For more information on enumerated types, please
-see :ref:`Enumerated_Types`. For use statement rules which are
-only applicable to modules, please see :ref:`Using_Modules`.
-For more information on modules in general, please
+Use statements can also restrict or rename the set of module symbols that are
+available within the scope. For further information about ``use`` statements,
+see :ref:`Using_Modules`.  For more information on enumerated types, please
+see :ref:`Enumerated_Types`.  For more information on modules in general, please
 see :ref:`Chapter-Modules`.
+
+.. _The_Import_Statement:
+
+The Import Statement
+--------------------
+
+The ``import`` statement provides one of the two primary ways to access a
+module's symbols from outside of the module, the other being the ``use``
+statement.  Import statements make either the module's name or certain symbols
+within it available for reference within a given scope.  For top-level modules,
+an ``import`` or ``use`` statement is required before referring to the module's
+name or the symbols it contains within a given lexical scope.
+
+Import statements can also rename the set of symbols that they make available
+within the scope.  For further information about ``import`` statements, see
+:ref:`Importing_Modules`.
+
+For more information on modules in general, please see :ref:`Chapter-Modules`.
 
 .. _The_Defer_Statement:
 

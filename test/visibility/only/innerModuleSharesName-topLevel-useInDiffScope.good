@@ -1,2 +1,2 @@
-innerModuleSharesName-topLevel-useInDiffScope.chpl:1: warning: as written, 'M' is a sub-module of the module created for file 'innerModuleSharesName-topLevel-useInDiffScope.chpl' due to the file-level 'use' statements.  If you meant for 'M' to be a top-level module, move the 'use' statements into its scope.
+innerModuleSharesName-topLevel-useInDiffScope.chpl:1: warning: as written, 'M' is a sub-module of the module created for file 'innerModuleSharesName-topLevel-useInDiffScope.chpl' due to the file-level 'require', 'use', and/or 'import' statements.  If you meant for 'M' to be a top-level module, move the 'require', 'use', and/or 'import' statements into its scope.
 whee

@@ -1,0 +1,10 @@
+enum color { red = 1, green = 2, blue = 3 };
+writeln(color.red: bool);
+writeln(color.red: real);
+writeln(color.red: imag);
+writeln(color.red: complex);
+config const c = color.blue;
+writeln(c: bool);
+writeln(c: real);
+writeln(c: imag);
+writeln(c: complex);

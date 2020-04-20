@@ -26,7 +26,7 @@ int main(int argc, char **argv) {
   GASNET_Safe(gex_Client_Init(&myclient, &myep, &myteam, "testacc", &argc, &argv, 0));
 
   if (argc > 1) iters = atoi(argv[1]);
-  if (iters <= 0) iters = 10000;
+  if (iters <= 0) iters = 100000;
 
   gex_Rank_t myrank = gex_TM_QueryRank(myteam);
   gex_Rank_t nranks = gex_TM_QuerySize(myteam);

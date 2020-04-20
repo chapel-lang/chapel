@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -207,8 +208,8 @@ module Curl {
                 This function will call ``setopt`` on each pair in turn.
    */
   proc setopt(ch:channel, args ...?k) throws {
-    for param i in 1..k {
-      setopt(ch, args(i)(1), args(i)(2));
+    for param i in 0..k-1 {
+      setopt(ch, args(i)(0), args(i)(1));
     }
   }
 
@@ -392,9 +393,10 @@ module Curl {
   pragma "no doc"
   module CurlQioIntegration {
 
-    use Sys only ;
-    use Time only ;
+    import Sys;
+    import Time;
     private use IO;
+    use Curl;
 
     class CurlFile : QioPluginFile {
 
@@ -424,7 +426,7 @@ module Curl {
       }
       override proc getpath(out path:c_string, out len:int(64)):syserr {
         path = qio_strdup(this.url_c);
-        len = url_c.length;
+        len = url_c.size;
         return ENOERR;
       }
 
@@ -587,7 +589,7 @@ module Curl {
     private proc startsWith(haystack:c_string, needle:c_string) {
       extern proc strncmp(s1:c_string, s2:c_string, n:size_t):c_int;
 
-      return strncmp(haystack, needle, needle.length:size_t) == 0;
+      return strncmp(haystack, needle, needle.size:size_t) == 0;
     }
 
     private proc curl_write_string(contents: c_void_ptr, size:size_t, nmemb:size_t, userp: c_void_ptr) {
@@ -1026,8 +1028,8 @@ module Curl {
       // curl_easy_setopt(curl, CURLOPT_POSTFIELDS, "name=daniel&project=curl");
 
       // Save the url requested
-      var url_c = c_calloc(uint(8), url.length+1);
-      c_memcpy(url_c:c_void_ptr, url.localize().c_str():c_void_ptr, url.length);
+      var url_c = c_calloc(uint(8), url.size+1);
+      c_memcpy(url_c:c_void_ptr, url.localize().c_str():c_void_ptr, url.size);
 
       fl.url_c = url_c:c_string;
 

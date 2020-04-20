@@ -101,12 +101,12 @@ writeln("\tR2D32: ", checkRNG(R2D32, T2D32), " errors");
 
 
 writeln("fillRandom() rank changed arrays");
-ref rcT1D = T2D(Dom2D.dim(1), n2/2);
-ref rcT2D = T3D(Dom3D.dim(1), Dom3D.dim(2), n3/2);
-ref rcT3D = T4D(Dom4D.dim(1), Dom4D.dim(2), Dom4D.dim(3), n4/2);
-const rcDom1D: domain(1) dmapped Dist1D = Dom2D.dim(1);
-const rcDom2D: domain(2) dmapped Dist2D = {Dom3D.dim(1), Dom3D.dim(2)};
-const rcDom3D: domain(3) dmapped Dist3D = {Dom4D.dim(1), Dom4D.dim(2), Dom4D.dim(3)};
+ref rcT1D = T2D(Dom2D.dim(0), n2/2);
+ref rcT2D = T3D(Dom3D.dim(0), Dom3D.dim(1), n3/2);
+ref rcT3D = T4D(Dom4D.dim(0), Dom4D.dim(1), Dom4D.dim(2), n4/2);
+const rcDom1D: domain(1) dmapped Dist1D = Dom2D.dim(0);
+const rcDom2D: domain(2) dmapped Dist2D = {Dom3D.dim(0), Dom3D.dim(1)};
+const rcDom3D: domain(3) dmapped Dist3D = {Dom4D.dim(0), Dom4D.dim(1), Dom4D.dim(2)};
 var rcR1D: [rcDom1D] real;
 var rcR2D: [rcDom2D] real;
 var rcR3D: [rcDom3D] real;

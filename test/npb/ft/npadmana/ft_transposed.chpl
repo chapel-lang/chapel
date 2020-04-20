@@ -118,17 +118,15 @@ proc checksum() : complex {
 
 
 proc initialize_twiddle() {
-  const N = (Ny, Nx, Nz);
-  const halfN = (Ny/2, Nx/2, Nz/2);
+  const Ns = (Ny, Nx, Nz);
   const fac = 4.0*pi**2 * alpha;
-  forall ijk in DomT {
+  forall xyz in DomT {
     var e : int = 0;
-    for param ii in 1..3 {
-      const i1 = ijk(ii);
-      const x1 = if (i1 >= halfN(ii)) then i1-N(ii) else i1;
+    for (idx, N) in zip(xyz, Ns) {
+      const x1 = if idx >= N/2 then idx-N else idx;
       e += x1**2;
     }
-    Twiddle.localAccess[ijk] = exp(-fac*e);
+    Twiddle.localAccess[xyz] = exp(-fac*e);
   }
 }
 

@@ -48,6 +48,9 @@ record ValueComparator {
 record Wrapper {
   var elt: owned Value?;
 }
+proc Wrapper.init=(ref other: Wrapper) {
+  this.elt = other.elt;
+}
 proc =(ref lhs: Wrapper, ref rhs: Wrapper) {
   lhs.elt = rhs.elt;
 }

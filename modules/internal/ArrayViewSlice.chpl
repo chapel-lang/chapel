@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -125,12 +126,12 @@ module ArrayViewSlice {
     proc type chpl__deserialize(data) {
       type domType = __primitive("static field type", this, "dom");
       type arrType = __primitive("static field type", this, "_ArrInstance");
-      const dom = _to_borrowed(domType).chpl__deserialize(data(1));
-      const arr = _to_borrowed(arrType).chpl__deserialize(data(2));
+      const dom = _to_borrowed(domType).chpl__deserialize(data(0));
+      const arr = _to_borrowed(arrType).chpl__deserialize(data(1));
       return new unmanaged ArrayViewSliceArr(eltType=arr.eltType,
-                                             _DomPid=data(1),
+                                             _DomPid=data(0),
                                              dom = dom,
-                                             _ArrPid=data(2),
+                                             _ArrPid=data(1),
                                              _ArrInstance=arr);
     }
 
@@ -160,7 +161,7 @@ module ArrayViewSlice {
     // must be (or should be) some way to do it without relying on
     // methods like this...
     //
-    proc isSliceArrayView() param {
+    override proc isSliceArrayView() param {
       return true;
     }
 
@@ -290,7 +291,7 @@ module ArrayViewSlice {
     // them proactively anymore.  If we're not serializing them, then we:
     // Don't want to privatize a DefaultRectangular, so pass the query on to
     // the wrapped array
-    proc dsiSupportsPrivatization() param
+    override proc dsiSupportsPrivatization() param
     {
       if chpl_serializeSlices then return false;
       return _ArrInstance.dsiSupportsPrivatization();
@@ -302,10 +303,10 @@ module ArrayViewSlice {
 
     proc dsiPrivatize(privatizeData) {
       return new unmanaged ArrayViewSliceArr(eltType=this.eltType,
-                                   _DomPid=privatizeData(1),
-                                   dom=privatizeData(2),
-                                   _ArrPid=privatizeData(3),
-                                   _ArrInstance=privatizeData(4));
+                                   _DomPid=privatizeData(0),
+                                   dom=privatizeData(1),
+                                   _ArrPid=privatizeData(2),
+                                   _ArrInstance=privatizeData(3));
     }
 
     //
@@ -382,7 +383,7 @@ module ArrayViewSlice {
       return arr._getRCREView();
     }
 
-    proc doiCanBulkTransferRankChange() param {
+    override proc doiCanBulkTransferRankChange() param {
       return arr.doiCanBulkTransferRankChange();
     }
 

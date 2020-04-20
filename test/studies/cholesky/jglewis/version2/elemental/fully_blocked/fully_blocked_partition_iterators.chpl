@@ -27,7 +27,7 @@ module fully_blocked_partition_iterators {
     // a full block remained.
 
     var block_low = idx_range.low;
-    for count in 0..idx_range.length-1 by block_size do {
+    for count in 0..idx_range.size-1 by block_size do {
       var next_block_low = block_low + block_size*idx_range.stride;
       var top_block = 
 	idx_range ( block_low .. 
@@ -60,7 +60,7 @@ module fully_blocked_partition_iterators {
     // a full block remained.
 
     var block_low = idx_range.low;
-    for count in 0..idx_range.length-1 by block_size do {
+    for count in 0..idx_range.size-1 by block_size do {
       var next_block_low = block_low + block_size*idx_range.stride;
       yield ( idx_range ( block_low .. 
 			  min ( next_block_low - idx_range.stride, 

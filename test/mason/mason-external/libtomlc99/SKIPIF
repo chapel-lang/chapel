@@ -1,0 +1,59 @@
+#!/usr/bin/env bash
+
+# mason requires CHPL_COMM=none CHPL_REGEXP=re2
+
+if [ "$CHPL_COMM" != none -o "$CHPL_REGEXP" != re2 -o "$CHPL_HOST_PLATFORM" != linux64 -o "$CHPL_HOST_COMPILER" != gnu ]; then
+    # SKIP this test
+    echo True
+    exit 0
+fi
+
+# This subshell works like an try-catch block
+(
+    set -e
+
+    # This test should only run on CentOS or similar
+    # Examine /etc/os-release
+
+    if [ -f /etc/os-release ]; then
+        source /etc/os-release
+        case "$ID $ID_LIKE" in
+        ( *centos* | *rhel* | *fedora* )
+            # Okay so far. Continue.
+            ;;
+        ( * )
+            # Not good SKIP this test.
+            exit 1
+            ;;
+        esac
+    else
+        exit 1
+    fi
+
+    # This test should only run if mason external compiler has been setup.
+    # Examine $HOME/.spack/linux/compilers.yaml
+
+    if grep -q 'gcc' "$HOME/.spack/linux/compilers.yaml" 2>/dev/null; then
+        : # Okay so far. Continue
+    else
+        : # Not good SKIP this test.
+        exit 1
+    fi
+)
+
+# exit status from subshell
+case "$?" in
+( 0 )
+    # All good. Run this test.
+    echo False
+    ;;
+( 1 )
+    # SKIP this test.
+    echo True
+    ;;
+( * )
+    # Raise an error.
+    echo True
+    exit 2
+    ;;
+esac

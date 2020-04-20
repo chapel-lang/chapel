@@ -169,13 +169,15 @@ Nested Modules
 --------------
 
 A *nested module* (or *sub-module*) is a module that is defined within
-another module, known as the outer, or parent, module. A nested module
-automatically has access to all of the symbols in its outer module.
-However, an outer module needs to explicitly name or use a nested module
-in order to access its symbols.
+another module, known as the outer, or parent, module.  An outer
+module can refer to the names of its sub-modules directly without a
+``use`` or ``import`` statement.  However, a sub-module must ``use``
+or ``import`` its parent module in order to refer to its name or
+symbols.
 
-A nested module can be used without using the outer module by explicitly
-naming the outer module in the use statement.
+An inner module's symbols can be referenced without accessing those of
+its parent module by naming the inner module in a qualified manner
+within the ``use`` statement.
 
    *Example (nested-use.chpl)*.
 
@@ -207,7 +209,7 @@ naming the outer module in the use statement.
       Initializing libsci
       	Initializing blas
 
-   uses a module named ``blas`` that is nested inside a module named
+   uses a module named ``blas`` that is nested within a module named
    ``libsci``.
 
 Files with both module declarations and file-scope statements result in
@@ -258,21 +260,21 @@ nested modules.
 Access of Module Contents
 -------------------------
 
-A module’s contents can be accessed by code outside of that module
-depending on the visibility of the module
-itself (:ref:`Visibility_Of_A_Module`) and the visibility of
-each individual symbol (:ref:`Visibility_Of_Symbols`). This
-can be done via the use statement (:ref:`Using_Modules`) or
-qualified naming (:ref:`Explicit_Naming`).
+A module’s contents can be accessed by code outside of that module depending on
+the visibility of the module itself (:ref:`Visibility_Of_A_Module`) and the
+visibility of each individual symbol (:ref:`Visibility_Of_Symbols`). This can be
+done via the use statement (:ref:`Using_Modules`), the import
+statement (:ref:`Importing_Modules`) or qualified
+naming (:ref:`Explicit_Naming`).
 
 .. _Visibility_Of_A_Module:
 
 Visibility Of A Module
 ~~~~~~~~~~~~~~~~~~~~~~
 
-A top-level module is available for use (:ref:`Using_Modules`)
-anywhere. The visibility of a nested module is subject to the rules
-of :ref:`Visibility_Of_Symbols`, where the nested module is
+A top-level module is available for use (:ref:`Using_Modules`) or
+import (:ref:`Importing_Modules`) anywhere. The visibility of a nested module is
+subject to the rules of :ref:`Visibility_Of_Symbols`, where the nested module is
 considered a "module-scope symbol" of its outer module.
 
 .. _Visibility_Of_Symbols:
@@ -280,15 +282,14 @@ considered a "module-scope symbol" of its outer module.
 Visibility Of A Module’s Symbols
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-A symbol defined at module scope is *visible* from outside the module
-when the ``privacy-specifier`` of its definition is ``public`` or is
-omitted (i.e. by default). When a module-scope symbol is declared
-``private``, it is not visible outside of that module. A symbol’s
-visibility inside its module is controlled by normal lexical scoping and
-is not affected by its ``privacy-specifier``. When a module’s symbol is
-visible (:ref:`Visibility_Of_A_Module`), the visible symbols
-it contains are accessible via the use
-statement (:ref:`Using_Modules`) or qualified
+A symbol defined at module scope is *visible* from outside the module when the
+``privacy-specifier`` of its definition is ``public`` or is omitted (i.e. by
+default). When a module-scope symbol is declared ``private``, it is not visible
+outside of that module. A symbol’s visibility inside its module is controlled by
+normal lexical scoping and is not affected by its ``privacy-specifier``. When a
+module’s symbol is visible (:ref:`Visibility_Of_A_Module`), the visible symbols
+it contains are accessible via the use statement (:ref:`Using_Modules`), import
+statement (:ref:`Importing_Modules`), or qualified
 naming (:ref:`Explicit_Naming`).
 
 .. _Using_Modules:
@@ -296,25 +297,548 @@ naming (:ref:`Explicit_Naming`).
 Using Modules
 ~~~~~~~~~~~~~
 
-The ``use`` statement provides the primary means of accessing a module’s
-symbols from outside of the module. Use statements make both the
-module’s name and its public symbols available for reference within a
-given scope. For top-level modules, a use statement is required before
-referring to the module’s name or the symbols it contains within a given
-lexical scope.
+The ``use`` statement provides one of the two primary ways to access a module’s
+symbols from outside of the module, the other being the ``import`` statement.
+Use statements make both the module’s name and its public symbols available
+for reference within a given scope. For top-level modules, a ``use`` or
+``import`` statement is required before referring to the module’s name or the
+symbols it contains within a given lexical scope.
 
-Use statements can also restrict or rename the set of module symbols
-that are available within the scope. For further information about use
-statements, see :ref:`The_Use_Statement`.
+The syntax of the use statement is given by:
+
+
+
+.. code-block:: syntax
+
+   use-statement:
+     privacy-specifier[OPT] `use' module-or-enum-name-list ;
+
+   module-or-enum-name-list:
+     module-or-enum-name limitation-clause[OPT]
+     module-or-enum-name , module-or-enum-name-list
+
+   module-or-enum-name:
+     rename-base
+     identifier . module-or-enum-name
+
+   limitation-clause:
+     `except' exclude-list
+     `only' rename-list[OPT]
+
+   exclude-list:
+     identifier-list
+     $ * $
+
+   rename-list:
+     rename-base
+     rename-base , rename-list
+
+   rename-base:
+     identifier `as' identifier
+     identifier
+
+For example, the program
+
+   *Example (use1.chpl)*.
+
+
+
+   .. code-block:: chapel
+
+      module M1 {
+        proc foo() {
+          writeln("In M1's foo.");
+        }
+      }
+
+      module M2 {
+        use M1;
+        proc main() {
+          writeln("In M2's main.");
+          M1.foo();
+        }
+      }
+
+   prints out
+
+   .. code-block:: printoutput
+
+      In M2's main.
+      In M1's foo.
+
+This program is equivalent to:
+
+   *Example (use2.chpl)*.
+
+
+
+   .. code-block:: chapel
+
+      module M1 {
+        proc foo() {
+          writeln("In M1's foo.");
+        }
+      }
+
+      module M2 {
+        proc main() {
+          use M1;
+
+          writeln("In M2's main.");
+          foo();
+        }
+      }
+
+   which also prints out
+
+   .. code-block:: printoutput
+
+      In M2's main.
+      In M1's foo.
+
+The ``module-or-enum-name`` in a ``use`` statement must begin with one of
+the following:
+
+ * a top-level module name
+ * a submodule of the current module
+ * a module name currently in scope due to another ``use`` or ``import``
+   statement
+ * any number of ``super`` components to indicate a number of parents of
+   the current module (e.g. ``super.super.SomeModule``)
+ * ``this`` to indicate the requested module is a submodule of the
+   current module
+
+The names that are made visible by a ``use`` statement are inserted in to a new
+scope that immediately encloses the scope within which the statement
+appears. This implies that the position of the ``use`` statement within a scope
+has no effect on its behavior. If a scope includes multiple ``use`` statements
+or a combination of ``use`` and ``import`` statements, then the newly-visible
+names are inserted in to a common enclosing scope.
+
+An error is signaled if multiple enumeration constants or public
+module-level symbols would be inserted into this enclosing scope with
+the same name, and that name is referenced by other statements in the
+same scope as the use.
+
+A module or enum being used may optionally be given a new name using the ``as``
+keyword.  This new name will be usable from the scope of the use in place of the
+old name.  This new name does not affect uses or imports of that module from
+other contexts.
+
+Use statements may be explicitly declared ``public`` or ``private``.
+By default, uses are ``private``.  Making a use ``public`` causes its
+symbols to be transitively visible: if module A uses module B, and
+module B contains a public use of a module or enumerated type C, then
+C’s public symbols will also be visible to A unless they are shadowed
+by symbols of the same name in B.  Conversely, if B's use of C is
+``private`` then A will not be able to see C's symbols due to that
+``use``.
+
+This notion of transitivity extends to the case in which a scope
+imports symbols from multiple modules or constants from multiple
+enumeration types. For example if a module A uses modules B1, B2, B3
+and modules B1, B2, B3 publicly use modules C1, C2, C3 respectively,
+then all of the public symbols in B1, B2, B3 have the potential to
+shadow the public symbols of C1, C2, and C3. However an error is
+signaled if C1, C2, C3 have conflicting public module-level
+definitions of the same symbol.
+
+An optional ``limitation-clause`` may be provided to limit the symbols
+made available by a given use statement. If an ``except`` list is
+provided, then all the visible but unlisted symbols in the module or
+enumerated type will be made available without prefix. If an ``only``
+list is provided, then just the listed visible symbols in the module or
+enumerated type will be made available without prefix. All visible
+symbols not provided via these limited use statements are still
+accessible by prefixing the access with the name of the module or
+enumerated type. It is an error to provide a name in a
+``limitation-clause`` that does not exist or is not visible in the
+respective module or enumerated type.
+
+If a type or type's secondary methods are defined in the used module, then any
+instances of the type obtained in the scope of the use may access the fields and
+methods of that type, regardless of the ``limitation-clause``. These fields
+and methods cannot be specified in a ``limitation-clause`` on their own.  The
+privacy of use statements is also ignored when determining if an instance can
+access the fields and methods, for similar reasons.
+
+This notion of transitivity extends to the case in which a scope
+imports symbols from multiple modules or constants from multiple
+enumeration types. For example if a module A uses modules B1, B2, B3
+and modules B1, B2, B3 publicly use modules C1, C2, C3 respectively,
+then all of the public symbols in B1, B2, B3 have the potential to
+shadow the public symbols of C1, C2, and C3. However an error is
+signaled if C1, C2, C3 have conflicting public module-level
+definitions of the same symbol.
+
+An optional ``limitation-clause`` may be provided to limit the symbols
+made available by a given use statement. If an ``except`` list is
+provided, then all the visible but unlisted symbols in the module or
+enumerated type will be made available without prefix. If an ``only``
+list is provided, then just the listed visible symbols in the module or
+enumerated type will be made available without prefix. All visible
+symbols not provided via these limited use statements are still
+accessible by prefixing the access with the name of the module or
+enumerated type. It is an error to provide a name in a
+``limitation-clause`` that does not exist or is not visible in the
+respective module or enumerated type.
+
+If a type or type's secondary methods are defined in the used module, then any
+instances of the type obtained in the scope of the use may access the fields and
+methods of that type, regardless of the ``limitation-clause``. These fields
+and methods cannot be specified in a ``limitation-clause`` on their own.  The
+privacy of use statements is also ignored when determining if an instance can
+access the fields and methods, for similar reasons.
+
+If an ``only`` list is left empty or ``except`` is followed by :math:`*`
+then no symbols are made available to the scope without prefix. However,
+any methods or fields defined within a module used in this way will
+still be accessible on instances of the type. For example:
+
+   *Example (limited-access.chpl)*.
+
+
+
+   .. code-block:: chapel
+
+      module M1 {
+        record A {
+          var x = 1;
+
+          proc foo() {
+            writeln("In A.foo()");
+          }
+        }
+      }
+
+      module M2 {
+        proc main() {
+          use M1 only;
+
+          var a = new M1.A(3); // Only accessible via the module prefix
+          writeln(a.x); // Accessible because we have a record instance
+          a.foo(); // Ditto
+        }
+      }
+
+   will print out
+
+   .. code-block:: printoutput
+
+      3
+      In A.foo()
+
+Within an ``only`` list, a visible symbol from that module may optionally be
+given a new name using the ``as`` keyword. This new name will be usable from the
+scope of the use in place of the old name unless the old name is additionally
+specified in the ``only`` list. If a use which renames a symbol is present at
+module scope, uses and imports of that module will also be able to reference
+that symbol using the new name instead of the old name. Renaming does not affect
+accesses to that symbol via the source module’s or enumerated type’s prefix, nor
+does it affect uses or imports of that module or enumerated type from other
+contexts. It is an error to attempt to rename a symbol that does not exist or is
+not visible in the respective module or enumerated type, or to rename a symbol
+to a name that is already present in the same ``only`` list. It is, however,
+perfectly acceptable to rename a symbol to a name present in the respective
+module or enumerated type which was not specified via that ``only`` list.
+
+If a use statement mentions multiple modules or enumerated types or a
+mix of these symbols, only the last module or enumerated type can have a
+``limitation-clause``. Limitation clauses are applied transitively as
+well - in the first example, if module A’s use of module B contains an
+``except`` or ``only`` list, that list will also limit which of C’s
+symbols are visible to A.
+
+For more information on enumerated types, please see :ref:`Enumerated_Types`.
+
+.. _Importing_Modules:
+
+Importing Modules
+~~~~~~~~~~~~~~~~~
+
+The import statement provides either only qualified access to all of the public
+symbols of a module or only unqualified access to the specified public symbols
+of a module.
+
+The syntax of the import statement is given by:
+
+.. code-block:: syntax
+
+   import-statement:
+     privacy-specifier[OPT] `import' module-or-symbol-rename ;
+     privacy-specifier[OPT] `import' module-or-symbol-base unqualified-list ;
+
+   module-or-symbol-rename:
+     rename-base
+     identifier . module-or-symbol-rename
+
+   module-or-symbol-base:
+     identifier
+     identifier . module-or-symbol-base
+
+   unqualified-list:
+     . { rename-list }
+
+For example, the program
+
+   *Example (import1.chpl)*.
+
+   .. code-block:: chapel
+
+      module M1 {
+        proc foo() {
+          writeln("In M1's foo.");
+        }
+      }
+
+      module M2 {
+        import M1;
+        proc main() {
+          writeln("In M2's main.");
+          M1.foo();
+        }
+      }
+
+   prints out
+
+   .. code-block:: printoutput
+
+      In M2's main.
+      In M1's foo.
+
+This program is equivalent to:
+
+   *Example (import2.chpl)*.
+
+   .. code-block:: chapel
+
+      module M1 {
+        proc foo() {
+          writeln("In M1's foo.");
+        }
+      }
+
+      module M2 {
+        proc main() {
+          import M1.foo;
+
+          writeln("In M2's main.");
+          foo();
+        }
+      }
+
+   which also prints out
+
+   .. code-block:: printoutput
+
+      In M2's main.
+      In M1's foo.
+
+And both programs are also equivalent to:
+
+   *Example (import3.chpl)*.
+
+   .. code-block:: chapel
+
+      module M1 {
+        proc foo() {
+          writeln("In M1's foo.");
+        }
+      }
+
+      module M2 {
+        proc main() {
+          import M1.{foo};
+
+          writeln("In M2's main.");
+          foo();
+        }
+      }
+
+   which also prints out
+
+   .. code-block:: printoutput
+
+      In M2's main.
+      In M1's foo.
+
+The ``module-or-symbol-rename`` or ``module-or-symbol-base`` in an ``import``
+statement must begin with one of the following:
+
+ * a top-level module name
+ * a module name currently in scope due to another ``use`` or ``import``
+   statement
+ * any number of ``super`` components to indicate a number of parents of the
+   current module (e.g. ``super.super.SomeModule``)
+ * ``this`` to indicate the requested module is a submodule of the current
+   module
+
+A submodule may not be imported without either the full path to it, or a
+``super`` or ``this`` prefix at the beginning of the path.
+
+And both programs are also equivalent to:
+
+   *Example (import3.chpl)*.
+
+   .. code-block:: chapel
+
+      module M1 {
+        proc foo() {
+          writeln("In M1's foo.");
+        }
+      }
+
+      module M2 {
+        proc main() {
+          import M1.{foo};
+
+          writeln("In M2's main.");
+          foo();
+        }
+      }
+
+   which also prints out
+
+   .. code-block:: printoutput
+
+      In M2's main.
+      In M1's foo.
+
+The ``module-or-symbol-rename`` or ``module-or-symbol-base`` in an ``import``
+statement must begin with one of the following:
+
+ * a top-level module name
+ * a module name currently in scope due to another ``use`` or ``import``
+   statement
+ * any number of ``super`` components to indicate a number of parents of the
+   current module (e.g. ``super.super.SomeModule``)
+ * ``this`` to indicate the requested module is a submodule of the current
+   module
+
+A submodule may not be imported without either the full path to it, or a
+``super`` or ``this`` prefix at the beginning of the path.
+
+The names that are made visible by an ``import`` statement are inserted in to a
+new scope that immediately encloses the scope within which the statement
+appears.  This implies that the position of the ``import`` statement within a
+scope has no effect on its behavior.  If a scope includes multiple ``import``
+statements, or a combination of ``import`` and ``use`` statements, then the
+newly-visible names are inserted into a common enclosing scope.
+
+An error is signaled if multiple public module-level symbols would be inserted
+into this enclosing scope with the same name, and that name is referenced by
+other statements in the same scope as the import.
+
+A module or a public module-level symbol being imported may optionally be given
+a new name using the ``as`` keyword.  This new name will be usable from the
+scope of the import in place of the old name.  This new name does not affect
+imports or uses of that module from other contexts.
+
+Import statements may be explicitly declared ``public`` or ``private``.  By
+default, imports are ``private``.  Making an import ``public`` causes its
+symbols to be visible as though they were defined in the scope with the import,
+a strategy which will be referred to as `re-exporting`.  However, symbols with
+the same name in the scope with the import will still take precedence.  If
+module A imports module B, and module B contains a public import of module C,
+then C will be visible to A as though it was a submodule of B.  This means that
+A could contain references like ``B.C.cSymbol`` if cSymbol was a symbol defined
+in C, regardless of if C was actually a submodule of B.  Similarly, if module B
+contains a public import of some public symbols defined in module C, then those
+symbols will be visible to A as though they were defined in module B, unless
+they are shadowed by symbols of the same name in B.  This means that A could
+contain references like ``B.cSymbol`` and it would reference C's cSymbol.
+Conversely, if B's import of C is ``private`` then A will not be able to see C's
+symbols due to that ``import``.
+
+This notion of re-exporting extends to the case in which a scope imports symbols
+from multiple modules.  For example, if a module A imports a module B, and
+module B contains a public import of modules C1, C2, and C3, then all three of
+those modules will be referenceable by A as though they were submodules of B.
+Similarly, if module B instead publicly imports specific symbols from C1, C2,
+and C3, A will be able to reference those symbols as though they were defined
+directly in B.  However, an error is signaled if symbols with the same name are
+imported from these modules.
+
+The import statement may specify a single module or module-level symbol, or it
+may specify multiple module-level symbols in the ``unqualified-list``.  Unlike
+``use`` statements, symbols specified for unqualified access are not able to be
+accessed with the module qualifier.  A separate import statement may be provided
+to enable this behavior.  It is an error to provide a name in an
+``unqualified-list`` that does not exist or is not visible in the respective
+module.
+
+If a type or type's secondary methods are defined in the imported module, then
+any instances of the type obtained in the scope of the import may access the
+fields and methods of that type, regardless of the ``unqualified-list``. These
+fields and methods cannot be specified in an ``unqualified-list`` on their own.
+The privacy of import statements is also ignored when determining if an instance
+can access the fields and methods, for similar reasons.
+
+Within an ``unqualified-list``, a visible symbol from that module may optionally
+be given a new name using the ``as`` keyword.  This new name will be usable from
+the scope of the import in place of the old name unless the old name is
+additionally specified in the ``unqualified-list``.  If an import which renames
+a symbol is present at module scope, imports and uses of that module will also
+be able to reference that symbol using the new name instead of the old name.
+Renaming does not affect accesses to that symbol via the source module's prefix,
+nor does it affect imports or uses of that module from other contexts.  It is an
+error to attempt to rename a symbol that does not exist or is not visible in the
+respective module, or to rename a symbol to a name that is already present in
+the same ``unqualified-list``.  It is, however, perfectly acceptable to rename a
+symbol to a name present in the respective module which was not specified via
+that ``unqualified-list``.
+
+This notion of re-exporting extends to the case in which a scope imports symbols
+from multiple modules.  For example, if a module A imports a module B, and
+module B contains a public import of modules C1, C2, and C3, then all three of
+those modules will be referenceable by A as though they were submodules of B.
+Similarly, if module B instead publicly imports specific symbols from C1, C2,
+and C3, A will be able to reference those symbols as though they were defined
+directly in B.  However, an error is signaled if symbols with the same name are
+imported from these modules.
+
+The import statement may specify a single module or module-level symbol, or it
+may specify multiple module-level symbols in the ``unqualified-list``.  Unlike
+``use`` statements, symbols specified for unqualified access are not able to be
+accessed with the module qualifier.  A separate import statement may be provided
+to enable this behavior.  It is an error to provide a name in an
+``unqualified-list`` that does not exist or is not visible in the respective
+module.
+
+If a type or type's secondary methods are defined in the imported module, then
+any instances of the type obtained in the scope of the import may access the
+fields and methods of that type, regardless of the ``unqualified-list``. These
+fields and methods cannot be specified in an ``unqualified-list`` on their own.
+The privacy of import statements is also ignored when determining if an instance
+can access the fields and methods, for similar reasons.
+
+Within an ``unqualified-list``, a visible symbol from that module may optionally
+be given a new name using the ``as`` keyword.  This new name will be usable from
+the scope of the import in place of the old name unless the old name is
+additionally specified in the ``unqualified-list``.  If an import which renames
+a symbol is present at module scope, imports and uses of that module will also
+be able to reference that symbol using the new name instead of the old name.
+Renaming does not affect accesses to that symbol via the source module's prefix,
+nor does it affect imports or uses of that module from other contexts.  It is an
+error to attempt to rename a symbol that does not exist or is not visible in the
+respective module, or to rename a symbol to a name that is already present in
+the same ``unqualified-list``.  It is, however, perfectly acceptable to rename a
+symbol to a name present in the respective module which was not specified via
+that ``unqualified-list``.
+
+The list of symbols for unqualified access can also be applied transitively -
+in the second example of re-exporting, if module A's import of B only allowed
+access to certain symbols, that list will also limit which of the symbols from
+C1, C2, and C3 will be available to A.
 
 .. _Explicit_Naming:
 
 Qualified Naming of Module Symbols
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-When a module’s symbol is visible—via a use statement, or lexically for
-nested modules—its public symbols can be referred to via qualified
-naming with the following syntax: 
+When a module’s symbol is visible—via a use or import statement, or lexically
+for nested modules—its public symbols can be referred to via qualified naming
+with the following syntax:
 
 .. code-block:: syntax
 
@@ -447,8 +971,8 @@ deinitialization:
 -  If the module contains a deinitializer, which is a module-scope
    function named ``deinit()``, it is executed first.
 
--  If the module declares global variables, they are deinitialized in
-   the reverse declaration order.
+-  If the module declares module-scope variables, they are deinitialized in
+   the reverse order of their declaration.
 
 Module deinitialization order is discussed
 in :ref:`Module_Deinitialization_Order`.
@@ -581,15 +1105,14 @@ Module Initialization Order
 
 Module initialization is performed using the following algorithm.
 
-Starting from the module that defines the main function, the modules
-named in its use statements are visited depth-first and initialized in
-post-order. If a use statement names a module that has already been
-visited, it is not visited a second time. Thus, infinite recursion is
-avoided.
+Starting from the module that defines the main function, the modules named in
+its use and import statements are visited depth-first and initialized in
+post-order. If a use or import statement names a module that has already been
+visited, it is not visited a second time. Thus, infinite recursion is avoided.
 
-Modules used by a given module are visited in the order in which they
-appear in the program text. For nested modules, the parent module and
-its uses are initialized before the nested module and its uses.
+Modules used or imported by a given module are visited in the order in which
+they appear in the program text. For nested modules, the parent module and its
+uses are initialized before the nested module and its uses or imports.
 
    *Example (init-order.chpl)*.
 

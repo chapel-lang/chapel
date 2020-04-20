@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -71,7 +72,7 @@ module ArrayViewReindex {
 
     // Don't want to privatize a DefaultRectangular, so pass the query on to
     // the wrapped array
-    proc dsiSupportsPrivatization() param
+    override proc dsiSupportsPrivatization() param
       return downDistInst.dsiSupportsPrivatization();
 
     proc dsiGetPrivatizeData() {
@@ -79,11 +80,11 @@ module ArrayViewReindex {
     }
 
     proc dsiPrivatize(privatizeData) {
-      return new unmanaged ArrayViewReindexDist(downDistPid = privatizeData(1),
-                                      downDistInst = privatizeData(2),
-                                      updom = privatizeData(3),
-                                      downdomPid = privatizeData(4),
-                                      downdomInst = privatizeData(5));
+      return new unmanaged ArrayViewReindexDist(downDistPid = privatizeData(0),
+                                      downDistInst = privatizeData(1),
+                                      updom = privatizeData(2),
+                                      downdomPid = privatizeData(3),
+                                      downdomInst = privatizeData(4));
     }
 
     override proc dsiDestroyDist() {
@@ -91,7 +92,7 @@ module ArrayViewReindex {
       //      _delete_dom(downdomInst, _isPrivatized(downdomInst));
     }
 
-    proc dsiIsLayout() param {
+    override proc dsiIsLayout() param {
       return downDistInst.dsiIsLayout();
     }
   }
@@ -252,12 +253,12 @@ module ArrayViewReindex {
 
     inline proc downIdxToUpIdx(downIdx: integral) {
       compilerAssert(updom.rank == 1, updom.rank:string);
-      return updom.dsiDim(1).orderToIndex(downdom.dsiDim(1).indexOrder(downIdx));
+      return updom.dsiDim(0).orderToIndex(downdom.dsiDim(0).indexOrder(downIdx));
     }
 
     inline proc downIdxToUpIdx(i) {
       var ind: updom.rank*updom.idxType;
-      for param d in 1..updom.rank {
+      for param d in 0..updom.rank-1 {
         ind(d) = updom.dsiDim(d).orderToIndex(downdom.dsiDim(d).indexOrder(i(d)));
       }
       return ind;
@@ -283,7 +284,7 @@ module ArrayViewReindex {
       chpl_assignDomainWithGetSetIndices(this, rhs);
     }
 
-    proc isReindexDomainView() param {
+    override proc isReindexDomainView() param {
       return true;
     }
 
@@ -302,7 +303,7 @@ module ArrayViewReindex {
 
     // Don't want to privatize a DefaultRectangular, so pass the query on to
     // the wrapped array
-    proc dsiSupportsPrivatization() param
+    override proc dsiSupportsPrivatization() param
       return downdomInst.dsiSupportsPrivatization();
 
     proc dsiGetPrivatizeData() {
@@ -313,11 +314,11 @@ module ArrayViewReindex {
       return new unmanaged ArrayViewReindexDom(rank = this.rank,
                                      idxType = this.idxType,
                                      stridable = this.stridable,
-                                     updomInst = privatizeData(1),
-                                     downdomPid = privatizeData(2),
-                                     downdomInst = privatizeData(3),
-                                     distPid = privatizeData(4),
-                                     distInst = privatizeData(5)
+                                     updomInst = privatizeData(0),
+                                     downdomPid = privatizeData(1),
+                                     downdomInst = privatizeData(2),
+                                     distPid = privatizeData(3),
+                                     distInst = privatizeData(4)
                                      );
     }
 
@@ -326,13 +327,13 @@ module ArrayViewReindex {
     }
 
     proc dsiReprivatize(other, reprivatizeData) {
-      updomInst = reprivatizeData(1);
+      updomInst = reprivatizeData(0);
       //      collapsedDim = other.collapsedDim;
       //      idx = other.idx;
       //      distPid = other.distPid;
       //      distInst = other.distInst;
-      downdomPid = reprivatizeData(2);
-      downdomInst = reprivatizeData(3);
+      downdomPid = reprivatizeData(1);
+      downdomInst = reprivatizeData(2);
     }
 
   } // end of class ArrayViewReindexDom
@@ -431,7 +432,7 @@ module ArrayViewReindex {
     // must be (or should be) some way to do it without relying on
     // methods like this...
     //
-    proc isReindexArrayView() param {
+    override proc isReindexArrayView() param {
       return true;
     }
 
@@ -578,7 +579,7 @@ module ArrayViewReindex {
 
     // Don't want to privatize a DefaultRectangular, so pass the query on to
     // the wrapped array
-    proc dsiSupportsPrivatization() param
+    override proc dsiSupportsPrivatization() param
       return _ArrInstance.dsiSupportsPrivatization();
 
     proc dsiGetPrivatizeData() {
@@ -587,10 +588,10 @@ module ArrayViewReindex {
 
     proc dsiPrivatize(privatizeData) {
       return new unmanaged ArrayViewReindexArr(eltType=this.eltType,
-                                     _DomPid=privatizeData(1),
-                                     dom=privatizeData(2),
-                                     _ArrPid=privatizeData(3),
-                                     _ArrInstance=privatizeData(4));
+                                     _DomPid=privatizeData(0),
+                                     dom=privatizeData(1),
+                                     _ArrPid=privatizeData(2),
+                                     _ArrInstance=privatizeData(3));
     }
 
     //
@@ -676,7 +677,7 @@ module ArrayViewReindex {
       }
     }
 
-    proc doiCanBulkTransferRankChange() param
+    override proc doiCanBulkTransferRankChange() param
       return arr.doiCanBulkTransferRankChange();
 
     proc doiBulkTransferFromKnown(destDom, srcClass, srcDom) : bool {
@@ -702,12 +703,12 @@ module ArrayViewReindex {
 
   inline proc chpl_reindexConvertIdx(i: integral, updom, downdom) {
     compilerAssert(downdom.rank == 1, downdom.rank:string);
-    return chpl_reindexConvertIdxDim(i, updom, downdom, 1);
+    return chpl_reindexConvertIdxDim(i, updom, downdom, 0);
   }
 
   inline proc chpl_reindexConvertIdx(i, updom, downdom) {
     var ind: downdom.rank*downdom.idxType;
-    for param d in 1..downdom.rank {
+    for param d in 0..downdom.rank-1 {
       ind(d) = chpl_reindexConvertIdxDim(i(d), updom, downdom, d);
     }
     return ind;
@@ -721,7 +722,7 @@ module ArrayViewReindex {
 
     var ranges : downdom.dsiDims().type;
     var actualLow, actualHigh: downdom.rank*downdom.idxType;
-    for param d in 1..dims.size {
+    for param d in 0..dims.size-1 {
       if (dims(d).size == 0) {
         actualLow(d) = downdom.dsiDim(d).low;
         actualHigh(d) = downdom.dsiDim(d).high;
@@ -730,7 +731,7 @@ module ArrayViewReindex {
         actualHigh(d) = chpl_reindexConvertIdxDim(dims(d).last, updom, downdom, d);
       }
     }
-    for param d in 1..updom.rank {
+    for param d in 0..updom.rank-1 {
       // Slicing the ranges preserves the stride
       ranges(d) = downdom.dsiDim(d)[actualLow(d)..actualHigh(d)];
     }
@@ -751,9 +752,9 @@ module ArrayViewReindex {
       compilerError("Called chpl_reindexConvertDomMaybeSlice with incorrect rank. Got " + dims.size:string + ", expecting " + updom.rank:string);
     }
 
-    var ranges : downdom.rank * range(downdom.idxType, stridable=downdom.stridable || dims(1).stridable);
+    var ranges : downdom.rank * range(downdom.idxType, stridable=downdom.stridable || dims(0).stridable);
     var actualLow, actualHigh: downdom.rank*downdom.idxType;
-    for param d in 1..dims.size {
+    for param d in 0..dims.size-1 {
       if (dims(d).size == 0) {
         actualLow(d) = downdom.dsiDim(d).low;
         actualHigh(d) = downdom.dsiDim(d).high;
@@ -762,7 +763,7 @@ module ArrayViewReindex {
         actualHigh(d) = chpl_reindexConvertIdxDim(dims(d).last, updom, downdom, d);
       }
     }
-    for param d in 1..updom.rank {
+    for param d in 0..updom.rank-1 {
       if (downdom.dsiDim(d).stridable || dims(d).stridable) {
         const relStride = max(1, (dims(d).stride / updom.dsiDim(d).stride) * downdom.dsiDim(d).stride);
         // Slicing the ranges preserves the stride

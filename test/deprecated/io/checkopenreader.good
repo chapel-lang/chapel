@@ -1,8 +1,0 @@
-checkopenreader.chpl:4: warning: openreader will no longer be available by default,
-please insert a use of the IO module to continue calling it.
-
-We can only see a short distance ahead,
-but we can see plenty there that needs to be done.
-
-    - Alan Turing
-

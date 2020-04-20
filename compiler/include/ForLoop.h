@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -37,14 +38,19 @@ public:
   static BlockStmt*      buildForLoop (Expr*      indices,
                                        Expr*      iteratorExpr,
                                        BlockStmt* body,
-                                       bool       coforall,
-                                       bool       zippered);
+                                       bool       zippered,
+                                       bool       isForExpr);
+
+  static BlockStmt*      buildCoforallLoop (Expr*      indices,
+                                            Expr*      iteratorExpr,
+                                            BlockStmt* body,
+                                            bool       zippered);
 
   static BlockStmt*      buildLoweredForallLoop (Expr*      indices,
                                                  Expr*      iteratorExpr,
                                                  BlockStmt* body,
-                                                 bool       coforall,
-                                                 bool       zippered);
+                                                 bool       zippered,
+                                                 bool       isForExpr);
 
 
 private:
@@ -53,7 +59,8 @@ private:
                                          BlockStmt* body,
                                          bool       coforall,
                                          bool       zippered,
-                                         bool       isLoweredForall);
+                                         bool       isLoweredForall,
+                                         bool       isForExpr);
 
 
 
@@ -65,7 +72,8 @@ public:
                                  VarSymbol* iterator,
                                  BlockStmt* initBody,
                                  bool       zippered,
-                                 bool       isLoweredForall);
+                                 bool       isLoweredForall,
+                                 bool       isForExpr);
   virtual               ~ForLoop();
 
   virtual ForLoop*       copy(SymbolMap* map      = NULL,
@@ -82,17 +90,25 @@ public:
 
   virtual bool           isForLoop()                                  const;
   virtual bool           isCoforallLoop()                             const;
+
+  virtual bool           deadBlockCleanup();
+
   // Forall loops start out as ForallStmt but at some point are
   // lowered into a sequence for For loops. This function indicates
   // if this ForLoop represents a lowered Forall.
   // This function should return `true` only for the loop implementing
   // standalone iteration or the loop implementing leader iteration.
-  virtual bool           isLoweredForallLoop()                        const;
+  bool                   isLoweredForallLoop()                        const;
 
-  virtual bool           deadBlockCleanup();
+  // indicates this is a for-expression (as opposed to a for-statement)
+  bool                   isForExpr()                                  const;
 
   BlockStmt*             copyBody();
   BlockStmt*             copyBody(SymbolMap* map);
+  void                   copyBodyHelper(Expr* beforeHere,
+                                        int64_t i,
+                                        SymbolMap* map,
+                                        Symbol* continueSym);
 
   SymExpr*               indexGet()                                   const;
   SymExpr*               iteratorGet()                                const;
@@ -108,6 +124,7 @@ private:
   SymExpr*               mIterator;
   bool                   mZippered;
   bool                   mLoweredForall;
+  bool                   mIsForExpr;
 };
 
 #endif

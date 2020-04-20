@@ -13,13 +13,13 @@ proc getter() const ref {
 
 proc tupleIndexFor(A, B) {
   for tup in zip(A, B) {
-    tup(1) = 1;
+    tup(0) = 1;
   }
 }
 
 proc tupleIndexForall(A, B) {
   forall tup in zip(A, B) {
-    tup(1) = 1;
+    tup(0) = 1;
   }
 }
 

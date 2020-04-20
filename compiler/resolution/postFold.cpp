@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -481,7 +482,7 @@ static Expr* postFoldPrimop(CallExpr* call) {
         bool found_int = get_int(ie, &val);
         INT_ASSERT(found_int);
 
-        idx = static_cast<size_t>(val) - 1;
+        idx = static_cast<size_t>(val);
       }
 
       retval = new SymExpr(new_UIntSymbol((int)unescaped[idx], INT_SIZE_8));
@@ -729,6 +730,10 @@ static bool postFoldMoveUpdateForParam(CallExpr* call, Symbol* lhsSym) {
         lhsSym->defPoint->remove();
 
         call->convertToNoop();
+
+        // TODO: Replace all uses of the lhsSym with rhsSym
+        // Consider PRIM_MOVE setting lhsSym and also
+        // the possibility of a PRIM_DEREF on rhsSym.
 
         retval = true;
       }

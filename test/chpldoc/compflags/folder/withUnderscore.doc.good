@@ -10,6 +10,13 @@ withUnderscore.doc
 
    use withUnderscore.doc;
 
+
+or
+
+.. code-block:: chapel
+
+   import withUnderscore.doc;
+
 .. function:: proc example()
 
    This should end up in my_docs/_sources/modules/withUnderscore.txt 

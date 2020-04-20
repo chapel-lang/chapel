@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -193,6 +194,7 @@ bool fIgnoreLocalClasses = false;
 bool fNoLifetimeChecking = false;
 bool fNoSplitInit = false;
 bool fNoEarlyDeinit = false;
+bool fNoCopyElision = false;
 bool fCompileTimeNilChecking = true;
 bool fOverrideChecking = true;
 bool fieeefloat = false;
@@ -217,7 +219,6 @@ bool fPrintUnusedFns = false;
 bool fPrintUnusedInternalFns = false;
 bool fReportAliases = false;
 bool fReportBlocking = false;
-bool fReportExpiring = false;
 bool fReportOptimizedLoopIterators = false;
 bool fReportInlinedIterators = false;
 bool fReportVectorizedLoops = false;
@@ -1049,7 +1050,6 @@ static ArgumentDescription arg_desc[] = {
  {"print-statistics", ' ', "[n|k|t]", "Print AST statistics", "S256", fPrintStatistics, NULL, NULL},
  {"report-aliases", ' ', NULL, "Report aliases in user code", "N", &fReportAliases, NULL, NULL},
  {"report-blocking", ' ', NULL, "Report blocking functions in user code", "N", &fReportBlocking, NULL, NULL},
- {"report-expiring", ' ', NULL, "Report expiring values in user code", "N", &fReportExpiring, NULL, NULL},
  {"report-inlining", ' ', NULL, "Print inlined functions", "F", &report_inlining, NULL, NULL},
  {"report-dead-blocks", ' ', NULL, "Print dead block removal stats", "F", &fReportDeadBlocks, NULL, NULL},
  {"report-dead-modules", ' ', NULL, "Print dead module removal stats", "F", &fReportDeadModules, NULL, NULL},
@@ -1074,6 +1074,7 @@ static ArgumentDescription arg_desc[] = {
  {"lifetime-checking", ' ', NULL, "Enable [disable] lifetime checking pass", "n", &fNoLifetimeChecking, NULL, NULL},
  {"split-initialization", ' ', NULL, "Enable [disable] support for split initialization", "n", &fNoSplitInit, NULL, NULL},
  {"early-deinit", ' ', NULL, "Enable [disable] support for early deinit based upon expiring value analysis", "n", &fNoEarlyDeinit, NULL, NULL},
+ {"copy-elision", ' ', NULL, "Enable [disable] copy elision based upon expiring value analysis", "n", &fNoCopyElision, NULL, NULL},
  {"legacy-classes", ' ', NULL, "Deprecated flag - does not affect compilation", "N", &fLegacyClasses, NULL, &warnUponLegacyClasses},
  {"ignore-nilability-errors", ' ', NULL, "Allow compilation to continue by coercing away nilability", "N", &fIgnoreNilabilityErrors, NULL, NULL},
  {"overload-sets-checks", ' ', NULL, "Report potentially hijacked calls", "N", &fOverloadSetsChecks, NULL, NULL},
@@ -1444,6 +1445,18 @@ static void checkIncrementalAndOptimized() {
               " using -O optimizations directly.");
 }
 
+static void checkUnsupportedConfigs(void) {
+  // Check for cce classic
+  if (!strcmp(CHPL_TARGET_COMPILER, "cray-prgenv-cray")) {
+    const char* cce_variant = getenv("CRAY_PE_CCE_VARIANT");
+    if (strstr(cce_variant, "CC=Classic")) {
+      USR_FATAL("CCE classic (cce < 9.x.x / 9.x.x-classic) is no longer supported."
+                 " Please notify the Chapel team if this configuration is"
+                 " important to you.");
+    }
+  }
+}
+
 static void checkMLDebugAndLibmode(void) {
 
   if (!fMultiLocaleLibraryDebug) { return; }
@@ -1452,11 +1465,7 @@ static void checkMLDebugAndLibmode(void) {
 
   if (!strcmp(CHPL_COMM, "none")) {
     fMultiLocaleLibraryDebug = false;
-
-    const char* warning =
-        "Compiling a single locale library because CHPL_COMM is none.";
-
-    USR_WARN(warning);
+    USR_WARN("Compiling a single locale library because CHPL_COMM is none.");
   }
 
   return;
@@ -1497,6 +1506,8 @@ static void postprocess_args() {
   checkTargetCpu();
 
   checkIncrementalAndOptimized();
+
+  checkUnsupportedConfigs();
 }
 
 int main(int argc, char* argv[]) {

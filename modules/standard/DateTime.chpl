@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -33,7 +34,7 @@
  */
 
 module DateTime {
-  private use HaltWrappers only ;
+  import HaltWrappers;
   private use SysCTypes;
 
   /* The minimum year allowed in `date` objects */
@@ -41,7 +42,7 @@ module DateTime {
   /* The maximum year allowed in `date` objects */
   param MAXYEAR = 9999;
 
-  private const DAYS_IN_MONTH = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+  private const DAYS_IN_MONTH: [1..12] int = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
   private const DAYS_BEFORE_MONTH = init_days_before_month();
 
   /* The Unix Epoch date and time */
@@ -283,8 +284,8 @@ module DateTime {
   /* A `date` object representing the current day */
   proc type date.today() {
     const timeSinceEpoch = getTimeOfDay();
-    const td = new timedelta(seconds=timeSinceEpoch(1),
-                             microseconds=timeSinceEpoch(2));
+    const td = new timedelta(seconds=timeSinceEpoch(0),
+                             microseconds=timeSinceEpoch(1));
 
     return unixEpoch.getdate() + td;
   }
@@ -344,13 +345,13 @@ module DateTime {
    */
   proc date.weekday() {
     // January 1 0001 is a Monday
-    return ((toordinal() + 6) % 7): DayOfWeek;
+    return try! ((toordinal() + 6) % 7): DayOfWeek;
   }
 
   /* Return the day of the week as an `ISODayOfWeek`.
      `Monday` == 1, `Sunday` == 7 */
   proc date.isoweekday() {
-    return (weekday(): int + 1): ISODayOfWeek;
+    return try! (weekday(): int + 1): ISODayOfWeek;
   }
 
   /* Return the ISO date as a tuple containing the ISO year, ISO week number,
@@ -602,7 +603,7 @@ module DateTime {
   proc time.isoformat() {
     proc makeNDigits(n, d) {
       var ret = d: string;
-      while ret.length < n {
+      while ret.size < n {
         ret = "0" + ret;
       }
       return ret;
@@ -930,11 +931,11 @@ module DateTime {
       return new datetime(year=lt.tm_year+1900, month=lt.tm_mon+1,
                           day=lt.tm_mday,       hour=lt.tm_hour,
                           minute=lt.tm_min,     second=lt.tm_sec,
-                          microsecond=timeSinceEpoch(2));
+                          microsecond=timeSinceEpoch(1));
     } else {
       const timeSinceEpoch = getTimeOfDay();
-      const td = new timedelta(seconds=timeSinceEpoch(1),
-                               microseconds=timeSinceEpoch(2));
+      const td = new timedelta(seconds=timeSinceEpoch(0),
+                               microseconds=timeSinceEpoch(1));
       const utcNow = unixEpoch + td;
 
       return (utcNow + tz!.utcoffset(utcNow)).replace(tzinfo=tz);
@@ -944,8 +945,8 @@ module DateTime {
   /* Return a `datetime` value representing the current time and date in UTC */
   proc type datetime.utcnow() {
     const timeSinceEpoch = getTimeOfDay();
-    const td = new timedelta(seconds=timeSinceEpoch(1),
-                             microseconds=timeSinceEpoch(2));
+    const td = new timedelta(seconds=timeSinceEpoch(0),
+                             microseconds=timeSinceEpoch(1));
     return unixEpoch + td;
   }
 
@@ -958,7 +959,7 @@ module DateTime {
       return new datetime(year=lt.tm_year+1900, month=lt.tm_mon+1,
                           day=lt.tm_mday,       hour=lt.tm_hour,
                           minute=lt.tm_min,     second=lt.tm_sec,
-                          microsecond=t(2));
+                          microsecond=t(1));
     } else {
       var dt = datetime.utcfromtimestamp(timestamp);
       return (dt + tz!.utcoffset(dt)).replace(tzinfo=tz);
@@ -1124,7 +1125,7 @@ module DateTime {
   proc datetime.isoformat(sep="T") {
     proc zeroPad(nDigits: int, i: int) {
       var numStr = i: string;
-      for i in 1..nDigits-numStr.length {
+      for i in 1..nDigits-numStr.size {
         numStr = "0" + numStr;
       }
       return numStr;

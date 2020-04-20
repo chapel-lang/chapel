@@ -2,10 +2,8 @@ class C {
   var x: int;
 }
 
-var A: [1..5] unmanaged C;
-
-for i in 1..5 do
-  A(i) = new unmanaged C(i);
+var A: [1..5] unmanaged C =
+  for i in 1..5 do new unmanaged C(i);
 
 writeln(A);
 
@@ -15,5 +13,4 @@ B = A.x;
 
 writeln(B);
 
-for i in 1..5 do
-  delete A(i);
+delete A;

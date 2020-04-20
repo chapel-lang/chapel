@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -156,7 +157,7 @@ proc updateRegistry(tf: string, args: list(string)) {
     if isDir(registryHome) {
       var pullRegistry = 'git pull -q origin master';
       if tf == "Mason.toml" then
-        writeln("Updating mason-registry");
+        writeln("Updating ", name);
       gitC(registryHome, pullRegistry);
     }
     // Registry has moved or does not exist
@@ -165,13 +166,13 @@ proc updateRegistry(tf: string, args: list(string)) {
       const localRegistry = registryHome;
       mkdir(localRegistry, parents=true);
       const cloneRegistry = 'git clone -q ' + registry + ' .';
-      writeln("Updating mason-registry");
+      writeln("Updating ", name);
       gitC(localRegistry, cloneRegistry);
     }
   }
 }
 
-proc parseChplVersion(brick:borrowed Toml): (VersionInfo, VersionInfo) {
+proc parseChplVersion(brick: borrowed Toml?): (VersionInfo, VersionInfo) {
   use Regexp;
 
   if brick == nil {
@@ -180,18 +181,18 @@ proc parseChplVersion(brick:borrowed Toml): (VersionInfo, VersionInfo) {
   }
 
   // Assert some expected fields are not nil
-  if brick['name'] == nil || brick['version'] == nil{
+  if brick!['name'] == nil || brick!['version'] == nil{
     stderr.writeln("Error: Unable to parse manifest file");
     exit(1);
   }
 
-  if brick['chplVersion'] == nil {
-    const name = brick["name"].s + "-" + brick["version"].s;
+  if brick!['chplVersion'] == nil {
+    const name = brick!["name"]!.s + "-" + brick!["version"]!.s;
     stderr.writeln("Brick '", name, "' missing required 'chplVersion' field");
     exit(1);
   }
 
-  const chplVersion = brick["chplVersion"].s;
+  const chplVersion = brick!["chplVersion"]!.s;
   var low, hi : VersionInfo;
 
   try {
@@ -208,7 +209,7 @@ proc parseChplVersion(brick:borrowed Toml): (VersionInfo, VersionInfo) {
     // Expecting 1 or 2 version strings
     if versions.size > 2 || versions.size < 1 {
       throw new owned MasonError("Expecting 1 or 2 versions in chplVersion range." + formatMessage);
-    } else if versions.size == 2 && (versions[1] == "" || versions[2] == "") {
+    } else if versions.size == 2 && (versions[0] == "" || versions[1] == "") {
       throw new owned MasonError("Unbounded chplVersion ranges are not allowed." + formatMessage);
     }
 
@@ -222,25 +223,25 @@ proc parseChplVersion(brick:borrowed Toml): (VersionInfo, VersionInfo) {
         throw new owned MasonError("Invalid Chapel version format: " + ver + formatMessage);
       }
       const nums = for s in semver.split(".") do s:int;
-      ret.major = nums[1];
-      ret.minor = nums[2];
-      if nums.size == 3 then ret.bug = nums[3];
+      ret.major = nums[0];
+      ret.minor = nums[1];
+      if nums.size == 3 then ret.bug = nums[2];
 
       return ret;
     }
 
-    low = parseString(versions[1]);
+    low = parseString(versions[0]);
 
     if (versions.size == 1) {
       hi = new VersionInfo(max(int), max(int), max(int));
     } else {
-      hi = parseString(versions[2]);
+      hi = parseString(versions[1]);
     }
 
     if (low <= hi) == false then
       throw new owned MasonError("Lower bound of chplVersion must be <= upper bound: " + low.str() + " > " + hi.str());
   } catch e : Error {
-    const name = brick["name"].s + "-" + brick["version"].s;
+    const name = brick!["name"]!.s + "-" + brick!["version"]!.s;
     stderr.writeln("Invalid chplVersion in package '", name, "': ", chplVersion);
     stderr.writeln("Details: ", e.message());
     exit(1);
@@ -251,7 +252,7 @@ proc parseChplVersion(brick:borrowed Toml): (VersionInfo, VersionInfo) {
 
 proc verifyChapelVersion(brick:borrowed Toml) {
   const tupInfo = getChapelVersionInfo();
-  const current = new VersionInfo(tupInfo(1), tupInfo(2), tupInfo(3));
+  const current = new VersionInfo(tupInfo(0), tupInfo(1), tupInfo(2));
   var low, hi : VersionInfo;
 
   var ret = false;
@@ -273,10 +274,10 @@ proc prettyVersionRange(low, hi) {
 
 proc chplVersionError(brick:borrowed Toml) {
   const info = verifyChapelVersion(brick);
-  if info(1) == false {
-    const low  = info(2);
-    const hi   = info(3);
-    const name = brick["name"].s + "-" + brick["version"].s;
+  if info(0) == false {
+    const low  = info(1);
+    const hi   = info(2);
+    const name = brick["name"]!.s + "-" + brick["version"]!.s;
     const msg  = name + " :  expecting " + prettyVersionRange(low, hi);
     failedChapelVersion.append(msg);
   }
@@ -288,10 +289,10 @@ proc chplVersionError(brick:borrowed Toml) {
    until each dep is recorded */
 private proc createDepTree(root: unmanaged Toml) {
   var dp: domain(string);
-  var dps: [dp] unmanaged Toml;
+  var dps: [dp] unmanaged Toml?;
   var depTree = new unmanaged Toml(dps);
   if root.pathExists("brick") {
-    depTree.set("root", new unmanaged Toml(root["brick"]));
+    depTree.set("root", new unmanaged Toml(root["brick"]!));
   }
   else {
     stderr.writeln("Could not find brick; Mason cannot update");
@@ -313,7 +314,8 @@ private proc createDepTree(root: unmanaged Toml) {
   // dependency tree because IVRS may not execute in the desired order. For
   // example, we might encounter foo-0.3.0 before foo-0.2.0.
   //
-  for brick in depTree.A.values() {
+  for b in depTree.A.values() {
+    var brick = b!;
     chplVersionError(brick);
 
     // Lock in the current Chapel version
@@ -321,67 +323,67 @@ private proc createDepTree(root: unmanaged Toml) {
     brick.set("chplVersion", curVer + ".." + curVer);
 
     if brick.pathExists("dependencies") {
-      for item in brick["dependencies"].arr {
-        const brick = depTree[item.s];
-        item.s = brick["name"].s + " " + brick["version"].s + " " + brick["source"].s;
+      for item in brick["dependencies"]!.arr {
+        const brick = depTree[item!.s]!;
+        item!.s = brick["name"]!.s + " " + brick["version"]!.s + " " + brick["source"]!.s;
       }
     }
   }
 
   // Check for pkg-config dependencies
   if root.pathExists("system") {
-    const exDeps = getPCDeps(root["system"]);
+    const exDeps = getPCDeps(root["system"]!);
     depTree.set("system", exDeps);
   }
 
   // Check for non-Chapel dependencies
   if root.pathExists("external") {
-    const externals = getExternalPackages(root["external"]);
+    const externals = getExternalPackages(root["external"]!);
     depTree.set("external", externals);
   }
   return depTree;
 }
 
 private proc createDepTrees(depTree: unmanaged Toml, ref deps: list(unmanaged Toml), name: string) : unmanaged Toml {
-  var depList: list(unmanaged Toml);
+  var depList: list(unmanaged Toml?);
   while deps.size > 0 {
-    var dep = deps[1];
+    var dep = deps[0];
 
-    var brick       = dep["brick"];
-    var package     = brick["name"].s;
-    var version     = brick["version"].s;
-    var chplVersion = brick["chplVersion"].s;
-    var source      = brick["source"].s;
+    var brick       = dep["brick"]!;
+    var package     = brick["name"]!.s;
+    var version     = brick["version"]!.s;
+    var chplVersion = brick["chplVersion"]!.s;
+    var source      = brick["source"]!.s;
 
     if depTree.pathExists(package) {
-      var verToUse = IVRS(brick, depTree[package]);
-      version = verToUse["version"].s;
-      chplVersion = verToUse["chplVersion"].s;
+      var verToUse = IVRS(brick, depTree[package]!);
+      version = verToUse["version"]!.s;
+      chplVersion = verToUse["chplVersion"]!.s;
     }
 
     depList.append(new unmanaged Toml(package));
 
     if depTree.pathExists(package) == false {
       var dt: domain(string);
-      var depTbl: [dt] unmanaged Toml;
+      var depTbl: [dt] unmanaged Toml?;
       depTree.set(package, depTbl);
     }
-    depTree[package].set("name", package);
-    depTree[package].set("version", version);
-    depTree[package].set("chplVersion", chplVersion);
-    depTree[package].set("source", source);
+    depTree[package]!.set("name", package);
+    depTree[package]!.set("version", version);
+    depTree[package]!.set("chplVersion", chplVersion);
+    depTree[package]!.set("source", source);
 
-    if dep.pathExists("dependencies") {
+    if dep!.pathExists("dependencies") {
       var subDeps = getDependencies(dep);
       var manifests = getManifests(subDeps);
       var dependency = createDepTrees(depTree, manifests, package);
     }
     delete dep;
-    deps.pop(1);
+    deps.pop(0);
   }
   // Use toArray here to avoid making Toml aware of `list`, for now.
   if depList.size > 0 then
-    depTree[name].set("dependencies", depList.toArray());
+    depTree[name]!.set("dependencies", depList.toArray());
   return depTree;
 }
 
@@ -394,11 +396,11 @@ private proc createDepTrees(depTree: unmanaged Toml, ref deps: list(unmanaged To
    - Always newest minor and patch
    - in accordance with semantic versioning  */
 private proc IVRS(A: borrowed Toml, B: borrowed Toml) {
-  const name = A["name"].s;
+  const name = A["name"]!.s;
   const (okA, Alo, Ahi) = verifyChapelVersion(A);
   const (okB, Blo, Bhi) = verifyChapelVersion(B);
-  const version1 = A["version"].s;
-  const version2 = B["version"].s;
+  const version1 = A["version"]!.s;
+  const version2 = B["version"]!.s;
   if okA == false && okB == false {
     stderr.writeln("Dependency resolution error: unable to find version of '", name, "' compatible with your version of Chapel (", getChapelVersionStr(), "):");
     stderr.writeln("  v", version1, " expecting ", prettyVersionRange(Alo, Ahi));
@@ -414,25 +416,25 @@ private proc IVRS(A: borrowed Toml, B: borrowed Toml) {
 
   var vers1 = version1.split('.');
   var vers2 = version2.split('.');
-  var v1 = vers1(1): int;
-  var v2 = vers2(1): int;
-  if vers1(1) != vers2(1) {
+  var v1 = vers1(0): int;
+  var v2 = vers2(0): int;
+  if vers1(0) != vers2(0) {
     stderr.writeln("Dependency resolution error: package '", name, "' used by multiple packages expecting different major versions:");
     stderr.writeln("  v", version1);
     stderr.writeln("  v", version2);
     exit(1);
   }
-  else if vers1(2) != vers2(2) {
-    v1 = vers1(2): int;
-    v2 = vers2(2): int;
+  else if vers1(1) != vers2(1) {
+    v1 = vers1(1): int;
+    v2 = vers2(1): int;
     if v1 > v2 {
       return A;
     }
     else return B;
   }
   else {
-    v1 = vers1(3): int;
-    v2 = vers2(3): int;
+    v1 = vers1(2): int;
+    v2 = vers2(2): int;
     if v1 > v2 {
       return A;
     }
@@ -447,8 +449,8 @@ private proc IVRS(A: borrowed Toml, B: borrowed Toml) {
 private proc getManifests(deps: list((string, unmanaged Toml?))) {
   var manifests: list(unmanaged Toml);
   for dep in deps {
-    var name = dep(1);
-    var version: string = dep(2)!.s;
+    var name = dep(0);
+    var version: string = dep(1)!.s;
     var toAdd = retrieveDep(name, version);
     manifests.append(toAdd);
   }
@@ -479,7 +481,7 @@ private proc getDependencies(tomlTbl: unmanaged Toml) {
   var deps: list((string, unmanaged Toml?));
   for k in tomlTbl.A {
     if k == "dependencies" {
-      for (a,d) in allFields(tomlTbl[k]) {
+      for (a,d) in allFields(tomlTbl[k]!) {
         deps.append((a, d));
       }
     }

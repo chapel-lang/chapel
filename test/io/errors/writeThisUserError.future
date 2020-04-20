@@ -1,6 +1,0 @@
-No issue number yet
-
-The machinery in `modules/standard/IO.chpl` should be able to display
-errors thrown from `readThis`/`writeThis` directly rather than throw
-a more general IOError as a workaround.
-

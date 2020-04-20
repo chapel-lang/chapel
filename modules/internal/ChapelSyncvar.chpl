@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -970,10 +971,11 @@ private module SyncVarRuntimeSupport {
   // Native qthreads sync var helpers and externs
   //
 
-  // native qthreads aligned_t sync vars only work on 64-bit platforms right
-  // now, and we only support casting between certain types and aligned_t
+  // native qthreads aligned_t sync vars only work on non-ARM 64-bit platform,
+  // and we only support casting between certain types and aligned_t
   proc supportsNativeSyncVar(type t) param {
-    return CHPL_TASKS == "qthreads"    &&
+    return CHPL_TASKS == "qthreads" &&
+           CHPL_TARGET_ARCH != "aarch64" &&
            castableToAlignedT(t) &&
            numBits(c_uintptr) == 64;
   }

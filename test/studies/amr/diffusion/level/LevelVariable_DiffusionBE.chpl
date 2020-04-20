@@ -64,7 +64,7 @@ proc LevelVariable.storeCGSolution(
     for grid in level.grids {
       this(grid,grid.cells) += alpha * search_dir(grid,grid.cells);
       residual(grid,grid.cells) -= alpha * residual_update(grid,grid.cells);
-      grid_res_norm_squares(grid) = +reduce( residual(grid).value(grid.cells)**2 );
+      grid_res_norm_squares(grid) = +reduce( residual(grid)!.value(grid.cells)**2 );
     }
     //<=== Update solution and residual <===
 
@@ -132,5 +132,5 @@ proc LevelVariable.storeFluxDivergence(
   q.fillOverlaps();
   
   for grid in level.grids do
-    this(grid).storeFluxDivergence(q(grid), diffusivity);
+    this(grid)!.storeFluxDivergence(q(grid)!, diffusivity);
 }

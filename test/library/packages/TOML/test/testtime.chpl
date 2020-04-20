@@ -12,17 +12,17 @@ config const str: string = """[owner]
 
 proc main() {
   var TomlData = parseToml(str);
-  var ts1 = TomlData["owner"]["timestamp1"];
-  var ts2 = TomlData["owner"]["timestamp2"];
-  var ts3 = TomlData["owner"]["timestamp3"];
-  var ts4 = TomlData["owner"]["timestamp4"];
-  var ts5 = TomlData["owner"]["timestamp5"];
+  var ts1 = TomlData["owner"]!["timestamp1"];
+  var ts2 = TomlData["owner"]!["timestamp2"];
+  var ts3 = TomlData["owner"]!["timestamp3"];
+  var ts4 = TomlData["owner"]!["timestamp4"];
+  var ts5 = TomlData["owner"]!["timestamp5"];
 
-  writeln(ts1.toString());
-  writeln(ts2.toString());
-  writeln(ts3.toString());
-  writeln(ts4.toString());
-  writeln(ts5.toString());
+  writeln(ts1!.toString());
+  writeln(ts2!.toString());
+  writeln(ts3!.toString());
+  writeln(ts4!.toString());
+  writeln(ts5!.toString());
 
   delete TomlData;
 }

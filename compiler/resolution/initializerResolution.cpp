@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -289,6 +290,14 @@ static CallExpr* buildInitCall(CallExpr* newExpr,
       USR_FATAL(call, "initialization requires an argument for %s", arg->name);
   }
 
+  // check that the type created by init is compatible with the requested
+  // type (e.g. for `type t = C(int); var x = new t(real);`).
+  if (isSubtypeOrInstantiation(tmp->type, at, call) == false) {
+    USR_FATAL_CONT(call, "initializer produces a different type");
+    USR_PRINT(call, "new was provided type '%s'", toString(at));
+    USR_PRINT(call, "init resulted in type '%s'", toString(tmp->type));
+  }
+
   return call;
 }
 
@@ -537,7 +546,7 @@ static void resolveInitCall(CallExpr* call, AggregateType* newExprAlias, bool fo
 
         checkForStoringIntoTuple(call, best->fn);
 
-        resolveNormalCallCompilerWarningStuff(best->fn);
+        resolveNormalCallCompilerWarningStuff(call, best->fn);
       }
     }
 
@@ -675,7 +684,7 @@ static void resolveInitializerBody(FnSymbol* fn) {
 
   toAggregateType(fn->_this->type)->initializerResolved = true;
 
-  insertAndResolveCasts(fn);
+  fixPrimInitsAndAddCasts(fn);
 
   ensureInMethodList(fn);
 }
@@ -758,7 +767,7 @@ static void makeActualsVector(const CallInfo&          info,
       // Fail if no matching formal is found.
       if (!match) {
         INT_FATAL(call,
-                  "Compilation should have already ensured this action ",
+                  "Compilation should have already ensured this action "
                   "would be valid");
       }
     }

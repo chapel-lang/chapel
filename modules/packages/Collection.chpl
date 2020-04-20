@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -162,10 +163,10 @@ module Collection {
       return getSize() == 0;
     }
 
-    /*
-      Syntactic sugar for `getSize`.
-    */
+    /* Deprecated - please use :proc:`CollectionImpl.size`. */
     proc length : int {
+      compilerWarning("'CollectionImpl.length' is deprecated - " +
+                      "please use 'CollectionImpl.size' instead");
       return getSize();
     }
 

@@ -23,5 +23,4 @@ borrow-escapes.chpl:97: note: consider scope of r
 borrow-escapes.chpl:106: In function 'bad23':
 borrow-escapes.chpl:111: error: Scoped variable would outlive the value it is set to
 borrow-escapes.chpl:109: note: consider scope of r
-borrow-escapes.chpl:111: error: Scoped variable outer reachable after lifetime ends
-borrow-escapes.chpl:109: note: consider scope of r
+borrow-escapes.chpl:115: error: Scoped variable outer would outlive the value it is set to

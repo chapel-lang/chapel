@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -96,8 +97,7 @@ bool CallInfo::isWellFormed(CallExpr* callExpr) {
 
     } else if (t->symbol->hasFlag(FLAG_GENERIC) == true) {
       // The _this actual to an initializer may be generic
-      bool isInit = strcmp(name, "init") == 0 ||
-                    strcmp(name, astrInitEquals) == 0;
+      bool isInit = name == astrInit || name == astrInitEquals;
       if (isInit && i == 2) {
         actuals.add(sym);
 

@@ -113,7 +113,7 @@ end, by using a forall-loop, the user is asserting that it is safe to
 run the iterations serially or in parallel, and in any order.
 
 Practically speaking, these characteristics mean that there can be no
-synchronization dependences between iterations of a forall-loop as
+synchronization dependencies between iterations of a forall-loop as
 there could be in a coforall-loop; doing so could cause deadlock
 depending on how the iterations are mapped to tasks.  In addition,
 there should typically be no loop-carried dependences across

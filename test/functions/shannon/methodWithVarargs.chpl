@@ -5,7 +5,7 @@ class myClass {
 proc myClass.setMember(a: int ...?rank) {
   var mc : unmanaged myClass = new unmanaged myClass();
 
-  for i in 1..rank do
+  for i in 0..rank-1 do
     mc.x = a(i);
 
   return mc;

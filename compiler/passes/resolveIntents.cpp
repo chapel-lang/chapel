@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -284,7 +285,7 @@ void resolveArgIntent(ArgSymbol* arg) {
       if (addedTmp) {
         if (arg->type->symbol->hasFlag(FLAG_COPY_MUTATES) ||
             (formalRequiresTemp(arg, fn) &&
-             shouldAddFormalTempAtCallSite(arg, fn)))
+             shouldAddInFormalTempAtCallSite(arg, fn)))
           intent = INTENT_REF;
       }
       // Otherwise, leave the intent INTENT_IN so that the formal can

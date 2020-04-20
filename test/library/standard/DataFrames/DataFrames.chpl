@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -145,14 +146,13 @@ module DataFrames {
     proc uni(lhs: borrowed TypedSeries(?lhsType), rhs: borrowed TypedSeries(?rhsType),
              unifier: borrowed SeriesUnifier(lhsType)): owned Series
              where lhsType == rhsType {
-      var uni_ords = 1..(lhs.ords.size + rhs.ords.size);
+      var uni_ords = 0..#(lhs.ords.size + rhs.ords.size);
       var uni_rev_idx: [uni_ords] idxType;
       var uni_data: [uni_ords] lhsType;
       var uni_valid_bits: [uni_ords] bool;
 
       var curr_ord = 0;
       for (lhs_v, (lhs_i, lhs_d)) in lhs._items(idxType) {
-        curr_ord += 1;
         uni_rev_idx[curr_ord] = lhs_i;
 
         if rhs.idx!.contains(lhs_i) {
@@ -162,20 +162,21 @@ module DataFrames {
           uni_data[curr_ord] = unifier.f_lhs(lhs_d);
           uni_valid_bits[curr_ord] = lhs_v;
         }
+        curr_ord += 1;
       }
 
       for (rhs_v, (rhs_i, rhs_d)) in rhs._items(idxType) {
         if !lhs.idx!.contains(rhs_i) {
-          curr_ord += 1;
           uni_rev_idx[curr_ord] = rhs_i;
           uni_data[curr_ord] = unifier.f_rhs(rhs_d);
           uni_valid_bits[curr_ord] = rhs_v;
+          curr_ord += 1;
         }
       }
 
-      return new owned TypedSeries(uni_data[1..curr_ord],
-                             new shared TypedIndex(uni_rev_idx[1..curr_ord]),
-                             uni_valid_bits[1..curr_ord]);
+      return new owned TypedSeries(uni_data[0..#curr_ord],
+                             new shared TypedIndex(uni_rev_idx[0..#curr_ord]),
+                             uni_valid_bits[0..#curr_ord]);
     }
 
     override
@@ -200,16 +201,16 @@ module DataFrames {
       var curr_ord = 0;
       for (i, b) in filterSeries.items(idxType) {
         if b && this.contains(i) {
-          curr_ord += 1;
           filter_rev_idx[curr_ord] = i;
           filter_data[curr_ord] = s[i];
           filter_valid_bits[curr_ord] = s.valid(i);
+          curr_ord += 1;
         }
       }
 
-      return new owned TypedSeries(filter_data[1..curr_ord],
-                             new shared TypedIndex(filter_rev_idx[1..curr_ord]),
-                             filter_valid_bits[1..curr_ord]);
+      return new owned TypedSeries(filter_data[0..#curr_ord],
+                             new shared TypedIndex(filter_rev_idx[0..#curr_ord]),
+                             filter_valid_bits[0..#curr_ord]);
     }
 
     override
@@ -223,8 +224,8 @@ module DataFrames {
       for idx in this {
         // TODO: clean up to simple cast after bugfix
         var idxStr = createStringWithNewBuffer(idx: string);
-        if idxStr.length > idxWidth then
-          idxWidth = idxStr.length;
+        if idxStr.size > idxWidth then
+          idxWidth = idxStr.size;
       }
       return idxWidth;
     }
@@ -236,7 +237,7 @@ module DataFrames {
         // TODO: clean up to simple cast after bugfix
         var idxStr = createStringWithNewBuffer(idx: string);
         f <~> idx;
-        for space in 1..idxWidth-idxStr.length do
+        for space in 1..idxWidth-idxStr.size do
           f <~> " ";
 
         if v then
@@ -261,11 +262,11 @@ module DataFrames {
         // TODO: clean up to simple cast after bugfix
         var idxStr = createStringWithNewBuffer(idx: string);
         f <~> idxStr;
-        for space in 1..idxWidth-idxStr.length do
+        for space in 1..idxWidth-idxStr.size do
           f <~> " ";
 
         for (ser, lab) in zip(d, d.labels) {
-          ser.writeElem(f, idx, lab.length);
+          ser!.writeElem(f, idx, lab.size);
           f <~> "   ";
         }
       }
@@ -282,7 +283,7 @@ module DataFrames {
         // TODO: clean up to simple cast after bugfix
         var idxStr = createStringWithNewBuffer(idx: string);
         f <~> idxStr;
-        for space in 1..idxWidth-idxStr.length do
+        for space in 1..idxWidth-idxStr.size do
           f <~> " ";
       }
     }
@@ -426,7 +427,7 @@ module DataFrames {
       super.init();
       eltType = T;
 
-      this.ords = 1..data.size;
+      this.ords = 0..#data.size;
       this.data = data;
       this.valid_bits = true;
     }
@@ -435,7 +436,7 @@ module DataFrames {
       super.init();
       eltType = T;
 
-      this.ords = 1..data.size;
+      this.ords = 0..#data.size;
       this.data = data;
       this.valid_bits = valid_bits;
     }
@@ -445,7 +446,7 @@ module DataFrames {
       eltType = T;
 
       this.idx = idx;
-      this.ords = 1..data.size;
+      this.ords = 0..#data.size;
       this.data = data;
       this.valid_bits = true;
     }
@@ -455,7 +456,7 @@ module DataFrames {
       eltType = T;
 
       this.idx = idx;
-      this.ords = 1..data.size;
+      this.ords = 0..#data.size;
       this.data = data;
       this.valid_bits = valid_bits;
     }
@@ -546,7 +547,7 @@ module DataFrames {
       // TODO: needs Series with Index(int) to remove items not in range
       var filter_data: [ords] eltType;
       for (i, b) in castFilter!.items() {
-        if b && i <= data.size then
+        if b && i < data.size then
           filter_data[i] = this.at(i);
       }
       return new owned TypedSeries(filter_data, this.valid_bits);
@@ -581,14 +582,14 @@ module DataFrames {
         return lhs.idx!.uni(lhs, this, unifier):owned Series;
 
       var uni_ords = if lhs.ords.size > this.ords.size
-                     then 1..lhs.ords.size
-                     else 1..this.ords.size;
+                     then 0..#lhs.ords.size
+                     else 0..#this.ords.size;
       var uni_data: [uni_ords] eltType;
       var uni_valid_bits: [uni_ords] bool;
 
       for i in uni_ords {
-        var inLhs = i <= lhs.ords.size;
-        var inThis = i <= this.ords.size;
+        var inLhs = i < lhs.ords.size;
+        var inThis = i < this.ords.size;
         if inLhs && inThis {
           uni_data[i] = unifier.f(lhs.at(i), this.at(i));
           uni_valid_bits[i] = lhs.valid_at(i) && this.valid_at(i);
@@ -737,7 +738,7 @@ module DataFrames {
                    then createStringWithNewBuffer(this[i]: string)
                    else "None";
 
-      for space in 1..len-output.length do
+      for space in 1..len-output.size do
         f <~> " ";
       f <~> output;
     }
@@ -750,7 +751,7 @@ module DataFrames {
                    then createStringWithNewBuffer(this.at(i): string)
                    else "None";
 
-      for space in 1..len-output.length do
+      for space in 1..len-output.size do
         f <~> " ";
       f <~> output;
     }
@@ -761,7 +762,7 @@ module DataFrames {
 
     // TODO: array of owned Series
     //   Currently run into confusing const errors in DefaultAssociative
-    var columns: [labels] unmanaged Series;
+    var columns: [labels] unmanaged Series?;
 
     var idx: shared Index?;
 
@@ -780,13 +781,23 @@ module DataFrames {
         this.columns[lab] = s.copy().release();
     }
 
+    pragma "no doc"
+    proc init(columns: [?D] ?E) where isSubtype(E, Series?) {
+      this.labels = D;
+      this.idx = nil;
+      this.complete();
+
+      for (lab, s) in zip(labels, columns) do
+        this.columns[lab] = s!.copy().release();
+    }
+
     proc init(columns: [?D], in idx: shared Index) {
       this.labels = D;
       this.idx = idx;
       this.complete();
 
       for (lab, s) in zip(labels, columns) do
-        this.insert(lab, s);
+        this.insert(lab, s!);
     }
 
     proc deinit() {
@@ -812,13 +823,13 @@ module DataFrames {
     proc reindex(in idx: shared Index?) {
       this.idx = idx;
       for s in columns do
-        s.reindex(idx);
+        s!.reindex(idx);
     }
 
     proc nrows() {
       var nMax = 0;
       for s in this {
-        var n = s.nrows();
+        var n = s!.nrows();
         if n > nMax then nMax = n;
       }
       return nMax;
@@ -831,7 +842,7 @@ module DataFrames {
       } else {
         var n = nrows();
         var nStr = createStringWithNewBuffer(n: string);
-        var idxWidth = nStr.length + 1;
+        var idxWidth = nStr.size + 1;
 
         for space in 1..idxWidth do
           f <~> " ";
@@ -839,15 +850,15 @@ module DataFrames {
           f <~> lab + "   ";
         }
 
-        for i in 1..n {
+        for i in 0..#n {
           f <~> "\n";
           var iStr = createStringWithNewBuffer(i: string);
           f <~> iStr;
-          for space in 1..idxWidth-iStr.length do
+          for space in 1..idxWidth-iStr.size do
             f <~> " ";
 
           for (ser, lab) in zip(this, labels) {
-            ser.writeElemNoIndex(f, i, lab.length);
+            ser!.writeElemNoIndex(f, i, lab.size);
             f <~> "   ";
           }
         }

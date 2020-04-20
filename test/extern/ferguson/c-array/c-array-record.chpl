@@ -54,6 +54,7 @@ proc test3() {
   // test copy init
   var y = x;
   writeln(y);
+  writeln(x); // avoiding copy elision to test copy init
 }
 test3();
 

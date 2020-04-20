@@ -11,12 +11,12 @@ proc main(){
   writeln("Member Symbols: ", digit.one, ", ", game.scissors);
 }
 
-//an enumerated chapel function with parentheses
-proc type enumerated.foo(){
+//an enum chapel function with parentheses
+proc type enum.foo(){
   return "foo";
 }
 
-//an enumerated chapel function without parentheses
-proc type enumerated.foo2{
+//an enum chapel function without parentheses
+proc type enum.foo2{
   return "foo2";
 }

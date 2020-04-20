@@ -1,10 +1,11 @@
 // This is based on:
 // https://bitbucket.hdfgroup.org/projects/HDFFV/repos/hdf5/browse/examples/h5_crtdat.c
 
+use HDF5.C_HDF5;
+
 param RANK = 2:c_int;
 
 proc main {
-  use HDF5.C_HDF5;
 
   var file_id: hid_t;
   var dims: [0..#RANK] hsize_t = [2:hsize_t, 3:hsize_t];

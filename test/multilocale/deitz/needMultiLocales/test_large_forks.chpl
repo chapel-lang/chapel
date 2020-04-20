@@ -4,8 +4,8 @@ config param size: int = 256;
 proc main() {
   var x, y, z: size*real;
 
-  for i in 1..size {
-    x(i) = i;
+  for i in 0..#size {
+    x(i) = i+1;
   }
 
   writeln(x);

@@ -11,6 +11,13 @@ exportTest.doc
 
    use exportTest.doc;
 
+
+or
+
+.. code-block:: chapel
+
+   import exportTest.doc;
+
 **Submodules**
 
 .. toctree::
@@ -120,6 +127,13 @@ Other
 .. code-block:: chapel
 
    use exportTest.doc.Other;
+
+
+or
+
+.. code-block:: chapel
+
+   import exportTest.doc.Other;
 
 .. function:: export proc inside()
 

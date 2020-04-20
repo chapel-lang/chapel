@@ -87,7 +87,7 @@ not the type face."
   chpl '("as"
          "const" "config"
          "except" "export" "extern"
-         "inline" "iter"
+         "import" "inline" "iter"
          "module"
          "only" "override"
          "param" "private" "proc" "public"
@@ -152,7 +152,7 @@ be mutually exclusive with `c-type-list-kwds'.
 
 Note: Use `c-typeless-decl-kwds' for keywords followed by a function
 or variable identifier (that's being defined)."
-  chpl '("as" "except" "only" "use"))
+  chpl '("as" "except" "import" "only" "use"))
 
 (c-lang-defconst c-block-stmt-1-kwds
   "Statement keywords followed directly by a substatement."

@@ -11,17 +11,15 @@ module LCALSDataTypes {
     var A: list(eltType);
 
     //
-    // Previously, this vector used an array with a domain that started at 0,
-    // but list indexes starting at 1. So we should add 1 to the index to
-    // prevent a logical error.
+    // This vector supports 0-based indexing.
     //
     proc this(i: int) ref {
-      return A[i + 1];
+      return A[i];
     }
     proc push_back(e: eltType) {
       A.append(e);
     }
-    proc numElements {
+    proc size {
       return A.size;
     }
     iter these() {
@@ -34,7 +32,7 @@ module LCALSDataTypes {
 
     const loop_kernel_dom = {LoopKernelID.REF_LOOP..LoopKernelID.FIND_FIRST_MIN};
     const loop_length_dom = {LoopLength.LONG..LoopLength.SHORT};
-    const loop_variant_dom = {LoopVariantID.RAW..LoopVariantID.FORALL_HYBRID_LAMBDA_TYPEFIX};
+    const loop_variants = LoopVariantID.RAW..LoopVariantID.FORALL_HYBRID_LAMBDA_TYPEFIX;
     const weight_group_dom = {WeightGroup.DATA_PARALLEL..WeightGroup.NUM_WEIGHT_GROUPS};;
 
     var loop_names: [loop_kernel_dom] string;
@@ -45,7 +43,7 @@ module LCALSDataTypes {
     var num_suite_passes: int;
     var loop_samp_frac: real;
 
-    const ref_loop_stat = new owned LoopStat();
+    const ref_loop_stat = new LoopStat();
 
     var loop_weights: [weight_group_dom] real;
 
@@ -54,7 +52,7 @@ module LCALSDataTypes {
     var cache_flush_data: [cache_flush_data_dom] real;
     var cache_flush_data_sum: real;
 
-    var loop_test_stats: [loop_variant_dom] [loop_kernel_dom] owned LoopStat;
+    var loop_test_stats = for loop_variants do [loop_kernel_dom] new shared LoopStat();
 
     proc getLoopStats(loop_variant: LoopVariantID) ref {
       return loop_test_stats[loop_variant];
@@ -81,7 +79,7 @@ module LCALSDataTypes {
     var loop_chksum: [loop_length_dom] real;
 
     proc init() {
-      loop_run_time = for i in loop_length_dom do new owned vector(real);
+      loop_run_time = for i in loop_length_dom do new vector(real);
     }
   }
 
@@ -259,7 +257,7 @@ module LCALSDataTypes {
     // class implements the same pattern used in the LCALS reference.
     //
     // var RealArray_3D_2xNx4: [0..#s_num_3D_2xNx4_Real_arrays][0..#2, 0..#aligned_chunksize, 0..#4] real;
-    var RealArray_3D_2xNx4: [0..#s_num_3D_2xNx4_Real_arrays] owned LCALS_Overlapping_Array_3D(real) = [i in 0..#s_num_3D_2xNx4_Real_arrays] new owned LCALS_Overlapping_Array_3D(real, 2*4*aligned_chunksize); // 2 X loop_length X 4 array size
+    var RealArray_3D_2xNx4: [0..#s_num_3D_2xNx4_Real_arrays] owned LCALS_Overlapping_Array_3D(real) = [i in 0..#s_num_3D_2xNx4_Real_arrays] new LCALS_Overlapping_Array_3D(real, 2*4*aligned_chunksize); // 2 X loop_length X 4 array size
 
     var RealArray_scalars: [0..#s_num_Real_scalars] real;
   }

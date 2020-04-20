@@ -235,8 +235,8 @@ static gex_Rank_t myrank = 0;
 static int myname = -1;
 static int children = 0;
 static int ctrl_children = 0;
-static gex_Rank_t tree_ranks = (gex_Rank_t)(-1L);
-static gex_Rank_t tree_nodes = (gex_Rank_t)(-1L);
+static gex_Rank_t tree_ranks = GEX_RANK_INVALID;
+static gex_Rank_t tree_nodes = GEX_RANK_INVALID;
 static int mypid;
 static volatile int exit_status = 0;
 static gex_Rank_t nnodes = 0;	/* nodes, as distinct from ranks */
@@ -896,7 +896,7 @@ static int options_helper(char **list, const char *string, const char *where)
     in_quotes = 0;
     do {
       int i = strcspn(string, special[in_quotes]);
-      memcpy(p , string, i); p += i;
+      GASNETI_MEMCPY(p , string, i); p += i;
       gasneti_assert_always((uintptr_t)(p-tmp) < (sizeof(tmp)-1));
       string += i;
       switch (*string) {
@@ -911,7 +911,7 @@ static int options_helper(char **list, const char *string, const char *where)
             gasneti_assert_always((uintptr_t)(p-tmp) < (sizeof(tmp)-1));
 	  } else {
 	    /* Keep the backslash */
-	    memcpy(p , string, 2); p += 2;
+	    GASNETI_MEMCPY(p , string, 2); p += 2;
             gasneti_assert_always((uintptr_t)(p-tmp) < (sizeof(tmp)-1));
 	  }
 	  string += 2;
@@ -922,7 +922,7 @@ static int options_helper(char **list, const char *string, const char *where)
 	  if (string[i] != '\'') {
 	    die(1, "unbalanced ' %s", where);
 	  }
-          memcpy(p , string, i); p += i;
+          GASNETI_MEMCPY(p , string, i); p += i;
           gasneti_assert_always((uintptr_t)(p-tmp) < (sizeof(tmp)-1));
 	  string += i + 1;
 	  break;
@@ -1257,7 +1257,7 @@ static void send_env(int s) {
         /* We parse these ourselves, don't forward */
       } else {
         size_t tmp = strlen(p) + 1;
-        memcpy(q, p, tmp);
+        GASNETI_MEMCPY(q, p, tmp);
         q += tmp;
       }
     }
@@ -1642,8 +1642,8 @@ static int do_worker(void) {
     gasneti_free((/*non-const*/ void *)wrapper);
     wrapper = NULL;
   }
-  tree_nodes = -1;
-  tree_ranks = -1;
+  tree_nodes = GEX_RANK_INVALID;
+  tree_ranks = GEX_RANK_INVALID;
 
   (void)fcntl_setfd(parent, FD_CLOEXEC);
 
@@ -1845,9 +1845,9 @@ static void transpose(uint8_t *buf, size_t len, size_t n)
 
   for (  j = 0, p0 = q0 = buf;     j < n;  ++j, q0 += len, p0 += row_len) {
     for (k = 0, p1 = p0, q1 = q0;  k < j;  ++k, p1 += len, q1 += row_len) {
-      memcpy(tmp, p1, len);
-      memcpy(p1,  q1, len);
-      memcpy(q1, tmp, len);
+      GASNETI_MEMCPY(tmp, p1, len);
+      GASNETI_MEMCPY(p1,  q1, len);
+      GASNETI_MEMCPY(q1, tmp, len);
     }
   }
 }
@@ -2164,7 +2164,7 @@ static void cmd_SNBCAST(char cmd, int i) {
       }
       for (r = 0; r < nranks; ++r) {
         gasneti_assert_always(index[roots[r]]);
-        memcpy(tmp + len * r, index[roots[r]], len);
+        GASNETI_MEMCPY(tmp + len * r, index[roots[r]], len);
       }
       gasneti_free(data);
       gasneti_free(roots);

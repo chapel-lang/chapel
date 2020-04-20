@@ -1,6 +1,6 @@
 proc main() {
-  var fish: [1..1] owned Fish = [new owned Salmon()];
-  fish[1].spawn();
+  var fish: [1..1] owned Fish? = [new owned Salmon?()];
+  fish[1]!.spawn();
   writeln(fish);
 }
 

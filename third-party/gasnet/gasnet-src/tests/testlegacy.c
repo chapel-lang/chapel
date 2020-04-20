@@ -13,10 +13,15 @@
 
 #define TEST_GASNET 1
 #define SHORT_REQ_BASE 128
-#include <other/amx/testam.h>
+#include <testam.h>
 
 /* Define to get one big function that pushes the gcc inliner heursitics */
 #undef TESTGASNET_NO_SPLIT
+
+#if PLATFORM_COMPILER_PGI_CXX
+  // suppress warnings on PGI C++ 19.10/macos about intentional constant controlling expressions
+  #pragma diag_suppress 236
+#endif
 
 TEST_BACKTRACE_DECLS();
 
@@ -336,7 +341,7 @@ void doit(int partner, int *partnerseg) {
     assert_always((void*)&u.v1 == (void*)&u.v2);       \
     assert_always(sizeof(u.v1.f1) == sizeof(u.v2.f2)); \
     assert_always(&u.v1.f1 == &u.v2.f2);               \
-    v1.f1 == v2.f2; v2.f2 = v1.f1;                     \
+    v1.f1 = v2.f2; v2.f2 = v1.f1;                      \
   } while (0)
 
   // types
@@ -868,6 +873,7 @@ void doit7(int partner, int *partnerseg) {
   } while(0)
   {
     gasnett_atomic_sval_t stmp = gasnett_atomic_signed((gasnett_atomic_val_t)0);
+    test_mark_used(stmp);
     TEST_ATOMICS(gasnett_atomic_val_t, atomic);
     TEST_ATOMICS(gasnett_atomic_val_t, strongatomic);
     TEST_ATOMICS(uint32_t, atomic32);

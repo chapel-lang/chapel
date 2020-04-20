@@ -493,6 +493,13 @@ gex_Event_t gasnete_amref_put_nb(
   // Otherwise this reference implementation has no way to portably link the
   // LC of an AM Request to a gex_Event_t.
   if (lc_opt != GEX_EVENT_DEFER) {
+    // Cannot maintain connection between root and leaf
+    // TODO-EX: complete implementation of GASNETI_FLAG_LC_OPT_IN
+    if (gasneti_leaf_is_pointer(lc_opt)) {
+      *lc_opt = GEX_EVENT_INVALID;
+      lc_opt = GEX_EVENT_NOW;
+    }
+
     if (nbytes <= GASNETE_GETPUT_MEDIUM_LONG_THRESHOLD) {
       gasnete_eop_t *op = gasnete_eop_new(GASNETI_MYTHREAD);
 

@@ -129,8 +129,8 @@ corresponding to the underlying domain which defines its indices.
 Rectangular Array Literals
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Rectangular array literals are specified by enclosing a comma separated
-list of expressions representing values in square brackets. A 1-based
+Rectangular array literals are specified by enclosing a comma-separated
+list of expressions representing values in square brackets. A 0-based
 domain will automatically be generated for the given array literal. The
 type of the array’s values will be the type of the first element listed.
 A trailing comma is allowed.
@@ -155,7 +155,7 @@ A trailing comma is allowed.
 
       var A = ["1", "2", "3", "4", "5"];
 
-      for i in 1..5 do
+      for i in 0..4 do
         writeln(A[i]);
 
    
@@ -980,14 +980,6 @@ by modifying the domain directly.
 
 .. code-block:: chapel
 
-   proc Array.numElements: this.domain.dim_type
-
-Returns the number of elements in the array.
-
-
-
-.. code-block:: chapel
-
    proc reshape(A: Array, D: Domain): Array
 
 Returns a copy of the array containing the same values but in the shape
@@ -999,6 +991,6 @@ into the new array using the default iteration orders over both arrays.
 
 .. code-block:: chapel
 
-   proc Array.size: this.domain.dim_type
+   proc Array.size: this.domain.idxType
 
-Same as :math:`Array`.numElements.
+Returns the number of elements in the array.

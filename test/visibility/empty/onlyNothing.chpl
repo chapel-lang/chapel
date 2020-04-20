@@ -1,6 +1,4 @@
 module OuterModule {
-  config param qualifiedAccess = false;
-
   module M {
     proc foo() {
       writeln("In foo");
@@ -8,6 +6,8 @@ module OuterModule {
   }
 
   module M2 {
+    config param qualifiedAccess = false;
+
     use M only ;   // require all symbols in M to be fully-qualified
 
     proc main() {

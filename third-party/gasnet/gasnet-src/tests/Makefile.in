@@ -115,6 +115,11 @@ testprograms_par =  \
 	testlockcontend \
 	$(MPI_TESTS_PAR)
 
+# misc files to clean
+clean_files = \
+	testhello \
+	$(TESTEXIT_SCRIPT)
+
 testprograms = $(testprograms_seq) $(testprograms_parsync) $(testprograms_par) $(MPI_TESTS) $(CXX_TESTS)
 
 tests-seq: clean $(testprograms_seq)
@@ -128,7 +133,7 @@ tests-mpi: $(MPI1_TESTS)
 tests-mpi2: $(MPI2_TESTS)
 
 clean:
-	rm -f $(testprograms:=@EXESUFFIX@) $(TESTEXIT_SCRIPT)
+	rm -f $(testprograms:=@EXESUFFIX@) $(clean_files)
 
 distclean: 
 	rm -f Makefile
@@ -378,6 +383,13 @@ testlogGP_extraobjs = delay.o
 testbarrierlate: delay.o
 testbarrierlate_extraobjs = delay.o
 
+# some tests need other/amx/testam.h
+AMX_INC = -I@TOP_SRCDIR@/other/amx
+testgasnet_extraincs    = $(AMX_INC)
+testlegacy_extraincs    = $(AMX_INC)
+testcxx_extraincs       = $(AMX_INC)
+testlegacycxx_extraincs = $(AMX_INC)
+
 # delay function, used by multiple tests
 # need to deliberately exclude and disable optimization for this object file to prevent breaking delay
 NOOPT_FLAG=-O0
@@ -411,13 +423,13 @@ testcxx testlegacycxx: force
 		echo "ERROR: $@ target requested, but no c++ compiler is configured"; \
 		exit 1; \
 	 fi
-	$(GASNET_CXX) -I$(srcdir) $(GASNET_CXXCPPFLAGS) $(KEEPTMP_CFLAGS) $(GASNET_DEVWARN_CXXFLAGS) $(GASNET_CXXFLAGS) -c -o $@.o $(srcdir)/$@.cc
+	$(GASNET_CXX) -I$(srcdir) $($@_extraincs) $(GASNET_CXXCPPFLAGS) $(KEEPTMP_CFLAGS) $(GASNET_DEVWARN_CXXFLAGS) $(GASNET_CXXFLAGS) -c -o $@.o $(srcdir)/$@.cc
 	$(GASNET_CXX) $(GASNET_CXXFLAGS) $(GASNET_LDFLAGS) -o $@ $@.o $($@_extraobjs) $(GASNET_LIBS)
 	@test -n '$(KEEPTMPS)' || ( cmd="rm -f $@.o"; echo "$$cmd"; eval "$$cmd" )
 
 # This is a model for how GASNet clients should be built:
 test% : force
-	$(GASNET_CC) -I$(srcdir) $(GASNET_CPPFLAGS) $(KEEPTMP_CFLAGS) $(GASNET_DEVWARN_CFLAGS) $(GASNET_CFLAGS) -c -o $@.o $(srcdir)/$@.c
+	$(GASNET_CC) -I$(srcdir) $($@_extraincs) $(GASNET_CPPFLAGS) $(KEEPTMP_CFLAGS) $(GASNET_DEVWARN_CFLAGS) $(GASNET_CFLAGS) -c -o $@.o $(srcdir)/$@.c
 	$(GASNET_LD) $(GASNET_LDFLAGS) -o $@ $@.o $($@_extraobjs) $(GASNET_LIBS)
 	@test -n '$(KEEPTMPS)' || ( cmd="rm -f $@.o"; echo "$$cmd"; eval "$$cmd" )
 

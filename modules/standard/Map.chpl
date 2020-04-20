@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -27,7 +28,8 @@
   mode of its originating map.
 */
 module Map {
-  private use ChapelLocks only ;
+  import ChapelLocks;
+  private use HaltWrappers;
 
   // Lock code lifted from modules/standard/Lists.chpl.
   // Maybe they should be combined into a Locks module.
@@ -49,12 +51,28 @@ module Map {
 
   private use IO;
 
+  pragma "no doc"
+  inline proc checkForNonNilableClass(type t) type {
+    if isNonNilableClass(t) {
+      return t?;
+    } else {
+      return t;
+    }
+  }
+
   record map {
-    type keyType, valType;
+    /* Type of map keys. */
+    type keyType;
+    /* Type of map values. */
+    type valType;
+
+    /* If `true`, this map will perform parallel safe operations. */
     param parSafe = false;
 
+    pragma "no doc"
     var myKeys: domain(keyType, parSafe=parSafe);
-    var vals: [myKeys] valType;
+    pragma "no doc"
+    var vals: [myKeys] checkForNonNilableClass(valType);
 
 
     pragma "no doc"
@@ -80,6 +98,58 @@ module Map {
       :arg parSafe: If `true`, this map will use parallel safe operations.
     */
     proc init(type keyType, type valType, param parSafe=false) {
+      if isGenericType(keyType) {
+        compilerWarning("creating a map with key type " +
+                        keyType:string);
+        if isClassType(keyType) && !isGenericType(borrowed keyType) {
+          compilerWarning("which now means class type with generic management");
+        }
+        compilerError("map key type cannot currently be generic");
+        // In the future we might support it if the list is not default-inited
+      }
+      if isGenericType(valType) {
+        compilerWarning("creating a map with value type " +
+                        valType:string);
+        if isClassType(valType) && !isGenericType(borrowed valType) {
+          compilerWarning("which now means class type with generic management");
+        }
+        compilerError("map value type cannot currently be generic");
+        // In the future we might support it if the list is not default-inited
+      }
+      this.keyType = keyType;
+      this.valType = valType;
+      this.parSafe = parSafe;
+    }
+
+    proc init(type keyType, type valType, param parSafe=false)
+    where isNonNilableClass(valType) {
+      if isOwnedClass(valType) {
+        compilerError("maps of non-nilable owned values are not allowed");
+      }
+
+      if isBorrowedClass(valType) {
+        compilerError("maps of non-nilable borrowed values are",
+                      " not currently supported");
+      }
+      if isGenericType(keyType) {
+        compilerWarning("creating a map with key type " +
+                        keyType:string);
+        if isClassType(keyType) && !isGenericType(borrowed keyType) {
+          compilerWarning("which now means class type with generic management");
+        }
+        compilerError("map key type cannot currently be generic");
+        // In the future we might support it if the list is not default-inited
+      }
+      if isGenericType(valType) {
+        compilerWarning("creating a map with value type " +
+                        valType:string);
+        if isClassType(valType) && !isGenericType(borrowed valType) {
+          compilerWarning("which now means class type with generic management");
+        }
+        compilerError("map value type cannot currently be generic");
+        // In the future we might support it if the list is not default-inited
+      }
+
       this.keyType = keyType;
       this.valType = valType;
       this.parSafe = parSafe;
@@ -95,7 +165,8 @@ module Map {
       :arg parSafe: If `true`, this map will use parallel safe operations.
       :type parSafe: bool
     */
-    proc init=(const ref other: map(?kt, ?vt, ?ps)) {
+    proc init=(pragma "intent ref maybe const formal"
+               other: map(?kt, ?vt, ?ps)) {
       this.keyType = kt;
       this.valType = vt;
       this.parSafe = ps;
@@ -185,7 +256,7 @@ module Map {
 
       :returns: Reference to the value mapped to the given key.
     */
-    proc this(k: keyType) ref {
+    proc this(k: keyType) ref where !isNonNilableClass(valType) {
       _enter();
       var (found, slotNum) = myKeys._value._findFilledSlot(k, needLock=false);
 
@@ -199,7 +270,7 @@ module Map {
         _leave();
         return result;
       } else {
-        halt("map index out of bounds: ", k);
+        boundsCheckHalt("map index out of bounds: " + k:string);
         ref result = vals._value.data[0];
         _leave();
         return result;
@@ -207,13 +278,90 @@ module Map {
     }
 
     pragma "no doc"
-    proc const this(k: keyType) const {
+    proc const this(k: keyType) const
+    where shouldReturnRvalueByValue(valType) && !isNonNilableClass(valType) {
       _enter();
       if !myKeys.contains(k) then
-        halt("map index ", k, " out of bounds");
+        boundsCheckHalt("map index " + k:string + " out of bounds");
       const result = vals[k];
       _leave();
       return result;
+    }
+
+    pragma "no doc"
+    proc const this(k: keyType) const ref
+    where shouldReturnRvalueByConstRef(valType) && !isNonNilableClass(valType) {
+      _enter();
+      if !myKeys.contains(k) then
+        halt("map index ", k, " out of bounds");
+      const ref result = vals[k];
+      _leave();
+      return result;
+    }
+
+    pragma "no doc"
+    proc const this(k: keyType)
+    where isNonNilableClass(valType) {
+      compilerError("Cannot access nilable class directly. Use an",
+                    " appropriate accessor method instead.");
+    }
+
+    /* Get a borrowed reference to the element at position `k`.
+     */
+    proc getBorrowed(k: keyType) where isClass(valType) {
+      _enter();
+      if !myKeys.contains(k) then
+        boundsCheckHalt("map index " + k:string + " out of bounds");
+      try! {
+        var result = vals[k].borrow();
+        _leave();
+        if isNonNilableClass(valType) {
+          return result!;
+        } else {
+          return result;
+        }
+      }
+    }
+
+    /* Get a reference to the element at position `k`. This method is not
+       available for non-nilable types.
+     */
+    proc getReference(k: keyType) ref
+    where !isNonNilableClass(valType) {
+      _enter();
+      if !myKeys.contains(k) then
+        boundsCheckHalt("map index " + k:string + " out of bounds");
+      try! {
+        ref result = vals[k];
+        _leave();
+        return result;
+      }
+    }
+
+    proc getValue(k: keyType) const
+    where isNonNilableClass(valType) {
+      _enter();
+      if !myKeys.contains(k) then
+        boundsCheckHalt("map index " + k:string + " out of bounds");
+      try! {
+        const result = vals[k]: valType;
+        _leave();
+        return result;
+      }
+    }
+
+    /* Remove the element at position `k` from the map and return its value
+     */
+    proc getAndRemove(k: keyType) {
+      _enter();
+      if !myKeys.contains(k) then
+        boundsCheckHalt("map index " + k:string + " out of bounds");
+      try! {
+        const ref result = vals[k]: valType;
+        myKeys.remove(k);
+        _leave();
+        return result: valType;
+      }
     }
 
     /*
@@ -250,14 +398,33 @@ module Map {
       }
     }
 
+    pragma "no doc"
+    iter items() const ref where isNonNilableClass(valType) {
+      try! {
+        for key in myKeys {
+          yield (key, vals[key]: valType);
+        }
+      }
+    }
+
     /*
       Iterates over the values of this map.
 
       :yields: A reference to one of the values contained in this map.
     */
-    iter values() ref {
+    iter values() ref
+    where !isNonNilableClass(valType) {
       for val in vals {
         yield val;
+      }
+    }
+
+    pragma "no doc"
+    iter values() const where isNonNilableClass(valType) {
+      try! {
+        for val in vals {
+          yield val: valType;
+        }
       }
     }
 
@@ -302,7 +469,7 @@ module Map {
                `false` otherwise.
      :rtype: bool
     */
-    proc add(k: keyType, v: valType): bool {
+    proc add(in k: keyType, in v: valType): bool {
       _enter();
       if myKeys.contains(k) {
         _leave();
@@ -315,6 +482,7 @@ module Map {
       _leave();
       return true;
     }
+
 
     /*
       Sets the value associated with a key. Method returns `false` if the key
@@ -330,7 +498,7 @@ module Map {
                `false` otherwise.
      :rtype: bool
     */
-    proc set(k: keyType, v: valType): bool {
+    proc set(k: keyType, in v: valType): bool {
       _enter();
       if !myKeys.contains(k) {
         _leave();
@@ -341,6 +509,18 @@ module Map {
 
       _leave();
       return true;
+    }
+
+    /* If the map doesn't contain a value at position `k` add one and
+       set it to `v`. If the map already contains a value at position
+       `k`, update it to the value `v`.
+     */
+    proc addOrSet(in k: keyType, in v: valType) {
+      if myKeys.contains(k) {
+        this.set(k, v);
+      } else {
+        this.add(k, v);
+      }
     }
 
     /*
@@ -364,7 +544,7 @@ module Map {
     }
 
     /*
-      Returns a new 1-based array containing a copy of key-value pairs as
+      Returns a new 0-based array containing a copy of key-value pairs as
       tuples.
 
       :return: A new DefaultRectangular array.
@@ -372,7 +552,7 @@ module Map {
     */
     proc toArray(): [] (keyType, valType) {
       _enter();
-      var A: [1..myKeys.size] (keyType, valType);
+      var A: [0..#myKeys.size] (keyType, valType);
       for (a, key) in zip(A, myKeys) {
         a = (key, vals[key]);
       }
@@ -381,7 +561,7 @@ module Map {
     }
 
     /*
-      Returns a new 1-based array containing a copy of keys. Array is not
+      Returns a new 0-based array containing a copy of keys. Array is not
       guaranteed to be in any particular order.
 
       :return: A new DefaultRectangular array.
@@ -389,7 +569,7 @@ module Map {
     */
     proc keysToArray(): [] keyType {
       _enter();
-      var A: [1..myKeys.size] keyType;
+      var A: [0..#myKeys.size] keyType;
       for (a, k) in zip(A, myKeys) {
         a = k;
       }
@@ -398,7 +578,7 @@ module Map {
     }
 
     /*
-      Returns a new 1-based array containing a copy of values. Array is not
+      Returns a new 0-based array containing a copy of values. Array is not
       guaranteed to be in any particular order.
 
       :return: A new DefaultRectangular array.
@@ -406,7 +586,7 @@ module Map {
     */
     proc valuesToArray(): [] valType {
       _enter();
-      var A: [1..vals.size] valType;
+      var A: [0..#vals.size] valType;
       for (a, v) in zip(A, vals) {
         a = v;
       }

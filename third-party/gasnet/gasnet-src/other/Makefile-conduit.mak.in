@@ -85,6 +85,34 @@ tests-par: force libgasnet-$(CONDUIT_NAME)-par.a $(CONDUIT_NAME)-par.mak $(CONDU
 	  configfile="$(CONDUIT_NAME)-par.mak" \
 	  CONDUIT_TESTS="$(CONDUIT_TESTS)" $(CONDUIT_TEST_MAKEARGS)
 
+do-check-install: force
+	@if test -r $(DESTDIR)$(includedir)/$(CONDUIT_NAME)-conduit/$(CONDUIT_NAME)-seq.mak && \
+            test -r $(DESTDIR)$(libdir)/libgasnet-$(CONDUIT_NAME)-seq.a ; then :; else \
+            echo "ERROR: tests-installed-* targets require first running a top-level 'make install', but there does not appear to be a valid install for $(CONDUIT_NAME)-conduit in prefix=$(prefix)" ; \
+	    exit 1 ; \
+	 fi
+
+tests-installed-seq: do-check-install
+	@echo "*** Building all GASNet tests in SEQ/$(GASNET_SEGMENT_STR) mode against install in $(DESTDIR)$(libdir) ***"
+	$(MAKE) -f $(top_builddir)/tests/Makefile tests-seq \
+	  configfile="$(DESTDIR)$(includedir)/$(CONDUIT_NAME)-conduit/$(CONDUIT_NAME)-seq.mak" \
+	  tools_fragment="$(DESTDIR)$(includedir)/gasnet_tools-seq.mak" \
+	  CONDUIT_TESTS="$(CONDUIT_TESTS)" $(CONDUIT_TEST_MAKEARGS)
+
+tests-installed-par: do-check-install
+	@echo "*** Building all GASNet tests in PAR/$(GASNET_SEGMENT_STR) mode against install in $(DESTDIR)$(libdir) ***"
+	$(MAKE) -f $(top_builddir)/tests/Makefile tests-par \
+	  configfile="$(DESTDIR)$(includedir)/$(CONDUIT_NAME)-conduit/$(CONDUIT_NAME)-par.mak" \
+	  tools_fragment="$(DESTDIR)$(includedir)/gasnet_tools-par.mak" \
+	  CONDUIT_TESTS="$(CONDUIT_TESTS)" $(CONDUIT_TEST_MAKEARGS)
+
+tests-installed-parsync: do-check-install
+	@echo "*** Building all GASNet tests in parsync/$(GASNET_SEGMENT_STR) mode against install in $(DESTDIR)$(libdir) ***"
+	$(MAKE) -f $(top_builddir)/tests/Makefile tests-parsync \
+	  configfile="$(DESTDIR)$(includedir)/$(CONDUIT_NAME)-conduit/$(CONDUIT_NAME)-parsync.mak" \
+	  tools_fragment="$(DESTDIR)$(includedir)/gasnet_tools-parsync.mak" \
+	  CONDUIT_TESTS="$(CONDUIT_TESTS)" $(CONDUIT_TEST_MAKEARGS)
+
 tests-mpi: force 
 	@echo "*** Building all MPI tests ***"
 	@$(MAKE) -f $(top_builddir)/tests/Makefile tests-mpi \
@@ -155,18 +183,14 @@ run-tests do-run-testexit: check-run-tests-deps
 	  CONDUIT_TESTS="$(CONDUIT_TESTS)" $(CONDUIT_TEST_MAKEARGS) ; \
 	 $(MAKE) TESTINSTANCE=$(TESTINSTANCE) TESTLOG=$(TESTLOG) do-end-tests
 
+RUN_TESTS_TARGETS= \
+   run-tests-seq run-tests-par run-tests-parsync \
+   run-tests-installed-seq run-tests-installed-par run-tests-installed-parsync \
+   run-tests-mpi run-tests-mpi2
 # these are separate make commands to ensure they can be composed 
 # and still get multiple run-tests invocations
-run-tests-seq: tests-clean
-	$(MAKE) tests-seq run-tests
-run-tests-par: tests-clean
-	@$(MAKE) tests-par run-tests
-run-tests-parsync: tests-clean 
-	@$(MAKE) tests-parsync run-tests
-run-tests-mpi: tests-clean 
-	@$(MAKE) tests-mpi run-tests
-run-tests-mpi2: tests-clean 
-	@$(MAKE) tests-mpi2 run-tests
+$(RUN_TESTS_TARGETS): tests-clean
+	@$(MAKE) `echo "$@" | sed 's/^run-//'` run-tests
 
 .PRECIOUS: run-testexit
 run-testexit: force

@@ -432,7 +432,10 @@ record buffer2 {
     this.b = for i in 1..16 do other.b[i];
     this.cnt = other.cnt;
   }
-
+  proc init=(other: buffer2) {
+    this.b = other.b;
+    this.cnt = other.cnt;
+  }
 
   inline proc enqueue(i:int) {
     b[cnt] = i;

@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -43,9 +44,6 @@ extern SymbolMap                        paramMap;
 
 extern Vec<CallExpr*>                   callStack;
 
-extern char                             arrayUnrefName[];
-extern char                             primCoerceTmpName[];
-
 extern Map<Type*,     FnSymbol*>        autoDestroyMap;
 
 extern Map<Type*,     FnSymbol*>        valueToRuntimeTypeMap;
@@ -56,7 +54,9 @@ extern std::map<Type*,     Serializers> serializeMap;
 
 bool       propagateNotPOD(Type* t);
 
-void       resolvePrimInit(CallExpr* call);
+void       lowerPrimInit(CallExpr* call, Expr* preventingSplitInit);
+void       resolveInitVar(CallExpr* call); // lowers PRIM_INIT_VAR_SPLIT_INIT
+void       fixPrimInitsAndAddCasts(FnSymbol* fn);
 
 bool       isTupleContainingOnlyReferences(Type* t);
 
@@ -78,7 +78,7 @@ bool       formalRequiresTemp(ArgSymbol* formal, FnSymbol* fn);
 // If formalRequiresTemp(formal,fn), when this function returns true,
 // the new strategy of making the temporary at the call site will be used.
 // (if it returns false, the temporary will be inside fn)
-bool       shouldAddFormalTempAtCallSite(ArgSymbol* formal, FnSymbol* fn);
+bool       shouldAddInFormalTempAtCallSite(ArgSymbol* formal, FnSymbol* fn);
 
 // This function concerns an initialization expression such as:
 //   var x = <expr>;
@@ -144,7 +144,9 @@ bool canDispatch(Type*     actualType,
 
 void parseExplainFlag(char* flag, int* line, ModuleSymbol** module);
 
-FnSymbol* findCopyInit(AggregateType* ct);
+FnSymbol* findCopyInitFn(AggregateType* ct, const char*& err);
+FnSymbol* findAssignFn(AggregateType* at);
+FnSymbol* findZeroArgInitFn(AggregateType* at);
 
 FnSymbol* getTheIteratorFn(Symbol* ic);
 FnSymbol* getTheIteratorFn(Type* icType);
@@ -210,12 +212,11 @@ void      resolveCallAndCallee(CallExpr* call, bool allowUnresolved = false);
 Type*     resolveDefaultGenericTypeSymExpr(SymExpr* se);
 Type*     resolveTypeAlias(SymExpr* se);
 
-FnSymbol* tryResolveCall(CallExpr* call);
+FnSymbol* tryResolveCall(CallExpr* call, bool checkWithin=false);
 void      makeRefType(Type* type);
 
 // FnSymbol changes
 void      insertFormalTemps(FnSymbol* fn);
-void      insertAndResolveCasts(FnSymbol* fn);
 void      ensureInMethodList(FnSymbol* fn);
 
 
@@ -225,10 +226,12 @@ void      getAutoCopyTypeKeys(Vec<Type*>& keys);
 FnSymbol* getAutoCopy(Type* t);             // returns NULL if there are none
 FnSymbol* getAutoDestroy(Type* t);          //  "
 FnSymbol* getUnalias(Type* t);
-
+const char* getErroneousCopyError(FnSymbol* fn);
+void markCopyErroneous(FnSymbol* fn, const char* err);
 
 
 bool isPOD(Type* t);
+bool recordContainingCopyMutatesField(Type* at);
 
 // resolution errors and warnings
 
@@ -240,9 +243,9 @@ void printResolutionErrorAmbiguous (CallInfo&                  info,
                                     Vec<ResolutionCandidate*>& candidates);
 void printUndecoratedClassTypeNote(Expr* ctx, Type* type);
 
-FnSymbol* resolveNormalCall(CallExpr* call, bool checkonly=false);
+FnSymbol* resolveNormalCall(CallExpr* call);
 
-void      resolveNormalCallCompilerWarningStuff(FnSymbol* resolvedFn);
+void resolveNormalCallCompilerWarningStuff(CallExpr* call, FnSymbol* resolvedFn);
 
 void checkMoveIntoClass(CallExpr* call, Type* lhs, Type* rhs);
 

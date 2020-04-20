@@ -794,6 +794,13 @@ void doit(gex_TM_t testtm, gex_DT_t dt)) {
           ops &= ~(GEX_OP_ADD | GEX_OP_FADD | GEX_OP_SUB | GEX_OP_FSUB |
                    GEX_OP_INC | GEX_OP_FINC | GEX_OP_DEC | GEX_OP_FDEC);
         }
+      #elif GASNET_CONDUIT_UCX
+        // 1) No FP types
+        if ((dt == GEX_DT_FLT) || (dt == GEX_DT_DBL)) continue;
+        // 2) No MULT, MIN or MAX
+        ops &= ~(GEX_OP_MULT | GEX_OP_FMULT |
+                 GEX_OP_MIN  | GEX_OP_FMIN  |
+                 GEX_OP_MAX  | GEX_OP_FMAX);
       #else
         continue;  // No whitebox testing
       #endif

@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -42,6 +43,7 @@ module DefaultAssociative {
     var idx: idxType;
   }
 
+  // TODO: Would we save compilation time by making this an array?
   proc chpl__primes return
   (23, 53, 89, 191, 383, 761, 1531, 3067, 6143, 12281, 24571, 49139, 98299,
    196597, 393209, 786431, 1572853, 3145721, 6291449, 12582893, 25165813,
@@ -66,7 +68,7 @@ module DefaultAssociative {
     // by design a distributed data structure
     var numEntries: chpl__processorAtomicType(int);
     var tableLock: if parSafe then chpl_LocalSpinlock else nothing;
-    var tableSizeNum = 1;
+    var tableSizeNum = 0;
     var tableSize : int;
     var tableDom = {0..tableSize-1};
     var table: [tableDom] chpl_TableEntry(idxType);
@@ -83,7 +85,7 @@ module DefaultAssociative {
     //       replace with a named constant/param?
     var postponeResize = false;
   
-    proc linksDistribution() param return false;
+    override proc linksDistribution() param return false;
     override proc dsiLinksDistribution() return false;
   
     proc init(type idxType,
@@ -150,35 +152,22 @@ module DefaultAssociative {
           var end = new ioLiteral("}");
 
           while true {
-            // Try reading an end curly
-            f <~> end;
-            if f.error() == EFORMAT {
-              // didn't find a curly, OK
-              f.clearError();
-            } else {
-              // Stop reading if we got to the end
-              // or if there was another error.
+
+            // Try reading an end curly. If we get it, then break.
+            try {
+              f <~> end;
               break;
+            } catch err: BadFormatError {
+              // We didn't read an end brace, so continue on.
             }
 
-            // Try reading a comma
-            if !first {
-              f <~> comma;
-              if f.error() {
-                // break out of the loop if we didn't read
-                // a comma and were expecting one
-                break;
-              }
-            }
+            // Try reading a comma.
+            if !first then f <~> comma;
             first = false;
 
-            // Read an index
+            // Read an index.
             var idx: idxType;
             f <~> idx;
-            if f.error() {
-              // Stop reading if we got an error
-              break;
-            }
             dsiAdd(idx);
           }
         }
@@ -205,9 +194,9 @@ module DefaultAssociative {
         yield i;
       on this {
         postponeResize = false;
-        if (numEntries.read()*8 < tableSize && tableSizeNum > 1) {
+        if (numEntries.read()*8 < tableSize && tableSizeNum > 0) {
           lockTable();
-          if (numEntries.read()*8 < tableSize && tableSizeNum > 1) {
+          if (numEntries.read()*8 < tableSize && tableSizeNum > 0) {
             _resize(grow=false);
           }
           unlockTable();
@@ -345,7 +334,7 @@ module DefaultAssociative {
     }
   
     proc dsiMember(idx: idxType): bool {
-      return _findFilledSlot(idx)(1);
+      return _findFilledSlot(idx)(0);
     }
   
     override proc dsiAdd(idx) {
@@ -362,7 +351,7 @@ module DefaultAssociative {
       // I checked the C code and couldn't see any call to _addWrapper.
       // I tried to replicate the issue with generic classes but it always
       // worked smoothly.
-      const numInds = _addWrapper(idx)[2];
+      const numInds = _addWrapper(idx)[1];
       return numInds;
     }
 
@@ -430,7 +419,7 @@ module DefaultAssociative {
         } else {
           retval = 0;
         }
-        if (numEntries.read()*8 < tableSize && tableSizeNum > 1) {
+        if (numEntries.read()*8 < tableSize && tableSizeNum > 0) {
           _resize(grow=false);
         }
         unlockTable();
@@ -443,7 +432,7 @@ module DefaultAssociative {
       var threshold = (numKeys + 1) * 2;
       var prime = 0;
       var primeLoc = 0;
-      for i in 1..chpl__primes.size {
+      for i in 0..#chpl__primes.size {
           if chpl__primes(i) > threshold {
             prime = chpl__primes(i);
             primeLoc = i;
@@ -636,11 +625,26 @@ module DefaultAssociative {
     param parSafeDom: bool;
     var dom : unmanaged DefaultAssociativeDom(idxType, parSafe=parSafeDom);
   
+    pragma "unsafe"
     var data : [dom.tableDom] eltType;
   
     var tmpDom = {0..(-1:chpl_table_index_type)};
+    pragma "unsafe"
     var tmpTable: [tmpDom] eltType;
-  
+
+    //
+    // #14367 - Blanket ban on non-nilable classes for the time being.
+    //
+    pragma "no doc"
+    proc postinit() {
+      if isNonNilableClass(this.eltType) {
+        param msg = "Cannot initialize associative array because"
+                  + " element type " + eltType:string
+                  + " is a non-nilable class";
+        compilerError(msg);
+      }
+    }
+
     //
     // Standard internal array interface
     // 
@@ -778,71 +782,70 @@ module DefaultAssociative {
 
       if !f.writing && ischpl {
         this.readChapelStyleAssocArray(f);
-      } else {
-        if isjson || ischpl {
-          f <~> new ioLiteral("[");
+        return;
+      }
+
+      if isjson || ischpl then f <~> new ioLiteral("[");
+
+      var first = true;
+
+      for (key, val) in zip(this.dom, this) {
+        if first then first = false;
+        else if isspace then f <~> new ioLiteral(" ");
+        else if isjson || ischpl then f <~> new ioLiteral(", ");
+
+        if f.writing && ischpl {
+          f <~> key;
+          f <~> new ioLiteral(" => ");
         }
 
-        var first = true;
-
-        for (key, val) in zip(this.dom, this) {
-          if first then first = false;
-          else if isspace then f <~> new ioLiteral(" ");
-          else if isjson || ischpl then f <~> new ioLiteral(", ");
-
-          if f.writing && ischpl {
-            f <~> key;
-            f <~> new ioLiteral(" => ");
-          }
-
-          f <~> val;
-        }
+        f <~> val;
       }
-      if isjson || ischpl {
-        f <~> new ioLiteral("]");
-      }
+
+      if isjson || ischpl then f <~> new ioLiteral("]");
     }
 
     proc readChapelStyleAssocArray(f) throws {
+      const openBracket = new ioLiteral("[");
+      const closedBracket = new ioLiteral("]");
       var first = true;
-      var read_end = false;
+      var readEnd = false;
 
-      f <~> new ioLiteral("[");
+      f <~> openBracket;
 
-      while ! f.error() {
+      while true {
         if first {
           first = false;
-          // but check for a ]
-          f <~> new ioLiteral("]");
-          if f.error() == EFORMAT {
-            f.clearError();
-          } else {
-            read_end = true;
+
+          // Break if we read an immediate closed bracket.
+          try {
+            f <~> closedBracket;
+            readEnd = true;
             break;
+          } catch err: BadFormatError {
+            // We didn't read a closed bracket, so continue on.
           }
         } else {
-          // read a comma or a space.
-          f <~> new ioLiteral(",");
 
-          if f.error() == EFORMAT {
-            f.clearError();
-            // No comma.
+          // Try reading a comma. If we don't, then break.
+          try {
+            f <~> new ioLiteral(",");
+          } catch err: BadFormatError {
+            // Break out of the loop if we didn't read a comma.
             break;
           }
         }
 
-        // Read a key
+        // Read a key.
         var key: idxType;
         f <~> key;
-        // Read =>
         f <~> new ioLiteral("=>");
-        // Read the value
+
+        // Read the value.
         f <~> dsiAccess(key);
       }
 
-      if ! read_end {
-        f <~> new ioLiteral("]");
-      }
+      if !readEnd then f <~> closedBracket;
     }
 
     proc dsiSerialWrite(f) throws { this.dsiSerialReadWrite(f); }
@@ -995,6 +998,10 @@ module DefaultAssociative {
   
   inline proc chpl__defaultHash(o: borrowed object): uint {
     return _gen_key(__primitive( "object2int", o));
+  }
+
+  inline proc chpl__defaultHash(l: locale): uint {
+    return _gen_key(__primitive( "object2int", l._value));
   }
 
   //

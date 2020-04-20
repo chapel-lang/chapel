@@ -551,7 +551,7 @@ extern int AMUDP_SPMDStartup(int *argc, char ***argv,
       } catch (xBase &exn) {
         AMX_Warn("Master %s failed to resolve its own hostname: %s%s",
           getMyHostName(),exn.why(),
-          (USE_NUMERIC_MASTER_ADDR?"\nTry setting AMUDP_MASTERIP":"")); 
+          (USE_NUMERIC_MASTER_ADDR?"":"\nTry setting " AMX_ENV_PREFIX_STR "_MASTERIP")); 
         AMX_RETURN_ERRFR(RESOURCE, AMUDP_SPMDStartup, exn.why());
       }
     }
@@ -717,6 +717,28 @@ pollentry:
               allList.remove(AMUDP_SPMDListenSocket);
               AMUDP_SPMDListenSocket = INVALID_SOCKET;
 
+              // sanity check: look for conflicting networks which prevent inter-slave comms
+              int saw_local = 0, saw_nonlocal = 0;
+              en_t worker_subnet;
+              bool force_output = false;
+              for (int i=0; i < AMUDP_SPMDNUMPROCS; i++) {
+                if (SockAddr(&AMUDP_SPMDTranslation_name[i]).is_localhost()) saw_local++;
+                else {
+                  saw_nonlocal++;
+                  worker_subnet = AMUDP_SPMDTranslation_name[i];
+                }
+              }
+              if (saw_local && saw_nonlocal) {
+                worker_subnet.sin_addr.s_addr &= 0x0000FFFFu;
+                AMX_Warn("Detected that %i of %i workers are using the localhost network, "
+                         "which may prevent communication between ranks.\n"
+                         "    This might indicate a DNS misconfiguration on those nodes.\n"
+                         "    You may be able to workaround this by requesting a particular subnet for worker comms, "
+                         "ex: " AMX_ENV_PREFIX_STR "_WORKERIP=%s",
+                         saw_local, AMUDP_SPMDNUMPROCS, SockAddr(&worker_subnet).IPStr());
+                force_output = true;
+              }
+
               int32_t bootstrapinfosz_nb = hton32(sizeof(bootstrapinfo));
               // transmit bootstrapping info
               for (int i=0; i < AMUDP_SPMDNUMPROCS; i++) {
@@ -730,7 +752,7 @@ pollentry:
                 sendAll(AMUDP_SPMDSlaveSocket[i], AMUDP_SPMDTranslation_tag, AMUDP_SPMDNUMPROCS*sizeof(tag_t));
                 sendAll(AMUDP_SPMDSlaveSocket[i], AMUDP_SPMDMasterEnvironment, ntoh32(bootstrapinfo.environtablesz));
               }
-              if (!AMX_SilentMode) {
+              if (!AMX_SilentMode || force_output) {
                 AMX_Info("Endpoint table (nproc=%i):", AMUDP_SPMDNUMPROCS);
                 for (int j=0; j < AMUDP_SPMDNUMPROCS; j++) {
                   char temp1[80], temp2[80];
@@ -938,6 +960,7 @@ pollentry:
       }
     }
 
+    char *master_localhost_warning = NULL;
     { // extract master's address
       if (strchr(slave_args,',')) {
         masterAddr = SockAddr(slave_args);
@@ -957,6 +980,13 @@ pollentry:
         (*portStr) = '\0';
         try {
           masterAddr = SockAddr((uint32_t)DNSLookup(IPStr).IP(), (uint16_t)masterPort);
+          if (masterAddr.is_localhost()) {
+              // we resolved master to 127.x.y.z localhost network, which may cause problems..
+              master_localhost_warning = (char *)AMX_malloc(1024);
+              sprintf(master_localhost_warning, "slave %s resolved master hostname '%s' to the localhost network. "
+                        "You may need to set " AMX_ENV_PREFIX_STR "_MASTERIP to the master's external IP address.", 
+                        getMyHostName(), IPStr);
+          }
         } catch (xSocket &exn) {
           AMX_RETURN_ERRFR(RESOURCE, AMUDP_SPMDStartup, "slave failed DNSLookup on master host name");
         }
@@ -967,7 +997,13 @@ pollentry:
     try {
       if (!AMX_SilentMode) AMX_Info("slave connecting to %s:%i", masterAddr.IPStr(), masterAddr.port());
 
-      AMUDP_SPMDControlSocket = connect_socket(masterAddr);
+      try {
+          AMUDP_SPMDControlSocket = connect_socket(masterAddr);
+      } catch (xSocket& exn) { // check for common failure mode
+          if (master_localhost_warning) AMX_Warn("%s",master_localhost_warning);
+          throw; // re-throw
+      }
+      AMX_free(master_localhost_warning);
 
       #if USE_COORD_KEEPALIVE
       { // make sure we get connection termination notification in a timely manner

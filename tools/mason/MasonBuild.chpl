@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -42,20 +43,8 @@ proc masonBuild(args) throws {
 
   if args.size > 2 {
 
-    //
-    // This function is generic and may be instantiated with either a list
-    // or an array as the type for "args". In the case of list, the
-    // start index is 1, however in the case of an array, the `low` element
-    // is 0. The below code is a stopgap.
-    //
-    var start = 3;
-    var end = args.size; 
-    if isArray(args) && args.eltType == string {
-      start = args.domain.low + 2;
-      end = args.domain.high;
-    }
-
-    for i in start..end {
+    // strip off the first two indices
+    for i in args.indices#-(args.size-2) {
       var arg = args[i];
       if opt == true {
         compopts.append(arg);
@@ -107,14 +96,14 @@ proc masonBuild(args) throws {
     var argsList = new list(string);
     for x in args do argsList.append(x);
     const configNames = UpdateLock(argsList);
-    const tomlName = configNames[1];
-    const lockName = configNames[2];
+    const tomlName = configNames[0];
+    const lockName = configNames[1];
     buildProgram(release, show, force, compopts, tomlName, lockName);
   }
 }
 
 private proc checkChplVersion(lockFile : borrowed Toml) throws {
-  const root = lockFile["root"];
+  const root = lockFile["root"]!;
   const (success, low, hi) = verifyChapelVersion(root);
 
   if success == false {
@@ -132,8 +121,8 @@ proc buildProgram(release: bool, show: bool, force: bool, ref cmdLineCompopts: l
     const cwd = getEnv("PWD");
     const projectHome = getProjectHome(cwd, tomlName);
     const toParse = open(projectHome + "/" + lockName, iomode.r);
-    var lockFile = new owned(parseToml(toParse));
-    const projectName = lockFile["root"]["name"].s;
+    var lockFile = owned.create(parseToml(toParse));
+    const projectName = lockFile["root"]!["name"]!.s;
     
     // --fast
     var binLoc = 'debug';
@@ -200,7 +189,7 @@ proc compileSrc(lockFile: borrowed Toml, binLoc: string, show: bool,
 
   const sourceList = genSourceList(lockFile);
   const depPath = MASON_HOME + '/src/';
-  const project = lockFile["root"]["name"].s;
+  const project = lockFile["root"]!["name"]!.s;
   const pathToProj = projectHome + '/src/'+ project + '.chpl';
   const moveTo = ' -o ' + projectHome + '/target/'+ binLoc +'/'+ project;
 
@@ -244,11 +233,12 @@ proc compileSrc(lockFile: borrowed Toml, binLoc: string, show: bool,
 proc genSourceList(lockFile: borrowed Toml) {
   var sourceList: list((string, string, string));
   for (name, package) in lockFile.A.items() {
-    if package.tag == fieldtag.fieldToml {
+    if package!.tag == fieldtag.fieldToml {
       if name == "root" || name == "system" || name == "external" then continue;
       else {
-        var version = lockFile[name]["version"].s;
-        var source = lockFile[name]["source"].s;
+        var toml = lockFile[name]!;
+        var version = toml["version"]!.s;
+        var source = toml["source"]!.s;
         sourceList.append((source, name, version));
       }
     }
@@ -303,28 +293,30 @@ proc getTomlCompopts(lock: borrowed Toml, ref compopts: list(string)) {
 
   // Checks for compilation options are present in Mason.toml
   if lock.pathExists('root.compopts') {
-    const cmpFlags = lock["root"]["compopts"].s;
+    const cmpFlags = lock["root"]!["compopts"]!.s;
     compopts.append(cmpFlags);
   }
   
   if lock.pathExists('external') {
-    const exDeps = lock['external'];
+    const exDeps = lock['external']!;
     for (name, depInfo) in exDeps.A.items() {
-      for (k,v) in allFields(depInfo) {
+      for (k,v) in allFields(depInfo!) {
+        var val = v!;
         select k {
-            when "libs" do compopts.append("-L" + v.s); 
-            when "include" do compopts.append("-I" + v.s);
-            when "other" do compopts.append("-I" + v.s);
+            when "libs" do compopts.append("-L" + val.s); 
+            when "include" do compopts.append("-I" + val.s);
+            when "other" do compopts.append("-I" + val.s);
             otherwise continue;
           }
       }
     }
   }
   if lock.pathExists('system') {
-    const pkgDeps = lock['system'];
-    for (name, depInfo) in pkgDeps.A.items() {
-      compopts.append(depInfo["libs"].s);
-      compopts.append("-I" + depInfo["include"].s);
+    const pkgDeps = lock['system']!;
+    for (name, dep) in pkgDeps.A.items() {
+      var depInfo = dep!;
+      compopts.append(depInfo["libs"]!.s);
+      compopts.append("-I" + depInfo["include"]!.s);
     }
   }
   return compopts;

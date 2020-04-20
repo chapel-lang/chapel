@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -63,7 +64,7 @@ module Random {
   public use RandomSupport;
   public use NPBRandom;
   public use PCGRandom;
-  private use HaltWrappers only;
+  import HaltWrappers;
 
 
 
@@ -254,11 +255,19 @@ module Random {
         throw new owned IllegalArgumentError('choice() array arguments must have same domain');
       }
     }
+
     if !isNothingType(sizeType) {
       if isIntegralType(sizeType) {
         if size <= 0 then
-        throw new owned IllegalArgumentError('choice() size must be greater than 0');
-      } else if !isDomainType(sizeType) {
+          throw new owned IllegalArgumentError('choice() size must be greater than 0');
+        if !replace && size > arr.size then
+          throw new owned IllegalArgumentError('choice() size must be smaller than array.size when replace=false');
+      } else if isDomainType(sizeType) {
+        if size.size <= 0 then
+          throw new owned IllegalArgumentError('choice() size domain can not be empty');
+        if !replace && size.size > arr.size then
+          throw new owned IllegalArgumentError('choice() size must be smaller than array.size when replace=false');
+      } else {
         compilerError('choice() size must be integral or domain');
       }
     }
@@ -318,8 +327,8 @@ module Random {
   /* _choice branch for distribution defined by probabilities array */
   proc _choiceProbabilities(stream, arr:[], size:?sizeType, replace, prob:?probType) throws
   {
-    use Search only;
-    use Sort only;
+    import Search;
+    import Sort;
 
     // If stride, offset, or size don't match, we're in trouble
     if arr.domain != prob.domain then
@@ -390,7 +399,7 @@ module Random {
             var (found, indexChosen) = Search.binarySearch(cumulativeArr, randNum);
             if !indicesChosen.contains(indexChosen) {
               indicesChosen += indexChosen;
-              samples[i] += A[indexChosen];
+              samples[i] = A[indexChosen];
               i += 1;
             }
             P[indexChosen] = 0;
@@ -479,11 +488,13 @@ module Random {
 
     /*
       Advances/rewinds the stream to the `n`-th value in the sequence.
-      The first value is with n=1.  n must be > 0, otherwise an
+      The first value corresponds to n=0.  n must be >= 0, otherwise an
       IllegalArgumentError is thrown.
 
-      :arg n: The position in the stream to skip to.  Must be > 0.
+      :arg n: The position in the stream to skip to.  Must be >= 0.
       :type n: `integral`
+
+      :throws IllegalArgumentError: When called with negative `n` value.
      */
     proc skipToNth(n: integral) throws {
       compilerError("RandomStreamInterface.skipToNth called");
@@ -491,14 +502,15 @@ module Random {
 
     /*
       Advance/rewind the stream to the `n`-th value and return it
-      (advancing the stream by one).  n must be > 0, otherwise an
+      (advancing the stream by one).  n must be >= 0, otherwise an
       IllegalArgumentError is thrown.  This is equivalent to
       :proc:`skipToNth()` followed by :proc:`getNext()`.
 
-      :arg n: The position in the stream to skip to.  Must be > 0.
+      :arg n: The position in the stream to skip to.  Must be >= 0.
       :type n: `integral`
 
       :returns: The `n`-th value in the random stream as type :type:`eltType`.
+      :throws IllegalArgumentError: When called with negative `n` value.
      */
     proc getNth(n: integral): eltType throws {
       compilerError("RandomStreamInterface.getNth called");
@@ -559,8 +571,8 @@ module Random {
 
     /*
 
-       Returns an iterable expression for generating `D.numIndices` random
-       numbers. The RNG state will be immediately advanced by `D.numIndices`
+       Returns an iterable expression for generating `D.size` random
+       numbers. The RNG state will be immediately advanced by `D.size`
        before the iterable expression yields any values.
 
        The returned iterable expression is useful in parallel contexts,
@@ -799,8 +811,8 @@ module Random {
         this.seed = seed;
         this.parSafe = parSafe;
         this.complete();
-        for param i in 1..numGenerators(eltType) {
-          param inc = pcg_getvalid_inc(i);
+        for param i in 0..numGenerators(eltType)-1 {
+          param inc = pcg_getvalid_inc(i+1);
           PCGRandomStreamPrivate_rngs[i].srandom(seed:uint(64), inc);
         }
         PCGRandomStreamPrivate_count = 1;
@@ -825,8 +837,8 @@ module Random {
 
       pragma "no doc"
       proc PCGRandomStreamPrivate_skipToNth_noLock(in n: integral) {
-        PCGRandomStreamPrivate_count = n;
-        PCGRandomStreamPrivate_rngs = randlc_skipto(eltType, seed, n);
+        PCGRandomStreamPrivate_count = n+1;
+        PCGRandomStreamPrivate_rngs = randlc_skipto(eltType, seed, n+1);
       }
 
       /*
@@ -891,15 +903,17 @@ module Random {
 
       /*
         Advances/rewinds the stream to the `n`-th value in the sequence.
-        The first value is with n=1.  n must be > 0, otherwise an
+        The first value corresponds to n=0.  n must be >= 0, otherwise an
         IllegalArgumentError is thrown.
 
-        :arg n: The position in the stream to skip to.  Must be > 0.
+        :arg n: The position in the stream to skip to.  Must be >= 0.
         :type n: `integral`
+
+        :throws IllegalArgumentError: When called with negative `n` value.
        */
       proc skipToNth(n: integral) throws {
-        if n <= 0 then
-          throw new owned IllegalArgumentError("PCGRandomStream.skipToNth(n) called with non-positive 'n' value " + n:string);
+        if n < 0 then
+          throw new owned IllegalArgumentError("PCGRandomStream.skipToNth(n) called with negative 'n' value " + n:string);
         _lock();
         PCGRandomStreamPrivate_skipToNth_noLock(n);
         _unlock();
@@ -907,18 +921,19 @@ module Random {
 
       /*
         Advance/rewind the stream to the `n`-th value and return it
-        (advancing the stream by one).  n must be > 0, otherwise an
+        (advancing the stream by one).  n must be >= 0, otherwise an
         IllegalArgumentError is thrown.  This is equivalent to
         :proc:`skipToNth()` followed by :proc:`getNext()`.
 
-        :arg n: The position in the stream to skip to.  Must be > 0.
+        :arg n: The position in the stream to skip to.  Must be >= 0.
         :type n: `integral`
 
         :returns: The `n`-th value in the random stream as type :type:`eltType`.
+        :throws IllegalArgumentError: When called with negative `n` value.
        */
       proc getNth(n: integral): eltType throws {
-        if (n <= 0) then
-          throw new owned IllegalArgumentError("PCGRandomStream.getNth(n) called with non-positive 'n' value " + n:string);
+        if (n < 0) then
+          throw new owned IllegalArgumentError("PCGRandomStream.getNth(n) called with negative 'n' value " + n:string);
         _lock();
         PCGRandomStreamPrivate_skipToNth_noLock(n);
         const result = PCGRandomStreamPrivate_getNext_noLock(eltType);
@@ -1018,12 +1033,12 @@ module Random {
          exactly once, where low and high refer to the array's domain.
          */
       proc permutation(arr: [] eltType) {
-        var low = arr.domain.dim(1).low;
-        var high = arr.domain.dim(1).high;
+        var low = arr.domain.dim(0).low;
+        var high = arr.domain.dim(0).high;
 
         if arr.domain.rank != 1 then
           compilerError("Permutation requires 1-D array");
-        //if arr.domain.dim(1).stridable then
+        //if arr.domain.dim(0).stridable then
         //  compilerError("Permutation requires non-stridable 1-D array");
 
         _lock();
@@ -1051,8 +1066,8 @@ module Random {
 
       /*
 
-         Returns an iterable expression for generating `D.numIndices` random
-         numbers. The RNG state will be immediately advanced by `D.numIndices`
+         Returns an iterable expression for generating `D.size` random
+         numbers. The RNG state will be immediately advanced by `D.size`
          before the iterable expression yields any values.
 
          The returned iterable expression is useful in parallel contexts,
@@ -1068,8 +1083,8 @@ module Random {
       proc iterate(D: domain, type resultType=eltType) {
         _lock();
         const start = PCGRandomStreamPrivate_count;
-        PCGRandomStreamPrivate_count += D.numIndices.safeCast(int(64));
-        PCGRandomStreamPrivate_skipToNth_noLock(PCGRandomStreamPrivate_count);
+        PCGRandomStreamPrivate_count += D.size.safeCast(int(64));
+        PCGRandomStreamPrivate_skipToNth_noLock(PCGRandomStreamPrivate_count-1);
         _unlock();
         return PCGRandomPrivate_iterate(resultType, D, seed, start);
       }
@@ -1169,11 +1184,11 @@ module Random {
     // These would form the RNG interface.
     private inline
     proc rand32_1(ref states):uint(32) {
-      return states[1].random(pcg_getvalid_inc(1));
+      return states[0].random(pcg_getvalid_inc(1));
     }
     private inline
     proc rand32_2(ref states):uint(32) {
-      return states[2].random(pcg_getvalid_inc(2));
+      return states[1].random(pcg_getvalid_inc(2));
     }
     // returns x with 0 <= x <= bound
     // count is 1-based
@@ -1182,7 +1197,7 @@ module Random {
                          bound:uint(32)):uint(32) {
       // just get 32 random bits if bound+1 is not representable.
       if bound == max(uint(32)) then return rand32_1(states);
-      else return states[1].bounded_random_vary_inc(
+      else return states[0].bounded_random_vary_inc(
           pcg_getvalid_inc(1), bound + 1,
           seed:uint(64), (count - 1):uint(64),
           101, 4);
@@ -1194,7 +1209,7 @@ module Random {
                          bound:uint(32)):uint(32) {
       // just get 32 random bits if bound+1 is not representable.
       if bound == max(uint(32)) then return rand32_2(states);
-      else return states[2].bounded_random_vary_inc(
+      else return states[1].bounded_random_vary_inc(
           pcg_getvalid_inc(2), bound + 1,
           seed:uint(64), (count - 1):uint(64),
           102, 4);
@@ -1203,17 +1218,17 @@ module Random {
     private inline
     proc rand64_1(ref states):uint(64) {
       var ret:uint(64) = 0;
-      ret |= states[1].random(pcg_getvalid_inc(1));
+      ret |= states[0].random(pcg_getvalid_inc(1));
       ret <<= 32;
-      ret |= states[2].random(pcg_getvalid_inc(2));
+      ret |= states[1].random(pcg_getvalid_inc(2));
       return ret;
     }
     private inline
     proc rand64_2(ref states):uint(64) {
       var ret:uint(64) = 0;
-      ret |= states[3].random(pcg_getvalid_inc(3));
+      ret |= states[2].random(pcg_getvalid_inc(3));
       ret <<= 32;
-      ret |= states[4].random(pcg_getvalid_inc(4));
+      ret |= states[3].random(pcg_getvalid_inc(4));
       return ret;
     }
 
@@ -1256,7 +1271,7 @@ module Random {
 
       // Step each RNG that is not involved in the output.
       for i in numGenForResultType+1..numGen {
-        states[i].random(pcg_getvalid_inc(i:uint));
+        states[i-1].random(pcg_getvalid_inc(i:uint));
       }
     }
 
@@ -1345,8 +1360,8 @@ module Random {
     private proc randlc_skipto(type resultType, seed: int(64), n: integral) {
       var states: numGenerators(resultType) * pcg_setseq_64_xsh_rr_32_rng;
 
-      for param i in 1..states.size {
-        param inc = pcg_getvalid_inc(i);
+      for param i in 0..states.size-1 {
+        param inc = pcg_getvalid_inc(i+1);
         states[i].srandom(seed:uint(64), inc);
         states[i].advance(inc, (n - 1):uint(64));
       }
@@ -1356,11 +1371,11 @@ module Random {
     //
     // iterate over outer ranges in tuple of ranges
     //
-    private iter outer(ranges, param dim: int = 1) {
-      if dim + 1 == ranges.size {
+    private iter outer(ranges, param dim: int = 0) {
+      if dim + 2 == ranges.size {
         for i in ranges(dim) do
           yield (i,);
-      } else if dim + 1 < ranges.size {
+      } else if dim + 2 < ranges.size {
         for i in ranges(dim) do
           for j in outer(ranges, dim+1) do
             yield (i, (...j));
@@ -1394,7 +1409,7 @@ module Random {
           where tag == iterKind.follower {
       param multiplier = 1;
       const ZD = computeZeroBasedDomain(D);
-      const innerRange = followThis(ZD.rank);
+      const innerRange = followThis(ZD.rank-1);
       for outer in outer(followThis) {
         var myStart = start;
         if ZD.rank > 1 then
@@ -2367,6 +2382,7 @@ module Random {
 
       pragma "no doc"
       proc NPBRandomStreamPrivate_skipToNth_noLock(in n: integral) {
+        n += 1;
         if eltType == complex then n = n*2 - 1;
         NPBRandomStreamPrivate_count = n;
         NPBRandomStreamPrivate_cursor = randlc_skipto(seed, n);
@@ -2389,15 +2405,17 @@ module Random {
 
       /*
         Advances/rewinds the stream to the `n`-th value in the sequence.
-        The first value is with n=1.  n must be > 0, otherwise an
+        The first value corresponds to n=0.  n must be >= 0, otherwise an
         IllegalArgumentError is thrown.
 
-        :arg n: The position in the stream to skip to.  Must be > 0.
+        :arg n: The position in the stream to skip to.  Must be >= 0.
         :type n: `integral`
+
+        :throws IllegalArgumentError: When called with negative `n` value.
        */
       proc skipToNth(n: integral) throws {
-        if n <= 0 then
-          throw new owned IllegalArgumentError("NPBRandomStream.skipToNth(n) called with non-positive 'n' value " + n:string);
+        if n < 0 then
+          throw new owned IllegalArgumentError("NPBRandomStream.skipToNth(n) called with negative 'n' value " + n:string);
         _lock();
         NPBRandomStreamPrivate_skipToNth_noLock(n);
         _unlock();
@@ -2405,18 +2423,19 @@ module Random {
 
       /*
         Advance/rewind the stream to the `n`-th value and return it
-        (advancing the stream by one).  n must be > 0, otherwise an
+        (advancing the stream by one).  n must be >= 0, otherwise an
         IllegalArgumentError is thrown.  This is equivalent to
         :proc:`skipToNth()` followed by :proc:`getNext()`.
 
-        :arg n: The position in the stream to skip to.  Must be > 0.
+        :arg n: The position in the stream to skip to.  Must be >= 0.
         :type n: `integral`
 
         :returns: The `n`-th value in the random stream as type :type:`eltType`.
+        :throws IllegalArgumentError: When called with negative `n` value.
        */
       proc getNth(n: integral): eltType throws {
-        if (n <= 0) then
-          throw new owned IllegalArgumentError("NPBRandomStream.getNth(n) called with non-positive 'n' value " + n:string);
+        if (n < 0) then
+          throw new owned IllegalArgumentError("NPBRandomStream.getNth(n) called with negative 'n' value " + n:string);
         _lock(); 
         NPBRandomStreamPrivate_skipToNth_noLock(n);
         const result = NPBRandomStreamPrivate_getNext_noLock();
@@ -2454,8 +2473,8 @@ module Random {
 
       /*
 
-         Returns an iterable expression for generating `D.numIndices` random
-         numbers. The RNG state will be immediately advanced by `D.numIndices`
+         Returns an iterable expression for generating `D.size` random
+         numbers. The RNG state will be immediately advanced by `D.size`
          before the iterable expression yields any values.
 
          The returned iterable expression is useful in parallel contexts,
@@ -2471,8 +2490,8 @@ module Random {
       proc iterate(D: domain, type resultType=real) {
         _lock();
         const start = NPBRandomStreamPrivate_count;
-        NPBRandomStreamPrivate_count += D.numIndices.safeCast(int(64));
-        NPBRandomStreamPrivate_skipToNth_noLock(NPBRandomStreamPrivate_count);
+        NPBRandomStreamPrivate_count += D.size.safeCast(int(64));
+        NPBRandomStreamPrivate_skipToNth_noLock(NPBRandomStreamPrivate_count-1);
         _unlock();
         return NPBRandomPrivate_iterate(resultType, D, seed, start);
       }
@@ -2603,11 +2622,11 @@ module Random {
     //
     // iterate over outer ranges in tuple of ranges
     //
-    private iter outer(ranges, param dim: int = 1) {
-      if dim + 1 == ranges.size {
+    private iter outer(ranges, param dim: int = 0) {
+      if dim + 2 == ranges.size {
         for i in ranges(dim) do
           yield (i,);
-      } else if dim + 1 < ranges.size {
+      } else if dim + 2 < ranges.size {
         for i in ranges(dim) do
           for j in outer(ranges, dim+1) do
             yield (i, (...j));
@@ -2642,7 +2661,7 @@ module Random {
           where tag == iterKind.follower {
       param multiplier = if resultType == complex then 2 else 1;
       const ZD = computeZeroBasedDomain(D);
-      const innerRange = followThis(ZD.rank);
+      const innerRange = followThis(ZD.rank-1);
       var cursor: real;
       for outer in outer(followThis) {
         var myStart = start;

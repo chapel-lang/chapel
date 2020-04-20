@@ -25,3 +25,4 @@ record I {
 
 }
 
+proc =(ref lhs: I, const ref rhs: I) { }

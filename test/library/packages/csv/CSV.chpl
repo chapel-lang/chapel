@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -53,10 +54,10 @@ module CSV {
 
       for l in ch.lines() {
         const line = l.strip(leading=false);
-        if line.length == 0 then
+        if line.size == 0 then
           continue;
         const vals = line.split(sep);
-        for param i in 1..numFields(t) {
+        for param i in 0..numFields(t)-1 {
           getFieldRef(r, i) = vals[i]: getField(r, i).type;
         }
         if skipHeader {
@@ -75,17 +76,17 @@ module CSV {
     /* Read a CSV file with fields of the types given by
        the arguments to the function
      */
-    iter read(type t...) throws where t.size > 1 || !isSpecialCaseType(t(1)) {
+    iter read(type t...) throws where t.size > 1 || !isSpecialCaseType(t(0)) {
       if ch.writing then compilerError("reading from a writing channel");
 
       var r: t;
       var skipHeader = hasHeader;
       for l in ch.lines() {
         const line = l.strip(leading=false);
-        if line.length == 0 then
+        if line.size == 0 then
           continue;
         const vals = line.split(sep);
-        for param i in 1..t.size {
+        for param i in 0..t.size-1 {
           r(i) = vals[i]: t(i);
         }
         if skipHeader {
@@ -113,22 +114,22 @@ module CSV {
       var skipHeader = hasHeader;
 
       var lines = ch.lines();
-      var firstLine = lines[1];
+      var firstLine = lines[0];
       var vals = firstLine.strip().split(sep);
-      const numRows = if skipHeader then lines.numElements - 1
-                                    else lines.numElements;
-      var A: [1..numRows, 1..vals.numElements] string;
+      const numRows = if skipHeader then lines.size - 1
+                                    else lines.size;
+      var A: [1..numRows, 1..vals.size] string;
 
       if !skipHeader {
         A[1, ..] = vals;
       }
 
-      for i in 2..lines.numElements {
+      for i in 1..<lines.size {
         const line = lines[i].strip(leading=false);
-        if line.length == 0 then
+        if line.size == 0 then
           continue;
         const vals = line.split(sep);
-        const row = if skipHeader then i-1 else i;
+        const row = if skipHeader then i else i+1;
         A[row, ..] = vals;
       }
       return A;
@@ -142,9 +143,9 @@ module CSV {
       use Reflection;
       if !ch.writing then compilerError("writing to a reading channel");
 
-      for param i in 1..numFields(t) {
+      for param i in 0..<numFields(t) {
         ch.write(getField(r, i));
-        if i < numFields(t) then
+        if i != numFields(t)-1 then
           ch.write(sep);
       }
       ch.writeln();
@@ -156,9 +157,9 @@ module CSV {
     proc write(tup: ?t) throws where isTuple(t) {
       if !ch.writing then compilerError("writing to a reading channel");
 
-      for param i in 1..tup.size {
+      for param i in 0..tup.size-1 {
         ch.write(tup(i));
-        if i < tup.size then
+        if i < tup.size-1 then
           ch.write(sep);
       }
       ch.writeln();

@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -48,6 +49,7 @@ config param timeDistributedIters:bool = false;
 config const infoDistributedIters:bool = false;
 
 // Distributed Dynamic Iterator.
+// Serial version.
 /*
   :arg c: The range (or domain) to iterate over. The range (domain) size must
     be positive.
@@ -63,8 +65,8 @@ config const infoDistributedIters:bool = false;
   :type numTasks: int
 
   :arg parDim: If ``c`` is a domain, then this specifies the dimension index
-    to parallelize across. Must be positive, and must be at most the rank of
-    the domain ``c``. Defaults to 1.
+    to parallelize across. Must be non-negative and less than the rank of
+    the domain ``c``. Defaults to 0.
   :type parDim: int
 
   :arg localeChunkSize: Chunk size to yield to each locale. Must be
@@ -96,11 +98,10 @@ config const infoDistributedIters:bool = false;
 
   Available for serial and zippered contexts.
 */
-// Serial version.
 iter distributedDynamic(c,
                         chunkSize:int=1,
                         numTasks:int=0,
-                        parDim:int=1,
+                        parDim:int=0,
                         localeChunkSize:int=0,
                         coordinated:bool=false,
                         workerLocales=Locales)
@@ -121,7 +122,7 @@ iter distributedDynamic(param tag:iterKind,
                         c,
                         chunkSize:int=1,
                         numTasks:int=0,
-                        parDim:int=1,
+                        parDim:int=0,
                         localeChunkSize:int=0,
                         coordinated:bool=false,
                         workerLocales=Locales)
@@ -144,22 +145,22 @@ where tag == iterKind.leader
   {
     assert(c.rank > 0, ("DistributedIters: Dynamic iterator (leader): "
                         + "Must use a valid domain"));
-    assert(parDim > 0, ("DistributedIters: Dynamic iterator (leader): "
-                        + "parDim must be a positive integer"));
-    assert(parDim <= c.rank, ("DistributedIters: Dynamic iterator (leader): "
+    assert(parDim >= 0, ("DistributedIters: Dynamic iterator (leader): "
+                        + "parDim must be a non-negative integer"));
+    assert(parDim < c.rank, ("DistributedIters: Dynamic iterator (leader): "
                               + "parDim must be a dimension of the domain"));
     var parDimDim = c.dim(parDim);
     for t in distributedDynamic(tag=iterKind.leader,
                                 c=parDimDim,
                                 chunkSize=chunkSize,
                                 numTasks=numTasks,
-                                parDim=1,
+                                parDim=0,
                                 localeChunkSize=localeChunkSize,
                                 coordinated=coordinated,
                                 workerLocales=workerLocales)
     {
       // Set the new range based on the tuple the dynamic 1-D iterator yields.
-      var newRange = t(1);
+      var newRange = t(0);
 
       // Does the same thing as densify, but densify makes a stridable domain,
       // which mismatches here if c (and thus cType) is non-stridable.
@@ -175,7 +176,7 @@ where tag == iterKind.leader
   }
   else // c is a range.
   {
-    const iterCount = c.length;
+    const iterCount = c.size;
 
     if iterCount == 0 then halt("DistributedIters: Dynamic iterator (leader):",
                                 " the range is empty");
@@ -197,16 +198,11 @@ where tag == iterKind.leader
       const denseRangeHigh:int = denseRange.high;
       const masterLocale = here.locale;
 
-      const potentialWorkerLocales =
+      const actualWorkerLocales =
         [L in workerLocales] if numLocales == 1
                                 || !coordinated
                                 || L != masterLocale
                              then L;
-      // It's not sensible to use a single locale besides masterLocale, so use
-      // potentialWorkerLocales only if it's larger than one locale.
-      const actualWorkerLocales = if potentialWorkerLocales.size > 1
-                                  then potentialWorkerLocales
-                                  else [masterLocale];
 
       if infoDistributedIters then
       {
@@ -256,13 +252,13 @@ where tag == iterKind.leader
                                                           chunkSize,
                                                           numTasks)
           {
-            const taskRange:cType = unDensify(denseTaskRangeTuple(1),
+            const taskRange:cType = unDensify(denseTaskRangeTuple(0),
                                               localeRange);
             if debugDistributedIters
             then writeln("DistributedIters: Dynamic iterator (leader): ",
                          here.locale, ": yielding ", unDensify(taskRange,c),
-                         " (", taskRange.length,
-                         "/", localeRange.length,
+                         " (", taskRange.size,
+                         "/", localeRange.size,
                          " locale-owned of ", iterCount,
                          " total) as ", taskRange);
             yield (taskRange,);
@@ -309,7 +305,7 @@ where tag == iterKind.follower
                  1);
   const current = if isDomain(c)
                   then c.these(tag=iterKind.follower, followThis=followThis)
-                  else unDensify(followThis(1), c);
+                  else unDensify(followThis(0), c);
 
   if debugDistributedIters
   then writeln("DistributedIters: Dynamic iterator (follower): ", here.locale,
@@ -322,6 +318,7 @@ where tag == iterKind.follower
 }
 
 // Distributed Guided Iterator.
+// Serial version.
 /*
   :arg c: The range (or domain) to iterate over. The range (domain) size must
     be positive.
@@ -333,8 +330,8 @@ where tag == iterKind.follower
   :type numTasks: int
 
   :arg parDim: If ``c`` is a domain, then this specifies the dimension index
-    to parallelize across. Must be positive, and must be at most the rank of
-    the domain ``c``. Defaults to 1.
+    to parallelize across. Must be non-negative and less than the rank of
+    the domain ``c``. Defaults to 0.
   :type parDim: int
 
   :arg minChunkSize: The smallest allowable chunk size. Must be positive.
@@ -367,10 +364,9 @@ where tag == iterKind.follower
 
   Available for serial and zippered contexts.
 */
-// Serial version.
 iter distributedGuided(c,
                        numTasks:int=0,
-                       parDim:int=1,
+                       parDim:int=0,
                        minChunkSize:int=1,
                        coordinated:bool=false,
                        workerLocales=Locales)
@@ -390,7 +386,7 @@ pragma "no doc"
 iter distributedGuided(param tag:iterKind,
                        c,
                        numTasks:int=0,
-                       parDim:int=1,
+                       parDim:int=0,
                        minChunkSize:int=1,
                        coordinated:bool=false,
                        workerLocales=Locales)
@@ -404,9 +400,9 @@ where tag == iterKind.leader
   {
     assert(c.rank > 0, ("DistributedIters: Guided iterator (leader): Must "
                         + "use a valid domain"));
-    assert(parDim > 0, ("DistributedIters: Guided iterator (leader): parDim "
-                        + "must be a positive integer"));
-    assert(parDim <= c.rank, ("DistributedIters: Guided iterator (leader): "
+    assert(parDim >= 0, ("DistributedIters: Guided iterator (leader): parDim "
+                        + "must be a non-negative integer"));
+    assert(parDim < c.rank, ("DistributedIters: Guided iterator (leader): "
                               + "parDim must be a dimension of the domain"));
 
     var parDimDim = c.dim(parDim);
@@ -414,13 +410,13 @@ where tag == iterKind.leader
     for t in distributedGuided(tag=iterKind.leader,
                                c=parDimDim,
                                numTasks=numTasks,
-                               parDim=1,
+                               parDim=0,
                                minChunkSize=minChunkSize,
                                coordinated=coordinated,
                                workerLocales=workerLocales)
     {
       // Set the new range based on the tuple the guided 1-D iterator yields.
-      var newRange = t(1);
+      var newRange = t(0);
 
       type cType = c.type;
       // Does the same thing as densify, but densify makes a stridable domain,
@@ -437,7 +433,7 @@ where tag == iterKind.leader
   }
   else // c is a range.
   {
-    const iterCount = c.length;
+    const iterCount = c.size;
 
     if iterCount == 0 then halt("DistributedIters: Guided iterator (leader): ",
                                 "the range is empty");
@@ -460,18 +456,11 @@ where tag == iterKind.leader
       const denseRangeHigh:int = denseRange.high;
       const masterLocale = here.locale;
 
-      const potentialWorkerLocales =
+      const actualWorkerLocales =
         [L in workerLocales] if numLocales == 1
                                 || !coordinated
                                 || L != masterLocale
                              then L;
-      /*
-        It's not sensible to use a single locale besides masterLocale, so use
-        potentialWorkerLocales only if it's larger than one locale.
-      */
-      const actualWorkerLocales = if potentialWorkerLocales.size > 1
-                                  then potentialWorkerLocales
-                                  else [masterLocale];
       const numActualWorkerLocales = actualWorkerLocales.size;
 
       // The guided iterator stage (determines next subrange index and size).
@@ -514,13 +503,13 @@ where tag == iterKind.leader
                                                          localeRange,
                                                          numTasks)
           {
-            const taskRange:cType = unDensify(denseTaskRangeTuple(1),
+            const taskRange:cType = unDensify(denseTaskRangeTuple(0),
                                               localeRange);
             if debugDistributedIters
             then writeln("DistributedIters: Guided iterator (leader): ",
                          here.locale, ": yielding ", unDensify(taskRange,c),
-                         " (", taskRange.length,
-                         "/", localeRange.length,
+                         " (", taskRange.size,
+                         "/", localeRange.size,
                          " locale-owned of ", iterCount,
                          " total) as ", taskRange);
             yield (taskRange,);
@@ -553,7 +542,7 @@ pragma "no doc"
 iter distributedGuided(param tag:iterKind,
                        c,
                        numTasks:int,
-                       parDim:int=1,
+                       parDim:int=0,
                        minChunkSize:int,
                        coordinated:bool,
                        workerLocales=Locales,
@@ -566,7 +555,7 @@ where tag == iterKind.follower
                  1);
   const current = if isDomain(c)
                   then c.these(tag=iterKind.follower, followThis=followThis)
-                  else unDensify(followThis(1), c);
+                  else unDensify(followThis(0), c);
 
   if debugDistributedIters
   then writeln("DistributedIters: Guided iterator (follower): ", here.locale,
@@ -644,7 +633,7 @@ private proc guidedSubrange(c:range(?),
 {
   assert(workerCount > 0, ("DistributedIters: guidedSubrange: "
                            + "'workerCount' must be positive"));
-  const cLength = c.length;
+  const cLength = c.size;
   var low:int = c.low;
   var chunkSize:int = (cLength / workerCount);
   var remainder:int = (cLength - chunkSize);

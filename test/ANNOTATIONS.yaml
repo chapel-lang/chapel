@@ -407,11 +407,28 @@ all:
     - text: Optimize unorderedCopy for types larger than 8 bytes (#14255)
       config: 16 node XC
   12/04/19:
-    - text: Warm up the runtime before entering user code (#14567)
+    - Warm up the runtime before entering user code (#14567)
+  01/17/20:
+    - Adjust point of deinitialization based on expiring value analysis (#14691)
+  02/07/20:
+    - text: machine update
+      config: chapcs
+  02/19/20:
+    - text:  Serialize calls to gasnet_AMPoll for IBV/Aries (#14912)
       config: 16 node XC, 16-node-cs
+  02/21/20:
+    - text: Poll for AMs on every call to gasnet_AMPoll for Aries (#14938)
+      config: 16 node XC
+  02/28/20:
+    - Add a spinlock to the atomic runtime interface. (#15015)
+  03/05/20:
+    - Allow bulk transfer of some wide pointer arrays (#15049)
+  03/20/20:
+    - text: Make --cache-remote readahead less aggressive (#15267)
+      config: chapcs.comm-counts
 
 
-AllCompTime:
+AllCompTime: &timecomp-base
   11/09/14:
     - disable the task table by default
   01/17/16:
@@ -424,14 +441,31 @@ AllCompTime:
     - Fix parse slowdown (#5257)
   02/07/17:
     - Loop over Defs and Uses with SymbolSymExprs (#5285)
+  05/16/18:
+    - Faster 'fixStringLiteralInit' implementation (#9506)
   05/23/18:
     - Fix problems with tuples (#9572)
   06/01/18:
     - Represent if-expressions with IfExpr node instead of if-functions (#9649)
+  07/10/18:
+    - use isSubtype in preference to ':' in where clauses (#10143)
+    - Refactor codegenPrimitive, add limit to denormalize (#10187)
+  07/14/18:
+    - Improve the speed of codegenPrimitive (#10321)
   10/05/18:
     - Compiler error for dereferencing a nil value (#11238)
   10/19/18:
     - Fix compiler performance issues in nilChecking (#11396)
+  08/30/19:
+    - Add factory functions for string and bytes (#13914)
+  11/05/19:
+    - Remove standardModuleSet and all code involving it from the compiler (#14270)
+  11/20/19:
+    - Simplify visible function determination of use visibility (#14481)
+  02/19/20:
+    - Improve handling for tryResolve and errors to handle a bad init= (#14887)
+  03/03/20:
+    - Remove calls to getUserInstantiationPoint (#15051)
 
 arguments:
   09/20/17:
@@ -545,6 +579,8 @@ chameneos-redux:
     - Chameneos initializer updates (#7328)
   10/31/18:
     - Enable parallelism for shape-ful expressions over ranges (#11501)
+  03/20/20:
+    - Fix up chameneos benchmarks (#15250)
 
 CoMD:
   07/26/17:
@@ -556,29 +592,8 @@ CoMD-elegant-aos:
   06/12/18:
     - Convert blocking calls in Spawn module to yielding non-blocking loops (#9507)
 
-compSampler-timecomp: &timecomp-base
-  09/09/16:
-    - disable function resolution optimization (#4476)
-  09/14/16:
-    - re-enable function resolution optimization (#4517)
-  05/16/18:
-    - Faster 'fixStringLiteralInit' implementation (#9506)
-  05/23/18:
-    - Fix problems with tuples (#9572)
-  07/10/18:
-    - use isSubtype in preference to ':' in where clauses (#10143)
-    - Refactor codegenPrimitive, add limit to denormalize (#10187)
-  07/14/18:
-    - Improve the speed of codegenPrimitive (#10321)
-  10/19/18:
-    - Fix compiler performance issues in nilChecking (#11396)
-  08/30/19:
-    - Add factory functions for string and bytes (#13914)
-  11/05/19:
-    - Remove standardModuleSet and all code involving it from the compiler (#14270)
-  11/20/19:
-    - Simplify visible function determination of use visibility (#14481)
-
+compSampler-timecomp:
+  <<: *timecomp-base
 
 cg:
   09/20/16:
@@ -589,7 +604,6 @@ cg:
 cg-a:
   04/05/18:
     - Convert BaseDist-inheriting classes to use initializers (#9075)
-
 
 cg-sparse-timecomp:
   <<: *timecomp-base
@@ -623,6 +637,41 @@ create-views:
 cs-resize:
   03/05/19:
     - Add radix sort to Sort package module (#12452)
+
+distCreate-arrays-deinit.cc-perf: &distCreate-base
+  02/12/20:
+    - Use --no-early-deinit in array creation/destruction benchmark (#14876)
+  03/13/20:
+    - Reallocate 1D arrays in place, when possible (#15177)
+  03/18/20:
+    -  Record-wrap `locale` (#15149)
+  03/22/20:
+    - Rewrite ddata_allocate() to avoid inadvertent widening of init_elts() (#15275)
+  03/26/20:
+    - Make locale-related comm improvements (#15288)
+
+distCreate-arrays-init.cc-perf:
+  <<: *distCreate-base
+distCreate-domains-deinit.cc-perf:
+  <<: *distCreate-base
+distCreate-domains-deinit.ml-perf:
+  <<: *distCreate-base
+distCreate-domains-init.cc-perf:
+  <<: *distCreate-base
+distCreate-domains-init.ml-perf:
+  <<: *distCreate-base
+distCreate-large-deinit.ml-perf:
+  <<: *distCreate-base
+distCreate-large-init.ml-perf:
+  <<: *distCreate-base
+distCreate-small-deinit.ml-perf:
+  <<: *distCreate-base
+distCreate-small-init.ml-perf:
+  <<: *distCreate-base
+distCreate-tiny-deinit.ml-perf:
+  <<: *distCreate-base
+distCreate-tiny-init.ml-perf:
+  <<: *distCreate-base
 
 domainAssignment-similar: &domainAssign-base
   10/26/19:
@@ -724,10 +773,14 @@ fastaredux:
     - Disable enum->int casts for enums without values (#10114)
   07/14/18:
     - Optimize enum->int casts for concrete types (#10308)
+  01/29/20:
+    - Propagate user thrown errors out of IO routines (#14739)
 
 fft:
   05/15/19:
     - Optimize all gets out of each Cyclic forall loop / leverage DR iterators (#13020)
+  03/05/20:
+    - Use simpler rule for deinit point (#15041)
 
 fft-timecomp:
   <<: *timecomp-base
@@ -760,6 +813,11 @@ hpl_performance:
     - text: Improvements to inferConstRefs (#4904)
       config: 16 node XC
 
+ig-variants.ml-perf:
+  01/30/20:
+    - Address deinit point and param loops and conditionals (#14825)
+  03/23/20:
+    - Fix forall-unordered-opt for ig-variants (#15286)
 init:
   05/03/16:
     - Fix ref-return intent bugs (#3795)
@@ -1165,6 +1223,26 @@ memleaksfull:
     - Allow messages in new Errors (#14545)
   01/09/20:
     - Resolve memory leaks with quicksort with array-of-arrays (#14635)
+  01/29/20:
+    - Propagate user thrown errors out of IO routines (#14739)
+  01/30/20:
+    - Adjust split init to allow some try, if with returns (#14814)
+  02/20/20:
+    - Use escaped strings in paths (#14907)
+  02/26/20:
+    - Closes memory leaks introduced by 14907 (#14959)
+  02/28/20:
+    - mason init (#14820)
+  02/29/20:
+    - Improve out intent (#14917)
+  03/01/20:
+    - Fix remote I/O error and a memory leak (#15025)
+  03/07/20:
+    - Close some memory leaks in mason init (#15099)
+  03/21/20:
+    - mason new --moduleName (#14997)
+  03/27/20:
+    - Close mason init memory leaks (#15325)
 
 meteor:
   12/18/13:
@@ -1187,6 +1265,9 @@ mg: &mg-base
     -  Move strided bulk transfer into common code (#11197)
   09/21/18:
     -  Restore comm=none performance lost in PR 11197 (#11206)
+  03/13/20:
+    -  Reallocate 1D arrays in place, when possible (#15177)
+
 mg-b:
   <<: *mg-base
 
@@ -1221,6 +1302,8 @@ miniMD:
     - Update miniMD problem size (#9296)
   04/18/19:
     - Enable bulk-transfer for BlockDist by default (#12797)
+  03/13/20:
+    -  Reallocate 1D arrays in place, when possible (#15177)
 
 miniMD.ml-time:
   09/14/17:
@@ -1309,6 +1392,8 @@ prk-stencil.ml-perf:
     - Update PR 5296 (#6722)
   12/02/17:
     - Stop doing a task-yield while forking remote tasks under ugni (#7915)
+  01/31/20:
+    - Fix timeout identification for Cray-CS testing (#14838)
 
 prk-stencil-time:
   05/11/17:
@@ -1346,6 +1431,8 @@ ra:
 ra.ml-perf:
   09/19/17:
     - machine changes, cannot reproduce old numbers
+  02/28/20:
+    - Use localAccess for ra-on (#15001)
 
 ra-atomics.ml-perf:
   10/03/17:
@@ -1372,6 +1459,8 @@ regexdna: &regexdna-base
     - Change string.length to measure in codepoints (#13675)
   12/17/19:
     - Add UTF8 validation for strings (#14384)
+  01/23/20:
+    - Add support for escaping non-UTF8 sequences in strings (#14743)
 regexdna-redux:
   <<: *regexdna-base
 regexdna-submitted:
@@ -1388,6 +1477,10 @@ remote-record-read-copy:
     - Invoke 'init' directly for init-var instead of chpl__initCopy (#11629)
   03/07/19:
     - Avoid init= for POD types (#12439)
+
+remote-unordered-gets.ml-perf:
+  02/04/20:
+    - Add unordered GET/PUT support in comm=ofi. (#14810)
 
 return-array-8: &return-array-base
   03/04/17:
@@ -1426,6 +1519,8 @@ revcomp: &revcomp-base
     - Turn "array-as-vec" deprecation warnings on (#13999)
   09/10/19:
     - Restore reverse-complement performance with qio hint (#14045)
+  02/04/20:
+    - Improve const/ref this decorators (and update revcomp) (#14809)
 revcomp-submitted:
   <<: *revcomp-base
 
@@ -1551,6 +1646,8 @@ temporary-copies:
     - Add the byteIndex type and its support, make string.find() return it, and make codepoint indexing/iteration the default (#12899)
   08/01/19:
     - Take advantage of known UTF-8 encoding to speed up strings (#13580)
+  02/20/20:
+    - Add 1st draft of copy elision (#14903)
 
 twopt-paircount:
   06/22/17:
@@ -1680,6 +1777,10 @@ compilerAndTestingStats: &compiler-perf-base
     - Switched test machine for --fast and --no-local
   12/13/19:
     - Switched test machine for --no-local
+  02/19/20:
+    - Improve handling for tryResolve and errors to handle a bad init= (#14887)
+  03/03/20:
+    - Remove calls to getUserInstantiationPoint (#15051)
 
 allTotalTime:
   <<: *compiler-perf-base

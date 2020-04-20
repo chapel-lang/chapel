@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -152,7 +153,9 @@ forall           return processToken(yyscanner, TFORALL);
 forwarding       return processToken(yyscanner, TFORWARDING);
 if               return processToken(yyscanner, TIF);
 imag             return processToken(yyscanner, TIMAG);
+import           return processToken(yyscanner, TIMPORT);
 in               return processToken(yyscanner, TIN);
+include          return processToken(yyscanner, TINCLUDE);
 index            return processToken(yyscanner, TINDEX);
 inline           return processToken(yyscanner, TINLINE);
 inout            return processToken(yyscanner, TINOUT);
@@ -245,6 +248,14 @@ zip              return processToken(yyscanner, TZIP);
 
 "#"              return processToken(yyscanner, THASH);
 ".."             return processToken(yyscanner, TDOTDOT);
+"..<"            return processToken(yyscanner, TDOTDOTOPENHIGH);
+                 /* The following cases would extend the current '..<'
+                    open range interval constructor to also support
+                    '<..' and '<..<'.  This concept didn't win enough
+                    support to merge as present, but are here in case
+                    we change our minds in a future release. */
+                 /* "<.."            return processToken(yyscanner, TDOTDOTOPENLOW); */
+                 /* "<..<"           return processToken(yyscanner, TDOTDOTOPENBOTH); */
 "..."            return processToken(yyscanner, TDOTDOTDOT);
 
 "&&"             return processToken(yyscanner, TAND);

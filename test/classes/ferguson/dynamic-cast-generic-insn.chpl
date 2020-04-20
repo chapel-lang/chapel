@@ -12,12 +12,12 @@ class Grandchild : Child {
 }
 
 config param n = 10;
-var A:[1..n] unmanaged Parent;
+var A:[1..n] unmanaged Parent?;
 for param i in 1..n {
   A[i] = new unmanaged Grandchild(p=i, x=i, y=i, z=i);
 }
 
-var first:borrowed Parent = A[1];
+var first:borrowed Parent = A[1]!;
 writeln("Attempting dynamic cast to Child");
 var c = first:borrowed Child;
 writeln(c);

@@ -56,11 +56,6 @@ MPI runtime (which GASNet will not even use outside of startup and shutdown).
      + If pmi-spawner was established as the default at configure time (see
        Build-time Configuration, below).
 
-+ Discontinued usage:
-  In prior releases it was often possible to launch some GASNet applications
-  directly using "srun", "mpiexec" or "yod".  This no longer supported, and
-  if used may result in unexpected behaviors (rather than graceful failure).
-
 @ Section: Build-time Configuration @
 
 Conduits which support pmi-spawner each accept a configure option of the form
@@ -103,10 +98,10 @@ purposes:
     that DIR is not in the default shared library search path at run time
     (please note that this example is linker-specific).
 
-  --with-pmi-version=VALUE (where VALUE must be 1 or 2)
+  --with-pmi-version=VALUE (where VALUE must be 1, 2, or x)
     If present, this option forces configure to only accept a client library
     which implements the given version of the PMI specification.  This is
-    normally only required if both are available but the PMI server supports
+    normally only required if several are available but the PMI server supports
     one but not the other.
 
   --with-pmirun-cmd=VALUE

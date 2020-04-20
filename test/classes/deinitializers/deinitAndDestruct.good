@@ -1,3 +1,5 @@
+warning: Destructors have been deprecated as of Chapel 1.21. Please use deinit instead.
+deinitAndDestruct.chpl:2: warning: to fix, rename ~C to deinit
 deinitAndDestruct.chpl:12: error: ambiguous call 'unmanaged C.deinit()'
 deinitAndDestruct.chpl:2: note: candidates are: C.~C()
 deinitAndDestruct.chpl:6: note:                 C.deinit()

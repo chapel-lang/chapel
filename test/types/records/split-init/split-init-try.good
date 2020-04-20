@@ -1,26 +1,69 @@
 test
 x
 init 0
-no00
-init
+deinit 0
+yes0
+init 0
+(x = 0, ptr = {})
+deinit 0
+yes1
 init 1
-= 0 1
 (x = 1, ptr = {})
-no01
-init
+deinit 1
+yes2
 init 2
-= 0 2
 (x = 2, ptr = {})
+deinit 2
+yes3
+init 3
+(x = 3, ptr = {})
+deinit 3
+yes1b
+init 1
+(x = 1, ptr = {})
+deinit 1
+yes2b
+init 2
+(x = 2, ptr = {})
+deinit 2
+yes3b
+init 3
+(x = 3, ptr = {})
+deinit 3
 no1
 init
 init 1
 = 0 1
+deinit 1
 (x = 1, ptr = {})
+deinit 1
 no2
 init
-init 1
-= 0 1
-(x = 1, ptr = {})
+deinit 0
 no3
 init
 (x = 0, ptr = {})
+deinit 0
+no4
+init
+deinit 0
+no5
+init
+init 1
+= 0 1
+deinit 1
+init 2
+= 1 2
+deinit 2
+(x = 2, ptr = {})
+deinit 2
+no6
+init
+init 1
+= 0 1
+deinit 1
+init 2
+= 1 2
+deinit 2
+(x = 2, ptr = {})
+deinit 2

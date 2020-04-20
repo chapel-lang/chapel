@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -1205,7 +1206,8 @@ TypeSymbol::TypeSymbol(const char* init_name, Type* init_type) :
     llvmTbaaStructCopyNode(NULL), llvmConstTbaaStructCopyNode(NULL),
     llvmDIType(NULL),
     doc(NULL),
-    instantiationPoint(NULL)
+    instantiationPoint(NULL),
+    userInstantiationPointLoc(0, NULL)
 {
   addFlag(FLAG_TYPE_VARIABLE);
   if (!type)
@@ -1603,6 +1605,20 @@ VarSymbol *new_BytesSymbol(const char *str) {
   return s;
 }
 
+// Just a convenience function
+VarSymbol *new_StringOrBytesSymbol(const char *str, AggregateType *t) {
+  if (t == dtString) {
+    return new_StringSymbol(str);
+  }
+  else if (t == dtBytes) {
+    return new_BytesSymbol(str);
+  }
+  else {
+    INT_FATAL("new_StringOrBytesSymbol accepts dtString and dtBytes only");
+    return NULL;
+  }
+}
+
 VarSymbol *new_CStringSymbol(const char *str) {
   Immediate imm;
   imm.const_kind = CONST_KIND_STRING;
@@ -1971,15 +1987,18 @@ const char* astrNew = NULL;
 const char* astrDeinit = NULL;
 const char* astrTag = NULL;
 const char* astrThis = NULL;
+const char* astrSuper = NULL;
 const char* astr_chpl_cname = NULL;
 const char* astr_chpl_forward_tgt = NULL;
 const char* astr_chpl_manager = NULL;
 const char* astr_chpl_statementLevelSymbol = NULL;
+const char* astr_chpl_waitDynamicEndCount = NULL;
 const char* astr_forallexpr = NULL;
 const char* astr_forexpr = NULL;
 const char* astr_loopexpr_iter = NULL;
 const char* astrPostfixBang = NULL;
 const char* astrBorrow = NULL;
+const char* astr_init_coerce_tmp = NULL;
 
 void initAstrConsts() {
   astrSassign = astr("=");
@@ -1999,10 +2018,12 @@ void initAstrConsts() {
   astrDeinit  = astr("deinit");
   astrTag     = astr("tag");
   astrThis    = astr("this");
+  astrSuper   = astr("super");
   astr_chpl_cname = astr("_chpl_cname");
   astr_chpl_forward_tgt = astr("_chpl_forward_tgt");
   astr_chpl_manager = astr("_chpl_manager");
   astr_chpl_statementLevelSymbol = astr("chpl_statementLevelSymbol");
+  astr_chpl_waitDynamicEndCount = astr("chpl_waitDynamicEndCount");
 
   astr_forallexpr    = astr("chpl__forallexpr");
   astr_forexpr       = astr("chpl__forexpr");
@@ -2011,6 +2032,7 @@ void initAstrConsts() {
   astrPostfixBang = astr("postfix!");
 
   astrBorrow = astr("borrow");
+  astr_init_coerce_tmp = astr("init_coerce_tmp");
 }
 
 /************************************* | **************************************

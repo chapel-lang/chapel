@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -52,8 +53,9 @@
   into a list is O(1).
 */
 module List {
+  import ChapelLocks;
+  private use HaltWrappers;
   private use Sort;
-  private use ChapelLocks only ;
 
   pragma "no doc"
   private const _initialCapacity = 8;
@@ -99,6 +101,23 @@ module List {
     }
   }
 
+  /* Check that element type is supported by list */
+  proc _checkType(type eltType) {
+    // Also unsupported but not checked: tuples of non-nilable class types
+    if isBorrowedClass(eltType) {
+      compilerError('list element type cannot currently be borrowed');
+    }
+    if isGenericType(eltType) {
+      compilerWarning("creating a list with element type " +
+                      eltType:string);
+      if isClassType(eltType) && !isGenericType(borrowed eltType) {
+        compilerWarning("which now means class type with generic management");
+      }
+      compilerError("list element type cannot currently be generic");
+      // In the future we might support it if the list is not default-inited
+    }
+  }
+
   private use IO;
 
   /*
@@ -112,10 +131,7 @@ module List {
     such protections are desirable, parallel safety can be enabled by setting
     `parSafe = true` in any list constructor.
 
-    .. note::
-
-      Unlike arrays, the domain of the list type is fixed from `1..size`, and
-      cannot be changed.
+    Unlike an array, the set of indices of a list is always `0..<size`.
   */
   record list {
 
@@ -141,7 +157,7 @@ module List {
     var _totalCapacity = 0;
 
     /*
-      Initializes an empty list containing elements of the given type.
+      Initializes an empty list.
 
       :arg eltType: The type of the elements of this list.
 
@@ -149,6 +165,7 @@ module List {
       :type parSafe: `param bool`
     */
     proc init(type eltType, param parSafe=false) {
+      _checkType(eltType);
       this.eltType = eltType;
       this.parSafe = parSafe;
       this.complete();
@@ -158,16 +175,17 @@ module List {
     /*
       Initializes a list containing elements that are copy initialized from
       the elements contained in another list.
-      
+
       Used in new expressions.
 
       :arg other: The list to initialize from.
-      :type other: `list(?t)`
 
       :arg parSafe: If `true`, this list will use parallel safe operations.
       :type parSafe: `param bool`
     */
     proc init(other: list(?t), param parSafe=false) {
+      if !isCopyableType(this.type.eltType) then
+        compilerError("Cannot copy list with element type that cannot be copied");
       this.eltType = t;
       this.parSafe = parSafe;
       this.complete();
@@ -181,12 +199,15 @@ module List {
       Used in new expressions.
 
       :arg other: The array to initialize from.
-      :type other: `[?d] ?t`
 
       :arg parSafe: If `true`, this list will use parallel safe operations.
       :type parSafe: `param bool`
     */
     proc init(other: [?d] ?t, param parSafe=false) {
+      _checkType(t);
+      if !isCopyableType(t) then
+        compilerError("Cannot construct list from array with element type that cannot be copied");
+
       this.eltType = t;
       this.parSafe = parSafe;
       this.complete();
@@ -205,12 +226,12 @@ module List {
         a compiler error.
 
       :arg other: The range to initialize from.
-      :type other: `range(?t)`
 
       :arg parSafe: If `true`, this list will use parallel safe operations.
       :type parSafe: `param bool`
     */
     proc init(other: range(?t), param parSafe=false) {
+      _checkType(t);
       this.eltType = t;
       this.parSafe = parSafe;
 
@@ -230,9 +251,11 @@ module List {
       the elements contained in another list.
 
       :arg other: The list to initialize from.
-      :type other: `list(this.type.eltType)`
     */
     proc init=(other: list(this.type.eltType, ?p)) {
+      if !isCopyableType(this.type.eltType) then
+        compilerError("Cannot copy list with element type that cannot be copied");
+
       this.eltType = this.type.eltType;
       this.parSafe = this.type.parSafe;
       this.complete();
@@ -244,9 +267,11 @@ module List {
       the elements contained in an array.
 
       :arg other: The array to initialize from.
-      :type other: `[?d] this.type.eltType`
     */
     proc init=(other: [?d] this.type.eltType) {
+      if !isCopyableType(this.type.eltType) then
+        compilerError("Cannot copy list from array with element type that cannot be copied");
+
       this.eltType = this.type.eltType;
       this.parSafe = this.type.parSafe;
       this.complete();
@@ -279,6 +304,7 @@ module List {
       this.complete();
       _commonInitFromIterable(other);
     }
+
 
     pragma "no doc"
     proc _commonInitFromIterable(iterable) {
@@ -347,15 +373,14 @@ module List {
     }
 
     //
-    // Performs conversion from one-based to zero-based indexing, all one-based
-    // accesses of list elements should go through this function.
+    // A helper function for getting a reference to a list element.
+    // May be less important now that lists use 0-based indexing(?).
     //
     pragma "no doc"
-    inline proc _getRef(idx: int) ref {
-      _sanity(idx >= 1 && idx <= _totalCapacity);
-      const zpos = idx - 1;
-      const arrayIdx = _getArrayIdx(zpos);
-      const itemIdx = _getItemIdx(zpos);
+    inline proc const ref _getRef(idx: int) ref {
+      _sanity(idx >= 0 && idx < _totalCapacity);
+      const arrayIdx = _getArrayIdx(idx);
+      const itemIdx = _getItemIdx(idx);
       const array = _arrays[arrayIdx];
       _sanity(array != nil);
       ref result = array[itemIdx];
@@ -375,8 +400,8 @@ module List {
     }
 
     pragma "no doc"
-    inline proc _withinBounds(idx: int): bool {
-      return (idx >= 1 && idx <= _size);
+    inline proc const _withinBounds(idx: int): bool {
+      return (idx >= 0 && idx < _size);
     }
 
     //
@@ -385,7 +410,7 @@ module List {
     // a bounds check fails.
     //
     pragma "no doc"
-    inline proc _boundsCheckLeaveOnThrow(i: int, umsg: string="") throws {
+    inline proc const _boundsCheckLeaveOnThrow(i: int, umsg: string="") throws {
       if !_withinBounds(i) {
         _leave();
         const msg = if umsg != "" then umsg else
@@ -510,7 +535,7 @@ module List {
     // expand memory if necessary.
     //
     pragma "no doc"
-    proc _expand(idx: int, shift: int=1) {
+    proc ref _expand(idx: int, shift: int=1) {
       _sanity(_withinBounds(idx));
 
       if shift <= 0 then
@@ -519,7 +544,7 @@ module List {
       on this {
         _maybeAcquireMem(shift);
 
-        for i in idx.._size by -1 {
+        for i in idx.._size-1 by -1 {
           ref src = _getRef(i);
           ref dst = _getRef(i + shift);
           _move(src, dst);
@@ -536,14 +561,14 @@ module List {
     // This method does not fire destructors, so do so before calling it.
     //
     pragma "no doc"
-    proc _collapse(idx: int, shift: int=1) {
+    proc ref _collapse(idx: int, shift: int=1) {
       _sanity(_withinBounds(idx));
 
-      if idx == _size then
+      if idx == _size-1 then
         return;
       
       on this {
-        for i in idx..(_size - 1) {
+        for i in idx..(_size - 2) {
           ref src = _getRef(i + 1);
           ref dst = _getRef(i);
           _move(src, dst);
@@ -562,10 +587,10 @@ module List {
     // case, fire it twice).
     //
     pragma "no doc"
-    proc _appendByRef(ref x: eltType) {
+    proc ref _appendByRef(ref x: eltType) {
       _maybeAcquireMem(1);
       ref src = x;
-      ref dst = _getRef(_size + 1);
+      ref dst = _getRef(_size);
       _move(src, dst);
       _size += 1;
     }
@@ -576,7 +601,7 @@ module List {
       :arg x: An element to append.
       :type x: `eltType`
     */
-    proc append(pragma "no auto destroy" in x: eltType) lifetime this < x {
+    proc ref append(pragma "no auto destroy" in x: eltType) lifetime this < x {
       _enter();
 
       //
@@ -597,7 +622,7 @@ module List {
       :return: `true` if this list contains `x`.
       :rtype: `bool`
     */
-    proc contains(x: eltType): bool {
+    proc const contains(x: eltType): bool {
       var result = false;
 
       on this {
@@ -627,21 +652,17 @@ module List {
       :return: A reference to the first item in this list.
       :rtype: `ref eltType`
     */
-    proc first() ref throws {
-      // Hack to initialize a reference (may be invalid memory).
-      ref result = _getRef(1);
+    proc ref first() ref {
+      _enter();
 
-      on this {
-        _enter();
-
-        if boundsChecking && _size == 0 {
-          _leave();
-          halt("Called \"list.first\" on an empty list.");
-        }
-
-        result = _getRef(1);
+      if boundsChecking && _size == 0 {
         _leave();
+        boundsCheckHalt("Called \"list.first\" on an empty list.");
       }
+
+      // TODO: How to make this work with on clauses?
+      ref result = _getRef(0);
+      _leave();
 
       return result;
     }
@@ -658,27 +679,23 @@ module List {
       :return: A reference to the last item in this list.
       :rtype: `ref eltType`
     */
-    proc last() ref {
-      // Hack to initialize a reference (may be invalid memory).
-      ref result = _getRef(1);
+    proc ref last() ref {
+      _enter();
 
-      on this {
-        _enter();
-
-        if boundsChecking && _size == 0 {
-          _leave();
-          halt("Called \"list.last\" on an empty list.");
-        }
-
-        result = _getRef(_size);
+      if boundsChecking && _size == 0 {
         _leave();
+        boundsCheckHalt("Called \"list.last\" on an empty list.");
       }
-    
-      return result;
+     
+      // TODO: How to make this work with on clauses?
+      ref result = _getRef(_size-1);
+      _leave();
+
+      return result;  
     }
 
     pragma "no doc"
-    inline proc _extendGeneric(collection) {
+    inline proc ref _extendGeneric(collection) {
 
       //
       // TODO: This could avoid repeated resizes at smaller total capacities
@@ -702,7 +719,7 @@ module List {
         contained in this list.
       :type other: `list(eltType)`
     */
-    proc extend(other: list(eltType, ?p)) lifetime this < other {
+    proc ref extend(other: list(eltType, ?p)) lifetime this < other {
       on this {
         _enter();
         _extendGeneric(other);
@@ -718,7 +735,7 @@ module List {
         contained in this list.
       :type other: `[?d] eltType`
     */
-    proc extend(other: [?d] eltType) lifetime this < other {
+    proc ref extend(other: [?d] eltType) lifetime this < other {
       on this {
         _enter();
         _extendGeneric(other);
@@ -738,7 +755,7 @@ module List {
       :arg other: The range to initialize from.
       :type other: `range(eltType)`
     */
-    proc extend(other: range(eltType, ?b, ?d)) lifetime this < other {
+    proc ref extend(other: range(eltType, ?b, ?d)) lifetime this < other {
       if !isBoundedRange(other) {
         param e = this.type:string;
         param f = other.type:string;
@@ -756,8 +773,8 @@ module List {
     /*
       Insert an element at a given position in this list, shifting all elements
       currently at and following that index one to the right. The call
-      ``a.insert(1, x)`` inserts an element at the front of the list `a`, and
-      ``a.insert((a.size + 1), x)`` is equivalent to ``a.append(x)``.
+      ``a.insert(0, x)`` inserts an element at the front of the list `a`, and
+      ``a.insert((a.size), x)`` is equivalent to ``a.append(x)``.
 
       If the insertion is successful, this method returns `true`. If the given
       index is out of bounds, this method does nothing and returns `false`.
@@ -776,15 +793,15 @@ module List {
       :return: `true` if `x` was inserted, `false` otherwise.
       :rtype: `bool`
     */
-    proc insert(idx: int, pragma "no auto destroy" in x: eltType): bool
+    proc ref insert(idx: int, pragma "no auto destroy" in x: eltType): bool
          lifetime this < x {
       var result = false;
 
       on this {
         _enter();
 
-      // Handle special case of `a.insert((a.size + 1), x)` here.
-      if idx == _size + 1 {
+      // Handle special case of `a.insert((a.size), x)` here.
+      if idx == _size {
         _appendByRef(x);
         result = true;
       } else if _withinBounds(idx) {
@@ -807,7 +824,7 @@ module List {
     }
 
     pragma "no doc"
-    proc _insertGenericKnownSize(idx: int, items, size: int): bool {
+    proc ref _insertGenericKnownSize(idx: int, items, size: int): bool {
       var result = false;
 
       _sanity(size >= 0);
@@ -816,7 +833,7 @@ module List {
         return true;
 
       on this {
-        if idx == _size + 1 {
+        if idx == _size {
           // TODO: In an ideal world, we'd resize only once.
           _extendGeneric(items);
           result = true;
@@ -863,7 +880,7 @@ module List {
       :return: `true` if `arr` was inserted, `false` otherwise.
       :rtype: `bool`
     */
-    proc insert(idx: int, arr: [?d] eltType): bool lifetime this < arr {
+    proc ref insert(idx: int, arr: [?d] eltType): bool lifetime this < arr {
 
       var result = false;
 
@@ -898,7 +915,7 @@ module List {
       :return: `true` if `lst` was inserted, `false` otherwise.
       :rtype: `bool`
     */
-    proc insert(idx: int, lst: list(eltType)): bool lifetime this < lst {
+    proc ref insert(idx: int, lst: list(eltType)): bool lifetime this < lst {
       
       var result = false;
       
@@ -935,7 +952,7 @@ module List {
       :return: The number of elements removed.
       :rtype: `int`
     */
-    proc remove(x: eltType, count:int=1): int {
+    proc ref remove(x: eltType, count:int=1): int {
       var result = 0;
 
       on this {
@@ -943,7 +960,7 @@ module List {
 
         var removed = 0;
 
-        for i in 1..(_size - removed) {
+        for i in 0..#(_size - removed) {
           ref item = _getRef(i);
         
           // TODO: Reduce total work to O(n) by marking holes?
@@ -972,7 +989,7 @@ module List {
     // call this from `pop`, but I added `unlockBeforeHalt` all the same.
     //
     pragma "no doc"
-    proc _popAtIndex(idx: int, unlockBeforeHalt=true): eltType {
+    proc ref _popAtIndex(idx: int, unlockBeforeHalt=true): eltType {
 
       //
       // TODO: We would like to put this in an on statement, but we can't yet
@@ -985,19 +1002,22 @@ module List {
       if boundsChecking && _size <= 0 {
         if unlockBeforeHalt then
           _leave();
-        halt("Called \"list.pop\" on an empty list.");
+        boundsCheckHalt("Called \"list.pop\" on an empty list.");
       }
 
       if boundsChecking && !_withinBounds(idx) {
         if unlockBeforeHalt then
           _leave();
-        halt("Index for \"list.pop\" out of bounds: " + idx:string);
+        const msg = "Index for \"list.pop\" out of bounds: " + idx:string;
+        boundsCheckHalt(msg);
       }
 
       ref item = _getRef(idx);
-      var result = item;
 
-      _destroy(item);
+      pragma "no init"
+      var result:eltType;
+      _move(item, result);
+
       // May release memory based on size before pop.
       _collapse(idx);
       _size -= 1;
@@ -1022,9 +1042,9 @@ module List {
       :return: The element popped.
       :rtype: `eltType`
     */
-    proc pop(): eltType {
+    proc ref pop(): eltType {
       _enter();
-      var result = _popAtIndex(_size);
+      var result = _popAtIndex(_size-1);
       _leave();
       return result;
     }
@@ -1051,7 +1071,7 @@ module List {
       :return: The element popped.
       :rtype: `eltType`
     */
-    proc pop(idx: int): eltType {
+    proc ref pop(idx: int): eltType {
       _enter();
       var result = _popAtIndex(idx);
       _leave();
@@ -1059,15 +1079,14 @@ module List {
     }
 
     //
-    // Manually call destructors on each currently allocated element. Use
-    // one-based indexing here since we're going through _getRef(). For
+    // Manually call destructors on each currently allocated element. For
     // logical consistency, set size to zero once all destructors have been
     // fired.
     //
     pragma "no doc"
     proc _fireAllDestructors() {
       on this {
-        for i in 1.._size {
+        for i in 0..#_size {
           ref item = _getRef(i);
           _destroy(item);
         }
@@ -1114,7 +1133,7 @@ module List {
         Clearing the contents of this list will invalidate all existing
         references to the elements contained in this list.
     */
-    proc clear() {
+    proc ref clear() {
       on this {
         _enter();
 
@@ -1132,7 +1151,7 @@ module List {
     }
 
     /*
-      Return a one-based index into this list of the first item whose value
+      Return a zero-based index into this list of the first item whose value
       is equal to `x`. If no such element can be found this method returns
       the value `-1`.
 
@@ -1149,27 +1168,27 @@ module List {
       :arg start: The start index to start searching from.
       :type start: `int`
 
-      :arg end: The end index to stop searching at. A value less than or equal
-                to `0` will search the entire list.
+      :arg end: The end index to stop searching at. A value less than
+                `0` will search the entire list.
       :type end: `int`
 
       :return: The index of the element to search for, or `-1` on error.
       :rtype: `int`
     */
-    proc indexOf(x: eltType, start: int=1, end: int=0): int {
+    proc const indexOf(x: eltType, start: int=0, end: int=-1): int {
       if boundsChecking {
         const msg = " index for \"list.indexOf\" out of bounds: ";
 
-        if end > 0 && !_withinBounds(end) then
-          halt("End" + msg + end:string);
+        if end >= 0 && !_withinBounds(end) then
+          boundsCheckHalt("End" + msg + end:string);
 
         if !_withinBounds(start) then
-          halt("Start" + msg + start:string);
+          boundsCheckHalt("Start" + msg + start:string);
       }
 
       param error = -1;
 
-      if end > 0 && end < start then
+      if end >= 0 && end < start then
         return error;
 
       var result = error;
@@ -1177,7 +1196,7 @@ module List {
       on this {
         _enter();
 
-        const stop = if end <= 0 then _size else end;
+        const stop = if end < 0 then _size-1 else end;
 
         for i in start..stop do
           if x == _getRef(i) {
@@ -1200,7 +1219,7 @@ module List {
       :return: The number of times a given element is found in this list.
       :rtype: `int`
     */
-    proc count(x: eltType): int {
+    proc const count(x: eltType): int {
       var result = 0;
 
       on this {
@@ -1231,7 +1250,7 @@ module List {
 
       :arg comparator: A comparator used to sort this list.
     */
-    proc sort(comparator=Sort.defaultComparator) {
+    proc ref sort(comparator: ?rec=Sort.defaultComparator) {
       on this {
         _enter();
 
@@ -1242,8 +1261,8 @@ module List {
         if _size > 1 {
 
           // Copy current list contents into an array.
-          var arr: [1.._size] eltType;
-          for i in 1.._size do
+          var arr: [0..#_size] eltType;
+          for i in 0..#_size do
             arr[i] = this[i];
 
           Sort.sort(arr, comparator);
@@ -1273,15 +1292,28 @@ module List {
 
       :return: An element from this list.
     */
-    proc this(i: int) ref {
+    proc ref this(i: int) ref {
       if boundsChecking && !_withinBounds(i) {
         const msg = "Invalid list index: " + i:string;
-        halt(msg);
+        boundsCheckHalt(msg);
       }
 
       ref result = _getRef(i);
       return result;
     }
+    proc const ref this(i: int) const ref {
+      if boundsChecking && !_withinBounds(i) {
+        const msg = "Invalid list index: " + i:string;
+        halt(msg);
+      }
+
+      const ref result = _getRef(i);
+      return result;
+    }
+
+    // TODO - make const ref return intent overloads for `these`
+    // and make the ref-return overload accept this by `ref`
+    // once #12944 is fixed.
 
     /*
       Iterate over the elements of this list.
@@ -1290,7 +1322,7 @@ module List {
     */
     iter these() ref {
       // TODO: We can just iterate through the _ddata directly here.
-      for i in 1.._size {
+      for i in 0..#_size {
         ref result = _getRef(i);
         yield result;
       }
@@ -1307,8 +1339,8 @@ module List {
 
       coforall tid in 0..#numTasks {
         var chunk = _computeChunk(tid, chunkSize, trailing);
-        for i in chunk(1) do
-          yield this[i + 1];
+        for i in chunk(0) do
+          yield this[i];
       }
     }
 
@@ -1350,8 +1382,8 @@ module List {
       // TODO: A faster scheme would access the _ddata directly to avoid
       // the penalty of logarithmic indexing over and over again.
       //
-      for i in followThis(1) do
-        yield this[i + 1];
+      for i in followThis(0) do
+        yield this[i];
     }
 
     /*
@@ -1364,11 +1396,11 @@ module List {
       
       ch <~> "[";
 
-      for i in 1..(_size - 1) do
+      for i in 0..(_size - 2) do
         ch <~> _getRef(i) <~> ", ";
 
       if _size > 0 then
-        ch <~> _getRef(_size);
+        ch <~> _getRef(_size-1);
 
       ch <~> "]";
 
@@ -1413,21 +1445,36 @@ module List {
     }
 
     /*
+      Returns the list's legal indices as the range ``0..<this.size``.
+
+      :return: ``0..<this.size``
+      :rtype: `range`
+    */
+    proc indices {
+      return 0..<this.size;
+    }
+
+    /*
       Returns a new DefaultRectangular array containing a copy of each of the
       elements contained in this list.
 
       :return: A new DefaultRectangular array.
     */
     proc const toArray(): [] eltType {
-      var result: [1.._size] eltType;
+      if isNonNilableClass(eltType) && isOwnedClass(eltType) then
+        compilerError("toArray() method is not available on a 'list'",
+                      " with elements of a non-nilable owned type, here: ",
+                      eltType:string);
+
+      // Once GitHub Issue #7704 is resolved, replace pragma "unsafe"
+      // with a remote var declaration.
+      pragma "unsafe" var result: [0..#_size] eltType;
 
       on this {
         _enter();
 
-        var tmp: [1.._size] eltType;
-
-        forall i in 1.._size do
-          tmp[i] = _getRef(i);
+        var tmp: [0..#_size] eltType =
+          forall i in 0..#_size do _getRef(i);
 
         result = tmp;
 
@@ -1472,7 +1519,7 @@ module List {
     //
     // TODO: Make this a forall loop eventually.
     //
-    for i in 1..(a.size) do
+    for i in 0..#(a.size) do
       if a[i] != b[i] then
         return false;
 

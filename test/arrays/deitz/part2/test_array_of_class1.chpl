@@ -7,13 +7,16 @@ class foo {
 
 var d : domain(2) = {1..n, 1..n};
 
-var a : [d] unmanaged foo;
+var a : [d] unmanaged foo =
+  forall (i,j) in d  do makeFoo(i,j);
 
-forall (i,j) in d {
-  a(i,j) = new unmanaged foo();
+proc makeFoo(i,j) {
+  const f = new unmanaged foo();
 
-  a(i,j).i = i*j;
-  a(i,j).f = 3.5 * i;
+  f.i = i*j;
+  f.f = 3.5 * i;
+
+  return f;
 }
 
 for (i,j) in d {

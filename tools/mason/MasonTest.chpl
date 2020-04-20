@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -34,6 +35,7 @@ use Sys;
 
 var subdir = false;
 var keepExec = false;
+var customTest = false;
 var setComm: string;
 var comm: string;
 var dirs: list(string);
@@ -124,13 +126,13 @@ private proc runTests(show: bool, run: bool, parallel: bool, ref cmdLineCompopts
 
     // parse lockfile
     const toParse = open(projectHome + "/Mason.lock", iomode.r);
-    const lockFile = new owned(parseToml(toParse));
+    const lockFile = owned.create(parseToml(toParse));
 
     // Get project source code and dependencies
     const sourceList = genSourceList(lockFile);
 
     getSrcCode(sourceList, show);
-    const project = lockFile["root"]["name"].s;
+    const project = lockFile["root"]!["name"]!.s;
     const projectPath = "".join(projectHome, "/src/", project, ".chpl");
 
     // Get system, and external compopts
@@ -141,11 +143,29 @@ private proc runTests(show: bool, run: bool, parallel: bool, ref cmdLineCompopts
     }
     // Make target files if they dont exist from a build
     makeTargetFiles("debug", projectHome);
-
+    var numTests: int;
+    var testNames: list(string);
+    // names of tests that compiled
+    var testsCompiled: list(string);
     // get the test names from lockfile or from test directory
-    const testNames = getTests(lockFile.borrow(), projectHome);
-    var numTests = testNames.size;
-
+    if (files.size == 0 && dirs.size == 0) {
+      testNames = getTests(lockFile.borrow(), projectHome);
+      numTests = testNames.size;
+    }
+    else {
+      try! {
+        for dir in dirs {
+          for file in findfiles(startdir = dir, recursive = subdir) {
+            if file.endsWith(".chpl") {
+              files.append(file);
+            }
+          }
+        }
+      }
+      testNames = files;
+      numTests = files.size;
+      customTest = true;
+    }
     // Check for tests to run
     if numTests > 0 {
 
@@ -153,24 +173,35 @@ private proc runTests(show: bool, run: bool, parallel: bool, ref cmdLineCompopts
       var timeElapsed = new Timer();
       timeElapsed.start();
       for test in testNames {
-
-        const testPath = "".join(projectHome, '/test/', test);
+        var testPath: string;
+        if customTest {
+          testPath = "".join(cwd,"/",test);
+        } 
+        else {
+          testPath = "".join(projectHome, '/test/', test);
+        }
         const testName = basename(stripExt(test, ".chpl"));
 
         // get the string of dependencies for compilation
         // also names test as --main-module
         const masonCompopts = getMasonDependencies(sourceList, testName);
         const allCompOpts = "".join(" ".join(compopts.these()), masonCompopts);
-
-        const outputLoc = projectHome + "/target/test/" + stripExt(test, ".chpl");
+        var testTemp: string = test;
+        if cwd == projectHome && customTest {
+          testTemp = relPath(testTemp,"test/");
+        }
+        const outputLoc = projectHome + "/target/test/" + stripExt(testTemp, ".chpl");
         const moveTo = "-o " + outputLoc;
         const compCommand = " ".join("chpl",testPath, projectPath, moveTo, allCompOpts);
-        const compilation = runWithStatus(compCommand);
+        const compilation = runWithStatus(compCommand, show);
         
         if compilation != 0 {
           stderr.writeln("compilation failed for " + test);
+          const errMsg = test +" failed to compile";
+          result.addError(testName, test,  errMsg);
         }
         else {
+          testsCompiled.append(test);
           if show || !run then writeln("Compiled '", test, "' successfully");
           if parallel {
             runTestBinary(projectHome, outputLoc, testName, result, show);
@@ -178,7 +209,7 @@ private proc runTests(show: bool, run: bool, parallel: bool, ref cmdLineCompopts
         }
       }
       if run && !parallel {
-        runTestBinaries(projectHome, testNames, numTests, result, show);
+        runTestBinaries(projectHome, testsCompiled, result, show);
       }
       timeElapsed.stop();
       if run {
@@ -223,10 +254,15 @@ private proc runTestBinary(projectHome: string, outputLoc: string, testName: str
 
 
 private proc runTestBinaries(projectHome: string, testNames: list(string),
-                             numTests: int, ref result, show: bool) {
+                            ref result, show: bool) {
 
+  const cwd = getEnv("PWD");
   for test in testNames {
-    const outputLoc = projectHome + "/target/test/" + stripExt(test, ".chpl");
+    var testTemp: string = test;
+    if cwd == projectHome && customTest {
+      testTemp = relPath(testTemp,"test/");
+    }
+    const outputLoc = projectHome + "/target/test/" + stripExt(testTemp, ".chpl");
     const testName = basename(stripExt(test, ".chpl"));
     runTestBinary(projectHome, outputLoc, testName, result, show);
   }
@@ -270,13 +306,12 @@ private proc getTests(lock: borrowed Toml, projectHome: string) {
   const testPath = joinPath(projectHome, "test");
 
   if lock.pathExists("root.tests") {
-    var tests = lock["root"]["tests"].toString();
+    var tests = lock["root"]!["tests"]!.toString();
     var strippedTests = tests.split(',').strip('[]');
     for test in strippedTests {
       const t = test.strip().strip('"');
       testNames.append(t);
     }
-    return testNames;
   }
   else if isDir(testPath) {
     var tests = findfiles(startdir=testPath, recursive=true, hidden=false);
@@ -285,7 +320,6 @@ private proc getTests(lock: borrowed Toml, projectHome: string) {
         testNames.append(getTestPath(test));
       }
     }
-    return testNames;
   }
   return testNames;
 }
@@ -293,16 +327,16 @@ private proc getTests(lock: borrowed Toml, projectHome: string) {
 /* Gets the path of the test following the test dir */
 proc getTestPath(fullPath: string, testPath = "") : string {
   var split = splitPath(fullPath);
-  if split[2] == "test" {
+  if split[1] == "test" {
     return testPath;
   }
   else {
     if testPath == "" {
-      return getTestPath(split[1], split[2]);
+      return getTestPath(split[0], split[1]);
     }
     else {
-      var appendedPath = joinPath(split[2], testPath);
-      return getTestPath(split[1], appendedPath);
+      var appendedPath = joinPath(split[1], testPath);
+      return getTestPath(split[0], appendedPath);
     }
   }
 }
@@ -396,10 +430,12 @@ proc testFile(file, ref result, show: bool) throws {
   const moveTo = "-o " + executable;
   const allCompOpts = "--comm " + comm;
   const compCommand = " ".join("chpl",file, moveTo, allCompOpts);
-  const compilation = runWithStatus(compCommand);
+  const compilation = runWithStatus(compCommand, show);
 
   if compilation != 0 {
     stderr.writeln("compilation failed for " + fileName);
+    const errMsg = fileName +" failed to compile";
+    result.addError(executable, fileName,  errMsg);
   }
   else {
     if show then writeln("\nCompiled '", fileName, "' successfully");
@@ -496,7 +532,7 @@ proc runAndLog(executable, fileName, ref result, reqNumLocales: int = numLocales
     }
     else if line.startsWith("Flavour") {
       var temp = line.strip().split(":");
-      flavour = temp[2].strip();
+      flavour = temp[1].strip();
       testExecMsg = "";
     }
     else if sep1Found then testExecMsg += line;
@@ -578,7 +614,7 @@ proc addTestResult(ref result, ref localesCountMap, ref testNames,
     when "IncorrectNumLocales" {
       if comm != "none" {
         var strSplit = errMsg.split("=");
-        var reqLocalesStr = strSplit[2].strip().split(",");
+        var reqLocalesStr = strSplit[1].strip().split(",");
         for a in reqLocalesStr do
           if localesCountMap.contains(a: int) then
             localesCountMap[a: int] += 1;

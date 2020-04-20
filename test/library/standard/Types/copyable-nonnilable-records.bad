@@ -1,0 +1,3 @@
+copyable-nonnilable-records.chpl:76: error: Cannot default-initialize z: owned C
+note: non-nil class types do not support default initialization
+note: Consider using the type owned C? instead

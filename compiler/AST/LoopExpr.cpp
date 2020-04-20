@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -408,8 +409,8 @@ static FnSymbol* buildSerialIteratorFn(const char* iteratorName,
   sifn->insertAtTail(ForLoop::buildForLoop(indices,
                                            new SymExpr(sifnIterator),
                                            new BlockStmt(stmt),
-                                           false, // is it a coforall?
-                                           zippered));
+                                           zippered,
+                                           /*isForExpr*/ true));
 
   return sifn;
 }
@@ -790,7 +791,11 @@ static CallExpr* buildLoopExprFunctions(LoopExpr* loopExpr) {
       indDefCopies.insertAtTail(defI->copy(&map));
     Expr* indicesCopy = (indices) ? indices->copy(&map) : NULL;
     Expr* bodyCopy = stmt->copy(&map);
-    fifn->insertAtTail(ForLoop::buildLoweredForallLoop(indicesCopy, new SymExpr(followerIterator), new BlockStmt(bodyCopy), false, zippered));
+    fifn->insertAtTail(
+        ForLoop::buildLoweredForallLoop(
+          indicesCopy, new SymExpr(followerIterator), new BlockStmt(bodyCopy),
+          zippered,
+          /* isForExpr */ true));
     addOuterVariableFormals(fifn, outerVars);
     adjustIndexDefPoints(fifn, &indDefCopies);
   }

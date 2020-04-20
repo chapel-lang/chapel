@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -538,7 +539,7 @@ class TypeSymbol : public Symbol {
   const char* doc;
 
   BlockStmt* instantiationPoint;
-
+  astlocT userInstantiationPointLoc;
 };
 
 /************************************* | **************************************
@@ -614,6 +615,9 @@ VarSymbol *new_StringSymbol(const char *s);
 //
 // Creates a new bytes literal with the given value.
 VarSymbol *new_BytesSymbol(const char *s);
+//
+// Creates a new string or bytes literal with the given value.
+VarSymbol *new_StringOrBytesSymbol(const char *s, AggregateType *at);
 
 // Creates a new C string literal with the given value.
 VarSymbol *new_CStringSymbol(const char *s);
@@ -692,15 +696,18 @@ extern const char* astrNew;
 extern const char* astrDeinit;
 extern const char* astrTag;
 extern const char* astrThis;
+extern const char* astrSuper;
 extern const char* astr_chpl_cname;
 extern const char* astr_chpl_forward_tgt;
 extern const char* astr_chpl_manager;
 extern const char* astr_chpl_statementLevelSymbol;
+extern const char* astr_chpl_waitDynamicEndCount;
 extern const char* astr_forallexpr;
 extern const char* astr_forexpr;
 extern const char* astr_loopexpr_iter;
 extern const char* astrPostfixBang;
 extern const char* astrBorrow;
+extern const char* astr_init_coerce_tmp;
 
 void initAstrConsts();
 

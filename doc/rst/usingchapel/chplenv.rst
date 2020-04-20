@@ -20,6 +20,8 @@ can be convenient.
 
 .. contents::
 
+.. _readme-chplenv.recommended_settings:
+
 Recommended Settings
 --------------------
 
@@ -35,7 +37,7 @@ CHPL_HOME
 
     .. code-block:: sh
 
-        export CHPL_HOME=~/chapel-1.20.0
+        export CHPL_HOME=~/chapel-1.22.0
 
    .. note::
      This, and all other examples in the Chapel documentation, assumes you're
@@ -459,9 +461,9 @@ CHPL_ATOMICS
         ===========  =====================================================
 
    If ``CHPL_ATOMICS`` is not set, it defaults to ``cstdlib`` when the target
-   compiler is ``gnu``, ``clang``, ``allinea``, or ``clang-included``.  It
-   defaults to ``intrinsics`` when the target compiler is ``intel`` or
-   ``cray``.  It defaults to ``locks`` when the target compiler is ``pgi``.
+   compiler is ``gnu``, ``clang``, ``allinea``, ``clang-included``, or
+   ``cray``.  It defaults to ``intrinsics`` when the target compiler is
+   ``intel``.  It defaults to ``locks`` when the target compiler is ``pgi``.
 
    See the Chapel Language Specification for more information about atomic
    operations in Chapel or :ref:`readme-atomics` for more information about the
@@ -697,6 +699,8 @@ CHPL_LIB_PIC
        ===== ================================
 
    If unset, ``CHPL_LIB_PIC`` defaults to ``none``
+
+.. _readme-chplenv.character_set:
 
 Character Set
 -------------

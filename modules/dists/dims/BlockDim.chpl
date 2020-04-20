@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -67,7 +68,7 @@ record BlockDim {
 
   const numLocales: int;
 
-  // the .low and .length of BlockDist's 'boundingBox' for our dimension
+  // the .low and .size of BlockDist's 'boundingBox' for our dimension
   const bbStart: idxType;
   const bbLength: idxType;
 
@@ -106,7 +107,7 @@ proc BlockDim.init(numLocales: int, boundingBox: range(?),
 
   this.numLocales = numLocales;
   this.bbStart = boundingBox.low;
-  this.bbLength = boundingBox.length;
+  this.bbLength = boundingBox.size;
 }
 
 /////////// privatization - start
@@ -122,9 +123,9 @@ proc type BlockDim.dsiPrivatize1d(privatizeData) {
 // initializer for privatization
 proc BlockDim.init(privatizeData, type idxType) {
   this.idxType = idxType;
-  numLocales = privatizeData(1);
-  bbStart = privatizeData(2);
-  bbLength = privatizeData(3);
+  numLocales = privatizeData(0);
+  bbStart = privatizeData(1);
+  bbLength = privatizeData(2);
 }
 
 proc BlockDim.dsiUsesLocalLocID1d() param return false;
@@ -137,7 +138,7 @@ proc type Block1dom.dsiPrivatize1d(privDist, privatizeData) {
   assert(privDist.locale == here); // sanity check
   return new Block1dom(idxType   = this.idxType,
                   stridable = this.stridable,
-                  wholeR    = privatizeData(1),
+                  wholeR    = privatizeData(0),
                   pdist     = privDist);
 }
 
@@ -146,7 +147,7 @@ proc Block1dom.dsiGetReprivatizeData1d() {
 }
 
 proc Block1dom.dsiReprivatize1d(reprivatizeData) {
-  this.wholeR = reprivatizeData(1);
+  this.wholeR = reprivatizeData(0);
 }
 
 proc Block1dom.dsiUsesLocalLocID1d() param return false;
@@ -258,7 +259,7 @@ proc Block1dom.dsiSingleTaskPerLocaleOnly1d() param return false;
 proc Block1locdom.dsiMyDensifiedRangeForTaskID1d(globDD, taskid:int, numTasks:int) {
   const locRange = densify(myRange, globDD.wholeR, userErrors=false);
   // Copied straight from BlockDom leader - replace locBlock(parDim)->locRange.
-  const (lo, hi) = _computeBlock(locRange.length, numTasks, taskid,
+  const (lo, hi) = _computeBlock(locRange.size, numTasks, taskid,
                                  locRange.high, locRange.low, locRange.low);
 
   // If this can occasionally be an empty range, add a check to Dimensional

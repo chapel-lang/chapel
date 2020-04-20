@@ -24,10 +24,6 @@
 extern gex_AM_Entry_t *gasnetc_handler;
 
 /* ------------------------------------------------------------------------------------ */
-/* Assert that a value is aligned to at least the given size */
-#define gasnetc_assert_aligned(_val,_align)	gasneti_assert(!((uintptr_t)(_val) % (_align)))
-
-/* ------------------------------------------------------------------------------------ */
 /* Configure gasnet_event_internal.h and gasnet_event.c */
 // TODO-EX: prefix needs to move from "extended" to "core"
 

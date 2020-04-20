@@ -161,7 +161,7 @@ while (numZeroes > 0) {
     	// Then do an intersection for all three possible constraints
     	currSet =  setIntersect(rowRemainders[i], colRemainders[j]);
     	currSet = setIntersect(currSet, boxRemainders[boxIndex]);
-    	if (currSet.numIndices == 1) {
+    	if (currSet.size == 1) {
 	   // TODO: we know there is only 1 element, 
  	   //       is there another way to get v?
 

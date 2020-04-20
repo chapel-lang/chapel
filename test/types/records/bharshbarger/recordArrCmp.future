@@ -1,18 +1,3 @@
-bug: confusing compiler error when comparing records with array fields
-
-After changing the logic default record comparisons via #14752, compiler creates
-something that is probably closer to what we want for this to work. However, as
-array comparisons are promoted, in the end it generates a promoted expression
-that throws off the compilation.
-
-Issues:
-https://github.com/chapel-lang/chapel/issues/7615 (initial issue that got this
-                                                   future in)
-https://github.com/chapel-lang/chapel/issues/11490
-https://github.com/chapel-lang/chapel/issues/11487
-
-Previous future report:
------------------------
 bug: Generated C code fails to compile when the != or == operators are used between records containing an array.
 
 Compiler output:
@@ -23,13 +8,4 @@ In file included from /tmp/chpl-bharshbarg-7938.deleteme/_main.c:33:
 /tmp/chpl-bharshbarg-7938.deleteme/recordArrCmp.c:176: error: used struct type value where scalar is required
 gmake: *** [/tmp/chpl-bharshbarg-7938.deleteme/a.out.tmp] Error 1
 error: compiling generated source
-
-Previous .bad file:
--------------------
-recordArrCmp.chpl:2: internal error: AST-EXP-0538 chpl version 1.19.0 pre-release (ddd8270625)
-
-Internal errors indicate a bug in the Chapel compiler ("It's us, not you"),
-and we're sorry for the hassle.  We would appreciate your reporting this bug -- 
-please see https://chapel-lang.org/bugs.html for instructions.  In the meantime,
-the filename + line number above may be useful in working around the issue.
 

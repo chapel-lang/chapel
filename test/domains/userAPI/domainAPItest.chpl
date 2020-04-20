@@ -8,7 +8,6 @@ proc testDomainAPI2D(lbl, D: domain, idx, OOBidx1, OOBidx2, intDom) {
   writeln("idxType          = ", D.idxType:string);
   writeln("stridable        = ", D.stridable);
   writeln("size             = ", D.size);
-  writeln("numIndices       = ", D.numIndices);
   writeln("isEmpty()        = ", D.isEmpty());
   writeln("low              = ", D.low);
   writeln("high             = ", D.high);
@@ -19,8 +18,8 @@ proc testDomainAPI2D(lbl, D: domain, idx, OOBidx1, OOBidx2, intDom) {
   writeln("alignedLow       = ", D.alignedLow);
   writeln("alignedHigh      = ", D.alignedHigh);
   writeln("dims()           = ", D.dims());
+  writeln("dim(0)           = ", D.dim(0));
   writeln("dim(1)           = ", D.dim(1));
-  writeln("dim(2)           = ", D.dim(2));
   writeln("contains(",idx,")   = ", D.contains(idx));
   writeln("contains(", OOBidx1, ")   = ", D.contains(OOBidx1));
   writeln("contains(", OOBidx2, ")   = ", D.contains(OOBidx2));
@@ -49,7 +48,7 @@ proc testDomainAPI2D(lbl, D: domain, idx, OOBidx1, OOBidx2, intDom) {
   // parallel iteration is handled in test/arrays/userAPI/arrayAPItest.chpl
 
   writeln("D[",intDom,"] = ", D[intDom]);
-  writeln("D[",intDom," (as ranges)] = ", D[intDom.dim(1), intDom.dim(2)]);
+  writeln("D[",intDom," (as ranges)] = ", D[intDom.dim(0), intDom.dim(1)]);
 
   writeln("D.localSlice(",intDom,") = ", D.localSlice[intDom]);
   writeln("D.targetLocales() = ", D.targetLocales());
@@ -69,7 +68,6 @@ proc testDomainAPI2D(lbl, D: domain, idx, OOBidx1, OOBidx2, intDom) {
   D2.clear();
   writeln(D2);
   writeln("size             = ", D2.size);
-  writeln("numIndices       = ", D2.numIndices);
   writeln("isEmpty()        = ", D2.isEmpty());
   writeln("low              = ", D2.low);
   writeln("high             = ", D2.high);

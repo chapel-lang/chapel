@@ -14,7 +14,7 @@ proc testUndensify(whole, r, dense) {
 
 proc t2(arg) {
   const result = densifySelf(arg);
-  proc shouldbe(r) return 0:r.length.type..#r.length;
+  proc shouldbe(r) return 0:r.size.type..#r.size;
   writeln("densifySelf ", arg, " -> ", result,
           " : ", result.type:string);
 
@@ -23,7 +23,7 @@ proc t2(arg) {
     if result != doublecheck then
       writeln("  ERROR on doublecheck");
   } else if isTuple(arg) {
-    for param i in 1..arg.size do
+    for param i in 0..arg.size-1 do
       if result(i) != shouldbe(arg(i)) then
         writeln("  ERROR on tuple/", i);
   } else if isRange(arg) {

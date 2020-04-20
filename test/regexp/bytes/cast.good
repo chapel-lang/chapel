@@ -1,4 +1,4 @@
-(matched = true, offset = 0, length = 8)
-(matched = true, offset = 0, length = 8)
-(matched = false, offset = -1, length = 0)
-(matched = false, offset = -1, length = 0)
+(matched = true, offset = 0, size = 8)
+(matched = true, offset = 0, size = 8)
+(matched = false, offset = -1, size = 0)
+(matched = false, offset = -1, size = 0)

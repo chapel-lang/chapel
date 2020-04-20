@@ -1,4 +1,4 @@
 Tuesday
-uncaught BadFormatError: bad format: missing expected literal (in channel.read(ref a:week) with path "readWriteEnum.stdin" offset 7)
+uncaught BadFormatError: bad format: missing expected literal (while reading week with path "readWriteEnum.stdin" offset 7)
   readWriteEnum.chpl:8: thrown here
   readWriteEnum.chpl:8: uncaught here

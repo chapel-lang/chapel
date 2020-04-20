@@ -10,6 +10,13 @@ queried.doc
 
    use queried.doc;
 
+
+or
+
+.. code-block:: chapel
+
+   import queried.doc;
+
 .. function:: proc queried(x: ?t)
 
    This proc queries the type of its argument 

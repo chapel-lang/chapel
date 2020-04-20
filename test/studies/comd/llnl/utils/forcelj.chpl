@@ -56,7 +56,7 @@ class ForceLJ : Force {
 if useChplVis then tagVdebug("computeLJForce");
     coforall ijk in locDom {
       on locGrid[ijk] {
-        const MyDom = Grid[ijk];
+        const MyDom = Grid[ijk]!;
         const force = MyDom.force : ForceLJ;
         const neighs = {-1..1, -1..1, -1..1};
         coforall (box, f, pe, boxIdx) in zip(MyDom.cells[MyDom.localDom], MyDom.f, MyDom.pe, MyDom.localDom) {
@@ -86,7 +86,7 @@ if useChplVis then pauseVdebug();
 if useChplVis then tagVdebug("computeLJForce");
     coforall ijk in locDom {
       on locGrid[ijk] {
-        const MyDom = Grid[ijk];
+        const MyDom = Grid[ijk]!;
         const force = MyDom.force : ForceLJ;
 local {
         const neighs = {-1..1, -1..1, -1..1};

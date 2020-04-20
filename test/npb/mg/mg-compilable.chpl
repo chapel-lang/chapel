@@ -423,7 +423,7 @@ proc interp(R, S) {
 /* HACK: domains and arrays don't parse yet
   const IDom: domain(3) = {-1..0, -1..0, -1..0};
   const IStn: [(i,j,k) in IDom] domain(3) = {i..0, j..0, k..0};
-  const w: [ijk in IDom] real = 1.0 / IStn.numIndices();
+  const w: [ijk in IDom] real = 1.0 / IStn.size();
 */
   const IDom: mydomain;  // HACK
   const w: 3*real;      // HACK

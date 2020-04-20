@@ -64,7 +64,7 @@ module analyze_torus_graphs {
       for s_ in torus_stencil do {
 	const s = if vertex_domain.rank == 1 then tuple (s_) else s_;
 	var neighbor : vertex_tuple; 
-	for d in 1..dimensions {
+	for d in 0..#dimensions {
 	    neighbor (d) =
 	      if v (d) + s (d) < vertex_domain.dim(d).low then
 	         vertex_domain.dim(d).high
@@ -105,7 +105,7 @@ module analyze_torus_graphs {
 
     if dense_stencil.rank > 1 then
       for s in dense_stencil do {
-	if ( + reduce [d in 1..G.dimensions] abs (s(d)) ) == 1 then
+	if ( + reduce [d in 0..#G.dimensions] abs (s(d)) ) == 1 then
 	  G.torus_stencil.add (s);
       }
     else 
@@ -117,7 +117,7 @@ module analyze_torus_graphs {
     writeln ( " dimension  lower  upper" );
     writeln ( "            bound  bound" );
 
-    for d in 1 .. G.dimensions do
+    for d in 0 .. #G.dimensions do
       writef ("%{########}%{########}%{########}\n", 
               d, vertex_domain.dim(d).low, vertex_domain.dim(d).high);
     writeln ( "fully implicit stencil representation");

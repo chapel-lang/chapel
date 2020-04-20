@@ -1,3 +1,3 @@
-uncaught BadFormatError: bad format: malformed number (in channel.read(ref a:int(64)) with path "freadNoInt.txt" offset 0)
+uncaught BadFormatError: bad format: malformed number (while reading int(64) with path "freadNoInt.txt" offset 0)
   freadNoInt.chpl:6: thrown here
   freadNoInt.chpl:6: uncaught here

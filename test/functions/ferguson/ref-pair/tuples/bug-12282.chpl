@@ -1,14 +1,14 @@
 record item {
   var data: int = 0;
 
-  proc writeThis(f) { f <~> data; }
+  proc writeThis(f) throws { f <~> data; }
 }
 
 record itemset {
   var dataset: 3*item;
 
   proc up() {
-    dataset(1).data += 1;
+    dataset(0).data += 1;
   }
 }
 

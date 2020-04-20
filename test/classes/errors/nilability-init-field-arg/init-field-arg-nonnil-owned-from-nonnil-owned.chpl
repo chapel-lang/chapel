@@ -2,7 +2,6 @@
 
 class MyClass {  var x: int;  }
 
-var rhs = new owned MyClass();
 
 record MyRecord {
   var lhs: owned MyClass;
@@ -11,6 +10,7 @@ record MyRecord {
   }
 }
 
-var myr = new MyRecord(rhs);
-
-
+{
+  var rhs = new owned MyClass();
+  var myr = new MyRecord(rhs);
+}

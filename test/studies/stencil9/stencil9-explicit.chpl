@@ -75,7 +75,7 @@ class DomArr {
 // an array of everyone's chunks of the global problem space that they own
 // in a sense it's the distributed A array in a local view
 //
-var LocalDomArrs: [LocaleGridDom] unmanaged DomArr;
+var LocalDomArrs: [LocaleGridDom] unmanaged DomArr?;
 
 var numIters: atomic int;
 
@@ -200,9 +200,9 @@ coforall (lr,lc) in LocaleGridDom {
           // make sure that neighbor exists; skip if they don't
           // miniMD would need to wrap around; I didn't want to do that
           //
-          if (neighbor(1) < 0 || neighbor(2) < 0 ||
-              neighbor(1) > LocaleGridDom.high(1) ||
-              neighbor(2) > LocaleGridDom.high(2)) then
+          if (neighbor(0) < 0 || neighbor(1) < 0 ||
+              neighbor(0) > LocaleGridDom.high(0) ||
+              neighbor(1) > LocaleGridDom.high(1)) then
             // out of bounds
             continue;
 
@@ -216,7 +216,7 @@ coforall (lr,lc) in LocaleGridDom {
           //
           // TODO: I think this conditional is unnecessary -- should remove
           //
-          if (Dom[Panels[ij]].numIndices > 0) {
+          if (Dom[Panels[ij]].size > 0) {
             // Update our fluff by assigning from our neighbor's array
             // using the same coordinates.
             //
@@ -225,7 +225,7 @@ coforall (lr,lc) in LocaleGridDom {
             // way to express the copy.
             //
             // 
-            A[Panels[ij]] = LocalDomArrs[neighbor].Arr[Panels[ij]];
+            A[Panels[ij]] = LocalDomArrs[neighbor]!.Arr[Panels[ij]];
           }
         }
       }
@@ -327,8 +327,8 @@ if printArrays {
   // iterate over array of local dom/arr descriptors
   //
   for lda in LocalDomArrs {
-    var Interior = lda.Dom.expand(-1);
-    Result[Interior] = lda.Arr[Interior];
+    var Interior = lda!.Dom.expand(-1);
+    Result[Interior] = lda!.Arr[Interior];
   }
   //
   // print out the global result array

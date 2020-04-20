@@ -7,10 +7,7 @@ class C {
   var z:int;
 }
 
-var A:[1..n] owned C;
-for i in 1..n {
-  A[i] = new owned C(i, i+1, i+2);
-}
+var A:[1..n] owned C = for i in 1..n do new owned C(i, i+1, i+2);
 
 var toOutput = 0;
 

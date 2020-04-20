@@ -17,11 +17,19 @@ proc warning2() {
 
 }
 
+proc warning3() {
+
+  var myDomain: domain(2);
+  myDomain = {1..n, 1..n} dmapped Block({1..n, 1..n});
+  writeln(myDomain);
+
+}
 
 proc ok1() {
 
   var myDomain: domain(2);
-  myDomain; // see issue #14746
+  myDomain;  // disabling split-init for myDomain
+  // this one is a warning too as discussed in issue #14746
   myDomain = {1..n, 1..n} dmapped Block({1..n, 1..n});
   writeln(myDomain);
 
@@ -30,4 +38,5 @@ proc ok1() {
 
 warning1();
 warning2();
+warning3();
 ok1();

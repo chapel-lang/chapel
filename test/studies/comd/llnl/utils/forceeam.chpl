@@ -46,12 +46,12 @@ class InterpolationObject {
     r = r - floor(r);
 
     var v : 4*real;
-    for i in -1..2 do v(i+2) = values(ii+i);
+    for i in -1..2 do v(i+1) = values(ii+i);
 
-    const g1 : real = v(3) - v(1);
-    const g2 : real = v(4) - v(2);
+    const g1 : real = v(2) - v(0);
+    const g2 : real = v(3) - v(1);
 
-    f  = v(2) + 0.5*r*(g1 + r*(v(3) + v(1) - 2.0*v(2)));
+    f  = v(1) + 0.5*r*(g1 + r*(v(2) + v(0) - 2.0*v(1)));
     df = 0.5*(g1 + r*(g2-g1))*invDx;
 
 //    var g1 : real = values(ii+1) - values(ii-1);
@@ -118,10 +118,9 @@ class ForceEAM : Force {
 
   override proc epilogue() : void {
 if useChplVis then tagVdebug("setupEAMForce");
-    this.eamPot = new unmanaged EAMPot();
-    const boxSpace = {1..numBoxes(1), 1..numBoxes(2), 1..numBoxes(3)};
+    const boxSpace = {1..numBoxes(0), 1..numBoxes(1), 1..numBoxes(2)};
     const distSpace = boxSpace dmapped Block(boundingBox=boxSpace, targetLocales=locGrid);
-    ref eamDom = this.eamPot!.eamDom;
+    var eamDom : [locDom] unmanaged EAMDomain?;
     coforall ijk in locDom {
       on locGrid[ijk] {
         const MyLocDom = distSpace.localSubdomain();
@@ -178,6 +177,7 @@ local {
 }
       }
     }
+    this.eamPot = new unmanaged EAMPot(eamDom!);
 if useChplVis then pauseVdebug();
   }
 
@@ -239,12 +239,12 @@ if useChplVis then pauseVdebug();
 
     // line 4
     var species = r.readln(int, string);
-    if(species(1) != 1) then {
+    if(species(0) != 1) then {
       var errMsg : string = "This CoMD version does not support alloys and cannot read setfl files with multiple species. Fatal Error.";
       throwError(errMsg);
     }
 
-    this.name = species(2);
+    this.name = species(1);
 
     // line 5
     var nRho, nR : int;
@@ -354,7 +354,7 @@ if useChplVis then tagVdebug("computeEAMForce");
     const ref eamDom = this.eamPot!.eamDom;
     coforall ijk in locDom {
       on locGrid[ijk] {
-        const MyDom = Grid[ijk];
+        const MyDom = Grid[ijk]!;
         const MyEAMDom = eamDom[ijk];
         const force = MyDom.force : ForceEAM;
         const neighs = {-1..1, -1..1, -1..1};
@@ -395,7 +395,7 @@ if useChplVis then pauseVdebug();
 if useChplVis then tagVdebug("computeEAMForce");
     coforall ijk in locDom {
       on locGrid[ijk] {
-        const MyDom = Grid[ijk];
+        const MyDom = Grid[ijk]!;
         const MyEAMDom = eamDom[ijk];
         const force = MyDom.force : ForceEAM;
         const neighs = {-1..1, -1..1, -1..1};
@@ -424,7 +424,7 @@ if useChplVis then tagVdebug("computeEAMForce");
     const ref eamDom = this.eamPot!.eamDom;
     coforall ijk in locDom {
       on locGrid[ijk] {
-        const MyDom = Grid[ijk];
+        const MyDom = Grid[ijk]!;
         const MyEAMDom = eamDom[ijk];
         const force = MyDom.force : ForceEAM;
 local {
@@ -467,7 +467,7 @@ if useChplVis then pauseVdebug();
 if useChplVis then tagVdebug("computeEAMForce");
     coforall ijk in locDom {
       on locGrid[ijk] {
-        const MyDom = Grid[ijk];
+        const MyDom = Grid[ijk]!;
         const MyEAMDom = eamDom[ijk];
         const force = MyDom.force : ForceEAM;
 local {

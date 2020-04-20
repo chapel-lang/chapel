@@ -19,6 +19,13 @@ proc runTests(stream) {
   var real32s: [1..4] real(32) = [0.1:real(32), 0.2:real(32), 0.3:real(32), 0.4:real(32)];
   testArray(stream, real32s);
 
+  // user-defined type
+  var rArr = [new R(1), new R(2), new R(3)];
+  testArray(stream, rArr, trials=1);
+
+  var pArr = [1, 1, 2];
+  testArray(stream, rArr, prob=pArr, size=2, replace=false, trials=1);
+
   // offset & strided domain
   var strideDom = {10..#10 by 3};
   var strideArr: [strideDom] int;
@@ -38,15 +45,15 @@ proc runTests(stream) {
   testArray(stream, [1,1,2], prob=[0.1, 0.4, 0.5]);
 
   // Numeric types
-  var preal32: [1..2] real(32) = 1;
+  var preal32: [0..1] real(32) = 1;
   testArray(stream, [1,2], prob=preal32, size=1000, trials=1);
-  var pint: [1..2] int = 1;
+  var pint: [0..1] int = 1;
   testArray(stream, [1,2], prob=pint, size=1000, trials=1);
-  var pint32: [1..2] int(32) = 1;
+  var pint32: [0..1] int(32) = 1;
   testArray(stream, [1,2], prob=pint32, size=1000, trials=1);
-  var puint32: [1..2] uint(32) = 1;
+  var puint32: [0..1] uint(32) = 1;
   testArray(stream, [1,2], prob=puint32, size=1000, trials=1);
-  var puint16: [1..2] uint(16) = 1;
+  var puint16: [0..1] uint(16) = 1;
   testArray(stream, [1,2], prob=puint16, size=1000, trials=1);
 
   // replace=false
@@ -55,24 +62,29 @@ proc runTests(stream) {
   //// domain-type size
   var A = [1,2,3,4];
   var p = [0.1, 0.2, 0.3, 0.4];
-  testArray(stream, A, prob=p, size={1..4});
-  testArray(stream, A, prob=p, size={1..4, 1..3});
-  testArray(stream, A, prob=p, size={1..4, 1..3, 1..2});
+  testArray(stream, A, prob=p, size={0..3});
+  testArray(stream, A, prob=p, size={0..3, 0..2});
+  testArray(stream, A, prob=p, size={0..3, 0..2, 0..1});
 
   // Ensure we maintain reference to domain passed in
-  var dom = {1..5};
+  var dom = {0..4};
   var B: [dom] int;
 
   var ret = stream.choice([1,2,3,4,5], size=dom);
 
-  dom = {1..10};
+  dom = {0..9};
   if ret.size != 10 then
     writeln('error: domain reference not maintained');
 }
 
-proc testArray(stream, arr: [], size:?sizeType=none, replace=true, prob:?probType=none, trials=10000) throws {
-  var countsDom: domain(arr.eltType);
-  var counts = new map(arr.eltType, int);
+/* User-defined type */
+record R {
+  var value = 0;
+  var tag = "someValue";
+}
+
+proc testArray(stream, arr: [] ?eltType, size:?sizeType=none, replace=true, prob:?probType=none, trials=10000) throws {
+  var counts = new map(eltType, int);
 
   // Collect statistics
   if isNothingType(probType) {
@@ -113,7 +125,7 @@ proc testArray(stream, arr: [], size:?sizeType=none, replace=true, prob:?probTyp
   if isDomainType(sizeType) then m = size.size;
   else if isIntegralType(sizeType) then m = size;
 
-  var actualRatios = new map(int, real);
+  var actualRatios = new map(eltType, real);
   for (k,v) in actualRatios.items() {
     if isNothingType(sizeType) then
       actualRatios[k] = v / trials:real;
@@ -139,7 +151,7 @@ proc testArray(stream, arr: [], size:?sizeType=none, replace=true, prob:?probTyp
   var success = true;
   if replace {
     for value in actualRatios {
-      if !isClose(actualRatios[value], expectedRatios[value:arr.eltType]) {
+      if !isClose(actualRatios[value], expectedRatios[value]) {
         success = false;
       }
     }

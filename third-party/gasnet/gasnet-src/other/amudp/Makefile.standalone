@@ -83,11 +83,13 @@ apputils.o : $(amxdir)/apputils.c $(headers)
 amudprun: amudprun.o $(headers) libamudp.a 
 	$(link) -o $@ $< -L. -lamudp $(linkend)
 
-%.o : %.c $(headers)
+%.o : %.c $(headers) $(amxdir)/*.h
 	$(Ccompile) $< -o $@
 
-%.o : %.cpp $(headers)
+%.o : %.cpp $(headers) $(amxdir)/*.h
 	$(CXXcompile) $< -o $@
+
+amudp_cdefs.o: $(amxdir)/amx_internal.c
 
 # delete compiling byproducts
 clean:

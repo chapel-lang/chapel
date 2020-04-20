@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -733,8 +734,7 @@ void initPrimitiveTypes() {
   dtAnyComplex->symbol->addFlag(FLAG_GENERIC);
 
   // parses from enum
-  // TODO: remove enumerated and replace it with enum
-  dtAnyEnumerated = createInternalType ("enumerated", "enumerated");
+  dtAnyEnumerated = createInternalType ("enum", "enum");
   dtAnyEnumerated->symbol->addFlag(FLAG_GENERIC);
 
   dtAnyImag = createInternalType("chpl_anyimag", "imag");

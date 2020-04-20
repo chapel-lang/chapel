@@ -2,3 +2,5 @@
 ../needsFenceSerial.chpl:16: note: Optimized atomic call to be unordered
 chpl_after_forall_fence();
 chpl_after_forall_fence();
+chpl_after_forall_fence();
+chpl_after_forall_fence();

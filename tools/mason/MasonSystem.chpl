@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -190,7 +191,7 @@ proc getPkgVariable(pkgName: string, option: string) {
 
   var line:string;
   for line in sub.stdout.lines() {
-    if line.length > 1 then
+    if line.size > 1 then
       lines.append(line);
   }
 
@@ -213,19 +214,19 @@ proc pkgExists(pkgName: string) : bool {
 proc getPkgInfo(pkgName: string, version: string) throws {
 
   var pkgDom: domain(string);
-  var pkgToml: [pkgDom] unmanaged Toml;
+  var pkgToml: [pkgDom] unmanaged Toml?;
   var pkgInfo = new unmanaged Toml(pkgToml);
 
   if pkgExists(pkgName) {
     // Pass "these" to join instead of converting the list to an array.
     const pcVersion = "".join(getPkgVariable(pkgName, "--modversion").these()).strip();
     const libs = "".join(getPkgVariable(pkgName, "--libs").these()).strip();
-    const include = "".join(getPkgVariable(pkgName, "--variable=includedir").these()).strip();
+    const includePath = "".join(getPkgVariable(pkgName, "--variable=includedir").these()).strip();
 
     pkgInfo.set("name", pkgName);
     pkgInfo.set("version", pcVersion);
     pkgInfo.set("libs", libs);
-    pkgInfo.set("include", include);
+    pkgInfo.set("include", includePath);
 
     if pcVersion != version && version != "*" {
       throw new owned MasonError("Unable to locate " + pkgName + ": " +version + "\n Found " + pcVersion);
@@ -242,12 +243,12 @@ proc getPkgInfo(pkgName: string, version: string) throws {
 proc getPCDeps(exDeps: unmanaged Toml) {
 
   var exDom: domain(string);
-  var exDepTree: [exDom] unmanaged Toml;
+  var exDepTree: [exDom] unmanaged Toml?;
 
   for (name, vers) in exDeps.A.items() {
     try! {
       if pkgConfigExists() {
-        const pkgInfo = getPkgInfo(name, vers.s);
+        const pkgInfo = getPkgInfo(name, vers!.s);
         exDom += name;
         exDepTree[name] = pkgInfo;
       }

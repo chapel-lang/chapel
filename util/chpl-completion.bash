@@ -39,6 +39,7 @@ _chpl ()
 --comm \
 --comm-substrate \
 --compile-time-nil-checking \
+--copy-elision \
 --copy-propagation \
 --copyright \
 --count-tokens \
@@ -142,6 +143,7 @@ _chpl ()
 --no-checks \
 --no-codegen \
 --no-compile-time-nil-checking \
+--no-copy-elision \
 --no-copy-propagation \
 --no-count-tokens \
 --no-cpp-lines \
@@ -217,7 +219,6 @@ _chpl ()
 --no-replace-array-accesses-with-ref-temps \
 --no-report-aliases \
 --no-report-blocking \
---no-report-expiring \
 --no-scalar-replacement \
 --no-specialize \
 --no-split-initialization \
@@ -279,7 +280,6 @@ _chpl ()
 --report-blocking \
 --report-dead-blocks \
 --report-dead-modules \
---report-expiring \
 --report-inlined-iterators \
 --report-inlining \
 --report-optimized-forall-unordered-ops \

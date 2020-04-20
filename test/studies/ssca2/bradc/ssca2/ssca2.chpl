@@ -85,7 +85,7 @@ class Subgraph {
     start = s;
     end   = e;
   }
-  proc adjMatrix(i: index(AdjD)) { return weights(i).length; }
+  proc adjMatrix(i: index(AdjD)) { return weights(i).size; }
 }
 
 
@@ -398,7 +398,7 @@ proc Graph.findSubGraphs(SUBGR_EDGE_LENGTH : int,
     [e in AdjD] weights(e) =  complete.weights(e);
   }
 
-  var subgraphs: [1..(startSetIntVPairs.length+startSetStrVPairs.length)];
+  var subgraphs: [1..(startSetIntVPairs.size+startSetStrVPairs.size)];
   // Loop over vertex pairs in the int starting set.
   cobegin {
     forall (i,v) in (1.., startSetIntVPairs) {
@@ -432,7 +432,7 @@ proc cutClusters(G, cutBoxSize, alpha) {
     var setClusters : Seq;     // set of nodes in clusters.
     var setN2 : Seq;           // set of cut nodes between clusters.
 
-    while (setG.length > 0) {
+    while (setG.size > 0) {
       var setIter :Seq;   // candidate verticies in cluster
       var iCut = 0;       // index of best cutting point so far
       var iAdj :Set;      // snapshot of setAdj at iCut

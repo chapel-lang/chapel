@@ -13,7 +13,14 @@ var str:t;
 var ok:bool;
 
 writeln("#1 not match");
-ok = r.readf("%/[a-z]/":t);
+try {
+  ok = r.readf("%/[a-z]/":t);
+} catch err: BadFormatError {
+  ok = false;
+} catch err {
+  writeln(err);
+  halt();
+}
 writeln(r.offset(), " ", ok);
 writeln("#2 passes B, should match");
 ok = r.readf("%/[A-Z]/":t);

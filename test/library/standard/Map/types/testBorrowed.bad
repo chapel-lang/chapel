@@ -1,0 +1,3 @@
+./MapTest.chpl:3: In function 'testMap':
+./MapTest.chpl:5: error: maps of non-nilable borrowed values are not currently supported
+testBorrowed.chpl:9: Function 'testMap' instantiated as: testMap(type t = borrowed T)

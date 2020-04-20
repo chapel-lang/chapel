@@ -109,3 +109,30 @@ proc cAssignFieldEOB() {
   // point 2
 }
 cAssignFieldEOB();
+
+record R {
+  var c: unmanaged C?;
+  proc init(arg: unmanaged C?) {
+    this.c = arg;
+  }
+  proc init=(other:R) {
+    this.c = new unmanaged C(other.c!.x);
+  }
+}
+var globr = new R(new unmanaged C(1));
+proc aliasesGlobal1() {
+  var r = new R(globr.c);
+  foo(r);
+}
+proc foo(in arg: R) {
+  globr.c!.x = 2;
+  writeln(arg.c!.x); // does it print out 1 or 2?
+}
+aliasesGlobal1();
+
+proc aliasesGlobal2() {
+  var r = new R(globr.c);
+  var y = r;
+  globr.c!.x = 2;
+  writeln(y.c!.x); // does it print out 1 or 2?
+}

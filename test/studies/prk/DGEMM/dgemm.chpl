@@ -80,7 +80,7 @@ else {
       const localDom = matrixDom.localSubdomain();
 
       coforall tid in 0..#nTasksPerLocale with (ref t) {
-        const myChunk = chunk(localDom.dim(2), nTasksPerLocale, tid);
+        const myChunk = chunk(localDom.dim(1), nTasksPerLocale, tid);
 
         var AA: [blockDom] dtype,
             BB: [blockDom] dtype,
@@ -104,8 +104,8 @@ else {
               for (kB, k) in zip(kk..kMax, 0..) do
                 BB[j,k] = B[kB,jB];
 
-            for ii in localDom.dim(1) by blockSize {
-              const iMax = min(ii+blockSize-1, localDom.dim(1).high);
+            for ii in localDom.dim(0) by blockSize {
+              const iMax = min(ii+blockSize-1, localDom.dim(0).high);
               const iRange = 0..iMax-ii;
 
               for (iB, i) in zip(ii..iMax, 0..) do

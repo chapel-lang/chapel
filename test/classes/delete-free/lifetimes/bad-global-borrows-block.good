@@ -1,3 +1,10 @@
 bad-global-borrows-block.chpl:7: error: Scoped variable globalBorrow would outlive the value it is set to
 bad-global-borrows-block.chpl:6: note: consider scope of myOwned
 bad-global-borrows-block.chpl:12: error: Scoped variable globalBorrow would outlive the value it is set to
+bad-global-borrows-block.chpl:19: error: Scoped variable would outlive the value it is set to
+bad-global-borrows-block.chpl:18: note: consider scope of myOwned
+bad-global-borrows-block.chpl:26: error: Scoped variable would outlive the value it is set to
+bad-global-borrows-block.chpl:25: note: consider result here
+bad-global-borrows-block.chpl:19: error: Scoped variable globalBorrow2 reachable after lifetime ends
+bad-global-borrows-block.chpl:18: note: consider scope of myOwned
+bad-global-borrows-block.chpl:26: error: Scoped variable globalBorrow3 reachable after lifetime ends

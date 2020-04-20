@@ -73,6 +73,11 @@
   print(E.Foo:bytes);
   print(E.Bar:bytes);
 
+  print((b"Foo"):E);
+  print((b"Bar"):E);
+  print((b"E.Foo"):E);
+  print((b"E.Bar"):E);
+
 }
 
 proc print(val) {

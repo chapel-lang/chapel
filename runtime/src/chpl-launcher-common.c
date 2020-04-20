@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -290,7 +291,7 @@ void get_debugger_wrapper(int* argc, char*** argv) {
   *argv = NULL;
 
   const int use_gdb = (getenv("CHPL_COMM_USE_GDB") != NULL);
-  const int use_lldb = (getenv("CHPL_COMM_USE_LLDB2") != NULL);
+  const int use_lldb = (getenv("CHPL_COMM_USE_LLDB") != NULL);
   if (!use_gdb && !use_lldb) {
     return;
   }
@@ -478,6 +479,7 @@ int chpl_launch_using_system(char* command, char* argv0) {
       printf("%s ", evList);
     }
     printf("%s\n", command);
+    fflush(stdout);
   }
   chpl_launch_sanity_checks(argv0);
   return system(command);

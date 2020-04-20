@@ -1,5 +1,11 @@
 before declaration
+default init
 after declaration, before assignment
-init
+init 1
+deinit 1
 after assignment
-deinit
+before nested call
+init 2
+deinit 2
+after nested call
+deinit 1

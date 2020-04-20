@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -30,7 +31,7 @@ module ChapelDebugPrint {
 
   proc chpl_debug_stringify(args...) : string {
     var str = "";
-    for param i in 1..args.size {
+    for param i in 0..args.size-1 {
       var tmp = args(i);
       if _can_stringify_direct(tmp) {
         // Call stringify from IO.chpl. Note that stringify

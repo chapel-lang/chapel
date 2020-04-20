@@ -1,6 +1,16 @@
 GASNet ofi-conduit documentation
 Copyright 2015-2017, Intel Corporation
-$Revision: 1.0 $
+Portions copyright 2018-2020, The Regents of the University of California.
+$Revision: 1.1 $
+
+**** NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE ****
+*                                                               *
+*  This version of ofi-conduit is a work-in-progress port from  *
+*  GASNet-1 to GASNet-EX and is currently disabled by default.  *
+*  Various aspects of this README are either out-of-date or     *
+*  have not been reverified against the current version.        *
+*                                                               *
+**** NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE ****
 
 User Information:
 ----------------
@@ -16,19 +26,26 @@ Where this conduit runs:
 -----------------------
 
 The GASNet OFI conduit can run on any OFI provider that supports its
-requirements. At this point in time, it is known to work on the Sockets provider
-(sockets) and the Intel(R) Omni-Path Fabric provider (psm2).  Work has been done
-to enable the gni provider which runs on Cray XC(TM) systems. The author of this
-conduit has seen good results from the preliminary testing of this provider,
-however has not had enough time to thoroughly validate it. As such, the gni
-provider should be considered experimental. The fi_info command installed with
-libfabric can be used to query the available OFI providers.
+requirements. At this point in time, it is known to work on the following
+providers (using the provider names in parenthesis):
+  + Sockets (sockets)
+  + Intel(R) Omni-Path Fabric (psm2)
+  + TCP, via "tcp;ofi_rxm", under libfabric 1.7 and higher (tcp)
+  + Verbs, via "verbs;ofi_rxm", under libfabric 1.7 and higher (verbs)
+
+Work has been done to enable the gni provider which runs on Cray XC(TM)
+systems. The author of this conduit has seen good results from the preliminary
+testing of this provider, however has not had enough time to thoroughly
+validate it. As such, the gni provider should be considered experimental.
+
+The fi_info command installed with libfabric can be used to query the available
+OFI providers.
 
 While OFI conduit can be considered as a tech-preview for next-generation fabrics,
 it is the recommended conduit for use on the Intel Omni-Path fabric.
 
-Users with InfiniBand hardware should use the GASNet ibv-conduit, as the verbs OFI provider
-does not yet implement all the capabilities needed by ofi-conduit.
+Users with InfiniBand hardware should use the GASNet ibv-conduit, rather than
+ofi-conduit with the verbs OFI provider, as the former may provide better performance.
 
 Users with Ethernet hardware are encouraged to consider the GASNet udp-conduit as an alternative
 to ofi-conduit with the sockets provider, as the former may provide more favorable performance.

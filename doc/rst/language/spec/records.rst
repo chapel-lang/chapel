@@ -11,8 +11,8 @@ record type is associated with only one piece of storage and has only
 one type throughout its lifetime. Storage is allocated for a variable of
 record type when the variable declaration is executed, and the record
 variable is also initialized at that time. When the record variable goes
-out of scope, or at the end of the program if it is a global, it is
-deinitialized and its storage is deallocated.
+out of scope, or at the end of the program if it is declared at module
+scope, it is deinitialized and its storage is deallocated.
 
 A record declaration statement creates a record
 type :ref:`Record_Declarations`. A variable of record type
@@ -178,10 +178,12 @@ Storage Allocation
 
 Storage for a record variable directly contains the data associated with
 the fields in the record, in the same manner as variables of primitive
-types directly contain the primitive values. Record storage is reclaimed
-when the record variable goes out of scope. No additional storage for a
-record is allocated or reclaimed. Field data of one variable’s record is
-not shared with data of another variable’s record.
+types directly contain the primitive values.  Unlike class variables, the
+field data of one record variable is not shared with data of another
+record variable.
+
+Record storage is reclaimed automatically. See :ref:`Variable_Lifetimes`
+for details on when a record becomes dead.
 
 .. _Record_Initialization:
 
@@ -409,36 +411,145 @@ Copy Initialization of Records
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 When a new record variable is created based upon an existing variable,
-we say that the new variable is *copy initialized* from the existing
-variable. For example: 
+it is *copy initialized* or *move initialized* as described in
+:ref:`Copy_and_Move_Initialization`. When a record is *copy initialized*,
+its ``init=`` initializer will be used to create the new record.
+
+Copy initialization is implemented by a method named ``init=``, known as the
+*copy initializer*. A copy initializer may only accept one argument, which
+represents the value from which the record will be initialized. These methods
+share the same rules as a normal initializer (:ref:`Class_Initializers`), along
+with some additional restrictions.
+
+The compiler-generated copy initializer for a non-generic record accepts an
+argument of the same type and simply initializes each field from the argument's
+corresponding field:
 
 .. code-block:: chapel
 
-   var x: MyRecordType;
-   var y = x; // this is called copy initialization
+  record R {
+    var x, y, z: int;
+  }
 
-We say that y is *copy initialized* from x. Since x and y both exist
-after y is initialized and they are different record variables, they
-must not be observed to alias. That is, modifications to a field in x
-should not cause the corresponding field in y to change.
+  // identical to compiler-generated implementation
+  // proc R.init=(other: R) {
+  //   this.x = other.x;
+  //   this.y = other.y;
+  //   this.z = other.z;
+  // }
 
-Initializing a record variable with the result of a call returning a
-record by value simply captures the result of the call into the variable
-and does not cause copy initialization. For example: 
+In order to override the compiler-generated implementation, the user must
+implement an ``init=`` method with the same signature.
 
 .. code-block:: chapel
 
-   proc returnsRecord() {
-     var ret: MyRecordType;
-     return ret;
-   }
-   var z = returnsRecord(); // captures result into z without copy initializing
+  proc R.init=(other: R) {
+    this.x = other.x;
+    this.y = other.y;
+    this.z = other.z;
+    writeln("copied R!");
+  }
 
-..
+.. note::
 
-   *Future*.
+  If a user implements their own ``init=`` method, they must also implement an
+  assignment operator for the same record type. Implementing one without the
+  other will cause the compiler to issue an error. *Rationale*: this
+  requirement exists to mitigate hard-to-debug problems by requiring that type
+  authors take responsibility for both ``init=`` and ``=`` implementations, or
+  neither implementation.
 
-   Specifying further details of copy initialization is future work.
+A user may indicate that a type is not copyable by adding a where-clause to
+the ``init=`` implementation that evaluates to ``false``:
+
+.. code-block:: chapel
+
+  proc R.init=(other: R) where false {
+  }
+
+The compiler-generated copy initializer for a generic type uses the expression
+``this.type`` as the argument's type to ensure that the types of the original
+record and its copy are the same:
+
+.. code-block:: chapel
+
+  record G {
+    type T;
+    var x : T;
+  }
+
+  // compiler-generated init= for 'G'
+  // proc G.init=(other: this.type) {
+  //   this.T = other.T;
+  //   this.x = other.x;
+  // }
+
+Note that the generic fields must still be manually initialized, despite
+the type already being known. Future work may allow these fields to be inferred.
+
+.. _Advanced_Copy_Initialization:
+
+Advanced Copy Initialization
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+A copy initializer can also be used to specify how a record should be
+initialized from a value of an arbitrary type. This kind of copy initializer is
+invoked when a variable declaration's initialization expression is not of the
+same type as the record being initialized. For example:
+
+.. code-block:: chapel
+
+  record MyString {
+    var s : string;
+  }
+
+  // normal copy initializer
+  proc MyString.init=(other: MyString) {
+    this.s = other.s;
+    writeln("normal init=");
+  }
+
+  // initialize from a string
+  proc MyString.init=(other: string) {
+    this.s = other;
+    writeln("string init=");
+  }
+
+  var A = new MyString("hello");
+  var B = A; // "normal init="
+  var C : MyString = "goodbye"; // "string init="
+
+Generic types can rely on the ``this.type`` expression to implement these kinds
+of copy initializers with the desired type constraints. The ``this.type``
+expression will evaluate to the type provided by the user at the variable
+declaration:
+
+.. code-block:: chapel
+
+  record Wrapper {
+    type T;
+    var x : T;
+  }
+
+  // normal copy initializer
+  proc Wrapper.init=(other: this.type) { ... }
+
+  // An incorrect attempt: ignores the user-specified type, and uses the
+  // value's type (which might not be the same!)
+  // i.e. 'var w : Wrapper(int) = "hi"', tries to create a 'Wrapper(string)'
+  // proc Wrapper.init=(other: ?T) {
+  //   this.T = T;
+  //   this.x = other;
+  // }
+
+  // initialize a Wrapper from the desired wrapped type 'T'
+  proc Wrapper.init=(other: this.type.T) {
+    this.T = other.type;
+    this.x = other;
+  }
+
+  var A : Wrapper(int) = 4;
+  var B : Wrapper(string) = "hello";
 
 .. _Record_Assignment:
 
@@ -523,10 +634,12 @@ Other comparison operator overloads (namely ``<``, ``<=``, ``>``, and ``>=``)
 have similar signatures but their where clauses also check whether the relevant
 operator is supported by each field.
 
-All of these comparison operators except ``!=`` compare the fields, one at a
-time, returning ``false`` if the property is not satisfied by the given pair of
-fields. Whereas ``!=`` returns ``true`` if the property is satisfied by any
-field.
+Record comparisons have a similar behavior to :ref:`tuple comparisons
+<Tuple_Relational_Operators>`.  The operators ``>``, ``>=``, ``<``, and ``<=``
+check the corresponding lexicographical order based on pair-wise comparisons
+between the arguments' fields.  The operators ``==`` and ``!=`` check whether
+the two arguments are pair-wise equal or not.  The fields are compared in the
+order they are declared in the record definition.
 
 .. _Class_and_Record_Differences:
 

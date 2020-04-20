@@ -31,9 +31,9 @@ Sometimes GASNet issues are general multi-locale issues that can be
 recreated by compiling the program with the ``--no-local`` flag and using
 ``CHPL_COMM=none``.  The ``--no-local`` flag assumes that all variables are
 non-local, and thus the compiler inserts communication and
-communication related calls into the code.  During program execution,
+communication-related calls into the code.  During program execution,
 the runtime checks to see if the reference is remote (which it will
-never will be), and if the generated code is correct, the program will
+never be), and if the generated code is correct, the program will
 execute without issue.  If the program does not complete as expected,
 you can use the ``--gdb`` flags to debug in **gdb** (see ``executing.rst``).
 

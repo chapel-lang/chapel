@@ -13,14 +13,14 @@ const greaterThan = ">".toByte();
 
 proc main(args: [] string) {
   var inFile = openfd(0);
-  const fileLen = inFile.length();
+  const fileLen = inFile.size;
   var data : [1..fileLen] uint(8);
   var r = inFile.reader(locking=false);
 
   const pairs = [c in "ATCGGCTAUAMKRYWWSSYRKMVBHDDHBVNN\n\n".bytes()] c;
 
   // initialize complement table
-  for i in 1..pairs.size by 2 {
+  for i in 0..#pairs.size by 2 {
     table[pairs[i]] = pairs[i+1];      // uppercase
     if pairs[i] != newLine then
       table[pairs[i] + 32] = pairs[i+1]; // lowercase

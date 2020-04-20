@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -58,10 +59,14 @@ module LocaleModel {
     const sid: chpl_sublocID_t;
     const ndName: string; // note: locale provides `proc name`
 
-    override proc chpl_id() return (parent:LocaleModel)._node_id; // top-level node id
+    // top-level node id
+    override proc chpl_id(){
+      return (parent._instance: borrowed LocaleModel?)!._node_id;
+    }
     override proc chpl_localeid() {
-      return chpl_buildLocaleID((parent:LocaleModel)._node_id:chpl_nodeID_t,
-                                sid);
+      return chpl_buildLocaleID(
+          (parent._instance: borrowed LocaleModel?)!._node_id:chpl_nodeID_t,
+          sid);
     }
     override proc chpl_name() return ndName;
 
@@ -75,8 +80,8 @@ module LocaleModel {
     }
 
     override proc writeThis(f) throws {
-      if parent then
-        parent!.writeThis(f);
+      if parent._instance then
+        parent.writeThis(f);
       f <~> '.'+ndName;
     }
 
@@ -101,6 +106,7 @@ module LocaleModel {
   }
 
   const chpl_emptyLocaleSpace: domain(1) = {1..0};
+  pragma "unsafe"
   const chpl_emptyLocales: [chpl_emptyLocaleSpace] locale;
 
   //
@@ -110,8 +116,11 @@ module LocaleModel {
     const _node_id : int;
     var local_name : string; // should never be modified after first assignment
 
-    var numSublocales: int; // should never be modified after first assignment
-    var childSpace: domain(1);
+    const numSublocales: int;
+    const childSpace: domain(1);
+    // Todo: avoid the pragma by having helpSetupLocaleNUMA return this array
+    // and initialize the field from it. Need childSpace to be const?
+    pragma "unsafe"
     var childLocales: [childSpace] unmanaged NumaDomain;
 
     // This constructor must be invoked "on" the node
@@ -119,10 +128,15 @@ module LocaleModel {
     // to establish the equivalence the "locale" field of the locale object
     // and the node ID portion of any wide pointer referring to it.
     proc init() {
-      if doneCreatingLocales {
+      use SysCTypes;
+      _node_id = chpl_nodeID: int;
+      extern proc chpl_topo_getNumNumaDomains(): c_int;
+      numSublocales = chpl_topo_getNumNumaDomains();
+      childSpace = {0..#numSublocales};
+
+      if rootLocaleInitialized {
         halt("Cannot create additional LocaleModel instances");
       }
-      _node_id = chpl_nodeID: int;
 
       this.complete();
 
@@ -130,12 +144,22 @@ module LocaleModel {
     }
 
     proc init(parent_loc : locale) {
-      if doneCreatingLocales {
+      if rootLocaleInitialized {
         halt("Cannot create additional LocaleModel instances");
       }
       super.init(parent_loc);
 
+      // Why doesn't this work (generates an internal error) to avoid
+      // the code duplication below?  Or if it's not supposed to work,
+      // how could we make it a user error?
+      //
+      //      this.init();
+
+      use SysCTypes;
       _node_id = chpl_nodeID: int;
+      extern proc chpl_topo_getNumNumaDomains(): c_int;
+      numSublocales = chpl_topo_getNumNumaDomains();
+      childSpace = {0..#numSublocales};
 
       this.complete();
 
@@ -154,20 +178,21 @@ module LocaleModel {
     //
     // The numa memory model currently assumes only one memory.
     //
-    proc defaultMemory() : locale {
-      return this;
+    // ENGIN: Are these ever used?
+    override proc defaultMemory() : locale {
+      return new locale(this);
     }
 
-    proc largeMemory() : locale {
-      return this;
+    override proc largeMemory() : locale {
+      return new locale(this);
     }
 
-    proc lowLatencyMemory() : locale {
-      return this;
+    override proc lowLatencyMemory() : locale {
+      return new locale(this);
     }
 
-    proc highBandwidthMemory() : locale {
-      return this;
+    override proc highBandwidthMemory() : locale {
+      return new locale(this);
     }
 
     proc getChildSpace() return childSpace;
@@ -183,16 +208,16 @@ module LocaleModel {
       if boundsChecking then
         if (idx < 0) || (idx >= numSublocales) then
           halt("sublocale child index out of bounds (",idx,")");
-      return childLocales[idx];
+      return new locale(childLocales[idx]);
     }
 
     iter getChildren() : locale  {
       for loc in childLocales do
-        yield loc;
+        yield new locale(loc);
     }
 
     proc getChildArray() {
-      return childLocales;
+      return [loc in childLocales] loc;
     }
 
     //------------------------------------------------------------------------{
@@ -203,10 +228,10 @@ module LocaleModel {
     }
     //------------------------------------------------------------------------}
 
-    proc deinit() {
-      for loc in childLocales do
-        delete loc;
-    }
+    // ENGIN: We store all LocaleModel instances in the Locales array which is
+    // marked "locale private" locale private variables are autoDestroy'd by the
+    // compiler. So, nothing to deinit here.
+    proc deinit() { }
  }
 
   //
@@ -219,10 +244,11 @@ module LocaleModel {
   class RootLocale : AbstractRootLocale {
 
     const myLocaleSpace: domain(1) = {0..numLocales-1};
+    pragma "unsafe"
     var myLocales: [myLocaleSpace] locale;
 
     proc init() {
-      super.init(nil);
+      super.init(nilLocale);
       nPUsPhysAcc = 0;
       nPUsPhysAll = 0;
       nPUsLogAcc = 0;
@@ -252,7 +278,7 @@ module LocaleModel {
       f <~> name;
     }
 
-    override proc getChildCount() return this.myLocaleSpace.numIndices;
+    override proc getChildCount() return this.myLocaleSpace.size;
 
     proc getChildSpace() return this.myLocaleSpace;
 
@@ -276,15 +302,17 @@ module LocaleModel {
       const subloc = chpl_sublocFromLocaleID(id);
       if chpl_isActualSublocID(subloc) then
         return (myLocales[node:int].getChild(subloc:int)):locale;
-      else
-        return (myLocales[node:int]):locale;
+      else {
+        const n = node:int;
+        const l = myLocales[n];
+        return l:locale;
+      }
     }
 
     proc deinit() {
       for loc in myLocales {
         on loc {
           rootLocaleInitialized = false;
-          delete _to_unmanaged(loc);
         }
       }
     }

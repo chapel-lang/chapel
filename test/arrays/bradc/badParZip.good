@@ -5,4 +5,4 @@ Case 1: Expecting 1 2 3 4
 4
 1 2 3 4
 Case 2: Expecting 
-badParZip.chpl:10: error: halt reached - zippered iteration with a range has non-equal lengths
+badParZip.chpl:10: error: halt reached - size mismatch in zippered iteration

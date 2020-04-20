@@ -1,5 +1,5 @@
 true
 false
-uncaught BadFormatError: bad format: missing expected literal (in channel.read(ref a:bool) with path "readWriteBool.stdin" offset 10)
+uncaught BadFormatError: bad format: missing expected literal (while reading bool with path "readWriteBool.stdin" offset 10)
   readWriteBool.chpl:11: thrown here
   readWriteBool.chpl:11: uncaught here

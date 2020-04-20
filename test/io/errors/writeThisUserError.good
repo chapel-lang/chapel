@@ -1,1 +1,3 @@
-IllegalArgumentError
+uncaught IllegalArgumentError: User error thrown from writeThis!
+  writeThisUserError.chpl:12: thrown here
+  writeThisUserError.chpl:20: uncaught here

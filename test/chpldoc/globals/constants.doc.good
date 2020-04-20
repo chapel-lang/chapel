@@ -11,6 +11,13 @@ hasGlobalConstants
 
    use hasGlobalConstants;
 
+
+or
+
+.. code-block:: chapel
+
+   import hasGlobalConstants;
+
 This module has some global scoped constants. 
 
 .. data:: const first: int

@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -114,11 +115,6 @@ module ChapelDistribution {
       compilerError("associative domains not supported by this distribution");
     }
 
-    proc dsiNewAssociativeDom(type idxType, param parSafe: bool)
-    where isEnumType(idxType) {
-      compilerError("enumerated domains not supported by this distribution");
-    }
-
     proc dsiNewSparseDom(param rank: int, type idxType, dom: domain) {
       compilerError("sparse domains not supported by this distribution");
     }
@@ -166,10 +162,9 @@ module ChapelDistribution {
     proc deinit() {
     }
 
-    pragma "unsafe"
     proc dsiMyDist(): unmanaged BaseDist {
       halt("internal error: dsiMyDist is not implemented");
-      var ret: unmanaged BaseDist; // nil
+      pragma "unsafe" var ret: unmanaged BaseDist; // nil
       return ret;
     }
 
@@ -379,7 +374,7 @@ module ChapelDistribution {
     }
 
     override proc dsiBulkAdd(inds: [] index(rank, idxType),
-        dataSorted=false, isUnique=false, preserveInds=true, addOn=nil:locale?){
+        dataSorted=false, isUnique=false, preserveInds=true, addOn=nilLocale){
 
       if !dataSorted && preserveInds {
         var _inds = inds;
@@ -391,7 +386,7 @@ module ChapelDistribution {
     }
 
     proc bulkAdd_help(inds: [?indsDom] index(rank, idxType),
-        dataSorted=false, isUnique=false, addOn=nil:locale?){
+        dataSorted=false, isUnique=false, addOn=nilLocale){
       halt("Helper function called on the BaseSparseDomImpl");
 
       return -1;
@@ -591,7 +586,7 @@ module ChapelDistribution {
 
     proc dsiBulkAdd(inds: [] index(rank, idxType),
         dataSorted=false, isUnique=false, preserveInds=true,
-        addOn=nil:locale?): int {
+        addOn=nilLocale): int {
 
       halt("Bulk addition is not supported by this sparse domain");
       return 0;
@@ -678,10 +673,9 @@ module ChapelDistribution {
 
     proc dsiStaticFastFollowCheck(type leadType) param return false;
 
-    pragma "unsafe"
     proc dsiGetBaseDom(): unmanaged BaseDom {
       halt("internal error: dsiGetBaseDom is not implemented");
-      var ret: unmanaged BaseDom; // nil
+      pragma "unsafe" var ret: unmanaged BaseDom; // nil
       return ret;
     }
 
@@ -824,15 +818,6 @@ module ChapelDistribution {
       halt("reallocating not supported for this array type");
     }
 
-    // This dsiReallocate version is used by array vector operations, which
-    // are supported on 1-D arrays only, so can work directly with ranges
-    // instead of requiring tuples of ranges.  They require two ranges
-    // because the allocated size and logical size can differ.
-    proc dsiReallocate(allocBound: range(idxType, BoundedRangeType.bounded, stridable),
-                       arrayBound: range(idxType, BoundedRangeType.bounded, stridable)) where rank == 1 {
-       halt("reallocating not supported for this array type");
-    }
-
     override proc dsiPostReallocate() {
     }
 
@@ -916,7 +901,7 @@ module ChapelDistribution {
       // fill all new indices i s.t. i > indices[oldnnz]
       forall i in shiftMap.domain.high+1..dom.nnzDom.high do data[i] = irv;
 
-      for (i, _newIdx) in zip(1..oldnnz by -1, shiftMap.domain.dim(1) by -1) {
+      for (i, _newIdx) in zip(1..oldnnz by -1, shiftMap.domain.dim(0) by -1) {
         newIdx = shiftMap[_newIdx];
         data[newIdx] = data[i];
 
@@ -1019,7 +1004,7 @@ module ChapelDistribution {
         var tmp:rank * range(idxType,BoundedRangeType.bounded,stridable);
 
         // set tmp = inds with some error checking
-        for param i in 1..rank {
+        for param i in 0..rank-1 {
           var from = inds(i);
           tmp(i) =
             from.safeCast(range(idxType,BoundedRangeType.bounded,stridable));

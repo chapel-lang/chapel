@@ -1,4 +1,5 @@
-# Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+# Copyright 2020 Hewlett Packard Enterprise Development LP
+# Copyright 2004-2019 Cray Inc.
 # Other additional copyright holders may be indicated within.
 #
 # The entirety of this work is licensed under the Apache License,
@@ -147,9 +148,7 @@ chplvis: compiler third-party-fltk FORCE
 	cd tools/chplvis && $(MAKE)
 	cd tools/chplvis && $(MAKE) install
 
-mason: comprt chpldoc mason-no-chpldoc FORCE
-
-mason-no-chpldoc: comprt FORCE
+mason: chpldoc notcompiler FORCE
 	cd tools/mason && $(MAKE) && $(MAKE) install
 
 c2chapel: FORCE

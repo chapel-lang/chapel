@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -69,6 +70,10 @@ BlockStmt* buildUseStmt(Expr* mod, const char* rename,
 BlockStmt* buildUseStmt(Expr* mod, Expr* rename,
                         std::vector<PotentialRename*>* names, bool except,
                         bool privateUse);
+BlockStmt* buildImportStmt(Expr* mod, bool privateImport);
+BlockStmt* buildImportStmt(Expr* mod, const char* rename, bool privateImport);
+BlockStmt* buildImportStmt(Expr* mod, std::vector<PotentialRename*>* names,
+                           bool privateImport);
 bool processStringInRequireStmt(const char* str, bool parseTime,
                                 const char* modFilename);
 BlockStmt* buildRequireStmt(CallExpr* args);
@@ -84,6 +89,10 @@ ModuleSymbol* buildModule(const char* name,
                           bool        priv,
                           bool        prototype,
                           const char* docs);
+BlockStmt* buildIncludeModule(const char* name,
+                              bool priv,
+                              bool prototype,
+                              const char* docs);
 
 CallExpr* buildPrimitiveExpr(CallExpr* exprs);
 
@@ -178,6 +187,17 @@ BlockStmt* buildExternBlockStmt(const char* c_code);
 CallExpr*  buildPreDecIncWarning(Expr* expr, char sign);
 BlockStmt* convertTypesToExtern(BlockStmt*);
 BlockStmt* handleConfigTypes(BlockStmt*);
+
+// In the following routines 'open[high|low]' are used to indicate
+// whether an open-range is being created, like `lo..<hi`.  At
+// present, Chapel only supports open intervals on the high bound,
+// so those that say that the low bound is open are unused, but
+// here if we decide to add `lo<..<hi` and/or `lo<..hi` later.
+CallExpr* buildBoundedRange(Expr* low, Expr* high,
+                            bool openlow=false, bool openhigh=false);
+CallExpr* buildLowBoundedRange(Expr* low, bool open=false);
+CallExpr* buildHighBoundedRange(Expr* high, bool open=false);
+CallExpr* buildUnboundedRange();
 
 Expr* tryExpr(Expr*);
 Expr* tryBangExpr(Expr*);

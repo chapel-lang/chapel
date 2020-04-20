@@ -1,6 +1,6 @@
 module OuterModule {
   module outermost {
-    use useMe;
+    use OuterModule.useMe;
     module middlemost {
       module innermost {
         proc f() {

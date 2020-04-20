@@ -18,13 +18,13 @@ record BeerAdvocateRecord {
 // ==== index of the first occurence of the substring ss after start.
 proc indexOf(substring: string, s: string, start: int): int {
 
-  if (substring.length > s.length) {
+  if (substring.size > s.size) {
     return -1;
   }
 
-  for i in start..(s.length - substring.length + 1) {
-    //writeln("i: " + i + ", s.length:" + s.length + ", substring.length: " + substring.length);
-    var ss = s[i..#substring.length];
+  for i in start..(s.size - substring.size + 1) {
+    //writeln("i: " + i + ", s.size:" + s.size + ", substring.size: " + substring.size);
+    var ss = s[i..#substring.size];
     //writeln("ss: " + ss);
     if (ss == substring) {
       return i;
@@ -64,18 +64,18 @@ proc findFieldValue(s: string, fieldStart: string, base: int): (string, int) {
   if (i == -1) {
     return ("", 1);
   }
-  var j = indexOf("\n", s, i + fieldStart.length);
+  var j = indexOf("\n", s, i + fieldStart.size);
   if (j == -1) {
     return ("", 1);
   } else {
-    return (s[i + fieldStart.length..(j - 1)], j + 1);
+    return (s[i + fieldStart.size..(j - 1)], j + 1);
   }
 }
 // ==== findFieldValueReal(s: string, fieldStart: string, base: int) -- Returns a
 // tuple 
 proc findFieldValueReal(s: string, fieldStart: string, base: int): (real, int) {
   var (a, b) = findFieldValue(s, fieldStart, base);
-  if (a.length > 0) {
+  if (a.size > 0) {
     return (a: real, b);
   } else {
     return (0.0, b);
@@ -84,7 +84,7 @@ proc findFieldValueReal(s: string, fieldStart: string, base: int): (real, int) {
 // ==== findFieldValueInt(s: string, fieldStart: string, base: int) -- Same here
 proc findFieldValueInt(s: string, fieldStart: string, base: int): (int, int) {
   var (a, b) = findFieldValue(s, fieldStart, base);
-  if (a.length > 0) {
+  if (a.size > 0) {
     // TZ: ???? How is this legal?
     return (a: int, b);
   } else {

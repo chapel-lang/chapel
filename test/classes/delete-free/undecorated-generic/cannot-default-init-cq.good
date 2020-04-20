@@ -1,3 +1,5 @@
 cannot-default-init-cq.chpl:3: In function 'test':
-cannot-default-init-cq.chpl:4: error: 'bb' cannot be default initialized
-cannot-default-init-cq.chpl:5: note: 'bb' is used here before being initialized
+cannot-default-init-cq.chpl:4: error: variable 'bb' is not initialized
+note: undecorated class type C? does not support default initialization
+note: consider adding a management decorator such as 'owned', 'shared', 'borrowed', or 'unmanaged'
+cannot-default-init-cq.chpl:5: note: 'bb' use here prevents split-init from establishing the type

@@ -96,40 +96,40 @@ proc main() {
 //  writeln("Compute time: ", dijkstra_tm);
 
   for i in D1 {
-    if (Edges[i].dupl != 0) {
+    if (Edges[i]!.dupl != 0) {
 
       // Recover original distance of edge
-      var sum: real = 1.0 / Edges[i].distance;
+      var sum: real = 1.0 / Edges[i]!.distance;
       for j in (i+1)..(nEdges-1) {
-        if (Edges[j].dupl == 1) then break;
-        sum -= 1.0 / Edges[j].distance;
+        if (Edges[j]!.dupl == 1) then break;
+        sum -= 1.0 / Edges[j]!.distance;
       }
 
-      Edges[i].distance = 1.0 / sum;
+      Edges[i]!.distance = 1.0 / sum;
 
       // Compute total distance of component edges (= total distance)
-      sum = Edges[i].distance;
+      sum = Edges[i]!.distance;
       for j in (i+1)..(nEdges-1) {
-        if (Edges[j].dupl == 1) then break;
-        sum += Edges[j].distance;
+        if (Edges[j]!.dupl == 1) then break;
+        sum += Edges[j]!.distance;
       }
 
       // Divide hyperlink score to component edges proportional
       // to (edge distance / total distance)
-      var vbHL: real = Edges[i].vb$.readXX() / sum;
-      Edges[i].vb$.writeXF(Edges[i].distance * vbHL);
+      var vbHL: real = Edges[i]!.vb$.readXX() / sum;
+      Edges[i]!.vb$.writeXF(Edges[i]!.distance * vbHL);
 
       for j in (i+1)..(nEdges-1) {
-        if (Edges[j].dupl == 1) then break;
-        Edges[j].vb$.writeXF(Edges[j].distance * vbHL);
+        if (Edges[j]!.dupl == 1) then break;
+        Edges[j]!.vb$.writeXF(Edges[j]!.distance * vbHL);
       }
     }
   }
 
   writeln("#     From     To     Betweenness");
 
-  for i in D1 do writeln(Edges[i].id, "     ", Edges[i].n1+1, "     ",
-                         Edges[i].n2+1, "     ", Edges[i].vb$.readXX());
+  for i in D1 do writeln(Edges[i]!.id, "     ", Edges[i]!.n1+1, "     ",
+                         Edges[i]!.n2+1, "     ", Edges[i]!.vb$.readXX());
 
   for n in Nodes do delete n;
   for e in Edges do delete e;

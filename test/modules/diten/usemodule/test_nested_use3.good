@@ -1,2 +1,2 @@
 test_nested_use3.chpl:12: In function 'main':
-test_nested_use3.chpl:13: error: Cannot find field 'notmiddlemost'
+test_nested_use3.chpl:13: error: Cannot find symbol 'notmiddlemost' in module 'outermost'

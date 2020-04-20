@@ -5,7 +5,7 @@ class D {
 
 class C {
   type elemType;
-  const dArray: [LocaleSpace] unmanaged D(elemType);
+  const dArray: [LocaleSpace] unmanaged D(elemType)?;
 
   proc init(type elemType, targetLocales: [?targetLocalesDomain] locale) {
     this.elemType = elemType;

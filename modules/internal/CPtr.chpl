@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -27,7 +28,7 @@
 module CPtr {
   private use ChapelStandard;
   private use SysBasic, SysError, SysCTypes;
-  private use HaltWrappers only;
+  import HaltWrappers;
 
   /* A Chapel version of a C NULL pointer. */
   inline proc c_nil:c_void_ptr {
@@ -67,14 +68,15 @@ module CPtr {
 
   */
 
-  //   Similar to _ddata from ChapelBase, but differs
-  //   from _ddata because it can never be wide.
   pragma "data class"
   pragma "no object"
   pragma "no default functions"
   pragma "no wide class"
   pragma "c_ptr class"
   class c_ptr {
+    //   Similar to _ddata from ChapelBase, but differs
+    //   from _ddata because it can never be wide.
+
     /* The type that this pointer points to */
     type eltType;
     /* Retrieve the i'th element (zero based) from a pointer to an array.
@@ -198,7 +200,12 @@ module CPtr {
       ch <~> new ioLiteral("]");
     }
 
+    /*
+      Deprecated - please use :var:`c_array.size`.
+    */
     inline proc length {
+      compilerWarning("'c_array.length' is deprecated - " +
+                      "please use 'c_array.size' instead");
       return size;
     }
 
@@ -233,14 +240,8 @@ module CPtr {
   }
 
   pragma "no doc"
-  inline proc c_void_ptr.writeThis(ch) {
-    try {
-      ch.writef("0x%xu", this:c_uintptr);
-    } catch e: SystemError {
-      ch.setError(e.err);
-    } catch {
-      ch.setError(EINVAL:syserr);
-    }
+  inline proc c_void_ptr.writeThis(ch) throws {
+    ch.writef("0x%xu", this:c_uintptr);
   }
 
   pragma "no doc"

@@ -34,6 +34,10 @@ proc equalArray() {
   var yND : [{1..5,1..7}] real;
   testAssert(x1D,y1D,"Equal 1D Arrays");
   testAssert(xND,yND,"Equal High Dim Arrays");
+
+  var x0: [0..2] int = [1,2,4];
+  var y0: [0..2] int = [1,2,4];
+  testAssert(y0, x0,"Equal 0-based arrays");
 }
 
 proc equalIntegers() {
@@ -79,6 +83,10 @@ proc Unequal1DArray() {
   var x3 = [1,7,6,5,8];
   var y3 = [1,7,6];
   testAssert(x3,y3,"Unequal 1D Array Type 3");
+
+  var x0: [0..2] int = [1,2,8];
+  var y0: [0..2] int = [1,2,4];
+  testAssert(y0, x0,"Unequal 0-based arrays");
 }
 
 proc UnequalComplex() {

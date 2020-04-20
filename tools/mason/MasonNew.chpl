@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -25,49 +26,62 @@ use MasonUtils;
 use MasonHelp;
 use MasonEnv;
 
-
-
+/*
+  Creates a new library project at a given directory
+  mason new <projectName/directoryName>
+*/
 proc masonNew(args) throws {
   try! {
     if args.size < 3 {
       masonNewHelp();
       exit();
-    } else {
+    } 
+    else {
       var vcs = true;
       var show = false;
-      var name = '';
-      for arg in args[2..] {
-        if arg == '-h' || arg == '--help' {
-          masonNewHelp();
-          exit();
+      var packageName = '';
+      var dirName = '';
+      var countArgs = args.domain.low + 2;
+      for arg in args[args.domain.low+2..] {
+        countArgs += 1;
+        select (arg) {
+          when '-h' {
+            masonNewHelp();
+            exit();
+          }
+          when '--help' {
+            masonNewHelp();
+            exit();
+          }
+          when '--no-vcs' {
+            vcs = false;
+          }
+          when '--show' {
+            show = true;
+          }
+          when '--name' {
+              packageName = args[countArgs];
+          }
+          otherwise {
+            if arg.startsWith('--name=') {
+              var res = arg.split("=");
+              packageName = res[1];
+            }
+            else {
+              if args[countArgs - 2] != '--name' then
+              dirName = arg;
+              if packageName.size == 0 then
+              packageName = arg;
+            }
+          }
         }
-        else if arg == '--no-vcs' {
-          vcs = false;
+      }
+
+      if validatePackageName(dirName=packageName) {
+        if isDir(dirName) {
+          throw new owned MasonError("A directory named '" + dirName + "' already exists");
         }
-        else if arg == '--show' {
-          show = true;
-        }
-        else {
-          name = arg;
-        }
-      }
-      
-      if name == '' {
-        throw new owned MasonError("No package name specified");
-      }
-      else if !isIdentifier(name) {
-        throw new owned MasonError("Bad package name '" + name +
-                             "' - only Chapel identifiers are legal package names");
-      }
-      else if name.count("$") > 0 {
-        throw new owned MasonError("Bad package name '" + name +
-                             "' - $ is not allowed in package names");
-      }
-      else if isDir(name) {
-          throw new owned MasonError("A directory named '" + name + "' already exists");
-      }
-      else {
-        InitProject(name, vcs, show);
+        InitProject(dirName, packageName, vcs, show);
       }
     }
   }
@@ -77,20 +91,46 @@ proc masonNew(args) throws {
   }
 }
 
-
-proc InitProject(name, vcs, show) throws {
-  if vcs {
-    gitInit(name, show);
-    addGitIgnore(name);
+proc validatePackageName(dirName) throws {
+  if dirName == '' {
+    throw new owned MasonError("No package name specified");
+  }
+  else if !isIdentifier(dirName) {
+    throw new owned MasonError("Bad package name '" + dirName +
+                        "' - only Chapel identifiers are legal package names.\n" +  
+                        "Please use mason new %s --name <LegalName>".format(dirName));
+  }
+  else if dirName.count("$") > 0 {
+    throw new owned MasonError("Bad package name '" + dirName +
+                        "' - $ is not allowed in package names");
   }
   else {
-    mkdir(name);
+    return true;
+  }
+}
+
+/*
+  Takes projectName, vcs (version control), show as inputs and
+  initializes a library project at a directory of given projectName
+  A library project consists of .gitignore file, Mason.toml file, and 
+  directories such as .git, src, example, test
+*/
+proc InitProject(dirName, packageName, vcs, show) throws {
+  if vcs {
+    gitInit(dirName, show);
+    addGitIgnore(dirName);
+  }
+  else {
+    mkdir(dirName);
   }
   // Confirm git init before creating files
-  if isDir(name) {
-    makeBasicToml(name);
-    makeProjectFiles(name);
-    writeln("Created new library project: " + name);
+  if isDir(dirName) {
+    makeBasicToml(dirName=packageName, path=dirName);
+    makeSrcDir(dirName);
+    makeModule(dirName, fileName=packageName);
+    makeTestDir(dirName);
+    makeExampleDir(dirName);  
+    writeln("Created new library project: " + dirName);
   }
   else {
     throw new owned MasonError("Failed to create project");
@@ -98,44 +138,51 @@ proc InitProject(name, vcs, show) throws {
 }
 
 
-private proc gitInit(name: string, show: bool) {
-  var initialize = "git init -q " + name;
-  if show then initialize = "git init " + name;
+proc gitInit(dirName: string, show: bool) {
+  var initialize = "git init -q " + dirName;
+  if show then initialize = "git init " + dirName;
   runCommand(initialize);
 }
 
-private proc addGitIgnore(name: string) {
+proc addGitIgnore(dirName: string) {
   var toIgnore = "target/\nMason.lock\n";
-  var gitIgnore = open(name+"/.gitignore", iomode.cw);
+  var gitIgnore = open(dirName+"/.gitignore", iomode.cw);
   var GIwriter = gitIgnore.writer();
   GIwriter.write(toIgnore);
   GIwriter.close();
 }
 
-
-proc makeBasicToml(name: string) {
+proc makeBasicToml(dirName: string, path: string) {
   const baseToml = '[brick]\n' +
-                     'name = "' + name + '"\n' +
+                     'name = "' + dirName + '"\n' +
                      'version = "0.1.0"\n' +
                      'chplVersion = "' + getChapelVersionStr() + '"\n' +
                      '\n' +
                      '[dependencies]' +
                      '\n';
-  var tomlFile = open(name+"/Mason.toml", iomode.cw);
+  var tomlFile = open(path+"/Mason.toml", iomode.cw);
   var tomlWriter = tomlFile.writer();
   tomlWriter.write(baseToml);
   tomlWriter.close();
 }
 
+proc makeSrcDir(path:string) {
+  mkdir(path + "/src");
+}
 
-private proc makeProjectFiles(name: string) {
-  mkdir(name + "/src");
-  mkdir(name + "/test");
-  mkdir(name + "/example");
-  const libTemplate = '/* Documentation for ' + name +
-    ' */\nmodule '+ name + ' {\n  writeln("New library: '+ name +'");\n}';
-  var lib = open(name+'/src/'+name+'.chpl', iomode.cw);
+proc makeModule(path:string, fileName:string) {
+  const libTemplate = '/* Documentation for ' + fileName +
+  ' */\nmodule '+ fileName + ' {\n  writeln("New library: '+ fileName +'");\n}';
+  var lib = open(path+'/src/'+fileName+'.chpl', iomode.cw);
   var libWriter = lib.writer();
   libWriter.write(libTemplate + '\n');
   libWriter.close();
+}
+
+proc makeTestDir(path:string) {
+  mkdir(path + "/test");
+}
+
+proc makeExampleDir(path:string) {
+  mkdir(path + "/example");
 }

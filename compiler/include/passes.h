@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -127,6 +128,7 @@ bool isVirtualIterator(FnSymbol* iterFn);
 void normalize(FnSymbol* fn);
 void normalize(Expr* expr);
 void checkUseBeforeDefs(FnSymbol* fn);
+void addMentionToEndOfStatement(Expr* node, CallExpr* existingEndOfStatement);
 
 // parallel.cpp
 Type* getOrMakeRefTypeDuringCodegen(Type* type);

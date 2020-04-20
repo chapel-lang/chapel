@@ -117,6 +117,23 @@ void _gasneti_leak_aligned(void *ptr GASNETI_CURLOCFARG) {
 extern const char *gasnet_max_segsize_str; // client-overrideable max segment size
 extern uint64_t gasnet_max_segsize; // DEPRECATED: client-overrideable max segment size
 
+#if GASNET_DEBUG
+  extern void gasneti_checkinit(void);
+  extern void gasneti_checkattach(void);
+  #define GASNETI_CHECKINIT()    gasneti_checkinit()
+  #define GASNETI_CHECKATTACH()  gasneti_checkattach()
+#else
+  #define GASNETI_CHECKINIT()    ((void)0)
+  #define GASNETI_CHECKATTACH()  ((void)0)
+#endif
+
+extern gex_Rank_t gasneti_mynode;
+#define gex_System_QueryJobRank() (GASNETI_CHECKINIT(), (gex_Rank_t)gasneti_mynode)
+
+extern gex_Rank_t gasneti_nodes;
+#define gex_System_QueryJobSize() (GASNETI_CHECKINIT(), (gex_Rank_t)gasneti_nodes)
+
+
 // We can detect TM0 by its better alignment than other tm's
 #ifdef GASNETI_TM0_ALIGN
   // Keep existing value
@@ -158,7 +175,15 @@ gex_Rank_t gasneti_i_tm_rank_to_jobrank(gasneti_TM_t _i_tm, gex_Rank_t _rank) {
 #define gasneti_e_tm_rank_to_jobrank(e_tm,rank) \
         gasneti_i_tm_rank_to_jobrank(gasneti_import_tm(e_tm),rank)
 
-// NOTE: gasneti_[ei]_tm_jobrank_to_rank() appear later, after defn of gasneti_nodes
+GASNETI_INLINE(gasneti_i_tm_jobrank_to_rank)
+gex_Rank_t gasneti_i_tm_jobrank_to_rank(gasneti_TM_t _i_tm, gex_Rank_t _jobrank) {
+  gasneti_assert(_i_tm);
+  gasneti_assert_uint(_jobrank ,<, gex_System_QueryJobSize());
+  if (gasneti_is_tm0(_i_tm)) return _jobrank;
+  return gasneti_tm_rev_lookup(_i_tm, _jobrank);
+}
+#define gasneti_e_tm_jobrank_to_rank(e_tm,jobrank) \
+        gasneti_i_tm_jobrank_to_rank(gasneti_import_tm(e_tm),jobrank)
 
 // Variants to allow tm=NULL to substitute for TM0
 // TODO-EX: These will necessarily be superceeded when multi-{EP,segment}
@@ -173,6 +198,36 @@ gex_Rank_t _gasneti_e_tm_rank_to_jobrank_allownull(gex_TM_t _e_tm, gex_Rank_t _r
   return gasneti_tm_fwd_lookup(_i_tm, _rank);
 }
 
+extern gasnet_seginfo_t *gasneti_seginfo;
+extern gasnet_seginfo_t *gasneti_seginfo_aux;
+
+// TODO: generalize for multi-{EP,segment} support
+// TODO: work towards dropping non-scalable seginfo tables
+GASNETI_INLINE(_gasneti_seginfo_lookup)
+const gasnet_seginfo_t *_gasneti_seginfo_lookup(gex_TM_t _e_tm, gex_Rank_t _rank, int _is_aux) {
+  gex_Rank_t _jobrank = _gasneti_e_tm_rank_to_jobrank_allownull(_e_tm,_rank);
+  gasnet_seginfo_t *_seg_table = _is_aux ? gasneti_seginfo_aux : gasneti_seginfo;
+  return _seg_table + _jobrank;
+}
+#define gasneti_client_seginfo(tm,rank) _gasneti_seginfo_lookup(tm,rank,0)
+#define gasneti_aux_seginfo(tm,rank)    _gasneti_seginfo_lookup(tm,rank,1)
+
+GASNETI_INLINE(_gasneti_in_seginfo_t)
+int _gasneti_in_seginfo_t(const void *_ptr, size_t _nbytes, const gasnet_seginfo_t *_seginfo) {
+  gasneti_assert(_nbytes); // precondition to avoid "fence post" error at top of segment
+  uintptr_t _uptr = (uintptr_t)_ptr;
+  uintptr_t _segbase = (uintptr_t)_seginfo->addr;
+  return (_uptr >= _segbase && (_uptr + _nbytes) <= (_segbase + _seginfo->size));
+}
+
+GASNETI_INLINE(_gasneti_in_segment_t)
+int _gasneti_in_segment_t(const void *_ptr, size_t _nbytes, const gex_Segment_t _segment) {
+  gasneti_assert(_nbytes); // precondition to avoid "fence post" error at top of segment
+  uintptr_t _uptr = (uintptr_t)_ptr;
+  gasneti_Segment_t _i_seg = gasneti_import_segment(_segment);
+  return (_uptr >= (uintptr_t)(_i_seg->_addr) && (_uptr + _nbytes) <= (uintptr_t)_i_seg->_ub);
+}
+
 // These in-segment checks accept e_tm=NULL to indicate rank is a jobrank
 // (NULL,gasneti_mynode) is a common case for this.
 // NOTE: This behavior will no longer work when multi-{EP,segment} support is
@@ -182,29 +237,45 @@ gex_Rank_t _gasneti_e_tm_rank_to_jobrank_allownull(gex_TM_t _e_tm, gex_Rank_t _r
   #define gasneti_in_auxsegment(e_tm,rank,ptr,nbytes)     (_gasneti_check_tm_rank_allownull(e_tm,rank), 1)
   #define gasneti_in_fullsegment(e_tm,rank,ptr,nbytes)    (_gasneti_check_tm_rank_allownull(e_tm,rank), 1)
 #else
-  GASNETI_INLINE(_gasneti_in_seg)
-  int _gasneti_in_seg(gex_TM_t _e_tm, gex_Rank_t _rank,
-                      const void *_ptr, size_t _nbytes, gasnet_seginfo_t *_seg) {
-    gasneti_assert(_nbytes); // precondition to avoid "fence post" error at top of segment
-    gex_Rank_t _jobrank = _gasneti_e_tm_rank_to_jobrank_allownull(_e_tm,_rank);
-    return ((_ptr) >= _seg[_jobrank].addr &&
-            ((((uintptr_t)(_ptr))+(_nbytes)) <=
-             (((uintptr_t)_seg[_jobrank].addr)+_seg[_jobrank].size)));
-  }
   #define gasneti_in_clientsegment(e_tm,rank,ptr,nbytes) \
-          _gasneti_in_seg(e_tm,rank,ptr,nbytes,gasneti_seginfo)
+          _gasneti_in_seginfo_t(ptr,nbytes,gasneti_client_seginfo(e_tm,rank))
   #define gasneti_in_auxsegment(e_tm,rank,ptr,nbytes) \
-          _gasneti_in_seg(e_tm,rank,ptr,nbytes,gasneti_seginfo_aux)
+          _gasneti_in_seginfo_t(ptr,nbytes,gasneti_aux_seginfo(e_tm,rank))
   #define gasneti_in_fullsegment(e_tm,rank,ptr,nbytes) \
     (gasneti_in_clientsegment(e_tm,rank,ptr,nbytes) || gasneti_in_auxsegment(e_tm,rank,ptr,nbytes))
+#endif
+
+// Local-only in-segment checks, taking a gasneti_EP_t to name the local endpoint
+#if GASNET_SEGMENT_EVERYTHING
+  #define gasneti_in_local_auxsegment(ep,ptr,nbytes)       1
+  #define gasneti_in_local_clientsegment(ep,ptr,nbytes)    1
+  #define gasneti_in_local_fullsegment(ep,ptr,nbytes)      1
+#else
+  GASNETI_INLINE(gasneti_in_local_auxsegment)
+  int gasneti_in_local_auxsegment(gasneti_EP_t _ep, void *_ptr, size_t _nbytes) {
+    // TODO-EX: needs update for multi-{EP,Segment}
+    return _gasneti_in_seginfo_t(_ptr, _nbytes, &gasneti_seginfo_aux[gasneti_mynode]);
+  }
+  GASNETI_INLINE(gasneti_in_local_clientsegment)
+  int gasneti_in_local_clientsegment(gasneti_EP_t _ep, void *_ptr, size_t _nbytes) {
+    gex_Segment_t _segment = gasneti_export_segment(_ep->_segment);
+    return _segment && _gasneti_in_segment_t(_ptr, _nbytes, _segment);
+  }
+  GASNETI_INLINE(gasneti_in_local_fullsegment)
+  int gasneti_in_local_fullsegment(gasneti_EP_t _ep, void *_ptr, size_t _nbytes) {
+    return gasneti_in_local_clientsegment(_ep, _ptr, _nbytes) ||
+           gasneti_in_local_auxsegment(_ep, _ptr, _nbytes);
+  }
 #endif
 
 #ifdef _INCLUDED_GASNET_INTERNAL_H
   /* default for GASNet implementation is to check against union of client and aux segments */
   #define gasneti_in_segment gasneti_in_fullsegment
+  #define gasneti_in_local_segment gasneti_in_local_fullsegment
 #else
   /* default for client is to check against just the client seg */
   #define gasneti_in_segment gasneti_in_clientsegment
+  #define gasneti_in_local_segment gasneti_in_local_clientsegment
 #endif
 
 #ifdef GASNETI_SUPPORTS_OUTOFSEGMENT_PUTGET
@@ -229,8 +300,10 @@ gex_Rank_t _gasneti_e_tm_rank_to_jobrank_allownull(gex_TM_t _e_tm, gex_Rank_t _r
               gasneti_current_loc);                                            \
     if_pf (_gex_bc_ptr == NULL ||                                              \
            !segtest(_gex_bc_tm,_gex_bc_rank,_gex_bc_ptr,_gex_bc_nbytes)) {     \
-      gex_Rank_t _gex_bc_jbrk =                                                \
-               _gasneti_e_tm_rank_to_jobrank_allownull(_gex_bc_tm,_gex_bc_rank); \
+      const gasnet_seginfo_t *_gex_bc_client_seg =                             \
+                       gasneti_client_seginfo(_gex_bc_tm,_gex_bc_rank);        \
+      const gasnet_seginfo_t *_gex_bc_aux_seg =                                \
+                       gasneti_aux_seginfo(_gex_bc_tm,_gex_bc_rank);           \
       gasneti_fatalerror("Remote address out of range (" GASNETI_TMRANKFMT     \
          " ptr=" GASNETI_LADDRFMT" nbytes=%" PRIuPTR ") at %s"                 \
          "\n  clientsegment=(" GASNETI_LADDRFMT"..." GASNETI_LADDRFMT")"       \
@@ -239,12 +312,12 @@ gex_Rank_t _gasneti_e_tm_rank_to_jobrank_allownull(gex_TM_t _e_tm, gex_Rank_t _r
          GASNETI_LADDRSTR(_gex_bc_ptr),                                        \
          (uintptr_t)_gex_bc_nbytes,                                            \
          gasneti_current_loc,                                                  \
-         GASNETI_LADDRSTR(gasneti_seginfo[_gex_bc_jbrk].addr),                 \
-         GASNETI_LADDRSTR((uintptr_t)gasneti_seginfo[_gex_bc_jbrk].addr +      \
-                                     gasneti_seginfo[_gex_bc_jbrk].size),      \
-         GASNETI_LADDRSTR(gasneti_seginfo_aux[_gex_bc_jbrk].addr),             \
-         GASNETI_LADDRSTR((uintptr_t)gasneti_seginfo_aux[_gex_bc_jbrk].addr +  \
-                                     gasneti_seginfo_aux[_gex_bc_jbrk].size)   \
+         GASNETI_LADDRSTR(_gex_bc_client_seg->addr),                           \
+         GASNETI_LADDRSTR((uintptr_t)_gex_bc_client_seg->addr +                \
+                                     _gex_bc_client_seg->size),                \
+         GASNETI_LADDRSTR(_gex_bc_aux_seg->addr),                              \
+         GASNETI_LADDRSTR((uintptr_t)_gex_bc_aux_seg->addr +                   \
+                                     _gex_bc_aux_seg->size)                    \
          );                                                                    \
     }                                                                          \
   } while(0)
@@ -276,16 +349,6 @@ gex_Rank_t _gasneti_e_tm_rank_to_jobrank_allownull(gex_TM_t _e_tm, gex_Rank_t _r
         gasnet_ErrorName(_retcode), _retcode, #fncall, gasneti_current_loc); \
    }                                                                         \
  } while (0)
-#endif
-
-#if GASNET_DEBUG
-  extern void gasneti_checkinit(void);
-  extern void gasneti_checkattach(void);
-  #define GASNETI_CHECKINIT()    gasneti_checkinit()
-  #define GASNETI_CHECKATTACH()  gasneti_checkattach()
-#else
-  #define GASNETI_CHECKINIT()    ((void)0)
-  #define GASNETI_CHECKATTACH()  ((void)0)
 #endif
 
 /* ------------------------------------------------------------------------------------ */
@@ -464,7 +527,7 @@ void gasneti_leaf_finish(gex_Event_t *opt_val) {
         (PLATFORM_OS_DARWIN || PLATFORM_OS_SOLARIS || PLATFORM_OS_LINUX || PLATFORM_OS_CNL)
       #define GASNETI_THREADINFO_OPT    0
     #elif PLATFORM_ARCH_POWERPC && \
-         (PLATFORM_OS_LINUX || PLATFORM_OS_BGQ)
+          PLATFORM_OS_LINUX
       #define GASNETI_THREADINFO_OPT    0
     #endif
   #endif
@@ -485,7 +548,13 @@ void gasneti_leaf_finish(gex_Event_t *opt_val) {
       and discard the unused variables
      We need 2 separate variables to ensure correct name-binding semantics for GASNET_POST_THREADINFO(GASNET_GET_THREADINFO())
    */
-  #define _GASNETI_THREAD_POSTED (sizeof(_gasneti_threadinfo_available) > 1)
+  #if PLATFORM_COMPILER_PGI_CXX
+    // Add a redundant value use to avoid a 550 set-but-not-used warning 
+    #define _GASNETI_THREAD_POSTED (sizeof(_gasneti_threadinfo_available) > 1 \
+                                    && !_gasneti_threadinfo_available)
+  #else
+    #define _GASNETI_THREAD_POSTED (sizeof(_gasneti_threadinfo_available) > 1)
+  #endif
   static gasnet_threadinfo_t _gasneti_threadinfo_cache = 0;
   static uint8_t             _gasneti_threadinfo_available = 
     sizeof(_gasneti_threadinfo_cache) + sizeof(_gasneti_threadinfo_available);
@@ -540,7 +609,8 @@ void gasneti_leaf_finish(gex_Event_t *opt_val) {
 #else
   #if GASNET_DEBUG
     #define GASNET_POST_THREADINFO(info)   \
-      static uint8_t _gasneti_threadinfo_dummy = sizeof(_gasneti_threadinfo_dummy) /* diagnose duplicate POST in a scope */
+      static void *_gasneti_threadinfo_dummy = /* diagnose duplicate POST in a scope */ \
+                  (void *)&_gasneti_threadinfo_dummy;
   #else
     #define GASNET_POST_THREADINFO(info) ((void)0)
   #endif
@@ -1083,32 +1153,6 @@ extern int gasneti_wait_mode; /* current waitmode hint */
   #define gasnet_set_waitmode(wait_mode) gasneti_set_waitmode(wait_mode)
 #endif
 
-#ifndef _GASNET_MYNODE
-  extern gex_Rank_t gasneti_mynode;
-  #define gex_System_QueryJobRank() (GASNETI_CHECKINIT(), (gex_Rank_t)gasneti_mynode)
-#else
-  #error "Unsupported define of _GASNET_MYNODE"
-#endif
-
-// TODO-EX: rename (or remove?) the override
-#ifndef _GASNET_NODES
-  extern gex_Rank_t gasneti_nodes;
-  #define gex_System_QueryJobSize() (GASNETI_CHECKINIT(), (gex_Rank_t)gasneti_nodes)
-#else
-  #error "Unsupported define of _GASNET_NODES"  
-#endif
-
-// This is not the naturual place for these, but they must follow defn of gex_System_QueryJobSize()
-GASNETI_INLINE(gasneti_i_tm_jobrank_to_rank)
-gex_Rank_t gasneti_i_tm_jobrank_to_rank(gasneti_TM_t _i_tm, gex_Rank_t _jobrank) {
-  gasneti_assert(_i_tm);
-  gasneti_assert_uint(_jobrank ,<, gex_System_QueryJobSize());
-  if (gasneti_is_tm0(_i_tm)) return _jobrank;
-  return gasneti_tm_rev_lookup(_i_tm, _jobrank);
-}
-#define gasneti_e_tm_jobrank_to_rank(e_tm,jobrank) \
-        gasneti_i_tm_jobrank_to_rank(gasneti_import_tm(e_tm),jobrank)
-
 #ifndef _GASNET_GETMAXSEGMENTSIZE
 #define _GASNET_GETMAXSEGMENTSIZE
 #define _GASNET_GETMAXSEGMENTSIZE_DEFAULT
@@ -1139,13 +1183,6 @@ gex_Rank_t gasneti_i_tm_jobrank_to_rank(gasneti_TM_t _i_tm, gex_Rank_t _jobrank)
           gasneti_getNodeInfo(nodeinfo_table, numentries)
 #endif
 extern gasnet_nodeinfo_t *gasneti_nodeinfo;
-
-#ifndef _GASNETI_SEGINFO
-#define _GASNETI_SEGINFO
-#define _GASNETI_SEGINFO_DEFAULT
-  extern gasnet_seginfo_t *gasneti_seginfo;
-  extern gasnet_seginfo_t *gasneti_seginfo_aux;
-#endif
 
 // TODO-EX: override?
 #if 1

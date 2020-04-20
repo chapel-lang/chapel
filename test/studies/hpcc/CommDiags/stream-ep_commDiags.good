@@ -3,5 +3,5 @@ Bytes per array = 256
 Total memory required (GB) = 7.15256e-07
 Number of trials = 10
 
-(execute_on_nb = 3) (get = 6, put = 2) (get = 6, put = 2) (get = 6, put = 2)
+(execute_on_nb = 3) (get = 2, put = 2) (get = 2, put = 2) (get = 2, put = 2)
 Validation: SUCCESS

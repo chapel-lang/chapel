@@ -296,7 +296,7 @@ extern gex_Event_t gasnete_VIS_pcwrapNB      (_GASNETE_VIS_PCWRAP_ARGS) GASNETI_
   (_gasnete_vis_handle_local_put(_tm,_dstrank,dstaddr,srcaddr,len) ? 0 : \
    _gex_RMA_PutBlocking(_tm,_dstrank,dstaddr,srcaddr,len,_flags GASNETI_THREAD_PASS))
 #define gasnete_vis_degen_PutNB(dstaddr, srcaddr, len) \
-  (_gasnete_vis_handle_local_put(_tm,_dstrank,dstaddr,srcaddr,len) ? 0 : \
+  (_gasnete_vis_handle_local_put(_tm,_dstrank,dstaddr,srcaddr,len) ? 0L : \
    _gex_RMA_PutNB(_tm,_dstrank,dstaddr,srcaddr,len,_GASNETE_LCOPT_FLAGS_NB GASNETI_THREAD_PASS))
 #define gasnete_vis_degen_PutNBI(dstaddr, srcaddr, len) \
   (_gasnete_vis_handle_local_put(_tm,_dstrank,dstaddr,srcaddr,len) ? 0 : \
@@ -306,7 +306,7 @@ extern gex_Event_t gasnete_VIS_pcwrapNB      (_GASNETE_VIS_PCWRAP_ARGS) GASNETI_
   (_gasnete_vis_handle_local_get(_tm,_srcrank,dstaddr,srcaddr,len) ? 0 : \
    _gex_RMA_GetBlocking(_tm,dstaddr,_srcrank,srcaddr,len,_flags GASNETI_THREAD_PASS))
 #define gasnete_vis_degen_GetNB(dstaddr, srcaddr, len) \
-  (_gasnete_vis_handle_local_get(_tm,_srcrank,dstaddr,srcaddr,len) ? 0 : \
+  (_gasnete_vis_handle_local_get(_tm,_srcrank,dstaddr,srcaddr,len) ? 0L : \
    _gex_RMA_GetNB(_tm,dstaddr,_srcrank,srcaddr,len,_flags GASNETI_THREAD_PASS))
 #define gasnete_vis_degen_GetNBI(dstaddr, srcaddr, len) \
   (_gasnete_vis_handle_local_get(_tm,_srcrank,dstaddr,srcaddr,len) ? 0 : \

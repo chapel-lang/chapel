@@ -4,6 +4,11 @@ record R {
   param p : T;
 }
 
+proc R.init=(other: R) {
+  this.T = other.T;
+  this.p = other.p;
+}
+
 proc R.init=(param p : this.type.T) {
   this.T = p.type;
   this.p = p;

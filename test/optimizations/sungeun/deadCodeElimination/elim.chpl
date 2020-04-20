@@ -1,5 +1,5 @@
 proc shift(A, offset) where isRectangularArr(A) && A.rank==1 {
-  const numElems = A.numElements;
+  const numElems = A.size;
   const ao = abs(offset);
   var sA = A;
   /* ran into internal error with the following */

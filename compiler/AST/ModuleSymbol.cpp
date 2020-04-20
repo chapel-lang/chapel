@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -375,6 +376,26 @@ void ModuleSymbol::printDocs(std::ostream* file,
   this->printTabs(file, tabs + 1);
 
   *file << "use ";
+
+  if (parentName != "") {
+    *file << parentName << ".";
+  }
+
+  *file << name << ";" << std::endl << std::endl;
+
+  if (!fDocsTextOnly) {
+    *file << std::endl;
+  }
+
+  *file  << "or" << std::endl << std::endl;
+   
+  if (fDocsTextOnly == false) {
+    *file << ".. code-block:: chapel" << std::endl << std::endl;
+  }
+
+  this->printTabs(file, tabs + 1);
+
+  *file << "import ";
 
   if (parentName != "") {
     *file << parentName << ".";

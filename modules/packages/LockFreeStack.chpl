@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -97,7 +98,7 @@ module LockFreeStack {
 
   class Node {
     type eltType;
-    var val : eltType?;
+    var val : toNilableIfClassType(eltType);
     var next : unmanaged Node(eltType)?;
 
     proc init(val : ?eltType) {
@@ -114,6 +115,8 @@ module LockFreeStack {
     type objType;
     var _top : AtomicObject(unmanaged Node(objType)?, hasGlobalSupport=true, hasABASupport=false);
     var _manager = new owned LocalEpochManager();
+
+    proc objTypeOpt type return toNilableIfClassType(objType);
 
     proc init(type objType) {
       this.objType = objType;
@@ -157,7 +160,7 @@ module LockFreeStack {
       return (true, retval);
     }
 
-    iter drain() : objType? {
+    iter drain() : objTypeOpt {
       var tok = getToken();
       var (hasElt, elt) = pop(tok);
       while hasElt {
@@ -167,7 +170,7 @@ module LockFreeStack {
       tryReclaim();
     }
 
-    iter drain(param tag : iterKind) : objType? where tag == iterKind.standalone {
+    iter drain(param tag : iterKind) : objTypeOpt where tag == iterKind.standalone {
       coforall tid in 1..here.maxTaskPar {
         var tok = getToken();
         var (hasElt, elt) = pop(tok);

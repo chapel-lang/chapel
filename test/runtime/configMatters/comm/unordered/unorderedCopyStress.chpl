@@ -9,7 +9,10 @@ config const printStats = true,
 config const oversubscription = 1,
              tasksPerLocale = here.maxTaskPar * oversubscription;
 
-config type copyType = int;
+config type componentType = int;
+config param numComponents = 1;
+type copyType = if numComponents > 1 then numComponents*componentType else componentType;
+
 config param useUnorderedCopy = true;
 config const concurrentFencing = false;
 config param commDiags = false;
@@ -22,8 +25,8 @@ const D = space dmapped Block(space, dataParTasksPerLocale=tasksPerLocale);
 var A, reversedA: [D] copyType;
 
 forall (a, r, d) in zip(A, reversedA, D) {
-  a += d;
-  r += d;
+  a += d:componentType;
+  r += d:componentType;
 }
 
 inline proc assign(ref dst, ref src) {
@@ -57,7 +60,7 @@ proc stop(opType: string) {
   if verify then
     forall (rA, i) in zip(reversedA, D) {
       var expected: copyType;
-      expected += size-i;
+      expected += (size-i):componentType;
       assert(rA == expected);
     }
 }

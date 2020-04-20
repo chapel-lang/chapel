@@ -18,13 +18,18 @@
 #define TEST_GASNETEX 1
 #define SHORT_REQ_BASE GEX_AM_INDEX_BASE
 test_static_assert_file(GEX_AM_INDEX_BASE <= 128);
-#include <other/amx/testam.h>
+#include <testam.h>
 
 /* Define to get one big function that pushes the gcc inliner heursitics */
 #undef TESTGASNET_NO_SPLIT
 
 #if !defined(GASNET_HIDDEN_AM_CONCURRENCY_LEVEL)
 #error Missing GASNET_HIDDEN_AM_CONCURRENCY_LEVEL definition
+#endif
+
+#if PLATFORM_COMPILER_PGI_CXX
+  // suppress warnings on PGI C++ 19.10/macos about intentional constant controlling expressions
+  #pragma diag_suppress 236
 #endif
 
 TEST_BACKTRACE_DECLS();
@@ -921,20 +926,20 @@ void doit0(int partner, int *partnerseg) {
   assert_arr_all_val(gex_TI_t, ti_arr, ti_all); // ALL includes them all
   test_format(gex_TI_t, ti_arr, gasnett_format_ti);
 
-  gex_RMA_Value_t val = 0;
+  gex_RMA_Value_t val = 0; test_mark_used(val);
   test_static_assert(sizeof(gex_RMA_Value_t) == SIZEOF_GEX_RMA_VALUE_T);
   test_static_assert(sizeof(gex_RMA_Value_t) >= sizeof(void *));
   test_static_assert(sizeof(gex_RMA_Value_t) >= sizeof(long));
   assert_unsigned(gex_RMA_Value_t);
 
-  gex_AM_Index_t ind = 0;
+  gex_AM_Index_t ind = 0; test_mark_used(ind);
   assert_unsigned(gex_AM_Index_t);
 
-  gex_AM_Arg_t arg = 0;
+  gex_AM_Arg_t arg = 0; test_mark_used(arg);
   test_static_assert(sizeof(gex_AM_Arg_t) >= 4);
   assert_signed(gex_AM_Arg_t);
   
-  gex_AM_SrcDesc_t sd = 0;
+  gex_AM_SrcDesc_t sd = 0; test_mark_used(sd);
   CHECK_ZERO_CONSTANT(gex_AM_SrcDesc_t, GEX_AM_SRCDESC_NO_OP);
 
   assert_inttype(gex_DT_t);

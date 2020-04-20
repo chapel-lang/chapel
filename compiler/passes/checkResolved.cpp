@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -96,13 +97,26 @@ checkResolved() {
 
   forv_Vec(TypeSymbol, type, gTypeSymbols) {
     if (EnumType* et = toEnumType(type->type)) {
+      std::set<std::string> enumVals;
       for_enums(def, et) {
         if (def->init) {
           SymExpr* sym = toSymExpr(def->init);
           if (!sym || (!sym->symbol()->hasFlag(FLAG_PARAM) &&
-                       !toVarSymbol(sym->symbol())->immediate))
+                       !toVarSymbol(sym->symbol())->immediate)) {
             USR_FATAL_CONT(def, "enumerator '%s' is not an integer param value",
                            def->sym->name);
+          } else if (fWarnUnstable) {
+            Immediate* imm = toVarSymbol(sym->symbol())->immediate;
+            std::string enumVal = imm->to_string();
+            if (enumVals.count(enumVal) != 0) {
+              USR_WARN(sym, "it has been suggested that support for enums "
+                       "with duplicate integer values should be deprecated, "
+                       "so this enum could be considered unstable; if you "
+                       "value such enums, please let the Chapel team know.");
+              break;
+            }
+            enumVals.insert(enumVal);
+          }
         }
       }
     }

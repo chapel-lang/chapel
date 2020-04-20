@@ -12,12 +12,12 @@ proc mkarray() {
 
 proc run() {
   var tup = mkarray();
+  tup(0).verify();
   tup(1).verify();
-  tup(2).verify();
-  assert(tup(1)[1].x == 1);
-  assert(tup(1)[2].x == 2);
-  assert(tup(2)[1].x == 3);
-  assert(tup(2)[2].x == 4);
+  assert(tup(0)[0].x == 1);
+  assert(tup(0)[1].x == 2);
+  assert(tup(1)[0].x == 3);
+  assert(tup(1)[1].x == 4);
 }
 
 run();

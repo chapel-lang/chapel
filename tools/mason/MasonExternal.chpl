@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -114,9 +115,9 @@ private proc searchSpkgs(args: [?d] string) {
   else {
     var command = "spack list";
     var pkgName: string;
-    if args[3].find('-') > 0 {
+    if args[3].find('-') != -1 {
       for arg in args[3..] {
-        if arg.find('h') {
+        if arg.find('h') != -1 {
           masonExternalSearchHelp();
           exit(0);
         }
@@ -147,9 +148,9 @@ private proc findSpkg(args: [?d] string) {
     listInstalled();
     exit(0);
   }
-  if args[3].find('-') {
+  if args[3].find('-') != -1 {
     for arg in args[3..] {
-      if arg == "-h" || arg == "--help" {  
+      if arg == "-h" || arg == "--help" {
         masonExternalFindHelp();
         exit(0);
       }
@@ -193,8 +194,8 @@ proc spkgInstalled(spec: string) {
   const pkgInfo = getSpackResult(command, quiet=true);
   var found = false;
   var dependencies: [1..0] string; // a list of pkg dependencies
-  for item in pkgInfo.split() {  
-    if item.rfind(spec) != 0 {
+  for item in pkgInfo.split() {
+    if item.rfind(spec) != -1 {
       return true;
     }
   }
@@ -236,32 +237,29 @@ private proc editCompilers() {
 
 
 /* Given a toml of external dependencies returns
-   the dependencies in a toml */
-proc getExternalPackages(exDeps: unmanaged Toml) {
+   the dependencies in a toml in lock file format */
+proc getExternalPackages(exDeps: unmanaged Toml) /* [domain(string)] unmanaged Toml? */ {
 
   var exDom: domain(string);
-  var exDepTree: [exDom] unmanaged Toml;
+  var exDepTree: [exDom] unmanaged Toml?;
 
-  for (name, spec) in exDeps.A.items() {
+  for (name, spc) in exDeps.A.items() {
     try! {
+      var spec = spc!;
       select spec.tag {
           when fieldtag.fieldToml do continue;
           otherwise {
             // Take key from toml file if not present in spec
-            var tempSpec = spec.s;
+            var fullSpec = spec.s;
+            // TODO: Should it be an error if TOML value includes name?
             if !spec.s.startsWith(name) {
-              tempSpec = "@".join(name, spec.s);
+              fullSpec = "@".join(name, spec.s);
             }
-            const specFields = getSpecFields(tempSpec);
-            var version = specFields[2];
-            var compiler = specFields[3];
-            //var variants = specFields[4];
 
-            // TODO: allow dependency search to include variants
-            var fullSpec = "%".join("@".join(name, version), compiler);
-            
-            var dependencies = getSpkgDependencies(fullSpec);
-            const pkgInfo = getSpkgInfo(fullSpec, dependencies);
+            const resolvedSpec = resolveSpec(fullSpec);
+
+            var dependencies = getSpkgDependencies(resolvedSpec);
+            const pkgInfo = getSpkgInfo(resolvedSpec, dependencies);
 
             if !exDom.contains(name) then
               exDom += name;
@@ -282,22 +280,24 @@ proc getExternalPackages(exDeps: unmanaged Toml) {
 /* Retrieves build information for MasonUpdate */
 proc getSpkgInfo(spec: string, ref dependencies: list(string)): unmanaged Toml throws {
 
-  // put above try b/c compiler complains about return value
   var depList: list(unmanaged Toml);
   var spkgDom: domain(string);
-  var spkgToml: [spkgDom] unmanaged Toml;
+  var spkgToml: [spkgDom] unmanaged Toml?;
   var spkgInfo = new unmanaged Toml(spkgToml);
 
   try {
     const specFields = getSpecFields(spec);
-    var pkgName = specFields[1];
-    var version = specFields[2];
-    var compiler = specFields[3];
+    var pkgName = specFields[0];
+    var version = specFields[1];
+    var compiler = specFields[2];
 
-    if spkgInstalled(spec) {      
-      const spkgPath = getSpkgPath(spec);
+    // Remove variants from spec
+    var simpleSpec = pkgName + '@' + version + '%' + compiler;
+
+    if spkgInstalled(simpleSpec) {
+      const spkgPath = getSpkgPath(simpleSpec);
       const libs = joinPath(spkgPath, "lib");
-      const include = joinPath(spkgPath, "include");
+      const includePath = joinPath(spkgPath, "include");
       const other = joinPath(spkgPath, "other");
 
       if isDir(other) {
@@ -307,12 +307,12 @@ proc getSpkgInfo(spec: string, ref dependencies: list(string)): unmanaged Toml t
       spkgInfo.set("version", version);
       spkgInfo.set("compiler", compiler);
       spkgInfo.set("libs", libs);
-      spkgInfo.set("include", include);
+      spkgInfo.set("include", includePath);
 
       while dependencies.size > 0 {
-        var dep = dependencies[1];
+        var dep = dependencies[0];
         var depSpec = dep.split("@", 1);
-        var name = depSpec[1];
+        var name = depSpec[0];
 
         // put dep into current packages dep list
         depList.append(new unmanaged Toml(name));
@@ -325,7 +325,7 @@ proc getSpkgInfo(spec: string, ref dependencies: list(string)): unmanaged Toml t
         spkgInfo.set(name, getSpkgInfo(dep, depsOfDep));
 
         // remove dep for recursion
-        dependencies.pop(1);
+        dependencies.pop(0);
       }
       if depList.size > 0 {
         // Temporarily use toArray here to avoid supporting list.
@@ -343,7 +343,7 @@ proc getSpkgInfo(spec: string, ref dependencies: list(string)): unmanaged Toml t
 }
 
 /* Returns spack package path for build information */
-proc getSpkgPath(spec: string) throws {
+proc getSpkgPath(spec: string): string throws {
   const command = "spack location -i " + spec;
   const pkgPath = getSpackResult(command, quiet=true);
   if pkgPath == "" {
@@ -352,18 +352,19 @@ proc getSpkgPath(spec: string) throws {
   return pkgPath.strip();
 }
 
-// TODO: allow for versions to be of the form 6.0 (without bug fix)
-proc getSpkgDependencies(spec: string) throws {
+/* Find dependencies of package that are installed on machine */
+proc getSpkgDependencies(spec: string): list(string) throws {
+  const name = specName(spec);
   const command = "spack find -df --show-full-compiler " + spec;
   const pkgInfo = getSpackResult(command, quiet=true);
   var found = false;
   var dependencies: list(string);
   for item in pkgInfo.split() {
 
-    if item.rfind(spec) != 0 {
+    if item.rfind(name) != -1 {
       found = true;
     }
-    else if found == true {
+    else if found {
       const dep = item.strip("^");
       dependencies.append(dep);
     }
@@ -372,6 +373,32 @@ proc getSpkgDependencies(spec: string) throws {
     throw new owned MasonError("Mason could not find dependency: " + spec);
   }
   return dependencies;
+}
+
+
+/* Get package name from spec */
+private proc specName(spec: string): string throws {
+  const fields = spec.split('%');
+  const subfields = fields[0].split('@');
+  const name = subfields[0];
+  return name;
+}
+
+
+/* Resolve spec, pinning to the installed version and eliminating ranges */
+private proc resolveSpec(spec: string): string throws {
+  const command = "spack spec %s".format(spec);
+  const output = getSpackResult(command, quiet=true);
+  var lines = output.split('\n');
+
+  // Package on 7th line
+  var ret = lines[6].strip();
+
+  if ret == '' {
+    throw new owned MasonError("Package not found: " + spec);
+  }
+
+  return ret;
 }
 
 
@@ -418,7 +445,7 @@ proc uninstallSpkg(args: [?d] string) throws {
   }
   else {
     var pkgName: string;
-    var command = "spack uninstall -y";    
+    var command = "spack uninstall -y";
     var confirm: string;
     var uninstallArgs = "";
     if args[3] == "-h" || args[3] == "--help" {
@@ -445,7 +472,7 @@ proc uninstallSpkg(args: [?d] string) throws {
       writeln("Aborting...");
       exit(0);
     }
-   
+
 
     const status = runSpackCommand(" ".join(command, uninstallArgs, pkgName));
     if status != 0 {

@@ -1,9 +1,10 @@
+class A { }
 class c0 {
-  iter getChildren(): locale? { yield nil; }
+  iter getChildren(): unmanaged A? { yield nil; }
 }
 
 class c1 {
-  iter getChildren(): locale? { yield nil; }
+  iter getChildren(): unmanaged A? { yield nil; }
 }
 
 var c = new unmanaged c1();

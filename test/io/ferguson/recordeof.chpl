@@ -11,7 +11,7 @@ config const debug = true;
 // Note that fileName not exist or have no contents
 var f = open(fileName, iomode.cwr);
 
-proc MyRecord.readWriteThis(f) {
+proc MyRecord.readWriteThis(f) throws {
   f <~> i;
   f <~> new ioLiteral("\n");
 }

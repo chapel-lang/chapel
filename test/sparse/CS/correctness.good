@@ -2,7 +2,6 @@ DSI
 ===
 csrsDom:
 size:		14
-numIndices:	14
 low:		(1, 1)
 high:		(6, 6)
 stride:		(1, 1)
@@ -22,7 +21,6 @@ alignedHigh:	(6, 6)
 
 cscsDom:
 size:		14
-numIndices:	14
 low:		(1, 1)
 high:		(6, 6)
 stride:		(1, 1)
@@ -42,7 +40,6 @@ alignedHigh:	(6, 6)
 
 csruDom:
 size:		14
-numIndices:	14
 low:		(1, 1)
 high:		(6, 6)
 stride:		(1, 1)
@@ -62,7 +59,6 @@ alignedHigh:	(6, 6)
 
 cscuDom:
 size:		14
-numIndices:	14
 low:		(1, 1)
 high:		(6, 6)
 stride:		(1, 1)

@@ -11,6 +11,13 @@ looksEmpty
 
    use looksEmpty;
 
+
+or
+
+.. code-block:: chapel
+
+   import looksEmpty;
+
 This module should have no contents, as all of its code lives under nested
 blocks instead of at the top level 
 

@@ -14,8 +14,8 @@ class ZeroInflowBC: AMRBC {
 
 
     //---- Assign zeros to ghost cells on the physical boundary ----
-    for (grid,multidomain) in hierarchy.physical_boundaries(level_idx) {
-      for ghost_domain in multidomain do
+    for (grid,multidomain) in hierarchy.physical_boundaries(level_idx)! {
+      for ghost_domain in multidomain! do
 	      q(grid, ghost_domain) = 0.0;
     }
   }

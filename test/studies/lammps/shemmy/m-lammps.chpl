@@ -115,7 +115,7 @@ proc computeForces()
 		var q:3*real = positionsLoc[here.id,j];
 		var d:3*real = p-q;
 
-		var dist2:real = d[1]*d[1]+d[2]*d[2]+d[3]*d[3];
+		var dist2:real = d[0]*d[0]+d[1]*d[1]+d[2]*d[2];
 		if(dist2<thresh)
 		{
 		    var f:3*real = computeForce(dist2,d);
@@ -132,8 +132,8 @@ proc computeForce(dist2:real,d:3*real)
 {
     var r2:real = 1.0/dist2;
     var r6:real = r2*r2*r2;  
-    var fcoeff:real = r6*(ljs[1]*r6-ljs[2])*r2;      
-    var f:3*real = (fcoeff*d[1],fcoeff*d[2],fcoeff*d[3]);
+    var fcoeff:real = r6*(ljs[0]*r6-ljs[1])*r2;      
+    var f:3*real = (fcoeff*d[0],fcoeff*d[1],fcoeff*d[2]);
     return f;
 }
 
@@ -144,11 +144,11 @@ proc updatePositions()
 	local
 	{
 	    var f:3*real = forces[i];
-	    var a:3*real = (dts[3]*f[1],dts[3]*f[2],dts[3]*f[3]);
+	    var a:3*real = (dts[2]*f[0],dts[2]*f[1],dts[2]*f[2]);
 	    var v:3*real = velocities[i] + a;
 
 	    velocities[i] = v;	
-	    v = (dts[1]*v[1],dts[1]*v[2],dts[1]*v[3]);
+	    v = (dts[0]*v[0],dts[0]*v[1],dts[0]*v[2]);
 	    positionsLoc[here.id,i] += v;
 	}
     }
@@ -207,7 +207,7 @@ proc updateNeighbors()
 		{
 		    var q:3*real = positionsLoc[here.id,j];
 		    var d:3*real = p-q;
-		    var dist2:real = d[1]*d[1]+d[2]*d[2]+d[3]*d[3];
+		    var dist2:real = d[0]*d[0]+d[1]*d[1]+d[2]*d[2];
 		    if(dist2<thresh)
 		    {
 			if(cnt<maxSize)

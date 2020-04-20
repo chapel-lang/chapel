@@ -129,7 +129,7 @@ proc main () {
         var c: [a.domain] real;
 
         for (i, j) in a.domain do
-            for k in a.domain.dim(1) do
+            for k in a.domain.dim(0) do
                 c[i, j] += a[k, i] * b[k, j];
 
         return c;
@@ -138,7 +138,7 @@ proc main () {
     proc err(a: [] real): real where a.rank == 2 {
         var sum = 0.0;
 
-        for i in a.domain.dim(1) {
+        for i in a.domain.dim(0) {
             for j in 0..i-1 do
                 sum += a[i, j]*a[i, j] + a[j, i]*a[j, i];
             sum += (a[i, i]-1.0)*(a[i, i]-1.0);

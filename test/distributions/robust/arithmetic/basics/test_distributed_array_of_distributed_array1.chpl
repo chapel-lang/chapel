@@ -6,7 +6,7 @@ var A: [Dom] [Dom] int;
 
 forall i in Dom do
   forall j in Dom do
-    A(i)(j) = 10000 * ((i(1)-1) * 5 + i(2)) + (j(1)-1)*5 + j(2);
+    A(i)(j) = 10000 * ((i(0)-1) * 5 + i(1)) + (j(0)-1)*5 + j(1);
 
 for i in Dom do
   writeln(A(i));

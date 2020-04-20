@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -123,6 +124,20 @@ int chpl_comm_run_in_gdb(int argc, char* argv[], int gdbArgnum, int* status) {
     }
   }
   *status = mysystem(command, "running gdb", 0);
+
+  return 1;
+}
+
+int chpl_comm_run_in_lldb(int argc, char* argv[], int lldbArgnum, int* status) {
+  int i;
+  char* command = chpl_glom_strings(2, "lldb -o 'b gdbShouldBreakHere' -- ",
+                                    argv[0]);
+  for (i=1; i<argc; i++) {
+    if (i != lldbArgnum) {
+      command = chpl_glom_strings(3, command, " ", argv[i]);
+    }
+  }
+  *status = mysystem(command, "running lldb", 0);
 
   return 1;
 }

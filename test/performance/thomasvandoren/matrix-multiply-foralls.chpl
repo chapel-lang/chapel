@@ -22,7 +22,7 @@ proc dotProduct(ref C: [?DC] int, ref A: [?DA] int, ref B: [?DB] int)
   forall (row, col) in DC {
     // Zero out the value, in case C is reused.
     C[row, col] = 0;
-    for i in DA.dim(2) do
+    for i in DA.dim(1) do
       C[row, col] += A[row, i] * B[i, col];
   }
 }

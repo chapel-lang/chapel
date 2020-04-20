@@ -10,6 +10,13 @@ complexes.doc
 
    use complexes.doc;
 
+
+or
+
+.. code-block:: chapel
+
+   import complexes.doc;
+
 .. record:: Foo
 
    .. attribute:: var aComplex: complex = 1.0+2.0i

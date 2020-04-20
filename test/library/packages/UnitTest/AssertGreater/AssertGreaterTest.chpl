@@ -45,6 +45,11 @@ proc ArrayOthers() {
   var x5 = [1,7,6,5,8];
   var y5 = [1,7,6];
   testAssert(x5,y5,"Array Others Diff Shape 1D");
+
+  var x6: [0..2] int = [2,4,8];
+  var y6: [0..2] int = [1,2,4];
+  testAssert(x6, y6,"0-based arrays");
+
 }
 
 proc UnequalComplex() {

@@ -49,12 +49,12 @@ proc calculate(data : string, size : int) {
   // Create a lock and release it.
   var lock$ : sync bool = true;
 
-  const high = data.length - size + 1;
+  const high = data.size - size + 1;
 
-  coforall tid in 1..here.maxTaskPar with (ref freqs) {
+  coforall tid in 0..#here.maxTaskPar with (ref freqs) {
     var privMap = new map(uint, int);
 
-    for i in tid..high by here.maxTaskPar {
+    for i in tid..high-1 by here.maxTaskPar {
       //
       // Assigning to an index in an associative array will create an
       // index/element pair if one does not already exist.
@@ -86,7 +86,7 @@ proc write_frequencies(data : string, size : int) {
   // sort will sort starting at the tuple's first element.
   sort(sorted, comparator=reverseComparator);
 
-  const sum = data.length - size;
+  const sum = data.size - size;
   for (f, e) in sorted do
     writef("%s %.3dr\n", decode(e, size), (100.0 * f) / sum);
 }
@@ -94,7 +94,7 @@ proc write_frequencies(data : string, size : int) {
 proc write_count(data : string, pattern : string) {
   const size = pattern.numBytes;
   var freqs = calculate(data, size);
-  const d = hash(pattern[1:byteIndex..#size]);
+  const d = hash(pattern[0:byteIndex..#size]);
   writeln(freqs[d], "\t", decode(d, size));
 }
 

@@ -1,25 +1,3 @@
-Expiring values for function rCopyInitEOB (exc.chpl:35)
-  a (exc.chpl:36) expires at end of block
-    alias b (exc.chpl:37)
-Expiring values for function rCopyInitIshEOB (exc.chpl:45)
-  a (exc.chpl:46) expires at end of block
-    alias b (exc.chpl:47)
-Expiring values for function rAssignEOB (exc.chpl:56)
-  a (exc.chpl:57) expires at end of block
-  b (exc.chpl:58) expires after last mention
-Expiring values for function makeBorrow (exc.chpl:67)
-  ret (exc.chpl:68) expires at end of block
-Expiring values for function rMakeBorrowEOB (exc.chpl:72)
-  a (exc.chpl:73) expires at end of block
-    alias b (exc.chpl:74)
-Expiring values for function cInitOtherEOB (exc.chpl:98)
-  a (exc.chpl:99) expires at end of block
-    alias b (exc.chpl:100)
-Expiring values for function cMakeBorrowEOB (exc.chpl:113)
-  a (exc.chpl:114) expires at end of block
-    alias b (exc.chpl:115)
-Expiring values for function makeBorrow (exc.chpl:108)
-  ret (exc.chpl:109) expires at end of block
 (owns = true, c = {x = 1})
 (owns = false, c = {x = 1})
 (owns = true, c = {x = 1})

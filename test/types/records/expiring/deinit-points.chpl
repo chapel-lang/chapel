@@ -445,3 +445,123 @@ proc t27() {
   writeln("end");
 }
 t27();
+
+proc t28() {
+  writeln("t28");
+  var r: R;
+  sync {
+    {
+      begin {
+        writeln("begin inner");
+        r;
+        writeln("end inner");
+      }
+    }
+  }
+  writeln("end outer");
+}
+t28();
+
+proc t29() {
+  writeln("t29");
+  var r: R;
+  sync {
+    if option {
+      begin {
+        writeln("begin inner");
+        r;
+        writeln("end inner");
+      }
+    }
+  }
+  writeln("end outer");
+}
+t29();
+
+proc g(arg) { return arg; }
+proc h(a, b) { }
+
+proc t30() {
+  writeln("t30");
+  g(makeR());
+  writeln("end outer");
+}
+t30();
+
+proc t30a() {
+  writeln("t30a");
+  if option then
+    g(makeR());
+  else
+    g(makeR());
+  writeln("end outer");
+}
+t30a();
+
+proc t30b() {
+  writeln("t30b");
+  g(if option then makeR() else makeR());
+  writeln("end outer");
+}
+t30b();
+
+proc t30c() {
+  writeln("t30c");
+  g(makeR());
+  {
+    writeln("nested block");
+  }
+  writeln("end outer");
+}
+t30c();
+
+proc t31() {
+  writeln("t31");
+  g(g(makeR()));
+  writeln("end outer");
+}
+t31();
+
+proc t32() {
+  writeln("t32");
+  h(g(makeR()), makeR());
+  writeln("end outer");
+}
+t32();
+
+proc t33() {
+  writeln("t33");
+  var x = g(g(makeR()));
+  writeln("end outer");
+}
+t33();
+
+proc t33a() {
+  writeln("t33a");
+  var x = if option then g(makeR()) else g(makeR());
+  writeln("end outer");
+}
+t33a();
+
+
+proc t34() {
+  writeln("t34");
+  const x = g(g(makeR()));
+  writeln("end outer");
+}
+t34();
+
+proc t35() {
+  writeln("t35");
+  const ref x = g(g(makeR()));
+  writeln("end outer");
+}
+t35();
+
+writeln("t36");
+g(makeR());
+writeln("end t36");
+
+writeln("t37");
+var t37glob = g(makeR());
+writeln("end t37");

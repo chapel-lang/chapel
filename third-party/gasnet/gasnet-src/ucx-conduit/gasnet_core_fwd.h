@@ -1,4 +1,4 @@
-/*   $Source: bitbucket.org:berkeleylab/gasnet.git/template-conduit/gasnet_core_fwd.h $
+/*   $Source: bitbucket.org:berkeleylab/gasnet.git/ucx-conduit/gasnet_core_fwd.h $
  * Description: GASNet header for ucx conduit core (forward definitions)
  * Copyright 2002, Dan Bonachea <bonachea@cs.berkeley.edu>
  * Copyright 2019, Mellanox Technologies LTD. All rights reserved.
@@ -76,6 +76,15 @@
 /* #define GASNETC_HAVE_NP_REP_MEDIUM 1 */
 /* #define GASNETC_HAVE_NP_REQ_LONG 1 */
 /* #define GASNETC_HAVE_NP_REP_LONG 1 */
+
+  /* uncomment for each GASNETC_HAVE_NP_* enabled above if the Commit function
+     has the numargs argument even in an NDEBUG build (it is always passed in
+     DEBUG builds).
+   */
+//#define GASNETC_AM_COMMIT_REQ_MEDIUM_NARGS 1
+//#define GASNETC_AM_COMMIT_REP_MEDIUM_NARGS 1
+//#define GASNETC_AM_COMMIT_REQ_LONG_NARGS 1
+//#define GASNETC_AM_COMMIT_REP_LONG_NARGS 1
 
   /* uncomment if your conduit's gasnetc_AMRequest{Short,Medium,Long}V()
      include a call to gasneti_AMPoll (or equivalent) for progress.

@@ -10,6 +10,13 @@ parenthesesLess.doc
 
    use parenthesesLess.doc;
 
+
+or
+
+.. code-block:: chapel
+
+   import parenthesesLess.doc;
+
 .. function:: proc foo
 
 .. function:: proc bar: bool

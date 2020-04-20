@@ -16,7 +16,7 @@ enable more features, such as distributed memory execution.
 0) See :ref:`prereqs.rst <readme-prereqs>` for more information about system
    tools and packages you may need to have installed to build and run Chapel.
 
-1) If you don't already have Chapel 1.20, see
+1) If you don't already have Chapel 1.22, see
    https://chapel-lang.org/download.html .
 
 2) If you are using a source release, build Chapel in a *quickstart*
@@ -28,14 +28,14 @@ enable more features, such as distributed memory execution.
 
       .. code-block:: bash
 
-         tar xzf chapel-1.20.0.tar.gz
+         tar xzf chapel-1.22.0.tar.gz
 
    b. Make sure that your shell is in the directory containing
       QUICKSTART.rst, for example:
 
       .. code-block:: bash
 
-         cd chapel-1.20.0
+         cd chapel-1.22.0
 
    c. Set up your environment for Chapel's Quickstart mode.
       If you are using a shell other than bash,
@@ -115,10 +115,11 @@ you will need to rebuild Chapel from source in a different configuration.
       # run the sample program
       ./hello
 
-   At this point, you can choose to continue using ``setchplenv.bash``
-   or use another method to configure Chapel. In particular, you might
-   use a :ref:`chplconfig <readme-chplenv.chplconfig>` file or
-   set environment variables your in dot files or your own script.
+   Note that the environment settings from ``util/setchplenv.bash`` will not persist beyond this terminal session.
+   You can choose to source ``setchplenv.bash`` whenever you want to use relevant commands.
+   If you want these environment settings to persist for future terminal sessions,
+   copy the commands from the Recommended Settings in :ref:`chplenv.rst <readme-chplenv.recommended_settings>` into your ``~/.bashrc`` file.
+   You can also store Chapel configuration settings in a :ref:`chplconfig <readme-chplenv.chplconfig>` file instead of your ``~/.bashrc``.
 
    See :ref:`chplenv.rst <readme-chplenv>` for a complete description of
    Chapel's configuration variables, what they mean, and how they

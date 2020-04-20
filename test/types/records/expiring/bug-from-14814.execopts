@@ -1,0 +1,2 @@
+--error=false  # bug-from-14814.nothrow.good
+--error=true   # bug-from-14814.throw.good

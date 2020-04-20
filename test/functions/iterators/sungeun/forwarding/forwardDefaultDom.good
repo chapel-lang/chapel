@@ -2,46 +2,46 @@
 ### numTasksPerLoc = 2
 ### ignoreRunning = false
 ### minIndicesPerTask = 1
-### numChunks = 2 (parDim = 1)
+### numChunks = 2 (parDim = 0)
 ### nranges = (9..17, 10..18, 11..19, 12..20)
 ### numTasksPerLoc = 2
 ### ignoreRunning = false
 ### minIndicesPerTask = 1
-### numChunks = 2 (parDim = 1)
+### numChunks = 2 (parDim = 0)
 ### nranges = (9..17, 10..18, 11..19, 12..20)
 ### numTasksPerLoc = 1
 ### ignoreRunning = false
 ### minIndicesPerTask = 1
-### numChunks = 1 (parDim = 1)
+### numChunks = 1 (parDim = 0)
 ### nranges = (9..17, 10..18, 11..19, 12..20)
 ### numTasksPerLoc = 2
 ### ignoreRunning = true
 ### minIndicesPerTask = 1
-### numChunks = 2 (parDim = 1)
+### numChunks = 2 (parDim = 0)
 ### nranges = (9..17, 10..18, 11..19, 12..20)
 ### numTasksPerLoc = 2
 ### ignoreRunning = false
 ### minIndicesPerTask = 2
-### numChunks = 2 (parDim = 1)
+### numChunks = 2 (parDim = 0)
 ### nranges = (9..17, 10..18, 11..19, 12..20)
 ### numTasksPerLoc = 2
 ### ignoreRunning = false
 ### minIndicesPerTask = 1
-### numChunks = 2 (parDim = 1)
+### numChunks = 2 (parDim = 0)
 ### nranges = (9..17, 10..18, 11..19, 12..20)
 ### numTasksPerLoc = 1
 ### ignoreRunning = false
 ### minIndicesPerTask = 1
-### numChunks = 1 (parDim = 1)
+### numChunks = 1 (parDim = 0)
 ### nranges = (9..17, 10..18, 11..19, 12..20)
 ### numTasksPerLoc = 2
 ### ignoreRunning = true
 ### minIndicesPerTask = 1
-### numChunks = 2 (parDim = 1)
+### numChunks = 2 (parDim = 0)
 ### nranges = (9..17, 10..18, 11..19, 12..20)
 ### numTasksPerLoc = 2
 ### ignoreRunning = false
 ### minIndicesPerTask = 2
-### numChunks = 2 (parDim = 1)
+### numChunks = 2 (parDim = 0)
 ### nranges = (9..17, 10..18, 11..19, 12..20)
 === leaving forwardDefaultDom ===

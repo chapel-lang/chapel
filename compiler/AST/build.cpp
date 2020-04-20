@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -30,6 +31,7 @@
 #include "files.h"
 #include "ForallStmt.h"
 #include "ForLoop.h"
+#include "ImportStmt.h"
 #include "LoopExpr.h"
 #include "ParamForLoop.h"
 #include "parser.h"
@@ -162,6 +164,8 @@ BlockStmt* buildPragmaStmt(Vec<const char*>* pragmas,
   for_alist(expr, stmt->body) {
     if (DefExpr* def = toDefExpr(expr)) {
       addPragmaFlags(def->sym, pragmas);
+    } else if (isEndOfStatementMarker(expr)) {
+      // ignore it
     } else {
       error = true;
       break;
@@ -365,12 +369,12 @@ BlockStmt* buildErrorStandin() {
   return new BlockStmt(new CallExpr(PRIM_ERROR), BLOCK_SCOPELESS);
 }
 
-static void addModuleToSearchList(UseStmt* newUse, BaseAST* module) {
+static void addModuleToSearchList(VisibilityStmt* newStmt, BaseAST* module) {
   UnresolvedSymExpr* modNameExpr = toUnresolvedSymExpr(module);
   if (modNameExpr) {
-    addModuleToParseList(modNameExpr->unresolved, newUse);
+    addModuleToParseList(modNameExpr->unresolved, newStmt);
   } else if (CallExpr* callExpr = toCallExpr(module)) {
-    addModuleToSearchList(newUse, callExpr->argList.first());
+    addModuleToSearchList(newStmt, callExpr->argList.first());
   }
 }
 
@@ -544,6 +548,76 @@ BlockStmt* buildUseStmt(std::vector<PotentialRename*>* args, bool privateUse) {
   return list;
 }
 
+//
+// Build an 'import' statement
+//
+BlockStmt* buildImportStmt(Expr* mod, bool privateImport) {
+  ImportStmt* newImport = new ImportStmt(mod, privateImport);
+  addModuleToSearchList(newImport, mod);
+
+  return buildChapelStmt(newImport);
+}
+
+//
+// Build an 'import' statement
+//
+BlockStmt* buildImportStmt(Expr* mod, const char* rename, bool privateImport) {
+  ImportStmt* newImport = new ImportStmt(mod, rename, privateImport);
+  addModuleToSearchList(newImport, mod);
+
+  return buildChapelStmt(newImport);
+}
+
+//
+// Build an 'import' statement
+//
+BlockStmt* buildImportStmt(Expr* mod, std::vector<PotentialRename*>* names,
+                           bool privateImport) {
+  std::vector<const char*> namesList;
+  std::map<const char*, const char*> renameMap;
+
+  // Iterate through the list of names for unqualified access
+  for_vector(PotentialRename, listElem, *names) {
+    switch (listElem->tag) {
+      case PotentialRename::SINGLE:
+        if (UnresolvedSymExpr* name = toUnresolvedSymExpr(listElem->elem)) {
+          namesList.push_back(name->unresolved);
+        } else {
+          USR_FATAL(listElem->elem, "incorrect expression in 'import' for "
+                    "unqualified access, identifier expected");
+        }
+        break;
+      case PotentialRename::DOUBLE:
+        std::pair<Expr*, Expr*>* elem = listElem->renamed;
+        UnresolvedSymExpr* old_name = toUnresolvedSymExpr(elem->first);
+        UnresolvedSymExpr* new_name = toUnresolvedSymExpr(elem->second);
+
+        if (old_name != NULL && new_name != NULL) {
+          // Verify that the new name isn't already in the renameMap
+          if (renameMap.count(new_name->unresolved) == 0) {
+            renameMap[new_name->unresolved] = old_name->unresolved;
+          } else {
+            USR_FATAL_CONT(elem->first, "already renamed '%s' to '%s', renaming"
+                           "'%s' would conflict",
+                           renameMap[new_name->unresolved],
+                           new_name->unresolved, old_name->unresolved);
+          }
+        } else {
+          USR_FATAL(elem->first, "incorrect expression in 'import' list rename,"
+                    " identifier expected");
+        }
+        break;
+    }
+  }
+
+  ImportStmt* newImport = new ImportStmt(mod, privateImport, &namesList,
+                                         &renameMap);
+  addModuleToSearchList(newImport, mod);
+
+  delete names;
+
+  return buildChapelStmt(newImport);
+}
 
 //
 // Build a 'require' statement
@@ -594,9 +668,11 @@ DefExpr* buildQueriedExpr(const char *expr) {
   return new DefExpr(new VarSymbol(&(expr[1])));
 }
 
+/* This routine seems to handle the case when the RHS of a tuple
+   declaration is a tuple expression like `(8, 4, 3)` */
 static void
 buildTupleVarDeclHelp(Expr* base, BlockStmt* decls, Expr* insertPoint) {
-  int count = 1;
+  int count = 0;
   for_alist(expr, decls->body) {
     if (DefExpr* def = toDefExpr(expr)) {
       if (strcmp(def->sym->name, "chpl__tuple_blank")) {
@@ -620,7 +696,7 @@ buildTupleVarDeclHelp(Expr* base, BlockStmt* decls, Expr* insertPoint) {
 BlockStmt*
 buildTupleVarDeclStmt(BlockStmt* tupleBlock, Expr* type, Expr* init) {
   VarSymbol* tmp = newTemp();
-  int count = 1;
+  int count = 0;
   for_alist(expr, tupleBlock->body) {
     if (DefExpr* def = toDefExpr(expr)) {
       if (strcmp(def->sym->name, "chpl__tuple_blank")) {
@@ -638,7 +714,7 @@ buildTupleVarDeclStmt(BlockStmt* tupleBlock, Expr* type, Expr* init) {
   // same as the number of variables.  These checks will get inserted in
   // buildVarDecls after it asserts that only DefExprs are in this block.
   //
-  tupleBlock->blockInfoSet(new CallExpr("_check_tuple_var_decl", tmp, new_IntSymbol(count-1)));
+  tupleBlock->blockInfoSet(new CallExpr("_check_tuple_var_decl", tmp, new_IntSymbol(count)));
   tupleBlock->insertAtHead(new DefExpr(tmp, init, type));
   return tupleBlock;
 }
@@ -732,7 +808,43 @@ ModuleSymbol* buildModule(const char* name,
   return mod;
 }
 
+BlockStmt* buildIncludeModule(const char* name,
+                              bool priv,
+                              bool prototype,
+                              const char* docs) {
+  astlocT loc(chplLineno, yyfilename);
+  ModuleSymbol* mod = parseIncludedSubmodule(name);
+  INT_ASSERT(mod != NULL);
 
+  // check visibility specifiers
+  //
+  //  include public/default   +  declaration public/default -> OK, public
+  //  include public/default   +  declaration private        -> error
+  //  include private          +  declaration public/default -> OK, private
+  //  include private          +  declaration private        -> OK, private
+  //
+  if (priv && !mod->hasFlag(FLAG_PRIVATE)) {
+    // make the module private (override public)
+    mod->addFlag(FLAG_PRIVATE);
+  } else if (mod->hasFlag(FLAG_PRIVATE) && !priv) {
+    USR_FATAL_CONT(loc,
+          "cannot make a private module public through an include statement");
+    USR_PRINT(mod, "module declared private here");
+  }
+
+  if (prototype) {
+    USR_FATAL_CONT(loc, "cannot apply prototype to module in include statement");
+    USR_PRINT(mod, "put prototype keyword at module declaration here");
+  }
+
+  // docs comment is ignored (the one in the module declaration is used)
+
+  if (fWarnUnstable) {
+    USR_WARN(loc, "module include statements are not yet stable and may change");
+  }
+
+  return buildChapelStmt(new DefExpr(mod));
+}
 
 CallExpr* buildPrimitiveExpr(CallExpr* exprs) {
   INT_ASSERT(exprs->isPrimitive(PRIM_ACTUALS_LIST));
@@ -755,11 +867,14 @@ CallExpr* buildPrimitiveExpr(CallExpr* exprs) {
 
 CallExpr* buildLetExpr(BlockStmt* decls, Expr* expr) {
   static int uid = 1;
-  FnSymbol* fn = new FnSymbol(astr("_let_fn", istr(uid++)));
+  FnSymbol* fn = new FnSymbol(astr("chpl_let_fn", istr(uid++)));
   fn->addFlag(FLAG_COMPILER_NESTED_FUNCTION);
   fn->addFlag(FLAG_INLINE);
   fn->insertAtTail(decls);
   fn->insertAtTail(new CallExpr(PRIM_RETURN, expr));
+  if (fWarnUnstable) {
+    USR_WARN(decls, "Let expressions are currently unstable and are expected to change in ways that will break their current uses.");
+  }
   return new CallExpr(new DefExpr(fn));
 }
 
@@ -811,7 +926,7 @@ static Expr* destructureIndicesAfter(Expr* insertAfter,
                                      bool coforall) {
   if (CallExpr* call = toCallExpr(indices)) {
     if (call->isNamed("_build_tuple")) {
-      int i = 1;
+      int i = 0;
 
       // Add checks that the index has tuple type of the right shape.
       CallExpr* checkCall = new CallExpr("_check_tuple_var_decl",
@@ -1013,7 +1128,10 @@ static BlockStmt* buildLoweredCoforall(Expr* indices,
     addByrefVars(taskBlk, byref_vars);
   }
 
-  BlockStmt* block = ForLoop::buildForLoop(indices, new SymExpr(iterator), taskBlk, true, zippered);
+  BlockStmt* block = ForLoop::buildCoforallLoop(indices,
+                                                new SymExpr(iterator),
+                                                taskBlk,
+                                                zippered);
   if (bounded) {
     if (!onBlock) { block->insertAtHead(new CallExpr("chpl_resetTaskSpawn", numTasks)); }
     block->insertAtHead(new CallExpr("_upEndCount", coforallCount, countRunningTasks, numTasks));
@@ -1480,6 +1598,12 @@ BlockStmt* buildVarDecls(BlockStmt* stmts, const char* docs,
     stmts->blockInfoSet(NULL);
   }
 
+  // Add a PRIM_END_OF_STATEMENT.
+  if (fDocs == false) {
+    CallExpr* end = new CallExpr(PRIM_END_OF_STATEMENT);
+    stmts->insertAtTail(end);
+  }
+
   // this was allocated in buildVarDeclFlags()
   if (flags)
     delete flags;
@@ -1625,14 +1749,14 @@ buildTupleArgDefExpr(IntentTag tag, BlockStmt* tuple, Expr* type, Expr* init) {
 
 
 //
-// Destructure tuple function arguments.  Add to the function's where
-// clause to match the shape of the tuple being destructured.
+// Destructure tuple function arguments of the form `proc foo((x,y,z), i)`.
+// Add to the function's where clause to match the shape of the tuple
+// being destructured.
 //
 static void
 destructureTupleGroupedArgs(FnSymbol* fn, BlockStmt* tuple, Expr* base) {
   int i = 0;
   for_alist(expr, tuple->body) {
-    i++;
     if (DefExpr* def = toDefExpr(expr)) {
       def->init = new CallExpr(base->copy(), new_IntSymbol(i));
       if (!strcmp(def->sym->name, "chpl__tuple_blank")) {
@@ -1643,6 +1767,7 @@ destructureTupleGroupedArgs(FnSymbol* fn, BlockStmt* tuple, Expr* base) {
     } else if (BlockStmt* inner = toBlockStmt(expr)) {
       destructureTupleGroupedArgs(fn, inner, new CallExpr(base->copy(), new_IntSymbol(i)));
     }
+    i++;
   }
 
   Expr* where =
@@ -1670,7 +1795,7 @@ FnSymbol* buildLambda(FnSymbol *fn) {
    * is better to guard against this behavior then leaving someone wondering
    * why we didn't.
    */
-  if (snprintf(buffer, 100, "_chpl_lambda_%i", nextId++) >= 100) {
+  if (snprintf(buffer, 100, "chpl_lambda_%i", nextId++) >= 100) {
     INT_FATAL("Too many lambdas.");
   }
 
@@ -1932,6 +2057,12 @@ BlockStmt* buildForwardingDeclStmt(BlockStmt* stmts) {
       if (VarSymbol* var = toVarSymbol(defExpr->sym)) {
         // Append a ForwardingStmt
         BlockStmt* toAppend = buildForwardingStmt(new UnresolvedSymExpr(var->name));
+
+        // Remove the END_OF_STATEMENT marker, not used for fields
+        Expr* last = stmts->body.last();
+        if (last && isEndOfStatementMarker(stmts->body.last()))
+          last->remove();
+
         for_alist(tmp, toAppend->body) {
           stmts->insertAtTail(tmp->remove());
         }
@@ -1951,10 +2082,15 @@ buildFunctionFormal(FnSymbol* fn, DefExpr* def) {
     return fn;
   ArgSymbol* arg = toArgSymbol(def->sym);
   INT_ASSERT(arg);
+
+  int countFormals = fn->numFormals();
+
   fn->insertFormalAtTail(def);
   if (!strcmp(arg->name, "chpl__tuple_arg_temp")) {
     destructureTupleGroupedArgs(fn, arg->variableExpr, new SymExpr(arg));
     arg->variableExpr = NULL;
+    // append countFormals to the argument name so it is unique
+    arg->name = astr(arg->name, istr(countFormals));
   }
   return fn;
 }
@@ -2143,7 +2279,7 @@ buildSyncStmt(Expr* stmt) {
 
   // Note that a sync statement can contain arbitrary code,
   // including code that throws. As a result, we need to take
-  // care call _waitDynamicEndCount even if such errors are thrown.
+  // care call chpl_waitDynamicEndCount even if such errors are thrown.
 
   // This code takes the approach of wrapping the sync body with
   //
@@ -2177,7 +2313,7 @@ buildSyncStmt(Expr* stmt) {
 
   block->insertAtTail(t);
 
-  // waitDynamicEndCount might throw, but we need to clean up the
+  // chpl_waitDynamicEndCount might throw, but we need to clean up the
   // end counts either way.
 
   BlockStmt* cleanup = new BlockStmt();
@@ -2186,7 +2322,7 @@ buildSyncStmt(Expr* stmt) {
   cleanup->insertAtTail(new CallExpr(PRIM_SET_DYNAMIC_END_COUNT, endCountSave));
 
   block->insertAtTail(new DeferStmt(cleanup));
-  block->insertAtTail(new CallExpr("_waitDynamicEndCount"));
+  block->insertAtTail(new CallExpr(astr_chpl_waitDynamicEndCount));
   return block;
 }
 
@@ -2324,6 +2460,45 @@ BlockStmt* handleConfigTypes(BlockStmt* blk) {
   }
   return blk;
 }
+
+static VarSymbol* one = NULL;
+
+static SymExpr* buildOneExpr() {
+  if (one == NULL) {
+    one = new_IntSymbol(1);
+  }
+  return new SymExpr(one);
+}
+
+CallExpr* buildBoundedRange(Expr* low, Expr* high,
+                            bool openlow, bool openhigh) {
+  if (openlow) {
+    low = new CallExpr("+", low, buildOneExpr());
+  }
+  if (openhigh) {
+    high = new CallExpr("-", high, buildOneExpr());
+  }
+  return new CallExpr("chpl_build_bounded_range",low, high);
+}
+
+CallExpr* buildLowBoundedRange(Expr* low, bool open) {
+  if (open) {
+    low = new CallExpr("+", low, buildOneExpr());
+  }
+  return new CallExpr("chpl_build_low_bounded_range", low);
+}
+
+CallExpr* buildHighBoundedRange(Expr* high, bool open) {
+  if (open) {
+    high = new CallExpr("-", high, buildOneExpr());
+  }
+  return new CallExpr("chpl_build_high_bounded_range", high);
+}
+
+CallExpr* buildUnboundedRange() {
+  return new CallExpr("chpl_build_unbounded_range");
+}
+
 
 // Attempt to find a stmt with a specific PrimitiveTag in a blockStmt
 //

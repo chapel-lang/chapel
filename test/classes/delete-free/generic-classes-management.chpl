@@ -84,7 +84,6 @@ module testmodule {
 
   proc main() {
 
-    var myOwnedNonNilable:owned MyClass = new owned MyClass();
     var myOwnedNilable:owned MyClass? = new owned MyClass();
     var mySharedNonNilable:shared MyClass = new shared MyClass();
     var mySharedNilable:shared MyClass? = new shared MyClass();
@@ -97,10 +96,14 @@ module testmodule {
     {
       param fnName = "acceptsOwnedNonNilable";
       writeln(fnName);
-      acceptsOwnedNonNilable(myOwnedNonNilable);
-      myOwnedNonNilable = new owned MyClass();
-      assert(canResolve(fnName, myOwnedNonNilable));
-      myOwnedNonNilable = new owned MyClass();
+      {
+        var myOwnedNonNilable:owned MyClass = new owned MyClass();
+        acceptsOwnedNonNilable(myOwnedNonNilable);
+      }
+      {
+        var myOwnedNonNilable:owned MyClass = new owned MyClass();
+        assert(canResolve(fnName, myOwnedNonNilable));
+      }
       assert(!canResolve(fnName, myOwnedNilable));
       myOwnedNilable = new owned MyClass();
       assert(!canResolve(fnName, mySharedNonNilable));
@@ -115,12 +118,16 @@ module testmodule {
     {
       param fnName = "acceptsOwnedNilable";
       writeln(fnName);
-      acceptsOwnedNilable(myOwnedNonNilable);
-      myOwnedNonNilable = new owned MyClass();
+      {
+        var myOwnedNonNilable:owned MyClass = new owned MyClass();
+        acceptsOwnedNilable(myOwnedNonNilable);
+      }
       acceptsOwnedNilable(myOwnedNilable);
       myOwnedNilable = new owned MyClass();
-      assert(canResolve(fnName, myOwnedNonNilable));
-      myOwnedNonNilable = new owned MyClass();
+      {
+        var myOwnedNonNilable:owned MyClass = new owned MyClass();
+        assert(canResolve(fnName, myOwnedNonNilable));
+      }
       assert(canResolve(fnName, myOwnedNilable));
       myOwnedNilable = new owned MyClass();
       assert(!canResolve(fnName, mySharedNonNilable));
@@ -135,12 +142,16 @@ module testmodule {
     {
       param fnName = "acceptsOwnedAny";
       writeln(fnName);
-      acceptsOwnedAny(myOwnedNonNilable);
-      myOwnedNonNilable = new owned MyClass();
+      {
+        var myOwnedNonNilable:owned MyClass = new owned MyClass();
+        acceptsOwnedAny(myOwnedNonNilable);
+      }
       acceptsOwnedAny(myOwnedNilable);
       myOwnedNilable = new owned MyClass();
-      assert(canResolve(fnName, myOwnedNonNilable));
-      myOwnedNonNilable = new owned MyClass();
+      {
+        var myOwnedNonNilable:owned MyClass = new owned MyClass();
+        assert(canResolve(fnName, myOwnedNonNilable));
+      }
       assert(canResolve(fnName, myOwnedNilable));
       myOwnedNilable = new owned MyClass();
       assert(!canResolve(fnName, mySharedNonNilable));
@@ -156,8 +167,10 @@ module testmodule {
       param fnName = "acceptsSharedNonNilable";
       writeln(fnName);
       acceptsSharedNonNilable(mySharedNonNilable);
-      assert(!canResolve(fnName, myOwnedNonNilable));
-      myOwnedNonNilable = new owned MyClass();
+      {
+        var myOwnedNonNilable:owned MyClass = new owned MyClass();
+        assert(!canResolve(fnName, myOwnedNonNilable));
+      }
       assert(!canResolve(fnName, myOwnedNilable));
       myOwnedNilable = new owned MyClass();
       assert(canResolve(fnName, mySharedNonNilable));
@@ -174,8 +187,10 @@ module testmodule {
       writeln(fnName);
       acceptsSharedNilable(mySharedNonNilable);
       acceptsSharedNilable(mySharedNilable);
-      assert(!canResolve(fnName, myOwnedNonNilable));
-      myOwnedNonNilable = new owned MyClass();
+      {
+        var myOwnedNonNilable:owned MyClass = new owned MyClass();
+        assert(!canResolve(fnName, myOwnedNonNilable));
+      }
       assert(!canResolve(fnName, myOwnedNilable));
       myOwnedNilable = new owned MyClass();
       assert(canResolve(fnName, mySharedNonNilable));
@@ -192,8 +207,10 @@ module testmodule {
       writeln(fnName);
       acceptsSharedAny(mySharedNonNilable);
       acceptsSharedAny(mySharedNilable);
-      assert(!canResolve(fnName, myOwnedNonNilable));
-      myOwnedNonNilable = new owned MyClass();
+      {
+        var myOwnedNonNilable:owned MyClass = new owned MyClass();
+        assert(!canResolve(fnName, myOwnedNonNilable));
+      }
       assert(!canResolve(fnName, myOwnedNilable));
       myOwnedNilable = new owned MyClass();
       assert(canResolve(fnName, mySharedNonNilable));
@@ -208,12 +225,17 @@ module testmodule {
     {
       param fnName = "acceptsBorrowedNonNilable";
       writeln(fnName);
-      acceptsBorrowedNonNilable(myOwnedNonNilable);
+      {
+        var myOwnedNonNilable:owned MyClass = new owned MyClass();
+        acceptsBorrowedNonNilable(myOwnedNonNilable);
+      }
       acceptsBorrowedNonNilable(mySharedNonNilable);
       acceptsBorrowedNonNilable(myBorrowedNonNilable);
       acceptsBorrowedNonNilable(myUnmanagedNonNilable);
-      assert(canResolve(fnName, myOwnedNonNilable));
-      myOwnedNonNilable = new owned MyClass();
+      {
+        var myOwnedNonNilable:owned MyClass = new owned MyClass();
+        assert(canResolve(fnName, myOwnedNonNilable));
+      }
       assert(!canResolve(fnName, myOwnedNilable));
       myOwnedNilable = new owned MyClass();
       assert(canResolve(fnName, mySharedNonNilable));
@@ -228,8 +250,10 @@ module testmodule {
     {
       param fnName = "acceptsBorrowedNilable";
       writeln(fnName);
-      acceptsBorrowedNilable(myOwnedNonNilable);
-      myOwnedNonNilable = new owned MyClass();
+      {
+        var myOwnedNonNilable:owned MyClass = new owned MyClass();
+        acceptsBorrowedNilable(myOwnedNonNilable);
+      }
       acceptsBorrowedNilable(myOwnedNilable);
       myOwnedNilable = new owned MyClass();
       acceptsBorrowedNilable(mySharedNonNilable);
@@ -238,8 +262,10 @@ module testmodule {
       acceptsBorrowedNilable(myBorrowedNilable);
       acceptsBorrowedNilable(myUnmanagedNonNilable);
       acceptsBorrowedNilable(myUnmanagedNilable);
-      assert(canResolve(fnName, myOwnedNonNilable));
-      myOwnedNonNilable = new owned MyClass();
+      {
+        var myOwnedNonNilable:owned MyClass = new owned MyClass();
+        assert(canResolve(fnName, myOwnedNonNilable));
+      }
       assert(canResolve(fnName, myOwnedNilable));
       myOwnedNilable = new owned MyClass();
       assert(canResolve(fnName, mySharedNonNilable));
@@ -254,8 +280,10 @@ module testmodule {
     {
       param fnName = "acceptsBorrowedAny";
       writeln(fnName);
-      acceptsBorrowedAny(myOwnedNonNilable);
-      myOwnedNonNilable = new owned MyClass();
+      {
+        var myOwnedNonNilable:owned MyClass = new owned MyClass();
+        acceptsBorrowedAny(myOwnedNonNilable);
+      }
       acceptsBorrowedAny(myOwnedNilable);
       myOwnedNilable = new owned MyClass();
       acceptsBorrowedAny(mySharedNonNilable);
@@ -264,8 +292,10 @@ module testmodule {
       acceptsBorrowedAny(myBorrowedNilable);
       acceptsBorrowedAny(myUnmanagedNonNilable);
       acceptsBorrowedAny(myUnmanagedNilable);
-      assert(canResolve(fnName, myOwnedNonNilable));
-      myOwnedNonNilable = new owned MyClass();
+      {
+        var myOwnedNonNilable:owned MyClass = new owned MyClass();
+        assert(canResolve(fnName, myOwnedNonNilable));
+      }
       assert(canResolve(fnName, myOwnedNilable));
       myOwnedNilable = new owned MyClass();
       assert(canResolve(fnName, mySharedNonNilable));
@@ -281,8 +311,10 @@ module testmodule {
       param fnName = "acceptsUnmanagedNonNilable";
       writeln(fnName);
       acceptsUnmanagedNonNilable(myUnmanagedNonNilable);
-      assert(!canResolve(fnName, myOwnedNonNilable));
-      myOwnedNonNilable = new owned MyClass();
+      {
+        var myOwnedNonNilable:owned MyClass = new owned MyClass();
+        assert(!canResolve(fnName, myOwnedNonNilable));
+      }
       assert(!canResolve(fnName, myOwnedNilable));
       myOwnedNilable = new owned MyClass();
       assert(!canResolve(fnName, mySharedNonNilable));
@@ -299,8 +331,10 @@ module testmodule {
       writeln(fnName);
       acceptsUnmanagedNilable(myUnmanagedNonNilable);
       acceptsUnmanagedNilable(myUnmanagedNilable);
-      assert(!canResolve(fnName, myOwnedNonNilable));
-      myOwnedNonNilable = new owned MyClass();
+      {
+        var myOwnedNonNilable:owned MyClass = new owned MyClass();
+        assert(!canResolve(fnName, myOwnedNonNilable));
+      }
       assert(!canResolve(fnName, myOwnedNilable));
       myOwnedNilable = new owned MyClass();
       assert(!canResolve(fnName, mySharedNonNilable));
@@ -317,8 +351,10 @@ module testmodule {
       writeln(fnName);
       acceptsUnmanagedAny(myUnmanagedNonNilable);
       acceptsUnmanagedAny(myUnmanagedNilable);
-      assert(!canResolve(fnName, myOwnedNonNilable));
-      myOwnedNonNilable = new owned MyClass();
+      {
+        var myOwnedNonNilable:owned MyClass = new owned MyClass();
+        assert(!canResolve(fnName, myOwnedNonNilable));
+      }
       assert(!canResolve(fnName, myOwnedNilable));
       myOwnedNilable = new owned MyClass();
       assert(!canResolve(fnName, mySharedNonNilable));
@@ -334,13 +370,17 @@ module testmodule {
     {
       param fnName = "acceptsClassAnyManagementNonNilable";
       writeln(fnName);
-      acceptsClassAnyManagementNonNilable(myOwnedNonNilable);
-      myOwnedNonNilable = new owned MyClass();
+      {
+        var myOwnedNonNilable:owned MyClass = new owned MyClass();
+        acceptsClassAnyManagementNonNilable(myOwnedNonNilable);
+      }
       acceptsClassAnyManagementNonNilable(mySharedNonNilable);
       acceptsClassAnyManagementNonNilable(myBorrowedNonNilable);
       acceptsClassAnyManagementNonNilable(myUnmanagedNonNilable);
-      assert(canResolve(fnName, myOwnedNonNilable));
-      myOwnedNonNilable = new owned MyClass();
+      {
+        var myOwnedNonNilable:owned MyClass = new owned MyClass();
+        assert(canResolve(fnName, myOwnedNonNilable));
+      }
       assert(!canResolve(fnName, myOwnedNilable));
       myOwnedNilable = new owned MyClass();
       assert(canResolve(fnName, mySharedNonNilable));
@@ -355,8 +395,10 @@ module testmodule {
     {
       param fnName = "acceptsClassAnyManagementNilable";
       writeln(fnName);
-      acceptsClassAnyManagementNilable(myOwnedNonNilable);
-      myOwnedNonNilable = new owned MyClass();
+      {
+        var myOwnedNonNilable:owned MyClass = new owned MyClass();
+        acceptsClassAnyManagementNilable(myOwnedNonNilable);
+      }
       acceptsClassAnyManagementNilable(myOwnedNilable);
       myOwnedNilable = new owned MyClass();
       acceptsClassAnyManagementNilable(mySharedNonNilable);
@@ -365,8 +407,10 @@ module testmodule {
       acceptsClassAnyManagementNilable(myBorrowedNilable);
       acceptsClassAnyManagementNilable(myUnmanagedNonNilable);
       acceptsClassAnyManagementNilable(myUnmanagedNilable);
-      assert(canResolve(fnName, myOwnedNonNilable));
-      myOwnedNonNilable = new owned MyClass();
+      {
+        var myOwnedNonNilable:owned MyClass = new owned MyClass();
+        assert(canResolve(fnName, myOwnedNonNilable));
+      }
       assert(canResolve(fnName, myOwnedNilable));
       myOwnedNilable = new owned MyClass();
       assert(canResolve(fnName, mySharedNonNilable));

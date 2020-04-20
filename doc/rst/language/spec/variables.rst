@@ -82,7 +82,7 @@ The ``type-part`` of a variable declaration specifies the type of the
 variable. It is optional.
 
 The ``initialization-part`` of a variable declaration specifies an
-initialization expression for the variable. It is option. When present,
+initialization expression for the variable. It is optional. When present,
 the initialization expression will be stored into the variable as its
 initial value.
 
@@ -128,10 +128,13 @@ declaration statement.
 If the ``initialization-part`` of a local variable declaration is
 omitted, the compiler will search forward in the function for the
 earliest assignment statement(s) setting that variable that occur before
-the variable is otherwise mentioned. It will search only within block
-declarations ``{ }`` and conditionals. These assignment statements are
-called applicable assignment statements. They perform initialization, not
-assignment, of that variable.
+the variable is otherwise mentioned. It will consider the variable passed
+to an ``out`` intent argument as an assignment statement for this
+purpose.  It will search only within block declarations ``{ }``, ``try``
+blocks, ``try!`` blocks, and conditionals.  These assignment statements
+and calls to functions with ``out`` intent are called applicable
+assignment statements.  They perform initialization, not assignment, of
+that variable.
 
    *Example (simple-split-init.chpl)*
 
@@ -168,8 +171,8 @@ assignment, of that variable.
    .. BLOCK-test-chapeloutput
 
       no-split-init.chpl:1: In function 'main':
-      no-split-init.chpl:2: error: 'x' cannot be default initialized
-      no-split-init.chpl:3: note: 'x' is used here before being initialized
+      no-split-init.chpl:2: error: variable 'x' is not initialized and has no type
+      no-split-init.chpl:3: note: 'x' use here prevents split-init from establishing the type
 
 
    *Example (split-cond-blocks-init.chpl)*
@@ -198,10 +201,31 @@ assignment, of that variable.
 
       4
 
+   A function call passing a variable to an ``out`` intent serves as an
+   applicable assignment statement, provided that the variable was
+   declared with a type. For example:
+
+   *Example (split-init-out.chpl)*
+
+   .. code-block:: chapel
+
+      proc setArgToFive(out arg: int) {
+        arg = 5;
+      }
+      proc main() {
+        var x:int;
+        setArgToFive(x); // initializes x
+        writeln(x);
+      }
+
+   .. BLOCK-test-chapeloutput
+
+      5
+
+
 Split initialization does not apply:
 
- * when the variable is a module-level variable, fields, config variable,
-   or ``extern`` variable.
+ * when the variable is a field, config variable, or ``extern`` variable.
  * when an applicable assignment statement setting the variable could not
    be identified
  * when the variable is mentioned before the earliest assignment
@@ -209,8 +233,13 @@ Split initialization does not apply:
  * when an applicable assignment statement is in a loop, ``on``
    statement, or ``begin`` statement
  * when an applicable assignment statement is in one branch of a
-   conditional but not in the other, including when the conditional has
-   no ``else`` branch.
+   conditional but not in the other, and when the other branch
+   does not always return or throw. This rule prevents
+   split-initialization when the applicable assignment statement is
+   in a conditional that has no ``else`` branch.
+ * when an applicable assignment statement is in a ``try`` or ``try!``
+   block which has ``catch`` clauses that mention the variable
+   or which has ``catch`` clauses that do not always throw or return.
 
 In the case that the variable is declared without a ``type-part`` and
 where multiple applicable assignment statements are identified, all of
@@ -392,7 +421,7 @@ Module Level Variables
 Variables declared in statements that are in a module but not in a
 function or block within that module are module level variables. Module
 level variables can be accessed anywhere within that module after the
-declaration of that variable. If they are public, they can also be
+initialization of that variable. If they are public, they can also be
 accessed in other modules that use that module.
 
 .. _Local_Variables:
@@ -404,12 +433,13 @@ Local variables are declared within block statements. They can only be
 accessed within the scope of that block statement (including all inner
 nested block statements and functions).
 
-A local variable only exists during the execution of code that lies
-within that block statement. This time is called the lifetime of the
-variable. When execution has finished within that block statement, the
-local variable and the storage it represents is removed. Variables of
-class type are the sole exception. Initializers of class types create
-storage that is not associated with any scope. Such storage can be
+A local variable only exists during its lifetime. The lifetime of a local
+variable will end when its deinitialization point, or deinit point, is
+reached. At that time, the local variable and the storage representing it
+is removed. See :ref:`Deinit_Points` for more details.
+
+Note that unlike most types, variables of ``unmanaged`` class type do not
+automatically reclaim the storage that they refer to. Such storage can be
 reclaimed as described in :ref:`Class_Delete`.
 
 .. _Constants:
@@ -568,7 +598,7 @@ Parameter constants and expressions cannot be aliased.
    .. code-block:: chapel
 
       var myInt = 51;
-      ref refInt = myInt;                   // alias of a local or global variable
+      ref refInt = myInt;                   // alias of the previous variable
       myInt = 62;
       writeln("refInt = ", refInt);
       refInt = 73;
@@ -597,3 +627,355 @@ Parameter constants and expressions cannot be aliased.
       refToExpr = 62
       myArr[3] = 73
       myConstRef = 52
+
+.. _Variable_Lifetimes:
+
+Variable Lifetimes
+------------------
+
+A variable only exists during its lifetime. The lifetime of a variable
+begins when the variable is initialized.
+
+A variable's lifetime ends:
+
+ * after copy elision if it occurred (after the last mention is
+   used to copy-initialize a variable or in intent argument) -- see
+   :ref:`Copy_Elision`.
+ * otherwise, at the variable's deinit point (see :ref:`Deinit_Points`)
+
+.. _Deinit_Points:
+
+Deinit Points
+~~~~~~~~~~~~~
+
+The compiler will add a deinitialization for each variable that is not
+the source of copy elision. The deinitialization point is particularly
+relevant for records and managed classes. For a record, the compiler will
+call the record ``deinit`` method at the deinitialization point. See
+:ref:`Record_Deinitializer` for more details on this method.
+
+Module-scope variables are destroyed at program tear-down as described in
+:ref:`Module_Deinitialization`.
+
+Fields are deinitialized when the containing class instance or record is 
+deinitialized.
+
+Regular local variables are destroyed at the end of the containing block.
+Temporary local variables have a different rule as described below.
+
+The compiler adds temporary local variables to contain the result of
+nested call expressions. ``g()`` in the statement ``f(g());`` is an
+example of a nested call expression. If the containing statement is an
+initialization expression for some variable, such as ``var x = f(g());``,
+then the temporary local variables for that statement are deinitialized at
+the end of the containing block. Otherwise, the temporary local variables
+are deinitialized at the end of the containing statement.
+
+   *Example (temporary-deinit-point.chpl)*
+
+   .. BLOCK-test-chapelpre
+
+      record R {
+        var x: int = 0;
+        proc init() {
+          this.x = 0;
+          writeln("init (default)");
+        }
+        proc init(arg:int) {
+          this.x = arg;
+          writeln("init ", arg, " ", arg);
+        }
+        proc init=(other: R) {
+          this.x = other.x;
+          writeln("init= ", other.x);
+        }
+        proc deinit() {
+          writeln("deinit ", x);
+        }
+      }
+      proc =(ref lhs:R, rhs:R) {
+        writeln("lhs ", lhs.x, " = rhs ", rhs.x);
+        lhs.x = rhs.x;
+      }
+      temporaryInDeclaration();
+      temporaryInConstRefDeclaration();
+      temporaryInStatement();
+
+   .. code-block:: chapel
+
+      proc makeRecord() {
+        return new R(); // creates a new R record
+      }
+      proc f(const ref arg) {
+        return new R(); // ignores argument, returns new record
+      }
+
+      proc temporaryInDeclaration() {
+        const x = f(makeRecord());
+        writeln("block ending");
+        // 'x' and the temporary result of 'makeRecord()' are deinited here
+      }
+
+      proc temporaryInConstRefDeclaration() {
+        const ref x = f(makeRecord());
+        writeln("block ending");
+        // 'x' and the temporary result of 'makeRecord()' are deinited here
+      }
+
+      proc temporaryInStatement() {
+        f(makeRecord());
+        // temporary result of 'f()' and 'makeRecord()' are deinited here
+        writeln("block ending");
+      }
+
+
+   .. BLOCK-test-chapeloutput
+
+      init (default)
+      init (default)
+      block ending
+      deinit 0
+      deinit 0
+      init (default)
+      init (default)
+      block ending
+      deinit 0
+      deinit 0
+      init (default)
+      init (default)
+      deinit 0
+      deinit 0
+      block ending
+
+
+
+.. _Copy_and_Move_Initialization:
+
+Copy and Move Initialization
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+This section uses the terminology *copy* and *move*. These terms
+describe how a Chapel program initializes a variable based upon an
+existing variable. Both *copy* and *move* create a new variable
+from an initial variable.
+
+Since records can use ``init=`` and ``deinit`` methods to adjust the
+behavior of copy initialization, this section is particularly relevant
+for records. In is also relevant for non-nilable ``owned`` class types
+since copies of those types will not be allowed by the compiler.
+
+After a *copy*, both the new variable and the initial variable exist
+separately. Generally speaking, they can both be modified.  However, they
+should generally refer to different storage. In particular, changing a
+field in the new record variable should not change the corresponding
+field in the initial record variable.
+
+A *move* is when a variable changes storage location. It is similar to a
+*copy initialization* but it represents a transfer rather than
+duplication. In particular, the initial record is no longer available
+after the *move*.  A *move* can be thought of as an optimized form a
+*copy* followed by destruction of the initial record.  After a *move*,
+there is only one record variable - where after a *copy* there are two.
+
+When a record is copied, it will run its *copy initializer* otherwise known
+as ``proc init=``.
+
+The compiler will choose whether to add *copy* or *move* initialization based
+upon the pattern of variable mentions.
+
+Here is an example of when *copy initialization* occurs:
+
+.. code-block:: chapel
+
+  var x:R = ...;
+  var y:R = x;    // copy initialization occurs here
+  ... uses of both x and y ...;
+
+Here is an example of when the compiler uses *move initialization*:
+
+.. code-block:: chapel
+
+  record R { ... }
+  proc makeR() {
+    return new R(...);
+  }
+  var x = makeR();    // move initialization occurs here
+
+
+The remainder of this section describes situations in which a *copy*
+or a *move* is added by the compiler to implement some kind of initialization.
+
+.. _copy-move-table:
+
+When one variable is initialized from another variable or from a call
+expression, the compiler must choose whether to perform *copy
+initialization* or *move initialization*.
+
+The following table shows in which situations a *copy* or *move
+initialization* is added. Each row in this table corresponds to a
+particular use of an expression `<expr>`. Each column indicates the kind
+the expression `<expr>`.
+
+========================  ==========  ============  ==========  =========
+operation                 value call  local var     local var   outer/ref
+                                      last mention  mentioned
+                                                    again
+========================  ==========  ============  ==========  =========
+variable initialization   move        move          copy        copy
+value return              move        move          impossible  copy
+========================  ==========  ============  ==========  =========
+
+Here are definitions of the rows and columns:
+
+variable initialization
+  means when a new variable is initialized in a variable declaration, in
+  a field initialization, or by the in argument intent.
+
+value return
+  means that an expression is returned from a function by value
+
+value call
+  means a function call that does not return with ``ref`` or ``const ref``
+  return intent
+
+local var last mention
+  means a use of a function-local variable which is not mentioned
+  again - see :ref:`Copy_Elision` for further details
+
+local var mentioned again
+  means a use of a function-local variable which is mentioned again
+
+outer/ref
+  means a use of a module-scope variable, an outer scope variable, or a
+  reference variable or argument
+
+
+.. _Copy_Elision:
+
+Copy Elision
+~~~~~~~~~~~~
+
+The compiler elides a *copy initialization* from a local ``var`` or
+``const`` variable when the source variable is not mentioned again. When
+a *copy* is elided, the *copy initialization* is changed into *move
+initialization* and the source variable is considered dead. Compile-time
+analysis provides compilation errors when a variable is used after it is
+dead in common cases.
+
+Like split initialization, copy elision considers mentions of variables
+to determine whether or not a copy can be elided. Since a ``return`` or
+``throw`` exits a function, a copy can be elided if it is followed
+immediately by a ``return`` or ``throw``. Copy elision considers eliding
+copies only within block declarations ``{ }``, ``try`` blocks, ``try!``
+blocks, and conditionals.
+
+   *Example (copy-elision.chpl)*
+
+   .. BLOCK-test-chapelpre
+
+      record R {
+        var x: int = 0;
+        proc init() {
+          this.x = 0;
+          writeln("init (default)");
+        }
+        proc init(arg:int) {
+          this.x = arg;
+          writeln("init ", arg, " ", arg);
+        }
+        proc init=(other: R) {
+          this.x = other.x;
+          writeln("init= ", other.x);
+        }
+        proc deinit() {
+          writeln("deinit ", x);
+        }
+      }
+      proc =(ref lhs:R, rhs:R) {
+        writeln("lhs ", lhs.x, " = rhs ", rhs.x);
+        lhs.x = rhs.x;
+      }
+
+
+   .. code-block:: chapel
+
+      config const option = true;
+
+      proc makeRecord() {
+        return new R(); // creates a new R record
+      }
+
+      proc elideCopy() {
+        var x = makeRecord();
+        var y = x; // copy elided because 'x' is not used again
+        writeln("block ending");
+      }
+      elideCopy();
+
+      proc noElideCopy() {
+        var x = makeRecord();
+        var y = x;  // copy is not elided because 'x' is used again
+        writeln(x); // 'x' used here
+        writeln("block ending");
+      }
+      noElideCopy();
+
+      proc elideCopyInReturningConditional() {
+        var x = makeRecord();
+        if option {
+          var y = x; // copy elided because 'x' is not used again
+          writeln("returning");
+          return;    // because this branch of conditional returns
+        }
+        writeln(x);  // mention of 'x' here not relevant
+        writeln("block ending");
+      }
+      elideCopyInReturningConditional();
+
+      proc elideCopyBothConditional() {
+        var x = makeRecord();
+        var y; // split initialization below
+        if option {
+          y = x;
+        } else {
+          y = x;
+        }
+        // copy is elided because 'x' is not used after the copy
+        // (in either branch of the conditional or after it)
+        writeln("block ending");
+      }
+      elideCopyBothConditional();
+
+   .. BLOCK-test-chapeloutput
+
+      init (default)
+      block ending
+      deinit 0
+      init (default)
+      init= 0
+      (x = 0)
+      block ending
+      deinit 0
+      deinit 0
+      init (default)
+      returning
+      deinit 0
+      init (default)
+      block ending
+      deinit 0
+
+
+Copy elision does not apply:
+
+ * when the source variable is a reference, field, or module-level
+   variable
+ * when the source variable is mentioned after the copy statement
+ * when the copy statement is in a loop, ``on`` statement, or ``begin``
+   statement
+ * when the copy statement is in one branch of a conditional but not in
+   the other, or when the other branch does not always ``return`` or
+   ``throw``.
+ * when the copy statement is in a ``try`` or ``try!`` block which has
+   ``catch`` clauses that mention the variable or which has ``catch``
+   clauses that do not always ``throw`` or ``return``.
+

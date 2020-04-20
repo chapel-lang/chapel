@@ -9,7 +9,7 @@ proc test() {
   var o3 = new owned MyClass(3)?;
 
   var s1:shared MyClass? = o1;
-  var s2 = new shared(o2);
+  var s2 = shared.create(o2);
   var s3:shared MyClass?;
   s3 = o3;
 

@@ -10,14 +10,14 @@ signature of a generic function without also instantiating the body, setter,
 and other associated portions of the AST.  One such example is when resolving
 the target of a call site.  Here, the only portions of the function that need
 to be instantiated are the formal arguments and the where clause; this is
-enough information to allow resolution to occur.  (Note: additional child nodes
+enough information to allow the resolution to occur.  (Note: additional child nodes
 are instantiated because they are used in AST transformations that occur during
 the function resolution process.)  By not unnecessarily instantiating the body
 of generic functions we can save the time and memory that would be used doing
 so.
 
 Another situation where partial instantiation is important is when resolving
-constrained generics.  In this case, we wish to deal with the functions body
+constrained generics.  In this case, we wish to deal with the function's body
 and signature independently, allowing the body to be resolved and instantiated
 separately, as well as only requiring model lookup when a constrained generic
 is chosen as the best candidate for a call site.
@@ -29,7 +29,7 @@ The `innerCopy` function is split into `partialCopy` and `finalizeCopy`; the
 `instantiateBody`.  The `instantiateSignature` function uses `partialCopy` to
 copy and instantiate enough of the generic function's AST to allow it to go
 through the candidate filtering and disambiguation process in the function
-resolution pass.  Once a best candidate has been determined by the
+resolution pass.  Once the best candidate has been determined by the
 `resolveNormalCall` method, `instantiateBody` is called on the call target if
 that function is a partially instantiated function.
 
@@ -37,7 +37,7 @@ Details
 -------
 
 To allow partial instantiation to work the `instantiate_tuple` function was
-also split into two pieces.  The first of these new functions adds formals to
+also split into two pieces.  The first of these new functions add formals to
 the generic's signature after recording the number of formals previously
 present.  This information is then used when instantiating the body of the
 generic to insert the necessary field setting calls for the return tuple value.

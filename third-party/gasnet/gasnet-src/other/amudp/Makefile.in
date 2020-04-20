@@ -246,7 +246,7 @@ CC = @CC@
 CCDEPMODE = @CCDEPMODE@
 CC_FAMILY = @CC_FAMILY@
 CC_SUBFAMILY = @CC_SUBFAMILY@
-CFLAGS = @GASNET_OPT_CFLAGS@ @DEVWARN_CFLAGS@ @MISC_CFLAGS@ @MISC_CPPFLAGS@ @SYS_HEADER_BLD@ $(MANUAL_CFLAGS) $(apputils_flags)
+CFLAGS = @GASNET_OPT_CFLAGS@ @DEVWARN_CFLAGS@ @MISC_CFLAGS@ @MISC_CPPFLAGS@ $(MANUAL_CFLAGS) $(apputils_flags)
 COMPLETE_INTTYPES_H = @COMPLETE_INTTYPES_H@
 COMPLETE_STDINT_H = @COMPLETE_STDINT_H@
 COMPLETE_SYS_TYPES_H = @COMPLETE_SYS_TYPES_H@
@@ -258,7 +258,7 @@ CROSS_COMPILING = @CROSS_COMPILING@
 CXX = @CXX@
 CXXCPP = @CXXCPP@
 CXXDEPMODE = @CXXDEPMODE@
-CXXFLAGS = @GASNET_OPT_CXXFLAGS@ @DEVWARN_CXXFLAGS@ @MISC_CXXFLAGS@ @MISC_CPPFLAGS@ @SYS_HEADER_BLD@ $(MANUAL_CXXFLAGS)
+CXXFLAGS = @GASNET_OPT_CXXFLAGS@ @DEVWARN_CXXFLAGS@ @MISC_CXXFLAGS@ @MISC_CPPFLAGS@ $(MANUAL_CXXFLAGS)
 CXX_FAMILY = @CXX_FAMILY@
 CXX_SUBFAMILY = @CXX_SUBFAMILY@
 CYGPATH_W = @CYGPATH_W@
@@ -334,7 +334,6 @@ MISC_CPPFLAGS = @MISC_CPPFLAGS@
 MISC_CXXFLAGS = @MISC_CXXFLAGS@
 MKDIR_P = @MKDIR_P@
 MPIRUN_CMD = @MPIRUN_CMD@
-MPIRUN_CMD_BATCH = @MPIRUN_CMD_BATCH@
 MPI_CC = @MPI_CC@
 MPI_CC_FAMILY = @MPI_CC_FAMILY@
 MPI_CC_SUBFAMILY = @MPI_CC_SUBFAMILY@
@@ -354,9 +353,6 @@ PACKAGE_STRING = @PACKAGE_STRING@
 PACKAGE_TARNAME = @PACKAGE_TARNAME@
 PACKAGE_URL = @PACKAGE_URL@
 PACKAGE_VERSION = @PACKAGE_VERSION@
-PAMI_CFLAGS = @PAMI_CFLAGS@
-PAMI_LDFLAGS = @PAMI_LDFLAGS@
-PAMI_LIBS = @PAMI_LIBS@
 PATH_SEPARATOR = @PATH_SEPARATOR@
 PERL = @PERL@
 PGDBG_PATH = @PGDBG_PATH@
@@ -390,8 +386,6 @@ SSH_SPAWNER_LIBS = @SSH_SPAWNER_LIBS@
 STRIP = @STRIP@
 SYSTEM_NAME = @SYSTEM_NAME@
 SYSTEM_TUPLE = @SYSTEM_TUPLE@
-SYS_HEADER_BLD = @SYS_HEADER_BLD@
-SYS_HEADER_INST = @SYS_HEADER_INST@
 TIMECMD = @TIMECMD@
 TOOL_PREFIX = @TOOL_PREFIX@
 TOP_BUILDDIR = @TOP_BUILDDIR@
@@ -984,11 +978,13 @@ apputils.o : $(amxdir)/apputils.c $(amxdir)/apputils.h $(allheaders)
 amudprun$(EXEEXT): amudprun.o $(headers) libamudp.a
 	$(link) -o $@ $< -L. -lamudp $(linkend)
 
-%.o: %.c $(allheaders)
+%.o: %.c $(allheaders) $(amxdir)/*.h
 	$(compile) -o $@ -c `test -f $(srcdir)/$< && echo "$(srcdir)/"`$<
 
-%.o: %.cpp $(allheaders) $(top_builddir)/libgasnet_tools-seq.a
+%.o: %.cpp $(allheaders) $(amxdir)/*.h $(top_builddir)/libgasnet_tools-seq.a
 	$(cxxcompile) -o $@ -c `test -f $(srcdir)/$< && echo "$(srcdir)/"`$<
+
+amudp_cdefs.o: $(amxdir)/amx_internal.c
 
 $(top_builddir)/libgasnet_tools-seq.a: force
 	@cd $(top_builddir) && $(MAKE) libgasnet_tools-seq.a
@@ -1006,7 +1002,7 @@ amudprun-host$(EXEEXT): force
 	ln -sf $$srcdir/../portable_inttypes.h . && \
 	ln -sf $$srcdir/../gasnet_portable_platform.h amx_portable_platform.h && \
 	ln -sf $$srcdir/../amx/*.[ch] . && \
-	$(MAKE) amudprun -f Makefile.standalone srcdir=$$srcdir altincdir=. MANUAL_DEFINES="-DAMX_ENV_PREFIX=GASNET $(MANUAL_DEFINES)" && \
+	$(MAKE) amudprun -f Makefile.standalone srcdir=$$srcdir amxdir=. altincdir=. MANUAL_DEFINES="-DAMX_ENV_PREFIX=GASNET $(MANUAL_DEFINES)" && \
 	mv amudprun ../amudprun-host && \
 	cd .. && rm -Rf .host
 

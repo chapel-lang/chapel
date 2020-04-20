@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -27,6 +28,7 @@
 #include "ForallStmt.h"
 #include "ForLoop.h"
 #include "IfExpr.h"
+#include "ImportStmt.h"
 #include "iterator.h"
 #include "expr.h"
 #include "LoopExpr.h"
@@ -203,18 +205,18 @@ void collect_top_asts(BaseAST* ast, std::vector<BaseAST*>& asts) {
   asts.push_back(ast);
 }
 
-static void do_containsSymExprFor(BaseAST* ast, Symbol* sym, bool* found) {
+static void do_containsSymExprFor(BaseAST* ast, Symbol* sym, SymExpr** found) {
   AST_CHILDREN_CALL(ast, do_containsSymExprFor, sym, found);
   if (SymExpr* symExpr = toSymExpr(ast))
     if (symExpr->symbol() == sym)
-      *found = true;
+      *found = symExpr;
 }
 
 // returns true if the AST contains a SymExpr pointing to sym
-bool containsSymExprFor(BaseAST* ast, Symbol* sym) {
-  bool found = false;
-  do_containsSymExprFor(ast, sym, &found);
-  return found;
+SymExpr* findSymExprFor(BaseAST* ast, Symbol* sym) {
+  SymExpr* ret = NULL;
+  do_containsSymExprFor(ast, sym, &ret);
+  return ret;
 }
 
 void reset_ast_loc(BaseAST* destNode, BaseAST* sourceNode) {
@@ -248,7 +250,7 @@ void computeNonvirtualCallSites(FnSymbol* fn) {
       } else if (call->isPrimitive(PRIM_VIRTUAL_METHOD_CALL)) {
         FnSymbol* vFn = toFnSymbol(toSymExpr(call->get(1))->symbol());
         if (vFn == fn) {
-          INT_FATAL(call, "unexpected case calling %d", fn->name);
+          INT_FATAL(call, "unexpected case calling %s", fn->name);
         }
       }
     }
@@ -1062,9 +1064,9 @@ void prune2() { prune(); } // Synonym for prune.
 
 /*
  * Takes a call that is a PRIM_SVEC_GET_MEMBER* and returns the symbol of the
- * field. Normally the call is something of the form PRIM_SVEC_GET_MEMBER(p, 1)
+ * field. Normally the call is something of the form PRIM_SVEC_GET_MEMBER(p, 0)
  * and what this function gets out is the symbol that is the first field
- * instead of just the number 1.
+ * instead of just the number 0.
  */
 Symbol* getSvecSymbol(CallExpr* call) {
   INT_ASSERT(call->isPrimitive(PRIM_GET_SVEC_MEMBER)       ||
@@ -1077,8 +1079,8 @@ Symbol* getSvecSymbol(CallExpr* call) {
   if (fieldSym) {
     int immediateVal = fieldSym->immediate->int_value();
 
-    INT_ASSERT(immediateVal >= 1 && immediateVal <= tuple->fields.length);
-    return tuple->getField(immediateVal);
+    INT_ASSERT(immediateVal >= 0 && immediateVal < tuple->fields.length);
+    return tuple->getField(immediateVal+1);
   } else {
     // GET_SVEC_MEMBER(p, i), where p is a star tuple
     return NULL;

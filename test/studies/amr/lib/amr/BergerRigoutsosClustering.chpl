@@ -55,7 +55,7 @@ proc clusterFlags (
       
       //---- If D2 is empty, split was unsuccessful ----
       
-      if D2.numIndices==0 then finished_domain_list.add(candidate.D);
+      if D2.size==0 then finished_domain_list.add(candidate.D);
 
 
       //---- Otherwise, push new candidates to stack ----
@@ -140,18 +140,18 @@ class CandidateDomain {
     min_width = initMin_width;
 
     proc calculate_signatures(param d) {
-      if d == rank then return ( new unmanaged ArrayWrapper( {D.dim(d)} ) ,);
-      else              return ( new unmanaged ArrayWrapper( {D.dim(d)} ) ,
+      if d == rank-1 then return ( new unmanaged ArrayWrapper( {D.dim(d)} ) ,);
+      else                return ( new unmanaged ArrayWrapper( {D.dim(d)} ) ,
                                  ( ...calculate_signatures( d + 1 ) )      );
     }
-    signatures = calculate_signatures(1);
+    signatures = calculate_signatures(0);
 
     this.complete();
       
     for idx in D 
     {
       if flags(idx) then
-        for d in 1..rank do signatures(d).array(idx(d)) += 1;
+        for d in 0..rank-1 do signatures(d).array(idx(d)) += 1;
     }
 
 
@@ -171,7 +171,7 @@ class CandidateDomain {
 
   proc deinit ()
   { 
-    for i in 1..rank do delete signatures(i);
+    for i in 0..rank-1 do delete signatures(i);
   }
   // /|'''''''''''''''''''/|
   //< |  deinitializer   < |
@@ -184,7 +184,7 @@ class CandidateDomain {
   //|/...................|/
   proc efficiency()
   {
-    return +reduce(signatures(1).array):real / D.numIndices:real;
+    return +reduce(signatures(1).array):real / D.size:real;
   }
   // /|'''''''''''''''''''/|
   //< |    efficiency    < |
@@ -209,7 +209,7 @@ proc CandidateDomain.trim()
   var trimmed_ranges:      rank*range(stridable=true);
   var trim_low, trim_high: int;
   
-  for d in 1..rank {
+  for d in 0..rank-1 {
     
     //---- Low bound ----
     
@@ -237,12 +237,12 @@ proc CandidateDomain.trim()
 
     //---- Comply with minimum width ----
 
-    if R.length < min_width(d) 
+    if R.size < min_width(d) 
     {
       
       //---- Approximately center the enlarged range ----
       
-      var n_overflow_low = (min_width(d) - R.length) / 2;
+      var n_overflow_low = (min_width(d) - R.size) / 2;
       var tmp = ((trim_low - n_overflow_low*stride .. by stride) #min_width(d));
       R = tmp.alignHigh();
 
@@ -265,7 +265,7 @@ proc CandidateDomain.trim()
   //---- Resize domain and signatures ----
   
   D = trimmed_ranges;
-  for d in 1..rank do signatures(d).Domain = {D.dim(d)};
+  for d in 0..rank-1 do signatures(d).Domain = {D.dim(d)};
 
 }
 // /|"""""""""""""""""""""""""""""/|
@@ -288,7 +288,7 @@ proc CandidateDomain.split()
   
   (D1,D2) = removeHole();
   
-  if D2.numIndices==0 then
+  if D2.size==0 then
     (D1,D2) = inflectionCut();
   
   return (D1,D2);
@@ -324,11 +324,11 @@ proc CandidateDomain.removeHole()
 
   //===> Locate largest hole ===>
 
-  for d in 1..rank {
+  for d in 0..rank-1 {
     
     //---- ranges = D ----
-    for d2 in 1..d-1    do ranges(d2) = D.dim(d2);
-    for d2 in d+1..rank do ranges(d2) = D.dim(d2);
+    for d2 in 0..d-1      do ranges(d2) = D.dim(d2);
+    for d2 in d+1..rank-1 do ranges(d2) = D.dim(d2);
   
   
     //---- Allowable hole bounds ----
@@ -364,7 +364,7 @@ proc CandidateDomain.removeHole()
         ranges(d) = hole_low .. hole_high by stride;
         hole = ranges;
         
-        if hole.numIndices > max_hole.numIndices
+        if hole.size > max_hole.size
         {
           max_hole = hole;
           d_cut    = d;
@@ -382,13 +382,13 @@ proc CandidateDomain.removeHole()
   
   //---- Split by removing largest hole ----
   
-  if max_hole.numIndices > 0
+  if max_hole.size > 0
   {
     
     stride = D.stride(d_cut);
     
-    for d in 1..d_cut-1    do ranges(d) = D.dim(d);
-    for d in d_cut+1..rank do ranges(d) = D.dim(d);
+    for d in 0..d_cut-1      do ranges(d) = D.dim(d);
+    for d in d_cut+1..rank-1 do ranges(d) = D.dim(d);
     
     ranges(d_cut) = D.low(d_cut) .. max_hole.low(d_cut)-stride by stride;
     D1 = ranges;
@@ -428,11 +428,11 @@ proc CandidateDomain.inflectionCut ()
 
   //===> Locate optimal cut ===>
   
-  for d in 1..rank {
+  for d in 0..rank-1 {
     
     //---- Must be at least 4 cells wide for an inflection cut ----
     
-    if D.dim(d).length >= 4 {
+    if D.dim(d).size >= 4 {
 
       ref sig = signatures(d).array;
       var stride = D.stride(d);
@@ -475,7 +475,7 @@ proc CandidateDomain.inflectionCut ()
   
   if cut_magnitude > 0 {
 
-    for d in 1..rank do ranges(d) = D.dim(d);
+    for d in 0..rank-1 do ranges(d) = D.dim(d);
 
     var stride = D.stride(cut_dimension);
     ranges(cut_dimension) = D.low(cut_dimension) .. D1_high by stride;

@@ -120,7 +120,11 @@ typedef struct {
 #define GASNETC_LUB_LONG          0x800000
 #define GASNETC_LUB_MEDIUM        ((size_t)GASNETC_GNI_MAX_MEDIUM)
 
+#if GASNETC_GNI_MAX_MEDIUM == 65472 // Cannot use all 65536 bytes of buffer (bug 4042)
+#define GASNETC_MAX_MEDIUM(nargs) (GASNETC_LUB_MEDIUM+8*((GASNETC_MAX_ARGS-(MAX(nargs,1)))/2))
+#else
 #define GASNETC_MAX_MEDIUM(nargs) (GASNETC_LUB_MEDIUM+8*((GASNETC_MAX_ARGS-(nargs))/2))
+#endif
 
 #define gex_AM_LUBRequestMedium() ((size_t)GASNETC_LUB_MEDIUM)
 #define gex_AM_LUBReplyMedium()   ((size_t)GASNETC_LUB_MEDIUM)

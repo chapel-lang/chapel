@@ -3,7 +3,7 @@ enum MyEnum {
   y = 2
 }
 
-proc enumerated.blarg() {
+proc enum.blarg() {
   return 1;
 }
 

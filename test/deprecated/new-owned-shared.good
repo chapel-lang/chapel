@@ -1,0 +1,6 @@
+new-owned-shared.chpl:8: warning: the syntax 'new owned(an expression)' is deprecated
+new-owned-shared.chpl:8: note: instead use 'owned.create(an expression)'
+new-owned-shared.chpl:9: warning: the syntax 'new shared(an expression)' is deprecated
+new-owned-shared.chpl:9: note: instead use 'shared.create(an expression)'
+11
+20

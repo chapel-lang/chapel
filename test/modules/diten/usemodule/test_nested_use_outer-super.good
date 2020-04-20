@@ -1,0 +1,6 @@
+innermost: a is 3
+innermost: b is b
+innermost: c is c
+foo
+outermost: a is 4
+outermost: c is c

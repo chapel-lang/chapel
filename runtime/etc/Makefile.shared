@@ -1,4 +1,5 @@
-# Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+# Copyright 2020 Hewlett Packard Enterprise Development LP
+# Copyright 2004-2019 Cray Inc.
 # Other additional copyright holders may be indicated within.
 # 
 # The entirety of this work is licensed under the Apache License,
@@ -28,12 +29,12 @@ $(TMPBINNAME): $(CHPL_CL_OBJS) FORCE
 		-c -o $(TMPBINNAME).o \
 		$(CHPLSRC) \
 		$(CHPL_RT_INC_DIR)
-	$(LD) $(CHPL_MAKE_BASE_LFLAGS) $(GEN_LFLAGS) $(COMP_GEN_LFLAGS) \
-		-o $(TMPBINNAME) $(TMPBINNAME).o \
-		$(CHPLUSEROBJ) $(CHPL_CL_OBJS) \
-		$(CHPL_MAKE_THIRD_PARTY_LINK_ARGS) \
-		-L$(CHPL_RT_LIB_DIR) \
-		-lchpl -lm
+	$(LD) $(CHPL_MAKE_BASE_LFLAGS) \
+	        $(COMP_GEN_USER_LDFLAGS) $(GEN_LFLAGS) $(COMP_GEN_LFLAGS) \
+		-o $(TMPBINNAME) $(TMPBINNAME).o $(CHPLUSEROBJ) \
+		$(CHPL_CL_OBJS) \
+		-L$(CHPL_RT_LIB_DIR) -lchpl -lm \
+		$(CHPL_MAKE_THIRD_PARTY_LINK_ARGS)
 ifneq ($(TMPBINNAME),$(BINNAME))
 	cp $(TMPBINNAME) $(BINNAME)
 	rm $(TMPBINNAME)

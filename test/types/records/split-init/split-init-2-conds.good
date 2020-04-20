@@ -1,2 +1,13 @@
+test1
 owned C {x = 1}
 owned C {x = 4}
+test2
+test3
+init 1
+test4
+init 1
+test5
+Error: 
+test6
+test7
+init 1

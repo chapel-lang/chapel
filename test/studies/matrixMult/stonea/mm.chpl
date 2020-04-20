@@ -39,10 +39,10 @@ proc matrixMult_ijk(
     const B : [?BD] int,
     C : [?CD] int)
 {
-    for (ai,ci) in zip(AD.dim(1), CD.dim(1)) {
-        for (bj,cj) in zip(BD.dim(2), CD.dim(2)) {
+    for (ai,ci) in zip(AD.dim(0), CD.dim(0)) {
+        for (bj,cj) in zip(BD.dim(1), CD.dim(1)) {
             C[ci,cj] = 0;
-            for (ak,bk) in zip(AD.dim(2),BD.dim(1)) {
+            for (ak,bk) in zip(AD.dim(1),BD.dim(0)) {
                 C[ci,cj] += A[ai,ak] * B[bk,bj];
             }
         }
@@ -57,8 +57,8 @@ proc matrixMult_ijk_clever(
     const B : [?BD] int,
     C : [?CD] int)
 {
-    for (ai,ci) in zip(AD.dim(1), CD.dim(1)) {
-        for (bj,cj) in zip(BD.dim(2), CD.dim(2)) {
+    for (ai,ci) in zip(AD.dim(0), CD.dim(0)) {
+        for (bj,cj) in zip(BD.dim(1), CD.dim(1)) {
             C[ci,cj] = dotProd(p, A[ai,..], B[..,bj]);
         }
     }
@@ -74,8 +74,8 @@ proc matrixMult_kij_clever(
 {
     C = 0;
 
-    for (ak,bk) in zip(AD.dim(2), BD.dim(1)) {
-        for (ai,ci) in zip(AD.dim(1), CD.dim(1)) {
+    for (ak,bk) in zip(AD.dim(1), BD.dim(0)) {
+        for (ai,ci) in zip(AD.dim(0), CD.dim(0)) {
             C[ci,..] = saxpy(n, A[ai,ak], B[bk,..], C[ci,..]);
         }
     }
@@ -91,7 +91,7 @@ proc matrixMult_tensored(
 {
     C = 0;
 
-    for (i,j,k) in {C.domain.dim(1), C.domain.dim(2), 1..p} {
+    for (i,j,k) in {C.domain.dim(0), C.domain.dim(1), 1..p} {
         C[i,j] += A[i,k] * B[k,j];
     }
 }
@@ -108,13 +108,13 @@ proc matrixMult_tensored_no_indices_no_reindexing(
     // asserting correct A, B, and C sizes would be complicated
 
     // potential error if one of the domains is degenerate
-    const rowRange  = 0..(C.domain.dim(1).high - C.domain.dim(1).low);
-    const colRange  = 0..(C.domain.dim(2).high - C.domain.dim(2).low);
-    const calcRange = 0..(B.domain.dim(1).high - B.domain.dim(1).low);
+    const rowRange  = 0..(C.domain.dim(0).high - C.domain.dim(0).low);
+    const colRange  = 0..(C.domain.dim(1).high - C.domain.dim(1).low);
+    const calcRange = 0..(B.domain.dim(0).high - B.domain.dim(0).low);
 
-    const keyIdxA = (A.domain.dim(1).low, A.domain.dim(2).low);
-    const keyIdxB = (B.domain.dim(1).low, B.domain.dim(2).low);
-    const keyIdxC = (C.domain.dim(1).low, C.domain.dim(2).low);
+    const keyIdxA = (A.domain.dim(0).low, A.domain.dim(1).low);
+    const keyIdxB = (B.domain.dim(0).low, B.domain.dim(1).low);
+    const keyIdxC = (C.domain.dim(0).low, C.domain.dim(1).low);
 
     C = 0;
  
@@ -134,9 +134,9 @@ proc matrixMult_tensored_no_indices(
     // asserting correct A, B, and C sizes would be complicated
 
     // potential error if one of the domains is degenerate
-    const rowRange  = 1..(C.domain.dim(1).high - C.domain.dim(1).low)+1;
-    const colRange  = 1..(C.domain.dim(2).high - C.domain.dim(2).low)+1;
-    const calcRange = 1..(B.domain.dim(1).high - B.domain.dim(1).low)+1;
+    const rowRange  = 1..(C.domain.dim(0).high - C.domain.dim(0).low)+1;
+    const colRange  = 1..(C.domain.dim(1).high - C.domain.dim(1).low)+1;
+    const calcRange = 1..(B.domain.dim(0).high - B.domain.dim(0).low)+1;
 
     // reindexed versions of A, B, and C
     ref Aprime = A.reindex(rowRange,  calcRange);
@@ -146,7 +146,7 @@ proc matrixMult_tensored_no_indices(
     C = 0;
 
     for (i,j,k) in
-      {Cprime.domain.dim(1), Cprime.domain.dim(2), Bprime.domain.dim(1)}
+      {Cprime.domain.dim(0), Cprime.domain.dim(1), Bprime.domain.dim(0)}
     {
         Cprime[i,j] += Aprime[i,k] * Bprime[k,j];
     }
@@ -182,9 +182,9 @@ proc main() {
          ( 45,  64,  60, 72, 149),
          ( 33,  61,  51, 54, 140));
 
-    const m = A.domain.dim(1).high - A.domain.dim(1).low + 1;
-    const p = A.domain.dim(2).high - A.domain.dim(2).low + 1;
-    const n = B.domain.dim(2).high - B.domain.dim(2).low + 1;
+    const m = A.domain.dim(0).high - A.domain.dim(0).low + 1;
+    const p = A.domain.dim(1).high - A.domain.dim(1).low + 1;
+    const n = B.domain.dim(1).high - B.domain.dim(1).low + 1;
 
     matrixMult_ijk(m, p, n, A, B, C);
     checkMult("mult ijk: ", C, D);

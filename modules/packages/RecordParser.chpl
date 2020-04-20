@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -106,10 +107,10 @@ use IO, Regexp, Reflection;
 
 /* A class providing the ability to read records matching a regular expression.
  */
-//   Future work is to make this be able to take in a class type as opposed to a
-//   record type.  Right now we cant take in a class type due to the future filed
-//   in test/types/typedefs/tzakian/classConstructorsFromTypes.chpl
 class RecordReader {
+  //   Future work is to make this be able to take in a class type as opposed to
+  //   a record type.  Right now we cant take in a class type due to the future
+  //   filed in test/types/typedefs/tzakian/classConstructorsFromTypes.chpl
   /* The record type to populate */
   type t;
   /* The channel to read from */
@@ -164,7 +165,7 @@ class RecordReader {
     // data is very nice... (but hey, the programmer wasn't willing to give us a
     // regex..)
     var accum: string = "\\s*";
-    for param n in 1..num_fields {
+    for param n in 0..<num_fields {
       accum = accum + getFieldName(t, n) + "\\s*(.*?)" + "\\s*";
     }
     return accum;
@@ -227,15 +228,15 @@ class RecordReader {
     // This will only loop through  at most one time before returning
     // FEATURE REQUEST: Make this so we don't need a for loop here
     for m in myReader.matches(matchRegexp, num_fields, 1) {
-      if (((m(1).offset) >= offst+len) && len != -1) { // rec.start >= start + len
+      if (((m(0).offset) >= offst+len) && len != -1) { // rec.start >= start + len
         // Then break and dont return any record
         return (rec, false);
       }
-      for param n in 1..num_fields {
+      for param n in 0..<num_fields {
         var tmp = getField(rec, n);
         var s: string;
         ref dst = getFieldRef(rec, n);
-        myReader.extractMatch(m(n + 1), s);
+        myReader.extractMatch(m(n+1), s);
         if s == "" then
           dst = tmp;
         else if tmp.type == string then

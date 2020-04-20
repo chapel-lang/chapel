@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -25,7 +26,7 @@
 //
 
 private use DimensionalDist2D;
-private use RangeChunk only ;
+import RangeChunk;
 
 /*
 This Replicated dimension specifier is for use with the
@@ -97,7 +98,7 @@ proc ReplicatedDim.dsiGetPrivatizeData1d() {
 
 // REQ - same purpose as dsiPrivatize()
 proc type ReplicatedDim.dsiPrivatize1d(privatizeData) {
-  return new ReplicatedDim(numLocales = privatizeData(1));
+  return new ReplicatedDim(numLocales = privatizeData(0));
 }
 
 // REQ does this class need -- and provide -- the localLocID?
@@ -142,7 +143,7 @@ proc type Replicated1dom.dsiPrivatize1d(privDist, privatizeData) {
   assert(privDist.locale == here); // sanity check
   return new Replicated1dom(idxType   = this.idxType,
                             stridable = this.stridable,
-                            wholeR    = privatizeData(1));
+                            wholeR    = privatizeData(0));
 }
 
 // REQ - same purpose as dsiGetReprivatizeData()
@@ -152,7 +153,7 @@ proc Replicated1dom.dsiGetReprivatizeData1d() {
 
 // REQ - same purpose as dsiReprivatize()
 proc Replicated1dom.dsiReprivatize1d(reprivatizeData) {
-  this.wholeR = reprivatizeData(1);
+  this.wholeR = reprivatizeData(0);
 }
 
 // REQ does this class need the localLocID?
@@ -278,7 +279,7 @@ proc Replicated1dom.dsiAccess1d(indexx: idxType): (locIdT, idxType) {
 iter Replicated1locdom.dsiMyDensifiedRangeForSingleTask1d(globDD)
   : dsiMyDensifiedRangeType1d(globDD)
 {
-  yield 0:globDD.idxType..#locWholeR.length;
+  yield 0:globDD.idxType..#locWholeR.size;
 }
 
 // REQ whether this distribution can handle only a single task per locale.

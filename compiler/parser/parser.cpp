@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -28,6 +29,7 @@
 #include "expr.h"
 #include "files.h"
 #include "flex-chapel.h"
+#include "ImportStmt.h"
 #include "insertLineNumbers.h"
 #include "stringutil.h"
 #include "symbol.h"
@@ -47,6 +49,7 @@ bool                 chplParseString               = false;
 const char*          chplParseStringMsg            = NULL;
 
 bool                 currentFileNamedOnCommandLine = false;
+
 bool                 parsed                        = false;
 
 static bool          sFirstFile                    = true;
@@ -65,7 +68,8 @@ static ModuleSymbol* parseMod(const char* modName,
 
 static ModuleSymbol* parseFile(const char* fileName,
                                ModTag      modTag,
-                               bool        namedOnCommandLine);
+                               bool        namedOnCommandLine,
+                               bool        include);
 
 static const char*   stdModNameToPath(const char* modName,
                                       bool*       isStandard);
@@ -133,7 +137,7 @@ static Vec<const char*> sFlagModPath;
 static Vec<const char*> sModNameSet;
 static Vec<const char*> sModNameList;
 static Vec<const char*> sModDoneSet;
-static Vec<UseStmt*>    sModReqdByInt;
+static Vec<VisibilityStmt*> sModReqdByInt;
 
 void addInternalModulePath(const ArgumentDescription* desc, const char* newpath) {
   sIntModPath.add(astr(newpath));
@@ -231,14 +235,14 @@ void addFlagModulePath(const char* newPath) {
   sFlagModPath.add(astr(newPath));
 }
 
-void addModuleToParseList(const char* name, UseStmt* useExpr) {
+void addModuleToParseList(const char* name, VisibilityStmt* expr) {
   const char* modName = astr(name);
 
   if (sModDoneSet.set_in(modName) == NULL &&
       sModNameSet.set_in(modName) == NULL) {
     if (currentModuleType           == MOD_INTERNAL ||
         sHandlingInternalModulesNow == true) {
-      sModReqdByInt.add(useExpr);
+      sModReqdByInt.add(expr);
     }
 
     sModNameSet.set_add(modName);
@@ -258,7 +262,7 @@ static void countTokensInCmdLineFiles() {
 
   while ((inputFileName = nthFilename(fileNum++))) {
     if (isChplSource(inputFileName) == true) {
-      parseFile(inputFileName, MOD_USER, true);
+      parseFile(inputFileName, MOD_USER, true, false);
     }
   }
 
@@ -317,7 +321,7 @@ static void parseCommandLineFiles() {
 
   while ((inputFileName = nthFilename(fileNum++))) {
     if (isChplSource(inputFileName)) {
-      parseFile(inputFileName, MOD_USER, true);
+      parseFile(inputFileName, MOD_USER, true, false);
     }
   }
 
@@ -391,18 +395,27 @@ static void helpPrintPath(Vec<const char*> path) {
 
 static void ensureRequiredStandardModulesAreParsed() {
   do {
-    Vec<UseStmt*> modReqdByIntCopy = sModReqdByInt;
+    Vec<VisibilityStmt*> modReqdByIntCopy = sModReqdByInt;
 
     sModReqdByInt.clear();
 
     sHandlingInternalModulesNow = true;
 
-    forv_Vec(UseStmt*, moduse, modReqdByIntCopy) {
-      BaseAST*           moduleExpr     = moduse->src;
+    forv_Vec(VisibilityStmt*, moduse, modReqdByIntCopy) {
+      BaseAST* moduleExpr = NULL;
+      if (UseStmt* use = toUseStmt(moduse)) {
+        moduleExpr = use->src;
+      } else if (ImportStmt* import = toImportStmt(moduse)) {
+        moduleExpr = import->src;
+      } else {
+        INT_FATAL("Incorrect VisibilityStmt subclass, expected either UseStmt "
+                  "or ImportStmt");
+      }
+
       UnresolvedSymExpr* oldModNameExpr = toUnresolvedSymExpr(moduleExpr);
 
       if (oldModNameExpr == NULL) {
-        INT_FATAL("It seems an internal module is using a mod.submod form");
+        continue;
       }
 
       const char* modName  = oldModNameExpr->unresolved;
@@ -423,7 +436,7 @@ static void ensureRequiredStandardModulesAreParsed() {
       // then we need to parse it
       if (foundInt == false) {
         if (const char* path = searchThePath(modName, false, sStdModPath)) {
-          ModuleSymbol* mod = parseFile(path, MOD_STANDARD, false);
+          ModuleSymbol* mod = parseFile(path, MOD_STANDARD, false, false);
 
           // If we also found a user module by the same name,
           // we need to rename the standard module and the use of it
@@ -493,7 +506,7 @@ static ModuleSymbol* parseMod(const char* modName, bool isInternal) {
     modTag = isStandard ? MOD_STANDARD : MOD_USER;
   }
 
-  return (path != NULL) ? parseFile(path, modTag, false) : NULL;
+  return (path != NULL) ? parseFile(path, modTag, false, false) : NULL;
 }
 
 /************************************* | **************************************
@@ -533,7 +546,8 @@ static bool haveAlreadyParsed(const char* path) {
 
 static ModuleSymbol* parseFile(const char* path,
                                ModTag      modTag,
-                               bool        namedOnCommandLine) {
+                               bool        namedOnCommandLine,
+                               bool        include) {
   ModuleSymbol* retval = NULL;
 
   // Make sure we haven't already parsed this file
@@ -607,6 +621,8 @@ static ModuleSymbol* parseFile(const char* path,
 
       } else if (lexerStatus == YYLEX_BLOCK_COMMENT) {
         context.latestComment = yylval.pch;
+      } else if (lexerStatus == YYLEX_SINGLE_LINE_COMMENT) {
+        context.latestComment = NULL;
       }
     }
 
@@ -627,8 +643,9 @@ static ModuleSymbol* parseFile(const char* path,
 
     if (yyblock == NULL) {
       INT_FATAL("yyblock should always be non-NULL after yyparse()");
+    }
 
-    } else if (containsOnlyModules(yyblock, path) == true) {
+    if (containsOnlyModules(yyblock, path) == true) {
       ModuleSymbol* moduleLast  = 0;
       int           moduleCount = 0;
 
@@ -638,7 +655,8 @@ static ModuleSymbol* parseFile(const char* path,
 
             defExpr->remove();
 
-            ModuleSymbol::addTopLevelModule(modSym);
+            if (include == false)
+              ModuleSymbol::addTopLevelModule(modSym);
 
             addModuleToDoneList(modSym);
 
@@ -650,6 +668,8 @@ static ModuleSymbol* parseFile(const char* path,
 
       if (moduleCount == 1) {
         retval = moduleLast;
+      } else if (include) {
+        USR_FATAL(moduleLast, "included module file contains multiple modules");
       }
 
     } else {
@@ -657,7 +677,8 @@ static ModuleSymbol* parseFile(const char* path,
 
       retval = buildModule(modName, modTag, yyblock, yyfilename, false, false, NULL);
 
-      ModuleSymbol::addTopLevelModule(retval);
+      if (include == false)
+        ModuleSymbol::addTopLevelModule(retval);
 
       retval->addFlag(FLAG_IMPLICIT_MODULE);
 
@@ -691,6 +712,7 @@ static ModuleSymbol* parseFile(const char* path,
 static bool containsOnlyModules(BlockStmt* block, const char* path) {
   int           moduleDefs     =     0;
   bool          hasUses        = false;
+  bool          hasImports     = false;
   bool          hasRequires    = false;
   bool          hasOther       = false;
   ModuleSymbol* lastModSym     =  NULL;
@@ -704,7 +726,7 @@ static bool containsOnlyModules(BlockStmt* block, const char* path) {
     if (DefExpr* defExpr = toDefExpr(stmt)) {
       ModuleSymbol* modSym = toModuleSymbol(defExpr->sym);
 
-      if (modSym != NULL) {
+      if (modSym != NULL && !modSym->hasFlag(FLAG_INCLUDED_MODULE)) {
         lastModSym     = modSym;
         lastModSymStmt = stmt;
 
@@ -727,6 +749,9 @@ static bool containsOnlyModules(BlockStmt* block, const char* path) {
     } else if (isUseStmt(stmt)  == true) {
       hasUses = true;
 
+    } else if (isImportStmt(stmt) == true) {
+      hasImports = true;
+
     } else {
       hasOther = true;
       if (firstOtherStmt == NULL)
@@ -734,20 +759,10 @@ static bool containsOnlyModules(BlockStmt* block, const char* path) {
     }
   }
 
-  if ((hasUses == true || hasRequires == true) &&
+  if ((hasUses == true || hasImports == true || hasRequires == true) &&
       hasOther == false &&
       moduleDefs == 1) {
-    const char* stmtKind;
-
-    if (hasUses == true && hasRequires == true) {
-      stmtKind = "require' and 'use";
-
-    } else if (hasUses == true) {
-      stmtKind = "use";
-
-    } else {
-      stmtKind = "require";
-    }
+    const char* stmtKind = "require', 'use', and/or 'import";
 
     USR_WARN(lastModSymStmt,
              "as written, '%s' is a sub-module of the module created for "
@@ -771,6 +786,7 @@ static bool containsOnlyModules(BlockStmt* block, const char* path) {
   }
 
   return hasUses == false &&
+    hasImports == false &&
     hasRequires == false &&
     hasOther == false &&
     moduleDefs > 0;
@@ -778,6 +794,57 @@ static bool containsOnlyModules(BlockStmt* block, const char* path) {
 
 static void addModuleToDoneList(ModuleSymbol* module) {
   sModDoneSet.set_add(astr(module->name));
+}
+
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
+
+
+ModuleSymbol* parseIncludedSubmodule(const char* name) {
+  // save parser global variables to restore after parsing the submodule
+  BlockStmt*  s_yyblock = yyblock;
+  const char* s_yyfilename = yyfilename;
+  int         s_yystartlineno = yystartlineno;
+  ModTag      s_currentModuleType = currentModuleType;
+  const char* s_currentModuleName = currentModuleName;
+  int         s_chplLineno = chplLineno;
+  bool        s_chplParseString = chplParseString;
+  const char* s_chplParseStringMsg = chplParseStringMsg;
+  bool        s_currentFileNamedOnCommandLine = currentFileNamedOnCommandLine;
+
+  std::string curPath = yyfilename;
+
+  // compute the path of the file to include
+  size_t lastDot = curPath.rfind(".");
+  INT_ASSERT(lastDot < curPath.size());
+  std::string noDot = curPath.substr(0, lastDot);
+  std::string includeFile = noDot + "/" + name + ".chpl";
+
+  const char* modNameFromFile = filenameToModulename(curPath.c_str());
+  if (0 != strcmp(modNameFromFile, currentModuleName))
+    USR_FATAL("Cannot include modules from a module whose name doesn't match its filename");
+
+  ModuleSymbol* ret = parseFile(astr(includeFile), currentModuleType,
+                                /* namedOnCommandLine */ false,
+                                /* include */ true);
+
+  ret->addFlag(FLAG_INCLUDED_MODULE);
+
+  // restore parser global variables
+  yyblock = s_yyblock;
+  yyfilename = s_yyfilename;
+  yystartlineno = s_yystartlineno;
+  currentModuleType = s_currentModuleType;
+  currentModuleName = s_currentModuleName;
+  chplLineno = s_chplLineno;
+  chplParseString = s_chplParseString;
+  chplParseStringMsg = s_chplParseStringMsg;
+  currentFileNamedOnCommandLine = s_currentFileNamedOnCommandLine;
+
+  return ret;
 }
 
 /************************************* | **************************************
@@ -831,6 +898,8 @@ BlockStmt* parseString(const char* string,
 
     } else if (lexerStatus == YYLEX_BLOCK_COMMENT) {
       context.latestComment = yylval.pch;
+    } else if (lexerStatus == YYLEX_SINGLE_LINE_COMMENT) {
+      context.latestComment = NULL;
     }
   }
 
