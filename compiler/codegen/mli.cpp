@@ -889,12 +889,6 @@ std::string MLIContext::genServersideRPC(FnSymbol* fn) {
     }
   }
 
-  //
-  // TODO: As it stands today, the server leaks memory allocated for return
-  // values. This is _obviously_ not ideal, however uncommenting the
-  // below code causes tests related to `c_string` to fail with a segfault.
-  // So for now, knowingly leak the memory.
-  //
   if (!hasVoidReturnType && this->isTypeRequiringAlloc(fn->retType)) {
     gen += this->genMemCleanup(fn->retType, "result");
   }
