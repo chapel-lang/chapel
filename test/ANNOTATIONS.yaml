@@ -951,6 +951,10 @@ LCALS-parallel-medium:
 LCALS-parallel-long:
   <<: *lcals-base
 
+listBenchmark1:
+  05/04/20:
+    - Change lists to use 0-based indexing (#14684)
+
 lulesh:
   03/15/14:
     - improved constness of de-nested functions, improved remove value forwarding
@@ -1243,6 +1247,14 @@ memleaksfull:
     - mason new --moduleName (#14997)
   03/27/20:
     - Close mason init memory leaks (#15325)
+  04/05/20:
+    - Make array literals start counting at zero (#14521)
+  04/11/20:
+    - Close a leak in addAndGetAndClearPrivatizedInParallel.chpl (#15484)
+  04/18/20:
+    - Close some multilocale test leaks (#15406)
+  04/19/20:
+    - no new leaks, multiple tests used to be registered as one
 
 meteor:
   12/18/13:
@@ -1312,6 +1324,15 @@ miniMD.ml-time:
     - Manually hoist loop-invariant array access in miniMD (#7432)
   09/26/17:
     - Prevent certain data races upon 'in' forall intents (#7467)
+
+ml-memleaksfull:
+  04/04/20:
+    - Close a few multilocale string/bytes leaks (#15386)
+  04/16/20:
+    - Avoid postinit in SparseBlockDom that was causing unnecessary allocations (#15385)
+    - Add proper privatization in Hashed distribution (#15390)
+  04/17/20:
+    - Close some multilocale test leaks (#15406)
 
 nbody:
   03/17/14:
@@ -1652,6 +1673,8 @@ temporary-copies:
 twopt-paircount:
   06/22/17:
     - Free strings leaked by Regex.subn() / qio_regexp_replace() (#6509)
+  04/03/20:
+    - Change tuples (and related queries) to use 0-based indexing (#14522)
 
 testSerialReductions:
   08/16/14:
@@ -1781,6 +1804,10 @@ compilerAndTestingStats: &compiler-perf-base
     - Improve handling for tryResolve and errors to handle a bad init= (#14887)
   03/03/20:
     - Remove calls to getUserInstantiationPoint (#15051)
+  03/26/20:
+    - Give errors in reexporting ambiguities (#15316)
+  04/16/20:
+    - Cache whether a ResolveScope or UseStmt can reexport (#15517)
 
 allTotalTime:
   <<: *compiler-perf-base
