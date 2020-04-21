@@ -63,8 +63,8 @@ static void print_on_its_own_line(int indent, const char* msg,
 }
 
 static void
-list_sym(Symbol* sym, bool type = true) {
-  if (VarSymbol* var = toVarSymbol(sym)) {
+list_sym(const Symbol* sym, bool type = true) {
+  if (const VarSymbol* var = toConstVarSymbol(sym)) {
     if (var->immediate) {
       if (var->immediate->const_kind == NUM_KIND_INT) {
         printf("%" PRId64 " ", var->immediate->int_value());
@@ -75,18 +75,18 @@ list_sym(Symbol* sym, bool type = true) {
       }
     }
   }
-  if (toFnSymbol(sym)) {
+  if (isFnSymbol(sym)) {
     printf("fn ");
-  } else if (ArgSymbol* arg = toArgSymbol(sym)) {
+  } else if (const ArgSymbol* arg = toConstArgSymbol(sym)) {
     printf("arg intent-%s ", arg->intentDescrString());
-  } else if (toTypeSymbol(sym)) {
+  } else if (isTypeSymbol(sym)) {
     printf("type ");
   }
   printf("%s", sym->name);
   printf("[%d]", sym->id);
   if (!type) {
     printf(" ");
-  } else if (FnSymbol* fn = toFnSymbol(sym)) {
+  } else if (const FnSymbol* fn = toConstFnSymbol(sym)) {
     printf(":%s", fn->retType->symbol->name);
     printf("[%d] ", fn->retType->symbol->id);
   } else if (sym->type && sym->type->symbol) {
@@ -99,8 +99,8 @@ list_sym(Symbol* sym, bool type = true) {
 
 
 static const char*
-block_explanation(BaseAST* ast, BaseAST* parentAst) {
-  if (ArgSymbol* parentArg = toArgSymbol(parentAst)) {
+block_explanation(const BaseAST* ast, const BaseAST* parentAst) {
+  if (const ArgSymbol* parentArg = toConstArgSymbol(parentAst)) {
     if (ast == parentArg->typeExpr)
       return "  typeExpr=";
     if (ast == parentArg->defaultExpr)
@@ -112,8 +112,8 @@ block_explanation(BaseAST* ast, BaseAST* parentAst) {
 }
 
 static const char*
-forall_explanation_start(BaseAST* ast, BaseAST* parentAst) {
-  if (LoopExpr* fe = toLoopExpr(parentAst)) {
+forall_explanation_start(const BaseAST* ast, const BaseAST* parentAst) {
+  if (const LoopExpr* fe = toConstLoopExpr(parentAst)) {
     if (ast == fe->iteratorExpr)
       return ") in( ";
     if (ast == fe->loopBody)
@@ -127,8 +127,9 @@ forall_explanation_start(BaseAST* ast, BaseAST* parentAst) {
   return NULL;
 }
 
-static void forallPreamble(Expr* expr, BaseAST* parentAst, int indent) {
-  if (ForallStmt* pfs = toForallStmt(parentAst)) {
+static void forallPreamble(const Expr* expr, const BaseAST* parentAst,
+                           int indent) {
+  if (const ForallStmt* pfs = toConstForallStmt(parentAst)) {
     if (expr == pfs->fRecIterIRdef) {
       print_on_its_own_line(indent, "fRecIterIRdef et al.\n");
     } else if (expr == pfs->loopBody()) {
@@ -137,22 +138,23 @@ static void forallPreamble(Expr* expr, BaseAST* parentAst, int indent) {
       else
         print_on_its_own_line(indent, "do\n", false);
     }
-  } else if (ShadowVarSymbol* svar = toShadowVarSymbol(parentAst)) {
+  } else if (const ShadowVarSymbol* svar = toConstShadowVarSymbol(parentAst)) {
     if (expr == svar->outerVarSE                          ||
         ( expr == svar->initBlock() && !svar->outerVarSE ) )
       printf("\n");
   }
 }
 
-static void forallPostamble(Expr* expr, ForallStmt* pfs, int indent) {
+static void forallPostamble(const Expr* expr, const ForallStmt* pfs,
+                            int indent) {
   if (AList* list = expr->list) {
-    if (list == &pfs->inductionVariables()  ||
-        list == &pfs->iteratedExpressions() ) {
+    if (list == &pfs->constInductionVariables()  ||
+        list == &pfs->constIteratedExpressions() ) {
       if (expr != list->tail)
         printf("\n");
-      if (expr == pfs->inductionVariables().tail) {
+      if (expr == pfs->constInductionVariables().tail) {
         print_on_its_own_line(indent, pfs->zippered() ? "in zip\n" : "in\n");
-      } else if (expr == pfs->iteratedExpressions().tail &&
+      } else if (expr == pfs->constIteratedExpressions().tail &&
                  pfs->numShadowVars() > 0) {
         print_on_its_own_line(indent, "with\n");
       }
@@ -167,7 +169,7 @@ static void forallPostamble(Expr* expr, ForallStmt* pfs, int indent) {
   }
 }
 
-static void usePostamble(UseStmt* use, int indent) {
+static void usePostamble(const UseStmt* use, int indent) {
   if (use->isARename()) {
     printf("as %s ", use->getRename());
   }
@@ -192,8 +194,8 @@ static void usePostamble(UseStmt* use, int indent) {
     printf("%s", str);
   }
 
-  for (std::map<const char*, const char*>::iterator it = use->renamed.begin();
-       it != use->renamed.end(); ++it) {
+  for (std::map<const char*, const char*>::const_iterator it =
+         use->renamed.begin(); it != use->renamed.end(); ++it) {
     if (first) {
       first = false;
     } else {
@@ -205,7 +207,7 @@ static void usePostamble(UseStmt* use, int indent) {
   printf("\n");
 }
 
-static void importPostamble(ImportStmt* import, int indent) {
+static void importPostamble(const ImportStmt* import, int indent) {
   if (import->isARename()) {
     printf("as %s ", import->getRename());
   }
@@ -223,7 +225,7 @@ static void importPostamble(ImportStmt* import, int indent) {
       printf("%s", str);
     }
 
-    for (std::map<const char*, const char*>::iterator it =
+    for (std::map<const char*, const char*>::const_iterator it =
            import->renamed.begin(); it != import->renamed.end(); ++it) {
       if (first) {
         first = false;
@@ -237,18 +239,18 @@ static void importPostamble(ImportStmt* import, int indent) {
 }
 
 static bool
-list_line(Expr* expr, BaseAST* parentAst) {
+list_line(const Expr* expr, const BaseAST* parentAst) {
   if (expr->isStmt())
     return !*block_explanation(expr, parentAst);
-  if (CondStmt* cond = toCondStmt(parentAst)) {
+  if (const CondStmt* cond = toConstCondStmt(parentAst)) {
     if (cond->condExpr == expr)
       return false;
   }
-  if (GotoStmt* gts = toGotoStmt(parentAst)) {
+  if (const GotoStmt* gts = toConstGotoStmt(parentAst)) {
     if (gts->label == expr)
       return false;
   }
-  if (Expr* pExpr = toExpr(parentAst))
+  if (const Expr* pExpr = toConstExpr(parentAst))
     if (pExpr->isStmt() && !isUseStmt(pExpr) && !isImportStmt(pExpr))
       return true;
   if (isSymbol(parentAst))
@@ -257,12 +259,12 @@ list_line(Expr* expr, BaseAST* parentAst) {
 }
 
 static void
-list_ast(BaseAST* ast, BaseAST* parentAst = NULL, int indent = 0) {
+list_ast(const BaseAST* ast, const BaseAST* parentAst = NULL, int indent = 0) {
   bool do_list_line = false;
   bool is_C_loop = false;
   bool empty_block = false;
   const char* block_explain = NULL;
-  if (Expr* expr = toExpr(ast)) {
+  if (const Expr* expr = toConstExpr(ast)) {
     forallPreamble(expr, parentAst, indent);
     do_list_line = !parentAst || list_line(expr, parentAst);
     if (do_list_line) {
@@ -271,9 +273,9 @@ list_ast(BaseAST* ast, BaseAST* parentAst = NULL, int indent = 0) {
     }
     if (const char* expl = forall_explanation_start(ast, parentAst))
       printf("%s", expl);
-    if (GotoStmt* e = toGotoStmt(ast)) {
+    if (const GotoStmt* e = toConstGotoStmt(ast)) {
       printf("goto %s ", gotoTagToString(e->gotoTag));
-    } else if (BlockStmt* block = toBlockStmt(ast)) {
+    } else if (const BlockStmt* block = toConstBlockStmt(ast)) {
       block_explain = block_explanation(ast, parentAst);
       const char* block_kind = ast->astTagAsString();
       if (!strcmp(block_kind, "BlockStmt")) block_kind = "";
@@ -281,34 +283,34 @@ list_ast(BaseAST* ast, BaseAST* parentAst = NULL, int indent = 0) {
       if (block->isRealBlockStmt() && block->length() == 0)
         empty_block = true;
       printf("%s", empty_block ? " " : "\n");
-    } else if (toCondStmt(ast)) {
+    } else if (isCondStmt(ast)) {
       printf("if ");
-    } else if (toIfExpr(ast)) {
+    } else if (isIfExpr(ast)) {
       printf("IfExpr ");
-    } else if (toForallStmt(ast)) {
+    } else if (isForallStmt(ast)) {
       printf("forall\n");
-    } else if (CallExpr* e = toCallExpr(expr)) {
+    } else if (const CallExpr* e = toConstCallExpr(expr)) {
       if (e->isPrimitive(PRIM_BLOCK_C_FOR_LOOP))
           is_C_loop = true;
       if (e->primitive)
         printf("%s( ", e->primitive->name);
       else
         printf("call( ");
-    } else if (LoopExpr* e = toLoopExpr(expr)) {
+    } else if (const LoopExpr* e = toConstLoopExpr(expr)) {
       if (e->zippered) printf("zip ");
       printf("forall( ");
-    } else if (NamedExpr* e = toNamedExpr(expr)) {
+    } else if (const NamedExpr* e = toConstNamedExpr(expr)) {
       printf("%s = ", e->name);
-    } else if (toDefExpr(expr)) {
-      Symbol* sym = toDefExpr(expr)->sym;
+    } else if (toConstDefExpr(expr)) {
+      Symbol* sym = toConstDefExpr(expr)->sym;
       if (sym->type != NULL) {
         printf("def %s ", sym->qualType().qualStr());
       } else {
         printf("def ");
       }
-    } else if (SymExpr* e = toSymExpr(expr)) {
+    } else if (const SymExpr* e = toConstSymExpr(expr)) {
       list_sym(e->symbol(), false);
-    } else if (UnresolvedSymExpr* e = toUnresolvedSymExpr(expr)) {
+    } else if (const UnresolvedSymExpr* e = toConstUnresolvedSymExpr(expr)) {
       printf("%s ", e->unresolved);
     } else if (isUseStmt(expr)) {
       printf("use ");
@@ -317,10 +319,10 @@ list_ast(BaseAST* ast, BaseAST* parentAst = NULL, int indent = 0) {
     }
   }
 
-  if (Symbol* sym = toSymbol(ast))
+  if (const Symbol* sym = toConstSymbol(ast))
     list_sym(sym);
 
-  bool early_newline = toFnSymbol(ast) || toModuleSymbol(ast);
+  bool early_newline = isFnSymbol(ast) || isModuleSymbol(ast);
   if (early_newline || is_C_loop)
     printf("\n");
 
@@ -332,15 +334,15 @@ list_ast(BaseAST* ast, BaseAST* parentAst = NULL, int indent = 0) {
 
   AST_CHILDREN_CALL(ast, list_ast, ast, new_indent);
 
-  if (Expr* expr = toExpr(ast)) {
-    CallExpr* parent_C_loop = NULL;
-    if (CallExpr* call = toCallExpr(parentAst))
-      if (call->isPrimitive(PRIM_BLOCK_C_FOR_LOOP))
-        parent_C_loop = call;
-    if (toCallExpr(expr)) {
+  if (const Expr* expr = toConstExpr(ast)) {
+    bool parentIsCLoop = isCallExpr(parentAst) &&
+      toConstCallExpr(parentAst)->isPrimitive(PRIM_BLOCK_C_FOR_LOOP);
+    const CallExpr* parent_C_loop = parentIsCLoop ? toConstCallExpr(parentAst) :
+      NULL;
+    if (isCallExpr(expr)) {
       printf(") ");
     }
-    if (toBlockStmt(ast)) {
+    if (isBlockStmt(ast)) {
       if (*block_explain)
         indent -= 2;
       if (!empty_block) {
@@ -353,24 +355,24 @@ list_ast(BaseAST* ast, BaseAST* parentAst = NULL, int indent = 0) {
         printf("}"); // newline is coming
       else
         printf("}\n");
-      if (isForallLoopBody(expr) && parentAst != NULL) {
+      if (isConstForallLoopBody(expr) && parentAst != NULL) {
         print_indent(indent);
         printf("      end forall %d", parentAst->id);
       }
-    } else if (LoopExpr* e = toLoopExpr(expr)) {
+    } else if (const LoopExpr* e = toConstLoopExpr(expr)) {
       if (e->cond) printf(") ");
       else         printf("} ");
-    } else if (UseStmt* use = toUseStmt(expr)) {
+    } else if (const UseStmt* use = toConstUseStmt(expr)) {
       usePostamble(use, indent);
-    } else if (ImportStmt* import = toImportStmt(expr)) {
+    } else if (const ImportStmt* import = toConstImportStmt(expr)) {
       importPostamble(import, indent);
-    } else if (CondStmt* cond = toCondStmt(parentAst)) {
+    } else if (const CondStmt* cond = toConstCondStmt(parentAst)) {
       if (cond->condExpr == expr)
         printf("\n");
-    } else if (ForallStmt* pfs = toForallStmt(parentAst)) {
+    } else if (const ForallStmt* pfs = toConstForallStmt(parentAst)) {
       forallPostamble(expr, pfs, indent);
-    } else if (!toCondStmt(expr) && do_list_line) {
-      DefExpr* def = toDefExpr(expr);
+    } else if (!isCondStmt(expr) && do_list_line) {
+      const DefExpr* def = toConstDefExpr(expr);
       if (!(def && early_newline))
         if (!parent_C_loop)
           printf("\n");
@@ -577,15 +579,15 @@ static void type_print_view(BaseAST* ast) {
 }
 
 void list_view(int id) {
-  if (BaseAST* ast = aidWithError(id, "list_view"))
+  if (const BaseAST* ast = aidWithError(id, "list_view"))
     list_view(ast);
 }
 
-void list_view(BaseAST* ast) {
+void list_view(const BaseAST* ast) {
   if (ast==NULL) {
     printf("<NULL>");
   } else {
-    if (toSymbol(ast))
+    if (isSymbol(ast))
       printf("%-7d ", ast->id);
     list_ast(ast);
   }
@@ -593,11 +595,11 @@ void list_view(BaseAST* ast) {
   fflush(stdout);
 }
 
-void list_view_noline(BaseAST* ast) {
+void list_view_noline(const BaseAST* ast) {
   if (ast==NULL) {
     printf("<NULL>");
   } else {
-    if (toSymbol(ast))
+    if (isSymbol(ast))
       printf("%-7d ", ast->id);
     list_ast(ast);
   }
