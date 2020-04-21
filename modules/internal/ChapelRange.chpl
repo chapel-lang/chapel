@@ -462,6 +462,44 @@ module ChapelRange {
     compilerError("Invalid use of count range in param for loop");
   }
 
+  proc chpl_bounded_count_for_param_loop_low(param low: integral, param high: integral, param count: integral) param {
+    param abs_count = if count < 0 then -count else count;
+    if (high - low + 1) < abs_count {
+      compilerError("Range in param for loop is too small for this count");
+    }
+    else if count == 0 {
+      return high + 1;
+    }
+    else if count < 0 {
+      return high + count + 1;
+    }
+    else {
+      return low;
+    }
+  }
+
+  pragma "last resort"
+  proc chpl_bounded_count_for_param_loop_low(low, high, count) {
+    compilerError("Invalid use of count range in param for loop");
+  }
+
+  proc chpl_bounded_count_for_param_loop_high(param low: integral, param high: integral, param count: integral) param {
+    if count == 0 {
+      return low - 1;
+    }
+    else if count < 0 {
+      return high;
+    }
+    else {
+      return low + count - 1;
+    }
+  }
+
+  pragma "last resort"
+  proc chpl_bounded_count_for_param_loop_high(low, high, count) {
+    compilerError("Invalid use of count range in param for loop");
+  }
+
   //################################################################################
   //# Predicates
   //#

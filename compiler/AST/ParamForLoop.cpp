@@ -75,6 +75,15 @@ BlockStmt* ParamForLoop::buildParamForLoop(VarSymbol* indexVar,
       high = call->get(1)->remove();
       low  = new CallExpr("chpl_low_bound_count_for_param_loop", high->copy(), count);
     }
+    else if (call && call->isNamed("chpl_build_bounded_range"))
+    {
+      Expr* temp_low = call->get(1);
+      Expr* temp_high = call->get(2);
+
+      // It is necessary that low is calculated first, because it also applies check for bound size.
+      low = new CallExpr("chpl_bounded_count_for_param_loop_low", temp_low->copy(), temp_high->copy(), count->copy());
+      high = new CallExpr("chpl_bounded_count_for_param_loop_high", temp_low->copy(), temp_high->copy(), count);
+    }
     else
     {
       USR_FATAL(range, "iterators for param-for-loops must be bounded literal ranges");

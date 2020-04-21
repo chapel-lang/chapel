@@ -1,0 +1,1 @@
+paramForLoopWrongTypeHigh.chpl:1: error: Invalid use of count range in param for loop

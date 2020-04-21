@@ -1,0 +1,1 @@
+paramForLoopBoundSmall.chpl:1: error: Range in param for loop is too small for this count
