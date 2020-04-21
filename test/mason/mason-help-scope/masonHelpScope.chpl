@@ -12,6 +12,7 @@ proc checkCommand(cmd: string) {
 }
 
 checkCommand('mason new -h');
+checkCommand('mason init -h');
 checkCommand('mason add -h');
 checkCommand('mason rm -h');
 checkCommand('mason build -h');

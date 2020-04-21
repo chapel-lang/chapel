@@ -46,11 +46,11 @@ proc masonInit(args) throws {
       countArgs += 1;
       select (arg) {
         when '-h' {
-          masonNewHelp();
+          masonInitHelp();
           exit();
         }
         when '--help' {
-          masonNewHelp();
+          masonInitHelp();
           exit();
         }
         when '--show' {
@@ -70,17 +70,17 @@ proc masonInit(args) throws {
         }
       }
     }
-    
+
     if dirName == '' {
       const cwd = getEnv("PWD");
-      var name = basename(cwd); 
+      var name = basename(cwd);
       const path = '.';
       if packageName.size > 0 then name = packageName;
       var resName = validatePackageNameChecks(path, name);
       name = resName;
       validateMasonFile(path, name, show);
       var isInitialized = validateInit(path, name, true, show);
-      if isInitialized > 0 then 
+      if isInitialized > 0 then
       writeln("Initialized new library project: " + basename(cwd));
     }
     else {
@@ -96,7 +96,7 @@ proc masonInit(args) throws {
         name = resName;
         validateMasonFile(path, name, show);
         var isInitialized = validateInit(path, name, true, show);
-        if isInitialized > 0 then 
+        if isInitialized > 0 then
         writeln("Initialized new library project in " + path + ": " + basename(path));
       }
       else {
@@ -263,9 +263,9 @@ proc addSection(sectionName: string, path: string, tomlFile: owned Toml, show: b
 }
 
 /*
-  validates Mason.toml for an already existing brick-name. 
-  If brick-name doesn't exist, it creates a module with the 
-  given packageName. 
+  validates Mason.toml for an already existing brick-name.
+  If brick-name doesn't exist, it creates a module with the
+  given packageName.
 */
 proc createModule(path: string, packageName: string, show: bool) throws {
   if validatePackageName(packageName) {
@@ -286,8 +286,8 @@ proc createModule(path: string, packageName: string, show: bool) throws {
 }
 
 /*
-  Logic for determining legal project name : 
-  Precedence Followed : 
+  Logic for determining legal project name :
+  Precedence Followed :
   1. `--name` if thrown
   2. Mason.toml's [brick][name] , if found
   3. Filename of src/<project>.chpl , if found
@@ -301,9 +301,9 @@ proc validatePackageNameChecks(path: string, name: string) {
       const tomlFile = owned.create(parseToml(toParse));
       if tomlFile.pathExists("brick.name") {
         const nameTOML = tomlFile["brick"]!["name"]!.s;
-        if validateNameInit(nameTOML) then actualName = nameTOML; 
+        if validateNameInit(nameTOML) then actualName = nameTOML;
       }
-    } 
+    }
     else {
       if isDir(path + '/src') {
         const files = listdir(path + '/src');
