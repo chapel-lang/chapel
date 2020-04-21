@@ -879,7 +879,7 @@ static void setupBoolGlobal(VarSymbol* globalVar, bool value) {
 void initCompilerGlobals() {
 
   gBoundsChecking = new VarSymbol("boundsChecking", dtBool);
-  gBoundsChecking->addFlag(FLAG_CONST);
+  gBoundsChecking->addFlag(FLAG_PARAM);
   setupBoolGlobal(gBoundsChecking, !fNoBoundsChecks);
 
   gCastChecking = new VarSymbol("castChecking", dtBool);
