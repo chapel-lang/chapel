@@ -41,7 +41,7 @@
 
 // These enable debug facilities
 static const char* debugLifetimesForFn = "";
-static const int debugLifetimesForId = 0;
+static const int debugLifetimesForId = 197337;
 static const bool debugOutputOnError = false;
 
 /* This file implements lifetime checking.
@@ -422,6 +422,12 @@ static void checkFunction(FnSymbol* fn) {
 }
 
 void checkLifetimesInFunction(FnSymbol* fn) {
+
+  if (not fn->isMethodOnRecord() && fn->id == 197337) {
+    printf("Function %s with id %d\n",
+           fn->name,
+           fn->id);
+  }
 
   // No need to check lifetimes in string literal module.
   if (fn->getModule() == stringLiteralModule)

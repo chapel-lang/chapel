@@ -833,21 +833,23 @@ void FnSymbol::accept(AstVisitor* visitor) {
   }
 }
 
-AggregateType* FnSymbol::getReceiver() const {
-  AggregateType* retval = NULL;
+AggregateType* FnSymbol::getReceiverType() const {
+  if (isMethod()) {
+    if (isResolved() && _this != NULL) {
+      return toAggregateType(_this->getValType());
+    } else {
+      if (numFormals() >= 2) {
+        ArgSymbol* _mt   = getFormal(1);
+        ArgSymbol* _this = getFormal(2);
 
-  if (isMethod() == true && numFormals() >= 2) {
-    ArgSymbol* _mt   = getFormal(1);
-    ArgSymbol* _this = getFormal(2);
-
-    if (AggregateType* at = toAggregateType(_this->type)) {
-      if (_mt->type == dtMethodToken) {
-        retval = at;
+        if (_mt->getValType() == dtMethodToken) {
+          return toAggregateType(_this->getValType());
+        }
       }
     }
   }
 
-  return retval;
+  return NULL;
 }
 
 bool FnSymbol::isMethod() const {
@@ -855,23 +857,17 @@ bool FnSymbol::isMethod() const {
 }
 
 bool FnSymbol::isMethodOnClass() const {
-  bool retval = false;
-
-  if (AggregateType* at = getReceiver()) {
-    retval = at->isClass();
+  if (AggregateType* at = getReceiverType()) {
+    return at->isClass();
   }
-
-  return retval;
+  return false;
 }
 
 bool FnSymbol::isMethodOnRecord() const {
-  bool retval = false;
-
-  if (AggregateType* at = getReceiver()) {
-    retval = at->isRecord();
+  if (AggregateType* at = getReceiverType()) {
+    return at->isRecord();
   }
-
-  return retval;
+  return false;
 }
 
 bool FnSymbol::isTypeMethod() const {

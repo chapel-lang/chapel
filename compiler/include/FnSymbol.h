@@ -191,7 +191,7 @@ public:
   void                       setGeneric(bool generic);
   void                       clearGeneric();
 
-  AggregateType*             getReceiver()                               const;
+  AggregateType*             getReceiverType()                           const;
 
   bool                       isIterator()                                const;
 
