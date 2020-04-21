@@ -1,1 +1,1 @@
-paramForLoopWrongCountLow.chpl:1: error: for negative count, last index must be present
+paramForLoopWrongCountLow.chpl:1: error: count operators with negative count requires the range to have a high bound

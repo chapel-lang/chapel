@@ -419,18 +419,13 @@ module ChapelRange {
   }
 
   pragma "last resort"
-  proc chpl_compute_count_param_loop(param count) {
-    compilerError("ranges in param for loop can only have integral count");
-  }
-
-  pragma "last resort"
   proc chpl_compute_count_param_loop(count) {
-    compilerError("ranges in param for loop must be integral literals");
+    compilerError("in a param for loop, the count operator requires a param integral value");
   }
 
   proc chpl_low_bound_count_for_param_loop(param high: integral, param count: integral) param {
     if count > 0 {
-      compilerError("for positive count, first index must be present");
+      compilerError("count operators with positive count requires the range to have a low bound");
     }
     else if count == 0 {
       return high + 1;
@@ -442,12 +437,12 @@ module ChapelRange {
 
   pragma "last resort"
   proc chpl_low_bound_count_for_param_loop(high, count) {
-    compilerError("Invalid use of count range in param for loop");
+    compilerError("Range bounds must be integers of compatible types in param for loop");
   }
 
   proc chpl_high_bound_count_for_param_loop(param low: integral, param count: integral) param {
     if count < 0 {
-      compilerError("for negative count, last index must be present");
+      compilerError("count operators with negative count requires the range to have a high bound");
     }
     else if count == 0 {
       return low - 1;
@@ -459,13 +454,14 @@ module ChapelRange {
 
   pragma "last resort"
   proc chpl_high_bound_count_for_param_loop(low, count) {
-    compilerError("Invalid use of count range in param for loop");
+    compilerError("Range bounds must be integers of compatible types in param for loop");
   }
 
   proc chpl_bounded_count_for_param_loop_low(param low: integral, param high: integral, param count: integral) param {
     param abs_count = if count < 0 then -count else count;
-    if (high - low + 1) < abs_count {
-      compilerError("Range in param for loop is too small for this count");
+    param size = high - low + 1;
+    if size < abs_count {
+      compilerError("Count of ", abs_count:string, " is too small for range of size ", size:string);
     }
     else if count == 0 {
       return high + 1;
@@ -480,7 +476,7 @@ module ChapelRange {
 
   pragma "last resort"
   proc chpl_bounded_count_for_param_loop_low(low, high, count) {
-    compilerError("Invalid use of count range in param for loop");
+    compilerError("Range bounds and count must be integers of compatible types in param for loop");
   }
 
   proc chpl_bounded_count_for_param_loop_high(param low: integral, param high: integral, param count: integral) param {
@@ -497,7 +493,7 @@ module ChapelRange {
 
   pragma "last resort"
   proc chpl_bounded_count_for_param_loop_high(low, high, count) {
-    compilerError("Invalid use of count range in param for loop");
+    compilerError("Range bounds and count must be integers of compatible types in param for loop");
   }
 
   //################################################################################

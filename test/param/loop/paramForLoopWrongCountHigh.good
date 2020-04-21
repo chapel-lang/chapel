@@ -1,1 +1,1 @@
-paramForLoopWrongCountHigh.chpl:1: error: for positive count, first index must be present
+paramForLoopWrongCountHigh.chpl:1: error: count operators with positive count requires the range to have a low bound

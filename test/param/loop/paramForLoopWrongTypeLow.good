@@ -1,1 +1,1 @@
-paramForLoopWrongTypeLow.chpl:1: error: Invalid use of count range in param for loop
+paramForLoopWrongTypeLow.chpl:1: error: Range bounds and count must be integers of compatible types in param for loop
