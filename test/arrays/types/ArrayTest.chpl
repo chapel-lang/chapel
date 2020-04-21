@@ -7,7 +7,7 @@ proc testArray(type t) {
 
   assert(a.size == 1);
 
-  if isunmanagedclass(t) {
+  if isUnmanagedClass(t) {
     delete a;
   }
 }
