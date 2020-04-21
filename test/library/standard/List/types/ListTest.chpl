@@ -16,4 +16,9 @@ proc testList(type t) {
 
   var value = l.pop();
   assert(l.size == 0);
+
+  if isUnmanagedClass(t) {
+    delete x;
+  }
+
 }
