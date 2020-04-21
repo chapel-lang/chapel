@@ -884,8 +884,8 @@ BlockStmt* buildSerialStmt(Expr* cond, BlockStmt* body) {
   VarSymbol *serial_state = newTemp();
   sbody->insertAtTail(new DefExpr(serial_state, new CallExpr(PRIM_GET_SERIAL)));
   sbody->insertAtTail(new CondStmt(cond, new CallExpr(PRIM_SET_SERIAL, gTrue)));
+  sbody->insertAtTail(new DeferStmt(new CallExpr(PRIM_SET_SERIAL, serial_state)));
   sbody->insertAtTail(body);
-  sbody->insertAtTail(new CallExpr(PRIM_SET_SERIAL, serial_state));
   return sbody;
 }
 
