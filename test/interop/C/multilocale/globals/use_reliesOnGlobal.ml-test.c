@@ -1,3 +1,8 @@
+// This test currently fails sporadically. whatIsGlobal() reads a global that is
+// uninitialized. Globals are not default-value-initialized in multilocale runs
+// because they are just wide pointers to heap. See "library-init" version of
+// this test for the "correct" version of this.
+
 #include "lib/reliesOnGlobal.h"
 
 // Test of calling an exported Chapel library that relies on a global.
