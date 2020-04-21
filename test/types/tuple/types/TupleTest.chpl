@@ -1,9 +1,6 @@
 proc test(type t) where isTuple(t) {
   var a = ((new t[0](1), new t[1](2)), (new t[0](3), new t[1](4)));
   assert(a.size == 2);
-  if isUnmanagedClass(t) {
-    delete a;
-  }
 }
 
 proc test(type t) {
