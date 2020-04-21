@@ -9,14 +9,16 @@ proc test() {
   
   serialWithReturn();
 
-  begin{
-    x$; 
-    writeln("Begin 1");
-  }
+  sync{
+    begin{
+      x$; 
+      writeln("Begin 1");
+    }
 
-  begin{
-    writeln("Begin 2");
-    x$ = 1;
+    begin{
+      writeln("Begin 2");
+      x$ = 1;
+    }
   }
 }
 
