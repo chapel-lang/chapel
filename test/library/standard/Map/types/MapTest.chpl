@@ -27,4 +27,9 @@ proc testMap(type t) {
   ret = m.remove(1);
   assert(ret);
   assert(!m.contains(2));
+
+  if isUnmanagedClass(t) {
+    delete x;
+    delete y;
+  }
 }

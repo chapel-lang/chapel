@@ -11,4 +11,8 @@ proc testArray(type t) {
 
 
   assert(A.size == 1);
+
+  if isUnmanagedClass(t) {
+    delete A;
+  }
 }
