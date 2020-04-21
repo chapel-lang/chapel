@@ -5,16 +5,18 @@ proc serialWithReturn() {
 }
 
 proc test() {
-
+  var x$: sync int;
+  
   serialWithReturn();
 
   begin{
-    sleep(1);
+    x$; 
     writeln("Begin 1");
   }
 
   begin{
-    writeln("Begin 2");  
+    writeln("Begin 2");
+    x$ = 1;
   }
 }
 
