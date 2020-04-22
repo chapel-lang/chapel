@@ -441,6 +441,10 @@ module ChapelRange {
   proc isBoundedRange(param B: BoundedRangeType) param
     return B == BoundedRangeType.bounded;
 
+  /* Return true if this range is bounded */
+  proc range.isBounded() param
+    return boundedType == BoundedRangeType.bounded;
+
   /* Return true if this range has a low bound, false otherwise */
   proc range.hasLowBound() param
     return boundedType == BoundedRangeType.bounded ||
