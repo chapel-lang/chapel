@@ -220,7 +220,7 @@ record LinkedList {
   }
   
   /*
-    Returns the data stored in the first element of the list
+    Returns a reference to the first item in the list
     
     .. warning::
       Calling this method on an empty list will cause the program to halt
@@ -229,12 +229,16 @@ record LinkedList {
     :return: the data stored at the front of the list
     :rtype: `ref eltType`
    */
-  proc ref front() ref: eltType {
-    return try! _first!.data;
+  proc ref first() ref: eltType {
+    import HaltWrappers;
+     if boundsChecking && size < 1 {
+       HaltWrappers.boundsCheckHalt("called LinkedLists.front on empty list");
+     }
+     return _first!.data;
   }
 
   /*
-    Returns the data stored in the last element of the list
+    Returns a reference to the last item in the list
 
     .. warning::
       Calling this method on an empty list will cause the program to halt
@@ -243,8 +247,12 @@ record LinkedList {
     :return: the data stored at the back of the list
     :rtype: `ref eltType`
    */
-  proc ref back() ref: eltType {
-    return try! _last!.data;
+  proc ref last() ref: eltType {
+    import HaltWrappers;
+     if boundsChecking && size < 1 {
+       HaltWrappers.boundsCheckHalt("called LinkedLists.last on empty list");
+     }
+    return _last!.data;
   }
   
   /*
