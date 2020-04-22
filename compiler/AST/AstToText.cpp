@@ -620,6 +620,47 @@ bool AstToText::isTypeDefault(Expr* expr) const
   return retval;
 }
 
+//
+//  Helper function for appending domain calls with multiple arguments
+//
+void AstToText::appendDomain(CallExpr* expr, bool printingType)
+{
+  mText += "domain(";
+              
+  for(int i=2; i<=expr->numActuals(); i++)
+  {
+    if (i != 2)
+      mText += ", ";
+
+    if (UnresolvedSymExpr* symi = toUnresolvedSymExpr(expr->get(i)))
+    {
+      appendExpr(symi, printingType);
+    }
+
+    else if (SymExpr* symi = toSymExpr(expr->get(i)))
+    {
+      appendExpr(symi, printingType);
+    }
+
+    else if (CallExpr* symi = toCallExpr(expr->get(i)))
+    {
+      appendExpr(symi, printingType);
+    }
+
+    else if (NamedExpr* symi = toNamedExpr(expr->get(i)))
+    {
+      appendExpr(symi, printingType);
+    }
+
+    else
+    {
+      mText += "AppendExpr.Call10";
+    }
+  }
+
+  mText += ")";
+}
+
 /************************************ | *************************************
 *                                                                           *
 * Helper functions for handling the "hidden formals" for methods.           *
@@ -913,40 +954,7 @@ void AstToText::appendExpr(CallExpr* expr, bool printingType)
 
             if (strcmp(sym->unresolved, "defaultDist") == 0)
             {
-              mText += "domain(";
-
-              for(int i=2; i<=expr->numActuals(); i++)
-              {
-                if (i != 2)
-                  mText += ", ";
-
-                if (UnresolvedSymExpr* symi = toUnresolvedSymExpr(expr->get(i)))
-                {
-                  appendExpr(symi, printingType);
-                }
-
-                else if (SymExpr* symi = toSymExpr(expr->get(i)))
-                {
-                  appendExpr(symi, printingType);
-                }
-
-                else if (CallExpr* symi = toCallExpr(expr->get(i)))
-                {
-                  appendExpr(symi, printingType);
-                }
-
-                else if (NamedExpr* symi = toNamedExpr(expr->get(i)))
-                {
-                  appendExpr(symi, printingType);
-                }
-
-                else
-                {
-                  mText += "AppendExpr.Call10";
-                }
-              }
-
-              mText += ")";
+              appendDomain(expr, printingType);
             }
 
             else
@@ -965,40 +973,7 @@ void AstToText::appendExpr(CallExpr* expr, bool printingType)
 
             if (arg1 != 0 && strcmp(arg1->name, "defaultDist") == 0)
             {
-              mText += "domain(";
-              
-              for(int i=2; i<=expr->numActuals(); i++)
-              {
-                if (i != 2)
-                  mText += ", ";
-
-                if (UnresolvedSymExpr* symi = toUnresolvedSymExpr(expr->get(i)))
-                {
-                  appendExpr(symi, printingType);
-                }
-
-                else if (SymExpr* symi = toSymExpr(expr->get(i)))
-                {
-                  appendExpr(symi, printingType);
-                }
-
-                else if (CallExpr* symi = toCallExpr(expr->get(i)))
-                {
-                  appendExpr(symi, printingType);
-                }
-
-                else if (NamedExpr* symi = toNamedExpr(expr->get(i)))
-                {
-                  appendExpr(symi, printingType);
-                }
-
-                else
-                {
-                  mText += "AppendExpr.Call11";
-                }
-              }
-
-              mText += ")";
+              appendDomain(expr, printingType);
             }
 
             else
@@ -1375,17 +1350,17 @@ void AstToText::appendExpr(IfExpr* expr, bool printingType)
   {
     appendExpr(sel, printingType);
 
-    mText += " then ";
     if (BlockStmt* thenBlockStmt = toBlockStmt(expr->getThenStmt()))
     {
+      mText += " then ";
       if (thenBlockStmt->body.length == 1)
       {
         Expr* exp = thenBlockStmt->body.get(1);
         appendExpr(exp, printingType);
 
-        mText += " else ";
         if (BlockStmt* elseBlockStmt = toBlockStmt(expr->getElseStmt()))
         {
+          mText += " else ";
           if (elseBlockStmt->body.length == 1)
           {
             Expr* exp = elseBlockStmt->body.get(1);

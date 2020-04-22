@@ -126,6 +126,11 @@ private:
   bool                   isTypeDefault(Expr* expr)                     const;
 
   //
+  // Helper function for appending domain calls with multiple arguments
+  //
+  void                   appendDomain(CallExpr* expr, bool printingType);
+
+  //
   // Support for selecting formals for functions and methods
   //
   int                    indexForThis(FnSymbol* fn)                    const;
