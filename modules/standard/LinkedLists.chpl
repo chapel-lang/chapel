@@ -226,7 +226,7 @@ record LinkedList {
       Calling this method on an empty list will cause the program to halt
 
 
-    :return: the data stored at the front of the list
+    :return: a reference to the first item in the list
     :rtype: `ref eltType`
    */
   proc ref first() ref: eltType {
@@ -244,7 +244,7 @@ record LinkedList {
       Calling this method on an empty list will cause the program to halt
 
 
-    :return: the data stored at the back of the list
+    :return: a reference to the last item in the lsit
     :rtype: `ref eltType`
    */
   proc ref last() ref: eltType {
