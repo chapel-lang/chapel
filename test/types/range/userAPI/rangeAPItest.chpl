@@ -9,6 +9,7 @@ proc testRangeAPI(lbl, r: range(?), idx, subr) {
   writeln("boundedType      = ", r.boundedType);
   writeln("isRangeType()    = ", isRangeType(r.type));
   writeln("isBoundedRange() = ", isBoundedRange(r));
+  writeln("isBounded()      = ", r.isBounded());
   writeln("hasLowBound()    = ", r.hasLowBound());
   writeln("hasHighBound()   = ", r.hasHighBound());
   writeln("stride           = ", r.stride);
