@@ -1041,8 +1041,8 @@ bool MLIContext::isTypeRequiringAlloc(Type* t) {
   return
       // TODO: Do we just assume that all CPTRs require allocation?
       t->symbol->hasFlag(FLAG_C_PTR_CLASS) ||
-      t == dtStringC ||
       t->getValType() == exportTypeChplByteBuffer;
+  // we had dtStringC in this list, but we don't really allocate for them
 }
 
 std::string MLIContext::genNewDecl(const char* t, const char* v) {
