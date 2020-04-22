@@ -1,7 +1,8 @@
 // This test currently fails sporadically. whatIsGlobal() reads a global that is
 // uninitialized. Globals are not default-value-initialized in multilocale runs
-// because they are just wide pointers to heap. See "library-init" version of
-// this test for the "correct" version of this.
+// because they are just wide pointers to heap. The correct way to do this is to
+// call the module initializer before using its globals. See "library-init"
+// version of this test
 
 #include "lib/reliesOnGlobal.h"
 
