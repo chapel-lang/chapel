@@ -1,4 +1,4 @@
-proc testArray(type t) {
+proc testAssoc(type t) {
   /* non-nilable shared T */
 
   var D: domain(int);

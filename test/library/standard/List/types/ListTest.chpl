@@ -1,7 +1,6 @@
 import List.list;
 
 proc testList(type t) {
-  /* non-nilable shared T */
   var l = new list(t);
 
   var x: t;

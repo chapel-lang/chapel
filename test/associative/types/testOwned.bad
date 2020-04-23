@@ -1,3 +1,3 @@
-./ArrayTest.chpl:1: In function 'testArray':
-./ArrayTest.chpl:8: error: Cannot initialize associative array because element type owned T is a non-nilable class
-testOwned.chpl:8: Function 'testArray' instantiated as: testArray(type t = owned T)
+./AssocTest.chpl:1: In function 'testAssoc':
+./AssocTest.chpl:8: error: Cannot initialize associative array because element type owned T is a non-nilable class
+testOwned.chpl:8: Function 'testAssoc' instantiated as: testAssoc(type t = owned T)
