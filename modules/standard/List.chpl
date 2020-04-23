@@ -117,16 +117,20 @@ module List {
   //
   // In order for the lifetime checker to evaluate lifetime clauses such as
   // `this < x` on methods like `list.append()`, the compiler has to see
-  // that the instantiated list type is or contains an instance of a borrowed
-  // class (else it will not evaluate the clause).
+  // that the instantiated list type contains an instance of a borrowed
+  // class (else it will not evaluate the lifetime clause).
   // List uses _ddata, which is marked "unsafe" and is skipped. In order to
   // flag lists of borrowed as "containing a borrowed class", we add a
   // dummy variable that is of type `borrowed t?` if `t` is a borrowed class,
   // and `nothing` otherwise.
   //
   pragma "no doc"
+  proc _dummyFieldType(type t) type where isBorrowedClass(t) {
+    return t?;
+  }
+
+  pragma "no doc"
   proc _dummyFieldType(type t) type {
-    if isBorrowedClass(t) then return t?;
     return nothing;
   }
 
@@ -200,7 +204,8 @@ module List {
     */
     proc init(other: list(?t), param parSafe=false) {
       if !isCopyableType(this.type.eltType) then
-        compilerError("Cannot copy list with element type that cannot be copied");
+        compilerError("Cannot copy list with element type that " +
+                      "cannot be copied");
       this.eltType = t;
       this.parSafe = parSafe;
       this.complete();
@@ -221,7 +226,8 @@ module List {
     proc init(other: [?d] ?t, param parSafe=false) {
       _checkType(t);
       if !isCopyableType(t) then
-        compilerError("Cannot construct list from array with element type that cannot be copied");
+        compilerError("Cannot construct list from array with element " +
+                      "type that cannot be copied");
 
       this.eltType = t;
       this.parSafe = parSafe;
@@ -269,7 +275,8 @@ module List {
     */
     proc init=(other: list(this.type.eltType, ?p)) {
       if !isCopyableType(this.type.eltType) then
-        compilerError("Cannot copy list with element type that cannot be copied");
+        compilerError("Cannot copy list with element type that " +
+                      "cannot be copied");
 
       this.eltType = this.type.eltType;
       this.parSafe = this.type.parSafe;
@@ -285,7 +292,8 @@ module List {
     */
     proc init=(other: [?d] this.type.eltType) {
       if !isCopyableType(this.type.eltType) then
-        compilerError("Cannot copy list from array with element type that cannot be copied");
+        compilerError("Cannot copy list from array with element type " +
+                      "that cannot be copied");
 
       this.eltType = this.type.eltType;
       this.parSafe = this.type.parSafe;
@@ -320,12 +328,18 @@ module List {
       _commonInitFromIterable(other);
     }
 
-
     pragma "no doc"
     proc _commonInitFromIterable(iterable) {
       this._firstTimeInitializeArrays();
-      for x in iterable do
-        append(x);
+      _enter();
+
+      for x in iterable do {
+        pragma "no auto destroy"
+        var cpy = x;
+        _appendByRef(cpy);
+      }
+
+      _leave();
     }
 
     pragma "no doc"
