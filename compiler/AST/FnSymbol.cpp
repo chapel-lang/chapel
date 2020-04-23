@@ -842,7 +842,7 @@ AggregateType* FnSymbol::getReceiverType() const {
         ArgSymbol* _mt   = getFormal(1);
         ArgSymbol* _this = getFormal(2);
 
-        if (_mt->getValType() == dtMethodToken) {
+        if (_mt->type == dtMethodToken) {
           return toAggregateType(_this->getValType());
         }
       }
@@ -857,17 +857,23 @@ bool FnSymbol::isMethod() const {
 }
 
 bool FnSymbol::isMethodOnClass() const {
+  bool retval = false;
+
   if (AggregateType* at = getReceiverType()) {
-    return at->isClass();
+    retval = at->isClass();
   }
-  return false;
+
+  return retval;
 }
 
 bool FnSymbol::isMethodOnRecord() const {
+  bool retval = false;
+
   if (AggregateType* at = getReceiverType()) {
-    return at->isRecord();
+    retval = at->isRecord();
   }
-  return false;
+
+  return retval;
 }
 
 bool FnSymbol::isTypeMethod() const {

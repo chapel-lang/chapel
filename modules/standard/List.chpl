@@ -114,14 +114,23 @@ module List {
     }
   }
 
-  private use IO;
-
   //
-  // Use to determine if the lifetime checker does not think `list` is subject
-  // to lifetime analysis because it does not contain any class fields.
+  // In order for the lifetime checker to evaluate lifetime clauses such as
+  // `this < x` on methods like `list.append()`, the compiler has to see
+  // that the instantiated list type is or contains an instance of a borrowed
+  // class (else it will not evaluate the clause).
+  // List uses _ddata, which is marked "unsafe" and is skipped. In order to
+  // flag lists of borrowed as "containing a borrowed class", we add a
+  // dummy variable that is of type `borrowed t?` if `t` is a borrowed class,
+  // and `nothing` otherwise.
   //
   pragma "no doc"
-  class _DummyClass { var x: int = 0; }
+  proc _dummyFieldType(type t) type {
+    if isBorrowedClass(t) then return t?;
+    return nothing;
+  }
+
+  private use IO;
 
   /*
     A list is a lightweight container suitable for building up and iterating
@@ -160,7 +169,7 @@ module List {
     var _totalCapacity = 0;
 
     pragma "no doc"
-    var _dummyFieldForBorrowLifetimeAnalysis: owned _DummyClass? = nil;
+    var _dummyFieldToForceBorrowChecking: _dummyFieldType(eltType);
 
     /*
       Initializes an empty list.

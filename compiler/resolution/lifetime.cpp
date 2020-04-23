@@ -1091,20 +1091,10 @@ bool LifetimeState::setInferredLifetimeToMin(Symbol* sym, LifetimePair lt) {
   // This prevents errors based upon "scoped variables" when the
   // variable has no meaningful scope.
   // It would be reasonable to update callers to avoid this situation, too.
-  if (!isSubjectToRefLifetimeAnalysis(sym)) {
+  if (!isSubjectToRefLifetimeAnalysis(sym))
     lt.referent = unknownLifetime();
-    if (sym->id == debugLifetimesForId) {
-      printf("Symbol %d not subject to referent lifetime analysis\n", sym->id);
-      printf("Marked %d inferred referent lifetime as unknown\n", sym->id);
-    }
-  }
-  if (!isSubjectToBorrowLifetimeAnalysis(sym)) {
+  if (!isSubjectToBorrowLifetimeAnalysis(sym))
     lt.borrowed = unknownLifetime();
-    if (sym->id == debugLifetimesForId) {
-      printf("Symbol %d not subject to borrow lifetime analysis\n", sym->id);
-      printf("Marked %d inferred borrowed lifetime as unknown\n", sym->id);
-    }
-  }
   // TODO -- consider making the above into asserts.
 
   // Don't bother storing unknown.
@@ -2591,7 +2581,8 @@ bool EmitLifetimeErrorsVisitor::enterCallExpr(CallExpr* call) {
   if (FnSymbol* fn = call->resolvedOrVirtualFunction()) {
     if (fn->lifetimeConstraints) {
       if (debugging) {
-        debugf("Checking lifetimes for call of %s\n", fn->name);
+        debugf("Checking lifetime constraints for call to %s [%d]\n",
+               fn->name, fn->id);
       }
 
       int i, j;
@@ -2616,10 +2607,14 @@ bool EmitLifetimeErrorsVisitor::enterCallExpr(CallExpr* call) {
           Symbol* actual2sym = actual2se->symbol();
 
           if (debugging) {
-            debugf("Debugging actual %d %s\n", i, actual1sym->name);
-            debugf("Against actual %d %s\n", j, actual2sym->name);
+            debugf("Debugging actual (%d) %s [%d]\n",
+                   i, actual1sym->name, actual1sym->id);
+            debugf("Against actual (%d) %s [%d]\n", j,
+                   actual2sym->name, actual2sym->id);
           }
 
+          // Determine if there is a lifetime constraint for these two
+          // formals.
           constraint_t order = orderConstraintFromClause(fn, formal1, formal2);
           if (order != CONSTRAINT_UNKNOWN && order != CONSTRAINT_EQUAL) {
             LifetimePair a1lp =
@@ -2637,10 +2632,10 @@ bool EmitLifetimeErrorsVisitor::enterCallExpr(CallExpr* call) {
             if (a1lp.borrowed.unknown) {
               a1lp.borrowed = scopeLifetimeForSymbol(actual1sym);
               if (debugging) {
-                debugf("Actual %s lifetime unknown, using scoped "
+                debugf("Actual %s [%d] lifetime unknown, using scoped "
                        "lifetime\n",
-                       actual1sym->name);
-                debugf("Scoped lifetime of %s is ", actual1sym->name);
+                       actual1sym->name, actual1sym->id);
+                debugf("%s", "Scoped lifetime is ");
                 printLifetime(a1lp.borrowed);
                 printf("\n");
               }
@@ -2649,45 +2644,50 @@ bool EmitLifetimeErrorsVisitor::enterCallExpr(CallExpr* call) {
             if (a2lp.borrowed.unknown) {
               a2lp.borrowed = scopeLifetimeForSymbol(actual2sym);
               if (debugging) {
-                debugf("- Actual %s lifetime unknown, using scoped "
+                debugf("Actual %s [%d] lifetime unknown, using scoped "
                        "lifetime\n",
-                       actual1sym->name);
-                debugf("Scoped lifetime of %s is ", actual1sym->name);
-                printLifetime(a1lp.borrowed);
+                       actual2sym->name, actual2sym->id);
+                debugf("%s", "Scoped lifetime is ");
+                printLifetime(a2lp.borrowed);
                 printf("\n");
               }
             }
 
             // Delay computing to emit debugging information.
-            bool hasAtLeastOneBorrowedFormal = false;
-
+            bool bothFormalsContainBorrowedOrAreBorrowed = false;       
+         
             if (isOrRefersBorrowedClass(formal1->getValType())) {
-              hasAtLeastOneBorrowedFormal = true;
+              bothFormalsContainBorrowedOrAreBorrowed = true;
               if (debugging) {
-                debugf("- Formal 1 %s of type %s is borrowed\n",
-                       actual1sym->name,
-                       formal1->getValType()->symbol->name);
+                debugf("Formal (%d) %s [%d] of type %s [%d] is or refers "
+                       "to borrowed\n",
+                       i, actual1sym->name, actual1sym->id,
+                       formal1->getValType()->symbol->name,
+                       formal2->getValType()->symbol->id);
               }
             }
 
             if (isOrRefersBorrowedClass(formal2->getValType())) {
-              hasAtLeastOneBorrowedFormal = true;
+              bothFormalsContainBorrowedOrAreBorrowed &= true;
               if (debugging) {
-                debugf("- Formal 2 %s of type %s is borrowed\n",
-                       actual2sym->name,
-                       formal2->getValType()->symbol->name);
+                debugf("Formal (%d) %s [%d] of type %s [%d] is or refers "
+                       "to borrowed\n",
+                       j, actual2sym->name, actual2sym->id,
+                       formal2->getValType()->symbol->name,
+                       formal2->getValType()->symbol->id);
               }
             }
 
             // see also
             //   arrays/ferguson/pushback-no-leak.chpl
-            if (hasAtLeastOneBorrowedFormal) {
+            if (bothFormalsContainBorrowedOrAreBorrowed) {
               if ((order == CONSTRAINT_LESS || order == CONSTRAINT_LESS_EQ) &&
                   lifetimes->isLifetimeShorter(a2lp.borrowed, a1lp.borrowed)) {
                 if (debugging) {
                   const char* ordering = order == CONSTRAINT_LESS ?
                       "constraint less" : "constraint less equal";
-                  debugf("- Ordering is %s\n", ordering);
+                  debugf("Constraint ordering to validate is %s\n",
+                         ordering);
                 } 
                 error = true;
                 ref = false;
@@ -2700,7 +2700,8 @@ bool EmitLifetimeErrorsVisitor::enterCallExpr(CallExpr* call) {
                 if (debugging) {
                   const char* ordering = order == CONSTRAINT_GREATER ?
                       "constraint greater" : "constraint greater equal";
-                  debugf("- Ordering is %s\n", ordering);
+                  debugf("Constraint ordering to validate is %s\n",
+                         ordering);
                 } 
                 error = true;
                 ref = false;
@@ -2710,10 +2711,6 @@ bool EmitLifetimeErrorsVisitor::enterCallExpr(CallExpr* call) {
             }
 
             if (error) {
-              if (debugging) {
-                debugf("%s: End of debugging, emitting error\n",
-                       __FUNCTION__);
-              }
               emitError(call,
                         ref?"Reference actual argument":"Actual argument",
                         "does not meet called function lifetime constraint",
