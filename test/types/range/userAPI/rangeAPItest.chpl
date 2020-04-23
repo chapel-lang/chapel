@@ -24,7 +24,6 @@ proc testRangeAPI(lbl, r: range(?), idx, subr) {
   writeln("isEmpty()        = ", r.isEmpty());
   if (isBoundedRange(r)) {
     writeln("size             = ", r.size);
-
   }
   writeln("hasFirst()       = ", r.hasFirst());
   writeln("hasLast()        = ", r.hasLast());
