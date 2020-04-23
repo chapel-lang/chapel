@@ -2324,6 +2324,10 @@ module ChapelArray {
       return _instance.chpl__serialize();
     }
 
+    proc push_back(in val: eltType) lifetime this < val {
+      return;
+    }
+
     pragma "no doc"
     pragma "no copy return"
     proc type chpl__deserialize(data) {

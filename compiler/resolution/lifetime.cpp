@@ -41,7 +41,7 @@
 
 // These enable debug facilities
 static const char* debugLifetimesForFn = "";
-static const int debugLifetimesForId = 197337;
+static const int debugLifetimesForId = 197391;
 static const bool debugOutputOnError = false;
 
 /* This file implements lifetime checking.
@@ -382,6 +382,15 @@ static void checkFunction(FnSymbol* fn);
 static bool isCallToFunctionReturningNotOwned(CallExpr* call);
 static bool isUser(BaseAST* ast);
 
+// Temporary debugging tool.
+#ifndef debugf
+  #define debugf(format__, ...) \
+    do { \
+      printf("DEBUG [%s/%d] ", __FUNCTION__, __LINE__); \
+      printf(format__, __VA_ARGS__); \
+    } while (0)
+#endif
+
 void checkLifetimesAndNilDereferences() {
   // Clear last error location so we get errors from nil checking
   // even if previous compiler code raised error on the same line.
@@ -422,12 +431,6 @@ static void checkFunction(FnSymbol* fn) {
 }
 
 void checkLifetimesInFunction(FnSymbol* fn) {
-
-  if (not fn->isMethodOnRecord() && fn->id == 197337) {
-    printf("Function %s with id %d\n",
-           fn->name,
-           fn->id);
-  }
 
   // No need to check lifetimes in string literal module.
   if (fn->getModule() == stringLiteralModule)
@@ -1088,10 +1091,20 @@ bool LifetimeState::setInferredLifetimeToMin(Symbol* sym, LifetimePair lt) {
   // This prevents errors based upon "scoped variables" when the
   // variable has no meaningful scope.
   // It would be reasonable to update callers to avoid this situation, too.
-  if (!isSubjectToRefLifetimeAnalysis(sym))
+  if (!isSubjectToRefLifetimeAnalysis(sym)) {
     lt.referent = unknownLifetime();
-  if (!isSubjectToBorrowLifetimeAnalysis(sym))
+    if (sym->id == debugLifetimesForId) {
+      printf("Symbol %d not subject to referent lifetime analysis\n", sym->id);
+      printf("Marked %d inferred referent lifetime as unknown\n", sym->id);
+    }
+  }
+  if (!isSubjectToBorrowLifetimeAnalysis(sym)) {
     lt.borrowed = unknownLifetime();
+    if (sym->id == debugLifetimesForId) {
+      printf("Symbol %d not subject to borrow lifetime analysis\n", sym->id);
+      printf("Marked %d inferred borrowed lifetime as unknown\n", sym->id);
+    }
+  }
   // TODO -- consider making the above into asserts.
 
   // Don't bother storing unknown.
@@ -2534,6 +2547,8 @@ static void emitError(Expr* inExpr,
 
 bool EmitLifetimeErrorsVisitor::enterCallExpr(CallExpr* call) {
 
+  bool debugging = (call->id == debugLifetimesForId);
+
   if (call->id == debugLifetimesForId)
     gdbShouldBreakHere();
 
@@ -2575,6 +2590,10 @@ bool EmitLifetimeErrorsVisitor::enterCallExpr(CallExpr* call) {
   // check that the call site meets those constraints.
   if (FnSymbol* fn = call->resolvedOrVirtualFunction()) {
     if (fn->lifetimeConstraints) {
+      if (debugging) {
+        debugf("Checking lifetimes for call of %s\n", fn->name);
+      }
+
       int i, j;
       // Consider all pairs of actuals.
       // I'm sure there's a more efficient way to do this.
@@ -2596,6 +2615,11 @@ bool EmitLifetimeErrorsVisitor::enterCallExpr(CallExpr* call) {
           INT_ASSERT(actual2se);
           Symbol* actual2sym = actual2se->symbol();
 
+          if (debugging) {
+            debugf("Debugging actual %d %s\n", i, actual1sym->name);
+            debugf("Against actual %d %s\n", j, actual2sym->name);
+          }
+
           constraint_t order = orderConstraintFromClause(fn, formal1, formal2);
           if (order != CONSTRAINT_UNKNOWN && order != CONSTRAINT_EQUAL) {
             LifetimePair a1lp =
@@ -2610,18 +2634,61 @@ bool EmitLifetimeErrorsVisitor::enterCallExpr(CallExpr* call) {
 
             // For the purposes of this check, use scope lifetime
             // if above lifetime is unknown.
-            if (a1lp.borrowed.unknown)
+            if (a1lp.borrowed.unknown) {
               a1lp.borrowed = scopeLifetimeForSymbol(actual1sym);
-            if (a2lp.borrowed.unknown)
-              a2lp.borrowed = scopeLifetimeForSymbol(actual2sym);
+              if (debugging) {
+                debugf("Actual %s lifetime unknown, using scoped "
+                       "lifetime\n",
+                       actual1sym->name);
+                debugf("Scoped lifetime of %s is ", actual1sym->name);
+                printLifetime(a1lp.borrowed);
+                printf("\n");
+              }
+            }
 
+            if (a2lp.borrowed.unknown) {
+              a2lp.borrowed = scopeLifetimeForSymbol(actual2sym);
+              if (debugging) {
+                debugf("- Actual %s lifetime unknown, using scoped "
+                       "lifetime\n",
+                       actual1sym->name);
+                debugf("Scoped lifetime of %s is ", actual1sym->name);
+                printLifetime(a1lp.borrowed);
+                printf("\n");
+              }
+            }
+
+            // Delay computing to emit debugging information.
+            bool hasAtLeastOneBorrowedFormal = false;
+
+            if (isOrRefersBorrowedClass(formal1->getValType())) {
+              hasAtLeastOneBorrowedFormal = true;
+              if (debugging) {
+                debugf("- Formal 1 %s of type %s is borrowed\n",
+                       actual1sym->name,
+                       formal1->getValType()->symbol->name);
+              }
+            }
+
+            if (isOrRefersBorrowedClass(formal2->getValType())) {
+              hasAtLeastOneBorrowedFormal = true;
+              if (debugging) {
+                debugf("- Formal 2 %s of type %s is borrowed\n",
+                       actual2sym->name,
+                       formal2->getValType()->symbol->name);
+              }
+            }
 
             // see also
             //   arrays/ferguson/pushback-no-leak.chpl
-            if (isOrRefersBorrowedClass(formal1->getValType()) &&
-                isOrRefersBorrowedClass(formal2->getValType())) {
+            if (hasAtLeastOneBorrowedFormal) {
               if ((order == CONSTRAINT_LESS || order == CONSTRAINT_LESS_EQ) &&
                   lifetimes->isLifetimeShorter(a2lp.borrowed, a1lp.borrowed)) {
+                if (debugging) {
+                  const char* ordering = order == CONSTRAINT_LESS ?
+                      "constraint less" : "constraint less equal";
+                  debugf("- Ordering is %s\n", ordering);
+                } 
                 error = true;
                 ref = false;
                 relevantLifetime = a2lp.borrowed;
@@ -2630,6 +2697,11 @@ bool EmitLifetimeErrorsVisitor::enterCallExpr(CallExpr* call) {
                           order == CONSTRAINT_GREATER_EQ) &&
                          lifetimes->isLifetimeShorter(a1lp.borrowed,
                                                       a2lp.borrowed)) {
+                if (debugging) {
+                  const char* ordering = order == CONSTRAINT_GREATER ?
+                      "constraint greater" : "constraint greater equal";
+                  debugf("- Ordering is %s\n", ordering);
+                } 
                 error = true;
                 ref = false;
                 relevantLifetime = a1lp.borrowed;
@@ -2638,6 +2710,10 @@ bool EmitLifetimeErrorsVisitor::enterCallExpr(CallExpr* call) {
             }
 
             if (error) {
+              if (debugging) {
+                debugf("%s: End of debugging, emitting error\n",
+                       __FUNCTION__);
+              }
               emitError(call,
                         ref?"Reference actual argument":"Actual argument",
                         "does not meet called function lifetime constraint",
@@ -3119,7 +3195,7 @@ static bool isSubjectToBorrowLifetimeAnalysis(Type* type) {
   bool isRecordContainingFieldsSubjectToAnalysis = false;
   if (isRecord(type)) {
     AggregateType* at = toAggregateType(type);
-    isRecordContainingFieldsSubjectToAnalysis = recordContainsClassFields(at);
+   isRecordContainingFieldsSubjectToAnalysis = recordContainsClassFields(at);
   }
 
   // this is a workaround for non-optimal AST for iteration
@@ -3131,8 +3207,9 @@ static bool isSubjectToBorrowLifetimeAnalysis(Type* type) {
   //  - a record containing refs/class pointers
   //    (or an iterator record)
   if (!(isClassLikeOrPtr(type) ||
-        isRecordContainingFieldsSubjectToAnalysis))
+        isRecordContainingFieldsSubjectToAnalysis)) {
     return false;
+  }
 
   return true;
 }

@@ -116,6 +116,13 @@ module List {
 
   private use IO;
 
+  //
+  // Use to determine if the lifetime checker does not think `list` is subject
+  // to lifetime analysis because it does not contain any class fields.
+  //
+  pragma "no doc"
+  class _DummyClass { var x: int = 0; }
+
   /*
     A list is a lightweight container suitable for building up and iterating
     over a collection of elements in a structured manner. Unlike a stack, the
@@ -151,6 +158,9 @@ module List {
 
     pragma "no doc"
     var _totalCapacity = 0;
+
+    pragma "no doc"
+    var _dummyFieldForBorrowLifetimeAnalysis: owned _DummyClass? = nil;
 
     /*
       Initializes an empty list.
@@ -597,7 +607,8 @@ module List {
       :arg x: An element to append.
       :type x: `eltType`
     */
-    proc ref append(pragma "no auto destroy" in x: eltType) lifetime this < x {
+    proc ref append(pragma "no auto destroy" in x: this.eltType)
+    lifetime this < x {
       _enter();
 
       //
