@@ -1,0 +1,1 @@
+./ArrayTest.chpl:9: error: halt reached - Can't resize domains whose arrays' elements don't have default values
