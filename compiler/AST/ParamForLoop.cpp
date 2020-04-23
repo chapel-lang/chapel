@@ -108,7 +108,7 @@ BlockStmt* ParamForLoop::buildParamForLoop(VarSymbol* indexVar,
   // When no case is satisfied, then show error
   if(high == NULL || low == NULL)
   {
-    USR_FATAL(range, "param for-loops currently only support range expressions with well defined param integral bounds");
+    USR_FATAL(range, "param for-loops currently only support range expressions with well-defined param integral bounds");
   }
 
   outer->insertAtTail(new DefExpr(indexVar, new_IntSymbol((int64_t) 0)));
