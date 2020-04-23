@@ -996,7 +996,35 @@ module DefaultAssociative {
     return hash;
   }
   
+  inline proc chpl__defaultHash(o: owned object): uint {
+    return _gen_key(__primitive("object2int", o.chpl_p));
+  }
+
+  inline proc chpl__defaultHash(o: shared object): uint {
+    return _gen_key(__primitive("object2int", o.chpl_p));
+  }
+
   inline proc chpl__defaultHash(o: borrowed object): uint {
+    return _gen_key(__primitive("object2int", o));
+  }
+
+  inline proc chpl__defaultHash(o: unmanaged object): uint {
+    return _gen_key(__primitive("object2int", o));
+  }
+
+  inline proc chpl__defaultHash(o: owned object?): uint {
+    return _gen_key(__primitive("object2int", o.chpl_p));
+  }
+
+  inline proc chpl__defaultHash(o: shared object?): uint {
+    return _gen_key(__primitive("object2int", o.chpl_p));
+  }
+
+  inline proc chpl__defaultHash(o: borrowed object?): uint {
+    return _gen_key(__primitive( "object2int", o));
+  }
+
+  inline proc chpl__defaultHash(o: unmanaged object): uint {
     return _gen_key(__primitive( "object2int", o));
   }
 

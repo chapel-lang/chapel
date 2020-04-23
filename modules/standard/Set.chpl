@@ -83,6 +83,22 @@ module Set {
     }
   }
 
+  pragma "no doc"
+  proc _checkElementType(type t) {
+    // Only non-nilable borrowed classes work so far
+    if isNonNilableClass(t) then
+      compilerError('Sets do not support non-nilable class types');
+    // TODO: Only error if tuple element is non-nilable class.
+    if isTuple(t) then
+      compilerError('Sets do not support tuple types');
+    // In the future we might support it if the set is not default-inited.
+    if isGenericType(t) {
+      compilerWarning("creating a set with element type " +
+                      t:string);
+      compilerError("set element type cannot currently be generic");
+    }
+  }
+
   /*
     A set is a collection of unique elements. Attempting to add a duplicate
     element to a set has no effect.
@@ -126,19 +142,8 @@ module Set {
       :arg parSafe: If `true`, this set will use parallel safe operations.
     */
     proc init(type eltType, param parSafe=false) {
-      // Only non-nilable borrowed classes work so far
-      if isClass(eltType) {
-        if !(isBorrowedClass(eltType) && isNonNilableClass(eltType)) then
-          compilerError('Sets do not support class types');
-      }
-      if isTuple(eltType) then
-        compilerError('Sets do not support tuple types');
-      if isGenericType(eltType) {
-        compilerWarning("creating a set with element type " +
-                        eltType:string);
-        compilerError("set element type cannot currently be generic");
-        // In the future we might support it if the set is not default-inited
-      }
+      _checkElementType(eltType);
+
       this.eltType = eltType;
       this.parSafe = parSafe;
     }
@@ -154,16 +159,8 @@ module Set {
     */
     proc init(type eltType, iterable, param parSafe=false)
             where canResolveMethod(iterable, "these") {
-      if isClass(eltType) then
-        compilerError('Sets do not support class types');
-      if isTuple(eltType) then
-        compilerError('Sets do not support tuple types');
-      if isGenericType(eltType) {
-        compilerWarning("creating a set with element type " +
-                        eltType:string);
-        compilerError("set element type cannot currently be generic");
-        // In the future we might support it if the set is not default-inited
-      }
+      _checkElementType(eltType); 
+
       this.eltType = eltType;
       this.parSafe = parSafe;
       this.complete();
