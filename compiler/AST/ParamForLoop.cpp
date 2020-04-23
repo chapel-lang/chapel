@@ -64,40 +64,51 @@ BlockStmt* ParamForLoop::buildParamForLoop(VarSymbol* indexVar,
 
   if (call && call->isNamed("#"))
   {
-    count = new CallExpr("chpl_compute_count_param_loop", call->get(2)->remove());
+    count       = new CallExpr("chpl_compute_count_param_loop", call->get(2)->remove());
     call        = toCallExpr(call->get(1));
   }
 
-  if (count != NULL && call && call->isNamed("chpl_build_low_bounded_range"))
-  {
-    low  = call->get(1)->remove();
-    high = new CallExpr("chpl_high_bound_count_for_param_loop", low->copy(), count);
-  }
-  else if (count != NULL && call && call->isNamed("chpl_build_high_bounded_range"))
-  {
-    high = call->get(1)->remove();
-    low  = new CallExpr("chpl_low_bound_count_for_param_loop", high->copy(), count);
-  }
-  else if (call && call->isNamed("chpl_build_bounded_range"))
-  {
-    if(count != NULL)
+  if(call) {
+    if(count == NULL)
     {
-      Expr* temp_low = call->get(1)->remove();
-      Expr* temp_high = call->get(1)->remove();
-
-      // It is necessary that low is calculated first, because it also applies check for bound size.
-      low = new CallExpr("chpl_bounded_count_for_param_loop_low", temp_low->copy(), temp_high->copy(), count->copy());
-      high = new CallExpr("chpl_bounded_count_for_param_loop_high", temp_low->copy(), temp_high->copy(), count);
+      // high..low
+      if (call->isNamed("chpl_build_bounded_range"))
+      {
+        low    = call->get(1)->remove();
+        high   = call->get(1)->remove();
+      }
     }
     else
     {
-      low    = call->get(1)->remove();
-      high   = call->get(1)->remove();
+      // high..low#count
+      if(call->isNamed("chpl_build_bounded_range"))
+      {
+        Expr* temp_low  = call->get(1)->remove();
+        Expr* temp_high = call->get(1)->remove();
+
+        // It is necessary that low is calculated first, because it also applies check for bound size.
+        low  = new CallExpr("chpl_bounded_count_for_param_loop_low", temp_low->copy(), temp_high->copy(), count->copy());
+        high = new CallExpr("chpl_bounded_count_for_param_loop_high", temp_low->copy(), temp_high->copy(), count);
+      }
+      // low..#count
+      else if (count != NULL && call && call->isNamed("chpl_build_low_bounded_range"))
+      {
+        low  = call->get(1)->remove();
+        high = new CallExpr("chpl_high_bound_count_for_param_loop", low->copy(), count);
+      }
+      // ..high#count
+      else if (count != NULL && call && call->isNamed("chpl_build_high_bounded_range"))
+      {
+        high = call->get(1)->remove();
+        low  = new CallExpr("chpl_low_bound_count_for_param_loop", high->copy(), count);
+      }
     }
   }
-  else
+
+  // When no case is satisfied, then show error
+  if(high == NULL || low == NULL)
   {
-    USR_FATAL(range, "param for loops currently only support range expressions with well defined param integral bounds");
+    USR_FATAL(range, "param for-loops currently only support range expressions with well defined param integral bounds");
   }
 
   outer->insertAtTail(new DefExpr(indexVar, new_IntSymbol((int64_t) 0)));
