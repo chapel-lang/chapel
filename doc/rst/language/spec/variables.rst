@@ -244,7 +244,7 @@ the same type.
 
 Any variables declared in a particular scope that are initialized with
 split init in both the ``then`` and ``else`` branches of a conditional
-must be initialized in the same order on in the ``then`` and ``else``
+must be initialized in the same order in the ``then`` and ``else``
 branches.
 
 .. _Default_Values_For_Types:
