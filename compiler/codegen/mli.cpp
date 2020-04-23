@@ -428,6 +428,10 @@ std::string MLIContext::genMarshalBodyChplBytesWrapper(Type* t, bool out) {
     gen += "mem_err = (";
     gen += fieldData;
     gen += " == NULL);\n";
+
+    // if I have allocated something here, own it, too
+    gen += fieldIsOwned;
+    gen += " = true;";
   }
 
   // Push/pull possible allocation error on ACK.
