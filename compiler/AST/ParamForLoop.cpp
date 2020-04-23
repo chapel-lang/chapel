@@ -91,13 +91,13 @@ BlockStmt* ParamForLoop::buildParamForLoop(VarSymbol* indexVar,
         high = new CallExpr("chpl_bounded_count_for_param_loop_high", temp_low->copy(), temp_high->copy(), count);
       }
       // low..#count
-      else if (count != NULL && call && call->isNamed("chpl_build_low_bounded_range"))
+      else if (call->isNamed("chpl_build_low_bounded_range"))
       {
         low  = call->get(1)->remove();
         high = new CallExpr("chpl_high_bound_count_for_param_loop", low->copy(), count);
       }
       // ..high#count
-      else if (count != NULL && call && call->isNamed("chpl_build_high_bounded_range"))
+      else if (call->isNamed("chpl_build_high_bounded_range"))
       {
         high = call->get(1)->remove();
         low  = new CallExpr("chpl_low_bound_count_for_param_loop", high->copy(), count);
