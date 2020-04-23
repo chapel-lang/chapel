@@ -1,3 +1,3 @@
 ./SetTest.chpl:3: In function 'testSet':
-./SetTest.chpl:5: error: Sets do not support class types
+./SetTest.chpl:4: error: Sets do not support class types
 testUnmanaged.chpl:9: Function 'testSet' instantiated as: testSet(type t = unmanaged T)
