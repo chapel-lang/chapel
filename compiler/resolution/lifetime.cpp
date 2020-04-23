@@ -3198,7 +3198,7 @@ static bool isSubjectToBorrowLifetimeAnalysis(Type* type) {
   bool isRecordContainingFieldsSubjectToAnalysis = false;
   if (isRecord(type)) {
     AggregateType* at = toAggregateType(type);
-   isRecordContainingFieldsSubjectToAnalysis = recordContainsClassFields(at);
+    isRecordContainingFieldsSubjectToAnalysis = recordContainsClassFields(at);
   }
 
   // this is a workaround for non-optimal AST for iteration
@@ -3210,9 +3210,8 @@ static bool isSubjectToBorrowLifetimeAnalysis(Type* type) {
   //  - a record containing refs/class pointers
   //    (or an iterator record)
   if (!(isClassLikeOrPtr(type) ||
-        isRecordContainingFieldsSubjectToAnalysis)) {
+        isRecordContainingFieldsSubjectToAnalysis))
     return false;
-  }
 
   return true;
 }

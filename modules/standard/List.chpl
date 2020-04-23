@@ -114,16 +114,6 @@ module List {
     }
   }
 
-  //
-  // In order for the lifetime checker to evaluate lifetime clauses such as
-  // `this < x` on methods like `list.append()`, the compiler has to see
-  // that the instantiated list type contains an instance of a borrowed
-  // class (else it will not evaluate the lifetime clause).
-  // List uses _ddata, which is marked "unsafe" and is skipped. In order to
-  // flag lists of borrowed as "containing a borrowed class", we add a
-  // dummy variable that is of type `borrowed t?` if `t` is a borrowed class,
-  // and `nothing` otherwise.
-  //
   pragma "no doc"
   proc _dummyFieldType(type t) type where isBorrowedClass(t) {
     return t?;
@@ -172,6 +162,16 @@ module List {
     pragma "no doc"
     var _totalCapacity = 0;
 
+    //
+    // In order for the lifetime checker to evaluate lifetime clauses such as
+    // `this < x` on methods like `list.append()`, the compiler has to see
+    // that the instantiated list type contains an instance of a borrowed
+    // class (else it will not evaluate the lifetime clause).
+    // List uses _ddata, which is marked "unsafe" and is skipped. In order to
+    // flag lists of borrowed as "containing a borrowed class", we add a
+    // dummy variable that is of type `borrowed t?` if `t` is a borrowed
+    // class, and is of type `nothing` otherwise.
+    //
     pragma "no doc"
     var _dummyFieldToForceBorrowChecking: _dummyFieldType(eltType);
 
