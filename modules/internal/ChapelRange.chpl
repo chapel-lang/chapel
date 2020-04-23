@@ -437,7 +437,7 @@ module ChapelRange {
 
   pragma "last resort"
   proc chpl_low_bound_count_for_param_loop(high, count) {
-    compilerError("Range bounds must be integers of compatible types in param for-loop");
+    compilerError("Range bounds must be integers of compatible types in param for-loops");
   }
 
   proc chpl_high_bound_count_for_param_loop(param low: integral, param count: integral) param {
