@@ -384,7 +384,7 @@ static bool isUser(BaseAST* ast);
 
 // Not sure what the etiquette for sanitizing macros is.
 #ifdef debugf
-  #warn "Undefining source file only macro 'debugf'."
+  #warning "Undefining source file only macro 'debugf'."
   #undef debugf
 #endif
 
