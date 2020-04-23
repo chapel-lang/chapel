@@ -20,7 +20,7 @@ proc greet(name) {
     return "Hello " + name; 
 }
 
-// call with one variable int(64)
+// call with one argument int(64)
 var variable : int(64) = 5;
 
 // call with 1 argument
