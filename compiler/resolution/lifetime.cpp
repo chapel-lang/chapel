@@ -41,7 +41,7 @@
 
 // These enable debug facilities
 static const char* debugLifetimesForFn = "";
-static const int debugLifetimesForId = 197391;
+static const int debugLifetimesForId = 0;
 static const bool debugOutputOnError = false;
 
 /* This file implements lifetime checking.
@@ -382,11 +382,17 @@ static void checkFunction(FnSymbol* fn);
 static bool isCallToFunctionReturningNotOwned(CallExpr* call);
 static bool isUser(BaseAST* ast);
 
-// Temporary debugging tool.
+// Not sure what the etiquette for sanitizing macros is.
+#ifdef debugf
+  #warn "Undefining source file only macro 'debugf'."
+  #undef debugf
+#endif
+
+// Helps "pretty print" some debug messages.
 #ifndef debugf
   #define debugf(format__, ...) \
     do { \
-      printf("DEBUG [%s/%d] ", __FUNCTION__, __LINE__); \
+      printf("DEBUG [%s:%d] ", __FUNCTION__, __LINE__); \
       printf(format__, __VA_ARGS__); \
     } while (0)
 #endif
