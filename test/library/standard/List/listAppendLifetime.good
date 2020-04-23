@@ -1,5 +1,5 @@
 listAppendLifetime.chpl:5: In function 'test':
 listAppendLifetime.chpl:10: error: Actual argument x does not meet called function lifetime constraint
 listAppendLifetime.chpl:8: note: consider result here
-$CHPL_HOME/modules/standard/List.chpl:622: note: called function list(C,false).append(x: borrowed C)
-$CHPL_HOME/modules/standard/List.chpl:622: note: includes lifetime constraint this < x
+$CHPL_HOME/modules/standard/List.chpl:634: note: called function list(C,false).append(x: borrowed C)
+$CHPL_HOME/modules/standard/List.chpl:634: note: includes lifetime constraint this < x
