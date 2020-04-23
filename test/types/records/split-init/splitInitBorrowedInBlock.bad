@@ -1,2 +1,0 @@
-splitInitBorrowedInBlock.chpl:3: In function 'test':
-splitInitBorrowedInBlock.chpl:8: error: Scoped variable x would outlive the value it is set to
