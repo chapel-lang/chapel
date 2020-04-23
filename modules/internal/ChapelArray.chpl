@@ -1418,6 +1418,11 @@ module ChapelArray {
         }
         compilerError("array element type cannot currently be generic");
         // In the future we might support it if the array is not default-inited
+      } else if isSparseDom(this) && isNonNilableClass(eltType) {
+        // TODO: The second half of this test should really be
+        // isDefaultInitializable, but we can't rely on that yet
+        // due to #14854.
+        compilerError("sparse arrays of non-nilable classes are not currently supported");
       }
 
       if chpl_warnUnstable then
