@@ -363,7 +363,7 @@ void ImportStmt::noRepeats() const {
 }
 
 void ImportStmt::validateUnqualified() {
-    BaseAST*            scopeToUse = getSearchScope();
+  BaseAST*            scopeToUse = getSearchScope();
   const ResolveScope* scope      = ResolveScope::getScopeFor(scopeToUse);
 
   for_vector(const char, name, unqualified) {
