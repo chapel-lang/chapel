@@ -3568,17 +3568,6 @@ module ChapelArray {
     }
   }
 
-  proc =(ref a: domain, b: _tuple) {
-    a.clear();
-    for ind in 0..#b.size {
-      a.add(b(ind));
-    }
-  }
-
-  proc =(ref d: domain, r: range(?)) {
-    d = {r};
-  }
-
   //
   // Return true if t is a tuple of ranges that is legal to assign to
   // rectangular domain d
@@ -3610,7 +3599,7 @@ module ChapelArray {
       a = {(...b)};
     } else {
       a.clear();
-      for ind in 1..b.size {
+      for ind in 0..#b.size {
         a.add(b(ind));
       }
     }
@@ -3619,7 +3608,6 @@ module ChapelArray {
   proc =(ref d: domain, r: range(?)) {
     d = {r};
   }
-
 
   proc =(ref a: domain, b) {  // b is iteratable
     if isRectangularDom(a) then
@@ -3924,7 +3912,7 @@ module ChapelArray {
           if move {
             __primitive("=", dst, src);
           } else {
-            a(j) = b(i);
+            dst = src;
           }
         }
       } else {
