@@ -536,11 +536,11 @@ void ParamForLoop::validateLoop(VarSymbol* lvar,
                                 VarSymbol* svar) {
   if (!lvar            || !hvar            || !svar)
     USR_FATAL(this,
-              "param for loop must be defined over a bounded param range");
+              "param for-loops must be defined over a bounded param range");
 
   if (!lvar->immediate || !hvar->immediate || !svar->immediate)
     USR_FATAL(this,
-              "param for loop must be defined over a bounded param range");
+              "param for-loops must be defined over a bounded param range");
 
   if (!is_int_type(svar->type) && !is_uint_type(svar->type)) {
     USR_FATAL(this, "Range stride must be an int");

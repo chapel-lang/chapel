@@ -9,3 +9,11 @@ for param i in 2..#5 {
 for param i in -3..#5 by -1{
     writeln(i);
 }
+
+for param i in -3..4#-2 {
+    writeln(i);
+}
+
+for param i in -3..4#3 {
+    writeln(i);
+}
