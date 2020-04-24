@@ -1,1 +1,1 @@
-paramForOverIter.chpl:7: error: iterators for param-for-loops must be bounded literal ranges
+paramForOverIter.chpl:7: error: param for-loops currently only support range expressions with well-defined param integral bounds

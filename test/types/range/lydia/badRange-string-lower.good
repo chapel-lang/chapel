@@ -1,2 +1,2 @@
 badRange-string-lower.chpl:1: In function 'main':
-badRange-string-lower.chpl:2: error: Range bounds must be integers of compatible types
+badRange-string-lower.chpl:2: error: Range bounds must be integers of compatible types in param for-loops
