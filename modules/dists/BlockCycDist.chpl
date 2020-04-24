@@ -603,7 +603,7 @@ proc BlockCyclicDom.dsiSerialWrite(x) {
 //
 // how to allocate a new array over this domain
 //
-proc BlockCyclicDom.dsiBuildArray(type eltType) {
+proc BlockCyclicDom.dsiBuildArray(type eltType, param initElts:bool) {
   const dom = this;
   var locArrTemp: [dom.dist.targetLocDom] unmanaged LocBlockCyclicArr(eltType, rank, idxType, stridable)?;
   var myLocArrTemp: unmanaged LocBlockCyclicArr(eltType, rank, idxType, stridable)?;
@@ -867,7 +867,7 @@ class BlockCyclicArr: BaseRectangularArr {
 
 override proc BlockCyclicArr.dsiGetBaseDom() return dom;
 
-override proc BlockCyclicArr.dsiDestroyArr() {
+override proc BlockCyclicArr.dsiDestroyArr(param deinitElts:bool) {
   coforall localeIdx in dom.dist.targetLocDom {
     on dom.dist.targetLocales(localeIdx) {
       delete locArr(localeIdx);

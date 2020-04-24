@@ -248,7 +248,7 @@ class SparseBlockDom: BaseSparseDomImpl {
   //
   // how to allocate a new array over this domain
   //
-  proc dsiBuildArray(type eltType) {
+  proc dsiBuildArray(type eltType, param initElts:bool) {
     var arr = new unmanaged SparseBlockArr(eltType=eltType, rank=rank, idxType=idxType,
         stridable=stridable, sparseLayoutType=sparseLayoutType, dom=_to_unmanaged(this));
     arr.setup();
@@ -412,7 +412,7 @@ class SparseBlockArr: BaseSparseArr {
     }
   }
 
-  override proc dsiDestroyArr() {
+  override proc dsiDestroyArr(param deinitElts:bool) {
     coforall localeIdx in dom.dist.targetLocDom {
       on locArr(localeIdx) {
         delete locArr(localeIdx);

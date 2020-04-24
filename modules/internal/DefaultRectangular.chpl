@@ -678,7 +678,7 @@ module DefaultRectangular {
       }
     }
 
-    proc dsiBuildArray(type eltType, param initElts) {
+    proc dsiBuildArray(type eltType, param initElts:bool) {
       return new unmanaged DefaultRectangularArr(eltType=eltType, rank=rank,
                                                  idxType=idxType,
                                                  stridable=stridable,

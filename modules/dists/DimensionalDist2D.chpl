@@ -936,7 +936,7 @@ proc DimensionalArr.isAlias
 //== creation and destruction
 
 // create a new array over this domain
-proc DimensionalDom.dsiBuildArray(type eltType)
+proc DimensionalDom.dsiBuildArray(type eltType, param initElts:bool)
 {
   _traceddd(this, ".dsiBuildArray");
   if rank != 2 then
@@ -1076,7 +1076,7 @@ override proc DimensionalArr.dsiPostReallocate() {
   // nothing for now
 }
 
-override proc DimensionalArr.dsiDestroyArr() {
+override proc DimensionalArr.dsiDestroyArr(param deinitElts:bool) {
   coforall desc in localAdescs do
     on desc do
       delete desc;

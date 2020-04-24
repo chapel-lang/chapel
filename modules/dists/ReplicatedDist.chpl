@@ -527,7 +527,7 @@ proc ReplicatedArr.dsiPrivatize(privatizeData) {
 
 
 // create a new array over this domain
-proc ReplicatedDom.dsiBuildArray(type eltType)
+proc ReplicatedDom.dsiBuildArray(type eltType, param initElts:bool)
   : unmanaged ReplicatedArr(eltType, _to_unmanaged(this.type))
 {
   if traceReplicatedDist then writeln("ReplicatedDom.dsiBuildArray");
@@ -568,7 +568,7 @@ proc chpl_serialReadWriteRectangular(f, arr, dom) where isReplicatedArr(arr) {
     chpl_serialReadWriteRectangularHelper(f, arr, dom);
 }
 
-override proc ReplicatedArr.dsiDestroyArr() {
+override proc ReplicatedArr.dsiDestroyArr(param deinitElts:bool) {
   coforall (loc, locArr) in zip(dom.dist.targetLocales, localArrs) {
     on loc do
       delete locArr;

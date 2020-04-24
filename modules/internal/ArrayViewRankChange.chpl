@@ -176,9 +176,9 @@ module ArrayViewRankChange {
         return downDomInst!;
     }
 
-    proc dsiBuildArray(type eltType) {
+    proc dsiBuildArray(type eltType, param initElts:bool) {
       pragma "no auto destroy"
-      const downarr = _newArray(downDom.dsiBuildArray(eltType));
+      const downarr = _newArray(downDom.dsiBuildArray(eltType, initElts));
       return new unmanaged ArrayViewRankChangeArr(eltType  =eltType,
                                         _DomPid = this.pid,
                                         dom = _to_unmanaged(this),

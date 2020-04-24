@@ -107,7 +107,7 @@ class PrivateDom: BaseRectangularDom {
 
   proc dsiSerialWrite(x) { x <~> "Private Domain"; }
 
-  proc dsiBuildArray(type eltType) {
+  proc dsiBuildArray(type eltType, param initElts:bool) {
     return new unmanaged PrivateArr(eltType=eltType, rank=rank, idxType=idxType, stridable=stridable, dom=_to_unmanaged(this));
   }
 

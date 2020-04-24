@@ -371,7 +371,7 @@ module ChapelArray {
   // NOTE: the bodies of functions marked with runtime type init fn such as
   // chpl__buildDomainRuntimeType and chpl__buildArrayRuntimeType are replaced
   // by the compiler to just create a record storing the arguments. The body
-  // is moved by the compiler to convertRuntimeTypeToValue.
+  // is moved by the compiler to chpl__convertRuntimeTypeToValue.
   // The return type of chpl__build...RuntimeType is what tells the
   // compiler which runtime type it is creating.
 
@@ -767,6 +767,7 @@ module ChapelArray {
   pragma "return not owned"
   proc chpl__domainFromArrayRuntimeType(type rtt) {
     proc getArrDomType() type {
+      pragma "unsafe"
       var arr : rtt;
       return __primitive("static typeof", arr.domain);
     }
@@ -780,6 +781,7 @@ module ChapelArray {
   }
 
   proc chpl__eltTypeFromArrayRuntimeType(type rtt) type {
+    pragma "unsafe"
     var arr: rtt;
     return arr.eltType;
   }

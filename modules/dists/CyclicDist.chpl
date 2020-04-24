@@ -509,7 +509,7 @@ override proc CyclicDom.dsiDestroyDom() {
     }
 }
 
-proc CyclicDom.dsiBuildArray(type eltType) {
+proc CyclicDom.dsiBuildArray(type eltType, param initElts:bool) {
   const dom = this;
   const creationLocale = here.id;
   const dummyLCD = new unmanaged LocCyclicDom(rank, idxType);
@@ -794,7 +794,7 @@ proc CyclicArr.setupRADOpt() {
   }
 }
 
-override proc CyclicArr.dsiDestroyArr() {
+override proc CyclicArr.dsiDestroyArr(param deinitElts:bool) {
   coforall localeIdx in dom.dist.targetLocDom {
     on dom.dist.targetLocs(localeIdx) {
       delete locArr(localeIdx);

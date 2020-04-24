@@ -849,7 +849,7 @@ proc BlockDom.dsiSerialWrite(x) {
 //
 // how to allocate a new array over this domain
 //
-proc BlockDom.dsiBuildArray(type eltType) {
+proc BlockDom.dsiBuildArray(type eltType, param initElts:bool) {
   const dom = this;
   const creationLocale = here.id;
   const dummyLBD = new unmanaged LocBlockDom(rank, idxType, stridable);
@@ -999,7 +999,7 @@ proc BlockArr.setupRADOpt() {
   }
 }
 
-override proc BlockArr.dsiDestroyArr() {
+override proc BlockArr.dsiDestroyArr(param deinitElts:bool) {
   coforall localeIdx in dom.dist.targetLocDom {
     on locArr(localeIdx) {
       delete locArr(localeIdx);

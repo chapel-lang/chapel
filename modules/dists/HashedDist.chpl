@@ -478,7 +478,7 @@ class UserMapAssocDom: BaseAssociativeDom {
   //
   // how to allocate a new array over this domain
   //
-  proc dsiBuildArray(type elemType) {
+  proc dsiBuildArray(type elemType, param initElts:bool) {
     var arr = new unmanaged UserMapAssocArr(idxType=idxType, mapperType=mapperType, eltType=elemType, dom=_to_unmanaged(this));
     arr.setup();
     return arr;
@@ -690,7 +690,7 @@ class UserMapAssocArr: AbsBaseArr {
     }
   }
 
-  override proc dsiDestroyArr() {
+  override proc dsiDestroyArr(param deinitElts:bool) {
     coforall localeIdx in dom.dist.targetLocDom do
       on dom.dist.targetLocales(localeIdx) do
         delete locArrs(localeIdx);

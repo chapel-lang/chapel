@@ -177,7 +177,7 @@ class CSDom: BaseSparseDomImpl {
     }
   }
 
-  proc dsiBuildArray(type eltType)
+  proc dsiBuildArray(type eltType, param initElts:bool)
     return new unmanaged CSArr(eltType=eltType, rank=rank, idxType=idxType, dom=_to_unmanaged(this));
 
   iter dsiIndsIterSafeForRemoving() {

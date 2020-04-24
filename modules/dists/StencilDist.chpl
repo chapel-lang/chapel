@@ -778,7 +778,7 @@ proc StencilDom.dsiSerialWrite(x) {
 //
 // how to allocate a new array over this domain
 //
-proc StencilDom.dsiBuildArray(type eltType) {
+proc StencilDom.dsiBuildArray(type eltType, param initElts:bool) {
   const dom = this;
   const creationLocale = here.id;
   const dummyLSD = new unmanaged LocStencilDom(rank, idxType, stridable);
@@ -1077,7 +1077,7 @@ proc StencilArr.setupRADOpt() {
   }
 }
 
-override proc StencilArr.dsiDestroyArr() {
+override proc StencilArr.dsiDestroyArr(param deinitElts:bool) {
   coforall localeIdx in dom.dist.targetLocDom {
     on locArr(localeIdx) {
       if !ignoreFluff then
