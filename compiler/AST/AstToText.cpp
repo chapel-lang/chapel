@@ -910,7 +910,7 @@ void AstToText::appendExpr(CallExpr* expr, bool printingType)
 
       else if (strcmp(fnName, "chpl__atomicType")             == 0)
       {
-        mText += "atomic";
+        mText += "atomic ";
         appendExpr(expr->get(1), printingType);
       }
 
