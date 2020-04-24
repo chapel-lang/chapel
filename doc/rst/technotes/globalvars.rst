@@ -17,14 +17,14 @@ Variables
 
 **boundsChecking**
 
-    This variable is *true* when ``--bounds-checks`` is enabled. 
+    This variable is *true* when the ``--bounds-checks`` flag is enabled. 
     It is used by libraries to enable/disable runtime bounds checks while 
     accessing ranges, arrays, or domains.
 
 **castChecking**
 
-    This variable reflects whether ``--cast-checks`` flag is enabled.
-    It is used to provide checks before casting a variable from one type to another.
+    This variable reflects whether the ``--cast-checks`` flag is enabled. If this flag is enabled, checks will
+    be done to prevent narrowing conversions.
 
 **chpl_checkNilDereferences**
 
@@ -43,5 +43,5 @@ Variables
 
 **_local**
 
-    This variable can be used to check if a program is being compiled for single/multi locale execution.
-    It is set to *true* if the program is compiled for single locale execution.
+    This variable can be used to check if a program is being compiled for single or multi locale execution.
+    It will be set to *true* when the program will be compiled for single locale execution.
