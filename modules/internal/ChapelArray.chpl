@@ -1062,9 +1062,9 @@ module ChapelArray {
       if _to_unmanaged(value.type) != value.type then
         compilerError("Domain on borrow created");
 
-      // the below check is necessary for iterator records that have domain
-      // shapes would create another set of privatized instances otherwise
       if _isPrivatized(value) {
+        // the below check is necessary for iterator records that have domain
+        // shapes would create another set of privatized instances otherwise
         if value.pid == nullPid {
           this._pid = _newPrivatizedClass(value);
         }
