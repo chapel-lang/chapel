@@ -931,7 +931,7 @@ bool UseStmt::providesNewSymbols(const ImportStmt* other) const {
     // probably fine. (and if they did, there's no harm in including it again)
     return true;
   } else {
-    if (other->unqualified.size() == 0 && other->renamed.size() == 0) {
+    if (!other->providesUnqualifiedAccess()) {
       // Other is an import of just a module.  As long as we provided something
       // for unqualified access, we provide new symbols
       if (renamed.size() > 0) {
