@@ -1,7 +1,7 @@
---checks # checks.good
---no-checks # checks-nochecks.good
---fast # checks-fast.good
---checks --no-checks # checks-checks-nochecks.good
---no-checks --checks # checks-nochecks-checks.good
---checks --fast # checks-checks-fast.good
---no-checks --fast # checks-nochecks-fast.good
+--checks # checks-on.good
+--no-checks # checks-off.good
+--fast # checks-off.good
+--checks --no-checks # checks-off.good
+--no-checks --checks # checks-on.good
+--checks --fast # checks-off.good
+--no-checks --fast # checks-off.good
