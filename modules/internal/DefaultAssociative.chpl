@@ -995,7 +995,8 @@ module DefaultAssociative {
     }
     return hash;
   }
-  
+
+  /*  
   inline proc chpl__defaultHash(o: owned object): uint {
     return _gen_key(__primitive("object2int", o.chpl_p));
   }
@@ -1003,15 +1004,14 @@ module DefaultAssociative {
   inline proc chpl__defaultHash(o: shared object): uint {
     return _gen_key(__primitive("object2int", o.chpl_p));
   }
+  */
 
+  // Non-nilable unmanaged objects will resolve to this.
   inline proc chpl__defaultHash(o: borrowed object): uint {
     return _gen_key(__primitive("object2int", o));
   }
 
-  inline proc chpl__defaultHash(o: unmanaged object): uint {
-    return _gen_key(__primitive("object2int", o));
-  }
-
+  /*
   inline proc chpl__defaultHash(o: owned object?): uint {
     return _gen_key(__primitive("object2int", o.chpl_p));
   }
@@ -1019,12 +1019,10 @@ module DefaultAssociative {
   inline proc chpl__defaultHash(o: shared object?): uint {
     return _gen_key(__primitive("object2int", o.chpl_p));
   }
+  */
 
+  // Nilable unmanaged objects will resolve to this.
   inline proc chpl__defaultHash(o: borrowed object?): uint {
-    return _gen_key(__primitive( "object2int", o));
-  }
-
-  inline proc chpl__defaultHash(o: unmanaged object): uint {
     return _gen_key(__primitive( "object2int", o));
   }
 
