@@ -382,7 +382,7 @@ void ImportStmt::validateUnqualified() {
 
       } else {
         for_vector(Symbol, sym, symbols) {
-          if (sym->hasFlag(FLAG_PRIVATE) == true) {
+          if (sym->hasFlag(FLAG_PRIVATE) == true && !sym->isVisible(this)) {
             USR_FATAL_CONT(this,
                            "Bad identifier, '%s' is private",
                            name);
