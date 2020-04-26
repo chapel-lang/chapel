@@ -1643,6 +1643,10 @@ static void handleInIntents(FnSymbol* fn, CallInfo& info) {
   if (isNestedNewOrDefault(fn, info.call)) {
     return;
   }
+  // In intents for chpl__coerceCopy / chpl__coerceMove are fundamental
+  // and shouldn't be adjusted here.
+  if (fn->hasFlag(FLAG_COERCE_FN))
+    return;
 
   Expr* anchor = info.call->getStmtExpr();
 
@@ -1711,9 +1715,7 @@ static void handleInIntents(FnSymbol* fn, CallInfo& info) {
 
         CallExpr* copy = NULL;
         if (runtimeTypes)
-          copy = new CallExpr("chpl__coerce",
-                              runtimeTypeTemp, actualSym,
-                              /*stealRHS*/ gFalse);
+          copy = new CallExpr("chpl__coerceCopy", runtimeTypeTemp, actualSym);
         else
           copy = new CallExpr("chpl__initCopy", actualSym);
 
@@ -1742,9 +1744,8 @@ static void handleInIntents(FnSymbol* fn, CallInfo& info) {
             tmp->addFlag(FLAG_CONST_DUE_TO_TASK_FORALL_INTENT);
           }
 
-          CallExpr* copy = new CallExpr("chpl__coerce",
-                                        runtimeTypeTemp, actualSym,
-                                        /*stealRHS*/ gTrue);
+          CallExpr* copy = new CallExpr("chpl__coerceMove",
+                                        runtimeTypeTemp, actualSym);
 
           CallExpr* move = new CallExpr(PRIM_MOVE, tmp, copy);
           anchor->insertBefore(new DefExpr(tmp));

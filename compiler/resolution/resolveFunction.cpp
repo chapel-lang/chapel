@@ -2311,10 +2311,13 @@ static void insertCasts(BaseAST* ast, FnSymbol* fn, Vec<CallExpr*>& casts) {
                                 !from->hasFlag(FLAG_INSERT_AUTO_DESTROY) &&
                                 !from->isRef();
 
-                CallExpr* callCoerceFn = new CallExpr("chpl__coerce",
-                                                      fromType,
-                                                      from,
-                                                      stealRHS?gTrue:gFalse);
+                CallExpr* callCoerceFn = NULL;
+                if (stealRHS)
+                  callCoerceFn = new CallExpr("chpl__coerceMove",
+                                              fromType, from);
+                else
+                  callCoerceFn = new CallExpr("chpl__coerceCopy",
+                                              fromType, from);
 
                 CallExpr* move = new CallExpr(PRIM_MOVE, to, callCoerceFn);
 
