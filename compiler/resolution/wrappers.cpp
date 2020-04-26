@@ -219,9 +219,14 @@ static bool      defaultedFormalUsesDefaultForType(ArgSymbol* formal);
 
 static bool      formalDefaultIsVariable(ArgSymbol* formal);
 
+static void      copyFormalTypeExpr(ArgSymbol* formal,
+                                    BlockStmt* body,
+                                    Symbol* temp);
+
 static void      defaultedFormalApplyDefaultForType(ArgSymbol* formal,
                                                     BlockStmt* wrapFn,
-                                                    VarSymbol* temp);
+                                                    VarSymbol* temp,
+                                                    Expr*      fromExpr);
 
 static void      defaultedFormalApplyDefaultValue(FnSymbol*  fn,
                                                   ArgSymbol* formal,
@@ -704,10 +709,10 @@ static DefaultExprFnEntry buildDefaultedActualFn(FnSymbol*  fn,
   block->insertAtTail(new DefExpr(temp));
 
   if (defaultedFormalUsesDefaultForType(formal) == true) {
-    defaultedFormalApplyDefaultForType(formal, block, temp);
+    defaultedFormalApplyDefaultForType(formal, block, temp, NULL);
 
   } else if (formalIntent == INTENT_OUT) {
-    defaultedFormalApplyDefaultForType(formal, block, temp);
+    defaultedFormalApplyDefaultForType(formal, block, temp, NULL);
 
   } else {
     // If the default expression is a call or dtNil,
@@ -883,9 +888,10 @@ static bool formalDefaultIsVariable(ArgSymbol* formal) {
   return false;
 }
 
-static void defaultedFormalApplyDefaultForType(ArgSymbol* formal,
-                                               BlockStmt* body,
-                                               VarSymbol* temp) {
+// sets temp to be the (runtime) type expression in formal's type
+static void copyFormalTypeExpr(ArgSymbol* formal,
+                               BlockStmt* body,
+                               Symbol* temp) {
   if (formal->typeExpr != NULL) {
     BlockStmt* typeExpr = formal->typeExpr->copy();
     Expr*      lastExpr = NULL;
@@ -919,28 +925,56 @@ static void defaultedFormalApplyDefaultForType(ArgSymbol* formal,
       // Compiled with -suseBulkTransferStride
       //
       CallExpr* lastCall = toCallExpr(lastExpr);
-      Expr*     initExpr = NULL;
+      Expr*     move     = NULL;
+      Expr*     typeExpr = NULL;
 
       if (lastCall != NULL && lastCall->isPrimitive(PRIM_MOVE) == true) {
-        initExpr = new CallExpr(PRIM_DEFAULT_INIT_VAR,
-                                temp, lastCall->get(1)->copy());
+        typeExpr = lastCall->get(1)->copy();
 
       } else {
-        initExpr = new CallExpr(PRIM_DEFAULT_INIT_VAR,
-                                temp, lastExpr->remove());
+        typeExpr = lastExpr->remove();
       }
 
-      body->insertAtTail(initExpr);
+      move = new CallExpr(PRIM_MOVE, temp, typeExpr);
+      body->insertAtTail(move);
     }
 
   } else {
-    Expr* expr = new SymExpr(formal->type->symbol);
+    Expr* typeExpr = new SymExpr(formal->type->symbol);
+    Expr* move = new CallExpr(PRIM_MOVE, temp, typeExpr);
+    body->insertAtTail(move);
+  }
+}
 
-    if (formal->hasFlag(FLAG_TYPE_VARIABLE)) {
-      body->insertAtTail(new CallExpr(PRIM_MOVE, temp, expr));
+// Creates the default value if fromExpr=NULL.
+// If fromExpr!=NULL, coerces fromExpr into the type of the formal.
+static void defaultedFormalApplyDefaultForType(ArgSymbol* formal,
+                                               BlockStmt* body,
+                                               VarSymbol* temp,
+                                               Expr* fromExpr) {
+  Symbol* typeTmp = NULL;
+  if (formal->typeExpr != NULL) {
+    typeTmp = newTemp("_formal_type");
+    typeTmp->addFlag(FLAG_TYPE_VARIABLE);
+    body->insertAtTail(new DefExpr(typeTmp));
+    copyFormalTypeExpr(formal, body, typeTmp);
+  } else {
+    typeTmp = formal->type->symbol;
+  }
+
+  if (formal->hasFlag(FLAG_TYPE_VARIABLE) == true) {
+    body->insertAtTail(new CallExpr(PRIM_MOVE, temp, typeTmp));
+
+  } else {
+    Expr* initExpr = NULL;
+    if (fromExpr == NULL) {
+      initExpr = new CallExpr(PRIM_DEFAULT_INIT_VAR, temp, typeTmp);
     } else {
-      body->insertAtTail(new CallExpr(PRIM_DEFAULT_INIT_VAR, temp, expr));
+      initExpr = new CallExpr(PRIM_MOVE,
+                              temp,
+                              new CallExpr(PRIM_COERCE, fromExpr, typeTmp));
     }
+    body->insertAtTail(initExpr);
   }
 }
 
@@ -975,10 +1009,10 @@ static void defaultedFormalApplyDefaultValue(FnSymbol*  fn,
       formal->intent & INTENT_FLAG_IN &&
       typeExprReturnsType(formal)) {
     VarSymbol* nt = newTemp(temp->type);
-    nt->addFlag(FLAG_INITIALIZED_LATER);
     body->insertAtTail(new DefExpr(nt));
-    defaultedFormalApplyDefaultForType(formal, body, nt);
-    body->insertAtTail(new CallExpr("=", nt, fromExpr));
+    defaultedFormalApplyDefaultForType(formal, body, nt, fromExpr);
+    //nt->addFlag(FLAG_INITIALIZED_LATER);
+    //body->insertAtTail(new CallExpr("=", nt, fromExpr));
     fromExpr = new SymExpr(nt);
   }
 
@@ -1464,6 +1498,7 @@ static void addArgCoercion(FnSymbol*  fn,
   }
 }
 
+/*
 // A wrapper that mimics the state during default_arg creation, so that we can
 // share code with that implementation.
 static void insertRuntimeTypeDefaultWrapper(FnSymbol* fn,
@@ -1500,6 +1535,7 @@ static void insertRuntimeTypeDefaultWrapper(FnSymbol* fn,
 
   curActual->replace(new SymExpr(newSym));
 }
+*/
 
 static Symbol* insertRuntimeTypeDefault(FnSymbol* fn,
                                         ArgSymbol* formal,
@@ -1635,12 +1671,25 @@ static void handleInIntents(FnSymbol* fn, CallInfo& info) {
 
       // Arrays and domains need special handling in order to preserve their
       // runtime types.
-      if (actualSym->getValType()->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE) &&
-          mustUseRuntimeTypeDefault(formal)) {
-        insertRuntimeTypeDefaultWrapper(fn, formal, info.call, se);
+      bool runtimeTypes =
+        actualSym->getValType()->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE) &&
+        mustUseRuntimeTypeDefault(formal);
+
+
+      VarSymbol* runtimeTypeTemp = NULL;
+      if (runtimeTypes) {
+        BlockStmt* block = new BlockStmt();
+        anchor->insertBefore(block);
+        runtimeTypeTemp = newTemp("_formal_type_tmp");
+        runtimeTypeTemp->addFlag(FLAG_TYPE_VARIABLE);
+        block->insertAtTail(new DefExpr(runtimeTypeTemp));
+        copyFormalTypeExpr(formal, block, runtimeTypeTemp);
+        resolveBlockStmt(block);
+        block->flattenAndRemove();
+      }
 
       // A copy might be necessary here but might not.
-      } else if (doesCopyInitializationRequireCopy(useExpr)) {
+      if (doesCopyInitializationRequireCopy(useExpr)) {
         // Add a new formal temp at the call site that mimics variable
         // initialization from the actual.
         VarSymbol* tmp = newTemp(astr("_formal_tmp_", formal->name));
@@ -1654,7 +1703,14 @@ static void handleInIntents(FnSymbol* fn, CallInfo& info) {
           tmp->addFlag(FLAG_CONST_DUE_TO_TASK_FORALL_INTENT);
         }
 
-        CallExpr* copy = new CallExpr("chpl__initCopy", actualSym);
+        CallExpr* copy = NULL;
+        if (runtimeTypes)
+          copy = new CallExpr("chpl__coerce",
+                              runtimeTypeTemp, actualSym,
+                              /*stealRHS*/ gFalse);
+        else
+          copy = new CallExpr("chpl__initCopy", actualSym);
+
         CallExpr* move = new CallExpr(PRIM_MOVE, tmp, copy);
         anchor->insertBefore(new DefExpr(tmp));
         anchor->insertBefore(move);
@@ -1669,6 +1725,30 @@ static void handleInIntents(FnSymbol* fn, CallInfo& info) {
         // Then "move" ownership to the called function
         // (don't destroy it here, it will be destroyed there).
         actualSym->addFlag(FLAG_NO_AUTO_DESTROY);
+
+        if (runtimeTypes) {
+          VarSymbol* tmp = newTemp(astr("_formal_tmp_", formal->name));
+          tmp->addFlag(FLAG_NO_AUTO_DESTROY);
+          tmp->addFlag(FLAG_EXPR_TEMP);
+
+          // Does this need to be here?
+          if (formal->hasFlag(FLAG_CONST_DUE_TO_TASK_FORALL_INTENT)) {
+            tmp->addFlag(FLAG_CONST_DUE_TO_TASK_FORALL_INTENT);
+          }
+
+          CallExpr* copy = new CallExpr("chpl__coerce",
+                                        runtimeTypeTemp, actualSym,
+                                        /*stealRHS*/ gTrue);
+
+          CallExpr* move = new CallExpr(PRIM_MOVE, tmp, copy);
+          anchor->insertBefore(new DefExpr(tmp));
+          anchor->insertBefore(move);
+
+          resolveCallAndCallee(copy, false); // false - allow unresolved
+          resolveCall(move);
+
+          currActual->replace(new SymExpr(tmp));
+        }
       }
     }
 

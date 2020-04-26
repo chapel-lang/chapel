@@ -140,7 +140,7 @@ testr0();
 writeln("-");
 
 proc testr1() {
-  writeln("testr1");
+  writeln("testr1 (copy required)");
   var B:[1..1] R = globalA;
   writeln(B);
 }
@@ -165,6 +165,8 @@ writeln("-");
 
 proc testr4() {
   writeln("testr4");
+  // goes 1..10 because the forall will make some copies of the record
+  // for different locales/tasks and we like to see that.
   var B:[1..10] R = new R(1);
   writeln(B);
 }
@@ -179,5 +181,129 @@ proc testr5() {
 testr5();
 writeln("-");
 
+proc testr6() {
+  writeln("testr6 (copy required)");
+  var B:[1..1] R = globalA[1..1];
+  writeln(B);
+}
+testr6();
+writeln("-");
+
+
+class C1 {
+  var A: [1..1] R = [i in 1..1] new R(1);
+}
+
+proc testC1() {
+  writeln("testC1");
+  var c = new C1();
+  writeln(c);
+}
+testC1();
+writeln("-");
+
+class C2 {
+  var A: [1..1] R;
+  proc init() {
+    this.A = [i in 1..1] new R(1);
+  }
+}
+
+proc testC2() {
+  writeln("testC2");
+  var c = new C2();
+  writeln(c);
+}
+testC2();
+writeln("-");
+
+class C3 {
+  var A: [1..1] R;
+  proc init() {
+    this.A = makeA();
+  }
+}
+
+proc testC3() {
+  writeln("testC3");
+  var c = new C3();
+  writeln(c);
+}
+testC3();
+writeln("-");
+
+class C4 {
+  var A: [1..1] R;
+}
+
+proc testC4() {
+  writeln("testC4");
+  var c = new C4(makeA());
+  writeln(c);
+}
+testC4();
+writeln("-");
+
+
+
+record R1 {
+  var A: [1..1] R = [i in 1..1] new R(1);
+}
+
+proc testR1() {
+  writeln("testR1");
+  var c = new R1();
+  writeln(c);
+}
+testR1();
+writeln("-");
+
+record R2 {
+  var A: [1..1] R;
+  proc init() {
+    this.A = [i in 1..1] new R(1);
+  }
+}
+
+proc testR2() {
+  writeln("testR2");
+  var c = new R2();
+  writeln(c);
+}
+testR2();
+writeln("-");
+
+record R3 {
+  var A: [1..1] R;
+  proc init() {
+    this.A = makeA();
+  }
+}
+
+proc testR3() {
+  writeln("testR3");
+  var c = new R3();
+  writeln(c);
+}
+testR3();
+writeln("-");
+
+class R4 {
+  var A: [1..1] R;
+}
+
+proc testR4() {
+  writeln("testR4");
+  var c = new R4(makeA());
+  writeln(c);
+}
+testR4();
+writeln("-");
+
 
 printInitDeinit = false;
+
+// TODO:
+// test 'in' default argument with default used
+// test default 'in' argument with default used and type previous domain arg
+// test 'in' argument with actual used and type is previous domain arg

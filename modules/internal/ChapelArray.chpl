@@ -786,6 +786,12 @@ module ChapelArray {
     return arr.eltType;
   }
 
+  proc chpl__instanceTypeFromArrayRuntimeType(type rtt) type {
+    pragma "unsafe"
+    var arr: rtt;
+    return arr._instance.type;
+  }
+
   //
   // Support for index types
   //
@@ -3723,6 +3729,13 @@ module ChapelArray {
     chpl__uncheckedArrayTransfer(a, b);
   }
 
+  pragma "no doc"
+  enum transferType {
+    move,
+    initCopy,
+    assign
+  }
+
   inline proc chpl__uncheckedArrayTransfer(ref a: [], b:[],
                                            param move=false) {
     var done = false;
@@ -4194,8 +4207,20 @@ module ChapelArray {
     type eltType = chpl__eltTypeFromArrayRuntimeType(dstType);
     const ref dom = chpl__domainFromArrayRuntimeType(dstType);
 
+    // type mismatch important because RHS could be a slice, e.g.
+    param typeMismatch = rhs._instance.type !=
+                         chpl__instanceTypeFromArrayRuntimeType(dstType);
+    // TODO: should copy-init if element types do not match but
+    // everything else is the same
+
+    param moveElts = ownsRhs && !typeMismatch;
+
+    chpl_debug_writeln("in  chpl__coerce owsRhs=", ownsRhs,
+                       " typeMismatch=", typeMismatch,
+                       " moveElts=", moveElts);
+
     pragma "unsafe" // when eltType is non-nilable
-    var lhs = dom.buildArray(eltType, initElts=!ownsRhs);
+    var lhs = dom.buildArray(eltType, initElts=!moveElts);
 
     if lhs.rank != rhs.rank then
       compilerError("rank mismatch in array assignment");
@@ -4211,15 +4236,17 @@ module ChapelArray {
       if boundsChecking then
         checkArrayShapesUponAssignment(lhs, rhs);
 
-      chpl__uncheckedArrayTransfer(lhs, rhs, move=ownsRhs);
+      chpl__uncheckedArrayTransfer(lhs, rhs, move=moveElts);
     }
 
     if ownsRhs {
       // If we own the RHS, we have already moved the elements out
       // and so should not try to deinit them.
       // We still need to free any array memory.
-      _do_destroy_arr(rhs._unowned, rhs._instance, deinitElts=false);
+      _do_destroy_arr(rhs._unowned, rhs._instance, deinitElts=!moveElts);
     }
+
+    chpl_debug_writeln("end chpl__coerce");
 
     return lhs;
   }
